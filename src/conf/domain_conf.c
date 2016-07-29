@@ -9666,6 +9666,9 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
         goto error;
     }
 
+    if (virDomainVirtioRevisionParseXML(ctxt, &def->virtio_rev) < 0)
+        goto error;
+
  cleanup:
     ctxt->node = oldnode;
     VIR_FREE(macaddr);
@@ -21072,6 +21075,8 @@ virDomainNetDefFormat(virBufferPtr buf,
                                   flags | VIR_DOMAIN_DEF_FORMAT_ALLOW_BOOT
                                   | VIR_DOMAIN_DEF_FORMAT_ALLOW_ROM) < 0)
         return -1;
+
+    virDomainVirtioRevisionFormatXML(buf, def->virtio_rev);
 
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</interface>\n");

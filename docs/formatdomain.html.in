@@ -4012,6 +4012,12 @@
       attribute <code>type='pci'</code>
       as <a href="#elementsAddress">documented above</a>.
     </p>
+    <p>
+      An optional <code>virtio</code> element can be used to enforce a particular
+      virtio revision in QEMU. The valid values for the <code>revision</code>
+      are <code>0</code> and <code>1</code>.
+      <span class='since'>Since 2.2.0</span>
+    </p>
 
     <h5><a name="elementsNICSVirtual">Virtual network</a></h5>
 
@@ -6409,7 +6415,7 @@ qemu-kvm -net nic,model=? /dev/null
       <dt><code>virtio</code></dt>
       <dd>
         <p>
-          An optional <code>virtio</code> can be used to enforce a particular
+          An optional <code>virtio</code> element can be used to enforce a particular
           virtio revision in QEMU. The valid values for the <code>revision</code>
           are <code>0</code> and <code>1</code>.
           <span class='since'>Since 2.2.0</span>
