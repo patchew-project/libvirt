@@ -386,6 +386,23 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
     return ret;
 }
 
+static void
+qemuBuildVirtioRevisionStr(virBufferPtr buf,
+                           virDomainVirtioRevision rev)
+{
+    switch (rev) {
+    case VIR_DOMAIN_VIRTIO_REVISION_HERITAGE:
+        virBufferAddLit(buf, ",disable-legacy=off,disable-modern=on");
+        break;
+    case VIR_DOMAIN_VIRTIO_REVISION_CONTEMPORARY:
+        virBufferAddLit(buf, ",disable-legacy=on,disable-modern=off");
+        break;
+    case VIR_DOMAIN_VIRTIO_REVISION_DEFAULT:
+    case VIR_DOMAIN_VIRTIO_REVISION_LAST:
+        break;
+    }
+}
+
 static int
 qemuBuildRomStr(virBufferPtr buf,
                 virDomainDeviceInfoPtr info)
@@ -1992,6 +2009,9 @@ qemuBuildDriveDevStr(const virDomainDef *def,
                               (disk->device == VIR_DOMAIN_DISK_DEVICE_LUN)
                               ? "on" : "off");
         }
+
+        qemuBuildVirtioRevisionStr(&opt, disk->virtio_rev);
+
         if (qemuBuildDeviceAddressStr(&opt, def, &disk->info, qemuCaps) < 0)
             goto error;
         break;
@@ -2311,6 +2331,8 @@ qemuBuildFSDevStr(const virDomainDef *def,
                       QEMU_FSDEV_HOST_PREFIX, fs->info.alias);
     virBufferAsprintf(&opt, ",mount_tag=%s", fs->dst);
 
+    qemuBuildVirtioRevisionStr(&opt, fs->virtio_rev);
+
     if (qemuBuildDeviceAddressStr(&opt, def, &fs->info, qemuCaps) < 0)
         goto error;
 
@@ -2568,6 +2590,7 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
                                       def->iothread);
                 }
             }
+            qemuBuildVirtioRevisionStr(&buf, def->virtio_rev);
             break;
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSILOGIC:
             virBufferAddLit(&buf, "lsi");
@@ -2613,6 +2636,7 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
             virBufferAsprintf(&buf, ",vectors=%d",
                               def->opts.vioserial.vectors);
         }
+        qemuBuildVirtioRevisionStr(&buf, def->virtio_rev);
         break;
 
     case VIR_DOMAIN_CONTROLLER_TYPE_CCID:
@@ -3557,6 +3581,9 @@ qemuBuildNicDevStr(virDomainDefPtr def,
     virBufferAsprintf(&buf, ",id=%s", net->info.alias);
     virBufferAsprintf(&buf, ",mac=%s",
                       virMacAddrFormat(&net->mac, macaddr));
+
+    qemuBuildVirtioRevisionStr(&buf, net->virtio_rev);
+
     if (qemuBuildDeviceAddressStr(&buf, def, &net->info, qemuCaps) < 0)
         goto error;
     if (qemuBuildRomStr(&buf, &net->info) < 0)
@@ -3826,6 +3853,8 @@ qemuBuildMemballoonCommandLine(virCommandPtr cmd,
         virBufferAsprintf(&buf, ",deflate-on-oom=%s",
                           virTristateSwitchTypeToString(def->memballoon->autodeflate));
     }
+
+    qemuBuildVirtioRevisionStr(&buf, def->memballoon->virtio_rev);
 
     virCommandAddArg(cmd, "-device");
     virCommandAddArgBuffer(cmd, &buf);
@@ -5563,6 +5592,8 @@ qemuBuildRNGDevStr(const virDomainDef *def,
         else
             virBufferAddLit(&buf, ",period=1000");
     }
+
+    qemuBuildVirtioRevisionStr(&buf, dev->virtio_rev);
 
     if (qemuBuildDeviceAddressStr(&buf, def, &dev->info, qemuCaps) < 0)
         goto error;
