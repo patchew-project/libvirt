@@ -1183,6 +1183,9 @@
           </data>
         </element>
       </optional>
+      <optional>
+        <ref name="virtioRevision"/>
+      </optional>
     </interleave>
   </define>
   <define name="snapshot">
