@@ -761,6 +761,7 @@ struct _virDomainControllerDef {
         virDomainUSBControllerOpts usbopts;
     } opts;
     virDomainDeviceInfo info;
+    virDomainVirtioRevision virtio_rev;
 };
 
 

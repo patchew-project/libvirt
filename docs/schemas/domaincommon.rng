@@ -1926,6 +1926,9 @@
             </optional>
           </element>
         </optional>
+        <optional>
+          <ref name="virtioRevision"/>
+        </optional>
       </interleave>
     </element>
   </define>

@@ -3116,6 +3116,14 @@
       additional attributes that control specific features, such as:
     </p>
 
+    <p>
+      For virtio controllers, an optional <code>virtio</code> element
+      can be used to enforce a particular virtio revision in QEMU.
+      The valid values for the <code>revision</code>
+      are <code>0</code> and <code>1</code>.
+      <span class='since'>Since 2.2.0</span>
+    </p>
+
       <dl>
         <dt><code>virtio-serial</code></dt>
         <dd>The <code>virtio-serial</code> controller has two additional

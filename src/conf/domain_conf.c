@@ -8285,6 +8285,9 @@ virDomainControllerDefParseXML(xmlNodePtr node,
         cur = cur->next;
     }
 
+    if (virDomainVirtioRevisionParseXML(ctxt, &def->virtio_rev) < 0)
+        goto error;
+
     /* node is parsed differently from target attributes because
      * someone thought it should be a subelement instead...
      */
@@ -20210,6 +20213,7 @@ virDomainControllerDefFormat(virBufferPtr buf,
             virBufferAsprintf(buf, "<pcihole64 unit='KiB'>%lu</"
                               "pcihole64>\n", def->opts.pciopts.pcihole64size);
         }
+        virDomainVirtioRevisionFormatXML(buf, def->virtio_rev);
 
         virBufferAdjustIndent(buf, -2);
         virBufferAddLit(buf, "</controller>\n");
