@@ -3570,6 +3570,9 @@
             </attribute>
           </element>
         </optional>
+        <optional>
+          <ref name="virtioRevision"/>
+        </optional>
       </interleave>
     </element>
   </define>
@@ -4773,6 +4776,17 @@
         </attribute>
       </optional>
       <empty/>
+    </element>
+  </define>
+
+  <define name="virtioRevision">
+    <element name="virtio">
+      <attribute name="revision">
+        <choice>
+          <value>0</value>
+          <value>1</value>
+        </choice>
+      </attribute>
     </element>
   </define>
 

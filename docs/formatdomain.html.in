@@ -6379,6 +6379,15 @@ qemu-kvm -net nic,model=? /dev/null
           <span class='since'>Since 1.1.1, requires QEMU 1.5</span>
         </p>
       </dd>
+      <dt><code>virtio</code></dt>
+      <dd>
+        <p>
+          An optional <code>virtio</code> can be used to enforce a particular
+          virtio revision in QEMU. The valid values for the <code>revision</code>
+          are <code>0</code> and <code>1</code>.
+          <span class='since'>Since 2.2.0</span>
+        </p>
+      </dd>
     </dl>
     <h4><a name="elementsRng">Random number generator device</a></h4>
 

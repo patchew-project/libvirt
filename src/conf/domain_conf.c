@@ -831,6 +831,12 @@ VIR_ENUM_IMPL(virDomainLoader,
               "rom",
               "pflash")
 
+VIR_ENUM_IMPL(virDomainVirtioRevision,
+              VIR_DOMAIN_VIRTIO_REVISION_LAST,
+              "default",
+              "0",
+              "1")
+
 /* Internal mapping: subset of block job types that can be present in
  * <mirror> XML (remaining types are not two-phase). */
 VIR_ENUM_DECL(virDomainBlockJob)
@@ -1054,6 +1060,41 @@ virDomainXMLNamespacePtr
 virDomainXMLOptionGetNamespace(virDomainXMLOptionPtr xmlopt)
 {
     return &xmlopt->ns;
+}
+
+static int
+virDomainVirtioRevisionParseXML(xmlXPathContextPtr ctxt,
+                                virDomainVirtioRevision *res)
+{
+    char *str = virXPathString("string(./virtio/@revision)", ctxt);
+    int ret = -1;
+    int val;
+
+    if (!str)
+        return 0;
+
+    if ((val = virDomainVirtioRevisionTypeFromString(str)) < 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Unable to parse virtio revision: '%s'"),
+                       str);
+        goto cleanup;
+    }
+
+    ret = 0;
+    *res = val;
+ cleanup:
+    VIR_FREE(str);
+    return ret;
+}
+
+
+static void
+virDomainVirtioRevisionFormatXML(virBufferPtr buf,
+                                 virDomainVirtioRevision val)
+{
+    if (val != VIR_DOMAIN_VIRTIO_REVISION_DEFAULT)
+        virBufferAsprintf(buf, "<virtio revision='%s'/>\n",
+                          virDomainVirtioRevisionTypeToString(val));
 }
 
 
@@ -12058,6 +12099,9 @@ virDomainMemballoonDefParseXML(xmlNodePtr node,
     else if (virDomainDeviceInfoParseXML(node, NULL, &def->info, flags) < 0)
         goto error;
 
+    if (virDomainVirtioRevisionParseXML(ctxt, &def->virtio_rev) < 0)
+        goto error;
+
  cleanup:
     VIR_FREE(model);
     VIR_FREE(deflate);
@@ -21445,6 +21489,8 @@ virDomainMemballoonDefFormat(virBufferPtr buf,
         virBufferFreeAndReset(&childrenBuf);
         return -1;
     }
+
+    virDomainVirtioRevisionFormatXML(&childrenBuf, def->virtio_rev);
 
     if (!virBufferUse(&childrenBuf)) {
         virBufferAddLit(buf, "/>\n");
