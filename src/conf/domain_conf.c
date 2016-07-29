@@ -8688,6 +8688,9 @@ virDomainFSDefParseXML(xmlNodePtr node,
             goto error;
     }
 
+    if (virDomainVirtioRevisionParseXML(ctxt, &def->virtio_rev) < 0)
+        goto error;
+
     def->src->path = source;
     source = NULL;
     def->dst = target;
@@ -20334,6 +20337,9 @@ virDomainFSDefFormat(virBufferPtr buf,
         virBufferAsprintf(buf, "<space_soft_limit unit='bytes'>"
                           "%llu</space_soft_limit>\n", def->space_soft_limit);
     }
+
+    virDomainVirtioRevisionFormatXML(buf, def->virtio_rev);
+
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</filesystem>\n");
     return 0;

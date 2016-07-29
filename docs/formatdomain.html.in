@@ -2963,6 +2963,16 @@
         hard limit is enforced.
         <span class="since">Since 0.9.13</span>
       </dd>
+
+      <dt><code>virtio</code></dt>
+      <dd>
+        <p>
+          An optional <code>virtio</code> element can be used to enforce a particular
+          virtio revision in QEMU. The valid values for the <code>revision</code>
+          are <code>0</code> and <code>1</code>.
+          <span class='since'>Since 2.2.0</span>
+        </p>
+      </dd>
     </dl>
 
     <h4><a name="elementsAddress">Device Addresses</a></h4>

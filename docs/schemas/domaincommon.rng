@@ -2079,6 +2079,9 @@
             <ref name='scaledInteger'/>
           </element>
         </optional>
+        <optional>
+          <ref name="virtioRevision"/>
+        </optional>
       </interleave>
     </element>
   </define>

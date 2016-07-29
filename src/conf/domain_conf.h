@@ -824,6 +824,7 @@ struct _virDomainFSDef {
     unsigned long long space_hard_limit; /* in bytes */
     unsigned long long space_soft_limit; /* in bytes */
     bool symlinksResolved;
+    virDomainVirtioRevision virtio_rev;
 };
 
 
