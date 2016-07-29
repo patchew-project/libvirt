@@ -408,8 +408,8 @@ if WITH_WIRESHARK_DISSECTOR
 ws_plugindir = $(plugindir)
 ws_plugin_LTLIBRARIES = wireshark/src/libvirt.la
 wireshark_src_libvirt_la_CPPFLAGS = \
-	-I wireshark/src $(WIRESHARK_DISSECTOR_CFLAGS)
-wireshark_src_libvirt_la_LDFLAGS = -avoid-version -module
+	-I wireshark/src $(WIRESHARK_DISSECTOR_CFLAGS) $(GLIB_CFLAGS)
+wireshark_src_libvirt_la_LDFLAGS = -avoid-version -module $(GLIB_LIBS)
 nodist_wireshark_src_libvirt_la_SOURCES = wireshark/src/plugin.c
 wireshark_src_libvirt_la_SOURCES = \
 	wireshark/src/packet-libvirt.h \
