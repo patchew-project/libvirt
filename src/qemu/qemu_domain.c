@@ -4394,7 +4394,7 @@ qemuDomainDetermineDiskChain(virQEMUDriverPtr driver,
                              bool report_broken)
 {
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
-    int ret = 0;
+    int ret = -1;
     uid_t uid;
     gid_t gid;
 
@@ -4415,6 +4415,8 @@ qemuDomainDetermineDiskChain(virQEMUDriverPtr driver,
                                   cfg->allowDiskFormatProbing,
                                   report_broken) < 0)
         ret = -1;
+
+    ret = 0;
 
  cleanup:
     virObjectUnref(cfg);
