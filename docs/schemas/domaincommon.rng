@@ -4438,6 +4438,15 @@
     </element>
   </define>
 
+  <define name="memAccess">
+    <attribute name="memAccess">
+      <choice>
+        <value>shared</value>
+        <value>private</value>
+      </choice>
+    </attribute>
+  </define>
+
   <define name="numaCell">
     <element name="cell">
       <optional>
@@ -4457,12 +4466,7 @@
         </attribute>
       </optional>
       <optional>
-        <attribute name="memAccess">
-          <choice>
-            <value>shared</value>
-            <value>private</value>
-          </choice>
-        </attribute>
+        <ref name="memAccess"/>
       </optional>
     </element>
   </define>
@@ -4696,6 +4700,9 @@
           <value>nvdimm</value>
         </choice>
       </attribute>
+      <optional>
+        <ref name="memAccess"/>
+      </optional>
       <interleave>
         <optional>
           <ref name="memorydev-source"/>
