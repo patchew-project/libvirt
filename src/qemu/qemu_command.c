@@ -3063,6 +3063,7 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
  *             to, or -1 if NUMA is not used in the guest
  * @hostNodes: map of host nodes to alloc the memory in, NULL for default
  * @autoNodeset: fallback nodeset in case of automatic numa placement
+ * @memPath: request memory-backend-file with specific mem-path
  * @def: domain definition object
  * @qemuCaps: qemu capabilities object
  * @cfg: qemu driver config object
@@ -3084,6 +3085,7 @@ qemuBuildMemoryBackendStr(unsigned long long size,
                           int guestNode,
                           virBitmapPtr userNodeset,
                           virBitmapPtr autoNodeset,
+                          const char *memPath,
                           virDomainDefPtr def,
                           virQEMUCapsPtr qemuCaps,
                           virQEMUDriverConfigPtr cfg,
@@ -3175,35 +3177,42 @@ qemuBuildMemoryBackendStr(unsigned long long size,
     if (!(props = virJSONValueNewObject()))
         return -1;
 
-    if (pagesize || hugepage) {
-        if (pagesize) {
-            /* Now lets see, if the huge page we want to use is even mounted
-             * and ready to use */
-            for (i = 0; i < cfg->nhugetlbfs; i++) {
-                if (cfg->hugetlbfs[i].size == pagesize)
-                    break;
-            }
+    if (memPath || pagesize || hugepage) {
+        if (pagesize || hugepage) {
+            if (pagesize) {
+                /* Now lets see, if the huge page we want to use is even mounted
+                 * and ready to use */
+                for (i = 0; i < cfg->nhugetlbfs; i++) {
+                    if (cfg->hugetlbfs[i].size == pagesize)
+                        break;
+                }
 
-            if (i == cfg->nhugetlbfs) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("Unable to find any usable hugetlbfs mount for %llu KiB"),
-                               pagesize);
-                goto cleanup;
-            }
+                if (i == cfg->nhugetlbfs) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   _("Unable to find any usable hugetlbfs mount for %llu KiB"),
+                                   pagesize);
+                    goto cleanup;
+                }
 
-            if (!(mem_path = qemuGetHugepagePath(&cfg->hugetlbfs[i])))
-                goto cleanup;
-        } else {
-            if (!(mem_path = qemuGetDefaultHugepath(cfg->hugetlbfs,
-                                                    cfg->nhugetlbfs)))
-                goto cleanup;
+                if (!(mem_path = qemuGetHugepagePath(&cfg->hugetlbfs[i])))
+                    goto cleanup;
+            } else {
+                if (!(mem_path = qemuGetDefaultHugepath(cfg->hugetlbfs,
+                                                        cfg->nhugetlbfs)))
+                    goto cleanup;
+            }
         }
 
         *backendType = "memory-backend-file";
 
         if (virJSONValueObjectAdd(props,
+                                  "s:mem-path", memPath ? memPath : mem_path,
+                                  NULL) < 0)
+            goto cleanup;
+
+        if (!memPath && (pagesize || hugepage) &&
+            virJSONValueObjectAdd(props,
                                   "b:prealloc", true,
-                                  "s:mem-path", mem_path,
                                   NULL) < 0)
             goto cleanup;
 
@@ -3255,7 +3264,7 @@ qemuBuildMemoryBackendStr(unsigned long long size,
     }
 
     /* If none of the following is requested... */
-    if (!pagesize && !userNodeset && !memAccess && !nodeSpecified && !force) {
+    if (!pagesize && !userNodeset && !memAccess && !nodeSpecified && !force && !memPath) {
         /* report back that using the new backend is not necessary
          * to achieve the desired configuration */
         ret = 1;
@@ -3311,7 +3320,7 @@ qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
         goto cleanup;
 
     if ((rc = qemuBuildMemoryBackendStr(memsize, 0, cell, NULL, auto_nodeset,
-                                        def, qemuCaps, cfg, &backendType,
+                                        NULL, def, qemuCaps, cfg, &backendType,
                                         &props, false)) < 0)
         goto cleanup;
 
@@ -3353,7 +3362,7 @@ qemuBuildMemoryDimmBackendStr(virDomainMemoryDefPtr mem,
 
     if (qemuBuildMemoryBackendStr(mem->size, mem->pagesize,
                                   mem->targetNode, mem->sourceNodes, auto_nodeset,
-                                  def, qemuCaps, cfg,
+                                  mem->path, def, qemuCaps, cfg,
                                   &backendType, &props, true) < 0)
         goto cleanup;
 
@@ -3371,6 +3380,7 @@ char *
 qemuBuildMemoryDeviceStr(virDomainMemoryDefPtr mem)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
+    const char *device;
 
     if (!mem->info.alias) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -3379,8 +3389,15 @@ qemuBuildMemoryDeviceStr(virDomainMemoryDefPtr mem)
     }
 
     switch ((virDomainMemoryModel) mem->model) {
+    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
     case VIR_DOMAIN_MEMORY_MODEL_DIMM:
-        virBufferAddLit(&buf, "pc-dimm,");
+
+        if (mem->model == VIR_DOMAIN_MEMORY_MODEL_DIMM)
+            device = "pc-dimm";
+        else
+            device = "nvdimm";
+
+        virBufferAsprintf(&buf, "%s,", device);
 
         if (mem->targetNode >= 0)
             virBufferAsprintf(&buf, "node=%d,", mem->targetNode);
@@ -3393,12 +3410,6 @@ qemuBuildMemoryDeviceStr(virDomainMemoryDefPtr mem)
             virBufferAsprintf(&buf, ",addr=%llu", mem->info.addr.dimm.base);
         }
 
-        break;
-
-    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
-        virReportError(VIR_ERR_NO_SUPPORT, "%s",
-                       _("nvdimm not supported yet"));
-        return NULL;
         break;
 
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
@@ -6935,6 +6946,7 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
                             virQEMUCapsPtr qemuCaps)
 {
     bool obsoleteAccel = false;
+    size_t i;
 
     /* This should *never* be NULL, since we always provide
      * a machine in the capabilities data for QEMU. So this
@@ -6969,6 +6981,15 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
                            _("key wrap support is not available "
                              "with this QEMU binary"));
             return -1;
+        }
+
+        for (i = 0; i < def->nmems; i++) {
+            if (def->mems[i]->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("nvdimm not is not available "
+                                 "with this QEMU binary"));
+                return -1;
+            }
         }
     } else {
         virBuffer buf = VIR_BUFFER_INITIALIZER;
@@ -7059,6 +7080,13 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
                     virBufferAsprintf(&buf, ",gic-version=%s",
                                       virGICVersionTypeToString(def->gic_version));
                 }
+            }
+        }
+
+        for (i = 0; i < def->nmems; i++) {
+            if (def->mems[i]->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM) {
+                virBufferAddLit(&buf, ",nvdimm=on");
+                break;
             }
         }
 
