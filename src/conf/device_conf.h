@@ -148,26 +148,11 @@ typedef struct _virDomainDeviceInfo {
 int virPCIDeviceAddressIsValid(virPCIDeviceAddressPtr addr,
                                bool report);
 
-static inline bool
-virPCIDeviceAddressIsEmpty(const virPCIDeviceAddress *addr)
-{
-    return !(addr->domain || addr->bus || addr->slot);
-}
+bool virPCIDeviceAddressIsEmpty(const virPCIDeviceAddress *addr);
 
-static inline bool
-virDeviceInfoPCIAddressWanted(const virDomainDeviceInfo *info)
-{
-    return info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE ||
-        (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI &&
-         virPCIDeviceAddressIsEmpty(&info->addr.pci));
-}
+bool virDeviceInfoPCIAddressWanted(const virDomainDeviceInfo *info);
 
-static inline bool
-virDeviceInfoPCIAddressPresent(const virDomainDeviceInfo *info)
-{
-    return info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI &&
-       !virPCIDeviceAddressIsEmpty(&info->addr.pci);
-}
+bool virDeviceInfoPCIAddressPresent(const virDomainDeviceInfo *info);
 
 int virPCIDeviceAddressParseXML(xmlNodePtr node,
                                 virPCIDeviceAddressPtr addr);
