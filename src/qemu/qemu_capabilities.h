@@ -372,6 +372,7 @@ typedef enum {
     QEMU_CAPS_OBJECT_TLS_CREDS_X509, /* -object tls-creds-x509 */
     QEMU_CAPS_DISPLAY, /* -display */
     QEMU_CAPS_DEVICE_INTEL_IOMMU, /* -device intel-iommu */
+    QEMU_CAPS_DEVICE_NVDIMM, /* -device nvdimm */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
