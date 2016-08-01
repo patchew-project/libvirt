@@ -1732,6 +1732,12 @@ virStorageVolDelete(virStorageVolPtr vol,
  * journaled, log structured, copy-on-write, versioned, and
  * network file systems are known to be problematic.
  *
+ * NB the data includes the format (and possibly size information), so
+ * non-raw images might become raw with different size from libvirt's
+ * POV.  Due to the fact that not all information for re-creating the
+ * volume can be kept for every volume type, the volume might be kept
+ * in that state and not re-created.
+ *
  * Returns 0 on success, or -1 on error
  */
 int
