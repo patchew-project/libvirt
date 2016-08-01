@@ -8944,6 +8944,7 @@ cmdQemuMonitorCommand(vshControl *ctl, const vshCmd *cmd)
     virBuffer buf = VIR_BUFFER_INITIALIZER;
     bool pad = false;
     virJSONValuePtr pretty = NULL;
+    char *prettystr = NULL;
 
     VSH_EXCLUSIVE_OPTIONS("hmp", "pretty");
 
@@ -8969,22 +8970,20 @@ cmdQemuMonitorCommand(vshControl *ctl, const vshCmd *cmd)
     if (virDomainQemuMonitorCommand(dom, monitor_cmd, &result, flags) < 0)
         goto cleanup;
 
-    if (vshCommandOptBool(cmd, "pretty")) {
-        char *tmp;
-        pretty = virJSONValueFromString(result);
-        if (pretty && (tmp = virJSONValueToString(pretty, true))) {
-            VIR_FREE(result);
-            result = tmp;
-        } else {
-            vshResetLibvirtError();
-        }
+    if (vshCommandOptBool(cmd, "pretty") &&
+        (pretty = virJSONValueFromString(result)) &&
+        (prettystr = virJSONValueToString(pretty, true))) {
+        vshPrint(ctl, "%s", prettystr);
+    } else {
+        vshResetLibvirtError();
+        vshPrint(ctl, "%s\n", result);
     }
-    vshPrint(ctl, "%s\n", result);
 
     ret = true;
 
  cleanup:
     VIR_FREE(result);
+    VIR_FREE(prettystr);
     VIR_FREE(monitor_cmd);
     virJSONValueFree(pretty);
     if (dom)
