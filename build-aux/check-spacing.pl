@@ -94,7 +94,7 @@ foreach my $file (@ARGV) {
             if ($kw =~ /^(?:if|for|while|switch|return)$/) {
                 $tmpdata =~ s/(?:$kw\s\()/XXX(/;
             } else {
-                print "Whitespace after non-keyword:\n";
+                print "Whitespace after non-keyword or sizeof:\n";
                 print "$file:$.: $line";
                 $ret = 1;
                 last;

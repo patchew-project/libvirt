@@ -476,12 +476,6 @@ sc_forbid_const_pointer_typedef:
 	halt='use correct style and type for Ptr typedefs'		\
 	  $(_sc_search_regexp)
 
-# Forbid sizeof foo or sizeof (foo), require sizeof(foo)
-sc_size_of_brackets:
-	@prohibit='sizeof\s'						\
-	halt='use sizeof(foo), not sizeof (foo) or sizeof foo'		\
-	  $(_sc_search_regexp)
-
 # Ensure that no C source file, docs, or rng schema uses TABs for
 # indentation.  Also match *.h.in files, to get libvirt.h.in.  Exclude
 # files in gnulib, since they're imported.
