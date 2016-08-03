@@ -85,7 +85,7 @@ VIR_LOG_INIT("util.netdev");
 #endif
 
 #define RESOURCE_FILE_LEN 4096
-#if HAVE_DECL_ETHTOOL_GFEATURES
+#ifdef ETHTOOL_GFEATURES
 # define TX_UDP_TNL 25
 # define GFEATURES_SIZE 2
 # define FEATURE_WORD(blocks, index, field)  ((blocks)[(index) / 32U].field)
@@ -2446,28 +2446,28 @@ virNetDevGetEthtoolFeatures(virBitmapPtr bitmap,
         {ETHTOOL_GTXCSUM, VIR_NET_DEV_FEAT_GTXCSUM},
         {ETHTOOL_GSG, VIR_NET_DEV_FEAT_GSG},
         {ETHTOOL_GTSO, VIR_NET_DEV_FEAT_GTSO},
-# if HAVE_DECL_ETHTOOL_GGSO
+# ifdef ETHTOOL_GGSO
         {ETHTOOL_GGSO, VIR_NET_DEV_FEAT_GGSO},
 # endif
-# if HAVE_DECL_ETHTOOL_GGRO
+# ifdef ETHTOOL_GGRO
         {ETHTOOL_GGRO, VIR_NET_DEV_FEAT_GGRO},
 # endif
     };
 
-# if HAVE_DECL_ETHTOOL_GFLAGS
+# ifdef ETHTOOL_GFLAGS
     /* ethtool masks */
     struct virNetDevEthtoolFeatureCmd flags[] = {
-#  if HAVE_DECL_ETH_FLAG_LRO
+#  ifdef ETH_FLAG_LRO
         {ETH_FLAG_LRO, VIR_NET_DEV_FEAT_LRO},
 #  endif
-#  if HAVE_DECL_ETH_FLAG_TXVLAN
+#  ifdef ETH_FLAG_TXVLAN
         {ETH_FLAG_RXVLAN, VIR_NET_DEV_FEAT_RXVLAN},
         {ETH_FLAG_TXVLAN, VIR_NET_DEV_FEAT_TXVLAN},
 #  endif
-#  if HAVE_DECL_ETH_FLAG_NTUBLE
+#  ifdef ETH_FLAG_NTUPLE
         {ETH_FLAG_NTUPLE, VIR_NET_DEV_FEAT_NTUPLE},
 #  endif
-#  if HAVE_DECL_ETH_FLAG_RXHASH
+#  ifdef ETH_FLAG_RXHASH
         {ETH_FLAG_RXHASH, VIR_NET_DEV_FEAT_RXHASH},
 #  endif
     };
@@ -2479,7 +2479,7 @@ virNetDevGetEthtoolFeatures(virBitmapPtr bitmap,
             ignore_value(virBitmapSetBit(bitmap, ethtool_cmds[i].feat));
     }
 
-# if HAVE_DECL_ETHTOOL_GFLAGS
+# ifdef ETHTOOL_GFLAGS
     cmd.cmd = ETHTOOL_GFLAGS;
     if (virNetDevFeatureAvailable(fd, ifr, &cmd)) {
         for (i = 0; i < ARRAY_CARDINALITY(flags); i++) {
@@ -2491,7 +2491,7 @@ virNetDevGetEthtoolFeatures(virBitmapPtr bitmap,
 }
 
 
-# if HAVE_DECL_ETHTOOL_GFEATURES
+# ifdef ETHTOOL_GFEATURES
 /**
  * virNetDevGFeatureAvailable
  * This function checks for the availability of a network device gfeature
