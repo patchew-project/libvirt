@@ -5056,6 +5056,7 @@ qemuProcessLaunch(virConnectPtr conn,
     virCommandSetPreExecHook(cmd, qemuProcessHook, &hookData);
     virCommandSetMaxProcesses(cmd, cfg->maxProcesses);
     virCommandSetMaxFiles(cmd, cfg->maxFiles);
+    virCommandSetMaxCoreSize(cmd, cfg->maxCore);
     virCommandSetUmask(cmd, 0x002);
 
     VIR_DEBUG("Setting up security labelling");
