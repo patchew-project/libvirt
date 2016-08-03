@@ -1201,6 +1201,16 @@ GEN_TEST_FUNC(qemuMonitorJSONNBDServerStart, "localhost", 12345)
 GEN_TEST_FUNC(qemuMonitorJSONNBDServerAdd, "vda", true)
 GEN_TEST_FUNC(qemuMonitorJSONDetachCharDev, "serial1")
 
+static bool
+testQemuMonitorJSONqemuMonitorJSONQueryCPUsEqual(struct qemuMonitorQueryCpusEntry *a,
+                                                 struct qemuMonitorQueryCpusEntry *b)
+{
+    if (a->tid != b->tid)
+        return false;
+
+    return true;
+}
+
 
 static int
 testQemuMonitorJSONqemuMonitorJSONQueryCPUs(const void *data)
@@ -1208,9 +1218,14 @@ testQemuMonitorJSONqemuMonitorJSONQueryCPUs(const void *data)
     virDomainXMLOptionPtr xmlopt = (virDomainXMLOptionPtr)data;
     qemuMonitorTestPtr test = qemuMonitorTestNewSimple(true, xmlopt);
     int ret = -1;
-    pid_t *cpupids = NULL;
-    pid_t expected_cpupids[] = {17622, 17624, 17626, 17628};
-    int ncpupids;
+    struct qemuMonitorQueryCpusEntry *cpudata = NULL;
+    struct qemuMonitorQueryCpusEntry expect[] = {
+        {17622},
+        {17624},
+        {17626},
+        {17628},
+    };
+    int ncpupids = 0;
     size_t i;
 
     if (!test)
@@ -1252,7 +1267,7 @@ testQemuMonitorJSONqemuMonitorJSONQueryCPUs(const void *data)
                                "}") < 0)
         goto cleanup;
 
-    ncpupids = qemuMonitorJSONQueryCPUs(qemuMonitorTestGetMonitor(test), &cpupids);
+    ncpupids = qemuMonitorJSONQueryCPUs(qemuMonitorTestGetMonitor(test), &cpudata);
 
     if (ncpupids != 4) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -1261,10 +1276,10 @@ testQemuMonitorJSONqemuMonitorJSONQueryCPUs(const void *data)
     }
 
     for (i = 0; i < ncpupids; i++) {
-        if (cpupids[i] != expected_cpupids[i]) {
+        if (!testQemuMonitorJSONqemuMonitorJSONQueryCPUsEqual(cpudata + i,
+                                                              expect + i)) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
-                           "Expecting cpupids[%zu] = %d but got %d",
-                           i, expected_cpupids[i], cpupids[i]);
+                           "vcpu entry %zu does not match expected data", i);
             goto cleanup;
         }
     }
@@ -1272,7 +1287,7 @@ testQemuMonitorJSONqemuMonitorJSONQueryCPUs(const void *data)
     ret = 0;
 
  cleanup:
-    VIR_FREE(cpupids);
+    qemuMonitorQueryCpusFree(cpudata, ncpupids);
     qemuMonitorTestFree(test);
     return ret;
 }

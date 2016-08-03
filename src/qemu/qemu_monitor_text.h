@@ -50,7 +50,7 @@ int qemuMonitorTextSystemPowerdown(qemuMonitorPtr mon);
 int qemuMonitorTextSystemReset(qemuMonitorPtr mon);
 
 int qemuMonitorTextQueryCPUs(qemuMonitorPtr mon,
-                             int **pids);
+                             struct qemuMonitorQueryCpusEntry **entries);
 int qemuMonitorTextGetVirtType(qemuMonitorPtr mon,
                                virDomainVirtType *virtType);
 int qemuMonitorTextGetBalloonInfo(qemuMonitorPtr mon,
