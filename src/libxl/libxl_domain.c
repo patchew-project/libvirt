@@ -1012,6 +1012,29 @@ libxlConsoleCallback(libxl_ctx *ctx, libxl_event *ev, void *for_callback)
             VIR_FREE(console);
         }
     }
+    for (i = 0; i < vm->def->nserials; i++) {
+        virDomainChrDefPtr chr = vm->def->serials[i];
+        char *console = NULL;
+        int ret;
+
+        if (chr->source.type == VIR_DOMAIN_CHR_TYPE_PTY) {
+            ignore_value(virAsprintf(&chr->info.alias, "serial%zd", i));
+            if (chr->source.data.file.path)
+                continue;
+            ret = libxl_console_get_tty(ctx, ev->domid,
+                                        chr->target.port,
+                                        LIBXL_CONSOLE_TYPE_SERIAL,
+                                        &console);
+            if (!ret) {
+                VIR_FREE(chr->source.data.file.path);
+                if (console && console[0] != '\0') {
+                    ignore_value(VIR_STRDUP(chr->source.data.file.path,
+                                            console));
+                }
+            }
+            VIR_FREE(console);
+        }
+    }
     virObjectUnlock(vm);
     libxl_event_free(ctx, ev);
 }

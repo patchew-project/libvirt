@@ -431,14 +431,25 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
         }
 
         if (def->nserials) {
-            if (def->nserials > 1) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                               "%s",
-                               _("Only one serial device is supported by libxl"));
-                return -1;
+            if (def->nserials == 1) {
+                if (libxlMakeChrdevStr(def->serials[0], &b_info->u.hvm.serial) <
+                    0)
+                    return -1;
+            } else {
+                if (VIR_ALLOC_N(b_info->u.hvm.serial_list, def->nserials + 1) <
+                    0)
+                    return -1;
+
+                for (i = 0; i < def->nserials; i++) {
+                    if (libxlMakeChrdevStr(def->serials[i],
+                                           &b_info->u.hvm.serial_list[i]) < 0)
+                    {
+                        libxl_string_list_dispose(&b_info->u.hvm.serial_list);
+                        return -1;
+                    }
+                }
+                b_info->u.hvm.serial_list[i] = NULL;
             }
-            if (libxlMakeChrdevStr(def->serials[0], &b_info->u.hvm.serial) < 0)
-                return -1;
         }
 
         if (def->nparallels) {
