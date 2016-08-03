@@ -6927,6 +6927,7 @@ qemuBuildNameCommandLine(virCommandPtr cmd,
 
 static int
 qemuBuildMachineCommandLine(virCommandPtr cmd,
+                            virQEMUDriverConfigPtr cfg,
                             const virDomainDef *def,
                             virQEMUCapsPtr qemuCaps)
 {
@@ -6999,17 +7000,22 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
                               virTristateSwitchTypeToString(vmport));
         }
 
-        if (def->mem.dump_core) {
-            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DUMP_GUEST_CORE)) {
+        if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DUMP_GUEST_CORE)) {
+            if (def->mem.dump_core) {
+                virBufferAsprintf(&buf, ",dump-guest-core=%s",
+                                  virTristateSwitchTypeToString(def->mem.dump_core));
+            } else if (cfg->dumpGuestCore != true) {
+                virBufferAsprintf(&buf, ",dump-guest-core=%s",
+                                  cfg->dumpGuestCore ? "on" : "off");
+            }
+        } else {
+            if (def->mem.dump_core) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                                _("dump-guest-core is not available "
                                  "with this QEMU binary"));
                 virBufferFreeAndReset(&buf);
                 return -1;
             }
-
-            virBufferAsprintf(&buf, ",dump-guest-core=%s",
-                              virTristateSwitchTypeToString(def->mem.dump_core));
         }
 
         if (def->mem.nosharepages) {
@@ -9365,7 +9371,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (enableFips)
         virCommandAddArg(cmd, "-enable-fips");
 
-    if (qemuBuildMachineCommandLine(cmd, def, qemuCaps) < 0)
+    if (qemuBuildMachineCommandLine(cmd, cfg, def, qemuCaps) < 0)
         goto error;
 
     if (qemuBuildCpuCommandLine(cmd, driver, def, qemuCaps, !!migrateURI) < 0)
