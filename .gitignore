@@ -73,7 +73,6 @@
 /docs/libvirt-qemu-*.xml
 /docs/libvirt-refs.xml
 /docs/search.php
-/docs/todo.html.in
 /examples/admin/client_close
 /examples/admin/client_info
 /examples/admin/client_limits
