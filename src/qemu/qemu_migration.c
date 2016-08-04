@@ -1095,16 +1095,30 @@ qemuMigrationCookieStatisticsXMLParse(xmlXPathContextPtr ctxt)
     stats = &jobInfo->stats;
     jobInfo->type = VIR_DOMAIN_JOB_COMPLETED;
 
-    virXPathULongLong("string(./started[1])", ctxt, &jobInfo->started);
-    virXPathULongLong("string(./stopped[1])", ctxt, &jobInfo->stopped);
-    virXPathULongLong("string(./sent[1])", ctxt, &jobInfo->sent);
+#define STATS_PARSE(f, xpath, val)                          \
+    do {                                                    \
+        int rc = f("string(./" xpath "[1])", ctxt, val);    \
+        if (rc == -2) {                                     \
+            virReportError(VIR_ERR_INTERNAL_ERROR,          \
+                           _("Malformed %s"), xpath);       \
+            goto cleanup;                                   \
+        }                                                   \
+    } while (0)
+
+#define STATS_PARSEULL(xpath, val)                          \
+    STATS_PARSE(virXPathULongLong, xpath, val)
+
+#define STATS_PARSEINT(xpath, val)                          \
+    STATS_PARSE(virXPathInt, xpath, val)
+
+    STATS_PARSEULL("started", &jobInfo->started);
+    STATS_PARSEULL("stopped", &jobInfo->stopped);
+    STATS_PARSEULL("sent", &jobInfo->sent);
     if (virXPathLongLong("string(./delta[1])", ctxt, &jobInfo->timeDelta) == 0)
         jobInfo->timeDeltaSet = true;
 
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_TIME_ELAPSED "[1])",
-                      ctxt, &jobInfo->timeElapsed);
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_TIME_REMAINING "[1])",
-                      ctxt, &jobInfo->timeRemaining);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_TIME_ELAPSED, &jobInfo->timeElapsed);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_TIME_REMAINING, &jobInfo->timeRemaining);
 
     if (virXPathULongLong("string(./" VIR_DOMAIN_JOB_DOWNTIME "[1])",
                           ctxt, &stats->downtime) == 0)
@@ -1113,51 +1127,33 @@ qemuMigrationCookieStatisticsXMLParse(xmlXPathContextPtr ctxt)
                           ctxt, &stats->setup_time) == 0)
         stats->setup_time_set = true;
 
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_MEMORY_TOTAL "[1])",
-                      ctxt, &stats->ram_total);
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_MEMORY_PROCESSED "[1])",
-                      ctxt, &stats->ram_transferred);
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_MEMORY_REMAINING "[1])",
-                      ctxt, &stats->ram_remaining);
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_MEMORY_BPS "[1])",
-                      ctxt, &stats->ram_bps);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_MEMORY_TOTAL, &stats->ram_total);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_MEMORY_PROCESSED, &stats->ram_transferred);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_MEMORY_REMAINING, &stats->ram_remaining);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_MEMORY_BPS, &stats->ram_bps);
 
     if (virXPathULongLong("string(./" VIR_DOMAIN_JOB_MEMORY_CONSTANT "[1])",
                           ctxt, &stats->ram_duplicate) == 0)
         stats->ram_duplicate_set = true;
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_MEMORY_NORMAL "[1])",
-                      ctxt, &stats->ram_normal);
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_MEMORY_NORMAL_BYTES "[1])",
-                      ctxt, &stats->ram_normal_bytes);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_MEMORY_NORMAL, &stats->ram_normal);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_MEMORY_NORMAL_BYTES, &stats->ram_normal_bytes);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_MEMORY_DIRTY_RATE, &stats->ram_dirty_rate);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_MEMORY_ITERATION, &stats->ram_iteration);
 
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_MEMORY_DIRTY_RATE "[1])",
-                      ctxt, &stats->ram_dirty_rate);
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_MEMORY_ITERATION "[1])",
-                      ctxt, &stats->ram_iteration);
-
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_DISK_TOTAL "[1])",
-                      ctxt, &stats->disk_total);
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_DISK_PROCESSED "[1])",
-                      ctxt, &stats->disk_transferred);
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_DISK_REMAINING "[1])",
-                      ctxt, &stats->disk_remaining);
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_DISK_BPS "[1])",
-                      ctxt, &stats->disk_bps);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_DISK_TOTAL, &stats->disk_total);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_DISK_PROCESSED, &stats->disk_transferred);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_DISK_REMAINING, &stats->disk_remaining);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_DISK_BPS, &stats->disk_bps);
 
     if (virXPathULongLong("string(./" VIR_DOMAIN_JOB_COMPRESSION_CACHE "[1])",
                           ctxt, &stats->xbzrle_cache_size) == 0)
         stats->xbzrle_set = true;
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_COMPRESSION_BYTES "[1])",
-                      ctxt, &stats->xbzrle_bytes);
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_COMPRESSION_PAGES "[1])",
-                      ctxt, &stats->xbzrle_pages);
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_COMPRESSION_CACHE_MISSES "[1])",
-                      ctxt, &stats->xbzrle_cache_miss);
-    virXPathULongLong("string(./" VIR_DOMAIN_JOB_COMPRESSION_OVERFLOW "[1])",
-                      ctxt, &stats->xbzrle_overflow);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_COMPRESSION_BYTES, &stats->xbzrle_bytes);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_COMPRESSION_PAGES, &stats->xbzrle_pages);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_COMPRESSION_CACHE_MISSES, &stats->xbzrle_cache_miss);
+    STATS_PARSEULL(VIR_DOMAIN_JOB_COMPRESSION_OVERFLOW, &stats->xbzrle_overflow);
 
-    virXPathInt("string(./" VIR_DOMAIN_JOB_AUTO_CONVERGE_THROTTLE "[1])",
-                ctxt, &stats->cpu_throttle_percentage);
+    STATS_PARSEINT(VIR_DOMAIN_JOB_AUTO_CONVERGE_THROTTLE, &stats->cpu_throttle_percentage);
  cleanup:
     ctxt->node = save_ctxt;
     return jobInfo;
