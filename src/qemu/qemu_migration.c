@@ -2387,6 +2387,28 @@ qemuMigrationIsSafe(virDomainDefPtr def,
     return true;
 }
 
+static bool
+qemuMigrationAreAllDisksRW(virDomainDefPtr def,
+                    size_t nmigrate_disks,
+                    const char **migrate_disks)
+{
+    size_t i;
+
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainDiskDefPtr disk = def->disks[i];
+
+        if (qemuMigrateDisk(disk, nmigrate_disks, migrate_disks) &&
+            disk->src->readonly) {
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                       _("Cannot migrate read-only disk %s"),
+                       disk->dst);
+            return false;
+        }
+    }
+
+    return true;
+}
+
 /** qemuMigrationSetOffline
  * Pause domain for non-live migration.
  */
@@ -3130,6 +3152,9 @@ qemuMigrationBeginPhase(virQEMUDriverPtr driver,
 
     if (!(flags & VIR_MIGRATE_UNSAFE) &&
         !qemuMigrationIsSafe(vm->def, nmigrate_disks, migrate_disks))
+        goto cleanup;
+
+    if (!qemuMigrationAreAllDisksRW(vm->def, nmigrate_disks, migrate_disks))
         goto cleanup;
 
     if (flags & VIR_MIGRATE_POSTCOPY &&
