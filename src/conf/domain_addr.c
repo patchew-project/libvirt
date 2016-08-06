@@ -58,14 +58,16 @@ virDomainPCIControllerModelToConnectType(virDomainControllerModelPCI model)
          */
         return VIR_PCI_CONNECT_TYPE_PCI_DEVICE;
 
-    case VIR_DOMAIN_CONTROLLER_MODEL_DMI_TO_PCI_BRIDGE:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_EXPANDER_BUS:
-        /* dmi-to-pci-bridge and pcie-expander-bus are treated like
-         * PCIe devices (the part of pcie-expander-bus that is plugged
-         * in isn't the expander bus itself, but a companion device
-         * used for setting it up).
+        /* pcie-expander-bus is treated like a standard PCIe endpoint
+         * device (the part of pcie-expander-bus that is plugged in
+         * isn't the expander bus itself, but a companion device used
+         * for setting it up).
          */
         return VIR_PCI_CONNECT_TYPE_PCIE_DEVICE;
+
+    case VIR_DOMAIN_CONTROLLER_MODEL_DMI_TO_PCI_BRIDGE:
+        return VIR_PCI_CONNECT_TYPE_DMI_TO_PCI_BRIDGE;
 
     case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT_PORT:
         return VIR_PCI_CONNECT_TYPE_PCIE_ROOT_PORT;
@@ -260,7 +262,8 @@ virDomainPCIAddressBusSetModel(virDomainPCIAddressBusPtr bus,
          * allows it.
          */
         bus->flags = (VIR_PCI_CONNECT_TYPE_PCIE_DEVICE
-                      | VIR_PCI_CONNECT_TYPE_PCIE_ROOT_PORT);
+                      | VIR_PCI_CONNECT_TYPE_PCIE_ROOT_PORT
+                      | VIR_PCI_CONNECT_TYPE_DMI_TO_PCI_BRIDGE);
         bus->minSlot = 1;
         bus->maxSlot = VIR_PCI_ADDRESS_SLOT_LAST;
         break;
@@ -291,8 +294,11 @@ virDomainPCIAddressBusSetModel(virDomainPCIAddressBusPtr bus,
         bus->maxSlot = VIR_PCI_ADDRESS_SLOT_LAST;
         break;
     case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_EXPANDER_BUS:
-        /* single slot, no hotplug, only accepts pcie-root-port */
-        bus->flags = VIR_PCI_CONNECT_TYPE_PCIE_ROOT_PORT;
+        /* single slot, no hotplug, only accepts pcie-root-port or
+         * dmi-to-pci-bridge
+         */
+        bus->flags = (VIR_PCI_CONNECT_TYPE_PCIE_ROOT_PORT
+                      | VIR_PCI_CONNECT_TYPE_DMI_TO_PCI_BRIDGE);
         bus->minSlot = 0;
         bus->maxSlot = 0;
         break;
