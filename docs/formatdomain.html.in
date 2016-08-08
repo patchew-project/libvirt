@@ -5235,6 +5235,14 @@ qemu-kvm -net nic,model=? /dev/null
       event device passed through to guests. (KVM only)
     </p>
 
+    <p>
+      For virtio input devices, an optional <code>virtio</code> element
+      can be used to enforce a particular virtio revision in QEMU.
+      The valid values for the <code>revision</code>
+      are <code>0.9</code> and <code>1.0</code>.
+      <span class='since'>Since 2.2.0</span>
+    </p>
+
     <h4><a name="elementsHub">Hub devices</a></h4>
 
     <p>

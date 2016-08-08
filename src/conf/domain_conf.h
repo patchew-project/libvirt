@@ -1228,6 +1228,7 @@ struct _virDomainInputDef {
         char *evdev;
     } source;
     virDomainDeviceInfo info;
+    virBitmapPtr virtio_rev;
 };
 
 typedef enum {
