@@ -99,5 +99,10 @@
       <virtio revision='0.9'/>
       <virtio revision='1.0'/>
     </memballoon>
+    <rng model='virtio'>
+      <backend model='random'>/dev/random</backend>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x0d' function='0x0'/>
+      <virtio revision='1.0'/>
+    </rng>
   </devices>
 </domain>

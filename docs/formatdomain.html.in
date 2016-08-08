@@ -6538,6 +6538,15 @@ qemu-kvm -net nic,model=? /dev/null
           </dd>
         </dl>
       </dd>
+      <dt><code>virtio</code></dt>
+      <dd>
+        <p>
+          An optional <code>virtio</code> element can be used to enforce a particular
+          virtio revision in QEMU. The valid values for the <code>revision</code>
+          are <code>0.9</code> and <code>1.0</code>.
+          <span class='since'>Since 2.2.0</span>
+        </p>
+      </dd>
 
     </dl>
 
