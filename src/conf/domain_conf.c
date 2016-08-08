@@ -834,6 +834,12 @@ VIR_ENUM_IMPL(virDomainLoader,
               "rom",
               "pflash")
 
+VIR_ENUM_IMPL(virDomainVirtioRevision,
+              VIR_DOMAIN_VIRTIO_REVISION_LAST,
+              "default",
+              "0.9",
+              "1.0")
+
 /* Internal mapping: subset of block job types that can be present in
  * <mirror> XML (remaining types are not two-phase). */
 VIR_ENUM_DECL(virDomainBlockJob)
@@ -1057,6 +1063,81 @@ virDomainXMLNamespacePtr
 virDomainXMLOptionGetNamespace(virDomainXMLOptionPtr xmlopt)
 {
     return &xmlopt->ns;
+}
+
+static int
+virDomainVirtioRevisionParseXML(xmlXPathContextPtr ctxt,
+                                virBitmapPtr *res)
+{
+    xmlNodePtr save = ctxt->node;
+    xmlNodePtr *nodes = NULL;
+    char *str = NULL;
+    int ret = -1;
+    size_t i;
+    int n;
+    virBitmapPtr revmap = NULL;
+
+    if ((n = virXPathNodeSet("./virtio", ctxt, &nodes)) < 0)
+        goto cleanup;
+
+    if (n == 0) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    if (!(revmap = virBitmapNew(VIR_DOMAIN_VIRTIO_REVISION_LAST)))
+        goto cleanup;
+
+    for (i = 0; i < n; i++) {
+        int val;
+
+        ctxt->node = nodes[i];
+
+        if (!(str = virXPathString("string(./@revision)", ctxt))) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("Missing 'revision' attribute in <virtio> element"));
+            goto cleanup;
+        }
+
+        if ((val = virDomainVirtioRevisionTypeFromString(str)) <= 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("Unable to parse virtio revision: '%s'"),
+                           str);
+            goto cleanup;
+        }
+
+        ignore_value(virBitmapSetBit(revmap, val));
+    }
+
+    ret = 0;
+    VIR_STEAL_PTR(*res, revmap);
+
+ cleanup:
+    ctxt->node = save;
+    virBitmapFree(revmap);
+    VIR_FREE(nodes);
+    VIR_FREE(str);
+    return ret;
+}
+
+
+static void
+virDomainVirtioRevisionFormatXML(virBufferPtr buf,
+                                 virBitmapPtr revmap)
+{
+    size_t i;
+
+    if (!revmap)
+        return;
+
+    for (i = VIR_DOMAIN_VIRTIO_REVISION_DEFAULT + 1;
+         i < VIR_DOMAIN_VIRTIO_REVISION_LAST;
+         i++) {
+        if (virBitmapIsBitSet(revmap, i)) {
+            virBufferAsprintf(buf, "<virtio revision='%s'/>\n",
+                              virDomainVirtioRevisionTypeToString(i));
+        }
+    }
 }
 
 
@@ -12061,6 +12142,9 @@ virDomainMemballoonDefParseXML(xmlNodePtr node,
     else if (virDomainDeviceInfoParseXML(node, NULL, &def->info, flags) < 0)
         goto error;
 
+    if (virDomainVirtioRevisionParseXML(ctxt, &def->virtio_rev) < 0)
+        goto error;
+
  cleanup:
     VIR_FREE(model);
     VIR_FREE(deflate);
@@ -21491,6 +21575,8 @@ virDomainMemballoonDefFormat(virBufferPtr buf,
         virBufferFreeAndReset(&childrenBuf);
         return -1;
     }
+
+    virDomainVirtioRevisionFormatXML(&childrenBuf, def->virtio_rev);
 
     if (!virBufferUse(&childrenBuf)) {
         virBufferAddLit(buf, "/>\n");
