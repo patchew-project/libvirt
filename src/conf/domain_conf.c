@@ -7716,6 +7716,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
         }
     }
 
+    if (virDomainVirtioRevisionParseXML(ctxt, &def->virtio_rev) < 0)
+        goto error;
+
     /* Disk volume types will have authentication information handled in
      * virStorageTranslateDiskSourcePool
      */
@@ -20141,6 +20144,7 @@ virDomainDiskDefFormat(virBufferPtr buf,
     if (virDomainDeviceInfoFormat(buf, &def->info,
                                   flags | VIR_DOMAIN_DEF_FORMAT_ALLOW_BOOT) < 0)
         return -1;
+    virDomainVirtioRevisionFormatXML(buf, def->virtio_rev);
 
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</disk>\n");
