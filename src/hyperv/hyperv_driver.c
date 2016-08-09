@@ -35,6 +35,7 @@
 #include "hyperv_wmi.h"
 #include "openwsman.h"
 #include "virstring.h"
+#include "virtypedparam.h"
 
 #define VIR_FROM_THIS VIR_FROM_HYPERV
 
@@ -51,11 +52,15 @@ hypervFreePrivate(hypervPrivate **priv)
         wsmc_release((*priv)->client);
     }
 
+    if ((*priv)->caps != NULL)
+        virObjectUnref((*priv)->caps);
+
     hypervFreeParsedUri(&(*priv)->parsedUri);
     VIR_FREE(*priv);
 }
 
-
+/* Forward declaration of hypervCapsInit */
+static virCapsPtr hypervCapsInit(hypervPrivate *priv);
 
 static virDrvOpenStatus
 hypervConnectOpen(virConnectPtr conn, virConnectAuthPtr auth,
@@ -180,6 +185,12 @@ hypervConnectOpen(virConnectPtr conn, virConnectAuthPtr auth,
     if (computerSystem == NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("%s is not a Hyper-V server"), conn->uri->server);
+        goto cleanup;
+    }
+
+    /* Setup capabilities */
+    priv->caps = hypervCapsInit(priv);
+    if (priv->caps == NULL) {
         goto cleanup;
     }
 
@@ -1324,7 +1335,19 @@ hypervConnectListAllDomains(virConnectPtr conn,
 }
 #undef MATCH
 
+static char*
+hypervConnectGetCapabilities(virConnectPtr conn)
+{
+    hypervPrivate *priv = conn->privateData;
+    char *xml = virCapabilitiesFormatXML(priv->caps);
 
+    if (xml == NULL) {
+        virReportOOMError();
+        return NULL;
+    }
+
+    return xml;
+}
 
 
 static virHypervisorDriver hypervHypervisorDriver = {
@@ -1361,8 +1384,89 @@ static virHypervisorDriver hypervHypervisorDriver = {
     .domainHasManagedSaveImage = hypervDomainHasManagedSaveImage, /* 0.9.5 */
     .domainManagedSaveRemove = hypervDomainManagedSaveRemove, /* 0.9.5 */
     .connectIsAlive = hypervConnectIsAlive, /* 0.9.8 */
+    .connectGetCapabilities = hypervConnectGetCapabilities, /* 1.2.10 */
 };
 
+/* Retrieves host system UUID  */
+static int
+hypervLookupHostSystemBiosUuid(hypervPrivate *priv, unsigned char *uuid)
+{
+    Win32_ComputerSystemProduct *computerSystem = NULL;
+    virBuffer query = VIR_BUFFER_INITIALIZER;
+    int result = -1;
+
+    virBufferAddLit(&query, WIN32_COMPUTERSYSTEMPRODUCT_WQL_SELECT);
+
+    if (hypervGetWin32ComputerSystemProductList(priv, &query, &computerSystem) < 0) {
+        goto cleanup;
+    }
+
+    if (computerSystem == NULL) {
+        virReportError(VIR_ERR_NO_DOMAIN,
+                       _("Unable to get Win32_ComputerSystemProduct"));
+        goto cleanup;
+    }
+
+    if (virUUIDParse(computerSystem->data->UUID, uuid) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Could not parse UUID from string '%s'"),
+                       computerSystem->data->UUID);
+        goto cleanup;
+    }
+
+    result = 0;
+
+ cleanup:
+    hypervFreeObject(priv, (hypervObject *)computerSystem);
+    virBufferFreeAndReset(&query);
+
+    return result;
+}
+
+
+
+static virCapsPtr hypervCapsInit(hypervPrivate *priv)
+{
+    virCapsPtr caps = NULL;
+    virCapsGuestPtr guest = NULL;
+
+    caps = virCapabilitiesNew(VIR_ARCH_X86_64, 1, 1);
+
+    if (caps == NULL) {
+        virReportOOMError();
+        return NULL;
+    }
+
+    /* virCapabilitiesSetMacPrefix(caps, (unsigned char[]){ 0x00, 0x0c, 0x29 }); */
+
+    if (hypervLookupHostSystemBiosUuid(priv,caps->host.host_uuid) < 0) {
+        goto failure;
+    }
+
+    /* i686 */
+    guest = virCapabilitiesAddGuest(caps, VIR_DOMAIN_OSTYPE_HVM, VIR_ARCH_I686, NULL, NULL, 0, NULL);
+    if (guest == NULL) {
+        goto failure;
+    }
+    if (virCapabilitiesAddGuestDomain(guest, VIR_DOMAIN_VIRT_HYPERV, NULL, NULL, 0, NULL) == NULL) {
+        goto failure;
+    }
+
+    /* x86_64 */
+    guest = virCapabilitiesAddGuest(caps, VIR_DOMAIN_OSTYPE_HVM, VIR_ARCH_X86_64, NULL, NULL, 0, NULL);
+    if (guest == NULL) {
+        goto failure;
+    }
+    if (virCapabilitiesAddGuestDomain(guest, VIR_DOMAIN_VIRT_HYPERV, NULL, NULL, 0, NULL) == NULL) {
+        goto failure;
+    }
+
+    return caps;
+
+ failure:
+    virObjectUnref(caps);
+    return NULL;
+}
 
 
 static void
