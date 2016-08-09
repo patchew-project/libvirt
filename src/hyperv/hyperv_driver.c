@@ -1349,6 +1349,57 @@ hypervConnectGetCapabilities(virConnectPtr conn)
     return xml;
 }
 
+static int
+hypervConnectGetVersion(virConnectPtr conn, unsigned long *version)
+{
+    int result = -1;
+    hypervPrivate *priv = conn->privateData;
+    CIM_DataFile  *datafile = NULL;
+    virBuffer query = VIR_BUFFER_INITIALIZER;
+    char *p;
+
+    virBufferAddLit(&query, " Select * from CIM_DataFile where Name='c:\\\\windows\\\\system32\\\\vmms.exe' ");
+    if (hypervGetCIMDataFileList(priv, &query, &datafile) < 0) {
+        goto cleanup;
+    }
+
+    /* Check the result of convertion */
+    if (datafile == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Could not lookup %s for domain %s"),
+                       "Msvm_VirtualSystemSettingData",
+                       datafile->data->Version);
+        goto cleanup;
+    }
+
+    /* Delete release number and last digit of build number 1.1.111x.xxxx */
+    p = strrchr(datafile->data->Version,'.');
+    if (p == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Could not parse version number from '%s'"),
+                       datafile->data->Version);
+        goto cleanup;
+    }
+    p--;
+    *p = '\0';
+
+    /* Parse Version String to Long */
+    if (virParseVersionString(datafile->data->Version,
+                              version, true) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Could not parse version number from '%s'"),
+                       datafile->data->Version);
+        goto cleanup;
+    }
+
+    result = 0;
+
+ cleanup:
+    hypervFreeObject(priv, (hypervObject *)datafile);
+    virBufferFreeAndReset(&query);
+
+    return result;
+}
 
 static virHypervisorDriver hypervHypervisorDriver = {
     .name = "Hyper-V",
@@ -1385,6 +1436,7 @@ static virHypervisorDriver hypervHypervisorDriver = {
     .domainManagedSaveRemove = hypervDomainManagedSaveRemove, /* 0.9.5 */
     .connectIsAlive = hypervConnectIsAlive, /* 0.9.8 */
     .connectGetCapabilities = hypervConnectGetCapabilities, /* 1.2.10 */
+    .connectGetVersion = hypervConnectGetVersion, /* 1.2.10 */
 };
 
 /* Retrieves host system UUID  */
