@@ -30,6 +30,7 @@
 #include "virlog.h"
 #include "viruuid.h"
 #include "hyperv_driver.h"
+#include "hyperv_network_driver.h"
 #include "hyperv_private.h"
 #include "hyperv_util.h"
 #include "hyperv_wmi.h"
@@ -1853,6 +1854,7 @@ hypervDebugHandler(const char *message, debug_level_e level,
 
 static virConnectDriver hypervConnectDriver = {
     .hypervisorDriver = &hypervHypervisorDriver,
+    .networkDriver = &hypervNetworkDriver,
 };
 
 int

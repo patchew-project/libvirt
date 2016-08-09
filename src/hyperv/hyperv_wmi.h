@@ -172,6 +172,23 @@ int hypervMsvmComputerSystemFromDomain(virDomainPtr domain,
                                        Msvm_ComputerSystem **computerSystem);
 
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Msvm_VirtualSwitch
+ */
+
+int hypervMsvmVirtualSwitchToNetwork(virConnectPtr conn,
+		Msvm_VirtualSwitch *virtualSwitch, virNetworkPtr *network);
+
+
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Msvm_VirtualSwitch
+ */
+
+int hypervMsvmVirtualSwitchToNetwork(virConnectPtr conn,
+		Msvm_VirtualSwitch *virtualSwitch, virNetworkPtr *network);
+
+
 
 # include "hyperv_wmi.generated.h"
 

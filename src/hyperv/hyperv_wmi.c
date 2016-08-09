@@ -1326,5 +1326,44 @@ hypervInvokeMethod(hypervPrivate *priv, invokeXmlParam *param_t, int nbParameter
 }
 
 
+int
+hypervMsvmVirtualSwitchToNetwork(virConnectPtr conn,
+                                 Msvm_VirtualSwitch *virtualSwitch, virNetworkPtr *network)
+{
+    unsigned char uuid[VIR_UUID_BUFLEN];
+    char *rawUuid = NULL;
+    char *uuidBuf;
+
+    if (network == NULL || *network != NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("Invalid argument"));
+        return -1;
+    }
+
+    // Switch-SM-91b305f3-9a9e-408b-8b04-0ecff33aaba8-0
+    // need to parse out the 'Switch-SM-' and '-0' so that its a proper UUID
+    rawUuid = virtualSwitch->data->Name;
+    uuidBuf = (char *)calloc(37, sizeof(char));
+    strncpy(uuidBuf, rawUuid+10, 36);
+
+    if (virUUIDParse(uuidBuf, uuid) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Could not parse UUID from string '%s'"),
+                       virtualSwitch->data->Name);
+        free(uuidBuf);
+        return -1;
+    }
+
+    *network = virGetNetwork(conn, virtualSwitch->data->ElementName, uuid);
+
+    if (*network == NULL) {
+        free(uuidBuf);
+        return -1;
+    }
+
+    free(uuidBuf);
+    return 0;
+}
+
+
 
 #include "hyperv_wmi.generated.c"
