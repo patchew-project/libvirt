@@ -1704,6 +1704,39 @@ hypervDomainGetAutostart(virDomainPtr domain, int *autostart)
     return result;
 }
 
+static int
+hypervDomainShutdownFlags(virDomainPtr domain, unsigned int flags)
+{
+    int result = -1;
+    hypervPrivate *priv = domain->conn->privateData;
+    Msvm_ComputerSystem *computerSystem = NULL;
+    bool in_transition = false;
+
+    virCheckFlags(0, -1);
+
+    if (hypervMsvmComputerSystemFromDomain(domain, &computerSystem) < 0) {
+        goto cleanup;
+    }
+
+    if (!hypervIsMsvmComputerSystemActive(computerSystem, &in_transition) || in_transition) {
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("Domain is not active or is in state transition"));
+        goto cleanup;
+    }
+
+    result = hypervInvokeMsvmComputerSystemRequestStateChange(domain, MSVM_COMPUTERSYSTEM_REQUESTEDSTATE_DISABLED);
+
+ cleanup:
+    hypervFreeObject(priv, (hypervObject *) computerSystem);
+    return result;
+}
+
+static int
+hypervDomainShutdown(virDomainPtr dom)
+{
+    return hypervDomainShutdownFlags(dom, 0);
+}
+
 static virHypervisorDriver hypervHypervisorDriver = {
     .name = "Hyper-V",
     .connectOpen = hypervConnectOpen, /* 0.9.5 */
@@ -1747,6 +1780,8 @@ static virHypervisorDriver hypervHypervisorDriver = {
     .domainGetVcpus = hypervDomainGetVcpus, /* 1.2.10 */
     .domainSetAutostart = hypervDomainSetAutostart, /* 1.2.10 */
     .domainGetAutostart = hypervDomainGetAutostart, /* 1.2.10 */
+    .domainShutdownFlags = hypervDomainShutdownFlags, /* 1.2.10 */
+    .domainShutdown = hypervDomainShutdown, /* 1.2.10 */
 };
 
 /* Retrieves host system UUID  */
