@@ -2090,6 +2090,121 @@ hypervDomainSetMemory(virDomainPtr domain, unsigned long memory)
     return hypervDomainSetMemoryFlags(domain, memory, 0);
 }
 
+
+static int
+hypervDomainSetVcpusFlags(virDomainPtr domain, unsigned int nvcpus,
+                          unsigned int flags ATTRIBUTE_UNUSED)
+{
+    int result = -1;
+    invokeXmlParam *params = NULL;
+    char uuid_string[VIR_UUID_STRING_BUFLEN];
+    hypervPrivate *priv = domain->conn->privateData;
+    properties_t *tab_props = NULL;
+    virBuffer query = VIR_BUFFER_INITIALIZER;
+    Msvm_VirtualSystemSettingData *virtualSystemSettingData = NULL;
+    Msvm_ProcessorSettingData *processorSettingData = NULL;
+    eprParam eprparam;
+    embeddedParam embeddedparam;
+    int nb_params;
+    const char *selector = "CreationClassName=Msvm_VirtualSystemManagementService";
+    char *nvcpus_str = NULL;
+
+    /* Convert nvcpus as a string value */
+    nvcpus_str = num2str(nvcpus);
+    if (nvcpus_str == NULL)
+    goto cleanup;
+
+    virUUIDFormat(domain->uuid, uuid_string);
+
+    VIR_DEBUG("nvcpus=%s, uuid=%s", nvcpus_str, uuid_string);
+
+    /* Get Msvm_VirtualSystemSettingData */
+    virBufferAsprintf(&query,
+                      "associators of "
+                      "{Msvm_ComputerSystem.CreationClassName=\"Msvm_ComputerSystem\","
+                      "Name=\"%s\"} "
+                      "where AssocClass = Msvm_SettingsDefineState "
+                      "ResultClass = Msvm_VirtualSystemSettingData",
+                      uuid_string);
+
+    if (hypervGetMsvmVirtualSystemSettingDataList(priv, &query, &virtualSystemSettingData) < 0)
+        goto cleanup;
+
+    /* Get Msvm_ProcessorSettingData */
+    virBufferFreeAndReset(&query);
+    virBufferAsprintf(&query,
+                      "associators of "
+                      "{Msvm_VirtualSystemSettingData.InstanceID=\"%s\"} "
+                      "where AssocClass = Msvm_VirtualSystemSettingDataComponent "
+                      "ResultClass = Msvm_ProcessorSettingData",
+                      virtualSystemSettingData->data->InstanceID);
+
+    if (hypervGetMsvmProcessorSettingDataList(priv, &query, &processorSettingData) < 0)
+        goto cleanup;
+
+    if (processorSettingData == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Could not lookup Msvm_ProcessorSettingData for domain %s"),
+                       virtualSystemSettingData->data->ElementName);
+        goto cleanup;
+    }
+
+    /* Prepare EPR param */
+    virBufferFreeAndReset(&query);
+    virBufferAddLit(&query, MSVM_COMPUTERSYSTEM_WQL_SELECT);
+    virBufferAsprintf(&query, "where Name = \"%s\"",uuid_string);
+    eprparam.query = &query;
+    eprparam.wmiProviderURI = ROOT_VIRTUALIZATION;
+
+    /* Prepare EMBEDDED param */
+    embeddedparam.nbProps = 2;
+    if (VIR_ALLOC_N(tab_props, embeddedparam.nbProps) < 0)
+        goto cleanup;
+    (*tab_props).name = "VirtualQuantity";
+    (*tab_props).val = nvcpus_str;
+    (*(tab_props+1)).name = "InstanceID";
+    (*(tab_props+1)).val = processorSettingData->data->InstanceID;
+    embeddedparam.instanceName =  "Msvm_ProcessorSettingData";
+    embeddedparam.prop_t = tab_props;
+
+    /* Create invokeXmlParam */
+    nb_params = 2;
+    if (VIR_ALLOC_N(params, nb_params) < 0)
+        goto cleanup;
+    (*params).name = "ComputerSystem";
+    (*params).type = EPR_PARAM;
+    (*params).param = &eprparam;
+    (*(params+1)).name = "ResourceSettingData";
+    (*(params+1)).type = EMBEDDED_PARAM;
+    (*(params+1)).param = &embeddedparam;
+
+    if (hypervInvokeMethod(priv, params, nb_params, "ModifyVirtualSystemResources",
+                           MSVM_VIRTUALSYSTEMMANAGEMENTSERVICE_RESOURCE_URI, selector) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, _("Could not set domain vcpus"));
+        goto cleanup;
+    }
+
+    result = 0;
+
+ cleanup:
+    VIR_FREE(tab_props);
+    VIR_FREE(params);
+    VIR_FREE(nvcpus_str);
+    hypervFreeObject(priv, (hypervObject *)virtualSystemSettingData);
+    hypervFreeObject(priv, (hypervObject *)processorSettingData);
+    virBufferFreeAndReset(&query);
+
+    return result;
+}
+
+
+
+static int
+hypervDomainSetVcpus(virDomainPtr domain, unsigned int nvcpus)
+{
+    return hypervDomainSetVcpusFlags(domain, nvcpus, 0);
+}
+
 static virHypervisorDriver hypervHypervisorDriver = {
     .name = "Hyper-V",
     .connectOpen = hypervConnectOpen, /* 0.9.5 */
@@ -2141,6 +2256,8 @@ static virHypervisorDriver hypervHypervisorDriver = {
     .domainSetMaxMemory = hypervDomainSetMaxMemory, /* 1.2.10 */
     .domainSetMemory = hypervDomainSetMemory, /* 1.2.10 */
     .domainSetMemoryFlags = hypervDomainSetMemoryFlags, /* 1.2.10 */
+    .domainSetVcpus = hypervDomainSetVcpus, /* 1.2.10 */
+    .domainSetVcpusFlags = hypervDomainSetVcpusFlags, /* 1.2.10 */
 };
 
 /* Retrieves host system UUID  */
