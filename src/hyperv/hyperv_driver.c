@@ -1737,6 +1737,130 @@ hypervDomainShutdown(virDomainPtr dom)
     return hypervDomainShutdownFlags(dom, 0);
 }
 
+static int
+hypervDomainGetSchedulerParametersFlags(virDomainPtr dom, virTypedParameterPtr params,
+                                        int *nparams, unsigned int flags)
+{
+    hypervPrivate *priv = dom->conn->privateData;
+    Msvm_ComputerSystem *computerSystem = NULL;
+    Msvm_ProcessorSettingData *processorSettingData = NULL;
+    Msvm_VirtualSystemSettingData *virtualSystemSettingData = NULL;
+    char uuid_string[VIR_UUID_STRING_BUFLEN];
+    virBuffer query = VIR_BUFFER_INITIALIZER;
+    int saved_nparams = 0;
+    int result = -1;
+
+    virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |VIR_DOMAIN_AFFECT_CONFIG |VIR_TYPED_PARAM_STRING_OKAY, -1);
+
+    /* We don't return strings, and thus trivially support this flag */
+    flags &= ~VIR_TYPED_PARAM_STRING_OKAY;
+
+    virUUIDFormat(dom->uuid, uuid_string);
+
+    /* Get Msvm_ComputerSystem */
+    if (hypervMsvmComputerSystemFromDomain(dom, &computerSystem) < 0) {
+        goto cleanup;
+    }
+
+    /* Get Msvm_VirtualSystemSettingData */
+    virBufferAsprintf(&query,
+                      "associators of "
+                      "{Msvm_ComputerSystem.CreationClassName=\"Msvm_ComputerSystem\","
+                      "Name=\"%s\"} "
+                      "where AssocClass = Msvm_SettingsDefineState "
+                      "ResultClass = Msvm_VirtualSystemSettingData",
+                      uuid_string);
+
+    if (hypervGetMsvmVirtualSystemSettingDataList(priv, &query, &virtualSystemSettingData) < 0) {
+        goto cleanup;
+    }
+
+    if (virtualSystemSettingData == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Could not lookup %s for domain %s"),
+                       "Msvm_VirtualSystemSettingData",
+                       computerSystem->data->ElementName);
+        goto cleanup;
+    }
+
+    /* Get Msvm_ProcessorSettingData */
+    virBufferAsprintf(&query,
+                      "associators of "
+                      "{Msvm_VirtualSystemSettingData.InstanceID=\"%s\"} "
+                      "where AssocClass = Msvm_VirtualSystemSettingDataComponent "
+                      "ResultClass = Msvm_ProcessorSettingData",
+                      virtualSystemSettingData->data->InstanceID);
+
+    if (hypervGetMsvmProcessorSettingDataList(priv, &query, &processorSettingData) < 0) {
+        goto cleanup;
+    }
+
+    if (processorSettingData == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, _("Could not lookup %s for domain %s"),
+                       "Msvm_ProcessorSettingData",computerSystem->data->ElementName);
+        goto cleanup;
+    }
+
+    if (virTypedParameterAssign(&params[0], VIR_DOMAIN_SCHEDULER_LIMIT,
+                                VIR_TYPED_PARAM_LLONG, processorSettingData->data->Limit) < 0)
+        goto cleanup;
+    saved_nparams++;
+
+    if (*nparams > saved_nparams) {
+        if (virTypedParameterAssign(&params[1],VIR_DOMAIN_SCHEDULER_RESERVATION,
+                                    VIR_TYPED_PARAM_LLONG, processorSettingData->data->Reservation) < 0)
+            goto cleanup;
+        saved_nparams++;
+    }
+
+    if (*nparams > saved_nparams) {
+        if (virTypedParameterAssign(&params[2],VIR_DOMAIN_SCHEDULER_WEIGHT,
+                                    VIR_TYPED_PARAM_UINT, processorSettingData->data->Weight) < 0)
+            goto cleanup;
+        saved_nparams++;
+    }
+
+    *nparams = saved_nparams;
+
+    result = 0;
+
+ cleanup:
+    hypervFreeObject(priv, (hypervObject *)computerSystem);
+    hypervFreeObject(priv, (hypervObject *)virtualSystemSettingData);
+    hypervFreeObject(priv, (hypervObject *)processorSettingData);
+    virBufferFreeAndReset(&query);
+
+    return result;
+}
+
+
+
+static int
+hypervDomainGetSchedulerParameters(virDomainPtr dom, virTypedParameterPtr params, int *nparams)
+{
+    return hypervDomainGetSchedulerParametersFlags(dom, params, nparams, VIR_DOMAIN_AFFECT_CURRENT);
+}
+
+
+
+static char*
+hypervDomainGetSchedulerType(virDomainPtr domain ATTRIBUTE_UNUSED, int *nparams)
+{
+    char *type;
+
+    if (VIR_STRDUP(type, "allocation") < 0) {
+        virReportOOMError();
+        return NULL;
+    }
+
+    if (nparams != NULL) {
+        *nparams = 3; /* reservation, limit, weight */
+    }
+
+    return type;
+}
+
+
 static virHypervisorDriver hypervHypervisorDriver = {
     .name = "Hyper-V",
     .connectOpen = hypervConnectOpen, /* 0.9.5 */
@@ -1782,6 +1906,9 @@ static virHypervisorDriver hypervHypervisorDriver = {
     .domainGetAutostart = hypervDomainGetAutostart, /* 1.2.10 */
     .domainShutdownFlags = hypervDomainShutdownFlags, /* 1.2.10 */
     .domainShutdown = hypervDomainShutdown, /* 1.2.10 */
+    .domainGetSchedulerParametersFlags = hypervDomainGetSchedulerParametersFlags, /* 1.2.10 */
+    .domainGetSchedulerParameters = hypervDomainGetSchedulerParameters, /* 1.2.10 */
+    .domainGetSchedulerType = hypervDomainGetSchedulerType, /* 1.2.10 */
 };
 
 /* Retrieves host system UUID  */
