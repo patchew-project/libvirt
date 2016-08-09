@@ -1401,6 +1401,178 @@ hypervConnectGetVersion(virConnectPtr conn, unsigned long *version)
     return result;
 }
 
+static int
+hypervConnectGetMaxVcpus(virConnectPtr conn, const char *type ATTRIBUTE_UNUSED)
+{
+    int result = -1;
+    hypervPrivate *priv = conn->privateData;
+    virBuffer query = VIR_BUFFER_INITIALIZER;
+    Msvm_ProcessorSettingData *processorSettingData = NULL;
+
+    /* Get Msvm_ProcessorSettingData maximum definition */
+    virBufferAddLit(&query, "SELECT * FROM Msvm_ProcessorSettingData "
+                    "WHERE InstanceID LIKE 'Microsoft:Definition%Maximum'");
+
+    if (hypervGetMsvmProcessorSettingDataList(priv, &query, &processorSettingData) < 0) {
+        goto cleanup;
+    }
+
+    if (processorSettingData == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Could not get maximum definition of Msvm_ProcessorSettingData"));
+        goto cleanup;
+    }
+
+    result = processorSettingData->data->SocketCount * processorSettingData->data->ProcessorsPerSocket;
+
+ cleanup:
+    hypervFreeObject(priv, (hypervObject *) processorSettingData);
+    virBufferFreeAndReset(&query);
+
+    return result;
+}
+
+static int
+hypervDomainGetVcpusFlags(virDomainPtr domain, unsigned int flags)
+{
+    int result = -1;
+    char uuid_string[VIR_UUID_STRING_BUFLEN];
+    hypervPrivate *priv = domain->conn->privateData;
+    Msvm_ComputerSystem *computerSystem = NULL;
+    Msvm_ProcessorSettingData *processorSettingData = NULL;
+    Msvm_VirtualSystemSettingData *virtualSystemSettingData = NULL;
+    virBuffer query = VIR_BUFFER_INITIALIZER;
+
+    virCheckFlags(VIR_DOMAIN_VCPU_LIVE | VIR_DOMAIN_VCPU_CONFIG | VIR_DOMAIN_VCPU_MAXIMUM, -1);
+
+    virUUIDFormat(domain->uuid, uuid_string);
+
+    /* Get Msvm_ComputerSystem */
+    if (hypervMsvmComputerSystemFromDomain(domain, &computerSystem) < 0) {
+        goto cleanup;
+    }
+
+    /* If @flags includes VIR_DOMAIN_VCPU_LIVE,
+       this will query a running domain (which will fail if domain is not active) */
+    if (flags & VIR_DOMAIN_VCPU_LIVE) {
+        if (computerSystem->data->EnabledState != MSVM_COMPUTERSYSTEM_ENABLEDSTATE_ENABLED) {
+            virReportError(VIR_ERR_OPERATION_INVALID, "%s", _("Domain is not active"));
+            goto cleanup;
+        }
+    }
+
+    /* If @flags includes VIR_DOMAIN_VCPU_MAXIMUM, then the maximum virtual CPU limit is queried */
+    if (flags & VIR_DOMAIN_VCPU_MAXIMUM) {
+        result = hypervConnectGetMaxVcpus(domain->conn, NULL);
+        goto cleanup;
+    }
+
+    /* Get Msvm_VirtualSystemSettingData */
+    virBufferAsprintf(&query,
+                      "associators of "
+                      "{Msvm_ComputerSystem.CreationClassName=\"Msvm_ComputerSystem\","
+                      "Name=\"%s\"} "
+                      "where AssocClass = Msvm_SettingsDefineState "
+                      "ResultClass = Msvm_VirtualSystemSettingData",
+                      uuid_string);
+    if (hypervGetMsvmVirtualSystemSettingDataList(priv, &query, &virtualSystemSettingData) < 0) {
+        goto cleanup;
+    }
+    if (virtualSystemSettingData == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, _("Could not lookup %s for domain %s"),
+                       "Msvm_VirtualSystemSettingData", computerSystem->data->ElementName);
+        goto cleanup;
+    }
+
+    /* Get Msvm_ProcessorSettingData */
+    virBufferFreeAndReset(&query);
+    virBufferAsprintf(&query,
+                      "associators of "
+                      "{Msvm_VirtualSystemSettingData.InstanceID=\"%s\"} "
+                      "where AssocClass = Msvm_VirtualSystemSettingDataComponent "
+                      "ResultClass = Msvm_ProcessorSettingData",
+                      virtualSystemSettingData->data->InstanceID);
+    if (hypervGetMsvmProcessorSettingDataList(priv, &query, &processorSettingData) < 0) {
+        goto cleanup;
+    }
+    if (processorSettingData == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, _("Could not lookup %s for domain %s"),
+                       "Msvm_ProcessorSettingData", computerSystem->data->ElementName);
+        goto cleanup;
+    }
+
+    result = processorSettingData->data->VirtualQuantity;
+
+ cleanup:
+    hypervFreeObject(priv, (hypervObject *)computerSystem);
+    hypervFreeObject(priv, (hypervObject *)virtualSystemSettingData);
+    hypervFreeObject(priv, (hypervObject *)processorSettingData);
+    virBufferFreeAndReset(&query);
+
+    return result;
+}
+
+static int
+hypervDomainGetMaxVcpus(virDomainPtr dom)
+{
+    /* If the guest is inactive, this is basically the same as virConnectGetMaxVcpus() */
+    return (hypervDomainIsActive(dom)) ?
+        hypervDomainGetVcpusFlags(dom, (VIR_DOMAIN_VCPU_LIVE | VIR_DOMAIN_VCPU_MAXIMUM))
+        : hypervConnectGetMaxVcpus(dom->conn, NULL);
+}
+
+static int
+hypervDomainGetVcpus(virDomainPtr domain, virVcpuInfoPtr info, int maxinfo,
+                     unsigned char *cpumaps, int maplen)
+{
+    int count = 0, i;
+    hypervPrivate *priv = domain->conn->privateData;
+    virBuffer query = VIR_BUFFER_INITIALIZER;
+    Win32_PerfRawData_HvStats_HyperVHypervisorVirtualProcessor *hypervVirtualProcessor = NULL;
+
+    /* FIXME: no information stored in cpumaps */
+    if ((cpumaps != NULL) && (maplen > 0))
+        memset(cpumaps, 0, maxinfo * maplen);
+
+    /* Loop for each vCPU */
+    for (i = 0; i < maxinfo; i++) {
+
+        /* Get vCPU stats */
+        hypervFreeObject(priv, (hypervObject *)hypervVirtualProcessor);
+        hypervVirtualProcessor = NULL;
+        virBufferFreeAndReset(&query);
+        virBufferAddLit(&query, WIN32_PERFRAWDATA_HVSTATS_HYPERVHYPERVISORVIRTUALPROCESSOR_WQL_SELECT);
+        /* Attribute Name format : <domain_name>:Hv VP <vCPU_number> */
+        virBufferAsprintf(&query, "where Name = \"%s:Hv VP %d\"", domain->name, i);
+
+        if (hypervGetWin32PerfRawDataHvStatsHyperVHypervisorVirtualProcessorList(
+                priv, &query, &hypervVirtualProcessor) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Could not get stats on vCPU #%d"), i);
+            continue;
+        }
+
+        /* Fill structure info */
+        info[i].number = i;
+        if (hypervVirtualProcessor == NULL) {
+            info[i].state = VIR_VCPU_OFFLINE;
+            info[i].cpuTime = 0LLU;
+            info[i].cpu = -1;
+        } else {
+            info[i].state = VIR_VCPU_RUNNING;
+            info[i].cpuTime = hypervVirtualProcessor->data->PercentTotalRunTime;
+            info[i].cpu = i;
+        }
+
+        count++;
+    }
+
+    hypervFreeObject(priv, (hypervObject *)hypervVirtualProcessor);
+    virBufferFreeAndReset(&query);
+
+    return count;
+}
+
 static virHypervisorDriver hypervHypervisorDriver = {
     .name = "Hyper-V",
     .connectOpen = hypervConnectOpen, /* 0.9.5 */
@@ -1437,6 +1609,10 @@ static virHypervisorDriver hypervHypervisorDriver = {
     .connectIsAlive = hypervConnectIsAlive, /* 0.9.8 */
     .connectGetCapabilities = hypervConnectGetCapabilities, /* 1.2.10 */
     .connectGetVersion = hypervConnectGetVersion, /* 1.2.10 */
+    .connectGetMaxVcpus = hypervConnectGetMaxVcpus, /* 1.2.10 */
+    .domainGetMaxVcpus = hypervDomainGetMaxVcpus, /* 1.2.10 */
+    .domainGetVcpusFlags = hypervDomainGetVcpusFlags, /* 1.2.10 */
+    .domainGetVcpus = hypervDomainGetVcpus, /* 1.2.10 */
 };
 
 /* Retrieves host system UUID  */
