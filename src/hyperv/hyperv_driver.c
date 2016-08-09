@@ -1573,6 +1573,37 @@ hypervDomainGetVcpus(virDomainPtr domain, virVcpuInfoPtr info, int maxinfo,
     return count;
 }
 
+static unsigned long long
+hypervNodeGetFreeMemory(virConnectPtr conn)
+{
+    unsigned long long res = 0;
+    hypervPrivate *priv = conn->privateData;
+    virBuffer query = VIR_BUFFER_INITIALIZER;
+    Win32_OperatingSystem *operatingSystem = NULL;
+
+    /* Get Win32_OperatingSystem */
+    virBufferAddLit(&query, WIN32_OPERATINGSYSTEM_WQL_SELECT);
+
+    if (hypervGetWin32OperatingSystemList(priv, &query, &operatingSystem) < 0) {
+        goto cleanup;
+    }
+
+    if (operatingSystem == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Could not get Win32_OperatingSystem"));
+        goto cleanup;
+    }
+
+    /* Return free memory in bytes */
+    res = operatingSystem->data->FreePhysicalMemory * 1024;
+
+ cleanup:
+    hypervFreeObject(priv, (hypervObject *) operatingSystem);
+    virBufferFreeAndReset(&query);
+
+    return res;
+}
+
 static virHypervisorDriver hypervHypervisorDriver = {
     .name = "Hyper-V",
     .connectOpen = hypervConnectOpen, /* 0.9.5 */
@@ -1580,6 +1611,7 @@ static virHypervisorDriver hypervHypervisorDriver = {
     .connectGetType = hypervConnectGetType, /* 0.9.5 */
     .connectGetHostname = hypervConnectGetHostname, /* 0.9.5 */
     .nodeGetInfo = hypervNodeGetInfo, /* 0.9.5 */
+    .nodeGetFreeMemory = hypervNodeGetFreeMemory, /* 1.2.10 */
     .connectListDomains = hypervConnectListDomains, /* 0.9.5 */
     .connectNumOfDomains = hypervConnectNumOfDomains, /* 0.9.5 */
     .connectListAllDomains = hypervConnectListAllDomains, /* 0.10.2 */
