@@ -1604,6 +1604,105 @@ hypervNodeGetFreeMemory(virConnectPtr conn)
     return res;
 }
 
+static int
+hypervDomainSetAutostart(virDomainPtr domain, int autostart)
+{
+    int result = -1;
+    invokeXmlParam *params = NULL;
+    hypervPrivate *priv = domain->conn->privateData;
+    virBuffer query = VIR_BUFFER_INITIALIZER;
+    virBuffer queryVssd = VIR_BUFFER_INITIALIZER;
+    Msvm_VirtualSystemSettingData *virtualSystemSettingData = NULL;
+    properties_t *tab_props = NULL;
+    eprParam eprparam;
+    embeddedParam embeddedparam;
+    int nb_params;
+    char uuid_string[VIR_UUID_STRING_BUFLEN];
+    const char *selector = "CreationClassName=Msvm_VirtualSystemManagementService";
+
+    virUUIDFormat(domain->uuid, uuid_string);
+
+    /* Prepare EPR param */
+    virBufferAddLit(&query, MSVM_COMPUTERSYSTEM_WQL_SELECT);
+    virBufferAsprintf(&query, "where Name = \"%s\"", uuid_string);
+    eprparam.query = &query;
+    eprparam.wmiProviderURI = ROOT_VIRTUALIZATION;
+
+    /* Prepare EMBEDDED param */
+    virBufferAsprintf(&queryVssd,
+                      "associators of "
+                      "{Msvm_ComputerSystem.CreationClassName=\"Msvm_ComputerSystem\","
+                      "Name=\"%s\"} "
+                      "where AssocClass = Msvm_SettingsDefineState "
+                      "ResultClass = Msvm_VirtualSystemSettingData",
+                      uuid_string);
+
+    if (hypervGetMsvmVirtualSystemSettingDataList(priv, &queryVssd, &virtualSystemSettingData) < 0)
+        goto cleanup;
+
+    embeddedparam.nbProps = 2;
+    if (VIR_ALLOC_N(tab_props, embeddedparam.nbProps) < 0)
+        goto cleanup;
+    (*tab_props).name = "AutomaticStartupAction";
+    (*tab_props).val = autostart ? "2" : "0";
+    (*(tab_props+1)).name = "InstanceID";
+    (*(tab_props+1)).val = virtualSystemSettingData->data->InstanceID;
+
+    embeddedparam.instanceName =  "Msvm_VirtualSystemGlobalSettingData";
+    embeddedparam.prop_t = tab_props;
+
+    /* Create invokeXmlParam tab */
+    nb_params = 2;
+    if (VIR_ALLOC_N(params, nb_params) < 0)
+        goto cleanup;
+    (*params).name = "ComputerSystem";
+    (*params).type = EPR_PARAM;
+    (*params).param = &eprparam;
+    (*(params+1)).name = "SystemSettingData";
+    (*(params+1)).type = EMBEDDED_PARAM;
+    (*(params+1)).param = &embeddedparam;
+
+    result = hypervInvokeMethod(priv, params, nb_params, "ModifyVirtualSystem",
+                             MSVM_VIRTUALSYSTEMMANAGEMENTSERVICE_RESOURCE_URI, selector);
+
+ cleanup:
+    hypervFreeObject(priv, (hypervObject *) virtualSystemSettingData);
+    VIR_FREE(tab_props);
+    VIR_FREE(params);
+    virBufferFreeAndReset(&query);
+    virBufferFreeAndReset(&queryVssd);
+
+    return result;
+}
+
+
+
+static int
+hypervDomainGetAutostart(virDomainPtr domain, int *autostart)
+{
+    int result = -1;
+    char uuid_string[VIR_UUID_STRING_BUFLEN];
+    hypervPrivate *priv = domain->conn->privateData;
+    virBuffer query = VIR_BUFFER_INITIALIZER;
+    Msvm_VirtualSystemGlobalSettingData *vsgsd = NULL;
+
+    virUUIDFormat(domain->uuid, uuid_string);
+    virBufferAddLit(&query, MSVM_VIRTUALSYSTEMGLOBALSETTINGDATA_WQL_SELECT);
+    virBufferAsprintf(&query, "where SystemName = \"%s\"", uuid_string);
+
+    if (hypervGetMsvmVirtualSystemGlobalSettingDataList(priv, &query, &vsgsd) < 0)
+        goto cleanup;
+
+    *autostart = vsgsd->data->AutomaticStartupAction;
+    result = 0;
+
+ cleanup:
+    hypervFreeObject(priv, (hypervObject *) vsgsd);
+    virBufferFreeAndReset(&query);
+
+    return result;
+}
+
 static virHypervisorDriver hypervHypervisorDriver = {
     .name = "Hyper-V",
     .connectOpen = hypervConnectOpen, /* 0.9.5 */
@@ -1645,6 +1744,8 @@ static virHypervisorDriver hypervHypervisorDriver = {
     .domainGetMaxVcpus = hypervDomainGetMaxVcpus, /* 1.2.10 */
     .domainGetVcpusFlags = hypervDomainGetVcpusFlags, /* 1.2.10 */
     .domainGetVcpus = hypervDomainGetVcpus, /* 1.2.10 */
+    .domainSetAutostart = hypervDomainSetAutostart, /* 1.2.10 */
+    .domainGetAutostart = hypervDomainGetAutostart, /* 1.2.10 */
 };
 
 /* Retrieves host system UUID  */

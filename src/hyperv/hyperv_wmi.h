@@ -29,12 +29,18 @@
 # include "hyperv_wmi_classes.h"
 # include "openwsman.h"
 
+#define ROOT_CIMV2 \
+    "http://schemas.microsoft.com/wbem/wsman/1/wmi/root/cimv2/*"
 
+#define ROOT_VIRTUALIZATION \
+    "http://schemas.microsoft.com/wbem/wsman/1/wmi/root/virtualization/*"
 
 typedef struct _hypervObject hypervObject;
 
 int hyperyVerifyResponse(WsManClient *client, WsXmlDocH response,
                          const char *detail);
+
+
 
 
 
@@ -90,6 +96,58 @@ enum _Msvm_ReturnCode {
 };
 
 const char *hypervReturnCodeToString(int returnCode);
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * hypervInvokeMethod
+ *   Function to invoke WSMAN request with simple, EPR or embedded parameters
+ */
+
+enum _PARAM_Type {
+    SIMPLE_PARAM = 0,
+    EPR_PARAM = 1,
+    EMBEDDED_PARAM = 2,
+};
+
+typedef struct _invokeXmlParam invokeXmlParam;
+struct _invokeXmlParam{
+        const char *name;
+        int type;
+	void *param;
+};
+
+typedef struct _eprParam eprParam;
+struct _eprParam{
+        virBufferPtr query;
+	const char *wmiProviderURI;
+};
+
+typedef struct _simpleParam simpleParam;
+struct _simpleParam{
+	const char *value;
+};
+
+typedef struct _properties_t properties_t;
+struct _properties_t{
+        const char *name;
+        const char *val;
+};
+
+typedef struct _embeddedParam embeddedParam;
+struct _embeddedParam{
+	const char *instanceName;
+	properties_t *prop_t;
+	int nbProps;
+};
+
+
+int
+hypervInvokeMethod(hypervPrivate *priv,
+                   invokeXmlParam *parameters,
+                   int nbParameters,
+                   const char* methodName,
+                   const char* providerURI,
+                   const char *selector);
+
 
 
 
