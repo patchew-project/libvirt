@@ -35,6 +35,9 @@
 #define ROOT_VIRTUALIZATION \
     "http://schemas.microsoft.com/wbem/wsman/1/wmi/root/virtualization/*"
 
+#define ROOT_VIRTUALIZATION_V2 \
+    "http://schemas.microsoft.com/wbem/wsman/1/wmi/root/virtualization/v2/*"
+
 typedef struct _hypervObject hypervObject;
 
 int hyperyVerifyResponse(WsManClient *client, WsXmlDocH response,

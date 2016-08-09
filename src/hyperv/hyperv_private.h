@@ -37,6 +37,10 @@ struct _hypervPrivate {
     WsManClient *client;
     virCapsPtr caps;
     virDomainXMLOptionPtr xmlopt;
+    char *hypervVersion;
 };
+
+#define HYPERV_VERSION_2008 "6.1"
+#define HYPERV_VERSION_2012 "6.3"
 
 #endif /* __HYPERV_PRIVATE_H__ */

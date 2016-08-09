@@ -55,6 +55,37 @@ class Msvm_ComputerSystem
     uint16   AssignedNumaNodeList[]
 end
 
+class Msvm_ComputerSystem_2012
+    string   Caption
+    string   Description
+    string   ElementName
+    datetime InstallDate
+    uint16   OperationalStatus[]
+    string   StatusDescriptions[]
+    string   Status
+    uint16   HealthState
+    uint16   EnabledState
+    string   OtherEnabledState
+    uint16   RequestedState
+    uint16   EnabledDefault
+    datetime TimeOfLastStateChange
+    string   CreationClassName
+    string   Name
+    string   PrimaryOwnerName
+    string   PrimaryOwnerContact
+    string   Roles[]
+    string   NameFormat
+    string   OtherIdentifyingInfo[]
+    string   IdentifyingDescriptions[]
+    uint16   Dedicated[]
+    string   OtherDedicatedDescriptions[]
+    uint16   ResetCapability
+    uint16   PowerManagementCapabilities[]
+    uint64   OnTimeInMilliseconds
+    datetime TimeOfLastConfigurationChange
+    uint32   ProcessID
+    uint16   AssignedNumaNodeList[]
+end
 
 class Msvm_ConcreteJob
     string   Caption
@@ -196,7 +227,7 @@ class Win32_ComputerSystem
     string   Caption
     uint16   ChassisBootupState
     string   CreationClassName
-    int16    CurrentTimeZone
+#    uint16    CurrentTimeZone
     boolean  DaylightInEffect
     string   Description
     string   DNSHostName
@@ -466,7 +497,7 @@ class Win32_OperatingSystem
   	string   CSCreationClassName
   	string   CSDVersion
   	string   CSName
-  	uint16   CurrentTimeZone
+#  	uint16   CurrentTimeZone
   	boolean  DataExecutionPrevention_Available
   	boolean  DataExecutionPrevention_32BitApplications
   	boolean  DataExecutionPrevention_Drivers

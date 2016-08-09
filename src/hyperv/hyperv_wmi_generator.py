@@ -61,6 +61,9 @@ class Class:
 
     def generate_classes_header(self):
         name_upper = self.name.upper()
+        class_name = self.name
+        if self.name.endswith("_2012"):
+            class_name = class_name[:-5]
 
         header = separator
         header += " * %s\n" % self.name
@@ -70,15 +73,17 @@ class Class:
 
         if self.name.startswith("Win32_") or self.name.startswith("CIM_DataFile"):
             header += "    \"http://schemas.microsoft.com/wbem/wsman/1/wmi/root/cimv2/%s\"\n" % self.name
+        elif self.name.endswith("_2012"):
+            header += "    \"http://schemas.microsoft.com/wbem/wsman/1/wmi/root/virtualization/v2/%s\"\n" % class_name
         else:
             header += "    \"http://schemas.microsoft.com/wbem/wsman/1/wmi/root/virtualization/%s\"\n" % self.name
 
         header += "\n"
         header += "#define %s_CLASSNAME \\\n" % name_upper
-        header += "    \"%s\"\n" % self.name
+        header += "    \"%s\"\n" % class_name
         header += "\n"
         header += "#define %s_WQL_SELECT \\\n" % name_upper
-        header += "    \"select * from %s \"\n" % self.name
+        header += "    \"select * from %s \"\n" % class_name
         header += "\n"
         header += "struct _%s_Data {\n" % self.name
 
@@ -134,6 +139,8 @@ class Class:
 
         if self.name.startswith("Win32_") or self.name.startswith("CIM_DataFile"):
             source += "    return hypervEnumAndPull(priv, query, ROOT_CIMV2,\n"
+        elif self.name.endswith("_2012"):
+            source += "    return hypervEnumAndPull(priv, query, ROOT_VIRTUALIZATION_V2,\n"
         else:
             source += "    return hypervEnumAndPull(priv, query, ROOT_VIRTUALIZATION,\n"
 

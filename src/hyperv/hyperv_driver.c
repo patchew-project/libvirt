@@ -30,6 +30,7 @@
 #include "virlog.h"
 #include "viruuid.h"
 #include "hyperv_driver.h"
+#include "hyperv_driver_2012.h"
 #include "hyperv_network_driver.h"
 #include "hyperv_private.h"
 #include "hyperv_util.h"
@@ -65,6 +66,35 @@ hypervFreePrivate(hypervPrivate **priv)
 
 /* Forward declaration of hypervCapsInit */
 static virCapsPtr hypervCapsInit(hypervPrivate *priv);
+static virHypervisorDriver hypervHypervisorDriver;
+
+static char *
+hypervNodeGetWindowsVersion(hypervPrivate *priv)
+{
+    virBuffer query = VIR_BUFFER_INITIALIZER;
+    Win32_OperatingSystem *operatingSystem = NULL;
+
+    /* Get Win32_OperatingSystem */
+    virBufferAddLit(&query, WIN32_OPERATINGSYSTEM_WQL_SELECT);
+
+    if (hypervGetWin32OperatingSystemList(priv, &query, &operatingSystem) < 0) {
+        goto cleanup;
+    }
+
+    if (operatingSystem == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Could not get Win32_OperatingSystem"));
+        goto cleanup;
+    }
+
+    return operatingSystem->data->Version;
+
+ cleanup:
+    hypervFreeObject(priv, (hypervObject *) operatingSystem);
+    virBufferFreeAndReset(&query);
+
+    return NULL;
+}
 
 static virDrvOpenStatus
 hypervConnectOpen(virConnectPtr conn, virConnectAuthPtr auth,
@@ -78,6 +108,9 @@ hypervConnectOpen(virConnectPtr conn, virConnectAuthPtr auth,
     char *password = NULL;
     virBuffer query = VIR_BUFFER_INITIALIZER;
     Msvm_ComputerSystem *computerSystem = NULL;
+    Msvm_ComputerSystem_2012 *computerSystem2012 = NULL;
+    char *windowsVersion = NULL;
+    char *hypervVersion = (char *)calloc(4, sizeof(char));
 
     virCheckFlags(VIR_CONNECT_RO, VIR_DRV_OPEN_ERROR);
 
@@ -175,6 +208,16 @@ hypervConnectOpen(virConnectPtr conn, virConnectAuthPtr auth,
     /* FIXME: Currently only basic authentication is supported  */
     wsman_transport_set_auth_method(priv->client, "basic");
 
+    windowsVersion = hypervNodeGetWindowsVersion(priv);
+    if (windowsVersion == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                        _("Could not determine Windows version"));
+        goto cleanup;
+    }
+
+    strncpy(hypervVersion, windowsVersion, 3);
+    priv->hypervVersion = hypervVersion;
+
     /* Check if the connection can be established and if the server has the
      * Hyper-V role installed. If the call to hypervGetMsvmComputerSystemList
      * succeeds than the connection has been established. If the returned list
@@ -183,13 +226,23 @@ hypervConnectOpen(virConnectPtr conn, virConnectAuthPtr auth,
     virBufferAddLit(&query, "where ");
     virBufferAddLit(&query, MSVM_COMPUTERSYSTEM_WQL_PHYSICAL);
 
-    if (hypervGetMsvmComputerSystemList(priv, &query, &computerSystem) < 0)
-        goto cleanup;
+    if (strcmp(priv->hypervVersion, HYPERV_VERSION_2008) == 0) {
+        if (hypervGetMsvmComputerSystemList(priv, &query, &computerSystem) < 0)
+            goto cleanup;
+    } else if (strcmp(priv->hypervVersion, HYPERV_VERSION_2012) == 0) {
+        if (hypervGetMsvmComputerSystem2012List(priv, &query, &computerSystem2012) < 0)
+            goto cleanup;
+    }
 
-    if (computerSystem == NULL) {
+    if (computerSystem == NULL && computerSystem2012 == NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("%s is not a Hyper-V server"), conn->uri->server);
         goto cleanup;
+    }
+
+    if (computerSystem2012 != NULL) {
+        hypervHypervisorDriver.connectListAllDomains = hypervConnectListAllDomains2012;
+        hypervHypervisorDriver.domainGetState = hypervDomainGetState2012;
     }
 
     /* Setup capabilities */
@@ -209,8 +262,9 @@ hypervConnectOpen(virConnectPtr conn, virConnectAuthPtr auth,
     hypervFreePrivate(&priv);
     VIR_FREE(username);
     VIR_FREE(password);
+    free(hypervVersion);
     hypervFreeObject(priv, (hypervObject *)computerSystem);
-
+    hypervFreeObject(priv, (hypervObject *)computerSystem2012);
     return result;
 }
 
