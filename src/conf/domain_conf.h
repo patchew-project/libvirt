@@ -1946,6 +1946,7 @@ struct _virDomainRNGDef {
     } source;
 
     virDomainDeviceInfo info;
+    virBitmapPtr virtio_rev;
 };
 
 typedef enum {

@@ -4804,6 +4804,9 @@
         <optional>
           <ref name="address"/>
         </optional>
+        <optional>
+          <ref name="virtioRevision"/>
+        </optional>
       </interleave>
     </element>
   </define>

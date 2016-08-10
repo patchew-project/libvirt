@@ -12089,6 +12089,9 @@ virDomainRNGDefParseXML(xmlNodePtr node,
     if (virDomainDeviceInfoParseXML(node, NULL, &def->info, flags) < 0)
         goto error;
 
+    if (virDomainVirtioRevisionParseXML(ctxt, &def->virtio_rev) < 0)
+        goto error;
+
  cleanup:
     VIR_FREE(model);
     VIR_FREE(backend);
@@ -21775,6 +21778,8 @@ virDomainRNGDefFormat(virBufferPtr buf,
         if (virDomainDeviceInfoFormat(buf, &def->info, flags) < 0)
             return -1;
     }
+
+    virDomainVirtioRevisionFormatXML(buf, def->virtio_rev);
 
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</rng>\n");
