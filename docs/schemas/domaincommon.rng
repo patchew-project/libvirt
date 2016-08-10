@@ -2414,6 +2414,9 @@
           <ref name="virYesNo"/>
         </attribute>
       </optional>
+      <optional>
+        <ref name="virtioRevision"/>
+      </optional>
     </element>
   </define>
   <!--
