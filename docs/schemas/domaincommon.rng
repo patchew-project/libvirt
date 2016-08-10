@@ -3150,6 +3150,9 @@
       <optional>
         <ref name="address"/>
       </optional>
+      <optional>
+        <ref name="virtioRevision"/>
+      </optional>
     </element>
   </define>
   <!--

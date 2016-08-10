@@ -1321,6 +1321,7 @@ struct _virDomainVideoDef {
     bool primary;
     virDomainVideoAccelDefPtr accel;
     virDomainDeviceInfo info;
+    virBitmapPtr virtio_rev;
 };
 
 /* graphics console modes */

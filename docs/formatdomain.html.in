@@ -5646,6 +5646,16 @@ qemu-kvm -net nic,model=? /dev/null
         The optional <code>address</code> sub-element can be used to
         tie the video device to a particular PCI slot.
       </dd>
+
+      <dt><code>virtio</code></dt>
+      <dd>
+        <p>
+          Optional <code>virtio</code> elements can be used to enforce a particular
+          virtio revision in QEMU. The valid values for the <code>revision</code>
+          are <code>0.9</code> and <code>1.0</code>.
+          <span class='since'>Since 2.2.0</span>
+        </p>
+      </dd>
     </dl>
 
     <h4><a name="elementsConsole">Consoles, serial, parallel &amp; channel devices</a></h4>

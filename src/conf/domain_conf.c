@@ -12650,11 +12650,13 @@ virDomainVideoAccelDefParseXML(xmlNodePtr node)
 
 static virDomainVideoDefPtr
 virDomainVideoDefParseXML(xmlNodePtr node,
+                          xmlXPathContextPtr ctxt,
                           const virDomainDef *dom,
                           unsigned int flags)
 {
     virDomainVideoDefPtr def;
     xmlNodePtr cur;
+    xmlNodePtr saved = ctxt->node;
     char *type = NULL;
     char *heads = NULL;
     char *vram = NULL;
@@ -12662,6 +12664,8 @@ virDomainVideoDefParseXML(xmlNodePtr node,
     char *ram = NULL;
     char *vgamem = NULL;
     char *primary = NULL;
+
+    ctxt->node = node;
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
@@ -12764,7 +12768,12 @@ virDomainVideoDefParseXML(xmlNodePtr node,
     if (virDomainDeviceInfoParseXML(node, NULL, &def->info, flags) < 0)
         goto error;
 
+    if (virDomainVirtioRevisionParseXML(ctxt, &def->virtio_rev) < 0)
+        goto error;
+
  cleanup:
+    ctxt->node = saved;
+
     VIR_FREE(type);
     VIR_FREE(ram);
     VIR_FREE(vram);
@@ -13459,7 +13468,7 @@ virDomainDeviceDefParse(const char *xmlStr,
             goto error;
         break;
     case VIR_DOMAIN_DEVICE_VIDEO:
-        if (!(dev->data.video = virDomainVideoDefParseXML(node, def, flags)))
+        if (!(dev->data.video = virDomainVideoDefParseXML(node, ctxt, def, flags)))
             goto error;
         break;
     case VIR_DOMAIN_DEVICE_HOSTDEV:
@@ -17125,7 +17134,7 @@ virDomainDefParseXML(xmlDocPtr xml,
         virDomainVideoDefPtr video;
         ssize_t insertAt = -1;
 
-        if (!(video = virDomainVideoDefParseXML(nodes[i], def, flags)))
+        if (!(video = virDomainVideoDefParseXML(nodes[i], ctxt, def, flags)))
             goto error;
 
         if (video->primary) {
@@ -21941,6 +21950,8 @@ virDomainVideoDefFormat(virBufferPtr buf,
 
     if (virDomainDeviceInfoFormat(buf, &def->info, flags) < 0)
         return -1;
+
+    virDomainVirtioRevisionFormatXML(buf, def->virtio_rev);
 
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</video>\n");
