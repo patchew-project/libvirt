@@ -2810,6 +2810,15 @@
           </dd>
         </dl>
       </dd>
+      <dt><code>virtio</code></dt>
+      <dd>
+        <p>
+          Optional <code>virtio</code> elements can be used to enforce a particular
+          virtio revision in QEMU. The valid values for the <code>revision</code>
+          are <code>0.9</code> and <code>1.0</code>.
+          <span class='since'>Since 2.2.0</span>
+        </p>
+      </dd>
     </dl>
 
     <h4><a name="elementsFilesystems">Filesystems</a></h4>
