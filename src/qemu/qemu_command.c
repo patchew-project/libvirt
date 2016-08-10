@@ -8405,7 +8405,7 @@ qemuBuildSmartcardCommandLine(virLogManagerPtr logManager,
 }
 
 
-char *
+static char *
 qemuBuildShmemDevStr(virDomainDefPtr def,
                      virDomainShmemDefPtr shmem,
                      virQEMUCapsPtr qemuCaps)
