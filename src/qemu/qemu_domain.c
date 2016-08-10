@@ -2617,6 +2617,24 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
         }
     }
 
+    if (dev->type == VIR_DOMAIN_DEVICE_SHMEM) {
+        if (!dev->data.shmem->server.enabled) {
+            if (!dev->data.shmem->size)
+                dev->data.shmem->size = 4 << 20;
+        } else {
+            /* Defaults/Requirements for the newer device that we should save */
+            if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_IVSHMEM_DOORBELL)) {
+                /* Size does not make much sense when claiming memory from
+                 * the server and so the newer version doesn't support that */
+                dev->data.shmem->size = 0;
+
+                dev->data.shmem->msi.enabled = true;
+                if (!dev->data.shmem->msi.ioeventfd)
+                    dev->data.shmem->msi.ioeventfd = VIR_TRISTATE_SWITCH_ON;
+            }
+        }
+    }
+
     ret = 0;
 
  cleanup:

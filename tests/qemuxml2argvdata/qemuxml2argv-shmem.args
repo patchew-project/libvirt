@@ -17,7 +17,7 @@ QEMU_AUDIO_DRV=none \
 -no-acpi \
 -boot c \
 -usb \
--device ivshmem,shm=shmem0,id=shmem0,bus=pci.0,addr=0x3 \
+-device ivshmem,size=4m,shm=shmem0,id=shmem0,bus=pci.0,addr=0x3 \
 -device ivshmem,size=128m,shm=shmem1,id=shmem1,bus=pci.0,addr=0x5 \
 -device ivshmem,size=256m,shm=shmem2,id=shmem2,bus=pci.0,addr=0x4 \
 -device ivshmem,size=512m,chardev=charshmem3,id=shmem3,bus=pci.0,addr=0x6 \
