@@ -373,6 +373,8 @@ typedef enum {
     QEMU_CAPS_DISPLAY, /* -display */
     QEMU_CAPS_DEVICE_INTEL_IOMMU, /* -device intel-iommu */
     QEMU_CAPS_MACHINE_SMM_OPT, /* -machine xxx,smm=on/off/auto */
+    QEMU_CAPS_DEVICE_IVSHMEM_PLAIN, /* -device ivshmem-plain */
+    QEMU_CAPS_DEVICE_IVSHMEM_DOORBELL, /* -device ivshmem-doorbell */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;

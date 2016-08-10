@@ -340,6 +340,8 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "display", /* 230 */
               "intel-iommu",
               "smm",
+              "ivshmem-plain",
+              "ivshmem-doorbell",
     );
 
 
@@ -1561,6 +1563,8 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "pxb-pcie", QEMU_CAPS_DEVICE_PXB_PCIE },
     { "tls-creds-x509", QEMU_CAPS_OBJECT_TLS_CREDS_X509 },
     { "intel-iommu", QEMU_CAPS_DEVICE_INTEL_IOMMU },
+    { "ivshmem-plain", QEMU_CAPS_DEVICE_IVSHMEM_PLAIN },
+    { "ivshmem-doorbell", QEMU_CAPS_DEVICE_IVSHMEM_DOORBELL },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {
