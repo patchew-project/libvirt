@@ -862,6 +862,8 @@ mymain(void)
     DO_TEST("virtio-input", NONE);
     DO_TEST("virtio-input-passthrough", NONE);
 
+    DO_TEST_FULL("virtio-revision", WHEN_BOTH, GIC_NONE, QEMU_CAPS_VIRTIO_SCSI, NONE);
+
     virObjectUnref(cfg);
 
     DO_TEST("acpi-table", NONE);

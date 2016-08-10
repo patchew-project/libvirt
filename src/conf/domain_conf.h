@@ -154,6 +154,13 @@ typedef virDomainTPMDef *virDomainTPMDefPtr;
 typedef struct _virDomainIOMMUDef virDomainIOMMUDef;
 typedef virDomainIOMMUDef *virDomainIOMMUDefPtr;
 
+typedef enum {
+    VIR_DOMAIN_VIRTIO_REVISION_DEFAULT,
+    VIR_DOMAIN_VIRTIO_REVISION_0_9,
+    VIR_DOMAIN_VIRTIO_REVISION_1_0,
+    VIR_DOMAIN_VIRTIO_REVISION_LAST,
+} virDomainVirtioRevision;
+
 /* Flags for the 'type' field in virDomainDeviceDef */
 typedef enum {
     VIR_DOMAIN_DEVICE_NONE = 0,
@@ -1546,6 +1553,7 @@ struct _virDomainMemballoonDef {
     virDomainDeviceInfo info;
     int period; /* seconds between collections */
     int autodeflate; /* enum virTristateSwitch */
+    virBitmapPtr virtio_rev;
 };
 
 struct _virDomainNVRAMDef {
@@ -3022,6 +3030,7 @@ VIR_ENUM_DECL(virDomainTPMBackend)
 VIR_ENUM_DECL(virDomainMemoryModel)
 VIR_ENUM_DECL(virDomainMemoryBackingModel)
 VIR_ENUM_DECL(virDomainIOMMUModel)
+VIR_ENUM_DECL(virDomainVirtioRevision)
 /* from libvirt.h */
 VIR_ENUM_DECL(virDomainState)
 VIR_ENUM_DECL(virDomainNostateReason)

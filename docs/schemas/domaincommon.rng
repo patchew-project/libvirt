@@ -3612,6 +3612,9 @@
             </attribute>
           </element>
         </optional>
+        <optional>
+          <ref name="virtioRevision"/>
+        </optional>
       </interleave>
     </element>
   </define>
@@ -4828,6 +4831,19 @@
       </optional>
       <empty/>
     </element>
+  </define>
+
+  <define name="virtioRevision">
+    <zeroOrMore>
+      <element name="virtio">
+        <attribute name="revision">
+          <choice>
+            <value>0.9</value>
+            <value>1.0</value>
+          </choice>
+        </attribute>
+      </element>
+    </zeroOrMore>
   </define>
 
   <define name="usbmaster">
