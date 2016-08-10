@@ -378,6 +378,36 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
 }
 
 static int
+qemuBuildVirtioRevisionStr(virBufferPtr buf,
+                           virBitmapPtr revmap,
+                           virQEMUCapsPtr qemuCaps)
+{
+    if (!revmap)
+        return 0;
+
+    if (virBitmapLastSetBit(revmap) &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_DISABLE_LEGACY)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("setting the virtio revision is not supported with "
+                         "this QEMU binary"));
+        return -1;
+    }
+
+    virBufferAddLit(buf, ",disable-legacy=");
+    if (virBitmapIsBitSet(revmap, VIR_DOMAIN_VIRTIO_REVISION_0_9))
+        virBufferAddLit(buf, "off");
+    else
+        virBufferAddLit(buf, "on");
+
+    virBufferAddLit(buf, ",disable-modern=");
+    if (virBitmapIsBitSet(revmap, VIR_DOMAIN_VIRTIO_REVISION_1_0))
+        virBufferAddLit(buf, "off");
+    else
+        virBufferAddLit(buf, "on");
+    return 0;
+}
+
+static int
 qemuBuildRomStr(virBufferPtr buf,
                 virDomainDeviceInfoPtr info)
 {
@@ -1988,6 +2018,10 @@ qemuBuildDriveDevStr(const virDomainDef *def,
                               (disk->device == VIR_DOMAIN_DISK_DEVICE_LUN)
                               ? "on" : "off");
         }
+
+        if (qemuBuildVirtioRevisionStr(&opt, disk->virtio_rev, qemuCaps) < 0)
+            goto error;
+
         if (qemuBuildDeviceAddressStr(&opt, def, &disk->info, qemuCaps) < 0)
             goto error;
         break;
@@ -2309,6 +2343,8 @@ qemuBuildFSDevStr(const virDomainDef *def,
                       QEMU_FSDEV_HOST_PREFIX, fs->info.alias);
     virBufferAsprintf(&opt, ",mount_tag=%s", fs->dst);
 
+    qemuBuildVirtioRevisionStr(&opt, fs->virtio_rev, qemuCaps);
+
     if (qemuBuildDeviceAddressStr(&opt, def, &fs->info, qemuCaps) < 0)
         goto error;
 
@@ -2566,6 +2602,8 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
                                       def->iothread);
                 }
             }
+            if (qemuBuildVirtioRevisionStr(&buf, def->virtio_rev, qemuCaps) < 0)
+                goto error;
             break;
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSILOGIC:
             virBufferAddLit(&buf, "lsi");
@@ -2611,6 +2649,8 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
             virBufferAsprintf(&buf, ",vectors=%d",
                               def->opts.vioserial.vectors);
         }
+        if (qemuBuildVirtioRevisionStr(&buf, def->virtio_rev, qemuCaps) < 0)
+            goto error;
         break;
 
     case VIR_DOMAIN_CONTROLLER_TYPE_CCID:
@@ -3555,12 +3595,16 @@ qemuBuildNicDevStr(virDomainDefPtr def,
     virBufferAsprintf(&buf, ",id=%s", net->info.alias);
     virBufferAsprintf(&buf, ",mac=%s",
                       virMacAddrFormat(&net->mac, macaddr));
+
     if (qemuBuildDeviceAddressStr(&buf, def, &net->info, qemuCaps) < 0)
         goto error;
     if (qemuBuildRomStr(&buf, &net->info) < 0)
         goto error;
     if (bootindex && virQEMUCapsGet(qemuCaps, QEMU_CAPS_BOOTINDEX))
         virBufferAsprintf(&buf, ",bootindex=%u", bootindex);
+    if (usingVirtio &&
+        qemuBuildVirtioRevisionStr(&buf, net->virtio_rev, qemuCaps) < 0)
+        goto error;
 
     if (virBufferCheckError(&buf) < 0)
         goto error;
@@ -3825,6 +3869,9 @@ qemuBuildMemballoonCommandLine(virCommandPtr cmd,
                           virTristateSwitchTypeToString(def->memballoon->autodeflate));
     }
 
+    if (qemuBuildVirtioRevisionStr(&buf, def->memballoon->virtio_rev, qemuCaps) < 0)
+        goto error;
+
     virCommandAddArg(cmd, "-device");
     virCommandAddArgBuffer(cmd, &buf);
     return 0;
@@ -3953,6 +4000,9 @@ qemuBuildVirtioInputDevStr(const virDomainDef *def,
     }
 
     if (qemuBuildDeviceAddressStr(&buf, def, &dev->info, qemuCaps) < 0)
+        goto error;
+
+    if (qemuBuildVirtioRevisionStr(&buf, dev->virtio_rev, qemuCaps) < 0)
         goto error;
 
     if (virBufferCheckError(&buf) < 0)
@@ -4318,6 +4368,9 @@ qemuBuildDeviceVideoStr(const virDomainDef *def,
     }
 
     if (qemuBuildDeviceAddressStr(&buf, def, &video->info, qemuCaps) < 0)
+        goto error;
+
+    if (qemuBuildVirtioRevisionStr(&buf, video->virtio_rev, qemuCaps) < 0)
         goto error;
 
     if (virBufferCheckError(&buf) < 0)
@@ -5565,6 +5618,9 @@ qemuBuildRNGDevStr(const virDomainDef *def,
         else
             virBufferAddLit(&buf, ",period=1000");
     }
+
+    if (qemuBuildVirtioRevisionStr(&buf, dev->virtio_rev, qemuCaps) < 0)
+        goto error;
 
     if (qemuBuildDeviceAddressStr(&buf, def, &dev->info, qemuCaps) < 0)
         goto error;
