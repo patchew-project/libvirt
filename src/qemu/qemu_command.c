@@ -8445,6 +8445,50 @@ qemuBuildShmemDevLegacyStr(virDomainDefPtr def,
     return NULL;
 }
 
+static int
+qemuBuildShmemDevCommandLine(virCommandPtr cmd,
+                             virDomainDefPtr def,
+                             virDomainShmemDefPtr shmem,
+                             virQEMUCapsPtr qemuCaps)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    virCommandAddArg(cmd, "-device");
+
+    if (shmem->server.enabled) {
+        virBufferAddLit(&buf, "ivshmem-doorbell");
+        virBufferAsprintf(&buf, ",id=%s,chardev=char%s",
+                          shmem->info.alias, shmem->info.alias);
+        if (shmem->msi.vectors)
+            virBufferAsprintf(&buf, ",vectors=%u", shmem->msi.vectors);
+        if (shmem->msi.ioeventfd)
+            virBufferAsprintf(&buf, ",ioeventfd=%s",
+                              virTristateSwitchTypeToString(shmem->msi.ioeventfd));
+    } else {
+        virBufferAddLit(&buf, "ivshmem-plain");
+        virBufferAsprintf(&buf, ",id=%s,memdev=shmmem-%s",
+                          shmem->info.alias, shmem->info.alias);
+    }
+
+    if (qemuBuildDeviceAddressStr(&buf, def, &shmem->info, qemuCaps) < 0) {
+        virBufferFreeAndReset(&buf);
+        return -1;
+    }
+
+    virCommandAddArgBuffer(cmd, &buf);
+
+    if (!shmem->server.enabled) {
+        virBufferAddLit(&buf, "memory-backend-file");
+        virBufferAsprintf(&buf, ",id=shmmem-%s,size=%llum,mem-path=/dev/shm/%s",
+                          shmem->info.alias, shmem->size >> 20, shmem->name);
+
+        virCommandAddArg(cmd, "-device");
+        virCommandAddArgBuffer(cmd, &buf);
+    }
+
+    return 0;
+}
+
 static char *
 qemuBuildShmemBackendStr(virLogManagerPtr logManager,
                          virCommandPtr cmd,
@@ -8511,10 +8555,24 @@ qemuBuildShmemCommandLine(virLogManagerPtr logManager,
         }
     }
 
-    if (!(devstr = qemuBuildShmemDevLegacyStr(def, shmem, qemuCaps)))
-        return -1;
-    virCommandAddArgList(cmd, "-device", devstr, NULL);
-    VIR_FREE(devstr);
+    if (virQEMUCapsGet(qemuCaps, shmem->server.enabled ?
+                       QEMU_CAPS_DEVICE_IVSHMEM_DOORBELL :
+                       QEMU_CAPS_DEVICE_IVSHMEM_PLAIN)) {
+        if (qemuBuildShmemDevCommandLine(cmd, def, shmem, qemuCaps) < 0)
+            return -1;
+    } else {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_IVSHMEM)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("ivshmem device is not supported "
+                             "with this QEMU binary"));
+            return -1;
+        }
+
+        if (!(devstr = qemuBuildShmemDevLegacyStr(def, shmem, qemuCaps)))
+            return -1;
+        virCommandAddArgList(cmd, "-device", devstr, NULL);
+        VIR_FREE(devstr);
+    }
 
     if (shmem->server.enabled) {
         if (!(devstr = qemuBuildShmemBackendStr(logManager, cmd, cfg, def,
