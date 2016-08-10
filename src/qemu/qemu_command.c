@@ -8406,9 +8406,9 @@ qemuBuildSmartcardCommandLine(virLogManagerPtr logManager,
 
 
 static char *
-qemuBuildShmemDevStr(virDomainDefPtr def,
-                     virDomainShmemDefPtr shmem,
-                     virQEMUCapsPtr qemuCaps)
+qemuBuildShmemDevLegacyStr(virDomainDefPtr def,
+                           virDomainShmemDefPtr shmem,
+                           virQEMUCapsPtr qemuCaps)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
 
@@ -8507,7 +8507,7 @@ qemuBuildShmemCommandLine(virLogManagerPtr logManager,
 {
     char *devstr = NULL;
 
-    if (!(devstr = qemuBuildShmemDevStr(def, shmem, qemuCaps)))
+    if (!(devstr = qemuBuildShmemDevLegacyStr(def, shmem, qemuCaps)))
         return -1;
     virCommandAddArgList(cmd, "-device", devstr, NULL);
     VIR_FREE(devstr);
