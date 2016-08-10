@@ -340,6 +340,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "display", /* 230 */
               "intel-iommu",
               "smm",
+              "virtio-disable-legacy",
     );
 
 
@@ -1565,6 +1566,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {
     { "deflate-on-oom", QEMU_CAPS_VIRTIO_BALLOON_AUTODEFLATE },
+    { "disable-legacy", QEMU_CAPS_VIRTIO_DISABLE_LEGACY },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBlk[] = {
@@ -1574,15 +1576,18 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBlk[] = {
     { "event_idx", QEMU_CAPS_VIRTIO_BLK_EVENT_IDX },
     { "scsi", QEMU_CAPS_VIRTIO_BLK_SCSI },
     { "logical_block_size", QEMU_CAPS_BLOCKIO },
+    { "disable-legacy", QEMU_CAPS_VIRTIO_DISABLE_LEGACY },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioNet[] = {
     { "tx", QEMU_CAPS_VIRTIO_TX_ALG },
     { "event_idx", QEMU_CAPS_VIRTIO_NET_EVENT_IDX },
+    { "disable-legacy", QEMU_CAPS_VIRTIO_DISABLE_LEGACY },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioSCSI[] = {
     { "iothread", QEMU_CAPS_VIRTIO_SCSI_IOTHREAD },
+    { "disable-legacy", QEMU_CAPS_VIRTIO_DISABLE_LEGACY },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsPCIAssign[] = {
@@ -1659,6 +1664,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsQxlVga[] = {
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioGpu[] = {
     { "virgl", QEMU_CAPS_DEVICE_VIRTIO_GPU_VIRGL },
+    { "disable-legacy", QEMU_CAPS_VIRTIO_DISABLE_LEGACY },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsICH9[] = {
