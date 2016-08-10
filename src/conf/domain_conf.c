@@ -10775,6 +10775,9 @@ virDomainInputDefParseXML(const virDomainDef *dom,
         goto error;
     }
 
+    if (virDomainVirtioRevisionParseXML(ctxt, &def->virtio_rev) < 0)
+        goto error;
+
  cleanup:
     VIR_FREE(evdev);
     VIR_FREE(type);
@@ -21992,6 +21995,7 @@ virDomainInputDefFormat(virBufferPtr buf,
     virBufferEscapeString(&childbuf, "<source evdev='%s'/>\n", def->source.evdev);
     if (virDomainDeviceInfoFormat(&childbuf, &def->info, flags) < 0)
         return -1;
+    virDomainVirtioRevisionFormatXML(&childbuf, def->virtio_rev);
 
     if (!virBufferUse(&childbuf)) {
         virBufferAddLit(buf, "/>\n");

@@ -3828,6 +3828,9 @@
       <optional>
         <ref name="address"/>
       </optional>
+      <optional>
+        <ref name="virtioRevision"/>
+      </optional>
     </element>
   </define>
   <define name="hub">
