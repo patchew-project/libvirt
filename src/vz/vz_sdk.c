@@ -977,6 +977,7 @@ prlsdkGetNetInfo(PRL_HANDLE netAdapter, virDomainNetDefPtr net, bool isCt)
         /* venet devices don't have mac address and
          * always up */
         net->linkstate = VIR_DOMAIN_NET_INTERFACE_LINK_STATE_UP;
+        net->type = VIR_DOMAIN_NET_TYPE_NETWORK;
         if (VIR_STRDUP(net->data.network.name,
                        PARALLELS_DOMAIN_ROUTED_NETWORK_NAME) < 0)
             goto cleanup;
@@ -1000,6 +1001,7 @@ prlsdkGetNetInfo(PRL_HANDLE netAdapter, virDomainNetDefPtr net, bool isCt)
     prlsdkCheckRetGoto(pret, cleanup);
 
     if (emulatedType == PNA_ROUTED) {
+        net->type = VIR_DOMAIN_NET_TYPE_NETWORK;
         if (VIR_STRDUP(net->data.network.name,
                        PARALLELS_DOMAIN_ROUTED_NETWORK_NAME) < 0)
             goto cleanup;
