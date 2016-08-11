@@ -2058,6 +2058,8 @@ virNumaGetNodeMemory;
 virNumaGetPageInfo;
 virNumaGetPages;
 virNumaIsAvailable;
+virNumaMemAccessTypeFromString;
+virNumaMemAccessTypeToString;
 virNumaNodeIsAvailable;
 virNumaNodesetIsAvailable;
 virNumaSetPagePoolSize;
