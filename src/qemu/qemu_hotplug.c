@@ -1878,7 +1878,8 @@ qemuDomainAttachMemory(virQEMUDriverPtr driver,
 
     if (qemuBuildMemoryBackendStr(mem->size, mem->pagesize,
                                   mem->targetNode, mem->sourceNodes, NULL,
-                                  mem->path, vm->def, priv->qemuCaps, cfg,
+                                  mem->path, mem->memAccess, vm->def,
+                                  priv->qemuCaps, cfg,
                                   &backendType, &props, true) < 0)
         goto cleanup;
 
