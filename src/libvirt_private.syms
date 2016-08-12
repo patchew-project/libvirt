@@ -971,6 +971,7 @@ cpuGetModels;
 cpuGuestData;
 cpuHasFeature;
 cpuNodeData;
+virCPUTranslate;
 virCPUUpdate;
 
 
