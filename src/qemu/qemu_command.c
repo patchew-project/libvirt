@@ -6461,7 +6461,7 @@ qemuBuildCpuModelArgStr(virQEMUDriverPtr driver,
 
     if (cpu->mode == VIR_CPU_MODE_HOST_MODEL &&
         !migrating &&
-        cpuUpdate(cpu, host) < 0)
+        virCPUUpdate(def->os.arch, cpu, host) < 0)
         goto cleanup;
 
     if (compareAgainstHost &&

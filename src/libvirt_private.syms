@@ -971,7 +971,7 @@ cpuGetModels;
 cpuGuestData;
 cpuHasFeature;
 cpuNodeData;
-cpuUpdate;
+virCPUUpdate;
 
 
 # cpu/cpu_x86.h
