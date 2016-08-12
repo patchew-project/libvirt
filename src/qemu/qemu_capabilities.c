@@ -2859,6 +2859,19 @@ int virQEMUCapsProbeQMP(virQEMUCapsPtr qemuCaps,
 }
 
 
+static bool
+virQEMUCapsCPUFilterFeatures(const char *name,
+                             void *opaque ATTRIBUTE_UNUSED)
+{
+    if (STREQ(name, "cmt") ||
+        STREQ(name, "mbm_total") ||
+        STREQ(name, "mbm_local"))
+        return false;
+
+    return true;
+}
+
+
 void
 virQEMUCapsInitHostCPUModel(virQEMUCapsPtr qemuCaps,
                             virCapsHostPtr host)
@@ -2877,7 +2890,8 @@ virQEMUCapsInitHostCPUModel(virQEMUCapsPtr qemuCaps,
         cpu->mode = VIR_CPU_MODE_CUSTOM;
         cpu->match = VIR_CPU_MATCH_EXACT;
 
-        if (virCPUDefCopyModel(cpu, host->cpu, true) < 0)
+        if (virCPUDefCopyModelFilter(cpu, host->cpu, true,
+                                     virQEMUCapsCPUFilterFeatures, NULL) < 0)
             goto error;
     }
 
