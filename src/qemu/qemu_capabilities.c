@@ -2302,6 +2302,32 @@ virQEMUCapsGetHostModel(virQEMUCapsPtr qemuCaps)
 }
 
 
+bool
+virQEMUCapsIsCPUModeSupported(virQEMUCapsPtr qemuCaps,
+                              virCapsPtr caps,
+                              virDomainVirtType type,
+                              virCPUMode mode)
+{
+    switch (mode) {
+    case VIR_CPU_MODE_HOST_PASSTHROUGH:
+        return type == VIR_DOMAIN_VIRT_KVM &&
+               virQEMUCapsGuestIsNative(caps->host.arch, qemuCaps->arch);
+
+    case VIR_CPU_MODE_HOST_MODEL:
+        return !!qemuCaps->cpuModel;
+
+    case VIR_CPU_MODE_CUSTOM:
+        return qemuCaps->cpuDefinitions &&
+               qemuCaps->cpuDefinitions->count > 0;
+
+    case VIR_CPU_MODE_LAST:
+        break;
+    }
+
+    return false;
+}
+
+
 int virQEMUCapsGetMachineTypesCaps(virQEMUCapsPtr qemuCaps,
                                    size_t *nmachines,
                                    virCapsGuestMachinePtr **machines)
@@ -4260,22 +4286,27 @@ virQEMUCapsFillDomainCPUCaps(virCapsPtr caps,
                              virQEMUCapsPtr qemuCaps,
                              virDomainCapsPtr domCaps)
 {
-    virDomainCapsCPUModelsPtr filtered = NULL;
-    char **models = NULL;
-
-    if (domCaps->virttype == VIR_DOMAIN_VIRT_KVM &&
-        virQEMUCapsGuestIsNative(caps->host.arch, qemuCaps->arch))
+    if (virQEMUCapsIsCPUModeSupported(qemuCaps, caps, domCaps->virttype,
+                                      VIR_CPU_MODE_HOST_PASSTHROUGH))
         domCaps->cpu.hostPassthrough = true;
 
-    domCaps->cpu.hostModel = virCPUDefCopy(qemuCaps->cpuModel);
+    if (virQEMUCapsIsCPUModeSupported(qemuCaps, caps, domCaps->virttype,
+                                      VIR_CPU_MODE_HOST_MODEL))
+        domCaps->cpu.hostModel = virCPUDefCopy(qemuCaps->cpuModel);
 
-    if (qemuCaps->cpuDefinitions &&
-        cpuGetModels(domCaps->arch, &models) >= 0) {
-        filtered = virDomainCapsCPUModelsFilter(qemuCaps->cpuDefinitions,
-                                                models);
-        virStringFreeList(models);
+    if (virQEMUCapsIsCPUModeSupported(qemuCaps, caps, domCaps->virttype,
+                                      VIR_CPU_MODE_CUSTOM)) {
+        virDomainCapsCPUModelsPtr filtered = NULL;
+        char **models = NULL;
+
+        if (qemuCaps->cpuDefinitions &&
+            cpuGetModels(domCaps->arch, &models) >= 0) {
+            filtered = virDomainCapsCPUModelsFilter(qemuCaps->cpuDefinitions,
+                                                    models);
+            virStringFreeList(models);
+        }
+        domCaps->cpu.custom = filtered;
     }
-    domCaps->cpu.custom = filtered;
 
     return 0;
 }
