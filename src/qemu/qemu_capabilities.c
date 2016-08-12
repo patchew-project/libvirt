@@ -4260,9 +4260,7 @@ virQEMUCapsFillDomainCPUCaps(virCapsPtr caps,
         virQEMUCapsGuestIsNative(caps->host.arch, qemuCaps->arch))
         domCaps->cpu.hostPassthrough = true;
 
-    if (qemuCaps->cpuDefinitions && caps && caps->host.cpu)
-        domCaps->cpu.hostModel = virQEMUCapsGuestIsNative(caps->host.arch,
-                                                          qemuCaps->arch);
+    domCaps->cpu.hostModel = virCPUDefCopy(qemuCaps->cpuModel);
 
     if (qemuCaps->cpuDefinitions &&
         cpuGetModels(domCaps->arch, &models) >= 0) {
