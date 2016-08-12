@@ -38,6 +38,14 @@ struct testSchemaData {
     const char *xml_path;
 };
 
+static char *
+testGetSchemaPath(const char *schema)
+{
+    char *schema_path;
+    ignore_value(virAsprintf(&schema_path, "%s/docs/schemas/%s",
+                             abs_topsrcdir, schema));
+    return schema_path;
+}
 
 static int
 testSchemaFile(const void *args)
@@ -120,6 +128,20 @@ testSchemaDirs(const char *schema, virXMLValidatorPtr validator, ...)
     int ret = 0;
     char *dir_path = NULL;
     const char *dir;
+    bool freeValidator = false;
+
+    if (!validator) {
+        char *schema_path = testGetSchemaPath(schema);
+
+        if (!schema_path ||
+            !(validator = virXMLValidatorInit(schema_path))) {
+            VIR_FREE(schema_path);
+            goto cleanup;
+        }
+
+        VIR_FREE(schema_path);
+        freeValidator = true;
+    }
 
     va_start(args, validator);
 
@@ -134,6 +156,8 @@ testSchemaDirs(const char *schema, virXMLValidatorPtr validator, ...)
     }
 
  cleanup:
+    if (freeValidator)
+        virXMLValidatorFree(validator);
     VIR_FREE(dir_path);
     va_end(args);
     return ret;
@@ -152,8 +176,7 @@ testSchemaGrammar(const void *opaque)
     char *schema_path;
     int ret = -1;
 
-    if (virAsprintf(&schema_path, "%s/docs/schemas/%s",
-                    abs_topsrcdir, data->schema) < 0)
+    if (!(schema_path = testGetSchemaPath(data->schema)))
         return -1;
 
     if (!(data->validator = virXMLValidatorInit(schema_path)))
