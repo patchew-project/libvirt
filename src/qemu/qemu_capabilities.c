@@ -374,6 +374,7 @@ struct _virQEMUCaps {
     virArch arch;
 
     virDomainCapsCPUModelsPtr cpuDefinitions;
+    virCPUDefPtr cpuModel;
 
     size_t nmachineTypes;
     struct virQEMUCapsMachineType *machineTypes;
@@ -2052,6 +2053,10 @@ virQEMUCapsPtr virQEMUCapsNewCopy(virQEMUCapsPtr qemuCaps)
             goto error;
     }
 
+    if (qemuCaps->cpuModel &&
+        !(ret->cpuModel = virCPUDefCopy(qemuCaps->cpuModel)))
+        goto error;
+
     if (VIR_ALLOC_N(ret->machineTypes, qemuCaps->nmachineTypes) < 0)
         goto error;
     ret->nmachineTypes = qemuCaps->nmachineTypes;
@@ -2821,6 +2826,37 @@ int virQEMUCapsProbeQMP(virQEMUCapsPtr qemuCaps,
 }
 
 
+void
+virQEMUCapsInitHostCPUModel(virQEMUCapsPtr qemuCaps,
+                            virCapsHostPtr host)
+{
+    virCPUDefPtr cpu = NULL;
+
+    if (!virQEMUCapsGuestIsNative(host->arch, qemuCaps->arch))
+        goto error;
+
+    if (host->cpu && host->cpu->model) {
+        if (VIR_ALLOC(cpu) < 0)
+            goto error;
+
+        cpu->sockets = cpu->cores = cpu->threads = 0;
+        cpu->type = VIR_CPU_TYPE_GUEST;
+        cpu->mode = VIR_CPU_MODE_CUSTOM;
+        cpu->match = VIR_CPU_MATCH_EXACT;
+
+        if (virCPUDefCopyModel(cpu, host->cpu, true) < 0)
+            goto error;
+    }
+
+    qemuCaps->cpuModel = cpu;
+    return;
+
+ error:
+    virCPUDefFree(cpu);
+    qemuCaps->cpuModel = NULL;
+}
+
+
 /*
  * Parsing a doc that looks like
  *
@@ -2839,8 +2875,11 @@ int virQEMUCapsProbeQMP(virQEMUCapsPtr qemuCaps,
  * </qemuCaps>
  */
 int
-virQEMUCapsLoadCache(virQEMUCapsPtr qemuCaps, const char *filename,
-                     time_t *qemuctime, time_t *selfctime,
+virQEMUCapsLoadCache(virCapsPtr caps,
+                     virQEMUCapsPtr qemuCaps,
+                     const char *filename,
+                     time_t *qemuctime,
+                     time_t *selfctime,
                      unsigned long *selfvers)
 {
     xmlDocPtr doc = NULL;
@@ -3068,6 +3107,8 @@ virQEMUCapsLoadCache(virQEMUCapsPtr qemuCaps, const char *filename,
     }
     VIR_FREE(nodes);
 
+    virQEMUCapsInitHostCPUModel(qemuCaps, &caps->host);
+
     ret = 0;
  cleanup:
     VIR_FREE(str);
@@ -3256,7 +3297,9 @@ virQEMUCapsReset(virQEMUCapsPtr qemuCaps)
 
 
 static int
-virQEMUCapsInitCached(virQEMUCapsPtr qemuCaps, const char *cacheDir)
+virQEMUCapsInitCached(virCapsPtr caps,
+                      virQEMUCapsPtr qemuCaps,
+                      const char *cacheDir)
 {
     char *capsdir = NULL;
     char *capsfile = NULL;
@@ -3298,8 +3341,8 @@ virQEMUCapsInitCached(virQEMUCapsPtr qemuCaps, const char *cacheDir)
         goto cleanup;
     }
 
-    if (virQEMUCapsLoadCache(qemuCaps, capsfile, &qemuctime, &selfctime,
-                             &selfvers) < 0) {
+    if (virQEMUCapsLoadCache(caps, qemuCaps, capsfile,
+                             &qemuctime, &selfctime, &selfvers) < 0) {
         VIR_WARN("Failed to load cached caps from '%s' for '%s': %s",
                  capsfile, qemuCaps->binary, virGetLastErrorMessage());
         virResetLastError();
@@ -3783,7 +3826,7 @@ virQEMUCapsLogProbeFailure(const char *binary)
 
 
 virQEMUCapsPtr
-virQEMUCapsNewForBinaryInternal(virCapsPtr caps ATTRIBUTE_UNUSED,
+virQEMUCapsNewForBinaryInternal(virCapsPtr caps,
                                 const char *binary,
                                 const char *libDir,
                                 const char *cacheDir,
@@ -3823,7 +3866,7 @@ virQEMUCapsNewForBinaryInternal(virCapsPtr caps ATTRIBUTE_UNUSED,
 
     if (!cacheDir)
         rv = 0;
-    else if ((rv = virQEMUCapsInitCached(qemuCaps, cacheDir)) < 0)
+    else if ((rv = virQEMUCapsInitCached(caps, qemuCaps, cacheDir)) < 0)
         goto error;
 
     if (rv == 0) {
@@ -3849,16 +3892,18 @@ virQEMUCapsNewForBinaryInternal(virCapsPtr caps ATTRIBUTE_UNUSED,
         if (cacheDir &&
             virQEMUCapsRememberCached(qemuCaps, cacheDir) < 0)
             goto error;
+
+        virQEMUCapsInitHostCPUModel(qemuCaps, &caps->host);
     }
 
+ cleanup:
     VIR_FREE(qmperr);
     return qemuCaps;
 
  error:
-    VIR_FREE(qmperr);
     virObjectUnref(qemuCaps);
     qemuCaps = NULL;
-    return NULL;
+    goto cleanup;
 }
 
 static virQEMUCapsPtr
