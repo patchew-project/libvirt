@@ -91,8 +91,9 @@ cpuGetSubDriverByName(const char *name)
 
 
 /**
- * cpuCompareXML:
+ * virCPUCompareXML:
  *
+ * @arch: CPU architecture
  * @host: host CPU definition
  * @xml: XML description of either guest or host CPU to be compared with @host
  *
@@ -104,25 +105,26 @@ cpuGetSubDriverByName(const char *name)
  * the @host CPU.
  */
 virCPUCompareResult
-cpuCompareXML(virCPUDefPtr host,
-              const char *xml,
-              bool failIncompatible)
+virCPUCompareXML(virArch arch,
+                 virCPUDefPtr host,
+                 const char *xml,
+                 bool failIncompatible)
 {
     xmlDocPtr doc = NULL;
     xmlXPathContextPtr ctxt = NULL;
     virCPUDefPtr cpu = NULL;
     virCPUCompareResult ret = VIR_CPU_COMPARE_ERROR;
 
-    VIR_DEBUG("host=%p, xml=%s", host, NULLSTR(xml));
+    VIR_DEBUG("arch=%s, host=%p, xml=%s",
+              virArchToString(arch), host, NULLSTR(xml));
 
     if (!(doc = virXMLParseStringCtxt(xml, _("(CPU_definition)"), &ctxt)))
         goto cleanup;
 
-    cpu = virCPUDefParseXML(ctxt->node, ctxt, VIR_CPU_TYPE_AUTO);
-    if (cpu == NULL)
+    if (!(cpu = virCPUDefParseXML(ctxt->node, ctxt, VIR_CPU_TYPE_AUTO)))
         goto cleanup;
 
-    ret = cpuCompare(host, cpu, failIncompatible);
+    ret = virCPUCompare(arch, host, cpu, failIncompatible);
 
  cleanup:
     virCPUDefFree(cpu);
@@ -134,8 +136,9 @@ cpuCompareXML(virCPUDefPtr host,
 
 
 /**
- * cpuCompare:
+ * virCPUCompare:
  *
+ * @arch: CPU architecture
  * @host: host CPU definition
  * @cpu: either guest or host CPU to be compared with @host
  *
@@ -147,21 +150,23 @@ cpuCompareXML(virCPUDefPtr host,
  * the @host CPU.
  */
 virCPUCompareResult
-cpuCompare(virCPUDefPtr host,
-           virCPUDefPtr cpu,
-           bool failIncompatible)
+virCPUCompare(virArch arch,
+              virCPUDefPtr host,
+              virCPUDefPtr cpu,
+              bool failIncompatible)
 {
     struct cpuArchDriver *driver;
 
-    VIR_DEBUG("host=%p, cpu=%p", host, cpu);
+    VIR_DEBUG("arch=%s, host=%p, cpu=%p",
+              virArchToString(arch), host, cpu);
 
-    if ((driver = cpuGetSubDriver(host->arch)) == NULL)
+    if (!(driver = cpuGetSubDriver(arch)))
         return VIR_CPU_COMPARE_ERROR;
 
-    if (driver->compare == NULL) {
+    if (!driver->compare) {
         virReportError(VIR_ERR_NO_SUPPORT,
                        _("cannot compare CPUs of %s architecture"),
-                       virArchToString(host->arch));
+                       virArchToString(arch));
         return VIR_CPU_COMPARE_ERROR;
     }
 
