@@ -3402,10 +3402,13 @@ char *qemuDomainFormatXML(virQEMUDriverPtr driver,
 {
     virDomainDefPtr def;
 
-    if ((flags & VIR_DOMAIN_XML_INACTIVE) && vm->newDef)
+    if ((flags & VIR_DOMAIN_XML_INACTIVE) && vm->newDef) {
         def = vm->newDef;
-    else
+    } else {
         def = vm->def;
+        if (virDomainObjIsActive(vm))
+            flags &= ~VIR_DOMAIN_XML_UPDATE_CPU;
+    }
 
     return qemuDomainDefFormatXML(driver, def, flags);
 }

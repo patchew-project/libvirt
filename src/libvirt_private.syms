@@ -969,8 +969,9 @@ cpuDecode;
 cpuEncode;
 cpuGetModels;
 cpuGuestData;
-cpuHasFeature;
 cpuNodeData;
+virCPUCheckFeature;
+virCPUDataCheckFeature;
 virCPUTranslate;
 virCPUUpdate;
 

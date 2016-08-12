@@ -648,9 +648,45 @@ virCPUUpdate(virArch arch,
 
 
 /**
- * cpuHasFeature:
+ * virCPUCheckFeature:
  *
- * @data: internal CPU representation
+ * @arch: CPU architecture
+ * @cpu: CPU definition
+ * @feature: feature to be checked for
+ *
+ * Checks whether @feature is supported by the CPU described by @cpu.
+ *
+ * Returns 1 if the feature is supported, 0 if it's not supported, or
+ * -1 on error.
+ */
+int
+virCPUCheckFeature(virArch arch,
+                   const virCPUDef *cpu,
+                   const char *feature)
+{
+    struct cpuArchDriver *driver;
+
+    VIR_DEBUG("arch=%s, cpu=%p, feature=%s",
+              virArchToString(arch), cpu, feature);
+
+    if (!(driver = cpuGetSubDriver(arch)))
+        return -1;
+
+    if (!driver->checkFeature) {
+        virReportError(VIR_ERR_NO_SUPPORT,
+                       _("cannot check guest CPU feature for %s architecture"),
+                       virArchToString(arch));
+        return -1;
+    }
+
+    return driver->checkFeature(cpu, feature);
+}
+
+
+/**
+ * virCPUDataCheckFeature:
+ *
+ * @data: CPU data
  * @feature: feature to be checked for
  *
  * Checks whether @feature is supported by the CPU described by @data.
@@ -659,24 +695,25 @@ virCPUUpdate(virArch arch,
  * -1 on error.
  */
 int
-cpuHasFeature(const virCPUData *data,
-              const char *feature)
+virCPUDataCheckFeature(const virCPUData *data,
+                       const char *feature)
 {
     struct cpuArchDriver *driver;
 
-    VIR_DEBUG("data=%p, feature=%s", data, feature);
+    VIR_DEBUG("arch=%s, data=%p, feature=%s",
+              virArchToString(data->arch), data, feature);
 
-    if ((driver = cpuGetSubDriver(data->arch)) == NULL)
+    if (!(driver = cpuGetSubDriver(data->arch)))
         return -1;
 
-    if (driver->hasFeature == NULL) {
+    if (!driver->dataCheckFeature) {
         virReportError(VIR_ERR_NO_SUPPORT,
-                       _("cannot check guest CPU data for %s architecture"),
+                       _("cannot check guest CPU feature for %s architecture"),
                        virArchToString(data->arch));
         return -1;
     }
 
-    return driver->hasFeature(data, feature);
+    return driver->dataCheckFeature(data, feature);
 }
 
 
