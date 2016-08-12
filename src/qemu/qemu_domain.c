@@ -3267,14 +3267,8 @@ qemuDomainDefFormatBuf(virQEMUDriverPtr driver,
     /* Update guest CPU requirements according to host CPU */
     if ((flags & VIR_DOMAIN_XML_UPDATE_CPU) &&
         def->cpu &&
-        (def->cpu->mode != VIR_CPU_MODE_CUSTOM || def->cpu->model)) {
-        if (!caps->host.cpu ||
-            !caps->host.cpu->model) {
-            virReportError(VIR_ERR_OPERATION_FAILED,
-                           "%s", _("cannot get host CPU capabilities"));
-            goto cleanup;
-        }
-
+        (def->cpu->mode != VIR_CPU_MODE_CUSTOM ||
+         def->cpu->model)) {
         if (virCPUUpdate(def->os.arch, def->cpu, caps->host.cpu) < 0)
             goto cleanup;
     }
