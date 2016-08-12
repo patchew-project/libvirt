@@ -844,8 +844,16 @@ int qemuMonitorGetMachines(qemuMonitorPtr mon,
 
 void qemuMonitorMachineInfoFree(qemuMonitorMachineInfoPtr machine);
 
+typedef struct _qemuMonitorCPUDefInfo qemuMonitorCPUDefInfo;
+typedef qemuMonitorCPUDefInfo *qemuMonitorCPUDefInfoPtr;
+
+struct _qemuMonitorCPUDefInfo {
+    char *name;
+};
+
 int qemuMonitorGetCPUDefinitions(qemuMonitorPtr mon,
-                                 char ***cpus);
+                                 qemuMonitorCPUDefInfoPtr **cpus);
+void qemuMonitorCPUDefInfoFree(qemuMonitorCPUDefInfoPtr cpu);
 
 int qemuMonitorGetCommands(qemuMonitorPtr mon,
                            char ***commands);

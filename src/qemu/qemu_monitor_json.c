@@ -4855,14 +4855,15 @@ int qemuMonitorJSONGetMachines(qemuMonitorPtr mon,
 }
 
 
-int qemuMonitorJSONGetCPUDefinitions(qemuMonitorPtr mon,
-                                     char ***cpus)
+int
+qemuMonitorJSONGetCPUDefinitions(qemuMonitorPtr mon,
+                                 qemuMonitorCPUDefInfoPtr **cpus)
 {
     int ret = -1;
     virJSONValuePtr cmd;
     virJSONValuePtr reply = NULL;
     virJSONValuePtr data;
-    char **cpulist = NULL;
+    qemuMonitorCPUDefInfoPtr *cpulist = NULL;
     int n = 0;
     size_t i;
 
@@ -4898,13 +4899,18 @@ int qemuMonitorJSONGetCPUDefinitions(qemuMonitorPtr mon,
         goto cleanup;
     }
 
-    /* null-terminated list */
-    if (VIR_ALLOC_N(cpulist, n + 1) < 0)
+    if (VIR_ALLOC_N(cpulist, n) < 0)
         goto cleanup;
 
     for (i = 0; i < n; i++) {
         virJSONValuePtr child = virJSONValueArrayGet(data, i);
         const char *tmp;
+        qemuMonitorCPUDefInfoPtr cpu;
+
+        if (VIR_ALLOC(cpu) < 0)
+            goto cleanup;
+
+        cpulist[i] = cpu;
 
         if (!(tmp = virJSONValueObjectGetString(child, "name"))) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -4912,7 +4918,7 @@ int qemuMonitorJSONGetCPUDefinitions(qemuMonitorPtr mon,
             goto cleanup;
         }
 
-        if (VIR_STRDUP(cpulist[i], tmp) < 0)
+        if (VIR_STRDUP(cpu->name, tmp) < 0)
             goto cleanup;
     }
 
@@ -4921,7 +4927,11 @@ int qemuMonitorJSONGetCPUDefinitions(qemuMonitorPtr mon,
     cpulist = NULL;
 
  cleanup:
-    virStringFreeList(cpulist);
+    if (ret < 0 && cpulist) {
+        for (i = 0; i < n; i++)
+            qemuMonitorCPUDefInfoFree(cpulist[i]);
+        VIR_FREE(cpulist);
+    }
     virJSONValueFree(cmd);
     virJSONValueFree(reply);
     return ret;
