@@ -19,8 +19,12 @@ virQEMUCapsPtr qemuTestParseCapabilities(const char *capsFile);
 
 extern virCPUDefPtr cpuDefault;
 extern virCPUDefPtr cpuHaswell;
-void testQemuCapsSetCPU(virCapsPtr caps,
-                        virCPUDefPtr hostCPU);
+extern virCPUDefPtr cpuPower8;
+
+void qemuTestSetHostArch(virCapsPtr caps,
+                        virArch arch);
+void qemuTestSetHostCPU(virCapsPtr caps,
+                        virCPUDefPtr cpu);
 
 int qemuTestDriverInit(virQEMUDriver *driver);
 void qemuTestDriverFree(virQEMUDriver *driver);
