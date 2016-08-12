@@ -1127,9 +1127,13 @@ cmdCPUModelNames(vshControl *ctl, const vshCmd *cmd)
         return false;
     }
 
-    for (i = 0; i < nmodels; i++) {
-        vshPrint(ctl, "%s\n", models[i]);
-        VIR_FREE(models[i]);
+    if (nmodels == 0) {
+        vshPrint(ctl, "%s\n", _("all CPU models are accepted"));
+    } else {
+        for (i = 0; i < nmodels; i++) {
+            vshPrint(ctl, "%s\n", models[i]);
+            VIR_FREE(models[i]);
+        }
     }
     VIR_FREE(models);
 
