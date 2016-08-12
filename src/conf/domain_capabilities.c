@@ -29,6 +29,9 @@
 
 #define VIR_FROM_THIS VIR_FROM_CAPABILITIES
 
+VIR_ENUM_IMPL(virDomainCapsCPUUsable, VIR_DOMCAPS_CPU_USABLE_LAST,
+              "unknown", "yes", "no");
+
 static virClassPtr virDomainCapsClass;
 static virClassPtr virDomainCapsCPUModelsClass;
 
@@ -157,7 +160,9 @@ virDomainCapsCPUModelsCopy(virDomainCapsCPUModelsPtr old)
         return NULL;
 
     for (i = 0; i < old->count; i++) {
-        if (virDomainCapsCPUModelsAdd(cpuModels, old->models[i].name, -1) < 0)
+        if (virDomainCapsCPUModelsAdd(cpuModels,
+                                      old->models[i].name, -1,
+                                      old->models[i].usable) < 0)
             goto error;
     }
 
@@ -184,7 +189,8 @@ virDomainCapsCPUModelsFilter(virDomainCapsCPUModelsPtr old,
             continue;
 
         if (virDomainCapsCPUModelsAdd(cpuModels,
-                                      old->models[i].name, -1) < 0)
+                                      old->models[i].name, -1,
+                                      old->models[i].usable) < 0)
             goto error;
     }
 
@@ -198,13 +204,16 @@ virDomainCapsCPUModelsFilter(virDomainCapsCPUModelsPtr old,
 
 int
 virDomainCapsCPUModelsAddSteal(virDomainCapsCPUModelsPtr cpuModels,
-                               char **name)
+                               char **name,
+                               virDomainCapsCPUUsable usable)
 {
     if (VIR_RESIZE_N(cpuModels->models, cpuModels->alloc,
                      cpuModels->count, 1) < 0)
         return -1;
 
-    cpuModels->models[cpuModels->count++].name = *name;
+    cpuModels->models[cpuModels->count].usable = usable;
+    cpuModels->models[cpuModels->count].name = *name;
+    cpuModels->count++;
     *name = NULL;
     return 0;
 }
@@ -213,14 +222,15 @@ virDomainCapsCPUModelsAddSteal(virDomainCapsCPUModelsPtr cpuModels,
 int
 virDomainCapsCPUModelsAdd(virDomainCapsCPUModelsPtr cpuModels,
                           const char *name,
-                          ssize_t nameLen)
+                          ssize_t nameLen,
+                          virDomainCapsCPUUsable usable)
 {
     char *copy = NULL;
 
     if (VIR_STRNDUP(copy, name, nameLen) < 0)
         goto error;
 
-    if (virDomainCapsCPUModelsAddSteal(cpuModels, &copy) < 0)
+    if (virDomainCapsCPUModelsAddSteal(cpuModels, &copy, usable) < 0)
         goto error;
 
     return 0;
@@ -366,18 +376,21 @@ virDomainCapsOSFormat(virBufferPtr buf,
 
 static void
 virDomainCapsCPUCustomFormat(virBufferPtr buf,
-                             virDomainCapsCPUModelsPtr custom)
+                             virDomainCapsCPUModelsPtr custom,
+                             virDomainCapsCPUUsable usable)
 {
     size_t i;
-
-    virBufferAdjustIndent(buf, 2);
+    const char *usableStr = virDomainCapsCPUUsableTypeToString(usable);
 
     for (i = 0; i < custom->count; i++) {
-        virBufferAsprintf(buf, "<model>%s</model>\n",
-                          custom->models[i].name);
-    }
+        virDomainCapsCPUModelPtr model = custom->models + i;
 
-    virBufferAdjustIndent(buf, -2);
+        if (model->usable != usable)
+            continue;
+
+        virBufferAsprintf(buf, "<model usable='%s'>%s</model>\n",
+                          usableStr, model->name);
+    }
 }
 
 static void
@@ -399,7 +412,16 @@ virDomainCapsCPUFormat(virBufferPtr buf,
                       virCPUModeTypeToString(VIR_CPU_MODE_CUSTOM));
     if (cpu->custom && cpu->custom->count) {
         virBufferAddLit(buf, "supported='yes'>\n");
-        virDomainCapsCPUCustomFormat(buf, cpu->custom);
+        virBufferAdjustIndent(buf, 2);
+
+        virDomainCapsCPUCustomFormat(buf, cpu->custom,
+                                     VIR_DOMCAPS_CPU_USABLE_YES);
+        virDomainCapsCPUCustomFormat(buf, cpu->custom,
+                                     VIR_DOMCAPS_CPU_USABLE_NO);
+        virDomainCapsCPUCustomFormat(buf, cpu->custom,
+                                     VIR_DOMCAPS_CPU_USABLE_UNKNOWN);
+
+        virBufferAdjustIndent(buf, -2);
         virBufferAddLit(buf, "</mode>\n");
     } else {
         virBufferAddLit(buf, "supported='no'/>\n");
