@@ -1065,6 +1065,8 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
         }
         if (STREQ(net->model, "virtio"))
             flags = virtioFlags;
+        else if (havePCIeRoot && STREQ(net->model, "e1000e"))
+            flags = pcieFlags;
         else
             flags = pciFlags;
 
