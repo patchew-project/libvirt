@@ -997,15 +997,22 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
 {
     size_t i, j;
     virDomainPCIConnectFlags flags = 0; /* initialize to quiet gcc warning */
+    virDomainPCIConnectFlags virtioFlags;
+    virDomainPCIConnectFlags pciFlags;
+    virDomainPCIConnectFlags pcieFlags;
     virPCIDeviceAddress tmp_addr;
+    bool havePCIeRoot = false;
 
     /* PCI controllers */
     for (i = 0; i < def->ncontrollers; i++) {
         if (def->controllers[i]->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI) {
             virDomainControllerModelPCI model = def->controllers[i]->model;
 
+            if (model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT) {
+                havePCIeRoot = true;
+                continue;
+            }
             if (model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT ||
-                model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT ||
                 !virDeviceInfoPCIAddressWanted(&def->controllers[i]->info))
                 continue;
 
@@ -1021,17 +1028,22 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
         }
     }
 
-    /* all other devices that plug into a PCI slot are treated as a
-     * PCI endpoint devices that require a hotplug-capable slot
-     * (except for some special cases which have specific handling
-     * below)
+    pciFlags  = VIR_PCI_CONNECT_HOTPLUGGABLE | VIR_PCI_CONNECT_TYPE_PCI_DEVICE;
+    pcieFlags = VIR_PCI_CONNECT_HOTPLUGGABLE | VIR_PCI_CONNECT_TYPE_PCIE_DEVICE;
+    /* if qemu has the disable-legacy option for
+     * virtio-net, then its virtio devices will present
+     * themselves as PCIe devices when plugged into a PCIe
+     * slot, so we can safely assign them to a PCIe slot.
      */
-    flags = VIR_PCI_CONNECT_HOTPLUGGABLE | VIR_PCI_CONNECT_TYPE_PCI_DEVICE;
+    virtioFlags = havePCIeRoot &&
+        virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY) ?
+        pcieFlags : pciFlags;
 
     for (i = 0; i < def->nfss; i++) {
         if (!virDeviceInfoPCIAddressWanted(&def->fss[i]->info))
             continue;
 
+        flags = virtioFlags;
         /* Only support VirtIO-9p-pci so far. If that changes,
          * we might need to skip devices here */
         if (virDomainPCIAddressReserveNextSlot(addrs, &def->fss[i]->info,
@@ -1045,12 +1057,18 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
          * in hostdevs list anyway, so handle them with other hostdevs
          * instead of here.
          */
-        if ((def->nets[i]->type == VIR_DOMAIN_NET_TYPE_HOSTDEV) ||
-            !virDeviceInfoPCIAddressWanted(&def->nets[i]->info)) {
+        virDomainNetDefPtr net = def->nets[i];
+
+        if ((net->type == VIR_DOMAIN_NET_TYPE_HOSTDEV) ||
+            !virDeviceInfoPCIAddressWanted(&net->info)) {
             continue;
         }
-        if (virDomainPCIAddressReserveNextSlot(addrs, &def->nets[i]->info,
-                                               flags) < 0)
+        if (STREQ(net->model, "virtio"))
+            flags = virtioFlags;
+        else
+            flags = pciFlags;
+
+        if (virDomainPCIAddressReserveNextSlot(addrs, &net->info, flags) < 0)
             goto error;
     }
 
@@ -1064,6 +1082,7 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
             def->sounds[i]->model == VIR_DOMAIN_SOUND_MODEL_USB)
             continue;
 
+        flags = pciFlags;
         if (virDomainPCIAddressReserveNextSlot(addrs, &def->sounds[i]->info,
                                                flags) < 0)
             goto error;
@@ -1094,6 +1113,7 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
         if (!virDeviceInfoPCIAddressWanted(&def->controllers[i]->info))
             continue;
 
+        flags = pciFlags;
         /* USB2 needs special handling to put all companions in the same slot */
         if (IS_USB2_CONTROLLER(def->controllers[i])) {
             virPCIDeviceAddress addr = { 0, 0, 0, 0, false };
@@ -1150,6 +1170,12 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
             def->controllers[i]->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
             def->controllers[i]->info.addr.pci = addr;
         } else {
+            if ((def->controllers[i]->type == VIR_DOMAIN_CONTROLLER_TYPE_SCSI &&
+                 def->controllers[i]->model ==
+                 VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI) ||
+                (def->controllers[i]->type ==
+                 VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL))
+                flags = virtioFlags;
             if (virDomainPCIAddressReserveNextSlot(addrs,
                                                    &def->controllers[i]->info,
                                                    flags) < 0)
@@ -1184,6 +1210,7 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
             goto error;
         }
 
+        flags = virtioFlags;
         if (virDomainPCIAddressReserveNextSlot(addrs, &def->disks[i]->info,
                                                flags) < 0)
             goto error;
@@ -1197,6 +1224,7 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
             def->hostdevs[i]->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI)
             continue;
 
+        flags = pciFlags;
         if (virDomainPCIAddressReserveNextSlot(addrs,
                                                def->hostdevs[i]->info,
                                                flags) < 0)
@@ -1207,6 +1235,7 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
     if (def->memballoon &&
         def->memballoon->model == VIR_DOMAIN_MEMBALLOON_MODEL_VIRTIO &&
         virDeviceInfoPCIAddressWanted(&def->memballoon->info)) {
+        flags = virtioFlags;
         if (virDomainPCIAddressReserveNextSlot(addrs,
                                                &def->memballoon->info,
                                                flags) < 0)
@@ -1219,6 +1248,7 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
             !virDeviceInfoPCIAddressWanted(&def->rngs[i]->info))
             continue;
 
+        flags = virtioFlags;
         if (virDomainPCIAddressReserveNextSlot(addrs,
                                                &def->rngs[i]->info, flags) < 0)
             goto error;
@@ -1228,6 +1258,7 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
     if (def->watchdog &&
         def->watchdog->model == VIR_DOMAIN_WATCHDOG_MODEL_I6300ESB &&
         virDeviceInfoPCIAddressWanted(&def->watchdog->info)) {
+        flags = pciFlags;
         if (virDomainPCIAddressReserveNextSlot(addrs, &def->watchdog->info,
                                                flags) < 0)
             goto error;
@@ -1237,6 +1268,10 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
      * assigned address. */
     if (def->nvideos > 0 &&
         virDeviceInfoPCIAddressWanted(&def->videos[0]->info)) {
+        if (def->videos[0]->type == VIR_DOMAIN_VIDEO_TYPE_VIRTIO)
+            flags = virtioFlags;
+        else
+            flags = pciFlags;
         if (virDomainPCIAddressReserveNextSlot(addrs, &def->videos[0]->info,
                                                flags) < 0)
             goto error;
@@ -1251,6 +1286,8 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
         }
         if (!virDeviceInfoPCIAddressWanted(&def->videos[i]->info))
             continue;
+
+        flags = pciFlags;
         if (virDomainPCIAddressReserveNextSlot(addrs, &def->videos[i]->info,
                                                flags) < 0)
             goto error;
@@ -1261,6 +1298,7 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
         if (!virDeviceInfoPCIAddressWanted(&def->shmems[i]->info))
             continue;
 
+        flags = pciFlags;
         if (virDomainPCIAddressReserveNextSlot(addrs,
                                                &def->shmems[i]->info, flags) < 0)
             goto error;
@@ -1270,6 +1308,7 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
             !virDeviceInfoPCIAddressWanted(&def->inputs[i]->info))
             continue;
 
+        flags = virtioFlags;
         if (virDomainPCIAddressReserveNextSlot(addrs,
                                                &def->inputs[i]->info, flags) < 0)
             goto error;
@@ -1284,6 +1323,7 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
             !virDeviceInfoPCIAddressWanted(&chr->info))
             continue;
 
+        flags = pciFlags;
         if (virDomainPCIAddressReserveNextSlot(addrs, &chr->info, flags) < 0)
             goto error;
     }
