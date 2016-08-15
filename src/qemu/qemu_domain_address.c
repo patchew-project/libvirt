@@ -1178,6 +1178,13 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
                 (def->controllers[i]->type ==
                  VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL))
                 flags = virtioFlags;
+            else if (havePCIeRoot &&
+                     def->controllers[i]->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
+                     def->controllers[i]->model ==
+                     VIR_DOMAIN_CONTROLLER_MODEL_USB_NEC_XHCI)
+                flags = pcieFlags;
+            else
+                flags = pciFlags;
             if (virDomainPCIAddressReserveNextSlot(addrs,
                                                    &def->controllers[i]->info,
                                                    flags) < 0)
