@@ -4213,6 +4213,13 @@ qemuProcessSetupGraphics(virQEMUDriverPtr driver,
     size_t i;
     int ret = -1;
 
+    for (i = 0; i < vm->def->ngraphics; i++) {
+        graphics = vm->def->graphics[i];
+
+        if (qemuProcessGraphicsSetupListen(driver, graphics, vm) < 0)
+            goto cleanup;
+    }
+
     if (allocate) {
         for (i = 0; i < vm->def->ngraphics; i++) {
             graphics = vm->def->graphics[i];
@@ -4226,9 +4233,6 @@ qemuProcessSetupGraphics(virQEMUDriverPtr driver,
         graphics = vm->def->graphics[i];
 
         if (qemuProcessGraphicsAllocatePorts(driver, graphics, allocate) < 0)
-            goto cleanup;
-
-        if (qemuProcessGraphicsSetupListen(driver, graphics, vm) < 0)
             goto cleanup;
     }
 
