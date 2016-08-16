@@ -279,14 +279,6 @@ vzCheckDiskAddressDriveUnsupportedParams(virDomainDiskDefPtr disk)
         return -1;
     }
 
-    if (busIdx != drive->bus || devIdx != drive->unit) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("Invalid drive address of disk %s, vz driver "
-                         "does not support non default name mappings."),
-                       disk->dst);
-        return -1;
-    }
-
     return 0;
 }
 
