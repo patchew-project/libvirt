@@ -928,6 +928,7 @@ int
 virStorageFileGetMetadataInternal(virStorageSourcePtr meta,
                                   char *buf,
                                   size_t len,
+                                  bool probe_encryption,
                                   int *backingFormat)
 {
     int ret = -1;
@@ -946,7 +947,7 @@ virStorageFileGetMetadataInternal(virStorageSourcePtr meta,
         goto cleanup;
     }
 
-    if (fileTypeInfo[meta->format].cryptInfo != NULL) {
+    if (probe_encryption && fileTypeInfo[meta->format].cryptInfo != NULL) {
         for (i = 0; fileTypeInfo[meta->format].cryptInfo[i].format != 0; i++) {
             if (virStorageFileHasEncryptionFormat(&fileTypeInfo[meta->format].cryptInfo[i],
                                                   buf, len)) {
@@ -1129,7 +1130,7 @@ virStorageFileGetMetadataFromBuf(const char *path,
     if (!(ret = virStorageFileMetadataNew(path, format)))
         return NULL;
 
-    if (virStorageFileGetMetadataInternal(ret, buf, len,
+    if (virStorageFileGetMetadataInternal(ret, buf, len, true,
                                           backingFormat) < 0) {
         virStorageSourceFree(ret);
         return NULL;
@@ -1200,7 +1201,8 @@ virStorageFileGetMetadataFromFD(const char *path,
         goto cleanup;
     }
 
-    if (virStorageFileGetMetadataInternal(meta, buf, len, backingFormat) < 0)
+    if (virStorageFileGetMetadataInternal(meta, buf, len, true,
+                                          backingFormat) < 0)
         goto cleanup;
 
     if (S_ISREG(sb.st_mode))

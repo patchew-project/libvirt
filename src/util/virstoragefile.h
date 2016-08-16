@@ -289,8 +289,9 @@ int virStorageFileProbeFormatFromBuf(const char *path,
 int virStorageFileGetMetadataInternal(virStorageSourcePtr meta,
                                       char *buf,
                                       size_t len,
+                                      bool probe_encryption,
                                       int *backingFormat)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(4);
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(5);
 
 virStorageSourcePtr virStorageFileGetMetadataFromFD(const char *path,
                                                     int fd,

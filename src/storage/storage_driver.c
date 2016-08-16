@@ -3239,7 +3239,7 @@ virStorageFileGetMetadataRecurse(virStorageSourcePtr src,
                                               &buf)) < 0)
         goto cleanup;
 
-    if (virStorageFileGetMetadataInternal(src, buf, headerLen,
+    if (virStorageFileGetMetadataInternal(src, buf, headerLen, false,
                                           &backingFormat) < 0)
         goto cleanup;
 
