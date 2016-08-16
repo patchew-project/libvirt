@@ -947,6 +947,30 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
 
     actualType = virDomainNetGetActualType(net);
 
+
+    switch ((virDomainNetType) actualType) {
+    case VIR_DOMAIN_NET_TYPE_NETWORK:
+    case VIR_DOMAIN_NET_TYPE_ETHERNET:
+    case VIR_DOMAIN_NET_TYPE_DIRECT:
+    case VIR_DOMAIN_NET_TYPE_BRIDGE:
+    case VIR_DOMAIN_NET_TYPE_HOSTDEV:
+        /* These types are supported. */
+        break;
+
+    case VIR_DOMAIN_NET_TYPE_USER:
+    case VIR_DOMAIN_NET_TYPE_VHOSTUSER:
+    case VIR_DOMAIN_NET_TYPE_SERVER:
+    case VIR_DOMAIN_NET_TYPE_CLIENT:
+    case VIR_DOMAIN_NET_TYPE_MCAST:
+    case VIR_DOMAIN_NET_TYPE_INTERNAL:
+    case VIR_DOMAIN_NET_TYPE_UDP:
+    case VIR_DOMAIN_NET_TYPE_LAST:
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                       _("hotplug of interface type of %s is not implemented yet"),
+                       virDomainNetTypeToString(actualType));
+        goto cleanup;
+    }
+
     if (actualType == VIR_DOMAIN_NET_TYPE_HOSTDEV) {
         /* This is really a "smart hostdev", so it should be attached
          * as a hostdev (the hostdev code will reach over into the
