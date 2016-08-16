@@ -1108,7 +1108,7 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
 
     releaseaddr = true;
 
-    if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_NETDEV)) {
+    if (qemuDomainSupportsNetdev(vm->def, priv->qemuCaps, net)) {
         vlan = -1;
     } else {
         vlan = qemuDomainNetVLAN(net);
@@ -1134,7 +1134,7 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
             goto cleanup;
     }
 
-    if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_NETDEV)) {
+    if (qemuDomainSupportsNetdev(vm->def, priv->qemuCaps, net)) {
         if (!(netstr = qemuBuildHostNetStr(net, driver,
                                            ',', -1,
                                            tapfdName, tapfdSize,
@@ -1149,7 +1149,7 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
     }
 
     qemuDomainObjEnterMonitor(driver, vm);
-    if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_NETDEV)) {
+    if (qemuDomainSupportsNetdev(vm->def, priv->qemuCaps, net)) {
         if (qemuMonitorAddNetdev(priv->mon, netstr,
                                  tapfd, tapfdName, tapfdSize,
                                  vhostfd, vhostfdName, vhostfdSize) < 0) {
@@ -1195,7 +1195,7 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
         } else {
             qemuDomainObjEnterMonitor(driver, vm);
 
-            if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_NETDEV)) {
+            if (qemuDomainSupportsNetdev(vm->def, priv->qemuCaps, net)) {
                 if (qemuMonitorSetLink(priv->mon, net->info.alias, VIR_DOMAIN_NET_INTERFACE_LINK_STATE_DOWN) < 0) {
                     ignore_value(qemuDomainObjExitMonitor(driver, vm));
                     virDomainAuditNet(vm, NULL, net, "attach", false);
@@ -1278,7 +1278,7 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (vlan < 0) {
-        if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_NETDEV)) {
+        if (qemuDomainSupportsNetdev(vm->def, priv->qemuCaps, net)) {
             char *netdev_name;
             if (virAsprintf(&netdev_name, "host%s", net->info.alias) < 0)
                 goto cleanup;
@@ -3326,7 +3326,7 @@ qemuDomainRemoveNetDevice(virQEMUDriverPtr driver,
         goto cleanup;
 
     qemuDomainObjEnterMonitor(driver, vm);
-    if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_NETDEV)) {
+    if (qemuDomainSupportsNetdev(vm->def, priv->qemuCaps, net)) {
         if (qemuMonitorRemoveNetdev(priv->mon, hostnet_name) < 0) {
             if (qemuDomainObjExitMonitor(driver, vm) < 0)
                 goto cleanup;
