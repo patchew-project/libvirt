@@ -3670,7 +3670,13 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
         return NULL;
 
     case VIR_DOMAIN_NET_TYPE_VHOSTUSER:
-        /* Unsupported yet. */
+        virBufferAsprintf(&buf, "vhost-user%cchardev=char%s",
+                          type_sep,
+                          net->info.alias);
+        type_sep = ',';
+        if (net->driver.virtio.queues > 1)
+            virBufferAsprintf(&buf, ",queues=%u",
+                              net->driver.virtio.queues);
         break;
 
     case VIR_DOMAIN_NET_TYPE_LAST:
@@ -7854,14 +7860,15 @@ qemuBuildGraphicsCommandLine(virQEMUDriverConfigPtr cfg,
 }
 
 static int
-qemuBuildVhostuserCommandLine(virCommandPtr cmd,
+qemuBuildVhostuserCommandLine(virQEMUDriverPtr driver,
+                              virCommandPtr cmd,
                               virDomainDefPtr def,
                               virDomainNetDefPtr net,
                               virQEMUCapsPtr qemuCaps,
                               unsigned int bootindex)
 {
     char *chardev = NULL;
-    virBuffer netdev_buf = VIR_BUFFER_INITIALIZER;
+    char *netdev = NULL;
     unsigned int queues = net->driver.virtio.queues;
     char *nic = NULL;
 
@@ -7898,25 +7905,27 @@ qemuBuildVhostuserCommandLine(virCommandPtr cmd,
         goto error;
     }
 
-    virBufferAsprintf(&netdev_buf, "vhost-user,id=host%s,chardev=char%s",
-                      net->info.alias, net->info.alias);
-
-    if (queues > 1) {
-        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_VHOSTUSER_MULTIQUEUE)) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("multi-queue is not supported for vhost-user "
-                             "with this QEMU binary"));
-            goto error;
-        }
-        virBufferAsprintf(&netdev_buf, ",queues=%u", queues);
+    if (queues > 1 &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_VHOSTUSER_MULTIQUEUE)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("multi-queue is not supported for vhost-user "
+                         "with this QEMU binary"));
+        goto error;
     }
+
+    if (!(netdev = qemuBuildHostNetStr(net, driver,
+                                       ',', -1,
+                                       NULL, 0, NULL, 0)))
+        goto error;
+
 
     virCommandAddArg(cmd, "-chardev");
     virCommandAddArg(cmd, chardev);
     VIR_FREE(chardev);
 
     virCommandAddArg(cmd, "-netdev");
-    virCommandAddArgBuffer(cmd, &netdev_buf);
+    virCommandAddArg(cmd, netdev);
+    VIR_FREE(netdev);
 
     if (!(nic = qemuBuildNicDevStr(def, net, -1, bootindex,
                                    queues, qemuCaps))) {
@@ -7931,8 +7940,8 @@ qemuBuildVhostuserCommandLine(virCommandPtr cmd,
     return 0;
 
  error:
+    VIR_FREE(netdev);
     VIR_FREE(chardev);
-    virBufferFreeAndReset(&netdev_buf);
     VIR_FREE(nic);
 
     return -1;
@@ -7969,7 +7978,7 @@ qemuBuildInterfaceCommandLine(virCommandPtr cmd,
         bootindex = net->info.bootIndex;
 
     if (actualType == VIR_DOMAIN_NET_TYPE_VHOSTUSER)
-        return qemuBuildVhostuserCommandLine(cmd, def, net, qemuCaps, bootindex);
+        return qemuBuildVhostuserCommandLine(driver, cmd, def, net, qemuCaps, bootindex);
 
     if (actualType == VIR_DOMAIN_NET_TYPE_HOSTDEV) {
         /* NET_TYPE_HOSTDEV devices are really hostdev devices, so
