@@ -2684,7 +2684,7 @@ virStorageSourceParseBackingJSONUri(virStorageSourcePtr src,
 {
     const char *uri;
 
-    if (!(uri = virJSONValueObjectGetString(json, "uri"))) {
+    if (!(uri = virJSONValueObjectGetString(json, "url"))) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("missing URI in JSON backing volume definition"));
         return -1;
