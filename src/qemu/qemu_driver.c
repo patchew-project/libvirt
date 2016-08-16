@@ -4826,7 +4826,7 @@ qemuDomainSetVcpusFlags(virDomainPtr dom, unsigned int nvcpus,
     if (!(flags & VIR_DOMAIN_VCPU_MAXIMUM) && nvcpus > maxvcpus) {
         virReportError(VIR_ERR_INVALID_ARG,
                        _("requested vcpus is greater than max allowable"
-                         " vcpus for the domain: %d > %d"),
+                         " vcpus for the domain: %u > %u"),
                        nvcpus, maxvcpus);
         goto endjob;
     }
