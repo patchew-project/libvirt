@@ -7848,7 +7848,7 @@ qemuBuildVhostuserCommandLine(virCommandPtr cmd,
                               virQEMUCapsPtr qemuCaps,
                               unsigned int bootindex)
 {
-    virBuffer chardev_buf = VIR_BUFFER_INITIALIZER;
+    char *chardev = NULL;
     virBuffer netdev_buf = VIR_BUFFER_INITIALIZER;
     unsigned int queues = net->driver.virtio.queues;
     char *nic = NULL;
@@ -7861,9 +7861,10 @@ qemuBuildVhostuserCommandLine(virCommandPtr cmd,
 
     switch ((virDomainChrType) net->data.vhostuser->type) {
     case VIR_DOMAIN_CHR_TYPE_UNIX:
-        virBufferAsprintf(&chardev_buf, "socket,id=char%s,path=%s%s",
-                          net->info.alias, net->data.vhostuser->data.nix.path,
-                          net->data.vhostuser->data.nix.listen ? ",server" : "");
+        if (!(chardev = qemuBuildChrChardevStr(NULL, NULL, NULL, def,
+                                               net->data.vhostuser,
+                                               net->info.alias, qemuCaps, false)))
+            goto error;
         break;
 
     case VIR_DOMAIN_CHR_TYPE_NULL:
@@ -7881,7 +7882,7 @@ qemuBuildVhostuserCommandLine(virCommandPtr cmd,
     case VIR_DOMAIN_CHR_TYPE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("vhost-user type '%s' not supported"),
-                        virDomainChrTypeToString(net->data.vhostuser->type));
+                       virDomainChrTypeToString(net->data.vhostuser->type));
         goto error;
     }
 
@@ -7899,7 +7900,8 @@ qemuBuildVhostuserCommandLine(virCommandPtr cmd,
     }
 
     virCommandAddArg(cmd, "-chardev");
-    virCommandAddArgBuffer(cmd, &chardev_buf);
+    virCommandAddArg(cmd, chardev);
+    VIR_FREE(chardev);
 
     virCommandAddArg(cmd, "-netdev");
     virCommandAddArgBuffer(cmd, &netdev_buf);
@@ -7917,7 +7919,7 @@ qemuBuildVhostuserCommandLine(virCommandPtr cmd,
     return 0;
 
  error:
-    virBufferFreeAndReset(&chardev_buf);
+    VIR_FREE(chardev);
     virBufferFreeAndReset(&netdev_buf);
     VIR_FREE(nic);
 
