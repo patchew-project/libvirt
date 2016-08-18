@@ -198,6 +198,7 @@ void virLogOutputListFree(virLogOutputPtr *list, int count);
 void virLogFilterFree(virLogFilterPtr filter);
 void virLogFilterListFree(virLogFilterPtr *list, int count);
 int virLogSetOutputs(const char *outputs);
+int virLogSetFilters(const char *filters);
 
 /*
 * Internal logging API
