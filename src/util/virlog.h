@@ -239,5 +239,11 @@ int virLogFindOutput(virLogOutputPtr *outputs, size_t noutputs,
                      virLogDestination dest, const void *opaque);
 int virLogDefineOutputs(virLogOutputPtr *outputs, size_t noutputs);
 int virLogDefineFilters(virLogFilterPtr *filters, size_t nfilters);
+virLogOutputPtr virLogNewOutputToStderr(virLogPriority priority);
+virLogOutputPtr virLogNewOutputToFile(virLogPriority priority,
+                                      const char *file);
+virLogOutputPtr virLogNewOutputToSyslog(virLogPriority priority,
+                                        const char *ident);
+virLogOutputPtr virLogNewOutputToJournald(int priority);
 
 #endif
