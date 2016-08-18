@@ -1850,3 +1850,74 @@ virLogDefineFilters(virLogFilterPtr *filters, size_t nfilters)
 
     return virLogNbFilters;
 }
+
+virLogOutputPtr
+virLogParseOutput(const char *src)
+{
+    virLogOutputPtr ret = NULL;
+    char **tokens = NULL;
+    char *abspath = NULL;
+    size_t count = 0;
+    virLogPriority prio;
+    int dest;
+    bool isSUID = virIsSUID();
+
+    if (!src)
+        return NULL;
+
+    VIR_DEBUG("output=%s", src);
+
+    /* split our format prio:destination:additional_data to tokens and parse
+     * them individually
+     */
+    if (!(tokens = virStringSplitCount(src, ":", 0, &count)))
+        return NULL;
+
+    if (virStrToLong_uip(tokens[0], NULL, 10, &prio) < 0 ||
+        (prio < VIR_LOG_DEBUG) || (prio > VIR_LOG_ERROR))
+        goto cleanup;
+
+    if ((dest = virLogDestinationTypeFromString(tokens[1])) < 0)
+        goto cleanup;
+
+    if (((dest == VIR_LOG_TO_STDERR ||
+          dest == VIR_LOG_TO_JOURNALD) && count != 2) ||
+        ((dest == VIR_LOG_TO_FILE ||
+          dest == VIR_LOG_TO_SYSLOG) && count != 3))
+        goto cleanup;
+
+    /* if running with setuid, only 'stderr' is allowed */
+    if (isSUID && dest != VIR_LOG_TO_STDERR)
+        goto cleanup;
+
+    switch ((virLogDestination) dest) {
+    case VIR_LOG_TO_STDERR:
+        ret = virLogNewOutputToStderr(prio);
+        break;
+    case VIR_LOG_TO_SYSLOG:
+#if HAVE_SYSLOG_H
+        ret = virLogNewOutputToSyslog(prio, tokens[2]);
+#endif
+        break;
+    case VIR_LOG_TO_FILE:
+        if (virFileAbsPath(tokens[2], &abspath) < 0)
+            goto cleanup;
+        ret = virLogNewOutputToFile(prio, abspath);
+        VIR_FREE(abspath);
+        break;
+    case VIR_LOG_TO_JOURNALD:
+#if USE_JOURNALD
+        ret = virLogNewOutputToJournald(prio);
+#endif
+        break;
+    case VIR_LOG_TO_OUTPUT_LAST:
+        break;
+    }
+
+ cleanup:
+    if (!ret)
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Failed to parse and define log output %s"), src);
+    virStringFreeList(tokens);
+    return ret;
+}

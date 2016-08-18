@@ -245,5 +245,6 @@ virLogOutputPtr virLogNewOutputToFile(virLogPriority priority,
 virLogOutputPtr virLogNewOutputToSyslog(virLogPriority priority,
                                         const char *ident);
 virLogOutputPtr virLogNewOutputToJournald(int priority);
+virLogOutputPtr virLogParseOutput(const char *src);
 
 #endif
