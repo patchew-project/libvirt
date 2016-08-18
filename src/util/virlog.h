@@ -232,5 +232,8 @@ virLogOutputPtr virLogOutputNew(virLogOutputFunc f,
                                 virLogPriority priority,
                                 virLogDestination dest,
                                 const char *name);
+virLogFilterPtr virLogFilterNew(const char *match,
+                                virLogPriority priority,
+                                unsigned int flags);
 
 #endif
