@@ -2806,6 +2806,73 @@ bswap_header(virQEMUSaveHeaderPtr hdr)
 }
 
 
+static int
+qemuSaveHeaderCheck(int fd,
+                    virQEMUSaveHeaderPtr header,
+                    const char *path,
+                    bool unlink_corrupt)
+{
+    int ret = -1;
+
+    if (saferead(fd, header, sizeof(*header)) != sizeof(*header)) {
+        if (unlink_corrupt) {
+            if (VIR_CLOSE(fd) < 0 || unlink(path) < 0) {
+                virReportSystemError(errno,
+                                     _("cannot remove corrupt file: %s"),
+                                     path);
+                goto error;
+            }
+            return -3;
+        }
+        virReportError(VIR_ERR_OPERATION_FAILED,
+                       "%s", _("failed to read qemu header"));
+        goto error;
+    }
+
+    if (memcmp((*header).magic, QEMU_SAVE_MAGIC, sizeof((*header).magic)) != 0) {
+        const char *msg = _("image magic is incorrect");
+
+        if (memcmp((*header).magic, QEMU_SAVE_PARTIAL,
+                   sizeof((*header).magic)) == 0) {
+            msg = _("save image is incomplete");
+            if (unlink_corrupt) {
+                if (VIR_CLOSE(fd) < 0 || unlink(path) < 0) {
+                    virReportSystemError(errno,
+                                         _("cannot remove corrupt file: %s"),
+                                         path);
+                    goto error;
+                }
+                return -3;
+            }
+        }
+        virReportError(VIR_ERR_OPERATION_FAILED, "%s", msg);
+        goto error;
+    }
+
+    if ((*header).version > QEMU_SAVE_VERSION) {
+        /* convert endianess and try again */
+        bswap_header(header);
+    }
+
+    if ((*header).version > QEMU_SAVE_VERSION) {
+        virReportError(VIR_ERR_OPERATION_FAILED,
+                       _("image version is not supported (%d > %d)"),
+                       (*header).version, QEMU_SAVE_VERSION);
+        goto error;
+    }
+
+    if ((*header).xml_len <= 0) {
+        virReportError(VIR_ERR_OPERATION_FAILED,
+                       _("invalid XML length: %d"), (*header).xml_len);
+        goto error;
+    }
+
+    ret = 0;
+
+ error:
+    return ret;
+}
+
 /* return -errno on failure, or 0 on success */
 static int
 qemuDomainSaveHeader(int fd, const char *path, const char *xml,
@@ -2827,6 +2894,7 @@ qemuDomainSaveHeader(int fd, const char *path, const char *xml,
                        _("failed to write xml to '%s'"), path);
         goto endjob;
     }
+
  endjob:
     return ret;
 }
@@ -3067,6 +3135,24 @@ qemuDomainSaveMemory(virQEMUDriverPtr driver,
             goto cleanup;
         }
     }
+
+    /* don't overwrite exsited save files */
+    if (virFileExists(path)) {
+        virQEMUSaveHeader header_tmp;
+        fd = qemuOpenFile(driver, NULL, path, O_RDONLY, NULL, NULL);
+        if (fd < 0)
+            goto cleanup;
+
+        if (qemuSaveHeaderCheck(fd, &header_tmp, path, false) >= 0) {
+            ret = -EEXIST;
+            virReportError(VIR_ERR_OPERATION_FAILED,
+                           _("failed to write existed image file '%s'"),
+                           path);
+            goto cleanup;
+        }
+        VIR_FORCE_CLOSE(fd);
+    }
+
     fd = qemuOpenFile(driver, vm, path,
                       O_WRONLY | O_TRUNC | O_CREAT | directFlag,
                       &needUnlink, &bypassSecurityDriver);
@@ -6327,6 +6413,7 @@ qemuDomainSaveImageOpen(virQEMUDriverPtr driver,
                         bool unlink_corrupt)
 {
     int fd = -1;
+    int ret = -1;
     virQEMUSaveHeader header;
     char *xml = NULL;
     virDomainDefPtr def = NULL;
@@ -6353,58 +6440,8 @@ qemuDomainSaveImageOpen(virQEMUDriverPtr driver,
                                            VIR_FILE_WRAPPER_BYPASS_CACHE)))
         goto error;
 
-    if (saferead(fd, &header, sizeof(header)) != sizeof(header)) {
-        if (unlink_corrupt) {
-            if (VIR_CLOSE(fd) < 0 || unlink(path) < 0) {
-                virReportSystemError(errno,
-                                     _("cannot remove corrupt file: %s"),
-                                     path);
-                goto error;
-            }
-            return -3;
-        }
-        virReportError(VIR_ERR_OPERATION_FAILED,
-                       "%s", _("failed to read qemu header"));
+    if ((ret = qemuSaveHeaderCheck(fd, &header, path, unlink_corrupt)) < 0)
         goto error;
-    }
-
-    if (memcmp(header.magic, QEMU_SAVE_MAGIC, sizeof(header.magic)) != 0) {
-        const char *msg = _("image magic is incorrect");
-
-        if (memcmp(header.magic, QEMU_SAVE_PARTIAL,
-                   sizeof(header.magic)) == 0) {
-            msg = _("save image is incomplete");
-            if (unlink_corrupt) {
-                if (VIR_CLOSE(fd) < 0 || unlink(path) < 0) {
-                    virReportSystemError(errno,
-                                         _("cannot remove corrupt file: %s"),
-                                         path);
-                    goto error;
-                }
-                return -3;
-            }
-        }
-        virReportError(VIR_ERR_OPERATION_FAILED, "%s", msg);
-        goto error;
-    }
-
-    if (header.version > QEMU_SAVE_VERSION) {
-        /* convert endianess and try again */
-        bswap_header(&header);
-    }
-
-    if (header.version > QEMU_SAVE_VERSION) {
-        virReportError(VIR_ERR_OPERATION_FAILED,
-                       _("image version is not supported (%d > %d)"),
-                       header.version, QEMU_SAVE_VERSION);
-        goto error;
-    }
-
-    if (header.xml_len <= 0) {
-        virReportError(VIR_ERR_OPERATION_FAILED,
-                       _("invalid XML length: %d"), header.xml_len);
-        goto error;
-    }
 
     if (VIR_ALLOC_N(xml, header.xml_len) < 0)
         goto error;
@@ -6439,7 +6476,7 @@ qemuDomainSaveImageOpen(virQEMUDriverPtr driver,
     VIR_FORCE_CLOSE(fd);
     virObjectUnref(caps);
 
-    return -1;
+    return ret;
 }
 
 static int ATTRIBUTE_NONNULL(4) ATTRIBUTE_NONNULL(5) ATTRIBUTE_NONNULL(6)
