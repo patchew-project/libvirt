@@ -404,7 +404,7 @@ virLogDaemonSetupLogging(virLogDaemonConfigPtr config,
     virLogSetFromEnv();
 
     if (virLogGetNbFilters() == 0)
-        virLogParseAndDefineFilters(config->log_filters);
+        virLogSetFilters(config->log_filters);
 
     if (virLogGetNbOutputs() == 0)
         virLogSetOutputs(config->log_outputs);
