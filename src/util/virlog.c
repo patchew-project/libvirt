@@ -1966,3 +1966,82 @@ virLogParseFilter(const char *filter)
     virStringFreeList(tokens);
     return ret;
 }
+
+/**
+ * virLogParseOutputs:
+ * @src: string defining a (set of) output(s)
+ * @outputs: user-supplied list where parsed outputs from @src shall be stored
+ *
+ * The format for an output can be:
+ *    x:stderr
+ *       output goes to stderr
+ *    x:syslog:name
+ *       use syslog for the output and use the given name as the ident
+ *    x:file:file_path
+ *       output to a file, with the given filepath
+ * In all case the x prefix is the minimal level, acting as a filter
+ *    1: DEBUG
+ *    2: INFO
+ *    3: WARNING
+ *    4: ERROR
+ *
+ * Multiple outputs can be defined within @src string, they just need to be
+ * separated by spaces.
+ *
+ * If running in setuid mode, then only the 'stderr' output will
+ * be allowed
+ *
+ * Returns the number of outputs parsed or -1 in case of error.
+ */
+int
+virLogParseOutputs(const char *src, virLogOutputPtr **outputs)
+{
+    int ret = -1;
+    int at = -1;
+    size_t noutputs = 0;
+    size_t i;
+    char **strings = NULL;
+    virLogOutputPtr output = NULL;
+    virLogOutputPtr *list = NULL;
+
+    if (!src)
+        return -1;
+
+    VIR_DEBUG("outputs=%s", src);
+
+    if (!(strings = virStringSplit(src, " ", 0)))
+        goto cleanup;
+
+    for (i = 0; strings[i]; i++) {
+        /* virStringSplit may return empty strings */
+        if (STREQ(strings[i], ""))
+            continue;
+
+        if (!(output = virLogParseOutput(strings[i])))
+            goto cleanup;
+
+        /* let's check if a duplicate output does not already exist in which
+         * case we replace it with its last occurrence
+         */
+        if ((at = virLogFindOutput(list, noutputs, output->dest,
+                                   output->name)) >= 0) {
+            virLogOutputFree(list[at]);
+            VIR_DELETE_ELEMENT(list, at, noutputs);
+        }
+
+        if (VIR_APPEND_ELEMENT(list, noutputs, output) < 0) {
+            virLogOutputFree(output);
+            goto cleanup;
+        }
+
+        virLogOutputFree(output);
+    }
+
+    ret = noutputs;
+    *outputs = list;
+ cleanup:
+    if (ret < 0)
+        virLogOutputListFree(list, noutputs);
+    virStringFreeList(strings);
+    return ret;
+}
