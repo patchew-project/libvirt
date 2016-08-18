@@ -1707,3 +1707,29 @@ virLogDefineOutputs(virLogOutputPtr *outputs, size_t noutputs)
 
     return virLogNbOutputs;
 }
+
+
+/**
+ * virLogDefineFilters:
+ * @filters: new set of filters to be defined
+ * @nfilters: number of filters in @filters
+ *
+ * Resets any existing set of filters and defines a completely new one.
+ *
+ * Returns number of filters successfully defined or -1 in case of error;
+ */
+int
+virLogDefineFilters(virLogFilterPtr *filters, size_t nfilters)
+{
+    if (virLogInitialize() < 0)
+        return -1;
+
+    virLogLock();
+    virLogResetOutputs();
+    virLogFilters = filters;
+    virLogNbOutputs = nfilters;
+    virLogFiltersSerial++;
+    virLogUnlock();
+
+    return virLogNbFilters;
+}
