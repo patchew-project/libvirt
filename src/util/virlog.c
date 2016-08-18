@@ -220,7 +220,9 @@ int
 virLogSetDefaultPriority(virLogPriority priority)
 {
     if ((priority < VIR_LOG_DEBUG) || (priority > VIR_LOG_ERROR)) {
-        VIR_WARN("Ignoring invalid log level setting.");
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("Failed to set logging priority, argument '%u' is "
+                         "invalid"), priority);
         return -1;
     }
     if (virLogInitialize() < 0)
@@ -1158,20 +1160,15 @@ virLogGetNbOutputs(void)
 int
 virLogParseDefaultPriority(const char *priority)
 {
-    int ret = -1;
-
     if (STREQ(priority, "1") || STREQ(priority, "debug"))
-        ret = virLogSetDefaultPriority(VIR_LOG_DEBUG);
+        return VIR_LOG_DEBUG;
     else if (STREQ(priority, "2") || STREQ(priority, "info"))
-        ret = virLogSetDefaultPriority(VIR_LOG_INFO);
+        return VIR_LOG_INFO;
     else if (STREQ(priority, "3") || STREQ(priority, "warning"))
-        ret = virLogSetDefaultPriority(VIR_LOG_WARN);
+        return VIR_LOG_WARN;
     else if (STREQ(priority, "4") || STREQ(priority, "error"))
-        ret = virLogSetDefaultPriority(VIR_LOG_ERROR);
-    else
-        VIR_WARN("Ignoring invalid log level setting");
-
-    return ret;
+        return VIR_LOG_ERROR;
+    return -1;
 }
 
 
@@ -1191,7 +1188,7 @@ virLogSetFromEnv(void)
 
     debugEnv = virGetEnvAllowSUID("LIBVIRT_DEBUG");
     if (debugEnv && *debugEnv)
-        virLogParseDefaultPriority(debugEnv);
+        virLogSetDefaultPriority(virLogParseDefaultPriority(debugEnv));
     debugEnv = virGetEnvAllowSUID("LIBVIRT_LOG_FILTERS");
     if (debugEnv && *debugEnv)
         virLogSetFilters(debugEnv);
