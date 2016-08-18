@@ -248,5 +248,6 @@ virLogOutputPtr virLogNewOutputToJournald(int priority);
 virLogOutputPtr virLogParseOutput(const char *src);
 virLogFilterPtr virLogParseFilter(const char *src);
 int virLogParseOutputs(const char *src, virLogOutputPtr **outputs);
+int virLogParseFilters(const char *src, virLogFilterPtr **filters);
 
 #endif
