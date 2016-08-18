@@ -1921,3 +1921,48 @@ virLogParseOutput(const char *src)
     virStringFreeList(tokens);
     return ret;
 }
+
+virLogFilterPtr
+virLogParseFilter(const char *filter)
+{
+    virLogFilterPtr ret = NULL;
+    size_t count = 0;
+    virLogPriority prio;
+    char **tokens = NULL;
+    unsigned int flags = 0;
+    char *ref = NULL;
+
+    if (!filter)
+        return NULL;
+
+    VIR_DEBUG("filter=%s", filter);
+
+    if (!(tokens = virStringSplitCount(filter, ":", 0, &count)))
+        return NULL;
+
+    if (count != 2)
+        goto cleanup;
+
+    if (virStrToLong_uip(tokens[0], NULL, 10, &prio) < 0 ||
+        (prio < VIR_LOG_DEBUG) || (prio > VIR_LOG_ERROR))
+        goto cleanup;
+
+    ref = tokens[1];
+    if (ref[0] == '+') {
+        flags |= VIR_LOG_STACK_TRACE;
+        ref++;
+    }
+
+    if (!*ref)
+        goto cleanup;
+
+    if (!(ret = virLogFilterNew(ref, prio, flags)))
+        goto cleanup;
+
+ cleanup:
+    if (!ret)
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Failed to parse and define log filter %s"), filter);
+    virStringFreeList(tokens);
+    return ret;
+}
