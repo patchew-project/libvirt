@@ -1794,16 +1794,35 @@ virLogFindOutput(virLogOutputPtr *outputs, size_t noutputs,
 int
 virLogDefineOutputs(virLogOutputPtr *outputs, size_t noutputs)
 {
+    int ret = -1;
+    size_t i;
+    char *tmp = NULL;
+
     if (virLogInitialize() < 0)
         return -1;
 
     virLogLock();
     virLogResetOutputs();
+
+    /* nothing can go wrong now (except for malloc) and we're also holding the
+     * lock so it's safe to call openlog and change the message tag */
+    for (i = 0; i < noutputs; i++) {
+        if (outputs[i]->dest == VIR_LOG_TO_SYSLOG) {
+            if (VIR_STRDUP_QUIET(tmp, outputs[i]->name) < 0)
+                goto cleanup;
+            VIR_FREE(current_ident);
+            current_ident = tmp;
+            openlog(current_ident, 0, 0);
+        }
+    }
+
     virLogOutputs = outputs;
     virLogNbOutputs = noutputs;
-    virLogUnlock();
 
-    return virLogNbOutputs;
+    ret = virLogNbOutputs;
+ cleanup:
+    virLogUnlock();
+    return ret;
 }
 
 
