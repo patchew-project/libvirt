@@ -1847,6 +1847,7 @@ virLogDefineOutput;
 virLogFilterFree;
 virLogFilterListFree;
 virLogFilterNew;
+virLogFindOutput;
 virLogGetDefaultPriority;
 virLogGetFilters;
 virLogGetNbFilters;

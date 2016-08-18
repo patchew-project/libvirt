@@ -235,5 +235,7 @@ virLogOutputPtr virLogOutputNew(virLogOutputFunc f,
 virLogFilterPtr virLogFilterNew(const char *match,
                                 virLogPriority priority,
                                 unsigned int flags);
+int virLogFindOutput(virLogOutputPtr *outputs, size_t noutputs,
+                     virLogDestination dest, const void *opaque);
 
 #endif
