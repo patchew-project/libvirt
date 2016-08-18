@@ -639,7 +639,7 @@ virLogCloseFd(void *data)
 }
 
 
-virLogOutputPtr
+static virLogOutputPtr
 virLogNewOutputToStderr(virLogPriority priority)
 {
     return virLogOutputNew(virLogOutputToFd, NULL, (void *)2L, priority,
@@ -647,7 +647,7 @@ virLogNewOutputToStderr(virLogPriority priority)
 }
 
 
-virLogOutputPtr
+static virLogOutputPtr
 virLogNewOutputToFile(virLogPriority priority,
                       const char *file)
 {
@@ -733,7 +733,7 @@ virLogCloseSyslog(void *data ATTRIBUTE_UNUSED)
 }
 
 
-virLogOutputPtr
+static virLogOutputPtr
 virLogNewOutputToSyslog(virLogPriority priority,
                         const char *ident)
 {
@@ -980,7 +980,7 @@ static void virLogCloseJournald(void *data ATTRIBUTE_UNUSED)
 }
 
 
-virLogOutputPtr
+static virLogOutputPtr
 virLogNewOutputToJournald(int priority)
 {
     virLogOutputPtr ret = NULL;
@@ -1424,7 +1424,7 @@ virLogDefineFilters(virLogFilterPtr *filters, size_t nfilters)
     return virLogNbFilters;
 }
 
-virLogOutputPtr
+static virLogOutputPtr
 virLogParseOutput(const char *src)
 {
     virLogOutputPtr ret = NULL;
@@ -1495,7 +1495,7 @@ virLogParseOutput(const char *src)
     return ret;
 }
 
-virLogFilterPtr
+static virLogFilterPtr
 virLogParseFilter(const char *filter)
 {
     virLogFilterPtr ret = NULL;
