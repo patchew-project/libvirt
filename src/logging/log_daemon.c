@@ -407,7 +407,7 @@ virLogDaemonSetupLogging(virLogDaemonConfigPtr config,
         virLogParseAndDefineFilters(config->log_filters);
 
     if (virLogGetNbOutputs() == 0)
-        virLogParseAndDefineOutputs(config->log_outputs);
+        virLogSetOutputs(config->log_outputs);
 
     /*
      * Command line override for --verbose
@@ -427,7 +427,7 @@ virLogDaemonSetupLogging(virLogDaemonConfigPtr config,
         if (access("/run/systemd/journal/socket", W_OK) >= 0) {
             if (virAsprintf(&tmp, "%d:journald", virLogGetDefaultPriority()) < 0)
                 goto error;
-            virLogParseAndDefineOutputs(tmp);
+            virLogSetOutputs(tmp);
             VIR_FREE(tmp);
         }
     }
@@ -471,7 +471,7 @@ virLogDaemonSetupLogging(virLogDaemonConfigPtr config,
             if (virAsprintf(&tmp, "%d:stderr", virLogGetDefaultPriority()) < 0)
                 goto error;
         }
-        virLogParseAndDefineOutputs(tmp);
+        virLogSetOutputs(tmp);
         VIR_FREE(tmp);
     }
 

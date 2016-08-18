@@ -694,7 +694,7 @@ daemonSetupLogging(struct daemonConfig *config,
         virLogParseAndDefineFilters(config->log_filters);
 
     if (virLogGetNbOutputs() == 0)
-        virLogParseAndDefineOutputs(config->log_outputs);
+        virLogSetOutputs(config->log_outputs);
 
     /*
      * Command line override for --verbose
@@ -721,7 +721,7 @@ daemonSetupLogging(struct daemonConfig *config,
 
             if (virAsprintf(&tmp, "%d:journald", priority) < 0)
                 goto error;
-            virLogParseAndDefineOutputs(tmp);
+            virLogSetOutputs(tmp);
             VIR_FREE(tmp);
         }
     }
@@ -764,7 +764,7 @@ daemonSetupLogging(struct daemonConfig *config,
             if (virAsprintf(&tmp, "%d:stderr", virLogGetDefaultPriority()) < 0)
                 goto error;
         }
-        virLogParseAndDefineOutputs(tmp);
+        virLogSetOutputs(tmp);
         VIR_FREE(tmp);
     }
 
