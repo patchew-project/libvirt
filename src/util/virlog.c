@@ -1137,7 +1137,7 @@ int virLogPriorityFromSyslog(int priority ATTRIBUTE_UNUSED)
 
 
 static int
-virLogParseOutput(const char *src)
+virLogParseAndDefineOutput(const char *src)
 {
     int ret = -1;
     char **tokens = NULL;
@@ -1209,7 +1209,7 @@ virLogParseOutput(const char *src)
 
 
 /**
- * virLogParseOutputs:
+ * virLogParseAndDefineOutputs:
  * @outputs: string defining a (set of) output(s)
  *
  * The format for an output can be:
@@ -1234,7 +1234,7 @@ virLogParseOutput(const char *src)
  * Returns the number of output parsed or -1 in case of error.
  */
 int
-virLogParseOutputs(const char *src)
+virLogParseAndDefineOutputs(const char *src)
 {
     int ret = -1;
     int count = 0;
@@ -1254,7 +1254,7 @@ virLogParseOutputs(const char *src)
         if (STREQ(strings[i], ""))
             continue;
 
-        if (virLogParseOutput(strings[i]) < 0)
+        if (virLogParseAndDefineOutput(strings[i]) < 0)
             goto cleanup;
 
         count++;
@@ -1268,7 +1268,7 @@ virLogParseOutputs(const char *src)
 
 
 static int
-virLogParseFilter(const char *filter)
+virLogParseAndDefineFilter(const char *filter)
 {
     int ret = -1;
     size_t count = 0;
@@ -1314,7 +1314,7 @@ virLogParseFilter(const char *filter)
 }
 
 /**
- * virLogParseFilters:
+ * virLogParseAndDefineFilters:
  * @filters: string defining a (set of) filter(s)
  *
  * The format for a filter is:
@@ -1332,7 +1332,7 @@ virLogParseFilter(const char *filter)
  * Returns the number of filter parsed or -1 in case of error.
  */
 int
-virLogParseFilters(const char *filters)
+virLogParseAndDefineFilters(const char *filters)
 {
     int ret = -1;
     int count = 0;
@@ -1352,7 +1352,7 @@ virLogParseFilters(const char *filters)
         if (STREQ(strings[i], ""))
             continue;
 
-        if (virLogParseFilter(strings[i]) < 0)
+        if (virLogParseAndDefineFilter(strings[i]) < 0)
             goto cleanup;
 
         count++;
@@ -1530,10 +1530,10 @@ virLogSetFromEnv(void)
         virLogParseDefaultPriority(debugEnv);
     debugEnv = virGetEnvAllowSUID("LIBVIRT_LOG_FILTERS");
     if (debugEnv && *debugEnv)
-        virLogParseFilters(debugEnv);
+        virLogParseAndDefineFilters(debugEnv);
     debugEnv = virGetEnvAllowSUID("LIBVIRT_LOG_OUTPUTS");
     if (debugEnv && *debugEnv)
-        virLogParseOutputs(debugEnv);
+        virLogParseAndDefineOutputs(debugEnv);
 }
 
 
