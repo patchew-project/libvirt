@@ -2529,6 +2529,11 @@
                 </attribute>
               </optional>
               <optional>
+                <attribute name='rxqueuesize'>
+                  <ref name='positiveInteger'/>
+                </attribute>
+              </optional>
+              <optional>
                 <attribute name="txmode">
                   <choice>
                     <value>iothread</value>
