@@ -2262,6 +2262,7 @@ virSCSIDeviceListNew;
 virSCSIDeviceListSteal;
 virSCSIDeviceNew;
 virSCSIDeviceSetUsedBy;
+virSCSIOpenVhost;
 
 
 # util/virseclabel.h

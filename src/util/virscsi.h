@@ -33,6 +33,7 @@ typedef virSCSIDevice *virSCSIDevicePtr;
 typedef struct _virSCSIDeviceList virSCSIDeviceList;
 typedef virSCSIDeviceList *virSCSIDeviceListPtr;
 
+int virSCSIOpenVhost(int *vhostfd, size_t *vhostfdSize);
 char *virSCSIDeviceGetSgName(const char *sysfs_prefix,
                              const char *adapter,
                              unsigned int bus,
