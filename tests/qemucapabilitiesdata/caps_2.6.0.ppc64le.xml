@@ -153,6 +153,7 @@
   <flag name='display'/>
   <flag name='smm'/>
   <flag name='virtio-pci-disable-legacy'/>
+  <flag name='vhost-scsi'/>
   <version>2005094</version>
   <kvmVersion>0</kvmVersion>
   <package></package>

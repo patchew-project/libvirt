@@ -190,6 +190,7 @@
   <flag name='intel-iommu'/>
   <flag name='smm'/>
   <flag name='virtio-pci-disable-legacy'/>
+  <flag name='vhost-scsi'/>
   <version>2005000</version>
   <kvmVersion>0</kvmVersion>
   <package></package>

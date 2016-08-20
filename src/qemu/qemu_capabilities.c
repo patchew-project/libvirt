@@ -341,6 +341,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "intel-iommu",
               "smm",
               "virtio-pci-disable-legacy",
+              "vhost-scsi",
     );
 
 
@@ -1562,6 +1563,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "pxb-pcie", QEMU_CAPS_DEVICE_PXB_PCIE },
     { "tls-creds-x509", QEMU_CAPS_OBJECT_TLS_CREDS_X509 },
     { "intel-iommu", QEMU_CAPS_DEVICE_INTEL_IOMMU },
+    { "vhost-scsi", QEMU_CAPS_DEVICE_VHOST_SCSI },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {
