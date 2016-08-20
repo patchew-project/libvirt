@@ -107,6 +107,18 @@ virSCSIDeviceGetSgName(const char *sysfs_prefix ATTRIBUTE_UNUSED,
 }
 
 int
+virSCSIOpenVhost(int *vhostfd,
+                 size_t *vhostfdSize)
+{
+    size_t i;
+
+    for (i = 0; i < *vhostfdSize; i++)
+        vhostfd[i] = STDERR_FILENO + 1 + i;
+
+    return 0;
+}
+
+int
 virNetDevTapCreate(char **ifname,
                    const char *tunpath ATTRIBUTE_UNUSED,
                    int *tapfd,
