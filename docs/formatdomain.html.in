@@ -3126,7 +3126,7 @@
       &lt;address type='pci' domain='0x0000' bus='0x00' slot='0x0a' function='0x0'/&gt;
     &lt;/controller&gt;
     &lt;controller type='scsi' index='0' model='virtio-scsi'&gt;
-      &lt;driver iothread='4'&gt;
+      &lt;driver iothread='4' compatibility='modern'&gt;
       &lt;address type='pci' domain='0x0000' bus='0x00' slot='0x0b' function='0x0'/&gt;
     &lt;/controller&gt;
     ...
@@ -3237,6 +3237,13 @@
         multiple controllers must be defined each having a specific
         <code>iothread</code> value. The <code>iothread</code> value
         must be within the range 1 to the domain iothreads value.
+      </dd>
+      <dt><code>compatibility</code></dt>
+      <dd>
+        The <code>compatibility</code> attribute can be used to specify the
+        compatibility of virtio devices. Allowed values are <code>legacy</code>,
+        <code>transitional</code> and <code>modern</code>.
+        <span class="since">Since 2.2.0</span>.
       </dd>
     </dl>
     <p>

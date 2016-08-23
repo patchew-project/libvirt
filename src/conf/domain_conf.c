@@ -8283,6 +8283,9 @@ virDomainControllerDefParseXML(xmlNodePtr node,
         cur = cur->next;
     }
 
+    if (virDomainDriverCompatibilityParseXML(ctxt, &def->compatibility) < 0)
+        goto error;
+
     /* node is parsed differently from target attributes because
      * someone thought it should be a subelement instead...
      */
@@ -20243,6 +20246,10 @@ virDomainControllerDefFormat(virBufferPtr buf,
 
         if (def->iothread)
             virBufferAsprintf(&driverBuf, " iothread='%u'", def->iothread);
+
+        if (def->compatibility)
+            virBufferAsprintf(&driverBuf, " compatibility='%s'",
+                              virDomainDriverCompatibilityTypeToString(def->compatibility));
 
         if (virBufferUse(&driverBuf)) {
             virBufferAddLit(buf, "<driver");

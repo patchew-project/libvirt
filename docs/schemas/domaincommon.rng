@@ -1944,6 +1944,9 @@
             <optional>
               <ref name="driverIOThread"/>
             </optional>
+            <optional>
+              <ref name="compatibility"/>
+            </optional>
           </element>
         </optional>
       </interleave>
