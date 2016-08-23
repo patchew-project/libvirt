@@ -1322,6 +1322,7 @@ struct _virDomainVideoDef {
     bool primary;
     virDomainVideoAccelDefPtr accel;
     virDomainDeviceInfo info;
+    virDomainDriverCompatibility compatibility;
 };
 
 /* graphics console modes */

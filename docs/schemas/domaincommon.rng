@@ -3080,6 +3080,11 @@
   <define name="video">
     <element name="video">
       <optional>
+        <element name="driver">
+          <ref name="compatibility"/>
+        </element>
+      </optional>
+      <optional>
         <element name="model">
           <choice>
             <attribute name="type">

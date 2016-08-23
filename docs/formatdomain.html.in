@@ -5641,6 +5641,14 @@ qemu-kvm -net nic,model=? /dev/null
         The optional <code>address</code> sub-element can be used to
         tie the video device to a particular PCI slot.
       </dd>
+
+      <dt><code>driver</code></dt>
+      <dd>
+        The <code>compatibility</code> attribute can be used to specify the
+        compatibility of virtio devices. Allowed values are <code>legacy</code>,
+        <code>transitional</code> and <code>modern</code>.
+        <span class="since">Since 2.2.0</span>.
+      </dd>
     </dl>
 
     <h4><a name="elementsConsole">Consoles, serial, parallel &amp; channel devices</a></h4>

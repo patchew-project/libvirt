@@ -86,6 +86,7 @@
     <input type='mouse' bus='ps2'/>
     <input type='keyboard' bus='ps2'/>
     <video>
+      <driver compatibility='modern'/>
       <model type='virtio' heads='1' primary='yes'>
         <acceleration accel3d='yes'/>
       </model>
