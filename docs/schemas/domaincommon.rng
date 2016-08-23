@@ -2129,6 +2129,9 @@
           <value>immediate</value>
         </attribute>
       </optional>
+      <optional>
+        <ref name='compatibility'/>
+      </optional>
       <empty/>
     </element>
   </define>

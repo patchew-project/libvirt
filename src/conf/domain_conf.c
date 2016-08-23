@@ -8686,6 +8686,9 @@ virDomainFSDefParseXML(xmlNodePtr node,
             goto error;
     }
 
+    if (virDomainDriverCompatibilityParseXML(ctxt, &def->compatibility) < 0)
+        goto error;
+
     def->src->path = source;
     source = NULL;
     def->dst = target;
@@ -20333,6 +20336,11 @@ virDomainFSDefFormat(virBufferPtr buf,
 
     }
 
+    if (def->compatibility) {
+        virBufferAsprintf(&driverBuf, " compatibility='%s'",
+                          virDomainDriverCompatibilityTypeToString(def->compatibility));
+    }
+
     if (virBufferUse(&driverBuf)) {
         virBufferAddLit(buf, "<driver");
         virBufferAddBuffer(buf, &driverBuf);
@@ -20391,6 +20399,7 @@ virDomainFSDefFormat(virBufferPtr buf,
         virBufferAsprintf(buf, "<space_soft_limit unit='bytes'>"
                           "%llu</space_soft_limit>\n", def->space_soft_limit);
     }
+
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</filesystem>\n");
     return 0;
