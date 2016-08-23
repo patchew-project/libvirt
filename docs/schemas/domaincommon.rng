@@ -3792,6 +3792,11 @@
 
   <define name="input">
     <element name="input">
+      <optional>
+        <element name="driver">
+          <ref name="compatibility"/>
+        </element>
+      </optional>
       <choice>
         <group>
           <attribute name="type">

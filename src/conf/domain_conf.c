@@ -10730,6 +10730,9 @@ virDomainInputDefParseXML(const virDomainDef *dom,
         goto error;
     }
 
+    if (virDomainDriverCompatibilityParseXML(ctxt, &def->compatibility) < 0)
+        goto error;
+
  cleanup:
     VIR_FREE(evdev);
     VIR_FREE(type);
@@ -21972,6 +21975,10 @@ virDomainInputDefFormat(virBufferPtr buf,
                       type, bus);
 
     virBufferAdjustIndent(&childbuf, virBufferGetIndent(buf, false) + 2);
+    if (def->compatibility) {
+        virBufferAsprintf(&childbuf, "<driver compatibility='%s'/>\n",
+                          virDomainDriverCompatibilityTypeToString(def->compatibility));
+    }
     virBufferEscapeString(&childbuf, "<source evdev='%s'/>\n", def->source.evdev);
     if (virDomainDeviceInfoFormat(&childbuf, &def->info, flags) < 0)
         return -1;

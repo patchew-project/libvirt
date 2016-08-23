@@ -1229,6 +1229,7 @@ struct _virDomainInputDef {
         char *evdev;
     } source;
     virDomainDeviceInfo info;
+    virDomainDriverCompatibility compatibility;
 };
 
 typedef enum {
