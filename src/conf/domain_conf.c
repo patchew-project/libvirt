@@ -834,6 +834,13 @@ VIR_ENUM_IMPL(virDomainLoader,
               "rom",
               "pflash")
 
+VIR_ENUM_IMPL(virDomainDriverCompatibility,
+              VIR_DOMAIN_DRIVER_COMPATIBILITY_LAST,
+              "default",
+              "legacy",
+              "transitional",
+              "modern")
+
 /* Internal mapping: subset of block job types that can be present in
  * <mirror> XML (remaining types are not two-phase). */
 VIR_ENUM_DECL(virDomainBlockJob)
@@ -1057,6 +1064,31 @@ virDomainXMLNamespacePtr
 virDomainXMLOptionGetNamespace(virDomainXMLOptionPtr xmlopt)
 {
     return &xmlopt->ns;
+}
+
+static int
+virDomainDriverCompatibilityParseXML(xmlXPathContextPtr ctxt,
+                                     virDomainDriverCompatibility *res)
+{
+    char *str = NULL;
+    int ret = -1;
+    int val;
+
+    if (!(str = virXPathString("string(./driver/@compatibility)", ctxt)))
+        return 0;
+
+    if ((val = virDomainDriverCompatibilityTypeFromString(str)) < 0) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("unable to parse the compatibility attribute"));
+        goto cleanup;
+    }
+
+    *res = val;
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(str);
+    return ret;
 }
 
 
@@ -12065,6 +12097,9 @@ virDomainMemballoonDefParseXML(xmlNodePtr node,
     else if (virDomainDeviceInfoParseXML(node, NULL, &def->info, flags) < 0)
         goto error;
 
+    if (virDomainDriverCompatibilityParseXML(ctxt, &def->compatibility) < 0)
+        goto error;
+
  cleanup:
     VIR_FREE(model);
     VIR_FREE(deflate);
@@ -21504,6 +21539,11 @@ virDomainMemballoonDefFormat(virBufferPtr buf,
         virDomainDeviceInfoFormat(&childrenBuf, &def->info, flags) < 0) {
         virBufferFreeAndReset(&childrenBuf);
         return -1;
+    }
+
+    if (def->compatibility) {
+        virBufferAsprintf(&childrenBuf, "<driver compatibility='%s'/>\n",
+                          virDomainDriverCompatibilityTypeToString(def->compatibility));
     }
 
     if (!virBufferUse(&childrenBuf)) {

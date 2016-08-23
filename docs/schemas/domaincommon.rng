@@ -3612,6 +3612,11 @@
             </attribute>
           </element>
         </optional>
+        <optional>
+          <element name="driver">
+            <ref name="compatibility"/>
+          </element>
+        </optional>
       </interleave>
     </element>
   </define>
@@ -4828,6 +4833,16 @@
       </optional>
       <empty/>
     </element>
+  </define>
+
+  <define name="compatibility">
+    <attribute name="compatibility">
+      <choice>
+        <value>legacy</value>
+        <value>transitional</value>
+        <value>modern</value>
+      </choice>
+    </attribute>
   </define>
 
   <define name="usbmaster">

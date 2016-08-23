@@ -154,6 +154,14 @@ typedef virDomainTPMDef *virDomainTPMDefPtr;
 typedef struct _virDomainIOMMUDef virDomainIOMMUDef;
 typedef virDomainIOMMUDef *virDomainIOMMUDefPtr;
 
+typedef enum {
+    VIR_DOMAIN_DRIVER_COMPATIBILITY_DEFAULT,
+    VIR_DOMAIN_DRIVER_COMPATIBILITY_LEGACY,
+    VIR_DOMAIN_DRIVER_COMPATIBILITY_TRANSITIONAL,
+    VIR_DOMAIN_DRIVER_COMPATIBILITY_MODERN,
+    VIR_DOMAIN_DRIVER_COMPATIBILITY_LAST,
+} virDomainDriverCompatibility;
+
 /* Flags for the 'type' field in virDomainDeviceDef */
 typedef enum {
     VIR_DOMAIN_DEVICE_NONE = 0,
@@ -1546,6 +1554,7 @@ struct _virDomainMemballoonDef {
     virDomainDeviceInfo info;
     int period; /* seconds between collections */
     int autodeflate; /* enum virTristateSwitch */
+    virDomainDriverCompatibility compatibility;
 };
 
 struct _virDomainNVRAMDef {
@@ -3022,6 +3031,7 @@ VIR_ENUM_DECL(virDomainTPMBackend)
 VIR_ENUM_DECL(virDomainMemoryModel)
 VIR_ENUM_DECL(virDomainMemoryBackingModel)
 VIR_ENUM_DECL(virDomainIOMMUModel)
+VIR_ENUM_DECL(virDomainDriverCompatibility)
 /* from libvirt.h */
 VIR_ENUM_DECL(virDomainState)
 VIR_ENUM_DECL(virDomainNostateReason)
