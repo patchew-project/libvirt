@@ -12044,6 +12044,9 @@ virDomainRNGDefParseXML(xmlNodePtr node,
     if (virDomainDeviceInfoParseXML(node, NULL, &def->info, flags) < 0)
         goto error;
 
+    if (virDomainDriverCompatibilityParseXML(ctxt, &def->compatibility) < 0)
+        goto error;
+
  cleanup:
     VIR_FREE(model);
     VIR_FREE(backend);
@@ -21747,6 +21750,11 @@ virDomainRNGDefFormat(virBufferPtr buf,
 
     case VIR_DOMAIN_RNG_BACKEND_LAST:
         break;
+    }
+
+    if (def->compatibility) {
+        virBufferAsprintf(buf, "<driver compatibility='%s'/>",
+                          virDomainDriverCompatibilityTypeToString(def->compatibility));
     }
 
     if (virDomainDeviceInfoNeedsFormat(&def->info, flags)) {

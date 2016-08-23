@@ -1947,6 +1947,7 @@ struct _virDomainRNGDef {
     } source;
 
     virDomainDeviceInfo info;
+    virDomainDriverCompatibility compatibility;
 };
 
 typedef enum {
