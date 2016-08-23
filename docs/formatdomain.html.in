@@ -4739,6 +4739,13 @@ qemu-kvm -net nic,model=? /dev/null
         <span class="since">virtio-net since 1.0.6 (QEMU and KVM only)</span>
         <span class="since">vhost-user since 1.2.17 (QEMU and KVM only)</span>
       </dd>
+      <dt><code>compatibility</code></dt>
+      <dd>
+        The <code>compatibility</code> attribute can be used to specify the
+        compatibility of virtio devices. Allowed values are <code>legacy</code>,
+        <code>transitional</code> and <code>modern</code>.
+        <span class="since">Since 2.2.0</span>.
+      </dd>
     </dl>
     <p>
       Offloading options for the host and guest can be configured using

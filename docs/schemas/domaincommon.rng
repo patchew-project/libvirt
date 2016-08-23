@@ -2553,6 +2553,9 @@
               </optional>
             </group>
           </choice>
+          <optional>
+            <ref name="compatibility"/>
+          </optional>
           <interleave>
             <optional>
               <element name='host'>

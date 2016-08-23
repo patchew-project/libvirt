@@ -994,6 +994,7 @@ struct _virDomainNetDef {
     virNetDevVlan vlan;
     int trustGuestRxFilters; /* enum virTristateBool */
     int linkstate;
+    virDomainDriverCompatibility compatibility;
 };
 
 /* Used for prefix of ifname of any network name generated dynamically

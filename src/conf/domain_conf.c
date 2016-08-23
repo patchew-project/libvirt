@@ -9664,6 +9664,9 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
         goto error;
     }
 
+    if (virDomainDriverCompatibilityParseXML(ctxt, &def->compatibility) < 0)
+        goto error;
+
  cleanup:
     ctxt->node = oldnode;
     VIR_FREE(macaddr);
@@ -20832,7 +20835,10 @@ virDomainVirtioNetDriverFormat(char **outstr,
     }
     if (def->driver.virtio.queues)
         virBufferAsprintf(&buf, "queues='%u' ", def->driver.virtio.queues);
-
+    if (def->compatibility) {
+        virBufferAsprintf(&buf, "compatibility='%s'",
+                          virDomainDriverCompatibilityTypeToString(def->compatibility));
+    }
     virBufferTrim(&buf, " ", -1);
 
     if (virBufferCheckError(&buf) < 0)
