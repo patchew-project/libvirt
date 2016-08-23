@@ -7671,6 +7671,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
         }
     }
 
+    if (virDomainDriverCompatibilityParseXML(ctxt, &def->compatibility) < 0)
+        goto error;
+
     /* Disk volume types will have authentication information handled in
      * virStorageTranslateDiskSourcePool
      */
@@ -19921,6 +19924,10 @@ virDomainDiskDefFormat(virBufferPtr buf,
         virBufferAsprintf(&driverBuf, " iothread='%u'", def->iothread);
     if (def->detect_zeroes)
         virBufferAsprintf(&driverBuf, " detect_zeroes='%s'", detect_zeroes);
+    if (def->compatibility) {
+        virBufferAsprintf(&driverBuf, " compatibility='%s'",
+                          virDomainDriverCompatibilityTypeToString(def->compatibility));
+    }
     if (virBufferUse(&driverBuf)) {
         virBufferAddLit(buf, "<driver");
         virBufferAddBuffer(buf, &driverBuf);

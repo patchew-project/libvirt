@@ -2084,7 +2084,7 @@
       &lt;target dev='vdc' bus='virtio'/&gt;
     &lt;/disk&gt;
     &lt;disk type='file' device='disk'&gt;
-      &lt;driver name='qemu' type='qcow2'/&gt;
+      &lt;driver name='qemu' type='qcow2' compatibility='modern'/&gt;
       &lt;source file='/var/lib/libvirt/images/domain.qcow'/&gt;
       &lt;backingStore type='file'&gt;
         &lt;format type='qcow2'/&gt;
@@ -2666,6 +2666,12 @@
             for a disk device <code>target</code> configured to use "virtio"
             <code>bus</code> and "pci" or "ccw" <code>address</code> types.
             <span class='since'>Since 1.2.8 (QEMU 2.1)</span>
+          </li>
+          <li>
+            The <code>compatibility</code> attribute can be used to specify
+            the compatibility of virtio devices. Allowed values are
+            <code>legacy</code>, <code>transitional</code> and <code>modern</code>.
+            <span class="since">Since 2.2.0</span>.
           </li>
         </ul>
       </dd>

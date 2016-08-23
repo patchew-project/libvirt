@@ -1641,6 +1641,9 @@
       <optional>
         <ref name="detect_zeroes"/>
       </optional>
+      <optional>
+        <ref name="compatibility"/>
+      </optional>
       <empty/>
     </element>
   </define>
