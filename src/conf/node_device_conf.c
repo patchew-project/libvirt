@@ -218,6 +218,7 @@ void virNodeDeviceObjRemove(virNodeDeviceObjListPtr devs,
         if (devs->objs[i] == dev) {
             virNodeDeviceObjUnlock(dev);
             virNodeDeviceObjFree(devs->objs[i]);
+            *(void**)dev = NULL;
 
             VIR_DELETE_ELEMENT(devs->objs, i, devs->count);
             break;
