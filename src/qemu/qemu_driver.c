@@ -14389,7 +14389,8 @@ qemuDomainSnapshotCreateActiveExternal(virConnectPtr conn,
             goto cleanup;
 
         if ((ret = qemuDomainSaveMemory(driver, vm, snap->def->file,
-                                        xml, compressed, resume, 0,
+                                        xml, compressed, resume,
+                                        VIR_DOMAIN_SAVE_BYPASS_CACHE,
                                         QEMU_ASYNC_JOB_SNAPSHOT)) < 0)
             goto cleanup;
 
