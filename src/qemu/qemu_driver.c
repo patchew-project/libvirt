@@ -4730,6 +4730,17 @@ qemuDomainSetVcpusMax(virQEMUDriverPtr driver,
         goto cleanup;
     }
 
+    if (persistentDef && persistentDef->cpu && persistentDef->cpu->sockets) {
+        /* explicitly allow correcting invalid vcpu count */
+        if (nvcpus != persistentDef->cpu->sockets *
+                      persistentDef->cpu->cores *
+                      persistentDef->cpu->threads) {
+            virReportError(VIR_ERR_INVALID_ARG, "%s",
+                           _("CPU topology doesn't match the desired vcpu count"));
+            goto cleanup;
+        }
+    }
+
     if (virDomainDefSetVcpusMax(persistentDef, nvcpus, driver->xmlopt) < 0)
         goto cleanup;
 
