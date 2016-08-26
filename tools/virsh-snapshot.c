@@ -160,6 +160,10 @@ static const vshCmdOptDef opts_snapshot_create[] = {
      .type = VSH_OT_BOOL,
      .help = N_("require atomic operation")
     },
+    {.name = "bypass-cache",
+     .type = VSH_OT_BOOL,
+     .help = N_("bypass system cache while writing external checkpoints")
+    },
     VIRSH_COMMON_OPT_LIVE(N_("take a live snapshot")),
     {.name = NULL}
 };
@@ -191,6 +195,8 @@ cmdSnapshotCreate(vshControl *ctl, const vshCmd *cmd)
         flags |= VIR_DOMAIN_SNAPSHOT_CREATE_ATOMIC;
     if (vshCommandOptBool(cmd, "live"))
         flags |= VIR_DOMAIN_SNAPSHOT_CREATE_LIVE;
+    if (vshCommandOptBool(cmd, "bypass-cache"))
+        flags |= VIR_DOMAIN_SNAPSHOT_CREATE_BYPASS_CACHE;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         goto cleanup;
@@ -358,6 +364,10 @@ static const vshCmdOptDef opts_snapshot_create_as[] = {
      .type = VSH_OT_BOOL,
      .help = N_("require atomic operation")
     },
+    {.name = "bypass-cache",
+     .type = VSH_OT_BOOL,
+     .help = N_("bypass system cache while writing external checkpoints")
+    },
     VIRSH_COMMON_OPT_LIVE(N_("take a live snapshot")),
     {.name = "memspec",
      .type = VSH_OT_STRING,
@@ -404,6 +414,8 @@ cmdSnapshotCreateAs(vshControl *ctl, const vshCmd *cmd)
         flags |= VIR_DOMAIN_SNAPSHOT_CREATE_ATOMIC;
     if (vshCommandOptBool(cmd, "live"))
         flags |= VIR_DOMAIN_SNAPSHOT_CREATE_LIVE;
+    if (vshCommandOptBool(cmd, "bypass-cache"))
+        flags |= VIR_DOMAIN_SNAPSHOT_CREATE_BYPASS_CACHE;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;

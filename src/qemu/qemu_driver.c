@@ -14308,6 +14308,7 @@ qemuDomainSnapshotCreateActiveExternal(virConnectPtr conn,
     bool pmsuspended = false;
     virQEMUDriverConfigPtr cfg = NULL;
     int compressed = QEMU_SAVE_FORMAT_RAW;
+    unsigned int save_memory_flag = 0;
 
     /* If quiesce was requested, then issue a freeze command, and a
      * counterpart thaw command when it is actually sent to agent.
@@ -14388,8 +14389,12 @@ qemuDomainSnapshotCreateActiveExternal(virConnectPtr conn,
         if (!(xml = qemuDomainDefFormatLive(driver, vm->def, true, true)))
             goto cleanup;
 
+        if (flags & VIR_DOMAIN_SNAPSHOT_CREATE_BYPASS_CACHE)
+            save_memory_flag |= VIR_DOMAIN_SAVE_BYPASS_CACHE;
+
         if ((ret = qemuDomainSaveMemory(driver, vm, snap->def->file,
-                                        xml, compressed, resume, 0,
+                                        xml, compressed, resume,
+                                        save_memory_flag,
                                         QEMU_ASYNC_JOB_SNAPSHOT)) < 0)
             goto cleanup;
 
@@ -14496,7 +14501,8 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
                   VIR_DOMAIN_SNAPSHOT_CREATE_REUSE_EXT |
                   VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE |
                   VIR_DOMAIN_SNAPSHOT_CREATE_ATOMIC |
-                  VIR_DOMAIN_SNAPSHOT_CREATE_LIVE, NULL);
+                  VIR_DOMAIN_SNAPSHOT_CREATE_LIVE |
+                  VIR_DOMAIN_SNAPSHOT_CREATE_BYPASS_CACHE, NULL);
 
     VIR_REQUIRE_FLAG_RET(VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE,
                          VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY,
@@ -14566,6 +14572,16 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("live snapshot creation is supported only "
                          "with external checkpoints"));
+        goto cleanup;
+    }
+
+    /* the option of bypass cache is only supported for external checkpoints */
+    if (flags & VIR_DOMAIN_SNAPSHOT_CREATE_BYPASS_CACHE &&
+         (def->memory != VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL ||
+         redefine)) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("only external memory snapshots support "
+                         "cache bypass."));
         goto cleanup;
     }
 
