@@ -3220,6 +3220,34 @@ libxlDomainAttachHostUSBDevice(libxlDriverPrivatePtr driver,
 #endif
 
 static int
+libxlDomainAttachMemory(libxlDriverPrivatePtr driver,
+                        virDomainObjPtr vm,
+                        virDomainMemoryDefPtr mem)
+{
+    int res = -1;
+    libxlDriverConfigPtr cfg = libxlDriverConfigGet(driver);
+
+    if (mem->targetNode != 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Non-zero target node is not supported."));
+        goto out;
+    }
+
+    /* Unlock virDomainObj while attaching memory */
+    virObjectUnlock(vm);
+    res = libxl_set_memory_target(cfg->ctx, vm->def->id, mem->size, 1, 1);
+    virObjectLock(vm);
+    if (res < 0)
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Failed to attach %lluKB memory for domain %d"),
+                       mem->size, vm->def->id);
+
+ out:
+    virDomainMemoryDefFree(mem);
+    return res;
+}
+
+static int
 libxlDomainAttachHostDevice(libxlDriverPrivatePtr driver,
                             virDomainObjPtr vm,
                             virDomainHostdevDefPtr hostdev)
@@ -3425,6 +3453,13 @@ libxlDomainAttachDeviceLive(libxlDriverPrivatePtr driver,
                                               dev->data.hostdev);
             if (!ret)
                 dev->data.hostdev = NULL;
+            break;
+
+        case VIR_DOMAIN_DEVICE_MEMORY:
+            /* Note that libxlDomainAttachMemory always consumes
+             * dev->data.memory. */
+            ret = libxlDomainAttachMemory(driver, vm, dev->data.memory);
+            dev->data.memory = NULL;
             break;
 
         default:

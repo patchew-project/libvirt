@@ -415,6 +415,7 @@ virDomainDefParserConfig libxlDomainDefParserConfig = {
     .macPrefix = { 0x00, 0x16, 0x3e },
     .devicesPostParseCallback = libxlDomainDeviceDefPostParse,
     .domainPostParseCallback = libxlDomainDefPostParse,
+    .features = VIR_DOMAIN_DEF_FEATURE_MEMORY_HOTPLUG
 };
 
 
