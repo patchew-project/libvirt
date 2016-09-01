@@ -16213,6 +16213,7 @@ qemuDomainBlockJobAbort(virDomainPtr dom,
     bool pivot = !!(flags & VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT);
     bool async = !!(flags & VIR_DOMAIN_BLOCK_JOB_ABORT_ASYNC);
     virDomainObjPtr vm;
+    unsigned long long now;
     int ret = -1;
 
     virCheckFlags(VIR_DOMAIN_BLOCK_JOB_ABORT_ASYNC |
@@ -16302,7 +16303,12 @@ qemuDomainBlockJobAbort(virDomainPtr dom,
             qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
             qemuBlockJobUpdate(driver, vm, disk);
             while (diskPriv->blockjob) {
-                if (virDomainObjWait(vm) < 0) {
+                if (virTimeMillisNow(&now) < 0) {
+                    ret = -1;
+                    goto endjob;
+                }
+
+                if (virDomainObjWaitUntil(vm, now + BLOCK_JOB_ABORT_TIMEOUT) < 0) {
                     ret = -1;
                     goto endjob;
                 }

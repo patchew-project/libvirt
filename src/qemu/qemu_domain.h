@@ -61,6 +61,8 @@
     (JOB_MASK(QEMU_JOB_DESTROY) |       \
      JOB_MASK(QEMU_JOB_ASYNC))
 
+# define BLOCK_JOB_ABORT_TIMEOUT 5000
+
 /* Only 1 job is allowed at any time
  * A job includes *all* monitor commands, even those just querying
  * information, not merely actions */
