@@ -3071,6 +3071,7 @@ vzConnectSupportsFeature(virConnectPtr conn ATTRIBUTE_UNUSED, int feature)
         return -1;
 
     switch (feature) {
+    case VIR_DRV_FEATURE_MIGRATION_V3:
     case VIR_DRV_FEATURE_MIGRATION_PARAMS:
     case VIR_DRV_FEATURE_MIGRATION_P2P:
         return 1;
