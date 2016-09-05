@@ -3714,7 +3714,7 @@ lxcDomainAttachDeviceMknodHelper(pid_t pid ATTRIBUTE_UNUSED,
      * to that normally implied by the device name
      */
     VIR_DEBUG("Creating dev %s (%d,%d)",
-              data->file, major(data->dev), minor(data->dev));
+              data->file, gnu_dev_major(data->dev), gnu_dev_minor(data->dev));
     if (mknod(data->file, data->mode, data->dev) < 0) {
         virReportSystemError(errno,
                              _("Unable to create device %s"),
@@ -3895,8 +3895,8 @@ lxcDomainAttachDeviceDiskLive(virLXCDriverPtr driver,
 
     if (virCgroupAllowDevice(priv->cgroup,
                              'b',
-                             major(sb.st_rdev),
-                             minor(sb.st_rdev),
+                             gnu_dev_major(sb.st_rdev),
+                             gnu_dev_minor(sb.st_rdev),
                              perms) < 0)
         goto cleanup;
 
@@ -3915,8 +3915,8 @@ lxcDomainAttachDeviceDiskLive(virLXCDriverPtr driver,
                                    file) < 0) {
         if (virCgroupDenyDevice(priv->cgroup,
                                 'b',
-                                major(sb.st_rdev),
-                                minor(sb.st_rdev),
+                                gnu_dev_major(sb.st_rdev),
+                                gnu_dev_minor(sb.st_rdev),
                                 perms) < 0)
             VIR_WARN("cannot deny device %s for domain %s",
                      src, vm->def->name);
@@ -4152,8 +4152,8 @@ lxcDomainAttachDeviceHostdevStorageLive(virLXCDriverPtr driver,
 
     if (virCgroupAllowDevice(priv->cgroup,
                              'b',
-                             major(sb.st_rdev),
-                             minor(sb.st_rdev),
+                             gnu_dev_major(sb.st_rdev),
+                             gnu_dev_minor(sb.st_rdev),
                              VIR_CGROUP_DEVICE_RWM) < 0)
         goto cleanup;
 
@@ -4165,8 +4165,8 @@ lxcDomainAttachDeviceHostdevStorageLive(virLXCDriverPtr driver,
                                    def->source.caps.u.storage.block) < 0) {
         if (virCgroupDenyDevice(priv->cgroup,
                                 'b',
-                                major(sb.st_rdev),
-                                minor(sb.st_rdev),
+                                gnu_dev_major(sb.st_rdev),
+                                gnu_dev_minor(sb.st_rdev),
                                 VIR_CGROUP_DEVICE_RWM) < 0)
             VIR_WARN("cannot deny device %s for domain %s",
                      def->source.caps.u.storage.block, vm->def->name);
@@ -4221,8 +4221,8 @@ lxcDomainAttachDeviceHostdevMiscLive(virLXCDriverPtr driver,
 
     if (virCgroupAllowDevice(priv->cgroup,
                              'c',
-                             major(sb.st_rdev),
-                             minor(sb.st_rdev),
+                             gnu_dev_major(sb.st_rdev),
+                             gnu_dev_minor(sb.st_rdev),
                              VIR_CGROUP_DEVICE_RWM) < 0)
         goto cleanup;
 
@@ -4237,8 +4237,8 @@ lxcDomainAttachDeviceHostdevMiscLive(virLXCDriverPtr driver,
                                    def->source.caps.u.misc.chardev) < 0) {
         if (virCgroupDenyDevice(priv->cgroup,
                                 'c',
-                                major(sb.st_rdev),
-                                minor(sb.st_rdev),
+                                gnu_dev_major(sb.st_rdev),
+                                gnu_dev_minor(sb.st_rdev),
                                 VIR_CGROUP_DEVICE_RWM) < 0)
             VIR_WARN("cannot deny device %s for domain %s",
                      def->source.caps.u.storage.block, vm->def->name);

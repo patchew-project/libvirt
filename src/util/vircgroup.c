@@ -765,7 +765,7 @@ virCgroupGetBlockDevString(const char *path)
 
     /* Automatically append space after the string since all callers
      * use it anyway */
-    if (virAsprintf(&ret, "%d:%d ", major(sb.st_rdev), minor(sb.st_rdev)) < 0)
+    if (virAsprintf(&ret, "%d:%d ", gnu_dev_major(sb.st_rdev), gnu_dev_minor(sb.st_rdev)) < 0)
         return NULL;
 
     return ret;
@@ -2941,8 +2941,8 @@ virCgroupAllowDevicePath(virCgroupPtr group,
 
     return virCgroupAllowDevice(group,
                                 S_ISCHR(sb.st_mode) ? 'c' : 'b',
-                                major(sb.st_rdev),
-                                minor(sb.st_rdev),
+                                gnu_dev_major(sb.st_rdev),
+                                gnu_dev_minor(sb.st_rdev),
                                 perms);
 }
 
@@ -3032,8 +3032,8 @@ virCgroupDenyDevicePath(virCgroupPtr group,
 
     return virCgroupDenyDevice(group,
                                S_ISCHR(sb.st_mode) ? 'c' : 'b',
-                               major(sb.st_rdev),
-                               minor(sb.st_rdev),
+                               gnu_dev_major(sb.st_rdev),
+                               gnu_dev_minor(sb.st_rdev),
                                perms);
 }
 

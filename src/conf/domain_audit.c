@@ -52,8 +52,8 @@ virDomainAuditGetRdev(const char *path)
 
     if (stat(path, &sb) == 0 &&
         (S_ISCHR(sb.st_mode) || S_ISBLK(sb.st_mode))) {
-        int maj = major(sb.st_rdev);
-        int min = minor(sb.st_rdev);
+        int maj = gnu_dev_major(sb.st_rdev);
+        int min = gnu_dev_minor(sb.st_rdev);
         ignore_value(virAsprintfQuiet(&ret, "%02X:%02X", maj, min));
     }
     return ret;

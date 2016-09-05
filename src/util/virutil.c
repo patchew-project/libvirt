@@ -1616,7 +1616,7 @@ virIsDevMapperDevice(const char *dev_name)
 
     if (!stat(dev_name, &buf) &&
         S_ISBLK(buf.st_mode) &&
-        dm_is_dm_major(major(buf.st_rdev)))
+        dm_is_dm_major(gnu_dev_major(buf.st_rdev)))
             return true;
 
     return false;
@@ -1664,9 +1664,9 @@ virGetDeviceID(const char *path, int *maj, int *min)
         return -EINVAL;
 
     if (maj)
-        *maj = major(sb.st_rdev);
+        *maj = gnu_dev_major(sb.st_rdev);
     if (min)
-        *min = minor(sb.st_rdev);
+        *min = gnu_dev_minor(sb.st_rdev);
 
     return 0;
 }

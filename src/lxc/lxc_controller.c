@@ -1520,7 +1520,7 @@ static int virLXCControllerPopulateDevices(virLXCControllerPtr ctrl)
                         LXC_STATE_DIR, ctrl->def->name, devs[i].path) < 0)
             goto cleanup;
 
-        dev_t dev = makedev(devs[i].maj, devs[i].min);
+        dev_t dev = gnu_dev_makedev(devs[i].maj, devs[i].min);
         if (mknod(path, S_IFCHR, dev) < 0 ||
             chmod(path, devs[i].mode)) {
             virReportSystemError(errno,
@@ -1592,7 +1592,7 @@ virLXCControllerSetupHostdevSubsysUSB(virDomainDefPtr vmDef,
     }
 
     VIR_DEBUG("Creating dev %s (%d,%d)",
-              dstfile, major(sb.st_rdev), minor(sb.st_rdev));
+              dstfile, gnu_dev_major(sb.st_rdev), gnu_dev_minor(sb.st_rdev));
     if (mknod(dstfile, mode, sb.st_rdev) < 0) {
         virReportSystemError(errno,
                              _("Unable to create device %s"),
@@ -1672,7 +1672,7 @@ virLXCControllerSetupHostdevCapsStorage(virDomainDefPtr vmDef,
     mode = 0700 | S_IFBLK;
 
     VIR_DEBUG("Creating dev %s (%d,%d)", dst,
-              major(sb.st_rdev), minor(sb.st_rdev));
+              gnu_dev_major(sb.st_rdev), gnu_dev_minor(sb.st_rdev));
     if (mknod(dst, mode, sb.st_rdev) < 0) {
         virReportSystemError(errno,
                              _("Unable to create device %s"),
@@ -1751,7 +1751,7 @@ virLXCControllerSetupHostdevCapsMisc(virDomainDefPtr vmDef,
     mode = 0700 | S_IFCHR;
 
     VIR_DEBUG("Creating dev %s (%d,%d)", dst,
-              major(sb.st_rdev), minor(sb.st_rdev));
+              gnu_dev_major(sb.st_rdev), gnu_dev_minor(sb.st_rdev));
     if (mknod(dst, mode, sb.st_rdev) < 0) {
         virReportSystemError(errno,
                              _("Unable to create device %s"),
@@ -1911,7 +1911,7 @@ static int virLXCControllerSetupDisk(virLXCControllerPtr ctrl,
      * to that normally implied by the device name
      */
     VIR_DEBUG("Creating dev %s (%d,%d) from %s",
-              dst, major(sb.st_rdev), minor(sb.st_rdev), tmpsrc);
+              dst, gnu_dev_major(sb.st_rdev), gnu_dev_minor(sb.st_rdev), tmpsrc);
     if (mknod(dst, mode, sb.st_rdev) < 0) {
         virReportSystemError(errno,
                              _("Unable to create device %s"),

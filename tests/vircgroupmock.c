@@ -562,11 +562,11 @@ int __lxstat(int ver, const char *path, struct stat *sb)
         free(newpath);
     } else if (STRPREFIX(path, fakedevicedir0)) {
         sb->st_mode = S_IFBLK;
-        sb->st_rdev = makedev(8, 0);
+        sb->st_rdev = gnu_dev_makedev(8, 0);
         return 0;
     } else if (STRPREFIX(path, fakedevicedir1)) {
         sb->st_mode = S_IFBLK;
-        sb->st_rdev = makedev(9, 0);
+        sb->st_rdev = gnu_dev_makedev(9, 0);
         return 0;
     } else {
         ret = real___lxstat(ver, path, sb);
@@ -593,11 +593,11 @@ int lstat(const char *path, struct stat *sb)
         free(newpath);
     } else if (STRPREFIX(path, fakedevicedir0)) {
         sb->st_mode = S_IFBLK;
-        sb->st_rdev = makedev(8, 0);
+        sb->st_rdev = gnu_dev_makedev(8, 0);
         return 0;
     } else if (STRPREFIX(path, fakedevicedir1)) {
         sb->st_mode = S_IFBLK;
-        sb->st_rdev = makedev(9, 0);
+        sb->st_rdev = gnu_dev_makedev(9, 0);
         return 0;
     } else {
         ret = real_lstat(path, sb);
@@ -624,11 +624,11 @@ int __xstat(int ver, const char *path, struct stat *sb)
         free(newpath);
     } else if (STRPREFIX(path, fakedevicedir0)) {
         sb->st_mode = S_IFBLK;
-        sb->st_rdev = makedev(8, 0);
+        sb->st_rdev = gnu_dev_makedev(8, 0);
         return 0;
     } else if (STRPREFIX(path, fakedevicedir1)) {
         sb->st_mode = S_IFBLK;
-        sb->st_rdev = makedev(9, 0);
+        sb->st_rdev = gnu_dev_makedev(9, 0);
         return 0;
     } else {
         ret = real___xstat(ver, path, sb);
@@ -661,11 +661,11 @@ int stat(const char *path, struct stat *sb)
         }
     } else if (STRPREFIX(path, fakedevicedir0)) {
         sb->st_mode = S_IFBLK;
-        sb->st_rdev = makedev(8, 0);
+        sb->st_rdev = gnu_dev_makedev(8, 0);
         return 0;
     } else if (STRPREFIX(path, fakedevicedir1)) {
         sb->st_mode = S_IFBLK;
-        sb->st_rdev = makedev(9, 0);
+        sb->st_rdev = gnu_dev_makedev(9, 0);
         return 0;
     } else {
         if (!(newpath = strdup(path)))
