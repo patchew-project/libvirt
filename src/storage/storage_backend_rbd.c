@@ -831,9 +831,10 @@ virStorageBackendRBDSnapshotFindNoDiff(rbd_image_t image,
 #endif
 
         if (r < 0) {
-            virReportSystemError(-r, _("failed to iterate RBD snapshot %s@%s"),
-                                 imgname, snaps[i].name);
-            goto cleanup;
+            VIR_DEBUG("failed to iterate RBD snapshot %s@%s,"
+                      " rbd_diff return %d",
+                      imgname, snaps[i].name, r);
+            continue;
         }
 
         /* If diff is still set to zero we found a snapshot without deltas */
