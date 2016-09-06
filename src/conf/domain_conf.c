@@ -646,7 +646,8 @@ VIR_ENUM_IMPL(virDomainHostdevMode, VIR_DOMAIN_HOSTDEV_MODE_LAST,
 VIR_ENUM_IMPL(virDomainHostdevSubsys, VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST,
               "usb",
               "pci",
-              "scsi")
+              "scsi",
+              "scsi_host")
 
 VIR_ENUM_IMPL(virDomainHostdevSubsysPCIBackend,
               VIR_DOMAIN_HOSTDEV_PCI_BACKEND_TYPE_LAST,
@@ -659,6 +660,10 @@ VIR_ENUM_IMPL(virDomainHostdevSubsysSCSIProtocol,
               VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_LAST,
               "adapter",
               "iscsi")
+
+VIR_ENUM_IMPL(virDomainHostdevSubsysHostProtocol,
+              VIR_DOMAIN_HOSTDEV_HOST_PROTOCOL_TYPE_LAST,
+              "vhost")
 
 VIR_ENUM_IMPL(virDomainHostdevCaps, VIR_DOMAIN_HOSTDEV_CAPS_TYPE_LAST,
               "storage",
@@ -2270,6 +2275,9 @@ void virDomainHostdevDefClear(virDomainHostdevDefPtr def)
             } else {
                 VIR_FREE(scsisrc->u.host.adapter);
             }
+        } else if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_HOST) {
+            virDomainHostdevSubsysHostPtr hostsrc = &def->source.subsys.u.host;
+            VIR_FREE(hostsrc->wwpn);
         }
         break;
     }
@@ -5977,6 +5985,31 @@ virDomainHostdevSubsysSCSIDefParseXML(xmlNodePtr sourcenode,
     return ret;
 }
 
+static int
+virDomainHostdevSubsysHostDefParseXML(xmlNodePtr sourcenode,
+                                      virDomainHostdevDefPtr def)
+{
+    virDomainHostdevSubsysHostPtr hostsrc = &def->source.subsys.u.host;
+
+    if (!(hostsrc->wwpn = virXMLPropString(sourcenode, "wwpn"))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("missing vhost-scsi hostdev source path name"));
+        goto cleanup;
+    }
+
+    if (!STRPREFIX(hostsrc->wwpn, "naa.") ||
+        strlen(hostsrc->wwpn) != strlen("naa.") + 16) {
+        virReportError(VIR_ERR_XML_ERROR, "%s", _("malformed 'wwpn' value"));
+        goto cleanup;
+    }
+
+    return 0;
+
+ cleanup:
+    VIR_FREE(hostsrc->wwpn);
+    return -1;
+}
+
 
 static int
 virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
@@ -6098,6 +6131,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
         if (virDomainHostdevSubsysSCSIDefParseXML(sourcenode, scsisrc) < 0)
+            goto error;
+        break;
+
+    case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_HOST:
+        if (virDomainHostdevSubsysHostDefParseXML(sourcenode, def) < 0)
             goto error;
         break;
 
@@ -20521,9 +20559,11 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
                                 unsigned int flags,
                                 bool includeTypeInAddr)
 {
+    bool closedSource = false;
     virDomainHostdevSubsysUSBPtr usbsrc = &def->source.subsys.u.usb;
     virDomainHostdevSubsysPCIPtr pcisrc = &def->source.subsys.u.pci;
     virDomainHostdevSubsysSCSIPtr scsisrc = &def->source.subsys.u.scsi;
+    virDomainHostdevSubsysHostPtr hostsrc = &def->source.subsys.u.host;
     virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
     virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &scsisrc->u.iscsi;
 
@@ -20562,6 +20602,15 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
 
         virBufferAsprintf(buf, " protocol='%s' name='%s'",
                           protocol, iscsisrc->path);
+    }
+
+    if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_HOST) {
+        const char *protocol =
+            virDomainHostdevSubsysHostProtocolTypeToString(hostsrc->protocol);
+        closedSource = true;
+
+        virBufferAsprintf(buf, " protocol='%s' wwpn='%s'/",
+                          protocol, hostsrc->wwpn);
     }
 
     virBufferAddLit(buf, ">\n");
@@ -20617,6 +20666,8 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
                               scsihostsrc->unit);
         }
         break;
+    case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_HOST:
+        break;
     default:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("unexpected hostdev type %d"),
@@ -20632,7 +20683,8 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
     }
 
     virBufferAdjustIndent(buf, -2);
-    virBufferAddLit(buf, "</source>\n");
+    if (!closedSource)
+        virBufferAddLit(buf, "</source>\n");
 
     return 0;
 }

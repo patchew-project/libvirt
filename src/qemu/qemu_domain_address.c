@@ -301,6 +301,16 @@ qemuDomainPrimeVirtioDeviceAddresses(virDomainDefPtr def,
             def->controllers[i]->info.type = type;
     }
 
+    for (i = 0; i < def->nhostdevs; i++) {
+        if (def->hostdevs[i]->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS &&
+            def->hostdevs[i]->source.subsys.type ==
+            VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_HOST &&
+            def->hostdevs[i]->source.subsys.u.host.protocol ==
+            VIR_DOMAIN_HOSTDEV_HOST_PROTOCOL_TYPE_VHOST &&
+            def->hostdevs[i]->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE)
+            def->hostdevs[i]->info->type = type;
+    }
+
     if (def->memballoon &&
         def->memballoon->model == VIR_DOMAIN_MEMBALLOON_MODEL_VIRTIO &&
         def->memballoon->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE)
