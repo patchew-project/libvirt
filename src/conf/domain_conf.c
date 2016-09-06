@@ -13720,6 +13720,12 @@ virDomainHostdevMatchSubsys(virDomainHostdevDefPtr a,
             return virDomainHostdevMatchSubsysSCSIiSCSI(a, b);
         else
             return virDomainHostdevMatchSubsysSCSIHost(a, b);
+    case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_HOST:
+        if (a->source.subsys.u.host.protocol !=
+            b->source.subsys.u.host.protocol)
+            return 0;
+        if (STREQ(a->source.subsys.u.host.wwpn, b->source.subsys.u.host.wwpn))
+            return 1;
     }
     return 0;
 }
