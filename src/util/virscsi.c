@@ -105,6 +105,32 @@ virSCSIDeviceGetAdapterId(const char *adapter,
     return -1;
 }
 
+int
+virSCSIOpenVhost(int *vhostfd,
+                 size_t *vhostfdSize)
+{
+    size_t i;
+
+    for (i = 0; i < *vhostfdSize; i++) {
+        vhostfd[i] = open("/dev/vhost-scsi", O_RDWR);
+
+        if (vhostfd[i] < 0) {
+            virReportSystemError(errno, "%s",
+                                 _("vhost-scsi was requested for an interface, "
+                                   "but is unavailable"));
+            goto error;
+        }
+    }
+
+    return 0;
+
+ error:
+    while (i--)
+        VIR_FORCE_CLOSE(vhostfd[i]);
+
+    return -1;
+}
+
 char *
 virSCSIDeviceGetSgName(const char *sysfs_prefix,
                        const char *adapter,
