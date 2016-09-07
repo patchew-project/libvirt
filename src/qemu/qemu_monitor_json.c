@@ -4351,6 +4351,7 @@ qemuMonitorJSONBlockJobError(virJSONValuePtr reply,
     if (qemuMonitorJSONErrorIsClass(error, "DeviceNotActive")) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        _("No active operation on device: %s"), device);
+        return -2;
     } else if (qemuMonitorJSONErrorIsClass(error, "DeviceInUse")) {
         virReportError(VIR_ERR_OPERATION_FAILED,
                        _("Device %s in use"), device);
@@ -4408,6 +4409,11 @@ qemuMonitorJSONBlockStream(qemuMonitorPtr mon,
 }
 
 
+/* return:
+ *  0 in case of success
+ * -1 in case of general error
+ * -2 in case there is no such job
+ */
 int
 qemuMonitorJSONBlockJobCancel(qemuMonitorPtr mon,
                               const char *device,
@@ -4426,10 +4432,7 @@ qemuMonitorJSONBlockJobCancel(qemuMonitorPtr mon,
     if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
         goto cleanup;
 
-    if (qemuMonitorJSONBlockJobError(reply, cmd_name, device) < 0)
-        goto cleanup;
-
-    ret = 0;
+    ret = qemuMonitorJSONBlockJobError(reply, cmd_name, device);
 
  cleanup:
     virJSONValueFree(cmd);

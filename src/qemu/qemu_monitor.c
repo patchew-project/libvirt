@@ -3335,6 +3335,11 @@ qemuMonitorBlockStream(qemuMonitorPtr mon,
 }
 
 
+/* return:
+ *  0 in case of success
+ * -1 in case of general error
+ * -2 in case there is no such job
+ */
 int
 qemuMonitorBlockJobCancel(qemuMonitorPtr mon,
                           const char *device,
