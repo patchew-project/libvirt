@@ -6251,12 +6251,6 @@ libxlDomainInterfaceAddresses(virDomainPtr dom,
     if (virDomainInterfaceAddressesEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
-        goto cleanup;
-    }
-
     switch (source) {
     case VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE:
         ret = libxlGetDHCPInterfaces(dom, vm, ifaces);

@@ -19600,18 +19600,18 @@ qemuDomainInterfaceAddresses(virDomainPtr dom,
     if (virDomainInterfaceAddressesEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
-        goto cleanup;
-    }
-
     switch (source) {
     case VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE:
         ret = qemuGetDHCPInterfaces(dom, vm, ifaces);
         break;
 
     case VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT:
+        if (!virDomainObjIsActive(vm)) {
+            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                           _("domain is not running"));
+            goto cleanup;
+        }
+
         if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
             goto cleanup;
 
