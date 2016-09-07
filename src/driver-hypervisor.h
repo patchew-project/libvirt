@@ -1251,6 +1251,15 @@ typedef int
                              int state,
                              unsigned int flags);
 
+typedef int
+(*virDrvDomainBackupStart)(virDomainPtr domain,
+                           const char *xmlDesc,
+                           unsigned int flags);
+
+typedef int
+(*virDrvDomainBackupStop)(virDomainPtr domain,
+                          unsigned int flags);
+
 typedef struct _virHypervisorDriver virHypervisorDriver;
 typedef virHypervisorDriver *virHypervisorDriverPtr;
 
@@ -1489,6 +1498,8 @@ struct _virHypervisorDriver {
     virDrvDomainMigrateStartPostCopy domainMigrateStartPostCopy;
     virDrvDomainGetGuestVcpus domainGetGuestVcpus;
     virDrvDomainSetGuestVcpus domainSetGuestVcpus;
+    virDrvDomainBackupStart domainBackupStart;
+    virDrvDomainBackupStop domainBackupStop;
 };
 
 

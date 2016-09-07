@@ -2679,6 +2679,25 @@ struct remote_domain_snapshot_delete_args {
     unsigned int flags;
 };
 
+struct remote_domain_backup_start_args {
+    remote_nonnull_domain dom;
+    remote_nonnull_string xml_desc;
+    unsigned int flags;
+};
+
+struct remote_domain_backup_start_ret {
+    int result;
+};
+
+struct remote_domain_backup_stop_args {
+    remote_nonnull_domain dom;
+    unsigned int flags;
+};
+
+struct remote_domain_backup_stop_ret {
+    int result;
+};
+
 struct remote_domain_open_console_args {
     remote_nonnull_domain dom;
     remote_string dev_name;
@@ -5934,5 +5953,17 @@ enum remote_procedure {
      * @generate: both
      * @acl: none
      */
-    REMOTE_PROC_NODE_DEVICE_EVENT_UPDATE = 377
+    REMOTE_PROC_NODE_DEVICE_EVENT_UPDATE = 377,
+
+     /**
+     * @generate: both
+     * @acl: domain:backup
+     */
+    REMOTE_PROC_DOMAIN_BACKUP_START = 378,
+
+     /**
+     * @generate: both
+     * @acl: domain:backup
+     */
+    REMOTE_PROC_DOMAIN_BACKUP_STOP = 379
 };

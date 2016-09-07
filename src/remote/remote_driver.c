@@ -8164,6 +8164,8 @@ static virHypervisorDriver hypervisor_driver = {
     .domainMigrateStartPostCopy = remoteDomainMigrateStartPostCopy, /* 1.3.3 */
     .domainGetGuestVcpus = remoteDomainGetGuestVcpus, /* 2.0.0 */
     .domainSetGuestVcpus = remoteDomainSetGuestVcpus, /* 2.0.0 */
+    .domainBackupStart = remoteDomainBackupStart, /* 2.3.0 */
+    .domainBackupStop = remoteDomainBackupStop, /* 2.3.0 */
 };
 
 static virNetworkDriver network_driver = {

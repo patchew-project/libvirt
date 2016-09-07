@@ -499,4 +499,20 @@ int qemuMonitorJSONGetHotpluggableCPUs(qemuMonitorPtr mon,
                                        struct qemuMonitorQueryHotpluggableCpusEntry **entries,
                                        size_t *nentries)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+
+int qemuMonitorJSONBlockdevAdd(qemuMonitorPtr mon,
+                               const char *id,
+                               const char *path)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+
+int qemuMonitorJSONBlockdevDel(qemuMonitorPtr mon,
+                               const char *id)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
+int qemuMonitorJSONBlockdevBackup(virJSONValuePtr actions,
+                                  const char *device,
+                                  const char *target,
+                                  unsigned long long speed)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+
 #endif /* QEMU_MONITOR_JSON_H */

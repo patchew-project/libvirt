@@ -201,6 +201,7 @@ virsh_SOURCES =							\
 		virsh-secret.c virsh-secret.h			\
 		virsh-snapshot.c virsh-snapshot.h		\
 		virsh-volume.c virsh-volume.h			\
+		virsh-backup.c virsh-backup.h			\
 		$(NULL)
 
 virsh_LDFLAGS = \

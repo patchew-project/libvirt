@@ -171,6 +171,8 @@ qemuBlockJobEventProcess(virQEMUDriverPtr driver,
         break;
 
     case VIR_DOMAIN_BLOCK_JOB_FAILED:
+        if (diskPriv->backuping)
+            diskPriv->backupFailed = true;
     case VIR_DOMAIN_BLOCK_JOB_CANCELED:
         virStorageSourceFree(disk->mirror);
         disk->mirror = NULL;

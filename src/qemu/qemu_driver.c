@@ -20118,6 +20118,688 @@ qemuDomainSetGuestVcpus(virDomainPtr dom,
     return ret;
 }
 
+/**
+ * FIXME nearly copy-paste of virDomainSnapshotDefAssignExternalNames
+ *
+ */
+static int
+virDomainBackupDefGeneratePaths(virDomainBackupDefPtr def)
+{
+    char *tmppath;
+    char *tmp;
+    size_t i;
+    size_t j;
+
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainBackupDiskDefPtr disk = &def->disks[i];
+
+        if (disk->present != VIR_TRISTATE_BOOL_YES || disk->src)
+            continue;
+
+        if (VIR_ALLOC(disk->src) < 0)
+            return -1;
+
+        disk->src->type = VIR_STORAGE_TYPE_FILE;
+        disk->src->format = VIR_STORAGE_FILE_QCOW2;
+
+        if (VIR_STRDUP(tmppath, virDomainDiskGetSource(def->dom->disks[i])) < 0)
+            return -1;
+
+        /* drop suffix of the file name */
+        if ((tmp = strrchr(tmppath, '.')) && !strchr(tmp, '/'))
+            *tmp = '\0';
+
+        if (virAsprintf(&disk->src->path, "%s.backup", tmppath) < 0) {
+            VIR_FREE(tmppath);
+            return -1;
+        }
+
+        VIR_FREE(tmppath);
+
+        /* verify that we didn't generate a duplicate name */
+        for (j = 0; j < i; j++) {
+            if (STREQ_NULLABLE(disk->src->path, def->disks[j].src->path)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("cannot generate backup name for "
+                                 "disk '%s': collision with disk '%s'"),
+                               disk->name, def->disks[j].name);
+                return -1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+static int
+virDomainBackupCompareDiskIndex(const void *a, const void *b)
+{
+    const virDomainBackupDiskDef *diska = a;
+    const virDomainBackupDiskDef *diskb = b;
+
+    /* Integer overflow shouldn't be a problem here.  */
+    return diska->idx - diskb->idx;
+}
+
+static int
+virDomainBackupAlignDisks(virDomainBackupDefPtr def)
+{
+    int ret = -1;
+    virBitmapPtr map = NULL;
+    size_t i;
+    int ndisks;
+
+    if (!def->dom) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("missing domain in backup"));
+        goto cleanup;
+    }
+
+    if (!(map = virBitmapNew(def->dom->ndisks)))
+        goto cleanup;
+
+    /* Double check requested disks.  */
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainBackupDiskDefPtr disk = &def->disks[i];
+        int idx = virDomainDiskIndexByName(def->dom, disk->name, false);
+
+        if (idx < 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("no disk named '%s'"), disk->name);
+            goto cleanup;
+        }
+
+        if (virBitmapIsBitSet(map, idx)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("disk '%s' specified twice"), disk->name);
+            goto cleanup;
+        }
+        ignore_value(virBitmapSetBit(map, idx));
+        disk->idx = idx;
+
+        if (STRNEQ(disk->name, def->dom->disks[idx]->dst)) {
+            VIR_FREE(disk->name);
+            if (VIR_STRDUP(disk->name, def->dom->disks[idx]->dst) < 0)
+                goto cleanup;
+        }
+
+        if (!disk->present)
+            disk->present = VIR_TRISTATE_BOOL_YES;
+
+        if (virStorageSourceIsEmpty(def->dom->disks[i]->src) &&
+            disk->present == VIR_TRISTATE_BOOL_YES) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("disk '%s' has no source, can not be exported"),
+                           disk->name);
+        }
+    }
+
+    /* Provide defaults for all remaining disks.  */
+    ndisks = def->ndisks;
+    if (VIR_EXPAND_N(def->disks, def->ndisks,
+                     def->dom->ndisks - def->ndisks) < 0)
+        goto cleanup;
+
+    for (i = 0; i < def->dom->ndisks; i++) {
+        virDomainBackupDiskDefPtr disk;
+
+        if (virBitmapIsBitSet(map, i))
+            continue;
+
+        disk = &def->disks[ndisks++];
+        if (VIR_STRDUP(disk->name, def->dom->disks[i]->dst) < 0)
+            goto cleanup;
+        disk->idx = i;
+
+        if (virStorageSourceIsEmpty(def->dom->disks[i]->src) ||
+            def->dom->disks[i]->src->readonly)
+            disk->present = VIR_TRISTATE_BOOL_NO;
+        else
+            disk->present = VIR_TRISTATE_BOOL_YES;
+    }
+
+    qsort(&def->disks[0], def->ndisks, sizeof(def->disks[0]),
+          virDomainBackupCompareDiskIndex);
+
+    if (virDomainBackupDefGeneratePaths(def) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    virBitmapFree(map);
+    return ret;
+}
+
+
+/*
+ * FIXME has much in common with qemuMigrationCancelOneDriveMirror
+ */
+static int
+qemuBackupDriveCancelSingle(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            virDomainDiskDefPtr disk)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    char *diskAlias = NULL;
+    int ret = -1;
+    int status;
+    int rv;
+
+    status = qemuBlockJobUpdate(driver, vm, disk);
+    if (status == VIR_DOMAIN_BLOCK_JOB_FAILED) {
+        virReportError(VIR_ERR_OPERATION_FAILED,
+                       _("disk %s backup failed"), disk->dst);
+        goto cleanup;
+    }
+
+    if (!(diskAlias = qemuAliasFromDisk(disk)))
+        goto cleanup;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    rv = qemuMonitorBlockJobCancel(priv->mon, diskAlias, true);
+    /* -2 means race condition, job is already failed but
+     * event is not yet delivered, thus we continue as
+     * in case of success, next block job update will deliver the event */
+    if (qemuDomainObjExitMonitor(driver, vm) < 0 || rv == -1)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    if (ret < 0) {
+        qemuBlockJobSyncEnd(driver, vm, disk);
+        QEMU_DOMAIN_DISK_PRIVATE(disk)->backuping = false;
+        QEMU_DOMAIN_DISK_PRIVATE(disk)->backupFailed = false;
+    }
+
+    VIR_FREE(diskAlias);
+
+    return ret;
+}
+
+static bool
+qemuBackupDriveCancelled(virQEMUDriverPtr driver,
+                         virDomainObjPtr vm,
+                         virErrorPtr *err)
+{
+    size_t i;
+    size_t active = 0;
+    int status;
+
+    *err = NULL;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+        qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+
+        if (!diskPriv->backuping)
+            continue;
+
+        status = qemuBlockJobUpdate(driver, vm, disk);
+        switch (status) {
+        case VIR_DOMAIN_BLOCK_JOB_FAILED:
+            virReportError(VIR_ERR_OPERATION_FAILED,
+                           _("migration of disk %s failed"), disk->dst);
+            if (!*err)
+                *err = virSaveLastError();
+            /* fallthrough */
+        case VIR_DOMAIN_BLOCK_JOB_CANCELED:
+            qemuBlockJobSyncEnd(driver, vm, disk);
+            diskPriv->backuping = false;
+            diskPriv->backupFailed = false;
+            break;
+
+        default:
+            ++active;
+        }
+    }
+
+    return active == 0;
+}
+
+/**
+ * FIXME nearly copy paste from qemuMigrationCancelDriveMirror
+ *
+ * Cancel backup jobs for all disks
+ *
+ * Returns 0 on success, -1 otherwise.
+ */
+static int
+qemuBackupDriveCancelAll(virQEMUDriverPtr driver,
+                         virDomainObjPtr vm)
+{
+    virErrorPtr err = NULL, wait_err;
+    size_t i;
+    int ret = -1;
+
+    VIR_DEBUG("Cancelling drive mirrors for domain %s", vm->def->name);
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+        qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+
+        if (!diskPriv->backuping)
+            continue;
+
+        if (qemuBackupDriveCancelSingle(driver, vm, disk) < 0) {
+            if (!virDomainObjIsActive(vm))
+                goto cleanup;
+
+            if (!err)
+                err = virSaveLastError();
+        }
+    }
+
+    while (!qemuBackupDriveCancelled(driver, vm, &wait_err)) {
+        if (!err && wait_err)
+            err = wait_err;
+        else
+            virFreeError(wait_err);
+
+        if (virDomainObjWait(vm) < 0)
+            goto cleanup;
+    }
+
+    if (!err)
+        ret = 0;
+
+ cleanup:
+    if (err) {
+        virSetError(err);
+        virFreeError(err);
+    }
+
+    return ret;
+}
+
+static int
+qemuDomainBackupFinishExport(virQEMUDriverPtr driver,
+                             virDomainObjPtr vm)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virErrorPtr err = NULL;
+    char *dev = NULL;
+    int ret = -1;
+    size_t i;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    ignore_value(qemuMonitorNBDServerStop(priv->mon));
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        return -1;
+
+    if (qemuBackupDriveCancelAll(driver, vm) < 0) {
+        if (!virDomainObjIsActive(vm))
+            goto cleanup;
+
+        err = virSaveLastError();
+    }
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+        qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+
+        if (!diskPriv->backupdev)
+            continue;
+        diskPriv->backupdev = false;
+
+        if (virAsprintf(&dev, "backup-%s", disk->info.alias) < 0)
+            continue;
+
+        qemuDomainObjEnterMonitor(driver, vm);
+        ignore_value(qemuMonitorBlockdevDel(priv->mon, dev));
+        if (qemuDomainObjExitMonitor(driver, vm) < 0)
+            goto cleanup;
+
+        VIR_FREE(dev);
+    }
+
+    if (!err)
+        ret = 0;
+ cleanup:
+    if (err) {
+        virSetError(err);
+        virFreeError(err);
+    }
+    VIR_FREE(dev);
+
+    return ret;
+}
+
+static int
+qemuDomainBackupPrepareDisk(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            virStorageSourcePtr src,
+                            struct qemuDomainDiskInfo *info)
+{
+    char *path = NULL;
+    virCommandPtr cmd = NULL;
+    int ret = -1;
+    const char *qemuImgPath;
+
+    if (!(qemuImgPath = qemuFindQemuImgBinary(driver)))
+        goto cleanup;
+
+    if (qemuGetDriveSourceString(src, NULL, &path) < 0)
+        goto cleanup;
+
+    if (qemuDomainStorageFileInit(driver, vm, src) < 0)
+        goto cleanup;
+
+    if (virStorageFileCreate(src) < 0) {
+        virReportSystemError(errno, _("failed to create image file '%s'"),
+                             path);
+        goto cleanup;
+    }
+
+    if (!(cmd = virCommandNewArgList(qemuImgPath, "create",
+                                     "-f", "qcow2",
+                                     NULL)))
+        goto cleanup;
+
+    virCommandAddArg(cmd, src->path);
+    virCommandAddArgFormat(cmd, "%lli", info->guest_size);
+
+    if (virCommandRun(cmd, NULL) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    virStorageFileDeinit(src);
+    VIR_FREE(path);
+    virCommandFree(cmd);
+
+    return ret;
+}
+
+static int
+qemuDomainBackupExportDisks(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            virDomainBackupDefPtr def)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    char *dev = NULL;
+    char *dev_backup = NULL;
+    int ret = -1, rc;
+    virJSONValuePtr actions = NULL;
+    size_t i;
+    virHashTablePtr block_info = NULL;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    rc = qemuMonitorNBDServerStart(priv->mon, def->address.data.ip.host,
+                                   def->address.data.ip.port);
+    if (qemuDomainObjExitMonitor(driver, vm) < 0 || rc < 0)
+        return -1;
+
+    if (!(actions = virJSONValueNewArray()))
+        goto cleanup;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    block_info = qemuMonitorGetBlockInfo(priv->mon);
+    if (qemuDomainObjExitMonitor(driver, vm) < 0 || !block_info)
+        goto cleanup;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+        struct qemuDomainDiskInfo *disk_info;
+
+        if (def->disks[i].present != VIR_TRISTATE_BOOL_YES)
+            continue;
+
+        if (!(disk_info = virHashLookup(block_info, disk->info.alias))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("missing block info for '%s'"), disk->info.alias);
+            goto cleanup;
+        }
+
+        if (qemuDomainBackupPrepareDisk(driver, vm, def->disks[i].src,
+                                        disk_info) < 0)
+            goto cleanup;
+
+        if (virAsprintf(&dev, "drive-%s", disk->info.alias) < 0)
+            goto cleanup;
+        if (virAsprintf(&dev_backup, "backup-%s", disk->info.alias) < 0)
+            goto cleanup;
+
+        qemuDomainObjEnterMonitor(driver, vm);
+        rc = qemuMonitorBlockdevAdd(priv->mon, dev_backup,
+                                    def->disks[i].src->path);
+        if (qemuDomainObjExitMonitor(driver, vm) < 0 || rc < 0)
+            goto cleanup;
+
+        QEMU_DOMAIN_DISK_PRIVATE(disk)->backupdev = true;
+
+        qemuDomainObjEnterMonitor(driver, vm);
+        rc = qemuMonitorBlockdevBackup(actions, dev, dev_backup, 0);
+        if (qemuDomainObjExitMonitor(driver, vm) < 0 || rc < 0)
+            goto cleanup;
+
+        VIR_FREE(dev);
+        VIR_FREE(dev_backup);
+    }
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    rc = qemuMonitorTransaction(priv->mon, actions);
+    if (qemuDomainObjExitMonitor(driver, vm) < 0 || rc < 0)
+        goto cleanup;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+
+        if (def->disks[i].present != VIR_TRISTATE_BOOL_YES)
+            continue;
+
+        QEMU_DOMAIN_DISK_PRIVATE(disk)->blockjob = true;
+        QEMU_DOMAIN_DISK_PRIVATE(disk)->backuping = true;
+        qemuBlockJobSyncBegin(disk);
+    }
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+
+        if (def->disks[i].present != VIR_TRISTATE_BOOL_YES)
+            continue;
+
+        if (virAsprintf(&dev, "drive-%s", disk->info.alias) < 0)
+            goto cleanup;
+
+        qemuDomainObjEnterMonitor(driver, vm);
+        rc = qemuMonitorNBDServerAdd(priv->mon, dev, false);
+        if (qemuDomainObjExitMonitor(driver, vm) < 0 || rc < 0)
+            goto cleanup;
+    }
+
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(actions);
+    VIR_FREE(dev);
+    VIR_FREE(dev_backup);
+    virHashFree(block_info);
+
+    return ret;
+}
+
+static int
+qemuDomainBackupStart(virDomainPtr domain,
+                      const char *xmlDesc,
+                      unsigned int flags)
+{
+    virQEMUDriverPtr driver = domain->conn->privateData;
+    virCapsPtr caps = NULL;
+    virDomainBackupDefPtr def = NULL;
+    virDomainObjPtr vm = NULL;
+    int ret = -1;
+    bool job = false;
+    int freezed = -1;
+    size_t i;
+
+    virCheckFlags(VIR_DOMAIN_BACKUP_START_QUIESCE,
+                  -1);
+
+    if (!(vm = qemuDomObjFromDomain(domain)))
+        goto cleanup;
+
+    if (virDomainBackupStartEnsureACL(domain->conn, vm->def) < 0)
+        goto cleanup;
+
+    if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
+        goto cleanup;
+
+    if (!(def = virDomainBackupDefParseString(xmlDesc, caps, driver->xmlopt, 0)))
+        goto cleanup;
+
+    /* FIXME refactor start nbd monitor function to support unix sockets */
+    if (def->address.type != VIR_DOMAIN_BACKUP_ADDRESS_IP) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       "%s", _("backup thru unix sockets is not supported"));
+        goto cleanup;
+    }
+
+    if (!virDomainObjIsActive(vm)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("backing up inactive domains is not supported"));
+        goto cleanup;
+    }
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+        goto cleanup;
+    job = true;
+
+    def->dom = vm->def;
+
+    if (virDomainBackupAlignDisks(def) < 0)
+        goto cleanup;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+        qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+
+        if (def->disks[i].present != VIR_TRISTATE_BOOL_YES)
+            continue;
+
+        if (diskPriv->blockjob) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("disk '%s' already has a blockjob"), disk->dst);
+            goto cleanup;
+        }
+    }
+
+    /* FIXME remove snapshot from below function name */
+    if ((flags & VIR_DOMAIN_BACKUP_START_QUIESCE) &&
+        (freezed = qemuDomainSnapshotFSFreeze(driver, vm, NULL, 0)) < 0)
+        goto cleanup;
+
+    if (qemuDomainBackupExportDisks(driver, vm, def) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    /* FIXME remove snapshot from name below */
+    if (freezed != -1 && qemuDomainSnapshotFSThaw(driver, vm, ret == 0) < 0)
+        ret = -1;
+
+    if (ret < 0 && virDomainObjIsActive(vm)) {
+        virErrorPtr err = virSaveLastError();
+
+        ignore_value(qemuDomainBackupFinishExport(driver, vm));
+        virSetError(err);
+        virFreeError(err);
+    } else if (ret == 0) {
+        for (i = 0; i < vm->def->ndisks; i++) {
+            virDomainDiskDefPtr disk = vm->def->disks[i];
+            qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+
+            if (!diskPriv->backuping)
+                continue;
+
+            qemuBlockJobSyncEnd(driver, vm, disk);
+        }
+    }
+
+    if (job)
+        qemuDomainObjEndJob(driver, vm);
+
+    virDomainBackupDefFree(def);
+    virObjectUnref(caps);
+    virDomainObjEndAPI(&vm);
+
+    return ret;
+}
+
+static int
+qemuDomainBackupStop(virDomainPtr domain,
+                     unsigned int flags)
+{
+    virQEMUDriverPtr driver = domain->conn->privateData;
+    virDomainObjPtr vm = NULL;
+    virErrorPtr err = NULL;
+    int ret = -1;
+    bool job = false;
+    size_t i;
+
+    virCheckFlags(0, -1);
+
+    if (!(vm = qemuDomObjFromDomain(domain)))
+        goto cleanup;
+
+    if (virDomainBackupStopEnsureACL(domain->conn, vm->def) < 0)
+        goto cleanup;
+
+    if (!virDomainObjIsActive(vm)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       "%s", _("inactive domain can't have active backup"));
+        goto cleanup;
+    }
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+        goto cleanup;
+    job = true;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+        qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+
+        if (!diskPriv->backuping)
+            continue;
+
+        /* backup blockjob can fail/cancelled between start and stop */
+        if (!diskPriv->blockjob) {
+            diskPriv->backuping = false;
+
+            if (diskPriv->backupFailed) {
+                virReportError(VIR_ERR_OPERATION_FAILED,
+                               _("disk %s backup failed"), disk->dst);
+                if (!err)
+                    err = virSaveLastError();
+                diskPriv->backupFailed = false;
+            }
+            continue;
+        }
+
+        qemuBlockJobSyncBegin(disk);
+    }
+
+    if (qemuDomainBackupFinishExport(driver, vm) < 0)
+        goto cleanup;
+
+    if (!err)
+        ret = 0;
+
+ cleanup:
+    if (job)
+        qemuDomainObjEndJob(driver, vm);
+
+    virDomainObjEndAPI(&vm);
+    if (err) {
+        virSetError(err);
+        virFreeError(err);
+    }
+
+    return ret;
+}
 
 static virHypervisorDriver qemuHypervisorDriver = {
     .name = QEMU_DRIVER_NAME,
@@ -20332,6 +21014,8 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainMigrateStartPostCopy = qemuDomainMigrateStartPostCopy, /* 1.3.3 */
     .domainGetGuestVcpus = qemuDomainGetGuestVcpus, /* 2.0.0 */
     .domainSetGuestVcpus = qemuDomainSetGuestVcpus, /* 2.0.0 */
+    .domainBackupStart = qemuDomainBackupStart, /* 2.3.0 */
+    .domainBackupStop = qemuDomainBackupStop, /* 2.3.0 */
 };
 
 

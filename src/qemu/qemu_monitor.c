@@ -4001,3 +4001,35 @@ qemuMonitorGetRTCTime(qemuMonitorPtr mon,
 
     return qemuMonitorJSONGetRTCTime(mon, tm);
 }
+
+int qemuMonitorBlockdevBackup(virJSONValuePtr actions,
+                              const char *device,
+                              const char *target,
+                              unsigned long long speed)
+{
+    VIR_DEBUG("actions=%p, device=%s, target=%s, speed=%llu",
+              actions, device, target, speed);
+
+    return qemuMonitorJSONBlockdevBackup(actions, device, target, speed);
+}
+
+int qemuMonitorBlockdevAdd(qemuMonitorPtr mon,
+                           const char *id,
+                           const char *path)
+{
+    VIR_DEBUG("mon=%p, id=%s, path=%s", mon, id, path);
+
+    QEMU_CHECK_MONITOR_JSON(mon);
+
+    return qemuMonitorJSONBlockdevAdd(mon, id, path);
+}
+
+int qemuMonitorBlockdevDel(qemuMonitorPtr mon,
+                           const char *id)
+{
+    VIR_DEBUG("mon=%p, id=%s", mon, id);
+
+    QEMU_CHECK_MONITOR_JSON(mon);
+
+    return qemuMonitorJSONBlockdevDel(mon, id);
+}

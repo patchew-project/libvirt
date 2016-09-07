@@ -991,4 +991,16 @@ int qemuMonitorMigrateStartPostCopy(qemuMonitorPtr mon);
 int qemuMonitorGetRTCTime(qemuMonitorPtr mon,
                           struct tm *tm);
 
+int qemuMonitorBlockdevAdd(qemuMonitorPtr mon,
+                           const char *id,
+                           const char *path);
+
+int qemuMonitorBlockdevDel(qemuMonitorPtr mon,
+                           const char *id);
+
+int qemuMonitorBlockdevBackup(virJSONValuePtr actions,
+                              const char *device,
+                              const char *target,
+                              unsigned long long speed);
+
 #endif /* QEMU_MONITOR_H */

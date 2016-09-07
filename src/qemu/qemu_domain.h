@@ -284,6 +284,10 @@ struct _qemuDomainDiskPrivate {
      * single disk */
     bool blockjob;
 
+    bool backuping;
+    bool backupdev;
+    bool backupFailed;
+
     /* for some synchronous block jobs, we need to notify the owner */
     int blockJobType;   /* type of the block job from the event */
     int blockJobStatus; /* status of the finished block job */

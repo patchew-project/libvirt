@@ -219,6 +219,7 @@ DRIVER_SOURCES =							\
 		libvirt.c libvirt_internal.h				\
 		libvirt-domain.c 					\
 		libvirt-domain-snapshot.c 				\
+		libvirt-domain-backup.c 				\
 		libvirt-host.c 						\
 		libvirt-interface.c	 				\
 		libvirt-network.c	 				\
@@ -334,6 +335,7 @@ DOMAIN_CONF_SOURCES =						\
 		conf/domain_audit.c conf/domain_audit.h		\
 		conf/domain_nwfilter.c conf/domain_nwfilter.h	\
 		conf/snapshot_conf.c conf/snapshot_conf.h	\
+		conf/backup_conf.c conf/backup_conf.h	\
 		conf/numa_conf.c conf/numa_conf.h	\
 		conf/virdomainobjlist.c conf/virdomainobjlist.h
 
@@ -2390,6 +2392,7 @@ libvirt_setuid_rpc_client_la_SOURCES = 		\
 		libvirt.c			\
 		libvirt-domain.c		\
 		libvirt-domain-snapshot.c	\
+		libvirt-domain-backup.c	\
 		libvirt-host.c			\
 		libvirt-interface.c		\
 		libvirt-network.c		\

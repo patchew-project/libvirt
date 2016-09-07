@@ -37,6 +37,7 @@ extern "C" {
 # include <libvirt/libvirt-host.h>
 # include <libvirt/libvirt-domain.h>
 # include <libvirt/libvirt-domain-snapshot.h>
+# include <libvirt/libvirt-domain-backup.h>
 # include <libvirt/libvirt-event.h>
 # include <libvirt/libvirt-interface.h>
 # include <libvirt/libvirt-network.h>

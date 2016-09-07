@@ -831,6 +831,8 @@ qemuMonitorJSONHandleBlockJobImpl(qemuMonitorPtr mon,
         type = VIR_DOMAIN_BLOCK_JOB_TYPE_COMMIT;
     else if (STREQ(type_str, "mirror"))
         type = VIR_DOMAIN_BLOCK_JOB_TYPE_COPY;
+    else if (STREQ(type_str, "backup"))
+        type = VIR_DOMAIN_BLOCK_JOB_TYPE_BACKUP;
 
     switch ((virConnectDomainEventBlockJobStatus) event) {
     case VIR_DOMAIN_BLOCK_JOB_COMPLETED:
@@ -7258,5 +7260,108 @@ qemuMonitorJSONGetHotpluggableCPUs(qemuMonitorPtr mon,
     qemuMonitorQueryHotpluggableCpusFree(info, ninfo);
     virJSONValueFree(cmd);
     virJSONValueFree(reply);
+    return ret;
+}
+
+int qemuMonitorJSONBlockdevAdd(qemuMonitorPtr mon,
+                               const char *id,
+                               const char *path)
+{
+    int ret = -1;
+    virJSONValuePtr cmd = NULL;
+    virJSONValuePtr args = NULL;
+    virJSONValuePtr file = NULL;
+    virJSONValuePtr reply = NULL;
+    virJSONValuePtr options = NULL;
+
+    if (!(cmd = virJSONValueNewObject()) ||
+        !(args = virJSONValueNewObject()) ||
+        !(options = virJSONValueNewObject()) ||
+        !(file = virJSONValueNewObject()))
+        goto cleanup;
+
+    if (virJSONValueObjectAppendString(file, "driver", "file") < 0 ||
+        virJSONValueObjectAppendString(file, "filename", path) < 0)
+        goto cleanup;
+
+    if (virJSONValueObjectAppendString(options, "driver", "qcow2") < 0 ||
+        virJSONValueObjectAppendString(options, "id", id) < 0 ||
+        virJSONValueObjectAppend(options, "file", file) < 0)
+        goto cleanup;
+
+    if (virJSONValueObjectAppend(args, "options", options) < 0)
+        goto cleanup;
+
+    if (virJSONValueObjectAppendString(cmd, "execute", "blockdev-add") < 0 ||
+        virJSONValueObjectAppend(cmd, "arguments", args) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(args);
+    virJSONValueFree(file);
+    virJSONValueFree(reply);
+    virJSONValueFree(options);
+    return ret;
+}
+
+int qemuMonitorJSONBlockdevDel(qemuMonitorPtr mon,
+                               const char *id)
+{
+    int ret = -1;
+    virJSONValuePtr cmd;
+    virJSONValuePtr reply = NULL;
+
+    cmd = qemuMonitorJSONMakeCommand("x-blockdev-del",
+                                     "s:id", id,
+                                     NULL);
+    if (!cmd)
+        return -1;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    return ret;
+}
+
+int qemuMonitorJSONBlockdevBackup(virJSONValuePtr actions,
+                                  const char *device,
+                                  const char *target,
+                                  unsigned long long speed)
+{
+    int ret = -1;
+    virJSONValuePtr cmd;
+
+    cmd = qemuMonitorJSONMakeCommandRaw(true,
+                                        "blockdev-backup",
+                                        "s:device", device,
+                                        "s:target", target,
+                                        "s:sync", "none",
+                                        "Y:speed", speed,
+                                        NULL);
+    if (!cmd)
+        return -1;
+
+    if (virJSONValueArrayAppend(actions, cmd) < 0)
+        goto cleanup;
+
+    ret = 0;
+    cmd = NULL;
+ cleanup:
+    virJSONValueFree(cmd);
     return ret;
 }
