@@ -337,6 +337,7 @@ struct qemuDomainDiskInfo {
     bool tray_open;
     bool empty;
     int io_status;
+    unsigned long long guest_size;
 };
 
 typedef struct _qemuDomainHostdevPrivate qemuDomainHostdevPrivate;

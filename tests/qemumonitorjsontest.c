@@ -50,6 +50,23 @@ const char *queryBlockReply =
 "            \"locked\": false,"
 "            \"removable\": false,"
 "            \"inserted\": {"
+"                \"image\": {"
+"                    \"virtual-size\": 68719476736,"
+"                    \"filename\": \"/home/zippy/work/tmp/gentoo.qcow2\","
+"                    \"cluster-size\": 65536,"
+"                    \"format\": \"qcow2\","
+"                    \"actual-size\": 156901376,"
+"                    \"format-specific\": {"
+"                        \"type\": \"qcow2\","
+"                        \"data\": {"
+"                            \"compat\": \"1.1\","
+"                            \"lazy-refcounts\": true,"
+"                            \"refcount-bits\": 16,"
+"                            \"corrupt\": false"
+"                        }"
+"                    },"
+"                    \"dirty-flag\": false"
+"                },"
 "                \"iops_rd\": 5,"
 "                \"iops_wr\": 6,"
 "                \"ro\": false,"
@@ -78,6 +95,13 @@ const char *queryBlockReply =
 "            \"locked\": false,"
 "            \"removable\": false,"
 "            \"inserted\": {"
+"                \"image\": {"
+"                    \"virtual-size\": 34359738368,"
+"                    \"filename\": \"/home/zippy/test.bin\","
+"                    \"format\": \"raw\","
+"                    \"actual-size\": 34359738368,"
+"                    \"dirty-flag\": false"
+"                },"
 "                \"iops_rd\": 0,"
 "                \"iops_wr\": 0,"
 "                \"ro\": false,"
@@ -99,6 +123,13 @@ const char *queryBlockReply =
 "            \"locked\": true,"
 "            \"removable\": true,"
 "            \"inserted\": {"
+"                \"image\": {"
+"                    \"virtual-size\": 17179869184,"
+"                    \"filename\": \"/home/zippy/test.bin\","
+"                    \"format\": \"raw\","
+"                    \"actual-size\": 17179869184,"
+"                    \"dirty-flag\": false"
+"                },"
 "                \"iops_rd\": 0,"
 "                \"iops_wr\": 0,"
 "                \"ro\": true,"
@@ -1413,6 +1444,8 @@ testQemuMonitorJSONqemuMonitorJSONGetBlockInfo(const void *data)
     if (VIR_ALLOC(info) < 0)
         goto cleanup;
 
+    info->guest_size = 68719476736ULL;
+
     if (virHashAddEntry(expectedBlockDevices, "virtio-disk0", info) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        "Unable to create expectedBlockDevices hash table");
@@ -1421,6 +1454,8 @@ testQemuMonitorJSONqemuMonitorJSONGetBlockInfo(const void *data)
 
     if (VIR_ALLOC(info) < 0)
         goto cleanup;
+
+    info->guest_size = 34359738368ULL;
 
     if (virHashAddEntry(expectedBlockDevices, "virtio-disk1", info) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -1434,6 +1469,7 @@ testQemuMonitorJSONqemuMonitorJSONGetBlockInfo(const void *data)
     info->locked = true;
     info->removable = true;
     info->tray = true;
+    info->guest_size = 17179869184ULL;
 
     if (virHashAddEntry(expectedBlockDevices, "ide0-1-0", info) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",

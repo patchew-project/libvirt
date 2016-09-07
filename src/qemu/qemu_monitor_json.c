@@ -1800,6 +1800,8 @@ int qemuMonitorJSONGetBlockInfo(qemuMonitorPtr mon,
 
     for (i = 0; i < virJSONValueArraySize(devices); i++) {
         virJSONValuePtr dev = virJSONValueArrayGet(devices, i);
+        virJSONValuePtr inserted;
+        virJSONValuePtr image;
         struct qemuDomainDiskInfo *info;
         const char *thisdev;
         const char *status;
@@ -1853,6 +1855,21 @@ int qemuMonitorJSONGetBlockInfo(qemuMonitorPtr mon,
             info->io_status = qemuMonitorBlockIOStatusToError(status);
             if (info->io_status < 0)
                 goto cleanup;
+        }
+
+        if ((inserted = virJSONValueObjectGetObject(dev, "inserted"))) {
+            if (!(image = virJSONValueObjectGetObject(inserted, "image"))) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("cannot read 'inserted/image' value"));
+                goto cleanup;
+            }
+
+            if (virJSONValueObjectGetNumberUlong(image, "virtual-size",
+                &info->guest_size) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("cannot read 'inserted/image/virtual-size' value"));
+                goto cleanup;
+            }
         }
     }
 
