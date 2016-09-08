@@ -3874,6 +3874,10 @@ qemuMigrationPrepareAny(virQEMUDriverPtr driver,
         priv->nbdPort = 0;
         qemuDomainRemoveInactive(driver, vm);
     }
+
+    if (ret < 0)
+        virDomainObjRemoveTransientDef(vm);
+
     virDomainObjEndAPI(&vm);
     qemuDomainEventQueue(driver, event);
     qemuMigrationCookieFree(mig);
