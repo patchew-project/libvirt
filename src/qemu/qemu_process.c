@@ -4954,7 +4954,6 @@ qemuProcessPrepareDomain(virConnectPtr conn,
     size_t i;
     char *nodeset = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     virCapsPtr caps;
 
     if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
@@ -5020,8 +5019,8 @@ qemuProcessPrepareDomain(virConnectPtr conn,
     if (qemuDomainMasterKeyCreate(vm) < 0)
         goto cleanup;
 
-    VIR_DEBUG("Add secrets to disks and hostdevs");
-    if (qemuDomainSecretPrepare(conn, vm) < 0)
+    VIR_DEBUG("Add secrets to disks, hostdevs, and chardevs");
+    if (qemuDomainSecretPrepare(conn, driver, vm) < 0)
         goto cleanup;
 
     for (i = 0; i < vm->def->nchannels; i++) {
@@ -5046,7 +5045,6 @@ qemuProcessPrepareDomain(virConnectPtr conn,
  cleanup:
     VIR_FREE(nodeset);
     virObjectUnref(caps);
-    virObjectUnref(cfg);
     return ret;
 }
 

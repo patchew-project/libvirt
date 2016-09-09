@@ -69,6 +69,7 @@ int qemuBuildSecretInfoProps(qemuDomainSecretInfoPtr secinfo,
 int qemuBuildTLSx509BackendProps(const char *tlspath,
                                  bool listen,
                                  bool verifypeer,
+                                 const char *secalias,
                                  virQEMUCapsPtr qemuCaps,
                                  virJSONValuePtr *propsret);
 
