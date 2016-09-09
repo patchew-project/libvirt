@@ -1093,6 +1093,7 @@ struct _virDomainChrSourceDef {
             bool listen;
             int protocol;
             bool tlscreds;
+            int disableTLS; /* enum virTristateBool */
         } tcp;
         struct {
             char *bindHost;

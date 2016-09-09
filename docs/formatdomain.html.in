@@ -6192,6 +6192,26 @@ qemu-kvm -net nic,model=? /dev/null
   &lt;/devices&gt;
   ...</pre>
 
+    <p>
+      <span class="since">Since 2.3.0,</span> some hypervisors support using
+      a TLS X.509 certificate environment in order to encrypt all serial TCP
+      connections via a hypervisor configuration option. In some instances
+      this may not be desired, so in order to disable TLS for a specific
+      chardev an optional attribute <code>disableTLS</code> is available.
+      By setting this to "yes" it will be possible for a hypervisor to not
+      use the TLS encryption for the particular character device.
+    </p>
+<pre>
+  ...
+  &lt;devices&gt;
+    &lt;serial type="tcp"&gt;
+      &lt;source mode='connect' host="127.0.0.1" service="5555" disableTLS="yes"/&gt;
+      &lt;protocol type="raw"/&gt;
+      &lt;target port="0"/&gt;
+    &lt;/serial&gt;
+  &lt;/devices&gt;
+  ...</pre>
+
     <h6><a name="elementsCharUDP">UDP network console</a></h6>
 
     <p>
