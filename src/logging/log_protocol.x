@@ -34,6 +34,11 @@ enum virLogManagerProtocolDomainOpenLogFileFlags {
     VIR_LOG_MANAGER_PROTOCOL_DOMAIN_OPEN_LOG_FILE_TRUNCATE = 1
 };
 
+enum virLogManagerProtocolDomainReadLogFileFlags {
+    /* wait until EOF from writing side */
+    VIR_LOG_MANAGER_PROTOCOL_DOMAIN_READ_LOG_FILE_WAIT = 1
+};
+
 /* Obtain a file handle suitable for writing to a
  * log file for a domain
  */

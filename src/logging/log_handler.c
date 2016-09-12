@@ -23,6 +23,7 @@
 #include <config.h>
 
 #include "log_handler.h"
+#include "log_protocol.h"
 #include "virerror.h"
 #include "virobject.h"
 #include "virfile.h"
@@ -54,10 +55,12 @@ struct _virLogHandlerLogFile {
     char *driver;
     unsigned char domuuid[VIR_UUID_BUFLEN];
     char *domname;
+    char *path;
 };
 
 struct _virLogHandler {
     virObjectLockable parent;
+    virCond condition;
 
     bool privileged;
     size_t max_size;
@@ -102,6 +105,7 @@ virLogHandlerLogFileFree(virLogHandlerLogFilePtr file)
 
     VIR_FREE(file->driver);
     VIR_FREE(file->domname);
+    VIR_FREE(file->path);
     VIR_FREE(file);
 }
 
@@ -130,6 +134,21 @@ virLogHandlerGetLogFileFromWatch(virLogHandlerPtr handler,
 
     for (i = 0; i < handler->nfiles; i++) {
         if (handler->files[i]->watch == watch)
+            return handler->files[i];
+    }
+
+    return NULL;
+}
+
+
+static virLogHandlerLogFilePtr
+virLogHandlerGetLogFileFromPath(virLogHandlerPtr handler,
+                                const char* path)
+{
+    size_t i;
+
+    for (i = 0; i < handler->nfiles; i++) {
+        if (STREQ(handler->files[i]->path, path))
             return handler->files[i];
     }
 
@@ -179,6 +198,7 @@ virLogHandlerDomainLogFileEvent(int watch,
  error:
     handler->inhibitor(false, handler->opaque);
     virLogHandlerLogFileClose(handler, logfile);
+    virCondBroadcast(&handler->condition);
     virObjectUnlock(handler);
 }
 
@@ -196,6 +216,9 @@ virLogHandlerNew(bool privileged,
         goto error;
 
     if (!(handler = virObjectLockableNew(virLogHandlerClass)))
+        goto error;
+
+    if (virCondInit(&handler->condition) < 0)
         goto error;
 
     handler->privileged = privileged;
@@ -357,6 +380,7 @@ virLogHandlerDispose(void *obj)
         virLogHandlerLogFileFree(handler->files[i]);
     }
     VIR_FREE(handler->files);
+    virCondDestroy(&handler->condition);
 }
 
 
@@ -401,7 +425,8 @@ virLogHandlerDomainOpenLogFile(virLogHandlerPtr handler,
     pipefd[0] = -1;
     memcpy(file->domuuid, domuuid, VIR_UUID_BUFLEN);
     if (VIR_STRDUP(file->driver, driver) < 0 ||
-        VIR_STRDUP(file->domname, domname) < 0)
+        VIR_STRDUP(file->domname, domname) < 0 ||
+        VIR_STRDUP(file->path, path) < 0)
         goto error;
 
     if ((file->file = virRotatingFileWriterNew(path,
@@ -492,9 +517,18 @@ virLogHandlerDomainReadLogFile(virLogHandlerPtr handler,
     char *data = NULL;
     ssize_t got;
 
-    virCheckFlags(0, NULL);
+    virCheckFlags(VIR_LOG_MANAGER_PROTOCOL_DOMAIN_READ_LOG_FILE_WAIT, NULL);
 
     virObjectLock(handler);
+
+    if (flags & VIR_LOG_MANAGER_PROTOCOL_DOMAIN_READ_LOG_FILE_WAIT) {
+        while (virLogHandlerGetLogFileFromPath(handler, path)) {
+            if (virCondWait(&handler->condition, &handler->parent.lock) < 0) {
+                virReportSystemError(errno, "%s", _("failed to wait for EOF"));
+                goto error;
+            }
+        }
+    }
 
     if (!(file = virRotatingFileReaderNew(path, handler->max_backups)))
         goto error;
