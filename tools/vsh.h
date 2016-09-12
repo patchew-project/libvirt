@@ -179,6 +179,7 @@ struct _vshCmdDef {
     const vshCmdOptDef *opts;   /* definition of command options */
     const vshCmdInfo *info;     /* details about command */
     unsigned int flags;         /* bitwise OR of VSH_CMD_FLAG */
+    const char *alias;          /* name of the aliased command */
 };
 
 /*

@@ -904,7 +904,8 @@ static const vshCmdDef virshCmds[] = {
      .handler = cmdSelfTest,
      .opts = NULL,
      .info = info_selftest,
-     .flags = VSH_CMD_FLAG_NOCONNECT | VSH_CMD_FLAG_ALIAS
+     .flags = VSH_CMD_FLAG_NOCONNECT | VSH_CMD_FLAG_ALIAS,
+     .alias = "self-test"
     },
     {.name = NULL}
 };
