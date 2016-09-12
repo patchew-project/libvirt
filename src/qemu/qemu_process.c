@@ -5493,6 +5493,8 @@ qemuProcessLaunch(virConnectPtr conn,
  cleanup:
     qemuDomainSecretDestroy(vm);
     virCommandFree(cmd);
+    if (logCtxt)
+        qemuDomainLogContextHalfClose(logCtxt);
     qemuDomainLogContextFree(logCtxt);
     virObjectUnref(cfg);
     virObjectUnref(caps);

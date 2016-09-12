@@ -3841,12 +3841,13 @@ ssize_t qemuDomainLogContextRead(qemuDomainLogContextPtr ctxt,
     char *buf;
     size_t buflen;
     if (ctxt->manager) {
+        int flags = VIR_LOG_MANAGER_PROTOCOL_DOMAIN_READ_LOG_FILE_WAIT;
         buf = virLogManagerDomainReadLogFile(ctxt->manager,
                                              ctxt->path,
                                              ctxt->inode,
                                              ctxt->pos,
                                              1024 * 128,
-                                             0);
+                                             flags);
         if (!buf)
             return -1;
         buflen = strlen(buf);
@@ -3974,6 +3975,10 @@ virLogManagerPtr qemuDomainLogContextGetManager(qemuDomainLogContextPtr ctxt)
     return ctxt->manager;
 }
 
+void qemuDomainLogContextHalfClose(qemuDomainLogContextPtr ctxt)
+{
+    VIR_FORCE_CLOSE(ctxt->writefd);
+}
 
 void qemuDomainLogContextFree(qemuDomainLogContextPtr ctxt)
 {
