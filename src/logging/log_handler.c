@@ -140,7 +140,7 @@ virLogHandlerGetLogFileFromWatch(virLogHandlerPtr handler,
 static void
 virLogHandlerDomainLogFileEvent(int watch,
                                 int fd,
-                                int events,
+                                int events ATTRIBUTE_UNUSED,
                                 void *opaque)
 {
     virLogHandlerPtr handler = opaque;
@@ -167,10 +167,10 @@ virLogHandlerDomainLogFileEvent(int watch,
         goto error;
     }
 
-    if (virRotatingFileWriterAppend(logfile->file, buf, len) != len)
+    if (len == 0)
         goto error;
 
-    if (events & VIR_EVENT_HANDLE_HANGUP)
+    if (virRotatingFileWriterAppend(logfile->file, buf, len) != len)
         goto error;
 
     virObjectUnlock(handler);
