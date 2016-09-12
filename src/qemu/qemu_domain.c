@@ -3974,6 +3974,10 @@ virLogManagerPtr qemuDomainLogContextGetManager(qemuDomainLogContextPtr ctxt)
     return ctxt->manager;
 }
 
+void qemuDomainLogContextHalfClose(qemuDomainLogContextPtr ctxt)
+{
+    VIR_FORCE_CLOSE(ctxt->writefd);
+}
 
 void qemuDomainLogContextFree(qemuDomainLogContextPtr ctxt)
 {
