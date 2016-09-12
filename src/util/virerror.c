@@ -1427,22 +1427,21 @@ void virReportErrorHelper(int domcode,
 {
     int save_errno = errno;
     va_list args;
-    char errorMessage[1024];
+    char *errorMessage = NULL;
     const char *virerr;
 
     if (fmt) {
         va_start(args, fmt);
-        vsnprintf(errorMessage, sizeof(errorMessage)-1, fmt, args);
+        ignore_value(virVasprintfQuiet(&errorMessage, fmt, args));
         va_end(args);
-    } else {
-        errorMessage[0] = '\0';
     }
 
-    virerr = virErrorMsg(errorcode, (errorMessage[0] ? errorMessage : NULL));
+    virerr = virErrorMsg(errorcode, errorMessage);
     virRaiseErrorFull(filename, funcname, linenr,
                       domcode, errorcode, VIR_ERR_ERROR,
                       virerr, errorMessage, NULL,
                       -1, -1, virerr, errorMessage);
+    VIR_FREE(errorMessage);
     errno = save_errno;
 }
 
