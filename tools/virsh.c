@@ -373,10 +373,11 @@ cmdSelfTest(vshControl *ctl, const vshCmd *cmd ATTRIBUTE_UNUSED)
 
     for (grp = cmdGroups; grp->name; grp++) {
         for (def = grp->commands; def->name; def++) {
-            if (def->flags & VSH_CMD_FLAG_ALIAS)
-                continue;
+            const vshCmdDef *c = def;
+            if (c->flags & VSH_CMD_FLAG_ALIAS)
+                c = vshCmddefSearch(c->alias);
 
-            if (!vshCmddefHelp(ctl, def->name))
+            if (!vshCmddefHelp(ctl, c->name))
                 return false;
         }
     }
@@ -904,7 +905,8 @@ static const vshCmdDef virshCmds[] = {
      .handler = cmdSelfTest,
      .opts = NULL,
      .info = info_selftest,
-     .flags = VSH_CMD_FLAG_NOCONNECT | VSH_CMD_FLAG_ALIAS
+     .flags = VSH_CMD_FLAG_NOCONNECT | VSH_CMD_FLAG_ALIAS,
+     .alias = "self-test"
     },
     {.name = NULL}
 };

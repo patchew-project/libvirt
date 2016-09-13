@@ -1410,6 +1410,12 @@ vshCommandParse(vshControl *ctl, vshCommandParser *parser)
                     vshError(ctl, _("unknown command: '%s'"), tkdata);
                     goto syntaxError;   /* ... or ignore this command only? */
                 }
+                /* aliases need to be resolved to the actual commands */
+                if (cmd->flags & VSH_CMD_FLAG_ALIAS) {
+                    VIR_FREE(tkdata);
+                    tkdata = vshStrdup(ctl, cmd->alias);
+                    cmd = vshCmddefSearch(tkdata);
+                }
                 if (vshCmddefOptParse(cmd, &opts_need_arg,
                                       &opts_required) < 0) {
                     vshError(ctl,
