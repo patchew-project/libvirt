@@ -1622,6 +1622,7 @@ int main(int argc, char **argv) {
                 0, "shutdown", NULL, NULL);
 
  cleanup:
+    virHookCleanUp();
     virNetlinkEventServiceStopAll();
     virObjectUnref(remoteProgram);
     virObjectUnref(lxcProgram);

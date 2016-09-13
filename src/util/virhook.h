@@ -100,11 +100,21 @@ typedef enum {
     VIR_HOOK_LIBXL_OP_LAST,
 } virHookLibxlOpType;
 
+struct _virHookInotify {
+    int inotifyFD;
+    int inotifyWatch;
+    int inotifyHandler;
+};
+
+typedef struct _virHookInotify *virHookInotifyPtr;
+
 int virHookInitialize(void);
 
 int virHookPresent(int driver);
 
 int virHookCall(int driver, const char *id, int op, int sub_op,
                 const char *extra, const char *input, char **output);
+
+int virHookCleanUp(void);
 
 #endif /* __VIR_HOOKS_H__ */

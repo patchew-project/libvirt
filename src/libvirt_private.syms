@@ -1649,6 +1649,7 @@ virHashValueFree;
 virHookCall;
 virHookInitialize;
 virHookPresent;
+virHookCleanUp;
 
 
 # util/virhostdev.h

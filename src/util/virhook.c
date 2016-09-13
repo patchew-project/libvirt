@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/inotify.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -44,6 +45,10 @@
 VIR_LOG_INIT("util.hook");
 
 #define LIBVIRT_HOOK_DIR SYSCONFDIR "/libvirt/hooks"
+
+#define virHookInstall(driver) virHooksFound |= (1 << driver);
+
+#define virHookUninstall(driver) virHooksFound ^= (1 << driver);
 
 VIR_ENUM_DECL(virHookDriver)
 VIR_ENUM_DECL(virHookDaemonOp)
@@ -109,6 +114,8 @@ VIR_ENUM_IMPL(virHookLibxlOp, VIR_HOOK_LIBXL_OP_LAST,
 
 static int virHooksFound = -1;
 
+static virHookInotifyPtr virHooksInotify = NULL;
+
 /**
  * virHookCheck:
  * @driver: the driver name "daemon", "qemu", "lxc"...
@@ -153,6 +160,121 @@ virHookCheck(int no, const char *driver)
     return ret;
 }
 
+/**
+ * virHookInotifyEvent:
+ * @fd: inotify file descriptor.
+ *
+ * Identifies file events at libvirt's hook directory.
+ * Install or uninstall hooks on demand. Acording file manipulation.
+ */
+static void
+virHookInotifyEvent(int watch ATTRIBUTE_UNUSED,
+                    int fd,
+                    int events ATTRIBUTE_UNUSED,
+                    void *data ATTRIBUTE_UNUSED)
+{
+    char buf[1024];
+    struct inotify_event *e;
+    int got;
+    int driver;
+    char *tmp, *name;
+
+    VIR_DEBUG("inotify event in virHookInotify()");
+
+reread:
+    got = read(fd, buf, sizeof(buf));
+    if (got == -1) {
+        if (errno == EINTR)
+            goto reread;
+        return;
+    }
+
+    tmp = buf;
+    while (got) {
+        if (got < sizeof(struct inotify_event))
+            return;
+
+        VIR_WARNINGS_NO_CAST_ALIGN
+        e = (struct inotify_event *)tmp;
+        VIR_WARNINGS_RESET
+
+        tmp += sizeof(struct inotify_event);
+        got -= sizeof(struct inotify_event);
+
+        if (got < e->len)
+            return;
+
+        tmp += e->len;
+        got -= e->len;
+
+        name = (char *)&(e->name);
+
+        /* Removing hook file. */
+        if (e->mask & (IN_DELETE | IN_MOVED_FROM)) {
+            if ((driver = virHookDriverTypeFromString(name)) < 0) {
+                VIR_DEBUG("Invalid hook name for %s", name);
+                return;
+            }
+
+            virHookUninstall(driver);
+        }
+
+        /* Creating hook file. */
+        if (e->mask & (IN_CREATE | IN_CLOSE_WRITE | IN_MOVED_TO)) {
+            if ((driver = virHookDriverTypeFromString(name)) < 0) {
+                VIR_DEBUG("Invalid hook name for %s", name);
+                return;
+            }
+
+            virHookInstall(driver);
+        }
+    }
+}
+
+/**
+ * virHookInotifyInit:
+ *
+ * Initialize inotify hooks support.
+ * Enable hooks installation on demand.
+ *
+ * Returns 0 if inotify was successfully installed, -1 in case of failure.
+ */
+static int
+virHookInotifyInit(void) {
+
+    if (VIR_ALLOC(virHooksInotify) < 0)
+        goto error;
+
+    if ((virHooksInotify->inotifyFD = inotify_init()) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("cannot initialize inotify"));
+        goto error;
+    }
+
+    if ((virHooksInotify->inotifyWatch =
+            inotify_add_watch(virHooksInotify->inotifyFD,
+                              LIBVIRT_HOOK_DIR,
+                              IN_CREATE | IN_MODIFY | IN_DELETE)) < 0) {
+        virReportSystemError(errno, _("Failed to create inotify watch on %s"),
+                             LIBVIRT_HOOK_DIR);
+        goto error;
+    }
+
+    if ((virHooksInotify->inotifyHandler =
+            virEventAddHandle(virHooksInotify->inotifyFD,
+                              VIR_EVENT_HANDLE_READABLE,
+                              virHookInotifyEvent, NULL, NULL)) < 0) {
+        VIR_DEBUG("Failed to add inotify handle in virHook.");
+        goto error;
+    }
+
+    return 0;
+
+error:
+    virHookCleanUp();
+    return -1;
+}
+
+
 /*
  * virHookInitialize:
  *
@@ -174,10 +296,14 @@ virHookInitialize(void)
             return -1;
 
         if (res == 1) {
-            virHooksFound |= (1 << i);
+            virHookInstall(i);
             ret++;
         }
     }
+
+    if (virHookInotifyInit() < 0)
+        VIR_INFO("Disabling hooks inotify support.");
+
     return ret;
 }
 
@@ -309,7 +435,12 @@ virHookCall(int driver,
     if (output)
         virCommandSetOutputBuffer(cmd, output);
 
-    ret = virCommandRun(cmd, NULL);
+    ret = virHookCheck(driver, virHookDriverTypeToString(driver));
+
+    if (ret > 0) {
+        ret = virCommandRun(cmd, NULL);
+    }
+
     if (ret < 0) {
         /* Convert INTERNAL_ERROR into known error.  */
         virReportError(VIR_ERR_HOOK_SCRIPT_FAILED, "%s",
@@ -321,4 +452,34 @@ virHookCall(int driver,
     VIR_FREE(path);
 
     return ret;
+}
+
+/**
+ * virHookCall:
+ *
+ * Release all structures and data used in virhooks.
+ *
+ * Returns: 0 if the execution succeeded
+ */
+int
+virHookCleanUp(void)
+{
+    if (!virHooksInotify)
+        return -1;
+
+    if ((virHooksInotify->inotifyFD >= 0) &&
+        (virHooksInotify->inotifyWatch >= 0))
+        if (inotify_rm_watch(virHooksInotify->inotifyFD,
+                             virHooksInotify->inotifyWatch) < 0)
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("Cannot remove inotify watcher."));
+
+    if (virHooksInotify->inotifyHandler >= 0)
+        virEventRemoveHandle(virHooksInotify->inotifyHandler);
+
+    VIR_FORCE_CLOSE(virHooksInotify->inotifyFD);
+    VIR_FREE(virHooksInotify);
+
+    virHooksFound = -1;
+
+    return 0;
 }
