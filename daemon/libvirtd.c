@@ -92,6 +92,9 @@
 # ifdef WITH_STORAGE
 #  include "storage/storage_driver.h"
 # endif
+# ifdef WITH_FS
+#  include "fs/fs_driver.h"
+# endif
 # ifdef WITH_NODE_DEVICES
 #  include "node_device/node_device_driver.h"
 # endif
@@ -374,6 +377,9 @@ static void daemonInitialize(void)
 # ifdef WITH_NWFILTER
     virDriverLoadModule("nwfilter");
 # endif
+# ifdef WITH_FS
+    virDriverLoadModule("fs");
+# endif
 # ifdef WITH_XEN
     virDriverLoadModule("xen");
 # endif
@@ -398,6 +404,7 @@ static void daemonInitialize(void)
 # ifdef WITH_VZ
     virDriverLoadModule("vz");
 # endif
+
 #else
 # ifdef WITH_NETWORK
     networkRegister();
@@ -407,6 +414,9 @@ static void daemonInitialize(void)
 # endif
 # ifdef WITH_STORAGE
     storageRegister();
+# endif
+# ifdef WITH_FS
+    fsRegister();
 # endif
 # ifdef WITH_NODE_DEVICES
     nodedevRegister();

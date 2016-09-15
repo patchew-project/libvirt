@@ -87,6 +87,7 @@ struct _virConnectDriver {
     virNWFilterDriverPtr nwfilterDriver;
     virSecretDriverPtr secretDriver;
     virStorageDriverPtr storageDriver;
+    virFSDriverPtr fsDriver;
 };
 
 int virRegisterConnectDriver(virConnectDriverPtr driver,

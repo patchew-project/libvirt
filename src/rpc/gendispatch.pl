@@ -56,6 +56,8 @@ sub fixup_name {
     my $name = shift;
 
     $name =~ s/Nwfilter/NWFilter/;
+    $name =~ s/Fspool/FSPool/;
+    $name =~ s/Fsitem/FSItem/;
     $name =~ s/Xml$/XML/;
     $name =~ s/Uri$/URI/;
     $name =~ s/Uuid$/UUID/;
@@ -500,7 +502,7 @@ elsif ($mode eq "server") {
                 if ($args_member =~ m/^remote_nonnull_string name;/ and $has_node_device) {
                     # ignore the name arg for node devices
                     next
-                } elsif ($args_member =~ m/^remote_nonnull_(domain|network|storage_pool|storage_vol|interface|secret|nwfilter) (\S+);/) {
+                } elsif ($args_member =~ m/^remote_nonnull_(domain|network|storage_pool|storage_vol|interface|secret|nwfilter|fspool|fsitem) (\S+);/) {
                     my $type_name = name_to_TypeName($1);
 
                     push(@vars_list, "vir${type_name}Ptr $2 = NULL");
@@ -665,7 +667,7 @@ elsif ($mode eq "server") {
                         if (!$modern_ret_as_list) {
                             push(@ret_list, "ret->$3 = tmp.$3;");
                         }
-                    } elsif ($ret_member =~ m/(?:admin|remote)_nonnull_(secret|nwfilter|node_device|interface|network|storage_vol|storage_pool|domain_snapshot|domain|server|client) (\S+)<(\S+)>;/) {
+                    } elsif ($ret_member =~ m/(?:admin|remote)_nonnull_(secret|nwfilter|node_device|interface|network|storage_vol|storage_pool|domain_snapshot|domain|server|client|fspool|fsitem) (\S+)<(\S+)>;/) {
                         $modern_ret_struct_name = $1;
                         $single_ret_list_error_msg_type = $1;
                         $single_ret_list_name = $2;
@@ -723,7 +725,7 @@ elsif ($mode eq "server") {
                     $single_ret_var = $1;
                     $single_ret_by_ref = 0;
                     $single_ret_check = " == NULL";
-                } elsif ($ret_member =~ m/^remote_nonnull_(domain|network|storage_pool|storage_vol|interface|node_device|secret|nwfilter|domain_snapshot) (\S+);/) {
+                } elsif ($ret_member =~ m/^remote_nonnull_(domain|network|storage_pool|storage_vol|interface|node_device|secret|nwfilter|domain_snapshot|fspool|fsitem) (\S+);/) {
                     my $type_name = name_to_TypeName($1);
 
                     if ($call->{ProcName} eq "DomainCreateWithFlags") {
@@ -1268,7 +1270,7 @@ elsif ($mode eq "client") {
                     $priv_src = "dev->conn";
                     push(@args_list, "virNodeDevicePtr dev");
                     push(@setters_list, "args.name = dev->name;");
-                } elsif ($args_member =~ m/^remote_nonnull_(domain|network|storage_pool|storage_vol|interface|secret|nwfilter|domain_snapshot) (\S+);/) {
+                } elsif ($args_member =~ m/^remote_nonnull_(domain|network|storage_pool|storage_vol|interface|secret|nwfilter|domain_snapshot|fspool|fsitem) (\S+);/) {
                     my $name = $1;
                     my $arg_name = $2;
                     my $type_name = name_to_TypeName($name);
@@ -1461,7 +1463,7 @@ elsif ($mode eq "client") {
                         }
 
                         push(@ret_list, "memcpy(result->$3, ret.$3, sizeof(result->$3));");
-                    } elsif ($ret_member =~ m/(?:admin|remote)_nonnull_(secret|nwfilter|node_device|interface|network|storage_vol|storage_pool|domain_snapshot|domain|server|client) (\S+)<(\S+)>;/) {
+                    } elsif ($ret_member =~ m/(?:admin|remote)_nonnull_(secret|nwfilter|node_device|interface|network|storage_vol|storage_pool|domain_snapshot|domain|server|client|fspool|fsitem) (\S+)<(\S+)>;/) {
                         my $proc_name = name_to_TypeName($1);
 
                         if ($structprefix eq "admin") {
@@ -1513,7 +1515,7 @@ elsif ($mode eq "client") {
                     push(@ret_list, "VIR_FREE(ret.$1);");
                     $single_ret_var = "char *rv = NULL";
                     $single_ret_type = "char *";
-                } elsif ($ret_member =~ m/^remote_nonnull_(domain|network|storage_pool|storage_vol|node_device|interface|secret|nwfilter|domain_snapshot) (\S+);/) {
+                } elsif ($ret_member =~ m/^remote_nonnull_(domain|network|storage_pool|storage_vol|node_device|interface|secret|nwfilter|domain_snapshot|fspool|fsitem) (\S+);/) {
                     my $name = $1;
                     my $arg_name = $2;
                     my $type_name = name_to_TypeName($name);
@@ -1968,7 +1970,8 @@ elsif ($mode eq "client") {
             "storage_conf.h",
             "nwfilter_conf.h",
             "node_device_conf.h",
-            "interface_conf.h"
+            "interface_conf.h",
+            "fs_conf.h"
             );
         foreach my $hdr (@headers) {
             print "#include \"$hdr\"\n";
@@ -2053,6 +2056,8 @@ elsif ($mode eq "client") {
             $object =~ s/^(\w)/uc $1/e;
             $object =~ s/_(\w)/uc $1/e;
             $object =~ s/Nwfilter/NWFilter/;
+            $object =~ s/Fspool/FSPool/;
+            $object =~ s/Fsitem/FSItem/;
             my $objecttype = $prefix . $object . "DefPtr";
             $apiname .= $action . "ACL";
 
@@ -2065,6 +2070,8 @@ elsif ($mode eq "client") {
             if ($object ne "Connect") {
                 if ($object eq "StorageVol") {
                     push @argdecls, "virStoragePoolDefPtr pool";
+                } elsif ($object eq "FSItem") {
+                    push @argdecls, "virFSPoolDefPtr fspool";
                 }
                 push @argdecls, "$objecttype $arg";
             }
@@ -2094,6 +2101,8 @@ elsif ($mode eq "client") {
                 if ($object ne "Connect") {
                     if ($object eq "StorageVol") {
                         push @argvars, "pool";
+                    } elsif ($object eq "FSItem") {
+                        push @argvars, "fspool";
                     }
                     push @argvars, $arg;
                 }

@@ -34,6 +34,15 @@ struct remote_nonnull_storage_vol {
         remote_nonnull_string      name;
         remote_nonnull_string      key;
 };
+struct remote_nonnull_fspool {
+    remote_nonnull_string name;
+    remote_uuid uuid;
+};
+struct remote_nonnull_fsitem {
+    remote_nonnull_string fspool;
+    remote_nonnull_string name;
+    remote_nonnull_string key;
+};
 struct remote_nonnull_node_device {
         remote_nonnull_string      name;
 };
@@ -1482,6 +1491,162 @@ struct remote_storage_vol_resize_args {
         remote_nonnull_storage_vol vol;
         uint64_t                   capacity;
         u_int                      flags;
+};
+struct remote_fspool_lookup_by_uuid_args {
+    remote_uuid uuid;
+};
+struct remote_fspool_lookup_by_uuid_ret {
+    remote_nonnull_fspool pool;
+};
+struct remote_fspool_lookup_by_name_args {
+    remote_nonnull_string name;
+};
+struct remote_fspool_lookup_by_name_ret {
+    remote_nonnull_fspool fspool;
+};
+struct remote_fspool_lookup_by_item_args {
+    remote_nonnull_fsitem item;
+};
+struct remote_fspool_lookup_by_item_ret {
+    remote_nonnull_fspool fspool;
+};
+struct remote_fspool_create_xml_args {
+    remote_nonnull_string xml;
+    unsigned int flags;
+};
+struct remote_fspool_create_xml_ret {
+    remote_nonnull_fspool fspool;
+};
+struct remote_fspool_define_xml_args {
+    remote_nonnull_string xml;
+    unsigned int flags;
+};
+struct remote_fspool_define_xml_ret {
+    remote_nonnull_fspool fspool;
+};
+struct remote_fspool_build_args {
+    remote_nonnull_fspool fspool;
+    unsigned int flags;
+};
+struct remote_fspool_undefine_args {
+    remote_nonnull_fspool fspool;
+};
+struct remote_fspool_create_args {
+    remote_nonnull_fspool fspool;
+    unsigned int flags;
+};
+
+struct remote_fspool_destroy_args {
+    remote_nonnull_fspool fspool;
+};
+struct remote_fspool_delete_args {
+    remote_nonnull_fspool fspool;
+    unsigned int flags;
+};
+struct remote_fspool_get_xml_desc_args {
+    remote_nonnull_fspool fspool;
+    unsigned int flags;
+};
+struct remote_fs_pool_get_xml_desc_ret {
+    remote_nonnull_string xml;
+};
+struct remote_fspool_get_info_args {
+    remote_nonnull_fspool fspool;
+};
+struct remote_fspool_get_info_ret {
+    unsigned char state;
+    unsigned hyper capacity;
+    unsigned hyper allocation;
+    unsigned hyper available;
+};
+struct remote_fspool_get_autostart_args {
+    remote_nonnull_fspool fspool;
+};
+struct remote_fspool_get_autostart_ret {
+    int autostart;
+};
+struct remote_fspool_set_autostart_args {
+    remote_nonnull_fspool fspool;
+    int autostart;
+};
+struct remote_fspool_num_of_items_args {
+    remote_nonnull_fspool fspool;
+};
+struct remote_fspool_num_of_items_ret {
+    int num;
+};
+struct remote_fspool_list_items_args {
+    remote_nonnull_fspool fspool;
+    int maxnames;
+};
+
+struct remote_fspool_list_items_ret {
+    remote_nonnull_string names<REMOTE_FSITEM_LIST_MAX>;
+};
+struct remote_fspool_refresh_args {
+    remote_nonnull_fspool fspool;
+    unsigned int flags;
+};
+struct remote_fsitem_lookup_by_name_args {
+    remote_nonnull_fspool fspool;
+    remote_nonnull_string name;
+};
+struct remote_fsitem_lookup_by_name_ret {
+    remote_nonnull_fsitem item;
+};
+struct remote_fsitem_lookup_by_key_args {
+    remote_nonnull_string key;
+};
+struct remote_fsitem_lookup_by_key_ret {
+    remote_nonnull_fsitem item;
+};
+struct remote_fsitem_lookup_by_path_args {
+    remote_nonnull_string path;
+};
+struct remote_fsitem_lookup_by_path_ret {
+    remote_nonnull_fsitem item;
+};
+struct remote_fsitem_create_xml_args {
+    remote_nonnull_fspool fspool;
+    remote_nonnull_string xml;
+    unsigned int flags;
+};
+struct remote_fsitem_create_xml_ret {
+    remote_nonnull_fsitem item;
+};
+struct remote_fsitem_create_xml_from_args {
+    remote_nonnull_fspool fspool;
+    remote_nonnull_string xml;
+    remote_nonnull_fsitem cloneitem;
+    unsigned int flags;
+};
+struct remote_fsitem_create_xml_from_ret {
+    remote_nonnull_fsitem item;
+};
+struct remote_fsitem_delete_args {
+    remote_nonnull_fsitem item;
+    unsigned int flags;
+};
+struct remote_fsitem_get_xml_desc_args {
+    remote_nonnull_fsitem item;
+    unsigned int flags;
+};
+struct remote_fsitem_get_xml_desc_ret {
+    remote_nonnull_string xml;
+};
+struct remote_fsitem_get_info_args {
+    remote_nonnull_fsitem item;
+};
+struct remote_fsitem_get_info_ret {
+    char type;
+    unsigned hyper capacity;
+    unsigned hyper allocation;
+};
+struct remote_fsitem_get_path_args {
+    remote_nonnull_fsitem item;
+};
+struct remote_fsitem_get_path_ret {
+    remote_nonnull_string name;
 };
 struct remote_node_num_of_devices_args {
         remote_string              cap;

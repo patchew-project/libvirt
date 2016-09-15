@@ -85,6 +85,12 @@ const REMOTE_STORAGE_POOL_LIST_MAX = 4096;
 /* Upper limit on lists of storage vols. */
 const REMOTE_STORAGE_VOL_LIST_MAX = 16384;
 
+/* Upper limit on lists of fspools. */
+const REMOTE_FSPOOL_LIST_MAX = 4096;
+
+/* Upper limit on lists of fsitems. */
+const REMOTE_FSITEM_LIST_MAX = 16384;
+
 /* Upper limit on lists of node devices. */
 const REMOTE_NODE_DEVICE_LIST_MAX = 16384;
 
@@ -294,6 +300,19 @@ struct remote_nonnull_storage_vol {
     remote_nonnull_string key;
 };
 
+/* A fspool which may not be NULL. */
+struct remote_nonnull_fspool {
+    remote_nonnull_string name;
+    remote_uuid uuid;
+};
+
+/* A fsitem which may not be NULL. */
+struct remote_nonnull_fsitem {
+    remote_nonnull_string fspool;
+    remote_nonnull_string name;
+    remote_nonnull_string key;
+};
+
 /* A node device which may not be NULL. */
 struct remote_nonnull_node_device {
     remote_nonnull_string name;
@@ -318,6 +337,8 @@ typedef remote_nonnull_network *remote_network;
 typedef remote_nonnull_nwfilter *remote_nwfilter;
 typedef remote_nonnull_storage_pool *remote_storage_pool;
 typedef remote_nonnull_storage_vol *remote_storage_vol;
+typedef remote_nonnull_fspool *remote_fspool;
+typedef remote_nonnull_fsitem *remote_fsitem;
 typedef remote_nonnull_node_device *remote_node_device;
 
 /* Error message. See <virterror.h> for explanation of fields. */
@@ -1955,6 +1976,206 @@ struct remote_storage_vol_resize_args {
     unsigned int flags;
 };
 
+/* FS pool calls: */
+
+struct remote_fspool_lookup_by_uuid_args {
+    remote_uuid uuid;
+};
+
+struct remote_fspool_lookup_by_uuid_ret {
+    remote_nonnull_fspool pool;
+};
+
+struct remote_fspool_lookup_by_name_args {
+    remote_nonnull_string name;
+};
+
+struct remote_fspool_lookup_by_name_ret {
+    remote_nonnull_fspool fspool;
+};
+
+struct remote_fspool_lookup_by_item_args {
+    remote_nonnull_fsitem item;
+};
+
+struct remote_fspool_lookup_by_item_ret {
+    remote_nonnull_fspool fspool;
+};
+
+struct remote_fspool_create_xml_args {
+    remote_nonnull_string xml;
+    unsigned int flags;
+};
+
+struct remote_fspool_create_xml_ret {
+    remote_nonnull_fspool fspool;
+};
+
+struct remote_fspool_define_xml_args {
+    remote_nonnull_string xml;
+    unsigned int flags;
+};
+
+struct remote_fspool_define_xml_ret {
+    remote_nonnull_fspool fspool;
+};
+
+struct remote_fspool_build_args {
+    remote_nonnull_fspool fspool;
+    unsigned int flags;
+};
+
+struct remote_fspool_undefine_args {
+    remote_nonnull_fspool fspool;
+};
+
+struct remote_fspool_create_args {
+    remote_nonnull_fspool fspool;
+    unsigned int flags;
+};
+
+struct remote_fspool_destroy_args {
+    remote_nonnull_fspool fspool;
+};
+struct remote_fspool_delete_args {
+    remote_nonnull_fspool fspool;
+    unsigned int flags;
+};
+
+struct remote_fspool_get_xml_desc_args {
+    remote_nonnull_fspool fspool;
+    unsigned int flags;
+};
+
+struct remote_fs_pool_get_xml_desc_ret {
+    remote_nonnull_string xml;
+};
+
+struct remote_fspool_get_info_args {
+    remote_nonnull_fspool fspool;
+};
+
+struct remote_fspool_get_info_ret { /* insert@1 */
+    unsigned char state;
+    unsigned hyper capacity;
+    unsigned hyper allocation;
+    unsigned hyper available;
+};
+
+struct remote_fspool_get_autostart_args {
+    remote_nonnull_fspool fspool;
+};
+
+struct remote_fspool_get_autostart_ret {
+    int autostart;
+};
+
+struct remote_fspool_set_autostart_args {
+    remote_nonnull_fspool fspool;
+    int autostart;
+};
+
+struct remote_fspool_num_of_items_args {
+    remote_nonnull_fspool fspool;
+};
+
+struct remote_fspool_num_of_items_ret {
+    int num;
+};
+
+struct remote_fspool_list_items_args {
+    remote_nonnull_fspool fspool;
+    int maxnames;
+};
+
+struct remote_fspool_list_items_ret {
+    remote_nonnull_string names<REMOTE_FSITEM_LIST_MAX>; /* insert@1 */
+};
+struct remote_fspool_refresh_args {
+    remote_nonnull_fspool fspool;
+    unsigned int flags;
+};
+
+/* FS item calls: */
+
+struct remote_fsitem_lookup_by_name_args {
+    remote_nonnull_fspool fspool;
+    remote_nonnull_string name;
+};
+
+struct remote_fsitem_lookup_by_name_ret {
+    remote_nonnull_fsitem item;
+};
+
+struct remote_fsitem_lookup_by_key_args {
+    remote_nonnull_string key;
+};
+
+struct remote_fsitem_lookup_by_key_ret {
+    remote_nonnull_fsitem item;
+};
+
+struct remote_fsitem_lookup_by_path_args {
+    remote_nonnull_string path;
+};
+
+struct remote_fsitem_lookup_by_path_ret {
+    remote_nonnull_fsitem item;
+};
+
+struct remote_fsitem_create_xml_args {
+    remote_nonnull_fspool fspool;
+    remote_nonnull_string xml;
+    unsigned int flags;
+};
+
+struct remote_fsitem_create_xml_ret {
+    remote_nonnull_fsitem item;
+};
+
+struct remote_fsitem_create_xml_from_args {
+    remote_nonnull_fspool fspool;
+    remote_nonnull_string xml;
+    remote_nonnull_fsitem cloneitem;
+    unsigned int flags;
+};
+
+struct remote_fsitem_create_xml_from_ret {
+    remote_nonnull_fsitem item;
+};
+
+struct remote_fsitem_delete_args {
+    remote_nonnull_fsitem item;
+    unsigned int flags;
+};
+
+struct remote_fsitem_get_xml_desc_args {
+    remote_nonnull_fsitem item;
+    unsigned int flags;
+};
+
+struct remote_fsitem_get_xml_desc_ret {
+    remote_nonnull_string xml;
+};
+
+struct remote_fsitem_get_info_args {
+    remote_nonnull_fsitem item;
+};
+
+struct remote_fsitem_get_info_ret { /* insert@1 */
+    char type;
+    unsigned hyper capacity;
+    unsigned hyper allocation;
+};
+
+struct remote_fsitem_get_path_args {
+    remote_nonnull_fsitem item;
+};
+
+struct remote_fsitem_get_path_ret {
+    remote_nonnull_string name;
+};
+
 /* Node driver calls: */
 
 struct remote_node_num_of_devices_args {
@@ -2244,7 +2465,21 @@ struct remote_storage_pool_is_persistent_ret {
     int persistent;
 };
 
+struct remote_fspool_is_active_args {
+    remote_nonnull_fspool fspool;
+};
 
+struct remote_fspool_is_active_ret {
+    int active;
+};
+
+struct remote_fspool_is_persistent_args {
+    remote_nonnull_fspool fspool;
+};
+
+struct remote_fspool_is_persistent_ret {
+    int persistent;
+};
 struct remote_interface_is_active_args {
     remote_nonnull_interface iface;
 };
@@ -2871,6 +3106,27 @@ struct remote_storage_pool_list_all_volumes_args {
 
 struct remote_storage_pool_list_all_volumes_ret { /* insert@1 */
     remote_nonnull_storage_vol vols<REMOTE_STORAGE_VOL_LIST_MAX>;
+    unsigned int ret;
+};
+
+struct remote_connect_list_all_fspools_args {
+    int need_results;
+    unsigned int flags;
+};
+
+struct remote_connect_list_all_fspools_ret { /* insert@1 */
+    remote_nonnull_fspool fspools<REMOTE_FSPOOL_LIST_MAX>;
+    unsigned int ret;
+};
+
+struct remote_fspool_list_all_items_args {
+    remote_nonnull_fspool fspool;
+    int need_results;
+    unsigned int flags;
+};
+
+struct remote_fspool_list_all_items_ret { /* insert@1 */
+    remote_nonnull_fsitem items<REMOTE_FSITEM_LIST_MAX>;
     unsigned int ret;
 };
 
@@ -5934,5 +6190,213 @@ enum remote_procedure {
      * @generate: both
      * @acl: none
      */
-    REMOTE_PROC_NODE_DEVICE_EVENT_UPDATE = 377
+    REMOTE_PROC_NODE_DEVICE_EVENT_UPDATE = 377,
+
+    /**
+     * @generate: both
+     * @acl: fspool:start
+     * @acl: fspool:write
+     */
+    REMOTE_PROC_FSPOOL_CREATE_XML = 382,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:write
+     * @acl: fspool:save
+     */
+    REMOTE_PROC_FSPOOL_DEFINE_XML = 383,
+
+    /**
+     * @generate: both
+     * @acl: fspool:format
+     */
+    REMOTE_PROC_FSPOOL_BUILD = 384,
+
+    /**
+     * @generate: both
+     * @acl: fspool:format
+     */
+    REMOTE_PROC_FSPOOL_DELETE = 385,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:delete
+     */
+    REMOTE_PROC_FSPOOL_UNDEFINE = 386,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:getattr
+     */
+    REMOTE_PROC_FSPOOL_LOOKUP_BY_NAME = 387,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:getattr
+     */
+    REMOTE_PROC_FSPOOL_LOOKUP_BY_UUID = 388,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:getattr
+     */
+    REMOTE_PROC_FSPOOL_LOOKUP_BY_ITEM = 389,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:read
+     */
+    REMOTE_PROC_FSPOOL_GET_INFO = 390,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:read
+     */
+    REMOTE_PROC_FSPOOL_GET_XML_DESC = 391,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:search_items
+     * @aclfilter: fsitem:getattr
+     */
+    REMOTE_PROC_FSPOOL_NUM_OF_ITEMS = 392,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:search_items
+     * @aclfilter: fsitem:getattr
+     */
+    REMOTE_PROC_FSPOOL_LIST_ITEMS = 393,
+
+    /**
+     * @generate: both
+     * @acl: fsitem:create
+     */
+    REMOTE_PROC_FSITEM_CREATE_XML = 394,
+
+    /**
+     * @generate: both
+     * @acl: fsitem:delete
+     */
+    REMOTE_PROC_FSITEM_DELETE = 395,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fsitem:getattr
+     */
+    REMOTE_PROC_FSITEM_LOOKUP_BY_NAME = 396,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fsitem:getattr
+     */
+    REMOTE_PROC_FSITEM_LOOKUP_BY_KEY = 397,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fsitem:getattr
+     */
+    REMOTE_PROC_FSITEM_LOOKUP_BY_PATH = 398,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fsitem:read
+     */
+    REMOTE_PROC_FSITEM_GET_INFO = 399,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fsitem:read
+     */
+    REMOTE_PROC_FSITEM_GET_XML_DESC = 400,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fsitem:read
+     */
+    REMOTE_PROC_FSITEM_GET_PATH = 401,
+
+    /**
+     * @generate: both
+     * @acl: fsitem:create
+     */
+    REMOTE_PROC_FSITEM_CREATE_XML_FROM = 402,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: connect:search_fspools
+     * @aclfilter: fspool:getattr
+     */
+    REMOTE_PROC_CONNECT_LIST_ALL_FSPOOLS = 403,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:search_items
+     * @aclfilter: fsitem:getattr
+     */
+    REMOTE_PROC_FSPOOL_LIST_ALL_ITEMS = 404,
+
+    /**
+     * @generate: both
+     * @acl: fspool:refresh
+     */
+    REMOTE_PROC_FSPOOL_REFRESH = 405,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:read
+     */
+    REMOTE_PROC_FSPOOL_IS_ACTIVE = 406,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:read
+     */
+    REMOTE_PROC_FSPOOL_IS_PERSISTENT = 407,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:read
+     */
+    REMOTE_PROC_FSPOOL_GET_AUTOSTART = 408,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:write
+     */
+    REMOTE_PROC_FSPOOL_SET_AUTOSTART = 409,
+
+    /**
+     * @generate: both
+     * @acl: fspool:start
+     */
+    REMOTE_PROC_FSPOOL_CREATE = 410,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: fspool:stop
+     */
+    REMOTE_PROC_FSPOOL_DESTROY = 411
 };

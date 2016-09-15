@@ -54,6 +54,8 @@ while (<>) {
             if ($api !~ /^$mainprefix/) {
                 $suffix =~ s/^[a-z]+(?:Unified)?//;
                 $suffix =~ s/^([A-Z]+)/lc $1/e;
+                $suffix =~ s/fsitem/fsItem/;
+                $suffix =~ s/fspool/fsPool/;
             }
 
             if ($api ne $suffix) {

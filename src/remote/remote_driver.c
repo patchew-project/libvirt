@@ -144,6 +144,8 @@ static virNWFilterPtr get_nonnull_nwfilter(virConnectPtr conn, remote_nonnull_nw
 static virInterfacePtr get_nonnull_interface(virConnectPtr conn, remote_nonnull_interface iface);
 static virStoragePoolPtr get_nonnull_storage_pool(virConnectPtr conn, remote_nonnull_storage_pool pool);
 static virStorageVolPtr get_nonnull_storage_vol(virConnectPtr conn, remote_nonnull_storage_vol vol);
+static virFSPoolPtr get_nonnull_fspool(virConnectPtr conn, remote_nonnull_fspool fspool);
+static virFSItemPtr get_nonnull_fsitem(virConnectPtr conn, remote_nonnull_fsitem item);
 static virNodeDevicePtr get_nonnull_node_device(virConnectPtr conn, remote_nonnull_node_device dev);
 static virSecretPtr get_nonnull_secret(virConnectPtr conn, remote_nonnull_secret secret);
 static virDomainSnapshotPtr get_nonnull_domain_snapshot(virDomainPtr domain, remote_nonnull_domain_snapshot snapshot);
@@ -152,6 +154,8 @@ static void make_nonnull_network(remote_nonnull_network *net_dst, virNetworkPtr 
 static void make_nonnull_interface(remote_nonnull_interface *interface_dst, virInterfacePtr interface_src);
 static void make_nonnull_storage_pool(remote_nonnull_storage_pool *pool_dst, virStoragePoolPtr vol_src);
 static void make_nonnull_storage_vol(remote_nonnull_storage_vol *vol_dst, virStorageVolPtr vol_src);
+static void make_nonnull_fspool(remote_nonnull_fspool *fspool_dst, virFSPoolPtr fspool_src);
+static void make_nonnull_fsitem(remote_nonnull_fsitem *item_dst, virFSItemPtr item_src);
 static void
 make_nonnull_node_device(remote_nonnull_node_device *dev_dst, virNodeDevicePtr dev_src);
 static void make_nonnull_secret(remote_nonnull_secret *secret_dst, virSecretPtr secret_src);
@@ -7841,6 +7845,19 @@ get_nonnull_storage_vol(virConnectPtr conn, remote_nonnull_storage_vol vol)
                             NULL, NULL);
 }
 
+static virFSPoolPtr
+get_nonnull_fspool(virConnectPtr conn, remote_nonnull_fspool fspool)
+{
+    return virGetFSPool(conn, fspool.name, BAD_CAST fspool.uuid,
+                        NULL, NULL);
+}
+
+static virFSItemPtr
+get_nonnull_fsitem(virConnectPtr conn, remote_nonnull_fsitem item)
+{
+    return virGetFSItem(conn, item.fspool, item.name, item.key,
+                        NULL, NULL);
+}
 static virNodeDevicePtr
 get_nonnull_node_device(virConnectPtr conn, remote_nonnull_node_device dev)
 {
@@ -7903,6 +7920,21 @@ make_nonnull_storage_vol(remote_nonnull_storage_vol *vol_dst, virStorageVolPtr v
     vol_dst->pool = vol_src->pool;
     vol_dst->name = vol_src->name;
     vol_dst->key = vol_src->key;
+}
+
+static void
+make_nonnull_fspool(remote_nonnull_fspool *fspool_dst, virFSPoolPtr fspool_src)
+{
+    fspool_dst->name = fspool_src->name;
+    memcpy(fspool_dst->uuid, fspool_src->uuid, VIR_UUID_BUFLEN);
+}
+
+static void
+make_nonnull_fsitem(remote_nonnull_fsitem *item_dst, virFSItemPtr item_src)
+{
+    item_dst->fspool = item_src->fspool;
+    item_dst->name = item_src->name;
+    item_dst->key = item_src->key;
 }
 
 static void
@@ -8296,6 +8328,39 @@ static virNWFilterDriver nwfilter_driver = {
     .connectListAllNWFilters     = remoteConnectListAllNWFilters, /* 0.10.2 */
 };
 
+static virFSDriver fspool_driver = {
+    .fsPoolLookupByName = remoteFSPoolLookupByName,
+    .fsPoolLookupByUUID = remoteFSPoolLookupByUUID,
+    .fsPoolLookupByItem = remoteFSPoolLookupByItem,
+    .fsPoolCreateXML = remoteFSPoolCreateXML,
+    .fsPoolDefineXML = remoteFSPoolDefineXML,
+    .fsPoolBuild = remoteFSPoolBuild,
+    .fsPoolUndefine = remoteFSPoolUndefine,
+    .fsPoolCreate = remoteFSPoolCreate,
+    .fsPoolDestroy = remoteFSPoolDestroy,
+    .fsPoolDelete = remoteFSPoolDelete,
+    .fsPoolRefresh = remoteFSPoolRefresh,
+    .fsPoolGetInfo = remoteFSPoolGetInfo,
+    .fsPoolGetXMLDesc = remoteFSPoolGetXMLDesc,
+    .fsPoolGetAutostart = remoteFSPoolGetAutostart,
+    .fsPoolSetAutostart = remoteFSPoolSetAutostart,
+    .fsPoolNumOfItems = remoteFSPoolNumOfItems,
+    .fsPoolListItems = remoteFSPoolListItems,
+    .fsPoolListAllItems = remoteFSPoolListAllItems,
+    .fsItemLookupByName = remoteFSItemLookupByName,
+    .fsItemLookupByKey = remoteFSItemLookupByKey,
+    .fsItemLookupByPath = remoteFSItemLookupByPath,
+    .fsItemCreateXML = remoteFSItemCreateXML,
+    .fsItemCreateXMLFrom = remoteFSItemCreateXMLFrom,
+    .fsItemDelete = remoteFSItemDelete,
+    .fsItemGetInfo = remoteFSItemGetInfo,
+    .fsItemGetXMLDesc = remoteFSItemGetXMLDesc,
+    .fsItemGetPath = remoteFSItemGetPath,
+    .fsPoolIsActive = remoteFSPoolIsActive,
+    .fsPoolIsPersistent = remoteFSPoolIsPersistent,
+    .connectListAllFSPools = remoteConnectListAllFSPools,
+};
+
 static virConnectDriver connect_driver = {
     .hypervisorDriver = &hypervisor_driver,
     .interfaceDriver = &interface_driver,
@@ -8304,6 +8369,7 @@ static virConnectDriver connect_driver = {
     .nwfilterDriver = &nwfilter_driver,
     .secretDriver = &secret_driver,
     .storageDriver = &storage_driver,
+    .fsDriver = &fspool_driver,
 };
 
 static virStateDriver state_driver = {

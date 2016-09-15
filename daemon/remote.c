@@ -88,6 +88,8 @@ static virNetworkPtr get_nonnull_network(virConnectPtr conn, remote_nonnull_netw
 static virInterfacePtr get_nonnull_interface(virConnectPtr conn, remote_nonnull_interface iface);
 static virStoragePoolPtr get_nonnull_storage_pool(virConnectPtr conn, remote_nonnull_storage_pool pool);
 static virStorageVolPtr get_nonnull_storage_vol(virConnectPtr conn, remote_nonnull_storage_vol vol);
+static virFSPoolPtr get_nonnull_fspool(virConnectPtr conn, remote_nonnull_fspool fspool);
+static virFSItemPtr get_nonnull_fsitem(virConnectPtr conn, remote_nonnull_fsitem item);
 static virSecretPtr get_nonnull_secret(virConnectPtr conn, remote_nonnull_secret secret);
 static virNWFilterPtr get_nonnull_nwfilter(virConnectPtr conn, remote_nonnull_nwfilter nwfilter);
 static virDomainSnapshotPtr get_nonnull_domain_snapshot(virDomainPtr dom, remote_nonnull_domain_snapshot snapshot);
@@ -97,6 +99,8 @@ static void make_nonnull_network(remote_nonnull_network *net_dst, virNetworkPtr 
 static void make_nonnull_interface(remote_nonnull_interface *interface_dst, virInterfacePtr interface_src);
 static void make_nonnull_storage_pool(remote_nonnull_storage_pool *pool_dst, virStoragePoolPtr pool_src);
 static void make_nonnull_storage_vol(remote_nonnull_storage_vol *vol_dst, virStorageVolPtr vol_src);
+static void make_nonnull_fspool(remote_nonnull_fspool *fspool_dst, virFSPoolPtr fspool_src);
+static void make_nonnull_fsitem(remote_nonnull_fsitem *item_dst, virFSItemPtr item_src);
 static void make_nonnull_node_device(remote_nonnull_node_device *dev_dst, virNodeDevicePtr dev_src);
 static void make_nonnull_secret(remote_nonnull_secret *secret_dst, virSecretPtr secret_src);
 static void make_nonnull_nwfilter(remote_nonnull_nwfilter *net_dst, virNWFilterPtr nwfilter_src);
@@ -6660,6 +6664,22 @@ get_nonnull_domain_snapshot(virDomainPtr dom, remote_nonnull_domain_snapshot sna
     return virGetDomainSnapshot(dom, snapshot.name);
 }
 
+static virFSPoolPtr
+get_nonnull_fspool(virConnectPtr conn, remote_nonnull_fspool fspool)
+{
+    return virGetFSPool(conn, fspool.name, BAD_CAST fspool.uuid,
+                        NULL, NULL);
+}
+
+static virFSItemPtr
+get_nonnull_fsitem(virConnectPtr conn, remote_nonnull_fsitem item)
+{
+    virFSItemPtr ret;
+    ret = virGetFSItem(conn, item.fspool, item.name, item.key,
+                       NULL, NULL);
+    return ret;
+}
+
 static virNodeDevicePtr
 get_nonnull_node_device(virConnectPtr conn, remote_nonnull_node_device dev)
 {
@@ -6703,6 +6723,21 @@ make_nonnull_storage_vol(remote_nonnull_storage_vol *vol_dst, virStorageVolPtr v
     ignore_value(VIR_STRDUP_QUIET(vol_dst->pool, vol_src->pool));
     ignore_value(VIR_STRDUP_QUIET(vol_dst->name, vol_src->name));
     ignore_value(VIR_STRDUP_QUIET(vol_dst->key, vol_src->key));
+}
+
+static void
+make_nonnull_fspool(remote_nonnull_fspool *fspool_dst, virFSPoolPtr fspool_src)
+{
+    ignore_value(VIR_STRDUP_QUIET(fspool_dst->name, fspool_src->name));
+    memcpy(fspool_dst->uuid, fspool_src->uuid, VIR_UUID_BUFLEN);
+}
+
+static void
+make_nonnull_fsitem(remote_nonnull_fsitem *item_dst, virFSItemPtr item_src)
+{
+    ignore_value(VIR_STRDUP_QUIET(item_dst->fspool, item_src->fspool));
+    ignore_value(VIR_STRDUP_QUIET(item_dst->name, item_src->name));
+    ignore_value(VIR_STRDUP_QUIET(item_dst->key, item_src->key));
 }
 
 static void
