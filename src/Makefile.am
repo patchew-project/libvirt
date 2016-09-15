@@ -399,6 +399,10 @@ CHRDEV_CONF_SOURCES =						\
 DEVICE_CONF_SOURCES =                                           \
 		conf/device_conf.c conf/device_conf.h
 
+# FS driver generic impl APIs
+FS_CONF_SOURCES =                                               \
+		conf/fs_conf.h conf/fs_conf.c
+
 CONF_SOURCES =							\
 		$(NETDEV_CONF_SOURCES)				\
 		$(DOMAIN_CONF_SOURCES)				\
@@ -411,6 +415,7 @@ CONF_SOURCES =							\
 		$(NWFILTER_CONF_SOURCES)			\
 		$(NODE_DEVICE_CONF_SOURCES)			\
 		$(STORAGE_CONF_SOURCES)				\
+		$(FS_CONF_SOURCES)					\
 		$(INTERFACE_CONF_SOURCES)			\
 		$(SECRET_CONF_SOURCES)				\
 		$(CPU_CONF_SOURCES)				\

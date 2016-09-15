@@ -568,6 +568,48 @@ virDomainConfNWFilterTeardown;
 virDomainConfVMNWFilterTeardown;
 
 
+# conf/fs_conf.h
+virFSItemDefFindByKey;
+virFSItemDefFindByName;
+virFSItemDefFindByPath;
+virFSItemDefFormat;
+virFSItemDefFree;
+virFSItemDefParseFile;
+virFSItemDefParseNode;
+virFSItemDefParseString;
+virFSItemTypeFromString;
+virFSItemTypeToString;
+virFSPoolDefFormat;
+virFSPoolDefFree;
+virFSPoolDefParseFile;
+virFSPoolDefParseNode;
+virFSPoolDefParseSourceString;
+virFSPoolDefParseString;
+virFSPoolLoadAllConfigs;
+virFSPoolLoadAllState;
+virFSPoolObjAssignDef;
+virFSPoolObjClearItems;
+virFSPoolObjDeleteDef;
+virFSPoolObjFindByName;
+virFSPoolObjFindByUUID;
+virFSPoolObjIsDuplicate;
+virFSPoolObjListExport;
+virFSPoolObjListFree;
+virFSPoolObjLock;
+virFSPoolObjRemove;
+virFSPoolObjSaveDef;
+virFSPoolObjUnlock;
+virFSPoolSaveConfig;
+virFSPoolSaveState;
+virFSPoolSourceClear;
+virFSPoolSourceFindDuplicate;
+virFSPoolSourceFree;
+virFSPoolSourceListFormat;
+virFSPoolSourceListNewSource;
+virFSPoolTypeFromString;
+virFSPoolTypeToString;
+
+
 # conf/interface_conf.h
 virInterfaceAssignDef;
 virInterfaceDefFormat;

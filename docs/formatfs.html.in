@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <body>
+    <h1>Filesystem pool and item XML format</h1>
+
+    <ul id="toc"></ul>
+
+    <h2><a name="FSPool">Filesystem pool XML</a></h2>
+
+    <p>
+      Filesystem pools is a facility to manage filesystems. They has a lot in common with
+      storage pools (nearly the same api and way of managment). However the managment units
+      are completely different. To avoid the misunderstanding in fspool usage use this XML
+      description. See <a href="fspool.html">fspool driver page</a>
+    </p>
+
+    <p>
+      The root element is named <code>fspool</code>. It has attribute <code>type</code>,
+      at the moment fspool has only one type <code>dir</code>. It represents fspool that
+      holds filesystems in subdirectories on a host filesystem.
+    </p>
+
+    <h3><a name="FSPoolFirst">General metadata</a></h3>
+
+    <pre>
+      &lt;fspool type="dir"&gt;
+        &lt;name&gt;virfs&lt;/name&gt;
+        &lt;uuid&gt;4584ee21-db40-4e98-980e-44802c47b62f&lt;/uuid&gt;
+        &lt;allocation&gt;10000000&lt;/allocation&gt;
+        &lt;capacity&gt;50000000&lt;/capacity&gt;
+        &lt;available&gt;40000000&lt;/available&gt;
+        ...</pre>
+
+    <dl>
+      <dt><code>name</code></dt>
+      <dd>Providing a name for the fspool which is unique to the host.
+        This is mandatory when defining a filesystem pool. <span class="since">Since 2.2.1</span></dd>
+      <dt><code>uuid</code></dt>
+      <dd>Providing an identifier for the fspool which is globally unique.
+        This is optional when defining a fspool, a UUID will be generated if
+        omitted. <span class="since">Since 2.2.1</span></dd>
+      <dt><code>allocation</code></dt>
+      <dd>Providing the total storage allocation for the pool. This value is in bytes.
+        This is not applicable when creating a fspool. <span class="since">Since 2.2.1</span></dd>
+      <dt><code>capacity</code></dt>
+      <dd>Providing the total capacity for the fspool. This value is in bytes. This
+        is not applicable when creating a fspool. <span class="since">Since 2.2.1</span></dd>
+      <dt><code>available</code></dt>
+      <dd>Providing the free space available for allocating new items
+        in the fspool. This value is in bytes. This is not applicable when creating a
+        fspool. <span class="since">Since 2.2.1</span></dd>
+    </dl>
+
+    <h3><a name="FSPoolSource">Source elements</a></h3>
+
+    <p>
+      A single <code>source</code> element is contained within the top level
+      <code>fspool</code> element. This tag is used to describe the source of
+      the fspool. At the moment it is left empty.
+    </p>
+
+    <h3><a name="FSPoolTarget">Target elements</a></h3>
+
+    <p>
+      A single <code>target</code> element is contained within the top level
+      <code>fspool</code> element for all types of fspools (fspool types <code>dir</code>).
+      This tag is used to describe the mapping of fspool into the host filesystem.
+      It can contain the following child elements:
+    </p>
+
+    <pre>
+        ...
+        &lt;target&gt;
+          &lt;path&gt;/path/in/host/fs&lt;/path&gt;
+          &lt;permissions&gt;
+            &lt;owner&gt;107&lt;/owner&gt;
+            &lt;group&gt;107&lt;/group&gt;
+            &lt;mode&gt;0744&lt;/mode&gt;
+          &lt;/permissions&gt;
+        &lt;/target&gt;
+      &lt;/fspool&gt;</pre>
+
+    <dl>
+      <dt><code>path</code></dt>
+      <dd>Provides the location at which the fspool will be mapped into
+        the local filesystem namespace, as an absolute path. For a fspool with directory
+        backend  it will be a fully qualified name of the directory in which items
+        will be created.
+        <span class="since">Since 2.2.1</span>
+      </dd>
+      <dt><code>permissions</code></dt>
+        <dd> It provides information about the permissions to use for the
+        final directory when the fspool is built. There are 4 child elements.
+        The <code>mode</code> element contains the octal permission set.
+        The <code>mode</code> defaults to 0755 when not provided.
+        The <code>owner</code> element contains the numeric user ID.
+        The <code>group</code> element contains the numeric group ID.
+        If <code>owner</code> or <code>group</code> aren't specified when
+        creating a directory, the values are inherited from the parent
+        directory.
+      </dd>
+    </dl>
+
+    <h2><a name="FSItem">Item XML</a></h2>
+    <p>
+      An item is a directory that holds single filesystem. The filesystem item
+      XML format is available <span class="since">since 2.2.1</span>
+    </p>
+
+    <h3><a name="FSItemFirst">General metadata</a></h3>
+
+    <pre>
+      &lt;item&gt;
+        &lt;name&gt;item1&lt;/name&gt;
+        &lt;key&gt;/path/to/fspool/&lt;/key&gt;
+        &lt;allocation&gt;0&lt;/allocation&gt;
+        &lt;capacity unit="T"&gt;1&lt;/capacity&gt;
+        ...</pre>
+
+    <dl>
+      <dt><code>name</code></dt>
+      <dd>Providing a name for the item which is unique to the fspool.
+        This is mandatory when defining an item.</dd>
+      <dt><code>key</code></dt>
+      <dd>Providing an identifier for the item which identifies a
+          single item. It is impossible to have two distinct keys
+          identifying a single item. This field cannot be set when creating
+          an item: it is always generated.
+        <span class="since">Since 2.2.1</span></dd>
+      <dt><code>allocation</code></dt>
+      <dd>Providing the total storage allocation for the item.</dd>
+      <dt><code>capacity</code></dt>
+      <dd>Providing the logical capacity for the item.</dd>
+    </dl>
+
+    <h3><a name="FsItemTarget">Target elements</a></h3>
+
+    <p>
+      A single <code>target</code> element is contained within the top level
+      <code>item</code> element. This tag is used to describe the mapping of
+      the fspool item into the host filesystem. It can contain the following
+      child elements:
+    </p>
+
+    <pre>
+        ...
+        &lt;target&gt;
+          &lt;path&gt;/var/lib/virt/images/sparse.img&lt;/path&gt;
+          &lt;format type='qcow2'/&gt;
+          &lt;permissions&gt;
+            &lt;owner&gt;107&lt;/owner&gt;
+            &lt;group&gt;107&lt;/group&gt;
+            &lt;mode&gt;0744&lt;/mode&gt;
+          &lt;/permissions&gt;
+        &lt;/target&gt;</pre>
+
+    <dl>
+      <dt><code>permissions</code></dt>
+      <dd>Provides information about the permissions to use
+        when creating items. There are 4 child elements.
+        The <code>mode</code> element contains the octal permission set.
+        The <code>mode</code> defaults to 0600 when not provided.
+        The <code>owner</code> element contains the numeric user ID.
+        The <code>group</code> element contains the numeric group ID.
+        If <code>owner</code> or <code>group</code> aren't specified when
+        creating fspool item, the values are inherited from the parent
+        directory.
+      </dd>
+    </dl>
+
+
+    <h2><a name="examples">Example configuration</a></h2>
+
+    <p>
+      Here is an example of fspool and item.
+    </p>
+
+    <h3><a name="exampleDir">Directory based fspool</a></h3>
+
+    <pre>
+      &lt;fspool type="dir"&gt;
+        &lt;name&gt;my_fspool&lt;/name&gt;
+        &lt;source&gt;
+        &lt;/source&gt;
+        &lt;target&gt;
+          &lt;path&gt;/my_fspool_dir&lt;/path&gt;
+        &lt;/target&gt;
+      &lt;/fspool&gt;</pre>
+
+    <h3><a name="exampleItem">Fspool Item</a></h3>
+
+    <pre>
+      &lt;item&gt;
+        &lt;name&gt;item1&lt;/name&gt;
+        &lt;allocation&gt;0&lt;/allocation&gt;
+        &lt;capacity unit="T"&gt;1&lt;/capacity&gt;
+        &lt;target&gt;
+          &lt;permissions&gt;
+            &lt;owner&gt;107&lt;/owner&gt;
+            &lt;group&gt;107&lt;/group&gt;
+            &lt;mode&gt;0744&lt;/mode&gt;
+          &lt;/permissions&gt;
+        &lt;/target&gt;
+      &lt;/item&gt;</pre>
+
+  </body>
+</html>

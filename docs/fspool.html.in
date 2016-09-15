@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <body>
+    <h1 >Filesystem Pool Management</h1>
+    <p>
+      Libvirt provides filesystems managment on the physical host through
+      fspools and items.
+    </p>
+    <p>
+      Fspool is the entity that holds filesystems. It has a lot in
+      common with storage pools and volumes. However, fspool deals with
+      filesystems and not with the block devices. Single filesystem in fspool
+      is called an item.
+    </p>
+    <p>
+      Libvirt supports the following fspool types:
+    </p>
+    <ul>
+      <li>
+        <a href="#FSPoolBackendDir">Directory backend</a>
+      </li>
+    </ul>
+
+    <h2><a name="FSPoolBackendDir">Fspool with directory backend</a></h2>
+    <p>
+      A fspool with a type of <code>dir</code> provides the means to manage
+      filesystems within a directory on a single host.
+    </p>
+
+    <h3>Example pool input definition</h3>
+    <pre>
+      &lt;fspool type="dir"&gt;
+        &lt;name&gt;virtfs&lt;/name&gt;
+        &lt;target&gt;
+          &lt;path&gt;/var/lib/virt/fs&lt;/path&gt;
+        &lt;/target&gt;
+      &lt;/fspool&gt;</pre>
+
+  </body>
+</html>

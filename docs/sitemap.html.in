@@ -181,6 +181,10 @@
                 <span>The storage pool and volume XML format</span>
               </li>
               <li>
+                <a href="formatfs.html">Filesystem pool</a>
+                <span>The filesystem pool and filesystem item XML format</span>
+              </li>
+              <li>
                 <a href="formatstorageencryption.html">Storage Encryption</a>
                 <span>Storage volume encryption XML format</span>
               </li>
