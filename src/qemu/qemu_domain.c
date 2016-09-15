@@ -2747,6 +2747,39 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
         }
     }
 
+    if (dev->type == VIR_DOMAIN_DEVICE_SHMEM) {
+        if (!dev->data.shmem->server.enabled) {
+            /* The size is 4M if not specified */
+            if (!dev->data.shmem->size)
+                dev->data.shmem->size = 4 << 20;
+            /* For old ivshmem we shouldn't change the role, the new
+             * ones are peer by default, mostly to safeguard that
+             * there should be no more than one master */
+            if (!dev->data.shmem->role) {
+                if (dev->data.shmem->model == VIR_DOMAIN_SHMEM_MODEL_IVSHMEM)
+                    dev->data.shmem->role = VIR_DOMAIN_SHMEM_ROLE_MASTER;
+                else
+                    dev->data.shmem->role = VIR_DOMAIN_SHMEM_ROLE_PEER;
+            }
+        } else {
+            /* In QEMU, role doesn't make sense for server-side shmem */
+            dev->data.shmem->role = VIR_DOMAIN_SHMEM_ROLE_DEFAULT;
+
+            /* Defaults/Requirements for the newer device that we should save */
+            if (dev->data.shmem->model == VIR_DOMAIN_SHMEM_MODEL_IVSHMEM_DOORBELL) {
+                /* Size does not make much sense when claiming memory from
+                 * the server and so the newer version doesn't support that */
+                dev->data.shmem->size = 0;
+
+                /* Also they can only exist with MSI and ioeventfd is
+                 * enabled unless specifically disabled */
+                dev->data.shmem->msi.enabled = true;
+                if (!dev->data.shmem->msi.ioeventfd)
+                    dev->data.shmem->msi.ioeventfd = VIR_TRISTATE_SWITCH_ON;
+            }
+        }
+    }
+
     ret = 0;
 
  cleanup:
