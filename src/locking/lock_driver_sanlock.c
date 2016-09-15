@@ -80,7 +80,7 @@ struct _virLockManagerSanlockDriver {
     gid_t group;
 };
 
-static virLockManagerSanlockDriver *driver;
+static virLockManagerSanlockDriverPtr sanlockDriver;
 
 struct _virLockManagerSanlockPrivate {
     const char *vm_uri;
@@ -100,7 +100,8 @@ struct _virLockManagerSanlockPrivate {
 /*
  * sanlock plugin for the libvirt virLockManager API
  */
-static int virLockManagerSanlockLoadConfig(const char *configFile)
+static int virLockManagerSanlockLoadConfig(virLockManagerSanlockDriverPtr driver,
+                                           const char *configFile)
 {
     virConfPtr conf;
     int ret = -1;
@@ -161,7 +162,8 @@ static int virLockManagerSanlockLoadConfig(const char *configFile)
 /* How many times try adding a lockspace? */
 #define LOCKSPACE_RETRIES 10
 
-static int virLockManagerSanlockSetupLockspace(void)
+static int
+virLockManagerSanlockSetupLockspace(virLockManagerSanlockDriverPtr driver)
 {
     int fd = -1;
     struct stat st;
@@ -371,15 +373,19 @@ static int virLockManagerSanlockInit(unsigned int version,
                                      const char *configFile,
                                      unsigned int flags)
 {
+    virLockManagerSanlockDriverPtr driver;
+
     VIR_DEBUG("version=%u configFile=%s flags=%x",
               version, NULLSTR(configFile), flags);
     virCheckFlags(0, -1);
 
-    if (driver)
+    if (sanlockDriver)
         return 0;
 
-    if (VIR_ALLOC(driver) < 0)
+    if (VIR_ALLOC(sanlockDriver) < 0)
         return -1;
+
+    driver = sanlockDriver;
 
     driver->requireLeaseForDisks = true;
     driver->hostID = 0;
@@ -392,7 +398,7 @@ static int virLockManagerSanlockInit(unsigned int version,
         goto error;
     }
 
-    if (virLockManagerSanlockLoadConfig(configFile) < 0)
+    if (virLockManagerSanlockLoadConfig(driver, configFile) < 0)
         goto error;
 
     if (driver->autoDiskLease && !driver->hostID) {
@@ -402,7 +408,7 @@ static int virLockManagerSanlockInit(unsigned int version,
     }
 
     if (driver->autoDiskLease) {
-        if (virLockManagerSanlockSetupLockspace() < 0)
+        if (virLockManagerSanlockSetupLockspace(driver) < -1)
             goto error;
     }
 
@@ -415,11 +421,11 @@ static int virLockManagerSanlockInit(unsigned int version,
 
 static int virLockManagerSanlockDeinit(void)
 {
-    if (!driver)
+    if (!sanlockDriver)
         return 0;
 
-    VIR_FREE(driver->autoDiskLeasePath);
-    VIR_FREE(driver);
+    VIR_FREE(sanlockDriver->autoDiskLeasePath);
+    VIR_FREE(sanlockDriver);
 
     return 0;
 }
@@ -438,7 +444,7 @@ static int virLockManagerSanlockNew(virLockManagerPtr lock,
 
     virCheckFlags(VIR_LOCK_MANAGER_NEW_STARTED, -1);
 
-    if (!driver) {
+    if (!sanlockDriver) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Sanlock plugin is not initialized"));
         return -1;
@@ -566,7 +572,8 @@ static int virLockManagerSanlockAddLease(virLockManagerPtr lock,
 
 
 
-static int virLockManagerSanlockAddDisk(virLockManagerPtr lock,
+static int virLockManagerSanlockAddDisk(virLockManagerSanlockDriverPtr driver,
+                                        virLockManagerPtr lock,
                                         const char *name,
                                         size_t nparams,
                                         virLockManagerParamPtr params ATTRIBUTE_UNUSED,
@@ -631,7 +638,8 @@ static int virLockManagerSanlockAddDisk(virLockManagerPtr lock,
 }
 
 
-static int virLockManagerSanlockCreateLease(struct sanlk_resource *res)
+static int virLockManagerSanlockCreateLease(virLockManagerSanlockDriverPtr driver,
+                                            struct sanlk_resource *res)
 {
     int fd = -1;
     struct stat st;
@@ -719,6 +727,7 @@ static int virLockManagerSanlockAddResource(virLockManagerPtr lock,
                                             virLockManagerParamPtr params,
                                             unsigned int flags)
 {
+    virLockManagerSanlockDriverPtr driver = sanlockDriver;
     virLockManagerSanlockPrivatePtr priv = lock->privateData;
 
     virCheckFlags(VIR_LOCK_MANAGER_RESOURCE_READONLY |
@@ -738,11 +747,12 @@ static int virLockManagerSanlockAddResource(virLockManagerPtr lock,
     switch (type) {
     case VIR_LOCK_MANAGER_RESOURCE_TYPE_DISK:
         if (driver->autoDiskLease) {
-            if (virLockManagerSanlockAddDisk(lock, name, nparams, params,
+            if (virLockManagerSanlockAddDisk(driver, lock, name, nparams, params,
                                              !!(flags & VIR_LOCK_MANAGER_RESOURCE_SHARED)) < 0)
                 return -1;
 
-            if (virLockManagerSanlockCreateLease(priv->res_args[priv->res_count-1]) < 0)
+            if (virLockManagerSanlockCreateLease(driver,
+                                                 priv->res_args[priv->res_count-1]) < 0)
                 return -1;
         } else {
             if (!(flags & (VIR_LOCK_MANAGER_RESOURCE_SHARED |
@@ -882,7 +892,7 @@ static int virLockManagerSanlockAcquire(virLockManagerPtr lock,
 
     if (priv->res_count == 0 &&
         priv->hasRWDisks &&
-        driver->requireLeaseForDisks) {
+        sanlockDriver->requireLeaseForDisks) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("Read/write, exclusive access, disks were present, but no leases specified"));
         return -1;
