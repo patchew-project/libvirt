@@ -2346,6 +2346,19 @@ qemuMigrationIsAllowed(virQEMUDriverPtr driver,
                 return false;
             }
         }
+
+        for (i = 0; i < vm->def->nshmems; i++) {
+            virDomainShmemDefPtr shmem = vm->def->shmems[i];
+
+            if (shmem->role != VIR_DOMAIN_SHMEM_ROLE_MASTER) {
+                virReportError(VIR_ERR_OPERATION_INVALID,
+                               _("domain's shmem device '%s' has role='%s', "
+                                 "try unplugging it first"),
+                               shmem->name,
+                               virDomainShmemRoleTypeToString(shmem->role));
+                return false;
+            }
+        }
     }
 
     return true;
