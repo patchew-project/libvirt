@@ -198,9 +198,11 @@ virsh_SOURCES =							\
 		virsh-nodedev.c virsh-nodedev.h			\
 		virsh-nwfilter.c virsh-nwfilter.h		\
 		virsh-pool.c virsh-pool.h			\
+		virsh-fspool.c virsh-fspool.h			\
 		virsh-secret.c virsh-secret.h			\
 		virsh-snapshot.c virsh-snapshot.h		\
 		virsh-volume.c virsh-volume.h			\
+		virsh-fsitem.c virsh-fsitem.h			\
 		$(NULL)
 
 virsh_LDFLAGS = \

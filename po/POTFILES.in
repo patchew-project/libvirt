@@ -289,8 +289,10 @@ tools/virsh-console.c
 tools/virsh-domain-monitor.c
 tools/virsh-domain.c
 tools/virsh-edit.c
+tools/virsh-fspool.c
 tools/virsh-host.c
 tools/virsh-interface.c
+tools/virsh-fsitem.c
 tools/virsh-network.c
 tools/virsh-nodedev.c
 tools/virsh-nwfilter.c

@@ -51,6 +51,8 @@
 # define VIRSH_CMD_GRP_DOM_MONITORING   "Domain Monitoring"
 # define VIRSH_CMD_GRP_STORAGE_POOL     "Storage Pool"
 # define VIRSH_CMD_GRP_STORAGE_VOL      "Storage Volume"
+# define VIRSH_CMD_GRP_FSPOOL           "Fspool"
+# define VIRSH_CMD_GRP_FSITEM           "Item"
 # define VIRSH_CMD_GRP_NETWORK          "Networking"
 # define VIRSH_CMD_GRP_NODEDEV          "Node Device"
 # define VIRSH_CMD_GRP_IFACE            "Interface"
@@ -69,6 +71,13 @@
      .flags = VSH_OFLAG_REQ,                                      \
      .help = _helpstr                                             \
     }                                                             \
+
+# define VIRSH_COMMON_OPT_FSPOOL(_helpstr)                       \
+    {.name = "fspool",                                            \
+     .type = VSH_OT_DATA,                                         \
+     .flags = VSH_OFLAG_REQ,                                      \
+     .help = _helpstr                                             \
+    }
 
 # define VIRSH_COMMON_OPT_DOMAIN(_helpstr)                        \
     {.name = "domain",                                            \

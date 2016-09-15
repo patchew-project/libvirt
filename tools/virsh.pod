@@ -699,7 +699,7 @@ Immediately terminate the domain I<domain>.  This doesn't give the domain
 OS any chance to react, and it's the equivalent of ripping the power
 cord out on a physical machine.  In most cases you will want to use
 the B<shutdown> command instead.  However, this does not delete any
-storage volumes used by the guest, and if the domain is persistent, it
+storage volumes or fspool items used by the guest, and if the domain is persistent, it
 can be restarted later.
 
 If I<domain> is transient, then the metadata of any snapshots will
@@ -3817,6 +3817,256 @@ necessary. I<capacity> is a scaled integer (see B<NOTES> above), which
 defaults to bytes if there is no suffix.  This command is only safe
 for storage volumes not in use by an active guest; see also
 B<blockresize> for live resizing.
+
+=back
+
+=head1 FSPOOL COMMANDS
+
+The following commands manipulate filesystem pools. Many of the commands
+for filesystem pools are similar to the ones used for storage pools.
+
+=over 4
+
+=item B<fspool-autostart> I<pool-or-uuid> [I<--disable>]
+
+Configure whether I<fspool> should automatically start at boot.
+
+=item B<fspool-build> I<pool-or-uuid> [I<--overwrite>] [I<--no-overwrite>]
+
+Build a given fspool.
+
+=item B<pool-create> I<file>
+[I<--build>] [[I<--overwrite>] | [I<--no-overwrite>]]
+
+Create and start a fspool object from the XML I<file>.
+
+[I<--build>] perform a B<fspool-build> after creation in order
+to remove the need for a follow-up command to build the fspool.
+
+=item B<pool-create-as> I<name> I<type> [I<--print-xml>]
+[I<--source-host hostname>] [I<--source-path path>]
+[I<--source-name name>] [I<--target path>] [I<--source-format format>]
+[I<--build>] [[I<--overwrite>] | [I<--no-overwrite>]]
+
+Create and start a fspool object I<name> from the raw parameters.  If
+I<--print-xml> is specified, then print the XML of the fspool object
+without creating the fspool.  Otherwise, the fspool has the specified
+I<type>.
+[I<--source-host hostname>] provides the source hostname for fspools backed
+by fspool from a remote server (fspool netfs, etc).
+
+[I<--source-path path>] provides the source directory path for fspools backed
+by directories (fspool type dir).
+
+[I<--source-name name>] provides the source name for fspools backed by storage
+from a named element.
+
+[I<--target path>] is the path for the mapping of the fspool into
+the host file system.
+
+[I<--source-format format>] provides information about the format of the
+fspool filesystem type.
+
+[I<--build>] [[I<--overwrite>] | [I<--no-overwrite>]] perform a
+B<fspool-build> after creation in order to remove the need for a
+follow-up command to build the fspool. The I<--overwrite> and
+I<--no-overwrite> flags follow the same rules as B<fspool-build>. If
+just I<--build> is provided, then B<fspool-build> is called with no flags.
+
+=item B<fspool-define> I<file>
+
+Define an inactive persistent fspool or modify an existing persistent one
+from the XML I<file>.
+
+=item B<pool-define-as> I<name> I<type> [I<--print-xml>]
+[I<--source-host hostname>] [I<--source-path path>]
+[I<--source-name name>] [I<--target path>] [I<--source-format format>]
+
+Create, but do not start, a fspool object I<name> from the raw parameters.
+If I<--print-xml> is specified, then print the XML of the pool object
+without defining the pool.  Otherwise, the pool has the specified
+I<type>.
+
+Use the same arguments as B<fspool-create-as>, except for the I<--build>,
+I<--overwrite>, and I<--no-overwrite> options.
+
+=item B<fspool-destroy> I<fspool-or-uuid>
+
+Destroy (stop) a given I<fspool> object. Libvirt will no longer manage the fspool
+object, but the raw data contained in
+the fspool is not changed, and can be later recovered with
+B<fspool-create>.
+
+=item B<fspool-delete> I<fspool-or-uuid>
+
+Destroy the resources used by a given I<fspool> object. This operation
+is non-recoverable.  The I<fspool> object will still exist after this
+command, ready for the creation of new fspool item.
+
+=item B<fspool-dumpxml> [I<--inactive>] I<fspool-or-uuid>
+
+Returns the XML information about the I<fspool> object.
+I<--inactive> tells virsh to dump fspool configuration that will be used
+on next start of the fspool as opposed to the current fspool configuration.
+
+=item B<fspool-edit> I<fspool-or-uuid>
+
+Edit the XML configuration file for a fspool.
+
+This is equivalent to:
+
+ virsh fspool-dumpxml fspool > fspool.xml
+ vi fspool.xml (or make changes with your other text editor)
+ virsh pool-define pool.xml
+
+except that it does some error checking.
+
+The editor used can be supplied by the C<$VISUAL> or C<$EDITOR> environment
+variables, and defaults to C<vi>.
+
+=item B<fspool-info> I<fspool-or-uuid>
+
+Returns basic information about the I<fspool> object.
+
+=item B<pool-fslist> [I<--inactive>] [I<--all>]
+                   [I<--persistent>] [I<--transient>]
+                   [I<--autostart>] [I<--no-autostart>]
+                   [[I<--details>] [<type>]
+
+List fspool objects known to libvirt.  By default, only active pools
+are listed; I<--inactive> lists just the inactive pools, and I<--all>
+lists all pools.
+
+In addition, there are several sets of filtering flags. I<--persistent> is to
+list the persistent fspools, I<--transient> is to list the transient fspools.
+I<--autostart> lists the autostarting fspools, I<--no-autostart> lists the fspools
+with autostarting disabled.
+
+You may also want to list fspools with specified types using I<type>, the
+pool types must be separated by comma, e.g. --type dir.
+
+The I<--details> option instructs virsh to additionally
+display fspool persistence and capacity related information where available.
+
+=item B<fspool-name> I<uuid>
+
+Convert the I<uuid> to a fspool name.
+
+=item B<fspool-refresh> I<fspool-or-uuid>
+
+Refresh the list of items contained in I<fspool>.
+
+=item B<fspool-start> I<fspool-or-uuid>
+[I<--build>] [[I<--overwrite>] | [I<--no-overwrite>]]
+
+Start the I<fspool>, which is previously defined but inactive.
+
+=item B<fspool-undefine> I<fspool-or-uuid>
+
+Undefine the configuration for an inactive I<fspool>.
+
+=item B<fspool-uuid> I<fspool>
+
+Returns the UUID of the named I<fspool>.
+
+=back
+
+=head1 FS ITEMS COMMANDS
+
+=over 4
+
+=item B<item-create> I<fspool-or-uuid> I<FILE>
+
+Create a item from an XML <file>.
+I<fspool-or-uuid> is the name or UUID of the fspool to create the item in.
+I<FILE> is the XML <file> with the item definition. An easy way to create the
+XML <file> is to use the B<item-dumpxml> command to obtain the definition of a
+pre-existing item.
+
+=item B<vol-create-from> I<pool-or-uuid> I<FILE> [I<--inputpool>
+I<pool-or-uuid>] I<vol-name-or-key-or-path> [I<--prealloc-metadata>]
+[I<--reflink>]
+
+Create a volume, using another item as input.
+I<fspool-or-uuid> is the name or UUID of the fspool to create the item in.
+I<FILE> is the XML <file> with the volume definition.
+I<--inputfspool> I<fspool-or-uuid> is the name or uuid of the fspool the
+source item is in.
+I<item-name-or-key-or-path> is the name or key or path of the source item.
+
+=item B<item-create-as> I<fspool-or-uuid> I<name> I<capacity>
+[I<--allocation> I<size>] [I<--format> I<string>][I<--print-xml>]
+
+Create a item from a set of arguments unless I<--print-xml> is specified, in
+which case just the XML of the item object is printed out without any actual
+object creation.
+I<fspool-or-uuid> is the name or UUID of the fspool to create the item
+in.
+I<name> is the name of the new item.
+I<capacity> is the size of the item to be created, as a scaled integer
+(see B<NOTES> above), defaulting to bytes if there is no suffix.
+I<--allocation> I<size> is the initial size to be allocated in the item,
+also as a scaled integer defaulting to bytes.
+
+=item B<item-clone> [I<--fspool> I<fspool-or-uuid>] I<item-name-or-key-or-path>
+I<name>
+
+Clone an existing item within the parent fspool.  Less powerful,
+but easier to type, version of B<item-create-from>.
+I<--fspool> I<fspool-or-uuid> is the name or UUID of the fspool
+that contains the source item, and will contain the new item.
+I<item-name-or-key-or-path> is the name or key or path of the source item.
+I<name> is the name of the new item.
+
+=item B<item-delete> [I<--fspool> I<fspool-or-uuid>] I<item-name-or-key-or-path>
+
+Delete a given item.
+I<--pool> I<fspool-or-uuid> is the name or UUID of the fspool the item
+is in.
+I<item-name-or-key-or-path> is the name or key or path of the item to delete.
+
+=item B<item-dumpxml> [I<--fspool> I<fspool-or-uuid>] I<item-name-or-key-or-path>
+
+Output the item information as an XML dump to stdout.
+I<--fspool> I<fspool-or-uuid> is the name or UUID of the fspool the item
+is in. I<item-name-or-key-or-path> is the name or key or path of the item
+to output the XML of.
+
+=item B<item-info> [I<--fspool> I<fspool-or-uuid>] I<item-name-or-key-or-path>
+[I<--bytes>]
+
+Returns basic information about the given item.
+I<--fspool> I<fspool-or-uuid> is the name or UUID of the fspool the item
+is in. I<item-name-or-key-or-path> is the name or key or path of the item
+to return information for. If I<--bytes> is specified the sizes are not
+converted to human friendly units.
+
+=item B<item-list> [I<--pool> I<pool-or-uuid>] [I<--details>]
+
+Return the list of volumes in the given fspool.
+I<--fspool> I<fspool-or-uuid> is the name or UUID of the fspool.
+The I<--details> option instructs virsh to additionally display item
+type and capacity related information where available.
+
+
+=item B<item-path> [I<--fspool> I<fspool-or-uuid>] I<item-name-or-key>
+
+Return the path for a given item.
+I<--fspool> I<fspool-or-uuid> is the name or UUID of the fspool the item
+is in.
+I<item-name-or-key> is the name or key of the item to return the path for.
+
+=item B<item-name> I<item-key-or-path>
+
+Return the name for a given item.
+I<item-key-or-path> is the key or path of the item to return the name for.
+
+=item B<item-key> [I<--fspool> I<fspool-or-uuid>] I<item-name-or-path>
+
+Return the item key for a given volume.
+I<--fspool> I<fspool-or-uuid> is the name or UUID of the fspool the item
+is in. I<item-name-or-path> is the name or path of the item to return the
+item key for.
 
 =back
 

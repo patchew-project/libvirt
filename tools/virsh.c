@@ -68,9 +68,11 @@
 #include "virsh-nodedev.h"
 #include "virsh-nwfilter.h"
 #include "virsh-pool.h"
+#include "virsh-fspool.h"
 #include "virsh-secret.h"
 #include "virsh-snapshot.h"
 #include "virsh-volume.h"
+#include "virsh-fsitem.h"
 
 /* Gnulib doesn't guarantee SA_SIGINFO support.  */
 #ifndef SA_SIGINFO
@@ -878,6 +880,8 @@ static const vshCmdGrp cmdGroups[] = {
     {VIRSH_CMD_GRP_SNAPSHOT, "snapshot", snapshotCmds},
     {VIRSH_CMD_GRP_STORAGE_POOL, "pool", storagePoolCmds},
     {VIRSH_CMD_GRP_STORAGE_VOL, "volume", storageVolCmds},
+    {VIRSH_CMD_GRP_FSPOOL, "fspool", fsPoolCmds},
+    {VIRSH_CMD_GRP_FSITEM, "item", fsItemCmds},
     {VIRSH_CMD_GRP_VIRSH, "virsh", virshCmds},
     {NULL, NULL, NULL}
 };
