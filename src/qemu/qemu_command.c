@@ -8561,17 +8561,19 @@ qemuBuildShmemDevLegacyStr(virDomainDefPtr def,
     }
 
     virBufferAddLit(&buf, "ivshmem");
+    virBufferAsprintf(&buf, ",id=%s", shmem->info.alias);
+
     if (shmem->size)
         virBufferAsprintf(&buf, ",size=%llum", shmem->size >> 20);
 
     if (!shmem->server.enabled) {
-        virBufferAsprintf(&buf, ",shm=%s,id=%s", shmem->name, shmem->info.alias);
+        virBufferAsprintf(&buf, ",shm=%s", shmem->name);
         if (shmem->role) {
             virBufferAsprintf(&buf, ",role=%s",
                               virDomainShmemRoleTypeToString(shmem->role));
         }
     } else {
-        virBufferAsprintf(&buf, ",chardev=char%s,id=%s", shmem->info.alias, shmem->info.alias);
+        virBufferAsprintf(&buf, ",chardev=char%s", shmem->info.alias);
         if (shmem->msi.enabled) {
             virBufferAddLit(&buf, ",msi=on");
             if (shmem->msi.vectors)
