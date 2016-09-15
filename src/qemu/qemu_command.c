@@ -8583,6 +8583,10 @@ qemuBuildShmemDevStr(virDomainDefPtr def,
 
     if (!shmem->server.enabled) {
         virBufferAsprintf(&buf, ",shm=%s,id=%s", shmem->name, shmem->info.alias);
+        if (shmem->role) {
+            virBufferAsprintf(&buf, ",role=%s",
+                              virDomainShmemRoleTypeToString(shmem->role));
+        }
     } else {
         virBufferAsprintf(&buf, ",chardev=char%s,id=%s", shmem->info.alias, shmem->info.alias);
         if (shmem->msi.enabled) {

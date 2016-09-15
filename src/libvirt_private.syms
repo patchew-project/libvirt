@@ -456,6 +456,8 @@ virDomainSeclabelTypeFromString;
 virDomainSeclabelTypeToString;
 virDomainShmemModelTypeFromString;
 virDomainShmemModelTypeToString;
+virDomainShmemRoleTypeFromString;
+virDomainShmemRoleTypeToString;
 virDomainShutdownReasonTypeFromString;
 virDomainShutdownReasonTypeToString;
 virDomainShutoffReasonTypeFromString;
