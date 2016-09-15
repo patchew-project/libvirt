@@ -2790,6 +2790,30 @@ testNodeGetFreeMemory(virConnectPtr conn ATTRIBUTE_UNUSED)
     return ret;
 }
 
+static int
+testNodeGetFreePages(virConnectPtr conn ATTRIBUTE_UNUSED,
+                     unsigned int npages,
+                     unsigned int *pages ATTRIBUTE_UNUSED,
+                     int startCell ATTRIBUTE_UNUSED,
+                     unsigned int cellCount,
+                     unsigned long long *counts,
+                     unsigned int flags)
+{
+    size_t i = 0, j = 0;
+    int x = 6;
+
+    virCheckFlags(0, -1);
+
+    for (i = 0; i < cellCount; i++) {
+        for (j = 0; j < npages; j++) {
+            x = x * 2 + 7;
+            counts[(i * npages) +  j] = x;
+        }
+    }
+
+    return 0;
+}
+
 static int testDomainCreateWithFlags(virDomainPtr domain, unsigned int flags)
 {
     testDriverPtr privconn = domain->conn->privateData;
@@ -6783,6 +6807,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .nodeGetInfo = testNodeGetInfo, /* 0.1.1 */
     .nodeGetCPUStats = testNodeGetCPUStats, /* 2.3.0 */
     .nodeGetFreeMemory = testNodeGetFreeMemory, /* 2.3.0 */
+    .nodeGetFreePages = testNodeGetFreePages, /* 2.3.0 */
     .connectGetCapabilities = testConnectGetCapabilities, /* 0.2.1 */
     .connectGetSysinfo = testConnectGetSysinfo, /* 2.3.0 */
     .connectGetType = testConnectGetType, /* 2.3.0 */
