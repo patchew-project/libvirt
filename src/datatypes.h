@@ -40,6 +40,8 @@ extern virClassPtr virSecretClass;
 extern virClassPtr virStreamClass;
 extern virClassPtr virStorageVolClass;
 extern virClassPtr virStoragePoolClass;
+extern virClassPtr virFSItemClass;
+extern virClassPtr virFSPoolClass;
 
 extern virClassPtr virAdmConnectClass;
 extern virClassPtr virAdmServerClass;
@@ -176,6 +178,46 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_vol->conn, virConnectClass)) {           \
             virReportErrorHelper(VIR_FROM_STORAGE,                      \
                                  VIR_ERR_INVALID_STORAGE_VOL,           \
+                                 __FILE__, __FUNCTION__, __LINE__,      \
+                                 __FUNCTION__);                         \
+            goto label;                                                 \
+        }                                                               \
+    } while (0)
+
+# define virCheckFSPoolReturn(obj, retval)                              \
+    do {                                                                \
+        virFSPoolPtr _pool = (obj);                                     \
+        if (!virObjectIsClass(_pool, virFSPoolClass) ||                 \
+            !virObjectIsClass(_pool->conn, virConnectClass)) {          \
+            virReportErrorHelper(VIR_FROM_FSPOOL,                       \
+                                 VIR_ERR_INVALID_FSPOOL,               \
+                                 __FILE__, __FUNCTION__, __LINE__,      \
+                                 __FUNCTION__);                         \
+            virDispatchError(NULL);                                     \
+            return retval;                                              \
+        }                                                               \
+    } while (0)
+
+# define virCheckFSItemReturn(obj, retval)                              \
+    do {                                                                \
+        virFSItemPtr _item = (obj);                                     \
+        if (!virObjectIsClass(_item, virFSItemClass) ||                 \
+            !virObjectIsClass(_item->conn, virConnectClass)) {          \
+            virReportErrorHelper(VIR_FROM_FSPOOL,                       \
+                                 VIR_ERR_INVALID_FSITEM,               \
+                                 __FILE__, __FUNCTION__, __LINE__,      \
+                                 __FUNCTION__);                         \
+            virDispatchError(NULL);                                     \
+            return retval;                                              \
+        }                                                               \
+    } while (0)
+# define virCheckFSItemGoto(obj, label)                                 \
+    do {                                                                \
+        virFSItemPtr _item = (obj);                                     \
+        if (!virObjectIsClass(_item, virFSItemClass) ||                 \
+            !virObjectIsClass(_item->conn, virConnectClass)) {          \
+            virReportErrorHelper(VIR_FROM_FSPOOL,                       \
+                                 VIR_ERR_INVALID_FSITEM,                \
                                  __FILE__, __FUNCTION__, __LINE__,      \
                                  __FUNCTION__);                         \
             goto label;                                                 \
@@ -457,6 +499,7 @@ struct _virConnect {
     virNodeDeviceDriverPtr nodeDeviceDriver;
     virSecretDriverPtr secretDriver;
     virNWFilterDriverPtr nwfilterDriver;
+    virFSDriverPtr fsDriver;
 
     /* Private data pointer which can be used by driver and
      * network driver as they wish.
@@ -596,6 +639,45 @@ struct _virStorageVol {
 };
 
 /**
+* _virFSPool:
+*
+* Internal structure associated to a fs pool
+*/
+struct _virFSPool {
+    virObject object;
+    virConnectPtr conn;                  /* pointer back to the connection */
+    char *name;                          /* the storage pool external name */
+    unsigned char uuid[VIR_UUID_BUFLEN]; /* the storage pool unique identifier */
+
+    /* Private data pointer which can be used by driver as they wish.
+     * Cleanup function pointer can be hooked to provide custom cleanup
+     * operation.
+     */
+    void *privateData;
+    virFreeCallback privateDataFreeFunc;
+};
+
+/**
+* _virFSItem:
+*
+* Internal structure associated to a fs pool item
+*/
+struct _virFSItem {
+    virObject object;
+    virConnectPtr conn;                  /* pointer back to the connection */
+    char *fspool;                          /* Pool name of owner */
+    char *name;                          /* the storage vol external name */
+    char *key;                           /* unique key for storage vol */
+
+    /* Private data pointer which can be used by driver as they wish.
+     * Cleanup function pointer can be hooked to provide custom cleanup
+     * operation.
+     */
+    void *privateData;
+    virFreeCallback privateDataFreeFunc;
+};
+
+/**
  * _virNodeDevice:
  *
  * Internal structure associated with a node device
@@ -687,6 +769,18 @@ virStorageVolPtr virGetStorageVol(virConnectPtr conn,
                                     const char *key,
                                     void *privateData,
                                     virFreeCallback freeFunc);
+virFSPoolPtr virGetFSPool(virConnectPtr conn,
+                          const char *name,
+                          const unsigned char *uuid,
+                          void *privateData,
+                          virFreeCallback freeFunc);
+virFSItemPtr virGetFSItem(virConnectPtr conn,
+                          const char *pool,
+                          const char *name,
+                          const char *key,
+                          void *privateData,
+                          virFreeCallback freeFunc);
+
 virNodeDevicePtr virGetNodeDevice(virConnectPtr conn,
                                   const char *name);
 virSecretPtr virGetSecret(virConnectPtr conn,

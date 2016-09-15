@@ -138,6 +138,7 @@ VIR_ENUM_IMPL(virErrorDomain, VIR_ERR_DOMAIN_LAST,
               "Xen XL Config",
 
               "Perf",
+              "FS Driver"
     )
 
 
@@ -1399,6 +1400,42 @@ virErrorMsg(virErrorNumber error, const char *info)
                 errmsg = _("guest agent replied with wrong id to guest-sync command");
             else
                 errmsg = _("guest agent replied with wrong id to guest-sync command: %s");
+            break;
+        case VIR_ERR_INVALID_FSPOOL:
+            if (info == NULL)
+                errmsg = _("invalid fspool poiter in");
+            else
+                errmsg = _("invalid fspool pointer in %s");
+            break;
+        case VIR_ERR_INVALID_FSITEM:
+            if (info == NULL)
+                errmsg = _("invalid fsitem pointer in");
+            else
+                errmsg = _("invalid fsitem pointer in %s");
+            break;
+        case VIR_WAR_NO_FSPOOL:
+            if (info == NULL)
+                errmsg = _("Failed to find a FS driver");
+            else
+                errmsg = _("Failed to find a FS driver: %s");
+            break;
+        case VIR_ERR_NO_FSPOOL:
+            if (info == NULL)
+                errmsg = _("fspool not found");
+            else
+                errmsg = _("fspool not found: %s");
+            break;
+        case VIR_ERR_NO_FSITEM:
+            if (info == NULL)
+                errmsg = _("fspool item not found");
+            else
+                errmsg = _("fspool item not found: %s");
+            break;
+        case VIR_ERR_FSITEM_EXIST:
+            if (info == NULL)
+                errmsg = _("fspool item exists");
+            else
+                errmsg = _("fspool item exists: %s");
             break;
     }
     return errmsg;

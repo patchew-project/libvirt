@@ -72,6 +72,7 @@ typedef enum {
 # include "driver-state.h"
 # include "driver-stream.h"
 # include "driver-storage.h"
+# include "driver-fs.h"
 
 # undef __VIR_DRIVER_H_INCLUDES___
 

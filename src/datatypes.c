@@ -45,6 +45,8 @@ virClassPtr virSecretClass;
 virClassPtr virStreamClass;
 virClassPtr virStorageVolClass;
 virClassPtr virStoragePoolClass;
+virClassPtr virFSPoolClass;
+virClassPtr virFSItemClass;
 
 static void virConnectDispose(void *obj);
 static void virConnectCloseCallbackDataDispose(void *obj);
@@ -58,6 +60,8 @@ static void virSecretDispose(void *obj);
 static void virStreamDispose(void *obj);
 static void virStorageVolDispose(void *obj);
 static void virStoragePoolDispose(void *obj);
+static void virFSItemDispose(void *obj);
+static void virFSPoolDispose(void *obj);
 
 virClassPtr virAdmConnectClass;
 virClassPtr virAdmConnectCloseCallbackDataClass;
@@ -96,6 +100,8 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS(virStream);
     DECLARE_CLASS(virStorageVol);
     DECLARE_CLASS(virStoragePool);
+    DECLARE_CLASS(virFSItem);
+    DECLARE_CLASS(virFSPool);
 
     DECLARE_CLASS_LOCKABLE(virAdmConnect);
     DECLARE_CLASS_LOCKABLE(virAdmConnectCloseCallbackData);
@@ -597,7 +603,155 @@ virStorageVolDispose(void *obj)
     virObjectUnref(vol->conn);
 }
 
+/**
+ * virGetFSPool:
+ * @conn: the hypervisor connection
+ * @name: pointer to the fs pool name
+ * @uuid: pointer to the uuid
+ * @privateData: pointer to driver specific private data
+ * @freeFunc: private data cleanup function pointer specific to driver
+ *
+ * Allocates a new storage pool object. When the object is no longer needed,
+ * virObjectUnref() must be called in order to not leak data.
+ *
+ * Returns a pointer to the storage pool object, or NULL on error.
+ */
+virFSPoolPtr
+virGetFSPool(virConnectPtr conn, const char *name,
+             const unsigned char *uuid,
+             void *privateData, virFreeCallback freeFunc)
+{
+    virFSPoolPtr ret = NULL;
 
+    if (virDataTypesInitialize() < 0)
+        return NULL;
+
+    virCheckConnectGoto(conn, error);
+    virCheckNonNullArgGoto(name, error);
+    virCheckNonNullArgGoto(uuid, error);
+
+    if (!(ret = virObjectNew(virFSPoolClass)))
+        goto error;
+
+    if (VIR_STRDUP(ret->name, name) < 0)
+        goto error;
+
+    ret->conn = virObjectRef(conn);
+    memcpy(&(ret->uuid[0]), uuid, VIR_UUID_BUFLEN);
+
+    /* set the driver specific data */
+    ret->privateData = privateData;
+    ret->privateDataFreeFunc = freeFunc;
+
+    return ret;
+
+ error:
+    virObjectUnref(ret);
+    return NULL;
+}
+
+
+/**
+ * virFSPoolDispose:
+ * @obj: the fs pool to release
+ *
+ * Unconditionally release all memory associated with fs pool.
+ * The pool object must not be used once this method returns.
+ *
+ * It will also unreference the associated connection object,
+ * which may also be released if its ref count hits zero.
+ */
+static void
+virFSPoolDispose(void *obj)
+{
+    virFSPoolPtr fspool = obj;
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
+
+    virUUIDFormat(fspool->uuid, uuidstr);
+    VIR_DEBUG("release fspool %p %s %s", fspool, fspool->name, uuidstr);
+
+    if (fspool->privateDataFreeFunc)
+        fspool->privateDataFreeFunc(fspool->privateData);
+
+    VIR_FREE(fspool->name);
+    virObjectUnref(fspool->conn);
+}
+
+
+/**
+ * virGetFSItem:
+ * @conn: the hypervisor connection
+ * @fspool: fspool owning the item
+ * @name: pointer to the fsitem name
+ * @key: pointer to unique key of the fsitem
+ * @privateData: pointer to driver specific private data
+ * @freeFunc: private data cleanup function pointer specific to driver
+ *
+ * Allocates a new fsitem object. When the object is no longer needed,
+ * virObjectUnref() must be called in order to not leak data.
+ *
+ * Returns a pointer to the fsitem object, or NULL on error.
+ */
+virFSItemPtr
+virGetFSItem(virConnectPtr conn, const char *fspool, const char *name,
+             const char *key, void *privateData, virFreeCallback freeFunc)
+{
+    virFSItemPtr ret = NULL;
+
+    if (virDataTypesInitialize() < 0)
+        return NULL;
+
+    virCheckConnectGoto(conn, error);
+    virCheckNonNullArgGoto(fspool, error);
+    virCheckNonNullArgGoto(name, error);
+    virCheckNonNullArgGoto(key, error);
+
+    if (!(ret = virObjectNew(virFSItemClass)))
+        goto error;
+
+    if (VIR_STRDUP(ret->fspool, fspool) < 0 ||
+        VIR_STRDUP(ret->name, name) < 0 ||
+        VIR_STRDUP(ret->key, key) < 0)
+        goto error;
+
+    ret->conn = virObjectRef(conn);
+
+    /* set driver specific data */
+    ret->privateData = privateData;
+    ret->privateDataFreeFunc = freeFunc;
+
+    return ret;
+
+ error:
+    virObjectUnref(ret);
+    return NULL;
+}
+
+
+/**
+ * virFSItemDispose:
+ * @obj: the fsitem to release
+ *
+ * Unconditionally release all memory associated with a fsitem.
+ * The fsitem object must not be used once this method returns.
+ *
+ * It will also unreference the associated connection object,
+ * which may also be released if its ref count hits zero.
+ */
+static void
+virFSItemDispose(void *obj)
+{
+    virFSItemPtr fsitem = obj;
+    VIR_DEBUG("release item %p %s", fsitem, fsitem->name);
+
+    if (fsitem->privateDataFreeFunc)
+        fsitem->privateDataFreeFunc(fsitem->privateData);
+
+    VIR_FREE(fsitem->key);
+    VIR_FREE(fsitem->name);
+    VIR_FREE(fsitem->fspool);
+    virObjectUnref(fsitem->conn);
+}
 /**
  * virGetNodeDevice:
  * @conn: the hypervisor connection

@@ -132,6 +132,8 @@ typedef enum {
 
     VIR_FROM_PERF = 65,         /* Error from perf */
 
+    VIR_FROM_FSPOOL = 66,       /* Error from fs pool */
+
 # ifdef VIR_ENUM_SENTINELS
     VIR_ERR_DOMAIN_LAST
 # endif
@@ -317,6 +319,12 @@ typedef enum {
     VIR_ERR_NO_CLIENT = 96,             /* Client was not found */
     VIR_ERR_AGENT_UNSYNCED = 97,        /* guest agent replies with wrong id
                                            to guest-sync command */
+    VIR_ERR_INVALID_FSPOOL = 98,        /* invalid fspool object */
+    VIR_ERR_INVALID_FSITEM = 99,        /* invalid fspool object */
+    VIR_WAR_NO_FSPOOL = 100,             /* failed to start fspool */
+    VIR_ERR_NO_FSPOOL = 101,            /* fspool not found */
+    VIR_ERR_NO_FSITEM = 102,            /* fstem not found */
+    VIR_ERR_FSITEM_EXIST = 103,         /* fspool item already exists */
 } virErrorNumber;
 
 /**

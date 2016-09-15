@@ -211,6 +211,7 @@ DRIVER_SOURCES =							\
 		driver-secret.h						\
 		driver-state.h						\
 		driver-storage.h					\
+		driver-fs.h 						\
 		driver-stream.h						\
 		internal.h						\
 		$(DATATYPES_SOURCES)					\
@@ -227,6 +228,7 @@ DRIVER_SOURCES =							\
 		libvirt-secret.c	 				\
 		libvirt-storage.c	 				\
 		libvirt-stream.c	 				\
+		libvirt-fs.c						\
 		locking/lock_manager.c locking/lock_manager.h		\
 		locking/lock_driver.h					\
 		locking/lock_driver_nop.h locking/lock_driver_nop.c	\
@@ -2399,6 +2401,7 @@ libvirt_setuid_rpc_client_la_SOURCES = 		\
 		libvirt-storage.c		\
 		libvirt-stream.c		\
 		libvirt-lxc.c			\
+		libvirt-fs.c			\
 		$(NULL)
 
 libvirt_setuid_rpc_client_la_LDFLAGS =		\
