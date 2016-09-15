@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<!-- A Relax NG schema for the libvirt fspool XML format -->
+<grammar xmlns="http://relaxng.org/ns/structure/1.0"
+    datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+  <include href='basictypes.rng'/>
+  <start>
+    <ref name='fspool'/>
+  </start>
+
+
+  <define name='fspool'>
+    <element name='fspool'>
+      <choice>
+        <ref name='fspooldir'/>
+      </choice>
+    </element>
+  </define>
+
+  <define name='fspooldir'>
+    <attribute name='type'>
+      <value>dir</value>
+    </attribute>
+    <interleave>
+      <ref name='commonmetadata'/>
+      <ref name='sizing'/>
+      <ref name='sourcedir'/>
+      <ref name='target'/>
+    </interleave>
+  </define>
+
+  <define name='commonmetadata'>
+    <interleave>
+      <element name='name'>
+        <ref name='genericName'/>
+      </element>
+      <optional>
+        <element name='uuid'>
+          <ref name='UUID'/>
+        </element>
+      </optional>
+    </interleave>
+  </define>
+
+  <define name='sizing'>
+    <interleave>
+      <optional>
+        <element name='capacity'>
+          <ref name='scaledInteger'/>
+        </element>
+      </optional>
+      <optional>
+        <element name='allocation'>
+          <ref name='scaledInteger'/>
+        </element>
+      </optional>
+      <optional>
+        <element name='available'>
+          <ref name='scaledInteger'/>
+        </element>
+      </optional>
+    </interleave>
+  </define>
+
+  <define name='target'>
+    <element name='target'>
+      <interleave>
+        <element name='path'>
+          <ref name='absFilePath'/>
+        </element>
+        <ref name='permissions'/>
+      </interleave>
+    </element>
+  </define>
+
+  <define name='sourcedir'>
+    <optional>
+      <element name='source'>
+      </element>
+    </optional>
+  </define>
+
+</grammar>

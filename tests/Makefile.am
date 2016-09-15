@@ -339,6 +339,8 @@ endif WITH_NSS
 
 test_programs += storagevolxml2xmltest storagepoolxml2xmltest
 
+test_programs += fsitemxml2xmltest fspoolxml2xmltest
+
 test_programs += nodedevxml2xmltest
 
 test_programs += interfacexml2xmltest
@@ -862,6 +864,16 @@ storagepoolxml2xmltest_SOURCES = \
 	storagepoolxml2xmltest.c \
 	testutils.c testutils.h
 storagepoolxml2xmltest_LDADD = $(LDADDS)
+
+fsitemxml2xmltest_SOURCES = \
+	fsitemxml2xmltest.c \
+	testutils.c testutils.h
+fsitemxml2xmltest_LDADD = $(LDADDS)
+
+fspoolxml2xmltest_SOURCES = \
+	fspoolxml2xmltest.c \
+	testutils.c testutils.h
+fspoolxml2xmltest_LDADD = $(LDADDS)
 
 nodedevxml2xmltest_SOURCES = \
 	nodedevxml2xmltest.c \

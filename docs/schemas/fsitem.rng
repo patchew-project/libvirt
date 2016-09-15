@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<!-- A Relax NG schema for the libvirt fspool item XML format -->
+<grammar xmlns="http://relaxng.org/ns/structure/1.0"
+    datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+  <include href='basictypes.rng'/>
+  <start>
+    <ref name='item'/>
+  </start>
+
+  <define name='item'>
+    <element name='fsitem'>
+      <optional>
+        <attribute name='type'>
+            <value>dir</value>
+        </attribute>
+      </optional>
+      <interleave>
+        <element name='name'>
+          <ref name='itemName'/>
+        </element>
+        <optional>
+          <element name='key'>
+            <text/>
+          </element>
+        </optional>
+        <ref name='sizing'/>
+        <ref name='target'/>
+      </interleave>
+    </element>
+  </define>
+
+  <define name='sizing'>
+    <interleave>
+      <optional>
+        <element name='capacity'>
+          <ref name='scaledInteger'/>
+        </element>
+      </optional>
+      <optional>
+        <element name='allocation'>
+          <ref name='scaledInteger'/>
+        </element>
+      </optional>
+    </interleave>
+  </define>
+
+  <define name='target'>
+    <element name='target'>
+      <interleave>
+        <optional>
+          <element name='path'>
+            <choice>
+              <data type='anyURI'/>
+              <ref name='absFilePath'/>
+            </choice>
+          </element>
+        </optional>
+        <ref name='permissions'/>
+        <optional>
+          <ref name='fileFormatFeatures'/>
+        </optional>
+      </interleave>
+    </element>
+  </define>
+
+</grammar>

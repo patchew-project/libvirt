@@ -1,0 +1,13 @@
+<item>
+  <name>item1</name>
+  <key>/var/lib/libvirt/images/fs/item1</key>
+  <capacity unit='bytes'>0</capacity>
+  <allocation unit='bytes'>4096</allocation>
+  <target>
+    <permissions>
+      <mode>0600</mode>
+      <owner>0</owner>
+      <group>0</group>
+    </permissions>
+  </target>
+</item>

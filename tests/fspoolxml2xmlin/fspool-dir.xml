@@ -1,0 +1,16 @@
+<fspool type='dir'>
+  <name>virtfs</name>
+  <uuid>5584ee21-db40-4e98-980e-44802c47b62f</uuid>
+  <capacity unit='bytes'>0</capacity>
+  <allocation unit='bytes'>0</allocation>
+  <available unit='bytes'>0</available>
+  <source>
+  </source>
+  <target>
+    <path>///var/////lib/libvirt/fs//</path>
+    <permissions>
+      <mode>0700</mode>
+      <label>some_lable_t</label>
+    </permissions>
+  </target>
+</fspool>
