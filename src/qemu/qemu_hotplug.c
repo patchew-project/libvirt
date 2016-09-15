@@ -2242,6 +2242,141 @@ qemuDomainAttachHostDevice(virConnectPtr conn,
     return -1;
 }
 
+
+int
+qemuDomainAttachShmemDevice(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            virDomainShmemDefPtr shmem)
+{
+    int ret = -1;
+    char *shmstr = NULL;
+    char *charAlias = NULL;
+    char *memAlias = NULL;
+    bool release_backing = false;
+    bool release_address = true;
+    bool supported = false;
+    virErrorPtr orig_err = NULL;
+    virJSONValuePtr props = NULL;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+
+
+    switch (shmem->model) {
+    case VIR_DOMAIN_SHMEM_MODEL_IVSHMEM_PLAIN:
+        supported = virQEMUCapsGet(priv->qemuCaps,
+                                   QEMU_CAPS_DEVICE_IVSHMEM_PLAIN);
+        break;
+
+    case VIR_DOMAIN_SHMEM_MODEL_IVSHMEM_DOORBELL:
+        supported = virQEMUCapsGet(priv->qemuCaps,
+                                   QEMU_CAPS_DEVICE_IVSHMEM_DOORBELL);
+        break;
+
+    default:
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                       _("live attach of shmem model '%s' is not supported"),
+                       virDomainShmemModelTypeToString(shmem->model));
+        return -1;
+    }
+
+    if (!supported) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Device '%s' is not supported by this version of qemu"),
+                       virDomainShmemModelTypeToString(shmem->model));
+        return -1;
+    }
+
+    if (qemuAssignDeviceShmemAlias(vm->def, shmem, -1) < 0)
+        return -1;
+
+    if (qemuDomainPrepareShmemChardev(shmem) < 0)
+        return -1;
+
+    if (VIR_REALLOC_N(vm->def->shmems, vm->def->nshmems + 1) < 0)
+        return -1;
+
+    if ((shmem->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE ||
+         shmem->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) &&
+         (virDomainPCIAddressEnsureAddr(priv->pciaddrs, &shmem->info) < 0))
+        return -1;
+
+    if (!(shmstr = qemuBuildShmemDevStr(vm->def, shmem, priv->qemuCaps)))
+        goto cleanup;
+
+    if (shmem->server.enabled) {
+        if (virAsprintf(&charAlias, "char%s", shmem->info.alias) < 0)
+            goto cleanup;
+    } else {
+        if (!(props = qemuBuildShmemBackendMemProps(shmem)))
+            goto cleanup;
+
+        if (virAsprintf(&memAlias, "shmmem-%s", shmem->info.alias) < 0)
+            goto cleanup;
+    }
+
+    if (virDomainShmemDefInsert(vm->def, shmem) < 0)
+        goto cleanup;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+
+    if (shmem->server.enabled) {
+        if (qemuMonitorAttachCharDev(priv->mon, charAlias,
+                                     &shmem->server.chr) < 0)
+            goto audit;
+    } else {
+        if (qemuMonitorAddObject(priv->mon, "memory-backend-file",
+                                 memAlias, props) < 0) {
+            props = NULL;
+            goto audit;
+        }
+        props = NULL;
+    }
+
+    release_backing = true;
+
+    if (qemuMonitorAddDevice(priv->mon, shmstr) < 0)
+        goto audit;
+
+    ret = 0;
+    release_address = false;
+
+ audit:
+    virDomainAuditShmem(vm, shmem, "attach", ret == 0);
+
+    orig_err = virSaveLastError();
+    if (ret < 0 && release_backing) {
+        if (shmem->server.enabled) {
+            if (qemuMonitorDetachCharDev(priv->mon, charAlias) < 0) {
+                VIR_WARN("Unable to remove backing chardev '%s' after failed "
+                         "qemuMonitorAddDevice", charAlias);
+            }
+        } else {
+            if (qemuMonitorDelObject(priv->mon, memAlias) < 0) {
+                VIR_WARN("Unable to remove backing memory '%s' after failed "
+                         "qemuMonitorAddDevice", memAlias);
+            }
+        }
+    }
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        ret = -1;
+
+ cleanup:
+    if (release_address)
+        qemuDomainReleaseDeviceAddress(vm, &shmem->info, NULL);
+
+    if (orig_err) {
+        virSetError(orig_err);
+        virFreeError(orig_err);
+    }
+
+    VIR_FREE(memAlias);
+    VIR_FREE(charAlias);
+    VIR_FREE(shmstr);
+
+    return ret;
+}
+
+
 static int
 qemuDomainChangeNetBridge(virDomainObjPtr vm,
                           virDomainNetDefPtr olddev,
@@ -3486,6 +3621,61 @@ qemuDomainRemoveRNGDevice(virQEMUDriverPtr driver,
 }
 
 
+static int
+qemuDomainRemoveShmemDevice(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            virDomainShmemDefPtr shmem)
+{
+    int ret = -1;
+    ssize_t idx = -1;
+    char *charAlias = NULL;
+    char *memAlias = NULL;
+    virObjectEventPtr event = NULL;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+
+
+    VIR_DEBUG("Removing shmem device %s from domain %p %s",
+              shmem->info.alias, vm, vm->def->name);
+
+    if (shmem->server.enabled) {
+        if (virAsprintf(&charAlias, "char%s", shmem->info.alias) < 0)
+            goto cleanup;
+    } else {
+        if (virAsprintf(&memAlias, "shmmem-%s", shmem->info.alias) < 0)
+            goto cleanup;
+    }
+
+    qemuDomainObjEnterMonitor(driver, vm);
+
+    if (shmem->server.enabled)
+        ret = qemuMonitorDetachCharDev(priv->mon, charAlias);
+    else
+        ret = qemuMonitorDelObject(priv->mon, memAlias);
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        goto cleanup;
+
+    virDomainAuditShmem(vm, shmem, "detach", ret == 0);
+
+    if (ret < 0)
+        goto cleanup;
+
+    event = virDomainEventDeviceRemovedNewFromObj(vm, shmem->info.alias);
+    qemuDomainEventQueue(driver, event);
+
+    if ((idx = virDomainShmemDefFind(vm->def, shmem)) >= 0)
+        virDomainShmemDefRemove(vm->def, idx);
+    qemuDomainReleaseDeviceAddress(vm, &shmem->info, NULL);
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(charAlias);
+    VIR_FREE(memAlias);
+
+    return ret;
+}
+
+
 int
 qemuDomainRemoveDevice(virQEMUDriverPtr driver,
                        virDomainObjPtr vm,
@@ -3517,6 +3707,10 @@ qemuDomainRemoveDevice(virQEMUDriverPtr driver,
         ret = qemuDomainRemoveMemoryDevice(driver, vm, dev->data.memory);
         break;
 
+    case VIR_DOMAIN_DEVICE_SHMEM:
+        ret = qemuDomainRemoveShmemDevice(driver, vm, dev->data.shmem);
+        break;
+
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_FS:
@@ -3530,7 +3724,6 @@ qemuDomainRemoveDevice(virQEMUDriverPtr driver,
     case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
-    case VIR_DOMAIN_DEVICE_SHMEM:
     case VIR_DOMAIN_DEVICE_TPM:
     case VIR_DOMAIN_DEVICE_PANIC:
     case VIR_DOMAIN_DEVICE_IOMMU:
@@ -4104,6 +4297,58 @@ int qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
     else
         return qemuDomainDetachThisHostDevice(driver, vm, detach);
 }
+
+
+int
+qemuDomainDetachShmemDevice(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            virDomainDeviceDefPtr dev)
+{
+    int ret = -1;
+    virErrorPtr orig_err = NULL;
+    virDomainShmemDefPtr shmem = dev->data.shmem;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+
+
+    switch (shmem->model) {
+    case VIR_DOMAIN_SHMEM_MODEL_IVSHMEM_PLAIN:
+    case VIR_DOMAIN_SHMEM_MODEL_IVSHMEM_DOORBELL:
+        break;
+
+    default:
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                       _("live detach of shmem model '%s' is not supported"),
+                       virDomainShmemModelTypeToString(shmem->model));
+        return -1;
+    }
+
+    qemuDomainMarkDeviceForRemoval(vm, &shmem->info);
+    qemuDomainObjEnterMonitor(driver, vm);
+
+    ret = qemuMonitorDelDevice(priv->mon, shmem->info.alias);
+
+    if (ret < 0)
+        orig_err = virSaveLastError();
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        ret = -1;
+
+    if (ret == 0) {
+        if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1) {
+            qemuDomainReleaseDeviceAddress(vm, &shmem->info, NULL);
+            ret = qemuDomainRemoveDevice(driver, vm, dev);
+        }
+    }
+    qemuDomainResetDeviceRemoval(vm);
+
+    if (orig_err) {
+        virSetError(orig_err);
+        virFreeError(orig_err);
+    }
+
+    return ret;
+}
+
 
 int
 qemuDomainDetachNetDevice(virQEMUDriverPtr driver,
