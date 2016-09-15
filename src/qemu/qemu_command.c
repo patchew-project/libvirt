@@ -8648,10 +8648,18 @@ qemuBuildShmemCommandLine(virLogManagerPtr logManager,
 {
     char *devstr = NULL;
 
-    if (!(devstr = qemuBuildShmemDevStr(def, shmem, qemuCaps)))
+    switch ((virDomainShmemModel)shmem->model) {
+    case VIR_DOMAIN_SHMEM_MODEL_IVSHMEM:
+        if (!(devstr = qemuBuildShmemDevStr(def, shmem, qemuCaps)))
+            return -1;
+        virCommandAddArgList(cmd, "-device", devstr, NULL);
+        VIR_FREE(devstr);
+        break;
+
+    /* coverity[dead_error_begin] */
+    case VIR_DOMAIN_SHMEM_MODEL_LAST:
         return -1;
-    virCommandAddArgList(cmd, "-device", devstr, NULL);
-    VIR_FREE(devstr);
+    }
 
     if (shmem->server.enabled) {
         if (!(devstr = qemuBuildShmemBackendStr(logManager, cmd, cfg, def,
