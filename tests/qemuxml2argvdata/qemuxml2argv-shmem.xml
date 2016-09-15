@@ -20,10 +20,10 @@
     <input type='keyboard' bus='ps2'/>
     <memballoon model='none'/>
     <shmem name='shmem0'/>
-    <shmem name='shmem1'>
+    <shmem name='shmem1' role='peer'>
       <size unit='M'>128</size>
     </shmem>
-    <shmem name='shmem2'>
+    <shmem name='shmem2' role='master'>
       <size unit='M'>256</size>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
     </shmem>

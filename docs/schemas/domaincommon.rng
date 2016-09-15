@@ -3584,6 +3584,14 @@
   <define name="shmem">
     <element name="shmem">
       <attribute name="name"/>
+      <optional>
+        <attribute name="role">
+          <choice>
+            <value>master</value>
+            <value>peer</value>
+          </choice>
+        </attribute>
+      </optional>
       <interleave>
         <optional>
           <element name="model">

@@ -6747,7 +6747,7 @@ qemu-kvm -net nic,model=? /dev/null
 <pre>
   ...
   &lt;devices&gt;
-    &lt;shmem name='my_shmem0'&gt;
+    &lt;shmem name='my_shmem0' role='peer'&gt;
       &lt;size unit='M'&gt;4&lt;/size&gt;
     &lt;/shmem&gt;
     &lt;shmem name='shmem_server'&gt;
@@ -6764,6 +6764,14 @@ qemu-kvm -net nic,model=? /dev/null
     <dd>
       The <code>shmem</code> element has one mandatory attribute,
       <code>name</code> to identify the shared memory.
+      Optional attribute <code>role</code> can be set to values
+      "master" or "peer".  The former will mean that upon migration,
+      the data in the shared memory is migrated with the domain.
+      There should be only one "master" per shared memory object.
+      Migration with "peer" role is disabled.  If migration of such
+      domain is required, the shmem device needs to be unplugged
+      before migration and plugged in at the destination upon
+      successful migration.
     </dd>
     <dt><code>size</code></dt>
     <dd>

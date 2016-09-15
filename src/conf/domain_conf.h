@@ -1560,10 +1560,20 @@ typedef enum {
     VIR_DOMAIN_SHMEM_MODEL_LAST
 } virDomainShmemModel;
 
+typedef enum {
+    VIR_DOMAIN_SHMEM_ROLE_DEFAULT,
+
+    VIR_DOMAIN_SHMEM_ROLE_MASTER,
+    VIR_DOMAIN_SHMEM_ROLE_PEER,
+
+    VIR_DOMAIN_SHMEM_ROLE_LAST
+} virDomainShmemRole;
+
 struct _virDomainShmemDef {
     char *name;
     unsigned long long size;
     int model; /* enum virDomainShmemModel */
+    int role; /* enum virDomainShmemRole */
     struct {
         bool enabled;
         virDomainChrSourceDef chr;
@@ -3052,6 +3062,7 @@ VIR_ENUM_DECL(virDomainMemoryModel)
 VIR_ENUM_DECL(virDomainMemoryBackingModel)
 VIR_ENUM_DECL(virDomainIOMMUModel)
 VIR_ENUM_DECL(virDomainShmemModel)
+VIR_ENUM_DECL(virDomainShmemRole)
 /* from libvirt.h */
 VIR_ENUM_DECL(virDomainState)
 VIR_ENUM_DECL(virDomainNostateReason)
