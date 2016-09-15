@@ -45,6 +45,7 @@ extern "C" {
 # include <libvirt/libvirt-secret.h>
 # include <libvirt/libvirt-storage.h>
 # include <libvirt/libvirt-stream.h>
+# include <libvirt/libvirt-fs.h>
 # undef __VIR_LIBVIRT_H_INCLUDES__
 
 # ifdef __cplusplus
