@@ -241,6 +241,10 @@ if WITH_STORAGE
     libvirtd_LDADD += ../src/libvirt_driver_storage.la
 endif WITH_STORAGE
 
+if WITH_FS
+    libvirtd_LDADD += ../src/libvirt_driver_fs.la
+endif WITH_FS
+
 if WITH_NETWORK
     libvirtd_LDADD += ../src/libvirt_driver_network.la
 endif WITH_NETWORK

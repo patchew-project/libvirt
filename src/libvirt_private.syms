@@ -1089,6 +1089,7 @@ virDomainMigratePrepareTunnel3;
 virDomainMigratePrepareTunnel3Params;
 virRegisterConnectDriver;
 virRegisterStateDriver;
+virSetSharedFSDriver;
 virSetSharedInterfaceDriver;
 virSetSharedNetworkDriver;
 virSetSharedNodeDeviceDriver;

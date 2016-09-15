@@ -100,6 +100,7 @@ int virSetSharedNodeDeviceDriver(virNodeDeviceDriverPtr driver) ATTRIBUTE_RETURN
 int virSetSharedNWFilterDriver(virNWFilterDriverPtr driver) ATTRIBUTE_RETURN_CHECK;
 int virSetSharedSecretDriver(virSecretDriverPtr driver) ATTRIBUTE_RETURN_CHECK;
 int virSetSharedStorageDriver(virStorageDriverPtr driver) ATTRIBUTE_RETURN_CHECK;
+int virSetSharedFSDriver(virFSDriverPtr driver) ATTRIBUTE_RETURN_CHECK;
 
 void *virDriverLoadModule(const char *name);
 

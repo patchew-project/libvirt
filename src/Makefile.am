@@ -644,6 +644,7 @@ DRIVER_SOURCE_FILES = \
 	$(REMOTE_DRIVER_SOURCES) \
 	$(SECRET_DRIVER_SOURCES) \
 	$(STORAGE_DRIVER_SOURCES) \
+	$(FS_DRIVER_SOURCES) \
 	$(TEST_DRIVER_SOURCES) \
 	$(UML_DRIVER_SOURCES) \
 	$(VBOX_DRIVER_SOURCES) \
@@ -664,6 +665,7 @@ STATEFUL_DRIVER_SOURCE_FILES = \
 	$(QEMU_DRIVER_SOURCES) \
 	$(SECRET_DRIVER_SOURCES) \
 	$(STORAGE_DRIVER_SOURCES) \
+	$(FS_DRIVER_SOURCES) \
 	$(UML_DRIVER_SOURCES) \
 	$(XEN_DRIVER_SOURCES) \
 	$(VZ_DRIVER_SOURCES) \
@@ -970,6 +972,14 @@ SECRET_UTIL_SOURCES =						\
 
 SECRET_DRIVER_SOURCES =						\
 		secret/secret_driver.h secret/secret_driver.c
+
+# FS pool backend specific impls
+FS_DRIVER_SOURCES =							\
+		fs/fs_driver.h fs/fs_driver.c		\
+		fs/fs_backend.h
+
+FS_DRIVER_DIR_SOURCES =							\
+		fs/fs_backend_dir.h fs/fs_backend_dir.c
 
 # Storage backend specific impls
 STORAGE_DRIVER_SOURCES =						\
@@ -1637,6 +1647,32 @@ endif WITH_DRIVER_MODULES
 libvirt_driver_secret_la_SOURCES = $(SECRET_DRIVER_SOURCES)
 endif WITH_SECRETS
 
+libvirt_driver_fs_impl_la_SOURCES =
+libvirt_driver_fs_impl_la_CFLAGS = \
+		-I$(srcdir)/access \
+		-I$(srcdir)/conf \
+		$(AM_CFLAGS)
+libvirt_driver_fs_impl_la_LDFLAGS = $(AM_LDFLAGS)
+libvirt_driver_fs_impl_la_LIBADD =
+libvirt_driver_fs_impl_la_LIBADD += $(SECDRIVER_LIBS) $(LIBXML_LIBS)
+if WITH_FS
+noinst_LTLIBRARIES += libvirt_driver_fs_impl.la
+libvirt_driver_fs_la_SOURCES =
+libvirt_driver_fs_la_LIBADD = libvirt_driver_fs_impl.la
+if WITH_DRIVER_MODULES
+mod_LTLIBRARIES += libvirt_driver_fs.la
+libvirt_driver_fs_la_LIBADD += ../gnulib/lib/libgnu.la
+libvirt_driver_fs_la_LDFLAGS = -module -avoid-version $(AM_LDFLAGS)
+else ! WITH_DRIVER_MODULES
+noinst_LTLIBRARIES += libvirt_driver_fs.la
+# Stateful, so linked to daemon instead
+#libvirt_la_BUILT_LIBADD += libvirt_driver_fs.la
+endif ! WITH_DRIVER_MODULES
+libvirt_driver_fs_impl_la_SOURCES += $(FS_DRIVER_SOURCES)
+libvirt_driver_fs_impl_la_SOURCES += $(FS_DRIVER_DIR_SOURCES)
+endif WITH_FS
+
+
 # Needed to keep automake quiet about conditionals
 libvirt_driver_storage_impl_la_SOURCES =
 libvirt_driver_storage_impl_la_CFLAGS = \
@@ -1908,6 +1944,8 @@ EXTRA_DIST +=							\
 		$(BHYVE_DRIVER_SOURCES)				\
 		$(NETWORK_DRIVER_SOURCES)			\
 		$(INTERFACE_DRIVER_SOURCES)			\
+		$(FS_DRIVER_SOURCES)				\
+		$(FS_DRIVER_DIR_SOURCES)			\
 		$(STORAGE_DRIVER_SOURCES)			\
 		$(STORAGE_DRIVER_FS_SOURCES)			\
 		$(STORAGE_DRIVER_LVM_SOURCES)			\

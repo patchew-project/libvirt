@@ -59,6 +59,8 @@ src/esx/esx_vi.c
 src/esx/esx_vi_methods.c
 src/esx/esx_vi_types.c
 src/fdstream.c
+src/fs/fs_backend_dir.c
+src/fs/fs_driver.c
 src/hyperv/hyperv_driver.c
 src/hyperv/hyperv_util.c
 src/hyperv/hyperv_wmi.c

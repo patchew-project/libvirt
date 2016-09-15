@@ -116,6 +116,7 @@ static int virStateDriverTabCount;
 static virNetworkDriverPtr virSharedNetworkDriver;
 static virInterfaceDriverPtr virSharedInterfaceDriver;
 static virStorageDriverPtr virSharedStorageDriver;
+static virFSDriverPtr virSharedFSDriver;
 static virNodeDeviceDriverPtr virSharedNodeDeviceDriver;
 static virSecretDriverPtr virSharedSecretDriver;
 static virNWFilterDriverPtr virSharedNWFilterDriver;
@@ -587,7 +588,30 @@ virSetSharedStorageDriver(virStorageDriverPtr driver)
     return 0;
 }
 
+/**
+ * virSetSharedFSDriver:
+ * @driver: pointer to a fs driver block
+ *
+ * Register a fs virtualization driver
+ *
+ * Returns the driver priority or -1 in case of error.
+ */
+int
+virSetSharedFSDriver(virFSDriverPtr driver)
+{
+    virCheckNonNullArgReturn(driver, -1);
 
+    if (virSharedFSDriver) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("A fs driver is already registered"));
+        return -1;
+    }
+
+    VIR_DEBUG("registering %s as fs driver", driver->name);
+
+    virSharedFSDriver = driver;
+    return 0;
+}
 /**
  * virSetSharedNodeDeviceDriver:
  * @driver: pointer to a device monitor block
@@ -707,6 +731,8 @@ virRegisterConnectDriver(virConnectDriverPtr driver,
             driver->secretDriver = virSharedSecretDriver;
         if (driver->storageDriver == NULL)
             driver->storageDriver = virSharedStorageDriver;
+        if (driver->fsDriver == NULL)
+            driver->fsDriver = virSharedFSDriver;
     }
 
     virConnectDriverTab[virConnectDriverTabCount] = driver;
@@ -1089,6 +1115,7 @@ virConnectOpenInternal(const char *name,
         ret->nwfilterDriver = virConnectDriverTab[i]->nwfilterDriver;
         ret->secretDriver = virConnectDriverTab[i]->secretDriver;
         ret->storageDriver = virConnectDriverTab[i]->storageDriver;
+        ret->fsDriver = virConnectDriverTab[i]->fsDriver;
 
         res = virConnectDriverTab[i]->hypervisorDriver->connectOpen(ret, auth, conf, flags);
         VIR_DEBUG("driver %zu %s returned %s",
@@ -1107,6 +1134,7 @@ virConnectOpenInternal(const char *name,
             ret->nwfilterDriver = NULL;
             ret->secretDriver = NULL;
             ret->storageDriver = NULL;
+            ret->fsDriver = NULL;
 
             if (res == VIR_DRV_OPEN_ERROR)
                 goto failed;

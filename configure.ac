@@ -1077,6 +1077,11 @@ dnl
 
 LIBVIRT_DRIVER_CHECK_BHYVE
 
+dnl
+dnl Checks for FS Driver
+dnl
+
+LIBVIRT_DRIVER_CHECK_FSPOOL
 
 dnl
 dnl check for kernel headers required by src/bridge.c
@@ -1648,6 +1653,35 @@ if test "$with_secrets" = "yes" ; then
   AC_DEFINE_UNQUOTED([WITH_SECRETS], 1, [whether local secrets management driver is available])
 fi
 AM_CONDITIONAL([WITH_SECRETS], [test "$with_secrets" = "yes"])
+
+
+AC_ARG_WITH([fs-dir],
+  [AS_HELP_STRING([--with-fs-dir],
+    [with fs backend for fs driver @<:@default=yes@:>])],
+  [],[with_fs_dir=yes])
+
+if test "$with_libvirtd" = "no"; then
+  with_fs_dir=no
+fi
+
+if test "$with_fs_dir" = "yes" ; then
+  AC_DEFINE_UNQUOTED([WITH_FS_DIR], 1, [whether directory backend for fs driver is enabled])
+fi
+AM_CONDITIONAL([WITH_FS_DIR], [test "$with_fs_dir" = "yes"])
+
+with_fs=no
+for backend in dir; do
+    if eval test \$with_fs_$backend = yes; then
+        with_fs=yes
+        break
+    fi
+done
+if test $with_fs = yes; then
+    AC_DEFINE([WITH_FS], [1],
+      [Define to 1 if at least one fs backend is in use])
+fi
+AM_CONDITIONAL([WITH_FS], [test "$with_fs" = "yes"])
+
 
 
 AC_ARG_WITH([storage-dir],
@@ -2762,6 +2796,10 @@ AC_MSG_NOTICE([     RBD: $with_storage_rbd])
 AC_MSG_NOTICE([Sheepdog: $with_storage_sheepdog])
 AC_MSG_NOTICE([ Gluster: $with_storage_gluster])
 AC_MSG_NOTICE([     ZFS: $with_storage_zfs])
+AC_MSG_NOTICE([])
+AC_MSG_NOTICE([Fs Drivers])
+AC_MSG_NOTICE([])
+LIBVIRT_DRIVER_RESULT_FS
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([Security Drivers])
 AC_MSG_NOTICE([])
