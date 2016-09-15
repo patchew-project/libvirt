@@ -398,6 +398,50 @@ virAccessDriverPolkitCheckStorageVol(virAccessManagerPtr manager,
                                       virAccessPermStorageVolTypeToString(perm),
                                       attrs);
 }
+static int
+virAccessDriverPolkitCheckFSPool(virAccessManagerPtr manager,
+                                 const char *driverName,
+                                 virFSPoolDefPtr fspool,
+                                 virAccessPermFSPool perm)
+{
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
+    const char *attrs[] = {
+        "connect_driver", driverName,
+        "fspool_name", fspool->name,
+        "fspool_uuid", uuidstr,
+        NULL,
+    };
+    virUUIDFormat(fspool->uuid, uuidstr);
+
+    return virAccessDriverPolkitCheck(manager,
+                                      "fs-pool",
+                                      virAccessPermFSPoolTypeToString(perm),
+                                      attrs);
+}
+
+static int
+virAccessDriverPolkitCheckFSItem(virAccessManagerPtr manager,
+                                 const char *driverName,
+                                 virFSPoolDefPtr fspool,
+                                 virFSItemDefPtr item,
+                                 virAccessPermFSItem perm)
+{
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
+    const char *attrs[] = {
+        "connect_driver", driverName,
+        "fspool_name", fspool->name,
+        "fspool_uuid", uuidstr,
+        "item_name", item->name,
+        "item_key", item->key,
+        NULL,
+    };
+    virUUIDFormat(fspool->uuid, uuidstr);
+
+    return virAccessDriverPolkitCheck(manager,
+                                      "fs-item",
+                                      virAccessPermFSItemTypeToString(perm),
+                                      attrs);
+}
 
 virAccessDriver accessDriverPolkit = {
     .privateDataLen = sizeof(virAccessDriverPolkitPrivate),
@@ -412,4 +456,7 @@ virAccessDriver accessDriverPolkit = {
     .checkSecret = virAccessDriverPolkitCheckSecret,
     .checkStoragePool = virAccessDriverPolkitCheckStoragePool,
     .checkStorageVol = virAccessDriverPolkitCheckStorageVol,
+    .checkFSPool = virAccessDriverPolkitCheckFSPool,
+    .checkFSItem = virAccessDriverPolkitCheckFSItem,
+
 };

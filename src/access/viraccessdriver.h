@@ -61,6 +61,16 @@ typedef int (*virAccessDriverCheckStorageVolDrv)(virAccessManagerPtr manager,
                                                  virStorageVolDefPtr vol,
                                                  virAccessPermStorageVol av);
 
+typedef int (*virAccessDriverCheckFSPoolDrv)(virAccessManagerPtr manager,
+                                             const char *driverName,
+                                             virFSPoolDefPtr fspool,
+                                             virAccessPermFSPool av);
+typedef int (*virAccessDriverCheckFSItemDrv)(virAccessManagerPtr manager,
+                                             const char *driverName,
+                                             virFSPoolDefPtr fspool,
+                                             virFSItemDefPtr item,
+                                             virAccessPermFSItem av);
+
 typedef int (*virAccessDriverSetupDrv)(virAccessManagerPtr manager);
 typedef void (*virAccessDriverCleanupDrv)(virAccessManagerPtr manager);
 
@@ -83,6 +93,8 @@ struct _virAccessDriver {
     virAccessDriverCheckSecretDrv checkSecret;
     virAccessDriverCheckStoragePoolDrv checkStoragePool;
     virAccessDriverCheckStorageVolDrv checkStorageVol;
+    virAccessDriverCheckFSPoolDrv checkFSPool;
+    virAccessDriverCheckFSItemDrv checkFSItem;
 };
 
 

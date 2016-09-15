@@ -344,3 +344,34 @@ int virAccessManagerCheckStorageVol(virAccessManagerPtr manager,
 
     return virAccessManagerSanitizeError(ret);
 }
+
+int virAccessManagerCheckFSPool(virAccessManagerPtr manager,
+                                const char *driverName,
+                                virFSPoolDefPtr fspool,
+                                virAccessPermFSPool perm)
+{
+    int ret = 0;
+    VIR_DEBUG("manager=%p(name=%s) driver=%s pool=%p perm=%d",
+              manager, manager->drv->name, driverName, fspool, perm);
+
+    if (manager->drv->checkFSPool)
+        ret = manager->drv->checkFSPool(manager, driverName, fspool, perm);
+
+    return virAccessManagerSanitizeError(ret);
+}
+
+int virAccessManagerCheckFSItem(virAccessManagerPtr manager,
+                                const char *driverName,
+                                virFSPoolDefPtr fspool,
+                                virFSItemDefPtr item,
+                                virAccessPermFSItem perm)
+{
+    int ret = 0;
+    VIR_DEBUG("manager=%p(name=%s) driver=%s pool=%p vol=%p perm=%d",
+              manager, manager->drv->name, driverName, fspool, item, perm);
+
+    if (manager->drv->checkFSItem)
+        ret = manager->drv->checkFSItem(manager, driverName, fspool, item, perm);
+
+    return virAccessManagerSanitizeError(ret);
+}

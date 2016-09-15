@@ -29,7 +29,7 @@ VIR_ENUM_IMPL(virAccessPermConnect,
               "search_domains", "search_networks",
               "search_storage_pools", "search_node_devices",
               "search_interfaces", "search_secrets",
-              "search_nwfilters",
+              "search_nwfilters", "search_fspools",
               "detect_storage_pools", "pm_control",
               "interface_transaction");
 
@@ -82,4 +82,17 @@ VIR_ENUM_IMPL(virAccessPermStorageVol,
               VIR_ACCESS_PERM_STORAGE_VOL_LAST,
               "getattr", "read", "create", "delete",
               "format", "resize", "data_read",
+              "data_write");
+
+VIR_ENUM_IMPL(virAccessPermFSPool,
+              VIR_ACCESS_PERM_FSPOOL_LAST,
+              "getattr", "read", "write",
+              "save", "delete", "start", "stop",
+              "refresh", "search_items",
+              "format");
+
+VIR_ENUM_IMPL(virAccessPermFSItem,
+              VIR_ACCESS_PERM_FSITEM_LAST,
+              "getattr", "read", "create", "delete",
+              "format", "data_read",
               "data_write");

@@ -267,6 +267,53 @@ virAccessDriverStackCheckStorageVol(virAccessManagerPtr manager,
     return ret;
 }
 
+static int
+virAccessDriverStackCheckFSPool(virAccessManagerPtr manager,
+                                const char *driverName,
+                                virFSPoolDefPtr fspool,
+                                virAccessPermFSPool perm)
+{
+    virAccessDriverStackPrivatePtr priv = virAccessManagerGetPrivateData(manager);
+    int ret = 1;
+    size_t i;
+
+    for (i = 0; i < priv->managersLen; i++) {
+        int rv;
+        /* We do not short-circuit on first denial - always check all drivers */
+        rv = virAccessManagerCheckFSPool(priv->managers[i], driverName, fspool, perm);
+        if (rv == 0 && ret != -1)
+            ret = 0;
+        else if (rv < 0)
+            ret = -1;
+    }
+
+    return ret;
+}
+
+static int
+virAccessDriverStackCheckFSItem(virAccessManagerPtr manager,
+                                const char *driverName,
+                                virFSPoolDefPtr fspool,
+                                virFSItemDefPtr item,
+                                virAccessPermFSItem perm)
+{
+    virAccessDriverStackPrivatePtr priv = virAccessManagerGetPrivateData(manager);
+    int ret = 1;
+    size_t i;
+
+    for (i = 0; i < priv->managersLen; i++) {
+        int rv;
+        /* We do not short-circuit on first denial - always check all drivers */
+        rv = virAccessManagerCheckFSItem(priv->managers[i], driverName, fspool, item, perm);
+        if (rv == 0 && ret != -1)
+            ret = 0;
+        else if (rv < 0)
+            ret = -1;
+    }
+
+    return ret;
+}
+
 virAccessDriver accessDriverStack = {
     .privateDataLen = sizeof(virAccessDriverStackPrivate),
     .name = "stack",
@@ -280,4 +327,6 @@ virAccessDriver accessDriverStack = {
     .checkSecret = virAccessDriverStackCheckSecret,
     .checkStoragePool = virAccessDriverStackCheckStoragePool,
     .checkStorageVol = virAccessDriverStackCheckStorageVol,
+    .checkFSPool = virAccessDriverStackCheckFSPool,
+    .checkFSItem = virAccessDriverStackCheckFSItem,
 };

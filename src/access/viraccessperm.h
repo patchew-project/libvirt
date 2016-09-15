@@ -67,6 +67,12 @@ typedef enum {
     VIR_ACCESS_PERM_CONNECT_SEARCH_STORAGE_POOLS,
 
     /**
+     * @desc: List fs pools
+     * @message: Listing fs pools requires authorization
+     * @anonymous: 1
+     */
+    VIR_ACCESS_PERM_CONNECT_SEARCH_FSPOOLS,
+    /**
      * @desc: List node devices
      * @message: Listing node devices requires authorization
      * @anonymous: 1
@@ -651,6 +657,122 @@ typedef enum {
     VIR_ACCESS_PERM_STORAGE_VOL_LAST
 } virAccessPermStorageVol;
 
+typedef enum {
+
+    /**
+     * @desc: Access fs pool
+     * @message: Accessing fs pool requires authorization
+     * @anonymous: 1
+     */
+    VIR_ACCESS_PERM_FSPOOL_GETATTR,
+
+    /**
+     * @desc: Read fs pool
+     * @message: Reading fs pool configuration requires authorization
+     * @anonymous: 1
+     */
+    VIR_ACCESS_PERM_FSPOOL_READ,
+
+    /**
+     * @desc: Write fs pool
+     * @message: Writing fs pool configuration requires authorization
+     */
+    VIR_ACCESS_PERM_FSPOOL_WRITE,
+
+    /**
+     * @desc: Save fs pool
+     * @message: Saving fs pool configuration requires authorization
+     */
+    VIR_ACCESS_PERM_FSPOOL_SAVE,
+
+    /**
+     * @desc: Delete fs pool
+     * @message: Deleting fs pool configuration requires authorization
+     */
+    VIR_ACCESS_PERM_FSPOOL_DELETE,
+
+    /**
+     * @desc: Start fs pool
+     * @message: Starting fs pool configuration requires authorization
+     */
+    VIR_ACCESS_PERM_FSPOOL_START,
+
+    /**
+     * @desc: Stop fs pool
+     * @message: Stopping fs pool configuration requires authorization
+     */
+    VIR_ACCESS_PERM_FSPOOL_STOP,
+
+    /**
+     * @desc: Refresh fs pool
+     * @message: Refreshing fs pool items requires authorization
+     */
+    VIR_ACCESS_PERM_FSPOOL_REFRESH,
+
+    /**
+     * @desc: List fs pool items
+     * @message: Listing fs pool items requires authorization
+     */
+    VIR_ACCESS_PERM_FSPOOL_SEARCH_ITEMS,
+
+    /**
+     * @desc: Format fs pool
+     * @message: Formatting fs pool data requires authorization
+     */
+    VIR_ACCESS_PERM_FSPOOL_FORMAT,
+
+    VIR_ACCESS_PERM_FSPOOL_LAST
+} virAccessPermFSPool;
+
+typedef enum {
+
+    /**
+     * @desc: Access fs item
+     * @message: Acceessing fs item requires authorization
+     * @anonymous: 1
+     */
+    VIR_ACCESS_PERM_FSITEM_GETATTR,
+
+    /**
+     * @desc: Read fs item
+     * @message: Reading fs item configuration requires authorization
+     * @anonymous: 1
+     */
+    VIR_ACCESS_PERM_FSITEM_READ,
+
+    /**
+     * @desc: Create fs item
+     * @message: Creating fs item requires authorization
+     */
+    VIR_ACCESS_PERM_FSITEM_CREATE,
+
+    /**
+     * @desc: Delete fs item
+     * @message: Deleting fs item requires authorization
+     */
+    VIR_ACCESS_PERM_FSITEM_DELETE,
+
+    /**
+     * @desc: Format fs item
+     * @message: Formatting fs item data requires authorization
+     */
+    VIR_ACCESS_PERM_FSITEM_FORMAT,
+
+    /**
+     * @desc: Read fs item data
+     * @message: Reading fs item data requires authorization
+     */
+    VIR_ACCESS_PERM_FSITEM_DATA_READ,
+
+    /**
+     * @desc: Write fs item data
+     * @message: Writing fs item data requires authorization
+     */
+    VIR_ACCESS_PERM_FSITEM_DATA_WRITE,
+
+    VIR_ACCESS_PERM_FSITEM_LAST
+} virAccessPermFSItem;
+
 VIR_ENUM_DECL(virAccessPermConnect);
 VIR_ENUM_DECL(virAccessPermDomain);
 VIR_ENUM_DECL(virAccessPermInterface);
@@ -660,5 +782,7 @@ VIR_ENUM_DECL(virAccessPermNWFilter);
 VIR_ENUM_DECL(virAccessPermSecret);
 VIR_ENUM_DECL(virAccessPermStoragePool);
 VIR_ENUM_DECL(virAccessPermStorageVol);
+VIR_ENUM_DECL(virAccessPermFSPool);
+VIR_ENUM_DECL(virAccessPermFSItem);
 
 #endif /* __VIR_ACCESS_PERM_H__ */

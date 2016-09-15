@@ -8,6 +8,8 @@
 # access/viraccessmanager.h
 virAccessManagerCheckConnect;
 virAccessManagerCheckDomain;
+virAccessManagerCheckFSItem;
+virAccessManagerCheckFSPool;
 virAccessManagerCheckInterface;
 virAccessManagerCheckNetwork;
 virAccessManagerCheckNodeDevice;
@@ -26,6 +28,10 @@ virAccessPermConnectTypeFromString;
 virAccessPermConnectTypeToString;
 virAccessPermDomainTypeFromString;
 virAccessPermDomainTypeToString;
+virAccessPermFSItemTypeFromString;
+virAccessPermFSItemTypeToString;
+virAccessPermFSPoolTypeFromString;
+virAccessPermFSPoolTypeToString;
 virAccessPermInterfaceTypeFromString;
 virAccessPermInterfaceTypeToString;
 virAccessPermNetworkTypeFromString;

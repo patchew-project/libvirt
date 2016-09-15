@@ -27,6 +27,7 @@
 # include "conf/nwfilter_conf.h"
 # include "conf/node_device_conf.h"
 # include "conf/storage_conf.h"
+# include "conf/fs_conf.h"
 # include "conf/secret_conf.h"
 # include "conf/interface_conf.h"
 # include "access/viraccessperm.h"
@@ -86,6 +87,16 @@ int virAccessManagerCheckStorageVol(virAccessManagerPtr manager,
                                     virStoragePoolDefPtr pool,
                                     virStorageVolDefPtr vol,
                                     virAccessPermStorageVol perm);
+int virAccessManagerCheckFSPool(virAccessManagerPtr manager,
+                                const char *driverName,
+                                virFSPoolDefPtr fspool,
+                                virAccessPermFSPool perm);
+int virAccessManagerCheckFSItem(virAccessManagerPtr manager,
+                                const char *driverName,
+                                virFSPoolDefPtr fspool,
+                                virFSItemDefPtr item,
+                                virAccessPermFSItem perm);
+
 
 
 #endif /* __VIR_ACCESS_MANAGER_H__ */

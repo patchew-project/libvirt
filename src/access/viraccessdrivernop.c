@@ -103,7 +103,24 @@ virAccessDriverNopCheckStorageVol(virAccessManagerPtr manager ATTRIBUTE_UNUSED,
     return 1; /* Allow */
 }
 
+static int
+virAccessDriverNopCheckFSPool(virAccessManagerPtr manager ATTRIBUTE_UNUSED,
+                              const char *driverName ATTRIBUTE_UNUSED,
+                              virFSPoolDefPtr fspool ATTRIBUTE_UNUSED,
+                              virAccessPermFSPool perm ATTRIBUTE_UNUSED)
+{
+    return 1; /* Allow */
+}
 
+static int
+virAccessDriverNopCheckFSItem(virAccessManagerPtr manager ATTRIBUTE_UNUSED,
+                              const char *driverName ATTRIBUTE_UNUSED,
+                              virFSPoolDefPtr fspool ATTRIBUTE_UNUSED,
+                              virFSItemDefPtr item ATTRIBUTE_UNUSED,
+                              virAccessPermFSItem perm ATTRIBUTE_UNUSED)
+{
+    return 1; /* Allow */
+}
 virAccessDriver accessDriverNop = {
     .name = "none",
     .checkConnect = virAccessDriverNopCheckConnect,
@@ -115,4 +132,6 @@ virAccessDriver accessDriverNop = {
     .checkSecret = virAccessDriverNopCheckSecret,
     .checkStoragePool = virAccessDriverNopCheckStoragePool,
     .checkStorageVol = virAccessDriverNopCheckStorageVol,
+    .checkFSPool = virAccessDriverNopCheckFSPool,
+    .checkFSItem = virAccessDriverNopCheckFSItem,
 };
