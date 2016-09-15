@@ -74,6 +74,7 @@ VIR_LOG_INIT("test.test_driver");
 
 struct _testCell {
     unsigned long mem;
+    unsigned long freeMem;
     int numCpus;
     virCapsHostNUMACellCPU cpus[MAX_CPUS];
 };
@@ -1268,6 +1269,7 @@ testOpenDefault(virConnectPtr conn)
     for (u = 0; u < privconn->numCells; ++u) {
         privconn->cells[u].numCpus = 8;
         privconn->cells[u].mem = (u + 1) * 2048 * 1024;
+        privconn->cells[u].freeMem = (u + 1) * 2048 * 512;
     }
     for (u = 0; u < 16; u++) {
         virBitmapPtr siblings = virBitmapNew(16);
@@ -2743,6 +2745,32 @@ testNodeGetCPUStats(virConnectPtr conn ATTRIBUTE_UNUSED,
 
     *nparams = i;
     return 0;
+}
+
+static unsigned long long
+testNodeGetFreeMemory(virConnectPtr conn ATTRIBUTE_UNUSED)
+{
+    unsigned int ret = 0;
+    unsigned int freeMem = 0;
+    size_t i;
+
+    testDriverPtr privconn = conn->privateData;
+
+    testDriverLock(privconn);
+
+    if (privconn->cells) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       "%s", _("Range exceeds available cells"));
+        goto cleanup;
+    }
+
+    for (i = 0; i < privconn->numCells; i++)
+        freeMem += privconn->cells[i].freeMem;
+    ret = freeMem;
+
+ cleanup:
+    testDriverUnlock(privconn);
+    return ret;
 }
 
 static int testDomainCreateWithFlags(virDomainPtr domain, unsigned int flags)
@@ -6737,6 +6765,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .connectGetMaxVcpus = testConnectGetMaxVcpus, /* 0.3.2 */
     .nodeGetInfo = testNodeGetInfo, /* 0.1.1 */
     .nodeGetCPUStats = testNodeGetCPUStats, /* 2.3.0 */
+    .nodeGetFreeMemory = testNodeGetFreeMemory, /* 2.3.0 */
     .connectGetCapabilities = testConnectGetCapabilities, /* 0.2.1 */
     .connectGetSysinfo = testConnectGetSysinfo, /* 2.3.0 */
     .connectGetType = testConnectGetType, /* 2.3.0 */
