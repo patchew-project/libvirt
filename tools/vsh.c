@@ -624,9 +624,7 @@ bool
 vshCmddefHelp(vshControl *ctl, const char *cmdname)
 {
     const vshCmdDef *def = vshCmddefSearch(cmdname);
-    /* Don't translate desc if it is "".  */
-    const char *desc = vshCmddefGetInfo(def, "desc");
-    const char *help = _(vshCmddefGetInfo(def, "help"));
+    const char *desc = NULL;
     char buf[256];
     uint64_t opts_need_arg;
     uint64_t opts_required;
@@ -644,7 +642,8 @@ vshCmddefHelp(vshControl *ctl, const char *cmdname)
     }
 
     fputs(_("  NAME\n"), stdout);
-    fprintf(stdout, "    %s - %s\n", def->name, help);
+    fprintf(stdout, "    %s - %s\n", def->name,
+            _(vshCmddefGetInfo(def, "help")));
 
     fputs(_("\n  SYNOPSIS\n"), stdout);
     fprintf(stdout, "    %s", def->name);
@@ -695,6 +694,7 @@ vshCmddefHelp(vshControl *ctl, const char *cmdname)
     }
     fputc('\n', stdout);
 
+    desc = vshCmddefGetInfo(def, "desc");
     if (desc && *desc) {
         /* Print the description only if it's not empty.  */
         fputs(_("\n  DESCRIPTION\n"), stdout);
