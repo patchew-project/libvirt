@@ -695,7 +695,7 @@ vshCmddefHelp(vshControl *ctl, const char *cmdname)
         }
         fputc('\n', stdout);
 
-        if (desc[0]) {
+        if (desc && *desc) {
             /* Print the description only if it's not empty.  */
             fputs(_("\n  DESCRIPTION\n"), stdout);
             fprintf(stdout, "    %s\n", _(desc));
