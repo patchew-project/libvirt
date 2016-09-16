@@ -423,9 +423,6 @@ static int
 vshCmddefOptParse(const vshCmdDef *cmd, uint64_t *opts_need_arg,
                   uint64_t *opts_required)
 {
-    if (vshCmddefCheckInternals(cmd) < 0)
-        return -1;
-
     if (vshCmddefOptFill(cmd, opts_need_arg, opts_required) < 0)
         return -1;
 
@@ -632,6 +629,12 @@ vshCmddefHelp(vshControl *ctl, const char *cmdname)
 
     if (!def) {
         vshError(ctl, _("command '%s' doesn't exist"), cmdname);
+        return false;
+    }
+
+    if (vshCmddefCheckInternals(def) < 0) {
+        vshError(ctl, _("internal error: wrong command structure: '%s'"),
+                 def->name);
         return false;
     }
 
@@ -1409,6 +1412,11 @@ vshCommandParse(vshControl *ctl, vshCommandParser *parser)
                 if (!(cmd = vshCmddefSearch(tkdata))) {
                     vshError(ctl, _("unknown command: '%s'"), tkdata);
                     goto syntaxError;   /* ... or ignore this command only? */
+                }
+                if (vshCmddefCheckInternals(cmd) < 0) {
+                    vshError(ctl, _("internal error: wrong command structure: "
+                                    "'%s'"), tkdata);
+                    goto syntaxError;
                 }
                 if (vshCmddefOptParse(cmd, &opts_need_arg,
                                       &opts_required) < 0) {
@@ -3344,8 +3352,8 @@ const vshCmdInfo info_selftest[] = {
 };
 
 /* Prints help for every command.
- * That runs vshCmddefOptParse which validates
- * the per-command options structure. */
+ * That runs vshCmddefCheckInternals which validates
+ * the overall command structure. */
 bool
 cmdSelfTest(vshControl *ctl, const vshCmd *cmd ATTRIBUTE_UNUSED)
 {
