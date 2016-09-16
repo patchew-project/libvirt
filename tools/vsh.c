@@ -329,6 +329,9 @@ vshCmddefCheckInternals(const vshCmdDef *cmd)
 {
     size_t i;
 
+    if (cmd->flags & VSH_CMD_FLAG_ALIAS && !cmd->alias)
+        return -1;
+
     if (!cmd->opts)
         return 0;
 
@@ -1407,6 +1410,13 @@ vshCommandParse(vshControl *ctl, vshCommandParser *parser)
                 if (!(cmd = vshCmddefSearch(tkdata))) {
                     vshError(ctl, _("unknown command: '%s'"), tkdata);
                     goto syntaxError;   /* ... or ignore this command only? */
+                }
+
+                /* aliases need to be resolved to the actual commands */
+                if (cmd->flags & VSH_CMD_FLAG_ALIAS) {
+                    VIR_FREE(tkdata);
+                    tkdata = vshStrdup(ctl, cmd->alias);
+                    cmd = vshCmddefSearch(tkdata);
                 }
                 if (vshCmddefCheckInternals(cmd) < 0) {
                     vshError(ctl, _("internal error: wrong command structure: "
@@ -3359,10 +3369,11 @@ cmdSelfTest(vshControl *ctl, const vshCmd *cmd ATTRIBUTE_UNUSED)
 
     for (grp = cmdGroups; grp->name; grp++) {
         for (def = grp->commands; def->name; def++) {
+            const vshCmdDef *c = def;
             if (def->flags & VSH_CMD_FLAG_ALIAS)
-                continue;
+                c = vshCmddefSearch(c->alias);
 
-            if (!vshCmddefHelp(ctl, def->name))
+            if (!vshCmddefHelp(ctl, c->name))
                 return false;
         }
     }
