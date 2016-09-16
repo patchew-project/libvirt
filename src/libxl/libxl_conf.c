@@ -1490,6 +1490,91 @@ int libxlDriverConfigLoadFile(libxlDriverConfigPtr cfg,
 
 }
 
+#ifdef LIBXL_HAVE_DEVICE_CHANNEL
+static int
+libxlMakeChannel(virDomainChrDefPtr l_channel,
+                 libxl_device_channel *x_channel)
+{
+    int ret = -1;
+
+    libxl_device_channel_init(x_channel);
+
+    switch (l_channel->source.type) {
+    case VIR_DOMAIN_CHR_TYPE_PTY:
+        x_channel->connection = LIBXL_CHANNEL_CONNECTION_PTY;
+        break;
+    case VIR_DOMAIN_CHR_TYPE_UNIX:
+        x_channel->connection = LIBXL_CHANNEL_CONNECTION_SOCKET;
+        if (!l_channel->source.data.nix.path) {
+            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                           _("channel path missing for unix type"));
+            return ret;
+        }
+        if (VIR_STRDUP(x_channel->u.socket.path,
+                       l_channel->source.data.nix.path) < 0)
+            return ret;
+        break;
+    default:
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("channel source type not supported"));
+        break;
+    }
+
+    switch (l_channel->targetType) {
+    case VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_XEN:
+        if (!l_channel->target.name) {
+            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                           _("channel target name missing"));
+            return ret;
+        }
+        if (VIR_STRDUP(x_channel->name, l_channel->target.name) < 0)
+            return ret;
+        ret = 0;
+        break;
+    default:
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("channel target type not supported"));
+        break;
+    }
+
+    return ret;
+}
+
+static int
+libxlMakeChannelList(virDomainDefPtr def, libxl_domain_config *d_config)
+{
+    virDomainChrDefPtr *l_channels = def->channels;
+    size_t nchannels = def->nchannels;
+    libxl_device_channel *x_channels;
+    size_t i, nvchannels = 0;
+
+    if (VIR_ALLOC_N(x_channels, nchannels) < 0)
+        return -1;
+
+    for (i = 0; i < nchannels; i++) {
+        if (l_channels[i]->deviceType != VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL)
+            continue;
+
+        if (libxlMakeChannel(l_channels[i], &x_channels[nvchannels]) < 0)
+            goto error;
+
+        nvchannels++;
+    }
+
+    VIR_SHRINK_N(x_channels, nchannels, nchannels - nvchannels);
+    d_config->channels = x_channels;
+    d_config->num_channels = nvchannels;
+
+    return 0;
+
+ error:
+    for (i = 0; i < nchannels; i++)
+        libxl_device_channel_dispose(&x_channels[i]);
+    VIR_FREE(x_channels);
+    return -1;
+}
+#endif
+
 #ifdef LIBXL_HAVE_PVUSB
 int
 libxlMakeUSBController(virDomainControllerDefPtr controller,
@@ -1861,6 +1946,11 @@ libxlBuildDomainConfig(virPortAllocatorPtr graphicsports,
         return -1;
 
     if (libxlMakeUSBList(def, d_config) < 0)
+        return -1;
+#endif
+
+#ifdef LIBXL_HAVE_DEVICE_CHANNEL
+    if (libxlMakeChannelList(def, d_config) < 0)
         return -1;
 #endif
 
