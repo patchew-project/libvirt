@@ -173,7 +173,11 @@ src/storage/storage_backend_scsi.c
 src/storage/storage_backend_sheepdog.c
 src/storage/storage_backend_zfs.c
 src/storage/storage_driver.c
-src/test/test_driver.c
+src/test/test_device_driver.c
+src/test/test_hypervisor_driver.c
+src/test/test_interface_driver.c
+src/test/test_network_driver.c
+src/test/test_storage_driver.c
 src/uml/uml_conf.c
 src/uml/uml_driver.c
 src/util/iohelper.c

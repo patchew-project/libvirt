@@ -1,0 +1,1 @@
+extern virInterfaceDriver testInterfaceDriver;

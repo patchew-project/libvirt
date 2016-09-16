@@ -689,7 +689,13 @@ check-local: check-protocol check-symfile check-symsorting \
 
 # Mock driver, covering domains, storage, networks, etc
 TEST_DRIVER_SOURCES =						\
-		test/test_driver.c test/test_driver.h
+		test/test_driver.c test/test_driver.h \
+		test/test_device_driver.c test/test_device_driver.h \
+		test/test_hypervisor_driver.c test/test_hypervisor_driver.h \
+		test/test_interface_driver.c test/test_interface_driver.h \
+		test/test_network_driver.c test/test_network_driver.h \
+		test/test_storage_driver.c test/test_storage_driver.h
+
 
 # Now the Hypervisor specific drivers
 XEN_DRIVER_SOURCES =						\
