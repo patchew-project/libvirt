@@ -683,6 +683,7 @@ qemuBuildRBDSecinfoURI(virBufferPtr buf,
  * @tlspath: path to the TLS credentials
  * @listen: boolen listen for client or server setting
  * @verifypeer: boolean to enable peer verification (form of authorization)
+ * @secalias: if one exists, the alias of the security object for passwordid
  * @qemuCaps: capabilities
  * @propsret: json properties to return
  *
@@ -694,6 +695,7 @@ int
 qemuBuildTLSx509BackendProps(const char *tlspath,
                              bool isListen,
                              bool verifypeer,
+                             const char *secalias,
                              virQEMUCapsPtr qemuCaps,
                              virJSONValuePtr *propsret)
 {
@@ -719,6 +721,10 @@ qemuBuildTLSx509BackendProps(const char *tlspath,
                                  NULL) < 0)
         goto cleanup;
 
+    if (secalias &&
+        virJSONValueObjectAdd(*propsret, "s:passwordid", secalias, NULL) < 0)
+        goto cleanup;
+
     ret = 0;
 
  cleanup:
@@ -733,6 +739,7 @@ qemuBuildTLSx509BackendProps(const char *tlspath,
  * @tlspath: path to the TLS credentials
  * @listen: boolen listen for client or server setting
  * @verifypeer: boolean to enable peer verification (form of authorization)
+ * @addpasswordid: boolean to handle adding passwordid to object
  * @inalias: Alias for the parent to generate object alias
  * @qemuCaps: capabilities
  *
@@ -745,6 +752,7 @@ qemuBuildTLSx509CommandLine(virCommandPtr cmd,
                             const char *tlspath,
                             bool isListen,
                             bool verifypeer,
+                            bool addpasswordid,
                             const char *inalias,
                             virQEMUCapsPtr qemuCaps)
 {
@@ -752,10 +760,15 @@ qemuBuildTLSx509CommandLine(virCommandPtr cmd,
     char *objalias = NULL;
     virJSONValuePtr props = NULL;
     char *tmp = NULL;
+    char *secalias = NULL;
 
-    if (qemuBuildTLSx509BackendProps(tlspath, isListen, verifypeer,
-                                     qemuCaps, &props) < 0)
+    if (addpasswordid &&
+        !(secalias = qemuDomainGetSecretAESAlias(inalias, false)))
         return -1;
+
+    if (qemuBuildTLSx509BackendProps(tlspath, isListen, verifypeer, secalias,
+                                     qemuCaps, &props) < 0)
+        goto cleanup;
 
     if (!(objalias = qemuAliasTLSObjFromChardevAlias(inalias)))
         goto cleanup;
@@ -772,6 +785,7 @@ qemuBuildTLSx509CommandLine(virCommandPtr cmd,
     virJSONValueFree(props);
     VIR_FREE(objalias);
     VIR_FREE(tmp);
+    VIR_FREE(secalias);
     return ret;
 }
 
@@ -5048,6 +5062,7 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
                 if (qemuBuildTLSx509CommandLine(cmd, cfg->chardevTLSx509certdir,
                                                 dev->data.tcp.listen,
                                                 cfg->chardevTLSx509verify,
+                                                cfg->chardevTLSx509haveUUID,
                                                 alias, qemuCaps) < 0)
                     goto error;
 
@@ -8666,6 +8681,19 @@ qemuBuildSerialCommandLine(virLogManagerPtr logManager,
 
         /* Use -chardev with -device if they are available */
         if (virQEMUCapsSupportsChardev(def, qemuCaps, serial)) {
+            qemuDomainChardevPrivatePtr chardevPriv =
+                QEMU_DOMAIN_CHARDEV_PRIVATE(serial);
+            qemuDomainSecretInfoPtr secinfo = chardevPriv->secinfo;
+
+            /* Add the secret object first if necessary. The
+             * secinfo is added only to a TCP serial device during
+             * qemuDomainSecretChardevPrepare. Subsequent called
+             * functions can just check the config fields */
+            if (cfg->chardevTLS && cfg->chardevTLSx509haveUUID &&
+                serial->source.type == VIR_DOMAIN_CHR_TYPE_TCP &&
+                qemuBuildObjectSecretCommandLine(cmd, secinfo) < 0)
+                return -1;
+
             if (!(devstr = qemuBuildChrChardevStr(logManager, cmd, cfg, def,
                                                   &serial->source,
                                                   serial->info.alias,

@@ -1128,6 +1128,25 @@ mymain(void)
     DO_TEST("serial-tcp-tlsx509-chardev-tls",
             QEMU_CAPS_CHARDEV, QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_OBJECT_TLS_CREDS_X509);
+    VIR_FREE(driver.config->chardevTLSx509certdir);
+    if (VIR_STRDUP_QUIET(driver.config->chardevTLSx509certdir, "/etc/pki/libvirt-chardev") < 0)
+        return EXIT_FAILURE;
+    driver.config->chardevTLSx509verify = 1;
+    if (VIR_STRDUP_QUIET(driver.config->chardevTLSx509secretUUID,
+                         "6fd3f62d-9fe7-4a4e-a869-7acd6376d8ea") < 0)
+        return EXIT_FAILURE;
+    driver.config->chardevTLSx509haveUUID = true;
+# ifdef HAVE_GNUTLS_CIPHER_ENCRYPT
+    DO_TEST("serial-tcp-tlsx509-secret-chardev",
+            QEMU_CAPS_CHARDEV, QEMU_CAPS_NODEFCONFIG,
+            QEMU_CAPS_OBJECT_SECRET,
+            QEMU_CAPS_OBJECT_TLS_CREDS_X509);
+# else
+    DO_TEST_FAILURE("serial-tcp-tlsx509-secret-chardev",
+                    QEMU_CAPS_CHARDEV, QEMU_CAPS_NODEFCONFIG,
+                    QEMU_CAPS_OBJECT_SECRET,
+                    QEMU_CAPS_OBJECT_TLS_CREDS_X509);
+# endif
     driver.config->chardevTLS = 0;
     VIR_FREE(driver.config->chardevTLSx509certdir);
     DO_TEST("serial-many-chardev",
