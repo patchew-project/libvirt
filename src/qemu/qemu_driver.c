@@ -3267,6 +3267,64 @@ qemuCompressProgramAvailable(virQEMUSaveFormat compress, char **compressed_path)
     return true;
 }
 
+typedef enum {
+    QEMU_COMPRESS_PROG_IMG = 0,
+    QEMU_COMPRESS_PROG_SNAP = 1,
+
+    QEMU_COMPRESS_PROG_LAST
+}virQEMUCompressType;
+
+# define VIR_QEMU_COMPRESS_CHECK(val, type)                                             \
+    do {                                                                                \
+        if (cfg->val) {                                                                 \
+            compressed = qemuSaveCompressionTypeFromString(cfg->val);                   \
+            if (compressed < 0) {                                                       \
+                virReportError(VIR_ERR_OPERATION_FAILED,                                \
+                               _("Invalid %s image format specified "                   \
+                                 "in configuration file"), type);                       \
+                goto cleanup;                                                           \
+            }                                                                           \
+            if (!qemuCompressProgramAvailable(compressed, compressed_path)) {           \
+                virReportError(VIR_ERR_OPERATION_FAILED,                                \
+                               _("Compression program for image format "                \
+                                 "in configuration file isn't available"));             \
+                goto cleanup;                                                           \
+            }                                                                           \
+        }                                                                               \
+    } while (0);
+
+/* Get the path of compress programe if available,
+ * or NULL if no compressed programe specified.
+ * Return 0 on success, -1 on failure.
+ * You must free the result */
+static int
+qemuCompressProgramPath(virQEMUDriverPtr driver, char **compressed_path,
+                        virQEMUCompressType type)
+{
+    virQEMUDriverConfigPtr cfg = NULL;
+    int compressed = QEMU_SAVE_FORMAT_RAW;
+    *compressed_path = NULL;
+    int ret = -1;
+
+    cfg = virQEMUDriverGetConfig(driver);
+    switch (type) {
+    case QEMU_COMPRESS_PROG_IMG:
+        VIR_QEMU_COMPRESS_CHECK(saveImageFormat, "save");
+        break;
+    case QEMU_COMPRESS_PROG_SNAP:
+        VIR_QEMU_COMPRESS_CHECK(snapshotImageFormat, "snapshot");
+        break;
+    default:
+        break;
+    }
+
+    ret = 0;
+
+ cleanup:
+    virObjectUnref(cfg);
+    return ret;
+}
+
 static int
 qemuDomainSaveFlags(virDomainPtr dom, const char *path, const char *dxml,
                     unsigned int flags)
@@ -3276,28 +3334,14 @@ qemuDomainSaveFlags(virDomainPtr dom, const char *path, const char *dxml,
     char *compressed_path = NULL;
     int ret = -1;
     virDomainObjPtr vm = NULL;
-    virQEMUDriverConfigPtr cfg = NULL;
 
     virCheckFlags(VIR_DOMAIN_SAVE_BYPASS_CACHE |
                   VIR_DOMAIN_SAVE_RUNNING |
                   VIR_DOMAIN_SAVE_PAUSED, -1);
 
-    cfg = virQEMUDriverGetConfig(driver);
-    if (cfg->saveImageFormat) {
-        compressed = qemuSaveCompressionTypeFromString(cfg->saveImageFormat);
-        if (compressed < 0) {
-            virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                           _("Invalid save image format specified "
-                             "in configuration file"));
-            goto cleanup;
-        }
-        if (!qemuCompressProgramAvailable(compressed, &compressed_path)) {
-            virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                           _("Compression program for image format "
-                             "in configuration file isn't available"));
-            goto cleanup;
-        }
-    }
+    if (qemuCompressProgramPath(driver, &compressed_path,
+                                QEMU_COMPRESS_PROG_IMG) < 0)
+        goto cleanup;
 
     if (!(vm = qemuDomObjFromDomain(dom)))
         goto cleanup;
@@ -3316,7 +3360,6 @@ qemuDomainSaveFlags(virDomainPtr dom, const char *path, const char *dxml,
 
  cleanup:
     virDomainObjEndAPI(&vm);
-    virObjectUnref(cfg);
     VIR_FREE(compressed_path);
     return ret;
 }
@@ -3346,7 +3389,6 @@ static int
 qemuDomainManagedSave(virDomainPtr dom, unsigned int flags)
 {
     virQEMUDriverPtr driver = dom->conn->privateData;
-    virQEMUDriverConfigPtr cfg = NULL;
     int compressed = QEMU_SAVE_FORMAT_RAW;
     char *compressed_path = NULL;
     virDomainObjPtr vm;
@@ -3374,22 +3416,9 @@ qemuDomainManagedSave(virDomainPtr dom, unsigned int flags)
         goto cleanup;
     }
 
-    cfg = virQEMUDriverGetConfig(driver);
-    if (cfg->saveImageFormat) {
-        compressed = qemuSaveCompressionTypeFromString(cfg->saveImageFormat);
-        if (compressed < 0) {
-            virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                           _("Invalid save image format specified "
-                             "in configuration file"));
-            goto cleanup;
-        }
-        if (!qemuCompressProgramAvailable(compressed, &compressed_path)) {
-            virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                           _("Compression program for image format "
-                             "in configuration file isn't available"));
-            goto cleanup;
-        }
-    }
+    if (qemuCompressProgramPath(driver, &compressed_path,
+                                QEMU_COMPRESS_PROG_IMG) < 0)
+        goto cleanup;
 
     if (!(name = qemuDomainManagedSavePath(driver, vm)))
         goto cleanup;
@@ -3405,7 +3434,6 @@ qemuDomainManagedSave(virDomainPtr dom, unsigned int flags)
     virDomainObjEndAPI(&vm);
     VIR_FREE(name);
     VIR_FREE(compressed_path);
-    virObjectUnref(cfg);
 
     return ret;
 }
@@ -14311,7 +14339,6 @@ qemuDomainSnapshotCreateActiveExternal(virConnectPtr conn,
     bool transaction = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_TRANSACTION);
     int thaw = 0; /* 1 if freeze succeeded, -1 if freeze failed */
     bool pmsuspended = false;
-    virQEMUDriverConfigPtr cfg = NULL;
     int compressed = QEMU_SAVE_FORMAT_RAW;
     char *compressed_path = NULL;
 
@@ -14373,23 +14400,9 @@ qemuDomainSnapshotCreateActiveExternal(virConnectPtr conn,
                                           JOB_MASK(QEMU_JOB_SUSPEND) |
                                           JOB_MASK(QEMU_JOB_MIGRATION_OP)));
 
-        cfg = virQEMUDriverGetConfig(driver);
-        if (cfg->snapshotImageFormat) {
-            compressed = qemuSaveCompressionTypeFromString(cfg->snapshotImageFormat);
-            if (compressed < 0) {
-                virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                               _("Invalid snapshot image format specified "
-                                 "in configuration file"));
-                goto cleanup;
-            }
-
-            if (!qemuCompressProgramAvailable(compressed, &compressed_path)) {
-                virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                               _("Compression program for image format "
-                                 "in configuration file isn't available"));
-                goto cleanup;
-            }
-        }
+        if (qemuCompressProgramPath(driver, &compressed_path,
+                                    QEMU_COMPRESS_PROG_SNAP) < 0)
+            goto cleanup;
 
         if (!(xml = qemuDomainDefFormatLive(driver, vm->def, true, true)))
             goto cleanup;
@@ -14467,7 +14480,6 @@ qemuDomainSnapshotCreateActiveExternal(virConnectPtr conn,
 
     VIR_FREE(xml);
     VIR_FREE(compressed_path);
-    virObjectUnref(cfg);
     if (memory_unlink && ret < 0)
         unlink(snap->def->file);
 
