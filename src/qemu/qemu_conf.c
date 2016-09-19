@@ -1450,6 +1450,16 @@ qemuGetHugepagePath(virHugeTLBFSPtr hugepage)
     return ret;
 }
 
+
+/**
+ * qemuGetDefaultHugepath:
+ *
+ * Get default hugepages path for memory backend. Does not work
+ * well with @nhugetlbfs == 0 or @hugetlbfs == NULL.
+ *
+ * Returns 0 on success,
+ *        -1 otherwise.
+ * */
 char *
 qemuGetDefaultHugepath(virHugeTLBFSPtr hugetlbfs,
                        size_t nhugetlbfs)
