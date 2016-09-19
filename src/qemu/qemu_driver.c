@@ -2833,15 +2833,6 @@ qemuDomainSaveHeader(int fd, const char *path, const char *xml,
     return ret;
 }
 
-/* Given a virQEMUSaveFormat compression level, return the name
- * of the program to run, or NULL if no program is needed.  */
-static const char *
-qemuCompressProgramName(int compress)
-{
-    return (compress == QEMU_SAVE_FORMAT_RAW ? NULL :
-            qemuSaveCompressionTypeToString(compress));
-}
-
 static virCommandPtr
 qemuCompressGetCommand(virQEMUSaveFormat compression)
 {
@@ -3270,6 +3261,7 @@ qemuCompressProgramAvailable(virQEMUSaveFormat compress, char **compressed_path)
 typedef enum {
     QEMU_COMPRESS_PROG_IMG = 0,
     QEMU_COMPRESS_PROG_SNAP = 1,
+    QEMU_COMPRESS_PROG_DUMP = 2,
 
     QEMU_COMPRESS_PROG_LAST
 }virQEMUCompressType;
@@ -3313,6 +3305,9 @@ qemuCompressProgramPath(virQEMUDriverPtr driver, char **compressed_path,
         break;
     case QEMU_COMPRESS_PROG_SNAP:
         VIR_QEMU_COMPRESS_CHECK(snapshotImageFormat, "snapshot");
+        break;
+    case QEMU_COMPRESS_PROG_DUMP:
+        VIR_QEMU_COMPRESS_CHECK(snapshotImageFormat, "dump");
         break;
     default:
         break;
@@ -3565,7 +3560,7 @@ static int
 doCoreDump(virQEMUDriverPtr driver,
            virDomainObjPtr vm,
            const char *path,
-           virQEMUSaveFormat compress,
+           const char *compress,
            unsigned int dump_flags,
            unsigned int dumpformat)
 {
@@ -3622,7 +3617,7 @@ doCoreDump(virQEMUDriverPtr driver,
             goto cleanup;
 
         ret = qemuMigrationToFile(driver, vm, fd,
-                                  qemuCompressProgramName(compress),
+                                  compress,
                                   QEMU_ASYNC_JOB_DUMP);
     }
 
@@ -3648,43 +3643,6 @@ doCoreDump(virQEMUDriverPtr driver,
     return ret;
 }
 
-static virQEMUSaveFormat
-getCompressionType(virQEMUDriverPtr driver)
-{
-    int ret = QEMU_SAVE_FORMAT_RAW;
-    char *compressed_path = NULL;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
-
-    /*
-     * We reuse "save" flag for "dump" here. Then, we can support the same
-     * format in "save" and "dump".
-     */
-    if (cfg->dumpImageFormat) {
-        ret = qemuSaveCompressionTypeFromString(cfg->dumpImageFormat);
-        /* Use "raw" as the format if the specified format is not valid,
-         * or the compress program is not available.
-         */
-        if (ret < 0) {
-            VIR_WARN("%s", _("Invalid dump image format specified in "
-                             "configuration file, using raw"));
-            ret = QEMU_SAVE_FORMAT_RAW;
-            goto cleanup;
-        }
-        if (!qemuCompressProgramAvailable(ret, &compressed_path)) {
-            VIR_WARN("%s", _("Compression program for dump image format "
-                             "in configuration file isn't available, "
-                             "using raw"));
-            ret = QEMU_SAVE_FORMAT_RAW;
-            goto cleanup;
-        }
-    }
- cleanup:
-    virObjectUnref(cfg);
-    VIR_FREE(compressed_path);
-    return ret;
-}
-
-
 static int
 qemuDomainCoreDumpWithFormat(virDomainPtr dom,
                              const char *path,
@@ -3697,6 +3655,7 @@ qemuDomainCoreDumpWithFormat(virDomainPtr dom,
     bool resume = false, paused = false;
     int ret = -1;
     virObjectEventPtr event = NULL;
+    char *compressed_path = NULL;
 
     virCheckFlags(VIR_DUMP_LIVE | VIR_DUMP_CRASH |
                   VIR_DUMP_BYPASS_CACHE | VIR_DUMP_RESET |
@@ -3737,7 +3696,16 @@ qemuDomainCoreDumpWithFormat(virDomainPtr dom,
         }
     }
 
-    ret = doCoreDump(driver, vm, path, getCompressionType(driver), flags,
+    /*
+     * We reuse "save" flag for "dump" here. Then, we can support the same
+     * format in "save" and "dump".
+     * Use "raw" as the format if the specified format is not valid,
+     * or the compress program is not available.
+     */
+    qemuCompressProgramPath(driver, &compressed_path,
+                            QEMU_COMPRESS_PROG_DUMP);
+
+    ret = doCoreDump(driver, vm, path, compressed_path, flags,
                      dumpformat);
     if (ret < 0)
         goto endjob;
@@ -3781,6 +3749,7 @@ qemuDomainCoreDumpWithFormat(virDomainPtr dom,
         qemuDomainRemoveInactive(driver, vm);
 
  cleanup:
+    VIR_FREE(compressed_path);
     virDomainObjEndAPI(&vm);
     qemuDomainEventQueue(driver, event);
     return ret;
@@ -3926,6 +3895,7 @@ processWatchdogEvent(virQEMUDriverPtr driver,
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     char *dumpfile = getAutoDumpPath(driver, vm);
     unsigned int flags = VIR_DUMP_MEMORY_ONLY;
+    char *compressed_path = NULL;
 
     if (!dumpfile)
         goto cleanup;
@@ -3944,8 +3914,17 @@ processWatchdogEvent(virQEMUDriverPtr driver,
         }
 
         flags |= cfg->autoDumpBypassCache ? VIR_DUMP_BYPASS_CACHE: 0;
+
+        /*
+         * We reuse "save" flag for "dump" here. Then, we can support the same
+         * format in "save" and "dump".
+         * Use "raw" as the format if the specified format is not valid,
+         * or the compress program is not available.
+         */
+        qemuCompressProgramPath(driver, &compressed_path,
+                                QEMU_COMPRESS_PROG_DUMP);
         ret = doCoreDump(driver, vm, dumpfile,
-                         getCompressionType(driver), flags,
+                         compressed_path, flags,
                          VIR_DOMAIN_CORE_DUMP_FORMAT_RAW);
         if (ret < 0)
             virReportError(VIR_ERR_OPERATION_FAILED,
@@ -3968,6 +3947,7 @@ processWatchdogEvent(virQEMUDriverPtr driver,
 
  cleanup:
     VIR_FREE(dumpfile);
+    VIR_FREE(compressed_path);
     virObjectUnref(cfg);
 }
 
@@ -3979,19 +3959,31 @@ doCoreDumpToAutoDumpPath(virQEMUDriverPtr driver,
     int ret = -1;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     char *dumpfile = getAutoDumpPath(driver, vm);
+    char *compressed_path = NULL;
 
     if (!dumpfile)
         goto cleanup;
 
     flags |= cfg->autoDumpBypassCache ? VIR_DUMP_BYPASS_CACHE: 0;
+
+    /*
+     * We reuse "save" flag for "dump" here. Then, we can support the same
+     * format in "save" and "dump".
+     * Use "raw" as the format if the specified format is not valid,
+     * or the compress program is not available.
+     */
+    qemuCompressProgramPath(driver, &compressed_path,
+                            QEMU_COMPRESS_PROG_DUMP);
+
     ret = doCoreDump(driver, vm, dumpfile,
-                     getCompressionType(driver), flags,
+                     compressed_path, flags,
                      VIR_DOMAIN_CORE_DUMP_FORMAT_RAW);
     if (ret < 0)
         virReportError(VIR_ERR_OPERATION_FAILED,
                        "%s", _("Dump failed"));
  cleanup:
     VIR_FREE(dumpfile);
+    VIR_FREE(compressed_path);
     virObjectUnref(cfg);
     return ret;
 }
