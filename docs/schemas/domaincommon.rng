@@ -3452,6 +3452,11 @@
             <ref name="virOnOff"/>
           </attribute>
         </optional>
+        <optional>
+          <attribute name="tls">
+            <ref name="virYesNo"/>
+          </attribute>
+        </optional>
         <zeroOrMore>
           <ref name='devSeclabel'/>
         </zeroOrMore>

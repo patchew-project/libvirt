@@ -1677,7 +1677,8 @@ int qemuDomainAttachChrDevice(virQEMUDriverPtr driver,
     if (qemuDomainChrPreInsert(vmdef, chr) < 0)
         goto cleanup;
 
-    if (cfg->chardevTLS) {
+    if (cfg->chardevTLS &&
+        dev->data.tcp.haveTLS == VIR_TRISTATE_BOOL_YES) {
         if (qemuBuildTLSx509BackendProps(cfg->chardevTLSx509certdir,
                                          dev->data.tcp.listen,
                                          cfg->chardevTLSx509verify,
