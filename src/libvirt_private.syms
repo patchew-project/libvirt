@@ -964,8 +964,6 @@ virSecretObjSetValueSize;
 # cpu/cpu.h
 cpuBaseline;
 cpuBaselineXML;
-cpuCompare;
-cpuCompareXML;
 cpuDataFormat;
 cpuDataFree;
 cpuDataParse;
@@ -975,6 +973,8 @@ cpuGetModels;
 cpuGuestData;
 cpuNodeData;
 virCPUCheckFeature;
+virCPUCompare;
+virCPUCompareXML;
 virCPUDataCheckFeature;
 virCPUTranslate;
 virCPUUpdate;
