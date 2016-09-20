@@ -424,8 +424,7 @@ static virDomainPCIConnectFlags
 qemuDomainDeviceConnectFlagsInternal(virDomainDeviceDefPtr dev,
                                      virDomainPCIConnectFlags pcieFlags
                                      ATTRIBUTE_UNUSED,
-                                     virDomainPCIConnectFlags virtioFlags
-                                     ATTRIBUTE_UNUSED)
+                                     virDomainPCIConnectFlags virtioFlags)
 {
     virDomainPCIConnectFlags flags = VIR_PCI_CONNECT_TYPE_PCI_DEVICE;
 
@@ -439,16 +438,22 @@ qemuDomainDeviceConnectFlagsInternal(virDomainDeviceDefPtr dev,
     case VIR_DOMAIN_DEVICE_CONTROLLER: {
         virDomainControllerDefPtr cont = dev->data.controller;
 
-        if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_FDC ||
-            cont->type == VIR_DOMAIN_CONTROLLER_TYPE_CCID ||
-            (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
-             cont->model == VIR_DOMAIN_CONTROLLER_MODEL_USB_NONE))
+        if ((cont->type == VIR_DOMAIN_CONTROLLER_TYPE_SCSI &&
+             cont->model == VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI) ||
+            cont->type == VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL) {
+            flags = virtioFlags;
+        } else if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_FDC ||
+                   cont->type == VIR_DOMAIN_CONTROLLER_TYPE_CCID ||
+                   (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
+                    cont->model == VIR_DOMAIN_CONTROLLER_MODEL_USB_NONE)) {
             flags = 0;
+        }
         break;
     }
 
     case VIR_DOMAIN_DEVICE_FS:
         /* the only type of filesystem so far is virtio-9p-pci */
+        flags = virtioFlags;
         break;
 
     case VIR_DOMAIN_DEVICE_NET: {
@@ -461,6 +466,8 @@ qemuDomainDeviceConnectFlagsInternal(virDomainDeviceDefPtr dev,
         if (net->type == VIR_DOMAIN_NET_TYPE_HOSTDEV ||
             STREQ(net->model, "usb-net"))
             flags = 0;
+        else if (STREQ(net->model, "virtio"))
+            flags = virtioFlags;
         break;
     }
 
@@ -475,20 +482,26 @@ qemuDomainDeviceConnectFlagsInternal(virDomainDeviceDefPtr dev,
         break;
 
     case VIR_DOMAIN_DEVICE_DISK:
-        if (dev->data.disk->bus != VIR_DOMAIN_DISK_BUS_VIRTIO)
-            flags = 0; /* only virtio disks use PCI */
+        if (dev->data.disk->bus == VIR_DOMAIN_DISK_BUS_VIRTIO)
+            flags =  virtioFlags;
+        else
+            flags = 0; /* no other disk types use PCI */
         break;
 
     case VIR_DOMAIN_DEVICE_HOSTDEV:
         break;
 
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
-        if (dev->data.memballoon->model != VIR_DOMAIN_MEMBALLOON_MODEL_VIRTIO)
+        if (dev->data.memballoon->model == VIR_DOMAIN_MEMBALLOON_MODEL_VIRTIO)
+            flags = virtioFlags;
+        else
             flags = 0;
         break;
 
     case VIR_DOMAIN_DEVICE_RNG:
-        if (dev->data.rng->model != VIR_DOMAIN_RNG_MODEL_VIRTIO)
+        if (dev->data.rng->model == VIR_DOMAIN_RNG_MODEL_VIRTIO)
+            flags = virtioFlags;
+        else
             flags = 0;
         break;
 
@@ -499,13 +512,17 @@ qemuDomainDeviceConnectFlagsInternal(virDomainDeviceDefPtr dev,
         break;
 
     case VIR_DOMAIN_DEVICE_VIDEO:
+        if (dev->data.video->type == VIR_DOMAIN_VIDEO_TYPE_VIRTIO)
+            flags = virtioFlags;
         break;
 
     case VIR_DOMAIN_DEVICE_SHMEM:
         break;
 
     case VIR_DOMAIN_DEVICE_INPUT:
-        if (dev->data.input->bus != VIR_DOMAIN_INPUT_BUS_VIRTIO)
+        if (dev->data.input->bus == VIR_DOMAIN_INPUT_BUS_VIRTIO)
+            flags = virtioFlags;
+        else
             flags = 0;
         break;
 
