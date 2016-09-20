@@ -442,6 +442,9 @@ qemuDomainDeviceConnectFlagsInternal(virDomainDeviceDefPtr dev,
              cont->model == VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI) ||
             cont->type == VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL) {
             flags = virtioFlags;
+        } else if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
+                   cont->model == VIR_DOMAIN_CONTROLLER_MODEL_USB_NEC_XHCI) {
+            flags = pcieFlags;
         } else if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_FDC ||
                    cont->type == VIR_DOMAIN_CONTROLLER_TYPE_CCID ||
                    (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
