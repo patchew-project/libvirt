@@ -2157,6 +2157,13 @@ qemuMigrationDriveMirror(virQEMUDriverPtr driver,
         if (!qemuMigrateDisk(disk, nmigrate_disks, migrate_disks))
             continue;
 
+        if (disk->src->readonly) {
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                       _("Cannot migrate read-only disk %s"),
+                       disk->dst);
+            goto cleanup;
+        }
+
         if (!(diskAlias = qemuAliasFromDisk(disk)) ||
             (virAsprintf(&nbd_dest, "nbd:%s:%d:exportname=%s",
                          hoststr, port, diskAlias) < 0))
