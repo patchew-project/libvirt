@@ -485,17 +485,17 @@ virDomainPCIAddressReserveSlot(virDomainPCIAddressSetPtr addrs,
 
 int
 virDomainPCIAddressEnsureAddr(virDomainPCIAddressSetPtr addrs,
-                              virDomainDeviceInfoPtr dev)
+                              virDomainDeviceInfoPtr dev,
+                              virDomainPCIConnectFlags flags)
 {
     int ret = -1;
     char *addrStr = NULL;
-    /* Flags should be set according to the particular device,
-     * but only the caller knows the type of device. Currently this
-     * function is only used for hot-plug, though, and hot-plug is
-     * only supported for standard PCI devices, so we can safely use
-     * the setting below */
-    virDomainPCIConnectFlags flags = (VIR_PCI_CONNECT_HOTPLUGGABLE |
-                                      VIR_PCI_CONNECT_TYPE_PCI_DEVICE);
+
+    /* if pciConnectFlags is 0, the particular model of this device
+     * on this machinetype doesn't need a PCI address, so we're done.
+     */
+    if (!flags)
+       return 0;
 
     if (!(addrStr = virDomainPCIAddressAsString(&dev->addr.pci)))
         goto cleanup;
