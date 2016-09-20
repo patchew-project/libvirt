@@ -398,6 +398,263 @@ qemuDomainAssignARMVirtioMMIOAddresses(virDomainDefPtr def,
 }
 
 
+/**
+ *  qemuDomainDeviceConnectFlagsInternal:
+ *
+ *  Lowest level function to determine PCI connectFlags for a
+ *  device. Assume HOTPLUGGABLE | PCI_ENDPOINT, then modify
+ *  appropriately for exceptions. This function relies on the next
+ *  higher-level function determining the value for pcieFlags and
+ *  virtioFlags in advance - this is to make it more efficient to call
+ *  multiple times.
+ *
+ *  @dev: The device to be checked
+ *
+ *  @pcieFlags: flags to use for a known PCI Express device
+ *
+ *  @virtioFlags: flags to use for a virtio device (properly vetted
+ *        for the current qemu binary and arch/machinetype)
+ *
+ *  returns appropriate virDomainPCIConnectFlags for this device in
+ *  this domain, or 0 if the device doesn't connect using PCI. There
+ *  is no failure.
+ *
+ */
+static virDomainPCIConnectFlags
+qemuDomainDeviceConnectFlagsInternal(virDomainDeviceDefPtr dev,
+                                     virDomainPCIConnectFlags pcieFlags
+                                     ATTRIBUTE_UNUSED,
+                                     virDomainPCIConnectFlags virtioFlags
+                                     ATTRIBUTE_UNUSED)
+{
+    virDomainPCIConnectFlags flags = VIR_PCI_CONNECT_TYPE_PCI_DEVICE;
+
+    /* Get these out of the way to simplify the rest */
+    if (dev->type == VIR_DOMAIN_DEVICE_CONTROLLER &&
+        dev->data.controller->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI)
+        return virDomainPCIControllerModelToConnectType(dev->data.controller->model);
+
+    /* remember - default flags is PCI_DEVICE, so only set if it's different. */
+    switch (dev->type) {
+    case VIR_DOMAIN_DEVICE_CONTROLLER: {
+        virDomainControllerDefPtr cont = dev->data.controller;
+
+        if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_FDC ||
+            cont->type == VIR_DOMAIN_CONTROLLER_TYPE_CCID ||
+            (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
+             cont->model == VIR_DOMAIN_CONTROLLER_MODEL_USB_NONE))
+            flags = 0;
+        break;
+    }
+
+    case VIR_DOMAIN_DEVICE_FS:
+        /* the only type of filesystem so far is virtio-9p-pci */
+        break;
+
+    case VIR_DOMAIN_DEVICE_NET: {
+        virDomainNetDefPtr net = dev->data.net;
+
+        /* NB: a type='hostdev' will use PCI, but its
+         * address is assigned when we're assigning the
+         * addresses for other hostdev devices.
+         */
+        if (net->type == VIR_DOMAIN_NET_TYPE_HOSTDEV ||
+            STREQ(net->model, "usb-net"))
+            flags = 0;
+        break;
+    }
+
+    case VIR_DOMAIN_DEVICE_SOUND:
+        switch (dev->data.sound->model) {
+        case VIR_DOMAIN_SOUND_MODEL_SB16:
+        case VIR_DOMAIN_SOUND_MODEL_PCSPK:
+        case VIR_DOMAIN_SOUND_MODEL_USB:
+            flags = 0;
+            break;
+        }
+        break;
+
+    case VIR_DOMAIN_DEVICE_DISK:
+        if (dev->data.disk->bus != VIR_DOMAIN_DISK_BUS_VIRTIO)
+            flags = 0; /* only virtio disks use PCI */
+        break;
+
+    case VIR_DOMAIN_DEVICE_HOSTDEV:
+        break;
+
+    case VIR_DOMAIN_DEVICE_MEMBALLOON:
+        if (dev->data.memballoon->model != VIR_DOMAIN_MEMBALLOON_MODEL_VIRTIO)
+            flags = 0;
+        break;
+
+    case VIR_DOMAIN_DEVICE_RNG:
+        if (dev->data.rng->model != VIR_DOMAIN_RNG_MODEL_VIRTIO)
+            flags = 0;
+        break;
+
+    case VIR_DOMAIN_DEVICE_WATCHDOG:
+        /* only one model connects using PCI */
+        if (dev->data.watchdog->model != VIR_DOMAIN_WATCHDOG_MODEL_I6300ESB)
+            flags = 0;
+        break;
+
+    case VIR_DOMAIN_DEVICE_VIDEO:
+        break;
+
+    case VIR_DOMAIN_DEVICE_SHMEM:
+        break;
+
+    case VIR_DOMAIN_DEVICE_INPUT:
+        if (dev->data.input->bus != VIR_DOMAIN_INPUT_BUS_VIRTIO)
+            flags = 0;
+        break;
+
+    case VIR_DOMAIN_DEVICE_CHR:
+        if (dev->data.chr->targetType != VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PCI)
+            flags = 0;
+        break;
+
+    /* These devices don't ever connect with PCI */
+    case VIR_DOMAIN_DEVICE_NVRAM:
+    case VIR_DOMAIN_DEVICE_TPM:
+    case VIR_DOMAIN_DEVICE_PANIC:
+    case VIR_DOMAIN_DEVICE_MEMORY:
+    case VIR_DOMAIN_DEVICE_HUB:
+    case VIR_DOMAIN_DEVICE_REDIRDEV:
+    case VIR_DOMAIN_DEVICE_SMARTCARD:
+    /* These devices don't even have a DeviceInfo */
+    case VIR_DOMAIN_DEVICE_LEASE:
+    case VIR_DOMAIN_DEVICE_GRAPHICS:
+    case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_LAST:
+    case VIR_DOMAIN_DEVICE_NONE:
+        flags = 0;
+        break;
+    }
+
+    if (flags)
+        flags |= VIR_PCI_CONNECT_HOTPLUGGABLE;
+
+    return flags;
+}
+
+
+/**
+ *  qemuDomainDeviceConnectFlags:
+ *
+ *  The version of the function to call if it will be called just
+ *  once.
+ *
+ *  @def: the entire DomainDef
+ *
+ *  @dev: The device to be checked
+ *
+ *  @qemuCaps: as you'd expect
+ *
+ *  sets device's info->pciConnectFlags when appropriate.
+ *  There is no failure, so there is no return value.
+ *
+ */
+static void ATTRIBUTE_UNUSED
+qemuDomainDeviceConnectFlags(virDomainDefPtr def,
+                             virDomainDeviceDefPtr dev,
+                             virQEMUCapsPtr qemuCaps)
+{
+    virDomainDeviceInfoPtr info = virDomainDeviceGetInfo(dev);
+
+    if (info) {
+        /* These flags are passed to qemuDomainDeviceConnectFlagsInternal
+         * after setting according to the machinetype and qemu
+         * capabilities.  That may seem like pointless posturing, but
+         * it's done this way to eliminate duplicated code while
+         * allowing more efficient operation when it's being done
+         * repeatedly with the device iterator.
+         */
+        virDomainPCIConnectFlags virtioFlags = VIR_PCI_CONNECT_TYPE_PCI_DEVICE;
+        virDomainPCIConnectFlags pcieFlags = VIR_PCI_CONNECT_TYPE_PCI_DEVICE;
+
+        if (qemuDomainMachineHasPCIeRoot(def))
+            pcieFlags = VIR_PCI_CONNECT_TYPE_PCIE_DEVICE;
+
+        if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY))
+            virtioFlags = pcieFlags;
+
+        info->pciConnectFlags
+            = qemuDomainDeviceConnectFlagsInternal(dev, pcieFlags, virtioFlags);
+    }
+}
+
+
+typedef struct {
+    virDomainPCIConnectFlags virtioFlags;
+    virDomainPCIConnectFlags pcieFlags;
+} qemuDomainDeviceConnectFlagsIteratorData;
+
+/**
+ *  qemuDomainDeviceConnectFlagsIterator:
+ *
+ *  The version of the function to call with
+ *  virDomainDeviceInfoIterate()
+ *
+ *  @def: the entire DomainDef
+ *
+ *  @dev: The device to be checked
+ *
+ *  @info: virDomainDeviceInfo within the device
+ *
+ *  @opaque: points to iterator data setup beforehand.
+ *
+ *  Sets @info->pciConnectFlags. Always returns 0 - there
+ *  is no failure.
+ *
+ */
+static int
+qemuDomainDeviceConnectFlagsIterator(virDomainDefPtr def ATTRIBUTE_UNUSED,
+                                     virDomainDeviceDefPtr dev,
+                                     virDomainDeviceInfoPtr info,
+                                     void *opaque)
+{
+    qemuDomainDeviceConnectFlagsIteratorData *data = opaque;
+
+    info->pciConnectFlags
+        = qemuDomainDeviceConnectFlagsInternal(dev, data->pcieFlags,
+                                               data->virtioFlags);
+    return 0;
+}
+
+
+/**
+ * qemuDomainDeviceSetAllConnectFlags:
+ *
+ * Set the info->pciConnectFlags for all devices in the domain.
+ *
+ * @def: the entire DomainDef
+ *
+ * @qemuCaps: as you'd expect
+ *
+ * sets info->pciConnectFlags for all devices as appropriate. returns
+ * 0 on success or -1 on failure (the only possibility of failure would
+ * be some internal problem with virDomainDeviceInfoIterate())
+ */
+static int ATTRIBUTE_UNUSED
+qemuDomainDeviceSetAllConnectFlags(virDomainDefPtr def,
+                                   virQEMUCapsPtr qemuCaps)
+{
+    qemuDomainDeviceConnectFlagsIteratorData data
+        = { .virtioFlags =  VIR_PCI_CONNECT_TYPE_PCI_DEVICE,
+            .pcieFlags = VIR_PCI_CONNECT_TYPE_PCI_DEVICE };
+
+    if (qemuDomainMachineHasPCIeRoot(def))
+        data.pcieFlags = VIR_PCI_CONNECT_TYPE_PCIE_DEVICE;
+
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY))
+        data.virtioFlags = data.pcieFlags;
+
+    return virDomainDeviceInfoIterate(def, qemuDomainDeviceConnectFlagsIterator,
+                                      &data);
+}
+
+
 static int
 qemuDomainCollectPCIAddress(virDomainDefPtr def ATTRIBUTE_UNUSED,
                             virDomainDeviceDefPtr device,
