@@ -1383,6 +1383,11 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
     }
     virBufferAddLit(buf, ",");
 
+    if (disk->src &&
+        disk->src->protocol == VIR_STORAGE_NET_PROTOCOL_GLUSTER) {
+        virBufferAsprintf(buf, "file.debug=%d,", disk->src->debug_level);
+    }
+
     if (secinfo && secinfo->type == VIR_DOMAIN_SECRET_INFO_TYPE_AES) {
         /* NB: If libvirt starts using the more modern option based
          *     syntax to build the command line (e.g., "-drive driver=rbd,
@@ -2177,6 +2182,7 @@ qemuBuildDriveDevStr(const virDomainDef *def,
 
 static int
 qemuBuildDiskDriveCommandLine(virCommandPtr cmd,
+                              virQEMUDriverConfigPtr cfg,
                               const virDomainDef *def,
                               virQEMUCapsPtr qemuCaps)
 {
@@ -2254,6 +2260,12 @@ qemuBuildDiskDriveCommandLine(virCommandPtr cmd,
             return -1;
 
         virCommandAddArg(cmd, "-drive");
+
+        if (disk->src &&
+            disk->src->protocol == VIR_STORAGE_NET_PROTOCOL_GLUSTER) {
+            if (cfg->glusterDebugLevel)
+                disk->src->debug_level = cfg->glusterDebugLevel;
+        }
 
         if (!(optstr = qemuBuildDriveStr(disk, driveBoot, qemuCaps)))
             return -1;
@@ -9570,7 +9582,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (qemuBuildHubCommandLine(cmd, def, qemuCaps) < 0)
         goto error;
 
-    if (qemuBuildDiskDriveCommandLine(cmd, def, qemuCaps) < 0)
+    if (qemuBuildDiskDriveCommandLine(cmd, cfg, def, qemuCaps) < 0)
         goto error;
 
     if (qemuBuildFSDevCommandLine(cmd, def, qemuCaps) < 0)
