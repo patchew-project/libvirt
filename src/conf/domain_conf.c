@@ -4532,6 +4532,16 @@ virDomainDefPostParse(virDomainDefPtr def,
                       unsigned int parseFlags,
                       virDomainXMLOptionPtr xmlopt)
 {
+    return virDomainDefPostParseOpaque(def, caps, parseFlags, xmlopt, NULL);
+}
+
+int
+virDomainDefPostParseOpaque(virDomainDefPtr def,
+                            virCapsPtr caps,
+                            unsigned int parseFlags,
+                            virDomainXMLOptionPtr xmlopt,
+                            void *parseOpaque)
+{
     int ret;
     struct virDomainDefPostParseDeviceIteratorData data = {
         .caps = caps,
@@ -4547,7 +4557,8 @@ virDomainDefPostParse(virDomainDefPtr def,
     /* call the domain config callback */
     if (xmlopt->config.domainPostParseCallback) {
         ret = xmlopt->config.domainPostParseCallback(def, caps, parseFlags,
-                                                     xmlopt->config.priv);
+                                                     xmlopt->config.priv,
+                                                     parseOpaque);
         if (ret < 0)
             return ret;
     }
