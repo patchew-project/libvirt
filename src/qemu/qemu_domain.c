@@ -5956,6 +5956,75 @@ qemuDomainRefreshVcpuInfo(virQEMUDriverPtr driver,
     return ret;
 }
 
+/**
+ * qemuDomainGetVcpuHalted:
+ * @vm: domain object
+ * @vcpu: cpu id
+ *
+ * Returns the vCPU halted state.
+  */
+bool
+qemuDomainGetVcpuHalted(virDomainObjPtr vm,
+                        unsigned int vcpuid)
+{
+    virDomainVcpuDefPtr vcpu = virDomainDefGetVcpu(vm->def, vcpuid);
+    return QEMU_DOMAIN_VCPU_PRIVATE(vcpu)->halted;
+}
+
+/**
+ * qemuDomainRefreshVcpuHalted:
+ * @driver: qemu driver data
+ * @vm: domain object
+ * @asyncJob: current asynchronous job type
+ *
+ * Updates vCPU halted state in the private data of @vm.
+ *
+ * Returns number of detected vCPUs on success, -1 on error and reports
+ * an appropriate error, -2 if the domain doesn't exist any more.
+ */
+int
+qemuDomainRefreshVcpuHalted(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            int asyncJob)
+{
+    virDomainVcpuDefPtr vcpu;
+    qemuMonitorCPUInfoPtr info = NULL;
+    size_t maxvcpus = virDomainDefGetVcpusMax(vm->def);
+    size_t i;
+    bool hotplug;
+    int rc;
+    int ret = -1;
+
+    /* Not supported currently for TCG, see qemuDomainRefreshVcpuInfo */
+    if (vm->def->virtType == VIR_DOMAIN_VIRT_QEMU)
+        return 0;
+
+    hotplug = qemuDomainSupportsNewVcpuHotplug(vm);
+
+    if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
+        return -1;
+
+    rc = qemuMonitorGetCPUInfo(qemuDomainGetMonitor(vm), &info, maxvcpus, hotplug);
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0) {
+        ret = -2;
+        goto cleanup;
+    }
+
+    if (rc < 0)
+        goto cleanup;
+
+    for (i = 0; i < maxvcpus; i++) {
+        vcpu = virDomainDefGetVcpu(vm->def, i);
+        QEMU_DOMAIN_VCPU_PRIVATE(vcpu)->halted = info[i].halted;
+    }
+
+    ret = 0;
+
+ cleanup:
+    qemuMonitorCPUInfoFree(info, maxvcpus);
+    return ret;
+}
 
 bool
 qemuDomainSupportsNicdev(virDomainDefPtr def,

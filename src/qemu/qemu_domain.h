@@ -317,6 +317,7 @@ struct _qemuDomainVcpuPrivate {
     pid_t tid; /* vcpu thread id */
     int enable_id; /* order in which the vcpus were enabled in qemu */
     char *alias;
+    bool halted; /* vcpu halted state */
 
     /* information for hotpluggable cpus */
     char *type;
@@ -662,6 +663,10 @@ int qemuDomainRefreshVcpuInfo(virQEMUDriverPtr driver,
                               virDomainObjPtr vm,
                               int asyncJob,
                               bool state);
+bool qemuDomainGetVcpuHalted(virDomainObjPtr vm, unsigned int vcpu);
+int qemuDomainRefreshVcpuHalted(virQEMUDriverPtr driver,
+                                virDomainObjPtr vm,
+                                int asyncJob);
 
 bool qemuDomainSupportsNicdev(virDomainDefPtr def,
                               virDomainNetDefPtr net);
