@@ -1713,16 +1713,17 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
                 buses_reserved = false;
         }
 
-        /* Reserve 1 extra slot for a (potential) bridge only if buses
-         * are not fully reserved yet.
+        /* Reserve 1 extra slot for a (potential) bridge (for future
+         * expansion) only if buses are not fully reserved yet.
          *
-         * We don't reserve the extra slot for aarch64 mach-virt guests
-         * either because we want to be able to have pure virtio-mmio
-         * guests, and reserving this slot would force us to add at least
-         * a dmi-to-pci-bridge to an otherwise PCI-free topology
+         * We only do this for those domains that have pci-root, since
+         * those with pcie-root will usually want to expand using PCIe
+         * controllers, and we don't want to saddle all PCIe domains
+         * down with a dmi-to-pci-bridge *and* a pci-bridge when they
+         * will probably never use it.
          */
         if (!buses_reserved &&
-            !qemuDomainMachineIsVirt(def) &&
+            qemuDomainMachineHasPCIRoot(def) &&
             qemuDomainPCIAddressReserveNextSlot(addrs, &info) < 0)
             goto cleanup;
 
