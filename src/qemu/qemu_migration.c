@@ -3233,9 +3233,9 @@ qemuMigrationBeginPhase(virQEMUDriverPtr driver,
     }
 
     if (xmlin) {
-        if (!(def = virDomainDefParseString(xmlin, caps, driver->xmlopt,
-                                            VIR_DOMAIN_DEF_PARSE_INACTIVE |
-                                            VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE)))
+        if (!(def = virDomainDefParseStringOpaque(xmlin, caps, driver->xmlopt, vm,
+                                                  VIR_DOMAIN_DEF_PARSE_INACTIVE |
+                                                  VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE)))
             goto cleanup;
 
         if (!qemuDomainDefCheckABIStability(driver, vm->def, def))
