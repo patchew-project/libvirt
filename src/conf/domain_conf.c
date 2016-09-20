@@ -4396,6 +4396,10 @@ virDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
 {
     int ret;
 
+    /* fill in configuration only in certain places */
+    if (flags & VIR_DOMAIN_DEF_PARSE_SKIP_POST_PARSE)
+        return 0;
+
     if (xmlopt->config.devicesPostParseCallback) {
         ret = xmlopt->config.devicesPostParseCallback(dev, def, caps, flags,
                                                       xmlopt->config.priv,
@@ -4553,6 +4557,10 @@ virDomainDefPostParseOpaque(virDomainDefPtr def,
         .parseOpaque = parseOpaque,
         .parseFlags = parseFlags,
     };
+
+    /* fill in configuration only in certain places */
+    if (parseFlags & VIR_DOMAIN_DEF_PARSE_SKIP_POST_PARSE)
+        return 0;
 
     /* this must be done before the hypervisor-specific callback,
      * in case presence of a controller at a specific index is checked
