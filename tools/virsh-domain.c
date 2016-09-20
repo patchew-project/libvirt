@@ -181,7 +181,8 @@ VIR_ENUM_IMPL(virshDomainVcpuState,
               VIR_VCPU_LAST,
               N_("offline"),
               N_("running"),
-              N_("blocked"))
+              N_("blocked"),
+              N_("halted"))
 
 static const char *
 virshDomainVcpuStateToString(int state)
