@@ -468,6 +468,8 @@ qemuDomainDeviceConnectFlagsInternal(virDomainDeviceDefPtr dev,
             flags = 0;
         else if (STREQ(net->model, "virtio"))
             flags = virtioFlags;
+        else if (STREQ(net->model, "e1000e"))
+            flags = pcieFlags;
         break;
     }
 

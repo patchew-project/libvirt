@@ -28,6 +28,7 @@
     <controller type='pci' model='pcie-root-port'/>
     <controller type='pci' model='pcie-root-port'/>
     <controller type='pci' model='pcie-root-port'/>
+    <controller type='pci' model='pcie-root-port'/>
     <controller type='virtio-serial'/>
     <controller type='scsi' model='virtio-scsi'/>
     <disk type='block' device='disk'>
@@ -44,6 +45,10 @@
     <interface type='user'>
       <mac address='00:11:22:33:44:55'/>
       <model type='virtio'/>
+    </interface>
+    <interface type='user'>
+      <mac address='00:11:22:33:44:66'/>
+      <model type='e1000e'/>
     </interface>
     <memballoon model='virtio'/>
     <rng model='virtio'>
