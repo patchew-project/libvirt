@@ -4581,7 +4581,8 @@ virDomainDefPostParseOpaque(virDomainDefPtr def,
 
     if (xmlopt->config.assignAddressesCallback) {
         ret = xmlopt->config.assignAddressesCallback(def, caps, parseFlags,
-                                                     xmlopt->config.priv);
+                                                     xmlopt->config.priv,
+                                                     parseOpaque);
         if (ret < 0)
             return ret;
     }
