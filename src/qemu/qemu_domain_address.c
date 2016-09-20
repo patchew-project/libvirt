@@ -743,36 +743,38 @@ qemuDomainValidateDevicePCISlotsQ35(virDomainDefPtr def,
     virDomainPCIConnectFlags flags = VIR_PCI_CONNECT_TYPE_PCIE_DEVICE;
 
     for (i = 0; i < def->ncontrollers; i++) {
-        switch (def->controllers[i]->type) {
+        virDomainControllerDefPtr cont = def->controllers[i];
+
+        switch (cont->type) {
         case VIR_DOMAIN_CONTROLLER_TYPE_SATA:
             /* Verify that the first SATA controller is at 00:1F.2 the
              * q35 machine type *always* has a SATA controller at this
              * address.
              */
-            if (def->controllers[i]->idx == 0) {
-                if (virDeviceInfoPCIAddressPresent(&def->controllers[i]->info)) {
-                    if (def->controllers[i]->info.addr.pci.domain != 0 ||
-                        def->controllers[i]->info.addr.pci.bus != 0 ||
-                        def->controllers[i]->info.addr.pci.slot != 0x1F ||
-                        def->controllers[i]->info.addr.pci.function != 2) {
+            if (cont->idx == 0) {
+                if (virDeviceInfoPCIAddressPresent(&cont->info)) {
+                    if (cont->info.addr.pci.domain != 0 ||
+                        cont->info.addr.pci.bus != 0 ||
+                        cont->info.addr.pci.slot != 0x1F ||
+                        cont->info.addr.pci.function != 2) {
                         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                                        _("Primary SATA controller must have PCI address 0:0:1f.2"));
                         goto cleanup;
                     }
                 } else {
-                    def->controllers[i]->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
-                    def->controllers[i]->info.addr.pci.domain = 0;
-                    def->controllers[i]->info.addr.pci.bus = 0;
-                    def->controllers[i]->info.addr.pci.slot = 0x1F;
-                    def->controllers[i]->info.addr.pci.function = 2;
+                    cont->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
+                    cont->info.addr.pci.domain = 0;
+                    cont->info.addr.pci.bus = 0;
+                    cont->info.addr.pci.slot = 0x1F;
+                    cont->info.addr.pci.function = 2;
                 }
             }
             break;
 
         case VIR_DOMAIN_CONTROLLER_TYPE_USB:
-            if ((def->controllers[i]->model
+            if ((cont->model
                  == VIR_DOMAIN_CONTROLLER_MODEL_USB_ICH9_UHCI1) &&
-                (def->controllers[i]->info.type
+                (cont->info.type
                  == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE)) {
                 /* Try to assign the first found USB2 controller to
                  * 00:1D.0 and 2nd to 00:1A.0 (because that is their
@@ -798,21 +800,21 @@ qemuDomainValidateDevicePCISlotsQ35(virDomainDefPtr def,
                     if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr,
                                                        flags, false, true) < 0)
                         goto cleanup;
-                    def->controllers[i]->info.type
+                    cont->info.type
                         = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
-                    def->controllers[i]->info.addr.pci.domain = 0;
-                    def->controllers[i]->info.addr.pci.bus = 0;
-                    def->controllers[i]->info.addr.pci.slot = tmp_addr.slot;
-                    def->controllers[i]->info.addr.pci.function = 0;
-                    def->controllers[i]->info.addr.pci.multi
+                    cont->info.addr.pci.domain = 0;
+                    cont->info.addr.pci.bus = 0;
+                    cont->info.addr.pci.slot = tmp_addr.slot;
+                    cont->info.addr.pci.function = 0;
+                    cont->info.addr.pci.multi
                        = VIR_TRISTATE_SWITCH_ON;
                 }
             }
             break;
 
         case VIR_DOMAIN_CONTROLLER_TYPE_PCI:
-            if (def->controllers[i]->model == VIR_DOMAIN_CONTROLLER_MODEL_DMI_TO_PCI_BRIDGE &&
-                def->controllers[i]->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE) {
+            if (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_DMI_TO_PCI_BRIDGE &&
+                cont->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE) {
                 /* Try to assign this bridge to 00:1E.0 (because that
                 * is its standard location on real hardware) unless
                 * it's already taken, but don't insist on it.
@@ -823,11 +825,11 @@ qemuDomainValidateDevicePCISlotsQ35(virDomainDefPtr def,
                     if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr,
                                                        flags, true, false) < 0)
                         goto cleanup;
-                    def->controllers[i]->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
-                    def->controllers[i]->info.addr.pci.domain = 0;
-                    def->controllers[i]->info.addr.pci.bus = 0;
-                    def->controllers[i]->info.addr.pci.slot = 0x1E;
-                    def->controllers[i]->info.addr.pci.function = 0;
+                    cont->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
+                    cont->info.addr.pci.domain = 0;
+                    cont->info.addr.pci.bus = 0;
+                    cont->info.addr.pci.slot = 0x1E;
+                    cont->info.addr.pci.function = 0;
                 }
             }
             break;
@@ -1001,12 +1003,14 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
 
     /* PCI controllers */
     for (i = 0; i < def->ncontrollers; i++) {
-        if (def->controllers[i]->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI) {
-            virDomainControllerModelPCI model = def->controllers[i]->model;
+        virDomainControllerDefPtr cont = def->controllers[i];
+
+        if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI) {
+            virDomainControllerModelPCI model = cont->model;
 
             if (model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT ||
                 model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT ||
-                !virDeviceInfoPCIAddressWanted(&def->controllers[i]->info))
+                !virDeviceInfoPCIAddressWanted(&cont->info))
                 continue;
 
             /* convert the type of controller into a "CONNECT_TYPE"
@@ -1014,9 +1018,7 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
              * controller/bus to connect it to on the upstream side.
              */
             flags = virDomainPCIControllerModelToConnectType(model);
-            if (virDomainPCIAddressReserveNextSlot(addrs,
-                                                   &def->controllers[i]->info,
-                                                   flags) < 0)
+            if (virDomainPCIAddressReserveNextSlot(addrs, &cont->info, flags) < 0)
                 goto error;
         }
     }
@@ -1071,38 +1073,40 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
 
     /* Device controllers (SCSI, USB, but not IDE, FDC or CCID) */
     for (i = 0; i < def->ncontrollers; i++) {
+        virDomainControllerDefPtr cont = def->controllers[i];
+
         /* PCI controllers have been dealt with earlier */
-        if (def->controllers[i]->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI)
+        if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI)
             continue;
 
         /* USB controller model 'none' doesn't need a PCI address */
-        if (def->controllers[i]->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
-            def->controllers[i]->model == VIR_DOMAIN_CONTROLLER_MODEL_USB_NONE)
+        if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
+            cont->model == VIR_DOMAIN_CONTROLLER_MODEL_USB_NONE)
             continue;
 
         /* FDC lives behind the ISA bridge; CCID is a usb device */
-        if (def->controllers[i]->type == VIR_DOMAIN_CONTROLLER_TYPE_FDC ||
-            def->controllers[i]->type == VIR_DOMAIN_CONTROLLER_TYPE_CCID)
+        if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_FDC ||
+            cont->type == VIR_DOMAIN_CONTROLLER_TYPE_CCID)
             continue;
 
         /* First IDE controller lives on the PIIX3 at slot=1, function=1,
            dealt with earlier on*/
-        if (def->controllers[i]->type == VIR_DOMAIN_CONTROLLER_TYPE_IDE &&
-            def->controllers[i]->idx == 0)
+        if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_IDE &&
+            cont->idx == 0)
             continue;
 
-        if (!virDeviceInfoPCIAddressWanted(&def->controllers[i]->info))
+        if (!virDeviceInfoPCIAddressWanted(&cont->info))
             continue;
 
         /* USB2 needs special handling to put all companions in the same slot */
-        if (IS_USB2_CONTROLLER(def->controllers[i])) {
+        if (IS_USB2_CONTROLLER(cont)) {
             virPCIDeviceAddress addr = {0};
             bool foundAddr = false;
 
             memset(&tmp_addr, 0, sizeof(tmp_addr));
             for (j = 0; j < def->ncontrollers; j++) {
                 if (IS_USB2_CONTROLLER(def->controllers[j]) &&
-                    def->controllers[j]->idx == def->controllers[i]->idx &&
+                    def->controllers[j]->idx == cont->idx &&
                     virDeviceInfoPCIAddressPresent(&def->controllers[j]->info)) {
                     addr = def->controllers[j]->info.addr.pci;
                     foundAddr = true;
@@ -1110,7 +1114,7 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
                 }
             }
 
-            switch (def->controllers[i]->model) {
+            switch (cont->model) {
             case VIR_DOMAIN_CONTROLLER_MODEL_USB_ICH9_EHCI1:
                 addr.function = 7;
                 addr.multi = VIR_TRISTATE_SWITCH_ABSENT;
@@ -1147,12 +1151,10 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
                                                false, foundAddr) < 0)
                 goto error;
 
-            def->controllers[i]->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
-            def->controllers[i]->info.addr.pci = addr;
+            cont->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
+            cont->info.addr.pci = addr;
         } else {
-            if (virDomainPCIAddressReserveNextSlot(addrs,
-                                                   &def->controllers[i]->info,
-                                                   flags) < 0)
+            if (virDomainPCIAddressReserveNextSlot(addrs, &cont->info, flags) < 0)
                 goto error;
         }
     }
