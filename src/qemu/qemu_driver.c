@@ -1478,13 +1478,17 @@ qemuDomainHelperGetVcpus(virDomainObjPtr vm,
         virDomainVcpuDefPtr vcpu = virDomainDefGetVcpu(vm->def, i);
         pid_t vcpupid = qemuDomainGetVcpuPid(vm, i);
         virVcpuInfoPtr vcpuinfo = info + ncpuinfo;
+        bool vcpuhalted = qemuDomainGetVcpuHalted(vm, i);
 
         if (!vcpu->online)
             continue;
 
         if (info) {
             vcpuinfo->number = i;
-            vcpuinfo->state = VIR_VCPU_RUNNING;
+            if (vcpuhalted)
+                vcpuinfo->state = VIR_VCPU_HALTED;
+            else
+                vcpuinfo->state = VIR_VCPU_RUNNING;
 
             if (qemuGetProcessInfo(&vcpuinfo->cpuTime,
                                    &vcpuinfo->cpu, NULL,
@@ -5370,6 +5374,7 @@ qemuDomainGetVcpus(virDomainPtr dom,
                    unsigned char *cpumaps,
                    int maplen)
 {
+    virQEMUDriverPtr driver = dom->conn->privateData;
     virDomainObjPtr vm;
     int ret = -1;
 
@@ -5382,6 +5387,13 @@ qemuDomainGetVcpus(virDomainPtr dom,
     if (!virDomainObjIsActive(vm)) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("cannot retrieve vcpu information for inactive domain"));
+        goto cleanup;
+    }
+
+    if (qemuDomainRefreshVcpuHalted(driver, vm, QEMU_ASYNC_JOB_NONE) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "%s",
+                       _("could not refresh CPU states"));
         goto cleanup;
     }
 
@@ -18863,7 +18875,7 @@ qemuDomainGetStatsBalloon(virQEMUDriverPtr driver,
 
 
 static int
-qemuDomainGetStatsVcpu(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
+qemuDomainGetStatsVcpu(virQEMUDriverPtr driver,
                        virDomainObjPtr dom,
                        virDomainStatsRecordPtr record,
                        int *maxparams,
@@ -18892,6 +18904,13 @@ qemuDomainGetStatsVcpu(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
     if (VIR_ALLOC_N(cpuinfo, virDomainDefGetVcpus(dom->def)) < 0 ||
         VIR_ALLOC_N(cpuwait, virDomainDefGetVcpus(dom->def)) < 0)
         goto cleanup;
+
+    if (qemuDomainRefreshVcpuHalted(driver, dom, QEMU_ASYNC_JOB_NONE) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "%s",
+                       _("could not refresh CPU states"));
+        goto cleanup;
+    }
 
     if (qemuDomainHelperGetVcpus(dom, cpuinfo, cpuwait,
                                  virDomainDefGetVcpus(dom->def),
