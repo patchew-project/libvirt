@@ -931,6 +931,9 @@ mymain(void)
             QEMU_CAPS_VIRTIO_BLK_SCSI);
     DO_TEST("virtio-lun",
             QEMU_CAPS_VIRTIO_BLK_SCSI);
+    DO_TEST("virtio-lun-legacy",
+            QEMU_CAPS_VIRTIO_BLK_SCSI,
+            QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY);
     DO_TEST("disk-scsi-lun-passthrough",
             QEMU_CAPS_SCSI_BLOCK,
             QEMU_CAPS_SCSI_LSI, QEMU_CAPS_VIRTIO_SCSI);

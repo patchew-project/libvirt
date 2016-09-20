@@ -2075,6 +2075,18 @@ qemuBuildDriveDevStr(const virDomainDef *def,
             virBufferAddLit(&opt, "virtio-blk-pci");
             if (disk->iothread)
                 virBufferAsprintf(&opt, ",iothread=iothread%u", disk->iothread);
+
+            /*
+             * SCSI command passthrough was deprecated in virtio 1.0,
+             * see https://bugzilla.redhat.com/show_bug.cgi?id=1365823
+             */
+            if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_BLK_SCSI) &&
+                disk->device == VIR_DOMAIN_DISK_DEVICE_LUN &&
+                virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY)) {
+                VIR_WARN("lun type devices are deprecated for virtio-blk-pci devices, "
+                         "consider using disks on a virtio-scsi controller");
+                virBufferAddLit(&opt, ",disable-modern=on");
+            }
         }
         qemuBuildIoEventFdStr(&opt, disk->ioeventfd, qemuCaps);
         if (disk->event_idx &&
