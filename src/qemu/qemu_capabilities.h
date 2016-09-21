@@ -378,6 +378,7 @@ typedef enum {
 
     /* 235 */
     QEMU_CAPS_VIRTIO_NET_RX_QUEUE_SIZE, /* virtio-net-*.rx_queue_size */
+    QEMU_CAPS_GLUSTER_DEBUG_LEVEL, /* -drive gluster.debug_level={0..9} */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
