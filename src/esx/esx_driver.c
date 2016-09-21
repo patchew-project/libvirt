@@ -969,7 +969,7 @@ esxConnectOpen(virConnectPtr conn, virConnectAuthPtr auth,
                     STRNEQ(vCenterIPAddress, potentialVCenterIPAddress)) {
                     virReportError(VIR_ERR_INTERNAL_ERROR,
                                    _("This host is managed by a vCenter with IP "
-                                     "address %s, but a mismachting vCenter '%s' "
+                                     "address %s, but a mismatching vCenter '%s' "
                                      "(%s) has been specified"),
                                    potentialVCenterIPAddress, priv->parsedUri->vCenter,
                                    vCenterIPAddress);
