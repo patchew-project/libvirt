@@ -2747,6 +2747,18 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
         }
     }
 
+    if (dev->type == VIR_DOMAIN_DEVICE_SHMEM) {
+        if (!dev->data.shmem->server.enabled) {
+            if (!dev->data.shmem->size)
+                dev->data.shmem->size = 4 << 20;
+        } else {
+            dev->data.shmem->size = 0;
+            dev->data.shmem->msi.enabled = true;
+            if (!dev->data.shmem->msi.ioeventfd)
+                dev->data.shmem->msi.ioeventfd = VIR_TRISTATE_SWITCH_ON;
+        }
+    }
+
     ret = 0;
 
  cleanup:

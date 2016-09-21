@@ -6751,7 +6751,6 @@ qemu-kvm -net nic,model=? /dev/null
       &lt;size unit='M'&gt;4&lt;/size&gt;
     &lt;/shmem&gt;
     &lt;shmem name='shmem_server'&gt;
-      &lt;size unit='M'&gt;2&lt;/size&gt;
       &lt;server path='/tmp/socket-shmem'/&gt;
       &lt;msi vectors='32' ioeventfd='on'/&gt;
     &lt;/shmem&gt;
