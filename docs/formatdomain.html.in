@@ -6740,7 +6740,10 @@ qemu-kvm -net nic,model=? /dev/null
 
     <p>
       A shared memory device allows to share a memory region between
-      different virtual machines and the host.
+      different virtual machines and the host.  Note that memory in
+      this region will be migrated, if that's not desired, the device
+      needs to be unplugged before migration and plugged back again
+      after that.
       <span class="since">Since 1.2.10, QEMU and KVM only</span>
     </p>
 

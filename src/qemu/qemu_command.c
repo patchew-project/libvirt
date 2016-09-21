@@ -8550,6 +8550,44 @@ qemuBuildShmemDevLegacyStr(virDomainDefPtr def,
     return NULL;
 }
 
+char *
+qemuBuildShmemDevStr(virDomainDefPtr def,
+                     virDomainShmemDefPtr shmem,
+                     virQEMUCapsPtr qemuCaps)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    if (shmem->server.enabled) {
+        virBufferAddLit(&buf, "ivshmem-doorbell");
+        virBufferAsprintf(&buf, ",id=%s,chardev=char%s",
+                          shmem->info.alias, shmem->info.alias);
+        if (shmem->msi.vectors)
+            virBufferAsprintf(&buf, ",vectors=%u", shmem->msi.vectors);
+        if (shmem->msi.ioeventfd)
+            virBufferAsprintf(&buf, ",ioeventfd=%s",
+                              virTristateSwitchTypeToString(shmem->msi.ioeventfd));
+    } else {
+        virBufferAddLit(&buf, "ivshmem-plain");
+        virBufferAsprintf(&buf, ",id=%s,memdev=shmmem-%s",
+                          shmem->info.alias, shmem->info.alias);
+
+        /* For now we default to master=on, users are adviced to
+         * unplug the ivshmem if they don't want to migrate the data
+         * in the shmem (see docs). */
+        virBufferAddLit(&buf, ",master=on");
+    }
+
+    if (qemuBuildDeviceAddressStr(&buf, def, &shmem->info, qemuCaps) < 0) {
+        virBufferFreeAndReset(&buf);
+        return NULL;
+    }
+
+    if (virBufferCheckError(&buf) < 0)
+        return NULL;
+
+    return virBufferContentAndReset(&buf);
+}
+
 static char *
 qemuBuildShmemBackendChrStr(virLogManagerPtr logManager,
                             virCommandPtr cmd,
@@ -8570,6 +8608,51 @@ qemuBuildShmemBackendChrStr(virLogManagerPtr logManager,
     return devstr;
 }
 
+
+virJSONValuePtr
+qemuBuildShmemBackendMemProps(virDomainShmemDefPtr shmem)
+{
+    char *mem_path = NULL;
+    virJSONValuePtr ret = NULL;
+
+    if (virAsprintf(&mem_path, "/dev/shm/%s", shmem->name) < 0)
+        return NULL;
+
+    virJSONValueObjectCreate(&ret,
+                             "U:size", shmem->size,
+                             "s:mem-path", mem_path,
+                             NULL);
+
+    VIR_FREE(mem_path);
+
+    return ret;
+}
+
+
+static char *
+qemuBuildShmemBackendMemStr(virDomainShmemDefPtr shmem)
+{
+    char *ret = NULL;
+    char *alias = NULL;
+    virJSONValuePtr props = qemuBuildShmemBackendMemProps(shmem);
+
+    if (!props)
+        return NULL;
+
+    if (virAsprintf(&alias, "shmmem-%s", shmem->info.alias) < 0)
+        goto cleanup;
+
+    ret = virQEMUBuildObjectCommandlineFromJSON("memory-backend-file",
+                                                alias,
+                                                props);
+ cleanup:
+    VIR_FREE(alias);
+    virJSONValueFree(props);
+
+    return ret;
+}
+
+
 static int
 qemuBuildShmemCommandLine(virLogManagerPtr logManager,
                           virCommandPtr cmd,
@@ -8579,6 +8662,18 @@ qemuBuildShmemCommandLine(virLogManagerPtr logManager,
                           virQEMUCapsPtr qemuCaps)
 {
     char *devstr = NULL;
+    bool legacy = false;
+
+    if (!qemuDomainSupportsNonLegacyShmem(qemuCaps, shmem)) {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_IVSHMEM)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("shmem device is not supported with this "
+                             "QEMU binary"));
+            return -1;
+        }
+
+        legacy = true;
+    }
 
     if (shmem->size) {
         /*
@@ -8606,8 +8701,14 @@ qemuBuildShmemCommandLine(virLogManagerPtr logManager,
         return -1;
     }
 
-    if (!(devstr = qemuBuildShmemDevLegacyStr(def, shmem, qemuCaps)))
+    if (legacy)
+        devstr = qemuBuildShmemDevLegacyStr(def, shmem, qemuCaps);
+    else
+        devstr = qemuBuildShmemDevStr(def, shmem, qemuCaps);
+
+    if (!devstr)
         return -1;
+
     virCommandAddArgList(cmd, "-device", devstr, NULL);
     VIR_FREE(devstr);
 
@@ -8617,6 +8718,12 @@ qemuBuildShmemCommandLine(virLogManagerPtr logManager,
             return -1;
 
         virCommandAddArgList(cmd, "-chardev", devstr, NULL);
+        VIR_FREE(devstr);
+    } else if (!legacy) {
+        if (!(devstr = qemuBuildShmemBackendMemStr(shmem)))
+            return -1;
+
+        virCommandAddArgList(cmd, "-object", devstr, NULL);
         VIR_FREE(devstr);
     }
 
