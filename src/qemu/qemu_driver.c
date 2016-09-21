@@ -4742,6 +4742,9 @@ qemuDomainSetVcpusMax(virQEMUDriverPtr driver,
         }
     }
 
+    /* ordering information may become invalid, thus clear it */
+    virDomainDefVcpuOrderClear(persistentDef);
+
     if (virDomainDefSetVcpusMax(persistentDef, nvcpus, driver->xmlopt) < 0)
         goto cleanup;
 
@@ -4916,6 +4919,8 @@ qemuDomainSetVcpusConfig(virDomainDefPtr def,
     size_t maxvcpus = virDomainDefGetVcpusMax(def);
     size_t i;
 
+    /* ordering information may become invalid, thus clear it */
+    virDomainDefVcpuOrderClear(def);
 
     if (curvcpus == nvcpus)
         return;

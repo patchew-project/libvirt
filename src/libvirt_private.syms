@@ -254,6 +254,7 @@ virDomainDefSetMemoryTotal;
 virDomainDefSetVcpus;
 virDomainDefSetVcpusMax;
 virDomainDefValidate;
+virDomainDefVcpuOrderClear;
 virDomainDeleteConfig;
 virDomainDeviceAddressIsValid;
 virDomainDeviceAddressTypeToString;
