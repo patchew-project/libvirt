@@ -19847,7 +19847,7 @@ virDomainDiskBlockIoDefFormat(virBufferPtr buf,
 
 /* virDomainSourceDefFormatSeclabel:
  *
- * This function automaticaly closes the <source> element and formats any
+ * This function automatically closes the <source> element and formats any
  * possible seclabels.
  */
 static void
