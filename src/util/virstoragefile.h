@@ -237,6 +237,8 @@ struct _virStorageSource {
     virStorageAuthDefPtr auth;
     virStorageEncryptionPtr encryption;
 
+    unsigned int debug_level;
+
     char *driverName;
     int format; /* virStorageFileFormat in domain backing chains, but
                  * pool-specific enum for storage volumes */
