@@ -1315,7 +1315,8 @@ qemuDiskBusNeedsDeviceArg(int bus)
 static int
 qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
                         virQEMUDriverConfigPtr cfg,
-                        virBufferPtr buf)
+                        virBufferPtr buf,
+                        virQEMUCapsPtr qemuCaps)
 {
     int actualType = virStorageSourceGetActualType(disk->src);
     qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
@@ -1386,6 +1387,7 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
 
     if (disk->src &&
         disk->src->protocol == VIR_STORAGE_NET_PROTOCOL_GLUSTER) {
+        if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_GLUSTER_DEBUG_LEVEL))
             virBufferAsprintf(buf, "file.debug=%d,", cfg->glusterDebugLevel);
     }
 
@@ -1515,7 +1517,7 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
         break;
     }
 
-    if (qemuBuildDriveSourceStr(disk, cfg, &opt) < 0)
+    if (qemuBuildDriveSourceStr(disk, cfg, &opt, qemuCaps) < 0)
         goto error;
 
     if (emitDeviceSyntax)

@@ -344,6 +344,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "query-hotpluggable-cpus",
 
               "virtio-net.rx_queue_size", /* 235 */
+              "gluster.debug_level",
     );
 
 
@@ -2495,6 +2496,10 @@ virQEMUCapsProbeQMPCommands(virQEMUCapsPtr qemuCaps,
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_BLOCK_COMMIT) &&
         qemuMonitorSupportsActiveCommit(mon))
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_ACTIVE_COMMIT);
+
+    /* Since qemu 2.7.0 */
+    if (qemuCaps->version >= 2007000)
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_GLUSTER_DEBUG_LEVEL);
 
     return 0;
 }
