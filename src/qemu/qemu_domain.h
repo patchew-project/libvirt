@@ -670,6 +670,9 @@ bool qemuDomainSupportsNetdev(virDomainDefPtr def,
                               virQEMUCapsPtr qemuCaps,
                               virDomainNetDefPtr net);
 
+bool qemuDomainSupportsNonLegacyShmem(virQEMUCapsPtr qemuCaps,
+                                      virDomainShmemDefPtr shmem);
+
 int qemuDomainNetVLAN(virDomainNetDefPtr def);
 
 int qemuDomainSetPrivatePaths(virQEMUDriverPtr driver,

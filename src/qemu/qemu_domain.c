@@ -5994,6 +5994,18 @@ qemuDomainSupportsNetdev(virDomainDefPtr def,
 }
 
 
+bool
+qemuDomainSupportsNonLegacyShmem(virQEMUCapsPtr qemuCaps,
+                                 virDomainShmemDefPtr shmem)
+{
+    int device_cap = shmem->server.enabled ?
+        QEMU_CAPS_DEVICE_IVSHMEM_DOORBELL :
+        QEMU_CAPS_DEVICE_IVSHMEM_PLAIN;
+
+    return virQEMUCapsGet(qemuCaps, device_cap);
+}
+
+
 int
 qemuDomainNetVLAN(virDomainNetDefPtr def)
 {
