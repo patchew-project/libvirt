@@ -378,6 +378,8 @@ typedef enum {
 
     /* 235 */
     QEMU_CAPS_VIRTIO_NET_RX_QUEUE_SIZE, /* virtio-net-*.rx_queue_size */
+    QEMU_CAPS_DEVICE_IVSHMEM_PLAIN, /* -device ivshmem-plain */
+    QEMU_CAPS_DEVICE_IVSHMEM_DOORBELL, /* -device ivshmem-doorbell */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
