@@ -4912,7 +4912,8 @@ qemuDomainSetVcpusLive(virQEMUDriverPtr driver,
  */
 static void
 qemuDomainSetVcpusConfig(virDomainDefPtr def,
-                         unsigned int nvcpus)
+                         unsigned int nvcpus,
+                         bool hotpluggable)
 {
     virDomainVcpuDefPtr vcpu;
     size_t curvcpus = virDomainDefGetVcpus(def);
@@ -4933,7 +4934,12 @@ qemuDomainSetVcpusConfig(virDomainDefPtr def,
                 continue;
 
             vcpu->online = true;
-            vcpu->hotpluggable = VIR_TRISTATE_BOOL_NO;
+            if (hotpluggable) {
+                vcpu->hotpluggable = VIR_TRISTATE_BOOL_YES;
+                def->individualvcpus = true;
+            } else {
+                vcpu->hotpluggable = VIR_TRISTATE_BOOL_NO;
+            }
 
             if (++curvcpus == nvcpus)
                 break;
@@ -4960,7 +4966,8 @@ qemuDomainSetVcpusInternal(virQEMUDriverPtr driver,
                            virDomainObjPtr vm,
                            virDomainDefPtr def,
                            virDomainDefPtr persistentDef,
-                           unsigned int nvcpus)
+                           unsigned int nvcpus,
+                           bool hotpluggable)
 {
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     int ret = -1;
@@ -4985,7 +4992,7 @@ qemuDomainSetVcpusInternal(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (persistentDef) {
-        qemuDomainSetVcpusConfig(persistentDef, nvcpus);
+        qemuDomainSetVcpusConfig(persistentDef, nvcpus, hotpluggable);
 
         if (virDomainSaveConfig(cfg->configDir, driver->caps, persistentDef) < 0)
             goto cleanup;
@@ -5008,12 +5015,14 @@ qemuDomainSetVcpusFlags(virDomainPtr dom,
     virDomainObjPtr vm = NULL;
     virDomainDefPtr def;
     virDomainDefPtr persistentDef;
+    bool hotpluggable = !!(flags & VIR_DOMAIN_VCPU_HOTPLUGGABLE);
     int ret = -1;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
                   VIR_DOMAIN_AFFECT_CONFIG |
                   VIR_DOMAIN_VCPU_MAXIMUM |
-                  VIR_DOMAIN_VCPU_GUEST, -1);
+                  VIR_DOMAIN_VCPU_GUEST |
+                  VIR_DOMAIN_VCPU_HOTPLUGGABLE, -1);
 
     if (!(vm = qemuDomObjFromDomain(dom)))
         goto cleanup;
@@ -5032,7 +5041,8 @@ qemuDomainSetVcpusFlags(virDomainPtr dom,
     else if (flags & VIR_DOMAIN_VCPU_MAXIMUM)
         ret = qemuDomainSetVcpusMax(driver, def, persistentDef, nvcpus);
     else
-        ret = qemuDomainSetVcpusInternal(driver, vm, def, persistentDef, nvcpus);
+        ret = qemuDomainSetVcpusInternal(driver, vm, def, persistentDef,
+                                         nvcpus, hotpluggable);
 
  endjob:
     qemuDomainObjEndJob(driver, vm);
