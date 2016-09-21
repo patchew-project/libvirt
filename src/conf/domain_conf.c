@@ -14165,7 +14165,7 @@ void virDomainControllerInsertPreAlloced(virDomainDefPtr def,
                                          virDomainControllerDefPtr controller)
 {
     int idx;
-    /* Tenatively plan to insert controller at the end. */
+    /* Tentatively plan to insert controller at the end. */
     int insertAt = -1;
     virDomainControllerDefPtr current = NULL;
 
