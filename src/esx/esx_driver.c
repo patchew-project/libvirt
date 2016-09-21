@@ -78,7 +78,7 @@ esxFreePrivate(esxPrivate **priv)
 
 /*
  * Parse a file name from a .vmx file and convert it to datastore path format
- * if possbile. A .vmx file can contain file names in various formats:
+ * if possible. A .vmx file can contain file names in various formats:
  *
  * - A single name referencing a file in the same directory as the .vmx file:
  *
