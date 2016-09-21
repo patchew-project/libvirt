@@ -93,6 +93,7 @@ enum qemuMigrationCookieFlags {
     QEMU_MIGRATION_COOKIE_FLAG_STATS,
     QEMU_MIGRATION_COOKIE_FLAG_MEMORY_HOTPLUG,
     QEMU_MIGRATION_COOKIE_FLAG_CPU_HOTPLUG,
+    QEMU_MIGRATION_COOKIE_FLAG_IVSHMEM,
 
     QEMU_MIGRATION_COOKIE_FLAG_LAST
 };
@@ -107,7 +108,8 @@ VIR_ENUM_IMPL(qemuMigrationCookieFlag,
               "nbd",
               "statistics",
               "memory-hotplug",
-              "cpu-hotplug");
+              "cpu-hotplug",
+              "ivshmem");
 
 enum qemuMigrationCookieFeatures {
     QEMU_MIGRATION_COOKIE_GRAPHICS  = (1 << QEMU_MIGRATION_COOKIE_FLAG_GRAPHICS),
@@ -118,6 +120,7 @@ enum qemuMigrationCookieFeatures {
     QEMU_MIGRATION_COOKIE_STATS = (1 << QEMU_MIGRATION_COOKIE_FLAG_STATS),
     QEMU_MIGRATION_COOKIE_MEMORY_HOTPLUG = (1 << QEMU_MIGRATION_COOKIE_FLAG_MEMORY_HOTPLUG),
     QEMU_MIGRATION_COOKIE_CPU_HOTPLUG = (1 << QEMU_MIGRATION_COOKIE_FLAG_CPU_HOTPLUG),
+    QEMU_MIGRATION_COOKIE_IVSHMEM = (1 << QEMU_MIGRATION_COOKIE_FLAG_IVSHMEM),
 };
 
 typedef struct _qemuMigrationCookieGraphics qemuMigrationCookieGraphics;
@@ -1414,6 +1417,9 @@ qemuMigrationBakeCookie(qemuMigrationCookiePtr mig,
     if (flags & QEMU_MIGRATION_COOKIE_CPU_HOTPLUG)
         mig->flagsMandatory |= QEMU_MIGRATION_COOKIE_CPU_HOTPLUG;
 
+    if (flags & QEMU_MIGRATION_COOKIE_IVSHMEM)
+        mig->flagsMandatory |= QEMU_MIGRATION_COOKIE_IVSHMEM;
+
     if (!(*cookieout = qemuMigrationCookieXMLFormatStr(driver, mig)))
         return -1;
 
@@ -2272,6 +2278,7 @@ qemuMigrationIsAllowed(virQEMUDriverPtr driver,
     int nsnapshots;
     int pauseReason;
     size_t i;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
 
     /* perform these checks only when migrating to remote hosts */
     if (remote) {
@@ -2343,6 +2350,16 @@ qemuMigrationIsAllowed(virQEMUDriverPtr driver,
                                _("domain's dimm info lacks slot ID "
                                  "or base address"));
 
+                return false;
+            }
+        }
+
+        for (i = 0; i < vm->def->nshmems; i++) {
+            if (!qemuDomainSupportsNonLegacyShmem(priv->qemuCaps,
+                                                  vm->def->shmems[i])) {
+                virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                               _("Migration with shmem device is not "
+                                 "supported with this QEMU binary"));
                 return false;
             }
         }
@@ -3201,6 +3218,11 @@ qemuMigrationBeginPhase(virQEMUDriverPtr driver,
         }
     }
 
+    /* We need to signal we are using newer ivshmem models, we
+     * wouldn't get here if we didn't. */
+    if (vm->def->nshmems)
+        cookieFlags |= QEMU_MIGRATION_COOKIE_IVSHMEM;
+
     if (virDomainDefHasMemoryHotplug(vm->def) ||
         ((flags & VIR_MIGRATE_PERSIST_DEST) &&
          vm->newDef && virDomainDefHasMemoryHotplug(vm->newDef)))
@@ -3707,7 +3729,8 @@ qemuMigrationPrepareAny(virQEMUDriverPtr driver,
                                        QEMU_MIGRATION_COOKIE_LOCKSTATE |
                                        QEMU_MIGRATION_COOKIE_NBD |
                                        QEMU_MIGRATION_COOKIE_MEMORY_HOTPLUG |
-                                       QEMU_MIGRATION_COOKIE_CPU_HOTPLUG)))
+                                       QEMU_MIGRATION_COOKIE_CPU_HOTPLUG |
+                                       QEMU_MIGRATION_COOKIE_IVSHMEM)))
         goto cleanup;
 
     if (STREQ_NULLABLE(protocol, "rdma") &&
