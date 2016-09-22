@@ -69,6 +69,16 @@
 
 VIR_LOG_INIT("rpc.netsocket");
 
+struct _virNetSocketCallbackObject {
+    virNetSocketPtr sock;
+    virNetSocketIOFunc func;
+    void *opaque;
+    virFreeCallback ff;
+};
+
+typedef struct _virNetSocketCallbackObject virNetSocketCallbackObject;
+typedef virNetSocketCallbackObject *virNetSocketCallbackObjectPtr;
+
 struct _virNetSocket {
     virObjectLockable parent;
 
@@ -77,11 +87,6 @@ struct _virNetSocket {
     pid_t pid;
     int errfd;
     bool client;
-
-    /* Event callback fields */
-    virNetSocketIOFunc func;
-    void *opaque;
-    virFreeCallback ff;
 
     virSocketAddr localAddr;
     virSocketAddr remoteAddr;
@@ -1928,38 +1933,19 @@ static void virNetSocketEventHandle(int watch ATTRIBUTE_UNUSED,
                                     int events,
                                     void *opaque)
 {
-    virNetSocketPtr sock = opaque;
-    virNetSocketIOFunc func;
-    void *eopaque;
-
-    virObjectLock(sock);
-    func = sock->func;
-    eopaque = sock->opaque;
-    virObjectUnlock(sock);
-
-    if (func)
-        func(sock, events, eopaque);
+    virNetSocketCallbackObjectPtr o = opaque;
+    if (o->func)
+        o->func(o->sock, events, o->opaque);
 }
 
 
 static void virNetSocketEventFree(void *opaque)
 {
-    virNetSocketPtr sock = opaque;
-    virFreeCallback ff;
-    void *eopaque;
-
-    virObjectLock(sock);
-    ff = sock->ff;
-    eopaque = sock->opaque;
-    sock->func = NULL;
-    sock->ff = NULL;
-    sock->opaque = NULL;
-    virObjectUnlock(sock);
-
-    if (ff)
-        ff(eopaque);
-
-    virObjectUnref(sock);
+    virNetSocketCallbackObjectPtr o = opaque;
+    if (o->ff)
+        o->ff(o->opaque);
+    virObjectUnref(o->sock);
+    VIR_FREE(o);
 }
 
 int virNetSocketAddIOCallback(virNetSocketPtr sock,
@@ -1969,32 +1955,40 @@ int virNetSocketAddIOCallback(virNetSocketPtr sock,
                               virFreeCallback ff)
 {
     int ret = -1;
+    virNetSocketCallbackObjectPtr cbobj = NULL;
 
-    virObjectRef(sock);
     virObjectLock(sock);
     if (sock->watch >= 0) {
         VIR_DEBUG("Watch already registered on socket %p", sock);
         goto cleanup;
     }
 
+    if (VIR_ALLOC(cbobj) < 0)
+        goto cleanup;
+
+    cbobj->sock = virObjectRef(sock);
+    cbobj->func = func;
+    cbobj->opaque = opaque;
+    cbobj->ff = ff;
+
     if ((sock->watch = virEventAddHandle(sock->fd,
                                          events,
                                          virNetSocketEventHandle,
-                                         sock,
+                                         cbobj,
                                          virNetSocketEventFree)) < 0) {
         VIR_DEBUG("Failed to register watch on socket %p", sock);
         goto cleanup;
     }
-    sock->func = func;
-    sock->opaque = opaque;
-    sock->ff = ff;
 
     ret = 0;
 
  cleanup:
     virObjectUnlock(sock);
-    if (ret != 0)
+    if (ret != 0) {
+        VIR_FREE(cbobj);
         virObjectUnref(sock);
+    }
+
     return ret;
 }
 

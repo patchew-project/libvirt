@@ -198,6 +198,11 @@ int virEventPollRemoveHandle(int watch)
         if (eventLoop.handles[i].watch == watch) {
             EVENT_DEBUG("mark delete %zu %d", i, eventLoop.handles[i].fd);
             eventLoop.handles[i].deleted = 1;
+            if (eventLoop.handles[i].ff) {
+                virMutexUnlock(&eventLoop.lock);
+                eventLoop.handles[i].ff(eventLoop.handles[i].opaque);
+                virMutexLock(&eventLoop.lock);
+            }
             virEventPollInterruptLocked();
             virMutexUnlock(&eventLoop.lock);
             return 0;
@@ -315,6 +320,11 @@ int virEventPollRemoveTimeout(int timer)
             continue;
 
         if (eventLoop.timeouts[i].timer == timer) {
+            if (eventLoop.timeouts[i].ff) {
+                virMutexUnlock(&eventLoop.lock);
+                eventLoop.timeouts[i].ff(eventLoop.timeouts[i].opaque);
+                virMutexLock(&eventLoop.lock);
+            }
             eventLoop.timeouts[i].deleted = 1;
             virEventPollInterruptLocked();
             virMutexUnlock(&eventLoop.lock);
@@ -536,13 +546,6 @@ static void virEventPollCleanupTimeouts(void)
         PROBE(EVENT_POLL_PURGE_TIMEOUT,
               "timer=%d",
               eventLoop.timeouts[i].timer);
-        if (eventLoop.timeouts[i].ff) {
-            virFreeCallback ff = eventLoop.timeouts[i].ff;
-            void *opaque = eventLoop.timeouts[i].opaque;
-            virMutexUnlock(&eventLoop.lock);
-            ff(opaque);
-            virMutexLock(&eventLoop.lock);
-        }
 
         if ((i+1) < eventLoop.timeoutsCount) {
             memmove(eventLoop.timeouts+i,
@@ -585,13 +588,6 @@ static void virEventPollCleanupHandles(void)
         PROBE(EVENT_POLL_PURGE_HANDLE,
               "watch=%d",
               eventLoop.handles[i].watch);
-        if (eventLoop.handles[i].ff) {
-            virFreeCallback ff = eventLoop.handles[i].ff;
-            void *opaque = eventLoop.handles[i].opaque;
-            virMutexUnlock(&eventLoop.lock);
-            ff(opaque);
-            virMutexLock(&eventLoop.lock);
-        }
 
         if ((i+1) < eventLoop.handlesCount) {
             memmove(eventLoop.handles+i,
