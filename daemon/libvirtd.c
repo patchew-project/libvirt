@@ -1631,7 +1631,6 @@ int main(int argc, char **argv) {
     /* we need to keep servers references up to here
       so that above function will not cause servers cleanup
       which can deadlock */
-    virObjectUnref(dmn);
     virObjectUnref(srv);
     virObjectUnref(srvAdm);
     virNetlinkShutdown();
@@ -1661,6 +1660,9 @@ int main(int argc, char **argv) {
         driversInitialized = false;
         virStateCleanup();
     }
+    /* unref daemon only here as hypervisor drivers can
+       call shutdown inhibition functions on cleanup */
+    virObjectUnref(dmn);
 
     return ret;
 }
