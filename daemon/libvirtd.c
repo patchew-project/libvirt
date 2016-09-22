@@ -1628,6 +1628,9 @@ int main(int argc, char **argv) {
     virObjectUnref(qemuProgram);
     virObjectUnref(adminProgram);
     virNetDaemonClose(dmn);
+    /* we need to keep servers references up to here
+      so that above function will not cause servers cleanup
+      which can deadlock */
     virObjectUnref(dmn);
     virObjectUnref(srv);
     virObjectUnref(srvAdm);

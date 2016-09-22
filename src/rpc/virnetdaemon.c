@@ -861,6 +861,7 @@ virNetDaemonClose(virNetDaemonPtr dmn)
     virObjectLock(dmn);
 
     virHashForEach(dmn->servers, daemonServerClose, NULL);
+    virHashRemoveAll(dmn->servers);
 
     virObjectUnlock(dmn);
 }
