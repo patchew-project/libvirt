@@ -10648,6 +10648,10 @@ static const vshCmdOptDef opts_domdisplay[] = {
      .help = N_("select particular graphical display "
                 "(e.g. \"vnc\", \"spice\", \"rdp\")")
     },
+    {.name = "all",
+     .type = VSH_OT_BOOL,
+     .help = N_("show all possible graphical displays")
+    },
     {.name = NULL}
 };
 
@@ -10671,6 +10675,7 @@ cmdDomDisplay(vshControl *ctl, const vshCmd *cmd)
     int tmp;
     int flags = 0;
     bool params = false;
+    bool all = false;
     const char *xpath_fmt = "string(/domain/devices/graphics[@type='%s']/%s)";
     virSocketAddr addr;
 
@@ -10684,6 +10689,9 @@ cmdDomDisplay(vshControl *ctl, const vshCmd *cmd)
 
     if (vshCommandOptBool(cmd, "include-password"))
         flags |= VIR_DOMAIN_XML_SECURE;
+
+    if (vshCommandOptBool(cmd, "all"))
+        all = true;
 
     if (vshCommandOptStringReq(ctl, cmd, "type", &type) < 0)
         goto cleanup;
@@ -10845,7 +10853,15 @@ cmdDomDisplay(vshControl *ctl, const vshCmd *cmd)
 
         /* We got what we came for so return successfully */
         ret = true;
-        break;
+        if (!all) {
+            break;
+        } else {
+            VIR_FREE(xpath);
+            VIR_FREE(passwd);
+            VIR_FREE(listen_addr);
+            VIR_FREE(output);
+            vshPrint(ctl, "\n");
+        }
     }
 
     if (!ret) {
