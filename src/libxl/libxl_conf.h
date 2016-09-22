@@ -57,6 +57,7 @@
 # define LIBXL_LIB_DIR LOCALSTATEDIR "/lib/libvirt/libxl"
 # define LIBXL_SAVE_DIR LIBXL_LIB_DIR "/save"
 # define LIBXL_DUMP_DIR LIBXL_LIB_DIR "/dump"
+# define LIBXL_CHANNEL_DIR LIBXL_LIB_DIR "/channel/target"
 # define LIBXL_BOOTLOADER_PATH "pygrub"
 
 
@@ -98,6 +99,7 @@ struct _libxlDriverConfig {
     char *libDir;
     char *saveDir;
     char *autoDumpDir;
+    char *channelDir;
 
     virFirmwarePtr *firmwares;
     size_t nfirmwares;
@@ -197,7 +199,7 @@ virDomainXMLOptionPtr
 libxlCreateXMLConf(void);
 
 int
-libxlBuildDomainConfig(virPortAllocatorPtr graphicsports,
+libxlBuildDomainConfig(libxlDriverPrivatePtr driver,
                        virDomainDefPtr def,
                        libxl_ctx *ctx,
                        libxl_domain_config *d_config);
