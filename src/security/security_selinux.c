@@ -137,7 +137,7 @@ virSecuritySELinuxMCSFind(virSecurityManagerPtr mgr,
     VIR_DEBUG("Using sensitivity level '%s' cat min %d max %d range %d",
               sens, catMin, catMax, catRange);
 
-    for (;;) {
+    while (1) {
         int c1 = virRandomInt(catRange);
         int c2 = virRandomInt(catRange);
 

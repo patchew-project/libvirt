@@ -4398,7 +4398,7 @@ static void qemuMigrationIOFunc(void *arg)
     fds[0].fd = data->sock;
     fds[1].fd = data->wakeupRecvFD;
 
-    for (;;) {
+    while (1) {
         int ret;
 
         fds[0].events = fds[1].events = POLLIN;

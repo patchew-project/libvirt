@@ -777,7 +777,7 @@ int virNetClientSetTLSSession(virNetClientPtr client,
 
     virNetSocketSetTLSSession(client->sock, client->tls);
 
-    for (;;) {
+    while (1) {
         ret = virNetTLSSessionHandshake(client->tls);
 
         if (ret < 0)
@@ -1258,7 +1258,7 @@ virNetClientIOHandleInput(virNetClientPtr client)
     /* Read as much data as is available, until we get
      * EAGAIN
      */
-    for (;;) {
+    while (1) {
         ssize_t ret;
 
         if (client->msg.nfds == 0) {
@@ -1463,7 +1463,7 @@ static int virNetClientIOEventLoop(virNetClientPtr client,
     fds[0].fd = virNetSocketGetFD(client->sock);
     fds[1].fd = client->wakeupReadFD;
 
-    for (;;) {
+    while (1) {
         char ignore;
         sigset_t oldmask, blockedsigs;
         int timeout = -1;

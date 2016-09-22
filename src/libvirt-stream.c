@@ -349,7 +349,7 @@ virStreamSendAll(virStreamPtr stream,
     if (VIR_ALLOC_N(bytes, want) < 0)
         goto cleanup;
 
-    for (;;) {
+    while (1) {
         int got, offset = 0;
         got = (handler)(stream, bytes, want, opaque);
         if (got < 0) {
@@ -443,7 +443,7 @@ virStreamRecvAll(virStreamPtr stream,
     if (VIR_ALLOC_N(bytes, want) < 0)
         goto cleanup;
 
-    for (;;) {
+    while (1) {
         int got, offset = 0;
         got = virStreamRecv(stream, bytes, want);
         if (got < 0)

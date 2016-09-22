@@ -4055,7 +4055,7 @@ remoteAuthSASL(virConnectPtr conn, struct private_data *priv,
     /* Loop-the-loop...
      * Even if the server has completed, the client must *always* do at least one step
      * in this loop to verify the server isn't lying about something. Mutual auth */
-    for (;;) {
+    while (1) {
         if ((err = virNetSASLSessionClientStep(sasl,
                                                serverin,
                                                serverinlen,

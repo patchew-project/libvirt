@@ -1269,7 +1269,7 @@ saferead_lim(int fd, size_t max_len, size_t *length)
     size_t size = 0;
     int save_errno;
 
-    for (;;) {
+    while (1) {
         int count;
         int requested;
 

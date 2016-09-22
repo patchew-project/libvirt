@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
     fprintf(stderr, "BEGIN STDERR\n");
     fflush(stderr);
 
-    for (;;) {
+    while (1) {
         got = read(STDIN_FILENO, buf, sizeof(buf));
         if (got < 0)
             goto cleanup;

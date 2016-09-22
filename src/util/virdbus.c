@@ -627,7 +627,7 @@ virDBusMessageIterEncode(DBusMessageIter *rootiter,
     narray = (size_t)-1;
     nstruct = strlen(types);
 
-    for (;;) {
+    while (1) {
         const char *t;
 
         VIR_DEBUG("Loop nstack=%zu narray=%zd nstruct=%zu types='%s'",
@@ -904,7 +904,7 @@ virDBusMessageIterDecode(DBusMessageIter *rootiter,
     narray = (size_t)-1;
     nstruct = strlen(types);
 
-    for (;;) {
+    while (1) {
         const char *t;
         bool advanceiter = true;
 

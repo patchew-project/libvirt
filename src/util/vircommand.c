@@ -2033,7 +2033,7 @@ virCommandProcessIO(virCommandPtr cmd)
         goto cleanup;
     ret = -1;
 
-    for (;;) {
+    while (1) {
         size_t i;
         struct pollfd fds[3];
         int nfds = 0;

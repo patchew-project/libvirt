@@ -187,7 +187,7 @@ phypExec(LIBSSH2_SESSION *session, const char *cmd, int *exit_status,
     if (rc != 0)
         goto err;
 
-    for (;;) {
+    while (1) {
         /* loop until we block */
         do {
             rc = libssh2_channel_read(channel, buffer, buffer_size);

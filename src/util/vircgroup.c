@@ -1587,7 +1587,7 @@ virCgroupNewMachineSystemd(const char *name,
         goto cleanup;
 
 
-    for (;;) {
+    while (1) {
         virCgroupPtr tmp;
         char *t = strchr(offset + 1, '/');
         if (t)
