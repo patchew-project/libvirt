@@ -3743,31 +3743,31 @@ typedef void (*virConnectDomainEventJobCompletedCallback)(virConnectPtr conn,
 /**
  * VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_BYTES_SEC_MAX:
  *
- * Macro represents the total throughput limit in maximum bytes per second,
- * as VIR_TYPED_PARAM_ULLONG.
+ * Macro represents the total throughput limit during bursts in
+ * maximum bytes per second, as VIR_TYPED_PARAM_ULLONG.
  */
 # define VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_BYTES_SEC_MAX "blkdeviotune.total_bytes_sec_max"
 
 /**
  * VIR_DOMAIN_TUNABLE_BLKDEV_READ_BYTES_SEC_MAX:
  *
- * Macro represents the read throughput limit in maximum bytes per second,
- * as VIR_TYPED_PARAM_ULLONG.
+ * Macro represents the read throughput limit during bursts in
+ * maximum bytes per second, as VIR_TYPED_PARAM_ULLONG.
  */
 # define VIR_DOMAIN_TUNABLE_BLKDEV_READ_BYTES_SEC_MAX "blkdeviotune.read_bytes_sec_max"
 
 /**
  * VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_BYTES_SEC_MAX:
  *
- * Macro represents the write throughput limit in maximum bytes per second,
- * as VIR_TYPED_PARAM_ULLONG.
+ * Macro represents the write throughput limit during bursts in
+ * maximum bytes per second, as VIR_TYPED_PARAM_ULLONG.
  */
 # define VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_BYTES_SEC_MAX "blkdeviotune.write_bytes_sec_max"
 
 /**
  * VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_IOPS_SEC_MAX:
  *
- * Macro represents the total maximum I/O operations per second,
+ * Macro represents the total maximum I/O operations per second during bursts,
  * as VIR_TYPED_PARAM_ULLONG.
  */
 # define VIR_DOMAIN_TUNABLE_BLKDEV_TOTAL_IOPS_SEC_MAX "blkdeviotune.total_iops_sec_max"
@@ -3775,7 +3775,7 @@ typedef void (*virConnectDomainEventJobCompletedCallback)(virConnectPtr conn,
 /**
  * VIR_DOMAIN_TUNABLE_BLKDEV_READ_IOPS_SEC_MAX:
  *
- * Macro represents the read maximum I/O operations per second,
+ * Macro represents the read maximum I/O operations per second during bursts,
  * as VIR_TYPED_PARAM_ULLONG.
  */
 # define VIR_DOMAIN_TUNABLE_BLKDEV_READ_IOPS_SEC_MAX "blkdeviotune.read_iops_sec_max"
@@ -3783,7 +3783,7 @@ typedef void (*virConnectDomainEventJobCompletedCallback)(virConnectPtr conn,
 /**
  * VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_IOPS_SEC_MAX:
  *
- * Macro represents the write maximum I/O operations per second,
+ * Macro represents the write maximum I/O operations per second during bursts,
  * as VIR_TYPED_PARAM_ULLONG.
  */
 # define VIR_DOMAIN_TUNABLE_BLKDEV_WRITE_IOPS_SEC_MAX "blkdeviotune.write_iops_sec_max"
