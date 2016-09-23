@@ -8254,8 +8254,13 @@ static int getSignalNumber(vshControl *ctl, const char *signame)
     for (i = 0; signame[i]; i++)
         lower[i] = c_tolower(signame[i]);
 
+    if (STRPREFIX(lower, "-"))
+        lower += 1;
+
     if (virStrToLong_i(lower, NULL, 10, &signum) >= 0)
         goto cleanup;
+
+    lower = tmp;
 
     if (STRPREFIX(lower, "sig_"))
         lower += 4;
