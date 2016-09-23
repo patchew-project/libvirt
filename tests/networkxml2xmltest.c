@@ -126,6 +126,7 @@ mymain(void)
     DO_TEST("dhcp6host-routed-network");
     DO_TEST("empty-allow-ipv6");
     DO_TEST("isolated-network");
+    DO_TEST("isolated-network-with-lease-time");
     DO_TEST("routed-network");
     DO_TEST("routed-network-no-dns");
     DO_TEST_PARSE_ERROR("routed-network-no-dns-extra-elements");

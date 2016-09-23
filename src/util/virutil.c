@@ -275,6 +275,76 @@ virHexToBin(unsigned char c)
     }
 }
 
+/**
+ * virScaleTime:
+ * @value: pointer to the integer which is supposed to hold value
+ * @unit: pointer to the string holding the unit
+ * @scale: integer holding the value of scale
+ * @limit: upper limit on scaled value
+ *
+ * Scale an integer @value in-place by an optional case-insensitive @unit,
+ * defaulting to @scale if @unit is NULL or empty. Recognized units include
+ * (w)eeks, (d)ays, (h)ours, (m)inutes and (s)econds. Ensure that the result
+ * does not exceed @limit.  Return 0 on success, -1 with error message raised
+ * on failure.
+ */
+int
+virScaleTime(long long *value, const char *unit,
+             long long scale, long long limit)
+{
+    size_t i;
+    static char const* const allowed_units[] = {"s", "m", "h", "d", "w",
+        "seconds", "minutes", "hours", "days", "weeks"};
+
+    size_t n_allowed_units = ARRAY_CARDINALITY(allowed_units);
+
+    if (!unit || !*unit) {
+        if (!scale) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Invalid scale %lld"), scale);
+            return -1;
+        }
+        unit = "";
+    } else {
+        for (i = 0; i < n_allowed_units; i++) {
+            if (STREQ(unit, allowed_units[i])) {
+                switch (*unit) {
+                case 'w':
+                    scale *= 7;
+                    /* fall through */
+                case 'd':
+                    scale *= 24;
+                    /* fall through */
+                case 'h':
+                    scale *= 60;
+                    /* fall through */
+                case 'm':
+                    scale *= 60;
+                    /* fall through */
+                case 's':
+                    break;
+                }
+                break;
+            }
+        }
+        if (i == n_allowed_units) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("Unknown time unit '%s'"), unit);
+            return -1;
+        }
+    }
+
+    if (*value && *value > (limit / scale)) {
+        virReportError(VIR_ERR_OVERFLOW, _("Value too large: %lld %s"),
+                       *value, unit);
+        return -1;
+    }
+
+    *value *= scale;
+    return 0;
+}
+
+
 /* Scale an integer VALUE in-place by an optional case-insensitive
  * SUFFIX, defaulting to SCALE if suffix is NULL or empty (scale is
  * typically 1 or 1024).  Recognized suffixes include 'b' or 'bytes',

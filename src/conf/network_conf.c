@@ -1032,21 +1032,76 @@ virNetworkDHCPHostDefParseXML(const char *networkName,
 }
 
 static int
+virNetworkDHCPLeaseTimeParseXML(const char *networkName,
+                                virNetworkIPDefPtr def,
+                                xmlXPathContextPtr ctxt,
+                                xmlNodePtr node)
+{
+    int ret = -1;
+    int scale = 1;
+    xmlNodePtr save;
+    char *unit = NULL;
+    int leasetimeRV = 0;
+    long long leasetime;
+
+    save = ctxt->node;
+    ctxt->node = node;
+
+    leasetimeRV = virXPathLongLong("string(./text())", ctxt, &leasetime);
+    if (leasetimeRV == -2) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid long long value specified for leasetime "
+                         "in definition of network '%s'"),
+                       networkName);
+        goto cleanup;
+    } else {
+        if (leasetime < 0) {
+            leasetime = -1;       /* infinite */
+        } else {
+            unit = virXPathString("string(./@unit)", ctxt);
+            if (virScaleTime(&leasetime, unit, scale,
+                             VIR_NETWORK_DHCP_LEASE_TIME_MAX) < 0) {
+                // let virScaleTime() report the appropriate error
+                goto cleanup;
+            }
+        }
+    }
+
+    def->leasetime = leasetime;
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(unit);
+    ctxt->node = save;
+    return ret;
+}
+
+static int
 virNetworkDHCPDefParseXML(const char *networkName,
                           xmlNodePtr node,
+                          xmlXPathContextPtr ctxt,
                           virNetworkIPDefPtr def)
 {
     int ret = -1;
-    xmlNodePtr cur;
+    xmlNodePtr cur, save;
     virSocketAddrRange range;
     virNetworkDHCPHostDef host;
 
     memset(&range, 0, sizeof(range));
     memset(&host, 0, sizeof(host));
 
+    save = ctxt->node;
+    ctxt->node = node;
+
     cur = node->children;
     while (cur != NULL) {
         if (cur->type == XML_ELEMENT_NODE &&
+            xmlStrEqual(cur->name, BAD_CAST "leasetime")) {
+
+            if (virNetworkDHCPLeaseTimeParseXML(networkName, def, ctxt, cur) < 0)
+                goto cleanup;
+
+        } else if (cur->type == XML_ELEMENT_NODE &&
             xmlStrEqual(cur->name, BAD_CAST "range")) {
 
             if (virSocketAddrRangeParseXML(networkName, def, cur, &range) < 0)
@@ -1095,6 +1150,7 @@ virNetworkDHCPDefParseXML(const char *networkName,
     ret = 0;
  cleanup:
     virNetworkDHCPHostDefClear(&host);
+    ctxt->node = save;
     return ret;
 }
 
@@ -1607,7 +1663,7 @@ virNetworkIPDefParseXML(const char *networkName,
     while (cur != NULL) {
         if (cur->type == XML_ELEMENT_NODE &&
             xmlStrEqual(cur->name, BAD_CAST "dhcp")) {
-            if (virNetworkDHCPDefParseXML(networkName, cur, def) < 0)
+            if (virNetworkDHCPDefParseXML(networkName, cur, ctxt, def) < 0)
                 goto cleanup;
         } else if (cur->type == XML_ELEMENT_NODE &&
                    xmlStrEqual(cur->name, BAD_CAST "tftp")) {
@@ -2674,6 +2730,13 @@ virNetworkIPDefFormat(virBufferPtr buf,
         size_t i;
         virBufferAddLit(buf, "<dhcp>\n");
         virBufferAdjustIndent(buf, 2);
+
+        if (def->leasetime) {
+            virBufferAddLit(buf, "<leasetime");
+            virBufferAsprintf(buf, " unit='seconds'>%lld",
+                              def->leasetime);
+            virBufferAddLit(buf, "</leasetime>\n");
+        }
 
         for (i = 0; i < def->nranges; i++) {
             char *saddr = virSocketAddrFormat(&def->ranges[i].start);

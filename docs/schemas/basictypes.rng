@@ -13,6 +13,12 @@
       <param name='pattern'>[0-9]+</param>
     </data>
   </define>
+  <!-- Our long doesn"t allow a leading "+" in its lexical form -->
+  <define name='long'>
+    <data type='long'>
+      <param name='pattern'>-?[0-9]+</param>
+    </data>
+  </define>
 
   <define name='hexuint'>
     <data type='string'>
@@ -281,6 +287,20 @@
       </attribute>
     </optional>
     <ref name='unsignedLong'/>
+  </define>
+
+  <define name='timeUnit'>
+    <data type='string'>
+      <param name='pattern'>(seconds|minutes|hours|days|weeks|s|m|h|d|w)</param>
+    </data>
+  </define>
+  <define name='scaledTime'>
+    <optional>
+      <attribute name='timeUnit'>
+        <ref name='timeUnit'/>
+      </attribute>
+    </optional>
+    <ref name='long'/>
   </define>
 
   <define name="pciDomain">

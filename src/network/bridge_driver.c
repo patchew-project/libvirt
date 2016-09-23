@@ -1222,6 +1222,14 @@ networkDnsmasqConfContents(virNetworkObjPtr network,
                               saddr, eaddr);
             if (VIR_SOCKET_ADDR_IS_FAMILY(&ipdef->address, AF_INET6))
                 virBufferAsprintf(&configbuf, ",%d", prefix);
+
+            if (ipdef->leasetime) {
+                if (ipdef->leasetime == -1)
+                    virBufferAddLit(&configbuf, ",infinite");
+                else
+                    virBufferAsprintf(&configbuf, ",%lld", ipdef->leasetime);
+            }
+
             virBufferAddLit(&configbuf, "\n");
 
             VIR_FREE(saddr);

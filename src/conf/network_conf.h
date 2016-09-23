@@ -26,6 +26,15 @@
 
 # define DNS_RECORD_LENGTH_SRV  (512 - 30)  /* Limit minus overhead as mentioned in RFC-2782 */
 
+/**
+ * VIR_NETWORK_DHCP_LEASE_TIME_MAX:
+ *
+ * Macro providing the upper limit on DHCP Lease Time (in seconds).
+ * Libvirt supports only dnsmasq as of now, and it stores the lease
+ * time in an unsigned int.
+ */
+# define VIR_NETWORK_DHCP_LEASE_TIME_MAX UINT_MAX
+
 # include <libxml/parser.h>
 # include <libxml/tree.h>
 # include <libxml/xpath.h>
@@ -166,6 +175,8 @@ struct _virNetworkIPDef {
 
     size_t nhosts;              /* Zero or more dhcp hosts */
     virNetworkDHCPHostDefPtr hosts;
+
+    long long leasetime;        /* DHCP lease time for all ranges */
 
     char *tftproot;
     char *bootfile;

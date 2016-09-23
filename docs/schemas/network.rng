@@ -337,9 +337,15 @@
               </element>
             </optional>
             <optional>
-              <!-- Define the range(s) of IP addresses that the DHCP
-                   server should hand out -->
               <element name="dhcp">
+                <optional>
+                  <element name="leasetime">
+                    <ref name="scaledTime"/>
+                    <attribute name="unit"><ref name="timeUnit"/></attribute>
+                  </element>
+                </optional>
+                <!-- Define the range(s) of IP addresses that the DHCP
+                     server should hand out -->
                 <zeroOrMore>
                   <element name="range">
                     <attribute name="start"><ref name="ipAddr"/></attribute>

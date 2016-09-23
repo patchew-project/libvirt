@@ -112,6 +112,7 @@ mymain(void)
     } while (0)
 
     DO_TEST("isolated-network", restricted);
+    DO_TEST("isolated-network-with-lease-time", dhcpv6);
     DO_TEST("netboot-network", restricted);
     DO_TEST("netboot-proxy-network", restricted);
     DO_TEST("nat-network-dns-srv-record-minimal", restricted);
