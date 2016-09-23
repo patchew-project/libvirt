@@ -2561,7 +2561,8 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
                              const virDomainDef *def,
                              virCapsPtr caps,
                              unsigned int parseFlags,
-                             void *opaque)
+                             void *opaque,
+                             void *parseOpaque ATTRIBUTE_UNUSED)
 {
     virQEMUDriverPtr driver = opaque;
     virQEMUCapsPtr qemuCaps = NULL;
