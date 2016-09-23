@@ -24682,7 +24682,8 @@ virDomainDefCopy(virDomainDefPtr src,
     virDomainDefPtr ret;
     unsigned int format_flags = VIR_DOMAIN_DEF_FORMAT_SECURE;
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_INACTIVE |
-                               VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE;
+                               VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE |
+                               VIR_DOMAIN_DEF_PARSE_SKIP_POST_PARSE;
 
     if (migratable)
         format_flags |= VIR_DOMAIN_DEF_FORMAT_INACTIVE | VIR_DOMAIN_DEF_FORMAT_MIGRATABLE;
@@ -25169,7 +25170,8 @@ virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
     xmlStr = virBufferContentAndReset(&buf);
     ret = virDomainDeviceDefParse(xmlStr, def, caps, xmlopt,
                                   VIR_DOMAIN_DEF_PARSE_INACTIVE |
-                                  VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE);
+                                  VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE |
+                                  VIR_DOMAIN_DEF_PARSE_SKIP_POST_PARSE);
 
  cleanup:
     VIR_FREE(xmlStr);
