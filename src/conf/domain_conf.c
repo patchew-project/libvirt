@@ -7127,6 +7127,13 @@ virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
         virReportError(VIR_ERR_XML_ERROR,                                      \
                        _("disk iotune field '%s' must be an integer"), #val);  \
         return -1;                                                             \
+    }                                                                          \
+    if (virXPathULongLong("string(./iotune/" #val "_max)",                     \
+                          ctxt, &def->blkdeviotune.val##_max) == -2) {         \
+        virReportError(VIR_ERR_XML_ERROR,                                      \
+                       _("disk iotune field '%s_max' must be an integer"),     \
+                       #val);                                                  \
+        return -1;                                                             \
     }
 
 static int
@@ -7140,14 +7147,13 @@ virDomainDiskDefIotuneParse(virDomainDiskDefPtr def,
     PARSE_IOTUNE(read_iops_sec);
     PARSE_IOTUNE(write_iops_sec);
 
-    PARSE_IOTUNE(total_bytes_sec_max);
-    PARSE_IOTUNE(read_bytes_sec_max);
-    PARSE_IOTUNE(write_bytes_sec_max);
-    PARSE_IOTUNE(total_iops_sec_max);
-    PARSE_IOTUNE(read_iops_sec_max);
-    PARSE_IOTUNE(write_iops_sec_max);
-
-    PARSE_IOTUNE(size_iops_sec);
+    if (virXPathULongLong("string(./iotune/size_iops_sec)",
+                          ctxt, &def->blkdeviotune.size_iops_sec) == -2) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("disk iotune field 'size_iops_sec' must be "
+                         "an integer"));
+        return -1;
+    }
 
     if ((def->blkdeviotune.total_bytes_sec &&
          def->blkdeviotune.read_bytes_sec) ||
