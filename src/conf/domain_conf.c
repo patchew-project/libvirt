@@ -7134,6 +7134,21 @@ virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
                        _("disk iotune field '%s_max' must be an integer"),     \
                        #val);                                                  \
         return -1;                                                             \
+    }                                                                          \
+    if (virXPathULongLong("string(./iotune/" #val "_max_length)",              \
+                          ctxt, &def->blkdeviotune.val##_max_length) == -2) {  \
+        virReportError(VIR_ERR_XML_ERROR,                                      \
+                       _("disk iotune field '%s_max_length' must be "          \
+                         "an integer"), #val);                                 \
+        return -1;                                                             \
+    }
+
+#define CHECK_IOTUNE_MAX_LENGTH(val)                                           \
+    if (def->blkdeviotune.val##_length && !def->blkdeviotune.val) {            \
+        virReportError(VIR_ERR_XML_ERROR,                                      \
+                       _("disk iotune '%s'_length cannot be set unless "       \
+                         "disk iotune '%s' is also set"), #val, #val);         \
+        return -1;                                                             \
     }
 
 static int
@@ -7154,6 +7169,13 @@ virDomainDiskDefIotuneParse(virDomainDiskDefPtr def,
                          "an integer"));
         return -1;
     }
+
+    //PARSE_IOTUNE(total_bytes_sec_max_length);
+    //PARSE_IOTUNE(read_bytes_sec_max_length);
+    //PARSE_IOTUNE(write_bytes_sec_max_length);
+    //PARSE_IOTUNE(total_iops_sec_max_length);
+    //PARSE_IOTUNE(read_iops_sec_max_length);
+    //PARSE_IOTUNE(write_iops_sec_max_length);
 
     if ((def->blkdeviotune.total_bytes_sec &&
          def->blkdeviotune.read_bytes_sec) ||
@@ -7195,8 +7217,16 @@ virDomainDiskDefIotuneParse(virDomainDiskDefPtr def,
         return -1;
     }
 
+    CHECK_IOTUNE_MAX_LENGTH(total_bytes_sec_max);
+    CHECK_IOTUNE_MAX_LENGTH(read_bytes_sec_max);
+    CHECK_IOTUNE_MAX_LENGTH(write_bytes_sec_max);
+    CHECK_IOTUNE_MAX_LENGTH(total_iops_sec_max);
+    CHECK_IOTUNE_MAX_LENGTH(read_iops_sec_max);
+    CHECK_IOTUNE_MAX_LENGTH(write_iops_sec_max);
+
     return 0;
 }
+#undef CHECK_IOTUNE_MAX_LENGTH
 #undef PARSE_IOTUNE
 
 
@@ -20257,7 +20287,13 @@ virDomainDiskDefFormat(virBufferPtr buf,
         def->blkdeviotune.total_iops_sec_max ||
         def->blkdeviotune.read_iops_sec_max ||
         def->blkdeviotune.write_iops_sec_max ||
-        def->blkdeviotune.size_iops_sec) {
+        def->blkdeviotune.size_iops_sec ||
+        def->blkdeviotune.total_bytes_sec_max_length ||
+        def->blkdeviotune.read_bytes_sec_max_length ||
+        def->blkdeviotune.write_bytes_sec_max_length ||
+        def->blkdeviotune.total_iops_sec_max_length ||
+        def->blkdeviotune.read_iops_sec_max_length ||
+        def->blkdeviotune.write_iops_sec_max_length) {
         virBufferAddLit(buf, "<iotune>\n");
         virBufferAdjustIndent(buf, 2);
 
@@ -20279,6 +20315,13 @@ virDomainDiskDefFormat(virBufferPtr buf,
             virBufferAsprintf(buf, "<size_iops_sec>%llu</size_iops_sec>\n",
                               def->blkdeviotune.size_iops_sec);
         }
+
+        FORMAT_IOTUNE(total_bytes_sec_max_length);
+        FORMAT_IOTUNE(read_bytes_sec_max_length);
+        FORMAT_IOTUNE(write_bytes_sec_max_length);
+        FORMAT_IOTUNE(total_iops_sec_max_length);
+        FORMAT_IOTUNE(read_iops_sec_max_length);
+        FORMAT_IOTUNE(write_iops_sec_max_length);
 
         virBufferAdjustIndent(buf, -2);
         virBufferAddLit(buf, "</iotune>\n");
