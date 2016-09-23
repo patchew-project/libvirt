@@ -344,6 +344,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "query-hotpluggable-cpus",
 
               "virtio-net.rx_queue_size", /* 235 */
+              "drive-iotune-max-length",
     );
 
 
@@ -2852,6 +2853,7 @@ static struct virQEMUCapsCommandLineProps virQEMUCapsCommandLine[] = {
     { "name", "debug-threads", QEMU_CAPS_NAME_DEBUG_THREADS },
     { "name", "guest", QEMU_CAPS_NAME_GUEST },
     { "spice", "unix", QEMU_CAPS_SPICE_UNIX },
+    { "drive", "throttling.bps-total-max-length", QEMU_CAPS_DRIVE_IOTUNE_MAX_LENGTH },
 };
 
 static int
