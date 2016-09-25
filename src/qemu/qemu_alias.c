@@ -28,6 +28,7 @@
 #include "virlog.h"
 #include "virstring.h"
 #include "network/bridge_driver.h"
+#include "qemu_process.h"
 
 #define QEMU_DRIVE_HOST_PREFIX "drive-"
 
@@ -331,21 +332,47 @@ qemuAssignDeviceRNGAlias(virDomainDefPtr def,
     return 0;
 }
 
+/* Find the smallest available slot. */
+static int
+qemuGetSmallestSlotIdx(virDomainDefPtr def)
+{
+    size_t i, j;
+    int minidx = 0, idx;
 
+    for (i = 0; i < def->nmems; i++) {
+        if ((idx = qemuDomainDeviceAliasIndex(&def->mems[i]->info, "dimm")) != i) {
+            for (j = 0; j < def->nmems; j++) {
+                if ((idx = qemuDomainDeviceAliasIndex(&def->mems[j]->info, "dimm")) == i)
+                    break;
+            }
+
+            if (j >= def->nmems) {
+                minidx = i;
+                break;
+            }
+        }
+
+        if ((idx = qemuDomainDeviceAliasIndex(&def->mems[i]->info, "dimm")) >= minidx)
+            minidx = idx + 1;
+    }
+
+    return minidx;
+}
+
+/* If the slot is not mentioned then find the smallest slot(X) available
+   and assign alias as dimmX. */
 int
 qemuAssignDeviceMemoryAlias(virDomainDefPtr def,
                             virDomainMemoryDefPtr mem)
 {
-    size_t i;
-    int maxidx = 0;
-    int idx;
+    int minidx = 0;
 
-    for (i = 0; i < def->nmems; i++) {
-        if ((idx = qemuDomainDeviceAliasIndex(&def->mems[i]->info, "dimm")) >= maxidx)
-            maxidx = idx + 1;
-    }
+    if (mem->info.addr.dimm.base)
+        minidx = mem->info.addr.dimm.slot;
+    else
+        minidx = qemuGetSmallestSlotIdx(def);
 
-    if (virAsprintf(&mem->info.alias, "dimm%d", maxidx) < 0)
+    if (virAsprintf(&mem->info.alias, "dimm%d", minidx) < 0)
         return -1;
 
     return 0;
@@ -475,8 +502,12 @@ qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps)
             return -1;
     }
     for (i = 0; i < def->nmems; i++) {
-        if (virAsprintf(&def->mems[i]->info.alias, "dimm%zu", i) < 0)
-            return -1;
+        if (!def->mems[i]->info.addr.dimm.base) {
+            if (virAsprintf(&def->mems[i]->info.alias, "dimm%zu", i) < 0)
+                return -1;
+        } else if (virAsprintf(&def->mems[i]->info.alias, "dimm%d", def->mems[i]->info.addr.dimm.slot) < 0) {
+              return -1;
+        }
     }
 
     return 0;
