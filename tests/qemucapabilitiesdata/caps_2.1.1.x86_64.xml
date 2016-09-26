@@ -165,6 +165,9 @@
   <flag name='name-guest'/>
   <flag name='drive-detect-zeroes'/>
   <flag name='display'/>
+  <flag name='drive-cache.writeback'/>
+  <flag name='drive-cache.direct'/>
+  <flag name='drive-cache.no_flush'/>
   <version>2001001</version>
   <kvmVersion>0</kvmVersion>
   <package></package>

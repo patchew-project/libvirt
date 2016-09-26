@@ -378,6 +378,9 @@ typedef enum {
 
     /* 235 */
     QEMU_CAPS_VIRTIO_NET_RX_QUEUE_SIZE, /* virtio-net-*.rx_queue_size */
+    QEMU_CAPS_DRIVE_CACHE_WRITEBACK, /* cache.writeback */
+    QEMU_CAPS_DRIVE_CACHE_DIRECT, /* cache.direct */
+    QEMU_CAPS_DRIVE_CACHE_NO_FLUSH, /* cache.no-flush */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;

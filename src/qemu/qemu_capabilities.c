@@ -344,6 +344,9 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "query-hotpluggable-cpus",
 
               "virtio-net.rx_queue_size", /* 235 */
+              "drive-cache.writeback",
+              "drive-cache.direct",
+              "drive-cache.no_flush",
     );
 
 
@@ -2836,6 +2839,9 @@ static struct virQEMUCapsCommandLineProps virQEMUCapsCommandLine[] = {
     { "machine", "vmport", QEMU_CAPS_MACHINE_VMPORT_OPT },
     { "drive", "discard", QEMU_CAPS_DRIVE_DISCARD },
     { "drive", "detect-zeroes", QEMU_CAPS_DRIVE_DETECT_ZEROES },
+    { "drive", "cache.writeback", QEMU_CAPS_DRIVE_CACHE_WRITEBACK },
+    { "drive", "cache.direct", QEMU_CAPS_DRIVE_CACHE_DIRECT },
+    { "drive", "cache.no-flush", QEMU_CAPS_DRIVE_CACHE_NO_FLUSH },
     { "realtime", "mlock", QEMU_CAPS_REALTIME_MLOCK },
     { "boot-opts", "strict", QEMU_CAPS_BOOT_STRICT },
     { "boot-opts", "reboot-timeout", QEMU_CAPS_REBOOT_TIMEOUT },
@@ -3756,8 +3762,12 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     if (qemuCaps->version >= 1005000)
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_CHARDEV_SPICEPORT);
 
-    if (qemuCaps->version >= 1006000)
+    if (qemuCaps->version >= 1006000) {
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_DEVICE_VIDEO_PRIMARY);
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_DRIVE_CACHE_WRITEBACK);
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_DRIVE_CACHE_DIRECT);
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_DRIVE_CACHE_NO_FLUSH);
+    }
 
     /* vmport option is supported v2.2.0 onwards */
     if (qemuCaps->version >= 2002000)

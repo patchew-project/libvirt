@@ -148,6 +148,9 @@
   <flag name='device-tray-moved-event'/>
   <flag name='nec-usb-xhci-ports'/>
   <flag name='display'/>
+  <flag name='drive-cache.writeback'/>
+  <flag name='drive-cache.direct'/>
+  <flag name='drive-cache.no_flush'/>
   <version>1006000</version>
   <kvmVersion>0</kvmVersion>
   <package></package>

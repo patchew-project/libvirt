@@ -190,6 +190,9 @@
   <flag name='intel-iommu'/>
   <flag name='smm'/>
   <flag name='virtio-pci-disable-legacy'/>
+  <flag name='drive-cache.writeback'/>
+  <flag name='drive-cache.direct'/>
+  <flag name='drive-cache.no_flush'/>
   <version>2005000</version>
   <kvmVersion>0</kvmVersion>
   <package></package>

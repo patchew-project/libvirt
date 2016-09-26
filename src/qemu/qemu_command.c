@@ -1635,6 +1635,36 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
         virBufferAddLit(&opt, ",cache=none");
     }
 
+    if (disk->cachetune.writeback > 0) {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_CACHE_WRITEBACK)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("disk cache writeback parameter is not "
+                             "supported by this QEMU"));
+        }
+        virBufferAsprintf(&opt, ",cache.writeback=%s",
+                          virTristateSwitchTypeToString(disk->cachetune.writeback));
+    }
+
+    if (disk->cachetune.direct > 0) {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_CACHE_DIRECT)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("disk cache direct parameter is not "
+                             "supported by this QEMU"));
+        }
+        virBufferAsprintf(&opt, ",cache.direct=%s",
+                          virTristateSwitchTypeToString(disk->cachetune.direct));
+    }
+
+    if (disk->cachetune.no_flush > 0) {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_CACHE_NO_FLUSH)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("disk cache no_flush parameter is not "
+                             "supported by this QEMU"));
+        }
+        virBufferAsprintf(&opt, ",cache.no-flush=%s",
+                          virTristateSwitchTypeToString(disk->cachetune.no_flush));
+    }
+
     if (disk->copy_on_read) {
         if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_COPY_ON_READ)) {
             virBufferAsprintf(&opt, ",copy-on-read=%s",
