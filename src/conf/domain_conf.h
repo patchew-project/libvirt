@@ -597,6 +597,13 @@ struct _virDomainDiskDef {
     char *vendor;
     char *product;
     int cachemode; /* enum virDomainDiskCache */
+
+    struct {
+        int writeback; /* enum virTristateSwitch */
+        int direct; /* enum virTristateSwitch */
+        int no_flush; /* enum virTristateSwitch */
+    } cachetune;
+
     int error_policy;  /* enum virDomainDiskErrorPolicy */
     int rerror_policy; /* enum virDomainDiskErrorPolicy */
     int iomode; /* enum virDomainDiskIo */

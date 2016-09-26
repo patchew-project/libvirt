@@ -1208,6 +1208,9 @@
         <ref name="geometry"/>
       </optional>
       <optional>
+        <ref name="cachetune"/>
+      </optional>
+      <optional>
         <ref name="diskBlockIo"/>
       </optional>
       <optional>
@@ -1592,6 +1595,25 @@
       </optional>
       <optional>
         <attribute name="removable">
+          <ref name="virOnOff"/>
+        </attribute>
+      </optional>
+    </element>
+  </define>
+  <define name="cachetune">
+    <element name="cachetune">
+      <optional>
+        <attribute name="writeback">
+          <ref name="virOnOff"/>
+        </attribute>
+      </optional>
+      <optional>
+        <attribute name="direct">
+          <ref name="virOnOff"/>
+        </attribute>
+      </optional>
+      <optional>
+        <attribute name="no_flush">
           <ref name="virOnOff"/>
         </attribute>
       </optional>

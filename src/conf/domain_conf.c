@@ -7405,6 +7405,52 @@ virDomainDiskDefParseValidate(const virDomainDiskDef *def)
     return 0;
 }
 
+static int
+virDomainDiskCachetuneDefFormat(virBufferPtr buf,
+                                virDomainDiskDefPtr def)
+{
+    const char *writeback = virTristateSwitchTypeToString(def->cachetune.writeback);
+    const char *direct = virTristateSwitchTypeToString(def->cachetune.direct);
+    const char *no_flush = virTristateSwitchTypeToString(def->cachetune.no_flush);
+
+    if (!writeback) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("unexpected disk cachetune writeback mode %d"),
+                       def->cachetune.writeback);
+        return -1;
+    }
+
+    if (!direct) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("unexpected disk cachetune direct mode %d"),
+                       def->cachetune.direct);
+        return -1;
+    }
+
+    if (!no_flush) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("unexpected disk cachetune no_flush mode %d"),
+                       def->cachetune.no_flush);
+        return -1;
+    }
+
+    if (def->cachetune.writeback ||
+        def->cachetune.direct ||
+        def->cachetune.no_flush) {
+        virBufferAddLit(buf, "<cachetune");
+
+        if (def->cachetune.writeback)
+            virBufferAsprintf(buf, " writeback='%s'", writeback);
+        if (def->cachetune.direct)
+            virBufferAsprintf(buf, " direct='%s'", direct);
+        if (def->cachetune.no_flush)
+            virBufferAsprintf(buf, " no_flush='%s'", no_flush);
+
+        virBufferAddLit(buf, "/>\n");
+    }
+
+    return 0;
+}
 
 static int
 virDomainDiskDefDriverParseXML(virDomainDiskDefPtr def,
@@ -7521,6 +7567,45 @@ virDomainDiskDefDriverParseXML(virDomainDiskDefPtr def,
     return ret;
 }
 
+static int
+virDomainDiskDefCachetuneParse(virDomainDiskDefPtr def,
+                               xmlNodePtr cur,
+                               xmlXPathContextPtr ctxt ATTRIBUTE_UNUSED)
+{
+    char *tmp = NULL;
+    int ret = -1;
+
+    if ((tmp = virXMLPropString(cur, "writeback")) &&
+        (def->cachetune.writeback = virTristateSwitchTypeFromString(tmp)) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unknown disk cache writeback setting '%s'"), tmp);
+        goto cleanup;
+    }
+    VIR_FREE(tmp);
+
+    if ((tmp = virXMLPropString(cur, "direct")) &&
+        (def->cachetune.direct = virTristateSwitchTypeFromString(tmp)) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unknown disk cache direct setting '%s'"), tmp);
+        goto cleanup;
+    }
+    VIR_FREE(tmp);
+
+    if ((tmp = virXMLPropString(cur, "no_flush")) &&
+        (def->cachetune.no_flush = virTristateSwitchTypeFromString(tmp)) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unknown disk cache no_flush setting '%s'"), tmp);
+        goto cleanup;
+    }
+    VIR_FREE(tmp);
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(tmp);
+
+    return ret;
+}
 
 #define VENDOR_LEN  8
 #define PRODUCT_LEN 16
@@ -7738,6 +7823,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
             }
         } else if (xmlStrEqual(cur->name, BAD_CAST "boot")) {
             /* boot is parsed as part of virDomainDeviceInfoParseXML */
+        } else if (xmlStrEqual(cur->name, BAD_CAST "cachetune")) {
+            if (virDomainDiskDefCachetuneParse(def, cur, ctxt) < 0)
+                goto error;
         }
     }
 
@@ -20182,6 +20270,8 @@ virDomainDiskDefFormat(virBufferPtr buf,
 
     virDomainDiskGeometryDefFormat(buf, def);
     virDomainDiskBlockIoDefFormat(buf, def);
+    if (virDomainDiskCachetuneDefFormat(buf, def) < 0)
+        return -1;
 
     /* For now, mirroring is currently output-only: we only output it
      * for live domains, therefore we ignore it on input except for
