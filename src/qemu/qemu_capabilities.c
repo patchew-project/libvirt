@@ -4036,7 +4036,8 @@ virQEMUCapsNewForBinaryInternal(virCapsPtr caps,
             virQEMUCapsRememberCached(qemuCaps, cacheDir) < 0)
             goto error;
 
-        virQEMUCapsInitHostCPUModel(qemuCaps, &caps->host);
+        if (caps)
+            virQEMUCapsInitHostCPUModel(qemuCaps, &caps->host);
     }
 
  cleanup:
