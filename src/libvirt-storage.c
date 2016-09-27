@@ -233,7 +233,8 @@ virConnectNumOfDefinedStoragePools(virConnectPtr conn)
 
     virCheckConnectReturn(conn, -1);
 
-    if (conn->storageDriver && conn->storageDriver->connectNumOfDefinedStoragePools) {
+    if (conn->storageDriver &&
+        conn->storageDriver->connectNumOfDefinedStoragePools) {
         int ret;
         ret = conn->storageDriver->connectNumOfDefinedStoragePools(conn);
         if (ret < 0)
@@ -280,7 +281,8 @@ virConnectListDefinedStoragePools(virConnectPtr conn,
     virCheckNonNullArgGoto(names, error);
     virCheckNonNegativeArgGoto(maxnames, error);
 
-    if (conn->storageDriver && conn->storageDriver->connectListDefinedStoragePools) {
+    if (conn->storageDriver &&
+        conn->storageDriver->connectListDefinedStoragePools) {
         int ret;
         ret = conn->storageDriver->connectListDefinedStoragePools(conn, names, maxnames);
         if (ret < 0)
@@ -332,7 +334,8 @@ virConnectFindStoragePoolSources(virConnectPtr conn,
     virCheckNonNullArgGoto(type, error);
     virCheckReadOnlyGoto(conn->flags, error);
 
-    if (conn->storageDriver && conn->storageDriver->connectFindStoragePoolSources) {
+    if (conn->storageDriver &&
+        conn->storageDriver->connectFindStoragePoolSources) {
         char *ret;
         ret = conn->storageDriver->connectFindStoragePoolSources(conn, type, srcSpec, flags);
         if (!ret)
@@ -485,7 +488,8 @@ virStoragePoolLookupByVolume(virStorageVolPtr vol)
 
     virCheckStorageVolReturn(vol, NULL);
 
-    if (vol->conn->storageDriver && vol->conn->storageDriver->storagePoolLookupByVolume) {
+    if (vol->conn->storageDriver &&
+        vol->conn->storageDriver->storagePoolLookupByVolume) {
         virStoragePoolPtr ret;
         ret = vol->conn->storageDriver->storagePoolLookupByVolume(vol);
         if (!ret)
@@ -1188,7 +1192,8 @@ virStoragePoolNumOfVolumes(virStoragePoolPtr pool)
 
     virCheckStoragePoolReturn(pool, -1);
 
-    if (pool->conn->storageDriver && pool->conn->storageDriver->storagePoolNumOfVolumes) {
+    if (pool->conn->storageDriver &&
+        pool->conn->storageDriver->storagePoolNumOfVolumes) {
         int ret;
         ret = pool->conn->storageDriver->storagePoolNumOfVolumes(pool);
         if (ret < 0)
@@ -1230,7 +1235,8 @@ virStoragePoolListVolumes(virStoragePoolPtr pool,
     virCheckNonNullArgGoto(names, error);
     virCheckNonNegativeArgGoto(maxnames, error);
 
-    if (pool->conn->storageDriver && pool->conn->storageDriver->storagePoolListVolumes) {
+    if (pool->conn->storageDriver &&
+        pool->conn->storageDriver->storagePoolListVolumes) {
         int ret;
         ret = pool->conn->storageDriver->storagePoolListVolumes(pool, names, maxnames);
         if (ret < 0)
@@ -1297,7 +1303,8 @@ virStorageVolLookupByName(virStoragePoolPtr pool,
     virCheckStoragePoolReturn(pool, NULL);
     virCheckNonNullArgGoto(name, error);
 
-    if (pool->conn->storageDriver && pool->conn->storageDriver->storageVolLookupByName) {
+    if (pool->conn->storageDriver &&
+        pool->conn->storageDriver->storageVolLookupByName) {
         virStorageVolPtr ret;
         ret = pool->conn->storageDriver->storageVolLookupByName(pool, name);
         if (!ret)
@@ -1471,7 +1478,8 @@ virStorageVolCreateXML(virStoragePoolPtr pool,
     virCheckNonNullArgGoto(xmlDesc, error);
     virCheckReadOnlyGoto(pool->conn->flags, error);
 
-    if (pool->conn->storageDriver && pool->conn->storageDriver->storageVolCreateXML) {
+    if (pool->conn->storageDriver &&
+        pool->conn->storageDriver->storageVolCreateXML) {
         virStorageVolPtr ret;
         ret = pool->conn->storageDriver->storageVolCreateXML(pool, xmlDesc, flags);
         if (!ret)
