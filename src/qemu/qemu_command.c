@@ -8456,6 +8456,39 @@ qemuBuildShmemDevLegacyStr(virDomainDefPtr def,
     return NULL;
 }
 
+char *
+qemuBuildShmemDevStr(virDomainDefPtr def,
+                     virDomainShmemDefPtr shmem,
+                     virQEMUCapsPtr qemuCaps)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    virBufferAsprintf(&buf, "%s", virDomainShmemModelTypeToString(shmem->model));
+    virBufferAsprintf(&buf, ",id=%s", shmem->info.alias);
+
+    if (shmem->server.enabled)
+        virBufferAsprintf(&buf, ",chardev=char%s", shmem->info.alias);
+    else
+        virBufferAsprintf(&buf, ",memdev=shmmem-%s", shmem->info.alias);
+
+    if (shmem->msi.vectors)
+        virBufferAsprintf(&buf, ",vectors=%u", shmem->msi.vectors);
+    if (shmem->msi.ioeventfd) {
+        virBufferAsprintf(&buf, ",ioeventfd=%s",
+                          virTristateSwitchTypeToString(shmem->msi.ioeventfd));
+    }
+
+    if (qemuBuildDeviceAddressStr(&buf, def, &shmem->info, qemuCaps) < 0) {
+        virBufferFreeAndReset(&buf);
+        return NULL;
+    }
+
+    if (virBufferCheckError(&buf) < 0)
+        return NULL;
+
+    return virBufferContentAndReset(&buf);
+}
+
 static char *
 qemuBuildShmemBackendChrStr(virLogManagerPtr logManager,
                             virCommandPtr cmd,
@@ -8475,6 +8508,50 @@ qemuBuildShmemBackendChrStr(virLogManagerPtr logManager,
 
     return devstr;
 }
+
+
+virJSONValuePtr
+qemuBuildShmemBackendMemProps(virDomainShmemDefPtr shmem)
+{
+    char *mem_path = NULL;
+    virJSONValuePtr ret = NULL;
+
+    if (virAsprintf(&mem_path, "/dev/shm/%s", shmem->name) < 0)
+        return NULL;
+
+    virJSONValueObjectCreate(&ret,
+                             "s:mem-path", mem_path,
+                             "U:size", shmem->size,
+                             NULL);
+
+    VIR_FREE(mem_path);
+    return ret;
+}
+
+
+static char *
+qemuBuildShmemBackendMemStr(virDomainShmemDefPtr shmem)
+{
+    char *ret = NULL;
+    char *alias = NULL;
+    virJSONValuePtr props = qemuBuildShmemBackendMemProps(shmem);
+
+    if (!props)
+        return NULL;
+
+    if (virAsprintf(&alias, "shmmem-%s", shmem->info.alias) < 0)
+        goto cleanup;
+
+    ret = virQEMUBuildObjectCommandlineFromJSON("memory-backend-file",
+                                                alias,
+                                                props);
+ cleanup:
+    VIR_FREE(alias);
+    virJSONValueFree(props);
+
+    return ret;
+}
+
 
 static int
 qemuBuildShmemCommandLine(virLogManagerPtr logManager,
@@ -8518,10 +8595,15 @@ qemuBuildShmemCommandLine(virLogManagerPtr logManager,
         break;
 
     case VIR_DOMAIN_SHMEM_MODEL_IVSHMEM_PLAIN:
+        if (!(devstr = qemuBuildShmemBackendMemStr(shmem)))
+            return -1;
+
+        virCommandAddArgList(cmd, "-object", devstr, NULL);
+        VIR_FREE(devstr);
+
+        /* fall-through */
     case VIR_DOMAIN_SHMEM_MODEL_IVSHMEM_DOORBELL:
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("%s device is not supported with this QEMU binary"),
-                       virDomainShmemModelTypeToString(shmem->model));
+        devstr = qemuBuildShmemDevStr(def, shmem, qemuCaps);
         break;
 
     case VIR_DOMAIN_SHMEM_MODEL_LAST:
