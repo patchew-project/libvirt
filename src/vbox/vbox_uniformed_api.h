@@ -21,7 +21,7 @@
 
 # include "internal.h"
 
-/* This file may be used in three place. That is vbox_tmpl.c,
+/* This file may be used in three places. That is vbox_tmpl.c,
  * vbox_common.c and vbox_driver.c. The vboxUniformedAPI and some
  * types used for vboxUniformedAPI is defined here.
  *
@@ -29,23 +29,21 @@
  * architecture of those vbox structs(vboxObj, vboxSession,
  * pFuncs, vboxCallback and vboxQueue). The file should be included
  * after the currect vbox_CAPI_v*.h, then we can use the vbox structs
- * in vboxGlobalData. The vbox_tmpl.c should implement functions
+ * in vboxPrivate. The vbox_tmpl.c should implement functions
  * defined in vboxUniformedAPI.
  *
  * In vbox_driver.c, it is used to define the struct vboxUniformedAPI.
  * The vbox_driver.c collects vboxUniformedAPI for all versions.
  * Then vboxRegister calls the vboxRegisterUniformedAPI to register.
- * Note: In vbox_driver.c, the vbox structs in vboxGlobalData is
- * defined by vbox_CAPI_v2.2.h.
  *
  * The vbox_common.c, it is used to generate common codes for all vbox
- * versions. Bacause the same member varible's offset in a vbox struct
+ * versions. Bacause the same member variable's offset in a vbox struct
  * may change between different vbox versions. The vbox_common.c
- * shouldn't directly use struct's member varibles defined in
- * vbox_CAPI_v*.h. To make things safety, we include the
+ * shouldn't directly use struct's member variables defined in
+ * vbox_CAPI_v*.h. To make things safe, we include the
  * vbox_common.h in vbox_common.c. In this case, we treat structs
- * defined by vbox as a void*. The common codes don't concern about
- * the inside of this structs(actually, we can't, in the common level).
+ * defined by vbox as a void*. The common code is not concerned about
+ * the inside of those structs (actually, we can't, in the common level).
  * With the help of vboxUniformed API, we call VirtualBox's API and
  * implement the vbox driver in a high level.
  *
@@ -155,22 +153,22 @@ typedef struct {
 typedef struct {
     int (*Initialize)(vboxPrivate *data);
     void (*Uninitialize)(vboxPrivate *data);
-    void (*ComUnallocMem)(PCVBOXXPCOM pFuncs, void *pv);
-    void (*Utf16Free)(PCVBOXXPCOM pFuncs, PRUnichar *pwszString);
-    void (*Utf8Free)(PCVBOXXPCOM pFuncs, char *pszString);
-    int (*Utf16ToUtf8)(PCVBOXXPCOM pFuncs, const PRUnichar *pwszString, char **ppszString);
-    int (*Utf8ToUtf16)(PCVBOXXPCOM pFuncs, const char *pszString, PRUnichar **ppwszString);
+    void (*ComUnallocMem)(void *pv);
+    void (*Utf16Free)(PRUnichar *pwszString);
+    void (*Utf8Free)(char *pszString);
+    int (*Utf16ToUtf8)(const PRUnichar *pwszString, char **ppszString);
+    int (*Utf8ToUtf16)(const char *pszString, PRUnichar **ppwszString);
 } vboxUniformedPFN;
 
 /* Functions for vboxIID */
 typedef struct {
     void (*vboxIIDInitialize)(vboxIIDUnion *iidu);
-    void (*vboxIIDUnalloc)(vboxPrivate *data, vboxIIDUnion *iidu);
-    void (*vboxIIDToUUID)(vboxPrivate *data, vboxIIDUnion *iidu, unsigned char *uuid);
-    void (*vboxIIDFromUUID)(vboxPrivate *data, vboxIIDUnion *iidu, const unsigned char *uuid);
-    bool (*vboxIIDIsEqual)(vboxPrivate *data, vboxIIDUnion *iidu1, vboxIIDUnion *iidu2);
-    void (*vboxIIDFromArrayItem)(vboxPrivate *data, vboxIIDUnion *iidu, vboxArray *array, int idx);
-    void (*vboxIIDToUtf8)(vboxPrivate *data, vboxIIDUnion *iidu, char **utf8);
+    void (*vboxIIDUnalloc)(vboxIIDUnion *iidu);
+    void (*vboxIIDToUUID)(vboxIIDUnion *iidu, unsigned char *uuid);
+    void (*vboxIIDFromUUID)(vboxIIDUnion *iidu, const unsigned char *uuid);
+    bool (*vboxIIDIsEqual)(vboxIIDUnion *iidu1, vboxIIDUnion *iidu2);
+    void (*vboxIIDFromArrayItem)(vboxIIDUnion *iidu, vboxArray *array, int idx);
+    void (*vboxIIDToUtf8)(vboxIIDUnion *iidu, char **utf8);
     void (*DEBUGIID)(const char *msg, vboxIIDUnion *iidu);
 } vboxUniformedIID;
 
@@ -566,17 +564,17 @@ typedef struct {
     uint32_t XPCOMCVersion;
     /* vbox APIs */
     int (*initializeDomainEvent)(vboxPrivate *data);
-    void (*registerGlobalData)(vboxPrivate *data);
-    void (*detachDevices)(vboxPrivate *data, IMachine *machine, PRUnichar *hddcnameUtf16);
+    vboxGlobalData* (*registerGlobalData)(void);
+    void (*detachDevices)(IMachine *machine, PRUnichar *hddcnameUtf16);
     nsresult (*unregisterMachine)(vboxPrivate *data, vboxIIDUnion *iidu, IMachine **machine);
     void (*deleteConfig)(IMachine *machine);
     void (*vboxAttachDrivesOld)(virDomainDefPtr def, vboxPrivate *data, IMachine *machine);
     virDomainState (*vboxConvertState)(PRUint32 state);
-    void (*dumpIDEHDDsOld)(virDomainDefPtr def, vboxPrivate *data, IMachine *machine);
-    void (*dumpDVD)(virDomainDefPtr def, vboxPrivate *data, IMachine *machine);
+    void (*dumpIDEHDDsOld)(virDomainDefPtr def, IMachine *machine);
+    void (*dumpDVD)(virDomainDefPtr def, IMachine *machine);
     int (*attachDVD)(vboxPrivate *data, IMachine *machine, const char *src);
     int (*detachDVD)(IMachine *machine);
-    void (*dumpFloppy)(virDomainDefPtr def, vboxPrivate *data, IMachine *machine);
+    void (*dumpFloppy)(virDomainDefPtr def, IMachine *machine);
     int (*attachFloppy)(vboxPrivate *data, IMachine *machine, const char *src);
     int (*detachFloppy)(IMachine *machine);
     int (*snapshotRestore)(virDomainPtr dom, IMachine *machine, ISnapshot *snapshot);
@@ -613,7 +611,6 @@ typedef struct {
     uniformedMachineStateChecker machineStateChecker;
     /* vbox API features */
     bool domainEventCallbacks;
-    bool hasStaticGlobalData;
     bool getMachineForSession;
     bool detachDevicesExplicitly;
     bool chipsetType;

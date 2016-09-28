@@ -520,24 +520,12 @@ vboxDomainSave(virDomainPtr dom, const char *path ATTRIBUTE_UNUSED)
     return ret;
 }
 
-static void vboxDriverLock(vboxPrivate *data)
-{
-    virMutexLock(&data->lock);
-}
-
-static void vboxDriverUnlock(vboxPrivate *data)
-{
-    virMutexUnlock(&data->lock);
-}
-
 static int vboxConnectGetVersion(virConnectPtr conn, unsigned long *version)
 {
     vboxPrivate *data = conn->privateData;
     VIR_DEBUG("%s: in vboxGetVersion", conn->driver->name);
 
-    vboxDriverLock(data);
     *version = data->version;
-    vboxDriverUnlock(data);
 
     return 0;
 }
@@ -600,9 +588,7 @@ static char *vboxConnectGetCapabilities(virConnectPtr conn)
     if (!data->vboxObj)
         return ret;
 
-    vboxDriverLock(data);
     ret = virCapabilitiesFormatXML(data->caps);
-    vboxDriverUnlock(data);
 
     return ret;
 }
@@ -1712,7 +1698,7 @@ vboxAttachDisplay(virDomainDefPtr def, vboxPrivate *data, IMachine *machine)
 }
 
 static void
-vboxAttachUSB(virDomainDefPtr def, vboxPrivate *data, IMachine *machine)
+vboxAttachUSB(virDomainDefPtr def, IMachine *machine)
 {
     IUSBCommon *USBCommon = NULL;
     size_t i = 0;
@@ -1816,7 +1802,7 @@ vboxAttachUSB(virDomainDefPtr def, vboxPrivate *data, IMachine *machine)
 }
 
 static void
-vboxAttachSharedFolder(virDomainDefPtr def, vboxPrivate *data, IMachine *machine)
+vboxAttachSharedFolder(virDomainDefPtr def, IMachine *machine)
 {
     size_t i;
     PRUnichar *nameUtf16;
@@ -1957,8 +1943,8 @@ vboxDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags
     vboxAttachParallel(def, data, machine);
     vboxAttachVideo(def, machine);
     vboxAttachDisplay(def, data, machine);
-    vboxAttachUSB(def, data, machine);
-    vboxAttachSharedFolder(def, data, machine);
+    vboxAttachUSB(def, machine);
+    vboxAttachSharedFolder(def, machine);
 
     /* Save the machine settings made till now and close the
      * session. also free up the mchiid variable used.
@@ -2020,7 +2006,7 @@ detachDevices_common(vboxPrivate *data, vboxIIDUnion *iidu)
     if (NS_SUCCEEDED(rc)) {
         rc = gVBoxAPI.UISession.GetMachine(data->vboxSession, &machine);
         if (NS_SUCCEEDED(rc) && machine) {
-            gVBoxAPI.detachDevices(data, machine, hddcnameUtf16);
+            gVBoxAPI.detachDevices(machine, hddcnameUtf16);
             gVBoxAPI.UIMachine.SaveSettings(machine);
         }
         gVBoxAPI.UISession.Close(data->vboxSession);
@@ -2983,7 +2969,7 @@ static int vboxDomainGetMaxVcpus(virDomainPtr dom)
 }
 
 static void
-vboxHostDeviceGetXMLDesc(vboxPrivate *data, virDomainDefPtr def, IMachine *machine)
+vboxHostDeviceGetXMLDesc(virDomainDefPtr def, IMachine *machine)
 {
     IUSBCommon *USBCommon = NULL;
     PRBool enabled = PR_FALSE;
@@ -3408,7 +3394,7 @@ vboxDumpDisplay(virDomainDefPtr def, vboxPrivate *data, IMachine *machine)
 }
 
 static void
-vboxDumpSharedFolders(virDomainDefPtr def, vboxPrivate *data, IMachine *machine)
+vboxDumpSharedFolders(virDomainDefPtr def, IMachine *machine)
 {
     /* shared folders */
     vboxArray sharedFolders = VBOX_ARRAY_INITIALIZER;
@@ -3469,7 +3455,7 @@ vboxDumpSharedFolders(virDomainDefPtr def, vboxPrivate *data, IMachine *machine)
 }
 
 static void
-vboxDumpNetwork(virDomainDefPtr def, vboxPrivate *data, IMachine *machine, PRUint32 networkAdapterCount)
+vboxDumpNetwork(virDomainDefPtr def, IMachine *machine, PRUint32 networkAdapterCount)
 {
     PRUint32 netAdpIncCnt = 0;
     size_t i = 0;
@@ -3648,7 +3634,7 @@ vboxDumpAudio(virDomainDefPtr def, vboxPrivate *data ATTRIBUTE_UNUSED,
 }
 
 static void
-vboxDumpSerial(virDomainDefPtr def, vboxPrivate *data, IMachine *machine, PRUint32 serialPortCount)
+vboxDumpSerial(virDomainDefPtr def, IMachine *machine, PRUint32 serialPortCount)
 {
     PRUint32 serialPortIncCount = 0;
     size_t i = 0;
@@ -3736,7 +3722,7 @@ vboxDumpSerial(virDomainDefPtr def, vboxPrivate *data, IMachine *machine, PRUint
 }
 
 static void
-vboxDumpParallel(virDomainDefPtr def, vboxPrivate *data, IMachine *machine, PRUint32 parallelPortCount)
+vboxDumpParallel(virDomainDefPtr def, IMachine *machine, PRUint32 parallelPortCount)
 {
     PRUint32 parallelPortIncCount = 0;
     size_t i = 0;
@@ -3947,24 +3933,24 @@ static char *vboxDomainGetXMLDesc(virDomainPtr dom, unsigned int flags)
      * into the common code.
      */
     if (gVBoxAPI.oldMediumInterface)
-        gVBoxAPI.dumpIDEHDDsOld(def, data, machine);
+        gVBoxAPI.dumpIDEHDDsOld(def, machine);
     else
         vboxDumpIDEHDDsNew(def, data, machine);
 
-    vboxDumpSharedFolders(def, data, machine);
-    vboxDumpNetwork(def, data, machine, networkAdapterCount);
+    vboxDumpSharedFolders(def, machine);
+    vboxDumpNetwork(def, machine, networkAdapterCount);
     vboxDumpAudio(def, data, machine);
 
     if (gVBoxAPI.oldMediumInterface) {
-        gVBoxAPI.dumpDVD(def, data, machine);
-        gVBoxAPI.dumpFloppy(def, data, machine);
+        gVBoxAPI.dumpDVD(def, machine);
+        gVBoxAPI.dumpFloppy(def, machine);
     }
 
-    vboxDumpSerial(def, data, machine, serialPortCount);
-    vboxDumpParallel(def, data, machine, parallelPortCount);
+    vboxDumpSerial(def, machine, serialPortCount);
+    vboxDumpParallel(def, machine, parallelPortCount);
 
     /* dump USB devices/filters if active */
-    vboxHostDeviceGetXMLDesc(data, def, machine);
+    vboxHostDeviceGetXMLDesc(def, machine);
 
     ret = virDomainDefFormat(def, data->caps,
                              virDomainDefFormatConvertXMLFlags(flags));
@@ -4565,7 +4551,7 @@ vboxSnapshotRedefine(virDomainPtr dom,
                                _("Unable to get the read write medium id"));
                 goto cleanup;
             }
-            gVBoxAPI.UIID.vboxIIDToUtf8(data, &iid, &uuid);
+            gVBoxAPI.UIID.vboxIIDToUtf8(&iid, &uuid);
             vboxIIDUnalloc(&iid);
 
             rc = gVBoxAPI.UIMedium.GetFormat(readWriteMedium, &formatUtf);
@@ -4673,7 +4659,7 @@ vboxSnapshotRedefine(virDomainPtr dom,
                            _("Unable to get hard disk id"));
             goto cleanup;
         }
-        gVBoxAPI.UIID.vboxIIDToUtf8(data, &iid, &uuid);
+        gVBoxAPI.UIID.vboxIIDToUtf8(&iid, &uuid);
         vboxIIDUnalloc(&iid);
 
         rc = gVBoxAPI.UIMedium.GetFormat(readOnlyMedium, &formatUtf);
@@ -4704,7 +4690,7 @@ vboxSnapshotRedefine(virDomainPtr dom,
             VIR_FREE(uuid);
             goto cleanup;
         }
-        gVBoxAPI.UIID.vboxIIDToUtf8(data, &parentiid, &parentUuid);
+        gVBoxAPI.UIID.vboxIIDToUtf8(&parentiid, &parentUuid);
         vboxIIDUnalloc(&parentiid);
 
         rc = gVBoxAPI.UIMedium.Close(readOnlyMedium);
@@ -4988,7 +4974,7 @@ vboxSnapshotRedefine(virDomainPtr dom,
                 VIR_FREE(disk);
                 goto cleanup;
             }
-            gVBoxAPI.UIID.vboxIIDToUtf8(data, &iid, &uuid);
+            gVBoxAPI.UIID.vboxIIDToUtf8(&iid, &uuid);
             disk->uuid = uuid;
             vboxIIDUnalloc(&iid);
 
@@ -5001,7 +4987,7 @@ vboxSnapshotRedefine(virDomainPtr dom,
             }
 
             gVBoxAPI.UIMedium.GetId(parentDisk, &parentiid);
-            gVBoxAPI.UIID.vboxIIDToUtf8(data, &parentiid, &parentUuid);
+            gVBoxAPI.UIID.vboxIIDToUtf8(&parentiid, &parentUuid);
             vboxIIDUnalloc(&parentiid);
             if (virVBoxSnapshotConfAddHardDiskToMediaRegistry(disk,
                                            snapshotMachineDesc->mediaRegistry,
@@ -5086,7 +5072,7 @@ vboxSnapshotRedefine(virDomainPtr dom,
                                (unsigned)rc);
                 goto cleanup;
             }
-            gVBoxAPI.UIID.vboxIIDToUtf8(data, &parentiid, &parentUuid);
+            gVBoxAPI.UIID.vboxIIDToUtf8(&parentiid, &parentUuid);
             vboxIIDUnalloc(&parentiid);
             VBOX_UTF8_TO_UTF16("VDI", &formatUtf16);
 
@@ -5135,7 +5121,7 @@ vboxSnapshotRedefine(virDomainPtr dom,
                                (unsigned)rc);
                 goto cleanup;
             }
-            gVBoxAPI.UIID.vboxIIDToUtf8(data, &iid, &uuid);
+            gVBoxAPI.UIID.vboxIIDToUtf8(&iid, &uuid);
             disk->uuid = uuid;
             vboxIIDUnalloc(&iid);
 
@@ -5491,10 +5477,7 @@ vboxDomainSnapshotGetAll(virDomainPtr dom,
 }
 
 static ISnapshot *
-vboxDomainSnapshotGet(vboxPrivate *data,
-                      virDomainPtr dom,
-                      IMachine *machine,
-                      const char *name)
+vboxDomainSnapshotGet(virDomainPtr dom, IMachine *machine, const char *name)
 {
     ISnapshot **snapshots = NULL;
     ISnapshot *snapshot = NULL;
@@ -5569,7 +5552,7 @@ static int vboxSnapshotGetReadWriteDisks(virDomainSnapshotDefPtr def,
     if (openSessionForMachine(data, dom->uuid, &domiid, &machine, false) < 0)
         goto cleanup;
 
-    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, snapshot->name)))
+    if (!(snap = vboxDomainSnapshotGet(dom, machine, snapshot->name)))
         goto cleanup;
 
     rc = gVBoxAPI.UISnapshot.GetId(snap, &snapIid);
@@ -5579,7 +5562,7 @@ static int vboxSnapshotGetReadWriteDisks(virDomainSnapshotDefPtr def,
         goto cleanup;
     }
 
-    gVBoxAPI.UIID.vboxIIDToUtf8(data, &snapIid, &snapshotUuidStr);
+    gVBoxAPI.UIID.vboxIIDToUtf8(&snapIid, &snapshotUuidStr);
     vboxIIDUnalloc(&snapIid);
     rc = gVBoxAPI.UISnapshot.GetMachine(snap, &snapMachine);
     if (NS_FAILED(rc)) {
@@ -5789,7 +5772,7 @@ int vboxSnapshotGetReadOnlyDisks(virDomainSnapshotPtr snapshot,
     if (openSessionForMachine(data, dom->uuid, &domiid, &machine, false) < 0)
         goto cleanup;
 
-    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, snapshot->name)))
+    if (!(snap = vboxDomainSnapshotGet(dom, machine, snapshot->name)))
         goto cleanup;
 
     rc = gVBoxAPI.UISnapshot.GetMachine(snap, &snapMachine);
@@ -6006,7 +5989,7 @@ static char *vboxDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     if (openSessionForMachine(data, dom->uuid, &domiid, &machine, false) < 0)
         goto cleanup;
 
-    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, snapshot->name)))
+    if (!(snap = vboxDomainSnapshotGet(dom, machine, snapshot->name)))
         goto cleanup;
 
     if (VIR_ALLOC(def) < 0 || !(def->dom = virDomainDefNew()))
@@ -6269,7 +6252,7 @@ vboxDomainSnapshotLookupByName(virDomainPtr dom, const char *name,
     if (openSessionForMachine(data, dom->uuid, &iid, &machine, false) < 0)
         goto cleanup;
 
-    if (!(snapshot = vboxDomainSnapshotGet(data, dom, machine, name)))
+    if (!(snapshot = vboxDomainSnapshotGet(dom, machine, name)))
         goto cleanup;
 
     ret = virGetDomainSnapshot(dom, name);
@@ -6340,7 +6323,7 @@ vboxDomainSnapshotGetParent(virDomainSnapshotPtr snapshot,
     if (openSessionForMachine(data, dom->uuid, &iid, &machine, false) < 0)
         goto cleanup;
 
-    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, snapshot->name)))
+    if (!(snap = vboxDomainSnapshotGet(dom, machine, snapshot->name)))
         goto cleanup;
 
     rc = gVBoxAPI.UISnapshot.GetParent(snap, &parent);
@@ -6461,7 +6444,7 @@ static int vboxDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot,
     if (openSessionForMachine(data, dom->uuid, &iid, &machine, false) < 0)
         goto cleanup;
 
-    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, snapshot->name)))
+    if (!(snap = vboxDomainSnapshotGet(dom, machine, snapshot->name)))
         goto cleanup;
 
     rc = gVBoxAPI.UIMachine.GetCurrentSnapshot(machine, &current);
@@ -6519,7 +6502,7 @@ static int vboxDomainSnapshotHasMetadata(virDomainSnapshotPtr snapshot,
         goto cleanup;
 
     /* Check that snapshot exists.  If so, there is no metadata.  */
-    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, snapshot->name)))
+    if (!(snap = vboxDomainSnapshotGet(dom, machine, snapshot->name)))
         goto cleanup;
 
     ret = 0;
@@ -6553,7 +6536,7 @@ static int vboxDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     if (openSessionForMachine(data, dom->uuid, &domiid, &machine, false) < 0)
         goto cleanup;
 
-    newSnapshot = vboxDomainSnapshotGet(data, dom, machine, snapshot->name);
+    newSnapshot = vboxDomainSnapshotGet(dom, machine, snapshot->name);
     if (!newSnapshot)
         goto cleanup;
 
@@ -6605,9 +6588,7 @@ static int vboxDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
 }
 
 static int
-vboxDomainSnapshotDeleteSingle(vboxPrivate *data,
-                               IConsole *console,
-                               ISnapshot *snapshot)
+vboxDomainSnapshotDeleteSingle(IConsole *console, ISnapshot *snapshot)
 {
     IProgress *progress = NULL;
     vboxIIDUnion iid;
@@ -6674,7 +6655,7 @@ vboxDomainSnapshotDeleteTree(vboxPrivate *data,
             goto cleanup;
     }
 
-    ret = vboxDomainSnapshotDeleteSingle(data, console, snapshot);
+    ret = vboxDomainSnapshotDeleteSingle(console, snapshot);
 
  cleanup:
     gVBoxAPI.UArray.vboxArrayRelease(&children);
@@ -6842,7 +6823,7 @@ vboxDomainSnapshotDeleteMetadataOnly(virDomainSnapshotPtr snapshot)
                                    (unsigned)rc);
                     goto cleanup;
                 }
-                gVBoxAPI.UIID.vboxIIDToUtf8(data, &parentiid, &parentUuid);
+                gVBoxAPI.UIID.vboxIIDToUtf8(&parentiid, &parentUuid);
                 vboxIIDUnalloc(&parentiid);
                 VBOX_UTF16_FREE(locationUtf16);
                 VBOX_UTF8_TO_UTF16("VDI", &formatUtf16);
@@ -6893,7 +6874,7 @@ vboxDomainSnapshotDeleteMetadataOnly(virDomainSnapshotPtr snapshot)
                     VIR_FREE(disk);
                     goto cleanup;
                 }
-                gVBoxAPI.UIID.vboxIIDToUtf8(data, &iid, &uuid);
+                gVBoxAPI.UIID.vboxIIDToUtf8(&iid, &uuid);
                 disk->uuid = uuid;
                 vboxIIDUnalloc(&iid);
 
@@ -7155,7 +7136,7 @@ static int vboxDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
     if (openSessionForMachine(data, dom->uuid, &domiid, &machine, false) < 0)
         goto cleanup;
 
-    snap = vboxDomainSnapshotGet(data, dom, machine, snapshot->name);
+    snap = vboxDomainSnapshotGet(dom, machine, snapshot->name);
     if (!snap)
         goto cleanup;
 
@@ -7206,7 +7187,7 @@ static int vboxDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
     if (flags & VIR_DOMAIN_SNAPSHOT_DELETE_CHILDREN)
         ret = vboxDomainSnapshotDeleteTree(data, console, snap);
     else
-        ret = vboxDomainSnapshotDeleteSingle(data, console, snap);
+        ret = vboxDomainSnapshotDeleteSingle(console, snap);
 
  cleanup:
     VBOX_RELEASE(console);

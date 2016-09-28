@@ -110,7 +110,7 @@ static vboxGlobalData *g_pVBoxGlobalData;
 #define VBOX_UTF16_FREE(arg)                                            \
     do {                                                                \
         if (arg) {                                                      \
-            data->pFuncs->pfnUtf16Free(arg);                            \
+            g_pVBoxGlobalData->pFuncs->pfnUtf16Free(arg);                            \
             (arg) = NULL;                                               \
         }                                                               \
     } while (0)
@@ -118,13 +118,13 @@ static vboxGlobalData *g_pVBoxGlobalData;
 #define VBOX_UTF8_FREE(arg)                                             \
     do {                                                                \
         if (arg) {                                                      \
-            data->pFuncs->pfnUtf8Free(arg);                             \
+            g_pVBoxGlobalData->pFuncs->pfnUtf8Free(arg);                             \
             (arg) = NULL;                                               \
         }                                                               \
     } while (0)
 
-#define VBOX_UTF16_TO_UTF8(arg1, arg2)  data->pFuncs->pfnUtf16ToUtf8(arg1, arg2)
-#define VBOX_UTF8_TO_UTF16(arg1, arg2)  data->pFuncs->pfnUtf8ToUtf16(arg1, arg2)
+#define VBOX_UTF16_TO_UTF8(arg1, arg2)  g_pVBoxGlobalData->pFuncs->pfnUtf16ToUtf8(arg1, arg2)
+#define VBOX_UTF8_TO_UTF16(arg1, arg2)  g_pVBoxGlobalData->pFuncs->pfnUtf8ToUtf16(arg1, arg2)
 
 #define VBOX_RELEASE(arg)                                                     \
     do {                                                                      \
@@ -302,8 +302,7 @@ vboxIIDUnalloc_v2_x_WIN32(vboxPrivate *data ATTRIBUTE_UNUSED,
 }
 
 static void
-_vboxIIDUnalloc(vboxPrivate *data ATTRIBUTE_UNUSED,
-                vboxIIDUnion *iid ATTRIBUTE_UNUSED)
+_vboxIIDUnalloc(vboxIIDUnion *iid ATTRIBUTE_UNUSED)
 {
     /* Nothing to free */
 }
@@ -315,25 +314,23 @@ vboxIIDToUUID_v2_x_WIN32(vboxIID_v2_x_WIN32 *iid, unsigned char *uuid)
 }
 
 static void
-_vboxIIDToUUID(vboxPrivate *data ATTRIBUTE_UNUSED, vboxIIDUnion *iidu, unsigned char *uuid)
+_vboxIIDToUUID(vboxIIDUnion *iidu, unsigned char *uuid)
 {
     vboxIIDToUUID_v2_x_WIN32(&iidu->vboxIID_v2_x_WIN32, uuid);
 }
 
 static void
-vboxIIDFromUUID_v2_x_WIN32(vboxPrivate *data, vboxIID_v2_x_WIN32 *iid,
-                           const unsigned char *uuid)
+vboxIIDFromUUID_v2_x_WIN32(vboxIID_v2_x_WIN32 *iid, const unsigned char *uuid)
 {
-    vboxIIDUnalloc_v2_x_WIN32(data, iid);
+    vboxIIDUnalloc_v2_x_WIN32(iid);
 
     nsIDFromChar((nsID *)&iid->value, uuid);
 }
 
 static void
-_vboxIIDFromUUID(vboxPrivate *data, vboxIIDUnion *iidu,
-                 const unsigned char *uuid)
+_vboxIIDFromUUID(vboxIIDUnion *iidu, const unsigned char *uuid)
 {
-    vboxIIDFromUUID_v2_x_WIN32(data, &iidu->vboxIID_v2_x_WIN32, uuid);
+    vboxIIDFromUUID_v2_x_WIN32(&iidu->vboxIID_v2_x_WIN32, uuid);
 }
 
 static bool
@@ -343,27 +340,26 @@ vboxIIDIsEqual_v2_x_WIN32(vboxIID_v2_x_WIN32 *iid1, vboxIID_v2_x_WIN32 *iid2)
 }
 
 static bool
-_vboxIIDIsEqual(vboxPrivate *data ATTRIBUTE_UNUSED, vboxIIDUnion *iidu1, vboxIIDUnion *iidu2)
+_vboxIIDIsEqual(vboxIIDUnion *iidu1, vboxIIDUnion *iidu2)
 {
     return vboxIIDIsEqual_v2_x_WIN32(&iidu1->vboxIID_v2_x_WIN32, &iidu2->vboxIID_v2_x_WIN32);
 }
 
 static void
-vboxIIDFromArrayItem_v2_x_WIN32(vboxPrivate *data, vboxIID_v2_x_WIN32 *iid,
+vboxIIDFromArrayItem_v2_x_WIN32(vboxIID_v2_x_WIN32 *iid,
                                 vboxArray *array, int idx)
 {
     GUID *items = (GUID *)array->items;
 
-    vboxIIDUnalloc_v2_x_WIN32(data, iid);
+    vboxIIDUnalloc_v2_x_WIN32(iid);
 
     memcpy(&iid->value, &items[idx], sizeof(GUID));
 }
 
 static void
-_vboxIIDFromArrayItem(vboxPrivate *data, vboxIIDUnion *iidu,
-                      vboxArray *array, int idx)
+_vboxIIDFromArrayItem(vboxIIDUnion *iidu, vboxArray *array, int idx)
 {
-    vboxIIDFromArrayItem_v2_x_WIN32(data, &iidu->vboxIID_v2_x_WIN32, array, idx);
+    vboxIIDFromArrayItem_v2_x_WIN32(&iidu->vboxIID_v2_x_WIN32, array, idx);
 }
 
 #  define vboxIIDUnalloc(iid) vboxIIDUnalloc_v2_x_WIN32(data, iid)
@@ -383,21 +379,21 @@ typedef struct _vboxIID_v2_x vboxIID_v2_x;
 #  define IID_MEMBER(name) (iidu->vboxIID_v2_x.name)
 
 static void
-vboxIIDUnalloc_v2_x(vboxPrivate *data, vboxIID_v2_x *iid)
+vboxIIDUnalloc_v2_x(vboxIID_v2_x *iid)
 {
     if (iid->value == NULL)
         return;
 
     if (iid->value != &iid->backing)
-        data->pFuncs->pfnComUnallocMem(iid->value);
+        g_pVBoxGlobalData->pFuncs->pfnComUnallocMem(iid->value);
 
     iid->value = NULL;
 }
 
 static void
-_vboxIIDUnalloc(vboxPrivate *data, vboxIIDUnion *iidu)
+_vboxIIDUnalloc(vboxIIDUnion *iidu)
 {
-    vboxIIDUnalloc_v2_x(data, &iidu->vboxIID_v2_x);
+    vboxIIDUnalloc_v2_x(&iidu->vboxIID_v2_x);
 }
 
 static void
@@ -407,17 +403,15 @@ vboxIIDToUUID_v2_x(vboxIID_v2_x *iid, unsigned char *uuid)
 }
 
 static void
-_vboxIIDToUUID(vboxPrivate *data ATTRIBUTE_UNUSED,
-               vboxIIDUnion *iidu, unsigned char *uuid)
+_vboxIIDToUUID(vboxIIDUnion *iidu, unsigned char *uuid)
 {
     vboxIIDToUUID_v2_x(&iidu->vboxIID_v2_x, uuid);
 }
 
 static void
-vboxIIDFromUUID_v2_x(vboxPrivate *data, vboxIID_v2_x *iid,
-                     const unsigned char *uuid)
+vboxIIDFromUUID_v2_x(vboxIID_v2_x *iid, const unsigned char *uuid)
 {
-    vboxIIDUnalloc_v2_x(data, iid);
+    vboxIIDUnalloc_v2_x(iid);
 
     iid->value = &iid->backing;
 
@@ -426,10 +420,9 @@ vboxIIDFromUUID_v2_x(vboxPrivate *data, vboxIID_v2_x *iid,
 }
 
 static void
-_vboxIIDFromUUID(vboxPrivate *data, vboxIIDUnion *iidu,
-                 const unsigned char *uuid)
+_vboxIIDFromUUID(vboxIIDUnion *iidu, const unsigned char *uuid)
 {
-    vboxIIDFromUUID_v2_x(data, &iidu->vboxIID_v2_x, uuid);
+    vboxIIDFromUUID_v2_x(&iidu->vboxIID_v2_x, uuid);
 }
 
 static bool
@@ -439,17 +432,15 @@ vboxIIDIsEqual_v2_x(vboxIID_v2_x *iid1, vboxIID_v2_x *iid2)
 }
 
 static bool
-_vboxIIDIsEqual(vboxPrivate *data ATTRIBUTE_UNUSED,
-                vboxIIDUnion *iidu1, vboxIIDUnion *iidu2)
+_vboxIIDIsEqual(vboxIIDUnion *iidu1, vboxIIDUnion *iidu2)
 {
     return vboxIIDIsEqual_v2_x(&iidu1->vboxIID_v2_x, &iidu2->vboxIID_v2_x);
 }
 
 static void
-vboxIIDFromArrayItem_v2_x(vboxPrivate *data, vboxIID_v2_x *iid,
-                          vboxArray *array, int idx)
+vboxIIDFromArrayItem_v2_x(vboxIID_v2_x *iid, vboxArray *array, int idx)
 {
-    vboxIIDUnalloc_v2_x(data, iid);
+    vboxIIDUnalloc_v2_x(iid);
 
     iid->value = &iid->backing;
 
@@ -457,18 +448,17 @@ vboxIIDFromArrayItem_v2_x(vboxPrivate *data, vboxIID_v2_x *iid,
 }
 
 static void
-_vboxIIDFromArrayItem(vboxPrivate *data, vboxIIDUnion *iidu,
-                      vboxArray *array, int idx)
+_vboxIIDFromArrayItem(vboxIIDUnion *iidu, vboxArray *array, int idx)
 {
-    vboxIIDFromArrayItem_v2_x(data, &iidu->vboxIID_v2_x, array, idx);
+    vboxIIDFromArrayItem_v2_x(&iidu->vboxIID_v2_x, array, idx);
 }
 
-#  define vboxIIDUnalloc(iid) vboxIIDUnalloc_v2_x(data, iid)
+#  define vboxIIDUnalloc(iid) vboxIIDUnalloc_v2_x(iid)
 #  define vboxIIDToUUID(iid, uuid) vboxIIDToUUID_v2_x(iid, uuid)
-#  define vboxIIDFromUUID(iid, uuid) vboxIIDFromUUID_v2_x(data, iid, uuid)
+#  define vboxIIDFromUUID(iid, uuid) vboxIIDFromUUID_v2_x(iid, uuid)
 #  define vboxIIDIsEqual(iid1, iid2) vboxIIDIsEqual_v2_x(iid1, iid2)
 #  define vboxIIDFromArrayItem(iid, array, idx) \
-    vboxIIDFromArrayItem_v2_x(data, iid, array, idx)
+    vboxIIDFromArrayItem_v2_x(iid, array, idx)
 #  define DEBUGIID(msg, iid) DEBUGUUID(msg, iid)
 
 # endif /* !WIN32 */
@@ -482,64 +472,59 @@ typedef struct _vboxIID_v3_x vboxIID_v3_x;
 # define IID_MEMBER(name) (iidu->vboxIID_v3_x.name)
 
 static void
-vboxIIDUnalloc_v3_x(vboxPrivate *data, vboxIID_v3_x *iid)
+vboxIIDUnalloc_v3_x(vboxIID_v3_x *iid)
 {
     if (iid->value != NULL && iid->owner)
-        data->pFuncs->pfnUtf16Free(iid->value);
+        g_pVBoxGlobalData->pFuncs->pfnUtf16Free(iid->value);
 
     iid->value = NULL;
     iid->owner = true;
 }
 
 static void
-_vboxIIDUnalloc(vboxPrivate *data, vboxIIDUnion *iidu)
+_vboxIIDUnalloc(vboxIIDUnion *iidu)
 {
-    vboxIIDUnalloc_v3_x(data, &iidu->vboxIID_v3_x);
+    vboxIIDUnalloc_v3_x(&iidu->vboxIID_v3_x);
 }
 
 static void
-vboxIIDToUUID_v3_x(vboxPrivate *data, vboxIID_v3_x *iid,
-                   unsigned char *uuid)
+vboxIIDToUUID_v3_x(vboxIID_v3_x *iid, unsigned char *uuid)
 {
     char *utf8 = NULL;
 
-    data->pFuncs->pfnUtf16ToUtf8(iid->value, &utf8);
+    g_pVBoxGlobalData->pFuncs->pfnUtf16ToUtf8(iid->value, &utf8);
 
     ignore_value(virUUIDParse(utf8, uuid));
 
-    data->pFuncs->pfnUtf8Free(utf8);
+    g_pVBoxGlobalData->pFuncs->pfnUtf8Free(utf8);
 }
 
 static void
-_vboxIIDToUUID(vboxPrivate *data, vboxIIDUnion *iidu,
-               unsigned char *uuid)
+_vboxIIDToUUID(vboxIIDUnion *iidu, unsigned char *uuid)
 {
-    vboxIIDToUUID_v3_x(data, &iidu->vboxIID_v3_x, uuid);
+    vboxIIDToUUID_v3_x(&iidu->vboxIID_v3_x, uuid);
 }
 
 static void
-vboxIIDFromUUID_v3_x(vboxPrivate *data, vboxIID_v3_x *iid,
-                     const unsigned char *uuid)
+vboxIIDFromUUID_v3_x(vboxIID_v3_x *iid, const unsigned char *uuid)
 {
     char utf8[VIR_UUID_STRING_BUFLEN];
 
-    vboxIIDUnalloc_v3_x(data, iid);
+    vboxIIDUnalloc_v3_x(iid);
 
     virUUIDFormat(uuid, utf8);
 
-    data->pFuncs->pfnUtf8ToUtf16(utf8, &iid->value);
+    g_pVBoxGlobalData->pFuncs->pfnUtf8ToUtf16(utf8, &iid->value);
 }
 
 static void
-_vboxIIDFromUUID(vboxPrivate *data, vboxIIDUnion *iidu,
-                 const unsigned char *uuid)
+_vboxIIDFromUUID(vboxIIDUnion *iidu, const unsigned char *uuid)
 {
-    vboxIIDFromUUID_v3_x(data, &iidu->vboxIID_v3_x, uuid);
+    vboxIIDFromUUID_v3_x(&iidu->vboxIID_v3_x, uuid);
 }
 
 static bool
-vboxIIDIsEqual_v3_x(vboxPrivate *data, vboxIID_v3_x *iid1,
-                    vboxIID_v3_x *iid2)
+vboxIIDIsEqual_v3_x(vboxIID_v3_x *iid1, vboxIID_v3_x *iid2)
 {
     unsigned char uuid1[VIR_UUID_BUFLEN];
     unsigned char uuid2[VIR_UUID_BUFLEN];
@@ -549,42 +534,39 @@ vboxIIDIsEqual_v3_x(vboxPrivate *data, vboxIID_v3_x *iid1,
      * or mixture of both and we don't want to fail here by
      * using direct string comparison. Here virUUIDParse() takes
      * care of these cases. */
-    vboxIIDToUUID_v3_x(data, iid1, uuid1);
-    vboxIIDToUUID_v3_x(data, iid2, uuid2);
+    vboxIIDToUUID_v3_x(iid1, uuid1);
+    vboxIIDToUUID_v3_x(iid2, uuid2);
 
     return memcmp(uuid1, uuid2, VIR_UUID_BUFLEN) == 0;
 }
 
 static bool
-_vboxIIDIsEqual(vboxPrivate *data, vboxIIDUnion *iidu1,
-                vboxIIDUnion *iidu2)
+_vboxIIDIsEqual(vboxIIDUnion *iidu1, vboxIIDUnion *iidu2)
 {
-    return vboxIIDIsEqual_v3_x(data, &iidu1->vboxIID_v3_x, &iidu2->vboxIID_v3_x);
+    return vboxIIDIsEqual_v3_x(&iidu1->vboxIID_v3_x, &iidu2->vboxIID_v3_x);
 }
 
 static void
-vboxIIDFromArrayItem_v3_x(vboxPrivate *data, vboxIID_v3_x *iid,
-                          vboxArray *array, int idx)
+vboxIIDFromArrayItem_v3_x(vboxIID_v3_x *iid, vboxArray *array, int idx)
 {
-    vboxIIDUnalloc_v3_x(data, iid);
+    vboxIIDUnalloc_v3_x(iid);
 
     iid->value = array->items[idx];
     iid->owner = false;
 }
 
 static void
-_vboxIIDFromArrayItem(vboxPrivate *data, vboxIIDUnion *iidu,
-                      vboxArray *array, int idx)
+_vboxIIDFromArrayItem(vboxIIDUnion *iidu, vboxArray *array, int idx)
 {
-    vboxIIDFromArrayItem_v3_x(data, &iidu->vboxIID_v3_x, array, idx);
+    vboxIIDFromArrayItem_v3_x(&iidu->vboxIID_v3_x, array, idx);
 }
 
-# define vboxIIDUnalloc(iid) vboxIIDUnalloc_v3_x(data, iid)
-# define vboxIIDToUUID(iid, uuid) vboxIIDToUUID_v3_x(data, iid, uuid)
-# define vboxIIDFromUUID(iid, uuid) vboxIIDFromUUID_v3_x(data, iid, uuid)
-# define vboxIIDIsEqual(iid1, iid2) vboxIIDIsEqual_v3_x(data, iid1, iid2)
+# define vboxIIDUnalloc(iid) vboxIIDUnalloc_v3_x(iid)
+# define vboxIIDToUUID(iid, uuid) vboxIIDToUUID_v3_x(iid, uuid)
+# define vboxIIDFromUUID(iid, uuid) vboxIIDFromUUID_v3_x(iid, uuid)
+# define vboxIIDIsEqual(iid1, iid2) vboxIIDIsEqual_v3_x(iid1, iid2)
 # define vboxIIDFromArrayItem(iid, array, idx) \
-    vboxIIDFromArrayItem_v3_x(data, iid, array, idx)
+    vboxIIDFromArrayItem_v3_x(iid, array, idx)
 # define DEBUGIID(msg, strUtf16) DEBUGPRUnichar(msg, strUtf16)
 
 #endif /* !(VBOX_API_VERSION == 2002000) */
@@ -1404,11 +1386,10 @@ static nsresult PR_COM_METHOD
 vboxCallbackOnMachineStateChange(IVirtualBoxCallback *pThis ATTRIBUTE_UNUSED,
                                  PRUnichar *machineId, PRUint32 state)
 {
+    VirtualBoxCallback *callback = (VirtualBoxCallback *) pThis;
     virDomainPtr dom = NULL;
     int event = 0;
     int detail = 0;
-
-    vboxDriverLock((vboxPrivate *) g_pVBoxGlobalData);
 
     VIR_DEBUG("IVirtualBoxCallback: %p, State: %d", pThis, state);
     DEBUGPRUnichar("machineId", machineId);
@@ -1420,9 +1401,10 @@ vboxCallbackOnMachineStateChange(IVirtualBoxCallback *pThis ATTRIBUTE_UNUSED,
         g_pVBoxGlobalData->pFuncs->pfnUtf16ToUtf8(machineId, &machineIdUtf8);
         ignore_value(virUUIDParse(machineIdUtf8, uuid));
 
-        dom = vboxDomainLookupByUUID(g_pVBoxGlobalData->conn, uuid);
+        dom = vboxDomainLookupByUUID(callback->conn, uuid);
         if (dom) {
             virObjectEventPtr ev;
+            vboxPrivate *data = (vboxPrivate *) callback->conn->privateData;
 
             if (state == MachineState_Starting) {
                 event = VIR_DOMAIN_EVENT_STARTED;
@@ -1456,11 +1438,9 @@ vboxCallbackOnMachineStateChange(IVirtualBoxCallback *pThis ATTRIBUTE_UNUSED,
             ev = virDomainEventLifecycleNewFromDom(dom, event, detail);
 
             if (ev)
-                virObjectEventStateQueue(g_pVBoxGlobalData->domainEvents, ev);
+                virObjectEventStateQueue(data->domainEvents, ev);
         }
     }
-
-    vboxDriverUnlock((vboxPrivate *) g_pVBoxGlobalData);
 
     return NS_OK;
 }
@@ -1523,11 +1503,10 @@ static nsresult PR_COM_METHOD
 vboxCallbackOnMachineRegistered(IVirtualBoxCallback *pThis ATTRIBUTE_UNUSED,
                                 PRUnichar *machineId, PRBool registered)
 {
+    VirtualBoxCallback *callback = (VirtualBoxCallback *) pThis;
     virDomainPtr dom = NULL;
     int event = 0;
     int detail = 0;
-
-    vboxDriverLock((vboxPrivate *) g_pVBoxGlobalData);
 
     VIR_DEBUG("IVirtualBoxCallback: %p, registered: %s", pThis, registered ? "true" : "false");
     DEBUGPRUnichar("machineId", machineId);
@@ -1539,9 +1518,10 @@ vboxCallbackOnMachineRegistered(IVirtualBoxCallback *pThis ATTRIBUTE_UNUSED,
         g_pVBoxGlobalData->pFuncs->pfnUtf16ToUtf8(machineId, &machineIdUtf8);
         ignore_value(virUUIDParse(machineIdUtf8, uuid));
 
-        dom = vboxDomainLookupByUUID(g_pVBoxGlobalData->conn, uuid);
+        dom = vboxDomainLookupByUUID(callback->conn, uuid);
         if (dom) {
             virObjectEventPtr ev;
+            vboxPrivate *data = (vboxPrivate *) callback->conn->privateData;
 
             /* CURRENT LIMITATION: we never get the VIR_DOMAIN_EVENT_UNDEFINED
              * event because the when the machine is de-registered the call
@@ -1560,11 +1540,9 @@ vboxCallbackOnMachineRegistered(IVirtualBoxCallback *pThis ATTRIBUTE_UNUSED,
             ev = virDomainEventLifecycleNewFromDom(dom, event, detail);
 
             if (ev)
-                virObjectEventStateQueue(g_pVBoxGlobalData->domainEvents, ev);
+                virObjectEventStateQueue(data->domainEvents, ev);
         }
     }
-
-    vboxDriverUnlock((vboxPrivate *) g_pVBoxGlobalData);
 
     return NS_OK;
 }
@@ -1634,8 +1612,9 @@ static nsresult PR_COM_METHOD
 vboxCallbackAddRef(nsISupports *pThis ATTRIBUTE_UNUSED)
 {
     nsresult c;
+    VirtualBoxCallback *callback = (VirtualBoxCallback *) pThis;
 
-    c = ++g_pVBoxGlobalData->vboxCallBackRefCount;
+    c = ++callback->vboxCallBackRefCount;
 
     VIR_DEBUG("pThis: %p, vboxCallback AddRef: %d", pThis, c);
 
@@ -1646,8 +1625,9 @@ static nsresult PR_COM_METHOD
 vboxCallbackRelease(nsISupports *pThis)
 {
     nsresult c;
+    VirtualBoxCallback *callback = (VirtualBoxCallback *) pThis;
 
-    c = --g_pVBoxGlobalData->vboxCallBackRefCount;
+    c = --callback->vboxCallBackRefCount;
     if (c == 0) {
         /* delete object */
         VIR_FREE(pThis->vtbl);
@@ -1662,17 +1642,17 @@ vboxCallbackRelease(nsISupports *pThis)
 static nsresult PR_COM_METHOD
 vboxCallbackQueryInterface(nsISupports *pThis, const nsID *iid, void **resultp)
 {
-    IVirtualBoxCallback *that = (IVirtualBoxCallback *)pThis;
+    VirtualBoxCallback *callback = (VirtualBoxCallback *) pThis;
     static const nsID ivirtualboxCallbackUUID = IVIRTUALBOXCALLBACK_IID;
     static const nsID isupportIID = NS_ISUPPORTS_IID;
 
     /* Match UUID for IVirtualBoxCallback class */
     if (memcmp(iid, &ivirtualboxCallbackUUID, sizeof(nsID)) == 0 ||
         memcmp(iid, &isupportIID, sizeof(nsID)) == 0) {
-        g_pVBoxGlobalData->vboxCallBackRefCount++;
-        *resultp = that;
+        callback->vboxCallBackRefCount++;
+        *resultp = callback;
 
-        VIR_DEBUG("pThis: %p, vboxCallback QueryInterface: %d", pThis, g_pVBoxGlobalData->vboxCallBackRefCount);
+        VIR_DEBUG("pThis: %p, vboxCallback QueryInterface: %d", callback, callback->vboxCallBackRefCount);
 
         return NS_OK;
     }
@@ -1685,8 +1665,8 @@ vboxCallbackQueryInterface(nsISupports *pThis, const nsID *iid, void **resultp)
 }
 
 
-static IVirtualBoxCallback *vboxAllocCallbackObj(void) {
-    IVirtualBoxCallback *vboxCallback = NULL;
+static IVirtualBoxCallback *vboxAllocCallbackObj(virConnectPtr conn) {
+    VirtualBoxCallback *vboxCallback = NULL;
 
     /* Allocate, Initialize and return a valid
      * IVirtualBoxCallback object here
@@ -1718,27 +1698,30 @@ static IVirtualBoxCallback *vboxAllocCallbackObj(void) {
 # endif /* VBOX_API_VERSION >= 3002000 */
         vboxCallback->vtbl->OnSnapshotChange            = &vboxCallbackOnSnapshotChange;
         vboxCallback->vtbl->OnGuestPropertyChange       = &vboxCallbackOnGuestPropertyChange;
-        g_pVBoxGlobalData->vboxCallBackRefCount = 1;
-
+        vboxCallback->vboxCallBackRefCount = 1;
     }
 
-    return vboxCallback;
+    vboxCallback->conn = conn;
+
+    return (IVirtualBoxCallback *) vboxCallback;
 }
 
 static void vboxReadCallback(int watch ATTRIBUTE_UNUSED,
                              int fd,
                              int events ATTRIBUTE_UNUSED,
-                             void *opaque ATTRIBUTE_UNUSED)
+                             void *opaque)
 {
+    vboxPrivate *data = (vboxPrivate *) opaque;
+
     if (fd >= 0) {
-        g_pVBoxGlobalData->vboxQueue->vtbl->ProcessPendingEvents(g_pVBoxGlobalData->vboxQueue);
+        data->vboxQueue->vtbl->ProcessPendingEvents(data->vboxQueue);
     } else {
         nsresult rc;
         PLEvent *pEvent = NULL;
 
-        rc = g_pVBoxGlobalData->vboxQueue->vtbl->WaitForEvent(g_pVBoxGlobalData->vboxQueue, &pEvent);
+        rc = data->vboxQueue->vtbl->WaitForEvent(data->vboxQueue, &pEvent);
         if (NS_SUCCEEDED(rc))
-            g_pVBoxGlobalData->vboxQueue->vtbl->HandleEvent(g_pVBoxGlobalData->vboxQueue, pEvent);
+            data->vboxQueue->vtbl->HandleEvent(data->vboxQueue, pEvent);
     }
 }
 
@@ -1762,7 +1745,7 @@ vboxConnectDomainEventRegister(virConnectPtr conn,
     vboxDriverLock(data);
 
     if (data->vboxCallback == NULL) {
-        data->vboxCallback = vboxAllocCallbackObj();
+        data->vboxCallback = vboxAllocCallbackObj(conn);
         if (data->vboxCallback != NULL) {
             rc = data->vboxObj->vtbl->RegisterCallback(data->vboxObj, data->vboxCallback);
             if (NS_SUCCEEDED(rc))
@@ -1780,7 +1763,7 @@ vboxConnectDomainEventRegister(virConnectPtr conn,
             PRInt32 vboxFileHandle;
             vboxFileHandle = data->vboxQueue->vtbl->GetEventQueueSelectFD(data->vboxQueue);
 
-            data->fdWatch = virEventAddHandle(vboxFileHandle, VIR_EVENT_HANDLE_READABLE, vboxReadCallback, NULL, NULL);
+            data->fdWatch = virEventAddHandle(vboxFileHandle, VIR_EVENT_HANDLE_READABLE, vboxReadCallback, data, NULL);
         }
 
         if (data->fdWatch >= 0) {
@@ -1866,7 +1849,7 @@ static int vboxConnectDomainEventRegisterAny(virConnectPtr conn,
     vboxDriverLock(data);
 
     if (data->vboxCallback == NULL) {
-        data->vboxCallback = vboxAllocCallbackObj();
+        data->vboxCallback = vboxAllocCallbackObj(conn);
         if (data->vboxCallback != NULL) {
             rc = data->vboxObj->vtbl->RegisterCallback(data->vboxObj, data->vboxCallback);
             if (NS_SUCCEEDED(rc))
@@ -1884,7 +1867,7 @@ static int vboxConnectDomainEventRegisterAny(virConnectPtr conn,
             PRInt32 vboxFileHandle;
             vboxFileHandle = data->vboxQueue->vtbl->GetEventQueueSelectFD(data->vboxQueue);
 
-            data->fdWatch = virEventAddHandle(vboxFileHandle, VIR_EVENT_HANDLE_READABLE, vboxReadCallback, NULL, NULL);
+            data->fdWatch = virEventAddHandle(vboxFileHandle, VIR_EVENT_HANDLE_READABLE, vboxReadCallback, data, NULL);
         }
 
         if (data->fdWatch >= 0) {
@@ -1971,7 +1954,7 @@ _initializeDomainEvent(vboxPrivate *data ATTRIBUTE_UNUSED)
 #else /* VBOX_API_VERSION > 2002000 || VBOX_API_VERSION < 4000000 */
     /* Initialize the fWatch needed for Event Callbacks */
     data->fdWatch = -1;
-    data->pFuncs->pfnGetEventQueue(&data->vboxQueue);
+    g_pVBoxGlobalData->pFuncs->pfnGetEventQueue(&data->vboxQueue);
     if (data->vboxQueue == NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("nsIEventQueue object is null"));
@@ -2020,8 +2003,7 @@ vboxGlobalData* _registerGlobalData(void)
 
 # if VBOX_API_VERSION < 3001000
 static void
-_detachDevices(vboxPrivate *data ATTRIBUTE_UNUSED,
-               IMachine *machine, PRUnichar *hddcnameUtf16)
+_detachDevices(IMachine *machine, PRUnichar *hddcnameUtf16)
 {
     /* Disconnect all the drives if present */
     machine->vtbl->DetachHardDisk(machine, hddcnameUtf16, 0, 0);
@@ -2030,8 +2012,7 @@ _detachDevices(vboxPrivate *data ATTRIBUTE_UNUSED,
 }
 # else  /* VBOX_API_VERSION >= 3001000 */
 static void
-_detachDevices(vboxPrivate *data, IMachine *machine,
-               PRUnichar *hddcnameUtf16 ATTRIBUTE_UNUSED)
+_detachDevices(IMachine *machine, PRUnichar *hddcnameUtf16 ATTRIBUTE_UNUSED)
 {
     /* get all the controller first, then the attachments and
     * remove them all so that the machine can be undefined
@@ -2096,8 +2077,7 @@ _deleteConfig(IMachine *machine)
 #else /* VBOX_API_VERSION >= 4000000 */
 
 static void
-_detachDevices(vboxPrivate *data ATTRIBUTE_UNUSED,
-               IMachine *machine ATTRIBUTE_UNUSED,
+_detachDevices(IMachine *machine ATTRIBUTE_UNUSED,
                PRUnichar *hddcnameUtf16 ATTRIBUTE_UNUSED)
 {
     vboxUnsupported();
@@ -2167,9 +2147,7 @@ _deleteConfig(IMachine *machine)
 #if VBOX_API_VERSION < 3001000
 
 static void
-_dumpIDEHDDsOld(virDomainDefPtr def,
-                vboxPrivate *data,
-                IMachine *machine)
+_dumpIDEHDDsOld(virDomainDefPtr def, IMachine *machine)
 {
     PRInt32 hddNum = 0;
     IHardDisk *hardDiskPM = NULL;
@@ -2276,9 +2254,7 @@ _dumpIDEHDDsOld(virDomainDefPtr def,
 }
 
 static void
-_dumpDVD(virDomainDefPtr def,
-         vboxPrivate *data,
-         IMachine *machine)
+_dumpDVD(virDomainDefPtr def, IMachine *machine)
 {
     IDVDDrive *dvdDrive = NULL;
     IDVDImage *dvdImage = NULL;
@@ -2415,9 +2391,7 @@ _detachDVD(IMachine *machine)
 }
 
 static void
-_dumpFloppy(virDomainDefPtr def,
-            vboxPrivate *data,
-            IMachine *machine)
+_dumpFloppy(virDomainDefPtr def, IMachine *machine)
 {
     IFloppyDrive *floppyDrive = NULL;
     IFloppyImage *floppyImage = NULL;
@@ -2571,7 +2545,6 @@ _detachFloppy(IMachine *machine)
 
 static void
 _dumpIDEHDDsOld(virDomainDefPtr def ATTRIBUTE_UNUSED,
-                vboxPrivate *data ATTRIBUTE_UNUSED,
                 IMachine *machine ATTRIBUTE_UNUSED)
 {
     vboxUnsupported();
@@ -2579,7 +2552,6 @@ _dumpIDEHDDsOld(virDomainDefPtr def ATTRIBUTE_UNUSED,
 
 static void
 _dumpDVD(virDomainDefPtr def ATTRIBUTE_UNUSED,
-         vboxPrivate *data ATTRIBUTE_UNUSED,
          IMachine *machine ATTRIBUTE_UNUSED)
 {
     vboxUnsupported();
@@ -2603,7 +2575,6 @@ _detachDVD(IMachine *machine ATTRIBUTE_UNUSED)
 
 static void
 _dumpFloppy(virDomainDefPtr def ATTRIBUTE_UNUSED,
-            vboxPrivate *data ATTRIBUTE_UNUSED,
             IMachine *machine ATTRIBUTE_UNUSED)
 {
     vboxUnsupported();
@@ -2674,29 +2645,29 @@ static void _pfnUninitialize(vboxPrivate *data)
     }
 }
 
-static void _pfnComUnallocMem(PCVBOXXPCOM pFuncs, void *pv)
+static void _pfnComUnallocMem(void *pv)
 {
-    pFuncs->pfnComUnallocMem(pv);
+    g_pVBoxGlobalData->pFuncs->pfnComUnallocMem(pv);
 }
 
-static void _pfnUtf16Free(PCVBOXXPCOM pFuncs, PRUnichar *pwszString)
+static void _pfnUtf16Free(PRUnichar *pwszString)
 {
-    pFuncs->pfnUtf16Free(pwszString);
+    g_pVBoxGlobalData->pFuncs->pfnUtf16Free(pwszString);
 }
 
-static void _pfnUtf8Free(PCVBOXXPCOM pFuncs, char *pszString)
+static void _pfnUtf8Free(char *pszString)
 {
-    pFuncs->pfnUtf8Free(pszString);
+    g_pVBoxGlobalData->pFuncs->pfnUtf8Free(pszString);
 }
 
-static int _pfnUtf16ToUtf8(PCVBOXXPCOM pFuncs, const PRUnichar *pwszString, char **ppszString)
+static int _pfnUtf16ToUtf8(const PRUnichar *pwszString, char **ppszString)
 {
-    return pFuncs->pfnUtf16ToUtf8(pwszString, ppszString);
+    return g_pVBoxGlobalData->pFuncs->pfnUtf16ToUtf8(pwszString, ppszString);
 }
 
-static int _pfnUtf8ToUtf16(PCVBOXXPCOM pFuncs, const char *pszString, PRUnichar **ppwszString)
+static int _pfnUtf8ToUtf16(const char *pszString, PRUnichar **ppwszString)
 {
-    return pFuncs->pfnUtf8ToUtf16(pszString, ppwszString);
+    return g_pVBoxGlobalData->pFuncs->pfnUtf8ToUtf16(pszString, ppwszString);
 }
 
 #if VBOX_API_VERSION == 2002000
@@ -2731,14 +2702,13 @@ static void _DEBUGIID(const char *msg, vboxIIDUnion *iidu)
 #endif /* VBOX_API_VERSION != 2002000 */
 
 static void
-_vboxIIDToUtf8(vboxPrivate *data ATTRIBUTE_UNUSED,
-               vboxIIDUnion *iidu ATTRIBUTE_UNUSED,
+_vboxIIDToUtf8(vboxIIDUnion *iidu ATTRIBUTE_UNUSED,
                char **utf8 ATTRIBUTE_UNUSED)
 {
 #if VBOX_API_VERSION == 2002000
     vboxUnsupported();
 #else /* !(VBOX_API_VERSION == 2002000) */
-    data->pFuncs->pfnUtf16ToUtf8(IID_MEMBER(value), utf8);
+    g_pVBoxGlobalData->pFuncs->pfnUtf16ToUtf8(IID_MEMBER(value), utf8);
 #endif /* !(VBOX_API_VERSION == 2002000) */
 }
 
@@ -5150,12 +5120,6 @@ void NAME(InstallUniformedAPI)(vboxUniformedAPI *pVBoxAPI)
 #else /* VBOX_API_VERSION > 2002000 || VBOX_API_VERSION < 4000000 */
     pVBoxAPI->domainEventCallbacks = 1;
 #endif /* VBOX_API_VERSION > 2002000 || VBOX_API_VERSION < 4000000 */
-
-#if VBOX_API_VERSION == 2002000
-    pVBoxAPI->hasStaticGlobalData = 0;
-#else /* VBOX_API_VERSION > 2002000 */
-    pVBoxAPI->hasStaticGlobalData = 1;
-#endif /* VBOX_API_VERSION > 2002000 */
 
 #if VBOX_API_VERSION >= 4000000
     /* Get machine for the call to VBOX_SESSION_OPEN_EXISTING */

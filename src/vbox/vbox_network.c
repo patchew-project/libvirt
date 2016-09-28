@@ -350,7 +350,7 @@ static virNetworkPtr vboxNetworkLookupByName(virConnectPtr conn, const char *nam
 }
 
 static PRUnichar *
-vboxSocketFormatAddrUtf16(vboxPrivate *data, virSocketAddrPtr addr)
+vboxSocketFormatAddrUtf16(virSocketAddrPtr addr)
 {
     char *utf8 = NULL;
     PRUnichar *utf16 = NULL;
@@ -462,10 +462,10 @@ vboxNetworkDefineCreateXML(virConnectPtr conn, const char *xml, bool start)
             PRUnichar *toIPAddressUtf16 = NULL;
             PRUnichar *trunkTypeUtf16 = NULL;
 
-            ipAddressUtf16 = vboxSocketFormatAddrUtf16(data, &ipdef->address);
-            networkMaskUtf16 = vboxSocketFormatAddrUtf16(data, &netmask);
-            fromIPAddressUtf16 = vboxSocketFormatAddrUtf16(data, &ipdef->ranges[0].start);
-            toIPAddressUtf16 = vboxSocketFormatAddrUtf16(data, &ipdef->ranges[0].end);
+            ipAddressUtf16 = vboxSocketFormatAddrUtf16(&ipdef->address);
+            networkMaskUtf16 = vboxSocketFormatAddrUtf16(&netmask);
+            fromIPAddressUtf16 = vboxSocketFormatAddrUtf16(&ipdef->ranges[0].start);
+            toIPAddressUtf16 = vboxSocketFormatAddrUtf16(&ipdef->ranges[0].end);
 
             if (ipAddressUtf16 == NULL || networkMaskUtf16 == NULL ||
                 fromIPAddressUtf16 == NULL || toIPAddressUtf16 == NULL) {
@@ -507,8 +507,8 @@ vboxNetworkDefineCreateXML(virConnectPtr conn, const char *xml, bool start)
         PRUnichar *ipAddressUtf16 = NULL;
         PRUnichar *networkMaskUtf16 = NULL;
 
-        ipAddressUtf16 = vboxSocketFormatAddrUtf16(data, &ipdef->hosts[0].ip);
-        networkMaskUtf16 = vboxSocketFormatAddrUtf16(data, &netmask);
+        ipAddressUtf16 = vboxSocketFormatAddrUtf16(&ipdef->hosts[0].ip);
+        networkMaskUtf16 = vboxSocketFormatAddrUtf16(&netmask);
 
         if (ipAddressUtf16 == NULL || networkMaskUtf16 == NULL) {
             VBOX_UTF16_FREE(ipAddressUtf16);
@@ -739,8 +739,7 @@ static int vboxNetworkCreate(virNetworkPtr network)
 }
 
 static int
-vboxSocketParseAddrUtf16(vboxPrivate *data, const PRUnichar *utf16,
-                         virSocketAddrPtr addr)
+vboxSocketParseAddrUtf16(const PRUnichar *utf16, virSocketAddrPtr addr)
 {
     int result = -1;
     char *utf8 = NULL;
@@ -837,13 +836,13 @@ static char *vboxNetworkGetXMLDesc(virNetworkPtr network, unsigned int flags)
             /* Currently virtualbox supports only one dhcp server per network
              * with contigious address space from start to end
              */
-            if (vboxSocketParseAddrUtf16(data, ipAddressUtf16,
+            if (vboxSocketParseAddrUtf16(ipAddressUtf16,
                                          &ipdef->address) < 0 ||
-                vboxSocketParseAddrUtf16(data, networkMaskUtf16,
+                vboxSocketParseAddrUtf16(networkMaskUtf16,
                                          &ipdef->netmask) < 0 ||
-                vboxSocketParseAddrUtf16(data, fromIPAddressUtf16,
+                vboxSocketParseAddrUtf16(fromIPAddressUtf16,
                                          &ipdef->ranges[0].start) < 0 ||
-                vboxSocketParseAddrUtf16(data, toIPAddressUtf16,
+                vboxSocketParseAddrUtf16(toIPAddressUtf16,
                                          &ipdef->ranges[0].end) < 0) {
                 errorOccurred = true;
             }
@@ -874,7 +873,7 @@ static char *vboxNetworkGetXMLDesc(virNetworkPtr network, unsigned int flags)
 
                 VBOX_UTF16_TO_UTF8(macAddressUtf16, &ipdef->hosts[0].mac);
 
-                if (vboxSocketParseAddrUtf16(data, ipAddressUtf16,
+                if (vboxSocketParseAddrUtf16(ipAddressUtf16,
                                              &ipdef->hosts[0].ip) < 0) {
                     errorOccurred = true;
                 }
@@ -896,9 +895,9 @@ static char *vboxNetworkGetXMLDesc(virNetworkPtr network, unsigned int flags)
         gVBoxAPI.UIHNInterface.GetNetworkMask(networkInterface, &networkMaskUtf16);
         gVBoxAPI.UIHNInterface.GetIPAddress(networkInterface, &ipAddressUtf16);
 
-        if (vboxSocketParseAddrUtf16(data, networkMaskUtf16,
+        if (vboxSocketParseAddrUtf16(networkMaskUtf16,
                                      &ipdef->netmask) < 0 ||
-            vboxSocketParseAddrUtf16(data, ipAddressUtf16,
+            vboxSocketParseAddrUtf16(ipAddressUtf16,
                                      &ipdef->address) < 0) {
             errorOccurred = true;
         }

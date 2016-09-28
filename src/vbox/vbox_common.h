@@ -348,44 +348,44 @@ typedef nsISupports IKeyboard;
 # define RC_SUCCEEDED(rc) NS_SUCCEEDED(rc.resultCode)
 # define RC_FAILED(rc) NS_FAILED(rc.resultCode)
 
-# define VBOX_UTF16_FREE(arg)                                            \
+# define VBOX_UTF16_FREE(arg)                                           \
     do {                                                                \
         if (arg) {                                                      \
-            gVBoxAPI.UPFN.Utf16Free(data->pFuncs, arg);                 \
+            gVBoxAPI.UPFN.Utf16Free(arg);                               \
             (arg) = NULL;                                               \
         }                                                               \
     } while (0)
 
-# define VBOX_UTF8_FREE(arg)                                             \
+# define VBOX_UTF8_FREE(arg)                                            \
     do {                                                                \
         if (arg) {                                                      \
-            gVBoxAPI.UPFN.Utf8Free(data->pFuncs, arg);                  \
+            gVBoxAPI.UPFN.Utf8Free(arg);                                \
             (arg) = NULL;                                               \
         }                                                               \
     } while (0)
 
-# define VBOX_COM_UNALLOC_MEM(arg)                                       \
+# define VBOX_COM_UNALLOC_MEM(arg)                                      \
     do {                                                                \
         if (arg) {                                                      \
-            gVBoxAPI.UPFN.ComUnallocMem(data->pFuncs, arg);             \
+            gVBoxAPI.UPFN.ComUnallocMem(arg);                           \
             (arg) = NULL;                                               \
         }                                                               \
     } while (0)
 
-# define VBOX_UTF16_TO_UTF8(arg1, arg2)  gVBoxAPI.UPFN.Utf16ToUtf8(data->pFuncs, arg1, arg2)
-# define VBOX_UTF8_TO_UTF16(arg1, arg2)  gVBoxAPI.UPFN.Utf8ToUtf16(data->pFuncs, arg1, arg2)
+# define VBOX_UTF16_TO_UTF8(arg1, arg2)  gVBoxAPI.UPFN.Utf16ToUtf8(arg1, arg2)
+# define VBOX_UTF8_TO_UTF16(arg1, arg2)  gVBoxAPI.UPFN.Utf8ToUtf16(arg1, arg2)
 
 # define VBOX_ADDREF(arg)                gVBoxAPI.nsUISupports.AddRef((void *)(arg))
 
-# define VBOX_RELEASE(arg)                                                     \
+# define VBOX_RELEASE(arg)                                                    \
     do {                                                                      \
         if (arg) {                                                            \
-            gVBoxAPI.nsUISupports.Release((void *)arg);                        \
+            gVBoxAPI.nsUISupports.Release((void *)arg);                       \
             (arg) = NULL;                                                     \
         }                                                                     \
     } while (0)
 
-# define VBOX_MEDIUM_RELEASE(arg)                                              \
+# define VBOX_MEDIUM_RELEASE(arg)                                             \
     do {                                                                      \
         if (arg) {                                                            \
             gVBoxAPI.UIMedium.Release(arg);                                   \
@@ -393,13 +393,13 @@ typedef nsISupports IKeyboard;
         }                                                                     \
     } while (0)
 
-# define vboxIIDUnalloc(iid)                     gVBoxAPI.UIID.vboxIIDUnalloc(data, iid)
-# define vboxIIDToUUID(iid, uuid)                gVBoxAPI.UIID.vboxIIDToUUID(data, iid, uuid)
-# define vboxIIDFromUUID(iid, uuid)              gVBoxAPI.UIID.vboxIIDFromUUID(data, iid, uuid)
-# define vboxIIDIsEqual(iid1, iid2)              gVBoxAPI.UIID.vboxIIDIsEqual(data, iid1, iid2)
+# define vboxIIDUnalloc(iid)                     gVBoxAPI.UIID.vboxIIDUnalloc(iid)
+# define vboxIIDToUUID(iid, uuid)                gVBoxAPI.UIID.vboxIIDToUUID(iid, uuid)
+# define vboxIIDFromUUID(iid, uuid)              gVBoxAPI.UIID.vboxIIDFromUUID(iid, uuid)
+# define vboxIIDIsEqual(iid1, iid2)              gVBoxAPI.UIID.vboxIIDIsEqual(iid1, iid2)
 # define DEBUGIID(msg, iid)                      gVBoxAPI.UIID.DEBUGIID(msg, iid)
 # define vboxIIDFromArrayItem(iid, array, idx) \
-    gVBoxAPI.UIID.vboxIIDFromArrayItem(data, iid, array, idx)
+    gVBoxAPI.UIID.vboxIIDFromArrayItem(iid, array, idx)
 
 # define VBOX_IID_INITIALIZE(iid)                gVBoxAPI.UIID.vboxIIDInitialize(iid)
 
