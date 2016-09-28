@@ -3093,8 +3093,12 @@ vshInitReload(vshControl *ctl)
 void
 vshDeinit(vshControl *ctl)
 {
-    if (ctl->imode)
-        vshReadlineDeinit(ctl);
+    /* Don't make calling vshReadlineDeinit conditional on imode. During
+     * interactive mode when "quit" or "exit" is typed, 'imode' is set
+     * to false so if this were conditional on imode, then history wouldn't
+     * be written when the "quit" or "exit" commands were used instead of
+     * when <ctrl>D is used */
+    vshReadlineDeinit(ctl);
     vshCloseLogFile(ctl);
 }
 
