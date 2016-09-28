@@ -102,6 +102,8 @@ typedef IMedium IHardDisk;
 
 VIR_LOG_INIT("vbox.vbox_tmpl");
 
+static vboxGlobalData *g_pVBoxGlobalData;
+
 #define vboxUnsupported() \
     VIR_WARN("No %s in current vbox version %d.", __FUNCTION__, VBOX_API_VERSION);
 
@@ -166,22 +168,6 @@ if (strUtf16) {\
           (unsigned)(iid)->m3[6],\
           (unsigned)(iid)->m3[7]);\
 }\
-
-#if VBOX_API_VERSION > 2002000
-
-/* g_pVBoxGlobalData has to be global variable,
- * there is no other way to make the callbacks
- * work other then having g_pVBoxGlobalData as
- * global, because the functions namely AddRef,
- * Release, etc consider it as global and you
- * can't change the function definition as it
- * is XPCOM nsISupport::* function and it expects
- * them that way
- */
-
-static vboxGlobalData *g_pVBoxGlobalData;
-
-#endif /* !(VBOX_API_VERSION == 2002000) */
 
 #if VBOX_API_VERSION < 4000000
 
@@ -1976,19 +1962,6 @@ _registerDomainEvent(virHypervisorDriverPtr driver)
 
 #endif /* !(VBOX_API_VERSION == 2002000 || VBOX_API_VERSION >= 4000000) */
 
-static int _pfnInitialize(vboxPrivate *data)
-{
-    data->pFuncs = g_pfnGetFunctions(VBOX_XPCOMC_VERSION);
-    if (data->pFuncs == NULL)
-        return -1;
-#if VBOX_XPCOMC_VERSION == 0x00010000U
-    data->pFuncs->pfnComInitialize(&data->vboxObj, &data->vboxSession);
-#else  /* !(VBOX_XPCOMC_VERSION == 0x00010000U) */
-    data->pFuncs->pfnComInitialize(IVIRTUALBOX_IID_STR, &data->vboxObj, ISESSION_IID_STR, &data->vboxSession);
-#endif /* !(VBOX_XPCOMC_VERSION == 0x00010000U) */
-    return 0;
-}
-
 static int
 _initializeDomainEvent(vboxPrivate *data ATTRIBUTE_UNUSED)
 {
@@ -2009,13 +1982,38 @@ _initializeDomainEvent(vboxPrivate *data ATTRIBUTE_UNUSED)
 }
 
 static
-void _registerGlobalData(vboxPrivate *data ATTRIBUTE_UNUSED)
+vboxGlobalData* _registerGlobalData(void)
 {
-#if VBOX_API_VERSION == 2002000
-    vboxUnsupported();
-#else /* VBOX_API_VERSION != 2002000 */
-    g_pVBoxGlobalData = (vboxGlobalData *) data;
-#endif /* VBOX_API_VERSION != 2002000 */
+    if (g_pVBoxGlobalData == NULL && VIR_ALLOC(g_pVBoxGlobalData) == 0) {
+        g_pVBoxGlobalData->pFuncs = g_pfnGetFunctions(VBOX_XPCOMC_VERSION);
+        if (g_pVBoxGlobalData->pFuncs == NULL)
+            return NULL;
+
+#if VBOX_XPCOMC_VERSION == 0x00010000U
+        g_pVBoxGlobalData->pFuncs->pfnComInitialize(&g_pVBoxGlobalData->vboxObj,
+                                                    &g_pVBoxGlobalData->vboxSession);
+#else  /* !(VBOX_XPCOMC_VERSION == 0x00010000U) */
+        g_pVBoxGlobalData->pFuncs->pfnComInitialize(IVIRTUALBOX_IID_STR,
+                                                    &g_pVBoxGlobalData->vboxObj,
+                                                    ISESSION_IID_STR,
+                                                    &g_pVBoxGlobalData->vboxSession);
+#endif /* !(VBOX_XPCOMC_VERSION == 0x00010000U) */
+    }
+
+
+    if (g_pVBoxGlobalData->vboxObj == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("IVirtualBox object is null"));
+        return NULL;
+    }
+
+    if (g_pVBoxGlobalData->vboxSession == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("ISession object is null"));
+        return NULL;
+    }
+
+    return g_pVBoxGlobalData;
 }
 
 #if VBOX_API_VERSION < 4000000
@@ -2629,10 +2627,51 @@ _detachFloppy(IMachine *machine ATTRIBUTE_UNUSED)
 
 #endif  /* VBOX_API_VERSION >= 3001000 */
 
+static int _pfnInitialize(vboxPrivate *data)
+{
+    int ret = -1;
+
+    virMutexLock(&g_pVBoxGlobalData->lock);
+
+    if (g_pVBoxGlobalData->vboxObj && g_pVBoxGlobalData->vboxSession) {
+        data->vboxObj = g_pVBoxGlobalData->vboxObj;
+        data->vboxSession = g_pVBoxGlobalData->vboxSession;
+
+        g_pVBoxGlobalData->vboxObj->vtbl->nsisupports.AddRef((nsISupports *) g_pVBoxGlobalData->vboxObj);
+        g_pVBoxGlobalData->vboxSession->vtbl->nsisupports.AddRef((nsISupports *) g_pVBoxGlobalData->vboxSession);
+
+        data->caps = virObjectRef(g_pVBoxGlobalData->caps);
+
+        g_pVBoxGlobalData->connectionCount++;
+
+        ret = 0;
+    }
+
+    virMutexUnlock(&g_pVBoxGlobalData->lock);
+
+    return ret;
+}
+
 static void _pfnUninitialize(vboxPrivate *data)
 {
-    if (data->pFuncs)
-        data->pFuncs->pfnComUninitialize();
+    if (!data || !g_pVBoxGlobalData)
+        return;
+
+    virMutexLock(&g_pVBoxGlobalData->lock);
+
+    g_pVBoxGlobalData->connectionCount--;
+
+    data->vboxObj->vtbl->nsisupports.Release((nsISupports *) data->vboxObj);
+    data->vboxSession->vtbl->nsisupports.Release((nsISupports *) data->vboxSession);
+    virObjectUnref(data->caps);
+
+    if (g_pVBoxGlobalData->connectionCount == 0) {
+        g_pVBoxGlobalData->pFuncs->pfnComUninitialize();
+        virMutexUnlock(&g_pVBoxGlobalData->lock);
+        VIR_FREE(g_pVBoxGlobalData);
+    } else {
+        virMutexUnlock(&g_pVBoxGlobalData->lock);
+    }
 }
 
 static void _pfnComUnallocMem(PCVBOXXPCOM pFuncs, void *pv)

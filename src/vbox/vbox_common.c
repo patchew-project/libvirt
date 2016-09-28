@@ -294,18 +294,6 @@ static int vboxInitialize(vboxPrivate *data)
     if (gVBoxAPI.domainEventCallbacks && gVBoxAPI.initializeDomainEvent(data) != 0)
         goto cleanup;
 
-    if (data->vboxObj == NULL) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("IVirtualBox object is null"));
-        goto cleanup;
-    }
-
-    if (data->vboxSession == NULL) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("ISession object is null"));
-        goto cleanup;
-    }
-
     return 0;
 
  cleanup:
@@ -382,12 +370,12 @@ static void vboxUninitialize(vboxPrivate *data)
     if (!data)
         return;
 
-    gVBoxAPI.UPFN.Uninitialize(data);
-
-    virObjectUnref(data->caps);
     virObjectUnref(data->xmlopt);
     if (gVBoxAPI.domainEventCallbacks)
         virObjectEventStateFree(data->domainEvents);
+
+    gVBoxAPI.UPFN.Uninitialize(data);
+
     VIR_FREE(data);
 }
 
@@ -398,6 +386,8 @@ vboxConnectOpen(virConnectPtr conn,
                 unsigned int flags)
 {
     vboxPrivate *data = NULL;
+    vboxGlobalData *globalData = NULL;
+
     uid_t uid = geteuid();
 
     virCheckFlags(VIR_CONNECT_RO, VIR_DRV_OPEN_ERROR);
@@ -438,8 +428,12 @@ vboxConnectOpen(virConnectPtr conn,
     if (VIR_ALLOC(data) < 0)
         return VIR_DRV_OPEN_ERROR;
 
-    if (!(data->caps = vboxCapsInit()) ||
-        vboxInitialize(data) < 0 ||
+    globalData = gVBoxAPI.registerGlobalData();
+
+    if (!globalData || !(globalData->caps = vboxCapsInit()))
+        return VIR_DRV_OPEN_ERROR;
+
+    if (vboxInitialize(data) < 0 ||
         vboxExtractVersion(data) < 0 ||
         !(data->xmlopt = vboxXMLConfInit())) {
         vboxUninitialize(data);
@@ -451,12 +445,8 @@ vboxConnectOpen(virConnectPtr conn,
             vboxUninitialize(data);
             return VIR_DRV_OPEN_ERROR;
         }
-
-        data->conn = conn;
     }
 
-    if (gVBoxAPI.hasStaticGlobalData)
-        gVBoxAPI.registerGlobalData(data);
 
     conn->privateData = data;
     VIR_DEBUG("in vboxOpen");

@@ -96,24 +96,28 @@ typedef union {
     PRInt32 resultCode;
 } resultCodeUnion;
 
+/* "extends" IVirtualBoxCallback to provide members for context info */
+typedef struct {
+    struct IVirtualBoxCallback_vtbl *vtbl;
+    virConnectPtr conn;
+    int vboxCallBackRefCount;
+} VirtualBoxCallback;
+
 typedef struct {
     virMutex lock;
     unsigned long version;
 
-    virCapsPtr caps;
     virDomainXMLOptionPtr xmlopt;
 
+    /* references to members of g_pVBoxGlobalData */
+    virCapsPtr caps;
     IVirtualBox *vboxObj;
     ISession *vboxSession;
-
-    /** Our version specific API table pointer. */
-    PCVBOXXPCOM pFuncs;
 
     /* The next is used for domainEvent */
     /* Async event handling */
     virObjectEventStatePtr domainEvents;
     int fdWatch;
-    int volatile vboxCallBackRefCount;
 # if defined(VBOX_API_VERSION) && VBOX_API_VERSION > 2002000 && VBOX_API_VERSION < 4000000
     IVirtualBoxCallback *vboxCallback;
     nsIEventQueue *vboxQueue;
@@ -121,49 +125,26 @@ typedef struct {
     void *vboxCallback;
     void *vboxQueue;
 # endif /* VBOX_API_VERSION <= 2002000 || VBOX_API_VERSION >= 4000000 || VBOX_API_VERSION undefined */
-
-    /* pointer back to the connection */
-    virConnectPtr conn;
 } vboxPrivate;
 
 typedef struct {
     virMutex lock;
-    unsigned long version;
-
     virCapsPtr caps;
-    virDomainXMLOptionPtr xmlopt;
-
-    IVirtualBox *vboxObj;
-    ISession *vboxSession;
 
     /** Our version specific API table pointer. */
     PCVBOXXPCOM pFuncs;
 
-    /* The next is used for domainEvent */
-# if defined(VBOX_API_VERSION) && VBOX_API_VERSION > 2002000 && VBOX_API_VERSION < 4000000
+    /* vbox objects shared for all connections.
+     *
+     * The pfnComInitialize does not support multiple sessions
+     * per process, therefore IVirutalBox and ISession must
+     * be global.
+     */
+    IVirtualBox *vboxObj;
+    ISession *vboxSession;
 
-    /* Async event handling */
-    virObjectEventStatePtr domainEvents;
-    int fdWatch;
-    IVirtualBoxCallback *vboxCallback;
-    nsIEventQueue *vboxQueue;
-
-    int volatile vboxCallBackRefCount;
-
-    /* pointer back to the connection */
-    virConnectPtr conn;
-
-# else /* VBOX_API_VERSION <= 2002000 || VBOX_API_VERSION >= 4000000 || VBOX_API_VERSION undefined */
-
-    virObjectEventStatePtr domainEvents;
-    int fdWatch;
-    void *vboxCallback;
-    void *vboxQueue;
-    int volatile vboxCallBackRefCount;
-    virConnectPtr conn;
-
-# endif /* VBOX_API_VERSION <= 2002000 || VBOX_API_VERSION >= 4000000 || VBOX_API_VERSION undefined */
-
+    /* keeps track of vbox connection count */
+    int volatile connectionCount;
 } vboxGlobalData;
 
 /* vboxUniformedAPI gives vbox_common.c a uniformed layer to see
