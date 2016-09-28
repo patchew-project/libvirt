@@ -5392,11 +5392,14 @@ qemuProcessLaunch(virConnectPtr conn,
                            _("Domain %s didn't show up"), vm->def->name);
             rv = -1;
         }
-        VIR_DEBUG("QEMU vm=%p name=%s running with pid=%llu",
-                  vm, vm->def->name, (unsigned long long)vm->pid);
+        qemuDomainLogContextWrite(logCtxt,
+                                  "QEMU vm=%p name=%s running with pid=%llu\n",
+                                  vm,
+                                  vm->def->name,
+                                  (unsigned long long)vm->pid);
     } else {
-        VIR_DEBUG("QEMU vm=%p name=%s failed to spawn",
-                  vm, vm->def->name);
+        qemuDomainLogContextWrite(logCtxt, "QEMU vm=%p name=%s failed to spawn",
+                                  vm, vm->def->name);
     }
 
     VIR_DEBUG("Writing early domain status to disk");
