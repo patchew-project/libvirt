@@ -206,12 +206,12 @@ static vboxGlobalData *g_pVBoxGlobalData;
  * vboxDriverLock and vboxDriverUnlock only be used in code for
  * 3.x release. */
 
-static void vboxDriverLock(vboxGlobalData *data)
+static void vboxDriverLock(vboxPrivate *data)
 {
     virMutexLock(&data->lock);
 }
 
-static void vboxDriverUnlock(vboxGlobalData *data)
+static void vboxDriverUnlock(vboxPrivate *data)
 {
     virMutexUnlock(&data->lock);
 }
@@ -309,14 +309,14 @@ typedef struct _vboxIID_v2_x_WIN32 vboxIID_v2_x_WIN32;
 #  define IID_MEMBER(name) (iidu->vboxIID_v2_x_WIN32.name)
 
 static void
-vboxIIDUnalloc_v2_x_WIN32(vboxGlobalData *data ATTRIBUTE_UNUSED,
+vboxIIDUnalloc_v2_x_WIN32(vboxPrivate *data ATTRIBUTE_UNUSED,
                           vboxIID_v2_x_WIN32 *iid ATTRIBUTE_UNUSED)
 {
     /* Nothing to free */
 }
 
 static void
-_vboxIIDUnalloc(vboxGlobalData *data ATTRIBUTE_UNUSED,
+_vboxIIDUnalloc(vboxPrivate *data ATTRIBUTE_UNUSED,
                 vboxIIDUnion *iid ATTRIBUTE_UNUSED)
 {
     /* Nothing to free */
@@ -329,13 +329,13 @@ vboxIIDToUUID_v2_x_WIN32(vboxIID_v2_x_WIN32 *iid, unsigned char *uuid)
 }
 
 static void
-_vboxIIDToUUID(vboxGlobalData *data ATTRIBUTE_UNUSED, vboxIIDUnion *iidu, unsigned char *uuid)
+_vboxIIDToUUID(vboxPrivate *data ATTRIBUTE_UNUSED, vboxIIDUnion *iidu, unsigned char *uuid)
 {
     vboxIIDToUUID_v2_x_WIN32(&iidu->vboxIID_v2_x_WIN32, uuid);
 }
 
 static void
-vboxIIDFromUUID_v2_x_WIN32(vboxGlobalData *data, vboxIID_v2_x_WIN32 *iid,
+vboxIIDFromUUID_v2_x_WIN32(vboxPrivate *data, vboxIID_v2_x_WIN32 *iid,
                            const unsigned char *uuid)
 {
     vboxIIDUnalloc_v2_x_WIN32(data, iid);
@@ -344,7 +344,7 @@ vboxIIDFromUUID_v2_x_WIN32(vboxGlobalData *data, vboxIID_v2_x_WIN32 *iid,
 }
 
 static void
-_vboxIIDFromUUID(vboxGlobalData *data, vboxIIDUnion *iidu,
+_vboxIIDFromUUID(vboxPrivate *data, vboxIIDUnion *iidu,
                  const unsigned char *uuid)
 {
     vboxIIDFromUUID_v2_x_WIN32(data, &iidu->vboxIID_v2_x_WIN32, uuid);
@@ -357,13 +357,13 @@ vboxIIDIsEqual_v2_x_WIN32(vboxIID_v2_x_WIN32 *iid1, vboxIID_v2_x_WIN32 *iid2)
 }
 
 static bool
-_vboxIIDIsEqual(vboxGlobalData *data ATTRIBUTE_UNUSED, vboxIIDUnion *iidu1, vboxIIDUnion *iidu2)
+_vboxIIDIsEqual(vboxPrivate *data ATTRIBUTE_UNUSED, vboxIIDUnion *iidu1, vboxIIDUnion *iidu2)
 {
     return vboxIIDIsEqual_v2_x_WIN32(&iidu1->vboxIID_v2_x_WIN32, &iidu2->vboxIID_v2_x_WIN32);
 }
 
 static void
-vboxIIDFromArrayItem_v2_x_WIN32(vboxGlobalData *data, vboxIID_v2_x_WIN32 *iid,
+vboxIIDFromArrayItem_v2_x_WIN32(vboxPrivate *data, vboxIID_v2_x_WIN32 *iid,
                                 vboxArray *array, int idx)
 {
     GUID *items = (GUID *)array->items;
@@ -374,7 +374,7 @@ vboxIIDFromArrayItem_v2_x_WIN32(vboxGlobalData *data, vboxIID_v2_x_WIN32 *iid,
 }
 
 static void
-_vboxIIDFromArrayItem(vboxGlobalData *data, vboxIIDUnion *iidu,
+_vboxIIDFromArrayItem(vboxPrivate *data, vboxIIDUnion *iidu,
                       vboxArray *array, int idx)
 {
     vboxIIDFromArrayItem_v2_x_WIN32(data, &iidu->vboxIID_v2_x_WIN32, array, idx);
@@ -397,7 +397,7 @@ typedef struct _vboxIID_v2_x vboxIID_v2_x;
 #  define IID_MEMBER(name) (iidu->vboxIID_v2_x.name)
 
 static void
-vboxIIDUnalloc_v2_x(vboxGlobalData *data, vboxIID_v2_x *iid)
+vboxIIDUnalloc_v2_x(vboxPrivate *data, vboxIID_v2_x *iid)
 {
     if (iid->value == NULL)
         return;
@@ -409,7 +409,7 @@ vboxIIDUnalloc_v2_x(vboxGlobalData *data, vboxIID_v2_x *iid)
 }
 
 static void
-_vboxIIDUnalloc(vboxGlobalData *data, vboxIIDUnion *iidu)
+_vboxIIDUnalloc(vboxPrivate *data, vboxIIDUnion *iidu)
 {
     vboxIIDUnalloc_v2_x(data, &iidu->vboxIID_v2_x);
 }
@@ -421,14 +421,14 @@ vboxIIDToUUID_v2_x(vboxIID_v2_x *iid, unsigned char *uuid)
 }
 
 static void
-_vboxIIDToUUID(vboxGlobalData *data ATTRIBUTE_UNUSED,
+_vboxIIDToUUID(vboxPrivate *data ATTRIBUTE_UNUSED,
                vboxIIDUnion *iidu, unsigned char *uuid)
 {
     vboxIIDToUUID_v2_x(&iidu->vboxIID_v2_x, uuid);
 }
 
 static void
-vboxIIDFromUUID_v2_x(vboxGlobalData *data, vboxIID_v2_x *iid,
+vboxIIDFromUUID_v2_x(vboxPrivate *data, vboxIID_v2_x *iid,
                      const unsigned char *uuid)
 {
     vboxIIDUnalloc_v2_x(data, iid);
@@ -440,7 +440,7 @@ vboxIIDFromUUID_v2_x(vboxGlobalData *data, vboxIID_v2_x *iid,
 }
 
 static void
-_vboxIIDFromUUID(vboxGlobalData *data, vboxIIDUnion *iidu,
+_vboxIIDFromUUID(vboxPrivate *data, vboxIIDUnion *iidu,
                  const unsigned char *uuid)
 {
     vboxIIDFromUUID_v2_x(data, &iidu->vboxIID_v2_x, uuid);
@@ -453,14 +453,14 @@ vboxIIDIsEqual_v2_x(vboxIID_v2_x *iid1, vboxIID_v2_x *iid2)
 }
 
 static bool
-_vboxIIDIsEqual(vboxGlobalData *data ATTRIBUTE_UNUSED,
+_vboxIIDIsEqual(vboxPrivate *data ATTRIBUTE_UNUSED,
                 vboxIIDUnion *iidu1, vboxIIDUnion *iidu2)
 {
     return vboxIIDIsEqual_v2_x(&iidu1->vboxIID_v2_x, &iidu2->vboxIID_v2_x);
 }
 
 static void
-vboxIIDFromArrayItem_v2_x(vboxGlobalData *data, vboxIID_v2_x *iid,
+vboxIIDFromArrayItem_v2_x(vboxPrivate *data, vboxIID_v2_x *iid,
                           vboxArray *array, int idx)
 {
     vboxIIDUnalloc_v2_x(data, iid);
@@ -471,7 +471,7 @@ vboxIIDFromArrayItem_v2_x(vboxGlobalData *data, vboxIID_v2_x *iid,
 }
 
 static void
-_vboxIIDFromArrayItem(vboxGlobalData *data, vboxIIDUnion *iidu,
+_vboxIIDFromArrayItem(vboxPrivate *data, vboxIIDUnion *iidu,
                       vboxArray *array, int idx)
 {
     vboxIIDFromArrayItem_v2_x(data, &iidu->vboxIID_v2_x, array, idx);
@@ -496,7 +496,7 @@ typedef struct _vboxIID_v3_x vboxIID_v3_x;
 # define IID_MEMBER(name) (iidu->vboxIID_v3_x.name)
 
 static void
-vboxIIDUnalloc_v3_x(vboxGlobalData *data, vboxIID_v3_x *iid)
+vboxIIDUnalloc_v3_x(vboxPrivate *data, vboxIID_v3_x *iid)
 {
     if (iid->value != NULL && iid->owner)
         data->pFuncs->pfnUtf16Free(iid->value);
@@ -506,13 +506,13 @@ vboxIIDUnalloc_v3_x(vboxGlobalData *data, vboxIID_v3_x *iid)
 }
 
 static void
-_vboxIIDUnalloc(vboxGlobalData *data, vboxIIDUnion *iidu)
+_vboxIIDUnalloc(vboxPrivate *data, vboxIIDUnion *iidu)
 {
     vboxIIDUnalloc_v3_x(data, &iidu->vboxIID_v3_x);
 }
 
 static void
-vboxIIDToUUID_v3_x(vboxGlobalData *data, vboxIID_v3_x *iid,
+vboxIIDToUUID_v3_x(vboxPrivate *data, vboxIID_v3_x *iid,
                    unsigned char *uuid)
 {
     char *utf8 = NULL;
@@ -525,14 +525,14 @@ vboxIIDToUUID_v3_x(vboxGlobalData *data, vboxIID_v3_x *iid,
 }
 
 static void
-_vboxIIDToUUID(vboxGlobalData *data, vboxIIDUnion *iidu,
+_vboxIIDToUUID(vboxPrivate *data, vboxIIDUnion *iidu,
                unsigned char *uuid)
 {
     vboxIIDToUUID_v3_x(data, &iidu->vboxIID_v3_x, uuid);
 }
 
 static void
-vboxIIDFromUUID_v3_x(vboxGlobalData *data, vboxIID_v3_x *iid,
+vboxIIDFromUUID_v3_x(vboxPrivate *data, vboxIID_v3_x *iid,
                      const unsigned char *uuid)
 {
     char utf8[VIR_UUID_STRING_BUFLEN];
@@ -545,14 +545,14 @@ vboxIIDFromUUID_v3_x(vboxGlobalData *data, vboxIID_v3_x *iid,
 }
 
 static void
-_vboxIIDFromUUID(vboxGlobalData *data, vboxIIDUnion *iidu,
+_vboxIIDFromUUID(vboxPrivate *data, vboxIIDUnion *iidu,
                  const unsigned char *uuid)
 {
     vboxIIDFromUUID_v3_x(data, &iidu->vboxIID_v3_x, uuid);
 }
 
 static bool
-vboxIIDIsEqual_v3_x(vboxGlobalData *data, vboxIID_v3_x *iid1,
+vboxIIDIsEqual_v3_x(vboxPrivate *data, vboxIID_v3_x *iid1,
                     vboxIID_v3_x *iid2)
 {
     unsigned char uuid1[VIR_UUID_BUFLEN];
@@ -570,14 +570,14 @@ vboxIIDIsEqual_v3_x(vboxGlobalData *data, vboxIID_v3_x *iid1,
 }
 
 static bool
-_vboxIIDIsEqual(vboxGlobalData *data, vboxIIDUnion *iidu1,
+_vboxIIDIsEqual(vboxPrivate *data, vboxIIDUnion *iidu1,
                 vboxIIDUnion *iidu2)
 {
     return vboxIIDIsEqual_v3_x(data, &iidu1->vboxIID_v3_x, &iidu2->vboxIID_v3_x);
 }
 
 static void
-vboxIIDFromArrayItem_v3_x(vboxGlobalData *data, vboxIID_v3_x *iid,
+vboxIIDFromArrayItem_v3_x(vboxPrivate *data, vboxIID_v3_x *iid,
                           vboxArray *array, int idx)
 {
     vboxIIDUnalloc_v3_x(data, iid);
@@ -587,7 +587,7 @@ vboxIIDFromArrayItem_v3_x(vboxGlobalData *data, vboxIID_v3_x *iid,
 }
 
 static void
-_vboxIIDFromArrayItem(vboxGlobalData *data, vboxIIDUnion *iidu,
+_vboxIIDFromArrayItem(vboxPrivate *data, vboxIIDUnion *iidu,
                       vboxArray *array, int idx)
 {
     vboxIIDFromArrayItem_v3_x(data, &iidu->vboxIID_v3_x, array, idx);
@@ -791,7 +791,7 @@ static virDomainState _vboxConvertState(PRUint32 state)
 #if VBOX_API_VERSION < 3001000
 
 static void
-_vboxAttachDrivesOld(virDomainDefPtr def, vboxGlobalData *data, IMachine *machine)
+_vboxAttachDrivesOld(virDomainDefPtr def, vboxPrivate *data, IMachine *machine)
 {
     size_t i;
     nsresult rc;
@@ -1037,7 +1037,7 @@ _vboxAttachDrivesOld(virDomainDefPtr def, vboxGlobalData *data, IMachine *machin
 #elif VBOX_API_VERSION < 4000000
 
 static void
-_vboxAttachDrivesOld(virDomainDefPtr def, vboxGlobalData *data, IMachine *machine)
+_vboxAttachDrivesOld(virDomainDefPtr def, vboxPrivate *data, IMachine *machine)
 {
     size_t i;
     nsresult rc = 0;
@@ -1264,7 +1264,7 @@ _vboxAttachDrivesOld(virDomainDefPtr def, vboxGlobalData *data, IMachine *machin
 
 static void
 _vboxAttachDrivesOld(virDomainDefPtr def ATTRIBUTE_UNUSED,
-                     vboxGlobalData *data ATTRIBUTE_UNUSED,
+                     vboxPrivate *data ATTRIBUTE_UNUSED,
                      IMachine *machine ATTRIBUTE_UNUSED)
 {
     vboxUnsupported();
@@ -1278,7 +1278,7 @@ _vboxDomainSnapshotRestore(virDomainPtr dom,
                           IMachine *machine,
                           ISnapshot *snapshot)
 {
-    vboxGlobalData *data = dom->conn->privateData;
+    vboxPrivate *data = dom->conn->privateData;
     vboxIID iid = VBOX_IID_INITIALIZER;
     nsresult rc;
     int ret = -1;
@@ -1312,7 +1312,7 @@ _vboxDomainSnapshotRestore(virDomainPtr dom,
                           IMachine *machine,
                           ISnapshot *snapshot)
 {
-    vboxGlobalData *data = dom->conn->privateData;
+    vboxPrivate *data = dom->conn->privateData;
 # if VBOX_API_VERSION < 5000000
     IConsole *console = NULL;
 # endif /*VBOX_API_VERSION < 5000000*/
@@ -1422,7 +1422,7 @@ vboxCallbackOnMachineStateChange(IVirtualBoxCallback *pThis ATTRIBUTE_UNUSED,
     int event = 0;
     int detail = 0;
 
-    vboxDriverLock(g_pVBoxGlobalData);
+    vboxDriverLock((vboxPrivate *) g_pVBoxGlobalData);
 
     VIR_DEBUG("IVirtualBoxCallback: %p, State: %d", pThis, state);
     DEBUGPRUnichar("machineId", machineId);
@@ -1474,7 +1474,7 @@ vboxCallbackOnMachineStateChange(IVirtualBoxCallback *pThis ATTRIBUTE_UNUSED,
         }
     }
 
-    vboxDriverUnlock(g_pVBoxGlobalData);
+    vboxDriverUnlock((vboxPrivate *) g_pVBoxGlobalData);
 
     return NS_OK;
 }
@@ -1541,7 +1541,7 @@ vboxCallbackOnMachineRegistered(IVirtualBoxCallback *pThis ATTRIBUTE_UNUSED,
     int event = 0;
     int detail = 0;
 
-    vboxDriverLock(g_pVBoxGlobalData);
+    vboxDriverLock((vboxPrivate *) g_pVBoxGlobalData);
 
     VIR_DEBUG("IVirtualBoxCallback: %p, registered: %s", pThis, registered ? "true" : "false");
     DEBUGPRUnichar("machineId", machineId);
@@ -1578,7 +1578,7 @@ vboxCallbackOnMachineRegistered(IVirtualBoxCallback *pThis ATTRIBUTE_UNUSED,
         }
     }
 
-    vboxDriverUnlock(g_pVBoxGlobalData);
+    vboxDriverUnlock((vboxPrivate *) g_pVBoxGlobalData);
 
     return NS_OK;
 }
@@ -1762,7 +1762,7 @@ vboxConnectDomainEventRegister(virConnectPtr conn,
                                void *opaque,
                                virFreeCallback freecb)
 {
-    vboxGlobalData *data = conn->privateData;
+    vboxPrivate *data = conn->privateData;
     int vboxRet = -1;
     nsresult rc;
     int ret = -1;
@@ -1827,7 +1827,7 @@ static int
 vboxConnectDomainEventDeregister(virConnectPtr conn,
                                  virConnectDomainEventCallback callback)
 {
-    vboxGlobalData *data = conn->privateData;
+    vboxPrivate *data = conn->privateData;
     int cnt;
     int ret = -1;
 
@@ -1866,7 +1866,7 @@ static int vboxConnectDomainEventRegisterAny(virConnectPtr conn,
                                              void *opaque,
                                              virFreeCallback freecb)
 {
-    vboxGlobalData *data = conn->privateData;
+    vboxPrivate *data = conn->privateData;
     int vboxRet = -1;
     nsresult rc;
     int ret = -1;
@@ -1933,7 +1933,7 @@ static int
 vboxConnectDomainEventDeregisterAny(virConnectPtr conn,
                                     int callbackID)
 {
-    vboxGlobalData *data = conn->privateData;
+    vboxPrivate *data = conn->privateData;
     int cnt;
     int ret = -1;
 
@@ -1976,7 +1976,7 @@ _registerDomainEvent(virHypervisorDriverPtr driver)
 
 #endif /* !(VBOX_API_VERSION == 2002000 || VBOX_API_VERSION >= 4000000) */
 
-static int _pfnInitialize(vboxGlobalData *data)
+static int _pfnInitialize(vboxPrivate *data)
 {
     data->pFuncs = g_pfnGetFunctions(VBOX_XPCOMC_VERSION);
     if (data->pFuncs == NULL)
@@ -1990,7 +1990,7 @@ static int _pfnInitialize(vboxGlobalData *data)
 }
 
 static int
-_initializeDomainEvent(vboxGlobalData *data ATTRIBUTE_UNUSED)
+_initializeDomainEvent(vboxPrivate *data ATTRIBUTE_UNUSED)
 {
 #if VBOX_API_VERSION <= 2002000 || VBOX_API_VERSION >= 4000000
     /* No event queue functionality in 2.2.* and 4.* as of now */
@@ -2009,12 +2009,12 @@ _initializeDomainEvent(vboxGlobalData *data ATTRIBUTE_UNUSED)
 }
 
 static
-void _registerGlobalData(vboxGlobalData *data ATTRIBUTE_UNUSED)
+void _registerGlobalData(vboxPrivate *data ATTRIBUTE_UNUSED)
 {
 #if VBOX_API_VERSION == 2002000
     vboxUnsupported();
 #else /* VBOX_API_VERSION != 2002000 */
-    g_pVBoxGlobalData = data;
+    g_pVBoxGlobalData = (vboxGlobalData *) data;
 #endif /* VBOX_API_VERSION != 2002000 */
 }
 
@@ -2022,7 +2022,7 @@ void _registerGlobalData(vboxGlobalData *data ATTRIBUTE_UNUSED)
 
 # if VBOX_API_VERSION < 3001000
 static void
-_detachDevices(vboxGlobalData *data ATTRIBUTE_UNUSED,
+_detachDevices(vboxPrivate *data ATTRIBUTE_UNUSED,
                IMachine *machine, PRUnichar *hddcnameUtf16)
 {
     /* Disconnect all the drives if present */
@@ -2032,7 +2032,7 @@ _detachDevices(vboxGlobalData *data ATTRIBUTE_UNUSED,
 }
 # else  /* VBOX_API_VERSION >= 3001000 */
 static void
-_detachDevices(vboxGlobalData *data, IMachine *machine,
+_detachDevices(vboxPrivate *data, IMachine *machine,
                PRUnichar *hddcnameUtf16 ATTRIBUTE_UNUSED)
 {
     /* get all the controller first, then the attachments and
@@ -2084,7 +2084,7 @@ _detachDevices(vboxGlobalData *data, IMachine *machine,
 # endif /* VBOX_API_VERSION >= 3001000 */
 
 static nsresult
-_unregisterMachine(vboxGlobalData *data, vboxIIDUnion *iidu, IMachine **machine)
+_unregisterMachine(vboxPrivate *data, vboxIIDUnion *iidu, IMachine **machine)
 {
     return data->vboxObj->vtbl->UnregisterMachine(data->vboxObj, IID_MEMBER(value), machine);
 }
@@ -2098,7 +2098,7 @@ _deleteConfig(IMachine *machine)
 #else /* VBOX_API_VERSION >= 4000000 */
 
 static void
-_detachDevices(vboxGlobalData *data ATTRIBUTE_UNUSED,
+_detachDevices(vboxPrivate *data ATTRIBUTE_UNUSED,
                IMachine *machine ATTRIBUTE_UNUSED,
                PRUnichar *hddcnameUtf16 ATTRIBUTE_UNUSED)
 {
@@ -2106,7 +2106,7 @@ _detachDevices(vboxGlobalData *data ATTRIBUTE_UNUSED,
 }
 
 static nsresult
-_unregisterMachine(vboxGlobalData *data, vboxIIDUnion *iidu, IMachine **machine)
+_unregisterMachine(vboxPrivate *data, vboxIIDUnion *iidu, IMachine **machine)
 {
     nsresult rc;
     vboxArray media = VBOX_ARRAY_INITIALIZER;
@@ -2170,7 +2170,7 @@ _deleteConfig(IMachine *machine)
 
 static void
 _dumpIDEHDDsOld(virDomainDefPtr def,
-                vboxGlobalData *data,
+                vboxPrivate *data,
                 IMachine *machine)
 {
     PRInt32 hddNum = 0;
@@ -2279,7 +2279,7 @@ _dumpIDEHDDsOld(virDomainDefPtr def,
 
 static void
 _dumpDVD(virDomainDefPtr def,
-         vboxGlobalData *data,
+         vboxPrivate *data,
          IMachine *machine)
 {
     IDVDDrive *dvdDrive = NULL;
@@ -2334,7 +2334,7 @@ _dumpDVD(virDomainDefPtr def,
 }
 
 static int
-_attachDVD(vboxGlobalData *data, IMachine *machine, const char *src)
+_attachDVD(vboxPrivate *data, IMachine *machine, const char *src)
 {
     IDVDDrive *dvdDrive = NULL;
     IDVDImage *dvdImage = NULL;
@@ -2418,7 +2418,7 @@ _detachDVD(IMachine *machine)
 
 static void
 _dumpFloppy(virDomainDefPtr def,
-            vboxGlobalData *data,
+            vboxPrivate *data,
             IMachine *machine)
 {
     IFloppyDrive *floppyDrive = NULL;
@@ -2476,7 +2476,7 @@ _dumpFloppy(virDomainDefPtr def,
 }
 
 static int
-_attachFloppy(vboxGlobalData *data, IMachine *machine, const char *src)
+_attachFloppy(vboxPrivate *data, IMachine *machine, const char *src)
 {
     IFloppyDrive *floppyDrive;
     IFloppyImage *floppyImage = NULL;
@@ -2573,7 +2573,7 @@ _detachFloppy(IMachine *machine)
 
 static void
 _dumpIDEHDDsOld(virDomainDefPtr def ATTRIBUTE_UNUSED,
-                vboxGlobalData *data ATTRIBUTE_UNUSED,
+                vboxPrivate *data ATTRIBUTE_UNUSED,
                 IMachine *machine ATTRIBUTE_UNUSED)
 {
     vboxUnsupported();
@@ -2581,14 +2581,14 @@ _dumpIDEHDDsOld(virDomainDefPtr def ATTRIBUTE_UNUSED,
 
 static void
 _dumpDVD(virDomainDefPtr def ATTRIBUTE_UNUSED,
-         vboxGlobalData *data ATTRIBUTE_UNUSED,
+         vboxPrivate *data ATTRIBUTE_UNUSED,
          IMachine *machine ATTRIBUTE_UNUSED)
 {
     vboxUnsupported();
 }
 
 static int
-_attachDVD(vboxGlobalData *data ATTRIBUTE_UNUSED,
+_attachDVD(vboxPrivate *data ATTRIBUTE_UNUSED,
            IMachine *machine ATTRIBUTE_UNUSED,
            const char *src ATTRIBUTE_UNUSED)
 {
@@ -2605,14 +2605,14 @@ _detachDVD(IMachine *machine ATTRIBUTE_UNUSED)
 
 static void
 _dumpFloppy(virDomainDefPtr def ATTRIBUTE_UNUSED,
-            vboxGlobalData *data ATTRIBUTE_UNUSED,
+            vboxPrivate *data ATTRIBUTE_UNUSED,
             IMachine *machine ATTRIBUTE_UNUSED)
 {
     vboxUnsupported();
 }
 
 static int
-_attachFloppy(vboxGlobalData *data ATTRIBUTE_UNUSED,
+_attachFloppy(vboxPrivate *data ATTRIBUTE_UNUSED,
               IMachine *machine ATTRIBUTE_UNUSED,
               const char *src ATTRIBUTE_UNUSED)
 {
@@ -2629,7 +2629,7 @@ _detachFloppy(IMachine *machine ATTRIBUTE_UNUSED)
 
 #endif  /* VBOX_API_VERSION >= 3001000 */
 
-static void _pfnUninitialize(vboxGlobalData *data)
+static void _pfnUninitialize(vboxPrivate *data)
 {
     if (data->pFuncs)
         data->pFuncs->pfnComUninitialize();
@@ -2692,7 +2692,7 @@ static void _DEBUGIID(const char *msg, vboxIIDUnion *iidu)
 #endif /* VBOX_API_VERSION != 2002000 */
 
 static void
-_vboxIIDToUtf8(vboxGlobalData *data ATTRIBUTE_UNUSED,
+_vboxIIDToUtf8(vboxPrivate *data ATTRIBUTE_UNUSED,
                vboxIIDUnion *iidu ATTRIBUTE_UNUSED,
                char **utf8 ATTRIBUTE_UNUSED)
 {
@@ -2821,7 +2821,7 @@ _virtualboxGetHost(IVirtualBox *vboxObj, IHost **host)
 }
 
 static nsresult
-_virtualboxCreateMachine(vboxGlobalData *data, virDomainDefPtr def, IMachine **machine, char *uuidstr ATTRIBUTE_UNUSED)
+_virtualboxCreateMachine(vboxPrivate *data, virDomainDefPtr def, IMachine **machine, char *uuidstr ATTRIBUTE_UNUSED)
 {
     vboxIID iid = VBOX_IID_INITIALIZER;
     PRUnichar *machineNameUtf16 = NULL;
@@ -3031,7 +3031,7 @@ _machineRemoveSharedFolder(IMachine *machine, PRUnichar *name)
 }
 
 static nsresult
-_machineLaunchVMProcess(vboxGlobalData *data,
+_machineLaunchVMProcess(vboxPrivate *data,
                         IMachine *machine ATTRIBUTE_UNUSED,
                         vboxIIDUnion *iidu ATTRIBUTE_UNUSED,
                         PRUnichar *sessionType, PRUnichar *env,
@@ -3329,13 +3329,13 @@ _machineSaveSettings(IMachine *machine)
 #if VBOX_API_VERSION < 4000000
 
 static nsresult
-_sessionOpen(vboxGlobalData *data, vboxIIDUnion *iidu, IMachine *machine ATTRIBUTE_UNUSED)
+_sessionOpen(vboxPrivate *data, vboxIIDUnion *iidu, IMachine *machine ATTRIBUTE_UNUSED)
 {
     return data->vboxObj->vtbl->OpenSession(data->vboxObj, data->vboxSession, IID_MEMBER(value));
 }
 
 static nsresult
-_sessionOpenExisting(vboxGlobalData *data, vboxIIDUnion *iidu, IMachine *machine ATTRIBUTE_UNUSED)
+_sessionOpenExisting(vboxPrivate *data, vboxIIDUnion *iidu, IMachine *machine ATTRIBUTE_UNUSED)
 {
     return data->vboxObj->vtbl->OpenExistingSession(data->vboxObj, data->vboxSession, IID_MEMBER(value));
 }
@@ -3349,13 +3349,13 @@ _sessionClose(ISession *session)
 #else /* VBOX_API_VERSION >= 4000000 */
 
 static nsresult
-_sessionOpen(vboxGlobalData *data, vboxIIDUnion *iidu ATTRIBUTE_UNUSED, IMachine *machine)
+_sessionOpen(vboxPrivate *data, vboxIIDUnion *iidu ATTRIBUTE_UNUSED, IMachine *machine)
 {
     return machine->vtbl->LockMachine(machine, data->vboxSession, LockType_Write);
 }
 
 static nsresult
-_sessionOpenExisting(vboxGlobalData *data, vboxIIDUnion *iidu ATTRIBUTE_UNUSED, IMachine *machine)
+_sessionOpenExisting(vboxPrivate *data, vboxIIDUnion *iidu ATTRIBUTE_UNUSED, IMachine *machine)
 {
     return machine->vtbl->LockMachine(machine, data->vboxSession, LockType_Shared);
 }
@@ -3930,7 +3930,7 @@ _vrdxServerSetEnabled(IVRDxServer *VRDxServer, PRBool enabled)
 }
 
 static nsresult
-_vrdxServerGetPorts(vboxGlobalData *data ATTRIBUTE_UNUSED,
+_vrdxServerGetPorts(vboxPrivate *data ATTRIBUTE_UNUSED,
                     IVRDxServer *VRDxServer, virDomainGraphicsDefPtr graphics)
 {
     nsresult rc;
@@ -3970,7 +3970,7 @@ _vrdxServerGetPorts(vboxGlobalData *data ATTRIBUTE_UNUSED,
 }
 
 static nsresult
-_vrdxServerSetPorts(vboxGlobalData *data ATTRIBUTE_UNUSED,
+_vrdxServerSetPorts(vboxPrivate *data ATTRIBUTE_UNUSED,
                     IVRDxServer *VRDxServer, virDomainGraphicsDefPtr graphics)
 {
     nsresult rc = 0;
@@ -4030,7 +4030,7 @@ _vrdxServerSetAllowMultiConnection(IVRDxServer *VRDxServer, PRBool enabled)
 }
 
 static nsresult
-_vrdxServerGetNetAddress(vboxGlobalData *data ATTRIBUTE_UNUSED,
+_vrdxServerGetNetAddress(vboxPrivate *data ATTRIBUTE_UNUSED,
                          IVRDxServer *VRDxServer, PRUnichar **netAddress)
 {
 #if VBOX_API_VERSION >= 4000000
@@ -4046,7 +4046,7 @@ _vrdxServerGetNetAddress(vboxGlobalData *data ATTRIBUTE_UNUSED,
 }
 
 static nsresult
-_vrdxServerSetNetAddress(vboxGlobalData *data ATTRIBUTE_UNUSED,
+_vrdxServerSetNetAddress(vboxPrivate *data ATTRIBUTE_UNUSED,
                          IVRDxServer *VRDxServer, PRUnichar *netAddress)
 {
 #if VBOX_API_VERSION < 4000000
@@ -4456,7 +4456,7 @@ _hostFindHostNetworkInterfaceByName(IHost *host, PRUnichar *name,
 }
 
 static nsresult
-_hostCreateHostOnlyNetworkInterface(vboxGlobalData *data ATTRIBUTE_UNUSED,
+_hostCreateHostOnlyNetworkInterface(vboxPrivate *data ATTRIBUTE_UNUSED,
                                     IHost *host, char *name ATTRIBUTE_UNUSED,
                                     IHostNetworkInterface **networkInterface)
 {
