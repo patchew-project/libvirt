@@ -110,6 +110,36 @@ typedef struct {
     PCVBOXXPCOM pFuncs;
 
     /* The next is used for domainEvent */
+    /* Async event handling */
+    virObjectEventStatePtr domainEvents;
+    int fdWatch;
+    int volatile vboxCallBackRefCount;
+# if defined(VBOX_API_VERSION) && VBOX_API_VERSION > 2002000 && VBOX_API_VERSION < 4000000
+    IVirtualBoxCallback *vboxCallback;
+    nsIEventQueue *vboxQueue;
+# else /* VBOX_API_VERSION <= 2002000 || VBOX_API_VERSION >= 4000000 || VBOX_API_VERSION undefined */
+    void *vboxCallback;
+    void *vboxQueue;
+# endif /* VBOX_API_VERSION <= 2002000 || VBOX_API_VERSION >= 4000000 || VBOX_API_VERSION undefined */
+
+    /* pointer back to the connection */
+    virConnectPtr conn;
+} vboxPrivate;
+
+typedef struct {
+    virMutex lock;
+    unsigned long version;
+
+    virCapsPtr caps;
+    virDomainXMLOptionPtr xmlopt;
+
+    IVirtualBox *vboxObj;
+    ISession *vboxSession;
+
+    /** Our version specific API table pointer. */
+    PCVBOXXPCOM pFuncs;
+
+    /* The next is used for domainEvent */
 # if defined(VBOX_API_VERSION) && VBOX_API_VERSION > 2002000 && VBOX_API_VERSION < 4000000
 
     /* Async event handling */
