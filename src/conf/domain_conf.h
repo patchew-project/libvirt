@@ -561,6 +561,32 @@ typedef enum {
     VIR_DOMAIN_DISK_MIRROR_STATE_LAST
 } virDomainDiskMirrorState;
 
+# define VIR_DOMAIN_MEMORY_DEFAULT_PATH "/var/lib/libvirt/qemu"
+
+typedef enum {
+    VIR_DOMAIN_MEMORY_SOURCE_NONE = 0,  /* No memory source defined */
+    VIR_DOMAIN_MEMORY_SOURCE_FILE,      /* Memory source is set as file */
+    VIR_DOMAIN_MEMORY_SOURCE_ANONYMOUS, /* Memory source is set as anonymous */
+
+    VIR_DOMAIN_MEMORY_SOURCE_LAST,
+} virDomainMemorySource;
+
+typedef enum {
+    VIR_DOMAIN_MEMORY_ACCESS_NONE = 0,  /*  No memory access defined */
+    VIR_DOMAIN_MEMORY_ACCESS_SHARED,    /* Memory access is set as shared */
+    VIR_DOMAIN_MEMORY_ACCESS_PRIVATE,   /* Memory access is set as private */
+
+    VIR_DOMAIN_MEMORY_ACCESS_LAST,
+} virDomainMemoryAccess;
+
+typedef enum {
+    VIR_DOMAIN_MEMORY_ALLOCATION_NONE = 0,  /* No memory allocation defined */
+    VIR_DOMAIN_MEMORY_ALLOCATION_IMMEDIATE, /* Memory allocation is set as immediate */
+    VIR_DOMAIN_MEMORY_ALLOCATION_ONDEMAND,  /* Memory allocation is set as ondemand */
+
+    VIR_DOMAIN_MEMORY_ALLOCATION_LAST,
+} virDomainMemoryAllocation;
+
 
 /* Stores the virtual disk configuration */
 struct _virDomainDiskDef {
@@ -2093,6 +2119,11 @@ struct _virDomainMemtune {
     unsigned long long soft_limit; /* in kibibytes, limit at off_t bytes */
     unsigned long long min_guarantee; /* in kibibytes, limit at off_t bytes */
     unsigned long long swap_hard_limit; /* in kibibytes, limit at off_t bytes */
+
+    int source; /* enum virDomainMemorySource */
+    int access; /* enum virDomainMemoryAccess */
+    int allocation; /* enum virDomainMemoryAllocation */
+    char* mem_path; /* memory path when file source is selected */
 };
 
 typedef struct _virDomainPowerManagement virDomainPowerManagement;
@@ -3074,6 +3105,9 @@ VIR_ENUM_DECL(virDomainTPMModel)
 VIR_ENUM_DECL(virDomainTPMBackend)
 VIR_ENUM_DECL(virDomainMemoryModel)
 VIR_ENUM_DECL(virDomainMemoryBackingModel)
+VIR_ENUM_DECL(virDomainMemorySource)
+VIR_ENUM_DECL(virDomainMemoryAccess)
+VIR_ENUM_DECL(virDomainMemoryAllocation)
 VIR_ENUM_DECL(virDomainIOMMUModel)
 /* from libvirt.h */
 VIR_ENUM_DECL(virDomainState)
