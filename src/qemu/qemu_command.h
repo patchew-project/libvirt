@@ -182,6 +182,10 @@ bool qemuCheckCCWS390AddressSupport(const virDomainDef *def,
                                     virDomainDeviceInfo info,
                                     virQEMUCapsPtr qemuCaps,
                                     const char *devicename);
+int
+qemuBuildMemoryBackingCommandLine(const virDomainDef *def,
+                          virCommandPtr cmd,
+                          virQEMUCapsPtr qemuCaps);
 
 virJSONValuePtr qemuBuildHotpluggableCPUProps(const virDomainVcpuDef *vcpu)
     ATTRIBUTE_NONNULL(1);
