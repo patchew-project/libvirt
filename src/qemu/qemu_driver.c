@@ -13887,6 +13887,12 @@ qemuDomainSnapshotPrepare(virConnectPtr conn,
                                                       active) < 0)
                 goto cleanup;
 
+            /* sheepdog allow to store memory inside the vdi */
+            if (vm->def->disks[i]->src->type == VIR_STORAGE_TYPE_NETWORK &&
+                (vm->def->disks[i]->src->protocol == VIR_STORAGE_NET_PROTOCOL_SHEEPDOG)) {
+                break;
+            }
+
             if (vm->def->disks[i]->src->format > 0 &&
                 vm->def->disks[i]->src->format != VIR_STORAGE_FILE_QCOW2) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
