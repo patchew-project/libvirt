@@ -4030,6 +4030,34 @@ qemuMonitorJSONDiskNameLookupOne(virJSONValuePtr image,
 }
 
 
+/* If the current device (thisdev) is the one we're looking for (searchDevice),
+ * then call LookupOne returning the desired name.
+ *
+ * Returns 0 on not found, 1 when thisdev and searchDevice match - it is up
+ * to the caller to determine whether @foundDevice is filled in
+ */
+static int
+qemuMonitorJSONQueryBlockFillDiskNameLookup(virJSONValuePtr dev,
+                                            const char *thisdev,
+                                            const char *searchDevice,
+                                            virStorageSourcePtr top,
+                                            virStorageSourcePtr target,
+                                            char **foundDevice)
+{
+    virJSONValuePtr inserted;
+    virJSONValuePtr image;
+
+    if (STREQ(thisdev, searchDevice)) {
+        if ((inserted = virJSONValueObjectGetObject(dev, "inserted")) &&
+            (image = virJSONValueObjectGetObject(inserted, "image"))) {
+            *foundDevice = qemuMonitorJSONDiskNameLookupOne(image, top, target);
+        }
+        return 1;
+    }
+    return 0;
+}
+
+
 char *
 qemuMonitorJSONDiskNameLookup(qemuMonitorPtr mon,
                               const char *device,
@@ -4052,9 +4080,8 @@ qemuMonitorJSONDiskNameLookup(qemuMonitorPtr mon,
 
     for (i = 0; i < virJSONValueArraySize(devices); i++) {
         virJSONValuePtr dev = virJSONValueArrayGet(devices, i);
-        virJSONValuePtr inserted;
-        virJSONValuePtr image;
         const char *thisdev;
+        int rc;
 
         if (!dev || dev->type != VIR_JSON_TYPE_OBJECT) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -4068,13 +4095,13 @@ qemuMonitorJSONDiskNameLookup(qemuMonitorPtr mon,
             goto cleanup;
         }
 
-        if (STREQ(thisdev, device)) {
-            if ((inserted = virJSONValueObjectGetObject(dev, "inserted")) &&
-                (image = virJSONValueObjectGetObject(inserted, "image"))) {
-                ret = qemuMonitorJSONDiskNameLookupOne(image, top, target);
-            }
+        if ((rc = qemuMonitorJSONQueryBlockFillDiskNameLookup(dev, thisdev,
+                                                              device, top,
+                                                              target,
+                                                              &ret)) < 0)
+            goto cleanup;
+        if (rc == 1)
             break;
-        }
     }
     /* Guarantee an error when returning NULL, but don't override a
      * more specific error if one was already generated.  */
