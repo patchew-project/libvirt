@@ -114,6 +114,18 @@ VIR_ENUM_IMPL(qemuDeviceVideo, VIR_DOMAIN_VIDEO_TYPE_LAST,
               "", /* don't support parallels */
               "virtio-vga");
 
+VIR_ENUM_DECL(qemuDeviceVideoSec)
+
+VIR_ENUM_IMPL(qemuDeviceVideoSec, VIR_DOMAIN_VIDEO_TYPE_LAST,
+              "", /* no secondary device for VGA*/
+              "", /* no secondary device for cirrus-vga*/
+              "", /* no secondary device for vmware-svga*/
+              "", /* no device for xen */
+              "", /* don't support vbox */
+              "qxl",
+              "", /* don't support parallels */
+              "virtio-gpu-pci");
+
 VIR_ENUM_DECL(qemuSoundCodec)
 
 VIR_ENUM_IMPL(qemuSoundCodec, VIR_DOMAIN_SOUND_CODEC_TYPE_LAST,
@@ -4299,18 +4311,16 @@ qemuBuildDeviceVideoStr(const virDomainDef *def,
     virBuffer buf = VIR_BUFFER_INITIALIZER;
     const char *model;
 
-    if (video->primary) {
+    if (video->primary && qemuDomainSupportVideoVga(video, qemuCaps))
         model = qemuDeviceVideoTypeToString(video->type);
-        if (!model || STREQ(model, "")) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("video type %s is not supported with QEMU"),
-                           virDomainVideoTypeToString(video->type));
-            goto error;
-        }
-        if (!qemuDomainSupportVideoVga(video, qemuCaps))
-            model = "virtio-gpu-pci";
-    } else {
-        model = "qxl";
+    else
+        model = qemuDeviceVideoSecTypeToString(video->type);
+
+    if (!model || STREQ(model, "")) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("invalid model for video type '%s'"),
+                       virDomainVideoTypeToString(video->type));
+        goto error;
     }
 
     virBufferAsprintf(&buf, "%s,id=%s", model, video->info.alias);
