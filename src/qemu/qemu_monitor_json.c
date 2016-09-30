@@ -142,6 +142,8 @@ struct _qemuMonitorJSONQueryBlockArgs {
     char *foundDevice;
 };
 
+typedef int (*qemuMonitorJSONQueryBlockFillCallback)(qemuMonitorJSONQueryBlockArgsPtr args);
+
 static int
 qemuMonitorEventCompare(const void *key, const void *elt)
 {
@@ -1787,29 +1789,97 @@ qemuMonitorJSONSetMemoryStatsPeriod(qemuMonitorPtr mon,
 
 /* qemuMonitorJSONQueryBlock:
  * @mon: Monitor pointer
+ * @table: The hash table pointer to insert a device into
+ * @backingChain: Boolean whether to follow backing chaing
+ * @searchDevice: Specific device name to search on
+ * @top: Top of a chain to start looking
+ * @target: The backing element target
+ * @foundDevice: Pointer to address of returned found device string
+ * @cb: The callback function to fill in the specific data needs
  *
- * This helper will attempt to make a "query-block" call and check for
- * errors before returning with the reply.
+ * This helper will attempt to make a "query-block" call, check for
+ * errors, and scan the reply list of devices calling out the @cb program
+ * in order to perform the action on the element.
  *
- * Returns: NULL on error, reply on success
+ * The function can be used in one of two ways - either passing a hash
+ * @table and whether to search the backing chain in order to fill in the
+ * hash table with all the found devices or to pass a @searchDevice, @top,
+ * and @target in order to search the returned data for a specific device
+ * and return the @foundDevice string.
+ *
+ * The @cb program is expected to return -1 for error and quit, 0 for
+ * good status and continue, and 1 for good status and return. The caller
+ * for usage of @foundDevice is expected to pass a non-NULL argument.
+ *
+ * Returns: -1 on error, 0 on success
  */
-static virJSONValuePtr
-qemuMonitorJSONQueryBlock(qemuMonitorPtr mon)
+static int
+qemuMonitorJSONQueryBlock(qemuMonitorPtr mon,
+                          virHashTablePtr table,
+                          bool backingChain,
+                          const char *searchDevice,
+                          virStorageSourcePtr top,
+                          virStorageSourcePtr target,
+                          char **foundDevice,
+                          qemuMonitorJSONQueryBlockFillCallback cb)
 {
+    int ret = -1;
+    size_t i;
     virJSONValuePtr cmd;
     virJSONValuePtr reply = NULL;
+    virJSONValuePtr devices;
 
     if (!(cmd = qemuMonitorJSONMakeCommand("query-block", NULL)))
-        return NULL;
+        return -1;
 
     if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0 ||
-        qemuMonitorJSONCheckError(cmd, reply) < 0) {
-        virJSONValueFree(reply);
-        reply = NULL;
+        qemuMonitorJSONCheckError(cmd, reply) < 0)
+        goto cleanup;
+
+    if (!(devices = virJSONValueObjectGetArray(reply, "return"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("block info reply was missing device list"));
+        goto cleanup;
     }
 
+    for (i = 0; i < virJSONValueArraySize(devices); i++) {
+        int rc;
+        qemuMonitorJSONQueryBlockArgs args = {0};
+
+        args.dev = virJSONValueArrayGet(devices, i);
+        if (!args.dev || args.dev->type != VIR_JSON_TYPE_OBJECT) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("block info device or type was not in "
+                             "expected format"));
+            goto cleanup;
+        }
+
+        if (!(args.thisdev = virJSONValueObjectGetString(args.dev, "device"))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("block info device entry was not in "
+                             "expected format"));
+            goto cleanup;
+        }
+
+        args.table = table;
+        args.backingChain = backingChain;
+        args.searchDevice = searchDevice;
+        args.top = top;
+        args.target = target;
+        if ((rc = cb(&args)) < 0)
+            goto cleanup;
+
+        if (rc == 1) {
+            *foundDevice = args.foundDevice;
+            break;
+        }
+    }
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(reply);
     virJSONValueFree(cmd);
-    return reply;
+    return ret;
 }
 
 
@@ -1876,46 +1946,9 @@ qemuMonitorJSONQueryBlockFillBlockInfoTable(qemuMonitorJSONQueryBlockArgsPtr arg
 int qemuMonitorJSONGetBlockInfo(qemuMonitorPtr mon,
                                 virHashTablePtr table)
 {
-    int ret = -1;
-    size_t i;
-
-    virJSONValuePtr reply;
-    virJSONValuePtr devices;
-
-    if (!(reply = qemuMonitorJSONQueryBlock(mon)))
-        return -1;
-
-    if (!(devices = virJSONValueObjectGetArray(reply, "return"))) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("block info reply was missing device list"));
-        goto cleanup;
-    }
-
-    for (i = 0; i < virJSONValueArraySize(devices); i++) {
-        qemuMonitorJSONQueryBlockArgs args = {0};
-
-        args.dev = virJSONValueArrayGet(devices, i);
-        if (!args.dev || args.dev->type != VIR_JSON_TYPE_OBJECT) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("block info device entry was not in expected format"));
-            goto cleanup;
-        }
-
-        if (!(args.thisdev = virJSONValueObjectGetString(args.dev, "device"))) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("block info device entry was not in expected format"));
-            goto cleanup;
-        }
-
-        args.table = table;
-        if (qemuMonitorJSONQueryBlockFillBlockInfoTable(&args) < 0)
-            goto cleanup;
-    }
-
-    ret = 0;
- cleanup:
-    virJSONValueFree(reply);
-    return ret;
+    return qemuMonitorJSONQueryBlock(mon, table, false,
+                                     NULL, NULL, NULL, NULL,
+                                     qemuMonitorJSONQueryBlockFillBlockInfoTable);
 }
 
 
@@ -2135,49 +2168,9 @@ qemuMonitorJSONBlockStatsUpdateCapacity(qemuMonitorPtr mon,
                                         virHashTablePtr stats,
                                         bool backingChain)
 {
-    int ret = -1;
-    size_t i;
-    virJSONValuePtr reply;
-    virJSONValuePtr devices;
-
-    if (!(reply = qemuMonitorJSONQueryBlock(mon)))
-        return -1;
-
-    if (!(devices = virJSONValueObjectGetArray(reply, "return"))) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("query-block reply was missing device list"));
-        goto cleanup;
-    }
-
-    for (i = 0; i < virJSONValueArraySize(devices); i++) {
-        qemuMonitorJSONQueryBlockArgs args = {0};
-
-        args.dev = virJSONValueArrayGet(devices, i);
-        if (!args.dev || args.dev->type != VIR_JSON_TYPE_OBJECT) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("query-block device entry was not "
-                             "in expected format"));
-            goto cleanup;
-        }
-
-        if (!(args.thisdev = virJSONValueObjectGetString(args.dev, "device"))) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("query-block device entry was not "
-                             "in expected format"));
-            goto cleanup;
-        }
-
-        args.table = stats;
-        args.backingChain = backingChain;
-        if (qemuMonitorJSONQueryBlockFillBlockStatsTable(&args) < 0)
-            goto cleanup;
-    }
-
-    ret = 0;
-
- cleanup:
-    virJSONValueFree(reply);
-    return ret;
+    return qemuMonitorJSONQueryBlock(mon, stats, backingChain,
+                                     NULL, NULL, NULL, NULL,
+                                     qemuMonitorJSONQueryBlockFillBlockStatsTable);
 }
 
 
@@ -4076,55 +4069,18 @@ qemuMonitorJSONDiskNameLookup(qemuMonitorPtr mon,
                               virStorageSourcePtr target)
 {
     char *ret = NULL;
-    virJSONValuePtr reply;
-    virJSONValuePtr devices;
-    size_t i;
 
-    if (!(reply = qemuMonitorJSONQueryBlock(mon)))
+    if (qemuMonitorJSONQueryBlock(mon, NULL, false,
+                                  device, top, target, &ret,
+                                  qemuMonitorJSONQueryBlockDiskNameLookup) < 0)
         return NULL;
 
-    if (!(devices = virJSONValueObjectGetArray(reply, "return"))) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("block info reply was missing device list"));
-        goto cleanup;
-    }
-
-    for (i = 0; i < virJSONValueArraySize(devices); i++) {
-        qemuMonitorJSONQueryBlockArgs args = {0};
-        int rc;
-
-        args.dev = virJSONValueArrayGet(devices, i);
-        if (!args.dev || args.dev->type != VIR_JSON_TYPE_OBJECT) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("block info device entry was not in expected format"));
-            goto cleanup;
-        }
-
-        if (!(args.thisdev = virJSONValueObjectGetString(args.dev, "device"))) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("block info device entry was not in expected format"));
-            goto cleanup;
-        }
-
-        args.searchDevice = device;
-        args.top = top;
-        args.target = target;
-        if ((rc = qemuMonitorJSONQueryBlockDiskNameLookup(&args)) < 0)
-            goto cleanup;
-        if (rc == 1) {
-            ret = args.foundDevice;
-            break;
-        }
-    }
     /* Guarantee an error when returning NULL, but don't override a
      * more specific error if one was already generated.  */
     if (!ret && !virGetLastError())
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("unable to find backing name for device %s"),
                        device);
-
- cleanup:
-    virJSONValueFree(reply);
 
     return ret;
 }
