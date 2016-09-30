@@ -135,6 +135,7 @@ struct _qemuMonitorJSONQueryBlockArgs {
     virJSONValuePtr dev;
     virHashTablePtr table;
     const char *thisdev;
+    bool backingChain;
 };
 
 static int
@@ -2100,6 +2101,31 @@ qemuMonitorJSONBlockStatsUpdateCapacityOne(virJSONValuePtr image,
 }
 
 
+/* Taking a query block argument, ensure the query block has something in
+ * the drive and if so make the call to fill update the stats capacity.
+ *
+ * Returns -1 on failure, 0 on success
+ */
+static int
+qemuMonitorJSONQueryBlockFillBlockStatsTable(qemuMonitorJSONQueryBlockArgsPtr args)
+{
+    virJSONValuePtr inserted;
+    virJSONValuePtr image;
+
+    /* drive may be empty */
+    if (!(inserted = virJSONValueObjectGetObject(args->dev, "inserted")) ||
+        !(image = virJSONValueObjectGetObject(inserted, "image")))
+        return 0;
+
+    if (qemuMonitorJSONBlockStatsUpdateCapacityOne(image, args->thisdev, 0,
+                                                   args->table,
+                                                   args->backingChain) < 0)
+        return -1;
+
+    return 0;
+}
+
+
 int
 qemuMonitorJSONBlockStatsUpdateCapacity(qemuMonitorPtr mon,
                                         virHashTablePtr stats,
@@ -2120,33 +2146,26 @@ qemuMonitorJSONBlockStatsUpdateCapacity(qemuMonitorPtr mon,
     }
 
     for (i = 0; i < virJSONValueArraySize(devices); i++) {
-        virJSONValuePtr dev = virJSONValueArrayGet(devices, i);
-        virJSONValuePtr inserted;
-        virJSONValuePtr image;
-        const char *dev_name;
+        qemuMonitorJSONQueryBlockArgs args = {0};
 
-        if (!dev || dev->type != VIR_JSON_TYPE_OBJECT) {
+        args.dev = virJSONValueArrayGet(devices, i);
+        if (!args.dev || args.dev->type != VIR_JSON_TYPE_OBJECT) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("query-block device entry was not "
                              "in expected format"));
             goto cleanup;
         }
 
-        if (!(dev_name = virJSONValueObjectGetString(dev, "device"))) {
+        if (!(args.thisdev = virJSONValueObjectGetString(args.dev, "device"))) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("query-block device entry was not "
                              "in expected format"));
             goto cleanup;
         }
 
-        /* drive may be empty */
-        if (!(inserted = virJSONValueObjectGetObject(dev, "inserted")) ||
-            !(image = virJSONValueObjectGetObject(inserted, "image")))
-            continue;
-
-        if (qemuMonitorJSONBlockStatsUpdateCapacityOne(image, dev_name, 0,
-                                                       stats,
-                                                       backingChain) < 0)
+        args.table = stats;
+        args.backingChain = backingChain;
+        if (qemuMonitorJSONQueryBlockFillBlockStatsTable(&args) < 0)
             goto cleanup;
     }
 
