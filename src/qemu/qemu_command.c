@@ -4455,7 +4455,7 @@ qemuBuildVideoCommandLine(virCommandPtr cmd,
             /* nothing - vga has no effect on Xen pvfb */
         } else {
             if ((primaryVideoType == VIR_DOMAIN_VIDEO_TYPE_QXL) &&
-                !virQEMUCapsGet(qemuCaps, QEMU_CAPS_VGA_QXL)) {
+                !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_QXL)) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                                _("This QEMU does not support QXL graphics adapters"));
                 return -1;
