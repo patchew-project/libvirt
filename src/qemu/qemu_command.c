@@ -4451,43 +4451,54 @@ qemuBuildVideoCommandLine(virCommandPtr cmd,
                           virQEMUCapsPtr qemuCaps)
 {
     size_t i;
-    int primaryVideoType;
+    char *str = NULL;
 
-    if (!def->videos)
-        return 0;
+    for (i = 0; i < def->nvideos; i++) {
+        virDomainVideoDefPtr video = def->videos[i];
 
-    primaryVideoType = def->videos[0]->type;
+        switch (video->type) {
+        case VIR_DOMAIN_VIDEO_TYPE_VGA:
+        case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
+        case VIR_DOMAIN_VIDEO_TYPE_VMVGA:
+        case VIR_DOMAIN_VIDEO_TYPE_VIRTIO:
+        case VIR_DOMAIN_VIDEO_TYPE_QXL:
+            if (video->primary) {
+                if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIDEO_PRIMARY)) {
 
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIDEO_PRIMARY)) {
-        for (i = 0; i < def->nvideos; i++) {
-            char *str;
-            virCommandAddArg(cmd, "-device");
-            if (!(str = qemuBuildDeviceVideoStr(def, def->videos[i],
-                                                qemuCaps)))
-                return -1;
+                    virCommandAddArg(cmd, "-device");
 
-            virCommandAddArg(cmd, str);
-            VIR_FREE(str);
-        }
-    } else {
-        if (primaryVideoType == VIR_DOMAIN_VIDEO_TYPE_XEN) {
-            /* nothing - vga has no effect on Xen pvfb */
-        } else {
-            if (qemuBuildVgaVideoCommand(cmd, def, qemuCaps) < 0)
-                return -1;
-        }
+                    if (!(str = qemuBuildDeviceVideoStr(def, def->videos[i],
+                                                        qemuCaps)))
+                        return -1;
 
-        for (i = 1; i < def->nvideos; i++) {
-            char *str;
+                    virCommandAddArg(cmd, str);
+                    VIR_FREE(str);
+                } else {
+                    if (qemuBuildVgaVideoCommand(cmd, def, qemuCaps) < 0)
+                        return -1;
+                }
+            } else {
+                virCommandAddArg(cmd, "-device");
 
-            virCommandAddArg(cmd, "-device");
+                if (!(str = qemuBuildDeviceVideoStr(def, def->videos[i],
+                                                    qemuCaps)))
+                    return -1;
 
-            if (!(str = qemuBuildDeviceVideoStr(def, def->videos[i],
-                                                qemuCaps)))
-                return -1;
+                virCommandAddArg(cmd, str);
+                VIR_FREE(str);
+            }
+            break;
 
-            virCommandAddArg(cmd, str);
-            VIR_FREE(str);
+        case VIR_DOMAIN_VIDEO_TYPE_VBOX:
+        case VIR_DOMAIN_VIDEO_TYPE_XEN:
+        case VIR_DOMAIN_VIDEO_TYPE_PARALLELS:
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("video type '%s' is not supported with QEMU"),
+                           virDomainVideoTypeToString(video->type));
+            return -1;
+
+        case VIR_DOMAIN_VIDEO_TYPE_LAST:
+            break;
         }
     }
 
