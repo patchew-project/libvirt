@@ -738,4 +738,7 @@ int qemuDomainCheckMonitor(virQEMUDriverPtr driver,
                            virDomainObjPtr vm,
                            qemuDomainAsyncJob asyncJob);
 
+bool qemuDomainSupportVideoVga(virDomainVideoDefPtr video,
+                               virQEMUCapsPtr qemuCaps);
+
 #endif /* __QEMU_DOMAIN_H__ */
