@@ -1676,7 +1676,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsQxl[] = {
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioGpu[] = {
-    { "virgl", QEMU_CAPS_DEVICE_VIRTIO_GPU_VIRGL },
+    { "virgl", QEMU_CAPS_VIRTIO_GPU_VIRGL },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsICH9[] = {
@@ -1744,6 +1744,8 @@ static struct virQEMUCapsObjectTypeProps virQEMUCapsObjectProps[] = {
     { "qxl", virQEMUCapsObjectPropsQxl,
       ARRAY_CARDINALITY(virQEMUCapsObjectPropsQxl) },
     { "virtio-gpu-pci", virQEMUCapsObjectPropsVirtioGpu,
+      ARRAY_CARDINALITY(virQEMUCapsObjectPropsVirtioGpu) },
+    { "virtio-gpu-device", virQEMUCapsObjectPropsVirtioGpu,
       ARRAY_CARDINALITY(virQEMUCapsObjectPropsVirtioGpu) },
     { "ICH9-LPC", virQEMUCapsObjectPropsICH9,
       ARRAY_CARDINALITY(virQEMUCapsObjectPropsICH9) },

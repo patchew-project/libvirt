@@ -4476,7 +4476,7 @@ qemuProcessStartValidateVideo(virDomainObjPtr vm,
         if (video->accel) {
             if (video->accel->accel3d == VIR_TRISTATE_SWITCH_ON &&
                 (video->type != VIR_DOMAIN_VIDEO_TYPE_VIRTIO ||
-                 !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_GPU_VIRGL))) {
+                 !virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_GPU_VIRGL))) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                _("%s 3d acceleration is not supported"),
                                virDomainVideoTypeToString(video->type));
