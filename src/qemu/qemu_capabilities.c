@@ -344,6 +344,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "query-hotpluggable-cpus",
 
               "virtio-net.rx_queue_size", /* 235 */
+              "virtio-vga",
     );
 
 
@@ -1570,6 +1571,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "virtio-net-device", QEMU_CAPS_DEVICE_VIRTIO_NET },
     { "virtio-gpu-pci", QEMU_CAPS_DEVICE_VIRTIO_GPU },
     { "virtio-gpu-device", QEMU_CAPS_DEVICE_VIRTIO_GPU },
+    { "virtio-vga", QEMU_CAPS_DEVICE_VIRTIO_VGA },
     { "virtio-keyboard-device", QEMU_CAPS_VIRTIO_KEYBOARD },
     { "virtio-keyboard-pci", QEMU_CAPS_VIRTIO_KEYBOARD },
     { "virtio-mouse-device", QEMU_CAPS_VIRTIO_MOUSE },
