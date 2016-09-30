@@ -1800,6 +1800,64 @@ qemuMonitorJSONQueryBlock(qemuMonitorPtr mon)
 }
 
 
+/* Allocate a qemuDomainDiskInfo structure, place it into the hash table,
+ * parse the device, and fill in the details for the info
+ *
+ * Returns -1 on failure, 0 on success
+ */
+static int
+qemuMonitorJSONQueryBlockFillInfo(virJSONValuePtr dev,
+                                  const char *thisdev,
+                                  virHashTablePtr table)
+{
+    int ret = -1;
+    struct qemuDomainDiskInfo *info;
+    const char *status;
+
+    thisdev = qemuAliasDiskDriveSkipPrefix(thisdev);
+
+    if (VIR_ALLOC(info) < 0)
+        goto cleanup;
+
+    if (virHashAddEntry(table, thisdev, info) < 0) {
+        VIR_FREE(info);
+        goto cleanup;
+    }
+
+    if (virJSONValueObjectGetBoolean(dev, "removable", &info->removable) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("cannot read 'removable' value"));
+        goto cleanup;
+    }
+
+    if (virJSONValueObjectGetBoolean(dev, "locked", &info->locked) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("cannot read 'locked' value"));
+        goto cleanup;
+    }
+
+    /* 'tray_open' is present only if the device has a tray */
+    if (virJSONValueObjectGetBoolean(dev, "tray_open", &info->tray_open) == 0)
+        info->tray = true;
+
+    /* presence of 'inserted' notifies that a medium is in the device */
+    if (!virJSONValueObjectGetObject(dev, "inserted"))
+        info->empty = true;
+
+    /* Missing io-status indicates no error */
+    if ((status = virJSONValueObjectGetString(dev, "io-status"))) {
+        info->io_status = qemuMonitorBlockIOStatusToError(status);
+        if (info->io_status < 0)
+            goto cleanup;
+    }
+
+    ret = 0;
+
+ cleanup:
+    return ret;
+}
+
+
 int qemuMonitorJSONGetBlockInfo(qemuMonitorPtr mon,
                                 virHashTablePtr table)
 {
@@ -1820,9 +1878,7 @@ int qemuMonitorJSONGetBlockInfo(qemuMonitorPtr mon,
 
     for (i = 0; i < virJSONValueArraySize(devices); i++) {
         virJSONValuePtr dev = virJSONValueArrayGet(devices, i);
-        struct qemuDomainDiskInfo *info;
         const char *thisdev;
-        const char *status;
 
         if (!dev || dev->type != VIR_JSON_TYPE_OBJECT) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -1836,44 +1892,8 @@ int qemuMonitorJSONGetBlockInfo(qemuMonitorPtr mon,
             goto cleanup;
         }
 
-        thisdev = qemuAliasDiskDriveSkipPrefix(thisdev);
-
-        if (VIR_ALLOC(info) < 0)
+        if (qemuMonitorJSONQueryBlockFillInfo(dev, thisdev, table) < 0)
             goto cleanup;
-
-        if (virHashAddEntry(table, thisdev, info) < 0) {
-            VIR_FREE(info);
-            goto cleanup;
-        }
-
-        if (virJSONValueObjectGetBoolean(dev, "removable", &info->removable) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("cannot read %s value"),
-                           "removable");
-            goto cleanup;
-        }
-
-        if (virJSONValueObjectGetBoolean(dev, "locked", &info->locked) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("cannot read %s value"),
-                           "locked");
-            goto cleanup;
-        }
-
-        /* 'tray_open' is present only if the device has a tray */
-        if (virJSONValueObjectGetBoolean(dev, "tray_open", &info->tray_open) == 0)
-            info->tray = true;
-
-        /* presence of 'inserted' notifies that a medium is in the device */
-        if (!virJSONValueObjectGetObject(dev, "inserted"))
-            info->empty = true;
-
-        /* Missing io-status indicates no error */
-        if ((status = virJSONValueObjectGetString(dev, "io-status"))) {
-            info->io_status = qemuMonitorBlockIOStatusToError(status);
-            if (info->io_status < 0)
-                goto cleanup;
-        }
     }
 
     ret = 0;
