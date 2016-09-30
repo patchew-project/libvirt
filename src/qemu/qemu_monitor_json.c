@@ -136,6 +136,10 @@ struct _qemuMonitorJSONQueryBlockArgs {
     virHashTablePtr table;
     const char *thisdev;
     bool backingChain;
+    const char *searchDevice;
+    virStorageSourcePtr top;
+    virStorageSourcePtr target;
+    char *foundDevice;
 };
 
 static int
@@ -4040,6 +4044,31 @@ qemuMonitorJSONDiskNameLookupOne(virJSONValuePtr image,
 }
 
 
+/* Taking a query block argument, if the current device (thisdev) is the
+ * one we're looking for (searchDevice), then call LookupDiskName. The caller
+ * will handle the case where the devices match, but the lookup call fails.
+ *
+ * Returns 0 on not found, 1 on found
+ */
+static int
+qemuMonitorJSONQueryBlockDiskNameLookup(qemuMonitorJSONQueryBlockArgsPtr args)
+{
+    virJSONValuePtr inserted;
+    virJSONValuePtr image;
+
+    if (STREQ(args->thisdev, args->searchDevice)) {
+        if ((inserted = virJSONValueObjectGetObject(args->dev, "inserted")) &&
+            (image = virJSONValueObjectGetObject(inserted, "image"))) {
+            args->foundDevice = qemuMonitorJSONDiskNameLookupOne(image,
+                                                                 args->top,
+                                                                 args->target);
+        }
+        return 1;
+    }
+    return 0;
+}
+
+
 char *
 qemuMonitorJSONDiskNameLookup(qemuMonitorPtr mon,
                               const char *device,
@@ -4061,28 +4090,29 @@ qemuMonitorJSONDiskNameLookup(qemuMonitorPtr mon,
     }
 
     for (i = 0; i < virJSONValueArraySize(devices); i++) {
-        virJSONValuePtr dev = virJSONValueArrayGet(devices, i);
-        virJSONValuePtr inserted;
-        virJSONValuePtr image;
-        const char *thisdev;
+        qemuMonitorJSONQueryBlockArgs args = {0};
+        int rc;
 
-        if (!dev || dev->type != VIR_JSON_TYPE_OBJECT) {
+        args.dev = virJSONValueArrayGet(devices, i);
+        if (!args.dev || args.dev->type != VIR_JSON_TYPE_OBJECT) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("block info device entry was not in expected format"));
             goto cleanup;
         }
 
-        if (!(thisdev = virJSONValueObjectGetString(dev, "device"))) {
+        if (!(args.thisdev = virJSONValueObjectGetString(args.dev, "device"))) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("block info device entry was not in expected format"));
             goto cleanup;
         }
 
-        if (STREQ(thisdev, device)) {
-            if ((inserted = virJSONValueObjectGetObject(dev, "inserted")) &&
-                (image = virJSONValueObjectGetObject(inserted, "image"))) {
-                ret = qemuMonitorJSONDiskNameLookupOne(image, top, target);
-            }
+        args.searchDevice = device;
+        args.top = top;
+        args.target = target;
+        if ((rc = qemuMonitorJSONQueryBlockDiskNameLookup(&args)) < 0)
+            goto cleanup;
+        if (rc == 1) {
+            ret = args.foundDevice;
             break;
         }
     }
