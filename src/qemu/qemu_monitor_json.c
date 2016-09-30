@@ -2089,6 +2089,34 @@ qemuMonitorJSONBlockStatsUpdateCapacityOne(virJSONValuePtr image,
 }
 
 
+/* Ensure the query block has something in the drive and if so make the call
+ * to update the stats capacity.
+ *
+ * Returns -1 on failure, 0 on success
+ */
+static int
+qemuMonitorJSONQueryBlockFillStats(virJSONValuePtr dev,
+                                  const char *thisdev,
+                                  virHashTablePtr table,
+                                  bool backingChain)
+{
+    virJSONValuePtr inserted;
+    virJSONValuePtr image;
+
+    /* drive may be empty */
+    if (!(inserted = virJSONValueObjectGetObject(dev, "inserted")) ||
+        !(image = virJSONValueObjectGetObject(inserted, "image")))
+        return 0;
+
+    if (qemuMonitorJSONBlockStatsUpdateCapacityOne(image, thisdev, 0,
+                                                   table,
+                                                   backingChain) < 0)
+        return -1;
+
+    return 0;
+}
+
+
 int
 qemuMonitorJSONBlockStatsUpdateCapacity(qemuMonitorPtr mon,
                                         virHashTablePtr stats,
@@ -2110,8 +2138,6 @@ qemuMonitorJSONBlockStatsUpdateCapacity(qemuMonitorPtr mon,
 
     for (i = 0; i < virJSONValueArraySize(devices); i++) {
         virJSONValuePtr dev = virJSONValueArrayGet(devices, i);
-        virJSONValuePtr inserted;
-        virJSONValuePtr image;
         const char *dev_name;
 
         if (!dev || dev->type != VIR_JSON_TYPE_OBJECT) {
@@ -2128,14 +2154,8 @@ qemuMonitorJSONBlockStatsUpdateCapacity(qemuMonitorPtr mon,
             goto cleanup;
         }
 
-        /* drive may be empty */
-        if (!(inserted = virJSONValueObjectGetObject(dev, "inserted")) ||
-            !(image = virJSONValueObjectGetObject(inserted, "image")))
-            continue;
-
-        if (qemuMonitorJSONBlockStatsUpdateCapacityOne(image, dev_name, 0,
-                                                       stats,
-                                                       backingChain) < 0)
+        if (qemuMonitorJSONQueryBlockFillStats(dev, dev_name, stats,
+                                               backingChain) < 0)
             goto cleanup;
     }
 
