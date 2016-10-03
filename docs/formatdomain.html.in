@@ -143,7 +143,14 @@
         <code>pflash</code>. Moreover, some firmwares may
         implement the Secure boot feature. Attribute
         <code>secure</code> can be used then to control it.
-        <span class="since">Since 2.1.0</span></dd>
+        <span class="since">Since 2.1.0</span>. The <code>firmware</code>
+        attribute can be used to request a specific type of firmware image
+        based on its common name, accepting the values <code>uefi</code>
+        and <code>bios</code>. <span class="since">Since 2.4.0</span>. When
+        <code>firmware</code> is set, it is not neccessary to provide any
+        path for the loader, nor set the <code>type</code> attribute or
+        <code>nvram</code> elements, as they will be automatically set
+        to the hypervisor specific default values.</dd>
       <dt><code>nvram</code></dt>
       <dd>Some UEFI firmwares may want to use a non-volatile memory to store
         some variables. In the host, this is represented as a file and the

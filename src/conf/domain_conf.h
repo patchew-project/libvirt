@@ -1724,6 +1724,16 @@ struct _virDomainBIOSDef {
 };
 
 typedef enum {
+    VIR_DOMAIN_LOADER_FIRMWARE_DEFAULT = 0,
+    VIR_DOMAIN_LOADER_FIRMWARE_BIOS,
+    VIR_DOMAIN_LOADER_FIRMWARE_UEFI,
+
+    VIR_DOMAIN_LOADER_FIRMWARE_LAST
+} virDomainLoaderFirmware;
+
+VIR_ENUM_DECL(virDomainLoaderFirmware)
+
+typedef enum {
     VIR_DOMAIN_LOADER_TYPE_ROM = 0,
     VIR_DOMAIN_LOADER_TYPE_PFLASH,
 
@@ -1735,6 +1745,7 @@ VIR_ENUM_DECL(virDomainLoader)
 typedef struct _virDomainLoaderDef virDomainLoaderDef;
 typedef virDomainLoaderDef *virDomainLoaderDefPtr;
 struct _virDomainLoaderDef {
+    virDomainLoaderFirmware firmware;
     char *path;
     int readonly;   /* enum virTristateBool */
     virDomainLoader type;

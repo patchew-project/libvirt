@@ -276,7 +276,17 @@
                 </choice>
               </attribute>
             </optional>
-            <ref name="absFilePath"/>
+            <optional>
+              <attribute name="firmware">
+                <choice>
+                  <value>bios</value>
+                  <value>uefi</value>
+                </choice>
+              </attribute>
+            </optional>
+            <optional>
+              <ref name="absFilePath"/>
+            </optional>
           </element>
         </optional>
         <optional>

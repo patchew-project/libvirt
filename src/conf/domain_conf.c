@@ -835,6 +835,12 @@ VIR_ENUM_IMPL(virDomainLoader,
               "rom",
               "pflash")
 
+VIR_ENUM_IMPL(virDomainLoaderFirmware,
+              VIR_DOMAIN_LOADER_FIRMWARE_LAST,
+              "default",
+              "bios",
+              "uefi")
+
 /* Internal mapping: subset of block job types that can be present in
  * <mirror> XML (remaining types are not two-phase). */
 VIR_ENUM_DECL(virDomainBlockJob)
@@ -15539,17 +15545,36 @@ virDomainLoaderDefParseXML(xmlNodePtr node,
     char *readonly_str = NULL;
     char *secure_str = NULL;
     char *type_str = NULL;
+    char *firmware_str = NULL;
 
     readonly_str = virXMLPropString(node, "readonly");
     secure_str = virXMLPropString(node, "secure");
     type_str = virXMLPropString(node, "type");
+    firmware_str = virXMLPropString(node, "firmware");
     loader->path = (char *) xmlNodeGetContent(node);
 
-    if (readonly_str &&
-        (loader->readonly = virTristateBoolTypeFromString(readonly_str)) <= 0) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("unknown readonly value: %s"), readonly_str);
-        goto cleanup;
+    if (loader->path && STREQ(loader->path, ""))
+        VIR_FREE(loader->path);
+
+    if (firmware_str) {
+        int firmware;
+        if ((firmware = virDomainLoaderFirmwareTypeFromString(firmware_str)) < 0) {
+            virReportError(VIR_ERR_XML_DETAIL,
+                           _("unknown firmware value: %s"), firmware_str);
+            goto cleanup;
+        }
+        loader->firmware = firmware;
+    }
+
+    if (readonly_str) {
+        if ((loader->readonly = virTristateBoolTypeFromString(readonly_str)) <= 0) {
+            virReportError(VIR_ERR_XML_DETAIL,
+                           _("unknown readonly value: %s"), readonly_str);
+            goto cleanup;
+        }
+    } else {
+        if (loader->firmware == VIR_DOMAIN_LOADER_FIRMWARE_UEFI)
+            loader->readonly = VIR_TRISTATE_SWITCH_ON;
     }
 
     if (secure_str &&
@@ -15567,6 +15592,29 @@ virDomainLoaderDefParseXML(xmlNodePtr node,
             goto cleanup;
         }
         loader->type = type;
+
+        switch (loader->firmware) {
+        case VIR_DOMAIN_LOADER_FIRMWARE_UEFI:
+            if (loader->type != VIR_DOMAIN_LOADER_TYPE_PFLASH) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("UEFI firmware must use pflash type"));
+                goto cleanup;
+            }
+            break;
+        case VIR_DOMAIN_LOADER_FIRMWARE_BIOS:
+            if (loader->type != VIR_DOMAIN_LOADER_TYPE_ROM) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("BIOS firmware must use ROM type"));
+                goto cleanup;
+            }
+            break;
+        case VIR_DOMAIN_LOADER_FIRMWARE_DEFAULT:
+        case VIR_DOMAIN_LOADER_FIRMWARE_LAST:
+            break;
+        }
+    } else {
+        if (loader->firmware == VIR_DOMAIN_LOADER_FIRMWARE_UEFI)
+            loader->type = VIR_DOMAIN_LOADER_TYPE_PFLASH;
     }
 
     ret = 0;
@@ -15574,6 +15622,7 @@ virDomainLoaderDefParseXML(xmlNodePtr node,
     VIR_FREE(readonly_str);
     VIR_FREE(secure_str);
     VIR_FREE(type_str);
+    VIR_FREE(firmware_str);
     return ret;
 }
 
@@ -22872,8 +22921,12 @@ virDomainLoaderDefFormat(virBufferPtr buf,
     const char *readonly = virTristateBoolTypeToString(loader->readonly);
     const char *secure = virTristateBoolTypeToString(loader->secure);
     const char *type = virDomainLoaderTypeToString(loader->type);
+    const char *firmware = virDomainLoaderFirmwareTypeToString(loader->firmware);
 
     virBufferAddLit(buf, "<loader");
+
+    if (loader->firmware)
+        virBufferAsprintf(buf, " firmware='%s'", firmware);
 
     if (loader->readonly)
         virBufferAsprintf(buf, " readonly='%s'", readonly);
@@ -22881,9 +22934,12 @@ virDomainLoaderDefFormat(virBufferPtr buf,
     if (loader->secure)
         virBufferAsprintf(buf, " secure='%s'", secure);
 
-    virBufferAsprintf(buf, " type='%s'>", type);
+    virBufferAsprintf(buf, " type='%s'", type);
 
-    virBufferEscapeString(buf, "%s</loader>\n", loader->path);
+    if (loader->path)
+        virBufferEscapeString(buf, ">%s</loader>\n", loader->path);
+    else
+        virBufferAddLit(buf, "/>\n");
     if (loader->nvram || loader->templt) {
         virBufferAddLit(buf, "<nvram");
         virBufferEscapeString(buf, " template='%s'", loader->templt);
