@@ -24,11 +24,14 @@
 # define __VIR_FIRMWARE_H__
 
 # include "internal.h"
+# include "virarch.h"
 
 typedef struct _virFirmware virFirmware;
 typedef virFirmware *virFirmwarePtr;
 
 struct _virFirmware {
+    virArch arch;
+    bool secboot;
     char *name;
     char *nvram;
 };
@@ -47,5 +50,9 @@ virFirmwareParseList(const char *list,
                      size_t *nfirmwares)
     ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
+virFirmwarePtr virFirmwareFind(virFirmwarePtr *firmwares,
+                               size_t nfirmwares,
+                               virArch arch,
+                               bool secboot);
 
 #endif /* __VIR_FIRMWARE_H__ */

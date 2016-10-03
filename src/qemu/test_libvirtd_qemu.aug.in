@@ -83,8 +83,8 @@ module Test_libvirtd_qemu =
 { "migration_port_max" = "49215" }
 { "log_timestamp" = "0" }
 { "nvram"
-    { "1" = "/usr/share/OVMF/OVMF_CODE.fd:/usr/share/OVMF/OVMF_VARS.fd" }
-    { "2" = "/usr/share/OVMF/OVMF_CODE.secboot.fd:/usr/share/OVMF/OVMF_VARS.fd" }
-    { "3" = "/usr/share/AAVMF/AAVMF_CODE.fd:/usr/share/AAVMF/AAVMF_VARS.fd" }
+    { "1" = "/usr/share/OVMF/OVMF_CODE.fd:/usr/share/OVMF/OVMF_VARS.fd:x86_64" }
+    { "2" = "/usr/share/OVMF/OVMF_CODE.secboot.fd:/usr/share/OVMF/OVMF_VARS.fd:x86_64:secboot" }
+    { "3" = "/usr/share/AAVMF/AAVMF_CODE.fd:/usr/share/AAVMF/AAVMF_VARS.fd:aarch64" }
 }
 { "stdio_handler" = "logd" }

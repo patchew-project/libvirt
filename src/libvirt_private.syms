@@ -1629,6 +1629,7 @@ virFirewallStartTransaction;
 
 
 # util/virfirmware.h
+virFirmwareFind;
 virFirmwareFreeList;
 virFirmwareParse;
 virFirmwareParseList;

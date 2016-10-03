@@ -61,29 +61,82 @@ int
 virFirmwareParse(const char *str, virFirmwarePtr firmware)
 {
     int ret = -1;
-    char **token;
+    char **token, **tmp;
+    size_t ntoken = 0;
+    int arch;
 
-    if (!(token = virStringSplit(str, ":", 0)))
+    if (!(tmp = token = virStringSplit(str, ":", 0)))
         goto cleanup;
 
-    if (token[0]) {
-        virSkipSpaces((const char **) &token[0]);
-        if (token[1])
-            virSkipSpaces((const char **) &token[1]);
+    while (tmp && *tmp) {
+        virSkipSpaces((const char **) &tmp);
+        if (STREQ(*tmp, "")) {
+            virReportError(VIR_ERR_CONF_SYNTAX,
+                           _("Invalid nvram format for '%s', token "
+                             "must not be the empty string"),
+                           str);
+            goto cleanup;
+        }
+        ntoken++;
+        tmp++;
     }
 
-    /* Exactly two tokens are expected */
-    if (!token[0] || !token[1] || token[2] ||
-        STREQ(token[0], "") || STREQ(token[1], "")) {
+    if (ntoken < 2 || ntoken > 4) {
         virReportError(VIR_ERR_CONF_SYNTAX,
-                       _("Invalid nvram format: '%s'"),
+                       _("Invalid nvram format for '%s', expected "
+                         "CODE-PATH:NVRAM-PATH:[ARCH:[FEATURE,...]]"),
                        str);
         goto cleanup;
+    }
+
+    if (ntoken > 2) {
+        if ((arch = virArchFromString(token[2])) < 0) {
+            virReportError(VIR_ERR_CONF_SYNTAX,
+                           _("Unknown arch in nvram config '%s'"),
+                           str);
+            goto cleanup;
+        }
+        firmware->arch = arch;
+    } else {
+        if (strstr(token[0], "OVMF")) {
+            firmware->arch = VIR_ARCH_X86_64;
+        } else if (strstr(token[1], "AVMF")) {
+            firmware->arch = VIR_ARCH_AARCH64;
+        } else {
+            virReportError(VIR_ERR_CONF_SYNTAX,
+                           _("Cannot guest arch for nvram config '%s', "
+                             "please specify it explicitly"),
+                           str);
+            goto cleanup;
+        }
     }
 
     if (VIR_STRDUP(firmware->name, token[0]) < 0 ||
         VIR_STRDUP(firmware->nvram, token[1]) < 0)
         goto cleanup;
+
+    /* Remaining tokens are feature flags */
+    if (ntoken > 3) {
+        tmp = token + 3;
+        while (*tmp) {
+            if (STREQ(*tmp, "secboot")) {
+                firmware->secboot = true;
+            } else {
+                virReportError(VIR_ERR_CONF_SYNTAX,
+                               _("Unknown feature flag in nvram config '%s'"),
+                               str);
+                goto cleanup;
+            }
+            tmp++;
+        }
+    } else {
+        if (strstr(firmware->name, "secboot"))
+            firmware->secboot = true;
+    }
+
+    VIR_DEBUG("Parsed firmware code='%s' nvram='%s' arch='%s' secboot='%d'",
+              firmware->name, firmware->nvram,
+              virArchToString(firmware->arch), firmware->secboot);
 
     ret = 0;
  cleanup:
@@ -134,4 +187,25 @@ virFirmwareParseList(const char *list,
  cleanup:
     virStringFreeList(token);
     return ret;
+}
+
+
+virFirmwarePtr virFirmwareFind(virFirmwarePtr *firmwares,
+                               size_t nfirmwares,
+                               virArch arch,
+                               bool secboot)
+{
+    size_t i;
+
+    for (i = 0; i < nfirmwares; i++) {
+        if (firmwares[i]->arch == arch &&
+            firmwares[i]->secboot == secboot) {
+            return firmwares[i];
+        }
+    }
+
+    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                   _("Cannot find a firmware for arch %s with secboot=%d"),
+                   virArchToString(arch), secboot);
+    return NULL;
 }
