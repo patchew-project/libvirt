@@ -552,21 +552,24 @@ int qemuTestCapsCacheInsert(virQEMUCapsCachePtr cache, const char *binary,
 int qemuTestDriverInit(virQEMUDriver *driver)
 {
     virSecurityManagerPtr mgr = NULL;
+    virQEMUDriverConfigPtr cfg;
 
     memset(driver, 0, sizeof(*driver));
 
     if (virMutexInit(&driver->lock) < 0)
         return -1;
 
-    driver->config = virQEMUDriverConfigNew(false);
+    cfg = driver->config = virQEMUDriverConfigNew(false);
     if (!driver->config)
         goto error;
 
     /* Overwrite some default paths so it's consistent for tests. */
     VIR_FREE(driver->config->libDir);
     VIR_FREE(driver->config->channelTargetDir);
+    VIR_FREE(driver->config->nvramDir);
     if (VIR_STRDUP(driver->config->libDir, "/tmp/lib") < 0 ||
-        VIR_STRDUP(driver->config->channelTargetDir, "/tmp/channel") < 0)
+        VIR_STRDUP(driver->config->channelTargetDir, "/tmp/channel") < 0 ||
+        VIR_STRDUP(driver->config->nvramDir, "/tmp/nvram") < 0)
         goto error;
 
     driver->caps = testQemuCapsInit();
@@ -591,6 +594,29 @@ int qemuTestDriverInit(virQEMUDriver *driver)
         goto error;
     if (!(driver->securityManager = virSecurityManagerNewStack(mgr)))
         goto error;
+
+    /* The default firmware list may be changed by configure arg,
+     * so we must clear it and setup a fixed firmware list for testing */
+    virFirmwareFreeList(cfg->firmwares, cfg->nfirmwares);
+    if (VIR_ALLOC_N(cfg->firmwares, 3) < 0)
+        goto error;
+    cfg->nfirmwares = 3;
+    if (VIR_ALLOC(cfg->firmwares[0]) < 0 || VIR_ALLOC(cfg->firmwares[1]) < 0 ||
+        VIR_ALLOC(cfg->firmwares[2]) < 0)
+        goto error;
+
+    if (VIR_STRDUP(cfg->firmwares[0]->name, VIR_QEMU_AAVMF_LOADER_PATH) < 0 ||
+        VIR_STRDUP(cfg->firmwares[0]->nvram, VIR_QEMU_AAVMF_NVRAM_PATH) < 0  ||
+        VIR_STRDUP(cfg->firmwares[1]->name, VIR_QEMU_OVMF_LOADER_PATH) < 0 ||
+        VIR_STRDUP(cfg->firmwares[1]->nvram, VIR_QEMU_OVMF_NVRAM_PATH) < 0 ||
+        VIR_STRDUP(cfg->firmwares[2]->name, VIR_QEMU_OVMF_SEC_LOADER_PATH) < 0 ||
+        VIR_STRDUP(cfg->firmwares[2]->nvram, VIR_QEMU_OVMF_SEC_NVRAM_PATH) < 0)
+        goto error;
+
+    cfg->firmwares[0]->arch = VIR_ARCH_AARCH64;
+    cfg->firmwares[1]->arch = VIR_ARCH_X86_64;
+    cfg->firmwares[2]->arch = VIR_ARCH_X86_64;
+    cfg->firmwares[2]->secboot = true;
 
     return 0;
 

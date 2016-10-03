@@ -2346,13 +2346,59 @@ qemuDomainDefPostParse(virDomainDefPtr def,
         goto cleanup;
     }
 
-    if (def->os.loader &&
-        def->os.loader->type == VIR_DOMAIN_LOADER_TYPE_PFLASH &&
-        def->os.loader->readonly == VIR_TRISTATE_SWITCH_ON &&
-        !def->os.loader->nvram) {
-        if (virAsprintf(&def->os.loader->nvram, "%s/%s_VARS.fd",
-                        cfg->nvramDir, def->name) < 0)
-            goto cleanup;
+    if (def->os.loader) {
+        switch (def->os.loader->firmware) {
+        case VIR_DOMAIN_LOADER_FIRMWARE_DEFAULT:
+            break;
+
+        case VIR_DOMAIN_LOADER_FIRMWARE_BIOS:
+            if (def->os.arch != VIR_ARCH_I686 &&
+                def->os.arch != VIR_ARCH_X86_64) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("BIOS firmware only supported on i686/x86_64"));
+                goto cleanup;
+            }
+            break;
+
+        case VIR_DOMAIN_LOADER_FIRMWARE_UEFI:
+            if (def->os.arch != VIR_ARCH_X86_64 &&
+                def->os.arch != VIR_ARCH_AARCH64) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("BIOS firmware only supported on x86_64/i686"));
+                goto cleanup;
+            }
+
+            if (def->os.loader->path == NULL) {
+                virFirmwarePtr firmware;
+
+                if (!(firmware = virFirmwareFind(cfg->firmwares,
+                                                 cfg->nfirmwares,
+                                                 def->os.arch,
+                                                 def->os.loader->secure ==
+                                                 VIR_TRISTATE_SWITCH_ON)))
+                    goto cleanup;
+
+                if (VIR_STRDUP(def->os.loader->path,
+                               firmware->name) < 0)
+                    goto cleanup;
+
+                if (def->os.loader->templt == NULL &&
+                    VIR_STRDUP(def->os.loader->templt,
+                               firmware->nvram) < 0)
+                    goto cleanup;
+            }
+
+        case VIR_DOMAIN_LOADER_FIRMWARE_LAST:
+            break;
+        }
+
+        if (def->os.loader->type == VIR_DOMAIN_LOADER_TYPE_PFLASH &&
+            def->os.loader->readonly == VIR_TRISTATE_SWITCH_ON &&
+            !def->os.loader->nvram) {
+            if (virAsprintf(&def->os.loader->nvram, "%s/%s_VARS.fd",
+                            cfg->nvramDir, def->name) < 0)
+                goto cleanup;
+        }
     }
 
     /* check for emulator and create a default one if needed */

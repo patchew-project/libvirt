@@ -66,6 +66,13 @@ typedef virQEMUDriver *virQEMUDriverPtr;
 typedef struct _virQEMUDriverConfig virQEMUDriverConfig;
 typedef virQEMUDriverConfig *virQEMUDriverConfigPtr;
 
+# define VIR_QEMU_OVMF_LOADER_PATH "/usr/share/OVMF/OVMF_CODE.fd"
+# define VIR_QEMU_OVMF_NVRAM_PATH "/usr/share/OVMF/OVMF_VARS.fd"
+# define VIR_QEMU_OVMF_SEC_LOADER_PATH "/usr/share/OVMF/OVMF_CODE.secboot.fd"
+# define VIR_QEMU_OVMF_SEC_NVRAM_PATH "/usr/share/OVMF/OVMF_VARS.fd"
+# define VIR_QEMU_AAVMF_LOADER_PATH "/usr/share/AAVMF/AAVMF_CODE.fd"
+# define VIR_QEMU_AAVMF_NVRAM_PATH "/usr/share/AAVMF/AAVMF_VARS.fd"
+
 /* Main driver config. The data in these object
  * instances is immutable, so can be accessed
  * without locking. Threads must, however, hold

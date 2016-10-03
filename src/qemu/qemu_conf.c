@@ -124,13 +124,6 @@ void qemuDomainCmdlineDefFree(qemuDomainCmdlineDefPtr def)
 }
 
 
-#define VIR_QEMU_OVMF_LOADER_PATH "/usr/share/OVMF/OVMF_CODE.fd"
-#define VIR_QEMU_OVMF_NVRAM_PATH "/usr/share/OVMF/OVMF_VARS.fd"
-#define VIR_QEMU_OVMF_SEC_LOADER_PATH "/usr/share/OVMF/OVMF_CODE.secboot.fd"
-#define VIR_QEMU_OVMF_SEC_NVRAM_PATH "/usr/share/OVMF/OVMF_VARS.fd"
-#define VIR_QEMU_AAVMF_LOADER_PATH "/usr/share/AAVMF/AAVMF_CODE.fd"
-#define VIR_QEMU_AAVMF_NVRAM_PATH "/usr/share/AAVMF/AAVMF_VARS.fd"
-
 virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
 {
     virQEMUDriverConfigPtr cfg;
@@ -334,6 +327,11 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
         VIR_STRDUP(cfg->firmwares[2]->name, VIR_QEMU_OVMF_SEC_LOADER_PATH) < 0 ||
         VIR_STRDUP(cfg->firmwares[2]->nvram, VIR_QEMU_OVMF_SEC_NVRAM_PATH) < 0)
         goto error;
+
+    cfg->firmwares[0]->arch = VIR_ARCH_AARCH64;
+    cfg->firmwares[1]->arch = VIR_ARCH_X86_64;
+    cfg->firmwares[2]->arch = VIR_ARCH_X86_64;
+    cfg->firmwares[2]->secboot = true;
 #endif
 
     return cfg;

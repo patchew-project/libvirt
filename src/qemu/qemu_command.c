@@ -8905,8 +8905,10 @@ qemuBuildDomainLoaderCommandLine(virCommandPtr cmd,
 
     switch ((virDomainLoader) loader->type) {
     case VIR_DOMAIN_LOADER_TYPE_ROM:
-        virCommandAddArg(cmd, "-bios");
-        virCommandAddArg(cmd, loader->path);
+        if (loader->path) {
+            virCommandAddArg(cmd, "-bios");
+            virCommandAddArg(cmd, loader->path);
+        }
         break;
 
     case VIR_DOMAIN_LOADER_TYPE_PFLASH:

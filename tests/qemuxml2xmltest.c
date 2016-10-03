@@ -808,6 +808,7 @@ mymain(void)
 
     DO_TEST("bios-nvram", NONE);
     DO_TEST("bios-nvram-os-interleave", NONE);
+    DO_TEST("bios-firmware", NONE);
 
     DO_TEST("tap-vhost", NONE);
     DO_TEST("tap-vhost-incorrect", NONE);
