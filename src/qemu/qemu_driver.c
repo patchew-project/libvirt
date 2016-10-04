@@ -1068,6 +1068,7 @@ qemuStateCleanup(void)
     if (!qemu_driver)
         return -1;
 
+    virThreadPoolFree(qemu_driver->workerPool);
     virNWFilterUnRegisterCallbackDriver(&qemuCallbackDriver);
     virObjectUnref(qemu_driver->config);
     virObjectUnref(qemu_driver->hostdevMgr);
@@ -1099,7 +1100,6 @@ qemuStateCleanup(void)
     virLockManagerPluginUnref(qemu_driver->lockManager);
 
     virMutexDestroy(&qemu_driver->lock);
-    virThreadPoolFree(qemu_driver->workerPool);
     VIR_FREE(qemu_driver);
 
     return 0;
