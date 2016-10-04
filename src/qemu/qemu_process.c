@@ -267,7 +267,6 @@ qemuConnectAgent(virQEMUDriverPtr driver, virDomainObjPtr vm)
  cleanup:
     if (!priv->agent) {
         VIR_WARN("Cannot connect to QEMU guest agent for %s", vm->def->name);
-        priv->agentError = true;
         virResetLastError();
     }
 

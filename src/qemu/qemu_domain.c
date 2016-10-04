@@ -5046,6 +5046,7 @@ qemuDomainAgentAvailable(virDomainObjPtr vm,
                          bool reportError)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    virDomainChrDefPtr config;
 
     if (virDomainObjGetState(vm, NULL) != VIR_DOMAIN_RUNNING) {
         if (reportError) {
@@ -5062,22 +5063,30 @@ qemuDomainAgentAvailable(virDomainObjPtr vm,
         }
         return false;
     }
-    if (!priv->agent) {
-        if (qemuFindAgentConfig(vm->def)) {
-            if (reportError) {
-                virReportError(VIR_ERR_AGENT_UNRESPONSIVE, "%s",
-                               _("QEMU guest agent is not connected"));
-            }
-            return false;
-        } else {
-            if (reportError) {
-                virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED, "%s",
-                               _("QEMU guest agent is not configured"));
-            }
-            return false;
+
+    if (priv->agent)
+        return true;
+
+    config = qemuFindAgentConfig(vm->def);
+
+    if (!config) {
+        if (reportError) {
+            virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED, "%s",
+                           _("QEMU guest agent is not configured"));
         }
+    } else if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_VSERPORT_CHANGE) &&
+               config->state != VIR_DOMAIN_CHR_DEVICE_STATE_CONNECTED) {
+        if (reportError) {
+            virReportError(VIR_ERR_AGENT_UNRESPONSIVE, "%s",
+                           _("QEMU guest agent is not connected"));
+        }
+    } else if (reportError) {
+        virReportError(VIR_ERR_AGENT_UNRESPONSIVE, "%s",
+                       _("QEMU guest agent is not "
+                         "available due to an error"));
     }
-    return true;
+
+    return false;
 }
 
 
