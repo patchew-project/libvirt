@@ -599,7 +599,6 @@ qemuAgentIO(int watch, int fd, int events, void *opaque)
     virDomainObjPtr vm;
     virErrorPtr err;
 
-    virObjectRef(mon);
     /* lock access to the monitor and protect fd */
     virObjectLock(mon);
 #if DEBUG_IO
@@ -609,7 +608,6 @@ qemuAgentIO(int watch, int fd, int events, void *opaque)
     /* this is not interesting at all */
     if (mon->lastError.code != VIR_ERR_OK) {
         virObjectUnlock(mon);
-        virObjectUnref(mon);
         return;
     }
 
@@ -672,7 +670,6 @@ qemuAgentIO(int watch, int fd, int events, void *opaque)
 
     qemuAgentUpdateWatch(mon);
     virObjectUnlock(mon);
-    virObjectUnref(mon);
     return;
 
  error:
@@ -697,7 +694,6 @@ qemuAgentIO(int watch, int fd, int events, void *opaque)
     /* Make sure anyone waiting wakes up now */
     virCondSignal(&mon->notify);
     virObjectUnlock(mon);
-    virObjectUnref(mon);
     (errorNotify)(mon, vm);
 }
 
