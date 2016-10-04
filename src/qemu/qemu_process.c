@@ -210,6 +210,8 @@ qemuConnectAgent(virQEMUDriverPtr driver, virDomainObjPtr vm)
     qemuAgentPtr agent = NULL;
     virDomainChrDefPtr config = qemuFindAgentConfig(vm->def);
 
+    priv->agentError = false;
+
     if (!config)
         return 0;
 
