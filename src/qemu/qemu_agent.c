@@ -597,6 +597,7 @@ qemuAgentIO(int watch, int fd, int events, void *opaque)
     qemuAgentPtr mon = opaque;
     void (*errorNotify)(qemuAgentPtr, virDomainObjPtr);
     virDomainObjPtr vm;
+    virErrorPtr err;
 
     virObjectRef(mon);
     /* lock access to the monitor and protect fd */
@@ -605,15 +606,19 @@ qemuAgentIO(int watch, int fd, int events, void *opaque)
     VIR_DEBUG("Agent %p I/O on watch %d fd %d events %d", mon, watch, fd, events);
 #endif
 
+    /* this is not interesting at all */
+    if (mon->lastError.code != VIR_ERR_OK) {
+        virObjectUnlock(mon);
+        virObjectUnref(mon);
+        return;
+    }
+
     if (mon->fd != fd || mon->watch != watch) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("event from unexpected fd %d!=%d / watch %d!=%d"),
                        mon->fd, fd, mon->watch, watch);
         goto error;
     }
-
-    if (mon->lastError.code != VIR_ERR_OK)
-        goto error;
 
     if (events & VIR_EVENT_HANDLE_WRITABLE) {
         if (mon->connectPending) {
@@ -665,19 +670,12 @@ qemuAgentIO(int watch, int fd, int events, void *opaque)
     return;
 
  error:
-    if (mon->lastError.code != VIR_ERR_OK) {
-        /* Already have an error, so clear any new error */
-        virResetLastError();
-    } else {
-        virErrorPtr err = virGetLastError();
-        if (!err)
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("Error while processing monitor IO"));
-        virCopyLastError(&mon->lastError);
-        virResetLastError();
-    }
+    if (!(err = virGetLastError()))
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Error while processing monitor IO"));
+    virCopyLastError(&mon->lastError);
+    virResetLastError();
 
-    VIR_DEBUG("Error on monitor %s", NULLSTR(mon->lastError.message));
     /* If IO process resulted in an error & we have a message,
      * then wakeup that waiter */
     if (mon->msg && !mon->msg->finished) {
