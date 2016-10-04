@@ -1898,7 +1898,9 @@ qemuDomainAttachMemory(virQEMUDriverPtr driver,
     if (qemuDomainDefValidateMemoryHotplug(vm->def, priv->qemuCaps, mem) < 0)
         goto cleanup;
 
-    if (qemuAssignDeviceMemoryAlias(vm->def, mem) < 0)
+    qemuAssignDeviceMemorySlot(vm->def, mem);
+
+    if (qemuAssignDeviceMemoryAlias(mem) < 0)
         goto cleanup;
 
     if (virAsprintf(&objalias, "mem%s", mem->info.alias) < 0)
@@ -4427,6 +4429,7 @@ qemuDomainDetachMemoryDevice(virQEMUDriverPtr driver,
     }
 
     mem = vm->def->mems[idx];
+    ignore_value(virBitmapClearBit(vm->def->memslotsptr, memdef->info.addr.dimm.slot));
 
     if (!mem->info.alias) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",

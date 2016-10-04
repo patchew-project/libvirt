@@ -57,8 +57,10 @@ int qemuAssignDeviceRedirdevAlias(virDomainDefPtr def,
 int qemuAssignDeviceRNGAlias(virDomainDefPtr def,
                              virDomainRNGDefPtr rng);
 
-int qemuAssignDeviceMemoryAlias(virDomainDefPtr def,
-                                virDomainMemoryDefPtr mems);
+void qemuAssignDeviceMemorySlot(virDomainDefPtr def,
+                                virDomainMemoryDefPtr);
+
+int qemuAssignDeviceMemoryAlias(virDomainMemoryDefPtr mems);
 
 int qemuAssignDeviceShmemAlias(virDomainDefPtr def,
                                virDomainShmemDefPtr shmem,

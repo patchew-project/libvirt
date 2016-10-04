@@ -2386,6 +2386,9 @@ qemuDomainDefPostParse(virDomainDefPtr def,
     if (qemuDomainDefVcpusPostParse(def) < 0)
         goto cleanup;
 
+    if (def->mem.memory_slots)
+        def->memslotsptr = virBitmapNew(def->mem.memory_slots);
+
     ret = 0;
  cleanup:
     virObjectUnref(qemuCaps);

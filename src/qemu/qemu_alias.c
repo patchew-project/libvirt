@@ -332,21 +332,34 @@ qemuAssignDeviceRNGAlias(virDomainDefPtr def,
 }
 
 
-int
-qemuAssignDeviceMemoryAlias(virDomainDefPtr def,
-                            virDomainMemoryDefPtr mem)
+void
+qemuAssignDeviceMemorySlot(virDomainDefPtr def,
+                           virDomainMemoryDefPtr mem)
 {
     size_t i;
-    int maxidx = 0;
-    int idx;
+    int minidx = 0;
 
-    for (i = 0; i < def->nmems; i++) {
-        if ((idx = qemuDomainDeviceAliasIndex(&def->mems[i]->info, "dimm")) >= maxidx)
-            maxidx = idx + 1;
+    if (mem->info.addr.dimm.base) {
+        minidx = mem->info.addr.dimm.slot;
+    } else {
+        for (i = 0; i < def->mem.memory_slots; i++) {
+            if (!virBitmapIsBitSet(def->memslotsptr, i)) {
+                minidx = i;
+                break;
+            }
+        }
     }
 
-    if (virAsprintf(&mem->info.alias, "dimm%d", maxidx) < 0)
-        return -1;
+    ignore_value(virBitmapSetBit(def->memslotsptr, minidx));
+    mem->info.addr.dimm.slot = minidx;
+}
+
+
+int
+qemuAssignDeviceMemoryAlias(virDomainMemoryDefPtr mem)
+{
+    if (virAsprintf(&mem->info.alias, "dimm%d", mem->info.addr.dimm.slot) < 0)
+         return -1;
 
     return 0;
 }
@@ -475,7 +488,8 @@ qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps)
             return -1;
     }
     for (i = 0; i < def->nmems; i++) {
-        if (virAsprintf(&def->mems[i]->info.alias, "dimm%zu", i) < 0)
+        qemuAssignDeviceMemorySlot(def, def->mems[i]);
+        if (virAsprintf(&def->mems[i]->info.alias, "dimm%d", def->mems[i]->info.addr.dimm.slot) < 0)
             return -1;
     }
 
