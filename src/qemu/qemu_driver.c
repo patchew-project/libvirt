@@ -4455,7 +4455,6 @@ processSerialChangedEvent(virQEMUDriverPtr driver,
             if (priv->agent) {
                 qemuAgentClose(priv->agent);
                 priv->agent = NULL;
-                priv->agentError = false;
             }
         }
 

@@ -5055,14 +5055,6 @@ qemuDomainAgentAvailable(virDomainObjPtr vm,
         }
         return false;
     }
-    if (priv->agentError) {
-        if (reportError) {
-            virReportError(VIR_ERR_AGENT_UNRESPONSIVE, "%s",
-                           _("QEMU guest agent is not "
-                             "available due to an error"));
-        }
-        return false;
-    }
 
     if (priv->agent)
         return true;

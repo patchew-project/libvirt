@@ -151,7 +151,6 @@ qemuProcessHandleAgentEOF(qemuAgentPtr agent,
 
     qemuAgentClose(agent);
     priv->agent = NULL;
-    priv->agentError = false;
 
     virObjectUnlock(vm);
     return;
@@ -169,21 +168,10 @@ qemuProcessHandleAgentEOF(qemuAgentPtr agent,
  * allowed
  */
 static void
-qemuProcessHandleAgentError(qemuAgentPtr agent ATTRIBUTE_UNUSED,
+qemuProcessHandleAgentError(qemuAgentPtr agent,
                             virDomainObjPtr vm)
 {
-    qemuDomainObjPrivatePtr priv;
-
-    VIR_DEBUG("Received error from agent on %p '%s'", vm, vm->def->name);
-
-    virObjectLock(vm);
-
-    priv = vm->privateData;
-
-    if (priv->agent)
-        priv->agentError = true;
-
-    virObjectUnlock(vm);
+    qemuProcessHandleAgentEOF(agent, vm);
 }
 
 static void qemuProcessHandleAgentDestroy(qemuAgentPtr agent,
@@ -208,8 +196,6 @@ qemuConnectAgent(virQEMUDriverPtr driver, virDomainObjPtr vm)
     qemuDomainObjPrivatePtr priv = vm->privateData;
     qemuAgentPtr agent = NULL;
     virDomainChrDefPtr config = qemuFindAgentConfig(vm->def);
-
-    priv->agentError = false;
 
     if (!config)
         return 0;
@@ -5915,7 +5901,6 @@ void qemuProcessStop(virQEMUDriverPtr driver,
     if (priv->agent) {
         qemuAgentClose(priv->agent);
         priv->agent = NULL;
-        priv->agentError = false;
     }
 
     if (priv->mon) {
