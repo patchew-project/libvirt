@@ -634,8 +634,14 @@ qemuAgentIO(int watch, int fd, int events, void *opaque)
     if (events & VIR_EVENT_HANDLE_READABLE) {
         int got = qemuAgentIORead(mon);
 
-        if (got <= 0)
+        if (got < 0)
             goto error;
+
+        if (got == 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("EOF from agent"));
+            goto error;
+        }
 
         if (qemuAgentIOProcess(mon) < 0)
             goto error;
@@ -647,13 +653,13 @@ qemuAgentIO(int watch, int fd, int events, void *opaque)
 
     if (events & VIR_EVENT_HANDLE_HANGUP) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("End of file from agent monitor"));
+                       _("Write hangup from agent"));
         goto error;
     }
 
     if (events & VIR_EVENT_HANDLE_ERROR) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Invalid file descriptor while waiting for monitor"));
+                       _("Write error to agent"));
         goto error;
     }
 
