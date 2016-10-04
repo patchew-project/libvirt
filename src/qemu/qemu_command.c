@@ -7113,7 +7113,8 @@ qemuBuildSmpCommandLine(virCommandPtr cmd,
      * in a different way */
     for (i = 0; i < maxvcpus; i++) {
         vcpu = virDomainDefGetVcpu(def, i);
-        if (vcpu->online && vcpu->hotpluggable == VIR_TRISTATE_BOOL_NO)
+        if (vcpu->online && ((vcpu->hotpluggable == VIR_TRISTATE_BOOL_NO) ||
+                            (vcpu->hotpluggable == VIR_TRISTATE_BOOL_ABSENT)))
             nvcpus++;
     }
 
