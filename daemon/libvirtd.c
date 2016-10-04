@@ -1628,7 +1628,6 @@ int main(int argc, char **argv) {
     virObjectUnref(qemuProgram);
     virObjectUnref(adminProgram);
     virNetDaemonClose(dmn);
-    virObjectUnref(dmn);
     virObjectUnref(srv);
     virObjectUnref(srvAdm);
     virNetlinkShutdown();
@@ -1658,6 +1657,9 @@ int main(int argc, char **argv) {
         driversInitialized = false;
         virStateCleanup();
     }
+    /* unref daemon only here as hypervisor drivers can
+       call shutdown inhibition functions on cleanup */
+    virObjectUnref(dmn);
 
     return ret;
 }
