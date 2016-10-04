@@ -176,6 +176,10 @@ void virEventPollUpdateHandle(int watch, int events)
  * Unregister a callback from a file handle
  * NB, it *must* be safe to call this from within a callback
  * For this reason we only ever set a flag in the existing list.
+ * Another reason is that as we drop the lock upon event callback
+ * invocation we can't free callback object if we called
+ * from a thread then loop thread.
+ *
  * Actual deletion will be done out-of-band
  */
 int virEventPollRemoveHandle(int watch)
@@ -295,6 +299,9 @@ void virEventPollUpdateTimeout(int timer, int frequency)
  * Unregister a callback for a timer
  * NB, it *must* be safe to call this from within a callback
  * For this reason we only ever set a flag in the existing list.
+ * Another reason is that as we drop the lock upon event callback
+ * invocation we can't free callback object if we called
+ * from a thread then loop thread.
  * Actual deletion will be done out-of-band
  */
 int virEventPollRemoveTimeout(int timer)
