@@ -180,7 +180,8 @@ qemuProcessHandleAgentError(qemuAgentPtr agent ATTRIBUTE_UNUSED,
 
     priv = vm->privateData;
 
-    priv->agentError = true;
+    if (priv->agent)
+        priv->agentError = true;
 
     virObjectUnlock(vm);
 }
