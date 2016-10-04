@@ -752,7 +752,6 @@ qemuMonitorTestAgentNotify(qemuAgentPtr agent ATTRIBUTE_UNUSED,
 
 
 static qemuAgentCallbacks qemuMonitorTestAgentCallbacks = {
-    .eofNotify = qemuMonitorTestAgentNotify,
     .errorNotify = qemuMonitorTestAgentNotify,
 };
 

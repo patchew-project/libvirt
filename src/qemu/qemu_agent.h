@@ -36,8 +36,6 @@ typedef qemuAgentCallbacks *qemuAgentCallbacksPtr;
 struct _qemuAgentCallbacks {
     void (*destroy)(qemuAgentPtr mon,
                     virDomainObjPtr vm);
-    void (*eofNotify)(qemuAgentPtr mon,
-                      virDomainObjPtr vm);
     void (*errorNotify)(qemuAgentPtr mon,
                         virDomainObjPtr vm);
 };

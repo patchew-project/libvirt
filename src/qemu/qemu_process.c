@@ -128,12 +128,12 @@ extern virQEMUDriverPtr qemu_driver;
  * performed
  */
 static void
-qemuProcessHandleAgentEOF(qemuAgentPtr agent,
-                          virDomainObjPtr vm)
+qemuProcessHandleAgentError(qemuAgentPtr agent,
+                            virDomainObjPtr vm)
 {
     qemuDomainObjPrivatePtr priv;
 
-    VIR_DEBUG("Received EOF from agent on %p '%s'", vm, vm->def->name);
+    VIR_DEBUG("Received error from agent on %p '%s'", vm, vm->def->name);
 
     virObjectLock(vm);
 
@@ -145,7 +145,7 @@ qemuProcessHandleAgentEOF(qemuAgentPtr agent,
     }
 
     if (priv->beingDestroyed) {
-        VIR_DEBUG("Domain is being destroyed, agent EOF is expected");
+        VIR_DEBUG("Domain is being destroyed, agent error is expected");
         goto unlock;
     }
 
@@ -161,19 +161,6 @@ qemuProcessHandleAgentEOF(qemuAgentPtr agent,
 }
 
 
-/*
- * This is invoked when there is some kind of error
- * parsing data to/from the agent. The VM can continue
- * to run, but no further agent commands will be
- * allowed
- */
-static void
-qemuProcessHandleAgentError(qemuAgentPtr agent,
-                            virDomainObjPtr vm)
-{
-    qemuProcessHandleAgentEOF(agent, vm);
-}
-
 static void qemuProcessHandleAgentDestroy(qemuAgentPtr agent,
                                           virDomainObjPtr vm)
 {
@@ -185,7 +172,6 @@ static void qemuProcessHandleAgentDestroy(qemuAgentPtr agent,
 
 static qemuAgentCallbacks agentCallbacks = {
     .destroy = qemuProcessHandleAgentDestroy,
-    .eofNotify = qemuProcessHandleAgentEOF,
     .errorNotify = qemuProcessHandleAgentError,
 };
 

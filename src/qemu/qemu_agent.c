@@ -595,8 +595,8 @@ static void
 qemuAgentIO(int watch, int fd, int events, void *opaque)
 {
     qemuAgentPtr mon = opaque;
-    bool error = false;
-    bool eof = false;
+    void (*errorNotify)(qemuAgentPtr, virDomainObjPtr);
+    virDomainObjPtr vm;
 
     virObjectRef(mon);
     /* lock access to the monitor and protect fd */
@@ -606,122 +606,95 @@ qemuAgentIO(int watch, int fd, int events, void *opaque)
 #endif
 
     if (mon->fd != fd || mon->watch != watch) {
-        if (events & (VIR_EVENT_HANDLE_HANGUP | VIR_EVENT_HANDLE_ERROR))
-            eof = true;
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("event from unexpected fd %d!=%d / watch %d!=%d"),
                        mon->fd, fd, mon->watch, watch);
-        error = true;
-    } else if (mon->lastError.code != VIR_ERR_OK) {
-        if (events & (VIR_EVENT_HANDLE_HANGUP | VIR_EVENT_HANDLE_ERROR))
-            eof = true;
-        error = true;
-    } else {
-        if (events & VIR_EVENT_HANDLE_WRITABLE) {
-            if (mon->connectPending) {
-                if (qemuAgentIOConnect(mon) < 0)
-                    error = true;
-            } else {
-                if (qemuAgentIOWrite(mon) < 0)
-                    error = true;
-            }
-            events &= ~VIR_EVENT_HANDLE_WRITABLE;
-        }
-
-        if (!error &&
-            events & VIR_EVENT_HANDLE_READABLE) {
-            int got = qemuAgentIORead(mon);
-            events &= ~VIR_EVENT_HANDLE_READABLE;
-            if (got < 0) {
-                error = true;
-            } else if (got == 0) {
-                eof = true;
-            } else {
-                /* Ignore hangup/error events if we read some data, to
-                 * give time for that data to be consumed */
-                events = 0;
-
-                if (qemuAgentIOProcess(mon) < 0)
-                    error = true;
-            }
-        }
-
-        if (!error &&
-            events & VIR_EVENT_HANDLE_HANGUP) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("End of file from agent monitor"));
-            eof = true;
-            events &= ~VIR_EVENT_HANDLE_HANGUP;
-        }
-
-        if (!error && !eof &&
-            events & VIR_EVENT_HANDLE_ERROR) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("Invalid file descriptor while waiting for monitor"));
-            eof = true;
-            events &= ~VIR_EVENT_HANDLE_ERROR;
-        }
-        if (!error && events) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("Unhandled event %d for monitor fd %d"),
-                           events, mon->fd);
-            error = true;
-        }
+        goto error;
     }
 
-    if (error || eof) {
-        if (mon->lastError.code != VIR_ERR_OK) {
-            /* Already have an error, so clear any new error */
-            virResetLastError();
-        } else {
-            virErrorPtr err = virGetLastError();
-            if (!err)
-                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                               _("Error while processing monitor IO"));
-            virCopyLastError(&mon->lastError);
-            virResetLastError();
-        }
+    if (mon->lastError.code != VIR_ERR_OK)
+        goto error;
 
-        VIR_DEBUG("Error on monitor %s", NULLSTR(mon->lastError.message));
-        /* If IO process resulted in an error & we have a message,
-         * then wakeup that waiter */
-        if (mon->msg && !mon->msg->finished) {
-            mon->msg->finished = 1;
-            virCondSignal(&mon->notify);
+    if (events & VIR_EVENT_HANDLE_WRITABLE) {
+        if (mon->connectPending) {
+            if (qemuAgentIOConnect(mon) < 0)
+                goto error;
+        } else {
+            if (qemuAgentIOWrite(mon) < 0)
+                goto error;
         }
+        events &= ~VIR_EVENT_HANDLE_WRITABLE;
+    }
+
+    if (events & VIR_EVENT_HANDLE_READABLE) {
+        int got = qemuAgentIORead(mon);
+
+        if (got <= 0)
+            goto error;
+
+        if (qemuAgentIOProcess(mon) < 0)
+            goto error;
+
+        /* Ignore hangup/error events if we read some data, to
+         * give time for that data to be consumed */
+        events = 0;
+    }
+
+    if (events & VIR_EVENT_HANDLE_HANGUP) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("End of file from agent monitor"));
+        goto error;
+    }
+
+    if (events & VIR_EVENT_HANDLE_ERROR) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Invalid file descriptor while waiting for monitor"));
+        goto error;
+    }
+
+    if (events) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Unhandled event %d for monitor fd %d"),
+                       events, mon->fd);
+        goto error;
+    }
+
+    qemuAgentUpdateWatch(mon);
+    virObjectUnlock(mon);
+    virObjectUnref(mon);
+    return;
+
+ error:
+    if (mon->lastError.code != VIR_ERR_OK) {
+        /* Already have an error, so clear any new error */
+        virResetLastError();
+    } else {
+        virErrorPtr err = virGetLastError();
+        if (!err)
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Error while processing monitor IO"));
+        virCopyLastError(&mon->lastError);
+        virResetLastError();
+    }
+
+    VIR_DEBUG("Error on monitor %s", NULLSTR(mon->lastError.message));
+    /* If IO process resulted in an error & we have a message,
+     * then wakeup that waiter */
+    if (mon->msg && !mon->msg->finished) {
+        mon->msg->finished = 1;
+        virCondSignal(&mon->notify);
     }
 
     qemuAgentUpdateWatch(mon);
 
-    /* We have to unlock to avoid deadlock against command thread,
-     * but is this safe ?  I think it is, because the callback
-     * will try to acquire the virDomainObjPtr mutex next */
-    if (eof) {
-        void (*eofNotify)(qemuAgentPtr, virDomainObjPtr)
-            = mon->cb->eofNotify;
-        virDomainObjPtr vm = mon->vm;
+    errorNotify = mon->cb->errorNotify;
+    vm = mon->vm;
 
-        /* Make sure anyone waiting wakes up now */
-        virCondSignal(&mon->notify);
-        virObjectUnlock(mon);
-        virObjectUnref(mon);
-        VIR_DEBUG("Triggering EOF callback");
-        (eofNotify)(mon, vm);
-    } else if (error) {
-        void (*errorNotify)(qemuAgentPtr, virDomainObjPtr)
-            = mon->cb->errorNotify;
-        virDomainObjPtr vm = mon->vm;
-
-        /* Make sure anyone waiting wakes up now */
-        virCondSignal(&mon->notify);
-        virObjectUnlock(mon);
-        virObjectUnref(mon);
-        VIR_DEBUG("Triggering error callback");
-        (errorNotify)(mon, vm);
-    } else {
-        virObjectUnlock(mon);
-        virObjectUnref(mon);
-    }
+    /* Make sure anyone waiting wakes up now */
+    virCondSignal(&mon->notify);
+    virObjectUnlock(mon);
+    virObjectUnref(mon);
+    (errorNotify)(mon, vm);
 }
 
 
@@ -732,9 +705,9 @@ qemuAgentOpen(virDomainObjPtr vm,
 {
     qemuAgentPtr mon;
 
-    if (!cb || !cb->eofNotify) {
+    if (!cb || !cb->errorNotify) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("EOF notify callback must be supplied"));
+                       _("error notify callback must be supplied"));
         return NULL;
     }
 
