@@ -841,10 +841,8 @@ qemuMonitorJSONHandleBlockJobImpl(qemuMonitorPtr mon,
     case VIR_DOMAIN_BLOCK_JOB_CANCELED:
     case VIR_DOMAIN_BLOCK_JOB_READY:
         break;
-    case VIR_DOMAIN_BLOCK_JOB_FAILED:
-    case VIR_DOMAIN_BLOCK_JOB_LAST:
-        VIR_DEBUG("should not get here");
-        break;
+    default:
+        VIR_WARN("unexpected block job type: %d", event);
     }
 
  out:
