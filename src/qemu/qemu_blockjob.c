@@ -33,6 +33,7 @@
 #include "virstoragefile.h"
 #include "virthread.h"
 #include "virtime.h"
+#include "viralloc.h"
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
@@ -53,16 +54,24 @@ VIR_LOG_INIT("qemu.qemu_blockjob");
 int
 qemuBlockJobUpdate(virQEMUDriverPtr driver,
                    virDomainObjPtr vm,
-                   virDomainDiskDefPtr disk)
+                   virDomainDiskDefPtr disk,
+                   char **error)
 {
     qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
     int status = diskPriv->blockJobStatus;
+
+    if (error)
+        *error = NULL;
 
     if (status != -1) {
         qemuBlockJobEventProcess(driver, vm, disk,
                                  diskPriv->blockJobType,
                                  diskPriv->blockJobStatus);
         diskPriv->blockJobStatus = -1;
+        if (error)
+            VIR_STEAL_PTR(*error, diskPriv->blockJobHint);
+        else
+            VIR_FREE(diskPriv->blockJobHint);
     }
 
     return status;
@@ -241,6 +250,6 @@ qemuBlockJobSyncEnd(virQEMUDriverPtr driver,
                     virDomainDiskDefPtr disk)
 {
     VIR_DEBUG("disk=%s", disk->dst);
-    qemuBlockJobUpdate(driver, vm, disk);
+    qemuBlockJobUpdate(driver, vm, disk, NULL);
     QEMU_DOMAIN_DISK_PRIVATE(disk)->blockJobSync = false;
 }

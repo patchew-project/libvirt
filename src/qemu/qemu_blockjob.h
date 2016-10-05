@@ -27,7 +27,8 @@
 
 int qemuBlockJobUpdate(virQEMUDriverPtr driver,
                        virDomainObjPtr vm,
-                       virDomainDiskDefPtr disk);
+                       virDomainDiskDefPtr disk,
+                       char **error);
 void qemuBlockJobEventProcess(virQEMUDriverPtr driver,
                               virDomainObjPtr vm,
                               virDomainDiskDefPtr disk,

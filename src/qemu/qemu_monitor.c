@@ -1458,13 +1458,14 @@ int
 qemuMonitorEmitBlockJob(qemuMonitorPtr mon,
                         const char *diskAlias,
                         int type,
-                        int status)
+                        int status,
+                        const char *hint)
 {
     int ret = -1;
     VIR_DEBUG("mon=%p", mon);
 
     QEMU_MONITOR_CALLBACK(mon, ret, domainBlockJob, mon->vm,
-                          diskAlias, type, status);
+                          diskAlias, type, status, hint);
     return ret;
 }
 

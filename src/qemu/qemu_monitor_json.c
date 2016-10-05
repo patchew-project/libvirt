@@ -846,7 +846,7 @@ qemuMonitorJSONHandleBlockJobImpl(qemuMonitorPtr mon,
     }
 
  out:
-    qemuMonitorEmitBlockJob(mon, device, type, event);
+    qemuMonitorEmitBlockJob(mon, device, type, event, error);
 }
 
 static void

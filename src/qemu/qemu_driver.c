@@ -16328,13 +16328,13 @@ qemuDomainBlockJobAbort(virDomainPtr dom,
                                      VIR_DOMAIN_BLOCK_JOB_CANCELED);
         } else {
             qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
-            qemuBlockJobUpdate(driver, vm, disk);
+            qemuBlockJobUpdate(driver, vm, disk, NULL);
             while (diskPriv->blockjob) {
                 if (virDomainObjWait(vm) < 0) {
                     ret = -1;
                     goto endjob;
                 }
-                qemuBlockJobUpdate(driver, vm, disk);
+                qemuBlockJobUpdate(driver, vm, disk, NULL);
             }
         }
     }
