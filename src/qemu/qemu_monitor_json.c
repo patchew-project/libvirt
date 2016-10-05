@@ -801,6 +801,7 @@ qemuMonitorJSONHandleBlockJobImpl(qemuMonitorPtr mon,
                                   int event)
 {
     const char *device;
+    const char *error = NULL;
     const char *type_str;
     int type = VIR_DOMAIN_BLOCK_JOB_TYPE_UNKNOWN;
     unsigned long long offset, len;
@@ -834,8 +835,7 @@ qemuMonitorJSONHandleBlockJobImpl(qemuMonitorPtr mon,
 
     switch ((virConnectDomainEventBlockJobStatus) event) {
     case VIR_DOMAIN_BLOCK_JOB_COMPLETED:
-        /* Make sure the whole device has been processed */
-        if (offset != len)
+        if ((error = virJSONValueObjectGetString(data, "error")))
             event = VIR_DOMAIN_BLOCK_JOB_FAILED;
         break;
     case VIR_DOMAIN_BLOCK_JOB_CANCELED:
