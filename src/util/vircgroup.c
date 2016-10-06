@@ -732,11 +732,12 @@ virCgroupDetect(virCgroupPtr group,
             return -1;
         }
 
-        VIR_DEBUG("Detected mount/mapping %zu:%s at %s in %s for pid %llu", i,
+        VIR_DEBUG("Detected mount/mapping %zu:%s at %s in %s for pid %lld",
+                  i,
                   virCgroupControllerTypeToString(i),
                   group->controllers[i].mountPoint,
                   group->controllers[i].placement,
-                  (unsigned long long)pid);
+                  (long long) pid);
     }
 
     return 0;
