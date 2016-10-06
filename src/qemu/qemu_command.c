@@ -7941,15 +7941,13 @@ qemuBuildInterfaceCommandLine(virCommandPtr cmd,
     if (!bootindex)
         bootindex = net->info.bootIndex;
 
-    if (actualType == VIR_DOMAIN_NET_TYPE_VHOSTUSER)
-        return qemuBuildVhostuserCommandLine(cmd, def, net, qemuCaps, bootindex);
-
     /* Currently nothing besides TAP devices supports multiqueue. */
     if (net->driver.virtio.queues > 0 &&
         !(actualType == VIR_DOMAIN_NET_TYPE_NETWORK ||
           actualType == VIR_DOMAIN_NET_TYPE_BRIDGE ||
           actualType == VIR_DOMAIN_NET_TYPE_DIRECT ||
-          actualType == VIR_DOMAIN_NET_TYPE_ETHERNET)) {
+          actualType == VIR_DOMAIN_NET_TYPE_ETHERNET ||
+          actualType == VIR_DOMAIN_NET_TYPE_VHOSTUSER)) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Multiqueue network is not supported for: %s"),
                        virDomainNetTypeToString(actualType));
@@ -8028,6 +8026,9 @@ qemuBuildInterfaceCommandLine(virCommandPtr cmd,
          * their commandlines are constructed with other hostdevs.
          */
         ret = 0;
+        goto cleanup;
+    } else if (actualType == VIR_DOMAIN_NET_TYPE_VHOSTUSER) {
+        ret = qemuBuildVhostuserCommandLine(cmd, def, net, qemuCaps, bootindex);
         goto cleanup;
     }
 
