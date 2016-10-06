@@ -7844,12 +7844,15 @@ qemuBuildGraphicsCommandLine(virQEMUDriverConfigPtr cfg,
 }
 
 static int
-qemuBuildVhostuserCommandLine(virCommandPtr cmd,
+qemuBuildVhostuserCommandLine(virQEMUDriverPtr driver,
+                              virLogManagerPtr logManager,
+                              virCommandPtr cmd,
                               virDomainDefPtr def,
                               virDomainNetDefPtr net,
                               virQEMUCapsPtr qemuCaps,
                               unsigned int bootindex)
 {
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     char *chardev = NULL;
     virBuffer netdev_buf = VIR_BUFFER_INITIALIZER;
     unsigned int queues = net->driver.virtio.queues;
@@ -7863,7 +7866,7 @@ qemuBuildVhostuserCommandLine(virCommandPtr cmd,
 
     switch ((virDomainChrType) net->data.vhostuser->type) {
     case VIR_DOMAIN_CHR_TYPE_UNIX:
-        if (!(chardev = qemuBuildChrChardevStr(NULL, NULL, NULL, def,
+        if (!(chardev = qemuBuildChrChardevStr(logManager, cmd, cfg, def,
                                                net->data.vhostuser,
                                                net->info.alias, qemuCaps, false)))
             goto error;
@@ -7917,10 +7920,12 @@ qemuBuildVhostuserCommandLine(virCommandPtr cmd,
 
     virCommandAddArgList(cmd, "-device", nic, NULL);
     VIR_FREE(nic);
+    virObjectUnref(cfg);
 
     return 0;
 
  error:
+    virObjectUnref(cfg);
     VIR_FREE(chardev);
     virBufferFreeAndReset(&netdev_buf);
     VIR_FREE(nic);
@@ -7929,8 +7934,9 @@ qemuBuildVhostuserCommandLine(virCommandPtr cmd,
 }
 
 static int
-qemuBuildInterfaceCommandLine(virCommandPtr cmd,
-                              virQEMUDriverPtr driver,
+qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
+                              virLogManagerPtr logManager,
+                              virCommandPtr cmd,
                               virDomainDefPtr def,
                               virDomainNetDefPtr net,
                               virQEMUCapsPtr qemuCaps,
@@ -7950,7 +7956,6 @@ qemuBuildInterfaceCommandLine(virCommandPtr cmd,
     char **tapfdName = NULL;
     char **vhostfdName = NULL;
     virDomainNetType actualType = virDomainNetGetActualType(net);
-    virQEMUDriverConfigPtr cfg = NULL;
     virNetDevBandwidthPtr actualBandwidth;
     size_t i;
 
@@ -7992,8 +7997,6 @@ qemuBuildInterfaceCommandLine(virCommandPtr cmd,
                        virDomainNetTypeToString(actualType));
         return -1;
     }
-
-    cfg = virQEMUDriverGetConfig(driver);
 
     switch (actualType) {
     case VIR_DOMAIN_NET_TYPE_NETWORK:
@@ -8054,7 +8057,8 @@ qemuBuildInterfaceCommandLine(virCommandPtr cmd,
         break;
 
     case VIR_DOMAIN_NET_TYPE_VHOSTUSER:
-        ret = qemuBuildVhostuserCommandLine(cmd, def, net, qemuCaps, bootindex);
+        ret = qemuBuildVhostuserCommandLine(driver, logManager, cmd, def,
+                                            net, qemuCaps, bootindex);
         goto cleanup;
         break;
 
@@ -8227,7 +8231,6 @@ qemuBuildInterfaceCommandLine(virCommandPtr cmd,
     VIR_FREE(host);
     VIR_FREE(tapfdName);
     VIR_FREE(vhostfdName);
-    virObjectUnref(cfg);
     return ret;
 }
 
@@ -8237,8 +8240,9 @@ qemuBuildInterfaceCommandLine(virCommandPtr cmd,
  *       API domainSetSecurityTapFDLabel that doesn't use the const format.
  */
 static int
-qemuBuildNetCommandLine(virCommandPtr cmd,
-                        virQEMUDriverPtr driver,
+qemuBuildNetCommandLine(virQEMUDriverPtr driver,
+                        virLogManagerPtr logManager,
+                        virCommandPtr cmd,
                         virDomainDefPtr def,
                         virQEMUCapsPtr qemuCaps,
                         virNetDevVPortProfileOp vmop,
@@ -8276,7 +8280,7 @@ qemuBuildNetCommandLine(virCommandPtr cmd,
             else
                 vlan = i;
 
-            if (qemuBuildInterfaceCommandLine(cmd, driver, def, net,
+            if (qemuBuildInterfaceCommandLine(driver, logManager, cmd, def, net,
                                               qemuCaps, vlan, bootNet, vmop,
                                               standalone, nnicindexes,
                                               nicindexes) < 0)
@@ -9503,7 +9507,8 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (qemuBuildFSDevCommandLine(cmd, def, qemuCaps) < 0)
         goto error;
 
-    if (qemuBuildNetCommandLine(cmd, driver, def, qemuCaps, vmop, standalone,
+    if (qemuBuildNetCommandLine(driver, logManager, cmd, def,
+                                qemuCaps, vmop, standalone,
                                 nnicindexes, nicindexes, &bootHostdevNet) < 0)
         goto error;
 
