@@ -9170,8 +9170,8 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                 ifname = virXMLPropString(cur, "dev");
                 if (ifname &&
                     (flags & VIR_DOMAIN_DEF_PARSE_INACTIVE) &&
-                     (STRPREFIX(ifname, VIR_NET_GENERATED_PREFIX) ||
-                      (prefix && STRPREFIX(ifname, prefix)))) {
+                    (STRPREFIX(ifname, VIR_NET_GENERATED_PREFIX) ||
+                     (prefix && STRPREFIX(ifname, prefix)))) {
                     /* An auto-generated target name, blank it out */
                     VIR_FREE(ifname);
                 }
@@ -9732,9 +9732,9 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
             filter = NULL;
             def->filterparams = filterparams;
             filterparams = NULL;
-        break;
+            break;
         default:
-        break;
+            break;
         }
     }
 
