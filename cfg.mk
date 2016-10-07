@@ -581,6 +581,11 @@ sc_prohibit_int_assign_bool:
 	halt='use bool type for boolean values'				\
 	  $(_sc_search_regexp)
 
+sc_prohibit_unsigned_pid:
+	@prohibit='\<unsigned\> [^,=]+pid'						\
+	halt='use signed type for pid values'				\
+	  $(_sc_search_regexp)
+
 # Many of the function names below came from this filter:
 # git grep -B2 '\<_('|grep -E '\.c- *[[:alpha:]_][[:alnum:]_]* ?\(.*[,;]$' \
 # |sed 's/.*\.c-  *//'|perl -pe 's/ ?\(.*//'|sort -u \
@@ -1213,6 +1218,9 @@ exclude_file_name_regexp--sc_prohibit_include_public_headers_brackets = \
 
 exclude_file_name_regexp--sc_prohibit_int_ijk = \
   ^(src/remote_protocol-structs|src/remote/remote_protocol\.x|cfg\.mk|include/libvirt/libvirt.+|src/admin_protocol-structs|src/admin/admin_protocol\.x)$$
+
+exclude_file_name_regexp--sc_prohibit_unsigned_pid = \
+  ^(include/libvirt/libvirt-qemu.h|src/(driver-hypervisor.h|libvirt-qemu.c|locking/lock_protocol.x|lxc/lxc_monitor_protocol.x|qemu/qemu_driver.c|remote/qemu_protocol.x|util/virpolkit.c|util/virsystemd.c)|tests/virpolkittest.c|tools/virsh-domain.c)$$
 
 exclude_file_name_regexp--sc_prohibit_getenv = \
   ^tests/.*\.[ch]$$

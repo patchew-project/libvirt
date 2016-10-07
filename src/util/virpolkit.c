@@ -82,6 +82,7 @@ int virPolkitCheckAuth(const char *actionid,
     VIR_INFO("Checking PID %lld running as %d",
              (long long) pid, uid);
 
+    /* Yes, PolicyKit really takes pid ad uint. */
     if (virDBusCallMethod(sysbus,
                           &reply,
                           NULL,
