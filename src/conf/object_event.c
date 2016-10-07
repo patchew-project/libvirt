@@ -821,12 +821,12 @@ virObjectEventStateFlush(virObjectEventStatePtr state)
     if (state->timer != -1)
         virEventUpdateTimeout(state->timer, -1);
 
+    /* Purge any deleted callbacks */
+    virObjectEventCallbackListPurgeMarked(state->callbacks);
+
     virObjectEventStateQueueDispatch(state,
                                      &tempQueue,
                                      state->callbacks);
-
-    /* Purge any deleted callbacks */
-    virObjectEventCallbackListPurgeMarked(state->callbacks);
 
     state->isDispatching = false;
     virObjectEventStateUnlock(state);
