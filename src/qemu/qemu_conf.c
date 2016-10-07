@@ -365,6 +365,7 @@ static void virQEMUDriverConfigDispose(void *obj)
     VIR_FREE(cfg->nvramDir);
 
     VIR_FREE(cfg->defaultTLSx509certdir);
+    VIR_FREE(cfg->defaultTLSx509secretUUID);
 
     VIR_FREE(cfg->vncTLSx509certdir);
     VIR_FREE(cfg->vncListen);
@@ -377,6 +378,7 @@ static void virQEMUDriverConfigDispose(void *obj)
     VIR_FREE(cfg->spiceSASLdir);
 
     VIR_FREE(cfg->chardevTLSx509certdir);
+    VIR_FREE(cfg->chardevTLSx509secretUUID);
 
     while (cfg->nhugetlbfs) {
         cfg->nhugetlbfs--;
@@ -424,6 +426,7 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
     int ret = -1;
     int rv;
     size_t i, j;
+    bool defaultTLSx509haveUUID;
     char *stdioHandler = NULL;
     char *user = NULL, *group = NULL;
     char **controllers = NULL;
@@ -446,6 +449,12 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         goto cleanup;
     if (virConfGetValueBool(conf, "default_tls_x509_verify", &cfg->defaultTLSx509verify) < 0)
         goto cleanup;
+    if ((rv = virConfGetValueString(conf, "default_tls_x509_secret_uuid",
+                                    &cfg->defaultTLSx509secretUUID)) < 0)
+        goto cleanup;
+    if (rv == 1)
+        defaultTLSx509haveUUID = true;
+
     if (virConfGetValueBool(conf, "vnc_auto_unix_socket", &cfg->vncAutoUnixSocket) < 0)
         goto cleanup;
     if (virConfGetValueBool(conf, "vnc_tls", &cfg->vncTLS) < 0)
@@ -513,6 +522,19 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         goto cleanup;
     if (rv == 0)
         cfg->chardevTLSx509verify = cfg->defaultTLSx509verify;
+    if ((rv = virConfGetValueString(conf, "chardev_tls_x509_secret_uuid",
+                                    &cfg->chardevTLSx509secretUUID)) < 0)
+        goto cleanup;
+    if (rv == 1) {
+        cfg->chardevTLSx509haveUUID = true;
+    } else {
+        if (defaultTLSx509haveUUID) {
+            if (VIR_STRDUP(cfg->chardevTLSx509secretUUID,
+                           cfg->defaultTLSx509secretUUID) < 0)
+                goto cleanup;
+            cfg->chardevTLSx509haveUUID = true;
+        }
+    }
 
     if (virConfGetValueUInt(conf, "remote_websocket_port_min", &cfg->webSocketPortMin) < 0)
         goto cleanup;
