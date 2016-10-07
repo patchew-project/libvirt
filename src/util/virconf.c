@@ -1219,7 +1219,7 @@ int virConfGetValueSizeT(virConfPtr conf,
     if (((unsigned long long)cval->l) > SIZE_MAX) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("%s: value for '%s' parameter must be in range 0:%zu"),
-                       conf->filename, setting, SIZE_MAX);
+                       conf->filename, setting, (size_t) SIZE_MAX);
         return -1;
     }
 #endif
