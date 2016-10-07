@@ -2967,7 +2967,7 @@ static int prlsdkApplyGraphicsParams(PRL_HANDLE sdkdom,
 
     glisten = virDomainGraphicsGetListen(gr, 0);
     pret = PrlVmCfg_SetVNCHostName(sdkdom, glisten && glisten->address ?
-                                           glisten->address : "");
+                                           glisten->address : "0.0.0.0");
     prlsdkCheckRetGoto(pret, cleanup);
 
     ret = 0;
