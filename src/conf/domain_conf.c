@@ -1961,6 +1961,8 @@ virDomainChrSourceDefCopy(virDomainChrSourceDefPtr dest,
 
         if (VIR_STRDUP(dest->data.tcp.service, src->data.tcp.service) < 0)
             return -1;
+
+        dest->data.tcp.haveTLS = src->data.tcp.haveTLS;
         break;
 
     case VIR_DOMAIN_CHR_TYPE_UNIX:
@@ -9999,6 +10001,7 @@ virDomainChrSourceDefParseXML(virDomainChrSourceDefPtr def,
     char *master = NULL;
     char *slave = NULL;
     char *append = NULL;
+    char *haveTLS = NULL;
     int remaining = 0;
 
     while (cur != NULL) {
@@ -10006,6 +10009,8 @@ virDomainChrSourceDefParseXML(virDomainChrSourceDefPtr def,
             if (xmlStrEqual(cur->name, BAD_CAST "source")) {
                 if (!mode)
                     mode = virXMLPropString(cur, "mode");
+                if (!haveTLS)
+                    haveTLS = virXMLPropString(cur, "tls");
 
                 switch ((virDomainChrType) def->type) {
                 case VIR_DOMAIN_CHR_TYPE_FILE:
@@ -10182,6 +10187,15 @@ virDomainChrSourceDefParseXML(virDomainChrSourceDefPtr def,
             def->data.tcp.listen = true;
         }
 
+        if (haveTLS &&
+            (def->data.tcp.haveTLS =
+             virTristateBoolTypeFromString(haveTLS)) <= 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("unknown chardev 'tls' setting '%s'"),
+                           haveTLS);
+            goto error;
+        }
+
         if (!protocol)
             def->data.tcp.protocol = VIR_DOMAIN_CHR_TCP_PROTOCOL_RAW;
         else if ((def->data.tcp.protocol =
@@ -10266,6 +10280,7 @@ virDomainChrSourceDefParseXML(virDomainChrSourceDefPtr def,
     VIR_FREE(append);
     VIR_FREE(logappend);
     VIR_FREE(logfile);
+    VIR_FREE(haveTLS);
 
     return remaining;
 
@@ -21417,7 +21432,12 @@ virDomainChrSourceDefFormat(virBufferPtr buf,
         virBufferAsprintf(buf, "<source mode='%s' ",
                           def->data.tcp.listen ? "bind" : "connect");
         virBufferEscapeString(buf, "host='%s' ", def->data.tcp.host);
-        virBufferEscapeString(buf, "service='%s'/>\n", def->data.tcp.service);
+        virBufferEscapeString(buf, "service='%s'", def->data.tcp.service);
+        if (def->data.tcp.haveTLS != VIR_TRISTATE_BOOL_ABSENT)
+            virBufferAsprintf(buf, " tls='%s'",
+                    virTristateBoolTypeToString(def->data.tcp.haveTLS));
+        virBufferAddLit(buf, "/>\n");
+
         virBufferAsprintf(buf, "<protocol type='%s'/>\n",
                           virDomainChrTcpProtocolTypeToString(
                               def->data.tcp.protocol));

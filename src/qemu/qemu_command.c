@@ -5002,7 +5002,8 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
                           telnet ? ",telnet" : "",
                           dev->data.tcp.listen ? ",server,nowait" : "");
 
-        if (cfg->chardevTLS) {
+        if (cfg->chardevTLS &&
+            dev->data.tcp.haveTLS == VIR_TRISTATE_BOOL_YES) {
             char *objalias = NULL;
 
             if (qemuBuildTLSx509CommandLine(cmd, cfg->chardevTLSx509certdir,

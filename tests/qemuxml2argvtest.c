@@ -1150,6 +1150,9 @@ mymain(void)
     DO_TEST("serial-tcp-tlsx509-chardev",
             QEMU_CAPS_CHARDEV, QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_OBJECT_TLS_CREDS_X509);
+    DO_TEST("serial-tcp-tlsx509-chardev-tls",
+            QEMU_CAPS_CHARDEV, QEMU_CAPS_NODEFCONFIG,
+            QEMU_CAPS_OBJECT_TLS_CREDS_X509);
     driver.config->chardevTLS = 0;
     VIR_FREE(driver.config->chardevTLSx509certdir);
     DO_TEST("serial-many-chardev",
