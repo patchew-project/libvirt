@@ -5694,7 +5694,8 @@ qemuBuildRNGCommandLine(virLogManagerPtr logManager,
 }
 
 
-static char *qemuBuildSmbiosBiosStr(virSysinfoBIOSDefPtr def)
+static char *
+qemuBuildSmbiosBiosStr(virSysinfoBIOSDefPtr def)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
 
@@ -5726,8 +5727,10 @@ static char *qemuBuildSmbiosBiosStr(virSysinfoBIOSDefPtr def)
     return NULL;
 }
 
-static char *qemuBuildSmbiosSystemStr(virSysinfoSystemDefPtr def,
-                                      bool skip_uuid)
+
+static char *
+qemuBuildSmbiosSystemStr(virSysinfoSystemDefPtr def,
+                         bool skip_uuid)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
 
@@ -5772,7 +5775,9 @@ static char *qemuBuildSmbiosSystemStr(virSysinfoSystemDefPtr def,
     return NULL;
 }
 
-static char *qemuBuildSmbiosBaseBoardStr(virSysinfoBaseBoardDefPtr def)
+
+static char *
+qemuBuildSmbiosBaseBoardStr(virSysinfoBaseBoardDefPtr def)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
 
