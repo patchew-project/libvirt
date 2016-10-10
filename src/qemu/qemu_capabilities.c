@@ -2405,10 +2405,13 @@ int virQEMUCapsGetMachineTypesCaps(virQEMUCapsPtr qemuCaps,
     size_t i;
 
     *machines = NULL;
+    *nmachines = 0;
+
+    if (!qemuCaps || !qemuCaps->nmachineTypes)
+        return 0;
     *nmachines = qemuCaps->nmachineTypes;
 
-    if (*nmachines &&
-        VIR_ALLOC_N(*machines, qemuCaps->nmachineTypes) < 0)
+    if (VIR_ALLOC_N(*machines, qemuCaps->nmachineTypes) < 0)
         goto error;
 
     for (i = 0; i < qemuCaps->nmachineTypes; i++) {
