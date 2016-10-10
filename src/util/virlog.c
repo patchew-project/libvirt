@@ -1362,16 +1362,15 @@ virLogFindOutput(virLogOutputPtr *outputs, size_t noutputs,
 int
 virLogDefineOutputs(virLogOutputPtr *outputs, size_t noutputs)
 {
-    int ret = -1;
-    int id;
-    char *tmp = NULL;
-
     if (virLogInitialize() < 0)
         return -1;
 
     virLogLock();
     virLogResetOutputs();
 
+#if HAVE_SYSLOG_H
+    int id = -1;
+    char *tmp = NULL;
     /* syslog needs to be special-cased, since it keeps the fd in private */
     if ((id = virLogFindOutput(outputs, noutputs, VIR_LOG_TO_SYSLOG,
                                current_ident)) != -1) {
@@ -1379,20 +1378,21 @@ virLogDefineOutputs(virLogOutputPtr *outputs, size_t noutputs)
          * holding the lock so it's safe to call openlog and change the message
          * tag
          */
-        if (VIR_STRDUP_QUIET(tmp, outputs[id]->name) < 0)
-            goto cleanup;
+        if (VIR_STRDUP_QUIET(tmp, outputs[id]->name) < 0) {
+            virLogUnlock();
+            return -1;
+        }
         VIR_FREE(current_ident);
         current_ident = tmp;
         openlog(current_ident, 0, 0);
     }
+#endif
 
     virLogOutputs = outputs;
     virLogNbOutputs = noutputs;
 
-    ret = 0;
- cleanup:
     virLogUnlock();
-    return ret;
+    return 0;
 }
 
 
