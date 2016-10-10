@@ -75,6 +75,10 @@ char *          virXMLPropString(xmlNodePtr node,
                                  const char *name);
 long     virXMLChildElementCount(xmlNodePtr node);
 
+int            virXMLCheckString(const char *nodeName,
+                                 char *str,
+                                 const char *forbiddenChars);
+
 /* Internal function; prefer the macros below.  */
 xmlDocPtr      virXMLParseHelper(int domcode,
                                  const char *filename,

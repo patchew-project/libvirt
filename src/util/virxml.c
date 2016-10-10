@@ -890,6 +890,24 @@ virXMLChildElementCount(xmlNodePtr node)
     return ret;
 }
 
+/**
+ * virXMLCheckString: checks if string contains at least one of
+ * forbidden characters
+ *
+ * Returns: 0 if string don't contains any of given characters, -1 otherwise
+ */
+int virXMLCheckString(const char *nodeName, char *str,
+                      const char *forbiddenChars)
+{
+    char *c;
+    c = strpbrk(str, forbiddenChars);
+    if (c) {
+        virReportError(VIR_ERR_XML_DETAIL,
+            _("invalid char in %s: %c"), nodeName, *c);
+        return -1;
+    }
+    return 0;
+}
 
 /**
  * virXMLNodeToString: convert an XML node ptr to an XML string
