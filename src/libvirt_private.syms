@@ -146,6 +146,7 @@ virDomainAuditIOThread;
 virDomainAuditMemory;
 virDomainAuditNet;
 virDomainAuditNetDevice;
+virDomainAuditPanic;
 virDomainAuditRedirdev;
 virDomainAuditRNG;
 virDomainAuditSecurityLabel;

@@ -893,6 +893,9 @@ virDomainAuditStart(virDomainObjPtr vm, const char *reason, bool success)
     for (i = 0; i < vm->def->nshmems; i++)
         virDomainAuditShmem(vm, vm->def->shmems[i], "start", true);
 
+    for (i = 0; i < vm->def->npanics; i++)
+        virDomainAuditPanic(vm, vm->def->panics[i], "start", true);
+
     virDomainAuditMemory(vm, 0, virDomainDefGetMemoryTotal(vm->def),
                          "start", true);
     virDomainAuditVcpu(vm, 0, virDomainDefGetVcpus(vm->def), "start", true);
@@ -1004,5 +1007,40 @@ virDomainAuditShmem(virDomainObjPtr vm,
     VIR_FREE(src);
     VIR_FREE(size);
     VIR_FREE(shmem);
+    return;
+}
+
+void
+virDomainAuditPanic(virDomainObjPtr vm,
+                    virDomainPanicDefPtr def,
+                    const char *reason,
+                    bool success)
+{
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
+    char *vmname = virAuditEncode("vm", vm->def->name);
+    const char *panic_model = virDomainPanicModelTypeToString(def->model);
+    char *model = virAuditEncode("model", VIR_AUDIT_STR(panic_model));
+    const char *virt = virDomainVirtTypeToString(vm->def->virtType);
+
+    virUUIDFormat(vm->def->uuid, uuidstr);
+
+    if (!vmname || !model) {
+        VIR_WARN("OOM while encoding audit message");
+        goto cleanup;
+    }
+
+    if (!virt) {
+        VIR_WARN("Unexpected virt type %d while encoding audit message",
+                 vm->def->virtType);
+        virt = "?";
+    }
+
+    VIR_AUDIT(VIR_AUDIT_RECORD_RESOURCE, success,
+              "virt=%s resrc=PanicNotifier reason=%s %s uuid=%s %s",
+              virt, reason, vmname, uuidstr, model);
+
+ cleanup:
+    VIR_FREE(vmname);
+    VIR_FREE(model);
     return;
 }

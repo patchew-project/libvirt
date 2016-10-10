@@ -371,5 +371,20 @@
       <dd>Path of the backing character device for given emulated device</dd>
     </dl>
 
+
+    <h4><a name="typeresourcepanic">Panic notifier</a></h4>
+    <p>
+      The <code>msg</code> field will include the following sub-fields
+    </p>
+
+    <dl>
+      <dt><code>resrc</code></dt>
+      <dd>The type of resource assigned. Set to <code>panic</code></dd>
+      <dt><code>reason</code></dt>
+      <dd>The reason which caused the resource to be assigned to happen</dd>
+      <dt><code>model</code></dt>
+      <dd>The model of the panic notifier device</dd>
+    </dl>
+
   </body>
 </html>
