@@ -14,7 +14,9 @@
       subsystem. This provides administrators / auditors with a canonical historical
       record of changes to virtual machines' / containers' lifecycle states and
       their configuration. On hosts which are running the Linux audit daemon,
-      the logs will usually end up in <code>/var/log/audit/audit.log</code>
+      the logs will usually end up in <code>/var/log/audit/audit.log</code>.
+      If QEMU try to use some resources on the host, libvirt will record them
+      in audit log.
     </p>
 
     <h2><a name="config">Configuration</a></h2>
