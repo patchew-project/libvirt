@@ -1682,6 +1682,7 @@ typedef enum {
     VIR_VCPU_OFFLINE    = 0,    /* the virtual CPU is offline */
     VIR_VCPU_RUNNING    = 1,    /* the virtual CPU is running */
     VIR_VCPU_BLOCKED    = 2,    /* the virtual CPU is blocked on resource */
+    VIR_VCPU_HALTED     = 3,    /* the virtual CPU is halted */
 
 # ifdef VIR_ENUM_SENTINELS
     VIR_VCPU_LAST
