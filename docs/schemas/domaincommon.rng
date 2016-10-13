@@ -5534,6 +5534,9 @@
         </attribute>
       </optional>
       <optional>
+        <ref name="alias"/>
+      </optional>
+      <optional>
         <ref name="address"/>
       </optional>
     </element>
