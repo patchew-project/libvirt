@@ -975,6 +975,15 @@ virStringStripIPv6Brackets(char *str)
 }
 
 
+bool
+virStringHasChars(const char *str, const char *chars)
+{
+    if (strpbrk(str, chars))
+        return true;
+    return false;
+}
+
+
 static const char control_chars[] =
     "\x01\x02\x03\x04\x05\x06\x07"
     "\x08" /* \t \n */ "\x0B\x0C" /* \r */ "\x0E\x0F"

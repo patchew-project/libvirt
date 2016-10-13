@@ -2435,6 +2435,7 @@ virStringEncodeBase64;
 virStringFreeList;
 virStringFreeListCount;
 virStringGetFirstWithPrefix;
+virStringHasChars;
 virStringHasControlChars;
 virStringIsEmpty;
 virStringIsPrintable;
