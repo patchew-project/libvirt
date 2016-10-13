@@ -2973,6 +2973,12 @@ networkValidate(virNetworkDriverStatePtr driver,
     bool bandwidthAllowed = true;
     bool usesInterface = false, usesAddress = false;
 
+    if (virStringHasChars(def->name, "\n")) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("name %s cannot contain '\\n'"), def->name);
+        return -1;
+    }
+
     /* Only the three L3 network types that are configured by libvirt
      * need to have a bridge device name / mac address provided
      */
