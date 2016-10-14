@@ -3722,11 +3722,6 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
         virBufferAsprintf(&buf, "user%c", type_sep);
         break;
 
-    case VIR_DOMAIN_NET_TYPE_HOSTDEV:
-        /* Should have been handled earlier via PCI/USB hotplug code. */
-        virObjectUnref(cfg);
-        return NULL;
-
     case VIR_DOMAIN_NET_TYPE_VHOSTUSER:
         virBufferAsprintf(&buf, "vhost-user%cchardev=char%s,",
                           type_sep,
@@ -3736,6 +3731,8 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
                               net->driver.virtio.queues);
         break;
 
+    case VIR_DOMAIN_NET_TYPE_HOSTDEV:
+        /* Should have been handled earlier via PCI/USB hotplug code. */
     case VIR_DOMAIN_NET_TYPE_INTERNAL:
         /* Not supported by QEMU driver */
     case VIR_DOMAIN_NET_TYPE_LAST:
