@@ -919,6 +919,9 @@ qemuDomainPCIAddressSetCreate(virDomainDefPtr def,
     virDomainPCIAddressSetPtr addrs;
     size_t i;
     bool hasPCIeRoot = false;
+    unsigned int lowestDMIToPCIBridge = nbuses;
+    unsigned int lowestUnaddressedPCIBridge = nbuses;
+    unsigned int lowestAddressedPCIBridge = nbuses;
     virDomainControllerModelPCI defaultModel;
 
     if ((addrs = virDomainPCIAddressSetAlloc(nbuses)) == NULL)
@@ -943,8 +946,24 @@ qemuDomainPCIAddressSetCreate(virDomainDefPtr def,
         if (virDomainPCIAddressBusSetModel(&addrs->buses[idx], cont->model) < 0)
             goto error;
 
-        if (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT)
+        /* we'll use all this info later to determine if we need
+         * to add a dmi-to-pci-bridge due to unaddressed pci-bridge controllers
+         */
+        if (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT) {
             hasPCIeRoot = true;
+        } else if (cont->model ==
+                   VIR_DOMAIN_CONTROLLER_MODEL_DMI_TO_PCI_BRIDGE) {
+            if (lowestDMIToPCIBridge > idx)
+                lowestDMIToPCIBridge = idx;
+        } else if (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_BRIDGE) {
+            if (virDeviceInfoPCIAddressWanted(&cont->info)) {
+                if (lowestUnaddressedPCIBridge > idx)
+                    lowestUnaddressedPCIBridge = idx;
+            } else {
+                if (lowestAddressedPCIBridge > idx)
+                    lowestAddressedPCIBridge = idx;
+            }
+        }
     }
 
     if (nbuses > 0 && !addrs->buses[0].model) {
@@ -960,13 +979,21 @@ qemuDomainPCIAddressSetCreate(virDomainDefPtr def,
 
     /* Now fill in a reasonable model for all the buses in the set
      * that don't yet have a corresponding controller in the domain
-     * config.
+     * config.  In the rare (and ... strange, but still allowed) case
+     * that a domain has 1) a pcie-root at index 0, 2) *no*
+     * dmi-to-pci-bridge (or pci-bridge that was manually addressed to
+     * sit directly on pcie-root), and 3) does have an unaddressed
+     * pci-bridge at an index > 1, then we need to add a
+     * dmi-to-pci-bridge.
      */
 
-    if (hasPCIeRoot)
-        defaultModel = VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT_PORT;
-    else
+    if (!hasPCIeRoot)
         defaultModel = VIR_DOMAIN_CONTROLLER_MODEL_PCI_BRIDGE;
+    else if (lowestUnaddressedPCIBridge < MIN(lowestAddressedPCIBridge,
+                                              lowestDMIToPCIBridge))
+        defaultModel = VIR_DOMAIN_CONTROLLER_MODEL_DMI_TO_PCI_BRIDGE;
+    else
+        defaultModel = VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT_PORT;
 
     for (i = 1; i < addrs->nbuses; i++) {
 
@@ -978,6 +1005,11 @@ qemuDomainPCIAddressSetCreate(virDomainDefPtr def,
 
         VIR_DEBUG("Auto-adding <controller type='pci' model='%s' index='%zu'/>",
                   virDomainControllerModelPCITypeToString(defaultModel), i);
+        /* only add a single dmi-to-pci-bridge, then add pcie-root-port
+         * for any other unspecified controller indexes.
+         */
+        if (hasPCIeRoot)
+            defaultModel = VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT_PORT;
     }
 
     if (virDomainDeviceInfoIterate(def, qemuDomainCollectPCIAddress, addrs) < 0)
