@@ -1859,17 +1859,25 @@ qemuMigrationDriveMirrorReady(virQEMUDriverPtr driver,
     for (i = 0; i < vm->def->ndisks; i++) {
         virDomainDiskDefPtr disk = vm->def->disks[i];
         qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+        char *error;
 
         if (!diskPriv->migrating)
             continue;
 
-        status = qemuBlockJobUpdate(driver, vm, disk);
+        status = qemuBlockJobUpdate(driver, vm, disk, &error);
         if (status == VIR_DOMAIN_BLOCK_JOB_FAILED) {
-            virReportError(VIR_ERR_OPERATION_FAILED,
-                           _("migration of disk %s failed"),
-                           disk->dst);
+            if (error) {
+                virReportError(VIR_ERR_OPERATION_FAILED,
+                               _("migration of disk %s failed: %s"),
+                               disk->dst, error);
+                VIR_FREE(error);
+            } else {
+                virReportError(VIR_ERR_OPERATION_FAILED,
+                               _("migration of disk %s failed"), disk->dst);
+            }
             return -1;
         }
+        VIR_FREE(error);
 
         if (disk->mirrorState != VIR_DOMAIN_DISK_MIRROR_STATE_READY)
             notReady++;
@@ -1908,17 +1916,23 @@ qemuMigrationDriveMirrorCancelled(virQEMUDriverPtr driver,
     for (i = 0; i < vm->def->ndisks; i++) {
         virDomainDiskDefPtr disk = vm->def->disks[i];
         qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+        char *error;
 
         if (!diskPriv->migrating)
             continue;
 
-        status = qemuBlockJobUpdate(driver, vm, disk);
+        status = qemuBlockJobUpdate(driver, vm, disk, &error);
         switch (status) {
         case VIR_DOMAIN_BLOCK_JOB_FAILED:
             if (check) {
-                virReportError(VIR_ERR_OPERATION_FAILED,
-                               _("migration of disk %s failed"),
-                               disk->dst);
+                if (error) {
+                    virReportError(VIR_ERR_OPERATION_FAILED,
+                                   _("migration of disk %s failed: %s"),
+                                   disk->dst, error);
+                } else {
+                    virReportError(VIR_ERR_OPERATION_FAILED,
+                                   _("migration of disk %s failed"), disk->dst);
+                }
                 failed = true;
             }
             /* fallthrough */
@@ -1931,6 +1945,7 @@ qemuMigrationDriveMirrorCancelled(virQEMUDriverPtr driver,
         default:
             active++;
         }
+        VIR_FREE(error);
     }
 
     if (failed) {
@@ -1968,24 +1983,30 @@ qemuMigrationCancelOneDriveMirror(virQEMUDriverPtr driver,
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     char *diskAlias = NULL;
+    char *error;
     int ret = -1;
     int status;
     int rv;
 
-    status = qemuBlockJobUpdate(driver, vm, disk);
+    status = qemuBlockJobUpdate(driver, vm, disk, &error);
     switch (status) {
     case VIR_DOMAIN_BLOCK_JOB_FAILED:
     case VIR_DOMAIN_BLOCK_JOB_CANCELED:
         if (failNoJob) {
-            virReportError(VIR_ERR_OPERATION_FAILED,
-                           _("migration of disk %s failed"),
-                           disk->dst);
-            return -1;
+            if (error) {
+                virReportError(VIR_ERR_OPERATION_FAILED,
+                               _("migration of disk %s failed: %s"),
+                               disk->dst, error);
+            } else {
+                virReportError(VIR_ERR_OPERATION_FAILED,
+                               _("migration of disk %s failed"), disk->dst);
+            }
+            goto cleanup;
         }
-        return 1;
-
+    /* fallthrough */
     case VIR_DOMAIN_BLOCK_JOB_COMPLETED:
-        return 1;
+        ret = 1;
+        goto cleanup;
     }
 
     if (!(diskAlias = qemuAliasFromDisk(disk)))
@@ -2003,6 +2024,7 @@ qemuMigrationCancelOneDriveMirror(virQEMUDriverPtr driver,
 
  cleanup:
     VIR_FREE(diskAlias);
+    VIR_FREE(error);
     return ret;
 }
 
