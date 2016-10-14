@@ -3719,7 +3719,6 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
         break;
 
     case VIR_DOMAIN_NET_TYPE_USER:
-    case VIR_DOMAIN_NET_TYPE_INTERNAL:
         virBufferAsprintf(&buf, "user%c", type_sep);
         break;
 
@@ -3737,6 +3736,8 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
                               net->driver.virtio.queues);
         break;
 
+    case VIR_DOMAIN_NET_TYPE_INTERNAL:
+        /* Not supported by QEMU driver */
     case VIR_DOMAIN_NET_TYPE_LAST:
         break;
     }
