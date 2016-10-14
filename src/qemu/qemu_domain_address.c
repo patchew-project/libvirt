@@ -465,8 +465,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
             case VIR_DOMAIN_CONTROLLER_MODEL_USB_QUSB2: /* xen only */
             case VIR_DOMAIN_CONTROLLER_MODEL_USB_NONE:
             case VIR_DOMAIN_CONTROLLER_MODEL_USB_LAST:
-                /* should be 0 */
-                return pciFlags;
+                return 0;
             }
 
         case VIR_DOMAIN_CONTROLLER_TYPE_IDE:
@@ -495,8 +494,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
          */
         if (net->type == VIR_DOMAIN_NET_TYPE_HOSTDEV ||
             STREQ(net->model, "usb-net")) {
-            /* should be 0 */
-            return pciFlags;
+            return 0;
         }
         return pciFlags;
     }
@@ -513,8 +511,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_SOUND_MODEL_PCSPK:
         case VIR_DOMAIN_SOUND_MODEL_USB:
         case VIR_DOMAIN_SOUND_MODEL_LAST:
-            /* should be 0 */
-            return pciFlags;
+            return 0;
         }
 
     case VIR_DOMAIN_DEVICE_DISK:
@@ -531,8 +528,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_DISK_BUS_SATA:
         case VIR_DOMAIN_DISK_BUS_SD:
         case VIR_DOMAIN_DISK_BUS_LAST:
-            /* should be 0 */
-            return pciFlags;
+            return 0;
         }
 
     case VIR_DOMAIN_DEVICE_HOSTDEV:
@@ -546,8 +542,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_MEMBALLOON_MODEL_XEN:
         case VIR_DOMAIN_MEMBALLOON_MODEL_NONE:
         case VIR_DOMAIN_MEMBALLOON_MODEL_LAST:
-            /* should be 0 (not PCI) */
-            return pciFlags;
+            return 0;
         }
 
     case VIR_DOMAIN_DEVICE_RNG:
@@ -556,8 +551,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
             return pciFlags;
 
         case VIR_DOMAIN_RNG_MODEL_LAST:
-            /* should be 0 */
-            return pciFlags;
+            return 0;
         }
 
     case VIR_DOMAIN_DEVICE_WATCHDOG:
@@ -569,8 +563,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_WATCHDOG_MODEL_IB700:
         case VIR_DOMAIN_WATCHDOG_MODEL_DIAG288:
         case VIR_DOMAIN_WATCHDOG_MODEL_LAST:
-            /* should be 0 */
-            return pciFlags;
+            return 0;
         }
 
     case VIR_DOMAIN_DEVICE_VIDEO:
@@ -586,8 +579,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
             return pciFlags;
 
         case VIR_DOMAIN_VIDEO_TYPE_LAST:
-            /* should be 0 */
-            return pciFlags;
+            return 0;
         }
 
 
@@ -604,8 +596,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_INPUT_BUS_XEN:
         case VIR_DOMAIN_INPUT_BUS_PARALLELS:
         case VIR_DOMAIN_INPUT_BUS_LAST:
-            /* should be 0 */
-            return pciFlags;
+            return 0;
         }
 
     case VIR_DOMAIN_DEVICE_CHR:
@@ -616,8 +607,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_USB:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
-            /* should be 0 */
-            return pciFlags;
+            return 0;
         }
 
     /* These devices don't ever connect with PCI */
@@ -634,8 +624,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
     case VIR_DOMAIN_DEVICE_IOMMU:
     case VIR_DOMAIN_DEVICE_LAST:
     case VIR_DOMAIN_DEVICE_NONE:
-        /* should be 0 */
-        return pciFlags;
+        return 0;
     }
 
     /* We can never get here, because all cases are covered in the
@@ -823,6 +812,27 @@ qemuDomainCollectPCIAddress(virDomainDefPtr def ATTRIBUTE_UNUSED,
          * of the parent's device type.
         */
         return 0;
+    }
+
+   /* If we get to here, the device has a PCI address assigned in the
+     * config and we should mark it as in-use. But if the
+     * pciConnectFlags are 0, then this device shouldn't have a PCI
+     * address associated with it. *BUT* since there are cases in the
+     * past where we've apparently allowed that, we need to pretend
+     * for now that it's okay, otherwise an existing domain could
+     * "disappear" from the list of domains due to a parse failure. We
+     * can fix this by just forcing the pciConnectFlags to be
+     * PCI_DEVICE (and then relying on validation functions to report
+     * inappropriate address types.
+     */
+    if (info->pciConnectFlags == 0) {
+        char *addrStr = virDomainPCIAddressAsString(&info->addr.pci);
+
+        VIR_WARN("qemuDomainDeviceCalculatePCIConnectFlags() thinks that the "
+                 "device with PCI address %s should not have a PCI address",
+                 addrStr ? addrStr : "(unknown)");
+        VIR_FREE(addrStr);
+        info->pciConnectFlags = VIR_PCI_CONNECT_TYPE_PCI_DEVICE;
     }
 
     /* Ignore implicit controllers on slot 0:0:1.0:
