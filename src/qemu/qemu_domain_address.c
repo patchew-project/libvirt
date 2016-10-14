@@ -426,8 +426,7 @@ qemuDomainAssignARMVirtioMMIOAddresses(virDomainDefPtr def,
  */
 static virDomainPCIConnectFlags
 qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
-                                         virDomainPCIConnectFlags pcieFlags
-                                         ATTRIBUTE_UNUSED,
+                                         virDomainPCIConnectFlags pcieFlags,
                                          virDomainPCIConnectFlags virtioFlags)
 {
     virDomainPCIConnectFlags pciFlags =  (VIR_PCI_CONNECT_TYPE_PCI_DEVICE |
@@ -517,6 +516,9 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
 
         if (STREQ(net->model, "virtio"))
             return  virtioFlags;
+
+        if (STREQ(net->model, "e1000e"))
+            return pcieFlags;
 
         return pciFlags;
     }
