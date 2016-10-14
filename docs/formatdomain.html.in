@@ -6204,6 +6204,27 @@ qemu-kvm -net nic,model=? /dev/null
   &lt;/devices&gt;
   ...</pre>
 
+    <p>
+      <span class="since">Since 2.4.0,</span> the optional attribute
+      <code>tls</code> can be used to control whether a serial chardev
+      TCP communication channel would utilize a hypervisor configured
+      TLS X.509 certificate environment in order to encrypt the data
+      channel. For the QEMU hypervisor usage of TLS is controlled by the
+      <code>chardev_tls</code> setting in file /etc/libvirt/qemu.conf. If
+      enabled, then by setting this attribute to "no" will disable usage
+      of the TLS environment for this particular serial TCP data channel.
+    </p>
+<pre>
+  ...
+  &lt;devices&gt;
+    &lt;serial type="tcp"&gt;
+      &lt;source mode='connect' host="127.0.0.1" service="5555" tls="yes"/&gt;
+      &lt;protocol type="raw"/&gt;
+      &lt;target port="0"/&gt;
+    &lt;/serial&gt;
+  &lt;/devices&gt;
+  ...</pre>
+
     <h6><a name="elementsCharUDP">UDP network console</a></h6>
 
     <p>
