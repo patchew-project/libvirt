@@ -1118,6 +1118,7 @@ struct _virDomainChrSourceDef {
 /* A complete character device, both host and domain views.  */
 struct _virDomainChrDef {
     int deviceType; /* enum virDomainChrDeviceType */
+    virObjectPtr privateData;
 
     bool targetTypeAttr;
     int targetType; /* enum virDomainChrConsoleTargetType ||
@@ -2447,6 +2448,7 @@ struct _virDomainXMLPrivateDataCallbacks {
     virDomainXMLPrivateDataNewFunc    diskNew;
     virDomainXMLPrivateDataNewFunc    hostdevNew;
     virDomainXMLPrivateDataNewFunc    vcpuNew;
+    virDomainXMLPrivateDataNewFunc    chardevNew;
     virDomainXMLPrivateDataFormatFunc format;
     virDomainXMLPrivateDataParseFunc  parse;
 };
@@ -2582,7 +2584,7 @@ bool virDomainDefHasDeviceAddress(virDomainDefPtr def,
 
 void virDomainDefFree(virDomainDefPtr vm);
 
-virDomainChrDefPtr virDomainChrDefNew(void);
+virDomainChrDefPtr virDomainChrDefNew(virDomainXMLOptionPtr xmlopt);
 
 virDomainDefPtr virDomainDefNew(void);
 virDomainDefPtr virDomainDefNewFull(const char *name,
