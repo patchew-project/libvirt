@@ -591,7 +591,7 @@ virDomainPCIAddressSetFree(virDomainPCIAddressSetPtr addrs)
 }
 
 
-int
+static int
 virDomainPCIAddressGetNextSlot(virDomainPCIAddressSetPtr addrs,
                                virPCIDeviceAddressPtr next_addr,
                                virDomainPCIConnectFlags flags)
