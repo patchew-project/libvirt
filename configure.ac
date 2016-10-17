@@ -218,6 +218,7 @@ if test "$with_remote" = "no" ; then
   with_gnutls=no
   with_ssh2=no
   with_sasl=no
+  with_libssh=no
 fi
 # Stateful drivers are useful only when building the daemon.
 if test "$with_libvirtd" = "no" ; then
@@ -260,6 +261,7 @@ LIBVIRT_CHECK_UDEV
 LIBVIRT_CHECK_WIRESHARK
 LIBVIRT_CHECK_NSS
 LIBVIRT_CHECK_YAJL
+LIBVIRT_CHECK_LIBSSH
 
 AC_MSG_CHECKING([for CPUID instruction])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
@@ -2786,6 +2788,7 @@ LIBVIRT_RESULT_DBUS
 LIBVIRT_RESULT_FUSE
 LIBVIRT_RESULT_GLUSTER
 LIBVIRT_RESULT_HAL
+LIBVIRT_RESULT_LIBSSH
 LIBVIRT_RESULT_NETCF
 LIBVIRT_RESULT_NUMACTL
 LIBVIRT_RESULT_OPENWSMAN
