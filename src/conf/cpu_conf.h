@@ -95,15 +95,15 @@ struct _virCPUFeatureDef {
 typedef struct _virCPUDef virCPUDef;
 typedef virCPUDef *virCPUDefPtr;
 struct _virCPUDef {
-    int type;           /* enum virCPUType */
-    int mode;           /* enum virCPUMode */
-    int match;          /* enum virCPUMatch */
+    int type;                   /* enum virCPUType */
+    int mode;                   /* enum virCPUMode */
+    int match;                  /* enum virCPUMatch */
     virArch arch;
     char *model;
-    char *vendor_id;    /* vendor id returned by CPUID in the guest */
-    int fallback;       /* enum virCPUFallback */
+    char *vendor_id;            /* vendor id returned by CPUID in the guest */
+    int fallback;               /* enum virCPUFallback */
     char *vendor;
-    unsigned int sockets;
+    unsigned int sockets;       /* sockets per NUMA node */
     unsigned int cores;
     unsigned int threads;
     size_t nfeatures;
