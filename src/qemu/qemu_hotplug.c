@@ -1738,7 +1738,7 @@ int qemuDomainAttachChrDevice(virQEMUDriverPtr driver,
                                          &tlsProps) < 0)
             goto cleanup;
 
-        if (!(tlsAlias = qemuAliasTLSObjFromChardevAlias(chr->info.alias)))
+        if (!(tlsAlias = qemuAliasTLSObjFromChardevAlias(charAlias)))
             goto cleanup;
         dev->data.tcp.tlscreds = true;
     }
@@ -4387,6 +4387,7 @@ int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
     virDomainChrDefPtr tmpChr;
     char *objAlias = NULL;
     char *devstr = NULL;
+    char *charAlias = NULL;
 
     if (!(tmpChr = virDomainChrFind(vmdef, chr))) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
@@ -4397,11 +4398,14 @@ int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
     if (!tmpChr->info.alias && qemuAssignDeviceChrAlias(vmdef, tmpChr, -1) < 0)
         goto cleanup;
 
+    if (virAsprintf(&charAlias, "char%s", tmpChr->info.alias) < 0)
+        goto cleanup;
+
     sa_assert(tmpChr->info.alias);
 
     if (tmpChr->source.type == VIR_DOMAIN_CHR_TYPE_TCP &&
         cfg->chardevTLS &&
-        !(objAlias = qemuAliasTLSObjFromChardevAlias(tmpChr->info.alias)))
+        !(objAlias = qemuAliasTLSObjFromChardevAlias(charAlias)))
         goto cleanup;
 
     if (qemuBuildChrDeviceStr(&devstr, vmdef, chr, priv->qemuCaps) < 0)
@@ -4427,6 +4431,7 @@ int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
  cleanup:
     qemuDomainResetDeviceRemoval(vm);
     VIR_FREE(devstr);
+    VIR_FREE(charAlias);
     virObjectUnref(cfg);
     return ret;
 
