@@ -10475,9 +10475,9 @@ cmdMigrate(vshControl *ctl, const vshCmd *cmd)
 
     if (vshCommandOptBool(cmd, "postcopy-after-precopy")) {
         if (!vshCommandOptBool(cmd, "postcopy")) {
-            virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED, "%s",
-                          _("--postcopy-after-precopy can only be used with "
-                            "--postcopy"));
+            vshError(ctl, "%s",
+                     _("argument unsupported: --postcopy-after-precopy can only "
+                       "be used with --postcopy"));
             goto cleanup;
         }
         iterEvent = virConnectDomainEventRegisterAny(
