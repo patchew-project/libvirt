@@ -1042,7 +1042,8 @@ qemuDomainSecretSetup(virConnectPtr conn,
     if (virCryptoHaveCipher(VIR_CRYPTO_CIPHER_AES256CBC) &&
         virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_OBJECT_SECRET) &&
         (secretUsageType == VIR_SECRET_USAGE_TYPE_CEPH ||
-         secretUsageType == VIR_SECRET_USAGE_TYPE_VOLUME)) {
+         secretUsageType == VIR_SECRET_USAGE_TYPE_VOLUME ||
+         secretUsageType == VIR_SECRET_USAGE_TYPE_TLS)) {
         if (qemuDomainSecretAESSetup(conn, priv, secinfo, srcalias,
                                      secretUsageType, username,
                                      seclookupdef, isLuks) < 0)
@@ -1220,6 +1221,95 @@ qemuDomainSecretHostdevPrepare(virConnectPtr conn,
 }
 
 
+/* qemuDomainSecretChardevDestroy:
+ * @disk: Pointer to a chardev definition
+ *
+ * Clear and destroy memory associated with the secret
+ */
+void
+qemuDomainSecretChardevDestroy(virDomainChrDefPtr chardev)
+{
+    qemuDomainChardevPrivatePtr chardevPriv =
+        QEMU_DOMAIN_CHARDEV_PRIVATE(chardev);
+
+    if (!chardevPriv || !chardevPriv->secinfo)
+        return;
+
+    qemuDomainSecretInfoFree(&chardevPriv->secinfo);
+}
+
+
+/* qemuDomainSecretChardevPrepare:
+ * @conn: Pointer to connection
+ * @driver: Pointer to driver object
+ * @priv: pointer to domain private object
+ * @chardev: Pointer to a chardev definition
+ *
+ * For a TCP character device, generate a qemuDomainSecretInfo to be used
+ * by the command line code to generate the secret for the tls-creds to use.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+qemuDomainSecretChardevPrepare(virConnectPtr conn,
+                               virQEMUDriverPtr driver,
+                               qemuDomainObjPrivatePtr priv,
+                               virDomainChrDefPtr chardev)
+{
+    virQEMUDriverConfigPtr cfg;
+    virSecretLookupTypeDef seclookupdef = {0};
+    qemuDomainSecretInfoPtr secinfo = NULL;
+    char *charAlias = NULL;
+
+    if (chardev->source.type != VIR_DOMAIN_CHR_TYPE_TCP)
+        return 0;
+
+    cfg = virQEMUDriverGetConfig(driver);
+    if (qemuDomainSupportTLSChardevTCP(cfg, &chardev->source) &&
+        cfg->chardevTLSx509secretUUID) {
+        qemuDomainChardevPrivatePtr chardevPriv =
+            QEMU_DOMAIN_CHARDEV_PRIVATE(chardev);
+
+        if (virUUIDParse(cfg->chardevTLSx509secretUUID,
+                         seclookupdef.u.uuid) < 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("malformed chardev TLS secret uuid in qemu.conf"));
+            goto error;
+        }
+        seclookupdef.type = VIR_SECRET_LOOKUP_TYPE_UUID;
+
+        if (VIR_ALLOC(secinfo) < 0)
+            goto error;
+
+        if (!(charAlias = qemuAliasChardevFromDevAlias(chardev->info.alias)))
+            goto error;
+
+        if (qemuDomainSecretSetup(conn, priv, secinfo, charAlias,
+                                  VIR_SECRET_USAGE_TYPE_TLS, NULL,
+                                  &seclookupdef, false) < 0)
+            goto error;
+
+        if (secinfo->type == VIR_DOMAIN_SECRET_INFO_TYPE_PLAIN) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("TLS X.509 requires encrypted secrets "
+                             "to be supported"));
+            goto error;
+        }
+
+        chardevPriv->secinfo = secinfo;
+    }
+
+    VIR_FREE(charAlias);
+    virObjectUnref(cfg);
+    return 0;
+
+ error:
+    virObjectUnref(cfg);
+    qemuDomainSecretInfoFree(&secinfo);
+    return -1;
+}
+
+
 /* qemuDomainSecretDestroy:
  * @vm: Domain object
  *
@@ -1236,11 +1326,15 @@ qemuDomainSecretDestroy(virDomainObjPtr vm)
 
     for (i = 0; i < vm->def->nhostdevs; i++)
         qemuDomainSecretHostdevDestroy(vm->def->hostdevs[i]);
+
+    for (i = 0; i < vm->def->nserials; i++)
+        qemuDomainSecretChardevDestroy(vm->def->serials[i]);
 }
 
 
 /* qemuDomainSecretPrepare:
  * @conn: Pointer to connection
+ * @driver: Pointer to driver object
  * @vm: Domain object
  *
  * For any objects that may require an auth/secret setup, create a
@@ -1253,6 +1347,7 @@ qemuDomainSecretDestroy(virDomainObjPtr vm)
  */
 int
 qemuDomainSecretPrepare(virConnectPtr conn,
+                        virQEMUDriverPtr driver,
                         virDomainObjPtr vm)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
@@ -1266,6 +1361,12 @@ qemuDomainSecretPrepare(virConnectPtr conn,
     for (i = 0; i < vm->def->nhostdevs; i++) {
         if (qemuDomainSecretHostdevPrepare(conn, priv,
                                            vm->def->hostdevs[i]) < 0)
+            return -1;
+    }
+
+    for (i = 0; i < vm->def->nserials; i++) {
+        if (qemuDomainSecretChardevPrepare(conn, driver, priv,
+                                           vm->def->serials[i]) < 0)
             return -1;
     }
 

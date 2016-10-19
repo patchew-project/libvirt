@@ -5157,8 +5157,8 @@ qemuProcessPrepareDomain(virConnectPtr conn,
     if (qemuDomainMasterKeyCreate(vm) < 0)
         goto cleanup;
 
-    VIR_DEBUG("Add secrets to disks and hostdevs");
-    if (qemuDomainSecretPrepare(conn, vm) < 0)
+    VIR_DEBUG("Add secrets to disks, hostdevs, and chardevs");
+    if (qemuDomainSecretPrepare(conn, driver, vm) < 0)
         goto cleanup;
 
     for (i = 0; i < vm->def->nchannels; i++) {

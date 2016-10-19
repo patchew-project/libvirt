@@ -1734,6 +1734,7 @@ int qemuDomainAttachChrDevice(virQEMUDriverPtr driver,
         if (qemuBuildTLSx509BackendProps(cfg->chardevTLSx509certdir,
                                          dev->data.tcp.listen,
                                          cfg->chardevTLSx509verify,
+                                         NULL,
                                          priv->qemuCaps,
                                          &tlsProps) < 0)
             goto cleanup;
