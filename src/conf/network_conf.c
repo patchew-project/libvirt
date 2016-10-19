@@ -2117,11 +2117,8 @@ virNetworkDefParseXML(xmlXPathContextPtr ctxt)
         goto error;
     }
 
-    if (strchr(def->name, '/')) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("name %s cannot contain '/'"), def->name);
+    if (virXMLNodeHasIllegalChars("name", def->name, "/"))
         goto error;
-    }
 
     /* Extract network uuid */
     tmp = virXPathString("string(./uuid[1])", ctxt);
