@@ -71,6 +71,9 @@ xmlNodePtr          virXPathNode(const char *xpath,
 int              virXPathNodeSet(const char *xpath,
                                  xmlXPathContextPtr ctxt,
                                  xmlNodePtr **list);
+int    virXMLNodeHasIllegalChars(const char *node_name,
+                                 const char *node,
+                                 const char *chars);
 char *          virXMLPropString(xmlNodePtr node,
                                  const char *name);
 long     virXMLChildElementCount(xmlNodePtr node);
