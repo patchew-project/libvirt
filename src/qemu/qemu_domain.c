@@ -6302,15 +6302,29 @@ qemuDomainSupportsVideoVga(virDomainVideoDefPtr video,
 
 /* qemuDomainSupportTLSChardevTCP
  * @cfg: Pointer to driver cfg
+ * @dev: Pointer to chardev source
  *
- * Let's check if this host supports using the TLS environment for chardev.
+ * Let's check if this host and/or domain supports or desires to use
+ * the TLS environment for the passed chardev TCP.
+ *
+ * If we have an environment and as long as the domain config doesn't have
+ * the "tls='no'" property, then we assume it's desired.
+ *
+ * If the host global isn't set, but the domain chardev config is requesting
+ * to use TLS and we find what appears to be some environment configured,
+ * then let's also try. This action could fail later in QEMU if the environment
+ * isn't set up to the exact specifications.
  *
  * Returns true if we want to use TLS, false otherwise.
  */
 bool
-qemuDomainSupportTLSChardevTCP(virQEMUDriverConfigPtr cfg)
+qemuDomainSupportTLSChardevTCP(virQEMUDriverConfigPtr cfg,
+                               const virDomainChrSourceDef *dev)
 {
-    if (cfg->chardevTLS)
+    if (cfg->chardevTLS && dev->data.tcp.haveTLS != VIR_TRISTATE_BOOL_NO)
+        return true;
+    if (!cfg->chardevTLS && dev->data.tcp.haveTLS == VIR_TRISTATE_BOOL_YES &&
+        virFileExists(cfg->chardevTLSx509certdir))
         return true;
     return false;
 }

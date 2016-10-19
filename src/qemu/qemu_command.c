@@ -4943,7 +4943,7 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
         if (dev->data.tcp.listen)
             virBufferAdd(&buf, nowait ? ",server,nowait" : ",server", -1);
 
-        if (qemuDomainSupportTLSChardevTCP(cfg)) {
+        if (qemuDomainSupportTLSChardevTCP(cfg, dev)) {
             char *objalias = NULL;
 
             if (qemuBuildTLSx509CommandLine(cmd, cfg->chardevTLSx509certdir,

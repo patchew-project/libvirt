@@ -1730,7 +1730,7 @@ int qemuDomainAttachChrDevice(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (dev->type == VIR_DOMAIN_CHR_TYPE_TCP &&
-        qemuDomainSupportTLSChardevTCP(cfg)) {
+        qemuDomainSupportTLSChardevTCP(cfg, dev)) {
         if (qemuBuildTLSx509BackendProps(cfg->chardevTLSx509certdir,
                                          dev->data.tcp.listen,
                                          cfg->chardevTLSx509verify,
@@ -4404,7 +4404,7 @@ int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (tmpChr->source.type == VIR_DOMAIN_CHR_TYPE_TCP &&
-        qemuDomainSupportTLSChardevTCP(cfg) &&
+        qemuDomainSupportTLSChardevTCP(cfg, &tmpChr->source) &&
         !(objAlias = qemuAliasTLSObjFromChardevAlias(charAlias)))
         goto cleanup;
 
