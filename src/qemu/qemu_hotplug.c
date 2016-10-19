@@ -1690,7 +1690,8 @@ qemuDomainAttachChrDeviceAssignAddr(virDomainDefPtr def,
     return ret;
 }
 
-int qemuDomainAttachChrDevice(virQEMUDriverPtr driver,
+int qemuDomainAttachChrDevice(virConnectPtr conn,
+                              virQEMUDriverPtr driver,
                               virDomainObjPtr vm,
                               virDomainChrDefPtr chr)
 {
@@ -1704,8 +1705,11 @@ int qemuDomainAttachChrDevice(virQEMUDriverPtr driver,
     char *charAlias = NULL;
     bool chardevAttached = false;
     bool tlsobjAdded = false;
+    bool secobjAdded = false;
     virJSONValuePtr tlsProps = NULL;
     char *tlsAlias = NULL;
+    virJSONValuePtr secProps = NULL;
+    char *secAlias = NULL;
     bool need_release = false;
 
     if (chr->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL &&
@@ -1729,12 +1733,28 @@ int qemuDomainAttachChrDevice(virQEMUDriverPtr driver,
     if (qemuDomainChrPreInsert(vmdef, chr) < 0)
         goto cleanup;
 
+    if (qemuDomainSecretChardevPrepare(conn, driver, priv, chr) < 0)
+        goto cleanup;
+
     if (dev->type == VIR_DOMAIN_CHR_TYPE_TCP &&
         qemuDomainSupportTLSChardevTCP(cfg, dev)) {
+        qemuDomainChardevPrivatePtr chardevPriv =
+            QEMU_DOMAIN_CHARDEV_PRIVATE(chr);
+
+        /* Add a secret object in order to access the TLS environment.
+         * The secinfo will only be created for serial TCP device. */
+        if (chardevPriv && chardevPriv->secinfo) {
+            if (qemuBuildSecretInfoProps(chardevPriv->secinfo, &secProps) < 0)
+                goto cleanup;
+
+            if (!(secAlias = qemuDomainGetSecretAESAlias(charAlias, false)))
+                goto cleanup;
+        }
+
         if (qemuBuildTLSx509BackendProps(cfg->chardevTLSx509certdir,
                                          dev->data.tcp.listen,
                                          cfg->chardevTLSx509verify,
-                                         NULL,
+                                         secAlias,
                                          priv->qemuCaps,
                                          &tlsProps) < 0)
             goto cleanup;
@@ -1745,6 +1765,15 @@ int qemuDomainAttachChrDevice(virQEMUDriverPtr driver,
     }
 
     qemuDomainObjEnterMonitor(driver, vm);
+    if (secAlias) {
+        rc = qemuMonitorAddObject(priv->mon, "secret",
+                                  secAlias, secProps);
+        secProps = NULL;
+        if (rc < 0)
+            goto exit_monitor;
+        secobjAdded = true;
+    }
+
     if (tlsAlias) {
         rc = qemuMonitorAddObject(priv->mon, "tls-creds-x509",
                                   tlsAlias, tlsProps);
@@ -1775,6 +1804,8 @@ int qemuDomainAttachChrDevice(virQEMUDriverPtr driver,
         qemuDomainReleaseDeviceAddress(vm, &chr->info, NULL);
     VIR_FREE(tlsAlias);
     virJSONValueFree(tlsProps);
+    VIR_FREE(secAlias);
+    virJSONValueFree(secProps);
     VIR_FREE(charAlias);
     VIR_FREE(devstr);
     virObjectUnref(cfg);
@@ -1782,6 +1813,8 @@ int qemuDomainAttachChrDevice(virQEMUDriverPtr driver,
 
  exit_monitor:
     orig_err = virSaveLastError();
+    if (secobjAdded)
+        ignore_value(qemuMonitorDelObject(priv->mon, secAlias));
     if (tlsobjAdded)
         ignore_value(qemuMonitorDelObject(priv->mon, tlsAlias));
     /* detach associated chardev on error */
@@ -4387,6 +4420,7 @@ int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
     virDomainDefPtr vmdef = vm->def;
     virDomainChrDefPtr tmpChr;
     char *objAlias = NULL;
+    char *secAlias = NULL;
     char *devstr = NULL;
     char *charAlias = NULL;
 
@@ -4405,9 +4439,18 @@ int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (tmpChr->source.type == VIR_DOMAIN_CHR_TYPE_TCP &&
-        qemuDomainSupportTLSChardevTCP(cfg, &tmpChr->source) &&
-        !(objAlias = qemuAliasTLSObjFromChardevAlias(charAlias)))
-        goto cleanup;
+        qemuDomainSupportTLSChardevTCP(cfg, &tmpChr->source)) {
+        if (!(objAlias = qemuAliasTLSObjFromChardevAlias(charAlias)))
+            goto cleanup;
+
+        /* Best shot at this as the secinfo is destroyed after process launch
+         * and this path does not recreate it. Thus, if the config has the
+         * secret UUID and we have a serial TCP chardev, then formulate a
+         * secAlias which we'll attempt to destroy. */
+        if (cfg->chardevTLSx509secretUUID &&
+            !(secAlias = qemuDomainGetSecretAESAlias(charAlias, false)))
+            goto cleanup;
+    }
 
     if (qemuBuildChrDeviceStr(&devstr, vmdef, chr, priv->qemuCaps) < 0)
         goto cleanup;
@@ -4420,6 +4463,10 @@ int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
 
     if (objAlias && qemuMonitorDelObject(priv->mon, objAlias) < 0)
         goto exit_monitor;
+
+    /* If it fails, then so be it - it was a best shot */
+    if (secAlias)
+        ignore_value(qemuMonitorDelObject(priv->mon, secAlias));
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         goto cleanup;
