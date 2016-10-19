@@ -755,4 +755,5 @@ int qemuDomainCheckMonitor(virQEMUDriverPtr driver,
 bool qemuDomainSupportsVideoVga(virDomainVideoDefPtr video,
                                 virQEMUCapsPtr qemuCaps);
 
+bool qemuDomainSupportTLSChardevTCP(virQEMUDriverConfigPtr cfg);
 #endif /* __QEMU_DOMAIN_H__ */

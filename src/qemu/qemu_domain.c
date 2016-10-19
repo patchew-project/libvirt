@@ -6298,3 +6298,19 @@ qemuDomainSupportsVideoVga(virDomainVideoDefPtr video,
 
     return true;
 }
+
+
+/* qemuDomainSupportTLSChardevTCP
+ * @cfg: Pointer to driver cfg
+ *
+ * Let's check if this host supports using the TLS environment for chardev.
+ *
+ * Returns true if we want to use TLS, false otherwise.
+ */
+bool
+qemuDomainSupportTLSChardevTCP(virQEMUDriverConfigPtr cfg)
+{
+    if (cfg->chardevTLS)
+        return true;
+    return false;
+}
