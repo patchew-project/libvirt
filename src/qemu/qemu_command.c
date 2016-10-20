@@ -1326,7 +1326,9 @@ qemuDiskBusNeedsDeviceArg(int bus)
 
 static int
 qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
-                        virBufferPtr buf)
+                        virQEMUDriverConfigPtr cfg,
+                        virBufferPtr buf,
+                        virQEMUCapsPtr qemuCaps)
 {
     int actualType = virStorageSourceGetActualType(disk->src);
     qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
@@ -1395,6 +1397,12 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
     }
     virBufferAddLit(buf, ",");
 
+    if (disk->src &&
+        disk->src->protocol == VIR_STORAGE_NET_PROTOCOL_GLUSTER) {
+        if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_GLUSTER_DEBUG_LEVEL))
+            virBufferAsprintf(buf, "file.debug=%d,", cfg->glusterDebugLevel);
+    }
+
     if (secinfo && secinfo->type == VIR_DOMAIN_SECRET_INFO_TYPE_AES) {
         /* NB: If libvirt starts using the more modern option based
          *     syntax to build the command line (e.g., "-drive driver=rbd,
@@ -1429,6 +1437,7 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
 
 char *
 qemuBuildDriveStr(virDomainDiskDefPtr disk,
+                  virQEMUDriverConfigPtr cfg,
                   bool bootable,
                   virQEMUCapsPtr qemuCaps)
 {
@@ -1520,7 +1529,7 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
         break;
     }
 
-    if (qemuBuildDriveSourceStr(disk, &opt) < 0)
+    if (qemuBuildDriveSourceStr(disk, cfg, &opt, qemuCaps) < 0)
         goto error;
 
     if (emitDeviceSyntax)
@@ -2148,6 +2157,7 @@ qemuBuildDriveDevStr(const virDomainDef *def,
 
 static int
 qemuBuildDiskDriveCommandLine(virCommandPtr cmd,
+                              virQEMUDriverConfigPtr cfg,
                               const virDomainDef *def,
                               virQEMUCapsPtr qemuCaps)
 {
@@ -2226,8 +2236,9 @@ qemuBuildDiskDriveCommandLine(virCommandPtr cmd,
 
         virCommandAddArg(cmd, "-drive");
 
-        if (!(optstr = qemuBuildDriveStr(disk, driveBoot, qemuCaps)))
+        if (!(optstr = qemuBuildDriveStr(disk, cfg, driveBoot, qemuCaps)))
             return -1;
+
         virCommandAddArg(cmd, optstr);
         VIR_FREE(optstr);
 
@@ -9451,7 +9462,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (qemuBuildHubCommandLine(cmd, def, qemuCaps) < 0)
         goto error;
 
-    if (qemuBuildDiskDriveCommandLine(cmd, def, qemuCaps) < 0)
+    if (qemuBuildDiskDriveCommandLine(cmd, cfg, def, qemuCaps) < 0)
         goto error;
 
     if (qemuBuildFSDevCommandLine(cmd, def, qemuCaps) < 0)
