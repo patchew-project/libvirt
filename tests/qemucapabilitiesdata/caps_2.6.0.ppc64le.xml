@@ -155,6 +155,7 @@
   <flag name='smm'/>
   <flag name='virtio-pci-disable-legacy'/>
   <flag name='virtio-vga'/>
+  <flag name='query-qmp-schema'/>
   <version>2006000</version>
   <kvmVersion>0</kvmVersion>
   <package></package>
