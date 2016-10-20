@@ -949,6 +949,42 @@ virJSONValueArraySteal(virJSONValuePtr array,
 }
 
 
+/**
+ * virJSONValueArrayForeachSteal:
+ * @array: array to iterate
+ * @cb: callback called on every member of the array
+ * @opaque: custom data for the callback
+ *
+ * Iterates members of the array and calls the callback on every single member.
+ * By returning success, the array claims ownership of given array element and
+ * is responsible for freeing it.
+ *
+ * Returns 0 if all members were successfully stolen by the callback; -1
+ * otherwise. The rest of the members stays in posession of the array.
+ */
+int
+virJSONValueArrayForeachSteal(virJSONValuePtr array,
+                              virJSONArrayIteratorFunc cb,
+                              void *opaque)
+{
+    ssize_t i;
+
+    if (array->type != VIR_JSON_TYPE_ARRAY)
+        return -1;
+
+    for (i = array->data.array.nvalues - 1; i >= 0; i--) {
+        if (cb(i, array->data.array.values[i], opaque) < 0)
+            break;
+
+        array->data.array.values[i] = NULL;
+    }
+
+    array->data.array.nvalues = i + 1;
+
+    return i < 0 ? 0 : -1;
+}
+
+
 const char *
 virJSONValueGetString(virJSONValuePtr string)
 {
