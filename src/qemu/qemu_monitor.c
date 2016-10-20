@@ -4026,3 +4026,14 @@ qemuMonitorGetRTCTime(qemuMonitorPtr mon,
 
     return qemuMonitorJSONGetRTCTime(mon, tm);
 }
+
+
+virHashTablePtr
+qemuMonitorQueryQMPSchema(qemuMonitorPtr mon)
+{
+    VIR_DEBUG("mon=%p", mon);
+
+    QEMU_CHECK_MONITOR_JSON_NULL(mon);
+
+    return qemuMonitorJSONQueryQMPSchema(mon);
+}
