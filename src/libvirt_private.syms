@@ -2649,6 +2649,7 @@ virParseVersionString;
 virPipeReadUntilEOF;
 virReadFCHost;
 virReadSCSIUniqueId;
+virSafeSerialParamValue;
 virScaleInteger;
 virSetBlocking;
 virSetCloseExec;

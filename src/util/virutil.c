@@ -2684,3 +2684,19 @@ virMemoryMaxValue(bool capped)
     else
         return LLONG_MAX;
 }
+
+#define VIR_SERIAL_PARAM_ACCEPTED_CHARS \
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ "
+
+int
+virSafeSerialParamValue(const char *value)
+{
+    if (strspn(value, VIR_SERIAL_PARAM_ACCEPTED_CHARS) != strlen(value)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("driver serial '%s' contains unsafe characters"),
+                       value);
+        return -1;
+    }
+
+    return 0;
+}

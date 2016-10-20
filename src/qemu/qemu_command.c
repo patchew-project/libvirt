@@ -427,23 +427,6 @@ qemuBuildIoEventFdStr(virBufferPtr buf,
     return 0;
 }
 
-#define QEMU_SERIAL_PARAM_ACCEPTED_CHARS \
-  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_ "
-
-static int
-qemuSafeSerialParamValue(const char *value)
-{
-    if (strspn(value, QEMU_SERIAL_PARAM_ACCEPTED_CHARS) != strlen(value)) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("driver serial '%s' contains unsafe characters"),
-                       value);
-        return -1;
-    }
-
-    return 0;
-}
-
-
 static int
 qemuNetworkDriveGetPort(int protocol,
                         const char *port)
@@ -1600,7 +1583,7 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
 
     if (disk->serial &&
         virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_SERIAL)) {
-        if (qemuSafeSerialParamValue(disk->serial) < 0)
+        if (virSafeSerialParamValue(disk->serial) < 0)
             goto error;
         if (disk->bus == VIR_DOMAIN_DISK_BUS_SCSI &&
             disk->device == VIR_DOMAIN_DISK_DEVICE_LUN) {
