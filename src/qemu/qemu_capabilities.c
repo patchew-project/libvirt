@@ -347,6 +347,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "machine-iommu",
               "virtio-vga",
               "query-qmp-schema",
+              "gluster.debug_level",
     );
 
 
@@ -1694,7 +1695,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsUSBNECXHCI[] = {
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
-    { "bogus/path/to/satisfy/compiler", 0 },
+    { "blockdev-add/arg-type/options/+gluster/debug-level", QEMU_CAPS_GLUSTER_DEBUG_LEVEL},
 };
 
 struct virQEMUCapsObjectTypeProps {
