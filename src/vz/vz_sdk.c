@@ -632,6 +632,9 @@ prlsdkGetDiskInfo(vzDriverPtr driver,
     if (virDiskNameToBusDeviceIndex(disk, &busIdx, &devIdx) < 0)
         goto cleanup;
 
+    if (virDomainDiskSetDriver(disk, "vz") < 0)
+        goto cleanup;
+
     address = &disk->info.addr.drive;
     address->bus = busIdx;
     address->target = 0;
