@@ -252,6 +252,8 @@ unsigned long long virMemoryLimitTruncate(unsigned long long value);
 bool virMemoryLimitIsSet(unsigned long long value);
 unsigned long long virMemoryMaxValue(bool ulong);
 
+int virSafeSerialParamValue(const char *value);
+
 /**
  * VIR_ASSIGN_IS_OVERFLOW:
  * @rvalue: value that is checked (evaluated twice)
