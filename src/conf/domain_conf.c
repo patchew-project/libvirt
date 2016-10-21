@@ -24559,6 +24559,54 @@ virDomainSmartcardDefForeach(virDomainDefPtr def,
 
 
 int
+virDomainRNGDefForeach(virDomainDefPtr def,
+                       bool abortOnError,
+                       virDomainRNGDefIterator iter,
+                       void *opaque)
+{
+    size_t i;
+    int rc = 0;
+
+    for (i = 0; i < def->nrngs; i++) {
+        if ((iter)(def,
+                   def->rngs[i],
+                   opaque) < 0)
+            rc = -1;
+
+        if (abortOnError && rc != 0)
+            goto done;
+    }
+
+ done:
+    return rc;
+}
+
+
+int
+virDomainRedirdevDefForeach(virDomainDefPtr def,
+                            bool abortOnError,
+                            virDomainRedirdevDefIterator iter,
+                            void *opaque)
+{
+    size_t i;
+    int rc = 0;
+
+    for (i = 0; i < def->nredirdevs; i++) {
+        if ((iter)(def,
+                   def->redirdevs[i],
+                   opaque) < 0)
+            rc = -1;
+
+        if (abortOnError && rc != 0)
+            goto done;
+    }
+
+ done:
+    return rc;
+}
+
+
+int
 virDomainUSBDeviceDefForeach(virDomainDefPtr def,
                              virDomainUSBDeviceDefIterator iter,
                              void *opaque,

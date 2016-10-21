@@ -2948,6 +2948,24 @@ int virDomainChrDefForeach(virDomainDefPtr def,
                            virDomainChrDefIterator iter,
                            void *opaque);
 
+typedef int (*virDomainRNGDefIterator)(virDomainDefPtr def,
+                                       virDomainRNGDefPtr dev,
+                                       void *opaque);
+
+int virDomainRNGDefForeach(virDomainDefPtr def,
+                           bool abortOnError,
+                           virDomainRNGDefIterator iter,
+                           void *opaque);
+
+typedef int (*virDomainRedirdevDefIterator)(virDomainDefPtr def,
+                                            virDomainRedirdevDefPtr dev,
+                                            void *opaque);
+
+int virDomainRedirdevDefForeach(virDomainDefPtr def,
+                                bool abortOnError,
+                                virDomainRedirdevDefIterator iter,
+                                void *opaque);
+
 typedef int (*virDomainDiskDefPathIterator)(virDomainDiskDefPtr disk,
                                             const char *path,
                                             size_t depth,
