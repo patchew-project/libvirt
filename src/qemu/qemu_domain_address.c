@@ -260,6 +260,118 @@ qemuDomainAssignSpaprVIOAddresses(virDomainDefPtr def,
 }
 
 
+static bool
+qemuDomainAnyDeviceHasAddressOfType(virDomainDefPtr def,
+                                    virDomainDeviceAddressType type)
+{
+    size_t i;
+
+    for (i = 0; i < def->ndisks; i++) {
+        if (def->disks[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->ncontrollers; i++) {
+        if (def->controllers[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nfss; i++) {
+        if (def->fss[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nnets; i++) {
+        if (def->nets[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->ninputs; i++) {
+        if (def->inputs[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nsounds; i++) {
+        if (def->sounds[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nvideos; i++) {
+        if (def->videos[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nhostdevs; i++) {
+        if (def->hostdevs[i]->info->type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nredirdevs; i++) {
+        if (def->redirdevs[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nsmartcards; i++) {
+        if (def->smartcards[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nserials; i++) {
+        if (def->serials[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nparallels; i++) {
+        if (def->parallels[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nchannels; i++) {
+        if (def->channels[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nconsoles; i++) {
+        if (def->consoles[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nhubs; i++) {
+        if (def->hubs[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nrngs; i++) {
+        if (def->rngs[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nshmems; i++) {
+        if (def->shmems[i]->info.type == type)
+            return true;
+    }
+
+    for (i = 0; i < def->nmems; i++) {
+        if (def->mems[i]->info.type == type)
+            return true;
+    }
+
+    if (def->memballoon && def->memballoon->info.type == type)
+        return true;
+
+    if (def->watchdog && def->watchdog->info.type == type)
+        return true;
+
+    if (def->nvram && def->nvram->info.type == type)
+        return true;
+
+    if (def->tpm && def->tpm->info.type == type)
+        return true;
+
+    return false;
+}
+
+
 static void
 qemuDomainPrimeVirtioDeviceAddresses(virDomainDefPtr def,
                                      virDomainDeviceAddressType type)
@@ -383,6 +495,8 @@ static void
 qemuDomainAssignARMVirtioMMIOAddresses(virDomainDefPtr def,
                                        virQEMUCapsPtr qemuCaps)
 {
+    bool usesMMIO;
+
     if (def->os.arch != VIR_ARCH_ARMV7L &&
         def->os.arch != VIR_ARCH_AARCH64)
         return;
@@ -391,9 +505,17 @@ qemuDomainAssignARMVirtioMMIOAddresses(virDomainDefPtr def,
           qemuDomainMachineIsVirt(def)))
         return;
 
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_MMIO)) {
-        qemuDomainPrimeVirtioDeviceAddresses(
-            def, VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO);
+    /* We use virtio-mmio by default on mach-virt guests only if they already
+     * have at least one virtio-mmio device: in all other cases, we prefer
+     * virtio-pci */
+    usesMMIO = qemuDomainAnyDeviceHasAddressOfType(def,
+                                                   VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO);
+    if (qemuDomainMachineHasPCIeRoot(def) && !usesMMIO) {
+        qemuDomainPrimeVirtioDeviceAddresses(def,
+                                             VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI);
+    } else if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_MMIO)) {
+        qemuDomainPrimeVirtioDeviceAddresses(def,
+                                             VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO);
     }
 }
 
