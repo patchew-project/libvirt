@@ -590,6 +590,7 @@ prlsdkGetDiskInfo(vzDriverPtr driver,
                   bool isCt)
 {
     char *buf = NULL;
+    char *serial = NULL;
     PRL_RESULT pret;
     PRL_UINT32 emulatedType;
     virDomainDeviceDriveAddressPtr address;
@@ -626,6 +627,20 @@ prlsdkGetDiskInfo(vzDriverPtr driver,
     if (*buf != '\0' && virDomainDiskSetSource(disk, buf) < 0)
         goto cleanup;
 
+    if (!isCdrom) {
+        serial = prlsdkGetStringParamVar(PrlVmDevHd_GetSerialNumber, prldisk);
+        if (serial) {
+            if (virSafeSerialParamValue(serial) < 0)
+                goto cleanup;
+
+            if (*serial == '\0')
+                VIR_FREE(serial);
+            else
+                disk->serial = serial;
+            serial = NULL;
+        }
+    }
+
     if (prlsdkGetDiskId(prldisk, &disk->bus, &disk->dst) < 0)
         goto cleanup;
 
@@ -646,6 +661,7 @@ prlsdkGetDiskInfo(vzDriverPtr driver,
 
  cleanup:
     VIR_FREE(buf);
+    VIR_FREE(serial);
     return ret;
 }
 
@@ -3494,6 +3510,11 @@ static int prlsdkConfigureDisk(vzDriverPtr driver,
 
     pret = PrlVmDev_SetStackIndex(sdkdisk, idx);
     prlsdkCheckRetGoto(pret, cleanup);
+
+    if (devType == PDE_HARD_DISK) {
+        pret = PrlVmDevHd_SetSerialNumber(sdkdisk, disk->serial);
+        prlsdkCheckRetGoto(pret, cleanup);
+    }
 
     return 0;
  cleanup:
