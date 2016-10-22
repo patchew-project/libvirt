@@ -1919,6 +1919,10 @@ static int qemuDomainResume(virDomainPtr dom)
         virReportError(VIR_ERR_OPERATION_INVALID,
                        "%s", _("domain is pmsuspended"));
         goto endjob;
+    } else if (state == VIR_DOMAIN_RUNNING) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       "%s", _("domain is already running"));
+        goto endjob;
     } else if ((state == VIR_DOMAIN_CRASHED &&
                 reason == VIR_DOMAIN_CRASHED_PANICKED) ||
                state == VIR_DOMAIN_PAUSED) {
