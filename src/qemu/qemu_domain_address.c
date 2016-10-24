@@ -388,6 +388,32 @@ qemuDomainAssignS390Addresses(virDomainDefPtr def,
 }
 
 
+static int
+qemuDomainCountVirtioMMIODevicesCallback(virDomainDefPtr def ATTRIBUTE_UNUSED,
+                                         virDomainDeviceDefPtr dev ATTRIBUTE_UNUSED,
+                                         virDomainDeviceInfoPtr info,
+                                         void *opaque)
+{
+    if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO)
+        (*((size_t *) opaque))++;
+
+    return 0;
+}
+
+
+static size_t
+qemuDomainCountVirtioMMIODevices(virDomainDefPtr def)
+{
+    size_t count = 0;
+
+    virDomainDeviceInfoIterate(def,
+                               qemuDomainCountVirtioMMIODevicesCallback,
+                               &count);
+
+    return count;
+}
+
+
 static void
 qemuDomainAssignARMVirtioMMIOAddresses(virDomainDefPtr def,
                                        virQEMUCapsPtr qemuCaps)
@@ -400,9 +426,16 @@ qemuDomainAssignARMVirtioMMIOAddresses(virDomainDefPtr def,
           qemuDomainMachineIsVirt(def)))
         return;
 
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_MMIO)) {
-        qemuDomainPrimeVirtioDeviceAddresses(
-            def, VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO);
+    /* We use virtio-mmio by default on mach-virt guests only if they already
+     * have at least one virtio-mmio device: in all other cases, we prefer
+     * virtio-pci */
+    if (qemuDomainMachineHasPCIeRoot(def) &&
+        qemuDomainCountVirtioMMIODevices(def) == 0) {
+        qemuDomainPrimeVirtioDeviceAddresses(def,
+                                             VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI);
+    } else if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_MMIO)) {
+        qemuDomainPrimeVirtioDeviceAddresses(def,
+                                             VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO);
     }
 }
 

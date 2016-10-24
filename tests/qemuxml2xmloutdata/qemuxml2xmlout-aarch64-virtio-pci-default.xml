@@ -30,16 +30,30 @@
     <disk type='file' device='disk'>
       <source file='/aarch64.raw'/>
       <target dev='vda' bus='virtio'/>
-      <address type='virtio-mmio'/>
+      <address type='pci' domain='0x0000' bus='0x02' slot='0x03' function='0x0'/>
     </disk>
     <controller type='pci' index='0' model='pcie-root'/>
     <controller type='virtio-serial' index='0'>
-      <address type='virtio-mmio'/>
+      <address type='pci' domain='0x0000' bus='0x02' slot='0x02' function='0x0'/>
+    </controller>
+    <controller type='pci' index='1' model='dmi-to-pci-bridge'>
+      <model name='i82801b11-bridge'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x0'/>
+    </controller>
+    <controller type='pci' index='2' model='pci-bridge'>
+      <model name='pci-bridge'/>
+      <target chassisNr='2'/>
+      <address type='pci' domain='0x0000' bus='0x01' slot='0x00' function='0x0'/>
+    </controller>
+    <controller type='pci' index='3' model='pcie-root-port'>
+      <model name='ioh3420'/>
+      <target chassis='3' port='0x10'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
     </controller>
     <interface type='user'>
       <mac address='52:54:00:09:a4:37'/>
       <model type='virtio'/>
-      <address type='virtio-mmio'/>
+      <address type='pci' domain='0x0000' bus='0x02' slot='0x01' function='0x0'/>
     </interface>
     <serial type='pty'>
       <target port='0'/>
@@ -51,11 +65,11 @@
       <target type='virtio' port='1'/>
     </console>
     <memballoon model='virtio'>
-      <address type='virtio-mmio'/>
+      <address type='pci' domain='0x0000' bus='0x02' slot='0x04' function='0x0'/>
     </memballoon>
     <rng model='virtio'>
       <backend model='random'>/dev/random</backend>
-      <address type='virtio-mmio'/>
+      <address type='pci' domain='0x0000' bus='0x02' slot='0x05' function='0x0'/>
     </rng>
   </devices>
 </domain>
