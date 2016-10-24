@@ -3623,10 +3623,10 @@ qemuDomainRemoveRNGDevice(virQEMUDriverPtr driver,
         goto cleanup;
 
     qemuDomainObjEnterMonitor(driver, vm);
-    rc = qemuMonitorDelObject(priv->mon, objAlias);
-
-    if (rc == 0 && rng->backend == VIR_DOMAIN_RNG_BACKEND_EGD)
+    if (rng->backend == VIR_DOMAIN_RNG_BACKEND_EGD)
         ignore_value(qemuMonitorDetachCharDev(priv->mon, charAlias));
+
+    rc = qemuMonitorDelObject(priv->mon, objAlias);
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         goto cleanup;
