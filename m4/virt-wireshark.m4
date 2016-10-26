@@ -52,10 +52,10 @@ AC_DEFUN([LIBVIRT_CHECK_WIRESHARK],[
         ws_prefix="/usr"
       fi
       dnl Replace the wireshark prefix with our own.
-      dnl Note that $(prefix) is kept verbatim at this point in time, and will
-      dnl only be expanded later, when make is called: this makes it possible
-      dnl to override the prefix at compilation or installation time
-      ws_plugindir='$(prefix)'"${ws_plugindir#$ws_prefix}"
+      dnl Note that ${exec_prefix} is kept verbatim at this point in time, and
+      dnl will only be expanded later, when make is called: this makes it
+      dnl possible to override such prefix at compilation or installation time
+      ws_plugindir='${exec_prefix}'"${ws_plugindir#$ws_prefix}"
     elif test "x$with_ws_plugindir" = "xno" || test "x$with_ws_plugindir" = "xyes"; then
       AC_MSG_ERROR([ws-plugindir must be used only with valid path])
     else
