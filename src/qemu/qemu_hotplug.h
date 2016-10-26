@@ -50,6 +50,9 @@ int qemuDomainAttachHostDevice(virConnectPtr conn,
                                virQEMUDriverPtr driver,
                                virDomainObjPtr vm,
                                virDomainHostdevDefPtr hostdev);
+int qemuDomainAttachShmemDevice(virQEMUDriverPtr driver,
+                                virDomainObjPtr vm,
+                                virDomainShmemDefPtr shmem);
 int qemuDomainFindGraphicsIndex(virDomainDefPtr def,
                                 virDomainGraphicsDefPtr dev);
 int qemuDomainAttachMemory(virQEMUDriverPtr driver,
@@ -86,6 +89,9 @@ int qemuDomainDetachNetDevice(virQEMUDriverPtr driver,
 int qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
                                virDomainObjPtr vm,
                                virDomainDeviceDefPtr dev);
+int qemuDomainDetachShmemDevice(virQEMUDriverPtr driver,
+                                virDomainObjPtr vm,
+                                virDomainShmemDefPtr dev);
 int qemuDomainAttachLease(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
                           virDomainLeaseDefPtr lease);

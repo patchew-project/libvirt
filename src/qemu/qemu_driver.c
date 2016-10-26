@@ -7601,6 +7601,15 @@ qemuDomainAttachDeviceLive(virDomainObjPtr vm,
         dev->data.memory = NULL;
         break;
 
+    case VIR_DOMAIN_DEVICE_SHMEM:
+        ret = qemuDomainAttachShmemDevice(driver, vm,
+                                          dev->data.shmem);
+        if (!ret) {
+            alias = dev->data.shmem->info.alias;
+            dev->data.shmem = NULL;
+        }
+        break;
+
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_FS:
     case VIR_DOMAIN_DEVICE_INPUT:
@@ -7612,7 +7621,6 @@ qemuDomainAttachDeviceLive(virDomainObjPtr vm,
     case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
-    case VIR_DOMAIN_DEVICE_SHMEM:
     case VIR_DOMAIN_DEVICE_TPM:
     case VIR_DOMAIN_DEVICE_PANIC:
     case VIR_DOMAIN_DEVICE_IOMMU:
@@ -7690,6 +7698,9 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
     case VIR_DOMAIN_DEVICE_MEMORY:
         ret = qemuDomainDetachMemoryDevice(driver, vm, dev->data.memory);
         break;
+    case VIR_DOMAIN_DEVICE_SHMEM:
+        ret = qemuDomainDetachShmemDevice(driver, vm, dev->data.shmem);
+        break;
 
     case VIR_DOMAIN_DEVICE_FS:
     case VIR_DOMAIN_DEVICE_INPUT:
@@ -7701,7 +7712,6 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
     case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
-    case VIR_DOMAIN_DEVICE_SHMEM:
     case VIR_DOMAIN_DEVICE_REDIRDEV:
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_TPM:
@@ -7848,6 +7858,7 @@ qemuDomainAttachDeviceConfig(virDomainDefPtr vmdef,
     virDomainControllerDefPtr controller;
     virDomainFSDefPtr fs;
     virDomainRedirdevDefPtr redirdev;
+    virDomainShmemDefPtr shmem;
 
     switch ((virDomainDeviceType) dev->type) {
     case VIR_DOMAIN_DEVICE_DISK:
@@ -7972,6 +7983,18 @@ qemuDomainAttachDeviceConfig(virDomainDefPtr vmdef,
         dev->data.redirdev = NULL;
         break;
 
+    case VIR_DOMAIN_DEVICE_SHMEM:
+        shmem = dev->data.shmem;
+        if (virDomainShmemDefFind(vmdef, shmem) >= 0) {
+            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                           _("device is already in the domain configuration"));
+            return -1;
+        }
+        if (virDomainShmemDefInsert(vmdef, shmem) < 0)
+            return -1;
+        dev->data.shmem = NULL;
+        break;
+
     case VIR_DOMAIN_DEVICE_INPUT:
     case VIR_DOMAIN_DEVICE_SOUND:
     case VIR_DOMAIN_DEVICE_VIDEO:
@@ -7981,7 +8004,6 @@ qemuDomainAttachDeviceConfig(virDomainDefPtr vmdef,
     case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
-    case VIR_DOMAIN_DEVICE_SHMEM:
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_TPM:
     case VIR_DOMAIN_DEVICE_PANIC:
@@ -8128,6 +8150,16 @@ qemuDomainDetachDeviceConfig(virDomainDefPtr vmdef,
         virDomainRedirdevDefFree(virDomainRedirdevDefRemove(vmdef, idx));
         break;
 
+    case VIR_DOMAIN_DEVICE_SHMEM:
+        if ((idx = virDomainShmemDefFind(vmdef, dev->data.shmem)) < 0) {
+            virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                           _("matching shmem device was not found"));
+            return -1;
+        }
+
+        virDomainShmemDefFree(virDomainShmemDefRemove(vmdef, idx));
+        break;
+
 
     case VIR_DOMAIN_DEVICE_INPUT:
     case VIR_DOMAIN_DEVICE_SOUND:
@@ -8138,7 +8170,6 @@ qemuDomainDetachDeviceConfig(virDomainDefPtr vmdef,
     case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
-    case VIR_DOMAIN_DEVICE_SHMEM:
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_TPM:
     case VIR_DOMAIN_DEVICE_PANIC:
