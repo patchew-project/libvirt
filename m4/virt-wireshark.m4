@@ -35,11 +35,20 @@ AC_DEFUN([LIBVIRT_CHECK_WIRESHARK],[
         dnl On some systems the plugindir variable may not be stored within pkg config.
         dnl Fall back to older style of constructing the plugin dir path.
         ws_plugindir="$libdir/wireshark/plugins/$ws_modversion"
-        ws_prefix="$prefix"
+        dnl We have no idea what the contents of $libdir look like, so we'll
+        dnl have to play a bit of a guessing game: let's try stripping off
+        dnl a bunch of likels prefixed and pick the first one that matches.
+        dnl Even if none does, we'll still have one last shot later
+        for try in "$prefix" "$exec_prefix" '${prefix}' '${exec_prefix}'; do
+          if test "x${ws_plugindir#$try}" != "x$ws_plugindir"; then
+            ws_prefix="$try"
+            break
+          fi
+        done
       fi
       if test "x$ws_prefix" = "x" ; then
-        dnl If the wireshark prefix cannot be retrieved from pkg-config,
-        dnl /usr is our best bet
+        dnl If the wireshark prefix cannot be retrieved from pkg-config
+        dnl or otherwise guessed, /usr is our best bet
         ws_prefix="/usr"
       fi
       dnl Replace the wireshark prefix with our own.
