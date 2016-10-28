@@ -690,10 +690,11 @@ qemuMonitorIO(int watch, int fd, int events, void *opaque)
 
         if (events & VIR_EVENT_HANDLE_HANGUP) {
             hangup = true;
+            eof = true;
             if (!error) {
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                                _("End of file from qemu monitor"));
-                eof = true;
+
                 events &= ~VIR_EVENT_HANDLE_HANGUP;
             }
         }
