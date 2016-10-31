@@ -6626,7 +6626,8 @@ virSecurityLabelDefParseXML(xmlXPathContextPtr ctxt,
      * if the 'live' VM XML is requested
      */
     if (seclabel->type == VIR_DOMAIN_SECLABEL_STATIC ||
-        (!(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE) &&
+        (!(flags & (VIR_DOMAIN_DEF_PARSE_SKIP_ACTIVE_LABEL |
+                    VIR_DOMAIN_DEF_PARSE_INACTIVE)) &&
          seclabel->type != VIR_DOMAIN_SECLABEL_NONE)) {
         p = virXPathStringLimit("string(./label[1])",
                                 VIR_SECURITY_LABEL_BUFLEN-1, ctxt);
@@ -6642,7 +6643,8 @@ virSecurityLabelDefParseXML(xmlXPathContextPtr ctxt,
 
     /* Only parse imagelabel, if requested live XML with relabeling */
     if (seclabel->relabel &&
-        (!(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE) &&
+        (!(flags & (VIR_DOMAIN_DEF_PARSE_SKIP_ACTIVE_LABEL |
+                    VIR_DOMAIN_DEF_PARSE_INACTIVE)) &&
          seclabel->type != VIR_DOMAIN_SECLABEL_NONE)) {
         p = virXPathStringLimit("string(./imagelabel[1])",
                                 VIR_SECURITY_LABEL_BUFLEN-1, ctxt);
