@@ -24,6 +24,7 @@
 #include "viralloc.h"
 #include "vircommand.h"
 #include "vircrypto.h"
+#include "virhost.h"
 #include "virmock.h"
 #include "virnetdev.h"
 #include "virnetdevip.h"
@@ -104,6 +105,14 @@ virSCSIDeviceGetSgName(const char *sysfs_prefix ATTRIBUTE_UNUSED,
 
     ignore_value(VIR_STRDUP(ret, "sg0"));
     return ret;
+}
+
+int
+virHostOpenVhostSCSI(int *vhostfd)
+{
+    *vhostfd = STDERR_FILENO + 1;
+
+    return 0;
 }
 
 int
