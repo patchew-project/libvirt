@@ -4524,6 +4524,7 @@ qemuMonitorJSONBlockIoThrottleInfo(virJSONValuePtr result,
         virJSONValuePtr temp_dev = virJSONValueArrayGet(io_throttle, i);
         virJSONValuePtr inserted;
         const char *current_dev;
+        const char *group_name;
 
         if (!temp_dev || temp_dev->type != VIR_JSON_TYPE_OBJECT) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -4549,7 +4550,6 @@ qemuMonitorJSONBlockIoThrottleInfo(virJSONValuePtr result,
                              "was not in expected format"));
             goto cleanup;
         }
-
         GET_THROTTLE_STATS("bps", total_bytes_sec);
         GET_THROTTLE_STATS("bps_rd", read_bytes_sec);
         GET_THROTTLE_STATS("bps_wr", write_bytes_sec);
@@ -4563,6 +4563,12 @@ qemuMonitorJSONBlockIoThrottleInfo(virJSONValuePtr result,
         GET_THROTTLE_STATS_OPTIONAL("iops_rd_max", read_iops_sec_max);
         GET_THROTTLE_STATS_OPTIONAL("iops_wr_max", write_iops_sec_max);
         GET_THROTTLE_STATS_OPTIONAL("iops_size", size_iops_sec);
+
+        if ((group_name = virJSONValueObjectGetString(inserted, "group"))) {
+            if (VIR_STRDUP(reply->group_name, group_name) < 0)
+                goto cleanup;
+        }
+
         GET_THROTTLE_STATS_OPTIONAL("bps_max_length", total_bytes_sec_max_length);
         GET_THROTTLE_STATS_OPTIONAL("bps_rd_max_length", read_bytes_sec_max_length);
         GET_THROTTLE_STATS_OPTIONAL("bps_wr_max_length", write_bytes_sec_max_length);
@@ -4591,17 +4597,23 @@ int qemuMonitorJSONSetBlockIoThrottle(qemuMonitorPtr mon,
                                       const char *device,
                                       virDomainBlockIoTuneInfoPtr info,
                                       bool supportMaxOptions,
+                                      bool supportGroupNameOption,
                                       bool supportMaxLengthOptions)
 {
     int ret = -1;
     virJSONValuePtr cmd = NULL;
     virJSONValuePtr result = NULL;
+    char *group_name = NULL;
+
+    if (supportGroupNameOption && VIR_STRDUP(group_name, info->group_name) < 0)
+        return -1;
 
     /* The qemu capability check has already been made in
      * qemuDomainSetBlockIoTune. NB, once a NULL is found in
      * the sequence, qemuMonitorJSONMakeCommand will stop. So
      * let's make use of that when !supportMaxOptions and
-     * similarly when !supportMaxLengthOptions */
+     * similarly when !supportGroupNameOption as well as when
+     * when !supportMaxLengthOptions */
    cmd = qemuMonitorJSONMakeCommand("block_set_io_throttle",
                                     "s:device", device,
                                     "U:bps", info->total_bytes_sec,
@@ -4618,6 +4630,8 @@ int qemuMonitorJSONSetBlockIoThrottle(qemuMonitorPtr mon,
                                     "U:iops_rd_max", info->read_iops_sec_max,
                                     "U:iops_wr_max", info->write_iops_sec_max,
                                     "U:iops_size", info->size_iops_sec,
+                                    !supportGroupNameOption ? NULL :
+                                    "s:group", group_name,
                                     !supportMaxLengthOptions ? NULL :
                                     "P:bps_max_length",
                                     info->total_bytes_sec_max_length,
@@ -4633,7 +4647,7 @@ int qemuMonitorJSONSetBlockIoThrottle(qemuMonitorPtr mon,
                                     info->write_iops_sec_max_length,
                                     NULL);
     if (!cmd)
-        return -1;
+        goto cleanup;
 
     if (qemuMonitorJSONCommand(mon, cmd, &result) < 0)
         goto cleanup;
@@ -4657,6 +4671,7 @@ int qemuMonitorJSONSetBlockIoThrottle(qemuMonitorPtr mon,
 
     ret = 0;
  cleanup:
+    VIR_FREE(group_name);
     virJSONValueFree(cmd);
     virJSONValueFree(result);
     return ret;
