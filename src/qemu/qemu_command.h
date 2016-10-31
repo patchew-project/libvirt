@@ -163,6 +163,11 @@ char *qemuBuildSCSIHostdevDrvStr(virDomainHostdevDefPtr dev);
 char *qemuBuildSCSIHostdevDevStr(const virDomainDef *def,
                                  virDomainHostdevDefPtr dev,
                                  virQEMUCapsPtr qemuCaps);
+char *
+qemuBuildHostHostdevDevStr(const virDomainDef *def,
+                           virDomainHostdevDefPtr dev,
+                           virQEMUCapsPtr qemuCaps,
+                           char *vhostfdName);
 
 char *qemuBuildRedirdevDevStr(const virDomainDef *def,
                               virDomainRedirdevDefPtr dev,

@@ -277,6 +277,25 @@ qemuSetupHostSCSIDeviceCgroup(virSCSIDevicePtr dev ATTRIBUTE_UNUSED,
     return ret;
 }
 
+static int
+qemuSetupHostHostDeviceCgroup(virHostDevicePtr dev ATTRIBUTE_UNUSED,
+                              const char *path,
+                              void *opaque)
+{
+    virDomainObjPtr vm = opaque;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    int ret;
+
+    VIR_DEBUG("Process path '%s' for scsi_host device", path);
+
+    ret = virCgroupAllowDevicePath(priv->cgroup, path,
+                                   VIR_CGROUP_DEVICE_RW, false);
+
+    virDomainAuditCgroupPath(vm, priv->cgroup, "allow", path, "rw", ret == 0);
+
+    return ret;
+}
+
 int
 qemuSetupHostdevCgroup(virDomainObjPtr vm,
                        virDomainHostdevDefPtr dev)
@@ -286,9 +305,11 @@ qemuSetupHostdevCgroup(virDomainObjPtr vm,
     virDomainHostdevSubsysUSBPtr usbsrc = &dev->source.subsys.u.usb;
     virDomainHostdevSubsysPCIPtr pcisrc = &dev->source.subsys.u.pci;
     virDomainHostdevSubsysSCSIPtr scsisrc = &dev->source.subsys.u.scsi;
+    virDomainHostdevSubsysHostPtr hostsrc = &dev->source.subsys.u.host;
     virPCIDevicePtr pci = NULL;
     virUSBDevicePtr usb = NULL;
     virSCSIDevicePtr scsi = NULL;
+    virHostDevicePtr host = NULL;
     char *path = NULL;
 
     /* currently this only does something for PCI devices using vfio
@@ -377,6 +398,16 @@ qemuSetupHostdevCgroup(virDomainObjPtr vm,
         }
 
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_HOST: {
+            if (hostsrc->protocol ==
+                VIR_DOMAIN_HOSTDEV_SUBSYS_HOST_PROTOCOL_TYPE_VHOST) {
+                if ((host = virHostDeviceNew(hostsrc->wwpn)) == NULL)
+                    goto cleanup;
+
+                if (virHostDeviceFileIterate(host,
+                                             qemuSetupHostHostDeviceCgroup,
+                                             vm) < 0)
+                    goto cleanup;
+            }
             break;
         }
 
@@ -390,6 +421,7 @@ qemuSetupHostdevCgroup(virDomainObjPtr vm,
     virPCIDeviceFree(pci);
     virUSBDeviceFree(usb);
     virSCSIDeviceFree(scsi);
+    virHostDeviceFree(host);
     VIR_FREE(path);
     return ret;
 }
