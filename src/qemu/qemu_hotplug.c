@@ -3501,6 +3501,8 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
         qemuDomainRemoveSCSIHostDevice(driver, vm, hostdev);
         break;
+    case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_HOST:
+        break;
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
         break;
     }
