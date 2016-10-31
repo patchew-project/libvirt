@@ -39,6 +39,7 @@
 #include "virpci.h"
 #include "virusb.h"
 #include "virscsi.h"
+#include "virhost.h"
 #include "virstoragefile.h"
 #include "virfile.h"
 #include "virhash.h"
@@ -1416,6 +1417,13 @@ virSecuritySELinuxSetSCSILabel(virSCSIDevicePtr dev,
 }
 
 static int
+virSecuritySELinuxSetHostLabel(virHostDevicePtr dev ATTRIBUTE_UNUSED,
+                               const char *file, void *opaque)
+{
+    return virSecuritySELinuxSetHostdevLabelHelper(file, opaque);
+}
+
+static int
 virSecuritySELinuxSetHostdevSubsysLabel(virSecurityManagerPtr mgr,
                                         virDomainDefPtr def,
                                         virDomainHostdevDefPtr dev,
@@ -1425,6 +1433,7 @@ virSecuritySELinuxSetHostdevSubsysLabel(virSecurityManagerPtr mgr,
     virDomainHostdevSubsysUSBPtr usbsrc = &dev->source.subsys.u.usb;
     virDomainHostdevSubsysPCIPtr pcisrc = &dev->source.subsys.u.pci;
     virDomainHostdevSubsysSCSIPtr scsisrc = &dev->source.subsys.u.scsi;
+    virDomainHostdevSubsysHostPtr hostsrc = &dev->source.subsys.u.host;
     virSecuritySELinuxCallbackData data = {.mgr = mgr, .def = def};
 
     int ret = -1;
@@ -1499,7 +1508,14 @@ virSecuritySELinuxSetHostdevSubsysLabel(virSecurityManagerPtr mgr,
     }
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_HOST: {
-        /* Fall through for now */
+        virHostDevicePtr host = virHostDeviceNew(hostsrc->wwpn);
+
+        if (!host)
+            goto done;
+
+        ret = virHostDeviceFileIterate(host, virSecuritySELinuxSetHostLabel, &data);
+        virHostDeviceFree(host);
+        break;
     }
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
@@ -1627,6 +1643,16 @@ virSecuritySELinuxRestoreSCSILabel(virSCSIDevicePtr dev,
 }
 
 static int
+virSecuritySELinuxRestoreHostLabel(virHostDevicePtr dev ATTRIBUTE_UNUSED,
+                                   const char *file,
+                                   void *opaque)
+{
+    virSecurityManagerPtr mgr = opaque;
+
+    return virSecuritySELinuxRestoreFileLabel(mgr, file);
+}
+
+static int
 virSecuritySELinuxRestoreHostdevSubsysLabel(virSecurityManagerPtr mgr,
                                             virDomainHostdevDefPtr dev,
                                             const char *vroot)
@@ -1635,6 +1661,7 @@ virSecuritySELinuxRestoreHostdevSubsysLabel(virSecurityManagerPtr mgr,
     virDomainHostdevSubsysUSBPtr usbsrc = &dev->source.subsys.u.usb;
     virDomainHostdevSubsysPCIPtr pcisrc = &dev->source.subsys.u.pci;
     virDomainHostdevSubsysSCSIPtr scsisrc = &dev->source.subsys.u.scsi;
+    virDomainHostdevSubsysHostPtr hostsrc = &dev->source.subsys.u.host;
     int ret = -1;
 
     /* Like virSecuritySELinuxRestoreImageLabelInt() for a networked
@@ -1705,7 +1732,15 @@ virSecuritySELinuxRestoreHostdevSubsysLabel(virSecurityManagerPtr mgr,
     }
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_HOST: {
-        /* Fall through for now */
+        virHostDevicePtr host = virHostDeviceNew(hostsrc->wwpn);
+
+        if (!host)
+            goto done;
+
+        ret = virHostDeviceFileIterate(host, virSecuritySELinuxRestoreHostLabel, mgr);
+        virHostDeviceFree(host);
+
+        break;
     }
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
