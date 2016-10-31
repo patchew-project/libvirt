@@ -12973,7 +12973,7 @@ virDomainHostdevDefParseXML(virDomainXMLOptionPtr xmlopt,
     }
 
     if (def->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
-        switch (def->source.subsys.type) {
+        switch ((virDomainHostdevSubsysType) def->source.subsys.type) {
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
             if (def->info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
                 def->info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
@@ -12994,6 +12994,11 @@ virDomainHostdevDefParseXML(virDomainXMLOptionPtr xmlopt,
                 def->readonly = true;
             if (virXPathBoolean("boolean(./shareable)", ctxt))
                 def->shareable = true;
+            break;
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
+            break;
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
+            goto error;
             break;
         }
     }
@@ -13861,7 +13866,7 @@ virDomainHostdevMatchSubsys(virDomainHostdevDefPtr a,
     if (a->source.subsys.type != b->source.subsys.type)
         return 0;
 
-    switch (a->source.subsys.type) {
+    switch ((virDomainHostdevSubsysType) a->source.subsys.type) {
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
         return virDomainHostdevMatchSubsysPCI(a, b);
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
@@ -13875,6 +13880,8 @@ virDomainHostdevMatchSubsys(virDomainHostdevDefPtr a,
             return virDomainHostdevMatchSubsysSCSIiSCSI(a, b);
         else
             return virDomainHostdevMatchSubsysSCSIHost(a, b);
+    case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
+        return 0;
     }
     return 0;
 }
