@@ -347,6 +347,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "machine-iommu",
               "virtio-vga",
               "drive-iotune-max-length",
+              "drive-iotune-group",
     );
 
 
@@ -2845,6 +2846,7 @@ static struct virQEMUCapsCommandLineProps virQEMUCapsCommandLine[] = {
     { "name", "guest", QEMU_CAPS_NAME_GUEST },
     { "spice", "unix", QEMU_CAPS_SPICE_UNIX },
     { "drive", "throttling.bps-total-max-length", QEMU_CAPS_DRIVE_IOTUNE_MAX_LENGTH },
+    { "drive", "throttling.group", QEMU_CAPS_DRIVE_IOTUNE_GROUP },
 };
 
 static int
