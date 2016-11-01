@@ -1,0 +1,95 @@
+  <domain type='kvm' id='56'>
+    <name>instance-00000092</name>
+    <uuid>126f2720-6f8e-45ab-a886-ec9277079a67</uuid>
+    <metadata>
+      <nova:instance xmlns:nova="http://openstack.org/xmlns/libvirt/nova/1.0">
+        <nova:package version="13.0.0"/>
+        <nova:name>emma</nova:name>
+        <nova:creationTime>2016-09-16 15:51:06</nova:creationTime>
+        <nova:flavor name="devstack">
+          <nova:memory>14336</nova:memory>
+          <nova:disk>30</nova:disk>
+          <nova:swap>0</nova:swap>
+          <nova:ephemeral>0</nova:ephemeral>
+          <nova:vcpus>20</nova:vcpus>
+        </nova:flavor>
+        <nova:owner>
+          <nova:user uuid="ff95838725294b1896e887d4caee5e1a">tester</nova:user>
+          <nova:project uuid="f04e5e9722e441ae90bcc7f12722a0ac">test</nova:project>
+        </nova:owner>
+        <nova:root type="image" uuid="37ec79a5-9eb2-4df5-beee-a6942657d828"/>
+      </nova:instance>
+    </metadata>
+    <memory unit='KiB'>14680064</memory>
+    <currentMemory unit='KiB'>14680064</currentMemory>
+    <memoryBacking>
+      <source type='file'/>
+      <access mode='private'/>
+      <allocation mode='immediate'/>
+    </memoryBacking>
+    <vcpu placement='static'>20</vcpu>
+    <cputune>
+      <shares>8192</shares>
+    </cputune>
+    <resource>
+      <partition>/machine</partition>
+    </resource>
+    <sysinfo type='smbios'>
+      <system>
+        <entry name='manufacturer'>OpenStack Foundation</entry>
+        <entry name='product'>OpenStack Nova</entry>
+        <entry name='version'>13.0.0</entry>
+        <entry name='serial'>0640ddd5-36c9-e211-a2f6-001e6789a0f1</entry>
+        <entry name='uuid'>126f2720-6f8e-45ab-a886-ec9277079a67</entry>
+        <entry name='family'>Virtual Machine</entry>
+      </system>
+    </sysinfo>
+    <os>
+      <type arch='x86_64' machine='pc-i440fx-wily'>hvm</type>
+      <boot dev='hd'/>
+      <smbios mode='sysinfo'/>
+    </os>
+    <features>
+      <acpi/>
+      <apic/>
+    </features>
+    <cpu mode='host-passthrough'>
+      <topology sockets='1' cores='8' threads='1'/>
+      <numa>
+        <cell id='0' cpus='0-7' memory='14680064' unit='KiB'/>
+        <cell id='1' cpus='8-15' memory='14680064' unit='KiB' memAccess='shared'/>
+      </numa>
+    </cpu>
+    <clock offset='utc'>
+      <timer name='pit' tickpolicy='delay'/>
+      <timer name='rtc' tickpolicy='catchup'/>
+      <timer name='hpet' present='no'/>
+    </clock>
+    <on_poweroff>destroy</on_poweroff>
+    <on_reboot>restart</on_reboot>
+    <on_crash>destroy</on_crash>
+    <devices>
+      <emulator>/usr/bin/qemu-system-x86_64</emulator>
+      <disk type='file' device='disk'>
+        <driver name='qemu' type='qcow2' cache='none'/>
+        <source file='/var/lib/nova/instances/126f2720-6f8e-45ab-a886-ec9277079a67/disk'/>
+        <backingStore type='file' index='1'>
+          <format type='raw'/>
+          <source file='/var/lib/nova/instances/_base/7205b893db62340da7d5246a23b66a52ccef9bd1'/>
+          <backingStore/>
+        </backingStore>
+        <target dev='vda' bus='virtio'/>
+        <alias name='virtio-disk0'/>
+        <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
+      </disk>
+      <controller type='usb' index='0'>
+        <alias name='usb'/>
+        <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x2'/>
+      </controller>
+      <memballoon model='virtio'>
+        <stats period='10'/>
+        <alias name='balloon0'/>
+        <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
+      </memballoon>
+    </devices>
+  </domain>
