@@ -1839,7 +1839,7 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
             virDomainEventJobCompletedPtr ev;
 
             ev = (virDomainEventJobCompletedPtr) event;
-            ((virConnectDomainEventJobCompletedCallback) cb)(conn, dom,
+            ((virConnectDomainEventJobCompletedCallback)cb)(conn, dom,
                                                              ev->params,
                                                              ev->nparams,
                                                              cbopaque);
