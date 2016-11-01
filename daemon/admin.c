@@ -392,17 +392,8 @@ adminConnectGetLoggingOutputs(char **outputs, unsigned int flags)
 
     virCheckFlags(0, -1);
 
-    if ((ret = virLogGetNbOutputs()) > 0) {
-        if (!(tmp = virLogGetOutputs()))
+    if ((ret = virLogGetNbOutputs()) > 0 && !(tmp = virLogGetOutputs()))
             return -1;
-    } else {
-        /* there were no outputs defined, return an empty string */
-        if (!tmp) {
-            if (VIR_ALLOC(tmp) < 0)
-                return -1;
-            memset(tmp, 0, 1);
-        }
-    }
 
     *outputs = tmp;
     return ret;
@@ -430,6 +421,16 @@ adminConnectGetLoggingFilters(char **filters, unsigned int flags)
 
     *filters = tmp;
     return ret;
+}
+
+static int
+adminConnectSetLoggingOutputs(virNetDaemonPtr dmn ATTRIBUTE_UNUSED,
+                              const char *outputs,
+                              unsigned int flags)
+{
+    virCheckFlags(0, -1);
+
+    return virLogSetOutputs(outputs);
 }
 
 static int

@@ -40,4 +40,5 @@ LIBVIRT_ADMIN_2.0.0 {
         virAdmServerSetClientLimits;
         virAdmConnectGetLoggingFilters;
         virAdmConnectGetLoggingOutputs;
+        virAdmConnectSetLoggingOutputs;
 };
