@@ -50,6 +50,7 @@
 #include "virtime.h"
 #include "intprops.h"
 #include "virstring.h"
+#include "configmake.h"
 
 /* Journald output is only supported on Linux new enough to expose
  * htole64.  */
@@ -105,6 +106,7 @@ struct _virLogOutput {
     char *name;
 };
 
+static char *virLogDefaultOutput;
 static virLogOutputPtr *virLogOutputs;
 static size_t virLogNbOutputs;
 
@@ -146,6 +148,98 @@ virLogUnlock(void)
     virMutexUnlock(&virLogMutex);
 }
 
+static int
+virLogSetDefaultOutputToStderr(void)
+{
+    char *tmp = NULL;
+    if (virAsprintf(&tmp, "%d:stderr", virLogGetDefaultPriority()) < 0)
+        return -1;
+
+    virLogDefaultOutput = tmp;
+    return 0;
+}
+
+static int
+virLogSetDefaultOutputToJournald(void)
+{
+    char *tmp = NULL;
+    virLogPriority priority = virLogDefaultPriority;
+
+    /* By default we don't want to log too much stuff into journald as
+     * it may employ rate limiting and thus block libvirt execution. */
+    if (priority == VIR_LOG_DEBUG)
+        priority = VIR_LOG_INFO;
+
+    if (virAsprintf(&tmp, "%d:journald", priority) < 0)
+        return -1;
+
+    virLogDefaultOutput = tmp;
+    return 0;
+}
+
+static int
+virLogSetDefaultOutputToFile(bool privileged)
+{
+    int ret = -1;
+    char *tmp = NULL;
+    char *logdir = NULL;
+
+    if (privileged) {
+        if (virAsprintf(&tmp, "%d:file:%s/log/libvirt/libvirtd.log",
+                        virLogGetDefaultPriority(),
+                        LOCALSTATEDIR) < 0)
+            goto cleanup;
+    } else {
+        if (!(logdir = virGetUserCacheDirectory()))
+            goto cleanup;
+
+        mode_t old_umask = umask(077);
+        if (virFileMakePath(logdir) < 0) {
+            umask(old_umask);
+            goto cleanup;
+        }
+        umask(old_umask);
+
+        if (virAsprintf(&tmp, "%d:file:%s/libvirtd.log",
+                        virLogGetDefaultPriority(), logdir) < 0)
+            goto cleanup;
+    }
+
+    virLogDefaultOutput = tmp;
+    tmp = NULL;
+    ret = 0;
+ cleanup:
+    VIR_FREE(tmp);
+    VIR_FREE(logdir);
+    return ret;
+}
+
+/* this should be run exactly once at daemon startup, so no locking is
+ * necessary
+ */
+int
+virLogSetDefaultOutput(virLogDestination dest, bool privileged)
+{
+    switch (dest) {
+    case VIR_LOG_TO_STDERR:
+        return virLogSetDefaultOutputToStderr();
+    case VIR_LOG_TO_JOURNALD:
+        return virLogSetDefaultOutputToJournald();
+    case VIR_LOG_TO_FILE:
+        return virLogSetDefaultOutputToFile(privileged);
+    case VIR_LOG_TO_SYSLOG:
+    case VIR_LOG_TO_OUTPUT_LAST:
+        break;
+    }
+
+    return 0;
+}
+
+char *
+virLogGetDefaultOutput(void)
+{
+    return virLogDefaultOutput;
+}
 
 static const char *
 virLogPriorityString(virLogPriority lvl)
