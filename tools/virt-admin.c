@@ -971,6 +971,135 @@ cmdSrvClientsSet(vshControl *ctl, const vshCmd *cmd)
     goto cleanup;
 }
 
+/* -------------------
+ * Command dmn-log-info
+ * -------------------
+ */
+static const vshCmdInfo info_dmn_log_info[] = {
+    {.name = "help",
+     .data = N_("view daemon's current logging settings")
+    },
+    {.name = "desc",
+     .data = N_("Returns all currently active logging settings on daemon. "
+                "These include global logging level, logging filters and "
+                "logging outputs.")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_dmn_log_info[] = {
+    {.name = "outputs",
+     .type = VSH_OT_BOOL,
+     .help = N_("query logging outputs")
+    },
+    {.name = "filters",
+     .type = VSH_OT_BOOL,
+     .help = N_("query logging filters")
+    },
+    {.name = NULL}
+};
+
+static bool
+cmdDmnLogInfo(vshControl *ctl, const vshCmd *cmd)
+{
+    bool optOutputs = vshCommandOptBool(cmd, "outputs");
+    bool optFilters = vshCommandOptBool(cmd, "filters");
+    bool all = optOutputs + optFilters == 0;
+    int nfilters, noutputs;
+    char *filters, *outputs;
+    vshAdmControlPtr priv = ctl->privData;
+
+    if (all || optFilters) {
+        if ((nfilters = virAdmConnectGetLoggingFilters(priv->conn,
+                                                       &filters, 0)) < 0) {
+            vshError(ctl, _("Unable to get daemon logging filters information"));
+            return false;
+        }
+    }
+
+    if (all || optOutputs) {
+        if ((noutputs = virAdmConnectGetLoggingOutputs(priv->conn,
+                                                       &outputs, 0)) < 0) {
+            vshError(ctl, _("Unable to get daemon logging outputs information"));
+            return false;
+        }
+    }
+
+    if (all || optFilters) {
+        vshPrintExtra(ctl, " %-15s", _("Logging filters: "));
+        vshPrint(ctl, "%s\n", filters);
+    }
+
+    if (all || optOutputs) {
+        vshPrintExtra(ctl, " %-15s", _("Logging outputs: "));
+        vshPrint(ctl, "%s\n", outputs);
+    }
+
+    return true;
+}
+
+/* -------------------------
+ * Command daemon-log-define
+ * -------------------------
+ */
+static const vshCmdInfo info_dmn_log_define[] = {
+    {.name = "help",
+     .data = N_("change daemon's logging settings")
+    },
+    {.name = "desc",
+     .data = N_("Defines and installs a new set of logging settings on a daemon. "
+                "These include global logging level, logging filters and "
+                "logging outputs.")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_dmn_log_define[] = {
+    {.name = "outputs",
+     .type = VSH_OT_STRING,
+     .help = N_("comma separated list of logging outputs"),
+     .flags = VSH_OFLAG_EMPTY_OK
+    },
+    {.name = "filters",
+     .type = VSH_OT_STRING,
+     .help = N_("comma separated list of logging filters"),
+     .flags = VSH_OFLAG_EMPTY_OK
+    },
+    {.name = NULL}
+};
+
+static bool
+cmdDmnLogDefine(vshControl *ctl, const vshCmd *cmd)
+{
+    const char *filters = NULL;
+    const char *outputs = NULL;
+    bool optOutputs = vshCommandOptBool(cmd, "outputs");
+    bool optFilters = vshCommandOptBool(cmd, "filters");
+    vshAdmControlPtr priv = ctl->privData;
+
+    if (!(optOutputs + optFilters)) {
+        vshError(ctl, _("At least one of options --outputs, --filters "
+                        "is mandatory"));
+        return false;
+    }
+
+    if (optFilters &&
+        (vshCommandOptStringReq(ctl, cmd, "filters", &filters) < 0 ||
+        virAdmConnectSetLoggingFilters(priv->conn, filters, 0) < 0)) {
+        vshError(ctl, _("Unable to change daemon logging settings"));
+        return false;
+    }
+
+    if (optOutputs &&
+        (vshCommandOptStringReq(ctl, cmd, "outputs", &outputs) < 0 ||
+        virAdmConnectSetLoggingOutputs(priv->conn, outputs, 0) < 0)) {
+        vshError(ctl, _("Unable to change daemon logging settings"));
+        return false;
+    }
+
+    return true;
+}
+
 static void *
 vshAdmConnectionHandler(vshControl *ctl)
 {
@@ -1311,6 +1440,12 @@ static const vshCmdDef monitoringCmds[] = {
      .info = info_srv_clients_info,
      .flags = 0
     },
+    {.name = "daemon-log-info",
+     .handler = cmdDmnLogInfo,
+     .opts = opts_dmn_log_info,
+     .info = info_dmn_log_info,
+     .flags = 0
+    },
     {.name = NULL}
 };
 
@@ -1339,6 +1474,12 @@ static const vshCmdDef managementCmds[] = {
      .handler = cmdSrvClientsSet,
      .opts = opts_srv_clients_set,
      .info = info_srv_clients_set,
+     .flags = 0
+    },
+    {.name = "daemon-log-define",
+     .handler = cmdDmnLogDefine,
+     .opts = opts_dmn_log_define,
+     .info = info_dmn_log_define,
      .flags = 0
     },
     {.name = NULL}
