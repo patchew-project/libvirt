@@ -903,6 +903,9 @@
     &lt;/hugepages&gt;
     &lt;nosharepages/&gt;
     &lt;locked/&gt;
+    &lt;source type='file|anonymous'/&gt;
+    &lt;access mode='shared|private'&gt;
+    &lt;allocation mode='immediate|ondemand'/&gt;
   &lt;/memoryBacking&gt;
   ...
 &lt;/domain&gt;
@@ -942,6 +945,13 @@
         most of the host's memory). Doing so may be dangerous to both the
         domain and the host itself since the host's kernel may run out of
         memory. <span class="since">Since 1.0.6</span></dd>
+      <dt><code>source</code></dt>
+        <dd>If the option "file" is selected, then token "mem-path=/var/lib/libvirt/qemu" will be added to object argument.</dd>
+      <dt><code>access</code></dt>
+        <dd>Specify if memory is shared or private. This can be overridden by numa cell element memAccess.
+        If share is selected then token "share=yes" will be added to object memory-backend-file.</dd>
+      <dt><code>allocation</code></dt>
+        <dd>Immediate - preallocate the memory immediately</dd>
     </dl>
 
 
