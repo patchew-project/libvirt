@@ -660,65 +660,24 @@ daemonSetupNetworking(virNetServerPtr srv,
 static int
 daemonSetupLoggingDefaults(bool godaemon, bool privileged)
 {
-    if (virLogGetOutputs() == 0 &&
-        (godaemon || !isatty(STDIN_FILENO))) {
-        char *tmp;
+    /* If we're running as a daemon, the try to direct the output to systemd
+     * journal first (if it exists), otherwise fallback to libvirtd.log. If not
+     * running as a daemon, use stderr as default.
+     */
+    if (!godaemon) {
+        if (virLogSetDefaultOutput(VIR_LOG_TO_STDERR, privileged) < 0)
+            return -1;
+    } else {
         if (access("/run/systemd/journal/socket", W_OK) >= 0) {
-            virLogPriority priority = virLogGetDefaultPriority();
-
-            /* By default we don't want to log too much stuff into journald as
-             * it may employ rate limiting and thus block libvirt execution. */
-            if (priority == VIR_LOG_DEBUG)
-                priority = VIR_LOG_INFO;
-
-            if (virAsprintf(&tmp, "%d:journald", priority) < 0)
-                goto error;
-            virLogSetOutputs(tmp);
-            VIR_FREE(tmp);
-        }
-    }
-
-    if (virLogGetOutputs() == 0) {
-        char *tmp = NULL;
-
-        if (godaemon) {
-            if (privileged) {
-                if (virAsprintf(&tmp, "%d:file:%s/log/libvirt/libvirtd.log",
-                                virLogGetDefaultPriority(),
-                                LOCALSTATEDIR) == -1)
-                    goto error;
-            } else {
-                char *logdir = virGetUserCacheDirectory();
-                mode_t old_umask;
-
-                if (!logdir)
-                    goto error;
-
-                old_umask = umask(077);
-                if (virFileMakePath(logdir) < 0) {
-                    umask(old_umask);
-                    goto error;
-                }
-                umask(old_umask);
-
-                if (virAsprintf(&tmp, "%d:file:%s/libvirtd.log",
-                                virLogGetDefaultPriority(), logdir) == -1) {
-                    VIR_FREE(logdir);
-                    goto error;
-                }
-                VIR_FREE(logdir);
-            }
+            if (virLogSetDefaultOutput(VIR_LOG_TO_JOURNALD, privileged) < 0)
+                return -1;
         } else {
-            if (virAsprintf(&tmp, "%d:stderr", virLogGetDefaultPriority()) < 0)
-                goto error;
+            if (virLogSetDefaultOutput(VIR_LOG_TO_FILE, privileged) < 0)
+                return -1;
         }
-        virLogSetOutputs(tmp);
-        VIR_FREE(tmp);
     }
 
     return 0;
- error:
-    return -1;
 }
 
 /*
@@ -733,6 +692,9 @@ daemonSetupLogging(struct daemonConfig *config,
                    bool verbose,
                    bool godaemon)
 {
+    if (daemonSetupLoggingDefaults(godaemon, privileged) < 0)
+        return -1;
+
     virLogReset();
 
     /*
@@ -767,20 +729,14 @@ daemonSetupLogging(struct daemonConfig *config,
         virLogSetDefaultPriority(VIR_LOG_INFO);
 
     /*
-     * If no defined outputs, and either running
-     * as daemon or not on a tty, then first try
-     * to direct it to the systemd journal
-     * (if it exists), otherwise fallback to libvirtd.log. If both not running
-     * as daemon and having a tty, use stderr as default.
-     */
-    if (virLogGetNbOutputs() == 0 &&
-        daemonSetupLoggingDefaults(godaemon, privileged) < 0)
-        goto error;
+     * If there are no outputs defined, use the default one */
+    if (!virLogGetNbOutputs()) {
+        char *tmp = virLogGetDefaultOutput();
+        virLogSetOutputs(tmp);
+        VIR_FREE(tmp);
+    }
 
     return 0;
-
- error:
-    return -1;
 }
 
 
