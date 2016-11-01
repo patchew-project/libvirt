@@ -409,6 +409,30 @@ adminConnectGetLoggingOutputs(char **outputs, unsigned int flags)
 }
 
 static int
+adminConnectGetLoggingFilters(char **filters, unsigned int flags)
+{
+    char *tmp = NULL;
+    int ret = -1;
+
+    virCheckFlags(0, -1);
+
+    if ((ret = virLogGetNbFilters()) > 0) {
+        if (!(tmp = virLogGetFilters()))
+        return -1;
+    } else {
+        /* there were no filters defined, return an empty string */
+        if (!tmp) {
+            if (VIR_ALLOC(tmp) < 0)
+                return -1;
+            memset(tmp, 0, 1);
+        }
+    }
+
+    *filters = tmp;
+    return ret;
+}
+
+static int
 adminDispatchConnectGetLoggingOutputs(virNetServerPtr server ATTRIBUTE_UNUSED,
                                       virNetServerClientPtr client ATTRIBUTE_UNUSED,
                                       virNetMessagePtr msg ATTRIBUTE_UNUSED,
@@ -433,6 +457,34 @@ adminDispatchConnectGetLoggingOutputs(virNetServerPtr server ATTRIBUTE_UNUSED,
     if (rv < 0)
         virNetMessageSaveError(rerr);
     VIR_FREE(outputs);
+    return rv;
+}
+
+static int
+adminDispatchConnectGetLoggingFilters(virNetServerPtr server ATTRIBUTE_UNUSED,
+                                      virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                      virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                      virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
+                                      admin_connect_get_logging_filters_args *args,
+                                      admin_connect_get_logging_filters_ret *ret)
+{
+    char *filters = NULL;
+    int nfilters = 0;
+    int rv = -1;
+
+    if ((nfilters = adminConnectGetLoggingFilters(&filters, args->flags)) < 0)
+        goto cleanup;
+
+    if (VIR_STRDUP(ret->filters, filters) < 0)
+        goto cleanup;
+
+    ret->nfilters = nfilters;
+    rv = 0;
+
+ cleanup:
+    if (rv < 0)
+        virNetMessageSaveError(rerr);
+    VIR_FREE(filters);
     return rv;
 }
 #include "admin_dispatch.h"

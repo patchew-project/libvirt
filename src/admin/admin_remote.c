@@ -472,3 +472,46 @@ remoteAdminConnectGetLoggingOutputs(virAdmConnectPtr conn,
     virObjectUnlock(priv);
     return rv;
 }
+
+static int
+remoteAdminConnectGetLoggingFilters(virAdmConnectPtr conn,
+                                    char **filters,
+                                    unsigned int flags)
+{
+    int rv = -1;
+    char *tmp_filters = NULL;
+    remoteAdminPrivPtr priv = conn->privateData;
+    admin_connect_get_logging_filters_args args;
+    admin_connect_get_logging_filters_ret ret;
+
+    args.flags = flags;
+
+    memset(&ret, 0, sizeof(ret));
+    virObjectLock(priv);
+
+    if (call(conn,
+             0,
+             ADMIN_PROC_CONNECT_GET_LOGGING_FILTERS,
+             (xdrproc_t) xdr_admin_connect_get_logging_filters_args,
+             (char *) &args,
+             (xdrproc_t) xdr_admin_connect_get_logging_filters_ret,
+             (char *) &ret) == -1)
+        goto done;
+
+    if (filters) {
+        if (VIR_STRDUP(tmp_filters, ret.filters) < 0)
+            goto cleanup;
+
+        *filters = tmp_filters;
+        tmp_filters = NULL;
+    }
+
+    rv = ret.nfilters;
+
+ cleanup:
+    xdr_free((xdrproc_t) xdr_admin_connect_get_logging_filters_ret, (char *) &ret);
+
+ done:
+    virObjectUnlock(priv);
+    return rv;
+}
