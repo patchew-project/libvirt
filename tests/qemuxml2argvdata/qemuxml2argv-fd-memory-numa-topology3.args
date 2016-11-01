@@ -1,0 +1,39 @@
+LC_ALL=C \
+PATH=/bin \
+HOME=/home/test \
+USER=test \
+LOGNAME=test \
+QEMU_AUDIO_DRV=none \
+/usr/bin/qemu-system-x86_64 \
+-name instance-00000092 \
+-S \
+-M pc-i440fx-wily \
+-cpu host \
+-m 43008 \
+-mem-prealloc \
+-smp 32,sockets=1,cores=24,threads=1 \
+-object memory-backend-file,id=ram-node0,mem-path=/var/lib/libvirt/qemu,\
+share=yes,size=15032385536 \
+-numa node,nodeid=0,cpus=0-1,memdev=ram-node0 \
+-object memory-backend-file,id=ram-node1,mem-path=/var/lib/libvirt/qemu,\
+share=yes,size=15032385536 \
+-numa node,nodeid=1,cpus=2-3,memdev=ram-node1 \
+-object memory-backend-file,id=ram-node2,mem-path=/var/lib/libvirt/qemu,\
+share=no,size=15032385536 \
+-numa node,nodeid=2,cpus=4-5,memdev=ram-node2 \
+-uuid 126f2720-6f8e-45ab-a886-ec9277079a67 \
+-smbios 'type=1,manufacturer=OpenStack Foundation,product=OpenStack Nova,\
+version=13.0.0,serial=0640ddd5-36c9-e211-a2f6-001e6789a0f1,\
+uuid=126f2720-6f8e-45ab-a886-ec9277079a67,family=Virtual Machine' \
+-nographic \
+-nodefaults \
+-monitor unix:/tmp/lib/domain--1-instance-00000092/monitor.sock,server,nowait \
+-rtc base=utc,driftfix=slew \
+-no-kvm-pit-reinjection \
+-boot c \
+-usb \
+-drive file=/var/lib/nova/instances/126f2720-6f8e-45ab-a886-ec9277079a67/disk,\
+format=qcow2,if=none,id=drive-virtio-disk0,cache=none \
+-device virtio-blk-pci,bus=pci.0,addr=0x5,drive=drive-virtio-disk0,\
+id=virtio-disk0 \
+-device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x6
