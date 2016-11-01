@@ -434,6 +434,16 @@ adminConnectSetLoggingOutputs(virNetDaemonPtr dmn ATTRIBUTE_UNUSED,
 }
 
 static int
+adminConnectSetLoggingFilters(virNetDaemonPtr dmn ATTRIBUTE_UNUSED,
+                              const char *filters,
+                              unsigned int flags)
+{
+    virCheckFlags(0, -1);
+
+    return virLogSetFilters(filters);
+}
+
+static int
 adminDispatchConnectGetLoggingOutputs(virNetServerPtr server ATTRIBUTE_UNUSED,
                                       virNetServerClientPtr client ATTRIBUTE_UNUSED,
                                       virNetMessagePtr msg ATTRIBUTE_UNUSED,
