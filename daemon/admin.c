@@ -383,4 +383,56 @@ adminDispatchServerSetClientLimits(virNetServerPtr server ATTRIBUTE_UNUSED,
     virObjectUnref(srv);
     return rv;
 }
+
+static int
+adminConnectGetLoggingOutputs(char **outputs, unsigned int flags)
+{
+    char *tmp = NULL;
+    int ret = -1;
+
+    virCheckFlags(0, -1);
+
+    if ((ret = virLogGetNbOutputs()) > 0) {
+        if (!(tmp = virLogGetOutputs()))
+            return -1;
+    } else {
+        /* there were no outputs defined, return an empty string */
+        if (!tmp) {
+            if (VIR_ALLOC(tmp) < 0)
+                return -1;
+            memset(tmp, 0, 1);
+        }
+    }
+
+    *outputs = tmp;
+    return ret;
+}
+
+static int
+adminDispatchConnectGetLoggingOutputs(virNetServerPtr server ATTRIBUTE_UNUSED,
+                                      virNetServerClientPtr client ATTRIBUTE_UNUSED,
+                                      virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                      virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
+                                      admin_connect_get_logging_outputs_args *args,
+                                      admin_connect_get_logging_outputs_ret *ret)
+{
+    char *outputs = NULL;
+    int noutputs = 0;
+    int rv = -1;
+
+    if ((noutputs = adminConnectGetLoggingOutputs(&outputs, args->flags) < 0))
+        goto cleanup;
+
+    if (VIR_STRDUP(ret->outputs, outputs) < 0)
+        goto cleanup;
+
+    ret->noutputs = noutputs;
+    rv = 0;
+
+ cleanup:
+    if (rv < 0)
+        virNetMessageSaveError(rerr);
+    VIR_FREE(outputs);
+    return rv;
+}
 #include "admin_dispatch.h"
