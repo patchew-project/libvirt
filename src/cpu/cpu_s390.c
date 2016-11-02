@@ -59,7 +59,7 @@ s390Decode(virCPUDefPtr cpu,
     virCheckFlags(VIR_CONNECT_BASELINE_CPU_EXPAND_FEATURES, -1);
 
     if (cpu->model == NULL &&
-        VIR_STRDUP(cpu->model, "host") < 0)
+        VIR_STRDUP(cpu->model, "") < 0)
         return -1;
 
     return 0;
