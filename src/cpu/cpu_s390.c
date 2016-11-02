@@ -71,16 +71,43 @@ s390DataFree(virCPUDataPtr data)
     VIR_FREE(data);
 }
 
+static int
+s390GetModels(char ***models ATTRIBUTE_UNUSED)
+{
+    return 0;
+}
+
+static virCPUCompareResult
+virCPUs390Compare(virCPUDefPtr host ATTRIBUTE_UNUSED,
+                 virCPUDefPtr cpu ATTRIBUTE_UNUSED,
+                 bool failMessages ATTRIBUTE_UNUSED)
+{
+    return VIR_CPU_COMPARE_IDENTICAL;
+}
+
+static int
+virCPUs390Update(virCPUDefPtr guest ATTRIBUTE_UNUSED,
+                 const virCPUDef *host ATTRIBUTE_UNUSED)
+{
+    /*
+     * - host-passthrough not yet supported
+     * - host-model needs no changes
+     * - custom mode ... ???
+     */
+    return 0;
+}
+
 struct cpuArchDriver cpuDriverS390 = {
     .name = "s390",
     .arch = archs,
     .narch = ARRAY_CARDINALITY(archs),
-    .compare    = NULL,
+    .compare    = virCPUs390Compare,
     .decode     = s390Decode,
     .encode     = NULL,
     .free       = s390DataFree,
     .nodeData   = s390NodeData,
     .guestData  = NULL,
     .baseline   = NULL,
-    .update     = NULL,
+    .update     = virCPUs390Update,
+    .getModels  = s390GetModels,
 };
