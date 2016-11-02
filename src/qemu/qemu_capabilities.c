@@ -3516,25 +3516,21 @@ virQEMUCapsInitCached(virCapsPtr caps,
         VIR_WARN("Failed to load cached caps from '%s' for '%s': %s",
                  capsfile, qemuCaps->binary, virGetLastErrorMessage());
         virResetLastError();
-        ret = 0;
-        virQEMUCapsReset(qemuCaps);
-        goto cleanup;
+        goto discard;
     }
 
+    if (!virQEMUCapsIsValid(qemuCaps, qemuctime))
+        goto discard;
+
     /* Discard cache if QEMU binary or libvirtd changed */
-    if (qemuctime != qemuCaps->ctime ||
-        selfctime != virGetSelfLastChanged() ||
+    if (selfctime != virGetSelfLastChanged() ||
         selfvers != LIBVIR_VERSION_NUMBER) {
-        VIR_DEBUG("Outdated cached capabilities '%s' for '%s' "
-                  "(%lld vs %lld, %lld vs %lld, %lu vs %lu)",
+        VIR_DEBUG("Dropping cached capabilities '%s' for '%s': "
+                  "libvirt changed (%lld vs %lld, %lu vs %lu)",
                   capsfile, qemuCaps->binary,
-                  (long long)qemuCaps->ctime, (long long)qemuctime,
                   (long long)selfctime, (long long)virGetSelfLastChanged(),
                   selfvers, (unsigned long)LIBVIR_VERSION_NUMBER);
-        ignore_value(unlink(capsfile));
-        virQEMUCapsReset(qemuCaps);
-        ret = 0;
-        goto cleanup;
+        goto discard;
     }
 
     VIR_DEBUG("Loaded '%s' for '%s' ctime %lld usedQMP=%d",
@@ -3548,6 +3544,12 @@ virQEMUCapsInitCached(virCapsPtr caps,
     VIR_FREE(capsfile);
     VIR_FREE(capsdir);
     return ret;
+
+ discard:
+    ignore_value(unlink(capsfile));
+    virQEMUCapsReset(qemuCaps);
+    ret = 0;
+    goto cleanup;
 }
 
 
@@ -4111,17 +4113,36 @@ virQEMUCapsNewForBinary(virCapsPtr caps,
 }
 
 
-bool virQEMUCapsIsValid(virQEMUCapsPtr qemuCaps)
+bool
+virQEMUCapsIsValid(virQEMUCapsPtr qemuCaps,
+                   time_t ctime)
 {
-    struct stat sb;
-
     if (!qemuCaps->binary)
         return true;
 
-    if (stat(qemuCaps->binary, &sb) < 0)
-        return false;
+    if (!ctime) {
+        struct stat sb;
 
-    return sb.st_ctime == qemuCaps->ctime;
+        if (stat(qemuCaps->binary, &sb) < 0) {
+            char ebuf[1024];
+            VIR_DEBUG("Dropping cached capabilities for '%s': "
+                      "failed to stat QEMU binary: %s",
+                      qemuCaps->binary,
+                      virStrerror(errno, ebuf, sizeof(ebuf)));
+            return false;
+        }
+        ctime = sb.st_ctime;
+    }
+
+    if (ctime != qemuCaps->ctime) {
+        VIR_DEBUG("Dropping cached capabilities for '%s': "
+                  "binary is newer than cache (%lld vs %lld)",
+                  qemuCaps->binary,
+                  (long long) ctime, (long long) qemuCaps->ctime);
+        return false;
+    }
+
+    return true;
 }
 
 
@@ -4214,7 +4235,7 @@ virQEMUCapsCacheLookup(virCapsPtr caps,
     virMutexLock(&cache->lock);
     ret = virHashLookup(cache->binaries, binary);
     if (ret &&
-        !virQEMUCapsIsValid(ret)) {
+        !virQEMUCapsIsValid(ret, 0)) {
         VIR_DEBUG("Cached capabilities %p no longer valid for %s",
                   ret, binary);
         virHashRemoveEntry(cache->binaries, binary);
