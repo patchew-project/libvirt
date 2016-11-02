@@ -383,6 +383,9 @@ typedef enum {
     QEMU_CAPS_DRIVE_IOTUNE_MAX_LENGTH, /* -drive bps_max_length = and friends */
     QEMU_CAPS_QUERY_QMP_SCHEMA, /* query-qmp-schema command */
 
+    /* 240 */
+    QEMU_CAPS_GLUSTER_DEBUG_LEVEL, /* -drive gluster.debug_level={0..9} */
+
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
 
