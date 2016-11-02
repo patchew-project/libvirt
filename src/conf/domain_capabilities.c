@@ -176,9 +176,11 @@ virDomainCapsCPUModelsCopy(virDomainCapsCPUModelsPtr old)
 
 virDomainCapsCPUModelsPtr
 virDomainCapsCPUModelsFilter(virDomainCapsCPUModelsPtr old,
-                             const char **models)
+                             const char **models,
+                             bool resetUsable)
 {
     virDomainCapsCPUModelsPtr cpuModels;
+    virDomainCapsCPUUsable usable;
     size_t i;
 
     if (!(cpuModels = virDomainCapsCPUModelsNew(0)))
@@ -188,9 +190,14 @@ virDomainCapsCPUModelsFilter(virDomainCapsCPUModelsPtr old,
         if (models && !virStringArrayHasString(models, old->models[i].name))
             continue;
 
+        if (resetUsable)
+            usable = VIR_DOMCAPS_CPU_USABLE_UNKNOWN;
+        else
+            usable = old->models[i].usable;
+
         if (virDomainCapsCPUModelsAdd(cpuModels,
                                       old->models[i].name, -1,
-                                      old->models[i].usable) < 0)
+                                      usable) < 0)
             goto error;
     }
 

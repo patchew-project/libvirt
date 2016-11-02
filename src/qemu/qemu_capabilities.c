@@ -4507,10 +4507,18 @@ virQEMUCapsFillDomainCPUCaps(virCapsPtr caps,
                                       VIR_CPU_MODE_CUSTOM)) {
         virDomainCapsCPUModelsPtr filtered = NULL;
         char **models = NULL;
+        bool resetUsable = false;
+
+        if ((domCaps->virttype == VIR_DOMAIN_VIRT_KVM &&
+             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) ||
+            (domCaps->virttype == VIR_DOMAIN_VIRT_QEMU &&
+             virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)))
+            resetUsable = true;
 
         if (cpuGetModels(domCaps->arch, &models) >= 0) {
             filtered = virDomainCapsCPUModelsFilter(qemuCaps->cpuDefinitions,
-                                                    (const char **) models);
+                                                    (const char **) models,
+                                                    resetUsable);
             virStringFreeList(models);
         }
         domCaps->cpu.custom = filtered;
