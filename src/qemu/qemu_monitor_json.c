@@ -4925,13 +4925,8 @@ qemuMonitorJSONGetCPUDefinitions(qemuMonitorPtr mon,
     if (qemuMonitorJSONCheckError(cmd, reply) < 0)
         goto cleanup;
 
-    if (!(data = virJSONValueObjectGetArray(reply, "return"))) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("query-cpu-definitions reply was missing return data"));
-        goto cleanup;
-    }
-
-    if ((n = virJSONValueArraySize(data)) < 0) {
+    if (!(data = virJSONValueObjectGetArray(reply, "return")) ||
+        (n = virJSONValueArraySize(data)) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("query-cpu-definitions reply data was not an array"));
         goto cleanup;
@@ -4958,6 +4953,24 @@ qemuMonitorJSONGetCPUDefinitions(qemuMonitorPtr mon,
 
         if (VIR_STRDUP(cpu->name, tmp) < 0)
             goto cleanup;
+
+        if (virJSONValueObjectHasKey(child, "unavailable-features")) {
+            virJSONValuePtr blockers;
+
+            blockers = virJSONValueObjectGetArray(child,
+                                                  "unavailable-features");
+            if (!blockers) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("unavailable-features in query-cpu-definitions "
+                                 "reply data was not an array"));
+                goto cleanup;
+            }
+
+            if (virJSONValueArraySize(blockers) > 0)
+                cpu->usable = VIR_TRISTATE_BOOL_NO;
+            else
+                cpu->usable = VIR_TRISTATE_BOOL_YES;
+        }
     }
 
     ret = n;

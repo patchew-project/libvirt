@@ -2306,7 +2306,8 @@ const char *virQEMUCapsGetPackage(virQEMUCapsPtr qemuCaps)
 int
 virQEMUCapsAddCPUDefinitions(virQEMUCapsPtr qemuCaps,
                              const char **name,
-                             size_t count)
+                             size_t count,
+                             virDomainCapsCPUUsable usable)
 {
     size_t i;
 
@@ -2316,7 +2317,7 @@ virQEMUCapsAddCPUDefinitions(virQEMUCapsPtr qemuCaps,
 
     for (i = 0; i < count; i++) {
         if (virDomainCapsCPUModelsAdd(qemuCaps->cpuDefinitions, name[i], -1,
-                                      VIR_DOMCAPS_CPU_USABLE_UNKNOWN) < 0)
+                                      usable) < 0)
             return -1;
     }
 
@@ -2327,10 +2328,12 @@ virQEMUCapsAddCPUDefinitions(virQEMUCapsPtr qemuCaps,
 int
 virQEMUCapsGetCPUDefinitions(virQEMUCapsPtr qemuCaps,
                              char ***names,
-                             size_t *count)
+                             size_t *count,
+                             bool usable)
 {
     size_t i;
     char **models = NULL;
+    size_t n = 0;
 
     *count = 0;
     if (names)
@@ -2344,17 +2347,21 @@ virQEMUCapsGetCPUDefinitions(virQEMUCapsPtr qemuCaps,
 
     for (i = 0; i < qemuCaps->cpuDefinitions->nmodels; i++) {
         virDomainCapsCPUModelPtr cpu = qemuCaps->cpuDefinitions->models + i;
-        if (models && VIR_STRDUP(models[i], cpu->name) < 0)
-            goto error;
+        if (!usable ||
+            cpu->usable == VIR_DOMCAPS_CPU_USABLE_YES) {
+            if (models && VIR_STRDUP(models[n], cpu->name) < 0)
+                goto error;
+            n++;
+        }
     }
 
     if (names)
         *names = models;
-    *count = qemuCaps->cpuDefinitions->nmodels;
+    *count = n;
     return 0;
 
  error:
-    virStringFreeListCount(models, i);
+    virStringFreeListCount(models, n);
     return -1;
 }
 
@@ -2713,9 +2720,15 @@ virQEMUCapsProbeQMPCPUDefinitions(virQEMUCapsPtr qemuCaps,
         goto cleanup;
 
     for (i = 0; i < ncpus; i++) {
+        virDomainCapsCPUUsable usable = VIR_DOMCAPS_CPU_USABLE_UNKNOWN;
+
+        if (cpus[i]->usable == VIR_TRISTATE_BOOL_YES)
+            usable = VIR_DOMCAPS_CPU_USABLE_YES;
+        else if (cpus[i]->usable == VIR_TRISTATE_BOOL_NO)
+            usable = VIR_DOMCAPS_CPU_USABLE_NO;
+
         if (virDomainCapsCPUModelsAddSteal(qemuCaps->cpuDefinitions,
-                                           &cpus[i]->name,
-                                           VIR_DOMCAPS_CPU_USABLE_UNKNOWN) < 0)
+                                           &cpus[i]->name, usable) < 0)
             goto cleanup;
     }
 
@@ -3128,6 +3141,17 @@ virQEMUCapsLoadCache(virCapsPtr caps,
             goto cleanup;
 
         for (i = 0; i < n; i++) {
+            int usable = VIR_DOMCAPS_CPU_USABLE_UNKNOWN;
+
+            if ((str = virXMLPropString(nodes[i], "usable")) &&
+                (usable = virDomainCapsCPUUsableTypeFromString(str)) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("unknown value '%s' in attribute 'usable'"),
+                               str);
+                goto cleanup;
+            }
+            VIR_FREE(str);
+
             if (!(str = virXMLPropString(nodes[i], "name"))) {
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                                _("missing cpu name in QEMU capabilities cache"));
@@ -3135,8 +3159,7 @@ virQEMUCapsLoadCache(virCapsPtr caps,
             }
 
             if (virDomainCapsCPUModelsAddSteal(qemuCaps->cpuDefinitions,
-                                               &str,
-                                               VIR_DOMCAPS_CPU_USABLE_UNKNOWN) < 0)
+                                               &str, usable) < 0)
                 goto cleanup;
         }
     }
@@ -3301,7 +3324,13 @@ virQEMUCapsFormatCache(virQEMUCapsPtr qemuCaps,
     if (qemuCaps->cpuDefinitions) {
         for (i = 0; i < qemuCaps->cpuDefinitions->nmodels; i++) {
             virDomainCapsCPUModelPtr cpu = qemuCaps->cpuDefinitions->models + i;
-            virBufferEscapeString(&buf, "<cpu name='%s'/>\n", cpu->name);
+            virBufferEscapeString(&buf, "<cpu name='%s'", cpu->name);
+            if (cpu->usable) {
+                const char *usable;
+                usable = virDomainCapsCPUUsableTypeToString(cpu->usable);
+                virBufferAsprintf(&buf, " usable='%s'", usable);
+            }
+            virBufferAddLit(&buf, "/>\n");
         }
     }
 

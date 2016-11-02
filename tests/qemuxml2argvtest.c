@@ -303,20 +303,24 @@ testAddCPUModels(virQEMUCapsPtr caps, bool skipLegacy)
 
     if (ARCH_IS_X86(arch)) {
         if (virQEMUCapsAddCPUDefinitions(caps, x86Models,
-                                         ARRAY_CARDINALITY(x86Models)) < 0)
+                                         ARRAY_CARDINALITY(x86Models),
+                                         VIR_DOMCAPS_CPU_USABLE_UNKNOWN) < 0)
             return -1;
 
         if (!skipLegacy &&
             virQEMUCapsAddCPUDefinitions(caps, x86LegacyModels,
-                                         ARRAY_CARDINALITY(x86LegacyModels)) < 0)
+                                         ARRAY_CARDINALITY(x86LegacyModels),
+                                         VIR_DOMCAPS_CPU_USABLE_UNKNOWN) < 0)
             return -1;
     } else if (ARCH_IS_ARM(arch)) {
         if (virQEMUCapsAddCPUDefinitions(caps, armModels,
-                                         ARRAY_CARDINALITY(armModels)) < 0)
+                                         ARRAY_CARDINALITY(armModels),
+                                         VIR_DOMCAPS_CPU_USABLE_UNKNOWN) < 0)
             return -1;
     } else if (ARCH_IS_PPC64(arch)) {
         if (virQEMUCapsAddCPUDefinitions(caps, ppc64Models,
-                                         ARRAY_CARDINALITY(ppc64Models)) < 0)
+                                         ARRAY_CARDINALITY(ppc64Models),
+                                         VIR_DOMCAPS_CPU_USABLE_UNKNOWN) < 0)
             return -1;
     }
 

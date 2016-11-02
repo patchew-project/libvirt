@@ -428,10 +428,12 @@ const char *virQEMUCapsGetPackage(virQEMUCapsPtr qemuCaps);
 unsigned int virQEMUCapsGetKVMVersion(virQEMUCapsPtr qemuCaps);
 int virQEMUCapsAddCPUDefinitions(virQEMUCapsPtr qemuCaps,
                                  const char **name,
-                                 size_t count);
+                                 size_t count,
+                                 virDomainCapsCPUUsable usable);
 int virQEMUCapsGetCPUDefinitions(virQEMUCapsPtr qemuCaps,
                                  char ***names,
-                                 size_t *count);
+                                 size_t *count,
+                                 bool usable);
 virCPUDefPtr virQEMUCapsGetHostModel(virQEMUCapsPtr qemuCaps);
 bool virQEMUCapsIsCPUModeSupported(virQEMUCapsPtr qemuCaps,
                                    virCapsPtr caps,
