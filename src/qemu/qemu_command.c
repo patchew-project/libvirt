@@ -6537,6 +6537,9 @@ qemuBuildCpuModelArgStr(virQEMUDriverPtr driver,
             virBufferAddLit(buf, "host");
             if (cpu->model)
                 virBufferAsprintf(buf, ",compat=%s", cpu->model);
+        } else if (ARCH_IS_S390(def->os.arch)) {
+            virCPUDefPtr guestCpu = virQEMUCapsGetHostModel(qemuCaps);
+            virBufferAdd(buf, guestCpu->model, -1);
         } else {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("unexpected host-model CPU for %s architecture"),
