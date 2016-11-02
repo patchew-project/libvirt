@@ -159,7 +159,7 @@
   <flag name='smm'/>
   <flag name='virtio-pci-disable-legacy'/>
   <flag name='drive-iotune-max-length'/>
-  <version>2005094</version>
+  <version>2006000</version>
   <kvmVersion>0</kvmVersion>
   <package></package>
   <arch>aarch64</arch>
