@@ -920,6 +920,25 @@ int qemuMonitorGetCPUDefinitions(qemuMonitorPtr mon,
                                  qemuMonitorCPUDefInfoPtr **cpus);
 void qemuMonitorCPUDefInfoFree(qemuMonitorCPUDefInfoPtr cpu);
 
+typedef struct _qemuMonitorCPUModelInfo qemuMonitorCPUModelInfo;
+typedef qemuMonitorCPUModelInfo *qemuMonitorCPUModelInfoPtr;
+
+struct _qemuMonitorCPUModelInfo {
+    char *name;
+    size_t nprops;
+    struct {
+        char *name;
+        bool supported;
+    } *props;
+};
+
+int qemuMonitorGetCPUModelExpansion(qemuMonitorPtr mon,
+                                    const char *type,
+                                    const char *model_name,
+                                    qemuMonitorCPUModelInfoPtr *model_info);
+
+void qemuMonitorCPUModelInfoFree(qemuMonitorCPUModelInfoPtr model_info);
+
 int qemuMonitorGetCommands(qemuMonitorPtr mon,
                            char ***commands);
 int qemuMonitorGetEvents(qemuMonitorPtr mon,

@@ -3615,6 +3615,34 @@ qemuMonitorCPUDefInfoFree(qemuMonitorCPUDefInfoPtr cpu)
 
 
 int
+qemuMonitorGetCPUModelExpansion(qemuMonitorPtr mon,
+                                const char *type,
+                                const char *model_name,
+                                qemuMonitorCPUModelInfoPtr *model_info)
+{
+    VIR_DEBUG("model_info=%p", model_info);
+
+    QEMU_CHECK_MONITOR_JSON(mon);
+
+    return qemuMonitorJSONGetCPUModelExpansion(mon, type, model_name, model_info);
+}
+
+
+void
+qemuMonitorCPUModelInfoFree(qemuMonitorCPUModelInfoPtr model_info)
+{
+    size_t i;
+
+    if (!model_info)
+        return;
+    VIR_FREE(model_info->name);
+    for (i = 0; i < model_info->nprops; i++)
+        VIR_FREE(model_info->props[i].name);
+    VIR_FREE(model_info);
+}
+
+
+int
 qemuMonitorGetCommands(qemuMonitorPtr mon,
                        char ***commands)
 {
