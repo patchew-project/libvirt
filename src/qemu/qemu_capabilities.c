@@ -392,6 +392,8 @@ struct _virQEMUCaps {
     size_t ngicCapabilities;
     virGICCapability *gicCapabilities;
 
+    virCPUDefPtr hostCPUModelFromQemu;
+
     /* Anything below is not stored in the cache since the values are
      * re-computed from the other fields or external data sources every
      * time we probe QEMU or load the results from the cache.
@@ -2123,6 +2125,10 @@ virQEMUCapsPtr virQEMUCapsNewCopy(virQEMUCapsPtr qemuCaps)
         !(ret->hostCPUModel = virCPUDefCopy(qemuCaps->hostCPUModel)))
         goto error;
 
+    if (qemuCaps->hostCPUModelFromQemu &&
+        !(ret->hostCPUModelFromQemu = virCPUDefCopy(qemuCaps->hostCPUModelFromQemu)))
+        goto error;
+
     if (VIR_ALLOC_N(ret->machineTypes, qemuCaps->nmachineTypes) < 0)
         goto error;
     ret->nmachineTypes = qemuCaps->nmachineTypes;
@@ -2733,6 +2739,51 @@ virQEMUCapsProbeQMPCPUDefinitions(virQEMUCapsPtr qemuCaps,
     return ret;
 }
 
+static int
+virQEMUCapsProbeQMPCPUModelExpansion(virQEMUCapsPtr qemuCaps,
+                                qemuMonitorPtr mon)
+{
+    qemuMonitorCPUModelInfoPtr model_info;
+    virCPUDefPtr hostcpumodel;
+    int nfeatures;
+    int ret = -1;
+    size_t i;
+
+    if (qemuMonitorGetCPUModelExpansion(mon, "static", "host", &model_info) < 0)
+        goto cleanup;
+
+    if (model_info == NULL) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    if (VIR_ALLOC(hostcpumodel) < 0)
+        goto cleanup;
+
+    if (VIR_STRDUP(hostcpumodel->model, model_info->name) < 0)
+        goto cleanup;
+
+    nfeatures = hostcpumodel->nfeatures = model_info->nprops;
+
+    if (VIR_ALLOC_N(hostcpumodel->features, nfeatures) < 0)
+        goto cleanup;
+
+    for (i = 0; i < nfeatures; i++) {
+        if (VIR_STRDUP(hostcpumodel->features[i].name, model_info->props[i].name) < 0)
+            goto cleanup;
+
+        hostcpumodel->features[i].policy = -1;
+    }
+
+    hostcpumodel->arch = qemuCaps->arch;
+    qemuCaps->hostCPUModelFromQemu = virCPUDefCopy(hostcpumodel);
+    ret = 0;
+
+ cleanup:
+    virCPUDefFree(hostcpumodel);
+    return ret;
+}
+
 struct tpmTypeToCaps {
     int type;
     virQEMUCapsFlags caps;
@@ -2963,6 +3014,7 @@ virQEMUCapsInitHostCPUModel(virQEMUCapsPtr qemuCaps,
                             virCapsPtr caps)
 {
     virCPUDefPtr cpu = NULL;
+    virCPUDefPtr src = NULL;
 
     if (!caps)
         return;
@@ -2979,7 +3031,10 @@ virQEMUCapsInitHostCPUModel(virQEMUCapsPtr qemuCaps,
         cpu->mode = VIR_CPU_MODE_CUSTOM;
         cpu->match = VIR_CPU_MATCH_EXACT;
 
-        if (virCPUDefCopyModelFilter(cpu, caps->host.cpu, true,
+        if (!(src = qemuCaps->hostCPUModelFromQemu))
+            src = caps->host.cpu;
+
+        if (virCPUDefCopyModelFilter(cpu, src, true,
                                      virQEMUCapsCPUFilterFeatures, NULL) < 0)
             goto error;
     }
@@ -3122,6 +3177,21 @@ virQEMUCapsLoadCache(virCapsPtr caps,
         goto cleanup;
     }
     VIR_FREE(str);
+
+    xmlNodePtr node;
+    if ((node = virXPathNode("./host/cpu[1]", ctxt))) {
+        xmlNodePtr oldNode = ctxt->node;
+        ctxt->node = node;
+        if (!(qemuCaps->hostCPUModelFromQemu = virCPUDefParseXML(node,
+                                                         ctxt,
+                                                         VIR_CPU_TYPE_HOST))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("missing host cpu data in QEMU capabilities cache"));
+            goto cleanup;
+        }
+        ctxt->node = oldNode;
+        node = NULL;
+    }
 
     if ((n = virXPathNodeSet("./cpu", ctxt, &nodes)) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -3302,6 +3372,20 @@ virQEMUCapsFormatCache(virQEMUCapsPtr qemuCaps,
 
     virBufferAsprintf(&buf, "<arch>%s</arch>\n",
                       virArchToString(qemuCaps->arch));
+
+    if (qemuCaps->hostCPUModelFromQemu) {
+        virBufferAddLit(&buf, "<host>\n");
+        virBufferAdjustIndent(&buf, 2);
+        virBufferAddLit(&buf, "<cpu>\n");
+        virBufferAdjustIndent(&buf, 2);
+        virBufferEscapeString(&buf, "<arch>%s</arch>\n",
+                              virArchToString(qemuCaps->hostCPUModelFromQemu->arch));
+        virCPUDefFormatBuf(&buf, qemuCaps->hostCPUModelFromQemu, true);
+        virBufferAdjustIndent(&buf, -2);
+        virBufferAddLit(&buf, "</cpu>\n");
+        virBufferAdjustIndent(&buf, -2);
+        virBufferAddLit(&buf, "</host>\n");
+    }
 
     if (qemuCaps->cpuDefinitions) {
         for (i = 0; i < qemuCaps->cpuDefinitions->nmodels; i++) {
@@ -3794,6 +3878,8 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     if (virQEMUCapsProbeQMPMachineTypes(qemuCaps, mon) < 0)
         goto cleanup;
     if (virQEMUCapsProbeQMPCPUDefinitions(qemuCaps, mon) < 0)
+        goto cleanup;
+    if (virQEMUCapsProbeQMPCPUModelExpansion(qemuCaps, mon) < 0)
         goto cleanup;
     if (virQEMUCapsProbeQMPKVMState(qemuCaps, mon) < 0)
         goto cleanup;
