@@ -3,10 +3,10 @@
   <selfctime>0</selfctime>
   <selfvers>0</selfvers>
   <usedQMP/>
+  <flag name='kvm'/>
   <flag name='mem-path'/>
   <flag name='drive-serial'/>
   <flag name='chardev'/>
-  <flag name='enable-kvm'/>
   <flag name='monitor-json'/>
   <flag name='sdl'/>
   <flag name='netdev'/>
@@ -196,7 +196,7 @@
   <kvmVersion>0</kvmVersion>
   <package> (v2.7.0-1292-g45b567d-dirty)</package>
   <arch>x86_64</arch>
-  <cpu name='host' usable='no'/>
+  <cpu name='host' usable='yes'/>
   <cpu name='qemu64' usable='yes'/>
   <cpu name='qemu32' usable='yes'/>
   <cpu name='phenom' usable='no'/>
@@ -208,10 +208,10 @@
   <cpu name='kvm32' usable='yes'/>
   <cpu name='coreduo' usable='yes'/>
   <cpu name='core2duo' usable='yes'/>
-  <cpu name='athlon' usable='yes'/>
+  <cpu name='athlon' usable='no'/>
   <cpu name='Westmere' usable='yes'/>
-  <cpu name='Skylake-Client' usable='no'/>
-  <cpu name='SandyBridge' usable='no'/>
+  <cpu name='Skylake-Client' usable='yes'/>
+  <cpu name='SandyBridge' usable='yes'/>
   <cpu name='Penryn' usable='yes'/>
   <cpu name='Opteron_G5' usable='no'/>
   <cpu name='Opteron_G4' usable='no'/>
@@ -219,12 +219,12 @@
   <cpu name='Opteron_G2' usable='yes'/>
   <cpu name='Opteron_G1' usable='yes'/>
   <cpu name='Nehalem' usable='yes'/>
-  <cpu name='IvyBridge' usable='no'/>
-  <cpu name='Haswell' usable='no'/>
-  <cpu name='Haswell-noTSX' usable='no'/>
+  <cpu name='IvyBridge' usable='yes'/>
+  <cpu name='Haswell' usable='yes'/>
+  <cpu name='Haswell-noTSX' usable='yes'/>
   <cpu name='Conroe' usable='yes'/>
-  <cpu name='Broadwell' usable='no'/>
-  <cpu name='Broadwell-noTSX' usable='no'/>
+  <cpu name='Broadwell' usable='yes'/>
+  <cpu name='Broadwell-noTSX' usable='yes'/>
   <cpu name='486' usable='yes'/>
   <machine name='pc-i440fx-2.8' alias='pc' hotplugCpus='yes' maxCpus='255'/>
   <machine name='pc-0.12' hotplugCpus='yes' maxCpus='255'/>

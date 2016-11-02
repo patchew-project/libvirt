@@ -51,8 +51,17 @@ main(int argc, char **argv)
 
     VIRT_TEST_PRELOAD(abs_builddir "/.libs/qemucapsprobemock.so");
 
-    if (argc != 2) {
-        fprintf(stderr, "%s QEMU_binary\n", argv[0]);
+    if (argc != 3) {
+        fprintf(stderr, "%s kvm|tcg QEMU_binary\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    if (STREQ(argv[1], "tcg")) {
+        flags |= VIR_QEMU_CAPS_NEW_FORCE_TCG;
+    } else if (STREQ(argv[1], "kvm")) {
+        flags |= VIR_QEMU_CAPS_NEW_FORCE_KVM;
+    } else {
+        fprintf(stderr, "Invalid accelerator (kvm|tcg): '%s'\n", argv[1]);
         return EXIT_FAILURE;
     }
 
@@ -71,7 +80,7 @@ main(int argc, char **argv)
     if (virThreadCreate(&thread, false, eventLoop, NULL) < 0)
         return EXIT_FAILURE;
 
-    if (!(caps = virQEMUCapsNewForBinaryInternal(NULL, argv[1], "/tmp", NULL,
+    if (!(caps = virQEMUCapsNewForBinaryInternal(NULL, argv[2], "/tmp", NULL,
                                                  -1, -1, flags)))
         return EXIT_FAILURE;
 

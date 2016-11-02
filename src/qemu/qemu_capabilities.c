@@ -3869,6 +3869,7 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
     pid_t pid = 0;
     virDomainObjPtr vm = NULL;
     virDomainXMLOptionPtr xmlopt = NULL;
+    const char *machine;
 
     /* the ".sock" sufix is important to avoid a possible clash with a qemu
      * domain called "capabilities"
@@ -3896,6 +3897,13 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
 
     VIR_DEBUG("Try to get caps via QMP qemuCaps=%p", qemuCaps);
 
+    if (flags & VIR_QEMU_CAPS_NEW_FORCE_KVM)
+        machine = "none,accel=kvm";
+    else if (flags & VIR_QEMU_CAPS_NEW_FORCE_TCG)
+        machine = "none,accel=tcg";
+    else
+        machine = "none,accel=kvm:tcg";
+
     /*
      * We explicitly need to use -daemonize here, rather than
      * virCommandDaemonize, because we need to synchronize
@@ -3908,7 +3916,7 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
                                "-no-user-config",
                                "-nodefaults",
                                "-nographic",
-                               "-M", "none",
+                               "-machine", machine,
                                "-qmp", monarg,
                                "-pidfile", pidfile,
                                "-daemonize",

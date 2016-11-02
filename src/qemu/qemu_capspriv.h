@@ -41,6 +41,8 @@ virQEMUCapsPtr virQEMUCapsNewCopy(virQEMUCapsPtr qemuCaps);
 
 typedef enum {
     VIR_QEMU_CAPS_NEW_FORCE_QMP = 1 << 0,
+    VIR_QEMU_CAPS_NEW_FORCE_TCG = 1 << 1,
+    VIR_QEMU_CAPS_NEW_FORCE_KVM = 1 << 2,
 } virQEMUCapsNewFlags;
 
 virQEMUCapsPtr

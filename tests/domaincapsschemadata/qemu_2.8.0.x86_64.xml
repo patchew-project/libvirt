@@ -35,10 +35,10 @@
       <model usable='yes'>kvm32</model>
       <model usable='yes'>coreduo</model>
       <model usable='yes'>core2duo</model>
-      <model usable='yes'>athlon</model>
+      <model usable='no'>athlon</model>
       <model usable='yes'>Westmere</model>
-      <model usable='no'>Skylake-Client</model>
-      <model usable='no'>SandyBridge</model>
+      <model usable='yes'>Skylake-Client</model>
+      <model usable='yes'>SandyBridge</model>
       <model usable='yes'>Penryn</model>
       <model usable='no'>Opteron_G5</model>
       <model usable='no'>Opteron_G4</model>
@@ -46,12 +46,12 @@
       <model usable='yes'>Opteron_G2</model>
       <model usable='yes'>Opteron_G1</model>
       <model usable='yes'>Nehalem</model>
-      <model usable='no'>IvyBridge</model>
-      <model usable='no'>Haswell</model>
-      <model usable='no'>Haswell-noTSX</model>
+      <model usable='yes'>IvyBridge</model>
+      <model usable='yes'>Haswell</model>
+      <model usable='yes'>Haswell-noTSX</model>
       <model usable='yes'>Conroe</model>
-      <model usable='no'>Broadwell</model>
-      <model usable='no'>Broadwell-noTSX</model>
+      <model usable='yes'>Broadwell</model>
+      <model usable='yes'>Broadwell-noTSX</model>
       <model usable='yes'>486</model>
     </mode>
   </cpu>

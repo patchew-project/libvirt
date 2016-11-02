@@ -466,7 +466,7 @@
 
 {
   "return": {
-    "fd": 14,
+    "fd": 16,
     "fdset-id": 0
   },
   "id": "libvirt-5"
@@ -3799,7 +3799,6 @@
     {
       "name": "host",
       "unavailable-features": [
-        "kvm"
       ],
       "static": false
     },
@@ -3818,7 +3817,11 @@
     {
       "name": "phenom",
       "unavailable-features": [
+        "mmxext",
         "fxsr-opt",
+        "3dnowext",
+        "3dnow",
+        "sse4a",
         "npt"
       ],
       "static": false
@@ -3874,6 +3877,9 @@
     {
       "name": "athlon",
       "unavailable-features": [
+        "mmxext",
+        "3dnowext",
+        "3dnow"
       ],
       "static": false
     },
@@ -3886,29 +3892,12 @@
     {
       "name": "Skylake-Client",
       "unavailable-features": [
-        "fma",
-        "pcid",
-        "x2apic",
-        "tsc-deadline",
-        "avx",
-        "f16c",
-        "rdrand",
-        "hle",
-        "avx2",
-        "invpcid",
-        "rtm",
-        "rdseed",
-        "3dnowprefetch",
-        "xsavec"
       ],
       "static": false
     },
     {
       "name": "SandyBridge",
       "unavailable-features": [
-        "x2apic",
-        "tsc-deadline",
-        "avx"
       ],
       "static": false
     },
@@ -3921,11 +3910,8 @@
     {
       "name": "Opteron_G5",
       "unavailable-features": [
-        "fma",
-        "avx",
-        "f16c",
+        "sse4a",
         "misalignsse",
-        "3dnowprefetch",
         "xop",
         "fma4",
         "tbm"
@@ -3935,9 +3921,8 @@
     {
       "name": "Opteron_G4",
       "unavailable-features": [
-        "avx",
+        "sse4a",
         "misalignsse",
-        "3dnowprefetch",
         "xop",
         "fma4"
       ],
@@ -3946,6 +3931,7 @@
     {
       "name": "Opteron_G3",
       "unavailable-features": [
+        "sse4a",
         "misalignsse"
       ],
       "static": false
@@ -3971,43 +3957,18 @@
     {
       "name": "IvyBridge",
       "unavailable-features": [
-        "x2apic",
-        "tsc-deadline",
-        "avx",
-        "f16c",
-        "rdrand"
       ],
       "static": false
     },
     {
       "name": "Haswell",
       "unavailable-features": [
-        "fma",
-        "pcid",
-        "x2apic",
-        "tsc-deadline",
-        "avx",
-        "f16c",
-        "rdrand",
-        "hle",
-        "avx2",
-        "invpcid",
-        "rtm"
       ],
       "static": false
     },
     {
       "name": "Haswell-noTSX",
       "unavailable-features": [
-        "fma",
-        "pcid",
-        "x2apic",
-        "tsc-deadline",
-        "avx",
-        "f16c",
-        "rdrand",
-        "avx2",
-        "invpcid"
       ],
       "static": false
     },
@@ -4020,36 +3981,12 @@
     {
       "name": "Broadwell",
       "unavailable-features": [
-        "fma",
-        "pcid",
-        "x2apic",
-        "tsc-deadline",
-        "avx",
-        "f16c",
-        "rdrand",
-        "hle",
-        "avx2",
-        "invpcid",
-        "rtm",
-        "rdseed",
-        "3dnowprefetch"
       ],
       "static": false
     },
     {
       "name": "Broadwell-noTSX",
       "unavailable-features": [
-        "fma",
-        "pcid",
-        "x2apic",
-        "tsc-deadline",
-        "avx",
-        "f16c",
-        "rdrand",
-        "avx2",
-        "invpcid",
-        "rdseed",
-        "3dnowprefetch"
       ],
       "static": false
     },
@@ -4065,7 +4002,7 @@
 
 {
   "return": {
-    "enabled": false,
+    "enabled": true,
     "present": true
   },
   "id": "libvirt-42"
