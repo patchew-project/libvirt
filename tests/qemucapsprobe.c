@@ -47,6 +47,7 @@ main(int argc, char **argv)
 {
     virThread thread;
     virQEMUCapsPtr caps;
+    unsigned int flags = VIR_QEMU_CAPS_NEW_FORCE_QMP;
 
     VIRT_TEST_PRELOAD(abs_builddir "/.libs/qemucapsprobemock.so");
 
@@ -71,7 +72,7 @@ main(int argc, char **argv)
         return EXIT_FAILURE;
 
     if (!(caps = virQEMUCapsNewForBinaryInternal(NULL, argv[1], "/tmp", NULL,
-                                                 -1, -1, true)))
+                                                 -1, -1, flags)))
         return EXIT_FAILURE;
 
     virObjectUnref(caps);

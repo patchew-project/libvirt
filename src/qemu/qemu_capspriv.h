@@ -39,6 +39,10 @@ struct _virQEMUCapsCache {
 
 virQEMUCapsPtr virQEMUCapsNewCopy(virQEMUCapsPtr qemuCaps);
 
+typedef enum {
+    VIR_QEMU_CAPS_NEW_FORCE_QMP = 1 << 0,
+} virQEMUCapsNewFlags;
+
 virQEMUCapsPtr
 virQEMUCapsNewForBinaryInternal(virCapsPtr caps,
                                 const char *binary,
@@ -46,7 +50,7 @@ virQEMUCapsNewForBinaryInternal(virCapsPtr caps,
                                 const char *cacheDir,
                                 uid_t runUid,
                                 gid_t runGid,
-                                bool qmpOnly);
+                                unsigned int flags);
 
 int virQEMUCapsLoadCache(virCapsPtr caps,
                          virQEMUCapsPtr qemuCaps,

@@ -3855,7 +3855,8 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
                    const char *libDir,
                    uid_t runUid,
                    gid_t runGid,
-                   char **qmperr)
+                   char **qmperr,
+                   unsigned int flags)
 {
     int ret = -1;
     virCommandPtr cmd = NULL;
@@ -3955,6 +3956,15 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
     ret = 0;
 
  cleanup:
+    if (flags & VIR_QEMU_CAPS_NEW_FORCE_QMP &&
+        ret == 0 &&
+        !qemuCaps->usedQMP) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Failed to probe QEMU binary with QMP: %s"),
+                       *qmperr ? *qmperr : _("unknown error"));
+        ret = -1;
+    }
+
     if (mon)
         virObjectUnlock(mon);
     qemuMonitorClose(mon);
@@ -4013,7 +4023,7 @@ virQEMUCapsNewForBinaryInternal(virCapsPtr caps,
                                 const char *cacheDir,
                                 uid_t runUid,
                                 gid_t runGid,
-                                bool qmpOnly)
+                                unsigned int flags)
 {
     virQEMUCapsPtr qemuCaps;
     struct stat sb;
@@ -4051,15 +4061,8 @@ virQEMUCapsNewForBinaryInternal(virCapsPtr caps,
         goto error;
 
     if (rv == 0) {
-        if (virQEMUCapsInitQMP(qemuCaps, libDir, runUid, runGid, &qmperr) < 0) {
-            virQEMUCapsLogProbeFailure(binary);
-            goto error;
-        }
-
-        if (qmpOnly && !qemuCaps->usedQMP) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("Failed to probe QEMU binary with QMP: %s"),
-                           qmperr ? qmperr : _("unknown error"));
+        if (virQEMUCapsInitQMP(qemuCaps, libDir, runUid, runGid, &qmperr,
+                               flags) < 0) {
             virQEMUCapsLogProbeFailure(binary);
             goto error;
         }
@@ -4096,7 +4099,7 @@ virQEMUCapsNewForBinary(virCapsPtr caps,
                         gid_t runGid)
 {
     return virQEMUCapsNewForBinaryInternal(caps, binary, libDir, cacheDir,
-                                           runUid, runGid, false);
+                                           runUid, runGid, 0);
 }
 
 
