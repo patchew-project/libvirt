@@ -269,7 +269,7 @@ virWinsockInit(void)
 }
 #endif
 
-
+#ifdef WITH_GNUTLS
 #ifdef WITH_GNUTLS_GCRYPT
 static int
 virTLSMutexInit(void **priv)
@@ -332,6 +332,7 @@ static struct gcry_thread_cbs virTLSThreadImpl = {
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 };
 #endif /* WITH_GNUTLS_GCRYPT */
+#endif /* WITH_GNUTLS */
 
 
 static bool virGlobalError;
@@ -357,6 +358,7 @@ virGlobalInit(void)
     }
 #endif
 
+#ifdef WITH_GNUTLS
 #ifdef WITH_GNUTLS_GCRYPT
     /*
      * This sequence of API calls it copied exactly from
@@ -371,13 +373,10 @@ virGlobalInit(void)
         gcry_control(GCRYCTL_DISABLE_SECMEM, NULL, 0);
         gcry_control(GCRYCTL_INITIALIZATION_FINISHED, NULL, 0);
     }
-#endif
-
-    virLogSetFromEnv();
-
-#ifdef WITH_GNUTLS
+#endif /* End of WITH_GNUTLS_GCRYPT*/
     virNetTLSInit();
-#endif
+#endif /* End of WITH_GNUTLS*/
+    virLogSetFromEnv();
 
 #if WITH_CURL
     curl_global_init(CURL_GLOBAL_DEFAULT);
