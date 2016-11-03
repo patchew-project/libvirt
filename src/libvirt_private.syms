@@ -2578,7 +2578,9 @@ virTypedParamsValidate;
 
 
 # util/virudev.h
+virUdevMgrAddLabel;
 virUdevMgrNew;
+virUdevMgrRemoveAllLabels;
 
 
 # util/viruri.h
