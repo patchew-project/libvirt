@@ -2130,7 +2130,9 @@ qemuDomainAttachMemory(virQEMUDriverPtr driver,
     if (qemuDomainAssignMemoryDeviceSlot(vm->def, mem) < 0)
         goto cleanup;
 
-    if (qemuAssignDeviceMemoryAlias(vm->def, mem) < 0)
+    /* in cases where we are using a VM with aliases generated according to the
+     * index of the memory device we need to keep continue using that scheme */
+    if (qemuAssignDeviceMemoryAlias(vm->def, mem, priv->memHotplugAliasMismatch) < 0)
         goto cleanup;
 
     if (virAsprintf(&objalias, "mem%s", mem->info.alias) < 0)

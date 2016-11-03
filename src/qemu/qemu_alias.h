@@ -58,7 +58,8 @@ int qemuAssignDeviceRNGAlias(virDomainDefPtr def,
                              virDomainRNGDefPtr rng);
 
 int qemuAssignDeviceMemoryAlias(virDomainDefPtr def,
-                                virDomainMemoryDefPtr mems);
+                                virDomainMemoryDefPtr mems,
+                                bool ble);
 
 int qemuAssignDeviceShmemAlias(virDomainDefPtr def,
                                virDomainShmemDefPtr shmem,
