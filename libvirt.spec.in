@@ -80,6 +80,7 @@
 %define with_firewalld     0%{!?_without_firewalld:0}
 %define with_libssh2       0%{!?_without_libssh2:0}
 %define with_wireshark     0%{!?_without_wireshark:0}
+%define with_udev_rules    0%{!?_without_udev_rules:0}
 %define with_pm_utils      1
 
 # Finally set the OS / architecture specific special cases
@@ -172,6 +173,11 @@
     %define with_wireshark 0%{!?_without_wireshark:1}
 %endif
 
+# XXX Currently feature we require from udev is not released yet
+# pkg-config returns 0 on success, 1 on failure. Need to reverse the logic here.
+%if !0%(pkg-config --atleast-version=232 libudev; echo $?)
+    %define with_udev_rules 1
+%endif
 
 %if %{with_qemu} || %{with_lxc} || %{with_uml}
 # numad is used to manage the CPU and memory placement dynamically,
@@ -474,6 +480,9 @@ Requires: numad
 Requires: dbus
 # For uid creation during pre
 Requires(pre): shadow-utils
+%if %{with_udev_rules}
+Requires: systemd-udev >= 232
+%endif
 
 %description daemon
 Server side daemon required to manage the virtualization capabilities
@@ -1100,6 +1109,12 @@ rm -rf .git
     %define arg_wireshark --without-wireshark-dissector
 %endif
 
+%if %{with_udev_rules}
+    %define arg_udev_rules --with-udev-rules
+%else
+    %define arg_udev_rules --without-udev-rules
+%endif
+
 %if %{with_pm_utils}
     %define arg_pm_utils --with-pm-utils
 %else
@@ -1190,6 +1205,7 @@ rm -f po/stamp-po
            --with-driver-modules \
            %{?arg_firewalld} \
            %{?arg_wireshark} \
+           %{?arg_udev_rules} \
            %{?arg_pm_utils} \
            --with-nss-plugin \
            %{arg_packager} \
@@ -1228,6 +1244,12 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/wireshark/plugins/*/libvirt.la
 mv $RPM_BUILD_ROOT%{_libdir}/wireshark/plugins/*/libvirt.so \
       $RPM_BUILD_ROOT%{_libdir}/wireshark/plugins/libvirt.so
     %endif
+%endif
+
+%define _udevdir %(pkg-config --variable=udevdir udev)
+%if ! %{with_udev_rules}
+rm -f $RPM_BUILD_ROOT%{_libexecdir}/libvirt_udevhelper
+rm -f $RPM_BUILD_ROOT%{_udevdir}/rules.d/99-libvirt.rules
 %endif
 
 install -d -m 0755 $RPM_BUILD_ROOT%{_datadir}/lib/libvirt/dnsmasq/
@@ -1630,7 +1652,10 @@ exit 0
 %dir %attr(0700, root, root) %{_localstatedir}/log/libvirt/
 
 %attr(0755, root, root) %{_libexecdir}/libvirt_iohelper
+%if %{with_udev_rules}
 %attr(0755, root, root) %{_libexecdir}/libvirt_udevhelper
+%{_udevdir}/rules.d/99-libvirt.rules
+%endif
 
 %attr(0755, root, root) %{_sbindir}/libvirtd
 %attr(0755, root, root) %{_sbindir}/virtlogd
