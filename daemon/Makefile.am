@@ -75,8 +75,9 @@ EXTRA_DIST =						\
 	libvirtd.lxc.logrotate.in                       \
 	libvirtd.libxl.logrotate.in                     \
 	libvirtd.uml.logrotate.in                       \
-	test_libvirtd.aug.in                             \
+	test_libvirtd.aug.in                            \
 	THREADS.txt					\
+	99-libvirt.rules				\
 	$(PODFILES)					\
 	$(MANINFILES)					\
 	$(DAEMON_SOURCES)				\
@@ -286,7 +287,8 @@ BUILT_SOURCES += libvirtd.policy
 install-data-local: install-init-redhat install-init-systemd \
 		install-init-upstart \
 		install-data-sasl install-data-polkit \
-		install-logrotate install-sysctl
+		install-logrotate install-sysctl \
+		install-data-udev
 	$(MKDIR_P) $(DESTDIR)$(localstatedir)/log/libvirt \
 		   $(DESTDIR)$(localstatedir)/run/libvirt \
 		   $(DESTDIR)$(localstatedir)/lib/libvirt
@@ -294,10 +296,24 @@ install-data-local: install-init-redhat install-init-systemd \
 uninstall-local:: uninstall-init-redhat uninstall-init-systemd \
 		uninstall-init-upstart \
 		uninstall-data-sasl uninstall-data-polkit \
-		uninstall-logrotate uninstall-sysctl
+		uninstall-logrotate uninstall-sysctl \
+		uninstall-data-udev
 	rmdir $(DESTDIR)$(localstatedir)/log/libvirt || :
 	rmdir $(DESTDIR)$(localstatedir)/run/libvirt || :
 	rmdir $(DESTDIR)$(localstatedir)/lib/libvirt || :
+
+if WITH_UDEV_RULES
+install-data-udev::
+	$(MKDIR_P) $(DESTDIR)$(udevdir)/rules.d
+	$(INSTALL_DATA) $(srcdir)/99-libvirt.rules $(DESTDIR)$(udevdir)/rules.d
+
+uninstall-data-udev::
+	rm -f $(DESTDIR)$(udevdir)/rules.d/99-libvirt.rules
+	rmdir $(DESTDIR)$(udevdir) || :
+else ! WITH_UDEV_RULES
+install-data-udev::
+uninstall-data-udev::
+endif ! WITH_UDEV_RULES
 
 if WITH_POLKIT
 install-data-polkit::

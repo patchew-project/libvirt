@@ -2861,6 +2861,7 @@ libvirt_iohelper_CFLAGS = \
 		$(PIE_CFLAGS) \
 		$(NULL)
 
+if WITH_UDEV_RULES
 libexec_PROGRAMS += libvirt_udevhelper
 libvirt_udevhelper_SOURCES = $(UTIL_UDEV_HELPER_SOURCES)
 libvirt_udevhelper_CFLAGS = \
@@ -2877,6 +2878,9 @@ libvirt_udevhelper_LDADD =		\
 if WITH_DTRACE_PROBES
 libvirt_udevhelper_LDADD += libvirt_probes.lo
 endif WITH_DTRACE_PROBES
+else ! WITH_UDEV_RULES
+EXTRA_DIST += $(UTIL_UDEV_HELPER_SOURCES)
+endif ! WITH_UDEV_RULES
 
 if WITH_NETWORK
 libexec_PROGRAMS += libvirt_leaseshelper

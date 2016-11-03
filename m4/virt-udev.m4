@@ -21,6 +21,11 @@ AC_DEFUN([LIBVIRT_CHECK_UDEV],[
   AC_REQUIRE([LIBVIRT_CHECK_PCIACCESS])
   LIBVIRT_CHECK_PKG([UDEV], [libudev], [145])
 
+  AC_ARG_WITH([udev-rules],
+    [AS_HELP_STRING([--with-udev-rules],
+      [install udev rules to avoid udev undoing relabeling devices @<:@default=check@:>@])],
+      [], [with_udev_rules=check])
+
   if test "$with_udev" = "yes" && test "$with_pciaccess" != "yes" ; then
     AC_MSG_ERROR([You must install the pciaccess module to build with udev])
   fi
@@ -31,6 +36,27 @@ AC_DEFUN([LIBVIRT_CHECK_UDEV],[
         AC_DEFINE_UNQUOTED([HAVE_UDEV_LOGGING], 1, [whether libudev logging can be used])
      fi
   fi
+
+  if test "x$with_udev_rules" != "xno" ; then
+    PKG_CHECK_EXISTS([libudev >= 232], [udev_allows_helper=yes], [udev_allows_helper=no])
+    if test "x$with_udev_rules" = "xcheck" ; then
+      with_udev_rules=$udev_allows_helper
+    fi
+    if test "x$with_udev_rules" != "xno" ; then
+      if test "x$udev_allows_helper" = "xno" ; then
+        AC_MSG_ERROR([Udev does not support calling helper binary. Install udev >= 232])
+      fi
+      if test "x$with_udev_rules" = "xyes" ; then
+        udevdir="$($PKG_CONFIG --variable udevdir udev)"
+        udevdir='$(prefix)'"${udevdir#/usr}"
+      else
+        udevdir=$with_udev_rules
+      fi
+    fi
+  fi
+
+  AC_SUBST([udevdir])
+  AM_CONDITIONAL(WITH_UDEV_RULES, [test "x$with_udev_rules" != "xno"])
 ])
 
 AC_DEFUN([LIBVIRT_RESULT_UDEV],[
