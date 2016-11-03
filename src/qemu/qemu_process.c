@@ -1626,6 +1626,7 @@ static qemuMonitorCallbacks monitorCallbacks = {
     .diskSecretLookup = qemuProcessFindVolumeQcowPassphrase,
     .domainEvent = qemuProcessHandleEvent,
     .domainShutdown = qemuProcessHandleShutdown,
+    .domainPowerdown = qemuProcessHandleShutdown,
     .domainStop = qemuProcessHandleStop,
     .domainResume = qemuProcessHandleResume,
     .domainReset = qemuProcessHandleReset,
