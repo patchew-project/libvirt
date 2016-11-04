@@ -2330,12 +2330,9 @@ qemuProcessSetupPid(virDomainObjPtr vm,
     char *mem_mask = NULL;
     int ret = -1;
 
-    if ((period || quota) &&
-        !virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPU)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("cgroup cpu is required for scheduler tuning"));
-        goto cleanup;
-    }
+    if (period || quota)
+        virCheckControllerGoto(priv->cgroup,
+                               VIR_CGROUP_CONTROLLER_CPU, cleanup);
 
     /* Infer which cpumask shall be used. */
     if (cpumask)
