@@ -847,12 +847,9 @@ lxcDomainSetMemoryParameters(virDomainPtr dom,
     if (virDomainObjGetDefs(vm, flags, &def, &persistentDef) < 0)
         goto endjob;
 
-    if (def &&
-        !virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_MEMORY)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("cgroup memory controller is not mounted"));
-        goto endjob;
-    }
+    if (def)
+        virCheckControllerGoto(priv->cgroup,
+                               VIR_CGROUP_CONTROLLER_MEMORY, endjob);
 
 #define VIR_GET_LIMIT_PARAMETER(PARAM, VALUE)                                \
     if ((rc = virTypedParamsGetULLong(params, nparams, PARAM, &VALUE)) < 0)  \
@@ -967,12 +964,9 @@ lxcDomainGetMemoryParameters(virDomainPtr dom,
     if (virDomainObjGetDefs(vm, flags, &def, &persistentDef) < 0)
         goto cleanup;
 
-    if (def &&
-        !virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_MEMORY)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("cgroup memory controller is not mounted"));
-        goto cleanup;
-    }
+    if (def)
+        virCheckControllerGoto(priv->cgroup,
+                               VIR_CGROUP_CONTROLLER_MEMORY, cleanup);
 
     if ((*nparams) == 0) {
         /* Current number of memory parameters supported by cgroups */
@@ -1863,11 +1857,8 @@ static char *lxcDomainGetSchedulerType(virDomainPtr dom,
         goto cleanup;
     }
 
-    if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPU)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("cgroup CPU controller is not mounted"));
-        goto cleanup;
-    }
+    virCheckControllerGoto(priv->cgroup,
+                           VIR_CGROUP_CONTROLLER_CPU, cleanup);
 
     if (nparams) {
         if (virCgroupSupportsCpuBW(priv->cgroup))
@@ -1990,13 +1981,9 @@ lxcDomainSetSchedulerParametersFlags(virDomainPtr dom,
             goto endjob;
     }
 
-    if (def) {
-        if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPU)) {
-            virReportError(VIR_ERR_OPERATION_INVALID,
-                           "%s", _("cgroup CPU controller is not mounted"));
-            goto endjob;
-        }
-    }
+    if (def)
+        virCheckControllerGoto(priv->cgroup,
+                               VIR_CGROUP_CONTROLLER_CPU, endjob);
 
     for (i = 0; i < nparams; i++) {
         virTypedParameterPtr param = &params[i];
@@ -2128,11 +2115,8 @@ lxcDomainGetSchedulerParametersFlags(virDomainPtr dom,
         goto out;
     }
 
-    if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPU)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("cgroup CPU controller is not mounted"));
-        goto cleanup;
-    }
+    virCheckControllerGoto(priv->cgroup,
+                           VIR_CGROUP_CONTROLLER_CPU, cleanup);
 
     if (virCgroupGetCpuShares(priv->cgroup, &shares) < 0)
         goto cleanup;
@@ -2388,11 +2372,8 @@ lxcDomainBlockStats(virDomainPtr dom,
         goto endjob;
     }
 
-    if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_BLKIO)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("blkio cgroup isn't mounted"));
-        goto endjob;
-    }
+    virCheckControllerGoto(priv->cgroup,
+                           VIR_CGROUP_CONTROLLER_BLKIO, endjob);
 
     if (!*path) {
         /* empty path - return entire domain blkstats instead */
@@ -2474,11 +2455,8 @@ lxcDomainBlockStatsFlags(virDomainPtr dom,
         goto endjob;
     }
 
-    if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_BLKIO)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("blkio cgroup isn't mounted"));
-        goto endjob;
-    }
+    virCheckControllerGoto(priv->cgroup,
+                           VIR_CGROUP_CONTROLLER_BLKIO, endjob);
 
     if (!*path) {
         /* empty path - return entire domain blkstats instead */
@@ -2611,13 +2589,9 @@ lxcDomainSetBlkioParameters(virDomainPtr dom,
     if (virDomainObjGetDefs(vm, flags, &def, &persistentDef) < 0)
         goto endjob;
 
-    if (def) {
-        if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_BLKIO)) {
-            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                           _("blkio cgroup isn't mounted"));
-            goto endjob;
-        }
-    }
+    if (def)
+        virCheckControllerGoto(priv->cgroup,
+                               VIR_CGROUP_CONTROLLER_BLKIO, endjob);
 
     ret = 0;
     if (def) {
@@ -2818,11 +2792,8 @@ lxcDomainGetBlkioParameters(virDomainPtr dom,
         goto cleanup;
 
     if (def) {
-        if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_BLKIO)) {
-            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                           _("blkio cgroup isn't mounted"));
-            goto cleanup;
-        }
+        virCheckControllerGoto(priv->cgroup,
+                               VIR_CGROUP_CONTROLLER_BLKIO, cleanup);
 
         /* fill blkio weight here */
         if (virCgroupGetBlkioWeight(priv->cgroup, &val) < 0)
@@ -3856,11 +3827,8 @@ lxcDomainAttachDeviceDiskLive(virLXCDriverPtr driver,
         goto cleanup;
     }
 
-    if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("devices cgroup isn't mounted"));
-        goto cleanup;
-    }
+    virCheckControllerGoto(priv->cgroup,
+                           VIR_CGROUP_CONTROLLER_DEVICES, cleanup);
 
     src = virDomainDiskGetSource(def);
     if (src == NULL) {
@@ -4408,11 +4376,8 @@ lxcDomainDetachDeviceDiskLive(virDomainObjPtr vm,
     if (virAsprintf(&dst, "/dev/%s", def->dst) < 0)
         goto cleanup;
 
-    if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("devices cgroup isn't mounted"));
-        goto cleanup;
-    }
+    virCheckControllerGoto(priv->cgroup,
+                           VIR_CGROUP_CONTROLLER_DEVICES, cleanup);
 
     if (lxcDomainAttachDeviceUnlink(vm, dst) < 0) {
         virDomainAuditDisk(vm, def->src, NULL, "detach", false);
@@ -4527,11 +4492,8 @@ lxcDomainDetachDeviceHostdevUSBLive(virLXCDriverPtr driver,
                     usbsrc->bus, usbsrc->device) < 0)
         goto cleanup;
 
-    if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("devices cgroup isn't mounted"));
-        goto cleanup;
-    }
+    virCheckControllerGoto(priv->cgroup,
+                           VIR_CGROUP_CONTROLLER_DEVICES, cleanup);
 
     if (!(usb = virUSBDeviceNew(usbsrc->bus, usbsrc->device, NULL)))
         goto cleanup;
@@ -4587,11 +4549,8 @@ lxcDomainDetachDeviceHostdevStorageLive(virDomainObjPtr vm,
         goto cleanup;
     }
 
-    if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("devices cgroup isn't mounted"));
-        goto cleanup;
-    }
+    virCheckControllerGoto(priv->cgroup,
+                           VIR_CGROUP_CONTROLLER_DEVICES, cleanup);
 
     if (lxcDomainAttachDeviceUnlink(vm, def->source.caps.u.storage.block) < 0) {
         virDomainAuditHostdev(vm, def, "detach", false);
@@ -4637,11 +4596,8 @@ lxcDomainDetachDeviceHostdevMiscLive(virDomainObjPtr vm,
         goto cleanup;
     }
 
-    if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("devices cgroup isn't mounted"));
-        goto cleanup;
-    }
+    virCheckControllerGoto(priv->cgroup,
+                           VIR_CGROUP_CONTROLLER_DEVICES, cleanup);
 
     if (lxcDomainAttachDeviceUnlink(vm, def->source.caps.u.misc.chardev) < 0) {
         virDomainAuditHostdev(vm, def, "detach", false);
@@ -5438,11 +5394,8 @@ lxcDomainGetCPUStats(virDomainPtr dom,
         goto cleanup;
     }
 
-    if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPUACCT)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("cgroup CPUACCT controller is not mounted"));
-        goto cleanup;
-    }
+    virCheckControllerGoto(priv->cgroup,
+                           VIR_CGROUP_CONTROLLER_CPUACCT, cleanup);
 
     if (start_cpu == -1)
         ret = virCgroupGetDomainTotalCpuStats(priv->cgroup,
