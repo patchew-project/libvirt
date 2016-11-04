@@ -2202,6 +2202,7 @@ qemuProcessInitCpuAffinity(virDomainObjPtr vm)
     int ret = -1;
     virBitmapPtr cpumap = NULL;
     virBitmapPtr cpumapToSet = NULL;
+    virBitmapPtr hostcpumap = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
 
     if (!vm->pid) {
@@ -2223,6 +2224,16 @@ qemuProcessInitCpuAffinity(virDomainObjPtr vm)
              * the spawned QEMU instance to all pCPUs if no map is given in
              * its config file */
             int hostcpus;
+            hostcpumap = virHostCPUGetOnlineBitmap();
+            cpumap = virProcessGetAffinity(vm->pid);
+
+            if (hostcpumap && cpumap && virBitmapEqual(hostcpumap, cpumap)) {
+                /* we're using all available CPUs, no reason to set
+                 * mask. If libvirtd is running without explicit
+                 * affinity, we can use hotplugged CPUs for this VM */
+                ret = 0;
+                goto cleanup;
+            }
 
             /* setaffinity fails if you set bits for CPUs which
              * aren't present, so we have to limit ourselves */
@@ -2248,6 +2259,7 @@ qemuProcessInitCpuAffinity(virDomainObjPtr vm)
 
  cleanup:
     virBitmapFree(cpumap);
+    virBitmapFree(hostcpumap);
     return ret;
 }
 
