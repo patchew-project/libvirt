@@ -8807,11 +8807,8 @@ static char *qemuDomainGetSchedulerType(virDomainPtr dom,
         goto cleanup;
     }
 
-    if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPU)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("cgroup CPU controller is not mounted"));
-        goto cleanup;
-    }
+    virCheckControllerGoto(priv->cgroup,
+                           VIR_CGROUP_CONTROLLER_CPU, cleanup);
 
     if (nparams) {
         if (virCgroupSupportsCpuBW(priv->cgroup))
@@ -9061,13 +9058,9 @@ qemuDomainSetBlkioParameters(virDomainPtr dom,
     if (virDomainObjGetDefs(vm, flags, &def, &persistentDef) < 0)
         goto endjob;
 
-    if (flags & VIR_DOMAIN_AFFECT_LIVE) {
-        if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_BLKIO)) {
-            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                           _("blkio cgroup isn't mounted"));
-            goto endjob;
-        }
-    }
+    if (flags & VIR_DOMAIN_AFFECT_LIVE)
+        virCheckControllerGoto(priv->cgroup,
+                               VIR_CGROUP_CONTROLLER_BLKIO, endjob);
 
     ret = 0;
     if (def) {
@@ -9277,11 +9270,8 @@ qemuDomainGetBlkioParameters(virDomainPtr dom,
         goto cleanup;
 
     if (def) {
-        if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_BLKIO)) {
-            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                           _("blkio cgroup isn't mounted"));
-            goto cleanup;
-        }
+        virCheckControllerGoto(priv->cgroup,
+                               VIR_CGROUP_CONTROLLER_BLKIO, cleanup);
 
         /* fill blkio weight here */
         if (virCgroupGetBlkioWeight(priv->cgroup, &val) < 0)
@@ -9372,12 +9362,9 @@ qemuDomainSetMemoryParameters(virDomainPtr dom,
     if (virDomainObjGetDefs(vm, flags, &def, &persistentDef) < 0)
         goto endjob;
 
-    if (def &&
-        !virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_MEMORY)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("cgroup memory controller is not mounted"));
-        goto endjob;
-    }
+    if (def)
+        virCheckControllerGoto(priv->cgroup,
+                               VIR_CGROUP_CONTROLLER_MEMORY, endjob);
 
 #define VIR_GET_LIMIT_PARAMETER(PARAM, VALUE)                                \
     if ((rc = virTypedParamsGetULLong(params, nparams, PARAM, &VALUE)) < 0)  \
@@ -9513,11 +9500,8 @@ qemuDomainGetMemoryParameters(virDomainPtr dom,
         mem_soft_limit = persistentDef->mem.soft_limit;
         swap_hard_limit = persistentDef->mem.swap_hard_limit;
     } else {
-        if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_MEMORY)) {
-            virReportError(VIR_ERR_OPERATION_INVALID,
-                           "%s", _("cgroup memory controller is not mounted"));
-            goto cleanup;
-        }
+        virCheckControllerGoto(priv->cgroup,
+                               VIR_CGROUP_CONTROLLER_MEMORY, cleanup);
 
         if (virCgroupGetMemoryHardLimit(priv->cgroup, &mem_hard_limit) < 0)
             goto cleanup;
@@ -9686,11 +9670,8 @@ qemuDomainSetNumaParameters(virDomainPtr dom,
             goto endjob;
         }
 
-        if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPUSET)) {
-            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                           _("cgroup cpuset controller is not mounted"));
-            goto endjob;
-        }
+        virCheckControllerGoto(priv->cgroup,
+                               VIR_CGROUP_CONTROLLER_CPUSET, endjob);
 
         if (mode != -1 &&
             virDomainNumatuneGetMode(def->numa, -1, &config_mode) == 0 &&
@@ -10164,12 +10145,9 @@ qemuDomainSetSchedulerParametersFlags(virDomainPtr dom,
             goto endjob;
     }
 
-    if (def &&
-        !virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPU)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("cgroup CPU controller is not mounted"));
-        goto endjob;
-    }
+    if (def)
+        virCheckControllerGoto(priv->cgroup,
+                               VIR_CGROUP_CONTROLLER_CPU, endjob);
 
     for (i = 0; i < nparams; i++) {
         virTypedParameterPtr param = &params[i];
@@ -10573,11 +10551,8 @@ qemuDomainGetSchedulerParametersFlags(virDomainPtr dom,
     if (persistentDef) {
         data = persistentDef->cputune;
     } else if (def) {
-        if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPU)) {
-            virReportError(VIR_ERR_OPERATION_INVALID,
-                           "%s", _("cgroup CPU controller is not mounted"));
-            goto cleanup;
-        }
+        virCheckControllerGoto(priv->cgroup,
+                               VIR_CGROUP_CONTROLLER_CPU, cleanup);
 
         if (virCgroupGetCpuShares(priv->cgroup, &data.shares) < 0)
             goto cleanup;
@@ -18013,11 +17988,8 @@ qemuDomainGetCPUStats(virDomainPtr domain,
         goto cleanup;
     }
 
-    if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPUACCT)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("cgroup CPUACCT controller is not mounted"));
-        goto cleanup;
-    }
+    virCheckControllerGoto(priv->cgroup,
+                           VIR_CGROUP_CONTROLLER_CPUACCT, cleanup);
 
     if (qemuDomainHasVcpuPids(vm) &&
         !(guestvcpus = virDomainDefGetOnlineVcpumap(vm->def)))
