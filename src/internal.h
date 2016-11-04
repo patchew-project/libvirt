@@ -362,6 +362,25 @@
         }                                                               \
     } while (0)
 
+/**
+ * virCheckControllerGoto:
+ * @Cgp: virCgroupPtr pointer
+ * @CgpCtr: cgroup controller type enum
+ * @label: label to jump to on error
+ *
+ * Returns nothing. Jumps to a label if unsupported controller type were
+ * passed to it.
+ */
+# define virCheckControllerGoto(Cgp, CgpCtr, label)                    \
+    do {                                                               \
+        if (!virCgroupHasController(Cgp, CgpCtr)) {                    \
+            virReportError(VIR_ERR_OPERATION_INVALID,                  \
+                            _("cgroup %s controller is not mounted"),  \
+                           virCgroupControllerTypeToString(CgpCtr));   \
+            goto label;                                                \
+        }                                                              \
+    } while (0)
+
 /* Macros to help dealing with mutually exclusive flags. */
 
 /**
