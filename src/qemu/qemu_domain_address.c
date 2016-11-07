@@ -428,7 +428,7 @@ qemuDomainAssignARMVirtioMMIOAddresses(virDomainDefPtr def,
  */
 static virDomainPCIConnectFlags
 qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
-                                         virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
+                                         virQEMUDriverPtr driver,
                                          virDomainPCIConnectFlags pcieFlags,
                                          virDomainPCIConnectFlags virtioFlags)
 {
@@ -558,8 +558,68 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
             return 0;
         }
 
-    case VIR_DOMAIN_DEVICE_HOSTDEV:
-        return pciFlags;
+    case VIR_DOMAIN_DEVICE_HOSTDEV: {
+        virDomainHostdevDefPtr hostdev = dev->data.hostdev;
+
+        if (hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS &&
+            hostdev->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI) {
+            bool isExpress = false;
+            virPCIDevicePtr pciDev;
+            virPCIDeviceAddressPtr hostAddr = &hostdev->source.subsys.u.pci.addr;
+
+            if (pciFlags == pcieFlags) {
+                /* This arch/qemu only supports legacy PCI, so there
+                 * is no point in checking if the device is an Express
+                 * device.
+                 */
+                return pciFlags;
+            }
+
+            if (virDeviceInfoPCIAddressPresent(hostdev->info)) {
+                /* A guest-side address has already been assigned, so
+                 * we can avoid reading the PCI config, and just use
+                 * pcieFlags, since the pciConnectFlags checking is
+                 * more relaxed when an address is already assigned
+                 * than it is when we're looking for a new address (so
+                 * validation will pass regardless of whether we set
+                 * the flags to PCI or PCIE).
+                 */
+                return pcieFlags;
+            }
+
+            if (!driver->privileged) {
+                /* unprivileged libvirtd is unable to read a device's
+                 * PCI config, so instead of trying and failing, we
+                 * will just assume what is by far the most likely
+                 * version of reality: this is a PCIE device.
+                 */
+                return pcieFlags;
+            }
+
+            if (!(pciDev = virPCIDeviceNew(hostAddr->domain,
+                                           hostAddr->bus,
+                                           hostAddr->slot,
+                                           hostAddr->function))) {
+                /* Even though libvirtd is running with privileges, we
+                 * still couldn't read the PCI config. So either
+                 * device doesn't currently exist on the host, or
+                 * libvirt is running unprivileged. Since the
+                 * overwhelming majority of assignable host devices
+                 * are PCIe, assume that.
+                 */
+                return pcieFlags;
+            }
+
+            isExpress = virPCIDeviceIsPCIExpress(pciDev);
+            virPCIDeviceFree(pciDev);
+
+            if (isExpress)
+                return pcieFlags;
+            else
+                return pciFlags;
+        }
+        return 0;
+    }
 
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
         switch ((virDomainMemballoonModel) dev->data.memballoon->model) {
