@@ -428,6 +428,7 @@ qemuDomainAssignARMVirtioMMIOAddresses(virDomainDefPtr def,
  */
 static virDomainPCIConnectFlags
 qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
+                                         virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
                                          virDomainPCIConnectFlags pcieFlags,
                                          virDomainPCIConnectFlags virtioFlags)
 {
@@ -666,6 +667,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
 typedef struct {
     virDomainPCIConnectFlags virtioFlags;
     virDomainPCIConnectFlags pcieFlags;
+    virQEMUDriverPtr driver;
 } qemuDomainFillDevicePCIConnectFlagsIterData;
 
 
@@ -678,8 +680,12 @@ typedef struct {
 static void
 qemuDomainFillDevicePCIConnectFlagsIterInit(virDomainDefPtr def,
                                             virQEMUCapsPtr qemuCaps,
+                                            virQEMUDriverPtr driver,
                                             qemuDomainFillDevicePCIConnectFlagsIterData *data)
 {
+
+    data->driver = driver;
+
     if (qemuDomainMachineHasPCIeRoot(def)) {
         data->pcieFlags = (VIR_PCI_CONNECT_TYPE_PCIE_DEVICE |
                            VIR_PCI_CONNECT_HOTPLUGGABLE);
@@ -719,7 +725,8 @@ qemuDomainFillDevicePCIConnectFlagsIter(virDomainDefPtr def ATTRIBUTE_UNUSED,
     qemuDomainFillDevicePCIConnectFlagsIterData *data = opaque;
 
     info->pciConnectFlags
-        = qemuDomainDeviceCalculatePCIConnectFlags(dev, data->pcieFlags,
+        = qemuDomainDeviceCalculatePCIConnectFlags(dev, data->driver,
+                                                   data->pcieFlags,
                                                    data->virtioFlags);
     return 0;
 }
@@ -739,11 +746,12 @@ qemuDomainFillDevicePCIConnectFlagsIter(virDomainDefPtr def ATTRIBUTE_UNUSED,
  */
 static int
 qemuDomainFillAllPCIConnectFlags(virDomainDefPtr def,
-                                 virQEMUCapsPtr qemuCaps)
+                                 virQEMUCapsPtr qemuCaps,
+                                 virQEMUDriverPtr driver)
 {
     qemuDomainFillDevicePCIConnectFlagsIterData data;
 
-    qemuDomainFillDevicePCIConnectFlagsIterInit(def, qemuCaps, &data);
+    qemuDomainFillDevicePCIConnectFlagsIterInit(def, qemuCaps, driver, &data);
 
     return virDomainDeviceInfoIterate(def,
                                       qemuDomainFillDevicePCIConnectFlagsIter,
@@ -765,7 +773,8 @@ qemuDomainFillAllPCIConnectFlags(virDomainDefPtr def,
 static void
 qemuDomainFillDevicePCIConnectFlags(virDomainDefPtr def,
                                     virDomainDeviceDefPtr dev,
-                                    virQEMUCapsPtr qemuCaps)
+                                    virQEMUCapsPtr qemuCaps,
+                                    virQEMUDriverPtr driver)
 {
     virDomainDeviceInfoPtr info = virDomainDeviceGetInfo(dev);
 
@@ -781,10 +790,11 @@ qemuDomainFillDevicePCIConnectFlags(virDomainDefPtr def,
          */
         qemuDomainFillDevicePCIConnectFlagsIterData data;
 
-        qemuDomainFillDevicePCIConnectFlagsIterInit(def, qemuCaps, &data);
+        qemuDomainFillDevicePCIConnectFlagsIterInit(def, qemuCaps, driver, &data);
 
         info->pciConnectFlags
-            = qemuDomainDeviceCalculatePCIConnectFlags(dev, data.pcieFlags,
+            = qemuDomainDeviceCalculatePCIConnectFlags(dev, data.driver,
+                                                       data.pcieFlags,
                                                        data.virtioFlags);
     }
 }
@@ -1851,6 +1861,7 @@ qemuDomainAddressFindNewBusNr(virDomainDefPtr def)
 static int
 qemuDomainAssignPCIAddresses(virDomainDefPtr def,
                              virQEMUCapsPtr qemuCaps,
+                             virQEMUDriverPtr driver,
                              virDomainObjPtr obj)
 {
     int ret = -1;
@@ -1877,7 +1888,7 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
      * of all devices. This will be used to pick an appropriate
      * bus when assigning addresses.
      */
-    if (qemuDomainFillAllPCIConnectFlags(def, qemuCaps) < 0)
+    if (qemuDomainFillAllPCIConnectFlags(def, qemuCaps, driver) < 0)
         goto cleanup;
 
     if (nbuses > 0 &&
@@ -1991,7 +2002,7 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
             dev.type = VIR_DOMAIN_DEVICE_CONTROLLER;
             dev.data.controller = def->controllers[contIndex];
             /* set connect flags so it will be properly addressed */
-            qemuDomainFillDevicePCIConnectFlags(def, &dev, qemuCaps);
+            qemuDomainFillDevicePCIConnectFlags(def, &dev, qemuCaps, driver);
             if (qemuDomainPCIAddressReserveNextSlot(addrs,
                                                     &dev.data.controller->info) < 0)
                 goto cleanup;
@@ -2273,6 +2284,7 @@ qemuDomainAssignUSBAddresses(virDomainDefPtr def,
 int
 qemuDomainAssignAddresses(virDomainDefPtr def,
                           virQEMUCapsPtr qemuCaps,
+                          virQEMUDriverPtr driver,
                           virDomainObjPtr obj,
                           bool newDomain)
 {
@@ -2287,7 +2299,7 @@ qemuDomainAssignAddresses(virDomainDefPtr def,
 
     qemuDomainAssignARMVirtioMMIOAddresses(def, qemuCaps);
 
-    if (qemuDomainAssignPCIAddresses(def, qemuCaps, obj) < 0)
+    if (qemuDomainAssignPCIAddresses(def, qemuCaps, driver, obj) < 0)
         return -1;
 
     if (qemuDomainAssignUSBAddresses(def, obj, newDomain) < 0)
@@ -2313,12 +2325,13 @@ qemuDomainAssignAddresses(virDomainDefPtr def,
  */
 int
 qemuDomainEnsurePCIAddress(virDomainObjPtr obj,
+                           virQEMUDriverPtr driver,
                            virDomainDeviceDefPtr dev)
 {
     qemuDomainObjPrivatePtr priv = obj->privateData;
     virDomainDeviceInfoPtr info = virDomainDeviceGetInfo(dev);
 
-    qemuDomainFillDevicePCIConnectFlags(obj->def, dev, priv->qemuCaps);
+    qemuDomainFillDevicePCIConnectFlags(obj->def, dev, priv->qemuCaps, driver);
 
     return virDomainPCIAddressEnsureAddr(priv->pciaddrs, info,
                                          info->pciConnectFlags);
