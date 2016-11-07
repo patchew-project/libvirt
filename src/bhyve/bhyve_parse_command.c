@@ -496,6 +496,7 @@ bhyveParsePCINet(virDomainDefPtr def,
                  unsigned pcislot,
                  unsigned pcibus,
                  unsigned function,
+                 const char *model,
                  const char *config)
 {
     /* -s slot,virtio-net,tapN[,mac=xx:xx:xx:xx:xx:xx] */
@@ -510,6 +511,8 @@ bhyveParsePCINet(virDomainDefPtr def,
     /* Let's just assume it is VIR_DOMAIN_NET_TYPE_ETHERNET, it could also be
      * a bridge, but this is the most generic option. */
     net->type = VIR_DOMAIN_NET_TYPE_ETHERNET;
+    if (VIR_STRDUP(net->model, model) < 0)
+        goto error;
 
     net->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
     net->info.addr.pci.slot = pcislot;
@@ -617,7 +620,11 @@ bhyveParseBhyvePCIArg(virDomainDefPtr def,
                           nahcidisk,
                           conf);
     else if (STREQ(emulation, "virtio-net"))
-        bhyveParsePCINet(def, xmlopt, caps, pcislot, bus, function, conf);
+        bhyveParsePCINet(def, xmlopt, caps, pcislot, bus, function,
+                         "virtio", conf);
+    else if (STREQ(emulation, "e1000"))
+        bhyveParsePCINet(def, xmlopt, caps, pcislot, bus, function,
+                         "e1000", conf);
 
     VIR_FREE(emulation);
     VIR_FREE(slotdef);

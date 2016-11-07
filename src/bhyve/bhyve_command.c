@@ -44,7 +44,8 @@
 VIR_LOG_INIT("bhyve.bhyve_command");
 
 static int
-bhyveBuildNetArgStr(const virDomainDef *def,
+bhyveBuildNetArgStr(virConnectPtr conn,
+                    const virDomainDef *def,
                     virDomainNetDefPtr net,
                     virCommandPtr cmd,
                     bool dryRun)
@@ -52,26 +53,46 @@ bhyveBuildNetArgStr(const virDomainDef *def,
     char macaddr[VIR_MAC_STRING_BUFLEN];
     char *realifname = NULL;
     char *brname = NULL;
+    char *nic_model = NULL;
+    int ret = -1;
     virDomainNetType actualType = virDomainNetGetActualType(net);
+
+    if (STREQ(net->model, "virtio")) {
+        if (VIR_STRDUP(nic_model, "virtio-net") < 0)
+            return -1;
+    } else if (STREQ(net->model, "e1000")) {
+        if ((bhyveDriverGetCaps(conn) & BHYVE_CAP_NET_E1000) != 0) {
+            if (VIR_STRDUP(nic_model, "e1000") < 0)
+                return -1;
+        } else {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("NIC model 'e1000' is not supported "
+                             "by given bhyve binary"));
+            return -1;
+        }
+    } else {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("NIC model '%s' is not supported"),
+                       net->model);
+        return -1;
+    }
 
     if (actualType == VIR_DOMAIN_NET_TYPE_BRIDGE) {
         if (VIR_STRDUP(brname, virDomainNetGetActualBridgeName(net)) < 0)
-            return -1;
+            goto out;
     } else {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Network type %d is not supported"),
                        virDomainNetGetActualType(net));
-        return -1;
+        goto out;
     }
 
     if (!net->ifname ||
         STRPREFIX(net->ifname, VIR_NET_GENERATED_PREFIX) ||
         strchr(net->ifname, '%')) {
         VIR_FREE(net->ifname);
-        if (VIR_STRDUP(net->ifname, VIR_NET_GENERATED_PREFIX "%d") < 0) {
-            VIR_FREE(brname);
-            return -1;
-        }
+        if (VIR_STRDUP(net->ifname, VIR_NET_GENERATED_PREFIX "%d") < 0)
+            goto out;
     }
 
     if (!dryRun) {
@@ -79,44 +100,41 @@ bhyveBuildNetArgStr(const virDomainDef *def,
                                            def->uuid, NULL, NULL, 0,
                                            virDomainNetGetActualVirtPortProfile(net),
                                            virDomainNetGetActualVlan(net),
-                                           VIR_NETDEV_TAP_CREATE_IFUP | VIR_NETDEV_TAP_CREATE_PERSIST) < 0) {
-            VIR_FREE(net->ifname);
-            VIR_FREE(brname);
-            return -1;
-        }
+                                           VIR_NETDEV_TAP_CREATE_IFUP | VIR_NETDEV_TAP_CREATE_PERSIST) < 0)
+            goto out;
 
         realifname = virNetDevTapGetRealDeviceName(net->ifname);
 
-        if (realifname == NULL) {
-            VIR_FREE(net->ifname);
-            VIR_FREE(brname);
-            return -1;
-        }
+        if (realifname == NULL)
+            goto out;
 
         VIR_DEBUG("%s -> %s", net->ifname, realifname);
         /* hack on top of other hack: we need to set
          * interface to 'UP' again after re-opening to find its
          * name
          */
-        if (virNetDevSetOnline(net->ifname, true) != 0) {
-            VIR_FREE(realifname);
-            VIR_FREE(net->ifname);
-            VIR_FREE(brname);
-            return -1;
-        }
+        if (virNetDevSetOnline(net->ifname, true) != 0)
+            goto out;
     } else {
         if (VIR_STRDUP(realifname, "tap0") < 0)
-            return -1;
+            goto out;
     }
 
 
     virCommandAddArg(cmd, "-s");
-    virCommandAddArgFormat(cmd, "%d:0,virtio-net,%s,mac=%s",
-                           net->info.addr.pci.slot,
+    virCommandAddArgFormat(cmd, "%d:0,%s,%s,mac=%s",
+                           net->info.addr.pci.slot, nic_model,
                            realifname, virMacAddrFormat(&net->mac, macaddr));
-    VIR_FREE(realifname);
 
-    return 0;
+    ret = 0;
+ out:
+    VIR_FREE(net->ifname);
+    VIR_FREE(realifname);
+    VIR_FREE(brname);
+    VIR_FREE(realifname);
+    VIR_FREE(nic_model);
+
+    return ret;
 }
 
 static int
@@ -284,7 +302,7 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
     /* Devices */
     for (i = 0; i < def->nnets; i++) {
         virDomainNetDefPtr net = def->nets[i];
-        if (bhyveBuildNetArgStr(def, net, cmd, dryRun) < 0)
+        if (bhyveBuildNetArgStr(conn, def, net, cmd, dryRun) < 0)
             goto error;
     }
     for (i = 0; i < def->ndisks; i++) {
