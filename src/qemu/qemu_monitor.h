@@ -877,6 +877,7 @@ int qemuMonitorSetBlockIoThrottle(qemuMonitorPtr mon,
                                   const char *device,
                                   virDomainBlockIoTuneInfoPtr info,
                                   bool supportMaxOptions,
+                                  bool supportGroupNameOption,
                                   bool supportMaxLengthOptions);
 
 int qemuMonitorGetBlockIoThrottle(qemuMonitorPtr mon,

@@ -4524,6 +4524,7 @@ qemuMonitorJSONBlockIoThrottleInfo(virJSONValuePtr result,
         virJSONValuePtr temp_dev = virJSONValueArrayGet(io_throttle, i);
         virJSONValuePtr inserted;
         const char *current_dev;
+        const char *group_name;
 
         if (!temp_dev || temp_dev->type != VIR_JSON_TYPE_OBJECT) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -4549,7 +4550,6 @@ qemuMonitorJSONBlockIoThrottleInfo(virJSONValuePtr result,
                              "was not in expected format"));
             goto cleanup;
         }
-
         GET_THROTTLE_STATS("bps", total_bytes_sec);
         GET_THROTTLE_STATS("bps_rd", read_bytes_sec);
         GET_THROTTLE_STATS("bps_wr", write_bytes_sec);
@@ -4563,6 +4563,11 @@ qemuMonitorJSONBlockIoThrottleInfo(virJSONValuePtr result,
         GET_THROTTLE_STATS_OPTIONAL("iops_rd_max", read_iops_sec_max);
         GET_THROTTLE_STATS_OPTIONAL("iops_wr_max", write_iops_sec_max);
         GET_THROTTLE_STATS_OPTIONAL("iops_size", size_iops_sec);
+
+        if ((group_name = virJSONValueObjectGetString(inserted, "group")) &&
+            VIR_STRDUP(reply->group_name, group_name) < 0)
+            goto cleanup;
+
         GET_THROTTLE_STATS_OPTIONAL("bps_max_length", total_bytes_sec_max_length);
         GET_THROTTLE_STATS_OPTIONAL("bps_rd_max_length", read_bytes_sec_max_length);
         GET_THROTTLE_STATS_OPTIONAL("bps_wr_max_length", write_bytes_sec_max_length);
@@ -4591,6 +4596,7 @@ int qemuMonitorJSONSetBlockIoThrottle(qemuMonitorPtr mon,
                                       const char *device,
                                       virDomainBlockIoTuneInfoPtr info,
                                       bool supportMaxOptions,
+                                      bool supportGroupNameOption,
                                       bool supportMaxLengthOptions)
 {
     int ret = -1;
@@ -4621,6 +4627,12 @@ int qemuMonitorJSONSetBlockIoThrottle(qemuMonitorPtr mon,
                               "U:iops_rd_max", info->read_iops_sec_max,
                               "U:iops_wr_max", info->write_iops_sec_max,
                               "U:iops_size", info->size_iops_sec,
+                              NULL) < 0)
+        goto cleanup;
+
+    if (supportGroupNameOption &&
+        virJSONValueObjectAdd(args,
+                              "s:group", info->group_name,
                               NULL) < 0)
         goto cleanup;
 
