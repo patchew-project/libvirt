@@ -23058,6 +23058,47 @@ virDomainDefHasCapabilitiesFeatures(virDomainDefPtr def)
     return false;
 }
 
+static bool
+virDomainSchedPriorityComparator(virDomainThreadSchedParamPtr baseSched,
+                                 virDomainThreadSchedParamPtr sched)
+{
+    bool ret = false;
+    ret = (baseSched->priority == sched->priority);
+
+    return ret;
+}
+
+static virDomainThreadSchedParamPtr
+virDomainSchedSubsetCharacteristic(virDomainDefPtr def,
+                                   virBitmapPtr schedMap,
+                                   virBitmapPtr subsetMap,
+                                   virDomainThreadSchedParamPtr (*func)(virDomainDefPtr, unsigned int),
+                                   bool (*comparator)(virDomainThreadSchedParamPtr,
+                                                      virDomainThreadSchedParamPtr))
+{
+    ssize_t nextidx;
+    virDomainThreadSchedParamPtr sched;
+    virDomainThreadSchedParamPtr baseSched = NULL;
+
+    virBitmapClearAll(subsetMap);
+
+    /* we need to find a subset of vCPUs with the given scheduler
+        * that share the priority */
+    nextidx = virBitmapNextSetBit(schedMap, -1);
+    if (!(sched = func(def, nextidx)))
+        return NULL;
+
+    baseSched = sched;
+    ignore_value(virBitmapSetBit(subsetMap, nextidx));
+
+    while ((nextidx = virBitmapNextSetBit(schedMap, nextidx)) > -1) {
+        sched = func(def, nextidx);
+        if (sched && comparator(baseSched, sched))
+            ignore_value(virBitmapSetBit(subsetMap, nextidx));
+    }
+
+    return baseSched;
+}
 
 /**
  * virDomainFormatSchedDef:
@@ -23082,8 +23123,9 @@ virDomainFormatSchedDef(virDomainDefPtr def,
                         virBitmapPtr resourceMap)
 {
     virBitmapPtr schedMap = NULL;
-    virBitmapPtr prioMap = NULL;
+    virBitmapPtr subsetMap = NULL;
     virDomainThreadSchedParamPtr sched;
+    virDomainThreadSchedParamPtr baseSched;
     char *tmp = NULL;
     ssize_t next;
     size_t i;
@@ -23098,7 +23140,7 @@ virDomainFormatSchedDef(virDomainDefPtr def,
      */
 
     if (!(schedMap = virBitmapNew(VIR_DOMAIN_CPUMASK_LEN)) ||
-        !(prioMap = virBitmapNew(VIR_DOMAIN_CPUMASK_LEN)))
+        !(subsetMap = virBitmapNew(VIR_DOMAIN_CPUMASK_LEN)))
         goto cleanup;
 
     for (i = VIR_PROC_POLICY_NONE + 1; i < VIR_PROC_POLICY_LAST; i++) {
@@ -23117,9 +23159,8 @@ virDomainFormatSchedDef(virDomainDefPtr def,
          * have them */
         while (!virBitmapIsAllClear(schedMap)) {
             virBitmapPtr currentMap = NULL;
-            ssize_t nextprio;
             bool hasPriority = false;
-            int priority = 0;
+            baseSched = NULL;
 
             switch ((virProcessSchedPolicy) i) {
             case VIR_PROC_POLICY_NONE:
@@ -23132,25 +23173,17 @@ virDomainFormatSchedDef(virDomainDefPtr def,
 
             case VIR_PROC_POLICY_FIFO:
             case VIR_PROC_POLICY_RR:
-                virBitmapClearAll(prioMap);
                 hasPriority = true;
 
-                /* we need to find a subset of vCPUs with the given scheduler
-                 * that share the priority */
-                nextprio = virBitmapNextSetBit(schedMap, -1);
-                if (!(sched = func(def, nextprio)))
+                baseSched = virDomainSchedSubsetCharacteristic(def,
+                                                               schedMap,
+                                                               subsetMap,
+                                                               func,
+                                                               virDomainSchedPriorityComparator);
+                if (baseSched == NULL)
                     goto cleanup;
 
-                priority = sched->priority;
-                ignore_value(virBitmapSetBit(prioMap, nextprio));
-
-                while ((nextprio = virBitmapNextSetBit(schedMap, nextprio)) > -1) {
-                    sched = func(def, nextprio);
-                    if (sched && sched->priority == priority)
-                        ignore_value(virBitmapSetBit(prioMap, nextprio));
-                }
-
-                currentMap = prioMap;
+                currentMap = subsetMap;
                 break;
             }
 
@@ -23164,8 +23197,8 @@ virDomainFormatSchedDef(virDomainDefPtr def,
                               virProcessSchedPolicyTypeToString(i));
             VIR_FREE(tmp);
 
-            if (hasPriority)
-                virBufferAsprintf(buf, " priority='%d'", priority);
+            if (hasPriority && baseSched != NULL)
+                virBufferAsprintf(buf, " priority='%d'", baseSched->priority);
 
             virBufferAddLit(buf, "/>\n");
 
@@ -23178,7 +23211,7 @@ virDomainFormatSchedDef(virDomainDefPtr def,
 
  cleanup:
     virBitmapFree(schedMap);
-    virBitmapFree(prioMap);
+    virBitmapFree(subsetMap);
     return ret;
 }
 
