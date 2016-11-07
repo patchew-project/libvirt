@@ -70,6 +70,7 @@
 VIR_LOG_INIT("util.process");
 
 #ifdef __linux__
+# include <sys/syscall.h>
 /*
  * Workaround older glibc. While kernel may support the setns
  * syscall, the glibc wrapper might not exist. If that's the
@@ -91,9 +92,14 @@ VIR_LOG_INIT("util.process");
 #  endif
 # endif
 
+# ifndef __NR_sched_setattr
+#  if defined(__x86_64__)
+#   define __NR_sched_setattr 314
+#  endif
+# endif
+
 # ifndef HAVE_SETNS
 #  if defined(__NR_setns)
-#   include <sys/syscall.h>
 
 static inline int setns(int fd, int nstype)
 {
@@ -103,11 +109,27 @@ static inline int setns(int fd, int nstype)
 #   error Please determine the syscall number for setns on your architecture
 #  endif
 # endif
+
+static inline int sched_setattr(pid_t pid,
+                                const struct sched_attr *attr,
+                                unsigned int flags)
+{
+    return syscall(__NR_sched_setattr, pid, attr, flags);
+}
 #else /* !__linux__ */
 static inline int setns(int fd ATTRIBUTE_UNUSED, int nstype ATTRIBUTE_UNUSED)
 {
     virReportSystemError(ENOSYS, "%s",
                          _("Namespaces are not supported on this platform."));
+    return -1;
+}
+
+static inline int sched_setattr(pid_t pid,
+                                const struct sched_attr *attr,
+                                unsigned int flags)
+{
+    virReportSystemError(ENOSYS, "%s",
+                         _("Deadline scheduler is not supported on this platform."));
     return -1;
 }
 #endif
@@ -1225,7 +1247,10 @@ virProcessSchedTranslatePolicy(virProcessSchedPolicy policy)
 int
 virProcessSetScheduler(pid_t pid,
                        virProcessSchedPolicy policy,
-                       int priority)
+                       int priority,
+                       unsigned long long runtime,
+                       unsigned long long deadline,
+                       unsigned long long period)
 {
     struct sched_param param = {0};
     int pol = virProcessSchedTranslatePolicy(policy);
@@ -1234,6 +1259,47 @@ virProcessSetScheduler(pid_t pid,
 
     if (!policy)
         return 0;
+
+    if (pol == SCHED_DEADLINE) {
+        int ret = 0;
+
+        if (runtime < 1024 || deadline < 1024 || period < 24) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                        _("Scheduler runtime, deadline and period must be "
+                          "higher or equal to 1024 (1 us) (runtime(%llu), "
+                          "deadline(%llu), period(%llu))"), runtime, deadline, period);
+            return -1;
+        }
+
+        if (!(runtime <= deadline && deadline <= period)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Scheduler configuration does not satisfy "
+                             "(runtime(%llu) <= deadline(%llu) <= period(%llu))"),
+                           runtime, deadline, period);
+            return -1;
+        }
+
+        struct sched_attr attrs = {
+           .size = sizeof(attrs),
+           .sched_policy = SCHED_DEADLINE,
+           .sched_flags = 0,
+           .sched_nice = 0,
+           .sched_priority = 0,
+           .sched_runtime = runtime,
+           .sched_deadline = deadline,
+           .sched_period = period,
+        };
+
+        ret = sched_setattr(pid, &attrs, 0);
+        if (ret != 0) {
+            virReportSystemError(errno,
+                                 _("Cannot set scheduler parameters for pid %d"),
+                                 pid);
+            return -1;
+        }
+
+        return 0;
+    }
 
     if (pol == SCHED_FIFO || pol == SCHED_RR) {
         int min = 0;

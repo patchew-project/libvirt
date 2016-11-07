@@ -23,6 +23,9 @@
 # define __VIR_PROCESS_H__
 
 # include <sys/types.h>
+# ifdef __linux__
+#  include <linux/types.h>
+# endif
 
 # include "internal.h"
 # include "virbitmap.h"
@@ -38,6 +41,26 @@ typedef enum {
 
     VIR_PROC_POLICY_LAST
 } virProcessSchedPolicy;
+
+# ifdef __linux__
+struct sched_attr {
+    __u32 size;
+
+    __u32 sched_policy;
+    __u64 sched_flags;
+
+    /* SCHED_NORMAL, SCHED_BATCH */
+    __s32 sched_nice;
+
+    /* SCHED_FIFO, SCHED_RR */
+    __u32 sched_priority;
+
+    /* SCHED_DEADLINE (nsec) */
+    __u64 sched_runtime;
+    __u64 sched_deadline;
+    __u64 sched_period;
+};
+# endif
 
 VIR_ENUM_DECL(virProcessSchedPolicy);
 
@@ -93,6 +116,9 @@ int virProcessRunInMountNamespace(pid_t pid,
 
 int virProcessSetScheduler(pid_t pid,
                            virProcessSchedPolicy policy,
-                           int priority);
+                           int priority,
+                           unsigned long long runtime,
+                           unsigned long long deadline,
+                           unsigned long long period);
 
 #endif /* __VIR_PROCESS_H__ */
