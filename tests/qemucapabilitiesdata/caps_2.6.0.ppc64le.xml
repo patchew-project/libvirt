@@ -156,6 +156,7 @@
   <flag name='drive-iotune-max-length'/>
   <flag name='ivshmem-plain'/>
   <flag name='ivshmem-doorbell'/>
+  <flag name='drive-iotune-group'/>
   <version>2005094</version>
   <kvmVersion>0</kvmVersion>
   <package></package>

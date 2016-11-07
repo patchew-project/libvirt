@@ -350,6 +350,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "ivshmem-plain",
 
               "ivshmem-doorbell", /* 240 */
+              "drive-iotune-group",
     );
 
 
@@ -2850,6 +2851,7 @@ static struct virQEMUCapsCommandLineProps virQEMUCapsCommandLine[] = {
     { "name", "guest", QEMU_CAPS_NAME_GUEST },
     { "spice", "unix", QEMU_CAPS_SPICE_UNIX },
     { "drive", "throttling.bps-total-max-length", QEMU_CAPS_DRIVE_IOTUNE_MAX_LENGTH },
+    { "drive", "throttling.group", QEMU_CAPS_DRIVE_IOTUNE_GROUP },
 };
 
 static int
