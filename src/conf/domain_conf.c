@@ -647,7 +647,8 @@ VIR_ENUM_IMPL(virDomainHostdevMode, VIR_DOMAIN_HOSTDEV_MODE_LAST,
 VIR_ENUM_IMPL(virDomainHostdevSubsys, VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST,
               "usb",
               "pci",
-              "scsi")
+              "scsi",
+              "scsi_host")
 
 VIR_ENUM_IMPL(virDomainHostdevSubsysPCIBackend,
               VIR_DOMAIN_HOSTDEV_PCI_BACKEND_TYPE_LAST,
@@ -660,6 +661,11 @@ VIR_ENUM_IMPL(virDomainHostdevSubsysSCSIProtocol,
               VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_LAST,
               "adapter",
               "iscsi")
+
+VIR_ENUM_IMPL(virDomainHostdevSubsysHostProtocol,
+              VIR_DOMAIN_HOSTDEV_SUBSYS_HOST_PROTOCOL_TYPE_LAST,
+              "none",
+              "vhost")
 
 VIR_ENUM_IMPL(virDomainHostdevCaps, VIR_DOMAIN_HOSTDEV_CAPS_TYPE_LAST,
               "storage",
@@ -13016,6 +13022,8 @@ virDomainHostdevDefParseXML(virDomainXMLOptionPtr xmlopt,
             break;
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
             break;
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_HOST:
+            break;
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
             goto error;
             break;
@@ -13899,6 +13907,8 @@ virDomainHostdevMatchSubsys(virDomainHostdevDefPtr a,
             return virDomainHostdevMatchSubsysSCSIiSCSI(a, b);
         else
             return virDomainHostdevMatchSubsysSCSIHost(a, b);
+    case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_HOST:
+        /* Fall through for now */
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
         return 0;
     }
