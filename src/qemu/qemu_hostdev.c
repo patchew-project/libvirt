@@ -292,6 +292,17 @@ qemuHostdevPrepareSCSIDevices(virQEMUDriverPtr driver,
                                         name, hostdevs, nhostdevs);
 }
 
+int
+qemuHostdevPrepareHostDevices(virQEMUDriverPtr driver,
+                              const char *name,
+                              virDomainHostdevDefPtr *hostdevs,
+                              int nhostdevs)
+{
+    virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
+
+    return virHostdevPrepareHostDevices(hostdev_mgr, QEMU_DRIVER_NAME,
+                                        name, hostdevs, nhostdevs);
+}
 
 int
 qemuHostdevPrepareDomainDevices(virQEMUDriverPtr driver,
@@ -312,6 +323,10 @@ qemuHostdevPrepareDomainDevices(virQEMUDriverPtr driver,
         return -1;
 
     if (qemuHostdevPrepareSCSIDevices(driver, def->name,
+                                      def->hostdevs, def->nhostdevs) < 0)
+        return -1;
+
+    if (qemuHostdevPrepareHostDevices(driver, def->name,
                                       def->hostdevs, def->nhostdevs) < 0)
         return -1;
 
@@ -370,6 +385,29 @@ qemuHostdevReAttachSCSIDevices(virQEMUDriverPtr driver,
 }
 
 void
+qemuHostdevReAttachHostDevices(virQEMUDriverPtr driver,
+                               const char *name,
+                               virDomainHostdevDefPtr *hostdevs,
+                               int nhostdevs)
+{
+    size_t i;
+    virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
+
+    for (i = 0; i < nhostdevs; i++) {
+        virDomainHostdevDefPtr hostdev = hostdevs[i];
+        virDomainDeviceDef dev;
+
+        dev.type = VIR_DOMAIN_DEVICE_HOSTDEV;
+        dev.data.hostdev = hostdev;
+
+        ignore_value(qemuRemoveSharedDevice(driver, &dev, name));
+    }
+
+    virHostdevReAttachHostDevices(hostdev_mgr, QEMU_DRIVER_NAME,
+                                  name, hostdevs, nhostdevs);
+}
+
+void
 qemuHostdevReAttachDomainDevices(virQEMUDriverPtr driver,
                                  virDomainDefPtr def)
 {
@@ -383,5 +421,8 @@ qemuHostdevReAttachDomainDevices(virQEMUDriverPtr driver,
                                   def->nhostdevs);
 
     qemuHostdevReAttachSCSIDevices(driver, def->name, def->hostdevs,
+                                   def->nhostdevs);
+
+    qemuHostdevReAttachHostDevices(driver, def->name, def->hostdevs,
                                    def->nhostdevs);
 }
