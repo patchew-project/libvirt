@@ -350,6 +350,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "ivshmem-plain",
 
               "ivshmem-doorbell", /* 240 */
+              "spapr-pci-host-bridge.numa_node",
     );
 
 
@@ -1614,6 +1615,10 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioNet[] = {
     { "rx_queue_size", QEMU_CAPS_VIRTIO_NET_RX_QUEUE_SIZE },
 };
 
+static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsSpaprPCIHostBridge[] = {
+    { "numa_node", QEMU_CAPS_SPAPR_PCI_HOST_BRIDGE_NUMA_NODE },
+};
+
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioSCSI[] = {
     { "iothread", QEMU_CAPS_VIRTIO_SCSI_IOTHREAD },
 };
@@ -1766,6 +1771,8 @@ static struct virQEMUCapsObjectTypeProps virQEMUCapsObjectProps[] = {
       ARRAY_CARDINALITY(virQEMUCapsObjectPropsVirtioBalloon) },
     { "nec-usb-xhci", virQEMUCapsObjectPropsUSBNECXHCI,
       ARRAY_CARDINALITY(virQEMUCapsObjectPropsUSBNECXHCI) },
+    { "spapr-pci-host-bridge", virQEMUCapsObjectPropsSpaprPCIHostBridge,
+      ARRAY_CARDINALITY(virQEMUCapsObjectPropsSpaprPCIHostBridge) },
 };
 
 struct virQEMUCapsPropTypeObjects {

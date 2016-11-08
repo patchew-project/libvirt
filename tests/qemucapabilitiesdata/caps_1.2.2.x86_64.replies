@@ -1701,6 +1701,14 @@
 }
 
 {
+  "id": "libvirt-39",
+  "error": {
+    "class": "DeviceNotFound",
+    "desc": "Device 'spapr-pci-host-bridge' not found"
+  }
+}
+
+{
   "return": [
     {
       "name": "isapc"
@@ -1738,7 +1746,7 @@
       "name": "none"
     }
   ],
-  "id": "libvirt-39"
+  "id": "libvirt-40"
 }
 
 {
@@ -1810,7 +1818,7 @@
       "name": "Opteron_G4"
     }
   ],
-  "id": "libvirt-40"
+  "id": "libvirt-41"
 }
 
 {
@@ -1818,11 +1826,11 @@
     "enabled": false,
     "present": true
   },
-  "id": "libvirt-41"
+  "id": "libvirt-42"
 }
 
 {
-  "id": "libvirt-42",
+  "id": "libvirt-43",
   "error": {
     "class": "CommandNotFound",
     "desc": "The command query-tpm-models has not been found"
@@ -1830,7 +1838,7 @@
 }
 
 {
-  "id": "libvirt-43",
+  "id": "libvirt-44",
   "error": {
     "class": "CommandNotFound",
     "desc": "The command query-tpm-types has not been found"
@@ -1838,7 +1846,7 @@
 }
 
 {
-  "id": "libvirt-44",
+  "id": "libvirt-45",
   "error": {
     "class": "CommandNotFound",
     "desc": "The command query-command-line-options has not been found"
@@ -1852,5 +1860,5 @@
       "capability": "xbzrle"
     }
   ],
-  "id": "libvirt-45"
+  "id": "libvirt-46"
 }

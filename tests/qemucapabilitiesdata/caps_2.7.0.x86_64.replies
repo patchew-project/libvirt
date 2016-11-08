@@ -3549,6 +3549,14 @@
 }
 
 {
+  "id": "libvirt-40",
+  "error": {
+    "class": "DeviceNotFound",
+    "desc": "Device 'spapr-pci-host-bridge' not found"
+  }
+}
+
+{
   "return": [
     {
       "hotpluggable-cpus": true,
@@ -3694,7 +3702,7 @@
       "cpu-max": 255
     }
   ],
-  "id": "libvirt-40"
+  "id": "libvirt-41"
 }
 
 {
@@ -3787,7 +3795,7 @@
       "name": "qemu64"
     }
   ],
-  "id": "libvirt-41"
+  "id": "libvirt-42"
 }
 
 {
@@ -3795,21 +3803,21 @@
     "enabled": false,
     "present": true
   },
-  "id": "libvirt-42"
+  "id": "libvirt-43"
 }
 
 {
   "return": [
     "tpm-tis"
   ],
-  "id": "libvirt-43"
+  "id": "libvirt-44"
 }
 
 {
   "return": [
     "passthrough"
   ],
-  "id": "libvirt-44"
+  "id": "libvirt-45"
 }
 
 {
@@ -4907,7 +4915,7 @@
       "option": "drive"
     }
   ],
-  "id": "libvirt-45"
+  "id": "libvirt-46"
 }
 
 {
@@ -4941,5 +4949,5 @@
       "capability": "postcopy-ram"
     }
   ],
-  "id": "libvirt-46"
+  "id": "libvirt-47"
 }
