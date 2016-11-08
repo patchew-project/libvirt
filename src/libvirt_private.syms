@@ -1675,6 +1675,23 @@ virHookInitialize;
 virHookPresent;
 
 
+# util/virhost.h
+virHostDeviceFileIterate;
+virHostDeviceFree;
+virHostDeviceGetName;
+virHostDeviceListAdd;
+virHostDeviceListCount;
+virHostDeviceListDel;
+virHostDeviceListFind;
+virHostDeviceListFindIndex;
+virHostDeviceListGet;
+virHostDeviceListNew;
+virHostDeviceListSteal;
+virHostDeviceNew;
+virHostDeviceSetUsedBy;
+virHostOpenVhostSCSI;
+
+
 # util/virhostdev.h
 virHostdevFindUSBDevice;
 virHostdevManagerGetDefault;
@@ -1682,10 +1699,12 @@ virHostdevPCINodeDeviceDetach;
 virHostdevPCINodeDeviceReAttach;
 virHostdevPCINodeDeviceReset;
 virHostdevPrepareDomainDevices;
+virHostdevPrepareHostDevices;
 virHostdevPreparePCIDevices;
 virHostdevPrepareSCSIDevices;
 virHostdevPrepareUSBDevices;
 virHostdevReAttachDomainDevices;
+virHostdevReAttachHostDevices;
 virHostdevReAttachPCIDevices;
 virHostdevReAttachSCSIDevices;
 virHostdevReAttachUSBDevices;

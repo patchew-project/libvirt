@@ -122,6 +122,7 @@ UTIL_SOURCES =							\
 		util/virhash.c util/virhash.h			\
 		util/virhashcode.c util/virhashcode.h		\
 		util/virhook.c util/virhook.h			\
+		util/virhost.c util/virhost.h			\
 		util/virhostcpu.c util/virhostcpu.h util/virhostcpupriv.h \
 		util/virhostdev.c util/virhostdev.h		\
 		util/virhostmem.c util/virhostmem.h		\

@@ -199,6 +199,7 @@ src/util/virfirewall.c
 src/util/virfirmware.c
 src/util/virhash.c
 src/util/virhook.c
+src/util/virhost.c
 src/util/virhostcpu.c
 src/util/virhostdev.c
 src/util/virhostmem.c
