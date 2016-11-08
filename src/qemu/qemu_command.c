@@ -3055,6 +3055,25 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
     return NULL;
 }
 
+static int qemuBuildSPAPRGlobalPCIRootNodeCommandLine(virCommandPtr cmd,
+                                                      virDomainControllerDefPtr def,
+                                                      virQEMUCapsPtr qemuCaps)
+{
+    if (def->opts.pciopts.numaNode != -1) {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SPAPR_PCI_HOST_BRIDGE_NUMA_NODE)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("the numa_node option with spapr-pci-host-bridge controller "
+                             "is not supported in this QEMU binary"));
+            return -1;
+        }
+        virCommandAddArg(cmd, "-global");
+        virCommandAddArgFormat(cmd, "spapr-pci-host-bridge.numa_node=%d",
+                               def->opts.pciopts.numaNode);
+    }
+
+    return 0;
+}
+
 
 static int
 qemuBuildControllerDevCommandLine(virCommandPtr cmd,
@@ -3107,8 +3126,12 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
             /* skip pci-root/pcie-root */
             if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI &&
                 (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT ||
-                 cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT))
+                 cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT)) {
+                if (ARCH_IS_PPC64(def->os.arch))
+                    if (qemuBuildSPAPRGlobalPCIRootNodeCommandLine(cmd, cont, qemuCaps) < 0)
+                        return -1;
                 continue;
+            }
 
             /* first SATA controller on Q35 machines is implicit */
             if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_SATA &&

@@ -3058,12 +3058,14 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
             /* if a PCI expander bus has a NUMA node set, make sure
              * that NUMA node is configured in the guest <cpu><numa>
              * array. NUMA cell id's in this array are numbered
-             * from 0 .. size-1.
+             * from 0 .. size-1. Or On PPC, if the pci/pcie-root has the
+             * NUMA node set, do the same.
              */
-            if ((cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_EXPANDER_BUS ||
-                 cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_EXPANDER_BUS) &&
-                (int) virDomainNumaGetNodeCount(def->numa)
-                <= cont->opts.pciopts.numaNode) {
+            if (((cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_EXPANDER_BUS ||
+                  cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_EXPANDER_BUS) ||
+                 (qemuDomainMachineIsPSeries(def) &&
+                  cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT)) &&
+                (int) virDomainNumaGetNodeCount(def->numa) <= cont->opts.pciopts.numaNode) {
                 virReportError(VIR_ERR_XML_ERROR,
                                _("%s with index %d is "
                                  "configured for a NUMA node (%d) "
@@ -3814,7 +3816,8 @@ qemuDomainDefFormatBuf(virQEMUDriverPtr driver,
         }
 
         if (pci && pci->idx == 0 &&
-            pci->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT) {
+            pci->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT &&
+            pci->opts.pciopts.numaNode == -1) {
             VIR_DEBUG("Removing default pci-root from domain '%s'"
                       " for migration compatibility", def->name);
             toremove++;

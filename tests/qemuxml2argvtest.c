@@ -2219,6 +2219,8 @@ mymain(void)
             QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE, QEMU_CAPS_MACHINE_IOMMU);
 
     DO_TEST("cpu-hotplug-startup", QEMU_CAPS_QUERY_HOTPLUGGABLE_CPUS);
+    DO_TEST("spapr-pci-hos-bridge-numa-node", QEMU_CAPS_NUMA,
+            QEMU_CAPS_SPAPR_PCI_HOST_BRIDGE_NUMA_NODE);
 
     qemuTestDriverFree(&driver);
 
