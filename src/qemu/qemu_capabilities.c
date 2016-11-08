@@ -350,6 +350,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "ivshmem-plain",
 
               "ivshmem-doorbell", /* 240 */
+              "vhost-scsi",
     );
 
 
@@ -1593,6 +1594,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "intel-iommu", QEMU_CAPS_DEVICE_INTEL_IOMMU },
     { "ivshmem-plain", QEMU_CAPS_DEVICE_IVSHMEM_PLAIN },
     { "ivshmem-doorbell", QEMU_CAPS_DEVICE_IVSHMEM_DOORBELL },
+    { "vhost-scsi", QEMU_CAPS_DEVICE_VHOST_SCSI },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {

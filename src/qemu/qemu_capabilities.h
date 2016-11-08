@@ -385,6 +385,7 @@ typedef enum {
 
     /* 240 */
     QEMU_CAPS_DEVICE_IVSHMEM_DOORBELL, /* -device ivshmem-doorbell */
+    QEMU_CAPS_DEVICE_VHOST_SCSI, /* -device vhost-scsi-{ccw,pci} */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
