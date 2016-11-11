@@ -106,7 +106,7 @@
             <ul>
               <li><a href="downloads.html">Download</a></li>
               <li><a href="contribute.html">Contribute</a></li>
-              <li><a href="docs.html">Learn</a></li>
+              <li><a href="docs.html">Documentation</a></li>
             </ul>
           </div>
           <div id="search">
