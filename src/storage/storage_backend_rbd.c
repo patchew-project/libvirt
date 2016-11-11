@@ -162,10 +162,20 @@ virStorageBackendRBDOpenRADOSConn(virStorageBackendRBDStatePtr ptr,
     rados_conf_set(ptr->cluster, "client_mount_timeout", client_mount_timeout);
 
     VIR_DEBUG("Setting RADOS option rados_mon_op_timeout to %s", mon_op_timeout);
-    rados_conf_set(ptr->cluster, "rados_mon_op_timeout", mon_op_timeout);
+    if (rados_conf_set(ptr->cluster, "rados_mon_op_timeout", mon_op_timeout) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("failed to set RADOS option: %s"),
+                       "rados_mon_op_timeout");
+        goto cleanup;
+    }
 
     VIR_DEBUG("Setting RADOS option rados_osd_op_timeout to %s", osd_op_timeout);
-    rados_conf_set(ptr->cluster, "rados_osd_op_timeout", osd_op_timeout);
+    if (rados_conf_set(ptr->cluster, "rados_osd_op_timeout", osd_op_timeout) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("failed to set RADOS option: %s"),
+                       "rados_osd_op_timeout");
+        goto cleanup;
+    }
 
     /*
      * Librbd supports creating RBD format 2 images. We no longer have to invoke
@@ -173,7 +183,12 @@ virStorageBackendRBDOpenRADOSConn(virStorageBackendRBDStatePtr ptr,
      * This leaves us to simply use rbd_create() and use the default behavior of librbd
      */
     VIR_DEBUG("Setting RADOS option rbd_default_format to %s", rbd_default_format);
-    rados_conf_set(ptr->cluster, "rbd_default_format", rbd_default_format);
+    if (rados_conf_set(ptr->cluster, "rbd_default_format", rbd_default_format) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("failed to set RADOS option: %s"),
+                       "rbd_default_format");
+        goto cleanup;
+    }
 
     ptr->starttime = time(0);
     if ((r = rados_connect(ptr->cluster)) < 0) {
