@@ -55,6 +55,7 @@
 #include "virtpm.h"
 #include "virstring.h"
 #include "virnetdev.h"
+#include "virhostcpu.h"
 
 #define VIR_FROM_THIS VIR_FROM_DOMAIN
 
@@ -1543,7 +1544,12 @@ virDomainDefGetVcpuPinInfoHelper(virDomainDefPtr def,
 {
     int maxvcpus = virDomainDefGetVcpusMax(def);
     virBitmapPtr allcpumap = NULL;
+    virBitmapPtr staticCpuset = NULL;
     size_t i;
+
+#ifdef __linux__
+    staticCpuset = virHostCPUGetOnlineBitmap();
+#endif
 
     if (hostcpus < 0)
         return -1;
@@ -1562,6 +1568,9 @@ virDomainDefGetVcpuPinInfoHelper(virDomainDefPtr def,
         else if (def->placement_mode == VIR_DOMAIN_CPU_PLACEMENT_MODE_AUTO &&
                  autoCpuset)
             bitmap = autoCpuset;
+        else if (def->placement_mode == VIR_DOMAIN_CPU_PLACEMENT_MODE_STATIC &&
+                 staticCpuset)
+            bitmap = staticCpuset;
         else if (def->cpumask)
             bitmap = def->cpumask;
         else
@@ -1571,6 +1580,7 @@ virDomainDefGetVcpuPinInfoHelper(virDomainDefPtr def,
     }
 
     virBitmapFree(allcpumap);
+    virBitmapFree(staticCpuset);
     return i;
 }
 
