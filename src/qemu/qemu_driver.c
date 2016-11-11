@@ -5409,6 +5409,11 @@ qemuDomainGetEmulatorPinInfo(virDomainPtr dom,
     virBitmapPtr cpumask = NULL;
     virBitmapPtr bitmap = NULL;
     virBitmapPtr autoCpuset = NULL;
+    virBitmapPtr staticCpuset = NULL;
+
+#ifdef __linux__
+    staticCpuset = virHostCPUGetOnlineBitmap();
+#endif
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
                   VIR_DOMAIN_AFFECT_CONFIG, -1);
@@ -5435,6 +5440,9 @@ qemuDomainGetEmulatorPinInfo(virDomainPtr dom,
     } else if (vm->def->placement_mode == VIR_DOMAIN_CPU_PLACEMENT_MODE_AUTO &&
                autoCpuset) {
         cpumask = autoCpuset;
+    } else if (vm->def->placement_mode == VIR_DOMAIN_CPU_PLACEMENT_MODE_STATIC &&
+               staticCpuset) {
+        cpumask = staticCpuset;
     } else {
         if (!(bitmap = virBitmapNew(hostcpus)))
             goto cleanup;
@@ -5449,6 +5457,7 @@ qemuDomainGetEmulatorPinInfo(virDomainPtr dom,
  cleanup:
     virDomainObjEndAPI(&vm);
     virBitmapFree(bitmap);
+    virBitmapFree(staticCpuset);
     return ret;
 }
 
