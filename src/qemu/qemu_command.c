@@ -491,6 +491,9 @@ qemuNetworkDriveGetPort(int protocol,
             /* no default port specified */
             return 0;
 
+        case VIR_STORAGE_NET_PROTOCOL_VXHS:
+            return 9999;
+
         case VIR_STORAGE_NET_PROTOCOL_RBD:
         case VIR_STORAGE_NET_PROTOCOL_LAST:
         case VIR_STORAGE_NET_PROTOCOL_NONE:
@@ -1034,6 +1037,7 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
         case VIR_STORAGE_NET_PROTOCOL_TFTP:
         case VIR_STORAGE_NET_PROTOCOL_ISCSI:
         case VIR_STORAGE_NET_PROTOCOL_GLUSTER:
+        case VIR_STORAGE_NET_PROTOCOL_VXHS:
             ret = qemuBuildNetworkDriveURI(src, secinfo);
             break;
 
