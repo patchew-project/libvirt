@@ -6775,6 +6775,76 @@ qemuDomainSetupDevPTS(virQEMUDriverPtr driver,
 
 
 int
+qemuDomainNamespaceSetupDisk(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
+                             virDomainDiskDefPtr disk,
+                             const char *devPath)
+{
+    virStorageSourcePtr next;
+    char *dst = NULL;
+    int ret = -1;
+
+    for (next = disk->src; next; next = next->backingStore) {
+        struct stat sb;
+        mode_t mode;
+
+        if (!next->path || !virStorageSourceIsLocalStorage(next) ||
+            !STRPREFIX(next->path, "/dev")) {
+            /* Not creating device. Just continue. */
+            continue;
+        }
+
+        if (stat(next->path, &sb) < 0) {
+            virReportSystemError(errno,
+                                 _("Unable to access %s"), next->path);
+            goto cleanup;
+        }
+
+        VIR_FREE(dst);
+        if (virAsprintf(&dst, "%s/%s", devPath, next->path + 4) < 0)
+            goto cleanup;
+
+        mode = 0700;
+        if (S_ISCHR(sb.st_mode))
+            mode |= S_IFCHR;
+        else
+            mode |= S_IFBLK;
+
+        if (mknod(dst, mode, sb.st_rdev) < 0) {
+            virReportSystemError(errno,
+                                 _("Unable to create device %s"),
+                                 dst);
+            goto cleanup;
+        }
+    }
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(dst);
+    return ret;
+}
+
+
+static int
+qemuDomainSetupAllDisks(virQEMUDriverPtr driver,
+                        virDomainObjPtr vm,
+                        const char *devPath)
+{
+    size_t i;
+    VIR_DEBUG("Setting up disks");
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        if (qemuDomainNamespaceSetupDisk(driver,
+                                         vm->def->disks[i],
+                                         devPath) < 0)
+            return -1;
+    }
+
+    VIR_DEBUG("Setup all disks");
+    return 0;
+}
+
+
+int
 qemuDomainBuildNamespace(virQEMUDriverPtr driver,
                          virDomainObjPtr vm)
 {
@@ -6791,6 +6861,9 @@ qemuDomainBuildNamespace(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (qemuDomainSetupDev(driver, vm, devPath) < 0)
+        goto cleanup;
+
+    if (qemuDomainSetupAllDisks(driver, vm, devPath) < 0)
         goto cleanup;
 
     if (mount(devPath, "/dev", NULL, mount_flags, NULL) < 0) {
