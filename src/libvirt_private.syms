@@ -1588,6 +1588,7 @@ virFileMatchesNameSuffix;
 virFileNBDDeviceAssociate;
 virFileOpenAs;
 virFileOpenTty;
+virFilePopulateDevices;
 virFilePrintf;
 virFileReadAll;
 virFileReadAllQuiet;

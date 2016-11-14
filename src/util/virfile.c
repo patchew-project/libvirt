@@ -3501,3 +3501,34 @@ int virFileIsSharedFS(const char *path)
                                  VIR_FILE_SHFS_SMB |
                                  VIR_FILE_SHFS_CIFS);
 }
+
+
+int
+virFilePopulateDevices(const char *prefix,
+                       const virFileDevices *const devs)
+{
+    size_t i;
+    int ret = -1;
+    char *path = NULL;
+
+    for (i = 0; devs && devs[i].path; i++) {
+        if (virAsprintf(&path, "%s/%s", prefix, devs[i].path) < 0)
+            goto cleanup;
+
+        dev_t dev = makedev(devs[i].maj, devs[i].min);
+        if (mknod(path, S_IFCHR, dev) < 0 ||
+            chmod(path, devs[i].mode)) {
+            virReportSystemError(errno,
+                                 _("Failed to make device %s"),
+                                 path);
+            goto cleanup;
+        }
+
+        VIR_FREE(path);
+    }
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(path);
+    return ret;
+}

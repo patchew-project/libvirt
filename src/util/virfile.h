@@ -307,4 +307,16 @@ int virFileGetHugepageSize(const char *path,
                            unsigned long long *size);
 int virFileFindHugeTLBFS(virHugeTLBFSPtr *ret_fs,
                          size_t *ret_nfs);
+
+typedef struct _virFileDevices virFileDevices;
+typedef virFileDevices *virFileDevicesPtr;
+struct _virFileDevices {
+    int maj;
+    int min;
+    mode_t mode;
+    const char *path;
+};
+
+int virFilePopulateDevices(const char *prefix,
+                           const virFileDevices *const devs);
 #endif /* __VIR_FILE_H */

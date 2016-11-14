@@ -1497,42 +1497,32 @@ static int virLXCControllerPopulateDevices(virLXCControllerPtr ctrl)
     size_t i;
     int ret = -1;
     char *path = NULL;
-    const struct {
-        int maj;
-        int min;
-        mode_t mode;
-        const char *path;
-    } devs[] = {
+    virFileDevices devs[] = {
         { LXC_DEV_MAJ_MEMORY, LXC_DEV_MIN_NULL, 0666, "/null" },
         { LXC_DEV_MAJ_MEMORY, LXC_DEV_MIN_ZERO, 0666, "/zero" },
         { LXC_DEV_MAJ_MEMORY, LXC_DEV_MIN_FULL, 0666, "/full" },
         { LXC_DEV_MAJ_MEMORY, LXC_DEV_MIN_RANDOM, 0666, "/random" },
         { LXC_DEV_MAJ_MEMORY, LXC_DEV_MIN_URANDOM, 0666, "/urandom" },
         { LXC_DEV_MAJ_TTY, LXC_DEV_MIN_TTY, 0666, "/tty" },
+        { 0, 0, 0, NULL},
     };
 
     if (virLXCControllerSetupDev(ctrl) < 0)
         goto cleanup;
 
+    if (virAsprintf(&path, "/%s/%s.dev", LXC_STATE_DIR, ctrl->def->name) < 0)
+        goto cleanup;
+
+    if (virFilePopulateDevices(path, devs) < 0)
+        goto cleanup;
+
     /* Populate /dev/ with a few important bits */
     for (i = 0; i < ARRAY_CARDINALITY(devs); i++) {
-        if (virAsprintf(&path, "/%s/%s.dev/%s",
-                        LXC_STATE_DIR, ctrl->def->name, devs[i].path) < 0)
-            goto cleanup;
-
-        dev_t dev = makedev(devs[i].maj, devs[i].min);
-        if (mknod(path, S_IFCHR, dev) < 0 ||
-            chmod(path, devs[i].mode)) {
-            virReportSystemError(errno,
-                                 _("Failed to make device %s"),
-                                 path);
-            goto cleanup;
-        }
-
-        if (lxcContainerChown(ctrl->def, path) < 0)
-            goto cleanup;
-
         VIR_FREE(path);
+        if (virAsprintf(&path, "/%s/%s.dev/%s",
+                        LXC_STATE_DIR, ctrl->def->name, devs[i].path) < 0 ||
+            lxcContainerChown(ctrl->def, path) < 0)
+            goto cleanup;
     }
 
     ret = 0;
