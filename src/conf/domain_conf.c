@@ -8374,7 +8374,7 @@ virDomainControllerDefParseXML(xmlNodePtr node,
     if (idx) {
         unsigned int idxVal;
         if (virStrToLong_ui(idx, NULL, 10, &idxVal) < 0 ||
-            idxVal > INT_MAX) {
+            idxVal > UINT_MAX) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Cannot parse controller index %s"), idx);
             goto error;
