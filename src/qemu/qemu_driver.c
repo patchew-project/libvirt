@@ -16609,6 +16609,12 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
     virQEMUDriverConfigPtr cfg = NULL;
     const char *format = NULL;
     int desttype = virStorageSourceGetActualType(mirror);
+    char *mirr_path = NULL;
+    qemuDomainSecretInfoPtr tmp_secinfo = NULL;
+    qemuDomainSecretInfoPtr mirr_secinfo = NULL;
+    qemuDomainSecretInfoPtr tmp_encinfo = NULL;
+    virStorageSourcePtr tmp_src = NULL;
+    qemuDomainDiskPrivatePtr diskPriv = NULL;
 
     /* Preliminaries: find the disk we are editing, sanity checks */
     virCheckFlags(VIR_DOMAIN_BLOCK_COPY_SHALLOW |
@@ -16628,6 +16634,8 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
 
     if (!(disk = qemuDomainDiskByName(vm->def, path)))
         goto endjob;
+
+    diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
 
     if (!(device = qemuAliasFromDisk(disk)))
         goto endjob;
@@ -16675,51 +16683,67 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
     }
 
     /* Prepare the destination file.  */
-    /* XXX Allow non-file mirror destinations */
-    if (!virStorageSourceIsLocalStorage(mirror)) {
+    if (!virStorageSourceIsLocalStorage(mirror) &&
+        (mirror->type != VIR_STORAGE_TYPE_NETWORK ||
+         mirror->protocol != VIR_STORAGE_NET_PROTOCOL_RBD)) {
         virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED, "%s",
                        _("non-file destination not supported yet"));
         goto endjob;
     }
-    if (stat(mirror->path, &st) < 0) {
-        if (errno != ENOENT) {
-            virReportSystemError(errno, _("unable to stat for disk %s: %s"),
-                                 disk->dst, mirror->path);
-            goto endjob;
-        } else if (flags & VIR_DOMAIN_BLOCK_COPY_REUSE_EXT ||
-                   desttype == VIR_STORAGE_TYPE_BLOCK) {
-            virReportSystemError(errno,
-                                 _("missing destination file for disk %s: %s"),
-                                 disk->dst, mirror->path);
-            goto endjob;
+    if (virStorageSourceIsLocalStorage(mirror)) {
+        if (stat(mirror->path, &st) < 0) {
+            if (errno != ENOENT) {
+                virReportSystemError(errno, _("unable to stat for disk %s: %s"),
+                                     disk->dst, mirror->path);
+                goto endjob;
+            } else if (flags & VIR_DOMAIN_BLOCK_COPY_REUSE_EXT ||
+                       desttype == VIR_STORAGE_TYPE_BLOCK) {
+                virReportSystemError(errno,
+                                     _("missing destination file for disk %s: %s"),
+                                     disk->dst, mirror->path);
+                goto endjob;
+            }
+        } else if (!S_ISBLK(st.st_mode)) {
+            if (st.st_size && !(flags & VIR_DOMAIN_BLOCK_COPY_REUSE_EXT)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("external destination file for disk %s already "
+                                 "exists and is not a block device: %s"),
+                               disk->dst, mirror->path);
+                goto endjob;
+            }
+            if (desttype == VIR_STORAGE_TYPE_BLOCK) {
+                virReportError(VIR_ERR_INVALID_ARG,
+                               _("blockdev flag requested for disk %s, but file "
+                                 "'%s' is not a block device"),
+                               disk->dst, mirror->path);
+                goto endjob;
+            }
         }
-    } else if (!S_ISBLK(st.st_mode)) {
-        if (st.st_size && !(flags & VIR_DOMAIN_BLOCK_COPY_REUSE_EXT)) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("external destination file for disk %s already "
-                             "exists and is not a block device: %s"),
-                           disk->dst, mirror->path);
-            goto endjob;
-        }
-        if (desttype == VIR_STORAGE_TYPE_BLOCK) {
-            virReportError(VIR_ERR_INVALID_ARG,
-                           _("blockdev flag requested for disk %s, but file "
-                             "'%s' is not a block device"),
-                           disk->dst, mirror->path);
-            goto endjob;
-        }
+    } else if (!(flags & VIR_DOMAIN_BLOCK_COPY_REUSE_EXT)) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       "%s",
+                       _("only external destination file is supported for "
+                         "rbd protocol"));
+        goto endjob;
     }
 
     if (!mirror->format) {
-        if (!(flags & VIR_DOMAIN_BLOCK_COPY_REUSE_EXT)) {
-            mirror->format = disk->src->format;
-        } else {
-            /* If the user passed the REUSE_EXT flag, then either they
-             * can also pass the RAW flag or use XML to tell us the format.
-             * So if we get here, we assume it is safe for us to probe the
-             * format from the file that we will be using.  */
-            mirror->format = virStorageFileProbeFormat(mirror->path, cfg->user,
+        if (virStorageSourceIsLocalStorage(mirror)) {
+            if (!(flags & VIR_DOMAIN_BLOCK_COPY_REUSE_EXT)) {
+                mirror->format = disk->src->format;
+            } else {
+                /* If the user passed the REUSE_EXT flag, then either they
+                 * can also pass the RAW flag or use XML to tell us the format.
+                 * So if we get here, we assume it is safe for us to probe the
+                 * format from the file that we will be using.  */
+                mirror->format = virStorageFileProbeFormat(mirror->path, cfg->user,
                                                        cfg->group);
+            }
+        } else {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("format is required for %s"),
+                           mirror->path);
+            goto endjob;
         }
     }
 
@@ -16745,9 +16769,29 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
         goto endjob;
     }
 
+    tmp_secinfo = diskPriv->secinfo;
+    tmp_encinfo = diskPriv->encinfo;
+    tmp_src = disk->src;
+    disk->src = mirror;
+
+    if (qemuDomainSecretDiskPrepare(conn, priv, disk) < 0) {
+        disk->src = tmp_src;
+        diskPriv->secinfo = tmp_secinfo;
+        diskPriv->encinfo = tmp_encinfo;
+        goto endjob;
+    }
+
+    disk->src = tmp_src;
+    mirr_secinfo = diskPriv->secinfo;
+    diskPriv->secinfo = tmp_secinfo;
+    diskPriv->encinfo = tmp_encinfo;
+
+    if (qemuGetDriveSourceString(mirror, mirr_secinfo, &mirr_path) < 0)
+        goto endjob;
+
     /* Actually start the mirroring */
     qemuDomainObjEnterMonitor(driver, vm);
-    ret = qemuMonitorDriveMirror(priv->mon, device, mirror->path, format,
+    ret = qemuMonitorDriveMirror(priv->mon, device, mirr_path, format,
                                  bandwidth, granularity, buf_size, flags);
     virDomainAuditDisk(vm, NULL, mirror, "mirror", ret >= 0);
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
@@ -16775,6 +16819,7 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
+    VIR_FREE(mirr_path);
     VIR_FREE(device);
     virObjectUnref(cfg);
     return ret;
