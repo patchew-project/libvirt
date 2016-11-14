@@ -55,6 +55,7 @@
 
 #include <sys/time.h>
 #include <fcntl.h>
+#include <sys/mount.h>
 
 #include <libxml/xpathInternals.h>
 
@@ -86,6 +87,21 @@ VIR_ENUM_IMPL(qemuDomainAsyncJob, QEMU_ASYNC_JOB_LAST,
               "start",
 );
 
+#define QEMU_DEV_MAJ_MEMORY  1
+#define QEMU_DEV_MAJ_TTY     5
+#define QEMU_DEV_MAJ_KVM     10
+#define QEMU_DEV_MAJ_PTY     136
+
+#define QEMU_DEV_MIN_CONSOLE 1
+#define QEMU_DEV_MIN_FULL    7
+#define QEMU_DEV_MIN_FUSE    229
+#define QEMU_DEV_MIN_KVM     232
+#define QEMU_DEV_MIN_NULL    3
+#define QEMU_DEV_MIN_PTMX    2
+#define QEMU_DEV_MIN_RANDOM  8
+#define QEMU_DEV_MIN_TTY     0
+#define QEMU_DEV_MIN_URANDOM 9
+#define QEMU_DEV_MIN_ZERO    5
 
 struct _qemuDomainLogContext {
     int refs;
@@ -6657,4 +6673,221 @@ qemuDomainSupportsVideoVga(virDomainVideoDefPtr video,
         return false;
 
     return true;
+}
+
+
+static int
+qemuDomainPopulateDevices(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
+                          virDomainObjPtr vm ATTRIBUTE_UNUSED,
+                          const char *path)
+{
+    int ret = -1;
+    virFileDevices devs[] = {
+        { QEMU_DEV_MAJ_MEMORY, QEMU_DEV_MIN_NULL, 0666, "/null" },
+        { QEMU_DEV_MAJ_MEMORY, QEMU_DEV_MIN_ZERO, 0666, "/zero" },
+        { QEMU_DEV_MAJ_MEMORY, QEMU_DEV_MIN_FULL, 0666, "/full" },
+        { QEMU_DEV_MAJ_KVM,  QEMU_DEV_MIN_KVM, 0660, "/kvm"},
+        { QEMU_DEV_MAJ_MEMORY, QEMU_DEV_MIN_RANDOM, 0666, "/random" },
+        { QEMU_DEV_MAJ_MEMORY, QEMU_DEV_MIN_URANDOM, 0666, "/urandom" },
+        { QEMU_DEV_MAJ_TTY, QEMU_DEV_MIN_TTY, 0666, "/tty" },
+        { 0, 0, 0, NULL},
+    };
+
+    if (virFilePopulateDevices(path, devs) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    return ret;
+}
+
+
+static int
+qemuDomainSetupDev(virQEMUDriverPtr driver,
+                   virDomainObjPtr vm,
+                   const char *path)
+{
+    char *mount_options = NULL;
+    char *opts = NULL;
+    int ret = -1;
+
+    VIR_DEBUG("Setting up /dev/ for domain %s", vm->def->name);
+
+    mount_options = virSecurityManagerGetMountOptions(driver->securityManager,
+                                                      vm->def);
+
+    if (!mount_options &&
+        VIR_STRDUP(mount_options, "") < 0)
+        goto cleanup;
+
+    /*
+     * tmpfs is limited to 64kb, since we only have device nodes in there
+     * and don't want to DOS the entire OS RAM usage
+     */
+    if (virAsprintf(&opts,
+                    "mode=755,size=65536%s", mount_options) < 0)
+        goto cleanup;
+
+    if (virFileSetupDev(path, opts) < 0)
+        goto cleanup;
+
+    if (qemuDomainPopulateDevices(driver, vm, path) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(opts);
+    VIR_FREE(mount_options);
+    return ret;
+}
+
+
+static int
+qemuDomainSetupDevPTS(virQEMUDriverPtr driver,
+                      virDomainObjPtr vm,
+                      const char *path)
+{
+    char *mount_options = NULL;
+    char *opts = NULL;
+    int ret = -1;
+    const gid_t ptsgid = 5;
+
+    mount_options = virSecurityManagerGetMountOptions(driver->securityManager,
+                                                      vm->def);
+
+    if (!mount_options &&
+        VIR_STRDUP(mount_options, "") < 0)
+        goto cleanup;
+
+    if (virAsprintf(&opts, "newinstance,ptmxmode=0666,mode=0620,gid=%u%s",
+                    ptsgid, (mount_options ? mount_options : "")) < 0)
+        goto cleanup;
+
+    if (virFileSetupDevPTS(path, opts, NULL) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(opts);
+    VIR_FREE(mount_options);
+    return ret;
+}
+
+
+int
+qemuDomainBuildNamespace(virQEMUDriverPtr driver,
+                         virDomainObjPtr vm)
+{
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    const unsigned long mount_flags = MS_MOVE;
+    char *devPath = NULL;
+    char *devptsPath = NULL;
+    int ret = -1;
+
+    if (virAsprintf(&devPath, "%s/%s.dev",
+                    cfg->stateDir, vm->def->name) < 0 ||
+        virAsprintf(&devptsPath, "%s/%s.devpts",
+                    cfg->stateDir, vm->def->name) < 0)
+        goto cleanup;
+
+    if (qemuDomainSetupDev(driver, vm, devPath) < 0)
+        goto cleanup;
+
+    if (mount(devPath, "/dev", NULL, mount_flags, NULL) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to mount %s on /dev"),
+                             devPath);
+        goto cleanup;
+    }
+
+    if (qemuDomainSetupDevPTS(driver, vm, devptsPath) < 0)
+        goto cleanup;
+
+    if (virFileMakePath("/dev/pts") < 0) {
+        virReportSystemError(errno, "%s",
+                             _("Cannot create /dev/pts"));
+        goto cleanup;
+    }
+
+    if (mount(devptsPath, "/dev/pts", NULL, mount_flags, NULL) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to mount %s on /dev/pts"),
+                             devptsPath);
+        goto cleanup;
+    }
+
+    if (virFileBindMountDevice("/dev/pts/ptmx", "/dev/ptmx") < 0)
+        goto cleanup;
+
+    VIR_DEBUG("blaaah: %d", system("ls -l /dev > /tmp/blaaah"));
+    VIR_DEBUG("blaaah: %d", system("ls -l /dev/pts >> /tmp/blaaah"));
+    VIR_DEBUG("blaaah: %d", system("mount >> /tmp/blaaah"));
+    ret = 0;
+ cleanup:
+    VIR_FREE(devPath);
+    return ret;
+}
+
+
+int
+qemuDomainCreateNamespace(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm)
+{
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    int ret = -1;
+    char *path = NULL;
+
+    if (virAsprintf(&path, "%s/%s.dev",
+                    cfg->stateDir, vm->def->name) < 0)
+        goto cleanup;
+
+    if (virFileMakePath(path) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to create %s"),
+                             path);
+        goto cleanup;
+    }
+
+    VIR_FREE(path);
+    if (virAsprintf(&path, "%s/%s.devpts",
+                    cfg->stateDir, vm->def->name) < 0)
+        goto cleanup;
+
+    if (virFileMakePath(path) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to create %s"),
+                             path);
+        goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(path);
+    virObjectUnref(cfg);
+    return ret;
+}
+
+
+void
+qemuDomainDeleteNamespace(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm)
+{
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    char *path;
+
+    if (virAsprintf(&path, "%s/%s.dev",
+                    cfg->stateDir, vm->def->name) < 0)
+        goto cleanup;
+
+    virFileDeleteTree(path);
+
+    VIR_FREE(path);
+    if (virAsprintf(&path, "%s/%s.devpts",
+                    cfg->stateDir, vm->def->name) < 0)
+        goto cleanup;
+
+    virFileDeleteTree(path);
+ cleanup:
+    virObjectUnref(cfg);
+    VIR_FREE(path);
 }

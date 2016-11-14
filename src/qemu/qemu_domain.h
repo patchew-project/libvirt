@@ -784,4 +784,12 @@ int qemuDomainCheckMonitor(virQEMUDriverPtr driver,
 bool qemuDomainSupportsVideoVga(virDomainVideoDefPtr video,
                                 virQEMUCapsPtr qemuCaps);
 
+int qemuDomainBuildNamespace(virQEMUDriverPtr driver,
+                             virDomainObjPtr vm);
+
+int qemuDomainCreateNamespace(virQEMUDriverPtr driver,
+                              virDomainObjPtr vm);
+
+void qemuDomainDeleteNamespace(virQEMUDriverPtr driver,
+                               virDomainObjPtr vm);
 #endif /* __QEMU_DOMAIN_H__ */
