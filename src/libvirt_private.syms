@@ -1556,6 +1556,7 @@ virDirRead;
 virFileAbsPath;
 virFileAccessibleAs;
 virFileActivateDirOverride;
+virFileBindMountDevice;
 virFileBuildPath;
 virFileClose;
 virFileDeleteTree;

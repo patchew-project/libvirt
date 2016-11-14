@@ -326,4 +326,6 @@ int virFileSetupDev(const char *path,
 int virFileSetupDevPTS(const char *path,
                        const char *mount_options,
                        char **ptmx_ret);
+
+int virFileBindMountDevice(const char *src, const char *dst);
 #endif /* __VIR_FILE_H */

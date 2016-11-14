@@ -3601,3 +3601,19 @@ virFileSetupDevPTS(const char *path,
     VIR_FREE(devptmx);
     return ret;
 }
+
+
+int
+virFileBindMountDevice(const char *src, const char *dst)
+{
+    if (virFileTouch(dst, 0666) < 0)
+        return -1;
+
+    if (mount(src, dst, "none", MS_BIND, NULL) < 0) {
+        virReportSystemError(errno, _("Failed to bind %s on to %s"), src,
+                             dst);
+        return -1;
+    }
+
+    return 0;
+}
