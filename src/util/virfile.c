@@ -32,6 +32,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
+#include <sys/mount.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <dirname.h>
@@ -3530,5 +3531,34 @@ virFilePopulateDevices(const char *prefix,
     ret = 0;
  cleanup:
     VIR_FREE(path);
+    return ret;
+}
+
+
+int
+virFileSetupDev(const char *path,
+                const char *mount_options)
+{
+    const unsigned long mount_flags = MS_NOSUID;
+    const char *mount_fs = "tmpfs";
+    int ret = -1;
+
+    if (virFileMakePath(path) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to make path %s"), path);
+        goto cleanup;
+    }
+
+    VIR_DEBUG("Mount devfs on %s type=tmpfs flags=%lx, opts=%s",
+              path, mount_flags, mount_options);
+    if (mount("devfs", path, mount_fs, mount_flags, mount_options) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to mount devfs on %s type %s (%s)"),
+                             path, mount_fs, mount_options);
+        goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
     return ret;
 }

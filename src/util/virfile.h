@@ -319,4 +319,7 @@ struct _virFileDevices {
 
 int virFilePopulateDevices(const char *prefix,
                            const virFileDevices *const devs);
+
+int virFileSetupDev(const char *path,
+                    const char *mount_options);
 #endif /* __VIR_FILE_H */
