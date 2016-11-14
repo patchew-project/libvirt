@@ -3657,7 +3657,6 @@ qemuDomainObjEnterAgent(virDomainObjPtr obj)
               priv->agent, obj, obj->def->name);
     virObjectLock(priv->agent);
     virObjectRef(priv->agent);
-    ignore_value(virTimeMillisNow(&priv->agentStart));
     virObjectUnlock(obj);
 }
 
@@ -3681,7 +3680,6 @@ qemuDomainObjExitAgent(virDomainObjPtr obj)
     VIR_DEBUG("Exited agent (agent=%p vm=%p name=%s)",
               priv->agent, obj, obj->def->name);
 
-    priv->agentStart = 0;
     if (!hasRefs)
         priv->agent = NULL;
 }
