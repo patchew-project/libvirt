@@ -3549,8 +3549,8 @@ virFileSetupDev(const char *path,
         goto cleanup;
     }
 
-    VIR_DEBUG("Mount devfs on %s type=tmpfs flags=%lx, opts=%s",
-              path, mount_flags, mount_options);
+    VIR_DEBUG("Mount devfs on %s type=%s flags=%lx, opts=%s",
+              path, mount_fs, mount_flags, mount_options);
     if (mount("devfs", path, mount_fs, mount_flags, mount_options) < 0) {
         virReportSystemError(errno,
                              _("Failed to mount devfs on %s type %s (%s)"),
@@ -3560,5 +3560,44 @@ virFileSetupDev(const char *path,
 
     ret = 0;
  cleanup:
+    return ret;
+}
+
+
+int
+virFileSetupDevPTS(const char *path,
+                   const char *mount_options,
+                   char **ptmx_ret)
+{
+    const unsigned long mount_flags = MS_NOSUID;
+    const char *mount_fs = "devpts";
+    char *devptmx = NULL;
+    int ret = -1;
+
+    if (virAsprintf(&devptmx, "%s/ptmx", path) < 0)
+        goto cleanup;
+
+    VIR_DEBUG("Mount devpts on %s type=%s flags=%lx, opts=%s",
+              path, mount_fs, mount_flags, mount_options);
+    if (mount("devpts", path, mount_fs, mount_flags, mount_options) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to mount devpts on %s type %s (%s)"),
+                             path, mount_fs, mount_options);
+        goto cleanup;
+    }
+
+    if (access(devptmx, R_OK) < 0) {
+        virReportSystemError(ENOSYS, "%s",
+                             _("Kernel does not support private devpts"));
+        goto cleanup;
+    }
+
+    if (ptmx_ret) {
+        *ptmx_ret = devptmx;
+        devptmx = NULL;
+    }
+    ret = 0;
+ cleanup:
+    VIR_FREE(devptmx);
     return ret;
 }

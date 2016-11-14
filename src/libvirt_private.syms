@@ -1603,6 +1603,7 @@ virFileResolveLink;
 virFileRewrite;
 virFileSanitizePath;
 virFileSetupDev;
+virFileSetupDevPTS;
 virFileSkipRoot;
 virFileStripSuffix;
 virFileTouch;

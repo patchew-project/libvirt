@@ -322,4 +322,8 @@ int virFilePopulateDevices(const char *prefix,
 
 int virFileSetupDev(const char *path,
                     const char *mount_options);
+
+int virFileSetupDevPTS(const char *path,
+                       const char *mount_options,
+                       char **ptmx_ret);
 #endif /* __VIR_FILE_H */

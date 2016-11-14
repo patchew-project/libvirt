@@ -2110,8 +2110,6 @@ virLXCControllerSetupDevPTS(virLXCControllerPtr ctrl)
                                                       ctrl->def);
 
     if (virAsprintf(&devpts, "%s/%s.devpts",
-                    LXC_STATE_DIR, ctrl->def->name) < 0 ||
-        virAsprintf(&ctrl->devptmx, "%s/%s.devpts/ptmx",
                     LXC_STATE_DIR, ctrl->def->name) < 0)
         goto cleanup;
 
@@ -2133,20 +2131,8 @@ virLXCControllerSetupDevPTS(virLXCControllerPtr ctrl)
                     ptsgid, (mount_options ? mount_options : "")) < 0)
         goto cleanup;
 
-    VIR_DEBUG("Mount devpts on %s type=tmpfs flags=%x, opts=%s",
-              devpts, MS_NOSUID, opts);
-    if (mount("devpts", devpts, "devpts", MS_NOSUID, opts) < 0) {
-        virReportSystemError(errno,
-                             _("Failed to mount devpts on %s"),
-                             devpts);
+    if (virFileSetupDevPTS(devpts, opts, &ctrl->devptmx) < 0)
         goto cleanup;
-    }
-
-    if (access(ctrl->devptmx, R_OK) < 0) {
-        virReportSystemError(ENOSYS, "%s",
-                             _("Kernel does not support private devpts"));
-        goto cleanup;
-    }
 
     if ((lxcContainerChown(ctrl->def, ctrl->devptmx) < 0) ||
         (lxcContainerChown(ctrl->def, devpts) < 0))
