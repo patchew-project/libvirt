@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sys/mount.h>
 #if HAVE_SETRLIMIT
 # include <sys/time.h>
 # include <sys/resource.h>
@@ -1142,6 +1143,29 @@ virProcessRunInMountNamespace(pid_t pid,
  cleanup:
     VIR_FORCE_CLOSE(errfd[0]);
     VIR_FORCE_CLOSE(errfd[1]);
+    return ret;
+}
+
+
+int
+virProcessSetupPrivateNS(void)
+{
+    int ret = -1;
+
+    if (unshare(CLONE_NEWNS) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("Cannot unshare mount namespace"));
+        goto cleanup;
+    }
+
+    if (mount("", "/", NULL, MS_SLAVE|MS_REC, NULL) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("Failed to switch root mount into slave mode"));
+        goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
     return ret;
 }
 
