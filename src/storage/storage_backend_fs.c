@@ -626,7 +626,8 @@ virStorageBackendFileSystemProbe(const char *device,
     int ret = -1;
     blkid_probe probe = NULL;
     const char *fstype = NULL;
-    char *names[2], *libblkid_format = NULL;
+    size_t i;
+    const char *names[VIR_STORAGE_POOL_FS_LAST] = {0};
 
     VIR_DEBUG("Probing for existing filesystem of type %s on device %s",
               format, device);
@@ -648,25 +649,26 @@ virStorageBackendFileSystemProbe(const char *device,
         goto error;
     }
 
-    if (VIR_STRDUP(libblkid_format, format) < 0)
-        goto error;
-
-    names[0] = libblkid_format;
-    names[1] = NULL;
+    for (i = 1; i < VIR_STORAGE_POOL_FS_LAST; i++)
+        names[i - 1] = virStoragePoolFormatFileSystemTypeToString(i);
 
     blkid_probe_filter_superblocks_type(probe,
                                         BLKID_FLTR_ONLYIN,
-                                        names);
+                                        (char **)names);
 
     if (blkid_do_probe(probe) != 0) {
         VIR_INFO("No filesystem of type '%s' found on device '%s'",
                  format, device);
         ret = 0;
     } else if (blkid_probe_lookup_value(probe, "TYPE", &fstype, NULL) == 0) {
-        virReportError(VIR_ERR_STORAGE_POOL_BUILT,
-                       _("Existing filesystem of type '%s' found on "
-                         "device '%s'"),
-                       fstype, device);
+        if (STRNEQ(fstype, format)) {
+            virReportError(VIR_ERR_STORAGE_POOL_BUILT,
+                           _("Existing filesystem of type '%s' found on "
+                             "device '%s'"),
+                           fstype, device);
+        } else {
+            ret = 0;
+        }
     }
 
     if (blkid_do_probe(probe) != 1) {
@@ -677,8 +679,6 @@ virStorageBackendFileSystemProbe(const char *device,
     }
 
  error:
-    VIR_FREE(libblkid_format);
-
     if (probe != NULL)
         blkid_free_probe(probe);
 
