@@ -618,12 +618,12 @@ virStorageBackendFileSystemStart(virConnectPtr conn ATTRIBUTE_UNUSED,
 #endif /* WITH_STORAGE_FS */
 
 #if WITH_BLKID
-static virStoragePoolProbeResult
+static int
 virStorageBackendFileSystemProbe(const char *device,
                                  const char *format)
 {
 
-    virStoragePoolProbeResult ret = FILESYSTEM_PROBE_ERROR;
+    int ret = -1;
     blkid_probe probe = NULL;
     const char *fstype = NULL;
     char *names[2], *libblkid_format = NULL;
@@ -661,20 +661,19 @@ virStorageBackendFileSystemProbe(const char *device,
     if (blkid_do_probe(probe) != 0) {
         VIR_INFO("No filesystem of type '%s' found on device '%s'",
                  format, device);
-        ret = FILESYSTEM_PROBE_NOT_FOUND;
+        ret = 0;
     } else if (blkid_probe_lookup_value(probe, "TYPE", &fstype, NULL) == 0) {
         virReportError(VIR_ERR_STORAGE_POOL_BUILT,
                        _("Existing filesystem of type '%s' found on "
                          "device '%s'"),
                        fstype, device);
-        ret = FILESYSTEM_PROBE_FOUND;
     }
 
     if (blkid_do_probe(probe) != 1) {
         virReportError(VIR_ERR_STORAGE_PROBE_FAILED, "%s",
                        _("Found additional probes to run, "
                          "filesystem probing may be incorrect"));
-        ret = FILESYSTEM_PROBE_ERROR;
+        ret = -1;
     }
 
  error:
@@ -688,7 +687,7 @@ virStorageBackendFileSystemProbe(const char *device,
 
 #else /* #if WITH_BLKID */
 
-static virStoragePoolProbeResult
+static int
 virStorageBackendFileSystemProbe(const char *device ATTRIBUTE_UNUSED,
                                  const char *format ATTRIBUTE_UNUSED)
 {
@@ -696,7 +695,7 @@ virStorageBackendFileSystemProbe(const char *device ATTRIBUTE_UNUSED,
                    _("probing for filesystems is unsupported "
                      "by this build"));
 
-    return FILESYSTEM_PROBE_ERROR;
+    return -1;
 }
 
 #endif /* #if WITH_BLKID */
@@ -772,8 +771,7 @@ virStorageBackendMakeFileSystem(virStoragePoolObjPtr pool,
     if (flags & VIR_STORAGE_POOL_BUILD_OVERWRITE) {
         ok_to_mkfs = true;
     } else if (flags & VIR_STORAGE_POOL_BUILD_NO_OVERWRITE &&
-               virStorageBackendFileSystemProbe(device, format) ==
-               FILESYSTEM_PROBE_NOT_FOUND) {
+               virStorageBackendFileSystemProbe(device, format) == 0) {
         ok_to_mkfs = true;
     }
 
