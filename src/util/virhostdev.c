@@ -737,7 +737,7 @@ virHostdevPreparePCIDevices(virHostdevManagerPtr mgr,
         virPCIDevicePtr actual;
 
         /* We need to look up the actual device because that's what
-         * virPCIDeviceReattach() exepects as its argument */
+         * virPCIDeviceReattach() expects as its argument */
         if (!(actual = virPCIDeviceListFind(mgr->inactivePCIHostdevs, pci)))
             continue;
 
