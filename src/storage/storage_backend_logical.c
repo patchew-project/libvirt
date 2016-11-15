@@ -682,13 +682,18 @@ virStorageBackendLogicalBuildPool(virConnectPtr conn ATTRIBUTE_UNUSED,
                                   virStoragePoolObjPtr pool,
                                   unsigned int flags)
 {
-    virCommandPtr vgcmd;
+    virCommandPtr vgcmd = NULL;
     int fd;
     char zeros[PV_BLANK_SECTOR_SIZE];
     int ret = -1;
     size_t i;
 
-    virCheckFlags(0, -1);
+    virCheckFlags(VIR_STORAGE_POOL_BUILD_OVERWRITE |
+                  VIR_STORAGE_POOL_BUILD_NO_OVERWRITE, ret);
+
+    VIR_EXCLUSIVE_FLAGS_GOTO(VIR_STORAGE_POOL_BUILD_OVERWRITE,
+                             VIR_STORAGE_POOL_BUILD_NO_OVERWRITE,
+                             cleanup);
 
     memset(zeros, 0, sizeof(zeros));
 
@@ -731,10 +736,21 @@ virStorageBackendLogicalBuildPool(virConnectPtr conn ATTRIBUTE_UNUSED,
         /*
          * Initialize the physical volume because vgcreate is not
          * clever enough todo this for us :-(
+         *
+         * If this API is called twice for the same device, then because
+         * vgcmd adds the device to the volume group, the pvcreate will
+         * fail since the pv is already part of the vg. Allow use of the
+         * override option inorder to overrule!
          */
-        pvcmd = virCommandNewArgList(PVCREATE,
-                                     pool->def->source.devices[i].path,
-                                     NULL);
+        if (flags & VIR_STORAGE_POOL_BUILD_OVERWRITE)
+            pvcmd = virCommandNewArgList(PVCREATE,
+                                         "-ff", "-y",
+                                         pool->def->source.devices[i].path,
+                                         NULL);
+        else
+            pvcmd = virCommandNewArgList(PVCREATE,
+                                         pool->def->source.devices[i].path,
+                                         NULL);
         if (virCommandRun(pvcmd, NULL) < 0) {
             virCommandFree(pvcmd);
             goto cleanup;
