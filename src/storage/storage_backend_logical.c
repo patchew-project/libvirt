@@ -682,13 +682,30 @@ virStorageBackendLogicalBuildPool(virConnectPtr conn ATTRIBUTE_UNUSED,
                                   virStoragePoolObjPtr pool,
                                   unsigned int flags)
 {
-    virCommandPtr vgcmd;
+    virCommandPtr vgcmd = NULL;
     int fd;
     char zeros[PV_BLANK_SECTOR_SIZE];
     int ret = -1;
     size_t i;
+    virStoragePoolSourceList sourceList;
 
     virCheckFlags(0, -1);
+
+    /* Let's make sure the about to be created vg doesn't already exist */
+    memset(&sourceList, 0, sizeof(sourceList));
+    sourceList.type = VIR_STORAGE_POOL_LOGICAL;
+
+    if (virStorageBackendLogicalGetPoolSources(&sourceList) < 0)
+        return -1;
+
+    for (i = 0; i < sourceList.nsources; i++) {
+        if (STREQ(sourceList.sources[i].name, pool->def->source.name)) {
+            virReportError(VIR_ERR_STORAGE_POOL_BUILT,
+                           _("volume group with name '%s' already exists"),
+                           pool->def->source.name);
+            goto cleanup;
+        }
+    }
 
     memset(zeros, 0, sizeof(zeros));
 
@@ -751,6 +768,9 @@ virStorageBackendLogicalBuildPool(virConnectPtr conn ATTRIBUTE_UNUSED,
     ret = 0;
 
  cleanup:
+    for (i = 0; i < sourceList.nsources; i++)
+        virStoragePoolSourceClear(&sourceList.sources[i]);
+    VIR_FREE(sourceList.sources);
     virCommandFree(vgcmd);
     return ret;
 }
