@@ -4706,10 +4706,10 @@ qemuBuildHubCommandLine(virCommandPtr cmd,
 
 
 static char *
-qemuBuildSCSIHostHostdevDrvStr(virDomainHostdevDefPtr dev)
+qemuBuildSCSISCSIHostHostdevDrvStr(virDomainHostdevDefPtr dev)
 {
     virDomainHostdevSubsysSCSIPtr scsisrc = &dev->source.subsys.u.scsi;
-    virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
+    virDomainHostdevSubsysSCSISCSIHostPtr scsihostsrc = &scsisrc->u.host;
 
     return virSCSIDeviceGetSgName(NULL,
                                   scsihostsrc->adapter,
@@ -4754,7 +4754,7 @@ qemuBuildSCSIHostdevDrvStr(virDomainHostdevDefPtr dev)
             goto error;
         virBufferAsprintf(&buf, "file=%s,if=none,format=raw", source);
     } else {
-        if (!(source = qemuBuildSCSIHostHostdevDrvStr(dev)))
+        if (!(source = qemuBuildSCSISCSIHostHostdevDrvStr(dev)))
             goto error;
         virBufferAsprintf(&buf, "file=/dev/%s,if=none", source);
     }

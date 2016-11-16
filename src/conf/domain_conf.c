@@ -5907,14 +5907,14 @@ virDomainStorageHostParse(xmlNodePtr node,
 }
 
 static int
-virDomainHostdevSubsysSCSIHostDefParseXML(xmlNodePtr sourcenode,
-                                          virDomainHostdevSubsysSCSIPtr scsisrc)
+virDomainHostdevSubsysSCSISCSIHostDefParseXML(xmlNodePtr sourcenode,
+                                              virDomainHostdevSubsysSCSIPtr scsisrc)
 {
     int ret = -1;
     bool got_address = false, got_adapter = false;
     xmlNodePtr cur;
     char *bus = NULL, *target = NULL, *unit = NULL;
-    virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
+    virDomainHostdevSubsysSCSISCSIHostPtr scsihostsrc = &scsisrc->u.host;
 
     cur = sourcenode->children;
     while (cur != NULL) {
@@ -6081,7 +6081,7 @@ virDomainHostdevSubsysSCSIDefParseXML(xmlNodePtr sourcenode,
     if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI)
         ret = virDomainHostdevSubsysSCSIiSCSIDefParseXML(sourcenode, scsisrc);
     else
-        ret = virDomainHostdevSubsysSCSIHostDefParseXML(sourcenode, scsisrc);
+        ret = virDomainHostdevSubsysSCSISCSIHostDefParseXML(sourcenode, scsisrc);
 
  cleanup:
     VIR_FREE(protocol);
@@ -13846,12 +13846,12 @@ virDomainHostdevMatchSubsysPCI(virDomainHostdevDefPtr first,
 }
 
 static int
-virDomainHostdevMatchSubsysSCSIHost(virDomainHostdevDefPtr first,
-                                    virDomainHostdevDefPtr second)
+virDomainHostdevMatchSubsysSCSISCSIHost(virDomainHostdevDefPtr first,
+                                        virDomainHostdevDefPtr second)
 {
-    virDomainHostdevSubsysSCSIHostPtr first_scsihostsrc =
+    virDomainHostdevSubsysSCSISCSIHostPtr first_scsihostsrc =
         &first->source.subsys.u.scsi.u.host;
-    virDomainHostdevSubsysSCSIHostPtr second_scsihostsrc =
+    virDomainHostdevSubsysSCSISCSIHostPtr second_scsihostsrc =
         &second->source.subsys.u.scsi.u.host;
 
     if (STREQ(first_scsihostsrc->adapter, second_scsihostsrc->adapter) &&
@@ -13898,7 +13898,7 @@ virDomainHostdevMatchSubsys(virDomainHostdevDefPtr a,
             VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI)
             return virDomainHostdevMatchSubsysSCSIiSCSI(a, b);
         else
-            return virDomainHostdevMatchSubsysSCSIHost(a, b);
+            return virDomainHostdevMatchSubsysSCSISCSIHost(a, b);
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
         return 0;
     }
@@ -20808,7 +20808,7 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
     virDomainHostdevSubsysUSBPtr usbsrc = &def->source.subsys.u.usb;
     virDomainHostdevSubsysPCIPtr pcisrc = &def->source.subsys.u.pci;
     virDomainHostdevSubsysSCSIPtr scsisrc = &def->source.subsys.u.scsi;
-    virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
+    virDomainHostdevSubsysSCSISCSIHostPtr scsihostsrc = &scsisrc->u.host;
     virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &scsisrc->u.iscsi;
 
     if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI &&

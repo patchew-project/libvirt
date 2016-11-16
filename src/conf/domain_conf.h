@@ -338,9 +338,9 @@ struct _virDomainHostdevSubsysPCI {
     int backend; /* enum virDomainHostdevSubsysPCIBackendType */
 };
 
-typedef struct _virDomainHostdevSubsysSCSIHost virDomainHostdevSubsysSCSIHost;
-typedef virDomainHostdevSubsysSCSIHost *virDomainHostdevSubsysSCSIHostPtr;
-struct _virDomainHostdevSubsysSCSIHost {
+typedef struct _virDomainHostdevSubsysSCSISCSIHost virDomainHostdevSubsysSCSISCSIHost;
+typedef virDomainHostdevSubsysSCSISCSIHost *virDomainHostdevSubsysSCSISCSIHostPtr;
+struct _virDomainHostdevSubsysSCSISCSIHost {
     char *adapter;
     unsigned bus;
     unsigned target;
@@ -363,7 +363,7 @@ struct _virDomainHostdevSubsysSCSI {
     int sgio; /* enum virDomainDeviceSGIO */
     int rawio; /* enum virTristateBool */
     union {
-        virDomainHostdevSubsysSCSIHost host;
+        virDomainHostdevSubsysSCSISCSIHost host;
         virDomainHostdevSubsysSCSIiSCSI iscsi;
     } u;
 };

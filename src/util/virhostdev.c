@@ -1044,13 +1044,13 @@ virHostdevUpdateActiveUSBDevices(virHostdevManagerPtr mgr,
 }
 
 static int
-virHostdevUpdateActiveSCSIHostDevices(virHostdevManagerPtr mgr,
-                                      virDomainHostdevDefPtr hostdev,
-                                      virDomainHostdevSubsysSCSIPtr scsisrc,
-                                      const char *drv_name,
-                                      const char *dom_name)
+virHostdevUpdateActiveSCSISCSIHostDevices(virHostdevManagerPtr mgr,
+                                          virDomainHostdevDefPtr hostdev,
+                                          virDomainHostdevSubsysSCSIPtr scsisrc,
+                                          const char *drv_name,
+                                          const char *dom_name)
 {
-    virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
+    virDomainHostdevSubsysSCSISCSIHostPtr scsihostsrc = &scsisrc->u.host;
     virSCSIDevicePtr scsi = NULL;
     virSCSIDevicePtr tmp = NULL;
     int ret = -1;
@@ -1107,8 +1107,11 @@ virHostdevUpdateActiveSCSIDevices(virHostdevManagerPtr mgr,
         if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI) {
             continue;  /* Not supported for iSCSI */
         } else {
-            if (virHostdevUpdateActiveSCSIHostDevices(mgr, hostdev, scsisrc,
-                                                      drv_name, dom_name) < 0)
+            if (virHostdevUpdateActiveSCSISCSIHostDevices(mgr,
+                                                          hostdev,
+                                                          scsisrc,
+                                                          drv_name,
+                                                          dom_name) < 0)
                 goto cleanup;
         }
     }
@@ -1340,11 +1343,11 @@ virHostdevPrepareUSBDevices(virHostdevManagerPtr mgr,
 }
 
 static int
-virHostdevPrepareSCSIHostDevices(virDomainHostdevDefPtr hostdev,
-                                 virDomainHostdevSubsysSCSIPtr scsisrc,
-                                 virSCSIDeviceListPtr list)
+virHostdevPrepareSCSISCSIHostDevices(virDomainHostdevDefPtr hostdev,
+                                     virDomainHostdevSubsysSCSIPtr scsisrc,
+                                     virSCSIDeviceListPtr list)
 {
-    virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
+    virDomainHostdevSubsysSCSISCSIHostPtr scsihostsrc = &scsisrc->u.host;
     virSCSIDevicePtr scsi;
     int ret = -1;
 
@@ -1406,7 +1409,9 @@ virHostdevPrepareSCSIDevices(virHostdevManagerPtr mgr,
         if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI) {
             continue;  /* Not supported for iSCSI */
         } else {
-            if (virHostdevPrepareSCSIHostDevices(hostdev, scsisrc, list) < 0)
+            if (virHostdevPrepareSCSISCSIHostDevices(hostdev,
+                                                     scsisrc,
+                                                     list) < 0)
                 goto cleanup;
         }
     }
@@ -1533,13 +1538,13 @@ virHostdevReAttachUSBDevices(virHostdevManagerPtr mgr,
 }
 
 static void
-virHostdevReAttachSCSIHostDevices(virHostdevManagerPtr mgr,
-                                  virDomainHostdevDefPtr hostdev,
-                                  virDomainHostdevSubsysSCSIPtr scsisrc,
-                                  const char *drv_name,
-                                  const char *dom_name)
+virHostdevReAttachSCSISCSIHostDevices(virHostdevManagerPtr mgr,
+                                      virDomainHostdevDefPtr hostdev,
+                                      virDomainHostdevSubsysSCSIPtr scsisrc,
+                                      const char *drv_name,
+                                      const char *dom_name)
 {
-    virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
+    virDomainHostdevSubsysSCSISCSIHostPtr scsihostsrc = &scsisrc->u.host;
     virSCSIDevicePtr scsi;
     virSCSIDevicePtr tmp;
 
@@ -1598,8 +1603,8 @@ virHostdevReAttachSCSIDevices(virHostdevManagerPtr mgr,
         if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI)
             continue; /* Not supported for iSCSI */
         else
-            virHostdevReAttachSCSIHostDevices(mgr, hostdev, scsisrc,
-                                              drv_name, dom_name);
+            virHostdevReAttachSCSISCSIHostDevices(mgr, hostdev, scsisrc,
+                                                  drv_name, dom_name);
     }
     virObjectUnlock(mgr->activeSCSIHostdevs);
 }

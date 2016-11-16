@@ -432,7 +432,7 @@ virDomainAuditHostdev(virDomainObjPtr vm, virDomainHostdevDefPtr hostdev,
                  */
                 goto cleanup;
             } else {
-                virDomainHostdevSubsysSCSIHostPtr scsihostsrc =
+                virDomainHostdevSubsysSCSISCSIHostPtr scsihostsrc =
                     &scsisrc->u.host;
                 if (virAsprintfQuiet(&address, "%s:%u:%u:%llu",
                                      scsihostsrc->adapter, scsihostsrc->bus,

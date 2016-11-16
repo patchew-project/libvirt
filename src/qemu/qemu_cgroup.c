@@ -357,7 +357,7 @@ qemuSetupHostdevCgroup(virDomainObjPtr vm,
                 VIR_DEBUG("Not updating cgroups for hostdev iSCSI path '%s'",
                           iscsisrc->path);
             } else {
-                virDomainHostdevSubsysSCSIHostPtr scsihostsrc =
+                virDomainHostdevSubsysSCSISCSIHostPtr scsihostsrc =
                     &scsisrc->u.host;
                 if ((scsi = virSCSIDeviceNew(NULL,
                                              scsihostsrc->adapter,

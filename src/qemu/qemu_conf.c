@@ -1198,7 +1198,7 @@ static char *
 qemuGetHostdevPath(virDomainHostdevDefPtr hostdev)
 {
     virDomainHostdevSubsysSCSIPtr scsisrc = &hostdev->source.subsys.u.scsi;
-    virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
+    virDomainHostdevSubsysSCSISCSIHostPtr scsihostsrc = &scsisrc->u.host;
     char *dev_name = NULL;
     char *dev_path = NULL;
 

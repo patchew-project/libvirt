@@ -1479,7 +1479,7 @@ virSecuritySELinuxSetHostdevSubsysLabel(virSecurityManagerPtr mgr,
     }
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI: {
-        virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
+        virDomainHostdevSubsysSCSISCSIHostPtr scsihostsrc = &scsisrc->u.host;
 
         virSCSIDevicePtr scsi =
             virSCSIDeviceNew(NULL,
@@ -1684,7 +1684,7 @@ virSecuritySELinuxRestoreHostdevSubsysLabel(virSecurityManagerPtr mgr,
     }
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI: {
-        virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
+        virDomainHostdevSubsysSCSISCSIHostPtr scsihostsrc = &scsisrc->u.host;
         virSCSIDevicePtr scsi =
             virSCSIDeviceNew(NULL,
                              scsihostsrc->adapter, scsihostsrc->bus,
