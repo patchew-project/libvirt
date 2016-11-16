@@ -374,6 +374,33 @@ mymain(void)
     DO_SESS_TEST(cacertreq.filename, servercertalt2req.filename, clientcertreq.filename,
                  false, false, "wiki.libvirt.org", NULL);
 
+#if GNUTLS_VERSION_NUMBER >= 0x030506
+    const char *const wildcards1[] = {
+        "CN=dogfood,C=UK",
+        NULL,
+    };
+    const char *const wildcards2[] = {
+        "CN=libvirt,C=UK",
+        NULL,
+    };
+    const char *const wildcards3[] = {
+        "CN=dogfood,C=UK",
+        "CN=libvirt,C=UK",
+        NULL,
+    };
+    const char *const wildcards4[] = {
+        "CN=libvirtstuff,C=UK",
+        NULL,
+    };
+    const char *const wildcards5[] = {
+        "CN=libvirt*,C=UK",
+        NULL,
+    };
+    const char *const wildcards6[] = {
+        "CN=*virt*,C=UK",
+        NULL,
+    };
+#else
     const char *const wildcards1[] = {
         "C=UK,CN=dogfood",
         NULL,
@@ -399,6 +426,7 @@ mymain(void)
         "C=UK,CN=*virt*",
         NULL,
     };
+#endif /* GNUTLS_VERSION_NUMBER >= 0x030506 */
 
     DO_SESS_TEST(cacertreq.filename, servercertreq.filename, clientcertreq.filename,
                  true, false, "libvirt.org", wildcards1);
