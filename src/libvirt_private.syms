@@ -2043,6 +2043,7 @@ virNetDevOpenvswitchSetMigrateData;
 virNetDevTapCreate;
 virNetDevTapCreateInBridgePort;
 virNetDevTapDelete;
+virNetDevTapInterfaceStats;
 virNetDevTapGetName;
 virNetDevTapGetRealDeviceName;
 
@@ -2365,9 +2366,6 @@ virSocketAddrSetIPv4AddrNetOrder;
 virSocketAddrSetIPv6Addr;
 virSocketAddrSetIPv6AddrNetOrder;
 virSocketAddrSetPort;
-
-# util/virstats.h
-virNetDevTapInterfaceStats;
 
 # util/virstorageencryption.h
 virStorageEncryptionFormat;
