@@ -118,7 +118,7 @@ virNodeDeviceObjPtr virNodeDeviceFindByName(virNodeDeviceObjListPtr devs,
 
     for (i = 0; i < devs->count; i++) {
         virNodeDeviceObjLock(devs->objs[i]);
-        if (STREQ(devs->objs[i]->def->name, name))
+        if (STREQ_NULLABLE(devs->objs[i]->def->name, name))
             return devs->objs[i];
         virNodeDeviceObjUnlock(devs->objs[i]);
     }
