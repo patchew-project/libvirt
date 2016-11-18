@@ -18,6 +18,21 @@
       <optional>
         <element name="parent"><text/></element>
       </optional>
+      <optional>
+        <element name="parent_wwnn">
+          <ref name='wwn'/>
+        </element>
+      </optional>
+      <optional>
+        <element name="parent_wwpn">
+          <ref name='wwn'/>
+        </element>
+      </optional>
+      <optional>
+        <element name="parent_fabric_wwn">
+          <ref name='wwn'/>
+        </element>
+      </optional>
 
       <optional>
         <element name="driver">
