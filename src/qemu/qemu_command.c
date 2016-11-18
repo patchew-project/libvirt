@@ -100,7 +100,7 @@ VIR_ENUM_IMPL(qemuVideo, VIR_DOMAIN_VIDEO_TYPE_LAST,
               "", /* don't support vbox */
               "qxl",
               "", /* don't support parallels */
-              "" /* no need for virtio */);
+              "virtio");
 
 VIR_ENUM_DECL(qemuDeviceVideo)
 
