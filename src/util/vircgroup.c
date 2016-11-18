@@ -2542,7 +2542,7 @@ virCgroupGetMemoryHardLimit(virCgroupPtr group, unsigned long long *kb)
         goto cleanup;
 
     *kb = limit_in_bytes >> 10;
-    if (*kb > VIR_DOMAIN_MEMORY_PARAM_UNLIMITED)
+    if (*kb >> 4 >= VIR_DOMAIN_MEMORY_PARAM_UNLIMITED >> 4)
         *kb = VIR_DOMAIN_MEMORY_PARAM_UNLIMITED;
 
     ret = 0;
@@ -2604,7 +2604,7 @@ virCgroupGetMemorySoftLimit(virCgroupPtr group, unsigned long long *kb)
         goto cleanup;
 
     *kb = limit_in_bytes >> 10;
-    if (*kb > VIR_DOMAIN_MEMORY_PARAM_UNLIMITED)
+    if (*kb >> 4 >= VIR_DOMAIN_MEMORY_PARAM_UNLIMITED >> 4)
         *kb = VIR_DOMAIN_MEMORY_PARAM_UNLIMITED;
 
     ret = 0;
@@ -2666,7 +2666,7 @@ virCgroupGetMemSwapHardLimit(virCgroupPtr group, unsigned long long *kb)
         goto cleanup;
 
     *kb = limit_in_bytes >> 10;
-    if (*kb > VIR_DOMAIN_MEMORY_PARAM_UNLIMITED)
+    if (*kb >> 4 >= VIR_DOMAIN_MEMORY_PARAM_UNLIMITED >> 4)
         *kb = VIR_DOMAIN_MEMORY_PARAM_UNLIMITED;
 
     ret = 0;
