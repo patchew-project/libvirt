@@ -151,6 +151,23 @@ virNodeDeviceObjPtr virNodeDeviceFindByName(virNodeDeviceObjListPtr devs,
 }
 
 
+static virNodeDeviceObjPtr
+virNodeDeviceFindByCap(virNodeDeviceObjListPtr devs,
+                       const char *cap)
+{
+    size_t i;
+
+    for (i = 0; i < devs->count; i++) {
+        virNodeDeviceObjLock(devs->objs[i]);
+        if (virNodeDeviceHasCap(devs->objs[i], cap))
+            return devs->objs[i];
+        virNodeDeviceObjUnlock(devs->objs[i]);
+    }
+
+    return NULL;
+}
+
+
 void virNodeDeviceDefFree(virNodeDeviceDefPtr def)
 {
     virNodeDevCapsDefPtr caps;
@@ -1827,6 +1844,28 @@ virNodeDeviceGetParentHost(virNodeDeviceObjListPtr devs,
 
     return ret;
 }
+
+
+int
+virNodeDeviceFindVportParentHost(virNodeDeviceObjListPtr devs,
+                                 int *parent_host)
+{
+    virNodeDeviceObjPtr parent = NULL;
+    int ret;
+
+    if (!(parent = virNodeDeviceFindByCap(devs, "vports"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Could not find any vport capable device"));
+        return -1;
+    }
+
+    ret = virNodeDeviceFindFCParentHost(parent, parent_host);
+
+    virNodeDeviceObjUnlock(parent);
+
+    return ret;
+}
+
 
 void virNodeDevCapsDefFree(virNodeDevCapsDefPtr caps)
 {
