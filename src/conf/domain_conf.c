@@ -9098,6 +9098,8 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     virDomainActualNetDefPtr actual = NULL;
     xmlNodePtr oldnode = ctxt->node;
     int ret, val;
+    char **tokens = NULL;
+    size_t ntokens = 0;
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
@@ -9394,6 +9396,13 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
 
         def->data.vhostuser->type = VIR_DOMAIN_CHR_TYPE_UNIX;
         def->data.vhostuser->data.nix.path = vhostuser_path;
+
+        if (!ifname && (tokens = virStringSplitCount(vhostuser_path, "/", 0,
+                                                     &ntokens))) {
+            if (VIR_STRDUP(ifname, tokens[ntokens-1]) < 0)
+                goto error;
+        }
+
         vhostuser_path = NULL;
 
         if (STREQ(vhostuser_mode, "server")) {
@@ -9842,6 +9851,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_FREE(localaddr);
     VIR_FREE(localport);
     virNWFilterHashTableFree(filterparams);
+    virStringFreeListCount(tokens, ntokens);
 
     return def;
 
