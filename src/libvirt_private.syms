@@ -2620,6 +2620,7 @@ virGetDeviceID;
 virGetDeviceUnprivSGIO;
 virGetEnvAllowSUID;
 virGetEnvBlockSUID;
+virGetFCHostNameByFabricWWN;
 virGetFCHostNameByWWN;
 virGetGroupID;
 virGetGroupList;
