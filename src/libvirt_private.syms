@@ -2367,7 +2367,7 @@ virSocketAddrSetIPv6AddrNetOrder;
 virSocketAddrSetPort;
 
 # util/virstats.h
-virNetInterfaceStats;
+virNetDevTapInterfaceStats;
 
 # util/virstorageencryption.h
 virStorageEncryptionFormat;

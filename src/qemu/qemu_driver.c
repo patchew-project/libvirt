@@ -11005,7 +11005,7 @@ qemuDomainInterfaceStats(virDomainPtr dom,
         if (net->type == VIR_DOMAIN_NET_TYPE_VHOSTUSER) {
             ret = virNetDevOpenvswitchInterfaceStats(path, stats);
         } else {
-            ret = virNetInterfaceStats(path, stats);
+            ret = virNetDevTapInterfaceStats(path, stats);
         }
     } else {
         virReportError(VIR_ERR_INVALID_ARG,
@@ -19154,7 +19154,7 @@ qemuDomainGetStatsInterface(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
                 continue;
             }
         } else {
-            if (virNetInterfaceStats(dom->def->nets[i]->ifname, &tmp) < 0) {
+            if (virNetDevTapInterfaceStats(dom->def->nets[i]->ifname, &tmp) < 0) {
                 virResetLastError();
                 continue;
             }
