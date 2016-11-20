@@ -18723,7 +18723,8 @@ qemuConnectGetDomainCapabilities(virConnectPtr conn,
     char *ret = NULL;
     virQEMUDriverPtr driver = conn->privateData;
     virQEMUCapsPtr qemuCaps = NULL;
-    int virttype; /* virDomainVirtType */
+    int virttype = VIR_DOMAIN_VIRT_NONE;
+    virDomainVirtType capsType;
     virDomainCapsPtr domCaps = NULL;
     int arch = virArchFromHost(); /* virArch */
     virQEMUDriverConfigPtr cfg = NULL;
@@ -18738,12 +18739,6 @@ qemuConnectGetDomainCapabilities(virConnectPtr conn,
 
     if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
         goto cleanup;
-
-    if (qemuHostdevHostSupportsPassthroughLegacy() ||
-        qemuHostdevHostSupportsPassthroughVFIO())
-        virttype = VIR_DOMAIN_VIRT_KVM;
-    else
-        virttype = VIR_DOMAIN_VIRT_QEMU;
 
     if (virttype_str &&
         (virttype = virDomainVirtTypeFromString(virttype_str)) < 0) {
@@ -18807,6 +18802,14 @@ qemuConnectGetDomainCapabilities(virConnectPtr conn,
     } else {
         machine = virQEMUCapsGetDefaultMachine(qemuCaps);
     }
+
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
+        capsType = VIR_DOMAIN_VIRT_KVM;
+    else
+        capsType = VIR_DOMAIN_VIRT_QEMU;
+
+    if (virttype == VIR_DOMAIN_VIRT_NONE)
+        virttype = capsType;
 
     if (!(domCaps = virDomainCapsNew(emulatorbin, machine, arch, virttype)))
         goto cleanup;
