@@ -399,9 +399,6 @@ typedef virQEMUCapsCache *virQEMUCapsCachePtr;
 
 virQEMUCapsPtr virQEMUCapsNew(void);
 
-int virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
-                              qemuMonitorPtr mon);
-
 int virQEMUCapsProbeQMP(virQEMUCapsPtr qemuCaps,
                         qemuMonitorPtr mon);
 
