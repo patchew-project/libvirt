@@ -913,6 +913,7 @@ typedef struct _qemuMonitorCPUDefInfo qemuMonitorCPUDefInfo;
 typedef qemuMonitorCPUDefInfo *qemuMonitorCPUDefInfoPtr;
 
 struct _qemuMonitorCPUDefInfo {
+    virTristateBool usable;
     char *name;
 };
 
