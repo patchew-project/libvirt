@@ -18811,6 +18811,13 @@ qemuConnectGetDomainCapabilities(virConnectPtr conn,
     if (virttype == VIR_DOMAIN_VIRT_NONE)
         virttype = capsType;
 
+    if (virttype == VIR_DOMAIN_VIRT_KVM && capsType == VIR_DOMAIN_VIRT_QEMU) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("KVM is not supported by '%s' on this host"),
+                       emulatorbin);
+        goto cleanup;
+    }
+
     if (!(domCaps = virDomainCapsNew(emulatorbin, machine, arch, virttype)))
         goto cleanup;
 
