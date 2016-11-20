@@ -4948,6 +4948,7 @@ virQEMUCapsFillDomainCPUCaps(virCapsPtr caps,
                                       VIR_CPU_MODE_CUSTOM)) {
         virDomainCapsCPUModelsPtr filtered = NULL;
         char **models = NULL;
+        const char *blacklist[] = { "host", NULL };
 
         if (virCPUGetModels(domCaps->arch, &models) >= 0) {
             virDomainCapsCPUModelsPtr cpus;
@@ -4958,7 +4959,8 @@ virQEMUCapsFillDomainCPUCaps(virCapsPtr caps,
                 cpus = qemuCaps->tcgCPUModels;
 
             filtered = virDomainCapsCPUModelsFilter(cpus,
-                                                    (const char **) models);
+                                                    (const char **) models,
+                                                    blacklist);
             virStringFreeList(models);
         }
         domCaps->cpu.custom = filtered;
