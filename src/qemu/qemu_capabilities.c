@@ -3980,6 +3980,11 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
 
     if (virQEMUCapsProbeQMPCommands(qemuCaps, mon) < 0)
         goto cleanup;
+
+    /* Some capabilities may differ depending on KVM state */
+    if (virQEMUCapsProbeQMPKVMState(qemuCaps, mon) < 0)
+        goto cleanup;
+
     if (virQEMUCapsProbeQMPEvents(qemuCaps, mon) < 0)
         goto cleanup;
     if (virQEMUCapsProbeQMPObjects(qemuCaps, mon) < 0)
@@ -3987,8 +3992,6 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     if (virQEMUCapsProbeQMPMachineTypes(qemuCaps, mon) < 0)
         goto cleanup;
     if (virQEMUCapsProbeQMPCPUDefinitions(qemuCaps, mon) < 0)
-        goto cleanup;
-    if (virQEMUCapsProbeQMPKVMState(qemuCaps, mon) < 0)
         goto cleanup;
     if (virQEMUCapsProbeQMPTPM(qemuCaps, mon) < 0)
         goto cleanup;
