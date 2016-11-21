@@ -115,8 +115,10 @@ VIR_LOG_INIT("qemu.qemu_driver");
 #define QEMU_NB_BLOCK_IO_TUNE_BASE_PARAMS 6
 #define QEMU_NB_BLOCK_IO_TUNE_MAX_PARAMS 7
 #define QEMU_NB_BLOCK_IO_TUNE_LENGTH_PARAMS 6
+#define QEMU_NB_BLOCK_IO_TUNE_GROUP_PARAMS 1
 #define QEMU_NB_BLOCK_IO_TUNE_ALL_PARAMS (QEMU_NB_BLOCK_IO_TUNE_BASE_PARAMS + \
                                           QEMU_NB_BLOCK_IO_TUNE_MAX_PARAMS + \
+                                          QEMU_NB_BLOCK_IO_TUNE_GROUP_PARAMS + \
                                           QEMU_NB_BLOCK_IO_TUNE_LENGTH_PARAMS)
 
 #define QEMU_NB_NUMA_PARAM 2
@@ -17344,8 +17346,9 @@ typedef enum {
     QEMU_BLOCK_IOTUNE_SET_BYTES_MAX        = 1 << 2,
     QEMU_BLOCK_IOTUNE_SET_IOPS_MAX         = 1 << 3,
     QEMU_BLOCK_IOTUNE_SET_SIZE_IOPS        = 1 << 4,
-    QEMU_BLOCK_IOTUNE_SET_BYTES_MAX_LENGTH = 1 << 5,
-    QEMU_BLOCK_IOTUNE_SET_IOPS_MAX_LENGTH  = 1 << 6,
+    QEMU_BLOCK_IOTUNE_SET_GROUP_NAME       = 1 << 5,
+    QEMU_BLOCK_IOTUNE_SET_BYTES_MAX_LENGTH = 1 << 6,
+    QEMU_BLOCK_IOTUNE_SET_IOPS_MAX_LENGTH  = 1 << 7,
 } qemuBlockIoTuneSetFlags;
 
 
@@ -17371,6 +17374,8 @@ qemuDomainSetBlockIoTuneDefaults(virDomainBlockIoTuneInfoPtr newinfo,
 
     if (!(set_flag & QEMU_BLOCK_IOTUNE_SET_SIZE_IOPS))
         newinfo->size_iops_sec = oldinfo->size_iops_sec;
+    if (!(set_flag & QEMU_BLOCK_IOTUNE_SET_GROUP_NAME))
+        VIR_STEAL_PTR(newinfo->group_name, oldinfo->group_name);
 
     /* The length field is handled a bit differently. If not defined/set,
      * QEMU will default these to 0 or 1 depending on whether something in
@@ -17425,6 +17430,7 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
     virDomainDiskDefPtr disk;
     qemuBlockIoTuneSetFlags set_flag = 0;
     bool supportMaxOptions = true;
+    bool supportGroupNameOption = true;
     bool supportMaxLengthOptions = true;
     virQEMUDriverConfigPtr cfg = NULL;
     virObjectEventPtr event = NULL;
@@ -17461,6 +17467,8 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
                                VIR_TYPED_PARAM_ULLONG,
                                VIR_DOMAIN_BLOCK_IOTUNE_SIZE_IOPS_SEC,
                                VIR_TYPED_PARAM_ULLONG,
+                               VIR_DOMAIN_BLOCK_IOTUNE_GROUP_NAME,
+                               VIR_TYPED_PARAM_STRING,
                                VIR_DOMAIN_BLOCK_IOTUNE_TOTAL_BYTES_SEC_MAX_LENGTH,
                                VIR_TYPED_PARAM_ULLONG,
                                VIR_DOMAIN_BLOCK_IOTUNE_READ_BYTES_SEC_MAX_LENGTH,
@@ -17540,6 +17548,16 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
         SET_IOTUNE_FIELD(write_iops_sec_max, IOPS_MAX,
                          WRITE_IOPS_SEC_MAX);
         SET_IOTUNE_FIELD(size_iops_sec, SIZE_IOPS, SIZE_IOPS_SEC);
+        if (STREQ(param->field, VIR_DOMAIN_BLOCK_IOTUNE_GROUP_NAME)) {
+            if (VIR_STRDUP(info.group_name, params->value.s) < 0)
+                goto endjob;
+            set_flag |= QEMU_BLOCK_IOTUNE_SET_GROUP_NAME;
+            if (virTypedParamsAddString(&eventParams, &eventNparams,
+                                        &eventMaxparams,
+                                        VIR_DOMAIN_TUNABLE_BLKDEV_GROUP_NAME,
+                                        param->value.s) < 0)
+                goto endjob;
+        }
 
         SET_IOTUNE_FIELD(total_bytes_sec_max_length, BYTES_MAX_LENGTH,
                          TOTAL_BYTES_SEC_MAX_LENGTH);
@@ -17592,6 +17610,8 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
     if (def) {
         supportMaxOptions = virQEMUCapsGet(priv->qemuCaps,
                                            QEMU_CAPS_DRIVE_IOTUNE_MAX);
+        supportGroupNameOption = virQEMUCapsGet(priv->qemuCaps,
+                                                QEMU_CAPS_DRIVE_IOTUNE_GROUP);
         supportMaxLengthOptions =
             virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_DRIVE_IOTUNE_MAX_LENGTH);
 
@@ -17608,6 +17628,14 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
                          QEMU_BLOCK_IOTUNE_SET_SIZE_IOPS))) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("a block I/O throttling parameter is not "
+                             "supported with this QEMU binary"));
+             goto endjob;
+        }
+
+        if (!supportGroupNameOption &&
+            (set_flag & QEMU_BLOCK_IOTUNE_SET_GROUP_NAME)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("the block I/O throttling group parameter is not "
                              "supported with this QEMU binary"));
              goto endjob;
         }
@@ -17655,12 +17683,14 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
         qemuDomainObjEnterMonitor(driver, vm);
         ret = qemuMonitorSetBlockIoThrottle(priv->mon, device,
                                             &info, supportMaxOptions,
+                                            supportGroupNameOption,
                                             supportMaxLengthOptions);
         if (qemuDomainObjExitMonitor(driver, vm) < 0)
             ret = -1;
         if (ret < 0)
             goto endjob;
         disk->blkdeviotune = info;
+        info.group_name = NULL;
 
         ret = virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps);
         if (ret < 0)
@@ -17683,6 +17713,7 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
         qemuDomainSetBlockIoTuneDefaults(&info, &conf_disk->blkdeviotune,
                                          set_flag);
         conf_disk->blkdeviotune = info;
+        info.group_name = NULL;
         ret = virDomainSaveConfig(cfg->configDir, driver->caps, persistentDef);
         if (ret < 0)
             goto endjob;
@@ -17693,6 +17724,7 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
+    VIR_FREE(info.group_name);
     VIR_FREE(device);
     virDomainObjEndAPI(&vm);
     if (eventNparams)
@@ -17754,6 +17786,8 @@ qemuDomainGetBlockIoTune(virDomainPtr dom,
         maxparams = QEMU_NB_BLOCK_IO_TUNE_BASE_PARAMS;
         if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_DRIVE_IOTUNE_MAX))
             maxparams += QEMU_NB_BLOCK_IO_TUNE_MAX_PARAMS;
+        if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_DRIVE_IOTUNE_GROUP))
+            maxparams += QEMU_NB_BLOCK_IO_TUNE_GROUP_PARAMS;
         if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_DRIVE_IOTUNE_MAX_LENGTH))
             maxparams += QEMU_NB_BLOCK_IO_TUNE_LENGTH_PARAMS;
     } else {
@@ -17820,6 +17854,13 @@ qemuDomainGetBlockIoTune(virDomainPtr dom,
     BLOCK_IOTUNE_ASSIGN(WRITE_IOPS_SEC_MAX, write_iops_sec_max);
 
     BLOCK_IOTUNE_ASSIGN(SIZE_IOPS_SEC, size_iops_sec);
+
+    if (*nparams < maxparams &&
+        virTypedParameterAssign(&params[(*nparams)++],
+                                VIR_DOMAIN_BLOCK_IOTUNE_GROUP_NAME,
+                                VIR_TYPED_PARAM_STRING,
+                                reply.group_name) < 0)
+        goto endjob;
 
     BLOCK_IOTUNE_ASSIGN(TOTAL_BYTES_SEC_MAX_LENGTH, total_bytes_sec_max_length);
     BLOCK_IOTUNE_ASSIGN(READ_BYTES_SEC_MAX_LENGTH, read_bytes_sec_max_length);

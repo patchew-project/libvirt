@@ -3468,6 +3468,7 @@ qemuMonitorSetBlockIoThrottle(qemuMonitorPtr mon,
                               const char *device,
                               virDomainBlockIoTuneInfoPtr info,
                               bool supportMaxOptions,
+                              bool supportGroupNameOption,
                               bool supportMaxLengthOptions)
 {
     VIR_DEBUG("device=%p, info=%p", device, info);
@@ -3477,6 +3478,7 @@ qemuMonitorSetBlockIoThrottle(qemuMonitorPtr mon,
     if (mon->json)
         return qemuMonitorJSONSetBlockIoThrottle(mon, device, info,
                                                  supportMaxOptions,
+                                                 supportGroupNameOption,
                                                  supportMaxLengthOptions);
     else
         return qemuMonitorTextSetBlockIoThrottle(mon, device, info);
