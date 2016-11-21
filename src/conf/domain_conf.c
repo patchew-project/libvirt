@@ -23065,6 +23065,44 @@ virDomainDefHasCapabilitiesFeatures(virDomainDefPtr def)
     return false;
 }
 
+static bool
+virDomainSchedPriorityComparator(virDomainThreadSchedParamPtr baseSched,
+                                 virDomainThreadSchedParamPtr sched)
+{
+    return (baseSched->priority == sched->priority);
+}
+
+static virDomainThreadSchedParamPtr
+virDomainSchedSubsetCharacteristic(virDomainDefPtr def,
+                                   virBitmapPtr schedMap,
+                                   virBitmapPtr prioMap,
+                                   virDomainThreadSchedParamPtr (*func)(virDomainDefPtr, unsigned int),
+                                   bool (*comparator)(virDomainThreadSchedParamPtr,
+                                                      virDomainThreadSchedParamPtr))
+{
+    ssize_t nextprio;
+    virDomainThreadSchedParamPtr sched;
+    virDomainThreadSchedParamPtr baseSched = NULL;
+
+    virBitmapClearAll(prioMap);
+
+    /* we need to find a subset of vCPUs with the given scheduler
+        * that share the priority */
+    nextprio = virBitmapNextSetBit(schedMap, -1);
+    if (!(sched = func(def, nextprio)))
+        return NULL;
+
+    baseSched = sched;
+    ignore_value(virBitmapSetBit(prioMap, nextprio));
+
+    while ((nextprio = virBitmapNextSetBit(schedMap, nextprio)) > -1) {
+        sched = func(def, nextprio);
+        if (sched && comparator(baseSched, sched))
+            ignore_value(virBitmapSetBit(prioMap, nextprio));
+    }
+
+    return baseSched;
+}
 
 /**
  * virDomainFormatSchedDef:
@@ -23091,6 +23129,7 @@ virDomainFormatSchedDef(virDomainDefPtr def,
     virBitmapPtr schedMap = NULL;
     virBitmapPtr prioMap = NULL;
     virDomainThreadSchedParamPtr sched;
+    virDomainThreadSchedParamPtr baseSched;
     char *tmp = NULL;
     ssize_t next;
     size_t i;
@@ -23124,9 +23163,8 @@ virDomainFormatSchedDef(virDomainDefPtr def,
          * have them */
         while (!virBitmapIsAllClear(schedMap)) {
             virBitmapPtr currentMap = NULL;
-            ssize_t nextprio;
             bool hasPriority = false;
-            int priority = 0;
+            baseSched = NULL;
 
             switch ((virProcessSchedPolicy) i) {
             case VIR_PROC_POLICY_NONE:
@@ -23139,23 +23177,15 @@ virDomainFormatSchedDef(virDomainDefPtr def,
 
             case VIR_PROC_POLICY_FIFO:
             case VIR_PROC_POLICY_RR:
-                virBitmapClearAll(prioMap);
                 hasPriority = true;
 
-                /* we need to find a subset of vCPUs with the given scheduler
-                 * that share the priority */
-                nextprio = virBitmapNextSetBit(schedMap, -1);
-                if (!(sched = func(def, nextprio)))
+                baseSched = virDomainSchedSubsetCharacteristic(def,
+                                                               schedMap,
+                                                               prioMap,
+                                                               func,
+                                                               virDomainSchedPriorityComparator);
+                if (baseSched == NULL)
                     goto cleanup;
-
-                priority = sched->priority;
-                ignore_value(virBitmapSetBit(prioMap, nextprio));
-
-                while ((nextprio = virBitmapNextSetBit(schedMap, nextprio)) > -1) {
-                    sched = func(def, nextprio);
-                    if (sched && sched->priority == priority)
-                        ignore_value(virBitmapSetBit(prioMap, nextprio));
-                }
 
                 currentMap = prioMap;
                 break;
@@ -23171,8 +23201,8 @@ virDomainFormatSchedDef(virDomainDefPtr def,
                               virProcessSchedPolicyTypeToString(i));
             VIR_FREE(tmp);
 
-            if (hasPriority)
-                virBufferAsprintf(buf, " priority='%d'", priority);
+            if (hasPriority && baseSched != NULL)
+                virBufferAsprintf(buf, " priority='%d'", baseSched->priority);
 
             virBufferAddLit(buf, "/>\n");
 
