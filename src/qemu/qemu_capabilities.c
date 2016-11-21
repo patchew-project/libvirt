@@ -2959,7 +2959,8 @@ virQEMUCapsCPUFilterFeatures(const char *name,
 {
     if (STREQ(name, "cmt") ||
         STREQ(name, "mbm_total") ||
-        STREQ(name, "mbm_local"))
+        STREQ(name, "mbm_local") ||
+        STREQ(name, "arat"))
         return false;
 
     return true;
