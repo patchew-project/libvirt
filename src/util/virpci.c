@@ -1848,6 +1848,12 @@ virPCIDeviceGetName(virPCIDevicePtr dev)
     return dev->name;
 }
 
+const char *
+virPCIDeviceGetConfigPath(virPCIDevicePtr dev)
+{
+    return dev->path;
+}
+
 void virPCIDeviceSetManaged(virPCIDevicePtr dev, bool managed)
 {
     dev->managed = managed;
