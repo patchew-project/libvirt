@@ -34,6 +34,7 @@ typedef enum {
     VIR_PROC_POLICY_IDLE,
     VIR_PROC_POLICY_FIFO,
     VIR_PROC_POLICY_RR,
+    VIR_PROC_POLICY_DEADLINE,
 
     VIR_PROC_POLICY_LAST
 } virProcessSchedPolicy;

@@ -34,6 +34,9 @@
 #endif
 #if HAVE_SCHED_SETSCHEDULER
 # include <sched.h>
+# ifdef __linux__
+#  include <linux/sched.h>
+# endif
 #endif
 
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || HAVE_BSD_CPU_AFFINITY
@@ -111,7 +114,8 @@ VIR_ENUM_IMPL(virProcessSchedPolicy, VIR_PROC_POLICY_LAST,
               "batch",
               "idle",
               "fifo",
-              "rr");
+              "rr",
+              "deadline");
 
 /**
  * virProcessTranslateStatus:
@@ -1211,6 +1215,13 @@ virProcessSchedTranslatePolicy(virProcessSchedPolicy policy)
 
     case VIR_PROC_POLICY_RR:
         return SCHED_RR;
+
+    case VIR_PROC_POLICY_DEADLINE:
+# ifdef SCHED_DEADLINE
+        return SCHED_DEADLINE;
+# else
+        return -1;
+# endif
 
     case VIR_PROC_POLICY_LAST:
         /* nada */

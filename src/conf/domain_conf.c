@@ -23132,6 +23132,7 @@ virDomainFormatSchedDef(virDomainDefPtr def,
             case VIR_PROC_POLICY_NONE:
             case VIR_PROC_POLICY_BATCH:
             case VIR_PROC_POLICY_IDLE:
+            case VIR_PROC_POLICY_DEADLINE:
             case VIR_PROC_POLICY_LAST:
                 currentMap = schedMap;
                 break;

@@ -1840,6 +1840,9 @@ typedef virDomainThreadSchedParam *virDomainThreadSchedParamPtr;
 struct _virDomainThreadSchedParam {
     virProcessSchedPolicy policy;
     int priority;
+    unsigned long long runtime;
+    unsigned long long deadline;
+    unsigned long long period;
 };
 
 typedef struct _virDomainTimerCatchupDef virDomainTimerCatchupDef;
