@@ -428,7 +428,7 @@ qemuDomainAssignARMVirtioMMIOAddresses(virDomainDefPtr def,
  */
 static virDomainPCIConnectFlags
 qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
-                                         virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
+                                         virQEMUDriverPtr driver,
                                          virDomainPCIConnectFlags pcieFlags,
                                          virDomainPCIConnectFlags virtioFlags)
 {
@@ -558,8 +558,88 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
             return 0;
         }
 
-    case VIR_DOMAIN_DEVICE_HOSTDEV:
-        return pciFlags;
+    case VIR_DOMAIN_DEVICE_HOSTDEV: {
+        virDomainHostdevDefPtr hostdev = dev->data.hostdev;
+
+        if (hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS &&
+            hostdev->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI) {
+            bool isExpress = false;
+            virPCIDevicePtr pciDev;
+            virPCIDeviceAddressPtr hostAddr = &hostdev->source.subsys.u.pci.addr;
+
+            if (pciFlags == pcieFlags) {
+                /* This arch/qemu only supports legacy PCI, so there
+                 * is no point in checking if the device is an Express
+                 * device.
+                 */
+                return pciFlags;
+            }
+
+            if (virDeviceInfoPCIAddressPresent(hostdev->info)) {
+                /* A guest-side address has already been assigned, so
+                 * we can avoid reading the PCI config, and just use
+                 * pcieFlags, since the pciConnectFlags checking is
+                 * more relaxed when an address is already assigned
+                 * than it is when we're looking for a new address (so
+                 * validation will pass regardless of whether we set
+                 * the flags to PCI or PCIE).
+                 */
+                return pcieFlags;
+            }
+
+            if (!(pciDev = virPCIDeviceNew(hostAddr->domain,
+                                           hostAddr->bus,
+                                           hostAddr->slot,
+                                           hostAddr->function))) {
+                /* libvirt should be able to perform all the
+                 * operations in virPCIDeviceNew() even if it's
+                 * running unprivileged, so if this fails, the device
+                 * apparently doesn't currently exist on the host.
+                 * Since the overwhelming majority of assignable host
+                 * devices are PCIe, assume this one is too.
+                 */
+                return pcieFlags;
+            }
+
+            if (!driver->privileged) {
+                /* unprivileged libvirtd is unable to read *all* of a
+                 * device's PCI config (it can only read the first 64
+                 * bytes, which isn't enough for the check that's done
+                 * in virPCIDeviceIsPCIExpress()), so instead of
+                 * trying and failing, we make an educated guess based
+                 * on the length of the device's config file - if it
+                 * is 256 bytes, then it is definitely a legacy PCI
+                 * device. If it's larger than that, then it is
+                 * *probably PCIe (although it could be PCI-x, but
+                 * those are extremely rare). If the config file can't
+                 * be found (in which case the "length" will be -1),
+                 * then we blindly assume the most likely outcome -
+                 * PCIe.
+                 */
+                off_t configLen = virFileLength(virPCIDeviceGetConfigPath(pciDev));
+
+                virPCIDeviceFree(pciDev);
+
+                if (configLen == 256)
+                    return pciFlags;
+
+                return pcieFlags;
+            }
+
+            /* If we are running with privileges, we can examine the
+             * PCI config contents with virPCIDeviceIsPCIExpress() for
+             * a definitive answer.
+             */
+            isExpress = virPCIDeviceIsPCIExpress(pciDev);
+            virPCIDeviceFree(pciDev);
+
+            if (isExpress)
+                return pcieFlags;
+
+            return pciFlags;
+        }
+        return 0;
+    }
 
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
         switch ((virDomainMemballoonModel) dev->data.memballoon->model) {
