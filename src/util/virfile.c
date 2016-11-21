@@ -1735,6 +1735,19 @@ virFileActivateDirOverride(const char *argv0)
     }
 }
 
+
+off_t
+virFileLength(const char *file)
+{
+    struct stat s;
+
+    if (stat(file, &s) < 0)
+        return -1;
+
+    return s.st_size;
+}
+
+
 bool
 virFileIsDir(const char *path)
 {
