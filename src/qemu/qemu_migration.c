@@ -3151,6 +3151,10 @@ qemuMigrationBeginPhase(virQEMUDriverPtr driver,
     if (priv->job.asyncJob == QEMU_ASYNC_JOB_MIGRATION_OUT)
         qemuMigrationJobSetPhase(driver, vm, QEMU_MIGRATION_PHASE_BEGIN3);
 
+    if (vm->def->cpu && vm->def->cpu->mode == VIR_CPU_MODE_HOST_PASSTHROUGH)
+        VIR_WARN("cpu mode 'host-passthrough' may fail migration if destination"
+                 " machine is running an older cpu model.");
+
     if (!qemuMigrationIsAllowed(driver, vm, true, flags))
         goto cleanup;
 
