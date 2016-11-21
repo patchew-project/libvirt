@@ -387,6 +387,7 @@ typedef enum {
     QEMU_CAPS_DEVICE_IVSHMEM_DOORBELL, /* -device ivshmem-doorbell */
     QEMU_CAPS_QUERY_QMP_SCHEMA, /* query-qmp-schema command */
     QEMU_CAPS_GLUSTER_DEBUG_LEVEL, /* -drive gluster.debug_level={0..9} */
+    QEMU_CAPS_DRIVE_IOTUNE_GROUP, /* -drive throttling.group=<name> */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
