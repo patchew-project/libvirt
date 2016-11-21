@@ -87,7 +87,7 @@ int virNetDevOpenvswitchAddPort(const char *brname, const char *ifname,
 
     cmd = virCommandNew(OVSVSCTL);
 
-    virCommandAddArgList(cmd, "--timeout=5", "--", "--if-exists", "del-port",
+    virCommandAddArgList(cmd, "--timeout=120", "--", "--if-exists", "del-port",
                          ifname, "--", "add-port", brname, ifname, NULL);
 
     if (virtVlan && virtVlan->nTags > 0) {
@@ -181,7 +181,7 @@ int virNetDevOpenvswitchRemovePort(const char *brname ATTRIBUTE_UNUSED, const ch
     virCommandPtr cmd = NULL;
 
     cmd = virCommandNew(OVSVSCTL);
-    virCommandAddArgList(cmd, "--timeout=5", "--", "--if-exists", "del-port", ifname, NULL);
+    virCommandAddArgList(cmd, "--timeout=120", "--", "--if-exists", "del-port", ifname, NULL);
 
     if (virCommandRun(cmd, NULL) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -210,7 +210,7 @@ int virNetDevOpenvswitchGetMigrateData(char **migrate, const char *ifname)
     size_t len;
     int ret = -1;
 
-    cmd = virCommandNewArgList(OVSVSCTL, "--timeout=5", "--if-exists", "get", "Interface",
+    cmd = virCommandNewArgList(OVSVSCTL, "--timeout=120", "--if-exists", "get", "Interface",
                                ifname, "external_ids:PortData", NULL);
 
     virCommandSetOutputBuffer(cmd, migrate);
@@ -253,7 +253,7 @@ int virNetDevOpenvswitchSetMigrateData(char *migrate, const char *ifname)
         return 0;
     }
 
-    cmd = virCommandNewArgList(OVSVSCTL, "--timeout=5", "set",
+    cmd = virCommandNewArgList(OVSVSCTL, "--timeout=120", "set",
                                "Interface", ifname, NULL);
     virCommandAddArgFormat(cmd, "external_ids:PortData=%s", migrate);
 
