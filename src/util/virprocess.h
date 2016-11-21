@@ -41,6 +41,26 @@ typedef enum {
 
 VIR_ENUM_DECL(virProcessSchedPolicy);
 
+# ifdef SCHED_DEADLINE
+struct sched_attr {
+    uint32_t size;
+
+    uint32_t sched_policy;
+    uint64_t sched_flags;
+
+    /* SCHED_NORMAL, SCHED_BATCH */
+    uint32_t sched_nice;
+
+    /* SCHED_FIFO, SCHED_RR */
+    uint32_t sched_priority;
+
+    /* SCHED_DEADLINE (nsec) */
+    uint64_t sched_runtime;
+    uint64_t sched_deadline;
+    uint64_t sched_period;
+};
+# endif
+
 char *
 virProcessTranslateStatus(int status);
 
@@ -93,6 +113,9 @@ int virProcessRunInMountNamespace(pid_t pid,
 
 int virProcessSetScheduler(pid_t pid,
                            virProcessSchedPolicy policy,
-                           int priority);
+                           int priority,
+                           unsigned long long runtime,
+                           unsigned long long deadline,
+                           unsigned long long period);
 
 #endif /* __VIR_PROCESS_H__ */

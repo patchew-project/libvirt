@@ -67,6 +67,7 @@
 VIR_LOG_INIT("util.process");
 
 #ifdef __linux__
+# include <sys/syscall.h>
 /*
  * Workaround older glibc. While kernel may support the setns
  * syscall, the glibc wrapper might not exist. If that's the
@@ -87,10 +88,8 @@ VIR_LOG_INIT("util.process");
 #   define __NR_setns 339
 #  endif
 # endif
-
 # ifndef HAVE_SETNS
 #  if defined(__NR_setns)
-#   include <sys/syscall.h>
 
 static inline int setns(int fd, int nstype)
 {
@@ -99,6 +98,24 @@ static inline int setns(int fd, int nstype)
 #  else /* !__NR_setns */
 #   error Please determine the syscall number for setns on your architecture
 #  endif
+# endif
+
+# if defined(SCHED_DEADLINE) && defined(__NR_sched_setattr)
+static inline int sched_setattr(pid_t pid,
+                                const struct sched_attr *attr,
+                                unsigned int flags)
+{
+    return syscall(__NR_sched_setattr, pid, attr, flags);
+}
+# else
+static inline int sched_setattr(pid_t pid,
+                                const struct sched_attr *attr,
+                                unsigned int flags)
+{
+    virReportSystemError(ENOSYS, "%s",
+                         _("Deadline scheduler is not supported on this platform."));
+    return -1;
+}
 # endif
 #else /* !__linux__ */
 static inline int setns(int fd ATTRIBUTE_UNUSED, int nstype ATTRIBUTE_UNUSED)
@@ -1234,10 +1251,16 @@ virProcessSchedTranslatePolicy(virProcessSchedPolicy policy)
 int
 virProcessSetScheduler(pid_t pid,
                        virProcessSchedPolicy policy,
-                       int priority)
+                       int priority,
+                       unsigned long long runtime,
+                       unsigned long long deadline,
+                       unsigned long long period)
 {
     struct sched_param param = {0};
+    struct sched_attr attrs = { sizeof(attrs), SCHED_DEADLINE, 0, 0, 0,
+                                runtime, deadline, period };
     int pol = virProcessSchedTranslatePolicy(policy);
+    int ret = 0;
 
     VIR_DEBUG("pid=%lld, policy=%d, priority=%u",
               (long long) pid, policy, priority);
@@ -1280,7 +1303,13 @@ virProcessSetScheduler(pid_t pid,
         param.sched_priority = priority;
     }
 
-    if (sched_setscheduler(pid, pol, &param) < 0) {
+    if (pol == SCHED_DEADLINE) {
+        ret = sched_setattr(pid, &attrs, 0);
+    } else {
+        ret = sched_setscheduler(pid, pol, &param);
+    }
+
+    if (ret < 0) {
         virReportSystemError(errno,
                              _("Cannot set scheduler parameters for pid %lld"),
                              (long long) pid);

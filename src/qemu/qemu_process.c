@@ -2395,7 +2395,8 @@ qemuProcessSetupPid(virDomainObjPtr vm,
 
     /* Set scheduler type and priority. */
     if (sched &&
-        virProcessSetScheduler(pid, sched->policy, sched->priority) < 0)
+        virProcessSetScheduler(pid, sched->policy, sched->priority,
+                               sched->runtime, sched->deadline, sched->period) < 0)
         goto cleanup;
 
     ret = 0;
