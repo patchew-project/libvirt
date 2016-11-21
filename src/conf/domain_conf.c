@@ -4518,11 +4518,13 @@ static int
 virDomainVcpuDefPostParse(virDomainDefPtr def)
 {
     virDomainVcpuDefPtr vcpu;
+    virDomainThreadSchedParamPtr sched;
     size_t maxvcpus = virDomainDefGetVcpusMax(def);
     size_t i;
 
     for (i = 0; i < maxvcpus; i++) {
         vcpu = virDomainDefGetVcpu(def, i);
+        sched = &vcpu->sched;
 
         /* impossible but some compilers don't like it */
         if (!vcpu)
@@ -4547,6 +4549,35 @@ virDomainVcpuDefPostParse(virDomainDefPtr def)
 
         case VIR_TRISTATE_BOOL_YES:
         case VIR_TRISTATE_BOOL_LAST:
+            break;
+        }
+
+        switch (sched->policy) {
+        case VIR_PROC_POLICY_NONE:
+        case VIR_PROC_POLICY_BATCH:
+        case VIR_PROC_POLICY_IDLE:
+        case VIR_PROC_POLICY_FIFO:
+        case VIR_PROC_POLICY_RR:
+            break;
+        case VIR_PROC_POLICY_DEADLINE:
+            if (sched->runtime < 1024 || sched->deadline < 1024 || sched->period < 1024) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                            _("Scheduler runtime, deadline and period must be "
+                            "higher or equal to 1024 (1 us) (runtime(%llu), "
+                            "deadline(%llu), period(%llu))"),
+                            sched->runtime, sched->deadline, sched->period);
+                return -1;
+            }
+
+            if (!(sched->runtime <= sched->deadline && sched->deadline <= sched->period)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                            _("Scheduler configuration does not satisfy "
+                                "(runtime(%llu) <= deadline(%llu) <= period(%llu))"),
+                            sched->runtime, sched->deadline, sched->period);
+                return -1;
+            }
+            break;
+        case VIR_PROC_POLICY_LAST:
             break;
         }
     }
@@ -15717,7 +15748,10 @@ static virBitmapPtr
 virDomainSchedulerParse(xmlNodePtr node,
                         const char *name,
                         virProcessSchedPolicy *policy,
-                        int *priority)
+                        int *priority,
+                        unsigned long long *runtime,
+                        unsigned long long *deadline,
+                        unsigned long long *period)
 {
     virBitmapPtr ret = NULL;
     char *tmp = NULL;
@@ -15773,6 +15807,42 @@ virDomainSchedulerParse(xmlNodePtr node,
         VIR_FREE(tmp);
     }
 
+    if (pol == VIR_PROC_POLICY_DEADLINE) {
+        if (!(tmp = virXMLPropString(node, "runtime"))) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("Missing scheduler runtime"));
+            goto error;
+        }
+        if (virStrToLong_ull(tmp, NULL, 10, runtime) < 0) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("Invalid value for element runtime"));
+            goto error;
+        }
+
+        if (!(tmp = virXMLPropString(node, "deadline"))) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("Missing scheduler deadline"));
+            goto error;
+        }
+        if (virStrToLong_ull(tmp, NULL, 10, deadline) < 0) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("Invalid value for element deadline"));
+            goto error;
+        }
+
+        if (!(tmp = virXMLPropString(node, "period"))) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("Missing scheduler period"));
+            goto error;
+        }
+        if (virStrToLong_ull(tmp, NULL, 10, period) < 0) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("Invalid value for element period"));
+            goto error;
+        }
+        VIR_FREE(tmp);
+    }
+
     return ret;
 
  error:
@@ -15793,9 +15863,13 @@ virDomainThreadSchedParseHelper(xmlNodePtr node,
     virDomainThreadSchedParamPtr sched;
     virProcessSchedPolicy policy;
     int priority;
+    unsigned long long runtime;
+    unsigned long long deadline;
+    unsigned long long period;
     int ret = -1;
 
-    if (!(map = virDomainSchedulerParse(node, name, &policy, &priority)))
+    if (!(map = virDomainSchedulerParse(node, name, &policy, &priority,
+                                        &runtime, &deadline, &period)))
         goto cleanup;
 
     while ((next = virBitmapNextSetBit(map, next)) > -1) {
@@ -15811,6 +15885,9 @@ virDomainThreadSchedParseHelper(xmlNodePtr node,
 
         sched->policy = policy;
         sched->priority = priority;
+        sched->runtime = runtime;
+        sched->deadline = deadline;
+        sched->period = period;
     }
 
     ret = 0;
@@ -23072,6 +23149,15 @@ virDomainSchedPriorityComparator(virDomainThreadSchedParamPtr baseSched,
     return (baseSched->priority == sched->priority);
 }
 
+static bool
+virDomainSchedDeadlineComparator(virDomainThreadSchedParamPtr baseSched,
+                                 virDomainThreadSchedParamPtr sched)
+{
+    return (baseSched->runtime == sched->priority &&
+            baseSched->deadline == sched->deadline &&
+            baseSched->period == sched->period);
+}
+
 static virDomainThreadSchedParamPtr
 virDomainSchedSubsetCharacteristic(virDomainDefPtr def,
                                    virBitmapPtr schedMap,
@@ -23164,13 +23250,13 @@ virDomainFormatSchedDef(virDomainDefPtr def,
         while (!virBitmapIsAllClear(schedMap)) {
             virBitmapPtr currentMap = NULL;
             bool hasPriority = false;
+            bool isDeadline = false;
             baseSched = NULL;
 
             switch ((virProcessSchedPolicy) i) {
             case VIR_PROC_POLICY_NONE:
             case VIR_PROC_POLICY_BATCH:
             case VIR_PROC_POLICY_IDLE:
-            case VIR_PROC_POLICY_DEADLINE:
             case VIR_PROC_POLICY_LAST:
                 currentMap = schedMap;
                 break;
@@ -23184,6 +23270,19 @@ virDomainFormatSchedDef(virDomainDefPtr def,
                                                                subsetMap,
                                                                func,
                                                                virDomainSchedPriorityComparator);
+                if (baseSched == NULL)
+                    goto cleanup;
+
+                currentMap = subsetMap;
+                break;
+            case VIR_PROC_POLICY_DEADLINE:
+                isDeadline = true;
+
+                baseSched = virDomainSchedSubsetCharacteristic(def,
+                                                               schedMap,
+                                                               subsetMap,
+                                                               func,
+                                                               virDomainSchedDeadlineComparator);
                 if (baseSched == NULL)
                     goto cleanup;
 
@@ -23203,6 +23302,9 @@ virDomainFormatSchedDef(virDomainDefPtr def,
 
             if (hasPriority && baseSched != NULL)
                 virBufferAsprintf(buf, " priority='%d'", baseSched->priority);
+            if (isDeadline && baseSched != NULL)
+                virBufferAsprintf(buf, " runtime='%llu' deadline='%llu' period='%llu'",
+                                  baseSched->runtime, baseSched->deadline, baseSched->period);
 
             virBufferAddLit(buf, "/>\n");
 

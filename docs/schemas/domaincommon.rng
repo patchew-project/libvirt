@@ -851,6 +851,22 @@
           <ref name="unsignedShort"/>
         </attribute>
       </group>
+      <group>
+        <attribute name="scheduler">
+          <choice>
+            <value>deadline</value>
+          </choice>
+        </attribute>
+        <attribute name="runtime">
+          <ref name="unsignedLong"/>
+        </attribute>
+        <attribute name="deadline">
+          <ref name="unsignedLong"/>
+        </attribute>
+        <attribute name="period">
+          <ref name="unsignedLong"/>
+        </attribute>
+      </group>
     </choice>
   </define>
 
