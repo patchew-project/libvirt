@@ -1457,7 +1457,7 @@ qemuTranslateSnapshotDiskSourcePool(virConnectPtr conn ATTRIBUTE_UNUSED,
 }
 
 char *
-qemuGetHugepagePath(virHugeTLBFSPtr hugepage)
+qemuGetBaseHugepagePath(virHugeTLBFSPtr hugepage)
 {
     char *ret;
 
@@ -1468,8 +1468,26 @@ qemuGetHugepagePath(virHugeTLBFSPtr hugepage)
 }
 
 
+char *
+qemuGetDomainHugepagePath(const virDomainDef *def,
+                          virHugeTLBFSPtr hugepage)
+{
+    char *base = qemuGetBaseHugepagePath(hugepage);
+    char *ret;
+
+    if (!base ||
+        virAsprintf(&ret, "%s/%s", base, def->name) < 0) {
+        VIR_FREE(base);
+        return NULL;
+    }
+
+    return ret;
+}
+
+
 /**
- * qemuGetDefaultHugepath:
+ * qemuGetDomainDefaultHugepath:
+ * @def: domain definition
  * @hugetlbfs: array of configured hugepages
  * @nhugetlbfs: number of item in the array
  *
@@ -1478,8 +1496,9 @@ qemuGetHugepagePath(virHugeTLBFSPtr hugepage)
  * Returns 0 on success, -1 otherwise.
  * */
 char *
-qemuGetDefaultHugepath(virHugeTLBFSPtr hugetlbfs,
-                       size_t nhugetlbfs)
+qemuGetDomainDefaultHugepath(const virDomainDef *def,
+                             virHugeTLBFSPtr hugetlbfs,
+                             size_t nhugetlbfs)
 {
     size_t i;
 
@@ -1490,12 +1509,12 @@ qemuGetDefaultHugepath(virHugeTLBFSPtr hugetlbfs,
     if (i == nhugetlbfs)
         i = 0;
 
-    return qemuGetHugepagePath(&hugetlbfs[i]);
+    return qemuGetDomainHugepagePath(def, &hugetlbfs[i]);
 }
 
 
 /**
- * qemuGetHupageMemPath: Construct HP enabled memory backend path
+ * qemuGetDomainHupageMemPath: Construct HP enabled memory backend path
  *
  * If no specific hugepage size is requested (@pagesize is zero)
  * the default hugepage size is used).
@@ -1505,9 +1524,10 @@ qemuGetDefaultHugepath(virHugeTLBFSPtr hugetlbfs,
  *        -1 otherwise.
  */
 int
-qemuGetHupageMemPath(virQEMUDriverConfigPtr cfg,
-                     unsigned long long pagesize,
-                     char **memPath)
+qemuGetDomainHupageMemPath(const virDomainDef *def,
+                           virQEMUDriverConfigPtr cfg,
+                           unsigned long long pagesize,
+                           char **memPath)
 {
     size_t i = 0;
 
@@ -1519,8 +1539,9 @@ qemuGetHupageMemPath(virQEMUDriverConfigPtr cfg,
     }
 
     if (!pagesize) {
-        if (!(*memPath = qemuGetDefaultHugepath(cfg->hugetlbfs,
-                                                cfg->nhugetlbfs)))
+        if (!(*memPath = qemuGetDomainDefaultHugepath(def,
+                                                      cfg->hugetlbfs,
+                                                      cfg->nhugetlbfs)))
             return -1;
     } else {
         for (i = 0; i < cfg->nhugetlbfs; i++) {
@@ -1536,7 +1557,7 @@ qemuGetHupageMemPath(virQEMUDriverConfigPtr cfg,
             return -1;
         }
 
-        if (!(*memPath = qemuGetHugepagePath(&cfg->hugetlbfs[i])))
+        if (!(*memPath = qemuGetDomainHugepagePath(def, &cfg->hugetlbfs[i])))
             return -1;
     }
 

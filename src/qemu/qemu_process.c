@@ -5273,10 +5273,18 @@ qemuProcessPrepareHost(virQEMUDriverPtr driver,
 
     if (vm->def->mem.nhugepages) {
         for (i = 0; i < cfg->nhugetlbfs; i++) {
-            char *hugepagePath = qemuGetHugepagePath(&cfg->hugetlbfs[i]);
+            char *hugepagePath = qemuGetDomainHugepagePath(vm->def, &cfg->hugetlbfs[i]);
 
             if (!hugepagePath)
                 goto cleanup;
+
+            if (virFileMakePathWithMode(hugepagePath, 0700) < 0) {
+                virReportSystemError(errno,
+                                     _("Unable to create %s"),
+                                     hugepagePath);
+                VIR_FREE(hugepagePath);
+                goto cleanup;
+            }
 
             if (virSecurityManagerSetHugepages(driver->securityManager,
                                                vm->def, hugepagePath) < 0) {
@@ -6144,6 +6152,21 @@ void qemuProcessStop(virQEMUDriverPtr driver,
         /* kick the device out of the hostdev list too */
         virDomainNetRemoveHostdev(def, net);
         networkReleaseActualDevice(vm->def, net);
+    }
+
+    if (vm->def->mem.nhugepages) {
+        for (i = 0; i < cfg->nhugetlbfs; i++) {
+            char *hugepagePath = qemuGetDomainHugepagePath(vm->def, &cfg->hugetlbfs[i]);
+
+            if (!hugepagePath)
+                continue;
+
+            if (rmdir(hugepagePath) < 0)
+                VIR_WARN("Unable to remove hugepage path: %s (errno=%d)",
+                         hugepagePath, errno);
+
+            VIR_FREE(hugepagePath);
+        }
     }
 
  retry:
