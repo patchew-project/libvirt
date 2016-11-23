@@ -15,8 +15,18 @@
         <a href="csharp.html">C# bindings</a>.
       </li>
      <li>
-        <strong>Go</strong>: Kyle Kelley et al. are developing
-        <a href="https://github.com/rgbkrk/libvirt-go">Go bindings</a>.
+        <strong>Go</strong>: There are two bindings available:
+        <a href="https://github.com/rgbkrk/libvirt-go">libvirt-go</a> and
+        <a href="https://github.com/digitalocean/go-libvirt">go-libvirt</a>.
+        <p>
+        The <tt>libvirt-go</tt> bindings are developed by Kyle Kelley et
+        al. and are built on the top of libvirt's client library.
+        </p>
+        <p>
+        The <tt>go-libvirt</tt> bindings are then developed by Ben
+        LeMasurier et al. and they hook straight into libvirt's RPC and thus do
+        not rely on <tt>cgo</tt>.
+        </p>
       </li>
       <li>
         <strong>Java</strong>: Daniel Veillard develops
