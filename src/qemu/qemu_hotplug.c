@@ -1980,6 +1980,7 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
     char *secAlias = NULL;
     bool releaseaddr = false;
     bool teardowncgroup = false;
+    bool teardowndevice = false;
     bool chardevAdded = false;
     bool objAdded = false;
     bool tlsobjAdded = false;
@@ -2024,6 +2025,10 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
                                       !rng->info.addr.ccw.assigned) < 0)
             goto cleanup;
     }
+
+    if (qemuDomainNamespaceSetupRNG(driver, vm, rng) < 0)
+        goto cleanup;
+    teardowndevice = true;
 
     if (qemuSetupRNGCgroup(vm, rng) < 0)
         goto cleanup;
@@ -2111,6 +2116,8 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
             qemuDomainReleaseDeviceAddress(vm, &rng->info, NULL);
         if (teardowncgroup && qemuTeardownRNGCgroup(vm, rng) < 0)
             VIR_WARN("Unable to remove RNG device cgroup ACL on hotplug fail");
+        if (teardowndevice && qemuDomainNamespaceTeardownRNG(driver, vm, rng) < 0)
+            VIR_WARN("Unable to remove chr device from /dev");
     }
 
     VIR_FREE(tlsAlias);
@@ -4100,6 +4107,9 @@ qemuDomainRemoveRNGDevice(virQEMUDriverPtr driver,
 
     if (qemuTeardownRNGCgroup(vm, rng) < 0)
         VIR_WARN("Failed to remove RNG device cgroup ACL");
+
+    if (qemuDomainNamespaceTeardownRNG(driver, vm, rng) < 0)
+        VIR_WARN("Unable to remove RNG device from /dev");
 
     event = virDomainEventDeviceRemovedNewFromObj(vm, rng->info.alias);
     qemuDomainEventQueue(driver, event);
