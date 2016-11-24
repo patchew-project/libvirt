@@ -55,6 +55,9 @@
 
 #include <sys/time.h>
 #include <fcntl.h>
+#if defined(HAVE_SYS_MOUNT_H)
+# include <sys/mount.h>
+#endif
 
 #include <libxml/xpathInternals.h>
 
@@ -1627,6 +1630,9 @@ qemuDomainObjPrivateXMLFormat(virBufferPtr buf,
                           virDomainChrTypeToString(priv->monConfig->type));
     }
 
+    if (priv->containerized)
+        virBufferAddLit(buf, "<containerized/>\n");
+
     qemuDomainObjPrivateXMLFormatVcpus(buf, vm->def);
 
     if (priv->qemuCaps) {
@@ -1808,6 +1814,8 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
                        virDomainChrTypeToString(priv->monConfig->type));
         goto error;
     }
+
+    priv->containerized = virXPathBoolean("count(./containerized) > 0", ctxt) > 0;
 
     if ((n = virXPathNodeSet("./vcpus/vcpu", ctxt, &nodes)) < 0)
         goto error;
@@ -6652,4 +6660,285 @@ qemuDomainSupportsVideoVga(virDomainVideoDefPtr video,
         return false;
 
     return true;
+}
+
+
+static int
+qemuDomainCreateDevice(const char *device,
+                       const char *path,
+                       bool allow_noent)
+{
+    char *devicePath = NULL;
+    struct stat sb;
+    int ret = -1;
+
+    if (!STRPREFIX(device, "/dev")) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("invalid device: %s"),
+                       device);
+        goto cleanup;
+    }
+
+    if (virAsprintf(&devicePath, "%s/%s",
+                    path, device + 4) < 0)
+        goto cleanup;
+
+    if (stat(device, &sb) < 0) {
+        if (errno == ENOENT && allow_noent) {
+            /* Ignore non-existent device. */
+            ret = 0;
+            goto cleanup;
+        }
+
+        virReportSystemError(errno, _("Unable to stat %s"), device);
+        goto cleanup;
+    }
+
+    if (virFileMakeParentPath(devicePath) < 0) {
+        virReportSystemError(errno,
+                             _("Unable to create %s"),
+                             devicePath);
+        goto cleanup;
+    }
+
+    if (mknod(devicePath, sb.st_mode, sb.st_rdev) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to make device %s"),
+                             devicePath);
+        goto cleanup;
+    }
+
+    if (chown(devicePath, sb.st_uid, sb.st_gid) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to chown device %s"),
+                             devicePath);
+        goto cleanup;
+    }
+
+    if (virFileCopyACLs(device, devicePath) < 0 &&
+        errno != ENOTSUP) {
+        virReportSystemError(errno,
+                             _("Failed to copy ACLs on device %s"),
+                             devicePath);
+        goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(devicePath);
+    return ret;
+}
+
+
+
+static int
+qemuDomainPopulateDevices(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm ATTRIBUTE_UNUSED,
+                          const char *path)
+{
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    const char *const *devices = (const char *const *) cfg->cgroupDeviceACL;
+    size_t i;
+    int ret = -1;
+
+    if (!devices)
+        devices = defaultDeviceACL;
+
+    for (i = 0; devices[i]; i++) {
+        if (qemuDomainCreateDevice(devices[i], path, true) < 0)
+            goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    virObjectUnref(cfg);
+    return ret;
+}
+
+
+static int
+qemuDomainSetupDev(virQEMUDriverPtr driver,
+                   virDomainObjPtr vm,
+                   const char *path)
+{
+    char *mount_options = NULL;
+    char *opts = NULL;
+    int ret = -1;
+
+    VIR_DEBUG("Setting up /dev/ for domain %s", vm->def->name);
+
+    mount_options = virSecurityManagerGetMountOptions(driver->securityManager,
+                                                      vm->def);
+
+    if (!mount_options &&
+        VIR_STRDUP(mount_options, "") < 0)
+        goto cleanup;
+
+    /*
+     * tmpfs is limited to 64kb, since we only have device nodes in there
+     * and don't want to DOS the entire OS RAM usage
+     */
+    if (virAsprintf(&opts,
+                    "mode=755,size=65536%s", mount_options) < 0)
+        goto cleanup;
+
+    if (virFileSetupDev(path, opts) < 0)
+        goto cleanup;
+
+    if (qemuDomainPopulateDevices(driver, vm, path) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(opts);
+    VIR_FREE(mount_options);
+    return ret;
+}
+
+
+int
+qemuDomainBuildNamespace(virQEMUDriverPtr driver,
+                         virDomainObjPtr vm)
+{
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    const unsigned long mount_flags = MS_MOVE;
+    char *devPath = NULL;
+    char *devptsPath = NULL;
+    int ret = -1;
+
+    if (!priv->containerized) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    if (virAsprintf(&devPath, "%s/%s.dev",
+                    cfg->stateDir, vm->def->name) < 0 ||
+        virAsprintf(&devptsPath, "%s/%s.devpts",
+                    cfg->stateDir, vm->def->name) < 0)
+        goto cleanup;
+
+    if (qemuDomainSetupDev(driver, vm, devPath) < 0)
+        goto cleanup;
+
+    /* Save /dev/pts mount point because /dev/pts/NNN is exposed in our live
+     * XML and other applications are supposed to be able to use it. */
+    if (mount("/dev/pts", devptsPath, NULL, mount_flags, NULL) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("Unable to move /dev/pts mount"));
+        goto cleanup;
+    }
+
+    if (mount(devPath, "/dev", NULL, mount_flags, NULL) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to mount %s on /dev"),
+                             devPath);
+        goto cleanup;
+    }
+
+    if (virFileMakePath("/dev/pts") < 0) {
+        virReportSystemError(errno, "%s",
+                             _("Cannot create /dev/pts"));
+        goto cleanup;
+    }
+
+    if (mount(devptsPath, "/dev/pts", NULL, mount_flags, NULL) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to mount %s on /dev/pts"),
+                             devptsPath);
+        goto cleanup;
+    }
+
+    if (virFileBindMountDevice("/dev/pts/ptmx", "/dev/ptmx") < 0)
+        goto cleanup;
+
+    VIR_DEBUG("blaaah: %d", system("find /dev/ -ls > /tmp/blaaah"));
+    VIR_DEBUG("blaaah: %d", system("echo >> /tmp/blaaah"));
+    VIR_DEBUG("blaaah: %d", system("mount >> /tmp/blaaah"));
+    ret = 0;
+ cleanup:
+    virObjectUnref(cfg);
+    VIR_FREE(devPath);
+    return ret;
+}
+
+
+int
+qemuDomainCreateNamespace(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm)
+{
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    int ret = -1;
+    char *path = NULL;
+
+#if !defined(__linux__)
+    /* Namespaces are Linux specific. On other platforms just
+     * carry on with the old behaviour. */
+    return 0;
+#endif
+
+    if (!virQEMUDriverIsPrivileged(driver)) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    if (virAsprintf(&path, "%s/%s.dev",
+                    cfg->stateDir, vm->def->name) < 0)
+        goto cleanup;
+
+    if (virFileMakePath(path) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to create %s"),
+                             path);
+        goto cleanup;
+    }
+
+    VIR_FREE(path);
+    if (virAsprintf(&path, "%s/%s.devpts",
+                    cfg->stateDir, vm->def->name) < 0)
+        goto cleanup;
+
+    if (virFileMakePath(path) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to create %s"),
+                             path);
+        goto cleanup;
+    }
+
+    priv->containerized = true;
+    ret = 0;
+ cleanup:
+    VIR_FREE(path);
+    virObjectUnref(cfg);
+    return ret;
+}
+
+
+void
+qemuDomainDeleteNamespace(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm)
+{
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    char *path;
+
+    if (!priv->containerized)
+        return;
+
+    if (virAsprintf(&path, "%s/%s.dev",
+                    cfg->stateDir, vm->def->name) < 0)
+        goto cleanup;
+
+    virFileDeleteTree(path);
+
+    VIR_FREE(path);
+    if (virAsprintf(&path, "%s/%s.devpts",
+                    cfg->stateDir, vm->def->name) < 0)
+        goto cleanup;
+
+    virFileDeleteTree(path);
+ cleanup:
+    virObjectUnref(cfg);
+    VIR_FREE(path);
 }
