@@ -5435,9 +5435,14 @@ qemuDomainGetEmulatorPinInfo(virDomainPtr dom,
                autoCpuset) {
         cpumask = autoCpuset;
     } else {
+#ifdef __linux__
+    if (!(bitmap = virHostCPUGetOnlineBitmap()))
+        return -1;
+#else
         if (!(bitmap = virBitmapNew(hostcpus)))
             goto cleanup;
         virBitmapSetAll(bitmap);
+#endif
         cpumask = bitmap;
     }
 
