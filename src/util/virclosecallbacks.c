@@ -300,7 +300,9 @@ virCloseCallbacksGetForConn(virCloseCallbacksPtr closeCallbacks,
     data.list = list;
     data.oom = false;
 
+    virObjectLock(closeCallbacks);
     virHashForEach(closeCallbacks->list, virCloseCallbacksGetOne, &data);
+    virObjectUnlock(closeCallbacks);
 
     if (data.oom) {
         VIR_FREE(list->entries);
@@ -329,22 +331,15 @@ virCloseCallbacksRun(virCloseCallbacksPtr closeCallbacks,
      * them all from the hash. At that point we can release
      * the lock and run the callbacks safely. */
 
-    virObjectLock(closeCallbacks);
     list = virCloseCallbacksGetForConn(closeCallbacks, conn);
     if (!list)
         return;
 
     for (i = 0; i < list->nentries; i++) {
-        char uuidstr[VIR_UUID_STRING_BUFLEN];
-        virUUIDFormat(list->entries[i].uuid, uuidstr);
-        virHashRemoveEntry(closeCallbacks->list, uuidstr);
-    }
-    virObjectUnlock(closeCallbacks);
-
-    for (i = 0; i < list->nentries; i++) {
         virDomainObjPtr vm;
+        virDomainObjPtr dom;
 
-        if (!(vm = virDomainObjListFindByUUID(domains,
+        if (!(vm = virDomainObjListFindByUUIDRef(domains,
                                               list->entries[i].uuid))) {
             char uuidstr[VIR_UUID_STRING_BUFLEN];
             virUUIDFormat(list->entries[i].uuid, uuidstr);
@@ -352,10 +347,20 @@ virCloseCallbacksRun(virCloseCallbacksPtr closeCallbacks,
             continue;
         }
 
-        vm = list->entries[i].callback(vm, conn, opaque);
-        if (vm)
-            virObjectUnlock(vm);
+        dom = list->entries[i].callback(vm, conn, opaque);
+        if (dom)
+            virObjectUnlock(dom);
+        virObjectUnref(vm);
     }
+
+    virObjectLock(closeCallbacks);
+    for (i = 0; i < list->nentries; i++) {
+        char uuidstr[VIR_UUID_STRING_BUFLEN];
+        virUUIDFormat(list->entries[i].uuid, uuidstr);
+        virHashRemoveEntry(closeCallbacks->list, uuidstr);
+    }
+    virObjectUnlock(closeCallbacks);
+
     VIR_FREE(list->entries);
     VIR_FREE(list);
 }
