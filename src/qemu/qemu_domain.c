@@ -7371,6 +7371,10 @@ qemuDomainAttachDeviceMknodHelper(pid_t pid ATTRIBUTE_UNUSED,
             goto cleanup;
     }   break;
 
+    case VIR_DOMAIN_DEVICE_CHR:
+        /* No labelling. */
+        break;
+
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_FS:
@@ -7384,7 +7388,6 @@ qemuDomainAttachDeviceMknodHelper(pid_t pid ATTRIBUTE_UNUSED,
     case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_REDIRDEV:
     case VIR_DOMAIN_DEVICE_SMARTCARD:
-    case VIR_DOMAIN_DEVICE_CHR:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
     case VIR_DOMAIN_DEVICE_RNG:
@@ -7504,6 +7507,10 @@ qemuDomainDetachDeviceUnlink(virQEMUDriverPtr driver,
             return -1;
     }   break;
 
+    case VIR_DOMAIN_DEVICE_CHR:
+        /* No labelling. */
+        break;
+
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_FS:
@@ -7517,7 +7524,6 @@ qemuDomainDetachDeviceUnlink(virQEMUDriverPtr driver,
     case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_REDIRDEV:
     case VIR_DOMAIN_DEVICE_SMARTCARD:
-    case VIR_DOMAIN_DEVICE_CHR:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
     case VIR_DOMAIN_DEVICE_RNG:
@@ -7667,5 +7673,61 @@ qemuDomainNamespaceTeardownHostdev(virQEMUDriverPtr driver,
     ret = 0;
  cleanup:
     VIR_FREE(path);
+    return ret;
+}
+
+
+int
+qemuDomainNamespaceSetupChardev(virQEMUDriverPtr driver,
+                                virDomainObjPtr vm,
+                                virDomainChrDefPtr chr)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virDomainDeviceDef dev = {.type = VIR_DOMAIN_DEVICE_CHR, .data.chr = chr};
+    const char *path;
+    int ret = -1;
+
+    if (!priv->containerized)
+        return 0;
+
+    if (chr->source->type != VIR_DOMAIN_CHR_TYPE_DEV)
+        return 0;
+
+    path = chr->source->data.file.path;
+
+    if (qemuDomainAttachDeviceMknod(driver,
+                                    vm,
+                                    &dev,
+                                    path) < 0)
+        goto cleanup;
+    ret = 0;
+ cleanup:
+    return ret;
+}
+
+
+int
+qemuDomainNamespaceTeardownChardev(virQEMUDriverPtr driver,
+                                   virDomainObjPtr vm,
+                                   virDomainChrDefPtr chr)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virDomainDeviceDef dev = {.type = VIR_DOMAIN_DEVICE_CHR, .data.chr = chr};
+    int ret = -1;
+    const char *path = NULL;
+
+    if (!priv->containerized)
+        return 0;
+
+    if (chr->source->type != VIR_DOMAIN_CHR_TYPE_DEV)
+        return 0;
+
+    path = chr->source->data.file.path;
+
+    if (qemuDomainDetachDeviceUnlink(driver, vm, &dev, path) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
     return ret;
 }
