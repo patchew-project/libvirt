@@ -1835,18 +1835,15 @@ qemuAgentSetTime(qemuAgentPtr mon,
 
 
 int
-qemuAgentGetFSInfo(qemuAgentPtr mon, virDomainFSInfoPtr **info,
-                   virDomainDefPtr vmdef)
+qemuAgentGetFSInfo(qemuAgentPtr mon, qemuAgentFsInfoPtr **info)
 {
     size_t i, j, k;
     int ret = -1;
     ssize_t ndata = 0, ndisk;
-    char **alias;
     virJSONValuePtr cmd;
     virJSONValuePtr reply = NULL;
     virJSONValuePtr data;
-    virDomainFSInfoPtr *info_ret = NULL;
-    virPCIDeviceAddress pci_address;
+    qemuAgentFsInfoPtr *info_ret = NULL;
 
     cmd = qemuAgentMakeCommand("guest-get-fsinfo", NULL);
     if (!cmd)
@@ -1879,6 +1876,8 @@ qemuAgentGetFSInfo(qemuAgentPtr mon, virDomainFSInfoPtr **info,
         goto cleanup;
 
     for (i = 0; i < ndata; i++) {
+        qemuAgentFsDiskAliasPtr alias;
+
         /* Reverse the order to arrange in mount order */
         virJSONValuePtr entry = virJSONValueArrayGet(data, ndata - 1 - i);
 
@@ -1941,7 +1940,6 @@ qemuAgentGetFSInfo(qemuAgentPtr mon, virDomainFSInfoPtr **info,
             int diskaddr[3], pciaddr[4];
             const char *diskaddr_comp[] = {"bus", "target", "unit"};
             const char *pciaddr_comp[] = {"domain", "bus", "slot", "function"};
-            virDomainDiskDefPtr diskDef;
 
             if (!disk) {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -1967,6 +1965,11 @@ qemuAgentGetFSInfo(qemuAgentPtr mon, virDomainFSInfoPtr **info,
                     goto cleanup;
                 }
             }
+
+            alias->bus = diskaddr[0];
+            alias->target = diskaddr[1];
+            alias->unit = diskaddr[2];
+
             for (k = 0; k < 4; k++) {
                 if (virJSONValueObjectGetNumberInt(
                         pci, pciaddr_comp[k], &pciaddr[k]) < 0) {
@@ -1977,22 +1980,13 @@ qemuAgentGetFSInfo(qemuAgentPtr mon, virDomainFSInfoPtr **info,
                 }
             }
 
-            pci_address.domain = pciaddr[0];
-            pci_address.bus = pciaddr[1];
-            pci_address.slot = pciaddr[2];
-            pci_address.function = pciaddr[3];
-            if (!(diskDef = virDomainDiskByAddress(
-                     vmdef, &pci_address,
-                     diskaddr[0], diskaddr[1], diskaddr[2])))
-                continue;
+            alias->address.domain = pciaddr[0];
+            alias->address.bus = pciaddr[1];
+            alias->address.slot = pciaddr[2];
+            alias->address.function = pciaddr[3];
 
-            if (VIR_STRDUP(*alias, diskDef->dst) < 0)
-                goto cleanup;
-
-            if (*alias) {
-                alias++;
-                info_ret[i]->ndevAlias++;
-            }
+            alias++;
+            info_ret[i]->ndevAlias++;
         }
     }
 
@@ -2003,7 +1997,7 @@ qemuAgentGetFSInfo(qemuAgentPtr mon, virDomainFSInfoPtr **info,
  cleanup:
     if (info_ret) {
         for (i = 0; i < ndata; i++)
-            virDomainFSInfoFree(info_ret[i]);
+            qemuAgentFsInfoFree(info_ret[i]);
         VIR_FREE(info_ret);
     }
     virJSONValueFree(cmd);
@@ -2241,4 +2235,18 @@ qemuAgentSetUserPassword(qemuAgentPtr mon,
     virJSONValueFree(reply);
     VIR_FREE(password64);
     return ret;
+}
+
+void
+qemuAgentFsInfoFree(qemuAgentFsInfoPtr info)
+{
+    if (!info)
+        return;
+
+    VIR_FREE(info->mountpoint);
+    VIR_FREE(info->name);
+    VIR_FREE(info->fstype);
+    VIR_FREE(info->devAlias);
+
+    VIR_FREE(info);
 }

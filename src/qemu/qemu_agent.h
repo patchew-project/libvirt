@@ -75,8 +75,29 @@ int qemuAgentShutdown(qemuAgentPtr mon,
 int qemuAgentFSFreeze(qemuAgentPtr mon,
                       const char **mountpoints, unsigned int nmountpoints);
 int qemuAgentFSThaw(qemuAgentPtr mon);
-int qemuAgentGetFSInfo(qemuAgentPtr mon, virDomainFSInfoPtr **info,
-                       virDomainDefPtr vmdef);
+
+typedef struct _qemuAgentFsDiskAlias qemuAgentFsDiskAlias;
+typedef qemuAgentFsDiskAlias *qemuAgentFsDiskAliasPtr;
+struct _qemuAgentFsDiskAlias {
+    virPCIDeviceAddress address;
+    unsigned int bus;
+    unsigned int target;
+    unsigned int unit;
+};
+
+typedef struct _qemuAgentFsInfo qemuAgentFsInfo;
+typedef qemuAgentFsInfo *qemuAgentFsInfoPtr;
+struct _qemuAgentFsInfo {
+    char *mountpoint; /* path to mount point */
+    char *name;       /* device name in the guest (e.g. "sda1") */
+    char *fstype;     /* filesystem type */
+    size_t ndevAlias; /* number of elements in devAlias */
+    qemuAgentFsDiskAliasPtr devAlias;  /* array of disk device aliases */
+};
+
+void qemuAgentFsInfoFree(qemuAgentFsInfoPtr info);
+
+int qemuAgentGetFSInfo(qemuAgentPtr mon, qemuAgentFsInfoPtr **info);
 
 int qemuAgentSuspend(qemuAgentPtr mon,
                      unsigned int target);

@@ -169,21 +169,15 @@ testQemuAgentGetFSInfo(const void *data)
     virDomainXMLOptionPtr xmlopt = (virDomainXMLOptionPtr)data;
     virCapsPtr caps = testQemuCapsInit();
     qemuMonitorTestPtr test = qemuMonitorTestNewAgent(xmlopt);
-    char *domain_filename = NULL;
-    virDomainDefPtr def = NULL;
-    virDomainFSInfoPtr *info = NULL;
+    qemuAgentFsInfoPtr *info = NULL;
     int ret = -1, ninfo = 0, i;
+
+    qemuAgentFsDiskAlias alias_sda1 = { { 0, 0, 1, 1, 0 }, 1, 0, 0 };
+    qemuAgentFsDiskAlias alias_vda = { { 0, 0, 6, 0, 0 }, 0, 0, 0 };
+    qemuAgentFsDiskAlias alias_vdb = { { 0, 0, 7, 0, 0 }, 0, 0, 0 };
 
     if (!test)
         return -1;
-
-    if (virAsprintf(&domain_filename, "%s/qemuagentdata/qemuagent-fsinfo.xml",
-                    abs_srcdir) < 0)
-        goto cleanup;
-
-    if (!(def = virDomainDefParseFile(domain_filename, caps, xmlopt,
-                                      NULL, VIR_DOMAIN_DEF_PARSE_INACTIVE)))
-        goto cleanup;
 
     if (qemuMonitorTestAddAgentSyncResponse(test) < 0)
         goto cleanup;
@@ -220,8 +214,7 @@ testQemuAgentGetFSInfo(const void *data)
                                "   \"disk\": [], \"type\": \"xfs\"}]}") < 0)
         goto cleanup;
 
-    if ((ninfo = qemuAgentGetFSInfo(qemuMonitorTestGetAgent(test),
-                                    &info, def)) < 0)
+    if ((ninfo = qemuAgentGetFSInfo(qemuMonitorTestGetAgent(test), &info)) < 0)
         goto cleanup;
 
     if (ninfo != 3) {
@@ -234,11 +227,11 @@ testQemuAgentGetFSInfo(const void *data)
         STRNEQ(info[2]->mountpoint, "/") ||
         STRNEQ(info[2]->fstype, "ext4") ||
         info[2]->ndevAlias != 1 ||
-        !info[2]->devAlias || !info[2]->devAlias[0] ||
-        STRNEQ(info[2]->devAlias[0], "hdc")) {
+        !info[2]->devAlias ||
+        memcmp(&info[2]->devAlias[0], &alias_sda1, sizeof(alias_sda1)) != 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-            "unexpected filesystems information returned for sda1 (%s,%s)",
-            info[2]->name, info[2]->devAlias ? info[2]->devAlias[0] : "null");
+            "unexpected filesystems information returned for sda1 (%s)",
+            info[2]->name);
         ret = -1;
         goto cleanup;
     }
@@ -246,12 +239,12 @@ testQemuAgentGetFSInfo(const void *data)
         STRNEQ(info[1]->mountpoint, "/opt") ||
         STRNEQ(info[1]->fstype, "vfat") ||
         info[1]->ndevAlias != 2 ||
-        !info[1]->devAlias || !info[1]->devAlias[0] || !info[1]->devAlias[1] ||
-        STRNEQ(info[1]->devAlias[0], "vda") ||
-        STRNEQ(info[1]->devAlias[1], "vdb")) {
+        !info[1]->devAlias ||
+        memcmp(&info[1]->devAlias[0], &alias_vda, sizeof(alias_vda)) != 0 ||
+        memcmp(&info[1]->devAlias[1], &alias_vdb, sizeof(alias_vdb)) != 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-            "unexpected filesystems information returned for dm-1 (%s,%s)",
-            info[0]->name, info[0]->devAlias ? info[0]->devAlias[0] : "null");
+            "unexpected filesystems information returned for dm-1 (%s)",
+            info[0]->name);
         ret = -1;
         goto cleanup;
     }
@@ -260,8 +253,8 @@ testQemuAgentGetFSInfo(const void *data)
         STRNEQ(info[0]->fstype, "xfs") ||
         info[0]->ndevAlias != 0 || info[0]->devAlias) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-            "unexpected filesystems information returned for sdb1 (%s,%s)",
-            info[0]->name, info[0]->devAlias ? info[0]->devAlias[0] : "null");
+            "unexpected filesystems information returned for sdb1 (%s)",
+            info[0]->name);
         ret = -1;
         goto cleanup;
     }
@@ -280,7 +273,7 @@ testQemuAgentGetFSInfo(const void *data)
                                "}") < 0)
         goto cleanup;
 
-    if (qemuAgentGetFSInfo(qemuMonitorTestGetAgent(test), &info, def) != -1) {
+    if (qemuAgentGetFSInfo(qemuMonitorTestGetAgent(test), &info) != -1) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        "agent get-fsinfo command should have failed");
         goto cleanup;
@@ -290,11 +283,9 @@ testQemuAgentGetFSInfo(const void *data)
 
  cleanup:
     for (i = 0; i < ninfo; i++)
-        virDomainFSInfoFree(info[i]);
+        qemuAgentFsInfoFree(info[i]);
     VIR_FREE(info);
-    VIR_FREE(domain_filename);
     virObjectUnref(caps);
-    virDomainDefFree(def);
     qemuMonitorTestFree(test);
     return ret;
 }

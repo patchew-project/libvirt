@@ -19683,14 +19683,89 @@ qemuNodeAllocPages(virConnectPtr conn,
 
 
 static int
+qemuDomainConvertFsInfo(qemuAgentFsInfoPtr *agent_info, int num,
+                        virDomainDefPtr def,
+                        virDomainFSInfoPtr **info)
+{
+    int ret = -1;
+    size_t i;
+    virDomainFSInfoPtr *info_ret = NULL;
+
+    if (num == 0) {
+        *info = NULL;
+        return 0;
+    }
+
+    if (VIR_ALLOC_N(info_ret, num) < 0)
+        return -1;
+
+    for (i = 0; i < num; i++) {
+        size_t j;
+        int devnum;
+
+        if (VIR_ALLOC(info_ret[i]) < 0)
+            goto cleanup;
+
+        if (VIR_STRDUP(info_ret[i]->mountpoint, agent_info[i]->mountpoint) < 0 ||
+            VIR_STRDUP(info_ret[i]->name, agent_info[i]->name) < 0 ||
+            VIR_STRDUP(info_ret[i]->fstype, agent_info[i]->fstype) < 0)
+            goto cleanup;
+
+        if (agent_info[i]->ndevAlias == 0)
+            continue;
+
+        if (VIR_EXPAND_N(info_ret[i]->devAlias,
+                         info_ret[i]->ndevAlias,
+                         agent_info[i]->ndevAlias) < 0)
+            goto cleanup;
+
+        devnum = 0;
+        for (j = 0; j < agent_info[i]->ndevAlias; j++) {
+            virDomainDiskDefPtr diskDef;
+            qemuAgentFsDiskAliasPtr alias = &agent_info[i]->devAlias[j];
+
+            if (!(diskDef = virDomainDiskByAddress(def, &alias->address,
+                                                   alias->bus, alias->target,
+                                                   alias->unit)))
+                continue;
+
+            if (VIR_STRDUP(info_ret[i]->devAlias[devnum++], diskDef->dst) < 0)
+                goto cleanup;
+        }
+
+        if (devnum < info_ret[i]->ndevAlias)
+            VIR_SHRINK_N(info_ret[i]->devAlias,
+                         info_ret[i]->ndevAlias,
+                         info_ret[i]->ndevAlias - devnum);
+    }
+
+    *info = info_ret;
+    info_ret = NULL;
+    ret = num;
+
+ cleanup:
+    if (info_ret) {
+        for (i = 0; i < num; i++)
+            virDomainFSInfoFree(info_ret[i]);
+        VIR_FREE(info_ret);
+    }
+
+    return ret;
+}
+
+
+static int
 qemuDomainGetFSInfo(virDomainPtr dom,
                     virDomainFSInfoPtr **info,
                     unsigned int flags)
 {
     virQEMUDriverPtr driver = dom->conn->privateData;
+    qemuAgentFsInfoPtr *agent_info = NULL;
     virDomainObjPtr vm;
     qemuAgentPtr agent;
     int ret = -1;
+    int num;
+    size_t i;
 
     virCheckFlags(0, ret);
 
@@ -19713,13 +19788,24 @@ qemuDomainGetFSInfo(virDomainPtr dom,
         goto endjob;
 
     agent = qemuDomainObjEnterAgent(vm);
-    ret = qemuAgentGetFSInfo(agent, info, vm->def);
+    num = qemuAgentGetFSInfo(agent, &agent_info);
     qemuDomainObjExitAgent(vm, agent);
+
+    if (num < 0)
+        goto endjob;
+
+    ret = qemuDomainConvertFsInfo(agent_info, num, vm->def, info);
 
  endjob:
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
+    if (agent_info) {
+        for (i = 0; i < num; i++)
+            qemuAgentFsInfoFree(agent_info[i]);
+        VIR_FREE(agent_info);
+    }
+
     virDomainObjEndAPI(&vm);
     return ret;
 }
