@@ -168,3 +168,41 @@ qemuSecurityRestoreDiskLabel(virQEMUDriverPtr driver,
                                               vm->def,
                                               disk);
 }
+
+
+int
+qemuSecuritySetHostdevLabel(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            virDomainHostdevDefPtr hostdev)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+
+    if (priv->containerized) {
+        /* Already handled by namespace code. */
+        return 0;
+    }
+
+    return virSecurityManagerSetHostdevLabel(driver->securityManager,
+                                             vm->def,
+                                             hostdev,
+                                             NULL);
+}
+
+
+int
+qemuSecurityRestoreHostdevLabel(virQEMUDriverPtr driver,
+                                virDomainObjPtr vm,
+                                virDomainHostdevDefPtr hostdev)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+
+    if (priv->containerized) {
+        /* Already handled by namespace code. */
+        return 0;
+    }
+
+    return virSecurityManagerRestoreHostdevLabel(driver->securityManager,
+                                                 vm->def,
+                                                 hostdev,
+                                                 NULL);
+}
