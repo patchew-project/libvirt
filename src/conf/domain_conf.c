@@ -56,6 +56,7 @@
 #include "virstring.h"
 #include "virnetdev.h"
 #include "virhostdev.h"
+#include "virhostcpu.h"
 
 #define VIR_FROM_THIS VIR_FROM_DOMAIN
 
@@ -1555,10 +1556,15 @@ virDomainDefGetVcpuPinInfoHelper(virDomainDefPtr def,
     if (hostcpus < 0)
         return -1;
 
+#ifdef __linux__
+    if (!(allcpumap = virHostCPUGetOnlineBitmap()))
+        return -1;
+#else
     if (!(allcpumap = virBitmapNew(hostcpus)))
         return -1;
 
     virBitmapSetAll(allcpumap);
+#endif
 
     for (i = 0; i < maxvcpus && i < ncpumaps; i++) {
         virDomainVcpuDefPtr vcpu = virDomainDefGetVcpu(def, i);
