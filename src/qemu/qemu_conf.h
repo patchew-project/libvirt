@@ -90,6 +90,8 @@ struct _virQEMUDriverConfig {
     gid_t group;
     bool dynamicOwnership;
 
+    bool containerize;
+
     int cgroupControllers;
     char **cgroupDeviceACL;
 

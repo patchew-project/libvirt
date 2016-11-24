@@ -314,6 +314,8 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
     cfg->glusterDebugLevel = 4;
     cfg->stdioLogD = true;
 
+    cfg->containerize = true;
+
 #ifdef DEFAULT_LOADER_NVRAM
     if (virFirmwareParseList(DEFAULT_LOADER_NVRAM,
                              &cfg->firmwares,
@@ -796,6 +798,9 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         }
     }
     if (virConfGetValueUInt(conf, "gluster_debug_level", &cfg->glusterDebugLevel) < 0)
+        goto cleanup;
+
+    if (virConfGetValueBool(conf, "containerize", &cfg->containerize) < 0)
         goto cleanup;
 
     ret = 0;

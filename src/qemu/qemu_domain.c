@@ -7238,7 +7238,8 @@ qemuDomainCreateNamespace(virQEMUDriverPtr driver,
     return 0;
 #endif
 
-    if (!virQEMUDriverIsPrivileged(driver)) {
+    if (!cfg->containerize ||
+        !virQEMUDriverIsPrivileged(driver)) {
         ret = 0;
         goto cleanup;
     }
