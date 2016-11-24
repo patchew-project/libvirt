@@ -2620,6 +2620,7 @@ virUSBDeviceFree;
 virUSBDeviceGetBus;
 virUSBDeviceGetDevno;
 virUSBDeviceGetName;
+virUSBDeviceGetPath;
 virUSBDeviceGetUsedBy;
 virUSBDeviceListAdd;
 virUSBDeviceListCount;
