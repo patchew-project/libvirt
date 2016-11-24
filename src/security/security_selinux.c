@@ -2657,6 +2657,14 @@ virSecuritySELinuxDomainSetPathLabel(virSecurityManagerPtr mgr,
     return virSecuritySELinuxSetFilecon(mgr, path, seclabel->imagelabel);
 }
 
+static int
+virSecuritySELinuxDomainSetHugepages(virSecurityManagerPtr mgr,
+                                     virDomainDefPtr def,
+                                     const char *path)
+{
+    return virSecuritySELinuxDomainSetPathLabel(mgr, def, path);
+}
+
 virSecurityDriver virSecurityDriverSELinux = {
     .privateDataLen                     = sizeof(virSecuritySELinuxData),
     .name                               = SECURITY_SELINUX_NAME,
@@ -2703,4 +2711,6 @@ virSecurityDriver virSecurityDriverSELinux = {
     .getBaseLabel                       = virSecuritySELinuxGetBaseLabel,
 
     .domainSetPathLabel                 = virSecuritySELinuxDomainSetPathLabel,
+
+    .domainSetSecurityHugepages         = virSecuritySELinuxDomainSetHugepages,
 };

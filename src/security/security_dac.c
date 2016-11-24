@@ -1614,6 +1614,15 @@ virSecurityDACDomainSetPathLabel(virSecurityManagerPtr mgr,
     return virSecurityDACSetOwnership(priv, NULL, path, user, group);
 }
 
+static int
+virSecurityDACDomainSetHugepages(virSecurityManagerPtr mgr,
+                                 virDomainDefPtr def,
+                                 const char *path)
+{
+    return virSecurityDACDomainSetPathLabel(mgr, def, path);
+}
+
+
 virSecurityDriver virSecurityDriverDAC = {
     .privateDataLen                     = sizeof(virSecurityDACData),
     .name                               = SECURITY_DAC_NAME,
@@ -1663,4 +1672,6 @@ virSecurityDriver virSecurityDriverDAC = {
     .getBaseLabel                       = virSecurityDACGetBaseLabel,
 
     .domainSetPathLabel                 = virSecurityDACDomainSetPathLabel,
+
+    .domainSetSecurityHugepages         = virSecurityDACDomainSetHugepages,
 };
