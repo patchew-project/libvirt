@@ -2298,6 +2298,7 @@ virSCSIDeviceGetAdapter;
 virSCSIDeviceGetBus;
 virSCSIDeviceGetDevName;
 virSCSIDeviceGetName;
+virSCSIDeviceGetPath;
 virSCSIDeviceGetReadonly;
 virSCSIDeviceGetSgName;
 virSCSIDeviceGetShareable;
