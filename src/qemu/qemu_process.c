@@ -3345,8 +3345,7 @@ qemuProcessReconnect(void *opaque)
     /* If upgrading from old libvirtd we won't have found any
      * caps in the domain status, so re-query them
      */
-    if (!priv->qemuCaps &&
-        !(priv->qemuCaps = virQEMUCapsCacheLookupCopy(caps,
+    if (!(priv->qemuCaps = virQEMUCapsCacheLookupCopy(caps,
                                                       driver->qemuCapsCache,
                                                       obj->def->emulator,
                                                       obj->def->os.machine)))
