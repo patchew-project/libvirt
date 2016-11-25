@@ -699,9 +699,7 @@ virHostCPUGetInfoPopulateLinux(FILE *cpuinfo,
         VIR_FREE(sysfs_cpudir);
 
         *cpus += nodecpus;
-
-        if (nodesockets > *sockets)
-            *sockets = nodesockets;
+        *sockets += nodesockets;
 
         if (nodecores > *cores)
             *cores = nodecores;
@@ -760,8 +758,7 @@ virHostCPUGetInfoPopulateLinux(FILE *cpuinfo,
      * the nodeinfo structure isn't designed to carry the full topology so
      * we're going to lie about the detected topology to notify the user
      * to check the host capabilities for the actual topology. */
-    if ((*nodes *
-         *sockets *
+    if ((*sockets *
          *cores *
          *threads) != (*cpus + offline)) {
         *nodes = 1;
