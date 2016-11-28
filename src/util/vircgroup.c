@@ -2452,6 +2452,40 @@ virCgroupGetBlkioDeviceWeight(virCgroupPtr group,
 }
 
 
+/*
+ * Retrieve the "memory.limit_in_bytes" value from the memory controller
+ * root dir. This value cannot be modified by userspace and therefore
+ * is the maximum limit value supported by cgroups on the local system.
+ */
+static int
+virCgroupGetMemoryUnlimited(unsigned long long int * mem_unlimited)
+{
+    int ret = -1;
+    virCgroupPtr group;
+
+    if (VIR_ALLOC(group))
+        goto cleanup;
+
+    if (virCgroupDetectMounts(group))
+        goto cleanup;
+
+    if (!group->controllers[VIR_CGROUP_CONTROLLER_MEMORY].mountPoint)
+        goto cleanup;
+
+    if (VIR_STRDUP(group->controllers[VIR_CGROUP_CONTROLLER_MEMORY].placement,
+                   "/.") < 0)
+        goto cleanup;
+
+    ret = virCgroupGetValueU64(group,
+                               VIR_CGROUP_CONTROLLER_MEMORY,
+                               "memory.limit_in_bytes",
+                               mem_unlimited);
+ cleanup:
+    virCgroupFree(&group);
+    return ret;
+}
+
+
 /**
  * virCgroupSetMemory:
  *
@@ -2534,6 +2568,7 @@ int
 virCgroupGetMemoryHardLimit(virCgroupPtr group, unsigned long long *kb)
 {
     long long unsigned int limit_in_bytes;
+    long long unsigned int unlimited_in_bytes;
     int ret = -1;
 
     if (virCgroupGetValueU64(group,
@@ -2541,9 +2576,13 @@ virCgroupGetMemoryHardLimit(virCgroupPtr group, unsigned long long *kb)
                              "memory.limit_in_bytes", &limit_in_bytes) < 0)
         goto cleanup;
 
-    *kb = limit_in_bytes >> 10;
-    if (*kb > VIR_DOMAIN_MEMORY_PARAM_UNLIMITED)
+    if (virCgroupGetMemoryUnlimited(&unlimited_in_bytes) < 0)
+        unlimited_in_bytes = VIR_DOMAIN_MEMORY_PARAM_UNLIMITED << 10;
+
+    if (limit_in_bytes == unlimited_in_bytes)
         *kb = VIR_DOMAIN_MEMORY_PARAM_UNLIMITED;
+    else
+        *kb = limit_in_bytes >> 10;
 
     ret = 0;
  cleanup:
@@ -2596,6 +2635,7 @@ int
 virCgroupGetMemorySoftLimit(virCgroupPtr group, unsigned long long *kb)
 {
     long long unsigned int limit_in_bytes;
+    long long unsigned int unlimited_in_bytes;
     int ret = -1;
 
     if (virCgroupGetValueU64(group,
@@ -2603,9 +2643,13 @@ virCgroupGetMemorySoftLimit(virCgroupPtr group, unsigned long long *kb)
                              "memory.soft_limit_in_bytes", &limit_in_bytes) < 0)
         goto cleanup;
 
-    *kb = limit_in_bytes >> 10;
-    if (*kb > VIR_DOMAIN_MEMORY_PARAM_UNLIMITED)
+    if (virCgroupGetMemoryUnlimited(&unlimited_in_bytes) < 0)
+        unlimited_in_bytes = VIR_DOMAIN_MEMORY_PARAM_UNLIMITED << 10;
+
+    if (limit_in_bytes == unlimited_in_bytes)
         *kb = VIR_DOMAIN_MEMORY_PARAM_UNLIMITED;
+    else
+        *kb = limit_in_bytes >> 10;
 
     ret = 0;
  cleanup:
@@ -2658,6 +2702,7 @@ int
 virCgroupGetMemSwapHardLimit(virCgroupPtr group, unsigned long long *kb)
 {
     long long unsigned int limit_in_bytes;
+    long long unsigned int unlimited_in_bytes;
     int ret = -1;
 
     if (virCgroupGetValueU64(group,
@@ -2665,9 +2710,13 @@ virCgroupGetMemSwapHardLimit(virCgroupPtr group, unsigned long long *kb)
                              "memory.memsw.limit_in_bytes", &limit_in_bytes) < 0)
         goto cleanup;
 
-    *kb = limit_in_bytes >> 10;
-    if (*kb > VIR_DOMAIN_MEMORY_PARAM_UNLIMITED)
+     if (virCgroupGetMemoryUnlimited(&unlimited_in_bytes) < 0)
+        unlimited_in_bytes = VIR_DOMAIN_MEMORY_PARAM_UNLIMITED << 10;
+
+    if (limit_in_bytes == unlimited_in_bytes)
         *kb = VIR_DOMAIN_MEMORY_PARAM_UNLIMITED;
+    else
+        *kb = limit_in_bytes >> 10;
 
     ret = 0;
  cleanup:
