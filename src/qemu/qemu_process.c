@@ -3247,8 +3247,8 @@ qemuProcessBuildDestroydHugepagesPath(virQEMUDriverPtr driver,
                     goto cleanup;
                 }
 
-                if (virSecurityManagerSetHugepages(driver->securityManager,
-                                                   vm->def, hugepagePath) < 0) {
+                if (virSecurityManagerDomainSetPathLabel(driver->securityManager,
+                                                         vm->def, hugepagePath) < 0) {
                     virReportError(VIR_ERR_INTERNAL_ERROR,
                                    "%s", _("Unable to set huge path in security driver"));
                     VIR_FREE(hugepagePath);
