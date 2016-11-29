@@ -3221,6 +3221,55 @@ qemuProcessReconnectCheckMemAliasOrderMismatch(virDomainObjPtr vm)
 }
 
 
+static int
+qemuProcessBuildDestroydHugepagesPath(virQEMUDriverPtr driver,
+                                      virDomainObjPtr vm,
+                                      bool build)
+{
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    char *hugepagePath = NULL;
+    size_t i;
+    int ret = -1;
+
+    if (vm->def->mem.nhugepages) {
+        for (i = 0; i < cfg->nhugetlbfs; i++) {
+            VIR_FREE(hugepagePath);
+            hugepagePath = qemuGetDomainHugepagePath(vm->def, &cfg->hugetlbfs[i]);
+
+            if (!hugepagePath)
+                goto cleanup;
+
+            if (build) {
+                if (virFileMakePathWithMode(hugepagePath, 0700) < 0) {
+                    virReportSystemError(errno,
+                                         _("Unable to create %s"),
+                                         hugepagePath);
+                    goto cleanup;
+                }
+
+                if (virSecurityManagerSetHugepages(driver->securityManager,
+                                                   vm->def, hugepagePath) < 0) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   "%s", _("Unable to set huge path in security driver"));
+                    VIR_FREE(hugepagePath);
+                    goto cleanup;
+                }
+            } else {
+                if (rmdir(hugepagePath) < 0)
+                    VIR_WARN("Unable to remove hugepage path: %s (errno=%d)",
+                             hugepagePath, errno);
+            }
+        }
+    }
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(hugepagePath);
+    virObjectUnref(cfg);
+    return ret;
+}
+
+
 struct qemuProcessReconnectData {
     virConnectPtr conn;
     virQEMUDriverPtr driver;
@@ -3364,6 +3413,9 @@ qemuProcessReconnect(void *opaque)
         qemuProcessShutdownOrReboot(driver, obj);
         goto cleanup;
     }
+
+    if (qemuProcessBuildDestroydHugepagesPath(driver, obj, true) < 0)
+        goto error;
 
     if ((qemuDomainAssignAddresses(obj->def, priv->qemuCaps, obj, false)) < 0)
         goto error;
@@ -5227,7 +5279,6 @@ qemuProcessPrepareHost(virQEMUDriverPtr driver,
 {
     int ret = -1;
     unsigned int hostdev_flags = 0;
-    size_t i;
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
 
@@ -5259,23 +5310,8 @@ qemuProcessPrepareHost(virQEMUDriverPtr driver,
                                NULL) < 0)
         goto cleanup;
 
-    if (vm->def->mem.nhugepages) {
-        for (i = 0; i < cfg->nhugetlbfs; i++) {
-            char *hugepagePath = qemuGetHugepagePath(&cfg->hugetlbfs[i]);
-
-            if (!hugepagePath)
-                goto cleanup;
-
-            if (virSecurityManagerSetHugepages(driver->securityManager,
-                                               vm->def, hugepagePath) < 0) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               "%s", _("Unable to set huge path in security driver"));
-                VIR_FREE(hugepagePath);
-                goto cleanup;
-            }
-            VIR_FREE(hugepagePath);
-        }
-    }
+    if (qemuProcessBuildDestroydHugepagesPath(driver, vm, true) < 0)
+        goto cleanup;
 
     /* Ensure no historical cgroup for this VM is lying around bogus
      * settings */
@@ -5952,6 +5988,8 @@ void qemuProcessStop(virQEMUDriverPtr driver,
         VIR_DEBUG("VM '%s' not active", vm->def->name);
         goto endjob;
     }
+
+    qemuProcessBuildDestroydHugepagesPath(driver, vm, false);
 
     vm->def->id = -1;
 
