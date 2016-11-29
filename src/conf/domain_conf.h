@@ -3202,7 +3202,7 @@ int virDomainDefGetVcpuPinInfoHelper(virDomainDefPtr def,
 
 bool virDomainDefHasMemballoon(const virDomainDef *def) ATTRIBUTE_NONNULL(1);
 
-char *virDomainObjGetShortName(virDomainObjPtr vm);
+char *virDomainObjGetShortName(const virDomainDef *def) ATTRIBUTE_NONNULL(1);
 
 int
 virDomainGetBlkioParametersAssignFromDef(virDomainDefPtr def,
