@@ -189,6 +189,8 @@ mymain(void)
     DO_TEST("gentoo", AF_INET6, "2001:1234:dead:beef::2");
     DO_TEST("gentoo", AF_UNSPEC, "192.168.122.254");
     DO_TEST("non-existent", AF_UNSPEC, NULL);
+    DO_TEST("debian", AF_INET, "192.168.122.2");
+    DO_TEST("suse", AF_INET, "192.168.122.3");
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

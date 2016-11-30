@@ -47,6 +47,8 @@
 #include "virstring.h"
 #include "virsocketaddr.h"
 #include "configmake.h"
+#include "virmacmap.h"
+#include "virobject.h"
 
 #if 0
 # define ERROR(...)                                             \
@@ -78,6 +80,68 @@ typedef struct {
     unsigned char addr[16];
     int af;
 } leaseAddress;
+
+
+static int
+appendAddr(leaseAddress **tmpAddress,
+           size_t *ntmpAddress,
+           virJSONValuePtr lease,
+           int af)
+{
+    int ret = -1;
+    const char *ipAddr;
+    virSocketAddr sa;
+    int family;
+    size_t i;
+
+    if (!(ipAddr = virJSONValueObjectGetString(lease, "ip-address"))) {
+        ERROR("ip-address field missing for %s", name);
+        goto cleanup;
+    }
+
+    DEBUG("IP address: %s", ipAddr);
+
+    if (virSocketAddrParse(&sa, ipAddr, AF_UNSPEC) < 0) {
+        ERROR("Unable to parse %s", ipAddr);
+        goto cleanup;
+    }
+
+    family = VIR_SOCKET_ADDR_FAMILY(&sa);
+    if (af != AF_UNSPEC && af != family) {
+        DEBUG("Skipping address which family is %d, %d requested", family, af);
+        ret = 0;
+        goto cleanup;
+    }
+
+    for (i = 0; i < *ntmpAddress; i++) {
+        if (memcmp((*tmpAddress)[i].addr,
+                   (family == AF_INET ?
+                    (void *) &sa.data.inet4.sin_addr.s_addr :
+                    (void *) &sa.data.inet6.sin6_addr.s6_addr),
+                   FAMILY_ADDRESS_SIZE(family)) == 0) {
+            DEBUG("IP address already in the list");
+            ret = 0;
+            goto cleanup;
+        }
+    }
+
+    if (VIR_REALLOC_N_QUIET(*tmpAddress, *ntmpAddress + 1) < 0) {
+        ERROR("Out of memory");
+        goto cleanup;
+    }
+
+    (*tmpAddress)[*ntmpAddress].af = family;
+    memcpy((*tmpAddress)[*ntmpAddress].addr,
+           (family == AF_INET ?
+            (void *) &sa.data.inet4.sin_addr.s_addr :
+            (void *) &sa.data.inet6.sin6_addr.s6_addr),
+           FAMILY_ADDRESS_SIZE(family));
+    (*ntmpAddress)++;
+    ret = 0;
+ cleanup:
+    return ret;
+}
+
 
 /**
  * findLease:
@@ -112,11 +176,13 @@ findLease(const char *name,
     const char *leaseDir = LEASEDIR;
     struct dirent *entry;
     virJSONValuePtr leases_array = NULL;
-    ssize_t i, nleases;
+    ssize_t i, j, nleases;
     leaseAddress *tmpAddress = NULL;
     size_t ntmpAddress = 0;
     time_t currtime;
     long long expirytime;
+    virMACMapMgrPtr *macmaps = NULL;
+    size_t nMacmaps = 0;
 
     *address = NULL;
     *naddress = 0;
@@ -126,7 +192,6 @@ findLease(const char *name,
         errno = EAFNOSUPPORT;
         goto cleanup;
     }
-
 
     if (virDirOpenQuiet(&dir, leaseDir) < 0) {
         ERROR("Failed to open dir '%s'", leaseDir);
@@ -142,23 +207,36 @@ findLease(const char *name,
     while ((ret = virDirRead(dir, &entry, leaseDir)) > 0) {
         char *path;
 
-        if (!virFileHasSuffix(entry->d_name, ".status"))
-            continue;
+        if (virFileHasSuffix(entry->d_name, ".status")) {
+            if (!(path = virFileBuildPath(leaseDir, entry->d_name, NULL)))
+                goto cleanup;
 
-        if (!(path = virFileBuildPath(leaseDir, entry->d_name, NULL)))
-            goto cleanup;
-
-        DEBUG("Processing %s", path);
-
-        if (virLeaseReadCustomLeaseFile(leases_array, path, NULL, NULL) < 0) {
-            ERROR("Unable to parse %s", path);
+            DEBUG("Processing %s", path);
+            if (virLeaseReadCustomLeaseFile(leases_array, path, NULL, NULL) < 0) {
+                ERROR("Unable to parse %s", path);
+                VIR_FREE(path);
+                goto cleanup;
+            }
             VIR_FREE(path);
-            goto cleanup;
+        } else if (virFileHasSuffix(entry->d_name, ".macs")) {
+            if (!(path = virFileBuildPath(leaseDir, entry->d_name, NULL)))
+                goto cleanup;
+
+            if (VIR_REALLOC_N_QUIET(macmaps, nMacmaps + 1) < 0) {
+                VIR_FREE(path);
+                goto cleanup;
+            }
+
+            DEBUG("Processing %s", path);
+            if (!(macmaps[nMacmaps] = virMACMapMgrNew(path))) {
+                ERROR("Unable to parse %s", path);
+                VIR_FREE(path);
+                goto cleanup;
+            }
+            nMacmaps++;
+            VIR_FREE(path);
         }
-
-        VIR_FREE(path);
     }
-
     VIR_DIR_CLOSE(dir);
 
     nleases = virJSONValueArraySize(leases_array);
@@ -172,9 +250,6 @@ findLease(const char *name,
     for (i = 0; i < nleases; i++) {
         virJSONValuePtr lease;
         const char *lease_name;
-        virSocketAddr sa;
-        const char *ipAddr;
-        int family;
 
         lease = virJSONValueArrayGet(leases_array, i);
 
@@ -204,36 +279,51 @@ findLease(const char *name,
         DEBUG("Found record for %s", lease_name);
         *found = true;
 
-        if (!(ipAddr = virJSONValueObjectGetString(lease, "ip-address"))) {
-            ERROR("ip-address field missing for %s", name);
+        if (appendAddr(&tmpAddress, &ntmpAddress, lease, af) < 0)
             goto cleanup;
-        }
+    }
 
-        DEBUG("IP address: %s", ipAddr);
+    for (i = 0; i < nMacmaps; i++) {
+        const char **macs = (const char **) virMACMapMgrLookup(macmaps[i], name);
 
-        if (virSocketAddrParse(&sa, ipAddr, AF_UNSPEC) < 0) {
-            ERROR("Unable to parse %s", ipAddr);
-            goto cleanup;
-        }
-
-        family = VIR_SOCKET_ADDR_FAMILY(&sa);
-        if (af != AF_UNSPEC && af != family) {
-            DEBUG("Skipping address which family is %d, %d requested", family, af);
+        if (!macs)
             continue;
-        }
 
-        if (VIR_REALLOC_N_QUIET(tmpAddress, ntmpAddress + 1) < 0) {
-            ERROR("Out of memory");
-            goto cleanup;
-        }
+        for (j = 0; j < nleases; j++) {
+            virJSONValuePtr lease = virJSONValueArrayGet(leases_array, j);
+            const char *macAddr;
 
-        tmpAddress[ntmpAddress].af = family;
-        memcpy(tmpAddress[ntmpAddress].addr,
-               (family == AF_INET ?
-                (void *) &sa.data.inet4.sin_addr.s_addr :
-                (void *) &sa.data.inet6.sin6_addr.s6_addr),
-               FAMILY_ADDRESS_SIZE(family));
-        ntmpAddress++;
+            if (!lease) {
+                /* This should never happen (TM) */
+                ERROR("Unable to get element %zd of %zd", j, nleases);
+                goto cleanup;
+            }
+
+            macAddr = virJSONValueObjectGetString(lease, "mac-address");
+            if (!macAddr)
+                continue;
+
+            if (!virStringListHasString(macs, macAddr))
+                continue;
+
+            if (virJSONValueObjectGetNumberLong(lease, "expiry-time", &expirytime) < 0) {
+                /* A lease cannot be present without expiry-time */
+                ERROR("expiry-time field missing for %s", name);
+                goto cleanup;
+            }
+
+            /* Do not report expired lease */
+            if (expirytime < (long long) currtime) {
+                DEBUG("Skipping expired lease for %s", name);
+                continue;
+            }
+
+            DEBUG("Found record for %s", name);
+            *found = true;
+
+            if (appendAddr(&tmpAddress, &ntmpAddress, lease, af) < 0)
+                goto cleanup;
+        }
     }
 
     *address = tmpAddress;
@@ -248,6 +338,9 @@ findLease(const char *name,
     VIR_FREE(tmpAddress);
     virJSONValueFree(leases_array);
     VIR_DIR_CLOSE(dir);
+    while (nMacmaps)
+        virObjectUnref(macmaps[--nMacmaps]);
+    VIR_FREE(macmaps);
     return ret;
 }
 

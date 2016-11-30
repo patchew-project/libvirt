@@ -100,9 +100,10 @@ hosts:       files libvirt dns
     <h2><a name="Limitations">Limitations</a></h2>
 
     <ol>
-      <li>The libvirt NSS module matches only hostnames provided by guest. If
-        the libvirt name and one advertised by guest differs, the latter is
-        matched.</li>
+     <li><del>The libvirt NSS module matches only hostnames provided by guest.
+        If the libvirt name and one advertised by guest differs, the latter is
+        matched.</del> As of <code>v2.6.0</code> the libvirt nss module
+        translates both hostnames provided by guest and libvirt domain names.</li>
       <li>The module works only in that cases where IP addresses are assigned by
         dnsmasq spawned by libvirt. Libvirt NATed networks are typical
         example.</li>
@@ -134,8 +135,10 @@ virsh domifaddr --source lease $domain
 </pre>
 
     <p>
-    If there's no record for either of the aforementioned commands, it's very
-    likely that NSS module won't find anything and vice versa.
+    <del>If there's no record for either of the aforementioned commands, it's
+        very likely that NSS module won't find anything and vice versa.</del>
+    As of <code>v2.6.0</code> the NSS module should provide hostname
+    translation even if no output had been produced by aforementioned command.
     </p>
   </body>
 </html>
