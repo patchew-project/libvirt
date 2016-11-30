@@ -37,7 +37,6 @@
 #include "virstring.h"
 #include "virtime.h"
 #include "locking/domain_lock.h"
-#include "xen_common.h"
 #include "network/bridge_driver.h"
 
 #define VIR_FROM_THIS VIR_FROM_LIBXL
@@ -407,7 +406,7 @@ libxlDomainDefPostParse(virDomainDefPtr def,
     }
 
     /* add implicit input devices */
-    if (xenDomainDefAddImplicitInputDevice(def) < 0)
+    if (virDomainDefXenAddImplicitInputDevice(def) < 0)
         return -1;
 
     return 0;

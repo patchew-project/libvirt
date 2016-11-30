@@ -384,7 +384,7 @@ xenDomainDefPostParse(virDomainDefPtr def,
     }
 
     /* add implicit input device */
-    if (xenDomainDefAddImplicitInputDevice(def) <0)
+    if (virDomainDefXenAddImplicitInputDevice(def) <0)
         return -1;
 
     return 0;

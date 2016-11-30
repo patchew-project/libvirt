@@ -3211,4 +3211,7 @@ virDomainGetBlkioParametersAssignFromDef(virDomainDefPtr def,
                                          virTypedParameterPtr params,
                                          int *nparams,
                                          int maxparams);
+
+int virDomainDefXenAddImplicitInputDevice(virDomainDefPtr def);
+
 #endif /* __DOMAIN_CONF_H */
