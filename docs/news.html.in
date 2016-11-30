@@ -39,6 +39,14 @@
           can be specified without providing a base address, which simplifies
           user configuration
           </li>
+          <li>qemu: for machinetypes that use a PCI Express root bus
+          (e.g. x86_64/Q35 and aarch64/virt), any unaddressed PCI
+          device that is an Express device (all virtio-1.0 devices,
+          e1000e, nec-xhci, vfio assigned devices) will be placed on
+          an Express controller (i.e. a pcie-root-port) instead of a
+          legacy PCI controller (i.e. pci-bridge). pcie-root-ports are
+          automatically added as needed.
+          </li>
         </ul>
       </li>
       <li><strong>Improvements</strong>
