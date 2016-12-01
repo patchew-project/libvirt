@@ -1001,13 +1001,12 @@ networkDnsmasqConfContents(virNetworkObjPtr network,
     if (pidfile)
         virBufferAsprintf(&configbuf, "pid-file=%s\n", pidfile);
 
-    /* dnsmasq will *always* listen on localhost unless told otherwise */
-#ifdef __linux__
+    /* dnsmasq will *always* listen on localhost unless told otherwise:
+     * - "lo" is the loopback interface on Linux
+     * - "lo0" is the loopback interface on BSD and Solaris
+     */
     virBufferAddLit(&configbuf, "except-interface=lo\n");
-#else
-    /* BSD family OSes and Solaris call loopback interface as lo0 */
     virBufferAddLit(&configbuf, "except-interface=lo0\n");
-#endif
 
     if (dnsmasqCapsGet(caps, DNSMASQ_CAPS_BIND_DYNAMIC)) {
         /* using --bind-dynamic with only --interface (no
