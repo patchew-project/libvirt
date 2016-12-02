@@ -14,6 +14,7 @@ p, ul, ol, dl {
 p {
   margin-top: 1em;
   margin-bottom: 1em;
+  text-align: justify;
 }
 
 ul, ol {
