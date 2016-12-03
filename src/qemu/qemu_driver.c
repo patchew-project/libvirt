@@ -3054,14 +3054,15 @@ qemuDomainSaveMemory(virQEMUDriverPtr driver,
     virQEMUSaveHeader header;
     bool bypassSecurityDriver = false;
     bool needUnlink = false;
+    bool canReopen = true;
     int ret = -1;
     int fd = -1;
     int directFlag = 0;
     virFileWrapperFdPtr wrapperFd = NULL;
     unsigned int wrapperFlags = VIR_FILE_WRAPPER_NON_BLOCKING;
+    struct stat statbuf;
 
     memset(&header, 0, sizeof(header));
-    memcpy(header.magic, QEMU_SAVE_PARTIAL, sizeof(header.magic));
     header.version = QEMU_SAVE_VERSION;
     header.was_running = was_running ? 1 : 0;
     header.compressed = compressed;
@@ -3077,6 +3078,27 @@ qemuDomainSaveMemory(virQEMUDriverPtr driver,
             goto cleanup;
         }
     }
+
+    /*
+     * Determine if this file is a PIPE, which could not be reopen.
+     */
+    if (virFileExists(path)) {
+        fd = qemuOpenFile(driver, vm, path, O_RDONLY | O_NONBLOCK, NULL, NULL);
+        if (fd < 0)
+            goto cleanup;
+        if (fstat(fd, &statbuf) < 0)
+            goto cleanup;
+        if (S_ISFIFO(statbuf.st_mode)) {
+            if (flags & VIR_DOMAIN_SAVE_PIPE) {
+                canReopen = false;
+            } else {
+                virReportSystemError(EINVAL, _("%s is not PIPE"), path);
+                goto cleanup;
+            }
+        }
+        VIR_FORCE_CLOSE(fd);
+    }
+
     fd = qemuOpenFile(driver, vm, path,
                       O_WRONLY | O_TRUNC | O_CREAT | directFlag,
                       &needUnlink, &bypassSecurityDriver);
@@ -3089,6 +3111,16 @@ qemuDomainSaveMemory(virQEMUDriverPtr driver,
     if (!(wrapperFd = virFileWrapperFdNew(&fd, path, wrapperFlags)))
         goto cleanup;
 
+    /* Set the header magic.
+     * If the fd could be reopen, we'll update the magic after
+     * the saving completes successfully.
+     * Otherwise, include the final magic here, like pipe.
+     */
+    if (canReopen)
+        memcpy(header.magic, QEMU_SAVE_PARTIAL, sizeof(header.magic));
+    else
+        memcpy(header.magic, QEMU_SAVE_MAGIC, sizeof(header.magic));
+
     /* Write header to file, followed by XML */
     if (qemuDomainSaveHeader(fd, path, domXML, &header) < 0)
         goto cleanup;
@@ -3097,28 +3129,30 @@ qemuDomainSaveMemory(virQEMUDriverPtr driver,
     if (qemuMigrationToFile(driver, vm, fd, compressedpath, asyncJob) < 0)
         goto cleanup;
 
-    /* Touch up file header to mark image complete. */
+    if (canReopen) {
+        /* Touch up file header to mark image complete. */
 
-    /* Reopen the file to touch up the header, since we aren't set
-     * up to seek backwards on wrapperFd.  The reopened fd will
-     * trigger a single page of file system cache pollution, but
-     * that's acceptable.  */
-    if (VIR_CLOSE(fd) < 0) {
-        virReportSystemError(errno, _("unable to close %s"), path);
-        goto cleanup;
-    }
+        /* Reopen the file to touch up the header, since we aren't set
+        * up to seek backwards on wrapperFd.  The reopened fd will
+        * trigger a single page of file system cache pollution, but
+        * that's acceptable.  */
+        if (VIR_CLOSE(fd) < 0) {
+                virReportSystemError(errno, _("unable to close %s"), path);
+                goto cleanup;
+        }
 
-    if (virFileWrapperFdClose(wrapperFd) < 0)
-        goto cleanup;
+        if (virFileWrapperFdClose(wrapperFd) < 0)
+                goto cleanup;
 
-    if ((fd = qemuOpenFile(driver, vm, path, O_WRONLY, NULL, NULL)) < 0)
-        goto cleanup;
+        if ((fd = qemuOpenFile(driver, vm, path, O_WRONLY, NULL, NULL)) < 0)
+                goto cleanup;
 
-    memcpy(header.magic, QEMU_SAVE_MAGIC, sizeof(header.magic));
+        memcpy(header.magic, QEMU_SAVE_MAGIC, sizeof(header.magic));
 
-    if (safewrite(fd, &header, sizeof(header)) != sizeof(header)) {
-        virReportSystemError(errno, _("unable to write %s"), path);
-        goto cleanup;
+        if (safewrite(fd, &header, sizeof(header)) != sizeof(header)) {
+                virReportSystemError(errno, _("unable to write %s"), path);
+                goto cleanup;
+        }
     }
 
     if (VIR_CLOSE(fd) < 0) {
@@ -3345,6 +3379,7 @@ qemuDomainSaveFlags(virDomainPtr dom, const char *path, const char *dxml,
 
     virCheckFlags(VIR_DOMAIN_SAVE_BYPASS_CACHE |
                   VIR_DOMAIN_SAVE_RUNNING |
+                  VIR_DOMAIN_SAVE_PIPE |
                   VIR_DOMAIN_SAVE_PAUSED, -1);
 
     cfg = virQEMUDriverGetConfig(driver);

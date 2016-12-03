@@ -1169,6 +1169,7 @@ typedef enum {
     VIR_DOMAIN_SAVE_BYPASS_CACHE = 1 << 0, /* Avoid file system cache pollution */
     VIR_DOMAIN_SAVE_RUNNING      = 1 << 1, /* Favor running over paused */
     VIR_DOMAIN_SAVE_PAUSED       = 1 << 2, /* Favor paused over running */
+    VIR_DOMAIN_SAVE_PIPE         = 1 << 3, /* Output is a pipe */
 } virDomainSaveRestoreFlags;
 
 int                     virDomainSave           (virDomainPtr domain,
