@@ -1893,7 +1893,7 @@ have also reverted all storage volumes back to the same contents as when
 the state file was created.
 
 =item B<save> I<domain> I<state-file> [I<--bypass-cache>] [I<--xml> B<file>]
-[{I<--running> | I<--paused>}] [I<--verbose>]
+[{I<--running> | I<--paused>}] [I<--pipe>] [I<--verbose>]
 
 Saves a running domain (RAM, but not disk state) to a state file so that
 it can be restored
@@ -1907,6 +1907,10 @@ The progress may be monitored using B<domjobinfo> virsh command and canceled
 with B<domjobabort> command (sent by another virsh instance). Another option
 is to send SIGINT (usually with C<Ctrl-C>) to the virsh process running
 B<save> command. I<--verbose> displays the progress of save.
+
+Usually B<save> command will save the domain's state as a regular file.
+Flag I<--pipe> could let B<save> dumps domain's state to a PIPE.
+Try to write a PIPE without I<--pipe> would error out.
 
 This is roughly equivalent to doing a hibernate on a running computer,
 with all the same limitations.  Open network connections may be

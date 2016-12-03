@@ -4170,6 +4170,10 @@ static const vshCmdOptDef opts_save[] = {
      .type = VSH_OT_BOOL,
      .help = N_("set domain to be paused on restore")
     },
+    {.name = "pipe",
+     .type = VSH_OT_BOOL,
+     .help = N_("the file being saved to is a pipe")
+    },
     {.name = "verbose",
      .type = VSH_OT_BOOL,
      .help = N_("display the progress of save")
@@ -4206,6 +4210,8 @@ doSave(void *opaque)
         flags |= VIR_DOMAIN_SAVE_RUNNING;
     if (vshCommandOptBool(cmd, "paused"))
         flags |= VIR_DOMAIN_SAVE_PAUSED;
+    if (vshCommandOptBool(cmd, "pipe"))
+        flags |= VIR_DOMAIN_SAVE_PIPE;
 
     if (vshCommandOptStringReq(ctl, cmd, "xml", &xmlfile) < 0)
         goto out;
