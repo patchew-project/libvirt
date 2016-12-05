@@ -289,6 +289,17 @@ networkRadvdConfigFileName(virNetworkDriverStatePtr driver,
     return configfile;
 }
 
+static char *
+networkMacMgrFileName(virNetworkDriverStatePtr driver,
+                      const char *bridge)
+{
+    char *filename;
+
+    ignore_value(virAsprintf(&filename, "%s/%s.macs",
+                             driver->dnsmasqStateDir, bridge));
+    return filename;
+}
+
 /* do needed cleanup steps and remove the network from the list */
 static int
 networkRemoveInactive(virNetworkDriverStatePtr driver,
@@ -300,6 +311,7 @@ networkRemoveInactive(virNetworkDriverStatePtr driver,
     char *configfile = NULL;
     char *radvdpidbase = NULL;
     char *statusfile = NULL;
+    char *macMapFile = NULL;
     dnsmasqContext *dctx = NULL;
     virNetworkDefPtr def = virNetworkObjGetPersistentDef(net);
 
@@ -329,11 +341,17 @@ networkRemoveInactive(virNetworkDriverStatePtr driver,
     if (!(statusfile = virNetworkConfigFile(driver->stateDir, def->name)))
         goto cleanup;
 
+    if (!(macMapFile = networkMacMgrFileName(driver, def->bridge)))
+        goto cleanup;
+
     /* dnsmasq */
     dnsmasqDelete(dctx);
     unlink(leasefile);
     unlink(customleasefile);
     unlink(configfile);
+
+    /* MAC map manager */
+    unlink(macMapFile);
 
     /* radvd */
     unlink(radvdconfigfile);
@@ -354,7 +372,68 @@ networkRemoveInactive(virNetworkDriverStatePtr driver,
     VIR_FREE(radvdconfigfile);
     VIR_FREE(radvdpidbase);
     VIR_FREE(statusfile);
+    VIR_FREE(macMapFile);
     dnsmasqContextFree(dctx);
+    return ret;
+}
+
+static int
+networkMacMgrAdd(virNetworkDriverStatePtr driver,
+                 virNetworkObjPtr network,
+                 const char *domain,
+                 const virMacAddr *mac)
+{
+    char macStr[VIR_MAC_STRING_BUFLEN];
+    char *file = NULL;
+    int ret = -1;
+
+    if (!network->macmap)
+        return 0;
+
+    virMacAddrFormat(mac, macStr);
+
+    if (!(file = networkMacMgrFileName(driver, network->def->bridge)))
+        goto cleanup;
+
+    if (virMACMapMgrAdd(network->macmap, domain, macStr) < 0)
+        goto cleanup;
+
+    if (virMACMapMgrFlush(network->macmap, file) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(file);
+    return ret;
+}
+
+static int
+networkMacMgrDel(virNetworkDriverStatePtr driver,
+                 virNetworkObjPtr network,
+                 const char *domain,
+                 const virMacAddr *mac)
+{
+    char macStr[VIR_MAC_STRING_BUFLEN];
+    char *file = NULL;
+    int ret = -1;
+
+    if (!network->macmap)
+        return 0;
+
+    virMacAddrFormat(mac, macStr);
+
+    if (!(file = networkMacMgrFileName(driver, network->def->bridge)))
+        goto cleanup;
+
+    if (virMACMapMgrRemove(network->macmap, domain, macStr) < 0)
+        goto cleanup;
+
+    if (virMACMapMgrFlush(network->macmap, file) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(file);
     return ret;
 }
 
@@ -2127,6 +2206,7 @@ networkStartNetworkVirtual(virNetworkDriverStatePtr driver,
     virNetworkIPDefPtr ipdef;
     virNetDevIPRoutePtr routedef;
     char *macTapIfName = NULL;
+    char *macMapFile = NULL;
     int tapfd = -1;
 
     /* Check to see if any network IP collides with an existing route */
@@ -2172,6 +2252,10 @@ networkStartNetworkVirtual(virNetworkDriverStatePtr driver,
             goto err0;
         }
     }
+
+    if (!(macMapFile = networkMacMgrFileName(driver, network->def->bridge)) ||
+        !(network->macmap = virMACMapMgrNew(macMapFile)))
+        goto err1;
 
     /* Set bridge options */
 
@@ -2272,6 +2356,7 @@ networkStartNetworkVirtual(virNetworkDriverStatePtr driver,
         goto err5;
 
     VIR_FREE(macTapIfName);
+    VIR_FREE(macMapFile);
 
     return 0;
 
@@ -2308,6 +2393,7 @@ networkStartNetworkVirtual(virNetworkDriverStatePtr driver,
         ignore_value(virNetDevTapDelete(macTapIfName, NULL));
         VIR_FREE(macTapIfName);
     }
+    VIR_FREE(macMapFile);
 
  err0:
     if (!save_err)
@@ -2328,6 +2414,8 @@ networkShutdownNetworkVirtual(virNetworkDriverStatePtr driver,
 {
     if (network->def->bandwidth)
         virNetDevBandwidthClear(network->def->bridge);
+
+    virObjectUnref(network->macmap);
 
     if (network->radvdPid > 0) {
         char *radvdpidbase;
@@ -4353,6 +4441,9 @@ networkAllocateActualDevice(virDomainDefPtr dom,
         }
     }
 
+    if (networkMacMgrAdd(driver, network, dom->name, &iface->mac) < 0)
+        goto error;
+
     if (virNetDevVPortProfileCheckComplete(virtport, true) < 0)
         goto error;
 
@@ -4739,6 +4830,8 @@ networkReleaseActualDevice(virDomainDefPtr dom,
     }
 
  success:
+    networkMacMgrDel(driver, network, dom->name, &iface->mac);
+
     if (iface->data.network.actual) {
         netdef->connections--;
         if (dev)
