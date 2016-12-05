@@ -31,10 +31,25 @@
 #include "virstoragefile.h"
 #include "virstring.h"
 #include "viruri.h"
+#include "viratomic.h"
 
 #define VIR_FROM_THIS VIR_FROM_STORAGE
 
 VIR_LOG_INIT("storage.storage_backend_gluster");
+
+
+typedef struct _virStorageBackendGlusterState virStorageBackendGlusterState;
+typedef virStorageBackendGlusterState *virStorageBackendGlusterStatePtr;
+
+typedef struct _virStorageFileBackendGlusterPriv virStorageFileBackendGlusterPriv;
+typedef virStorageFileBackendGlusterPriv *virStorageFileBackendGlusterPrivPtr;
+
+typedef struct _virStorageBackendGlusterStatePreopened virStorageBackendGlusterStatePreopened;
+typedef virStorageBackendGlusterStatePreopened *virStorageBackendGlusterStatePtrPreopened;
+
+typedef struct _virStorageBackendGlusterconnCache virStorageBackendGlusterconnCache;
+typedef virStorageBackendGlusterconnCache *virStorageBackendGlusterconnCachePtr;
+
 
 struct _virStorageBackendGlusterState {
     glfs_t *vol;
@@ -47,8 +62,207 @@ struct _virStorageBackendGlusterState {
     char *dir; /* dir from URI, or "/"; always starts and ends in '/' */
 };
 
-typedef struct _virStorageBackendGlusterState virStorageBackendGlusterState;
-typedef virStorageBackendGlusterState *virStorageBackendGlusterStatePtr;
+struct _virStorageFileBackendGlusterPriv {
+    glfs_t *vol;
+    char *canonpath;
+};
+
+struct _virStorageBackendGlusterStatePreopened {
+    virObjectLockable parent;
+    virStorageFileBackendGlusterPrivPtr priv;
+    size_t nservers;
+    virStorageNetHostDefPtr hosts;
+    char *volname;
+};
+
+struct _virStorageBackendGlusterconnCache {
+    virMutex lock;
+    size_t nConn;
+    virStorageBackendGlusterStatePtrPreopened *conn;
+};
+
+
+static virStorageBackendGlusterconnCachePtr connCache;
+static virClassPtr virStorageBackendGlusterStatePreopenedClass;
+static virOnceControl glusterConnOnce = VIR_ONCE_CONTROL_INITIALIZER;
+static bool virStorageBackendGlusterPreopenedGlobalError;
+
+
+static void virStorageBackendGlusterStatePreopenedDispose(void *obj);
+
+
+static int virStorageBackendGlusterStatePreopenedOnceInit(void)
+{
+    if (!(virStorageBackendGlusterStatePreopenedClass =
+                                virClassNew(virClassForObjectLockable(),
+                                "virStorageBackendGlusterStatePreopenedClass",
+                                sizeof(virStorageBackendGlusterStatePreopened),
+                                virStorageBackendGlusterStatePreopenedDispose)))
+        return -1;
+
+    return 0;
+}
+
+static void virStorageBackendGlusterStatePreopenedDispose(void *object)
+{
+    virStorageBackendGlusterStatePtrPreopened entry = object;
+
+    glfs_fini(entry->priv->vol);
+
+    VIR_FREE(entry->priv->canonpath);
+    VIR_FREE(entry->priv);
+    VIR_FREE(entry->volname);
+
+    virStorageNetHostDefFree(entry->nservers, entry->hosts);
+}
+
+static void
+virStorageBackendGlusterConnInit(void)
+{
+    if (VIR_ALLOC(connCache) < 0) {
+        virStorageBackendGlusterPreopenedGlobalError = false;
+        return;
+    }
+
+    if (virMutexInit(&connCache->lock) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Unable to initialize mutex"));
+        virStorageBackendGlusterPreopenedGlobalError = false;
+    }
+}
+
+VIR_ONCE_GLOBAL_INIT(virStorageBackendGlusterStatePreopened);
+
+static int
+virStorageBackendGlusterPreopenedSet(virStorageSourcePtr src,
+                                     virStorageFileBackendGlusterPrivPtr priv)
+{
+    size_t i;
+    virStorageBackendGlusterStatePtrPreopened entry = NULL;
+
+    if (virOnce(&glusterConnOnce, virStorageBackendGlusterConnInit) < 0)
+        return -1;
+
+    if (virStorageBackendGlusterPreopenedGlobalError)
+        return -1;
+
+    virMutexLock(&connCache->lock);
+    for (i = 0; i < connCache->nConn; i++) {
+        if (STREQ(connCache->conn[i]->volname, src->volume)) {
+            virMutexUnlock(&connCache->lock);
+            return 0;
+        }
+    }
+    virMutexUnlock(&connCache->lock);
+
+    if (virStorageBackendGlusterStatePreopenedInitialize() < 0)
+        return -1;
+
+    if (!(entry = virObjectLockableNew(virStorageBackendGlusterStatePreopenedClass)))
+        return -1;
+
+    if (VIR_STRDUP(entry->volname, src->volume) < 0)
+        goto error;
+
+    if (VIR_ALLOC_N(entry->hosts, entry->nservers) < 0)
+        goto error;
+
+    entry->nservers = src->nhosts;
+    if (!(entry->hosts = virStorageNetHostDefCopy(src->nhosts, src->hosts)))
+        goto error;
+    entry->priv = priv;
+
+    virMutexLock(&connCache->lock);
+    if (VIR_APPEND_ELEMENT(connCache->conn, connCache->nConn, entry) < 0) {
+        virMutexUnlock(&connCache->lock);
+        goto error;
+    }
+    virMutexUnlock(&connCache->lock);
+
+    return 0;
+
+ error:
+    virStorageNetHostDefFree(entry->nservers, entry->hosts);
+    VIR_FREE(entry->volname);
+    return -1;
+}
+
+static glfs_t *
+virStorageBackendGlusterPreopenedFind(virStorageSourcePtr src)
+{
+    glfs_t *ret = NULL;
+    bool match = false;
+    size_t i;
+    size_t j;
+    size_t k;
+
+    if (connCache == NULL)
+        return NULL;
+
+    virStorageBackendGlusterStatePtrPreopened entry;
+
+    virMutexLock(&connCache->lock);
+    for (i = 0; i < connCache->nConn; i++) {
+        entry = connCache->conn[i];
+        if (!(STREQ(entry->volname, src->volume) &&
+            (entry->nservers == src->nhosts)))
+            continue;
+        for (j = 0; j < entry->nservers; j++) {
+            for (k = 0; k < src->nhosts; k++) {
+                if (entry->hosts[j].type != src->hosts[k].type)
+                    continue;
+                if (entry->hosts[j].type == VIR_STORAGE_NET_HOST_TRANS_UNIX) {
+                    if (STREQ(entry->hosts[j].u.uds.path,
+                              src->hosts[k].u.uds.path)) {
+                        match = true;
+                        break;
+                    }
+                } else {
+                    if (STREQ(entry->hosts[j].u.inet.addr,
+                              src->hosts[k].u.inet.addr) &&
+                        STREQ(entry->hosts[j].u.inet.port,
+                              src->hosts[k].u.inet.port)) {
+                        match = true;
+                        break;
+                    }
+                }
+            }
+            if (!match)
+                goto unlock;
+            match = false; /* reset */
+        }
+        virObjectRef(entry);
+        ret = entry->priv->vol;
+    }
+
+ unlock:
+    virMutexUnlock(&connCache->lock);
+    return ret;
+}
+
+static void
+virStorageBackendGlusterPreopenedClose(virStorageSourcePtr src)
+{
+    virStorageFileBackendGlusterPrivPtr priv = src->drv->priv;
+    size_t i;
+
+    virMutexLock(&connCache->lock);
+    for (i = 0; i < connCache->nConn; i++) {
+        if (STREQ(connCache->conn[i]->volname, src->volume)) {
+            virObjectUnref(connCache->conn[i]);
+            if (connCache->conn[i]->volname) {
+                if (priv && priv->canonpath)
+                    VIR_FREE(priv->canonpath);
+                goto unlock;
+            }
+            VIR_DELETE_ELEMENT(connCache->conn, i, connCache->nConn);
+            VIR_FREE(src->drv);
+        }
+    }
+
+ unlock:
+    virMutexUnlock(&connCache->lock);
+}
 
 static void
 virStorageBackendGlusterClose(virStorageBackendGlusterStatePtr state)
@@ -538,31 +752,15 @@ virStorageBackend virStorageBackendGluster = {
 };
 
 
-typedef struct _virStorageFileBackendGlusterPriv virStorageFileBackendGlusterPriv;
-typedef virStorageFileBackendGlusterPriv *virStorageFileBackendGlusterPrivPtr;
-
-struct _virStorageFileBackendGlusterPriv {
-    glfs_t *vol;
-    char *canonpath;
-};
-
-
 static void
 virStorageFileBackendGlusterDeinit(virStorageSourcePtr src)
 {
-    virStorageFileBackendGlusterPrivPtr priv = src->drv->priv;
-
     VIR_DEBUG("deinitializing gluster storage file %p (gluster://%s:%s/%s%s)",
               src, src->hosts->u.inet.addr,
               src->hosts->u.inet.port ? src->hosts->u.inet.port : "0",
               src->volume, src->path);
 
-    if (priv->vol)
-        glfs_fini(priv->vol);
-    VIR_FREE(priv->canonpath);
-
-    VIR_FREE(priv);
-    src->drv->priv = NULL;
+    virStorageBackendGlusterPreopenedClose(src);
 }
 
 static int
@@ -626,6 +824,12 @@ virStorageFileBackendGlusterInit(virStorageSourcePtr src)
     if (VIR_ALLOC(priv) < 0)
         return -1;
 
+    priv->vol = virStorageBackendGlusterPreopenedFind(src);
+    if (priv->vol) {
+        src->drv->priv = priv;
+        return 0;
+    }
+
     VIR_DEBUG("initializing gluster storage file %p "
               "(priv='%p' volume='%s' path='%s') as [%u:%u]",
               src, priv, src->volume, src->path,
@@ -635,6 +839,9 @@ virStorageFileBackendGlusterInit(virStorageSourcePtr src)
         virReportOOMError();
         goto error;
     }
+
+    if (virStorageBackendGlusterPreopenedSet(src, priv) < 0)
+        goto error;
 
     for (i = 0; i < src->nhosts; i++) {
         if (virStorageFileBackendGlusterInitServer(priv, src->hosts + i) < 0)
@@ -653,9 +860,7 @@ virStorageFileBackendGlusterInit(virStorageSourcePtr src)
     return 0;
 
  error:
-    if (priv->vol)
-        glfs_fini(priv->vol);
-    VIR_FREE(priv);
+    virStorageBackendGlusterPreopenedClose(src);
 
     return -1;
 }
