@@ -162,6 +162,60 @@ static int testAdd(const void *args)
 }
 
 
+static int testRemove(const void *args)
+{
+    const struct testSplitData *data = args;
+    char **list = NULL;
+    size_t ntokens;
+    size_t i;
+    int ret = -1;
+    size_t listLenght;
+
+    if (!(list = virStringSplitCount(data->string, data->delim,
+                                     data->max_tokens, &ntokens))) {
+        VIR_DEBUG("Got no tokens at all");
+        return -1;
+    }
+
+    listLenght = virStringListLength((const char **) list);
+
+    for (i = 0; data->tokens[i]; i++) {
+        char **tmp;
+        int rv;
+        size_t j, toRemove = 0;
+
+        for (j = 0; list && list[j]; j++)
+            if (STREQ(list[j], data->tokens[i]))
+                toRemove++;
+
+        if ((rv = virStringListRemove((const char **) list,
+                                      &tmp, data->tokens[i])) < 0)
+            goto cleanup;
+        virStringListFree(list);
+        list = tmp;
+        tmp = NULL;
+        listLenght -= toRemove;
+
+        if (rv != listLenght) {
+            virFilePrintf(stderr,
+                          "Unexpected length of new list: %d expected %zu",
+                          rv, listLenght);
+            goto cleanup;
+        }
+    }
+
+    if (list && list[0]) {
+        virFilePrintf(stderr, "Not removed all tokens: %s", list[0]);
+        goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    virStringListFree(list);
+    return ret;
+}
+
+
 static bool fail;
 
 static const char *
@@ -635,6 +689,8 @@ mymain(void)
         if (virTestRun("Join " #str, testJoin, &joinData) < 0)          \
             ret = -1;                                                   \
         if (virTestRun("Add " #str, testAdd, &joinData) < 0)            \
+            ret = -1;                                                   \
+        if (virTestRun("Remove " #str, testRemove, &splitData) < 0)     \
             ret = -1;                                                   \
     } while (0)
 

@@ -203,6 +203,56 @@ virStringListAdd(const char **strings,
 
 
 /**
+ * virStringListRemove:
+ * @strings: a NULL-terminated array of strings
+ * @newStrings: new NULL-terminated array of strings
+ * @item: string to remove
+ *
+ * Creates new strings list with all strings duplicated except
+ * for every occurrence of @item. Callers is responsible for
+ * freeing both @strings and returned list.
+ *
+ * Returns the number of items in the new list (excluding NULL
+ * anchor), -1 on error.
+ */
+int
+virStringListRemove(const char **strings,
+                    char ***newStrings,
+                    const char *item)
+{
+    char **ret = NULL;
+    size_t i, j = 0;
+
+    for (i = 0; strings && strings[i]; i++) {
+        if (STRNEQ(strings[i], item))
+            j++;
+    }
+
+    if (!j) {
+        *newStrings = NULL;
+        return 0;
+    }
+
+    if (VIR_ALLOC_N(ret, j + 1) < 0)
+        goto error;
+
+    for (i = 0, j = 0; strings[i]; i++) {
+        if (STREQ(strings[i], item))
+            continue;
+        if (VIR_STRDUP(ret[j], strings[i]) < 0)
+            goto error;
+        j++;
+    }
+
+    *newStrings = ret;
+    return j;
+ error:
+    virStringListFree(ret);
+    return -1;
+}
+
+
+/**
  * virStringListFree:
  * @str_array: a NULL-terminated array of strings to free
  *
