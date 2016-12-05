@@ -374,6 +374,14 @@ mymain(void)
     DO_SESS_TEST(cacertreq.filename, servercertalt2req.filename, clientcertreq.filename,
                  false, false, "wiki.libvirt.org", NULL);
 
+#if GNUTLS_VERSION_NUMBER != 0x030506
+    /*
+     * GNUTLS 3.5.6 broke wildcard support by reversing the
+     * fields in the reported dname. This regression will
+     * be fixed in 3.5.7, so rather than workaround it in
+     * libvirt we just blacklist that version
+     * https://lists.gnupg.org/pipermail/gnutls-devel/2016-November/008224.html
+     */
     const char *const wildcards1[] = {
         "C=UK,CN=dogfood",
         NULL,
@@ -412,6 +420,7 @@ mymain(void)
                  false, false, "libvirt.org", wildcards5);
     DO_SESS_TEST(cacertreq.filename, servercertreq.filename, clientcertreq.filename,
                  false, false, "libvirt.org", wildcards6);
+#endif
 
     TLS_ROOT_REQ(cacertrootreq,
                  "UK", "libvirt root", NULL, NULL, NULL, NULL,
