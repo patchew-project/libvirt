@@ -5967,6 +5967,7 @@ virDomainStorageHostParse(xmlNodePtr node,
     int ret = -1;
     xmlNodePtr child;
     char *transport = NULL;
+    char *socket = NULL;
     virStorageNetHostDef host;
 
     memset(&host, 0, sizeof(host));
@@ -5976,12 +5977,13 @@ virDomainStorageHostParse(xmlNodePtr node,
         if (child->type == XML_ELEMENT_NODE &&
             xmlStrEqual(child->name, BAD_CAST "host")) {
 
-            host.transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
+            host.type = VIR_STORAGE_NET_HOST_TRANS_TCP;
 
             /* transport can be tcp (default), unix or rdma.  */
             if ((transport = virXMLPropString(child, "transport"))) {
-                host.transport = virStorageNetHostTransportTypeFromString(transport);
-                if (host.transport < 0) {
+                host.type = virStorageNetHostTransportTypeFromString(transport);
+                if ((host.type < 0) ||
+                    (host.type >= VIR_STORAGE_NET_HOST_TRANS_LAST)) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                    _("unknown protocol transport type '%s'"),
                                    transport);
@@ -5989,17 +5991,17 @@ virDomainStorageHostParse(xmlNodePtr node,
                 }
             }
 
-            host.socket = virXMLPropString(child, "socket");
+            socket = virXMLPropString(child, "socket");
 
-            if (host.transport == VIR_STORAGE_NET_HOST_TRANS_UNIX &&
-                host.socket == NULL) {
+            if (host.type == VIR_STORAGE_NET_HOST_TRANS_UNIX &&
+                socket == NULL) {
                 virReportError(VIR_ERR_XML_ERROR, "%s",
                                _("missing socket for unix transport"));
                 goto cleanup;
             }
 
-            if (host.transport != VIR_STORAGE_NET_HOST_TRANS_UNIX &&
-                host.socket != NULL) {
+            if (host.type != VIR_STORAGE_NET_HOST_TRANS_UNIX &&
+                socket != NULL) {
                 virReportError(VIR_ERR_XML_ERROR,
                                _("transport '%s' does not support "
                                  "socket attribute"),
@@ -6007,16 +6009,17 @@ virDomainStorageHostParse(xmlNodePtr node,
                 goto cleanup;
             }
 
+            host.u.uds.path = socket;
             VIR_FREE(transport);
 
-            if (host.transport != VIR_STORAGE_NET_HOST_TRANS_UNIX) {
-                if (!(host.name = virXMLPropString(child, "name"))) {
+            if (host.type != VIR_STORAGE_NET_HOST_TRANS_UNIX) {
+                if (!(host.u.inet.addr = virXMLPropString(child, "name"))) {
                     virReportError(VIR_ERR_XML_ERROR, "%s",
                                    _("missing name for host"));
                     goto cleanup;
                 }
 
-                host.port = virXMLPropString(child, "port");
+                host.u.inet.port = virXMLPropString(child, "port");
             }
 
             if (VIR_APPEND_ELEMENT(*hosts, *nhosts, host) < 0)
@@ -14065,8 +14068,8 @@ virDomainHostdevMatchSubsysSCSIiSCSI(virDomainHostdevDefPtr first,
     virDomainHostdevSubsysSCSIiSCSIPtr second_iscsisrc =
         &second->source.subsys.u.scsi.u.iscsi;
 
-    if (STREQ(first_iscsisrc->hosts[0].name, second_iscsisrc->hosts[0].name) &&
-        STREQ(first_iscsisrc->hosts[0].port, second_iscsisrc->hosts[0].port) &&
+    if (STREQ(first_iscsisrc->hosts[0].u.inet.addr, second_iscsisrc->hosts[0].u.inet.addr) &&
+        STREQ(first_iscsisrc->hosts[0].u.inet.port, second_iscsisrc->hosts[0].u.inet.port) &&
         STREQ(first_iscsisrc->path, second_iscsisrc->path))
         return 1;
     return 0;
@@ -20323,16 +20326,17 @@ virDomainDiskSourceFormatInternal(virBufferPtr buf,
                 for (n = 0; n < src->nhosts; n++) {
                     virBufferAddLit(buf, "<host");
                     virBufferEscapeString(buf, " name='%s'",
-                                          src->hosts[n].name);
+                                          src->hosts[n].u.inet.addr);
                     virBufferEscapeString(buf, " port='%s'",
-                                          src->hosts[n].port);
+                                          src->hosts[n].u.inet.port);
 
-                    if (src->hosts[n].transport)
+                    if (src->hosts[n].type)
                         virBufferAsprintf(buf, " transport='%s'",
-                                          virStorageNetHostTransportTypeToString(src->hosts[n].transport));
+                                          virStorageNetHostTransportTypeToString(src->hosts[n].type));
 
-                    virBufferEscapeString(buf, " socket='%s'",
-                                          src->hosts[n].socket);
+                    if (src->hosts[n].type == VIR_STORAGE_NET_HOST_TRANS_UNIX)
+                        virBufferEscapeString(buf, " socket='%s'",
+                                              src->hosts[n].u.uds.path);
 
                     virBufferAddLit(buf, "/>\n");
                 }
@@ -21103,8 +21107,8 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
         if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI) {
             virBufferAddLit(buf, "<host");
-            virBufferEscapeString(buf, " name='%s'", iscsisrc->hosts[0].name);
-            virBufferEscapeString(buf, " port='%s'", iscsisrc->hosts[0].port);
+            virBufferEscapeString(buf, " name='%s'", iscsisrc->hosts[0].u.inet.addr);
+            virBufferEscapeString(buf, " port='%s'", iscsisrc->hosts[0].u.inet.port);
             virBufferAddLit(buf, "/>\n");
         } else {
             virBufferAsprintf(buf, "<adapter name='%s'/>\n",

@@ -553,7 +553,8 @@ virStorageFileBackendGlusterDeinit(virStorageSourcePtr src)
     virStorageFileBackendGlusterPrivPtr priv = src->drv->priv;
 
     VIR_DEBUG("deinitializing gluster storage file %p (gluster://%s:%s/%s%s)",
-              src, src->hosts->name, src->hosts->port ? src->hosts->port : "0",
+              src, src->hosts->u.inet.addr,
+              src->hosts->u.inet.port ? src->hosts->u.inet.port : "0",
               src->volume, src->path);
 
     if (priv->vol)
@@ -568,27 +569,27 @@ static int
 virStorageFileBackendGlusterInitServer(virStorageFileBackendGlusterPrivPtr priv,
                                        virStorageNetHostDefPtr host)
 {
-    const char *transport = virStorageNetHostTransportTypeToString(host->transport);
+    const char *transport = virStorageNetHostTransportTypeToString(host->type);
     const char *hoststr = NULL;
     int port = 0;
 
-    switch ((virStorageNetHostTransport) host->transport) {
+    switch ((virStorageNetHostTransport) host->type) {
     case VIR_STORAGE_NET_HOST_TRANS_RDMA:
     case VIR_STORAGE_NET_HOST_TRANS_TCP:
-        hoststr = host->name;
+        hoststr = host->u.inet.addr;
 
-        if (host->port &&
-            virStrToLong_i(host->port, NULL, 10, &port) < 0) {
+        if (host->u.inet.port &&
+            virStrToLong_i(host->u.inet.port, NULL, 10, &port) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("failed to parse port number '%s'"),
-                           host->port);
+                           host->u.inet.port);
             return -1;
         }
 
         break;
 
     case VIR_STORAGE_NET_HOST_TRANS_UNIX:
-        hoststr = host->socket;
+        hoststr = host->u.uds.path;
         break;
 
     case VIR_STORAGE_NET_HOST_TRANS_LAST:
@@ -797,8 +798,8 @@ virStorageFileBackendGlusterGetUniqueIdentifier(virStorageSourcePtr src)
         return NULL;
 
     ignore_value(virAsprintf(&priv->canonpath, "gluster://%s:%s/%s/%s",
-                             src->hosts->name,
-                             src->hosts->port,
+                             src->hosts->u.inet.addr,
+                             src->hosts->u.inet.port,
                              src->volume,
                              filePath));
 

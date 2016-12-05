@@ -387,7 +387,7 @@ testStorageChain(const void *args)
                         elt->type,
                         elt->format,
                         virStorageNetProtocolTypeToString(elt->protocol),
-                        NULLSTR(elt->nhosts ? elt->hosts[0].name : NULL),
+                        NULLSTR(elt->nhosts ? elt->hosts[0].u.inet.addr : NULL),
                         NULLSTR(elt->auth ? elt->auth->username : NULL)) < 0) {
             VIR_FREE(expect);
             VIR_FREE(actual);
