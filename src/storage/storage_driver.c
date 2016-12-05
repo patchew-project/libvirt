@@ -3195,6 +3195,7 @@ virStorageFileGetMetadataRecurse(virStorageSourcePtr src,
     ssize_t headerLen;
     virStorageSourcePtr backingStore = NULL;
     int backingFormat;
+    bool initFlag = false;
 
     VIR_DEBUG("path=%s format=%d uid=%u gid=%u probe=%d",
               src->path, src->format,
@@ -3204,8 +3205,11 @@ virStorageFileGetMetadataRecurse(virStorageSourcePtr src,
     if (!virStorageFileSupportsBackingChainTraversal(src))
         return 0;
 
-    if (virStorageFileInitAs(src, uid, gid) < 0)
-        return -1;
+    if (!src->drv) {
+        if (virStorageFileInitAs(src, uid, gid) < 0)
+            return -1;
+        initFlag = true;
+    }
 
     if (virStorageFileAccess(src, F_OK) < 0) {
         if (src == parent) {
@@ -3281,7 +3285,8 @@ virStorageFileGetMetadataRecurse(virStorageSourcePtr src,
 
  cleanup:
     VIR_FREE(buf);
-    virStorageFileDeinit(src);
+    if (initFlag)
+        virStorageFileDeinit(src);
     virStorageSourceFree(backingStore);
     return ret;
 }
