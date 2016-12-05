@@ -15,6 +15,10 @@
     <h3>v3.0.0 (<i>unreleased</i>)</h3>
     <ul>
       <li><strong>New features</strong>
+        <ul>
+          <li>New <code>libvirt-guest</code> nss module that translates libvirt
+          guest names into IP addresses</li>
+        </ul>
       </li>
       <li><strong>Improvements</strong>
       </li>
