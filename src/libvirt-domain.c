@@ -11195,24 +11195,26 @@ virConnectGetDomainCapabilities(virConnectPtr conn,
  *
  * VIR_DOMAIN_STATS_PERF: Return perf event statistics.
  * The typed parameter keys are in this format:
- * "perf.cmt" - the usage of l3 cache (bytes) by applications running on the
- *              platform as unsigned long long. It is produced by cmt perf
- *              event.
- * "perf.mbmt" - the total system bandwidth (bytes/s) from one level of cache
- *               to another as unsigned long long. It is produced by mbmt perf
- *               event.
- * "perf.mbml" - the amount of data (bytes/s) sent through the memory controller
- *               on the socket as unsigned long long. It is produced by mbml
- *               perf event.
- * "perf.cache_misses"     - the count of cache misses as unsigned long long.
- *                           It is produced by cache_misses perf event.
- * "perf.cache_references" - the count of cache hits as unsigned long long.
- *                           It is produced by cache_references perf event.
- * "perf.instructions"     - The count of instructions as unsigned long long.
- *                           It is produced by instructions perf event.
- * "perf.cpu_cycles"       - The count of cpu cycles (total/elapsed) as an
- *                           unsigned long long. It is produced by cpu_cycles
- *                           perf event.
+ * "perf.cmt"                     - the usage of l3 cache (bytes) by applications running on the
+ *                                  platform as unsigned long long. It is produced by cmt perf
+ *                                  event.
+ * "perf.mbmt"                    - the total system bandwidth (bytes/s) from one level of cache
+ *                                  to another as unsigned long long. It is produced by mbmt perf
+ *                                  event.
+ * "perf.mbml"                    - the amount of data (bytes/s) sent through the memory controller
+ *                                  on the socket as unsigned long long. It is produced by mbml
+ *                                  perf event.
+ * "perf.cache_misses"            - the count of cache misses as unsigned long long.
+ *                                  It is produced by cache_misses perf event.
+ * "perf.cache_references"        - the count of cache hits as unsigned long long.
+ *                                  It is produced by cache_references perf event.
+ * "perf.instructions"            - The count of instructions as unsigned long long.
+ *                                  It is produced by instructions perf event.
+ * "perf.cpu_cycles"              - The count of cpu cycles (total/elapsed) as an
+ *                                  unsigned long long. It is produced by cpu_cycles
+ *                                  perf event.
+ * "perf.branch_instructions"     - The count of branch instructions as unsigned long long.
+ *                                  It is produced by branch_instructions perf event.
  *
  * Note that entire stats groups or individual stat fields may be missing from
  * the output in case they are not supported by the given hypervisor, are not

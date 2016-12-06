@@ -945,7 +945,8 @@ I<--perf> returns the statistics of all enabled perf events:
 "perf.cpu_cycles" - the count of cpu cycles (total/elapsed),
 "perf.instructions" - the count of instructions,
 "perf.cache_references" - the count of cache hits,
-"perf.cache_misses" - the count of caches misses
+"perf.cache_misses" - the count of caches misses,
+"perf.branch_instructions" - the count of branch instructions
 
 See the B<perf> command for more details about each event.
 
@@ -2273,25 +2274,27 @@ performance event. B<eventSpec> is a string list of one or more events
 separated by commas. Valid event names are as follows:
 
 B<Valid perf event names>
-  cmt              - A PQos (Platform Qos) feature to monitor the
-                     usage of cache by applications running on the
-                     platform.
-  mbmt             - Provides a way to monitor the total system
-                     memory bandwidth between one level of cache
-                     and another.
-  mbml             - Provides a way to limit the amount of data
-                     (bytes/s) send through the memory controller
-                     on the socket.
-  cache_misses     - Provides the count of cache misses by
-                     applications running on the platform.
-  cache_references - Provides the count of cache hits by
-                     applications running on th e platform.
-  instructions     - Provides the count of instructions executed
-                     by applications running on the platform.
-  cpu_cycles       - Provides the count of cpu cycles
-                     (total/elapsed). May be used with
-                     instructions in order to get a cycles
-                     per instruction.
+  cmt                     - A PQos (Platform Qos) feature to monitor the
+                            usage of cache by applications running on the
+                            platform.
+  mbmt                    - Provides a way to monitor the total system
+                            memory bandwidth between one level of cache
+                            and another.
+  mbml                    - Provides a way to limit the amount of data
+                            (bytes/s) send through the memory controller
+                            on the socket.
+  cache_misses            - Provides the count of cache misses by
+                            applications running on the platform.
+  cache_references        - Provides the count of cache hits by
+                            applications running on th e platform.
+  instructions            - Provides the count of instructions executed
+                            by applications running on the platform.
+  cpu_cycles              - Provides the count of cpu cycles
+                            (total/elapsed). May be used with
+                            instructions in order to get a cycles
+                            per instruction.
+  branch_instructions     - Provides the count of branch instructions
+                            executed by applications running on the platform.
 
 B<Note>: The statistics can be retrieved using the B<domstats> command using
 the I<--perf> flag.

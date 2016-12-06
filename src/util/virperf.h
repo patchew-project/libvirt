@@ -32,10 +32,11 @@ typedef enum {
     VIR_PERF_EVENT_MBMT,   /* Memory Bandwidth Monitoring Total */
     VIR_PERF_EVENT_MBML,   /* Memory Bandwidth Monitor Limit for controller */
 
-    VIR_PERF_EVENT_CPU_CYCLES,       /* Count of CPU Cycles (total/elapsed) */
-    VIR_PERF_EVENT_INSTRUCTIONS,     /* Count of instructions for application */
-    VIR_PERF_EVENT_CACHE_REFERENCES, /* Cache hits by applications */
-    VIR_PERF_EVENT_CACHE_MISSES,     /* Cache misses by applications */
+    VIR_PERF_EVENT_CPU_CYCLES,          /* Count of CPU Cycles (total/elapsed) */
+    VIR_PERF_EVENT_INSTRUCTIONS,        /* Count of instructions for application */
+    VIR_PERF_EVENT_CACHE_REFERENCES,    /* Cache hits by applications */
+    VIR_PERF_EVENT_CACHE_MISSES,        /* Cache misses by applications */
+    VIR_PERF_EVENT_BRANCH_INSTRUCTIONS, /* Count of branch instructions by applications*/
 
     VIR_PERF_EVENT_LAST
 } virPerfEventType;
