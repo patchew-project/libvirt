@@ -3355,10 +3355,10 @@ virStorageAddISCSIPoolSourceHost(virDomainDiskDefPtr def,
     if (VIR_ALLOC_N(def->src->hosts, def->src->nhosts) < 0)
         goto cleanup;
 
-    if (VIR_STRDUP(def->src->hosts[0].name, pooldef->source.hosts[0].name) < 0)
+    if (VIR_STRDUP(def->src->hosts[0].u.inet.addr, pooldef->source.hosts[0].name) < 0)
         goto cleanup;
 
-    if (virAsprintf(&def->src->hosts[0].port, "%d",
+    if (virAsprintf(&def->src->hosts[0].u.inet.port, "%d",
                     pooldef->source.hosts[0].port ?
                     pooldef->source.hosts[0].port :
                     3260) < 0)
@@ -3384,8 +3384,7 @@ virStorageAddISCSIPoolSourceHost(virDomainDiskDefPtr def,
     /* Storage pool have not supported these 2 attributes yet,
      * use the defaults.
      */
-    def->src->hosts[0].transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
-    def->src->hosts[0].socket = NULL;
+    def->src->hosts[0].type = VIR_STORAGE_NET_HOST_TRANS_TCP;
 
     def->src->protocol = VIR_STORAGE_NET_PROTOCOL_ISCSI;
 
