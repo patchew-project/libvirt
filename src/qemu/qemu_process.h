@@ -90,6 +90,10 @@ virCommandPtr qemuProcessCreatePretendCmd(virConnectPtr conn,
                                           bool standalone,
                                           unsigned int flags);
 
+int qemuStorageVolumeRegister(virQEMUDriverConfigPtr cfg,
+                             virDomainObjPtr vm, virStorageSourcePtr src);
+void qemuStorageVolumeUnRegister(virStorageSourcePtr src);
+
 int qemuProcessInit(virQEMUDriverPtr driver,
                     virDomainObjPtr vm,
                     qemuDomainAsyncJob asyncJob,

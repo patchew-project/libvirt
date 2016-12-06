@@ -333,6 +333,7 @@ qemuSecurityChownCallback(virStorageSourcePtr src,
 {
     struct stat sb;
     int save_errno = 0;
+    bool initFlag = false;
     int ret = -1;
 
     if (!virStorageFileSupportsSecurityDriver(src))
@@ -356,8 +357,11 @@ qemuSecurityChownCallback(virStorageSourcePtr src,
     }
 
     /* storage file init reports errors, return -2 on failure */
-    if (virStorageFileInit(src) < 0)
-        return -2;
+    if (!src->drv) {
+        if (virStorageFileInit(src) < 0)
+            return -2;
+        initFlag = true;
+    }
 
     if (virStorageFileChown(src, uid, gid) < 0) {
         save_errno = errno;
@@ -367,7 +371,8 @@ qemuSecurityChownCallback(virStorageSourcePtr src,
     ret = 0;
 
  cleanup:
-    virStorageFileDeinit(src);
+    if (initFlag)
+        virStorageFileDeinit(src);
     errno = save_errno;
 
     return ret;
@@ -13870,9 +13875,6 @@ qemuDomainSnapshotPrepareDiskExternal(virConnectPtr conn,
             return -1;
     }
 
-    if (virStorageFileInit(snapdisk->src) < 0)
-        return -1;
-
     if (virStorageFileStat(snapdisk->src, &st) < 0) {
         if (errno != ENOENT) {
             virReportSystemError(errno,
@@ -13896,7 +13898,6 @@ qemuDomainSnapshotPrepareDiskExternal(virConnectPtr conn,
     ret = 0;
 
  cleanup:
-    virStorageFileDeinit(snapdisk->src);
     return ret;
 }
 
@@ -14131,6 +14132,7 @@ qemuDomainSnapshotCreateSingleDiskActive(virQEMUDriverPtr driver,
     const char *formatStr = NULL;
     int ret = -1, rc;
     bool need_unlink = false;
+    bool initFlag = false;
 
     if (snap->snapshot != VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -14143,12 +14145,18 @@ qemuDomainSnapshotCreateSingleDiskActive(virQEMUDriverPtr driver,
 
     if (!(newDiskSrc = virStorageSourceCopy(snap->src, false)))
         goto cleanup;
+    else
+        if (snap->src->drv)
+            newDiskSrc->drv = snap->src->drv;
 
     if (virStorageSourceInitChainElement(newDiskSrc, disk->src, false) < 0)
         goto cleanup;
 
-    if (qemuDomainStorageFileInit(driver, vm, newDiskSrc) < 0)
-        goto cleanup;
+    if (!newDiskSrc->drv) {
+        if (qemuDomainStorageFileInit(driver, vm, newDiskSrc) < 0)
+            goto cleanup;
+        initFlag = true;
+    }
 
     if (qemuGetDriveSourceString(newDiskSrc, NULL, &source) < 0)
         goto cleanup;
@@ -14216,7 +14224,8 @@ qemuDomainSnapshotCreateSingleDiskActive(virQEMUDriverPtr driver,
  cleanup:
     if (need_unlink && virStorageFileUnlink(newDiskSrc))
         VIR_WARN("unable to unlink just-created %s", source);
-    virStorageFileDeinit(newDiskSrc);
+    if (initFlag)
+        virStorageFileDeinit(newDiskSrc);
     virStorageSourceFree(newDiskSrc);
     virStorageSourceFree(persistDiskSrc);
     VIR_FREE(device);
@@ -14571,6 +14580,7 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
     virDomainSnapshotObjPtr snap = NULL;
     virDomainSnapshotPtr snapshot = NULL;
     virDomainSnapshotDefPtr def = NULL;
+    virDomainSnapshotDefPtr refDef = NULL;
     bool update_current = true;
     bool redefine = flags & VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE;
     unsigned int parse_flags = VIR_DOMAIN_SNAPSHOT_PARSE_DISKS;
@@ -14579,6 +14589,7 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
     bool align_match = true;
     virQEMUDriverConfigPtr cfg = NULL;
     virCapsPtr caps = NULL;
+    size_t i;
 
     virCheckFlags(VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE |
                   VIR_DOMAIN_SNAPSHOT_CREATE_CURRENT |
@@ -14695,6 +14706,10 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
 
     qemuDomainObjSetAsyncJobMask(vm, QEMU_JOB_NONE);
 
+    for (i = 0; i < def->ndisks; i++)
+        if (qemuStorageVolumeRegister(cfg, vm, def->disks[i].src) < 0)
+            goto cleanup;
+
     if (redefine) {
         if (virDomainSnapshotRedefinePrep(domain, vm, &def, &snap,
                                           &update_current, flags) < 0)
@@ -14805,6 +14820,11 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
     snapshot = virGetDomainSnapshot(domain, snap->def->name);
 
  endjob:
+    refDef = (!snap) ? def : snap->def;
+
+    for (i = 0; i < refDef->ndisks; i++)
+        qemuStorageVolumeUnRegister(refDef->disks[i].src);
+
     if (snapshot && !(flags & VIR_DOMAIN_SNAPSHOT_CREATE_NO_METADATA)) {
         if (qemuDomainSnapshotWriteMetadata(vm, snap, driver->caps,
                                             cfg->snapshotDir) < 0) {
