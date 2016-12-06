@@ -1488,6 +1488,8 @@ virStorageFileBackendFileDeinit(virStorageSourcePtr src)
 
     VIR_FREE(priv->canonpath);
     VIR_FREE(priv);
+
+    VIR_FREE(src->drv);
 }
 
 

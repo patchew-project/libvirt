@@ -562,7 +562,8 @@ virStorageFileBackendGlusterDeinit(virStorageSourcePtr src)
     VIR_FREE(priv->canonpath);
 
     VIR_FREE(priv);
-    src->drv->priv = NULL;
+
+    VIR_FREE(src->drv);
 }
 
 static int

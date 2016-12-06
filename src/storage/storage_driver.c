@@ -2900,11 +2900,8 @@ virStorageFileDeinit(virStorageSourcePtr src)
     if (!virStorageFileIsInitialized(src))
         return;
 
-    if (src->drv->backend &&
-        src->drv->backend->backendDeinit)
+    if (src->drv->backend && src->drv->backend->backendDeinit)
         src->drv->backend->backendDeinit(src);
-
-    VIR_FREE(src->drv);
 }
 
 
