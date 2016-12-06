@@ -179,6 +179,7 @@ virLXCMonitorPtr virLXCMonitorNew(virDomainObjPtr vm,
     memcpy(&mon->cb, cb, sizeof(mon->cb));
 
     virObjectRef(mon);
+    virObjectRef(vm);
     virNetClientSetCloseCallback(mon->client, virLXCMonitorEOFNotify, mon,
                                  virLXCMonitorCloseFreeCallback);
 
@@ -188,6 +189,7 @@ virLXCMonitorPtr virLXCMonitorNew(virDomainObjPtr vm,
 
  error:
     virObjectUnref(mon);
+    virObjectUnref(vm);
     mon = NULL;
     goto cleanup;
 }
@@ -201,6 +203,7 @@ static void virLXCMonitorDispose(void *opaque)
     if (mon->cb.destroy)
         (mon->cb.destroy)(mon, mon->vm);
     virObjectUnref(mon->program);
+    virObjectUnref(mon->vm);
 }
 
 
