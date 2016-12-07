@@ -7471,6 +7471,7 @@ qemuDomainAttachDeviceMknodHelper(pid_t pid ATTRIBUTE_UNUSED,
     }   break;
 
     case VIR_DOMAIN_DEVICE_CHR:
+    case VIR_DOMAIN_DEVICE_RNG:
         /* No labelling. */
         break;
 
@@ -7489,7 +7490,6 @@ qemuDomainAttachDeviceMknodHelper(pid_t pid ATTRIBUTE_UNUSED,
     case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
-    case VIR_DOMAIN_DEVICE_RNG:
     case VIR_DOMAIN_DEVICE_SHMEM:
     case VIR_DOMAIN_DEVICE_TPM:
     case VIR_DOMAIN_DEVICE_PANIC:
@@ -7607,6 +7607,7 @@ qemuDomainDetachDeviceUnlink(virQEMUDriverPtr driver,
     }   break;
 
     case VIR_DOMAIN_DEVICE_CHR:
+    case VIR_DOMAIN_DEVICE_RNG:
         /* No labelling. */
         break;
 
@@ -7625,7 +7626,6 @@ qemuDomainDetachDeviceUnlink(virQEMUDriverPtr driver,
     case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
-    case VIR_DOMAIN_DEVICE_RNG:
     case VIR_DOMAIN_DEVICE_SHMEM:
     case VIR_DOMAIN_DEVICE_TPM:
     case VIR_DOMAIN_DEVICE_PANIC:
@@ -7817,6 +7817,72 @@ qemuDomainNamespaceTeardownChardev(virQEMUDriverPtr driver,
         return 0;
 
     path = chr->source->data.file.path;
+
+    if (qemuDomainDetachDeviceUnlink(driver, vm, &dev, path) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    return ret;
+}
+
+
+int
+qemuDomainNamespaceSetupRNG(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            virDomainRNGDefPtr rng)
+{
+    virDomainDeviceDef dev = {.type = VIR_DOMAIN_DEVICE_RNG, .data.rng = rng};
+    const char *path = NULL;
+    int ret = -1;
+
+    if (!qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT))
+        return 0;
+
+    switch ((virDomainRNGBackend) rng->backend) {
+    case VIR_DOMAIN_RNG_BACKEND_RANDOM:
+        path = rng->source.file;
+        break;
+
+    case VIR_DOMAIN_RNG_BACKEND_EGD:
+    case VIR_DOMAIN_RNG_BACKEND_LAST:
+        ret = 0;
+        goto cleanup;
+    }
+
+    if (qemuDomainAttachDeviceMknod(driver,
+                                    vm,
+                                    &dev,
+                                    path) < 0)
+        goto cleanup;
+    ret = 0;
+ cleanup:
+    return ret;
+}
+
+
+int
+qemuDomainNamespaceTeardownRNG(virQEMUDriverPtr driver,
+                               virDomainObjPtr vm,
+                               virDomainRNGDefPtr rng)
+{
+    virDomainDeviceDef dev = {.type = VIR_DOMAIN_DEVICE_RNG, .data.rng = rng};
+    int ret = -1;
+    const char *path = NULL;
+
+    if (!qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT))
+        return 0;
+
+    switch ((virDomainRNGBackend) rng->backend) {
+    case VIR_DOMAIN_RNG_BACKEND_RANDOM:
+        path = rng->source.file;
+        break;
+
+    case VIR_DOMAIN_RNG_BACKEND_EGD:
+    case VIR_DOMAIN_RNG_BACKEND_LAST:
+        ret = 0;
+        goto cleanup;
+    }
 
     if (qemuDomainDetachDeviceUnlink(driver, vm, &dev, path) < 0)
         goto cleanup;
