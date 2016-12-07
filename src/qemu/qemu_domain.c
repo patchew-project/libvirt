@@ -7338,7 +7338,8 @@ qemuDomainCreateNamespace(virQEMUDriverPtr driver,
         goto cleanup;
     }
 
-    /* Enabling of the mount namespace goes here. */
+    if (qemuDomainEnableNamespace(vm, QEMU_DOMAIN_NS_MOUNT) < 0)
+        goto cleanup;
 
     ret = 0;
  cleanup:
