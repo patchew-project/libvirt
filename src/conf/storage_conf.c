@@ -1590,6 +1590,8 @@ virStorageVolTargetDefFormat(virStorageVolOptionsPtr options,
             return -1;
 
     virBufferEscapeString(buf, "<compat>%s</compat>\n", def->compat);
+    if (def->nocow)
+        virBufferAddLit(buf, "<nocow/>\n");
 
     if (def->features) {
         size_t i;

@@ -17,6 +17,7 @@
     <encryption format='qcow'>
       <secret type='passphrase' uuid='e78d4b51-a2af-485f-b0f5-afca709a80f4'/>
     </encryption>
+    <nocow/>
   </target>
   <backingStore>
     <path>/dev/null</path>
