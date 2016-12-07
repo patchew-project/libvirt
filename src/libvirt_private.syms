@@ -2261,6 +2261,7 @@ virProcessSetMaxMemLock;
 virProcessSetMaxProcesses;
 virProcessSetNamespaces;
 virProcessSetScheduler;
+virProcessSetupPrivateMountNS;
 virProcessTranslateStatus;
 virProcessWait;
 
