@@ -7311,7 +7311,8 @@ qemuDomainCreateNamespace(virQEMUDriverPtr driver,
     char *devPath = NULL;
     char *devptsPath = NULL;
 
-    if (!virQEMUDriverIsPrivileged(driver)) {
+    if (!virBitmapIsBitSet(cfg->namespaces, QEMU_DOMAIN_NS_MOUNT) ||
+        !virQEMUDriverIsPrivileged(driver)) {
         ret = 0;
         goto cleanup;
     }
