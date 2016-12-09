@@ -6672,12 +6672,18 @@ qemuBuildCpuModelArgStr(virQEMUDriverPtr driver,
         switch ((virCPUFeaturePolicy) cpu->features[i].policy) {
         case VIR_CPU_FEATURE_FORCE:
         case VIR_CPU_FEATURE_REQUIRE:
-            virBufferAsprintf(buf, ",+%s", cpu->features[i].name);
+            if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION))
+                virBufferAsprintf(buf, ",%s=on", cpu->features[i].name);
+            else
+                virBufferAsprintf(buf, ",+%s", cpu->features[i].name);
             break;
 
         case VIR_CPU_FEATURE_DISABLE:
         case VIR_CPU_FEATURE_FORBID:
-            virBufferAsprintf(buf, ",-%s", cpu->features[i].name);
+            if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION))
+                virBufferAsprintf(buf, ",%s=off", cpu->features[i].name);
+            else
+                virBufferAsprintf(buf, ",-%s", cpu->features[i].name);
             break;
 
         case VIR_CPU_FEATURE_OPTIONAL:
