@@ -562,18 +562,15 @@ prlsdkGetDiskId(PRL_HANDLE disk, int *bus, char **dst)
         *bus = VIR_DOMAIN_DISK_BUS_IDE;
         *dst = virIndexToDiskName(pos, "hd");
         break;
-    case PMS_SCSI_DEVICE:
-        *bus = VIR_DOMAIN_DISK_BUS_SCSI;
-        *dst = virIndexToDiskName(pos, "sd");
-        break;
     case PMS_SATA_DEVICE:
         *bus = VIR_DOMAIN_DISK_BUS_SATA;
         *dst = virIndexToDiskName(pos, "sd");
         break;
+    case PMS_SCSI_DEVICE:
     default:
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Unknown disk bus: %X"), ifType);
-        return -1;
+        *bus = VIR_DOMAIN_DISK_BUS_SCSI;
+        *dst = virIndexToDiskName(pos, "sd");
+        break;
     }
 
     if (NULL == *dst)
