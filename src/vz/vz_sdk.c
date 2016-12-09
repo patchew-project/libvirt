@@ -4360,7 +4360,8 @@ prlsdkExtractStatsParam(PRL_HANDLE sdkstats, const char *name, long long *val)
 int
 prlsdkGetBlockStats(PRL_HANDLE sdkstats,
                     virDomainDiskDefPtr disk,
-                    virDomainBlockStatsPtr stats)
+                    virDomainBlockStatsPtr stats,
+                    bool isCt)
 {
     virDomainDeviceDriveAddressPtr address;
     int idx;
@@ -4379,7 +4380,7 @@ prlsdkGetBlockStats(PRL_HANDLE sdkstats,
         idx = address->unit;
         break;
     case VIR_DOMAIN_DISK_BUS_SCSI:
-        prefix = "scsi";
+        prefix = isCt ? "hdd" : "scsi";
         idx = address->unit;
         break;
     default:
