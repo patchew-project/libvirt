@@ -45,7 +45,7 @@ virFirewallPtr virFirewallNew(void);
 void virFirewallFree(virFirewallPtr firewall);
 
 virFirewallRulePtr virFirewallAddRule(virFirewallPtr firewall,
-                                      virFirewallLayer layer,
+                                      int layer,
                                       ...)
     ATTRIBUTE_SENTINEL;
 
@@ -54,7 +54,7 @@ typedef int (*virFirewallQueryCallback)(virFirewallPtr firewall,
                                         void *opaque);
 
 virFirewallRulePtr virFirewallAddRuleFull(virFirewallPtr firewall,
-                                          virFirewallLayer layer,
+                                          int layer,
                                           bool ignoreErrors,
                                           virFirewallQueryCallback cb,
                                           void *opaque,

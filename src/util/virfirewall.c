@@ -417,7 +417,7 @@ virFirewallAddRuleFullV(virFirewallPtr firewall,
  */
 virFirewallRulePtr
 virFirewallAddRule(virFirewallPtr firewall,
-                   virFirewallLayer layer,
+                   int layer,
                    ...)
 {
     virFirewallRulePtr rule;
@@ -452,7 +452,7 @@ virFirewallAddRule(virFirewallPtr firewall,
  * Returns the new rule
  */
 virFirewallRulePtr virFirewallAddRuleFull(virFirewallPtr firewall,
-                                          virFirewallLayer layer,
+                                          int layer,
                                           bool ignoreErrors,
                                           virFirewallQueryCallback cb,
                                           void *opaque,
