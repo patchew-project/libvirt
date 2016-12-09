@@ -21,6 +21,7 @@ virQEMUCapsPtr qemuTestParseCapabilities(virCapsPtr caps,
 extern virCPUDefPtr cpuDefault;
 extern virCPUDefPtr cpuHaswell;
 extern virCPUDefPtr cpuPower8;
+extern virCPUDefPtr cpuS390zEC12_2_base;
 
 void qemuTestSetHostArch(virCapsPtr caps,
                         virArch arch);

@@ -17,6 +17,7 @@
 virCPUDefPtr cpuDefault;
 virCPUDefPtr cpuHaswell;
 virCPUDefPtr cpuPower8;
+virCPUDefPtr cpuS390zEC12_2_base;
 
 static virCPUFeatureDef cpuDefaultFeatures[] = {
     { (char *) "ds",        -1 },
@@ -91,6 +92,40 @@ static virCPUDef cpuHaswellData = {
     ARRAY_CARDINALITY(cpuHaswellFeatures), /* nfeatures */
     ARRAY_CARDINALITY(cpuHaswellFeatures), /* nfeatures_max */
     cpuHaswellFeatures,     /* features */
+};
+
+static virCPUFeatureDef cpuS390zEC12_2_base_Features[] = {
+    { (char *) "aefsi",     -1 },
+    { (char *) "msa5",      -1 },
+    { (char *) "msa4",      -1 },
+    { (char *) "msa3",      -1 },
+    { (char *) "msa2",      -1 },
+    { (char *) "msa1",      -1 },
+    { (char *) "sthyi",     -1 },
+    { (char *) "edat",      -1 },
+    { (char *) "ri",        -1 },
+    { (char *) "edat2",     -1 },
+    { (char *) "ipter",     -1 },
+    { (char *) "esop",      -1 },
+    { (char *) "cte",       -1 },
+    { (char *) "te",        -1 },
+    { (char *) "cmm",       -1 },
+};
+static virCPUDef cpuS390zEC12_2_base_Data = {
+    VIR_CPU_TYPE_HOST,      /* type */
+    0,                      /* mode */
+    0,                      /* match */
+    VIR_ARCH_S390X,         /* arch */
+    (char *) "zEC12-base",  /* model */
+    NULL,                   /* vendor_id */
+    0,                      /* fallback */
+    NULL,                   /* vendor */
+    1,                      /* sockets */
+    1,                      /* cores */
+    1,                      /* threads */
+    ARRAY_CARDINALITY(cpuS390zEC12_2_base_Features), /* nfeatures */
+    ARRAY_CARDINALITY(cpuS390zEC12_2_base_Features), /* nfeatures_max */
+    cpuS390zEC12_2_base_Features,     /* features */
 };
 
 static virCPUDef cpuPower8Data = {
@@ -342,7 +377,8 @@ virCapsPtr testQemuCapsInit(void)
 
     if (!(cpuDefault = virCPUDefCopy(&cpuDefaultData)) ||
         !(cpuHaswell = virCPUDefCopy(&cpuHaswellData)) ||
-        !(cpuPower8 = virCPUDefCopy(&cpuPower8Data)))
+        !(cpuPower8 = virCPUDefCopy(&cpuPower8Data)) ||
+        !(cpuS390zEC12_2_base = virCPUDefCopy(&cpuS390zEC12_2_base_Data)))
         goto cleanup;
 
     qemuTestSetHostCPU(caps, NULL);
@@ -455,6 +491,7 @@ virCapsPtr testQemuCapsInit(void)
     virCPUDefFree(cpuDefault);
     virCPUDefFree(cpuHaswell);
     virCPUDefFree(cpuPower8);
+    virCPUDefFree(cpuS390zEC12_2_base);
     virObjectUnref(caps);
     return NULL;
 }
