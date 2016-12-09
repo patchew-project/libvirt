@@ -52,4 +52,7 @@ int virNetDevOpenvswitchInterfaceStats(const char *ifname,
                                        virDomainInterfaceStatsPtr stats)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
 
+char *virNetDevOpenvswitchGetVhostuserIfname(const char *path)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+
 #endif /* __VIR_NETDEV_OPENVSWITCH_H__ */

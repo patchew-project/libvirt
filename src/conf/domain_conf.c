@@ -55,6 +55,7 @@
 #include "virtpm.h"
 #include "virstring.h"
 #include "virnetdev.h"
+#include "virnetdevopenvswitch.h"
 #include "virhostdev.h"
 
 #define VIR_FROM_THIS VIR_FROM_DOMAIN
@@ -9582,6 +9583,10 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
 
         def->data.vhostuser->type = VIR_DOMAIN_CHR_TYPE_UNIX;
         def->data.vhostuser->data.nix.path = vhostuser_path;
+
+        if (!ifname)
+            ifname = virNetDevOpenvswitchGetVhostuserIfname(vhostuser_path);
+
         vhostuser_path = NULL;
 
         if (STREQ(vhostuser_mode, "server")) {
