@@ -6262,8 +6262,14 @@ qemuBuildClockCommandLine(virCommandPtr cmd,
                     return -1;
                 }
                 break;
-            case VIR_DOMAIN_TIMER_TICKPOLICY_MERGE:
             case VIR_DOMAIN_TIMER_TICKPOLICY_DISCARD:
+                if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM_PIT_TICK_POLICY))
+                    virCommandAddArgList(cmd, "-global",
+                                         "kvm-pit.lost_tick_policy=discard", NULL);
+                else if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_NO_KVM_PIT))
+                    virCommandAddArg(cmd, "-no-kvm-pit-reinjection");
+                break;
+            case VIR_DOMAIN_TIMER_TICKPOLICY_MERGE:
                 /* no way to support these modes for pit in qemu */
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                _("unsupported pit tickpolicy '%s'"),
