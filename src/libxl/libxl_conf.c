@@ -881,9 +881,10 @@ libxlMakeDiskList(virDomainDefPtr def, libxl_domain_config *d_config)
 int
 libxlMakeNic(virDomainDefPtr def,
              virDomainNetDefPtr l_nic,
-             libxl_device_nic *x_nic)
+             libxl_device_nic *x_nic,
+             bool attach)
 {
-    bool ioemu_nic = def->os.type == VIR_DOMAIN_OSTYPE_HVM;
+    bool ioemu_nic = def->os.type == VIR_DOMAIN_OSTYPE_HVM && !attach;
     virDomainNetType actual_type = virDomainNetGetActualType(l_nic);
     virNetworkPtr network = NULL;
     virConnectPtr conn = NULL;
@@ -917,6 +918,8 @@ libxlMakeNic(virDomainDefPtr def,
             goto cleanup;
         if (STREQ(l_nic->model, "netfront"))
             x_nic->nictype = LIBXL_NIC_TYPE_VIF;
+        else
+            x_nic->nictype = LIBXL_NIC_TYPE_VIF_IOEMU;
     }
 
     if (VIR_STRDUP(x_nic->ifname, l_nic->ifname) < 0)
@@ -1047,7 +1050,7 @@ libxlMakeNicList(virDomainDefPtr def,  libxl_domain_config *d_config)
         if (virDomainNetGetActualType(l_nics[i]) == VIR_DOMAIN_NET_TYPE_HOSTDEV)
             continue;
 
-        if (libxlMakeNic(def, l_nics[i], &x_nics[nvnics]))
+        if (libxlMakeNic(def, l_nics[i], &x_nics[nvnics], false))
             goto error;
         /*
          * The devid (at least right now) will not get initialized by
