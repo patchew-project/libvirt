@@ -44,10 +44,15 @@ virFirewallPtr virFirewallNew(void);
 
 void virFirewallFree(virFirewallPtr firewall);
 
-virFirewallRulePtr virFirewallAddRule(virFirewallPtr firewall,
-                                      virFirewallLayer layer,
-                                      ...)
+virFirewallRulePtr virFirewallAddRuleInt(virFirewallPtr firewall,
+                                         virFirewallLayer layer,
+                                         void *null,
+                                         ...)
     ATTRIBUTE_SENTINEL;
+
+/* work around passing an enum to va_start */
+# define virFirewallAddRule(firewall, layer, ...) \
+         virFirewallAddRuleInt(firewall, layer, NULL, __VA_ARGS__)
 
 typedef int (*virFirewallQueryCallback)(virFirewallPtr firewall,
                                         const char *const *lines,

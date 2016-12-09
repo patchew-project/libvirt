@@ -416,13 +416,14 @@ virFirewallAddRuleFullV(virFirewallPtr firewall,
  * Returns the new rule
  */
 virFirewallRulePtr
-virFirewallAddRule(virFirewallPtr firewall,
-                   virFirewallLayer layer,
-                   ...)
+virFirewallAddRuleInt(virFirewallPtr firewall,
+                      virFirewallLayer layer,
+                      void *null,
+                      ...)
 {
     virFirewallRulePtr rule;
     va_list args;
-    va_start(args, layer);
+    va_start(args, null);
     rule = virFirewallAddRuleFullV(firewall, layer, false, NULL, NULL, args);
     va_end(args);
     return rule;

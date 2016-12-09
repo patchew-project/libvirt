@@ -1616,8 +1616,8 @@ virFindFileInPath;
 
 
 # util/virfirewall.h
-virFirewallAddRule;
 virFirewallAddRuleFull;
+virFirewallAddRuleInt;
 virFirewallApply;
 virFirewallFree;
 virFirewallNew;
