@@ -1522,6 +1522,13 @@ mymain(void)
 
     qemuTestSetHostArch(driver.caps, VIR_ARCH_S390X);
     DO_TEST("cpu-s390-zEC12", QEMU_CAPS_KVM, QEMU_CAPS_VIRTIO_CCW, QEMU_CAPS_VIRTIO_S390);
+
+    /* Cpu feature tests for both possible formats:
+     * Qemu < 2.8  : no query-cpu-model-expansion support : +/-feature format
+     * Qemu >= 2.8 : query-cpu-model-expansion support    : feature=state format
+     */
+    DO_TEST("cpu-features-post-qcme", QEMU_CAPS_KVM, QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION);
+    DO_TEST("cpu-features-pre-qcme", QEMU_CAPS_KVM);
     qemuTestSetHostArch(driver.caps, VIR_ARCH_NONE);
 
     qemuTestSetHostCPU(driver.caps, cpuHaswell);
