@@ -389,6 +389,7 @@ typedef enum {
     QEMU_CAPS_GLUSTER_DEBUG_LEVEL, /* -drive gluster.debug_level={0..9} */
     QEMU_CAPS_DEVICE_VHOST_SCSI, /* -device vhost-scsi-{ccw,pci} */
     QEMU_CAPS_DRIVE_IOTUNE_GROUP, /* -drive throttling.group=<name> */
+    QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION, /* qmp query-cpu-model-expansion */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
