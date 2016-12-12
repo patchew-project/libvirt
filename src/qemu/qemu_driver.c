@@ -19749,6 +19749,8 @@ qemuDomainGetFSInfo(virDomainPtr dom,
     virQEMUDriverPtr driver = dom->conn->privateData;
     virDomainObjPtr vm;
     qemuAgentPtr agent;
+    virCapsPtr caps = NULL;
+    virDomainDefPtr def = NULL;
     int ret = -1;
 
     virCheckFlags(0, ret);
@@ -19771,8 +19773,14 @@ qemuDomainGetFSInfo(virDomainPtr dom,
     if (!qemuDomainAgentAvailable(vm, true))
         goto endjob;
 
+    if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
+        goto endjob;
+
+    if (!(def = virDomainDefCopy(vm->def, caps, driver->xmlopt, NULL, false)))
+        goto endjob;
+
     agent = qemuDomainObjEnterAgent(vm);
-    ret = qemuAgentGetFSInfo(agent, info, vm->def);
+    ret = qemuAgentGetFSInfo(agent, info, def);
     qemuDomainObjExitAgent(vm, agent);
 
  endjob:
@@ -19780,6 +19788,8 @@ qemuDomainGetFSInfo(virDomainPtr dom,
 
  cleanup:
     virDomainObjEndAPI(&vm);
+    virDomainDefFree(def);
+    virObjectUnref(caps);
     return ret;
 }
 
