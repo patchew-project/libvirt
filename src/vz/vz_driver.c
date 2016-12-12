@@ -3730,6 +3730,28 @@ vzDomainGetBalloonStats(virDomainObjPtr dom,
     return 0;
 }
 
+static int
+vzDomainGetStateStats(virDomainObjPtr dom,
+                      virDomainStatsRecordPtr record,
+                      int *maxparams)
+{
+    if (virTypedParamsAddInt(&record->params,
+                             &record->nparams,
+                             maxparams,
+                             "state.state",
+                             dom->state.state) < 0)
+        return -1;
+
+    if (virTypedParamsAddInt(&record->params,
+                             &record->nparams,
+                             maxparams,
+                             "state.reason",
+                             dom->state.reason) < 0)
+        return -1;
+
+    return 0;
+}
+
 static virDomainStatsRecordPtr
 vzDomainGetAllStats(virConnectPtr conn,
                     virDomainObjPtr dom)
@@ -3739,6 +3761,9 @@ vzDomainGetAllStats(virConnectPtr conn,
 
     if (VIR_ALLOC(stat) < 0)
         return NULL;
+
+    if (vzDomainGetStateStats(dom, stat, &maxparams) < 0)
+        goto error;
 
     if (vzDomainGetBlockStats(dom, stat, &maxparams) < 0)
         goto error;
