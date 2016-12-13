@@ -31,7 +31,8 @@
         <ul>
           <li>perf: Add more perf statistics<br/>
           Add support to get the count of branch instructions executed
-          and branch misses by applications running on the platform
+          and branch misses and bus cycles by applications running on
+          the platform
           </li>
         </ul>
       </li>
