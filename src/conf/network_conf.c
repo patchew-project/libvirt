@@ -315,6 +315,10 @@ static void
 virNetworkIPDefClear(virNetworkIPDefPtr def)
 {
     VIR_FREE(def->family);
+
+    virStringListFreeCount(def->ptrs, def->nptrs);
+    def->ptrs = NULL;
+
     VIR_FREE(def->ranges);
 
     while (def->nhosts)
@@ -1507,6 +1511,10 @@ virNetworkIPDefParseXML(const char *networkName,
     unsigned long prefix = 0;
     int prefixRc;
     int result = -1;
+    char *localPtr = NULL;
+    xmlNodePtr *nodes = NULL;
+    size_t i;
+    int n;
 
     save = ctxt->node;
     ctxt->node = node;
@@ -1548,6 +1556,17 @@ virNetworkIPDefParseXML(const char *networkName,
         def->prefix = 0;
     else
         def->prefix = prefix;
+
+    localPtr = virXPathString("string(./@localPtr)", ctxt);
+    if (localPtr) {
+        def->localPTR = virTristateBoolTypeFromString(localPtr);
+        if (def->localPTR <= 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("Invalid localPtr value '%s' in network '%s'"),
+                           localPtr, networkName);
+            goto cleanup;
+        }
+    }
 
     /* validate address, etc. for each family */
     if ((def->family == NULL) || (STREQ(def->family, "ipv4"))) {
@@ -1604,6 +1623,46 @@ virNetworkIPDefParseXML(const char *networkName,
         goto cleanup;
     }
 
+    if ((n = virXPathNodeSet("./ptr", ctxt, &nodes)) < 0)
+        goto cleanup;
+
+    if (n > 0) {
+        if (VIR_ALLOC_N(def->ptrs, n) < 0)
+            goto cleanup;
+        def->nptrs = n;
+    }
+    for (i = 0; i < n; i++) {
+        char *domain;
+        const char *suffix;
+        size_t len;
+        size_t suflen;
+
+        if (!(domain = virXMLPropString(nodes[i], "domain"))) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("Missing PTR domain in network '%s'"),
+                           networkName);
+            goto cleanup;
+        }
+
+        if (VIR_SOCKET_ADDR_IS_FAMILY(&def->address, AF_INET))
+            suffix = VIR_SOCKET_ADDR_IPV4_ARPA;
+        else
+            suffix = VIR_SOCKET_ADDR_IPV6_ARPA;
+
+        len = strlen(domain);
+        suflen = strlen(suffix);
+        if (len <= suflen ||
+            STRNEQ(domain + len - suflen, suffix) ||
+            domain[len - suflen - 1] != '.') {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Invalid PTR domain '%s' in network '%s'"),
+                           domain, networkName);
+            VIR_FREE(domain);
+            goto cleanup;
+        }
+        def->ptrs[i] = domain;
+    }
+
     if ((dhcp = virXPathNode("./dhcp[1]", ctxt)) &&
         virNetworkDHCPDefParseXML(networkName, dhcp, def) < 0)
         goto cleanup;
@@ -1627,6 +1686,8 @@ virNetworkIPDefParseXML(const char *networkName,
         virNetworkIPDefClear(def);
     VIR_FREE(address);
     VIR_FREE(netmask);
+    VIR_FREE(localPtr);
+    VIR_FREE(nodes);
 
     ctxt->node = save;
     return result;
@@ -2630,6 +2691,7 @@ static int
 virNetworkIPDefFormat(virBufferPtr buf,
                       const virNetworkIPDef *def)
 {
+    size_t i;
     int result = -1;
 
     virBufferAddLit(buf, "<ip");
@@ -2652,15 +2714,23 @@ virNetworkIPDefFormat(virBufferPtr buf,
     }
     if (def->prefix > 0)
         virBufferAsprintf(buf, " prefix='%u'", def->prefix);
+
+    if (def->localPTR) {
+        virBufferAsprintf(buf, " localPtr='%s'",
+                          virTristateBoolTypeToString(def->localPTR));
+    }
+
     virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
+
+    for (i = 0; i < def->nptrs; i++)
+        virBufferAsprintf(buf, "<ptr domain='%s'/>\n", def->ptrs[i]);
 
     if (def->tftproot) {
         virBufferEscapeString(buf, "<tftp root='%s'/>\n",
                               def->tftproot);
     }
     if ((def->nranges || def->nhosts)) {
-        size_t i;
         virBufferAddLit(buf, "<dhcp>\n");
         virBufferAdjustIndent(buf, 2);
 
