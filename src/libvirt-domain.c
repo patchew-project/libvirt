@@ -11242,6 +11242,9 @@ virConnectGetDomainCapabilities(virConnectPtr conn,
  *     "perf.stalled_cycles_backend"  - The count of stalled cycles backend
  *                                      as unsigned long long. It is produced
  *                                      by stalled_cycles_backend perf event.
+ *     "perf.ref_cpu_cycles"          - The count of ref cpu cycles as unsigned
+ *                                      long long. It is produced by
+ *                                      ref_cpu_cycles perf event.
  *
  * Note that entire stats groups or individual stat fields may be missing from
  * the output in case they are not supported by the given hypervisor, are not

@@ -32,8 +32,8 @@
           <li>perf: Add more perf statistics<br/>
           Add support to get the count of branch instructions
           executed, branch misses, bus cycles, stalled cycles
-          frontend, stalled cycles backend by applications
-          running on the platform
+          frontend, stalled cycles backend and ref cpu cycles
+          by applications running on the platform
           </li>
         </ul>
       </li>
