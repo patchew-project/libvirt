@@ -939,7 +939,6 @@ mymain(void)
     DO_TEST("cpu-numa-no-memory-element", NONE);
     DO_TEST("cpu-numa-disordered", NONE);
     DO_TEST("cpu-numa-disjoint", NONE);
-    DO_TEST("cpu-numa-memshared", NONE);
 
     DO_TEST("numatune-auto-prefer", NONE);
     DO_TEST("numatune-memnode", NONE);

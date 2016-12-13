@@ -1500,8 +1500,6 @@ mymain(void)
     DO_TEST_PARSE_ERROR("cpu-numa3", NONE);
     DO_TEST_FAILURE("cpu-numa-disjoint", NONE);
     DO_TEST("cpu-numa-disjoint", QEMU_CAPS_NUMA);
-    DO_TEST_FAILURE("cpu-numa-memshared", QEMU_CAPS_OBJECT_MEMORY_RAM);
-    DO_TEST_FAILURE("cpu-numa-memshared", NONE);
     DO_TEST("cpu-host-model", NONE);
     DO_TEST("cpu-host-model-vendor", NONE);
     skipLegacyCPUs = true;
@@ -2414,6 +2412,16 @@ mymain(void)
             QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE, QEMU_CAPS_MACHINE_IOMMU);
 
     DO_TEST("cpu-hotplug-startup", QEMU_CAPS_QUERY_HOTPLUGGABLE_CPUS);
+
+    DO_TEST("fd-memory-numa-topology", QEMU_CAPS_MEM_PATH, QEMU_CAPS_OBJECT_MEMORY_FILE,
+            QEMU_CAPS_KVM);
+    DO_TEST("fd-memory-numa-topology2", QEMU_CAPS_MEM_PATH, QEMU_CAPS_OBJECT_MEMORY_FILE,
+            QEMU_CAPS_KVM);
+    DO_TEST("fd-memory-numa-topology3", QEMU_CAPS_MEM_PATH, QEMU_CAPS_OBJECT_MEMORY_FILE,
+            QEMU_CAPS_KVM);
+
+    DO_TEST("fd-memory-no-numa-topology", QEMU_CAPS_MEM_PATH, QEMU_CAPS_OBJECT_MEMORY_FILE,
+            QEMU_CAPS_KVM);
 
     qemuTestDriverFree(&driver);
 

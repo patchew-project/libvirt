@@ -3315,15 +3315,11 @@ qemuBuildMemoryBackendStr(unsigned long long size,
     if (!(props = virJSONValueNewObject()))
         return -1;
 
-    if (pagesize) {
-        if (qemuGetDomainHupageMemPath(def, cfg, pagesize, &mem_path) < 0)
-            goto cleanup;
-
+    if (def->mem.source == VIR_DOMAIN_MEMORY_SOURCE_FILE) {
         *backendType = "memory-backend-file";
 
         if (virJSONValueObjectAdd(props,
-                                  "b:prealloc", true,
-                                  "s:mem-path", mem_path,
+                                  "s:mem-path", cfg->libDir,
                                   NULL) < 0)
             goto cleanup;
 
@@ -3339,18 +3335,54 @@ qemuBuildMemoryBackendStr(unsigned long long size,
             break;
 
         case VIR_DOMAIN_MEMORY_ACCESS_DEFAULT:
+            if (def->mem.access == VIR_DOMAIN_MEMORY_ACCESS_SHARED) {
+                if (virJSONValueObjectAdd(props, "b:share", true, NULL) < 0)
+                    goto cleanup;
+            }
+            break;
+
         case VIR_DOMAIN_MEMORY_ACCESS_LAST:
             break;
         }
-    } else {
-        if (memAccess) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("Shared memory mapping is supported "
-                             "only with hugepages"));
-            goto cleanup;
-        }
 
-        *backendType = "memory-backend-ram";
+        force = true;
+    } else {
+        if (pagesize) {
+            if (qemuGetDomainHupageMemPath(def, cfg, pagesize, &mem_path) < 0)
+                goto cleanup;
+
+            *backendType = "memory-backend-file";
+
+            if (virJSONValueObjectAdd(props,
+                                      "b:prealloc", true,
+                                      "s:mem-path", mem_path,
+                                      NULL) < 0)
+                goto cleanup;
+
+            switch (memAccess) {
+            case VIR_DOMAIN_MEMORY_ACCESS_SHARED:
+                if (virJSONValueObjectAdd(props, "b:share", true, NULL) < 0)
+                    goto cleanup;
+                break;
+
+            case VIR_DOMAIN_MEMORY_ACCESS_PRIVATE:
+                if (virJSONValueObjectAdd(props, "b:share", false, NULL) < 0)
+                    goto cleanup;
+                break;
+
+            case VIR_DOMAIN_MEMORY_ACCESS_DEFAULT:
+                if (def->mem.access == VIR_DOMAIN_MEMORY_ACCESS_SHARED) {
+                    if (virJSONValueObjectAdd(props, "b:share", true, NULL) < 0)
+                        goto cleanup;
+                }
+                break;
+
+            case VIR_DOMAIN_MEMORY_ACCESS_LAST:
+                break;
+            }
+        } else {
+            *backendType = "memory-backend-ram";
+        }
     }
 
     if (virJSONValueObjectAdd(props, "U:size", size * 1024, NULL) < 0)
@@ -7250,31 +7282,37 @@ qemuBuildMemPathStr(virQEMUDriverConfigPtr cfg,
     const long system_page_size = virGetSystemPageSizeKB();
     char *mem_path = NULL;
 
-    /*
-     *  No-op if hugepages were not requested.
-     */
-    if (!def->mem.nhugepages)
-        return 0;
+    if (def->mem.nhugepages) {
 
-    /* There is one special case: if user specified "huge"
-     * pages of regular system pages size.
-     * And there is nothing to do in this case.
-     */
-    if (def->mem.hugepages[0].size == system_page_size)
-        return 0;
+        /* There is one special case: if user specified "huge"
+         * pages of regular system pages size.
+         * And there is nothing to do in this case.
+         */
+        if (def->mem.hugepages[0].size == system_page_size)
+            return 0;
 
-    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_MEM_PATH)) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("hugepage backing not supported by '%s'"),
-                       def->emulator);
-        return -1;
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_MEM_PATH)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("hugepage backing not supported by '%s'"),
+                           def->emulator);
+            return -1;
+        }
+
+        if (qemuGetDomainHupageMemPath(def, cfg, def->mem.hugepages[0].size, &mem_path) < 0)
+            return -1;
+
+        if (def->mem.allocation != VIR_DOMAIN_MEMORY_ALLOCATION_IMMEDIATE)
+            virCommandAddArgList(cmd, "-mem-prealloc", NULL);
+
+        virCommandAddArgList(cmd, "-mem-path", mem_path, NULL);
+        VIR_FREE(mem_path);
+    } else {
+        /*
+         *  No-op if hugepages or immediate allocation were not requested.
+         */
+        return 0;
     }
 
-    if (qemuGetDomainHupageMemPath(def, cfg, def->mem.hugepages[0].size, &mem_path) < 0)
-        return -1;
-
-    virCommandAddArgList(cmd, "-mem-prealloc", "-mem-path", mem_path, NULL);
-    VIR_FREE(mem_path);
 
     return 0;
 }
@@ -7303,9 +7341,12 @@ qemuBuildMemCommandLine(virCommandPtr cmd,
                               virDomainDefGetMemoryInitial(def) / 1024);
     }
 
+    if (def->mem.allocation == VIR_DOMAIN_MEMORY_ALLOCATION_IMMEDIATE)
+        virCommandAddArgList(cmd, "-mem-prealloc", NULL);
+
     /*
-     * Add '-mem-path' (and '-mem-prealloc') parameter here only if
-     * there is no numa node specified.
+     * Add '-mem-path' (and '-mem-prealloc') parameter here if
+     * the hugepages and no numa node is specified.
      */
     if (!virDomainNumaGetNodeCount(def->numa) &&
         qemuBuildMemPathStr(cfg, def, qemuCaps, cmd) < 0)
