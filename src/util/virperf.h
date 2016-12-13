@@ -41,6 +41,7 @@ typedef enum {
     VIR_PERF_EVENT_BRANCH_MISSES,  /* Count of branch misses for applications */
     VIR_PERF_EVENT_BUS_CYCLES,       /* Count of bus cycles for applications*/
     VIR_PERF_EVENT_STALLED_CYCLES_FRONTEND, /*Count of stalled cycles frontend*/
+    VIR_PERF_EVENT_STALLED_CYCLES_BACKEND, /*Count of stalled cycles backend*/
 
     VIR_PERF_EVENT_LAST
 } virPerfEventType;
