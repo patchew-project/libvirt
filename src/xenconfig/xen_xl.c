@@ -393,6 +393,12 @@ xenParseXLDisk(virConfPtr conf, virDomainDefPtr def)
 
                 case LIBXL_DISK_FORMAT_EMPTY:
                     break;
+
+#ifdef LIBXL_HAVE_QED
+                case LIBXL_DISK_FORMAT_QED:
+                    disk->src->format = VIR_STORAGE_FILE_QED;
+                    break;
+#endif
                 }
 
                 switch (libxldisk->backend) {
