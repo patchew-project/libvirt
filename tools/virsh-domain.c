@@ -1005,7 +1005,6 @@ cmdAttachInterface(vshControl *ctl, const vshCmd *cmd)
         vshError(ctl, _("No support for %s in command 'attach-interface'"),
                  type);
         goto cleanup;
-        break;
     }
 
     if (target != NULL)
@@ -7365,7 +7364,6 @@ cmdCPUCompare(vshControl *ctl, const vshCmd *cmd)
         vshPrint(ctl, _("CPU described in %s is incompatible with host CPU\n"),
                  from);
         goto cleanup;
-        break;
 
     case VIR_CPU_COMPARE_IDENTICAL:
         vshPrint(ctl, _("CPU described in %s is identical to host CPU\n"),
