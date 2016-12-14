@@ -393,6 +393,11 @@ xenParseXLDisk(virConfPtr conf, virDomainDefPtr def)
 
                 case LIBXL_DISK_FORMAT_EMPTY:
                     break;
+
+                default:
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("disk image format not supported: %s"),
+                                   libxl_disk_format_to_string(libxldisk->format));
                 }
 
                 switch (libxldisk->backend) {
@@ -415,6 +420,10 @@ xenParseXLDisk(virConfPtr conf, virDomainDefPtr def)
                         goto fail;
                     virDomainDiskSetType(disk, VIR_STORAGE_TYPE_BLOCK);
                     break;
+                default:
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("disk backend not supported: %s"),
+                                   libxl_disk_backend_to_string(libxldisk->backend));
                 }
             }
 
