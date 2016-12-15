@@ -4675,6 +4675,35 @@ qemuProcessStartValidate(virQEMUDriverPtr driver,
 }
 
 
+int
+qemuStorageVolumeRegister(virQEMUDriverConfigPtr cfg,
+                         virDomainObjPtr vm, virStorageSourcePtr src)
+{
+    uid_t uid;
+    gid_t gid;
+
+    if (virStorageSourceIsEmpty(src))
+        return 0;
+
+    qemuDomainGetImageIds(cfg, vm, src, &uid, &gid);
+
+    if (virStorageFileInitAs(src, uid, gid) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+void
+qemuStorageVolumeUnRegister(virStorageSourcePtr src)
+{
+        if (virStorageSourceIsEmpty(src))
+            return;
+
+        virStorageFileDeinit(src);
+}
+
+
 /**
  * qemuProcessInit:
  *
@@ -4699,6 +4728,7 @@ qemuProcessInit(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = vm->privateData;
     int stopFlags;
     int ret = -1;
+    size_t i;
 
     VIR_DEBUG("vm=%p name=%s id=%d migration=%d",
               vm, vm->def->name, vm->def->id, migration);
@@ -4750,6 +4780,12 @@ qemuProcessInit(virQEMUDriverPtr driver,
 
     if (qemuDomainSetPrivatePaths(driver, vm) < 0)
         goto cleanup;
+
+    if (!(flags & VIR_QEMU_PROCESS_START_PRETEND)) {
+        for (i = 0; i < vm->def->ndisks; i++)
+            if (qemuStorageVolumeRegister(cfg, vm, vm->def->disks[i]->src) < 0)
+                goto cleanup;
+    }
 
     ret = 0;
 
@@ -5743,6 +5779,7 @@ qemuProcessFinishStartup(virConnectPtr conn,
 {
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     int ret = -1;
+    size_t i;
 
     if (startCPUs) {
         VIR_DEBUG("Starting domain CPUs");
@@ -5766,6 +5803,9 @@ qemuProcessFinishStartup(virConnectPtr conn,
                              VIR_HOOK_QEMU_OP_STARTED,
                              VIR_HOOK_SUBOP_BEGIN) < 0)
         goto cleanup;
+
+    for (i = 0; i < vm->def->ndisks; i++)
+        qemuStorageVolumeUnRegister(vm->def->disks[i]->src);
 
     ret = 0;
 
@@ -6118,6 +6158,12 @@ void qemuProcessStop(virQEMUDriverPtr driver,
         VIR_FREE(xml);
     }
 
+    for (i = 0; i < vm->def->ndisks; i++) {
+        vm->def->disks[i]->src->drv = NULL;  /* FIXME: Brings in garbage */
+        if (qemuStorageVolumeRegister(cfg, vm, vm->def->disks[i]->src) < 0)
+            goto cleanup;
+    }
+
     /* Reset Security Labels unless caller don't want us to */
     if (!(flags & VIR_QEMU_PROCESS_STOP_NO_RELABEL))
         virSecurityManagerRestoreAllLabel(driver->securityManager,
@@ -6288,6 +6334,9 @@ void qemuProcessStop(virQEMUDriverPtr driver,
                     NULL, xml, NULL);
         VIR_FREE(xml);
     }
+
+    for (i = 0; i < vm->def->ndisks; i++)
+        qemuStorageVolumeUnRegister(vm->def->disks[i]->src);
 
     virDomainObjRemoveTransientDef(vm);
 

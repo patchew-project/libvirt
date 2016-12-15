@@ -249,6 +249,7 @@ typedef struct _virStorageFileBackend virStorageFileBackend;
 typedef virStorageFileBackend *virStorageFileBackendPtr;
 
 struct _virStorageDriverData {
+    virObject parent;
     virStorageFileBackendPtr backend;
     void *priv;
 

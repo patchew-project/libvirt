@@ -1486,6 +1486,11 @@ virStorageFileBackendFileDeinit(virStorageSourcePtr src)
 
     virStorageFileBackendFsPrivPtr priv = src->drv->priv;
 
+    if (virObjectUnref(src->drv))
+        return;
+
+    src->drv = NULL;
+
     VIR_FREE(priv->canonpath);
     VIR_FREE(priv);
 }

@@ -30,6 +30,8 @@
 # include "storage_conf.h"
 # include "virstoragefile.h"
 
+bool virStorageFileIsInitialized(virStorageSourcePtr src);
+
 int virStorageFileInit(virStorageSourcePtr src);
 int virStorageFileInitAs(virStorageSourcePtr src,
                          uid_t uid, gid_t gid);

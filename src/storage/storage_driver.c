@@ -2831,7 +2831,7 @@ int storageRegister(void)
 
 
 /* ----------- file handlers cooperating with storage driver --------------- */
-static bool
+bool
 virStorageFileIsInitialized(virStorageSourcePtr src)
 {
     return src && src->drv;
@@ -2894,6 +2894,22 @@ virStorageFileSupportsSecurityDriver(virStorageSourcePtr src)
 }
 
 
+static virClassPtr virStorageDriverDataClass;
+
+static int virStorageDriverDataOnceInit(void)
+{
+    if (!(virStorageDriverDataClass = virClassNew(virClassForObject(),
+                                                  "virStorageDriverData",
+                                                  sizeof(virStorageDriverData),
+                                                  NULL)))
+        return -1;
+
+    return 0;
+}
+
+VIR_ONCE_GLOBAL_INIT(virStorageDriverData)
+
+
 void
 virStorageFileDeinit(virStorageSourcePtr src)
 {
@@ -2903,8 +2919,6 @@ virStorageFileDeinit(virStorageSourcePtr src)
     if (src->drv->backend &&
         src->drv->backend->backendDeinit)
         src->drv->backend->backendDeinit(src);
-
-    VIR_FREE(src->drv);
 }
 
 
@@ -2926,7 +2940,16 @@ virStorageFileInitAs(virStorageSourcePtr src,
                      uid_t uid, gid_t gid)
 {
     int actualType = virStorageSourceGetActualType(src);
-    if (VIR_ALLOC(src->drv) < 0)
+
+    if (virStorageFileIsInitialized(src)) {
+        virObjectRef(src->drv);
+        return 0;
+    }
+
+    if (virStorageDriverDataInitialize() < 0)
+        return -1;
+
+    if (!(src->drv = virObjectNew(virStorageDriverDataClass)))
         return -1;
 
     if (uid == (uid_t) -1)
@@ -2950,7 +2973,7 @@ virStorageFileInitAs(virStorageSourcePtr src,
     return 0;
 
  error:
-    VIR_FREE(src->drv);
+    virObjectUnref(src->drv);
     return -1;
 }
 

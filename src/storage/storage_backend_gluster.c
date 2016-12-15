@@ -557,12 +557,16 @@ virStorageFileBackendGlusterDeinit(virStorageSourcePtr src)
               src->hosts->u.inet.port ? src->hosts->u.inet.port : "0",
               src->volume, src->path);
 
+    if (virObjectUnref(src->drv))
+        return;
+
+    src->drv = NULL;
+
     if (priv->vol)
         glfs_fini(priv->vol);
     VIR_FREE(priv->canonpath);
 
     VIR_FREE(priv);
-    src->drv->priv = NULL;
 }
 
 static int

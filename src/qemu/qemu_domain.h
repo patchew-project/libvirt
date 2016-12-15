@@ -591,9 +591,11 @@ bool qemuDomainDiskSourceDiffers(virDomainDiskDefPtr disk,
 bool qemuDomainDiskChangeSupported(virDomainDiskDefPtr disk,
                                    virDomainDiskDefPtr orig_disk);
 
-int qemuDomainStorageFileInit(virQEMUDriverPtr driver,
-                              virDomainObjPtr vm,
-                              virStorageSourcePtr src);
+void qemuDomainGetImageIds(virQEMUDriverConfigPtr cfg,
+                           virDomainObjPtr vm,
+                           virStorageSourcePtr src,
+                           uid_t *uid, gid_t *gid);
+
 char *qemuDomainStorageAlias(const char *device, int depth);
 
 void qemuDomainDiskChainElementRevoke(virQEMUDriverPtr driver,
