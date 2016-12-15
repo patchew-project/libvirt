@@ -2730,6 +2730,7 @@ virStorageBackendBLKIDProbePart(blkid_probe probe,
 /*
  * @device: Path to device
  * @format: Desired format
+ * @writelabel: True if desire to write the label
  *
  * Use the blkid_ APIs in order to get details regarding whether a file
  * system or partition exists on the disk already.
@@ -2740,7 +2741,8 @@ virStorageBackendBLKIDProbePart(blkid_probe probe,
  */
 static int
 virStorageBackendBLKIDProbe(const char *device,
-                            const char *format)
+                            const char *format,
+                            bool writelabel)
 {
 
     int ret = -1;
@@ -2768,7 +2770,12 @@ virStorageBackendBLKIDProbe(const char *device,
 
     switch (rc) {
     case VIR_STORAGE_BLKID_PROBE_UNDEFINED:
-        ret = 0;
+        if (writelabel)
+            ret = 0;
+        else
+            virReportError(VIR_ERR_STORAGE_PROBE_FAILED,
+                           _("Device '%s' is unrecognized, requires build"),
+                           device);
         break;
 
     case VIR_STORAGE_BLKID_PROBE_ERROR:
@@ -2784,9 +2791,12 @@ virStorageBackendBLKIDProbe(const char *device,
         break;
 
     case VIR_STORAGE_BLKID_PROBE_MATCH:
-        virReportError(VIR_ERR_STORAGE_POOL_BUILT,
-                       _("Device '%s' already formatted using '%s'"),
-                       device, format);
+        if (writelabel)
+            virReportError(VIR_ERR_STORAGE_POOL_BUILT,
+                           _("Device '%s' already formatted using '%s'"),
+                           device, format);
+        else
+            ret = 0;
         break;
 
     case VIR_STORAGE_BLKID_PROBE_DIFFERENT:
@@ -2827,6 +2837,7 @@ virStorageBackendBLKIDProbe(const char *device ATTRIBUTE_UNUSED,
 /* virStorageBackendDeviceProbeEmpty:
  * @devpath: Path to the device to check
  * @format: Desired format string
+ * @writelabel: True if the caller expects to write the label
  *
  * Check if the @devpath has some sort of known file system using the
  * BLKID API if available.
@@ -2836,9 +2847,10 @@ virStorageBackendBLKIDProbe(const char *device ATTRIBUTE_UNUSED,
  */
 bool
 virStorageBackendDeviceProbeEmpty(const char *devpath,
-                                  const char *format)
+                                  const char *format,
+                                  bool writelabel)
 {
-    if (virStorageBackendBLKIDProbe(devpath, format) == 0)
+    if (virStorageBackendBLKIDProbe(devpath, format, writelabel) == 0)
         true;
 
     return false;
