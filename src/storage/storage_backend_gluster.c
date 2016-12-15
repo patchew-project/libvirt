@@ -36,6 +36,20 @@
 
 VIR_LOG_INIT("storage.storage_backend_gluster");
 
+
+typedef struct _virStorageBackendGlusterState virStorageBackendGlusterState;
+typedef virStorageBackendGlusterState *virStorageBackendGlusterStatePtr;
+
+typedef struct _virStorageFileBackendGlusterPriv virStorageFileBackendGlusterPriv;
+typedef virStorageFileBackendGlusterPriv *virStorageFileBackendGlusterPrivPtr;
+
+typedef struct _virStorageBackendGlusterCache virStorageBackendGlusterCache;
+typedef virStorageBackendGlusterCache *virStorageBackendGlusterCachePtr;
+
+typedef struct _virStorageBackendGlusterCacheConn virStorageBackendGlusterCacheConn;
+typedef virStorageBackendGlusterCacheConn *virStorageBackendGlusterCacheConnPtr;
+
+
 struct _virStorageBackendGlusterState {
     glfs_t *vol;
 
@@ -47,8 +61,206 @@ struct _virStorageBackendGlusterState {
     char *dir; /* dir from URI, or "/"; always starts and ends in '/' */
 };
 
-typedef struct _virStorageBackendGlusterState virStorageBackendGlusterState;
-typedef virStorageBackendGlusterState *virStorageBackendGlusterStatePtr;
+struct _virStorageFileBackendGlusterPriv {
+    glfs_t *vol;
+    char *canonpath;
+};
+
+struct _virStorageBackendGlusterCacheConn {
+    virObjectLockable parent;
+    virCond cond;
+    bool quit;
+
+    glfs_t *fs;
+    size_t nhosts;
+    virStorageNetHostDefPtr hosts;
+    char *volname;
+};
+
+struct _virStorageBackendGlusterCache {
+    virMutex lock;
+    size_t nConn;
+    virStorageBackendGlusterCacheConnPtr *conn;
+};
+
+
+static virStorageBackendGlusterCachePtr virStorageBackendGlusterGlobalCacheObj;
+static virClassPtr virStorageBackendGlusterCacheConnClass;
+static virOnceControl virStorageBackendGlusterCacheOnce = VIR_ONCE_CONTROL_INITIALIZER;
+
+
+static void virStorageBackendGlusterCacheConnDispose(void *obj);
+
+
+static int virStorageBackendGlusterCacheConnOnceInit(void)
+{
+    if (!(virStorageBackendGlusterCacheConnClass =
+                                virClassNew(virClassForObjectLockable(),
+                                "virStorageBackendGlusterCacheConnClass",
+                                sizeof(virStorageBackendGlusterCacheConn),
+                                virStorageBackendGlusterCacheConnDispose)))
+        return -1;
+
+    return 0;
+}
+
+static void virStorageBackendGlusterCacheConnDispose(void *object)
+{
+    virStorageBackendGlusterCacheConnPtr conn = object;
+
+    glfs_fini(conn->fs);
+
+    VIR_FREE(conn->volname);
+
+    virStorageNetHostDefFree(conn->nhosts, conn->hosts);
+    virCondDestroy(&conn->cond);
+}
+
+VIR_ONCE_GLOBAL_INIT(virStorageBackendGlusterCacheConn);
+
+static bool
+virStorageBackendGlusterCompareHosts(size_t nSrcHosts,
+                                     virStorageNetHostDefPtr srcHosts,
+                                     size_t nDstHosts,
+                                     virStorageNetHostDefPtr dstHosts)
+{
+    bool match = false;
+    size_t i;
+    size_t j;
+
+    if (nSrcHosts != nDstHosts)
+        return false;
+    for (i = 0; i < nSrcHosts; i++) {
+        for (j = 0; j < nDstHosts; j++) {
+            if (srcHosts[i].type != dstHosts[j].type)
+                continue;
+            switch (srcHosts[i].type) {
+                case VIR_STORAGE_NET_HOST_TRANS_UNIX:
+                    if (STREQ(srcHosts[i].u.uds.path, dstHosts[j].u.uds.path))
+                        match = true;
+                    break;
+                case VIR_STORAGE_NET_HOST_TRANS_TCP:
+                case VIR_STORAGE_NET_HOST_TRANS_RDMA:
+                    if (STREQ(srcHosts[i].u.inet.addr, dstHosts[j].u.inet.addr)
+                                               &&
+                        STREQ(srcHosts[i].u.inet.port, dstHosts[j].u.inet.port))
+                        match = true;
+                    break;
+                case VIR_STORAGE_NET_HOST_TRANS_LAST:
+                    break;
+            }
+            if (match)
+                break; /* out of inner for loop */
+        }
+        if (!match)
+            return false;
+        match = false; /* reset */
+    }
+    return true;
+}
+
+static int
+virStorageBackendGlusterCacheAdd(virStorageSourcePtr src, glfs_t *fs)
+{
+    virStorageBackendGlusterCacheConnPtr newConn = NULL;
+    virStorageBackendGlusterCacheConnPtr conn = NULL;
+    size_t i;
+
+    for (i = 0; i < virStorageBackendGlusterGlobalCacheObj->nConn; i++) {
+        conn = virStorageBackendGlusterGlobalCacheObj->conn[i];
+        if (STRNEQ(conn->volname, src->volume))
+            continue;
+        if (virStorageBackendGlusterCompareHosts(conn->nhosts, conn->hosts,
+                                                 src->nhosts, src->hosts)) {
+            return 0;
+        }
+    }
+
+    if (!(newConn = virObjectLockableNew(virStorageBackendGlusterCacheConnClass)))
+        return -1;
+
+    if (virCondInit(&newConn->cond) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("failed to initialize domain condition"));
+        goto error;
+    }
+
+    if (VIR_STRDUP(newConn->volname, src->volume) < 0)
+        goto error;
+
+    newConn->nhosts = src->nhosts;
+    if (!(newConn->hosts = virStorageNetHostDefCopy(src->nhosts, src->hosts)))
+        goto error;
+    newConn->fs = fs;
+
+    if (VIR_APPEND_ELEMENT(virStorageBackendGlusterGlobalCacheObj->conn,
+                           virStorageBackendGlusterGlobalCacheObj->nConn,
+                           newConn) < 0)
+        goto error;
+
+    return 0;
+
+ error:
+    virStorageNetHostDefFree(newConn->nhosts, newConn->hosts);
+    VIR_FREE(newConn->volname);
+    virObjectUnref(newConn);
+    return -1;
+}
+
+static glfs_t *
+virStorageBackendGlusterCacheLookup(virStorageSourcePtr src)
+{
+    virStorageBackendGlusterCacheConnPtr conn;
+    size_t i;
+
+    if (virStorageBackendGlusterGlobalCacheObj == NULL)
+        return NULL;
+
+    for (i = 0; i < virStorageBackendGlusterGlobalCacheObj->nConn; i++) {
+        conn = virStorageBackendGlusterGlobalCacheObj->conn[i];
+        if (STRNEQ(conn->volname, src->volume))
+            continue;
+        if (virStorageBackendGlusterCompareHosts(conn->nhosts, conn->hosts,
+                                                 src->nhosts, src->hosts)) {
+            while (!conn->quit) {
+                if (virCondWait(&conn->cond, &conn->parent.lock) < 0) {
+                    virReportSystemError(errno, "%s",
+                                         _("failed to wait for domain condition"));
+                    return NULL;
+                }
+            }
+            virObjectRef(conn);
+            return conn->fs;
+        }
+    }
+
+    return NULL;
+}
+
+static void
+virStorageBackendGlusterCacheRelease(virStorageSourcePtr src)
+{
+    virStorageBackendGlusterCacheConnPtr conn = NULL;
+    size_t i;
+
+    virMutexLock(&virStorageBackendGlusterGlobalCacheObj->lock);
+    for (i = 0; i < virStorageBackendGlusterGlobalCacheObj->nConn; i++) {
+        conn = virStorageBackendGlusterGlobalCacheObj->conn[i];
+        if (STRNEQ(conn->volname, src->volume))
+            continue;
+        if (virStorageBackendGlusterCompareHosts(conn->nhosts, conn->hosts,
+                                                 src->nhosts, src->hosts)) {
+            if (virObjectUnref(conn))
+                goto unlock;
+
+            VIR_DELETE_ELEMENT(virStorageBackendGlusterGlobalCacheObj->conn, i,
+                               virStorageBackendGlusterGlobalCacheObj->nConn);
+        }
+    }
+
+ unlock:
+    virMutexUnlock(&virStorageBackendGlusterGlobalCacheObj->lock);
+}
 
 static void
 virStorageBackendGlusterClose(virStorageBackendGlusterStatePtr state)
@@ -67,6 +279,26 @@ virStorageBackendGlusterClose(virStorageBackendGlusterStatePtr state)
     VIR_FREE(state->volname);
     VIR_FREE(state->dir);
     VIR_FREE(state);
+}
+
+static void
+virStorageBackendGlusterBroadcast(virStorageSourcePtr src)
+{
+    virStorageBackendGlusterCacheConnPtr conn;
+    size_t i;
+
+    virMutexLock(&virStorageBackendGlusterGlobalCacheObj->lock);
+    for (i = 0; i < virStorageBackendGlusterGlobalCacheObj->nConn; i++) {
+        conn = virStorageBackendGlusterGlobalCacheObj->conn[i];
+        if (STRNEQ(conn->volname, src->volume))
+            continue;
+        if (virStorageBackendGlusterCompareHosts(conn->nhosts, conn->hosts,
+                                                 src->nhosts, src->hosts)) {
+            conn->quit = true;
+            virCondBroadcast(&conn->cond);
+        }
+    }
+    virMutexUnlock(&virStorageBackendGlusterGlobalCacheObj->lock);
 }
 
 static virStorageBackendGlusterStatePtr
@@ -538,15 +770,6 @@ virStorageBackend virStorageBackendGluster = {
 };
 
 
-typedef struct _virStorageFileBackendGlusterPriv virStorageFileBackendGlusterPriv;
-typedef virStorageFileBackendGlusterPriv *virStorageFileBackendGlusterPrivPtr;
-
-struct _virStorageFileBackendGlusterPriv {
-    glfs_t *vol;
-    char *canonpath;
-};
-
-
 static void
 virStorageFileBackendGlusterDeinit(virStorageSourcePtr src)
 {
@@ -562,10 +785,9 @@ virStorageFileBackendGlusterDeinit(virStorageSourcePtr src)
 
     src->drv = NULL;
 
-    if (priv->vol)
-        glfs_fini(priv->vol);
-    VIR_FREE(priv->canonpath);
+    virStorageBackendGlusterCacheRelease(src);
 
+    VIR_FREE(priv->canonpath);
     VIR_FREE(priv);
 }
 
@@ -613,6 +835,19 @@ virStorageFileBackendGlusterInitServer(virStorageFileBackendGlusterPrivPtr priv,
     return 0;
 }
 
+static void
+virStorageBackendGlusterCacheInit(void)
+{
+    if (VIR_ALLOC(virStorageBackendGlusterGlobalCacheObj) < 0)
+        return;
+
+    if (virMutexInit(&virStorageBackendGlusterGlobalCacheObj->lock) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Unable to initialize mutex"));
+        return;
+    }
+    errno = VIR_ERR_OK;
+}
 
 static int
 virStorageFileBackendGlusterInit(virStorageSourcePtr src)
@@ -635,10 +870,37 @@ virStorageFileBackendGlusterInit(virStorageSourcePtr src)
               src, priv, src->volume, src->path,
               (unsigned int)src->drv->uid, (unsigned int)src->drv->gid);
 
+    if (virOnce(&virStorageBackendGlusterCacheOnce,
+                virStorageBackendGlusterCacheInit) < 0)
+        return -1;
+
+    if (errno)
+        return -errno;
+
+    if (!virStorageBackendGlusterGlobalCacheObj)
+        return -1;
+
+    if (virStorageBackendGlusterCacheConnInitialize() < 0)
+        return -1;
+
+    virMutexLock(&virStorageBackendGlusterGlobalCacheObj->lock);
+
+    priv->vol = virStorageBackendGlusterCacheLookup(src);
+    if (priv->vol) {
+        src->drv->priv = priv;
+        virMutexUnlock(&virStorageBackendGlusterGlobalCacheObj->lock);
+        return 0;
+    }
+
     if (!(priv->vol = glfs_new(src->volume))) {
         virReportOOMError();
-        goto error;
+        goto unlock;
     }
+
+    if (virStorageBackendGlusterCacheAdd(src, priv->vol) < 0)
+        goto unlock;
+
+    virMutexUnlock(&virStorageBackendGlusterGlobalCacheObj->lock);
 
     for (i = 0; i < src->nhosts; i++) {
         if (virStorageFileBackendGlusterInitServer(priv, src->hosts + i) < 0)
@@ -652,15 +914,17 @@ virStorageFileBackendGlusterInit(virStorageSourcePtr src)
         goto error;
     }
 
+    virStorageBackendGlusterBroadcast(src);
+
     src->drv->priv = priv;
 
     return 0;
 
- error:
-    if (priv->vol)
-        glfs_fini(priv->vol);
-    VIR_FREE(priv);
+ unlock:
+    virMutexUnlock(&virStorageBackendGlusterGlobalCacheObj->lock);
 
+ error:
+    virStorageBackendGlusterCacheRelease(src);
     return -1;
 }
 
