@@ -822,19 +822,18 @@ qemuBuildGlusterDriveJSONHosts(virStorageSourcePtr src)
 
     for (i = 0; i < src->nhosts; i++) {
         host = src->hosts + i;
-        transport = virStorageNetHostTransportTypeToString(host->transport);
-        portstr = host->port;
+        transport = virStorageNetHostTransportTypeToString(host->type);
 
         if (virJSONValueObjectCreate(&server, "s:type", transport, NULL) < 0)
             goto cleanup;
 
-        if (!portstr)
-            portstr = QEMU_DEFAULT_GLUSTER_PORT;
-
-        switch ((virStorageNetHostTransport) host->transport) {
+        switch ((virStorageNetHostTransport) host->type) {
         case VIR_STORAGE_NET_HOST_TRANS_TCP:
+            portstr = host->u.inet.port;
+            if (!portstr)
+                portstr = QEMU_DEFAULT_GLUSTER_PORT;
             if (virJSONValueObjectAdd(server,
-                                      "s:host", host->name,
+                                      "s:host", host->u.inet.addr,
                                       "s:port", portstr,
                                       NULL) < 0)
                 goto cleanup;
@@ -842,7 +841,7 @@ qemuBuildGlusterDriveJSONHosts(virStorageSourcePtr src)
 
         case VIR_STORAGE_NET_HOST_TRANS_UNIX:
             if (virJSONValueObjectAdd(server,
-                                      "s:socket", host->socket,
+                                      "s:socket", host->u.uds.path,
                                       NULL) < 0)
                 goto cleanup;
             break;
@@ -916,20 +915,41 @@ qemuBuildNetworkDriveURI(virStorageSourcePtr src,
     if (VIR_ALLOC(uri) < 0)
         goto cleanup;
 
-    if (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_TCP) {
+    switch (src->hosts->type) {
+    case VIR_STORAGE_NET_HOST_TRANS_TCP:
         if (VIR_STRDUP(uri->scheme,
                        virStorageNetProtocolTypeToString(src->protocol)) < 0)
             goto cleanup;
-    } else {
-        if (virAsprintf(&uri->scheme, "%s+%s",
-                        virStorageNetProtocolTypeToString(src->protocol),
-                        virStorageNetHostTransportTypeToString(src->hosts->transport)) < 0)
-            goto cleanup;
-    }
 
-    if ((uri->port = qemuNetworkDriveGetPort(src->protocol,
-                                             src->hosts->port)) < 0)
+    case VIR_STORAGE_NET_HOST_TRANS_RDMA:
+        if (VIR_STRDUP(uri->server, src->hosts->u.inet.addr) < 0)
+            goto cleanup;
+
+        if ((uri->port = qemuNetworkDriveGetPort(src->protocol,
+                                                 src->hosts->u.inet.port)) < 0)
+            goto cleanup;
+
+    case VIR_STORAGE_NET_HOST_TRANS_UNIX:
+        if (src->hosts->type != VIR_STORAGE_NET_HOST_TRANS_TCP) {
+            if (virAsprintf(&uri->scheme, "%s+%s",
+                            virStorageNetProtocolTypeToString(src->protocol),
+                            virStorageNetHostTransportTypeToString(src->hosts->type)) < 0)
+                goto cleanup;
+        }
+
+        if (src->hosts->type == VIR_STORAGE_NET_HOST_TRANS_UNIX &&
+            virAsprintf(&uri->query, "socket=%s", src->hosts->u.uds.path) < 0)
+            goto cleanup;
+        break;
+
+    case VIR_STORAGE_NET_HOST_TRANS_LAST:
+    default:
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("protocol '%s' doesn't support transport %s"),
+                       virStorageNetProtocolTypeToString(src->protocol),
+                       virStorageNetHostTransportTypeToString(src->hosts->type));
         goto cleanup;
+    }
 
     if (src->path) {
         if (src->volume) {
@@ -944,14 +964,7 @@ qemuBuildNetworkDriveURI(virStorageSourcePtr src,
         }
     }
 
-    if (src->hosts->socket &&
-        virAsprintf(&uri->query, "socket=%s", src->hosts->socket) < 0)
-        goto cleanup;
-
     if (qemuBuildGeneralSecinfoURI(uri, secinfo) < 0)
-        goto cleanup;
-
-    if (VIR_STRDUP(uri->server, src->hosts->name) < 0)
         goto cleanup;
 
     ret = virURIFormat(uri);
@@ -979,38 +992,38 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
                 goto cleanup;
             }
 
-            if (!((src->hosts->name && strchr(src->hosts->name, ':')) ||
-                  (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_TCP &&
-                   !src->hosts->name) ||
-                  (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_UNIX &&
-                   src->hosts->socket &&
-                   src->hosts->socket[0] != '/'))) {
+            if (!((src->hosts->u.inet.addr && strchr(src->hosts->u.inet.addr, ':')) ||
+                  (src->hosts->type == VIR_STORAGE_NET_HOST_TRANS_TCP &&
+                   !src->hosts->u.inet.addr) ||
+                  (src->hosts->type == VIR_STORAGE_NET_HOST_TRANS_UNIX &&
+                   src->hosts->u.uds.path &&
+                   src->hosts->u.uds.path[0] != '/'))) {
 
                 virBufferAddLit(&buf, "nbd:");
 
-                switch (src->hosts->transport) {
+                switch (src->hosts->type) {
                 case VIR_STORAGE_NET_HOST_TRANS_TCP:
-                    virBufferStrcat(&buf, src->hosts->name, NULL);
+                    virBufferStrcat(&buf, src->hosts->u.inet.addr, NULL);
                     virBufferAsprintf(&buf, ":%s",
-                                      src->hosts->port ? src->hosts->port :
+                                      src->hosts->u.inet.port ? src->hosts->u.inet.port :
                                       QEMU_DEFAULT_NBD_PORT);
                     break;
 
                 case VIR_STORAGE_NET_HOST_TRANS_UNIX:
-                    if (!src->hosts->socket) {
+                    if (!src->hosts->u.uds.path) {
                         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                                        _("socket attribute required for "
                                          "unix transport"));
                         goto cleanup;
                     }
 
-                    virBufferAsprintf(&buf, "unix:%s", src->hosts->socket);
+                    virBufferAsprintf(&buf, "unix:%s", src->hosts->u.uds.path);
                     break;
 
                 default:
                     virReportError(VIR_ERR_INTERNAL_ERROR,
                                    _("nbd does not support transport '%s'"),
-                                   virStorageNetHostTransportTypeToString(src->hosts->transport));
+                                   virStorageNetHostTransportTypeToString(src->hosts->type));
                     goto cleanup;
                 }
 
@@ -1049,8 +1062,8 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
                     goto cleanup;
             } else if (src->nhosts == 1) {
                 if (virAsprintf(&ret, "sheepdog:%s:%s:%s",
-                                src->hosts->name,
-                                src->hosts->port ? src->hosts->port : "7000",
+                                src->hosts->u.inet.addr,
+                                src->hosts->u.inet.port ? src->hosts->u.inet.port : "7000",
                                 src->path) < 0)
                     goto cleanup;
             } else {
@@ -1084,14 +1097,14 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
                         virBufferAddLit(&buf, "\\;");
 
                     /* assume host containing : is ipv6 */
-                    if (strchr(src->hosts[i].name, ':'))
+                    if (strchr(src->hosts[i].u.inet.addr, ':'))
                         virBufferEscape(&buf, '\\', ":", "[%s]",
-                                        src->hosts[i].name);
+                                        src->hosts[i].u.inet.addr);
                     else
-                        virBufferAsprintf(&buf, "%s", src->hosts[i].name);
+                        virBufferAsprintf(&buf, "%s", src->hosts[i].u.inet.addr);
 
-                    if (src->hosts[i].port)
-                        virBufferAsprintf(&buf, "\\:%s", src->hosts[i].port);
+                    if (src->hosts[i].u.inet.port)
+                        virBufferAsprintf(&buf, "\\:%s", src->hosts[i].u.inet.port);
                 }
             }
 

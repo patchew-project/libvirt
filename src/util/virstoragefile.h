@@ -151,13 +151,25 @@ typedef enum {
 
 VIR_ENUM_DECL(virStorageNetHostTransport)
 
+typedef struct _virStorageNetHostUnixSockAddr virStorageNetHostUnixSockAddr;
+struct _virStorageNetHostUnixSockAddr {
+    char *path;
+};
+
+typedef struct _virStorageNetHostInetSockAddr virStorageNetHostInetSockAddr;
+struct _virStorageNetHostInetSockAddr {
+    char *addr;
+    char *port;
+};
+
 typedef struct _virStorageNetHostDef virStorageNetHostDef;
 typedef virStorageNetHostDef *virStorageNetHostDefPtr;
 struct _virStorageNetHostDef {
-    char *name;
-    char *port;
-    int transport; /* virStorageNetHostTransport */
-    char *socket;  /* path to unix socket */
+    virStorageNetHostTransport type;
+    union { /* union tag is @type */
+        virStorageNetHostUnixSockAddr uds;
+        virStorageNetHostInetSockAddr inet;
+    } u;
 };
 
 /* Information for a storage volume from a virStoragePool */

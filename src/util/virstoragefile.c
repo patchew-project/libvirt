@@ -1602,9 +1602,18 @@ virStorageNetHostDefClear(virStorageNetHostDefPtr def)
     if (!def)
         return;
 
-    VIR_FREE(def->name);
-    VIR_FREE(def->port);
-    VIR_FREE(def->socket);
+    switch (def->type) {
+    case VIR_STORAGE_NET_HOST_TRANS_UNIX:
+        VIR_FREE(def->u.uds.path);
+        break;
+    case VIR_STORAGE_NET_HOST_TRANS_TCP:
+    case VIR_STORAGE_NET_HOST_TRANS_RDMA:
+        VIR_FREE(def->u.inet.addr);
+        VIR_FREE(def->u.inet.port);
+        break;
+    case VIR_STORAGE_NET_HOST_TRANS_LAST:
+        break;
+    }
 }
 
 
@@ -1649,16 +1658,23 @@ virStorageNetHostDefCopy(size_t nhosts,
         virStorageNetHostDefPtr src = &hosts[i];
         virStorageNetHostDefPtr dst = &ret[i];
 
-        dst->transport = src->transport;
+        dst->type = src->type;
 
-        if (VIR_STRDUP(dst->name, src->name) < 0)
-            goto error;
-
-        if (VIR_STRDUP(dst->port, src->port) < 0)
-            goto error;
-
-        if (VIR_STRDUP(dst->socket, src->socket) < 0)
-            goto error;
+        switch (src->type) {
+        case VIR_STORAGE_NET_HOST_TRANS_UNIX:
+            if (VIR_STRDUP(dst->u.uds.path, src->u.uds.path) < 0)
+               goto error;
+            break;
+        case VIR_STORAGE_NET_HOST_TRANS_TCP:
+        case VIR_STORAGE_NET_HOST_TRANS_RDMA:
+            if (VIR_STRDUP(dst->u.inet.addr, src->u.inet.addr)< 0)
+                goto error;
+            if (VIR_STRDUP(dst->u.inet.port, src->u.inet.port)< 0)
+                goto error;
+            break;
+        case VIR_STORAGE_NET_HOST_TRANS_LAST:
+            break;
+        }
     }
 
     return ret;
@@ -2291,7 +2307,7 @@ virStorageSourceParseBackingURI(virStorageSourcePtr src,
     }
 
     if (scheme[1] &&
-        (src->hosts->transport = virStorageNetHostTransportTypeFromString(scheme[1])) < 0) {
+        (src->hosts->type = virStorageNetHostTransportTypeFromString(scheme[1])) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("invalid protocol transport type '%s'"),
                        scheme[1]);
@@ -2300,7 +2316,7 @@ virStorageSourceParseBackingURI(virStorageSourcePtr src,
 
     /* handle socket stored as a query */
     if (uri->query) {
-        if (VIR_STRDUP(src->hosts->socket, STRSKIP(uri->query, "socket=")) < 0)
+        if (VIR_STRDUP(src->hosts->u.uds.path, STRSKIP(uri->query, "socket=")) < 0)
             goto cleanup;
     }
 
@@ -2338,11 +2354,11 @@ virStorageSourceParseBackingURI(virStorageSourcePtr src,
     }
 
     if (uri->port > 0) {
-        if (virAsprintf(&src->hosts->port, "%d", uri->port) < 0)
+        if (virAsprintf(&src->hosts->u.inet.port, "%d", uri->port) < 0)
             goto cleanup;
     }
 
-    if (VIR_STRDUP(src->hosts->name, uri->server) < 0)
+    if (VIR_STRDUP(src->hosts->u.inet.addr, uri->server) < 0)
         goto cleanup;
 
     ret = 0;
@@ -2377,26 +2393,25 @@ virStorageSourceRBDAddHost(virStorageSourcePtr src,
     if (port) {
         *port = '\0';
         port += skip;
-        if (VIR_STRDUP(src->hosts[src->nhosts - 1].port, port) < 0)
+        if (VIR_STRDUP(src->hosts[src->nhosts - 1].u.inet.port, port) < 0)
             goto error;
     }
 
     parts = virStringSplit(hostport, "\\:", 0);
     if (!parts)
         goto error;
-    src->hosts[src->nhosts-1].name = virStringListJoin((const char **)parts, ":");
+    src->hosts[src->nhosts-1].u.inet.addr = virStringListJoin((const char **)parts, ":");
     virStringListFree(parts);
-    if (!src->hosts[src->nhosts-1].name)
+    if (!src->hosts[src->nhosts-1].u.inet.addr)
         goto error;
 
-    src->hosts[src->nhosts-1].transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
-    src->hosts[src->nhosts-1].socket = NULL;
+    src->hosts[src->nhosts-1].type = VIR_STORAGE_NET_HOST_TRANS_TCP;
 
     return 0;
 
  error:
-    VIR_FREE(src->hosts[src->nhosts-1].port);
-    VIR_FREE(src->hosts[src->nhosts-1].name);
+    VIR_FREE(src->hosts[src->nhosts-1].u.inet.port);
+    VIR_FREE(src->hosts[src->nhosts-1].u.inet.addr);
     return -1;
 }
 
@@ -2523,7 +2538,7 @@ virStorageSourceParseNBDColonString(const char *nbdstr,
         goto cleanup;
 
     src->nhosts = 1;
-    src->hosts->transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
+    src->hosts->type = VIR_STORAGE_NET_HOST_TRANS_TCP;
 
     /* format: [] denotes optional sections, uppercase are variable strings
      * nbd:unix:/PATH/TO/SOCKET[:exportname=EXPORTNAME]
@@ -2542,7 +2557,7 @@ virStorageSourceParseNBDColonString(const char *nbdstr,
             goto cleanup;
         }
 
-        if (VIR_STRDUP(src->hosts->socket, backing[2]) < 0)
+        if (VIR_STRDUP(src->hosts->u.uds.path, backing[2]) < 0)
             goto cleanup;
 
    } else {
@@ -2553,7 +2568,7 @@ virStorageSourceParseNBDColonString(const char *nbdstr,
             goto cleanup;
         }
 
-        if (VIR_STRDUP(src->hosts->name, backing[1]) < 0)
+        if (VIR_STRDUP(src->hosts->u.inet.addr, backing[1]) < 0)
             goto cleanup;
 
         if (!backing[2]) {
@@ -2563,7 +2578,7 @@ virStorageSourceParseNBDColonString(const char *nbdstr,
             goto cleanup;
         }
 
-        if (VIR_STRDUP(src->hosts->port, backing[2]) < 0)
+        if (VIR_STRDUP(src->hosts->u.inet.port, backing[2]) < 0)
             goto cleanup;
     }
 
@@ -2723,7 +2738,7 @@ virStorageSourceParseBackingJSONGlusterHost(virStorageNetHostDefPtr host,
         return -1;
     }
 
-    host->transport = transport;
+    host->type = transport;
 
     switch ((virStorageNetHostTransport) transport) {
     case VIR_STORAGE_NET_HOST_TRANS_TCP:
@@ -2734,8 +2749,8 @@ virStorageSourceParseBackingJSONGlusterHost(virStorageNetHostDefPtr host,
             return -1;
         }
 
-        if (VIR_STRDUP(host->name, hostname) < 0 ||
-            VIR_STRDUP(host->port, port) < 0)
+        if (VIR_STRDUP(host->u.inet.addr, hostname) < 0 ||
+            VIR_STRDUP(host->u.inet.port, port) < 0)
             return -1;
         break;
 
@@ -2748,7 +2763,7 @@ virStorageSourceParseBackingJSONGlusterHost(virStorageNetHostDefPtr host,
         }
 
 
-        if (VIR_STRDUP(host->socket, socket) < 0)
+        if (VIR_STRDUP(host->u.uds.path, socket) < 0)
             return -1;
         break;
 
@@ -2865,15 +2880,15 @@ virStorageSourceParseBackingJSONNbd(virStorageSourcePtr src,
     src->nhosts = 1;
 
     if (path) {
-        src->hosts[0].transport = VIR_STORAGE_NET_HOST_TRANS_UNIX;
-        if (VIR_STRDUP(src->hosts[0].socket, path) < 0)
+        src->hosts[0].type = VIR_STORAGE_NET_HOST_TRANS_UNIX;
+        if (VIR_STRDUP(src->hosts[0].u.uds.path, path) < 0)
             return -1;
     } else {
-        src->hosts[0].transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
-        if (VIR_STRDUP(src->hosts[0].name, host) < 0)
+        src->hosts[0].type = VIR_STORAGE_NET_HOST_TRANS_TCP;
+        if (VIR_STRDUP(src->hosts[0].u.inet.addr, host) < 0)
             return -1;
 
-        if (VIR_STRDUP(src->hosts[0].port, port) < 0)
+        if (VIR_STRDUP(src->hosts[0].u.inet.port, port) < 0)
             return -1;
     }
 
@@ -2931,11 +2946,11 @@ virStorageSourceParseBackingJSONSSH(virStorageSourcePtr src,
         return -1;
     src->nhosts = 1;
 
-    src->hosts[0].transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
-    if (VIR_STRDUP(src->hosts[0].name, host) < 0)
+    src->hosts[0].type = VIR_STORAGE_NET_HOST_TRANS_TCP;
+    if (VIR_STRDUP(src->hosts[0].u.inet.addr, host) < 0)
         return -1;
 
-    if (VIR_STRDUP(src->hosts[0].port, port) < 0)
+    if (VIR_STRDUP(src->hosts[0].u.inet.port, port) < 0)
         return -1;
 
     return 0;

@@ -637,14 +637,14 @@ libxlMakeNetworkDiskSrcStr(virStorageSourcePtr src,
                     virBufferAddLit(&buf, "\\;");
 
                 /* assume host containing : is ipv6 */
-                if (strchr(src->hosts[i].name, ':'))
+                if (strchr(src->hosts[i].u.inet.addr, ':'))
                     virBufferEscape(&buf, '\\', ":", "[%s]",
-                                    src->hosts[i].name);
+                                    src->hosts[i].u.inet.addr);
                 else
-                    virBufferAsprintf(&buf, "%s", src->hosts[i].name);
+                    virBufferAsprintf(&buf, "%s", src->hosts[i].u.inet.addr);
 
-                if (src->hosts[i].port)
-                    virBufferAsprintf(&buf, "\\:%s", src->hosts[i].port);
+                if (src->hosts[i].u.inet.port)
+                    virBufferAsprintf(&buf, "\\:%s", src->hosts[i].u.inet.port);
             }
         }
 

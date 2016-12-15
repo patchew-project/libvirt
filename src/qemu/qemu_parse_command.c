@@ -77,10 +77,10 @@ qemuParseDriveURIString(virDomainDiskDefPtr def, virURIPtr uri,
     }
 
     if (!transp) {
-        def->src->hosts->transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
+        def->src->hosts->type = VIR_STORAGE_NET_HOST_TRANS_TCP;
     } else {
-        def->src->hosts->transport = virStorageNetHostTransportTypeFromString(transp);
-        if (def->src->hosts->transport < 0) {
+        def->src->hosts->type = virStorageNetHostTransportTypeFromString(transp);
+        if (def->src->hosts->type < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Invalid %s transport type '%s'"), scheme, transp);
             goto error;
@@ -88,19 +88,20 @@ qemuParseDriveURIString(virDomainDiskDefPtr def, virURIPtr uri,
     }
     def->src->nhosts = 0; /* set to 1 once everything succeeds */
 
-    if (def->src->hosts->transport != VIR_STORAGE_NET_HOST_TRANS_UNIX) {
-        if (VIR_STRDUP(def->src->hosts->name, uri->server) < 0)
+    switch (def->src->hosts->type) {
+    case VIR_STORAGE_NET_HOST_TRANS_TCP:
+    case VIR_STORAGE_NET_HOST_TRANS_RDMA:
+        if (VIR_STRDUP(def->src->hosts->u.inet.addr, uri->server) < 0)
             goto error;
 
-        if (virAsprintf(&def->src->hosts->port, "%d", uri->port) < 0)
+        if (virAsprintf(&def->src->hosts->u.inet.port, "%d", uri->port) < 0)
             goto error;
-    } else {
-        def->src->hosts->name = NULL;
-        def->src->hosts->port = 0;
+        break;
+    case VIR_STORAGE_NET_HOST_TRANS_UNIX:
         if (uri->query) {
             if (STRPREFIX(uri->query, "socket=")) {
                 sock = strchr(uri->query, '=') + 1;
-                if (VIR_STRDUP(def->src->hosts->socket, sock) < 0)
+                if (VIR_STRDUP(def->src->hosts->u.uds.path, sock) < 0)
                     goto error;
             } else {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -108,6 +109,9 @@ qemuParseDriveURIString(virDomainDiskDefPtr def, virURIPtr uri,
                 goto error;
             }
         }
+        break;
+    case VIR_STORAGE_NET_HOST_TRANS_LAST:
+        break;
     }
     if (uri->path) {
         volimg = uri->path + 1; /* skip the prefix slash */
@@ -221,8 +225,8 @@ qemuParseNBDString(virDomainDiskDefPtr disk)
         if (src)
             *src++ = '\0';
 
-        h->transport = VIR_STORAGE_NET_HOST_TRANS_UNIX;
-        if (VIR_STRDUP(h->socket, host + strlen("unix:")) < 0)
+        h->type = VIR_STORAGE_NET_HOST_TRANS_UNIX;
+        if (VIR_STRDUP(h->u.uds.path, host + strlen("unix:")) < 0)
             goto error;
     } else {
         port = strchr(host, ':');
@@ -233,14 +237,14 @@ qemuParseNBDString(virDomainDiskDefPtr disk)
         }
 
         *port++ = '\0';
-        if (VIR_STRDUP(h->name, host) < 0)
+        if (VIR_STRDUP(h->u.inet.addr, host) < 0)
             goto error;
 
         src = strchr(port, ':');
         if (src)
             *src++ = '\0';
 
-        if (VIR_STRDUP(h->port, port) < 0)
+        if (VIR_STRDUP(h->u.inet.port, port) < 0)
             goto error;
     }
 
@@ -729,11 +733,10 @@ qemuParseCommandLineDisk(virDomainXMLOptionPtr xmlopt,
                         if (VIR_ALLOC(def->src->hosts) < 0)
                             goto error;
                         def->src->nhosts = 1;
-                        def->src->hosts->name = def->src->path;
-                        if (VIR_STRDUP(def->src->hosts->port, port) < 0)
+                        def->src->hosts->u.inet.addr = def->src->path;
+                        if (VIR_STRDUP(def->src->hosts->u.inet.port, port) < 0)
                             goto error;
-                        def->src->hosts->transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
-                        def->src->hosts->socket = NULL;
+                        def->src->hosts->type = VIR_STORAGE_NET_HOST_TRANS_TCP;
                         if (VIR_STRDUP(def->src->path, vdi) < 0)
                             goto error;
                     }
@@ -2006,8 +2009,8 @@ qemuParseCommandLine(virCapsPtr caps,
                         if (VIR_ALLOC(disk->src->hosts) < 0)
                             goto error;
                         disk->src->nhosts = 1;
-                        disk->src->hosts->name = disk->src->path;
-                        if (VIR_STRDUP(disk->src->hosts->port, port) < 0)
+                        disk->src->hosts->u.inet.addr = disk->src->path;
+                        if (VIR_STRDUP(disk->src->hosts->u.inet.port, port) < 0)
                             goto error;
                         if (VIR_STRDUP(disk->src->path, vdi) < 0)
                             goto error;
@@ -2548,14 +2551,13 @@ qemuParseCommandLine(virCapsPtr caps,
                     goto error;
                 }
             }
-            first_rbd_disk->src->hosts[first_rbd_disk->src->nhosts].port = port;
-            if (VIR_STRDUP(first_rbd_disk->src->hosts[first_rbd_disk->src->nhosts].name,
+            first_rbd_disk->src->hosts[first_rbd_disk->src->nhosts].u.inet.port = port;
+            if (VIR_STRDUP(first_rbd_disk->src->hosts[first_rbd_disk->src->nhosts].u.inet.addr,
                            token) < 0) {
                 VIR_FREE(hosts);
                 goto error;
             }
-            first_rbd_disk->src->hosts[first_rbd_disk->src->nhosts].transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
-            first_rbd_disk->src->hosts[first_rbd_disk->src->nhosts].socket = NULL;
+            first_rbd_disk->src->hosts[first_rbd_disk->src->nhosts].type = VIR_STORAGE_NET_HOST_TRANS_TCP;
 
             first_rbd_disk->src->nhosts++;
             token = strtok_r(NULL, ",", &saveptr);
