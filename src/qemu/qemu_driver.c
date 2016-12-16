@@ -16657,6 +16657,7 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
     virQEMUDriverConfigPtr cfg = NULL;
     const char *format = NULL;
     int desttype = virStorageSourceGetActualType(mirror);
+    virErrorPtr monitor_error = NULL;
 
     /* Preliminaries: find the disk we are editing, sanity checks */
     virCheckFlags(VIR_DOMAIN_BLOCK_COPY_SHALLOW |
@@ -16801,6 +16802,7 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         ret = -1;
     if (ret < 0) {
+        monitor_error = virSaveLastError();
         qemuDomainDiskChainElementRevoke(driver, vm, mirror);
         goto endjob;
     }
@@ -16821,6 +16823,10 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
         VIR_WARN("unable to unlink just-created %s", mirror->path);
     virStorageSourceFree(mirror);
     qemuDomainObjEndJob(driver, vm);
+    if (monitor_error) {
+        virSetError(monitor_error);
+        virFreeError(monitor_error);
+    }
 
  cleanup:
     VIR_FREE(device);
