@@ -54,15 +54,12 @@ AC_DEFUN([LIBVIRT_CHECK_LIB],[
   m4_pushdef([header_name], [$4])
 
   m4_pushdef([check_name_lc], m4_tolower(check_name))
-  m4_pushdef([check_name_dash], m4_translit(check_name_lc, [_], [-]))
 
   m4_pushdef([config_var], [WITH_]check_name)
   m4_pushdef([make_var], [WITH_]check_name)
   m4_pushdef([cflags_var], check_name[_CFLAGS])
   m4_pushdef([libs_var], check_name[_LIBS])
   m4_pushdef([with_var], [with_]check_name_lc)
-
-  LIBVIRT_ARG_WITH(check_name, library_name, [check])
 
   old_LIBS=$LIBS
   old_CFLAGS=$CFLAGS
@@ -122,7 +119,6 @@ AC_DEFUN([LIBVIRT_CHECK_LIB],[
   m4_popdef([make_var])
   m4_popdef([config_var])
 
-  m4_popdef([check_name_dash])
   m4_popdef([check_name_lc])
 
   m4_popdef([header_name])
@@ -179,7 +175,6 @@ AC_DEFUN([LIBVIRT_CHECK_LIB_ALT],[
   m4_pushdef([header_name_alt], [$8])
 
   m4_pushdef([check_name_lc], m4_tolower(check_name))
-  m4_pushdef([check_name_dash], m4_translit(check_name_lc, [_], [-]))
 
   m4_pushdef([config_var], [WITH_]check_name)
   m4_pushdef([make_var], [WITH_]check_name)
@@ -188,8 +183,6 @@ AC_DEFUN([LIBVIRT_CHECK_LIB_ALT],[
   m4_pushdef([with_var], [with_]check_name_lc)
   m4_pushdef([config_var_alt], [WITH_]check_name_alt)
   m4_pushdef([make_var_alt], [WITH_]check_name_alt)
-
-  LIBVIRT_ARG_WITH(check_name, library_name, [check])
 
   old_LIBS=$LIBS
   old_CFLAGS=$CFLAGS
@@ -266,7 +259,6 @@ AC_DEFUN([LIBVIRT_CHECK_LIB_ALT],[
   m4_popdef([config_var])
 
   m4_popdef([check_name_lc])
-  m4_popdef([check_name_dash])
 
   m4_popdef([header_name_alt])
   m4_popdef([function_name_alt])
@@ -304,15 +296,12 @@ AC_DEFUN([LIBVIRT_CHECK_PKG],[
   m4_pushdef([pc_version], [$3])
 
   m4_pushdef([check_name_lc], m4_tolower(check_name))
-  m4_pushdef([check_name_dash], m4_translit(check_name_lc, [_], [-]))
 
   m4_pushdef([config_var], [WITH_]check_name)
   m4_pushdef([make_var], [WITH_]check_name)
   m4_pushdef([cflags_var], check_name[_CFLAGS])
   m4_pushdef([libs_var], check_name[_LIBS])
   m4_pushdef([with_var], [with_]check_name_lc)
-
-  LIBVIRT_ARG_WITH(check_name, pc_name, [check], pc_version)
 
   fail=0
   if test "x$with_var" != "xno" ; then
@@ -343,7 +332,6 @@ AC_DEFUN([LIBVIRT_CHECK_PKG],[
   m4_popdef([config_var])
 
   m4_popdef([check_name_lc])
-  m4_popdef([check_name_dash])
 
   m4_popdef([pc_version])
   m4_popdef([pc_name])
