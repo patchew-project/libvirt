@@ -9884,9 +9884,9 @@ qemuDomainSetPerfEvents(virDomainPtr dom,
             type = virPerfEventTypeFromString(param->field);
 
             if (!enabled && virPerfEventDisable(priv->perf, type) < 0)
-                goto endjob;
+                continue;
             if (enabled && virPerfEventEnable(priv->perf, type, vm->pid) < 0)
-                goto endjob;
+                continue;
 
             def->perf.events[type] = enabled ?
                 VIR_TRISTATE_BOOL_YES : VIR_TRISTATE_BOOL_NO;
