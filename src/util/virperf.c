@@ -67,73 +67,71 @@ struct virPerf {
 # include <linux/perf_event.h>
 
 struct virPerfEventAttr {
-    int type;
     unsigned int attrType;
     unsigned long long attrConfig;
 };
 
 static struct virPerfEventAttr attrs[] = {
-    {.type = VIR_PERF_EVENT_CMT, .attrType = 0, .attrConfig = 1},
-    {.type = VIR_PERF_EVENT_MBMT, .attrType = 0, .attrConfig = 2},
-    {.type = VIR_PERF_EVENT_MBML, .attrType = 0, .attrConfig = 3},
-    {.type = VIR_PERF_EVENT_CPU_CYCLES,
-     .attrType = PERF_TYPE_HARDWARE,
-     .attrConfig = PERF_COUNT_HW_CPU_CYCLES},
-    {.type = VIR_PERF_EVENT_INSTRUCTIONS,
-     .attrType = PERF_TYPE_HARDWARE,
-     .attrConfig = PERF_COUNT_HW_INSTRUCTIONS},
-    {.type = VIR_PERF_EVENT_CACHE_REFERENCES,
-     .attrType = PERF_TYPE_HARDWARE,
-     .attrConfig = PERF_COUNT_HW_CACHE_REFERENCES},
-    {.type = VIR_PERF_EVENT_CACHE_MISSES,
-     .attrType = PERF_TYPE_HARDWARE,
-     .attrConfig = PERF_COUNT_HW_CACHE_MISSES},
-    {.type = VIR_PERF_EVENT_BRANCH_INSTRUCTIONS,
-     .attrType = PERF_TYPE_HARDWARE,
-     .attrConfig = PERF_COUNT_HW_BRANCH_INSTRUCTIONS},
-    {.type = VIR_PERF_EVENT_BRANCH_MISSES,
-     .attrType = PERF_TYPE_HARDWARE,
-     .attrConfig = PERF_COUNT_HW_BRANCH_MISSES},
-    {.type = VIR_PERF_EVENT_BUS_CYCLES,
-     .attrType = PERF_TYPE_HARDWARE,
-     .attrConfig = PERF_COUNT_HW_BUS_CYCLES},
-    {.type = VIR_PERF_EVENT_STALLED_CYCLES_FRONTEND,
-     .attrType = PERF_TYPE_HARDWARE,
-     .attrConfig = PERF_COUNT_HW_STALLED_CYCLES_FRONTEND},
-    {.type = VIR_PERF_EVENT_STALLED_CYCLES_BACKEND,
-     .attrType = PERF_TYPE_HARDWARE,
-     .attrConfig = PERF_COUNT_HW_STALLED_CYCLES_BACKEND},
-    {.type = VIR_PERF_EVENT_REF_CPU_CYCLES,
+    [VIR_PERF_EVENT_CMT] = {
+        .attrType = 0,
+        .attrConfig = 1
+    },
+    [VIR_PERF_EVENT_MBMT] = {
+        .attrType = 0,
+        .attrConfig = 2
+    },
+    [VIR_PERF_EVENT_MBML] {
+        .attrType = 0,
+        .attrConfig = 3
+    },
+    [VIR_PERF_EVENT_CPU_CYCLES] = {
+        .attrType = PERF_TYPE_HARDWARE,
+        .attrConfig = PERF_COUNT_HW_CPU_CYCLES
+    },
+    [VIR_PERF_EVENT_INSTRUCTIONS] = {
+        .attrType = PERF_TYPE_HARDWARE,
+        .attrConfig = PERF_COUNT_HW_INSTRUCTIONS
+    },
+    [VIR_PERF_EVENT_CACHE_REFERENCES] = {
+        .attrType = PERF_TYPE_HARDWARE,
+        .attrConfig = PERF_COUNT_HW_CACHE_REFERENCES
+    },
+    [VIR_PERF_EVENT_CACHE_MISSES] = {
+        .attrType = PERF_TYPE_HARDWARE,
+        .attrConfig = PERF_COUNT_HW_CACHE_MISSES
+    },
+    [VIR_PERF_EVENT_BRANCH_INSTRUCTIONS] = {
+        .attrType = PERF_TYPE_HARDWARE,
+        .attrConfig = PERF_COUNT_HW_BRANCH_INSTRUCTIONS
+    },
+    [VIR_PERF_EVENT_BRANCH_MISSES] = {
+        .attrType = PERF_TYPE_HARDWARE,
+        .attrConfig = PERF_COUNT_HW_BRANCH_MISSES
+    },
+    [VIR_PERF_EVENT_BUS_CYCLES] = {
+        .attrType = PERF_TYPE_HARDWARE,
+        .attrConfig = PERF_COUNT_HW_BUS_CYCLES
+    },
+    [VIR_PERF_EVENT_STALLED_CYCLES_FRONTEND] = {
+        .attrType = PERF_TYPE_HARDWARE,
+        .attrConfig = PERF_COUNT_HW_STALLED_CYCLES_FRONTEND
+    },
+    [VIR_PERF_EVENT_STALLED_CYCLES_BACKEND] = {
+        .attrType = PERF_TYPE_HARDWARE,
+        .attrConfig = PERF_COUNT_HW_STALLED_CYCLES_BACKEND
+    },
+    [VIR_PERF_EVENT_REF_CPU_CYCLES] = {
 # ifdef PERF_COUNT_HW_REF_CPU_CYCLES
-     .attrType = PERF_TYPE_HARDWARE,
-     .attrConfig = PERF_COUNT_HW_REF_CPU_CYCLES
+        .attrType = PERF_TYPE_HARDWARE,
+        .attrConfig = PERF_COUNT_HW_REF_CPU_CYCLES
 # else
-     .attrType = 0,
-     .attrConfig = 0,
+        .attrType = 0,
+        .attrConfig = 0,
 # endif
     },
 };
+verify(ARRAY_CARDINALITY(attrs) == VIR_PERF_EVENT_LAST);
 typedef struct virPerfEventAttr *virPerfEventAttrPtr;
-
-
-static virPerfEventAttrPtr
-virPerfGetEventAttr(virPerfEventType type)
-{
-    size_t i;
-    if (type >= VIR_PERF_EVENT_LAST) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Event '%d' is not supported"),
-                       type);
-        return NULL;
-    }
-
-    for (i = 0; i < VIR_PERF_EVENT_LAST; i++) {
-        if (i == type)
-            return attrs + i;
-    }
-
-    return NULL;
-}
 
 
 static int
@@ -193,17 +191,15 @@ virPerfEventEnable(virPerfPtr perf,
     char *buf = NULL;
     struct perf_event_attr attr;
     virPerfEventPtr event = virPerfGetEvent(perf, type);
-    virPerfEventAttrPtr event_attr = virPerfGetEventAttr(type);
+    virPerfEventAttrPtr event_attr = &attrs[type];
 
-    if (!event || !event_attr)
+    if (!event)
         return -1;
 
-    if (event_attr->attrType == 0 && (type == VIR_PERF_EVENT_CMT ||
-                                       type == VIR_PERF_EVENT_MBMT ||
-                                       type == VIR_PERF_EVENT_MBML)) {
+    if (event_attr->attrType == 0) {
         virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED,
                        _("unable to enable host cpu perf event for %s"),
-                       virPerfEventTypeToString(event->type));
+                       virPerfEventTypeToString(type));
         return -1;
     }
 
