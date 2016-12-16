@@ -46,7 +46,6 @@ VIR_ENUM_IMPL(virPerfEvent, VIR_PERF_EVENT_LAST,
               "stalled_cycles_backend", "ref_cpu_cycles");
 
 struct virPerfEvent {
-    int type;
     int fd;
     bool enabled;
     union {
@@ -166,23 +165,6 @@ virPerfRdtAttrInit(void)
 }
 
 
-static virPerfEventPtr
-virPerfGetEvent(virPerfPtr perf,
-                virPerfEventType type)
-{
-    if (!perf)
-        return NULL;
-
-    if (type >= VIR_PERF_EVENT_LAST) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Event '%d' is not supported"),
-                       type);
-        return NULL;
-    }
-
-    return perf->events + type;
-}
-
 int
 virPerfEventEnable(virPerfPtr perf,
                    virPerfEventType type,
@@ -190,11 +172,8 @@ virPerfEventEnable(virPerfPtr perf,
 {
     char *buf = NULL;
     struct perf_event_attr attr;
-    virPerfEventPtr event = virPerfGetEvent(perf, type);
+    virPerfEventPtr event = &(perf->events[type]);
     virPerfEventAttrPtr event_attr = &attrs[type];
-
-    if (!event)
-        return -1;
 
     if (event_attr->attrType == 0) {
         virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED,
@@ -229,14 +208,14 @@ virPerfEventEnable(virPerfPtr perf,
     if (event->fd < 0) {
         virReportSystemError(errno,
                              _("unable to open host cpu perf event for %s"),
-                             virPerfEventTypeToString(event->type));
+                             virPerfEventTypeToString(type));
         goto error;
     }
 
     if (ioctl(event->fd, PERF_EVENT_IOC_ENABLE) < 0) {
         virReportSystemError(errno,
                              _("unable to enable host cpu perf event for %s"),
-                             virPerfEventTypeToString(event->type));
+                             virPerfEventTypeToString(type));
         goto error;
     }
 
@@ -253,9 +232,7 @@ int
 virPerfEventDisable(virPerfPtr perf,
                     virPerfEventType type)
 {
-    virPerfEventPtr event = virPerfGetEvent(perf, type);
-    if (event == NULL)
-        return -1;
+    virPerfEventPtr event = &(perf->events[type]);
 
     if (!event->enabled)
         return 0;
@@ -263,7 +240,7 @@ virPerfEventDisable(virPerfPtr perf,
     if (ioctl(event->fd, PERF_EVENT_IOC_DISABLE) < 0) {
         virReportSystemError(errno,
                              _("unable to disable host cpu perf event for %s"),
-                             virPerfEventTypeToString(event->type));
+                             virPerfEventTypeToString(type));
         return -1;
     }
 
@@ -275,11 +252,7 @@ virPerfEventDisable(virPerfPtr perf,
 bool virPerfEventIsEnabled(virPerfPtr perf,
                            virPerfEventType type)
 {
-    virPerfEventPtr event = virPerfGetEvent(perf, type);
-    if (event == NULL)
-        return false;
-
-    return event->enabled;
+    return perf->events[type].enabled;
 }
 
 int
@@ -287,8 +260,8 @@ virPerfReadEvent(virPerfPtr perf,
                  virPerfEventType type,
                  uint64_t *value)
 {
-    virPerfEventPtr event = virPerfGetEvent(perf, type);
-    if (event == NULL || !event->enabled)
+    virPerfEventPtr event = &perf->events[type];
+    if (!event->enabled)
         return -1;
 
     if (saferead(event->fd, value, sizeof(uint64_t)) < 0) {
@@ -359,7 +332,6 @@ virPerfNew(void)
         return NULL;
 
     for (i = 0; i < VIR_PERF_EVENT_LAST; i++) {
-        perf->events[i].type = i;
         perf->events[i].fd = -1;
         perf->events[i].enabled = false;
     }
