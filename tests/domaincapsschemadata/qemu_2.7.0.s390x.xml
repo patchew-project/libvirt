@@ -20,9 +20,7 @@
   </os>
   <cpu>
     <mode name='host-passthrough' supported='yes'/>
-    <mode name='host-model' supported='yes'>
-      <model fallback='allow'></model>
-    </mode>
+    <mode name='host-model' supported='no'/>
     <mode name='custom' supported='no'/>
   </cpu>
   <devices>
