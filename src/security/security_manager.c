@@ -235,6 +235,44 @@ virSecurityManagerPostFork(virSecurityManagerPtr mgr)
     virObjectUnlock(mgr);
 }
 
+
+int
+virSecurityManagerTransactionStart(virSecurityManagerPtr mgr)
+{
+    int ret = 0;
+
+    virObjectLock(mgr);
+    if (mgr->drv->transactionStart)
+        ret = mgr->drv->transactionStart(mgr);
+    virObjectUnlock(mgr);
+    return ret;
+}
+
+
+int
+virSecurityManagerTransactionCommit(virSecurityManagerPtr mgr,
+                                    pid_t pid)
+{
+    int ret = 0;
+
+    virObjectLock(mgr);
+    if (mgr->drv->transactionCommit)
+        ret = mgr->drv->transactionCommit(mgr, pid);
+    virObjectUnlock(mgr);
+    return ret;
+}
+
+
+void
+virSecurityManagerTransactionAbort(virSecurityManagerPtr mgr)
+{
+    virObjectLock(mgr);
+    if (mgr->drv->transactionAbort)
+        mgr->drv->transactionAbort(mgr);
+    virObjectUnlock(mgr);
+}
+
+
 void *
 virSecurityManagerGetPrivateData(virSecurityManagerPtr mgr)
 {
