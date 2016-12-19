@@ -329,10 +329,11 @@ qemuAutostartDomains(virQEMUDriverPtr driver)
 
 
 static int
-qemuSecurityChownCallback(virStorageSourcePtr src,
+qemuSecurityChownCallback(const virStorageSource *storage,
                           uid_t uid,
                           gid_t gid)
 {
+    virStorageSourcePtr src = NULL;
     struct stat sb;
     int save_errno = 0;
     int ret = -1;
@@ -340,26 +341,35 @@ qemuSecurityChownCallback(virStorageSourcePtr src,
     if (!virStorageFileSupportsSecurityDriver(src))
         return 0;
 
+    if (!(src = virStorageSourceCopy(storage, false)))
+        goto cleanup;
+
     if (virStorageSourceIsLocalStorage(src)) {
         /* use direct chmod for local files so that the file doesn't
          * need to be initialized */
-        if (!src->path)
-            return 0;
+        if (!src->path) {
+            ret = 0;
+            goto cleanup;
+        }
 
         if (stat(src->path, &sb) >= 0) {
             if (sb.st_uid == uid &&
                 sb.st_gid == gid) {
                 /* It's alright, there's nothing to change anyway. */
-                return 0;
+                ret = 0;
+                goto cleanup;
             }
         }
 
-        return chown(src->path, uid, gid);
+        ret = chown(src->path, uid, gid);
+        goto cleanup;
     }
 
     /* storage file init reports errors, return -2 on failure */
-    if (virStorageFileInit(src) < 0)
-        return -2;
+    if (virStorageFileInit(src) < 0) {
+        ret = -2;
+        goto cleanup;
+    }
 
     if (virStorageFileChown(src, uid, gid) < 0) {
         save_errno = errno;
@@ -370,7 +380,9 @@ qemuSecurityChownCallback(virStorageSourcePtr src,
 
  cleanup:
     virStorageFileDeinit(src);
-    errno = save_errno;
+    virStorageSourceFree(src);
+    if (save_errno)
+        errno = save_errno;
 
     return ret;
 }
