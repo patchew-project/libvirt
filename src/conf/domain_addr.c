@@ -867,6 +867,66 @@ virDomainPCIAddressReserveNextSlot(virDomainPCIAddressSetPtr addrs,
 }
 
 
+typedef struct {
+    virPCIDeviceAddressPtr addr;
+    bool isMulti;
+} virDomainPCIAddressIsMultiIterData;
+
+
+static int
+virDomainPCIAddressIsMultiIter(virDomainDefPtr def ATTRIBUTE_UNUSED,
+                               virDomainDeviceDefPtr dev ATTRIBUTE_UNUSED,
+                               virDomainDeviceInfoPtr info,
+                               void *data)
+{
+    virDomainPCIAddressIsMultiIterData *context = data;
+    virPCIDeviceAddressPtr testAddr = context->addr;
+    virPCIDeviceAddressPtr thisAddr;
+
+    if (!info || info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI)
+       return 0;
+
+    thisAddr = &info->addr.pci;
+
+    if (thisAddr->domain == testAddr->domain &&
+        thisAddr->bus == testAddr->bus &&
+        thisAddr->slot == testAddr->slot &&
+        thisAddr->function != testAddr->function) {
+        context->isMulti = true;
+        return -1; /* finish early, *NOT* an error */
+    }
+
+    return 0;
+}
+
+
+/**
+ * virDomainPCIAddressIsMulti():
+ *
+ * @def: the domain definition whose devices need adjusting
+ * @addr: the address to check
+ *
+ * See if there is any PCI device in the domain with the same
+ * domain/bus/slot but different function. If so, then this address is
+ * used by a multifunction device.
+ *
+ * Returns true if the address is being used by multiple devices, else
+ * false.
+ */
+bool
+virDomainPCIAddressIsMulti(const virDomainDef *def,
+                           virPCIDeviceAddressPtr addr)
+{
+    virDomainPCIAddressIsMultiIterData data = { .addr = addr,
+                                                .isMulti = false };
+
+    ignore_value(virDomainDeviceInfoIterate((virDomainDefPtr)def,
+                                            virDomainPCIAddressIsMultiIter,
+                                            &data));
+    return data.isMulti;
+}
+
+
 static char*
 virDomainCCWAddressAsString(virDomainDeviceCCWAddressPtr addr)
 {
