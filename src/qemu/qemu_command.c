@@ -295,6 +295,7 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
     int ret = -1;
     char *devStr = NULL;
     const char *contAlias = NULL;
+    virTristateSwitch multi = VIR_TRISTATE_SWITCH_ABSENT;
 
     if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
         size_t i;
@@ -327,6 +328,8 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
             goto cleanup;
         }
 
+        multi = info->addr.pci.multi;
+
         if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_PCI_MULTIFUNCTION)) {
             if (info->addr.pci.function != 0) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
@@ -340,6 +343,15 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
                                  "this QEMU binary"));
                 goto cleanup;
             }
+        } else if (info->addr.pci.function == 0 &&
+                   multi == VIR_TRISTATE_SWITCH_ABSENT &&
+                   virDomainPCIAddressIsMulti(domainDef, &info->addr.pci)) {
+            /* Even if the config doesn't tell us, by definition we
+             * must have multifunction=on in the commandline for the
+             * device at function 0 if there are any other devices on
+             * the same slot.
+             */
+            multi = VIR_TRISTATE_SWITCH_ON;
         }
 
         if (info->addr.pci.bus != 0 &&
@@ -351,9 +363,9 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
         }
         virBufferAsprintf(buf, ",bus=%s", contAlias);
 
-        if (info->addr.pci.multi == VIR_TRISTATE_SWITCH_ON)
+        if (multi == VIR_TRISTATE_SWITCH_ON)
             virBufferAddLit(buf, ",multifunction=on");
-        else if (info->addr.pci.multi == VIR_TRISTATE_SWITCH_OFF)
+        else if (multi == VIR_TRISTATE_SWITCH_OFF)
             virBufferAddLit(buf, ",multifunction=off");
         virBufferAsprintf(buf, ",addr=0x%x", info->addr.pci.slot);
         if (info->addr.pci.function != 0)
