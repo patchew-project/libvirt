@@ -248,7 +248,8 @@ int qemuMigrationCancel(virQEMUDriverPtr driver,
 int qemuMigrationFetchJobStatus(virQEMUDriverPtr driver,
                                 virDomainObjPtr vm,
                                 qemuDomainAsyncJob asyncJob,
-                                qemuDomainJobInfoPtr jobInfo);
+                                qemuDomainJobInfoPtr jobInfo,
+                                bool check_status);
 
 int qemuMigrationErrorInit(virQEMUDriverPtr driver);
 void qemuMigrationErrorSave(virQEMUDriverPtr driver,

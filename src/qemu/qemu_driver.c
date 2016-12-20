@@ -13010,8 +13010,7 @@ qemuDomainGetJobStatsInternal(virQEMUDriverPtr driver,
     if (completed)
         fetch = false;
 
-    /* Do not ask QEMU if migration is not even running yet  */
-    if (!priv->job.current || !priv->job.current->stats.status)
+    if (!priv->job.current)
         fetch = false;
 
     if (fetch) {
@@ -13050,7 +13049,7 @@ qemuDomainGetJobStatsInternal(virQEMUDriverPtr driver,
         jobInfo->type == VIR_DOMAIN_JOB_UNBOUNDED) {
         if (fetch)
             ret = qemuMigrationFetchJobStatus(driver, vm, QEMU_ASYNC_JOB_NONE,
-                                              jobInfo);
+                                              jobInfo, true);
         else
             ret = qemuDomainJobInfoUpdateTime(jobInfo);
     } else {

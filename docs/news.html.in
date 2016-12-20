@@ -42,6 +42,10 @@
           cpu cycles, stalled backend cpu cycles, and ref cpu
           cycles by applications running on the platform
           </li>
+          <li>qemu: show disks stats for nbd disks migration<br/>
+          Show disks stats in migrations stats in disks copy phase
+          of migration with non-shared disks.
+          </li>
         </ul>
       </li>
       <li><strong>Bug fixes</strong>
