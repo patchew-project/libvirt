@@ -377,3 +377,45 @@ virNetDevOpenvswitchInterfaceStats(const char *ifname,
     virCommandFree(cmd);
     return ret;
 }
+
+/**
+ * virNetDevOpenvswitchVhostuserGetIfname:
+ * @path: the path of the unix socket
+ *
+ * Retreives the ovs ifname from vhostuser unix socket path
+ *
+ * Returns a new string which must be deallocated by caller or NULL
+ */
+char *
+virNetDevOpenvswitchGetVhostuserIfname(const char *path)
+{
+    virCommandPtr cmd = NULL;
+    char *ifname = NULL;
+    char **tokens = NULL;
+    size_t ntokens = 0;
+
+    /* Openvswitch vhostuser path are hardcoded to
+     * /<runstatedir>/openvswitch/<ifname>
+     * for example: /var/run/openvswitch/dpdkvhostuser0
+     *
+     * so we pick the filename and check it's a openvswitch interface
+     */
+    if ((tokens = virStringSplitCount(path, "/", 0, &ntokens))) {
+         if (VIR_STRDUP(ifname, tokens[ntokens - 1]) < 0)
+             goto cleanup;
+    }
+    if (ifname != NULL) {
+        cmd = virCommandNewArgList(OVSVSCTL, "--timeout=5", "get", "Interface",
+                                   ifname, "name", NULL);
+        if (virCommandRun(cmd, NULL) < 0) {
+            /* it's not a openvswitch vhostuser interface */
+            VIR_FREE(ifname);
+        }
+    }
+
+ cleanup:
+    virStringListFreeCount(tokens, ntokens);
+    virCommandFree(cmd);
+    return ifname;
+
+}
