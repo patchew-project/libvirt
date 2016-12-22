@@ -3584,7 +3584,8 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
      * can remove the luks object password too
      */
     if (!virStorageSourceIsEmpty(disk->src) && disk->src->encryption &&
-        disk->src->encryption->format == VIR_STORAGE_ENCRYPTION_FORMAT_LUKS) {
+        disk->src->encryption->format == VIR_STORAGE_ENCRYPTION_FORMAT_LUKS &&
+        disk->src->encryption->nsecrets > 0) {
 
         if (!(encAlias =
               qemuDomainGetSecretAESAlias(disk->info.alias, true))) {
