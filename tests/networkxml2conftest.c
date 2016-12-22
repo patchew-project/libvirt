@@ -71,11 +71,16 @@ testCompareXMLToConfHelper(const void *data)
     const testInfo *info = data;
     char *inxml = NULL;
     char *outxml = NULL;
+#ifdef __linux__
+    const char *os = "linux";
+#else
+    const char *os = "other";
+#endif
 
     if (virAsprintf(&inxml, "%s/networkxml2confdata/%s.xml",
                     abs_srcdir, info->name) < 0 ||
-        virAsprintf(&outxml, "%s/networkxml2confdata/%s.conf",
-                    abs_srcdir, info->name) < 0) {
+        virAsprintf(&outxml, "%s/networkxml2confdata/%s-%s.conf",
+                    abs_srcdir, info->name, os) < 0) {
         goto cleanup;
     }
 
