@@ -18069,6 +18069,12 @@ qemuDomainSetMetadata(virDomainPtr dom,
                                   driver->xmlopt, cfg->stateDir,
                                   cfg->configDir, flags);
 
+    if (ret == 0) {
+        virObjectEventPtr ev = NULL;
+        ev = virDomainEventMetadataChangeNewFromObj(vm, type, uri);
+        qemuDomainEventQueue(driver, ev);
+    }
+
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
