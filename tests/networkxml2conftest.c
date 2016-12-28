@@ -19,15 +19,25 @@
 #define VIR_FROM_THIS VIR_FROM_NONE
 
 static int
-testCompareXMLToConfFiles(const char *inxml, const char *outconf, dnsmasqCapsPtr caps)
+testCompareXMLToConfFiles(const char *inxml,
+                          const char *outconf,
+                          dnsmasqCapsPtr caps)
 {
     char *actual = NULL;
+    char *expected = NULL;
     int ret = -1;
     virNetworkDefPtr dev = NULL;
     virNetworkObjPtr obj = NULL;
     virCommandPtr cmd = NULL;
     char *pidfile = NULL;
     dnsmasqContext *dctx = NULL;
+    const char *loopback_name = "lo";
+    const char *loopback_placeholder = "@LOOPBACK_NAME@";
+    char *tmp = NULL;
+
+#ifndef __linux__
+    loname = "lo0";
+#endif
 
     if (!(dev = virNetworkDefParseFile(inxml)))
         goto fail;
@@ -45,13 +55,40 @@ testCompareXMLToConfFiles(const char *inxml, const char *outconf, dnsmasqCapsPtr
                                    dctx, caps) < 0)
         goto fail;
 
-    if (virTestCompareToFile(actual, outconf) < 0)
+    /* Regeneration option is sacrificed so that we can have one file for both
+     * Linux and non-Linux outputs */
+    if (virTestLoadFile(outconf, &expected) < 0)
         goto fail;
+
+    tmp = strstr(expected, loopback_placeholder);
+    if (tmp) {
+        size_t placeholder_len = strlen(loopback_placeholder);
+        size_t loname_len = strlen(loopback_name);
+
+        if (loname_len > placeholder_len) {
+            fprintf(stderr, "%s", "Increase the loopback placeholder size");
+            goto fail;
+        }
+
+        if (!virStrncpy(tmp, loopback_name, strlen(loopback_name), strlen(tmp)))
+            goto fail;
+
+        memmove(tmp + loname_len, tmp + placeholder_len,
+                strlen(tmp + placeholder_len) + 1);
+    }
+
+    if (STRNEQ_NULLABLE(actual, expected)) {
+        virTestDifferenceFullNoRegenerate(stderr,
+                                          expected, outconf,
+                                          actual, NULL);
+        goto fail;
+    }
 
     ret = 0;
 
  fail:
     VIR_FREE(actual);
+    VIR_FREE(expected);
     VIR_FREE(pidfile);
     virCommandFree(cmd);
     virObjectUnref(obj);
