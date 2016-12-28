@@ -8891,18 +8891,19 @@ cmdPerf(vshControl *ctl, const vshCmd *cmd)
             vshError(ctl, "%s", _("Unable to get perf events"));
             goto cleanup;
         }
-        for (i = 0; i < nparams; i++) {
-            if (params[i].type == VIR_TYPED_PARAM_BOOLEAN &&
-                params[i].value.b) {
-                vshPrint(ctl, "%-15s: %s\n", params[i].field, _("enabled"));
-            } else {
-                vshPrint(ctl, "%-15s: %s\n", params[i].field, _("disabled"));
-            }
-        }
     } else {
         if (virDomainSetPerfEvents(dom, params, nparams, flags) != 0) {
             vshError(ctl, "%s", _("Unable to enable/disable perf events"));
             goto cleanup;
+        } else {
+            for (i = 0; i < nparams; i++) {
+                if (params[i].type == VIR_TYPED_PARAM_BOOLEAN &&
+                    params[i].value.b) {
+                    vshPrint(ctl, "%-15s: %s\n", params[i].field, _("enabled"));
+                } else {
+                    vshPrint(ctl, "%-15s: %s\n", params[i].field, _("disabled"));
+                }
+            }
         }
     }
 
