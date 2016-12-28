@@ -42,7 +42,7 @@ testCompareXMLToConfFiles(const char *inxml, const char *outconf, dnsmasqCapsPtr
         goto fail;
 
     if (networkDnsmasqConfContents(obj, pidfile, &actual,
-                        dctx, caps) < 0)
+                                   dctx, caps) < 0)
         goto fail;
 
     if (virTestCompareToFile(actual, outconf) < 0)
