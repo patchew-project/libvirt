@@ -95,6 +95,9 @@ virStorageBackendRBDOpenRADOSConn(virStorageBackendRBDStatePtr ptr,
             goto cleanup;
         }
 
+        /* try default location, but ignore failure */
+        rados_conf_read_file(ptr->cluster, NULL);
+
         if (!conn) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("'ceph' authentication not supported "
@@ -124,6 +127,10 @@ virStorageBackendRBDOpenRADOSConn(virStorageBackendRBDStatePtr ptr,
                            _("failed to create the RADOS cluster"));
             goto cleanup;
         }
+
+        /* try default location, but ignore failure */
+        rados_conf_read_file(ptr->cluster, NULL);
+
         if (virStorageBackendRBDRADOSConfSet(ptr->cluster,
                                              "auth_supported", "none") < 0)
             goto cleanup;
