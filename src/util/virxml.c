@@ -150,7 +150,7 @@ virXPathNumber(const char *xpath,
     obj = xmlXPathEval(BAD_CAST xpath, ctxt);
     ctxt->node = relnode;
     if ((obj == NULL) || (obj->type != XPATH_NUMBER) ||
-        (isnan(obj->floatval))) {
+        (isnan((long double) obj->floatval))) {
         xmlXPathFreeObject(obj);
         return -1;
     }
@@ -183,7 +183,7 @@ virXPathLongBase(const char *xpath,
         if (virStrToLong_l((char *) obj->stringval, NULL, base, value) < 0)
             ret = -2;
     } else if ((obj != NULL) && (obj->type == XPATH_NUMBER) &&
-               (!(isnan(obj->floatval)))) {
+               (!(isnan((long double) obj->floatval)))) {
         *value = (long) obj->floatval;
         if (*value != obj->floatval)
             ret = -2;
@@ -288,7 +288,7 @@ virXPathULongBase(const char *xpath,
         if (virStrToLong_ul((char *) obj->stringval, NULL, base, value) < 0)
             ret = -2;
     } else if ((obj != NULL) && (obj->type == XPATH_NUMBER) &&
-               (!(isnan(obj->floatval)))) {
+               (!(isnan((long double) obj->floatval)))) {
         *value = (unsigned long) obj->floatval;
         if (*value != obj->floatval)
             ret = -2;
@@ -404,7 +404,7 @@ virXPathULongLong(const char *xpath,
         if (virStrToLong_ull((char *) obj->stringval, NULL, 10, value) < 0)
             ret = -2;
     } else if ((obj != NULL) && (obj->type == XPATH_NUMBER) &&
-               (!(isnan(obj->floatval)))) {
+               (!(isnan((long double) obj->floatval)))) {
         *value = (unsigned long long) obj->floatval;
         if (*value != obj->floatval)
             ret = -2;
@@ -450,7 +450,7 @@ virXPathLongLong(const char *xpath,
         if (virStrToLong_ll((char *) obj->stringval, NULL, 10, value) < 0)
             ret = -2;
     } else if ((obj != NULL) && (obj->type == XPATH_NUMBER) &&
-               (!(isnan(obj->floatval)))) {
+               (!(isnan((long double) obj->floatval)))) {
         *value = (long long) obj->floatval;
         if (*value != obj->floatval)
             ret = -2;
