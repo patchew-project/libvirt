@@ -809,6 +809,8 @@ libxlDomainCleanup(libxlDriverPrivatePtr driver,
         VIR_FREE(xml);
     }
 
+    libxlLoggerCloseFile(cfg->logger, vm->def->id);
+
     virDomainObjRemoveTransientDef(vm);
     virObjectUnref(cfg);
 }
@@ -1290,6 +1292,8 @@ libxlDomainStart(libxlDriverPrivatePtr driver,
      * be cleaned up if there are any subsequent failures.
      */
     vm->def->id = domid;
+
+    libxlLoggerOpenFile(cfg->logger, domid, vm->def->name);
 
     /* Always enable domain death events */
     if (libxl_evenable_domain_death(cfg->ctx, vm->def->id, 0, &priv->deathW))
