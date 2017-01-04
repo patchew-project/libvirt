@@ -293,6 +293,14 @@
       <li>
         <p>Update tests and/or documentation, particularly if you are adding
         a new feature or changing the output of a program.</p>
+
+        <p>If your changes are significant, you should also document them
+        in the <a href="news.html">release notes</a>. The rule of thumb is
+        that user-visible changes, such as adding new XML elements or fixing
+        all but the most obscure bugs, should be documented properly; changes
+        that are only relevant to other libvirt developers, such as code
+        refactoring, should not.
+        </p>
       </li>
     </ol>
 
