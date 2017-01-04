@@ -46,13 +46,15 @@ EXTRA_DIST = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libvirt.pc libvirt-qemu.pc libvirt-lxc.pc libvirt-admin.pc
 
-NEWS: $(srcdir)/docs/NEWS.xsl $(srcdir)/docs/news.xml
-	$(AM_V_GEN)if [ -x $(XSLTPROC) ] ; then			\
-	  $(XSLTPROC) --nonet $(srcdir)/docs/NEWS.xsl		\
-	     $(srcdir)/docs/news.xml				\
-	   | perl -0777 -pe 's/\n\n+$$/\n/'			\
-	   | perl -pe 's/[ \t]+$$//'				\
-	   > $@-t && mv $@-t $@ ; fi
+NEWS: $(srcdir)/docs/NEWS.xsl $(srcdir)/docs/news.xml $(srcdir)/docs/reformat-news.py
+	$(AM_V_GEN) \
+	if [ -x $(XSLTPROC) ]; then \
+	  $(XSLTPROC) --nonet $(srcdir)/docs/NEWS.xsl $(srcdir)/docs/news.xml >$@-tmp \
+	    || { rm -f $@-tmp; exit 1; }; \
+	  $(srcdir)/docs/reformat-news.py $@-tmp >$@ \
+	    || { rm -f $@-tmp; exit 1; }; \
+	  rm -f $@-tmp; \
+	fi
 
 $(top_srcdir)/HACKING: $(top_srcdir)/docs/hacking1.xsl \
 			$(top_srcdir)/docs/hacking2.xsl \
