@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output method="text" encoding="UTF-8"/>
+
+  <!-- This XSLT stylesheet can be applied to the XML version of the release
+       notes to produce a plain text document. The output document is not
+       formatted properly and needs to be processed further -->
+
+  <!-- Document -->
+  <xsl:template match="/releases">
+    <xsl:text>libvirt releases
+================
+</xsl:text>
+    <xsl:apply-templates select="release"/>
+  </xsl:template>
+
+  <!-- Release -->
+  <xsl:template match="release">
+    <xsl:text>
+# </xsl:text>
+    <xsl:value-of select="@version"/>
+    <xsl:text> (</xsl:text>
+    <xsl:value-of select="@date"/>
+    <xsl:text>)
+</xsl:text>
+    <xsl:apply-templates select="section"/>
+  </xsl:template>
+
+  <!-- Section -->
+  <xsl:template match="section">
+    <xsl:text>
+* </xsl:text>
+    <xsl:value-of select="@title"/>
+    <xsl:text>
+</xsl:text>
+    <xsl:apply-templates select="item"/>
+  </xsl:template>
+
+  <!-- Item -->
+  <xsl:template match="item">
+    <xsl:text>
+- </xsl:text>
+    <xsl:apply-templates select="summary"/>
+    <xsl:apply-templates select="description"/>
+  </xsl:template>
+
+  <!-- Item summary -->
+  <xsl:template match="summary">
+    <xsl:value-of select="normalize-space()"/>
+    <xsl:text>
+</xsl:text>
+  </xsl:template>
+
+  <!-- Item description -->
+  <xsl:template match="description">
+    <xsl:value-of select="normalize-space()"/>
+    <xsl:text>
+</xsl:text>
+  </xsl:template>
+
+</xsl:stylesheet>
