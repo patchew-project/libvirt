@@ -1060,6 +1060,10 @@ static const vshCmdOptDef opts_pool_list[] = {
      .type = VSH_OT_BOOL,
      .help = N_("display extended details for pools")
     },
+    {.name = "uuid",
+     .type = VSH_OT_BOOL,
+     .help = N_("display UUID of pools")
+    },
     {.name = NULL}
 };
 
@@ -1087,6 +1091,7 @@ cmdPoolList(vshControl *ctl, const vshCmd *cmd ATTRIBUTE_UNUSED)
     const char *type = NULL;
     bool details = vshCommandOptBool(cmd, "details");
     bool inactive, all;
+    bool uuid = false;
     char *outputStr = NULL;
 
     inactive = vshCommandOptBool(cmd, "inactive");
@@ -1110,6 +1115,9 @@ cmdPoolList(vshControl *ctl, const vshCmd *cmd ATTRIBUTE_UNUSED)
 
     if (vshCommandOptBool(cmd, "transient"))
         flags |= VIR_CONNECT_LIST_STORAGE_POOLS_TRANSIENT;
+
+    if (vshCommandOptBool(cmd, "uuid"))
+        uuid = true;
 
     if (vshCommandOptStringReq(ctl, cmd, "type", &type) < 0)
         return false;
@@ -1298,17 +1306,34 @@ cmdPoolList(vshControl *ctl, const vshCmd *cmd ATTRIBUTE_UNUSED)
     /* Output basic info then return if --details option not selected */
     if (!details) {
         /* Output old style header */
-        vshPrintExtra(ctl, " %-20s %-10s %-10s\n", _("Name"), _("State"),
+        vshPrintExtra(ctl, " %-20s %-10s %-10s", _("Name"), _("State"),
                       _("Autostart"));
-        vshPrintExtra(ctl, "-------------------------------------------\n");
+        if (uuid)
+            vshPrintExtra(ctl, " %-10s\n", _("UUID"));
+        else
+            vshPrintExtra(ctl, "\n");
+
+        vshPrintExtra(ctl, "-------------------------------------------");
+
+        if (uuid)
+            vshPrintExtra(ctl, "--------------------------------------\n");
+        else
+            vshPrintExtra(ctl, "\n");
 
         /* Output old style pool info */
         for (i = 0; i < list->npools; i++) {
             const char *name = virStoragePoolGetName(list->pools[i]);
-            vshPrint(ctl, " %-20s %-10s %-10s\n",
+            char uuid_str[VIR_UUID_STRING_BUFLEN];
+            vshPrint(ctl, " %-20s %-10s %-10s",
                  name,
                  poolInfoTexts[i].state,
                  poolInfoTexts[i].autostart);
+            if (uuid) {
+                virStoragePoolGetUUIDString(list->pools[i], uuid_str);
+                vshPrintExtra(ctl, " %-36s\n", uuid_str);
+            } else {
+                vshPrintExtra(ctl, "\n");
+            }
         }
 
         /* Cleanup and return */
