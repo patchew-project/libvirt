@@ -47,12 +47,17 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libvirt.pc libvirt-qemu.pc libvirt-lxc.pc libvirt-admin.pc
 
 NEWS: $(srcdir)/docs/news.xml $(srcdir)/docs/news-ascii.xsl
-	$(AM_V_GEN)if [ -x $(XSLTPROC) ] ; then			\
-	  $(XSLTPROC) --nonet $(srcdir)/docs/news-ascii.xsl	\
-	     $(srcdir)/docs/news.xml				\
-	   | perl -0777 -pe 's/\n\n+$$/\n/'			\
-	   | perl -pe 's/[ \t]+$$//'				\
-	   > $@-t && mv $@-t $@ ; fi
+	$(AM_V_GEN) \
+	if [ -x $(XSLTPROC) ]; then \
+	  $(XSLTPROC) --nonet \
+	    $(srcdir)/docs/news-ascii.xsl \
+	    $(srcdir)/docs/news.xml \
+	  >$@-tmp \
+	    || { rm -f $@-tmp; exit 1; }; \
+	  $(srcdir)/docs/reformat-news.py $@-tmp >$@ \
+	    || { rm -f $@-tmp; exit 1; }; \
+	  rm -f $@-tmp; \
+	fi
 
 $(top_srcdir)/HACKING: $(top_srcdir)/docs/hacking1.xsl \
 			$(top_srcdir)/docs/hacking2.xsl \

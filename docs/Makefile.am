@@ -156,7 +156,7 @@ schemadir = $(pkgdatadir)/schemas
 schema_DATA = $(wildcard $(srcdir)/schemas/*.rng)
 
 EXTRA_DIST=					\
-  apibuild.py genaclperms.pl \
+  apibuild.py reformat-news.py genaclperms.pl \
   site.xsl subsite.xsl newapi.xsl news-ascii.xsl news-html.xsl page.xsl \
   hacking1.xsl hacking2.xsl wrapstring.xsl \
   $(dot_html) $(dot_html_in) $(gif) $(apihtml) $(apipng) \
