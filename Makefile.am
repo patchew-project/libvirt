@@ -46,10 +46,10 @@ EXTRA_DIST = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libvirt.pc libvirt-qemu.pc libvirt-lxc.pc libvirt-admin.pc
 
-NEWS: $(top_srcdir)/docs/news.xsl $(top_srcdir)/docs/news.html.in
+NEWS: $(srcdir)/docs/news.xml $(srcdir)/docs/news-ascii.xsl
 	$(AM_V_GEN)if [ -x $(XSLTPROC) ] ; then			\
-	  $(XSLTPROC) --nonet $(top_srcdir)/docs/news.xsl	\
-	     $(top_srcdir)/docs/news.html.in			\
+	  $(XSLTPROC) --nonet $(srcdir)/docs/news-ascii.xsl	\
+	     $(srcdir)/docs/news.xml				\
 	   | perl -0777 -pe 's/\n\n+$$/\n/'			\
 	   | perl -pe 's/[ \t]+$$//'				\
 	   > $@-t && mv $@-t $@ ; fi
