@@ -1320,7 +1320,13 @@ cmdPoolList(vshControl *ctl, const vshCmd *cmd ATTRIBUTE_UNUSED)
             for (i = 0; i < list->npools; i++) {
                 char uuid_str[VIR_UUID_STRING_BUFLEN];
                 virStoragePoolGetUUIDString(list->pools[i], uuid_str);
-                vshPrint(ctl, "%-36s\n", uuid_str);
+                if (!name) {
+                    vshPrint(ctl, "%-36s\n", uuid_str);
+                } else {
+                    const char *name_str =
+                        virStoragePoolGetName(list->pools[i]);
+                    vshPrint(ctl, "%-36s %-10s\n", uuid_str, name_str);
+                }
             }
             ret = true;
             goto cleanup;
