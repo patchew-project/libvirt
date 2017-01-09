@@ -1172,6 +1172,9 @@ virNetLibsshSessionSetHostKeyVerification(virNetLibsshSessionPtr sess,
             goto error;
     }
 
+    if (!hostsfile)
+        hostsfile = "/dev/null";
+
     /* set the known hosts file */
     if (ssh_options_set(sess->session, SSH_OPTIONS_KNOWNHOSTS, hostsfile) < 0)
         goto error;
