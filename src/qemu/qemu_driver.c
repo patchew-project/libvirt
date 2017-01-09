@@ -329,10 +329,11 @@ qemuAutostartDomains(virQEMUDriverPtr driver)
 
 
 static int
-qemuSecurityChownCallback(virStorageSourcePtr src,
+qemuSecurityChownCallback(const virStorageSource *src,
                           uid_t uid,
                           gid_t gid)
 {
+    virStorageSourcePtr cpy = NULL;
     struct stat sb;
     int save_errno = 0;
     int ret = -1;
@@ -355,22 +356,28 @@ qemuSecurityChownCallback(virStorageSourcePtr src,
         }
 
         return chown(src->path, uid, gid);
-    }
+    } else {
+        if (!(cpy = virStorageSourceCopy(src, false)))
+            goto cleanup;
 
-    /* storage file init reports errors, return -2 on failure */
-    if (virStorageFileInit(src) < 0)
-        return -2;
+        /* src file init reports errors, return -2 on failure */
+        if (virStorageFileInit(cpy) < 0) {
+            ret = -2;
+            goto cleanup;
+        }
 
-    if (virStorageFileChown(src, uid, gid) < 0) {
-        save_errno = errno;
-        goto cleanup;
+        if (virStorageFileChown(cpy, uid, gid) < 0) {
+            save_errno = errno;
+            goto cleanup;
+        }
     }
 
     ret = 0;
 
  cleanup:
-    virStorageFileDeinit(src);
     errno = save_errno;
+    virStorageFileDeinit(cpy);
+    virStorageSourceFree(cpy);
 
     return ret;
 }
