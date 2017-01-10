@@ -168,6 +168,10 @@ int virDomainPCIAddressReserveNextSlot(virDomainPCIAddressSetPtr addrs,
                                        virDomainPCIConnectFlags flags)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
+void virDomainPCIAddressSetAllMulti(virDomainDefPtr def,
+                                    virDomainPCIAddressSetPtr addrs)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
 struct _virDomainCCWAddressSet {
     virHashTablePtr defined;
     virDomainDeviceCCWAddress next;

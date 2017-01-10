@@ -870,6 +870,81 @@ virDomainPCIAddressReserveNextSlot(virDomainPCIAddressSetPtr addrs,
 }
 
 
+static int
+virDomainPCIAddressSetMultiIter(virDomainDefPtr def ATTRIBUTE_UNUSED,
+                                virDomainDeviceDefPtr dev ATTRIBUTE_UNUSED,
+                                virDomainDeviceInfoPtr info,
+                                void *data)
+{
+    virPCIDeviceAddressPtr testAddr = data;
+    virPCIDeviceAddressPtr thisAddr;
+
+    if (!info || info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI)
+       return 0;
+
+    thisAddr = &info->addr.pci;
+
+    if (thisAddr->domain == testAddr->domain &&
+        thisAddr->bus == testAddr->bus &&
+        thisAddr->slot == testAddr->slot &&
+        thisAddr->function == 0) {
+
+        /* only set to ON if it wasn't previously set
+         * (assuming that the user must have better information
+         * than us if they explicitly set it OFF)
+         */
+        if (thisAddr->multi == VIR_TRISTATE_SWITCH_ABSENT)
+            thisAddr->multi = VIR_TRISTATE_SWITCH_ON;
+
+        return -1; /* finish early, *NOT* an error */
+    }
+
+    return 0;
+}
+
+
+/**
+ * virDomainPCIAddressSetAllMulti():
+ *
+ * @def: the domain definition whose devices may need adjusting
+ * @addrs: address set keeping track of all addresses in use.
+ *
+ * Look for any PCI slots that have multiple functions assigned, and
+ * set multi to YES in the address for the device at function 0
+ * (unless it has been explicitly set to NO).
+ *
+ * No return code, since there is no possibility of failure.
+ */
+void
+virDomainPCIAddressSetAllMulti(virDomainDefPtr def,
+                               virDomainPCIAddressSetPtr addrs)
+{
+    /* Scan through all the slots in @addrs looking for any that have
+     * more than just function 0 marked as in use, then use an
+     * iterator to find the DeviceInfo that uses function 0 on that
+     * slot and mark it as multi = YES
+     */
+    size_t busIdx, slotIdx;
+
+    for (busIdx = 0; busIdx < addrs->nbuses; busIdx++) {
+        virDomainPCIAddressBusPtr bus = &addrs->buses[busIdx];
+
+        for (slotIdx = bus->minSlot; slotIdx <= bus->maxSlot; slotIdx++) {
+            if (bus->slot[slotIdx].functions > 1) {
+                virPCIDeviceAddress addr = { .domain = 0,
+                                             .bus = busIdx,
+                                             .slot = slotIdx,
+                                             .function = 0 };
+
+                ignore_value(virDomainDeviceInfoIterate(def,
+                                                        virDomainPCIAddressSetMultiIter,
+                                                        &addr));
+            }
+        }
+    }
+}
+
+
 static char*
 virDomainCCWAddressAsString(virDomainDeviceCCWAddressPtr addr)
 {
