@@ -2093,6 +2093,11 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
         if (qemuDomainAssignDevicePCISlots(def, qemuCaps, addrs) < 0)
             goto cleanup;
 
+        /* set multi attribute for devices at function 0 of
+         * any slot that has multiple functions in use
+         */
+        virDomainPCIAddressSetAllMulti(def, addrs);
+
         for (i = 0; i < def->ncontrollers; i++) {
             virDomainControllerDefPtr cont = def->controllers[i];
             int idx = cont->idx;
