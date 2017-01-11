@@ -4320,6 +4320,7 @@
             <ref name="tpm"/>
             <ref name="shmem"/>
             <ref name="memorydev"/>
+            <ref name="crypto"/>
           </choice>
         </zeroOrMore>
         <optional>
@@ -4801,6 +4802,32 @@
         </attribute>
       </optional>
       <empty/>
+    </element>
+  </define>
+
+  <define name="crypto">
+    <element name="crypto">
+      <attribute name="model">
+        <choice>
+          <value>virtio</value>
+        </choice>
+      </attribute>
+      <ref name="crypto-backend"/>
+    </element>
+  </define>
+
+  <define name="crypto-backend">
+    <element name="backend">
+      <attribute name="type">
+        <choice>
+          <value>builtin</value>
+        </choice>
+      </attribute>
+      <optional>
+        <attribute name="queues">
+          <ref name="positiveInteger"/>
+        </attribute>
+      </optional>
     </element>
   </define>
 
