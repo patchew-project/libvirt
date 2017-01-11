@@ -65,8 +65,6 @@ int lxcContainerStart(virDomainDefPtr def,
                       size_t nttyPaths,
                       char **ttyPaths);
 
-int lxcContainerAvailable(int features);
-
 int lxcContainerSetupHostdevCapsMakePath(const char *dev);
 
 virArch lxcContainerGetAlt32bitArch(virArch arch);
