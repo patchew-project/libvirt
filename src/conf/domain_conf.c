@@ -12595,7 +12595,7 @@ virDomainCryptoDefParseXML(xmlNodePtr node,
     if (virDomainDeviceInfoParseXML(node, NULL, &def->info, flags) < 0)
         goto error;
 
-cleanup:
+ cleanup:
     VIR_FREE(model);
     VIR_FREE(backend);
     VIR_FREE(queues);
@@ -12603,7 +12603,7 @@ cleanup:
     ctxt->node = save;
     return def;
 
-error:
+ error:
     virDomainCryptoDefFree(def);
     def = NULL;
     goto cleanup;

@@ -332,6 +332,26 @@ qemuAssignDeviceRNGAlias(virDomainDefPtr def,
 }
 
 
+int
+qemuAssignDeviceCryptoAlias(const virDomainDef *def,
+                            virDomainCryptoDefPtr crypto)
+{
+    size_t i;
+    int maxidx = 0;
+    int idx;
+
+    for (i = 0; i < def->ncryptos; i++) {
+        if ((idx = qemuDomainDeviceAliasIndex(&def->cryptos[i]->info, "crypto")) >= maxidx)
+            maxidx = idx + 1;
+    }
+
+    if (virAsprintf(&crypto->info.alias, "crypto%d", maxidx) < 0)
+        return -1;
+
+    return 0;
+}
+
+
 /**
  * qemuAssignDeviceMemoryAlias:
  * @def: domain definition. Necessary only if @oldAlias is true.

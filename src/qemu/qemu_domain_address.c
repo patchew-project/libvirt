@@ -331,6 +331,12 @@ qemuDomainPrimeVirtioDeviceAddresses(virDomainDefPtr def,
             def->rngs[i]->info.type = type;
     }
 
+    for (i = 0; i < def->ncryptos; i++) {
+        if (def->cryptos[i]->model == VIR_DOMAIN_CRYPTO_MODEL_VIRTIO &&
+            def->cryptos[i]->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE)
+            def->cryptos[i]->info.type = type;
+    }
+
     if (type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
         for (i = 0; i < def->nfss; i++) {
             if (def->fss[i]->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE)
@@ -727,6 +733,15 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
             return 0;
         }
 
+    case VIR_DOMAIN_DEVICE_CRYPTO:
+        switch ((virDomainCryptoModel) dev->data.crypto->model) {
+        case VIR_DOMAIN_CRYPTO_MODEL_VIRTIO:
+            return virtioFlags;
+
+        case VIR_DOMAIN_RNG_MODEL_LAST:
+            return 0;
+        }
+
     case VIR_DOMAIN_DEVICE_VIDEO:
         switch ((virDomainVideoType) dev->data.video->type) {
         case VIR_DOMAIN_VIDEO_TYPE_VIRTIO:
@@ -784,7 +799,6 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_IOMMU:
-    case VIR_DOMAIN_DEVICE_CRYPTO:
     case VIR_DOMAIN_DEVICE_LAST:
     case VIR_DOMAIN_DEVICE_NONE:
         return 0;
@@ -1767,6 +1781,16 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
             continue;
 
         if (qemuDomainPCIAddressReserveNextSlot(addrs, &def->rngs[i]->info) < 0)
+            goto error;
+    }
+
+    /* VirtIO CRYPTO */
+    for (i = 0; i < def->ncryptos; i++) {
+        if (def->cryptos[i]->model != VIR_DOMAIN_CRYPTO_MODEL_VIRTIO ||
+            !virDeviceInfoPCIAddressWanted(&def->cryptos[i]->info))
+            continue;
+
+        if (qemuDomainPCIAddressReserveNextSlot(addrs, &def->cryptos[i]->info) < 0)
             goto error;
     }
 

@@ -392,6 +392,8 @@ typedef enum {
 
     /* 245 */
     QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION, /* qmp query-cpu-model-expansion */
+    QEMU_CAPS_OBJECT_CRYPTO_BUILTIN, /* -object cryptodev-backend-builtin */
+    QEMU_CAPS_DEVICE_VIRTIO_CRYPTO, /* -device virtio-crypto-pci */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;

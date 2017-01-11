@@ -356,6 +356,8 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "drive-iotune-group",
 
               "query-cpu-model-expansion", /* 245 */
+              "cryptodev-backend-builtin",
+              "virtio-crypto",
     );
 
 
@@ -1623,6 +1625,8 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "ivshmem-plain", QEMU_CAPS_DEVICE_IVSHMEM_PLAIN },
     { "ivshmem-doorbell", QEMU_CAPS_DEVICE_IVSHMEM_DOORBELL },
     { "vhost-scsi", QEMU_CAPS_DEVICE_VHOST_SCSI },
+    { "cryptodev-backend-builtin", QEMU_CAPS_OBJECT_CRYPTO_BUILTIN },
+    { "virtio-crypto-device", QEMU_CAPS_DEVICE_VIRTIO_CRYPTO },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {
