@@ -129,6 +129,8 @@
   <flag name='vhost-scsi'/>
   <flag name='drive-iotune-group'/>
   <flag name='query-cpu-model-expansion'/>
+  <flag name='cryptodev-backend-builtin'/>
+  <flag name='virtio-crypto'/>
   <version>2007093</version>
   <kvmVersion>0</kvmVersion>
   <package></package>
