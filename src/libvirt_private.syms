@@ -228,6 +228,8 @@ virDomainControllerRemove;
 virDomainControllerTypeToString;
 virDomainCpuPlacementModeTypeFromString;
 virDomainCpuPlacementModeTypeToString;
+virDomainCryptoBackendTypeFromString;
+virDomainCryptoModelTypeFromString;
 virDomainDefAddController;
 virDomainDefAddImplicitDevices;
 virDomainDefAddUSBController;
