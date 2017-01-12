@@ -85,7 +85,8 @@ VIR_ENUM_IMPL(virStorageNetProtocol, VIR_STORAGE_NET_PROTOCOL_LAST,
               "ftp",
               "ftps",
               "tftp",
-              "ssh")
+              "ssh",
+              "vxhs")
 
 VIR_ENUM_IMPL(virStorageNetHostTransport, VIR_STORAGE_NET_HOST_TRANS_LAST,
               "tcp",
@@ -2633,6 +2634,7 @@ virStorageSourceParseBackingColon(virStorageSourcePtr src,
     case VIR_STORAGE_NET_PROTOCOL_ISCSI:
     case VIR_STORAGE_NET_PROTOCOL_GLUSTER:
     case VIR_STORAGE_NET_PROTOCOL_SSH:
+    case VIR_STORAGE_NET_PROTOCOL_VXHS:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("malformed backing store path for protocol %s"),
                        protocol);
@@ -2964,6 +2966,64 @@ virStorageSourceParseBackingJSONRBD(virStorageSourcePtr src,
 }
 
 
+static int
+virStorageSourceParseBackingJSONVXHS(virStorageSourcePtr src,
+                                    virJSONValuePtr json,
+                                    int opaque ATTRIBUTE_UNUSED)
+{
+    virJSONValuePtr server;
+    const char *hostname, *port;
+    const char *uri = virJSONValueObjectGetString(json, "filename");
+    const char *vdisk_id = virJSONValueObjectGetString(json, "vdisk-id");
+
+    src->type = VIR_STORAGE_TYPE_NETWORK;
+    src->protocol = VIR_STORAGE_NET_PROTOCOL_VXHS;
+
+    /* legacy URI based syntax passed via 'filename' option */
+    if (uri)
+        return virStorageSourceParseBackingJSONUriStr(src, uri,
+                                                      VIR_STORAGE_NET_PROTOCOL_VXHS);
+
+    server = virJSONValueObjectGetObject(json, "server");
+    hostname = virJSONValueObjectGetString(server, "host");
+    port = virJSONValueObjectGetString(server, "port");
+
+    if (!vdisk_id) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("missing 'vdisk-id' attribute in "
+                         "JSON backing definition for VxHS volume"));
+        return -1;
+    }
+    if (!server) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("missing 'server' attribute in "
+                         "JSON backing definition for VxHS volume"));
+        return -1;
+    }
+    if (!hostname) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("missing hostname for tcp backing server in "
+                       "JSON backing definition for VxHS volume"));
+        return -1;
+    }
+
+
+    if (VIR_STRDUP(src->path, vdisk_id) < 0)
+        return -1;
+
+    if (VIR_ALLOC_N(src->hosts, 1) < 0)
+        return -1;
+    src->nhosts = 1;
+
+    src->hosts[0].transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
+
+    if (VIR_STRDUP(src->hosts[0].name, hostname) < 0 ||
+        VIR_STRDUP(src->hosts[0].port, port) < 0)
+        return -1;
+
+    return 0;
+}
+
 struct virStorageSourceJSONDriverParser {
     const char *drvname;
     int (*func)(virStorageSourcePtr src, virJSONValuePtr json, int opaque);
@@ -2985,6 +3045,7 @@ static const struct virStorageSourceJSONDriverParser jsonParsers[] = {
     {"sheepdog", virStorageSourceParseBackingJSONSheepdog, 0},
     {"ssh", virStorageSourceParseBackingJSONSSH, 0},
     {"rbd", virStorageSourceParseBackingJSONRBD, 0},
+    {"vxhs", virStorageSourceParseBackingJSONVXHS, 0},
 };
 
 

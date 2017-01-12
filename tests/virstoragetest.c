@@ -1492,6 +1492,22 @@ mymain(void)
                        "<source protocol='rbd' name='testshare'>\n"
                        "  <host name='example.com'/>\n"
                        "</source>\n");
+    TEST_BACKING_PARSE("json:{\"file.driver\":\"vxhs\","
+                             "\"file.filename\":\"vxhs://192.168.0.1:9999/c6718f6b-0401-441d-a8c3-1f0064d75ee0\""
+                            "}",
+                       "<source protocol='vxhs' name='c6718f6b-0401-441d-a8c3-1f0064d75ee0'>\n"
+                       "  <host name='192.168.0.1' port='9999'/>\n"
+                       "</source>\n");
+    TEST_BACKING_PARSE("json:{\"file\":{\"driver\":\"vxhs\","
+                                       "\"vdisk-id\":\"c6718f6b-0401-441d-a8c3-1f0064d75ee0\","
+                                       "\"server\": { \"host\":\"example.com\","
+                                                      "\"port\":\"1234\""
+                                                   "}"
+                                      "}"
+                            "}",
+                       "<source protocol='vxhs' name='c6718f6b-0401-441d-a8c3-1f0064d75ee0'>\n"
+                       "  <host name='example.com' port='1234'/>\n"
+                       "</source>\n");
 
  cleanup:
     /* Final cleanup */

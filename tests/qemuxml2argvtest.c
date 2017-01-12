@@ -900,6 +900,7 @@ mymain(void)
 # endif
     DO_TEST("disk-drive-network-rbd-ipv6", NONE);
     DO_TEST_FAILURE("disk-drive-network-rbd-no-colon", NONE);
+    DO_TEST("disk-drive-network-vxhs", NONE);
     DO_TEST("disk-drive-no-boot",
             QEMU_CAPS_BOOTINDEX);
     DO_TEST_PARSE_ERROR("disk-device-lun-type-invalid",
