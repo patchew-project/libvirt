@@ -778,7 +778,7 @@ virStorageBackendLogicalBuildPool(virConnectPtr conn ATTRIBUTE_UNUSED,
         /* The blkid FS and Part probing code doesn't know "lvm2" (this
          * pool's only format type), but it does know "LVM2_member", so
          * we'll pass that here */
-        if (!(flags & VIR_STORAGE_POOL_BUILD_OVERWRITE) &&
+        if ((flags & VIR_STORAGE_POOL_BUILD_NO_OVERWRITE) &&
             !virStorageBackendDeviceIsEmpty(path, "LVM2_member", true))
             goto cleanup;
 
