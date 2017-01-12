@@ -5032,6 +5032,15 @@ qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
     if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
         goto cleanup;
 
+    /* Some QEMU architectures have the query-cpu-model-expansion
+     * command, but return 'GenericError' instead of simply omitting
+     * the command entirely.
+     */
+    if (qemuMonitorJSONHasError(reply, "GenericError")) {
+        ret = 0;
+        goto cleanup;
+    }
+
     if (qemuMonitorJSONCheckError(cmd, reply) < 0)
         goto cleanup;
 
