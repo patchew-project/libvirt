@@ -2011,7 +2011,7 @@ virGetSCSIHostNameByParentaddr(unsigned int domain,
  *
  * Read the value of sysfs "fc_host" entry.
  *
- * Returns result as a stringon success, caller must free @result after
+ * Returns result as a string on success, caller must free @result after
  * Otherwise returns NULL.
  */
 char *
