@@ -2019,6 +2019,26 @@ virReadFCHost(const char *sysfs_prefix,
               int host,
               const char *entry)
 {
+   return virReadFCHostOption(sysfs_prefix, host, entry, true);
+}
+
+/* virReadFCHostOption:
+ * @sysfs_prefix: "fc_host" sysfs path, defaults to SYSFS_FC_HOST_PATH
+ * @host: Host number, E.g. 5 of "fc_host/host5"
+ * @entry: Name of the sysfs entry to read
+ * @required: If true reports error when entry not found else no error
+ *
+ * Read the value of sysfs "fc_host" entry.
+ *
+ * Returns result as a string on success, caller must free @result after
+ * Otherwise returns NULL.
+ */
+char *
+virReadFCHostOption(const char *sysfs_prefix,
+                    int host,
+                    const char *entry,
+                    bool required)
+{
     char *sysfs_path = NULL;
     char *p = NULL;
     char *buf = NULL;
@@ -2027,6 +2047,9 @@ virReadFCHost(const char *sysfs_prefix,
     if (virAsprintf(&sysfs_path, "%s/host%d/%s",
                     sysfs_prefix ? sysfs_prefix : SYSFS_FC_HOST_PATH,
                     host, entry) < 0)
+        goto cleanup;
+
+    if (!required && !virFileExists(sysfs_path))
         goto cleanup;
 
     if (virFileReadAll(sysfs_path, 1024, &buf) < 0)

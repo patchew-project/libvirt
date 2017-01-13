@@ -186,6 +186,11 @@ char *virReadFCHost(const char *sysfs_prefix,
                     int host,
                     const char *entry)
     ATTRIBUTE_NONNULL(3);
+char *virReadFCHostOption(const char *sysfs_prefix,
+                          int host,
+                          const char *entry,
+                          bool required)
+    ATTRIBUTE_NONNULL(3);
 
 bool virIsCapableFCHost(const char *sysfs_prefix, int host);
 bool virIsCapableVport(const char *sysfs_prefix, int host);

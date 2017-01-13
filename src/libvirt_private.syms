@@ -2717,6 +2717,7 @@ virParseOwnershipIds;
 virParseVersionString;
 virPipeReadUntilEOF;
 virReadFCHost;
+virReadFCHostOption;
 virReadSCSIUniqueId;
 virScaleInteger;
 virSetBlocking;
