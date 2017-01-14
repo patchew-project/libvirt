@@ -2199,6 +2199,17 @@ void virDomainStatsRecordListFree(virDomainStatsRecordPtr *stats);
  */
 # define VIR_PERF_PARAM_CACHE_L1DRA "cache_l1dra"
 
+/**
+ * VIR_PERF_PARAM_CACHE_L1DRM:
+ *
+ * Macro for typed parameter name that represents cache_l1drm
+ * perf event which can be used to measure the count of total
+ * read misses for level 1 data cache by applications running
+ * on the platform. It corresponds to the "perf.cache_l1drm"
+ * field in the *Stats APIs.
+ */
+# define VIR_PERF_PARAM_CACHE_L1DRM "cache_l1drm"
+
 int virDomainGetPerfEvents(virDomainPtr dom,
                            virTypedParameterPtr *params,
                            int *nparams,

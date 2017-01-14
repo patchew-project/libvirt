@@ -27,6 +27,7 @@
     <event name='stalled_cycles_backend' enabled='yes'/>
     <event name='ref_cpu_cycles' enabled='yes'/>
     <event name='cache_l1dra' enabled='yes'/>
+    <event name='cache_l1drm' enabled='yes'/>
   </perf>
   <devices>
   </devices>
