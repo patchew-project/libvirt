@@ -1348,7 +1348,7 @@ libshunload_la_LDFLAGS = $(MOCKLIBS_LDFLAGS)
 
 shunloadtest_SOURCES = \
 	shunloadtest.c
-shunloadtest_LDADD = $(LIB_PTHREAD)
+shunloadtest_LDADD = $(LIB_PTHREAD) $(LDADDS)
 shunloadtest_DEPENDENCIES = libshunload.la
 
 sysinfotest_SOURCES = \
