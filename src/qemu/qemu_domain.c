@@ -4001,6 +4001,7 @@ void qemuDomainObjTaint(virQEMUDriverPtr driver,
     bool closeLog = false;
 
     if (virDomainObjTaint(obj, taint)) {
+        char *timestamp = NULL;
         char uuidstr[VIR_UUID_STRING_BUFLEN];
         virUUIDFormat(obj->def->uuid, uuidstr);
 
@@ -4018,27 +4019,31 @@ void qemuDomainObjTaint(virQEMUDriverPtr driver,
             logCtxt = qemuDomainLogContextNew(driver, obj,
                                               QEMU_DOMAIN_LOG_CONTEXT_MODE_ATTACH);
             if (!logCtxt) {
-                if (orig_err) {
-                    virSetError(orig_err);
-                    virFreeError(orig_err);
-                }
                 VIR_WARN("Unable to open domainlog");
-                return;
+                goto cleanup;
             }
             closeLog = true;
         }
 
+        if ((timestamp = virTimeStringNow()) == NULL)
+            goto cleanup;
+
         if (qemuDomainLogContextWrite(logCtxt,
-                                      "Domain id=%d is tainted: %s\n",
+                                      "%s: Domain id=%d is tainted: %s\n",
+                                      timestamp,
                                       obj->def->id,
                                       virDomainTaintTypeToString(taint)) < 0)
             virResetLastError();
+
+     cleanup:
         if (closeLog)
             qemuDomainLogContextFree(logCtxt);
         if (orig_err) {
             virSetError(orig_err);
             virFreeError(orig_err);
         }
+
+        VIR_FREE(timestamp);
     }
 }
 
