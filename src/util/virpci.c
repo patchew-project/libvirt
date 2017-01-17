@@ -933,6 +933,16 @@ virPCIDeviceReset(virPCIDevicePtr dev,
     char *drvName = NULL;
     int ret = -1;
     int fd = -1;
+    int hdrType = -1;
+
+    if (virPCIGetHeaderType(dev, &hdrType) < 0)
+        return -1;
+
+    if (hdrType == VIR_PCI_HEADER_PCI_BRIDGE) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Resetting a pci-bridge device is not allowed"));
+        return -1;
+    }
 
     if (activeDevs && virPCIDeviceListFind(activeDevs, dev)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
