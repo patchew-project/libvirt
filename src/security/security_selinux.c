@@ -81,7 +81,7 @@ struct _virSecuritySELinuxCallbackData {
 typedef struct _virSecuritySELinuxContextItem virSecuritySELinuxContextItem;
 typedef virSecuritySELinuxContextItem *virSecuritySELinuxContextItemPtr;
 struct _virSecuritySELinuxContextItem {
-    const char *path;
+    char *path;
     const char *tcon;
     bool optional;
 };
@@ -111,21 +111,31 @@ virSecuritySELinuxContextListAppend(virSecuritySELinuxContextListPtr list,
                                     const char *tcon,
                                     bool optional)
 {
-    virSecuritySELinuxContextItemPtr item;
+    int ret = -1;
+    char *tmp = NULL;
+    virSecuritySELinuxContextItemPtr item = NULL;
 
     if (VIR_ALLOC(item) < 0)
         return -1;
 
-    item->path = path;
+    if (VIR_STRDUP(tmp, path) < 0)
+        goto cleanup;
+
+    item->path = tmp;
     item->tcon = tcon;
     item->optional = optional;
 
-    if (VIR_APPEND_ELEMENT(list->items, list->nItems, item) < 0) {
-        VIR_FREE(item);
-        return -1;
-    }
+    if (VIR_APPEND_ELEMENT(list->items, list->nItems, item) < 0)
+        goto cleanup;
 
-    return 0;
+    tmp = NULL;
+    item = NULL;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(tmp);
+    VIR_FREE(item);
+    return ret;
 }
 
 static void
@@ -137,8 +147,10 @@ virSecuritySELinuxContextListFree(void *opaque)
     if (!list)
         return;
 
-    for (i = 0; i < list->nItems; i++)
+    for (i = 0; i < list->nItems; i++) {
+        VIR_FREE(list->items[i]->path);
         VIR_FREE(list->items[i]);
+    }
     VIR_FREE(list);
 }
 
