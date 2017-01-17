@@ -1618,6 +1618,7 @@ storageVolLookupByPath(virConnectPtr conn,
             case VIR_STORAGE_POOL_ISCSI:
             case VIR_STORAGE_POOL_SCSI:
             case VIR_STORAGE_POOL_MPATH:
+            case VIR_STORAGE_POOL_VSTORAGE:
                 stable_path = virStorageBackendStablePath(pool,
                                                           cleanpath,
                                                           false);
@@ -3501,6 +3502,7 @@ virStorageTranslateDiskSourcePool(virConnectPtr conn,
     case VIR_STORAGE_POOL_DISK:
     case VIR_STORAGE_POOL_SCSI:
     case VIR_STORAGE_POOL_ZFS:
+    case VIR_STORAGE_POOL_VSTORAGE:
         if (!(def->src->path = virStorageVolGetPath(vol)))
             goto cleanup;
 
