@@ -1182,6 +1182,10 @@ virrotatingfiletest_SOURCES = \
 virrotatingfiletest_CFLAGS = $(AM_CFLAGS)
 virrotatingfiletest_LDADD = $(LDADDS)
 
+virresctrltest_SOURCES = \
+	virresctrltest.c testutils.h testutils.c
+virresctrltest_LDADD = $(LDADDS)
+
 if WITH_LINUX
 virusbtest_SOURCES = \
 	virusbtest.c testutils.h testutils.c
