@@ -2313,6 +2313,7 @@ virRandomInt;
 # util/virresctrl.h
 virResCtrlAvailable;
 virResCtrlInit;
+virResCtrlGet;
 
 # util/virrotatingfile.h
 virRotatingFileReaderConsume;
