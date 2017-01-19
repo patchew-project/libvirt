@@ -11262,6 +11262,9 @@ virConnectGetDomainCapabilities(virConnectPtr conn,
  *     "perf.cache_l1dwm" - The count of total write misses for level 1 data
  *                          cache as unsigned long long. It is produced by
  *                          cache_l1dwm perf event.
+ *     "perf.cache_l1dpa" - The count of total prefetch accesses for level 1
+ *                          data cache as unsigned long long. It is produced by
+ *                          cache_l1dpa perf event.
  *
  * Note that entire stats groups or individual stat fields may be missing from
  * the output in case they are not supported by the given hypervisor, are not

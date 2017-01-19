@@ -137,8 +137,8 @@
           Add support to get the count of branch instructions
           executed, branch misses, bus cycles, stalled frontend
           cpu cycles, stalled backend cpu cycles, ref cpu cycles,
-          cache l1dra, cache l1drm, cache l1dwa and cache l1dwm by
-          applications running on the platform.
+          cache l1dra, cache l1drm, cache l1dwa, cache l1dwm,
+          cache l1dpa by applications running on the platform.
         </description>
       </change>
       <change>

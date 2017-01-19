@@ -45,7 +45,7 @@ VIR_ENUM_IMPL(virPerfEvent, VIR_PERF_EVENT_LAST,
               "bus_cycles", "stalled_cycles_frontend",
               "stalled_cycles_backend", "ref_cpu_cycles",
               "cache_l1dra", "cache_l1drm", "cache_l1dwa",
-              "cache_l1dwm");
+              "cache_l1dwm", "cache_l1dpa");
 
 struct virPerfEvent {
     int type;
@@ -134,6 +134,11 @@ static struct virPerfEventAttr attrs[] = {
      .attrConfig = (PERF_COUNT_HW_CACHE_L1D) |
                    (PERF_COUNT_HW_CACHE_OP_WRITE << 8) |
                    (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)},
+    {.type = VIR_PERF_EVENT_CACHE_L1DPA,
+     .attrType = PERF_TYPE_HW_CACHE,
+     .attrConfig = (PERF_COUNT_HW_CACHE_L1D) |
+                   (PERF_COUNT_HW_CACHE_OP_PREFETCH << 8) |
+                   (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16)},
 };
 typedef struct virPerfEventAttr *virPerfEventAttrPtr;
 

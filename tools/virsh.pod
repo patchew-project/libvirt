@@ -949,7 +949,8 @@ I<--perf> returns the statistics of all enabled perf events:
 "perf.cache_l1dra" - the count of read accesses for level 1 data cache,
 "perf.cache_l1drm" - the count of read misses for level 1 data cache,
 "perf.cache_l1dwa" - the count of write accesses for level 1 data cache,
-"perf.cache_l1dwm" - the count of write misses for level 1 data cache
+"perf.cache_l1dwm" - the count of write misses for level 1 data cache,
+"perf.cache_l1dpa" - the count of prefetch accesses for level 1 data cache
 
 See the B<perf> command for more details about each event.
 
@@ -2322,6 +2323,8 @@ B<Valid perf event names>
                 data cache by applications running on the platform.
   cache_l1dwm - Provides the count of total write misses for level 1
                 data cache by applications running on the platform.
+  cache_l1dpa - Provides the count of total prefetch accesses for
+                level 1 data cache by applications running on the platform.
 
 B<Note>: The statistics can be retrieved using the B<domstats> command using
 the I<--perf> flag.
