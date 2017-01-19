@@ -1942,6 +1942,7 @@
   &lt;event name='cache_l1dwa' enabled='no'/&gt;
   &lt;event name='cache_l1dwm' enabled='no'/&gt;
   &lt;event name='cache_l1dpa' enabled='no'/&gt;
+  &lt;event name='cache_l1dpm' enabled='no'/&gt;
 &lt;/perf&gt;
 ...
 </pre>
@@ -2049,6 +2050,12 @@
       <td>the count of total prefetch accesses for level 1 data
           cache by applications running on the platform</td>
       <td><code>perf.cache_l1dpa</code></td>
+    </tr>
+    <tr>
+      <td><code>cache_l1dpm</code></td>
+      <td>the count of total prefetch misses for level 1 data
+          cache by applications running on the platform</td>
+      <td><code>perf.cache_l1dpm</code></td>
     </tr>
   </table>
 

@@ -31,6 +31,7 @@
     <event name='cache_l1dwa' enabled='yes'/>
     <event name='cache_l1dwm' enabled='yes'/>
     <event name='cache_l1dpa' enabled='yes'/>
+    <event name='cache_l1dpm' enabled='yes'/>
   </perf>
   <devices>
   </devices>

@@ -52,6 +52,7 @@ typedef enum {
     VIR_PERF_EVENT_CACHE_L1DWA, /* Count of write accesses for level 1 data cache */
     VIR_PERF_EVENT_CACHE_L1DWM, /* Count of write misses for level 1 data cache */
     VIR_PERF_EVENT_CACHE_L1DPA, /* Count of prefetch accesses for level 1 data cache */
+    VIR_PERF_EVENT_CACHE_L1DPM, /* Count of prefetch misses for level 1 data cache */
 
     VIR_PERF_EVENT_LAST
 } virPerfEventType;
