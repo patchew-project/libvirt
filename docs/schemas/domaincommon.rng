@@ -436,6 +436,7 @@
               <value>cache_l1dra</value>
               <value>cache_l1drm</value>
               <value>cache_l1dwa</value>
+              <value>cache_l1dwm</value>
             </choice>
           </attribute>
           <attribute name="enabled">

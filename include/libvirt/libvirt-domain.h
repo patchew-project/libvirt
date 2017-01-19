@@ -2221,6 +2221,17 @@ void virDomainStatsRecordListFree(virDomainStatsRecordPtr *stats);
  */
 # define VIR_PERF_PARAM_CACHE_L1DWA "cache_l1dwa"
 
+/*
+ * VIR_PERF_PARAM_CACHE_L1DWM:
+ *
+ *Macro for typed parameter name that represents cache_l1dwm
+ *perf event which can be used to measure the count of total
+ *write misses for level 1 data cache by applications running
+ *on the platform. It corresponds to the "perf.cache_l1dwm"
+ *field in the *Stats APIs.
+ */
+# define VIR_PERF_PARAM_CACHE_L1DWM "cache_l1dwm"
+
 int virDomainGetPerfEvents(virDomainPtr dom,
                            virTypedParameterPtr *params,
                            int *nparams,
