@@ -948,6 +948,7 @@ I<--perf> returns the statistics of all enabled perf events:
 "perf.ref_cpu_cycles" - the count of ref cpu cycles,
 "perf.cache_l1dra" - the count of read accesses for level 1 data cache,
 "perf.cache_l1drm" - the count of read misses for level 1 data cache
+"perf.cache_l1dwa" - the count of write accesses for level 1 data cache
 
 See the B<perf> command for more details about each event.
 
@@ -2315,6 +2316,8 @@ B<Valid perf event names>
   cache_l1dra - Provides the count of total read accesses for level 1
                 data cache by applications running on the platform.
   cache_l1drm - Provides the count of total read misses for level 1
+                data cache by applications running on the platform.
+  cache_l1dwa - Provides the count of total write accesses for level 1
                 data cache by applications running on the platform.
 
 B<Note>: The statistics can be retrieved using the B<domstats> command using

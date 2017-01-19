@@ -49,6 +49,7 @@ typedef enum {
     VIR_PERF_EVENT_REF_CPU_CYCLES,   /* Count of ref cpu cycles */
     VIR_PERF_EVENT_CACHE_L1DRA, /* Count of read accesses for level 1 data cache */
     VIR_PERF_EVENT_CACHE_L1DRM, /* Count of read misses for level 1 data cache */
+    VIR_PERF_EVENT_CACHE_L1DWA, /* Count of write accesses for level 1 data cache */
 
     VIR_PERF_EVENT_LAST
 } virPerfEventType;

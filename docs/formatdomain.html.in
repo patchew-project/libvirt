@@ -1939,6 +1939,7 @@
   &lt;event name='ref_cpu_cycles' enabled='no'/&gt;
   &lt;event name='cache_l1dra' enabled='no'/&gt;
   &lt;event name='cache_l1drm' enabled='no'/&gt;
+  &lt;event name='cache_l1dwa' enabled='no'/&gt;
 &lt;/perf&gt;
 ...
 </pre>
@@ -2028,6 +2029,12 @@
       <td>the count of total read misses for level 1 data cache by
           applications running on the platform</td>
       <td><code>perf.cache_l1drm</code></td>
+    </tr>
+    <tr>
+      <td><code>cache_l1dwa</code></td>
+      <td>the count of total write accesses for level 1 data cache by
+          applications running on the platform</td>
+      <td><code>perf.cache_l1dwa</code></td>
     </tr>
   </table>
 

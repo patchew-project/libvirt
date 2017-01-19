@@ -435,6 +435,7 @@
               <value>ref_cpu_cycles</value>
               <value>cache_l1dra</value>
               <value>cache_l1drm</value>
+              <value>cache_l1dwa</value>
             </choice>
           </attribute>
           <attribute name="enabled">

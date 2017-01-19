@@ -9551,6 +9551,7 @@ qemuDomainSetPerfEvents(virDomainPtr dom,
                                VIR_PERF_PARAM_REF_CPU_CYCLES, VIR_TYPED_PARAM_BOOLEAN,
                                VIR_PERF_PARAM_CACHE_L1DRA, VIR_TYPED_PARAM_BOOLEAN,
                                VIR_PERF_PARAM_CACHE_L1DRM, VIR_TYPED_PARAM_BOOLEAN,
+                               VIR_PERF_PARAM_CACHE_L1DWA, VIR_TYPED_PARAM_BOOLEAN,
                                NULL) < 0)
         return -1;
 

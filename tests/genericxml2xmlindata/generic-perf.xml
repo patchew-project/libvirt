@@ -28,6 +28,7 @@
     <event name='ref_cpu_cycles' enabled='yes'/>
     <event name='cache_l1dra' enabled='yes'/>
     <event name='cache_l1drm' enabled='yes'/>
+    <event name='cache_l1dwa' enabled='yes'/>
   </perf>
   <devices>
   </devices>
