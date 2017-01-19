@@ -11250,6 +11250,9 @@ virConnectGetDomainCapabilities(virConnectPtr conn,
  *                             CPU frequency scaling by applications running
  *                             as unsigned long long. It is produced by the
  *                             ref_cpu_cycles perf event.
+ *     "perf.cache_l1dra" - The count of total read accesses for level 1 data
+ *                          cache as unsigned long long. It is produced by
+ *                          cache_l1dra perf event.
  *
  * Note that entire stats groups or individual stat fields may be missing from
  * the output in case they are not supported by the given hypervisor, are not
