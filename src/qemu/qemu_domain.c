@@ -7690,15 +7690,23 @@ qemuDomainAttachDeviceMknodHelper(pid_t pid ATTRIBUTE_UNUSED,
 
 
 static int
-qemuDomainAttachDeviceMknod(virQEMUDriverPtr driver,
-                            virDomainObjPtr vm,
-                            virDomainDeviceDefPtr devDef,
-                            const char *file)
+qemuDomainAttachDeviceMknodRecursive(virQEMUDriverPtr driver,
+                                     virDomainObjPtr vm,
+                                     virDomainDeviceDefPtr devDef,
+                                     const char *file,
+                                     unsigned int ttl)
 {
     struct qemuDomainAttachDeviceMknodData data;
     int ret = -1;
     char *target = NULL;
     bool isLink;
+
+    if (!ttl) {
+        virReportSystemError(ELOOP,
+                             _("Too many levels of symbolic links: %s"),
+                             file);
+        return ret;
+    }
 
     memset(&data, 0, sizeof(data));
 
@@ -7777,7 +7785,8 @@ qemuDomainAttachDeviceMknod(virQEMUDriverPtr driver,
     }
 
     if (isLink &&
-        qemuDomainAttachDeviceMknod(driver, vm, devDef, target) < 0)
+        qemuDomainAttachDeviceMknodRecursive(driver, vm, devDef,
+                                             target, ttl -1) < 0)
         goto cleanup;
 
     ret = 0;
@@ -7788,6 +7797,19 @@ qemuDomainAttachDeviceMknod(virQEMUDriverPtr driver,
     virFileFreeACLs(&data.acl);
     VIR_FREE(target);
     return ret;
+}
+
+
+static int
+qemuDomainAttachDeviceMknod(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            virDomainDeviceDefPtr devDef,
+                            const char *file)
+{
+    long symloop_max = sysconf(_SC_SYMLOOP_MAX);
+
+    return qemuDomainAttachDeviceMknodRecursive(driver, vm, devDef,
+                                                file, symloop_max);
 }
 
 
