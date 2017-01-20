@@ -1127,6 +1127,11 @@ udevInterfaceIsActive(virInterfacePtr ifinfo)
     struct udev_device *dev;
     virInterfaceDefPtr def = NULL;
     int status = -1;
+    struct dirent **member_list = NULL;
+    const char *devtype;
+    int member_count = 0;
+    char *member_path;
+    size_t i;
 
     dev = udev_device_new_from_subsystem_sysname(udev, "net",
                                                  ifinfo->name);
@@ -1145,6 +1150,23 @@ udevInterfaceIsActive(virInterfacePtr ifinfo)
 
     /* Check if it's active or not */
     status = STREQ(udev_device_get_sysattr_value(dev, "operstate"), "up");
+
+    if (!status) {
+        devtype = udev_device_get_devtype(dev);
+        if (STREQ_NULLABLE(devtype, "bridge")) {
+            if (virAsprintf(&member_path, "%s/%s",
+                        udev_device_get_syspath(dev), "brif") < 0)
+                goto cleanup;
+            member_count = scandir(member_path, &member_list,
+                    udevBridgeScanDirFilter, alphasort);
+            if (member_count > 0)
+                status = 1;
+            for (i = 0; i < member_count; i++)
+                VIR_FREE(member_list[i]);
+            VIR_FREE(member_list);
+            VIR_FREE(member_path);
+        }
+    }
 
     udev_device_unref(dev);
 
