@@ -6954,9 +6954,10 @@ qemuDomainGetPreservedMounts(virQEMUDriverPtr driver,
 
 
 static int
-qemuDomainCreateDevice(const char *device,
-                       const char *path,
-                       bool allow_noent)
+qemuDomainCreateDeviceRecursive(const char *device,
+                                const char *path,
+                                bool allow_noent,
+                                unsigned int ttl)
 {
     char *devicePath = NULL;
     char *target = NULL;
@@ -6967,6 +6968,13 @@ qemuDomainCreateDevice(const char *device,
 #ifdef WITH_SELINUX
     char *tcon = NULL;
 #endif
+
+    if (!ttl) {
+        virReportSystemError(ELOOP,
+                             _("Too many levels of symbolic links: %s"),
+                             device);
+        return ret;
+    }
 
     if (lstat(device, &sb) < 0) {
         if (errno == ENOENT && allow_noent) {
@@ -7057,7 +7065,8 @@ qemuDomainCreateDevice(const char *device,
             tmp = NULL;
         }
 
-        if (qemuDomainCreateDevice(target, path, allow_noent) < 0)
+        if (qemuDomainCreateDeviceRecursive(target, path,
+                                            allow_noent, ttl - 1) < 0)
             goto cleanup;
     } else {
         if (create &&
@@ -7127,6 +7136,17 @@ qemuDomainCreateDevice(const char *device,
     return ret;
 }
 
+
+static int
+qemuDomainCreateDevice(const char *device,
+                       const char *path,
+                       bool allow_noent)
+{
+    long symloop_max = sysconf(_SC_SYMLOOP_MAX);
+
+    return qemuDomainCreateDeviceRecursive(device, path,
+                                           allow_noent, symloop_max);
+}
 
 
 static int
