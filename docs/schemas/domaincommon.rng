@@ -1470,6 +1470,7 @@
             <value>ftp</value>
             <value>ftps</value>
             <value>tftp</value>
+            <value>vxhs</value>
           </choice>
         </attribute>
         <optional>

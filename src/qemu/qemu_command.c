@@ -491,6 +491,9 @@ qemuNetworkDriveGetPort(int protocol,
             /* no default port specified */
             return 0;
 
+        case VIR_STORAGE_NET_PROTOCOL_VXHS:
+            return 9999;
+
         case VIR_STORAGE_NET_PROTOCOL_RBD:
         case VIR_STORAGE_NET_PROTOCOL_LAST:
         case VIR_STORAGE_NET_PROTOCOL_NONE:
@@ -899,6 +902,65 @@ qemuBuildGlusterDriveJSON(virStorageSourcePtr src)
 }
 
 
+#define QEMU_DEFAULT_VXHS_PORT "9999"
+
+/* Build the VxHS host object */
+static virJSONValuePtr
+qemuBuildVxHSDriveJSONHost(virStorageSourcePtr src)
+{
+    virJSONValuePtr server = NULL;
+    virStorageNetHostDefPtr host;
+    const char *portstr;
+
+    if (src->nhosts != 1) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("VxHS supports only one server"));
+        goto cleanup;
+    }
+
+    host = src->hosts;
+    portstr = host->port;
+
+    if (!portstr)
+        portstr = QEMU_DEFAULT_VXHS_PORT;
+
+    if (virJSONValueObjectCreate(&server,
+                                 "s:host", host->name,
+                                 "s:port", portstr,
+                                 NULL) < 0)
+        server = NULL;
+
+ cleanup:
+    return server;
+}
+
+
+static virJSONValuePtr
+qemuBuildVxHSDriveJSON(virStorageSourcePtr src)
+{
+    const char *protocol = virStorageNetProtocolTypeToString(src->protocol);
+    virJSONValuePtr server = NULL;
+    virJSONValuePtr ret = NULL;
+
+    if (!(server = qemuBuildVxHSDriveJSONHost(src)))
+        return NULL;
+
+    /* VxHS disk sepecification example:
+     * { driver:"vxhs",
+     *   vdisk-id:"eb90327c-8302-4725-4e85ed4dc251",
+     *   server.host:"1.2.3.4",
+     *   server.port:1234}
+     */
+    if (virJSONValueObjectCreate(&ret,
+                                 "s:driver", protocol,
+                                 "s:vdisk-id", src->path,
+                                 "a:server", server, NULL) < 0)
+        virJSONValueFree(server);
+
+    return ret;
+}
+
+
 static char *
 qemuBuildNetworkDriveURI(virStorageSourcePtr src,
                          qemuDomainSecretInfoPtr secinfo)
@@ -1034,6 +1096,7 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
         case VIR_STORAGE_NET_PROTOCOL_TFTP:
         case VIR_STORAGE_NET_PROTOCOL_ISCSI:
         case VIR_STORAGE_NET_PROTOCOL_GLUSTER:
+        case VIR_STORAGE_NET_PROTOCOL_VXHS:
             ret = qemuBuildNetworkDriveURI(src, secinfo);
             break;
 
@@ -1146,6 +1209,11 @@ qemuGetDriveSourceProps(virStorageSourcePtr src,
         if (src->protocol == VIR_STORAGE_NET_PROTOCOL_GLUSTER &&
             src->nhosts > 1) {
             if (!(fileprops = qemuBuildGlusterDriveJSON(src)))
+                return -1;
+        }
+
+        if (src->protocol == VIR_STORAGE_NET_PROTOCOL_VXHS) {
+            if (!(fileprops = qemuBuildVxHSDriveJSON(src)))
                 return -1;
         }
         break;
