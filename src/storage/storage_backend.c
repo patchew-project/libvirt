@@ -171,6 +171,7 @@ virStorageFileBackendForTypeInternal(int type,
 
 
 virStorageFileBackendPtr
+
 virStorageFileBackendForType(int type,
                              int protocol)
 {
