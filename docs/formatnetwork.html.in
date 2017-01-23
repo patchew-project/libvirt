@@ -92,7 +92,7 @@
 
     <pre>
 ...
-&lt;bridge name="virbr0" stp="on" delay="5" macTableManager="libvirt"/&gt;
+&lt;bridge name="virbr0" stp="on" delay="5" mtu='9000' macTableManager="libvirt"/&gt;
 &lt;domain name="example.com" localOnly="no"/&gt;
 &lt;forward mode="nat" dev="eth0"/&gt;
 ...</pre>
@@ -120,6 +120,12 @@
         'on'). Attribute <code>delay</code> sets the bridge's forward
         delay value in seconds (default is 0).
         <span class="since">Since 0.3.0</span>
+
+        The optional attribute. <code>mtu</code> specifies the Maximum
+        Transmission Unit (MTU) for the
+        bridge. <span class="since">Since 3.1.0</span>. If mtu is
+        unspecified, the default setting for the type of bridge being
+        used is assumed (usually 1500).
 
         <p>
           The <code>macTableManager</code> attribute of the bridge

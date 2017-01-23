@@ -71,6 +71,12 @@
             </optional>
 
             <optional>
+              <attribute name="mtu">
+                <data type="unsignedInt"/>
+              </attribute>
+            </optional>
+
+            <optional>
               <attribute name="macTableManager">
                 <ref name="macTableManager"/>
               </attribute>

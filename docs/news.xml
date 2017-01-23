@@ -12,7 +12,11 @@
 <libvirt>
   <release version="v3.1.0" date="unreleased">
     <section title="New features">
-      <change/>
+      <change>
+        <summary>
+          Support specifying MTU in a network's &lt;bridge&gt; element
+        </summary>
+      </change>
     </section>
     <section title="Improvements">
       <change>

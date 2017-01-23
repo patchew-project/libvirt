@@ -2212,6 +2212,17 @@ virNetworkDefParseXML(xmlXPathContextPtr ctxt)
     }
     VIR_FREE(tmp);
 
+    tmp = virXPathString("string(./bridge[1]/@mtu)", ctxt);
+    if (tmp) {
+        if (virStrToLong_ui(tmp, NULL, 10, &def->mtu) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("Invalid mtu value '%s' in network '%s'"),
+                           tmp, def->name);
+            goto error;
+        }
+    }
+    VIR_FREE(tmp);
+
     tmp = virXPathString("string(./bridge[1]/@macTableManager)", ctxt);
     if (tmp) {
         if ((def->macTableManager
@@ -2433,9 +2444,11 @@ virNetworkDefParseXML(xmlXPathContextPtr ctxt)
         }
         /* fall through to next case */
     case VIR_NETWORK_FORWARD_BRIDGE:
-        if (def->delay || stp) {
+        if (def->delay || stp || def->mtu) {
             virReportError(VIR_ERR_XML_ERROR,
-                           _("bridge delay/stp options only allowed in route, nat, and isolated mode, not in %s (network '%s')"),
+                           _("bridge delay/stp/mtu options only allowed in "
+                             "route, nat, and isolated mode, not in %s "
+                             "(network '%s')"),
                            virNetworkForwardTypeToString(def->forward.type),
                            def->name);
             goto error;
@@ -2957,6 +2970,9 @@ virNetworkDefFormatBuf(virBufferPtr buf,
             virBufferAsprintf(buf, " stp='%s' delay='%ld'",
                               def->stp ? "on" : "off", def->delay);
         }
+        if (def->mtu)
+            virBufferAsprintf(buf, " mtu='%u'", def->mtu);
+
         if (def->macTableManager) {
             virBufferAsprintf(buf, " macTableManager='%s'",
                              virNetworkBridgeMACTableManagerTypeToString(def->macTableManager));
