@@ -8794,7 +8794,7 @@ cmdMemtune(vshControl *ctl, const vshCmd *cmd)
  */
 static const vshCmdInfo info_perf[] = {
     {.name = "help",
-        .data = N_("Get or set perf event")
+        .data = N_("Get, set or reset perf event")
     },
     {.name = "desc",
         .data = N_("Get or set the current perf events for a guest"
@@ -8815,6 +8815,10 @@ static const vshCmdOptDef opts_perf[] = {
      .type = VSH_OT_STRING,
      .help = N_("perf events which will be disabled")
     },
+    {.name = "reset",
+     .type = VSH_OT_STRING,
+     .help = N_("perf events which will be reset")
+    },
     VIRSH_COMMON_OPT_DOMAIN_CONFIG,
     VIRSH_COMMON_OPT_DOMAIN_LIVE,
     VIRSH_COMMON_OPT_DOMAIN_CURRENT,
@@ -8823,7 +8827,7 @@ static const vshCmdOptDef opts_perf[] = {
 
 static int
 virshParseEventStr(const char *event,
-                   bool state,
+                   int state,
                    virTypedParameterPtr *params,
                    int *nparams,
                    int *maxparams)
@@ -8837,7 +8841,7 @@ virshParseEventStr(const char *event,
 
     for (i = 0; i < ntok; i++) {
         if ((*tok[i] != '\0') &&
-            virTypedParamsAddBoolean(params, nparams,
+            virTypedParamsAddInt(params, nparams,
                                      maxparams, tok[i], state) < 0)
             goto cleanup;
     }
@@ -8854,9 +8858,11 @@ virshPrintPerfStatus(vshControl *ctl, virTypedParameterPtr params, int nparams)
     size_t i;
 
     for (i = 0; i < nparams; i++) {
-        if (params[i].type == VIR_TYPED_PARAM_BOOLEAN &&
-            params[i].value.b) {
+        if (params[i].type == VIR_TYPED_PARAM_INT &&
+            params[i].value.i == VIR_PERF_STATE_ENABLED) {
             vshPrintExtra(ctl, "%-15s: %s\n", params[i].field, _("enabled"));
+        } else if (params[i].value.i == VIR_PERF_STATE_RESET) {
+                vshPrintExtra(ctl, "%-15s: %s\n", params[i].field, _("reset"));
         } else {
             vshPrintExtra(ctl, "%-15s: %s\n", params[i].field, _("disabled"));
         }
@@ -8871,14 +8877,16 @@ cmdPerf(vshControl *ctl, const vshCmd *cmd)
     int maxparams = 0;
     virTypedParameterPtr params = NULL;
     bool ret = false;
-    const char *enable = NULL, *disable = NULL;
+    const char *enable = NULL, *disable = NULL, *resett = NULL;
     unsigned int flags = VIR_DOMAIN_AFFECT_CURRENT;
     bool current = vshCommandOptBool(cmd, "current");
     bool config = vshCommandOptBool(cmd, "config");
     bool live = vshCommandOptBool(cmd, "live");
+    bool reset = vshCommandOptBool(cmd, "reset");
 
     VSH_EXCLUSIVE_OPTIONS_VAR(current, live);
     VSH_EXCLUSIVE_OPTIONS_VAR(current, config);
+    VSH_EXCLUSIVE_OPTIONS_VAR(reset, config);
 
     if (config)
         flags |= VIR_DOMAIN_AFFECT_CONFIG;
@@ -8886,18 +8894,23 @@ cmdPerf(vshControl *ctl, const vshCmd *cmd)
         flags |= VIR_DOMAIN_AFFECT_LIVE;
 
     if (vshCommandOptStringReq(ctl, cmd, "enable", &enable) < 0 ||
-        vshCommandOptStringReq(ctl, cmd, "disable", &disable) < 0)
+        vshCommandOptStringReq(ctl, cmd, "disable", &disable) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "reset", &resett) < 0)
         return false;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;
 
-    if (enable && virshParseEventStr(enable, true, &params,
-                                     &nparams, &maxparams) < 0)
+    if (enable && virshParseEventStr(enable, VIR_PERF_STATE_ENABLED,
+                                     &params, &nparams, &maxparams) < 0)
         goto cleanup;
 
-    if (disable && virshParseEventStr(disable, false, &params,
-                                      &nparams, &maxparams) < 0)
+    if (disable && virshParseEventStr(disable, VIR_PERF_STATE_DISABLED,
+                                      &params, &nparams, &maxparams) < 0)
+        goto cleanup;
+
+    if (resett && virshParseEventStr(resett, VIR_PERF_STATE_RESET,
+                                    &params, &nparams, &maxparams) < 0)
         goto cleanup;
 
     if (nparams == 0) {
@@ -8908,7 +8921,7 @@ cmdPerf(vshControl *ctl, const vshCmd *cmd)
         virshPrintPerfStatus(ctl, params, nparams);
     } else {
         if (virDomainSetPerfEvents(dom, params, nparams, flags) != 0) {
-            vshError(ctl, "%s", _("Unable to enable/disable perf events"));
+            vshError(ctl, "%s", _("Unable to enable/disable/reset perf events"));
             goto cleanup;
         } else {
             virshPrintPerfStatus(ctl, params, nparams);

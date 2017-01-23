@@ -2188,6 +2188,12 @@ void virDomainStatsRecordListFree(virDomainStatsRecordPtr *stats);
  */
 # define VIR_PERF_PARAM_REF_CPU_CYCLES "ref_cpu_cycles"
 
+enum {
+VIR_PERF_STATE_DISABLED,
+VIR_PERF_STATE_ENABLED,
+VIR_PERF_STATE_RESET,
+};
+
 int virDomainGetPerfEvents(virDomainPtr dom,
                            virTypedParameterPtr *params,
                            int *nparams,

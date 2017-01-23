@@ -60,14 +60,18 @@ virPerfPtr virPerfNew(void);
 
 void virPerfFree(virPerfPtr perf);
 
-int virPerfEventEnable(virPerfPtr perf,
-                       virPerfEventType type,
-                       pid_t pid);
+int virPerfEventSetFd(virPerfPtr perf,
+                      virPerfEventType type,
+                      pid_t pid, int state);
+
+int virPerfEventEnable(int fd);
+
+int virPerfEventReset(int fd);
 
 int virPerfEventDisable(virPerfPtr perf,
                         virPerfEventType type);
 
-bool virPerfEventIsEnabled(virPerfPtr perf,
+int virPerfEventIsEnabled(virPerfPtr perf,
                            virPerfEventType type);
 
 int virPerfReadEvent(virPerfPtr perf,

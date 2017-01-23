@@ -3200,11 +3200,19 @@ qemuDomainPerfRestart(virDomainObjPtr vm)
 
     for (i = 0; i < VIR_PERF_EVENT_LAST; i++) {
         if (def->perf.events[i] &&
-            def->perf.events[i] == VIR_TRISTATE_BOOL_YES) {
+            def->perf.events[i] == VIR_PERF_STATE_ENABLED) {
 
             /* Failure to re-enable the perf event should not be fatal */
-            if (virPerfEventEnable(priv->perf, i, vm->pid) < 0)
-                def->perf.events[i] = VIR_TRISTATE_BOOL_NO;
+            if (virPerfEventSetFd(priv->perf, i, vm->pid, VIR_PERF_STATE_ENABLED) < 0)
+                def->perf.events[i] = VIR_PERF_STATE_DISABLED;
+        }
+
+        if (def->perf.events[i] &&
+            def->perf.events[i] == VIR_PERF_STATE_RESET) {
+
+            /* Failure to reset the perf event should not be fatal */
+            if (virPerfEventSetFd(priv->perf, i, vm->pid, VIR_PERF_STATE_RESET) < 0)
+                def->perf.events[i] = VIR_PERF_STATE_DISABLED;
         }
     }
 
@@ -5563,8 +5571,12 @@ qemuProcessLaunch(virConnectPtr conn,
         goto cleanup;
 
     for (i = 0; i < VIR_PERF_EVENT_LAST; i++) {
-        if (vm->def->perf.events[i] == VIR_TRISTATE_BOOL_YES &&
-            virPerfEventEnable(priv->perf, i, vm->pid) < 0)
+        if (vm->def->perf.events[i] == VIR_PERF_STATE_ENABLED &&
+            virPerfEventSetFd(priv->perf, i, vm->pid, VIR_PERF_STATE_ENABLED) < 0)
+            goto cleanup;
+
+        if (vm->def->perf.events[i] == VIR_PERF_STATE_RESET &&
+            virPerfEventSetFd(priv->perf, i, vm->pid, VIR_PERF_STATE_RESET) < 0)
             goto cleanup;
     }
 

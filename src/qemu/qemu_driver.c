@@ -9530,25 +9530,25 @@ qemuDomainSetPerfEvents(virDomainPtr dom,
     virDomainDefPtr persistentDef;
     int ret = -1;
     virPerfEventType type;
-    bool enabled;
+    int state;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
                   VIR_DOMAIN_AFFECT_CONFIG, -1);
 
     if (virTypedParamsValidate(params, nparams,
-                               VIR_PERF_PARAM_CMT, VIR_TYPED_PARAM_BOOLEAN,
-                               VIR_PERF_PARAM_MBMT, VIR_TYPED_PARAM_BOOLEAN,
-                               VIR_PERF_PARAM_MBML, VIR_TYPED_PARAM_BOOLEAN,
-                               VIR_PERF_PARAM_CPU_CYCLES, VIR_TYPED_PARAM_BOOLEAN,
-                               VIR_PERF_PARAM_INSTRUCTIONS, VIR_TYPED_PARAM_BOOLEAN,
-                               VIR_PERF_PARAM_CACHE_REFERENCES, VIR_TYPED_PARAM_BOOLEAN,
-                               VIR_PERF_PARAM_CACHE_MISSES, VIR_TYPED_PARAM_BOOLEAN,
-                               VIR_PERF_PARAM_BRANCH_INSTRUCTIONS, VIR_TYPED_PARAM_BOOLEAN,
-                               VIR_PERF_PARAM_BRANCH_MISSES, VIR_TYPED_PARAM_BOOLEAN,
-                               VIR_PERF_PARAM_BUS_CYCLES, VIR_TYPED_PARAM_BOOLEAN,
-                               VIR_PERF_PARAM_STALLED_CYCLES_FRONTEND, VIR_TYPED_PARAM_BOOLEAN,
-                               VIR_PERF_PARAM_STALLED_CYCLES_BACKEND, VIR_TYPED_PARAM_BOOLEAN,
-                               VIR_PERF_PARAM_REF_CPU_CYCLES, VIR_TYPED_PARAM_BOOLEAN,
+                               VIR_PERF_PARAM_CMT, VIR_TYPED_PARAM_INT,
+                               VIR_PERF_PARAM_MBMT, VIR_TYPED_PARAM_INT,
+                               VIR_PERF_PARAM_MBML, VIR_TYPED_PARAM_INT,
+                               VIR_PERF_PARAM_CPU_CYCLES, VIR_TYPED_PARAM_INT,
+                               VIR_PERF_PARAM_INSTRUCTIONS, VIR_TYPED_PARAM_INT,
+                               VIR_PERF_PARAM_CACHE_REFERENCES, VIR_TYPED_PARAM_INT,
+                               VIR_PERF_PARAM_CACHE_MISSES, VIR_TYPED_PARAM_INT,
+                               VIR_PERF_PARAM_BRANCH_INSTRUCTIONS, VIR_TYPED_PARAM_INT,
+                               VIR_PERF_PARAM_BRANCH_MISSES, VIR_TYPED_PARAM_INT,
+                               VIR_PERF_PARAM_BUS_CYCLES, VIR_TYPED_PARAM_INT,
+                               VIR_PERF_PARAM_STALLED_CYCLES_FRONTEND, VIR_TYPED_PARAM_INT,
+                               VIR_PERF_PARAM_STALLED_CYCLES_BACKEND, VIR_TYPED_PARAM_INT,
+                               VIR_PERF_PARAM_REF_CPU_CYCLES, VIR_TYPED_PARAM_INT,
                                NULL) < 0)
         return -1;
 
@@ -9570,16 +9570,17 @@ qemuDomainSetPerfEvents(virDomainPtr dom,
     if (def) {
         for (i = 0; i < nparams; i++) {
             virTypedParameterPtr param = &params[i];
-            enabled = param->value.b;
+            state = param->value.i;
             type = virPerfEventTypeFromString(param->field);
 
-            if (!enabled && virPerfEventDisable(priv->perf, type) < 0)
+            if ((state == VIR_PERF_STATE_DISABLED) && virPerfEventDisable(priv->perf, type) < 0) {
                 goto endjob;
-            if (enabled && virPerfEventEnable(priv->perf, type, vm->pid) < 0)
-                goto endjob;
+            } else {
+                  if (virPerfEventSetFd(priv->perf, type, vm->pid, state) < 0)
+                    goto endjob;
+            }
 
-            def->perf.events[type] = enabled ?
-                VIR_TRISTATE_BOOL_YES : VIR_TRISTATE_BOOL_NO;
+            def->perf.events[type] = state;
         }
 
         if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0)
@@ -9589,11 +9590,10 @@ qemuDomainSetPerfEvents(virDomainPtr dom,
     if (persistentDef) {
         for (i = 0; i < nparams; i++) {
             virTypedParameterPtr param = &params[i];
-            enabled = param->value.b;
+            state = param->value.i;
             type = virPerfEventTypeFromString(param->field);
 
-            persistentDef->perf.events[type] = enabled ?
-                VIR_TRISTATE_BOOL_YES : VIR_TRISTATE_BOOL_NO;
+            persistentDef->perf.events[type] = state;
         }
 
         if (virDomainSaveConfig(cfg->configDir, driver->caps, persistentDef) < 0)
@@ -9649,14 +9649,14 @@ qemuDomainGetPerfEvents(virDomainPtr dom,
     priv = vm->privateData;
 
     for (i = 0; i < VIR_PERF_EVENT_LAST; i++) {
-        bool perf_enabled;
+        int perf_enabled;
 
         if (flags & VIR_DOMAIN_AFFECT_CONFIG)
-            perf_enabled = def->perf.events[i] == VIR_TRISTATE_BOOL_YES;
+            perf_enabled = def->perf.events[i];
         else
             perf_enabled = virPerfEventIsEnabled(priv->perf, i);
 
-        if (virTypedParamsAddBoolean(&par, &npar, &maxpar,
+        if (virTypedParamsAddInt(&par, &npar, &maxpar,
                                      virPerfEventTypeToString(i),
                                      perf_enabled) < 0)
             goto endjob;

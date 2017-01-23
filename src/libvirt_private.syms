@@ -2230,6 +2230,7 @@ virPCIStubDriverTypeToString;
 virPerfEventDisable;
 virPerfEventEnable;
 virPerfEventIsEnabled;
+virPerfEventSetFd;
 virPerfEventTypeFromString;
 virPerfEventTypeToString;
 virPerfFree;
