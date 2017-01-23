@@ -2300,7 +2300,7 @@ networkStartNetworkVirtual(virNetworkDriverStatePtr driver,
         /* Keep tun fd open and interface up to allow for IPv6 DAD to happen */
         if (virNetDevTapCreateInBridgePort(network->def->bridge,
                                            &macTapIfName, &network->def->mac,
-                                           NULL, NULL, &tapfd, 1, NULL, NULL,
+                                           NULL, NULL, &tapfd, 1, NULL, NULL, -1,
                                            VIR_NETDEV_TAP_CREATE_USE_MAC_FOR_BRIDGE |
                                            VIR_NETDEV_TAP_CREATE_IFUP |
                                            VIR_NETDEV_TAP_CREATE_PERSIST) < 0) {

@@ -77,7 +77,7 @@ bhyveBuildNetArgStr(const virDomainDef *def,
         if (virNetDevTapCreateInBridgePort(brname, &net->ifname, &net->mac,
                                            def->uuid, NULL, NULL, 0,
                                            virDomainNetGetActualVirtPortProfile(net),
-                                           virDomainNetGetActualVlan(net),
+                                           virDomainNetGetActualVlan(net), -1,
                                            VIR_NETDEV_TAP_CREATE_IFUP | VIR_NETDEV_TAP_CREATE_PERSIST) < 0) {
             goto cleanup;
         }

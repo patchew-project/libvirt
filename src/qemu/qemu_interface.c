@@ -543,7 +543,7 @@ qemuInterfaceBridgeConnect(virDomainDefPtr def,
         if (virNetDevTapCreateInBridgePort(brname, &net->ifname, &net->mac,
                                            def->uuid, tunpath, tapfd, *tapfdSize,
                                            virDomainNetGetActualVirtPortProfile(net),
-                                           virDomainNetGetActualVlan(net),
+                                           virDomainNetGetActualVlan(net), -1,
                                            tap_create_flags) < 0) {
             virDomainAuditNetDevice(def, net, tunpath, false);
             goto cleanup;
