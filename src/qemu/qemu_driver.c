@@ -17194,7 +17194,7 @@ qemuDomainSetBlockIoTuneDefaults(virDomainBlockIoTuneInfoPtr newinfo,
     if (!(set_fields & QEMU_BLOCK_IOTUNE_SET_SIZE_IOPS))
         newinfo->size_iops_sec = oldinfo->size_iops_sec;
     if (!(set_fields & QEMU_BLOCK_IOTUNE_SET_GROUP_NAME))
-        VIR_STEAL_PTR(newinfo->group_name, oldinfo->group_name);
+        VIR_STRDUP(newinfo->group_name, oldinfo->group_name);
 
     /* The length field is handled a bit differently. If not defined/set,
      * QEMU will default these to 0 or 1 depending on whether something in
@@ -17512,8 +17512,10 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
             ret = -1;
         if (ret < 0)
             goto endjob;
+
+        VIR_FREE(disk->blkdeviotune.group_name);
         disk->blkdeviotune = info;
-        info.group_name = NULL;
+        VIR_STRDUP(disk->blkdeviotune.group_name, info.group_name);
 
         ret = virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps);
         if (ret < 0)
@@ -17533,10 +17535,14 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
                            path);
             goto endjob;
         }
+
         qemuDomainSetBlockIoTuneDefaults(&info, &conf_disk->blkdeviotune,
                                          set_fields);
+
+        VIR_FREE(conf_disk->blkdeviotune.group_name);
         conf_disk->blkdeviotune = info;
-        info.group_name = NULL;
+        VIR_STRDUP(conf_disk->blkdeviotune.group_name, info.group_name);
+
         ret = virDomainSaveConfig(cfg->configDir, driver->caps, persistentDef);
         if (ret < 0)
             goto endjob;
