@@ -5499,9 +5499,10 @@ qemu-kvm -net nic,model=? /dev/null
               should be auto-allocated). The <code>autoport</code> attribute is
               the new preferred syntax for indicating auto-allocation of the TCP
               port to use. The <code>passwd</code> attribute provides a VNC
-              password in clear text. The <code>keymap</code> attribute specifies
-              the keymap to use. It is possible to set a limit on the validity of
-              the password by giving an timestamp
+              password in clear text, if the <code>passwd</code> is set to empty
+              string the VNC access is disabled. The <code>keymap</code> attribute
+              specifies the keymap to use. It is possible to set a limit on the
+              validity of the password by giving an timestamp
               <code>passwdValidTo='2010-04-09T15:51:00'</code> assumed to be
               in UTC. The <code>connected</code> attribute allows control of
               connected client during password changes. VNC accepts
@@ -5540,11 +5541,13 @@ qemu-kvm -net nic,model=? /dev/null
               an alternative secure port number. The <code>autoport</code>
               attribute is the new preferred syntax for indicating
               auto-allocation of needed port numbers. The <code>passwd</code>
-              attribute provides a SPICE password in clear text. The
-              <code>keymap</code> attribute specifies the keymap to use. It is
-              possible to set a limit on the validity of the password by giving
-              an timestamp <code>passwdValidTo='2010-04-09T15:51:00'</code>
-              assumed to be in UTC.
+              attribute provides a SPICE password in clear text, if the
+              <code>passwd</code> is set to empty string the SPICE access is
+              disabled. The <code>keymap</code> attribute specifies the keymap
+              to use. It is possible to set a limit on the validity of the
+              password by giving an timestamp
+              <code>passwdValidTo='2010-04-09T15:51:00'</code> assumed to be
+              in UTC.
             </p>
             <p>
               The <code>connected</code> attribute allows control of connected
