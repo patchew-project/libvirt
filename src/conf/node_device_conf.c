@@ -37,8 +37,11 @@
 #include "virbuffer.h"
 #include "viruuid.h"
 #include "virrandom.h"
+#include "virlog.h"
 
 #define VIR_FROM_THIS VIR_FROM_NODEDEV
+
+VIR_LOG_INIT("conf.node_device_conf");
 
 VIR_ENUM_IMPL(virNodeDevCap, VIR_NODE_DEV_CAP_LAST,
               "system",
@@ -1032,6 +1035,11 @@ virNodeDevCapSCSIHostParseXML(xmlXPathContextPtr ctxt,
                     goto out;
                 }
             }
+
+            if (virNodeDevCapsDefParseString("string(./fabric_wwn[1])",
+                                             ctxt,
+                                             &data->scsi_host.fabric_wwn) < 0)
+                VIR_DEBUG("No fabric_wwn defined for '%s'", def->name);
 
             ctxt->node = orignode2;
 
