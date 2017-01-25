@@ -11716,6 +11716,8 @@ virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
             if (flags & VIR_DOMAIN_DEF_PARSE_INACTIVE)
                 def->data.vnc.port = 0;
             def->data.vnc.autoport = true;
+        } else {
+            def->data.vnc.autoport = false;
         }
     }
 
