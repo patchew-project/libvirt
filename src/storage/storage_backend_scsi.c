@@ -214,9 +214,9 @@ getAdapterName(virStoragePoolSourceAdapter adapter)
  * sysfs tree to get the parent 'scsi_host#' to ensure it matches.
  */
 static bool
-checkVhbaSCSIHostParent(virConnectPtr conn,
-                        const char *name,
-                        const char *parent_name)
+checkParent(virConnectPtr conn,
+            const char *name,
+            const char *parent_name)
 {
     char *vhba_parent = NULL;
     bool retval = false;
@@ -227,7 +227,7 @@ checkVhbaSCSIHostParent(virConnectPtr conn,
     if (!conn)
         return true;
 
-    if (!(vhba_parent = virStoragePoolGetVhbaSCSIHostParent(conn, name)))
+    if (!(vhba_parent = virVHBAGetParent(conn, name)))
         goto cleanup;
 
     if (STRNEQ(parent_name, vhba_parent)) {
@@ -276,7 +276,7 @@ createVport(virConnectPtr conn,
          * retrieved has the same parent
          */
         if (adapter->data.fchost.parent &&
-            checkVhbaSCSIHostParent(conn, name, adapter->data.fchost.parent))
+            checkParent(conn, name, adapter->data.fchost.parent))
             ret = 0;
 
         goto cleanup;
@@ -416,7 +416,7 @@ deleteVport(virConnectPtr conn,
         if (virGetSCSIHostNumber(adapter.data.fchost.parent, &parent_host) < 0)
             goto cleanup;
     } else {
-        if (!(vhba_parent = virStoragePoolGetVhbaSCSIHostParent(conn, name)))
+        if (!(vhba_parent = virVHBAGetParent(conn, name)))
             goto cleanup;
 
         if (virGetSCSIHostNumber(vhba_parent, &parent_host) < 0)

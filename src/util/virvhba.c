@@ -18,6 +18,8 @@
 
 #include <config.h>
 
+#include "node_device_conf.h"
+
 #include "viralloc.h"
 #include "virerror.h"
 #include "virfile.h"
@@ -530,3 +532,66 @@ virVHBAGetHostByFabricWWN(const char *sysfs_prefix ATTRIBUTE_UNUSED,
 }
 
 #endif /* __linux__ */
+
+
+/* The following will be more generic - using the Node Device driver in
+ * order to perform the lookup rather than looking through the file system
+ * in order to find the answer */
+/*
+ * virVHBAGetParent:
+ *
+ * Using the Node Device Driver, find the host# name found via wwnn/wwpn
+ * lookup in the fc_host sysfs tree (e.g. virGetFCHostNameByWWN) to get
+ * the parent 'scsi_host#'.
+ *
+ * @conn: Connection pointer (must be non-NULL on entry)
+ * @name: Pointer a string from a virGetFCHostNameByWWN (e.g., "host#")
+ *
+ * Returns a "scsi_host#" string of the parent of the vHBA
+ */
+char *
+virVHBAGetParent(virConnectPtr conn,
+                 const char *name)
+{
+    char *nodedev_name = NULL;
+    virNodeDevicePtr device = NULL;
+    char *xml = NULL;
+    virNodeDeviceDefPtr def = NULL;
+    char *vhba_parent = NULL;
+
+    VIR_DEBUG("conn=%p, name=%s", conn, name);
+
+    /* We get passed "host#" from the return from virGetFCHostNameByWWN,
+     * so we need to adjust that to what the nodedev lookup expects
+     */
+    if (virAsprintf(&nodedev_name, "scsi_%s", name) < 0)
+        goto cleanup;
+
+    /* Compare the scsi_host for the name with the provided parent
+     * if not the same, then fail
+     */
+    if (!(device = virNodeDeviceLookupByName(conn, nodedev_name))) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Cannot find '%s' in node device database"),
+                       nodedev_name);
+        goto cleanup;
+    }
+
+    if (!(xml = virNodeDeviceGetXMLDesc(device, 0)))
+        goto cleanup;
+
+    if (!(def = virNodeDeviceDefParseString(xml, EXISTING_DEVICE, NULL)))
+        goto cleanup;
+
+    /* The caller checks whether the returned value is NULL or not
+     * before continuing
+     */
+    ignore_value(VIR_STRDUP(vhba_parent, def->parent));
+
+ cleanup:
+    VIR_FREE(nodedev_name);
+    virNodeDeviceDefFree(def);
+    VIR_FREE(xml);
+    virObjectUnref(device);
+    return vhba_parent;
+}

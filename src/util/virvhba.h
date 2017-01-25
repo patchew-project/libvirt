@@ -52,4 +52,8 @@ char *virVHBAGetHostByFabricWWN(const char *sysfs_prefix,
                                 const char *fabric_wwn)
     ATTRIBUTE_NONNULL(2);
 
+char *virVHBAGetParent(virConnectPtr conn,
+                       const char *name)
+    ATTRIBUTE_NONNULL(1);
+
 #endif /* __VIR_VBHA_H__ */
