@@ -577,16 +577,10 @@ virVHBAGetParent(virConnectPtr conn,
         goto cleanup;
     }
 
-    if (!(xml = virNodeDeviceGetXMLDesc(device, 0)))
-        goto cleanup;
-
-    if (!(def = virNodeDeviceDefParseString(xml, EXISTING_DEVICE, NULL)))
-        goto cleanup;
-
     /* The caller checks whether the returned value is NULL or not
      * before continuing
      */
-    ignore_value(VIR_STRDUP(vhba_parent, def->parent));
+    ignore_value(VIR_STRDUP(vhba_parent, virNodeDeviceGetParent(device)));
 
  cleanup:
     VIR_FREE(nodedev_name);
