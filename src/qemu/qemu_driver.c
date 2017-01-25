@@ -17256,6 +17256,7 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
     virTypedParameterPtr eventParams = NULL;
     int eventNparams = 0;
     int eventMaxparams = 0;
+    char *group_name = NULL;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
                   VIR_DOMAIN_AFFECT_CONFIG, -1);
@@ -17370,7 +17371,7 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
 
         /* NB: Cannot use macro since this is a value.s not a value.ul */
         if (STREQ(param->field, VIR_DOMAIN_BLOCK_IOTUNE_GROUP_NAME)) {
-            if (VIR_STRDUP(info.group_name, params->value.s) < 0)
+            if (VIR_STRDUP(group_name, params->value.s) < 0)
                 goto endjob;
             set_fields |= QEMU_BLOCK_IOTUNE_SET_GROUP_NAME;
             if (virTypedParamsAddString(&eventParams, &eventNparams,
@@ -17500,6 +17501,10 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
 
 #undef CHECK_MAX
 
+        if (set_fields & QEMU_BLOCK_IOTUNE_SET_GROUP_NAME &&
+            VIR_STRDUP(info.group_name, group_name) < 0)
+            goto endjob;
+
          /* NB: Let's let QEMU decide how to handle issues with _length
           * via the JSON error code from the block_set_io_throttle call */
 
@@ -17513,7 +17518,6 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
         if (ret < 0)
             goto endjob;
         disk->blkdeviotune = info;
-        info.group_name = NULL;
 
         ret = virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps);
         if (ret < 0)
@@ -17533,10 +17537,14 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
                            path);
             goto endjob;
         }
+
+        if (set_fields & QEMU_BLOCK_IOTUNE_SET_GROUP_NAME &&
+            VIR_STRDUP(info.group_name, group_name) < 0)
+            goto endjob;
+
         qemuDomainSetBlockIoTuneDefaults(&info, &conf_disk->blkdeviotune,
                                          set_fields);
         conf_disk->blkdeviotune = info;
-        info.group_name = NULL;
         ret = virDomainSaveConfig(cfg->configDir, driver->caps, persistentDef);
         if (ret < 0)
             goto endjob;
@@ -17547,7 +17555,7 @@ qemuDomainSetBlockIoTune(virDomainPtr dom,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
-    VIR_FREE(info.group_name);
+    VIR_FREE(group_name);
     VIR_FREE(device);
     virDomainObjEndAPI(&vm);
     if (eventNparams)
