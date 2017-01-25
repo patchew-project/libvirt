@@ -33,6 +33,7 @@
 #include "virlog.h"
 #include "virfile.h"
 #include "vircommand.h"
+#include "virscsihost.h"
 #include "virstring.h"
 #include "virvhba.h"
 #include "storage_util.h"
@@ -159,7 +160,7 @@ virStoragePoolFCRefreshThread(void *opaque)
         pool->def->allocation = pool->def->capacity = pool->def->available = 0;
 
         if (virStoragePoolObjIsActive(pool) &&
-            virGetSCSIHostNumber(fchost_name, &host) == 0 &&
+            virSCSIHostGetNumber(fchost_name, &host) == 0 &&
             virStorageBackendSCSITriggerRescan(host) == 0) {
             virStoragePoolObjClearVols(pool);
             found = virStorageBackendSCSIFindLUs(pool, host);
@@ -184,7 +185,7 @@ getAdapterName(virStoragePoolSourceAdapter adapter)
             virPCIDeviceAddress addr = adapter.data.scsi_host.parentaddr;
             unsigned int unique_id = adapter.data.scsi_host.unique_id;
 
-            if (!(name = virGetSCSIHostNameByParentaddr(addr.domain,
+            if (!(name = virSCSIHostGetNameByParentaddr(addr.domain,
                                                         addr.bus,
                                                         addr.slot,
                                                         addr.function,
@@ -312,7 +313,7 @@ createVport(virConnectPtr conn,
         skip_capable_check = true;
     }
 
-    if (virGetSCSIHostNumber(parent_hoststr, &parent_host) < 0)
+    if (virSCSIHostGetNumber(parent_hoststr, &parent_host) < 0)
         goto cleanup;
 
     /* NOTE:
@@ -413,13 +414,13 @@ deleteVport(virConnectPtr conn,
      * the parent scsi_host which we did not save at startup time
      */
     if (adapter.data.fchost.parent) {
-        if (virGetSCSIHostNumber(adapter.data.fchost.parent, &parent_host) < 0)
+        if (virSCSIHostGetNumber(adapter.data.fchost.parent, &parent_host) < 0)
             goto cleanup;
     } else {
         if (!(vhba_parent = virVHBAGetParent(conn, name)))
             goto cleanup;
 
-        if (virGetSCSIHostNumber(vhba_parent, &parent_host) < 0)
+        if (virSCSIHostGetNumber(vhba_parent, &parent_host) < 0)
             goto cleanup;
     }
 
@@ -460,7 +461,7 @@ virStorageBackendSCSICheckPool(virStoragePoolObjPtr pool,
         }
     }
 
-    if (virGetSCSIHostNumber(name, &host) < 0)
+    if (virSCSIHostGetNumber(name, &host) < 0)
         goto cleanup;
 
     if (virAsprintf(&path, "%s/host%d",
@@ -489,7 +490,7 @@ virStorageBackendSCSIRefreshPool(virConnectPtr conn ATTRIBUTE_UNUSED,
     if (!(name = getAdapterName(pool->def->source.adapter)))
         return -1;
 
-    if (virGetSCSIHostNumber(name, &host) < 0)
+    if (virSCSIHostGetNumber(name, &host) < 0)
         goto out;
 
     VIR_DEBUG("Scanning host%u", host);
