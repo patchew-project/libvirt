@@ -6150,9 +6150,11 @@ qemuDomainSaveImageOpen(virQEMUDriverPtr driver,
     virDomainDefPtr def = NULL;
     int oflags = open_write ? O_RDWR : O_RDONLY;
     virCapsPtr caps = NULL;
+    unsigned int wrapperFlags = VIR_FILE_WRAPPER_NON_BLOCKING;
 
     if (bypass_cache) {
         int directFlag = virFileDirectFdFlag();
+        wrapperFlags |= VIR_FILE_WRAPPER_BYPASS_CACHE;
         if (directFlag < 0) {
             virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                            _("bypass cache unsupported by this system"));
@@ -6166,9 +6168,8 @@ qemuDomainSaveImageOpen(virQEMUDriverPtr driver,
 
     if ((fd = qemuOpenFile(driver, NULL, path, oflags, NULL, NULL)) < 0)
         goto error;
-    if (bypass_cache &&
-        !(*wrapperFd = virFileWrapperFdNew(&fd, path,
-                                           VIR_FILE_WRAPPER_BYPASS_CACHE)))
+    if (wrapperFd &&
+        !(*wrapperFd = virFileWrapperFdNew(&fd, path, wrapperFlags)))
         goto error;
 
     if (saferead(fd, &header, sizeof(header)) != sizeof(header)) {
