@@ -1939,6 +1939,7 @@
   &lt;event name='ref_cpu_cycles' enabled='no'/&gt;
   &lt;event name='cpu_clock' enabled='no'/&gt;
   &lt;event name='task_clock' enabled='no'/&gt;
+  &lt;event name='page_faults' enabled='no'/&gt;
 &lt;/perf&gt;
 ...
 </pre>
@@ -2026,6 +2027,11 @@
       <td><code>task_clock</code></td>
       <td>the count of task clock by applications running on the platform</td>
       <td><code>perf.task_clock</code></td>
+    </tr>
+    <tr>
+      <td><code>page_faults</code></td>
+      <td>the count of page faults by applications running on the platform</td>
+      <td><code>perf.page_faults</code></td>
     </tr>
   </table>
 
