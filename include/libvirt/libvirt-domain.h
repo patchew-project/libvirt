@@ -2188,6 +2188,16 @@ void virDomainStatsRecordListFree(virDomainStatsRecordPtr *stats);
  */
 # define VIR_PERF_PARAM_REF_CPU_CYCLES "ref_cpu_cycles"
 
+/**
+ * VIR_PERF_PARAM_CPU_CLOCK:
+ *
+ * Macro for typed parameter name that represents cpu_clock
+ * perf event which can be used to measure the count of cpu
+ * clock by applications running on the platform. It corresponds
+ * to the "perf.cpu_clock" field in the *Stats APIs.
+ */
+# define VIR_PERF_PARAM_CPU_CLOCK "cpu_clock"
+
 int virDomainGetPerfEvents(virDomainPtr dom,
                            virTypedParameterPtr *params,
                            int *nparams,
