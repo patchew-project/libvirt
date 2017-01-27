@@ -156,8 +156,8 @@
           executed, branch misses, bus cycles, stalled frontend
           cpu cycles, stalled backend cpu cycles, ref cpu cycles,
           cpu clock, task clock, page faults, context switches,
-          cpu migrations, page faults min and page faults maj by
-          applications running on the platform.
+          cpu migrations, page faults min, page faults maj and
+          alignment faults by applications running on the platform.
         </description>
       </change>
       <change>
