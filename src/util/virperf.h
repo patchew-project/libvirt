@@ -50,6 +50,7 @@ typedef enum {
     VIR_PERF_EVENT_CPU_CLOCK,   /* Count of cpu clock */
     VIR_PERF_EVENT_TASK_CLOCK,   /* Count of task clock */
     VIR_PERF_EVENT_PAGE_FAULTS,   /* Count of page faults */
+    VIR_PERF_EVENT_CONTEXT_SWITCHES,   /* Count of context switches */
 
     VIR_PERF_EVENT_LAST
 } virPerfEventType;
