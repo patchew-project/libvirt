@@ -951,6 +951,7 @@ I<--perf> returns the statistics of all enabled perf events:
 "perf.page_faults" - the count of page faults
 "perf.context_switches" - the count of context switches
 "perf.cpu_migrations" - the count of cpu migrations
+"perf.page_faults_min" - the count of minor page faults
 
 See the B<perf> command for more details about each event.
 
@@ -2326,6 +2327,10 @@ B<Valid perf event names>
   cpu_migrations - Provides the count of cpu migrations, that is, where the
                    process moved from one logical processor to another, by
                    applications running on the platform
+  page_faults_min - Provides the count of minor page faults, that is, where
+                    the page was present in the page cache, and therefore the
+                    fault avoided loading it from storage, by applications
+                    running on the platform
 
 B<Note>: The statistics can be retrieved using the B<domstats> command using
 the I<--perf> flag.

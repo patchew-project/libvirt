@@ -11262,6 +11262,9 @@ virConnectGetDomainCapabilities(virConnectPtr conn,
  *     "perf.cpu_migrations" - The count of cpu migrations as unsigned long
  *                             long. It is produced by the cpu_migrations
  *                             perf event.
+ *     "perf.page_faults_min" - The count of minor page faults as unsigned long
+ *                              long. It is produced by the page_faults_min
+ *                              perf event.
  *
  * Note that entire stats groups or individual stat fields may be missing from
  * the output in case they are not supported by the given hypervisor, are not

@@ -155,8 +155,9 @@
           Add support to get the count of branch instructions
           executed, branch misses, bus cycles, stalled frontend
           cpu cycles, stalled backend cpu cycles, ref cpu cycles,
-          cpu clock, task clock, page faults, context switches and
-          cpu migrations by applications running on the platform.
+          cpu clock, task clock, page faults, context switches,
+          cpu migrations and page faults min by applications
+          running on the platform.
         </description>
       </change>
       <change>

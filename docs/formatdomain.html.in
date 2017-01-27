@@ -1942,6 +1942,7 @@
   &lt;event name='page_faults' enabled='no'/&gt;
   &lt;event name='context_switches' enabled='no'/&gt;
   &lt;event name='cpu_migrations' enabled='no'/&gt;
+  &lt;event name='page_faults_min' enabled='no'/&gt;
 &lt;/perf&gt;
 ...
 </pre>
@@ -2044,6 +2045,12 @@
       <td><code>cpu_migrations</code></td>
       <td>the count of cpu migrations by applications running on the platform</td>
       <td><code>perf.cpu_migrations</code></td>
+    </tr>
+    <tr>
+      <td><code>page_faults_min</code></td>
+      <td>the count of minor page faults by applications running on the
+          platform</td>
+      <td><code>perf.page_faults_min</code></td>
     </tr>
   </table>
 
