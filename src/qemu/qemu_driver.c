@@ -19170,6 +19170,7 @@ qemuDomainGetStatsOneBlock(virQEMUDriverPtr driver,
 
     QEMU_ADD_NAME_PARAM(record, maxparams, "block", "name", block_idx,
                         disk->dst);
+
     if (virStorageSourceIsLocalStorage(src) && src->path)
         QEMU_ADD_NAME_PARAM(record, maxparams, "block", "path",
                             block_idx, src->path);
@@ -19216,7 +19217,7 @@ qemuDomainGetStatsOneBlock(virQEMUDriverPtr driver,
     if (entry->capacity)
         QEMU_ADD_BLOCK_PARAM_ULL(record, maxparams, block_idx,
                                  "capacity", entry->capacity);
-    if (entry->physical) {
+    if (entry->physical || virStorageSourceIsEmpty(src)) {
         QEMU_ADD_BLOCK_PARAM_ULL(record, maxparams, block_idx,
                                  "physical", entry->physical);
     } else {
