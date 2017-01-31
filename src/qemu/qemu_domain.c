@@ -3147,6 +3147,14 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
     if (dev->type == VIR_DOMAIN_DEVICE_CONTROLLER) {
         virDomainControllerDefPtr cont = dev->data.controller;
 
+        if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
+            cont->model == VIR_DOMAIN_CONTROLLER_MODEL_USB_NEC_XHCI &&
+            cont->opts.usbopts.ports > 15) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("nec-xhci controller only supports up to 15 ports"));
+            goto cleanup;
+        }
+
         if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI) {
             if (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_EXPANDER_BUS &&
                 !qemuDomainMachineIsI440FX(def)) {
