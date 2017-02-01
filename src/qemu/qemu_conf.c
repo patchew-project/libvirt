@@ -314,6 +314,9 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
     cfg->glusterDebugLevel = 4;
     cfg->stdioLogD = true;
 
+    if (VIR_STRDUP(cfg->lockManagerName, "lockd") < 0)
+        goto error;
+
     if (!(cfg->namespaces = virBitmapNew(QEMU_DOMAIN_NS_LAST)))
         goto error;
 
