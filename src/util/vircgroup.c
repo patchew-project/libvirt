@@ -3122,7 +3122,7 @@ virCgroupDenyDevicePath(virCgroupPtr group,
  *   s2 = t02 + t12
  *   s3 = t03 + t13
  */
-static int
+int
 virCgroupGetPercpuVcpuSum(virCgroupPtr group,
                           virBitmapPtr guestvcpus,
                           unsigned long long *sum_cpu_time,

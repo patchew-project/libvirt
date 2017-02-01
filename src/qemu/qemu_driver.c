@@ -18775,7 +18775,16 @@ qemuDomainGetStatsCpu(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
     unsigned long long cpu_time = 0;
     unsigned long long user_time = 0;
     unsigned long long sys_time = 0;
+    unsigned long long *sum_cpu_time = NULL;
+    virBitmapPtr cpumap = NULL;
+    virBitmapPtr guestvcpus = NULL;
+    char *buf = NULL;
+    char *pos;
+    char param_name[VIR_TYPED_PARAM_FIELD_LENGTH];
+    int ncpu;
     int err = 0;
+    int ret = -1;
+    size_t i;
 
     if (!priv->cgroup)
         return 0;
@@ -18802,7 +18811,67 @@ qemuDomainGetStatsCpu(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
                                         sys_time) < 0)
         return -1;
 
-    return 0;
+    if ((cpumap = virHostCPUGetPresentBitmap())) {
+        ncpu = virBitmapSize(cpumap);
+
+        if (virTypedParamsAddULLong(&record->params,
+                                    &record->nparams,
+                                    maxparams,
+                                    "cpu.count",
+                                    ncpu) < 0)
+            goto cleanup;
+
+        if (!virCgroupGetCpuacctPercpuUsage(priv->cgroup, &buf)) {
+            pos = buf;
+            for (i = 0; i < ncpu; i++) {
+                unsigned long long time = 0;
+
+                if (virBitmapIsBitSet(cpumap, i) &&
+                    virStrToLong_ull(pos, &pos, 10, &time) < 0) {
+                    VIR_WARN("cpuacct parse error");
+                    continue;
+                }
+
+                snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH,
+                         "cpu.%zu.time", i);
+                if (virTypedParamsAddULLong(&record->params,
+                                            &record->nparams,
+                                            maxparams,
+                                            param_name,
+                                            time) < 0)
+                    goto cleanup;
+            }
+        }
+
+        if (qemuDomainHasVcpuPids(dom) &&
+            (guestvcpus = virDomainDefGetOnlineVcpumap(dom->def)) &&
+            !VIR_ALLOC_N(sum_cpu_time, ncpu) &&
+            !virCgroupGetPercpuVcpuSum(priv->cgroup, guestvcpus,
+                                            sum_cpu_time, ncpu, cpumap)) {
+            for (i = 0; i < ncpu; i++) {
+                snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH,
+                         "cpu.%zu.vtime", i);
+                if (virTypedParamsAddULLong(&record->params,
+                                            &record->nparams,
+                                            maxparams,
+                                            param_name,
+                                            sum_cpu_time[i]) < 0)
+                    goto cleanup;
+            }
+        }
+    }
+
+    ret = 0;
+
+ cleanup:
+    if (!ret && virGetLastError())
+        virResetLastError();
+    virBitmapFree(cpumap);
+    virBitmapFree(guestvcpus);
+    VIR_FREE(sum_cpu_time);
+    VIR_FREE(buf);
+
+    return ret;
 }
 
 static int

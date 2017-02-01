@@ -297,4 +297,9 @@ int virCgroupSetOwner(virCgroupPtr cgroup,
 int virCgroupHasEmptyTasks(virCgroupPtr cgroup, int controller);
 
 bool virCgroupControllerAvailable(int controller);
+int virCgroupGetPercpuVcpuSum(virCgroupPtr group,
+                              virBitmapPtr guestvcpus,
+                              unsigned long long *sum_cpu_time,
+                              size_t nsum,
+                              virBitmapPtr cpumap);
 #endif /* __VIR_CGROUP_H__ */
