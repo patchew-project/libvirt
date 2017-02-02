@@ -1953,6 +1953,10 @@ static const vshCmdOptDef opts_domstats[] = {
      .type = VSH_OT_BOOL,
      .help = N_("report domain physical cpu usage"),
     },
+    {.name = "per-cpu",
+     .type = VSH_OT_BOOL,
+     .help = N_("report domain per physical cpu usage"),
+    },
     {.name = "balloon",
      .type = VSH_OT_BOOL,
      .help = N_("report domain balloon statistics"),
@@ -2071,6 +2075,9 @@ cmdDomstats(vshControl *ctl, const vshCmd *cmd)
 
     if (vshCommandOptBool(cmd, "cpu-total"))
         stats |= VIR_DOMAIN_STATS_CPU_TOTAL;
+
+    if (vshCommandOptBool(cmd, "per-cpu"))
+        stats |= VIR_DOMAIN_STATS_PER_CPU;
 
     if (vshCommandOptBool(cmd, "balloon"))
         stats |= VIR_DOMAIN_STATS_BALLOON;

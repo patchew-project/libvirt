@@ -11126,6 +11126,13 @@ virConnectGetDomainCapabilities(virConnectPtr conn,
  *     "cpu.system" - system cpu time spent in nanoseconds as unsigned long
  *                    long.
  *
+ * VIR_DOMAIN_STATS_PER_CPU:
+ *     Return per host CPU statistics
+ *     "cpu.count" - number of host cpus
+ *     "cpu.<num>.time" - total cpu time spent for this domain in nanoseconds
+ *     "cpu.<num>.vtime" - time spent in virtual cpu threads for this domain
+ *                         in nanoseconds
+ *
  * VIR_DOMAIN_STATS_BALLOON:
  *     Return memory balloon device information.
  *     The typed parameter keys are in this format:

@@ -860,8 +860,9 @@ I<snapshot-create> for disk snapshots) will accept either target
 or unique source names printed by this command.
 
 =item B<domstats> [I<--raw>] [I<--enforce>] [I<--backing>] [I<--state>]
-[I<--cpu-total>] [I<--balloon>] [I<--vcpu>] [I<--interface>] [I<--block>]
-[I<--perf>] [[I<--list-active>] [I<--list-inactive>] [I<--list-persistent>]
+[I<--cpu-total>] [I<--per-cpu>] [I<--balloon>] [I<--vcpu>] [I<--interface>]
+[I<--block>] [I<--perf>]
+[[I<--list-active>] [I<--list-inactive>] [I<--list-persistent>]
 [I<--list-transient>] [I<--list-running>] [I<--list-paused>]
 [I<--list-shutoff>] [I<--list-other>]] | [I<domain> ...]
 
@@ -893,6 +894,12 @@ I<--cpu-total> returns:
 "cpu.time" - total cpu time spent for this domain in nanoseconds,
 "cpu.user" - user cpu time spent in nanoseconds,
 "cpu.system" - system cpu time spent in nanoseconds
+
+I<--per-cpu> returns:
+"cpu.count" - number of host cpus,
+"cpu.<num>.time" - total cpu time spent for this domain in nanoseconds,
+"cpu.<num>.vtime" - time spent in virtual cpu threads for this domain
+in nanoseconds.
 
 I<--balloon> returns:
 "balloon.current" - the memory in kiB currently used,

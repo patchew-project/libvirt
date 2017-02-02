@@ -18806,6 +18806,69 @@ qemuDomainGetStatsCpu(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
 }
 
 static int
+qemuDomainGetStatsPerCpu(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
+                         virDomainObjPtr dom,
+                         virDomainStatsRecordPtr record,
+                         int *maxparams,
+                         unsigned int privflags ATTRIBUTE_UNUSED)
+{
+    qemuDomainObjPrivatePtr priv = dom->privateData;
+    virCgroupCpuStats stats = {0};
+    virBitmapPtr guestvcpus = NULL;
+    char param_name[VIR_TYPED_PARAM_FIELD_LENGTH];
+    int ncpus;
+    size_t i;
+    int ret = -1;
+
+    if (qemuDomainHasVcpuPids(dom))
+        guestvcpus = virDomainDefGetOnlineVcpumap(dom->def);
+
+    ncpus = virCgroupGetCpuStats(priv->cgroup, guestvcpus, &stats);
+
+    if (ncpus > 0) {
+        if (virTypedParamsAddUInt(&record->params,
+                                  &record->nparams,
+                                  maxparams,
+                                  "cpu.count",
+                                  ncpus) < 0)
+            goto cleanup;
+
+        for (i = 0; i < ncpus; i++) {
+            snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH,
+                     "cpu.%zu.time", i);
+            if (virTypedParamsAddULLong(&record->params,
+                                        &record->nparams,
+                                        maxparams,
+                                        param_name,
+                                        stats.time[i]) < 0)
+                goto cleanup;
+
+
+            if (stats.vtime) {
+                snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH,
+                         "cpu.%zu.vtime", i);
+                if (virTypedParamsAddULLong(&record->params,
+                                            &record->nparams,
+                                            maxparams,
+                                            param_name,
+                                            stats.vtime[i]) < 0)
+                    goto cleanup;
+            }
+        }
+    }
+
+    ret = 0;
+
+ cleanup:
+    if (!ret && virGetLastError())
+        virResetLastError();
+    virBitmapFree(guestvcpus);
+    virCgroupCpuStatsFree(&stats);
+
+    return ret;
+}
+
+static int
 qemuDomainGetStatsBalloon(virQEMUDriverPtr driver,
                           virDomainObjPtr dom,
                           virDomainStatsRecordPtr record,
@@ -19380,6 +19443,7 @@ struct qemuDomainGetStatsWorker {
 static struct qemuDomainGetStatsWorker qemuDomainGetStatsWorkers[] = {
     { qemuDomainGetStatsState, VIR_DOMAIN_STATS_STATE, false },
     { qemuDomainGetStatsCpu, VIR_DOMAIN_STATS_CPU_TOTAL, false },
+    { qemuDomainGetStatsPerCpu, VIR_DOMAIN_STATS_PER_CPU, false },
     { qemuDomainGetStatsBalloon, VIR_DOMAIN_STATS_BALLOON, true },
     { qemuDomainGetStatsVcpu, VIR_DOMAIN_STATS_VCPU, true },
     { qemuDomainGetStatsInterface, VIR_DOMAIN_STATS_INTERFACE, false },

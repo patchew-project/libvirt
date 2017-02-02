@@ -42,6 +42,15 @@
           Allow setting MTU size for some types of domain interface.
         </description>
       </change>
+      <change>
+        <summary>
+          Show per host cpu stats in all domain stats
+        </summary>
+        <description>
+          Show stats provided in virDomainGetCPUStats in all domain stats
+          as well.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
       <change>
