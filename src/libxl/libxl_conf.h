@@ -173,6 +173,9 @@ libxlDriverNodeGetInfo(libxlDriverPrivatePtr driver,
 int libxlDriverConfigLoadFile(libxlDriverConfigPtr cfg,
                               const char *filename);
 
+unsigned long long
+libxlDriverGetDom0MaxmemConf(libxlDriverConfigPtr cfg);
+
 int
 libxlMakeDisk(virDomainDiskDefPtr l_dev, libxl_device_disk *x_dev);
 int

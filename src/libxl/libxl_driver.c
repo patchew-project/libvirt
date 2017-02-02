@@ -615,7 +615,7 @@ libxlAddDom0(libxlDriverPrivatePtr driver)
     if (virDomainDefSetVcpus(vm->def, d_info.vcpu_online) < 0)
         goto cleanup;
     vm->def->mem.cur_balloon = d_info.current_memkb;
-    virDomainDefSetMemoryTotal(vm->def, d_info.max_memkb);
+    virDomainDefSetMemoryTotal(vm->def, libxlDriverGetDom0MaxmemConf(cfg));
 
     ret = 0;
 
