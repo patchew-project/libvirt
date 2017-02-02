@@ -435,6 +435,8 @@ qemuMonitorTestFree(qemuMonitorTestPtr test)
         qemuAgentClose(test->agent);
     }
 
+    sleep(1);
+
     virObjectUnref(test->vm);
 
     if (test->started)
