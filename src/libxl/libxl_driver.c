@@ -4286,6 +4286,7 @@ libxlNodeGetFreeMemory(virConnectPtr conn)
     if (virNodeGetFreeMemoryEnsureACL(conn) < 0)
         goto cleanup;
 
+    libxl_physinfo_init(&phy_info);
     if (libxl_get_physinfo(cfg->ctx, &phy_info)) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("libxl_get_physinfo_info failed"));
@@ -4295,6 +4296,7 @@ libxlNodeGetFreeMemory(virConnectPtr conn)
     ret = phy_info.free_pages * cfg->verInfo->pagesize;
 
  cleanup:
+    libxl_physinfo_dispose(&phy_info);
     virObjectUnref(cfg);
     return ret;
 }
