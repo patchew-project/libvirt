@@ -89,6 +89,10 @@ typedef enum {
                                        */
 } virCgroupFlags;
 
+static int
+virCgroupGetPercpuTime(virCgroupPtr group,
+                       virBitmapPtr cpumap,
+                       unsigned long long *time);
 
 /**
  * virCgroupGetDevicePermsString:
@@ -3123,49 +3127,41 @@ virCgroupDenyDevicePath(virCgroupPtr group,
  *   s3 = t03 + t13
  */
 static int
-virCgroupGetPercpuVcpuSum(virCgroupPtr group,
-                          virBitmapPtr guestvcpus,
-                          unsigned long long *sum_cpu_time,
-                          size_t nsum,
-                          virBitmapPtr cpumap)
+virCgroupGetPercpuVTime(virCgroupPtr group,
+                        virBitmapPtr guestvcpus,
+                        unsigned long long *vtime,
+                        virBitmapPtr cpumap)
 {
     int ret = -1;
     ssize_t i = -1;
-    char *buf = NULL;
     virCgroupPtr group_vcpu = NULL;
+    unsigned long long *time = NULL;
+    int ncpus = virBitmapSize(cpumap);
+
+
+    if (VIR_ALLOC_N(time, ncpus) < 0)
+        goto cleanup;
 
     while ((i = virBitmapNextSetBit(guestvcpus, i)) >= 0) {
-        char *pos;
-        unsigned long long tmp;
         ssize_t j;
 
         if (virCgroupNewThread(group, VIR_CGROUP_THREAD_VCPU, i,
                                false, &group_vcpu) < 0)
             goto cleanup;
 
-        if (virCgroupGetCpuacctPercpuUsage(group_vcpu, &buf) < 0)
+        if (virCgroupGetPercpuTime(group_vcpu, cpumap, time) < 0)
             goto cleanup;
 
-        pos = buf;
-        for (j = virBitmapNextSetBit(cpumap, -1);
-             j >= 0 && j < nsum;
-             j = virBitmapNextSetBit(cpumap, j)) {
-            if (virStrToLong_ull(pos, &pos, 10, &tmp) < 0) {
-                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                               _("cpuacct parse error"));
-                goto cleanup;
-            }
-            sum_cpu_time[j] += tmp;
-        }
+        for (j = 0; j < ncpus; j++)
+            vtime[j] += time[j];
 
         virCgroupFree(&group_vcpu);
-        VIR_FREE(buf);
     }
 
     ret = 0;
  cleanup:
     virCgroupFree(&group_vcpu);
-    VIR_FREE(buf);
+    VIR_FREE(time);
     return ret;
 }
 
@@ -3254,8 +3250,8 @@ virCgroupGetCpuStats(virCgroupPtr group,
         if (VIR_ALLOC_N(stats->vtime, ncpus) < 0)
             goto cleanup;
 
-        if (virCgroupGetPercpuVcpuSum(group, guestvcpus, stats->vtime,
-                                      ncpus, cpumap) < 0)
+        if (virCgroupGetPercpuVTime(group, guestvcpus, stats->vtime,
+                                    cpumap) < 0)
             goto cleanup;
     }
 
