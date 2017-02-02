@@ -297,4 +297,21 @@ int virCgroupSetOwner(virCgroupPtr cgroup,
 int virCgroupHasEmptyTasks(virCgroupPtr cgroup, int controller);
 
 bool virCgroupControllerAvailable(int controller);
+
+struct virCgroupCpuStats_ {
+    /* time arrays are not sparsed, that is if cpu is offline
+     * it has value 0 for time instead of being skipped */
+    unsigned long long *time; /* per cpu time */
+    unsigned long long *vtime;/* per cpu time for virtual cpu threads */
+};
+
+typedef struct virCgroupCpuStats_ virCgroupCpuStats;
+typedef virCgroupCpuStats *virCgroupCpuStatsPtr;
+
+int virCgroupGetCpuStats(virCgroupPtr group,
+                         virBitmapPtr guestvcpus,
+                         virCgroupCpuStatsPtr stats);
+void virCgroupCpuStatsFree(virCgroupCpuStatsPtr stats);
+
+
 #endif /* __VIR_CGROUP_H__ */
