@@ -42,9 +42,10 @@ enum {
     RDT_RESOURCE_L3CODE,
     RDT_RESOURCE_L2,
     /* Must be the last */
-    RDT_NUM_RESOURCES,
+    RDT_NUM_RESOURCES
 };
 
+VIR_ENUM_DECL(virResCtrl);
 
 typedef struct _virResCacheBank virResCacheBank;
 typedef virResCacheBank *virResCacheBankPtr;

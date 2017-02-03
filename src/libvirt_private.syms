@@ -2317,6 +2317,9 @@ virRandomInt;
 virResCtrlAvailable;
 virResCtrlInit;
 virResCtrlGet;
+virResCtrlTypeFromString;
+virResCtrlTypeToString;
+
 
 # util/virrotatingfile.h
 virRotatingFileReaderConsume;

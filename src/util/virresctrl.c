@@ -41,6 +41,31 @@ VIR_LOG_INIT("util.resctrl");
 
 #define VIR_FROM_THIS VIR_FROM_RESCTRL
 
+VIR_ENUM_IMPL(virResCtrl, RDT_NUM_RESOURCES,
+              "l3", "l3data", "l3code", "l2");
+
+#define CONSTRUCT_RESCTRL_PATH(domain_name, item_name) \
+do { \
+    if (NULL == domain_name) { \
+        if (asprintf(&path, "%s/%s", RESCTRL_DIR, item_name) < 0)\
+            return -1; \
+    } \
+    else { \
+        if (asprintf(&path, "%s/%s/%s", RESCTRL_DIR, \
+                                        domain_name, \
+                                        item_name) < 0) \
+            return -1;  \
+    } \
+} while(0)
+
+#define VIR_RESCTRL_ENABLED(type) \
+    ResCtrlAll[type].enabled
+
+#define VIR_RESCTRL_GET_SCHEMATA(count) ((1 << count) - 1)
+
+#define VIR_RESCTRL_SET_SCHEMATA(p, type, pos, val) \
+    p->schematas[type]->schemata_items[pos] = val
+
 static unsigned int host_id = 0;
 
 static virResCtrl ResCtrlAll[] = {
