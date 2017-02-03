@@ -45,6 +45,7 @@
 #include "qemu_domain.h"
 #define __QEMU_CAPSRIV_H_ALLOW__
 #include "qemu_capspriv.h"
+#include "virresctrl.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -1098,7 +1099,71 @@ virQEMUCapsInitCPU(virCapsPtr caps,
     goto cleanup;
 }
 
+static int
+virQEMUCapsInitCache(virCapsPtr caps)
+{
+    int i, j;
+    virResCtrlPtr resctrl;
+    virCapsHostCacheBankPtr bank;
 
+    for (i = 0; i < RDT_NUM_RESOURCES; i ++)
+    {
+        /* L3DATA and L3CODE share L3 resources */
+        if ( i == RDT_RESOURCE_L3CODE )
+            continue;
+
+        resctrl = virResCtrlGet(i);
+
+        if(resctrl->enabled) {
+            for( j = 0; j < resctrl->num_banks; j++)
+            {
+                if(VIR_RESIZE_N(caps->host.cachebank, caps->host.ncachebank_max,
+                                caps->host.ncachebank, 1) < 0)
+                    return -1;
+
+                if(VIR_ALLOC(bank) < 0)
+                    return -1;
+
+                bank->id = resctrl->cache_banks[j].host_id;
+                if(VIR_STRDUP(bank->type, resctrl->cache_level) < 0)
+                    goto err;
+                if(VIR_STRDUP(bank->cpus, virBitmapFormat(resctrl->cache_banks[j].cpu_mask)) < 0)
+                    goto err;
+                bank->size = resctrl->cache_banks[j].cache_size;
+                /*L3DATA and L3CODE shares L3 cache resources, so fill them to the control element*/
+                if ( i == RDT_RESOURCE_L3DATA ) {
+                    if(VIR_EXPAND_N(bank->control, bank->ncontrol, 2) < 0)
+                        goto err;
+
+                    bank->control[0].min = virResCtrlGet(RDT_RESOURCE_L3DATA)->cache_banks[j].cache_min;
+                    bank->control[0].reserved = bank->control[0].min * (virResCtrlGet(RDT_RESOURCE_L3DATA)->min_cbm_bits);
+                    if(VIR_STRDUP(bank->control[0].scope,
+                                  virResCtrlGet(RDT_RESOURCE_L3DATA)->name) < 0)
+                        goto err;
+
+                    bank->control[1].min = virResCtrlGet(RDT_RESOURCE_L3CODE)->cache_banks[j].cache_min;
+                    bank->control[1].reserved = bank->control[1].min * (virResCtrlGet(RDT_RESOURCE_L3CODE)->min_cbm_bits);
+                    if(VIR_STRDUP(bank->control[1].scope,
+                                  virResCtrlGet(RDT_RESOURCE_L3CODE)->name) < 0)
+                        goto err;
+                }
+                else {
+                    if(VIR_EXPAND_N(bank->control, bank->ncontrol, 1) < 0)
+                        goto err;
+                    bank->control[0].min = resctrl->cache_banks[j].cache_min;
+                    bank->control[0].reserved = bank->control[0].min * resctrl->min_cbm_bits;
+                    if(VIR_STRDUP(bank->control[0].scope, resctrl->name) < 0)
+                        goto err;
+                }
+                caps->host.cachebank[caps->host.ncachebank++] = bank;
+            }
+        }
+    }
+    return 0;
+err:
+    VIR_FREE(bank);
+    return -1;
+}
 static int
 virQEMUCapsInitPages(virCapsPtr caps)
 {
@@ -1143,6 +1208,9 @@ virCapsPtr virQEMUCapsInit(virQEMUCapsCachePtr cache)
 
     if (virQEMUCapsInitCPU(caps, hostarch) < 0)
         VIR_WARN("Failed to get host CPU");
+
+    if (virQEMUCapsInitCache(caps) < 0)
+        VIR_WARN("Failed to get host cache");
 
     /* Add the power management features of the host */
     if (virNodeSuspendGetTargetMask(&caps->host.powerMgmt) < 0)
