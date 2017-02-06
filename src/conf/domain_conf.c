@@ -21140,6 +21140,7 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
     virDomainHostdevSubsysPCIPtr pcisrc = &def->source.subsys.u.pci;
     virDomainHostdevSubsysSCSIPtr scsisrc = &def->source.subsys.u.scsi;
     virDomainHostdevSubsysSCSIVHostPtr hostsrc = &def->source.subsys.u.scsi_host;
+    virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
     virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
     virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &scsisrc->u.iscsi;
 
@@ -21243,6 +21244,15 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
         }
         break;
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST:
+        break;
+    case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
+        if (virPCIDeviceAddressFormat(buf, mdevsrc->addr,
+                                      includeTypeInAddr) != 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("PCI address Formatting failed"));
+            return -1;
+        }
+        virBufferAsprintf(buf, "<uuid>%s</uuid>\n", mdevsrc->uuidstr);
         break;
     default:
         virReportError(VIR_ERR_INTERNAL_ERROR,
