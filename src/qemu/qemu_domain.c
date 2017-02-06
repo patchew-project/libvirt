@@ -2629,6 +2629,23 @@ qemuDomainDefVcpusPostParse(virDomainDefPtr def)
 
 
 static int
+qemuDomainDefMemoryLockingPostParse(virDomainDefPtr def)
+{
+    /* Memory locking can only work properly if the memory locking limit
+     * for the QEMU process has been raised appropriately: the default one
+     * is extrememly low, so there's no way the guest will fit in there */
+    if (def->mem.locked && !virMemoryLimitIsSet(def->mem.hard_limit)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Setting <memoryBacking><locked> requires "
+                         "<memtune><hard_limit> to be set as well"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 qemuDomainDefPostParse(virDomainDefPtr def,
                        virCapsPtr caps,
                        unsigned int parseFlags,
@@ -2690,6 +2707,9 @@ qemuDomainDefPostParse(virDomainDefPtr def,
         goto cleanup;
 
     if (qemuDomainDefVcpusPostParse(def) < 0)
+        goto cleanup;
+
+    if (qemuDomainDefMemoryLockingPostParse(def) < 0)
         goto cleanup;
 
     ret = 0;

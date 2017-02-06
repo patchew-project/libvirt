@@ -2129,6 +2129,7 @@ mymain(void)
     DO_TEST_FAILURE("mlock-on", NONE);
     DO_TEST("mlock-off", QEMU_CAPS_REALTIME_MLOCK);
     DO_TEST("mlock-unsupported", NONE);
+    DO_TEST_PARSE_ERROR("mlock-without-hardlimit", NONE);
 
     DO_TEST_PARSE_ERROR("pci-bridge-negative-index-invalid",
                         QEMU_CAPS_DEVICE_PCI_BRIDGE);
