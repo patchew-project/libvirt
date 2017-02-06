@@ -1469,6 +1469,12 @@ mymain(void)
     DO_TEST("hostdev-vfio-multidomain",
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_DEVICE_VFIO_PCI, QEMU_CAPS_HOST_PCI_MULTIDOMAIN);
+    DO_TEST("hostdev-mdev-unmanaged",
+            QEMU_CAPS_NODEFCONFIG,
+            QEMU_CAPS_DEVICE_VFIO_PCI);
+    DO_TEST_PARSE_ERROR("hostdev-mdev-unmanaged-no-uuid",
+                        QEMU_CAPS_NODEFCONFIG,
+                        QEMU_CAPS_DEVICE_VFIO_PCI);
     DO_TEST_FAILURE("hostdev-vfio-multidomain",
                     QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_DEVICE_VFIO_PCI);
     DO_TEST("pci-rom",
