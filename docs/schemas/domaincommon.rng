@@ -3984,6 +3984,7 @@
       <ref name="hostdevsubsysusb"/>
       <ref name="hostdevsubsysscsi"/>
       <ref name="hostdevsubsyshost"/>
+      <ref name="hostdevsubsysmdev"/>
     </choice>
   </define>
 
@@ -4131,6 +4132,22 @@
           </attribute>
         </group>
       </choice>
+    </element>
+  </define>
+
+  <define name="hostdevsubsysmdev">
+    <attribute name="type">
+      <value>mdev</value>
+    </attribute>
+    <element name="source">
+      <element name="address">
+        <ref name="pciaddress"/>
+      </element>
+      <optional>
+        <element name="uuid">
+          <ref name="UUID"/>
+        </element>
+      </optional>
     </element>
   </define>
 
