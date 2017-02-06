@@ -498,6 +498,7 @@ int virResCtrlRefreshSchemata(void)
     int k;
     unsigned int tmp_schemata;
     unsigned int default_schemata;
+    int pair_type = 0;
 
     virResDomainPtr header, p;
 
@@ -505,6 +506,12 @@ int virResCtrlRefreshSchemata(void)
 
     for (i = 0; i < RDT_NUM_RESOURCES; i++) {
         if (VIR_RESCTRL_ENABLED(i)) {
+
+            if (i == RDT_RESOURCE_L3DATA)
+                pair_type = RDT_RESOURCE_L3CODE;
+            if (i == RDT_RESOURCE_L3CODE)
+                pair_type = RDT_RESOURCE_L3DATA;
+
             for(j = 0; j < header->schematas[i]->n_schemata_items; j ++) {
                 p = header->next;
                 default_schemata = VIR_RESCTRL_GET_SCHEMATA(ResCtrlAll[i].cbm_len);
@@ -512,6 +519,8 @@ int virResCtrlRefreshSchemata(void)
                 /* NOTEs: if only header domain, the schemata will be set to default one*/
                 for (k = 1; k < DomainAll.num_domains; k++) {
                     tmp_schemata |= p->schematas[i]->schemata_items[j].schemata;
+                    if(pair_type > 0)
+                        tmp_schemata |= p->schematas[pair_type]->schemata_items[j].schemata;
                     p = p->next;
                 }
                 /* sys fs doens't let us use 0 */
@@ -845,6 +854,7 @@ virResCtrlCalculateSchemata(int type,
     virResDomainPtr p;
     unsigned int tmp_schemata;
     unsigned int schemata_sum = 0;
+    int pair_type = 0;
 
     if(ResCtrlAll[type].cache_banks[sid].cache_left < size) {
         VIR_ERROR("Note enough cache left on bank %u", hostid);
@@ -859,8 +869,19 @@ virResCtrlCalculateSchemata(int type,
 
     p = DomainAll.domains;
     p = p->next;
+
+    /* for type is l3code and l3data, we need to deal them specially*/
+
+    if (type == RDT_RESOURCE_L3DATA)
+        pair_type =  RDT_RESOURCE_L3CODE;
+
+    if (type == RDT_RESOURCE_L3CODE)
+        pair_type = RDT_RESOURCE_L3DATA;
+
     for (i = 1; i < DomainAll.num_domains; i ++) {
         schemata_sum |= p->schematas[type]->schemata_items[sid].schemata;
+        if(pair_type > 0)
+            schemata_sum |= p->schematas[pair_type]->schemata_items[sid].schemata;
         p = p->next;
     }
 
@@ -901,6 +922,8 @@ int virResCtrlSetCacheBanks(virDomainCachetunePtr cachetune,
     }
 
     if (p != NULL) {
+        virResCtrlAppendDomain(p);
+
         for(i = 0 ; i < cachetune->n_banks; i++) {
             if ((type = virResCtrlTypeFromString(
                             cachetune->cache_banks[i].type)) < 0 ) {
@@ -934,7 +957,6 @@ int virResCtrlSetCacheBanks(virDomainCachetunePtr cachetune,
             virResCtrlDestroyDomain(p);
             return -1;
         }
-        virResCtrlAppendDomain(p);
     } else {
         VIR_ERROR("Failed to create a domain in sysfs");
         return -1;
