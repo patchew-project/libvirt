@@ -3027,7 +3027,7 @@ libxlDomainAttachDeviceDiskLive(virDomainObjPtr vm, virDomainDeviceDefPtr dev)
                     }
                     goto cleanup;
                 }
-
+                libxlUpdateDisk(l_disk, &x_disk);
                 virDomainDiskInsertPreAlloced(vm->def, l_disk);
 
             } else {
