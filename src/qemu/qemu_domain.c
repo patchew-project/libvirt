@@ -6901,6 +6901,7 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
             break;
         }
 
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
             break;
         }
