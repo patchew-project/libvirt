@@ -3765,6 +3765,20 @@
   &lt;/devices&gt;
   ...</pre>
 
+    <p>or:</p>
+
+<pre>
+  ...
+  &lt;devices&gt;
+    &lt;hostdev mode='subsystem' type='mdev'&gt;
+    &lt;source&gt;
+      &lt;address domain='0x0000' bus='0x06' slot='0x02' function='0x0'/&gt;
+      &lt;uuid&gt;c2177883-f1bb-47f0-914d-32a22e3a8804&lt;/uuid&gt;
+    &lt;/source&gt;
+    &lt;/hostdev&gt;
+  &lt;/devices&gt;
+  ...</pre>
+
     <dl>
       <dt><code>hostdev</code></dt>
       <dd>The <code>hostdev</code> element is the main container for describing
@@ -3809,12 +3823,20 @@
             <code>type</code> passes all LUNs presented by a single HBA to
             the guest.
           </dd>
+          <dt><code>mdev</code></dt>
+          <dd>For mediated devices (<span class="since">Since 3.1.0</span>)
+          the <code>managed</code> attribute controls whether the mediated
+          device to be assigned is pre-created by the user or shall be created
+          automatically by libvirt using the information provided by the
+          <code>source</code> element. Currently, only the value "no" is
+          supported which is the same as omitting the attribute completely.
+          </dd>
         </dl>
         <p>
-          Note: The <code>managed</code> attribute is only used with PCI devices
-          and is ignored by all the other device types, thus setting
-          <code>managed</code> explicitly with other than PCI device has the same
-          effect as omitting it.
+          Note: The <code>managed</code> attribute is only used with PCI and
+          mediated devices and is ignored by all the other device types, thus
+          setting <code>managed</code> explicitly with other than a PCI or a
+          mediated device has the same effect as omitting it.
         </p>
       </dd>
       <dt><code>source</code></dt>
@@ -3878,6 +3900,16 @@
             attribute set to "vhost" and a <code>wwpn</code> attribute that
             is the vhost_scsi wwpn (16 hexadecimal digits with a prefix of
             "naa.") established in the host configfs.
+          </dd>
+          <dt><code>mdev</code></dt>
+          <dd>Mediated devices (<span class="since">Since 3.1.0</span>) are
+          described by the PCI <code>address</code> of the backing physical
+          parent device. Additionally, the mediated device is further identified
+          by the <code>uuid</code> element. The element is optional if
+          <code>managed="yes"</code>, in which case the UUID shall be
+          generated automatically along with creation with the mediated
+          device. However, when <code>managed="no"</code> then <code>uuid</code>
+          element is mandatory.
           </dd>
         </dl>
       </dd>
