@@ -6326,6 +6326,49 @@ virDomainHostdevSubsysSCSIVHostDefParseXML(xmlNodePtr sourcenode,
     return ret;
 }
 
+static int
+virDomainHostdevSubsysMediatedDevDefParseXML(virDomainHostdevDefPtr def,
+                                             xmlXPathContextPtr ctxt)
+{
+    int ret = -1;
+    unsigned char uuid[VIR_UUID_BUFLEN] = {0};
+    char *uuidxml = NULL;
+    xmlNodePtr node = NULL;
+
+    virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
+    virPCIDeviceAddressPtr addr = &mdevsrc->addr;
+
+    node = virXPathNode("./source/address", ctxt);
+    if (virPCIDeviceAddressParseXML(node, addr) < 0)
+        return -1;
+
+    uuidxml = virXPathString("string(./source/uuid)", ctxt);
+    if (!uuidxml && !def->managed) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("uuid element is mandatory for unmanaged devices"));
+        goto cleanup;
+    }
+
+    if (uuidxml) {
+        if (virUUIDParse(uuidxml, uuid) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           "%s", _("malformed uuid element"));
+            goto cleanup;
+        }
+    } else {
+        if (virUUIDGenerate(uuid)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           "%s", _("Failed to generate UUID"));
+            goto cleanup;
+        }
+    }
+
+    virUUIDFormat(uuid, mdevsrc->uuidstr);
+    ret = 0;
+ cleanup:
+    VIR_FREE(uuidxml);
+    return ret;
+}
 
 static int
 virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
@@ -6455,6 +6498,8 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
             goto error;
         break;
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
+        if (virDomainHostdevSubsysMediatedDevDefParseXML(def, ctxt) < 0)
+            goto error;
         break;
 
     default:
