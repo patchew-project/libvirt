@@ -14192,6 +14192,24 @@ virDomainHostdevMatchSubsysSCSIiSCSI(virDomainHostdevDefPtr first,
 }
 
 static int
+virDomainHostdevMatchSubsysMediatedDev(virDomainHostdevDefPtr first,
+                                       virDomainHostdevDefPtr second)
+{
+    virDomainHostdevSubsysMediatedDevPtr first_mdevsrc =
+        &first->source.subsys.u.mdev;
+    virDomainHostdevSubsysMediatedDevPtr second_mdevsrc =
+        &second->source.subsys.u.mdev;
+
+    if (STREQ(first_mdevsrc->uuidstr, second_mdevsrc->uuidstr) &&
+        first_mdevsrc->addr.domain == second_mdevsrc->addr.domain &&
+        first_mdevsrc->addr.bus == second_mdevsrc->addr.bus &&
+        first_mdevsrc->addr.slot == second_mdevsrc->addr.slot &&
+        first_mdevsrc->addr.function == second_mdevsrc->addr.function)
+        return 1;
+    return 0;
+}
+
+static int
 virDomainHostdevMatchSubsys(virDomainHostdevDefPtr a,
                             virDomainHostdevDefPtr b)
 {
@@ -14222,6 +14240,7 @@ virDomainHostdevMatchSubsys(virDomainHostdevDefPtr a,
         else
             return 0;
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
+        return virDomainHostdevMatchSubsysMediatedDev(a, b);
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
         return 0;
     }
