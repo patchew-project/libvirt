@@ -76,6 +76,7 @@
 #include "configmake.h"
 #include "nwfilter_conf.h"
 #include "netdev_bandwidth_conf.h"
+#include "virresctrl.h"
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
@@ -5714,6 +5715,12 @@ qemuProcessLaunch(virConnectPtr conn,
         qemuProcessAutoDestroyAdd(driver, vm, conn) < 0)
         goto cleanup;
 
+    VIR_DEBUG("Cache allocation");
+
+    if (virResCtrlAvailable() &&
+            virResCtrlSetCacheBanks(&(vm->def->cachetune), vm->def->uuid, vm->pid) < 0)
+        goto cleanup;
+
     ret = 0;
 
  cleanup:
@@ -6215,6 +6222,10 @@ void qemuProcessStop(virQEMUDriverPtr driver,
 
     virPerfFree(priv->perf);
     priv->perf = NULL;
+
+    if(virResCtrlAvailable() && virResCtrlUpdate() < 0)
+        VIR_WARN("Failed to update resource control for %s",
+                 vm->def->name);
 
     qemuProcessRemoveDomainStatus(driver, vm);
 
