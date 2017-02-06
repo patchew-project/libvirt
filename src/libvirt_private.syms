@@ -2319,6 +2319,8 @@ virResCtrlInit;
 virResCtrlGet;
 virResCtrlTypeFromString;
 virResCtrlTypeToString;
+virResCtrlSetCacheBanks;
+virResCtrlUpdate;
 
 
 # util/virrotatingfile.h

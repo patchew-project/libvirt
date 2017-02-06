@@ -26,6 +26,7 @@
 
 # include "virutil.h"
 # include "virbitmap.h"
+# include "domain_conf.h"
 
 #define RESCTRL_DIR "/sys/fs/resctrl"
 #define RESCTRL_INFO_DIR "/sys/fs/resctrl/info"
@@ -82,9 +83,53 @@ struct _virResCtrl {
         virResCacheBankPtr      cache_banks;
 };
 
+/**
+ * a virResSchemata represents a schemata object under a resource control
+ * domain.
+ */
+typedef struct _virResSchemataItem virResSchemataItem;
+typedef virResSchemataItem *virResSchemataItemPtr;
+struct _virResSchemataItem {
+    unsigned int socket_no;
+    unsigned schemata;
+};
+
+typedef struct _virResSchemata virResSchemata;
+typedef virResSchemata *virResSchemataPtr;
+struct _virResSchemata {
+    unsigned int n_schemata_items;
+    virResSchemataItemPtr schemata_items;
+};
+
+/**
+ * a virResDomain represents a resource control domain. It's a double linked
+ * list.
+ */
+
+typedef struct _virResDomain virResDomain;
+typedef virResDomain *virResDomainPtr;
+
+struct _virResDomain {
+    char* name;
+    virResSchemataPtr schematas[RDT_NUM_RESOURCES];
+    char* tasks;
+    int n_sockets;
+    virResDomainPtr pre;
+    virResDomainPtr next;
+};
+
+/* All resource control domains on this host*/
+
+typedef struct _virResCtrlDomain virResCtrlDomain;
+typedef virResCtrlDomain *virResCtrlDomainPtr;
+struct _virResCtrlDomain {
+    unsigned int num_domains;
+    virResDomainPtr domains;
+};
 
 bool virResCtrlAvailable(void);
 int virResCtrlInit(void);
 virResCtrlPtr virResCtrlGet(int);
-
+int virResCtrlSetCacheBanks(virDomainCachetunePtr, unsigned char*, pid_t);
+int virResCtrlUpdate(void);
 #endif
