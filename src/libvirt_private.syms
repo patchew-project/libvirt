@@ -1713,6 +1713,7 @@ virHostdevPrepareSCSIDevices;
 virHostdevPrepareSCSIVHostDevices;
 virHostdevPrepareUSBDevices;
 virHostdevReAttachDomainDevices;
+virHostdevReAttachMediatedDevices;
 virHostdevReAttachPCIDevices;
 virHostdevReAttachSCSIDevices;
 virHostdevReAttachSCSIVHostDevices;

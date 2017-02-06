@@ -84,6 +84,10 @@ void qemuHostdevReAttachSCSIVHostDevices(virQEMUDriverPtr driver,
                                          const char *name,
                                          virDomainHostdevDefPtr *hostdevs,
                                          int nhostdevs);
+void qemuHostdevReAttachMediatedDevices(virQEMUDriverPtr driver,
+                                        const char *name,
+                                        virDomainHostdevDefPtr *hostdevs,
+                                        int nhostdevs);
 void qemuHostdevReAttachDomainDevices(virQEMUDriverPtr driver,
                                       virDomainDefPtr def);
 

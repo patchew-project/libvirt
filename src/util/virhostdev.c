@@ -1913,6 +1913,59 @@ virHostdevReAttachSCSIVHostDevices(virHostdevManagerPtr mgr,
     virObjectUnlock(mgr->activeSCSIVHostHostdevs);
 }
 
+void
+virHostdevReAttachMediatedDevices(virHostdevManagerPtr mgr,
+                                  const char *drv_name,
+                                  const char *dom_name,
+                                  virDomainHostdevDefPtr *hostdevs,
+                                  int nhostdevs)
+{
+    char *used_by_drvname = NULL;
+    char *used_by_domname = NULL;
+    virDomainHostdevDefPtr hostdev = NULL;
+    virDomainHostdevSubsysMediatedDevPtr mdevsrc = NULL;
+    size_t i;
+
+    if (nhostdevs == 0)
+        return;
+
+    virObjectLock(mgr->activeMediatedHostdevs);
+    for (i = 0; i < nhostdevs; i++) {
+        virMediatedDevicePtr mdev, tmp;
+
+        hostdev = hostdevs[i];
+        mdevsrc = &hostdev->source.subsys.u.mdev;
+
+        if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS ||
+            hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV)
+            continue;
+
+        if (!(mdev = virMediatedDeviceNew(&mdevsrc->addr, mdevsrc->uuidstr))) {
+            VIR_WARN("Failed to reattach mediated device %s attached to "
+                     "domain %s", mdevsrc->uuidstr, dom_name);
+            continue;
+        }
+
+        /* Remove from the list only mdevs assigned to @drv_name/@dom_name */
+
+        tmp = virMediatedDeviceListFind(mgr->activeMediatedHostdevs, mdev);
+        virMediatedDeviceFree(mdev);
+
+        /* skip inactive devices */
+        if (!tmp)
+            continue;
+
+        virMediatedDeviceGetUsedBy(tmp, &used_by_drvname, &used_by_domname);
+        if (STREQ_NULLABLE(drv_name, used_by_drvname) &&
+            STREQ_NULLABLE(dom_name, used_by_domname)) {
+            VIR_DEBUG("Removing %s dom=%s from activeMediatedHostdevs",
+                      mdevsrc->uuidstr, dom_name);
+            virMediatedDeviceListDel(mgr->activeMediatedHostdevs, tmp);
+        }
+    }
+    virObjectUnlock(mgr->activeMediatedHostdevs);
+}
+
 int
 virHostdevPCINodeDeviceDetach(virHostdevManagerPtr mgr,
                               virPCIDevicePtr pci)
