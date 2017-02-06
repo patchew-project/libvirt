@@ -305,6 +305,24 @@ qemuHostdevPrepareSCSIVHostDevices(virQEMUDriverPtr driver,
 }
 
 int
+qemuHostdevPrepareMediatedDevices(virQEMUDriverPtr driver,
+                                  const char *name,
+                                  virDomainHostdevDefPtr *hostdevs,
+                                  int nhostdevs)
+{
+    virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
+
+    if (!qemuHostdevHostSupportsPassthroughVFIO()) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("host doesn't support VFIO PCI interface"));
+        return -1;
+    }
+
+    return virHostdevPrepareMediatedDevices(hostdev_mgr, QEMU_DRIVER_NAME,
+                                            name, hostdevs, nhostdevs);
+}
+
+int
 qemuHostdevPrepareDomainDevices(virQEMUDriverPtr driver,
                                 virDomainDefPtr def,
                                 virQEMUCapsPtr qemuCaps,
@@ -328,6 +346,10 @@ qemuHostdevPrepareDomainDevices(virQEMUDriverPtr driver,
 
     if (qemuHostdevPrepareSCSIVHostDevices(driver, def->name,
                                            def->hostdevs, def->nhostdevs) < 0)
+        return -1;
+
+    if (qemuHostdevPrepareMediatedDevices(driver, def->name,
+                                          def->hostdevs, def->nhostdevs) < 0)
         return -1;
 
     return 0;

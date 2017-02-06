@@ -59,6 +59,10 @@ int qemuHostdevPrepareSCSIVHostDevices(virQEMUDriverPtr driver,
                                        const char *name,
                                        virDomainHostdevDefPtr *hostdevs,
                                        int nhostdevs);
+int qemuHostdevPrepareMediatedDevices(virQEMUDriverPtr driver,
+                                      const char *name,
+                                      virDomainHostdevDefPtr *hostdevs,
+                                      int nhostdevs);
 int qemuHostdevPrepareDomainDevices(virQEMUDriverPtr driver,
                                     virDomainDefPtr def,
                                     virQEMUCapsPtr qemuCaps,

@@ -1707,6 +1707,7 @@ virHostdevPCINodeDeviceDetach;
 virHostdevPCINodeDeviceReAttach;
 virHostdevPCINodeDeviceReset;
 virHostdevPrepareDomainDevices;
+virHostdevPrepareMediatedDevices;
 virHostdevPreparePCIDevices;
 virHostdevPrepareSCSIDevices;
 virHostdevPrepareSCSIVHostDevices;

@@ -1,6 +1,6 @@
 /* virhostdev.c: hostdev management
  *
- * Copyright (C) 2006-2007, 2009-2016 Red Hat, Inc.
+ * Copyright (C) 2006-2007, 2009-2017 Red Hat, Inc.
  * Copyright (C) 2006 Daniel P. Berrange
  * Copyright (C) 2014 SUSE LINUX Products GmbH, Nuernberg, Germany.
  *
@@ -147,6 +147,7 @@ virHostdevManagerDispose(void *obj)
     virObjectUnref(hostdevMgr->activeUSBHostdevs);
     virObjectUnref(hostdevMgr->activeSCSIHostdevs);
     virObjectUnref(hostdevMgr->activeSCSIVHostHostdevs);
+    virObjectUnref(hostdevMgr->activeMediatedHostdevs);
     VIR_FREE(hostdevMgr->stateDir);
 }
 
@@ -172,6 +173,9 @@ virHostdevManagerNew(void)
         goto error;
 
     if (!(hostdevMgr->activeSCSIVHostHostdevs = virSCSIVHostDeviceListNew()))
+        goto error;
+
+    if (!(hostdevMgr->activeMediatedHostdevs = virMediatedDeviceListNew()))
         goto error;
 
     if (privileged) {
@@ -1593,6 +1597,126 @@ virHostdevPrepareSCSIVHostDevices(virHostdevManagerPtr mgr,
  cleanup:
     virObjectUnref(list);
     return -1;
+}
+
+static int
+virHostdevMarkMediatedDevices(virHostdevManagerPtr mgr,
+                              const char *drvname,
+                              const char *domname,
+                              virMediatedDeviceListPtr list)
+{
+    size_t i, j;
+    unsigned int count;
+    virMediatedDevicePtr tmp;
+
+    virObjectLock(mgr->activeMediatedHostdevs);
+    count = virMediatedDeviceListCount(list);
+
+    for (i = 0; i < count; i++) {
+        virMediatedDevicePtr mdev = virMediatedDeviceListGet(list, i);
+        if ((tmp = virMediatedDeviceListFind(mgr->activeMediatedHostdevs,
+                                             mdev))) {
+            char *tmp_drvname;
+            char *tmp_domname;
+
+            virMediatedDeviceGetUsedBy(tmp, &tmp_drvname, &tmp_domname);
+            virReportError(VIR_ERR_OPERATION_INVALID,
+                           _("Mediated device %s is in use by "
+                             "driver %s, domain %s"),
+                           virMediatedDeviceGetPath(tmp),
+                           tmp_drvname, tmp_domname);
+            goto error;
+        }
+
+        virMediatedDeviceSetUsedBy(mdev, drvname, domname);
+        VIR_DEBUG("Adding %s to activeMediatedHostdevs",
+                  virMediatedDeviceGetPath(mdev));
+        /*
+         * The caller is responsible to steal these mdev devices
+         * from the virMediatedDeviceList that passed in on success,
+         * perform rollback on failure.
+         */
+        if (virMediatedDeviceListAdd(mgr->activeMediatedHostdevs, mdev) < 0)
+            goto error;
+    }
+
+    virObjectUnlock(mgr->activeMediatedHostdevs);
+    return 0;
+
+ error:
+    for (j = 0; j < i; j++) {
+        tmp = virMediatedDeviceListGet(list, i);
+        virMediatedDeviceListSteal(mgr->activeMediatedHostdevs, tmp);
+    }
+    virObjectUnlock(mgr->activeMediatedHostdevs);
+    return -1;
+}
+
+int
+virHostdevPrepareMediatedDevices(virHostdevManagerPtr mgr,
+                                 const char *drv_name,
+                                 const char *dom_name,
+                                 virDomainHostdevDefPtr *hostdevs,
+                                 int nhostdevs)
+{
+    size_t i;
+    int ret = -1;
+    virMediatedDeviceListPtr list;
+    virMediatedDevicePtr tmp;
+
+    if (!nhostdevs)
+        return 0;
+
+    /* To prevent situation where Mediated device is assigned to two domains
+     * we need to keep a list of currently assigned Mediated devices.
+     * This is done in several loops which cannot be joined into one big
+     * loop. See virHostdevPreparePCIDevices()
+     */
+    if (!(list = virMediatedDeviceListNew()))
+        goto cleanup;
+
+    /* Loop 1: build temporary list
+     */
+    for (i = 0; i < nhostdevs; i++) {
+        virDomainHostdevDefPtr hostdev = hostdevs[i];
+        virDomainHostdevSubsysMediatedDevPtr mdevsrc = &hostdev->source.subsys.u.mdev;
+        virMediatedDevicePtr mdev;
+
+        if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS)
+            continue;
+        if (hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV)
+            continue;
+
+        if (!(mdev = virMediatedDeviceNew(&mdevsrc->addr, mdevsrc->uuidstr)))
+            goto cleanup;
+
+        if (virMediatedDeviceListAdd(list, mdev) < 0) {
+            virMediatedDeviceFree(mdev);
+            goto cleanup;
+        }
+    }
+
+    /* Mark devices in temporary list as used by @dom_name
+     * and add them do driver list. However, if something goes
+     * wrong, perform rollback.
+     */
+    if (virHostdevMarkMediatedDevices(mgr, drv_name, dom_name, list) < 0)
+        goto cleanup;
+
+    /* Loop 2: Temporary list was successfully merged with
+     * driver list, so steal all items to avoid freeing them
+     * in cleanup label.
+     */
+    while (virMediatedDeviceListCount(list) > 0) {
+        tmp = virMediatedDeviceListGet(list, 0);
+        virMediatedDeviceListSteal(list, tmp);
+    }
+
+    ret = 0;
+
+ cleanup:
+    virObjectUnref(list);
+    return ret;
 }
 
 void
