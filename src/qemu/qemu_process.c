@@ -3738,6 +3738,13 @@ qemuValidateCpuCount(virDomainDefPtr def,
         return -1;
     }
 
+    if (def->cpu->sockets && virDomainDefGetVcpusMax(def) >
+        def->cpu->sockets * def->cpu->cores * def->cpu->threads) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Maximum CPUs greater than topology limit"));
+        return -1;
+    }
+
     if (maxCpus > 0 && virDomainDefGetVcpusMax(def) > maxCpus) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("Maximum CPUs greater than specified machine type limit"));
