@@ -7340,6 +7340,15 @@ qemuBuildMemCommandLine(virCommandPtr cmd,
         qemuBuildMemPathStr(cfg, def, qemuCaps, cmd) < 0)
         return -1;
 
+    /* Memory locking can only work properly if the memory locking limit
+     * for the QEMU process has been raised appropriately: the default one
+     * is extrememly low, so there's no way the guest will fit in there */
+    if (def->mem.locked && !virMemoryLimitIsSet(def->mem.hard_limit)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Setting <memoryBacking><locked> requires "
+                         "<memtune><hard_limit> to be set as well"));
+        return -1;
+    }
     if (def->mem.locked && !virQEMUCapsGet(qemuCaps, QEMU_CAPS_REALTIME_MLOCK)) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("memory locking not supported by QEMU binary"));
