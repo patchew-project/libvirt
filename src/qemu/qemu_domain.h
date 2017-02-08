@@ -31,7 +31,7 @@
 # include "domain_conf.h"
 # include "snapshot_conf.h"
 # include "qemu_monitor.h"
-# include "qemu_agent.h"
+# include "virqemuagent.h"
 # include "qemu_conf.h"
 # include "qemu_capabilities.h"
 # include "virchrdev.h"

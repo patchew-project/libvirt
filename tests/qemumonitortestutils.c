@@ -30,7 +30,7 @@
 #include "virthread.h"
 #include "qemu/qemu_processpriv.h"
 #include "qemu/qemu_monitor.h"
-#include "qemu/qemu_agent.h"
+#include "virqemuagent.h"
 #include "rpc/virnetsocket.h"
 #include "viralloc.h"
 #include "virlog.h"

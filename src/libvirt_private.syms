@@ -2306,6 +2306,27 @@ virQEMUBuildLuksOpts;
 virQEMUBuildObjectCommandlineFromJSON;
 
 
+# util/virqemuagent.h
+qemuAgentArbitraryCommand;
+qemuAgentClose;
+qemuAgentFSFreeze;
+qemuAgentFSThaw;
+qemuAgentFSTrim;
+qemuAgentGetFSInfo;
+qemuAgentGetInterfaces;
+qemuAgentGetTime;
+qemuAgentGetVCPUs;
+qemuAgentNotifyClose;
+qemuAgentNotifyEvent;
+qemuAgentOpen;
+qemuAgentSetVCPUs;
+qemuAgentSetUserPassword;
+qemuAgentSetTime;
+qemuAgentShutdown;
+qemuAgentSuspend;
+qemuAgentUpdateCPUInfo;
+
+
 # util/virrandom.h
 virRandom;
 virRandomBits;

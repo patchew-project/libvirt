@@ -23,7 +23,7 @@
 # include "domain_conf.h"
 # include "qemu/qemu_conf.h"
 # include "qemu/qemu_monitor.h"
-# include "qemu/qemu_agent.h"
+# include "virqemuagent.h"
 
 typedef struct _qemuMonitorTest qemuMonitorTest;
 typedef qemuMonitorTest *qemuMonitorTestPtr;

@@ -1,5 +1,5 @@
 /*
- * qemu_agent.c: interaction with QEMU guest agent
+ * virqemuagent.c: interaction with QEMU guest agent
  *
  * Copyright (C) 2006-2014 Red Hat, Inc.
  * Copyright (C) 2006 Daniel P. Berrange
@@ -32,7 +32,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "qemu_agent.h"
+#include "virqemuagent.h"
 #include "viralloc.h"
 #include "virlog.h"
 #include "virerror.h"

@@ -161,6 +161,7 @@ UTIL_SOURCES =							\
 		util/virprobe.h					\
 		util/virprocess.c util/virprocess.h		\
 		util/virqemu.c util/virqemu.h			\
+		util/virqemuagent.c util/virqemuagent.h		\
 		util/virrandom.h util/virrandom.c		\
 		util/virrotatingfile.h util/virrotatingfile.c   \
 		util/virscsi.c util/virscsi.h			\
@@ -815,7 +816,6 @@ VBOX_DRIVER_EXTRA_DIST =					\
 		vbox/vbox_XPCOMCGlue.c vbox/vbox_XPCOMCGlue.h
 
 QEMU_DRIVER_SOURCES =							\
-		qemu/qemu_agent.c qemu/qemu_agent.h			\
 		qemu/qemu_alias.c qemu/qemu_alias.h			\
 		qemu/qemu_blockjob.c qemu/qemu_blockjob.h		\
 		qemu/qemu_capabilities.c qemu/qemu_capabilities.h	\

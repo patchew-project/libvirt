@@ -23,7 +23,7 @@
 #include "testutilsqemu.h"
 #include "qemumonitortestutils.h"
 #include "qemu/qemu_conf.h"
-#include "qemu/qemu_agent.h"
+#include "virqemuagent.h"
 #include "virthread.h"
 #include "virerror.h"
 #include "virstring.h"
