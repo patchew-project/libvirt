@@ -970,9 +970,12 @@ SECRET_DRIVER_SOURCES =						\
 		secret/secret_driver.h secret/secret_driver.c
 
 # Storage backend specific impls
+STORAGE_DRIVER_BACKEND_SOURCES = \
+		storage/storage_backend.h storage/storage_backend.c
+
 STORAGE_DRIVER_SOURCES =						\
 		storage/storage_driver.h storage/storage_driver.c	\
-		storage/storage_backend.h storage/storage_backend.c \
+		$(STORAGE_DRIVER_BACKEND_SOURCES) \
 		storage/storage_util.h storage/storage_util.c
 
 STORAGE_DRIVER_FS_SOURCES =					\
@@ -1660,6 +1663,12 @@ if WITH_BLKID
 libvirt_driver_storage_impl_la_CFLAGS += $(BLKID_CFLAGS)
 libvirt_driver_storage_impl_la_LIBADD += $(BLKID_LIBS)
 endif WITH_BLKID
+
+if WITH_DRIVER_MODULES
+storagebackenddir = $(libdir)/libvirt/storage-backend
+storagebackend_LTLIBRARIES =
+endif WITH_DRIVER_MODULES
+
 if WITH_STORAGE
 noinst_LTLIBRARIES += libvirt_driver_storage_impl.la
 libvirt_driver_storage_la_SOURCES =
@@ -1681,8 +1690,14 @@ libvirt_storage_backend_fs_la_CFLAGS =	\
 	-I$(srcdir)/conf \
 	$(AM_CFLAGS)
 
+if WITH_DRIVER_MODULES
+storagebackend_LTLIBRARIES += libvirt_storage_backend_fs.la
+libvirt_storage_backend_fs_la_LDFLAGS = \
+	-module -avoid-version $(AM_LDFLAGS)
+else ! WITH_DRIVER_MODULES
 noinst_LTLIBRARIES += libvirt_storage_backend_fs.la
 libvirt_driver_storage_impl_la_LIBADD += libvirt_storage_backend_fs.la
+endif ! WITH_DRIVER_MODULES
 endif WITH_STORAGE
 
 if WITH_STORAGE_LVM
@@ -1692,9 +1707,15 @@ libvirt_storage_backend_logical_la_CFLAGS = \
 	-I$(srcdir)/conf \
 	$(AM_CFLAGS)
 
+if WITH_DRIVER_MODULES
+storagebackend_LTLIBRARIES += libvirt_storage_backend_logical.la
+libvirt_storage_backend_logical_la_LDFLAGS = \
+	-module -avoid-version $(AM_LDFLAGS)
+else ! WITH_DRIVER_MODULES
 noinst_LTLIBRARIES += libvirt_storage_backend_logical.la
 libvirt_driver_storage_impl_la_LIBADD += \
 	libvirt_storage_backend_logical.la
+endif ! WITH_DRIVER_MODULES
 endif WITH_STORAGE_LVM
 
 if WITH_STORAGE_ISCSI
@@ -1705,9 +1726,15 @@ libvirt_storage_backend_iscsi_la_CFLAGS = \
 	-I$(srcdir)/secret \
 	$(AM_CFLAGS)
 
+if WITH_DRIVER_MODULES
+storagebackend_LTLIBRARIES += libvirt_storage_backend_iscsi.la
+libvirt_storage_backend_iscsi_la_LDFLAGS = \
+	-module -avoid-version $(AM_LDFLAGS)
+else ! WITH_DRIVER_MODULES
 noinst_LTLIBRARIES += libvirt_storage_backend_iscsi.la
 libvirt_driver_storage_impl_la_LIBADD += \
 	libvirt_storage_backend_iscsi.la
+endif ! WITH_DRIVER_MODULES
 endif WITH_STORAGE_ISCSI
 
 if WITH_STORAGE_SCSI
@@ -1716,8 +1743,14 @@ libvirt_storage_backend_scsi_la_CFLAGS = \
 	-I$(srcdir)/conf \
 	$(AM_CFLAGS)
 
+if WITH_DRIVER_MODULES
+storagebackend_LTLIBRARIES += libvirt_storage_backend_scsi.la
+libvirt_storage_backend_scsi_la_LDFLAGS = \
+	-module -avoid-version $(AM_LDFLAGS)
+else ! WITH_DRIVER_MODULES
 noinst_LTLIBRARIES += libvirt_storage_backend_scsi.la
 libvirt_driver_storage_impl_la_LIBADD += libvirt_storage_backend_scsi.la
+endif ! WITH_DRIVER_MODULES
 endif WITH_STORAGE_SCSI
 
 if WITH_STORAGE_MPATH
@@ -1729,9 +1762,15 @@ libvirt_storage_backend_mpath_la_CFLAGS =	\
 	$(DEVMAPPER_CFLAGS) \
 	$(AM_CFLAGS)
 
+if WITH_DRIVER_MODULES
+storagebackend_LTLIBRARIES += libvirt_storage_backend_mpath.la
+libvirt_storage_backend_mpath_la_LDFLAGS = \
+	-module -avoid-version $(AM_LDFLAGS)
+else ! WITH_DRIVER_MODULES
 noinst_LTLIBRARIES += libvirt_storage_backend_mpath.la
 libvirt_driver_storage_impl_la_LIBADD += \
 	libvirt_storage_backend_mpath.la
+endif ! WITH_DRIVER_MODULES
 endif WITH_STORAGE_MPATH
 
 if WITH_STORAGE_DISK
@@ -1740,8 +1779,14 @@ libvirt_storage_backend_disk_la_CFLAGS =	\
 	-I$(srcdir)/conf \
 	$(AM_CFLAGS)
 
+if WITH_DRIVER_MODULES
+storagebackend_LTLIBRARIES += libvirt_storage_backend_disk.la
+libvirt_storage_backend_disk_la_LDFLAGS = \
+	-module -avoid-version $(AM_LDFLAGS)
+else ! WITH_DRIVER_MODULES
 noinst_LTLIBRARIES += libvirt_storage_backend_disk.la
 libvirt_driver_storage_impl_la_LIBADD += libvirt_storage_backend_disk.la
+endif ! WITH_DRIVER_MODULES
 endif WITH_STORAGE_DISK
 
 if WITH_STORAGE_RBD
@@ -1752,8 +1797,14 @@ libvirt_storage_backend_rbd_la_CFLAGS = \
 	-I$(srcdir)/secret \
 	$(AM_CFLAGS)
 
+if WITH_DRIVER_MODULES
+storagebackend_LTLIBRARIES += libvirt_storage_backend_rbd.la
+libvirt_storage_backend_rbd_la_LDFLAGS = \
+	-module -avoid-version $(AM_LDFLAGS)
+else ! WITH_DRIVER_MODULES
 noinst_LTLIBRARIES += libvirt_storage_backend_rbd.la
 libvirt_driver_storage_impl_la_LIBADD += libvirt_storage_backend_rbd.la
+endif ! WITH_DRIVER_MODULES
 endif WITH_STORAGE_RBD
 
 if WITH_STORAGE_SHEEPDOG
@@ -1763,9 +1814,23 @@ libvirt_storage_backend_sheepdog_la_CFLAGS = \
 	-I$(srcdir)/conf \
 	$(AM_CFLAGS)
 
+libvirt_storage_backend_sheepdog_priv_la_SOURCES = \
+	$(STORAGE_DRIVER_SHEEPDOG_SOURCES) \
+	$(STORAGE_DRIVER_BACKEND_SOURCES)
+libvirt_storage_backend_sheepdog_priv_la_CFLAGS = \
+	-I$(srcdir)/conf \
+	$(AM_CFLAGS)
+noinst_LTLIBRARIES += libvirt_storage_backend_sheepdog_priv.la
+
+if WITH_DRIVER_MODULES
+storagebackend_LTLIBRARIES += libvirt_storage_backend_sheepdog.la
+libvirt_storage_backend_sheepdog_la_LDFLAGS = \
+	-module -avoid-version $(AM_LDFLAGS)
+else ! WITH_DRIVER_MODULES
 noinst_LTLIBRARIES += libvirt_storage_backend_sheepdog.la
 libvirt_driver_storage_impl_la_LIBADD += \
 	libvirt_storage_backend_sheepdog.la
+endif ! WITH_DRIVER_MODULES
 endif WITH_STORAGE_SHEEPDOG
 
 if WITH_STORAGE_GLUSTER
@@ -1777,9 +1842,15 @@ libvirt_storage_backend_gluster_la_CFLAGS = \
 	$(GLUSTERFS_CFLAGS) \
 	$(AM_CFLAGS)
 
+if WITH_DRIVER_MODULES
+storagebackend_LTLIBRARIES += libvirt_storage_backend_gluster.la
+libvirt_storage_backend_gluster_la_LDFLAGS = \
+	-module -avoid-version $(AM_LDFLAGS)
+else ! WITH_DRIVER_MODULES
 noinst_LTLIBRARIES += libvirt_storage_backend_gluster.la
 libvirt_driver_storage_impl_la_LIBADD += \
 	libvirt_storage_backend_gluster.la
+endif ! WITH_DRIVER_MODULES
 endif WITH_STORAGE_GLUSTER
 
 if WITH_STORAGE_ZFS
@@ -1788,8 +1859,14 @@ libvirt_storage_backend_zfs_la_CFLAGS =	\
 	-I$(srcdir)/conf \
 	$(AM_CFLAGS)
 
+if WITH_DRIVER_MODULES
+storagebackend_LTLIBRARIES += libvirt_storage_backend_zfs.la
+libvirt_storage_backend_zfs_la_LDFLAGS = \
+	-module -avoid-version $(AM_LDFLAGS)
+else ! WITH_DRIVER_MODULES
 noinst_LTLIBRARIES += libvirt_storage_backend_zfs.la
 libvirt_driver_storage_impl_la_LIBADD += libvirt_storage_backend_zfs.la
+endif ! WITH_DRIVER_MODULES
 endif WITH_STORAGE_ZFS
 
 if WITH_STORAGE_VSTORAGE
@@ -1799,9 +1876,15 @@ libvirt_storage_backend_vstorage_la_CFLAGS =	\
 	-I$(srcdir)/conf \
 	$(AM_CFLAGS)
 
+if WITH_DRIVER_MODULES
+storagebackend_LTLIBRARIES += libvirt_storage_backend_vstorage.la
+libvirt_storage_backend_vstorage_la_LDFLAGS = \
+	-module -avoid-version $(AM_LDFLAGS)
+else ! WITH_DRIVER_MODULES
 noinst_LTLIBRARIES += libvirt_storage_backend_vstorage.la
 libvirt_driver_storage_impl_la_LIBADD += \
 	libvirt_storage_backend_vstorage.la
+endif ! WITH_DRIVER_MODULES
 endif WITH_STORAGE_VSTORAGE
 
 if WITH_NODE_DEVICES
