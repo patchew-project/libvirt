@@ -31,15 +31,6 @@
 
 VIR_LOG_INIT("qemu.qemu_process");
 
-struct qemuSecuritySetRestoreAllLabelData {
-    bool set;
-    virQEMUDriverPtr driver;
-    virDomainObjPtr vm;
-    const char *stdin_path;
-    bool migrated;
-};
-
-
 #define PROLOGUE(F, type)                                                   \
 int                                                                         \
 qemuSecurity##F(virQEMUDriverPtr driver,                                    \
