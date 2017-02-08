@@ -57,6 +57,7 @@
 #include "virstring.h"
 #include "virsysinfo.h"
 #include "viraccessapicheck.h"
+#include "viraccessapicheckqemu.h"
 #include "viratomic.h"
 #include "virhostdev.h"
 #include "network/bridge_driver.h"
@@ -6415,6 +6416,55 @@ libxlConnectBaselineCPU(virConnectPtr conn,
     return cpu;
 }
 
+static char *
+libxlDomainQemuAgentCommand(virDomainPtr domain,
+                           const char *cmd,
+                           int timeout,
+                           unsigned int flags)
+{
+    libxlDriverPrivatePtr driver = domain->conn->privateData;
+    virDomainObjPtr vm;
+    int ret = -1;
+    char *result = NULL;
+    libxlDomainObjPrivatePtr priv;
+
+    virCheckFlags(0, NULL);
+
+    if (!(vm = libxlDomObjFromDomain(domain)))
+        goto cleanup;
+
+    priv = vm->privateData;
+
+    if (virDomainQemuAgentCommandEnsureACL(domain->conn, vm->def) < 0)
+        goto cleanup;
+
+    if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0)
+        goto cleanup;
+
+    if (!virDomainObjIsActive(vm)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       "%s", _("domain is not running"));
+        goto endjob;
+    }
+
+    if (!libxlDomainAgentAvailable(vm, true))
+        goto endjob;
+
+    libxlDomainObjEnterAgent(vm);
+    ret = qemuAgentArbitraryCommand(priv->agent, cmd, &result, timeout);
+    libxlDomainObjExitAgent(vm);
+    if (ret < 0)
+        VIR_FREE(result);
+
+ endjob:
+    libxlDomainObjEndJob(driver, vm);
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return result;
+}
+
+
 static virHypervisorDriver libxlHypervisorDriver = {
     .name = LIBXL_DRIVER_NAME,
     .connectOpen = libxlConnectOpen, /* 0.9.0 */
@@ -6522,6 +6572,7 @@ static virHypervisorDriver libxlHypervisorDriver = {
     .connectGetDomainCapabilities = libxlConnectGetDomainCapabilities, /* 2.0.0 */
     .connectCompareCPU = libxlConnectCompareCPU, /* 2.3.0 */
     .connectBaselineCPU = libxlConnectBaselineCPU, /* 2.3.0 */
+    .domainQemuAgentCommand = libxlDomainQemuAgentCommand, /* 3.1.0 */
 };
 
 static virConnectDriver libxlConnectDriver = {

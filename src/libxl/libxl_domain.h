@@ -29,6 +29,7 @@
 # include "domain_conf.h"
 # include "libxl_conf.h"
 # include "virchrdev.h"
+# include "virqemuagent.h"
 
 # define JOB_MASK(job)                  (1 << (job - 1))
 # define DEFAULT_JOB_MASK               \
@@ -62,6 +63,11 @@ typedef libxlDomainObjPrivate *libxlDomainObjPrivatePtr;
 struct _libxlDomainObjPrivate {
     virObjectLockable parent;
 
+    /* agent */
+    qemuAgentPtr agent;
+    bool agentError;
+    unsigned long long agentStart;
+
     /* console */
     virChrdevsPtr devs;
     libxl_evgen_domain_death *deathW;
@@ -90,6 +96,16 @@ libxlDomainObjBeginJob(libxlDriverPrivatePtr driver,
 void
 libxlDomainObjEndJob(libxlDriverPrivatePtr driver,
                      virDomainObjPtr obj);
+
+bool
+libxlDomainAgentAvailable(virDomainObjPtr vm,
+                          bool reportError);
+
+void
+libxlDomainObjEnterAgent(virDomainObjPtr obj);
+
+void
+libxlDomainObjExitAgent(virDomainObjPtr obj);
 
 int
 libxlDomainJobUpdateTime(struct libxlDomainJobObj *job)

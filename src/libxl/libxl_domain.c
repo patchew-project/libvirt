@@ -782,6 +782,12 @@ libxlDomainCleanup(libxlDriverPrivatePtr driver,
         }
     }
 
+    if (priv->agent) {
+        qemuAgentClose(priv->agent);
+        priv->agent = NULL;
+        priv->agentError = false;
+    }
+
     if ((vm->def->nnets)) {
         size_t i;
 
@@ -938,6 +944,228 @@ libxlDomainFreeMem(libxl_ctx *ctx, libxl_domain_config *d_config)
     virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                    _("Failed to balloon domain0 memory"));
     return -1;
+}
+
+/*
+ * This is a callback registered with a qemuAgentPtr instance,
+ * and to be invoked when the agent console hits an end of file
+ * condition, or error, thus indicating VM shutdown should be
+ * performed
+ */
+static void
+libxlHandleAgentEOF(qemuAgentPtr agent,
+                          virDomainObjPtr vm)
+{
+    libxlDomainObjPrivatePtr priv;
+
+    VIR_DEBUG("Received EOF from agent on %p '%s'", vm, vm->def->name);
+
+    virObjectLock(vm);
+
+    priv = vm->privateData;
+
+    if (!priv->agent) {
+        VIR_DEBUG("Agent freed already");
+        goto unlock;
+    }
+
+    qemuAgentClose(agent);
+    priv->agent = NULL;
+
+ unlock:
+    virObjectUnlock(vm);
+    return;
+}
+
+
+/*
+ * This is invoked when there is some kind of error
+ * parsing data to/from the agent. The VM can continue
+ * to run, but no further agent commands will be
+ * allowed
+ */
+static void
+libxlHandleAgentError(qemuAgentPtr agent ATTRIBUTE_UNUSED,
+                            virDomainObjPtr vm)
+{
+    libxlDomainObjPrivatePtr priv;
+
+    VIR_DEBUG("Received error from agent on %p '%s'", vm, vm->def->name);
+
+    virObjectLock(vm);
+
+    priv = vm->privateData;
+
+    priv->agentError = true;
+
+    virObjectUnlock(vm);
+}
+
+static void libxlHandleAgentDestroy(qemuAgentPtr agent,
+                                          virDomainObjPtr vm)
+{
+    VIR_DEBUG("Received destroy agent=%p vm=%p", agent, vm);
+
+    virObjectUnref(vm);
+}
+
+static qemuAgentCallbacks agentCallbacks = {
+    .destroy = libxlHandleAgentDestroy,
+    .eofNotify = libxlHandleAgentEOF,
+    .errorNotify = libxlHandleAgentError,
+};
+
+static virDomainChrDefPtr
+libxlFindAgentConfig(virDomainDefPtr def)
+{
+    size_t i;
+
+    for (i = 0; i < def->nchannels; i++) {
+        virDomainChrDefPtr channel = def->channels[i];
+
+        if (channel->targetType != VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_XEN)
+            continue;
+
+        if (STREQ_NULLABLE(channel->target.name, "org.qemu.guest_agent.0"))
+            return channel;
+    }
+
+    return NULL;
+}
+
+bool
+libxlDomainAgentAvailable(virDomainObjPtr vm, bool reportError)
+{
+    libxlDomainObjPrivatePtr priv = vm->privateData;
+
+    if (virDomainObjGetState(vm, NULL) != VIR_DOMAIN_RUNNING) {
+        if (reportError) {
+            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                           _("domain is not running"));
+        }
+        return false;
+    }
+    if (priv->agentError) {
+        if (reportError) {
+            virReportError(VIR_ERR_AGENT_UNRESPONSIVE, "%s",
+                           _("QEMU guest agent is not "
+                             "available due to an error"));
+        }
+        return false;
+    }
+    if (!priv->agent) {
+        if (libxlFindAgentConfig(vm->def)) {
+            if (reportError) {
+                virReportError(VIR_ERR_AGENT_UNRESPONSIVE, "%s",
+                               _("QEMU guest agent is not connected"));
+            }
+            return false;
+        } else {
+            if (reportError) {
+                virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED, "%s",
+                               _("QEMU guest agent is not configured"));
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+static int
+libxlConnectAgent(virDomainObjPtr vm)
+{
+    virDomainChrDefPtr config = libxlFindAgentConfig(vm->def);
+    libxlDomainObjPrivatePtr priv = vm->privateData;
+    qemuAgentPtr agent = NULL;
+    int ret = -1;
+
+    if (!config)
+        return 0;
+
+    if (priv->agent)
+        return 0;
+
+    /* Hold an extra reference because we can't allow 'vm' to be
+     * deleted while the agent is active */
+    virObjectRef(vm);
+
+    ignore_value(virTimeMillisNow(&priv->agentStart));
+    virObjectUnlock(vm);
+
+    agent = qemuAgentOpen(vm, config->source, &agentCallbacks);
+
+    virObjectLock(vm);
+    priv->agentStart = 0;
+
+    if (agent == NULL)
+        virObjectUnref(vm);
+
+    if (!virDomainObjIsActive(vm)) {
+        qemuAgentClose(agent);
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("guest crashed while connecting to the guest agent"));
+        ret = -2;
+        goto cleanup;
+    }
+
+    priv->agent = agent;
+
+    if (priv->agent == NULL) {
+        VIR_INFO("Failed to connect agent for %s", vm->def->name);
+        goto cleanup;
+    }
+
+    ret = 0;
+
+ cleanup:
+    return ret;
+}
+
+/*
+ * obj must be locked before calling
+ *
+ * To be called immediately before any QEMU agent API call.
+ * Must have already called libxlDomainObjBeginJob() and checked
+ * that the VM is still active.
+ *
+ * To be followed with libxlDomainObjExitAgent() once complete
+ */
+void
+libxlDomainObjEnterAgent(virDomainObjPtr obj)
+{
+    libxlDomainObjPrivatePtr priv = obj->privateData;
+
+    VIR_DEBUG("Entering agent (agent=%p vm=%p name=%s)",
+              priv->agent, obj, obj->def->name);
+    virObjectLock(priv->agent);
+    virObjectRef(priv->agent);
+    ignore_value(virTimeMillisNow(&priv->agentStart));
+    virObjectUnlock(obj);
+}
+
+
+/* obj must NOT be locked before calling
+ *
+ * Should be paired with an earlier qemuDomainObjEnterAgent() call
+ */
+void
+libxlDomainObjExitAgent(virDomainObjPtr obj)
+{
+    libxlDomainObjPrivatePtr priv = obj->privateData;
+    bool hasRefs;
+
+    hasRefs = virObjectUnref(priv->agent);
+
+    if (hasRefs)
+        virObjectUnlock(priv->agent);
+
+    virObjectLock(obj);
+    VIR_DEBUG("Exited agent (agent=%p vm=%p name=%s)",
+              priv->agent, obj, obj->def->name);
+
+    priv->agentStart = 0;
+    if (!hasRefs)
+        priv->agent = NULL;
 }
 
 static int
@@ -1312,8 +1540,17 @@ libxlDomainStart(libxlDriverPrivatePtr driver,
     libxlDomainCreateIfaceNames(vm->def, &d_config);
 
 #ifdef LIBXL_HAVE_DEVICE_CHANNEL
-    if (vm->def->nchannels > 0)
+    if (vm->def->nchannels > 0) {
         libxlDomainCreateChannelPTY(vm->def, cfg->ctx);
+
+        /* Failure to connect to agent shouldn't be fatal */
+        if (libxlConnectAgent(vm) < 0) {
+            VIR_WARN("Cannot connect to QEMU guest agent for %s",
+                     vm->def->name);
+            virResetLastError();
+            priv->agentError = true;
+        }
+    }
 #endif
 
     if ((dom_xml = virDomainDefFormat(vm->def, cfg->caps, 0)) == NULL)
