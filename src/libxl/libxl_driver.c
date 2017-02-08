@@ -6261,6 +6261,8 @@ libxlDomainInterfaceAddresses(virDomainPtr dom,
                               unsigned int source,
                               unsigned int flags)
 {
+    libxlDriverPrivatePtr driver = dom->conn->privateData;
+    libxlDomainObjPrivatePtr priv;
     virDomainObjPtr vm = NULL;
     int ret = -1;
 
@@ -6281,6 +6283,22 @@ libxlDomainInterfaceAddresses(virDomainPtr dom,
     switch (source) {
     case VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE:
         ret = libxlGetDHCPInterfaces(dom, vm, ifaces);
+        break;
+    case VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT:
+        priv = vm->privateData;
+        if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_QUERY) < 0)
+            goto cleanup;
+
+        if (!libxlDomainAgentAvailable(vm, true))
+            goto endjob;
+
+        libxlDomainObjEnterAgent(vm);
+        ret = qemuAgentGetInterfaces(priv->agent, ifaces);
+        libxlDomainObjExitAgent(vm);
+
+    endjob:
+        libxlDomainObjEndJob(driver, vm);
+
         break;
 
     default:
