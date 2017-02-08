@@ -333,7 +333,8 @@ qemuAgentIOProcessLine(qemuAgentPtr mon,
         goto cleanup;
     }
 
-    if (virJSONValueObjectHasKey(obj, "QMP") == 1) {
+    if (virJSONValueObjectHasKey(obj, "QMP") == 1 ||
+        virJSONValueObjectHasKey(obj, "execute") == 1) {
         ret = 0;
     } else if (virJSONValueObjectHasKey(obj, "event") == 1) {
         ret = qemuAgentIOProcessEvent(mon, obj);
