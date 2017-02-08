@@ -95,5 +95,8 @@ qemuSecurityRestoreAllLabel(virQEMUDriverPtr driver,
 WRAP1(SetDiskLabel, virDomainDiskDefPtr)
 WRAP1(RestoreDiskLabel, virDomainDiskDefPtr)
 
+WRAP1(SetImageLabel, virStorageSourcePtr)
+WRAP1(RestoreImageLabel, virStorageSourcePtr)
+
 WRAP2(SetHostdevLabel, virDomainHostdevDefPtr)
 WRAP2(RestoreHostdevLabel, virDomainHostdevDefPtr)
