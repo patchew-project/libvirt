@@ -2047,7 +2047,6 @@ virshDomainStatsPrintRecord(vshControl *ctl ATTRIBUTE_UNUSED,
         VIR_FREE(param);
     }
 
-    vshPrint(ctl, "\n");
     return true;
 }
 
