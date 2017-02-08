@@ -585,6 +585,14 @@ sc_prohibit_unsigned_pid:
 	halt='use signed type for pid values'				\
 	  $(_sc_search_regexp)
 
+sc_prohibit_direct_secdriver:
+	@for i in $$(grep -i ^WRAP.\( src/qemu/qemu_security.c | 			\
+	awk 'BEGIN {FS = "[^[:alnum:]]"} {print "virSecurityManager" $$2 }'); do	\
+	  grep -n $$i $$($(VC_LIST_EXCEPT) | grep -E '^src/qemu/') && \
+	  { echo "$(ME): prefer qemuSecurity$${i#virSecurityManager} over $$i" 1>&2; exit 1; }	\
+    done || :
+
+
 # Many of the function names below came from this filter:
 # git grep -B2 '\<_('|grep -E '\.c- *[[:alpha:]_][[:alnum:]_]* ?\(.*[,;]$' \
 # |sed 's/.*\.c-  *//'|perl -pe 's/ ?\(.*//'|sort -u \
