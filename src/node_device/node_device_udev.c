@@ -1457,6 +1457,33 @@ static int udevPCITranslateInit(bool privileged ATTRIBUTE_UNUSED)
     return 0;
 }
 
+
+/*
+ * @deviceAddCb: Callback routine for adding a device
+ *
+ * Enumerate all known devices calling the add device callback function
+ *
+ * Returns 0 on success, -1 on failure
+ */
+static int
+udevEnumerateAddDevices(virNodeDeviceAdd deviceAddCb)
+{
+    size_t i;
+    int ret = 0;
+
+    nodeDeviceLock();
+    for (i = 0; i < driver->devs.count && ret >= 0; i++) {
+        virNodeDeviceObjPtr obj = driver->devs.objs[i];
+        virNodeDeviceObjLock(obj);
+        ret = deviceAddCb(obj->def, true);
+        virNodeDeviceObjUnlock(obj);
+    }
+    nodeDeviceUnlock();
+
+    return ret;
+}
+
+
 static int nodeStateInitialize(bool privileged,
                                virStateInhibitCallback callback ATTRIBUTE_UNUSED,
                                void *opaque ATTRIBUTE_UNUSED)
@@ -1534,6 +1561,8 @@ static int nodeStateInitialize(bool privileged,
 
     if (udevEnumerateDevices(udev) != 0)
         goto cleanup;
+
+    virNodeDeviceConfEnumerateInit(udevEnumerateAddDevices);
 
     ret = 0;
 
