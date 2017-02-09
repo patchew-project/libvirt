@@ -1021,6 +1021,12 @@ void virNetServerClientClose(virNetServerClientPtr client)
         client->sock = NULL;
     }
 
+    if (client->privateData &&
+        client->privateDataFreeFunc) {
+        client->privateDataFreeFunc(client->privateData);
+        client->privateData = NULL;
+    }
+
     virObjectUnlock(client);
 }
 
