@@ -196,6 +196,9 @@ struct _virQEMUDriverConfig {
     virFirmwarePtr *firmwares;
     size_t nfirmwares;
     unsigned int glusterDebugLevel;
+
+    /* Node device enumeration enabled */
+    bool nodeDeviceEnumeration;
 };
 
 /* Main driver state */
