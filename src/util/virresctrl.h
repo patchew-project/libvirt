@@ -26,6 +26,7 @@
 
 # include "virutil.h"
 # include "virbitmap.h"
+# include "domain_conf.h"
 
 enum {
     VIR_RDT_RESOURCE_L3,
@@ -73,9 +74,10 @@ struct _virResCtrl {
         virResCacheBankPtr      cache_banks;
 };
 
-
 bool virResCtrlAvailable(void);
 int virResCtrlInit(void);
 virResCtrlPtr virResCtrlGet(int);
-
+int virResCtrlSetCacheBanks(virDomainCachetunePtr,
+        unsigned char *, pid_t *, int);
+int virResCtrlUpdate(void);
 #endif
