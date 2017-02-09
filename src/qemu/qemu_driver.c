@@ -197,6 +197,28 @@ static virNWFilterCallbackDriver qemuCallbackDriver = {
 };
 
 
+static int
+qemuNodeDeviceAdd(virNodeDeviceDefPtr def,
+                  bool enumerate)
+{
+    return qemuNodeDeviceEntryAdd(qemu_driver, def, enumerate);
+}
+
+
+static int
+qemuNodeDeviceRemove(virNodeDeviceDefPtr def)
+{
+    return qemuNodeDeviceEntryRemove(qemu_driver, def);
+}
+
+
+static virNodeDeviceCallbackDriver qemuNodedevCallbackDriver = {
+    .name = QEMU_DRIVER_NAME,
+    .nodeDeviceAdd = qemuNodeDeviceAdd,
+    .nodeDeviceRemove = qemuNodeDeviceRemove,
+};
+
+
 struct qemuAutostartData {
     virQEMUDriverPtr driver;
     virConnectPtr conn;
@@ -774,6 +796,15 @@ qemuStateInitialize(bool privileged,
         goto error;
 
     if (!(qemu_driver->sharedDevices = virHashCreate(30, qemuSharedDeviceEntryFree)))
+        goto error;
+
+    /* Create a hash table to keep track of node device's by name */
+    if (!(qemu_driver->nodeDevices = virHashCreate(100, NULL)))
+        goto error;
+
+    /* Set up a callback mechanism with the node device conf code to get
+     * called whenever a node device is added or removed. */
+    if (virNodeDeviceRegisterCallbackDriver(&qemuNodedevCallbackDriver) < 0)
         goto error;
 
     if (qemuMigrationErrorInit(qemu_driver) < 0)

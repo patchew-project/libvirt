@@ -1598,3 +1598,51 @@ qemuGetDomainHupageMemPath(const virDomainDef *def,
 
     return 0;
 }
+
+
+/**
+ * @driver: qemu driver pointer
+ * @def: Node device definition
+ * @enumeration: boolean for emumeration indication
+ *
+ * Taking the @def from the node device driver, add the device to
+ * the qemu node device hash table. The @enumeration is true when
+ * this callback is called from the node device enumeration and false
+ * when called when the @def was added to the node device.
+ *
+ * Returns -1 on failure, 0 on adding device name, 1 on already added name
+ */
+int
+qemuNodeDeviceEntryAdd(virQEMUDriverPtr driver,
+                       virNodeDeviceDefPtr def,
+                       bool enumerate)
+{
+    VIR_DEBUG("Attempt to add name='%s', parent='%s' enumerate=%d",
+              def->name, def->parent, enumerate);
+
+    if (!virHashLookup(driver->nodeDevices, def->name)) {
+        if (virHashAddEntry(driver->nodeDevices, def->name, NULL) < 0)
+            return -1;
+        return 0;
+    }
+    return 1;
+}
+
+
+/**
+ * @driver: qemu driver pointer
+ * @def: node device definition
+ *
+ * Remove the definition from qemu's node device hash table.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+qemuNodeDeviceEntryRemove(virQEMUDriverPtr driver,
+                          virNodeDeviceDefPtr def)
+{
+    VIR_DEBUG("Attempt to remove name='%s' parent='%s'",
+              def->name, def->parent);
+
+    return virHashRemoveEntry(driver->nodeDevices, def->name);
+}
