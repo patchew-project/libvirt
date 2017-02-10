@@ -6831,9 +6831,21 @@ qemuDomainSupportsVideoVga(virDomainVideoDefPtr video,
 }
 
 
-static int
+/**
+ * qemuDomainGetHostdevPath:
+ * @dev: host device definition
+ * @path: resulting path to @dev
+ * @perms: Optional pointer to VIR_CGROUP_DEVICE_* perms
+ *
+ * For given device @dev fetch its host path and store it at @path. Optionally,
+ * caller can get @perms on the path (e.g. rw/ro).
+ *
+ * Returns 0 on success, -1 otherwise.
+ */
+int
 qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
-                         char **path)
+                         char **path,
+                         int *perms)
 {
     int ret = -1;
     virDomainHostdevSubsysUSBPtr usbsrc = &dev->source.subsys.u.usb;
@@ -6864,6 +6876,8 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
                 if (!(tmpPath = virPCIDeviceGetIOMMUGroupDev(pci)))
                     goto cleanup;
                 freeTmpPath = true;
+                if (perms)
+                    *perms = VIR_CGROUP_DEVICE_RW;
             }
             break;
 
@@ -6878,6 +6892,8 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
 
             if (!(tmpPath = (char *) virUSBDeviceGetPath(usb)))
                 goto cleanup;
+            if (perms)
+                *perms = VIR_CGROUP_DEVICE_RW;
             break;
 
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
@@ -6902,6 +6918,9 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
 
                 if (!(tmpPath = (char *) virSCSIDeviceGetPath(scsi)))
                     goto cleanup;
+                if (perms)
+                    *perms = virSCSIDeviceGetReadonly(scsi) ?
+                        VIR_CGROUP_DEVICE_READ :VIR_CGROUP_DEVICE_RW;
             }
             break;
 
@@ -6913,6 +6932,8 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
 
                 if (!(tmpPath = (char *) virSCSIVHostDeviceGetPath(host)))
                     goto cleanup;
+                if (perms)
+                    *perms = VIR_CGROUP_DEVICE_RW;
             }
             break;
         }
@@ -7328,7 +7349,7 @@ qemuDomainSetupHostdev(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
     int ret = -1;
     char *path = NULL;
 
-    if (qemuDomainGetHostdevPath(dev, &path) < 0)
+    if (qemuDomainGetHostdevPath(dev, &path, NULL) < 0)
         goto cleanup;
 
     if (!path) {
@@ -7964,7 +7985,7 @@ qemuDomainNamespaceSetupHostdev(virQEMUDriverPtr driver,
     if (!qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT))
         return 0;
 
-    if (qemuDomainGetHostdevPath(hostdev, &path) < 0)
+    if (qemuDomainGetHostdevPath(hostdev, &path, NULL) < 0)
         goto cleanup;
 
     if (!path) {
@@ -7995,7 +8016,7 @@ qemuDomainNamespaceTeardownHostdev(virQEMUDriverPtr driver,
     if (!qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT))
         return 0;
 
-    if (qemuDomainGetHostdevPath(hostdev, &path) < 0)
+    if (qemuDomainGetHostdevPath(hostdev, &path, NULL) < 0)
         goto cleanup;
 
     if (!path) {
