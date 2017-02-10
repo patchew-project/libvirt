@@ -25,7 +25,11 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <poll.h>
+#ifdef HAVE_LINUX_EPOLL
+# include <sys/epoll.h>
+#else
+# include <poll.h>
+#endif
 #include <sys/time.h>
 #include <errno.h>
 #include <unistd.h>
@@ -87,6 +91,9 @@ struct virEventPollLoop {
     size_t timeoutsCount;
     size_t timeoutsAlloc;
     struct virEventPollTimeout *timeouts;
+#ifdef HAVE_LINUX_EPOLL
+    int epollfd;
+#endif
 };
 
 /* Only have one event loop */
@@ -109,6 +116,11 @@ int virEventPollAddHandle(int fd, int events,
                           virFreeCallback ff)
 {
     int watch;
+#ifdef HAVE_LINUX_EPOLL
+    size_t i;
+    struct epoll_event ev;
+#endif
+    int native = virEventPollToNativeEvents(events);
     virMutexLock(&eventLoop.lock);
     if (eventLoop.handlesCount == eventLoop.handlesAlloc) {
         EVENT_DEBUG("Used %zu handle slots, adding at least %d more",
@@ -124,8 +136,7 @@ int virEventPollAddHandle(int fd, int events,
 
     eventLoop.handles[eventLoop.handlesCount].watch = watch;
     eventLoop.handles[eventLoop.handlesCount].fd = fd;
-    eventLoop.handles[eventLoop.handlesCount].events =
-                                         virEventPollToNativeEvents(events);
+    eventLoop.handles[eventLoop.handlesCount].events = native;
     eventLoop.handles[eventLoop.handlesCount].cb = cb;
     eventLoop.handles[eventLoop.handlesCount].ff = ff;
     eventLoop.handles[eventLoop.handlesCount].opaque = opaque;
@@ -133,7 +144,30 @@ int virEventPollAddHandle(int fd, int events,
 
     eventLoop.handlesCount++;
 
+#ifdef HAVE_LINUX_EPOLL
+    ev.events = native;
+    ev.data.fd = fd;
+    if (epoll_ctl(eventLoop.epollfd, EPOLL_CTL_ADD, fd, &ev) < 0) {
+        if (errno == EEXIST) {
+            for (i = 0; i < eventLoop.handlesCount; i++) {
+                if (eventLoop.handles[i].fd == fd &&
+                    !eventLoop.handles[i].deleted) {
+                    ev.events |= eventLoop.handles[i].events;
+                }
+            }
+            if (epoll_ctl(eventLoop.epollfd, EPOLL_CTL_MOD, fd, &ev) < 0) {
+                virMutexUnlock(&eventLoop.lock);
+                return -1;
+            }
+        }
+        else {
+            virMutexUnlock(&eventLoop.lock);
+            return -1;
+        }
+    }
+#else
     virEventPollInterruptLocked();
+#endif
 
     PROBE(EVENT_POLL_ADD_HANDLE,
           "watch=%d fd=%d events=%d cb=%p opaque=%p ff=%p",
@@ -145,8 +179,14 @@ int virEventPollAddHandle(int fd, int events,
 
 void virEventPollUpdateHandle(int watch, int events)
 {
+#ifdef HAVE_LINUX_EPOLL
+    struct epoll_event ev;
+    size_t i, j;
+#else
     size_t i;
+#endif
     bool found = false;
+    int native = virEventPollToNativeEvents(events);
     PROBE(EVENT_POLL_UPDATE_HANDLE,
           "watch=%d events=%d",
           watch, events);
@@ -159,13 +199,34 @@ void virEventPollUpdateHandle(int watch, int events)
     virMutexLock(&eventLoop.lock);
     for (i = 0; i < eventLoop.handlesCount; i++) {
         if (eventLoop.handles[i].watch == watch) {
-            eventLoop.handles[i].events =
-                    virEventPollToNativeEvents(events);
+            eventLoop.handles[i].events = native;
+#ifndef HAVE_LINUX_EPOLL
             virEventPollInterruptLocked();
+#endif
             found = true;
             break;
         }
     }
+
+#ifdef HAVE_LINUX_EPOLL
+    ev.events = native;
+    for (j = 0; j < eventLoop.handlesCount; j++) {
+        if (eventLoop.handles[i].fd == eventLoop.handles[i].fd &&
+            !eventLoop.handles[i].deleted &&
+            i != j) {
+            ev.events |= eventLoop.handles[i].events;
+        }
+    }
+    ev.data.fd = eventLoop.handles[i].fd;
+
+    if (found && epoll_ctl(eventLoop.epollfd, EPOLL_CTL_MOD,
+                           eventLoop.handles[i].fd, &ev) < 0) {
+        VIR_WARN("Update for existing handle watch %d failed", watch);
+        virMutexUnlock(&eventLoop.lock);
+        return;
+    }
+#endif
+
     virMutexUnlock(&eventLoop.lock);
 
     if (!found)
@@ -180,7 +241,12 @@ void virEventPollUpdateHandle(int watch, int events)
  */
 int virEventPollRemoveHandle(int watch)
 {
+#ifdef HAVE_LINUX_EPOLL
+    struct epoll_event ev;
+    size_t i, j;
+#else
     size_t i;
+#endif
     PROBE(EVENT_POLL_REMOVE_HANDLE,
           "watch=%d",
           watch);
@@ -196,15 +262,47 @@ int virEventPollRemoveHandle(int watch)
             continue;
 
         if (eventLoop.handles[i].watch == watch) {
-            EVENT_DEBUG("mark delete %zu %d", i, eventLoop.handles[i].fd);
-            eventLoop.handles[i].deleted = 1;
-            virEventPollInterruptLocked();
-            virMutexUnlock(&eventLoop.lock);
-            return 0;
+            break;
         }
     }
+
+    if (i == eventLoop.handlesCount) {
+        virMutexUnlock(&eventLoop.lock);
+        return -1;
+    }
+
+#ifdef HAVE_LINUX_EPOLL
+    ev.events = 0;
+    for (j = 0; j < eventLoop.handlesCount; j++) {
+        if (eventLoop.handles[j].fd == eventLoop.handles[i].fd &&
+            !eventLoop.handles[j].deleted &&
+            i != j) {
+            ev.events |= eventLoop.handles[i].events;
+        }
+    }
+
+    ev.data.fd = eventLoop.handles[i].fd;
+    if (ev.events) {
+        if (epoll_ctl(eventLoop.epollfd, EPOLL_CTL_MOD, eventLoop.handles[i].fd,
+                      &ev) < 0) {
+            virMutexUnlock(&eventLoop.lock);
+            return -1;
+        }
+    }
+    else {
+        if (epoll_ctl(eventLoop.epollfd, EPOLL_CTL_DEL, eventLoop.handles[i].fd,
+                      &ev) < 0) {
+            virMutexUnlock(&eventLoop.lock);
+            return -1;
+        }
+    }
+#endif
+
+    EVENT_DEBUG("mark delete %zu %d", i, eventLoop.handles[i].fd);
+    eventLoop.handles[i].deleted = 1;
+    virEventPollInterruptLocked();
     virMutexUnlock(&eventLoop.lock);
-    return -1;
+    return 0;
 }
 
 
@@ -373,6 +471,7 @@ static int virEventPollCalculateTimeout(int *timeout)
     return 0;
 }
 
+#ifndef HAVE_LINUX_EPOLL
 /*
  * Allocate a pollfd array containing data for all registered
  * file handles. The caller must free the returned data struct
@@ -409,6 +508,7 @@ static struct pollfd *virEventPollMakePollFDs(int *nfds) {
 
     return fds;
 }
+#endif
 
 
 /*
@@ -472,7 +572,11 @@ static int virEventPollDispatchTimeouts(void)
  *
  * Returns 0 upon success, -1 if an error occurred
  */
+#ifdef HAVE_LINUX_EPOLL
+static int virEventPollDispatchHandles(int nfds, struct epoll_event *events)
+#else
 static int virEventPollDispatchHandles(int nfds, struct pollfd *fds)
+#endif
 {
     size_t i, n;
     VIR_DEBUG("Dispatch %d", nfds);
@@ -482,7 +586,11 @@ static int virEventPollDispatchHandles(int nfds, struct pollfd *fds)
      * in the fds array we've got */
     for (i = 0, n = 0; n < nfds && i < eventLoop.handlesCount; n++) {
         while (i < eventLoop.handlesCount &&
+#ifdef HAVE_LINUX_EPOLL
+               (eventLoop.handles[i].fd != events[n].data.fd ||
+#else
                (eventLoop.handles[i].fd != fds[n].fd ||
+#endif
                 eventLoop.handles[i].events == 0)) {
             i++;
         }
@@ -496,16 +604,25 @@ static int virEventPollDispatchHandles(int nfds, struct pollfd *fds)
             continue;
         }
 
+#ifdef HAVE_LINUX_EPOLL
+        if (events[n].events) {
+            int hEvents = virEventPollFromNativeEvents(events[n].events);
+#else
         if (fds[n].revents) {
+            int hEvents = virEventPollFromNativeEvents(fds[n].revents);
+#endif
             virEventHandleCallback cb = eventLoop.handles[i].cb;
             int watch = eventLoop.handles[i].watch;
             void *opaque = eventLoop.handles[i].opaque;
-            int hEvents = virEventPollFromNativeEvents(fds[n].revents);
             PROBE(EVENT_POLL_DISPATCH_HANDLE,
                   "watch=%d events=%d",
                   watch, hEvents);
             virMutexUnlock(&eventLoop.lock);
+#ifdef HAVE_LINUX_EPOLL
+            (cb)(watch, events[n].data.fd, hEvents, opaque);
+#else
             (cb)(watch, fds[n].fd, hEvents, opaque);
+#endif
             virMutexLock(&eventLoop.lock);
         }
     }
@@ -618,7 +735,11 @@ static void virEventPollCleanupHandles(void)
  */
 int virEventPollRunOnce(void)
 {
+#ifdef HAVE_LINUX_EPOLL
+    struct epoll_event events[MAX_POLL_EVENTS_AT_ONCE];
+#else
     struct pollfd *fds = NULL;
+#endif
     int ret, timeout, nfds;
 
     virMutexLock(&eventLoop.lock);
@@ -628,17 +749,29 @@ int virEventPollRunOnce(void)
     virEventPollCleanupTimeouts();
     virEventPollCleanupHandles();
 
-    if (!(fds = virEventPollMakePollFDs(&nfds)) ||
-        virEventPollCalculateTimeout(&timeout) < 0)
+#ifndef HAVE_LINUX_EPOLL
+    if (!(fds = virEventPollMakePollFDs(&nfds)))
+        goto error;
+#endif
+    if (virEventPollCalculateTimeout(&timeout) < 0)
         goto error;
 
     virMutexUnlock(&eventLoop.lock);
 
  retry:
+#ifdef HAVE_LINUX_EPOLL
+//FIXME: PROBE handles
+    PROBE(EVENT_POLL_RUN,
+          "nhandles=%d timeout=%d",
+          42, timeout);
+    nfds = ret = epoll_wait(eventLoop.epollfd, events,
+                     MAX_POLL_EVENTS_AT_ONCE, timeout);
+#else
     PROBE(EVENT_POLL_RUN,
           "nhandles=%d timeout=%d",
           nfds, timeout);
     ret = poll(fds, nfds, timeout);
+#endif
     if (ret < 0) {
         EVENT_DEBUG("Poll got error event %d", errno);
         if (errno == EINTR || errno == EAGAIN)
@@ -653,22 +786,32 @@ int virEventPollRunOnce(void)
     if (virEventPollDispatchTimeouts() < 0)
         goto error;
 
+#ifdef HAVE_LINUX_EPOLL
+    if (ret > 0 &&
+        virEventPollDispatchHandles(nfds, events) < 0)
+        goto error;
+#else
     if (ret > 0 &&
         virEventPollDispatchHandles(nfds, fds) < 0)
         goto error;
+#endif
 
     virEventPollCleanupTimeouts();
     virEventPollCleanupHandles();
 
     eventLoop.running = 0;
     virMutexUnlock(&eventLoop.lock);
+#ifndef HAVE_LINUX_EPOLL
     VIR_FREE(fds);
+#endif
     return 0;
 
  error:
     virMutexUnlock(&eventLoop.lock);
  error_unlocked:
+#ifndef HAVE_LINUX_EPOLL
     VIR_FREE(fds);
+#endif
     return -1;
 }
 
@@ -698,6 +841,17 @@ int virEventPollInit(void)
         return -1;
     }
 
+#ifdef HAVE_LINUX_EPOLL
+    eventLoop.epollfd = epoll_create1(0);
+    if (eventLoop.epollfd < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Unable to initialize epoll"));
+        VIR_FORCE_CLOSE(eventLoop.wakeupfd[0]);
+        VIR_FORCE_CLOSE(eventLoop.wakeupfd[1]);
+        return -1;
+    }
+#endif
+
     if (virEventPollAddHandle(eventLoop.wakeupfd[0],
                               VIR_EVENT_HANDLE_READABLE,
                               virEventPollHandleWakeup, NULL, NULL) < 0) {
@@ -706,6 +860,9 @@ int virEventPollInit(void)
                        eventLoop.wakeupfd[0]);
         VIR_FORCE_CLOSE(eventLoop.wakeupfd[0]);
         VIR_FORCE_CLOSE(eventLoop.wakeupfd[1]);
+#ifdef HAVE_LINUX_EPOLL
+        VIR_FORCE_CLOSE(eventLoop.epollfd);
+#endif
         return -1;
     }
 
@@ -742,6 +899,16 @@ int
 virEventPollToNativeEvents(int events)
 {
     int ret = 0;
+#ifdef HAVE_LINUX_EPOLL
+    if (events & VIR_EVENT_HANDLE_READABLE)
+        ret |= EPOLLIN;
+    if (events & VIR_EVENT_HANDLE_WRITABLE)
+        ret |= EPOLLOUT;
+    if (events & VIR_EVENT_HANDLE_ERROR)
+        ret |= EPOLLERR;
+    if (events & VIR_EVENT_HANDLE_HANGUP)
+        ret |= EPOLLHUP;
+#else
     if (events & VIR_EVENT_HANDLE_READABLE)
         ret |= POLLIN;
     if (events & VIR_EVENT_HANDLE_WRITABLE)
@@ -750,6 +917,7 @@ virEventPollToNativeEvents(int events)
         ret |= POLLERR;
     if (events & VIR_EVENT_HANDLE_HANGUP)
         ret |= POLLHUP;
+#endif
     return ret;
 }
 
@@ -757,6 +925,16 @@ int
 virEventPollFromNativeEvents(int events)
 {
     int ret = 0;
+#ifdef HAVE_LINUX_EPOLL
+    if (events & EPOLLIN)
+        ret |= VIR_EVENT_HANDLE_READABLE;
+    if (events & EPOLLOUT)
+        ret |= VIR_EVENT_HANDLE_WRITABLE;
+    if (events & EPOLLERR)
+        ret |= VIR_EVENT_HANDLE_ERROR;
+    if (events & EPOLLHUP)
+        ret |= VIR_EVENT_HANDLE_HANGUP;
+#else
     if (events & POLLIN)
         ret |= VIR_EVENT_HANDLE_READABLE;
     if (events & POLLOUT)
@@ -767,5 +945,6 @@ virEventPollFromNativeEvents(int events)
         ret |= VIR_EVENT_HANDLE_ERROR;
     if (events & POLLHUP)
         ret |= VIR_EVENT_HANDLE_HANGUP;
+#endif
     return ret;
 }

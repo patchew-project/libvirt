@@ -26,6 +26,11 @@
 
 # include "internal.h"
 
+# ifdef HAVE_LINUX_EPOLL
+/* Maximum number of events that are returned by epoll in virEventPollRunOnce */
+#  define MAX_POLL_EVENTS_AT_ONCE 10
+# endif
+
 /**
  * virEventPollAddHandle: register a callback for monitoring file handle events
  *

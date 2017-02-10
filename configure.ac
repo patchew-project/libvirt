@@ -877,6 +877,32 @@ AC_DEFINE_UNQUOTED([isbase64],[libvirt_gl_isbase64],[Hack to avoid symbol clash]
 AC_DEFINE_UNQUOTED([base64_encode],[libvirt_gl_base64_encode],[Hack to avoid symbol clash])
 AC_DEFINE_UNQUOTED([base64_encode_alloc],[libvirt_gl_base64_encode_alloc],[Hack to avoid symbol clash])
 
+AC_ARG_ENABLE([epoll],
+              [AS_HELP_STRING([--enable-epoll],[use epoll(4) on Linux])],
+              [enable_epoll=$enableval], [enable_epoll=auto])
+if test x$enable_epoll = xno; then
+    have_linux_epoll=no
+else
+    AC_MSG_CHECKING([for Linux epoll(4)])
+    AC_LINK_IFELSE([AC_LANG_PROGRAM(
+        [
+        #ifndef __linux__
+        #error This is not Linux
+        #endif
+        #include <sys/epoll.h>
+        ],
+        [epoll_create1 (EPOLL_CLOEXEC);])],
+        [have_linux_epoll=yes],
+        [have_linux_epoll=no])
+    AC_MSG_RESULT([$have_linux_epoll])
+fi
+if test x$enable_epoll,$have_linux_epoll = xyes,no; then
+    AC_MSG_ERROR([epoll support explicitly enabled but not available])
+fi
+if test "x$have_linux_epoll" = xyes; then
+  AC_DEFINE_UNQUOTED([HAVE_LINUX_EPOLL], 1, [whether epoll is supported])
+fi
+
 AC_CONFIG_FILES([run],
                 [chmod +x,-w run])
 AC_CONFIG_FILES([\
