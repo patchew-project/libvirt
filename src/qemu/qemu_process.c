@@ -76,6 +76,7 @@
 #include "configmake.h"
 #include "nwfilter_conf.h"
 #include "netdev_bandwidth_conf.h"
+#include "virresctrl.h"
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
@@ -5021,6 +5022,49 @@ qemuProcessVcpusSortOrder(const void *a,
     return vcpua->order - vcpub->order;
 }
 
+static int
+qemuProcessSetCacheBanks(virDomainObjPtr vm)
+{
+    size_t i, j;
+    virDomainCachetunePtr cachetune;
+    unsigned int max_vcpus = virDomainDefGetVcpusMax(vm->def);
+    pid_t *pids = NULL;
+    virDomainVcpuDefPtr vcpu;
+    size_t npid = 0;
+    size_t count = 0;
+    int ret = -1;
+
+    cachetune = &(vm->def->cachetune);
+
+    for (i = 0; i < cachetune->n_banks; i++) {
+        if (cachetune->cache_banks[i].vcpus) {
+            for (j = 0; j < max_vcpus; j++) {
+                if (virBitmapIsBitSet(cachetune->cache_banks[i].vcpus, j)) {
+
+                    vcpu = virDomainDefGetVcpu(vm->def, j);
+                    if (!vcpu->online)
+                        continue;
+
+                    if (VIR_RESIZE_N(pids, npid, count, 1) < 0)
+                        goto cleanup;
+                    pids[count ++] = qemuDomainGetVcpuPid(vm, j);
+                }
+            }
+        }
+    }
+
+    if (pids == NULL) {
+        if (VIR_ALLOC_N(pids, 1) < 0)
+            goto cleanup;
+        pids[0] = vm->pid;
+        count = 1;
+    }
+    ret = virResCtrlSetCacheBanks(cachetune, vm->def->uuid, pids, count);
+
+ cleanup:
+    VIR_FREE(pids);
+    return ret;
+}
 
 static int
 qemuProcessSetupHotpluggableVcpus(virQEMUDriverPtr driver,
@@ -5714,6 +5758,11 @@ qemuProcessLaunch(virConnectPtr conn,
         qemuProcessAutoDestroyAdd(driver, vm, conn) < 0)
         goto cleanup;
 
+    VIR_DEBUG("Cache allocation");
+
+    if (virResCtrlAvailable() && qemuProcessSetCacheBanks(vm) < 0)
+        goto cleanup;
+
     ret = 0;
 
  cleanup:
@@ -6215,6 +6264,10 @@ void qemuProcessStop(virQEMUDriverPtr driver,
 
     virPerfFree(priv->perf);
     priv->perf = NULL;
+
+    if (virResCtrlAvailable() && virResCtrlUpdate() < 0)
+        VIR_WARN("Failed to update resource control for %s",
+                 vm->def->name);
 
     qemuProcessRemoveDomainStatus(driver, vm);
 
