@@ -114,6 +114,8 @@ typedef virResCtrlDomain *virResCtrlDomainPtr;
 struct _virResCtrlDomain {
     unsigned int num_domains;
     virResDomainPtr domains;
+
+    virMutex lock;
 };
 
 
@@ -166,16 +168,34 @@ static int virResCtrlGetStr(const char *domain_name, const char *item_name, char
 {
     char *path;
     int rc = 0;
+    int readfd;
+    int len;
 
     CONSTRUCT_RESCTRL_PATH(domain_name, item_name);
 
-    if (virFileReadAll(path, MAX_FILE_LEN, ret) < 0) {
-        rc = -1;
+    if (!virFileExists(path))
+        goto cleanup;
+
+    if ((readfd = open(path, O_RDONLY)) < 0)
+        goto cleanup;
+
+    /* the lock will be released after readfd closed */
+    if (virFileLock(readfd, true, 0, 1, true) < 0) {
+        virReportSystemError(errno, _("Unable to lock '%s'"), path);
         goto cleanup;
     }
 
+    len = virFileReadLimFD(readfd, MAX_FILE_LEN, ret);
+
+    if (len < 0) {
+        virReportSystemError(errno, _("Failed to read file '%s'"), path);
+        goto cleanup;
+    }
+    rc = 0;
+
  cleanup:
     VIR_FREE(path);
+    VIR_FORCE_CLOSE(readfd);
     return rc;
 }
 
@@ -616,6 +636,9 @@ virResCtrlRefresh(void)
     unsigned int origin_count = domainall.num_domains;
     virResDomainPtr p, pre, del;
     pre = domainall.domains;
+
+    virMutexLock(&domainall.lock);
+
     p = del = NULL;
     if (pre)
         p = pre->next;
@@ -640,10 +663,11 @@ virResCtrlRefresh(void)
             p = p->next;
         }
         VIR_FREE(tasks);
-
     }
 
-    return virResCtrlRefreshSchemata();
+    virResCtrlRefreshSchemata();
+    virMutexUnlock(&domainall.lock);
+    return 0;
 }
 
 /* Get a domain ptr by domain's name*/
@@ -688,6 +712,12 @@ virResCtrlWrite(const char *name, const char *item, const char *content)
 
     if ((writefd = open(path, O_WRONLY | O_APPEND, S_IRUSR | S_IWUSR)) < 0)
         goto cleanup;
+
+    /* the lock will be released after writefd closed */
+    if (virFileLock(writefd, false, 0, 0, true) < 0) {
+        virReportSystemError(errno, _("Unable to lock '%s'"), path);
+        goto cleanup;
+    }
 
     if (safewrite(writefd, content, strlen(content)) < 0)
         goto cleanup;
@@ -868,10 +898,15 @@ static int
 virResCtrlAppendDomain(virResDomainPtr dom)
 {
     virResDomainPtr p = domainall.domains;
+
+    virMutexLock(&domainall.lock);
+
     while (p->next != NULL) p = p->next;
     p->next = dom;
     dom->pre = p;
     domainall.num_domains += 1;
+
+    virMutexUnlock(&domainall.lock);
     return 0;
 }
 
@@ -894,18 +929,22 @@ virResCtrlCalculateSchemata(int type,
 {
     size_t i;
     int count;
+    int rc = -1;
     virResDomainPtr p;
     unsigned int tmp_schemata;
     unsigned int schemata_sum = 0;
     int pair_type = 0;
 
+    virMutexLock(&resctrlall[type].cache_banks[sid].lock);
+
     if (resctrlall[type].cache_banks[sid].cache_left < size) {
         VIR_ERROR(_("Not enough cache left on bank %u"), hostid);
-        return -1;
+        goto cleanup;
     }
+
     if ((count = size / resctrlall[type].cache_banks[sid].cache_min) <= 0) {
         VIR_ERROR(_("Error cache size %llu"), size);
-        return -1;
+        goto cleanup;
     }
 
     tmp_schemata = VIR_RESCTRL_GET_SCHEMATA(count);
@@ -920,7 +959,7 @@ virResCtrlCalculateSchemata(int type,
     if (type == VIR_RDT_RESOURCE_L3CODE)
         pair_type = VIR_RDT_RESOURCE_L3DATA;
 
-    for (i = 1; i < domainall.num_domains; i ++) {
+    for (i = 1; i < domainall.num_domains; i++) {
         schemata_sum |= p->schematas[type]->schemata_items[sid].schemata;
         if (pair_type > 0)
             schemata_sum |= p->schematas[pair_type]->schemata_items[sid].schemata;
@@ -931,7 +970,16 @@ virResCtrlCalculateSchemata(int type,
 
     while ((tmp_schemata & schemata_sum) != 0)
         tmp_schemata = tmp_schemata >> 1;
-    return tmp_schemata;
+
+    resctrlall[type].cache_banks[sid].cache_left -= size;
+    if (pair_type > 0)
+        resctrlall[pair_type].cache_banks[sid].cache_left = resctrlall[type].cache_banks[sid].cache_left;
+
+    rc = tmp_schemata;
+
+ cleanup:
+    virMutexUnlock(&resctrlall[type].cache_banks[sid].lock);
+    return rc;
 }
 
 int virResCtrlSetCacheBanks(virDomainCachetunePtr cachetune,
@@ -1043,7 +1091,7 @@ int virResCtrlUpdate(void)
 int
 virResCtrlInit(void)
 {
-    size_t i = 0;
+    size_t i, j;
     char *tmp;
     int rc = 0;
 
@@ -1062,6 +1110,24 @@ virResCtrlInit(void)
     }
 
     domainall.domains = virResCtrlGetAllDomains(&(domainall.num_domains));
+
+    for (i = 0; i < VIR_RDT_RESOURCE_LAST; i++) {
+        if (VIR_RESCTRL_ENABLED(i)) {
+            for (j = 0; j < resctrlall[i].num_banks; j++) {
+                if (virMutexInit(&resctrlall[i].cache_banks[j].lock) < 0) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                            _("Unable to initialize mutex"));
+                    return -1;
+                }
+            }
+        }
+    }
+
+    if (virMutexInit(&domainall.lock) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                _("Unable to initialize mutex"));
+        return -1;
+    }
 
     if ((rc = virResCtrlRefresh()) < 0)
         VIR_ERROR(_("Failed to refresh resource control"));
