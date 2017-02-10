@@ -7505,6 +7505,67 @@ qemuDomainSetupTPM(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
 
 
 static int
+qemuDomainSetupVideo(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
+                     virDomainVideoDefPtr video,
+                     const char *devPath)
+{
+    const char *dripath = "/dev/dri";
+    char *dridevpath = NULL;
+    struct dirent *ent;
+    DIR *dir;
+    int rv, ret = -1;
+
+    if (!video->accel ||
+        !video->accel->accel3d)
+        return 0;
+
+    if (virDirOpen(&dir, dripath) < 0)
+        return ret;
+
+    while ((rv = virDirRead(dir, &ent, dripath)) > 0) {
+        if (!STRPREFIX(ent->d_name, "render"))
+            continue;
+
+        VIR_FREE(dridevpath);
+        if (virAsprintf(&dridevpath, "%s/%s", dripath, ent->d_name) < 0)
+            goto cleanup;
+
+        if (qemuDomainCreateDevice(dridevpath, devPath, false) < 0)
+            goto cleanup;
+    }
+
+    if (rv < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(dridevpath);
+    VIR_DIR_CLOSE(dir);
+    return ret;
+}
+
+
+static int
+qemuDomainSetupAllVideos(virQEMUDriverPtr driver,
+                         virDomainObjPtr vm,
+                         const char *devPath)
+{
+    size_t i;
+
+    VIR_DEBUG("Setting up videos");
+    for (i = 0; i < vm->def->nvideos; i++) {
+        if (qemuDomainSetupVideo(driver,
+                                 vm->def->videos[i],
+                                 devPath) < 0)
+            return -1;
+    }
+
+    VIR_DEBUG("Setup all videos");
+    return 0;
+}
+
+
+static int
 qemuDomainSetupInput(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
                      virDomainInputDefPtr input,
                      const char *devPath)
@@ -7655,6 +7716,9 @@ qemuDomainBuildNamespace(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (qemuDomainSetupTPM(driver, vm, devPath) < 0)
+        goto cleanup;
+
+    if (qemuDomainSetupAllVideos(driver, vm, devPath) < 0)
         goto cleanup;
 
     if (qemuDomainSetupAllInputs(driver, vm, devPath) < 0)

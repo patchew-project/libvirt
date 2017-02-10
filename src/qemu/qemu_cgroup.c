@@ -335,6 +335,52 @@ qemuTeardownHostdevCgroup(virDomainObjPtr vm,
     return ret;
 }
 
+
+static int
+qemuSetupVideoCgroup(virDomainObjPtr vm,
+                     virDomainVideoDefPtr video)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    const char *dripath = "/dev/dri";
+    char *devpath = NULL;
+    struct dirent *ent;
+    DIR *dir;
+    int rv, rc, ret = -1;
+
+    if (!video->accel ||
+        !video->accel->accel3d)
+        return 0;
+
+    if (virDirOpen(&dir, dripath) < 0)
+        return ret;
+
+    while ((rv = virDirRead(dir, &ent, dripath)) > 0) {
+        if (!STRPREFIX(ent->d_name, "render"))
+            continue;
+
+        VIR_FREE(devpath);
+        if (virAsprintf(&devpath, "%s/%s", dripath, ent->d_name) < 0)
+            goto cleanup;
+
+        rc = virCgroupAllowDevicePath(priv->cgroup, devpath,
+                                      VIR_CGROUP_DEVICE_RW, false);
+        virDomainAuditCgroupPath(vm, priv->cgroup, "allow", devpath,
+                                 "rw", rc == 0);
+        if (rv < 0)
+            goto cleanup;
+    }
+
+    if (rv < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(devpath);
+    VIR_DIR_CLOSE(dir);
+    return ret;
+}
+
+
 static int
 qemuSetupBlkioCgroup(virDomainObjPtr vm)
 {
@@ -601,6 +647,11 @@ qemuSetupDevicesCgroup(virQEMUDriverPtr driver,
 
     for (i = 0; i < vm->def->nhostdevs; i++) {
         if (qemuSetupHostdevCgroup(vm, vm->def->hostdevs[i]) < 0)
+            goto cleanup;
+    }
+
+    for (i = 0; i < vm->def->nvideos; i++) {
+        if (qemuSetupVideoCgroup(vm, vm->def->videos[i]) < 0)
             goto cleanup;
     }
 
