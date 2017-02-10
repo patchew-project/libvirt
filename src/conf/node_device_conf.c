@@ -33,12 +33,15 @@
 #include "virstring.h"
 #include "node_device_conf.h"
 #include "device_conf.h"
+#include "virlog.h"
 #include "virxml.h"
 #include "virbuffer.h"
 #include "viruuid.h"
 #include "virrandom.h"
 
 #define VIR_FROM_THIS VIR_FROM_NODEDEV
+
+VIR_LOG_INIT("conf.node_device_conf");
 
 VIR_ENUM_IMPL(virNodeDevCap, VIR_NODE_DEV_CAP_LAST,
               "system",
@@ -263,6 +266,99 @@ void virNodeDeviceDefFree(virNodeDeviceDefPtr def)
     VIR_FREE(def);
 }
 
+
+/* Provide callback infrastructure that is expected to be called when
+ * devices are added/removed from a node_device subsystem that supports
+ * the callback mechanism. This provides a way for drivers to register
+ * to be notified when a node_device is added/removed. */
+virNodedevEnumerateAddDevices virNodedevEnumerateAddDevicesCb = NULL;
+int nodeDeviceCallbackDriver;
+#define MAX_CALLBACK_DRIVER 10
+static virNodeDeviceCallbackDriverPtr nodeDeviceDrvArray[MAX_CALLBACK_DRIVER];
+
+
+/**
+ * @cb: Driver function to be called.
+ *
+ * Set a callback at driver initialization to provide a callback to a
+ * driver specific function that can handle the enumeration of the existing
+ * devices and the addition of those devices for the registering driver.
+ *
+ * The initial node_device enumeration is done prior to other drivers, thus
+ * this provides a mechanism to load the existing data since the functions
+ * virNodeDeviceAssignDef and virNodeDeviceObjRemove would typically
+ * only be called when a new device is added/removed after the initial
+ * enumeration. The registering driver will need to handle duplication
+ * of data.
+ */
+void
+virNodeDeviceConfEnumerateInit(virNodedevEnumerateAddDevices cb)
+{
+    virNodedevEnumerateAddDevicesCb = cb;
+}
+
+
+/**
+ * @cbd: Driver callback pointers to add/remove devices
+ *
+ * Register a callback function in the registering driver to be called
+ * when devices are added or removed. Additionally, ensure the initial
+ * enumeration of the devices is completed taking care to do it after
+ * setting the callbacks
+ *
+ * Returns address of enumerate callback on success, NULL on failure
+ */
+virNodedevEnumerateAddDevices
+virNodeDeviceRegisterCallbackDriver(virNodeDeviceCallbackDriverPtr cbd)
+{
+    if (nodeDeviceCallbackDriver >= MAX_CALLBACK_DRIVER) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("no space available for another callback driver"));
+        return NULL;
+    }
+
+    if (!cbd->nodeDeviceAdd || !cbd->nodeDeviceRemove) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("callback requires both add and remove functions"));
+        return NULL;
+    }
+
+    if (!virNodedevEnumerateAddDevicesCb) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("no enumeration callback API is registered"));
+        return NULL;
+    }
+
+    nodeDeviceDrvArray[nodeDeviceCallbackDriver++] = cbd;
+
+    return virNodedevEnumerateAddDevicesCb;
+}
+
+
+/**
+ * @cb: Driver function to be called.
+ *
+ * Clear the callback function. It'll be up to the calling driver to
+ * clear it's own data properly
+ */
+void
+virNodeDeviceUnregisterCallbackDriver(virNodeDeviceCallbackDriverPtr cbd)
+{
+    size_t i = 0;
+
+    while (i < nodeDeviceCallbackDriver && nodeDeviceDrvArray[i] != cbd)
+        i++;
+
+    if (i < nodeDeviceCallbackDriver) {
+        memmove(&nodeDeviceDrvArray[i], &nodeDeviceDrvArray[i+1],
+                (nodeDeviceCallbackDriver - i - 1) *
+                sizeof(nodeDeviceDrvArray[i]));
+        nodeDeviceDrvArray[i] = NULL;
+        nodeDeviceCallbackDriver--;
+    }
+}
+
+
 void virNodeDeviceObjFree(virNodeDeviceObjPtr dev)
 {
     if (!dev)
@@ -289,6 +385,7 @@ void virNodeDeviceObjListFree(virNodeDeviceObjListPtr devs)
 virNodeDeviceObjPtr virNodeDeviceAssignDef(virNodeDeviceObjListPtr devs,
                                            virNodeDeviceDefPtr def)
 {
+    size_t i;
     virNodeDeviceObjPtr device;
 
     if ((device = virNodeDeviceFindByName(devs, def->name))) {
@@ -315,6 +412,13 @@ virNodeDeviceObjPtr virNodeDeviceAssignDef(virNodeDeviceObjListPtr devs,
     }
     device->def = def;
 
+    /* Call any registered drivers that want to be notified of a new device */
+    for (i = 0; i < nodeDeviceCallbackDriver; i++) {
+        if (nodeDeviceDrvArray[i]->nodeDeviceAdd(def, false) < 0)
+            VIR_WARN("Failed to add device name '%s' parent '%s' for "
+                     "register callback %zu", def->name, def->parent, i);
+    }
+
     return device;
 
 }
@@ -322,13 +426,22 @@ virNodeDeviceObjPtr virNodeDeviceAssignDef(virNodeDeviceObjListPtr devs,
 void virNodeDeviceObjRemove(virNodeDeviceObjListPtr devs,
                             virNodeDeviceObjPtr *dev)
 {
-    size_t i;
+    size_t i, j;
 
     virNodeDeviceObjUnlock(*dev);
 
     for (i = 0; i < devs->count; i++) {
         virNodeDeviceObjLock(*dev);
         if (devs->objs[i] == *dev) {
+            /* Call any registered drivers that want to be notified of a
+             * removed device */
+            for (j = 0; j < nodeDeviceCallbackDriver; j++) {
+                if (nodeDeviceDrvArray[j]->nodeDeviceRemove((*dev)->def) < 0) {
+                    VIR_WARN("failed to remove name='%s' parent='%s' from "
+                             "callback driver, continuing",
+                             (*dev)->def->name, (*dev)->def->parent);
+                }
+            }
             virNodeDeviceObjUnlock(*dev);
             virNodeDeviceObjFree(devs->objs[i]);
             *dev = NULL;

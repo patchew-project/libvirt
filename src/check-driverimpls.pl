@@ -70,6 +70,7 @@ while (<>) {
     } elsif (/^(?:static\s+)?(vir(?:\w+)?Driver)\s+/) {
         next if $1 eq "virNWFilterCallbackDriver" ||
                 $1 eq "virNWFilterTechDriver" ||
+                $1 eq "virNodeDeviceCallbackDriver" ||
                 $1 eq "virConnectDriver";
         $intable = 1;
         $table = $1;
