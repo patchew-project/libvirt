@@ -197,6 +197,28 @@ static virNWFilterCallbackDriver qemuCallbackDriver = {
 };
 
 
+static int
+qemuNodeDeviceAdd(virNodeDeviceDefPtr def,
+                  bool enumerate)
+{
+    return qemuNodeDeviceEntryAdd(qemu_driver, def, enumerate);
+}
+
+
+static int
+qemuNodeDeviceRemove(virNodeDeviceDefPtr def)
+{
+    return qemuNodeDeviceEntryRemove(qemu_driver, def);
+}
+
+
+static virNodeDeviceCallbackDriver qemuNodedevCallbackDriver = {
+    .name = QEMU_DRIVER_NAME,
+    .nodeDeviceAdd = qemuNodeDeviceAdd,
+    .nodeDeviceRemove = qemuNodeDeviceRemove,
+};
+
+
 struct qemuAutostartData {
     virQEMUDriverPtr driver;
     virConnectPtr conn;
@@ -638,6 +660,7 @@ qemuStateInitialize(bool privileged,
     char *driverConf = NULL;
     virConnectPtr conn = NULL;
     virQEMUDriverConfigPtr cfg;
+    virNodedevEnumerateAddDevices nodedevEnumCb;
     uid_t run_uid = -1;
     gid_t run_gid = -1;
     char *hugepagePath = NULL;
@@ -774,6 +797,23 @@ qemuStateInitialize(bool privileged,
         goto error;
 
     if (!(qemu_driver->sharedDevices = virHashCreate(30, qemuSharedDeviceEntryFree)))
+        goto error;
+
+    /* Create a hash table to keep track of node device's by name */
+    if (!(qemu_driver->nodeDevices = virHashCreate(100, NULL)))
+        goto error;
+
+    /* Set up a callback mechanism with the node device conf code to get
+     * called whenever a node device is added or removed. */
+    if (!(nodedevEnumCb =
+          virNodeDeviceRegisterCallbackDriver(&qemuNodedevCallbackDriver)))
+        goto error;
+
+    /* Setting the add/remove callback first ensures that there is no
+     * window of opportunity for a device to be added after enumeration
+     * is complete, but before the callback is in place. So, set the
+     * callback first, then do the enumeration. */
+    if (nodedevEnumCb(qemuNodeDeviceAdd) < 0)
         goto error;
 
     if (qemuMigrationErrorInit(qemu_driver) < 0)
@@ -1075,6 +1115,7 @@ qemuStateCleanup(void)
         return -1;
 
     virNWFilterUnRegisterCallbackDriver(&qemuCallbackDriver);
+    virNodeDeviceUnregisterCallbackDriver(&qemuNodedevCallbackDriver);
     virThreadPoolFree(qemu_driver->workerPool);
     virObjectUnref(qemu_driver->config);
     virObjectUnref(qemu_driver->hostdevMgr);
