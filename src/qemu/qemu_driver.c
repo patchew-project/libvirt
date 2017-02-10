@@ -799,22 +799,27 @@ qemuStateInitialize(bool privileged,
     if (!(qemu_driver->sharedDevices = virHashCreate(30, qemuSharedDeviceEntryFree)))
         goto error;
 
-    /* Create a hash table to keep track of node device's by name */
-    if (!(qemu_driver->nodeDevices = virHashCreate(100, NULL)))
-        goto error;
+    /* If node device enumeration is enabled, create a hash table to
+     * keep track of node device's by name and set up a callback mechanism
+     * with the node device conf code to get called whenever a node device
+     * is added or removed. */
+    if (cfg->nodeDeviceEnumeration) {
+        if (!(qemu_driver->nodeDevices = virHashCreate(100, NULL)))
+            goto error;
 
-    /* Set up a callback mechanism with the node device conf code to get
-     * called whenever a node device is added or removed. */
-    if (!(nodedevEnumCb =
-          virNodeDeviceRegisterCallbackDriver(&qemuNodedevCallbackDriver)))
-        goto error;
+        /* Set up a callback mechanism with the node device conf code to get
+         * called whenever a node device is added or removed. */
+        if (!(nodedevEnumCb =
+              virNodeDeviceRegisterCallbackDriver(&qemuNodedevCallbackDriver)))
+            goto error;
 
-    /* Setting the add/remove callback first ensures that there is no
-     * window of opportunity for a device to be added after enumeration
-     * is complete, but before the callback is in place. So, set the
-     * callback first, then do the enumeration. */
-    if (nodedevEnumCb(qemuNodeDeviceAdd) < 0)
-        goto error;
+        /* Setting the add/remove callback first ensures that there is no
+         * window of opportunity for a device to be added after enumeration
+         * is complete, but before the callback is in place. So, set the
+         * callback first, then do the enumeration. */
+        if (nodedevEnumCb(qemuNodeDeviceAdd) < 0)
+            goto error;
+    }
 
     if (qemuMigrationErrorInit(qemu_driver) < 0)
         goto error;

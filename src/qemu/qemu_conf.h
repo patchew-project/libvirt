@@ -198,6 +198,9 @@ struct _virQEMUDriverConfig {
     unsigned int glusterDebugLevel;
 
     char *memoryBackingDir;
+
+    /* Node device enumeration enabled */
+    bool nodeDeviceEnumeration;
 };
 
 /* Main driver state */
