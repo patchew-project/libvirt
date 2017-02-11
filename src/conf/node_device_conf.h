@@ -28,10 +28,8 @@
 # include "internal.h"
 # include "virbitmap.h"
 # include "virutil.h"
-# include "virthread.h"
 # include "virpci.h"
 # include "device_conf.h"
-# include "object_event.h"
 
 # include <libxml/tree.h>
 
@@ -207,53 +205,6 @@ struct _virNodeDeviceDef {
     virNodeDevCapsDefPtr caps;		/* optional device capabilities */
 };
 
-
-typedef struct _virNodeDeviceObj virNodeDeviceObj;
-typedef virNodeDeviceObj *virNodeDeviceObjPtr;
-struct _virNodeDeviceObj {
-    virMutex lock;
-
-    virNodeDeviceDefPtr def;		/* device definition */
-    void *privateData;			/* driver-specific private data */
-    void (*privateFree)(void *data);	/* destructor for private data */
-
-};
-
-typedef struct _virNodeDeviceObjList virNodeDeviceObjList;
-typedef virNodeDeviceObjList *virNodeDeviceObjListPtr;
-struct _virNodeDeviceObjList {
-    size_t count;
-    virNodeDeviceObjPtr *objs;
-};
-
-typedef struct _virNodeDeviceDriverState virNodeDeviceDriverState;
-typedef virNodeDeviceDriverState *virNodeDeviceDriverStatePtr;
-struct _virNodeDeviceDriverState {
-    virMutex lock;
-
-    virNodeDeviceObjList devs;		/* currently-known devices */
-    void *privateData;			/* driver-specific private data */
-
-    /* Immutable pointer, self-locking APIs */
-    virObjectEventStatePtr nodeDeviceEventState;
-};
-
-
-int virNodeDeviceHasCap(const virNodeDeviceObj *dev, const char *cap);
-
-virNodeDeviceObjPtr virNodeDeviceFindByName(virNodeDeviceObjListPtr devs,
-                                            const char *name);
-virNodeDeviceObjPtr
-virNodeDeviceFindBySysfsPath(virNodeDeviceObjListPtr devs,
-                             const char *sysfs_path)
-    ATTRIBUTE_NONNULL(2);
-
-virNodeDeviceObjPtr virNodeDeviceAssignDef(virNodeDeviceObjListPtr devs,
-                                           virNodeDeviceDefPtr def);
-
-void virNodeDeviceObjRemove(virNodeDeviceObjListPtr devs,
-                            virNodeDeviceObjPtr *dev);
-
 char *virNodeDeviceDefFormat(const virNodeDeviceDef *def);
 
 virNodeDeviceDefPtr virNodeDeviceDefParseString(const char *str,
@@ -271,35 +222,9 @@ int virNodeDeviceGetWWNs(virNodeDeviceDefPtr def,
                          char **wwnn,
                          char **wwpn);
 
-int virNodeDeviceGetParentHost(virNodeDeviceObjListPtr devs,
-                               const char *dev_name,
-                               const char *parent_name,
-                               int *parent_host);
-
-int virNodeDeviceGetParentHostByWWNs(virNodeDeviceObjListPtr devs,
-                                     const char *dev_name,
-                                     const char *parent_wwnn,
-                                     const char *parent_wwpn,
-                                     int *parent_host);
-
-int virNodeDeviceGetParentHostByFabricWWN(virNodeDeviceObjListPtr devs,
-                                          const char *dev_name,
-                                          const char *parent_fabric_wwn,
-                                          int *parent_host);
-
-int virNodeDeviceFindVportParentHost(virNodeDeviceObjListPtr devs,
-                                     int *parent_host);
-
-void virNodeDeviceDefFree(virNodeDeviceDefPtr def);
-
-void virNodeDeviceObjFree(virNodeDeviceObjPtr dev);
-
-void virNodeDeviceObjListFree(virNodeDeviceObjListPtr devs);
+void virNodeDeviceDefFree(void *opaque);
 
 void virNodeDevCapsDefFree(virNodeDevCapsDefPtr caps);
-
-void virNodeDeviceObjLock(virNodeDeviceObjPtr obj);
-void virNodeDeviceObjUnlock(virNodeDeviceObjPtr obj);
 
 # define VIR_CONNECT_LIST_NODE_DEVICES_FILTERS_CAP \
                 (VIR_CONNECT_LIST_NODE_DEVICES_CAP_SYSTEM        | \
@@ -314,13 +239,5 @@ void virNodeDeviceObjUnlock(virNodeDeviceObjPtr obj);
                  VIR_CONNECT_LIST_NODE_DEVICES_CAP_FC_HOST       | \
                  VIR_CONNECT_LIST_NODE_DEVICES_CAP_VPORTS        | \
                  VIR_CONNECT_LIST_NODE_DEVICES_CAP_SCSI_GENERIC)
-
-typedef bool (*virNodeDeviceObjListFilter)(virConnectPtr conn, void *opaque);
-
-int virNodeDeviceObjListExport(virConnectPtr conn,
-                               virNodeDeviceObjList devobjs,
-                               virNodeDevicePtr **devices,
-                               virNodeDeviceObjListFilter filter,
-                               unsigned int flags);
 
 #endif /* __VIR_NODE_DEVICE_CONF_H__ */

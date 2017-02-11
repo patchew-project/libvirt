@@ -694,25 +694,12 @@ virNetDevIPRouteParseXML;
 virNodeDevCapsDefFree;
 virNodeDevCapTypeFromString;
 virNodeDevCapTypeToString;
-virNodeDeviceAssignDef;
 virNodeDeviceDefFormat;
 virNodeDeviceDefFree;
 virNodeDeviceDefParseFile;
 virNodeDeviceDefParseNode;
 virNodeDeviceDefParseString;
-virNodeDeviceFindByName;
-virNodeDeviceFindBySysfsPath;
-virNodeDeviceFindVportParentHost;
-virNodeDeviceGetParentHost;
-virNodeDeviceGetParentHostByFabricWWN;
-virNodeDeviceGetParentHostByWWNs;
 virNodeDeviceGetWWNs;
-virNodeDeviceHasCap;
-virNodeDeviceObjListExport;
-virNodeDeviceObjListFree;
-virNodeDeviceObjLock;
-virNodeDeviceObjRemove;
-virNodeDeviceObjUnlock;
 
 
 # conf/node_device_event.h
@@ -959,6 +946,18 @@ virDomainObjListNumOfDomains;
 virDomainObjListRemove;
 virDomainObjListRemoveLocked;
 virDomainObjListRename;
+
+
+# conf/virnodedeviceobj.h
+virNodeDeviceObjExportList;
+virNodeDeviceObjFindByName;
+virNodeDeviceObjFindBySysfsPath;
+virNodeDeviceObjFindVportParentHost;
+virNodeDeviceObjGetNames;
+virNodeDeviceObjGetParentHost;
+virNodeDeviceObjGetParentHostByFabricWWN;
+virNodeDeviceObjGetParentHostByWWNs;
+virNodeDeviceObjNumOfDevices;
 
 
 # conf/virpoolobj.h

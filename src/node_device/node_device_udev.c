@@ -43,6 +43,7 @@
 #include "virpci.h"
 #include "virstring.h"
 #include "virnetdev.h"
+#include "virpoolobj.h"
 
 #define VIR_FROM_THIS VIR_FROM_NODEDEV
 
@@ -1024,32 +1025,34 @@ static int udevGetDeviceDetails(struct udev_device *device,
 
 static int udevRemoveOneDevice(struct udev_device *device)
 {
-    virNodeDeviceObjPtr dev = NULL;
+    virPoolObjPtr obj = NULL;
+    virNodeDeviceDefPtr def;
     virObjectEventPtr event = NULL;
     const char *name = NULL;
     int ret = -1;
 
     name = udev_device_get_syspath(device);
-    dev = virNodeDeviceFindBySysfsPath(&driver->devs, name);
 
-    if (!dev) {
+    if (!(obj = virNodeDeviceObjFindBySysfsPath(driver->devs, name))) {
         VIR_DEBUG("Failed to find device to remove that has udev name '%s'",
                   name);
         goto cleanup;
     }
 
-    event = virNodeDeviceEventLifecycleNew(dev->def->name,
+    def = virPoolObjGetDef(obj);
+    event = virNodeDeviceEventLifecycleNew(def->name,
                                            VIR_NODE_DEVICE_EVENT_DELETED,
                                            0);
 
     VIR_DEBUG("Removing device '%s' with sysfs path '%s'",
-              dev->def->name, name);
-    virNodeDeviceObjRemove(&driver->devs, &dev);
+              def->name, name);
+    virPoolObjTableRemove(driver->devs, &obj);
 
     ret = 0;
  cleanup:
     if (event)
         virObjectEventStateQueue(driver->nodeDeviceEventState, event);
+    virPoolObjEndAPI(&obj);
     return ret;
 }
 
@@ -1059,7 +1062,7 @@ static int udevSetParent(struct udev_device *device,
 {
     struct udev_device *parent_device = NULL;
     const char *parent_sysfs_path = NULL;
-    virNodeDeviceObjPtr dev = NULL;
+    virPoolObjPtr obj = NULL;
     int ret = -1;
 
     parent_device = device;
@@ -1077,14 +1080,11 @@ static int udevSetParent(struct udev_device *device,
             goto cleanup;
         }
 
-        dev = virNodeDeviceFindBySysfsPath(&driver->devs,
-                                           parent_sysfs_path);
-        if (dev != NULL) {
-            if (VIR_STRDUP(def->parent, dev->def->name) < 0) {
-                virNodeDeviceObjUnlock(dev);
+        if ((obj = virNodeDeviceObjFindBySysfsPath(driver->devs,
+                                                   parent_sysfs_path))) {
+            virNodeDeviceDefPtr objdef = virPoolObjGetDef(obj);
+            if (VIR_STRDUP(def->parent, objdef->name) < 0)
                 goto cleanup;
-            }
-            virNodeDeviceObjUnlock(dev);
 
             if (VIR_STRDUP(def->parent_sysfs_path, parent_sysfs_path) < 0)
                 goto cleanup;
@@ -1098,6 +1098,7 @@ static int udevSetParent(struct udev_device *device,
     ret = 0;
 
  cleanup:
+    virPoolObjEndAPI(&obj);
     return ret;
 }
 
@@ -1105,7 +1106,8 @@ static int udevSetParent(struct udev_device *device,
 static int udevAddOneDevice(struct udev_device *device)
 {
     virNodeDeviceDefPtr def = NULL;
-    virNodeDeviceObjPtr dev = NULL;
+    virPoolObjPtr obj = NULL;
+    virNodeDeviceDefPtr newdef;
     virObjectEventPtr event = NULL;
     bool new_device = true;
     int ret = -1;
@@ -1128,29 +1130,37 @@ static int udevAddOneDevice(struct udev_device *device)
     if (udevGetDeviceDetails(device, def) != 0)
         goto cleanup;
 
+    if (!def->name) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Did not generate def->name for '%s'"),
+                       udev_device_get_syspath(device));
+        goto cleanup;
+    }
+
     if (udevSetParent(device, def) != 0)
         goto cleanup;
 
-    dev = virNodeDeviceFindByName(&driver->devs, def->name);
-    if (dev) {
-        virNodeDeviceObjUnlock(dev);
+    if ((obj = virPoolObjTableFindByName(driver->devs, def->name))) {
+        virPoolObjEndAPI(&obj);
         new_device = false;
     }
 
     /* If this is a device change, the old definition will be freed
      * and the current definition will take its place. */
-    dev = virNodeDeviceAssignDef(&driver->devs, def);
-    if (dev == NULL)
+    if (!(obj = virPoolObjTableAdd(driver->devs, NULL, def->name,
+                                   def, NULL, NULL, virNodeDeviceDefFree,
+                                   NULL, 0)))
         goto cleanup;
+    VIR_STEAL_PTR(newdef, def);
 
     if (new_device)
-        event = virNodeDeviceEventLifecycleNew(dev->def->name,
+        event = virNodeDeviceEventLifecycleNew(newdef->name,
                                                VIR_NODE_DEVICE_EVENT_CREATED,
                                                0);
     else
-        event = virNodeDeviceEventUpdateNew(dev->def->name);
+        event = virNodeDeviceEventUpdateNew(newdef->name);
 
-    virNodeDeviceObjUnlock(dev);
+    virPoolObjEndAPI(&obj);
 
     ret = 0;
 
@@ -1288,7 +1298,7 @@ static int nodeStateCleanup(void)
     if (udev != NULL)
         udev_unref(udev);
 
-    virNodeDeviceObjListFree(&driver->devs);
+    virObjectUnref(driver->devs);
     nodeDeviceUnlock();
     virMutexDestroy(&driver->lock);
     VIR_FREE(driver);
@@ -1404,7 +1414,7 @@ udevGetDMIData(virNodeDevCapDataPtr data)
 static int udevSetupSystemDev(void)
 {
     virNodeDeviceDefPtr def = NULL;
-    virNodeDeviceObjPtr dev = NULL;
+    virPoolObjPtr obj = NULL;
     int ret = -1;
 
     if (VIR_ALLOC(def) < 0)
@@ -1420,17 +1430,18 @@ static int udevSetupSystemDev(void)
     udevGetDMIData(&def->caps->data);
 #endif
 
-    dev = virNodeDeviceAssignDef(&driver->devs, def);
-    if (dev == NULL)
+    if (!(obj = virPoolObjTableAdd(driver->devs, NULL, def->name,
+                                   def, NULL, NULL, virNodeDeviceDefFree,
+                                   NULL, 0)))
         goto cleanup;
+    def = NULL;
 
-    virNodeDeviceObjUnlock(dev);
+    virPoolObjEndAPI(&obj);
 
     ret = 0;
 
  cleanup:
-    if (ret == -1)
-        virNodeDeviceDefFree(def);
+    virNodeDeviceDefFree(def);
 
     return ret;
 }
@@ -1487,6 +1498,11 @@ static int nodeStateInitialize(bool privileged,
     driver->privateData = priv;
     nodeDeviceLock();
     driver->nodeDeviceEventState = virObjectEventStateNew();
+
+    if (!(driver->devs =
+          virPoolObjTableNew(VIR_POOLOBJTABLE_NODEDEVICE,
+                             VIR_POOLOBJTABLE_NODEDEVICE_HASHSTART, true)))
+        goto cleanup;
 
     if (udevPCITranslateInit(privileged) < 0)
         goto cleanup;

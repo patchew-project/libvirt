@@ -42,19 +42,22 @@
 #include "virutil.h"
 #include "viraccessapicheck.h"
 #include "virnetdev.h"
+#include "virpoolobj.h"
 
 #define VIR_FROM_THIS VIR_FROM_NODEDEV
 
 virNodeDeviceDriverStatePtr driver;
 
-static int update_caps(virNodeDeviceObjPtr dev)
+static int
+update_caps(virPoolObjPtr obj)
 {
-    virNodeDevCapsDefPtr cap = dev->def->caps;
+    virNodeDeviceDefPtr def = virPoolObjGetDef(obj);
+    virNodeDevCapsDefPtr cap = def->caps;
 
     while (cap) {
         switch (cap->data.type) {
         case VIR_NODE_DEV_CAP_SCSI_HOST:
-            nodeDeviceSysfsGetSCSIHostCaps(&dev->def->caps->data);
+            nodeDeviceSysfsGetSCSIHostCaps(&def->caps->data);
             break;
         case VIR_NODE_DEV_CAP_NET:
             if (virNetDevGetLinkInfo(cap->data.net.ifname, &cap->data.net.lnk) < 0)
@@ -64,8 +67,8 @@ static int update_caps(virNodeDeviceObjPtr dev)
                 return -1;
             break;
         case VIR_NODE_DEV_CAP_PCI_DEV:
-           if (nodeDeviceSysfsGetPCIRelatedDevCaps(dev->def->sysfs_path,
-                                                   &dev->def->caps->data) < 0)
+           if (nodeDeviceSysfsGetPCIRelatedDevCaps(def->sysfs_path,
+                                                   &def->caps->data) < 0)
               return -1;
            break;
 
@@ -100,16 +103,18 @@ static int update_caps(virNodeDeviceObjPtr dev)
  * the driver name for a device each time its entry is used, both for
  * udev *and* HAL backends.
  */
-static int update_driver_name(virNodeDeviceObjPtr dev)
+static int
+update_driver_name(virPoolObjPtr obj)
 {
+    virNodeDeviceDefPtr def = virPoolObjGetDef(obj);
     char *driver_link = NULL;
     char *devpath = NULL;
     char *p;
     int ret = -1;
 
-    VIR_FREE(dev->def->driver);
+    VIR_FREE(def->driver);
 
-    if (virAsprintf(&driver_link, "%s/driver", dev->def->sysfs_path) < 0)
+    if (virAsprintf(&driver_link, "%s/driver", def->sysfs_path) < 0)
         goto cleanup;
 
     /* Some devices don't have an explicit driver, so just return
@@ -126,7 +131,7 @@ static int update_driver_name(virNodeDeviceObjPtr dev)
     }
 
     p = strrchr(devpath, '/');
-    if (p && VIR_STRDUP(dev->def->driver, p + 1) < 0)
+    if (p && VIR_STRDUP(def->driver, p + 1) < 0)
         goto cleanup;
     ret = 0;
 
@@ -137,7 +142,7 @@ static int update_driver_name(virNodeDeviceObjPtr dev)
 }
 #else
 /* XXX: Implement me for non-linux */
-static int update_driver_name(virNodeDeviceObjPtr dev ATTRIBUTE_UNUSED)
+static int update_driver_name(virPoolObjPtr obj ATTRIBUTE_UNUSED)
 {
     return 0;
 }
@@ -153,73 +158,40 @@ void nodeDeviceUnlock(void)
     virMutexUnlock(&driver->lock);
 }
 
+/* Node device implementations */
+
 int
 nodeNumOfDevices(virConnectPtr conn,
                  const char *cap,
                  unsigned int flags)
 {
-    int ndevs = 0;
-    size_t i;
+    virCheckFlags(0, -1);
 
     if (virNodeNumOfDevicesEnsureACL(conn) < 0)
         return -1;
 
-    virCheckFlags(0, -1);
-
-    nodeDeviceLock();
-    for (i = 0; i < driver->devs.count; i++) {
-        virNodeDeviceObjPtr obj = driver->devs.objs[i];
-        virNodeDeviceObjLock(obj);
-        if (virNodeNumOfDevicesCheckACL(conn, obj->def) &&
-            ((cap == NULL) ||
-             virNodeDeviceHasCap(obj, cap)))
-            ++ndevs;
-        virNodeDeviceObjUnlock(obj);
-    }
-    nodeDeviceUnlock();
-
-    return ndevs;
+    return virNodeDeviceObjNumOfDevices(driver->devs, conn, cap,
+                                        virNodeNumOfDevicesCheckACL);
 }
+
 
 int
 nodeListDevices(virConnectPtr conn,
                 const char *cap,
-                char **const names, int maxnames,
+                char **const names,
+                int maxnames,
                 unsigned int flags)
 {
-    int ndevs = 0;
-    size_t i;
+    virCheckFlags(0, -1);
 
     if (virNodeListDevicesEnsureACL(conn) < 0)
         return -1;
 
-    virCheckFlags(0, -1);
-
-    nodeDeviceLock();
-    for (i = 0; i < driver->devs.count && ndevs < maxnames; i++) {
-        virNodeDeviceObjPtr obj = driver->devs.objs[i];
-        virNodeDeviceObjLock(obj);
-        if (virNodeListDevicesCheckACL(conn, obj->def) &&
-            (cap == NULL ||
-             virNodeDeviceHasCap(obj, cap))) {
-            if (VIR_STRDUP(names[ndevs++], obj->def->name) < 0) {
-                virNodeDeviceObjUnlock(obj);
-                goto failure;
-            }
-        }
-        virNodeDeviceObjUnlock(obj);
-    }
-    nodeDeviceUnlock();
-
-    return ndevs;
-
- failure:
-    nodeDeviceUnlock();
-    --ndevs;
-    while (--ndevs >= 0)
-        VIR_FREE(names[ndevs]);
-    return -1;
+    return virNodeDeviceObjGetNames(driver->devs, conn,
+                                    virNodeListDevicesCheckACL,
+                                    cap, names, maxnames);
 }
+
 
 int
 nodeConnectListAllNodeDevices(virConnectPtr conn,
@@ -233,40 +205,63 @@ nodeConnectListAllNodeDevices(virConnectPtr conn,
     if (virConnectListAllNodeDevicesEnsureACL(conn) < 0)
         return -1;
 
-    nodeDeviceLock();
-    ret = virNodeDeviceObjListExport(conn, driver->devs, devices,
+    ret = virNodeDeviceObjExportList(conn, driver->devs, devices,
                                      virConnectListAllNodeDevicesCheckACL,
                                      flags);
-    nodeDeviceUnlock();
     return ret;
 }
+
 
 virNodeDevicePtr
 nodeDeviceLookupByName(virConnectPtr conn, const char *name)
 {
-    virNodeDeviceObjPtr obj;
+    virPoolObjPtr obj;
+    virNodeDeviceDefPtr def;
     virNodeDevicePtr ret = NULL;
 
-    nodeDeviceLock();
-    obj = virNodeDeviceFindByName(&driver->devs, name);
-    nodeDeviceUnlock();
+    if (!(obj = virNodeDeviceObjFindByName(driver->devs, name)))
+        return NULL;
+    def = virPoolObjGetDef(obj);
 
-    if (!obj) {
-        virReportError(VIR_ERR_NO_NODE_DEVICE,
-                       _("no node device with matching name '%s'"),
-                       name);
-        goto cleanup;
-    }
-
-    if (virNodeDeviceLookupByNameEnsureACL(conn, obj->def) < 0)
+    if (virNodeDeviceLookupByNameEnsureACL(conn, def) < 0)
         goto cleanup;
 
     ret = virGetNodeDevice(conn, name);
 
  cleanup:
-    if (obj)
-        virNodeDeviceObjUnlock(obj);
+    virPoolObjEndAPI(&obj);
     return ret;
+}
+
+
+struct nodeDeviceSearchData {
+    const char *wwnn;
+    const char *wwpn;
+};
+
+static bool
+nodeLookupSCSIHostByWWN(virPoolObjPtr obj,
+                        void *opaque)
+{
+    virNodeDeviceDefPtr def = virPoolObjGetDef(obj);
+    struct nodeDeviceSearchData *data = opaque;
+    virNodeDevCapsDefPtr cap;
+
+    for (cap = def->caps; cap; cap = cap->next) {
+        if (cap->data.type != VIR_NODE_DEV_CAP_SCSI_HOST)
+            continue;
+
+        nodeDeviceSysfsGetSCSIHostCaps(&cap->data);
+        if (cap->data.scsi_host.flags &
+            VIR_NODE_DEV_CAP_FLAG_HBA_FC_HOST) {
+            if (STREQ(cap->data.scsi_host.wwnn, data->wwnn) &&
+                STREQ(cap->data.scsi_host.wwpn, data->wwpn)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 
@@ -276,46 +271,26 @@ nodeDeviceLookupSCSIHostByWWN(virConnectPtr conn,
                               const char *wwpn,
                               unsigned int flags)
 {
-    size_t i;
-    virNodeDeviceObjListPtr devs = &driver->devs;
-    virNodeDevCapsDefPtr cap = NULL;
-    virNodeDeviceObjPtr obj = NULL;
+    virPoolObjPtr obj;
+    virNodeDeviceDefPtr def;
     virNodeDevicePtr dev = NULL;
+    struct nodeDeviceSearchData data = { .wwnn = wwnn,
+                                         .wwpn = wwpn };
 
     virCheckFlags(0, NULL);
 
-    nodeDeviceLock();
+    if (!(obj = virPoolObjTableSearchRef(driver->devs, nodeLookupSCSIHostByWWN,
+                                         &data)))
+        return NULL;
+    def = virPoolObjGetDef(obj);
 
-    for (i = 0; i < devs->count; i++) {
-        obj = devs->objs[i];
-        virNodeDeviceObjLock(obj);
-        cap = obj->def->caps;
+    if (virNodeDeviceLookupSCSIHostByWWNEnsureACL(conn, def) < 0)
+        goto cleanup;
 
-        while (cap) {
-            if (cap->data.type == VIR_NODE_DEV_CAP_SCSI_HOST) {
-                nodeDeviceSysfsGetSCSIHostCaps(&cap->data);
-                if (cap->data.scsi_host.flags &
-                    VIR_NODE_DEV_CAP_FLAG_HBA_FC_HOST) {
-                    if (STREQ(cap->data.scsi_host.wwnn, wwnn) &&
-                        STREQ(cap->data.scsi_host.wwpn, wwpn)) {
+    dev = virGetNodeDevice(conn, def->name);
 
-                        if (virNodeDeviceLookupSCSIHostByWWNEnsureACL(conn, obj->def) < 0)
-                            goto out;
-
-                        dev = virGetNodeDevice(conn, obj->def->name);
-                        virNodeDeviceObjUnlock(obj);
-                        goto out;
-                    }
-                }
-            }
-            cap = cap->next;
-        }
-
-        virNodeDeviceObjUnlock(obj);
-    }
-
- out:
-    nodeDeviceUnlock();
+ cleanup:
+    virPoolObjEndAPI(&obj);
     return dev;
 }
 
@@ -324,34 +299,27 @@ char *
 nodeDeviceGetXMLDesc(virNodeDevicePtr dev,
                      unsigned int flags)
 {
-    virNodeDeviceObjPtr obj;
+    virPoolObjPtr obj;
+    virNodeDeviceDefPtr def;
     char *ret = NULL;
 
     virCheckFlags(0, NULL);
 
-    nodeDeviceLock();
-    obj = virNodeDeviceFindByName(&driver->devs, dev->name);
-    nodeDeviceUnlock();
+    if (!(obj = virNodeDeviceObjFindByName(driver->devs, dev->name)))
+        return NULL;
+    def = virPoolObjGetDef(obj);
 
-    if (!obj) {
-        virReportError(VIR_ERR_NO_NODE_DEVICE,
-                       _("no node device with matching name '%s'"),
-                       dev->name);
-        goto cleanup;
-    }
-
-    if (virNodeDeviceGetXMLDescEnsureACL(dev->conn, obj->def) < 0)
+    if (virNodeDeviceGetXMLDescEnsureACL(dev->conn, def) < 0)
         goto cleanup;
 
     update_driver_name(obj);
     if (update_caps(obj) < 0)
         goto cleanup;
 
-    ret = virNodeDeviceDefFormat(obj->def);
+    ret = virNodeDeviceDefFormat(def);
 
  cleanup:
-    if (obj)
-        virNodeDeviceObjUnlock(obj);
+    virPoolObjEndAPI(&obj);
     return ret;
 }
 
@@ -359,25 +327,19 @@ nodeDeviceGetXMLDesc(virNodeDevicePtr dev,
 char *
 nodeDeviceGetParent(virNodeDevicePtr dev)
 {
-    virNodeDeviceObjPtr obj;
+    virPoolObjPtr obj;
+    virNodeDeviceDefPtr def;
     char *ret = NULL;
 
-    nodeDeviceLock();
-    obj = virNodeDeviceFindByName(&driver->devs, dev->name);
-    nodeDeviceUnlock();
+    if (!(obj = virNodeDeviceObjFindByName(driver->devs, dev->name)))
+        return NULL;
+    def = virPoolObjGetDef(obj);
 
-    if (!obj) {
-        virReportError(VIR_ERR_NO_NODE_DEVICE,
-                       _("no node device with matching name '%s'"),
-                       dev->name);
-        goto cleanup;
-    }
-
-    if (virNodeDeviceGetParentEnsureACL(dev->conn, obj->def) < 0)
+    if (virNodeDeviceGetParentEnsureACL(dev->conn, def) < 0)
         goto cleanup;
 
-    if (obj->def->parent) {
-        if (VIR_STRDUP(ret, obj->def->parent) < 0)
+    if (def->parent) {
+        if (VIR_STRDUP(ret, def->parent) < 0)
             goto cleanup;
     } else {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -385,8 +347,7 @@ nodeDeviceGetParent(virNodeDevicePtr dev)
     }
 
  cleanup:
-    if (obj)
-        virNodeDeviceObjUnlock(obj);
+    virPoolObjEndAPI(&obj);
     return ret;
 }
 
@@ -394,26 +355,20 @@ nodeDeviceGetParent(virNodeDevicePtr dev)
 int
 nodeDeviceNumOfCaps(virNodeDevicePtr dev)
 {
-    virNodeDeviceObjPtr obj;
+    virPoolObjPtr obj;
+    virNodeDeviceDefPtr def;
     virNodeDevCapsDefPtr caps;
     int ncaps = 0;
     int ret = -1;
 
-    nodeDeviceLock();
-    obj = virNodeDeviceFindByName(&driver->devs, dev->name);
-    nodeDeviceUnlock();
+    if (!(obj = virNodeDeviceObjFindByName(driver->devs, dev->name)))
+        return -1;
+    def = virPoolObjGetDef(obj);
 
-    if (!obj) {
-        virReportError(VIR_ERR_NO_NODE_DEVICE,
-                       _("no node device with matching name '%s'"),
-                       dev->name);
-        goto cleanup;
-    }
-
-    if (virNodeDeviceNumOfCapsEnsureACL(dev->conn, obj->def) < 0)
+    if (virNodeDeviceNumOfCapsEnsureACL(dev->conn, def) < 0)
         goto cleanup;
 
-    for (caps = obj->def->caps; caps; caps = caps->next) {
+    for (caps = def->caps; caps; caps = caps->next) {
         ++ncaps;
 
         if (caps->data.type == VIR_NODE_DEV_CAP_SCSI_HOST) {
@@ -430,36 +385,32 @@ nodeDeviceNumOfCaps(virNodeDevicePtr dev)
     ret = ncaps;
 
  cleanup:
-    if (obj)
-        virNodeDeviceObjUnlock(obj);
+    virPoolObjEndAPI(&obj);
     return ret;
 }
 
 
 int
-nodeDeviceListCaps(virNodeDevicePtr dev, char **const names, int maxnames)
+nodeDeviceListCaps(virNodeDevicePtr dev,
+                   char **const names,
+                   int maxnames)
 {
-    virNodeDeviceObjPtr obj;
+    virPoolObjPtr obj;
+    virNodeDeviceDefPtr def;
     virNodeDevCapsDefPtr caps;
     int ncaps = 0;
     int ret = -1;
 
-    nodeDeviceLock();
-    obj = virNodeDeviceFindByName(&driver->devs, dev->name);
-    nodeDeviceUnlock();
+    if (!(obj = virNodeDeviceObjFindByName(driver->devs, dev->name)))
+        return -1;
+    def = virPoolObjGetDef(obj);
 
-    if (!obj) {
-        virReportError(VIR_ERR_NO_NODE_DEVICE,
-                       _("no node device with matching name '%s'"),
-                       dev->name);
-        goto cleanup;
-    }
-
-    if (virNodeDeviceListCapsEnsureACL(dev->conn, obj->def) < 0)
+    if (virNodeDeviceListCapsEnsureACL(dev->conn, def) < 0)
         goto cleanup;
 
-    for (caps = obj->def->caps; caps && ncaps < maxnames; caps = caps->next) {
-        if (VIR_STRDUP(names[ncaps++], virNodeDevCapTypeToString(caps->data.type)) < 0)
+    for (caps = def->caps; caps && ncaps < maxnames; caps = caps->next) {
+        if (VIR_STRDUP(names[ncaps++],
+                       virNodeDevCapTypeToString(caps->data.type)) < 0)
             goto cleanup;
 
         if (caps->data.type == VIR_NODE_DEV_CAP_SCSI_HOST) {
@@ -483,8 +434,7 @@ nodeDeviceListCaps(virNodeDevicePtr dev, char **const names, int maxnames)
     ret = ncaps;
 
  cleanup:
-    if (obj)
-        virNodeDeviceObjUnlock(obj);
+    virPoolObjEndAPI(&obj);
     if (ret == -1) {
         --ncaps;
         while (--ncaps >= 0)
@@ -573,9 +523,7 @@ nodeDeviceCreateXML(virConnectPtr conn,
     virt_type  = virConnectGetType(conn);
 
     nodeDeviceLock();
-
-    def = virNodeDeviceDefParseString(xmlDesc, CREATE_DEVICE, virt_type);
-    if (def == NULL)
+    if (!(def = virNodeDeviceDefParseString(xmlDesc, CREATE_DEVICE, virt_type)))
         goto cleanup;
 
     if (virNodeDeviceCreateXMLEnsureACL(conn, def) < 0)
@@ -585,36 +533,35 @@ nodeDeviceCreateXML(virConnectPtr conn,
         goto cleanup;
 
     if (def->parent) {
-        if (virNodeDeviceGetParentHost(&driver->devs,
-                                       def->name,
-                                       def->parent,
-                                       &parent_host) < 0)
+        if (virNodeDeviceObjGetParentHost(driver->devs,
+                                          def->name,
+                                          def->parent,
+                                          &parent_host) < 0)
             goto cleanup;
     } else if (def->parent_wwnn && def->parent_wwpn) {
-        if (virNodeDeviceGetParentHostByWWNs(&driver->devs,
-                                             def->name,
-                                             def->parent_wwnn,
-                                             def->parent_wwpn,
-                                             &parent_host) < 0)
+        if (virNodeDeviceObjGetParentHostByWWNs(driver->devs,
+                                                def->name,
+                                                def->parent_wwnn,
+                                                def->parent_wwpn,
+                                                &parent_host) < 0)
             goto cleanup;
     } else if (def->parent_fabric_wwn) {
-        if (virNodeDeviceGetParentHostByFabricWWN(&driver->devs,
-                                                  def->name,
-                                                  def->parent_fabric_wwn,
-                                                  &parent_host) < 0)
+        if (virNodeDeviceObjGetParentHostByFabricWWN(driver->devs,
+                                                     def->name,
+                                                     def->parent_fabric_wwn,
+                                                     &parent_host) < 0)
             goto cleanup;
     } else {
         /* Try to find a vport capable scsi_host when no parent supplied */
-        if (virNodeDeviceFindVportParentHost(&driver->devs, &parent_host) < 0)
+        if (virNodeDeviceObjFindVportParentHost(driver->devs, &parent_host) < 0)
             goto cleanup;
     }
 
     if (virManageVport(parent_host,
                        wwpn,
                        wwnn,
-                       VPORT_CREATE) == -1) {
+                       VPORT_CREATE) == -1)
         goto cleanup;
-    }
 
     dev = find_new_device(conn, wwnn, wwpn);
     /* We don't check the return value, because one way or another,
@@ -638,63 +585,44 @@ int
 nodeDeviceDestroy(virNodeDevicePtr dev)
 {
     int ret = -1;
-    virNodeDeviceObjPtr obj = NULL;
-    char *parent_name = NULL, *wwnn = NULL, *wwpn = NULL;
+    virPoolObjPtr obj;
+    virNodeDeviceDefPtr def;
+    char *wwnn = NULL;
+    char *wwpn = NULL;
     int parent_host = -1;
 
-    nodeDeviceLock();
-    obj = virNodeDeviceFindByName(&driver->devs, dev->name);
-    nodeDeviceUnlock();
+    if (!(obj = virNodeDeviceObjFindByName(driver->devs, dev->name)))
+        return -1;
+    def = virPoolObjGetDef(obj);
 
-    if (!obj) {
-        virReportError(VIR_ERR_NO_NODE_DEVICE,
-                       _("no node device with matching name '%s'"),
-                       dev->name);
-        goto out;
-    }
+    if (virNodeDeviceDestroyEnsureACL(dev->conn, def) < 0)
+        goto cleanup;
 
-    if (virNodeDeviceDestroyEnsureACL(dev->conn, obj->def) < 0)
-        goto out;
+    if (virNodeDeviceGetWWNs(def, &wwnn, &wwpn) == -1)
+        goto cleanup;
 
-    if (virNodeDeviceGetWWNs(obj->def, &wwnn, &wwpn) == -1)
-        goto out;
-
-
-    /* virNodeDeviceGetParentHost will cause the device object's lock to be
-     * taken, so we have to dup the parent's name and drop the lock
-     * before calling it.  We don't need the reference to the object
-     * any more once we have the parent's name.  */
-    if (VIR_STRDUP(parent_name, obj->def->parent) < 0) {
-        virNodeDeviceObjUnlock(obj);
-        obj = NULL;
-        goto out;
-    }
-    virNodeDeviceObjUnlock(obj);
-    obj = NULL;
-
-    if (virNodeDeviceGetParentHost(&driver->devs,
-                                   dev->name,
-                                   parent_name,
-                                   &parent_host) == -1) {
-        goto out;
-    }
+    if (virNodeDeviceObjGetParentHost(driver->devs,
+                                      dev->name,
+                                      def->parent,
+                                      &parent_host) == -1)
+        goto cleanup;
 
     if (virManageVport(parent_host,
                        wwpn,
                        wwnn,
-                       VPORT_DELETE) == -1) {
-        goto out;
-    }
+                       VPORT_DELETE) == -1)
+        goto cleanup;
+
+    virPoolObjTableRemove(driver->devs, &obj);
 
     ret = 0;
- out:
-    if (obj)
-        virNodeDeviceObjUnlock(obj);
-    VIR_FREE(parent_name);
+ cleanup:
+    virPoolObjEndAPI(&obj);
     VIR_FREE(wwnn);
     VIR_FREE(wwpn);
     return ret;
 }
+
 
 int
 nodeConnectNodeDeviceEventRegisterAny(virConnectPtr conn,
