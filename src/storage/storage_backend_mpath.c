@@ -48,6 +48,7 @@ virStorageBackendMpathNewVol(virStoragePoolObjPtr pool,
                              const char *dev)
 {
     virStorageVolDefPtr vol;
+    virPoolObjPtr volobj;
     int ret = -1;
 
     if (VIR_ALLOC(vol) < 0)
@@ -70,16 +71,19 @@ virStorageBackendMpathNewVol(virStoragePoolObjPtr pool,
     if (VIR_STRDUP(vol->key, vol->target.path) < 0)
         goto cleanup;
 
-    if (VIR_APPEND_ELEMENT_COPY(pool->volumes.objs, pool->volumes.count, vol) < 0)
+    if (!(volobj = virStoragePoolObjAddVolume(pool, vol)))
         goto cleanup;
+
+    vol = NULL;
+    virPoolObjEndAPI(&volobj);
+
     pool->def->capacity += vol->target.capacity;
     pool->def->allocation += vol->target.allocation;
     ret = 0;
 
  cleanup:
 
-    if (ret != 0)
-        virStorageVolDefFree(vol);
+    virStorageVolDefFree(vol);
 
     return ret;
 }

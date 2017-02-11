@@ -99,16 +99,17 @@ virStorageBackendZFSCheckPool(virStoragePoolObjPtr pool ATTRIBUTE_UNUSED,
 
 static int
 virStorageBackendZFSParseVol(virStoragePoolObjPtr pool,
-                             virStorageVolDefPtr vol,
+                             virStorageVolDefPtr volume,
                              const char *volume_string)
 {
+    virPoolObjPtr volobj = NULL;
+    virStorageVolDefPtr voldef = volume;
     int ret = -1;
     char **tokens;
     size_t count;
     char **name_tokens = NULL;
     char *vol_name;
     bool is_new_vol = false;
-    virStorageVolDefPtr volume = NULL;
 
     if (!(tokens = virStringSplitCount(volume_string, "\t", 0, &count)))
         return -1;
@@ -121,58 +122,60 @@ virStorageBackendZFSParseVol(virStoragePoolObjPtr pool,
 
     vol_name = name_tokens[1];
 
-    if (vol == NULL)
-        volume = virStorageVolDefFindByName(pool, vol_name);
-    else
-        volume = vol;
+    if (!voldef) {
+        if ((volobj = virStorageVolObjFindByName(pool, vol_name)))
+            voldef = virPoolObjGetDef(volobj);
+    }
 
-    if (volume == NULL) {
-        if (VIR_ALLOC(volume) < 0)
+    if (!voldef) {
+        if (VIR_ALLOC(voldef) < 0)
             goto cleanup;
 
         is_new_vol = true;
-        volume->type = VIR_STORAGE_VOL_BLOCK;
+        voldef->type = VIR_STORAGE_VOL_BLOCK;
 
-        if (VIR_STRDUP(volume->name, vol_name) < 0)
+        if (VIR_STRDUP(voldef->name, vol_name) < 0)
             goto cleanup;
     }
 
-    if (!volume->key && VIR_STRDUP(volume->key, tokens[0]) < 0)
+    if (!voldef->key && VIR_STRDUP(voldef->key, tokens[0]) < 0)
         goto cleanup;
 
-    if (volume->target.path == NULL) {
-        if (virAsprintf(&volume->target.path, "%s/%s",
-                        pool->def->target.path, volume->name) < 0)
+    if (voldef->target.path == NULL) {
+        if (virAsprintf(&voldef->target.path, "%s/%s",
+                        pool->def->target.path, voldef->name) < 0)
             goto cleanup;
     }
 
-    if (virStrToLong_ull(tokens[1], NULL, 10, &volume->target.capacity) < 0) {
+    if (virStrToLong_ull(tokens[1], NULL, 10, &voldef->target.capacity) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        "%s", _("malformed volsize reported"));
         goto cleanup;
     }
 
-    if (virStrToLong_ull(tokens[2], NULL, 10, &volume->target.allocation) < 0) {
+    if (virStrToLong_ull(tokens[2], NULL, 10, &voldef->target.allocation) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        "%s", _("malformed refreservation reported"));
         goto cleanup;
     }
 
-    if (volume->target.allocation < volume->target.capacity)
-        volume->target.sparse = true;
+    if (voldef->target.allocation < voldef->target.capacity)
+        voldef->target.sparse = true;
 
-    if (is_new_vol &&
-        VIR_APPEND_ELEMENT(pool->volumes.objs,
-                           pool->volumes.count,
-                           volume) < 0)
-        goto cleanup;
+    if (is_new_vol) {
+        if (!(volobj = virStoragePoolObjAddVolume(pool, voldef)))
+            goto cleanup;
+
+        voldef = NULL;
+    }
 
     ret = 0;
  cleanup:
     virStringListFree(tokens);
     virStringListFree(name_tokens);
+    virPoolObjEndAPI(&volobj);
     if (is_new_vol)
-        virStorageVolDefFree(volume);
+        virStorageVolDefFree(voldef);
     return ret;
 }
 

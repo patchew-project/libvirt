@@ -1370,13 +1370,11 @@ storagePoolSetAutostart(virStoragePoolPtr obj,
     return ret;
 }
 
-
 static int
 storagePoolNumOfVolumes(virStoragePoolPtr obj)
 {
     virStoragePoolObjPtr pool;
     int ret = -1;
-    size_t i;
 
     if (!(pool = virStoragePoolObjFromStoragePool(obj)))
         return -1;
@@ -1389,26 +1387,27 @@ storagePoolNumOfVolumes(virStoragePoolPtr obj)
                        _("storage pool '%s' is not active"), pool->def->name);
         goto cleanup;
     }
-    ret = 0;
-    for (i = 0; i < pool->volumes.count; i++) {
-        if (virStoragePoolNumOfVolumesCheckACL(obj->conn, pool->def,
-                                               pool->volumes.objs[i]))
-            ret++;
-    }
+
+    /* NB: Cannot call filter in List function since the volume ACL filter
+     * function requires 3 instead of 2 params for virPoolObjACLFilter.
+     * Setting up this way fulfills check-aclrules.pl's check that the
+     * driver function calls the CheckACL API */
+    ret = virStoragePoolObjNumOfVolumes(pool->volumes, obj->conn, pool->def,
+                                        virStoragePoolNumOfVolumesCheckACL);
 
  cleanup:
     virStoragePoolObjUnlock(pool);
     return ret;
 }
 
+
 static int
 storagePoolListVolumes(virStoragePoolPtr obj,
                        char **const names,
                        int maxnames)
 {
+    int ret = -1;
     virStoragePoolObjPtr pool;
-    size_t i;
-    int n = 0;
 
     memset(names, 0, maxnames * sizeof(*names));
 
@@ -1424,35 +1423,30 @@ storagePoolListVolumes(virStoragePoolPtr obj,
         goto cleanup;
     }
 
-    for (i = 0; i < pool->volumes.count && n < maxnames; i++) {
-        if (!virStoragePoolListVolumesCheckACL(obj->conn, pool->def,
-                                               pool->volumes.objs[i]))
-            continue;
-        if (VIR_STRDUP(names[n++], pool->volumes.objs[i]->name) < 0)
-            goto cleanup;
-    }
-
-    virStoragePoolObjUnlock(pool);
-    return n;
+    /* NB: Cannot call filter in List function since the volume ACL filter
+     * function requires 3 instead of 2 params for virPoolObjACLFilter.
+     * Setting up this way fulfills check-aclrules.pl's check that the
+     * driver function calls the CheckACL API */
+    ret = virStoragePoolObjListVolumes(pool->volumes, obj->conn, pool->def,
+                                       virStoragePoolListVolumesCheckACL,
+                                       names, maxnames);
 
  cleanup:
     virStoragePoolObjUnlock(pool);
-    for (n = 0; n < maxnames; n++)
-        VIR_FREE(names[n]);
-
-    memset(names, 0, maxnames * sizeof(*names));
-    return -1;
+    return ret;
 }
+
 
 static int
 storagePoolListAllVolumes(virStoragePoolPtr pool,
-                          virStorageVolPtr **vols,
+                          virStorageVolPtr **volumes,
                           unsigned int flags)
 {
     virStoragePoolObjPtr obj;
+    virPoolObjPtr *volobjs = NULL;
+    size_t nvolobjs = 0;
     size_t i;
-    virStorageVolPtr *tmp_vols = NULL;
-    virStorageVolPtr vol = NULL;
+    virStorageVolPtr *vols = NULL;
     int nvols = 0;
     int ret = -1;
 
@@ -1470,40 +1464,45 @@ storagePoolListAllVolumes(virStoragePoolPtr pool,
         goto cleanup;
     }
 
-     /* Just returns the volumes count */
-    if (!vols) {
-        ret = obj->volumes.count;
-        goto cleanup;
-    }
-
-    if (VIR_ALLOC_N(tmp_vols, obj->volumes.count + 1) < 0)
+    if (virPoolObjTableCollect(obj->volumes, pool->conn, &volobjs, &nvolobjs,
+                               NULL, NULL, flags) < 0)
         goto cleanup;
 
-    for (i = 0; i < obj->volumes.count; i++) {
-        if (!virStoragePoolListAllVolumesCheckACL(pool->conn, obj->def,
-                                                  obj->volumes.objs[i]))
-            continue;
-        if (!(vol = virGetStorageVol(pool->conn, obj->def->name,
-                                     obj->volumes.objs[i]->name,
-                                     obj->volumes.objs[i]->key,
-                                     NULL, NULL)))
+    if (volumes) {
+        if (VIR_ALLOC_N(vols, nvolobjs + 1) < 0)
             goto cleanup;
-        tmp_vols[nvols++] = vol;
+
+        for (i = 0; i < nvolobjs; i++) {
+            bool passacl = false;
+            virPoolObjPtr volobj = volobjs[i];
+            virStorageVolDefPtr def;
+
+            virObjectLock(volobj);
+            def = virPoolObjGetDef(volobj);
+            /* NB: Cannot call ACL filter in Collect function since it
+             * takes 3 params and the volume ACL filter requires 3 */
+            if (virStoragePoolListAllVolumesCheckACL(pool->conn, obj->def,
+                                                     obj)) {
+                vols[nvols++] = virGetStorageVol(pool->conn, obj->def->name,
+                                                 def->name, def->key,
+                                                 NULL, NULL);
+                passacl = true;
+            }
+            virObjectUnlock(volobj);
+
+            if (passacl && !vols[i])
+                goto cleanup;
+        }
+
+        *volumes = vols;
+        vols = NULL;
     }
 
-    *vols = tmp_vols;
-    tmp_vols = NULL;
     ret = nvols;
 
  cleanup:
-    if (tmp_vols) {
-        for (i = 0; i < nvols; i++)
-            virObjectUnref(tmp_vols[i]);
-        VIR_FREE(tmp_vols);
-    }
-
-    virStoragePoolObjUnlock(obj);
-
+    virObjectListFree(vols);
+    virObjectListFreeCount(volobjs, nvolobjs);
     return ret;
 }
 
@@ -1512,7 +1511,8 @@ storageVolLookupByName(virStoragePoolPtr obj,
                        const char *name)
 {
     virStoragePoolObjPtr pool;
-    virStorageVolDefPtr vol;
+    virPoolObjPtr volobj = NULL;
+    virStorageVolDefPtr voldef;
     virStorageVolPtr ret = NULL;
 
     if (!(pool = virStoragePoolObjFromStoragePool(obj)))
@@ -1524,22 +1524,22 @@ storageVolLookupByName(virStoragePoolPtr obj,
         goto cleanup;
     }
 
-    vol = virStorageVolDefFindByName(pool, name);
-
-    if (!vol) {
+    if (!(volobj = virStorageVolObjFindByName(pool, name))) {
         virReportError(VIR_ERR_NO_STORAGE_VOL,
                        _("no storage vol with matching name '%s'"),
                        name);
         goto cleanup;
     }
+    voldef = virPoolObjGetDef(volobj);
 
-    if (virStorageVolLookupByNameEnsureACL(obj->conn, pool->def, vol) < 0)
+    if (virStorageVolLookupByNameEnsureACL(obj->conn, pool->def, voldef) < 0)
         goto cleanup;
 
-    ret = virGetStorageVol(obj->conn, pool->def->name, vol->name, vol->key,
-                           NULL, NULL);
+    ret = virGetStorageVol(obj->conn, pool->def->name, voldef->name,
+                           voldef->key, NULL, NULL);
 
  cleanup:
+    virPoolObjEndAPI(&volobj);
     virStoragePoolObjUnlock(pool);
     return ret;
 }
@@ -1556,21 +1556,25 @@ storageVolLookupByKey(virConnectPtr conn,
     for (i = 0; i < driver->pools.count && !ret; i++) {
         virStoragePoolObjLock(driver->pools.objs[i]);
         if (virStoragePoolObjIsActive(driver->pools.objs[i])) {
-            virStorageVolDefPtr vol =
-                virStorageVolDefFindByKey(driver->pools.objs[i], key);
+            virPoolObjPtr volobj;
 
-            if (vol) {
+            if ((volobj = virStorageVolObjFindByKey(driver->pools.objs[i],
+                                                    key))) {
                 virStoragePoolDefPtr def = driver->pools.objs[i]->def;
-                if (virStorageVolLookupByKeyEnsureACL(conn, def, vol) < 0) {
+                virStorageVolDefPtr voldef = virPoolObjGetDef(volobj);
+
+                if (virStorageVolLookupByKeyEnsureACL(conn, def, voldef) < 0) {
+                    virPoolObjEndAPI(&volobj);
                     virStoragePoolObjUnlock(driver->pools.objs[i]);
                     goto cleanup;
                 }
 
                 ret = virGetStorageVol(conn,
                                        def->name,
-                                       vol->name,
-                                       vol->key,
+                                       voldef->name,
+                                       voldef->key,
                                        NULL, NULL);
+                virPoolObjEndAPI(&volobj);
             }
         }
         virStoragePoolObjUnlock(driver->pools.objs[i]);
@@ -1600,7 +1604,7 @@ storageVolLookupByPath(virConnectPtr conn,
     storageDriverLock();
     for (i = 0; i < driver->pools.count && !ret; i++) {
         virStoragePoolObjPtr pool = driver->pools.objs[i];
-        virStorageVolDefPtr vol;
+        virPoolObjPtr volobj = NULL;
         char *stable_path = NULL;
 
         virStoragePoolObjLock(pool);
@@ -1646,18 +1650,22 @@ storageVolLookupByPath(virConnectPtr conn,
                 break;
         }
 
-        vol = virStorageVolDefFindByPath(pool, stable_path);
+        volobj = virStorageVolObjFindByPath(pool, stable_path);
         VIR_FREE(stable_path);
 
-        if (vol) {
-            if (virStorageVolLookupByPathEnsureACL(conn, pool->def, vol) < 0) {
+        if (volobj) {
+            virStorageVolDefPtr voldef = virPoolObjGetDef(volobj);
+            if (virStorageVolLookupByPathEnsureACL(conn, pool->def,
+                                                   voldef) < 0) {
+                virPoolObjEndAPI(&volobj);
                 virStoragePoolObjUnlock(pool);
                 goto cleanup;
             }
 
             ret = virGetStorageVol(conn, pool->def->name,
-                                   vol->name, vol->key,
+                                   voldef->name, voldef->key,
                                    NULL, NULL);
+            virPoolObjEndAPI(&volobj);
         }
 
         virStoragePoolObjUnlock(pool);
@@ -1727,18 +1735,21 @@ static void
 storageVolRemoveFromPool(virStoragePoolObjPtr pool,
                          virStorageVolDefPtr vol)
 {
-    size_t i;
+    virPoolObjPtr obj;
 
-    for (i = 0; i < pool->volumes.count; i++) {
-        if (pool->volumes.objs[i] == vol) {
-            VIR_INFO("Deleting volume '%s' from storage pool '%s'",
-                     vol->name, pool->def->name);
-            virStorageVolDefFree(vol);
-
-            VIR_DELETE_ELEMENT(pool->volumes.objs, i, pool->volumes.count);
-            break;
-        }
+    if (!(obj = virPoolObjTableFindByName(pool->volumes, vol->name))) {
+        virReportError(VIR_ERR_NO_STORAGE_VOL,
+                       _("no storage vol with matching name '%s'"),
+                       vol->name);
+        return;
     }
+
+    VIR_INFO("Deleting volume '%s' from storage pool '%s'",
+              vol->name, pool->def->name);
+
+    virStoragePoolObjRemoveVolume(pool, &obj);
+
+    virPoolObjEndAPI(&obj);
 }
 
 
@@ -1781,23 +1792,23 @@ storageVolDeleteInternal(virStorageVolPtr obj,
 }
 
 
-static virStorageVolDefPtr
-virStorageVolDefFromVol(virStorageVolPtr obj,
+static virPoolObjPtr
+virStorageVolObjFromVol(virStorageVolPtr volume,
                         virStoragePoolObjPtr *pool,
                         virStorageBackendPtr *backend)
 {
-    virStorageVolDefPtr vol = NULL;
+    virPoolObjPtr volobj = NULL;
 
     *pool = NULL;
 
     storageDriverLock();
-    *pool = virStoragePoolObjFindByName(&driver->pools, obj->pool);
+    *pool = virStoragePoolObjFindByName(&driver->pools, volume->pool);
     storageDriverUnlock();
 
     if (!*pool) {
         virReportError(VIR_ERR_NO_STORAGE_POOL,
                        _("no storage pool with matching name '%s'"),
-                       obj->pool);
+                       volume->pool);
         return NULL;
     }
 
@@ -1808,10 +1819,10 @@ virStorageVolDefFromVol(virStorageVolPtr obj,
         goto error;
     }
 
-    if (!(vol = virStorageVolDefFindByName(*pool, obj->name))) {
+    if (!(volobj = virStorageVolObjFindByName(*pool, volume->name))) {
         virReportError(VIR_ERR_NO_STORAGE_VOL,
                        _("no storage vol with matching name '%s'"),
-                       obj->name);
+                       volume->name);
         goto error;
     }
 
@@ -1820,7 +1831,7 @@ virStorageVolDefFromVol(virStorageVolPtr obj,
             goto error;
     }
 
-    return vol;
+    return volobj;
 
  error:
     virStoragePoolObjUnlock(*pool);
@@ -1831,40 +1842,44 @@ virStorageVolDefFromVol(virStorageVolPtr obj,
 
 
 static int
-storageVolDelete(virStorageVolPtr obj,
+storageVolDelete(virStorageVolPtr volume,
                  unsigned int flags)
 {
     virStoragePoolObjPtr pool;
+    virPoolObjPtr volobj;
+    virStorageVolDefPtr voldef;
     virStorageBackendPtr backend;
-    virStorageVolDefPtr vol = NULL;
     int ret = -1;
 
-    if (!(vol = virStorageVolDefFromVol(obj, &pool, &backend)))
+    if (!(volobj = virStorageVolObjFromVol(volume, &pool, &backend)))
         return -1;
+    voldef = virPoolObjGetDef(volobj);
 
-    if (virStorageVolDeleteEnsureACL(obj->conn, pool->def, vol) < 0)
+    if (virStorageVolDeleteEnsureACL(volume->conn, pool->def, voldef) < 0)
         goto cleanup;
 
-    if (vol->in_use) {
+    if (voldef->in_use) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        _("volume '%s' is still in use."),
-                       vol->name);
+                       voldef->name);
         goto cleanup;
     }
 
-    if (vol->building) {
+    if (voldef->building) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        _("volume '%s' is still being allocated."),
-                       vol->name);
+                       voldef->name);
         goto cleanup;
     }
 
-    if (storageVolDeleteInternal(obj, backend, pool, vol, flags, true) < 0)
+    if (storageVolDeleteInternal(volume, backend, pool, voldef,
+                                 flags, true) < 0)
         goto cleanup;
 
     ret = 0;
 
  cleanup:
+    virPoolObjEndAPI(&volobj);
     virStoragePoolObjUnlock(pool);
     return ret;
 }
@@ -1878,7 +1893,10 @@ storageVolCreateXML(virStoragePoolPtr obj,
     virStoragePoolObjPtr pool;
     virStorageBackendPtr backend;
     virStorageVolDefPtr voldef = NULL;
-    virStorageVolPtr ret = NULL, volobj = NULL;
+    virStorageVolDefPtr objvoldef;
+    virPoolObjPtr volobj = NULL;
+    virStorageVolPtr vol = NULL;
+    virStorageVolPtr ret = NULL;
 
     virCheckFlags(VIR_STORAGE_VOL_CREATE_PREALLOC_METADATA, NULL);
 
@@ -1894,9 +1912,8 @@ storageVolCreateXML(virStoragePoolPtr obj,
     if ((backend = virStorageBackendForType(pool->def->type)) == NULL)
         goto cleanup;
 
-    voldef = virStorageVolDefParseString(pool->def, xmldesc,
-                                         VIR_VOL_XML_PARSE_OPT_CAPACITY);
-    if (voldef == NULL)
+    if (!(voldef = virStorageVolDefParseString(pool->def, xmldesc,
+                                               VIR_VOL_XML_PARSE_OPT_CAPACITY)))
         goto cleanup;
 
     if (!voldef->target.capacity && !backend->buildVol) {
@@ -1909,7 +1926,7 @@ storageVolCreateXML(virStoragePoolPtr obj,
     if (virStorageVolCreateXMLEnsureACL(obj->conn, pool->def, voldef) < 0)
         goto cleanup;
 
-    if (virStorageVolDefFindByName(pool, voldef->name)) {
+    if ((volobj = virStorageVolObjFindByName(pool, voldef->name))) {
         virReportError(VIR_ERR_STORAGE_VOL_EXIST,
                        _("'%s'"), voldef->name);
         goto cleanup;
@@ -1922,43 +1939,38 @@ storageVolCreateXML(virStoragePoolPtr obj,
         goto cleanup;
     }
 
-    if (VIR_REALLOC_N(pool->volumes.objs,
-                      pool->volumes.count+1) < 0)
-        goto cleanup;
-
     /* Wipe any key the user may have suggested, as volume creation
      * will generate the canonical key.  */
     VIR_FREE(voldef->key);
     if (backend->createVol(obj->conn, pool, voldef) < 0)
         goto cleanup;
 
-    pool->volumes.objs[pool->volumes.count++] = voldef;
-    volobj = virGetStorageVol(obj->conn, pool->def->name, voldef->name,
-                              voldef->key, NULL, NULL);
-    if (!volobj) {
-        pool->volumes.count--;
+    if (!(volobj = virStoragePoolObjAddVolume(pool, voldef)))
+        goto cleanup;
+    VIR_STEAL_PTR(objvoldef, voldef);
+
+    if (!(vol = virGetStorageVol(obj->conn, pool->def->name, objvoldef->name,
+                                 objvoldef->key, NULL, NULL))) {
+        virStoragePoolObjRemoveVolume(pool, &volobj);
         goto cleanup;
     }
-
 
     if (backend->buildVol) {
         int buildret;
         virStorageVolDefPtr buildvoldef = NULL;
 
-        if (VIR_ALLOC(buildvoldef) < 0) {
-            voldef = NULL;
+        if (VIR_ALLOC(buildvoldef) < 0)
             goto cleanup;
-        }
 
         /* Make a shallow copy of the 'defined' volume definition, since the
          * original allocation value will change as the user polls 'info',
          * but we only need the initial requested values
          */
-        memcpy(buildvoldef, voldef, sizeof(*voldef));
+        memcpy(buildvoldef, objvoldef, sizeof(*objvoldef));
 
         /* Drop the pool lock during volume allocation */
         pool->asyncjobs++;
-        voldef->building = true;
+        objvoldef->building = true;
         virStoragePoolObjUnlock(pool);
 
         buildret = backend->buildVol(obj->conn, pool, buildvoldef, flags);
@@ -1969,23 +1981,21 @@ storageVolCreateXML(virStoragePoolPtr obj,
         virStoragePoolObjLock(pool);
         storageDriverUnlock();
 
-        voldef->building = false;
+        objvoldef->building = false;
         pool->asyncjobs--;
 
         if (buildret < 0) {
             /* buildVol handles deleting volume on failure */
-            storageVolRemoveFromPool(pool, voldef);
-            voldef = NULL;
+            storageVolRemoveFromPool(pool, objvoldef);
             goto cleanup;
         }
 
     }
 
     if (backend->refreshVol &&
-        backend->refreshVol(obj->conn, pool, voldef) < 0) {
-        storageVolDeleteInternal(volobj, backend, pool, voldef,
+        backend->refreshVol(obj->conn, pool, objvoldef) < 0) {
+        storageVolDeleteInternal(vol, backend, pool, objvoldef,
                                  0, false);
-        voldef = NULL;
         goto cleanup;
     }
 
@@ -1993,18 +2003,18 @@ storageVolCreateXML(virStoragePoolPtr obj,
      * it updates the pool values.
      */
     if (pool->def->type != VIR_STORAGE_POOL_DISK) {
-        pool->def->allocation += voldef->target.allocation;
-        pool->def->available -= voldef->target.allocation;
+        pool->def->allocation += objvoldef->target.allocation;
+        pool->def->available -= objvoldef->target.allocation;
     }
 
     VIR_INFO("Creating volume '%s' in storage pool '%s'",
-             volobj->name, pool->def->name);
-    ret = volobj;
-    volobj = NULL;
-    voldef = NULL;
+             vol->name, pool->def->name);
+    ret = vol;
+    vol = NULL;
 
  cleanup:
-    virObjectUnref(volobj);
+    virPoolObjEndAPI(&volobj);
+    virObjectUnref(vol);
     virStorageVolDefFree(voldef);
     if (pool)
         virStoragePoolObjUnlock(pool);
@@ -2014,13 +2024,19 @@ storageVolCreateXML(virStoragePoolPtr obj,
 static virStorageVolPtr
 storageVolCreateXMLFrom(virStoragePoolPtr obj,
                         const char *xmldesc,
-                        virStorageVolPtr vobj,
+                        virStorageVolPtr volume,
                         unsigned int flags)
 {
     virStoragePoolObjPtr pool, origpool = NULL;
     virStorageBackendPtr backend;
-    virStorageVolDefPtr origvol = NULL, newvol = NULL, shadowvol = NULL;
-    virStorageVolPtr ret = NULL, volobj = NULL;
+    virPoolObjPtr newvolobj = NULL;
+    virPoolObjPtr origvolobj = NULL;
+    virStorageVolDefPtr origvoldef;
+    virStorageVolDefPtr newvoldef = NULL;
+    virStorageVolDefPtr objnewvoldef;
+    virStorageVolDefPtr shadowvoldef = NULL;
+    virStorageVolPtr vol = NULL;
+    virStorageVolPtr ret = NULL;
     int buildret;
 
     virCheckFlags(VIR_STORAGE_VOL_CREATE_PREALLOC_METADATA |
@@ -2029,9 +2045,9 @@ storageVolCreateXMLFrom(virStoragePoolPtr obj,
 
     storageDriverLock();
     pool = virStoragePoolObjFindByUUID(&driver->pools, obj->uuid);
-    if (pool && STRNEQ(obj->name, vobj->pool)) {
+    if (pool && STRNEQ(obj->name, volume->pool)) {
         virStoragePoolObjUnlock(pool);
-        origpool = virStoragePoolObjFindByName(&driver->pools, vobj->pool);
+        origpool = virStoragePoolObjFindByName(&driver->pools, volume->pool);
         virStoragePoolObjLock(pool);
     }
     storageDriverUnlock();
@@ -2044,10 +2060,10 @@ storageVolCreateXMLFrom(virStoragePoolPtr obj,
         goto cleanup;
     }
 
-    if (STRNEQ(obj->name, vobj->pool) && !origpool) {
+    if (STRNEQ(obj->name, volume->pool) && !origpool) {
         virReportError(VIR_ERR_NO_STORAGE_POOL,
                        _("no storage pool with matching name '%s'"),
-                       vobj->pool);
+                       volume->pool);
         goto cleanup;
     }
 
@@ -2067,41 +2083,42 @@ storageVolCreateXMLFrom(virStoragePoolPtr obj,
     if ((backend = virStorageBackendForType(pool->def->type)) == NULL)
         goto cleanup;
 
-    origvol = virStorageVolDefFindByName(origpool ?
-                                         origpool : pool, vobj->name);
-    if (!origvol) {
+    if (!(origvolobj = virStorageVolObjFindByName(origpool ? origpool :
+                                                  pool, volume->name))) {
         virReportError(VIR_ERR_NO_STORAGE_VOL,
                        _("no storage vol with matching name '%s'"),
-                       vobj->name);
+                       volume->name);
         goto cleanup;
     }
+    origvoldef = virPoolObjGetDef(origvolobj);
 
-    newvol = virStorageVolDefParseString(pool->def, xmldesc,
-                                         VIR_VOL_XML_PARSE_NO_CAPACITY);
-    if (newvol == NULL)
+    if (!(newvoldef =
+          virStorageVolDefParseString(pool->def, xmldesc,
+                                      VIR_VOL_XML_PARSE_NO_CAPACITY)))
         goto cleanup;
 
-    if (virStorageVolCreateXMLFromEnsureACL(obj->conn, pool->def, newvol) < 0)
+    if (virStorageVolCreateXMLFromEnsureACL(obj->conn, pool->def,
+                                            newvoldef) < 0)
         goto cleanup;
 
-    if (virStorageVolDefFindByName(pool, newvol->name)) {
+    if ((newvolobj = virStorageVolObjFindByName(pool, newvoldef->name))) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("storage volume name '%s' already in use."),
-                       newvol->name);
+                       newvoldef->name);
         goto cleanup;
     }
 
     /* Use the original volume's capacity in case the new capacity
      * is less than that, or it was omitted */
-    if (newvol->target.capacity < origvol->target.capacity)
-        newvol->target.capacity = origvol->target.capacity;
+    if (newvoldef->target.capacity < origvoldef->target.capacity)
+        newvoldef->target.capacity = origvoldef->target.capacity;
 
     /* If the allocation was not provided in the XML, then use capacity
      * as it's specifically documented "If omitted when creating a volume,
      * the  volume will be fully allocated at time of creation.". This
      * is especially important for logical volume creation. */
-    if (!newvol->target.has_allocation)
-        newvol->target.allocation = newvol->target.capacity;
+    if (!newvoldef->target.has_allocation)
+        newvoldef->target.allocation = newvoldef->target.capacity;
 
     if (!backend->buildVolFrom) {
         virReportError(VIR_ERR_NO_SUPPORT,
@@ -2110,49 +2127,47 @@ storageVolCreateXMLFrom(virStoragePoolPtr obj,
         goto cleanup;
     }
 
-    if (origvol->building) {
+    if (origvoldef->building) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        _("volume '%s' is still being allocated."),
-                       origvol->name);
+                       origvoldef->name);
         goto cleanup;
     }
 
     if (backend->refreshVol &&
-        backend->refreshVol(obj->conn, pool, origvol) < 0)
-        goto cleanup;
-
-    if (VIR_REALLOC_N(pool->volumes.objs,
-                      pool->volumes.count+1) < 0)
+        backend->refreshVol(obj->conn, pool, origvoldef) < 0)
         goto cleanup;
 
     /* 'Define' the new volume so we get async progress reporting.
      * Wipe any key the user may have suggested, as volume creation
      * will generate the canonical key.  */
-    VIR_FREE(newvol->key);
-    if (backend->createVol(obj->conn, pool, newvol) < 0)
+    VIR_FREE(newvoldef->key);
+    if (backend->createVol(obj->conn, pool, newvoldef) < 0)
         goto cleanup;
 
     /* Make a shallow copy of the 'defined' volume definition, since the
      * original allocation value will change as the user polls 'info',
      * but we only need the initial requested values
      */
-    if (VIR_ALLOC(shadowvol) < 0)
+    if (VIR_ALLOC(shadowvoldef) < 0)
         goto cleanup;
 
-    memcpy(shadowvol, newvol, sizeof(*newvol));
+    memcpy(shadowvoldef, newvoldef, sizeof(*newvoldef));
 
-    pool->volumes.objs[pool->volumes.count++] = newvol;
-    volobj = virGetStorageVol(obj->conn, pool->def->name, newvol->name,
-                              newvol->key, NULL, NULL);
-    if (!volobj) {
-        pool->volumes.count--;
+    if (!(newvolobj = virStoragePoolObjAddVolume(pool, newvoldef)))
+        goto cleanup;
+    VIR_STEAL_PTR(objnewvoldef, newvoldef);
+
+    if (!(vol = virGetStorageVol(obj->conn, pool->def->name, objnewvoldef->name,
+                                 objnewvoldef->key, NULL, NULL))) {
+        virStoragePoolObjRemoveVolume(pool, &newvolobj);
         goto cleanup;
     }
 
     /* Drop the pool lock during volume allocation */
     pool->asyncjobs++;
-    newvol->building = true;
-    origvol->in_use++;
+    objnewvoldef->building = true;
+    origvoldef->in_use++;
     virStoragePoolObjUnlock(pool);
 
     if (origpool) {
@@ -2160,7 +2175,8 @@ storageVolCreateXMLFrom(virStoragePoolPtr obj,
         virStoragePoolObjUnlock(origpool);
     }
 
-    buildret = backend->buildVolFrom(obj->conn, pool, shadowvol, origvol, flags);
+    buildret = backend->buildVolFrom(obj->conn, pool, shadowvoldef,
+                                     origvoldef, flags);
 
     storageDriverLock();
     virStoragePoolObjLock(pool);
@@ -2168,8 +2184,8 @@ storageVolCreateXMLFrom(virStoragePoolPtr obj,
         virStoragePoolObjLock(origpool);
     storageDriverUnlock();
 
-    origvol->in_use--;
-    newvol->building = false;
+    origvoldef->in_use--;
+    objnewvoldef->building = false;
     pool->asyncjobs--;
 
     if (origpool) {
@@ -2180,9 +2196,8 @@ storageVolCreateXMLFrom(virStoragePoolPtr obj,
 
     if (buildret < 0 ||
         (backend->refreshVol &&
-         backend->refreshVol(obj->conn, pool, newvol) < 0)) {
-        storageVolDeleteInternal(volobj, backend, pool, newvol, 0, false);
-        newvol = NULL;
+         backend->refreshVol(obj->conn, pool, objnewvoldef) < 0)) {
+        storageVolDeleteInternal(vol, backend, pool, objnewvoldef, 0, false);
         goto cleanup;
     }
 
@@ -2190,20 +2205,21 @@ storageVolCreateXMLFrom(virStoragePoolPtr obj,
      * it updates the pool values
      */
     if (pool->def->type != VIR_STORAGE_POOL_DISK) {
-        pool->def->allocation += newvol->target.allocation;
-        pool->def->available -= newvol->target.allocation;
+        pool->def->allocation += objnewvoldef->target.allocation;
+        pool->def->available -= objnewvoldef->target.allocation;
     }
 
     VIR_INFO("Creating volume '%s' in storage pool '%s'",
-             volobj->name, pool->def->name);
-    ret = volobj;
-    volobj = NULL;
-    newvol = NULL;
+             vol->name, pool->def->name);
+    ret = vol;
+    vol = NULL;
 
  cleanup:
-    virObjectUnref(volobj);
-    virStorageVolDefFree(newvol);
-    VIR_FREE(shadowvol);
+    virPoolObjEndAPI(&origvolobj);
+    virPoolObjEndAPI(&newvolobj);
+    virObjectUnref(vol);
+    virStorageVolDefFree(newvoldef);
+    VIR_FREE(shadowvoldef);
     if (pool)
         virStoragePoolObjUnlock(pool);
     if (origpool)
@@ -2213,7 +2229,7 @@ storageVolCreateXMLFrom(virStoragePoolPtr obj,
 
 
 static int
-storageVolDownload(virStorageVolPtr obj,
+storageVolDownload(virStorageVolPtr volume,
                    virStreamPtr stream,
                    unsigned long long offset,
                    unsigned long long length,
@@ -2221,21 +2237,23 @@ storageVolDownload(virStorageVolPtr obj,
 {
     virStorageBackendPtr backend;
     virStoragePoolObjPtr pool = NULL;
-    virStorageVolDefPtr vol = NULL;
+    virPoolObjPtr volobj;
+    virStorageVolDefPtr voldef;
     int ret = -1;
 
     virCheckFlags(0, -1);
 
-    if (!(vol = virStorageVolDefFromVol(obj, &pool, &backend)))
+    if (!(volobj = virStorageVolObjFromVol(volume, &pool, &backend)))
         return -1;
+    voldef = virPoolObjGetDef(volobj);
 
-    if (virStorageVolDownloadEnsureACL(obj->conn, pool->def, vol) < 0)
+    if (virStorageVolDownloadEnsureACL(volume->conn, pool->def, voldef) < 0)
         goto cleanup;
 
-    if (vol->building) {
+    if (voldef->building) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        _("volume '%s' is still being allocated."),
-                       vol->name);
+                       voldef->name);
         goto cleanup;
     }
 
@@ -2245,10 +2263,11 @@ storageVolDownload(virStorageVolPtr obj,
         goto cleanup;
     }
 
-    ret = backend->downloadVol(obj->conn, pool, vol, stream,
+    ret = backend->downloadVol(volume->conn, pool, voldef, stream,
                                offset, length, flags);
 
  cleanup:
+    virPoolObjEndAPI(&volobj);
     virStoragePoolObjUnlock(pool);
 
     return ret;
@@ -2380,7 +2399,7 @@ virStorageVolFDStreamCloseCb(virStreamPtr st ATTRIBUTE_UNUSED,
 }
 
 static int
-storageVolUpload(virStorageVolPtr obj,
+storageVolUpload(virStorageVolPtr volume,
                  virStreamPtr stream,
                  unsigned long long offset,
                  unsigned long long length,
@@ -2388,29 +2407,31 @@ storageVolUpload(virStorageVolPtr obj,
 {
     virStorageBackendPtr backend;
     virStoragePoolObjPtr pool = NULL;
-    virStorageVolDefPtr vol = NULL;
+    virPoolObjPtr volobj;
+    virStorageVolDefPtr voldef;
     virStorageVolStreamInfoPtr cbdata = NULL;
     int ret = -1;
 
     virCheckFlags(0, -1);
 
-    if (!(vol = virStorageVolDefFromVol(obj, &pool, &backend)))
+    if (!(volobj = virStorageVolObjFromVol(volume, &pool, &backend)))
         return -1;
+    voldef = virPoolObjGetDef(volobj);
 
-    if (virStorageVolUploadEnsureACL(obj->conn, pool->def, vol) < 0)
+    if (virStorageVolUploadEnsureACL(volume->conn, pool->def, voldef) < 0)
         goto cleanup;
 
-    if (vol->in_use) {
+    if (voldef->in_use) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        _("volume '%s' is still in use."),
-                       vol->name);
+                       voldef->name);
         goto cleanup;
     }
 
-    if (vol->building) {
+    if (voldef->building) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        _("volume '%s' is still being allocated."),
-                       vol->name);
+                       voldef->name);
         goto cleanup;
     }
 
@@ -2429,11 +2450,11 @@ storageVolUpload(virStorageVolPtr obj,
     if (VIR_ALLOC(cbdata) < 0 ||
         VIR_STRDUP(cbdata->pool_name, pool->def->name) < 0)
         goto cleanup;
-    if (vol->type == VIR_STORAGE_VOL_PLOOP &&
-        VIR_STRDUP(cbdata->vol_path, vol->target.path) < 0)
+    if (voldef->type == VIR_STORAGE_VOL_PLOOP &&
+        VIR_STRDUP(cbdata->vol_path, voldef->target.path) < 0)
         goto cleanup;
 
-    if ((ret = backend->uploadVol(obj->conn, pool, vol, stream,
+    if ((ret = backend->uploadVol(volume->conn, pool, voldef, stream,
                                   offset, length, flags)) < 0)
         goto cleanup;
 
@@ -2446,6 +2467,7 @@ storageVolUpload(virStorageVolPtr obj,
     cbdata = NULL;
 
  cleanup:
+    virPoolObjEndAPI(&volobj);
     virStoragePoolObjUnlock(pool);
     if (cbdata)
         virStorageVolPoolRefreshDataFree(cbdata);
@@ -2454,13 +2476,14 @@ storageVolUpload(virStorageVolPtr obj,
 }
 
 static int
-storageVolResize(virStorageVolPtr obj,
+storageVolResize(virStorageVolPtr volume,
                  unsigned long long capacity,
                  unsigned int flags)
 {
     virStorageBackendPtr backend;
     virStoragePoolObjPtr pool = NULL;
-    virStorageVolDefPtr vol = NULL;
+    virPoolObjPtr volobj;
+    virStorageVolDefPtr voldef;
     unsigned long long abs_capacity, delta = 0;
     int ret = -1;
 
@@ -2468,44 +2491,46 @@ storageVolResize(virStorageVolPtr obj,
                   VIR_STORAGE_VOL_RESIZE_DELTA |
                   VIR_STORAGE_VOL_RESIZE_SHRINK, -1);
 
-    if (!(vol = virStorageVolDefFromVol(obj, &pool, &backend)))
+    if (!(volobj = virStorageVolObjFromVol(volume, &pool, &backend)))
         return -1;
+    voldef = virPoolObjGetDef(volobj);
 
-    if (virStorageVolResizeEnsureACL(obj->conn, pool->def, vol) < 0)
+    if (virStorageVolResizeEnsureACL(volume->conn, pool->def, voldef) < 0)
         goto cleanup;
 
-    if (vol->in_use) {
+    if (voldef->in_use) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        _("volume '%s' is still in use."),
-                       vol->name);
+                       voldef->name);
         goto cleanup;
     }
 
-    if (vol->building) {
+    if (voldef->building) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        _("volume '%s' is still being allocated."),
-                       vol->name);
+                       voldef->name);
         goto cleanup;
     }
 
     if (flags & VIR_STORAGE_VOL_RESIZE_DELTA) {
         if (flags & VIR_STORAGE_VOL_RESIZE_SHRINK)
-            abs_capacity = vol->target.capacity - MIN(capacity, vol->target.capacity);
+            abs_capacity = voldef->target.capacity -
+                MIN(capacity, voldef->target.capacity);
         else
-            abs_capacity = vol->target.capacity + capacity;
+            abs_capacity = voldef->target.capacity + capacity;
         flags &= ~VIR_STORAGE_VOL_RESIZE_DELTA;
     } else {
         abs_capacity = capacity;
     }
 
-    if (abs_capacity < vol->target.allocation) {
+    if (abs_capacity < voldef->target.allocation) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("can't shrink capacity below "
                          "existing allocation"));
         goto cleanup;
     }
 
-    if (abs_capacity < vol->target.capacity &&
+    if (abs_capacity < voldef->target.capacity &&
         !(flags & VIR_STORAGE_VOL_RESIZE_SHRINK)) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("Can't shrink capacity below current "
@@ -2514,7 +2539,7 @@ storageVolResize(virStorageVolPtr obj,
     }
 
     if (flags & VIR_STORAGE_VOL_RESIZE_ALLOCATE)
-        delta = abs_capacity - vol->target.allocation;
+        delta = abs_capacity - voldef->target.allocation;
 
     if (delta > pool->def->available) {
         virReportError(VIR_ERR_OPERATION_FAILED, "%s",
@@ -2529,16 +2554,16 @@ storageVolResize(virStorageVolPtr obj,
         goto cleanup;
     }
 
-    if (backend->resizeVol(obj->conn, pool, vol, abs_capacity, flags) < 0)
+    if (backend->resizeVol(volume->conn, pool, voldef, abs_capacity, flags) < 0)
         goto cleanup;
 
-    vol->target.capacity = abs_capacity;
+    voldef->target.capacity = abs_capacity;
     /* Only update the allocation and pool values if we actually did the
      * allocation; otherwise, this is akin to a create operation with a
      * capacity value different and potentially much larger than available
      */
     if (flags & VIR_STORAGE_VOL_RESIZE_ALLOCATE) {
-        vol->target.allocation = abs_capacity;
+        voldef->target.allocation = abs_capacity;
         pool->def->allocation += delta;
         pool->def->available -= delta;
     }
@@ -2546,6 +2571,7 @@ storageVolResize(virStorageVolPtr obj,
     ret = 0;
 
  cleanup:
+    virPoolObjEndAPI(&volobj);
     virStoragePoolObjUnlock(pool);
 
     return ret;
@@ -2553,13 +2579,14 @@ storageVolResize(virStorageVolPtr obj,
 
 
 static int
-storageVolWipePattern(virStorageVolPtr obj,
+storageVolWipePattern(virStorageVolPtr volume,
                       unsigned int algorithm,
                       unsigned int flags)
 {
     virStorageBackendPtr backend;
     virStoragePoolObjPtr pool = NULL;
-    virStorageVolDefPtr vol = NULL;
+    virPoolObjPtr volobj;
+    virStorageVolDefPtr voldef;
     int ret = -1;
 
     virCheckFlags(0, -1);
@@ -2571,24 +2598,24 @@ storageVolWipePattern(virStorageVolPtr obj,
         return -1;
     }
 
-    if (!(vol = virStorageVolDefFromVol(obj, &pool, &backend)))
+    if (!(volobj = virStorageVolObjFromVol(volume, &pool, &backend)))
         return -1;
+    voldef = virPoolObjGetDef(volobj);
 
-
-    if (virStorageVolWipePatternEnsureACL(obj->conn, pool->def, vol) < 0)
+    if (virStorageVolWipePatternEnsureACL(volume->conn, pool->def, voldef) < 0)
         goto cleanup;
 
-    if (vol->in_use) {
+    if (voldef->in_use) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        _("volume '%s' is still in use."),
-                       vol->name);
+                       voldef->name);
         goto cleanup;
     }
 
-    if (vol->building) {
+    if (voldef->building) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        _("volume '%s' is still being allocated."),
-                       vol->name);
+                       voldef->name);
         goto cleanup;
     }
 
@@ -2598,16 +2625,17 @@ storageVolWipePattern(virStorageVolPtr obj,
         goto cleanup;
     }
 
-    if (backend->wipeVol(obj->conn, pool, vol, algorithm, flags) < 0)
+    if (backend->wipeVol(volume->conn, pool, voldef, algorithm, flags) < 0)
         goto cleanup;
 
     if (backend->refreshVol &&
-        backend->refreshVol(obj->conn, pool, vol) < 0)
+        backend->refreshVol(volume->conn, pool, voldef) < 0)
         goto cleanup;
 
     ret = 0;
 
  cleanup:
+    virPoolObjEndAPI(&volobj);
     virStoragePoolObjUnlock(pool);
 
     return ret;
@@ -2622,37 +2650,40 @@ storageVolWipe(virStorageVolPtr obj,
 
 
 static int
-storageVolGetInfoFlags(virStorageVolPtr obj,
+storageVolGetInfoFlags(virStorageVolPtr volume,
                        virStorageVolInfoPtr info,
                        unsigned int flags)
 {
     virStoragePoolObjPtr pool;
     virStorageBackendPtr backend;
-    virStorageVolDefPtr vol;
+    virPoolObjPtr volobj;
+    virStorageVolDefPtr voldef;
     int ret = -1;
 
     virCheckFlags(VIR_STORAGE_VOL_GET_PHYSICAL, -1);
 
-    if (!(vol = virStorageVolDefFromVol(obj, &pool, &backend)))
+    if (!(volobj = virStorageVolObjFromVol(volume, &pool, &backend)))
         return -1;
+    voldef = virPoolObjGetDef(volobj);
 
-    if (virStorageVolGetInfoFlagsEnsureACL(obj->conn, pool->def, vol) < 0)
+    if (virStorageVolGetInfoFlagsEnsureACL(volume->conn, pool->def, voldef) < 0)
         goto cleanup;
 
     if (backend->refreshVol &&
-        backend->refreshVol(obj->conn, pool, vol) < 0)
+        backend->refreshVol(volume->conn, pool, voldef) < 0)
         goto cleanup;
 
     memset(info, 0, sizeof(*info));
-    info->type = vol->type;
-    info->capacity = vol->target.capacity;
+    info->type = voldef->type;
+    info->capacity = voldef->target.capacity;
     if (flags & VIR_STORAGE_VOL_GET_PHYSICAL)
-        info->allocation = vol->target.physical;
+        info->allocation = voldef->target.physical;
     else
-        info->allocation = vol->target.allocation;
+        info->allocation = voldef->target.allocation;
     ret = 0;
 
  cleanup:
+    virPoolObjEndAPI(&volobj);
     virStoragePoolObjUnlock(pool);
     return ret;
 }
@@ -2667,50 +2698,56 @@ storageVolGetInfo(virStorageVolPtr obj,
 
 
 static char *
-storageVolGetXMLDesc(virStorageVolPtr obj,
+storageVolGetXMLDesc(virStorageVolPtr volume,
                      unsigned int flags)
 {
     virStoragePoolObjPtr pool;
     virStorageBackendPtr backend;
-    virStorageVolDefPtr vol;
+    virPoolObjPtr volobj;
+    virStorageVolDefPtr voldef;
     char *ret = NULL;
 
     virCheckFlags(0, NULL);
 
-    if (!(vol = virStorageVolDefFromVol(obj, &pool, &backend)))
+    if (!(volobj = virStorageVolObjFromVol(volume, &pool, &backend)))
         return NULL;
+    voldef = virPoolObjGetDef(volobj);
 
-    if (virStorageVolGetXMLDescEnsureACL(obj->conn, pool->def, vol) < 0)
+    if (virStorageVolGetXMLDescEnsureACL(volume->conn, pool->def, voldef) < 0)
         goto cleanup;
 
     if (backend->refreshVol &&
-        backend->refreshVol(obj->conn, pool, vol) < 0)
+        backend->refreshVol(volume->conn, pool, voldef) < 0)
         goto cleanup;
 
-    ret = virStorageVolDefFormat(pool->def, vol);
+    ret = virStorageVolDefFormat(pool->def, voldef);
 
  cleanup:
+    virPoolObjEndAPI(&volobj);
     virStoragePoolObjUnlock(pool);
 
     return ret;
 }
 
 static char *
-storageVolGetPath(virStorageVolPtr obj)
+storageVolGetPath(virStorageVolPtr volume)
 {
     virStoragePoolObjPtr pool;
-    virStorageVolDefPtr vol;
+    virPoolObjPtr volobj;
+    virStorageVolDefPtr voldef;
     char *ret = NULL;
 
-    if (!(vol = virStorageVolDefFromVol(obj, &pool, NULL)))
+    if (!(volobj = virStorageVolObjFromVol(volume, &pool, NULL)))
         return NULL;
+    voldef = virPoolObjGetDef(volobj);
 
-    if (virStorageVolGetPathEnsureACL(obj->conn, pool->def, vol) < 0)
+    if (virStorageVolGetPathEnsureACL(volume->conn, pool->def, voldef) < 0)
         goto cleanup;
 
-    ignore_value(VIR_STRDUP(ret, vol->target.path));
+    ignore_value(VIR_STRDUP(ret, voldef->target.path));
 
  cleanup:
+    virPoolObjEndAPI(&volobj);
     virStoragePoolObjUnlock(pool);
     return ret;
 }

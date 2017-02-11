@@ -288,7 +288,8 @@ virStorageBackendLogicalMakeVol(char **const groups,
 {
     struct virStorageBackendLogicalPoolVolData *data = opaque;
     virStoragePoolObjPtr pool = data->pool;
-    virStorageVolDefPtr vol = NULL;
+    virPoolObjPtr volobj = NULL;
+    virStorageVolDefPtr voldef = data->vol;
     bool is_new_vol = false;
     int ret = -1;
     const char *attrs = groups[9];
@@ -306,32 +307,30 @@ virStorageBackendLogicalMakeVol(char **const groups,
         return 0;
 
     /* See if we're only looking for a specific volume */
-    if (data->vol != NULL) {
-        vol = data->vol;
-        if (STRNEQ(vol->name, groups[0]))
-            return 0;
-    }
+    if (voldef && STRNEQ(voldef->name, groups[0]))
+        return 0;
 
     /* Or filling in more data on an existing volume */
-    if (vol == NULL)
-        vol = virStorageVolDefFindByName(pool, groups[0]);
+    if (!voldef) {
+        if ((volobj = virStorageVolObjFindByName(pool, groups[0])))
+            voldef = virPoolObjGetDef(volobj);
+    }
 
     /* Or a completely new volume */
-    if (vol == NULL) {
-        if (VIR_ALLOC(vol) < 0)
+    if (!voldef) {
+        if (VIR_ALLOC(voldef) < 0)
             return -1;
 
         is_new_vol = true;
-        vol->type = VIR_STORAGE_VOL_BLOCK;
+        voldef->type = VIR_STORAGE_VOL_BLOCK;
 
-        if (VIR_STRDUP(vol->name, groups[0]) < 0)
+        if (VIR_STRDUP(voldef->name, groups[0]) < 0)
             goto cleanup;
-
     }
 
-    if (vol->target.path == NULL) {
-        if (virAsprintf(&vol->target.path, "%s/%s",
-                        pool->def->target.path, vol->name) < 0)
+    if (!voldef->target.path) {
+        if (virAsprintf(&voldef->target.path, "%s/%s",
+                        pool->def->target.path, voldef->name) < 0)
             goto cleanup;
     }
 
@@ -342,7 +341,7 @@ virStorageBackendLogicalMakeVol(char **const groups,
      * in brackets [] described for the groups[1] (backingStore).
      */
     if (attrs[0] == 's')
-        vol->target.sparse = true;
+        voldef->target.sparse = true;
 
     /* Skips the backingStore of lv created with "--virtualsize",
      * its original device "/dev/$vgname/$lvname_vorigin" is
@@ -352,41 +351,44 @@ virStorageBackendLogicalMakeVol(char **const groups,
      *  lv is created with "--virtualsize").
      */
     if (groups[1] && STRNEQ(groups[1], "") && (groups[1][0] != '[')) {
-        if (VIR_ALLOC(vol->target.backingStore) < 0)
+        if (VIR_ALLOC(voldef->target.backingStore) < 0)
             goto cleanup;
 
-        if (virAsprintf(&vol->target.backingStore->path, "%s/%s",
+        if (virAsprintf(&voldef->target.backingStore->path, "%s/%s",
                         pool->def->target.path, groups[1]) < 0)
             goto cleanup;
 
-        vol->target.backingStore->format = VIR_STORAGE_POOL_LOGICAL_LVM2;
+        voldef->target.backingStore->format = VIR_STORAGE_POOL_LOGICAL_LVM2;
     }
 
-    if (!vol->key && VIR_STRDUP(vol->key, groups[2]) < 0)
+    if (!voldef->key && VIR_STRDUP(voldef->key, groups[2]) < 0)
         goto cleanup;
 
-    if (virStorageBackendUpdateVolInfo(vol, false,
+    if (virStorageBackendUpdateVolInfo(voldef, false,
                                        VIR_STORAGE_VOL_OPEN_DEFAULT, 0) < 0)
         goto cleanup;
 
-    if (virStrToLong_ull(groups[8], NULL, 10, &vol->target.allocation) < 0) {
+    if (virStrToLong_ull(groups[8], NULL, 10, &voldef->target.allocation) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        "%s", _("malformed volume allocation value"));
         goto cleanup;
     }
 
-    if (virStorageBackendLogicalParseVolExtents(vol, groups) < 0)
+    if (virStorageBackendLogicalParseVolExtents(voldef, groups) < 0)
         goto cleanup;
 
-    if (is_new_vol &&
-        VIR_APPEND_ELEMENT(pool->volumes.objs, pool->volumes.count, vol) < 0)
-        goto cleanup;
+    if (is_new_vol) {
+        if (!(volobj = virStoragePoolObjAddVolume(pool, voldef)))
+            goto cleanup;
+        voldef = NULL;
+        virPoolObjEndAPI(&volobj);
+    }
 
     ret = 0;
 
  cleanup:
     if (is_new_vol)
-        virStorageVolDefFree(vol);
+        virStorageVolDefFree(voldef);
     return ret;
 }
 

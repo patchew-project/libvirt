@@ -379,15 +379,20 @@ virStorageBackendGlusterRefreshPool(virConnectPtr conn ATTRIBUTE_UNUSED,
     }
     while (!(errno = glfs_readdirplus_r(dir, &st, &de.ent, &ent)) && ent) {
         virStorageVolDefPtr vol;
-        int okay = virStorageBackendGlusterRefreshVol(state,
-                                                      ent->d_name, &st,
-                                                      &vol);
+        virPoolObjPtr volobj;
 
-        if (okay < 0)
+        if (virStorageBackendGlusterRefreshVol(state, ent->d_name,
+                                               &st, &vol) < 0)
             goto cleanup;
-        if (vol && VIR_APPEND_ELEMENT(pool->volumes.objs, pool->volumes.count,
-                                      vol) < 0)
+
+        if (!vol)
+            continue;
+
+        if (!(volobj = virStoragePoolObjAddVolume(pool, vol))) {
+            virStorageVolDefFree(vol);
             goto cleanup;
+        }
+        virPoolObjEndAPI(&volobj);
     }
     if (errno) {
         virReportSystemError(errno, _("failed to read directory '%s' in '%s'"),

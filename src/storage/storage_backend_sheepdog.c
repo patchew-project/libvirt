@@ -115,6 +115,7 @@ virStorageBackendSheepdogAddVolume(virConnectPtr conn ATTRIBUTE_UNUSED,
                                   virStoragePoolObjPtr pool, const char *diskInfo)
 {
     virStorageVolDefPtr vol = NULL;
+    virPoolObjPtr obj;
 
     if (diskInfo == NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -130,11 +131,11 @@ virStorageBackendSheepdogAddVolume(virConnectPtr conn ATTRIBUTE_UNUSED,
     if (virStorageBackendSheepdogRefreshVol(conn, pool, vol) < 0)
         goto error;
 
-    if (VIR_EXPAND_N(pool->volumes.objs, pool->volumes.count, 1) < 0)
+    if (!(obj = virStoragePoolObjAddVolume(pool, vol)))
         goto error;
+    vol = NULL;
 
-    pool->volumes.objs[pool->volumes.count - 1] = vol;
-
+    virPoolObjEndAPI(&obj);
     return 0;
 
  error:

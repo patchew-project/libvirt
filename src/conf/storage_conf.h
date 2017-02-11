@@ -28,6 +28,7 @@
 # include "virstorageencryption.h"
 # include "virstoragefile.h"
 # include "virbitmap.h"
+# include "virpoolobj.h"
 # include "virthread.h"
 # include "device_conf.h"
 # include "node_device_conf.h"
@@ -71,13 +72,6 @@ struct _virStorageVolDef {
 
     virStorageVolSource source;
     virStorageSource target;
-};
-
-typedef struct _virStorageVolDefList virStorageVolDefList;
-typedef virStorageVolDefList *virStorageVolDefListPtr;
-struct _virStorageVolDefList {
-    size_t count;
-    virStorageVolDefPtr *objs;
 };
 
 VIR_ENUM_DECL(virStorageVol)
@@ -279,7 +273,7 @@ struct _virStoragePoolObj {
     virStoragePoolDefPtr def;
     virStoragePoolDefPtr newDef;
 
-    virStorageVolDefList volumes;
+    virPoolObjTablePtr volumes;
 };
 
 typedef struct _virStoragePoolObjList virStoragePoolObjList;
@@ -343,14 +337,14 @@ virStoragePoolObjPtr
 virStoragePoolSourceFindDuplicateDevices(virStoragePoolObjPtr pool,
                                          virStoragePoolDefPtr def);
 
-virStorageVolDefPtr
-virStorageVolDefFindByKey(virStoragePoolObjPtr pool,
+virPoolObjPtr
+virStorageVolObjFindByKey(virStoragePoolObjPtr pool,
                           const char *key);
-virStorageVolDefPtr
-virStorageVolDefFindByPath(virStoragePoolObjPtr pool,
+virPoolObjPtr
+virStorageVolObjFindByPath(virStoragePoolObjPtr pool,
                            const char *path);
-virStorageVolDefPtr
-virStorageVolDefFindByName(virStoragePoolObjPtr pool,
+virPoolObjPtr
+virStorageVolObjFindByName(virStoragePoolObjPtr pool,
                            const char *name);
 
 void virStoragePoolObjClearVols(virStoragePoolObjPtr pool);
@@ -387,6 +381,27 @@ virStoragePoolObjPtr
 virStoragePoolObjAssignDef(virStoragePoolObjListPtr pools,
                            virStoragePoolDefPtr def);
 
+virPoolObjPtr virStoragePoolObjAddVolume(virStoragePoolObjPtr pool,
+                                         virStorageVolDefPtr voldef);
+
+void virStoragePoolObjRemoveVolume(virStoragePoolObjPtr pool,
+                                   virPoolObjPtr *volobj);
+
+typedef bool (*virStoragePoolVolumeACLFilter)
+    (virConnectPtr conn, virStoragePoolDefPtr pool, void *objdef);
+
+int virStoragePoolObjNumOfVolumes(virPoolObjTablePtr volumes,
+                                  virConnectPtr conn,
+                                  virStoragePoolDefPtr pooldef,
+                                  virStoragePoolVolumeACLFilter aclfilter);
+
+int virStoragePoolObjListVolumes(virPoolObjTablePtr volumes,
+                                 virConnectPtr conn,
+                                 virStoragePoolDefPtr pooldef,
+                                 virStoragePoolVolumeACLFilter aclfilter,
+                                 char **const names,
+                                 int maxnames);
+
 int virStoragePoolSaveState(const char *stateFile,
                             virStoragePoolDefPtr def);
 int virStoragePoolSaveConfig(const char *configFile,
@@ -396,7 +411,7 @@ int virStoragePoolObjSaveDef(virStorageDriverStatePtr driver,
                              virStoragePoolDefPtr def);
 int virStoragePoolObjDeleteDef(virStoragePoolObjPtr pool);
 
-void virStorageVolDefFree(virStorageVolDefPtr def);
+void virStorageVolDefFree(void *opaque);
 void virStoragePoolSourceClear(virStoragePoolSourcePtr source);
 void virStoragePoolSourceDeviceClear(virStoragePoolSourceDevicePtr dev);
 void virStoragePoolSourceFree(virStoragePoolSourcePtr source);

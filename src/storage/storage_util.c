@@ -3471,6 +3471,7 @@ virStorageBackendRefreshLocal(virConnectPtr conn ATTRIBUTE_UNUSED,
     struct statvfs sb;
     struct stat statbuf;
     virStorageVolDefPtr vol = NULL;
+    virPoolObjPtr volobj;
     virStorageSourcePtr target = NULL;
     int direrr;
     int fd = -1, ret = -1;
@@ -3539,8 +3540,11 @@ virStorageBackendRefreshLocal(virConnectPtr conn ATTRIBUTE_UNUSED,
              * An error message was raised, but we just continue. */
         }
 
-        if (VIR_APPEND_ELEMENT(pool->volumes.objs, pool->volumes.count, vol) < 0)
+        if (!(volobj = virStoragePoolObjAddVolume(pool, vol)))
             goto cleanup;
+
+        vol = NULL;
+        virPoolObjEndAPI(&volobj);
     }
     if (direrr < 0)
         goto cleanup;
@@ -3656,6 +3660,7 @@ virStorageBackendSCSINewLun(virStoragePoolObjPtr pool,
                             const char *dev)
 {
     virStorageVolDefPtr vol = NULL;
+    virPoolObjPtr volobj;
     char *devpath = NULL;
     int retval = -1;
 
@@ -3727,10 +3732,11 @@ virStorageBackendSCSINewLun(virStoragePoolObjPtr pool,
     pool->def->capacity += vol->target.capacity;
     pool->def->allocation += vol->target.allocation;
 
-    if (VIR_APPEND_ELEMENT(pool->volumes.objs, pool->volumes.count, vol) < 0)
+    if (!(volobj = virStoragePoolObjAddVolume(pool, vol)))
         goto cleanup;
 
     vol = NULL;
+    virPoolObjEndAPI(&volobj);
     retval = 0;
 
  cleanup:

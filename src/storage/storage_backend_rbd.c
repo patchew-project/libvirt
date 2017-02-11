@@ -429,6 +429,7 @@ virStorageBackendRBDRefreshPool(virConnectPtr conn,
     int ret = -1;
     int len = -1;
     int r = 0;
+    int count = 0;
     char *name, *names = NULL;
     virStorageBackendRBDStatePtr ptr = NULL;
     struct rados_cluster_stat_t clusterstat;
@@ -473,6 +474,7 @@ virStorageBackendRBDRefreshPool(virConnectPtr conn,
 
     for (name = names; name < names + max_size;) {
         virStorageVolDefPtr vol;
+        virPoolObjPtr volobj;
 
         if (STREQ(name, ""))
             break;
@@ -506,15 +508,17 @@ virStorageBackendRBDRefreshPool(virConnectPtr conn,
             goto cleanup;
         }
 
-        if (VIR_APPEND_ELEMENT(pool->volumes.objs, pool->volumes.count, vol) < 0) {
+        if (!(volobj = virStoragePoolObjAddVolume(pool, vol))) {
             virStorageVolDefFree(vol);
             virStoragePoolObjClearVols(pool);
             goto cleanup;
         }
+        count++;
+        virPoolObjEndAPI(&volobj);
     }
 
-    VIR_DEBUG("Found %zu images in RBD pool %s",
-              pool->volumes.count, pool->def->source.name);
+    VIR_DEBUG("Found %d images in RBD pool %s",
+              count, pool->def->source.name);
 
     ret = 0;
 
