@@ -860,32 +860,12 @@ virStoragePoolFormatFileSystemNetTypeToString;
 virStoragePoolFormatFileSystemTypeToString;
 virStoragePoolFormatLogicalTypeToString;
 virStoragePoolGetVhbaSCSIHostParent;
-virStoragePoolLoadAllConfigs;
-virStoragePoolLoadAllState;
-virStoragePoolObjAddVolume;
-virStoragePoolObjAssignDef;
-virStoragePoolObjClearVols;
-virStoragePoolObjDeleteDef;
-virStoragePoolObjFindByName;
-virStoragePoolObjFindByUUID;
-virStoragePoolObjIsDuplicate;
-virStoragePoolObjListExport;
-virStoragePoolObjListFree;
-virStoragePoolObjListVolumes;
-virStoragePoolObjLock;
-virStoragePoolObjNumOfVolumes;
-virStoragePoolObjRemove;
-virStoragePoolObjRemoveVolume;
-virStoragePoolObjSaveDef;
-virStoragePoolObjUnlock;
 virStoragePoolSaveConfig;
 virStoragePoolSaveState;
 virStoragePoolSourceAdapterTypeFromString;
 virStoragePoolSourceAdapterTypeToString;
 virStoragePoolSourceClear;
 virStoragePoolSourceDeviceClear;
-virStoragePoolSourceFindDuplicate;
-virStoragePoolSourceFindDuplicateDevices;
 virStoragePoolSourceFree;
 virStoragePoolSourceListFormat;
 virStoragePoolSourceListNewSource;
@@ -896,9 +876,6 @@ virStorageVolDefFree;
 virStorageVolDefParseFile;
 virStorageVolDefParseNode;
 virStorageVolDefParseString;
-virStorageVolObjFindByKey;
-virStorageVolObjFindByName;
-virStorageVolObjFindByPath;
 virStorageVolTypeFromString;
 virStorageVolTypeToString;
 
@@ -1011,6 +988,33 @@ virSecretObjSaveConfig;
 virSecretObjSaveData;
 virSecretObjSetValue;
 virSecretObjSetValueSize;
+
+
+# conf/virstorageobj.h
+virStoragePoolObjAdd;
+virStoragePoolObjAddVolume;
+virStoragePoolObjClearVols;
+virStoragePoolObjDeleteDef;
+virStoragePoolObjExportList;
+virStoragePoolObjFindDuplicate;
+virStoragePoolObjGetNames;
+virStoragePoolObjIsDuplicate;
+virStoragePoolObjListVolumes;
+virStoragePoolObjLoadAllConfigs;
+virStoragePoolObjLoadAllState;
+virStoragePoolObjNumOfStoragePools;
+virStoragePoolObjNumOfVolumes;
+virStoragePoolObjPrivateDecrAsyncjobs;
+virStoragePoolObjPrivateGetAsyncjobs;
+virStoragePoolObjPrivateGetAutostartLink;
+virStoragePoolObjPrivateGetConfigFile;
+virStoragePoolObjPrivateGetVolumes;
+virStoragePoolObjPrivateIncrAsyncjobs;
+virStoragePoolObjRemoveVolume;
+virStoragePoolObjSaveDef;
+virStorageVolObjFindByKey;
+virStorageVolObjFindByName;
+virStorageVolObjFindByPath;
 
 
 # cpu/cpu.h

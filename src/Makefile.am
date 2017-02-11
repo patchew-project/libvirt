@@ -380,7 +380,8 @@ POOLOBJ_SOURCES =						\
 
 # Storage driver generic impl APIs
 STORAGE_CONF_SOURCES =                                         \
-		conf/storage_conf.h conf/storage_conf.c
+		conf/storage_conf.h conf/storage_conf.c        \
+		conf/virstorageobj.h conf/virstorageobj.c
 
 # Interface driver generic impl APIs
 INTERFACE_CONF_SOURCES =                                       \

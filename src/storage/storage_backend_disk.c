@@ -58,10 +58,11 @@ volPartFindExtended(virPoolObjPtr volobj,
 
 
 static int
-virStorageBackendDiskMakeDataVol(virStoragePoolObjPtr pool,
+virStorageBackendDiskMakeDataVol(virPoolObjPtr poolobj,
                                  char **const groups,
                                  virStorageVolDefPtr vol)
 {
+    virStoragePoolDefPtr pooldef = virPoolObjGetDef(poolobj);
     char *tmp, *devpath, *partname;
 
     /* Prepended path will be same for all partitions, so we can
@@ -83,7 +84,7 @@ virStorageBackendDiskMakeDataVol(virStoragePoolObjPtr pool,
             return -1;
         }
 
-        if (!(volobj = virStoragePoolObjAddVolume(pool, vol))) {
+        if (!(volobj = virStoragePoolObjAddVolume(poolobj, vol))) {
             virStorageVolDefFree(vol);
             return -1;
         }
@@ -100,7 +101,7 @@ virStorageBackendDiskMakeDataVol(virStoragePoolObjPtr pool,
          * dir every time its run. Should figure out a more efficient
          * way of doing this...
          */
-        vol->target.path = virStorageBackendStablePath(pool, devpath, true);
+        vol->target.path = virStorageBackendStablePath(poolobj, devpath, true);
         VIR_FREE(devpath);
         if (vol->target.path == NULL)
             return -1;
@@ -122,7 +123,7 @@ virStorageBackendDiskMakeDataVol(virStoragePoolObjPtr pool,
          * our deletion will fail because the name we generated is wrong.
          * Check for our conditions and see if the generated name is the
          * same as StablePath returns and has the 'p' in it */
-        if (pool->def->source.devices[0].part_separator ==
+        if (pooldef->source.devices[0].part_separator ==
             VIR_TRISTATE_BOOL_YES &&
             !virIsDevMapperDevice(vol->target.path) &&
             STREQ(groups[0], vol->target.path) &&
@@ -166,7 +167,7 @@ virStorageBackendDiskMakeDataVol(virStoragePoolObjPtr pool,
         }
 
         if (VIR_STRDUP(vol->source.extents[0].path,
-                       pool->def->source.devices[0].path) < 0)
+                       pooldef->source.devices[0].path) < 0)
             return -1;
     }
 
@@ -210,9 +211,11 @@ virStorageBackendDiskMakeDataVol(virStoragePoolObjPtr pool,
 
     /* Find the extended partition and increase the allocation value */
     if (vol->source.partType == VIR_STORAGE_VOL_DISK_TYPE_LOGICAL) {
+        virPoolObjTablePtr volumes =
+            virStoragePoolObjPrivateGetVolumes(poolobj);
         virPoolObjPtr volobj;
 
-        if ((volobj = virPoolObjTableSearch(pool->volumes, volPartFindExtended,
+        if ((volobj = virPoolObjTableSearch(volumes, volPartFindExtended,
                                             NULL))) {
             virStorageVolDefPtr voldef = virPoolObjGetDef(volobj);
             voldef->target.allocation += vol->target.allocation;
@@ -221,18 +224,19 @@ virStorageBackendDiskMakeDataVol(virStoragePoolObjPtr pool,
     }
 
     if (STRNEQ(groups[2], "metadata"))
-        pool->def->allocation += vol->target.allocation;
-    if (vol->source.extents[0].end > pool->def->capacity)
-        pool->def->capacity = vol->source.extents[0].end;
+        pooldef->allocation += vol->target.allocation;
+    if (vol->source.extents[0].end > pooldef->capacity)
+        pooldef->capacity = vol->source.extents[0].end;
 
     return 0;
 }
 
 static int
-virStorageBackendDiskMakeFreeExtent(virStoragePoolObjPtr pool,
+virStorageBackendDiskMakeFreeExtent(virPoolObjPtr poolobj,
                                     char **const groups)
 {
-    virStoragePoolSourceDevicePtr dev = &pool->def->source.devices[0];
+    virStoragePoolDefPtr pooldef = virPoolObjGetDef(poolobj);
+    virStoragePoolSourceDevicePtr dev = &pooldef->source.devices[0];
 
     if (VIR_REALLOC_N(dev->freeExtents,
                       dev->nfreeExtent + 1) < 0)
@@ -262,11 +266,11 @@ virStorageBackendDiskMakeFreeExtent(virStoragePoolObjPtr pool,
     if (dev->freeExtents[dev->nfreeExtent].start == 0)
         dev->freeExtents[dev->nfreeExtent].start = SECTOR_SIZE;
 
-    pool->def->available +=
+    pooldef->available +=
         (dev->freeExtents[dev->nfreeExtent].end -
          dev->freeExtents[dev->nfreeExtent].start);
-    if (dev->freeExtents[dev->nfreeExtent].end > pool->def->capacity)
-        pool->def->capacity = dev->freeExtents[dev->nfreeExtent].end;
+    if (dev->freeExtents[dev->nfreeExtent].end > pooldef->capacity)
+        pooldef->capacity = dev->freeExtents[dev->nfreeExtent].end;
 
     dev->nfreeExtent++;
 
@@ -275,7 +279,7 @@ virStorageBackendDiskMakeFreeExtent(virStoragePoolObjPtr pool,
 
 
 struct virStorageBackendDiskPoolVolData {
-    virStoragePoolObjPtr pool;
+    virPoolObjPtr poolobj;
     virStorageVolDefPtr vol;
 };
 
@@ -285,7 +289,7 @@ virStorageBackendDiskMakeVol(size_t ntok ATTRIBUTE_UNUSED,
                              void *opaque)
 {
     struct virStorageBackendDiskPoolVolData *data = opaque;
-    virStoragePoolObjPtr pool = data->pool;
+    virPoolObjPtr poolobj = data->poolobj;
     /*
      * Ignore normal+metadata, and logical+metadata partitions
      * since they're basically internal book-keeping regions
@@ -311,7 +315,7 @@ virStorageBackendDiskMakeVol(size_t ntok ATTRIBUTE_UNUSED,
             } else {
                 virPoolObjPtr volobj;
 
-                if ((volobj = virStorageVolObjFindByKey(pool, groups[0]))) {
+                if ((volobj = virStorageVolObjFindByKey(poolobj, groups[0]))) {
                     /* If no key, the volume must be newly created. If groups[0]
                      * isn't already a volume, assume it's the path we want */
                     virPoolObjEndAPI(&volobj);
@@ -320,10 +324,10 @@ virStorageBackendDiskMakeVol(size_t ntok ATTRIBUTE_UNUSED,
             }
         }
 
-        return virStorageBackendDiskMakeDataVol(pool, groups, voldef);
+        return virStorageBackendDiskMakeDataVol(poolobj, groups, voldef);
     } else if (STREQ(groups[2], "free")) {
         /* ....or free space extents */
-        return virStorageBackendDiskMakeFreeExtent(pool, groups);
+        return virStorageBackendDiskMakeFreeExtent(poolobj, groups);
     } else {
         /* This code path should never happen unless someone changed
          * libvirt_parthelper forgot to change this code */
@@ -342,7 +346,7 @@ virStorageBackendDiskMakeVol(size_t ntok ATTRIBUTE_UNUSED,
  * and we can even ensure the output is friendly.
  */
 static int
-virStorageBackendDiskReadPartitions(virStoragePoolObjPtr pool,
+virStorageBackendDiskReadPartitions(virPoolObjPtr poolobj,
                                     virStorageVolDefPtr vol)
 {
     /*
@@ -353,10 +357,11 @@ virStorageBackendDiskReadPartitions(virStoragePoolObjPtr pool,
      *
      */
 
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     char *parthelper_path;
     virCommandPtr cmd;
     struct virStorageBackendDiskPoolVolData cbdata = {
-        .pool = pool,
+        .poolobj = poolobj,
         .vol = vol,
     };
     int ret;
@@ -367,7 +372,7 @@ virStorageBackendDiskReadPartitions(virStoragePoolObjPtr pool,
         return -1;
 
     cmd = virCommandNewArgList(parthelper_path,
-                               pool->def->source.devices[0].path,
+                               def->source.devices[0].path,
                                NULL);
 
     /* Check for the presence of the part_separator='yes'. Pass this
@@ -376,16 +381,15 @@ virStorageBackendDiskReadPartitions(virStoragePoolObjPtr pool,
      * the generated device name for a source device which ends with
      * a non-numeric value (e.g. mpatha would generate mpathap#).
      */
-    if (pool->def->source.devices[0].part_separator ==
-        VIR_TRISTATE_BOOL_YES)
+    if (def->source.devices[0].part_separator == VIR_TRISTATE_BOOL_YES)
         virCommandAddArg(cmd, "-p");
 
     /* If a volume is passed, virStorageBackendDiskMakeVol only updates the
      * pool allocation for that single volume.
      */
     if (!vol)
-        pool->def->allocation = 0;
-    pool->def->capacity = pool->def->available = 0;
+        def->allocation = 0;
+    def->capacity = def->available = 0;
 
     ret = virCommandRunNul(cmd,
                            6,
@@ -401,8 +405,10 @@ virStorageBackendDiskMakePoolGeometry(size_t ntok ATTRIBUTE_UNUSED,
                                       char **const groups,
                                       void *data)
 {
-    virStoragePoolObjPtr pool = data;
-    virStoragePoolSourceDevicePtr device = &(pool->def->source.devices[0]);
+    virPoolObjPtr poolobj = data;
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
+
+    virStoragePoolSourceDevicePtr device = &(def->source.devices[0]);
     if (virStrToLong_i(groups[0], NULL, 0, &device->geometry.cylinders) < 0 ||
         virStrToLong_i(groups[1], NULL, 0, &device->geometry.heads) < 0 ||
         virStrToLong_i(groups[2], NULL, 0, &device->geometry.sectors) < 0) {
@@ -415,8 +421,9 @@ virStorageBackendDiskMakePoolGeometry(size_t ntok ATTRIBUTE_UNUSED,
 }
 
 static int
-virStorageBackendDiskReadGeometry(virStoragePoolObjPtr pool)
+virStorageBackendDiskReadGeometry(virPoolObjPtr poolobj)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     char *parthelper_path;
     virCommandPtr cmd;
     int ret;
@@ -427,14 +434,14 @@ virStorageBackendDiskReadGeometry(virStoragePoolObjPtr pool)
         return -1;
 
     cmd = virCommandNewArgList(parthelper_path,
-                                             pool->def->source.devices[0].path,
-                                             "-g",
-                                             NULL);
+                               def->source.devices[0].path,
+                               "-g",
+                               NULL);
 
     ret = virCommandRunNul(cmd,
                            3,
                            virStorageBackendDiskMakePoolGeometry,
-                           pool);
+                           poolobj);
     virCommandFree(cmd);
     VIR_FREE(parthelper_path);
     return ret;
@@ -442,34 +449,37 @@ virStorageBackendDiskReadGeometry(virStoragePoolObjPtr pool)
 
 static int
 virStorageBackendDiskRefreshPool(virConnectPtr conn ATTRIBUTE_UNUSED,
-                                 virStoragePoolObjPtr pool)
+                                 virPoolObjPtr poolobj)
 {
-    VIR_FREE(pool->def->source.devices[0].freeExtents);
-    pool->def->source.devices[0].nfreeExtent = 0;
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
+
+    VIR_FREE(def->source.devices[0].freeExtents);
+    def->source.devices[0].nfreeExtent = 0;
 
     virFileWaitForDevices();
 
-    if (!virFileExists(pool->def->source.devices[0].path)) {
+    if (!virFileExists(def->source.devices[0].path)) {
         virReportError(VIR_ERR_INVALID_ARG,
                        _("device path '%s' doesn't exist"),
-                       pool->def->source.devices[0].path);
+                       def->source.devices[0].path);
         return -1;
     }
 
-    if (virStorageBackendDiskReadGeometry(pool) != 0)
+    if (virStorageBackendDiskReadGeometry(poolobj) != 0)
         return -1;
 
-    return virStorageBackendDiskReadPartitions(pool, NULL);
+    return virStorageBackendDiskReadPartitions(poolobj, NULL);
 }
 
 
 static int
 virStorageBackendDiskStartPool(virConnectPtr conn ATTRIBUTE_UNUSED,
-                               virStoragePoolObjPtr pool)
+                               virPoolObjPtr poolobj)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     const char *format =
-        virStoragePoolFormatDiskTypeToString(pool->def->source.format);
-    const char *path = pool->def->source.devices[0].path;
+        virStoragePoolFormatDiskTypeToString(def->source.format);
+    const char *path = def->source.devices[0].path;
 
     virFileWaitForDevices();
 
@@ -491,10 +501,11 @@ virStorageBackendDiskStartPool(virConnectPtr conn ATTRIBUTE_UNUSED,
  */
 static int
 virStorageBackendDiskBuildPool(virConnectPtr conn ATTRIBUTE_UNUSED,
-                               virStoragePoolObjPtr pool,
+                               virPoolObjPtr poolobj,
                                unsigned int flags)
 {
-    int format = pool->def->source.format;
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
+    int format = def->source.format;
     const char *fmt;
     bool ok_to_mklabel = false;
     int ret = -1;
@@ -511,22 +522,22 @@ virStorageBackendDiskBuildPool(virConnectPtr conn ATTRIBUTE_UNUSED,
     if (flags & VIR_STORAGE_POOL_BUILD_OVERWRITE) {
         ok_to_mklabel = true;
     } else {
-        if (virStorageBackendDeviceIsEmpty(pool->def->source.devices[0].path,
-                                              fmt, true))
+        if (virStorageBackendDeviceIsEmpty(def->source.devices[0].path,
+                                           fmt, true))
             ok_to_mklabel = true;
     }
 
     if (ok_to_mklabel) {
         /* eg parted /dev/sda mklabel --script msdos */
         if (format == VIR_STORAGE_POOL_DISK_UNKNOWN)
-            format = pool->def->source.format = VIR_STORAGE_POOL_DISK_DOS;
+            format = def->source.format = VIR_STORAGE_POOL_DISK_DOS;
         if (format == VIR_STORAGE_POOL_DISK_DOS)
             fmt = "msdos";
         else
             fmt = virStoragePoolFormatDiskTypeToString(format);
 
         cmd = virCommandNewArgList(PARTED,
-                                   pool->def->source.devices[0].path,
+                                   def->source.devices[0].path,
                                    "mklabel",
                                    "--script",
                                    fmt,
@@ -566,16 +577,19 @@ volNumOfPartTypes(virPoolObjPtr volobj,
  * Important when the partition table is of msdos type
  */
 static int
-virStorageBackendDiskPartTypeToCreate(virStoragePoolObjPtr pool)
+virStorageBackendDiskPartTypeToCreate(virPoolObjPtr poolobj)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     struct volPartListData data = { .count = 0 };
 
-    if (pool->def->source.format == VIR_STORAGE_POOL_DISK_DOS) {
+    if (def->source.format == VIR_STORAGE_POOL_DISK_DOS) {
+        virPoolObjTablePtr volumes =
+            virStoragePoolObjPrivateGetVolumes(poolobj);
 
         /* count primary and extended partitions,
          * can't be more than 3 to create a new primary partition */
-        if (virPoolObjTableList(pool->volumes, NULL, NULL,
-                                volNumOfPartTypes, &data) == 0) {
+        if (virPoolObjTableList(volumes, NULL, NULL, volNumOfPartTypes,
+                                &data) == 0) {
             if (data.count >= 4)
                 return VIR_STORAGE_VOL_DISK_TYPE_LOGICAL;
         }
@@ -586,13 +600,15 @@ virStorageBackendDiskPartTypeToCreate(virStoragePoolObjPtr pool)
 }
 
 static int
-virStorageBackendDiskPartFormat(virStoragePoolObjPtr pool,
+virStorageBackendDiskPartFormat(virPoolObjPtr poolobj,
                                 virStorageVolDefPtr vol,
                                 char** partFormat)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
+    virPoolObjTablePtr volumes = virStoragePoolObjPrivateGetVolumes(poolobj);
     virPoolObjPtr volobj;
 
-    if (pool->def->source.format == VIR_STORAGE_POOL_DISK_DOS) {
+    if (def->source.format == VIR_STORAGE_POOL_DISK_DOS) {
         const char *partedFormat;
         partedFormat = virStoragePartedFsTypeToString(vol->target.format);
         if (partedFormat == NULL) {
@@ -602,8 +618,8 @@ virStorageBackendDiskPartFormat(virStoragePoolObjPtr pool,
         }
         if (vol->target.format == VIR_STORAGE_VOL_DISK_EXTENDED) {
             /* make sure we don't have an extended partition already */
-            if ((volobj == virPoolObjTableSearch(pool->volumes,
-                                                 volPartFindExtended, NULL))) {
+            if ((volobj == virPoolObjTableSearch(volumes, volPartFindExtended,
+                                                 NULL))) {
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                                _("extended partition already exists"));
                 virPoolObjEndAPI(&volobj);
@@ -617,14 +633,14 @@ virStorageBackendDiskPartFormat(virStoragePoolObjPtr pool,
                and after that check if an extended partition exists
                to create logical partitions. */
             /* XXX Only support one extended partition */
-            switch (virStorageBackendDiskPartTypeToCreate(pool)) {
+            switch (virStorageBackendDiskPartTypeToCreate(poolobj)) {
             case VIR_STORAGE_VOL_DISK_TYPE_PRIMARY:
                 if (virAsprintf(partFormat, "primary %s", partedFormat) < 0)
                     return -1;
                 break;
             case VIR_STORAGE_VOL_DISK_TYPE_LOGICAL:
                 /* make sure we have an extended partition */
-                if ((volobj == virPoolObjTableSearch(pool->volumes,
+                if ((volobj == virPoolObjTableSearch(volumes,
                                                      volPartFindExtended,
                                                      NULL))) {
                     if (virAsprintf(partFormat, "logical %s",
@@ -660,23 +676,24 @@ virStorageBackendDiskPartFormat(virStoragePoolObjPtr pool,
  * partitions
  */
 static int
-virStorageBackendDiskPartBoundaries(virStoragePoolObjPtr pool,
+virStorageBackendDiskPartBoundaries(virPoolObjPtr poolobj,
                                     unsigned long long *start,
                                     unsigned long long *end,
                                     unsigned long long allocation)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     size_t i;
     int smallestExtent = -1;
     unsigned long long smallestSize = 0;
     unsigned long long extraBytes = 0;
     unsigned long long alignedAllocation = allocation;
-    virStoragePoolSourceDevicePtr dev = &pool->def->source.devices[0];
+    virStoragePoolSourceDevicePtr dev = &def->source.devices[0];
     unsigned long long cylinderSize = (unsigned long long)dev->geometry.heads *
                                       dev->geometry.sectors * SECTOR_SIZE;
 
     VIR_DEBUG("find free area: allocation %llu, cyl size %llu", allocation,
           cylinderSize);
-    int partType = virStorageBackendDiskPartTypeToCreate(pool);
+    int partType = virStorageBackendDiskPartTypeToCreate(poolobj);
 
     /* how many extra bytes we have since we allocate
        aligned to the cylinder boundary */
@@ -688,7 +705,7 @@ virStorageBackendDiskPartBoundaries(virStoragePoolObjPtr pool,
              dev->freeExtents[i].start;
          unsigned long long neededSize = allocation;
 
-         if (pool->def->source.format == VIR_STORAGE_POOL_DISK_DOS) {
+         if (def->source.format == VIR_STORAGE_POOL_DISK_DOS) {
              /* align to cylinder boundary */
              neededSize += extraBytes;
              if ((*start % cylinderSize) > extraBytes) {
@@ -736,7 +753,7 @@ virStorageBackendDiskPartBoundaries(virStoragePoolObjPtr pool,
     }
 
     *end = *start + alignedAllocation;
-    if (pool->def->source.format == VIR_STORAGE_POOL_DISK_DOS) {
+    if (def->source.format == VIR_STORAGE_POOL_DISK_DOS) {
         /* adjust our allocation if start is not at a cylinder boundary */
         *end -= (*start % cylinderSize);
     }
@@ -750,7 +767,7 @@ virStorageBackendDiskPartBoundaries(virStoragePoolObjPtr pool,
 
 /* virStorageBackendDiskDeleteVol
  * @conn: Pointer to a libvirt connection
- * @pool: Pointer to the storage pool
+ * @poolobj: Pointer to the storage pool
  * @vol: Pointer to the volume definition
  * @flags: flags (unused for now)
  *
@@ -775,14 +792,15 @@ virStorageBackendDiskPartBoundaries(virStoragePoolObjPtr pool,
  */
 static int
 virStorageBackendDiskDeleteVol(virConnectPtr conn,
-                               virStoragePoolObjPtr pool,
+                               virPoolObjPtr poolobj,
                                virStorageVolDefPtr vol,
                                unsigned int flags)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     char *part_num = NULL;
     char *devpath = NULL;
     char *dev_name;
-    char *src_path = pool->def->source.devices[0].path;
+    char *src_path = def->source.devices[0].path;
     char *srcname = last_component(src_path);
     virCommandPtr cmd = NULL;
     bool isDevMapperDevice;
@@ -852,8 +870,8 @@ virStorageBackendDiskDeleteVol(virConnectPtr conn,
      * virStorageBackendDiskMakeDataVol and trying to redo that logic
      * here is pointless
      */
-    virStoragePoolObjClearVols(pool);
-    if (virStorageBackendDiskRefreshPool(conn, pool) < 0)
+    virStoragePoolObjClearVols(poolobj);
+    if (virStorageBackendDiskRefreshPool(conn, poolobj) < 0)
         goto cleanup;
 
     rc = 0;
@@ -866,14 +884,15 @@ virStorageBackendDiskDeleteVol(virConnectPtr conn,
 
 static int
 virStorageBackendDiskCreateVol(virConnectPtr conn,
-                               virStoragePoolObjPtr pool,
+                               virPoolObjPtr poolobj,
                                virStorageVolDefPtr vol)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     int res = -1;
     char *partFormat = NULL;
     unsigned long long startOffset = 0, endOffset = 0;
     virCommandPtr cmd = virCommandNewArgList(PARTED,
-                                             pool->def->source.devices[0].path,
+                                             def->source.devices[0].path,
                                              "mkpart",
                                              "--script",
                                              NULL);
@@ -885,11 +904,11 @@ virStorageBackendDiskCreateVol(virConnectPtr conn,
         goto cleanup;
     }
 
-    if (virStorageBackendDiskPartFormat(pool, vol, &partFormat) != 0)
+    if (virStorageBackendDiskPartFormat(poolobj, vol, &partFormat) != 0)
         goto cleanup;
     virCommandAddArg(cmd, partFormat);
 
-    if (virStorageBackendDiskPartBoundaries(pool, &startOffset,
+    if (virStorageBackendDiskPartBoundaries(poolobj, &startOffset,
                                             &endOffset,
                                             vol->target.capacity) != 0) {
         goto cleanup;
@@ -905,19 +924,19 @@ virStorageBackendDiskCreateVol(virConnectPtr conn,
     virFileWaitForDevices();
 
     /* Blow away free extent info, as we're about to re-populate it */
-    VIR_FREE(pool->def->source.devices[0].freeExtents);
-    pool->def->source.devices[0].nfreeExtent = 0;
+    VIR_FREE(def->source.devices[0].freeExtents);
+    def->source.devices[0].nfreeExtent = 0;
 
     /* Specifying a target path is meaningless */
     VIR_FREE(vol->target.path);
 
     /* Fetch actual extent info, generate key */
-    if (virStorageBackendDiskReadPartitions(pool, vol) < 0) {
+    if (virStorageBackendDiskReadPartitions(poolobj, vol) < 0) {
         /* Best effort to remove the partition. Ignore any errors
          * since we could be calling this with vol->target.path == NULL
          */
         virErrorPtr save_err = virSaveLastError();
-        ignore_value(virStorageBackendDiskDeleteVol(conn, pool, vol, 0));
+        ignore_value(virStorageBackendDiskDeleteVol(conn, poolobj, vol, 0));
         virSetError(save_err);
         virFreeError(save_err);
         goto cleanup;
@@ -933,7 +952,7 @@ virStorageBackendDiskCreateVol(virConnectPtr conn,
 
 static int
 virStorageBackendDiskBuildVolFrom(virConnectPtr conn,
-                                  virStoragePoolObjPtr pool,
+                                  virPoolObjPtr poolobj,
                                   virStorageVolDefPtr vol,
                                   virStorageVolDefPtr inputvol,
                                   unsigned int flags)
@@ -944,19 +963,20 @@ virStorageBackendDiskBuildVolFrom(virConnectPtr conn,
     if (!build_func)
         return -1;
 
-    return build_func(conn, pool, vol, inputvol, flags);
+    return build_func(conn, poolobj, vol, inputvol, flags);
 }
 
 
 static int
 virStorageBackendDiskVolWipe(virConnectPtr conn,
-                             virStoragePoolObjPtr pool,
+                             virPoolObjPtr poolobj,
                              virStorageVolDefPtr vol,
                              unsigned int algorithm,
                              unsigned int flags)
 {
     if (vol->source.partType != VIR_STORAGE_VOL_DISK_TYPE_EXTENDED)
-        return virStorageBackendVolWipeLocal(conn, pool, vol, algorithm, flags);
+        return virStorageBackendVolWipeLocal(conn, poolobj, vol,
+                                             algorithm, flags);
 
     /* Wiping an extended partition is not support */
     virReportError(VIR_ERR_NO_SUPPORT,

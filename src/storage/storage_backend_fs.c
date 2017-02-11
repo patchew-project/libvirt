@@ -38,7 +38,6 @@
 #include "virerror.h"
 #include "storage_backend_fs.h"
 #include "storage_util.h"
-#include "storage_conf.h"
 #include "virstoragefile.h"
 #include "vircommand.h"
 #include "viralloc.h"
@@ -213,34 +212,36 @@ virStorageBackendFileSystemNetFindPoolSources(virConnectPtr conn ATTRIBUTE_UNUSE
 }
 
 /**
- * @pool storage pool to check FS types
+ * @poolobj: storage pool to check FS types
  *
  * Determine if storage pool FS types are properly set up
  *
  * Return 0 if everything's OK, -1 on error
  */
 static int
-virStorageBackendFileSystemIsValid(virStoragePoolObjPtr pool)
+virStorageBackendFileSystemIsValid(virPoolObjPtr poolobj)
 {
-    if (pool->def->type == VIR_STORAGE_POOL_NETFS) {
-        if (pool->def->source.nhost != 1) {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
+
+    if (def->type == VIR_STORAGE_POOL_NETFS) {
+        if (def->source.nhost != 1) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("expected exactly 1 host for the storage pool"));
             return -1;
         }
-        if (pool->def->source.hosts[0].name == NULL) {
+        if (def->source.hosts[0].name == NULL) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            "%s", _("missing source host"));
             return -1;
         }
-        if (pool->def->source.dir == NULL) {
+        if (def->source.dir == NULL) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            "%s", _("missing source path"));
             return -1;
         }
     } else {
-        if (pool->def->source.ndevice != 1) {
-            if (pool->def->source.ndevice == 0)
+        if (def->source.ndevice != 1) {
+            if (def->source.ndevice == 0)
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                                _("missing source device"));
             else
@@ -256,30 +257,31 @@ virStorageBackendFileSystemIsValid(virStoragePoolObjPtr pool)
 
 /**
  * virStorageBackendFileSystemGetPoolSource
- * @pool: storage pool object pointer
+ * @poolobj: storage pool object pointer
  *
  * Allocate/return a string representing the FS storage pool source.
  * It is up to the caller to VIR_FREE the allocated string
  */
 static char *
-virStorageBackendFileSystemGetPoolSource(virStoragePoolObjPtr pool)
+virStorageBackendFileSystemGetPoolSource(virPoolObjPtr poolobj)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     char *src = NULL;
 
-    if (pool->def->type == VIR_STORAGE_POOL_NETFS) {
-        if (pool->def->source.format == VIR_STORAGE_POOL_NETFS_CIFS) {
+    if (def->type == VIR_STORAGE_POOL_NETFS) {
+        if (def->source.format == VIR_STORAGE_POOL_NETFS_CIFS) {
             if (virAsprintf(&src, "//%s/%s",
-                            pool->def->source.hosts[0].name,
-                            pool->def->source.dir) < 0)
+                            def->source.hosts[0].name,
+                            def->source.dir) < 0)
                 return NULL;
         } else {
             if (virAsprintf(&src, "%s:%s",
-                            pool->def->source.hosts[0].name,
-                            pool->def->source.dir) < 0)
+                            def->source.hosts[0].name,
+                            def->source.dir) < 0)
                 return NULL;
         }
     } else {
-        if (VIR_STRDUP(src, pool->def->source.devices[0].path) < 0)
+        if (VIR_STRDUP(src, def->source.devices[0].path) < 0)
             return NULL;
     }
     return src;
@@ -287,15 +289,16 @@ virStorageBackendFileSystemGetPoolSource(virStoragePoolObjPtr pool)
 
 
 /**
- * @pool storage pool to check for status
+ * @poolobj: storage pool to check for status
  *
  * Determine if a storage pool is already mounted
  *
  * Return 0 if not mounted, 1 if mounted, -1 on error
  */
 static int
-virStorageBackendFileSystemIsMounted(virStoragePoolObjPtr pool)
+virStorageBackendFileSystemIsMounted(virPoolObjPtr poolobj)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     int ret = -1;
     char *src = NULL;
     FILE *mtab;
@@ -311,14 +314,13 @@ virStorageBackendFileSystemIsMounted(virStoragePoolObjPtr pool)
     }
 
     while ((getmntent_r(mtab, &ent, buf, sizeof(buf))) != NULL) {
-        if (!(src = virStorageBackendFileSystemGetPoolSource(pool)))
+        if (!(src = virStorageBackendFileSystemGetPoolSource(poolobj)))
             goto cleanup;
 
         /* compare both mount destinations and sources to be sure the mounted
          * FS pool is really the one we're looking for
          */
-        if ((rc1 = virFileComparePaths(ent.mnt_dir,
-                                       pool->def->target.path)) < 0 ||
+        if ((rc1 = virFileComparePaths(ent.mnt_dir, def->target.path)) < 0 ||
             (rc2 = virFileComparePaths(ent.mnt_fsname, src)) < 0)
             goto cleanup;
 
@@ -339,7 +341,7 @@ virStorageBackendFileSystemIsMounted(virStoragePoolObjPtr pool)
 }
 
 /**
- * @pool storage pool to mount
+ * @poolobj: storage pool to mount
  *
  * Ensure that a FS storage pool is mounted on its target location.
  * If already mounted, this is a no-op
@@ -347,68 +349,69 @@ virStorageBackendFileSystemIsMounted(virStoragePoolObjPtr pool)
  * Returns 0 if successfully mounted, -1 on error
  */
 static int
-virStorageBackendFileSystemMount(virStoragePoolObjPtr pool)
+virStorageBackendFileSystemMount(virPoolObjPtr poolobj)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     char *src = NULL;
     /* 'mount -t auto' doesn't seem to auto determine nfs (or cifs),
      *  while plain 'mount' does. We have to craft separate argvs to
      *  accommodate this */
-    bool netauto = (pool->def->type == VIR_STORAGE_POOL_NETFS &&
-                    pool->def->source.format == VIR_STORAGE_POOL_NETFS_AUTO);
-    bool glusterfs = (pool->def->type == VIR_STORAGE_POOL_NETFS &&
-                      pool->def->source.format == VIR_STORAGE_POOL_NETFS_GLUSTERFS);
-    bool cifsfs = (pool->def->type == VIR_STORAGE_POOL_NETFS &&
-                   pool->def->source.format == VIR_STORAGE_POOL_NETFS_CIFS);
+    bool netauto = (def->type == VIR_STORAGE_POOL_NETFS &&
+                    def->source.format == VIR_STORAGE_POOL_NETFS_AUTO);
+    bool glusterfs = (def->type == VIR_STORAGE_POOL_NETFS &&
+                      def->source.format == VIR_STORAGE_POOL_NETFS_GLUSTERFS);
+    bool cifsfs = (def->type == VIR_STORAGE_POOL_NETFS &&
+                   def->source.format == VIR_STORAGE_POOL_NETFS_CIFS);
     virCommandPtr cmd = NULL;
     int ret = -1;
     int rc;
 
-    if (virStorageBackendFileSystemIsValid(pool) < 0)
+    if (virStorageBackendFileSystemIsValid(poolobj) < 0)
         return -1;
 
-    if ((rc = virStorageBackendFileSystemIsMounted(pool)) < 0)
+    if ((rc = virStorageBackendFileSystemIsMounted(poolobj)) < 0)
         return -1;
 
     /* Short-circuit if already mounted */
     if (rc == 1) {
-        VIR_INFO("Target '%s' is already mounted", pool->def->target.path);
+        VIR_INFO("Target '%s' is already mounted", def->target.path);
         return 0;
     }
 
-    if (!(src = virStorageBackendFileSystemGetPoolSource(pool)))
+    if (!(src = virStorageBackendFileSystemGetPoolSource(poolobj)))
         return -1;
 
     if (netauto)
         cmd = virCommandNewArgList(MOUNT,
                                    src,
-                                   pool->def->target.path,
+                                   def->target.path,
                                    NULL);
     else if (glusterfs)
         cmd = virCommandNewArgList(MOUNT,
                                    "-t",
-                                   virStoragePoolFormatFileSystemNetTypeToString(pool->def->source.format),
+                                   virStoragePoolFormatFileSystemNetTypeToString(def->source.format),
                                    src,
                                    "-o",
                                    "direct-io-mode=1",
-                                   pool->def->target.path,
+                                   def->target.path,
                                    NULL);
     else if (cifsfs)
         cmd = virCommandNewArgList(MOUNT,
                                    "-t",
-                                   virStoragePoolFormatFileSystemNetTypeToString(pool->def->source.format),
+                                   virStoragePoolFormatFileSystemNetTypeToString(def->source.format),
                                    src,
-                                   pool->def->target.path,
+                                   def->target.path,
                                    "-o",
                                    "guest",
                                    NULL);
     else
         cmd = virCommandNewArgList(MOUNT,
                                    "-t",
-                                   (pool->def->type == VIR_STORAGE_POOL_FS ?
-                                    virStoragePoolFormatFileSystemTypeToString(pool->def->source.format) :
-                                    virStoragePoolFormatFileSystemNetTypeToString(pool->def->source.format)),
+                                   (def->type == VIR_STORAGE_POOL_FS ?
+                                    virStoragePoolFormatFileSystemTypeToString(def->source.format) :
+                                    virStoragePoolFormatFileSystemNetTypeToString(def->source.format)),
                                    src,
-                                   pool->def->target.path,
+                                   def->target.path,
                                    NULL);
 
     if (virCommandRun(cmd, NULL) < 0)
@@ -424,7 +427,7 @@ virStorageBackendFileSystemMount(virStoragePoolObjPtr pool)
 
 /**
  * @conn connection to report errors against
- * @pool storage pool to start
+ * @poolobj: storage pool to start
  *
  * Starts a directory or FS based storage pool.  The underlying source
  * device will be mounted for FS based pools.
@@ -433,10 +436,11 @@ virStorageBackendFileSystemMount(virStoragePoolObjPtr pool)
  */
 static int
 virStorageBackendFileSystemStart(virConnectPtr conn ATTRIBUTE_UNUSED,
-                                 virStoragePoolObjPtr pool)
+                                 virPoolObjPtr poolobj)
 {
-    if (pool->def->type != VIR_STORAGE_POOL_DIR &&
-        virStorageBackendFileSystemMount(pool) < 0)
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
+    if (def->type != VIR_STORAGE_POOL_DIR &&
+        virStorageBackendFileSystemMount(poolobj) < 0)
         return -1;
 
     return 0;
@@ -445,7 +449,7 @@ virStorageBackendFileSystemStart(virConnectPtr conn ATTRIBUTE_UNUSED,
 
 /**
  * @conn connection to report errors against
- * @pool storage pool to unmount
+ * @poolobj: storage pool to unmount
  *
  * Stops a file storage pool.  The underlying source device is unmounted
  * for FS based pools.  Any cached data about volumes is released.
@@ -457,20 +461,21 @@ virStorageBackendFileSystemStart(virConnectPtr conn ATTRIBUTE_UNUSED,
  */
 static int
 virStorageBackendFileSystemStop(virConnectPtr conn ATTRIBUTE_UNUSED,
-                                virStoragePoolObjPtr pool)
+                                virPoolObjPtr poolobj)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     virCommandPtr cmd = NULL;
     int ret = -1;
     int rc;
 
-    if (virStorageBackendFileSystemIsValid(pool) < 0)
+    if (virStorageBackendFileSystemIsValid(poolobj) < 0)
         return -1;
 
     /* Short-circuit if already unmounted */
-    if ((rc = virStorageBackendFileSystemIsMounted(pool)) != 1)
+    if ((rc = virStorageBackendFileSystemIsMounted(poolobj)) != 1)
         return rc;
 
-    cmd = virCommandNewArgList(UMOUNT, pool->def->target.path, NULL);
+    cmd = virCommandNewArgList(UMOUNT, def->target.path, NULL);
     if (virCommandRun(cmd, NULL) < 0)
         goto cleanup;
 
@@ -483,20 +488,22 @@ virStorageBackendFileSystemStop(virConnectPtr conn ATTRIBUTE_UNUSED,
 
 
 static int
-virStorageBackendFileSystemCheck(virStoragePoolObjPtr pool,
+virStorageBackendFileSystemCheck(virPoolObjPtr poolobj,
                                  bool *isActive)
 {
-    if (pool->def->type == VIR_STORAGE_POOL_DIR) {
-        *isActive = virFileExists(pool->def->target.path);
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
+
+    if (def->type == VIR_STORAGE_POOL_DIR) {
+        *isActive = virFileExists(def->target.path);
 #if WITH_STORAGE_FS
     } else {
         int ret;
         *isActive = false;
 
-        if (virStorageBackendFileSystemIsValid(pool) < 0)
+        if (virStorageBackendFileSystemIsValid(poolobj) < 0)
             return -1;
 
-        if ((ret = virStorageBackendFileSystemIsMounted(pool)) != 0) {
+        if ((ret = virStorageBackendFileSystemIsMounted(poolobj)) != 0) {
             if (ret < 0)
                 return -1;
             *isActive = true;
@@ -506,6 +513,7 @@ virStorageBackendFileSystemCheck(virStoragePoolObjPtr pool,
 
     return 0;
 }
+
 
 /* some platforms don't support mkfs */
 #ifdef MKFS
@@ -558,28 +566,29 @@ virStorageBackendExecuteMKFS(const char *device ATTRIBUTE_UNUSED,
 #endif /* #ifdef MKFS */
 
 static int
-virStorageBackendMakeFileSystem(virStoragePoolObjPtr pool,
+virStorageBackendMakeFileSystem(virPoolObjPtr poolobj,
                                 unsigned int flags)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     const char *device = NULL, *format = NULL;
     bool ok_to_mkfs = false;
     int ret = -1;
 
-    if (pool->def->source.devices == NULL) {
+    if (def->source.devices == NULL) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        _("No source device specified when formatting pool '%s'"),
-                       pool->def->name);
+                       def->name);
         goto error;
     }
 
-    device = pool->def->source.devices[0].path;
-    format = virStoragePoolFormatFileSystemTypeToString(pool->def->source.format);
+    device = def->source.devices[0].path;
+    format = virStoragePoolFormatFileSystemTypeToString(def->source.format);
     VIR_DEBUG("source device: '%s' format: '%s'", device, format);
 
     if (!virFileExists(device)) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        _("Source device does not exist when formatting pool '%s'"),
-                       pool->def->name);
+                       def->name);
         goto error;
     }
 
@@ -600,7 +609,7 @@ virStorageBackendMakeFileSystem(virStoragePoolObjPtr pool,
 
 /**
  * @conn connection to report errors against
- * @pool storage pool to build
+ * @poolobj: storage pool to build
  * @flags controls the pool formatting behaviour
  *
  * Build a directory or FS based storage pool.
@@ -621,7 +630,7 @@ virStorageBackendMakeFileSystem(virStoragePoolObjPtr pool,
  */
 static int
 virStorageBackendFileSystemBuild(virConnectPtr conn ATTRIBUTE_UNUSED,
-                                 virStoragePoolObjPtr pool,
+                                 virPoolObjPtr poolobj,
                                  unsigned int flags)
 {
     virCheckFlags(VIR_STORAGE_POOL_BUILD_OVERWRITE |
@@ -631,11 +640,11 @@ virStorageBackendFileSystemBuild(virConnectPtr conn ATTRIBUTE_UNUSED,
                             VIR_STORAGE_POOL_BUILD_NO_OVERWRITE,
                             -1);
 
-    if (virStorageBackendBuildLocal(pool) < 0)
+    if (virStorageBackendBuildLocal(poolobj) < 0)
         return -1;
 
     if (flags != 0)
-        return virStorageBackendMakeFileSystem(pool, flags);
+        return virStorageBackendMakeFileSystem(poolobj, flags);
 
     return 0;
 }

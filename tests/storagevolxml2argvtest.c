@@ -5,6 +5,7 @@
 #include "datatypes.h"
 #include "storage/storage_util.h"
 #include "testutilsqemu.h"
+#include "virpoolobj.h"
 #include "virstring.h"
 
 #define VIR_FROM_THIS VIR_FROM_NONE
@@ -52,7 +53,8 @@ testCompareXMLToArgvFiles(bool shouldFail,
     virStorageVolDefPtr vol = NULL, inputvol = NULL;
     virStoragePoolDefPtr pool = NULL;
     virStoragePoolDefPtr inputpool = NULL;
-    virStoragePoolObj poolobj = {.def = NULL };
+    virPoolObjPtr poolobj = NULL;
+    virStoragePoolDefPtr pooldef;
 
 
     if (!(conn = virGetConnect()))
@@ -61,7 +63,10 @@ testCompareXMLToArgvFiles(bool shouldFail,
     if (!(pool = virStoragePoolDefParseFile(poolxml)))
         goto cleanup;
 
-    poolobj.def = pool;
+    if (!(poolobj = virPoolObjNew(NULL, pool, NULL, virStoragePoolDefFree)))
+        goto cleanup;
+    virObjectRef(poolobj);
+    VIR_STEAL_PTR(pooldef, pool);
 
     if (inputpoolxml) {
         if (!(inputpool = virStoragePoolDefParseFile(inputpoolxml)))
@@ -71,17 +76,17 @@ testCompareXMLToArgvFiles(bool shouldFail,
     if (inputvolxml)
         parse_flags |= VIR_VOL_XML_PARSE_NO_CAPACITY;
 
-    if (!(vol = virStorageVolDefParseFile(pool, volxml, parse_flags)))
+    if (!(vol = virStorageVolDefParseFile(pooldef, volxml, parse_flags)))
         goto cleanup;
 
     if (inputvolxml &&
         !(inputvol = virStorageVolDefParseFile(inputpool, inputvolxml, 0)))
         goto cleanup;
 
-    testSetVolumeType(vol, pool);
+    testSetVolumeType(vol, pooldef);
     testSetVolumeType(inputvol, inputpool);
 
-    cmd = virStorageBackendCreateQemuImgCmdFromVol(conn, &poolobj, vol,
+    cmd = virStorageBackendCreateQemuImgCmdFromVol(conn, poolobj, vol,
                                                    inputvol, flags,
                                                    create_tool, imgformat,
                                                    NULL);
@@ -103,6 +108,7 @@ testCompareXMLToArgvFiles(bool shouldFail,
 
  cleanup:
     virStoragePoolDefFree(pool);
+    virObjectUnref(poolobj);
     virStoragePoolDefFree(inputpool);
     virStorageVolDefFree(vol);
     virStorageVolDefFree(inputvol);

@@ -30,7 +30,6 @@
 #include <libdevmapper.h>
 
 #include "virerror.h"
-#include "storage_conf.h"
 #include "storage_backend.h"
 #include "viralloc.h"
 #include "virlog.h"
@@ -43,10 +42,11 @@
 VIR_LOG_INIT("storage.storage_backend_mpath");
 
 static int
-virStorageBackendMpathNewVol(virStoragePoolObjPtr pool,
+virStorageBackendMpathNewVol(virPoolObjPtr poolobj,
                              const int devnum,
                              const char *dev)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     virStorageVolDefPtr vol;
     virPoolObjPtr volobj;
     int ret = -1;
@@ -71,14 +71,14 @@ virStorageBackendMpathNewVol(virStoragePoolObjPtr pool,
     if (VIR_STRDUP(vol->key, vol->target.path) < 0)
         goto cleanup;
 
-    if (!(volobj = virStoragePoolObjAddVolume(pool, vol)))
+    if (!(volobj = virStoragePoolObjAddVolume(poolobj, vol)))
         goto cleanup;
 
     vol = NULL;
     virPoolObjEndAPI(&volobj);
 
-    pool->def->capacity += vol->target.capacity;
-    pool->def->allocation += vol->target.allocation;
+    def->capacity += vol->target.capacity;
+    def->allocation += vol->target.allocation;
     ret = 0;
 
  cleanup:
@@ -160,7 +160,7 @@ virStorageBackendGetMinorNumber(const char *dev_name, uint32_t *minor)
 
 
 static int
-virStorageBackendCreateVols(virStoragePoolObjPtr pool,
+virStorageBackendCreateVols(virPoolObjPtr poolobj,
                             struct dm_names *names)
 {
     int retval = -1, is_mpath = 0;
@@ -186,7 +186,7 @@ virStorageBackendCreateVols(virStoragePoolObjPtr pool,
                 goto out;
             }
 
-            if (virStorageBackendMpathNewVol(pool, minor, map_device) < 0)
+            if (virStorageBackendMpathNewVol(poolobj, minor, map_device) < 0)
                 goto out;
 
             VIR_FREE(map_device);
@@ -208,7 +208,7 @@ virStorageBackendCreateVols(virStoragePoolObjPtr pool,
 
 
 static int
-virStorageBackendGetMaps(virStoragePoolObjPtr pool)
+virStorageBackendGetMaps(virPoolObjPtr poolobj)
 {
     int retval = 0;
     struct dm_task *dmt = NULL;
@@ -236,7 +236,7 @@ virStorageBackendGetMaps(virStoragePoolObjPtr pool)
         goto out;
     }
 
-    virStorageBackendCreateVols(pool, names);
+    virStorageBackendCreateVols(poolobj, names);
 
  out:
     if (dmt != NULL)
@@ -245,7 +245,7 @@ virStorageBackendGetMaps(virStoragePoolObjPtr pool)
 }
 
 static int
-virStorageBackendMpathCheckPool(virStoragePoolObjPtr pool ATTRIBUTE_UNUSED,
+virStorageBackendMpathCheckPool(virPoolObjPtr poolobj ATTRIBUTE_UNUSED,
                                 bool *isActive)
 {
     *isActive = virFileExists("/dev/mapper") ||
@@ -257,17 +257,18 @@ virStorageBackendMpathCheckPool(virStoragePoolObjPtr pool ATTRIBUTE_UNUSED,
 
 static int
 virStorageBackendMpathRefreshPool(virConnectPtr conn ATTRIBUTE_UNUSED,
-                                  virStoragePoolObjPtr pool)
+                                  virPoolObjPtr poolobj)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     int retval = 0;
 
-    VIR_DEBUG("conn=%p, pool=%p", conn, pool);
+    VIR_DEBUG("conn=%p, obj=%p", conn, poolobj);
 
-    pool->def->allocation = pool->def->capacity = pool->def->available = 0;
+    def->allocation = def->capacity = def->available = 0;
 
     virFileWaitForDevices();
 
-    virStorageBackendGetMaps(pool);
+    virStorageBackendGetMaps(poolobj);
 
     return retval;
 }

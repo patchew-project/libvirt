@@ -24,7 +24,6 @@
 #include <glusterfs/api/glfs.h>
 
 #include "storage_backend_gluster.h"
-#include "storage_conf.h"
 #include "viralloc.h"
 #include "virerror.h"
 #include "virlog.h"
@@ -71,11 +70,12 @@ virStorageBackendGlusterClose(virStorageBackendGlusterStatePtr state)
 }
 
 static virStorageBackendGlusterStatePtr
-virStorageBackendGlusterOpen(virStoragePoolObjPtr pool)
+virStorageBackendGlusterOpen(virPoolObjPtr poolobj)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     virStorageBackendGlusterStatePtr ret = NULL;
-    const char *name = pool->def->source.name;
-    const char *dir = pool->def->source.dir;
+    const char *name = def->source.name;
+    const char *dir = def->source.dir;
     bool trailing_slash = true;
 
     /* Volume name must not contain '/'; optional path allows use of a
@@ -112,11 +112,11 @@ virStorageBackendGlusterOpen(virStoragePoolObjPtr pool)
         goto error;
     if (VIR_STRDUP(ret->uri->scheme, "gluster") < 0)
         goto error;
-    if (VIR_STRDUP(ret->uri->server, pool->def->source.hosts[0].name) < 0)
+    if (VIR_STRDUP(ret->uri->server, def->source.hosts[0].name) < 0)
         goto error;
     if (virAsprintf(&ret->uri->path, "/%s%s", ret->volname, ret->dir) < 0)
         goto error;
-    ret->uri->port = pool->def->source.hosts[0].port;
+    ret->uri->port = def->source.hosts[0].port;
 
     /* Actually connect to glfs */
     if (!(ret->vol = glfs_new(ret->volname))) {
@@ -339,8 +339,9 @@ virStorageBackendGlusterRefreshVol(virStorageBackendGlusterStatePtr state,
 
 static int
 virStorageBackendGlusterRefreshPool(virConnectPtr conn ATTRIBUTE_UNUSED,
-                                    virStoragePoolObjPtr pool)
+                                    virPoolObjPtr poolobj)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     int ret = -1;
     virStorageBackendGlusterStatePtr state = NULL;
     struct {
@@ -354,7 +355,7 @@ virStorageBackendGlusterRefreshPool(virConnectPtr conn ATTRIBUTE_UNUSED,
     struct stat st;
     struct statvfs sb;
 
-    if (!(state = virStorageBackendGlusterOpen(pool)))
+    if (!(state = virStorageBackendGlusterOpen(poolobj)))
         goto cleanup;
 
     /* Why oh why did glfs 3.4 decide to expose only readdir_r rather
@@ -388,7 +389,7 @@ virStorageBackendGlusterRefreshPool(virConnectPtr conn ATTRIBUTE_UNUSED,
         if (!vol)
             continue;
 
-        if (!(volobj = virStoragePoolObjAddVolume(pool, vol))) {
+        if (!(volobj = virStoragePoolObjAddVolume(poolobj, vol))) {
             virStorageVolDefFree(vol);
             goto cleanup;
         }
@@ -406,11 +407,11 @@ virStorageBackendGlusterRefreshPool(virConnectPtr conn ATTRIBUTE_UNUSED,
         goto cleanup;
     }
 
-    pool->def->capacity = ((unsigned long long)sb.f_frsize *
-                           (unsigned long long)sb.f_blocks);
-    pool->def->available = ((unsigned long long)sb.f_bfree *
-                            (unsigned long long)sb.f_frsize);
-    pool->def->allocation = pool->def->capacity - pool->def->available;
+    def->capacity = ((unsigned long long)sb.f_frsize *
+                     (unsigned long long)sb.f_blocks);
+    def->available = ((unsigned long long)sb.f_bfree *
+                      (unsigned long long)sb.f_frsize);
+    def->allocation = def->capacity - def->available;
 
     ret = 0;
  cleanup:
@@ -418,14 +419,14 @@ virStorageBackendGlusterRefreshPool(virConnectPtr conn ATTRIBUTE_UNUSED,
         glfs_closedir(dir);
     virStorageBackendGlusterClose(state);
     if (ret < 0)
-        virStoragePoolObjClearVols(pool);
+        virStoragePoolObjClearVols(poolobj);
     return ret;
 }
 
 
 static int
 virStorageBackendGlusterVolDelete(virConnectPtr conn ATTRIBUTE_UNUSED,
-                                  virStoragePoolObjPtr pool,
+                                  virPoolObjPtr poolobj,
                                   virStorageVolDefPtr vol,
                                   unsigned int flags)
 {
@@ -449,7 +450,7 @@ virStorageBackendGlusterVolDelete(virConnectPtr conn ATTRIBUTE_UNUSED,
         break;
 
     case VIR_STORAGE_VOL_NETWORK:
-        if (!(state = virStorageBackendGlusterOpen(pool)))
+        if (!(state = virStorageBackendGlusterOpen(poolobj)))
             goto cleanup;
 
         if (glfs_unlink(state->vol, vol->name) < 0) {
@@ -463,7 +464,7 @@ virStorageBackendGlusterVolDelete(virConnectPtr conn ATTRIBUTE_UNUSED,
         break;
 
     case VIR_STORAGE_VOL_NETDIR:
-        if (!(state = virStorageBackendGlusterOpen(pool)))
+        if (!(state = virStorageBackendGlusterOpen(poolobj)))
             goto cleanup;
 
         if (glfs_rmdir(state->vol, vol->target.path) < 0) {

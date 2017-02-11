@@ -57,7 +57,7 @@ int virStorageFileGetMetadata(virStorageSourcePtr src,
 int virStorageTranslateDiskSourcePool(virConnectPtr conn,
                                       virDomainDiskDefPtr def);
 
-virStoragePoolObjPtr virStoragePoolObjFindPoolByUUID(const unsigned char *uuid)
+virPoolObjPtr virStoragePoolObjFindPoolByUUID(const unsigned char *uuid)
     ATTRIBUTE_NONNULL(1);
 
 virStoragePoolPtr
@@ -65,8 +65,8 @@ storagePoolLookupByTargetPath(virConnectPtr conn,
                               const char *path)
     ATTRIBUTE_NONNULL(2);
 
-char *virStoragePoolObjBuildTempFilePath(virStoragePoolObjPtr pool,
-                                         virStorageVolDefPtr vol)
+char *virStoragePoolBuildTempFilePath(virStoragePoolDefPtr def,
+                                      virStorageVolDefPtr vol)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
 
 int storageRegister(void);

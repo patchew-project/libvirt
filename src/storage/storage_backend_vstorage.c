@@ -18,7 +18,7 @@ VIR_LOG_INIT("storage.storage_backend_vstorage");
 
 /**
  * @conn connection to report errors against
- * @pool storage pool to build
+ * @poolobj storage pool object to build
  * @flags controls the pool formatting behaviour
  *
  * Does not support @flags, if provided an error will occur.
@@ -27,19 +27,20 @@ VIR_LOG_INIT("storage.storage_backend_vstorage");
  */
 static int
 virStorageBackendVzPoolBuild(virConnectPtr conn ATTRIBUTE_UNUSED,
-                             virStoragePoolObjPtr pool,
+                             virPoolObjPtr poolobj,
                              unsigned int flags)
 {
     virCheckFlags(0, -1);
 
-    return virStorageBackendBuildLocal(pool);
+    return virStorageBackendBuildLocal(poolobj);
 }
 
 
 static int
 virStorageBackendVzPoolStart(virConnectPtr conn ATTRIBUTE_UNUSED,
-                             virStoragePoolObjPtr pool)
+                             virPoolObjPtr poolobj)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     int ret = -1;
     virCommandPtr cmd = NULL;
     char *grp_name = NULL;
@@ -47,27 +48,27 @@ virStorageBackendVzPoolStart(virConnectPtr conn ATTRIBUTE_UNUSED,
     char *mode = NULL;
 
     /* Check the permissions */
-    if (pool->def->target.perms.mode == (mode_t) - 1)
-        pool->def->target.perms.mode = VIR_STORAGE_DEFAULT_POOL_PERM_MODE;
-    if (pool->def->target.perms.uid == (uid_t) -1)
-        pool->def->target.perms.uid = geteuid();
-    if (pool->def->target.perms.gid == (gid_t) -1)
-        pool->def->target.perms.gid = getegid();
+    if (def->target.perms.mode == (mode_t) - 1)
+        def->target.perms.mode = VIR_STORAGE_DEFAULT_POOL_PERM_MODE;
+    if (def->target.perms.uid == (uid_t) -1)
+        def->target.perms.uid = geteuid();
+    if (def->target.perms.gid == (gid_t) -1)
+        def->target.perms.gid = getegid();
 
     /* Convert ids to names because vstorage uses names */
 
-    if (!(grp_name = virGetGroupName(pool->def->target.perms.gid)))
+    if (!(grp_name = virGetGroupName(def->target.perms.gid)))
         goto cleanup;
 
-    if (!(usr_name = virGetUserName(pool->def->target.perms.uid)))
+    if (!(usr_name = virGetUserName(def->target.perms.uid)))
         goto cleanup;
 
-    if (virAsprintf(&mode, "%o", pool->def->target.perms.mode) < 0)
+    if (virAsprintf(&mode, "%o", def->target.perms.mode) < 0)
         goto cleanup;
 
     cmd = virCommandNewArgList(VSTORAGE_MOUNT,
-                               "-c", pool->def->source.name,
-                               pool->def->target.path,
+                               "-c", def->source.name,
+                               def->target.path,
                                "-m", mode,
                                "-g", grp_name, "-u", usr_name,
                                NULL);
@@ -86,8 +87,9 @@ virStorageBackendVzPoolStart(virConnectPtr conn ATTRIBUTE_UNUSED,
 
 
 static int
-virStorageBackendVzIsMounted(virStoragePoolObjPtr pool)
+virStorageBackendVzIsMounted(virPoolObjPtr poolobj)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     int ret = -1;
     FILE *mtab;
     struct mntent ent;
@@ -106,7 +108,7 @@ virStorageBackendVzIsMounted(virStoragePoolObjPtr pool)
 
     while ((getmntent_r(mtab, &ent, buf, sizeof(buf))) != NULL) {
 
-        if (STREQ(ent.mnt_dir, pool->def->target.path) &&
+        if (STREQ(ent.mnt_dir, def->target.path) &&
             STREQ(ent.mnt_fsname, cluster)) {
             ret = 1;
             goto cleanup;
@@ -124,17 +126,18 @@ virStorageBackendVzIsMounted(virStoragePoolObjPtr pool)
 
 static int
 virStorageBackendVzPoolStop(virConnectPtr conn ATTRIBUTE_UNUSED,
-                            virStoragePoolObjPtr pool)
+                            virPoolObjPtr poolobj)
 {
+    virStoragePoolDefPtr def = virPoolObjGetDef(poolobj);
     virCommandPtr cmd = NULL;
     int ret = -1;
     int rc;
 
     /* Short-circuit if already unmounted */
-    if ((rc = virStorageBackendVzIsMounted(pool)) != 1)
+    if ((rc = virStorageBackendVzIsMounted(poolobj)) != 1)
         return rc;
 
-    cmd = virCommandNewArgList(UMOUNT, pool->def->target.path, NULL);
+    cmd = virCommandNewArgList(UMOUNT, def->target.path, NULL);
     if (virCommandRun(cmd, NULL) < 0)
         goto cleanup;
 
@@ -149,12 +152,12 @@ virStorageBackendVzPoolStop(virConnectPtr conn ATTRIBUTE_UNUSED,
  * Check whether the cluster is mounted
  */
 static int
-virStorageBackendVzCheck(virStoragePoolObjPtr pool,
+virStorageBackendVzCheck(virPoolObjPtr poolobj,
                          bool *isActive)
 {
     int ret = -1;
     *isActive = false;
-    if ((ret = virStorageBackendVzIsMounted(pool)) != 0) {
+    if ((ret = virStorageBackendVzIsMounted(poolobj)) != 0) {
         if (ret < 0)
             return -1;
         *isActive = true;
