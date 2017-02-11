@@ -29,13 +29,14 @@
 # include "virdnsmasq.h"
 # include "network_conf.h"
 # include "object_event.h"
+# include "virpoolobj.h"
 
 /* Main driver state */
 struct _virNetworkDriverState {
     virMutex lock;
 
     /* Immutable pointer, self-locking APIs */
-    virNetworkObjListPtr networks;
+    virPoolObjTablePtr networks;
 
     /* Immutable pointers, Immutable objects */
     char *networkConfigDir;

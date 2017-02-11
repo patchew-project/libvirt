@@ -620,11 +620,8 @@ virNetDevVPortTypeToString;
 
 
 # conf/network_conf.h
-virNetworkAssignDef;
-virNetworkBridgeInUse;
 virNetworkBridgeMACTableManagerTypeFromString;
 virNetworkBridgeMACTableManagerTypeToString;
-virNetworkConfigChangeSetup;
 virNetworkConfigFile;
 virNetworkDefCopy;
 virNetworkDefFormat;
@@ -636,35 +633,12 @@ virNetworkDefGetRouteByIndex;
 virNetworkDefParseFile;
 virNetworkDefParseNode;
 virNetworkDefParseString;
+virNetworkDefParseXML;
 virNetworkDefUpdateSection;
-virNetworkDeleteConfig;
 virNetworkForwardTypeToString;
 virNetworkIPDefNetmask;
 virNetworkIPDefPrefix;
-virNetworkLoadAllConfigs;
-virNetworkLoadAllState;
-virNetworkObjAssignDef;
-virNetworkObjEndAPI;
-virNetworkObjFindByName;
-virNetworkObjFindByNameLocked;
-virNetworkObjFindByUUID;
-virNetworkObjFindByUUIDLocked;
-virNetworkObjGetPersistentDef;
-virNetworkObjListExport;
-virNetworkObjListForEach;
-virNetworkObjListGetNames;
-virNetworkObjListNew;
-virNetworkObjListNumOfNetworks;
-virNetworkObjListPrune;
-virNetworkObjNew;
-virNetworkObjReplacePersistentDef;
-virNetworkObjSetDefTransient;
-virNetworkObjTaint;
-virNetworkObjUnsetDefTransient;
-virNetworkObjUpdate;
-virNetworkRemoveInactive;
 virNetworkSaveConfig;
-virNetworkSaveStatus;
 virNetworkSetBridgeMacAddr;
 virNetworkTaintTypeFromString;
 virNetworkTaintTypeToString;
@@ -918,6 +892,38 @@ virInterfaceObjClone;
 virInterfaceObjFindByMACString;
 virInterfaceObjGetNames;
 virInterfaceObjNumOfInterfaces;
+
+
+# conf/virnetworkobj.h
+virNetworkObjAdd;
+virNetworkObjAssignDef;
+virNetworkObjBridgeInUse;
+virNetworkObjDeleteConfig;
+virNetworkObjExportList;
+virNetworkObjGetNames;
+virNetworkObjGetPersistentDef;
+virNetworkObjLoadAllConfigs;
+virNetworkObjLoadAllState;
+virNetworkObjNumOfNetworks;
+virNetworkObjPrivateGetClassId;
+virNetworkObjPrivateGetDnsmasqPid;
+virNetworkObjPrivateGetFloorSum;
+virNetworkObjPrivateGetMacMap;
+virNetworkObjPrivateGetRadvdPid;
+virNetworkObjPrivateGetTaint;
+virNetworkObjPrivateIsTaint;
+virNetworkObjPrivateSetClassId;
+virNetworkObjPrivateSetDnsmasqPid;
+virNetworkObjPrivateSetFloorSum;
+virNetworkObjPrivateSetMacMap;
+virNetworkObjPrivateSetRadvdPid;
+virNetworkObjPrivateSetTaint;
+virNetworkObjPrune;
+virNetworkObjReplacePersistentDef;
+virNetworkObjSaveStatus;
+virNetworkObjSetDefTransient;
+virNetworkObjUnsetDefTransient;
+virNetworkObjUpdate;
 
 
 # conf/virnodedeviceobj.h

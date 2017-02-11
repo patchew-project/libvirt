@@ -30,6 +30,7 @@
 # include "domain_conf.h"
 # include "vircommand.h"
 # include "virdnsmasq.h"
+# include "virpoolobj.h"
 
 int networkRegister(void);
 
@@ -50,11 +51,11 @@ int networkGetNetworkAddress(const char *netname, char **netaddr)
 int networkGetActualType(virDomainNetDefPtr iface)
     ATTRIBUTE_NONNULL(1);
 
-int networkDnsmasqConfContents(virNetworkObjPtr network,
-                        const char *pidfile,
-                        char **configstr,
-                        dnsmasqContext *dctx,
-                        dnsmasqCapsPtr caps);
+int networkDnsmasqConfContents(virPoolObjPtr obj,
+                               const char *pidfile,
+                               char **configstr,
+                               dnsmasqContext *dctx,
+                               dnsmasqCapsPtr caps);
 
 bool networkBandwidthChangeAllowed(virDomainNetDefPtr iface,
                                    virNetDevBandwidthPtr newBandwidth)
