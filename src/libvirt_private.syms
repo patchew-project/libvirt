@@ -961,6 +961,39 @@ virDomainObjListRemoveLocked;
 virDomainObjListRename;
 
 
+# conf/virpoolobj.h
+virPoolObjEndAPI;
+virPoolObjGetDef;
+virPoolObjGetNewDef;
+virPoolObjGetPrivateData;
+virPoolObjIsActive;
+virPoolObjIsAutostart;
+virPoolObjIsBeingRemoved;
+virPoolObjIsPersistent;
+virPoolObjNew;
+virPoolObjSetActive;
+virPoolObjSetAutostart;
+virPoolObjSetBeingRemoved;
+virPoolObjSetDef;
+virPoolObjSetNewDef;
+virPoolObjSetPersistent;
+virPoolObjSetPrivateData;
+virPoolObjTableAdd;
+virPoolObjTableClearAll;
+virPoolObjTableClone;
+virPoolObjTableCollect;
+virPoolObjTableFindByName;
+virPoolObjTableFindByUUID;
+virPoolObjTableFindByUUIDRef;
+virPoolObjTableIterate;
+virPoolObjTableList;
+virPoolObjTableNew;
+virPoolObjTablePrune;
+virPoolObjTableRemove;
+virPoolObjTableSearch;
+virPoolObjTableSearchRef;
+
+
 # conf/virsecretobj.h
 virSecretLoadAllConfigs;
 virSecretObjDeleteConfig;

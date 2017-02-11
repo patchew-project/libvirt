@@ -373,6 +373,10 @@ NWFILTER_CONF_SOURCES =						\
 		$(NWFILTER_PARAM_CONF_SOURCES)			\
 		conf/nwfilter_conf.c conf/nwfilter_conf.h
 
+# "Generic" poolobj sources
+POOLOBJ_SOURCES =						\
+		conf/virpoolobj.h conf/virpoolobj.c
+
 # Storage driver generic impl APIs
 STORAGE_CONF_SOURCES =                                         \
 		conf/storage_conf.h conf/storage_conf.c
@@ -405,6 +409,7 @@ CONF_SOURCES =							\
 		$(NETDEV_CONF_SOURCES)				\
 		$(DOMAIN_CONF_SOURCES)				\
 		$(OBJECT_EVENT_SOURCES)				\
+		$(POOLOBJ_SOURCES)				\
 		$(DOMAIN_EVENT_SOURCES)				\
 		$(NETWORK_EVENT_SOURCES)			\
 		$(STORAGE_EVENT_SOURCES)			\
