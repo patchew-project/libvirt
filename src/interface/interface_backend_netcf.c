@@ -31,6 +31,7 @@
 #include "interface_conf.h"
 #include "viralloc.h"
 #include "virlog.h"
+#include "virpoolobj.h"
 #include "virstring.h"
 #include "viraccessapicheck.h"
 
@@ -95,6 +96,7 @@ netcfStateInitialize(bool privileged ATTRIBUTE_UNUSED,
         driver = NULL;
         return -1;
     }
+
     return 0;
 }
 
@@ -266,7 +268,7 @@ netcfInterfaceObjIsActive(struct netcf_if *iface,
 
 static int netcfConnectNumOfInterfacesImpl(virConnectPtr conn,
                                            int status,
-                                           virInterfaceObjListFilter filter)
+                                           virPoolObjACLFilter filter)
 {
     int count;
     int want = 0;
@@ -359,7 +361,7 @@ static int netcfConnectNumOfInterfacesImpl(virConnectPtr conn,
 static int netcfConnectListInterfacesImpl(virConnectPtr conn,
                                           int status,
                                           char **const names, int nnames,
-                                          virInterfaceObjListFilter filter)
+                                          virPoolObjACLFilter filter)
 {
     int count = 0;
     int want = 0;

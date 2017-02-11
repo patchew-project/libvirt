@@ -65,6 +65,7 @@
 #include "virauth.h"
 #include "viratomic.h"
 #include "virdomainobjlist.h"
+#include "virinterfaceobj.h"
 #include "virhostcpu.h"
 
 #define VIR_FROM_THIS VIR_FROM_TEST
@@ -96,9 +97,9 @@ struct _testDriver {
     virMutex lock;
 
     virNodeInfo nodeInfo;
-    virInterfaceObjList ifaces;
+    virPoolObjTablePtr ifaces;
     bool transaction_running;
-    virInterfaceObjList backupIfaces;
+    virPoolObjTablePtr backupIfaces;
     virStoragePoolObjList pools;
     virPoolObjTablePtr devs;
     int numCells;
@@ -153,7 +154,8 @@ testDriverFree(testDriverPtr driver)
     virObjectUnref(driver->domains);
     virObjectUnref(driver->devs);
     virObjectUnref(driver->networks);
-    virInterfaceObjListFree(&driver->ifaces);
+    virObjectUnref(driver->ifaces);
+    virObjectUnref(driver->backupIfaces);
     virStoragePoolObjListFree(&driver->pools);
     virObjectUnref(driver->eventState);
     virMutexUnlock(&driver->lock);
@@ -418,6 +420,9 @@ testDriverNew(void)
         !(ret->devs = virPoolObjTableNew(VIR_POOLOBJTABLE_NODEDEVICE,
                                          VIR_POOLOBJTABLE_NODEDEVICE_HASHSTART,
                                          true)) ||
+        !(ret->ifaces = virPoolObjTableNew(VIR_POOLOBJTABLE_INTERFACE,
+                                           VIR_POOLOBJTABLE_INTERFACE_HASHSTART,
+                                           true)) ||
         !(ret->domains = virDomainObjListNew()) ||
         !(ret->networks = virNetworkObjListNew()))
         goto error;
@@ -970,34 +975,33 @@ testParseInterfaces(testDriverPtr privconn,
     int num, ret = -1;
     size_t i;
     xmlNodePtr *nodes = NULL;
-    virInterfaceObjPtr obj;
+    virInterfaceDefPtr def = NULL;
+    xmlNodePtr node;
+    virPoolObjPtr obj;
 
-    num = virXPathNodeSet("/node/interface", ctxt, &nodes);
-    if (num < 0)
+    if ((num = virXPathNodeSet("/node/interface", ctxt, &nodes)) < 0)
         goto error;
 
     for (i = 0; i < num; i++) {
-        virInterfaceDefPtr def;
-        xmlNodePtr node = testParseXMLDocFromFile(nodes[i], file,
-                                                   "interface");
-        if (!node)
+        if (!(node = testParseXMLDocFromFile(nodes[i], file, "interface")))
             goto error;
 
-        def = virInterfaceDefParseNode(ctxt->doc, node);
-        if (!def)
+        if (!(def = virInterfaceDefParseNode(ctxt->doc, node)))
             goto error;
 
-        if (!(obj = virInterfaceAssignDef(&privconn->ifaces, def))) {
-            virInterfaceDefFree(def);
+        if (!(obj = virPoolObjTableAdd(privconn->ifaces, NULL, def->name,
+                                       def, NULL, NULL, virInterfaceDefFree,
+                                       NULL, 0)))
             goto error;
-        }
+        def = NULL;
 
-        obj->active = 1;
-        virInterfaceObjUnlock(obj);
+        virPoolObjSetActive(obj, true);
+        virPoolObjEndAPI(&obj);
     }
 
     ret = 0;
  error:
+    virInterfaceDefFree(def);
     VIR_FREE(nodes);
     return ret;
 }
@@ -3605,133 +3609,94 @@ static int testNetworkSetAutostart(virNetworkPtr network,
  */
 
 
-static int testConnectNumOfInterfaces(virConnectPtr conn)
+static int
+testConnectNumOfInterfaces(virConnectPtr conn)
 {
     testDriverPtr privconn = conn->privateData;
-    size_t i;
-    int count = 0;
 
-    testDriverLock(privconn);
-    for (i = 0; (i < privconn->ifaces.count); i++) {
-        virInterfaceObjLock(privconn->ifaces.objs[i]);
-        if (virInterfaceObjIsActive(privconn->ifaces.objs[i]))
-            count++;
-        virInterfaceObjUnlock(privconn->ifaces.objs[i]);
-    }
-    testDriverUnlock(privconn);
-    return count;
+    return virInterfaceObjNumOfInterfaces(privconn->ifaces, conn, true, NULL);
 }
 
-static int testConnectListInterfaces(virConnectPtr conn, char **const names, int nnames)
+
+static int
+testConnectListInterfaces(virConnectPtr conn,
+                          char **const names,
+                          int maxnames)
 {
     testDriverPtr privconn = conn->privateData;
-    int n = 0;
-    size_t i;
 
-    testDriverLock(privconn);
-    memset(names, 0, sizeof(*names)*nnames);
-    for (i = 0; (i < privconn->ifaces.count) && (n < nnames); i++) {
-        virInterfaceObjLock(privconn->ifaces.objs[i]);
-        if (virInterfaceObjIsActive(privconn->ifaces.objs[i])) {
-            if (VIR_STRDUP(names[n++], privconn->ifaces.objs[i]->def->name) < 0) {
-                virInterfaceObjUnlock(privconn->ifaces.objs[i]);
-                goto error;
-            }
-        }
-        virInterfaceObjUnlock(privconn->ifaces.objs[i]);
-    }
-    testDriverUnlock(privconn);
-
-    return n;
-
- error:
-    for (n = 0; n < nnames; n++)
-        VIR_FREE(names[n]);
-    testDriverUnlock(privconn);
-    return -1;
+    return virInterfaceObjGetNames(privconn->ifaces, conn, true, NULL,
+                                   names, maxnames);
 }
 
-static int testConnectNumOfDefinedInterfaces(virConnectPtr conn)
+
+static int
+testConnectNumOfDefinedInterfaces(virConnectPtr conn)
 {
     testDriverPtr privconn = conn->privateData;
-    size_t i;
-    int count = 0;
 
-    testDriverLock(privconn);
-    for (i = 0; i < privconn->ifaces.count; i++) {
-        virInterfaceObjLock(privconn->ifaces.objs[i]);
-        if (!virInterfaceObjIsActive(privconn->ifaces.objs[i]))
-            count++;
-        virInterfaceObjUnlock(privconn->ifaces.objs[i]);
-    }
-    testDriverUnlock(privconn);
-    return count;
+    return virInterfaceObjNumOfInterfaces(privconn->ifaces, conn, false, NULL);
 }
 
-static int testConnectListDefinedInterfaces(virConnectPtr conn, char **const names, int nnames)
+
+static int
+testConnectListDefinedInterfaces(virConnectPtr conn,
+                                 char **const names,
+                                 int maxnames)
 {
     testDriverPtr privconn = conn->privateData;
-    int n = 0;
-    size_t i;
 
-    testDriverLock(privconn);
-    memset(names, 0, sizeof(*names)*nnames);
-    for (i = 0; (i < privconn->ifaces.count) && (n < nnames); i++) {
-        virInterfaceObjLock(privconn->ifaces.objs[i]);
-        if (!virInterfaceObjIsActive(privconn->ifaces.objs[i])) {
-            if (VIR_STRDUP(names[n++], privconn->ifaces.objs[i]->def->name) < 0) {
-                virInterfaceObjUnlock(privconn->ifaces.objs[i]);
-                goto error;
-            }
-        }
-        virInterfaceObjUnlock(privconn->ifaces.objs[i]);
-    }
-    testDriverUnlock(privconn);
-
-    return n;
-
- error:
-    for (n = 0; n < nnames; n++)
-        VIR_FREE(names[n]);
-    testDriverUnlock(privconn);
-    return -1;
+    return virInterfaceObjGetNames(privconn->ifaces, conn, false, NULL,
+                                   names, maxnames);
 }
 
-static virInterfacePtr testInterfaceLookupByName(virConnectPtr conn,
-                                                 const char *name)
+
+static virPoolObjPtr
+testInterfaceObjFromName(virPoolObjTablePtr ifaces,
+                         const char *name)
+{
+    virPoolObjPtr obj;
+
+    if (!(obj = virPoolObjTableFindByName(ifaces, name))) {
+        virReportError(VIR_ERR_NO_INTERFACE,
+                       _("no interface with matching name '%s'"), name);
+        return NULL;
+    }
+
+    return obj;
+}
+
+
+static virInterfacePtr
+testInterfaceLookupByName(virConnectPtr conn,
+                          const char *name)
 {
     testDriverPtr privconn = conn->privateData;
-    virInterfaceObjPtr iface;
+    virPoolObjPtr obj;
+    virInterfaceDefPtr def;
     virInterfacePtr ret = NULL;
 
-    testDriverLock(privconn);
-    iface = virInterfaceFindByName(&privconn->ifaces, name);
-    testDriverUnlock(privconn);
+    if (!(obj = testInterfaceObjFromName(privconn->ifaces, name)))
+        return NULL;
 
-    if (iface == NULL) {
-        virReportError(VIR_ERR_NO_INTERFACE, NULL);
-        goto cleanup;
-    }
+    def = virPoolObjGetDef(obj);
+    ret = virGetInterface(conn, def->name, def->mac);
 
-    ret = virGetInterface(conn, iface->def->name, iface->def->mac);
-
- cleanup:
-    if (iface)
-        virInterfaceObjUnlock(iface);
+    virPoolObjEndAPI(&obj);
     return ret;
 }
 
-static virInterfacePtr testInterfaceLookupByMACString(virConnectPtr conn,
-                                                      const char *mac)
+static virInterfacePtr
+testInterfaceLookupByMACString(virConnectPtr conn,
+                               const char *mac)
 {
     testDriverPtr privconn = conn->privateData;
-    virInterfaceObjPtr iface;
     int ifacect;
+    char *ifacenames[] = { NULL, NULL };
     virInterfacePtr ret = NULL;
 
-    testDriverLock(privconn);
-    ifacect = virInterfaceFindByMACString(&privconn->ifaces, mac, &iface, 1);
-    testDriverUnlock(privconn);
+    ifacect = virInterfaceObjFindByMACString(conn, privconn->ifaces,
+                                             mac, ifacenames, 2);
 
     if (ifacect == 0) {
         virReportError(VIR_ERR_NO_INTERFACE, NULL);
@@ -3743,34 +3708,34 @@ static virInterfacePtr testInterfaceLookupByMACString(virConnectPtr conn,
         goto cleanup;
     }
 
-    ret = virGetInterface(conn, iface->def->name, iface->def->mac);
+    ret = virGetInterface(conn, ifacenames[0], mac);
 
  cleanup:
-    if (iface)
-        virInterfaceObjUnlock(iface);
+    VIR_FREE(ifacenames[0]);
+    VIR_FREE(ifacenames[1]);
     return ret;
 }
 
-static int testInterfaceIsActive(virInterfacePtr iface)
+
+static int
+testInterfaceIsActive(virInterfacePtr iface)
 {
     testDriverPtr privconn = iface->conn->privateData;
-    virInterfaceObjPtr obj;
+    virPoolObjPtr obj;
     int ret = -1;
 
-    testDriverLock(privconn);
-    obj = virInterfaceFindByName(&privconn->ifaces, iface->name);
-    testDriverUnlock(privconn);
-    if (!obj) {
-        virReportError(VIR_ERR_NO_INTERFACE, NULL);
-        goto cleanup;
-    }
-    ret = virInterfaceObjIsActive(obj);
+    if (!(obj = testInterfaceObjFromName(privconn->ifaces, iface->name)))
+        return -1;
 
- cleanup:
-    if (obj)
-        virInterfaceObjUnlock(obj);
+    if (virPoolObjIsActive(obj))
+        ret = 1;
+    else
+        ret = 0;
+
+    virPoolObjEndAPI(&obj);
     return ret;
 }
+
 
 static int testInterfaceChangeBegin(virConnectPtr conn,
                                     unsigned int flags)
@@ -3789,8 +3754,7 @@ static int testInterfaceChangeBegin(virConnectPtr conn,
 
     privconn->transaction_running = true;
 
-    if (virInterfaceObjListClone(&privconn->ifaces,
-                                 &privconn->backupIfaces) < 0)
+    if (!(privconn->backupIfaces = virInterfaceObjClone(privconn->ifaces)))
         goto cleanup;
 
     ret = 0;
@@ -3816,7 +3780,8 @@ static int testInterfaceChangeCommit(virConnectPtr conn,
         goto cleanup;
     }
 
-    virInterfaceObjListFree(&privconn->backupIfaces);
+    virObjectUnref(privconn->backupIfaces);
+    privconn->backupIfaces = NULL;
     privconn->transaction_running = false;
 
     ret = 0;
@@ -3844,11 +3809,8 @@ static int testInterfaceChangeRollback(virConnectPtr conn,
         goto cleanup;
     }
 
-    virInterfaceObjListFree(&privconn->ifaces);
-    privconn->ifaces.count = privconn->backupIfaces.count;
-    privconn->ifaces.objs = privconn->backupIfaces.objs;
-    privconn->backupIfaces.count = 0;
-    privconn->backupIfaces.objs = NULL;
+    virObjectUnref(privconn->ifaces);
+    VIR_STEAL_PTR(privconn->ifaces, privconn->backupIfaces);
 
     privconn->transaction_running = false;
 
@@ -3859,40 +3821,36 @@ static int testInterfaceChangeRollback(virConnectPtr conn,
     return ret;
 }
 
-static char *testInterfaceGetXMLDesc(virInterfacePtr iface,
-                                     unsigned int flags)
+
+static char *
+testInterfaceGetXMLDesc(virInterfacePtr iface,
+                        unsigned int flags)
 {
     testDriverPtr privconn = iface->conn->privateData;
-    virInterfaceObjPtr privinterface;
+    virPoolObjPtr obj;
     char *ret = NULL;
 
     virCheckFlags(0, NULL);
 
-    testDriverLock(privconn);
-    privinterface = virInterfaceFindByName(&privconn->ifaces,
-                                           iface->name);
-    testDriverUnlock(privconn);
+    if (!(obj = testInterfaceObjFromName(privconn->ifaces, iface->name)))
+        return NULL;
 
-    if (privinterface == NULL) {
-        virReportError(VIR_ERR_NO_INTERFACE, __FUNCTION__);
-        goto cleanup;
-    }
+    ret = virInterfaceDefFormat(virPoolObjGetDef(obj));
 
-    ret = virInterfaceDefFormat(privinterface->def);
-
- cleanup:
-    if (privinterface)
-        virInterfaceObjUnlock(privinterface);
+    virPoolObjEndAPI(&obj);
     return ret;
 }
 
 
-static virInterfacePtr testInterfaceDefineXML(virConnectPtr conn, const char *xmlStr,
-                                              unsigned int flags)
+static virInterfacePtr
+testInterfaceDefineXML(virConnectPtr conn,
+                       const char *xmlStr,
+                       unsigned int flags)
 {
     testDriverPtr privconn = conn->privateData;
-    virInterfaceDefPtr def;
-    virInterfaceObjPtr iface = NULL;
+    virInterfaceDefPtr def = NULL;
+    virPoolObjPtr obj;
+    virInterfaceDefPtr objdef;
     virInterfacePtr ret = NULL;
 
     virCheckFlags(0, NULL);
@@ -3901,107 +3859,88 @@ static virInterfacePtr testInterfaceDefineXML(virConnectPtr conn, const char *xm
     if ((def = virInterfaceDefParseString(xmlStr)) == NULL)
         goto cleanup;
 
-    if ((iface = virInterfaceAssignDef(&privconn->ifaces, def)) == NULL)
+    if (!(obj = virPoolObjTableAdd(privconn->ifaces, NULL, def->name,
+                                   def, NULL, NULL, virInterfaceDefFree,
+                                   NULL, 0)))
         goto cleanup;
-    def = NULL;
+    VIR_STEAL_PTR(objdef, def);
 
-    ret = virGetInterface(conn, iface->def->name, iface->def->mac);
+    ret = virGetInterface(conn, objdef->name, objdef->mac);
 
  cleanup:
     virInterfaceDefFree(def);
-    if (iface)
-        virInterfaceObjUnlock(iface);
+    virPoolObjEndAPI(&obj);
     testDriverUnlock(privconn);
     return ret;
 }
 
-static int testInterfaceUndefine(virInterfacePtr iface)
+
+static int
+testInterfaceUndefine(virInterfacePtr iface)
 {
     testDriverPtr privconn = iface->conn->privateData;
-    virInterfaceObjPtr privinterface;
-    int ret = -1;
+    virPoolObjPtr obj;
 
-    testDriverLock(privconn);
-    privinterface = virInterfaceFindByName(&privconn->ifaces,
-                                           iface->name);
+    if (!(obj = testInterfaceObjFromName(privconn->ifaces, iface->name)))
+        return -1;
 
-    if (privinterface == NULL) {
-        virReportError(VIR_ERR_NO_INTERFACE, NULL);
-        goto cleanup;
-    }
+    virPoolObjTableRemove(privconn->ifaces, &obj);
 
-    virInterfaceRemove(&privconn->ifaces,
-                       privinterface);
-    ret = 0;
-
- cleanup:
-    testDriverUnlock(privconn);
-    return ret;
+    virPoolObjEndAPI(&obj);
+    return 0;
 }
 
-static int testInterfaceCreate(virInterfacePtr iface,
-                               unsigned int flags)
+
+static int
+testInterfaceCreate(virInterfacePtr iface,
+                    unsigned int flags)
 {
     testDriverPtr privconn = iface->conn->privateData;
-    virInterfaceObjPtr privinterface;
+    virPoolObjPtr obj;
     int ret = -1;
 
     virCheckFlags(0, -1);
 
-    testDriverLock(privconn);
-    privinterface = virInterfaceFindByName(&privconn->ifaces,
-                                           iface->name);
+    if (!(obj = testInterfaceObjFromName(privconn->ifaces, iface->name)))
+        return -1;
 
-    if (privinterface == NULL) {
-        virReportError(VIR_ERR_NO_INTERFACE, NULL);
-        goto cleanup;
-    }
-
-    if (privinterface->active != 0) {
+    if (virPoolObjIsActive(obj)) {
         virReportError(VIR_ERR_OPERATION_INVALID, NULL);
         goto cleanup;
     }
 
-    privinterface->active = 1;
+    virPoolObjSetActive(obj, true);
     ret = 0;
 
  cleanup:
-    if (privinterface)
-        virInterfaceObjUnlock(privinterface);
-    testDriverUnlock(privconn);
+    virPoolObjEndAPI(&obj);
     return ret;
 }
 
-static int testInterfaceDestroy(virInterfacePtr iface,
-                                unsigned int flags)
+
+static int
+testInterfaceDestroy(virInterfacePtr iface,
+                     unsigned int flags)
 {
     testDriverPtr privconn = iface->conn->privateData;
-    virInterfaceObjPtr privinterface;
+    virPoolObjPtr obj;
     int ret = -1;
 
     virCheckFlags(0, -1);
 
-    testDriverLock(privconn);
-    privinterface = virInterfaceFindByName(&privconn->ifaces,
-                                           iface->name);
+    if (!(obj = testInterfaceObjFromName(privconn->ifaces, iface->name)))
+        return -1;
 
-    if (privinterface == NULL) {
-        virReportError(VIR_ERR_NO_INTERFACE, NULL);
-        goto cleanup;
-    }
-
-    if (privinterface->active == 0) {
+    if (!virPoolObjIsActive(obj)) {
         virReportError(VIR_ERR_OPERATION_INVALID, NULL);
         goto cleanup;
     }
 
-    privinterface->active = 0;
+    virPoolObjSetActive(obj, false);
     ret = 0;
 
  cleanup:
-    if (privinterface)
-        virInterfaceObjUnlock(privinterface);
-    testDriverUnlock(privconn);
+    virPoolObjEndAPI(&obj);
     return ret;
 }
 

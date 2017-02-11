@@ -32,6 +32,7 @@
 #include "interface_driver.h"
 #include "interface_conf.h"
 #include "viralloc.h"
+#include "virpoolobj.h"
 #include "virstring.h"
 #include "viraccessapicheck.h"
 #include "virnetdev.h"
@@ -137,7 +138,7 @@ udevGetDevices(struct udev *udev, virUdevStatus status)
 
 static int
 udevNumOfInterfacesByStatus(virConnectPtr conn, virUdevStatus status,
-                            virInterfaceObjListFilter filter)
+                            virPoolObjACLFilter filter)
 {
     struct udev *udev = udev_ref(driver->udev);
     struct udev_enumerate *enumerate = NULL;
@@ -190,7 +191,7 @@ udevListInterfacesByStatus(virConnectPtr conn,
                            char **const names,
                            int names_len,
                            virUdevStatus status,
-                           virInterfaceObjListFilter filter)
+                           virPoolObjACLFilter filter)
 {
     struct udev *udev = udev_ref(driver->udev);
     struct udev_enumerate *enumerate = NULL;
