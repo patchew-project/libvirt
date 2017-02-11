@@ -2995,6 +2995,19 @@ virDomainObjWait(virDomainObjPtr vm)
 }
 
 
+int
+virDomainObjCheckIsActive(virDomainObjPtr vm)
+{
+    if (!virDomainObjIsActive(vm)) {
+        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                       _("domain is not running"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
 /**
  * Waits for domain condition to be triggered for a specific period of time.
  *

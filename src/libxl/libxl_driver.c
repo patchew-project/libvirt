@@ -1183,10 +1183,8 @@ libxlDomainSuspend(virDomainPtr dom)
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s", _("Domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto endjob;
-    }
 
     if (virDomainObjGetState(vm, NULL) != VIR_DOMAIN_PAUSED) {
         if (libxl_domain_pause(cfg->ctx, vm->def->id) != 0) {
