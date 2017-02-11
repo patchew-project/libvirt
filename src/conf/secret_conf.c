@@ -42,8 +42,9 @@ VIR_ENUM_IMPL(virSecretUsage, VIR_SECRET_USAGE_TYPE_LAST,
               "none", "volume", "ceph", "iscsi", "tls")
 
 void
-virSecretDefFree(virSecretDefPtr def)
+virSecretDefFree(void *opaque)
 {
+    virSecretDefPtr def = opaque;
     if (def == NULL)
         return;
 

@@ -39,7 +39,7 @@ struct _virSecretDef {
     char *usage_id; /* May be NULL */
 };
 
-void virSecretDefFree(virSecretDefPtr def);
+void virSecretDefFree(void *opaque);
 virSecretDefPtr virSecretDefParseString(const char *xml);
 virSecretDefPtr virSecretDefParseFile(const char *filename);
 char *virSecretDefFormat(const virSecretDef *def);

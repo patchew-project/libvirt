@@ -37,280 +37,83 @@
 
 VIR_LOG_INIT("conf.virsecretobj");
 
-struct _virSecretObj {
-    virObjectLockable parent;
+struct _virSecretObjPrivate {
     char *configFile;
     char *base64File;
-    virSecretDefPtr def;
     unsigned char *value;       /* May be NULL */
     size_t value_size;
 };
 
-static virClassPtr virSecretObjClass;
-static virClassPtr virSecretObjListClass;
-static void virSecretObjDispose(void *obj);
-static void virSecretObjListDispose(void *obj);
 
-struct _virSecretObjList {
-    virObjectLockable parent;
+static void
+virSecretObjPrivateFree(void *obj)
+{
+    virSecretObjPrivatePtr objpriv = obj;
 
-    /* uuid string -> virSecretObj  mapping
-     * for O(1), lockless lookup-by-uuid */
-    virHashTable *objs;
-};
+    if (!objpriv)
+        return;
 
-struct virSecretSearchData {
-    int usageType;
-    const char *usageID;
-};
+    if (objpriv->value) {
+        /* Wipe before free to ensure we don't leave a secret on the heap */
+        memset(objpriv->value, 0, objpriv->value_size);
+        VIR_FREE(objpriv->value);
+    }
+    VIR_FREE(objpriv->configFile);
+    VIR_FREE(objpriv->base64File);
+    VIR_FREE(objpriv);
+}
+
+
+static virSecretObjPrivatePtr
+virSecretObjPrivateAlloc(const char *configDir,
+                         const char *uuidstr)
+{
+    virSecretObjPrivatePtr objpriv = NULL;
+
+    if (VIR_ALLOC(objpriv) < 0)
+        return NULL;
+
+    if (!(objpriv->configFile = virFileBuildPath(configDir, uuidstr, ".xml")) ||
+        !(objpriv->base64File = virFileBuildPath(configDir, uuidstr,
+                                                    ".base64"))) {
+        virSecretObjPrivateFree(objpriv);
+        return NULL;
+    }
+
+    return objpriv;
+}
 
 
 static int
-virSecretObjOnceInit(void)
+secretAssignDef(virPoolObjPtr obj,
+                void *newDef,
+                void *oldDef,
+                unsigned int assignFlags ATTRIBUTE_UNUSED)
 {
-    if (!(virSecretObjClass = virClassNew(virClassForObjectLockable(),
-                                          "virSecretObj",
-                                          sizeof(virSecretObj),
-                                          virSecretObjDispose)))
-        return -1;
+    virSecretDefPtr objdef = virPoolObjGetDef(obj);
+    virSecretDefPtr newdef = newDef;
+    virSecretDefPtr *olddef = oldDef;
 
-    if (!(virSecretObjListClass = virClassNew(virClassForObjectLockable(),
-                                              "virSecretObjList",
-                                              sizeof(virSecretObjList),
-                                              virSecretObjListDispose)))
+    if (objdef->isprivate && !newdef->isprivate) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("cannot change private flag on existing secret"));
         return -1;
+    }
+
+    /* Store away current objdef in olddef, clear it out since the SetDef
+     * will attempt to free first, and replace objdef with newdef */
+    if (olddef) {
+        *olddef = objdef;
+        virPoolObjSetDef(obj, NULL);
+    }
+
+    virPoolObjSetDef(obj, newdef);
 
     return 0;
 }
 
 
-VIR_ONCE_GLOBAL_INIT(virSecretObj)
-
-virSecretObjPtr
-virSecretObjNew(void)
-{
-    virSecretObjPtr secret;
-
-    if (virSecretObjInitialize() < 0)
-        return NULL;
-
-    if (!(secret = virObjectLockableNew(virSecretObjClass)))
-        return NULL;
-
-    return secret;
-}
-
-
-void
-virSecretObjEndAPI(virSecretObjPtr *secret)
-{
-    if (!*secret)
-        return;
-
-    virObjectUnlock(*secret);
-    virObjectUnref(*secret);
-    *secret = NULL;
-}
-
-
-virSecretObjListPtr
-virSecretObjListNew(void)
-{
-    virSecretObjListPtr secrets;
-
-    if (virSecretObjInitialize() < 0)
-        return NULL;
-
-    if (!(secrets = virObjectLockableNew(virSecretObjListClass)))
-        return NULL;
-
-    if (!(secrets->objs = virHashCreate(50, virObjectFreeHashData))) {
-        virObjectUnref(secrets);
-        return NULL;
-    }
-
-    return secrets;
-}
-
-
-static void
-virSecretObjDispose(void *obj)
-{
-    virSecretObjPtr secret = obj;
-
-    virSecretDefFree(secret->def);
-    if (secret->value) {
-        /* Wipe before free to ensure we don't leave a secret on the heap */
-        memset(secret->value, 0, secret->value_size);
-        VIR_FREE(secret->value);
-    }
-    VIR_FREE(secret->configFile);
-    VIR_FREE(secret->base64File);
-}
-
-
-static void
-virSecretObjListDispose(void *obj)
-{
-    virSecretObjListPtr secrets = obj;
-
-    virHashFree(secrets->objs);
-}
-
-
-/**
- * virSecretObjFindByUUIDLocked:
- * @secrets: list of secret objects
- * @uuid: secret uuid to find
- *
- * This functions requires @secrets to be locked already!
- *
- * Returns: not locked, but ref'd secret object.
- */
-virSecretObjPtr
-virSecretObjListFindByUUIDLocked(virSecretObjListPtr secrets,
-                                 const unsigned char *uuid)
-{
-    char uuidstr[VIR_UUID_STRING_BUFLEN];
-
-    virUUIDFormat(uuid, uuidstr);
-
-    return virObjectRef(virHashLookup(secrets->objs, uuidstr));
-}
-
-
-/**
- * virSecretObjFindByUUID:
- * @secrets: list of secret objects
- * @uuid: secret uuid to find
- *
- * This function locks @secrets and finds the secret object which
- * corresponds to @uuid.
- *
- * Returns: locked and ref'd secret object.
- */
-virSecretObjPtr
-virSecretObjListFindByUUID(virSecretObjListPtr secrets,
-                           const unsigned char *uuid)
-{
-    virSecretObjPtr ret;
-
-    virObjectLock(secrets);
-    ret = virSecretObjListFindByUUIDLocked(secrets, uuid);
-    virObjectUnlock(secrets);
-    if (ret)
-        virObjectLock(ret);
-    return ret;
-}
-
-
-static int
-virSecretObjSearchName(const void *payload,
-                       const void *name ATTRIBUTE_UNUSED,
-                       const void *opaque)
-{
-    virSecretObjPtr secret = (virSecretObjPtr) payload;
-    struct virSecretSearchData *data = (struct virSecretSearchData *) opaque;
-    int found = 0;
-
-    virObjectLock(secret);
-
-    if (secret->def->usage_type != data->usageType)
-        goto cleanup;
-
-    if (data->usageType != VIR_SECRET_USAGE_TYPE_NONE &&
-        STREQ(secret->def->usage_id, data->usageID))
-        found = 1;
-
- cleanup:
-    virObjectUnlock(secret);
-    return found;
-}
-
-
-/**
- * virSecretObjFindByUsageLocked:
- * @secrets: list of secret objects
- * @usageType: secret usageType to find
- * @usageID: secret usage string
- *
- * This functions requires @secrets to be locked already!
- *
- * Returns: not locked, but ref'd secret object.
- */
-virSecretObjPtr
-virSecretObjListFindByUsageLocked(virSecretObjListPtr secrets,
-                                  int usageType,
-                                  const char *usageID)
-{
-    virSecretObjPtr ret = NULL;
-    struct virSecretSearchData data = { .usageType = usageType,
-                                        .usageID = usageID };
-
-    ret = virHashSearch(secrets->objs, virSecretObjSearchName, &data);
-    if (ret)
-        virObjectRef(ret);
-    return ret;
-}
-
-
-/**
- * virSecretObjFindByUsage:
- * @secrets: list of secret objects
- * @usageType: secret usageType to find
- * @usageID: secret usage string
- *
- * This function locks @secrets and finds the secret object which
- * corresponds to @usageID of @usageType.
- *
- * Returns: locked and ref'd secret object.
- */
-virSecretObjPtr
-virSecretObjListFindByUsage(virSecretObjListPtr secrets,
-                            int usageType,
-                            const char *usageID)
-{
-    virSecretObjPtr ret;
-
-    virObjectLock(secrets);
-    ret = virSecretObjListFindByUsageLocked(secrets, usageType, usageID);
-    virObjectUnlock(secrets);
-    if (ret)
-        virObjectLock(ret);
-    return ret;
-}
-
-
-/*
- * virSecretObjListRemove:
- * @secrets: list of secret objects
- * @secret: a secret object
- *
- * Remove the object from the hash table.  The caller must hold the lock
- * on the driver owning @secrets and must have also locked @secret to
- * ensure no one else is either waiting for @secret or still using it.
- */
-void
-virSecretObjListRemove(virSecretObjListPtr secrets,
-                       virSecretObjPtr secret)
-{
-    char uuidstr[VIR_UUID_STRING_BUFLEN];
-
-    virUUIDFormat(secret->def->uuid, uuidstr);
-    virObjectRef(secret);
-    virObjectUnlock(secret);
-
-    virObjectLock(secrets);
-    virObjectLock(secret);
-    virHashRemoveEntry(secrets->objs, uuidstr);
-    virObjectUnlock(secret);
-    virObjectUnref(secret);
-    virObjectUnlock(secrets);
-}
-
-
-/*
- * virSecretObjListAddLocked:
+/* virSecretObjAdd:
  * @secrets: list of secret objects
  * @def: new secret definition
  * @configDir: directory to place secret config files
@@ -318,196 +121,153 @@ virSecretObjListRemove(virSecretObjListPtr secrets,
  *
  * Add the new def to the secret obj table hash
  *
- * This functions requires @secrets to be locked already!
- *
- * Returns pointer to secret or NULL if failure to add
+ * Returns: Either a pointer to a locked and ref'd secret obj that needs
+ *          to use virPoolObjEndAPI when the caller is done with the object
+ *          or NULL if failure to add.
  */
-virSecretObjPtr
-virSecretObjListAddLocked(virSecretObjListPtr secrets,
-                          virSecretDefPtr def,
-                          const char *configDir,
-                          virSecretDefPtr *oldDef)
+virPoolObjPtr
+virSecretObjAdd(virPoolObjTablePtr secrets,
+                virSecretDefPtr def,
+                const char *configDir,
+                virSecretDefPtr *oldDef)
 {
-    virSecretObjPtr secret;
-    virSecretObjPtr ret = NULL;
+    virPoolObjPtr obj = NULL;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
-    char *configFile = NULL, *base64File = NULL;
+    virSecretObjPrivatePtr objpriv = NULL;
 
-    if (oldDef)
-        *oldDef = NULL;
-
-    /* Is there a secret already matching this UUID */
-    if ((secret = virSecretObjListFindByUUIDLocked(secrets, def->uuid))) {
-        virObjectLock(secret);
-
-        if (STRNEQ_NULLABLE(secret->def->usage_id, def->usage_id)) {
-            virUUIDFormat(secret->def->uuid, uuidstr);
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("a secret with UUID %s is already defined for "
-                             "use with %s"),
-                           uuidstr, secret->def->usage_id);
-            goto cleanup;
-        }
-
-        if (secret->def->isprivate && !def->isprivate) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("cannot change private flag on existing secret"));
-            goto cleanup;
-        }
-
-        if (oldDef)
-            *oldDef = secret->def;
-        else
-            virSecretDefFree(secret->def);
-        secret->def = def;
-    } else {
-        /* No existing secret with same UUID,
-         * try look for matching usage instead */
-        if ((secret = virSecretObjListFindByUsageLocked(secrets,
-                                                        def->usage_type,
-                                                        def->usage_id))) {
-            virObjectLock(secret);
-            virUUIDFormat(secret->def->uuid, uuidstr);
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("a secret with UUID %s already defined for "
-                             "use with %s"),
-                           uuidstr, def->usage_id);
-            goto cleanup;
-        }
-
-        /* Generate the possible configFile and base64File strings
-         * using the configDir, uuidstr, and appropriate suffix
-         */
-        virUUIDFormat(def->uuid, uuidstr);
-        if (!(configFile = virFileBuildPath(configDir, uuidstr, ".xml")) ||
-            !(base64File = virFileBuildPath(configDir, uuidstr, ".base64")))
-            goto cleanup;
-
-        if (!(secret = virSecretObjNew()))
-            goto cleanup;
-
-        virObjectLock(secret);
-
-        if (virHashAddEntry(secrets->objs, uuidstr, secret) < 0)
-            goto cleanup;
-
-        secret->def = def;
-        secret->configFile = configFile;
-        secret->base64File = base64File;
-        configFile = NULL;
-        base64File = NULL;
-        virObjectRef(secret);
+    if (!def->usage_id || !*def->usage_id) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("secret with UUID %s does not have usage defined"),
+                       uuidstr);
+        return NULL;
     }
 
-    ret = secret;
-    secret = NULL;
+    virUUIDFormat(def->uuid, uuidstr);
+    if (!(obj = virPoolObjTableAdd(secrets, uuidstr, def->usage_id,
+                                   def, NULL, oldDef, virSecretDefFree,
+                                   secretAssignDef, 0)))
+        return NULL;
 
- cleanup:
-    virSecretObjEndAPI(&secret);
-    VIR_FREE(configFile);
-    VIR_FREE(base64File);
-    return ret;
+    if (!(objpriv = virPoolObjGetPrivateData(obj))) {
+        if (!(objpriv = virSecretObjPrivateAlloc(configDir, uuidstr)))
+            goto error;
+
+        virPoolObjSetPrivateData(obj, objpriv, virSecretObjPrivateFree);
+    }
+
+    return obj;
+
+ error:
+    virPoolObjTableRemove(secrets, &obj);
+    virPoolObjEndAPI(&obj);
+    return NULL;
 }
 
 
-virSecretObjPtr
-virSecretObjListAdd(virSecretObjListPtr secrets,
-                    virSecretDefPtr def,
-                    const char *configDir,
-                    virSecretDefPtr *oldDef)
-{
-    virSecretObjPtr ret;
-
-    virObjectLock(secrets);
-    ret = virSecretObjListAddLocked(secrets, def, configDir, oldDef);
-    virObjectUnlock(secrets);
-    return ret;
-}
-
-
-struct virSecretObjListGetHelperData {
-    virConnectPtr conn;
-    virSecretObjListACLFilter filter;
-    int got;
-    char **uuids;
-    int nuuids;
-    bool error;
+struct secretCountData {
+    int count;
 };
 
-
 static int
-virSecretObjListGetHelper(void *payload,
-                          const void *name ATTRIBUTE_UNUSED,
-                          void *opaque)
+secretCount(virPoolObjPtr obj ATTRIBUTE_UNUSED,
+            void *opaque)
 {
-    struct virSecretObjListGetHelperData *data = opaque;
-    virSecretObjPtr obj = payload;
+    struct secretCountData *data = opaque;
 
-    if (data->error)
-        return 0;
-
-    if (data->nuuids >= 0 && data->got == data->nuuids)
-        return 0;
-
-    virObjectLock(obj);
-
-    if (data->filter && !data->filter(data->conn, obj->def))
-        goto cleanup;
-
-    if (data->uuids) {
-        char *uuidstr;
-
-        if (VIR_ALLOC_N(uuidstr, VIR_UUID_STRING_BUFLEN) < 0)
-            goto cleanup;
-
-        virUUIDFormat(obj->def->uuid, uuidstr);
-        data->uuids[data->got] = uuidstr;
-    }
-
-    data->got++;
-
- cleanup:
-    virObjectUnlock(obj);
+    data->count++;
     return 0;
 }
 
 
 int
-virSecretObjListNumOfSecrets(virSecretObjListPtr secrets,
-                             virSecretObjListACLFilter filter,
-                             virConnectPtr conn)
+virSecretObjNumOfSecrets(virPoolObjTablePtr secretobjs,
+                         virConnectPtr conn,
+                         virPoolObjACLFilter aclfilter)
 {
-    struct virSecretObjListGetHelperData data = {
-        .conn = conn, .filter = filter, .got = 0,
-        .uuids = NULL, .nuuids = -1, .error = false };
+    struct secretCountData data = { .count = 0 };
 
-    virObjectLock(secrets);
-    virHashForEach(secrets->objs, virSecretObjListGetHelper, &data);
-    virObjectUnlock(secrets);
+    if (virPoolObjTableList(secretobjs, conn, aclfilter,
+                            secretCount, &data) < 0)
+        return 0;
 
-    return data.got;
+    return data.count;
+}
+
+
+struct secretListData {
+    int nuuids;
+    char **const uuids;
+    int maxuuids;
+};
+
+
+static int secretGetUUIDs(virPoolObjPtr obj,
+                          void *opaque)
+{
+    virSecretDefPtr def = virPoolObjGetDef(obj);
+    struct secretListData *data = opaque;
+
+    if (data->nuuids < data->maxuuids) {
+        char *uuidstr;
+
+        if (VIR_ALLOC_N(uuidstr, VIR_UUID_STRING_BUFLEN) < 0)
+            return -1;
+
+        virUUIDFormat(def->uuid, uuidstr);
+        data->uuids[data->nuuids++] = uuidstr;
+    }
+
+    return 0;
+}
+
+
+int
+virSecretObjGetUUIDs(virPoolObjTablePtr secrets,
+                     char **uuids,
+                     int maxuuids,
+                     virPoolObjACLFilter aclfilter,
+                     virConnectPtr conn)
+{
+    struct secretListData data = { .nuuids = 0,
+                                   .uuids = uuids,
+                                   .maxuuids = maxuuids };
+
+    if (virPoolObjTableList(secrets, conn, aclfilter,
+                            secretGetUUIDs, &data) < 0)
+        goto failure;
+
+    return data.nuuids;
+
+ failure:
+
+    while (data.nuuids >= 0)
+        VIR_FREE(data.uuids[--data.nuuids]);
+
+    return -1;
 }
 
 
 #define MATCH(FLAG) (flags & (FLAG))
 static bool
-virSecretObjMatchFlags(virSecretObjPtr secret,
-                       unsigned int flags)
+secretMatchFlags(virPoolObjPtr obj,
+                 unsigned int flags)
 {
+    virSecretDefPtr def = virPoolObjGetDef(obj);
+
     /* filter by whether it's ephemeral */
     if (MATCH(VIR_CONNECT_LIST_SECRETS_FILTERS_EPHEMERAL) &&
         !((MATCH(VIR_CONNECT_LIST_SECRETS_EPHEMERAL) &&
-           secret->def->isephemeral) ||
+           def->isephemeral) ||
           (MATCH(VIR_CONNECT_LIST_SECRETS_NO_EPHEMERAL) &&
-           !secret->def->isephemeral)))
+           !def->isephemeral)))
         return false;
 
     /* filter by whether it's private */
     if (MATCH(VIR_CONNECT_LIST_SECRETS_FILTERS_PRIVATE) &&
         !((MATCH(VIR_CONNECT_LIST_SECRETS_PRIVATE) &&
-           secret->def->isprivate) ||
+           def->isprivate) ||
           (MATCH(VIR_CONNECT_LIST_SECRETS_NO_PRIVATE) &&
-           !secret->def->isprivate)))
+           !def->isprivate)))
         return false;
 
     return true;
@@ -515,135 +275,60 @@ virSecretObjMatchFlags(virSecretObjPtr secret,
 #undef MATCH
 
 
-struct virSecretObjListData {
-    virConnectPtr conn;
-    virSecretPtr *secrets;
-    virSecretObjListACLFilter filter;
-    unsigned int flags;
-    int nsecrets;
-    bool error;
-};
-
-static int
-virSecretObjListPopulate(void *payload,
-                         const void *name ATTRIBUTE_UNUSED,
-                         void *opaque)
-{
-    struct virSecretObjListData *data = opaque;
-    virSecretObjPtr obj = payload;
-    virSecretPtr secret = NULL;
-
-    if (data->error)
-        return 0;
-
-    virObjectLock(obj);
-
-    if (data->filter && !data->filter(data->conn, obj->def))
-        goto cleanup;
-
-    if (!virSecretObjMatchFlags(obj, data->flags))
-        goto cleanup;
-
-    if (!data->secrets) {
-        data->nsecrets++;
-        goto cleanup;
-    }
-
-    if (!(secret = virGetSecret(data->conn, obj->def->uuid,
-                                obj->def->usage_type,
-                                obj->def->usage_id))) {
-        data->error = true;
-        goto cleanup;
-    }
-
-    data->secrets[data->nsecrets++] = secret;
-
- cleanup:
-    virObjectUnlock(obj);
-    return 0;
-}
-
-
 int
-virSecretObjListExport(virConnectPtr conn,
-                       virSecretObjListPtr secretobjs,
+virSecretObjExportList(virConnectPtr conn,
+                       virPoolObjTablePtr secretobjs,
                        virSecretPtr **secrets,
-                       virSecretObjListACLFilter filter,
+                       virPoolObjACLFilter aclfilter,
                        unsigned int flags)
 {
-    int ret = -1;
-    struct virSecretObjListData data = {
-        .conn = conn, .secrets = NULL,
-        .filter = filter, .flags = flags,
-        .nsecrets = 0, .error = false };
+    virPoolObjPtr *objs = NULL;
+    size_t nobjs = 0;
+    virSecretPtr *secs = NULL;
 
-    virObjectLock(secretobjs);
-    if (secrets &&
-        VIR_ALLOC_N(data.secrets, virHashSize(secretobjs->objs) + 1) < 0)
-        goto cleanup;
+    if (virPoolObjTableCollect(secretobjs, conn, &objs, &nobjs, aclfilter,
+                               secretMatchFlags, flags) < 0)
+        return -1;
 
-    virHashForEach(secretobjs->objs, virSecretObjListPopulate, &data);
+    if (secrets) {
+        size_t i;
 
-    if (data.error)
-        goto cleanup;
+        if (VIR_ALLOC_N(secs, nobjs + 1) < 0)
+            goto cleanup;
 
-    if (data.secrets) {
-        /* trim the array to the final size */
-        ignore_value(VIR_REALLOC_N(data.secrets, data.nsecrets + 1));
-        *secrets = data.secrets;
-        data.secrets = NULL;
+        for (i = 0; i < nobjs; i++) {
+            virSecretDefPtr def;
+
+            virObjectLock(objs[i]);
+            def = virPoolObjGetDef(objs[i]);
+            secs[i] = virGetSecret(conn, def->uuid, def->usage_type,
+                                   def->usage_id);
+            virObjectUnlock(objs[i]);
+            if (!secs[i])
+                goto cleanup;
+        }
+
+        VIR_STEAL_PTR(*secrets, secs);
     }
 
-    ret = data.nsecrets;
-
  cleanup:
-    virObjectUnlock(secretobjs);
-    while (data.secrets && data.nsecrets)
-        virObjectUnref(data.secrets[--data.nsecrets]);
+    virObjectListFree(secs);
+    virObjectListFreeCount(objs, nobjs);
 
-    VIR_FREE(data.secrets);
-    return ret;
+    return nobjs;
 }
 
 
 int
-virSecretObjListGetUUIDs(virSecretObjListPtr secrets,
-                         char **uuids,
-                         int nuuids,
-                         virSecretObjListACLFilter filter,
-                         virConnectPtr conn)
+virSecretObjDeleteConfig(virPoolObjPtr obj)
 {
-    int ret = -1;
+    virSecretDefPtr def = virPoolObjGetDef(obj);
+    virSecretObjPrivatePtr objpriv = virPoolObjGetPrivateData(obj);
 
-    struct virSecretObjListGetHelperData data = {
-        .conn = conn, .filter = filter, .got = 0,
-        .uuids = uuids, .nuuids = nuuids, .error = false };
-
-    virObjectLock(secrets);
-    virHashForEach(secrets->objs, virSecretObjListGetHelper, &data);
-    virObjectUnlock(secrets);
-
-    if (data.error)
-        goto cleanup;
-
-    ret = data.got;
-
- cleanup:
-    if (ret < 0) {
-        while (data.got)
-            VIR_FREE(data.uuids[--data.got]);
-    }
-    return ret;
-}
-
-
-int
-virSecretObjDeleteConfig(virSecretObjPtr secret)
-{
-    if (!secret->def->isephemeral &&
-        unlink(secret->configFile) < 0 && errno != ENOENT) {
+    if (!def->isephemeral &&
+        unlink(objpriv->configFile) < 0 && errno != ENOENT) {
         virReportSystemError(errno, _("cannot unlink '%s'"),
-                             secret->configFile);
+                             objpriv->configFile);
         return -1;
     }
 
@@ -652,11 +337,13 @@ virSecretObjDeleteConfig(virSecretObjPtr secret)
 
 
 void
-virSecretObjDeleteData(virSecretObjPtr secret)
+virSecretObjDeleteData(virPoolObjPtr obj)
 {
+    virSecretObjPrivatePtr objpriv = virPoolObjGetPrivateData(obj);
+
     /* The configFile will already be removed, so secret won't be
      * loaded again if this fails */
-    (void)unlink(secret->base64File);
+    (void)unlink(objpriv->base64File);
 }
 
 
@@ -667,15 +354,17 @@ virSecretObjDeleteData(virSecretObjPtr secret)
    secret is defined, it is stored as base64 (with no formatting) in
    "$basename.base64".  "$basename" is in both cases the base64-encoded UUID. */
 int
-virSecretObjSaveConfig(virSecretObjPtr secret)
+virSecretObjSaveConfig(virPoolObjPtr obj)
 {
+    virSecretDefPtr def = virPoolObjGetDef(obj);
+    virSecretObjPrivatePtr objpriv = virPoolObjGetPrivateData(obj);
     char *xml = NULL;
     int ret = -1;
 
-    if (!(xml = virSecretDefFormat(secret->def)))
+    if (!(xml = virSecretDefFormat(def)))
         goto cleanup;
 
-    if (virFileRewriteStr(secret->configFile, S_IRUSR | S_IWUSR, xml) < 0)
+    if (virFileRewriteStr(objpriv->configFile, S_IRUSR | S_IWUSR, xml) < 0)
         goto cleanup;
 
     ret = 0;
@@ -687,18 +376,19 @@ virSecretObjSaveConfig(virSecretObjPtr secret)
 
 
 int
-virSecretObjSaveData(virSecretObjPtr secret)
+virSecretObjSaveData(virPoolObjPtr obj)
 {
+    virSecretObjPrivatePtr objpriv = virPoolObjGetPrivateData(obj);
     char *base64 = NULL;
     int ret = -1;
 
-    if (!secret->value)
+    if (!objpriv->value)
         return 0;
 
-    if (!(base64 = virStringEncodeBase64(secret->value, secret->value_size)))
+    if (!(base64 = virStringEncodeBase64(objpriv->value, objpriv->value_size)))
         goto cleanup;
 
-    if (virFileRewriteStr(secret->base64File, S_IRUSR | S_IWUSR, base64) < 0)
+    if (virFileRewriteStr(objpriv->base64File, S_IRUSR | S_IWUSR, base64) < 0)
         goto cleanup;
 
     ret = 0;
@@ -709,37 +399,24 @@ virSecretObjSaveData(virSecretObjPtr secret)
 }
 
 
-virSecretDefPtr
-virSecretObjGetDef(virSecretObjPtr secret)
-{
-    return secret->def;
-}
-
-
-void
-virSecretObjSetDef(virSecretObjPtr secret,
-                   virSecretDefPtr def)
-{
-    secret->def = def;
-}
-
-
 unsigned char *
-virSecretObjGetValue(virSecretObjPtr secret)
+virSecretObjGetValue(virPoolObjPtr obj)
 {
+    virSecretDefPtr def = virPoolObjGetDef(obj);
+    virSecretObjPrivatePtr objpriv = virPoolObjGetPrivateData(obj);
     unsigned char *ret = NULL;
 
-    if (!secret->value) {
+    if (!objpriv->value) {
         char uuidstr[VIR_UUID_STRING_BUFLEN];
-        virUUIDFormat(secret->def->uuid, uuidstr);
+        virUUIDFormat(def->uuid, uuidstr);
         virReportError(VIR_ERR_NO_SECRET,
                        _("secret '%s' does not have a value"), uuidstr);
         goto cleanup;
     }
 
-    if (VIR_ALLOC_N(ret, secret->value_size) < 0)
+    if (VIR_ALLOC_N(ret, objpriv->value_size) < 0)
         goto cleanup;
-    memcpy(ret, secret->value, secret->value_size);
+    memcpy(ret, objpriv->value, objpriv->value_size);
 
  cleanup:
     return ret;
@@ -747,24 +424,26 @@ virSecretObjGetValue(virSecretObjPtr secret)
 
 
 int
-virSecretObjSetValue(virSecretObjPtr secret,
+virSecretObjSetValue(virPoolObjPtr obj,
                      const unsigned char *value,
                      size_t value_size)
 {
+    virSecretDefPtr def = virPoolObjGetDef(obj);
+    virSecretObjPrivatePtr objpriv = virPoolObjGetPrivateData(obj);
     unsigned char *old_value, *new_value;
     size_t old_value_size;
 
     if (VIR_ALLOC_N(new_value, value_size) < 0)
         return -1;
 
-    old_value = secret->value;
-    old_value_size = secret->value_size;
+    old_value = objpriv->value;
+    old_value_size = objpriv->value_size;
 
     memcpy(new_value, value, value_size);
-    secret->value = new_value;
-    secret->value_size = value_size;
+    objpriv->value = new_value;
+    objpriv->value_size = value_size;
 
-    if (!secret->def->isephemeral && virSecretObjSaveData(secret) < 0)
+    if (!def->isephemeral && virSecretObjSaveData(obj) < 0)
         goto error;
 
     /* Saved successfully - drop old value */
@@ -777,8 +456,8 @@ virSecretObjSetValue(virSecretObjPtr secret,
 
  error:
     /* Error - restore previous state and free new value */
-    secret->value = old_value;
-    secret->value_size = old_value_size;
+    objpriv->value = old_value;
+    objpriv->value_size = old_value_size;
     memset(new_value, 0, value_size);
     VIR_FREE(new_value);
     return -1;
@@ -786,17 +465,21 @@ virSecretObjSetValue(virSecretObjPtr secret,
 
 
 size_t
-virSecretObjGetValueSize(virSecretObjPtr secret)
+virSecretObjGetValueSize(virPoolObjPtr obj)
 {
-    return secret->value_size;
+    virSecretObjPrivatePtr objpriv = virPoolObjGetPrivateData(obj);
+
+    return objpriv->value_size;
 }
 
 
 void
-virSecretObjSetValueSize(virSecretObjPtr secret,
+virSecretObjSetValueSize(virPoolObjPtr obj,
                          size_t value_size)
 {
-    secret->value_size = value_size;
+    virSecretObjPrivatePtr objpriv = virPoolObjGetPrivateData(obj);
+
+    objpriv->value_size = value_size;
 }
 
 
@@ -820,33 +503,34 @@ virSecretLoadValidateUUID(virSecretDefPtr def,
 
 
 static int
-virSecretLoadValue(virSecretObjPtr secret)
+virSecretLoadValue(virPoolObjPtr obj)
 {
     int ret = -1, fd = -1;
     struct stat st;
     char *contents = NULL, *value = NULL;
     size_t value_size;
+    virSecretObjPrivatePtr objpriv = virPoolObjGetPrivateData(obj);
 
-    if ((fd = open(secret->base64File, O_RDONLY)) == -1) {
+    if ((fd = open(objpriv->base64File, O_RDONLY)) == -1) {
         if (errno == ENOENT) {
             ret = 0;
             goto cleanup;
         }
         virReportSystemError(errno, _("cannot open '%s'"),
-                             secret->base64File);
+                             objpriv->base64File);
         goto cleanup;
     }
 
     if (fstat(fd, &st) < 0) {
         virReportSystemError(errno, _("cannot stat '%s'"),
-                             secret->base64File);
+                             objpriv->base64File);
         goto cleanup;
     }
 
     if ((size_t)st.st_size != st.st_size) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("'%s' file does not fit in memory"),
-                       secret->base64File);
+                       objpriv->base64File);
         goto cleanup;
     }
 
@@ -855,7 +539,7 @@ virSecretLoadValue(virSecretObjPtr secret)
 
     if (saferead(fd, contents, st.st_size) != st.st_size) {
         virReportSystemError(errno, _("cannot read '%s'"),
-                             secret->base64File);
+                             objpriv->base64File);
         goto cleanup;
     }
 
@@ -864,15 +548,15 @@ virSecretLoadValue(virSecretObjPtr secret)
     if (!base64_decode_alloc(contents, st.st_size, &value, &value_size)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("invalid base64 in '%s'"),
-                       secret->base64File);
+                       objpriv->base64File);
         goto cleanup;
     }
     if (value == NULL)
         goto cleanup;
 
-    secret->value = (unsigned char *)value;
+    objpriv->value = (unsigned char *)value;
     value = NULL;
-    secret->value_size = value_size;
+    objpriv->value_size = value_size;
 
     ret = 0;
 
@@ -890,14 +574,14 @@ virSecretLoadValue(virSecretObjPtr secret)
 }
 
 
-static virSecretObjPtr
-virSecretLoad(virSecretObjListPtr secrets,
+static virPoolObjPtr
+virSecretLoad(virPoolObjTablePtr secrets,
               const char *file,
               const char *path,
               const char *configDir)
 {
     virSecretDefPtr def = NULL;
-    virSecretObjPtr secret = NULL, ret = NULL;
+    virPoolObjPtr obj = NULL, ret = NULL;
 
     if (!(def = virSecretDefParseFile(path)))
         goto cleanup;
@@ -905,26 +589,26 @@ virSecretLoad(virSecretObjListPtr secrets,
     if (virSecretLoadValidateUUID(def, file) < 0)
         goto cleanup;
 
-    if (!(secret = virSecretObjListAdd(secrets, def, configDir, NULL)))
+    if (!(obj = virSecretObjAdd(secrets, def, configDir, NULL)))
         goto cleanup;
     def = NULL;
 
-    if (virSecretLoadValue(secret) < 0)
+    if (virSecretLoadValue(obj) < 0)
         goto cleanup;
 
-    ret = secret;
-    secret = NULL;
+    VIR_STEAL_PTR(ret, obj);
 
  cleanup:
-    if (secret)
-        virSecretObjListRemove(secrets, secret);
+    if (obj)
+        virPoolObjTableRemove(secrets, &obj);
     virSecretDefFree(def);
+    virPoolObjEndAPI(&obj);
     return ret;
 }
 
 
 int
-virSecretLoadAllConfigs(virSecretObjListPtr secrets,
+virSecretLoadAllConfigs(virPoolObjTablePtr secrets,
                         const char *configDir)
 {
     DIR *dir = NULL;
@@ -938,7 +622,7 @@ virSecretLoadAllConfigs(virSecretObjListPtr secrets,
      * loop (if any).  It's better to keep the secrets we managed to find. */
     while (virDirRead(dir, &de, NULL) > 0) {
         char *path;
-        virSecretObjPtr secret;
+        virPoolObjPtr obj;
 
         if (!virFileHasSuffix(de->d_name, ".xml"))
             continue;
@@ -946,7 +630,7 @@ virSecretLoadAllConfigs(virSecretObjListPtr secrets,
         if (!(path = virFileBuildPath(configDir, de->d_name, NULL)))
             continue;
 
-        if (!(secret = virSecretLoad(secrets, de->d_name, path, configDir))) {
+        if (!(obj = virSecretLoad(secrets, de->d_name, path, configDir))) {
             VIR_ERROR(_("Error reading secret: %s"),
                       virGetLastErrorMessage());
             VIR_FREE(path);
@@ -954,7 +638,7 @@ virSecretLoadAllConfigs(virSecretObjListPtr secrets,
         }
 
         VIR_FREE(path);
-        virSecretObjEndAPI(&secret);
+        virPoolObjEndAPI(&obj);
     }
 
     VIR_DIR_CLOSE(dir);

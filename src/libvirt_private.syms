@@ -995,23 +995,16 @@ virPoolObjTableSearchRef;
 
 # conf/virsecretobj.h
 virSecretLoadAllConfigs;
+virSecretObjAdd;
 virSecretObjDeleteConfig;
 virSecretObjDeleteData;
-virSecretObjEndAPI;
-virSecretObjGetDef;
+virSecretObjExportList;
+virSecretObjGetUUIDs;
 virSecretObjGetValue;
 virSecretObjGetValueSize;
-virSecretObjListAdd;
-virSecretObjListExport;
-virSecretObjListFindByUsage;
-virSecretObjListFindByUUID;
-virSecretObjListGetUUIDs;
-virSecretObjListNew;
-virSecretObjListNumOfSecrets;
-virSecretObjListRemove;
+virSecretObjNumOfSecrets;
 virSecretObjSaveConfig;
 virSecretObjSaveData;
-virSecretObjSetDef;
 virSecretObjSetValue;
 virSecretObjSetValueSize;
 
