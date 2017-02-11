@@ -331,8 +331,7 @@ bool virNetworkObjTaint(virNetworkObjPtr obj,
 
 void virNetworkDefFree(virNetworkDefPtr def);
 
-typedef bool (*virNetworkObjListFilter)(virConnectPtr conn,
-                                        virNetworkDefPtr def);
+typedef bool (*virNetworkObjListFilter)(virConnectPtr conn, void *opaque);
 
 enum {
     VIR_NETWORK_OBJ_LIST_ADD_LIVE = (1 << 0),

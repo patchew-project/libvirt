@@ -65,8 +65,7 @@ virSecretObjPtr virSecretObjListAdd(virSecretObjListPtr secrets,
                                     const char *configDir,
                                     virSecretDefPtr *oldDef);
 
-typedef bool (*virSecretObjListACLFilter)(virConnectPtr conn,
-                                          virSecretDefPtr def);
+typedef bool (*virSecretObjListACLFilter)(virConnectPtr conn, void *opaque);
 
 int virSecretObjListNumOfSecrets(virSecretObjListPtr secrets,
                                  virSecretObjListACLFilter filter,

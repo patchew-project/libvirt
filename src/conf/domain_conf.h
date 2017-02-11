@@ -2400,8 +2400,7 @@ struct _virDomainObj {
                                           * restore will be required later */
 };
 
-typedef bool (*virDomainObjListACLFilter)(virConnectPtr conn,
-                                          virDomainDefPtr def);
+typedef bool (*virDomainObjListACLFilter)(virConnectPtr conn, void *opaque);
 
 
 typedef enum {

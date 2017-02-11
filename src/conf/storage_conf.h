@@ -314,8 +314,7 @@ struct _virStoragePoolSourceList {
     virStoragePoolSourcePtr sources;
 };
 
-typedef bool (*virStoragePoolObjListFilter)(virConnectPtr conn,
-                                            virStoragePoolDefPtr def);
+typedef bool (*virStoragePoolObjListFilter)(virConnectPtr conn, void *opaque);
 
 static inline int
 virStoragePoolObjIsActive(virStoragePoolObjPtr pool)

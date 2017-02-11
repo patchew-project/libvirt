@@ -2066,7 +2066,7 @@ elsif ($mode eq "client") {
                 if ($object eq "StorageVol") {
                     push @argdecls, "virStoragePoolDefPtr pool";
                 }
-                push @argdecls, "$objecttype $arg";
+                push @argdecls, "void *opaque";
             }
             if ($checkflags) {
                 push @argdecls, "unsigned int flags";
@@ -2101,6 +2101,9 @@ elsif ($mode eq "client") {
                 print "/* Returns: $fail on error/denied, $pass on allowed */\n";
                 print "$ret $apiname(" . join(", ", @argdecls) . ")\n";
                 print "{\n";
+                if ($object ne "Connect") {
+                    print "    $objecttype $arg = opaque;\n";
+                }
                 print "    virAccessManagerPtr mgr;\n";
                 print "    int rv;\n";
                 print "\n";

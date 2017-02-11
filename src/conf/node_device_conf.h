@@ -315,8 +315,7 @@ void virNodeDeviceObjUnlock(virNodeDeviceObjPtr obj);
                  VIR_CONNECT_LIST_NODE_DEVICES_CAP_VPORTS        | \
                  VIR_CONNECT_LIST_NODE_DEVICES_CAP_SCSI_GENERIC)
 
-typedef bool (*virNodeDeviceObjListFilter)(virConnectPtr conn,
-                                           virNodeDeviceDefPtr def);
+typedef bool (*virNodeDeviceObjListFilter)(virConnectPtr conn, void *opaque);
 
 int virNodeDeviceObjListExport(virConnectPtr conn,
                                virNodeDeviceObjList devobjs,

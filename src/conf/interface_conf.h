@@ -212,8 +212,7 @@ char *virInterfaceDefFormat(const virInterfaceDef *def);
 void virInterfaceObjLock(virInterfaceObjPtr obj);
 void virInterfaceObjUnlock(virInterfaceObjPtr obj);
 
-typedef bool (*virInterfaceObjListFilter)(virConnectPtr conn,
-                                          virInterfaceDefPtr def);
+typedef bool (*virInterfaceObjListFilter)(virConnectPtr conn, void *opaque);
 
 # define VIR_CONNECT_LIST_INTERFACES_FILTERS_ACTIVE   \
                 (VIR_CONNECT_LIST_INTERFACES_ACTIVE | \
