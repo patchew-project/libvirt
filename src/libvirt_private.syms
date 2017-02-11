@@ -742,18 +742,9 @@ virNWFilterDefFormat;
 virNWFilterDefFree;
 virNWFilterDefParseFile;
 virNWFilterDefParseString;
+virNWFilterDeleteDef;
 virNWFilterInstFiltersOnAllVMs;
 virNWFilterJumpTargetTypeToString;
-virNWFilterLoadAllConfigs;
-virNWFilterObjAssignDef;
-virNWFilterObjDeleteDef;
-virNWFilterObjFindByName;
-virNWFilterObjFindByUUID;
-virNWFilterObjListFree;
-virNWFilterObjLock;
-virNWFilterObjRemove;
-virNWFilterObjSaveDef;
-virNWFilterObjUnlock;
 virNWFilterPrintStateMatchFlags;
 virNWFilterPrintTCPFlags;
 virNWFilterReadLockFilterUpdates;
@@ -764,7 +755,8 @@ virNWFilterRuleIsProtocolEthernet;
 virNWFilterRuleIsProtocolIPv4;
 virNWFilterRuleIsProtocolIPv6;
 virNWFilterRuleProtocolTypeToString;
-virNWFilterTestUnassignDef;
+virNWFilterSaveDef;
+virNWFilterTriggerVMFilterRebuild;
 virNWFilterUnlockFilterUpdates;
 virNWFilterUnRegisterCallbackDriver;
 virNWFilterWriteLockFilterUpdates;
@@ -957,6 +949,15 @@ virNodeDeviceObjGetParentHost;
 virNodeDeviceObjGetParentHostByFabricWWN;
 virNodeDeviceObjGetParentHostByWWNs;
 virNodeDeviceObjNumOfDevices;
+
+
+# conf/virnwfilterobj.h
+virNWFilterObjAdd;
+virNWFilterObjExportList;
+virNWFilterObjGetFilters;
+virNWFilterObjLoadAllConfigs;
+virNWFilterObjNumOfNWFilters;
+virNWFilterObjTestUnassignDef;
 
 
 # conf/virpoolobj.h

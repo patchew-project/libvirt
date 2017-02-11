@@ -302,7 +302,7 @@ virNWFilterCreateVarsFrom(virNWFilterHashTablePtr vars1,
 typedef struct _virNWFilterInst virNWFilterInst;
 typedef virNWFilterInst *virNWFilterInstPtr;
 struct _virNWFilterInst {
-    virNWFilterObjPtr *filters;
+    virPoolObjPtr *filters;
     size_t nfilters;
     virNWFilterRuleInstPtr *rules;
     size_t nrules;
@@ -315,7 +315,7 @@ virNWFilterInstReset(virNWFilterInstPtr inst)
     size_t i;
 
     for (i = 0; i < inst->nfilters; i++)
-        virNWFilterObjUnlock(inst->filters[i]);
+        virObjectUnref(inst->filters[i]);
     VIR_FREE(inst->filters);
     inst->nfilters = 0;
 
@@ -368,6 +368,21 @@ virNWFilterRuleDefToRuleInst(virNWFilterDefPtr def,
 }
 
 
+static virPoolObjPtr
+nwfilterObjFromFiltername(virNWFilterDriverStatePtr driver,
+                          const char *name)
+{
+    virPoolObjPtr obj;
+
+    if (!(obj = virPoolObjTableFindByName(driver->nwfilters, name))) {
+        virReportError(VIR_ERR_NO_NWFILTER,
+                       _("Could not find filter '%s'"), name);
+    }
+
+    return obj;
+}
+
+
 static int
 virNWFilterIncludeDefToRuleInst(virNWFilterDriverStatePtr driver,
                                 virNWFilterIncludeDefPtr inc,
@@ -376,21 +391,20 @@ virNWFilterIncludeDefToRuleInst(virNWFilterDriverStatePtr driver,
                                 bool *foundNewFilter,
                                 virNWFilterInstPtr inst)
 {
-    virNWFilterObjPtr obj;
+    virPoolObjPtr obj;
+    virNWFilterDefPtr def;
+    virNWFilterDefPtr newdef;
     virNWFilterHashTablePtr tmpvars = NULL;
     virNWFilterDefPtr childdef;
     int ret = -1;
 
     VIR_DEBUG("Instantiating filter %s", inc->filterref);
-    obj = virNWFilterObjFindByName(&driver->nwfilters,
-                                   inc->filterref);
-    if (!obj) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("referenced filter '%s' is missing"),
-                       inc->filterref);
-        goto cleanup;
-    }
-    if (obj->wantRemoved) {
+    if (!(obj = nwfilterObjFromFiltername(driver, inc->filterref)))
+        return -1;
+    def = virPoolObjGetDef(obj);
+    newdef = virPoolObjGetNewDef(obj);
+
+    if (virPoolObjIsBeingRemoved(obj)) {
         virReportError(VIR_ERR_NO_NWFILTER,
                        _("Filter '%s' is in use."),
                        inc->filterref);
@@ -398,16 +412,15 @@ virNWFilterIncludeDefToRuleInst(virNWFilterDriverStatePtr driver,
     }
 
     /* create a temporary hashmap for depth-first tree traversal */
-    if (!(tmpvars = virNWFilterCreateVarsFrom(inc->params,
-                                              vars)))
+    if (!(tmpvars = virNWFilterCreateVarsFrom(inc->params, vars)))
         goto cleanup;
 
-    childdef = obj->def;
+    childdef = def;
 
     switch (useNewFilter) {
     case INSTANTIATE_FOLLOW_NEWFILTER:
-        if (obj->newDef) {
-            childdef = obj->newDef;
+        if (newdef) {
+            childdef = newdef;
             *foundNewFilter = true;
         }
         break;
@@ -419,7 +432,7 @@ virNWFilterIncludeDefToRuleInst(virNWFilterDriverStatePtr driver,
                            inst->nfilters,
                            obj) < 0)
         goto cleanup;
-    obj = NULL;
+    virObjectRef(obj);
 
     if (virNWFilterDefToInst(driver,
                              childdef,
@@ -434,8 +447,7 @@ virNWFilterIncludeDefToRuleInst(virNWFilterDriverStatePtr driver,
     if (ret < 0)
         virNWFilterInstReset(inst);
     virNWFilterHashTableFree(tmpvars);
-    if (obj)
-        virNWFilterObjUnlock(obj);
+    virPoolObjEndAPI(&obj);
     return ret;
 }
 
@@ -501,7 +513,7 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
                                    int useNewFilter,
                                    virNWFilterDriverStatePtr driver)
 {
-    virNWFilterObjPtr obj;
+    virPoolObjPtr obj = NULL;
     int rc = 0;
     size_t i, j;
     virNWFilterDefPtr next_filter;
@@ -542,34 +554,34 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
                 break;
         } else if (inc) {
             VIR_DEBUG("Following filter %s", inc->filterref);
-            obj = virNWFilterObjFindByName(&driver->nwfilters, inc->filterref);
-            if (obj) {
+            if (!(obj = nwfilterObjFromFiltername(driver, inc->filterref))) {
+                rc = -1;
+                break;
+            } else {
+                virNWFilterDefPtr def = virPoolObjGetDef(obj);
+                virNWFilterDefPtr newdef = virPoolObjGetNewDef(obj);
+                virNWFilterHashTablePtr tmpvars;
 
-                if (obj->wantRemoved) {
+                if (virPoolObjIsBeingRemoved(obj)) {
                     virReportError(VIR_ERR_NO_NWFILTER,
                                    _("Filter '%s' is in use."),
                                    inc->filterref);
                     rc = -1;
-                    virNWFilterObjUnlock(obj);
                     break;
                 }
 
                 /* create a temporary hashmap for depth-first tree traversal */
-                virNWFilterHashTablePtr tmpvars =
-                                      virNWFilterCreateVarsFrom(inc->params,
-                                                                vars);
-                if (!tmpvars) {
+                if (!(tmpvars = virNWFilterCreateVarsFrom(inc->params, vars))) {
                     rc = -1;
-                    virNWFilterObjUnlock(obj);
                     break;
                 }
 
-                next_filter = obj->def;
+                next_filter = def;
 
                 switch (useNewFilter) {
                 case INSTANTIATE_FOLLOW_NEWFILTER:
-                    if (obj->newDef)
-                        next_filter = obj->newDef;
+                    if (newdef)
+                        next_filter = newdef;
                     break;
                 case INSTANTIATE_ALWAYS:
                     break;
@@ -583,18 +595,14 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
 
                 virNWFilterHashTableFree(tmpvars);
 
-                virNWFilterObjUnlock(obj);
+                virPoolObjEndAPI(&obj);
                 if (rc < 0)
                     break;
-            } else {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("referenced filter '%s' is missing"),
-                               inc->filterref);
-                rc = -1;
-                break;
             }
         }
     }
+
+    virPoolObjEndAPI(&obj);
     return rc;
 }
 
@@ -787,7 +795,9 @@ __virNWFilterInstantiateFilter(virNWFilterDriverStatePtr driver,
     int rc;
     const char *drvname = EBIPTABLES_DRIVER_ID;
     virNWFilterTechDriverPtr techdriver;
-    virNWFilterObjPtr obj;
+    virPoolObjPtr obj;
+    virNWFilterDefPtr def;
+    virNWFilterDefPtr newdef;
     virNWFilterHashTablePtr vars, vars1;
     virNWFilterDefPtr filter;
     char vmmacaddr[VIR_MAC_STRING_BUFLEN] = {0};
@@ -807,15 +817,12 @@ __virNWFilterInstantiateFilter(virNWFilterDriverStatePtr driver,
 
     VIR_DEBUG("filter name: %s", filtername);
 
-    obj = virNWFilterObjFindByName(&driver->nwfilters, filtername);
-    if (!obj) {
-        virReportError(VIR_ERR_NO_NWFILTER,
-                       _("Could not find filter '%s'"),
-                       filtername);
+    if (!(obj = nwfilterObjFromFiltername(driver, filtername)))
         return -1;
-    }
+    def = virPoolObjGetDef(obj);
+    newdef = virPoolObjGetNewDef(obj);
 
-    if (obj->wantRemoved) {
+    if (virPoolObjIsBeingRemoved(obj)) {
         virReportError(VIR_ERR_NO_NWFILTER,
                        _("Filter '%s' is in use."),
                        filtername);
@@ -847,12 +854,12 @@ __virNWFilterInstantiateFilter(virNWFilterDriverStatePtr driver,
         goto err_exit_vars1;
     }
 
-    filter = obj->def;
+    filter = def;
 
     switch (useNewFilter) {
     case INSTANTIATE_FOLLOW_NEWFILTER:
-        if (obj->newDef) {
-            filter = obj->newDef;
+        if (newdef) {
+            filter = newdef;
             *foundNewFilter = true;
         }
         break;
@@ -880,7 +887,7 @@ __virNWFilterInstantiateFilter(virNWFilterDriverStatePtr driver,
     virNWFilterHashTableFree(vars1);
 
  err_exit:
-    virNWFilterObjUnlock(obj);
+    virPoolObjEndAPI(&obj);
 
     VIR_FREE(str_ipaddr);
     VIR_FREE(str_macaddr);

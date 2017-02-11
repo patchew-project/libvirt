@@ -371,7 +371,8 @@ NWFILTER_PARAM_CONF_SOURCES =					\
 
 NWFILTER_CONF_SOURCES =						\
 		$(NWFILTER_PARAM_CONF_SOURCES)			\
-		conf/nwfilter_conf.c conf/nwfilter_conf.h
+		conf/nwfilter_conf.c conf/nwfilter_conf.h	\
+		conf/virnwfilterobj.c conf/virnwfilterobj.h
 
 # "Generic" poolobj sources
 POOLOBJ_SOURCES =						\

@@ -43,6 +43,7 @@ src/conf/storage_conf.c
 src/conf/virchrdev.c
 src/conf/virdomainobjlist.c
 src/conf/virnodedeviceobj.c
+src/conf/virnwfilterobj.c
 src/conf/virpoolobj.c
 src/conf/virsecretobj.c
 src/cpu/cpu.c
