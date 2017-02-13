@@ -7040,6 +7040,7 @@ qemuDomainCreateDeviceRecursive(const char *device,
 #ifdef WITH_SELINUX
     char *tcon = NULL;
 #endif
+    mode_t oldUmask = umask((mode_t) 0);
 
     if (!ttl) {
         virReportSystemError(ELOOP,
@@ -7205,6 +7206,7 @@ qemuDomainCreateDeviceRecursive(const char *device,
 #ifdef WITH_SELINUX
     freecon(tcon);
 #endif
+    umask(oldUmask);
     return ret;
 }
 
@@ -7678,6 +7680,7 @@ qemuDomainAttachDeviceMknodHelper(pid_t pid ATTRIBUTE_UNUSED,
     int ret = -1;
     bool delDevice = false;
     bool isLink = S_ISLNK(data->sb.st_mode);
+    mode_t oldUmask = umask((mode_t) 0);
 
     virSecurityManagerPostFork(data->driver->securityManager);
 
@@ -7756,6 +7759,7 @@ qemuDomainAttachDeviceMknodHelper(pid_t pid ATTRIBUTE_UNUSED,
     freecon(data->tcon);
 #endif
     virFileFreeACLs(&data->acl);
+    umask(oldUmask);
     return ret;
 }
 
