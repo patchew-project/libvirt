@@ -1544,6 +1544,7 @@ struct _virDomainGraphicsDef {
             virTristateBool copypaste;
             virTristateBool filetransfer;
             virTristateBool gl;
+            virDomainDeviceInfo gpu;
         } spice;
     } data;
     /* nListens, listens, and *port are only useful if type is vnc,

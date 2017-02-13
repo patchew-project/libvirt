@@ -26,7 +26,11 @@
     <input type='mouse' bus='ps2'/>
     <input type='keyboard' bus='ps2'/>
     <graphics type='spice' autoport='no'>
-      <gl enable='yes'/>
+      <gl enable='yes'>
+        <gpu>
+          <address type='pci' domain='0x0000' bus='0x06' slot='0x12' function='0x5'/>
+        </gpu>
+      </gl>
     </graphics>
     <video>
       <model type='virtio' heads='1'>

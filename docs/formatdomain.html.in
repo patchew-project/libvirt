@@ -5619,7 +5619,11 @@ qemu-kvm -net nic,model=? /dev/null
   &lt;clipboard copypaste='no'/&gt;
   &lt;mouse mode='client'/&gt;
   &lt;filetransfer enable='no'/&gt;
-  &lt;gl enable='yes'/&gt;
+  &lt;gl enable='yes'&gt;
+    &lt;gpu&gt;
+      &lt;address type='pci' domain='0x0000' bus='0x06' slot='0x12' function='0x5'/&gt;
+    &lt;/gpu&gt;
+  &lt;/gl&gt;
 &lt;/graphics&gt;</pre>
             <p>
               Spice supports variable compression settings for audio, images and
@@ -5664,6 +5668,13 @@ qemu-kvm -net nic,model=? /dev/null
               You can enable or disable OpenGL support explicitly with
               the <code>gl</code> element, by setting the <code>enable</code>
               property. (QEMU only, <span class="since">since 1.3.3</span>).
+            </p>
+            <p>
+              By default, QEMU will pick the first available GPU. You
+              may specify a host GPU to use for rendering with the
+              <code>gpu</code> element that supports a PCI
+              <code>address</code> child element. (QEMU only, <span
+              class="since">since 3.1</span>).
             </p>
           </dd>
           <dt><code>rdp</code></dt>

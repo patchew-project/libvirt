@@ -1300,6 +1300,7 @@ void virDomainGraphicsDefFree(virDomainGraphicsDefPtr def)
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
+        virDomainDeviceInfoClear(&def->data.spice.gpu);
         VIR_FREE(def->data.spice.keymap);
         virDomainGraphicsAuthDefClear(&def->data.spice.auth);
         break;
@@ -12159,6 +12160,13 @@ virDomainGraphicsDefParseXMLSpice(virDomainGraphicsDefPtr def,
                 VIR_FREE(enable);
 
                 def->data.spice.gl = enableVal;
+
+                if (cur->children && cur->children->type == XML_ELEMENT_NODE &&
+                    xmlStrEqual(cur->children->name, BAD_CAST "gpu") &&
+                    virDomainDeviceInfoParseXML(cur->children, NULL,
+                                                &def->data.spice.gpu, flags) < 0)
+                    goto error;
+
             } else if (xmlStrEqual(cur->name, BAD_CAST "mouse")) {
                 char *mode = virXMLPropString(cur, "mode");
                 int modeVal;
@@ -22839,6 +22847,36 @@ virDomainGraphicsListenDefFormatAddr(virBufferPtr buf,
         virBufferAsprintf(buf, " listen='%s'", glisten->address);
 }
 
+static int
+virDomainSpiceGLDefFormat(virBufferPtr buf, virDomainGraphicsDefPtr def)
+{
+    virBuffer childrenBuf = VIR_BUFFER_INITIALIZER;
+    int indent = virBufferGetIndent(buf, false);
+
+    if (def->data.spice.gl == VIR_TRISTATE_BOOL_ABSENT) {
+        return 0;
+    }
+
+    virBufferAsprintf(buf, "<gl enable='%s'",
+                      virTristateBoolTypeToString(def->data.spice.gl));
+
+    virBufferAdjustIndent(&childrenBuf, indent + 4);
+    if (virDomainDeviceInfoFormat(&childrenBuf, &def->data.spice.gpu, 0) < 0)
+        return -1;
+    if (virBufferUse(&childrenBuf)) {
+        virBufferAddLit(buf, ">\n");
+        virBufferAdjustIndent(buf, 2);
+        virBufferAddLit(buf, "<gpu>\n");
+        virBufferAddBuffer(buf, &childrenBuf);
+        virBufferAddLit(buf, "</gpu>\n");
+        virBufferAdjustIndent(buf, -2);
+        virBufferAddLit(buf, "</gl>\n");
+    } else {
+        virBufferAddLit(buf, "/>\n");
+    }
+    virBufferFreeAndReset(&childrenBuf);
+    return 0;
+}
 
 static int
 virDomainGraphicsDefFormat(virBufferPtr buf,
@@ -23082,9 +23120,10 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
         if (def->data.spice.filetransfer)
             virBufferAsprintf(buf, "<filetransfer enable='%s'/>\n",
                               virTristateBoolTypeToString(def->data.spice.filetransfer));
-        if (def->data.spice.gl)
-            virBufferAsprintf(buf, "<gl enable='%s'/>\n",
-                              virTristateBoolTypeToString(def->data.spice.gl));
+
+        if (virDomainSpiceGLDefFormat(buf, def) < 0) {
+            return -1;
+        }
     }
 
     if (children) {

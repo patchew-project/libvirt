@@ -3033,6 +3033,11 @@
                 <attribute name="enable">
                   <ref name="virYesNo"/>
                 </attribute>
+                <optional>
+                  <element name="gpu">
+                    <ref name="address"/>
+                  </element>
+                </optional>
                 <empty/>
               </element>
             </optional>
