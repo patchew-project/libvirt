@@ -227,7 +227,11 @@ static int test3(const void *unused ATTRIBUTE_UNUSED)
         goto cleanup;
     }
 
+#ifdef HAVE_LINUX_EPOLL
+    ret = checkoutput("test3epoll", NULL);
+#else
     ret = checkoutput("test3", NULL);
+#endif
 
  cleanup:
     virCommandFree(cmd);

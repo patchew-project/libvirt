@@ -89,6 +89,12 @@ augeas_DATA =
 augeastestdir = $(datadir)/augeas/lenses/tests
 augeastest_DATA =
 
+if HAVE_LINUX_EPOLL
+poll_src=util/vireventepoll.c
+else !HAVE_LINUX_EPOLL
+poll_src=util/vireventpoll.c
+endif !HAVE_LINUX_EPOLL
+
 # These files are not related to driver APIs. Simply generic
 # helper APIs for various purposes
 UTIL_SOURCES =							\
@@ -113,7 +119,7 @@ UTIL_SOURCES =							\
 		util/virerror.c util/virerror.h			\
 		util/virevent.c util/virevent.h			\
 		util/vireventpollcommon.c util/vireventpoll.h		\
-		util/vireventpoll.c util/vireventpollinternal.h		\
+		$(poll_src) util/vireventpollinternal.h		\
 		util/virfile.c util/virfile.h			\
 		util/virfirewall.c util/virfirewall.h		\
 		util/virfirewallpriv.h				\
@@ -2376,7 +2382,7 @@ libvirt_setuid_rpc_client_la_SOURCES = 		\
 		util/virdbus.c			\
 		util/virerror.c			\
 		util/virevent.c			\
-		util/vireventpoll.c		\
+		$(poll_src)				\
 		util/vireventpollcommon.c			\
 		util/virfile.c			\
 		util/virgettext.c		\
