@@ -340,6 +340,8 @@ BuildRequires: polkit-devel >= 0.93
 # For mount/umount in FS driver
 BuildRequires: util-linux
 %if %{with_qemu}
+# For managing ACLs
+BuildRequires: libacl-devel
 # From QEMU RPMs
 BuildRequires: /usr/bin/qemu-img
 %else
@@ -645,6 +647,8 @@ Requires: xz
     %if 0%{?fedora} >= 24
 Requires: systemd-container
     %endif
+# For managing ACLs
+Requires: libacl
 
 %description daemon-driver-qemu
 The qemu driver plugin for the libvirtd daemon, providing
