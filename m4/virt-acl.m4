@@ -21,6 +21,10 @@ AC_DEFUN([LIBVIRT_CHECK_ACL], [
 
   AC_CHECK_HEADERS([sys/acl.h])
 
+  if test "x$ac_cv_header_sys_acl_h:x$with_qemu" = "xno:xyes"; then
+    AC_MSG_ERROR([Unable to find <sys/acl.h>, required by qemu driver])
+  fi
+
   ACL_CFLAGS=""
   ACL_LIBS=""
   if test "x$ac_cv_header_sys_acl_h:x$with_linux" = "xyes:xyes"; then
