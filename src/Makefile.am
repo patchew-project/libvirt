@@ -112,7 +112,8 @@ UTIL_SOURCES =							\
 		util/virendian.h				\
 		util/virerror.c util/virerror.h			\
 		util/virevent.c util/virevent.h			\
-		util/vireventpoll.c util/vireventpoll.h		\
+		util/vireventpollcommon.c util/vireventpoll.h		\
+		util/vireventpoll.c util/vireventpollinternal.h		\
 		util/virfile.c util/virfile.h			\
 		util/virfirewall.c util/virfirewall.h		\
 		util/virfirewallpriv.h				\
@@ -2376,6 +2377,7 @@ libvirt_setuid_rpc_client_la_SOURCES = 		\
 		util/virerror.c			\
 		util/virevent.c			\
 		util/vireventpoll.c		\
+		util/vireventpollcommon.c			\
 		util/virfile.c			\
 		util/virgettext.c		\
 		util/virhash.c			\
