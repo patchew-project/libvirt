@@ -3277,7 +3277,19 @@
         attributes: <code>iobase</code> and <code>irq</code>.
         <span class="since">Since 1.2.1</span>
       </dd>
+      <dt><code>mdev</code></dt>
+      <dd>Mediated devices' addresses have so far only one mandatory attribute
+        <code>uuid</code> (<span class="since">since 3.1.0</span>) which
+        uniquely identifies a mediated device under the syfs file system.
+      </dd>
     </dl>
+
+    <p>
+        Note: Due to nature of mediated devices, being only software devices
+        defining an allocation of resources on the physical parent device, the
+        address type <code>mdev</code> is supposed to be used to identify a
+        device on the host only, rather than identifying it in the guest.
+    </p>
 
     <h4><a name="elementsControllers">Controllers</a></h4>
 
@@ -3774,6 +3786,19 @@
   &lt;/devices&gt;
   ...</pre>
 
+    <p>or:</p>
+
+<pre>
+  ...
+  &lt;devices&gt;
+    &lt;hostdev mode='subsystem' type='mdev' model='vfio-pci'&gt;
+    &lt;source&gt;
+      &lt;address type='mdev' uuid='c2177883-f1bb-47f0-914d-32a22e3a8804'&gt;
+    &lt;/source&gt;
+    &lt;/hostdev&gt;
+  &lt;/devices&gt;
+  ...</pre>
+
     <dl>
       <dt><code>hostdev</code></dt>
       <dd>The <code>hostdev</code> element is the main container for describing
@@ -3818,12 +3843,23 @@
             <code>type</code> passes all LUNs presented by a single HBA to
             the guest.
           </dd>
+          <dt><code>mdev</code></dt>
+          <dd>For mediated devices (<span class="since">Since 3.1.0</span>)
+          the <code>model</code> attribute specifies the device API which
+          determines how the host's vfio driver will expose the device to the
+          guest. Currently, only <code>vfio-pci</code> model is supported.
+          The model also has implications on the guest's address type, i.e.
+          for <code>vfio-pci</code> device API any address type other than PCI
+          will result in an error.
+          </dd>
         </dl>
         <p>
-          Note: The <code>managed</code> attribute is only used with PCI devices
-          and is ignored by all the other device types, thus setting
-          <code>managed</code> explicitly with other than PCI device has the same
-          effect as omitting it.
+          Note: The <code>managed</code> attribute is only used with PCI and is
+          ignored by all the other device types, thus setting
+          <code>managed</code> explicitly with other than a PCI device has the
+          same effect as omitting it. Similarly, <code>model</code> attribute is
+          only supported by mediated devices and ignored by all other device
+          types.
         </p>
       </dd>
       <dt><code>source</code></dt>
@@ -3887,6 +3923,10 @@
             attribute set to "vhost" and a <code>wwpn</code> attribute that
             is the vhost_scsi wwpn (16 hexadecimal digits with a prefix of
             "naa.") established in the host configfs.
+          </dd>
+          <dt><code>mdev</code></dt>
+          <dd>Mediated devices (<span class="since">Since 3.1.0</span>) are
+          described by the <code>address</code> element.
           </dd>
         </dl>
       </dd>
