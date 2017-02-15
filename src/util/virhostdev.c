@@ -1,6 +1,6 @@
 /* virhostdev.c: hostdev management
  *
- * Copyright (C) 2006-2007, 2009-2016 Red Hat, Inc.
+ * Copyright (C) 2006-2007, 2009-2017 Red Hat, Inc.
  * Copyright (C) 2006 Daniel P. Berrange
  * Copyright (C) 2014 SUSE LINUX Products GmbH, Nuernberg, Germany.
  *
@@ -147,6 +147,7 @@ virHostdevManagerDispose(void *obj)
     virObjectUnref(hostdevMgr->activeUSBHostdevs);
     virObjectUnref(hostdevMgr->activeSCSIHostdevs);
     virObjectUnref(hostdevMgr->activeSCSIVHostHostdevs);
+    virObjectUnref(hostdevMgr->activeMediatedHostdevs);
     VIR_FREE(hostdevMgr->stateDir);
 }
 
@@ -172,6 +173,9 @@ virHostdevManagerNew(void)
         goto error;
 
     if (!(hostdevMgr->activeSCSIVHostHostdevs = virSCSIVHostDeviceListNew()))
+        goto error;
+
+    if (!(hostdevMgr->activeMediatedHostdevs = virMediatedDeviceListNew()))
         goto error;
 
     if (privileged) {
@@ -1593,6 +1597,176 @@ virHostdevPrepareSCSIVHostDevices(virHostdevManagerPtr mgr,
  cleanup:
     virObjectUnref(list);
     return -1;
+}
+
+
+static bool
+virHostdevMediatedDeviceIsUsed(virMediatedDevicePtr dev,
+                               virMediatedDeviceListPtr list)
+{
+    const char *drvname, *domname;
+    virMediatedDevicePtr tmp = NULL;
+
+    virObjectLock(list);
+
+    if ((tmp = virMediatedDeviceListFind(list, dev))) {
+        virMediatedDeviceGetUsedBy(tmp, &drvname, &domname);
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("Mediated device %s is in use by "
+                         "driver %s, domain %s"),
+                       virMediatedDeviceGetPath(tmp),
+                       drvname, domname);
+    }
+
+    virObjectUnlock(list);
+    return !!tmp;
+}
+
+
+static int
+virHostdevMediatedDeviceCheckModel(virMediatedDevicePtr dev,
+                                   virMediatedDeviceModelType model)
+{
+    int ret = -1;
+    char *dev_api = NULL;
+    int actual_model;
+
+    if (virMediatedDeviceGetDeviceAPI(dev, &dev_api) < 0)
+        return -1;
+
+    /* safeguard in case we've got an older libvirt which doesn't know newer
+     * device_api models yet
+     */
+    if ((actual_model = virMediatedDeviceModelTypeFromString(dev_api)) <= 0)
+        goto cleanup;
+
+    if (actual_model != model) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Invalid device API '%s' for device %s: "
+                         "device only supports '%s'"),
+                       virMediatedDeviceModelTypeToString(model),
+                       virMediatedDeviceGetPath(dev), dev_api);
+        goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(dev_api);
+    return ret;
+}
+
+
+static int
+virHostdevMarkMediatedDevices(virHostdevManagerPtr mgr,
+                              const char *drvname,
+                              const char *domname,
+                              virMediatedDeviceListPtr list)
+{
+    int ret = -1;
+    size_t i, j, count;
+
+    virObjectLock(mgr->activeMediatedHostdevs);
+
+    count = virMediatedDeviceListCount(list);
+    for (i = 0; i < count; i++) {
+        virMediatedDevicePtr mdev = virMediatedDeviceListGet(list, i);
+        VIR_DEBUG("Adding %s to activeMediatedHostdevs",
+                  virMediatedDeviceGetPath(mdev));
+
+        virMediatedDeviceSetUsedBy(mdev, drvname, domname);
+
+        /* Copy mdev references to the driver list:
+         * - caller is responsible for NOT freeing devices in @list on success
+         * - we're responsible for performing a rollback on failure
+         */
+        if (virMediatedDeviceListAdd(mgr->activeMediatedHostdevs, mdev) < 0)
+            goto rollback;
+    }
+
+    ret = 0;
+ cleanup:
+    virObjectUnlock(mgr->activeMediatedHostdevs);
+    return ret;
+
+ rollback:
+    for (j = 0; j < i; j++) {
+        virMediatedDevicePtr tmp = virMediatedDeviceListGet(list, j);
+        virMediatedDeviceListSteal(mgr->activeMediatedHostdevs, tmp);
+    }
+    goto cleanup;
+}
+
+
+int
+virHostdevPrepareMediatedDevices(virHostdevManagerPtr mgr,
+                                 const char *drv_name,
+                                 const char *dom_name,
+                                 virDomainHostdevDefPtr *hostdevs,
+                                 int nhostdevs)
+{
+    size_t i;
+    int ret = -1;
+    virMediatedDeviceListPtr list;
+
+    if (!nhostdevs)
+        return 0;
+
+    /* To prevent situation where mediated device is assigned to multiple
+     * domains we maintain a driver list of currently assigned mediated devices.
+     * A device is appended to the driver list after a series of preparations.
+     */
+    if (!(list = virMediatedDeviceListNew()))
+        goto cleanup;
+
+    /* Loop 1: Build a temporary list of unused mediated devices. */
+    for (i = 0; i < nhostdevs; i++) {
+        virDomainHostdevDefPtr hostdev = hostdevs[i];
+        virDomainHostdevSubsysMediatedDevPtr src = &hostdev->source.subsys.u.mdev;
+        virMediatedDevicePtr mdev;
+
+        if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS)
+            continue;
+        if (hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV)
+            continue;
+
+        if (!(mdev = virMediatedDeviceNew(src->uuidstr)))
+            goto cleanup;
+
+        if (virHostdevMediatedDeviceIsUsed(mdev, mgr->activeMediatedHostdevs))
+            goto cleanup;
+
+        /* Check whether the user-provided model corresponds with the actually
+         * supported mediated device's API.
+         */
+        if (virHostdevMediatedDeviceCheckModel(mdev, src->model) < 0)
+            goto cleanup;
+
+        if (virMediatedDeviceListAdd(list, mdev) < 0) {
+            virMediatedDeviceFree(mdev);
+            goto cleanup;
+        }
+    }
+
+
+    /* Mark the devices in the list as used by @drv_name-@dom_name and copy the
+     * references to the driver list
+     */
+    if (virHostdevMarkMediatedDevices(mgr, drv_name, dom_name, list) < 0)
+        goto cleanup;
+
+    /* Loop 2: Temporary list was successfully merged with
+     * driver list, so steal all items to avoid freeing them
+     * in cleanup label.
+     */
+    while (virMediatedDeviceListCount(list) > 0) {
+        virMediatedDevicePtr tmp = virMediatedDeviceListGet(list, 0);
+        virMediatedDeviceListSteal(list, tmp);
+    }
+
+    ret = 0;
+ cleanup:
+    virObjectUnref(list);
+    return ret;
 }
 
 void

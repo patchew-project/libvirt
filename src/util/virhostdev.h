@@ -31,6 +31,7 @@
 # include "virusb.h"
 # include "virscsi.h"
 # include "virscsivhost.h"
+# include "virmdev.h"
 # include "domain_conf.h"
 
 typedef enum {
@@ -55,6 +56,7 @@ struct _virHostdevManager {
     virUSBDeviceListPtr activeUSBHostdevs;
     virSCSIDeviceListPtr activeSCSIHostdevs;
     virSCSIVHostDeviceListPtr activeSCSIVHostHostdevs;
+    virMediatedDeviceListPtr activeMediatedHostdevs;
 };
 
 virHostdevManagerPtr virHostdevManagerGetDefault(void);
@@ -95,6 +97,13 @@ virHostdevPrepareSCSIVHostDevices(virHostdevManagerPtr hostdev_mgr,
                                   const char *dom_name,
                                   virDomainHostdevDefPtr *hostdevs,
                                   int nhostdevs)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+int
+virHostdevPrepareMediatedDevices(virHostdevManagerPtr hostdev_mgr,
+                                 const char *drv_name,
+                                 const char *dom_name,
+                                 virDomainHostdevDefPtr *hostdevs,
+                                 int nhostdevs)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 void
 virHostdevReAttachPCIDevices(virHostdevManagerPtr hostdev_mgr,
