@@ -2321,7 +2321,11 @@ virRandomInt;
 virResCtrlAvailable;
 virResCtrlGet;
 virResCtrlInit;
-
+virResCtrlSetCacheBanks;
+virResCtrlTypeFromString;
+virResCtrlTypeToString;
+virResCtrlUpdate;
+#
 
 # util/virrotatingfile.h
 virRotatingFileReaderConsume;
