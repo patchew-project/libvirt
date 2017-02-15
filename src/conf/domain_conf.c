@@ -259,7 +259,8 @@ VIR_ENUM_IMPL(virDomainDeviceAddress, VIR_DOMAIN_DEVICE_ADDRESS_TYPE_LAST,
               "ccw",
               "virtio-mmio",
               "isa",
-              "dimm")
+              "dimm",
+              "mdev")
 
 VIR_ENUM_IMPL(virDomainDiskDevice, VIR_DOMAIN_DISK_DEVICE_LAST,
               "disk",
@@ -3289,6 +3290,7 @@ int virDomainDeviceAddressIsValid(virDomainDeviceInfoPtr info,
         return virDomainDeviceCCWAddressIsValid(&info->addr.ccw);
 
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_USB:
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_MDEV:
         return 1;
     }
 
@@ -3381,6 +3383,7 @@ virDomainDeviceInfoAddressIsEqual(const virDomainDeviceInfo *a,
     /* address types below don't have any specific data */
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO:
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390:
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_MDEV:
         break;
 
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI:
@@ -5129,7 +5132,8 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
     }
 
     if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE ||
-        info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390)
+        info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390 ||
+        info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_MDEV)
         return 0;
 
     /* We'll be in domain/devices/[device type]/ so 3 level indent */
@@ -5212,6 +5216,7 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
         break;
 
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390:
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_MDEV:
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE:
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_LAST:
         break;
@@ -5773,6 +5778,7 @@ virDomainDeviceInfoParseXML(xmlNodePtr node,
             goto cleanup;
         break;
 
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_MDEV:
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE:
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_LAST:
         break;
@@ -18540,6 +18546,7 @@ virDomainDeviceInfoCheckABIStability(virDomainDeviceInfoPtr src,
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390:
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW:
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO:
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_MDEV:
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE:
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_LAST:
         break;
