@@ -2844,6 +2844,7 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
 {
     qemuMonitorCPUModelInfoPtr *modelInfo;
     const char *model;
+    qemuMonitorCPUModelExpansionType type;
 
     if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION))
         return 0;
@@ -2856,9 +2857,12 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
         model = "host";
     }
 
-    return qemuMonitorGetCPUModelExpansion(mon,
-                                           QEMU_MONITOR_CPU_MODEL_EXPANSION_STATIC,
-                                           model, modelInfo);
+    if (ARCH_IS_X86(qemuCaps->arch))
+        type = QEMU_MONITOR_CPU_MODEL_EXPANSION_STATIC_FULL;
+    else
+        type = QEMU_MONITOR_CPU_MODEL_EXPANSION_STATIC;
+
+    return qemuMonitorGetCPUModelExpansion(mon, type, model, modelInfo);
 }
 
 struct tpmTypeToCaps {
