@@ -618,9 +618,11 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         virPCIDeviceAddressPtr hostAddr = &hostdev->source.subsys.u.pci.addr;
 
         if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS ||
-            hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI) {
+            (hostdev->source.subsys.type !=
+             VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI &&
+             hostdev->source.subsys.type !=
+             VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV))
             return 0;
-        }
 
         if (pciFlags == pcieFlags) {
             /* This arch/qemu only supports legacy PCI, so there
@@ -641,6 +643,9 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
              */
             return pcieFlags;
         }
+
+        if (hostdev->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV)
+            return pcieFlags;
 
         if (!(pciDev = virPCIDeviceNew(hostAddr->domain,
                                        hostAddr->bus,
@@ -1725,12 +1730,15 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
 
     /* Host PCI devices */
     for (i = 0; i < def->nhostdevs; i++) {
+        virDomainHostdevSubsysPtr subsys = &def->hostdevs[i]->source.subsys;
         if (!virDeviceInfoPCIAddressWanted(def->hostdevs[i]->info))
             continue;
         if (def->hostdevs[i]->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS)
             continue;
-        if (def->hostdevs[i]->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI &&
-            def->hostdevs[i]->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST)
+        if (subsys->type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI &&
+            subsys->type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST &&
+            !(subsys->type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV &&
+              subsys->u.mdev.model == VIR_MDEV_MODEL_TYPE_VFIO_PCI))
             continue;
 
         if (qemuDomainPCIAddressReserveNextAddr(addrs,
