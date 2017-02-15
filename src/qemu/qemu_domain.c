@@ -6852,10 +6852,12 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
     virDomainHostdevSubsysPCIPtr pcisrc = &dev->source.subsys.u.pci;
     virDomainHostdevSubsysSCSIPtr scsisrc = &dev->source.subsys.u.scsi;
     virDomainHostdevSubsysSCSIVHostPtr hostsrc = &dev->source.subsys.u.scsi_host;
+    virDomainHostdevSubsysMediatedDevPtr mdevsrc = &dev->source.subsys.u.mdev;
     virPCIDevicePtr pci = NULL;
     virUSBDevicePtr usb = NULL;
     virSCSIDevicePtr scsi = NULL;
     virSCSIVHostDevicePtr host = NULL;
+    virMediatedDevicePtr mdev = NULL;
     char *tmpPath = NULL;
     bool freeTmpPath = false;
 
@@ -6930,6 +6932,14 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
         }
 
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
+            if (!(mdev = virMediatedDeviceNew(mdevsrc->uuidstr)))
+                goto cleanup;
+
+            if (!(tmpPath = virMediatedDeviceGetIOMMUGroupDev(mdev)))
+                goto cleanup;
+
+            freeTmpPath = true;
+            break;
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
             break;
         }
@@ -6950,6 +6960,7 @@ qemuDomainGetHostdevPath(virDomainHostdevDefPtr dev,
     virUSBDeviceFree(usb);
     virSCSIDeviceFree(scsi);
     virSCSIVHostDeviceFree(host);
+    virMediatedDeviceFree(mdev);
     if (freeTmpPath)
         VIR_FREE(tmpPath);
     return ret;
