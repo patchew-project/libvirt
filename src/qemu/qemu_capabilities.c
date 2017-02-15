@@ -3180,7 +3180,7 @@ virQEMUCapsLoadHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
 
     ctxt->node = hostCPUNode;
 
-    if ((n = virXPathNodeSet("./feature", ctxt, &featureNodes)) > 0) {
+    if ((n = virXPathNodeSet("./property", ctxt, &featureNodes)) > 0) {
         if (VIR_ALLOC_N(hostCPU->props, n) < 0)
             goto cleanup;
 
@@ -3191,14 +3191,14 @@ virQEMUCapsLoadHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
             if (!hostCPU->props[i].name) {
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                                _("missing 'name' attribute for a host CPU"
-                                 " model feature in QEMU capabilities cache"));
+                                 " model property in QEMU capabilities cache"));
                 goto cleanup;
             }
 
-            if (!(str = virXMLPropString(featureNodes[i], "supported"))) {
+            if (!(str = virXMLPropString(featureNodes[i], "boolean"))) {
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                               _("missing 'supported' attribute for a host CPU"
-                                 " model feature in QEMU capabilities cache"));
+                               _("missing 'boolean' attribute for a host CPU"
+                                 " model property in QEMU capabilities cache"));
                 goto cleanup;
             }
             if (STREQ(str, "yes")) {
@@ -3207,7 +3207,7 @@ virQEMUCapsLoadHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
                 hostCPU->props[i].supported = false;
             } else {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("invalid supported value: '%s'"), str);
+                               _("invalid boolean value: '%s'"), str);
                 goto cleanup;
             }
             VIR_FREE(str);
@@ -3552,7 +3552,7 @@ virQEMUCapsFormatHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
     virBufferAdjustIndent(buf, 2);
 
     for (i = 0; i < model->nprops; i++) {
-        virBufferAsprintf(buf, "<feature name='%s' supported='%s'/>\n",
+        virBufferAsprintf(buf, "<property name='%s' boolean='%s'/>\n",
                           model->props[i].name,
                           model->props[i].supported ? "yes" : "no");
     }
