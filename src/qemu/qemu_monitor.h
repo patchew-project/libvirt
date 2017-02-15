@@ -921,16 +921,31 @@ int qemuMonitorGetCPUDefinitions(qemuMonitorPtr mon,
                                  qemuMonitorCPUDefInfoPtr **cpus);
 void qemuMonitorCPUDefInfoFree(qemuMonitorCPUDefInfoPtr cpu);
 
+typedef enum {
+    QEMU_MONITOR_CPU_PROPERTY_BOOLEAN,
+    QEMU_MONITOR_CPU_PROPERTY_STRING,
+    QEMU_MONITOR_CPU_PROPERTY_ULL,
+} qemuMonitorCPUPropertyType;
+
+typedef struct _qemuMonitorCPUProperty qemuMonitorCPUProperty;
+typedef qemuMonitorCPUProperty *qemuMonitorCPUPropertyPtr;
+struct _qemuMonitorCPUProperty {
+    char *name;
+    qemuMonitorCPUPropertyType type;
+    union {
+        bool boolean;
+        char *string;
+        unsigned long long ull;
+    } value;
+};
+
 typedef struct _qemuMonitorCPUModelInfo qemuMonitorCPUModelInfo;
 typedef qemuMonitorCPUModelInfo *qemuMonitorCPUModelInfoPtr;
 
 struct _qemuMonitorCPUModelInfo {
     char *name;
     size_t nprops;
-    struct {
-        char *name;
-        bool supported;
-    } *props;
+    qemuMonitorCPUPropertyPtr props;
 };
 
 int qemuMonitorGetCPUModelExpansion(qemuMonitorPtr mon,

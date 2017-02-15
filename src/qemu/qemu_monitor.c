@@ -3661,8 +3661,11 @@ qemuMonitorCPUModelInfoFree(qemuMonitorCPUModelInfoPtr model_info)
     if (!model_info)
         return;
 
-    for (i = 0; i < model_info->nprops; i++)
+    for (i = 0; i < model_info->nprops; i++) {
         VIR_FREE(model_info->props[i].name);
+        if (model_info->props[i].type == QEMU_MONITOR_CPU_PROPERTY_STRING)
+            VIR_FREE(model_info->props[i].value.string);
+    }
 
     VIR_FREE(model_info->props);
     VIR_FREE(model_info->name);
@@ -3691,7 +3694,22 @@ qemuMonitorCPUModelInfoCopy(const qemuMonitorCPUModelInfo *orig)
         if (VIR_STRDUP(copy->props[i].name, orig->props[i].name) < 0)
             goto error;
 
-        copy->props[i].supported = orig->props[i].supported;
+        copy->props[i].type = orig->props[i].type;
+        switch (orig->props[i].type) {
+        case QEMU_MONITOR_CPU_PROPERTY_BOOLEAN:
+            copy->props[i].value.boolean = orig->props[i].value.boolean;
+            break;
+
+        case QEMU_MONITOR_CPU_PROPERTY_STRING:
+            if (VIR_STRDUP(copy->props[i].value.string,
+                           orig->props[i].value.string) < 0)
+                goto error;
+            break;
+
+        case QEMU_MONITOR_CPU_PROPERTY_ULL:
+            copy->props[i].value.ull = orig->props[i].value.ull;
+            break;
+        }
     }
 
     return copy;

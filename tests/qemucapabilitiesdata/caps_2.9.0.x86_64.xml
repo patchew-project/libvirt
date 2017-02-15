@@ -222,11 +222,13 @@
     <property name='avx512cd' boolean='no'/>
     <property name='decodeassists' boolean='no'/>
     <property name='sse4.1' boolean='yes'/>
+    <property name='family' ull='6'/>
     <property name='avx512f' boolean='no'/>
     <property name='msr' boolean='yes'/>
     <property name='mce' boolean='yes'/>
     <property name='mca' boolean='yes'/>
     <property name='xcrypt' boolean='no'/>
+    <property name='min-level' ull='13'/>
     <property name='xgetbv1' boolean='yes'/>
     <property name='cid' boolean='no'/>
     <property name='ds' boolean='no'/>
@@ -242,6 +244,7 @@
     <property name='xcrypt-en' boolean='no'/>
     <property name='pn' boolean='no'/>
     <property name='dca' boolean='no'/>
+    <property name='vendor' string='GenuineIntel'/>
     <property name='pku' boolean='no'/>
     <property name='smx' boolean='no'/>
     <property name='cmp-legacy' boolean='no'/>
@@ -287,6 +290,7 @@
     <property name='sse4.2' boolean='yes'/>
     <property name='pge' boolean='yes'/>
     <property name='pdcm' boolean='no'/>
+    <property name='model' ull='94'/>
     <property name='movbe' boolean='yes'/>
     <property name='nrip-save' boolean='no'/>
     <property name='ssse3' boolean='yes'/>
@@ -297,6 +301,7 @@
     <property name='fma' boolean='yes'/>
     <property name='cx16' boolean='yes'/>
     <property name='de' boolean='yes'/>
+    <property name='stepping' ull='3'/>
     <property name='xsave' boolean='yes'/>
     <property name='clflush' boolean='yes'/>
     <property name='skinit' boolean='no'/>
@@ -334,6 +339,7 @@
     <property name='sep' boolean='yes'/>
     <property name='nodeid-msr' boolean='no'/>
     <property name='misalignsse' boolean='no'/>
+    <property name='min-xlevel' ull='2147483656'/>
     <property name='bmi1' boolean='yes'/>
     <property name='bmi2' boolean='yes'/>
     <property name='kvm-pv-unhalt' boolean='yes'/>
@@ -363,6 +369,7 @@
     <property name='pse36' boolean='yes'/>
     <property name='tbm' boolean='no'/>
     <property name='wdt' boolean='no'/>
+    <property name='model-id' string='Intel(R) Xeon(R) CPU E3-1245 v5 @ 3.50GHz'/>
     <property name='sha-ni' boolean='no'/>
     <property name='abm' boolean='yes'/>
     <property name='avx512pf' boolean='no'/>

@@ -3074,14 +3074,16 @@ virQEMUCapsInitCPUModelS390(virQEMUCapsPtr qemuCaps,
     cpu->nfeatures = 0;
 
     for (i = 0; i < modelInfo->nprops; i++) {
-        if (VIR_STRDUP(cpu->features[i].name, modelInfo->props[i].name) < 0)
+        virCPUFeatureDefPtr feature = cpu->features + cpu->nfeatures;
+        qemuMonitorCPUPropertyPtr prop = modelInfo->props + i;
+
+        if (prop->type != QEMU_MONITOR_CPU_PROPERTY_BOOLEAN)
+            continue;
+
+        if (VIR_STRDUP(feature->name, prop->name) < 0)
             return -1;
-
-        if (modelInfo->props[i].supported)
-            cpu->features[i].policy = VIR_CPU_FEATURE_REQUIRE;
-        else
-            cpu->features[i].policy = VIR_CPU_FEATURE_DISABLE;
-
+        feature->policy = prop->value.boolean ? VIR_CPU_FEATURE_REQUIRE
+                                              : VIR_CPU_FEATURE_DISABLE;
         cpu->nfeatures++;
     }
 
@@ -3154,7 +3156,6 @@ static int
 virQEMUCapsLoadHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
                                 xmlXPathContextPtr ctxt)
 {
-    char *str = NULL;
     xmlNodePtr hostCPUNode;
     xmlNodePtr *featureNodes = NULL;
     xmlNodePtr oldnode = ctxt->node;
@@ -3187,30 +3188,47 @@ virQEMUCapsLoadHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
         hostCPU->nprops = n;
 
         for (i = 0; i < n; i++) {
-            hostCPU->props[i].name = virXMLPropString(featureNodes[i], "name");
-            if (!hostCPU->props[i].name) {
+            qemuMonitorCPUPropertyPtr prop = hostCPU->props + i;
+            ctxt->node = featureNodes[i];
+
+            if (!(prop->name = virXMLPropString(ctxt->node, "name"))) {
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                                _("missing 'name' attribute for a host CPU"
                                  " model property in QEMU capabilities cache"));
                 goto cleanup;
             }
 
-            if (!(str = virXMLPropString(featureNodes[i], "boolean"))) {
-                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                               _("missing 'boolean' attribute for a host CPU"
-                                 " model property in QEMU capabilities cache"));
-                goto cleanup;
-            }
-            if (STREQ(str, "yes")) {
-                hostCPU->props[i].supported = true;
-            } else if (STREQ(str, "no")) {
-                hostCPU->props[i].supported = false;
+            if (virXPathBoolean("boolean(./@boolean)", ctxt)) {
+                if (virXPathBoolean("./@boolean='yes'", ctxt))
+                    prop->value.boolean = true;
+                prop->type = QEMU_MONITOR_CPU_PROPERTY_BOOLEAN;
+            } else if (virXPathBoolean("boolean(./@string)", ctxt)) {
+                prop->value.string = virXMLPropString(ctxt->node, "string");
+                if (!prop->value.string) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   _("invalid string value for '%s' host CPU "
+                                     "model property in QEMU capabilities cache"),
+                                   prop->name);
+                    goto cleanup;
+                }
+                prop->type = QEMU_MONITOR_CPU_PROPERTY_STRING;
+            } else if (virXPathBoolean("boolean(./@ull)", ctxt)) {
+                if (virXPathULongLong("string(./@ull)", ctxt,
+                                      &prop->value.ull) < 0) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   _("invalid integer value for '%s' host CPU "
+                                     "model property in QEMU capabilities cache"),
+                                   prop->name);
+                    goto cleanup;
+                }
+                prop->type = QEMU_MONITOR_CPU_PROPERTY_ULL;
             } else {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("invalid boolean value: '%s'"), str);
+                               _("missing value for '%s' host CPU model "
+                                 "property in QEMU capabilities cache"),
+                               prop->name);
                 goto cleanup;
             }
-            VIR_FREE(str);
         }
     }
 
@@ -3220,7 +3238,6 @@ virQEMUCapsLoadHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
 
  cleanup:
     ctxt->node = oldnode;
-    VIR_FREE(str);
     VIR_FREE(featureNodes);
     qemuMonitorCPUModelInfoFree(hostCPU);
     return ret;
@@ -3552,9 +3569,24 @@ virQEMUCapsFormatHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
     virBufferAdjustIndent(buf, 2);
 
     for (i = 0; i < model->nprops; i++) {
-        virBufferAsprintf(buf, "<property name='%s' boolean='%s'/>\n",
-                          model->props[i].name,
-                          model->props[i].supported ? "yes" : "no");
+        qemuMonitorCPUPropertyPtr prop = model->props + i;
+
+        switch (prop->type) {
+        case QEMU_MONITOR_CPU_PROPERTY_BOOLEAN:
+            virBufferAsprintf(buf, "<property name='%s' boolean='%s'/>\n",
+                              prop->name, prop->value.boolean ? "yes" : "no");
+            break;
+
+        case QEMU_MONITOR_CPU_PROPERTY_STRING:
+            virBufferAsprintf(buf, "<property name='%s' ", prop->name);
+            virBufferEscapeString(buf, "string='%s'/>\n", prop->value.string);
+            break;
+
+        case QEMU_MONITOR_CPU_PROPERTY_ULL:
+            virBufferAsprintf(buf, "<property name='%s' ull='%llu'/>\n",
+                              prop->name, prop->value.ull);
+            break;
+        }
     }
 
     virBufferAdjustIndent(buf, -2);
