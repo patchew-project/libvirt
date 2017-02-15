@@ -419,6 +419,18 @@ qemuHostdevReAttachSCSIVHostDevices(virQEMUDriverPtr driver,
 }
 
 void
+qemuHostdevReAttachMediatedDevices(virQEMUDriverPtr driver,
+                                   const char *name,
+                                   virDomainHostdevDefPtr *hostdevs,
+                                   int nhostdevs)
+{
+    virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
+
+    virHostdevReAttachMediatedDevices(hostdev_mgr, QEMU_DRIVER_NAME,
+                                      name, hostdevs, nhostdevs);
+}
+
+void
 qemuHostdevReAttachDomainDevices(virQEMUDriverPtr driver,
                                  virDomainDefPtr def)
 {
@@ -436,4 +448,7 @@ qemuHostdevReAttachDomainDevices(virQEMUDriverPtr driver,
 
     qemuHostdevReAttachSCSIVHostDevices(driver, def->name, def->hostdevs,
                                         def->nhostdevs);
+
+    qemuHostdevReAttachMediatedDevices(driver, def->name, def->hostdevs,
+                                       def->nhostdevs);
 }
