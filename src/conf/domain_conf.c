@@ -56,6 +56,7 @@
 #include "virstring.h"
 #include "virnetdev.h"
 #include "virhostdev.h"
+#include "virmdev.h"
 
 #define VIR_FROM_THIS VIR_FROM_DOMAIN
 
@@ -649,7 +650,8 @@ VIR_ENUM_IMPL(virDomainHostdevSubsys, VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST,
               "usb",
               "pci",
               "scsi",
-              "scsi_host")
+              "scsi_host",
+              "mdev")
 
 VIR_ENUM_IMPL(virDomainHostdevSubsysPCIBackend,
               VIR_DOMAIN_HOSTDEV_PCI_BACKEND_TYPE_LAST,
@@ -667,6 +669,11 @@ VIR_ENUM_IMPL(virDomainHostdevSubsysSCSIHostProtocol,
               VIR_DOMAIN_HOSTDEV_SUBSYS_SCSI_HOST_PROTOCOL_TYPE_LAST,
               "none",
               "vhost")
+
+VIR_ENUM_IMPL(virMediatedDeviceModel,
+              VIR_MDEV_MODEL_TYPE_LAST,
+              "default",
+              "vfio-pci")
 
 VIR_ENUM_IMPL(virDomainHostdevCaps, VIR_DOMAIN_HOSTDEV_CAPS_TYPE_LAST,
               "storage",
@@ -6348,10 +6355,12 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
     char *sgio = NULL;
     char *rawio = NULL;
     char *backendStr = NULL;
+    char *model = NULL;
     int backend;
     int ret = -1;
     virDomainHostdevSubsysPCIPtr pcisrc = &def->source.subsys.u.pci;
     virDomainHostdevSubsysSCSIPtr scsisrc = &def->source.subsys.u.scsi;
+    virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
 
     /* @managed can be read from the xml document - it is always an
      * attribute of the toplevel element, no matter what type of
@@ -6431,6 +6440,21 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
         }
     }
 
+    if (model) {
+        if (def->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("model is only supported with mediated devices"));
+            goto error;
+        }
+
+        if ((mdevsrc->model = virMediatedDeviceModelTypeFromString(model)) <= 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("unknown hostdev model '%s'"),
+                           model);
+            goto error;
+        }
+    }
+
     switch (def->source.subsys.type) {
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
         if (virDomainHostdevSubsysPCIDefParseXML(sourcenode, def, flags) < 0)
@@ -6462,6 +6486,8 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST:
         if (virDomainHostdevSubsysSCSIVHostDefParseXML(sourcenode, def) < 0)
             goto error;
+        break;
+    case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
         break;
 
     default:
@@ -13291,6 +13317,7 @@ virDomainHostdevDefParseXML(virDomainXMLOptionPtr xmlopt,
             }
             break;
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
             break;
         }
@@ -14182,6 +14209,7 @@ virDomainHostdevMatchSubsys(virDomainHostdevDefPtr a,
             return 1;
         else
             return 0;
+    case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
         return 0;
     }
@@ -23105,6 +23133,7 @@ virDomainHostdevDefFormat(virBufferPtr buf,
 {
     const char *mode = virDomainHostdevModeTypeToString(def->mode);
     virDomainHostdevSubsysSCSIPtr scsisrc = &def->source.subsys.u.scsi;
+    virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
     const char *type;
 
     if (!mode) {
@@ -23154,6 +23183,11 @@ virDomainHostdevDefFormat(virBufferPtr buf,
             virBufferAsprintf(buf, " rawio='%s'",
                               virTristateBoolTypeToString(scsisrc->rawio));
         }
+
+        if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV &&
+            mdevsrc->model)
+            virBufferAsprintf(buf, " model='%s'",
+                              virMediatedDeviceModelTypeToString(mdevsrc->model));
     }
     virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
