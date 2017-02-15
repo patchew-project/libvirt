@@ -33,6 +33,7 @@
 #include "virprocess.h"
 #include "nodeinfo.h"
 #include "cpu/cpu.h"
+#include "cpu/cpu_x86.h"
 #include "domain_conf.h"
 #include "vircommand.h"
 #include "virbitmap.h"
