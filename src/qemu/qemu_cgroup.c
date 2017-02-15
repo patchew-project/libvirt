@@ -318,6 +318,23 @@ qemuSetupHostSCSIVHostDeviceCgroup(virSCSIVHostDevicePtr dev ATTRIBUTE_UNUSED,
     return ret;
 }
 
+static int
+qemuSetupHostMediatedDeviceCgroup(virMediatedDevicePtr dev ATTRIBUTE_UNUSED,
+                                  const char *path,
+                                  void *opaque)
+{
+    virDomainObjPtr vm = opaque;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    int ret = -1;
+
+    VIR_DEBUG("Process path '%s' for mediated device", path);
+    ret = virCgroupAllowDevicePath(priv->cgroup, path,
+                                   VIR_CGROUP_DEVICE_RW, false);
+    virDomainAuditCgroupPath(vm, priv->cgroup, "allow", path, "rw", ret == 0);
+
+    return ret;
+}
+
 int
 qemuSetupHostdevCgroup(virDomainObjPtr vm,
                        virDomainHostdevDefPtr dev)
@@ -328,10 +345,12 @@ qemuSetupHostdevCgroup(virDomainObjPtr vm,
     virDomainHostdevSubsysPCIPtr pcisrc = &dev->source.subsys.u.pci;
     virDomainHostdevSubsysSCSIPtr scsisrc = &dev->source.subsys.u.scsi;
     virDomainHostdevSubsysSCSIVHostPtr hostsrc = &dev->source.subsys.u.scsi_host;
+    virDomainHostdevSubsysMediatedDevPtr mdevsrc = &dev->source.subsys.u.mdev;
     virPCIDevicePtr pci = NULL;
     virUSBDevicePtr usb = NULL;
     virSCSIDevicePtr scsi = NULL;
     virSCSIVHostDevicePtr host = NULL;
+    virMediatedDevicePtr mdev = NULL;
     char *path = NULL;
 
     /* currently this only does something for PCI devices using vfio
@@ -434,6 +453,15 @@ qemuSetupHostdevCgroup(virDomainObjPtr vm,
         }
 
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
+            if (!(mdev = virMediatedDeviceNew(mdevsrc->uuidstr)))
+                goto cleanup;
+
+            if (!(path = virMediatedDeviceGetIOMMUGroupDev(mdev)))
+                goto cleanup;
+
+            if (qemuSetupHostMediatedDeviceCgroup(mdev, path, vm) < 0)
+                goto cleanup;
+
             break;
 
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
@@ -447,6 +475,7 @@ qemuSetupHostdevCgroup(virDomainObjPtr vm,
     virUSBDeviceFree(usb);
     virSCSIDeviceFree(scsi);
     virSCSIVHostDeviceFree(host);
+    virMediatedDeviceFree(mdev);
     VIR_FREE(path);
     return ret;
 }
