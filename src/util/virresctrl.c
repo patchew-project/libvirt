@@ -916,6 +916,46 @@ virResCtrlAppendDomain(virResDomainPtr dom)
     return 0;
 }
 
+/* scan /sys/fs/resctrl again and refresh default schemata */
+static
+int virResCtrlScan(void)
+{
+    struct dirent *ent;
+    DIR *dp = NULL;
+    int direrr;
+    virResDomainPtr p;
+    int rc = -1;
+
+    if (virDirOpenQuiet(&dp, RESCTRL_DIR) < 0) {
+        if (errno == ENOENT)
+            return -1;
+        VIR_ERROR(_("Unable to open %s (%d)"), RESCTRL_DIR, errno);
+        goto cleanup;
+    }
+
+    while ((direrr = virDirRead(dp, &ent, NULL)) > 0) {
+        if ((ent->d_type != DT_DIR) || STREQ(ent->d_name, "info"))
+            continue;
+        /* test if we'v tracked all domains */
+        p = virResCtrlGetDomain(ent->d_name);
+        if (p == NULL) {
+            p = virResCtrlLoadDomain(ent->d_name);
+            if (p == NULL)
+                continue;
+            /* This domain is not created by libvirt, so we don't care
+             * about the tasks, add a fake one to prevent virResCtrlRefresh
+             * remove it from sysfs */
+            virResCtrlAddTask(p, 1);
+            virResCtrlAppendDomain(p);
+        }
+    }
+    rc = 0;
+
+ cleanup:
+    VIR_DIR_CLOSE(dp);
+    return rc;
+}
+
 static int
 virResCtrlGetSocketIdByHostID(int type, unsigned int hostid)
 {
@@ -1012,6 +1052,12 @@ int virResCtrlSetCacheBanks(virDomainCachetunePtr cachetune,
     if (cachetune->n_banks < 1)
         return 0;
 
+    /* scan /sys/fs/resctrl again and refresh default schemata */
+
+    if (virResCtrlScan() < 0) {
+        VIR_ERROR(_("Failed to scan resctrl domain dir"));
+        return -1;
+    }
     p = virResCtrlGetDomain(name);
     if (p == NULL) {
         VIR_DEBUG("no domain name %s found, create new one!", name);
@@ -1073,7 +1119,7 @@ int virResCtrlSetCacheBanks(virDomainCachetunePtr cachetune,
     virResCtrlRefresh();
     /* after refresh, flush header's schemata changes to sys fs */
     if (virResCtrlFlushDomainToSysfs(domainall.domains) < 0)
-        VIR_WARN("failed to flush domain to sysfs");
+        VIR_ERROR(_("failed to flush domain to sysfs"));
 
     return 0;
 }
