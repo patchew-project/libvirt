@@ -987,7 +987,6 @@ virSecretObjSetValueSize;
 # cpu/cpu.h
 cpuBaseline;
 cpuBaselineXML;
-cpuDataFree;
 cpuDecode;
 cpuEncode;
 cpuNodeData;
@@ -997,6 +996,7 @@ virCPUCompareXML;
 virCPUConvertLegacy;
 virCPUDataCheckFeature;
 virCPUDataFormat;
+virCPUDataFree;
 virCPUDataNew;
 virCPUDataParse;
 virCPUGetModels;
