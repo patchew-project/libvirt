@@ -1962,6 +1962,24 @@ virMacMapNew;
 virMacMapRemove;
 virMacMapWriteFile;
 
+# util/virmdev.h
+virMediatedDeviceFree;
+virMediatedDeviceGetDeviceAPI;
+virMediatedDeviceGetIOMMUGroupDev;
+virMediatedDeviceGetPath;
+virMediatedDeviceGetUsedBy;
+virMediatedDeviceListAdd;
+virMediatedDeviceListCount;
+virMediatedDeviceListDel;
+virMediatedDeviceListFind;
+virMediatedDeviceListGet;
+virMediatedDeviceListNew;
+virMediatedDeviceListSteal;
+virMediatedDeviceListStealIndex;
+virMediatedDeviceNew;
+virMediatedDeviceSetUsedBy;
+
+
 
 # util/virnetdev.h
 virNetDevAddMulti;

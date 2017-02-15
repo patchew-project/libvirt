@@ -186,6 +186,7 @@ UTIL_SOURCES =							\
 		util/viruuid.c util/viruuid.h			\
 		util/virxdrdefs.h                               \
 		util/virxml.c util/virxml.h			\
+		util/virmdev.c util/virmdev.h			\
 		$(NULL)
 
 EXTRA_DIST += $(srcdir)/util/keymaps.csv $(srcdir)/util/virkeycode-mapgen.py
