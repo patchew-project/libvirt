@@ -6348,6 +6348,47 @@ virDomainHostdevSubsysSCSIVHostDefParseXML(xmlNodePtr sourcenode,
     return ret;
 }
 
+static int
+virDomainHostdevSubsysMediatedDevDefParseXML(virDomainHostdevDefPtr def,
+                                             xmlXPathContextPtr ctxt)
+{
+    int ret = -1;
+    unsigned char uuid[VIR_UUID_BUFLEN] = {0};
+    char *uuidxml = NULL;
+    xmlNodePtr node = NULL;
+    virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
+
+    if (mdevsrc->model == 0) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("Missing 'model' attribute for element <hostdev>"));
+        goto cleanup;
+    }
+
+    if (!(node = virXPathNode("./source/address", ctxt))) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Missing <address> element"));
+        goto cleanup;
+    }
+
+    if (!(uuidxml = virXMLPropString(node, "uuid"))) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Missing 'uuid' attribute for element <address>"));
+        goto cleanup;
+    }
+
+    if (virUUIDParse(uuidxml, uuid) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "%s",
+                       _("Cannot parse uuid attribute of element <address>"));
+        goto cleanup;
+    }
+
+    virUUIDFormat(uuid, mdevsrc->uuidstr);
+    ret = 0;
+ cleanup:
+    VIR_FREE(uuidxml);
+    return ret;
+}
 
 static int
 virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
@@ -6380,6 +6421,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
 
     sgio = virXMLPropString(node, "sgio");
     rawio = virXMLPropString(node, "rawio");
+    model = virXMLPropString(node, "model");
 
     /* @type is passed in from the caller rather than read from the
      * xml document, because it is specified in different places for
@@ -6494,6 +6536,8 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
             goto error;
         break;
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
+        if (virDomainHostdevSubsysMediatedDevDefParseXML(def, ctxt) < 0)
+            goto error;
         break;
 
     default:
@@ -6509,6 +6553,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
     VIR_FREE(sgio);
     VIR_FREE(rawio);
     VIR_FREE(backendStr);
+    VIR_FREE(model);
     return ret;
 }
 
@@ -21180,6 +21225,7 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
     virDomainHostdevSubsysPCIPtr pcisrc = &def->source.subsys.u.pci;
     virDomainHostdevSubsysSCSIPtr scsisrc = &def->source.subsys.u.scsi;
     virDomainHostdevSubsysSCSIVHostPtr hostsrc = &def->source.subsys.u.scsi_host;
+    virDomainHostdevSubsysMediatedDevPtr mdevsrc = &def->source.subsys.u.mdev;
     virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
     virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &scsisrc->u.iscsi;
 
@@ -21283,6 +21329,10 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
         }
         break;
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST:
+        break;
+    case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
+        virBufferAsprintf(buf, "<address type='mdev' uuid='%s'/>\n",
+                          mdevsrc->uuidstr);
         break;
     default:
         virReportError(VIR_ERR_INTERNAL_ERROR,
