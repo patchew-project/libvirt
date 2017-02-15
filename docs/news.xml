@@ -53,6 +53,17 @@
           was <code>virtio-net</code>.
         </description>
       </change>
+      <change>
+        <summary>
+          qemu: add mediated devices framework support
+        </summary>
+        <description>
+          With the upcomming kernel changes which introduce the new mediated
+          device framework, provide an initial support of this framework into
+          libvirt, mainly introduce new device type as well as an address type
+          in the XML.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
       <change>
