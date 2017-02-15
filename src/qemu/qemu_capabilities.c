@@ -3030,8 +3030,13 @@ virQEMUCapsProbeQMPGICCapabilities(virQEMUCapsPtr qemuCaps,
 
 static bool
 virQEMUCapsCPUFilterFeatures(const char *name,
-                             void *opaque ATTRIBUTE_UNUSED)
+                             void *opaque)
 {
+    virQEMUCapsPtr qemuCaps = opaque;
+
+    if (!ARCH_IS_X86(qemuCaps->arch))
+        return true;
+
     if (STREQ(name, "cmt") ||
         STREQ(name, "mbm_total") ||
         STREQ(name, "mbm_local"))
@@ -3128,7 +3133,8 @@ virQEMUCapsInitHostCPUModel(virQEMUCapsPtr qemuCaps,
             goto error;
 
         if (virCPUDefCopyModelFilter(cpu, caps->host.cpu, true,
-                                     virQEMUCapsCPUFilterFeatures, NULL) < 0)
+                                     virQEMUCapsCPUFilterFeatures,
+                                     qemuCaps) < 0)
             goto error;
     }
 
