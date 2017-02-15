@@ -134,21 +134,21 @@
   <package></package>
   <arch>s390x</arch>
   <hostCPU model='zEC12.2-base'>
-    <feature name='aefsi' supported='yes'/>
-    <feature name='msa5' supported='yes'/>
-    <feature name='msa4' supported='yes'/>
-    <feature name='msa3' supported='yes'/>
-    <feature name='msa2' supported='yes'/>
-    <feature name='msa1' supported='yes'/>
-    <feature name='sthyi' supported='yes'/>
-    <feature name='edat' supported='yes'/>
-    <feature name='ri' supported='yes'/>
-    <feature name='edat2' supported='yes'/>
-    <feature name='ipter' supported='yes'/>
-    <feature name='esop' supported='yes'/>
-    <feature name='cte' supported='yes'/>
-    <feature name='te' supported='yes'/>
-    <feature name='cmm' supported='yes'/>
+    <property name='aefsi' boolean='yes'/>
+    <property name='msa5' boolean='yes'/>
+    <property name='msa4' boolean='yes'/>
+    <property name='msa3' boolean='yes'/>
+    <property name='msa2' boolean='yes'/>
+    <property name='msa1' boolean='yes'/>
+    <property name='sthyi' boolean='yes'/>
+    <property name='edat' boolean='yes'/>
+    <property name='ri' boolean='yes'/>
+    <property name='edat2' boolean='yes'/>
+    <property name='ipter' boolean='yes'/>
+    <property name='esop' boolean='yes'/>
+    <property name='cte' boolean='yes'/>
+    <property name='te' boolean='yes'/>
+    <property name='cmm' boolean='yes'/>
   </hostCPU>
   <cpu type='kvm' name='z10EC-base'/>
   <cpu type='kvm' name='z9EC-base'/>
