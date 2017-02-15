@@ -36,6 +36,7 @@ enum {
     VIR_RDT_RESOURCE_LAST,
 };
 
+VIR_ENUM_DECL(virResCtrl);
 
 typedef struct _virResCacheBank virResCacheBank;
 typedef virResCacheBank *virResCacheBankPtr;
