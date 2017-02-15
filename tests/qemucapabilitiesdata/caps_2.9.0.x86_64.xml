@@ -206,80 +206,109 @@
   <package> (v2.8.0-877-g38e4b757b4)</package>
   <arch>x86_64</arch>
   <hostCPU type='kvm' model='base'>
+    <property name='phys-bits' ull='0'/>
+    <property name='core-id' ull='18446744073709551615'/>
+    <property name='xlevel' ull='2147483656'/>
     <property name='cmov' boolean='yes'/>
     <property name='ia64' boolean='no'/>
     <property name='aes' boolean='yes'/>
     <property name='mmx' boolean='yes'/>
-    <property name='rdpid' boolean='no'/>
     <property name='arat' boolean='yes'/>
+    <property name='rdpid' boolean='no'/>
     <property name='pause-filter' boolean='no'/>
     <property name='xsavec' boolean='yes'/>
     <property name='osxsave' boolean='no'/>
+    <property name='tsc-frequency' ull='0'/>
+    <property name='xd' boolean='yes'/>
+    <property name='hv-vendor-id' string=''/>
     <property name='kvm-asyncpf' boolean='yes'/>
+    <property name='kvm_asyncpf' boolean='yes'/>
+    <property name='perfctr_core' boolean='no'/>
     <property name='perfctr-core' boolean='no'/>
     <property name='mpx' boolean='yes'/>
-    <property name='pbe' boolean='no'/>
     <property name='avx512cd' boolean='no'/>
     <property name='decodeassists' boolean='no'/>
+    <property name='pbe' boolean='no'/>
+    <property name='sse4_1' boolean='yes'/>
     <property name='sse4.1' boolean='yes'/>
+    <property name='sse4-1' boolean='yes'/>
     <property name='family' ull='6'/>
     <property name='avx512f' boolean='no'/>
+    <property name='xcrypt' boolean='no'/>
+    <property name='hv-runtime' boolean='no'/>
     <property name='msr' boolean='yes'/>
     <property name='mce' boolean='yes'/>
     <property name='mca' boolean='yes'/>
-    <property name='xcrypt' boolean='no'/>
+    <property name='thread-id' ull='18446744073709551615'/>
     <property name='min-level' ull='13'/>
     <property name='xgetbv1' boolean='yes'/>
     <property name='cid' boolean='no'/>
-    <property name='ds' boolean='no'/>
+    <property name='hv-relaxed' boolean='no'/>
     <property name='fxsr' boolean='yes'/>
+    <property name='ds' boolean='no'/>
+    <property name='hv-crash' boolean='no'/>
     <property name='xsaveopt' boolean='yes'/>
     <property name='xtpr' boolean='no'/>
-    <property name='avx512vl' boolean='no'/>
     <property name='avx512-vpopcntdq' boolean='no'/>
     <property name='phe' boolean='no'/>
+    <property name='avx512vl' boolean='no'/>
     <property name='extapic' boolean='no'/>
     <property name='3dnowprefetch' boolean='yes'/>
     <property name='cr8legacy' boolean='no'/>
+    <property name='cpuid-0xb' boolean='yes'/>
     <property name='xcrypt-en' boolean='no'/>
+    <property name='kvm_pv_eoi' boolean='yes'/>
+    <property name='apic-id' ull='4294967295'/>
     <property name='pn' boolean='no'/>
     <property name='dca' boolean='no'/>
     <property name='vendor' string='GenuineIntel'/>
     <property name='pku' boolean='no'/>
     <property name='smx' boolean='no'/>
     <property name='cmp-legacy' boolean='no'/>
+    <property name='cmp_legacy' boolean='no'/>
     <property name='avx512-4fmaps' boolean='no'/>
     <property name='vmcb-clean' boolean='no'/>
-    <property name='hle' boolean='yes'/>
+    <property name='vmcb_clean' boolean='no'/>
     <property name='3dnowext' boolean='no'/>
+    <property name='hle' boolean='yes'/>
     <property name='npt' boolean='no'/>
+    <property name='memory' string='/machine/unattached/system[0]'/>
     <property name='clwb' boolean='no'/>
     <property name='lbrv' boolean='no'/>
     <property name='adx' boolean='yes'/>
     <property name='ss' boolean='yes'/>
     <property name='pni' boolean='yes'/>
+    <property name='svm_lock' boolean='no'/>
     <property name='svm-lock' boolean='no'/>
     <property name='smep' boolean='yes'/>
-    <property name='smap' boolean='yes'/>
     <property name='pfthreshold' boolean='no'/>
+    <property name='smap' boolean='yes'/>
     <property name='x2apic' boolean='yes'/>
     <property name='avx512vbmi' boolean='no'/>
+    <property name='hv-stimer' boolean='no'/>
+    <property name='i64' boolean='yes'/>
     <property name='flushbyasid' boolean='no'/>
     <property name='f16c' boolean='yes'/>
     <property name='ace2-en' boolean='no'/>
-    <property name='pae' boolean='yes'/>
     <property name='pat' boolean='yes'/>
+    <property name='pae' boolean='yes'/>
     <property name='sse' boolean='yes'/>
     <property name='phe-en' boolean='no'/>
     <property name='kvm-nopiodelay' boolean='yes'/>
+    <property name='kvm_nopiodelay' boolean='yes'/>
     <property name='tm' boolean='no'/>
     <property name='kvmclock-stable-bit' boolean='yes'/>
     <property name='hypervisor' boolean='yes'/>
+    <property name='socket-id' ull='18446744073709551615'/>
     <property name='pcommit' boolean='no'/>
     <property name='syscall' boolean='yes'/>
+    <property name='level' ull='13'/>
     <property name='avx512dq' boolean='no'/>
     <property name='svm' boolean='no'/>
+    <property name='full-cpuid-auto-level' boolean='yes'/>
+    <property name='hv-reset' boolean='no'/>
     <property name='invtsc' boolean='no'/>
+    <property name='sse3' boolean='yes'/>
     <property name='sse2' boolean='yes'/>
     <property name='est' boolean='no'/>
     <property name='avx512ifma' boolean='no'/>
@@ -287,44 +316,61 @@
     <property name='kvm-pv-eoi' boolean='yes'/>
     <property name='cx8' boolean='yes'/>
     <property name='kvm-mmu' boolean='no'/>
+    <property name='kvm_mmu' boolean='no'/>
+    <property name='sse4_2' boolean='yes'/>
     <property name='sse4.2' boolean='yes'/>
+    <property name='sse4-2' boolean='yes'/>
     <property name='pge' boolean='yes'/>
+    <property name='fill-mtrr-mask' boolean='yes'/>
     <property name='pdcm' boolean='no'/>
+    <property name='nodeid_msr' boolean='no'/>
     <property name='model' ull='94'/>
     <property name='movbe' boolean='yes'/>
     <property name='nrip-save' boolean='no'/>
-    <property name='ssse3' boolean='yes'/>
+    <property name='nrip_save' boolean='no'/>
     <property name='sse4a' boolean='no'/>
+    <property name='ssse3' boolean='yes'/>
+    <property name='kvm_pv_unhalt' boolean='yes'/>
     <property name='invpcid' boolean='yes'/>
     <property name='pdpe1gb' boolean='yes'/>
     <property name='tsc-deadline' boolean='yes'/>
     <property name='fma' boolean='yes'/>
     <property name='cx16' boolean='yes'/>
     <property name='de' boolean='yes'/>
+    <property name='enforce' boolean='no'/>
     <property name='stepping' ull='3'/>
     <property name='xsave' boolean='yes'/>
     <property name='clflush' boolean='yes'/>
     <property name='skinit' boolean='no'/>
-    <property name='tsc' boolean='yes'/>
     <property name='tce' boolean='no'/>
+    <property name='tsc' boolean='yes'/>
     <property name='fpu' boolean='yes'/>
     <property name='ds-cpl' boolean='no'/>
+    <property name='ds_cpl' boolean='no'/>
     <property name='ibs' boolean='no'/>
+    <property name='host-phys-bits' boolean='no'/>
     <property name='fma4' boolean='no'/>
     <property name='la57' boolean='no'/>
     <property name='osvw' boolean='no'/>
-    <property name='apic' boolean='yes'/>
+    <property name='check' boolean='yes'/>
     <property name='pmm' boolean='no'/>
+    <property name='apic' boolean='yes'/>
+    <property name='pmu' boolean='no'/>
+    <property name='min-xlevel2' ull='0'/>
     <property name='tsc-adjust' boolean='yes'/>
+    <property name='tsc_adjust' boolean='yes'/>
     <property name='kvm-steal-time' boolean='yes'/>
+    <property name='kvm_steal_time' boolean='yes'/>
     <property name='kvmclock' boolean='yes'/>
+    <property name='l3-cache' boolean='yes'/>
     <property name='lwp' boolean='no'/>
     <property name='xop' boolean='no'/>
     <property name='avx' boolean='yes'/>
     <property name='ospke' boolean='no'/>
+    <property name='ace2' boolean='no'/>
     <property name='acpi' boolean='no'/>
     <property name='avx512bw' boolean='no'/>
-    <property name='ace2' boolean='no'/>
+    <property name='hv-vapic' boolean='no'/>
     <property name='fsgsbase' boolean='yes'/>
     <property name='ht' boolean='no'/>
     <property name='nx' boolean='yes'/>
@@ -334,17 +380,23 @@
     <property name='xsaves' boolean='yes'/>
     <property name='lm' boolean='yes'/>
     <property name='umip' boolean='no'/>
-    <property name='pse' boolean='yes'/>
     <property name='avx2' boolean='yes'/>
+    <property name='pse' boolean='yes'/>
     <property name='sep' boolean='yes'/>
+    <property name='pclmuldq' boolean='yes'/>
     <property name='nodeid-msr' boolean='no'/>
+    <property name='kvm' boolean='yes'/>
     <property name='misalignsse' boolean='no'/>
     <property name='min-xlevel' ull='2147483656'/>
-    <property name='bmi1' boolean='yes'/>
     <property name='bmi2' boolean='yes'/>
+    <property name='bmi1' boolean='yes'/>
     <property name='kvm-pv-unhalt' boolean='yes'/>
+    <property name='realized' boolean='no'/>
+    <property name='tsc_scale' boolean='no'/>
     <property name='tsc-scale' boolean='no'/>
     <property name='topoext' boolean='no'/>
+    <property name='hv-vpindex' boolean='no'/>
+    <property name='xlevel2' ull='0'/>
     <property name='clflushopt' boolean='yes'/>
     <property name='monitor' boolean='no'/>
     <property name='avx512er' boolean='no'/>
@@ -353,11 +405,17 @@
     <property name='3dnow' boolean='no'/>
     <property name='erms' boolean='yes'/>
     <property name='lahf-lm' boolean='yes'/>
-    <property name='fxsr-opt' boolean='no'/>
+    <property name='lahf_lm' boolean='yes'/>
     <property name='xstore' boolean='no'/>
+    <property name='hv-synic' boolean='no'/>
+    <property name='fxsr-opt' boolean='no'/>
+    <property name='fxsr_opt' boolean='no'/>
     <property name='rtm' boolean='yes'/>
     <property name='lmce' boolean='yes'/>
+    <property name='hv-time' boolean='no'/>
     <property name='perfctr-nb' boolean='no'/>
+    <property name='perfctr_nb' boolean='no'/>
+    <property name='ffxsr' boolean='no'/>
     <property name='rdrand' boolean='yes'/>
     <property name='rdseed' boolean='yes'/>
     <property name='avx512-4vnniw' boolean='no'/>
@@ -369,6 +427,7 @@
     <property name='pse36' boolean='yes'/>
     <property name='tbm' boolean='no'/>
     <property name='wdt' boolean='no'/>
+    <property name='pause_filter' boolean='no'/>
     <property name='model-id' string='Intel(R) Xeon(R) CPU E3-1245 v5 @ 3.50GHz'/>
     <property name='sha-ni' boolean='no'/>
     <property name='abm' boolean='yes'/>
@@ -376,80 +435,109 @@
     <property name='xstore-en' boolean='no'/>
   </hostCPU>
   <hostCPU type='tcg' model='base'>
+    <property name='phys-bits' ull='0'/>
+    <property name='core-id' ull='18446744073709551615'/>
+    <property name='xlevel' ull='2147483658'/>
     <property name='cmov' boolean='yes'/>
     <property name='ia64' boolean='no'/>
     <property name='aes' boolean='yes'/>
     <property name='mmx' boolean='yes'/>
-    <property name='rdpid' boolean='no'/>
     <property name='arat' boolean='yes'/>
+    <property name='rdpid' boolean='no'/>
     <property name='pause-filter' boolean='no'/>
     <property name='xsavec' boolean='no'/>
     <property name='osxsave' boolean='no'/>
+    <property name='tsc-frequency' ull='0'/>
+    <property name='xd' boolean='yes'/>
+    <property name='hv-vendor-id' string=''/>
     <property name='kvm-asyncpf' boolean='no'/>
+    <property name='kvm_asyncpf' boolean='no'/>
+    <property name='perfctr_core' boolean='no'/>
     <property name='perfctr-core' boolean='no'/>
     <property name='mpx' boolean='yes'/>
-    <property name='pbe' boolean='no'/>
     <property name='avx512cd' boolean='no'/>
     <property name='decodeassists' boolean='no'/>
+    <property name='pbe' boolean='no'/>
+    <property name='sse4_1' boolean='yes'/>
     <property name='sse4.1' boolean='yes'/>
+    <property name='sse4-1' boolean='yes'/>
     <property name='family' ull='6'/>
     <property name='avx512f' boolean='no'/>
+    <property name='xcrypt' boolean='no'/>
+    <property name='hv-runtime' boolean='no'/>
     <property name='msr' boolean='yes'/>
     <property name='mce' boolean='yes'/>
     <property name='mca' boolean='yes'/>
-    <property name='xcrypt' boolean='no'/>
+    <property name='thread-id' ull='18446744073709551615'/>
     <property name='min-level' ull='13'/>
     <property name='xgetbv1' boolean='yes'/>
     <property name='cid' boolean='no'/>
-    <property name='ds' boolean='no'/>
+    <property name='hv-relaxed' boolean='no'/>
     <property name='fxsr' boolean='yes'/>
+    <property name='ds' boolean='no'/>
+    <property name='hv-crash' boolean='no'/>
     <property name='xsaveopt' boolean='yes'/>
     <property name='xtpr' boolean='no'/>
-    <property name='avx512vl' boolean='no'/>
     <property name='avx512-vpopcntdq' boolean='no'/>
     <property name='phe' boolean='no'/>
+    <property name='avx512vl' boolean='no'/>
     <property name='extapic' boolean='no'/>
     <property name='3dnowprefetch' boolean='no'/>
     <property name='cr8legacy' boolean='yes'/>
+    <property name='cpuid-0xb' boolean='yes'/>
     <property name='xcrypt-en' boolean='no'/>
+    <property name='kvm_pv_eoi' boolean='no'/>
+    <property name='apic-id' ull='4294967295'/>
     <property name='pn' boolean='no'/>
     <property name='dca' boolean='no'/>
     <property name='vendor' string='AuthenticAMD'/>
     <property name='pku' boolean='yes'/>
     <property name='smx' boolean='no'/>
     <property name='cmp-legacy' boolean='no'/>
+    <property name='cmp_legacy' boolean='no'/>
     <property name='avx512-4fmaps' boolean='no'/>
     <property name='vmcb-clean' boolean='no'/>
-    <property name='hle' boolean='no'/>
+    <property name='vmcb_clean' boolean='no'/>
     <property name='3dnowext' boolean='yes'/>
+    <property name='hle' boolean='no'/>
     <property name='npt' boolean='no'/>
+    <property name='memory' string='/machine/unattached/system[0]'/>
     <property name='clwb' boolean='yes'/>
     <property name='lbrv' boolean='no'/>
     <property name='adx' boolean='yes'/>
     <property name='ss' boolean='yes'/>
     <property name='pni' boolean='yes'/>
+    <property name='svm_lock' boolean='no'/>
     <property name='svm-lock' boolean='no'/>
     <property name='smep' boolean='yes'/>
-    <property name='smap' boolean='yes'/>
     <property name='pfthreshold' boolean='no'/>
+    <property name='smap' boolean='yes'/>
     <property name='x2apic' boolean='no'/>
     <property name='avx512vbmi' boolean='no'/>
+    <property name='hv-stimer' boolean='no'/>
+    <property name='i64' boolean='yes'/>
     <property name='flushbyasid' boolean='no'/>
     <property name='f16c' boolean='no'/>
     <property name='ace2-en' boolean='no'/>
-    <property name='pae' boolean='yes'/>
     <property name='pat' boolean='yes'/>
+    <property name='pae' boolean='yes'/>
     <property name='sse' boolean='yes'/>
     <property name='phe-en' boolean='no'/>
     <property name='kvm-nopiodelay' boolean='no'/>
+    <property name='kvm_nopiodelay' boolean='no'/>
     <property name='tm' boolean='no'/>
     <property name='kvmclock-stable-bit' boolean='no'/>
     <property name='hypervisor' boolean='yes'/>
+    <property name='socket-id' ull='18446744073709551615'/>
     <property name='pcommit' boolean='yes'/>
     <property name='syscall' boolean='yes'/>
+    <property name='level' ull='13'/>
     <property name='avx512dq' boolean='no'/>
     <property name='svm' boolean='yes'/>
+    <property name='full-cpuid-auto-level' boolean='yes'/>
+    <property name='hv-reset' boolean='no'/>
     <property name='invtsc' boolean='no'/>
+    <property name='sse3' boolean='yes'/>
     <property name='sse2' boolean='yes'/>
     <property name='est' boolean='no'/>
     <property name='avx512ifma' boolean='no'/>
@@ -457,44 +545,61 @@
     <property name='kvm-pv-eoi' boolean='no'/>
     <property name='cx8' boolean='yes'/>
     <property name='kvm-mmu' boolean='no'/>
+    <property name='kvm_mmu' boolean='no'/>
+    <property name='sse4_2' boolean='yes'/>
     <property name='sse4.2' boolean='yes'/>
+    <property name='sse4-2' boolean='yes'/>
     <property name='pge' boolean='yes'/>
+    <property name='fill-mtrr-mask' boolean='yes'/>
     <property name='pdcm' boolean='no'/>
+    <property name='nodeid_msr' boolean='no'/>
     <property name='model' ull='6'/>
     <property name='movbe' boolean='yes'/>
     <property name='nrip-save' boolean='no'/>
-    <property name='ssse3' boolean='yes'/>
+    <property name='nrip_save' boolean='no'/>
     <property name='sse4a' boolean='yes'/>
+    <property name='ssse3' boolean='yes'/>
+    <property name='kvm_pv_unhalt' boolean='no'/>
     <property name='invpcid' boolean='no'/>
     <property name='pdpe1gb' boolean='yes'/>
     <property name='tsc-deadline' boolean='no'/>
     <property name='fma' boolean='no'/>
     <property name='cx16' boolean='yes'/>
     <property name='de' boolean='yes'/>
+    <property name='enforce' boolean='no'/>
     <property name='stepping' ull='3'/>
     <property name='xsave' boolean='yes'/>
     <property name='clflush' boolean='yes'/>
     <property name='skinit' boolean='no'/>
-    <property name='tsc' boolean='yes'/>
     <property name='tce' boolean='no'/>
+    <property name='tsc' boolean='yes'/>
     <property name='fpu' boolean='yes'/>
     <property name='ds-cpl' boolean='no'/>
+    <property name='ds_cpl' boolean='no'/>
     <property name='ibs' boolean='no'/>
+    <property name='host-phys-bits' boolean='no'/>
     <property name='fma4' boolean='no'/>
     <property name='la57' boolean='yes'/>
     <property name='osvw' boolean='no'/>
-    <property name='apic' boolean='yes'/>
+    <property name='check' boolean='yes'/>
     <property name='pmm' boolean='no'/>
+    <property name='apic' boolean='yes'/>
+    <property name='pmu' boolean='no'/>
+    <property name='min-xlevel2' ull='0'/>
     <property name='tsc-adjust' boolean='no'/>
+    <property name='tsc_adjust' boolean='no'/>
     <property name='kvm-steal-time' boolean='no'/>
+    <property name='kvm_steal_time' boolean='no'/>
     <property name='kvmclock' boolean='no'/>
+    <property name='l3-cache' boolean='yes'/>
     <property name='lwp' boolean='no'/>
     <property name='xop' boolean='no'/>
     <property name='avx' boolean='no'/>
     <property name='ospke' boolean='yes'/>
+    <property name='ace2' boolean='no'/>
     <property name='acpi' boolean='yes'/>
     <property name='avx512bw' boolean='no'/>
-    <property name='ace2' boolean='no'/>
+    <property name='hv-vapic' boolean='no'/>
     <property name='fsgsbase' boolean='yes'/>
     <property name='ht' boolean='no'/>
     <property name='nx' boolean='yes'/>
@@ -504,17 +609,23 @@
     <property name='xsaves' boolean='no'/>
     <property name='lm' boolean='yes'/>
     <property name='umip' boolean='no'/>
-    <property name='pse' boolean='yes'/>
     <property name='avx2' boolean='no'/>
+    <property name='pse' boolean='yes'/>
     <property name='sep' boolean='yes'/>
+    <property name='pclmuldq' boolean='yes'/>
     <property name='nodeid-msr' boolean='no'/>
+    <property name='kvm' boolean='yes'/>
     <property name='misalignsse' boolean='no'/>
     <property name='min-xlevel' ull='2147483658'/>
-    <property name='bmi1' boolean='yes'/>
     <property name='bmi2' boolean='yes'/>
+    <property name='bmi1' boolean='yes'/>
     <property name='kvm-pv-unhalt' boolean='no'/>
+    <property name='realized' boolean='no'/>
+    <property name='tsc_scale' boolean='no'/>
     <property name='tsc-scale' boolean='no'/>
     <property name='topoext' boolean='no'/>
+    <property name='hv-vpindex' boolean='no'/>
+    <property name='xlevel2' ull='0'/>
     <property name='clflushopt' boolean='yes'/>
     <property name='monitor' boolean='yes'/>
     <property name='avx512er' boolean='no'/>
@@ -523,11 +634,17 @@
     <property name='3dnow' boolean='yes'/>
     <property name='erms' boolean='yes'/>
     <property name='lahf-lm' boolean='yes'/>
-    <property name='fxsr-opt' boolean='no'/>
+    <property name='lahf_lm' boolean='yes'/>
     <property name='xstore' boolean='no'/>
+    <property name='hv-synic' boolean='no'/>
+    <property name='fxsr-opt' boolean='no'/>
+    <property name='fxsr_opt' boolean='no'/>
     <property name='rtm' boolean='no'/>
     <property name='lmce' boolean='no'/>
+    <property name='hv-time' boolean='no'/>
     <property name='perfctr-nb' boolean='no'/>
+    <property name='perfctr_nb' boolean='no'/>
+    <property name='ffxsr' boolean='no'/>
     <property name='rdrand' boolean='no'/>
     <property name='rdseed' boolean='no'/>
     <property name='avx512-4vnniw' boolean='no'/>
@@ -539,6 +656,7 @@
     <property name='pse36' boolean='yes'/>
     <property name='tbm' boolean='no'/>
     <property name='wdt' boolean='no'/>
+    <property name='pause_filter' boolean='no'/>
     <property name='model-id' string='QEMU TCG CPU version 2.5+'/>
     <property name='sha-ni' boolean='no'/>
     <property name='abm' boolean='yes'/>
