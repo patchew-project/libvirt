@@ -3362,6 +3362,9 @@ qemuMigrationBegin(virConnectPtr conn,
         goto endjob;
     }
 
+    if (qemuMigrationCheckSetupTLS(driver, conn, vm, flags) < 0)
+        goto endjob;
+
     /* Check if there is any ejected media.
      * We don't want to require them on the destination.
      */
@@ -4709,8 +4712,14 @@ qemuMigrationRun(virQEMUDriverPtr driver,
 {
     int ret = -1;
     unsigned int migrate_flags = QEMU_MONITOR_MIGRATE_BACKGROUND;
+    virQEMUDriverConfigPtr cfg = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
     qemuMigrationCookiePtr mig = NULL;
+    virJSONValuePtr tlsProps = NULL;
+    virJSONValuePtr secProps = NULL;
+    char *tlsAlias = NULL;
+    char *tlsHostname = NULL;
+    char *secAlias = NULL;
     qemuMigrationIOThreadPtr iothread = NULL;
     int fd = -1;
     unsigned long migrate_speed = resource ? resource : priv->migMaxBandwidth;
@@ -4773,6 +4782,44 @@ qemuMigrationRun(virQEMUDriverPtr driver,
 
     if (qemuDomainMigrateGraphicsRelocate(driver, vm, mig, graphicsuri) < 0)
         VIR_WARN("unable to provide data for graphics client relocation");
+
+    /* If we're using TLS attempt to add the objects */
+    if (priv->migrateTLS) {
+        cfg = virQEMUDriverGetConfig(driver);
+
+        if (qemuDomainGetTLSObjects(priv->qemuCaps, priv->migSecinfo,
+                                    cfg->migrateTLSx509certdir, false,
+                                    cfg->migrateTLSx509verify,
+                                    "migrate", &tlsProps, &tlsAlias,
+                                    &secProps, &secAlias) < 0)
+            goto cleanup;
+
+        /* Ensure the domain doesn't already have the TLS objects defined...
+         * This should prevent any issues just in case some cleanup wasn't
+         * properly completed (both src and dst use the same aliases) or
+         * some other error path between now and perform . */
+        qemuDomainDelTLSObjects(driver, vm, secAlias, tlsAlias);
+
+        /* Add the migrate TLS objects to the domain */
+        if (qemuDomainAddTLSObjects(driver, vm, secAlias, &secProps,
+                                    tlsAlias, &tlsProps) < 0)
+            goto cleanup;
+
+        migParams->migrateTLSAlias = tlsAlias;
+        migParams->migrateTLSAlias_set = true;
+
+        /* We need to add the tls-hostname only for special circumstances.
+         * When using "fd:" or "exec:", qemu needs to know the hostname of
+         * the target qemu to correctly validate the x509 certificate
+         * it receives. */
+        if (STREQ(spec->dest.host.protocol, "fd") ||
+            STREQ(spec->dest.host.protocol, "exec")) {
+            if (VIR_STRDUP(tlsHostname, spec->dest.host.name) < 0)
+                goto cleanup;
+            migParams->migrateTLSHostname = tlsHostname;
+            migParams->migrateTLSHostname_set = true;
+        }
+    }
 
     if (migrate_flags & (QEMU_MONITOR_MIGRATE_NON_SHARED_DISK |
                          QEMU_MONITOR_MIGRATE_NON_SHARED_INC)) {
@@ -4953,6 +5000,14 @@ qemuMigrationRun(virQEMUDriverPtr driver,
                                            dconn) < 0)
             ret = -1;
     }
+
+    qemuDomainDelTLSObjects(driver, vm, secAlias, tlsAlias);
+    virJSONValueFree(tlsProps);
+    virJSONValueFree(secProps);
+    VIR_FREE(tlsAlias);
+    VIR_FREE(tlsHostname);
+    VIR_FREE(secAlias);
+    virObjectUnref(cfg);
 
     if (spec->fwdType != MIGRATION_FWD_DIRECT) {
         if (iothread && qemuMigrationStopTunnel(iothread, ret < 0) < 0)
