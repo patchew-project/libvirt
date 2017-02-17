@@ -5582,13 +5582,6 @@ qemuDomainHotplugAddIOThread(virQEMUDriverPtr driver,
     qemuMonitorIOThreadInfoPtr *new_iothreads = NULL;
     virDomainIOThreadIDDefPtr iothrid;
 
-    if (virDomainIOThreadIDFind(vm->def, iothread_id)) {
-        virReportError(VIR_ERR_INVALID_ARG,
-                       _("an IOThread is already using iothread_id '%u'"),
-                       iothread_id);
-        goto cleanup;
-    }
-
     if (virAsprintf(&alias, "iothread%u", iothread_id) < 0)
         return -1;
 
@@ -5724,6 +5717,22 @@ qemuDomainHotplugDelIOThread(virQEMUDriverPtr driver,
     goto cleanup;
 }
 
+
+static int
+qemuDomainAddIOThreadCheck(virDomainDefPtr def,
+                           unsigned int iothread_id)
+{
+    if (virDomainIOThreadIDFind(def, iothread_id)) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("an IOThread is already using iothread_id '%u'"),
+                       iothread_id);
+        return -1;
+    }
+
+    return 0;
+}
+
+
 static int
 qemuDomainDelIOThreadCheck(virDomainDefPtr def,
                            unsigned int iothread_id)
@@ -5792,6 +5801,9 @@ qemuDomainChgIOThread(virQEMUDriverPtr driver,
         }
 
         if (add) {
+            if (qemuDomainAddIOThreadCheck(def, iothread_id) < 0)
+                goto endjob;
+
             if (qemuDomainHotplugAddIOThread(driver, vm, iothread_id) < 0)
                 goto endjob;
         } else {
@@ -5808,6 +5820,9 @@ qemuDomainChgIOThread(virQEMUDriverPtr driver,
 
     if (persistentDef) {
         if (add) {
+            if (qemuDomainAddIOThreadCheck(persistentDef, iothread_id) < 0)
+                goto endjob;
+
             if (!virDomainIOThreadIDAdd(persistentDef, iothread_id))
                 goto endjob;
 

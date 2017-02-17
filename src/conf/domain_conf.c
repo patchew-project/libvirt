@@ -20247,13 +20247,6 @@ virDomainIOThreadIDAdd(virDomainDefPtr def,
     virDomainIOThreadIDDefPtr iothrid = NULL;
     int pos;
 
-    if (virDomainIOThreadIDFind(def, iothread_id)) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("cannot duplicate iothread_id '%u' in iothreadids"),
-                       iothread_id);
-        return NULL;
-    }
-
     if (VIR_ALLOC(iothrid) < 0)
         goto error;
 
