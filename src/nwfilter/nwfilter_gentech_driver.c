@@ -448,7 +448,7 @@ virNWFilterIncludeDefToRuleInst(virNWFilterDriverStatePtr driver,
  *  the filter and its subfilters.
  * @useNewFilter: instruct whether to use a newDef pointer rather than a
  *  def ptr which is useful during a filter update
- * @foundNewFilter: pointer to int indivating whether a newDef pointer was
+ * @foundNewFilter: pointer to int indicating whether a newDef pointer was
  *  ever used; variable expected to be initialized to 0 by caller
  * @rulesout: array to be filled with rule instance
  * @nrulesout: counter to be filled with number of rule instances
@@ -738,7 +738,7 @@ virNWFilterInstantiate(const unsigned char *vmuuid ATTRIBUTE_UNUSED,
 
         if (rc == 0 && (virNetDevValidateConfig(ifname, NULL, ifindex) <= 0)) {
             virResetLastError();
-            /* interface changed/disppeared */
+            /* interface changed/disappeared */
             techdriver->allTeardown(ifname);
             rc = -1;
         }
