@@ -5496,7 +5496,6 @@ qemuDomainPinIOThread(virDomainPtr dom,
 
         virBitmapFree(iothrid->cpumask);
         iothrid->cpumask = cpumask;
-        iothrid->autofill = false;
 
         /* Configure the corresponding cpuset cgroup before set affinity. */
         if (virCgroupHasController(priv->cgroup,
@@ -5546,7 +5545,6 @@ qemuDomainPinIOThread(virDomainPtr dom,
 
         virBitmapFree(iothrid->cpumask);
         iothrid->cpumask = cpumask;
-        iothrid->autofill = false;
 
         ret = virDomainSaveConfig(cfg->configDir, driver->caps, persistentDef);
         goto endjob;

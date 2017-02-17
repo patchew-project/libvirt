@@ -5,6 +5,10 @@
   <currentMemory unit='KiB'>219136</currentMemory>
   <vcpu placement='static'>1</vcpu>
   <iothreads>2</iothreads>
+  <iothreadids>
+    <iothread id='1'/>
+    <iothread id='2'/>
+  </iothreadids>
   <os>
     <type arch='s390x' machine='s390-ccw'>hvm</type>
     <boot dev='hd'/>

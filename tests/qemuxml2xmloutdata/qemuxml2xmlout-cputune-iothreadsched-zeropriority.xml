@@ -5,6 +5,12 @@
   <currentMemory unit='KiB'>219136</currentMemory>
   <vcpu placement='static'>2</vcpu>
   <iothreads>4</iothreads>
+  <iothreadids>
+    <iothread id='1'/>
+    <iothread id='2'/>
+    <iothread id='3'/>
+    <iothread id='4'/>
+  </iothreadids>
   <cputune>
     <shares>2048</shares>
     <period>1000000</period>

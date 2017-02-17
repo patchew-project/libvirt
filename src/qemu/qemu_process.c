@@ -2115,9 +2115,8 @@ qemuProcessDetectIOThreadPIDs(virQEMUDriverPtr driver,
                 /* Check if the domain had defined any iothreadid elements
                  * and supply a VIR_INFO indicating that it's being removed.
                  */
-                if (!vm->def->iothreadids[i]->autofill)
-                    VIR_INFO("IOThreads not supported, remove iothread id '%u'",
-                             vm->def->iothreadids[i]->iothread_id);
+                VIR_INFO("IOThreads not supported, remove iothread id '%u'",
+                         vm->def->iothreadids[i]->iothread_id);
                 virDomainIOThreadIDDefFree(vm->def->iothreadids[i]);
             }
             /* Remove any trace */

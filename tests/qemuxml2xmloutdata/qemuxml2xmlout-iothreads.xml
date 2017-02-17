@@ -5,6 +5,10 @@
   <currentMemory unit='KiB'>219136</currentMemory>
   <vcpu placement='static'>2</vcpu>
   <iothreads>2</iothreads>
+  <iothreadids>
+    <iothread id='1'/>
+    <iothread id='2'/>
+  </iothreadids>
   <os>
     <type arch='i686' machine='pc'>hvm</type>
     <boot dev='hd'/>

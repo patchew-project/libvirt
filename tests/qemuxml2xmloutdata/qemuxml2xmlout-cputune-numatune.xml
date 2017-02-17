@@ -5,6 +5,10 @@
   <currentMemory unit='KiB'>65536</currentMemory>
   <vcpu placement='auto' current='2'>6</vcpu>
   <iothreads>2</iothreads>
+  <iothreadids>
+    <iothread id='1'/>
+    <iothread id='2'/>
+  </iothreadids>
   <cputune>
     <emulatorpin cpuset='1-3'/>
     <iothreadpin iothread='1' cpuset='2'/>

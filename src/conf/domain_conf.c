@@ -2624,7 +2624,6 @@ virDomainIOThreadIDDefArrayInit(virDomainDefPtr def,
         if (VIR_ALLOC(iothrid) < 0)
             goto error;
         iothrid->iothread_id = nxt;
-        iothrid->autofill = true;
 
         pos = virDomainIOThreadInsertGetPos(def, iothrid);
 
@@ -20222,18 +20221,10 @@ void
 virDomainIOThreadIDDel(virDomainDefPtr def,
                        unsigned int iothread_id)
 {
-    size_t i, j;
+    size_t i;
 
     for (i = 0; i < def->niothreadids; i++) {
         if (def->iothreadids[i]->iothread_id == iothread_id) {
-            /* If we were sequential and removed a threadid in the
-             * beginning or middle of the list, then unconditionally
-             * clear the autofill flag so we don't lose these
-             * definitions for XML formatting.
-             */
-            for (j = i + 1; j < def->niothreadids; j++)
-                def->iothreadids[j]->autofill = false;
-
             virDomainIOThreadIDDefFree(def->iothreadids[i]);
             VIR_DELETE_ELEMENT(def->iothreadids, i, def->niothreadids);
 
@@ -23889,23 +23880,14 @@ virDomainDefFormatInternal(virDomainDefPtr def,
     if (def->niothreadids > 0) {
         virBufferAsprintf(buf, "<iothreads>%lu</iothreads>\n",
                           def->niothreadids);
-        /* Only print out iothreadids if we read at least one */
+        virBufferAddLit(buf, "<iothreadids>\n");
+        virBufferAdjustIndent(buf, 2);
         for (i = 0; i < def->niothreadids; i++) {
-            if (!def->iothreadids[i]->autofill)
-                break;
+            virBufferAsprintf(buf, "<iothread id='%u'/>\n",
+                              def->iothreadids[i]->iothread_id);
         }
-        if (i < def->niothreadids) {
-            virBufferAddLit(buf, "<iothreadids>\n");
-            virBufferAdjustIndent(buf, 2);
-            for (i = 0; i < def->niothreadids; i++) {
-                if (def->iothreadids[i]->autofill)
-                    continue;
-                virBufferAsprintf(buf, "<iothread id='%u'/>\n",
-                                  def->iothreadids[i]->iothread_id);
-            }
-            virBufferAdjustIndent(buf, -2);
-            virBufferAddLit(buf, "</iothreadids>\n");
-        }
+        virBufferAdjustIndent(buf, -2);
+        virBufferAddLit(buf, "</iothreadids>\n");
     }
 
     if (virDomainCputuneDefFormat(buf, def) < 0)

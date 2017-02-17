@@ -2069,7 +2069,6 @@ typedef struct _virDomainIOThreadIDDef virDomainIOThreadIDDef;
 typedef virDomainIOThreadIDDef *virDomainIOThreadIDDefPtr;
 
 struct _virDomainIOThreadIDDef {
-    bool autofill;
     unsigned int iothread_id;
     int thread_id;
     virBitmapPtr cpumask;

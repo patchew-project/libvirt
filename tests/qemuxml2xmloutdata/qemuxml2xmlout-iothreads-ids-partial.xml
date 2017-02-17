@@ -6,6 +6,8 @@
   <vcpu placement='static'>2</vcpu>
   <iothreads>4</iothreads>
   <iothreadids>
+    <iothread id='1'/>
+    <iothread id='2'/>
     <iothread id='5'/>
     <iothread id='6'/>
   </iothreadids>
