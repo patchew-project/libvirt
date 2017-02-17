@@ -570,6 +570,13 @@ struct _qemuMonitorMigrationParams {
 
     bool cpuThrottleIncrement_set;
     int cpuThrottleIncrement;
+
+    /* Input only for destination */
+    bool migrateTLSAlias_set;
+    char *migrateTLSAlias;
+
+    bool migrateTLSHostname_set;
+    char *migrateTLSHostname;
 };
 
 int qemuMonitorGetMigrationParams(qemuMonitorPtr mon,

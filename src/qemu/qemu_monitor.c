@@ -2504,12 +2504,16 @@ qemuMonitorSetMigrationParams(qemuMonitorPtr mon,
 {
     VIR_DEBUG("compressLevel=%d:%d compressThreads=%d:%d "
               "decompressThreads=%d:%d cpuThrottleInitial=%d:%d "
-              "cpuThrottleIncrement=%d:%d",
+              "cpuThrottleIncrement=%d:%d tlsAlias=%d:%s "
+              "tlsHostname=%d:%s",
               params->compressLevel_set, params->compressLevel,
               params->compressThreads_set, params->compressThreads,
               params->decompressThreads_set, params->decompressThreads,
               params->cpuThrottleInitial_set, params->cpuThrottleInitial,
-              params->cpuThrottleIncrement_set, params->cpuThrottleIncrement);
+              params->cpuThrottleIncrement_set, params->cpuThrottleIncrement,
+              params->migrateTLSAlias_set, NULLSTR(params->migrateTLSAlias),
+              params->migrateTLSHostname_set,
+              NULLSTR(params->migrateTLSHostname));
 
     QEMU_CHECK_MONITOR_JSON(mon);
 
@@ -2517,7 +2521,9 @@ qemuMonitorSetMigrationParams(qemuMonitorPtr mon,
         !params->compressThreads_set &&
         !params->decompressThreads_set &&
         !params->cpuThrottleInitial_set &&
-        !params->cpuThrottleIncrement_set)
+        !params->cpuThrottleIncrement_set &&
+        !params->migrateTLSAlias_set &&
+        !params->migrateTLSHostname_set)
         return 0;
 
     return qemuMonitorJSONSetMigrationParams(mon, params);
