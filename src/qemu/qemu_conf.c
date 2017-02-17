@@ -555,6 +555,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
 
     GET_CONFIG_TLS_CERT(chardev);
 
+    GET_CONFIG_TLS_CERT(migrate);
+
     if (virConfGetValueUInt(conf, "remote_websocket_port_min", &cfg->webSocketPortMin) < 0)
         goto cleanup;
     if (cfg->webSocketPortMin < QEMU_WEBSOCKET_PORT_MIN) {
