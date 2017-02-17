@@ -33,6 +33,7 @@ typedef qemuMigrationCompression *qemuMigrationCompressionPtr;
     (VIR_MIGRATE_LIVE |                         \
      VIR_MIGRATE_PEER2PEER |                    \
      VIR_MIGRATE_TUNNELLED |                    \
+     VIR_MIGRATE_TLS |                          \
      VIR_MIGRATE_PERSIST_DEST |                 \
      VIR_MIGRATE_UNDEFINE_SOURCE |              \
      VIR_MIGRATE_PAUSED |                       \
