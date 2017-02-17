@@ -1526,6 +1526,89 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
 }
 
 
+void
+qemuDomainDelTLSObjects(virQEMUDriverPtr driver,
+                        virDomainObjPtr vm,
+                        const char *secAlias,
+                        const char *tlsAlias)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virErrorPtr orig_err;
+
+    /* Nothing to do if neither defined */
+    if (!tlsAlias && !secAlias)
+        return;
+
+    orig_err = virSaveLastError();
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    if (tlsAlias)
+        ignore_value(qemuMonitorDelObject(priv->mon, tlsAlias));
+    if (secAlias)
+        ignore_value(qemuMonitorDelObject(priv->mon, secAlias));
+    if (orig_err) {
+        virSetError(orig_err);
+        virFreeError(orig_err);
+    }
+    ignore_value(qemuDomainObjExitMonitor(driver, vm));
+}
+
+
+int
+qemuDomainAddTLSObjects(virQEMUDriverPtr driver,
+                        virDomainObjPtr vm,
+                        const char *secAlias,
+                        virJSONValuePtr *secProps,
+                        const char *tlsAlias,
+                        virJSONValuePtr *tlsProps)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    int rc;
+    bool secobjAdded = false;
+    bool tlsobjAdded = false;
+    virErrorPtr orig_err;
+
+    /* Nothing to do if neither defined */
+    if (!tlsAlias && !secAlias)
+        return 0;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+
+    if (secAlias) {
+        rc = qemuMonitorAddObject(priv->mon, "secret",
+                                  secAlias, *secProps);
+        *secProps = NULL; /* qemuMonitorAddObject consumes */
+        if (rc < 0)
+            goto exit_monitor;
+        secobjAdded = true;
+    }
+
+    if (tlsAlias) {
+        rc = qemuMonitorAddObject(priv->mon, "tls-creds-x509",
+                                  tlsAlias, *tlsProps);
+        *tlsProps = NULL; /* qemuMonitorAddObject consumes */
+        if (rc < 0)
+            goto exit_monitor;
+        tlsobjAdded = true;
+    }
+
+    return qemuDomainObjExitMonitor(driver, vm);
+
+ exit_monitor:
+    orig_err = virSaveLastError();
+    if (tlsobjAdded)
+        ignore_value(qemuMonitorDelObject(priv->mon, tlsAlias));
+    if (secobjAdded)
+        ignore_value(qemuMonitorDelObject(priv->mon, secAlias));
+    if (orig_err) {
+        virSetError(orig_err);
+        virFreeError(orig_err);
+    }
+    ignore_value(qemuDomainObjExitMonitor(driver, vm));
+    return -1;
+}
+
+
 static int
 qemuDomainGetChardevTLSObjects(virQEMUDriverConfigPtr cfg,
                                qemuDomainObjPrivatePtr priv,
@@ -1582,8 +1665,6 @@ int qemuDomainAttachRedirdevDevice(virConnectPtr conn,
     char *charAlias = NULL;
     char *devstr = NULL;
     bool chardevAdded = false;
-    bool tlsobjAdded = false;
-    bool secobjAdded = false;
     virJSONValuePtr tlsProps = NULL;
     virJSONValuePtr secProps = NULL;
     char *tlsAlias = NULL;
@@ -1619,25 +1700,11 @@ int qemuDomainAttachRedirdevDevice(virConnectPtr conn,
                                        &secProps, &secAlias) < 0)
         goto cleanup;
 
+    if (qemuDomainAddTLSObjects(driver, vm, secAlias, &secProps,
+                                tlsAlias, &tlsProps) < 0)
+        goto cleanup;
+
     qemuDomainObjEnterMonitor(driver, vm);
-
-    if (secAlias) {
-        rc = qemuMonitorAddObject(priv->mon, "secret",
-                                  secAlias, secProps);
-        secProps = NULL;
-        if (rc < 0)
-            goto exit_monitor;
-        secobjAdded = true;
-    }
-
-    if (tlsAlias) {
-        rc = qemuMonitorAddObject(priv->mon, "tls-creds-x509",
-                                  tlsAlias, tlsProps);
-        tlsProps = NULL; /* qemuMonitorAddObject consumes */
-        if (rc < 0)
-            goto exit_monitor;
-        tlsobjAdded = true;
-    }
 
     if (qemuMonitorAttachCharDev(priv->mon,
                                  charAlias,
@@ -1672,15 +1739,12 @@ int qemuDomainAttachRedirdevDevice(virConnectPtr conn,
     /* detach associated chardev on error */
     if (chardevAdded)
         ignore_value(qemuMonitorDetachCharDev(priv->mon, charAlias));
-    if (tlsobjAdded)
-        ignore_value(qemuMonitorDelObject(priv->mon, tlsAlias));
-    if (secobjAdded)
-        ignore_value(qemuMonitorDelObject(priv->mon, secAlias));
     if (orig_err) {
         virSetError(orig_err);
         virFreeError(orig_err);
     }
     ignore_value(qemuDomainObjExitMonitor(driver, vm));
+    qemuDomainDelTLSObjects(driver, vm, secAlias, tlsAlias);
     goto audit;
 }
 
@@ -1858,10 +1922,8 @@ int qemuDomainAttachChrDevice(virConnectPtr conn,
     virDomainChrSourceDefPtr dev = chr->source;
     char *charAlias = NULL;
     bool chardevAttached = false;
-    bool tlsobjAdded = false;
     bool teardowncgroup = false;
     bool teardowndevice = false;
-    bool secobjAdded = false;
     virJSONValuePtr tlsProps = NULL;
     char *tlsAlias = NULL;
     virJSONValuePtr secProps = NULL;
@@ -1908,24 +1970,11 @@ int qemuDomainAttachChrDevice(virConnectPtr conn,
                                        &secProps, &secAlias) < 0)
         goto cleanup;
 
-    qemuDomainObjEnterMonitor(driver, vm);
-    if (secAlias) {
-        rc = qemuMonitorAddObject(priv->mon, "secret",
-                                  secAlias, secProps);
-        secProps = NULL;
-        if (rc < 0)
-            goto exit_monitor;
-        secobjAdded = true;
-    }
+    if (qemuDomainAddTLSObjects(driver, vm, secAlias, &secProps,
+                                tlsAlias, &tlsProps) < 0)
+        goto cleanup;
 
-    if (tlsAlias) {
-        rc = qemuMonitorAddObject(priv->mon, "tls-creds-x509",
-                                  tlsAlias, tlsProps);
-        tlsProps = NULL; /* qemuMonitorAddObject consumes */
-        if (rc < 0)
-            goto exit_monitor;
-        tlsobjAdded = true;
-    }
+    qemuDomainObjEnterMonitor(driver, vm);
 
     if (qemuMonitorAttachCharDev(priv->mon, charAlias, chr->source) < 0)
         goto exit_monitor;
@@ -1966,16 +2015,13 @@ int qemuDomainAttachChrDevice(virConnectPtr conn,
     /* detach associated chardev on error */
     if (chardevAttached)
         qemuMonitorDetachCharDev(priv->mon, charAlias);
-    if (tlsobjAdded)
-        ignore_value(qemuMonitorDelObject(priv->mon, tlsAlias));
-    if (secobjAdded)
-        ignore_value(qemuMonitorDelObject(priv->mon, secAlias));
     if (orig_err) {
         virSetError(orig_err);
         virFreeError(orig_err);
     }
 
     ignore_value(qemuDomainObjExitMonitor(driver, vm));
+    qemuDomainDelTLSObjects(driver, vm, secAlias, tlsAlias);
     goto audit;
 }
 
@@ -2000,8 +2046,6 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
     bool teardowndevice = false;
     bool chardevAdded = false;
     bool objAdded = false;
-    bool tlsobjAdded = false;
-    bool secobjAdded = false;
     virJSONValuePtr props = NULL;
     virJSONValuePtr tlsProps = NULL;
     virJSONValuePtr secProps = NULL;
@@ -2076,27 +2120,13 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
                                            charAlias, &tlsProps, &tlsAlias,
                                            &secProps, &secAlias) < 0)
             goto cleanup;
+
+        if (qemuDomainAddTLSObjects(driver, vm, secAlias, &secProps,
+                                    tlsAlias, &tlsProps) < 0)
+            goto cleanup;
     }
 
     qemuDomainObjEnterMonitor(driver, vm);
-
-    if (secAlias) {
-        rv = qemuMonitorAddObject(priv->mon, "secret",
-                                  secAlias, secProps);
-        secProps = NULL;
-        if (rv < 0)
-            goto exit_monitor;
-        secobjAdded = true;
-    }
-
-    if (tlsAlias) {
-        rv = qemuMonitorAddObject(priv->mon, "tls-creds-x509",
-                                  tlsAlias, tlsProps);
-        tlsProps = NULL; /* qemuMonitorAddObject consumes */
-        if (rv < 0)
-            goto exit_monitor;
-        tlsobjAdded = true;
-    }
 
     if (rng->backend == VIR_DOMAIN_RNG_BACKEND_EGD &&
         qemuMonitorAttachCharDev(priv->mon, charAlias,
@@ -2152,10 +2182,6 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
         ignore_value(qemuMonitorDelObject(priv->mon, objAlias));
     if (rng->backend == VIR_DOMAIN_RNG_BACKEND_EGD && chardevAdded)
         ignore_value(qemuMonitorDetachCharDev(priv->mon, charAlias));
-    if (tlsobjAdded)
-        ignore_value(qemuMonitorDelObject(priv->mon, tlsAlias));
-    if (secobjAdded)
-        ignore_value(qemuMonitorDelObject(priv->mon, secAlias));
     if (orig_err) {
         virSetError(orig_err);
         virFreeError(orig_err);
@@ -2163,6 +2189,7 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         releaseaddr = false;
+    qemuDomainDelTLSObjects(driver, vm, secAlias, tlsAlias);
     goto audit;
 }
 
