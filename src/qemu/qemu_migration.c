@@ -1487,6 +1487,55 @@ qemuMigrationEatCookie(virQEMUDriverPtr driver,
     return NULL;
 }
 
+
+/* qemuMigrationCheckSetupTLS
+ *
+ * Check if flags desired to use TLS and whether it's configured for the
+ * host it's being run on (src or dst depending on caller). If configured
+ * to use a secret for the TLS config, generate and save the migSecinfo.
+ *
+ * Returns 0 on success (or no TLS)
+ */
+static int
+qemuMigrationCheckSetupTLS(virQEMUDriverPtr driver,
+                           virConnectPtr dconn,
+                           virDomainObjPtr vm,
+                           unsigned int flags)
+{
+    int ret = -1;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virQEMUDriverConfigPtr cfg = NULL;
+
+    if (flags & VIR_MIGRATE_TLS) {
+        cfg = virQEMUDriverGetConfig(driver);
+
+        if (!cfg->migrateTLS) {
+            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                           _("migration TLS not enabled for the host"));
+            goto cleanup;
+        }
+
+        priv->migrateTLS = true;
+        if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir,
+                                vm, driver->caps) < 0)
+            VIR_WARN("Failed to save migrateTLS for vm %s", vm->def->name);
+
+        /* If there's a secret associated with the migrate TLS, then we
+         * need to grab it before attempting to create the command line. */
+        if (cfg->migrateTLSx509secretUUID &&
+            qemuDomainSecretMigratePrepare(dconn, priv, "migrate",
+                                           cfg->migrateTLSx509secretUUID) < 0)
+            goto cleanup;
+    }
+
+    ret = 0;
+
+ cleanup:
+    virObjectUnref(cfg);
+    return ret;
+}
+
+
 static void
 qemuMigrationStoreDomainState(virDomainObjPtr vm)
 {
@@ -3613,6 +3662,7 @@ qemuMigrationPrepareAny(virQEMUDriverPtr driver,
     bool stopProcess = false;
     bool relabel = false;
     int rv;
+    char *tlsAlias = NULL;
     qemuMonitorMigrationParams migParams = { 0 };
 
     virNWFilterReadLockFilterUpdates();
@@ -3779,6 +3829,13 @@ qemuMigrationPrepareAny(virQEMUDriverPtr driver,
                                  VIR_QEMU_PROCESS_START_AUTODESTROY) < 0)
         goto stopjob;
 
+    if (qemuMigrationCheckSetupTLS(driver, dconn, vm, flags) < 0)
+        goto stopjob;
+
+    if (priv->migrateTLS &&
+        !(tlsAlias = qemuAliasTLSObjFromSrcAlias("migrate")))
+        goto stopjob;
+
     if (qemuProcessPrepareHost(driver, vm, !!incoming) < 0)
         goto stopjob;
 
@@ -3805,6 +3862,12 @@ qemuMigrationPrepareAny(virQEMUDriverPtr driver,
     if (qemuMigrationSetCompression(driver, vm, QEMU_ASYNC_JOB_MIGRATION_IN,
                                     compression, &migParams) < 0)
         goto stopjob;
+
+    /* A set only parameter to indicate the "tls-creds-x509" object id */
+    if (priv->migrateTLS) {
+        migParams.migrateTLSAlias = tlsAlias;
+        migParams.migrateTLSAlias_set = true;
+    }
 
     if (STREQ_NULLABLE(protocol, "rdma") &&
         virProcessSetMaxMemLock(vm->pid, vm->def->mem.hard_limit << 10) < 0) {
@@ -3891,6 +3954,7 @@ qemuMigrationPrepareAny(virQEMUDriverPtr driver,
     ret = 0;
 
  cleanup:
+    VIR_FREE(tlsAlias);
     qemuProcessIncomingDefFree(incoming);
     VIR_FREE(xmlout);
     VIR_FORCE_CLOSE(dataFD[0]);
@@ -6184,6 +6248,22 @@ qemuMigrationFinish(virQEMUDriverPtr driver,
 
     qemuDomainCleanupRemove(vm, qemuMigrationPrepareCleanup);
     VIR_FREE(priv->job.completed);
+
+    /* If migration used TLS, then command line creation generated a
+     * secinfo object and a TLS server object. Remove both now as this
+     * domain would now be a potential client of the next migration. */
+    if (priv->migrateTLS) {
+        char *tlsAlias = qemuAliasTLSObjFromSrcAlias("migrate");
+        char *secAlias = qemuDomainGetSecretAESAlias("migrate", false);
+
+        qemuDomainDelTLSObjects(driver, vm, secAlias, tlsAlias);
+        qemuDomainSecretMigrateDestroy(&priv->migSecinfo);
+        VIR_FREE(tlsAlias);
+        priv->migrateTLS = false;
+        if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir,
+                                vm, driver->caps) < 0)
+            VIR_WARN("Failed to save migrateTLS on vm %s", vm->def->name);
+    }
 
     cookie_flags = QEMU_MIGRATION_COOKIE_NETWORK |
                    QEMU_MIGRATION_COOKIE_STATS |

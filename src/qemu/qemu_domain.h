@@ -287,6 +287,7 @@ struct _qemuDomainObjPrivate {
     /* for migration's using TLS with a secret (not to be saved in our */
     /* private XML). */
     qemuDomainSecretInfoPtr migSecinfo;
+    bool migrateTLS;
 };
 
 # define QEMU_DOMAIN_PRIVATE(vm)	\

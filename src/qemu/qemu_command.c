@@ -802,6 +802,27 @@ qemuBuildTLSx509CommandLine(virCommandPtr cmd,
 }
 
 
+static int
+qemuBuildMigrateTLSCommandLine(virCommandPtr cmd,
+                               virQEMUDriverConfigPtr cfg,
+                               virQEMUCapsPtr qemuCaps,
+                               qemuDomainSecretInfoPtr migSecinfo)
+{
+    if (migSecinfo && qemuBuildObjectSecretCommandLine(cmd, migSecinfo) < 0)
+        return -1;
+
+    /* When starting from command line this is the target of a migration
+     * so we need to start a TLS endpoint server (3rd param) */
+    if (qemuBuildTLSx509CommandLine(cmd, cfg->migrateTLSx509certdir,
+                                    true, cfg->migrateTLSx509verify,
+                                    !!cfg->migrateTLSx509secretUUID,
+                                    "migrate", qemuCaps) < 0)
+        return -1;
+
+    return 0;
+}
+
+
 #define QEMU_DEFAULT_NBD_PORT "10809"
 #define QEMU_DEFAULT_GLUSTER_PORT "24007"
 
@@ -9649,6 +9670,8 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
                      bool monitor_json,
                      virQEMUCapsPtr qemuCaps,
                      const char *migrateURI,
+                     bool migrateTLS,
+                     qemuDomainSecretInfoPtr migSecinfo,
                      virDomainSnapshotObjPtr snapshot,
                      virNetDevVPortProfileOp vmop,
                      bool standalone,
@@ -9841,8 +9864,12 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (qemuBuildHostdevCommandLine(cmd, def, qemuCaps, &bootHostdevNet) < 0)
         goto error;
 
-    if (migrateURI)
+    if (migrateURI) {
         virCommandAddArgList(cmd, "-incoming", migrateURI, NULL);
+        if (migrateTLS && qemuBuildMigrateTLSCommandLine(cmd, cfg, qemuCaps,
+                                                         migSecinfo) < 0)
+            goto error;
+    }
 
     if (qemuBuildMemballoonCommandLine(cmd, def, qemuCaps) < 0)
         goto error;

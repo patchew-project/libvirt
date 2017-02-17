@@ -50,6 +50,8 @@ virCommandPtr qemuBuildCommandLine(virQEMUDriverPtr driver,
                                    bool monitor_json,
                                    virQEMUCapsPtr qemuCaps,
                                    const char *migrateURI,
+                                   bool migrateTLS,
+                                   qemuDomainSecretInfoPtr migSecinfo,
                                    virDomainSnapshotObjPtr snapshot,
                                    virNetDevVPortProfileOp vmop,
                                    bool standalone,
@@ -58,7 +60,7 @@ virCommandPtr qemuBuildCommandLine(virQEMUDriverPtr driver,
                                    size_t *nnicindexes,
                                    int **nicindexes,
                                    const char *domainLibDir)
-    ATTRIBUTE_NONNULL(15);
+    ATTRIBUTE_NONNULL(17);
 
 
 /* Generate the object properties for a secret */
