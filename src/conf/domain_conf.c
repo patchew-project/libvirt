@@ -2559,6 +2559,28 @@ virDomainIOThreadIDDefArrayFree(virDomainIOThreadIDDefPtr *def,
 
 
 static int
+virDomainIOThreadInsertGetPos(virDomainDefPtr def,
+                              virDomainIOThreadIDDefPtr iothread)
+{
+    int idx;
+    int pos = -1;
+
+    if (def->niothreadids == 0)
+        return pos;
+
+    for (idx = def->niothreadids - 1; idx >= 0; idx--) {
+        if (def->iothreadids[idx]->iothread_id < iothread->iothread_id)
+            break;
+
+        if (def->iothreadids[idx]->iothread_id > iothread->iothread_id)
+            pos = idx;
+    }
+
+    return pos;
+}
+
+
+static int
 virDomainIOThreadIDDefArrayInit(virDomainDefPtr def,
                                 unsigned int iothreads)
 {
@@ -2587,11 +2609,13 @@ virDomainIOThreadIDDefArrayInit(virDomainDefPtr def,
                                        def->iothreadids[i]->iothread_id));
 
     /* resize array */
-    if (VIR_REALLOC_N(def->iothreadids, iothreads) < 0)
+    if (VIR_EXPAND_N(def->iothreadids, i, iothreads - def->niothreadids) < 0)
         goto error;
 
     /* Populate iothreadids[] using the set bit number from thrmap */
     while (def->niothreadids < iothreads) {
+        int pos;
+
         if ((nxt = virBitmapNextSetBit(thrmap, nxt)) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("failed to populate iothreadids"));
@@ -2601,7 +2625,12 @@ virDomainIOThreadIDDefArrayInit(virDomainDefPtr def,
             goto error;
         iothrid->iothread_id = nxt;
         iothrid->autofill = true;
-        def->iothreadids[def->niothreadids++] = iothrid;
+
+        pos = virDomainIOThreadInsertGetPos(def, iothrid);
+
+        /* VIR_INSERT_ELEMENT_INPLACE will never return an error here. */
+        ignore_value(VIR_INSERT_ELEMENT_INPLACE(def->iothreadids, pos,
+                                                def->niothreadids, iothrid));
     }
 
     retval = 0;
@@ -15590,6 +15619,7 @@ virDomainDefParseIOThreads(virDomainDefPtr def,
         goto error;
 
     for (i = 0; i < n; i++) {
+        int pos;
         virDomainIOThreadIDDefPtr iothrid = NULL;
         if (!(iothrid = virDomainIOThreadIDDefParseXML(nodes[i], ctxt)))
             goto error;
@@ -15601,7 +15631,12 @@ virDomainDefParseIOThreads(virDomainDefPtr def,
             virDomainIOThreadIDDefFree(iothrid);
             goto error;
         }
-        def->iothreadids[def->niothreadids++] = iothrid;
+
+        pos = virDomainIOThreadInsertGetPos(def, iothrid);
+
+        /* VIR_INSERT_ELEMENT_INPLACE will never return an error here. */
+        ignore_value(VIR_INSERT_ELEMENT_INPLACE(def->iothreadids, pos,
+                                                def->niothreadids, iothrid));
     }
     VIR_FREE(nodes);
 
@@ -20155,6 +20190,7 @@ virDomainIOThreadIDAdd(virDomainDefPtr def,
                        unsigned int iothread_id)
 {
     virDomainIOThreadIDDefPtr iothrid = NULL;
+    int pos;
 
     if (virDomainIOThreadIDFind(def, iothread_id)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -20168,7 +20204,9 @@ virDomainIOThreadIDAdd(virDomainDefPtr def,
 
     iothrid->iothread_id = iothread_id;
 
-    if (VIR_APPEND_ELEMENT_COPY(def->iothreadids, def->niothreadids,
+    pos = virDomainIOThreadInsertGetPos(def, iothrid);
+
+    if (VIR_INSERT_ELEMENT_COPY(def->iothreadids, pos, def->niothreadids,
                                 iothrid) < 0)
         goto error;
 
