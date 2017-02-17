@@ -5747,6 +5747,17 @@ qemuDomainDelIOThreadCheck(virDomainDefPtr def,
         }
     }
 
+    for (i = 0; i < def->ncontrollers; i++) {
+        if (def->controllers[i]->iothread == iothread_id) {
+            const char *model = virDomainControllerModelSCSITypeToString(def->controllers[i]->model);
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("cannot remove IOThread '%u' since it "
+                             "is being used by controller '%s'"),
+                           iothread_id, model);
+            return -1;
+        }
+    }
+
     return 0;
 }
 
