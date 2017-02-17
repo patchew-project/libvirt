@@ -175,6 +175,43 @@ VIR_ENUM_DECL(qemuDomainNamespace)
 bool qemuDomainNamespaceEnabled(virDomainObjPtr vm,
                                 qemuDomainNamespace ns);
 
+/* Type of domain secret */
+typedef enum {
+    VIR_DOMAIN_SECRET_INFO_TYPE_PLAIN = 0,
+    VIR_DOMAIN_SECRET_INFO_TYPE_AES,  /* utilize GNUTLS_CIPHER_AES_256_CBC */
+
+    VIR_DOMAIN_SECRET_INFO_TYPE_LAST
+} qemuDomainSecretInfoType;
+
+typedef struct _qemuDomainSecretPlain qemuDomainSecretPlain;
+typedef struct _qemuDomainSecretPlain *qemuDomainSecretPlainPtr;
+struct _qemuDomainSecretPlain {
+    char *username;
+    uint8_t *secret;
+    size_t secretlen;
+};
+
+# define QEMU_DOMAIN_AES_IV_LEN 16   /* 16 bytes for 128 bit random */
+                                     /*    initialization vector */
+typedef struct _qemuDomainSecretAES qemuDomainSecretAES;
+typedef struct _qemuDomainSecretAES *qemuDomainSecretAESPtr;
+struct _qemuDomainSecretAES {
+    char *username;
+    char *alias;      /* generated alias for secret */
+    char *iv;         /* base64 encoded initialization vector */
+    char *ciphertext; /* encoded/encrypted secret */
+};
+
+typedef struct _qemuDomainSecretInfo qemuDomainSecretInfo;
+typedef qemuDomainSecretInfo *qemuDomainSecretInfoPtr;
+struct _qemuDomainSecretInfo {
+    qemuDomainSecretInfoType type;
+    union {
+        qemuDomainSecretPlain plain;
+        qemuDomainSecretAES aes;
+    } s;
+};
+
 typedef struct _qemuDomainObjPrivate qemuDomainObjPrivate;
 typedef qemuDomainObjPrivate *qemuDomainObjPrivatePtr;
 struct _qemuDomainObjPrivate {
@@ -246,47 +283,14 @@ struct _qemuDomainObjPrivate {
 
     /* note whether memory device alias does not correspond to slot number */
     bool memAliasOrderMismatch;
+
+    /* for migration's using TLS with a secret (not to be saved in our */
+    /* private XML). */
+    qemuDomainSecretInfoPtr migSecinfo;
 };
 
 # define QEMU_DOMAIN_PRIVATE(vm)	\
     ((qemuDomainObjPrivatePtr) (vm)->privateData)
-
-/* Type of domain secret */
-typedef enum {
-    VIR_DOMAIN_SECRET_INFO_TYPE_PLAIN = 0,
-    VIR_DOMAIN_SECRET_INFO_TYPE_AES,  /* utilize GNUTLS_CIPHER_AES_256_CBC */
-
-    VIR_DOMAIN_SECRET_INFO_TYPE_LAST
-} qemuDomainSecretInfoType;
-
-typedef struct _qemuDomainSecretPlain qemuDomainSecretPlain;
-typedef struct _qemuDomainSecretPlain *qemuDomainSecretPlainPtr;
-struct _qemuDomainSecretPlain {
-    char *username;
-    uint8_t *secret;
-    size_t secretlen;
-};
-
-# define QEMU_DOMAIN_AES_IV_LEN 16   /* 16 bytes for 128 bit random */
-                                     /*    initialization vector */
-typedef struct _qemuDomainSecretAES qemuDomainSecretAES;
-typedef struct _qemuDomainSecretAES *qemuDomainSecretAESPtr;
-struct _qemuDomainSecretAES {
-    char *username;
-    char *alias;      /* generated alias for secret */
-    char *iv;         /* base64 encoded initialization vector */
-    char *ciphertext; /* encoded/encrypted secret */
-};
-
-typedef struct _qemuDomainSecretInfo qemuDomainSecretInfo;
-typedef qemuDomainSecretInfo *qemuDomainSecretInfoPtr;
-struct _qemuDomainSecretInfo {
-    qemuDomainSecretInfoType type;
-    union {
-        qemuDomainSecretPlain plain;
-        qemuDomainSecretAES aes;
-    } s;
-};
 
 # define QEMU_DOMAIN_DISK_PRIVATE(disk)	\
     ((qemuDomainDiskPrivatePtr) (disk)->privateData)
@@ -762,6 +766,16 @@ int qemuDomainSecretChardevPrepare(virConnectPtr conn,
                                    virDomainChrSourceDefPtr dev)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
     ATTRIBUTE_NONNULL(4) ATTRIBUTE_NONNULL(5);
+
+void qemuDomainSecretMigrateDestroy(qemuDomainSecretInfoPtr *migSecinfo)
+    ATTRIBUTE_NONNULL(1);
+
+int qemuDomainSecretMigratePrepare(virConnectPtr conn,
+                                   qemuDomainObjPrivatePtr priv,
+                                   const char *srcAlias,
+                                   const char *secretUUID)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
+    ATTRIBUTE_NONNULL(4);
 
 void qemuDomainSecretDestroy(virDomainObjPtr vm)
     ATTRIBUTE_NONNULL(1);

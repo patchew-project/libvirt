@@ -1370,6 +1370,77 @@ qemuDomainSecretChardevPrepare(virConnectPtr conn,
 }
 
 
+/* qemuDomainSecretMigrateDestroy:
+ * @migSecinfo: Pointer to the secinfo from the incoming def
+ *
+ * Clear and destroy memory associated with the secret
+ */
+void
+qemuDomainSecretMigrateDestroy(qemuDomainSecretInfoPtr *migSecinfo)
+{
+    if (!*migSecinfo)
+        return;
+
+    qemuDomainSecretInfoFree(migSecinfo);
+}
+
+
+/* qemuDomainSecretMigratePrepare
+ * @conn: Pointer to connection
+ * @priv: pointer to domain private object
+ * @srcAlias: Alias to use (either migrate or nbd)
+ * @secretUUID: UUID for the secret from the cfg (migrate or nbd)
+ *
+ * Create and prepare the qemuDomainSecretInfoPtr to be used for either
+ * a migration or nbd. Unlike other domain secret prepare functions, this
+ * is only expected to be called for a single object/instance. Theoretically
+ * the object could be reused, although that results in keeping a secret
+ * stored in memory for perhaps longer than expected or necessary.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+qemuDomainSecretMigratePrepare(virConnectPtr conn,
+                               qemuDomainObjPrivatePtr priv,
+                               const char *srcAlias,
+                               const char *secretUUID)
+{
+    virSecretLookupTypeDef seclookupdef = {0};
+    qemuDomainSecretInfoPtr secinfo = NULL;
+
+    if (virUUIDParse(secretUUID, seclookupdef.u.uuid) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("malformed %s TLS secret uuid in qemu.conf"),
+                       srcAlias);
+        return -1;
+    }
+    seclookupdef.type = VIR_SECRET_LOOKUP_TYPE_UUID;
+
+    if (VIR_ALLOC(secinfo) < 0)
+        return -1;
+
+    if (qemuDomainSecretSetup(conn, priv, secinfo, srcAlias,
+                              VIR_SECRET_USAGE_TYPE_TLS, NULL,
+                              &seclookupdef, false) < 0)
+        goto error;
+
+    if (secinfo->type == VIR_DOMAIN_SECRET_INFO_TYPE_PLAIN) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("TLS X.509 requires encrypted secrets "
+                         "to be supported"));
+        goto error;
+    }
+    priv->migSecinfo = secinfo;
+
+    return 0;
+
+ error:
+    qemuDomainSecretInfoFree(&secinfo);
+    return -1;
+}
+
+
+
 /* qemuDomainSecretDestroy:
  * @vm: Domain object
  *
@@ -1634,6 +1705,8 @@ qemuDomainObjPrivateFree(void *data)
 
     VIR_FREE(priv->libDir);
     VIR_FREE(priv->channelTargetDir);
+
+    qemuDomainSecretMigrateDestroy(&priv->migSecinfo);
     qemuDomainMasterKeyFree(priv);
 
     VIR_FREE(priv);
