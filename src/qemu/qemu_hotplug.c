@@ -1651,7 +1651,6 @@ qemuDomainGetChardevTLSObjects(virQEMUDriverConfigPtr cfg,
 static int
 qemuDomainAddChardevTLSObjects(virConnectPtr conn,
                                virQEMUDriverPtr driver,
-                               virQEMUDriverConfigPtr cfg,
                                virDomainObjPtr vm,
                                virDomainChrSourceDefPtr dev,
                                char *devAlias,
@@ -1660,13 +1659,19 @@ qemuDomainAddChardevTLSObjects(virConnectPtr conn,
                                char **secAlias)
 {
     int ret = -1;
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virJSONValuePtr tlsProps = NULL;
     virJSONValuePtr secProps = NULL;
 
+    /* NB: This may alter haveTLS based on cfg */
+    qemuDomainPrepareChardevSourceTLS(dev, cfg);
+
     if (dev->type != VIR_DOMAIN_CHR_TYPE_TCP ||
-        dev->data.tcp.haveTLS != VIR_TRISTATE_BOOL_YES)
+        dev->data.tcp.haveTLS != VIR_TRISTATE_BOOL_YES) {
+        virObjectUnref(cfg);
         return 0;
+    }
 
     if (qemuDomainSecretChardevPrepare(conn, cfg, priv, devAlias, dev) < 0)
         goto cleanup;
@@ -1685,6 +1690,7 @@ qemuDomainAddChardevTLSObjects(virConnectPtr conn,
  cleanup:
     virJSONValueFree(tlsProps);
     virJSONValueFree(secProps);
+    virObjectUnref(cfg);
 
     return ret;
 }
@@ -1697,7 +1703,6 @@ int qemuDomainAttachRedirdevDevice(virConnectPtr conn,
 {
     int ret = -1;
     int rc;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virDomainDefPtr def = vm->def;
     char *charAlias = NULL;
@@ -1707,8 +1712,6 @@ int qemuDomainAttachRedirdevDevice(virConnectPtr conn,
     char *secAlias = NULL;
     bool need_release = false;
     virErrorPtr orig_err;
-
-    qemuDomainPrepareChardevSourceTLS(redirdev->source, cfg);
 
     if (qemuAssignDeviceRedirdevAlias(def, redirdev, -1) < 0)
         goto cleanup;
@@ -1727,7 +1730,7 @@ int qemuDomainAttachRedirdevDevice(virConnectPtr conn,
     if (VIR_REALLOC_N(def->redirdevs, def->nredirdevs+1) < 0)
         goto cleanup;
 
-    if (qemuDomainAddChardevTLSObjects(conn, driver, cfg, vm, redirdev->source,
+    if (qemuDomainAddChardevTLSObjects(conn, driver, vm, redirdev->source,
                                        redirdev->info.alias, charAlias,
                                        &tlsAlias, &secAlias) < 0)
         goto cleanup;
@@ -1757,7 +1760,6 @@ int qemuDomainAttachRedirdevDevice(virConnectPtr conn,
     VIR_FREE(secAlias);
     VIR_FREE(charAlias);
     VIR_FREE(devstr);
-    virObjectUnref(cfg);
     return ret;
 
  exit_monitor:
@@ -1940,7 +1942,6 @@ int qemuDomainAttachChrDevice(virConnectPtr conn,
                               virDomainChrDefPtr chr)
 {
     int ret = -1, rc;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virErrorPtr orig_err;
     virDomainDefPtr vmdef = vm->def;
@@ -1957,8 +1958,6 @@ int qemuDomainAttachChrDevice(virConnectPtr conn,
     if (chr->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL &&
         qemuDomainPrepareChannel(chr, priv->channelTargetDir) < 0)
         goto cleanup;
-
-    qemuDomainPrepareChardevSourceTLS(dev, cfg);
 
     if (qemuAssignDeviceChrAlias(vmdef, chr, -1) < 0)
         goto cleanup;
@@ -1985,7 +1984,7 @@ int qemuDomainAttachChrDevice(virConnectPtr conn,
     if (qemuDomainChrPreInsert(vmdef, chr) < 0)
         goto cleanup;
 
-    if (qemuDomainAddChardevTLSObjects(conn, driver, cfg, vm, dev,
+    if (qemuDomainAddChardevTLSObjects(conn, driver, vm, dev,
                                        chr->info.alias, charAlias,
                                        &tlsAlias, &secAlias) < 0)
         goto cleanup;
@@ -2021,7 +2020,6 @@ int qemuDomainAttachChrDevice(virConnectPtr conn,
     VIR_FREE(secAlias);
     VIR_FREE(charAlias);
     VIR_FREE(devstr);
-    virObjectUnref(cfg);
     return ret;
 
  exit_monitor:
@@ -2046,7 +2044,6 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
                           virDomainObjPtr vm,
                           virDomainRNGDefPtr rng)
 {
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virDomainDeviceDef dev = { VIR_DOMAIN_DEVICE_RNG, { .rng = rng } };
     virErrorPtr orig_err;
@@ -2107,9 +2104,6 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
         goto cleanup;
     teardowncgroup = true;
 
-    if (rng->backend == VIR_DOMAIN_RNG_BACKEND_EGD)
-        qemuDomainPrepareChardevSourceTLS(rng->source.chardev, cfg);
-
     /* build required metadata */
     if (!(devstr = qemuBuildRNGDevStr(vm->def, rng, priv->qemuCaps)))
         goto cleanup;
@@ -2124,7 +2118,7 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
         goto cleanup;
 
     if (rng->backend == VIR_DOMAIN_RNG_BACKEND_EGD) {
-        if (qemuDomainAddChardevTLSObjects(conn, driver, cfg, vm,
+        if (qemuDomainAddChardevTLSObjects(conn, driver, vm,
                                            rng->source.chardev,
                                            rng->info.alias, charAlias,
                                            &tlsAlias, &secAlias) < 0)
@@ -2176,7 +2170,6 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
     VIR_FREE(objAlias);
     VIR_FREE(devstr);
     virDomainCCWAddressSetFree(ccwaddrs);
-    virObjectUnref(cfg);
     return ret;
 
  exit_monitor:
