@@ -516,6 +516,32 @@ virDomainAuditHostdev(virDomainObjPtr vm, virDomainHostdevDefPtr hostdev,
 
 
 /**
+ * virDomainAuditVHBA:
+ * @vm: domain making a change in pass-through host device
+ * @vhba: device being attached or removed
+ * @reason: one of "start", "attach", or "detach"
+ * @success: true if the device passthrough operation succeeded
+ *
+ * Log an audit message about an attempted device passthrough change.
+ */
+static void
+virDomainAuditVHBA(virDomainObjPtr vm, virStorageAdapterFCHostPtr fchost,
+                   const char *reason, bool success)
+{
+    char *wwstr = NULL;
+
+    if (virAsprintfQuiet(&wwstr, "%s:%s", fchost->wwpn, fchost->wwnn) < 0) {
+        VIR_WARN("OOM while encoding audit message");
+        return;
+    }
+
+    virDomainAuditGenericDev(vm, "vhba", NULL, wwstr, reason, success);
+
+    VIR_FREE(wwstr);
+}
+
+
+/**
  * virDomainAuditRedirdev:
  * @vm: domain making a change in pass-through host device
  * @redirdev: device being attached or removed
@@ -862,6 +888,12 @@ virDomainAuditStart(virDomainObjPtr vm, const char *reason, bool success)
     for (i = 0; i < vm->def->nhostdevs; i++) {
         virDomainHostdevDefPtr hostdev = vm->def->hostdevs[i];
         virDomainAuditHostdev(vm, hostdev, "start", true);
+    }
+
+    for (i = 0; i < vm->def->ncontrollers; i++) {
+        if (!vm->def->controllers[i]->fchost)
+            continue;
+        virDomainAuditVHBA(vm, vm->def->controllers[i]->fchost, "start", true);
     }
 
     for (i = 0; i < vm->def->nredirdevs; i++) {

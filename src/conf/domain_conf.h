@@ -48,6 +48,7 @@
 # include "virobject.h"
 # include "device_conf.h"
 # include "virbitmap.h"
+# include "virstoragedevice.h"
 # include "virstoragefile.h"
 # include "virseclabel.h"
 # include "virprocess.h"
@@ -795,6 +796,7 @@ struct _virDomainControllerDef {
         virDomainPCIControllerOpts pciopts;
         virDomainUSBControllerOpts usbopts;
     } opts;
+    virStorageAdapterFCHostPtr fchost;
     virDomainDeviceInfo info;
 };
 

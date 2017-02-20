@@ -1826,7 +1826,8 @@
               </choice>
             </attribute>
           </group>
-          <!-- scsi has an optional attribute "model" -->
+          <!-- scsi has an optional attribute "model"
+               and optional subelement "adapter" -->
           <group>
             <attribute name="type">
               <value>scsi</value>
@@ -1844,6 +1845,9 @@
                   <value>lsisas1078</value>
                 </choice>
               </attribute>
+            </optional>
+            <optional>
+              <ref name="scsiadapter"/>
             </optional>
           </group>
           <!-- usb has an optional attribute "model",
@@ -4838,6 +4842,12 @@
         </attribute>
       </optional>
       <empty/>
+    </element>
+  </define>
+
+  <define name="scsiadapter">
+    <element name='adapter'>
+      <ref name='vhbaadapter'/>
     </element>
   </define>
 

@@ -481,6 +481,12 @@ int qemuDomainAttachControllerDevice(virQEMUDriverPtr driver,
         return -1;
     }
 
+    if (controller->fchost) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("hotplug not support for vHBA controller."));
+        return -1;
+    }
+
     /* default idx would normally be set by virDomainDefPostParse(),
      * which isn't called in the case of live attach of a single
      * device.
@@ -564,6 +570,10 @@ qemuDomainFindOrCreateSCSIDiskController(virQEMUDriverPtr driver,
         cont = vm->def->controllers[i];
 
         if (cont->type != VIR_DOMAIN_CONTROLLER_TYPE_SCSI)
+            continue;
+
+        /* The VHBA controller has a singular purpose */
+        if (cont->fchost)
             continue;
 
         if (cont->idx == controller)
@@ -4594,6 +4604,12 @@ int qemuDomainDetachControllerDevice(virQEMUDriverPtr driver,
         virReportError(VIR_ERR_OPERATION_FAILED,
                        _("device with '%s' address cannot be detached"),
                        virDomainDeviceAddressTypeToString(detach->info.type));
+        goto cleanup;
+    }
+
+    if (detach->fchost) {
+        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                       _("vHBA controller cannot be detached"));
         goto cleanup;
     }
 

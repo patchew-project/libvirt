@@ -165,6 +165,11 @@ qemuAssignDeviceControllerAlias(virDomainDefPtr domainDef,
         /* first USB device is "usb", others are normal "usb%d" */
         if (controller->idx == 0)
             return VIR_STRDUP(controller->info.alias, "usb");
+    } else if (controller->type == VIR_DOMAIN_CONTROLLER_TYPE_SCSI &&
+               controller->fchost) {
+        /* There is no need for an alias for a vHBA since we're not passing
+         * it through to QEMU */
+        return 0;
     }
     /* all other controllers use the default ${type}${index} naming
      * scheme for alias/id.

@@ -638,6 +638,15 @@ mymain(void)
     DO_TEST("disk-source-pool", NONE);
     DO_TEST("disk-source-pool-mode", NONE);
 
+    DO_TEST("vhba-no-parent",
+            QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_VIRTIO_SCSI);
+    DO_TEST("vhba-parent-name",
+            QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_VIRTIO_SCSI);
+    DO_TEST("vhba-parent-wwns",
+            QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_VIRTIO_SCSI);
+    DO_TEST("vhba-parent-fabric",
+            QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_VIRTIO_SCSI);
+
     DO_TEST("disk-drive-discard", NONE);
     DO_TEST("disk-drive-detect-zeroes", NONE);
 

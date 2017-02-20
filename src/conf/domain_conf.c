@@ -1789,15 +1789,21 @@ virDomainControllerDefNew(virDomainControllerType type)
 }
 
 
-void virDomainControllerDefFree(virDomainControllerDefPtr def)
+void
+virDomainControllerDefFree(virDomainControllerDefPtr def)
 {
     if (!def)
         return;
 
+    if (def->fchost) {
+        virStorageAdapterVHBAClear(def->fchost);
+        VIR_FREE(def->fchost);
+    }
     virDomainDeviceInfoClear(&def->info);
 
     VIR_FREE(def);
 }
+
 
 virDomainFSDefPtr
 virDomainFSDefNew(void)
@@ -2378,6 +2384,7 @@ void virDomainHostdevDefFree(virDomainHostdevDefPtr def)
     if (def->parent.type == VIR_DOMAIN_DEVICE_NONE)
         VIR_FREE(def);
 }
+
 
 void virDomainHubDefFree(virDomainHubDefPtr def)
 {
@@ -3338,6 +3345,7 @@ virDomainDeviceGetInfo(virDomainDeviceDefPtr device)
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_IOMMU:
+
     case VIR_DOMAIN_DEVICE_LAST:
     case VIR_DOMAIN_DEVICE_NONE:
         break;
@@ -3653,7 +3661,6 @@ virDomainDeviceInfoIterateInternal(virDomainDefPtr def,
     case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_REDIRDEV:
-    case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_CHR:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
@@ -3661,10 +3668,12 @@ virDomainDeviceInfoIterateInternal(virDomainDefPtr def,
     case VIR_DOMAIN_DEVICE_SHMEM:
     case VIR_DOMAIN_DEVICE_TPM:
     case VIR_DOMAIN_DEVICE_PANIC:
-    case VIR_DOMAIN_DEVICE_LAST:
     case VIR_DOMAIN_DEVICE_RNG:
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
+
+    case VIR_DOMAIN_DEVICE_NONE:
+    case VIR_DOMAIN_DEVICE_LAST:
         break;
     }
 #endif
@@ -4169,6 +4178,10 @@ virDomainHostdevAssignAddress(virDomainXMLOptionPtr xmlopt,
         if (def->controllers[i]->type != VIR_DOMAIN_CONTROLLER_TYPE_SCSI)
             continue;
 
+        /* Do not allow assignment to the VHBA controller */
+        if (def->controllers[i]->fchost)
+            continue;
+
         controller++;
         ret = virDomainControllerSCSINextUnit(def, max_unit,
                                               def->controllers[i]->idx);
@@ -4194,6 +4207,24 @@ virDomainHostdevAssignAddress(virDomainXMLOptionPtr xmlopt,
     hostdev->info->addr.drive.unit = next_unit;
 
     return 0;
+}
+
+
+/* Returns true if the passed in address info matches the controller address
+ * for a VHBA controller */
+static bool
+virDomainDriveAddressIsUsedByVHBA(const virDomainDef *def,
+                                  const virDomainDeviceDriveAddress *addr)
+{
+    size_t i;
+
+    for (i = 0; i < def->ncontrollers; i++) {
+        if (def->controllers[i]->fchost &&
+            def->controllers[i]->idx == addr->controller)
+            return true;
+    }
+
+    return false;
 }
 
 
@@ -4303,6 +4334,17 @@ virDomainDeviceDefPostParseInternal(virDomainDeviceDefPtr dev,
                                    addr->target, addr->unit);
                     return -1;
                 }
+
+                /* If the assignment was to a vHBA controller fail */
+                if (virDomainDriveAddressIsUsedByVHBA(def, addr)) {
+                    virReportError(VIR_ERR_XML_ERROR,
+                                   _("SCSI host address controller='%u' "
+                                     "bus='%u' target='%u' unit='%u' cannot "
+                                     "use a vHBA controller"),
+                                   addr->controller, addr->bus,
+                                   addr->target, addr->unit);
+                    return -1;
+                }
             }
         }
     }
@@ -4318,6 +4360,16 @@ virDomainDeviceDefPostParseInternal(virDomainDeviceDefPtr dev,
                            virDomainControllerModelSCSITypeToString(VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI));
             return -1;
         }
+
+        if (cdev->fchost && cdev->type != VIR_DOMAIN_CONTROLLER_TYPE_SCSI &&
+            cdev->model != VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("Invalid VHBA configuration, requires controller "
+                             "model '%s'"),
+                           virDomainControllerModelSCSITypeToString(VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI));
+            return -1;
+        }
+
     }
 
     return 0;
@@ -4736,7 +4788,8 @@ virDomainDiskAddressDiskBusCompatibility(virDomainDiskBus bus,
 
 
 static int
-virDomainDiskDefValidate(const virDomainDiskDef *disk)
+virDomainDiskDefValidate(const virDomainDef *def,
+                         const virDomainDiskDef *disk)
 {
     /* Validate LUN configuration */
     if (disk->device == VIR_DOMAIN_DISK_DEVICE_LUN) {
@@ -4763,6 +4816,17 @@ virDomainDiskDefValidate(const virDomainDiskDef *disk)
                        virDomainDeviceAddressTypeToString(disk->info.type),
                        disk->dst,
                        virDomainDiskBusTypeToString(disk->bus));
+        return -1;
+    }
+
+    /* If the disk is assigned to a controller being used for vHBA then
+     * reject it.
+     */
+    if (disk->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_DRIVE &&
+        virDomainDriveAddressIsUsedByVHBA(def, &disk->info.addr.drive)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("disk '%s' improperly configured cannot use a "
+                         "VHBA controller"), disk->dst);
         return -1;
     }
 
@@ -4822,13 +4886,17 @@ virDomainDeviceDefValidateInternal(const virDomainDeviceDef *dev,
 {
     switch ((virDomainDeviceType) dev->type) {
     case VIR_DOMAIN_DEVICE_DISK:
-        return virDomainDiskDefValidate(dev->data.disk);
+        return virDomainDiskDefValidate(def, dev->data.disk);
 
     case VIR_DOMAIN_DEVICE_REDIRDEV:
         return virDomainRedirdevDefValidate(def, dev->data.redirdev);
 
     case VIR_DOMAIN_DEVICE_NET:
         return virDomainNetDefValidate(dev->data.net);
+
+    case VIR_DOMAIN_DEVICE_CONTROLLER:
+        if (dev->data.controller->fchost)
+            return virStorageAdapterVHBAParseValidate(dev->data.controller->fchost);
 
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_FS:
@@ -4837,7 +4905,6 @@ virDomainDeviceDefValidateInternal(const virDomainDeviceDef *dev,
     case VIR_DOMAIN_DEVICE_VIDEO:
     case VIR_DOMAIN_DEVICE_HOSTDEV:
     case VIR_DOMAIN_DEVICE_WATCHDOG:
-    case VIR_DOMAIN_DEVICE_CONTROLLER:
     case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_SMARTCARD:
@@ -6757,7 +6824,16 @@ virDomainDiskDefAssignAddress(virDomainXMLOptionPtr xmlopt,
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("using disk target name '%s' conflicts with "
                              "SCSI host device address controller='%u' "
-                             "bus='%u' target='%u' unit='%u"),
+                             "bus='%u' target='%u' unit='%u'"),
+                           def->dst, controller, 0, 0, unit);
+            return -1;
+        }
+
+        if (virDomainDriveAddressIsUsedByVHBA(vmdef, &addr)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("using disk target name '%s' conflicts with "
+                             "VHBA controller='%u' bus='%u' target='%u' "
+                             "unit='%u'"),
                            def->dst, controller, 0, 0, unit);
             return -1;
         }
@@ -8572,6 +8648,20 @@ virDomainControllerModelTypeToString(virDomainControllerDefPtr def,
 }
 
 
+static int
+virDomainControllerVHBAParseXML(xmlNodePtr node,
+                                virDomainControllerDefPtr def)
+{
+    if (VIR_ALLOC(def->fchost) < 0)
+        return -1;
+
+    if (virStorageAdapterVHBAParseXML(node, def->fchost) < 0)
+        return -1;
+
+    return 0;
+}
+
+
 /* Parse the XML definition for a controller
  * @param node XML nodeset to parse for controller definition
  */
@@ -8669,6 +8759,9 @@ virDomainControllerDefParseXML(xmlNodePtr node,
                 port = virXMLPropString(cur, "port");
                 busNr = virXMLPropString(cur, "busNr");
                 processedTarget = true;
+            } else if (xmlStrEqual(cur->name, BAD_CAST "adapter")) {
+                if (virDomainControllerVHBAParseXML(cur, def) < 0)
+                    goto error;
             }
         }
         cur = cur->next;
@@ -18609,6 +18702,67 @@ virDomainControllerDefCheckABIStability(virDomainControllerDefPtr src,
         return false;
     }
 
+    if ((src->fchost && !dst->fchost) || (!src->fchost && dst->fchost)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Target controller VHBA presence does not match "
+                         "source"));
+        return false;
+    }
+
+    if (src->fchost) {
+        if (STRNEQ(src->fchost->wwnn, dst->fchost->wwnn)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Target VHBA wwnn %s does not match source %s"),
+                           dst->fchost->wwnn, src->fchost->wwnn);
+            return false;
+        }
+
+        if (STRNEQ(src->fchost->wwpn, dst->fchost->wwpn)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Target VHBA wwpn %s does not match source %s"),
+                           dst->fchost->wwpn, src->fchost->wwpn);
+            return false;
+        }
+
+        if (STRNEQ_NULLABLE(src->fchost->parent, dst->fchost->parent)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Target VHBA parent %s does not match source %s"),
+                           NULLSTR(dst->fchost->parent),
+                           NULLSTR(src->fchost->parent));
+            return false;
+        }
+
+        if (STRNEQ_NULLABLE(src->fchost->parent_wwnn,
+                            dst->fchost->parent_wwnn)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Target VHBA parent wwnn %s does not match "
+                             "source %s"),
+                           NULLSTR(dst->fchost->parent_wwnn),
+                           NULLSTR(src->fchost->parent_wwnn));
+            return false;
+        }
+
+        if (STRNEQ_NULLABLE(src->fchost->parent_wwpn,
+                            dst->fchost->parent_wwpn)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Target VHBA parent wwpn %s does not match "
+                             "source %s"),
+                           NULLSTR(dst->fchost->parent_wwpn),
+                           NULLSTR(src->fchost->parent_wwpn));
+            return false;
+        }
+
+        if (STRNEQ_NULLABLE(src->fchost->parent_fabric_wwn,
+                            dst->fchost->parent_fabric_wwn)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Target VHBA parent fabric wwn %s does not match "
+                             "source %s"),
+                           NULLSTR(dst->fchost->parent_fabric_wwn),
+                           NULLSTR(src->fchost->parent_fabric_wwn));
+            return false;
+        }
+    }
+
     if (src->type == VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL) {
         if (src->opts.vioserial.ports != dst->opts.vioserial.ports) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -19875,18 +20029,19 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
     case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_REDIRDEV:
-    case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_CHR:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
-    case VIR_DOMAIN_DEVICE_LAST:
     case VIR_DOMAIN_DEVICE_RNG:
     case VIR_DOMAIN_DEVICE_TPM:
     case VIR_DOMAIN_DEVICE_PANIC:
     case VIR_DOMAIN_DEVICE_SHMEM:
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
+
+    case VIR_DOMAIN_DEVICE_NONE:
+    case VIR_DOMAIN_DEVICE_LAST:
         break;
     }
 #endif
@@ -20900,7 +21055,7 @@ virDomainControllerDefFormat(virBufferPtr buf,
 
     if (pciModel || pciTarget ||
         def->queues || def->cmd_per_lun || def->max_sectors || def->ioeventfd ||
-        def->iothread ||
+        def->iothread || def->fchost ||
         virDomainDeviceInfoNeedsFormat(&def->info, flags) || pcihole64) {
         virBufferAddLit(buf, ">\n");
         virBufferAdjustIndent(buf, 2);
@@ -20963,6 +21118,11 @@ virDomainControllerDefFormat(virBufferPtr buf,
                 virBufferAsprintf(buf, " iothread='%u'", def->iothread);
 
             virBufferAddLit(buf, "/>\n");
+        }
+
+        if (def->fchost) {
+            virBufferAddLit(buf, "<adapter");
+            virStorageAdapterVHBAFormat(buf, def->fchost);
         }
 
         if (virDomainDeviceInfoNeedsFormat(&def->info, flags) &&

@@ -3120,6 +3120,10 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
             if (cont->type != contOrder[j])
                 continue;
 
+            /* skip vHBA controller */
+            if (cont->fchost)
+                continue;
+
             /* skip USB controllers with type none.*/
             if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
                 cont->model == VIR_DOMAIN_CONTROLLER_MODEL_USB_NONE) {
