@@ -1,0 +1,9 @@
+<device>
+  <name>drm_card0</name>
+  <path>/sys/devices/pci0000:00/0000:00:02.0/drm/card0</path>
+  <devnode type='dev'>/dev/dri/card0</devnode>
+  <parent>pci_0000_00_02_0</parent>
+  <capability type='drm'>
+    <type>primary</type>
+  </capability>
+</device>
