@@ -2601,8 +2601,10 @@ prlsdkCheckUnsupportedParams(PRL_HANDLE sdkdom, virDomainDefPtr def)
         def->onCrash != VIR_DOMAIN_LIFECYCLE_CRASH_DESTROY) {
 
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("on_reboot, on_poweroff and on_crash parameters "
-                         "are not supported by vz driver"));
+                       _("The following parameters must be "
+                         "on_reboot = restart, on_poweroff = destroy, "
+                         "on_crash = destroy. "
+                         "Different actions are not supported by vz driver"));
         return -1;
     }
 
