@@ -28,8 +28,11 @@
 # include "internal.h"
 # include "virbitmap.h"
 # include "virutil.h"
+# include "virscsihost.h"
+# include "virstoragedevice.h"
 # include "virthread.h"
 # include "virpci.h"
+# include "virvhba.h"
 # include "device_conf.h"
 # include "object_event.h"
 
@@ -339,5 +342,11 @@ int virNodeDeviceObjListExport(virConnectPtr conn,
 
 char *virNodeDeviceGetParentName(virConnectPtr conn,
                                  const char *nodedev_name);
+
+char *virNodeDeviceCreateVport(virConnectPtr conn,
+                               virStorageAdapterFCHostPtr fchost);
+
+int virNodeDeviceDeleteVport(virConnectPtr conn,
+                             virStorageAdapterFCHostPtr fchost);
 
 #endif /* __VIR_NODE_DEVICE_CONF_H__ */
