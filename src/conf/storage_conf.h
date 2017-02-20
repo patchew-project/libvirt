@@ -26,6 +26,7 @@
 
 # include "internal.h"
 # include "virstorageencryption.h"
+# include "virstoragedevice.h"
 # include "virstoragefile.h"
 # include "virbitmap.h"
 # include "virthread.h"
@@ -170,38 +171,6 @@ struct _virStoragePoolSourceDevice {
     } geometry;
 };
 
-typedef enum {
-    VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_DEFAULT = 0,
-    VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST,
-    VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_FC_HOST,
-
-    VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_LAST,
-} virStoragePoolSourceAdapterType;
-VIR_ENUM_DECL(virStoragePoolSourceAdapter)
-
-typedef struct _virStoragePoolSourceAdapter virStoragePoolSourceAdapter;
-typedef virStoragePoolSourceAdapter *virStoragePoolSourceAdapterPtr;
-struct _virStoragePoolSourceAdapter {
-    int type; /* virStoragePoolSourceAdapterType */
-
-    union {
-        struct {
-            char *name;
-            virPCIDeviceAddress parentaddr; /* host address */
-            int unique_id;
-            bool has_parent;
-        } scsi_host;
-        struct {
-            char *parent;
-            char *parent_wwnn;
-            char *parent_wwpn;
-            char *parent_fabric_wwn;
-            char *wwnn;
-            char *wwpn;
-            int managed;        /* enum virTristateSwitch */
-        } fchost;
-    } data;
-};
 
 typedef struct _virStoragePoolSource virStoragePoolSource;
 typedef virStoragePoolSource *virStoragePoolSourcePtr;
@@ -218,7 +187,7 @@ struct _virStoragePoolSource {
     char *dir;
 
     /* Or an adapter */
-    virStoragePoolSourceAdapter adapter;
+    virStorageAdapter adapter;
 
     /* Or a name */
     char *name;

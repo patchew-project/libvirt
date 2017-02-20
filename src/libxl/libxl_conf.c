@@ -46,6 +46,7 @@
 #include "libxl_conf.h"
 #include "libxl_utils.h"
 #include "virstoragefile.h"
+#include "virstoragedevice.h"
 #include "secret_util.h"
 
 

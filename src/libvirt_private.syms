@@ -902,8 +902,6 @@ virStoragePoolObjSaveDef;
 virStoragePoolObjUnlock;
 virStoragePoolSaveConfig;
 virStoragePoolSaveState;
-virStoragePoolSourceAdapterTypeFromString;
-virStoragePoolSourceAdapterTypeToString;
 virStoragePoolSourceClear;
 virStoragePoolSourceDeviceClear;
 virStoragePoolSourceFindDuplicate;
@@ -2434,6 +2432,20 @@ virSocketAddrSetIPv4AddrNetOrder;
 virSocketAddrSetIPv6Addr;
 virSocketAddrSetIPv6AddrNetOrder;
 virSocketAddrSetPort;
+
+
+# util/virstoragedevice.h
+virStorageAdapterClear;
+virStorageAdapterFormat;
+virStorageAdapterParseValidate;
+virStorageAdapterParseXML;
+virStorageAdapterTypeFromString;
+virStorageAdapterTypeToString;
+virStorageAdapterVHBAClear;
+virStorageAdapterVHBAFormat;
+virStorageAdapterVHBAParseValidate;
+virStorageAdapterVHBAParseXML;
+
 
 # util/virstorageencryption.h
 virStorageEncryptionFormat;

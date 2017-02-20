@@ -21,6 +21,8 @@
 
 # include "internal.h"
 
+# include "virstoragedevice.h"
+
 int virSCSIHostGetUniqueId(const char *sysfs_prefix, int host);
 
 char *virSCSIHostFindByPCI(const char *sysfs_prefix,
@@ -31,10 +33,6 @@ int virSCSIHostGetNumber(const char *adapter_name,
                          unsigned int *result)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
-char *virSCSIHostGetNameByParentaddr(unsigned int domain,
-                                     unsigned int bus,
-                                     unsigned int slot,
-                                     unsigned int function,
-                                     unsigned int unique_id);
+char *virSCSIHostGetNameByParentaddr(virStorageAdapterSCSIHostPtr scsi_host);
 
 #endif /* __VIR_SCSI_HOST_H__ */

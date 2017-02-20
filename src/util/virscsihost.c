@@ -218,36 +218,30 @@ virSCSIHostGetNumber(const char *adapter_name,
 }
 
 /* virSCSIHostGetNameByParentaddr:
- * @domain: The domain from the scsi_host parentaddr
- * @bus: The bus from the scsi_host parentaddr
- * @slot: The slot from the scsi_host parentaddr
- * @function: The function from the scsi_host parentaddr
- * @unique_id: The unique id value for parentaddr
+ * @scsi_host: The scsi_host adapter pointer.
  *
  * Generate a parentaddr and find the scsi_host host# for
- * the provided parentaddr PCI address fields.
+ * the provided scsi_host.
  *
  * Returns the "host#" string which must be free'd by
  * the caller or NULL on error
  */
 char *
-virSCSIHostGetNameByParentaddr(unsigned int domain,
-                               unsigned int bus,
-                               unsigned int slot,
-                               unsigned int function,
-                               unsigned int unique_id)
+virSCSIHostGetNameByParentaddr(virStorageAdapterSCSIHostPtr scsi_host)
 {
+    virPCIDeviceAddressPtr addr = &scsi_host->parentaddr;
     char *name = NULL;
     char *parentaddr = NULL;
 
     if (virAsprintf(&parentaddr, "%04x:%02x:%02x.%01x",
-                    domain, bus, slot, function) < 0)
+                    addr->domain, addr->bus, addr->slot, addr->function) < 0)
         goto cleanup;
-    if (!(name = virSCSIHostFindByPCI(NULL, parentaddr, unique_id))) {
+    if (!(name = virSCSIHostFindByPCI(NULL, parentaddr,
+                                      scsi_host->unique_id))) {
         virReportError(VIR_ERR_XML_ERROR,
                        _("Failed to find scsi_host using PCI '%s' "
                          "and unique_id='%u'"),
-                       parentaddr, unique_id);
+                       parentaddr, scsi_host->unique_id);
         goto cleanup;
     }
 
@@ -284,11 +278,7 @@ virSCSIHostGetNumber(const char *adapter_name ATTRIBUTE_UNUSED,
 }
 
 char *
-virSCSIHostGetNameByParentaddr(unsigned int domain ATTRIBUTE_UNUSED,
-                               unsigned int bus ATTRIBUTE_UNUSED,
-                               unsigned int slot ATTRIBUTE_UNUSED,
-                               unsigned int function ATTRIBUTE_UNUSED,
-                               unsigned int unique_id ATTRIBUTE_UNUSED)
+virSCSIHostGetNameByParentaddr(virStorageAdapterSCSIHostPtr scsi_host)
 {
     virReportSystemError(ENOSYS, "%s", _("Not supported on this platform"));
     return NULL;
