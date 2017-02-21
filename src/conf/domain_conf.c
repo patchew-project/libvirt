@@ -1228,6 +1228,30 @@ virDomainDeviceDefCheckUnsupportedMemoryDevice(virDomainDeviceDefPtr dev)
 }
 
 
+/**
+ * virDomainDefCheckUnsupportedIOThreadPolling:
+ * @def: domain definition
+ *
+ * Returns -1 if the domain definition would configure IOThread polling
+ * and reports an error, otherwise returns 0.
+ */
+static int
+virDomainDefCheckUnsupportedIOThreadPolling(virDomainDefPtr def)
+{
+    size_t i;
+
+    for (i = 0; i < def->niothreadids; i++) {
+        if (def->iothreadids[i]->poll_enabled != VIR_TRISTATE_BOOL_ABSENT) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("IOThread polling is not supported by this driver"));
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
 bool virDomainObjTaint(virDomainObjPtr obj,
                        virDomainTaintFlags taint)
 {
@@ -4467,6 +4491,10 @@ virDomainDefPostParseCheckFeatures(virDomainDefPtr def,
         return -1;
     }
 
+    if (UNSUPPORTED(VIR_DOMAIN_DEF_FEATURE_IOTHREAD_POLLING) &&
+        virDomainDefCheckUnsupportedIOThreadPolling(def) < 0)
+        return -1;
+
     return 0;
 }
 
@@ -4585,6 +4613,60 @@ virDomainVcpuDefPostParse(virDomainDefPtr def)
 }
 
 
+int
+virDomainIOThreadDefPostParse(virDomainIOThreadIDDefPtr iothread)
+{
+    if ((iothread->poll_grow > 0 || iothread->poll_shrink > 0) &&
+        iothread->poll_max_ns == 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("polling grow or shrink is set for iothread id "
+                         "'%u' but max_ns is not set"),
+                       iothread->iothread_id);
+        return -1;
+    }
+
+    switch (iothread->poll_enabled) {
+    case VIR_TRISTATE_BOOL_ABSENT:
+        if (iothread->poll_max_ns > 0)
+            iothread->poll_enabled = VIR_TRISTATE_BOOL_YES;
+        break;
+
+    case VIR_TRISTATE_BOOL_NO:
+        iothread->poll_max_ns = 0;
+        iothread->poll_grow = 0;
+        iothread->poll_shrink = 0;
+        break;
+
+    case VIR_TRISTATE_BOOL_YES:
+        if (iothread->poll_max_ns == 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("polling is enabled for iothread id '%u' but "
+                             "max_ns is not set"), iothread->iothread_id);
+            return -1;
+        }
+        break;
+
+    case VIR_TRISTATE_BOOL_LAST:
+        break;
+    }
+
+    return 0;
+}
+
+
+static int
+virDomainDefPostParseIOThreads(virDomainDefPtr def)
+{
+    size_t i;
+
+    for (i = 0; i < def->niothreadids; i++)
+        if (virDomainIOThreadDefPostParse(def->iothreadids[i]) < 0)
+            return -1;
+
+    return 0;
+}
+
+
 static int
 virDomainDefPostParseInternal(virDomainDefPtr def,
                               struct virDomainDefPostParseDeviceIteratorData *data)
@@ -4597,6 +4679,9 @@ virDomainDefPostParseInternal(virDomainDefPtr def,
     }
 
     if (virDomainVcpuDefPostParse(def) < 0)
+        return -1;
+
+    if (virDomainDefPostParseIOThreads(def) < 0)
         return -1;
 
     if (virDomainDefPostParseMemory(def, data->parseFlags) < 0)
@@ -15574,7 +15659,9 @@ virDomainIdmapDefParseXML(xmlXPathContextPtr ctxt,
  *
  *     <iothreads>4</iothreads>
  *     <iothreadids>
- *       <iothread id='1'/>
+ *       <iothread id='1'>
+ *         <polling enabled='yes' max_ns='4000' grow='2' shrink='4'/>
+ *       </iothread>
  *       <iothread id='3'/>
  *       <iothread id='5'/>
  *       <iothread id='7'/>
@@ -15587,6 +15674,7 @@ virDomainIOThreadIDDefParseXML(xmlNodePtr node,
     virDomainIOThreadIDDefPtr iothrid;
     xmlNodePtr oldnode = ctxt->node;
     char *tmp = NULL;
+    int npoll = 0;
 
     if (VIR_ALLOC(iothrid) < 0)
         return NULL;
@@ -15603,6 +15691,58 @@ virDomainIOThreadIDDefParseXML(xmlNodePtr node,
         virReportError(VIR_ERR_XML_ERROR,
                        _("invalid iothread 'id' value '%s'"), tmp);
         goto error;
+    }
+    VIR_FREE(tmp);
+
+    if ((npoll = virXPathNodeSet("./polling", ctxt, NULL)) < 0)
+        goto error;
+
+    if (npoll > 1) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("only one polling element is allowed for each "
+                         "<iothread> element"));
+        goto error;
+    }
+
+    if (npoll > 0) {
+        if ((tmp = virXPathString("string(./polling/@enabled)", ctxt))) {
+            int enabled = virTristateBoolTypeFromString(tmp);
+            if (enabled < 0) {
+                virReportError(VIR_ERR_XML_ERROR,
+                               _("invalid polling 'enabled' value '%s'"), tmp);
+                goto error;
+            }
+            iothrid->poll_enabled = enabled;
+        } else {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("missing 'enabled' attribute in <polling> element"));
+            goto error;
+        }
+        VIR_FREE(tmp);
+
+        if ((tmp = virXPathString("string(./polling/@max_ns)", ctxt)) &&
+            virStrToLong_uip(tmp, NULL, 10, &iothrid->poll_max_ns) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("invalid polling 'max_ns' value '%s'"), tmp);
+            goto error;
+        }
+        VIR_FREE(tmp);
+
+        if ((tmp = virXPathString("string(./polling/@grow)", ctxt)) &&
+            virStrToLong_uip(tmp, NULL, 10, &iothrid->poll_grow) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("invalid polling 'grow' value '%s'"), tmp);
+            goto error;
+        }
+        VIR_FREE(tmp);
+
+        if ((tmp = virXPathString("string(./polling/@shrink)", ctxt)) &&
+            virStrToLong_uip(tmp, NULL, 10, &iothrid->poll_shrink) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("invalid polling 'shrink' value '%s'"), tmp);
+            goto error;
+        }
+        VIR_FREE(tmp);
     }
 
  cleanup:
@@ -23713,7 +23853,8 @@ virDomainDefIothreadShouldFormat(virDomainDefPtr def)
     size_t i;
 
     for (i = 0; i < def->niothreadids; i++) {
-        if (!def->iothreadids[i]->autofill)
+        if (!def->iothreadids[i]->autofill ||
+            def->iothreadids[i]->poll_enabled != VIR_TRISTATE_BOOL_ABSENT)
             return true;
     }
 
@@ -23918,8 +24059,28 @@ virDomainDefFormatInternal(virDomainDefPtr def,
             virBufferAddLit(buf, "<iothreadids>\n");
             virBufferAdjustIndent(buf, 2);
             for (i = 0; i < def->niothreadids; i++) {
-                virBufferAsprintf(buf, "<iothread id='%u'/>\n",
-                                  def->iothreadids[i]->iothread_id);
+                virDomainIOThreadIDDefPtr iothread = def->iothreadids[i];
+                virBufferAsprintf(buf, "<iothread id='%u'", iothread->iothread_id);
+                if (iothread->poll_enabled != VIR_TRISTATE_BOOL_ABSENT) {
+                    virBufferAddLit(buf, ">\n");
+                    virBufferAdjustIndent(buf, 2);
+                    virBufferAsprintf(buf, "<polling enabled='%s'",
+                                      virTristateBoolTypeToString(iothread->poll_enabled));
+                    if (iothread->poll_max_ns)
+                        virBufferAsprintf(buf, " max_ns='%u'",
+                                          iothread->poll_max_ns);
+                    if (iothread->poll_grow)
+                        virBufferAsprintf(buf, " grow='%u'",
+                                          iothread->poll_grow);
+                    if (iothread->poll_shrink)
+                        virBufferAsprintf(buf, " shrink='%u'",
+                                          iothread->poll_shrink);
+                    virBufferAddLit(buf, "/>\n");
+                    virBufferAdjustIndent(buf, -2);
+                    virBufferAddLit(buf, "</iothread>\n");
+                } else {
+                    virBufferAddLit(buf, "/>\n");
+                }
             }
             virBufferAdjustIndent(buf, -2);
             virBufferAddLit(buf, "</iothreadids>\n");

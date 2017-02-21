@@ -100,6 +100,12 @@ mymain(void)
 
     DO_TEST("vcpus-individual");
 
+    DO_TEST("iothreads-no-polling");
+    DO_TEST("iothreads-polling-enabled");
+    DO_TEST("iothreads-polling-disabled");
+    DO_TEST_FULL("iothreads-polling-enabled-fail", 0, false,
+        TEST_COMPARE_DOM_XML2XML_RESULT_FAIL_PARSE);
+
     virObjectUnref(caps);
     virObjectUnref(xmlopt);
 

@@ -1101,7 +1101,8 @@ virCapsPtr virTestGenericCapsInit(void)
 }
 
 static virDomainDefParserConfig virTestGenericDomainDefParserConfig = {
-    .features = VIR_DOMAIN_DEF_FEATURE_INDIVIDUAL_VCPUS,
+    .features = VIR_DOMAIN_DEF_FEATURE_INDIVIDUAL_VCPUS |
+                VIR_DOMAIN_DEF_FEATURE_IOTHREAD_POLLING,
 };
 static virDomainXMLPrivateDataCallbacks virTestGenericPrivateDataCallbacks;
 

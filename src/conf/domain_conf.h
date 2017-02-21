@@ -2074,10 +2074,17 @@ struct _virDomainIOThreadIDDef {
     int thread_id;
     virBitmapPtr cpumask;
 
+    virTristateBool poll_enabled;
+    unsigned int poll_max_ns;
+    unsigned int poll_grow;
+    unsigned int poll_shrink;
+
     virDomainThreadSchedParam sched;
 };
 
 void virDomainIOThreadIDDefFree(virDomainIOThreadIDDefPtr def);
+
+int virDomainIOThreadDefPostParse(virDomainIOThreadIDDefPtr iothread);
 
 
 typedef struct _virDomainCputune virDomainCputune;
@@ -2410,6 +2417,7 @@ typedef enum {
     VIR_DOMAIN_DEF_FEATURE_OFFLINE_VCPUPIN = (1 << 2),
     VIR_DOMAIN_DEF_FEATURE_NAME_SLASH = (1 << 3),
     VIR_DOMAIN_DEF_FEATURE_INDIVIDUAL_VCPUS = (1 << 4),
+    VIR_DOMAIN_DEF_FEATURE_IOTHREAD_POLLING = (1 << 5),
 } virDomainDefFeatures;
 
 

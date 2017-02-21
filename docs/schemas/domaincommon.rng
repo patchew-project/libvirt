@@ -661,6 +661,30 @@
               <attribute name="id">
                 <ref name="unsignedInt"/>
               </attribute>
+              <optional>
+                <element name="polling">
+                  <optional>
+                    <attribute name="enabled">
+                      <ref name="virYesNo"/>
+                    </attribute>
+                  </optional>
+                  <optional>
+                    <attribute name="max_ns">
+                      <ref name="unsignedInt"/>
+                    </attribute>
+                  </optional>
+                  <optional>
+                    <attribute name="grow">
+                      <ref name="unsignedInt"/>
+                    </attribute>
+                  </optional>
+                  <optional>
+                    <attribute name="shrink">
+                      <ref name="unsignedInt"/>
+                    </attribute>
+                  </optional>
+                </element>
+              </optional>
             </element>
           </zeroOrMore>
         </element>

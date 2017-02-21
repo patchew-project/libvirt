@@ -611,6 +611,7 @@
   ...
   &lt;iothreadids&gt;
     &lt;iothread id="2"/&gt;
+      &lt;polling enabled='yes' max_ns="4000" grow="2" shrink="4"/&gt;
     &lt;iothread id="4"/&gt;
     &lt;iothread id="6"/&gt;
     &lt;iothread id="8"/&gt;
@@ -645,7 +646,23 @@
         defined for the domain, then the <code>iothreads</code> value
         will be adjusted accordingly.
         <span class="since">Since 1.2.15</span>
-       </dd>
+      </dd>
+      <dt><code>polling</code></dt>
+      <dd>
+        The optional <code>polling</code> element provides the capability to
+        enable/disable and configure polling mechanism for iothreads. Attribute
+        <code>max_ns</code> specifies the maximum time in <code>ns</code>
+        between each poll requests and is mandatory if polling is explicitly
+        enabled. Attributes <code>grow</code> and <code>shrink</code> specifies
+        time in <code>ns</code> that is used to configure how the polling
+        algorithm will adapt current polling time to different workloads.
+        If any of <code>max_ns</code>, <code>grow</code> and <code>shrink</code>
+        is set to <code>0</code>, it is the same as not providing it at all.
+        If this element is omitted the default behavior and values are set by
+        hypervisor. Possible values for <code>enabled</code> are
+        <code>yes</code> and <code>no</code>. Available only for QEMU driver.
+        <span class="since">Since 3.1.0</span>
+      </dd>
     </dl>
 
     <h3><a name="elementsCPUTuning">CPU Tuning</a></h3>
