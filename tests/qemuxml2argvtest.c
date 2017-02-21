@@ -702,13 +702,9 @@ mymain(void)
     DO_TEST("boot-network", NONE);
     DO_TEST("boot-floppy", NONE);
     DO_TEST("boot-floppy-q35",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_ICH9_AHCI);
     DO_TEST("bootindex-floppy-q35",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_ICH9_AHCI, QEMU_CAPS_BOOT_MENU,
             QEMU_CAPS_BOOTINDEX);
@@ -1392,24 +1388,20 @@ mymain(void)
     DO_TEST_PARSE_ERROR("usb-none-usbtablet",
             QEMU_CAPS_CHARDEV, QEMU_CAPS_NODEFCONFIG);
     DO_TEST("usb-controller-default-q35",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE, QEMU_CAPS_PCI_OHCI,
+            QEMU_CAPS_PCI_OHCI,
             QEMU_CAPS_PIIX3_USB_UHCI, QEMU_CAPS_NEC_USB_XHCI);
     DO_TEST_FAILURE("usb-controller-default-unavailable-q35",
-                    QEMU_CAPS_DEVICE_PCI_BRIDGE,
                     QEMU_CAPS_DEVICE_IOH3420,
-                    QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE, QEMU_CAPS_PCI_OHCI,
+                    QEMU_CAPS_PCI_OHCI,
                     QEMU_CAPS_NEC_USB_XHCI);
     DO_TEST("usb-controller-explicit-q35",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE, QEMU_CAPS_PCI_OHCI,
+            QEMU_CAPS_PCI_OHCI,
             QEMU_CAPS_PIIX3_USB_UHCI, QEMU_CAPS_NEC_USB_XHCI);
     DO_TEST_FAILURE("usb-controller-explicit-unavailable-q35",
-                    QEMU_CAPS_DEVICE_PCI_BRIDGE,
                     QEMU_CAPS_DEVICE_IOH3420,
-                    QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE, QEMU_CAPS_PCI_OHCI,
+                    QEMU_CAPS_PCI_OHCI,
                     QEMU_CAPS_PIIX3_USB_UHCI);
     DO_TEST("usb-controller-xhci",
             QEMU_CAPS_CHARDEV, QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_PIIX3_USB_UHCI,
@@ -1684,8 +1676,7 @@ mymain(void)
     DO_TEST("video-device-pciaddr-default",
             QEMU_CAPS_KVM, QEMU_CAPS_VNC,
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
-            QEMU_CAPS_DEVICE_QXL,
-            QEMU_CAPS_DEVICE_PCI_BRIDGE);
+            QEMU_CAPS_DEVICE_QXL);
     DO_TEST("video-vga-nodevice", QEMU_CAPS_DEVICE_VGA);
     DO_TEST("video-vga-device", QEMU_CAPS_DEVICE_VGA,
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY);
@@ -1791,30 +1782,21 @@ mymain(void)
             QEMU_CAPS_DEVICE_CIRRUS_VGA);
     DO_TEST("pci-autofill-addr", QEMU_CAPS_DEVICE_CIRRUS_VGA);
     DO_TEST("pci-many",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_CIRRUS_VGA);
     DO_TEST("pci-bridge-many-disks",
             QEMU_CAPS_DEVICE_PCI_BRIDGE);
     DO_TEST("pcie-root",
             QEMU_CAPS_ICH9_AHCI,
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420);
     DO_TEST("q35",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_ICH9_AHCI,
             QEMU_CAPS_PCI_MULTIFUNCTION, QEMU_CAPS_ICH9_USB_EHCI1,
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
             QEMU_CAPS_DEVICE_QXL);
     DO_TEST_PARSE_ERROR("q35-dmi-bad-address1",
-                        QEMU_CAPS_DEVICE_PCI_BRIDGE,
-                        QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
                         QEMU_CAPS_DEVICE_IOH3420);
     DO_TEST_PARSE_ERROR("q35-dmi-bad-address2",
-                        QEMU_CAPS_DEVICE_PCI_BRIDGE,
-                        QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
                         QEMU_CAPS_DEVICE_IOH3420);
     DO_TEST("q35-pm-disable",
             QEMU_CAPS_DEVICE_PCI_BRIDGE,
@@ -1917,8 +1899,6 @@ mymain(void)
             QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_FSDEV,
             QEMU_CAPS_FSDEV_WRITEOUT,
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_ICH9_AHCI,
             QEMU_CAPS_PCI_MULTIFUNCTION,
@@ -1940,8 +1920,6 @@ mymain(void)
             QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_FSDEV,
             QEMU_CAPS_FSDEV_WRITEOUT,
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_ICH9_AHCI,
             QEMU_CAPS_PCI_MULTIFUNCTION,
@@ -1963,8 +1941,6 @@ mymain(void)
             QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_FSDEV,
             QEMU_CAPS_FSDEV_WRITEOUT,
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_ICH9_AHCI,
             QEMU_CAPS_PCI_MULTIFUNCTION,
@@ -1991,8 +1967,6 @@ mymain(void)
             QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_FSDEV,
             QEMU_CAPS_FSDEV_WRITEOUT,
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_ICH9_AHCI,
             QEMU_CAPS_PCI_MULTIFUNCTION,
@@ -2006,8 +1980,6 @@ mymain(void)
             QEMU_CAPS_HDA_DUPLEX,
             QEMU_CAPS_USB_REDIR);
     DO_TEST("pcie-root-port",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_ICH9_AHCI,
             QEMU_CAPS_PCI_MULTIFUNCTION,
@@ -2031,8 +2003,6 @@ mymain(void)
             QEMU_CAPS_HDA_DUPLEX);
 
     DO_TEST_PARSE_ERROR("q35-wrong-root",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_ICH9_AHCI,
             QEMU_CAPS_PCI_MULTIFUNCTION, QEMU_CAPS_ICH9_USB_EHCI1,
@@ -2041,16 +2011,12 @@ mymain(void)
     DO_TEST_PARSE_ERROR("440fx-wrong-root", NONE);
 
     DO_TEST_PARSE_ERROR("pcie-root-port-too-many",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_ICH9_AHCI,
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
             QEMU_CAPS_DEVICE_QXL);
 
     DO_TEST("pcie-switch-upstream-port",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_DEVICE_X3130_UPSTREAM,
             QEMU_CAPS_ICH9_AHCI,
@@ -2058,8 +2024,6 @@ mymain(void)
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
             QEMU_CAPS_DEVICE_QXL);
     DO_TEST("pcie-switch-downstream-port",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_DEVICE_X3130_UPSTREAM,
             QEMU_CAPS_DEVICE_XIO3130_DOWNSTREAM,
@@ -2068,35 +2032,25 @@ mymain(void)
             QEMU_CAPS_DEVICE_QXL);
 
     DO_TEST("pci-expander-bus",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_PXB);
     DO_TEST_PARSE_ERROR("pci-expander-bus-bad-node",
-                        QEMU_CAPS_DEVICE_PCI_BRIDGE,
                         QEMU_CAPS_DEVICE_PXB);
     DO_TEST_PARSE_ERROR("pci-expander-bus-bad-machine",
-                        QEMU_CAPS_DEVICE_PCI_BRIDGE,
                         QEMU_CAPS_DEVICE_PXB);
     DO_TEST_PARSE_ERROR("pci-expander-bus-bad-bus",
-                        QEMU_CAPS_DEVICE_PCI_BRIDGE,
                         QEMU_CAPS_DEVICE_PXB);
 
     DO_TEST("pcie-expander-bus",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_DEVICE_X3130_UPSTREAM,
             QEMU_CAPS_DEVICE_XIO3130_DOWNSTREAM,
             QEMU_CAPS_DEVICE_PXB_PCIE);
     DO_TEST_PARSE_ERROR("pcie-expander-bus-bad-machine",
-                        QEMU_CAPS_DEVICE_PCI_BRIDGE,
-                        QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
                         QEMU_CAPS_DEVICE_IOH3420,
                         QEMU_CAPS_DEVICE_X3130_UPSTREAM,
                         QEMU_CAPS_DEVICE_XIO3130_DOWNSTREAM,
                         QEMU_CAPS_DEVICE_PXB_PCIE);
     DO_TEST_PARSE_ERROR("pcie-expander-bus-bad-bus",
-                        QEMU_CAPS_DEVICE_PCI_BRIDGE,
-                        QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
                         QEMU_CAPS_DEVICE_IOH3420,
                         QEMU_CAPS_DEVICE_PXB_PCIE);
 
@@ -2137,14 +2091,10 @@ mymain(void)
     DO_TEST("mlock-off", QEMU_CAPS_REALTIME_MLOCK);
     DO_TEST("mlock-unsupported", NONE);
 
-    DO_TEST_PARSE_ERROR("pci-bridge-negative-index-invalid",
-                        QEMU_CAPS_DEVICE_PCI_BRIDGE);
-    DO_TEST_PARSE_ERROR("pci-bridge-duplicate-index",
-                        QEMU_CAPS_DEVICE_PCI_BRIDGE);
-    DO_TEST_PARSE_ERROR("pci-root-nonzero-index",
-                        QEMU_CAPS_DEVICE_PCI_BRIDGE);
-    DO_TEST_PARSE_ERROR("pci-root-address",
-                        QEMU_CAPS_DEVICE_PCI_BRIDGE);
+    DO_TEST_PARSE_ERROR("pci-bridge-negative-index-invalid", NONE);
+    DO_TEST_PARSE_ERROR("pci-bridge-duplicate-index", NONE);
+    DO_TEST_PARSE_ERROR("pci-root-nonzero-index", NONE);
+    DO_TEST_PARSE_ERROR("pci-root-address", NONE);
 
     DO_TEST("hotplug-base",
             QEMU_CAPS_KVM, QEMU_CAPS_VIRTIO_SCSI);
@@ -2152,8 +2102,6 @@ mymain(void)
     DO_TEST("pcihole64", QEMU_CAPS_I440FX_PCI_HOLE64_SIZE);
     DO_TEST_FAILURE("pcihole64-none", NONE);
     DO_TEST("pcihole64-q35",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_ICH9_AHCI,
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
@@ -2187,9 +2135,8 @@ mymain(void)
             QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY,
             QEMU_CAPS_DEVICE_VIRTIO_MMIO,
             QEMU_CAPS_DEVICE_VIRTIO_RNG, QEMU_CAPS_OBJECT_RNG_RANDOM,
-            QEMU_CAPS_OBJECT_GPEX, QEMU_CAPS_DEVICE_PCI_BRIDGE,
+            QEMU_CAPS_OBJECT_GPEX,
             QEMU_CAPS_PCI_MULTIFUNCTION,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420);
     DO_TEST("aarch64-virt-2.6-virtio-pci-default",
             QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_DTB,
@@ -2212,7 +2159,7 @@ mymain(void)
             QEMU_CAPS_VIRTIO_SCSI);
     DO_TEST("aarch64-video-virtio-gpu-pci",
             QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_OBJECT_GPEX,
-            QEMU_CAPS_DEVICE_PCI_BRIDGE, QEMU_CAPS_DEVICE_IOH3420,
+            QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_PCI_MULTIFUNCTION, QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
             QEMU_CAPS_DEVICE_VIRTIO_GPU, QEMU_CAPS_BOOTINDEX);
     DO_TEST("aarch64-aavmf-virtio-mmio",
@@ -2466,12 +2413,12 @@ mymain(void)
                         QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_USB_HUB);
 
     DO_TEST("acpi-table", NONE);
-    DO_TEST("intel-iommu", QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
+    DO_TEST("intel-iommu",
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_DEVICE_INTEL_IOMMU);
-    DO_TEST("intel-iommu-machine", QEMU_CAPS_DEVICE_PCI_BRIDGE, QEMU_CAPS_MACHINE_OPT,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE, QEMU_CAPS_MACHINE_IOMMU);
+    DO_TEST("intel-iommu-machine",
+            QEMU_CAPS_MACHINE_OPT,
+            QEMU_CAPS_MACHINE_IOMMU);
 
     DO_TEST("cpu-hotplug-startup", QEMU_CAPS_QUERY_HOTPLUGGABLE_CPUS);
 
