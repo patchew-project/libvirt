@@ -5571,7 +5571,7 @@ qemuDomainPinIOThread(virDomainPtr dom,
 static int
 qemuDomainHotplugAddIOThread(virQEMUDriverPtr driver,
                              virDomainObjPtr vm,
-                             unsigned int iothread_id)
+                             virDomainIOThreadIDDef iothread)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     char *alias = NULL;
@@ -5583,14 +5583,18 @@ qemuDomainHotplugAddIOThread(virQEMUDriverPtr driver,
     int new_niothreads = 0;
     bool supportPolling = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_IOTHREAD_POLLING);
     qemuMonitorIOThreadInfoPtr *new_iothreads = NULL;
-    virDomainIOThreadIDDefPtr iothrid;
+    virDomainIOThreadIDDefPtr new_iothread = NULL;
+    virJSONValuePtr props = NULL;
 
-    if (virAsprintf(&alias, "iothread%u", iothread_id) < 0)
+    if (virAsprintf(&alias, "iothread%u", iothread.iothread_id) < 0)
         return -1;
 
     qemuDomainObjEnterMonitor(driver, vm);
 
-    rc = qemuMonitorAddObject(priv->mon, "iothread", alias, NULL);
+    if (qemuBuildIOThreadProps(&iothread, priv->qemuCaps, &props) < 0)
+        goto cleanup;
+
+    rc = qemuMonitorAddObject(priv->mon, "iothread", alias, props);
     exp_niothreads++;
     if (rc < 0)
         goto exit_monitor;
@@ -5620,23 +5624,23 @@ qemuDomainHotplugAddIOThread(virQEMUDriverPtr driver,
      * in the QEMU IOThread list, so we can add it to our iothreadids list
      */
     for (idx = 0; idx < new_niothreads; idx++) {
-        if (new_iothreads[idx]->iothread_id == iothread_id)
+        if (new_iothreads[idx]->iothread_id == iothread.iothread_id)
             break;
     }
 
     if (idx == new_niothreads) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("cannot find new IOThread '%u' in QEMU monitor."),
-                       iothread_id);
+                       iothread.iothread_id);
         goto cleanup;
     }
 
-    if (!(iothrid = virDomainIOThreadIDAdd(vm->def, iothread_id)))
+    if (!(new_iothread = virDomainIOThreadIDAdd(vm->def, iothread)))
         goto cleanup;
 
-    qemuDomainIOThreadUpdate(iothrid, new_iothreads[idx], supportPolling);
+    qemuDomainIOThreadUpdate(new_iothread, new_iothreads[idx], supportPolling);
 
-    if (qemuProcessSetupIOThread(vm, iothrid) < 0)
+    if (qemuProcessSetupIOThread(vm, new_iothread) < 0)
         goto cleanup;
 
     ret = 0;
@@ -5649,6 +5653,7 @@ qemuDomainHotplugAddIOThread(virQEMUDriverPtr driver,
     }
     virDomainAuditIOThread(vm, orig_niothreads, new_niothreads,
                            "update", rc == 0);
+    virJSONValueFree(props);
     VIR_FREE(alias);
     return ret;
 
@@ -5773,10 +5778,73 @@ qemuDomainDelIOThreadCheck(virDomainDefPtr def,
     return 0;
 }
 
+
+static int
+qemuDomainIOThreadParseParams(virTypedParameterPtr params,
+                              int nparams,
+                              qemuDomainObjPrivatePtr priv,
+                              virDomainIOThreadIDDefPtr iothread)
+{
+    int poll_enabled;
+    int rc;
+
+    if (virTypedParamsValidate(params, nparams,
+                               VIR_DOMAIN_IOTHREAD_POLL_ENABLED,
+                               VIR_TYPED_PARAM_BOOLEAN,
+                               VIR_DOMAIN_IOTHREAD_POLL_MAX_NS,
+                               VIR_TYPED_PARAM_UINT,
+                               VIR_DOMAIN_IOTHREAD_POLL_GROW,
+                               VIR_TYPED_PARAM_UINT,
+                               VIR_DOMAIN_IOTHREAD_POLL_SHRINK,
+                               VIR_TYPED_PARAM_UINT,
+                               NULL) < 0)
+        return -1;
+
+    if ((rc = virTypedParamsGetBoolean(params, nparams,
+                                       VIR_DOMAIN_IOTHREAD_POLL_ENABLED,
+                                       &poll_enabled)) < 0)
+        return -1;
+
+    if (rc > 0) {
+        if (poll_enabled)
+            iothread->poll_enabled = VIR_TRISTATE_BOOL_YES;
+        else
+            iothread->poll_enabled = VIR_TRISTATE_BOOL_NO;
+    }
+
+    if (virTypedParamsGetUInt(params, nparams,
+                              VIR_DOMAIN_IOTHREAD_POLL_MAX_NS,
+                              &iothread->poll_max_ns) < 0)
+        return -1;
+
+    if (virTypedParamsGetUInt(params, nparams,
+                              VIR_DOMAIN_IOTHREAD_POLL_GROW,
+                              &iothread->poll_grow) < 0)
+        return -1;
+
+    if (virTypedParamsGetUInt(params, nparams,
+                              VIR_DOMAIN_IOTHREAD_POLL_SHRINK,
+                              &iothread->poll_shrink) < 0)
+        return -1;
+
+    if (virDomainIOThreadDefPostParse(iothread) < 0)
+        return -1;
+
+    if (iothread->poll_enabled != VIR_TRISTATE_BOOL_ABSENT &&
+        !virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_IOTHREAD_POLLING)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("IOThreads polling is not supported for this QEMU"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
 static int
 qemuDomainChgIOThread(virQEMUDriverPtr driver,
                       virDomainObjPtr vm,
-                      unsigned int iothread_id,
+                      virDomainIOThreadIDDef iothread,
                       bool add,
                       unsigned int flags)
 {
@@ -5804,36 +5872,39 @@ qemuDomainChgIOThread(virQEMUDriverPtr driver,
         }
 
         if (add) {
-            if (qemuDomainAddIOThreadCheck(def, iothread_id) < 0)
+            if (qemuDomainAddIOThreadCheck(def, iothread.iothread_id) < 0)
                 goto endjob;
 
-            if (qemuDomainHotplugAddIOThread(driver, vm, iothread_id) < 0)
+            if (qemuDomainHotplugAddIOThread(driver, vm, iothread) < 0)
                 goto endjob;
         } else {
-            if (qemuDomainDelIOThreadCheck(def, iothread_id) < 0)
+            if (qemuDomainDelIOThreadCheck(def, iothread.iothread_id) < 0)
                 goto endjob;
 
-            if (qemuDomainHotplugDelIOThread(driver, vm, iothread_id) < 0)
+            if (qemuDomainHotplugDelIOThread(driver, vm,
+                                             iothread.iothread_id) < 0)
                 goto endjob;
         }
 
-        if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0)
+        if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm,
+                                driver->caps) < 0)
             goto endjob;
     }
 
     if (persistentDef) {
         if (add) {
-            if (qemuDomainAddIOThreadCheck(persistentDef, iothread_id) < 0)
+            if (qemuDomainAddIOThreadCheck(persistentDef,
+                                           iothread.iothread_id) < 0)
                 goto endjob;
 
-            if (!virDomainIOThreadIDAdd(persistentDef, iothread_id))
+            if (!virDomainIOThreadIDAdd(persistentDef, iothread))
                 goto endjob;
-
         } else {
-            if (qemuDomainDelIOThreadCheck(persistentDef, iothread_id) < 0)
+            if (qemuDomainDelIOThreadCheck(persistentDef,
+                                           iothread.iothread_id) < 0)
                 goto endjob;
 
-            virDomainIOThreadIDDel(persistentDef, iothread_id);
+            virDomainIOThreadIDDel(persistentDef, iothread.iothread_id);
         }
 
         if (virDomainSaveConfig(cfg->configDir, driver->caps,
@@ -5851,13 +5922,17 @@ qemuDomainChgIOThread(virQEMUDriverPtr driver,
     return ret;
 }
 
+
 static int
-qemuDomainAddIOThread(virDomainPtr dom,
-                      unsigned int iothread_id,
-                      unsigned int flags)
+qemuDomainAddIOThreadParams(virDomainPtr dom,
+                            unsigned int iothread_id,
+                            virTypedParameterPtr params,
+                            int nparams,
+                            unsigned int flags)
 {
     virQEMUDriverPtr driver = dom->conn->privateData;
     virDomainObjPtr vm = NULL;
+    virDomainIOThreadIDDef iothread = {0};
     int ret = -1;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
@@ -5868,18 +5943,32 @@ qemuDomainAddIOThread(virDomainPtr dom,
                        _("invalid value of 0 for iothread_id"));
         return -1;
     }
+    iothread.iothread_id = iothread_id;
 
     if (!(vm = qemuDomObjFromDomain(dom)))
         goto cleanup;
 
-    if (virDomainAddIOThreadEnsureACL(dom->conn, vm->def, flags) < 0)
+    if (qemuDomainIOThreadParseParams(params, nparams, vm->privateData,
+                                      &iothread) < 0)
         goto cleanup;
 
-    ret = qemuDomainChgIOThread(driver, vm, iothread_id, true, flags);
+    if (virDomainAddIOThreadParamsEnsureACL(dom->conn, vm->def, flags) < 0)
+        goto cleanup;
+
+    ret = qemuDomainChgIOThread(driver, vm, iothread, true, flags);
 
  cleanup:
     virDomainObjEndAPI(&vm);
     return ret;
+}
+
+
+static int
+qemuDomainAddIOThread(virDomainPtr dom,
+                      unsigned int iothread_id,
+                      unsigned int flags)
+{
+    return qemuDomainAddIOThreadParams(dom, iothread_id, NULL, 0, flags);
 }
 
 
@@ -5890,6 +5979,7 @@ qemuDomainDelIOThread(virDomainPtr dom,
 {
     virQEMUDriverPtr driver = dom->conn->privateData;
     virDomainObjPtr vm = NULL;
+    virDomainIOThreadIDDef iothread = {0};
     int ret = -1;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
@@ -5900,6 +5990,7 @@ qemuDomainDelIOThread(virDomainPtr dom,
                        _("invalid value of 0 for iothread_id"));
         return -1;
     }
+    iothread.iothread_id = iothread_id;
 
     if (!(vm = qemuDomObjFromDomain(dom)))
         goto cleanup;
@@ -5907,7 +5998,7 @@ qemuDomainDelIOThread(virDomainPtr dom,
     if (virDomainDelIOThreadEnsureACL(dom->conn, vm->def, flags) < 0)
            goto cleanup;
 
-    ret = qemuDomainChgIOThread(driver, vm, iothread_id, false, flags);
+    ret = qemuDomainChgIOThread(driver, vm, iothread, false, flags);
 
  cleanup:
     virDomainObjEndAPI(&vm);
@@ -20274,6 +20365,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainGetIOThreadInfo = qemuDomainGetIOThreadInfo, /* 1.2.14 */
     .domainPinIOThread = qemuDomainPinIOThread, /* 1.2.14 */
     .domainAddIOThread = qemuDomainAddIOThread, /* 1.2.15 */
+    .domainAddIOThreadParams = qemuDomainAddIOThreadParams, /* 3.1.0 */
     .domainDelIOThread = qemuDomainDelIOThread, /* 1.2.15 */
     .domainGetSecurityLabel = qemuDomainGetSecurityLabel, /* 0.6.1 */
     .domainGetSecurityLabelList = qemuDomainGetSecurityLabelList, /* 0.10.0 */

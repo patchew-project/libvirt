@@ -20348,14 +20348,14 @@ virDomainIOThreadIDFind(const virDomainDef *def,
 
 virDomainIOThreadIDDefPtr
 virDomainIOThreadIDAdd(virDomainDefPtr def,
-                       unsigned int iothread_id)
+                       virDomainIOThreadIDDef iothread)
 {
     virDomainIOThreadIDDefPtr iothrid = NULL;
 
     if (VIR_ALLOC(iothrid) < 0)
         goto error;
 
-    iothrid->iothread_id = iothread_id;
+    *iothrid = iothread;
 
     if (VIR_APPEND_ELEMENT_COPY(def->iothreadids, def->niothreadids,
                                 iothrid) < 0)

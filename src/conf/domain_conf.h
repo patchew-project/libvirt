@@ -2791,7 +2791,7 @@ int virDomainDefAddImplicitDevices(virDomainDefPtr def);
 virDomainIOThreadIDDefPtr virDomainIOThreadIDFind(const virDomainDef *def,
                                                   unsigned int iothread_id);
 virDomainIOThreadIDDefPtr virDomainIOThreadIDAdd(virDomainDefPtr def,
-                                                 unsigned int iothread_id);
+                                                 virDomainIOThreadIDDef iothread);
 void virDomainIOThreadIDDel(virDomainDefPtr def, unsigned int iothread_id);
 
 unsigned int virDomainDefFormatConvertXMLFlags(unsigned int flags);
