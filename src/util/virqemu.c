@@ -229,7 +229,8 @@ virQEMUBuildCommandLineJSON(virJSONValuePtr value,
                             virBufferPtr buf,
                             virQEMUBuildCommandLineJSONArrayFormatFunc array)
 {
-    if (virQEMUBuildCommandLineJSONRecurse(NULL, value, buf, array, false) < 0)
+    if (value &&
+        virQEMUBuildCommandLineJSONRecurse(NULL, value, buf, array, false) < 0)
         return -1;
 
     virBufferTrim(buf, ",", -1);
