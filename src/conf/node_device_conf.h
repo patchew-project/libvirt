@@ -234,6 +234,24 @@ struct _virNodeDeviceDef {
     virNodeDevCapsDefPtr caps;		/* optional device capabilities */
 };
 
+/* Callback mechanism to add/remove node device's by name/parent
+ * to a target driver that cares to know */
+typedef int (*virNodeDeviceAdd)(virNodeDeviceDefPtr def, bool enumerate);
+typedef int (*virNodeDeviceRemove)(virNodeDeviceDefPtr def);
+
+typedef struct _virNodeDeviceCallbackDriver virNodeDeviceCallbackDriver;
+typedef virNodeDeviceCallbackDriver *virNodeDeviceCallbackDriverPtr;
+struct _virNodeDeviceCallbackDriver {
+    const char *name;
+    virNodeDeviceAdd nodeDeviceAdd;
+    virNodeDeviceRemove nodeDeviceRemove;
+};
+
+typedef int (*virNodedevEnumerateAddDevices)(virNodeDeviceAdd deviceAddCb);
+void virNodeDeviceConfEnumerateInit(virNodedevEnumerateAddDevices cb);
+
+virNodedevEnumerateAddDevices virNodeDeviceRegisterCallbackDriver(virNodeDeviceCallbackDriverPtr);
+void virNodeDeviceUnregisterCallbackDriver(virNodeDeviceCallbackDriverPtr);
 
 typedef struct _virNodeDeviceObj virNodeDeviceObj;
 typedef virNodeDeviceObj *virNodeDeviceObjPtr;

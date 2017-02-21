@@ -243,7 +243,8 @@ while (<>) {
     } elsif (/^(?:static\s+)?(vir(?:\w+)?Driver)\s+/) {
         if ($1 ne "virNWFilterCallbackDriver" &&
             $1 ne "virNWFilterTechDriver" &&
-            $1 ne "virDomainConfNWFilterDriver") {
+            $1 ne "virDomainConfNWFilterDriver" &&
+            $1 ne "virNodeDeviceCallbackDriver") {
             $intable = 1;
             $table = $1;
         }

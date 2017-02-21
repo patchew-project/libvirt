@@ -695,6 +695,7 @@ virNodeDevCapsDefFree;
 virNodeDevCapTypeFromString;
 virNodeDevCapTypeToString;
 virNodeDeviceAssignDef;
+virNodeDeviceConfEnumerateInit;
 virNodeDeviceDefFormat;
 virNodeDeviceDefFree;
 virNodeDeviceDefParseFile;
@@ -711,6 +712,8 @@ virNodeDeviceObjListFree;
 virNodeDeviceObjLock;
 virNodeDeviceObjRemove;
 virNodeDeviceObjUnlock;
+virNodeDeviceRegisterCallbackDriver;
+virNodeDeviceUnregisterCallbackDriver;
 
 
 # conf/node_device_event.h
