@@ -32,6 +32,7 @@
 # include "network_conf.h"
 # include "domain_conf.h"
 # include "snapshot_conf.h"
+# include "node_device_conf.h"
 # include "domain_event.h"
 # include "virthread.h"
 # include "security/security_manager.h"
@@ -255,6 +256,9 @@ struct _virQEMUDriver {
     virHashTablePtr sharedDevices;
 
     /* Immutable pointer, self-locking APIs */
+    virHashTablePtr nodeDevices;
+
+    /* Immutable pointer, self-locking APIs */
     virPortAllocatorPtr remotePorts;
 
     /* Immutable pointer, self-locking APIs */
@@ -351,4 +355,14 @@ int qemuGetDomainHupageMemPath(const virDomainDef *def,
                                virQEMUDriverConfigPtr cfg,
                                unsigned long long pagesize,
                                char **memPath);
+
+void qemuNodeDeviceEntryFree(void *payload, const void *name);
+
+int qemuNodeDeviceEntryAdd(virQEMUDriverPtr driver,
+                           virNodeDeviceDefPtr def,
+                           bool enumerate);
+
+int qemuNodeDeviceEntryRemove(virQEMUDriverPtr driver,
+                              virNodeDeviceDefPtr def);
+
 #endif /* __QEMUD_CONF_H */
