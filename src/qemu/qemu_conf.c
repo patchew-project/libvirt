@@ -349,6 +349,8 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
         goto error;
 #endif
 
+    cfg->nodeDeviceEnumeration = false;
+
     return cfg;
 
  error:
@@ -711,6 +713,9 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
     if (virConfGetValueBool(conf, "clear_emulator_capabilities", &cfg->clearEmulatorCapabilities) < 0)
         goto cleanup;
     if (virConfGetValueBool(conf, "allow_disk_format_probing", &cfg->allowDiskFormatProbing) < 0)
+        goto cleanup;
+    if (virConfGetValueBool(conf, "nodedev_enumeration",
+                            &cfg->nodeDeviceEnumeration) < 0)
         goto cleanup;
     if (virConfGetValueBool(conf, "set_process_name", &cfg->setProcessName) < 0)
         goto cleanup;

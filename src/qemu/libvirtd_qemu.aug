@@ -92,6 +92,7 @@ module Libvirtd_qemu =
    let device_entry = bool_entry "mac_filter"
                  | bool_entry "relaxed_acs_check"
                  | bool_entry "allow_disk_format_probing"
+                 | bool_entry "nodedev_enumeration"
                  | str_entry "lock_manager"
 
    let rpc_entry = int_entry "max_queued"
