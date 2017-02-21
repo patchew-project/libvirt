@@ -7298,6 +7298,125 @@ cmdIOThreadAdd(vshControl *ctl, const vshCmd *cmd)
 }
 
 /*
+ * "iothreadmod" command
+ */
+static const vshCmdInfo info_iothreadmod[] = {
+    {.name = "help",
+     .data = N_("modifies an existing IOThread of the guest domain")
+    },
+    {.name = "desc",
+     .data = N_("Modifies an existing IOThread of the guest domain.")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_iothreadmod[] = {
+    VIRSH_COMMON_OPT_DOMAIN_FULL,
+    {.name = "id",
+     .type = VSH_OT_INT,
+     .flags = VSH_OFLAG_REQ,
+     .help = N_("iothread id of existing IOThread")
+    },
+    {.name = "poll-disabled",
+     .type = VSH_OT_BOOL,
+     .help = N_("disable polling for the new IOThread")
+    },
+    {.name = "poll-max-ns",
+     .type = VSH_OT_INT,
+     .help = N_("set max polling time in ns for the new IOThread")
+    },
+    {.name = "poll-grow",
+     .type = VSH_OT_INT,
+     .help = N_("set how much ns should be used to grow current polling "
+                "time for the new IOThread")
+    },
+    {.name = "poll-shrink",
+     .type = VSH_OT_INT,
+     .help = N_("set how much ns should be used to shrink current polling "
+                "time for the new IOThread")
+    },
+    VIRSH_COMMON_OPT_DOMAIN_CONFIG,
+    VIRSH_COMMON_OPT_DOMAIN_LIVE,
+    VIRSH_COMMON_OPT_DOMAIN_CURRENT,
+    {.name = NULL}
+};
+
+static bool
+cmdIOThreadMod(vshControl *ctl, const vshCmd *cmd)
+{
+    virDomainPtr dom;
+    int iothread_id = 0;
+    bool ret = false;
+    bool config = vshCommandOptBool(cmd, "config");
+    bool live = vshCommandOptBool(cmd, "live");
+    bool current = vshCommandOptBool(cmd, "current");
+    bool poll_disabled = vshCommandOptBool(cmd, "poll-disabled");
+    unsigned int flags = VIR_DOMAIN_AFFECT_CURRENT;
+    virTypedParameterPtr params = NULL;
+    int nparams = 0;
+    int maxparams = 0;
+    unsigned int poll_val;
+    int rc;
+
+    VSH_EXCLUSIVE_OPTIONS_VAR(current, live);
+    VSH_EXCLUSIVE_OPTIONS_VAR(current, config);
+    VSH_EXCLUSIVE_OPTIONS("poll-disabled", "poll-max-ns");
+    VSH_EXCLUSIVE_OPTIONS("poll-disabled", "poll-grow");
+    VSH_EXCLUSIVE_OPTIONS("poll-disabled", "poll-shrink");
+
+    if (config)
+        flags |= VIR_DOMAIN_AFFECT_CONFIG;
+    if (live)
+        flags |= VIR_DOMAIN_AFFECT_LIVE;
+
+    if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
+        return false;
+
+    if (vshCommandOptInt(ctl, cmd, "id", &iothread_id) < 0)
+        goto cleanup;
+    if (iothread_id <= 0) {
+        vshError(ctl, _("Invalid IOThread id value: '%d'"), iothread_id);
+        goto cleanup;
+    }
+
+    if (poll_disabled) {
+        if (virTypedParamsAddBoolean(&params, &nparams, &maxparams,
+                                     VIR_DOMAIN_IOTHREAD_POLL_ENABLED, 0) < 0)
+            goto save_error;
+    } else {
+#define VSH_IOTHREAD_SET_PARAMS(opt, param)                                 \
+        poll_val = 0;                                                       \
+        if ((rc = vshCommandOptUInt(ctl, cmd, opt, &poll_val)) < 0)         \
+            goto cleanup;                                                   \
+        if (rc > 0 &&                                                       \
+            virTypedParamsAddUInt(&params, &nparams, &maxparams,            \
+                                  param, poll_val) < 0)                     \
+            goto save_error;
+
+        VSH_IOTHREAD_SET_PARAMS("poll-max-ns", VIR_DOMAIN_IOTHREAD_POLL_MAX_NS)
+        VSH_IOTHREAD_SET_PARAMS("poll-grow", VIR_DOMAIN_IOTHREAD_POLL_GROW)
+        VSH_IOTHREAD_SET_PARAMS("poll-shrink", VIR_DOMAIN_IOTHREAD_POLL_SHRINK)
+
+#undef VSH_IOTHREAD_SET_PARAMS
+    }
+
+    if (virDomainModIOThreadParams(dom, iothread_id,
+                                   params, nparams, flags) < 0)
+        goto cleanup;
+
+    ret = true;
+
+ cleanup:
+    virTypedParamsFree(params, nparams);
+    virDomainFree(dom);
+    return ret;
+
+ save_error:
+    vshSaveLibvirtError();
+    goto cleanup;
+}
+
+/*
  * "iothreaddel" command
  */
 static const vshCmdInfo info_iothreaddel[] = {
@@ -13734,6 +13853,12 @@ const vshCmdDef domManagementCmds[] = {
      .handler = cmdIOThreadAdd,
      .opts = opts_iothreadadd,
      .info = info_iothreadadd,
+     .flags = 0
+    },
+    {.name = "iothreadmod",
+     .handler = cmdIOThreadMod,
+     .opts = opts_iothreadmod,
+     .info = info_iothreadmod,
      .flags = 0
     },
     {.name = "iothreaddel",
