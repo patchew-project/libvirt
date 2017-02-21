@@ -80,6 +80,15 @@
           devices, providing device type information.
         </description>
       </change>
+      <change>
+        <summary>
+          iothread: add support for polling mechanism
+        </summary>
+        <description>
+          Add a new &lt;polling&gt; element for iothreads that allows to
+          configure polling feature instead of blocking syscalls.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
       <change>
