@@ -9211,6 +9211,18 @@
         {
           "name": "thread-id",
           "type": "int"
+        },
+        {
+          "name": "poll-max-ns",
+          "type": "int"
+        },
+        {
+          "name": "poll-grow",
+          "type": "int"
+        },
+        {
+          "name": "poll-shrink",
+          "type": "int"
         }
       ],
       "meta-type": "object"
