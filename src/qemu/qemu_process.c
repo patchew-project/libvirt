@@ -2104,7 +2104,7 @@ qemuProcessDetectIOThreadPIDs(virQEMUDriverPtr driver,
     /* Get the list of IOThreads from qemu */
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
         goto cleanup;
-    niothreads = qemuMonitorGetIOThreads(priv->mon, &iothreads);
+    niothreads = qemuMonitorGetIOThreads(priv->mon, &iothreads, false);
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         goto cleanup;
     if (niothreads < 0)

@@ -4025,6 +4025,7 @@ qemuMonitorRTCResetReinjection(qemuMonitorPtr mon)
  * qemuMonitorGetIOThreads:
  * @mon: Pointer to the monitor
  * @iothreads: Location to return array of IOThreadInfo data
+ * @supportPolling: Whether require polling data in QEMU reply
  *
  * Issue query-iothreads command.
  * Retrieve the list of iothreads defined/running for the machine
@@ -4034,7 +4035,8 @@ qemuMonitorRTCResetReinjection(qemuMonitorPtr mon)
  */
 int
 qemuMonitorGetIOThreads(qemuMonitorPtr mon,
-                        qemuMonitorIOThreadInfoPtr **iothreads)
+                        qemuMonitorIOThreadInfoPtr **iothreads,
+                        bool supportPolling)
 {
 
     VIR_DEBUG("iothreads=%p", iothreads);
@@ -4047,7 +4049,7 @@ qemuMonitorGetIOThreads(qemuMonitorPtr mon,
         return 0;
     }
 
-    return qemuMonitorJSONGetIOThreads(mon, iothreads);
+    return qemuMonitorJSONGetIOThreads(mon, iothreads, supportPolling);
 }
 
 

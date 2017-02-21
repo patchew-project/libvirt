@@ -2488,7 +2488,7 @@ testQemuMonitorJSONGetIOThreads(const void *data)
         goto cleanup;
 
     if ((ninfo = qemuMonitorGetIOThreads(qemuMonitorTestGetMonitor(test),
-                                         &info)) < 0)
+                                         &info, false)) < 0)
         goto cleanup;
 
     if (ninfo != 2) {

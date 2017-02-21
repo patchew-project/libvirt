@@ -480,7 +480,8 @@ int qemuMonitorJSONGetGuestCPU(qemuMonitorPtr mon,
 int qemuMonitorJSONRTCResetReinjection(qemuMonitorPtr mon);
 
 int qemuMonitorJSONGetIOThreads(qemuMonitorPtr mon,
-                                qemuMonitorIOThreadInfoPtr **iothreads)
+                                qemuMonitorIOThreadInfoPtr **iothreads,
+                                bool supportPolling)
     ATTRIBUTE_NONNULL(2);
 
 int qemuMonitorJSONGetMemoryDeviceInfo(qemuMonitorPtr mon,

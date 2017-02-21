@@ -6738,7 +6738,8 @@ qemuMonitorJSONRTCResetReinjection(qemuMonitorPtr mon)
  */
 int
 qemuMonitorJSONGetIOThreads(qemuMonitorPtr mon,
-                            qemuMonitorIOThreadInfoPtr **iothreads)
+                            qemuMonitorIOThreadInfoPtr **iothreads,
+                            bool supportPolling)
 {
     int ret = -1;
     virJSONValuePtr cmd;
@@ -6804,6 +6805,22 @@ qemuMonitorJSONGetIOThreads(qemuMonitorPtr mon,
                              "'thread-id' data"));
             goto cleanup;
         }
+
+#define VIR_IOTHREAD_GET_POLL_DATA(prop, store)                             \
+        if (supportPolling &&                                               \
+            virJSONValueObjectGetNumberInt(child, prop, &store) < 0) {      \
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",                    \
+                           _("query-iothreads reply has malformed "         \
+                             "'" prop "' data"));                           \
+            goto cleanup;                                                   \
+        }
+
+        VIR_IOTHREAD_GET_POLL_DATA("poll-max-ns", info->poll_max_ns)
+        VIR_IOTHREAD_GET_POLL_DATA("poll-grow", info->poll_grow)
+        VIR_IOTHREAD_GET_POLL_DATA("poll-shrink", info->poll_shrink)
+
+#undef VIR_IOTHREAD_GET_DATA
+
     }
 
     ret = n;

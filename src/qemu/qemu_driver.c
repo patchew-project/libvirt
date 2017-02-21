@@ -5284,7 +5284,7 @@ qemuDomainGetIOThreadsLive(virQEMUDriverPtr driver,
     }
 
     qemuDomainObjEnterMonitor(driver, vm);
-    niothreads = qemuMonitorGetIOThreads(priv->mon, &iothreads);
+    niothreads = qemuMonitorGetIOThreads(priv->mon, &iothreads, false);
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         goto endjob;
     if (niothreads < 0)
@@ -5599,7 +5599,7 @@ qemuDomainHotplugAddIOThread(virQEMUDriverPtr driver,
      * and add the thread_id to the vm->def->iothreadids list.
      */
     if ((new_niothreads = qemuMonitorGetIOThreads(priv->mon,
-                                                  &new_iothreads)) < 0)
+                                                  &new_iothreads, false)) < 0)
         goto exit_monitor;
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
@@ -5681,7 +5681,7 @@ qemuDomainHotplugDelIOThread(virQEMUDriverPtr driver,
         goto exit_monitor;
 
     if ((new_niothreads = qemuMonitorGetIOThreads(priv->mon,
-                                                  &new_iothreads)) < 0)
+                                                  &new_iothreads, false)) < 0)
         goto exit_monitor;
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
