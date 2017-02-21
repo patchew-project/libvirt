@@ -774,7 +774,7 @@ virDomainNumaDefCPUParseXML(virDomainNumaPtr def,
 
         ctxt->node = nodes[i];
         if (virDomainParseMemory("./@memory", "./@unit", ctxt,
-                                 &def->mem_nodes[cur_cell].mem, true, false) < 0)
+                                 &def->mem_nodes[cur_cell].mem, false, false) < 0)
             goto cleanup;
 
         if ((tmp = virXMLPropString(nodes[i], "memAccess"))) {
@@ -807,6 +807,7 @@ virDomainNumaDefCPUFormat(virBufferPtr buf,
     virDomainMemoryAccess memAccess;
     char *cpustr;
     size_t ncells = virDomainNumaGetNodeCount(def);
+    unsigned long long cellmem;
     size_t i;
 
     if (ncells == 0)
@@ -823,9 +824,11 @@ virDomainNumaDefCPUFormat(virBufferPtr buf,
         virBufferAddLit(buf, "<cell");
         virBufferAsprintf(buf, " id='%zu'", i);
         virBufferAsprintf(buf, " cpus='%s'", cpustr);
-        virBufferAsprintf(buf, " memory='%llu'",
-                          virDomainNumaGetNodeMemorySize(def, i));
-        virBufferAddLit(buf, " unit='KiB'");
+        cellmem = virDomainNumaGetNodeMemorySize(def, i);
+        if (cellmem > 0) {
+            virBufferAsprintf(buf, " memory='%llu'", cellmem);
+            virBufferAddLit(buf, " unit='KiB'");
+        }
         if (memAccess)
             virBufferAsprintf(buf, " memAccess='%s'",
                               virDomainMemoryAccessTypeToString(memAccess));

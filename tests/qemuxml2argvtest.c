@@ -1521,6 +1521,7 @@ mymain(void)
     DO_TEST("cpu-strict1", QEMU_CAPS_KVM);
     DO_TEST("cpu-numa1", NONE);
     DO_TEST("cpu-numa2", NONE);
+    DO_TEST("cpu-numa4", NONE);
     DO_TEST("cpu-numa-no-memory-element", NONE);
     DO_TEST_PARSE_ERROR("cpu-numa3", NONE);
     DO_TEST_FAILURE("cpu-numa-disjoint", NONE);

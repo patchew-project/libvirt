@@ -103,13 +103,15 @@
       <attribute name="cpus">
         <ref name="cpuset"/>
       </attribute>
-      <attribute name="memory">
-        <ref name="memoryKB"/>
-      </attribute>
       <optional>
-        <attribute name="unit">
-          <ref name="unit"/>
+        <attribute name="memory">
+          <ref name="memoryKB"/>
         </attribute>
+        <optional>
+          <attribute name="unit">
+            <ref name="unit"/>
+          </attribute>
+        </optional>
       </optional>
       <optional>
         <attribute name="memAccess">

@@ -962,6 +962,7 @@ mymain(void)
 
     DO_TEST("cpu-numa1", NONE);
     DO_TEST("cpu-numa2", NONE);
+    DO_TEST("cpu-numa4", NONE);
     DO_TEST("cpu-numa-no-memory-element", NONE);
     DO_TEST("cpu-numa-disordered", NONE);
     DO_TEST("cpu-numa-disjoint", NONE);
