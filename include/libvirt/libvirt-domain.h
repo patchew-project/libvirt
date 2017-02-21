@@ -1921,6 +1921,11 @@ int                  virDomainAddIOThreadParams(virDomainPtr domain,
                                                 virTypedParameterPtr params,
                                                 int nparams,
                                                 unsigned int flags);
+int                  virDomainModIOThreadParams(virDomainPtr domain,
+                                                unsigned int iothread_id,
+                                                virTypedParameterPtr params,
+                                                int nparams,
+                                                unsigned int flags);
 int                  virDomainDelIOThread(virDomainPtr domain,
                                           unsigned int iothread_id,
                                           unsigned int flags);

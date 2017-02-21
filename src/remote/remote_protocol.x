@@ -1237,6 +1237,13 @@ struct remote_domain_add_iothread_params_args {
     unsigned int flags;
 };
 
+struct remote_domain_mod_iothread_params_args {
+    remote_nonnull_domain dom;
+    unsigned int iothread_id;
+    remote_typed_param params<REMOTE_DOMAIN_IOTHREAD_PARAMS_MAX>;
+    unsigned int flags;
+};
+
 struct remote_domain_del_iothread_args {
     remote_nonnull_domain dom;
     unsigned int iothread_id;
@@ -6036,6 +6043,13 @@ enum remote_procedure {
      * @acl: domain:save:!VIR_DOMAIN_AFFECT_CONFIG|VIR_DOMAIN_AFFECT_LIVE
      * @acl: domain:save:VIR_DOMAIN_AFFECT_CONFIG
      */
-    REMOTE_PROC_DOMAIN_ADD_IOTHREAD_PARAMS = 384
+    REMOTE_PROC_DOMAIN_ADD_IOTHREAD_PARAMS = 384,
 
+    /**
+     * @generate: both
+     * @acl: domain:write
+     * @acl: domain:save:!VIR_DOMAIN_AFFECT_CONFIG|VIR_DOMAIN_AFFECT_LIVE
+     * @acl: domain:save:VIR_DOMAIN_AFFECT_CONFIG
+     */
+    REMOTE_PROC_DOMAIN_MOD_IOTHREAD_PARAMS = 385
 };
