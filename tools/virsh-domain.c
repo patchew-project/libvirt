@@ -7191,6 +7191,24 @@ static const vshCmdOptDef opts_iothreadadd[] = {
      .flags = VSH_OFLAG_REQ,
      .help = N_("iothread for the new IOThread")
     },
+    {.name = "poll-disabled",
+     .type = VSH_OT_BOOL,
+     .help = N_("disable polling for the new IOThread")
+    },
+    {.name = "poll-max-ns",
+     .type = VSH_OT_INT,
+     .help = N_("set max polling time in ns for the new IOThread")
+    },
+    {.name = "poll-grow",
+     .type = VSH_OT_INT,
+     .help = N_("set how much ns should be used to grow current polling "
+                "time for the new IOThread")
+    },
+    {.name = "poll-shrink",
+     .type = VSH_OT_INT,
+     .help = N_("set how much ns should be used to shrink current polling "
+                "time for the new IOThread")
+    },
     VIRSH_COMMON_OPT_DOMAIN_CONFIG,
     VIRSH_COMMON_OPT_DOMAIN_LIVE,
     VIRSH_COMMON_OPT_DOMAIN_CURRENT,
@@ -7206,10 +7224,21 @@ cmdIOThreadAdd(vshControl *ctl, const vshCmd *cmd)
     bool config = vshCommandOptBool(cmd, "config");
     bool live = vshCommandOptBool(cmd, "live");
     bool current = vshCommandOptBool(cmd, "current");
+    bool poll_disabled = vshCommandOptBool(cmd, "poll-disabled");
     unsigned int flags = VIR_DOMAIN_AFFECT_CURRENT;
+    virTypedParameterPtr params = NULL;
+    int nparams = 0;
+    int maxparams = 0;
+    unsigned int poll_val;
+    int rc;
 
     VSH_EXCLUSIVE_OPTIONS_VAR(current, live);
     VSH_EXCLUSIVE_OPTIONS_VAR(current, config);
+    VSH_EXCLUSIVE_OPTIONS("poll-disabled", "poll-max-ns");
+    VSH_EXCLUSIVE_OPTIONS("poll-disabled", "poll-grow");
+    VSH_EXCLUSIVE_OPTIONS("poll-disabled", "poll-shrink");
+    VSH_REQUIRE_OPTION("poll-grow", "poll-max-ns");
+    VSH_REQUIRE_OPTION("poll-shrink", "poll-max-ns");
 
     if (config)
         flags |= VIR_DOMAIN_AFFECT_CONFIG;
@@ -7226,14 +7255,46 @@ cmdIOThreadAdd(vshControl *ctl, const vshCmd *cmd)
         goto cleanup;
     }
 
-    if (virDomainAddIOThread(dom, iothread_id, flags) < 0)
-        goto cleanup;
+    if (poll_disabled) {
+        if (virTypedParamsAddBoolean(&params, &nparams, &maxparams,
+                                     VIR_DOMAIN_IOTHREAD_POLL_ENABLED, 0) < 0)
+            goto save_error;
+    } else {
+#define VSH_IOTHREAD_SET_PARAMS(opt, param)                                 \
+        poll_val = 0;                                                       \
+        if ((rc = vshCommandOptUInt(ctl, cmd, opt, &poll_val)) < 0)         \
+            goto cleanup;                                                   \
+        if (rc > 0 &&                                                       \
+            virTypedParamsAddUInt(&params, &nparams, &maxparams,            \
+                                  param, poll_val) < 0)                     \
+            goto save_error;
+
+        VSH_IOTHREAD_SET_PARAMS("poll-max-ns", VIR_DOMAIN_IOTHREAD_POLL_MAX_NS)
+        VSH_IOTHREAD_SET_PARAMS("poll-grow", VIR_DOMAIN_IOTHREAD_POLL_GROW)
+        VSH_IOTHREAD_SET_PARAMS("poll-shrink", VIR_DOMAIN_IOTHREAD_POLL_SHRINK)
+
+#undef VSH_IOTHREAD_SET_PARAMS
+    }
+
+    if (nparams) {
+        if (virDomainAddIOThreadParams(dom, iothread_id,
+                                       params, nparams, flags) < 0)
+            goto cleanup;
+    } else {
+        if (virDomainAddIOThread(dom, iothread_id, flags) < 0)
+            goto cleanup;
+    }
 
     ret = true;
 
  cleanup:
+    virTypedParamsFree(params, nparams);
     virDomainFree(dom);
     return ret;
+
+ save_error:
+    vshSaveLibvirtError();
+    goto cleanup;
 }
 
 /*
