@@ -4054,6 +4054,25 @@ qemuMonitorGetIOThreads(qemuMonitorPtr mon,
 
 
 /**
+ * qemuMonitorSetIOThread:
+ * @mon: Pointer to the monitor
+ * @iothreadInfo: filled IOThread info with data
+ *
+ *
+ */
+int
+qemuMonitorSetIOThread(qemuMonitorPtr mon,
+                       qemuMonitorIOThreadInfoPtr iothreadInfo)
+{
+    VIR_DEBUG("iothread=%p", iothreadInfo);
+
+    QEMU_CHECK_MONITOR_JSON(mon);
+
+    return qemuMonitorJSONSetIOThread(mon, iothreadInfo);
+}
+
+
+/**
  * qemuMonitorGetMemoryDeviceInfo:
  * @mon: pointer to the monitor
  * @info: Location to return the hash of qemuMonitorMemoryDeviceInfo

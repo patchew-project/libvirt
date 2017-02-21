@@ -484,6 +484,10 @@ int qemuMonitorJSONGetIOThreads(qemuMonitorPtr mon,
                                 bool supportPolling)
     ATTRIBUTE_NONNULL(2);
 
+int qemuMonitorJSONSetIOThread(qemuMonitorPtr mon,
+                               qemuMonitorIOThreadInfoPtr iothreadInfo)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
 int qemuMonitorJSONGetMemoryDeviceInfo(qemuMonitorPtr mon,
                                        virHashTablePtr info)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);

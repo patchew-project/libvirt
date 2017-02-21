@@ -2065,6 +2065,12 @@ struct _virDomainHugePage {
 
 # define VIR_DOMAIN_CPUMASK_LEN 1024
 
+typedef enum {
+    VIR_DOMAIN_IOTHREAD_ACTION_ADD,
+    VIR_DOMAIN_IOTHREAD_ACTION_DEL,
+    VIR_DOMAIN_IOTHREAD_ACTION_MOD,
+} virDomainIOThreadAction;
+
 typedef struct _virDomainIOThreadIDDef virDomainIOThreadIDDef;
 typedef virDomainIOThreadIDDef *virDomainIOThreadIDDefPtr;
 
@@ -2792,6 +2798,8 @@ virDomainIOThreadIDDefPtr virDomainIOThreadIDFind(const virDomainDef *def,
                                                   unsigned int iothread_id);
 virDomainIOThreadIDDefPtr virDomainIOThreadIDAdd(virDomainDefPtr def,
                                                  virDomainIOThreadIDDef iothread);
+void virDomainIOThreadIDMod(virDomainIOThreadIDDefPtr old_iothread,
+                            virDomainIOThreadIDDefPtr new_iothread);
 void virDomainIOThreadIDDel(virDomainDefPtr def, unsigned int iothread_id);
 
 unsigned int virDomainDefFormatConvertXMLFlags(unsigned int flags);

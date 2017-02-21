@@ -20370,6 +20370,32 @@ virDomainIOThreadIDAdd(virDomainDefPtr def,
 
 
 void
+virDomainIOThreadIDMod(virDomainIOThreadIDDefPtr old_iothread,
+                       virDomainIOThreadIDDefPtr new_iothread)
+{
+    old_iothread->poll_enabled = new_iothread->poll_enabled;
+
+    switch (new_iothread->poll_enabled) {
+    case VIR_TRISTATE_BOOL_YES:
+        old_iothread->poll_max_ns = new_iothread->poll_max_ns;
+        old_iothread->poll_grow = new_iothread->poll_grow;
+        old_iothread->poll_shrink = new_iothread->poll_shrink;
+        break;
+
+    case VIR_TRISTATE_BOOL_ABSENT:
+    case VIR_TRISTATE_BOOL_NO:
+        old_iothread->poll_max_ns = 0;
+        old_iothread->poll_grow = 0;
+        old_iothread->poll_shrink = 0;
+        break;
+
+    case VIR_TRISTATE_BOOL_LAST:
+        break;
+    }
+}
+
+
+void
 virDomainIOThreadIDDel(virDomainDefPtr def,
                        unsigned int iothread_id)
 {

@@ -5662,6 +5662,55 @@ qemuDomainHotplugAddIOThread(virQEMUDriverPtr driver,
     goto cleanup;
 }
 
+
+static int
+qemuDomainHotplugModIOThread(virQEMUDriverPtr driver,
+                             virDomainObjPtr vm,
+                             virDomainIOThreadIDDef iothread,
+                             virDomainIOThreadIDDefPtr old_iothread)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    qemuMonitorIOThreadInfo iothread_info = {0};
+    int rc;
+
+    iothread_info.iothread_id = old_iothread->iothread_id;
+
+    switch (iothread.poll_enabled) {
+    case VIR_TRISTATE_BOOL_ABSENT:
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("IOThread polling must be specified for "
+                         "live update"));
+        return -1;
+
+    case VIR_TRISTATE_BOOL_YES:
+        iothread_info.poll_max_ns = iothread.poll_max_ns;
+        iothread_info.poll_grow = iothread.poll_grow;
+        iothread_info.poll_shrink = iothread.poll_shrink;
+        break;
+
+    case VIR_TRISTATE_BOOL_NO:
+        /* No need to do anything because iothread_info has all members
+         * initialized to 0 which will disable polling. */
+    case VIR_TRISTATE_BOOL_LAST:
+        break;
+    }
+
+    qemuDomainObjEnterMonitor(driver, vm);
+
+    rc = qemuMonitorSetIOThread(priv->mon, &iothread_info);
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        return -1;
+
+    if (rc < 0)
+        return -1;
+
+    virDomainIOThreadIDMod(old_iothread, &iothread);
+
+    return 0;
+}
+
+
 static int
 qemuDomainHotplugDelIOThread(virQEMUDriverPtr driver,
                              virDomainObjPtr vm,
@@ -5739,6 +5788,21 @@ qemuDomainAddIOThreadCheck(virDomainDefPtr def,
     }
 
     return 0;
+}
+
+
+static virDomainIOThreadIDDefPtr
+qemuDomainModIOThreadGet(virDomainDefPtr def,
+                         unsigned int iothread_id)
+{
+    virDomainIOThreadIDDefPtr ret = NULL;
+
+    if (!(ret = virDomainIOThreadIDFind(def, iothread_id)))
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("cannot find IOThread '%u' in iothreadids list"),
+                       iothread_id);
+
+    return ret;
 }
 
 
@@ -5845,13 +5909,14 @@ static int
 qemuDomainChgIOThread(virQEMUDriverPtr driver,
                       virDomainObjPtr vm,
                       virDomainIOThreadIDDef iothread,
-                      bool add,
+                      virDomainIOThreadAction action,
                       unsigned int flags)
 {
     virQEMUDriverConfigPtr cfg = NULL;
     qemuDomainObjPrivatePtr priv;
     virDomainDefPtr def;
     virDomainDefPtr persistentDef;
+    virDomainIOThreadIDDefPtr old_iothread = NULL;
     int ret = -1;
 
     cfg = virQEMUDriverGetConfig(driver);
@@ -5871,19 +5936,34 @@ qemuDomainChgIOThread(virQEMUDriverPtr driver,
             goto endjob;
         }
 
-        if (add) {
+        switch (action) {
+        case VIR_DOMAIN_IOTHREAD_ACTION_ADD:
             if (qemuDomainAddIOThreadCheck(def, iothread.iothread_id) < 0)
                 goto endjob;
 
             if (qemuDomainHotplugAddIOThread(driver, vm, iothread) < 0)
                 goto endjob;
-        } else {
+            break;
+
+        case VIR_DOMAIN_IOTHREAD_ACTION_DEL:
             if (qemuDomainDelIOThreadCheck(def, iothread.iothread_id) < 0)
                 goto endjob;
 
             if (qemuDomainHotplugDelIOThread(driver, vm,
                                              iothread.iothread_id) < 0)
                 goto endjob;
+            break;
+
+        case VIR_DOMAIN_IOTHREAD_ACTION_MOD:
+            if (!(old_iothread = qemuDomainModIOThreadGet(def,
+                                                          iothread.iothread_id)))
+                goto endjob;
+
+            if (qemuDomainHotplugModIOThread(driver, vm, iothread,
+                                             old_iothread) < 0)
+                goto endjob;
+
+            break;
         }
 
         if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm,
@@ -5892,19 +5972,30 @@ qemuDomainChgIOThread(virQEMUDriverPtr driver,
     }
 
     if (persistentDef) {
-        if (add) {
+        switch (action) {
+        case VIR_DOMAIN_IOTHREAD_ACTION_ADD:
             if (qemuDomainAddIOThreadCheck(persistentDef,
                                            iothread.iothread_id) < 0)
                 goto endjob;
 
             if (!virDomainIOThreadIDAdd(persistentDef, iothread))
                 goto endjob;
-        } else {
+            break;
+
+        case VIR_DOMAIN_IOTHREAD_ACTION_DEL:
             if (qemuDomainDelIOThreadCheck(persistentDef,
                                            iothread.iothread_id) < 0)
                 goto endjob;
 
             virDomainIOThreadIDDel(persistentDef, iothread.iothread_id);
+
+        case VIR_DOMAIN_IOTHREAD_ACTION_MOD:
+            if (!(old_iothread = qemuDomainModIOThreadGet(persistentDef,
+                                                          iothread.iothread_id)))
+                goto endjob;
+
+            virDomainIOThreadIDMod(old_iothread, &iothread);
+            break;
         }
 
         if (virDomainSaveConfig(cfg->configDir, driver->caps,
@@ -5955,7 +6046,8 @@ qemuDomainAddIOThreadParams(virDomainPtr dom,
     if (virDomainAddIOThreadParamsEnsureACL(dom->conn, vm->def, flags) < 0)
         goto cleanup;
 
-    ret = qemuDomainChgIOThread(driver, vm, iothread, true, flags);
+    ret = qemuDomainChgIOThread(driver, vm, iothread,
+                                VIR_DOMAIN_IOTHREAD_ACTION_ADD, flags);
 
  cleanup:
     virDomainObjEndAPI(&vm);
@@ -5969,6 +6061,48 @@ qemuDomainAddIOThread(virDomainPtr dom,
                       unsigned int flags)
 {
     return qemuDomainAddIOThreadParams(dom, iothread_id, NULL, 0, flags);
+}
+
+
+static int
+qemuDomainModIOThreadParams(virDomainPtr dom,
+                            unsigned int iothread_id,
+                            virTypedParameterPtr params,
+                            int nparams,
+                            unsigned int flags)
+{
+    virQEMUDriverPtr driver = dom->conn->privateData;
+    virDomainObjPtr vm = NULL;
+    virDomainIOThreadIDDef iothread = {0};
+    int ret = -1;
+
+    virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
+                  VIR_DOMAIN_AFFECT_CONFIG, -1);
+
+    if (iothread_id == 0) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("invalid value of 0 for iothread_id"));
+        goto cleanup;
+    }
+
+    iothread.iothread_id = iothread_id;
+
+    if (!(vm = qemuDomObjFromDomain(dom)))
+        goto cleanup;
+
+    if (qemuDomainIOThreadParseParams(params, nparams, vm->privateData,
+                                      &iothread) < 0)
+        goto cleanup;
+
+    if (virDomainModIOThreadParamsEnsureACL(dom->conn, vm->def, flags) < 0)
+        goto cleanup;
+
+    ret = qemuDomainChgIOThread(driver, vm, iothread,
+                                VIR_DOMAIN_IOTHREAD_ACTION_MOD, flags);
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
 }
 
 
@@ -5998,7 +6132,8 @@ qemuDomainDelIOThread(virDomainPtr dom,
     if (virDomainDelIOThreadEnsureACL(dom->conn, vm->def, flags) < 0)
            goto cleanup;
 
-    ret = qemuDomainChgIOThread(driver, vm, iothread, false, flags);
+    ret = qemuDomainChgIOThread(driver, vm, iothread,
+                                VIR_DOMAIN_IOTHREAD_ACTION_DEL, flags);
 
  cleanup:
     virDomainObjEndAPI(&vm);
@@ -20366,6 +20501,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainPinIOThread = qemuDomainPinIOThread, /* 1.2.14 */
     .domainAddIOThread = qemuDomainAddIOThread, /* 1.2.15 */
     .domainAddIOThreadParams = qemuDomainAddIOThreadParams, /* 3.1.0 */
+    .domainModIOThreadParams = qemuDomainModIOThreadParams, /* 3.1.0 */
     .domainDelIOThread = qemuDomainDelIOThread, /* 1.2.15 */
     .domainGetSecurityLabel = qemuDomainGetSecurityLabel, /* 0.6.1 */
     .domainGetSecurityLabelList = qemuDomainGetSecurityLabelList, /* 0.10.0 */

@@ -6840,6 +6840,38 @@ qemuMonitorJSONGetIOThreads(qemuMonitorPtr mon,
 
 
 int
+qemuMonitorJSONSetIOThread(qemuMonitorPtr mon,
+                           qemuMonitorIOThreadInfoPtr iothreadInfo)
+{
+    int ret = -1;
+    char *path = NULL;
+    qemuMonitorJSONObjectProperty prop;
+
+    if (virAsprintf(&path, "/objects/iothread%u", iothreadInfo->iothread_id) < 0)
+        goto cleanup;
+
+#define VIR_IOTHREAD_SET_PROP(propName, propVal)                            \
+    memset(&prop, 0, sizeof(qemuMonitorJSONObjectProperty));                \
+    prop.type = QEMU_MONITOR_OBJECT_PROPERTY_INT;                           \
+    prop.val.iv = propVal;                                                  \
+    if (qemuMonitorJSONSetObjectProperty(mon, path, propName, &prop) < 0)   \
+        goto cleanup;
+
+    VIR_IOTHREAD_SET_PROP("poll-max-ns", iothreadInfo->poll_max_ns)
+    VIR_IOTHREAD_SET_PROP("poll-grow", iothreadInfo->poll_grow)
+    VIR_IOTHREAD_SET_PROP("poll-shrink", iothreadInfo->poll_shrink)
+
+#undef VIR_IOTHREAD_SET_PROP
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(path);
+    return ret;
+}
+
+
+int
 qemuMonitorJSONGetMemoryDeviceInfo(qemuMonitorPtr mon,
                                    virHashTablePtr info)
 {
