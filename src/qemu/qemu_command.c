@@ -7277,11 +7277,59 @@ qemuBuildMemCommandLine(virCommandPtr cmd,
 }
 
 
+int
+qemuBuildIOThreadProps(const virDomainIOThreadIDDef *def,
+                       virQEMUCapsPtr qemuCaps,
+                       virJSONValuePtr *props)
+{
+    virJSONValuePtr newProps = NULL;
+
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_IOTHREAD_POLLING)) {
+        switch (def->poll_enabled) {
+        case VIR_TRISTATE_BOOL_YES:
+            if (virJSONValueObjectCreate(&newProps, "u:poll-max-ns",
+                                         def->poll_max_ns, NULL) < 0)
+                goto error;
+
+            if (def->poll_grow &&
+                virJSONValueObjectAdd(newProps, "u:poll-grow",
+                                      def->poll_grow, NULL) < 0)
+                goto error;
+
+            if (def->poll_shrink &&
+                virJSONValueObjectAdd(newProps, "u:poll-shrink",
+                                      def->poll_shrink, NULL) < 0)
+                goto error;
+            break;
+        case VIR_TRISTATE_BOOL_NO:
+            if (virJSONValueObjectCreate(&newProps, "u:poll-max-ns", 0, NULL) < 0)
+                goto error;
+            break;
+        case VIR_TRISTATE_BOOL_ABSENT:
+        case VIR_TRISTATE_BOOL_LAST:
+            break;
+        }
+    }
+
+    *props = newProps;
+    return 0;
+
+ error:
+    virJSONValueFree(newProps);
+    return -1;
+}
+
+
 static int
 qemuBuildIOThreadCommandLine(virCommandPtr cmd,
-                             const virDomainDef *def)
+                             const virDomainDef *def,
+                             virQEMUCapsPtr qemuCaps)
 {
     size_t i;
+    int ret = -1;
+    char *alias = NULL;
+    char *propsCmd = NULL;
+    virJSONValuePtr props = NULL;
 
     if (def->niothreadids == 0)
         return 0;
@@ -7293,11 +7341,31 @@ qemuBuildIOThreadCommandLine(virCommandPtr cmd,
      */
     for (i = 0; i < def->niothreadids; i++) {
         virCommandAddArg(cmd, "-object");
-        virCommandAddArgFormat(cmd, "iothread,id=iothread%u",
-                               def->iothreadids[i]->iothread_id);
+
+        if (virAsprintf(&alias, "iothread%u", def->iothreadids[i]->iothread_id) < 0)
+            goto cleanup;
+
+        if (qemuBuildIOThreadProps(def->iothreadids[i], qemuCaps, &props) < 0)
+            goto cleanup;
+
+        if (!(propsCmd = virQEMUBuildObjectCommandlineFromJSON("iothread",
+                                                               alias, props)))
+            goto cleanup;
+
+        virCommandAddArg(cmd, propsCmd);
+
+        virJSONValueFree(props);
+        VIR_FREE(propsCmd);
+        VIR_FREE(alias);
     }
 
-    return 0;
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(props);
+    VIR_FREE(propsCmd);
+    VIR_FREE(alias);
+    return ret;
 }
 
 
@@ -9598,7 +9666,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (qemuBuildSmpCommandLine(cmd, def) < 0)
         goto error;
 
-    if (qemuBuildIOThreadCommandLine(cmd, def) < 0)
+    if (qemuBuildIOThreadCommandLine(cmd, def, qemuCaps) < 0)
         goto error;
 
     if (virDomainNumaGetNodeCount(def->numa) &&

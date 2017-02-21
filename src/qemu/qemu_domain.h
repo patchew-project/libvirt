@@ -848,4 +848,10 @@ int qemuDomainNamespaceSetupRNG(virQEMUDriverPtr driver,
 int qemuDomainNamespaceTeardownRNG(virQEMUDriverPtr driver,
                                    virDomainObjPtr vm,
                                    virDomainRNGDefPtr rng);
+
+void qemuDomainIOThreadUpdate(virDomainIOThreadIDDefPtr iothread,
+                              qemuMonitorIOThreadInfoPtr iothread_info,
+                              bool supportPolling)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
 #endif /* __QEMU_DOMAIN_H__ */

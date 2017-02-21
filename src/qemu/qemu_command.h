@@ -202,6 +202,9 @@ char *qemuBuildShmemDevStr(virDomainDefPtr def,
                            virQEMUCapsPtr qemuCaps)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
-
+int qemuBuildIOThreadProps(const virDomainIOThreadIDDef *def,
+                           virQEMUCapsPtr qemuCaps,
+                           virJSONValuePtr *props)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
 #endif /* __QEMU_COMMAND_H__*/

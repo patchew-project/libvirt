@@ -3283,7 +3283,8 @@ virDomainDefParserConfig virQEMUDriverDomainDefParserConfig = {
 
     .features = VIR_DOMAIN_DEF_FEATURE_MEMORY_HOTPLUG |
                 VIR_DOMAIN_DEF_FEATURE_OFFLINE_VCPUPIN |
-                VIR_DOMAIN_DEF_FEATURE_INDIVIDUAL_VCPUS,
+                VIR_DOMAIN_DEF_FEATURE_INDIVIDUAL_VCPUS |
+                VIR_DOMAIN_DEF_FEATURE_IOTHREAD_POLLING,
 };
 
 
@@ -8279,4 +8280,24 @@ qemuDomainNamespaceTeardownRNG(virQEMUDriverPtr driver,
     ret = 0;
  cleanup:
     return ret;
+}
+
+
+void
+qemuDomainIOThreadUpdate(virDomainIOThreadIDDefPtr iothread,
+                         qemuMonitorIOThreadInfoPtr iothread_info,
+                         bool supportPolling)
+{
+    iothread->thread_id = iothread_info->thread_id;
+
+    if (supportPolling && iothread->poll_enabled == VIR_TRISTATE_BOOL_ABSENT) {
+        iothread->poll_max_ns = iothread_info->poll_max_ns;
+        iothread->poll_grow = iothread_info->poll_grow;
+        iothread->poll_shrink = iothread_info->poll_shrink;
+
+        if (iothread->poll_max_ns == 0)
+            iothread->poll_enabled = VIR_TRISTATE_BOOL_NO;
+        else
+            iothread->poll_enabled = VIR_TRISTATE_BOOL_YES;
+    }
 }

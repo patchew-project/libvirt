@@ -5581,6 +5581,7 @@ qemuDomainHotplugAddIOThread(virQEMUDriverPtr driver,
     unsigned int orig_niothreads = vm->def->niothreadids;
     unsigned int exp_niothreads = vm->def->niothreadids;
     int new_niothreads = 0;
+    bool supportPolling = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_IOTHREAD_POLLING);
     qemuMonitorIOThreadInfoPtr *new_iothreads = NULL;
     virDomainIOThreadIDDefPtr iothrid;
 
@@ -5599,7 +5600,8 @@ qemuDomainHotplugAddIOThread(virQEMUDriverPtr driver,
      * and add the thread_id to the vm->def->iothreadids list.
      */
     if ((new_niothreads = qemuMonitorGetIOThreads(priv->mon,
-                                                  &new_iothreads, false)) < 0)
+                                                  &new_iothreads,
+                                                  supportPolling)) < 0)
         goto exit_monitor;
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
@@ -5632,7 +5634,7 @@ qemuDomainHotplugAddIOThread(virQEMUDriverPtr driver,
     if (!(iothrid = virDomainIOThreadIDAdd(vm->def, iothread_id)))
         goto cleanup;
 
-    iothrid->thread_id = new_iothreads[idx]->thread_id;
+    qemuDomainIOThreadUpdate(iothrid, new_iothreads[idx], supportPolling);
 
     if (qemuProcessSetupIOThread(vm, iothrid) < 0)
         goto cleanup;

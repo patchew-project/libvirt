@@ -2100,11 +2100,12 @@ qemuProcessDetectIOThreadPIDs(virQEMUDriverPtr driver,
     int niothreads = 0;
     int ret = -1;
     size_t i;
+    bool supportPolling = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_IOTHREAD_POLLING);
 
     /* Get the list of IOThreads from qemu */
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
         goto cleanup;
-    niothreads = qemuMonitorGetIOThreads(priv->mon, &iothreads, false);
+    niothreads = qemuMonitorGetIOThreads(priv->mon, &iothreads, supportPolling);
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         goto cleanup;
     if (niothreads < 0)
@@ -2134,7 +2135,7 @@ qemuProcessDetectIOThreadPIDs(virQEMUDriverPtr driver,
                            iothreads[i]->iothread_id);
             goto cleanup;
         }
-        iothrid->thread_id = iothreads[i]->thread_id;
+        qemuDomainIOThreadUpdate(iothrid, iothreads[i], supportPolling);
     }
 
     ret = 0;
@@ -4569,6 +4570,15 @@ qemuProcessStartValidateIOThreads(virDomainObjPtr vm,
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("IOThreads not supported for this QEMU"));
         return -1;
+    }
+
+    for (i = 0; i < vm->def->niothreadids; i++) {
+        if (vm->def->iothreadids[i]->poll_enabled != VIR_TRISTATE_BOOL_ABSENT &&
+            !virQEMUCapsGet(qemuCaps, QEMU_CAPS_IOTHREAD_POLLING)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("IOThreads polling is not supported for this QEMU"));
+            return -1;
+        }
     }
 
     for (i = 0; i < vm->def->ncontrollers; i++) {

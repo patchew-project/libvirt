@@ -1507,6 +1507,14 @@ mymain(void)
     DO_TEST("iothreads-virtio-scsi-ccw", QEMU_CAPS_OBJECT_IOTHREAD,
             QEMU_CAPS_VIRTIO_SCSI, QEMU_CAPS_VIRTIO_SCSI_IOTHREAD,
             QEMU_CAPS_VIRTIO_CCW, QEMU_CAPS_VIRTIO_S390);
+    DO_TEST("iothreads-polling-enabled",
+            QEMU_CAPS_OBJECT_IOTHREAD,
+            QEMU_CAPS_IOTHREAD_POLLING);
+    DO_TEST("iothreads-polling-disabled",
+            QEMU_CAPS_OBJECT_IOTHREAD,
+            QEMU_CAPS_IOTHREAD_POLLING);
+    DO_TEST_FAILURE("iothreads-polling-not-supported",
+                    QEMU_CAPS_OBJECT_IOTHREAD);
 
     DO_TEST("cpu-topology1", NONE);
     DO_TEST("cpu-topology2", NONE);
