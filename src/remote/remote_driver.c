@@ -8246,6 +8246,7 @@ static virHypervisorDriver hypervisor_driver = {
     .domainGetIOThreadInfo = remoteDomainGetIOThreadInfo, /* 1.2.14 */
     .domainPinIOThread = remoteDomainPinIOThread, /* 1.2.14 */
     .domainAddIOThread = remoteDomainAddIOThread, /* 1.2.15 */
+    .domainAddIOThreadParams = remoteDomainAddIOThreadParams, /* 3.1.0 */
     .domainDelIOThread = remoteDomainDelIOThread, /* 1.2.15 */
     .domainGetSecurityLabel = remoteDomainGetSecurityLabel, /* 0.6.1 */
     .domainGetSecurityLabelList = remoteDomainGetSecurityLabelList, /* 0.10.0 */

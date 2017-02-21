@@ -253,6 +253,9 @@ const REMOTE_DOMAIN_IP_ADDR_MAX = 2048;
 /* Upper limit on number of guest vcpu information entries */
 const REMOTE_DOMAIN_GUEST_VCPU_PARAMS_MAX = 64;
 
+/* Upper limit on number of IOThread information entries */
+const REMOTE_DOMAIN_IOTHREAD_PARAMS_MAX = 64;
+
 /* UUID.  VIR_UUID_BUFLEN definition comes from libvirt.h */
 typedef opaque remote_uuid[VIR_UUID_BUFLEN];
 
@@ -1224,6 +1227,13 @@ struct remote_domain_pin_iothread_args {
 struct remote_domain_add_iothread_args {
     remote_nonnull_domain dom;
     unsigned int iothread_id;
+    unsigned int flags;
+};
+
+struct remote_domain_add_iothread_params_args {
+    remote_nonnull_domain dom;
+    unsigned int iothread_id;
+    remote_typed_param params<REMOTE_DOMAIN_IOTHREAD_PARAMS_MAX>;
     unsigned int flags;
 };
 
@@ -6018,6 +6028,14 @@ enum remote_procedure {
      * @generate: both
      * @acl: none
      */
-    REMOTE_PROC_SECRET_EVENT_VALUE_CHANGED = 383
+    REMOTE_PROC_SECRET_EVENT_VALUE_CHANGED = 383,
+
+    /**
+     * @generate: both
+     * @acl: domain:write
+     * @acl: domain:save:!VIR_DOMAIN_AFFECT_CONFIG|VIR_DOMAIN_AFFECT_LIVE
+     * @acl: domain:save:VIR_DOMAIN_AFFECT_CONFIG
+     */
+    REMOTE_PROC_DOMAIN_ADD_IOTHREAD_PARAMS = 384
 
 };

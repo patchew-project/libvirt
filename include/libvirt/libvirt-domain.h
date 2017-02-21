@@ -1855,6 +1855,40 @@ int                     virDomainGetEmulatorPinInfo (virDomainPtr domain,
                                                      int maplen,
                                                      unsigned int flags);
 
+/* IOThread parameters */
+
+/**
+ * VIR_DOMAIN_IOTHREAD_POLL_ENABLED:
+ *
+ * Whether polling should be enabled or not.  If omitted the default is set
+ * by hypervisor.
+ */
+# define VIR_DOMAIN_IOTHREAD_POLL_ENABLED "poll_enabled"
+
+/**
+ * VIR_DOMAIN_IOTHREAD_POLL_MAX_NS:
+ *
+ * The maximal polling time that can be used by polling algorithm in ns.
+ * If omitted the default is 0.
+ */
+# define VIR_DOMAIN_IOTHREAD_POLL_MAX_NS "poll_max_ns"
+
+/**
+ * VIR_DOMAIN_IOTHREAD_POLL_GROW:
+ *
+ * This tells the polling algorithm how many ns it should grow current
+ * polling time if it's not optimal anymore.  If omitted the default is 0.
+ */
+# define VIR_DOMAIN_IOTHREAD_POLL_GROW "poll_grow"
+
+/**
+ * VIR_DOMAIN_IOTHREAD_POLL_SHRINK:
+ *
+ * This tells the polling algorithm how many ns it should shrink current
+ * polling time if it's not optimal anymore.  If omitted the default is 0.
+ */
+# define VIR_DOMAIN_IOTHREAD_POLL_SHRINK "poll_shrink"
+
 /**
  * virIOThreadInfo:
  *
@@ -1882,6 +1916,11 @@ int                  virDomainPinIOThread(virDomainPtr domain,
 int                  virDomainAddIOThread(virDomainPtr domain,
                                           unsigned int iothread_id,
                                           unsigned int flags);
+int                  virDomainAddIOThreadParams(virDomainPtr domain,
+                                                unsigned int iothread_id,
+                                                virTypedParameterPtr params,
+                                                int nparams,
+                                                unsigned int flags);
 int                  virDomainDelIOThread(virDomainPtr domain,
                                           unsigned int iothread_id,
                                           unsigned int flags);

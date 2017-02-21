@@ -7751,6 +7751,81 @@ virDomainAddIOThread(virDomainPtr domain,
 
 
 /**
+ * virDomainAddIOThreadParams:
+ * @domain: a domain object
+ * @iothread_id: the specific IOThread ID value to add
+ * @params: pointer to IOThread parameter objects
+ * @nparams: number of IOThread parameters
+ * @flags: bitwise-OR of virDomainModificationImpact and virTypedParameterFlags
+ *
+ * Dynamically add an IOThread to the domain. It is left up to the
+ * underlying virtual hypervisor to determine the valid range for an
+ * @iothread_id and determining whether the @iothread_id already exists.
+ *
+ * The combination of parameters has some limitation:
+ *
+ * - If VIR_DOMAIN_IOTHREAD_POLL_ENABLED is set to true,
+ *   VIR_DOMAIN_IOTHREAD_POLL_MAX_NS must be set as well.
+ *
+ * - If VIR_DOMAIN_IOTHREAD_POLL_MAX_NS is set to value > 0,
+ *   VIR_DOMAIN_IOTHREAD_POLL_ENABLED is set to true.
+ *
+ * - If one of VIR_DOMAIN_IOTHREAD_POLL_GROW or VIR_DOMAIN_IOTHREAD_POLL_SHRINK
+ *   is set to value > 0, VIR_DOMAIN_IOTHREAD_POLL_MAX_NS must be set as well.
+ *
+ * See VIR_DOMAIN_IOTHREAD_* for detailed description of accepted IOThread
+ * parameters.
+ *
+ * Note that this call can fail if the underlying virtualization hypervisor
+ * does not support it or if growing the number of iothreads is arbitrarily
+ * limited.  This function requires privileged access to the hypervisor.
+ *
+ * Returns 0 in case of success, -1 in case of failure.
+ */
+int
+virDomainAddIOThreadParams(virDomainPtr domain,
+                           unsigned int iothread_id,
+                           virTypedParameterPtr params,
+                           int nparams,
+                           unsigned int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "iothread_id=%u, params=%p, nparams=%d, flags=%x",
+                     iothread_id, params, nparams, flags);
+    VIR_TYPED_PARAMS_DEBUG(params, nparams);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    conn = domain->conn;
+
+    virCheckReadOnlyGoto(conn->flags, error);
+    virCheckNonNegativeArgGoto(nparams, error);
+    if (nparams)
+        virCheckNonNullArgGoto(params, error);
+
+    if (virTypedParameterValidateSet(conn, params, nparams) < 0)
+        goto error;
+
+    if (conn->driver->domainAddIOThreadParams) {
+        int ret;
+        ret = conn->driver->domainAddIOThreadParams(domain, iothread_id,
+                                                    params, nparams, flags);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+
+ error:
+    virDispatchError(domain->conn);
+    return -1;
+}
+
+
+/**
  * virDomainDelIOThread:
  * @domain: a domain object
  * @iothread_id: the specific IOThread ID value to delete
