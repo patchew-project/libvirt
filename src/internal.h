@@ -218,6 +218,10 @@
 #   endif
 #  endif
 
+#  ifndef ATTRIBUTE_FALLTHROUGH
+#   define ATTRIBUTE_FALLTHROUGH __attribute__((fallthrough))
+#  endif
+
 # else
 #  ifndef ATTRIBUTE_UNUSED
 #   define ATTRIBUTE_UNUSED
@@ -227,6 +231,10 @@
 #  endif
 #  ifndef ATTRIBUTE_RETURN_CHECK
 #   define ATTRIBUTE_RETURN_CHECK
+#  endif
+#
+#  ifndef ATTRIBUTE_FALLTHROUGH
+#   define ATTRIBUTE_FALLTHROUGH do {} while(0)
 #  endif
 # endif				/* __GNUC__ */
 
