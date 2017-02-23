@@ -358,6 +358,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "query-cpu-model-expansion", /* 245 */
               "virtio-net.host_mtu",
               "spice-rendernode",
+              "sd-card",
     );
 
 
@@ -1625,6 +1626,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "ivshmem-plain", QEMU_CAPS_DEVICE_IVSHMEM_PLAIN },
     { "ivshmem-doorbell", QEMU_CAPS_DEVICE_IVSHMEM_DOORBELL },
     { "vhost-scsi", QEMU_CAPS_DEVICE_VHOST_SCSI },
+    { "sd-card", QEMU_CAPS_SD_CARD },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {
@@ -5215,8 +5217,7 @@ virQEMUCapsFillDomainDeviceDiskCaps(virQEMUCapsPtr qemuCaps,
     VIR_DOMAIN_CAPS_ENUM_SET(disk->bus,
                              VIR_DOMAIN_DISK_BUS_IDE,
                              VIR_DOMAIN_DISK_BUS_SCSI,
-                             VIR_DOMAIN_DISK_BUS_VIRTIO,
-                             /* VIR_DOMAIN_DISK_BUS_SD */);
+                             VIR_DOMAIN_DISK_BUS_VIRTIO);
 
     /* PowerPC pseries based VMs do not support floppy device */
     if (!ARCH_IS_PPC64(qemuCaps->arch) ||
@@ -5225,6 +5226,10 @@ virQEMUCapsFillDomainDeviceDiskCaps(virQEMUCapsPtr qemuCaps,
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_USB_STORAGE))
         VIR_DOMAIN_CAPS_ENUM_SET(disk->bus, VIR_DOMAIN_DISK_BUS_USB);
+
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SD_CARD))
+        VIR_DOMAIN_CAPS_ENUM_SET(disk->bus, VIR_DOMAIN_DISK_BUS_SD);
+
     return 0;
 }
 
