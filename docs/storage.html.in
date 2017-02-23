@@ -195,6 +195,7 @@
   &lt;name&gt;virtimages&lt;/name&gt;
   &lt;source&gt;
     &lt;device path="/dev/VolGroup00/VirtImages"/&gt;
+    &lt;format type="auto"/&gt;
   &lt;/source&gt;
   &lt;target&gt;
     &lt;path&gt;/var/lib/virt/images&lt;/path&gt;
@@ -324,6 +325,7 @@
     &lt;device path="/dev/sda1"/&gt;
     &lt;device path="/dev/sdb1"/&gt;
     &lt;device path="/dev/sdc1"/&gt;
+    &lt;format type="lvm2"/&gt;
   &lt;/source&gt;
   &lt;target&gt;
     &lt;path&gt;/dev/HostVG&lt;/path&gt;
@@ -334,7 +336,7 @@
     <p>
       The logical volume pool supports only the <code>lvm2</code> format,
       although not supplying a format value will result in automatic
-      selection of the<code>lvm2</code> format.
+      selection of the <code>lvm2</code> format.
     </p>
 
     <h3>Valid volume format types</h3>
@@ -359,6 +361,7 @@
   &lt;name&gt;sda&lt;/name&gt;
   &lt;source&gt;
     &lt;device path='/dev/sda'/&gt;
+    &lt;format type='gpt'/&gt;
   &lt;/source&gt;
   &lt;target&gt;
     &lt;path&gt;/dev&lt;/path&gt;
