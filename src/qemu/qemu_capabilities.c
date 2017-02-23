@@ -2857,7 +2857,9 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
         model = "host";
     }
 
-    return qemuMonitorGetCPUModelExpansion(mon, "static", model, modelInfo);
+    return qemuMonitorGetCPUModelExpansion(mon,
+                                           QEMU_MONITOR_CPU_MODEL_EXPANSION_STATIC,
+                                           model, modelInfo);
 }
 
 struct tpmTypeToCaps {
