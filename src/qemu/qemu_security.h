@@ -60,4 +60,12 @@ int qemuSecuritySetHostdevLabel(virQEMUDriverPtr driver,
 int qemuSecurityRestoreHostdevLabel(virQEMUDriverPtr driver,
                                     virDomainObjPtr vm,
                                     virDomainHostdevDefPtr hostdev);
+
+int qemuSecuritySetMemoryLabel(virQEMUDriverPtr driver,
+                               virDomainObjPtr vm,
+                               virDomainMemoryDefPtr mem);
+
+int qemuSecurityRestoreMemoryLabel(virQEMUDriverPtr driver,
+                                   virDomainObjPtr vm,
+                                   virDomainMemoryDefPtr mem);
 #endif /* __QEMU_SECURITY_H__ */
