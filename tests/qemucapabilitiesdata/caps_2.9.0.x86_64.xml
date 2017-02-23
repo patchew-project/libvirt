@@ -202,6 +202,7 @@
   <flag name='vhost-scsi'/>
   <flag name='drive-iotune-group'/>
   <flag name='virtio-net.host_mtu'/>
+  <flag name='nvdimm'/>
   <version>2008050</version>
   <kvmVersion>0</kvmVersion>
   <package> (v2.8.0-1321-gad584d3)</package>
