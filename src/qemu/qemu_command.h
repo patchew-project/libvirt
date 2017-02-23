@@ -134,6 +134,7 @@ int qemuBuildMemoryBackendStr(virJSONValuePtr *backendProps,
                               unsigned long long pagesize,
                               virBitmapPtr userNodeset,
                               virBitmapPtr autoNodeset,
+                              const char *memPath,
                               bool force);
 
 char *qemuBuildMemoryDeviceStr(virDomainMemoryDefPtr mem);
