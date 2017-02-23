@@ -8275,3 +8275,47 @@ qemuDomainNamespaceTeardownRNG(virQEMUDriverPtr driver,
  cleanup:
     return ret;
 }
+
+
+/**
+ * qemuDomainDiskLookupByNodename:
+ * @def: domain definition to look for the disk
+ * @nodename: block backend node name to find
+ * @src: filled with the specific backing store element if provided
+ * @idx: index of @src in the backing chain, if provided
+ *
+ * Looks up the disk in the domain via @nodename and returns it's definition.
+ * Optionally fills @src and @idx if provided with the specific backing chain
+ * element which corresponds to the node name.
+ */
+virDomainDiskDefPtr
+qemuDomainDiskLookupByNodename(virDomainDefPtr def,
+                               const char *nodename,
+                               virStorageSourcePtr *src,
+                               unsigned int *idx)
+{
+    size_t i;
+    unsigned int srcindex;
+    virStorageSourcePtr tmp = NULL;
+
+    if (src)
+        *src = NULL;
+
+    if (idx)
+        *idx = 0;
+
+    for (i = 0; i < def->ndisks; i++) {
+        if ((tmp = virStorageSourceFindByNodeName(def->disks[i]->src,
+                                                  nodename, &srcindex))) {
+            if (src)
+                *src = tmp;
+
+            if (idx)
+                *idx = srcindex;
+
+            return def->disks[i];
+        }
+    }
+
+    return NULL;
+}
