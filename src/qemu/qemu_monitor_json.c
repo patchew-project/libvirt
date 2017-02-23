@@ -2637,6 +2637,16 @@ qemuMonitorJSONSetMigrationParams(qemuMonitorPtr mon,
 
 #undef APPEND
 
+    if (params->migrateTLSAlias &&
+        virJSONValueObjectAppendString(args, "tls-creds",
+                                       params->migrateTLSAlias) < 0)
+        goto cleanup;
+
+    if (params->migrateTLSHostname &&
+        virJSONValueObjectAppendString(args, "tls-hostname",
+                                       params->migrateTLSHostname) < 0)
+        goto cleanup;
+
     if (virJSONValueObjectAppend(cmd, "arguments", args) < 0)
         goto cleanup;
     args = NULL;
