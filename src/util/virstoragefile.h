@@ -276,6 +276,9 @@ struct _virStorageSource {
     /* Name of the child backing store recorded in metadata of the
      * current file.  */
     char *backingStoreRaw;
+
+    /* metadata that allows identifying given storage source */
+    char *nodeName;
 };
 
 
@@ -394,5 +397,11 @@ int virStorageFileCheckCompat(const char *compat);
 virStorageSourcePtr virStorageSourceNewFromBackingAbsolute(const char *path);
 
 bool virStorageSourceIsRelative(virStorageSourcePtr src);
+
+virStorageSourcePtr
+virStorageSourceFindByNodeName(virStorageSourcePtr top,
+                               const char *nodeName,
+                               unsigned int *index)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
 #endif /* __VIR_STORAGE_FILE_H__ */
