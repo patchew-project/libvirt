@@ -19982,7 +19982,7 @@ msgid "Error notify callback must be supplied"
 msgstr ""
 
 #: src/qemu/qemu_monitor.c:956
-msgid "Qemu monitor was closed"
+msgid "QEMU monitor was closed"
 msgstr "Il monitor di Qemu è stato chiuso"
 
 #: src/qemu/qemu_monitor.c:1014

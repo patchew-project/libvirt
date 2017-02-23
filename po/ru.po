@@ -20349,7 +20349,7 @@ msgid "Error notify callback must be supplied"
 msgstr "Необходимо предоставить обратный вызов для уведомления об ошибке"
 
 #: src/qemu/qemu_monitor.c:956
-msgid "Qemu monitor was closed"
+msgid "QEMU monitor was closed"
 msgstr "Работа монитора QEMU завершена"
 
 #: src/qemu/qemu_monitor.c:1014

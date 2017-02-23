@@ -20520,7 +20520,7 @@ msgid "Error notify callback must be supplied"
 msgstr "Fehler-Benachrichtigung Callback muss angegeben werden"
 
 #: src/qemu/qemu_monitor.c:956
-msgid "Qemu monitor was closed"
+msgid "QEMU monitor was closed"
 msgstr "Qemu Monitor war geschlossen"
 
 #: src/qemu/qemu_monitor.c:1014

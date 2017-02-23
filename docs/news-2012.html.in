@@ -46,7 +46,7 @@
       locking: Fix VPATH build and distribute generated files (Jiri Denemark),<br/>
       build: Fix VPATH build (Jiri Denemark),<br/>
       Change virCgroupGetAppRoot stub on non-Linux to avoid unused param warning (Daniel P. Berrange),<br/>
-      Qemu FreeBSD: fix compilation (Roman Bogorodskiy),<br/>
+      QEMU FreeBSD: fix compilation (Roman Bogorodskiy),<br/>
       Drop mntent.h include. (Roman Bogorodskiy),<br/>
       virsh: Fix usage of header termios.h (Peter Krempa),<br/>
       pci: Fix building of 32bit PCI command array (Peter Krempa),<br/>

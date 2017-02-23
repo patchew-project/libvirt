@@ -20061,7 +20061,7 @@ msgid "Error notify callback must be supplied"
 msgstr "ਗਲਤੀ ਸੂਚਨਾ ਕਾਲਬੈਕ ਮੁਹੱਈਆ ਕਰਵਾਉਣਾ ਜਰੂਰੀ ਹੈ"
 
 #: src/qemu/qemu_monitor.c:956
-msgid "Qemu monitor was closed"
+msgid "QEMU monitor was closed"
 msgstr "Qemu ਮੌਨੀਟਰ ਬੰਦ ਕੀਤਾ ਗਿਆ ਸੀ"
 
 #: src/qemu/qemu_monitor.c:1014

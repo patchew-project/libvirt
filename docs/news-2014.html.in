@@ -330,7 +330,7 @@
       qemu: Add bps_max and friends to qemu command generation (Matthias Gatto),<br/>
       qemu: Add bps_max and friends QMP suport (Matthias Gatto),<br/>
       qemu: Add bps_max and friends qemu driver (Matthias Gatto),<br/>
-      qemu: Add Qemu capability for bps_max and friends (Matthias Gatto),<br/>
+      qemu: Add QEMU capability for bps_max and friends (Matthias Gatto),<br/>
       qemu: Modify the structure _virDomainBlockIoTuneInfo. (Matthias Gatto),<br/>
       cpu_conf: Allow specification of 'units' for @memory on numa nodes. (Prerna Saxena),<br/>
       conf: Expose virDomainParseMemory for use outside domain_conf (Prerna Saxena),<br/>

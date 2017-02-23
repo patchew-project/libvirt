@@ -20224,7 +20224,7 @@ msgid "Error notify callback must be supplied"
 msgstr "പിശക് അറിയിക്കുന്ന കോള്‍ബാക്ക് നല്‍കിയിരിയ്ക്കണം"
 
 #: src/qemu/qemu_monitor.c:956
-msgid "Qemu monitor was closed"
+msgid "QEMU monitor was closed"
 msgstr "Qemu മോണിറ്റര്‍ അടച്ചിരിയ്ക്കുന്നു"
 
 #: src/qemu/qemu_monitor.c:1014

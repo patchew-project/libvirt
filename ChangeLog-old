@@ -576,7 +576,7 @@ Fri May 29 10:00:01 EDT 2009 Cole Robinson <crobinso@redhat.com>
 Fri May 29 15:29:32 CEST 2009 Daniel Veillard <veillard@redhat.com>
 
 	* src/qemu_conf.c docs/schemas/domain.rng
-	  tests/capabilityschemadata/caps-qemu-kvm.xml: PPC Qemu Machine Type
+	  tests/capabilityschemadata/caps-qemu-kvm.xml: PPC QEMU Machine Type
 	  changed from g3bw to g3beige some time ago, patch by Thomas Baker
 
 Fri May 29 14:26:30 BST 2009 Daniel P. Berrange <berrange@redhat.com>
@@ -8397,7 +8397,7 @@ Thu May 15 09:12:08 CEST 2008 Jim Meyering <meyering@redhat.com>
 Thu May 15 15:07:49 JST 2008 Atsushi SAKAI <sakaia@jp.fujitsu.com>
 
 	* qemud/libvirtd.init.in: change libvirtd description
-	which supports various guest not only Qemu
+	which supports various guest not only QEMU
 	* docs/*: typo fixes
 	* include/libvirt/libvirt.h, include/libvirt/libvirt.h.in,
 	qemud/event.c, qemud/qemud.c, qemud/remote.c,

@@ -20120,7 +20120,7 @@ msgid "Error notify callback must be supplied"
 msgstr "સુચિત કોલબેક ભૂલને લાગુ કરવી જ જોઇએ"
 
 #: src/qemu/qemu_monitor.c:956
-msgid "Qemu monitor was closed"
+msgid "QEMU monitor was closed"
 msgstr "Qemu મોનિટર બંધ થયેલ હતુ"
 
 #: src/qemu/qemu_monitor.c:1014

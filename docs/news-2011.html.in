@@ -2252,7 +2252,7 @@
       build: fix 32-bit test failure (Eric Blake),<br/>
       build: Fix problem of building Python bindings (Osier Yang),<br/>
       build: fix 32-bit test failure (Eric Blake),<br/>
-      ppc: Enable starting of Qemu VMs on ppc host (Stefan Berger),<br/>
+      ppc: Enable starting of QEMU VMs on ppc host (Stefan Berger),<br/>
       Migrate VMs between different-endianess hosts (Stefan Berger),<br/>
       build: really fix mingw startup (Eric Blake),<br/>
       build: fix mingw build (Eric Blake),<br/>
@@ -2540,7 +2540,7 @@
       Make error reporting in libvirtd thread safe (Jiri Denemark),<br/>
       update domain status forcibly even if attach a device failed (Wen Congyang),<br/>
       util: Fix return value for virJSONValueFromString if it fails (Osier Yang),<br/>
-      Initialization error of qemuCgroupData in Qemu host usb hotplug (Wen Congyang),<br/>
+      Initialization error of qemuCgroupData in QEMU host usb hotplug (Wen Congyang),<br/>
       build: fix missing initializer (Eric Blake),<br/>
       Fix uninitialized variable &amp; error reporting in LXC veth setup (Daniel P. Berrange),<br/>
       udev: fix regression with qemu:///session (Eric Blake),<br/>

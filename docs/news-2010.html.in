@@ -635,8 +635,8 @@
     <ul>
       <li>Features:<br/>
       esx: Support vSphere 4.1 (Matthias Bolte),<br/>
-      Qemu arbitrary monitor commands. (Chris Lalancette),<br/>
-      Qemu Monitor API entry point. (Chris Lalancette)<br/>
+      QEMU arbitrary monitor commands. (Chris Lalancette),<br/>
+      QEMU Monitor API entry point. (Chris Lalancette)<br/>
       </li>
 
       <li>Documentation:<br/>
@@ -739,10 +739,10 @@
       esx: Don't ignore the vcenter query parameter (Matthias Bolte),<br/>
       esx: Add autodetection for the SCSI controller model (Matthias Bolte),<br/>
       esx: Allow 'vmpvscsi' as SCSI controller model (Matthias Bolte),<br/>
-      Add tests for the new Qemu namespace XML. (Chris Lalancette),<br/>
-      Qemu remote protocol. (Chris Lalancette),<br/>
+      Add tests for the new QEMU namespace XML. (Chris Lalancette),<br/>
+      QEMU remote protocol. (Chris Lalancette),<br/>
       Handle arbitrary qemu command-lines in qemuParseCommandLine. (Chris Lalancette),<br/>
-      Qemu arbitrary command-line arguments. (Chris Lalancette),<br/>
+      QEMU arbitrary command-line arguments. (Chris Lalancette),<br/>
       Add namespace callback hooks to domain_conf. (Chris Lalancette),<br/>
       Remove erroneous setting of return value to errno. (Laine Stump),<br/>
       Change virDirCreate to return -errno on failure. (Laine Stump),<br/>
@@ -2048,7 +2048,7 @@
       qemu: Fix a memory leak in qemudExtractTTYPath (Matthias Bolte),<br/>
       Fix UUID random generator to use /dev/random (Laine Stump),<br/>
       let "configure --disable-shared" work once again (Jim Meyering),<br/>
-      Qemu: ask for memory preallocation with large pages (Daniel Veillard),<br/>
+      QEMU: ask for memory preallocation with large pages (Daniel Veillard),<br/>
       network/bridge_driver.c: avoid potential NULL-dereference (Jim Meyering),<br/>
       Don't free an uninitalized pointer in update_driver_name() (Matthias Bolte),<br/>
       xend_internal: don't let invalid input provoke NULL dereference (Jim Meyering),<br/>

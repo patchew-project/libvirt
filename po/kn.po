@@ -20339,7 +20339,7 @@ msgid "Error notify callback must be supplied"
 msgstr "ದೋಷ ಸೂಚನಾ ಕಾಲ್‌ಬ್ಯಾಕ್ ಅನ್ನು ಒದಗಿಸಬೇಕು"
 
 #: src/qemu/qemu_monitor.c:956
-msgid "Qemu monitor was closed"
+msgid "QEMU monitor was closed"
 msgstr "QEMU ಮೇಲ್ವಿಚಾರಕವನ್ನು ಮುಚ್ಚಲಾಗಿದೆ"
 
 #: src/qemu/qemu_monitor.c:1014

@@ -19979,7 +19979,7 @@ msgid "Error notify callback must be supplied"
 msgstr "错误：必须指定通知回叫"
 
 #: src/qemu/qemu_monitor.c:956
-msgid "Qemu monitor was closed"
+msgid "QEMU monitor was closed"
 msgstr "已关闭 Qemu 监控程序"
 
 #: src/qemu/qemu_monitor.c:1014

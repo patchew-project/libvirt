@@ -20413,7 +20413,7 @@ msgid "Error notify callback must be supplied"
 msgstr "பிழை அறிவிப்பு கால்பேக் கண்டிப்பாக குறிப்பிடப்பட வேண்டும்"
 
 #: src/qemu/qemu_monitor.c:956
-msgid "Qemu monitor was closed"
+msgid "QEMU monitor was closed"
 msgstr "Qemu மானிட்டர் மூடப்பட்டது"
 
 #: src/qemu/qemu_monitor.c:1014
