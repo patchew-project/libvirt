@@ -137,6 +137,11 @@ struct _virQEMUDriverConfig {
     bool chardevTLSx509verify;
     char *chardevTLSx509secretUUID;
 
+    bool migrateTLS;
+    char *migrateTLSx509certdir;
+    bool migrateTLSx509verify;
+    char *migrateTLSx509secretUUID;
+
     unsigned int remotePortMin;
     unsigned int remotePortMax;
 
