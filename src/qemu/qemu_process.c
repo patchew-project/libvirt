@@ -4746,15 +4746,15 @@ qemuProcessInit(virQEMUDriverPtr driver,
                                                       vm->def->os.machine)))
         goto cleanup;
 
-    if (qemuProcessStartValidate(driver, vm, priv->qemuCaps, caps, flags) < 0)
-        goto cleanup;
-
     /* Do this upfront, so any part of the startup process can add
      * runtime state to vm->def that won't be persisted. This let's us
      * report implicit runtime defaults in the XML, like vnc listen/socket
      */
     VIR_DEBUG("Setting current domain def as transient");
     if (virDomainObjSetDefTransient(caps, driver->xmlopt, vm) < 0)
+        goto cleanup;
+
+    if (qemuProcessStartValidate(driver, vm, priv->qemuCaps, caps, flags) < 0)
         goto cleanup;
 
     if (flags & VIR_QEMU_PROCESS_START_PRETEND) {
