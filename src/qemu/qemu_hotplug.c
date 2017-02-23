@@ -442,13 +442,13 @@ qemuDomainAttachVirtioDiskDevice(virConnectPtr conn,
         ignore_value(qemuMonitorDelObject(priv->mon, secinfo->s.aes.alias));
     if (encobjAdded)
         ignore_value(qemuMonitorDelObject(priv->mon, encinfo->s.aes.alias));
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        releaseaddr = false;
     if (orig_err) {
         virSetError(orig_err);
         virFreeError(orig_err);
     }
 
-    if (qemuDomainObjExitMonitor(driver, vm) < 0)
-        releaseaddr = false;
 
     virDomainAuditDisk(vm, NULL, disk->src, "attach", false);
 
@@ -728,12 +728,11 @@ qemuDomainAttachSCSIDisk(virConnectPtr conn,
         ignore_value(qemuMonitorDelObject(priv->mon, secinfo->s.aes.alias));
     if (encobjAdded)
         ignore_value(qemuMonitorDelObject(priv->mon, encinfo->s.aes.alias));
+    ignore_value(qemuDomainObjExitMonitor(driver, vm));
     if (orig_err) {
         virSetError(orig_err);
         virFreeError(orig_err);
     }
-
-    ignore_value(qemuDomainObjExitMonitor(driver, vm));
 
     virDomainAuditDisk(vm, NULL, disk->src, "attach", false);
 
@@ -822,12 +821,12 @@ qemuDomainAttachUSBMassStorageDevice(virQEMUDriverPtr driver,
         VIR_WARN("Unable to remove drive %s (%s) after failed "
                  "qemuMonitorAddDevice", drivealias, drivestr);
     }
+    ignore_value(qemuDomainObjExitMonitor(driver, vm));
     if (orig_err) {
         virSetError(orig_err);
         virFreeError(orig_err);
     }
 
-    ignore_value(qemuDomainObjExitMonitor(driver, vm));
     virDomainAuditDisk(vm, NULL, disk->src, "attach", false);
 
  error:
@@ -1676,11 +1675,11 @@ int qemuDomainAttachRedirdevDevice(virConnectPtr conn,
         ignore_value(qemuMonitorDelObject(priv->mon, tlsAlias));
     if (secobjAdded)
         ignore_value(qemuMonitorDelObject(priv->mon, secAlias));
+    ignore_value(qemuDomainObjExitMonitor(driver, vm));
     if (orig_err) {
         virSetError(orig_err);
         virFreeError(orig_err);
     }
-    ignore_value(qemuDomainObjExitMonitor(driver, vm));
     goto audit;
 }
 
@@ -1970,12 +1969,12 @@ int qemuDomainAttachChrDevice(virConnectPtr conn,
         ignore_value(qemuMonitorDelObject(priv->mon, tlsAlias));
     if (secobjAdded)
         ignore_value(qemuMonitorDelObject(priv->mon, secAlias));
+    ignore_value(qemuDomainObjExitMonitor(driver, vm));
     if (orig_err) {
         virSetError(orig_err);
         virFreeError(orig_err);
     }
 
-    ignore_value(qemuDomainObjExitMonitor(driver, vm));
     goto audit;
 }
 
@@ -2156,13 +2155,13 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
         ignore_value(qemuMonitorDelObject(priv->mon, tlsAlias));
     if (secobjAdded)
         ignore_value(qemuMonitorDelObject(priv->mon, secAlias));
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        releaseaddr = false;
     if (orig_err) {
         virSetError(orig_err);
         virFreeError(orig_err);
     }
 
-    if (qemuDomainObjExitMonitor(driver, vm) < 0)
-        releaseaddr = false;
     goto audit;
 }
 
@@ -2276,13 +2275,13 @@ qemuDomainAttachMemory(virQEMUDriverPtr driver,
     orig_err = virSaveLastError();
     if (objAdded)
         ignore_value(qemuMonitorDelObject(priv->mon, objalias));
-    if (orig_err) {
-        virSetError(orig_err);
-        virFreeError(orig_err);
-    }
     if (qemuDomainObjExitMonitor(driver, vm) < 0) {
         mem = NULL;
         goto audit;
+    }
+    if (orig_err) {
+        virSetError(orig_err);
+        virFreeError(orig_err);
     }
 
  removedef:
@@ -2506,12 +2505,12 @@ qemuDomainAttachHostSCSIDevice(virConnectPtr conn,
                  "qemuMonitorAddDevice",
                  drvstr, devstr);
     }
+    ignore_value(qemuDomainObjExitMonitor(driver, vm));
     if (orig_err) {
         virSetError(orig_err);
         virFreeError(orig_err);
     }
 
-    ignore_value(qemuDomainObjExitMonitor(driver, vm));
     virDomainAuditHostdev(vm, hostdev, "attach", false);
 
     goto cleanup;
@@ -2798,13 +2797,13 @@ qemuDomainAttachShmemDevice(virQEMUDriverPtr driver,
             ignore_value(qemuMonitorDelObject(priv->mon, memAlias));
     }
 
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        release_address = false;
+
     if (orig_err) {
         virSetError(orig_err);
         virFreeError(orig_err);
     }
-
-    if (qemuDomainObjExitMonitor(driver, vm) < 0)
-        release_address = false;
 
     goto audit;
 }
