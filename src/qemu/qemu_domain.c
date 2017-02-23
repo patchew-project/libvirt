@@ -1353,8 +1353,9 @@ qemuDomainSecretChardevPrepare(virConnectPtr conn,
 
         if (virUUIDParse(cfg->chardevTLSx509secretUUID,
                          seclookupdef.u.uuid) < 0) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("malformed chardev TLS secret uuid in qemu.conf"));
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("malformed TLS secret uuid '%s' in qemu.conf"),
+                           cfg->chardevTLSx509secretUUID);
             return -1;
         }
         seclookupdef.type = VIR_SECRET_LOOKUP_TYPE_UUID;
@@ -1377,6 +1378,47 @@ qemuDomainSecretChardevPrepare(virConnectPtr conn,
     VIR_FREE(charAlias);
     return -1;
 }
+
+
+/* qemuDomainSecretMigratePrepare
+ * @conn: Pointer to connection
+ * @priv: pointer to domain private object
+ * @srcAlias: Alias to use (either migrate or nbd)
+ * @secretUUID: UUID for the secret from the cfg (migrate or nbd)
+ *
+ * Create and prepare the qemuDomainSecretInfoPtr to be used for either
+ * a migration or nbd. Unlike other domain secret prepare functions, this
+ * is only expected to be called for a single object/instance. Theoretically
+ * the object could be reused, although that results in keeping a secret
+ * stored in memory for perhaps longer than expected or necessary.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+qemuDomainSecretMigratePrepare(virConnectPtr conn,
+                               qemuDomainObjPrivatePtr priv,
+                               const char *srcAlias,
+                               const char *secretUUID)
+{
+    virSecretLookupTypeDef seclookupdef = {0};
+
+    if (virUUIDParse(secretUUID, seclookupdef.u.uuid) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("malformed TLS secret uuid '%s' in qemu.conf"),
+                       secretUUID);
+        return -1;
+    }
+    seclookupdef.type = VIR_SECRET_LOOKUP_TYPE_UUID;
+
+    if (!(priv->migSecinfo =
+          qemuDomainSecretInfoNew(conn, priv, srcAlias,
+                                  VIR_SECRET_USAGE_TYPE_TLS, NULL,
+                                  &seclookupdef, false, "TLS X.509")))
+        return -1;
+
+    return 0;
+}
+
 
 
 /* qemuDomainSecretDestroy:
@@ -1643,6 +1685,8 @@ qemuDomainObjPrivateFree(void *data)
 
     VIR_FREE(priv->libDir);
     VIR_FREE(priv->channelTargetDir);
+
+    qemuDomainSecretInfoFree(&priv->migSecinfo);
     qemuDomainMasterKeyFree(priv);
 
     VIR_FREE(priv);
