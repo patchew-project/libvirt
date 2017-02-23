@@ -1644,10 +1644,12 @@ qemuDomainGetChardevTLSObjects(virQEMUDriverConfigPtr cfg,
 
 
 static int
-qemuDomainAddChardevTLSObjects(virQEMUDriverPtr driver,
+qemuDomainAddChardevTLSObjects(virConnectPtr conn,
+                               virQEMUDriverPtr driver,
                                virQEMUDriverConfigPtr cfg,
                                virDomainObjPtr vm,
                                virDomainChrSourceDefPtr dev,
+                               char *devAlias,
                                char *charAlias,
                                char **tlsAlias,
                                char **secAlias)
@@ -1660,6 +1662,9 @@ qemuDomainAddChardevTLSObjects(virQEMUDriverPtr driver,
     if (dev->type != VIR_DOMAIN_CHR_TYPE_TCP ||
         dev->data.tcp.haveTLS != VIR_TRISTATE_BOOL_YES)
         return 0;
+
+    if (qemuDomainSecretChardevPrepare(conn, cfg, priv, devAlias, dev) < 0)
+        goto cleanup;
 
     if (qemuDomainGetChardevTLSObjects(cfg, priv, dev, charAlias,
                                        &tlsProps, tlsAlias,
@@ -1717,12 +1722,9 @@ int qemuDomainAttachRedirdevDevice(virConnectPtr conn,
     if (VIR_REALLOC_N(def->redirdevs, def->nredirdevs+1) < 0)
         goto cleanup;
 
-    if (qemuDomainSecretChardevPrepare(conn, cfg, priv, redirdev->info.alias,
-                                       redirdev->source) < 0)
-        goto cleanup;
-
-    if (qemuDomainAddChardevTLSObjects(driver, cfg, vm, redirdev->source,
-                                       charAlias, &tlsAlias, &secAlias) < 0)
+    if (qemuDomainAddChardevTLSObjects(conn, driver, cfg, vm, redirdev->source,
+                                       redirdev->info.alias, charAlias,
+                                       &tlsAlias, &secAlias) < 0)
         goto audit;
 
     qemuDomainObjEnterMonitor(driver, vm);
@@ -1978,11 +1980,8 @@ int qemuDomainAttachChrDevice(virConnectPtr conn,
     if (qemuDomainChrPreInsert(vmdef, chr) < 0)
         goto cleanup;
 
-    if (qemuDomainSecretChardevPrepare(conn, cfg, priv, chr->info.alias,
-                                       dev) < 0)
-        goto cleanup;
-
-    if (qemuDomainAddChardevTLSObjects(driver, cfg, vm, dev, charAlias,
+    if (qemuDomainAddChardevTLSObjects(conn, driver, cfg, vm, dev,
+                                       chr->info.alias, charAlias,
                                        &tlsAlias, &secAlias) < 0)
         goto audit;
 
@@ -2120,12 +2119,10 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
         goto cleanup;
 
     if (rng->backend == VIR_DOMAIN_RNG_BACKEND_EGD) {
-        if (qemuDomainSecretChardevPrepare(conn, cfg, priv, rng->info.alias,
-                                           rng->source.chardev) < 0)
-            goto cleanup;
-
-        if (qemuDomainAddChardevTLSObjects(driver, cfg, vm, rng->source.chardev,
-                                           charAlias, &tlsAlias, &secAlias) < 0)
+        if (qemuDomainAddChardevTLSObjects(conn, driver, cfg, vm,
+                                           rng->source.chardev,
+                                           rng->info.alias, charAlias,
+                                           &tlsAlias, &secAlias) < 0)
             goto audit;
     }
 
