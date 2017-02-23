@@ -1112,6 +1112,55 @@ qemuDomainSecretSetup(virConnectPtr conn,
 }
 
 
+/* qemuDomainSecretInfoNew:
+ * @conn: Pointer to connection
+ * @priv: pointer to domain private object
+ * @srcAlias: Alias base to use for TLS object
+ * @lookupType: Type of secret lookup
+ * @username: username for plain secrets
+ * @looupdef: lookup def describing secret
+ * @isLuks: boolean for luks lookup
+ * @encFmt: string for error message
+ *
+ * Helper function to create a secinfo to be used for secinfo consumers
+ *
+ * Returns @secinfo on success, NULL on failure. Caller is responsible
+ * to eventually free @secinfo.
+ */
+static qemuDomainSecretInfoPtr
+qemuDomainSecretInfoNew(virConnectPtr conn,
+                        qemuDomainObjPrivatePtr priv,
+                        const char *srcAlias,
+                        virSecretLookupType lookupType,
+                        const char *username,
+                        virSecretLookupTypeDefPtr lookupDef,
+                        bool isLuks,
+                        const char *encFmt)
+{
+    qemuDomainSecretInfoPtr secinfo = NULL;
+
+    if (VIR_ALLOC(secinfo) < 0)
+        return NULL;
+
+    if (qemuDomainSecretSetup(conn, priv, secinfo, srcAlias, lookupType,
+                              username, lookupDef, isLuks) < 0)
+        goto error;
+
+    if (encFmt && secinfo->type == VIR_DOMAIN_SECRET_INFO_TYPE_PLAIN) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("%s requires encrypted secrets to be supported"),
+                       encFmt);
+        goto error;
+    }
+
+    return secinfo;
+
+ error:
+    qemuDomainSecretInfoFree(&secinfo);
+    return NULL;
+}
+
+
 /* qemuDomainSecretDiskDestroy:
  * @disk: Pointer to a disk definition
  *
@@ -1171,51 +1220,30 @@ qemuDomainSecretDiskPrepare(virConnectPtr conn,
 {
     virStorageSourcePtr src = disk->src;
     qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
-    qemuDomainSecretInfoPtr secinfo = NULL;
 
     if (qemuDomainSecretDiskCapable(src)) {
         virSecretUsageType secretUsageType = VIR_SECRET_USAGE_TYPE_ISCSI;
 
-        if (VIR_ALLOC(secinfo) < 0)
-            return -1;
-
         if (src->protocol == VIR_STORAGE_NET_PROTOCOL_RBD)
             secretUsageType = VIR_SECRET_USAGE_TYPE_CEPH;
 
-        if (qemuDomainSecretSetup(conn, priv, secinfo, disk->info.alias,
-                                  secretUsageType, src->auth->username,
-                                  &src->auth->seclookupdef, false) < 0)
-            goto error;
-
-        diskPriv->secinfo = secinfo;
+        if (!(diskPriv->secinfo =
+              qemuDomainSecretInfoNew(conn, priv, disk->info.alias,
+                                      secretUsageType, src->auth->username,
+                                      &src->auth->seclookupdef, false, NULL)))
+              return -1;
     }
 
     if (qemuDomainDiskHasEncryptionSecret(src)) {
-
-        if (VIR_ALLOC(secinfo) < 0)
-            return -1;
-
-        if (qemuDomainSecretSetup(conn, priv, secinfo, disk->info.alias,
-                                  VIR_SECRET_USAGE_TYPE_VOLUME, NULL,
-                                  &src->encryption->secrets[0]->seclookupdef,
-                                  true) < 0)
-            goto error;
-
-        if (secinfo->type == VIR_DOMAIN_SECRET_INFO_TYPE_PLAIN) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("luks encryption requires encrypted secrets "
-                             "to be supported"));
-            goto error;
-        }
-
-        diskPriv->encinfo = secinfo;
+        if (!(diskPriv->encinfo =
+              qemuDomainSecretInfoNew(conn, priv, disk->info.alias,
+                                      VIR_SECRET_USAGE_TYPE_VOLUME, NULL,
+                                      &src->encryption->secrets[0]->seclookupdef,
+                                      true, "luks encryption")))
+              return -1;
     }
 
     return 0;
-
- error:
-    qemuDomainSecretInfoFree(&secinfo);
-    return -1;
 }
 
 
@@ -1251,8 +1279,6 @@ qemuDomainSecretHostdevPrepare(virConnectPtr conn,
                                qemuDomainObjPrivatePtr priv,
                                virDomainHostdevDefPtr hostdev)
 {
-    qemuDomainSecretInfoPtr secinfo = NULL;
-
     if (virHostdevIsSCSIDevice(hostdev)) {
         virDomainHostdevSubsysSCSIPtr scsisrc = &hostdev->source.subsys.u.scsi;
         virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &scsisrc->u.iscsi;
@@ -1263,24 +1289,17 @@ qemuDomainSecretHostdevPrepare(virConnectPtr conn,
             qemuDomainHostdevPrivatePtr hostdevPriv =
                 QEMU_DOMAIN_HOSTDEV_PRIVATE(hostdev);
 
-            if (VIR_ALLOC(secinfo) < 0)
+            if (!(hostdevPriv->secinfo =
+                  qemuDomainSecretInfoNew(conn, priv, hostdev->info->alias,
+                                          VIR_SECRET_USAGE_TYPE_ISCSI,
+                                          iscsisrc->auth->username,
+                                          &iscsisrc->auth->seclookupdef,
+                                          false, NULL)))
                 return -1;
-
-            if (qemuDomainSecretSetup(conn, priv, secinfo, hostdev->info->alias,
-                                      VIR_SECRET_USAGE_TYPE_ISCSI,
-                                      iscsisrc->auth->username,
-                                      &iscsisrc->auth->seclookupdef, false) < 0)
-                goto error;
-
-            hostdevPriv->secinfo = secinfo;
         }
     }
 
     return 0;
-
- error:
-    qemuDomainSecretInfoFree(&secinfo);
-    return -1;
 }
 
 
@@ -1322,7 +1341,6 @@ qemuDomainSecretChardevPrepare(virConnectPtr conn,
                                virDomainChrSourceDefPtr dev)
 {
     virSecretLookupTypeDef seclookupdef = {0};
-    qemuDomainSecretInfoPtr secinfo = NULL;
     char *charAlias = NULL;
 
     if (dev->type != VIR_DOMAIN_CHR_TYPE_TCP)
@@ -1337,36 +1355,26 @@ qemuDomainSecretChardevPrepare(virConnectPtr conn,
                          seclookupdef.u.uuid) < 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("malformed chardev TLS secret uuid in qemu.conf"));
-            goto error;
+            return -1;
         }
         seclookupdef.type = VIR_SECRET_LOOKUP_TYPE_UUID;
 
-        if (VIR_ALLOC(secinfo) < 0)
-            goto error;
-
         if (!(charAlias = qemuAliasChardevFromDevAlias(chrAlias)))
+            return -1;
+
+        if (!(chrSourcePriv->secinfo =
+              qemuDomainSecretInfoNew(conn, priv, charAlias,
+                                      VIR_SECRET_USAGE_TYPE_TLS, NULL,
+                                      &seclookupdef, false, "TLS X.509")))
             goto error;
 
-        if (qemuDomainSecretSetup(conn, priv, secinfo, charAlias,
-                                  VIR_SECRET_USAGE_TYPE_TLS, NULL,
-                                  &seclookupdef, false) < 0)
-            goto error;
-
-        if (secinfo->type == VIR_DOMAIN_SECRET_INFO_TYPE_PLAIN) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("TLS X.509 requires encrypted secrets "
-                             "to be supported"));
-            goto error;
-        }
-
-        chrSourcePriv->secinfo = secinfo;
+        VIR_FREE(charAlias);
     }
 
-    VIR_FREE(charAlias);
     return 0;
 
  error:
-    qemuDomainSecretInfoFree(&secinfo);
+    VIR_FREE(charAlias);
     return -1;
 }
 
