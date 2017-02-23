@@ -2502,6 +2502,8 @@ virAsprintfInternal;
 virSkipSpaces;
 virSkipSpacesAndBackslash;
 virSkipSpacesBackwards;
+virStrcat;
+virStrcatInplace;
 virStrcpy;
 virStrdup;
 virStringBufferIsPrintable;

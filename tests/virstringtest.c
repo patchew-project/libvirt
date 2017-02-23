@@ -693,6 +693,37 @@ static int testStripControlChars(const void *args)
     return ret;
 }
 
+
+struct testStrcatData {
+    const char *dest;
+    const char *src;
+    const char *res;
+};
+
+static int
+testStrcat(const void *args)
+{
+    const struct testStrcatData *data = args;
+    char *str = NULL;
+    int ret = -1;
+
+    if (VIR_STRDUP(str, data->dest) < 0)
+        goto cleanup;
+
+    if (VIR_STRCAT(str, data->src) < 0)
+        goto cleanup;
+
+    if (!STREQ_NULLABLE(str, data->res))
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(str);
+    return ret;
+}
+
+
 static int
 mymain(void)
 {
@@ -958,6 +989,24 @@ mymain(void)
     TEST_STRIP_CONTROL_CHARS("\x01H\x02" "E\x03L\x04L\x05O", "HELLO");
     TEST_STRIP_CONTROL_CHARS("\x01\x02\x03\x04HELL\x05O", "HELLO");
     TEST_STRIP_CONTROL_CHARS("\nhello \x01\x07hello\t", "\nhello hello\t");
+
+#define TEST_STRCAT(dests, srcs, ress)                                      \
+    do {                                                                    \
+        struct testStrcatData strcatData = {                                \
+            .dest = dests,                                                  \
+            .src = srcs,                                                    \
+            .res = ress,                                                    \
+        };                                                                  \
+        if (virTestRun("Concatenate '" #dests "' with '" #srcs "'",         \
+                       testStrcat, &strcatData) < 0)                        \
+            ret = -1;                                                       \
+    } while (0)
+
+    TEST_STRCAT(NULL, NULL, NULL);
+    TEST_STRCAT(NULL, "world", "world");
+    TEST_STRCAT("hello", NULL, "hello");
+    TEST_STRCAT("hello", "world", "helloworld");
+
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 

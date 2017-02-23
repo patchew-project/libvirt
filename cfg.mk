@@ -1147,7 +1147,7 @@ exclude_file_name_regexp--sc_prohibit_fork_wrappers = \
 exclude_file_name_regexp--sc_prohibit_gethostname = ^src/util/virutil\.c$$
 
 exclude_file_name_regexp--sc_prohibit_internal_functions = \
-  ^src/(util/(viralloc|virutil|virfile)\.[hc]|esx/esx_vi\.c)$$
+  ^src/(util/(viralloc|virutil|virfile|virstring)\.[hc]|esx/esx_vi\.c)$$
 
 exclude_file_name_regexp--sc_prohibit_newline_at_end_of_diagnostic = \
   ^src/rpc/gendispatch\.pl$$

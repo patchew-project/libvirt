@@ -837,6 +837,76 @@ virStrndup(char **dest,
 }
 
 
+/**
+ * virStrcat
+ * @dest: where to store concatenated string
+ * @src: the source string to append to @dest
+ * @inPlace: false if we should expand the allocated memory before moving,
+ *           true if we should assume someone else has already done that.
+ * @report: whether to report OOM error, if there is one
+ * @domcode: error domain code
+ * @filename: caller's filename
+ * @funcname: caller's funcname
+ * @linenr: caller's line number
+ *
+ * Wrapper over strcat, which reports OOM error if told so,
+ * in which case callers wants to pass @domcode, @filename,
+ * @funcname and @linenr which should represent location in
+ * caller's body where virStrcat is called from. Consider
+ * using VIR_STRCAT which sets these automatically.
+ *
+ * Returns: 0 for NULL src, 1 on successful concatenate, -1 otherwise.
+ */
+int
+virStrcat(char **dest,
+          const char *src,
+          bool report,
+          int domcode,
+          const char *filename,
+          const char *funcname,
+          size_t linenr)
+{
+    size_t dest_len = 0;
+    size_t src_len = 0;
+
+    if (!src)
+        return 0;
+
+    if (*dest)
+        dest_len = strlen(*dest);
+    src_len = strlen(src);
+
+    if (virReallocN(dest, sizeof(*dest), dest_len + src_len + 1,
+                    report, domcode, filename, funcname, linenr) < 0)
+        return -1;
+
+    strcat(*dest, src);
+
+    return 1;
+}
+
+
+/**
+ * virStrcat
+ * @dest: where to store concatenated string
+ * @src: the source string to append to @dest
+ *
+ * Wrapper over strcat, which properly handles if @src is NULL.
+ *
+ * Returns: 0 for NULL src, 1 on successful concatenate.
+ */
+int
+virStrcatInplace(char *dest, const char *src)
+{
+    if (!src)
+        return 0;
+
+    strcat(dest, src);
+
+    return 1;
+}
+
+
 size_t virStringListLength(const char * const *strings)
 {
     size_t i = 0;

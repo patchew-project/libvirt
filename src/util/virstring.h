@@ -131,6 +131,13 @@ int virStrdup(char **dest, const char *src, bool report, int domcode,
 int virStrndup(char **dest, const char *src, ssize_t n, bool report, int domcode,
                const char *filename, const char *funcname, size_t linenr)
     ATTRIBUTE_RETURN_CHECK ATTRIBUTE_NONNULL(1);
+
+int virStrcat(char **dest, const char *src, bool report, int domcode,
+              const char *filename, const char *funcname, size_t linenr)
+    ATTRIBUTE_RETURN_CHECK ATTRIBUTE_NONNULL(1);
+int virStrcatInplace(char *dest, const char *src)
+    ATTRIBUTE_NONNULL(1);
+
 int virAsprintfInternal(bool report, int domcode, const char *filename,
                         const char *funcname, size_t linenr, char **strp,
                         const char *fmt, ...)
@@ -208,6 +215,26 @@ int virVasprintfInternal(bool report, int domcode, const char *filename,
  */
 # define VIR_STRNDUP_QUIET(dst, src, n) virStrndup(&(dst), src, n, false, \
                                                    0, NULL, NULL, 0)
+
+/**
+ * VIR_STRCAT:
+ * @dst: variable to hold result (char*, not char**)
+ * @src: string to concatenate to @dst
+ *
+ * Concatenate @src string into @dst string, @dst may be NULL.
+ *
+ * This macro is safe to use on arguments with side effects.
+ *
+ * VIR_STRCAT_INPLACE expect the @dst to be already allocated to hold
+ * the result.
+ *
+ * Returns -1 on failure, 0 if @src was NULL, 1 if @src was concatenated.
+ */
+# define VIR_STRCAT(dst, src) virStrcat(&(dst), src, true, VIR_FROM_THIS, \
+                                        __FILE__, __FUNCTION__, __LINE__)
+# define VIR_STRCAT_QUIET(dst, src) virStrcat(&(dst), src, false, 0, \
+                                              NULL, NULL, 0)
+# define VIR_STRCAT_INPLACE(dst, src) virStrcatInplace(dst, src)
 
 size_t virStringListLength(const char * const *strings);
 
