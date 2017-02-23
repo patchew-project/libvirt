@@ -124,16 +124,16 @@ char *qemuBuildControllerDevStr(const virDomainDef *domainDef,
                                 virQEMUCapsPtr qemuCaps,
                                 int *nusbcontroller);
 
-int qemuBuildMemoryBackendStr(unsigned long long size,
-                              unsigned long long pagesize,
+int qemuBuildMemoryBackendStr(virJSONValuePtr *backendProps,
+                              const char **backendType,
+                              virQEMUDriverConfigPtr cfg,
+                              virQEMUCapsPtr qemuCaps,
+                              virDomainDefPtr def,
                               int guestNode,
+                              unsigned long long size,
+                              unsigned long long pagesize,
                               virBitmapPtr userNodeset,
                               virBitmapPtr autoNodeset,
-                              virDomainDefPtr def,
-                              virQEMUCapsPtr qemuCaps,
-                              virQEMUDriverConfigPtr cfg,
-                              const char **backendType,
-                              virJSONValuePtr *backendProps,
                               bool force);
 
 char *qemuBuildMemoryDeviceStr(virDomainMemoryDefPtr mem);

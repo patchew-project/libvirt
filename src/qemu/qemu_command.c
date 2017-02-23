@@ -3077,38 +3077,47 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
 
 /**
  * qemuBuildMemoryBackendStr:
+ * @backendProps: [out] constructed object
+ * @backendType: [out] type of the backennd used
+ * @cfg: qemu driver config object
+ * @qemuCaps: qemu capabilities object
+ * @def: domain definition object
  * @size: size of the memory device in kibibytes
  * @pagesize: size of the requested memory page in KiB, 0 for default
  * @guestNode: NUMA node in the guest that the memory object will be attached
  *             to, or -1 if NUMA is not used in the guest
- * @hostNodes: map of host nodes to alloc the memory in, NULL for default
- * @autoNodeset: fallback nodeset in case of automatic numa placement
- * @def: domain definition object
- * @qemuCaps: qemu capabilities object
- * @cfg: qemu driver config object
- * @aliasPrefix: prefix string of the alias (to allow for multiple frontents)
- * @id: index of the device (to construct the alias)
- * @backendStr: returns the object string
+ * @userNodeset: user requested map of host nodes to alloc the memory on, NULL
+ *               for default
+ * @autoNodeset: fallback nodeset in case of automatic NUMA placement
+ * @force: forcibly use one of the backends
  *
- * Formats the configuration string for the memory device backend according
- * to the configuration. @pagesize and @hostNodes can be used to override the
- * default source configuration, both are optional.
+ * Creates a configuration object that represents memory backend of given guest
+ * NUMA node (domain @def and @guestNode) of size @size.  @pagesize can be used
+ * to override configured size of hugepages.  Use @userNodeset and @autoNodeset
+ * to fine tune the placement of the memory on the host NUMA nodes.
  *
- * Returns 0 on success, 1 if only the implicit memory-device-ram with no
- * other configuration was used (to detect legacy configurations). Returns
- * -1 in case of an error.
+ * By default, if no memory-backend-* object is necessary to fulfil the guest
+ * configuration value of 1 is returned. This behaviour can be suppressed by
+ * setting @force to true in which case 0 would be returned.
+ *
+ * Then, if one of the two memory-backend-* should be used, the @qemuCaps is
+ * consulted to check if qemu does support it.
+ *
+ * Returns: 0 on success,
+ *          1 on success and if there's no need to use memory-backend-*
+ *         -1 on error.
  */
 int
-qemuBuildMemoryBackendStr(unsigned long long size,
-                          unsigned long long pagesize,
+qemuBuildMemoryBackendStr(virJSONValuePtr *backendProps,
+                          const char **backendType,
+                          virQEMUDriverConfigPtr cfg,
+                          virQEMUCapsPtr qemuCaps,
+                          virDomainDefPtr def,
                           int guestNode,
+                          unsigned long long size,
+                          unsigned long long pagesize,
                           virBitmapPtr userNodeset,
                           virBitmapPtr autoNodeset,
-                          virDomainDefPtr def,
-                          virQEMUCapsPtr qemuCaps,
-                          virQEMUDriverConfigPtr cfg,
-                          const char **backendType,
-                          virJSONValuePtr *backendProps,
                           bool force)
 {
     virDomainHugePagePtr master_hugepage = NULL;
@@ -3327,9 +3336,9 @@ qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
     if (virAsprintf(&alias, "ram-node%zu", cell) < 0)
         goto cleanup;
 
-    if ((rc = qemuBuildMemoryBackendStr(memsize, 0, cell, NULL, auto_nodeset,
-                                        def, qemuCaps, cfg, &backendType,
-                                        &props, false)) < 0)
+    if ((rc = qemuBuildMemoryBackendStr(&props, &backendType, cfg, qemuCaps,
+                                        def, cell, memsize, 0, NULL,
+                                        auto_nodeset, false)) < 0)
         goto cleanup;
 
     if (!(*backendStr = virQEMUBuildObjectCommandlineFromJSON(backendType,
@@ -3368,10 +3377,9 @@ qemuBuildMemoryDimmBackendStr(virDomainMemoryDefPtr mem,
     if (virAsprintf(&alias, "mem%s", mem->info.alias) < 0)
         goto cleanup;
 
-    if (qemuBuildMemoryBackendStr(mem->size, mem->pagesize,
-                                  mem->targetNode, mem->sourceNodes, auto_nodeset,
-                                  def, qemuCaps, cfg,
-                                  &backendType, &props, true) < 0)
+    if (qemuBuildMemoryBackendStr(&props, &backendType, cfg, qemuCaps, def,
+                                  mem->targetNode, mem->size, mem->pagesize,
+                                  mem->sourceNodes, auto_nodeset, true) < 0)
         goto cleanup;
 
     ret = virQEMUBuildObjectCommandlineFromJSON(backendType, alias, props);
