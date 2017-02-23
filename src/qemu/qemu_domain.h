@@ -859,4 +859,7 @@ char *qemuDomainDiskBackingStoreGetName(virDomainDiskDefPtr disk,
                                         virStorageSourcePtr src,
                                         unsigned int idx);
 
+virStorageSourcePtr qemuDomainGetStorageSourceByDevstr(const char *devstr,
+                                                       virDomainDefPtr def);
+
 #endif /* __QEMU_DOMAIN_H__ */
