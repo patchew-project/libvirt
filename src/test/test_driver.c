@@ -699,7 +699,7 @@ static char *testBuildFilename(const char *relativeTo,
             VIR_FREE(absFile);
             return NULL;
         }
-        strcat(absFile, filename);
+        ignore_value(VIR_STRCAT_INPLACE(absFile, filename));
         return absFile;
     } else {
         ignore_value(VIR_STRDUP(ret, filename));

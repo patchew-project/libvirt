@@ -201,11 +201,11 @@ virStorageBackendLogicalParseVolExtents(virStorageVolDefPtr vol,
     /* Allocate space for 'nextents' regex_unit strings plus a comma for each */
     if (VIR_ALLOC_N(regex, nextents * (strlen(regex_unit) + 1) + 1) < 0)
         goto cleanup;
-    strcat(regex, regex_unit);
+    VIR_STRCAT_INPLACE(regex, regex_unit);
     for (i = 1; i < nextents; i++) {
         /* "," is the separator of "devices" field */
-        strcat(regex, ",");
-        strcat(regex, regex_unit);
+        VIR_STRCAT_INPLACE(regex, ",");
+        VIR_STRCAT_INPLACE(regex, regex_unit);
     }
 
     if (VIR_ALLOC(reg) < 0)

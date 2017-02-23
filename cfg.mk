@@ -390,6 +390,11 @@ sc_prohibit_strdup:
 	halt='use VIR_STRDUP, not strdup'				\
 	  $(_sc_search_regexp)
 
+sc_prohibit_strcat:
+	@prohibit='\<strn?cat\> *\('					\
+	halt='use VIR_STRCAT, not strcat'				\
+	  $(_sc_search_regexp)
+
 # Prefer virSetUIDGID.
 sc_prohibit_setuid:
 	@prohibit='\<set(re)?[ug]id\> *\('				\
@@ -994,12 +999,6 @@ sc_prohibit_not_streq:
 	halt='Use STRNEQ instead of !STREQ and STREQ instead of !STRNEQ'	\
 	  $(_sc_search_regexp)
 
-sc_prohibit_verbose_strcat:
-	@prohibit='strncat\([^,]*,\s+([^,]*),\s+strlen\(\1\)\)'     \
-	in_vc_files='\.[ch]$$'                                      \
-	halt='Use strcat(a, b) instead of strncat(a, b, strlen(b))' \
-	  $(_sc_search_regexp)
-
 # Ensure that each .c file containing a "main" function also
 # calls virGettextInitialize
 sc_gettext_init:
@@ -1133,6 +1132,9 @@ exclude_file_name_regexp--sc_prohibit_asprintf = \
 
 exclude_file_name_regexp--sc_prohibit_strdup = \
   ^(docs/|examples/|src/util/virstring\.c|tests/vir(netserverclient|cgroup)mock.c$$)
+
+exclude_file_name_regexp--sc_prohibit_strcat = \
+  ^(docs/|src/util/virstring\.c|tests/virstringtest\.c)$$
 
 exclude_file_name_regexp--sc_prohibit_close = \
   (\.p[yl]$$|\.spec\.in$$|^docs/|^(src/util/virfile\.c|src/libvirt-stream\.c|tests/vir.+mock\.c)$$)

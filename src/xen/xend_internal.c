@@ -1824,7 +1824,7 @@ xenDaemonDomainPinVcpu(virConnectPtr conn,
     for (i = 0; i < maplen; i++) for (j = 0; j < 8; j++)
      if (cpumap[i] & (1 << j)) {
         snprintf(buf, sizeof(buf), "%zu,", (8 * i) + j);
-        strcat(mapstr, buf);
+        VIR_STRCAT_INPLACE(mapstr, buf);
     }
     mapstr[strlen(mapstr) - 1] = 0;
 
