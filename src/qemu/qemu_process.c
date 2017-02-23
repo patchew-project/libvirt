@@ -6738,6 +6738,7 @@ qemuProcessRefreshDisks(virQEMUDriverPtr driver,
         /* fill in additional data */
         diskpriv->removable = info->removable;
         diskpriv->tray = info->tray;
+        VIR_STEAL_PTR(disk->src->nodeName, info->nodename);
     }
 
     ret = 0;
