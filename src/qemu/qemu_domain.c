@@ -766,7 +766,7 @@ qemuDomainSecretAESClear(qemuDomainSecretAES secret)
 }
 
 
-static void
+void
 qemuDomainSecretInfoFree(qemuDomainSecretInfoPtr *secinfo)
 {
     if (!*secinfo)
@@ -1844,6 +1844,9 @@ qemuDomainObjPrivateXMLFormat(virBufferPtr buf,
     virBufferEscapeString(buf, "<channelTargetDir path='%s'/>\n",
                           priv->channelTargetDir);
 
+    if (priv->migrateTLS)
+        virBufferAddLit(buf, "<migrateTLS/>\n");
+
     return 0;
 }
 
@@ -2111,6 +2114,8 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
 
     if (qemuDomainSetPrivatePathsOld(driver, vm) < 0)
         goto error;
+
+    priv->migrateTLS = virXPathBoolean("boolean(./migrateTLS)", ctxt) == 1;
 
     return 0;
 

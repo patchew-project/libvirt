@@ -287,6 +287,7 @@ struct _qemuDomainObjPrivate {
     /* for migration's using TLS with a secret (not to be saved in our */
     /* private XML). */
     qemuDomainSecretInfoPtr migSecinfo;
+    bool migrateTLS;
 };
 
 # define QEMU_DOMAIN_PRIVATE(vm)	\
@@ -733,6 +734,9 @@ int qemuDomainWriteMasterKeyFile(virQEMUDriverPtr driver,
 int qemuDomainMasterKeyCreate(virDomainObjPtr vm);
 
 void qemuDomainMasterKeyRemove(qemuDomainObjPrivatePtr priv);
+
+void qemuDomainSecretInfoFree(qemuDomainSecretInfoPtr *secinfo)
+    ATTRIBUTE_NONNULL(1);
 
 void qemuDomainSecretDiskDestroy(virDomainDiskDefPtr disk)
     ATTRIBUTE_NONNULL(1);
