@@ -1183,10 +1183,8 @@ libxlDomainSuspend(virDomainPtr dom)
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s", _("Domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto endjob;
-    }
 
     if (virDomainObjGetState(vm, NULL) != VIR_DOMAIN_PAUSED) {
         if (libxl_domain_pause(cfg->ctx, vm->def->id) != 0) {
@@ -1239,10 +1237,8 @@ libxlDomainResume(virDomainPtr dom)
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s", _("Domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto endjob;
-    }
 
     if (virDomainObjGetState(vm, NULL) == VIR_DOMAIN_PAUSED) {
         if (libxl_domain_unpause(cfg->ctx, vm->def->id) != 0) {
@@ -1297,11 +1293,8 @@ libxlDomainShutdownFlags(virDomainPtr dom, unsigned int flags)
     if (virDomainShutdownFlagsEnsureACL(dom->conn, vm->def, flags) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("Domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto cleanup;
-    }
 
     if (flags & VIR_DOMAIN_SHUTDOWN_PARAVIRT) {
         ret = libxl_domain_shutdown(cfg->ctx, vm->def->id);
@@ -1364,11 +1357,8 @@ libxlDomainReboot(virDomainPtr dom, unsigned int flags)
     if (virDomainRebootEnsureACL(dom->conn, vm->def, flags) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("Domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto cleanup;
-    }
 
     if (flags & VIR_DOMAIN_REBOOT_PARAVIRT) {
         ret = libxl_domain_reboot(cfg->ctx, vm->def->id);
@@ -1411,11 +1401,8 @@ libxlDomainDestroyFlags(virDomainPtr dom,
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("Domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto endjob;
-    }
 
     if (libxlDomainDestroyInternal(driver, vm) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -1820,10 +1807,8 @@ libxlDomainSaveFlags(virDomainPtr dom, const char *to, const char *dxml,
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s", _("Domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto endjob;
-    }
 
     if (libxlDoDomainSave(driver, vm, to) < 0)
         goto endjob;
@@ -1946,10 +1931,8 @@ libxlDomainCoreDump(virDomainPtr dom, const char *to, unsigned int flags)
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s", _("Domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto endjob;
-    }
 
     if (!(flags & VIR_DUMP_LIVE) &&
         virDomainObjGetState(vm, NULL) == VIR_DOMAIN_RUNNING) {
@@ -2043,10 +2026,9 @@ libxlDomainManagedSave(virDomainPtr dom, unsigned int flags)
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s", _("Domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto endjob;
-    }
+
     if (!vm->persistent) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("cannot do managed save for transient domain"));
@@ -2518,10 +2500,8 @@ libxlDomainGetVcpus(virDomainPtr dom, virVcpuInfoPtr info, int maxinfo,
     if (virDomainGetVcpusEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s", _("Domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto cleanup;
-    }
 
     if ((vcpuinfo = libxl_list_vcpu(cfg->ctx, vm->def->id, &maxcpu,
                                     &hostcpus)) == NULL) {
@@ -2755,11 +2735,8 @@ libxlDomainCreateWithFlags(virDomainPtr dom,
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("Domain is already running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto endjob;
-    }
 
     ret = libxlDomainStartNew(driver, vm,
                               (flags & VIR_DOMAIN_START_PAUSED) != 0);
@@ -4498,10 +4475,8 @@ libxlDomainGetSchedulerType(virDomainPtr dom, int *nparams)
     if (virDomainGetSchedulerTypeEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s", _("Domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto cleanup;
-    }
 
     sched_id = libxl_get_scheduler(cfg->ctx);
 
@@ -4562,11 +4537,8 @@ libxlDomainGetSchedulerParametersFlags(virDomainPtr dom,
     if (virDomainGetSchedulerParametersFlagsEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("Domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto cleanup;
-    }
 
     sched_id = libxl_get_scheduler(cfg->ctx);
 
@@ -4643,10 +4615,8 @@ libxlDomainSetSchedulerParametersFlags(virDomainPtr dom,
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s", _("Domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto endjob;
-    }
 
     sched_id = libxl_get_scheduler(cfg->ctx);
 
@@ -4712,11 +4682,8 @@ libxlDomainOpenConsole(virDomainPtr dom,
     if (virDomainOpenConsoleEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto cleanup;
-    }
 
     priv = vm->privateData;
     if (dev_name) {
@@ -4812,11 +4779,8 @@ libxlDomainGetNumaParameters(virDomainPtr dom,
     if (virDomainGetNumaParametersEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("Domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto cleanup;
-    }
 
     if ((*nparams) == 0) {
         *nparams = LIBXL_NUMA_NPARAM;
@@ -4983,11 +4947,8 @@ libxlDomainInterfaceStats(virDomainPtr dom,
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto endjob;
-    }
 
     /* Check the path is one of the domain's network interfaces. */
     for (i = 0; i < vm->def->nnets; i++) {
@@ -5111,11 +5072,8 @@ libxlDomainGetCPUStats(virDomainPtr dom,
     if (virDomainGetCPUStatsEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto cleanup;
-    }
 
     if (start_cpu == -1)
         ret = libxlDomainGetTotalCPUStats(driver, vm, params, nparams);
@@ -5164,11 +5122,8 @@ libxlDomainMemoryStats(virDomainPtr dom,
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto endjob;
-    }
 
     if (libxl_domain_info(cfg->ctx, &d_info, vm->def->id) != 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -5528,11 +5483,8 @@ libxlDomainBlockStats(virDomainPtr dom,
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto endjob;
-    }
 
     memset(&blkstats, 0, sizeof(libxlBlockStats));
     if ((ret = libxlDomainBlockStatsGather(vm, path, &blkstats)) < 0)
@@ -5581,11 +5533,8 @@ libxlDomainBlockStatsFlags(virDomainPtr dom,
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto endjob;
-    }
 
     /* return count of supported stats */
     if (*nparams == 0) {
@@ -5922,9 +5871,7 @@ libxlDomainMigrateBegin3Params(virDomainPtr domain,
         return NULL;
     }
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0) {
         virObjectUnlock(vm);
         return NULL;
     }
@@ -6330,11 +6277,8 @@ libxlDomainInterfaceAddresses(virDomainPtr dom,
     if (virDomainInterfaceAddressesEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
+    if (virDomainObjCheckIsActive(vm) < 0)
         goto cleanup;
-    }
 
     switch (source) {
     case VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE:

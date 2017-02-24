@@ -1,0 +1,52 @@
+diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
+index 1bc72a4..10a69af 100644
+--- a/src/conf/domain_conf.c
++++ b/src/conf/domain_conf.c
+@@ -2995,6 +2995,19 @@ virDomainObjWait(virDomainObjPtr vm)
+ }
+ 
+ 
++int
++virDomainObjCheckIsActive(virDomainObjPtr vm)
++{
++    if (!virDomainObjIsActive(vm)) {
++        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
++                       _("domain is not running"));
++        return -1;
++    }
++
++    return 0;
++}
++
++
+ /**
+  * Waits for domain condition to be triggered for a specific period of time.
+  *
+diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+index dd79206..b6c7826 100644
+--- a/src/conf/domain_conf.h
++++ b/src/conf/domain_conf.h
+@@ -2559,6 +2559,7 @@ bool virDomainObjTaint(virDomainObjPtr obj,
+ 
+ void virDomainObjBroadcast(virDomainObjPtr vm);
+ int virDomainObjWait(virDomainObjPtr vm);
++int virDomainObjCheckIsActive(virDomainObjPtr vm);
+ int virDomainObjWaitUntil(virDomainObjPtr vm,
+                           unsigned long long whenms);
+ 
+diff --git a/src/libxl/libxl_driver.c b/src/libxl/libxl_driver.c
+index 74cb05a..3a487ac 100644
+--- a/src/libxl/libxl_driver.c
++++ b/src/libxl/libxl_driver.c
+@@ -1183,10 +1183,8 @@ libxlDomainSuspend(virDomainPtr dom)
+     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0)
+         goto cleanup;
+ 
+-    if (!virDomainObjIsActive(vm)) {
+-        virReportError(VIR_ERR_OPERATION_INVALID, "%s", _("Domain is not running"));
++    if (virDomainObjCheckIsActive(vm) < 0)
+         goto endjob;
+-    }
+ 
+     if (virDomainObjGetState(vm, NULL) != VIR_DOMAIN_PAUSED) {
+         if (libxl_domain_pause(cfg->ctx, vm->def->id) != 0) {
