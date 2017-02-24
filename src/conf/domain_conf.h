@@ -2559,6 +2559,7 @@ bool virDomainObjTaint(virDomainObjPtr obj,
 
 void virDomainObjBroadcast(virDomainObjPtr vm);
 int virDomainObjWait(virDomainObjPtr vm);
+int virDomainObjCheckIsActive(virDomainObjPtr vm);
 int virDomainObjWaitUntil(virDomainObjPtr vm,
                           unsigned long long whenms);
 
