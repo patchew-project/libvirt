@@ -142,6 +142,7 @@ virt_host_validate_SOURCES = \
 		virt-host-validate-common.c virt-host-validate-common.h \
 		virt-host-validate-qemu.c virt-host-validate-qemu.h \
 		virt-host-validate-lxc.c virt-host-validate-lxc.h \
+		virt-host-validate-bhyve.c virt-host-validate-bhyve.h \
 		$(NULL)
 
 virt_host_validate_LDFLAGS = \
