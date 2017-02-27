@@ -725,35 +725,28 @@ libxlMakeDomainCapabilities(virDomainCapsPtr domCaps,
     return 0;
 }
 
-#define LIBXL_QEMU_DM_STR  "Options specific to the Xen version:"
 
+#define LIBXL_QEMU_DM_STR  "qemu-dm"
+
+/*
+ * libxl exposes a setting for specifying a device model version. The default
+ * is LIBXL_DEVICE_MODEL_VERSION_QEMU_XEN (aka upstream qemu). But users can
+ * specify LIBXL_DEVICE_MODEL_VERSION_QEMU_XEN_TRADITIONAL if they are using
+ * the old, forked qemu (aka qemu-dm). libvirt only supports specifying an
+ * emulator. This function makes a poor attempt at determining the device
+ * model version based on the emulator name. If the emulator name contains
+ * "qemu-dm", it is assumed to be a
+ * LIBXL_DEVICE_MODEL_VERSION_QEMU_XEN_TRADITIONAL emulator.
+ */
 int
 libxlDomainGetEmulatorType(const virDomainDef *def)
 {
-    int ret = LIBXL_DEVICE_MODEL_VERSION_QEMU_XEN;
-    virCommandPtr cmd = NULL;
-    char *output = NULL;
-
     if (def->os.type == VIR_DOMAIN_OSTYPE_HVM) {
         if (def->emulator) {
-            if (!virFileExists(def->emulator))
-                goto cleanup;
-
-            cmd = virCommandNew(def->emulator);
-
-            virCommandAddArgList(cmd, "-help", NULL);
-            virCommandSetOutputBuffer(cmd, &output);
-
-            if (virCommandRun(cmd, NULL) < 0)
-                goto cleanup;
-
-            if (strstr(output, LIBXL_QEMU_DM_STR))
-                ret = LIBXL_DEVICE_MODEL_VERSION_QEMU_XEN_TRADITIONAL;
+            if (strstr(def->emulator, LIBXL_QEMU_DM_STR))
+                return LIBXL_DEVICE_MODEL_VERSION_QEMU_XEN_TRADITIONAL;
         }
     }
 
- cleanup:
-    VIR_FREE(output);
-    virCommandFree(cmd);
-    return ret;
+    return LIBXL_DEVICE_MODEL_VERSION_QEMU_XEN;
 }
