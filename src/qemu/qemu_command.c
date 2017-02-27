@@ -3090,6 +3090,7 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
  *               for default
  * @autoNodeset: fallback nodeset in case of automatic NUMA placement
  * @memPathReq: request memory-backend-file with specific mem-path
+ * @memAccessReq: specifically requested memAccess mode
  * @force: forcibly use one of the backends
  *
  * Creates a configuration object that represents memory backend of given guest
@@ -3122,6 +3123,7 @@ qemuBuildMemoryBackendStr(virJSONValuePtr *backendProps,
                           virBitmapPtr userNodeset,
                           virBitmapPtr autoNodeset,
                           const char *memPathReq,
+                          virDomainMemoryAccess memAccessReq,
                           bool force)
 {
     virDomainHugePagePtr master_hugepage = NULL;
@@ -3153,6 +3155,9 @@ qemuBuildMemoryBackendStr(virJSONValuePtr *backendProps,
 
         memAccess = virDomainNumaGetNodeMemoryAccessMode(def->numa, guestNode);
     }
+
+    if (memAccessReq)
+        memAccess = memAccessReq;
 
     if (virDomainNumatuneGetMode(def->numa, guestNode, &mode) < 0 &&
         virDomainNumatuneGetMode(def->numa, -1, &mode) < 0)
@@ -3352,7 +3357,9 @@ qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
 
     if ((rc = qemuBuildMemoryBackendStr(&props, &backendType, cfg, qemuCaps,
                                         def, cell, memsize, 0, NULL,
-                                        auto_nodeset, NULL, false)) < 0)
+                                        auto_nodeset, NULL,
+                                        VIR_DOMAIN_MEMORY_ACCESS_DEFAULT,
+                                        false)) < 0)
         goto cleanup;
 
     if (!(*backendStr = virQEMUBuildObjectCommandlineFromJSON(backendType,
@@ -3394,7 +3401,7 @@ qemuBuildMemoryDimmBackendStr(virDomainMemoryDefPtr mem,
     if (qemuBuildMemoryBackendStr(&props, &backendType, cfg, qemuCaps, def,
                                   mem->targetNode, mem->size, mem->pagesize,
                                   mem->sourceNodes, auto_nodeset, mem->path,
-                                  true) < 0)
+                                  mem->access, true) < 0)
         goto cleanup;
 
     ret = virQEMUBuildObjectCommandlineFromJSON(backendType, alias, props);

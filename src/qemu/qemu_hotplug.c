@@ -2219,7 +2219,7 @@ qemuDomainAttachMemory(virQEMUDriverPtr driver,
     if (qemuBuildMemoryBackendStr(&props, &backendType, cfg, priv->qemuCaps,
                                   vm->def, mem->targetNode, mem->size,
                                   mem->pagesize, mem->sourceNodes, NULL,
-                                  mem->path, true) < 0)
+                                  mem->path, mem->access, true) < 0)
         goto cleanup;
 
     if (virDomainMemoryInsert(vm->def, mem) < 0) {
