@@ -3089,6 +3089,7 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
  * @userNodeset: user requested map of host nodes to alloc the memory on, NULL
  *               for default
  * @autoNodeset: fallback nodeset in case of automatic NUMA placement
+ * @memPathReq: request memory-backend-file with specific mem-path
  * @force: forcibly use one of the backends
  *
  * Creates a configuration object that represents memory backend of given guest
@@ -3102,6 +3103,8 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
  *
  * Then, if one of the two memory-backend-* should be used, the @qemuCaps is
  * consulted to check if qemu does support it.
+ *
+ * If @memPathReq is non-NULL, memory-backend-file is used with passed path.
  *
  * Returns: 0 on success,
  *          1 on success and if there's no need to use memory-backend-*
@@ -3118,6 +3121,7 @@ qemuBuildMemoryBackendStr(virJSONValuePtr *backendProps,
                           unsigned long long pagesize,
                           virBitmapPtr userNodeset,
                           virBitmapPtr autoNodeset,
+                          const char *memPathReq,
                           bool force)
 {
     virDomainHugePagePtr master_hugepage = NULL;
@@ -3126,7 +3130,8 @@ qemuBuildMemoryBackendStr(virJSONValuePtr *backendProps,
     const long system_page_size = virGetSystemPageSizeKB();
     virDomainMemoryAccess memAccess = VIR_DOMAIN_MEMORY_ACCESS_DEFAULT;
     size_t i;
-    char *mem_path = NULL;
+    char *memPathActual = NULL;
+    bool prealloc = false;
     virBitmapPtr nodemask = NULL;
     int ret = -1;
     virJSONValuePtr props = NULL;
@@ -3206,26 +3211,35 @@ qemuBuildMemoryBackendStr(virJSONValuePtr *backendProps,
     if (!(props = virJSONValueNewObject()))
         return -1;
 
-    if (pagesize || def->mem.source == VIR_DOMAIN_MEMORY_SOURCE_FILE) {
+    if (pagesize || memPathReq ||
+        def->mem.source == VIR_DOMAIN_MEMORY_SOURCE_FILE) {
         *backendType = "memory-backend-file";
 
-        if (def->mem.source == VIR_DOMAIN_MEMORY_SOURCE_FILE) {
+        if (memPathReq) {
+            if (VIR_STRDUP(memPathActual, memPathReq) < 0)
+                goto cleanup;
+            prealloc = true;
+        } else if (def->mem.source == VIR_DOMAIN_MEMORY_SOURCE_FILE) {
             /* we can have both pagesize and mem source, then check mem source first */
+            if (VIR_STRDUP(memPathActual, cfg->memoryBackingDir) < 0)
+                goto cleanup;
             force = true;
-            if (virJSONValueObjectAdd(props,
-                                      "s:mem-path", cfg->memoryBackingDir,
-                                      NULL) < 0)
-                goto cleanup;
         } else {
-            if (qemuGetDomainHupageMemPath(def, cfg, pagesize, &mem_path) < 0)
+            if (qemuGetDomainHupageMemPath(def, cfg, pagesize, &memPathActual) < 0)
                 goto cleanup;
-
-            if (virJSONValueObjectAdd(props,
-                                      "b:prealloc", true,
-                                      "s:mem-path", mem_path,
-                                      NULL) < 0)
-                goto cleanup;
+            prealloc = true;
         }
+
+        if (prealloc &&
+            virJSONValueObjectAdd(props,
+                                  "b:prealloc", true,
+                                  NULL) < 0)
+            goto cleanup;
+
+        if (virJSONValueObjectAdd(props,
+                                  "s:mem-path", memPathActual,
+                                  NULL) < 0)
+            goto cleanup;
 
         switch (memAccess) {
         case VIR_DOMAIN_MEMORY_ACCESS_SHARED:
@@ -3281,7 +3295,8 @@ qemuBuildMemoryBackendStr(virJSONValuePtr *backendProps,
     }
 
     /* If none of the following is requested... */
-    if (!needHugepage && !userNodeset && !memAccess && !nodeSpecified && !force) {
+    if (!needHugepage && !userNodeset &&
+        !memAccess && !nodeSpecified && !force && !memPathReq) {
         /* report back that using the new backend is not necessary
          * to achieve the desired configuration */
         ret = 1;
@@ -3309,8 +3324,7 @@ qemuBuildMemoryBackendStr(virJSONValuePtr *backendProps,
 
  cleanup:
     virJSONValueFree(props);
-    VIR_FREE(mem_path);
-
+    VIR_FREE(memPathActual);
     return ret;
 }
 
@@ -3338,7 +3352,7 @@ qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
 
     if ((rc = qemuBuildMemoryBackendStr(&props, &backendType, cfg, qemuCaps,
                                         def, cell, memsize, 0, NULL,
-                                        auto_nodeset, false)) < 0)
+                                        auto_nodeset, NULL, false)) < 0)
         goto cleanup;
 
     if (!(*backendStr = virQEMUBuildObjectCommandlineFromJSON(backendType,
@@ -3379,7 +3393,8 @@ qemuBuildMemoryDimmBackendStr(virDomainMemoryDefPtr mem,
 
     if (qemuBuildMemoryBackendStr(&props, &backendType, cfg, qemuCaps, def,
                                   mem->targetNode, mem->size, mem->pagesize,
-                                  mem->sourceNodes, auto_nodeset, true) < 0)
+                                  mem->sourceNodes, auto_nodeset, mem->path,
+                                  true) < 0)
         goto cleanup;
 
     ret = virQEMUBuildObjectCommandlineFromJSON(backendType, alias, props);
@@ -3396,6 +3411,7 @@ char *
 qemuBuildMemoryDeviceStr(virDomainMemoryDefPtr mem)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
+    const char *device;
 
     if (!mem->info.alias) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -3404,8 +3420,15 @@ qemuBuildMemoryDeviceStr(virDomainMemoryDefPtr mem)
     }
 
     switch ((virDomainMemoryModel) mem->model) {
+    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
     case VIR_DOMAIN_MEMORY_MODEL_DIMM:
-        virBufferAddLit(&buf, "pc-dimm,");
+
+        if (mem->model == VIR_DOMAIN_MEMORY_MODEL_DIMM)
+            device = "pc-dimm";
+        else
+            device = "nvdimm";
+
+        virBufferAsprintf(&buf, "%s,", device);
 
         if (mem->targetNode >= 0)
             virBufferAsprintf(&buf, "node=%d,", mem->targetNode);
@@ -3419,12 +3442,6 @@ qemuBuildMemoryDeviceStr(virDomainMemoryDefPtr mem)
                 virBufferAsprintf(&buf, ",addr=%llu", mem->info.addr.dimm.base);
         }
 
-        break;
-
-    case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
-        virReportError(VIR_ERR_NO_SUPPORT, "%s",
-                       _("nvdimm not supported yet"));
-        return NULL;
         break;
 
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
@@ -6976,6 +6993,7 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
     bool obsoleteAccel = false;
+    size_t i;
     int ret = -1;
 
     /* This should *never* be NULL, since we always provide
@@ -7011,6 +7029,15 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
                            _("key wrap support is not available "
                              "with this QEMU binary"));
             return -1;
+        }
+
+        for (i = 0; i < def->nmems; i++) {
+            if (def->mems[i]->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("nvdimm not is not available "
+                                 "with this QEMU binary"));
+                return -1;
+            }
         }
     } else {
         virTristateSwitch vmport = def->features[VIR_DOMAIN_FEATURE_VMPORT];
@@ -7128,6 +7155,18 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
                 virBufferAddLit(&buf, ",iommu=on");
                 break;
             case VIR_DOMAIN_IOMMU_MODEL_LAST:
+                break;
+            }
+        }
+
+        for (i = 0; i < def->nmems; i++) {
+            if (def->mems[i]->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM) {
+                if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_NVDIMM)) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                   _("nvdimm isn't supported by this QEMU binary"));
+                    goto cleanup;
+                }
+                virBufferAddLit(&buf, ",nvdimm=on");
                 break;
             }
         }
