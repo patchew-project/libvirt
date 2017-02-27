@@ -435,20 +435,6 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
             b_info->u.hvm.bios = LIBXL_BIOS_TYPE_OVMF;
 
         if (def->emulator) {
-            if (!virFileExists(def->emulator)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                               _("emulator '%s' not found"),
-                               def->emulator);
-                return -1;
-            }
-
-            if (!virFileIsExecutable(def->emulator)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                               _("emulator '%s' is not executable"),
-                               def->emulator);
-                return -1;
-            }
-
             VIR_FREE(b_info->device_model);
             if (VIR_STRDUP(b_info->device_model, def->emulator) < 0)
                 return -1;
