@@ -3208,7 +3208,10 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
                 goto cleanup;
             }
 
-            if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI &&
+            /* pSeries guests can have multiple pci-root controllers,
+             * but other machine types only support a single one */
+            if (!qemuDomainMachineIsPSeries(def) &&
+                cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI &&
                 (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT ||
                  cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT) &&
                 cont->idx != 0) {
