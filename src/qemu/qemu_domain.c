@@ -3207,6 +3207,16 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
                                virDomainNumaGetNodeCount(def->numa));
                 goto cleanup;
             }
+
+            if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI &&
+                (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT ||
+                 cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT) &&
+                cont->idx != 0) {
+                virReportError(VIR_ERR_XML_ERROR, "%s",
+                               _("pci-root and pcie-root controllers "
+                                 "should have index 0"));
+                goto cleanup;
+            }
         } else if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
                    cont->model == -1) {
             /* Pick a suitable default model for the USB controller if none
