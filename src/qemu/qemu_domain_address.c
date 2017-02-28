@@ -1845,13 +1845,15 @@ qemuDomainSupportsPCI(virDomainDefPtr def,
 
 
 static void
-qemuDomainPCIControllerSetDefaultModelName(virDomainControllerDefPtr cont)
+qemuDomainPCIControllerSetDefaultModelName(virDomainControllerDefPtr cont,
+                                           virDomainDefPtr def)
 {
     int *modelName = &cont->opts.pciopts.modelName;
 
     /* make sure it's not already set */
     if (*modelName != VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_NONE)
         return;
+
     switch ((virDomainControllerModelPCI)cont->model) {
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_BRIDGE:
         *modelName = VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_PCI_BRIDGE;
@@ -1875,10 +1877,36 @@ qemuDomainPCIControllerSetDefaultModelName(virDomainControllerDefPtr cont)
         *modelName = VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_PXB_PCIE;
         break;
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT:
+        if (qemuDomainMachineIsPSeries(def))
+            *modelName = VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_SPAPR_PCI_HOST_BRIDGE;
+        break;
     case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
         break;
     }
+}
+
+
+static int
+qemuDomainAddressFindNewIndex(virDomainDefPtr def)
+{
+    int ret = -1;
+    size_t i;
+
+    for (i = 0; i < def->ncontrollers; i++) {
+        virDomainControllerDefPtr cont = def->controllers[i];
+
+        if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI) {
+            if (cont->opts.pciopts.idx > ret)
+                ret = cont->opts.pciopts.idx;
+        }
+    }
+
+    ret++;
+    if (ret < 0 || ret > 31)
+        ret = -1;
+
+    return ret;
 }
 
 
@@ -2142,7 +2170,7 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
              * device in qemu) for any controller that doesn't yet
              * have it set.
              */
-            qemuDomainPCIControllerSetDefaultModelName(cont);
+            qemuDomainPCIControllerSetDefaultModelName(cont, def);
 
             /* set defaults for any other auto-generated config
              * options for this controller that haven't been
@@ -2179,9 +2207,22 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
                     goto cleanup;
                 }
                 break;
+            case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT:
+                if (!qemuDomainMachineIsPSeries(def))
+                    break;
+                if (options->idx == -1)
+                    options->idx = qemuDomainAddressFindNewIndex(def);
+                if (options->idx == -1) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("No valid index is available to "
+                                     "auto-assign to bus %d. Must be "
+                                     "manually assigned"),
+                                   addr->bus);
+                    goto cleanup;
+                }
+                break;
             case VIR_DOMAIN_CONTROLLER_MODEL_DMI_TO_PCI_BRIDGE:
             case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_UPSTREAM_PORT:
-            case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT:
             case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT:
             case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
                 break;
