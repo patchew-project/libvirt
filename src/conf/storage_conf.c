@@ -100,10 +100,6 @@ VIR_ENUM_IMPL(virStoragePartedFs,
               "ext2", "ext2",
               "extended")
 
-VIR_ENUM_IMPL(virStoragePoolSourceAdapter,
-              VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_LAST,
-              "default", "scsi_host", "fc_host")
-
 typedef const char *(*virStorageVolFormatToString)(int format);
 typedef int (*virStorageVolFormatFromString)(const char *format);
 
@@ -342,21 +338,6 @@ virStorageVolDefFree(virStorageVolDefPtr def)
     VIR_FREE(def);
 }
 
-static void
-virStoragePoolSourceAdapterClear(virStoragePoolSourceAdapterPtr adapter)
-{
-    if (adapter->type == VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_FC_HOST) {
-        VIR_FREE(adapter->data.fchost.wwnn);
-        VIR_FREE(adapter->data.fchost.wwpn);
-        VIR_FREE(adapter->data.fchost.parent);
-        VIR_FREE(adapter->data.fchost.parent_wwnn);
-        VIR_FREE(adapter->data.fchost.parent_wwpn);
-        VIR_FREE(adapter->data.fchost.parent_fabric_wwn);
-    } else if (adapter->type ==
-               VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST) {
-        VIR_FREE(adapter->data.scsi_host.name);
-    }
-}
 
 void
 virStoragePoolSourceDeviceClear(virStoragePoolSourceDevicePtr dev)
@@ -382,7 +363,7 @@ virStoragePoolSourceClear(virStoragePoolSourcePtr source)
     VIR_FREE(source->devices);
     VIR_FREE(source->dir);
     VIR_FREE(source->name);
-    virStoragePoolSourceAdapterClear(&source->adapter);
+    virStorageAdapterClear(&source->adapter);
     VIR_FREE(source->initiator.iqn);
     virStorageAuthDefFree(source->auth);
     VIR_FREE(source->vendor);
@@ -462,6 +443,7 @@ virStoragePoolObjRemove(virStoragePoolObjListPtr pools,
     }
 }
 
+
 static int
 virStoragePoolDefParseSource(xmlXPathContextPtr ctxt,
                              virStoragePoolSourcePtr source,
@@ -470,14 +452,13 @@ virStoragePoolDefParseSource(xmlXPathContextPtr ctxt,
 {
     int ret = -1;
     xmlNodePtr relnode, authnode, *nodeset = NULL;
+    xmlNodePtr adapternode;
     int nsource;
     size_t i;
     virStoragePoolOptionsPtr options;
     virStorageAuthDefPtr authdef = NULL;
     char *name = NULL;
     char *port = NULL;
-    char *adapter_type = NULL;
-    char *managed = NULL;
     int n;
 
     relnode = ctxt->node;
@@ -583,109 +564,9 @@ virStoragePoolDefParseSource(xmlXPathContextPtr ctxt,
         VIR_STRDUP(source->dir, "/") < 0)
         goto cleanup;
 
-    if ((adapter_type = virXPathString("string(./adapter/@type)", ctxt))) {
-        if ((source->adapter.type =
-             virStoragePoolSourceAdapterTypeFromString(adapter_type)) <= 0) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("Unknown pool adapter type '%s'"),
-                           adapter_type);
+    if ((adapternode = virXPathNode("./adapter", ctxt))) {
+        if (virStorageAdapterParseXML(&source->adapter, adapternode, ctxt) < 0)
             goto cleanup;
-        }
-
-        if (source->adapter.type ==
-            VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_FC_HOST) {
-            source->adapter.data.fchost.parent =
-                virXPathString("string(./adapter/@parent)", ctxt);
-            managed = virXPathString("string(./adapter/@managed)", ctxt);
-            if (managed) {
-                source->adapter.data.fchost.managed =
-                    virTristateBoolTypeFromString(managed);
-                if (source->adapter.data.fchost.managed < 0) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                   _("unknown fc_host managed setting '%s'"),
-                                   managed);
-                    goto cleanup;
-                }
-            }
-
-            source->adapter.data.fchost.parent_wwnn =
-                virXPathString("string(./adapter/@parent_wwnn)", ctxt);
-            source->adapter.data.fchost.parent_wwpn =
-                virXPathString("string(./adapter/@parent_wwpn)", ctxt);
-            source->adapter.data.fchost.parent_fabric_wwn =
-                virXPathString("string(./adapter/@parent_fabric_wwn)", ctxt);
-
-            source->adapter.data.fchost.wwpn =
-                virXPathString("string(./adapter/@wwpn)", ctxt);
-            source->adapter.data.fchost.wwnn =
-                virXPathString("string(./adapter/@wwnn)", ctxt);
-        } else if (source->adapter.type ==
-                   VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST) {
-
-            source->adapter.data.scsi_host.name =
-                virXPathString("string(./adapter/@name)", ctxt);
-            if (virXPathNode("./adapter/parentaddr", ctxt)) {
-                xmlNodePtr addrnode = virXPathNode("./adapter/parentaddr/address",
-                                                   ctxt);
-                virPCIDeviceAddressPtr addr =
-                    &source->adapter.data.scsi_host.parentaddr;
-
-                if (!addrnode) {
-                    virReportError(VIR_ERR_XML_ERROR, "%s",
-                                   _("Missing scsi_host PCI address element"));
-                    goto cleanup;
-                }
-                source->adapter.data.scsi_host.has_parent = true;
-                if (virPCIDeviceAddressParseXML(addrnode, addr) < 0)
-                    goto cleanup;
-                if ((virXPathInt("string(./adapter/parentaddr/@unique_id)",
-                                 ctxt,
-                                 &source->adapter.data.scsi_host.unique_id) < 0) ||
-                    (source->adapter.data.scsi_host.unique_id < 0)) {
-                    virReportError(VIR_ERR_XML_ERROR, "%s",
-                                   _("Missing or invalid scsi adapter "
-                                     "'unique_id' value"));
-                    goto cleanup;
-                }
-            }
-        }
-    } else {
-        char *wwnn = NULL;
-        char *wwpn = NULL;
-        char *parent = NULL;
-
-        /* "type" was not specified in the XML, so we must verify that
-         * "wwnn", "wwpn", "parent", or "parentaddr" are also not in the
-         * XML. If any are found, then we cannot just use "name" alone".
-         */
-        wwnn = virXPathString("string(./adapter/@wwnn)", ctxt);
-        wwpn = virXPathString("string(./adapter/@wwpn)", ctxt);
-        parent = virXPathString("string(./adapter/@parent)", ctxt);
-
-        if (wwnn || wwpn || parent) {
-            VIR_FREE(wwnn);
-            VIR_FREE(wwpn);
-            VIR_FREE(parent);
-            virReportError(VIR_ERR_XML_ERROR, "%s",
-                           _("Use of 'wwnn', 'wwpn', and 'parent' attributes "
-                             "requires use of the adapter 'type'"));
-            goto cleanup;
-        }
-
-        if (virXPathNode("./adapter/parentaddr", ctxt)) {
-            virReportError(VIR_ERR_XML_ERROR, "%s",
-                           _("Use of 'parent' element requires use "
-                             "of the adapter 'type'"));
-            goto cleanup;
-        }
-
-        /* To keep back-compat, 'type' is not required to specify
-         * for scsi_host adapter.
-         */
-        if ((source->adapter.data.scsi_host.name =
-             virXPathString("string(./adapter/@name)", ctxt)))
-            source->adapter.type =
-                VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST;
     }
 
     if ((authnode = virXPathNode("./auth", ctxt))) {
@@ -711,8 +592,6 @@ virStoragePoolDefParseSource(xmlXPathContextPtr ctxt,
 
     VIR_FREE(port);
     VIR_FREE(nodeset);
-    VIR_FREE(adapter_type);
-    VIR_FREE(managed);
     virStorageAuthDefFree(authdef);
     return ret;
 }
@@ -928,37 +807,8 @@ virStoragePoolDefParseXML(xmlXPathContextPtr ctxt)
             goto error;
         }
 
-        if (ret->source.adapter.type ==
-            VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_FC_HOST) {
-            if (!ret->source.adapter.data.fchost.wwnn ||
-                !ret->source.adapter.data.fchost.wwpn) {
-                virReportError(VIR_ERR_XML_ERROR, "%s",
-                               _("'wwnn' and 'wwpn' must be specified for adapter "
-                                 "type 'fchost'"));
-                goto error;
-            }
-
-            if (!virValidateWWN(ret->source.adapter.data.fchost.wwnn) ||
-                !virValidateWWN(ret->source.adapter.data.fchost.wwpn))
-                goto error;
-        } else if (ret->source.adapter.type ==
-                   VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST) {
-            if (!ret->source.adapter.data.scsi_host.name &&
-                !ret->source.adapter.data.scsi_host.has_parent) {
-                virReportError(VIR_ERR_XML_ERROR, "%s",
-                               _("Either 'name' or 'parent' must be specified "
-                                 "for the 'scsi_host' adapter"));
-                goto error;
-            }
-
-            if (ret->source.adapter.data.scsi_host.name &&
-                ret->source.adapter.data.scsi_host.has_parent) {
-                virReportError(VIR_ERR_XML_ERROR, "%s",
-                               _("Both 'name' and 'parent' cannot be specified "
-                                 "for the 'scsi_host' adapter"));
-                goto error;
-            }
-        }
+        if (virStorageAdapterParseValidate(&ret->source.adapter) < 0)
+            goto error;
     }
 
     /* If DEVICE is the only source type, then its required */
@@ -1112,49 +962,10 @@ virStoragePoolSourceFormat(virBufferPtr buf,
     if (options->flags & VIR_STORAGE_POOL_SOURCE_DIR)
         virBufferEscapeString(buf, "<dir path='%s'/>\n", src->dir);
 
-    if ((options->flags & VIR_STORAGE_POOL_SOURCE_ADAPTER)) {
-        if (src->adapter.type == VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_FC_HOST ||
-            src->adapter.type == VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST)
-            virBufferAsprintf(buf, "<adapter type='%s'",
-                              virStoragePoolSourceAdapterTypeToString(src->adapter.type));
-
-        if (src->adapter.type == VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_FC_HOST) {
-            virBufferEscapeString(buf, " parent='%s'",
-                                  src->adapter.data.fchost.parent);
-            if (src->adapter.data.fchost.managed)
-                virBufferAsprintf(buf, " managed='%s'",
-                                  virTristateBoolTypeToString(src->adapter.data.fchost.managed));
-            virBufferEscapeString(buf, " parent_wwnn='%s'",
-                                  src->adapter.data.fchost.parent_wwnn);
-            virBufferEscapeString(buf, " parent_wwpn='%s'",
-                                  src->adapter.data.fchost.parent_wwpn);
-            virBufferEscapeString(buf, " parent_fabric_wwn='%s'",
-                                  src->adapter.data.fchost.parent_fabric_wwn);
-
-            virBufferAsprintf(buf, " wwnn='%s' wwpn='%s'/>\n",
-                              src->adapter.data.fchost.wwnn,
-                              src->adapter.data.fchost.wwpn);
-        } else if (src->adapter.type ==
-                   VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST) {
-            if (src->adapter.data.scsi_host.name) {
-                virBufferAsprintf(buf, " name='%s'/>\n",
-                                  src->adapter.data.scsi_host.name);
-            } else {
-                virPCIDeviceAddress addr;
-                virBufferAddLit(buf, ">\n");
-                virBufferAdjustIndent(buf, 2);
-                virBufferAsprintf(buf, "<parentaddr unique_id='%d'>\n",
-                                  src->adapter.data.scsi_host.unique_id);
-                virBufferAdjustIndent(buf, 2);
-                addr = src->adapter.data.scsi_host.parentaddr;
-                ignore_value(virPCIDeviceAddressFormat(buf, addr, false));
-                virBufferAdjustIndent(buf, -2);
-                virBufferAddLit(buf, "</parentaddr>\n");
-                virBufferAdjustIndent(buf, -2);
-                virBufferAddLit(buf, "</adapter>\n");
-            }
-        }
-    }
+    if ((options->flags & VIR_STORAGE_POOL_SOURCE_ADAPTER) &&
+        (src->adapter.type == VIR_STORAGE_ADAPTER_TYPE_FC_HOST ||
+         src->adapter.type == VIR_STORAGE_ADAPTER_TYPE_SCSI_HOST))
+        virStorageAdapterFormat(buf, &src->adapter);
 
     if (options->flags & VIR_STORAGE_POOL_SOURCE_NAME)
         virBufferEscapeString(buf, "<name>%s</name>\n", src->name);
@@ -2279,16 +2090,16 @@ virStoragePoolObjIsDuplicate(virStoragePoolObjListPtr pools,
 
 
 static int
-getSCSIHostNumber(virStoragePoolSourceAdapter adapter,
+getSCSIHostNumber(virStorageAdapterSCSIHostPtr scsi_host,
                   unsigned int *hostnum)
 {
     int ret = -1;
     unsigned int num;
     char *name = NULL;
 
-    if (adapter.data.scsi_host.has_parent) {
-        virPCIDeviceAddress addr = adapter.data.scsi_host.parentaddr;
-        unsigned int unique_id = adapter.data.scsi_host.unique_id;
+    if (scsi_host->has_parent) {
+        virPCIDeviceAddress addr = scsi_host->parentaddr;
+        unsigned int unique_id = scsi_host->unique_id;
 
         if (!(name = virSCSIHostGetNameByParentaddr(addr.domain,
                                                     addr.bus,
@@ -2299,7 +2110,7 @@ getSCSIHostNumber(virStoragePoolSourceAdapter adapter,
         if (virSCSIHostGetNumber(name, &num) < 0)
             goto cleanup;
     } else {
-        if (virSCSIHostGetNumber(adapter.data.scsi_host.name, &num) < 0)
+        if (virSCSIHostGetNumber(scsi_host->name, &num) < 0)
             goto cleanup;
     }
 
@@ -2330,7 +2141,7 @@ virStorageIsSameHostnum(const char *name,
  * matchFCHostToSCSIHost:
  *
  * @conn: Connection pointer
- * @fc_adapter: fc_host adapter (either def or pool->def)
+ * @fchost: fc_host adapter ptr (either def or pool->def)
  * @scsi_hostnum: Already determined "scsi_pool" hostnum
  *
  * Returns true/false whether there is a match between the incoming
@@ -2338,7 +2149,7 @@ virStorageIsSameHostnum(const char *name,
  */
 static bool
 matchFCHostToSCSIHost(virConnectPtr conn,
-                      virStoragePoolSourceAdapter fc_adapter,
+                      virStorageAdapterFCHostPtr fchost,
                       unsigned int scsi_hostnum)
 {
     bool ret = false;
@@ -2349,16 +2160,14 @@ matchFCHostToSCSIHost(virConnectPtr conn,
     /* If we have a parent defined, get its hostnum, and compare to the
      * scsi_hostnum. If they are the same, then we have a match
      */
-    if (fc_adapter.data.fchost.parent &&
-        virStorageIsSameHostnum(fc_adapter.data.fchost.parent, scsi_hostnum))
+    if (fchost->parent &&
+        virStorageIsSameHostnum(fchost->parent, scsi_hostnum))
         return true;
 
-    /* If we find an fc_adapter name, then either libvirt created a vHBA
+    /* If we find an fc adapter name, then either libvirt created a vHBA
      * for this fc_host or a 'virsh nodedev-create' generated a vHBA.
      */
-    if ((name = virVHBAGetHostByWWN(NULL, fc_adapter.data.fchost.wwnn,
-                                    fc_adapter.data.fchost.wwpn))) {
-
+    if ((name = virVHBAGetHostByWWN(NULL, fchost->wwnn, fchost->wwpn))) {
         /* Get the scsi_hostN for the vHBA in order to see if it
          * matches our scsi_hostnum
          */
@@ -2372,7 +2181,7 @@ matchFCHostToSCSIHost(virConnectPtr conn,
          * If the parent fc_hostnum is the same as the scsi_hostnum, we
          * have a match.
          */
-        if (conn && !fc_adapter.data.fchost.parent) {
+        if (conn && !fchost->parent) {
             if (virAsprintf(&scsi_host_name, "scsi_%s", name) < 0)
                 goto cleanup;
             if ((parent_name = virNodeDeviceGetParentName(conn,
@@ -2404,25 +2213,21 @@ matchFCHostToSCSIHost(virConnectPtr conn,
     return ret;
 }
 
+
 static bool
-matchSCSIAdapterParent(virStoragePoolObjPtr pool,
-                       virStoragePoolDefPtr def)
+matchSCSIAdapterParent(virStorageAdapterSCSIHostPtr pool_scsi_host,
+                       virStorageAdapterSCSIHostPtr def_scsi_host)
 {
-    virPCIDeviceAddressPtr pooladdr =
-        &pool->def->source.adapter.data.scsi_host.parentaddr;
-    virPCIDeviceAddressPtr defaddr =
-        &def->source.adapter.data.scsi_host.parentaddr;
-    int pool_unique_id =
-        pool->def->source.adapter.data.scsi_host.unique_id;
-    int def_unique_id =
-        def->source.adapter.data.scsi_host.unique_id;
+    virPCIDeviceAddressPtr pooladdr = &pool_scsi_host->parentaddr;
+    virPCIDeviceAddressPtr defaddr = &def_scsi_host->parentaddr;
+
     if (pooladdr->domain == defaddr->domain &&
         pooladdr->bus == defaddr->bus &&
         pooladdr->slot == defaddr->slot &&
         pooladdr->function == defaddr->function &&
-        pool_unique_id == def_unique_id) {
+        pool_scsi_host->unique_id == def_scsi_host->unique_id)
         return true;
-    }
+
     return false;
 }
 
@@ -2465,6 +2270,8 @@ virStoragePoolSourceFindDuplicate(virConnectPtr conn,
     int ret = 1;
     virStoragePoolObjPtr pool = NULL;
     virStoragePoolObjPtr matchpool = NULL;
+    virStorageAdapterPtr pool_adapter;
+    virStorageAdapterPtr def_adapter;
 
     /* Check the pool list for duplicate underlying storage */
     for (i = 0; i < pools->count; i++) {
@@ -2500,62 +2307,70 @@ virStoragePoolSourceFindDuplicate(virConnectPtr conn,
             break;
 
         case VIR_STORAGE_POOL_SCSI:
-            if (pool->def->source.adapter.type ==
-                VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_FC_HOST &&
-                def->source.adapter.type ==
-                VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_FC_HOST) {
-                if (STREQ(pool->def->source.adapter.data.fchost.wwnn,
-                          def->source.adapter.data.fchost.wwnn) &&
-                    STREQ(pool->def->source.adapter.data.fchost.wwpn,
-                          def->source.adapter.data.fchost.wwpn))
+            pool_adapter = &pool->def->source.adapter;
+            def_adapter = &def->source.adapter;
+            if (pool_adapter->type == VIR_STORAGE_ADAPTER_TYPE_FC_HOST &&
+                def_adapter->type == VIR_STORAGE_ADAPTER_TYPE_FC_HOST) {
+                virStorageAdapterFCHostPtr pool_fchost =
+                    &pool_adapter->data.fchost;
+                virStorageAdapterFCHostPtr def_fchost =
+                    &def_adapter->data.fchost;
+                if (STREQ(pool_fchost->wwnn, def_fchost->wwnn) &&
+                    STREQ(pool_fchost->wwpn, def_fchost->wwpn))
                     matchpool = pool;
-            } else if (pool->def->source.adapter.type ==
-                       VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST &&
-                       def->source.adapter.type ==
-                       VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST) {
+            } else if (pool_adapter->type ==
+                       VIR_STORAGE_ADAPTER_TYPE_SCSI_HOST &&
+                       def_adapter->type ==
+                       VIR_STORAGE_ADAPTER_TYPE_SCSI_HOST) {
+                virStorageAdapterSCSIHostPtr pool_scsi_host =
+                    &pool_adapter->data.scsi_host;
+                virStorageAdapterSCSIHostPtr def_scsi_host =
+                    &def_adapter->data.scsi_host;
                 unsigned int pool_hostnum, def_hostnum;
 
-                if (pool->def->source.adapter.data.scsi_host.has_parent &&
-                    def->source.adapter.data.scsi_host.has_parent &&
-                    matchSCSIAdapterParent(pool, def)) {
+                if (pool_scsi_host->has_parent &&
+                    def_scsi_host->has_parent &&
+                    matchSCSIAdapterParent(pool_scsi_host, def_scsi_host)) {
                     matchpool = pool;
                     break;
                 }
 
-                if (getSCSIHostNumber(pool->def->source.adapter,
-                                      &pool_hostnum) < 0 ||
-                    getSCSIHostNumber(def->source.adapter, &def_hostnum) < 0)
+                if (getSCSIHostNumber(pool_scsi_host, &pool_hostnum) < 0 ||
+                    getSCSIHostNumber(def_scsi_host, &def_hostnum) < 0)
                     break;
                 if (pool_hostnum == def_hostnum)
                     matchpool = pool;
-            } else if (pool->def->source.adapter.type ==
-                       VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_FC_HOST &&
-                       def->source.adapter.type ==
-                       VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST) {
+            } else if (pool_adapter->type ==
+                       VIR_STORAGE_ADAPTER_TYPE_FC_HOST &&
+                       def_adapter->type ==
+                       VIR_STORAGE_ADAPTER_TYPE_SCSI_HOST) {
+                virStorageAdapterFCHostPtr pool_fchost =
+                    &pool_adapter->data.fchost;
+                virStorageAdapterSCSIHostPtr def_scsi_host =
+                    &def_adapter->data.scsi_host;
                 unsigned int scsi_hostnum;
 
                 /* Get the scsi_hostN for the scsi_host source adapter def */
-                if (getSCSIHostNumber(def->source.adapter,
-                                      &scsi_hostnum) < 0)
+                if (getSCSIHostNumber(def_scsi_host, &scsi_hostnum) < 0)
                     break;
 
-                if (matchFCHostToSCSIHost(conn, pool->def->source.adapter,
-                                          scsi_hostnum)) {
+                if (matchFCHostToSCSIHost(conn, pool_fchost, scsi_hostnum)) {
                     matchpool = pool;
                     break;
                 }
 
-            } else if (pool->def->source.adapter.type ==
-                       VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST &&
-                       def->source.adapter.type ==
-                       VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_FC_HOST) {
+            } else if (pool_adapter->type ==
+                       VIR_STORAGE_ADAPTER_TYPE_SCSI_HOST &&
+                       def_adapter->type ==
+                       VIR_STORAGE_ADAPTER_TYPE_FC_HOST) {
+                virStorageAdapterSCSIHostPtr pool_scsi_host =
+                    &pool_adapter->data.scsi_host;
                 unsigned int scsi_hostnum;
 
-                if (getSCSIHostNumber(pool->def->source.adapter,
-                                      &scsi_hostnum) < 0)
+                if (getSCSIHostNumber(pool_scsi_host, &scsi_hostnum) < 0)
                     break;
 
-                if (matchFCHostToSCSIHost(conn, def->source.adapter,
+                if (matchFCHostToSCSIHost(conn, &def_adapter->data.fchost,
                                           scsi_hostnum)) {
                     matchpool = pool;
                     break;
