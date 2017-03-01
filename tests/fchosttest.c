@@ -100,6 +100,30 @@ static const char test12_xml[] =
 "</pool>";
 
 
+/* virStoragePoolCreateXML parent wwnn/wwpn to find the vport capable HBA */
+static const char test13_xml[] =
+"<pool type='scsi'>"
+"  <name>vhba_pool</name>"
+"  <source>"
+"    <adapter type='fc_host' parent_wwnn='2000000012341234' parent_wwpn='1000000012341234' wwnn='20000000c9831b4b' wwpn='10000000c9831b4b'/>"
+"  </source>"
+"  <target>"
+"    <path>/dev/disk/by-path</path>"
+"  </target>"
+"</pool>";
+
+/* virStoragePoolCreateXML parent fabric_wwn to find the vport capable HBA */
+static const char test14_xml[] =
+"<pool type='scsi'>"
+"  <name>vhba_pool</name>"
+"  <source>"
+"    <adapter type='fc_host' parent_fabric_wwn='2000000043214321' wwnn='20000000c9831b4b' wwpn='10000000c9831b4b'/>"
+"  </source>"
+"  <target>"
+"    <path>/dev/disk/by-path</path>"
+"  </target>"
+"</pool>";
+
 /* Test virIsVHBACapable */
 static int
 test1(const void *data ATTRIBUTE_UNUSED)
@@ -388,6 +412,14 @@ mymain(void)
         ret = -1;
     if (virTestRun("manageVHBAByStoragePool-no-parent", manageVHBAByStoragePool,
                    test12_xml) < 0)
+        ret = -1;
+    if (virTestRun("manageVHBAByStoragePool-parent-wwn",
+                   manageVHBAByStoragePool,
+                   test13_xml) < 0)
+        ret = -1;
+    if (virTestRun("manageVHBAByStoragePool-parent-fabric-wwn",
+                   manageVHBAByStoragePool,
+                   test14_xml) < 0)
         ret = -1;
 
  cleanup:
