@@ -2391,6 +2391,82 @@ nodeDeviceCheckParent(virConnectPtr conn,
 
 /**
  * @conn: Connection pointer
+ * @fchost: Pointer to the vHBA adapter
+ *
+ * If we have a valid connection, then use the node device create
+ * XML API rather than traversing through the sysfs to create the vHBA.
+ * Generate the Node Device XML using the Storage vHBA Adapter providing
+ * either the parent name, parent wwnn/wwpn, or parent fabric_name if
+ * available to the Node Device code.  Since the Storage XML processing
+ * requires the wwnn/wwpn to be used for the vHBA to be provided (and
+ * not generated), we can use that as the fc_host wwnn/wwpn. This will
+ * allow for easier search later when we need it.
+ *
+ * Returns vHBA name on success, NULL on failure with an error message set
+ */
+static char *
+nodeDeviceCreateNodeDeviceVport(virConnectPtr conn,
+                                virStorageAdapterFCHostPtr fchost)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+    char *vhbaStr = NULL;
+    virNodeDevicePtr dev = NULL;
+    char *name;
+    bool created = false;
+
+    /* If the nodedev already knows about this vHBA, then we're not
+     * managing it - we'll just use it. */
+    if ((dev = virNodeDeviceLookupSCSIHostByWWN(conn, fchost->wwnn,
+                                                fchost->wwpn, 0)))
+        goto skip_create;
+
+    virBufferAddLit(&buf, "<device>\n");
+    virBufferAdjustIndent(&buf, 2);
+    if (fchost->parent)
+        virBufferEscapeString(&buf, "<parent>%s</parent>\n",
+                              fchost->parent);
+    else if (fchost->parent_wwnn && fchost->parent_wwpn)
+        virBufferAsprintf(&buf, "<parent wwnn='%s' wwpn='%s'/>\n",
+                          fchost->parent_wwnn, fchost->parent_wwpn);
+    else if (fchost->parent_fabric_wwn)
+        virBufferAsprintf(&buf, "<parent fabric_wnn='%s'/>\n",
+                          fchost->parent_fabric_wwn);
+    virBufferAddLit(&buf, "<capability type='scsi_host'>\n");
+    virBufferAdjustIndent(&buf, 2);
+    virBufferAsprintf(&buf, "<capability type='fc_host' wwnn='%s' wwpn='%s'>\n",
+                      fchost->wwnn, fchost->wwpn);
+    virBufferAddLit(&buf, "</capability>\n");
+    virBufferAdjustIndent(&buf, -2);
+    virBufferAddLit(&buf, "</capability>\n");
+    virBufferAdjustIndent(&buf, -2);
+    virBufferAddLit(&buf, "</device>\n");
+
+    if (!(vhbaStr = virBufferContentAndReset(&buf))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("unable to create node device XML"));
+        goto cleanup;
+    }
+
+    if (!(dev = virNodeDeviceCreateXML(conn, vhbaStr, 0)))
+        goto cleanup;
+    created = true;
+
+ skip_create:
+    if (VIR_STRDUP(name, virNodeDeviceGetName(dev)) < 0) {
+        /* If we created, then destroy it */
+        if (created)
+            ignore_value(virNodeDeviceDestroy(dev));
+    }
+
+ cleanup:
+    VIR_FREE(vhbaStr);
+    virObjectUnref(dev);
+    return name;
+}
+
+
+/**
+ * @conn: Connection pointer
  * @fchost: Pointer to vHBA adapter
  *
  * Create a vHBA for Storage. This code accomplishes this via searching
@@ -2413,6 +2489,11 @@ virNodeDeviceCreateVport(virConnectPtr conn,
 
     VIR_DEBUG("conn=%p, parent='%s', wwnn='%s' wwpn='%s'",
               conn, NULLSTR(fchost->parent), fchost->wwnn, fchost->wwpn);
+
+    /* If we have a connection, bypass sysfs searching and use the
+     * NodeDevice API's in order to perform our delete */
+    if (conn)
+        return nodeDeviceCreateNodeDeviceVport(conn, fchost);
 
     /* If we find an existing HBA/vHBA within the fc_host sysfs
      * using the wwnn/wwpn, then a nodedev is already created for
@@ -2494,6 +2575,41 @@ virNodeDeviceCreateVport(virConnectPtr conn,
  * @conn: Connection pointer
  * @fchost: Pointer to vHBA adapter
  *
+ * Search for the vHBA SCSI_HOST by the wwnn/wwpn provided at creation
+ * and use the node device driver to destroy.
+ *
+ * Returns 0 on success, -1 on failure w/ error message.
+ */
+static int
+nodeDeviceDeleteNodeDeviceVport(virConnectPtr conn,
+                                virStorageAdapterFCHostPtr fchost)
+{
+    int ret = -1;
+    virNodeDevicePtr dev;
+
+    if (!(dev = virNodeDeviceLookupSCSIHostByWWN(conn, fchost->wwnn,
+                                                 fchost->wwpn, 0))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Failed to find fc_host for wwnn='%s' and wwpn='%s'"),
+                       fchost->wwnn, fchost->wwpn);
+        return -1;
+    }
+
+    if (virNodeDeviceDestroy(dev) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    virObjectUnref(dev);
+    return ret;
+}
+
+
+/**
+ * @conn: Connection pointer
+ * @fchost: Pointer to vHBA adapter
+ *
  * As long as the vHBA is being managed, search for the scsi_host via the
  * provided wwnn/wwpn and then find the corresponding parent scsi_host in
  * order to send the delete request.
@@ -2517,6 +2633,11 @@ virNodeDeviceDeleteVport(virConnectPtr conn,
     /* If we're not managing the deletion of the vHBA, then just return */
     if (fchost->managed != VIR_TRISTATE_BOOL_YES)
         return 0;
+
+    /* If we have a connection, bypass sysfs searching and use the
+     * NodeDevice API's in order to perform our delete */
+    if (conn)
+        return nodeDeviceDeleteNodeDeviceVport(conn, fchost);
 
     /* Find our vHBA by searching the fc_host sysfs tree for our wwnn/wwpn */
     if (!(name = virVHBAGetHostByWWN(NULL, fchost->wwnn, fchost->wwpn))) {
