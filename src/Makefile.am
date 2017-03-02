@@ -50,7 +50,7 @@ AM_LDFLAGS =	$(DRIVER_MODULES_LDFLAGS)			\
 		$(MINGW_EXTRA_LDFLAGS)				\
 		$(NULL)
 
-EXTRA_DIST = $(conf_DATA) util/keymaps.csv
+EXTRA_DIST = $(conf_DATA)
 
 BUILT_SOURCES =
 CLEANFILES =
@@ -132,7 +132,6 @@ UTIL_SOURCES =							\
 		util/virjson.c util/virjson.h			\
 		util/virkeycode.c util/virkeycode.h		\
 		util/virkeyfile.c util/virkeyfile.h		\
-		util/virkeymaps.h				\
 		util/virlease.c util/virlease.h			\
 		util/virlockspace.c util/virlockspace.h		\
 		util/virlog.c util/virlog.h			\
@@ -190,16 +189,34 @@ UTIL_SOURCES =							\
 		util/virxml.c util/virxml.h			\
 		$(NULL)
 
-EXTRA_DIST += $(srcdir)/util/keymaps.csv $(srcdir)/util/virkeycode-mapgen.py
+EXTRA_DIST += $(srcdir)/keycodemapdb/data/keymaps.csv $(srcdir)/keycodemapdb/tools/keymap-gen
 
-BUILT_SOURCES += util/virkeymaps.h
-MAINTAINERCLEANFILES += util/virkeymaps.h
+util/virkeycodetable_%.h: $(srcdir)/keycodemapdb/data/keymaps.csv \
+			$(srcdir)/keycodemapdb/tools/keymap-gen Makefile.am
+	$(AM_V_GEN)export NAME=`echo $@ | sed -e 's,util/virkeycodetable_,,' -e 's,\.h,,'` && \
+		$(MKDIR_P) util/ && \
+		$(PYTHON) $(srcdir)/keycodemapdb/tools/keymap-gen \
+		--lang stdc --varname virKeyCodeTable_$$NAME code-table \
+		$(srcdir)/keycodemapdb/data/keymaps.csv $$NAME > \
+			$@-tmp && mv $@-tmp $@ || rm $@-tmp
 
-util/virkeymaps.h: $(srcdir)/util/keymaps.csv	\
-		$(srcdir)/util/virkeycode-mapgen.py
-	$(MKDIR_P) util/
-	$(AM_V_GEN)$(PYTHON) $(srcdir)/util/virkeycode-mapgen.py \
-	  <$(srcdir)/util/keymaps.csv >util/virkeymaps.h
+util/virkeynametable_%.h: $(srcdir)/keycodemapdb/data/keymaps.csv \
+			$(srcdir)/keycodemapdb/tools/keymap-gen Makefile.am
+	$(AM_V_GEN)export NAME=`echo $@ | sed -e 's,util/virkeynametable_,,' -e 's,\.h,,'` && \
+		$(MKDIR_P) util/ && \
+		$(PYTHON) $(srcdir)/keycodemapdb/tools/keymap-gen \
+		--lang stdc --varname virKeyNameTable_$$NAME name-table \
+		$(srcdir)/keycodemapdb/data/keymaps.csv $$NAME > \
+			$@-tmp && mv $@-tmp $@ || rm $@-tmp
+
+KEYCODES = linux osx atset1 atset2 atset3 xt xtkbd usb win32 rfb
+KEYNAMES = linux osx win32
+
+KEYTABLES = $(KEYCODES:%=util/virkeycodetable_%.h) $(KEYNAMES:%=util/virkeynametable_%.h)
+
+UTIL_SOURCES += $(KEYTABLES)
+BUILT_SOURCES += $(KEYTABLES)
+MAINTAINERCLEANFILES += $(KEYTABLES)
 
 # Internal generic driver infrastructure
 NODE_INFO_SOURCES = nodeinfo.h nodeinfo.c
