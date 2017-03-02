@@ -103,108 +103,134 @@ typedef enum {
 
 VIR_ENUM_DECL(virNodeDevDRM)
 
+typedef struct _virNodeDevCapSystemHardware {
+    char *vendor_name;
+    char *version;
+    char *serial;
+    unsigned char uuid[VIR_UUID_BUFLEN];
+} virNodeDevSystemHardware, *virNodeDevSystemHardwarePtr;
+
+typedef struct _virNodeDevCapSystemFirmware {
+    char *vendor_name;
+    char *version;
+    char *release_date;
+} virNodeDevSystemFirmware, *virNodeDevSystemFirmwarePtr;
+
+typedef struct _virNodeDevCapSystem {
+    char *product_name;
+    virNodeDevSystemHardware hardware;
+    virNodeDevSystemFirmware firmware;
+} virNodeDevCapSystem, *virNodeDevCapSystemPtr;
+
+typedef struct _virNodeDevCapPCIDev {
+    unsigned int domain;
+    unsigned int bus;
+    unsigned int slot;
+    unsigned int function;
+    unsigned int product;
+    unsigned int vendor;
+    unsigned int class;
+    char *product_name;
+    char *vendor_name;
+    virPCIDeviceAddressPtr physical_function;
+    virPCIDeviceAddressPtr *virtual_functions;
+    size_t num_virtual_functions;
+    unsigned int max_virtual_functions;
+    unsigned int flags;
+    virPCIDeviceAddressPtr *iommuGroupDevices;
+    size_t nIommuGroupDevices;
+    unsigned int iommuGroupNumber;
+    int numa_node;
+    virPCIEDeviceInfoPtr pci_express;
+    int hdrType; /* enum virPCIHeaderType or -1 */
+} virNodeDevCapPCIDev, *virNodeDevCapPCIDevPtr;
+
+typedef struct _virNodeDevCapUSBDev {
+   unsigned int bus;
+   unsigned int device;
+   unsigned int product;
+   unsigned int vendor;
+   char *product_name;
+   char *vendor_name;
+} virNodeDevCapUSBDev, *virNodeDevCapUSBDevPtr;
+
+typedef struct _virNodeDevCapUSBIf {
+    unsigned int number;
+    unsigned int _class;		/* "class" is reserved in C */
+    unsigned int subclass;
+    unsigned int protocol;
+    char *description;
+} virNodeDevCapUSBIf, *virNodeDevCapUSBIfPtr;
+
+typedef struct _virNodeDevCapNet {
+    char *address;
+    unsigned int address_len;
+    char *ifname;
+    virNetDevIfLink lnk;
+    virNodeDevNetCapType subtype;  /* LAST -> no subtype */
+    virBitmapPtr features; /* enum virNetDevFeature */
+} virNodeDevCapNet, *virNodeDevCapNetPtr;
+
+typedef struct _virNodeDevCapSCSIHost {
+    unsigned int host;
+    int unique_id;
+    char *wwnn;
+    char *wwpn;
+    char *fabric_wwn;
+    unsigned int flags;
+    int max_vports;
+    int vports;
+} virNodeDevCapSCSIHost, *virNodeDevCapSCSIHostPtr;
+
+typedef struct _virNodeDevCapSCSITarget {
+    char *name;
+} virNodeDevCapSCSITarget, *virNodeDevCapSCSITargetPtr;
+
+typedef struct _virNodeDevCapSCSI {
+    unsigned int host;
+    unsigned int bus;
+    unsigned int target;
+    unsigned int lun;
+    char *type;
+} virNodeDevCapSCSI, *virNodeDevCapSCSIPtr;
+
+typedef struct _virNodeDevCapStorage {
+    unsigned long long size;
+    unsigned long long num_blocks;
+    unsigned long long logical_block_size;
+    unsigned long long removable_media_size;
+    char *block;
+    char *bus;
+    char *drive_type;
+    char *model;
+    char *vendor;
+    char *serial;
+    char *media_label;
+    unsigned int flags;	/* virNodeDevStorageCapFlags bits */
+} virNodeDevCapStorage, *virNodeDevCapStoragePtr;
+
+typedef struct _virNodeDevCapSCSIGeneric {
+    char *path;
+} virNodeDevCapSCSIGeneric, *virNodeDevCapSCSIGenericPtr;
+
+typedef struct _virNodeDevCapDRM {
+    virNodeDevDRMType type;
+} virNodeDevCapDRM, *virNodeDevCapDRMPtr;
+
 typedef struct _virNodeDevCapData {
     virNodeDevCapType type;
     union {
-        struct {
-            char *product_name;
-            struct {
-                char *vendor_name;
-                char *version;
-                char *serial;
-                unsigned char uuid[VIR_UUID_BUFLEN];
-            } hardware;
-            struct {
-                char *vendor_name;
-                char *version;
-                char *release_date;
-            } firmware;
-        } system;
-        struct {
-            unsigned int domain;
-            unsigned int bus;
-            unsigned int slot;
-            unsigned int function;
-            unsigned int product;
-            unsigned int vendor;
-            unsigned int class;
-            char *product_name;
-            char *vendor_name;
-            virPCIDeviceAddressPtr physical_function;
-            virPCIDeviceAddressPtr *virtual_functions;
-            size_t num_virtual_functions;
-            unsigned int max_virtual_functions;
-            unsigned int flags;
-            virPCIDeviceAddressPtr *iommuGroupDevices;
-            size_t nIommuGroupDevices;
-            unsigned int iommuGroupNumber;
-            int numa_node;
-            virPCIEDeviceInfoPtr pci_express;
-            int hdrType; /* enum virPCIHeaderType or -1 */
-        } pci_dev;
-        struct {
-            unsigned int bus;
-            unsigned int device;
-            unsigned int product;
-            unsigned int vendor;
-            char *product_name;
-            char *vendor_name;
-        } usb_dev;
-        struct {
-            unsigned int number;
-            unsigned int _class;		/* "class" is reserved in C */
-            unsigned int subclass;
-            unsigned int protocol;
-            char *description;
-        } usb_if;
-        struct {
-            char *address;
-            unsigned int address_len;
-            char *ifname;
-            virNetDevIfLink lnk;
-            virNodeDevNetCapType subtype;  /* LAST -> no subtype */
-            virBitmapPtr features; /* enum virNetDevFeature */
-        } net;
-        struct {
-            unsigned int host;
-            int unique_id;
-            char *wwnn;
-            char *wwpn;
-            char *fabric_wwn;
-            unsigned int flags;
-            int max_vports;
-            int vports;
-        } scsi_host;
-        struct {
-            char *name;
-        } scsi_target;
-        struct {
-            unsigned int host;
-            unsigned int bus;
-            unsigned int target;
-            unsigned int lun;
-            char *type;
-        } scsi;
-        struct {
-            unsigned long long size;
-            unsigned long long num_blocks;
-            unsigned long long logical_block_size;
-            unsigned long long removable_media_size;
-            char *block;
-            char *bus;
-            char *drive_type;
-            char *model;
-            char *vendor;
-            char *serial;
-            char *media_label;
-            unsigned int flags;	/* virNodeDevStorageCapFlags bits */
-        } storage;
-        struct {
-            char *path;
-        } sg; /* SCSI generic device */
-        struct {
-            virNodeDevDRMType type;
-        } drm;
+        virNodeDevCapSystem system;
+        virNodeDevCapPCIDev pci_dev;
+        virNodeDevCapUSBDev usb_dev;
+        virNodeDevCapUSBIf usb_if;
+        virNodeDevCapNet net;
+        virNodeDevCapSCSIHost scsi_host;
+        virNodeDevCapSCSITarget scsi_target;
+        virNodeDevCapSCSI scsi;
+        virNodeDevCapStorage storage;
+        virNodeDevCapSCSIGeneric sg;
+        virNodeDevCapDRM drm;
     };
 } virNodeDevCapData, *virNodeDevCapDataPtr;
 
