@@ -61,6 +61,7 @@
 #include "virlog.h"
 #include "virdnsmasq.h"
 #include "configmake.h"
+#include "virnetlink.h"
 #include "virnetdev.h"
 #include "virnetdevip.h"
 #include "virnetdevbridge.h"
@@ -2067,6 +2068,168 @@ networkReloadFirewallRules(virNetworkDriverStatePtr driver)
                              NULL);
 }
 
+static int
+networkGetAcceptRA(const char *ifname)
+{
+    char *path = NULL;
+    char *buf = NULL;
+    char *suffix;
+    int accept_ra = -1;
+
+    if (virAsprintf(&path, SYSCTL_PATH "/net/ipv6/conf/%s/accept_ra",
+                    ifname ? ifname : "all") < 0)
+        goto cleanup;
+
+    if ((virFileReadAll(path, 512, &buf) < 0) ||
+        (virStrToLong_i(buf, &suffix, 10, &accept_ra) < 0))
+        goto cleanup;
+
+ cleanup:
+    VIR_FREE(path);
+    VIR_FREE(buf);
+
+    return accept_ra;
+}
+
+#if defined(__linux__) && defined(HAVE_LIBNL)
+struct networkIPv6CheckData {
+    bool hasRARoutes;
+
+    /* Devices with conflicting accept_ra */
+    char **devices;
+    size_t ndevices;
+};
+
+static int
+networkCheckIPv6ForwardingCallback(const struct nlmsghdr *resp,
+                                   void *opaque)
+{
+    struct rtmsg *rtmsg = NLMSG_DATA(resp);
+    int accept_ra = -1;
+    struct rtattr *rta;
+    char *ifname = NULL;
+    char name[IFNAMSIZ];
+    struct networkIPv6CheckData *data = opaque;
+    int ret = 0;
+    int len = RTM_PAYLOAD(resp);
+    int oif = -1;
+
+    /* Ignore messages other than route ones */
+    if (resp->nlmsg_type != RTM_NEWROUTE)
+        return ret;
+
+    memset(&name, 0, sizeof(name));
+
+    /* Extract a few attributes */
+    for (rta = RTM_RTA(rtmsg); RTA_OK(rta, len); rta = RTA_NEXT(rta, len)) {
+        switch (rta->rta_type) {
+        case RTA_OIF:
+            oif = *(int *)RTA_DATA(rta);
+            if (!if_indextoname(oif, name) || VIR_STRDUP(ifname, name) < 0)
+                VIR_DEBUG("Failed to convert OIF to a device name");
+            break;
+        }
+    }
+
+    /* No need to do anything else for non RA routes */
+    if (rtmsg->rtm_protocol != RTPROT_RA)
+        goto cleanup;
+
+    data->hasRARoutes = true;
+
+    /* Check the accept_ra value for the interface */
+    accept_ra = networkGetAcceptRA(ifname);
+    VIR_DEBUG("Checking route for device %s, accept_ra: %d", ifname, accept_ra);
+
+    if (accept_ra != 2 && VIR_APPEND_ELEMENT(data->devices, data->ndevices, ifname) < 0)
+        ret = -1;
+
+ cleanup:
+    VIR_FREE(ifname);
+    return ret;
+}
+
+static bool
+networkCheckIPv6Forwarding(void)
+{
+    struct nl_msg *nlmsg = NULL;
+    bool valid = false;
+    struct rtgenmsg genmsg;
+    size_t i;
+    struct networkIPv6CheckData data = {
+        .hasRARoutes = false,
+        .devices = NULL,
+        .ndevices = 0
+    };
+
+
+    /* Prepare the request message */
+    if (!(nlmsg = nlmsg_alloc_simple(RTM_GETROUTE,
+                                     NLM_F_REQUEST | NLM_F_DUMP))) {
+        virReportOOMError();
+        goto cleanup;
+    }
+
+    memset(&genmsg, 0, sizeof(genmsg));
+    genmsg.rtgen_family = AF_INET6;
+
+    if (nlmsg_append(nlmsg, &genmsg, sizeof(genmsg), NLMSG_ALIGNTO) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("allocated netlink buffer is too small"));
+        goto cleanup;
+    }
+
+    /* Send the request and loop over the responses */
+    if (virNetlinkDumpCommand(nlmsg, networkCheckIPv6ForwardingCallback, 0, 0,
+                              NETLINK_ROUTE, 0, &data) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Failed to loop over routes"));
+        goto cleanup;
+    }
+
+    valid = !data.hasRARoutes || data.ndevices == 0;
+
+    /* Check the global accept_ra if at least one isn't set on a
+       per-device basis */
+    if (!valid && data.hasRARoutes) {
+        int accept_ra = networkGetAcceptRA(NULL);
+        valid = accept_ra == 2;
+        VIR_DEBUG("Checked global accept_ra: %d", accept_ra);
+    }
+
+    if (!valid) {
+        virBuffer buf = VIR_BUFFER_INITIALIZER;
+        for (i = 0; i < data.ndevices; i++) {
+            virBufferAdd(&buf, data.devices[i], -1);
+            if (i < data.ndevices - 1)
+                virBufferAddLit(&buf, ", ");
+        }
+
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Check the host setup: enabling IPv6 forwarding with "
+                         "RA routes without accept_ra set to 2 is likely to cause "
+                         "routes loss. Interfaces to look at: %s"),
+                       virBufferCurrentContent(&buf));
+        virBufferFreeAndReset(&buf);
+    }
+
+ cleanup:
+    nlmsg_free(nlmsg);
+    for (i = 0; i < data.ndevices; i++)
+        VIR_FREE(data.devices[i]);
+    return valid;
+}
+
+#else /* defined(__linux__) && defined(HAVE_LIBNL) */
+
+static bool
+networkCheckIPv6Forwarding(void)
+{
+    VIR_WARN("built without libnl: unable to check if IPv6 forwarding can be safely enabled");
+    return true;
+}
+#endif /* defined(__linux__) && defined(HAVE_LIBNL) */
+
 /* Enable IP Forwarding. Return 0 for success, -1 for failure. */
 static int
 networkEnableIPForwarding(bool enableIPv4, bool enableIPv6)
@@ -2377,11 +2540,16 @@ networkStartNetworkVirtual(virNetworkDriverStatePtr driver,
     }
 
     /* If forward.type != NONE, turn on global IP forwarding */
-    if (network->def->forward.type != VIR_NETWORK_FORWARD_NONE &&
-        networkEnableIPForwarding(v4present, v6present) < 0) {
-        virReportSystemError(errno, "%s",
-                             _("failed to enable IP forwarding"));
-        goto err3;
+    if (network->def->forward.type != VIR_NETWORK_FORWARD_NONE) {
+        if (!networkCheckIPv6Forwarding())
+            goto err3; /* Precise error message already provided */
+
+
+        if (networkEnableIPForwarding(v4present, v6present) < 0) {
+            virReportSystemError(errno, "%s",
+                                 _("failed to enable IP forwarding"));
+            goto err3;
+        }
     }
 
 
