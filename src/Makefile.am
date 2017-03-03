@@ -50,6 +50,8 @@ AM_LDFLAGS =	$(DRIVER_MODULES_LDFLAGS)			\
 		$(MINGW_EXTRA_LDFLAGS)				\
 		$(NULL)
 
+POD2MAN = pod2man -c "Virtualization Support" -r "$(PACKAGE)-$(VERSION)"
+
 EXTRA_DIST = $(conf_DATA)
 
 BUILT_SOURCES =
@@ -212,15 +214,51 @@ util/virkeynametable_%.h: $(srcdir)/keycodemapdb/data/keymaps.csv \
 		$(srcdir)/keycodemapdb/data/keymaps.csv $$NAME > \
 			$@-tmp && mv $@-tmp $@ || rm $@-tmp
 
+util/virkeycode-%.pod: $(srcdir)/keycodemapdb/data/keymaps.csv \
+			$(srcdir)/keycodemapdb/tools/keymap-gen Makefile.am
+	$(AM_V_GEN)export NAME=`echo $@ | sed -e 's,util/virkeycode-,,' \
+					      -e 's,\.pod,,'` && \
+		$(MKDIR_P) util/ && \
+		$(PYTHON) $(srcdir)/keycodemapdb/tools/keymap-gen \
+		--lang pod --varname "Key code values for $$NAME" code-docs \
+		$(srcdir)/keycodemapdb/data/keymaps.csv $$NAME > \
+			$@-tmp && mv $@-tmp $@ || rm $@-tmp
+
+util/virkeyname-%.pod: $(srcdir)/keycodemapdb/data/keymaps.csv \
+			$(srcdir)/keycodemapdb/tools/keymap-gen Makefile.am
+	$(AM_V_GEN)export NAME=`echo $@ | sed -e 's,util/virkeyname-,,' \
+					      -e 's,\.pod,,'` && \
+		$(MKDIR_P) util/ && \
+		$(PYTHON) $(srcdir)/keycodemapdb/tools/keymap-gen \
+		--lang pod --varname "Key name values for $$NAME" name-docs \
+		$(srcdir)/keycodemapdb/data/keymaps.csv $$NAME > \
+			$@-tmp && mv $@-tmp $@ || rm $@-tmp
+
+util/virkey%.7: util/virkey%.pod
+	$(AM_V_GEN)$(POD2MAN) --section=7 $< $@-t1 && \
+	if grep 'POD ERROR' $@-t1; then rm $@-t1; exit 1; fi && \
+	sed \
+		-e 's|SYSCONFDIR|\@sysconfdir\@|g' \
+		-e 's|LOCALSTATEDIR|\@localstatedir\@|g' \
+		< $@-t1 > $@-t2 && \
+	rm -f $@-t1 && \
+	mv $@-t2 $@
+
 KEYCODES = linux osx atset1 atset2 atset3 xt xtkbd usb win32 rfb
 KEYNAMES = linux osx win32
 
 KEYTABLES = $(KEYCODES:%=util/virkeycodetable_%.h) \
 	    $(KEYNAMES:%=util/virkeynametable_%.h)
 
+KEYPODS = $(KEYCODES:%=util/virkeycode-%.pod) \
+	  $(KEYNAMES:%=util/virkeyname-%.pod)
+KEYMANS = $(KEYPODS:%.pod=%.7)
+
+man7_MANS = $(KEYMANS)
+
 UTIL_SOURCES += $(KEYTABLES)
 BUILT_SOURCES += $(KEYTABLES)
-MAINTAINERCLEANFILES += $(KEYTABLES)
+MAINTAINERCLEANFILES += $(KEYTABLES) $(KEYMANS) $(KEYPODS)
 
 # Internal generic driver infrastructure
 NODE_INFO_SOURCES = nodeinfo.h nodeinfo.c
@@ -2796,8 +2834,6 @@ virtlogd.init: logging/virtlogd.init.in $(top_builddir)/config.status
 	    < $< > $@-t &&					\
 	    chmod a+x $@-t &&					\
 	    mv $@-t $@
-
-POD2MAN = pod2man -c "Virtualization Support" -r "$(PACKAGE)-$(VERSION)"
 
 virtlockd.8.in: locking/virtlockd.pod
 	$(AM_V_GEN)$(POD2MAN) --section=8 $< $@-t1 && \
