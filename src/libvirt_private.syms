@@ -863,6 +863,19 @@ virDomainSnapshotStateTypeToString;
 virDomainSnapshotUpdateRelations;
 
 
+# conf/storage_adapter_conf.h
+virStorageAdapterClear;
+virStorageAdapterFormat;
+virStorageAdapterParseValidate;
+virStorageAdapterParseXML;
+virStorageAdapterTypeFromString;
+virStorageAdapterTypeToString;
+virStorageAdapterVHBAClear;
+virStorageAdapterVHBAFormat;
+virStorageAdapterVHBAParseValidate;
+virStorageAdapterVHBAParseXML;
+
+
 # conf/storage_conf.h
 virStoragePartedFsTypeToString;
 virStoragePoolDefFormat;
@@ -892,8 +905,6 @@ virStoragePoolObjSaveDef;
 virStoragePoolObjUnlock;
 virStoragePoolSaveConfig;
 virStoragePoolSaveState;
-virStoragePoolSourceAdapterTypeFromString;
-virStoragePoolSourceAdapterTypeToString;
 virStoragePoolSourceClear;
 virStoragePoolSourceDeviceClear;
 virStoragePoolSourceFindDuplicate;
@@ -2441,6 +2452,7 @@ virSocketAddrSetIPv4AddrNetOrder;
 virSocketAddrSetIPv6Addr;
 virSocketAddrSetIPv6AddrNetOrder;
 virSocketAddrSetPort;
+
 
 # util/virstorageencryption.h
 virStorageEncryptionFormat;
