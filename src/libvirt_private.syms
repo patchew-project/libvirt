@@ -1647,7 +1647,6 @@ virFileStripSuffix;
 virFileTouch;
 virFileUnlock;
 virFileUpdatePerm;
-virFileWaitForDevices;
 virFileWrapperFdClose;
 virFileWrapperFdFree;
 virFileWrapperFdNew;
@@ -2750,6 +2749,7 @@ virTristateSwitchTypeFromString;
 virTristateSwitchTypeToString;
 virUpdateSelfLastChanged;
 virValidateWWN;
+virWaitForDevices;
 
 
 # util/viruuid.h
