@@ -26,6 +26,15 @@
           don't start it with unsupported features.
         </description>
       </change>
+      <change>
+          <summary>
+            qemu_capabilities: introduce QEMU_CAPS_SD_CARD to probe sd-card drivers
+        </summary>
+        <description>
+          The new QEMU capability flag will allow libvirt to probe sd-card
+          drivers.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
       <change/>
