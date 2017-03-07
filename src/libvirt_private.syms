@@ -976,8 +976,6 @@ virSecretObjSetValueSize;
 
 
 # conf/virstorageobj.h
-virStoragePoolLoadAllConfigs;
-virStoragePoolLoadAllState;
 virStoragePoolObjAssignDef;
 virStoragePoolObjClearVols;
 virStoragePoolObjDeleteDef;
@@ -986,12 +984,13 @@ virStoragePoolObjFindByUUID;
 virStoragePoolObjIsDuplicate;
 virStoragePoolObjListExport;
 virStoragePoolObjListFree;
+virStoragePoolObjLoadAllConfigs;
+virStoragePoolObjLoadAllState;
 virStoragePoolObjLock;
 virStoragePoolObjRemove;
 virStoragePoolObjSaveDef;
+virStoragePoolObjSourceFindDuplicate;
 virStoragePoolObjUnlock;
-virStoragePoolSourceFindDuplicate;
-virStoragePoolSourceFindDuplicateDevices;
 
 
 # cpu/cpu.h
