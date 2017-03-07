@@ -860,28 +860,12 @@ virStoragePoolFormatDiskTypeToString;
 virStoragePoolFormatFileSystemNetTypeToString;
 virStoragePoolFormatFileSystemTypeToString;
 virStoragePoolFormatLogicalTypeToString;
-virStoragePoolLoadAllConfigs;
-virStoragePoolLoadAllState;
-virStoragePoolObjAssignDef;
-virStoragePoolObjClearVols;
-virStoragePoolObjDeleteDef;
-virStoragePoolObjFindByName;
-virStoragePoolObjFindByUUID;
-virStoragePoolObjIsDuplicate;
-virStoragePoolObjListExport;
-virStoragePoolObjListFree;
-virStoragePoolObjLock;
-virStoragePoolObjRemove;
-virStoragePoolObjSaveDef;
-virStoragePoolObjUnlock;
 virStoragePoolSaveConfig;
 virStoragePoolSaveState;
 virStoragePoolSourceAdapterTypeFromString;
 virStoragePoolSourceAdapterTypeToString;
 virStoragePoolSourceClear;
 virStoragePoolSourceDeviceClear;
-virStoragePoolSourceFindDuplicate;
-virStoragePoolSourceFindDuplicateDevices;
 virStoragePoolSourceFree;
 virStoragePoolSourceListFormat;
 virStoragePoolSourceListNewSource;
@@ -989,6 +973,25 @@ virSecretObjSaveData;
 virSecretObjSetDef;
 virSecretObjSetValue;
 virSecretObjSetValueSize;
+
+
+# conf/virstorageobj.h
+virStoragePoolLoadAllConfigs;
+virStoragePoolLoadAllState;
+virStoragePoolObjAssignDef;
+virStoragePoolObjClearVols;
+virStoragePoolObjDeleteDef;
+virStoragePoolObjFindByName;
+virStoragePoolObjFindByUUID;
+virStoragePoolObjIsDuplicate;
+virStoragePoolObjListExport;
+virStoragePoolObjListFree;
+virStoragePoolObjLock;
+virStoragePoolObjRemove;
+virStoragePoolObjSaveDef;
+virStoragePoolObjUnlock;
+virStoragePoolSourceFindDuplicate;
+virStoragePoolSourceFindDuplicateDevices;
 
 
 # cpu/cpu.h
