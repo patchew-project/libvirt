@@ -360,8 +360,6 @@ testInitQEMUCaps(struct testInfo *info,
     if (!(info->qemuCaps = virQEMUCapsNew()))
         goto cleanup;
 
-    virQEMUCapsSet(info->qemuCaps, QEMU_CAPS_NO_ACPI);
-
     if (testQemuCapsSetGIC(info->qemuCaps, gic) < 0)
         goto cleanup;
 
@@ -380,6 +378,20 @@ testUpdateQEMUCaps(const struct testInfo *info,
     int ret = -1;
 
     virQEMUCapsSetArch(info->qemuCaps, vm->def->os.arch);
+
+    /* Important: keep this in sync with virQEMUCapsInitArchQMPBasic() */
+
+    /* ACPI only works on x86 and aarch64 */
+    if (ARCH_IS_X86(vm->def->os.arch) ||
+        vm->def->os.arch == VIR_ARCH_AARCH64) {
+        virQEMUCapsSet(info->qemuCaps, QEMU_CAPS_NO_ACPI);
+    }
+
+    /* HPET and KVM PIT are x86 specific */
+    if (ARCH_IS_X86(vm->def->os.arch)) {
+        virQEMUCapsSet(info->qemuCaps, QEMU_CAPS_NO_HPET);
+        virQEMUCapsSet(info->qemuCaps, QEMU_CAPS_NO_KVM_PIT);
+    }
 
     /* We need to pretend QEMU 2.0.0 is in use so that pSeries guests
      * will get the correct alias assigned to their buses.
