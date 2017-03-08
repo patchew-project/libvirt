@@ -374,6 +374,15 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
                           def->features[VIR_DOMAIN_FEATURE_ACPI] ==
                           VIR_TRISTATE_SWITCH_ON);
 
+        if (def->cpu && def->cpu->nfeatures) {
+            for (i = 0; i < def->cpu->nfeatures; i++) {
+                if (def->cpu->features[i].policy == VIR_CPU_FEATURE_REQUIRE &&
+                    (STREQ(def->cpu->features[i].name, "vmx") ||
+                     STREQ(def->cpu->features[i].name, "svm")))
+                    libxl_defbool_set(&b_info->u.hvm.nested_hvm, true);
+            }
+        }
+
         if (def->nsounds > 0) {
             /*
              * Use first sound device.  man xl.cfg(5) describes soundhw as
