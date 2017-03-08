@@ -5192,10 +5192,6 @@ virQEMUCapsCacheLookupByArch(virCapsPtr caps,
             virQEMUCapsCacheValidate(cache, binary, caps, &ret);
             VIR_FREE(binary);
         }
-    } else {
-        virReportError(VIR_ERR_INVALID_ARG,
-                       _("unable to find any emulator to serve '%s' "
-                         "architecture"), virArchToString(arch));
     }
 
     virObjectRef(ret);
