@@ -1871,6 +1871,21 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
 }
 
 
+static int
+qemuBuildCheckIOThreadAddress(virDomainDeviceInfo info)
+{
+    if (info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI &&
+        info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("IOThreads are only available for virtio pci and "
+                         "virtio ccw"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
 char *
 qemuBuildDriveDevStr(const virDomainDef *def,
                      virDomainDiskDefPtr disk,
@@ -1887,6 +1902,9 @@ qemuBuildDriveDevStr(const virDomainDef *def,
         goto error;
 
     if (!qemuCheckCCWS390AddressSupport(def, disk->info, qemuCaps, disk->dst))
+        goto error;
+
+    if (disk->iothread > 0 && qemuBuildCheckIOThreadAddress(disk->info) < 0)
         goto error;
 
     switch (disk->bus) {
@@ -2571,6 +2589,8 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
             if (def->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
                 virBufferAddLit(&buf, "virtio-scsi-ccw");
                 if (def->iothread) {
+                    if (qemuBuildCheckIOThreadAddress(def->info) < 0)
+                        goto error;
                     virBufferAsprintf(&buf, ",iothread=iothread%u",
                                       def->iothread);
                 }
@@ -2583,6 +2603,8 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
             } else {
                 virBufferAddLit(&buf, "virtio-scsi-pci");
                 if (def->iothread) {
+                    if (qemuBuildCheckIOThreadAddress(def->info) < 0)
+                        goto error;
                     virBufferAsprintf(&buf, ",iothread=iothread%u",
                                       def->iothread);
                 }

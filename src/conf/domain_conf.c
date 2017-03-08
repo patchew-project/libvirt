@@ -4769,12 +4769,10 @@ virDomainDiskDefValidate(const virDomainDef *def,
     }
 
     if (disk->iothread > 0) {
-        if (disk->bus != VIR_DOMAIN_DISK_BUS_VIRTIO ||
-            (disk->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI &&
-             disk->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW)) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("IOThreads are only available for virtio pci and "
-                             "virtio ccw disk"));
+        if (disk->bus != VIR_DOMAIN_DISK_BUS_VIRTIO) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("IOThreads are not available for bus '%s', disk '%s'"),
+                           virDomainDiskBusTypeToString(disk->bus), disk->dst);
             return -1;
         }
 
@@ -4847,14 +4845,6 @@ virDomainControllerDefValidate(const virDomainDef *def,
                            _("IOThreads are only supported for virtio-scsi "
                              "controllers, model is '%s'"),
                            virDomainControllerModelSCSITypeToString(cont->model));
-            return -1;
-        }
-
-        if (cont->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI &&
-            cont->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("IOThreads are only available for virtio pci and "
-                             "virtio ccw controllers"));
             return -1;
         }
 
