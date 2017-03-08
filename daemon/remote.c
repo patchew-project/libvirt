@@ -101,6 +101,7 @@ static void make_nonnull_node_device(remote_nonnull_node_device *dev_dst, virNod
 static void make_nonnull_secret(remote_nonnull_secret *secret_dst, virSecretPtr secret_src);
 static void make_nonnull_nwfilter(remote_nonnull_nwfilter *net_dst, virNWFilterPtr nwfilter_src);
 static void make_nonnull_domain_snapshot(remote_nonnull_domain_snapshot *snapshot_dst, virDomainSnapshotPtr snapshot_src);
+static void remoteClientCleanEventCallbacks(struct daemonClientPrivate *priv);
 
 static int
 remoteSerializeDomainDiskErrors(virDomainDiskErrorPtr errors,
@@ -1623,24 +1624,15 @@ void remoteRelayConnectionClosedEvent(virConnectPtr conn ATTRIBUTE_UNUSED, int r
                                   &msg);
 }
 
-/*
- * You must hold lock for at least the client
- * We don't free stuff here, merely disconnect the client's
- * network socket & resources.
- * We keep the libvirt connection open until any async
- * jobs have finished, then clean it up elsewhere
- */
-void remoteClientFreeFunc(void *data)
+static void remoteClientCleanEventCallbacks(struct daemonClientPrivate *priv)
 {
-    struct daemonClientPrivate *priv = data;
-
     /* Deregister event delivery callback */
-    if (priv->conn) {
-        virIdentityPtr sysident = virIdentityGetSystem();
+    if (priv && priv->conn) {
         size_t i;
-
+        virIdentityPtr sysident = virIdentityGetSystem();
         virIdentitySetCurrent(sysident);
 
+        virMutexLock(&priv->lock);
         for (i = 0; i < priv->ndomainEventCallbacks; i++) {
             int callbackID = priv->domainEventCallbacks[i]->callbackID;
             if (callbackID < 0) {
@@ -1654,6 +1646,7 @@ void remoteClientFreeFunc(void *data)
                 VIR_WARN("unexpected domain event deregister failure");
         }
         VIR_FREE(priv->domainEventCallbacks);
+        priv->ndomainEventCallbacks = 0;
 
         for (i = 0; i < priv->nnetworkEventCallbacks; i++) {
             int callbackID = priv->networkEventCallbacks[i]->callbackID;
@@ -1669,21 +1662,7 @@ void remoteClientFreeFunc(void *data)
                 VIR_WARN("unexpected network event deregister failure");
         }
         VIR_FREE(priv->networkEventCallbacks);
-
-        for (i = 0; i < priv->nstorageEventCallbacks; i++) {
-            int callbackID = priv->storageEventCallbacks[i]->callbackID;
-            if (callbackID < 0) {
-                VIR_WARN("unexpected incomplete storage pool callback %zu", i);
-                continue;
-            }
-            VIR_DEBUG("Deregistering remote storage pool event relay %d",
-                      callbackID);
-            priv->storageEventCallbacks[i]->callbackID = -1;
-            if (virConnectStoragePoolEventDeregisterAny(priv->conn,
-                                                        callbackID) < 0)
-                VIR_WARN("unexpected storage pool event deregister failure");
-        }
-        VIR_FREE(priv->storageEventCallbacks);
+        priv->nnetworkEventCallbacks = 0;
 
         for (i = 0; i < priv->nnodeDeviceEventCallbacks; i++) {
             int callbackID = priv->nodeDeviceEventCallbacks[i]->callbackID;
@@ -1729,28 +1708,45 @@ void remoteClientFreeFunc(void *data)
                 VIR_WARN("unexpected qemu monitor event deregister failure");
         }
         VIR_FREE(priv->qemuEventCallbacks);
+        priv->nqemuEventCallbacks = 0;
 
         if (priv->closeRegistered) {
             if (virConnectUnregisterCloseCallback(priv->conn,
                                                   remoteRelayConnectionClosedEvent) < 0)
                 VIR_WARN("unexpected close callback event deregister failure");
         }
-
-        virConnectClose(priv->conn);
-
+        virMutexUnlock(&priv->lock);
         virIdentitySetCurrent(NULL);
         virObjectUnref(sysident);
     }
+}
+
+
+/*
+ * You must hold lock for at least the client
+ * We don't free stuff here, merely disconnect the client's
+ * network socket & resources.
+ * We keep the libvirt connection open until any async
+ * jobs have finished, then clean it up elsewhere
+ */
+void remoteClientFreeFunc(void *data)
+{
+    struct daemonClientPrivate *priv = data;
+    if (!priv || !priv->conn)
+        return;
+
+    remoteClientCleanEventCallbacks(priv);
+    virConnectClose(priv->conn);
 
     VIR_FREE(priv);
 }
-
 
 static void remoteClientCloseFunc(virNetServerClientPtr client)
 {
     struct daemonClientPrivate *priv = virNetServerClientGetPrivateData(client);
 
     daemonRemoveAllClientStreams(priv->streams);
+    remoteClientCleanEventCallbacks(priv);
 }
 
 
