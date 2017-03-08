@@ -106,6 +106,7 @@ xenParseXLOS(virConfPtr conf, virDomainDefPtr def, virCapsPtr caps)
     if (def->os.type == VIR_DOMAIN_OSTYPE_HVM) {
         const char *bios;
         const char *boot;
+        int val;
 
         if (xenConfigGetString(conf, "bios", &bios, NULL) < 0)
             return -1;
@@ -163,6 +164,35 @@ xenParseXLOS(virConfPtr conf, virDomainDefPtr def, virCapsPtr caps)
                 break;
             }
             def->os.nBootDevs++;
+        }
+
+        if (xenConfigGetBool(conf, "nestedhvm", &val, 0) < 0) {
+            return -1;
+        } else if (val) {
+            virCPUDefPtr cpu = NULL;
+
+            if (VIR_ALLOC(cpu) < 0)
+                return -1;
+
+            if (VIR_ALLOC_N(cpu->features, 1) < 0)
+                goto cleanup;
+
+            cpu->features[0].policy = VIR_CPU_FEATURE_REQUIRE;
+            if (VIR_STRDUP(cpu->features[0].name, "vmx") < 0)
+                goto cleanup;
+
+            cpu->nfeatures = cpu->nfeatures_max = 1;
+            cpu->mode = VIR_CPU_MODE_HOST_PASSTHROUGH;
+            cpu->type = VIR_CPU_TYPE_GUEST;
+            def->cpu = cpu;
+            cpu = NULL;
+
+ cleanup:
+            if (cpu) {
+                VIR_FREE(cpu->features);
+                VIR_FREE(cpu);
+                return -1;
+            }
         }
     } else {
         if (xenConfigCopyStringOpt(conf, "bootloader", &def->os.bootloader) < 0)
@@ -896,6 +926,17 @@ xenFormatXLOS(virConfPtr conf, virDomainDefPtr def)
 
         if (xenConfigSetString(conf, "boot", boot) < 0)
             return -1;
+
+        if (def->cpu && def->cpu->nfeatures) {
+            for (i = 0; i < def->cpu->nfeatures; i++) {
+                if (def->cpu->features[i].policy == VIR_CPU_FEATURE_REQUIRE &&
+                    (STREQ(def->cpu->features[i].name, "vmx") ||
+                     STREQ(def->cpu->features[i].name, "svm")))
+                    if (xenConfigSetInt(conf, "nestedhvm", 1) < 0)
+                        return -1;
+            }
+        }
+
 
         /* XXX floppy disks */
     } else {
