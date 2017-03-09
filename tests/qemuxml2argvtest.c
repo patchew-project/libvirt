@@ -772,6 +772,13 @@ mymain(void)
             QEMU_CAPS_MACHINE_OPT,
             QEMU_CAPS_MACHINE_SMM_OPT,
             QEMU_CAPS_VIRTIO_SCSI);
+
+    /* Make sure all combinations of ACPI and UEFI behave as expected */
+    DO_TEST("q35-acpi-uefi", NONE);
+    DO_TEST_FAILURE("q35-noacpi-uefi", NONE);
+    DO_TEST("q35-noacpi-nouefi", NONE);
+    DO_TEST("q35-acpi-nouefi", NONE);
+
     DO_TEST("clock-utc", QEMU_CAPS_NODEFCONFIG);
     DO_TEST("clock-localtime", NONE);
     DO_TEST("clock-localtime-basis-localtime", QEMU_CAPS_RTC);
@@ -2309,6 +2316,13 @@ mymain(void)
     DO_TEST_FAILURE("aarch64-kvm-32-on-64",
             QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_DEVICE_VIRTIO_MMIO,
             QEMU_CAPS_KVM);
+
+    /* Make sure all combinations of ACPI and UEFI behave as expected */
+    DO_TEST("aarch64-acpi-uefi", NONE);
+    DO_TEST("aarch64-noacpi-uefi", NONE);
+    DO_TEST("aarch64-noacpi-nouefi", NONE);
+    DO_TEST_FAILURE("aarch64-acpi-nouefi", NONE);
+
     qemuTestSetHostArch(driver.caps, VIR_ARCH_NONE);
 
     DO_TEST("kvm-pit-delay", QEMU_CAPS_KVM_PIT_TICK_POLICY);
