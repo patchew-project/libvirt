@@ -37,6 +37,15 @@
           applications running on the platform.
         </description>
       </change>
+      <change>
+        <summary>
+           qemu: Allow qemuDomainSaveMemory saving VM state to a pipe
+        </summary>
+        <description>
+            Introduce flag VIR_DOMAIN_SAVE_DIRECT to enable command 'save'
+            to write to PIPE, for PIPE can't be reopened.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
       <change/>
