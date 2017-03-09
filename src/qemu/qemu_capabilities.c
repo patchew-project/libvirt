@@ -4231,6 +4231,8 @@ virQEMUCapsInitArchQMPBasic(virQEMUCapsPtr qemuCaps,
         goto cleanup;
     }
 
+    /* Important: keep this in sync with testUpdateQEMUCaps() */
+
     /* ACPI only works on x86 and aarch64 */
     if (ARCH_IS_X86(qemuCaps->arch) ||
         qemuCaps->arch == VIR_ARCH_AARCH64) {
