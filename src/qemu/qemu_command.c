@@ -3203,7 +3203,6 @@ qemuBuildMemoryBackendStr(unsigned long long size,
 
         if (def->mem.source == VIR_DOMAIN_MEMORY_SOURCE_FILE) {
             /* we can have both pagesize and mem source, then check mem source first */
-            force = true;
             if (virJSONValueObjectAdd(props,
                                       "s:mem-path", cfg->memoryBackingDir,
                                       NULL) < 0)
@@ -3273,7 +3272,8 @@ qemuBuildMemoryBackendStr(unsigned long long size,
     }
 
     /* If none of the following is requested... */
-    if (!needHugepage && !userNodeset && !memAccess && !nodeSpecified && !force) {
+    if (!needHugepage && !userNodeset && !memAccess && !nodeSpecified &&
+        def->mem.source != VIR_DOMAIN_MEMORY_SOURCE_FILE && !force) {
         /* report back that using the new backend is not necessary
          * to achieve the desired configuration */
         ret = 1;
