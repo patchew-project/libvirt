@@ -6348,9 +6348,23 @@ qemuBuildPMCommandLine(virCommandPtr cmd,
         virCommandAddArg(cmd, "-no-shutdown");
     }
 
+    /* Architectures that support ACPI also support -no-acpi as a way
+     * of turning it off, and vice versa */
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_NO_ACPI)) {
+
+        /* ACPI is off unless explicitly turned on */
         if (def->features[VIR_DOMAIN_FEATURE_ACPI] != VIR_TRISTATE_SWITCH_ON)
             virCommandAddArg(cmd, "-no-acpi");
+
+        /* aarch64 requires UEFI to be in use for ACPI to work */
+        if (def->features[VIR_DOMAIN_FEATURE_ACPI] == VIR_TRISTATE_SWITCH_ON &&
+            def->os.arch == VIR_ARCH_AARCH64 &&
+            (!def->os.loader ||
+             def->os.loader->type != VIR_DOMAIN_LOADER_TYPE_PFLASH)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("ACPI requires UEFI on this architecture"));
+            return -1;
+        }
     }
 
     /* We fall back to PIIX4_PM even for q35, since it's what we did
@@ -9195,10 +9209,14 @@ qemuBuildDomainLoaderCommandLine(virCommandPtr cmd,
         break;
 
     case VIR_DOMAIN_LOADER_TYPE_PFLASH:
+
+        /* On x86, ACPI is a requirement for UEFI; other architectures,
+         * such as aarch64, might have different requirements */
         if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_NO_ACPI) &&
+            ARCH_IS_X86(def->os.arch) &&
             def->features[VIR_DOMAIN_FEATURE_ACPI] != VIR_TRISTATE_SWITCH_ON) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("ACPI must be enabled in order to use UEFI"));
+                           _("UEFI requires ACPI on this architecture"));
             goto cleanup;
         }
 
