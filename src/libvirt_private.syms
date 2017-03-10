@@ -2227,6 +2227,7 @@ virPCIDeviceSetUsedBy;
 virPCIDeviceUnbind;
 virPCIDeviceWaitForCleanup;
 virPCIEDeviceInfoFree;
+virPCIGetDeviceAddressFromSysfsLink;
 virPCIGetHeaderType;
 virPCIGetNetName;
 virPCIGetPhysicalFunction;
