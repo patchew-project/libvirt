@@ -2217,6 +2217,7 @@ virPCIDeviceListSteal;
 virPCIDeviceListStealIndex;
 virPCIDeviceNew;
 virPCIDeviceReattach;
+virPCIDeviceRebind;
 virPCIDeviceReset;
 virPCIDeviceSetManaged;
 virPCIDeviceSetRemoveSlot;
