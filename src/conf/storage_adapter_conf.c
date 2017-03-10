@@ -19,7 +19,7 @@
 
 #include <config.h>
 
-#include "storage_adapter_conf.h"
+#include "storage_conf.h"
 
 #include "viralloc.h"
 #include "virerror.h"
@@ -32,10 +32,9 @@
 
 VIR_LOG_INIT("conf.storage_adapter_conf");
 
-VIR_ENUM_IMPL(virStoragePoolSourceAdapter,
-              VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_LAST,
+VIR_ENUM_IMPL(virStorageAdapter,
+              VIR_STORAGE_ADAPTER_TYPE_LAST,
               "default", "scsi_host", "fc_host")
-
 
 static void
 virStorageAdapterFCHostClear(virStorageAdapterFCHostPtr fchost)
@@ -50,12 +49,12 @@ virStorageAdapterFCHostClear(virStorageAdapterFCHostPtr fchost)
 
 
 void
-virStorageAdapterClear(virStoragePoolSourceAdapterPtr adapter)
+virStorageAdapterClear(virStorageAdapterPtr adapter)
 {
-    if (adapter->type == VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_FC_HOST)
+    if (adapter->type == VIR_STORAGE_ADAPTER_TYPE_FC_HOST)
         virStorageAdapterFCHostClear(&adapter->data.fchost);
 
-    if (adapter->type == VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST)
+    if (adapter->type == VIR_STORAGE_ADAPTER_TYPE_SCSI_HOST)
         VIR_FREE(adapter->data.scsi_host.name);
 }
 
@@ -123,7 +122,7 @@ virStorageAdapterSCSIHostParseXML(xmlNodePtr node,
 static int
 virStorageAdapterLegacyParseXML(xmlNodePtr node,
                                 xmlXPathContextPtr ctxt,
-                                virStoragePoolSourceAdapterPtr adapter)
+                                virStorageAdapterPtr adapter)
 {
     char *wwnn = virXMLPropString(node, "wwnn");
     char *wwpn = virXMLPropString(node, "wwpn");
@@ -154,14 +153,14 @@ virStorageAdapterLegacyParseXML(xmlNodePtr node,
      * for scsi_host adapter.
      */
     if ((adapter->data.scsi_host.name = virXMLPropString(node, "name")))
-        adapter->type = VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST;
+        adapter->type = VIR_STORAGE_ADAPTER_TYPE_SCSI_HOST;
 
     return 0;
 }
 
 
 int
-virStorageAdapterParseXML(virStoragePoolSourcePtr source,
+virStorageAdapterParseXML(virStorageAdapterPtr adapter,
                           xmlNodePtr node,
                           xmlXPathContextPtr ctxt)
 {
@@ -172,26 +171,24 @@ virStorageAdapterParseXML(virStoragePoolSourcePtr source,
     ctxt->node = node;
 
     if ((adapter_type = virXMLPropString(node, "type"))) {
-        if ((source->adapter.type =
-             virStoragePoolSourceAdapterTypeFromString(adapter_type)) <= 0) {
+        if ((adapter->type =
+             virStorageAdapterTypeFromString(adapter_type)) <= 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Unknown pool adapter type '%s'"),
                            adapter_type);
             goto cleanup;
         }
 
-        if (source->adapter.type ==
-            VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_FC_HOST) {
-            if (virStorageAdapterFCHostParseXML(node, &source->adapter.data.fchost) < 0)
-                goto cleanup;
-        } else if (source->adapter.type ==
-                   VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST) {
-            if (virStorageAdapterSCSIHostParseXML(node, ctxt, &source->adapter.data.scsi_host) < 0)
+        if ((adapter->type == VIR_STORAGE_ADAPTER_TYPE_FC_HOST) &&
+            (virStorageAdapterFCHostParseXML(node, &adapter->data.fchost)) < 0)
                 goto cleanup;
 
-        }
+        if ((adapter->type == VIR_STORAGE_ADAPTER_TYPE_SCSI_HOST) &&
+            (virStorageAdapterSCSIHostParseXML(node, ctxt,
+                                               &adapter->data.scsi_host)) < 0)
+                goto cleanup;
     } else {
-        if (virStorageAdapterLegacyParseXML(node, ctxt, &source->adapter) < 0)
+        if (virStorageAdapterLegacyParseXML(node, ctxt, adapter) < 0)
             goto cleanup;
     }
 
@@ -260,21 +257,19 @@ virStorageAdapterSCSIHostParseValidate(virStorageAdapterSCSIHostPtr scsi_host)
 
 
 int
-virStorageAdapterParseValidate(virStoragePoolDefPtr ret)
+virStorageAdapterParseValidate(virStorageAdapterPtr adapter)
 {
-    if (!ret->source.adapter.type) {
+    if (!adapter->type) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("missing storage pool source adapter"));
         return -1;
     }
 
-    if (ret->source.adapter.type ==
-        VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_FC_HOST)
-        return virStorageAdapterFCHostParseValidate(&ret->source.adapter.data.fchost);
+    if (adapter->type == VIR_STORAGE_ADAPTER_TYPE_FC_HOST)
+        return virStorageAdapterFCHostParseValidate(&adapter->data.fchost);
 
-    if (ret->source.adapter.type ==
-        VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST)
-        return virStorageAdapterSCSIHostParseValidate(&ret->source.adapter.data.scsi_host);
+    if (adapter->type == VIR_STORAGE_ADAPTER_TYPE_SCSI_HOST)
+        return virStorageAdapterSCSIHostParseValidate(&adapter->data.scsi_host);
 
     return 0;
 }
@@ -285,13 +280,13 @@ virStorageAdapterFCHostFormat(virBufferPtr buf,
                               virStorageAdapterFCHostPtr fchost)
 {
     virBufferEscapeString(buf, " parent='%s'", fchost->parent);
-    if (fchost->managed)
-        virBufferAsprintf(buf, " managed='%s'",
-                          virTristateBoolTypeToString(fchost->managed));
     virBufferEscapeString(buf, " parent_wwnn='%s'", fchost->parent_wwnn);
     virBufferEscapeString(buf, " parent_wwpn='%s'", fchost->parent_wwpn);
     virBufferEscapeString(buf, " parent_fabric_wwn='%s'",
                           fchost->parent_fabric_wwn);
+    if (fchost->managed != VIR_TRISTATE_BOOL_ABSENT)
+        virBufferAsprintf(buf, " managed='%s'",
+                          virTristateBoolTypeToString(fchost->managed));
 
     virBufferAsprintf(buf, " wwnn='%s' wwpn='%s'/>\n",
                       fchost->wwnn, fchost->wwpn);
@@ -322,14 +317,14 @@ virStorageAdapterSCSIHostFormat(virBufferPtr buf,
 
 void
 virStorageAdapterFormat(virBufferPtr buf,
-                        virStoragePoolSourcePtr src)
+                        virStorageAdapterPtr adapter)
 {
     virBufferAsprintf(buf, "<adapter type='%s'",
-                      virStoragePoolSourceAdapterTypeToString(src->adapter.type));
+                      virStorageAdapterTypeToString(adapter->type));
 
-    if (src->adapter.type == VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_FC_HOST)
-        virStorageAdapterFCHostFormat(buf, &src->adapter.data.fchost);
+    if (adapter->type == VIR_STORAGE_ADAPTER_TYPE_FC_HOST)
+        virStorageAdapterFCHostFormat(buf, &adapter->data.fchost);
 
-    if (src->adapter.type == VIR_STORAGE_POOL_SOURCE_ADAPTER_TYPE_SCSI_HOST)
-        virStorageAdapterSCSIHostFormat(buf, &src->adapter.data.scsi_host);
+    if (adapter->type == VIR_STORAGE_ADAPTER_TYPE_SCSI_HOST)
+        virStorageAdapterSCSIHostFormat(buf, &adapter->data.scsi_host);
 }
