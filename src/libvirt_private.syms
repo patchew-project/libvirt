@@ -848,10 +848,10 @@ virDomainSnapshotUpdateRelations;
 
 
 # conf/storage_adapter_conf.h
-virStoragePoolDefParseSourceAdapter;
-virStoragePoolSourceAdapterClear;
-virStoragePoolSourceAdapterFormat;
-virStoragePoolSourceAdapterParseValidate;
+virStorageAdapterClear;
+virStorageAdapterFormat;
+virStorageAdapterParseValidate;
+virStorageAdapterParseXML;
 
 
 # conf/storage_conf.h
