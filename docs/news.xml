@@ -12,7 +12,15 @@
 <libvirt>
   <release version="v3.2.0" date="unreleased">
     <section title="New features">
-      <change/>
+      <change>
+        <summary>
+          virt-host-validate: Add bhyve support
+        </summary>
+        <description>
+          Add support for validation of the bhyve hypervisor hosts
+          using the virt-host-validate tool.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
       <change>
