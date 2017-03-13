@@ -111,7 +111,8 @@ virBhyveCapsBuild(void)
 }
 
 virDomainCapsPtr
-virBhyveDomainCapsBuild(const char *emulatorbin,
+virBhyveDomainCapsBuild(bhyveConnPtr conn,
+                        const char *emulatorbin,
                         const char *machine,
                         virArch arch,
                         virDomainVirtType virttype)
@@ -120,8 +121,9 @@ virBhyveDomainCapsBuild(const char *emulatorbin,
     unsigned int bhyve_caps = 0;
     DIR *dir;
     struct dirent *entry;
-    const char *firmware_dir = "/usr/local/share/uefi-firmware";
     size_t firmwares_alloc = 0;
+    virBhyveDriverConfigPtr cfg = virBhyveDriverGetConfig(conn);
+    const char *firmware_dir = cfg->firmwareDir;
 
     if (!(caps = virDomainCapsNew(emulatorbin, machine, arch, virttype)))
         goto cleanup;
@@ -152,7 +154,10 @@ virBhyveDomainCapsBuild(const char *emulatorbin,
 
            caps->os.loader.values.nvalues++;
         }
+    } else {
+        VIR_WARN("Cannot open firmware directory %s", firmware_dir);
     }
+
     caps->disk.supported = true;
     VIR_DOMAIN_CAPS_ENUM_SET(caps->disk.diskDevice,
                              VIR_DOMAIN_DISK_DEVICE_DISK,
