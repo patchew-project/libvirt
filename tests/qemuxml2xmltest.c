@@ -884,12 +884,24 @@ mymain(void)
             QEMU_CAPS_ICH9_AHCI,
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
             QEMU_CAPS_DEVICE_QXL);
-    DO_TEST("pcie-root-port",
+
+    /* Make sure the default model for PCIe Root Ports is picked correctly
+     * according to architecture, machine type and binary capabilities; also
+     * make sure that the user can override the default */
+    DO_TEST("pcie-root-port-q35",
             QEMU_CAPS_DEVICE_IOH3420,
-            QEMU_CAPS_ICH9_AHCI,
-            QEMU_CAPS_PCI_MULTIFUNCTION,
-            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
-            QEMU_CAPS_DEVICE_QXL);
+            QEMU_CAPS_DEVICE_PCIE_ROOT_PORT,
+            QEMU_CAPS_PCI_MULTIFUNCTION);
+    DO_TEST("pcie-root-port-mach-virt-generic",
+            QEMU_CAPS_OBJECT_GPEX,
+            QEMU_CAPS_DEVICE_IOH3420,
+            QEMU_CAPS_DEVICE_PCIE_ROOT_PORT,
+            QEMU_CAPS_PCI_MULTIFUNCTION);
+    DO_TEST("pcie-root-port-mach-virt-ioh3420",
+            QEMU_CAPS_OBJECT_GPEX,
+            QEMU_CAPS_DEVICE_IOH3420,
+            QEMU_CAPS_PCI_MULTIFUNCTION);
+
     DO_TEST("pcie-switch-upstream-port",
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_DEVICE_X3130_UPSTREAM,

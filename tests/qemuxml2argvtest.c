@@ -2011,12 +2011,15 @@ mymain(void)
             QEMU_CAPS_DEVICE_QXL,
             QEMU_CAPS_HDA_DUPLEX,
             QEMU_CAPS_USB_REDIR);
-    DO_TEST("pcie-root-port",
+
+    /* Make sure the default model for PCIe Root Ports is picked correctly
+     * according to architecture, machine type and binary capabilities; also
+     * make sure that the user can override the default */
+    DO_TEST("pcie-root-port-q35",
             QEMU_CAPS_DEVICE_IOH3420,
-            QEMU_CAPS_ICH9_AHCI,
-            QEMU_CAPS_PCI_MULTIFUNCTION,
-            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
-            QEMU_CAPS_DEVICE_QXL);
+            QEMU_CAPS_DEVICE_PCIE_ROOT_PORT,
+            QEMU_CAPS_PCI_MULTIFUNCTION);
+
     DO_TEST("autoindex",
             QEMU_CAPS_DEVICE_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
@@ -2294,6 +2297,20 @@ mymain(void)
     DO_TEST_FAILURE("aarch64-kvm-32-on-64",
             QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_DEVICE_VIRTIO_MMIO,
             QEMU_CAPS_KVM);
+
+    /* Make sure the default model for PCIe Root Ports is picked correctly
+     * according to architecture, machine type and binary capabilities; also
+     * make sure that the user can override the default */
+    DO_TEST("pcie-root-port-mach-virt-generic",
+            QEMU_CAPS_OBJECT_GPEX,
+            QEMU_CAPS_DEVICE_IOH3420,
+            QEMU_CAPS_DEVICE_PCIE_ROOT_PORT,
+            QEMU_CAPS_PCI_MULTIFUNCTION);
+    DO_TEST("pcie-root-port-mach-virt-ioh3420",
+            QEMU_CAPS_OBJECT_GPEX,
+            QEMU_CAPS_DEVICE_IOH3420,
+            QEMU_CAPS_PCI_MULTIFUNCTION);
+
     qemuTestSetHostArch(driver.caps, VIR_ARCH_NONE);
 
     DO_TEST("kvm-pit-delay", QEMU_CAPS_KVM_PIT_TICK_POLICY);
