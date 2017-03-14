@@ -4000,6 +4000,7 @@ qemuMonitorSetDomainLog(qemuMonitorPtr mon,
  * @mon: Pointer to the monitor
  * @arch: arch of the guest
  * @data: returns the cpu data
+ * @disabled: returns the CPU data for features which were disabled by QEMU
  *
  * Retrieve the definition of the guest CPU from a running qemu instance.
  *
@@ -4009,15 +4010,19 @@ qemuMonitorSetDomainLog(qemuMonitorPtr mon,
 int
 qemuMonitorGetGuestCPU(qemuMonitorPtr mon,
                        virArch arch,
-                       virCPUDataPtr *data)
+                       virCPUDataPtr *data,
+                       virCPUDataPtr *disabled)
 {
-    VIR_DEBUG("arch='%s' data='%p'", virArchToString(arch), data);
+    VIR_DEBUG("arch=%s data=%p disabled=%p",
+              virArchToString(arch), data, disabled);
 
     QEMU_CHECK_MONITOR_JSON(mon);
 
     *data = NULL;
+    if (disabled)
+        *disabled = NULL;
 
-    return qemuMonitorJSONGetGuestCPU(mon, arch, data);
+    return qemuMonitorJSONGetGuestCPU(mon, arch, data, disabled);
 }
 
 
