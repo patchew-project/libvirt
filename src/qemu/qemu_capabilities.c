@@ -359,6 +359,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "query-cpu-model-expansion", /* 245 */
               "virtio-net.host_mtu",
               "spice-rendernode",
+              "pcie-root-port",
     );
 
 
@@ -1619,6 +1620,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "ivshmem-plain", QEMU_CAPS_DEVICE_IVSHMEM_PLAIN },
     { "ivshmem-doorbell", QEMU_CAPS_DEVICE_IVSHMEM_DOORBELL },
     { "vhost-scsi", QEMU_CAPS_DEVICE_VHOST_SCSI },
+    { "pcie-root-port", QEMU_CAPS_DEVICE_PCIE_ROOT_PORT },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {
