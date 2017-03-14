@@ -1846,13 +1846,16 @@ qemuDomainSupportsPCI(virDomainDefPtr def,
 
 
 static void
-qemuDomainPCIControllerSetDefaultModelName(virDomainControllerDefPtr cont)
+qemuDomainPCIControllerSetDefaultModelName(virDomainControllerDefPtr cont,
+                                           virDomainDefPtr def,
+                                           virQEMUCapsPtr qemuCaps)
 {
     int *modelName = &cont->opts.pciopts.modelName;
 
     /* make sure it's not already set */
     if (*modelName != VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_NONE)
         return;
+
     switch ((virDomainControllerModelPCI)cont->model) {
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_BRIDGE:
         *modelName = VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_PCI_BRIDGE;
@@ -1861,7 +1864,13 @@ qemuDomainPCIControllerSetDefaultModelName(virDomainControllerDefPtr cont)
         *modelName = VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_I82801B11_BRIDGE;
         break;
     case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT_PORT:
-        *modelName = VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_IOH3420;
+        /* Use generic PCIe Root Ports for mach-virt guests, if available */
+        if (qemuDomainMachineIsVirt(def) &&
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_PCIE_ROOT_PORT)) {
+            *modelName = VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_PCIE_ROOT_PORT;
+        } else {
+            *modelName = VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_IOH3420;
+        }
         break;
     case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_UPSTREAM_PORT:
         *modelName = VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_X3130_UPSTREAM;
@@ -2143,7 +2152,7 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
              * device in qemu) for any controller that doesn't yet
              * have it set.
              */
-            qemuDomainPCIControllerSetDefaultModelName(cont);
+            qemuDomainPCIControllerSetDefaultModelName(cont, def, qemuCaps);
 
             /* set defaults for any other auto-generated config
              * options for this controller that haven't been
