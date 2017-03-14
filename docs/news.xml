@@ -17,6 +17,15 @@
           The virt-host-validate tool now supports bhyve hypervisor
         </summary>
       </change>
+      <change>
+        <summary>
+          qemu: Introduce support for generic PCIe Root Ports
+        </summary>
+        <description>
+          This new PCI controller model will be used by default for
+          aarch64/virt guests if the QEMU binary supports it.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
       <change>
