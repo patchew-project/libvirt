@@ -1982,6 +1982,7 @@ virNetDevFeatureTypeToString;
 virNetDevGetFeatures;
 virNetDevGetIndex;
 virNetDevGetLinkInfo;
+virNetDevGetName;
 virNetDevGetMAC;
 virNetDevGetMTU;
 virNetDevGetOnline;
