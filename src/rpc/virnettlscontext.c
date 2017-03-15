@@ -1208,6 +1208,7 @@ virNetTLSSessionPtr virNetTLSSessionNew(virNetTLSContextPtr ctxt,
     /* avoid calling all the priority functions, since the defaults
      * are adequate.
      */
+    VIR_DEBUG("Setting priority string '%s'", ctxt->priority ? ctxt->priority : TLS_PRIORITY);
     if ((err = gnutls_priority_set_direct(sess->session,
                                           ctxt->priority ? ctxt->priority : TLS_PRIORITY,
                                           NULL)) != 0) {
