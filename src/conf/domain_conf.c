@@ -4252,6 +4252,23 @@ virDomainHostdevDefPostParse(virDomainHostdevDefPtr dev,
             }
         }
         break;
+    case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV: {
+        int model = dev->source.subsys.u.mdev.model;
+
+        if (dev->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE)
+            return 0;
+
+        if (model == VIR_MDEV_MODEL_TYPE_VFIO_PCI &&
+            dev->info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("Unsupported address type '%s' with mediated "
+                             "device model '%s'"),
+                           virDomainDeviceAddressTypeToString(dev->info->type),
+                           virMediatedDeviceModelTypeToString(model));
+            return -1;
+        }
+    }
+
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST:
