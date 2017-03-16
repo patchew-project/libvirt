@@ -26,8 +26,6 @@
   <flag name='hda-duplex'/>
   <flag name='drive-aio'/>
   <flag name='pci-bootindex'/>
-  <flag name='ccid-emulated'/>
-  <flag name='ccid-passthru'/>
   <flag name='chardev-spicevmc'/>
   <flag name='virtio-tx-alg'/>
   <flag name='pci-multifunction'/>
@@ -202,9 +200,10 @@
   <flag name='drive-iotune-group'/>
   <flag name='query-cpu-model-expansion'/>
   <flag name='virtio-net.host_mtu'/>
-  <version>2008050</version>
+  <flag name='spice-rendernode'/>
+  <version>2008090</version>
   <kvmVersion>0</kvmVersion>
-  <package> (v2.8.0-1961-g5b10b94bd5)</package>
+  <package> (v2.9.0-rc0-15-g1883ff34b5)</package>
   <arch>x86_64</arch>
   <hostCPU type='kvm' model='base'>
     <property name='phys-bits' type='number' value='0'/>
@@ -401,6 +400,7 @@
     <property name='hv-vpindex' type='boolean' value='false'/>
     <property name='xlevel2' type='number' value='0'/>
     <property name='clflushopt' type='boolean' value='true'/>
+    <property name='kvm-no-smi-migration' type='boolean' value='false'/>
     <property name='monitor' type='boolean' value='false'/>
     <property name='avx512er' type='boolean' value='false'/>
     <property name='pmm-en' type='boolean' value='false'/>
@@ -423,7 +423,7 @@
     <property name='rdseed' type='boolean' value='true'/>
     <property name='avx512-4vnniw' type='boolean' value='false'/>
     <property name='vme' type='boolean' value='true'/>
-    <property name='vmx' type='boolean' value='true'/>
+    <property name='vmx' type='boolean' value='false'/>
     <property name='dtes64' type='boolean' value='false'/>
     <property name='mtrr' type='boolean' value='true'/>
     <property name='rdtscp' type='boolean' value='true'/>
@@ -632,6 +632,7 @@
     <property name='hv-vpindex' type='boolean' value='false'/>
     <property name='xlevel2' type='number' value='0'/>
     <property name='clflushopt' type='boolean' value='true'/>
+    <property name='kvm-no-smi-migration' type='boolean' value='false'/>
     <property name='monitor' type='boolean' value='true'/>
     <property name='avx512er' type='boolean' value='false'/>
     <property name='pmm-en' type='boolean' value='false'/>
