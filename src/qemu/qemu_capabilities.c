@@ -2795,7 +2795,7 @@ virQEMUCapsProbeQMPCPUDefinitions(virQEMUCapsPtr qemuCaps,
     size_t i;
 
     if ((ncpus = qemuMonitorGetCPUDefinitions(mon, &cpus)) < 0)
-        return -1;
+        return 0;
 
     if (!(models = virDomainCapsCPUModelsNew(ncpus)))
         goto cleanup;
