@@ -2318,7 +2318,7 @@ void virDomainHostdevDefClear(virDomainHostdevDefPtr def)
 
     switch (def->mode) {
     case VIR_DOMAIN_HOSTDEV_MODE_CAPABILITIES:
-        switch (def->source.caps.type) {
+        switch ((virDomainHostdevCapsType) def->source.caps.type) {
         case VIR_DOMAIN_HOSTDEV_CAPS_TYPE_STORAGE:
             VIR_FREE(def->source.caps.u.storage.block);
             break;
@@ -2328,6 +2328,8 @@ void virDomainHostdevDefClear(virDomainHostdevDefPtr def)
         case VIR_DOMAIN_HOSTDEV_CAPS_TYPE_NET:
             VIR_FREE(def->source.caps.u.net.ifname);
             virNetDevIPInfoClear(&def->source.caps.u.net.ip);
+            break;
+        case VIR_DOMAIN_HOSTDEV_CAPS_TYPE_LAST:
             break;
         }
         break;
