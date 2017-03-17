@@ -571,6 +571,9 @@ struct _qemuMonitorMigrationParams {
 
     bool cpuThrottleIncrement_set;
     int cpuThrottleIncrement;
+
+    char *migrateTLSAlias;
+    char *migrateTLSHostname;
 };
 
 int qemuMonitorGetMigrationParams(qemuMonitorPtr mon,

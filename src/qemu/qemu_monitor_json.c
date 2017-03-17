@@ -2566,6 +2566,7 @@ qemuMonitorJSONGetMigrationParams(qemuMonitorPtr mon,
     virJSONValuePtr result;
     virJSONValuePtr cmd = NULL;
     virJSONValuePtr reply = NULL;
+    const char *tlsStr = NULL;
 
     memset(params, 0, sizeof(*params));
 
@@ -2594,6 +2595,21 @@ qemuMonitorJSONGetMigrationParams(qemuMonitorPtr mon,
     PARSE(cpuThrottleIncrement, "cpu-throttle-increment");
 
 #undef PARSE
+
+    /* NB: First supported in QEMU 2.7; however, there was no way to
+     * clear, so 2.9 altered the definition to allow using an empty string
+     * to disable. Additionally, it defined the variable to an empty string
+     * by default if not defined ever. Use this as our marker to determine
+     * whether TLS can be supported or not. */
+    if ((tlsStr = virJSONValueObjectGetString(result, "tls-creds"))) {
+        if (VIR_STRDUP(params->migrateTLSAlias, tlsStr) < 0)
+            goto cleanup;
+    }
+
+    if ((tlsStr = virJSONValueObjectGetString(result, "tls-hostname"))) {
+        if (VIR_STRDUP(params->migrateTLSHostname, tlsStr) < 0)
+            goto cleanup;
+    }
 
     ret = 0;
  cleanup:
@@ -2636,6 +2652,18 @@ qemuMonitorJSONSetMigrationParams(qemuMonitorPtr mon,
     APPEND(cpuThrottleIncrement, "cpu-throttle-increment");
 
 #undef APPEND
+
+    /* See query, value will be either NULL, "", or something valid.
+     * NULL will indicate no support, while "" will indicate to disable */
+    if (params->migrateTLSAlias &&
+        virJSONValueObjectAppendString(args, "tls-creds",
+                                       params->migrateTLSAlias) < 0)
+        goto cleanup;
+
+    if (params->migrateTLSHostname &&
+        virJSONValueObjectAppendString(args, "tls-hostname",
+                                       params->migrateTLSHostname) < 0)
+        goto cleanup;
 
     if (virJSONValueObjectAppend(cmd, "arguments", args) < 0)
         goto cleanup;
