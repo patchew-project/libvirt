@@ -71,6 +71,7 @@ virCPUDefCopyWithoutModel;
 virCPUDefFormat;
 virCPUDefFormatBuf;
 virCPUDefFree;
+virCPUDefFreeFeatures;
 virCPUDefFreeModel;
 virCPUDefParseXML;
 virCPUDefStealModel;
