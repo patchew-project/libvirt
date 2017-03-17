@@ -817,12 +817,7 @@ prlsdkAddDomainHardDisksInfo(vzDriverPtr driver, PRL_HANDLE sdkdom, virDomainDef
 
     for (i = 0; i < hddCount; ++i) {
 
-        PRL_UINT32 emulatedType;
-
         pret = PrlVmCfg_GetHardDisk(sdkdom, i, &hdd);
-        prlsdkCheckRetGoto(pret, error);
-
-        pret = PrlVmDev_GetEmulatedType(hdd, &emulatedType);
         prlsdkCheckRetGoto(pret, error);
 
         if (IS_CT(def) &&
