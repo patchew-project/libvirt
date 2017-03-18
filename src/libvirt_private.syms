@@ -909,12 +909,9 @@ virInterfaceObjUnlock;
 
 
 # conf/virnetworkobj.h
-virNetworkAssignDef;
-virNetworkBridgeInUse;
-virNetworkConfigChangeSetup;
-virNetworkDeleteConfig;
-virNetworkLoadAllConfigs;
-virNetworkLoadAllState;
+virNetworkObjAssignDef;
+virNetworkObjBridgeInUse;
+virNetworkObjDeleteConfig;
 virNetworkObjEndAPI;
 virNetworkObjFindByName;
 virNetworkObjFindByNameLocked;
@@ -927,15 +924,17 @@ virNetworkObjListGetNames;
 virNetworkObjListNew;
 virNetworkObjListNumOfNetworks;
 virNetworkObjListPrune;
+virNetworkObjLoadAllConfigs;
+virNetworkObjLoadAllState;
 virNetworkObjNew;
+virNetworkObjRemoveInactive;
 virNetworkObjReplacePersistentDef;
+virNetworkObjSaveStatus;
 virNetworkObjSetDefTransient;
 virNetworkObjTaint;
 virNetworkObjUnsetDefTransient;
 virNetworkObjUpdate;
 virNetworkObjUpdateAssignDef;
-virNetworkRemoveInactive;
-virNetworkSaveStatus;
 
 
 # conf/virnodedeviceobj.h
