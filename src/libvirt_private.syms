@@ -915,7 +915,6 @@ virNetworkConfigChangeSetup;
 virNetworkDeleteConfig;
 virNetworkLoadAllConfigs;
 virNetworkLoadAllState;
-virNetworkObjAssignDef;
 virNetworkObjEndAPI;
 virNetworkObjFindByName;
 virNetworkObjFindByNameLocked;
@@ -934,6 +933,7 @@ virNetworkObjSetDefTransient;
 virNetworkObjTaint;
 virNetworkObjUnsetDefTransient;
 virNetworkObjUpdate;
+virNetworkObjUpdateAssignDef;
 virNetworkRemoveInactive;
 virNetworkSaveStatus;
 
