@@ -3971,10 +3971,56 @@ doCoreDumpToAutoDumpPath(virQEMUDriverPtr driver,
     return ret;
 }
 
+
+static char *
+qemuProcessGuestPanicEventInfoFormatData(qemuMonitorEventPanicInfoPtr info)
+{
+    char *ret = NULL;
+
+    switch (info->type) {
+    case QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_HYPERV:
+        ignore_value(virAsprintf(&ret, "hyper-v: arg1='0x%llx', arg2='0x%llx', "
+                                       "arg3='0x%llx', arg4='0x%llx', "
+                                       "arg5='0x%llx'",
+                                       info->data.hyperv.arg1,
+                                       info->data.hyperv.arg2,
+                                       info->data.hyperv.arg3,
+                                       info->data.hyperv.arg4,
+                                       info->data.hyperv.arg5));
+        break;
+
+    case QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_NONE:
+    case QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_LAST:
+        break;
+    }
+
+    return ret;
+}
+
+
+static void
+qemuProcessGuestPanicEventInfo(virQEMUDriverPtr driver,
+                               virDomainObjPtr vm,
+                               qemuMonitorEventPanicInfoPtr info)
+{
+    char *msg = qemuProcessGuestPanicEventInfoFormatData(info);
+    char *timestamp = virTimeStringNow();
+
+    if (msg && timestamp) {
+        qemuDomainLogAppendMessage(driver, vm, "%s: panic %s\n", timestamp, msg);
+        VIR_WARN("domain '%s' panic data: %s", vm->def->name, msg);
+    }
+
+    VIR_FREE(timestamp);
+    VIR_FREE(msg);
+}
+
+
 static void
 processGuestPanicEvent(virQEMUDriverPtr driver,
                        virDomainObjPtr vm,
-                       int action)
+                       int action,
+                       qemuMonitorEventPanicInfoPtr info)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virObjectEventPtr event = NULL;
@@ -3989,6 +4035,9 @@ processGuestPanicEvent(virQEMUDriverPtr driver,
                   vm->def->name);
         goto endjob;
     }
+
+    if (info)
+        qemuProcessGuestPanicEventInfo(driver, vm, info);
 
     virDomainObjSetState(vm, VIR_DOMAIN_CRASHED, VIR_DOMAIN_CRASHED_PANICKED);
 
@@ -4567,7 +4616,8 @@ static void qemuProcessEventHandler(void *data, void *opaque)
         processWatchdogEvent(driver, vm, processEvent->action);
         break;
     case QEMU_PROCESS_EVENT_GUESTPANIC:
-        processGuestPanicEvent(driver, vm, processEvent->action);
+        processGuestPanicEvent(driver, vm, processEvent->action,
+                               processEvent->data);
         break;
     case QEMU_PROCESS_EVENT_DEVICE_DELETED:
         processDeviceDeletedEvent(driver, vm, processEvent->data);
