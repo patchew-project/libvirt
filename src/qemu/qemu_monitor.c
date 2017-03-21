@@ -1359,11 +1359,12 @@ qemuMonitorEmitResume(qemuMonitorPtr mon)
 
 
 int
-qemuMonitorEmitGuestPanic(qemuMonitorPtr mon)
+qemuMonitorEmitGuestPanic(qemuMonitorPtr mon,
+                          qemuMonitorEventPanicInfoPtr info)
 {
     int ret = -1;
     VIR_DEBUG("mon=%p", mon);
-    QEMU_MONITOR_CALLBACK(mon, ret, domainGuestPanic, mon->vm);
+    QEMU_MONITOR_CALLBACK(mon, ret, domainGuestPanic, mon->vm, info);
     return ret;
 }
 
@@ -4183,4 +4184,14 @@ qemuMonitorQueryQMPSchema(qemuMonitorPtr mon)
     QEMU_CHECK_MONITOR_JSON_NULL(mon);
 
     return qemuMonitorJSONQueryQMPSchema(mon);
+}
+
+
+void
+qemuMonitorEventPanicInfoFree(qemuMonitorEventPanicInfoPtr info)
+{
+    if (!info)
+        return;
+
+    VIR_FREE(info);
 }
