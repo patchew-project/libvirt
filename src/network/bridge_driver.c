@@ -2488,7 +2488,8 @@ networkShutdownNetworkVirtual(virNetworkDriverStatePtr driver,
     if (network->def->bandwidth)
         virNetDevBandwidthClear(network->def->bridge);
 
-    virObjectUnref(network->macmap);
+    if (!virObjectUnref(network->macmap))
+        network->macmap = NULL;
 
     if (network->radvdPid > 0) {
         char *radvdpidbase;
