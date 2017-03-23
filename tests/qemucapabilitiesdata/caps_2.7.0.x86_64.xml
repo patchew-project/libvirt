@@ -200,6 +200,7 @@
   <flag name='vhost-scsi'/>
   <flag name='drive-iotune-group'/>
   <flag name='query-cpu-definitions'/>
+  <flag name='kernel-irqchip'/>
   <version>2007000</version>
   <kvmVersion>0</kvmVersion>
   <package> (v2.7.0)</package>

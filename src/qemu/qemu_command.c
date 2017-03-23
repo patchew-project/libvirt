@@ -7316,6 +7316,17 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
             }
         }
 
+        if (def->irqchip) {
+            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_MACHINE_KERNEL_IRQCHIP)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("kernel-irqchip option is not supported by this "
+                                 "QEMU binary"));
+                goto cleanup;
+            }
+            virBufferAsprintf(&buf, ",kernel_irqchip=%s",
+                              virDomainIRQChipTypeToString(def->irqchip));
+        }
+
         virCommandAddArgBuffer(cmd, &buf);
     }
 
