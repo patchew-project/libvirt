@@ -1662,6 +1662,7 @@ typedef enum {
     VIR_DOMAIN_FEATURE_VMPORT,
     VIR_DOMAIN_FEATURE_GIC,
     VIR_DOMAIN_FEATURE_SMM,
+    VIR_DOMAIN_FEATURE_IRQCHIP,
 
     VIR_DOMAIN_FEATURE_LAST
 } virDomainFeature;
@@ -1800,6 +1801,17 @@ struct _virDomainLoaderDef {
 };
 
 void virDomainLoaderDefFree(virDomainLoaderDefPtr loader);
+
+typedef enum {
+    VIR_DOMAIN_IRQCHIP_DEFAULT = 0,
+    VIR_DOMAIN_IRQCHIP_OFF,
+    VIR_DOMAIN_IRQCHIP_SPLIT,
+    VIR_DOMAIN_IRQCHIP_ON,
+
+    VIR_DOMAIN_IRQCHIP_LAST
+} virDomainIRQChip;
+
+VIR_ENUM_DECL(virDomainIRQChip);
 
 /* Operating system configuration data & machine / arch */
 typedef struct _virDomainOSDef virDomainOSDef;
@@ -2250,6 +2262,7 @@ struct _virDomainDef {
     unsigned int hyperv_spinlocks;
     virGICVersion gic_version;
     char *hyperv_vendor_id;
+    virDomainIRQChip irqchip;
 
     /* These options are of type virTristateSwitch: ON = keep, OFF = drop */
     int caps_features[VIR_DOMAIN_CAPS_FEATURE_LAST];

@@ -1627,6 +1627,7 @@
   &lt;/kvm&gt;
   &lt;pvspinlock state='on'/&gt;
   &lt;gic version='2'/&gt;
+  &lt;irqchip mode='split'/&gt;
 
 &lt;/features&gt;
 ...</pre>
@@ -1787,6 +1788,15 @@
           <code>on</code> and <code>off</code>. The default is left
           for hypervisor to decide.
           <span class="since">Since 2.1.0</span>
+      </dd>
+      <dt><code>irqchip</code></dt>
+      <dd>Tune the in-kernel irqchip. Possible values for the
+          <code>mode</code> attribute are:
+          <code>on</code>, <code>split</code> and <code>off</code>.
+          <code>split</code> is useful for using interrupt remapping
+          with the <a href="#elementsIommu">IOMMU device</a>.
+          The default is left for hypervisor to decide.
+          <span class="since">Since 3.3.0</span> (QEMU only)
       </dd>
     </dl>
 

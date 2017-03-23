@@ -1124,6 +1124,8 @@ mymain(void)
     DO_TEST("intel-iommu-machine",
             QEMU_CAPS_MACHINE_OPT,
             QEMU_CAPS_MACHINE_IOMMU);
+    DO_TEST("intel-iommu-irqchip",
+            QEMU_CAPS_DEVICE_INTEL_IOMMU);
 
     DO_TEST("cpu-check-none", NONE);
     DO_TEST("cpu-check-partial", NONE);
