@@ -13944,6 +13944,15 @@ virDomainIOMMUDefParseXML(xmlNodePtr node,
         iommu->intremap = val;
     }
 
+    VIR_FREE(tmp);
+    if ((tmp = virXPathString("string(./driver/@caching)", ctxt))) {
+        if ((val = virTristateSwitchTypeFromString(tmp)) < 0) {
+            virReportError(VIR_ERR_XML_ERROR, _("unknown caching value: %s"), tmp);
+            goto cleanup;
+        }
+        iommu->caching = val;
+    }
+
     ret = iommu;
     iommu = NULL;
 
@@ -23864,9 +23873,17 @@ virDomainIOMMUDefFormat(virBufferPtr buf,
 
     virBufferAdjustIndent(&childBuf, virBufferGetIndent(buf, false) + 2);
 
-    if (iommu->intremap) {
-        virBufferAsprintf(&childBuf, "<driver intremap='%s'/>\n",
-                          virTristateSwitchTypeToString(iommu->intremap));
+    if (iommu->intremap || iommu->caching) {
+        virBufferAddLit(&childBuf, "<driver");
+        if (iommu->intremap) {
+            virBufferAsprintf(&childBuf, " intremap='%s'",
+                              virTristateSwitchTypeToString(iommu->intremap));
+        }
+        if (iommu->caching) {
+            virBufferAsprintf(&childBuf, " caching='%s'",
+                              virTristateSwitchTypeToString(iommu->caching));
+        }
+        virBufferAddLit(&childBuf, "/>\n");
     }
 
     virBufferAsprintf(buf, "<iommu model='%s'",

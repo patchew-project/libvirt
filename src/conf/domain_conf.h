@@ -2204,6 +2204,7 @@ typedef enum {
 struct _virDomainIOMMUDef {
     virDomainIOMMUModel model;
     virTristateSwitch intremap;
+    virTristateSwitch caching;
 };
 /*
  * Guest VM main configuration
