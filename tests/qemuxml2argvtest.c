@@ -2478,6 +2478,7 @@ mymain(void)
     DO_TEST("intel-iommu-irqchip",
             QEMU_CAPS_MACHINE_OPT,
             QEMU_CAPS_MACHINE_KERNEL_IRQCHIP,
+            QEMU_CAPS_INTEL_IOMMU_INTREMAP,
             QEMU_CAPS_DEVICE_INTEL_IOMMU);
 
     DO_TEST("cpu-hotplug-startup", QEMU_CAPS_QUERY_HOTPLUGGABLE_CPUS);

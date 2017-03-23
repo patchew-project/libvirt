@@ -6652,6 +6652,16 @@ qemuBuildIOMMUCommandLine(virCommandPtr cmd,
             return -1;
         }
         virBufferAddLit(&opts, "intel-iommu");
+        if (iommu->intremap) {
+            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_INTEL_IOMMU_INTREMAP)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("iommu: interrupt remapping is not supported "
+                                 "with this QEMU binary"));
+                goto cleanup;
+            }
+            virBufferAsprintf(&opts, ",intremap=%s",
+                              virTristateSwitchTypeToString(iommu->intremap));
+        }
     case VIR_DOMAIN_IOMMU_MODEL_LAST:
         break;
     }
@@ -6659,6 +6669,7 @@ qemuBuildIOMMUCommandLine(virCommandPtr cmd,
     virCommandAddArgBuffer(cmd, &opts);
 
     ret = 0;
+ cleanup:
     virBufferFreeAndReset(&opts);
     return ret;
 }

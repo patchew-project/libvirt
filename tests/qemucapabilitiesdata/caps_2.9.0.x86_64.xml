@@ -206,6 +206,7 @@
   <flag name='pcie-root-port'/>
   <flag name='query-cpu-definitions'/>
   <flag name='kernel-irqchip'/>
+  <flag name='intel-iommu-intremap'/>
   <version>2008090</version>
   <kvmVersion>0</kvmVersion>
   <package> (v2.9.0-rc0-142-g940a8ce)</package>
