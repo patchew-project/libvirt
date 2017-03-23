@@ -2480,6 +2480,11 @@ mymain(void)
             QEMU_CAPS_MACHINE_KERNEL_IRQCHIP,
             QEMU_CAPS_INTEL_IOMMU_INTREMAP,
             QEMU_CAPS_DEVICE_INTEL_IOMMU);
+    DO_TEST("intel-iommu-caching",
+            QEMU_CAPS_MACHINE_OPT,
+            QEMU_CAPS_DEVICE_INTEL_IOMMU,
+            QEMU_CAPS_INTEL_IOMMU_INTREMAP,
+            QEMU_CAPS_INTEL_IOMMU_CACHING);
 
     DO_TEST("cpu-hotplug-startup", QEMU_CAPS_QUERY_HOTPLUGGABLE_CPUS);
 

@@ -6662,6 +6662,16 @@ qemuBuildIOMMUCommandLine(virCommandPtr cmd,
             virBufferAsprintf(&opts, ",intremap=%s",
                               virTristateSwitchTypeToString(iommu->intremap));
         }
+        if (iommu->caching) {
+            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_INTEL_IOMMU_CACHING)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("iommu: caching mode is not supported "
+                                 "with this QEMU binary"));
+                goto cleanup;
+            }
+            virBufferAsprintf(&opts, ",caching-mode=%s",
+                              virTristateSwitchTypeToString(iommu->caching));
+        }
     case VIR_DOMAIN_IOMMU_MODEL_LAST:
         break;
     }
