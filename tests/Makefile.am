@@ -127,6 +127,7 @@ EXTRA_DIST =		\
 	qemumonitorjsondata \
 	qemuxml2argvdata \
 	qemuxml2xmloutdata \
+	qemumemlockdata \
 	secretxml2xmlin \
 	securityselinuxhelperdata \
 	securityselinuxlabeldata \
@@ -276,6 +277,7 @@ test_programs += qemuxml2argvtest qemuxml2xmltest \
 	qemuargv2xmltest qemuhelptest domainsnapshotxml2xmltest \
 	qemumonitortest qemumonitorjsontest qemuhotplugtest \
 	qemuagenttest qemucapabilitiestest qemucaps2xmltest \
+	qemumemlocktest \
 	qemucommandutiltest
 test_helpers += qemucapsprobe
 test_libraries += libqemumonitortestutils.la \
@@ -658,6 +660,12 @@ domainsnapshotxml2xmltest_SOURCES = \
 	domainsnapshotxml2xmltest.c testutilsqemu.c testutilsqemu.h \
 	testutils.c testutils.h
 domainsnapshotxml2xmltest_LDADD = $(qemu_LDADDS) $(LDADDS)
+
+qemumemlocktest_SOURCES = \
+	qemumemlocktest.c \
+	testutilsqemu.c testutilsqemu.h \
+	testutils.c testutils.h
+qemumemlocktest_LDADD = $(qemu_LDADDS) $(LDADDS)
 else ! WITH_QEMU
 EXTRA_DIST += qemuxml2argvtest.c qemuxml2xmltest.c qemuargv2xmltest.c \
 	qemuhelptest.c domainsnapshotxml2xmltest.c \
@@ -665,6 +673,7 @@ EXTRA_DIST += qemuxml2argvtest.c qemuxml2xmltest.c qemuargv2xmltest.c \
 	qemumonitorjsontest.c qemuhotplugtest.c \
 	qemuagenttest.c qemucapabilitiestest.c \
 	qemucaps2xmltest.c qemucommandutiltest.c \
+	qemumemlocktest.c \
 	$(QEMUMONITORTESTUTILS_SOURCES)
 endif ! WITH_QEMU
 
