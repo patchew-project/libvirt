@@ -23842,6 +23842,15 @@ virDomainDefIothreadShouldFormat(virDomainDefPtr def)
 }
 
 
+static void
+virDomainIOMMUDefFormat(virBufferPtr buf,
+                        virDomainIOMMUDefPtr iommu)
+{
+    virBufferAsprintf(buf, "<iommu model='%s'/>\n",
+                      virDomainIOMMUModelTypeToString(iommu->model));
+}
+
+
 /* This internal version appends to an existing buffer
  * (possibly with auto-indent), rather than flattening
  * to string.
@@ -24595,10 +24604,8 @@ virDomainDefFormatInternal(virDomainDefPtr def,
             goto error;
     }
 
-    if (def->iommu) {
-        virBufferAsprintf(buf, "<iommu model='%s'/>\n",
-                          virDomainIOMMUModelTypeToString(def->iommu->model));
-    }
+    if (def->iommu)
+        virDomainIOMMUDefFormat(buf, def->iommu);
 
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</devices>\n");
