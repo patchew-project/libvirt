@@ -13873,6 +13873,16 @@ qemuDomainSnapshotPrepare(virConnectPtr conn,
         goto cleanup;
     }
 
+    /* Internal snapshots don't work with VMs with OVMF loader since qemu does
+     * not snapshot the variable store */
+    if (found_internal &&
+        vm->def->os.loader->type == VIR_DOMAIN_LOADER_TYPE_PFLASH) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("internal snapshots of a VM with pflash based "
+                         "firmware are not supported"));
+        goto cleanup;
+    }
+
     /* Alter flags to let later users know what we learned.  */
     if (external && !active)
         *flags |= VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY;
