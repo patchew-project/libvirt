@@ -1083,6 +1083,15 @@ virCommandSetUID(virCommandPtr cmd, uid_t uid)
     cmd->uid = uid;
 }
 
+unsigned long long
+virCommandGetMaxMemLock(virCommandPtr cmd)
+{
+    if (!cmd || cmd->has_error)
+        return 0;
+
+    return cmd->maxMemLock;
+}
+
 void
 virCommandSetMaxMemLock(virCommandPtr cmd, unsigned long long bytes)
 {

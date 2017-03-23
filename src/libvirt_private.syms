@@ -1433,6 +1433,7 @@ virCommandDaemonize;
 virCommandDoAsyncIO;
 virCommandExec;
 virCommandFree;
+virCommandGetMaxMemLock;
 virCommandHandshakeNotify;
 virCommandHandshakeWait;
 virCommandNew;
