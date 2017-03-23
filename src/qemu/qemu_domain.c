@@ -6199,18 +6199,20 @@ qemuDomainUpdateCurrentMemorySize(virQEMUDriverPtr driver,
 
 /**
  * qemuDomainGetMemLockLimitBytes:
- *
  * @def: domain definition
  *
- * Returns the size of the memory in bytes that needs to be set as
- * RLIMIT_MEMLOCK for the QEMU process.
- * If a mem.hard_limit is set, then that value is preferred; otherwise, the
- * value returned may depend upon the architecture or devices present.
+ * Calculate the memory locking limit that needs to be set in order for
+ * the guest to operate properly. The limit depends on a number of factors,
+ * including certain configuration options and less immediately apparent ones
+ * such as the guest architecture or the use of certain devices.
+ *
+ * Returns: the memory locking limit, or 0 if setting the limit is not needed
  */
 unsigned long long
 qemuDomainGetMemLockLimitBytes(virDomainDefPtr def)
 {
-    unsigned long long memKB;
+    unsigned long long memKB = 0;
+    size_t i;
 
     /* prefer the hard limit */
     if (virMemoryLimitIsSet(def->mem.hard_limit)) {
@@ -6218,13 +6220,17 @@ qemuDomainGetMemLockLimitBytes(virDomainDefPtr def)
         goto done;
     }
 
-    if (ARCH_IS_PPC64(def->os.arch)) {
+    if (def->mem.locked) {
+        memKB = virDomainDefGetMemoryTotal(def) + 1024 * 1024;
+        goto done;
+    }
+
+    if (ARCH_IS_PPC64(def->os.arch) && def->virtType == VIR_DOMAIN_VIRT_KVM) {
         unsigned long long maxMemory;
         unsigned long long memory;
         unsigned long long baseLimit;
         unsigned long long passthroughLimit;
         size_t nPCIHostBridges;
-        size_t i;
         bool usesVFIO = false;
 
         /* TODO: Detect at runtime once we start using more than just
@@ -6314,43 +6320,20 @@ qemuDomainGetMemLockLimitBytes(virDomainDefPtr def)
      *
      * Note that this may not be valid for all platforms.
      */
-    memKB = virDomainDefGetMemoryTotal(def) + 1024 * 1024;
-
- done:
-    return memKB << 10;
-}
-
-
-/**
- * @def: domain definition
- *
- * Returns true if the locked memory limit needs to be set or updated because
- * of domain configuration, VFIO passthrough devices or architecture-specific
- * requirements.
- * */
-bool
-qemuDomainRequiresMemLock(virDomainDefPtr def)
-{
-    size_t i;
-
-    if (def->mem.locked)
-        return true;
-
     for (i = 0; i < def->nhostdevs; i++) {
         virDomainHostdevDefPtr dev = def->hostdevs[i];
 
         if (dev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS &&
             dev->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI &&
-            dev->source.subsys.u.pci.backend == VIR_DOMAIN_HOSTDEV_PCI_BACKEND_VFIO)
-            return true;
+            dev->source.subsys.u.pci.backend == VIR_DOMAIN_HOSTDEV_PCI_BACKEND_VFIO) {
+            memKB = virDomainDefGetMemoryTotal(def) + 1024 * 1024;
+        }
     }
 
-    /* ppc64 KVM domains need to lock some memory even when VFIO is not used */
-    if (ARCH_IS_PPC64(def->os.arch) && def->virtType == VIR_DOMAIN_VIRT_KVM)
-        return true;
-
-    return false;
+ done:
+    return memKB << 10;
 }
+
 
 /**
  * qemuDomainAdjustMaxMemLock:
@@ -6372,7 +6355,9 @@ qemuDomainAdjustMaxMemLock(virDomainObjPtr vm)
     unsigned long long bytes = 0;
     int ret = -1;
 
-    if (qemuDomainRequiresMemLock(vm->def)) {
+    bytes = qemuDomainGetMemLockLimitBytes(vm->def);
+
+    if (bytes) {
         /* If this is the first time adjusting the limit, save the current
          * value so that we can restore it once memory locking is no longer
          * required. Failing to obtain the current limit is not a critical
@@ -6381,7 +6366,6 @@ qemuDomainAdjustMaxMemLock(virDomainObjPtr vm)
             if (virProcessGetMaxMemLock(vm->pid, &(vm->original_memlock)) < 0)
                 vm->original_memlock = 0;
         }
-        bytes = qemuDomainGetMemLockLimitBytes(vm->def);
     } else {
         /* Once memory locking is no longer required, we can restore the
          * original, usually very low, limit */
