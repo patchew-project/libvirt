@@ -518,7 +518,7 @@ virHostdevSetNetConfig(virDomainHostdevDefPtr hostdev,
  * case, try to find in the old state dir.
  */
 static int
-virHostdevNetConfigRestore(virDomainHostdevDefPtr hostdev,
+virHostdevRestoreNetConfig(virDomainHostdevDefPtr hostdev,
                            const char *stateDir,
                            const char *oldStateDir)
 {
@@ -868,7 +868,7 @@ virHostdevPreparePCIDevices(virHostdevManagerPtr mgr,
  resetvfnetconfig:
     if (last_processed_hostdev_vf >= 0) {
         for (i = 0; i <= last_processed_hostdev_vf; i++)
-            virHostdevNetConfigRestore(hostdevs[i], mgr->stateDir, NULL);
+            virHostdevRestoreNetConfig(hostdevs[i], mgr->stateDir, NULL);
     }
 
  reattachdevs:
@@ -929,7 +929,7 @@ virHostdevReattachPCIDevice(virHostdevManagerPtr mgr,
 }
 
 /* @oldStateDir:
- * For upgrade purpose: see virHostdevNetConfigRestore
+ * For upgrade purpose: see virHostdevRestoreNetConfig
  */
 void
 virHostdevReAttachPCIDevices(virHostdevManagerPtr mgr,
@@ -1030,7 +1030,7 @@ virHostdevReAttachPCIDevices(virHostdevManagerPtr mgr,
             if (actual) {
                 VIR_DEBUG("Restoring network configuration of PCI device %s",
                           virPCIDeviceGetName(actual));
-                virHostdevNetConfigRestore(hostdev, mgr->stateDir,
+                virHostdevRestoreNetConfig(hostdev, mgr->stateDir,
                                            oldStateDir);
             }
         }
