@@ -57,7 +57,9 @@ virCapabilitiesFreeGuest;
 virCapabilitiesFreeMachines;
 virCapabilitiesFreeNUMAInfo;
 virCapabilitiesGetCpusForNodemask;
+virCapabilitiesGetNodeInfo;
 virCapabilitiesHostSecModelAddBaseLabel;
+virCapabilitiesInitNUMA;
 virCapabilitiesNew;
 virCapabilitiesSetHostCPU;
 virCapabilitiesSetNetPrefix;
@@ -1129,11 +1131,6 @@ virLogManagerDomainOpenLogFile;
 virLogManagerDomainReadLogFile;
 virLogManagerFree;
 virLogManagerNew;
-
-
-# nodeinfo.h
-nodeCapsInitNUMA;
-nodeGetInfo;
 
 
 # secret/secret_util.h
