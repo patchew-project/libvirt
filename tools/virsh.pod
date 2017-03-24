@@ -4104,7 +4104,7 @@ used to represent properties of snapshots.
 
 =item B<snapshot-create> I<domain> [I<xmlfile>] {[I<--redefine> [I<--current>]]
 | [I<--no-metadata>] [I<--halt>] [I<--disk-only>] [I<--reuse-external>]
-[I<--quiesce>] [I<--atomic>] [I<--live>]}
+[I<--quiesce>] [I<--atomic>] [I<--live>] [I<--unsafe>]}
 
 Create a snapshot for domain I<domain> with the properties specified in
 I<xmlfile>.  Normally, the only properties settable for a domain snapshot
@@ -4162,6 +4162,10 @@ If I<--live> is specified, libvirt takes the snapshot (checkpoint) while
 the guest is running. Both disk snapshot and domain memory snapshot are
 taken. This increases the size of the memory image of the external
 checkpoint. This is currently supported only for external checkpoints.
+
+Certain snapshot configurations may be unsafe but historically used to work. You
+can specify the I<--unsafe> flag if a snapshot operation is forbidden due to
+being unsafe.
 
 Existence of snapshot metadata will prevent attempts to B<undefine>
 a persistent domain.  However, for transient domains, snapshot

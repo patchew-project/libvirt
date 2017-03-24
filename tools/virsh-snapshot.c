@@ -364,6 +364,10 @@ static const vshCmdOptDef opts_snapshot_create_as[] = {
      .flags = VSH_OFLAG_REQ_OPT,
      .help = N_("memory attributes: [file=]name[,snapshot=type]")
     },
+    {.name = "unsafe",
+     .type = VSH_OT_BOOL,
+     .help = N_("override unsafe operation")
+    },
     {.name = "diskspec",
      .type = VSH_OT_ARGV,
      .help = N_("disk attributes: disk[,snapshot=type][,driver=type][,file=name]")
@@ -404,6 +408,8 @@ cmdSnapshotCreateAs(vshControl *ctl, const vshCmd *cmd)
         flags |= VIR_DOMAIN_SNAPSHOT_CREATE_ATOMIC;
     if (vshCommandOptBool(cmd, "live"))
         flags |= VIR_DOMAIN_SNAPSHOT_CREATE_LIVE;
+    if (vshCommandOptBool(cmd, "unsafe"))
+        flags |= VIR_DOMAIN_SNAPSHOT_CREATE_UNSAFE;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;
