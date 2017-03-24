@@ -1144,22 +1144,6 @@ virLogManagerNew;
 # nodeinfo.h
 nodeCapsInitNUMA;
 nodeGetInfo;
-virHostCPUGetCount;
-virHostCPUGetKVMMaxVCPUs;
-virHostCPUGetMap;
-virHostCPUGetOnlineBitmap;
-virHostCPUGetPresentBitmap;
-virHostCPUGetStats;
-virHostCPUGetThreadsPerSubcore;
-virHostCPUHasBitmap;
-virHostCPUStatsAssign;
-virHostMemAllocPages;
-virHostMemGetCellsFree;
-virHostMemGetFreePages;
-virHostMemGetInfo;
-virHostMemGetParameters;
-virHostMemGetStats;
-virHostMemSetParameters;
 
 
 # secret/secret_util.h
@@ -1724,6 +1708,19 @@ virHookInitialize;
 virHookPresent;
 
 
+# util/virhostcpu.h
+virHostCPUGetCount;
+virHostCPUGetInfo;
+virHostCPUGetKVMMaxVCPUs;
+virHostCPUGetMap;
+virHostCPUGetOnlineBitmap;
+virHostCPUGetPresentBitmap;
+virHostCPUGetStats;
+virHostCPUGetThreadsPerSubcore;
+virHostCPUHasBitmap;
+virHostCPUStatsAssign;
+
+
 # util/virhostdev.h
 virHostdevFindUSBDevice;
 virHostdevIsSCSIDevice;
@@ -1745,6 +1742,16 @@ virHostdevUpdateActiveDomainDevices;
 virHostdevUpdateActivePCIDevices;
 virHostdevUpdateActiveSCSIDevices;
 virHostdevUpdateActiveUSBDevices;
+
+
+# util/virhostmem.h
+virHostMemAllocPages;
+virHostMemGetCellsFree;
+virHostMemGetFreePages;
+virHostMemGetInfo;
+virHostMemGetParameters;
+virHostMemGetStats;
+virHostMemSetParameters;
 
 
 # util/viridentity.h
