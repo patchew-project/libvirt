@@ -556,15 +556,17 @@ virNetDevIPCheckIPv6ForwardingCallback(const struct nlmsghdr *resp,
     if (resp->nlmsg_type != RTM_NEWROUTE)
         return ret;
 
-    /* Extract a few attributes */
+    /* Extract a device ID attribute */
     for (rta = RTM_RTA(rtmsg); RTA_OK(rta, len); rta = RTA_NEXT(rta, len)) {
-        switch (rta->rta_type) {
-        case RTA_OIF:
+        if (rta->rta_type == RTA_OIF) {
             oif = *(int *)RTA_DATA(rta);
+
+            /* Should never happen: netlink message would be broken */
+            if (ifname)
+                goto error;
 
             if (!(ifname = virNetDevGetName(oif)))
                 goto error;
-            break;
         }
     }
 
