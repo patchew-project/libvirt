@@ -106,6 +106,7 @@ xenParseXLOS(virConfPtr conf, virDomainDefPtr def, virCapsPtr caps)
     if (def->os.type == VIR_DOMAIN_OSTYPE_HVM) {
         const char *bios;
         const char *boot;
+        int val = 0;
 
         if (xenConfigGetString(conf, "bios", &bios, NULL) < 0)
             return -1;
@@ -164,6 +165,47 @@ xenParseXLOS(virConfPtr conf, virDomainDefPtr def, virCapsPtr caps)
             }
             def->os.nBootDevs++;
         }
+
+        if (xenConfigGetBool(conf, "nestedhvm", &val, -1) < 0)
+            return -1;
+
+        if (val != -1) {
+            virCPUDefPtr cpu = NULL;
+
+            if (VIR_ALLOC(cpu) < 0)
+                return -1;
+
+            if (val == 0) {
+                if (VIR_ALLOC_N(cpu->features, 2) < 0)
+                    goto cleanup;
+
+                /*
+                 * Below is pointless in real world but for purpose
+                 * of testing let's check features depth holding at
+                 * least multiple elements and also check if both
+                 * vmx|svm are understood.
+                 */
+                cpu->features[0].policy = VIR_CPU_FEATURE_DISABLE;
+                if (VIR_STRDUP(cpu->features[0].name, "vmx") < 0)
+                    goto cleanup;
+                cpu->features[1].policy = VIR_CPU_FEATURE_DISABLE;
+                if (VIR_STRDUP(cpu->features[1].name, "svm") < 0)
+                    goto cleanup;
+
+                cpu->nfeatures = cpu->nfeatures_max = 2;
+            }
+            cpu->mode = VIR_CPU_MODE_HOST_PASSTHROUGH;
+            cpu->type = VIR_CPU_TYPE_GUEST;
+            def->cpu = cpu;
+            cpu = NULL;
+ cleanup:
+            if (cpu) {
+                VIR_FREE(cpu->features);
+                VIR_FREE(cpu);
+                return -1;
+            }
+        }
+
     } else {
         if (xenConfigCopyStringOpt(conf, "bootloader", &def->os.bootloader) < 0)
             return -1;
@@ -896,6 +938,31 @@ xenFormatXLOS(virConfPtr conf, virDomainDefPtr def)
 
         if (xenConfigSetString(conf, "boot", boot) < 0)
             return -1;
+
+        if (def->cpu &&
+            def->cpu->mode == VIR_CPU_MODE_HOST_PASSTHROUGH) {
+            bool hasHwVirt = true;
+
+            if (def->cpu->nfeatures) {
+                for (i = 0; i < def->cpu->nfeatures; i++) {
+
+                    switch (def->cpu->features[i].policy) {
+                        case VIR_CPU_FEATURE_DISABLE:
+                        case VIR_CPU_FEATURE_FORBID:
+                            if (STREQ(def->cpu->features[i].name, "vmx") ||
+                                STREQ(def->cpu->features[i].name, "svm"))
+                                hasHwVirt = false;
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            if (xenConfigSetInt(conf, "nestedhvm", hasHwVirt) < 0)
+                return -1;
+        }
 
         /* XXX floppy disks */
     } else {
