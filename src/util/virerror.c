@@ -1407,6 +1407,11 @@ virErrorMsg(virErrorNumber error, const char *info)
             else
                 errmsg = _("libssh transport error: %s");
             break;
+        case VIR_ERR_OPERATION_UNSAFE:
+            if (info == NULL)
+                errmsg = _("operation unsafe");
+            else
+                errmsg = _("operation unsafe: %s");
     }
     return errmsg;
 }

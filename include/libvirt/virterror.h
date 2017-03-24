@@ -319,6 +319,7 @@ typedef enum {
     VIR_ERR_AGENT_UNSYNCED = 97,        /* guest agent replies with wrong id
                                            to guest-sync command */
     VIR_ERR_LIBSSH = 98,                /* error in libssh transport driver */
+    VIR_ERR_OPERATION_UNSAFE = 99,      /* unsafe operation requiring override */
 } virErrorNumber;
 
 /**
