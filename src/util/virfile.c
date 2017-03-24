@@ -65,6 +65,7 @@
 #endif
 
 #include "configmake.h"
+#include "intprops.h"
 #include "viralloc.h"
 #include "vircommand.h"
 #include "virerror.h"
@@ -3792,5 +3793,87 @@ virFileComparePaths(const char *p1, const char *p2)
  cleanup:
     VIR_FREE(res1);
     VIR_FREE(res2);
+    return ret;
+}
+
+
+int
+virFileReadValueInt(const char *path, int *value)
+{
+    char *str = NULL;
+    char *endp = NULL;
+
+    if (!virFileExists(path))
+        return -2;
+
+    if (virFileReadAll(path, INT_STRLEN_BOUND(*value), &str) < 0)
+        return -1;
+
+    if (virStrToLong_i(str, &endp, 10, value) < 0 ||
+        (endp && !c_isspace(*endp))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Invalid integer value '%s' in file '%s'"),
+                       str, path);
+        return -1;
+    }
+
+    VIR_FREE(str);
+
+    return 0;
+}
+
+
+int
+virFileReadValueUint(const char *path, unsigned int *value)
+{
+    char *str = NULL;
+    char *endp = NULL;
+
+    if (!virFileExists(path))
+        return -2;
+
+    if (virFileReadAll(path, INT_STRLEN_BOUND(*value), &str) < 0)
+        return -1;
+
+    if (virStrToLong_uip(str, &endp, 10, value) < 0 ||
+        (endp && !c_isspace(*endp))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Invalid unsigned integer value '%s' in file '%s'"),
+                       str, path);
+        return -1;
+    }
+
+    VIR_FREE(str);
+
+    return 0;
+}
+
+int
+virFileReadValueBitmap(const char *path,
+                       int maxlen,
+                       virBitmapPtr *value)
+{
+    char *buf = NULL;
+    int ret = -1;
+    char *tmp = NULL;
+
+    if (!virFileExists(path))
+        return -2;
+
+    if (virFileReadAll(path, maxlen, &buf) < 0)
+        goto cleanup;
+
+    /* trim optinoal newline at the end */
+    tmp = buf + strlen(buf) - 1;
+    if (*tmp == '\n')
+        *tmp = '\0';
+
+    *value = virBitmapParseUnlimited(buf);
+    if (!*value)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(buf);
     return ret;
 }
