@@ -13754,6 +13754,7 @@ qemuDomainSnapshotPrepare(virConnectPtr conn,
     bool active = virDomainObjIsActive(vm);
     bool reuse = (*flags & VIR_DOMAIN_SNAPSHOT_CREATE_REUSE_EXT) != 0;
     bool atomic = (*flags & VIR_DOMAIN_SNAPSHOT_CREATE_ATOMIC) != 0;
+    bool unsafe = (*flags & VIR_DOMAIN_SNAPSHOT_CREATE_UNSAFE) != 0;
     bool found_internal = false;
     bool forbid_internal = false;
     int external = 0;
@@ -13870,6 +13871,20 @@ qemuDomainSnapshotPrepare(virConnectPtr conn,
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("mixing internal and external targets for a snapshot "
                          "is not yet supported"));
+        goto cleanup;
+    }
+
+    /* internal snapshots + pflash based loader have the following problems:
+     * - if the variable store is raw, the snapshot is incomplete
+     * - alowing a qcow2 image as the varstore would make it eligible to receive
+     *   the vmstate dump, which would make it huge
+     * - offline snapshot would not snapshot the varstore at all
+     */
+    if (!unsafe && found_internal &&
+        vm->def->os.loader->type == VIR_DOMAIN_LOADER_TYPE_PFLASH) {
+        virReportError(VIR_ERR_OPERATION_UNSAFE, "%s",
+                       _("internal snapshots of a VM with pflash based "
+                         "firmware can corrupt the nvram data"));
         goto cleanup;
     }
 
