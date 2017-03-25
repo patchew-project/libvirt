@@ -124,7 +124,11 @@ remoteDispatchObjectEventSend(virNetServerClientPtr client,
 static void
 remoteEventCallbackFree(void *opaque)
 {
-    VIR_FREE(opaque);
+    daemonClientEventCallbackPtr callback = opaque;
+    if (!callback)
+        return;
+    virObjectUnref(callback->client);
+    VIR_FREE(callback);
 }
 
 
@@ -3845,7 +3849,7 @@ remoteDispatchConnectDomainEventRegister(virNetServerPtr server ATTRIBUTE_UNUSED
      */
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
-    callback->client = client;
+    callback->client = virObjectRef(client);
     callback->eventID = VIR_DOMAIN_EVENT_ID_LIFECYCLE;
     callback->callbackID = -1;
     callback->legacy = true;
@@ -3872,7 +3876,7 @@ remoteDispatchConnectDomainEventRegister(virNetServerPtr server ATTRIBUTE_UNUSED
     rv = 0;
 
  cleanup:
-    VIR_FREE(callback);
+    remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virMutexUnlock(&priv->lock);
@@ -4080,7 +4084,7 @@ remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
      * success, we use 'ref' to save a copy of the pointer.  */
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
-    callback->client = client;
+    callback->client = virObjectRef(client);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     callback->legacy = true;
@@ -4107,7 +4111,7 @@ remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
     rv = 0;
 
  cleanup:
-    VIR_FREE(callback);
+    remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virMutexUnlock(&priv->lock);
@@ -4156,7 +4160,7 @@ remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server ATTRI
      * success, we use 'ref' to save a copy of the pointer.  */
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
-    callback->client = client;
+    callback->client = virObjectRef(client);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -4183,7 +4187,7 @@ remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server ATTRI
     rv = 0;
 
  cleanup:
-    VIR_FREE(callback);
+    remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virObjectUnref(dom);
@@ -5666,7 +5670,7 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server ATTRIBUTE_UN
      * success, we use 'ref' to save a copy of the pointer.  */
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
-    callback->client = client;
+    callback->client = virObjectRef(client);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -5693,7 +5697,7 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server ATTRIBUTE_UN
     rv = 0;
 
  cleanup:
-    VIR_FREE(callback);
+    remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virObjectUnref(net);
@@ -5788,7 +5792,7 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server ATTRIBUT
      * success, we use 'ref' to save a copy of the pointer.  */
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
-    callback->client = client;
+    callback->client = virObjectRef(client);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -5815,7 +5819,7 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server ATTRIBUT
     rv = 0;
 
  cleanup:
-    VIR_FREE(callback);
+    remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virObjectUnref(pool);
@@ -5909,7 +5913,7 @@ remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server ATTRIBUTE
      * success, we use 'ref' to save a copy of the pointer.  */
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
-    callback->client = client;
+    callback->client = virObjectRef(client);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -5936,7 +5940,7 @@ remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server ATTRIBUTE
     rv = 0;
 
  cleanup:
-    VIR_FREE(callback);
+    remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virObjectUnref(dev);
@@ -6030,7 +6034,7 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
      * success, we use 'ref' to save a copy of the pointer.  */
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
-    callback->client = client;
+    callback->client = virObjectRef(client);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -6057,7 +6061,7 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
     rv = 0;
 
  cleanup:
-    VIR_FREE(callback);
+    remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virObjectUnref(secret);
@@ -6146,7 +6150,7 @@ qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server ATTRIBUTE_U
      * success, we use 'ref' to save a copy of the pointer.  */
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
-    callback->client = client;
+    callback->client = virObjectRef(client);
     callback->callbackID = -1;
     ref = callback;
     if (VIR_APPEND_ELEMENT(priv->qemuEventCallbacks,
@@ -6173,7 +6177,7 @@ qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server ATTRIBUTE_U
     rv = 0;
 
  cleanup:
-    VIR_FREE(callback);
+    remoteEventCallbackFree(callback);
     if (rv < 0)
         virNetMessageSaveError(rerr);
     virObjectUnref(dom);
