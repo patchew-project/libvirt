@@ -703,6 +703,9 @@ virStoragePoolDefParseXML(xmlXPathContextPtr ctxt)
         if (virStoragePoolDefParseSource(ctxt, &ret->source, ret->type,
                                          source_node) < 0)
             goto error;
+    } else {
+        if (options->formatFromString)
+            ret->source.format = options->defaultFormat;
     }
 
     ret->name = virXPathString("string(./name)", ctxt);
@@ -755,6 +758,14 @@ virStoragePoolDefParseXML(xmlXPathContextPtr ctxt)
         if (ret->source.name == NULL) {
             /* source name defaults to pool name */
             if (VIR_STRDUP(ret->source.name, ret->name) < 0)
+                goto error;
+        }
+        if (ret->type == VIR_STORAGE_POOL_LOGICAL &&
+            STRNEQ(ret->name, ret->source.name)) {
+                virReportError(VIR_ERR_XML_ERROR,
+                               _("for a logical pool, the pool name='%s' "
+                                 "must match the pool source name='%s'"),
+                               ret->name, ret->source.name);
                 goto error;
         }
     }
