@@ -2060,8 +2060,8 @@ virHostdevReAttachMediatedDevices(virHostdevManagerPtr mgr,
             continue;
 
         virMediatedDeviceGetUsedBy(tmp, &used_by_drvname, &used_by_domname);
-        if (STREQ_NULLABLE(drv_name, used_by_drvname) &&
-            STREQ_NULLABLE(dom_name, used_by_domname)) {
+        if (used_by_drvname && STREQ(drv_name, used_by_drvname) &&
+            used_by_domname && STREQ(dom_name, used_by_domname)) {
             VIR_DEBUG("Removing %s dom=%s from activeMediatedHostdevs",
                       mdevsrc->uuidstr, dom_name);
             virMediatedDeviceListDel(mgr->activeMediatedHostdevs, tmp);
