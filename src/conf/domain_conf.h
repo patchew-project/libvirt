@@ -1033,6 +1033,10 @@ struct _virDomainNetDef {
  * by libvirt, and cannot be used for a persistent network name.  */
 # define VIR_NET_GENERATED_PREFIX "vnet"
 
+/* except to macvtap/macvlan interfaces, which start with "macv(tap|lan) */
+# define VIR_NET_GENERATED_MACVTAP_PREFIX "macvtap"
+# define VIR_NET_GENERATED_MACVLAN_PREFIX "macvlan"
+
 typedef enum {
     VIR_DOMAIN_CHR_DEVICE_STATE_DEFAULT = 0,
     VIR_DOMAIN_CHR_DEVICE_STATE_CONNECTED,
