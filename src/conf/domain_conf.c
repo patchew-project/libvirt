@@ -4846,6 +4846,24 @@ virDomainNetDefValidate(const virDomainNetDef *net)
 
 
 static int
+virDomainControllerDefValidate(const virDomainControllerDef *controller)
+{
+    if (controller->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI) {
+        if (controller->idx > 255) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("PCI controller index %d too high, or too many "
+                             "PCI controllers. A maximum of 256 PCI "
+                             "controllers is allowed, and the maximum value "
+                             "of the index attribute is 255"),
+                           controller->idx);
+            return -1;
+        }
+    }
+    return 0;
+}
+
+
+static int
 virDomainDeviceDefValidateInternal(const virDomainDeviceDef *dev,
                                    const virDomainDef *def)
 {
@@ -4867,6 +4885,7 @@ virDomainDeviceDefValidateInternal(const virDomainDeviceDef *dev,
     case VIR_DOMAIN_DEVICE_HOSTDEV:
     case VIR_DOMAIN_DEVICE_WATCHDOG:
     case VIR_DOMAIN_DEVICE_CONTROLLER:
+        return virDomainControllerDefValidate(dev->data.controller);
     case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_SMARTCARD:
