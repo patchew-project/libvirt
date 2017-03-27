@@ -170,15 +170,34 @@ virMediatedDeviceNew(const char *uuidstr, virMediatedDeviceModelType model)
     return ret;
 }
 
+
+char *
+virMediatedDeviceGetSysfsPath(const char *uuidstr)
+{
+    char *ret = NULL;
+
+    ignore_value(virAsprintf(&ret, MDEV_SYSFS_DEVICES "%s", uuidstr));
+    return ret;
+}
+
 #else
 
 virMediatedDevicePtr
-virMediatedDeviceNew(virPCIDeviceAddressPtr pciaddr ATTRIBUTE_UNUSED,
-                     const char *uuidstr ATTRIBUTE_UNUSED)
+virMediatedDeviceNew(const char *uuidstr ATTRIBUTE_UNUSED,
+                     virMediatedDeviceModelType model ATTRIBUTE_UNUSED)
 {
-    virRerportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                    _("mediated devices are not supported on non-linux "
-                      "platforms"));
+    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                   _("mediated devices are not supported on non-linux "
+                     "platforms"));
+    return NULL;
+}
+
+char *
+virMediatedDeviceGetSysfsPath(const char *uuidstr ATTRIBUTE_UNUSED)
+{
+    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                   _("mediated devices are not supported on non-linux "
+                     "platforms"));
     return NULL;
 }
 
@@ -420,16 +439,6 @@ virMediatedDeviceIsUsed(virMediatedDevicePtr dev,
     }
 
     return !!tmp;
-}
-
-
-char *
-virMediatedDeviceGetSysfsPath(const char *uuidstr)
-{
-    char *ret = NULL;
-
-    ignore_value(virAsprintf(&ret, MDEV_SYSFS_DEVICES "%s", uuidstr));
-    return ret;
 }
 
 
