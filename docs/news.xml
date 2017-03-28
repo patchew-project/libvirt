@@ -18,6 +18,8 @@
      each <section> tag is required to contain at least one <change> tag.
 
      Lines should be kept under 80 columns, and should not exceed 100 columns.
+
+     This file is validated against docs/news.rng schema.
      -->
 
 <libvirt>
