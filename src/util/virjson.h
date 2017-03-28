@@ -84,13 +84,11 @@ void virJSONValueFree(virJSONValuePtr value);
 void virJSONValueHashFree(void *opaque, const void *name);
 
 int virJSONValueObjectCreate(virJSONValuePtr *obj, ...)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_SENTINEL;
-int virJSONValueObjectCreateVArgs(virJSONValuePtr *obj, va_list args)
-    ATTRIBUTE_NONNULL(1);
+    ATTRIBUTE_SENTINEL;
+int virJSONValueObjectCreateVArgs(virJSONValuePtr *obj, va_list args);
 int virJSONValueObjectAdd(virJSONValuePtr obj, ...)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_SENTINEL;
-int virJSONValueObjectAddVArgs(virJSONValuePtr obj, va_list args)
-    ATTRIBUTE_NONNULL(1);
+    ATTRIBUTE_SENTINEL;
+int virJSONValueObjectAddVArgs(virJSONValuePtr obj, va_list args);
 
 
 virJSONValuePtr virJSONValueNewString(const char *data);
@@ -136,8 +134,7 @@ int virJSONValueGetNumberLong(virJSONValuePtr object, long long *value);
 int virJSONValueGetNumberUlong(virJSONValuePtr object, unsigned long long *value);
 int virJSONValueGetNumberDouble(virJSONValuePtr object, double *value);
 int virJSONValueGetBoolean(virJSONValuePtr object, bool *value);
-int virJSONValueGetArrayAsBitmap(const virJSONValue *val, virBitmapPtr *bitmap)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+int virJSONValueGetArrayAsBitmap(const virJSONValue *val, virBitmapPtr *bitmap);
 bool virJSONValueIsNull(virJSONValuePtr object);
 virJSONValuePtr virJSONValueObjectGetObject(virJSONValuePtr object,
                                             const char *key);
@@ -165,8 +162,7 @@ int virJSONValueObjectAppendBoolean(virJSONValuePtr object, const char *key, int
 int virJSONValueObjectAppendNull(virJSONValuePtr object, const char *key);
 
 int virJSONValueObjectRemoveKey(virJSONValuePtr object, const char *key,
-                                virJSONValuePtr *value)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                                virJSONValuePtr *value);
 
 virJSONValuePtr virJSONValueFromString(const char *jsonstring);
 char *virJSONValueToString(virJSONValuePtr object,

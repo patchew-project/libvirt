@@ -75,7 +75,7 @@ virCPUDefFreeFeatures(virCPUDefPtr def)
 }
 
 
-void ATTRIBUTE_NONNULL(1)
+void
 virCPUDefFreeModel(virCPUDefPtr def)
 {
 
@@ -96,7 +96,7 @@ virCPUDefFree(virCPUDefPtr def)
 }
 
 
-int ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
+int
 virCPUDefCopyModel(virCPUDefPtr dst,
                    const virCPUDef *src,
                    bool resetPolicy)

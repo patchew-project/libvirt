@@ -1494,7 +1494,7 @@ networkDnsmasqConfContents(virNetworkObjPtr network,
 }
 
 /* build the dnsmasq command line */
-static int ATTRIBUTE_NONNULL(3)
+static int
 networkBuildDhcpDaemonCommandLine(virNetworkDriverStatePtr driver,
                                   virNetworkObjPtr network,
                                   virCommandPtr *cmdout,

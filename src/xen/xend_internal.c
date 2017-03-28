@@ -275,7 +275,7 @@ istartswith(const char *haystack, const char *needle)
  * Returns the HTTP return code and @content is set to the
  * allocated memory containing HTTP content.
  */
-static int ATTRIBUTE_NONNULL(2)
+static int
 xend_req(int fd, char **content)
 {
     char *buffer;
@@ -344,7 +344,7 @@ xend_req(int fd, char **content)
  *
  * Returns the HTTP return code or -1 in case or error.
  */
-static int ATTRIBUTE_NONNULL(3)
+static int
 xend_get(virConnectPtr xend, const char *path, char **content)
 {
     int ret;
@@ -873,7 +873,6 @@ xenDaemonDomainLookupByName_ids(virConnectPtr xend,
  * Returns domain's state.
  */
 static int
-ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
 sexpr_to_xend_domain_state(virDomainDefPtr def, const struct sexpr *root)
 {
     const char *flags;

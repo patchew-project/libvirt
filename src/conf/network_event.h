@@ -36,9 +36,7 @@ virNetworkEventStateRegisterID(virConnectPtr conn,
                                virConnectNetworkEventGenericCallback cb,
                                void *opaque,
                                virFreeCallback freecb,
-                               int *callbackID)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(5)
-    ATTRIBUTE_NONNULL(8);
+                               int *callbackID);
 
 int
 virNetworkEventStateRegisterClient(virConnectPtr conn,
@@ -48,9 +46,7 @@ virNetworkEventStateRegisterClient(virConnectPtr conn,
                                    virConnectNetworkEventGenericCallback cb,
                                    void *opaque,
                                    virFreeCallback freecb,
-                                   int *callbackID)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(5)
-    ATTRIBUTE_NONNULL(8);
+                                   int *callbackID);
 
 virObjectEventPtr
 virNetworkEventLifecycleNew(const char *name,

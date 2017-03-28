@@ -3269,7 +3269,7 @@ qemuDomainSaveInternal(virQEMUDriverPtr driver, virDomainPtr dom,
  *                           no there was an error, then just return RAW
  *                           indicating none.
  */
-static int ATTRIBUTE_NONNULL(2)
+static int
 qemuGetCompressionProgram(const char *imageFormat,
                           char **compresspath,
                           const char *styleFormat,
@@ -6160,7 +6160,7 @@ qemuDomainSaveImageUpdateDef(virQEMUDriverPtr driver,
  * on success. On error returns -1 on most failures, -3 if corrupt image was
  * unlinked (no error raised).
  */
-static int ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(4)
+static int
 qemuDomainSaveImageOpen(virQEMUDriverPtr driver,
                         const char *path,
                         virDomainDefPtr *ret_def,
@@ -6287,7 +6287,7 @@ qemuDomainSaveImageOpen(virQEMUDriverPtr driver,
     return -1;
 }
 
-static int ATTRIBUTE_NONNULL(4) ATTRIBUTE_NONNULL(5) ATTRIBUTE_NONNULL(6)
+static int
 qemuDomainSaveImageStartVM(virConnectPtr conn,
                            virQEMUDriverPtr driver,
                            virDomainObjPtr vm,
@@ -11732,7 +11732,7 @@ qemuDomainMigratePrepareTunnel(virConnectPtr dconn,
  *
  * This starts an empty VM listening on a TCP port.
  */
-static int ATTRIBUTE_NONNULL(5)
+static int
 qemuDomainMigratePrepare2(virConnectPtr dconn,
                           char **cookie ATTRIBUTE_UNUSED,
                           int *cookielen ATTRIBUTE_UNUSED,

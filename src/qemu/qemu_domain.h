@@ -456,31 +456,24 @@ void qemuDomainObjDiscardAsyncJob(virQEMUDriverPtr driver,
                                   virDomainObjPtr obj);
 void qemuDomainObjReleaseAsyncJob(virDomainObjPtr obj);
 
-qemuMonitorPtr qemuDomainGetMonitor(virDomainObjPtr vm)
-    ATTRIBUTE_NONNULL(1);
+qemuMonitorPtr qemuDomainGetMonitor(virDomainObjPtr vm);
 void qemuDomainObjEnterMonitor(virQEMUDriverPtr driver,
-                               virDomainObjPtr obj)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                               virDomainObjPtr obj);
 int qemuDomainObjExitMonitor(virQEMUDriverPtr driver,
                              virDomainObjPtr obj)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
     ATTRIBUTE_RETURN_CHECK;
 int qemuDomainObjEnterMonitorAsync(virQEMUDriverPtr driver,
                                    virDomainObjPtr obj,
                                    qemuDomainAsyncJob asyncJob)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 
-qemuAgentPtr qemuDomainObjEnterAgent(virDomainObjPtr obj)
-    ATTRIBUTE_NONNULL(1);
-void qemuDomainObjExitAgent(virDomainObjPtr obj, qemuAgentPtr agent)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+qemuAgentPtr qemuDomainObjEnterAgent(virDomainObjPtr obj);
+void qemuDomainObjExitAgent(virDomainObjPtr obj, qemuAgentPtr agent);
 
 
-void qemuDomainObjEnterRemote(virDomainObjPtr obj)
-    ATTRIBUTE_NONNULL(1);
-void qemuDomainObjExitRemote(virDomainObjPtr obj)
-    ATTRIBUTE_NONNULL(1);
+void qemuDomainObjEnterRemote(virDomainObjPtr obj);
+void qemuDomainObjExitRemote(virDomainObjPtr obj);
 
 virDomainDefPtr qemuDomainDefCopy(virQEMUDriverPtr driver,
                                   virDomainDefPtr src,
@@ -651,25 +644,18 @@ bool qemuDomainDefCheckABIStability(virQEMUDriverPtr driver,
 bool qemuDomainAgentAvailable(virDomainObjPtr vm,
                               bool reportError);
 
-int qemuDomainJobInfoUpdateTime(qemuDomainJobInfoPtr jobInfo)
-    ATTRIBUTE_NONNULL(1);
-int qemuDomainJobInfoUpdateDowntime(qemuDomainJobInfoPtr jobInfo)
-    ATTRIBUTE_NONNULL(1);
+int qemuDomainJobInfoUpdateTime(qemuDomainJobInfoPtr jobInfo);
+int qemuDomainJobInfoUpdateDowntime(qemuDomainJobInfoPtr jobInfo);
 int qemuDomainJobInfoToInfo(qemuDomainJobInfoPtr jobInfo,
-                            virDomainJobInfoPtr info)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                            virDomainJobInfoPtr info);
 int qemuDomainJobInfoToParams(qemuDomainJobInfoPtr jobInfo,
                               int *type,
                               virTypedParameterPtr *params,
-                              int *nparams)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
-    ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(4);
+                              int *nparams);
 
-int qemuDomainSupportsBlockJobs(virDomainObjPtr vm, bool *modern)
-    ATTRIBUTE_NONNULL(1);
+int qemuDomainSupportsBlockJobs(virDomainObjPtr vm, bool *modern);
 bool qemuDomainDiskBlockJobIsActive(virDomainDiskDefPtr disk);
-bool qemuDomainHasBlockjob(virDomainObjPtr vm, bool copy_only)
-    ATTRIBUTE_NONNULL(1);
+bool qemuDomainHasBlockjob(virDomainObjPtr vm, bool copy_only);
 
 int qemuDomainAlignMemorySizes(virDomainDefPtr def);
 void qemuDomainMemoryDeviceAlignSize(virDomainDefPtr def,
@@ -739,17 +725,13 @@ int qemuDomainMasterKeyCreate(virDomainObjPtr vm);
 
 void qemuDomainMasterKeyRemove(qemuDomainObjPrivatePtr priv);
 
-void qemuDomainSecretInfoFree(qemuDomainSecretInfoPtr *secinfo)
-    ATTRIBUTE_NONNULL(1);
+void qemuDomainSecretInfoFree(qemuDomainSecretInfoPtr *secinfo);
 
-void qemuDomainSecretDiskDestroy(virDomainDiskDefPtr disk)
-    ATTRIBUTE_NONNULL(1);
+void qemuDomainSecretDiskDestroy(virDomainDiskDefPtr disk);
 
-bool qemuDomainSecretDiskCapable(virStorageSourcePtr src)
-    ATTRIBUTE_NONNULL(1);
+bool qemuDomainSecretDiskCapable(virStorageSourcePtr src);
 
-bool qemuDomainDiskHasEncryptionSecret(virStorageSourcePtr src)
-    ATTRIBUTE_NONNULL(1);
+bool qemuDomainDiskHasEncryptionSecret(virStorageSourcePtr src);
 
 qemuDomainSecretInfoPtr
 qemuDomainSecretInfoTLSNew(virConnectPtr conn,
@@ -759,59 +741,44 @@ qemuDomainSecretInfoTLSNew(virConnectPtr conn,
 
 int qemuDomainSecretDiskPrepare(virConnectPtr conn,
                                 qemuDomainObjPrivatePtr priv,
-                                virDomainDiskDefPtr disk)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                                virDomainDiskDefPtr disk);
 
-void qemuDomainSecretHostdevDestroy(virDomainHostdevDefPtr disk)
-    ATTRIBUTE_NONNULL(1);
+void qemuDomainSecretHostdevDestroy(virDomainHostdevDefPtr disk);
 
 int qemuDomainSecretHostdevPrepare(virConnectPtr conn,
                                    qemuDomainObjPrivatePtr priv,
-                                   virDomainHostdevDefPtr hostdev)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                                   virDomainHostdevDefPtr hostdev);
 
-void qemuDomainSecretChardevDestroy(virDomainChrSourceDefPtr dev)
-    ATTRIBUTE_NONNULL(1);
+void qemuDomainSecretChardevDestroy(virDomainChrSourceDefPtr dev);
 
 int qemuDomainSecretChardevPrepare(virConnectPtr conn,
                                    virQEMUDriverConfigPtr cfg,
                                    qemuDomainObjPrivatePtr priv,
                                    const char *chrAlias,
-                                   virDomainChrSourceDefPtr dev)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
-    ATTRIBUTE_NONNULL(4) ATTRIBUTE_NONNULL(5);
+                                   virDomainChrSourceDefPtr dev);
 
-void qemuDomainSecretDestroy(virDomainObjPtr vm)
-    ATTRIBUTE_NONNULL(1);
+void qemuDomainSecretDestroy(virDomainObjPtr vm);
 
 int qemuDomainSecretPrepare(virConnectPtr conn,
                             virQEMUDriverPtr driver,
-                            virDomainObjPtr vm)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                            virDomainObjPtr vm);
 
-int qemuDomainDefValidateDiskLunSource(const virStorageSource *src)
-    ATTRIBUTE_NONNULL(1);
+int qemuDomainDefValidateDiskLunSource(const virStorageSource *src);
 
 int qemuDomainPrepareChannel(virDomainChrDefPtr chr,
-                             const char *domainChannelTargetDir)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                             const char *domainChannelTargetDir);
 
 void qemuDomainPrepareChardevSourceTLS(virDomainChrSourceDefPtr source,
-                                       virQEMUDriverConfigPtr cfg)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                                       virQEMUDriverConfigPtr cfg);
 
 void qemuDomainPrepareChardevSource(virDomainDefPtr def,
-                                    virQEMUDriverPtr driver)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                                    virQEMUDriverPtr driver);
 
-int qemuDomainPrepareShmemChardev(virDomainShmemDefPtr shmem)
-    ATTRIBUTE_NONNULL(1);
+int qemuDomainPrepareShmemChardev(virDomainShmemDefPtr shmem);
 
-bool qemuDomainVcpuHotplugIsInOrder(virDomainDefPtr def)
-    ATTRIBUTE_NONNULL(1);
+bool qemuDomainVcpuHotplugIsInOrder(virDomainDefPtr def);
 
-void qemuDomainVcpuPersistOrder(virDomainDefPtr def)
-    ATTRIBUTE_NONNULL(1);
+void qemuDomainVcpuPersistOrder(virDomainDefPtr def);
 
 int qemuDomainCheckMonitor(virQEMUDriverPtr driver,
                            virDomainObjPtr vm,

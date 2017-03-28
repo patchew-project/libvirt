@@ -32,12 +32,11 @@
 int virNetDevBandwidthParse(virNetDevBandwidthPtr *bandwidth,
                             xmlNodePtr node,
                             int net_type)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virNetDevBandwidthFormat(virNetDevBandwidthPtr def,
                              virBufferPtr buf);
 
-void virDomainClearNetBandwidth(virDomainObjPtr vm)
-    ATTRIBUTE_NONNULL(1);
+void virDomainClearNetBandwidth(virDomainObjPtr vm);
 
 static inline bool virNetDevSupportBandwidth(virDomainNetType type)
 {

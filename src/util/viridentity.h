@@ -50,20 +50,14 @@ virIdentityPtr virIdentityNew(void);
 
 int virIdentitySetAttr(virIdentityPtr ident,
                        unsigned int attr,
-                       const char *value)
-    ATTRIBUTE_NONNULL(1)
-    ATTRIBUTE_NONNULL(3);
+                       const char *value);
 
 int virIdentityGetAttr(virIdentityPtr ident,
                        unsigned int attr,
-                       const char **value)
-    ATTRIBUTE_NONNULL(1)
-    ATTRIBUTE_NONNULL(3);
+                       const char **value);
 
 bool virIdentityIsEqual(virIdentityPtr identA,
-                        virIdentityPtr identB)
-    ATTRIBUTE_NONNULL(1)
-    ATTRIBUTE_NONNULL(2);
+                        virIdentityPtr identB);
 
 int virIdentityGetUNIXUserName(virIdentityPtr ident,
                                const char **username);

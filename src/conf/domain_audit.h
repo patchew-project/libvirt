@@ -29,110 +29,88 @@
 
 void virDomainAuditStart(virDomainObjPtr vm,
                          const char *reason,
-                         bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                         bool success);
 void virDomainAuditInit(virDomainObjPtr vm,
                         pid_t pid,
-                        ino_t pidns)
-    ATTRIBUTE_NONNULL(1);
+                        ino_t pidns);
 void virDomainAuditStop(virDomainObjPtr vm,
-                        const char *reason)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                        const char *reason);
 void virDomainAuditDisk(virDomainObjPtr vm,
                         virStorageSourcePtr oldDef,
                         virStorageSourcePtr newDef,
                         const char *reason,
-                        bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4);
+                        bool success);
 void virDomainAuditFS(virDomainObjPtr vm,
                       virDomainFSDefPtr oldDef,
                       virDomainFSDefPtr newDef,
                       const char *reason,
-                      bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4);
+                      bool success);
 void virDomainAuditNet(virDomainObjPtr vm,
                        virDomainNetDefPtr oldDef,
                        virDomainNetDefPtr newDef,
                        const char *reason,
-                       bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4);
+                       bool success);
 void virDomainAuditNetDevice(virDomainDefPtr vmDef,
                              virDomainNetDefPtr netDef,
                              const char *device,
-                             bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                             bool success);
 void virDomainAuditHostdev(virDomainObjPtr vm,
                            virDomainHostdevDefPtr def,
                            const char *reason,
-                           bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                           bool success);
 void virDomainAuditCgroup(virDomainObjPtr vm,
                           virCgroupPtr group,
                           const char *reason,
                           const char *extra,
-                          bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
-    ATTRIBUTE_NONNULL(4);
+                          bool success);
 void virDomainAuditCgroupMajor(virDomainObjPtr vm,
                                virCgroupPtr group,
                                const char *reason,
                                int maj,
                                const char *name,
                                const char *perms,
-                               bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
-    ATTRIBUTE_NONNULL(5) ATTRIBUTE_NONNULL(6);
+                               bool success);
 void virDomainAuditCgroupPath(virDomainObjPtr vm,
                               virCgroupPtr group,
                               const char *reason,
                               const char *path,
                               const char *perms,
-                              int rc)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
-    ATTRIBUTE_NONNULL(4) ATTRIBUTE_NONNULL(5);
+                              int rc);
 void virDomainAuditMemory(virDomainObjPtr vm,
                           unsigned long long oldmem,
                           unsigned long long newmem,
                           const char *reason,
-                          bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4);
+                          bool success);
 void virDomainAuditVcpu(virDomainObjPtr vm,
                         unsigned int oldvcpu,
                         unsigned int newvcpu,
                         const char *reason,
-                        bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4);
+                        bool success);
 void virDomainAuditIOThread(virDomainObjPtr vm,
                             unsigned int oldiothread,
                             unsigned int newiothread,
                             const char *reason,
-                            bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4);
+                            bool success);
 void virDomainAuditSecurityLabel(virDomainObjPtr vm,
-                                 bool success)
-    ATTRIBUTE_NONNULL(1);
+                                 bool success);
 void virDomainAuditRedirdev(virDomainObjPtr vm,
                             virDomainRedirdevDefPtr def,
                             const char *reason,
-                            bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                            bool success);
 
 void virDomainAuditChardev(virDomainObjPtr vm,
                            virDomainChrDefPtr oldDef,
                            virDomainChrDefPtr newDef,
                            const char *reason,
-                           bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4);
+                           bool success);
 void virDomainAuditRNG(virDomainObjPtr vm,
                        virDomainRNGDefPtr oldDef,
                        virDomainRNGDefPtr newDef,
                        const char *reason,
-                       bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4);
+                       bool success);
 void virDomainAuditShmem(virDomainObjPtr vm,
                          virDomainShmemDefPtr def,
-                         const char *reason, bool success)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                         const char *reason, bool success);
 
 
 #endif /* __VIR_DOMAIN_AUDIT_H__ */

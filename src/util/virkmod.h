@@ -25,10 +25,7 @@
 # include "internal.h"
 
 char *virKModConfig(void);
-char *virKModLoad(const char *, bool)
-    ATTRIBUTE_NONNULL(1);
-char *virKModUnload(const char *)
-    ATTRIBUTE_NONNULL(1);
-bool virKModIsBlacklisted(const char *)
-    ATTRIBUTE_NONNULL(1);
+char *virKModLoad(const char *, bool);
+char *virKModUnload(const char *);
+bool virKModIsBlacklisted(const char *);
 #endif /* __VIR_KMOD_H__ */

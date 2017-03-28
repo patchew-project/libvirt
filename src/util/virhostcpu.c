@@ -282,10 +282,6 @@ virHostCPUGetSiblingsList(unsigned int cpu)
 /* parses a node entry, returning number of processors in the node and
  * filling arguments */
 static int
-ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3)
-ATTRIBUTE_NONNULL(4) ATTRIBUTE_NONNULL(6)
-ATTRIBUTE_NONNULL(7) ATTRIBUTE_NONNULL(8)
-ATTRIBUTE_NONNULL(9)
 virHostCPUParseNode(const char *node,
                     virArch arch,
                     virBitmapPtr present_cpus_map,

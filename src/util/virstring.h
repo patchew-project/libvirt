@@ -29,17 +29,14 @@
 char **virStringSplitCount(const char *string,
                            const char *delim,
                            size_t max_tokens,
-                           size_t *tokcount)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                           size_t *tokcount);
 
 char **virStringSplit(const char *string,
                       const char *delim,
-                      size_t max_tokens)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                      size_t max_tokens);
 
 char *virStringListJoin(const char **strings,
-                        const char *delim)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                        const char *delim);
 
 char **virStringListAdd(const char **strings,
                         const char *item);
@@ -53,8 +50,7 @@ void virStringListFreeCount(char **strings,
 bool virStringListHasString(const char **strings,
                             const char *needle);
 char *virStringListGetFirstWithPrefix(char **strings,
-                                      const char *prefix)
-    ATTRIBUTE_NONNULL(2);
+                                      const char *prefix);
 
 char *virArgvToString(const char *const *argv);
 
@@ -109,11 +105,10 @@ int virStrToDouble(char const *s,
                    double *result)
     ATTRIBUTE_RETURN_CHECK;
 
-void virSkipSpaces(const char **str) ATTRIBUTE_NONNULL(1);
-void virSkipSpacesAndBackslash(const char **str) ATTRIBUTE_NONNULL(1);
-void virTrimSpaces(char *str, char **endp) ATTRIBUTE_NONNULL(1);
-void virSkipSpacesBackwards(const char *str, char **endp)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+void virSkipSpaces(const char **str);
+void virSkipSpacesAndBackslash(const char **str);
+void virTrimSpaces(char *str, char **endp);
+void virSkipSpacesBackwards(const char *str, char **endp);
 
 bool virStringIsEmpty(const char *str);
 
@@ -126,21 +121,19 @@ char *virStrcpy(char *dest, const char *src, size_t destbytes)
 /* Don't call these directly - use the macros below */
 int virStrdup(char **dest, const char *src, bool report, int domcode,
               const char *filename, const char *funcname, size_t linenr)
-    ATTRIBUTE_RETURN_CHECK ATTRIBUTE_NONNULL(1);
+    ATTRIBUTE_RETURN_CHECK;
 
 int virStrndup(char **dest, const char *src, ssize_t n, bool report, int domcode,
                const char *filename, const char *funcname, size_t linenr)
-    ATTRIBUTE_RETURN_CHECK ATTRIBUTE_NONNULL(1);
+    ATTRIBUTE_RETURN_CHECK;
 int virAsprintfInternal(bool report, int domcode, const char *filename,
                         const char *funcname, size_t linenr, char **strp,
                         const char *fmt, ...)
-    ATTRIBUTE_NONNULL(6) ATTRIBUTE_NONNULL(7) ATTRIBUTE_FMT_PRINTF(7, 8)
-    ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_FMT_PRINTF(7, 8) ATTRIBUTE_RETURN_CHECK;
 int virVasprintfInternal(bool report, int domcode, const char *filename,
                          const char *funcname, size_t linenr, char **strp,
                          const char *fmt, va_list list)
-    ATTRIBUTE_NONNULL(6) ATTRIBUTE_NONNULL(7) ATTRIBUTE_FMT_PRINTF(7, 0)
-    ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_FMT_PRINTF(7, 0) ATTRIBUTE_RETURN_CHECK;
 
 /**
  * VIR_STRDUP:
@@ -271,13 +264,11 @@ int virStringToUpper(char **dst, const char *src);
 ssize_t virStringSearch(const char *str,
                         const char *regexp,
                         size_t max_results,
-                        char ***matches)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(4);
+                        char ***matches);
 
 char *virStringReplace(const char *haystack,
                        const char *oldneedle,
-                       const char *newneedle)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                       const char *newneedle);
 
 void virStringStripIPv6Brackets(char *str);
 bool virStringHasControlChars(const char *str);

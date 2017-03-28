@@ -55,7 +55,7 @@ void virWaitForDevices(void);
 
 int virScaleInteger(unsigned long long *value, const char *suffix,
                     unsigned long long scale, unsigned long long limit)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virHexToBin(unsigned char c);
 
@@ -64,10 +64,10 @@ int virParseVersionString(const char *str, unsigned long *version,
                           bool allowMissing);
 
 int virDoubleToStr(char **strp, double number)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 char *virFormatIntDecimal(char *buf, size_t buflen, int val)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virDiskNameParse(const char *name, int *disk, int *partition);
 int virDiskNameToIndex(const char* str);
@@ -144,14 +144,13 @@ char *virGetUserRuntimeDirectory(void);
 char *virGetUserShell(uid_t uid);
 char *virGetUserName(uid_t uid);
 char *virGetGroupName(gid_t gid);
-int virGetGroupList(uid_t uid, gid_t group, gid_t **groups)
-    ATTRIBUTE_NONNULL(3);
+int virGetGroupList(uid_t uid, gid_t group, gid_t **groups);
 int virGetUserID(const char *name,
                  uid_t *uid) ATTRIBUTE_RETURN_CHECK;
 int virGetGroupID(const char *name,
                   gid_t *gid) ATTRIBUTE_RETURN_CHECK;
 
-bool virIsDevMapperDevice(const char *dev_name) ATTRIBUTE_NONNULL(1);
+bool virIsDevMapperDevice(const char *dev_name);
 
 bool virValidateWWN(const char *wwn);
 

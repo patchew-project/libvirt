@@ -223,20 +223,20 @@ virLogOutputPtr virLogOutputNew(virLogOutputFunc f,
                                 void *data,
                                 virLogPriority priority,
                                 virLogDestination dest,
-                                const char *name) ATTRIBUTE_NONNULL(1);
+                                const char *name);
 virLogFilterPtr virLogFilterNew(const char *match,
                                 virLogPriority priority,
-                                unsigned int flags) ATTRIBUTE_NONNULL(1);
+                                unsigned int flags);
 int virLogFindOutput(virLogOutputPtr *outputs, size_t noutputs,
                      virLogDestination dest, const void *opaque);
 int virLogDefineOutputs(virLogOutputPtr *outputs,
-                        size_t noutputs) ATTRIBUTE_NONNULL(1);
+                        size_t noutputs);
 int virLogDefineFilters(virLogFilterPtr *filters, size_t nfilters);
-virLogOutputPtr virLogParseOutput(const char *src) ATTRIBUTE_NONNULL(1);
-virLogFilterPtr virLogParseFilter(const char *src) ATTRIBUTE_NONNULL(1);
+virLogOutputPtr virLogParseOutput(const char *src);
+virLogFilterPtr virLogParseFilter(const char *src);
 int virLogParseOutputs(const char *src,
-                       virLogOutputPtr **outputs) ATTRIBUTE_NONNULL(1);
+                       virLogOutputPtr **outputs);
 int virLogParseFilters(const char *src,
-                       virLogFilterPtr **filters) ATTRIBUTE_NONNULL(1);
+                       virLogFilterPtr **filters);
 
 #endif

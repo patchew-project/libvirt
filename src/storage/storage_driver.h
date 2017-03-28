@@ -51,23 +51,20 @@ bool virStorageFileSupportsSecurityDriver(const virStorageSource *src);
 int virStorageFileGetMetadata(virStorageSourcePtr src,
                               uid_t uid, gid_t gid,
                               bool allow_probe,
-                              bool report_broken)
-    ATTRIBUTE_NONNULL(1);
+                              bool report_broken);
 
 int virStorageTranslateDiskSourcePool(virConnectPtr conn,
                                       virDomainDiskDefPtr def);
 
-virStoragePoolObjPtr virStoragePoolObjFindPoolByUUID(const unsigned char *uuid)
-    ATTRIBUTE_NONNULL(1);
+virStoragePoolObjPtr virStoragePoolObjFindPoolByUUID(const unsigned char *uuid);
 
 virStoragePoolPtr
 storagePoolLookupByTargetPath(virConnectPtr conn,
-                              const char *path)
-    ATTRIBUTE_NONNULL(2);
+                              const char *path);
 
 char *virStoragePoolObjBuildTempFilePath(virStoragePoolObjPtr pool,
                                          virStorageVolDefPtr vol)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int storageRegister(void);
 int storageRegisterAll(void);

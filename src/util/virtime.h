@@ -37,32 +37,31 @@
     (4 + 1 + 2 + 1 + 2 + 1 + 2 + 1 + 2 + 1 + 2 + 1 + 3 + 5 + 1)
 /*   Yr      Mon     Day     Hour    Min     Sec     Ms  TZ  NULL */
 
-void virTimeFieldsThen(unsigned long long when, struct tm *fields)
-    ATTRIBUTE_NONNULL(2);
+void virTimeFieldsThen(unsigned long long when, struct tm *fields);
 
 /* These APIs are async signal safe and return -1, setting
  * errno on failure */
 int virTimeMillisNowRaw(unsigned long long *now)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virTimeFieldsNowRaw(struct tm *fields)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virTimeStringNowRaw(char *buf)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virTimeStringThenRaw(unsigned long long when, char *buf)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 /* These APIs are *not* async signal safe and return -1,
  * raising a libvirt error on failure
  */
 int virTimeMillisNow(unsigned long long *now)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virTimeFieldsNow(struct tm *fields)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 char *virTimeStringNow(void);
 char *virTimeStringThen(unsigned long long when);
 
 int virTimeLocalOffsetFromUTC(long *offset)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 typedef struct {
     unsigned long long start_t;

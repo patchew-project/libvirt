@@ -67,22 +67,20 @@ int virNetDevIPAddrAdd(const char *ifname,
                        virSocketAddr *addr,
                        virSocketAddr *peer,
                        unsigned int prefix)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virNetDevIPRouteAdd(const char *ifname,
                         virSocketAddrPtr addr,
                         unsigned int prefix,
                         virSocketAddrPtr gateway,
                         unsigned int metric)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4)
     ATTRIBUTE_RETURN_CHECK;
 int virNetDevIPAddrDel(const char *ifname,
                        virSocketAddr *addr,
                        unsigned int prefix)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virNetDevIPAddrGet(const char *ifname, virSocketAddrPtr addr)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
-int virNetDevIPWaitDadFinish(virSocketAddrPtr *addrs, size_t count)
-    ATTRIBUTE_NONNULL(1);
+    ATTRIBUTE_RETURN_CHECK;
+int virNetDevIPWaitDadFinish(virSocketAddrPtr *addrs, size_t count);
 bool virNetDevIPCheckIPv6Forwarding(void);
 
 /* virNetDevIPRoute object */

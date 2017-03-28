@@ -414,12 +414,12 @@ typedef virQEMUCapsCache *virQEMUCapsCachePtr;
 virQEMUCapsPtr virQEMUCapsNew(void);
 
 void virQEMUCapsSet(virQEMUCapsPtr qemuCaps,
-                    virQEMUCapsFlags flag) ATTRIBUTE_NONNULL(1);
+                    virQEMUCapsFlags flag);
 
-void virQEMUCapsSetList(virQEMUCapsPtr qemuCaps, ...) ATTRIBUTE_NONNULL(1);
+void virQEMUCapsSetList(virQEMUCapsPtr qemuCaps, ...);
 
 void virQEMUCapsClear(virQEMUCapsPtr qemuCaps,
-                      virQEMUCapsFlags flag) ATTRIBUTE_NONNULL(1);
+                      virQEMUCapsFlags flag);
 
 bool virQEMUCapsGet(virQEMUCapsPtr qemuCaps,
                     virQEMUCapsFlags flag);

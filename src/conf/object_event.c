@@ -335,7 +335,7 @@ virObjectEventCallbackListPurgeMarked(virObjectEventCallbackListPtr cbList)
  *
  * Return the id if found, or -1 with no error issued if not present.
  */
-static int ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
+static int
 virObjectEventCallbackLookup(virConnectPtr conn,
                              virObjectEventCallbackListPtr cbList,
                              const char *key,

@@ -58,8 +58,7 @@ int virNumaGetPages(int node,
                     unsigned int **pages_size,
                     unsigned int **pages_avail,
                     unsigned int **pages_free,
-                    size_t *npages)
-    ATTRIBUTE_NONNULL(5);
+                    size_t *npages);
 int virNumaSetPagePoolSize(int node,
                            unsigned int page_size,
                            unsigned long long page_count,

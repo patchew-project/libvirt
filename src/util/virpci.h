@@ -217,7 +217,7 @@ int virPCIGetAddrString(unsigned int domain,
                         unsigned int slot,
                         unsigned int function,
                         char **pciConfigAddr)
-    ATTRIBUTE_NONNULL(5) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virPCIDeviceAddressParse(char *address, virPCIDeviceAddressPtr bdf);
 

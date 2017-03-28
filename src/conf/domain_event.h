@@ -264,8 +264,7 @@ virDomainEventStateRegister(virConnectPtr conn,
                             virObjectEventStatePtr state,
                             virConnectDomainEventCallback callback,
                             void *opaque,
-                            virFreeCallback freecb)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                            virFreeCallback freecb);
 int
 virDomainEventStateRegisterID(virConnectPtr conn,
                               virObjectEventStatePtr state,
@@ -274,8 +273,7 @@ virDomainEventStateRegisterID(virConnectPtr conn,
                               virConnectDomainEventGenericCallback cb,
                               void *opaque,
                               virFreeCallback freecb,
-                              int *callbackID)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(5);
+                              int *callbackID);
 int
 virDomainEventStateRegisterClient(virConnectPtr conn,
                                   virObjectEventStatePtr state,
@@ -286,23 +284,18 @@ virDomainEventStateRegisterClient(virConnectPtr conn,
                                   virFreeCallback freecb,
                                   bool legacy,
                                   int *callbackID,
-                                  bool remoteID)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(5)
-    ATTRIBUTE_NONNULL(9);
+                                  bool remoteID);
 
 int
 virDomainEventStateCallbackID(virConnectPtr conn,
                               virObjectEventStatePtr state,
                               virConnectDomainEventCallback callback,
-                              int *remoteID)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
-    ATTRIBUTE_NONNULL(4);
+                              int *remoteID);
 
 int
 virDomainEventStateDeregister(virConnectPtr conn,
                               virObjectEventStatePtr state,
-                              virConnectDomainEventCallback callback)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                              virConnectDomainEventCallback callback);
 
 int
 virDomainQemuMonitorEventStateRegisterID(virConnectPtr conn,
@@ -313,9 +306,7 @@ virDomainQemuMonitorEventStateRegisterID(virConnectPtr conn,
                                          void *opaque,
                                          virFreeCallback freecb,
                                          unsigned int flags,
-                                         int *callbackID)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(5)
-    ATTRIBUTE_NONNULL(9);
+                                         int *callbackID);
 
 virObjectEventPtr
 virDomainQemuMonitorEventNew(int id,
@@ -324,7 +315,6 @@ virDomainQemuMonitorEventNew(int id,
                              const char *event,
                              long long seconds,
                              unsigned int micros,
-                             const char *details)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(4);
+                             const char *details);
 
 #endif

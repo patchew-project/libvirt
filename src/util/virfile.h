@@ -93,7 +93,7 @@ typedef enum {
 virFileWrapperFdPtr virFileWrapperFdNew(int *fd,
                                         const char *name,
                                         unsigned int flags)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virFileWrapperFdClose(virFileWrapperFdPtr dfd);
 
@@ -128,18 +128,18 @@ int virFileNBDDeviceAssociate(const char *file,
 int virFileDeleteTree(const char *dir);
 
 int virFileReadHeaderFD(int fd, int maxlen, char **buf)
-    ATTRIBUTE_RETURN_CHECK ATTRIBUTE_NONNULL(3);
+    ATTRIBUTE_RETURN_CHECK;
 int virFileReadLimFD(int fd, int maxlen, char **buf)
-    ATTRIBUTE_RETURN_CHECK ATTRIBUTE_NONNULL(3);
+    ATTRIBUTE_RETURN_CHECK;
 int virFileReadAll(const char *path, int maxlen, char **buf)
-    ATTRIBUTE_RETURN_CHECK ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3);
+    ATTRIBUTE_RETURN_CHECK;
 int virFileReadAllQuiet(const char *path, int maxlen, char **buf)
-    ATTRIBUTE_RETURN_CHECK ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3);
+    ATTRIBUTE_RETURN_CHECK;
 int virFileReadBufQuiet(const char *file, char *buf, int len)
-    ATTRIBUTE_RETURN_CHECK ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+    ATTRIBUTE_RETURN_CHECK;
 
 int virFileWriteStr(const char *path, const char *str, mode_t mode)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virFileMatchesNameSuffix(const char *file,
                              const char *name,
@@ -152,12 +152,10 @@ int virFileStripSuffix(char *str,
                        const char *suffix) ATTRIBUTE_RETURN_CHECK;
 
 int virFileLinkPointsTo(const char *checkLink,
-                        const char *checkDest)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                        const char *checkDest);
 int virFileRelLinkPointsTo(const char *directory,
                            const char *checkLink,
-                           const char *checkDest)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                           const char *checkDest);
 
 int virFileResolveLink(const char *linkpath,
                        char **resultpath) ATTRIBUTE_RETURN_CHECK;
@@ -165,31 +163,28 @@ int virFileResolveAllLinks(const char *linkpath,
                            char **resultpath) ATTRIBUTE_RETURN_CHECK;
 
 int virFileIsLink(const char *linkpath)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virFileReadLink(const char *linkpath, char **resultpath)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 char *virFindFileInPath(const char *file);
 
 char *virFileFindResource(const char *filename,
                           const char *builddir,
-                          const char *installdir)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                          const char *installdir);
 char *virFileFindResourceFull(const char *filename,
                               const char *prefix,
                               const char *suffix,
                               const char *builddir,
                               const char *installdir,
-                              const char *envname)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4) ATTRIBUTE_NONNULL(5);
-void virFileActivateDirOverride(const char *argv0)
-    ATTRIBUTE_NONNULL(1);
+                              const char *envname);
+void virFileActivateDirOverride(const char *argv0);
 
-off_t virFileLength(const char *path, int fd) ATTRIBUTE_NONNULL(1);
-bool virFileIsDir (const char *file) ATTRIBUTE_NONNULL(1);
-bool virFileExists(const char *file) ATTRIBUTE_NONNULL(1);
-bool virFileIsExecutable(const char *file) ATTRIBUTE_NONNULL(1);
+off_t virFileLength(const char *path, int fd);
+bool virFileIsDir (const char *file);
+bool virFileExists(const char *file);
+bool virFileIsExecutable(const char *file);
 
 enum {
     VIR_FILE_SHFS_NFS = (1 << 0),
@@ -200,9 +195,9 @@ enum {
     VIR_FILE_SHFS_CIFS = (1 << 5),
 };
 
-int virFileIsSharedFSType(const char *path, int fstypes) ATTRIBUTE_NONNULL(1);
-int virFileIsSharedFS(const char *path) ATTRIBUTE_NONNULL(1);
-int virFileIsMountPoint(const char *file) ATTRIBUTE_NONNULL(1);
+int virFileIsSharedFSType(const char *path, int fstypes);
+int virFileIsSharedFS(const char *path);
+int virFileIsMountPoint(const char *file);
 
 int virFileGetMountSubtree(const char *mtabpath,
                            const char *prefix,
@@ -224,11 +219,11 @@ enum {
 };
 int virFileAccessibleAs(const char *path, int mode,
                         uid_t uid, gid_t gid)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virFileOpenAs(const char *path, int openflags, mode_t mode,
                   uid_t uid, gid_t gid,
                   unsigned int flags)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virFileRemove(const char *path, uid_t uid, gid_t gid);
 
 enum {
@@ -239,15 +234,14 @@ enum {
 int virDirCreate(const char *path, mode_t mode, uid_t uid, gid_t gid,
                  unsigned int flags) ATTRIBUTE_RETURN_CHECK;
 int virDirOpen(DIR **dirp, const char *dirname)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virDirOpenIfExists(DIR **dirp, const char *dirname)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virDirOpenQuiet(DIR **dirp, const char *dirname)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virDirRead(DIR *dirp, struct dirent **ent, const char *dirname)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
-void virDirClose(DIR **dirp)
-    ATTRIBUTE_NONNULL(1);
+    ATTRIBUTE_RETURN_CHECK;
+void virDirClose(DIR **dirp);
 # define VIR_DIR_CLOSE(dir)  virDirClose(&(dir))
 
 int virFileMakePath(const char *path) ATTRIBUTE_RETURN_CHECK;

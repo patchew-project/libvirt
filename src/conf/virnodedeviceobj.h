@@ -50,8 +50,7 @@ virNodeDeviceObjFindByName(virNodeDeviceObjListPtr devs,
 
 virNodeDeviceObjPtr
 virNodeDeviceObjFindBySysfsPath(virNodeDeviceObjListPtr devs,
-                                const char *sysfs_path)
-    ATTRIBUTE_NONNULL(2);
+                                const char *sysfs_path);
 
 virNodeDeviceObjPtr
 virNodeDeviceObjAssignDef(virNodeDeviceObjListPtr devs,

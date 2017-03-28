@@ -140,9 +140,6 @@ waitsocket(int socket_fd, LIBSSH2_SESSION * session)
 
 /* this function is the layer that manipulates the ssh channel itself
  * and executes the commands on the remote machine */
-static char *phypExec(LIBSSH2_SESSION *, const char *, int *, virConnectPtr)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
-    ATTRIBUTE_NONNULL(4);
 static char *
 phypExec(LIBSSH2_SESSION *session, const char *cmd, int *exit_status,
          virConnectPtr conn)
@@ -240,9 +237,6 @@ phypExec(LIBSSH2_SESSION *session, const char *cmd, int *exit_status,
 }
 
 /* Convenience wrapper function */
-static char *phypExecBuffer(LIBSSH2_SESSION *, virBufferPtr buf, int *,
-                            virConnectPtr, bool) ATTRIBUTE_NONNULL(1)
-    ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(4);
 static char *
 phypExecBuffer(LIBSSH2_SESSION *session, virBufferPtr buf, int *exit_status,
                virConnectPtr conn, bool strip_newline)
@@ -264,8 +258,6 @@ phypExecBuffer(LIBSSH2_SESSION *session, virBufferPtr buf, int *exit_status,
 }
 
 /* Convenience wrapper function */
-static int phypExecInt(LIBSSH2_SESSION *, virBufferPtr, virConnectPtr, int *)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(4);
 static int
 phypExecInt(LIBSSH2_SESSION *session, virBufferPtr buf, virConnectPtr conn,
             int *result)

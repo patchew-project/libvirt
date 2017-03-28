@@ -74,6 +74,6 @@ int virPidFileConstructPath(bool privileged,
                             const char *progname,
                             char **pidfile);
 
-int virPidFileForceCleanupPath(const char *path) ATTRIBUTE_NONNULL(1);
+int virPidFileForceCleanupPath(const char *path);
 
 #endif /* __VIR_PIDFILE_H__ */

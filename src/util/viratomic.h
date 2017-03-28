@@ -41,8 +41,7 @@
  * This call acts as a full compiler and hardware memory barrier
  * (before the get)
  */
-VIR_STATIC int virAtomicIntGet(volatile int *atomic)
-    ATTRIBUTE_NONNULL(1);
+VIR_STATIC int virAtomicIntGet(volatile int *atomic);
 
 /**
  * virAtomicIntSet:
@@ -52,8 +51,7 @@ VIR_STATIC int virAtomicIntGet(volatile int *atomic)
  * (after the set)
  */
 VIR_STATIC void virAtomicIntSet(volatile int *atomic,
-                                int newval)
-    ATTRIBUTE_NONNULL(1);
+                                int newval);
 
 /**
  * virAtomicIntInc:
@@ -64,8 +62,7 @@ VIR_STATIC void virAtomicIntSet(volatile int *atomic,
  *
  * This call acts as a full compiler and hardware memory barrier.
  */
-VIR_STATIC int virAtomicIntInc(volatile int *atomic)
-    ATTRIBUTE_NONNULL(1);
+VIR_STATIC int virAtomicIntInc(volatile int *atomic);
 
 /**
  * virAtomicIntDecAndTest:
@@ -76,8 +73,7 @@ VIR_STATIC int virAtomicIntInc(volatile int *atomic)
  *
  * This call acts as a full compiler and hardware memory barrier.
  */
-VIR_STATIC bool virAtomicIntDecAndTest(volatile int *atomic)
-    ATTRIBUTE_NONNULL(1);
+VIR_STATIC bool virAtomicIntDecAndTest(volatile int *atomic);
 
 /**
  * virAtomicIntCompareExchange:
@@ -94,8 +90,7 @@ VIR_STATIC bool virAtomicIntDecAndTest(volatile int *atomic)
  */
 VIR_STATIC bool virAtomicIntCompareExchange(volatile int *atomic,
                                             int oldval,
-                                            int newval)
-    ATTRIBUTE_NONNULL(1);
+                                            int newval);
 
 /**
  * virAtomicIntAdd:
@@ -107,8 +102,7 @@ VIR_STATIC bool virAtomicIntCompareExchange(volatile int *atomic,
  * This call acts as a full compiler and hardware memory barrier.
  */
 VIR_STATIC int virAtomicIntAdd(volatile int *atomic,
-                               int val)
-    ATTRIBUTE_NONNULL(1);
+                               int val);
 
 /**
  * virAtomicIntAnd:
@@ -121,8 +115,7 @@ VIR_STATIC int virAtomicIntAdd(volatile int *atomic,
  * { tmp = *atomic; *atomic &= val; return tmp; }
  */
 VIR_STATIC unsigned int virAtomicIntAnd(volatile unsigned int *atomic,
-                                        unsigned int val)
-    ATTRIBUTE_NONNULL(1);
+                                        unsigned int val);
 
 /**
  * virAtomicIntOr:
@@ -135,8 +128,7 @@ VIR_STATIC unsigned int virAtomicIntAnd(volatile unsigned int *atomic,
  * This call acts as a full compiler and hardware memory barrier.
  */
 VIR_STATIC unsigned int virAtomicIntOr(volatile unsigned int *atomic,
-                                       unsigned int val)
-    ATTRIBUTE_NONNULL(1);
+                                       unsigned int val);
 
 /**
  * virAtomicIntXor:
@@ -149,8 +141,7 @@ VIR_STATIC unsigned int virAtomicIntOr(volatile unsigned int *atomic,
  * This call acts as a full compiler and hardware memory barrier.
  */
 VIR_STATIC unsigned int virAtomicIntXor(volatile unsigned int *atomic,
-                                        unsigned int val)
-    ATTRIBUTE_NONNULL(1);
+                                        unsigned int val);
 
 # undef VIR_STATIC
 

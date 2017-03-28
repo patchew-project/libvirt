@@ -28,8 +28,7 @@ char *virSCSIHostFindByPCI(const char *sysfs_prefix,
                            unsigned int unique_id);
 
 int virSCSIHostGetNumber(const char *adapter_name,
-                         unsigned int *result)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                         unsigned int *result);
 
 char *virSCSIHostGetNameByParentaddr(unsigned int domain,
                                      unsigned int bus,

@@ -63,11 +63,9 @@ void virDomainNumaFree(virDomainNumaPtr numa);
  */
 int virDomainNumatuneParseXML(virDomainNumaPtr numa,
                               bool placement_static,
-                              xmlXPathContextPtr ctxt)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3);
+                              xmlXPathContextPtr ctxt);
 
-int virDomainNumatuneFormatXML(virBufferPtr buf, virDomainNumaPtr numatune)
-    ATTRIBUTE_NONNULL(1);
+int virDomainNumatuneFormatXML(virBufferPtr buf, virDomainNumaPtr numatune);
 
 /*
  * Getters
@@ -88,16 +86,12 @@ int virDomainNumatuneMaybeGetNodeset(virDomainNumaPtr numatune,
 size_t virDomainNumaGetNodeCount(virDomainNumaPtr numa);
 
 virBitmapPtr virDomainNumaGetNodeCpumask(virDomainNumaPtr numa,
-                                         size_t node)
-    ATTRIBUTE_NONNULL(1);
+                                         size_t node);
 virDomainMemoryAccess virDomainNumaGetNodeMemoryAccessMode(virDomainNumaPtr numa,
-                                                      size_t node)
-    ATTRIBUTE_NONNULL(1);
+                                                      size_t node);
 unsigned long long virDomainNumaGetNodeMemorySize(virDomainNumaPtr numa,
-                                                  size_t node)
-    ATTRIBUTE_NONNULL(1);
-unsigned long long virDomainNumaGetMemorySize(virDomainNumaPtr numa)
-    ATTRIBUTE_NONNULL(1);
+                                                  size_t node);
+unsigned long long virDomainNumaGetMemorySize(virDomainNumaPtr numa);
 
 unsigned int
 virDomainNumaGetMaxCPUID(virDomainNumaPtr numa);
@@ -121,13 +115,11 @@ int virDomainNumatuneSet(virDomainNumaPtr numa,
                          bool placement_static,
                          int placement,
                          int mode,
-                         virBitmapPtr nodeset)
-    ATTRIBUTE_NONNULL(1);
+                         virBitmapPtr nodeset);
 
 void virDomainNumaSetNodeMemorySize(virDomainNumaPtr numa,
                                     size_t node,
-                                    unsigned long long size)
-    ATTRIBUTE_NONNULL(1);
+                                    unsigned long long size);
 
 /*
  * Other accessors

@@ -1577,7 +1577,7 @@ vshCommandParse(vshControl *ctl, vshCommandParser *parser)
  * --------------------
  */
 
-static vshCommandToken ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
+static vshCommandToken
 vshCommandArgvGetArg(vshControl *ctl, vshCommandParser *parser, char **res,
                      bool report ATTRIBUTE_UNUSED)
 {
@@ -1610,7 +1610,7 @@ vshCommandArgvParse(vshControl *ctl, int nargs, char **argv)
  * ----------------------
  */
 
-static vshCommandToken ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
+static vshCommandToken
 vshCommandStringGetArg(vshControl *ctl, vshCommandParser *parser, char **res,
                        bool report)
 {

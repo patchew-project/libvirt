@@ -123,8 +123,7 @@ void virSysinfoSystemDefFree(virSysinfoSystemDefPtr def);
 void virSysinfoBaseBoardDefClear(virSysinfoBaseBoardDefPtr def);
 void virSysinfoDefFree(virSysinfoDefPtr def);
 
-int virSysinfoFormat(virBufferPtr buf, virSysinfoDefPtr def)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+int virSysinfoFormat(virBufferPtr buf, virSysinfoDefPtr def);
 
 bool virSysinfoIsEqual(virSysinfoDefPtr src,
                        virSysinfoDefPtr dst);

@@ -52,10 +52,8 @@ struct _virURI {
     virURIParamPtr params;
 };
 
-virURIPtr virURIParse(const char *uri)
-    ATTRIBUTE_NONNULL(1);
-char *virURIFormat(virURIPtr uri)
-    ATTRIBUTE_NONNULL(1);
+virURIPtr virURIParse(const char *uri);
+char *virURIFormat(virURIPtr uri);
 
 char *virURIFormatParams(virURIPtr uri);
 

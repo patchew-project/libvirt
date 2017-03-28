@@ -247,7 +247,6 @@ virSecurityDACSetChownCallback(virSecurityManagerPtr mgr,
 
 /* returns 1 if label isn't found, 0 on success, -1 on error */
 static int
-ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
 virSecurityDACParseIds(virSecurityLabelDefPtr seclabel,
                        uid_t *uidPtr, gid_t *gidPtr)
 {
@@ -261,7 +260,6 @@ virSecurityDACParseIds(virSecurityLabelDefPtr seclabel,
 }
 
 static int
-ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(4)
 virSecurityDACGetIds(virSecurityLabelDefPtr seclabel,
                      virSecurityDACDataPtr priv,
                      uid_t *uidPtr, gid_t *gidPtr,
@@ -292,7 +290,6 @@ virSecurityDACGetIds(virSecurityLabelDefPtr seclabel,
 
 /* returns 1 if label isn't found, 0 on success, -1 on error */
 static int
-ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
 virSecurityDACParseImageIds(virSecurityLabelDefPtr seclabel,
                             uid_t *uidPtr, gid_t *gidPtr)
 {
@@ -306,7 +303,6 @@ virSecurityDACParseImageIds(virSecurityLabelDefPtr seclabel,
 }
 
 static int
-ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(4)
 virSecurityDACGetImageIds(virSecurityLabelDefPtr seclabel,
                           virSecurityDACDataPtr priv,
                           uid_t *uidPtr, gid_t *gidPtr)

@@ -60,27 +60,25 @@ void virNetMessageClear(virNetMessagePtr);
 
 void virNetMessageFree(virNetMessagePtr msg);
 
-virNetMessagePtr virNetMessageQueueServe(virNetMessagePtr *queue)
-    ATTRIBUTE_NONNULL(1);
+virNetMessagePtr virNetMessageQueueServe(virNetMessagePtr *queue);
 void virNetMessageQueuePush(virNetMessagePtr *queue,
-                            virNetMessagePtr msg)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                            virNetMessagePtr msg);
 
 int virNetMessageEncodeHeader(virNetMessagePtr msg)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virNetMessageDecodeLength(virNetMessagePtr msg)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virNetMessageDecodeHeader(virNetMessagePtr msg)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virNetMessageEncodePayload(virNetMessagePtr msg,
                                xdrproc_t filter,
                                void *data)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virNetMessageDecodePayload(virNetMessagePtr msg,
                                xdrproc_t filter,
                                void *data)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virNetMessageEncodeNumFDs(virNetMessagePtr msg);
 int virNetMessageDecodeNumFDs(virNetMessagePtr msg);
@@ -88,12 +86,11 @@ int virNetMessageDecodeNumFDs(virNetMessagePtr msg);
 int virNetMessageEncodePayloadRaw(virNetMessagePtr msg,
                                   const char *buf,
                                   size_t len)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virNetMessageEncodePayloadEmpty(virNetMessagePtr msg)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
-void virNetMessageSaveError(virNetMessageErrorPtr rerr)
-    ATTRIBUTE_NONNULL(1);
+void virNetMessageSaveError(virNetMessageErrorPtr rerr);
 
 int virNetMessageDupFD(virNetMessagePtr msg,
                        size_t slot);

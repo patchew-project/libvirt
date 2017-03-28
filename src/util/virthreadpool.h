@@ -41,7 +41,7 @@ virThreadPoolPtr virThreadPoolNewFull(size_t minWorkers,
                                       size_t prioWorkers,
                                       virThreadPoolJobFunc func,
                                       const char *funcName,
-                                      void *opaque) ATTRIBUTE_NONNULL(4);
+                                      void *opaque);
 
 size_t virThreadPoolGetMinWorkers(virThreadPoolPtr pool);
 size_t virThreadPoolGetMaxWorkers(virThreadPoolPtr pool);
@@ -54,8 +54,7 @@ void virThreadPoolFree(virThreadPoolPtr pool);
 
 int virThreadPoolSendJob(virThreadPoolPtr pool,
                          unsigned int priority,
-                         void *jobdata) ATTRIBUTE_NONNULL(1)
-                                        ATTRIBUTE_RETURN_CHECK;
+                         void *jobdata) ATTRIBUTE_RETURN_CHECK;
 
 int virThreadPoolSetParameters(virThreadPoolPtr pool,
                                long long int minWorkers,

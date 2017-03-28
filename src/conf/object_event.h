@@ -61,33 +61,28 @@ typedef void (*virConnectObjectEventGenericCallback)(virConnectPtr conn,
 
 void
 virObjectEventStateQueue(virObjectEventStatePtr state,
-                         virObjectEventPtr event)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                         virObjectEventPtr event);
 
 void
 virObjectEventStateQueueRemote(virObjectEventStatePtr state,
                                virObjectEventPtr event,
-                               int remoteID)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                               int remoteID);
 
 int
 virObjectEventStateDeregisterID(virConnectPtr conn,
                                 virObjectEventStatePtr state,
-                                int callbackID)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                                int callbackID);
 
 int
 virObjectEventStateEventID(virConnectPtr conn,
                            virObjectEventStatePtr state,
                            int callbackID,
-                           int *remoteID)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                           int *remoteID);
 
 void
 virObjectEventStateSetRemote(virConnectPtr conn,
                              virObjectEventStatePtr state,
                              int callbackID,
-                             int remoteID)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                             int remoteID);
 
 #endif

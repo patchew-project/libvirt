@@ -69,7 +69,6 @@ int virNetClientStreamEventUpdateCallback(virNetClientStreamPtr st,
                                           int events);
 int virNetClientStreamEventRemoveCallback(virNetClientStreamPtr st);
 
-bool virNetClientStreamEOF(virNetClientStreamPtr st)
-    ATTRIBUTE_NONNULL(1);
+bool virNetClientStreamEOF(virNetClientStreamPtr st);
 
 #endif /* __VIR_NET_CLIENT_STREAM_H__ */

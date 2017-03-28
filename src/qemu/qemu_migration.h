@@ -135,22 +135,17 @@ qemuMigrationParams(virTypedParameterPtr params,
 int qemuMigrationJobStart(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
                           qemuDomainAsyncJob job)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 void qemuMigrationJobSetPhase(virQEMUDriverPtr driver,
                               virDomainObjPtr vm,
-                              qemuMigrationJobPhase phase)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                              qemuMigrationJobPhase phase);
 void qemuMigrationJobStartPhase(virQEMUDriverPtr driver,
                                 virDomainObjPtr vm,
-                                qemuMigrationJobPhase phase)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
-void qemuMigrationJobContinue(virDomainObjPtr obj)
-    ATTRIBUTE_NONNULL(1);
+                                qemuMigrationJobPhase phase);
+void qemuMigrationJobContinue(virDomainObjPtr obj);
 bool qemuMigrationJobIsActive(virDomainObjPtr vm,
-                              qemuDomainAsyncJob job)
-    ATTRIBUTE_NONNULL(1);
-void qemuMigrationJobFinish(virQEMUDriverPtr driver, virDomainObjPtr obj)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                              qemuDomainAsyncJob job);
+void qemuMigrationJobFinish(virQEMUDriverPtr driver, virDomainObjPtr obj);
 
 int qemuMigrationSetOffline(virQEMUDriverPtr driver,
                             virDomainObjPtr vm);
@@ -247,7 +242,7 @@ int qemuMigrationToFile(virQEMUDriverPtr driver,
                         int fd,
                         const char *compressor,
                         qemuDomainAsyncJob asyncJob)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int qemuMigrationCancel(virQEMUDriverPtr driver,
                         virDomainObjPtr vm);

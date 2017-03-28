@@ -1947,7 +1947,7 @@ virDomainNetDefFree(virDomainNetDefPtr def)
     VIR_FREE(def);
 }
 
-void ATTRIBUTE_NONNULL(1)
+void
 virDomainChrSourceDefClear(virDomainChrSourceDefPtr def)
 {
     switch (def->type) {
@@ -5181,7 +5181,7 @@ virDomainDefValidate(virDomainDefPtr def,
 /* Generate a string representation of a device address
  * @info address Device address to stringify
  */
-static int ATTRIBUTE_NONNULL(2)
+static int
 virDomainDeviceInfoFormat(virBufferPtr buf,
                           virDomainDeviceInfoPtr info,
                           unsigned int flags)

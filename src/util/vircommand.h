@@ -37,15 +37,14 @@ pid_t virFork(void) ATTRIBUTE_RETURN_CHECK;
 
 int virRun(const char *const*argv, int *status) ATTRIBUTE_RETURN_CHECK;
 
-virCommandPtr virCommandNew(const char *binary) ATTRIBUTE_NONNULL(1);
+virCommandPtr virCommandNew(const char *binary);
 
-virCommandPtr virCommandNewArgs(const char *const*args) ATTRIBUTE_NONNULL(1);
+virCommandPtr virCommandNewArgs(const char *const*args);
 
 virCommandPtr virCommandNewArgList(const char *binary, ...)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_SENTINEL;
+    ATTRIBUTE_SENTINEL;
 
-virCommandPtr virCommandNewVAList(const char *binary, va_list list)
-    ATTRIBUTE_NONNULL(1);
+virCommandPtr virCommandNewVAList(const char *binary, va_list list);
 
 /* All error report from these setup APIs is
  * delayed until the Run/RunAsync methods
@@ -66,7 +65,7 @@ int virCommandPassFDGetFDIndex(virCommandPtr cmd,
                                int fd);
 
 void virCommandSetPidFile(virCommandPtr cmd,
-                          const char *pidfile) ATTRIBUTE_NONNULL(2);
+                          const char *pidfile);
 
 void virCommandSetGID(virCommandPtr cmd, gid_t gid);
 
@@ -96,73 +95,72 @@ void virCommandNonblockingFDs(virCommandPtr cmd);
 void virCommandRawStatus(virCommandPtr cmd);
 
 void virCommandAddEnvFormat(virCommandPtr cmd, const char *format, ...)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_FMT_PRINTF(2, 3);
+    ATTRIBUTE_FMT_PRINTF(2, 3);
 
 void virCommandAddEnvPair(virCommandPtr cmd,
                           const char *name,
-                          const char *value) ATTRIBUTE_NONNULL(2);
+                          const char *value);
 
 void virCommandAddEnvString(virCommandPtr cmd,
-                            const char *str) ATTRIBUTE_NONNULL(2);
+                            const char *str);
 
 void virCommandAddEnvBuffer(virCommandPtr cmd,
                             virBufferPtr buf);
 
 void virCommandAddEnvPassBlockSUID(virCommandPtr cmd,
                                    const char *name,
-                                   const char *defvalue) ATTRIBUTE_NONNULL(2);
+                                   const char *defvalue);
 
 void virCommandAddEnvPassAllowSUID(virCommandPtr cmd,
-                                   const char *name) ATTRIBUTE_NONNULL(2);
+                                   const char *name);
 
 void virCommandAddEnvPassCommon(virCommandPtr cmd);
 
 void virCommandAddArg(virCommandPtr cmd,
-                      const char *val) ATTRIBUTE_NONNULL(2);
+                      const char *val);
 
 void virCommandAddArgBuffer(virCommandPtr cmd,
                             virBufferPtr buf);
 
 void virCommandAddArgFormat(virCommandPtr cmd,
                             const char *format, ...)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_FMT_PRINTF(2, 3);
+    ATTRIBUTE_FMT_PRINTF(2, 3);
 
 void virCommandAddArgPair(virCommandPtr cmd,
                           const char *name,
-                          const char *val)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                          const char *val);
 
 void virCommandAddArgSet(virCommandPtr cmd,
-                         const char *const*vals) ATTRIBUTE_NONNULL(2);
+                         const char *const*vals);
 
 void virCommandAddArgList(virCommandPtr cmd,
                           ... /* const char *arg, ..., NULL */)
     ATTRIBUTE_SENTINEL;
 
 void virCommandSetWorkingDirectory(virCommandPtr cmd,
-                                   const char *pwd) ATTRIBUTE_NONNULL(2);
+                                   const char *pwd);
 
 void virCommandSetInputBuffer(virCommandPtr cmd,
-                              const char *inbuf) ATTRIBUTE_NONNULL(2);
+                              const char *inbuf);
 
 void virCommandSetOutputBuffer(virCommandPtr cmd,
-                               char **outbuf) ATTRIBUTE_NONNULL(2);
+                               char **outbuf);
 
 void virCommandSetErrorBuffer(virCommandPtr cmd,
-                              char **errbuf) ATTRIBUTE_NONNULL(2);
+                              char **errbuf);
 
 void virCommandSetInputFD(virCommandPtr cmd,
                           int infd);
 
 void virCommandSetOutputFD(virCommandPtr cmd,
-                           int *outfd) ATTRIBUTE_NONNULL(2);
+                           int *outfd);
 
 void virCommandSetErrorFD(virCommandPtr cmd,
-                          int *errfd) ATTRIBUTE_NONNULL(2);
+                          int *errfd);
 
 void virCommandSetPreExecHook(virCommandPtr cmd,
                               virExecHook hook,
-                              void *opaque) ATTRIBUTE_NONNULL(2);
+                              void *opaque);
 
 void virCommandWriteArgLog(virCommandPtr cmd,
                            int logfd);

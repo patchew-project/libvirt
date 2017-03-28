@@ -410,7 +410,7 @@ static void daemonInitialize(void)
 #undef VIR_DAEMON_LOAD_MODULE
 
 
-static int ATTRIBUTE_NONNULL(3)
+static int
 daemonSetupNetworking(virNetServerPtr srv,
                       virNetServerPtr srvAdm,
                       struct daemonConfig *config,

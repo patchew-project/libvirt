@@ -125,7 +125,7 @@ unsigned long long virThreadID(virThreadPtr thread);
  * }
  */
 int virOnce(virOnceControlPtr once, virOnceFunc init)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virMutexInit(virMutexPtr m) ATTRIBUTE_RETURN_CHECK;
 int virMutexInitRecursive(virMutexPtr m) ATTRIBUTE_RETURN_CHECK;

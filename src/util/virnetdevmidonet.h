@@ -28,9 +28,9 @@
 
 int virNetDevMidonetBindPort(const char *ifname,
                              virNetDevVPortProfilePtr virtualport)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virNetDevMidonetUnbindPort(virNetDevVPortProfilePtr virtualport)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 #endif /* __VIR_NETDEV_MIDONET_H__ */

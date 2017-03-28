@@ -74,18 +74,16 @@ void virFirewallRemoveRule(virFirewallPtr firewall,
 
 void virFirewallRuleAddArg(virFirewallPtr firewall,
                            virFirewallRulePtr rule,
-                           const char *arg)
-    ATTRIBUTE_NONNULL(3);
+                           const char *arg);
 
 void virFirewallRuleAddArgFormat(virFirewallPtr firewall,
                                  virFirewallRulePtr rule,
                                  const char *fmt, ...)
-    ATTRIBUTE_NONNULL(3) ATTRIBUTE_FMT_PRINTF(3, 4);
+    ATTRIBUTE_FMT_PRINTF(3, 4);
 
 void virFirewallRuleAddArgSet(virFirewallPtr firewall,
                               virFirewallRulePtr rule,
-                              const char *const *args)
-    ATTRIBUTE_NONNULL(3);
+                              const char *const *args);
 
 void virFirewallRuleAddArgList(virFirewallPtr firewall,
                                virFirewallRulePtr rule,

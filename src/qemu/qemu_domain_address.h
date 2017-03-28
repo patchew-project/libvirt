@@ -36,21 +36,18 @@ int qemuDomainAssignAddresses(virDomainDefPtr def,
                               virQEMUCapsPtr qemuCaps,
                               virQEMUDriverPtr driver,
                               virDomainObjPtr obj,
-                              bool newDomain)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                              bool newDomain);
 
 int qemuDomainEnsurePCIAddress(virDomainObjPtr obj,
                                virDomainDeviceDefPtr dev,
-                               virQEMUDriverPtr driver)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                               virQEMUDriverPtr driver);
 
 void qemuDomainReleaseDeviceAddress(virDomainObjPtr vm,
                                     virDomainDeviceInfoPtr info,
                                     const char *devstr);
 
 virDomainCCWAddressSetPtr
-qemuDomainCCWAddrSetCreateFromDomain(virDomainDefPtr def)
-    ATTRIBUTE_NONNULL(1);
+qemuDomainCCWAddrSetCreateFromDomain(virDomainDefPtr def);
 
 int qemuDomainAssignMemoryDeviceSlot(virDomainDefPtr def,
                                      virDomainMemoryDefPtr mem);

@@ -35,20 +35,15 @@ int networkRegister(void);
 
 # if WITH_NETWORK
 int networkAllocateActualDevice(virDomainDefPtr dom,
-                                virDomainNetDefPtr iface)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                                virDomainNetDefPtr iface);
 int networkNotifyActualDevice(virDomainDefPtr dom,
-                              virDomainNetDefPtr iface)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                              virDomainNetDefPtr iface);
 int networkReleaseActualDevice(virDomainDefPtr dom,
-                               virDomainNetDefPtr iface)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                               virDomainNetDefPtr iface);
 
-int networkGetNetworkAddress(const char *netname, char **netaddr)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+int networkGetNetworkAddress(const char *netname, char **netaddr);
 
-int networkGetActualType(virDomainNetDefPtr iface)
-    ATTRIBUTE_NONNULL(1);
+int networkGetActualType(virDomainNetDefPtr iface);
 
 int networkDnsmasqConfContents(virNetworkObjPtr network,
                         const char *pidfile,
@@ -57,12 +52,10 @@ int networkDnsmasqConfContents(virNetworkObjPtr network,
                         dnsmasqCapsPtr caps);
 
 bool networkBandwidthChangeAllowed(virDomainNetDefPtr iface,
-                                   virNetDevBandwidthPtr newBandwidth)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                                   virNetDevBandwidthPtr newBandwidth);
 
 int networkBandwidthUpdate(virDomainNetDefPtr iface,
-                           virNetDevBandwidthPtr newBandwidth)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                           virNetDevBandwidthPtr newBandwidth);
 
 # else
 /* Define no-op replacements that don't drag in any link dependencies.  */

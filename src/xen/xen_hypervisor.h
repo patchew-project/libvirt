@@ -73,64 +73,53 @@ int     xenHypervisorGetMaxVcpus        (virConnectPtr conn,
                                          const char *type);
 int     xenHypervisorGetDomainInfo        (virConnectPtr conn,
                                            virDomainDefPtr def,
-                                           virDomainInfoPtr info)
-          ATTRIBUTE_NONNULL (1);
+                                           virDomainInfoPtr info);
 int     xenHypervisorGetDomainState     (virConnectPtr conn,
                                          virDomainDefPtr def,
                                          int *state,
-                                         int *reason)
-          ATTRIBUTE_NONNULL (1);
+                                         int *reason);
 int     xenHypervisorGetDomInfo         (virConnectPtr conn,
                                          int id,
                                          virDomainInfoPtr info);
 int     xenHypervisorSetMaxMemory       (virConnectPtr conn,
                                          virDomainDefPtr def,
-                                         unsigned long memory)
-          ATTRIBUTE_NONNULL (1);
+                                         unsigned long memory);
 int     xenHypervisorCheckID            (virConnectPtr conn,
                                          int id);
 int     xenHypervisorPinVcpu            (virConnectPtr conn,
                                          virDomainDefPtr def,
                                          unsigned int vcpu,
                                          unsigned char *cpumap,
-                                         int maplen)
-          ATTRIBUTE_NONNULL (1);
+                                         int maplen);
 int     xenHypervisorGetVcpus           (virConnectPtr conn,
                                          virDomainDefPtr def,
                                          virVcpuInfoPtr info,
                                          int maxinfo,
                                          unsigned char *cpumaps,
-                                         int maplen)
-          ATTRIBUTE_NONNULL (1);
+                                         int maplen);
 int     xenHypervisorGetVcpuMax         (virConnectPtr conn,
-                                         virDomainDefPtr def)
-          ATTRIBUTE_NONNULL (1);
+                                         virDomainDefPtr def);
 
 char *  xenHypervisorGetSchedulerType   (virConnectPtr conn,
-                                         int *nparams)
-          ATTRIBUTE_NONNULL (1);
+                                         int *nparams);
 
 int     xenHypervisorGetSchedulerParameters(virConnectPtr conn,
                                             virDomainDefPtr def,
                                             virTypedParameterPtr params,
-                                            int *nparams)
-          ATTRIBUTE_NONNULL (1);
+                                            int *nparams);
 
 int     xenHypervisorSetSchedulerParameters(virConnectPtr conn,
                                             virDomainDefPtr def,
                                             virTypedParameterPtr params,
-                                            int nparams)
-          ATTRIBUTE_NONNULL (1);
+                                            int nparams);
 
 int     xenHypervisorDomainBlockStats   (virConnectPtr conn,
                                          virDomainDefPtr def,
                                          const char *path,
-                                         virDomainBlockStatsPtr stats)
-          ATTRIBUTE_NONNULL (1);
+                                         virDomainBlockStatsPtr stats);
 int     xenHypervisorDomainInterfaceStats (virDomainDefPtr def,
                                            const char *path,
-                                           virDomainInterfaceStatsPtr stats)
-          ATTRIBUTE_NONNULL (1);
+                                           virDomainInterfaceStatsPtr stats);
 
 int     xenHypervisorNodeGetCellsFreeMemory(virConnectPtr conn,
                                           unsigned long long *freeMems,

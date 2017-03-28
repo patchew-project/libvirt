@@ -124,16 +124,16 @@ struct _virCPUDef {
 };
 
 
-void ATTRIBUTE_NONNULL(1)
+void
 virCPUDefFreeFeatures(virCPUDefPtr def);
 
-void ATTRIBUTE_NONNULL(1)
+void
 virCPUDefFreeModel(virCPUDefPtr def);
 
 void
 virCPUDefFree(virCPUDefPtr def);
 
-int ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
+int
 virCPUDefCopyModel(virCPUDefPtr dst,
                    const virCPUDef *src,
                    bool resetPolicy);
@@ -149,8 +149,7 @@ virCPUDefCopyModelFilter(virCPUDefPtr dst,
                          const virCPUDef *src,
                          bool resetPolicy,
                          virCPUDefFeatureFilter filter,
-                         void *opaque)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                         void *opaque);
 
 void
 virCPUDefStealModel(virCPUDefPtr dst,

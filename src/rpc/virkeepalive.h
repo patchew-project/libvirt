@@ -39,9 +39,7 @@ virKeepAlivePtr virKeepAliveNew(int interval,
                                 void *client,
                                 virKeepAliveSendFunc sendCB,
                                 virKeepAliveDeadFunc deadCB,
-                                virKeepAliveFreeFunc freeCB)
-                                ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(4)
-                                ATTRIBUTE_NONNULL(5) ATTRIBUTE_NONNULL(6);
+                                virKeepAliveFreeFunc freeCB);
 
 int virKeepAliveStart(virKeepAlivePtr ka,
                       int interval,

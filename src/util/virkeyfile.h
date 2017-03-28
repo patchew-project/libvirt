@@ -37,28 +37,25 @@ virKeyFilePtr virKeyFileNew(void);
 
 int virKeyFileLoadFile(virKeyFilePtr conf,
                        const char *filename)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virKeyFileLoadData(virKeyFilePtr conf,
                        const char *filename,
                        const char *data,
                        size_t len)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 void virKeyFileFree(virKeyFilePtr conf);
 
 bool virKeyFileHasGroup(virKeyFilePtr conf,
-                        const char *groupname)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                        const char *groupname);
 
 bool virKeyFileHasValue(virKeyFilePtr conf,
                         const char *groupname,
-                        const char *valuename)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                        const char *valuename);
 
 const char *virKeyFileGetValueString(virKeyFilePtr conf,
                                      const char *groupname,
-                                     const char *valuename)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                                     const char *valuename);
 
 #endif /* __VIR_KEYFILE_H__ */

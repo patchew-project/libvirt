@@ -5052,7 +5052,7 @@ virQEMUCapsCacheNew(const char *libDir,
 }
 
 
-static void ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
+static void
 virQEMUCapsCacheValidate(virQEMUCapsCachePtr cache,
                          const char *binary,
                          virCapsPtr caps,

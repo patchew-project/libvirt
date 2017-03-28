@@ -2531,8 +2531,7 @@ virDomainXMLOptionPtr virDomainXMLOptionNew(virDomainDefParserConfigPtr config,
 void virDomainNetGenerateMAC(virDomainXMLOptionPtr xmlopt, virMacAddrPtr mac);
 
 virDomainXMLNamespacePtr
-virDomainXMLOptionGetNamespace(virDomainXMLOptionPtr xmlopt)
-    ATTRIBUTE_NONNULL(1);
+virDomainXMLOptionGetNamespace(virDomainXMLOptionPtr xmlopt);
 
 int virDomainDefPostParse(virDomainDefPtr def,
                           virCapsPtr caps,
@@ -2565,8 +2564,7 @@ void virDomainDefVcpuOrderClear(virDomainDefPtr def);
 int  virDomainDefGetVcpusTopology(const virDomainDef *def,
                                   unsigned int *maxvcpus);
 
-virDomainObjPtr virDomainObjNew(virDomainXMLOptionPtr caps)
-    ATTRIBUTE_NONNULL(1);
+virDomainObjPtr virDomainObjNew(virDomainXMLOptionPtr caps);
 
 void virDomainObjEndAPI(virDomainObjPtr *vm);
 
@@ -2651,7 +2649,7 @@ int virDomainDeviceInfoIterate(virDomainDefPtr def,
 
 bool virDomainDefHasDeviceAddress(virDomainDefPtr def,
                                   virDomainDeviceInfoPtr info)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 void virDomainDefFree(virDomainDefPtr vm);
 
@@ -2886,11 +2884,9 @@ int virDomainHostdevFind(virDomainDefPtr def, virDomainHostdevDefPtr match,
 virDomainGraphicsListenDefPtr
 virDomainGraphicsGetListen(virDomainGraphicsDefPtr def, size_t i);
 int virDomainGraphicsListenAppendAddress(virDomainGraphicsDefPtr def,
-                                         const char *address)
-            ATTRIBUTE_NONNULL(1);
+                                         const char *address);
 int virDomainGraphicsListenAppendSocket(virDomainGraphicsDefPtr def,
-                                        const char *socket)
-            ATTRIBUTE_NONNULL(1);
+                                        const char *socket);
 
 virDomainNetType virDomainNetGetActualType(virDomainNetDefPtr iface);
 const char *virDomainNetGetActualBridgeName(virDomainNetDefPtr iface);
@@ -2921,8 +2917,7 @@ int virDomainControllerFindByPCIAddress(virDomainDefPtr def,
 int virDomainControllerFindUnusedIndex(virDomainDef const *def, int type);
 virDomainControllerDefPtr virDomainControllerRemove(virDomainDefPtr def, size_t i);
 const char *virDomainControllerAliasFind(const virDomainDef *def,
-                                         int type, int idx)
-    ATTRIBUTE_NONNULL(1);
+                                         int type, int idx);
 
 int virDomainLeaseIndex(virDomainDefPtr def,
                         virDomainLeaseDefPtr lease);
@@ -2942,8 +2937,7 @@ void
 virDomainChrGetDomainPtrs(const virDomainDef *vmdef,
                           virDomainChrDeviceType type,
                           const virDomainChrDef ***arrPtr,
-                          size_t *cntPtr)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(4);
+                          size_t *cntPtr);
 virDomainChrDefPtr
 virDomainChrFind(virDomainDefPtr def,
                  virDomainChrDefPtr target);
@@ -3040,11 +3034,9 @@ int virDomainDiskDefForeachPath(virDomainDiskDefPtr disk,
                                 void *opaque);
 
 void
-virDomainObjSetState(virDomainObjPtr obj, virDomainState state, int reason)
-        ATTRIBUTE_NONNULL(1);
+virDomainObjSetState(virDomainObjPtr obj, virDomainState state, int reason);
 virDomainState
-virDomainObjGetState(virDomainObjPtr obj, int *reason)
-        ATTRIBUTE_NONNULL(1);
+virDomainObjGetState(virDomainObjPtr obj, int *reason);
 
 virSecurityLabelDefPtr
 virDomainDefGetSecurityLabelDef(virDomainDefPtr def, const char *model);
@@ -3056,23 +3048,21 @@ typedef const char* (*virEventActionToStringFunc)(int type);
 typedef int (*virEventActionFromStringFunc)(const char *type);
 
 int virDomainMemoryInsert(virDomainDefPtr def, virDomainMemoryDefPtr mem)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
-virDomainMemoryDefPtr virDomainMemoryRemove(virDomainDefPtr def, int idx)
-    ATTRIBUTE_NONNULL(1);
+    ATTRIBUTE_RETURN_CHECK;
+virDomainMemoryDefPtr virDomainMemoryRemove(virDomainDefPtr def, int idx);
 int virDomainMemoryFindByDef(virDomainDefPtr def, virDomainMemoryDefPtr mem)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virDomainMemoryFindInactiveByDef(virDomainDefPtr def,
                                      virDomainMemoryDefPtr mem)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virDomainShmemDefInsert(virDomainDefPtr def, virDomainShmemDefPtr shmem)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 bool virDomainShmemDefEquals(virDomainShmemDefPtr src, virDomainShmemDefPtr dst)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 ssize_t virDomainShmemDefFind(virDomainDefPtr def, virDomainShmemDefPtr shmem)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
-virDomainShmemDefPtr virDomainShmemDefRemove(virDomainDefPtr def, size_t idx)
-    ATTRIBUTE_NONNULL(1);
+    ATTRIBUTE_RETURN_CHECK;
+virDomainShmemDefPtr virDomainShmemDefRemove(virDomainDefPtr def, size_t idx);
 
 VIR_ENUM_DECL(virDomainTaint)
 VIR_ENUM_DECL(virDomainVirt)
@@ -3228,12 +3218,10 @@ virDomainParseMemory(const char *xpath,
                      bool required,
                      bool capped);
 
-bool virDomainDefNeedsPlacementAdvice(virDomainDefPtr def)
-    ATTRIBUTE_NONNULL(1);
+bool virDomainDefNeedsPlacementAdvice(virDomainDefPtr def);
 
 int virDomainDiskDefCheckDuplicateInfo(const virDomainDiskDef *a,
-                                       const virDomainDiskDef *b)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                                       const virDomainDiskDef *b);
 
 int virDomainDefGetVcpuPinInfoHelper(virDomainDefPtr def,
                                      int maplen,
@@ -3241,11 +3229,11 @@ int virDomainDefGetVcpuPinInfoHelper(virDomainDefPtr def,
                                      unsigned char *cpumaps,
                                      int hostcpus,
                                      virBitmapPtr autoCpuset)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
-bool virDomainDefHasMemballoon(const virDomainDef *def) ATTRIBUTE_NONNULL(1);
+bool virDomainDefHasMemballoon(const virDomainDef *def);
 
-char *virDomainObjGetShortName(const virDomainDef *def) ATTRIBUTE_NONNULL(1);
+char *virDomainObjGetShortName(const virDomainDef *def);
 
 int
 virDomainGetBlkioParametersAssignFromDef(virDomainDefPtr def,
@@ -3256,7 +3244,7 @@ virDomainGetBlkioParametersAssignFromDef(virDomainDefPtr def,
 bool
 virDomainDeviceInfoAddressIsEqual(const virDomainDeviceInfo *a,
                                   const virDomainDeviceInfo *b)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virDomainDiskSetBlockIOTune(virDomainDiskDefPtr disk,
                                 virDomainBlockIoTuneInfo *info);

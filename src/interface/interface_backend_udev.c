@@ -73,7 +73,7 @@ virUdevStatusString(virUdevStatus status)
  * for access control checks to be performed. Currently
  * this implies existence of name and mac address attributes
  */
-static virInterfaceDef * ATTRIBUTE_NONNULL(1)
+static virInterfaceDef *
 udevGetMinimalDefForDevice(struct udev_device *dev)
 {
     virInterfaceDef *def;
@@ -96,7 +96,7 @@ udevGetMinimalDefForDevice(struct udev_device *dev)
 }
 
 
-static struct udev_enumerate * ATTRIBUTE_NONNULL(1)
+static struct udev_enumerate *
 udevGetDevices(struct udev *udev, virUdevStatus status)
 {
     struct udev_enumerate *enumerate;
@@ -579,9 +579,7 @@ udevBridgeScanDirFilter(const struct dirent *entry)
 }
 
 
-static int
-ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
-ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK
+static int ATTRIBUTE_RETURN_CHECK
 udevGetIfaceDefBond(struct udev *udev,
                     struct udev_device *dev,
                     const char *name,
@@ -804,9 +802,7 @@ udevGetIfaceDefBond(struct udev *udev,
     return -1;
 }
 
-static int
-ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
-ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK
+static int ATTRIBUTE_RETURN_CHECK
 udevGetIfaceDefBridge(struct udev *udev,
                       struct udev_device *dev,
                       const char *name,
@@ -910,9 +906,7 @@ udevGetIfaceDefBridge(struct udev *udev,
     return -1;
 }
 
-static int
-ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
-ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK
+static int ATTRIBUTE_RETURN_CHECK
 udevGetIfaceDefVlan(struct udev *udev ATTRIBUTE_UNUSED,
                     struct udev_device *dev ATTRIBUTE_UNUSED,
                     const char *name,
@@ -978,7 +972,7 @@ udevGetIfaceDefVlan(struct udev *udev ATTRIBUTE_UNUSED,
     return ret;
 }
 
-static virInterfaceDef * ATTRIBUTE_NONNULL(1)
+static virInterfaceDef *
 udevGetIfaceDef(struct udev *udev, const char *name)
 {
     struct udev_device *dev = NULL;

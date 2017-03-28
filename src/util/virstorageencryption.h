@@ -77,8 +77,7 @@ struct _virStorageEncryption {
     virStorageEncryptionInfoDef encinfo;
 };
 
-virStorageEncryptionPtr virStorageEncryptionCopy(const virStorageEncryption *src)
-    ATTRIBUTE_NONNULL(1);
+virStorageEncryptionPtr virStorageEncryptionCopy(const virStorageEncryption *src);
 
 void virStorageEncryptionFree(virStorageEncryptionPtr enc);
 

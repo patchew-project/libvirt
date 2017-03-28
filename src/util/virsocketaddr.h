@@ -142,7 +142,6 @@ bool virSocketAddrIsNumericLocalhost(const char *addr);
 
 int virSocketAddrPTRDomain(const virSocketAddr *addr,
                            unsigned int prefix,
-                           char **ptr)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3);
+                           char **ptr);
 
 #endif /* __VIR_SOCKETADDR_H__ */

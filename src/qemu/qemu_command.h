@@ -57,8 +57,7 @@ virCommandPtr qemuBuildCommandLine(virQEMUDriverPtr driver,
                                    virBitmapPtr nodeset,
                                    size_t *nnicindexes,
                                    int **nicindexes,
-                                   const char *domainLibDir)
-    ATTRIBUTE_NONNULL(15);
+                                   const char *domainLibDir);
 
 
 /* Generate the object properties for a secret */
@@ -193,16 +192,13 @@ bool qemuCheckCCWS390AddressSupport(const virDomainDef *def,
                                     virQEMUCapsPtr qemuCaps,
                                     const char *devicename);
 
-virJSONValuePtr qemuBuildHotpluggableCPUProps(const virDomainVcpuDef *vcpu)
-    ATTRIBUTE_NONNULL(1);
+virJSONValuePtr qemuBuildHotpluggableCPUProps(const virDomainVcpuDef *vcpu);
 
-virJSONValuePtr qemuBuildShmemBackendMemProps(virDomainShmemDefPtr shmem)
-    ATTRIBUTE_NONNULL(1);
+virJSONValuePtr qemuBuildShmemBackendMemProps(virDomainShmemDefPtr shmem);
 
 char *qemuBuildShmemDevStr(virDomainDefPtr def,
                            virDomainShmemDefPtr shmem,
-                           virQEMUCapsPtr qemuCaps)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                           virQEMUCapsPtr qemuCaps);
 
 
 

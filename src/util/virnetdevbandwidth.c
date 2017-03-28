@@ -97,7 +97,7 @@ virNetDevBandwidthCmdAddOptimalQuantum(virCommandPtr cmd,
  * Returns: 0 on success,
  *         -1 otherwise (with error reported).
  */
-static int ATTRIBUTE_NONNULL(1)
+static int
 virNetDevBandwidthManipulateFilter(const char *ifname,
                                    const virMacAddr *ifmac_ptr,
                                    unsigned int id,

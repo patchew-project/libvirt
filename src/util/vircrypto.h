@@ -42,7 +42,6 @@ int
 virCryptoHashString(virCryptoHash hash,
                     const char *input,
                     char **output)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
     ATTRIBUTE_RETURN_CHECK;
 
 bool virCryptoHaveCipher(virCryptoCipher algorithm);
@@ -52,8 +51,7 @@ int virCryptoEncryptData(virCryptoCipher algorithm,
                          uint8_t *iv, size_t ivlen,
                          uint8_t *data, size_t datalen,
                          uint8_t **ciphertext, size_t *ciphertextlen)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(6)
-    ATTRIBUTE_NONNULL(8) ATTRIBUTE_NONNULL(9) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 uint8_t *virCryptoGenerateRandom(size_t nbytes);
 

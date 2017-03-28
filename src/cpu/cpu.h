@@ -151,16 +151,14 @@ virCPUCompareResult
 virCPUCompare(virArch arch,
               virCPUDefPtr host,
               virCPUDefPtr cpu,
-              bool failIncompatible)
-    ATTRIBUTE_NONNULL(3);
+              bool failIncompatible);
 
 int
 cpuDecode   (virCPUDefPtr cpu,
              const virCPUData *data,
              const char **models,
              unsigned int nmodels,
-             const char *preferred)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+             const char *preferred);
 
 int
 cpuEncode   (virArch arch,
@@ -170,8 +168,7 @@ cpuEncode   (virArch arch,
              virCPUDataPtr *optional,
              virCPUDataPtr *disabled,
              virCPUDataPtr *forbidden,
-             virCPUDataPtr *vendor)
-    ATTRIBUTE_NONNULL(2);
+             virCPUDataPtr *vendor);
 
 virCPUDataPtr
 virCPUDataNew(virArch arch);
@@ -206,34 +203,29 @@ cpuBaseline (virCPUDefPtr *cpus,
 int
 virCPUUpdate(virArch arch,
              virCPUDefPtr guest,
-             const virCPUDef *host)
-    ATTRIBUTE_NONNULL(2);
+             const virCPUDef *host);
 
 int
 virCPUUpdateLive(virArch arch,
                  virCPUDefPtr cpu,
                  virCPUDataPtr dataEnabled,
-                 virCPUDataPtr dataDisabled)
-    ATTRIBUTE_NONNULL(2);
+                 virCPUDataPtr dataDisabled);
 
 int
 virCPUCheckFeature(virArch arch,
                    const virCPUDef *cpu,
-                   const char *feature)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                   const char *feature);
 
 
 int
 virCPUDataCheckFeature(const virCPUData *data,
-                       const char *feature)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                       const char *feature);
 
 
 bool
 virCPUModelIsAllowed(const char *model,
                      const char **models,
-                     unsigned int nmodels)
-    ATTRIBUTE_NONNULL(1);
+                     unsigned int nmodels);
 
 int
 virCPUGetModels(virArch arch, char ***models);
@@ -242,13 +234,11 @@ int
 virCPUTranslate(virArch arch,
                 virCPUDefPtr cpu,
                 const char **models,
-                unsigned int nmodels)
-    ATTRIBUTE_NONNULL(2);
+                unsigned int nmodels);
 
 int
 virCPUConvertLegacy(virArch arch,
-                    virCPUDefPtr cpu)
-    ATTRIBUTE_NONNULL(2);
+                    virCPUDefPtr cpu);
 
 int
 virCPUExpandFeatures(virArch arch,
@@ -257,9 +247,7 @@ virCPUExpandFeatures(virArch arch,
 /* virCPUDataFormat and virCPUDataParse are implemented for unit tests only and
  * have no real-life usage
  */
-char *virCPUDataFormat(const virCPUData *data)
-    ATTRIBUTE_NONNULL(1);
-virCPUDataPtr virCPUDataParse(const char *xmlStr)
-    ATTRIBUTE_NONNULL(1);
+char *virCPUDataFormat(const virCPUData *data);
+virCPUDataPtr virCPUDataParse(const char *xmlStr);
 
 #endif /* __VIR_CPU_H__ */

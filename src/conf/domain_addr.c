@@ -524,7 +524,7 @@ virDomainPCIAddressSlotInUse(virDomainPCIAddressSetPtr addrs,
  * automatically created by libvirt, so it is an internal error (not
  * XML).
  */
-static int ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
+static int
 virDomainPCIAddressReserveAddrInternal(virDomainPCIAddressSetPtr addrs,
                                        virPCIDeviceAddressPtr addr,
                                        virDomainPCIConnectFlags flags,
@@ -735,7 +735,7 @@ virDomainPCIAddressFindUnusedFunctionOnBus(virDomainPCIAddressBusPtr bus,
 }
 
 
-static int ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
+static int
 virDomainPCIAddressGetNextAddr(virDomainPCIAddressSetPtr addrs,
                                virPCIDeviceAddressPtr next_addr,
                                int function,

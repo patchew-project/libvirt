@@ -108,8 +108,7 @@ libxlDomainSaveImageOpen(libxlDriverPrivatePtr driver,
                          libxlDriverConfigPtr cfg,
                          const char *from,
                          virDomainDefPtr *ret_def,
-                         libxlSavefileHeaderPtr ret_hdr)
-    ATTRIBUTE_NONNULL(4) ATTRIBUTE_NONNULL(5);
+                         libxlSavefileHeaderPtr ret_hdr);
 
 int
 libxlDomainDestroyInternal(libxlDriverPrivatePtr driver,

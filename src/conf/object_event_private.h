@@ -83,9 +83,7 @@ virObjectEventStateRegisterID(virConnectPtr conn,
                               virFreeCallback freecb,
                               bool legacy,
                               int *callbackID,
-                              bool remoteFilter)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(6)
-    ATTRIBUTE_NONNULL(8) ATTRIBUTE_NONNULL(12);
+                              bool remoteFilter);
 
 int
 virObjectEventStateCallbackID(virConnectPtr conn,
@@ -93,9 +91,7 @@ virObjectEventStateCallbackID(virConnectPtr conn,
                               virClassPtr klass,
                               int eventID,
                               virConnectObjectEventGenericCallback callback,
-                              int *remoteID)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
-    ATTRIBUTE_NONNULL(5);
+                              int *remoteID);
 
 void *
 virObjectEventNew(virClassPtr klass,
@@ -104,8 +100,6 @@ virObjectEventNew(virClassPtr klass,
                   int id,
                   const char *name,
                   const unsigned char *uuid,
-                  const char *key)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(5)
-    ATTRIBUTE_NONNULL(7);
+                  const char *key);
 
 #endif

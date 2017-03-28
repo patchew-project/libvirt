@@ -66,25 +66,21 @@ bool virCgroupAvailable(void);
 int virCgroupNewPartition(const char *path,
                           bool create,
                           int controllers,
-                          virCgroupPtr *group)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4);
+                          virCgroupPtr *group);
 
-int virCgroupNewSelf(virCgroupPtr *group)
-    ATTRIBUTE_NONNULL(1);
+int virCgroupNewSelf(virCgroupPtr *group);
 
 int virCgroupNewDomainPartition(virCgroupPtr partition,
                                 const char *driver,
                                 const char *name,
                                 bool create,
-                                virCgroupPtr *group)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(5);
+                                virCgroupPtr *group);
 
 int virCgroupNewThread(virCgroupPtr domain,
                        virCgroupThreadName nameval,
                        int id,
                        bool create,
-                       virCgroupPtr *group)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(5);
+                       virCgroupPtr *group);
 
 int virCgroupDelThread(virCgroupPtr cgroup,
                        virCgroupThreadName nameval,
@@ -100,8 +96,7 @@ int virCgroupNewDetectMachine(const char *name,
                               bool privileged,
                               pid_t pid,
                               int controllers,
-                              virCgroupPtr *group)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                              virCgroupPtr *group);
 
 int virCgroupNewMachine(const char *name,
                         const char *drivername,
@@ -113,12 +108,9 @@ int virCgroupNewMachine(const char *name,
                         int *nicindexes,
                         const char *partition,
                         int controllers,
-                        virCgroupPtr *group)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
-    ATTRIBUTE_NONNULL(3);
+                        virCgroupPtr *group);
 
-int virCgroupTerminateMachine(const char *name)
-    ATTRIBUTE_NONNULL(1);
+int virCgroupTerminateMachine(const char *name);
 
 bool virCgroupNewIgnoreError(void);
 

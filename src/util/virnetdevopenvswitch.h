@@ -41,24 +41,23 @@ int virNetDevOpenvswitchAddPort(const char *brname,
                                 const unsigned char *vmuuid,
                                 virNetDevVPortProfilePtr ovsport,
                                 virNetDevVlanPtr virtVlan)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
     ATTRIBUTE_RETURN_CHECK;
 
 int virNetDevOpenvswitchRemovePort(const char *brname, const char *ifname)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virNetDevOpenvswitchGetMigrateData(char **migrate, const char *ifname)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virNetDevOpenvswitchSetMigrateData(char *migrate, const char *ifname)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virNetDevOpenvswitchInterfaceStats(const char *ifname,
                                        virDomainInterfaceStatsPtr stats)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virNetDevOpenvswitchGetVhostuserIfname(const char *path,
                                            char **ifname)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 #endif /* __VIR_NETDEV_OPENVSWITCH_H__ */

@@ -123,7 +123,7 @@ virDomainObjPtr vzDomObjFromDomain(virDomainPtr domain);
 virDomainObjPtr vzDomObjFromDomainRef(virDomainPtr domain);
 
 char * vzGetOutput(const char *binary, ...)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_SENTINEL;
+    ATTRIBUTE_SENTINEL;
 
 vzDriverPtr
 vzGetDriverConnection(void);

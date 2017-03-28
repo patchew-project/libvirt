@@ -52,8 +52,7 @@ int qemuInterfaceBridgeConnect(virDomainDefPtr def,
                                virDomainNetDefPtr net,
                                int *tapfd,
                                size_t *tapfdSize,
-                               unsigned int *mtu)
-    ATTRIBUTE_NONNULL(2);
+                               unsigned int *mtu);
 
 int qemuInterfaceOpenVhostNet(virDomainDefPtr def,
                               virDomainNetDefPtr net,

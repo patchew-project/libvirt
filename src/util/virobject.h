@@ -63,41 +63,30 @@ struct _virObjectLockable {
 virClassPtr virClassForObject(void);
 virClassPtr virClassForObjectLockable(void);
 
-# ifndef VIR_PARENT_REQUIRED
-#  define VIR_PARENT_REQUIRED ATTRIBUTE_NONNULL(1)
-# endif
 virClassPtr virClassNew(virClassPtr parent,
                         const char *name,
                         size_t objectSize,
-                        virObjectDisposeCallback dispose)
-    VIR_PARENT_REQUIRED ATTRIBUTE_NONNULL(2);
+                        virObjectDisposeCallback dispose);
 
-const char *virClassName(virClassPtr klass)
-    ATTRIBUTE_NONNULL(1);
+const char *virClassName(virClassPtr klass);
 
 bool virClassIsDerivedFrom(virClassPtr klass,
-                           virClassPtr parent)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                           virClassPtr parent);
 
-void *virObjectNew(virClassPtr klass)
-    ATTRIBUTE_NONNULL(1);
+void *virObjectNew(virClassPtr klass);
 bool virObjectUnref(void *obj);
 void *virObjectRef(void *obj);
 
 bool virObjectIsClass(void *obj,
-                      virClassPtr klass)
-    ATTRIBUTE_NONNULL(2);
+                      virClassPtr klass);
 
 void virObjectFreeCallback(void *opaque);
 void virObjectFreeHashData(void *opaque, const void *name);
 
-void *virObjectLockableNew(virClassPtr klass)
-    ATTRIBUTE_NONNULL(1);
+void *virObjectLockableNew(virClassPtr klass);
 
-void virObjectLock(void *lockableobj)
-    ATTRIBUTE_NONNULL(1);
-void virObjectUnlock(void *lockableobj)
-    ATTRIBUTE_NONNULL(1);
+void virObjectLock(void *lockableobj);
+void virObjectUnlock(void *lockableobj);
 
 void virObjectListFree(void *list);
 void virObjectListFreeCount(void *list, size_t count);

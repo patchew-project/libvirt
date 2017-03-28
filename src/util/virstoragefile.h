@@ -292,8 +292,7 @@ int virStorageFileProbeFormat(const char *path, uid_t uid, gid_t gid);
 int virStorageFileGetMetadataInternal(virStorageSourcePtr meta,
                                       char *buf,
                                       size_t len,
-                                      int *backingFormat)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(4);
+                                      int *backingFormat);
 
 virStorageSourcePtr virStorageFileGetMetadataFromFD(const char *path,
                                                     int fd,
@@ -303,27 +302,23 @@ virStorageSourcePtr virStorageFileGetMetadataFromBuf(const char *path,
                                                      char *buf,
                                                      size_t len,
                                                      int format,
-                                                     int *backingFormat)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                                                     int *backingFormat);
 int virStorageFileChainGetBroken(virStorageSourcePtr chain,
                                  char **broken_file);
 
 int virStorageFileParseChainIndex(const char *diskTarget,
                                   const char *name,
-                                  unsigned int *chainIndex)
-    ATTRIBUTE_NONNULL(3);
+                                  unsigned int *chainIndex);
 
 int virStorageFileParseBackingStoreStr(const char *str,
                                        char **target,
-                                       unsigned int *chainIndex)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3);
+                                       unsigned int *chainIndex);
 
 virStorageSourcePtr virStorageFileChainLookup(virStorageSourcePtr chain,
                                               virStorageSourcePtr startFrom,
                                               const char *name,
                                               unsigned int idx,
-                                              virStorageSourcePtr *parent)
-    ATTRIBUTE_NONNULL(1);
+                                              virStorageSourcePtr *parent);
 
 int virStorageFileResize(const char *path,
                          unsigned long long capacity,
@@ -373,12 +368,10 @@ int virStorageSourceUpdateCapacity(virStorageSourcePtr src,
 
 virStorageSourcePtr virStorageSourceNewFromBacking(virStorageSourcePtr parent);
 virStorageSourcePtr virStorageSourceCopy(const virStorageSource *src,
-                                         bool backingChain)
-    ATTRIBUTE_NONNULL(1);
+                                         bool backingChain);
 
 int virStorageSourceParseRBDColonString(const char *rbdstr,
-                                        virStorageSourcePtr src)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                                        virStorageSourcePtr src);
 
 typedef int
 (*virStorageFileSimplifyPathReadlinkCallback)(const char *path,
@@ -390,8 +383,7 @@ char *virStorageFileCanonicalizePath(const char *path,
 
 int virStorageFileGetRelativeBackingPath(virStorageSourcePtr from,
                                          virStorageSourcePtr to,
-                                         char **relpath)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                                         char **relpath);
 
 int virStorageFileCheckCompat(const char *compat);
 
@@ -402,7 +394,6 @@ bool virStorageSourceIsRelative(virStorageSourcePtr src);
 virStorageSourcePtr
 virStorageSourceFindByNodeName(virStorageSourcePtr top,
                                const char *nodeName,
-                               unsigned int *index)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                               unsigned int *index);
 
 #endif /* __VIR_STORAGE_FILE_H__ */

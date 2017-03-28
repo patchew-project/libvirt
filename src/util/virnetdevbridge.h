@@ -27,56 +27,54 @@
 # include "virmacaddr.h"
 
 int virNetDevBridgeCreate(const char *brname)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virNetDevBridgeDelete(const char *brname)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virNetDevBridgeAddPort(const char *brname,
                            const char *ifname)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virNetDevBridgeRemovePort(const char *brname,
                               const char *ifname)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virNetDevBridgeSetSTPDelay(const char *brname,
                                int delay)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virNetDevBridgeGetSTPDelay(const char *brname,
                                int *delay)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virNetDevBridgeSetSTP(const char *brname,
                           bool enable)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virNetDevBridgeGetSTP(const char *brname,
                           bool *enable)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virNetDevBridgeSetVlanFiltering(const char *brname,
                                     bool enable)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virNetDevBridgeGetVlanFiltering(const char *brname,
                                     bool *enable)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 int virNetDevBridgePortGetLearning(const char *brname,
                                    const char *ifname,
                                    bool *enable)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
     ATTRIBUTE_RETURN_CHECK;
 int virNetDevBridgePortSetLearning(const char *brname,
                                    const char *ifname,
                                    bool enable)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virNetDevBridgePortGetUnicastFlood(const char *brname,
                                        const char *ifname,
                                        bool *enable)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
     ATTRIBUTE_RETURN_CHECK;
 int virNetDevBridgePortSetUnicastFlood(const char *brname,
                                        const char *ifname,
                                        bool enable)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 
 typedef enum {
     VIR_NETDEVBRIDGE_FDB_FLAG_ROUTER    = (1 << 0),
@@ -89,8 +87,8 @@ typedef enum {
 
 int virNetDevBridgeFDBAdd(const virMacAddr *mac, const char *ifname,
                           unsigned int flags)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int virNetDevBridgeFDBDel(const virMacAddr *mac, const char *ifname,
                           unsigned int flags)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 #endif /* __VIR_NETDEV_BRIDGE_H__ */

@@ -153,7 +153,7 @@ netcfStateReload(void)
  * for access control checks to be performed. Currently
  * this implies existence of name and mac address attributes
  */
-static virInterfaceDef * ATTRIBUTE_NONNULL(1)
+static virInterfaceDef *
 netcfGetMinimalDefForDevice(struct netcf_if *iface)
 {
     virInterfaceDef *def;

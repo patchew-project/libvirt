@@ -38,14 +38,12 @@ void
 virFirmwareFreeList(virFirmwarePtr *firmwares, size_t nfirmwares);
 
 int
-virFirmwareParse(const char *str, virFirmwarePtr firmware)
-    ATTRIBUTE_NONNULL(2);
+virFirmwareParse(const char *str, virFirmwarePtr firmware);
 
 int
 virFirmwareParseList(const char *list,
                      virFirmwarePtr **firmwares,
-                     size_t *nfirmwares)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                     size_t *nfirmwares);
 
 
 #endif /* __VIR_FIRMWARE_H__ */

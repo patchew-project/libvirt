@@ -32,7 +32,6 @@ int bhyveDomainAssignPCIAddresses(virDomainDefPtr def, virDomainObjPtr obj);
 virDomainPCIAddressSetPtr bhyveDomainPCIAddressSetCreate(virDomainDefPtr def,
                                                          unsigned int nbuses);
 
-int bhyveDomainAssignAddresses(virDomainDefPtr def, virDomainObjPtr obj)
-    ATTRIBUTE_NONNULL(1);
+int bhyveDomainAssignAddresses(virDomainDefPtr def, virDomainObjPtr obj);
 
 #endif /* __BHYVE_DEVICE_H__ */

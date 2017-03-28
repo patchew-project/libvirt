@@ -96,7 +96,7 @@ btrfsCloneFile(int dest_fd ATTRIBUTE_UNUSED,
 }
 #endif
 
-static int ATTRIBUTE_NONNULL(2)
+static int
 virStorageBackendCopyToFD(virStorageVolDefPtr vol,
                           virStorageVolDefPtr inputvol,
                           int fd,

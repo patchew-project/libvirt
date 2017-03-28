@@ -3475,7 +3475,7 @@ qemuDomainJobAllowed(qemuDomainObjPrivatePtr priv, qemuDomainJob job)
 /*
  * obj must be locked before calling
  */
-static int ATTRIBUTE_NONNULL(1)
+static int
 qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
                               virDomainObjPtr obj,
                               qemuDomainJob job,
@@ -3774,7 +3774,7 @@ qemuDomainObjEnterMonitorInternal(virQEMUDriverPtr driver,
     return 0;
 }
 
-static void ATTRIBUTE_NONNULL(1)
+static void
 qemuDomainObjExitMonitorInternal(virQEMUDriverPtr driver,
                                  virDomainObjPtr obj)
 {

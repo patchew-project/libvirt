@@ -129,7 +129,7 @@ bhyveAutostartDomains(bhyveConnPtr driver)
  *
  * Returns: a reference to a virCapsPtr instance or NULL
  */
-virCapsPtr ATTRIBUTE_NONNULL(1)
+virCapsPtr
 bhyveDriverGetCapabilities(bhyveConnPtr driver)
 {
 

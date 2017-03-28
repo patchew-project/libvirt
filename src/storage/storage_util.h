@@ -131,8 +131,7 @@ enum {
 
 int virStorageBackendVolOpen(const char *path, struct stat *sb,
                              unsigned int flags)
-    ATTRIBUTE_RETURN_CHECK
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+    ATTRIBUTE_RETURN_CHECK;
 
 # define VIR_STORAGE_DEFAULT_POOL_PERM_MODE 0755
 # define VIR_STORAGE_DEFAULT_VOL_PERM_MODE  0600

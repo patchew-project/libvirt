@@ -35,8 +35,7 @@ virVHBAIsVportCapable(const char *sysfs_prefix, int host);
 char *
 virVHBAGetConfig(const char *sysfs_prefix,
                  int host,
-                 const char *entry)
-    ATTRIBUTE_NONNULL(3);
+                 const char *entry);
 
 char *
 virVHBAFindVportHost(const char *sysfs_prefix);
@@ -45,18 +44,15 @@ int
 virVHBAManageVport(const int parent_host,
                    const char *wwpn,
                    const char *wwnn,
-                   int operation)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                   int operation);
 
 char *
 virVHBAGetHostByWWN(const char *sysfs_prefix,
                     const char *wwnn,
-                    const char *wwpn)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                    const char *wwpn);
 
 char *
 virVHBAGetHostByFabricWWN(const char *sysfs_prefix,
-                          const char *fabric_wwn)
-    ATTRIBUTE_NONNULL(2);
+                          const char *fabric_wwn);
 
 #endif /* __VIR_VBHA_H__ */

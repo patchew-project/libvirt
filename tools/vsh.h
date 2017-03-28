@@ -259,40 +259,38 @@ const vshCmdGrp *vshCmdGrpSearch(const char *grpname);
 bool vshCmdGrpHelp(vshControl *ctl, const char *name);
 
 int vshCommandOptInt(vshControl *ctl, const vshCmd *cmd,
-                     const char *name, int *value)
-    ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK;
+                     const char *name, int *value);
 int vshCommandOptUInt(vshControl *ctl, const vshCmd *cmd,
                       const char *name, unsigned int *value)
-    ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int vshCommandOptUIntWrap(vshControl *ctl, const vshCmd *cmd,
                           const char *name, unsigned int *value)
-    ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int vshCommandOptUL(vshControl *ctl, const vshCmd *cmd,
                     const char *name, unsigned long *value)
-    ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int vshCommandOptULWrap(vshControl *ctl, const vshCmd *cmd,
                         const char *name, unsigned long *value)
-    ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int vshCommandOptStringQuiet(vshControl *ctl, const vshCmd *cmd,
                              const char *name, const char **value)
-    ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int vshCommandOptStringReq(vshControl *ctl, const vshCmd *cmd,
                            const char *name, const char **value)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
-    ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int vshCommandOptLongLong(vshControl *ctl, const vshCmd *cmd,
                           const char *name, long long *value)
-    ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int vshCommandOptULongLong(vshControl *ctl, const vshCmd *cmd,
                            const char *name, unsigned long long *value)
-    ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int vshCommandOptULongLongWrap(vshControl *ctl, const vshCmd *cmd,
                                const char *name, unsigned long long *value)
-    ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int vshCommandOptScaledInt(vshControl *ctl, const vshCmd *cmd,
                            const char *name, unsigned long long *value,
                            int scale, unsigned long long max)
-    ATTRIBUTE_NONNULL(4) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_RETURN_CHECK;
 int vshBlockJobOptionBandwidth(vshControl *ctl,
                                const vshCmd *cmd,
                                bool bytes,
@@ -323,8 +321,7 @@ int vshNameSorter(const void *a, const void *b);
 virTypedParameterPtr vshFindTypedParamByName(const char *name,
                                              virTypedParameterPtr list,
                                              int count);
-char *vshGetTypedParamValue(vshControl *ctl, virTypedParameterPtr item)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+char *vshGetTypedParamValue(vshControl *ctl, virTypedParameterPtr item);
 
 double vshPrettyCapacity(unsigned long long val, const char **unit);
 int vshStringToArray(const char *str, char ***array);
