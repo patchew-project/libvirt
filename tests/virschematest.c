@@ -35,6 +35,7 @@ VIR_LOG_INIT("tests.schematest");
 
 struct testSchemaData {
     virXMLValidatorPtr validator;
+    const char *schema;
     const char *xml_path;
 };
 
@@ -140,15 +141,10 @@ testSchemaDirs(const char *schema, virXMLValidatorPtr validator, ...)
 }
 
 
-struct testSchemaFileData {
-    virXMLValidatorPtr validator;
-    const char *schema;
-};
-
 static int
 testSchemaGrammar(const void *opaque)
 {
-    struct testSchemaFileData *data = (struct testSchemaFileData *) opaque;
+    struct testSchemaData *data = (struct testSchemaData *) opaque;
     char *schema_path;
     int ret = -1;
 
@@ -171,7 +167,7 @@ static int
 mymain(void)
 {
     int ret = 0;
-    struct testSchemaFileData data;
+    struct testSchemaData data;
 
     memset(&data, 0, sizeof(data));
 
@@ -195,6 +191,30 @@ mymain(void)
             ret = -1;                                                          \
         }                                                                      \
     } while (0)
+
+#define DO_TEST_FILE(sch, xmlfile)                                             \
+    do {                                                                       \
+        data.schema = sch;                                                     \
+        data.xml_path = xmlfile;                                               \
+        if (virTestRun("test schema grammar file: " sch,                       \
+                       testSchemaGrammar, &data) == 0) {                       \
+            /* initialize the validator even if the schema test                \
+             * was skipped because of VIR_TEST_RANGE */                        \
+            if (!data.validator && testSchemaGrammar(&data) < 0) {             \
+                ret = -1;                                                      \
+                break;                                                         \
+            }                                                                  \
+            if (virTestRun("Checking " xmlfile " against " sch,                \
+                           testSchemaFile, &data) < 0)                         \
+                ret = -1;                                                      \
+                                                                               \
+            virXMLValidatorFree(data.validator);                               \
+            data.validator = NULL;                                             \
+        } else {                                                               \
+            ret = -1;                                                          \
+        }                                                                      \
+    } while (0)
+
 
     DO_TEST("capability.rng", "capabilityschemadata", "xencapsdata");
     DO_TEST("domain.rng", "domainschemadata", "qemuargv2xmldata",
