@@ -166,6 +166,8 @@ struct _virNodeDevCapPCIDev {
     int numa_node;
     virPCIEDeviceInfoPtr pci_express;
     int hdrType; /* enum virPCIHeaderType or -1 */
+    virNodeDevCapMdevPtr *mdevs;
+    size_t nmdevs;
 };
 
 typedef struct _virNodeDevCapUSBDev virNodeDevCapUSBDev;
