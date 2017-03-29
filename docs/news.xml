@@ -16,6 +16,8 @@
      allowed.
 
      Lines should be kept under 80 columns, and should not exceed 100 columns.
+
+     This file is validated against docs/schemas/news.rng schema.
      -->
 
 <libvirt>
