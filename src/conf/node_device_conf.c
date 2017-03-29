@@ -541,9 +541,13 @@ virNodeDeviceDefFormat(const virNodeDeviceDef *def)
         case VIR_NODE_DEV_CAP_DRM:
             virBufferEscapeString(&buf, "<type>%s</type>\n", virNodeDevDRMTypeToString(data->drm.type));
             break;
+        case VIR_NODE_DEV_CAP_MDEV:
+            virBufferEscapeString(&buf, "<type id='%s'/>\n", data->mdev.type);
+            virBufferAsprintf(&buf, "<iommuGroup number='%u'/>\n",
+                              data->mdev.iommuGroupNumber);
+            break;
         case VIR_NODE_DEV_CAP_FC_HOST:
         case VIR_NODE_DEV_CAP_VPORTS:
-        case VIR_NODE_DEV_CAP_MDEV:
         case VIR_NODE_DEV_CAP_LAST:
             break;
         }

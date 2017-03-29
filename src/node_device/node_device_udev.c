@@ -324,9 +324,9 @@ udevTranslatePCIIds(unsigned int vendor,
     return 0;
 }
 
-#define MDEV_GET_SYSFS_ATTR(attr, cb, ...)                                  \
+#define MDEV_GET_SYSFS_ATTR(attr_name, dir, cb, ...)                        \
     do {                                                                    \
-        if (virAsprintf(&attrpath, "%s/%s", relpath, #attr) < 0)            \
+        if (virAsprintf(&attrpath, "%s/%s", dir, #attr_name) < 0)           \
             goto cleanup;                                                   \
                                                                             \
         if (cb(device, attrpath, __VA_ARGS__) < 0)                          \
@@ -345,17 +345,6 @@ udevGetMdevCaps(struct udev_device *device,
     const char *relpath = NULL;   /* diff between @sysfspath and @devpath */
     char *tmp = NULL;
 
-
-    /* UDEV doesn't report attributes under subdirectories but can query them
-     * if specified as relative paths to the device's base path,
-     * e.g. /sys/devices/../0000:00:01.0/ is the device's base path as udev
-     * reports it, but we're interested in attributes under
-     * /sys/devices/../0000:00:01.0/mdev_supported_types/<type>/. So, let's
-     * strip the common part of the path and let udev chew the relative bit.
-     */
-    devpath = udev_device_get_syspath(device);
-    relpath = sysfspath + strlen(devpath);
-
     /* When calling from the mdev child device, @sysfspath is a symbolic link
      * to the actual mdev type (rather than a physical path), so we need to
      * resolve it in order to get the type's name.
@@ -366,14 +355,24 @@ udevGetMdevCaps(struct udev_device *device,
     if (VIR_STRDUP(mdev->type, last_component(tmp)) < 0)
         goto cleanup;
 
-    MDEV_GET_SYSFS_ATTR(name, udevGetStringSysfsAttr,
-                        &mdev->name);
-    MDEV_GET_SYSFS_ATTR(description, udevGetStringSysfsAttr,
-                        &mdev->description);
-    MDEV_GET_SYSFS_ATTR(device_api, udevGetStringSysfsAttr,
-                        &mdev->device_api);
-    MDEV_GET_SYSFS_ATTR(available_instances, udevGetUintSysfsAttr,
-                        &mdev->available_instances, 10);
+    /* UDEV doesn't report attributes under subdirectories by default but is
+     * able to query them if the path to the attribute is relative paths to the
+     * device's base path, e.g. /sys/devices/../0000:00:01.0/ is the device's
+     * base path as udev reports it, but we're interested in attributes under
+     * /sys/devices/../0000:00:01.0/mdev_supported_types/<type>/. So, let's
+     * strip the common part of the path and let udev chew the relative bit.
+     */
+    devpath = udev_device_get_syspath(device);
+    relpath = sysfspath + strlen(devpath);
+
+    MDEV_GET_SYSFS_ATTR(name, relpath,
+                        udevGetStringSysfsAttr, &mdev->name);
+    MDEV_GET_SYSFS_ATTR(description, relpath,
+                        udevGetStringSysfsAttr, &mdev->description);
+    MDEV_GET_SYSFS_ATTR(device_api, relpath,
+                        udevGetStringSysfsAttr, &mdev->device_api);
+    MDEV_GET_SYSFS_ATTR(available_instances, relpath,
+                        udevGetUintSysfsAttr, &mdev->available_instances, 10);
 
     ret = 0;
  cleanup:
@@ -1099,6 +1098,51 @@ udevProcessSCSIGeneric(struct udev_device *dev,
 
 
 static int
+udevProcessMediatedDevice(struct udev_device *dev,
+                          virNodeDeviceDefPtr def)
+{
+    int ret = -1;
+    const char *uuidstr = NULL;
+    int iommugrp = -1;
+    int model = -1;
+    char *path = NULL;
+    virMediatedDevicePtr mdev = NULL;
+    virNodeDevCapMdevPtr data = &def->caps->data.mdev;
+
+    if (virAsprintf(&path, "%s/mdev_type", udev_device_get_syspath(dev)) < 0)
+        goto cleanup;
+
+    if (udevGetMdevCaps(dev, path, data) < 0)
+        goto cleanup;
+
+    if ((model = virMediatedDeviceModelTypeFromString(data->device_api)) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Device API '%s' not supported yet"),
+                       data->device_api);
+        goto cleanup;
+    }
+
+    uuidstr = udev_device_get_sysname(dev);
+    if (!(mdev = virMediatedDeviceNew(uuidstr, model)))
+        goto cleanup;
+
+    if ((iommugrp = virMediatedDeviceGetIOMMUGroupNum(mdev)) < 0)
+        goto cleanup;
+
+    if (udevGenerateDeviceName(dev, def, NULL) != 0)
+        goto cleanup;
+
+    data->iommuGroupNumber = iommugrp;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(path);
+    virMediatedDeviceFree(mdev);
+    return ret;
+
+}
+
+static int
 udevGetDeviceNodes(struct udev_device *device,
                    virNodeDeviceDefPtr def)
 {
@@ -1217,6 +1261,7 @@ udevGetDeviceDetails(struct udev_device *device,
     case VIR_NODE_DEV_CAP_DRM:
         return udevProcessDRMDevice(device, def);
     case VIR_NODE_DEV_CAP_MDEV:
+        return udevProcessMediatedDevice(device, def);
     case VIR_NODE_DEV_CAP_SYSTEM:
     case VIR_NODE_DEV_CAP_FC_HOST:
     case VIR_NODE_DEV_CAP_VPORTS:
