@@ -67,4 +67,19 @@ virSysfsGetNodeValueBitmap(unsigned int cpu,
                            const char *file,
                            virBitmapPtr *value);
 
+int
+virSysfsGetResctrlString(const char* file,
+                         char **value);
+
+int
+virSysfsGetResctrlUint(const char* file,
+                       unsigned int **value);
+
+int
+virSysfsGetResctrlInfoString(const char* file,
+                             char **value);
+
+int
+virSysfsGetResCtrInfoUint(const char *file,
+                          unsigned int *value);
 #endif /* __VIR_SYSFS_H__*/

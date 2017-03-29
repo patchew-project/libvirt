@@ -36,8 +36,10 @@ VIR_LOG_INIT("util.sysfs");
 
 #define VIR_SYSFS_VALUE_MAXLEN 8192
 #define SYSFS_SYSTEM_PATH "/sys/devices/system"
+#define SYSFS_RESCTRL_PATH "/sys/fs/resctrl"
 
 static const char *sysfs_system_path = SYSFS_SYSTEM_PATH;
+static const char *sysfs_resctrl_path = SYSFS_RESCTRL_PATH;
 
 
 void virSysfsSetSystemPath(const char *path)
@@ -48,11 +50,24 @@ void virSysfsSetSystemPath(const char *path)
         sysfs_system_path = SYSFS_SYSTEM_PATH;
 }
 
-
 const char *
 virSysfsGetSystemPath(void)
 {
     return sysfs_system_path;
+}
+
+void virSysfsSetResctrlPath(const char *path)
+{
+    if (path)
+        sysfs_resctrl_path  = path;
+    else
+        sysfs_resctrl_path = SYSFS_RESCTRL_PATH;
+}
+
+const char *
+virSysfsGetResctrlPath(void)
+{
+    return sysfs_resctrl_path;
 }
 
 int
@@ -224,6 +239,87 @@ virSysfsGetNodeValueBitmap(unsigned int node,
         return -1;
 
     ret = virFileReadValueBitmap(path, VIR_SYSFS_VALUE_MAXLEN, value);
+    VIR_FREE(path);
+    return ret;
+}
+
+int
+virSysfsGetResctrlString(const char* file,
+                         char **value)
+{
+    chat *path = NULL;
+    int ret = -1;
+    if (virAsprintf(&path, "%s/%s", sysfs_resctrl_path, file) < 0)
+    if (!virFileExists(path)) {
+        ret = -2;
+        goto cleanup;
+    }
+
+    if (virFileReadAll(path, VIR_SYSFS_VALUE_MAXLEN, value) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(path);
+    return ret;
+}
+
+int
+virSysfsGetResctrlUint(const char* file,
+                       unsigned int **value)
+{
+    chat *path = NULL;
+    int ret = -1;
+    if (virAsprintf(&path, "%s/%s", sysfs_resctrl_path, file) < 0)
+    if (!virFileExists(path)) {
+        ret = -2;
+        goto cleanup;
+    }
+
+    ret = virFileReadValueUint(path, value);
+
+ cleanup:
+    VIR_FREE(path);
+    return ret;
+}
+
+int
+virSysfsGetResctrlInfoString(const char* file,
+                             char **value)
+{
+    chat *path = NULL;
+    int ret = -1;
+    if (virAsprintf(&path, "%s/info/%s", sysfs_resctrl_path, file) < 0)
+        return -1;
+
+    if (!virFileExists(path)) {
+        ret = -2;
+        goto cleanup;
+    }
+
+    if (virFileReadAll(path, VIR_SYSFS_VALUE_MAXLEN, value) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(path);
+    return ret;
+}
+
+int
+virSysfsGetResCtrInfoUint(const char *file,
+                          unsigned int *value)
+{
+    char *path = NULL;
+    int ret = -1;
+
+    if (virAsprintf(&path, "%s/info/%s", sysfs_resctrl_path, file) < 0)
+        return -1;
+
+    ret = virFileReadValueUint(path, value);
+
     VIR_FREE(path);
     return ret;
 }

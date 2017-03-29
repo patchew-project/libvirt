@@ -2631,6 +2631,10 @@ virSysfsGetValueBitmap;
 virSysfsGetValueInt;
 virSysfsGetValueString;
 virSysfsSetSystemPath;
+virSysfsGetResctrlString;
+virSysfsGetResctrlUint;
+virSysfsGetResctrlInfoString;
+virSysfsGetResCtrInfoUint;
 
 
 # util/virsysinfo.h
