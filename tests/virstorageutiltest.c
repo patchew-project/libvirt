@@ -93,6 +93,7 @@ mymain(void)
         ret = -1
 
     DO_TEST_GLUSTER_LOOKUP("basic");
+    DO_TEST_GLUSTER_LOOKUP("multivol");
 
 #undef DO_TEST_GLUSTER_LOOKUP
 
