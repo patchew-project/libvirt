@@ -2836,64 +2836,21 @@ virStorageBackendDeleteLocal(virConnectPtr conn ATTRIBUTE_UNUSED,
 }
 
 
-/**
- * virStorageBackendFindGlusterPoolSources:
- * @host: host to detect volumes on
- * @pooltype: src->format is set to this value
- * @list: list of storage pool sources to be filled
- * @report: report error if the 'gluster' cli tool is missing
- *
- * Looks up gluster volumes on @host and fills them to @list.
- *
- * Returns number of volumes on the host on success, or -1 on error.
- */
 int
-virStorageBackendFindGlusterPoolSources(const char *host,
+virStorageUtilGlusterExtractPoolSources(const char *host,
+                                        const char *xml,
                                         int pooltype,
-                                        virStoragePoolSourceListPtr list,
-                                        bool report)
+                                        virStoragePoolSourceListPtr list)
 {
-    char *glusterpath = NULL;
-    char *outbuf = NULL;
-    virCommandPtr cmd = NULL;
     xmlDocPtr doc = NULL;
     xmlXPathContextPtr ctxt = NULL;
     xmlNodePtr *nodes = NULL;
     virStoragePoolSource *src = NULL;
     size_t i;
     int nnodes;
-    int rc;
-
     int ret = -1;
 
-    if (!(glusterpath = virFindFileInPath("gluster"))) {
-        if (report) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("'gluster' command line tool not found"));
-            return -1;
-        } else {
-            return 0;
-        }
-    }
-
-    cmd = virCommandNewArgList(glusterpath,
-                               "--xml",
-                               "--log-file=/dev/null",
-                               "volume", "info", "all", NULL);
-
-    virCommandAddArgFormat(cmd, "--remote-host=%s", host);
-    virCommandSetOutputBuffer(cmd, &outbuf);
-
-    if (virCommandRun(cmd, &rc) < 0)
-        goto cleanup;
-
-    if (rc != 0) {
-        ret = 0;
-        goto cleanup;
-    }
-
-    if (!(doc = virXMLParseStringCtxt(outbuf, _("(gluster_cli_output)"),
-                                      &ctxt)))
+    if (!(doc = virXMLParseStringCtxt(xml, _("(gluster_cli_output)"), &ctxt)))
         goto cleanup;
 
     if ((nnodes = virXPathNodeSet("//volumes/volume", ctxt, &nodes)) < 0)
@@ -2927,6 +2884,64 @@ virStorageBackendFindGlusterPoolSources(const char *host,
     VIR_FREE(nodes);
     xmlXPathFreeContext(ctxt);
     xmlFreeDoc(doc);
+
+    return ret;
+}
+
+
+/**
+ * virStorageBackendFindGlusterPoolSources:
+ * @host: host to detect volumes on
+ * @pooltype: src->format is set to this value
+ * @list: list of storage pool sources to be filled
+ * @report: report error if the 'gluster' cli tool is missing
+ *
+ * Looks up gluster volumes on @host and fills them to @list.
+ *
+ * Returns number of volumes on the host on success, or -1 on error.
+ */
+int
+virStorageBackendFindGlusterPoolSources(const char *host,
+                                        int pooltype,
+                                        virStoragePoolSourceListPtr list,
+                                        bool report)
+{
+    char *glusterpath = NULL;
+    char *outbuf = NULL;
+    virCommandPtr cmd = NULL;
+    int rc;
+
+    int ret = -1;
+
+    if (!(glusterpath = virFindFileInPath("gluster"))) {
+        if (report) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("'gluster' command line tool not found"));
+            return -1;
+        } else {
+            return 0;
+        }
+    }
+
+    cmd = virCommandNewArgList(glusterpath,
+                               "--xml",
+                               "--log-file=/dev/null",
+                               "volume", "info", "all", NULL);
+
+    virCommandAddArgFormat(cmd, "--remote-host=%s", host);
+    virCommandSetOutputBuffer(cmd, &outbuf);
+
+    if (virCommandRun(cmd, &rc) < 0)
+        goto cleanup;
+
+    if (rc != 0) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    ret = virStorageUtilGlusterExtractPoolSources(host, outbuf, pooltype, list);
+
+ cleanup:
     VIR_FREE(outbuf);
     virCommandFree(cmd);
     VIR_FREE(glusterpath);
