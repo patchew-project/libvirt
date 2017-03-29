@@ -690,6 +690,7 @@ virNetDevIPRouteParseXML;
 
 
 # conf/node_device_conf.h
+virNodeDevCapMdevFree;
 virNodeDevCapsDefFree;
 virNodeDevCapTypeFromString;
 virNodeDevCapTypeToString;

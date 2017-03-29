@@ -43,6 +43,7 @@
 #include "virpci.h"
 #include "virstring.h"
 #include "virnetdev.h"
+#include "virmdev.h"
 
 #define VIR_FROM_THIS VIR_FROM_NODEDEV
 
@@ -1051,12 +1052,16 @@ udevGetDeviceType(struct udev_device *device,
         if (udevHasDeviceProperty(device, "INTERFACE"))
             *type = VIR_NODE_DEV_CAP_NET;
 
-        /* SCSI generic device doesn't set DEVTYPE property */
+        /* Neither SCSI generic devices nor mediated devices set DEVTYPE
+         * property, but they so we need to rely on the SUBSYSTEM property */
         if (udevGetStringProperty(device, "SUBSYSTEM", &subsystem) < 0)
             return -1;
 
         if (STREQ_NULLABLE(subsystem, "scsi_generic"))
             *type = VIR_NODE_DEV_CAP_SCSI_GENERIC;
+        else if (STREQ_NULLABLE(subsystem, "mdev"))
+            *type = VIR_NODE_DEV_CAP_MDEV;
+
         VIR_FREE(subsystem);
     }
 
@@ -1096,6 +1101,7 @@ udevGetDeviceDetails(struct udev_device *device,
         return udevProcessSCSIGeneric(device, def);
     case VIR_NODE_DEV_CAP_DRM:
         return udevProcessDRMDevice(device, def);
+    case VIR_NODE_DEV_CAP_MDEV:
     case VIR_NODE_DEV_CAP_SYSTEM:
     case VIR_NODE_DEV_CAP_FC_HOST:
     case VIR_NODE_DEV_CAP_VPORTS:
