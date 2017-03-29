@@ -4217,7 +4217,7 @@ virQEMUCapsInitQMPArch(virQEMUCapsPtr qemuCaps,
  *
  * Initialize @qemuCaps with basic architecture-dependent capabilities.
  */
-static void
+void
 virQEMUCapsInitQMPBasicArch(virQEMUCapsPtr qemuCaps)
 {
     /* ACPI/HPET/KVM PIT are x86 specific */
