@@ -180,5 +180,96 @@
 ...
 &lt;device&gt;</pre>
 
+    <h3><a name="MDEVCap">MDEV capability</a></h3>
+    <p>
+      A PCI device capable of creating mediated devices will include a nested
+      capability mdev which enumerates all the supported mdev types on the
+      physical device, along with the type attributes available through sysfs.
+      For a more info about mediated devices, refer to the
+      <a href="#MDEV">paragraph below</a>.
+    </p>
+
+<pre>
+&lt;device&gt;
+...
+  &lt;driver&gt;
+    &lt;name&gt;nvidia&lt;/name&gt;
+  &lt;/driver&gt;
+  &lt;capability type='pci'&gt;
+...
+    &lt;capability type='mdev'&gt;
+      &lt;type id='nvidia-11'&gt;
+        &lt;name&gt;GRID M60-0B&lt;/name&gt;
+        &lt;description&gt;num_heads=2, frl_config=45, framebuffer=512M,
+        max_resolution=2560x1600, max_instance=16&lt;/description&gt;
+        &lt;device_api&gt;vfio-pci&lt;/device_api&gt;
+        &lt;available_instances&gt;16&lt;/available_instances&gt;
+      &lt;/type&gt;
+      &lt;!-- Here would come the rest of the available mdev types --&gt;
+    &lt;/capability&gt;
+...
+  &lt;/capability&gt;
+&lt;/device&gt;</pre>
+
+    <h2><a name="MDEV">Mediated devices (MDEVs)</a></h2>
+    <p>
+      Mediated devices (<span class="since">Since 3.2.0</span>) are software
+      devices defining resource allocation on the backing physical device which
+      in turn allows the parent physical device's resources to be divided into
+      several mediated devices, thus sharing the physical device's performance
+      among multiple guests. Unlike SR-IOV however, where a PCIe device appears
+      as multiple separate PCIe devices on the host's PCI bus, mediated devices
+      only appear on the mdev virtual bus. Therefore, no detach/reattach
+      procedure from/to the host driver procedure is involved even though
+      mediated devices are used in a direct device assignment manner.<br/>
+      <br/>
+      At the moment, libvirt can only list the available mediated devices on the
+      host and display all information libvirt can gather about them, see the
+      examples below. Because mediated devices are instantiated from vendor
+      specific templates, simply called 'types', information about the resource
+      allocation for a specific type is contained within the backing physical
+      parent device (see <a href="#PCI">PCI host devices</a> for an example).
+    </p>
+
+    <h3>Example of a mediated device</h3>
+    <pre>
+&lt;device&gt;
+  &lt;name&gt;mdev_4b20d080_1b54_4048_85b3_a6a62d165c01&lt;/name&gt;
+  &lt;path&gt;/sys/devices/pci0000:00/0000:00:02.0/4b20d080-1b54-4048-85b3-a6a62d165c01&lt;/path&gt;
+  &lt;parent&gt;pci_0000_06_00_0&lt;/parent&gt;
+  &lt;driver&gt;
+    &lt;name&gt;vfio_mdev&lt;/name&gt;
+  &lt;/driver&gt;
+  &lt;capability type='mdev'&gt;
+    &lt;type id='nvidia-11'/&gt;
+    &lt;iommuGroup number='12'/&gt;
+  &lt;capability/&gt;
+&lt;device/&gt;</pre>
+
+    <p>
+      To see the supported mediated device types on a specific physical device
+      use the following:
+    </p>
+
+    <pre>
+$ ls /sys/class/mdev_bus/&lt;device&gt;/mdev_supported_types</pre>
+
+    <p>
+      To manually instantiate a mediated device, use one of the following as a
+      reference:
+    </p>
+
+    <pre>
+$ uuidgen &gt; /sys/class/mdev_bus/&lt;device&gt;/mdev_supported_types/&lt;type&gt;/create
+...
+$ echo &lt;UUID&gt; &gt; /sys/class/mdev_bus/&lt;device&gt;/mdev_supported_types/&lt;type&gt;/create</pre>
+
+    <p>
+      Manual removal of a mediated device is then performed as follows:
+    </p>
+
+    <pre>
+$ echo 1 &gt; /sys/bus/mdev/devices/&lt;uuid&gt;/remove</pre>
+
   </body>
 </html>
