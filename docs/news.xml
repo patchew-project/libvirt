@@ -18,6 +18,27 @@
      Lines should be kept under 80 columns, and should not exceed 100 columns.
 
      This file is validated against docs/schemas/news.rng schema.
+
+     Use the following template to add a new release section:
+
+  <release version="FIXME" date="unreleased">
+    <section title="New features">
+      <change>
+        <summary/>
+      </change>
+    </section>
+    <section title="Improvements">
+      <change>
+        <summary/>
+      </change>
+    </section>
+    <section title="Bug fixes">
+      <change>
+        <summary/>
+      </change>
+    </section>
+  </release>
+
      -->
 
 <libvirt>
