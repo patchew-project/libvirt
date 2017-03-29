@@ -1983,33 +1983,6 @@ networkRefreshRadvd(virNetworkDriverStatePtr driver,
     return kill(network->radvdPid, SIGHUP);
 }
 
-#if 0
-/* currently unused, so it causes a build error unless we #if it out */
-static int
-networkRestartRadvd(virNetworkObjPtr network)
-{
-    char *radvdpidbase;
-
-    /* if there is a running radvd, kill it */
-    if (network->radvdPid > 0) {
-        /* essentially ignore errors from the following two functions,
-         * since there's really no better recovery to be done than to
-         * just push ahead (and that may be exactly what's needed).
-         */
-        if ((networkKillDaemon(network->radvdPid, "radvd",
-                               network->def->name) >= 0) &&
-            ((radvdpidbase = networkRadvdPidfileBasename(network->def->name))
-             != NULL)) {
-            virPidFileDelete(driver->pidDir, radvdpidbase);
-            VIR_FREE(radvdpidbase);
-        }
-        network->radvdPid = -1;
-    }
-    /* now start radvd if it should be started */
-    return networkStartRadvd(network);
-}
-#endif /* #if 0 */
-
 static int
 networkRefreshDaemonsHelper(virNetworkObjPtr net,
                             void *opaque)
