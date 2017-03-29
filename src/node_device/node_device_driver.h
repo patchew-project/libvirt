@@ -30,37 +30,67 @@
 
 # define LINUX_NEW_DEVICE_WAIT_TIME 60
 
-# ifdef WITH_HAL
-int halNodeRegister(void);
-# endif
-# ifdef WITH_UDEV
-int udevNodeRegister(void);
-# endif
-
-void nodeDeviceLock(void);
-void nodeDeviceUnlock(void);
-
 extern virNodeDeviceDriverStatePtr driver;
 
-int nodedevRegister(void);
+# ifdef WITH_HAL
+int
+halNodeRegister(void);
+# endif
+# ifdef WITH_UDEV
+int
+udevNodeRegister(void);
+# endif
 
-int nodeNumOfDevices(virConnectPtr conn, const char *cap, unsigned int flags);
-int nodeListDevices(virConnectPtr conn, const char *cap, char **const names,
-                    int maxnames, unsigned int flags);
-int nodeConnectListAllNodeDevices(virConnectPtr conn,
-                                  virNodeDevicePtr **devices,
-                                  unsigned int flags);
-virNodeDevicePtr nodeDeviceLookupByName(virConnectPtr conn, const char *name);
-virNodeDevicePtr nodeDeviceLookupSCSIHostByWWN(virConnectPtr conn,
-                                               const char *wwnn,
-                                               const char *wwpn,
-                                               unsigned int flags);
-char *nodeDeviceGetXMLDesc(virNodeDevicePtr dev, unsigned int flags);
-char *nodeDeviceGetParent(virNodeDevicePtr dev);
-int nodeDeviceNumOfCaps(virNodeDevicePtr dev);
-int nodeDeviceListCaps(virNodeDevicePtr dev, char **const names, int maxnames);
-virNodeDevicePtr nodeDeviceCreateXML(virConnectPtr conn,
-                                     const char *xmlDesc, unsigned int flags);
+void
+nodeDeviceLock(void);
+
+void
+nodeDeviceUnlock(void);
+
+int
+nodedevRegister(void);
+
+int
+nodeNumOfDevices(virConnectPtr conn, const char *cap, unsigned int flags);
+
+int
+nodeListDevices(virConnectPtr conn,
+                const char *cap,
+                char **const names,
+                int maxnames,
+                unsigned int flags);
+
+int
+nodeConnectListAllNodeDevices(virConnectPtr conn,
+                              virNodeDevicePtr **devices,
+                              unsigned int flags);
+
+virNodeDevicePtr
+nodeDeviceLookupByName(virConnectPtr conn, const char *name);
+
+virNodeDevicePtr
+nodeDeviceLookupSCSIHostByWWN(virConnectPtr conn,
+                              const char *wwnn,
+                              const char *wwpn,
+                              unsigned int flags);
+
+char *
+nodeDeviceGetXMLDesc(virNodeDevicePtr dev, unsigned int flags);
+
+char *
+nodeDeviceGetParent(virNodeDevicePtr dev);
+
+int
+nodeDeviceNumOfCaps(virNodeDevicePtr dev);
+
+int
+nodeDeviceListCaps(virNodeDevicePtr dev, char **const names, int maxnames);
+
+virNodeDevicePtr
+nodeDeviceCreateXML(virConnectPtr conn,
+                    const char *xmlDesc,
+                    unsigned int flags);
+
 int nodeDeviceDestroy(virNodeDevicePtr dev);
 
 int

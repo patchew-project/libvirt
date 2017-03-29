@@ -47,7 +47,8 @@
 
 virNodeDeviceDriverStatePtr driver;
 
-static int update_caps(virNodeDeviceObjPtr dev)
+static int
+update_caps(virNodeDeviceObjPtr dev)
 {
     virNodeDevCapsDefPtr cap = dev->def->caps;
 
@@ -101,7 +102,8 @@ static int update_caps(virNodeDeviceObjPtr dev)
  * the driver name for a device each time its entry is used, both for
  * udev *and* HAL backends.
  */
-static int update_driver_name(virNodeDeviceObjPtr dev)
+static int
+update_driver_name(virNodeDeviceObjPtr dev)
 {
     char *driver_link = NULL;
     char *devpath = NULL;
@@ -138,21 +140,27 @@ static int update_driver_name(virNodeDeviceObjPtr dev)
 }
 #else
 /* XXX: Implement me for non-linux */
-static int update_driver_name(virNodeDeviceObjPtr dev ATTRIBUTE_UNUSED)
+static int
+update_driver_name(virNodeDeviceObjPtr dev ATTRIBUTE_UNUSED)
 {
     return 0;
 }
 #endif
 
 
-void nodeDeviceLock(void)
+void
+nodeDeviceLock(void)
 {
     virMutexLock(&driver->lock);
 }
-void nodeDeviceUnlock(void)
+
+
+void
+nodeDeviceUnlock(void)
 {
     virMutexUnlock(&driver->lock);
 }
+
 
 int
 nodeNumOfDevices(virConnectPtr conn,
@@ -181,6 +189,7 @@ nodeNumOfDevices(virConnectPtr conn,
 
     return ndevs;
 }
+
 
 int
 nodeListDevices(virConnectPtr conn,
@@ -222,6 +231,7 @@ nodeListDevices(virConnectPtr conn,
     return -1;
 }
 
+
 int
 nodeConnectListAllNodeDevices(virConnectPtr conn,
                               virNodeDevicePtr **devices,
@@ -241,6 +251,7 @@ nodeConnectListAllNodeDevices(virConnectPtr conn,
     nodeDeviceUnlock();
     return ret;
 }
+
 
 virNodeDevicePtr
 nodeDeviceLookupByName(virConnectPtr conn, const char *name)
@@ -500,6 +511,7 @@ nodeDeviceListCaps(virNodeDevicePtr dev, char **const names, int maxnames)
     return ret;
 }
 
+
 static int
 get_time(time_t *t)
 {
@@ -564,6 +576,7 @@ find_new_device(virConnectPtr conn, const char *wwnn, const char *wwpn)
 
     return dev;
 }
+
 
 virNodeDevicePtr
 nodeDeviceCreateXML(virConnectPtr conn,
@@ -663,6 +676,7 @@ nodeDeviceDestroy(virNodeDevicePtr dev)
     return ret;
 }
 
+
 int
 nodeConnectNodeDeviceEventRegisterAny(virConnectPtr conn,
                                       virNodeDevicePtr dev,
@@ -684,6 +698,7 @@ nodeConnectNodeDeviceEventRegisterAny(virConnectPtr conn,
     return callbackID;
 }
 
+
 int
 nodeConnectNodeDeviceEventDeregisterAny(virConnectPtr conn,
                                         int callbackID)
@@ -704,7 +719,9 @@ nodeConnectNodeDeviceEventDeregisterAny(virConnectPtr conn,
     return ret;
 }
 
-int nodedevRegister(void)
+
+int
+nodedevRegister(void)
 {
 #ifdef WITH_UDEV
     return udevNodeRegister();

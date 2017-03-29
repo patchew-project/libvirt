@@ -230,6 +230,7 @@ nodeDeviceSysfsGetSCSIHostCaps(virNodeDevCapSCSIHostPtr scsi_host ATTRIBUTE_UNUS
     return -1;
 }
 
+
 int
 nodeDeviceSysfsGetPCIRelatedDevCaps(const char *sysfsPath ATTRIBUTE_UNUSED,
                                     virNodeDevCapPCIDevPtr pci_dev ATTRIBUTE_UNUSED)

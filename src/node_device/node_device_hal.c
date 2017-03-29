@@ -84,6 +84,7 @@ get_str_prop(LibHalContext *ctxt, const char *udi,
     return -1;
 }
 
+
 static int
 get_int_prop(LibHalContext *ctxt, const char *udi,
              const char *prop, int *val_p)
@@ -101,6 +102,7 @@ get_int_prop(LibHalContext *ctxt, const char *udi,
 
     return rv;
 }
+
 
 static int
 get_bool_prop(LibHalContext *ctxt, const char *udi,
@@ -120,6 +122,7 @@ get_bool_prop(LibHalContext *ctxt, const char *udi,
     return rv;
 }
 
+
 static int
 get_uint64_prop(LibHalContext *ctxt, const char *udi,
                 const char *prop, unsigned long long *val_p)
@@ -137,6 +140,7 @@ get_uint64_prop(LibHalContext *ctxt, const char *udi,
 
     return rv;
 }
+
 
 static int
 gather_pci_cap(LibHalContext *ctx, const char *udi,
@@ -289,6 +293,7 @@ gather_storage_cap(LibHalContext *ctx, const char *udi,
         d->storage.flags |= VIR_NODE_DEV_CAP_STORAGE_HOTPLUGGABLE;
     return 0;
 }
+
 
 static int
 gather_scsi_generic_cap(LibHalContext *ctx, const char *udi,
@@ -446,11 +451,13 @@ gather_capabilities(LibHalContext *ctx, const char *udi,
     return rv;
 }
 
+
 static void
 free_udi(void *udi)
 {
     VIR_FREE(udi);
 }
+
 
 static void
 dev_create(const char *udi)
@@ -516,6 +523,7 @@ dev_create(const char *udi)
     nodeDeviceUnlock();
 }
 
+
 static void
 dev_refresh(const char *udi)
 {
@@ -537,6 +545,7 @@ dev_refresh(const char *udi)
     if (dev)
         dev_create(udi);
 }
+
 
 static void
 device_added(LibHalContext *ctx ATTRIBUTE_UNUSED,
