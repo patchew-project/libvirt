@@ -264,6 +264,30 @@ virNodeDeviceCapPCIDefFormat(virBufferPtr buf,
         virBufferAsprintf(buf, "<capability type='%s'/>\n",
                           virPCIHeaderTypeToString(data->pci_dev.hdrType));
     }
+    if (data->pci_dev.mdevs) {
+        virBufferAddLit(buf, "<capability type='mdev'>\n");
+        virBufferAdjustIndent(buf, 2);
+        for (i = 0; i < data->pci_dev.nmdevs; i++) {
+            virNodeDevCapMdevPtr mdev = data->pci_dev.mdevs[i];
+            virBufferEscapeString(buf, "<type id='%s'>\n", mdev->type);
+            virBufferAdjustIndent(buf, 2);
+            if (mdev->name)
+                virBufferAsprintf(buf, "<name>%s</name>\n",
+                                  mdev->name);
+            if (mdev->description)
+                virBufferAsprintf(buf, "<description>%s</description>\n",
+                                  mdev->description);
+            virBufferAsprintf(buf, "<device_api>%s</device_api>\n",
+                              mdev->device_api);
+            virBufferAsprintf(buf,
+                              "<available_instances>%u</available_instances>\n",
+                              mdev->available_instances);
+            virBufferAdjustIndent(buf, -2);
+            virBufferAddLit(buf, "</type>\n");
+        }
+        virBufferAdjustIndent(buf, -2);
+        virBufferAddLit(buf, "</capability>\n");
+    }
     if (data->pci_dev.nIommuGroupDevices) {
         virBufferAsprintf(buf, "<iommuGroup number='%d'>\n",
                           data->pci_dev.iommuGroupNumber);
