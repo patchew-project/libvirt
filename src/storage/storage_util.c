@@ -2839,18 +2839,21 @@ virStorageBackendDeleteLocal(virConnectPtr conn ATTRIBUTE_UNUSED,
 /**
  * virStorageBackendFindGlusterPoolSources:
  * @host: host to detect volumes on
- * @pooltype: src->format is set to this value
  * @list: list of storage pool sources to be filled
+ * @netfs: lookup will be used with netfs pools
  * @report: report error if the 'gluster' cli tool is missing
  *
  * Looks up gluster volumes on @host and fills them to @list.
+ *
+ * If @netfs is specified the data is tweaked so that it can be used with netfs
+ * type pools. Otherwise the data is for use with native gluster pools.
  *
  * Returns number of volumes on the host on success, or -1 on error.
  */
 int
 virStorageBackendFindGlusterPoolSources(const char *host,
-                                        int pooltype,
                                         virStoragePoolSourceListPtr list,
+                                        bool netfs,
                                         bool report)
 {
     char *glusterpath = NULL;
@@ -2918,7 +2921,8 @@ virStorageBackendFindGlusterPoolSources(const char *host,
         if (VIR_STRDUP(src->hosts[0].name, host) < 0)
             goto cleanup;
 
-        src->format = pooltype;
+        if (netfs)
+            src->format = VIR_STORAGE_POOL_NETFS_GLUSTERFS;
     }
 
     ret = nnodes;

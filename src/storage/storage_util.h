@@ -94,8 +94,8 @@ int virStorageBackendRefreshLocal(virConnectPtr conn,
                                   virStoragePoolObjPtr pool);
 
 int virStorageBackendFindGlusterPoolSources(const char *host,
-                                            int pooltype,
                                             virStoragePoolSourceListPtr list,
+                                            bool netfs,
                                             bool report);
 
 bool virStorageBackendDeviceIsEmpty(const char *devpath,
