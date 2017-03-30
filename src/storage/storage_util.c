@@ -2846,6 +2846,7 @@ virStorageUtilGlusterExtractPoolSources(const char *host,
     xmlXPathContextPtr ctxt = NULL;
     xmlNodePtr *nodes = NULL;
     virStoragePoolSource *src = NULL;
+    char *volname;
     size_t i;
     int nnodes;
     int ret = -1;
@@ -2862,10 +2863,20 @@ virStorageUtilGlusterExtractPoolSources(const char *host,
         if (!(src = virStoragePoolSourceListNewSource(list)))
             goto cleanup;
 
-        if (!(src->dir = virXPathString("string(./name)", ctxt))) {
+        if (!(volname = virXPathString("string(./name)", ctxt))) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("failed to extract gluster volume name"));
             goto cleanup;
+        }
+
+        if (netfs) {
+            src->format = VIR_STORAGE_POOL_NETFS_GLUSTERFS;
+            src->dir = volname;
+        } else {
+            src->name = volname;
+
+            if (VIR_STRDUP(src->dir, "/") < 0)
+                goto cleanup;
         }
 
         if (VIR_ALLOC_N(src->hosts, 1) < 0)
@@ -2875,8 +2886,6 @@ virStorageUtilGlusterExtractPoolSources(const char *host,
         if (VIR_STRDUP(src->hosts[0].name, host) < 0)
             goto cleanup;
 
-        if (netfs)
-            src->format = VIR_STORAGE_POOL_NETFS_GLUSTERFS;
     }
 
     ret = nnodes;
