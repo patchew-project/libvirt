@@ -24,5 +24,6 @@
 # include "virsysfs.h"
 
 void virSysfsSetSystemPath(const char *path);
+void virSysfsSetResctrlPath(const char *path);
 
 #endif /* __VIR_SYSFS_PRIV_H__*/

@@ -19,6 +19,7 @@
  */
 
 #include <config.h>
+#include <fcntl.h>
 
 #include "internal.h"
 
@@ -36,8 +37,10 @@ VIR_LOG_INIT("util.sysfs");
 
 #define VIR_SYSFS_VALUE_MAXLEN 8192
 #define SYSFS_SYSTEM_PATH "/sys/devices/system"
+#define SYSFS_RESCTRL_PATH "/sys/fs/resctrl"
 
 static const char *sysfs_system_path = SYSFS_SYSTEM_PATH;
+static const char *sysfs_resctrl_path = SYSFS_RESCTRL_PATH;
 
 
 void virSysfsSetSystemPath(const char *path)
@@ -53,6 +56,20 @@ const char *
 virSysfsGetSystemPath(void)
 {
     return sysfs_system_path;
+}
+
+void virSysfsSetResctrlPath(const char *path)
+{
+    if (path)
+        sysfs_resctrl_path  = path;
+    else
+        sysfs_resctrl_path = SYSFS_RESCTRL_PATH;
+}
+
+const char *
+virSysfsGetResctrlPath(void)
+{
+    return sysfs_resctrl_path;
 }
 
 int
@@ -224,6 +241,132 @@ virSysfsGetNodeValueBitmap(unsigned int node,
         return -1;
 
     ret = virFileReadValueBitmap(path, VIR_SYSFS_VALUE_MAXLEN, value);
+    VIR_FREE(path);
+    return ret;
+}
+
+int
+virSysfsGetResctrlString(const char* file,
+                         char **value)
+{
+    char *path = NULL;
+    int ret = -1;
+    if (virAsprintf(&path, "%s/%s", sysfs_resctrl_path, file) < 0)
+        return -1;
+
+    if (virFileReadAll(path, VIR_SYSFS_VALUE_MAXLEN, value) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(path);
+    return ret;
+}
+
+int
+virSysfsGetResctrlUint(const char *file,
+                       unsigned int *value)
+{
+    char *path = NULL;
+    int ret = -1;
+    if (virAsprintf(&path, "%s/%s", sysfs_resctrl_path, file) < 0)
+        return -1;
+
+    ret = virFileReadValueUint(path, value);
+
+    VIR_FREE(path);
+    return ret;
+}
+
+int
+virSysfsGetResctrlInfoString(const char* file,
+                             char **value)
+{
+    char *path = NULL;
+    int ret = -1;
+    if (virAsprintf(&path, "%s/info/%s", sysfs_resctrl_path, file) < 0)
+        return -1;
+
+    if (virFileReadAll(path, VIR_SYSFS_VALUE_MAXLEN, value) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(path);
+    return ret;
+}
+
+int
+virSysfsGetResctrlInfoUint(const char *file,
+                           unsigned int *value)
+{
+    char *path = NULL;
+    int ret;
+
+    if (virAsprintf(&path, "%s/info/%s", sysfs_resctrl_path, file) < 0)
+        return -1;
+
+    ret = virFileReadValueUint(path, value);
+
+    VIR_FREE(path);
+    return ret;
+}
+
+int
+virSysfsWriteResctrlString(const char *file,
+                           const char *content)
+{
+    char *path = NULL;
+    int ret = -1;
+    int writefd;
+
+    if (virAsprintf(&path, "%s/%s", sysfs_resctrl_path, file) < 0)
+        return -1;
+
+    /* We can not use virFileWriteStr because resctrl requires oflag should be as
+     O_WRONLY | O_APPEND */
+    if ((writefd = open(path, O_WRONLY | O_APPEND, S_IRUSR | S_IWUSR)) < 0)
+        goto cleanup;
+
+    if (safewrite(writefd, content, strlen(content)) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    VIR_FORCE_CLOSE(writefd);
+    VIR_FREE(path);
+    return ret;
+}
+
+int
+virSysfsCreateResCtrlDir(const char *file)
+{
+    char *path = NULL;
+    int ret = -1;
+
+    if (virAsprintf(&path, "%s/%s", sysfs_resctrl_path, file) < 0)
+        return -1;
+
+    ret = virDirCreate(path, 0755, 0, 0, 0);
+
+    VIR_FREE(path);
+    return ret;
+}
+
+int
+virSysfsRemoveResCtrlDir(const char *file)
+{
+    char *path = NULL;
+    int ret = -1;
+
+    if (virAsprintf(&path, "%s/%s", sysfs_resctrl_path, file) < 0)
+        return -1;
+
+    ret = virFileDeleteTree(path);
+
     VIR_FREE(path);
     return ret;
 }

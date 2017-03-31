@@ -2620,17 +2620,26 @@ virVasprintfInternal;
 
 
 # util/virsysfs.h
+virSysfsCreateResCtrlDir;
 virSysfsGetCpuValueBitmap;
 virSysfsGetCpuValueInt;
 virSysfsGetCpuValueString;
 virSysfsGetCpuValueUint;
 virSysfsGetNodeValueBitmap;
 virSysfsGetNodeValueString;
+virSysfsGetResctrlInfoString;
+virSysfsGetResctrlInfoUint;
+virSysfsGetResctrlPath;
+virSysfsGetResctrlString;
+virSysfsGetResctrlUint;
 virSysfsGetSystemPath;
 virSysfsGetValueBitmap;
 virSysfsGetValueInt;
 virSysfsGetValueString;
+virSysfsRemoveResCtrlDir;
+virSysfsSetResctrlPath;
 virSysfsSetSystemPath;
+virSysfsWriteResctrlString;
 
 
 # util/virsysinfo.h

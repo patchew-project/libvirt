@@ -25,6 +25,7 @@
 # include "virbitmap.h"
 
 const char * virSysfsGetSystemPath(void);
+const char * virSysfsGetResctrlPath(void);
 
 int
 virSysfsGetValueInt(const char *file,
@@ -67,4 +68,29 @@ virSysfsGetNodeValueBitmap(unsigned int cpu,
                            const char *file,
                            virBitmapPtr *value);
 
+int
+virSysfsGetResctrlString(const char* file,
+                         char **value);
+
+int
+virSysfsGetResctrlUint(const char* file,
+                       unsigned int *value);
+
+int
+virSysfsGetResctrlInfoString(const char* file,
+                             char **value);
+
+int
+virSysfsGetResctrlInfoUint(const char *file,
+                           unsigned int *value);
+
+int
+virSysfsWriteResctrlString(const char *file,
+                           const char *content);
+
+int
+virSysfsCreateResCtrlDir(const char *file);
+
+int
+virSysfsRemoveResCtrlDir(const char *file);
 #endif /* __VIR_SYSFS_H__*/
