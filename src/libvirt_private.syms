@@ -324,6 +324,7 @@ virDomainDiskSetDriver;
 virDomainDiskSetFormat;
 virDomainDiskSetSource;
 virDomainDiskSetType;
+virDomainDiskZeroSource;
 virDomainFSDefFree;
 virDomainFSDefNew;
 virDomainFSIndexByName;

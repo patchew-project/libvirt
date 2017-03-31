@@ -1719,6 +1719,29 @@ virDomainDiskSetSource(virDomainDiskDefPtr def, const char *src)
 }
 
 
+void
+virDomainDiskZeroSource(virDomainDiskDefPtr def)
+{
+    switch ((virStorageType) def->src->type) {
+    case VIR_STORAGE_TYPE_DIR:
+    case VIR_STORAGE_TYPE_FILE:
+    case VIR_STORAGE_TYPE_BLOCK:
+        VIR_FREE(def->src->path);
+        break;
+    case VIR_STORAGE_TYPE_NETWORK:
+        VIR_FREE(def->src->volume);
+        break;
+    case VIR_STORAGE_TYPE_VOLUME:
+        virStorageSourcePoolDefFree(def->src->srcpool);
+        def->src->srcpool = NULL;
+        break;
+    case VIR_STORAGE_TYPE_NONE:
+    case VIR_STORAGE_TYPE_LAST:
+        break;
+    }
+}
+
+
 const char *
 virDomainDiskGetDriver(virDomainDiskDefPtr def)
 {

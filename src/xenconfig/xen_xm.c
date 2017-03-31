@@ -140,7 +140,7 @@ xenParseXMDisk(virConfPtr conf, virDomainDefPtr def)
 
             if (offset == head) {
                 /* No source file given, eg CDROM with no media */
-                ignore_value(virDomainDiskSetSource(disk, NULL));
+                virDomainDiskZeroSource(disk);
             } else {
                 if (VIR_STRNDUP(tmp, head, offset - head) < 0)
                     goto cleanup;

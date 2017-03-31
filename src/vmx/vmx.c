@@ -2283,7 +2283,7 @@ virVMXParseDisk(virVMXContext *ctx, virDomainXMLOptionPtr xmlopt, virConfPtr con
             virDomainDiskSetType(*def, VIR_STORAGE_TYPE_BLOCK);
 
             if (STRCASEEQ(fileName, "auto detect")) {
-                ignore_value(virDomainDiskSetSource(*def, NULL));
+                virDomainDiskZeroSource(*def);
                 (*def)->startupPolicy = VIR_DOMAIN_STARTUP_POLICY_OPTIONAL;
             } else if (virDomainDiskSetSource(*def, fileName) < 0) {
                 goto cleanup;
@@ -2294,7 +2294,7 @@ virVMXParseDisk(virVMXContext *ctx, virDomainXMLOptionPtr xmlopt, virConfPtr con
             virDomainDiskSetType(*def, VIR_STORAGE_TYPE_BLOCK);
 
             if (STRCASEEQ(fileName, "auto detect")) {
-                ignore_value(virDomainDiskSetSource(*def, NULL));
+                virDomainDiskZeroSource(*def);
                 (*def)->startupPolicy = VIR_DOMAIN_STARTUP_POLICY_OPTIONAL;
             } else if (virDomainDiskSetSource(*def, fileName) < 0) {
                 goto cleanup;
@@ -2326,7 +2326,7 @@ virVMXParseDisk(virVMXContext *ctx, virDomainXMLOptionPtr xmlopt, virConfPtr con
             }
 
             virDomainDiskSetType(*def, VIR_STORAGE_TYPE_FILE);
-            ignore_value(virDomainDiskSetSource(*def, NULL));
+            virDomainDiskZeroSource(*def);
         } else {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Invalid or not yet handled value '%s' "
