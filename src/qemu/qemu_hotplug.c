@@ -5875,6 +5875,37 @@ qemuDomainFilterHotplugVcpuEntities(virDomainDefPtr def,
 }
 
 
+static int
+qemuDomainVcpuValidateConfig(virDomainDefPtr def,
+                             virBitmapPtr map,
+                             bool state)
+{
+    virDomainVcpuDefPtr vcpu;
+    ssize_t next = -1;
+
+    /* vcpu 0 can't be disabled */
+    if (!state && virBitmapIsBitSet(map, 0)) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("vCPU '0' must be enabled"));
+        return -1;
+    }
+
+    /* make sure that all selected vcpus are in the correct state */
+    while ((next = virBitmapNextSetBit(map, next)) >= 0) {
+        if (!(vcpu = virDomainDefGetVcpu(def, next)))
+            continue;
+
+        if (vcpu->online == state) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("vcpu '%zd' is already in requested state"), next);
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
 int
 qemuDomainSetVcpuInternal(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
@@ -5907,6 +5938,11 @@ qemuDomainSetVcpuInternal(virQEMUDriverPtr driver,
                            _("only one hotpluggable entity can be selected"));
             goto cleanup;
         }
+    }
+
+    if (persistentDef) {
+        if (qemuDomainVcpuValidateConfig(persistentDef, map, state) < 0)
+            goto cleanup;
     }
 
     if (livevcpus &&
