@@ -313,6 +313,69 @@ virStringListGetFirstWithPrefix(char **strings,
     return NULL;
 }
 
+const char *digits = "IVXLCDM";
+const unsigned values[] = { 1, 5, 10, 50, 100, 500, 1000 };
+
+static int
+virRomanStrToLong_ul(char const *s, unsigned long *result)
+{
+    unsigned long ret = 0;
+    char const *cur;
+
+    if (*s == '\0')
+        return -1;
+
+    for (cur = s; *cur != '\0'; cur++) {
+        size_t pos;
+        char const *lookup;
+
+        lookup = strchr(digits, *cur);
+        if (!lookup)
+            return -1;
+        pos = lookup - digits;
+
+        if (*(cur + 1) != '\0' && strchr(digits + pos + 1, *(cur + 1))) {
+            ret -= values[pos];
+        } else {
+            if (ret > ULONG_MAX - values[pos])
+                return -1;
+            ret += values[pos];
+        }
+    }
+    *result = ret;
+    return 0;
+}
+
+static int
+virRomanStrToLong_ull(char const *s, unsigned long long *result)
+{
+    unsigned long long ret = 0;
+    char const *cur;
+
+    if (*s == '\0')
+        return -1;
+
+    for (cur = s; *cur != '\0'; cur++) {
+        size_t pos;
+        char const *lookup;
+
+        lookup = strchr(digits, *cur);
+        if (!lookup)
+            return -1;
+        pos = lookup - digits;
+
+        if (*(cur + 1) != '\0' && strchr(digits + pos + 1, *(cur + 1))) {
+            ret -= values[pos];
+        } else {
+            if (ret > ULLONG_MAX - values[pos])
+                return -1;
+            ret += values[pos];
+        }
+    }
+    *result = ret;
+    return 0;
+}
+
 /* Like strtol, but produce an "int" result, and check more carefully.
    Return 0 upon success;  return -1 to indicate failure.
    When END_PTR is NULL, the byte after the final valid digit must be NUL.
@@ -379,6 +442,11 @@ virStrToLong_uip(char const *s, char **end_ptr, int base, unsigned int *result)
     char *p;
     bool err = false;
 
+    if (virRomanStrToLong_ul(s, &val) == 0) {
+        *result = val;
+        return 0;
+    }
+
     errno = 0;
     val = strtoul(s, &p, base); /* exempt from syntax-check */
     err = (memchr(s, '-', p - s) ||
@@ -440,6 +508,11 @@ virStrToLong_ulp(char const *s, char **end_ptr, int base,
     unsigned long int val;
     char *p;
     int err;
+
+    if (virRomanStrToLong_ul(s, &val) == 0) {
+        *result = val;
+        return 0;
+    }
 
     errno = 0;
     val = strtoul(s, &p, base); /* exempt from syntax-check */
@@ -503,6 +576,11 @@ virStrToLong_ullp(char const *s, char **end_ptr, int base,
     unsigned long long val;
     char *p;
     int err;
+
+    if (virRomanStrToLong_ull(s, &val) == 0) {
+        *result = val;
+        return 0;
+    }
 
     errno = 0;
     val = strtoull(s, &p, base); /* exempt from syntax-check */
