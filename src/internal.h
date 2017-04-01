@@ -286,6 +286,19 @@
 #  define VIR_WARNINGS_NO_WLOGICALOP_STRCHR
 # endif
 
+/* Workaround for clang's triggering  "-Wframe-larger-than=" on tests
+ * when compiling with '-O0' */
+# ifndef VIR_WARNINGS_NO_FRAME_LARGER_THAN
+#  if defined(__clang__)
+#   define VIR_WARNINGS_NO_FRAME_LARGER_THAN                       \
+     _Pragma ("clang diagnostic push")                             \
+     _Pragma ("clang diagnostic ignored \"-Wframe-larger-than=\"")
+#   define VIR_WARNINGS_NO_FRAME_LARGER_THAN_RESET  _Pragma("clang diagnostic pop")
+#  else
+#   define VIR_WARNINGS_NO_FRAME_LARGER_THAN
+#   define VIR_WARNINGS_NO_FRAME_LARGER_THAN_RESET
+#  endif /* defined(__clang__) */
+# endif
 
 /*
  * Use this when passing possibly-NULL strings to printf-a-likes.

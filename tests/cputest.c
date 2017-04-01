@@ -732,6 +732,8 @@ static const char *models[]     = { "qemu64", "core2duo", "Nehalem" };
 static const char *haswell[]    = { "SandyBridge", "Haswell" };
 static const char *ppc_models[] = { "POWER6", "POWER7", "POWER8" };
 
+VIR_WARNINGS_NO_FRAME_LARGER_THAN
+
 static int
 mymain(void)
 {
@@ -1011,5 +1013,7 @@ mymain(void)
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
+
+VIR_WARNINGS_NO_FRAME_LARGER_THAN_RESET
 
 VIRT_TEST_MAIN(mymain)

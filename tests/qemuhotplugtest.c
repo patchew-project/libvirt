@@ -574,6 +574,7 @@ testQemuHotplugCpuIndividual(const void *opaque)
 }
 
 
+VIR_WARNINGS_NO_FRAME_LARGER_THAN
 
 static int
 mymain(void)
@@ -855,5 +856,7 @@ mymain(void)
     qemuTestDriverFree(&driver);
     return (ret == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
+
+VIR_WARNINGS_NO_FRAME_LARGER_THAN_RESET
 
 VIRT_TEST_MAIN(mymain)

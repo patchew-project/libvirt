@@ -693,6 +693,9 @@ static int testStripControlChars(const void *args)
     return ret;
 }
 
+
+VIR_WARNINGS_NO_FRAME_LARGER_THAN
+
 static int
 mymain(void)
 {
@@ -960,5 +963,7 @@ mymain(void)
     TEST_STRIP_CONTROL_CHARS("\nhello \x01\x07hello\t", "\nhello hello\t");
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
+
+VIR_WARNINGS_NO_FRAME_LARGER_THAN_RESET
 
 VIRT_TEST_MAIN(mymain)
