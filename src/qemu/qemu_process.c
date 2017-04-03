@@ -367,8 +367,8 @@ qemuProcessFindDomainDiskByAlias(virDomainObjPtr vm,
     }
 
     virReportError(VIR_ERR_INTERNAL_ERROR,
-                   _("no disk found with alias %s"),
-                   alias);
+                   _("VM %s: no disk found with alias %s"),
+                   vm->def->name, alias);
     return NULL;
 }
 
