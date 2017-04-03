@@ -1692,7 +1692,7 @@ static void
 qemuProcessMonitorLogFree(void *opaque)
 {
     qemuDomainLogContextPtr logCtxt = opaque;
-    qemuDomainLogContextFree(logCtxt);
+    virObjectUnref(logCtxt);
 }
 
 static int
@@ -1731,7 +1731,7 @@ qemuConnectMonitor(virQEMUDriverPtr driver, virDomainObjPtr vm, int asyncJob,
                           driver);
 
     if (mon && logCtxt) {
-        qemuDomainLogContextRef(logCtxt);
+        virObjectRef(logCtxt);
         qemuMonitorSetDomainLog(mon,
                                 qemuProcessMonitorReportLogError,
                                 logCtxt,
@@ -5871,7 +5871,7 @@ qemuProcessLaunch(virConnectPtr conn,
  cleanup:
     qemuDomainSecretDestroy(vm);
     virCommandFree(cmd);
-    qemuDomainLogContextFree(logCtxt);
+    virObjectUnref(logCtxt);
     virObjectUnref(cfg);
     virObjectUnref(caps);
     VIR_FREE(nicindexes);
@@ -6667,7 +6667,7 @@ int qemuProcessAttach(virConnectPtr conn ATTRIBUTE_UNUSED,
             goto error;
     }
 
-    qemuDomainLogContextFree(logCtxt);
+    virObjectUnref(logCtxt);
     VIR_FREE(seclabel);
     VIR_FREE(sec_managers);
     virObjectUnref(cfg);
@@ -6687,7 +6687,7 @@ int qemuProcessAttach(virConnectPtr conn ATTRIBUTE_UNUSED,
 
     qemuMonitorClose(priv->mon);
     priv->mon = NULL;
-    qemuDomainLogContextFree(logCtxt);
+    virObjectUnref(logCtxt);
     VIR_FREE(seclabel);
     VIR_FREE(sec_managers);
     if (seclabelgen)
