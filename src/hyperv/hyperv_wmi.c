@@ -45,7 +45,7 @@
 #define VIR_FROM_THIS VIR_FROM_HYPERV
 
 
-static int ATTRIBUTE_UNUSED
+static int
 hypervGetWmiClassInfo(hypervPrivate *priv, hypervWmiClassInfoListPtr list,
                       hypervWmiClassInfoPtr *info)
 {
@@ -143,14 +143,14 @@ hypervVerifyResponse(WsManClient *client, WsXmlDocH response,
 
 /* This function guarantees that query is freed, even on failure */
 int
-hypervEnumAndPull(hypervPrivate *priv, virBufferPtr query, const char *root,
-                  XmlSerializerInfo *serializerInfo, const char *resourceUri,
-                  const char *className, hypervObject **list)
+hypervEnumAndPull(hypervPrivate *priv, hypervWqlQueryPtr wqlQuery,
+                  hypervObject **list)
 {
     int result = -1;
     WsSerializerContextH serializerContext;
     client_opt_t *options = NULL;
     char *query_string = NULL;
+    hypervWmiClassInfoPtr wmiInfo = NULL;
     filter_t *filter = NULL;
     WsXmlDocH response = NULL;
     char *enumContext = NULL;
@@ -160,17 +160,19 @@ hypervEnumAndPull(hypervPrivate *priv, virBufferPtr query, const char *root,
     XML_TYPE_PTR data = NULL;
     hypervObject *object;
 
-    if (virBufferCheckError(query) < 0) {
-        virBufferFreeAndReset(query);
+    if (virBufferCheckError(&wqlQuery->query) < 0) {
+        virBufferFreeAndReset(&wqlQuery->query);
         return -1;
     }
-    query_string = virBufferContentAndReset(query);
+    query_string = virBufferContentAndReset(&wqlQuery->query);
 
     if (list == NULL || *list != NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("Invalid argument"));
-        VIR_FREE(query_string);
         return -1;
     }
+
+    if (hypervGetWmiClassInfo(priv, wqlQuery->info, &wmiInfo) < 0)
+        goto cleanup;
 
     serializerContext = wsmc_get_serialization_context(priv->client);
 
@@ -190,7 +192,8 @@ hypervEnumAndPull(hypervPrivate *priv, virBufferPtr query, const char *root,
         goto cleanup;
     }
 
-    response = wsmc_action_enumerate(priv->client, root, options, filter);
+    response = wsmc_action_enumerate(priv->client, wmiInfo->rootUri, options,
+                                     filter);
 
     if (hypervVerifyResponse(priv->client, response, "enumeration") < 0)
         goto cleanup;
@@ -201,7 +204,7 @@ hypervEnumAndPull(hypervPrivate *priv, virBufferPtr query, const char *root,
     response = NULL;
 
     while (enumContext != NULL && *enumContext != '\0') {
-        response = wsmc_action_pull(priv->client, resourceUri, options,
+        response = wsmc_action_pull(priv->client, wmiInfo->resourceUri, options,
                                     filter, enumContext);
 
         if (hypervVerifyResponse(priv->client, response, "pull") < 0)
@@ -231,11 +234,12 @@ hypervEnumAndPull(hypervPrivate *priv, virBufferPtr query, const char *root,
             goto cleanup;
         }
 
-        if (ws_xml_get_child(node, 0, resourceUri, className) == NULL)
+        if (ws_xml_get_child(node, 0, wmiInfo->resourceUri,
+                             wmiInfo->name) == NULL)
             break;
 
-        data = ws_deserialize(serializerContext, node, serializerInfo,
-                              className, resourceUri, NULL, 0, 0);
+        data = ws_deserialize(serializerContext, node, wmiInfo->serializerInfo,
+                              wmiInfo->name, wmiInfo->resourceUri, NULL, 0, 0);
 
         if (data == NULL) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -246,8 +250,8 @@ hypervEnumAndPull(hypervPrivate *priv, virBufferPtr query, const char *root,
         if (VIR_ALLOC(object) < 0)
             goto cleanup;
 
-        object->serializerInfo = serializerInfo;
-        object->data = data;
+        object->info = wmiInfo;
+        object->data.common = data;
 
         data = NULL;
 
@@ -283,12 +287,11 @@ hypervEnumAndPull(hypervPrivate *priv, virBufferPtr query, const char *root,
         /* FIXME: ws_serializer_free_mem is broken in openwsman <= 2.2.6,
          *        see hypervFreeObject for a detailed explanation. */
         if (ws_serializer_free_mem(serializerContext, data,
-                                   serializerInfo) < 0) {
+                                   wmiInfo->serializerInfo) < 0) {
             VIR_ERROR(_("Could not free deserialized data"));
         }
 #endif
     }
-
     VIR_FREE(query_string);
     ws_xml_destroy_doc(response);
     VIR_FREE(enumContext);
@@ -322,8 +325,8 @@ hypervFreeObject(hypervPrivate *priv ATTRIBUTE_UNUSED, hypervObject *object)
          *        them in wsmc_release. So this doesn't result in a real
          *        memory leak, but just in piling up unused memory until
          *        the connection is closed. */
-        if (ws_serializer_free_mem(serializerContext, object->data,
-                                   object->serializerInfo) < 0) {
+        if (ws_serializer_free_mem(serializerContext, object->data.common,
+                                   object->info->serializerInfo) < 0) {
             VIR_ERROR(_("Could not free deserialized data"));
         }
 #endif
