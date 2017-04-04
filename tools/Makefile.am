@@ -182,6 +182,7 @@ virt_host_validate_LDADD = \
 virt_host_validate_CFLAGS = \
 		$(LIBXML_CFLAGS)				\
 		$(WARN_CFLAGS)					\
+		$(RELAXED_FRAME_LIMIT_CFLAGS)	\
 		$(PIE_CFLAGS)					\
 		$(COVERAGE_CFLAGS)				\
 		$(NULL)
@@ -208,6 +209,7 @@ virt_login_shell_CFLAGS =					\
 		-DLIBVIRT_SETUID_RPC_CLIENT			\
 		$(LIBXML_CFLAGS)				\
 		$(WARN_CFLAGS)					\
+		$(RELAXED_FRAME_LIMIT_CFLAGS)	\
 		$(PIE_CFLAGS)					\
 		$(COVERAGE_CFLAGS)
 
@@ -239,6 +241,7 @@ virsh_LDADD =							\
 		libvirt_shell.la
 virsh_CFLAGS =							\
 		$(WARN_CFLAGS)					\
+		$(RELAXED_FRAME_LIMIT_CFLAGS)	\
 		$(PIE_CFLAGS)					\
 		$(COVERAGE_CFLAGS)				\
 		$(LIBXML_CFLAGS)
@@ -260,6 +263,7 @@ virt_admin_LDADD =						\
 		$(NULL)
 virt_admin_CFLAGS =						\
 		$(WARN_CFLAGS)					\
+		$(RELAXED_FRAME_LIMIT_CFLAGS)	\
 		$(PIE_CFLAGS)					\
 		$(COVERAGE_CFLAGS)				\
 		$(LIBXML_CFLAGS)				\
@@ -499,6 +503,7 @@ nss_libnss_libvirt_impl_la_CFLAGS = \
 	-DLIBVIRT_NSS		\
 	$(AM_CFLAGS)		\
 	$(WARN_CFLAGS)		\
+	$(STRICT_FRAME_LIMIT_CFLAGS)	\
 	$(PIE_CFLAGS)		\
 	$(COVERAGE_CFLAGS)	\
 	$(LIBXML_CFLAGS)
@@ -529,6 +534,7 @@ nss_libnss_libvirt_guest_impl_la_CFLAGS = \
 	-DLIBVIRT_NSS_GUEST	\
 	$(AM_CFLAGS)		\
 	$(WARN_CFLAGS)		\
+	$(STRICT_FRAME_LIMIT_CFLAGS)	\
 	$(PIE_CFLAGS)		\
 	$(COVERAGE_CFLAGS)	\
 	$(LIBXML_CFLAGS)

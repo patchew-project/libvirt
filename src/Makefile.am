@@ -39,6 +39,7 @@ INCLUDES =	-I../gnulib/lib					\
 
 AM_CFLAGS =	$(LIBXML_CFLAGS)				\
 		$(WARN_CFLAGS)					\
+		$(STRICT_FRAME_LIMIT_CFLAGS) \
 		$(LOCK_CHECKING_CFLAGS)				\
 		$(WIN32_EXTRA_CFLAGS)				\
 		$(COVERAGE_CFLAGS)

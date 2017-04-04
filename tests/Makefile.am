@@ -46,6 +46,7 @@ AM_CFLAGS = \
 	$(APPARMOR_CFLAGS) \
 	$(YAJL_CFLAGS) \
 	$(COVERAGE_CFLAGS) \
+	$(RELAXED_FRAME_LIMIT_CFLAGS) \
 	$(WARN_CFLAGS)
 
 AM_LDFLAGS = \
@@ -925,6 +926,7 @@ commandhelper_SOURCES = \
 	commandhelper.c
 commandhelper_LDADD = \
 	$(WARN_CFLAGS) \
+	$(RELAXED_FRAME_LIMIT_CFLAGS) \
 	$(NO_INDIRECT_LDFLAGS) \
 	$(PROBES_O) \
 	../src/libvirt_util.la \
