@@ -153,7 +153,30 @@ fig = \
   migration-unmanaged-direct.fig
 
 schemadir = $(pkgdatadir)/schemas
-schema_DATA = $(wildcard $(srcdir)/schemas/*.rng)
+schema_DATA = \
+	schemas/basictypes.rng \
+	schemas/capability.rng \
+	schemas/cputypes.rng \
+	schemas/domaincaps.rng \
+	schemas/domaincommon.rng \
+	schemas/domain.rng \
+	schemas/domainsnapshot.rng \
+	schemas/domain.xml \
+	schemas/interface.rng \
+	schemas/networkcommon.rng \
+	schemas/network.rng \
+	schemas/nodedev.rng \
+	schemas/nwfilter.rng \
+	schemas/secret.rng \
+	schemas/storagecommon.rng \
+	schemas/storagepool.rng \
+	schemas/storagevol.rng \
+	$(NULL)
+
+noinst_DATA = \
+	schemas/news.rng \
+	$(NULL)
+
 
 EXTRA_DIST=					\
   apibuild.py genaclperms.pl \
@@ -166,7 +189,7 @@ EXTRA_DIST=					\
   $(internals_html_in) $(internals_html) \
   aclperms.htmlinc \
   hvsupport.pl \
-  $(schema_DATA)
+  $(schema_DATA) $(noinst_DATA)
 
 acl_generated = aclperms.htmlinc
 
