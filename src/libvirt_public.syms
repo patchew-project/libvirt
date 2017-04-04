@@ -755,8 +755,12 @@ LIBVIRT_3.0.0 {
 
 LIBVIRT_3.1.0 {
     global:
-        virDomainSetBlockThreshold;
         virDomainSetVcpu;
 } LIBVIRT_3.0.0;
+
+LIBVIRT_3.2.0 {
+     global:
+        virDomainSetBlockThreshold;
+} LIBVIRT_3.1.0;
 
 # .... define new API here using predicted next version number ....
