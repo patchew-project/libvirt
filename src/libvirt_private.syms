@@ -951,6 +951,7 @@ virNodeDeviceObjHasCap;
 virNodeDeviceObjListExport;
 virNodeDeviceObjListFree;
 virNodeDeviceObjLock;
+virNodeDeviceObjNumOfDevices;
 virNodeDeviceObjRemove;
 virNodeDeviceObjUnlock;
 
