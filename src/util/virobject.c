@@ -700,3 +700,54 @@ virObjectPoolableHashTableGetSecondary(void *anyobj)
 
     return obj->objsSecondary;
 }
+
+
+static virObjectPoolableHashElementPtr
+virObjectGetPoolableHashElementObj(void *anyobj)
+{
+    if (virObjectIsClass(anyobj, virObjectPoolableHashElementClass))
+        return anyobj;
+
+    VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, virObjectPoolableHashElementClass);
+
+    return NULL;
+
+}
+
+
+/**
+ * virObjectPoolableHashElementGetPrimaryKey
+ * @anyobj: Pointer to a PoolableHashElement object
+ *
+ * Returns: Pointer to the primaryKey or NULL on failure
+ */
+const char *
+virObjectPoolableHashElementGetPrimaryKey(void *anyobj)
+{
+    virObjectPoolableHashElementPtr obj =
+        virObjectGetPoolableHashElementObj(anyobj);
+
+    if (!obj)
+        return NULL;
+
+    return obj->primaryKey;
+}
+
+
+/**
+ * virObjectPoolableHashElementGetSecondaryKey
+ * @anyobj: Pointer to a PoolableHashElement object
+ *
+ * Returns: Pointer to the secondaryKey which may be NULL
+ */
+const char *
+virObjectPoolableHashElementGetSecondaryKey(void *anyobj)
+{
+    virObjectPoolableHashElementPtr obj =
+        virObjectGetPoolableHashElementObj(anyobj);
+
+    if (!obj)
+        return NULL;
+
+    return obj->secondaryKey;
+}

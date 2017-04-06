@@ -190,4 +190,10 @@ virObjectPoolableHashTableGetPrimary(void *anyobj);
 virHashTablePtr
 virObjectPoolableHashTableGetSecondary(void *anyobj);
 
+const char *
+virObjectPoolableHashElementGetPrimaryKey(void *anyobj);
+
+const char *
+virObjectPoolableHashElementGetSecondaryKey(void *anyobj);
+
 #endif /* __VIR_OBJECT_H */
