@@ -2235,6 +2235,8 @@ virObjectListFreeCount;
 virObjectLock;
 virObjectLockableNew;
 virObjectNew;
+virObjectPoolableHashTableGetPrimary;
+virObjectPoolableHashTableGetSecondary;
 virObjectPoolableHashTableNew;
 virObjectRef;
 virObjectUnlock;

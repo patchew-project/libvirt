@@ -81,6 +81,18 @@ typedef enum {
 struct _virObjectPoolableHashTable {
     virObjectLockable parent;
     virObjectPoolableHashTableObjType objtype;
+
+    int tableElemsStart;
+
+    /* primary key -> object mapping for O(1),
+     * lockless lookup-by-primary */
+    virHashTable *objsPrimary;
+
+    /* uuid string -> virPoolObj  mapping
+     * for O(1), lockless lookup-by-uuid */
+    /* secondary key -> object mapping for O(1),
+     * lockless lookup-by-secondary */
+    virHashTable *objsSecondary;
 };
 
 
@@ -135,7 +147,9 @@ virObjectLockableNew(virClassPtr klass)
 
 void *
 virObjectPoolableHashTableNew(virClassPtr klass,
-                              virObjectPoolableHashTableObjType objtype)
+                              virObjectPoolableHashTableObjType objtype,
+                              int tableElemsStart,
+                              bool primaryOnly)
     ATTRIBUTE_NONNULL(1);
 
 void
@@ -152,5 +166,11 @@ virObjectListFree(void *list);
 void
 virObjectListFreeCount(void *list,
                        size_t count);
+
+virHashTablePtr
+virObjectPoolableHashTableGetPrimary(void *anyobj);
+
+virHashTablePtr
+virObjectPoolableHashTableGetSecondary(void *anyobj);
 
 #endif /* __VIR_OBJECT_H */

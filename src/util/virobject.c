@@ -295,7 +295,9 @@ virObjectLockableDispose(void *anyobj)
 
 void *
 virObjectPoolableHashTableNew(virClassPtr klass,
-                              virObjectPoolableHashTableObjType objtype)
+                              virObjectPoolableHashTableObjType objtype,
+                              int tableElemsStart,
+                              bool primaryOnly)
 {
     virObjectPoolableHashTablePtr obj;
 
@@ -311,13 +313,29 @@ virObjectPoolableHashTableNew(virClassPtr klass,
         return NULL;
 
     obj->objtype = objtype;
+    obj->tableElemsStart = tableElemsStart;
 
-    VIR_DEBUG("poolable new obj=%p, type=%d",
-              obj, objtype);
+    if (!(obj->objsPrimary = virHashCreate(tableElemsStart,
+                                           virObjectFreeHashData)))
+        goto error;
+
+    if (!primaryOnly &&
+        !(obj->objsSecondary = virHashCreate(tableElemsStart,
+                                             virObjectFreeHashData)))
+        goto error;
+
+
+    VIR_DEBUG("obj=%p, type=%d, elems=%d objsPrimary=%p objsSecondary=%p",
+              obj, objtype, tableElemsStart,
+              obj->objsPrimary, obj->objsSecondary);
 
     return obj;
 
+ error:
+    virObjectUnref(obj);
+    return NULL;
 }
+
 
 static void
 virObjectPoolableHashTableDispose(void *anyobj)
@@ -325,6 +343,9 @@ virObjectPoolableHashTableDispose(void *anyobj)
     virObjectPoolableHashTablePtr obj = anyobj;
 
     VIR_DEBUG("poolable dispose obj=%p", obj);
+
+    virHashFree(obj->objsPrimary);
+    virHashFree(obj->objsSecondary);
 }
 
 
@@ -402,7 +423,6 @@ virObjectGetLockableObj(void *anyobj)
     VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, virObjectLockableClass);
 
     return NULL;
-
 }
 
 
@@ -556,4 +576,54 @@ virObjectListFreeCount(void *list,
         virObjectUnref(((void **)list)[i]);
 
     VIR_FREE(list);
+}
+
+
+static virObjectPoolableHashTablePtr
+virObjectGetPoolableHashTableObj(void *anyobj)
+{
+    if (virObjectIsClass(anyobj, virObjectPoolableHashTableClass))
+        return anyobj;
+
+    VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, virObjectPoolableHashTableClass);
+
+    return NULL;
+}
+
+
+/**
+ * virObjectPoolableHashTableGetPrimary
+ * @anyobj: Pointer to a PoolableHashTable object
+ *
+ * Returns: Pointer to the Primary Hash Table or NULL on failure
+ */
+virHashTablePtr
+virObjectPoolableHashTableGetPrimary(void *anyobj)
+{
+    virObjectPoolableHashTablePtr obj =
+        virObjectGetPoolableHashTableObj(anyobj);
+
+    if (!obj)
+        return NULL;
+
+    return obj->objsPrimary;
+}
+
+
+/**
+ * virObjectPoolableHashTableGetSecondary
+ * @anyobj: Pointer to a PoolableHashTable object
+ *
+ * Returns: Pointer to the Secondary Hash Table or NULL on failure
+ */
+virHashTablePtr
+virObjectPoolableHashTableGetSecondary(void *anyobj)
+{
+    virObjectPoolableHashTablePtr obj =
+        virObjectGetPoolableHashTableObj(anyobj);
+
+    if (!obj)
+        return NULL;
+
+    return obj->objsSecondary;
 }
