@@ -213,7 +213,7 @@ nodeConnectListAllNodeDevices(virConnectPtr conn,
         return -1;
 
     nodeDeviceLock();
-    ret = virNodeDeviceObjListExport(conn, driver->devs, devices,
+    ret = virNodeDeviceObjListExport(conn, &driver->devs, devices,
                                      virConnectListAllNodeDevicesCheckACL,
                                      flags);
     nodeDeviceUnlock();
