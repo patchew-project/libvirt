@@ -23,6 +23,7 @@
 # define __VIR_OBJECT_H__
 
 # include "internal.h"
+# include "virhash.h"
 # include "virthread.h"
 
 typedef struct _virClass virClass;
@@ -33,6 +34,9 @@ typedef virObject *virObjectPtr;
 
 typedef struct _virObjectLockable virObjectLockable;
 typedef virObjectLockable *virObjectLockablePtr;
+
+typedef struct _virObjectPoolableHashTable virObjectPoolableHashTable;
+typedef virObjectPoolableHashTable *virObjectPoolableHashTablePtr;
 
 typedef void (*virObjectDisposeCallback)(void *obj);
 
@@ -60,9 +64,29 @@ struct _virObjectLockable {
     virMutex lock;
 };
 
+typedef enum {
+    VIR_OBJECTPOOLABLE_NODEDEVICE,
+    VIR_OBJECTPOOLABLE_INTERFACE,
+    VIR_OBJECTPOOLABLE_NWFILTER,
+    VIR_OBJECTPOOLABLE_VOLUME,
+    VIR_OBJECTPOOLABLE_BLOCK_STORAGE,
+    VIR_OBJECTPOOLABLE_SECRET,
+    VIR_OBJECTPOOLABLE_NETWORK,
+    VIR_OBJECTPOOLABLE_SNAPSHOT,
+    VIR_OBJECTPOOLABLE_DOMAIN,
+
+    VIR_OBJECTPOOLABLE_LAST
+} virObjectPoolableHashTableObjType;
+
+struct _virObjectPoolableHashTable {
+    virObjectLockable parent;
+    virObjectPoolableHashTableObjType objtype;
+};
+
 
 virClassPtr virClassForObject(void);
 virClassPtr virClassForObjectLockable(void);
+virClassPtr virClassForObjectPoolableHashTable(void);
 
 # ifndef VIR_PARENT_REQUIRED
 #  define VIR_PARENT_REQUIRED ATTRIBUTE_NONNULL(1)
@@ -107,6 +131,11 @@ virObjectFreeHashData(void *opaque,
 
 void *
 virObjectLockableNew(virClassPtr klass)
+    ATTRIBUTE_NONNULL(1);
+
+void *
+virObjectPoolableHashTableNew(virClassPtr klass,
+                              virObjectPoolableHashTableObjType objtype)
     ATTRIBUTE_NONNULL(1);
 
 void
