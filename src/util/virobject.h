@@ -38,6 +38,9 @@ typedef virObjectLockable *virObjectLockablePtr;
 typedef struct _virObjectPoolableHashTable virObjectPoolableHashTable;
 typedef virObjectPoolableHashTable *virObjectPoolableHashTablePtr;
 
+typedef struct _virObjectPoolableHashElement virObjectPoolableHashElement;
+typedef virObjectPoolableHashElement *virObjectPoolableHashElementPtr;
+
 typedef void (*virObjectDisposeCallback)(void *obj);
 
 /* Most code should not play with the contents of this struct; however,
@@ -96,9 +99,17 @@ struct _virObjectPoolableHashTable {
 };
 
 
+struct _virObjectPoolableHashElement {
+    virObjectLockable parent;
+
+    char *primaryKey;
+    char *secondaryKey;
+};
+
 virClassPtr virClassForObject(void);
 virClassPtr virClassForObjectLockable(void);
 virClassPtr virClassForObjectPoolableHashTable(void);
+virClassPtr virClassForObjectPoolableHashElement(void);
 
 # ifndef VIR_PARENT_REQUIRED
 #  define VIR_PARENT_REQUIRED ATTRIBUTE_NONNULL(1)
@@ -151,6 +162,12 @@ virObjectPoolableHashTableNew(virClassPtr klass,
                               int tableElemsStart,
                               bool primaryOnly)
     ATTRIBUTE_NONNULL(1);
+
+void *
+virObjectPoolableHashElementNew(virClassPtr klass,
+                                const char *primaryKey,
+                                const char *secondaryKey)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
 void
 virObjectLock(void *lockableobj)

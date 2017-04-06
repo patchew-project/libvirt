@@ -62,10 +62,11 @@ struct _virClass {
 static virClassPtr virObjectClass;
 static virClassPtr virObjectLockableClass;
 static virClassPtr virObjectPoolableHashTableClass;
+static virClassPtr virObjectPoolableHashElementClass;
 
 static void virObjectLockableDispose(void *anyobj);
 static void virObjectPoolableHashTableDispose(void *anyobj);
-
+static void virObjectPoolableHashElementDispose(void *anyobj);
 
 static int
 virObjectOnceInit(void)
@@ -87,6 +88,13 @@ virObjectOnceInit(void)
                       "virObjectPoolableHashTable",
                       sizeof(virObjectPoolableHashTable),
                       virObjectPoolableHashTableDispose)))
+        return -1;
+
+    if (!(virObjectPoolableHashElementClass =
+          virClassNew(virObjectLockableClass,
+                      "virObjectPoolableHashElement",
+                      sizeof(virObjectPoolableHashElement),
+                      virObjectPoolableHashElementDispose)))
         return -1;
 
     return 0;
@@ -141,6 +149,23 @@ virClassForObjectPoolableHashTable(void)
     VIR_DEBUG("virObjectPoolableHashTableClass=%p",
               virObjectPoolableHashTableClass);
     return virObjectPoolableHashTableClass;
+}
+
+
+/**
+ * virClassForObjectPoolableHashElement:
+ *
+ * Returns the class instance for the virObjectPoolableHashElement type
+ */
+virClassPtr
+virClassForObjectPoolableHashElement(void)
+{
+    if (virObjectInitialize() < 0)
+        return NULL;
+
+    VIR_DEBUG("virObjectPoolableHashElementClass=%p",
+              virObjectPoolableHashElementClass);
+    return virObjectPoolableHashElementClass;
 }
 
 
@@ -349,6 +374,53 @@ virObjectPoolableHashTableDispose(void *anyobj)
 }
 
 
+void *
+virObjectPoolableHashElementNew(virClassPtr klass,
+                                const char *primaryKey,
+                                const char *secondaryKey)
+{
+    virObjectPoolableHashElementPtr obj;
+
+    if (!virClassIsDerivedFrom(klass, virClassForObjectPoolableHashElement())) {
+        virReportInvalidArg(klass,
+                            _("Class %s must derive from "
+                              "virObjectPoolableHashElement"),
+                            virClassName(klass));
+        return NULL;
+    }
+
+    if (!(obj = virObjectLockableNew(klass)))
+        return NULL;
+
+    if (VIR_STRDUP(obj->primaryKey, primaryKey) < 0)
+        goto error;
+
+    if (secondaryKey && VIR_STRDUP(obj->secondaryKey, secondaryKey) < 0)
+        goto error;
+
+    VIR_DEBUG("obj=%p, primary=%s secondary=%s",
+              obj, obj->primaryKey, NULLSTR(obj->secondaryKey));
+
+    return obj;
+
+ error:
+    virObjectUnref(obj);
+    return NULL;
+
+}
+
+static void
+virObjectPoolableHashElementDispose(void *anyobj)
+{
+    virObjectPoolableHashElementPtr obj = anyobj;
+
+    VIR_DEBUG("dispose obj=%p", obj);
+
+    VIR_FREE(obj->primaryKey);
+    VIR_FREE(obj->secondaryKey);
+}
+
+
 /**
  * virObjectUnref:
  * @anyobj: any instance of virObjectPtr
@@ -417,7 +489,8 @@ static virObjectLockablePtr
 virObjectGetLockableObj(void *anyobj)
 {
     if (virObjectIsClass(anyobj, virObjectLockableClass) ||
-        virObjectIsClass(anyobj, virObjectPoolableHashTableClass))
+        virObjectIsClass(anyobj, virObjectPoolableHashTableClass) ||
+        virObjectIsClass(anyobj, virObjectPoolableHashElementClass))
         return anyobj;
 
     VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, virObjectLockableClass);

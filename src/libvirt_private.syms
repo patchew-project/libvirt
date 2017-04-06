@@ -2223,6 +2223,7 @@ virNumaSetupMemoryPolicy;
 # util/virobject.h
 virClassForObject;
 virClassForObjectLockable;
+virClassForObjectPoolableHashElement;
 virClassForObjectPoolableHashTable;
 virClassIsDerivedFrom;
 virClassName;
@@ -2235,6 +2236,7 @@ virObjectListFreeCount;
 virObjectLock;
 virObjectLockableNew;
 virObjectNew;
+virObjectPoolableHashElementNew;
 virObjectPoolableHashTableGetPrimary;
 virObjectPoolableHashTableGetSecondary;
 virObjectPoolableHashTableNew;
