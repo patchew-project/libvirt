@@ -685,6 +685,8 @@ virNetworkEventStateRegisterID;
 
 
 # conf/networkcommon_conf.h
+virNetDevCoalesceFormatXML;
+virNetDevCoalesceParseXML;
 virNetDevIPRouteCreate;
 virNetDevIPRouteFormat;
 virNetDevIPRouteParseXML;

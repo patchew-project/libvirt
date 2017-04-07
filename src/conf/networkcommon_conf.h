@@ -32,6 +32,7 @@
 # include "virbuffer.h"
 # include "virsocketaddr.h"
 # include "virnetdevip.h"
+# include "virnetdev.h"
 
 virNetDevIPRoutePtr
 virNetDevIPRouteCreate(const char *networkName,
@@ -51,5 +52,13 @@ virNetDevIPRouteParseXML(const char *networkName,
 int
 virNetDevIPRouteFormat(virBufferPtr buf,
                        const virNetDevIPRoute *def);
+
+virNetDevCoalescePtr
+virNetDevCoalesceParseXML(xmlNodePtr node,
+                          xmlXPathContextPtr ctxt);
+
+void
+virNetDevCoalesceFormatXML(virBufferPtr buf,
+                           virNetDevCoalescePtr coalesce);
 
 #endif /* __NETWORKCOMMON_CONF_H__ */

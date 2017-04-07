@@ -10251,6 +10251,13 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
         goto error;
     }
 
+    node = virXPathNode("./coalesce", ctxt);
+    if (node) {
+        def->coalesce = virNetDevCoalesceParseXML(node, ctxt);
+        if (!def->coalesce)
+            goto error;
+    }
+
  cleanup:
     ctxt->node = oldnode;
     VIR_FREE(macaddr);
@@ -22143,6 +22150,8 @@ virDomainNetDefFormat(virBufferPtr buf,
 
     if (def->mtu)
         virBufferAsprintf(buf, "<mtu size='%u'/>\n", def->mtu);
+
+    virNetDevCoalesceFormatXML(buf, def->coalesce);
 
     if (virDomainDeviceInfoFormat(buf, &def->info,
                                   flags | VIR_DOMAIN_DEF_FORMAT_ALLOW_BOOT

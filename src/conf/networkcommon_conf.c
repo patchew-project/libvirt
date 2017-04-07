@@ -328,3 +328,94 @@ virNetDevIPRouteFormat(virBufferPtr buf,
  cleanup:
     return result;
 }
+
+virNetDevCoalescePtr
+virNetDevCoalesceParseXML(xmlNodePtr node,
+                          xmlXPathContextPtr ctxt)
+{
+    virNetDevCoalescePtr ret = NULL;
+    xmlNodePtr save = NULL;
+    char *str = NULL;
+    unsigned long long tmp = 0;
+
+    save = ctxt->node;
+    ctxt->node = node;
+
+#define GET_COALESCE_PARAM(name)                                        \
+    do {                                                                \
+        str = virXPathString("string(./" #name ")", ctxt);              \
+        if (!str)                                                       \
+            break;                                                      \
+                                                                        \
+        if (!ret && VIR_ALLOC(ret) < 0)                                 \
+            return NULL;                                                \
+                                                                        \
+        if (virStrToLong_ullp(str, NULL, 10, &tmp) < 0) {               \
+            virReportError(VIR_ERR_XML_DETAIL,                          \
+                           _("cannot parse value '%s' for parameter '%s'"), \
+                           str, #name);                                 \
+            VIR_FREE(str);                                              \
+            goto error;                                                 \
+        }                                                               \
+        VIR_FREE(str);                                                  \
+                                                                        \
+        if (tmp > UINT32_MAX) {                                         \
+            virReportError(VIR_ERR_OVERFLOW,                            \
+                           _("value '%llu' is too big for " #name       \
+                             ", maximum is '%lu'"),                     \
+                           tmp, (unsigned long) UINT32_MAX);            \
+            goto error;                                                 \
+        }                                                               \
+                                                                        \
+        ret->name = tmp;                                                \
+    } while (0)
+
+    /* Just add more parameters if needed */
+
+    GET_COALESCE_PARAM(rx_max_coalesced_frames);
+
+#undef GET_COALESCE_PARAM
+
+ cleanup:
+    ctxt->node = save;
+    return ret;
+
+ error:
+    VIR_FREE(ret);
+    goto cleanup;
+}
+
+void
+virNetDevCoalesceFormatXML(virBufferPtr buf,
+                           virNetDevCoalescePtr coalesce)
+{
+    virBuffer childrenBuf = VIR_BUFFER_INITIALIZER;
+    int indent = virBufferGetIndent(buf, false);
+
+    if (!coalesce)
+        return;
+
+    virBufferAdjustIndent(&childrenBuf, indent + 2);
+
+#define SET_COALESCE_PARAM(name)                                \
+    do {                                                        \
+        if (coalesce->name) {                                   \
+            virBufferAsprintf(&childrenBuf,                     \
+                              /* TODO: turn %u into something 32-bit compatible */ \
+                              "<" #name ">%u</" #name ">\n",    \
+                              coalesce->name);                  \
+        }                                                       \
+    } while (0)
+
+    /* Just add more parameters if needed */
+
+    SET_COALESCE_PARAM(rx_max_coalesced_frames);
+
+#undef SET_COALESCE_PARAM
+
+    if (virBufferUse(&childrenBuf)) {
+        virBufferAddLit(buf, "<coalesce>\n");
+        virBufferAddBuffer(buf, &childrenBuf);
+        virBufferAddLit(buf, "</coalesce>\n");
+    }
+}

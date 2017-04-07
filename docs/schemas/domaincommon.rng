@@ -2509,6 +2509,9 @@
         <ref name="mtu"/>
       </optional>
       <optional>
+        <ref name="coalesce"/>
+      </optional>
+      <optional>
         <element name="target">
           <attribute name="dev">
             <ref name="deviceName"/>

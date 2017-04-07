@@ -275,4 +275,21 @@
       </attribute>
     </element>
   </define>
+
+  <define name="coalesce">
+    <element name="coalesce">
+      <interleave>
+        <!--
+            Other parameters can just be added here the same way the
+            following one is.
+            -->
+        <optional>
+          <element name="rx_max_coalesced_frames">
+            <ref name="unsignedInt"/>
+          </element>
+        </optional>
+      </interleave>
+    </element>
+  </define>
+
 </grammar>
