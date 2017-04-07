@@ -2062,6 +2062,7 @@ virNetDevRxFilterModeTypeFromString;
 virNetDevRxFilterModeTypeToString;
 virNetDevRxFilterNew;
 virNetDevSaveNetConfig;
+virNetDevSetCoalesce;
 virNetDevSetMAC;
 virNetDevSetMTU;
 virNetDevSetMTUFromDevice;
