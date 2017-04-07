@@ -2516,24 +2516,44 @@ static int
 storageBackendWipeLocal(const char *path,
                         int fd,
                         unsigned long long wipe_len,
-                        size_t writebuf_length)
+                        size_t writebuf_length,
+                        bool zero_end)
 {
     int ret = -1, written = 0;
     unsigned long long remaining = 0;
+    off_t size;
     size_t write_size = 0;
     char *writebuf = NULL;
-
-    VIR_DEBUG("wiping start: 0 len: %llu", wipe_len);
 
     if (VIR_ALLOC_N(writebuf, writebuf_length) < 0)
         goto cleanup;
 
-    if (lseek(fd, 0, SEEK_SET) < 0) {
-        virReportSystemError(errno,
-                             _("Failed to seek to the start in volume "
-                               "with path '%s'"),
-                             path);
-        goto cleanup;
+    if (!zero_end) {
+        if (lseek(fd, 0, SEEK_SET) < 0) {
+            virReportSystemError(errno,
+                                 _("Failed to seek to the start in volume "
+                                   "with path '%s'"),
+                                 path);
+            goto cleanup;
+        }
+        VIR_DEBUG("wiping start: 0 len: %llu", wipe_len);
+    } else {
+        if ((size = lseek(fd, 0, SEEK_END)) == (off_t)-1) {
+            virReportSystemError(errno,
+                                 _("Failed to seek to the end in volume "
+                                   "with path '%s'"),
+                                 path);
+            goto cleanup;
+        }
+        size -= wipe_len;
+        if (lseek(fd, size, SEEK_SET) < 0) {
+            virReportSystemError(errno,
+                                 _("Failed to seek to %zd bytes in volume "
+                                   "with path '%s'"),
+                                 size, path);
+            goto cleanup;
+        }
+        VIR_DEBUG("wiping start: %zd len: %llu", size, wipe_len);
     }
 
     remaining = wipe_len;
@@ -2573,7 +2593,8 @@ storageBackendWipeLocal(const char *path,
 static int
 storageBackendVolWipeLocalFile(const char *path,
                                unsigned int algorithm,
-                               unsigned long long allocation)
+                               unsigned long long allocation,
+                               bool zero_end)
 {
     int ret = -1, fd = -1;
     const char *alg_char = NULL;
@@ -2648,7 +2669,8 @@ storageBackendVolWipeLocalFile(const char *path,
         if (S_ISREG(st.st_mode) && st.st_blocks < (st.st_size / DEV_BSIZE)) {
             ret = storageBackendVolZeroSparseFileLocal(path, st.st_size, fd);
         } else {
-            ret = storageBackendWipeLocal(path, fd, allocation, st.st_blksize);
+            ret = storageBackendWipeLocal(path, fd, allocation, st.st_blksize,
+                                          zero_end);
         }
         if (ret < 0)
             goto cleanup;
@@ -2686,7 +2708,7 @@ storageBackendVolWipePloop(virStorageVolDefPtr vol,
         goto cleanup;
 
     if (storageBackendVolWipeLocalFile(target_path, algorithm,
-                                       vol->target.allocation) < 0)
+                                       vol->target.allocation, false) < 0)
         goto cleanup;
 
     if (virFileRemove(disk_desc, 0, 0) < 0) {
@@ -2735,7 +2757,7 @@ virStorageBackendVolWipeLocal(virConnectPtr conn ATTRIBUTE_UNUSED,
         ret = storageBackendVolWipePloop(vol, algorithm);
     } else {
         ret = storageBackendVolWipeLocalFile(vol->target.path, algorithm,
-                                             vol->target.allocation);
+                                             vol->target.allocation, false);
     }
 
     return ret;
