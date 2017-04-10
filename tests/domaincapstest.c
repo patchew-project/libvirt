@@ -563,6 +563,8 @@ mymain(void)
     DO_TEST_BHYVE("fbuf", "/usr/sbin/bhyve", &bhyve_caps, VIR_DOMAIN_VIRT_BHYVE);
 #endif /* WITH_BHYVE */
 
+    virObjectUnref(cfg);
+
     return ret;
 }
 
