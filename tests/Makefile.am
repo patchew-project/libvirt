@@ -1131,7 +1131,8 @@ virpcimock_la_SOURCES = \
 	virpcimock.c
 virpcimock_la_CFLAGS = $(AM_CFLAGS)
 virpcimock_la_LDFLAGS = $(MOCKLIBS_LDFLAGS)
-virpcimock_la_LIBADD = $(MOCKLIBS_LIBS)
+virpcimock_la_LIBADD = $(MOCKLIBS_LIBS) \
+	../src/libvirt_util.la
 
 virrandommock_la_SOURCES = \
 	virrandommock.c
