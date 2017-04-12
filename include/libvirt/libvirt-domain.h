@@ -2984,6 +2984,9 @@ typedef enum {
  */
 typedef enum {
     VIR_DOMAIN_EVENT_SHUTDOWN_FINISHED = 0, /* Guest finished shutdown sequence */
+    VIR_DOMAIN_EVENT_SHUTDOWN_SIGINT = 1,   /* Guest is shutting down due to SIGINT */
+    VIR_DOMAIN_EVENT_SHUTDOWN_SIGHUP = 2,   /* Guest is shutting down due to SIGHUP */
+    VIR_DOMAIN_EVENT_SHUTDOWN_SIGTERM = 3,  /* Guest is shutting down due to SIGKILL */
 
 # ifdef VIR_ENUM_SENTINELS
     VIR_DOMAIN_EVENT_SHUTDOWN_LAST

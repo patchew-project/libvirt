@@ -12220,7 +12220,11 @@ VIR_ENUM_IMPL(virshDomainEventStopped,
 VIR_ENUM_DECL(virshDomainEventShutdown)
 VIR_ENUM_IMPL(virshDomainEventShutdown,
               VIR_DOMAIN_EVENT_SHUTDOWN_LAST,
-              N_("Finished"))
+              N_("Finished"),
+              N_("Killed with SIGINT"),
+              N_("Killed with SIGHUP"),
+              N_("Killed with SIGTERM"),
+    )
 
 VIR_ENUM_DECL(virshDomainEventPMSuspended)
 VIR_ENUM_IMPL(virshDomainEventPMSuspended,

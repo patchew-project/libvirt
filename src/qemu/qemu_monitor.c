@@ -1323,12 +1323,12 @@ qemuMonitorEmitEvent(qemuMonitorPtr mon, const char *event,
 
 
 int
-qemuMonitorEmitShutdown(qemuMonitorPtr mon)
+qemuMonitorEmitShutdown(qemuMonitorPtr mon, const char *signal)
 {
     int ret = -1;
-    VIR_DEBUG("mon=%p", mon);
+    VIR_DEBUG("mon=%p signal=%s", mon, NULLSTR(signal));
 
-    QEMU_MONITOR_CALLBACK(mon, ret, domainShutdown, mon->vm);
+    QEMU_MONITOR_CALLBACK(mon, ret, domainShutdown, mon->vm, signal);
     return ret;
 }
 

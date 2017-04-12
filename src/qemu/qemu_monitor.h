@@ -130,6 +130,7 @@ typedef int (*qemuMonitorDomainEventCallback)(qemuMonitorPtr mon,
                                               void *opaque);
 typedef int (*qemuMonitorDomainShutdownCallback)(qemuMonitorPtr mon,
                                                  virDomainObjPtr vm,
+                                                 const char *signal,
                                                  void *opaque);
 typedef int (*qemuMonitorDomainResetCallback)(qemuMonitorPtr mon,
                                               virDomainObjPtr vm,
@@ -344,7 +345,7 @@ int qemuMonitorGetDiskSecret(qemuMonitorPtr mon,
 int qemuMonitorEmitEvent(qemuMonitorPtr mon, const char *event,
                          long long seconds, unsigned int micros,
                          const char *details);
-int qemuMonitorEmitShutdown(qemuMonitorPtr mon);
+int qemuMonitorEmitShutdown(qemuMonitorPtr mon, const char *signal);
 int qemuMonitorEmitReset(qemuMonitorPtr mon);
 int qemuMonitorEmitPowerdown(qemuMonitorPtr mon);
 int qemuMonitorEmitStop(qemuMonitorPtr mon);

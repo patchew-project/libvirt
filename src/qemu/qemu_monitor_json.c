@@ -523,9 +523,9 @@ qemuMonitorJSONKeywordStringToJSON(const char *str, const char *firstkeyword)
 }
 
 
-static void qemuMonitorJSONHandleShutdown(qemuMonitorPtr mon, virJSONValuePtr data ATTRIBUTE_UNUSED)
+static void qemuMonitorJSONHandleShutdown(qemuMonitorPtr mon, virJSONValuePtr data)
 {
-    qemuMonitorEmitShutdown(mon);
+    qemuMonitorEmitShutdown(mon, virJSONValueObjectGetString(data, "signal"));
 }
 
 static void qemuMonitorJSONHandleReset(qemuMonitorPtr mon, virJSONValuePtr data ATTRIBUTE_UNUSED)

@@ -240,6 +240,15 @@ eventDetailToString(int event,
             case VIR_DOMAIN_EVENT_SHUTDOWN_FINISHED:
                 return "Finished";
 
+            case VIR_DOMAIN_EVENT_SHUTDOWN_SIGINT:
+                return "Killed with SIGINT";
+
+            case VIR_DOMAIN_EVENT_SHUTDOWN_SIGHUP:
+                return "Killed with SIGHUP";
+
+            case VIR_DOMAIN_EVENT_SHUTDOWN_SIGTERM:
+                return "Killed with SIGTERM";
+
             case VIR_DOMAIN_EVENT_SHUTDOWN_LAST:
                 break;
             }
