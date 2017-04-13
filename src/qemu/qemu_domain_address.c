@@ -88,7 +88,7 @@ qemuDomainSetSCSIControllerModel(const virDomainDef *def,
             return -1;
         }
     } else {
-        if (qemuDomainMachineIsPSeries(def)) {
+        if (qemuDomainMachineIsPSeries(def->os.machine, def->os.arch)) {
             *model = VIR_DOMAIN_CONTROLLER_MODEL_SCSI_IBMVSCSI;
         } else if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SCSI_LSI)) {
             *model = VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSILOGIC;
@@ -245,7 +245,7 @@ qemuDomainAssignSpaprVIOAddresses(virDomainDefPtr def,
 
     for (i = 0; i < def->nserials; i++) {
         if (def->serials[i]->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL &&
-            qemuDomainMachineIsPSeries(def))
+            qemuDomainMachineIsPSeries(def->os.machine, def->os.arch))
             def->serials[i]->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_SPAPRVIO;
         if (qemuDomainAssignSpaprVIOAddress(def, &def->serials[i]->info,
                                             VIO_ADDR_SERIAL) < 0)
@@ -253,7 +253,7 @@ qemuDomainAssignSpaprVIOAddresses(virDomainDefPtr def,
     }
 
     if (def->nvram) {
-        if (qemuDomainMachineIsPSeries(def))
+        if (qemuDomainMachineIsPSeries(def->os.machine, def->os.arch))
             def->nvram->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_SPAPRVIO;
         if (qemuDomainAssignSpaprVIOAddress(def, &def->nvram->info,
                                             VIO_ADDR_NVRAM) < 0)
@@ -375,7 +375,7 @@ qemuDomainAssignS390Addresses(virDomainDefPtr def,
     int ret = -1;
     virDomainCCWAddressSetPtr addrs = NULL;
 
-    if (qemuDomainMachineIsS390CCW(def) &&
+    if (qemuDomainMachineIsS390CCW(def->os.machine) &&
         virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_CCW)) {
         qemuDomainPrimeVirtioDeviceAddresses(
             def, VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW);
@@ -445,7 +445,7 @@ qemuDomainAssignARMVirtioMMIOAddresses(virDomainDefPtr def,
         return;
 
     if (!(STRPREFIX(def->os.machine, "vexpress-") ||
-          qemuDomainMachineIsVirt(def)))
+          qemuDomainMachineIsVirt(def->os.machine, def->os.arch)))
         return;
 
     /* We use virtio-mmio by default on mach-virt guests only if they already
@@ -1479,12 +1479,12 @@ qemuDomainValidateDevicePCISlotsChipsets(virDomainDefPtr def,
                                          virQEMUCapsPtr qemuCaps,
                                          virDomainPCIAddressSetPtr addrs)
 {
-    if (qemuDomainMachineIsI440FX(def) &&
+    if (qemuDomainMachineIsI440FX(def->os.machine) &&
         qemuDomainValidateDevicePCISlotsPIIX3(def, qemuCaps, addrs) < 0) {
         return -1;
     }
 
-    if (qemuDomainMachineIsQ35(def) &&
+    if (qemuDomainMachineIsQ35(def->os.machine) &&
         qemuDomainValidateDevicePCISlotsQ35(def, qemuCaps, addrs) < 0) {
         return -1;
     }
@@ -1845,7 +1845,7 @@ qemuDomainSupportsPCI(virDomainDefPtr def,
     if (STREQ(def->os.machine, "versatilepb"))
         return true;
 
-    if (qemuDomainMachineIsVirt(def) &&
+    if (qemuDomainMachineIsVirt(def->os.machine, def->os.arch) &&
         virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_GPEX))
         return true;
 

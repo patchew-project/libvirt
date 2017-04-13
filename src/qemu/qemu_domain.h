@@ -675,15 +675,15 @@ void qemuDomainMemoryDeviceAlignSize(virDomainDefPtr def,
 
 virDomainChrDefPtr qemuFindAgentConfig(virDomainDefPtr def);
 
-bool qemuDomainMachineIsQ35(const virDomainDef *def);
-bool qemuDomainMachineIsI440FX(const virDomainDef *def);
+bool qemuDomainMachineIsQ35(const char *machine);
+bool qemuDomainMachineIsI440FX(const char *machine);
 bool qemuDomainMachineHasPCIRoot(const virDomainDef *def);
 bool qemuDomainMachineHasPCIeRoot(const virDomainDef *def);
-bool qemuDomainMachineNeedsFDC(const virDomainDef *def);
-bool qemuDomainMachineIsS390CCW(const virDomainDef *def);
-bool qemuDomainMachineIsVirt(const virDomainDef *def);
-bool qemuDomainMachineIsPSeries(const virDomainDef *def);
-bool qemuDomainMachineHasBuiltinIDE(const virDomainDef *def);
+bool qemuDomainMachineNeedsFDC(const char *machine);
+bool qemuDomainMachineIsS390CCW(const char *machine);
+bool qemuDomainMachineIsVirt(const char *machine, const virArch arch);
+bool qemuDomainMachineIsPSeries(const char *machine, const virArch arch);
+bool qemuDomainMachineHasBuiltinIDE(const char *machine);
 
 int qemuDomainUpdateCurrentMemorySize(virQEMUDriverPtr driver,
                                       virDomainObjPtr vm);

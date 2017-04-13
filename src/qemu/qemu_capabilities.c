@@ -2315,7 +2315,7 @@ bool virQEMUCapsHasPCIMultiBus(virQEMUCapsPtr qemuCaps,
     /* If 'virt' supports PCI, it supports multibus.
      * No extra conditions here for simplicity.
      */
-    if (qemuDomainMachineIsVirt(def))
+    if (qemuDomainMachineIsVirt(def->os.machine, def->os.arch))
         return true;
 
     return false;
@@ -5369,7 +5369,7 @@ virQEMUCapsSupportsChardev(const virDomainDef *def,
         return false;
 
     if ((def->os.arch == VIR_ARCH_PPC) || ARCH_IS_PPC64(def->os.arch)) {
-        if (!qemuDomainMachineIsPSeries(def))
+        if (!qemuDomainMachineIsPSeries(def->os.machine, def->os.arch))
             return false;
         /* only pseries need -device spapr-vty with -chardev */
         if (chr->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL &&
@@ -5396,8 +5396,8 @@ virQEMUCapsSupportsVmport(virQEMUCapsPtr qemuCaps,
     if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_MACHINE_VMPORT_OPT))
         return false;
 
-    return qemuDomainMachineIsI440FX(def) ||
-        qemuDomainMachineIsQ35(def) ||
+    return qemuDomainMachineIsI440FX(def->os.machine) ||
+        qemuDomainMachineIsQ35(def->os.machine) ||
         STREQ(def->os.machine, "isapc");
 }
 
@@ -5409,7 +5409,7 @@ virQEMUCapsSupportsSMM(virQEMUCapsPtr qemuCaps,
     if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_MACHINE_SMM_OPT))
         return false;
 
-    return qemuDomainMachineIsQ35(def);
+    return qemuDomainMachineIsQ35(def->os.machine);
 }
 
 

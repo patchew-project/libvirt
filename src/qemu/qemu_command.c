@@ -1390,7 +1390,7 @@ qemuCheckCCWS390AddressSupport(const virDomainDef *def,
                                const char *devicename)
 {
     if (info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
-        if (!qemuDomainMachineIsS390CCW(def)) {
+        if (!qemuDomainMachineIsS390CCW(def->os.machine)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("cannot use CCW address type for device "
                              "'%s' using machine type '%s'"),
@@ -2294,7 +2294,7 @@ qemuBuildDiskDriveCommandLine(virCommandPtr cmd,
 
         /* PowerPC pseries based VMs do not support floppy device */
         if (disk->device == VIR_DOMAIN_DISK_DEVICE_FLOPPY &&
-            qemuDomainMachineIsPSeries(def)) {
+            qemuDomainMachineIsPSeries(def->os.machine, def->os.arch)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("PowerPC pseries machines do not support floppy device"));
             return -1;
@@ -2345,7 +2345,7 @@ qemuBuildDiskDriveCommandLine(virCommandPtr cmd,
                                 disk->info.alias) < 0)
                     return -1;
 
-                if (!qemuDomainMachineNeedsFDC(def)) {
+                if (!qemuDomainMachineNeedsFDC(def->os.machine)) {
                     virCommandAddArg(cmd, "-global");
                     virCommandAddArgFormat(cmd, "isa-fdc.%s", optstr);
                 } else {
@@ -2360,7 +2360,7 @@ qemuBuildDiskDriveCommandLine(virCommandPtr cmd,
                                     bootindex) < 0)
                         return -1;
 
-                    if (!qemuDomainMachineNeedsFDC(def)) {
+                    if (!qemuDomainMachineNeedsFDC(def->os.machine)) {
                         virCommandAddArg(cmd, "-global");
                         virCommandAddArgFormat(cmd, "isa-fdc.%s", optstr);
                     } else {
@@ -3076,7 +3076,7 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
          * specified, or one with a single IDE contraller had multiple
          * ide controllers specified.
          */
-        if (qemuDomainMachineHasBuiltinIDE(domainDef))
+        if (qemuDomainMachineHasBuiltinIDE(domainDef->os.machine))
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("Only a single IDE controller is supported "
                              "for this machine type"));
@@ -3174,18 +3174,18 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
 
             /* first SATA controller on Q35 machines is implicit */
             if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_SATA &&
-                cont->idx == 0 && qemuDomainMachineIsQ35(def))
+                cont->idx == 0 && qemuDomainMachineIsQ35(def->os.machine))
                     continue;
 
             /* first IDE controller is implicit on various machines */
             if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_IDE &&
-                cont->idx == 0 && qemuDomainMachineHasBuiltinIDE(def))
+                cont->idx == 0 && qemuDomainMachineHasBuiltinIDE(def->os.machine))
                     continue;
 
             if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
                 cont->model == -1 &&
-                !qemuDomainMachineIsQ35(def) &&
-                !qemuDomainMachineIsVirt(def)) {
+                !qemuDomainMachineIsQ35(def->os.machine) &&
+                !qemuDomainMachineIsVirt(def->os.machine, def->os.arch)) {
 
                 /* An appropriate default USB controller model should already
                  * have been selected in qemuDomainDeviceDefPostParse(); if
@@ -3222,8 +3222,8 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
      * not to add one either. Add a legacy USB controller, unless we're
      * creating a kind of guest we want to keep legacy-free */
     if (usbcontroller == 0 &&
-        !qemuDomainMachineIsQ35(def) &&
-        !qemuDomainMachineIsVirt(def) &&
+        !qemuDomainMachineIsQ35(def->os.machine) &&
+        !qemuDomainMachineIsVirt(def->os.machine, def->os.arch) &&
         !ARCH_IS_S390(def->os.arch))
         virCommandAddArg(cmd, "-usb");
 
@@ -4104,7 +4104,7 @@ qemuBuildNVRAMCommandLine(virCommandPtr cmd,
     if (!def->nvram)
         return 0;
 
-    if (qemuDomainMachineIsPSeries(def)) {
+    if (qemuDomainMachineIsPSeries(def->os.machine, def->os.arch)) {
         if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_NVRAM)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("nvram device is not supported by "
@@ -6487,7 +6487,7 @@ qemuBuildPMCommandLine(virCommandPtr cmd,
     if (def->pm.s3) {
         const char *pm_object = "PIIX4_PM";
 
-        if (qemuDomainMachineIsQ35(def) &&
+        if (qemuDomainMachineIsQ35(def->os.machine) &&
             virQEMUCapsGet(qemuCaps, QEMU_CAPS_ICH9_DISABLE_S3)) {
             pm_object = "ICH9-LPC";
         } else if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_PIIX_DISABLE_S3)) {
@@ -6504,7 +6504,7 @@ qemuBuildPMCommandLine(virCommandPtr cmd,
     if (def->pm.s4) {
         const char *pm_object = "PIIX4_PM";
 
-        if (qemuDomainMachineIsQ35(def) &&
+        if (qemuDomainMachineIsQ35(def->os.machine) &&
             virQEMUCapsGet(qemuCaps, QEMU_CAPS_ICH9_DISABLE_S4)) {
             pm_object = "ICH9-LPC";
         } else if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_PIIX_DISABLE_S4)) {
@@ -6693,7 +6693,7 @@ qemuBuildIOMMUCommandLine(virCommandPtr cmd,
                            virDomainIOMMUModelTypeToString(iommu->model));
             return -1;
         }
-        if (!qemuDomainMachineIsQ35(def)) {
+        if (!qemuDomainMachineIsQ35(def->os.machine)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("IOMMU device: '%s' is only supported with "
                              "Q35 machines"),
@@ -6732,13 +6732,13 @@ qemuBuildGlobalControllerCommandLine(virCommandPtr cmd,
             case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT:
                 hoststr = "i440FX-pcihost";
                 cap = virQEMUCapsGet(qemuCaps, QEMU_CAPS_I440FX_PCI_HOLE64_SIZE);
-                machine = qemuDomainMachineIsI440FX(def);
+                machine = qemuDomainMachineIsI440FX(def->os.machine);
                 break;
 
             case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT:
                 hoststr = "q35-pcihost";
                 cap = virQEMUCapsGet(qemuCaps, QEMU_CAPS_Q35_PCI_HOLE64_SIZE);
-                machine = qemuDomainMachineIsQ35(def);
+                machine = qemuDomainMachineIsQ35(def->os.machine);
                 break;
 
             default:
@@ -7323,7 +7323,7 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
 
         if (def->features[VIR_DOMAIN_FEATURE_GIC] == VIR_TRISTATE_SWITCH_ON) {
             if (def->gic_version != VIR_GIC_VERSION_NONE) {
-                if (!qemuDomainMachineIsVirt(def)) {
+                if (!qemuDomainMachineIsVirt(def->os.machine, def->os.arch)) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                                    _("gic-version option is available "
                                      "only for ARM virt machine"));
@@ -7352,7 +7352,7 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
             virQEMUCapsGet(qemuCaps, QEMU_CAPS_MACHINE_IOMMU)) {
             switch (def->iommu->model) {
             case VIR_DOMAIN_IOMMU_MODEL_INTEL:
-                if (!qemuDomainMachineIsQ35(def)) {
+                if (!qemuDomainMachineIsQ35(def->os.machine)) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                    _("IOMMU device: '%s' is only supported with "
                                      "Q35 machines"),
@@ -9615,7 +9615,7 @@ qemuBuildPanicCommandLine(virCommandPtr cmd,
             /* For pSeries guests, the firmware provides the same
              * functionality as the pvpanic device. The address
              * cannot be configured by the user */
-            if (!qemuDomainMachineIsPSeries(def)) {
+            if (!qemuDomainMachineIsPSeries(def->os.machine, def->os.arch)) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                                _("only pSeries guests support panic device "
                                  "of model 'pseries'"));
@@ -10041,7 +10041,7 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
 {
     virBuffer cmd = VIR_BUFFER_INITIALIZER;
 
-    if (qemuDomainMachineIsPSeries(def)) {
+    if (qemuDomainMachineIsPSeries(def->os.machine, def->os.arch)) {
         if (serial->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL &&
             serial->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_SPAPRVIO) {
             virBufferAsprintf(&cmd, "spapr-vty,chardev=char%s",
