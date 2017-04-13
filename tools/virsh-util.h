@@ -58,6 +58,11 @@ virshStreamSink(virStreamPtr st,
                 void *opaque);
 
 int
+virshStreamSkip(virStreamPtr st,
+                unsigned long long offset,
+                void *opaque);
+
+int
 virshDomainGetXMLFromDom(vshControl *ctl,
                          virDomainPtr dom,
                          unsigned int flags,
