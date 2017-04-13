@@ -1110,6 +1110,7 @@ virStateCleanup;
 virStateInitialize;
 virStateReload;
 virStateStop;
+virStreamInData;
 
 
 # locking/domain_lock.h
