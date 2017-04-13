@@ -1613,6 +1613,7 @@ virFileGetHugepageSize;
 virFileGetMountReverseSubtree;
 virFileGetMountSubtree;
 virFileHasSuffix;
+virFileInData;
 virFileIsAbsPath;
 virFileIsDir;
 virFileIsExecutable;

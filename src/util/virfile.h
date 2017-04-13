@@ -340,4 +340,7 @@ int virFileReadValueInt(const char *path, int *value);
 int virFileReadValueUint(const char *path, unsigned int *value);
 int virFileReadValueBitmap(const char *path, int maxlen, virBitmapPtr *value);
 
+int virFileInData(int fd,
+                  int *inData,
+                  unsigned long long *length);
 #endif /* __VIR_FILE_H */
