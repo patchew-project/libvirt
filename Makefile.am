@@ -36,9 +36,7 @@ EXTRA_DIST = \
   libvirt-qemu.pc.in \
   libvirt-lxc.pc.in \
   libvirt-admin.pc.in \
-  autobuild.sh \
   Makefile.nonreentrant \
-  autogen.sh \
   cfg.mk \
   run.in \
   AUTHORS.in
