@@ -648,7 +648,7 @@ remoteRelayDomainEventBlockJob(virConnectPtr conn,
     /* build return data */
     memset(&data, 0, sizeof(data));
     if (VIR_STRDUP(data.path, path) < 0)
-        goto error;
+        return -1;
     data.type = type;
     data.status = status;
     make_nonnull_domain(&data.dom, dom);
@@ -667,9 +667,6 @@ remoteRelayDomainEventBlockJob(virConnectPtr conn,
     }
 
     return 0;
- error:
-    VIR_FREE(data.path);
-    return -1;
 }
 
 
@@ -1025,7 +1022,7 @@ remoteRelayDomainEventBlockJob2(virConnectPtr conn,
     memset(&data, 0, sizeof(data));
     data.callbackID = callback->callbackID;
     if (VIR_STRDUP(data.dst, dst) < 0)
-        goto error;
+        return -1;
     data.type = type;
     data.status = status;
     make_nonnull_domain(&data.dom, dom);
@@ -1035,9 +1032,6 @@ remoteRelayDomainEventBlockJob2(virConnectPtr conn,
                                   (xdrproc_t)xdr_remote_domain_event_block_job_2_msg, &data);
 
     return 0;
- error:
-    VIR_FREE(data.dst);
-    return -1;
 }
 
 
@@ -1067,7 +1061,7 @@ remoteRelayDomainEventTunable(virConnectPtr conn,
                                 (virTypedParameterRemotePtr *) &data.params.params_val,
                                 &data.params.params_len,
                                 VIR_TYPED_PARAM_STRING_OKAY) < 0)
-        return -1;
+        goto error;
 
     remoteDispatchObjectEventSend(callback->client, remoteProgram,
                                   REMOTE_PROC_DOMAIN_EVENT_CALLBACK_TUNABLE,
@@ -1075,6 +1069,10 @@ remoteRelayDomainEventTunable(virConnectPtr conn,
                                   &data);
 
     return 0;
+ error:
+    VIR_FREE(data.dom.name);
+    return -1;
+
 }
 
 
@@ -1207,13 +1205,16 @@ remoteRelayDomainEventJobCompleted(virConnectPtr conn,
                                 (virTypedParameterRemotePtr *) &data.params.params_val,
                                 &data.params.params_len,
                                 VIR_TYPED_PARAM_STRING_OKAY) < 0)
-        return -1;
+        goto error;
 
     remoteDispatchObjectEventSend(callback->client, remoteProgram,
                                   REMOTE_PROC_DOMAIN_EVENT_CALLBACK_JOB_COMPLETED,
                                   (xdrproc_t)xdr_remote_domain_event_callback_job_completed_msg,
                                   &data);
     return 0;
+ error:
+    VIR_FREE(data.dom.name);
+    return -1;
 }
 
 
