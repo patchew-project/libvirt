@@ -1,117 +1,210 @@
 #!/bin/sh
 # Run this to generate all the initial makefiles, etc.
 
-set -e
-
-srcdir=`dirname "$0"`
-test -z "$srcdir" && srcdir=.
-
-THEDIR=`pwd`
-cd "$srcdir"
-
-test -f src/libvirt.c || {
-    echo "You must run this script in the top-level libvirt directory"
+die()
+{
+    echo "error: $1" >&2
     exit 1
 }
 
+starting_point=$(pwd)
 
-EXTRA_ARGS=
+srcdir=$(dirname "$0")
+test "$srcdir" || srcdir=.
+
+cd "$srcdir" || {
+    die "failed to cd into $srcdir"
+}
+
+test -f src/libvirt.c || {
+    die "$0 must live in the top-level libvirt directory"
+}
+
+dry_run=
 no_git=
-if test "x$1" = "x--no-git"; then
-  no_git=" $1"
-  shift
-  case "$1 $2" in
-    --gnulib-srcdir=*) no_git="$no_git $1"; shift ;;
-    --gnulib-srcdir\ *) no_git="$no_git $1=$2"; shift; shift;;
-  esac
-fi
-if test -z "$NOCONFIGURE" ; then
-  if test "x$1" = "x--system"; then
-    shift
-    prefix=/usr
-    libdir=$prefix/lib
-    sysconfdir=/etc
-    localstatedir=/var
-    if [ -d /usr/lib64 ]; then
-      libdir=$prefix/lib64
-    fi
-    EXTRA_ARGS="--prefix=$prefix --sysconfdir=$sysconfdir --localstatedir=$localstatedir --libdir=$libdir"
-    echo "Running ./configure with $EXTRA_ARGS $@"
-  else
-    if test -z "$*" && test ! -f "$THEDIR/config.status"; then
-        echo "I am going to run ./configure with no arguments - if you wish"
-        echo "to pass any to it, please specify them on the $0 command line."
-    fi
-  fi
-fi
+gnulib_srcdir=
+extra_args=
+while test "$#" -gt 0; do
+    case "$1" in
+    --dry-run)
+        # This variable will serve both as an indicator of the fact that a
+        # dry run has been requested, and to store the result of the dry run.
+        # It will be ultimately used as return code for the script, so a
+        # value of 1 means "running autogen.sh is not needed at this time"
+        dry_run=1
+        shift
+        ;;
+    --no-git)
+        no_git=" $1"
+        shift
+        ;;
+    --gnulib-srcdir=*)
+        gnulib_srcdir=" $1"
+        shift
+        ;;
+    --gnulib-srcdir)
+        gnulib_srcdir=" $1=$2"
+        shift
+        shift
+        ;;
+    --system)
+        prefix=/usr
+        sysconfdir=/etc
+        localstatedir=/var
+        if test -d $prefix/lib64; then
+            libdir=$prefix/lib64
+        else
+            libdir=$prefix/lib
+        fi
+        extra_args="--prefix=$prefix --localstatedir=$localstatedir"
+        extra_args="$extra_args --sysconfdir=$sysconfdir --libdir=$libdir"
+        shift
+        ;;
+    *)
+        # All remaining arguments will be passed to configure verbatim
+        break
+        ;;
+    esac
+done
+no_git="$no_git$gnulib_srcdir"
 
-# Compute the hash we'll use to determine whether rerunning bootstrap
-# is required.  The first is just the SHA1 that selects a gnulib snapshot.
-# The second ensures that whenever we change the set of gnulib modules used
-# by this package, we rerun bootstrap to pull in the matching set of files.
-# The third ensures that whenever we change the set of local gnulib diffs,
-# we rerun bootstrap to pull in those diffs.
-bootstrap_hash()
+gnulib_hash()
 {
+    local no_git=$1
+
     if test "$no_git"; then
-        echo no-git
+        echo "no-git"
         return
     fi
-    git submodule status | sed 's/^[ +-]//;s/ .*//'
+
+    # Compute the hash we'll use to determine whether rerunning bootstrap
+    # is required. The first is just the SHA1 that selects a gnulib snapshot.
+    # The second ensures that whenever we change the set of gnulib modules used
+    # by this package, we rerun bootstrap to pull in the matching set of files.
+    # The third ensures that whenever we change the set of local gnulib diffs,
+    # we rerun bootstrap to pull in those diffs.
+    git submodule status .gnulib | awk '{ print $1 }'
     git hash-object bootstrap.conf
-    git ls-tree -d HEAD gnulib/local | awk '{print $3}'
+    git ls-tree -d HEAD gnulib/local | awk '{ print $3 }'
 }
 
-# Ensure that whenever we pull in a gnulib update or otherwise change to a
-# different version (i.e., when switching branches), we also rerun ./bootstrap.
-# Also, running 'make rpm' tends to litter the po/ directory, and some people
-# like to run 'git clean -x -f po' to fix it; but only ./bootstrap regenerates
-# the required file po/Makevars.
-# Only run bootstrap from a git checkout, never from a tarball.
-if test -d .git || test -f .git; then
-    curr_status=.git-module-status t=
-    if test "$no_git"; then
-        t=no-git
-    elif test -d .gnulib; then
-        t=$(bootstrap_hash; git diff .gnulib)
+gnulib_update_required()
+{
+    local expected=$1
+    local actual=$2
+    local no_git=$3
+
+    local ret=0
+
+    # Whenever the gnulib submodule or any of the related bits has been
+    # changed in some way (see gnulib_hash) we need to update the submodule,
+    # eg. run bootstrap again; updating is also needed if any of the files
+    # that can only be generated through bootstrap has gone missing
+    if test "$actual" = "$expected" && \
+       test -f po/Makevars && test -f AUTHORS; then
+        ret=1
     fi
-    case $t:${CLEAN_SUBMODULE+set} in
-        *:set) ;;
-        *-dirty*)
-            echo "error: gnulib submodule is dirty, please investigate" 2>&1
-            echo "set env-var CLEAN_SUBMODULE to discard gnulib changes" 2>&1
-            exit 1 ;;
-    esac
-    # Keep this test in sync with cfg.mk:_update_required
-    if test "$t" = "$(cat $curr_status 2>/dev/null)" \
-        && test -f "po/Makevars" && test -f AUTHORS; then
-        # good, it's up to date, all we need is autoreconf
-        autoreconf -if
+
+    return "$ret"
+}
+
+gnulib_update()
+{
+    local expected=$1
+    local actual=$2
+    local no_git=$3
+
+    local ret=0
+
+    # Depending on whether or not an update is required, we might be able to
+    # get away with simply running autoreconf, or we might have to go through
+    # the bootstrap process
+    if gnulib_update_required "$expected" "$actual" "$no_git"; then
+        echo "Running bootstrap..."
+        ./bootstrap$no_git --bootstrap-sync
+        ret=$?
     else
-        if test -z "$no_git" && test ${CLEAN_SUBMODULE+set}; then
-            echo cleaning up submodules...
-            git submodule foreach 'git clean -dfqx && git reset --hard'
+        echo "Running autoreconf..."
+        autoreconf -if
+        ret=$?
+    fi
+
+    return "$ret"
+}
+
+if test -d .git || test -f .git; then
+
+    if test -z "$CLEAN_SUBMODULE"; then
+        git submodule status | while read _ path _; do
+            dirty=$(git diff "$path")
+            case "$dirty" in
+                *-dirty*)
+                    echo "error: $path is dirty, please investigate" >&2
+                    echo "set CLEAN_SUBMODULE to discard submodule changes" >&2
+                    exit 1
+                    ;;
+            esac
+        done
+    fi
+    if test "$CLEAN_SUBMODULE" && test -z "$no_git"; then
+        if test -z "$dry_run"; then
+            echo "Cleaning up submodules..."
+            git submodule foreach 'git clean -dfqx && git reset --hard' || {
+                die "cleaning up submodules failed"
+            }
         fi
-        echo running bootstrap$no_git...
-        ./bootstrap$no_git --bootstrap-sync && bootstrap_hash > $curr_status \
-            || { echo "Failed to bootstrap, please investigate."; exit 1; }
+    fi
+
+    curr_status=.git-module-status
+    expected=$(cat "$curr_status" 2>/dev/null)
+    actual=$(gnulib_hash "$no_git")
+
+    if test "$dry_run"; then
+        if gnulib_update_required "$expected" "$actual" "$no_git"; then
+            dry_run=0
+        fi
+    else
+        gnulib_update "$expected" "$actual" "$no_git" || {
+            die "submodule update failed"
+        }
+        gnulib_hash >"$curr_status"
     fi
 fi
 
-test -n "$NOCONFIGURE" && exit 0
+# When performing a dry run, we can stop here
+test "$dry_run" && exit "$dry_run"
 
-cd "$THEDIR"
+# If asked not to run configure, we can stop here
+test "$NOCONFIGURE" && exit 0
 
-if test "x$OBJ_DIR" != x; then
-    mkdir -p "$OBJ_DIR"
-    cd "$OBJ_DIR"
+cd "$starting_point" || {
+    die "failed to cd into $starting_point"
+}
+
+if test "$OBJ_DIR"; then
+    mkdir -p "$OBJ_DIR" || {
+        die "failed to create $OBJ_DIR"
+    }
+    cd "$OBJ_DIR" || {
+        die "failed to cd into $OBJ_DIR"
+    }
 fi
 
-if test -z "$*" && test -z "$EXTRA_ARGS" && test -f config.status; then
-    ./config.status --recheck
+if test -z "$*" && test -z "$extra_args" && test -f config.status; then
+    ./config.status --recheck || {
+        die "config.status failed"
+    }
 else
-    $srcdir/configure $EXTRA_ARGS "$@"
-fi && {
-    echo
-    echo "Now type 'make' to compile libvirt."
-}
+    if test -z "$*" && test -z "$extra_args"; then
+        echo "I am going to run ./configure with no arguments - if you wish"
+        echo "to pass any to it, please specify them on the $0 command line."
+    else
+        echo "Running ./configure with $extra_args $@"
+    fi
+    $srcdir/configure $extra_args "$@" || {
+        die "configure failed"
+    }
+fi
+
+echo
+echo "Now type 'make' to compile libvirt."
