@@ -7,6 +7,19 @@ die()
     exit 1
 }
 
+git_submodules()
+{
+    # Print the list of known submodules. Parse the .gitmodules file because
+    # we want the submodule's alias rather than its path (as we're going to
+    # use it for building eg. function names) and the 'git submodule' command
+    # doesn't provide us with that information
+    grep -E '^\[submodule ' .gitmodules | while read _ name; do
+        name=${name#\"}
+        name=${name%%\"*}
+        echo "$name"
+    done
+}
+
 starting_point=$(pwd)
 
 srcdir=$(dirname "$0")
@@ -68,70 +81,6 @@ while test "$#" -gt 0; do
 done
 no_git="$no_git$gnulib_srcdir"
 
-gnulib_hash()
-{
-    local no_git=$1
-
-    if test "$no_git"; then
-        echo "no-git"
-        return
-    fi
-
-    # Compute the hash we'll use to determine whether rerunning bootstrap
-    # is required. The first is just the SHA1 that selects a gnulib snapshot.
-    # The second ensures that whenever we change the set of gnulib modules used
-    # by this package, we rerun bootstrap to pull in the matching set of files.
-    # The third ensures that whenever we change the set of local gnulib diffs,
-    # we rerun bootstrap to pull in those diffs.
-    git submodule status .gnulib | awk '{ print $1 }'
-    git hash-object bootstrap.conf
-    git ls-tree -d HEAD gnulib/local | awk '{ print $3 }'
-}
-
-gnulib_update_required()
-{
-    local expected=$1
-    local actual=$2
-    local no_git=$3
-
-    local ret=0
-
-    # Whenever the gnulib submodule or any of the related bits has been
-    # changed in some way (see gnulib_hash) we need to update the submodule,
-    # eg. run bootstrap again; updating is also needed if any of the files
-    # that can only be generated through bootstrap has gone missing
-    if test "$actual" = "$expected" && \
-       test -f po/Makevars && test -f AUTHORS; then
-        ret=1
-    fi
-
-    return "$ret"
-}
-
-gnulib_update()
-{
-    local expected=$1
-    local actual=$2
-    local no_git=$3
-
-    local ret=0
-
-    # Depending on whether or not an update is required, we might be able to
-    # get away with simply running autoreconf, or we might have to go through
-    # the bootstrap process
-    if gnulib_update_required "$expected" "$actual" "$no_git"; then
-        echo "Running bootstrap..."
-        ./bootstrap$no_git --bootstrap-sync
-        ret=$?
-    else
-        echo "Running autoreconf..."
-        autoreconf -if
-        ret=$?
-    fi
-
-    return "$ret"
-}
-
 if test -d .git || test -f .git; then
 
     if test -z "$CLEAN_SUBMODULE"; then
@@ -155,20 +104,74 @@ if test -d .git || test -f .git; then
         fi
     fi
 
-    curr_status=.git-module-status
-    expected=$(cat "$curr_status" 2>/dev/null)
-    actual=$(gnulib_hash "$no_git")
+    for submodule in $(git_submodules); do
+        functions_file=".submodules/$submodule.functions"
+        status_file=".submodules/$submodule.status"
 
-    if test "$dry_run"; then
-        if gnulib_update_required "$expected" "$actual" "$no_git"; then
-            dry_run=0
-        fi
-    else
-        gnulib_update "$expected" "$actual" "$no_git" || {
-            die "submodule update failed"
+        # No need to check for the file's existence: the script will
+        # abort if it's not present
+        . "$functions_file"
+
+        # hash_function(no_git):
+        # @no_git: whether to avoid using git for updates
+        #
+        # This function must print a hash encompassing the entire submodule
+        # status. The hash will be remembered between runs and will be used
+        # to determine whether a submodule update is required.
+        #
+        # Output: submodule hash
+        # Return value: ignored
+        hash_function="${submodule}_hash"
+        type "$hash_function" >/dev/null 2>&1 || {
+            die "required function $hash_function missing"
         }
-        gnulib_hash >"$curr_status"
-    fi
+
+        # update_required_function(expected, actual, no_git):
+        # @expected: expected hash (from previous run)
+        # @actual: actual hash (from current run)
+        # @no_git: whether to avoid using git for updates
+        #
+        # This function is used to determine whether a submodule update is
+        # required. It must perform no action, regardless of the outcome:
+        # it's mostly intended for use with --dry-run.
+        #
+        # Output: ignored
+        # Return value: 0 if update is required, 1 otherwise
+        update_required_function="${submodule}_update_required"
+        type "$update_required_function" >/dev/null 2>&1 || {
+            die "required function $update_required_function missing"
+        }
+
+        # update_function(expected, actual, no_git):
+        # @expected: expected hash (from previous run)
+        # @actual: actual hash (from current run)
+        # @no_git: whether to avoid using git for updates
+        #
+        # This function must perform the submodule update; if no update
+        # is required, it can decide to skip it, but it will be called
+        # regardless.
+        #
+        # Output: ignored
+        # Return value: 0 if update was successful, 1 otherwise
+        update_function="${submodule}_update"
+        type "$update_function" >/dev/null 2>&1 || {
+            die "required function $update_function missing"
+        }
+
+        expected=$(cat "$status_file" 2>/dev/null)
+        actual=$("$hash_function" "$no_git")
+
+        if test "$dry_run"; then
+            if "$update_required_function" "$expected" "$actual" "$no_git"; then
+                dry_run=0
+            fi
+        else
+            "$update_function" "$expected" "$actual" "$no_git" || {
+                die "submodule update failed"
+            }
+            "$hash_function" >"$status_file"
+        fi
+    done
 fi
 
 # When performing a dry run, we can stop here

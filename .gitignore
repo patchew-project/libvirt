@@ -30,11 +30,11 @@
 .dirstamp
 .gdb_history
 .git
-.git-module-status
 .libs
 .lvimrc
 .memdump
 .sc-start-sc_*
+.submodules/*.status
 /ABOUT-NLS
 /AUTHORS
 /ChangeLog
