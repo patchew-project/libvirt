@@ -582,9 +582,13 @@ virNodeDeviceDefFormat(const virNodeDeviceDef *def)
         case VIR_NODE_DEV_CAP_DRM:
             virBufferEscapeString(&buf, "<type>%s</type>\n", virNodeDevDRMTypeToString(data->drm.type));
             break;
+        case VIR_NODE_DEV_CAP_MDEV:
+            virBufferEscapeString(&buf, "<type id='%s'/>\n", data->mdev.type);
+            virBufferAsprintf(&buf, "<iommuGroup number='%u'/>\n",
+                              data->mdev.iommuGroupNumber);
+            break;
         case VIR_NODE_DEV_CAP_FC_HOST:
         case VIR_NODE_DEV_CAP_VPORTS:
-        case VIR_NODE_DEV_CAP_MDEV:
         case VIR_NODE_DEV_CAP_LAST:
             break;
         }
@@ -1645,6 +1649,39 @@ virNodeDevCapSystemParseXML(xmlXPathContextPtr ctxt,
 }
 
 
+static int
+virNodeDevCapMdevParseXML(xmlXPathContextPtr ctxt,
+                          virNodeDeviceDefPtr def,
+                          xmlNodePtr node,
+                          virNodeDevCapMdevPtr mdev)
+{
+    xmlNodePtr orignode;
+    int ret = -1;
+
+    orignode = ctxt->node;
+    ctxt->node = node;
+
+    if (!(mdev->type = virXPathString("string(./type[1]/@id)", ctxt))) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("missing type id attribute for '%s'"), def->name);
+        goto out;
+    }
+
+    if (virNodeDevCapsDefParseULong("number(./iommuGroup[1]/@number)", ctxt,
+                                    &mdev->iommuGroupNumber, def,
+                                    _("missing iommuGroup number atribute for "
+                                      "'%s'"),
+                                    _("invalid iommuGroup number attribute for "
+                                      "'%s'")) < 0)
+        goto out;
+
+    ret = 0;
+ out:
+    ctxt->node = orignode;
+    return ret;
+}
+
+
 static virNodeDevCapsDefPtr
 virNodeDevCapsDefParseXML(xmlXPathContextPtr ctxt,
                           virNodeDeviceDefPtr def,
@@ -1716,6 +1753,8 @@ virNodeDevCapsDefParseXML(xmlXPathContextPtr ctxt,
     case VIR_NODE_DEV_CAP_VPORTS:
     case VIR_NODE_DEV_CAP_SCSI_GENERIC:
     case VIR_NODE_DEV_CAP_MDEV:
+        ret = virNodeDevCapMdevParseXML(ctxt, def, node, &caps->data.mdev);
+        break;
     case VIR_NODE_DEV_CAP_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("unknown capability type '%d' for '%s'"),
@@ -2035,6 +2074,8 @@ virNodeDevCapsDefFree(virNodeDevCapsDefPtr caps)
         VIR_FREE(data->sg.path);
         break;
     case VIR_NODE_DEV_CAP_MDEV:
+        virNodeDevCapMdevClear(&data->mdev);
+        break;
     case VIR_NODE_DEV_CAP_DRM:
     case VIR_NODE_DEV_CAP_FC_HOST:
     case VIR_NODE_DEV_CAP_VPORTS:

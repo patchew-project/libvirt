@@ -1083,6 +1083,51 @@ udevProcessSCSIGeneric(struct udev_device *dev,
 }
 
 static int
+udevProcessMediatedDevice(struct udev_device *dev,
+                          virNodeDeviceDefPtr def)
+{
+    int ret = -1;
+    const char *uuidstr = NULL;
+    int iommugrp = -1;
+    int model = -1;
+    char *path = NULL;
+    virMediatedDevicePtr mdev = NULL;
+    virNodeDevCapMdevPtr data = &def->caps->data.mdev;
+
+    if (virAsprintf(&path, "%s/mdev_type", udev_device_get_syspath(dev)) < 0)
+        goto cleanup;
+
+    if (udevGetMdevCaps(dev, path, data) < 0)
+        goto cleanup;
+
+    if ((model = virMediatedDeviceModelTypeFromString(data->device_api)) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Device API '%s' not supported yet"),
+                       data->device_api);
+        goto cleanup;
+    }
+
+    uuidstr = udev_device_get_sysname(dev);
+    if (!(mdev = virMediatedDeviceNew(uuidstr, model)))
+        goto cleanup;
+
+    if ((iommugrp = virMediatedDeviceGetIOMMUGroupNum(mdev)) < 0)
+        goto cleanup;
+
+    if (udevGenerateDeviceName(dev, def, NULL) != 0)
+        goto cleanup;
+
+    data->iommuGroupNumber = iommugrp;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(path);
+    virMediatedDeviceFree(mdev);
+    return ret;
+
+}
+
+static int
 udevGetDeviceNodes(struct udev_device *device,
                    virNodeDeviceDefPtr def)
 {
@@ -1199,6 +1244,7 @@ static int udevGetDeviceDetails(struct udev_device *device,
     case VIR_NODE_DEV_CAP_DRM:
         return udevProcessDRMDevice(device, def);
     case VIR_NODE_DEV_CAP_MDEV:
+        return udevProcessMediatedDevice(device, def);
     case VIR_NODE_DEV_CAP_SYSTEM:
     case VIR_NODE_DEV_CAP_FC_HOST:
     case VIR_NODE_DEV_CAP_VPORTS:
