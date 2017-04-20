@@ -742,33 +742,30 @@ virDomainNumaDefCPUParseXML(virDomainNumaPtr def,
             goto cleanup;
         }
 
-        if (!(tmp = virXMLPropString(nodes[i], "cpus"))) {
-            virReportError(VIR_ERR_XML_ERROR, "%s",
-                           _("Missing 'cpus' attribute in NUMA cell"));
-            goto cleanup;
-        }
-
-        if (virBitmapParse(tmp, &def->mem_nodes[cur_cell].cpumask,
-                           VIR_DOMAIN_CPUMASK_LEN) < 0)
-            goto cleanup;
-
-        if (virBitmapIsAllClear(def->mem_nodes[cur_cell].cpumask)) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                          _("NUMA cell %d has no vCPUs assigned"), cur_cell);
-            goto cleanup;
-        }
-        VIR_FREE(tmp);
-
-        for (j = 0; j < n; j++) {
-            if (j == cur_cell || !def->mem_nodes[j].cpumask)
-                continue;
-
-            if (virBitmapOverlaps(def->mem_nodes[j].cpumask,
-                                  def->mem_nodes[cur_cell].cpumask)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                               _("NUMA cells %u and %zu have overlapping vCPU ids"),
-                               cur_cell, j);
+        tmp = virXMLPropString(nodes[i], "cpus");
+        if (tmp) {
+            if (virBitmapParse(tmp, &def->mem_nodes[cur_cell].cpumask,
+                               VIR_DOMAIN_CPUMASK_LEN) < 0)
                 goto cleanup;
+
+            if (virBitmapIsAllClear(def->mem_nodes[cur_cell].cpumask)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                              _("NUMA cell %d has no vCPUs assigned"), cur_cell);
+                goto cleanup;
+            }
+            VIR_FREE(tmp);
+
+            for (j = 0; j < n; j++) {
+                if (j == cur_cell || !def->mem_nodes[j].cpumask)
+                    continue;
+
+                if (virBitmapOverlaps(def->mem_nodes[j].cpumask,
+                                      def->mem_nodes[cur_cell].cpumask)) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("NUMA cells %u and %zu have overlapping vCPU ids"),
+                                   cur_cell, j);
+                    goto cleanup;
+                }
             }
         }
 
@@ -808,6 +805,7 @@ virDomainNumaDefCPUFormat(virBufferPtr buf,
     char *cpustr;
     size_t ncells = virDomainNumaGetNodeCount(def);
     size_t i;
+    size_t ncpuless = 0;
 
     if (ncells == 0)
         return 0;
@@ -817,12 +815,24 @@ virDomainNumaDefCPUFormat(virBufferPtr buf,
     for (i = 0; i < ncells; i++) {
         memAccess = virDomainNumaGetNodeMemoryAccessMode(def, i);
 
-        if (!(cpustr = virBitmapFormat(virDomainNumaGetNodeCpumask(def, i))))
-            return -1;
+        cpustr = virBitmapFormat(virDomainNumaGetNodeCpumask(def, i));
 
         virBufferAddLit(buf, "<cell");
         virBufferAsprintf(buf, " id='%zu'", i);
-        virBufferAsprintf(buf, " cpus='%s'", cpustr);
+        if (cpustr && (*cpustr != 0))
+            virBufferAsprintf(buf, " cpus='%s'", cpustr);
+        else {
+            /* Note, at present we only allow cpuless numa node with */
+            /* nodeset assign. */
+            ncpuless++;
+            if (!virDomainNumatuneNodeSpecified(def, i)) {
+                VIR_FREE(cpustr);
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("CPUless NUMA node cellid %zu must be "
+                                 "specified node set."), i);
+                return -1;
+            }
+        }
         virBufferAsprintf(buf, " memory='%llu'",
                           virDomainNumaGetNodeMemorySize(def, i));
         virBufferAddLit(buf, " unit='KiB'");
@@ -835,6 +845,12 @@ virDomainNumaDefCPUFormat(virBufferPtr buf,
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</numa>\n");
 
+    if (ncpuless == ncells) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                        _("At lease one NUMA node should "
+                          "include CPU element."));
+        return -1;
+    }
     return 0;
 }
 
@@ -861,6 +877,7 @@ virDomainNumaGetMaxCPUID(virDomainNumaPtr numa)
         int bit;
 
         bit = virBitmapLastSetBit(virDomainNumaGetNodeCpumask(numa, i));
+        bit = (bit > 0) ? bit : 0;
         if (bit > ret)
             ret = bit;
     }
@@ -971,5 +988,23 @@ virDomainNumaGetMemorySize(virDomainNumaPtr numa)
     for (i = 0; i < numa->nmem_nodes; i++)
         ret += numa->mem_nodes[i].mem;
 
+    return ret;
+}
+
+// NOTE, For some plateforms, there are some node without cpus, such as Phi.
+// We just need do some check for these plateforms, we must assigned nodeset
+// for CPU less node.
+int
+virDomainNumaCPULessCheck(virDomainNumaPtr numa)
+{
+    int ret = 0;
+    int i = 0;
+    for (i = 0; i < numa->nmem_nodes; i++){
+        if (!numa->mem_nodes[i].cpumask && !numa->mem_nodes[i].nodeset) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Cell: %d is a cpuless numa, must specfiy the nodeset."), i);
+            return -1;
+        }
+    }
     return ret;
 }

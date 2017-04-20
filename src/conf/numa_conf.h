@@ -155,5 +155,7 @@ int virDomainNumaDefCPUFormat(virBufferPtr buf, virDomainNumaPtr def);
 
 unsigned int virDomainNumaGetCPUCountTotal(virDomainNumaPtr numa);
 
+int virDomainNumaCPULessCheck(virDomainNumaPtr numa);
+
 
 #endif /* __NUMA_CONF_H__ */

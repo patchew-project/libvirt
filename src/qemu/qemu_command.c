@@ -7665,11 +7665,13 @@ qemuBuildNumaArgStr(virQEMUDriverConfigPtr cfg,
         virCommandAddArg(cmd, "-numa");
         virBufferAsprintf(&buf, "node,nodeid=%zu", i);
 
-        for (tmpmask = cpumask; tmpmask; tmpmask = next) {
-            if ((next = strchr(tmpmask, ',')))
-                *(next++) = '\0';
-            virBufferAddLit(&buf, ",cpus=");
-            virBufferAdd(&buf, tmpmask, -1);
+        if (*cpumask != 0) {
+            for (tmpmask = cpumask; tmpmask; tmpmask = next) {
+                if ((next = strchr(tmpmask, ',')))
+                    *(next++) = '\0';
+                virBufferAddLit(&buf, ",cpus=");
+                virBufferAdd(&buf, tmpmask, -1);
+            }
         }
 
         if (needBackend)

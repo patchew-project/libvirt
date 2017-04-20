@@ -17330,6 +17330,10 @@ virDomainDefParseXML(xmlDocPtr xml,
                                   ctxt) < 0)
         goto error;
 
+    if (virDomainNumaCPULessCheck(def->numa) < 0){
+        goto error;
+    }
+
     if (virDomainNumatuneHasPlacementAuto(def->numa) &&
         !def->cpumask && !virDomainDefHasVcpuPin(def) &&
         !def->cputune.emulatorpin &&

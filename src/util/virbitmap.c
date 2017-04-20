@@ -953,6 +953,9 @@ virBitmapLastSetBit(virBitmapPtr bitmap)
     unsigned long bits;
 
     /* If bitmap is empty then there is no set bit */
+    if (!bitmap)
+        return -1;
+
     if (bitmap->map_len == 0)
         return -1;
 
@@ -1039,9 +1042,12 @@ virBitmapCountBits(virBitmapPtr bitmap)
     size_t i;
     size_t ret = 0;
 
-    for (i = 0; i < bitmap->map_len; i++)
-        ret += count_one_bits_l(bitmap->map[i]);
+    if (bitmap == NULL)
+        return ret;
 
+    for (i = 0; i < bitmap->map_len; i++) {
+        ret += count_one_bits_l(bitmap->map[i]);
+    }
     return ret;
 }
 
