@@ -314,6 +314,133 @@ static int udevTranslatePCIIds(unsigned int vendor,
 }
 
 
+static int
+udevGetMdevCaps(struct udev_device *device,
+                const char *sysfspath,
+                virNodeDevCapMdevPtr mdev)
+{
+    int ret = -1;
+    char *attrpath = NULL;  /* relative path to the actual sysfs attribute */
+    const char *devpath = NULL;   /* base sysfs path as reported by udev */
+    const char *relpath = NULL;   /* diff between @sysfspath and @devpath */
+    char *tmp = NULL;
+
+#define MDEV_GET_SYSFS_ATTR(attr_name, dir, cb, ...)                        \
+    do {                                                                    \
+        if (virAsprintf(&attrpath, "%s/%s", dir, #attr_name) < 0)           \
+            goto cleanup;                                                   \
+                                                                            \
+        if (cb(device, attrpath, __VA_ARGS__) < 0)                          \
+            goto cleanup;                                                   \
+                                                                            \
+        VIR_FREE(attrpath);                                                 \
+    } while (0)                                                             \
+
+    /* UDEV doesn't report attributes under subdirectories by default but is
+     * able to query them if the path to the attribute is relative to the
+     * device's base path, e.g. /sys/devices/../0000:00:01.0/ is the device's
+     * base path as udev reports it, but we're interested in attributes under
+     * /sys/devices/../0000:00:01.0/mdev_supported_types/<type>/. So, let's
+     * strip the common part of the path and let udev chew the relative bit.
+     */
+    devpath = udev_device_get_syspath(device);
+    relpath = sysfspath + strlen(devpath);
+
+    /* When calling from the mdev child device, @sysfspath is a symbolic link
+     * to the actual mdev type (rather than a physical path), so we need to
+     * resolve it in order to get the type's name.
+     */
+    if (virFileResolveLink(sysfspath, &tmp) < 0)
+        goto cleanup;
+
+    if (VIR_STRDUP(mdev->type, last_component(tmp)) < 0)
+        goto cleanup;
+
+    MDEV_GET_SYSFS_ATTR(name, relpath,
+                        udevGetStringSysfsAttr, &mdev->name);
+    MDEV_GET_SYSFS_ATTR(device_api, relpath,
+                        udevGetStringSysfsAttr, &mdev->device_api);
+    MDEV_GET_SYSFS_ATTR(available_instances, relpath,
+                        udevGetUintSysfsAttr, &mdev->available_instances, 10);
+
+#undef MDEV_GET_SYSFS_ATTR
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(attrpath);
+    VIR_FREE(tmp);
+    return ret;
+}
+
+
+static int
+udevPCIGetMdevCaps(struct udev_device *device,
+                   virNodeDevCapPCIDevPtr pcidata)
+{
+    int ret = -1;
+    int direrr = -1;
+    DIR *dir = NULL;
+    struct dirent *entry;
+    char *path = NULL;
+    char *tmppath = NULL;
+    virNodeDevCapMdevPtr mdev = NULL;
+    virNodeDevCapMdevPtr *mdevs = NULL;
+    size_t nmdevs = 0;
+    size_t i;
+
+    if (virAsprintf(&path, "%s/mdev_supported_types",
+                    udev_device_get_syspath(device)) < 0)
+        return -1;
+
+    if ((direrr = virDirOpenIfExists(&dir, path)) < 0)
+        goto cleanup;
+
+    if (direrr == 0) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    if (VIR_ALLOC(mdevs) < 0)
+        goto cleanup;
+
+    /* since udev doesn't provide means to list other than top-level
+     * attributes, we need to scan the subdirectories ourselves
+     */
+    while ((direrr = virDirRead(dir, &entry, path)) > 0) {
+        if (VIR_ALLOC(mdev) < 0)
+            goto cleanup;
+
+        if (virAsprintf(&tmppath, "%s/%s", path, entry->d_name) < 0)
+            goto cleanup;
+
+        if (udevGetMdevCaps(device, tmppath, mdev) < 0)
+            goto cleanup;
+
+        if (VIR_APPEND_ELEMENT(mdevs, nmdevs, mdev) < 0)
+            goto cleanup;
+
+        VIR_FREE(tmppath);
+    }
+
+    if (direrr < 0)
+        goto cleanup;
+
+    VIR_STEAL_PTR(pcidata->mdevs, mdevs);
+    pcidata->nmdevs = nmdevs;
+    nmdevs = 0;
+    ret = 0;
+ cleanup:
+    virNodeDevCapMdevFree(mdev);
+    for (i = 0; i < nmdevs; i++)
+        virNodeDevCapMdevFree(mdevs[i]);
+    VIR_FREE(mdevs);
+    VIR_FREE(path);
+    VIR_FREE(tmppath);
+    VIR_DIR_CLOSE(dir);
+    return ret;
+}
+
+
 static int udevProcessPCI(struct udev_device *device,
                           virNodeDeviceDefPtr def)
 {
@@ -399,6 +526,12 @@ static int udevProcessPCI(struct udev_device *device,
             pci_express = NULL;
         }
     }
+
+    /* check whether the device is mediated devices framework capable, if so,
+     * process it
+     */
+    if (udevPCIGetMdevCaps(device, pci_dev) < 0)
+        goto cleanup;
 
     ret = 0;
 

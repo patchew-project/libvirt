@@ -205,6 +205,30 @@
     </optional>
 
     <optional>
+      <element name='capability'>
+        <attribute name='type'>
+          <value>mdev</value>
+        </attribute>
+        <element name='type'>
+          <attribute name='id'>
+            <data type='string'/>
+          </attribute>
+          <optional>
+            <element name='name'><text/></element>
+          </optional>
+          <element name='deviceAPI'>
+            <choice>
+              <value>vfio-pci</value>
+            </choice>
+          </element>
+          <element name='availableInstances'>
+            <ref name='unsignedInt'/>
+          </element>
+        </element>
+      </element>
+   </optional>
+
+    <optional>
       <element name='iommuGroup'>
         <attribute name='number'>
           <ref name='unsignedInt'/>

@@ -94,6 +94,7 @@ typedef enum {
     VIR_NODE_DEV_CAP_FLAG_PCI_PHYSICAL_FUNCTION     = (1 << 0),
     VIR_NODE_DEV_CAP_FLAG_PCI_VIRTUAL_FUNCTION      = (1 << 1),
     VIR_NODE_DEV_CAP_FLAG_PCIE                      = (1 << 2),
+    VIR_NODE_DEV_CAP_FLAG_PCI_MDEV                  = (1 << 3),
 } virNodeDevPCICapFlags;
 
 typedef enum {
@@ -132,6 +133,16 @@ struct _virNodeDevCapSystem {
     virNodeDevCapSystemFirmware firmware;
 };
 
+typedef struct _virNodeDevCapMdev virNodeDevCapMdev;
+typedef virNodeDevCapMdev *virNodeDevCapMdevPtr;
+struct _virNodeDevCapMdev {
+    char *type;
+    char *name;
+    char *device_api;
+    unsigned int available_instances;
+    unsigned int iommuGroupNumber;
+};
+
 typedef struct _virNodeDevCapPCIDev virNodeDevCapPCIDev;
 typedef virNodeDevCapPCIDev *virNodeDevCapPCIDevPtr;
 struct _virNodeDevCapPCIDev {
@@ -155,6 +166,8 @@ struct _virNodeDevCapPCIDev {
     int numa_node;
     virPCIEDeviceInfoPtr pci_express;
     int hdrType; /* enum virPCIHeaderType or -1 */
+    virNodeDevCapMdevPtr *mdevs;
+    size_t nmdevs;
 };
 
 typedef struct _virNodeDevCapUSBDev virNodeDevCapUSBDev;
@@ -263,6 +276,7 @@ struct _virNodeDevCapData {
         virNodeDevCapStorage storage;
         virNodeDevCapSCSIGeneric sg;
         virNodeDevCapDRM drm;
+        virNodeDevCapMdev mdev;
     };
 };
 
@@ -338,6 +352,9 @@ virNodeDeviceDefFree(virNodeDeviceDefPtr def);
 
 void
 virNodeDevCapsDefFree(virNodeDevCapsDefPtr caps);
+
+void
+virNodeDevCapMdevFree(virNodeDevCapMdevPtr mdev);
 
 # define VIR_CONNECT_LIST_NODE_DEVICES_FILTERS_CAP \
                 (VIR_CONNECT_LIST_NODE_DEVICES_CAP_SYSTEM        | \
