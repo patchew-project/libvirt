@@ -364,6 +364,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "query-cpu-definitions", /* 250 */
               "block-write-threshold",
               "query-named-block-nodes",
+              "kernel-irqchip",
     );
 
 
@@ -3124,6 +3125,7 @@ static struct virQEMUCapsCommandLineProps virQEMUCapsCommandLine[] = {
     { "drive", "throttling.bps-total-max-length", QEMU_CAPS_DRIVE_IOTUNE_MAX_LENGTH },
     { "drive", "throttling.group", QEMU_CAPS_DRIVE_IOTUNE_GROUP },
     { "spice", "rendernode", QEMU_CAPS_SPICE_RENDERNODE },
+    { "machine", "kernel_irqchip", QEMU_CAPS_MACHINE_KERNEL_IRQCHIP },
 };
 
 static int
