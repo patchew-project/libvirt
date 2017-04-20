@@ -403,6 +403,7 @@ typedef enum {
     QEMU_CAPS_QUERY_NAMED_BLOCK_NODES, /* qmp query-named-block-nodes */
     QEMU_CAPS_MACHINE_KERNEL_IRQCHIP, /* -machine kernel_irqchip */
     QEMU_CAPS_INTEL_IOMMU_INTREMAP, /* intel-iommu.intremap */
+    QEMU_CAPS_INTEL_IOMMU_CACHING, /* intel-iommu.caching-mode */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
