@@ -60,7 +60,8 @@ VIR_ENUM_IMPL(virNodeDevCap, VIR_NODE_DEV_CAP_LAST,
               "fc_host",
               "vports",
               "scsi_generic",
-              "drm")
+              "drm",
+              "mdev")
 
 VIR_ENUM_IMPL(virNodeDevNetCap, VIR_NODE_DEV_CAP_NET_LAST,
               "80203",
@@ -542,6 +543,7 @@ virNodeDeviceDefFormat(const virNodeDeviceDef *def)
             break;
         case VIR_NODE_DEV_CAP_FC_HOST:
         case VIR_NODE_DEV_CAP_VPORTS:
+        case VIR_NODE_DEV_CAP_MDEV:
         case VIR_NODE_DEV_CAP_LAST:
             break;
         }
@@ -1613,6 +1615,7 @@ virNodeDevCapsDefParseXML(xmlXPathContextPtr ctxt,
     case VIR_NODE_DEV_CAP_FC_HOST:
     case VIR_NODE_DEV_CAP_VPORTS:
     case VIR_NODE_DEV_CAP_SCSI_GENERIC:
+    case VIR_NODE_DEV_CAP_MDEV:
     case VIR_NODE_DEV_CAP_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("unknown capability type '%d' for '%s'"),
@@ -1928,6 +1931,7 @@ virNodeDevCapsDefFree(virNodeDevCapsDefPtr caps)
     case VIR_NODE_DEV_CAP_SCSI_GENERIC:
         VIR_FREE(data->sg.path);
         break;
+    case VIR_NODE_DEV_CAP_MDEV:
     case VIR_NODE_DEV_CAP_DRM:
     case VIR_NODE_DEV_CAP_FC_HOST:
     case VIR_NODE_DEV_CAP_VPORTS:
