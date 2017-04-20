@@ -765,6 +765,7 @@ LIBVIRT_3.3.0 {
         virStreamRecvFlags;
         virStreamSkip;
         virStreamSparseRecvAll;
+        virStreamSparseSendAll;
 } LIBVIRT_3.1.0;
 
 # .... define new API here using predicted next version number ....
