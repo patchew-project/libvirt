@@ -7364,6 +7364,15 @@ qemu-kvm -net nic,model=? /dev/null
               (QEMU only)
             </p>
           </dd>
+          <dt><code>caching</code></dt>
+          <dd>
+            <p>
+              The <code>caching</code> attribute with possible values
+              <code>on</code> and <code>off</code> can be used to
+              turn on the caching mode. <span class="since">Since 3.3.0</span>
+              (QEMU only)
+            </p>
+          </dd>
         </dl>
       </dd>
     </dl>
