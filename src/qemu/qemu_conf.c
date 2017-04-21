@@ -65,8 +65,14 @@ VIR_LOG_INIT("qemu.qemu_conf");
  * This limitation is mentioned in qemu.conf, so bear in mind that the
  * configuration file should reflect any changes made to these values.
  */
-#define QEMU_REMOTE_PORT_MIN 5900
+
+// Range of available ports - Avoid ports below 1024 (system ports)
+#define QEMU_REMOTE_PORT_MIN 1024
 #define QEMU_REMOTE_PORT_MAX 65535
+
+// Default min and max if not configured in qemu.conf
+#define QEMU_REMOTE_PORT_MIN_DEFAULT 5901
+#define QEMU_REMOTE_PORT_MAX_DEFAULT 5999
 
 #define QEMU_WEBSOCKET_PORT_MIN 5700
 #define QEMU_WEBSOCKET_PORT_MAX 65535
@@ -283,8 +289,8 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
 
 #undef SET_TLS_X509_CERT_DEFAULT
 
-    cfg->remotePortMin = QEMU_REMOTE_PORT_MIN;
-    cfg->remotePortMax = QEMU_REMOTE_PORT_MAX;
+    cfg->remotePortMin = QEMU_REMOTE_PORT_MIN_DEFAULT;
+    cfg->remotePortMax = QEMU_REMOTE_PORT_MAX_DEFAULT;
 
     cfg->webSocketPortMin = QEMU_WEBSOCKET_PORT_MIN;
     cfg->webSocketPortMax = QEMU_WEBSOCKET_PORT_MAX;
