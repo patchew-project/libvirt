@@ -86,7 +86,7 @@ virSecretObjOnceInit(void)
 
 VIR_ONCE_GLOBAL_INIT(virSecretObj)
 
-virSecretObjPtr
+static virSecretObjPtr
 virSecretObjNew(void)
 {
     virSecretObjPtr secret;
@@ -158,16 +158,7 @@ virSecretObjListDispose(void *obj)
 }
 
 
-/**
- * virSecretObjFindByUUIDLocked:
- * @secrets: list of secret objects
- * @uuid: secret uuid to find
- *
- * This functions requires @secrets to be locked already!
- *
- * Returns: not locked, but ref'd secret object.
- */
-virSecretObjPtr
+static virSecretObjPtr
 virSecretObjListFindByUUIDLocked(virSecretObjListPtr secrets,
                                  const unsigned char *uuid)
 {
@@ -187,7 +178,7 @@ virSecretObjListFindByUUIDLocked(virSecretObjListPtr secrets,
  * This function locks @secrets and finds the secret object which
  * corresponds to @uuid.
  *
- * Returns: locked and ref'd secret object.
+ * Returns: locked and ref'd secret object on success, NULL on failure.
  */
 virSecretObjPtr
 virSecretObjListFindByUUID(virSecretObjListPtr secrets,
@@ -228,17 +219,7 @@ virSecretObjSearchName(const void *payload,
 }
 
 
-/**
- * virSecretObjFindByUsageLocked:
- * @secrets: list of secret objects
- * @usageType: secret usageType to find
- * @usageID: secret usage string
- *
- * This functions requires @secrets to be locked already!
- *
- * Returns: not locked, but ref'd secret object.
- */
-virSecretObjPtr
+static virSecretObjPtr
 virSecretObjListFindByUsageLocked(virSecretObjListPtr secrets,
                                   int usageType,
                                   const char *usageID)
@@ -263,7 +244,7 @@ virSecretObjListFindByUsageLocked(virSecretObjListPtr secrets,
  * This function locks @secrets and finds the secret object which
  * corresponds to @usageID of @usageType.
  *
- * Returns: locked and ref'd secret object.
+ * Returns: locked and ref'd secret object on success, NULL on failure.
  */
 virSecretObjPtr
 virSecretObjListFindByUsage(virSecretObjListPtr secrets,
@@ -320,9 +301,9 @@ virSecretObjListRemove(virSecretObjListPtr secrets,
  *
  * This functions requires @secrets to be locked already!
  *
- * Returns pointer to secret or NULL if failure to add
+ * Returns: locked secret or NULL if failure to add
  */
-virSecretObjPtr
+static virSecretObjPtr
 virSecretObjListAddLocked(virSecretObjListPtr secrets,
                           virSecretDefPtr def,
                           const char *configDir,
