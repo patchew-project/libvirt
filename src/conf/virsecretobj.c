@@ -418,9 +418,9 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
 struct virSecretObjListGetHelperData {
     virConnectPtr conn;
     virSecretObjListACLFilter filter;
-    int got;
-    char **uuids;
     int nuuids;
+    char **uuids;
+    int maxuuids;
     bool error;
 };
 
@@ -437,7 +437,7 @@ virSecretObjListGetHelper(void *payload,
     if (data->error)
         return 0;
 
-    if (data->nuuids >= 0 && data->got == data->nuuids)
+    if (data->maxuuids >= 0 && data->nuuids == data->maxuuids)
         return 0;
 
     virObjectLock(obj);
@@ -455,10 +455,10 @@ virSecretObjListGetHelper(void *payload,
         }
 
         virUUIDFormat(def->uuid, uuidstr);
-        data->uuids[data->got] = uuidstr;
+        data->uuids[data->nuuids] = uuidstr;
     }
 
-    data->got++;
+    data->nuuids++;
 
  cleanup:
     virObjectUnlock(obj);
@@ -472,45 +472,41 @@ virSecretObjListNumOfSecrets(virSecretObjListPtr secrets,
                              virConnectPtr conn)
 {
     struct virSecretObjListGetHelperData data = {
-        .conn = conn, .filter = filter, .got = 0,
-        .uuids = NULL, .nuuids = -1, .error = false };
+        .conn = conn, .filter = filter, .nuuids = 0,
+        .uuids = NULL, .maxuuids = -1, .error = false };
 
     virObjectLock(secrets);
     virHashForEach(secrets->objs, virSecretObjListGetHelper, &data);
     virObjectUnlock(secrets);
 
-    return data.got;
+    return data.nuuids;
 }
 
 
 int
 virSecretObjListGetUUIDs(virSecretObjListPtr secrets,
                          char **uuids,
-                         int nuuids,
+                         int maxuuids,
                          virSecretObjListACLFilter filter,
                          virConnectPtr conn)
 {
-    int ret = -1;
-
     struct virSecretObjListGetHelperData data = {
-        .conn = conn, .filter = filter, .got = 0,
-        .uuids = uuids, .nuuids = nuuids, .error = false };
+        .conn = conn, .filter = filter, .nuuids = 0,
+        .uuids = uuids, .maxuuids = maxuuids, .error = false };
 
     virObjectLock(secrets);
     virHashForEach(secrets->objs, virSecretObjListGetHelper, &data);
     virObjectUnlock(secrets);
 
     if (data.error)
-        goto cleanup;
+        goto error;
 
-    ret = data.got;
+    return data.nuuids;
 
- cleanup:
-    if (ret < 0) {
-        while (data.got)
-            VIR_FREE(data.uuids[--data.got]);
-    }
-    return ret;
+ error:
+    while (--data.nuuids)
+        VIR_FREE(data.uuids[data.nuuids]);
+    return -1;
 }
 
 
