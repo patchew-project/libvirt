@@ -54,7 +54,8 @@ virSecretObjListRemove(virSecretObjListPtr secrets,
 virSecretObjPtr
 virSecretObjListAdd(virSecretObjListPtr secrets,
                     virSecretDefPtr newdef,
-                    const char *configDir,
+                    const char *configFile,
+                    const char *base64File,
                     virSecretDefPtr *oldDef);
 
 typedef bool

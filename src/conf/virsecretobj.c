@@ -300,7 +300,8 @@ virSecretObjListRemove(virSecretObjListPtr secrets,
  * virSecretObjListAdd:
  * @secrets: list of secret objects
  * @newdef: new secret definition
- * @configDir: directory to place secret config files
+ * @configFile: secret config file
+ * @base64File: secret data file
  * @oldDef: Former secret def (e.g. a reload path perhaps)
  *
  * Add the new @newdef to the secret obj table hash
@@ -310,14 +311,14 @@ virSecretObjListRemove(virSecretObjListPtr secrets,
 virSecretObjPtr
 virSecretObjListAdd(virSecretObjListPtr secrets,
                     virSecretDefPtr newdef,
-                    const char *configDir,
+                    const char *configFile,
+                    const char *base64File,
                     virSecretDefPtr *oldDef)
 {
     virSecretObjPtr obj;
     virSecretDefPtr def;
     virSecretObjPtr ret = NULL;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
-    char *configFile = NULL, *base64File = NULL;
 
     virObjectLock(secrets);
 
@@ -366,13 +367,6 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
             goto cleanup;
         }
 
-        /* Generate the possible configFile and base64File strings
-         * using the configDir, uuidstr, and appropriate suffix
-         */
-        if (!(configFile = virFileBuildPath(configDir, uuidstr, ".xml")) ||
-            !(base64File = virFileBuildPath(configDir, uuidstr, ".base64")))
-            goto cleanup;
-
         if (!(obj = virSecretObjNew()))
             goto cleanup;
 
@@ -380,8 +374,10 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
             goto cleanup;
 
         obj->def = newdef;
-        VIR_STEAL_PTR(obj->configFile, configFile);
-        VIR_STEAL_PTR(obj->base64File, base64File);
+        if ((VIR_STRDUP(obj->configFile, configFile) < 0) ||
+            (VIR_STRDUP(obj->base64File, base64File) < 0))
+            goto cleanup;
+
         virObjectRef(obj);
     }
 
@@ -390,8 +386,6 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
 
  cleanup:
     virSecretObjEndAPI(&obj);
-    VIR_FREE(configFile);
-    VIR_FREE(base64File);
     virObjectUnlock(secrets);
     return ret;
 }
@@ -899,21 +893,22 @@ virSecretLoadValue(virSecretObjPtr obj)
 
 static virSecretObjPtr
 virSecretLoad(virSecretObjListPtr secrets,
-              const char *file,
-              const char *path,
-              const char *configDir)
+              const char *fname,
+              const char *configFile,
+              const char *base64File)
 {
     virSecretDefPtr def = NULL;
     virSecretObjPtr obj = NULL;
     virSecretObjPtr ret = NULL;
 
-    if (!(def = virSecretDefParseFile(path)))
+    if (!(def = virSecretDefParseFile(configFile)))
         goto cleanup;
 
-    if (virSecretLoadValidateUUID(def, file) < 0)
+    if (virSecretLoadValidateUUID(def, fname) < 0)
         goto cleanup;
 
-    if (!(obj = virSecretObjListAdd(secrets, def, configDir, NULL)))
+    if (!(obj = virSecretObjListAdd(secrets, def, configFile, base64File,
+                                    NULL)))
         goto cleanup;
     def = NULL;
 
@@ -936,6 +931,8 @@ virSecretLoadAllConfigs(virSecretObjListPtr secrets,
 {
     DIR *dir = NULL;
     struct dirent *de;
+    char *configFile = NULL;
+    char *base64File = NULL;
     int rc;
 
     if ((rc = virDirOpenIfExists(&dir, configDir)) <= 0)
@@ -944,26 +941,32 @@ virSecretLoadAllConfigs(virSecretObjListPtr secrets,
     /* Ignore errors reported by readdir or other calls within the
      * loop (if any).  It's better to keep the secrets we managed to find. */
     while (virDirRead(dir, &de, NULL) > 0) {
-        char *path;
         virSecretObjPtr obj;
+
+        VIR_FREE(configFile);
+        VIR_FREE(base64File);
 
         if (!virFileHasSuffix(de->d_name, ".xml"))
             continue;
 
-        if (!(path = virFileBuildPath(configDir, de->d_name, NULL)))
+        if (!(configFile = virFileBuildPath(configDir, de->d_name, ".xml")))
             continue;
 
-        if (!(obj = virSecretLoad(secrets, de->d_name, path, configDir))) {
+        if (!(base64File = virFileBuildPath(configDir, de->d_name, "base64")))
+            continue;
+
+        if (!(obj = virSecretLoad(secrets, de->d_name, configFile,
+                                  base64File))) {
             VIR_ERROR(_("Error reading secret: %s"),
                       virGetLastErrorMessage());
-            VIR_FREE(path);
             continue;
         }
 
-        VIR_FREE(path);
         virSecretObjEndAPI(&obj);
     }
 
+    VIR_FREE(configFile);
+    VIR_FREE(base64File);
     VIR_DIR_CLOSE(dir);
     return 0;
 }

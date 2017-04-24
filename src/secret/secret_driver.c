@@ -213,6 +213,9 @@ secretDefineXML(virConnectPtr conn,
     virSecretDefPtr backup = NULL;
     virSecretDefPtr def;
     virObjectEventPtr event = NULL;
+    char *configFile = NULL;
+    char *base64File = NULL;
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
 
     virCheckFlags(0, NULL);
 
@@ -222,8 +225,13 @@ secretDefineXML(virConnectPtr conn,
     if (virSecretDefineXMLEnsureACL(conn, def) < 0)
         goto cleanup;
 
-    if (!(obj = virSecretObjListAdd(driver->secrets, def,
-                                    driver->configDir, &backup)))
+    virUUIDFormat(def->uuid, uuidstr);
+    if (!(configFile = virFileBuildPath(driver->configDir, uuidstr, ".xml")) ||
+        !(base64File = virFileBuildPath(driver->configDir, uuidstr, ".base64")))
+        goto cleanup;
+
+    if (!(obj = virSecretObjListAdd(driver->secrets, def, configFile,
+                                    base64File, &backup)))
         goto cleanup;
 
     if (!def->isephemeral) {
@@ -272,6 +280,8 @@ secretDefineXML(virConnectPtr conn,
         virSecretObjListRemove(driver->secrets, obj);
 
  cleanup:
+    VIR_FREE(configFile);
+    VIR_FREE(base64File);
     virSecretDefFree(def);
     virSecretObjEndAPI(&obj);
     if (event)
