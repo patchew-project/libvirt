@@ -2470,6 +2470,10 @@ qemuDomainAttachHostSCSIDevice(virConnectPtr conn,
     if (qemuHostdevPrepareSCSIDevices(driver, vm->def->name,
                                       &hostdev, 1)) {
         virDomainHostdevSubsysSCSIPtr scsisrc = &hostdev->source.subsys.u.scsi;
+
+        if (virGetLastError())
+            return -1;
+
         if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI) {
             virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &scsisrc->u.iscsi;
             virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -2595,9 +2599,12 @@ qemuDomainAttachSCSIVHostDevice(virQEMUDriverPtr driver,
 
     if (qemuHostdevPrepareSCSIVHostDevices(driver, vm->def->name, &hostdev, 1) < 0) {
         virDomainHostdevSubsysSCSIVHostPtr hostsrc = &hostdev->source.subsys.u.scsi_host;
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Unable to prepare scsi_host hostdev: %s"),
-                       hostsrc->wwpn);
+
+        if (!virGetLastError()) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Unable to prepare scsi_host hostdev: %s"),
+                           hostsrc->wwpn);
+        }
         return -1;
     }
 
