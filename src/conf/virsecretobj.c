@@ -415,9 +415,54 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
 }
 
 
-struct virSecretObjListGetHelperData {
+struct secretCountData {
     virConnectPtr conn;
-    virSecretObjListACLFilter filter;
+    virSecretObjListACLFilter aclfilter;
+    int count;
+};
+
+static int
+virSecretObjListNumOfSecretsCallback(void *payload,
+                                     const void *name ATTRIBUTE_UNUSED,
+                                     void *opaque)
+{
+    struct secretCountData *data = opaque;
+    virSecretObjPtr obj = payload;
+    virSecretDefPtr def;
+
+    virObjectLock(obj);
+    def = obj->def;
+
+    if (data->aclfilter && !data->aclfilter(data->conn, def))
+        goto cleanup;
+
+    data->count++;
+
+ cleanup:
+    virObjectUnlock(obj);
+    return 0;
+}
+
+
+int
+virSecretObjListNumOfSecrets(virSecretObjListPtr secrets,
+                             virSecretObjListACLFilter aclfilter,
+                             virConnectPtr conn)
+{
+    struct secretCountData data = {
+        .conn = conn, .aclfilter = aclfilter, .count = 0 };
+
+    virObjectLock(secrets);
+    virHashForEach(secrets->objs, virSecretObjListNumOfSecretsCallback, &data);
+    virObjectUnlock(secrets);
+
+    return data.count;
+}
+
+
+struct secretListData {
+    virConnectPtr conn;
+    virSecretObjListACLFilter aclfilter;
     int nuuids;
     char **uuids;
     int maxuuids;
@@ -426,11 +471,11 @@ struct virSecretObjListGetHelperData {
 
 
 static int
-virSecretObjListGetHelper(void *payload,
-                          const void *name ATTRIBUTE_UNUSED,
-                          void *opaque)
+virSecretObjListGetUUIDsCallback(void *payload,
+                                 const void *name ATTRIBUTE_UNUSED,
+                                 void *opaque)
 {
-    struct virSecretObjListGetHelperData *data = opaque;
+    struct secretListData *data = opaque;
     virSecretObjPtr obj = payload;
     virSecretDefPtr def;
 
@@ -443,7 +488,7 @@ virSecretObjListGetHelper(void *payload,
     virObjectLock(obj);
     def = obj->def;
 
-    if (data->filter && !data->filter(data->conn, def))
+    if (data->aclfilter && !data->aclfilter(data->conn, def))
         goto cleanup;
 
     if (data->uuids) {
@@ -455,10 +500,8 @@ virSecretObjListGetHelper(void *payload,
         }
 
         virUUIDFormat(def->uuid, uuidstr);
-        data->uuids[data->nuuids] = uuidstr;
+        data->uuids[data->nuuids++] = uuidstr;
     }
-
-    data->nuuids++;
 
  cleanup:
     virObjectUnlock(obj);
@@ -467,35 +510,18 @@ virSecretObjListGetHelper(void *payload,
 
 
 int
-virSecretObjListNumOfSecrets(virSecretObjListPtr secrets,
-                             virSecretObjListACLFilter filter,
-                             virConnectPtr conn)
-{
-    struct virSecretObjListGetHelperData data = {
-        .conn = conn, .filter = filter, .nuuids = 0,
-        .uuids = NULL, .maxuuids = -1, .error = false };
-
-    virObjectLock(secrets);
-    virHashForEach(secrets->objs, virSecretObjListGetHelper, &data);
-    virObjectUnlock(secrets);
-
-    return data.nuuids;
-}
-
-
-int
 virSecretObjListGetUUIDs(virSecretObjListPtr secrets,
                          char **uuids,
                          int maxuuids,
-                         virSecretObjListACLFilter filter,
+                         virSecretObjListACLFilter aclfilter,
                          virConnectPtr conn)
 {
-    struct virSecretObjListGetHelperData data = {
-        .conn = conn, .filter = filter, .nuuids = 0,
-        .uuids = uuids, .maxuuids = maxuuids, .error = false };
+    struct secretListData data = {
+        .conn = conn, .aclfilter = aclfilter, .uuids = uuids, .nuuids = 0,
+        .maxuuids = maxuuids, .error = false };
 
     virObjectLock(secrets);
-    virHashForEach(secrets->objs, virSecretObjListGetHelper, &data);
+    virHashForEach(secrets->objs, virSecretObjListGetUUIDsCallback, &data);
     virObjectUnlock(secrets);
 
     if (data.error)
@@ -541,7 +567,7 @@ virSecretObjMatchFlags(virSecretObjPtr obj,
 struct virSecretObjListData {
     virConnectPtr conn;
     virSecretPtr *secrets;
-    virSecretObjListACLFilter filter;
+    virSecretObjListACLFilter aclfilter;
     unsigned int flags;
     int nsecrets;
     bool error;
@@ -563,7 +589,7 @@ virSecretObjListPopulate(void *payload,
     virObjectLock(obj);
     def = obj->def;
 
-    if (data->filter && !data->filter(data->conn, def))
+    if (data->aclfilter && !data->aclfilter(data->conn, def))
         goto cleanup;
 
     if (!virSecretObjMatchFlags(obj, data->flags))
@@ -593,13 +619,13 @@ int
 virSecretObjListExport(virConnectPtr conn,
                        virSecretObjListPtr secretobjs,
                        virSecretPtr **secrets,
-                       virSecretObjListACLFilter filter,
+                       virSecretObjListACLFilter aclfilter,
                        unsigned int flags)
 {
     int ret = -1;
     struct virSecretObjListData data = {
         .conn = conn, .secrets = NULL,
-        .filter = filter, .flags = flags,
+        .aclfilter = aclfilter, .flags = flags,
         .nsecrets = 0, .error = false };
 
     virObjectLock(secretobjs);
