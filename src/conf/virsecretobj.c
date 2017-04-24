@@ -97,6 +97,8 @@ virSecretObjNew(void)
     if (!(secret = virObjectLockableNew(virSecretObjClass)))
         return NULL;
 
+    virObjectLock(secret);
+
     return secret;
 }
 
@@ -366,8 +368,6 @@ virSecretObjListAddLocked(virSecretObjListPtr secrets,
 
         if (!(secret = virSecretObjNew()))
             goto cleanup;
-
-        virObjectLock(secret);
 
         if (virHashAddEntry(secrets->objs, uuidstr, secret) < 0)
             goto cleanup;
