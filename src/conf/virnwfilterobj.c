@@ -42,6 +42,11 @@ struct _virNWFilterObj {
     virNWFilterDefPtr newDef;
 };
 
+struct _virNWFilterObjList {
+    size_t count;
+    virNWFilterObjPtr *objs;
+};
+
 
 static virNWFilterObjPtr
 virNWFilterObjNew(void)
@@ -112,6 +117,17 @@ virNWFilterObjListFree(virNWFilterObjListPtr nwfilters)
         virNWFilterObjFree(nwfilters->objs[i]);
     VIR_FREE(nwfilters->objs);
     nwfilters->count = 0;
+}
+
+
+virNWFilterObjListPtr
+virNWFilterObjListNew(void)
+{
+    virNWFilterObjListPtr nwfilters;
+
+    if (VIR_ALLOC(nwfilters) < 0)
+        return NULL;
+    return nwfilters;
 }
 
 
