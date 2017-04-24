@@ -512,7 +512,7 @@ virNWFilterObjListLoadConfig(virNWFilterObjListPtr nwfilters,
 
     /* We generated a UUID, make it permanent by saving the config to disk */
     if (!def->uuid_specified &&
-        virNWFilterSaveConfig(configDir, def) < 0)
+        virNWFilterSaveConfig(configFile, def) < 0)
         goto error;
 
     if (!(obj = virNWFilterObjListAssignDef(nwfilters, def)))

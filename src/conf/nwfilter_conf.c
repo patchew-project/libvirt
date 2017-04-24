@@ -2767,30 +2767,21 @@ virNWFilterDefParseFile(const char *filename)
 
 
 int
-virNWFilterSaveXML(const char *configDir,
+virNWFilterSaveXML(const char *configFile,
                    virNWFilterDefPtr def,
                    const char *xml)
 {
     char uuidstr[VIR_UUID_STRING_BUFLEN];
-    char *configFile = NULL;
-    int ret = -1;
-
-    if (!(configFile = virFileBuildPath(configDir, def->name, ".xml")))
-        goto cleanup;
 
     virUUIDFormat(def->uuid, uuidstr);
-    ret = virXMLSaveFile(configFile,
-                         virXMLPickShellSafeComment(def->name, uuidstr),
-                         "nwfilter-edit", xml);
-
- cleanup:
-    VIR_FREE(configFile);
-    return ret;
+    return virXMLSaveFile(configFile,
+                          virXMLPickShellSafeComment(def->name, uuidstr),
+                          "nwfilter-edit", xml);
 }
 
 
 int
-virNWFilterSaveConfig(const char *configDir,
+virNWFilterSaveConfig(const char *configFile,
                       virNWFilterDefPtr def)
 {
     int ret = -1;
@@ -2799,7 +2790,7 @@ virNWFilterSaveConfig(const char *configDir,
     if (!(xml = virNWFilterDefFormat(def)))
         goto cleanup;
 
-    if (virNWFilterSaveXML(configDir, def, xml) < 0)
+    if (virNWFilterSaveXML(configFile, def, xml) < 0)
         goto cleanup;
 
     ret = 0;
@@ -2925,26 +2916,17 @@ virNWFilterTriggerVMFilterRebuild(void)
 
 
 int
-virNWFilterDeleteDef(const char *configDir,
+virNWFilterDeleteDef(const char *configFile,
                      virNWFilterDefPtr def)
 {
-    int ret = -1;
-    char *configFile = NULL;
-
-    if (!(configFile = virFileBuildPath(configDir, def->name, ".xml")))
-        goto error;
-
     if (unlink(configFile) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("cannot remove config for %s"),
                        def->name);
-        goto error;
+        return -1;
     }
 
-    ret = 0;
- error:
-    VIR_FREE(configFile);
-    return ret;
+    return  0;
 }
 
 

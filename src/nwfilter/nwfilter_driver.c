@@ -495,6 +495,7 @@ nwfilterDefineXML(virConnectPtr conn,
     virNWFilterObjPtr obj = NULL;
     virNWFilterDefPtr objdef;
     virNWFilterPtr ret = NULL;
+    char *configFile = NULL;
 
     if (!driver->privileged) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
@@ -512,12 +513,15 @@ nwfilterDefineXML(virConnectPtr conn,
     if (virNWFilterDefineXMLEnsureACL(conn, def) < 0)
         goto cleanup;
 
+    if (!(configFile = virFileBuildPath(driver->configDir, def->name, ".xml")))
+        goto cleanup;
+
     if (!(obj = virNWFilterObjListAssignDef(driver->nwfilters, def)))
         goto cleanup;
     def = NULL;
     objdef = virNWFilterObjGetDef(obj);
 
-    if (virNWFilterSaveConfig(driver->configDir, objdef) < 0) {
+    if (virNWFilterSaveConfig(configFile, objdef) < 0) {
         virNWFilterObjListRemove(driver->nwfilters, obj);
         goto cleanup;
     }
@@ -525,6 +529,7 @@ nwfilterDefineXML(virConnectPtr conn,
     ret = virGetNWFilter(conn, objdef->name, objdef->uuid);
 
  cleanup:
+    VIR_FREE(configFile);
     virNWFilterDefFree(def);
     if (obj)
         virNWFilterObjUnlock(obj);
@@ -541,6 +546,7 @@ nwfilterUndefine(virNWFilterPtr nwfilter)
 {
     virNWFilterObjPtr obj;
     virNWFilterDefPtr def;
+    char *configFile = NULL;
     int ret = -1;
 
     nwfilterDriverLock();
@@ -561,7 +567,10 @@ nwfilterUndefine(virNWFilterPtr nwfilter)
         goto cleanup;
     }
 
-    if (virNWFilterDeleteDef(driver->configDir, def) < 0)
+    if (!(configFile = virFileBuildPath(driver->configDir, def->name, ".xml")))
+        goto cleanup;
+
+    if (virNWFilterDeleteDef(configFile, def) < 0)
         goto cleanup;
 
     virNWFilterObjListRemove(driver->nwfilters, obj);
@@ -569,6 +578,7 @@ nwfilterUndefine(virNWFilterPtr nwfilter)
     ret = 0;
 
  cleanup:
+    VIR_FREE(configFile);
     if (obj)
         virNWFilterObjUnlock(obj);
 
