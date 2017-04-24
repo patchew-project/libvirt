@@ -163,12 +163,8 @@ virSecretObjListDispose(void *obj)
 
 static virSecretObjPtr
 virSecretObjListFindByUUIDLocked(virSecretObjListPtr secrets,
-                                 const unsigned char *uuid)
+                                 const char *uuidstr)
 {
-    char uuidstr[VIR_UUID_STRING_BUFLEN];
-
-    virUUIDFormat(uuid, uuidstr);
-
     return virObjectRef(virHashLookup(secrets->objs, uuidstr));
 }
 
@@ -176,7 +172,7 @@ virSecretObjListFindByUUIDLocked(virSecretObjListPtr secrets,
 /**
  * virSecretObjFindByUUID:
  * @secrets: list of secret objects
- * @uuid: secret uuid to find
+ * @uuidstr: secret uuid to find
  *
  * This function locks @secrets and finds the secret object which
  * corresponds to @uuid.
@@ -185,12 +181,12 @@ virSecretObjListFindByUUIDLocked(virSecretObjListPtr secrets,
  */
 virSecretObjPtr
 virSecretObjListFindByUUID(virSecretObjListPtr secrets,
-                           const unsigned char *uuid)
+                           const char *uuidstr)
 {
     virSecretObjPtr obj;
 
     virObjectLock(secrets);
-    obj = virSecretObjListFindByUUIDLocked(secrets, uuid);
+    obj = virSecretObjListFindByUUIDLocked(secrets, uuidstr);
     virObjectUnlock(secrets);
     if (obj)
         virObjectLock(obj);
@@ -328,13 +324,14 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
     if (oldDef)
         *oldDef = NULL;
 
+    virUUIDFormat(newdef->uuid, uuidstr);
+
     /* Is there a secret already matching this UUID */
-    if ((obj = virSecretObjListFindByUUIDLocked(secrets, newdef->uuid))) {
+    if ((obj = virSecretObjListFindByUUIDLocked(secrets, uuidstr))) {
         virObjectLock(obj);
         def = obj->def;
 
         if (STRNEQ_NULLABLE(def->usage_id, newdef->usage_id)) {
-            virUUIDFormat(def->uuid, uuidstr);
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("a secret with UUID %s is already defined for "
                              "use with %s"),
@@ -372,7 +369,6 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
         /* Generate the possible configFile and base64File strings
          * using the configDir, uuidstr, and appropriate suffix
          */
-        virUUIDFormat(newdef->uuid, uuidstr);
         if (!(configFile = virFileBuildPath(configDir, uuidstr, ".xml")) ||
             !(base64File = virFileBuildPath(configDir, uuidstr, ".base64")))
             goto cleanup;
