@@ -483,6 +483,37 @@ virSecretObjListNumOfSecrets(virSecretObjListPtr secrets,
 }
 
 
+int
+virSecretObjListGetUUIDs(virSecretObjListPtr secrets,
+                         char **uuids,
+                         int nuuids,
+                         virSecretObjListACLFilter filter,
+                         virConnectPtr conn)
+{
+    int ret = -1;
+
+    struct virSecretObjListGetHelperData data = {
+        .conn = conn, .filter = filter, .got = 0,
+        .uuids = uuids, .nuuids = nuuids, .error = false };
+
+    virObjectLock(secrets);
+    virHashForEach(secrets->objs, virSecretObjListGetHelper, &data);
+    virObjectUnlock(secrets);
+
+    if (data.error)
+        goto cleanup;
+
+    ret = data.got;
+
+ cleanup:
+    if (ret < 0) {
+        while (data.got)
+            VIR_FREE(data.uuids[--data.got]);
+    }
+    return ret;
+}
+
+
 #define MATCH(FLAG) (flags & (FLAG))
 static bool
 virSecretObjMatchFlags(virSecretObjPtr obj,
@@ -600,37 +631,6 @@ virSecretObjListExport(virConnectPtr conn,
         virObjectUnref(data.secrets[--data.nsecrets]);
 
     VIR_FREE(data.secrets);
-    return ret;
-}
-
-
-int
-virSecretObjListGetUUIDs(virSecretObjListPtr secrets,
-                         char **uuids,
-                         int nuuids,
-                         virSecretObjListACLFilter filter,
-                         virConnectPtr conn)
-{
-    int ret = -1;
-
-    struct virSecretObjListGetHelperData data = {
-        .conn = conn, .filter = filter, .got = 0,
-        .uuids = uuids, .nuuids = nuuids, .error = false };
-
-    virObjectLock(secrets);
-    virHashForEach(secrets->objs, virSecretObjListGetHelper, &data);
-    virObjectUnlock(secrets);
-
-    if (data.error)
-        goto cleanup;
-
-    ret = data.got;
-
- cleanup:
-    if (ret < 0) {
-        while (data.got)
-            VIR_FREE(data.uuids[--data.got]);
-    }
     return ret;
 }
 

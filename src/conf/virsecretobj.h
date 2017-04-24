@@ -67,18 +67,18 @@ virSecretObjListNumOfSecrets(virSecretObjListPtr secrets,
                              virConnectPtr conn);
 
 int
-virSecretObjListExport(virConnectPtr conn,
-                       virSecretObjListPtr secretobjs,
-                       virSecretPtr **secrets,
-                       virSecretObjListACLFilter filter,
-                       unsigned int flags);
-
-int
 virSecretObjListGetUUIDs(virSecretObjListPtr secrets,
                          char **uuids,
                          int nuuids,
                          virSecretObjListACLFilter filter,
                          virConnectPtr conn);
+
+int
+virSecretObjListExport(virConnectPtr conn,
+                       virSecretObjListPtr secretobjs,
+                       virSecretPtr **secrets,
+                       virSecretObjListACLFilter filter,
+                       unsigned int flags);
 
 int
 virSecretObjDeleteConfig(virSecretObjPtr obj);
