@@ -2780,26 +2780,6 @@ virNWFilterSaveXML(const char *configFile,
 }
 
 
-int
-virNWFilterSaveConfig(const char *configFile,
-                      virNWFilterDefPtr def)
-{
-    int ret = -1;
-    char *xml;
-
-    if (!(xml = virNWFilterDefFormat(def)))
-        goto cleanup;
-
-    if (virNWFilterSaveXML(configFile, def, xml) < 0)
-        goto cleanup;
-
-    ret = 0;
- cleanup:
-    VIR_FREE(xml);
-    return ret;
-}
-
-
 int nCallbackDriver;
 #define MAX_CALLBACK_DRIVER 10
 static virNWFilterCallbackDriverPtr callbackDrvArray[MAX_CALLBACK_DRIVER];

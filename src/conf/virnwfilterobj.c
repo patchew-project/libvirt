@@ -487,6 +487,27 @@ virNWFilterObjListExport(virConnectPtr conn,
 }
 
 
+int
+virNWFilterObjSaveConfig(virNWFilterObjPtr obj,
+                         const char *configFile)
+{
+    virNWFilterDefPtr def = obj->def;
+    int ret = -1;
+    char *xml;
+
+    if (!(xml = virNWFilterDefFormat(def)))
+        goto cleanup;
+
+    if (virNWFilterSaveXML(configFile, def, xml) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(xml);
+    return ret;
+}
+
+
 static virNWFilterObjPtr
 virNWFilterObjListLoadConfig(virNWFilterObjListPtr nwfilters,
                              const char *configDir,
@@ -515,7 +536,7 @@ virNWFilterObjListLoadConfig(virNWFilterObjListPtr nwfilters,
 
     /* We generated a UUID, make it permanent by saving the config to disk */
     if (!def->uuid_specified &&
-        virNWFilterSaveConfig(configFile, def) < 0)
+        virNWFilterObjSaveConfig(obj, configFile) < 0)
         goto error;
 
     VIR_FREE(configFile);

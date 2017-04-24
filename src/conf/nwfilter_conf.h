@@ -585,10 +585,6 @@ virNWFilterSaveXML(const char *configFile,
                    virNWFilterDefPtr def,
                    const char *xml);
 
-int
-virNWFilterSaveConfig(const char *configFile,
-                      virNWFilterDefPtr def);
-
 virNWFilterDefPtr
 virNWFilterDefParseString(const char *xml);
 

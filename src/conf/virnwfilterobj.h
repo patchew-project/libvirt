@@ -98,6 +98,10 @@ virNWFilterObjListExport(virConnectPtr conn,
                          virNWFilterObjListFilter aclfilter);
 
 int
+virNWFilterObjSaveConfig(virNWFilterObjPtr obj,
+                         const char *configFile);
+
+int
 virNWFilterObjListLoadAllConfigs(virNWFilterObjListPtr nwfilters,
                                  const char *configDir);
 
