@@ -301,7 +301,7 @@ virSecretObjListRemove(virSecretObjListPtr secrets,
 
 
 /*
- * virSecretObjListAddLocked:
+ * virSecretObjListAdd:
  * @secrets: list of secret objects
  * @newdef: new secret definition
  * @configDir: directory to place secret config files
@@ -309,21 +309,21 @@ virSecretObjListRemove(virSecretObjListPtr secrets,
  *
  * Add the new @newdef to the secret obj table hash
  *
- * This functions requires @secrets to be locked already!
- *
- * Returns: locked secret or NULL if failure to add
+ * Returns: locked and ref'd secret or NULL if failure to add
  */
-static virSecretObjPtr
-virSecretObjListAddLocked(virSecretObjListPtr secrets,
-                          virSecretDefPtr newdef,
-                          const char *configDir,
-                          virSecretDefPtr *oldDef)
+virSecretObjPtr
+virSecretObjListAdd(virSecretObjListPtr secrets,
+                    virSecretDefPtr newdef,
+                    const char *configDir,
+                    virSecretDefPtr *oldDef)
 {
     virSecretObjPtr obj;
     virSecretDefPtr def;
     virSecretObjPtr ret = NULL;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
     char *configFile = NULL, *base64File = NULL;
+
+    virObjectLock(secrets);
 
     if (oldDef)
         *oldDef = NULL;
@@ -396,22 +396,8 @@ virSecretObjListAddLocked(virSecretObjListPtr secrets,
     virSecretObjEndAPI(&obj);
     VIR_FREE(configFile);
     VIR_FREE(base64File);
-    return ret;
-}
-
-
-virSecretObjPtr
-virSecretObjListAdd(virSecretObjListPtr secrets,
-                    virSecretDefPtr newdef,
-                    const char *configDir,
-                    virSecretDefPtr *oldDef)
-{
-    virSecretObjPtr obj;
-
-    virObjectLock(secrets);
-    obj = virSecretObjListAddLocked(secrets, newdef, configDir, oldDef);
     virObjectUnlock(secrets);
-    return obj;
+    return ret;
 }
 
 
