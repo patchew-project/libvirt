@@ -550,9 +550,9 @@ struct virSecretObjListData {
 };
 
 static int
-virSecretObjListPopulate(void *payload,
-                         const void *name ATTRIBUTE_UNUSED,
-                         void *opaque)
+virSecretObjListExportCallback(void *payload,
+                               const void *name ATTRIBUTE_UNUSED,
+                               void *opaque)
 {
     struct virSecretObjListData *data = opaque;
     virSecretObjPtr obj = payload;
@@ -598,7 +598,6 @@ virSecretObjListExport(virConnectPtr conn,
                        virSecretObjListACLFilter aclfilter,
                        unsigned int flags)
 {
-    int ret = -1;
     struct virSecretObjListData data = {
         .conn = conn, .secrets = NULL,
         .aclfilter = aclfilter, .flags = flags,
@@ -606,30 +605,28 @@ virSecretObjListExport(virConnectPtr conn,
 
     virObjectLock(secretobjs);
     if (secrets &&
-        VIR_ALLOC_N(data.secrets, virHashSize(secretobjs->objs) + 1) < 0)
-        goto cleanup;
+        VIR_ALLOC_N(data.secrets, virHashSize(secretobjs->objs) + 1) < 0) {
+        virObjectUnlock(secretobjs);
+        return -1;
+    }
 
-    virHashForEach(secretobjs->objs, virSecretObjListPopulate, &data);
+    virHashForEach(secretobjs->objs, virSecretObjListExportCallback, &data);
+    virObjectUnlock(secretobjs);
 
     if (data.error)
-        goto cleanup;
+        goto error;
 
     if (data.secrets) {
         /* trim the array to the final size */
         ignore_value(VIR_REALLOC_N(data.secrets, data.nsecrets + 1));
         *secrets = data.secrets;
-        data.secrets = NULL;
     }
 
-    ret = data.nsecrets;
+    return data.nsecrets;
 
- cleanup:
-    virObjectUnlock(secretobjs);
-    while (data.secrets && data.nsecrets)
-        virObjectUnref(data.secrets[--data.nsecrets]);
-
-    VIR_FREE(data.secrets);
-    return ret;
+ error:
+    virObjectListFree(data.secrets);
+    return -1;
 }
 
 
