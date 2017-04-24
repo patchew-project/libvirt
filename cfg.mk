@@ -768,7 +768,7 @@ sc_prohibit_gettext_markup:
 # lower-level code must not include higher-level headers.
 cross_dirs=$(patsubst $(srcdir)/src/%.,%,$(wildcard $(srcdir)/src/*/.))
 cross_dirs_re=($(subst / ,/|,$(cross_dirs)))
-mid_dirs=access|conf|cpu|locking|logging|network|node_device|rpc|security|storage
+mid_dirs=access|conf|cpu|locking|logging|network|node_device|rpc|security|storage|xen
 sc_prohibit_cross_inclusion:
 	@for dir in $(cross_dirs); do					\
 	  case $$dir in							\
@@ -777,7 +777,7 @@ sc_prohibit_cross_inclusion:
 	    locking/) safe="($$dir|util|conf|rpc)";;			\
 	    cpu/| network/| node_device/| rpc/| security/| storage/)	\
 	      safe="($$dir|util|conf|storage)";;			\
-	    xenapi/ | xenconfig/ ) safe="($$dir|util|conf|xen)";;	\
+	    xenapi/) safe="($$dir|util|conf|xen)";;	\
 	    *) safe="($$dir|$(mid_dirs)|util)";;			\
 	  esac;								\
 	  in_vc_files="^src/$$dir"					\
