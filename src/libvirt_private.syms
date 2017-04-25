@@ -1648,6 +1648,8 @@ virFileReadLimFD;
 virFileReadLink;
 virFileReadValueBitmap;
 virFileReadValueInt;
+virFileReadValueScaledInt;
+virFileReadValueString;
 virFileReadValueUint;
 virFileRelLinkPointsTo;
 virFileRemove;
@@ -2635,20 +2637,6 @@ virStrToLong_ullp;
 virStrToLong_ulp;
 virTrimSpaces;
 virVasprintfInternal;
-
-
-# util/virsysfs.h
-virSysfsGetCpuValueBitmap;
-virSysfsGetCpuValueInt;
-virSysfsGetCpuValueString;
-virSysfsGetCpuValueUint;
-virSysfsGetNodeValueBitmap;
-virSysfsGetNodeValueString;
-virSysfsGetSystemPath;
-virSysfsGetValueBitmap;
-virSysfsGetValueInt;
-virSysfsGetValueString;
-virSysfsSetSystemPath;
 
 
 # util/virsysinfo.h
