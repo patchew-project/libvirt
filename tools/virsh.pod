@@ -2935,6 +2935,9 @@ B<--managed> is usable only for I<hostdev> type and tells libvirt
 that the interface should be managed, which means detached and reattached
 from/to the host by libvirt.
 
+B<--brtype> is usable only for I<bridge> type and tells libvirt
+that the interface attached to bridge type (linux bridge or openvswitch).
+
 If B<--print-xml> is specified, then the XML of the interface that would be
 attached is printed instead.
 

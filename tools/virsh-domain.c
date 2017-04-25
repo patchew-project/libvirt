@@ -766,6 +766,10 @@ static const vshCmdOptDef opts_attach_interface[] = {
      .type = VSH_OT_BOOL,
      .help = N_("libvirt will automatically detach/attach the device from/to host")
     },
+    {.name = "brtype",
+     .type = VSH_OT_STRING,
+     .help = N_("Bridge type: linux / openvswitch")
+    },
     {.name = NULL}
 };
 
@@ -819,7 +823,8 @@ cmdAttachInterface(vshControl *ctl, const vshCmd *cmd)
     virDomainPtr dom = NULL;
     const char *mac = NULL, *target = NULL, *script = NULL,
                *type = NULL, *source = NULL, *model = NULL,
-               *inboundStr = NULL, *outboundStr = NULL;
+               *inboundStr = NULL, *outboundStr = NULL,
+               *brtype = NULL;
     virNetDevBandwidthRate inbound, outbound;
     virDomainNetType typ;
     int ret;
@@ -850,7 +855,8 @@ cmdAttachInterface(vshControl *ctl, const vshCmd *cmd)
         vshCommandOptStringReq(ctl, cmd, "script", &script) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "model", &model) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "inbound", &inboundStr) < 0 ||
-        vshCommandOptStringReq(ctl, cmd, "outbound", &outboundStr) < 0)
+        vshCommandOptStringReq(ctl, cmd, "outbound", &outboundStr) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "brtype", &brtype) < 0)
         goto cleanup;
 
     /* check interface type */
@@ -946,6 +952,19 @@ cmdAttachInterface(vshControl *ctl, const vshCmd *cmd)
     if (model != NULL)
         virBufferAsprintf(&buf, "<model type='%s'/>\n", model);
 
+    if ((brtype != NULL)) {
+        if (STRNEQ(brtype , "linux") && STRNEQ(brtype , "openvswitch")) {
+            vshError(ctl, _("bridge type is incorrect, should be linux "
+            "or openvswitch"));
+            goto cleanup;
+        }
+        if (typ != VIR_DOMAIN_NET_TYPE_BRIDGE) {
+            vshError(ctl, _("No support for %s with bridge type"), type);
+            goto cleanup;
+        }
+        if (STREQ(brtype , "openvswitch"))
+            virBufferAsprintf(&buf, "  <virtualport type='openvswitch'/>\n");
+    }
     if (inboundStr || outboundStr) {
         virBufferAddLit(&buf, "<bandwidth>\n");
         virBufferAdjustIndent(&buf, 2);
