@@ -32,6 +32,12 @@
 
 VIR_LOG_INIT("conf.virinterfaceobj");
 
+struct _virInterfaceObj {
+    virMutex lock;
+
+    bool active;           /* true if interface is active (up) */
+    virInterfaceDefPtr def; /* The interface definition */
+};
 
 
 /* virInterfaceObj manipulation */
@@ -58,6 +64,28 @@ virInterfaceObjFree(virInterfaceObjPtr obj)
     virInterfaceDefFree(obj->def);
     virMutexDestroy(&obj->lock);
     VIR_FREE(obj);
+}
+
+
+virInterfaceDefPtr
+virInterfaceObjGetDef(virInterfaceObjPtr obj)
+{
+    return obj->def;
+}
+
+
+bool
+virInterfaceObjIsActive(virInterfaceObjPtr obj)
+{
+    return obj->active;
+}
+
+
+void
+virInterfaceObjSetActive(virInterfaceObjPtr obj,
+                         bool active)
+{
+    obj->active = active;
 }
 
 
