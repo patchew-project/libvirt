@@ -3899,6 +3899,11 @@
               <ref name="virOnOff"/>
             </attribute>
           </optional>
+          <optional>
+            <attribute name="caching">
+              <ref name="virOnOff"/>
+            </attribute>
+          </optional>
         </element>
       </optional>
     </element>
