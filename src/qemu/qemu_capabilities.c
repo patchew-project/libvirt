@@ -365,6 +365,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "block-write-threshold",
               "query-named-block-nodes",
               "kernel-irqchip",
+              "intel-iommu-intremap",
     );
 
 
@@ -1715,6 +1716,10 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsUSBNECXHCI[] = {
     { "p3", QEMU_CAPS_NEC_USB_XHCI_PORTS },
 };
 
+static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsIntelIOMMU[] = {
+    { "intremap", QEMU_CAPS_INTEL_IOMMU_INTREMAP },
+};
+
 /* see documentation for virQEMUCapsQMPSchemaGetByPath for the query format */
 static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "blockdev-add/arg-type/options/+gluster/debug-level", QEMU_CAPS_GLUSTER_DEBUG_LEVEL},
@@ -1822,6 +1827,9 @@ static struct virQEMUCapsObjectTypeProps virQEMUCapsObjectProps[] = {
     { "nec-usb-xhci", virQEMUCapsObjectPropsUSBNECXHCI,
       ARRAY_CARDINALITY(virQEMUCapsObjectPropsUSBNECXHCI),
       -1 },
+    { "intel-iommu", virQEMUCapsObjectPropsIntelIOMMU,
+      ARRAY_CARDINALITY(virQEMUCapsObjectPropsIntelIOMMU),
+      QEMU_CAPS_DEVICE_INTEL_IOMMU},
 };
 
 struct virQEMUCapsPropTypeObjects {
