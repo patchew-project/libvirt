@@ -7520,6 +7520,78 @@ virDomainDiskSourcePoolDefParse(xmlNodePtr node,
 }
 
 
+static virStorageNetCookieDefPtr
+virDomainStorageCookieParse(xmlNodePtr node,
+                            xmlXPathContextPtr ctxt)
+{
+    virStorageNetCookieDefPtr cookie = NULL;
+    virStorageNetCookieDefPtr ret = NULL;
+    xmlNodePtr oldnode = ctxt->node;
+
+    ctxt->node = node;
+
+    if (VIR_ALLOC(cookie) < 0)
+        goto cleanup;
+
+    if (!(cookie->name = virXPathString("string(./@name)", ctxt))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s", _("missing cookie name"));
+        goto cleanup;
+    }
+
+    if (!(cookie->value = virXPathString("string(.)", ctxt))) {
+        virReportError(VIR_ERR_XML_ERROR, _("missing value for cookie '%s'"),
+                       cookie->name);
+        goto cleanup;
+    }
+
+    VIR_STEAL_PTR(ret, cookie);
+
+ cleanup:
+    ctxt->node = oldnode;
+    virStorageNetCookieDefFree(cookie);
+    return ret;
+}
+
+
+static int
+virDomainStorageCookiesParse(xmlNodePtr node,
+                             xmlXPathContextPtr ctxt,
+                             virStorageSourcePtr src)
+{
+    xmlNodePtr oldnode = ctxt->node;
+    xmlNodePtr *nodes = NULL;
+    ssize_t nnodes;
+    size_t i;
+    int ret = -1;
+
+    ctxt->node = node;
+
+    if ((nnodes = virXPathNodeSet("./cookie", ctxt, &nodes)) < 0)
+        goto cleanup;
+
+    if (VIR_ALLOC_N(src->cookies, nnodes) < 0)
+        goto cleanup;
+
+    src->ncookies = nnodes;
+
+    for (i = 0; i < nnodes; i++) {
+        if (!(src->cookies[i] = virDomainStorageCookieParse(nodes[i], ctxt)))
+            goto cleanup;
+    }
+
+    if (virStorageSourceNetCookiesValidate(src) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(nodes);
+    ctxt->node = oldnode;
+
+    return ret;
+}
+
+
 int
 virDomainDiskSourceParse(xmlNodePtr node,
                          xmlXPathContextPtr ctxt,
@@ -7528,6 +7600,7 @@ virDomainDiskSourceParse(xmlNodePtr node,
     int ret = -1;
     char *protocol = NULL;
     xmlNodePtr saveNode = ctxt->node;
+    xmlNodePtr tmpnode;
 
     ctxt->node = node;
 
@@ -7590,6 +7663,12 @@ virDomainDiskSourceParse(xmlNodePtr node,
 
         if (virDomainStorageHostParse(node, &src->hosts, &src->nhosts) < 0)
             goto cleanup;
+
+        if (src->protocol == VIR_STORAGE_NET_PROTOCOL_HTTP &&
+            (tmpnode = virXPathNode("./cookies", ctxt))) {
+            if (virDomainStorageCookiesParse(tmpnode, ctxt, src) < 0)
+                goto cleanup;
+        }
         break;
     case VIR_STORAGE_TYPE_VOLUME:
         if (virDomainDiskSourcePoolDefParse(node, &src->srcpool) < 0)
@@ -20769,6 +20848,30 @@ virDomainSourceDefFormatSeclabel(virBufferPtr buf,
 
 
 static int
+virDomainDiskSourceFormatNetworkCookies(virBufferPtr buf,
+                                        virStorageSourcePtr src)
+{
+    size_t i;
+
+    if (src->ncookies == 0)
+        return 0;
+
+    virBufferAddLit(buf, "<cookies>\n");
+    virBufferAdjustIndent(buf, 2);
+
+    for (i = 0; i < src->ncookies; i++) {
+        virBufferEscapeString(buf, "<cookie name='%s'>", src->cookies[i]->name);
+        virBufferEscapeString(buf, "%s</cookie>\n", src->cookies[i]->value);
+    }
+
+    virBufferAdjustIndent(buf, -2);
+    virBufferAddLit(buf, "</cookies>\n");
+
+    return 0;
+}
+
+
+static int
 virDomainDiskSourceFormatNetwork(virBufferPtr buf,
                                  virStorageSourcePtr src)
 {
@@ -20787,7 +20890,7 @@ virDomainDiskSourceFormatNetwork(virBufferPtr buf,
 
     VIR_FREE(path);
 
-    if (src->nhosts == 0 && !src->snapshot && !src->configFile) {
+    if (src->nhosts == 0 && !src->snapshot && !src->configFile && src->ncookies == 0) {
         virBufferAddLit(buf, "/>\n");
     } else {
         virBufferAddLit(buf, ">\n");
@@ -20808,6 +20911,9 @@ virDomainDiskSourceFormatNetwork(virBufferPtr buf,
 
         virBufferEscapeString(buf, "<snapshot name='%s'/>\n", src->snapshot);
         virBufferEscapeString(buf, "<config file='%s'/>\n", src->configFile);
+
+        if (virDomainDiskSourceFormatNetworkCookies(buf, src) < 0)
+            return -1;
 
         virBufferAdjustIndent(buf, -2);
         virBufferAddLit(buf, "</source>\n");

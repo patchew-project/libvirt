@@ -1948,6 +1948,126 @@ virStorageSourceSeclabelsCopy(virStorageSourcePtr to,
 }
 
 
+void
+virStorageNetCookieDefFree(virStorageNetCookieDefPtr def)
+{
+    if (!def)
+        return;
+
+    VIR_FREE(def->name);
+    VIR_FREE(def->value);
+
+    VIR_FREE(def);
+}
+
+
+static void
+virStorageSourceCookiesClear(virStorageSourcePtr src)
+{
+    size_t i;
+
+    if (!src || !src->cookies)
+        return;
+
+    for (i = 0; i < src->ncookies; i++)
+        virStorageNetCookieDefFree(src->cookies[i]);
+
+    VIR_FREE(src->cookies);
+    src->ncookies = 0;
+}
+
+
+static int
+virStorageSourceNetCookiesCopy(virStorageSourcePtr to,
+                               const virStorageSource *from)
+{
+    size_t i;
+
+    if (from->ncookies == 0)
+        return 0;
+
+    if (VIR_ALLOC_N(to->cookies, from->ncookies) < 0)
+        return -1;
+    to->ncookies = from->ncookies;
+
+    for (i = 0; i < from->ncookies; i++) {
+        if (VIR_STRDUP(to->cookies[i]->name, from->cookies[i]->name) < 0 ||
+            VIR_STRDUP(to->cookies[i]->value, from->cookies[i]->value) < 0)
+            goto error;
+    }
+
+    return 0;
+
+ error:
+    virStorageSourceCookiesClear(to);
+    return -1;
+}
+
+
+/* see https://tools.ietf.org/html/rfc6265#section-4.1.1 */
+static const char virStorageSourceCookieValueInvalidChars[] =
+ "\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F"
+ "\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F"
+ " \",;\\";
+
+/* in addition cookie name can't contain these */
+static const char virStorageSourceCookieNameInvalidChars[] =
+ "()<>@:/[]?={}";
+
+static int
+virStorageSourceNetCookieValidate(virStorageNetCookieDefPtr def)
+{
+    /* name must have at least 1 character */
+    if (*(def->name) == '\0') {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("cookie name must not be empty"));
+        return -1;
+    }
+
+    /* check invalid characters in name */
+    if (virStringHasChars(def->name, virStorageSourceCookieValueInvalidChars) ||
+        virStringHasChars(def->name, virStorageSourceCookieNameInvalidChars)) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("cookie name '%s' contains invalid characters"),
+                       def->name);
+        return -1;
+    }
+
+    /* check invalid characters in value */
+    if (virStringHasChars(def->value, virStorageSourceCookieValueInvalidChars)) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("value of cookie '%s' contains invalid characters"),
+                       def->name);
+        return -1;
+    }
+
+    return 0;
+}
+
+
+int
+virStorageSourceNetCookiesValidate(virStorageSourcePtr src)
+{
+    size_t i;
+    size_t j;
+
+    for (i = 0; i < src->ncookies; i++) {
+        if (virStorageSourceNetCookieValidate(src->cookies[i]) < 0)
+            return -1;
+
+        for (j = i + 1; j < src->ncookies; j++) {
+            if (STREQ(src->cookies[i]->name, src->cookies[j]->name)) {
+                virReportError(VIR_ERR_XML_ERROR, _("duplicate cookie '%s'"),
+                               src->cookies[i]->name);
+                return -1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+
 static virStorageTimestampsPtr
 virStorageTimestampsCopy(const virStorageTimestamps *src)
 {
@@ -2059,6 +2179,9 @@ virStorageSourceCopy(const virStorageSource *src,
 
         ret->nhosts = src->nhosts;
     }
+
+    if (virStorageSourceNetCookiesCopy(ret, src) < 0)
+        goto error;
 
     if (src->srcpool &&
         !(ret->srcpool = virStorageSourcePoolDefCopy(src->srcpool)))
@@ -2258,6 +2381,7 @@ virStorageSourceClear(virStorageSourcePtr def)
     VIR_FREE(def->volume);
     VIR_FREE(def->snapshot);
     VIR_FREE(def->configFile);
+    virStorageSourceCookiesClear(def);
     virStorageSourcePoolDefFree(def->srcpool);
     VIR_FREE(def->driverName);
     virBitmapFree(def->features);

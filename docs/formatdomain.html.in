@@ -2245,6 +2245,9 @@
     &lt;driver name='qemu' type='raw'/&gt;
     &lt;source protocol="http" name="url_path"&gt;
       &lt;host name="hostname" port="80"/&gt;
+      &lt;cookies&gt;
+        &lt;cookie name="test"&gt;somevalue&lt;/cookie&gt;
+      &lt;/cookies&gt;
     &lt;/source&gt;
     &lt;target dev='hde' bus='ide' tray='open'/&gt;
     &lt;readonly/&gt;
@@ -2592,6 +2595,12 @@
             provided as a parameter to the client of a networked storage
             protocol. Supported for 'rbd' <span class="since">since 1.2.11
             (QEMU only).</span>
+          </dd>
+          <dt><code>cookies</code></dt>
+          <dd>
+            For <code>http</code> and <code>https</code> accessed storage it's
+            possible to pass one or more cookies. The cookie name and value
+            must conform to the HTTP specification.
           </dd>
         </dl>
 

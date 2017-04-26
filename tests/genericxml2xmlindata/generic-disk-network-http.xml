@@ -32,6 +32,10 @@
       <driver name='qemu' type='raw'/>
       <source protocol='http' name='test3.img'>
         <host name='example.org' port='1234'/>
+        <cookies>
+          <cookie name='test'>testcookievalue</cookie>
+          <cookie name='test2'>blurb</cookie>
+        </cookies>
       </source>
       <target dev='vdc' bus='virtio'/>
     </disk>
