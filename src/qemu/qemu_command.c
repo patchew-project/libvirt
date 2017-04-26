@@ -1528,10 +1528,27 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
     }
     virBufferAddLit(buf, ",");
 
-    if (disk->src->type == VIR_STORAGE_TYPE_NETWORK &&
-        disk->src->protocol == VIR_STORAGE_NET_PROTOCOL_GLUSTER) {
-        if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_GLUSTER_DEBUG_LEVEL))
-            virBufferAsprintf(buf, "file.debug=%d,", cfg->glusterDebugLevel);
+    if (disk->src->type == VIR_STORAGE_TYPE_NETWORK) {
+        switch ((virStorageNetProtocol) disk->src->protocol) {
+        case VIR_STORAGE_NET_PROTOCOL_NONE:
+        case VIR_STORAGE_NET_PROTOCOL_NBD:
+        case VIR_STORAGE_NET_PROTOCOL_RBD:
+        case VIR_STORAGE_NET_PROTOCOL_SHEEPDOG:
+        case VIR_STORAGE_NET_PROTOCOL_ISCSI:
+        case VIR_STORAGE_NET_PROTOCOL_HTTP:
+        case VIR_STORAGE_NET_PROTOCOL_HTTPS:
+        case VIR_STORAGE_NET_PROTOCOL_FTP:
+        case VIR_STORAGE_NET_PROTOCOL_FTPS:
+        case VIR_STORAGE_NET_PROTOCOL_TFTP:
+        case VIR_STORAGE_NET_PROTOCOL_SSH:
+        case VIR_STORAGE_NET_PROTOCOL_LAST:
+            break;
+
+        case VIR_STORAGE_NET_PROTOCOL_GLUSTER:
+            if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_GLUSTER_DEBUG_LEVEL))
+                virBufferAsprintf(buf, "file.debug=%d,", cfg->glusterDebugLevel);
+            break;
+        }
     }
 
     if (secinfo && secinfo->type == VIR_DOMAIN_SECRET_INFO_TYPE_AES) {
