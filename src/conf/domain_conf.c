@@ -14136,11 +14136,15 @@ virDomainMemoryDefParseXML(xmlNodePtr memdevNode,
 
 
 static virDomainIOMMUDefPtr
-virDomainIOMMUDefParseXML(xmlNodePtr node)
+virDomainIOMMUDefParseXML(xmlNodePtr node,
+                          xmlXPathContextPtr ctxt)
 {
     virDomainIOMMUDefPtr iommu = NULL, ret = NULL;
+    xmlNodePtr save = ctxt->node;
     char *tmp = NULL;
     int val;
+
+    ctxt->node = node;
 
     if (VIR_ALLOC(iommu) < 0)
         goto cleanup;
@@ -14158,10 +14162,20 @@ virDomainIOMMUDefParseXML(xmlNodePtr node)
 
     iommu->model = val;
 
+    VIR_FREE(tmp);
+    if ((tmp = virXPathString("string(./driver/@intremap)", ctxt))) {
+        if ((val = virTristateSwitchTypeFromString(tmp)) < 0) {
+            virReportError(VIR_ERR_XML_ERROR, _("unknown intremap value: %s"), tmp);
+            goto cleanup;
+        }
+        iommu->intremap = val;
+    }
+
     ret = iommu;
     iommu = NULL;
 
  cleanup:
+    ctxt->node = save;
     VIR_FREE(iommu);
     VIR_FREE(tmp);
     return ret;
@@ -14314,7 +14328,7 @@ virDomainDeviceDefParse(const char *xmlStr,
             goto error;
         break;
     case VIR_DOMAIN_DEVICE_IOMMU:
-        if (!(dev->data.iommu = virDomainIOMMUDefParseXML(node)))
+        if (!(dev->data.iommu = virDomainIOMMUDefParseXML(node, ctxt)))
             goto error;
         break;
     case VIR_DOMAIN_DEVICE_NONE:
@@ -18444,7 +18458,7 @@ virDomainDefParseXML(xmlDocPtr xml,
     }
 
     if (n > 0) {
-        if (!(def->iommu = virDomainIOMMUDefParseXML(nodes[0])))
+        if (!(def->iommu = virDomainIOMMUDefParseXML(nodes[0], ctxt)))
             goto error;
     }
     VIR_FREE(nodes);
@@ -24100,8 +24114,24 @@ static void
 virDomainIOMMUDefFormat(virBufferPtr buf,
                         const virDomainIOMMUDef *iommu)
 {
-    virBufferAsprintf(buf, "<iommu model='%s'/>\n",
+    virBuffer childBuf = VIR_BUFFER_INITIALIZER;
+
+    virBufferAdjustIndent(&childBuf, virBufferGetIndent(buf, false) + 2);
+
+    if (iommu->intremap != VIR_TRISTATE_SWITCH_ABSENT) {
+        virBufferAsprintf(&childBuf, "<driver intremap='%s'/>\n",
+                          virTristateSwitchTypeToString(iommu->intremap));
+    }
+
+    virBufferAsprintf(buf, "<iommu model='%s'",
                       virDomainIOMMUModelTypeToString(iommu->model));
+    if (virBufferUse(&childBuf)) {
+        virBufferAddLit(buf, ">\n");
+        virBufferAddBuffer(buf, &childBuf);
+        virBufferAddLit(buf, "</iommu>\n");
+    } else {
+        virBufferAddLit(buf, "/>\n");
+    }
 }
 
 

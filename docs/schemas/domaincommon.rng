@@ -3892,6 +3892,15 @@
       <attribute name="model">
         <value>intel</value>
       </attribute>
+      <optional>
+        <element name="driver">
+          <optional>
+            <attribute name="intremap">
+              <ref name="virOnOff"/>
+            </attribute>
+          </optional>
+        </element>
+      </optional>
     </element>
   </define>
 
