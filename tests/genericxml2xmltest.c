@@ -99,6 +99,7 @@ mymain(void)
     DO_TEST("perf");
 
     DO_TEST("vcpus-individual");
+    DO_TEST("disk-network-http");
 
     virObjectUnref(caps);
     virObjectUnref(xmlopt);
