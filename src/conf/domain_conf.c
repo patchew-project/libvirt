@@ -140,7 +140,8 @@ VIR_ENUM_IMPL(virDomainFeature, VIR_DOMAIN_FEATURE_LAST,
               "pmu",
               "vmport",
               "gic",
-              "smm")
+              "smm",
+              "irqchip")
 
 VIR_ENUM_IMPL(virDomainCapabilitiesPolicy, VIR_DOMAIN_CAPABILITIES_POLICY_LAST,
               "default",
@@ -856,6 +857,12 @@ VIR_ENUM_IMPL(virDomainLoader,
               VIR_DOMAIN_LOADER_TYPE_LAST,
               "rom",
               "pflash")
+
+VIR_ENUM_IMPL(virDomainIRQChip,
+              VIR_DOMAIN_IRQCHIP_LAST,
+              "off",
+              "split",
+              "on")
 
 /* Internal mapping: subset of block job types that can be present in
  * <mirror> XML (remaining types are not two-phase). */
@@ -17521,6 +17528,24 @@ virDomainDefParseXML(xmlDocPtr xml,
             ctxt->node = node;
             break;
 
+        case VIR_DOMAIN_FEATURE_IRQCHIP:
+            node = ctxt->node;
+            ctxt->node = nodes[i];
+            tmp = virXPathString("string(./@mode)", ctxt);
+            if (tmp) {
+                int value = virDomainIRQChipTypeFromString(tmp);
+                if (value < 0) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("Unknown irqchip mode: %s"),
+                                   tmp);
+                    goto error;
+                }
+                def->irqchip = value;
+                def->features[val] = VIR_TRISTATE_SWITCH_ON;
+            }
+            ctxt->node = node;
+            break;
+
         /* coverity[dead_error_begin] */
         case VIR_DOMAIN_FEATURE_LAST:
             break;
@@ -24598,6 +24623,13 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                         virBufferAsprintf(buf, " version='%s'",
                                           virGICVersionTypeToString(def->gic_version));
                     virBufferAddLit(buf, "/>\n");
+                }
+                break;
+
+            case VIR_DOMAIN_FEATURE_IRQCHIP:
+                if (def->features[i] == VIR_TRISTATE_SWITCH_ON) {
+                    virBufferAsprintf(buf, "<irqchip mode='%s'/>\n",
+                                      virDomainIRQChipTypeToString(def->irqchip));
                 }
                 break;
 

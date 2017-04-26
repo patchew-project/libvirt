@@ -4514,6 +4514,9 @@
               </optional>
             </element>
           </optional>
+          <optional>
+            <ref name="irqchip"/>
+          </optional>
         </interleave>
       </element>
     </optional>
@@ -4686,6 +4689,19 @@
           <ref name="rebootTimeoutDelay"/>
         </attribute>
       </optional>
+    </element>
+  </define>
+
+  <define name="irqchip">
+    <element name="irqchip">
+      <attribute name="mode">
+        <choice>
+          <value>off</value>
+          <value>split</value>
+          <value>on</value>
+        </choice>
+      </attribute>
+      <empty/>
     </element>
   </define>
 
