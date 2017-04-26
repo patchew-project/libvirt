@@ -1467,6 +1467,7 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
     qemuDomainSecretInfoPtr encinfo = diskPriv->encinfo;
     virJSONValuePtr srcprops = NULL;
     char *source = NULL;
+    size_t i;
     int ret = -1;
 
     if (qemuGetDriveSourceProps(disk->src, &srcprops) < 0)
@@ -1535,13 +1536,35 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
         case VIR_STORAGE_NET_PROTOCOL_RBD:
         case VIR_STORAGE_NET_PROTOCOL_SHEEPDOG:
         case VIR_STORAGE_NET_PROTOCOL_ISCSI:
-        case VIR_STORAGE_NET_PROTOCOL_HTTP:
-        case VIR_STORAGE_NET_PROTOCOL_HTTPS:
         case VIR_STORAGE_NET_PROTOCOL_FTP:
         case VIR_STORAGE_NET_PROTOCOL_FTPS:
         case VIR_STORAGE_NET_PROTOCOL_TFTP:
         case VIR_STORAGE_NET_PROTOCOL_SSH:
         case VIR_STORAGE_NET_PROTOCOL_LAST:
+            break;
+
+        case VIR_STORAGE_NET_PROTOCOL_HTTP:
+        case VIR_STORAGE_NET_PROTOCOL_HTTPS:
+            if (disk->src->ncookies > 0) {
+                if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_BLOCK_CURL_OPTIONS)) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                   _("this qemu does not support http cookies"));
+                    goto cleanup;
+                }
+
+                virBufferAddLit(buf, "file.cookie=");
+                for (i = 0; i < disk->src->ncookies; i++) {
+                    if (i > 0)
+                        virBufferAddLit(buf, "; ");
+
+                    virBufferAsprintf(buf, "%s=%s",
+                                      disk->src->cookies[i]->name,
+                                      disk->src->cookies[i]->value);
+                }
+
+                virBufferAddLit(buf, ",");
+            }
+
             break;
 
         case VIR_STORAGE_NET_PROTOCOL_GLUSTER:

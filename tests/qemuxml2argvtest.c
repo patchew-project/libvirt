@@ -886,6 +886,7 @@ mymain(void)
     DO_TEST("disk-drive-network-iscsi-lun",
             QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_SCSI_BLOCK);
+    DO_TEST("disk-drive-network-http", QEMU_CAPS_BLOCK_CURL_OPTIONS);
     DO_TEST("disk-drive-network-gluster",
             QEMU_CAPS_GLUSTER_DEBUG_LEVEL);
     DO_TEST("disk-drive-network-rbd", NONE);

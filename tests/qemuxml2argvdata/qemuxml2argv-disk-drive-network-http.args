@@ -1,0 +1,32 @@
+LC_ALL=C \
+PATH=/bin \
+HOME=/home/test \
+USER=test \
+LOGNAME=test \
+QEMU_AUDIO_DRV=none \
+/usr/bin/qemu-system-i686 \
+-name QEMUGuest1 \
+-S \
+-M pc \
+-m 214 \
+-smp 1,sockets=1,cores=1,threads=1 \
+-uuid c7a5fdbd-edaf-9455-926a-d65c16db1809 \
+-nographic \
+-nodefaults \
+-monitor unix:/tmp/lib/domain--1-QEMUGuest1/monitor.sock,server,nowait \
+-no-acpi \
+-boot c \
+-usb \
+-drive file=http://example.org:80/test.img,format=raw,if=none,\
+id=drive-virtio-disk0 \
+-device virtio-blk-pci,bus=pci.0,addr=0x3,drive=drive-virtio-disk0,\
+id=virtio-disk0 \
+-drive file=https://example.org:443/test2.img,format=raw,if=none,\
+id=drive-virtio-disk1 \
+-device virtio-blk-pci,bus=pci.0,addr=0x4,drive=drive-virtio-disk1,\
+id=virtio-disk1 \
+-drive 'file=http://example.org:1234/test3.img,\
+file.cookie=test=testcookievalue; test2=blurb,format=raw,if=none,\
+id=drive-virtio-disk2' \
+-device virtio-blk-pci,bus=pci.0,addr=0x5,drive=drive-virtio-disk2,\
+id=virtio-disk2
