@@ -27,8 +27,6 @@
 
 # include "vmware/vmware_conf.h"
 
-//# define VIR_FROM_THIS VIR_FROM_NONE
-
 struct testInfo {
     const char *vmware_type;
     const char *name;
