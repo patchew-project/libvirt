@@ -364,6 +364,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "query-cpu-definitions", /* 250 */
               "block-write-threshold",
               "query-named-block-nodes",
+              "qemu-xhci",
     );
 
 
@@ -1609,6 +1610,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "vhost-scsi", QEMU_CAPS_DEVICE_VHOST_SCSI },
     { "nvdimm", QEMU_CAPS_DEVICE_NVDIMM },
     { "pcie-root-port", QEMU_CAPS_DEVICE_PCIE_ROOT_PORT },
+    { "qemu-xhci", QEMU_CAPS_DEVICE_QEMU_XHCI },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {
