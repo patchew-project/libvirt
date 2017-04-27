@@ -732,8 +732,8 @@ virCPUppc64GetHost(virCPUDefPtr cpu,
     data->len = 1;
 
 #if defined(__powerpc__) || defined(__powerpc64__)
-    asm("mfpvr %0"
-        : "=r" (data->pvr[0].value));
+    __asm__("mfpvr %0"
+            : "=r" (data->pvr[0].value));
 #endif
     data->pvr[0].mask = 0xfffffffful;
 
