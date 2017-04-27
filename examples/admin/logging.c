@@ -1,11 +1,12 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 #include "config.h"
-#include<unistd.h>
-#include<libvirt/libvirt-admin.h>
-#include<libvirt/virterror.h>
+#include <unistd.h>
+#include <getopt.h>
+#include <libvirt/libvirt-admin.h>
+#include <libvirt/virterror.h>
 
 static void printHelp(const char *argv0)
 {
@@ -31,7 +32,6 @@ int main(int argc, char **argv)
     const char *set_filters = NULL;
 
     ret = c = -1;
-    opterr = 0;
 
     while ((c = getopt(argc, argv, ":hpo:f:")) > 0) {
         switch (c) {
