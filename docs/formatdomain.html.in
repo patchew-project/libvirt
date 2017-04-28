@@ -7113,7 +7113,11 @@ qemu-kvm -net nic,model=? /dev/null
     <h4><a name="elementsPanic">panic device</a></h4>
     <p>
       panic device enables libvirt to receive panic notification from a QEMU
-      guest.
+      guest. When the guest triggers the panic device, QEMU pauses the guest, and
+      libvirt takes the action specified by the <code>on_crash</code> element.
+      Note that this may interfere with the guest's own crash handling actions
+      (like writing a dump file and rebooting itself) if the guest triggers the
+      panic device first (as Windows does via the Hyper-V crash CPU feature).
       <span class="since">Since 1.2.1, QEMU and KVM only</span>
     </p>
     <p>
