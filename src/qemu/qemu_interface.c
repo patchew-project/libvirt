@@ -512,6 +512,7 @@ qemuInterfaceBridgeConnect(virDomainDefPtr def,
     bool template_ifname = false;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     const char *tunpath = "/dev/net/tun";
+    char *domIdPlusIndex = NULL;
 
     if (net->backend.tap) {
         tunpath = net->backend.tap;
@@ -531,8 +532,13 @@ qemuInterfaceBridgeConnect(virDomainDefPtr def,
         STRPREFIX(net->ifname, VIR_NET_GENERATED_PREFIX) ||
         strchr(net->ifname, '%')) {
         VIR_FREE(net->ifname);
-        if (VIR_STRDUP(net->ifname, VIR_NET_GENERATED_PREFIX "%d") < 0)
+        if (virAsprintf(&domIdPlusIndex, "%s%d.%s",
+           VIR_NET_GENERATED_PREFIX, def->id, "%d") < 0) {
             goto cleanup;
+        }
+        if (VIR_STRDUP(net->ifname, domIdPlusIndex) < 0) {
+            goto cleanup;
+        }
         /* avoid exposing vnet%d in getXMLDesc or error outputs */
         template_ifname = true;
     }
@@ -594,6 +600,7 @@ qemuInterfaceBridgeConnect(virDomainDefPtr def,
     ret = 0;
 
  cleanup:
+    VIR_FREE(domIdPlusIndex);
     if (ret < 0) {
         size_t i;
         for (i = 0; i < *tapfdSize && tapfd[i] >= 0; i++)
