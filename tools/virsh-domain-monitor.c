@@ -396,6 +396,10 @@ static const vshCmdOptDef opts_domblkinfo[] = {
      .flags = VSH_OFLAG_REQ,
      .help = N_("block device")
     },
+    {.name = "human",
+     .type = VSH_OT_BOOL,
+     .help = N_("Human readable output")
+    },
     {.name = NULL}
 };
 
@@ -405,6 +409,7 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
     virDomainBlockInfo info;
     virDomainPtr dom;
     bool ret = false;
+    bool human = false;
     const char *device = NULL;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
@@ -416,9 +421,39 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
     if (virDomainGetBlockInfo(dom, device, &info, 0) < 0)
         goto cleanup;
 
-    vshPrint(ctl, "%-15s %llu\n", _("Capacity:"), info.capacity);
-    vshPrint(ctl, "%-15s %llu\n", _("Allocation:"), info.allocation);
-    vshPrint(ctl, "%-15s %llu\n", _("Physical:"), info.physical);
+    human = vshCommandOptBool(cmd, "human");
+
+    if (!human) {
+        vshPrint(ctl, "%-15s %llu\n", _("Capacity:"), info.capacity);
+        vshPrint(ctl, "%-15s %llu\n", _("Allocation:"), info.allocation);
+        vshPrint(ctl, "%-15s %llu\n", _("Physical:"), info.physical);
+    } else {
+        double sizeCapacity = 1;
+        const char *sizeStr = "B";
+
+        /* Check if capacity can be in K. */
+        if (info.capacity >= 1024) {
+            sizeCapacity = 1024.0;
+            sizeStr = "K";
+        }
+        /* Check if capacity can be in M. */
+        if (info.capacity >= 1048576) {
+            sizeCapacity = 1048576.0;
+            sizeStr = "M";
+        }
+        /* Check if capacity can be in G. */
+        if (info.capacity >= 1073741824) {
+            sizeCapacity = 1073741824.0;
+            sizeStr = "G";
+        }
+
+        vshPrint(ctl, "%-15s %.1f%s\n", _("Capacity:"),
+                                info.capacity/sizeCapacity, sizeStr);
+        vshPrint(ctl, "%-15s %.1f%s\n", _("Allocation:"),
+                                info.allocation/sizeCapacity, sizeStr);
+        vshPrint(ctl, "%-15s %.1f%s\n", _("Physical:"),
+                                info.physical/sizeCapacity, sizeStr);
+    }
 
     ret = true;
 
