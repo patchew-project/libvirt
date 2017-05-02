@@ -3175,7 +3175,7 @@ qemuProcessRecoverJob(virQEMUDriverPtr driver,
     case QEMU_JOB_MIGRATION_OP:
     case QEMU_JOB_ABORT:
     case QEMU_JOB_ASYNC:
-    case QEMU_JOB_ASYNC_NESTED:
+    case QEMU_JOB_PLACEHOLDER_1:
         /* async job was already handled above */
     case QEMU_JOB_NONE:
     case QEMU_JOB_LAST:

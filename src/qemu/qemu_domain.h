@@ -76,7 +76,7 @@ typedef enum {
 
     /* The following two items must always be the last items before JOB_LAST */
     QEMU_JOB_ASYNC,         /* Asynchronous job */
-    QEMU_JOB_ASYNC_NESTED,  /* Normal job within an async job */
+    QEMU_JOB_PLACEHOLDER_1, /* Have to keep for backward compatibility */
 
     QEMU_JOB_LAST
 } qemuDomainJob;
@@ -438,10 +438,6 @@ int qemuDomainObjBeginAsyncJob(virQEMUDriverPtr driver,
                                virDomainObjPtr obj,
                                qemuDomainAsyncJob asyncJob,
                                virDomainJobOperation operation)
-    ATTRIBUTE_RETURN_CHECK;
-int qemuDomainObjBeginNestedJob(virQEMUDriverPtr driver,
-                                virDomainObjPtr obj,
-                                qemuDomainAsyncJob asyncJob)
     ATTRIBUTE_RETURN_CHECK;
 
 void qemuDomainObjEndJob(virQEMUDriverPtr driver,
