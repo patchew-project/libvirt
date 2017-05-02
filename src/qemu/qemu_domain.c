@@ -323,6 +323,7 @@ qemuDomainObjResetAsyncJob(qemuDomainObjPrivatePtr priv)
     job->spiceMigration = false;
     job->spiceMigrated = false;
     job->postcopyEnabled = false;
+    job->asyncInterruptible = false;
     VIR_FREE(job->current);
 }
 
@@ -3622,15 +3623,16 @@ qemuDomainObjReleaseAsyncJob(virDomainObjPtr obj)
 }
 
 static bool
-qemuDomainNestedJobAllowed(qemuDomainObjPrivatePtr priv, qemuDomainJob job)
+qemuDomainAsyncJobCompatible(qemuDomainObjPrivatePtr priv, qemuDomainJob job)
 {
-    return !priv->job.asyncJob || (priv->job.mask & JOB_MASK(job)) != 0;
+    return !priv->job.asyncJob ||
+           (priv->job.asyncInterruptible && (priv->job.mask & JOB_MASK(job)) != 0);
 }
 
 bool
 qemuDomainJobAllowed(qemuDomainObjPrivatePtr priv, qemuDomainJob job)
 {
-    return !priv->job.active && qemuDomainNestedJobAllowed(priv, job);
+    return !priv->job.active && qemuDomainAsyncJobCompatible(priv, job);
 }
 
 /* Give up waiting for mutex after 30 seconds */
@@ -3648,7 +3650,6 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = obj->privateData;
     unsigned long long now;
     unsigned long long then;
-    bool nested = job == QEMU_JOB_ASYNC_NESTED;
     bool async = job == QEMU_JOB_ASYNC;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     const char *blocker = NULL;
@@ -3681,7 +3682,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
         goto error;
     }
 
-    while (!nested && !qemuDomainNestedJobAllowed(priv, job)) {
+    while (!qemuDomainAsyncJobCompatible(priv, job)) {
         VIR_DEBUG("Waiting for async job (vm=%p name=%s)", obj, obj->def->name);
         if (virCondWaitUntil(&priv->job.asyncCond, &obj->parent.lock, then) < 0)
             goto error;
@@ -3695,7 +3696,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
 
     /* No job is active but a new async job could have been started while obj
      * was unlocked, so we need to recheck it. */
-    if (!nested && !qemuDomainNestedJobAllowed(priv, job))
+    if (!qemuDomainAsyncJobCompatible(priv, job))
         goto retry;
 
     qemuDomainObjResetJob(priv);
@@ -3750,7 +3751,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
              priv->job.asyncOwner, NULLSTR(priv->job.asyncOwnerAPI),
              duration / 1000, asyncDuration / 1000);
 
-    if (nested || qemuDomainNestedJobAllowed(priv, job))
+    if (qemuDomainAsyncJobCompatible(priv, job))
         blocker = priv->job.ownerAPI;
     else
         blocker = priv->job.asyncOwnerAPI;
@@ -3870,7 +3871,7 @@ qemuDomainObjEndJob(virQEMUDriverPtr driver, virDomainObjPtr obj)
     qemuDomainObjResetJob(priv);
     if (qemuDomainTrackJob(job))
         qemuDomainObjSaveJob(driver, obj);
-    virCondSignal(&priv->job.cond);
+    virCondBroadcast(&priv->job.cond);
 }
 
 void
@@ -3907,31 +3908,14 @@ qemuDomainObjAbortAsyncJob(virDomainObjPtr obj)
  *
  * To be called immediately before any QEMU monitor API call
  * Must have already either called qemuDomainObjBeginJob() and checked
- * that the VM is still active; may not be used for nested async jobs.
+ * that the VM is still active.
  *
  * To be followed with qemuDomainObjExitMonitor() once complete
  */
-static int
-qemuDomainObjEnterMonitorInternal(virQEMUDriverPtr driver,
-                                  virDomainObjPtr obj,
-                                  qemuDomainAsyncJob asyncJob)
+void
+qemuDomainObjEnterMonitor(virQEMUDriverPtr driver ATTRIBUTE_UNUSED, virDomainObjPtr obj)
 {
     qemuDomainObjPrivatePtr priv = obj->privateData;
-
-    if (asyncJob != QEMU_ASYNC_JOB_NONE) {
-        int ret;
-        if ((ret = qemuDomainObjBeginNestedJob(driver, obj, asyncJob)) < 0)
-            return ret;
-        if (!virDomainObjIsActive(obj)) {
-            virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                           _("domain is no longer running"));
-            qemuDomainObjEndJob(driver, obj);
-            return -1;
-        }
-    } else if (priv->job.asyncOwner == virThreadSelfID()) {
-        VIR_WARN("This thread seems to be the async job owner; entering"
-                 " monitor without asking for a nested job is dangerous");
-    }
 
     VIR_DEBUG("Entering monitor (mon=%p vm=%p name=%s)",
               priv->mon, obj, obj->def->name);
@@ -3939,12 +3923,10 @@ qemuDomainObjEnterMonitorInternal(virQEMUDriverPtr driver,
     virObjectRef(priv->mon);
     ignore_value(virTimeMillisNow(&priv->monStart));
     virObjectUnlock(obj);
-
-    return 0;
 }
 
 static void ATTRIBUTE_NONNULL(1)
-qemuDomainObjExitMonitorInternal(virQEMUDriverPtr driver,
+qemuDomainObjExitMonitorInternal(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
                                  virDomainObjPtr obj)
 {
     qemuDomainObjPrivatePtr priv = obj->privateData;
@@ -3962,17 +3944,8 @@ qemuDomainObjExitMonitorInternal(virQEMUDriverPtr driver,
     priv->monStart = 0;
     if (!hasRefs)
         priv->mon = NULL;
-
-    if (priv->job.active == QEMU_JOB_ASYNC_NESTED)
-        qemuDomainObjEndJob(driver, obj);
 }
 
-void qemuDomainObjEnterMonitor(virQEMUDriverPtr driver,
-                               virDomainObjPtr obj)
-{
-    ignore_value(qemuDomainObjEnterMonitorInternal(driver, obj,
-                                                   QEMU_ASYNC_JOB_NONE));
-}
 
 /* obj must NOT be locked before calling
  *
@@ -4014,9 +3987,134 @@ int qemuDomainObjExitMonitor(virQEMUDriverPtr driver,
 int
 qemuDomainObjEnterMonitorAsync(virQEMUDriverPtr driver,
                                virDomainObjPtr obj,
-                               qemuDomainAsyncJob asyncJob)
+                               qemuDomainAsyncJob asyncJob ATTRIBUTE_UNUSED)
 {
-    return qemuDomainObjEnterMonitorInternal(driver, obj, asyncJob);
+    qemuDomainObjEnterMonitor(driver, obj);
+    return 0;
+}
+
+
+void
+qemuDomainObjEnterInterruptible(virDomainObjPtr obj,
+                                qemuDomainJobContextPtr ctx)
+{
+    qemuDomainObjPrivatePtr priv = obj->privateData;
+    struct qemuDomainJobObj *job = &priv->job;
+
+    /* Second clause helps to detect situation when this function is
+     * called from from concurrent regular job.
+     */
+    ctx->async = job->asyncJob && !job->active;
+
+    if (!ctx->async)
+        return;
+
+    job->asyncInterruptible = true;
+    VIR_DEBUG("Async job enters interruptible state. "
+              "(obj=%p name=%s, async=%s)",
+              obj, obj->def->name,
+              qemuDomainAsyncJobTypeToString(job->asyncJob));
+    virCondBroadcast(&priv->job.asyncCond);
+}
+
+
+int
+qemuDomainObjExitInterruptible(virDomainObjPtr obj,
+                               qemuDomainJobContextPtr ctx)
+{
+    qemuDomainObjPrivatePtr priv = obj->privateData;
+    struct qemuDomainJobObj *job = &priv->job;
+    virErrorPtr err = NULL;
+    int ret = -1;
+
+    if (!ctx->async)
+        return 0;
+
+    job->asyncInterruptible = false;
+    VIR_DEBUG("Async job exits interruptible state. "
+              "(obj=%p name=%s, async=%s)",
+              obj, obj->def->name,
+              qemuDomainAsyncJobTypeToString(job->asyncJob));
+
+    err = virSaveLastError();
+
+    /* Before continuing async job wait until any job started in
+     * meanwhile is finished.
+     */
+    while (job->active) {
+        if (virCondWait(&priv->job.cond, &obj->parent.lock) < 0) {
+            virReportSystemError(errno, "%s",
+                                 _("failed to wait for job condition"));
+            goto cleanup;
+        }
+    }
+
+    if (!virDomainObjIsActive(obj)) {
+        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                       _("domain is not running"));
+        goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    if (err) {
+        virSetError(err);
+        virFreeError(err);
+    }
+    return ret;
+}
+
+
+/*
+ * obj must be locked before calling. Must be used within context of regular or
+ * async job
+ *
+ * Wait on obj lock. In case of async job regular compatible jobs are allowed
+ * to run while waiting. Any regular job than is started during the wait is
+ * finished before return from this function.
+ */
+int
+qemuDomainObjWait(virDomainObjPtr obj)
+{
+    qemuDomainJobContext ctx;
+    int rc = 0;
+
+    qemuDomainObjEnterInterruptible(obj, &ctx);
+
+    if (virCondWait(&obj->cond, &obj->parent.lock) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("failed to wait for domain condition"));
+        rc = -1;
+    }
+
+    if (qemuDomainObjExitInterruptible(obj, &ctx) < 0 || rc < 0)
+        return -1;
+
+    return 0;
+}
+
+
+/*
+ * obj must be locked before calling. Must be used within context of regular or
+ * async job
+ *
+ * Sleep with obj lock dropped. In case of async job regular compatible jobs
+ * are allowed to run while sleeping. Any regular job than is started during the
+ * sleep is finished before return from this function.
+ */
+int
+qemuDomainObjSleep(virDomainObjPtr obj, unsigned long nsec)
+{
+    struct timespec ts = { .tv_sec = 0, .tv_nsec = nsec };
+    qemuDomainJobContext ctx;
+
+    qemuDomainObjEnterInterruptible(obj, &ctx);
+
+    virObjectUnlock(obj);
+    nanosleep(&ts, NULL);
+    virObjectLock(obj);
+
+    return qemuDomainObjExitInterruptible(obj, &ctx);
 }
 
 
@@ -4063,16 +4161,26 @@ qemuDomainObjExitAgent(virDomainObjPtr obj, qemuAgentPtr agent)
 
 void qemuDomainObjEnterRemote(virDomainObjPtr obj)
 {
+    qemuDomainJobContext ctx;
+
     VIR_DEBUG("Entering remote (vm=%p name=%s)",
               obj, obj->def->name);
+
+    qemuDomainObjEnterInterruptible(obj, &ctx);
     virObjectUnlock(obj);
 }
 
-void qemuDomainObjExitRemote(virDomainObjPtr obj)
+int qemuDomainObjExitRemote(virDomainObjPtr obj)
 {
+    /* enter/exit remote MUST be called only in the context of async job */
+    qemuDomainJobContext ctx = { .async = true };
+
     virObjectLock(obj);
+
     VIR_DEBUG("Exited remote (vm=%p name=%s)",
               obj, obj->def->name);
+
+    return qemuDomainObjExitInterruptible(obj, &ctx);
 }
 
 

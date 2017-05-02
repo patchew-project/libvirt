@@ -209,6 +209,8 @@ qemuConnectAgent(virQEMUDriverPtr driver, virDomainObjPtr vm)
     qemuDomainObjPrivatePtr priv = vm->privateData;
     qemuAgentPtr agent = NULL;
     virDomainChrDefPtr config = qemuFindAgentConfig(vm->def);
+    qemuDomainJobContext ctx;
+    int rc;
 
     if (!config)
         return 0;
@@ -232,6 +234,7 @@ qemuConnectAgent(virQEMUDriverPtr driver, virDomainObjPtr vm)
      * deleted while the agent is active */
     virObjectRef(vm);
 
+    qemuDomainObjEnterInterruptible(vm, &ctx);
     virObjectUnlock(vm);
 
     agent = qemuAgentOpen(vm,
@@ -239,14 +242,13 @@ qemuConnectAgent(virQEMUDriverPtr driver, virDomainObjPtr vm)
                           &agentCallbacks);
 
     virObjectLock(vm);
+    rc = qemuDomainObjExitInterruptible(vm, &ctx);
 
     if (agent == NULL)
         virObjectUnref(vm);
 
-    if (!virDomainObjIsActive(vm)) {
+    if (rc < 0) {
         qemuAgentClose(agent);
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("guest crashed while connecting to the guest agent"));
         return -1;
     }
 

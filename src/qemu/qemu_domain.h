@@ -132,6 +132,8 @@ struct qemuDomainJobObj {
 
     virCond asyncCond;                  /* Use to coordinate with async jobs */
     qemuDomainAsyncJob asyncJob;        /* Currently active async job */
+    bool asyncInterruptible;            /* Jobs compatible with current async job
+                                           are allowed to run */
     unsigned long long asyncOwner;      /* Thread which set current async job */
     const char *asyncOwnerAPI;          /* The API which owns the async job */
     unsigned long long asyncStarted;    /* When the current async job started */
@@ -473,6 +475,23 @@ int qemuDomainObjEnterMonitorAsync(virQEMUDriverPtr driver,
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
 
 
+typedef struct _qemuDomainJobContext qemuDomainJobContext;
+typedef qemuDomainJobContext *qemuDomainJobContextPtr;
+struct _qemuDomainJobContext {
+    bool async;
+};
+
+void qemuDomainObjEnterInterruptible(virDomainObjPtr obj, qemuDomainJobContextPtr ctx)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+int qemuDomainObjExitInterruptible(virDomainObjPtr obj, qemuDomainJobContextPtr ctx)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+
+int qemuDomainObjWait(virDomainObjPtr obj)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+
+int qemuDomainObjSleep(virDomainObjPtr obj, unsigned long nsec)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+
 qemuAgentPtr qemuDomainObjEnterAgent(virDomainObjPtr obj)
     ATTRIBUTE_NONNULL(1);
 void qemuDomainObjExitAgent(virDomainObjPtr obj, qemuAgentPtr agent)
@@ -481,8 +500,8 @@ void qemuDomainObjExitAgent(virDomainObjPtr obj, qemuAgentPtr agent)
 
 void qemuDomainObjEnterRemote(virDomainObjPtr obj)
     ATTRIBUTE_NONNULL(1);
-void qemuDomainObjExitRemote(virDomainObjPtr obj)
-    ATTRIBUTE_NONNULL(1);
+int qemuDomainObjExitRemote(virDomainObjPtr obj)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
 
 virDomainDefPtr qemuDomainDefCopy(virQEMUDriverPtr driver,
                                   virDomainDefPtr src,

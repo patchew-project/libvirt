@@ -3016,25 +3016,6 @@ virDomainObjBroadcast(virDomainObjPtr vm)
 }
 
 
-int
-virDomainObjWait(virDomainObjPtr vm)
-{
-    if (virCondWait(&vm->cond, &vm->parent.lock) < 0) {
-        virReportSystemError(errno, "%s",
-                             _("failed to wait for domain condition"));
-        return -1;
-    }
-
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                       _("domain is not running"));
-        return -1;
-    }
-
-    return 0;
-}
-
-
 /**
  * Waits for domain condition to be triggered for a specific period of time.
  *
