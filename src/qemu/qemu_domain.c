@@ -3925,9 +3925,13 @@ qemuDomainObjEnterMonitor(virQEMUDriverPtr driver ATTRIBUTE_UNUSED, virDomainObj
     virObjectUnlock(obj);
 }
 
-static void ATTRIBUTE_NONNULL(1)
-qemuDomainObjExitMonitorInternal(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
-                                 virDomainObjPtr obj)
+/* obj must NOT be locked before calling
+ *
+ * Should be paired with an earlier qemuDomainObjEnterMonitor call
+ */
+int
+qemuDomainObjExitMonitor(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
+                         virDomainObjPtr obj)
 {
     qemuDomainObjPrivatePtr priv = obj->privateData;
     bool hasRefs;
@@ -3944,31 +3948,10 @@ qemuDomainObjExitMonitorInternal(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
     priv->monStart = 0;
     if (!hasRefs)
         priv->mon = NULL;
-}
 
-
-/* obj must NOT be locked before calling
- *
- * Should be paired with an earlier qemuDomainObjEnterMonitor() call
- *
- * Returns -1 if the domain is no longer alive after exiting the monitor.
- * In that case, the caller should be careful when using obj's data,
- * e.g. the live definition in vm->def has been freed by qemuProcessStop
- * and replaced by the persistent definition, so pointers stolen
- * from the live definition could no longer be valid.
- */
-int qemuDomainObjExitMonitor(virQEMUDriverPtr driver,
-                             virDomainObjPtr obj)
-{
-    qemuDomainObjExitMonitorInternal(driver, obj);
-    if (!virDomainObjIsActive(obj)) {
-        if (!virGetLastError())
-            virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                           _("domain is no longer running"));
-        return -1;
-    }
     return 0;
 }
+
 
 /*
  * obj must be locked before calling
