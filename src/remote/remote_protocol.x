@@ -312,6 +312,12 @@ struct remote_nonnull_domain_snapshot {
     remote_nonnull_domain dom;
 };
 
+/* A backup which may not be NULL. */
+struct remote_nonnull_domain_backup {
+    remote_nonnull_string name;
+    remote_nonnull_domain dom;
+};
+
 /* A domain or network which may be NULL. */
 typedef remote_nonnull_domain *remote_domain;
 typedef remote_nonnull_network *remote_network;
@@ -2689,6 +2695,16 @@ struct remote_domain_revert_to_snapshot_args {
 struct remote_domain_snapshot_delete_args {
     remote_nonnull_domain_snapshot snap;
     unsigned int flags;
+};
+
+struct remote_domain_backup_create_xml_args {
+    remote_nonnull_domain dom;
+    remote_nonnull_string xml_desc;
+    unsigned int flags;
+};
+
+struct remote_domain_backup_create_xml_ret {
+    remote_nonnull_domain_backup back;
 };
 
 struct remote_domain_open_console_args {
@@ -6062,7 +6078,12 @@ enum remote_procedure {
      * @generate: both
      * @acl: domain:write
      */
-    REMOTE_PROC_DOMAIN_SET_BLOCK_THRESHOLD = 386
+    REMOTE_PROC_DOMAIN_SET_BLOCK_THRESHOLD = 386,
 
 
+     /**
+     * @generate: both
+     * @acl: domain:backup
+     */
+    REMOTE_PROC_DOMAIN_BACKUP_CREATE_XML = 387
 };

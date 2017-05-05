@@ -148,6 +148,7 @@ static virStorageVolPtr get_nonnull_storage_vol(virConnectPtr conn, remote_nonnu
 static virNodeDevicePtr get_nonnull_node_device(virConnectPtr conn, remote_nonnull_node_device dev);
 static virSecretPtr get_nonnull_secret(virConnectPtr conn, remote_nonnull_secret secret);
 static virDomainSnapshotPtr get_nonnull_domain_snapshot(virDomainPtr domain, remote_nonnull_domain_snapshot snapshot);
+static virDomainBackupPtr get_nonnull_domain_backup(virDomainPtr dom, remote_nonnull_domain_backup backup);
 static void make_nonnull_domain(remote_nonnull_domain *dom_dst, virDomainPtr dom_src);
 static void make_nonnull_network(remote_nonnull_network *net_dst, virNetworkPtr net_src);
 static void make_nonnull_interface(remote_nonnull_interface *interface_dst, virInterfacePtr interface_src);
@@ -8133,6 +8134,11 @@ get_nonnull_domain_snapshot(virDomainPtr domain, remote_nonnull_domain_snapshot 
     return virGetDomainSnapshot(domain, snapshot.name);
 }
 
+static virDomainBackupPtr
+get_nonnull_domain_backup(virDomainPtr dom, remote_nonnull_domain_backup backup)
+{
+    return virGetDomainBackup(dom, backup.name);
+}
 
 /* Make remote_nonnull_domain and remote_nonnull_network. */
 static void
@@ -8434,6 +8440,7 @@ static virHypervisorDriver hypervisor_driver = {
     .domainSetGuestVcpus = remoteDomainSetGuestVcpus, /* 2.0.0 */
     .domainSetVcpu = remoteDomainSetVcpu, /* 3.1.0 */
     .domainSetBlockThreshold = remoteDomainSetBlockThreshold, /* 3.2.0 */
+    .domainBackupCreateXML = remoteDomainBackupCreateXML, /* 3.4.0 */
 };
 
 static virNetworkDriver network_driver = {
