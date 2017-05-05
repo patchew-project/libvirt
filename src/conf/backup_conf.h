@@ -33,6 +33,7 @@ typedef virDomainBackupDiskDef *virDomainBackupDiskDefPtr;
 struct _virDomainBackupDiskDef {
     char *name;     /* name matching the <target dev='...' of the domain */
     virStorageSourcePtr target;
+    virDomainDiskDefPtr vmdisk;
 };
 
 /* Stores the complete backup metadata */
@@ -61,5 +62,9 @@ virDomainBackupDefParseNode(xmlDocPtr xml,
                             unsigned int flags);
 void
 virDomainBackupDefFree(virDomainBackupDefPtr def);
+
+int
+virDomainBackupDefResolveDisks(virDomainBackupDefPtr def,
+                               virDomainDefPtr vmdef);
 
 #endif /* __BACKUP_CONF_H */
