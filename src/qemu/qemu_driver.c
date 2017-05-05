@@ -20449,8 +20449,17 @@ qemuDomainSetBlockThreshold(virDomainPtr dom,
 }
 
 
+typedef struct _qemuDomainBackupDiskTrackInfo qemuDomainBackupDiskTrackInfo;
+typedef qemuDomainBackupDiskTrackInfo *qemuDomainBackupDiskTrackInfoPtr;
+struct _qemuDomainBackupDiskTrackInfo {
+    bool created;
+    bool prepared;
+};
+
+
 static int
-qemuDomainBackupCheckTarget(virDomainBackupDiskDefPtr disk)
+qemuDomainBackupCheckTarget(virDomainBackupDiskDefPtr disk,
+                            bool *created)
 {
     int ret = -1;
     struct stat st;
@@ -20468,6 +20477,12 @@ qemuDomainBackupCheckTarget(virDomainBackupDiskDefPtr disk)
         }
         switch (target->type) {
         case VIR_STORAGE_TYPE_FILE:
+            if (virStorageFileCreate(target) < 0) {
+                virReportSystemError(errno, _("failed to create image file '%s'"),
+                                     target->path);
+                goto cleanup;
+            }
+            *created = true;
             break;
 
         case VIR_STORAGE_TYPE_BLOCK:
@@ -20519,6 +20534,22 @@ qemuDomainBackupCheckTarget(virDomainBackupDiskDefPtr disk)
 }
 
 
+static void
+qemuDomainBackupDiskUnlink(virDomainBackupDiskDefPtr disk)
+{
+    virStorageSourcePtr target = disk->target;
+
+    if (virStorageFileInit(target) < 0)
+        return;
+
+    if (virStorageFileUnlink(target) < 0)
+        VIR_WARN("unable to unlink target path '%s' for disk '%s', errno: %d",
+                 target->path, disk->name, errno);
+
+    virStorageFileDeinit(target);
+}
+
+
 static virDomainBackupPtr
 qemuDomainBackupCreateXML(virDomainPtr domain,
                           const char *xmlDesc,
@@ -20531,6 +20562,7 @@ qemuDomainBackupCreateXML(virDomainPtr domain,
     virDomainBackupPtr ret = NULL;
     virJSONValuePtr actions = NULL;
     virDomainObjPtr vm = NULL;
+    qemuDomainBackupDiskTrackInfoPtr track_disks = NULL;
     char *path = NULL, *device = NULL;
     bool job = false;
     int rc;
@@ -20563,6 +20595,9 @@ qemuDomainBackupCreateXML(virDomainPtr domain,
     if (!(actions = virJSONValueNewArray()))
         goto cleanup;
 
+    if (VIR_ALLOC_N(track_disks, def->ndisks) < 0)
+        goto cleanup;
+
     for (i = 0; i < def->ndisks; i++) {
         virStorageSourcePtr target = def->disks[i].target;
         virDomainDiskDefPtr disk = def->disks[i].vmdisk;
@@ -20580,8 +20615,14 @@ qemuDomainBackupCreateXML(virDomainPtr domain,
         if (qemuDomainDiskBlockJobIsActive(disk))
             goto cleanup;
 
-        if (qemuDomainBackupCheckTarget(&def->disks[i]) < 0)
+        if (qemuDomainBackupCheckTarget(&def->disks[i],
+                                        &track_disks[i].created) < 0)
             goto cleanup;
+
+        if (qemuDomainDiskChainElementPrepare(driver, vm, def->disks[i].target,
+                                              false) < 0)
+            goto cleanup;
+        track_disks[i].prepared = true;
 
         if (qemuGetDriveSourceString(target, NULL, &path) < 0)
             goto cleanup;
@@ -20616,11 +20657,24 @@ qemuDomainBackupCreateXML(virDomainPtr domain,
         QEMU_DOMAIN_DISK_PRIVATE(def->disks->vmdisk)->blockjob = true;
 
  cleanup:
+    if (!ret && track_disks) {
+        for (i = 0; i < def->ndisks; i++) {
+            virDomainBackupDiskDefPtr backup_disk = &def->disks[i];
+
+            if (track_disks[i].prepared)
+                qemuDomainDiskChainElementRevoke(driver, vm,
+                                                 backup_disk->target);
+            if (track_disks[i].created)
+                qemuDomainBackupDiskUnlink(backup_disk);
+        }
+    }
+
     if (job)
         qemuDomainObjEndJob(driver, vm);
 
     VIR_FREE(path);
     VIR_FREE(device);
+    VIR_FREE(track_disks);
 
     virDomainBackupDefFree(def);
     virJSONValueFree(actions);
