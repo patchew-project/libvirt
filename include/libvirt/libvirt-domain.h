@@ -2325,6 +2325,9 @@ typedef enum {
     /* Active Block Commit (virDomainBlockCommit with flags), job
      * exists as long as sync is active */
 
+    VIR_DOMAIN_BLOCK_JOB_TYPE_BACKUP = 5,
+    /* Block Backup */
+
 # ifdef VIR_ENUM_SENTINELS
     VIR_DOMAIN_BLOCK_JOB_TYPE_LAST
 # endif

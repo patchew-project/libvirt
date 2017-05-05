@@ -863,7 +863,7 @@ VIR_ENUM_IMPL(virDomainLoader,
  * <mirror> XML (remaining types are not two-phase). */
 VIR_ENUM_DECL(virDomainBlockJob)
 VIR_ENUM_IMPL(virDomainBlockJob, VIR_DOMAIN_BLOCK_JOB_TYPE_LAST,
-              "", "", "copy", "", "active-commit")
+              "", "", "copy", "", "active-commit", "")
 
 VIR_ENUM_IMPL(virDomainMemoryModel,
               VIR_DOMAIN_MEMORY_MODEL_LAST,

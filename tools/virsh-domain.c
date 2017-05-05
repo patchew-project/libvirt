@@ -2454,7 +2454,8 @@ VIR_ENUM_IMPL(virshDomainBlockJob,
               N_("Block Pull"),
               N_("Block Copy"),
               N_("Block Commit"),
-              N_("Active Block Commit"))
+              N_("Active Block Commit"),
+              N_("Block Backup"))
 
 static const char *
 virshDomainBlockJobToString(int type)
