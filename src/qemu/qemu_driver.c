@@ -20449,6 +20449,76 @@ qemuDomainSetBlockThreshold(virDomainPtr dom,
 }
 
 
+static int
+qemuDomainBackupCheckTarget(virDomainBackupDiskDefPtr disk)
+{
+    int ret = -1;
+    struct stat st;
+    virStorageSourcePtr target = disk->target;
+
+    if (virStorageFileInit(target) < 0)
+        return -1;
+
+    if (virStorageFileStat(target, &st) < 0) {
+        if (errno != ENOENT) {
+            virReportSystemError(errno,
+                                 _("unable to stat target path '%s' for disk '%s'"),
+                                 target->path, disk->name);
+            goto cleanup;
+        }
+        switch (target->type) {
+        case VIR_STORAGE_TYPE_FILE:
+            break;
+
+        case VIR_STORAGE_TYPE_BLOCK:
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("missing target block device '%s' for disk '%s'"),
+                           target->path, disk->name);
+            goto cleanup;
+
+        default:
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("unexpected backup target type '%s' for disk '%s'"),
+                           virStorageTypeToString(target->type),
+                           disk->name);
+            goto cleanup;
+        }
+    } else {
+        switch (target->type) {
+        case VIR_STORAGE_TYPE_FILE:
+            if (!S_ISREG(st.st_mode) || st.st_size > 0) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("invalid existing target file '%s' for disk '%s'"),
+                               target->path, disk->name);
+                goto cleanup;
+            }
+            break;
+
+        case VIR_STORAGE_TYPE_BLOCK:
+            if (!S_ISBLK(st.st_mode)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("target file '%s' for disk '%s' is not a block device"),
+                               target->path, disk->name);
+                goto cleanup;
+            }
+            break;
+
+        default:
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("unexpected backup target type '%s' for disk '%s'"),
+                           virStorageTypeToString(target->type), disk->name);
+            goto cleanup;
+        }
+    }
+
+    ret = 0;
+
+ cleanup:
+    virStorageFileDeinit(target);
+    return ret;
+}
+
+
 static virDomainBackupPtr
 qemuDomainBackupCreateXML(virDomainPtr domain,
                           const char *xmlDesc,
@@ -20508,6 +20578,9 @@ qemuDomainBackupCreateXML(virDomainPtr domain,
         }
 
         if (qemuDomainDiskBlockJobIsActive(disk))
+            goto cleanup;
+
+        if (qemuDomainBackupCheckTarget(&def->disks[i]) < 0)
             goto cleanup;
 
         if (qemuGetDriveSourceString(target, NULL, &path) < 0)
