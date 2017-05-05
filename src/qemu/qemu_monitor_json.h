@@ -522,4 +522,9 @@ int qemuMonitorJSONSetBlockThreshold(qemuMonitorPtr mon,
 virJSONValuePtr qemuMonitorJSONQueryNamedBlockNodes(qemuMonitorPtr mon)
     ATTRIBUTE_NONNULL(1);
 
+int qemuMonitorJSONDriveBackup(virJSONValuePtr actions,
+                               const char *device, const char *target,
+                               const char *bitmap, const char *format,
+                               unsigned long long speed, bool reuse)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 #endif /* QEMU_MONITOR_JSON_H */
