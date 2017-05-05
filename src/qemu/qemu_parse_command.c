@@ -1060,6 +1060,10 @@ qemuParseCommandLineNet(virDomainXMLOptionPtr xmlopt,
             def->script = values[i];
             values[i] = NULL;
         } else if (def->type == VIR_DOMAIN_NET_TYPE_ETHERNET &&
+                   STREQ(keywords[i], "downscript") && STRNEQ(values[i], "")) {
+            def->downscript = values[i];
+            values[i] = NULL;
+        } else if (def->type == VIR_DOMAIN_NET_TYPE_ETHERNET &&
                    STREQ(keywords[i], "ifname")) {
             def->ifname = values[i];
             values[i] = NULL;

@@ -1935,6 +1935,7 @@ virDomainNetDefClear(virDomainNetDefPtr def)
     VIR_FREE(def->backend.vhost);
     VIR_FREE(def->virtPortProfile);
     VIR_FREE(def->script);
+    VIR_FREE(def->downscript);
     VIR_FREE(def->domain_name);
     VIR_FREE(def->ifname);
     VIR_FREE(def->ifname_guest);
@@ -9589,6 +9590,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     char *ifname_guest = NULL;
     char *ifname_guest_actual = NULL;
     char *script = NULL;
+    char *downscript = NULL;
     char *address = NULL;
     char *port = NULL;
     char *localaddr = NULL;
@@ -9761,6 +9763,9 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
             } else if (!script &&
                        xmlStrEqual(cur->name, BAD_CAST "script")) {
                 script = virXMLPropString(cur, "path");
+            } else if (!downscript &&
+                       xmlStrEqual(cur->name, BAD_CAST "downscript")) {
+                downscript = virXMLPropString(cur, "path");
             } else if (!domain_name &&
                        xmlStrEqual(cur->name, BAD_CAST "backenddomain")) {
                 domain_name = virXMLPropString(cur, "name");
@@ -10074,6 +10079,10 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
         def->script = script;
         script = NULL;
     }
+    if (downscript != NULL) {
+        def->downscript = downscript;
+        downscript = NULL;
+    }
     if (domain_name != NULL) {
         def->domain_name = domain_name;
         domain_name = NULL;
@@ -10356,6 +10365,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_FREE(dev);
     virDomainActualNetDefFree(actual);
     VIR_FREE(script);
+    VIR_FREE(downscript);
     VIR_FREE(bridge);
     VIR_FREE(model);
     VIR_FREE(backend);
@@ -22158,6 +22168,9 @@ virDomainNetDefFormat(virBufferPtr buf,
 
     virBufferEscapeString(buf, "<script path='%s'/>\n",
                           def->script);
+    if (def->downscript)
+        virBufferEscapeString(buf, "<downscript path='%s'/>\n",
+                              def->downscript);
     virBufferEscapeString(buf, "<backenddomain name='%s'/>\n", def->domain_name);
 
     if (def->ifname &&

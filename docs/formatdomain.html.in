@@ -4663,6 +4663,7 @@
   &lt;interface type='ethernet'&gt;
     &lt;target dev='vnet7'/&gt;
     &lt;script path='/etc/qemu-ifup-mynet'/&gt;
+    &lt;downscript path='/etc/qemu-ifdown-mynet'/&gt;
   &lt;/interface&gt;
 &lt;/devices&gt;
 ...</pre>

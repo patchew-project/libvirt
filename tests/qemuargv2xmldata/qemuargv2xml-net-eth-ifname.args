@@ -18,6 +18,6 @@ QEMU_AUDIO_DRV=none \
 -usb \
 -drive file=/dev/HostVG/QEMUGuest1,format=raw,if=ide,bus=0,unit=0 \
 -net nic,macaddr=00:11:22:33:44:55,vlan=0,model=rtl8139,name=net0 \
--net tap,ifname=nic02,script=/etc/qemu-ifup,vlan=0,name=hostnet0 \
+-net tap,ifname=nic02,script=/etc/qemu-ifup,downscript=/etc/qemu-ifdown,vlan=0,name=hostnet0 \
 -serial none \
 -parallel none
