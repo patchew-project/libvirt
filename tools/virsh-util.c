@@ -175,6 +175,17 @@ virshDomainSnapshotFree(virDomainSnapshotPtr snap)
 }
 
 
+void
+virshDomainBackupFree(virDomainBackupPtr backup)
+{
+    if (!backup)
+        return;
+
+    vshSaveLibvirtHelperError();
+    virDomainBackupFree(backup); /* sc_prohibit_obj_free_apis_in_virsh */
+}
+
+
 int
 virshDomainGetXMLFromDom(vshControl *ctl,
                          virDomainPtr dom,

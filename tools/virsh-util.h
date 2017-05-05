@@ -46,6 +46,9 @@ virshDomainFree(virDomainPtr dom);
 void
 virshDomainSnapshotFree(virDomainSnapshotPtr snap);
 
+void
+virshDomainBackupFree(virDomainBackupPtr backup);
+
 int
 virshDomainState(vshControl *ctl,
                  virDomainPtr dom,
