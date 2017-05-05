@@ -288,6 +288,7 @@ DRIVER_SOURCES =							\
 		libvirt.c libvirt_internal.h				\
 		libvirt-domain.c 					\
 		libvirt-domain-snapshot.c 				\
+		libvirt-domain-backup.c 				\
 		libvirt-host.c 						\
 		libvirt-interface.c	 				\
 		libvirt-network.c	 				\
@@ -2684,6 +2685,7 @@ libvirt_setuid_rpc_client_la_SOURCES = 		\
 		libvirt.c			\
 		libvirt-domain.c		\
 		libvirt-domain-snapshot.c	\
+		libvirt-domain-backup.c	\
 		libvirt-host.c			\
 		libvirt-interface.c		\
 		libvirt-network.c		\
