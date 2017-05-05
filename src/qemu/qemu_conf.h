@@ -32,6 +32,7 @@
 # include "network_conf.h"
 # include "domain_conf.h"
 # include "snapshot_conf.h"
+# include "backup_conf.h"
 # include "domain_event.h"
 # include "virthread.h"
 # include "security/security_manager.h"
