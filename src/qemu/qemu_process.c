@@ -6252,56 +6252,6 @@ void qemuProcessStop(virQEMUDriverPtr driver,
                                         qemuProcessCleanupChardevDevice,
                                         NULL));
 
-
-    /* shut it off for sure */
-    ignore_value(qemuProcessKill(vm,
-                                 VIR_QEMU_PROCESS_KILL_FORCE|
-                                 VIR_QEMU_PROCESS_KILL_NOCHECK));
-
-    qemuDomainCleanupRun(driver, vm);
-
-    /* Stop autodestroy in case guest is restarted */
-    qemuProcessAutoDestroyRemove(driver, vm);
-
-    /* now that we know it's stopped call the hook if present */
-    if (virHookPresent(VIR_HOOK_DRIVER_QEMU)) {
-        char *xml = qemuDomainDefFormatXML(driver, vm->def, 0);
-
-        /* we can't stop the operation even if the script raised an error */
-        ignore_value(virHookCall(VIR_HOOK_DRIVER_QEMU, vm->def->name,
-                                 VIR_HOOK_QEMU_OP_STOPPED, VIR_HOOK_SUBOP_END,
-                                 NULL, xml, NULL));
-        VIR_FREE(xml);
-    }
-
-    /* Reset Security Labels unless caller don't want us to */
-    if (!(flags & VIR_QEMU_PROCESS_STOP_NO_RELABEL))
-        qemuSecurityRestoreAllLabel(driver, vm,
-                                    !!(flags & VIR_QEMU_PROCESS_STOP_MIGRATED));
-
-    qemuSecurityReleaseLabel(driver->securityManager, vm->def);
-
-    for (i = 0; i < vm->def->ndisks; i++) {
-        virDomainDeviceDef dev;
-        virDomainDiskDefPtr disk = vm->def->disks[i];
-
-        dev.type = VIR_DOMAIN_DEVICE_DISK;
-        dev.data.disk = disk;
-        ignore_value(qemuRemoveSharedDevice(driver, &dev, vm->def->name));
-    }
-
-    /* Clear out dynamically assigned labels */
-    for (i = 0; i < vm->def->nseclabels; i++) {
-        if (vm->def->seclabels[i]->type == VIR_DOMAIN_SECLABEL_DYNAMIC)
-            VIR_FREE(vm->def->seclabels[i]->label);
-        VIR_FREE(vm->def->seclabels[i]->imagelabel);
-    }
-
-    virStringListFree(priv->qemuDevices);
-    priv->qemuDevices = NULL;
-
-    qemuHostdevReAttachDomainDevices(driver, vm->def);
-
     def = vm->def;
     for (i = 0; i < def->nnets; i++) {
         virDomainNetDefPtr net = def->nets[i];
@@ -6358,6 +6308,55 @@ void qemuProcessStop(virQEMUDriverPtr driver,
         virDomainNetRemoveHostdev(def, net);
         networkReleaseActualDevice(vm->def, net);
     }
+
+    /* shut it off for sure */
+    ignore_value(qemuProcessKill(vm,
+                                 VIR_QEMU_PROCESS_KILL_FORCE|
+                                 VIR_QEMU_PROCESS_KILL_NOCHECK));
+
+    qemuDomainCleanupRun(driver, vm);
+
+    /* Stop autodestroy in case guest is restarted */
+    qemuProcessAutoDestroyRemove(driver, vm);
+
+    /* now that we know it's stopped call the hook if present */
+    if (virHookPresent(VIR_HOOK_DRIVER_QEMU)) {
+        char *xml = qemuDomainDefFormatXML(driver, vm->def, 0);
+
+        /* we can't stop the operation even if the script raised an error */
+        ignore_value(virHookCall(VIR_HOOK_DRIVER_QEMU, vm->def->name,
+                                 VIR_HOOK_QEMU_OP_STOPPED, VIR_HOOK_SUBOP_END,
+                                 NULL, xml, NULL));
+        VIR_FREE(xml);
+    }
+
+    /* Reset Security Labels unless caller don't want us to */
+    if (!(flags & VIR_QEMU_PROCESS_STOP_NO_RELABEL))
+        qemuSecurityRestoreAllLabel(driver, vm,
+                                    !!(flags & VIR_QEMU_PROCESS_STOP_MIGRATED));
+
+    qemuSecurityReleaseLabel(driver->securityManager, vm->def);
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDeviceDef dev;
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+
+        dev.type = VIR_DOMAIN_DEVICE_DISK;
+        dev.data.disk = disk;
+        ignore_value(qemuRemoveSharedDevice(driver, &dev, vm->def->name));
+    }
+
+    /* Clear out dynamically assigned labels */
+    for (i = 0; i < vm->def->nseclabels; i++) {
+        if (vm->def->seclabels[i]->type == VIR_DOMAIN_SECLABEL_DYNAMIC)
+            VIR_FREE(vm->def->seclabels[i]->label);
+        VIR_FREE(vm->def->seclabels[i]->imagelabel);
+    }
+
+    virStringListFree(priv->qemuDevices);
+    priv->qemuDevices = NULL;
+
+    qemuHostdevReAttachDomainDevices(driver, vm->def);
 
  retry:
     if ((ret = qemuRemoveCgroup(vm)) < 0) {
