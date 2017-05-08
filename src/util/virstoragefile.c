@@ -374,7 +374,7 @@ static struct FileTypeInfo const fileTypeInfo[] = {
     },
     [VIR_STORAGE_FILE_VMDK] = {
         0, "KDMV", NULL,
-        LV_LITTLE_ENDIAN, 4, 4, {1, 2},
+        LV_LITTLE_ENDIAN, 4, 4, {1, 2, 3},
         4+4+4, 8, 512, NULL, vmdk4GetBackingStore, NULL
     },
 };
