@@ -339,6 +339,9 @@ bhyveBuildGraphicsArgStr(const virDomainDef *def ATTRIBUTE_UNUSED,
     virBuffer opt = VIR_BUFFER_INITIALIZER;
     virDomainGraphicsListenDefPtr glisten = NULL;
     bool escapeAddr;
+    unsigned short port;
+
+    bhyveConnPtr driver = conn->privateData;
 
     if (!(bhyveDriverGetCaps(conn) & BHYVE_CAP_LPC_BOOTROM) ||
         def->os.bootloader ||
@@ -399,6 +402,12 @@ bhyveBuildGraphicsArgStr(const virDomainDef *def ATTRIBUTE_UNUSED,
                 virBufferAsprintf(&opt, "[%s]", glisten->address);
             else
                 virBufferAdd(&opt, glisten->address, -1);
+        }
+
+        if (graphics->data.vnc.autoport) {
+            if (virPortAllocatorAcquire(driver->remotePorts, &port) < 0)
+                return -1;
+            graphics->data.vnc.port = port;
         }
 
         virBufferAsprintf(&opt, ":%d", graphics->data.vnc.port);
