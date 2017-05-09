@@ -4797,9 +4797,24 @@ testStoragePoolListAllVolumes(virStoragePoolPtr pool,
 }
 
 
+static virStorageVolDefPtr
+testStorageVolDefFindByName(virStoragePoolObjPtr obj,
+                            const char *name)
+{
+    virStorageVolDefPtr privvol;
+
+    if (!(privvol = virStorageVolDefFindByName(obj, name))) {
+        virReportError(VIR_ERR_NO_STORAGE_VOL,
+                       _("no storage vol with matching name '%s'"), name);
+    }
+
+    return privvol;
+}
+
+
 static virStorageVolPtr
 testStorageVolLookupByName(virStoragePoolPtr pool,
-                           const char *name ATTRIBUTE_UNUSED)
+                           const char *name)
 {
     testDriverPtr privconn = pool->conn->privateData;
     virStoragePoolObjPtr obj;
@@ -4809,13 +4824,8 @@ testStorageVolLookupByName(virStoragePoolPtr pool,
     if (!(obj = testStoragePoolObjFindActiveByName(privconn, pool->name)))
         return NULL;
 
-    privvol = virStorageVolDefFindByName(obj, name);
-
-    if (!privvol) {
-        virReportError(VIR_ERR_NO_STORAGE_VOL,
-                       _("no storage vol with matching name '%s'"), name);
+    if (!(privvol = testStorageVolDefFindByName(obj, name)))
         goto cleanup;
-    }
 
     ret = virGetStorageVol(pool->conn, obj->def->name,
                            privvol->name, privvol->key,
@@ -5044,14 +5054,8 @@ testStorageVolDelete(virStorageVolPtr vol,
     if (!(obj = testStoragePoolObjFindActiveByName(privconn, vol->pool)))
         return -1;
 
-    privvol = virStorageVolDefFindByName(obj, vol->name);
-
-    if (privvol == NULL) {
-        virReportError(VIR_ERR_NO_STORAGE_VOL,
-                       _("no storage vol with matching name '%s'"),
-                       vol->name);
+    if (!(privvol = testStorageVolDefFindByName(obj, vol->name)))
         goto cleanup;
-    }
 
     obj->def->allocation -= privvol->target.allocation;
     obj->def->available = (obj->def->capacity - obj->def->allocation);
@@ -5099,14 +5103,8 @@ testStorageVolGetInfo(virStorageVolPtr vol,
     if (!(obj = testStoragePoolObjFindActiveByName(privconn, vol->pool)))
         return -1;
 
-    privvol = virStorageVolDefFindByName(obj, vol->name);
-
-    if (privvol == NULL) {
-        virReportError(VIR_ERR_NO_STORAGE_VOL,
-                       _("no storage vol with matching name '%s'"),
-                       vol->name);
+    if (!(privvol = testStorageVolDefFindByName(obj, vol->name)))
         goto cleanup;
-    }
 
     memset(info, 0, sizeof(*info));
     info->type = testStorageVolumeTypeForPool(obj->def->type);
@@ -5134,14 +5132,8 @@ testStorageVolGetXMLDesc(virStorageVolPtr vol,
     if (!(obj = testStoragePoolObjFindActiveByName(privconn, vol->pool)))
         return NULL;
 
-    privvol = virStorageVolDefFindByName(obj, vol->name);
-
-    if (privvol == NULL) {
-        virReportError(VIR_ERR_NO_STORAGE_VOL,
-                       _("no storage vol with matching name '%s'"),
-                       vol->name);
+    if (!(privvol = testStorageVolDefFindByName(obj, vol->name)))
         goto cleanup;
-    }
 
     ret = virStorageVolDefFormat(obj->def, privvol);
 
@@ -5162,14 +5154,8 @@ testStorageVolGetPath(virStorageVolPtr vol)
     if (!(obj = testStoragePoolObjFindActiveByName(privconn, vol->pool)))
         return NULL;
 
-    privvol = virStorageVolDefFindByName(obj, vol->name);
-
-    if (privvol == NULL) {
-        virReportError(VIR_ERR_NO_STORAGE_VOL,
-                       _("no storage vol with matching name '%s'"),
-                       vol->name);
+    if (!(privvol = testStorageVolDefFindByName(obj, vol->name)))
         goto cleanup;
-    }
 
     ignore_value(VIR_STRDUP(ret, privvol->target.path));
 
