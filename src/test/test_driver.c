@@ -1035,6 +1035,7 @@ testParseInterfaces(testDriverPtr privconn,
     return ret;
 }
 
+
 static int
 testOpenVolumesForPool(const char *file,
                        xmlXPathContextPtr ctxt,
@@ -1091,6 +1092,7 @@ testOpenVolumesForPool(const char *file,
     return ret;
 }
 
+
 static int
 testParseStorage(testDriverPtr privconn,
                  const char *file,
@@ -1142,6 +1144,7 @@ testParseStorage(testDriverPtr privconn,
     VIR_FREE(nodes);
     return ret;
 }
+
 
 static int
 testParseNodedevs(testDriverPtr privconn,
@@ -3996,8 +3999,8 @@ testInterfaceDestroy(virInterfacePtr iface,
  * Storage Driver routines
  */
 
-
-static int testStoragePoolObjSetDefaults(virStoragePoolObjPtr pool)
+static int
+testStoragePoolObjSetDefaults(virStoragePoolObjPtr pool)
 {
 
     pool->def->capacity = defaultPoolCap;
@@ -4069,6 +4072,7 @@ testStoragePoolLookupByUUID(virConnectPtr conn,
     return ret;
 }
 
+
 static virStoragePoolPtr
 testStoragePoolLookupByName(virConnectPtr conn,
                             const char *name)
@@ -4088,6 +4092,7 @@ testStoragePoolLookupByName(virConnectPtr conn,
         virStoragePoolObjUnlock(pool);
     return ret;
 }
+
 
 static virStoragePoolPtr
 testStoragePoolLookupByVolume(virStorageVolPtr vol)
@@ -4159,6 +4164,7 @@ testConnectListDefinedStoragePools(virConnectPtr conn,
     return n;
 }
 
+
 static int
 testConnectListAllStoragePools(virConnectPtr conn,
                                virStoragePoolPtr **pools,
@@ -4177,7 +4183,9 @@ testConnectListAllStoragePools(virConnectPtr conn,
     return ret;
 }
 
-static int testStoragePoolIsActive(virStoragePoolPtr pool)
+
+static int
+testStoragePoolIsActive(virStoragePoolPtr pool)
 {
     testDriverPtr privconn = pool->conn->privateData;
     virStoragePoolObjPtr obj;
@@ -4194,7 +4202,9 @@ static int testStoragePoolIsActive(virStoragePoolPtr pool)
     return ret;
 }
 
-static int testStoragePoolIsPersistent(virStoragePoolPtr pool)
+
+static int
+testStoragePoolIsPersistent(virStoragePoolPtr pool)
 {
     testDriverPtr privconn = pool->conn->privateData;
     virStoragePoolObjPtr obj;
@@ -4210,7 +4220,6 @@ static int testStoragePoolIsPersistent(virStoragePoolPtr pool)
         virStoragePoolObjUnlock(obj);
     return ret;
 }
-
 
 
 static int
@@ -4246,6 +4255,7 @@ testStoragePoolCreate(virStoragePoolPtr pool,
         virStoragePoolObjUnlock(privpool);
     return ret;
 }
+
 
 static char *
 testConnectFindStoragePoolSources(virConnectPtr conn ATTRIBUTE_UNUSED,
@@ -4401,6 +4411,7 @@ testStoragePoolCreateXML(virConnectPtr conn,
     return ret;
 }
 
+
 static virStoragePoolPtr
 testStoragePoolDefineXML(virConnectPtr conn,
                          const char *xml,
@@ -4448,6 +4459,7 @@ testStoragePoolDefineXML(virConnectPtr conn,
     return ret;
 }
 
+
 static int
 testStoragePoolUndefine(virStoragePoolPtr pool)
 {
@@ -4479,6 +4491,7 @@ testStoragePoolUndefine(virStoragePoolPtr pool)
     testObjectEventQueue(privconn, event);
     return ret;
 }
+
 
 static int
 testStoragePoolBuild(virStoragePoolPtr pool,
@@ -4677,6 +4690,7 @@ testStoragePoolGetInfo(virStoragePoolPtr pool,
     return ret;
 }
 
+
 static char *
 testStoragePoolGetXMLDesc(virStoragePoolPtr pool,
                           unsigned int flags)
@@ -4697,6 +4711,7 @@ testStoragePoolGetXMLDesc(virStoragePoolPtr pool,
         virStoragePoolObjUnlock(privpool);
     return ret;
 }
+
 
 static int
 testStoragePoolGetAutostart(virStoragePoolPtr pool,
@@ -4721,6 +4736,7 @@ testStoragePoolGetAutostart(virStoragePoolPtr pool,
         virStoragePoolObjUnlock(privpool);
     return ret;
 }
+
 
 static int
 testStoragePoolSetAutostart(virStoragePoolPtr pool,
@@ -4832,6 +4848,7 @@ testStoragePoolListAllVolumes(virStoragePoolPtr obj,
     return ret;
 }
 
+
 static virStorageVolPtr
 testStorageVolLookupByName(virStoragePoolPtr pool,
                            const char *name ATTRIBUTE_UNUSED)
@@ -4905,6 +4922,7 @@ testStorageVolLookupByKey(virConnectPtr conn,
     return ret;
 }
 
+
 static virStorageVolPtr
 testStorageVolLookupByPath(virConnectPtr conn,
                            const char *path)
@@ -4940,6 +4958,7 @@ testStorageVolLookupByPath(virConnectPtr conn,
 
     return ret;
 }
+
 
 static virStorageVolPtr
 testStorageVolCreateXML(virStoragePoolPtr pool,
@@ -5006,6 +5025,7 @@ testStorageVolCreateXML(virStoragePoolPtr pool,
         virStoragePoolObjUnlock(privpool);
     return ret;
 }
+
 
 static virStorageVolPtr
 testStorageVolCreateXMLFrom(virStoragePoolPtr pool,
@@ -5084,6 +5104,7 @@ testStorageVolCreateXMLFrom(virStoragePoolPtr pool,
     return ret;
 }
 
+
 static int
 testStorageVolDelete(virStorageVolPtr vol,
                      unsigned int flags)
@@ -5136,7 +5157,8 @@ testStorageVolDelete(virStorageVolPtr vol,
 }
 
 
-static int testStorageVolumeTypeForPool(int pooltype)
+static int
+testStorageVolumeTypeForPool(int pooltype)
 {
 
     switch (pooltype) {
@@ -5148,6 +5170,7 @@ static int testStorageVolumeTypeForPool(int pooltype)
             return VIR_STORAGE_VOL_BLOCK;
     }
 }
+
 
 static int
 testStorageVolGetInfo(virStorageVolPtr vol,
@@ -5188,6 +5211,7 @@ testStorageVolGetInfo(virStorageVolPtr vol,
     return ret;
 }
 
+
 static char *
 testStorageVolGetXMLDesc(virStorageVolPtr vol,
                          unsigned int flags)
@@ -5224,6 +5248,7 @@ testStorageVolGetXMLDesc(virStorageVolPtr vol,
         virStoragePoolObjUnlock(privpool);
     return ret;
 }
+
 
 static char *
 testStorageVolGetPath(virStorageVolPtr vol)
