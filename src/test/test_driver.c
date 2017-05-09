@@ -4738,8 +4738,7 @@ testStoragePoolNumOfVolumes(virStoragePoolPtr pool)
     if (!(obj = testStoragePoolObjFindActiveByName(privconn, pool->name)))
         return -1;
 
-    ret = virStoragePoolObjNumOfVolumes(&obj->volumes, pool->conn,
-                                        obj->def, NULL);
+    ret = virStoragePoolObjNumOfVolumes(obj, pool->conn, NULL);
 
     virStoragePoolObjUnlock(obj);
     return ret;
@@ -4758,8 +4757,7 @@ testStoragePoolListVolumes(virStoragePoolPtr pool,
     if (!(obj = testStoragePoolObjFindActiveByName(privconn, pool->name)))
         return -1;
 
-    n = virStoragePoolObjVolumeGetNames(&obj->volumes, pool->conn,
-                                        obj->def, NULL, names, maxnames);
+    n = virStoragePoolObjVolumeGetNames(obj, pool->conn, NULL, names, maxnames);
 
     virStoragePoolObjUnlock(obj);
     return n;
@@ -4786,8 +4784,7 @@ testStoragePoolListAllVolumes(virStoragePoolPtr pool,
         goto cleanup;
     }
 
-    ret = virStoragePoolObjVolumeListExport(pool->conn, &obj->volumes,
-                                            obj->def, vols, NULL);
+    ret = virStoragePoolObjVolumeListExport(pool->conn, obj, vols, NULL);
 
  cleanup:
     virStoragePoolObjUnlock(obj);
