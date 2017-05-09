@@ -1069,8 +1069,7 @@ testOpenVolumesForPool(const char *file,
 
         if (def->target.path == NULL) {
             if (virAsprintf(&def->target.path, "%s/%s",
-                            obj->def->target.path,
-                            def->name) == -1)
+                            obj->def->target.path, def->name) < 0)
                 goto error;
         }
 
@@ -4946,8 +4945,7 @@ testStorageVolCreateXML(virStoragePoolPtr pool,
     }
 
     if (virAsprintf(&privvol->target.path, "%s/%s",
-                    obj->def->target.path,
-                    privvol->name) == -1)
+                    obj->def->target.path, privvol->name) < 0)
         goto cleanup;
 
     if (VIR_STRDUP(privvol->key, privvol->target.path) < 0 ||
@@ -5015,8 +5013,7 @@ testStorageVolCreateXMLFrom(virStoragePoolPtr pool,
     obj->def->available = (obj->def->capacity - obj->def->allocation);
 
     if (virAsprintf(&privvol->target.path, "%s/%s",
-                    obj->def->target.path,
-                    privvol->name) == -1)
+                    obj->def->target.path, privvol->name) < 0)
         goto cleanup;
 
     if (VIR_STRDUP(privvol->key, privvol->target.path) < 0 ||
