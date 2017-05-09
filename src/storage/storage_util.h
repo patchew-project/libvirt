@@ -32,37 +32,37 @@ virStorageBackendGetBuildVolFromFunction(virStorageVolDefPtr vol,
                                          virStorageVolDefPtr inputvol);
 
 int virStorageBackendVolCreateLocal(virConnectPtr conn,
-                                    virStoragePoolObjPtr pool,
+                                    virStoragePoolObjPtr obj,
                                     virStorageVolDefPtr vol);
 
 int virStorageBackendVolBuildLocal(virConnectPtr conn,
-                                   virStoragePoolObjPtr pool,
+                                   virStoragePoolObjPtr obj,
                                    virStorageVolDefPtr vol,
                                    unsigned int flags);
 
 int virStorageBackendVolBuildFromLocal(virConnectPtr conn,
-                                       virStoragePoolObjPtr pool,
+                                       virStoragePoolObjPtr obj,
                                        virStorageVolDefPtr vol,
                                        virStorageVolDefPtr inputvol,
                                        unsigned int flags);
 
 int virStorageBackendVolDeleteLocal(virConnectPtr conn,
-                                    virStoragePoolObjPtr pool,
+                                    virStoragePoolObjPtr obj,
                                     virStorageVolDefPtr vol,
                                     unsigned int flags);
 
 int virStorageBackendVolRefreshLocal(virConnectPtr conn,
-                                     virStoragePoolObjPtr pool,
+                                     virStoragePoolObjPtr obj,
                                      virStorageVolDefPtr vol);
 
 int virStorageBackendVolResizeLocal(virConnectPtr conn,
-                                    virStoragePoolObjPtr pool,
+                                    virStoragePoolObjPtr obj,
                                     virStorageVolDefPtr vol,
                                     unsigned long long capacity,
                                     unsigned int flags);
 
 int virStorageBackendVolUploadLocal(virConnectPtr conn,
-                                    virStoragePoolObjPtr pool,
+                                    virStoragePoolObjPtr obj,
                                     virStorageVolDefPtr vol,
                                     virStreamPtr stream,
                                     unsigned long long offset,
@@ -70,7 +70,7 @@ int virStorageBackendVolUploadLocal(virConnectPtr conn,
                                     unsigned int flags);
 
 int virStorageBackendVolDownloadLocal(virConnectPtr conn,
-                                      virStoragePoolObjPtr pool,
+                                      virStoragePoolObjPtr obj,
                                       virStorageVolDefPtr vol,
                                       virStreamPtr stream,
                                       unsigned long long offset,
@@ -78,20 +78,20 @@ int virStorageBackendVolDownloadLocal(virConnectPtr conn,
                                       unsigned int flags);
 
 int virStorageBackendVolWipeLocal(virConnectPtr conn,
-                                  virStoragePoolObjPtr pool,
+                                  virStoragePoolObjPtr obj,
                                   virStorageVolDefPtr vol,
                                   unsigned int algorithm,
                                   unsigned int flags);
 
 /* Local/Common Storage Pool Backend APIs */
-int virStorageBackendBuildLocal(virStoragePoolObjPtr pool);
+int virStorageBackendBuildLocal(virStoragePoolObjPtr obj);
 
 int virStorageBackendDeleteLocal(virConnectPtr conn,
-                                 virStoragePoolObjPtr pool,
+                                 virStoragePoolObjPtr obj,
                                  unsigned int flags);
 
 int virStorageBackendRefreshLocal(virConnectPtr conn,
-                                  virStoragePoolObjPtr pool);
+                                  virStoragePoolObjPtr obj);
 
 int virStorageUtilGlusterExtractPoolSources(const char *host,
                                             const char *xml,
@@ -150,13 +150,13 @@ int virStorageBackendUpdateVolTargetInfoFD(virStorageSourcePtr target,
                                            struct stat *sb);
 
 bool virStorageBackendPoolPathIsStable(const char *path);
-char *virStorageBackendStablePath(virStoragePoolObjPtr pool,
+char *virStorageBackendStablePath(virStoragePoolObjPtr obj,
                                   const char *devpath,
                                   bool loop);
 
 virCommandPtr
 virStorageBackendCreateQemuImgCmdFromVol(virConnectPtr conn,
-                                         virStoragePoolObjPtr pool,
+                                         virStoragePoolObjPtr obj,
                                          virStorageVolDefPtr vol,
                                          virStorageVolDefPtr inputvol,
                                          unsigned int flags,
@@ -164,7 +164,7 @@ virStorageBackendCreateQemuImgCmdFromVol(virConnectPtr conn,
                                          int imgformat,
                                          const char *secretPath);
 
-int virStorageBackendSCSIFindLUs(virStoragePoolObjPtr pool,
+int virStorageBackendSCSIFindLUs(virStoragePoolObjPtr obj,
                                  uint32_t scanhost);
 
 int
