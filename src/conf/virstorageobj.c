@@ -37,6 +37,80 @@
 VIR_LOG_INIT("conf.virstorageobj");
 
 
+virStoragePoolDefPtr
+virStoragePoolObjGetDef(virStoragePoolObjPtr obj)
+{
+    return obj->def;
+}
+
+
+virStoragePoolDefPtr
+virStoragePoolObjGetNewDef(virStoragePoolObjPtr obj)
+{
+    return obj->newDef;
+}
+
+
+void
+virStoragePoolObjStealNewDef(virStoragePoolObjPtr obj)
+{
+    virStoragePoolDefFree(obj->def);
+    obj->def = obj->newDef;
+    obj->newDef = NULL;
+}
+
+
+char *
+virStoragePoolObjGetConfigFile(virStoragePoolObjPtr obj)
+{
+    return obj->configFile;
+}
+
+
+void
+virStoragePoolObjSetConfigFile(virStoragePoolObjPtr obj,
+                               char *configFile)
+{
+    obj->configFile = configFile;
+}
+
+
+bool
+virStoragePoolObjIsActive(virStoragePoolObjPtr obj)
+{
+    return obj->active;
+}
+
+
+void
+virStoragePoolObjSetActive(virStoragePoolObjPtr obj,
+                           bool active)
+{
+    obj->active = active;
+}
+
+
+unsigned int
+virStoragePoolObjGetAsyncjobs(virStoragePoolObjPtr obj)
+{
+    return obj->asyncjobs;
+}
+
+
+void
+virStoragePoolObjIncrAsyncjobs(virStoragePoolObjPtr obj)
+{
+    obj->asyncjobs++;
+}
+
+
+void
+virStoragePoolObjDecrAsyncjobs(virStoragePoolObjPtr obj)
+{
+    obj->asyncjobs--;
+}
+
+
 void
 virStoragePoolObjFree(virStoragePoolObjPtr obj)
 {
