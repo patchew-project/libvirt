@@ -93,6 +93,14 @@ void
 virStoragePoolObjSetActive(virStoragePoolObjPtr obj,
                            bool active);
 
+int
+virStoragePoolObjGetAutostart(virStoragePoolObjPtr obj);
+
+int
+virStoragePoolObjSetAutostart(virStoragePoolObjPtr obj,
+                              const char *autostartDir,
+                              int autostart);
+
 unsigned int
 virStoragePoolObjGetAsyncjobs(virStoragePoolObjPtr obj);
 

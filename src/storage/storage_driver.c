@@ -1250,11 +1250,7 @@ storagePoolGetAutostart(virStoragePoolPtr pool,
     if (virStoragePoolGetAutostartEnsureACL(pool->conn, obj->def) < 0)
         goto cleanup;
 
-    if (!obj->configFile) {
-        *autostart = 0;
-    } else {
-        *autostart = obj->autostart;
-    }
+    *autostart = virStoragePoolObjGetAutostart(obj);
 
     ret = 0;
 
@@ -1277,39 +1273,8 @@ storagePoolSetAutostart(virStoragePoolPtr pool,
     if (virStoragePoolSetAutostartEnsureACL(pool->conn, obj->def) < 0)
         goto cleanup;
 
-    if (!obj->configFile) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       "%s", _("pool has no config file"));
-    }
-
-    autostart = (autostart != 0);
-
-    if (obj->autostart != autostart) {
-        if (autostart) {
-            if (virFileMakePath(driver->autostartDir) < 0) {
-                virReportSystemError(errno,
-                                     _("cannot create autostart directory %s"),
-                                     driver->autostartDir);
-                goto cleanup;
-            }
-
-            if (symlink(obj->configFile, obj->autostartLink) < 0) {
-                virReportSystemError(errno,
-                                     _("Failed to create symlink '%s' to '%s'"),
-                                     obj->autostartLink, obj->configFile);
-                goto cleanup;
-            }
-        } else {
-            if (unlink(obj->autostartLink) < 0 &&
-                errno != ENOENT && errno != ENOTDIR) {
-                virReportSystemError(errno,
-                                     _("Failed to delete symlink '%s'"),
-                                     obj->autostartLink);
-                goto cleanup;
-            }
-        }
-        obj->autostart = autostart;
-    }
+    if (virStoragePoolObjSetAutostart(obj, driver->autostartDir, autostart) < 0)
+        goto cleanup;
 
     ret = 0;
 

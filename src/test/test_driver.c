@@ -4690,11 +4690,7 @@ testStoragePoolGetAutostart(virStoragePoolPtr pool,
     if (!(obj = testStoragePoolObjFindByName(privconn, pool->name)))
         return -1;
 
-    if (!obj->configFile) {
-        *autostart = 0;
-    } else {
-        *autostart = obj->autostart;
-    }
+    *autostart = virStoragePoolObjGetAutostart(obj);
 
     virStoragePoolObjUnlock(obj);
     return 0;
@@ -4712,14 +4708,9 @@ testStoragePoolSetAutostart(virStoragePoolPtr pool,
     if (!(obj = testStoragePoolObjFindByName(privconn, pool->name)))
         return -1;
 
-    if (!obj->configFile) {
-        virReportError(VIR_ERR_INVALID_ARG,
-                       "%s", _("pool has no config file"));
+    if (virStoragePoolObjSetAutostart(obj, NULL, autostart) < 0)
         goto cleanup;
-    }
 
-    autostart = (autostart != 0);
-    obj->autostart = autostart;
     ret = 0;
 
  cleanup:

@@ -111,6 +111,63 @@ virStoragePoolObjSetActive(virStoragePoolObjPtr obj,
 }
 
 
+int
+virStoragePoolObjGetAutostart(virStoragePoolObjPtr obj)
+{
+    if (!obj->configFile)
+        return 0;
+
+    return obj->autostart;
+}
+
+
+int
+virStoragePoolObjSetAutostart(virStoragePoolObjPtr obj,
+                              const char *autostartDir,
+                              int autostart)
+{
+    obj->autostart = autostart;
+
+    if (!obj->configFile) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "%s", _("pool has no config file"));
+        return -1;
+    }
+
+    autostart = (autostart != 0);
+
+    if (obj->autostart != autostart) {
+        if (autostart && autostartDir) {
+            if (virFileMakePath(autostartDir) < 0) {
+                virReportSystemError(errno,
+                                     _("cannot create autostart directory %s"),
+                                     autostartDir);
+                return -1;
+            }
+
+            if (symlink(obj->configFile, obj->autostartLink) < 0) {
+                virReportSystemError(errno,
+                                     _("Failed to create symlink '%s' to '%s'"),
+                                     obj->autostartLink, obj->configFile);
+                return -1;
+            }
+        } else {
+            if (unlink(obj->autostartLink) < 0 &&
+                errno != ENOENT && errno != ENOTDIR) {
+                virReportSystemError(errno,
+                                     _("Failed to delete symlink '%s'"),
+                                     obj->autostartLink);
+                return -1;
+            }
+        }
+
+        obj->autostart = autostart;
+    }
+
+    return 0;
+}
+
+
 unsigned int
 virStoragePoolObjGetAsyncjobs(virStoragePoolObjPtr obj)
 {
