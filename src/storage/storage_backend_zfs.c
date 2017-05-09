@@ -161,10 +161,7 @@ virStorageBackendZFSParseVol(virStoragePoolObjPtr pool,
     if (volume->target.allocation < volume->target.capacity)
         volume->target.sparse = true;
 
-    if (is_new_vol &&
-        VIR_APPEND_ELEMENT(pool->volumes.objs,
-                           pool->volumes.count,
-                           volume) < 0)
+    if (is_new_vol && virStoragePoolObjAddVol(pool, volume) < 0)
         goto cleanup;
 
     ret = 0;

@@ -1579,25 +1579,6 @@ storagePoolLookupByTargetPath(virConnectPtr conn,
 }
 
 
-static void
-storageVolRemoveFromPool(virStoragePoolObjPtr obj,
-                         virStorageVolDefPtr voldef)
-{
-    size_t i;
-
-    for (i = 0; i < obj->volumes.count; i++) {
-        if (obj->volumes.objs[i] == voldef) {
-            VIR_INFO("Deleting volume '%s' from storage pool '%s'",
-                     voldef->name, obj->def->name);
-            virStorageVolDefFree(voldef);
-
-            VIR_DELETE_ELEMENT(obj->volumes.objs, i, obj->volumes.count);
-            break;
-        }
-    }
-}
-
-
 static int
 storageVolDeleteInternal(virStorageVolPtr vol,
                          virStorageBackendPtr backend,
@@ -1629,7 +1610,7 @@ storageVolDeleteInternal(virStorageVolPtr vol,
         }
     }
 
-    storageVolRemoveFromPool(obj, voldef);
+    virStoragePoolObjRemoveVol(obj, voldef);
     ret = 0;
 
  cleanup:
@@ -1768,24 +1749,19 @@ storageVolCreateXML(virStoragePoolPtr pool,
         goto cleanup;
     }
 
-    if (VIR_REALLOC_N(obj->volumes.objs,
-                      obj->volumes.count + 1) < 0)
-        goto cleanup;
-
     /* Wipe any key the user may have suggested, as volume creation
      * will generate the canonical key.  */
     VIR_FREE(voldef->key);
     if (backend->createVol(pool->conn, obj, voldef) < 0)
         goto cleanup;
 
-    obj->volumes.objs[obj->volumes.count++] = voldef;
-    volobj = virGetStorageVol(pool->conn, obj->def->name, voldef->name,
-                              voldef->key, NULL, NULL);
-    if (!volobj) {
-        obj->volumes.count--;
+    if (!(volobj = virGetStorageVol(pool->conn, obj->def->name, voldef->name,
+                                    voldef->key, NULL, NULL)))
         goto cleanup;
-    }
 
+    /* NB: Upon success voldef "owned" by storage pool for deletion purposes */
+    if (virStoragePoolObjAddVol(obj, voldef) < 0)
+        goto cleanup;
 
     if (backend->buildVol) {
         int buildret;
@@ -1820,7 +1796,7 @@ storageVolCreateXML(virStoragePoolPtr pool,
 
         if (buildret < 0) {
             /* buildVol handles deleting volume on failure */
-            storageVolRemoveFromPool(obj, voldef);
+            virStoragePoolObjRemoveVol(obj, voldef);
             voldef = NULL;
             goto cleanup;
         }
@@ -1971,9 +1947,6 @@ storageVolCreateXMLFrom(virStoragePoolPtr pool,
         backend->refreshVol(pool->conn, obj, voldefsrc) < 0)
         goto cleanup;
 
-    if (VIR_REALLOC_N(obj->volumes.objs, obj->volumes.count + 1) < 0)
-        goto cleanup;
-
     /* 'Define' the new volume so we get async progress reporting.
      * Wipe any key the user may have suggested, as volume creation
      * will generate the canonical key.  */
@@ -1990,13 +1963,13 @@ storageVolCreateXMLFrom(virStoragePoolPtr pool,
 
     memcpy(shadowvol, voldef, sizeof(*voldef));
 
-    obj->volumes.objs[obj->volumes.count++] = voldef;
-    volobj = virGetStorageVol(pool->conn, obj->def->name, voldef->name,
-                              voldef->key, NULL, NULL);
-    if (!volobj) {
-        obj->volumes.count--;
+    if (!(volobj = virGetStorageVol(pool->conn, obj->def->name, voldef->name,
+                                    voldef->key, NULL, NULL)))
         goto cleanup;
-    }
+
+    /* NB: Upon success voldef "owned" by storage pool for deletion purposes */
+    if (virStoragePoolObjAddVol(obj, voldef) < 0)
+        goto cleanup;
 
     /* Drop the pool lock during volume allocation */
     obj->asyncjobs++;

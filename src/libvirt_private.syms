@@ -1007,6 +1007,7 @@ virSecretObjSetValueSize;
 
 
 # conf/virstorageobj.h
+virStoragePoolObjAddVol;
 virStoragePoolObjAssignDef;
 virStoragePoolObjClearVols;
 virStoragePoolObjDecrAsyncjobs;
@@ -1019,6 +1020,7 @@ virStoragePoolObjGetConfigFile;
 virStoragePoolObjGetDef;
 virStoragePoolObjGetNames;
 virStoragePoolObjGetNewDef;
+virStoragePoolObjGetVolumesCount;
 virStoragePoolObjIncrAsyncjobs;
 virStoragePoolObjIsActive;
 virStoragePoolObjIsDuplicate;
@@ -1030,6 +1032,7 @@ virStoragePoolObjLock;
 virStoragePoolObjNumOfStoragePools;
 virStoragePoolObjNumOfVolumes;
 virStoragePoolObjRemove;
+virStoragePoolObjRemoveVol;
 virStoragePoolObjSaveDef;
 virStoragePoolObjSetActive;
 virStoragePoolObjSetAutostart;

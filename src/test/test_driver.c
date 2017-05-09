@@ -1075,7 +1075,8 @@ testOpenVolumesForPool(const char *file,
 
         if (!def->key && VIR_STRDUP(def->key, def->target.path) < 0)
             goto error;
-        if (VIR_APPEND_ELEMENT_COPY(obj->volumes.objs, obj->volumes.count, def) < 0)
+
+        if (virStoragePoolObjAddVol(obj, def) < 0)
             goto error;
 
         obj->def->allocation += def->target.allocation;
@@ -4937,8 +4938,7 @@ testStorageVolCreateXML(virStoragePoolPtr pool,
         goto cleanup;
 
     if (VIR_STRDUP(privvol->key, privvol->target.path) < 0 ||
-        VIR_APPEND_ELEMENT_COPY(obj->volumes.objs,
-                                obj->volumes.count, privvol) < 0)
+        virStoragePoolObjAddVol(obj, privvol) < 0)
         goto cleanup;
 
     obj->def->allocation += privvol->target.allocation;
@@ -5005,8 +5005,7 @@ testStorageVolCreateXMLFrom(virStoragePoolPtr pool,
         goto cleanup;
 
     if (VIR_STRDUP(privvol->key, privvol->target.path) < 0 ||
-        VIR_APPEND_ELEMENT_COPY(obj->volumes.objs,
-                                obj->volumes.count, privvol) < 0)
+        virStoragePoolObjAddVol(obj, privvol) < 0)
         goto cleanup;
 
     obj->def->allocation += privvol->target.allocation;
@@ -5031,7 +5030,6 @@ testStorageVolDelete(virStorageVolPtr vol,
     testDriverPtr privconn = vol->conn->privateData;
     virStoragePoolObjPtr obj;
     virStorageVolDefPtr privvol;
-    size_t i;
     int ret = -1;
 
     virCheckFlags(0, -1);
@@ -5045,14 +5043,8 @@ testStorageVolDelete(virStorageVolPtr vol,
     obj->def->allocation -= privvol->target.allocation;
     obj->def->available = (obj->def->capacity - obj->def->allocation);
 
-    for (i = 0; i < obj->volumes.count; i++) {
-        if (obj->volumes.objs[i] == privvol) {
-            virStorageVolDefFree(privvol);
+    virStoragePoolObjRemoveVol(obj, privvol);
 
-            VIR_DELETE_ELEMENT(obj->volumes.objs, i, obj->volumes.count);
-            break;
-        }
-    }
     ret = 0;
 
  cleanup:

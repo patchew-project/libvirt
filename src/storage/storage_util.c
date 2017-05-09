@@ -3595,7 +3595,7 @@ virStorageBackendRefreshLocal(virConnectPtr conn ATTRIBUTE_UNUSED,
              * An error message was raised, but we just continue. */
         }
 
-        if (VIR_APPEND_ELEMENT(pool->volumes.objs, pool->volumes.count, vol) < 0)
+        if (virStoragePoolObjAddVol(pool, vol) < 0)
             goto cleanup;
     }
     if (direrr < 0)
@@ -3783,7 +3783,7 @@ virStorageBackendSCSINewLun(virStoragePoolObjPtr pool,
     pool->def->capacity += vol->target.capacity;
     pool->def->allocation += vol->target.allocation;
 
-    if (VIR_APPEND_ELEMENT(pool->volumes.objs, pool->volumes.count, vol) < 0)
+    if (virStoragePoolObjAddVol(pool, vol) < 0)
         goto cleanup;
 
     vol = NULL;

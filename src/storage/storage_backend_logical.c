@@ -356,8 +356,7 @@ virStorageBackendLogicalMakeVol(char **const groups,
     if (virStorageBackendLogicalParseVolExtents(vol, groups) < 0)
         goto cleanup;
 
-    if (is_new_vol &&
-        VIR_APPEND_ELEMENT(pool->volumes.objs, pool->volumes.count, vol) < 0)
+    if (is_new_vol && virStoragePoolObjAddVol(pool, vol) < 0)
         goto cleanup;
 
     ret = 0;
