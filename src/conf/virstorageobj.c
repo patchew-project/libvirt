@@ -696,6 +696,17 @@ virStoragePoolObjDeleteDef(virStoragePoolObjPtr obj)
                        obj->def->name);
         return -1;
     }
+    VIR_FREE(obj->configFile);
+
+    if (!obj->autostartLink)
+        return 0;
+
+    if (unlink(obj->autostartLink) < 0 && errno != ENOTDIR) {
+        char ebuf[1024];
+        VIR_ERROR(_("Failed to delete autostart link '%s': %s"),
+                  obj->autostartLink, virStrerror(errno, ebuf, sizeof(ebuf)));
+    }
+    VIR_FREE(obj->autostartLink);
 
     return 0;
 }

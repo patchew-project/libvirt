@@ -841,17 +841,6 @@ storagePoolUndefine(virStoragePoolPtr pool)
     if (virStoragePoolObjDeleteDef(obj) < 0)
         goto cleanup;
 
-    if (unlink(obj->autostartLink) < 0 &&
-        errno != ENOENT &&
-        errno != ENOTDIR) {
-        char ebuf[1024];
-        VIR_ERROR(_("Failed to delete autostart link '%s': %s"),
-                  obj->autostartLink, virStrerror(errno, ebuf, sizeof(ebuf)));
-    }
-
-    VIR_FREE(obj->configFile);
-    VIR_FREE(obj->autostartLink);
-
     event = virStoragePoolEventLifecycleNew(obj->def->name,
                                             obj->def->uuid,
                                             VIR_STORAGE_POOL_EVENT_UNDEFINED,
