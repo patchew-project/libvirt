@@ -1014,6 +1014,7 @@ virStoragePoolObjDecrAsyncjobs;
 virStoragePoolObjDeleteDef;
 virStoragePoolObjFindByName;
 virStoragePoolObjFindByUUID;
+virStoragePoolObjForEachVolume;
 virStoragePoolObjGetAsyncjobs;
 virStoragePoolObjGetAutostart;
 virStoragePoolObjGetConfigFile;

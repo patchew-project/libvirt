@@ -343,6 +343,16 @@ virStoragePoolObjGetVolumesCount(virStoragePoolObjPtr obj)
 
 
 virStorageVolDefPtr
+virStoragePoolObjForEachVolume(virStoragePoolObjPtr obj,
+                               size_t curidx)
+{
+    if (curidx < obj->volumes.count)
+        return obj->volumes.objs[curidx];
+    return NULL;
+}
+
+
+virStorageVolDefPtr
 virStorageVolDefFindByKey(virStoragePoolObjPtr obj,
                           const char *key)
 {
