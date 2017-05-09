@@ -37,6 +37,27 @@
 VIR_LOG_INIT("conf.virstorageobj");
 
 
+static virStoragePoolObjPtr
+virStoragePoolObjNew(virStoragePoolDefPtr def)
+{
+    virStoragePoolObjPtr obj;
+
+    if (VIR_ALLOC(obj) < 0)
+        return NULL;
+
+    if (virMutexInit(&obj->lock) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("cannot initialize mutex"));
+        VIR_FREE(obj);
+        return NULL;
+    }
+    virStoragePoolObjLock(obj);
+    obj->active = 0;
+    obj->def = def;
+    return obj;
+}
+
+
 virStoragePoolDefPtr
 virStoragePoolObjGetDef(virStoragePoolObjPtr obj)
 {
@@ -386,24 +407,15 @@ virStoragePoolObjAssignDef(virStoragePoolObjListPtr pools,
         return obj;
     }
 
-    if (VIR_ALLOC(obj) < 0)
+    if (!(obj = virStoragePoolObjNew(def)))
         return NULL;
-
-    if (virMutexInit(&obj->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("cannot initialize mutex"));
-        VIR_FREE(obj);
-        return NULL;
-    }
-    virStoragePoolObjLock(obj);
-    obj->active = 0;
 
     if (VIR_APPEND_ELEMENT_COPY(pools->objs, pools->count, obj) < 0) {
+        obj->def = NULL;
         virStoragePoolObjUnlock(obj);
         virStoragePoolObjFree(obj);
         return NULL;
     }
-    obj->def = def;
 
     return obj;
 }
