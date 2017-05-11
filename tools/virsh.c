@@ -166,6 +166,11 @@ virshConnect(vshControl *ctl, const char *uri, bool readonly)
         if (readonly)
             goto cleanup;
 
+        /* No URI or indication of a requesting a remote connection, then
+         * polkit will not work for the authentication/authorization */
+        if (!uri || !(strstr(uri, ":///")))
+            goto cleanup;
+
         err = virGetLastError();
         if (!agentCreated &&
             err && err->domain == VIR_FROM_POLKIT &&
