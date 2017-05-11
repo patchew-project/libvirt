@@ -366,6 +366,8 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "query-named-block-nodes",
               "cpu-cache",
               "qemu-xhci",
+
+              "loadparm", /* 255 */
     );
 
 
@@ -3130,6 +3132,7 @@ static struct virQEMUCapsCommandLineProps virQEMUCapsCommandLine[] = {
     { "drive", "throttling.bps-total-max-length", QEMU_CAPS_DRIVE_IOTUNE_MAX_LENGTH },
     { "drive", "throttling.group", QEMU_CAPS_DRIVE_IOTUNE_GROUP },
     { "spice", "rendernode", QEMU_CAPS_SPICE_RENDERNODE },
+    { "machine", "loadparm", QEMU_CAPS_LOADPARM },
 };
 
 static int

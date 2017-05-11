@@ -7208,6 +7208,41 @@ qemuAppendKeyWrapMachineParms(virBuffer *buf, virQEMUCapsPtr qemuCaps,
     return true;
 }
 
+static void
+qemuAppendLoadparmMachineParm(virBuffer *buf,
+                              const virDomainDef *def,
+                              virQEMUCapsPtr qemuCaps)
+{
+    size_t i = 0;
+
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_BOOTINDEX) ||
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_LOADPARM))
+        return;
+
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainDiskDefPtr disk = def->disks[i];
+
+        if (disk->info.bootIndex == 1) {
+            if (disk->info.loadparm)
+                virBufferAsprintf(buf, ",loadparm=%s", disk->info.loadparm);
+
+            return;
+        }
+    }
+
+    /* Network boot device*/
+    for (i = 0; i < def->nnets; i++) {
+        virDomainNetDefPtr net = def->nets[i];
+
+        if (net->info.bootIndex == 1) {
+            if (net->info.loadparm)
+                virBufferAsprintf(buf, ",loadparm=%s", net->info.loadparm);
+
+            return;
+        }
+    }
+}
+
 static int
 qemuBuildNameCommandLine(virCommandPtr cmd,
                          virQEMUDriverConfigPtr cfg,
@@ -7296,6 +7331,8 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
 
         virCommandAddArg(cmd, "-machine");
         virBufferAdd(&buf, def->os.machine, -1);
+
+        qemuAppendLoadparmMachineParm(&buf, def, qemuCaps);
 
         if (def->virtType == VIR_DOMAIN_VIRT_QEMU)
             virBufferAddLit(&buf, ",accel=tcg");
