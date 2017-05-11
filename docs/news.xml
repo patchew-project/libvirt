@@ -35,6 +35,15 @@
 <libvirt>
   <release version="v3.4.0" date="unreleased">
     <section title="New features">
+      <change>
+        <summary>
+          qemu: Add support for loadparm for a boot device
+        </summary>
+        <description>
+          Add an optional boot parameter 'loadparm' for a boot device.
+          On S390 architecture the loadparm is used to select a boot entry.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
     </section>
