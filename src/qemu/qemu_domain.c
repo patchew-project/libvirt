@@ -3154,24 +3154,84 @@ qemuDomainDefaultNetModel(const virDomainDef *def,
 
 
 /*
- * Clear auto generated unix socket path, i.e., the one which starts with our
- * channel directory.
+ * Clear auto generated unix socket paths:
+ *
+ * libvirt 1.2.18 and older:
+ *     {cfg->channelTargetDir}/{dom-name}.{target-name}
+ *
+ * libvirt 1.2.19 - 1.3.2:
+ *     {cfg->channelTargetDir}/domain-{dom-name}/{target-name}
+ *
+ * libvirt 1.3.3 and newer:
+ *     {cfg->channelTargetDir}/domain-{dom-id}-{short-dom-name}/{target-name}
+ *
+ * The unix socket path was stored in config XML until libvirt 1.3.0.
+ * If someone specifies the same path as we generate, they shouldn't do it.
+ *
+ * This function clears the path for migration as well, so we need to clear
+ * the path event if we are not storing it in the XML.
  */
-static void
+static int
 qemuDomainChrDefDropDefaultPath(virDomainChrDefPtr chr,
                                 virQEMUDriverPtr driver)
 {
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    char *path;
+    char *prefix = NULL;
+    int prefixLen;
+    int ret = -1;
+    int rv;
 
-    if (chr->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL &&
-        chr->targetType == VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_VIRTIO &&
-        chr->source->type == VIR_DOMAIN_CHR_TYPE_UNIX &&
-        chr->source->data.nix.path &&
-        STRPREFIX(chr->source->data.nix.path, cfg->channelTargetDir)) {
-        VIR_FREE(chr->source->data.nix.path);
+    if (chr->deviceType != VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL ||
+        chr->targetType != VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_VIRTIO ||
+        chr->source->type != VIR_DOMAIN_CHR_TYPE_UNIX ||
+        !chr->source->data.nix.path) {
+        ret = 0;
+        goto cleanup;
     }
 
+    if (!STRPREFIX(chr->source->data.nix.path, cfg->channelTargetDir)) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    path = chr->source->data.nix.path + strlen(cfg->channelTargetDir);
+    prefixLen = strlen(path) - strlen(chr->target.name);
+
+    if (STRNEQ(path + prefixLen, chr->target.name)) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    if (!VIR_STRNDUP(prefix, path, prefixLen))
+        goto cleanup;
+
+    /* Now we've isolated the middle part of the path by removing the
+     * cfg->channelTargetDir part from the beginning and chr->target.name
+     * from the end.  The middle part is the one that changed in the past
+     * and the only part that we need to try to match with. */
+
+#define VIR_CLEAR_CHR_DEF_PATH(regex)                                       \
+    if ((rv = virStringMatch(prefix, regex)) < 0)                           \
+        goto cleanup;                                                       \
+                                                                            \
+    if (rv == 0) {                                                          \
+        VIR_FREE(chr->source->data.nix.path);                               \
+        ret = 0;                                                            \
+        goto cleanup;                                                       \
+    }
+
+    VIR_CLEAR_CHR_DEF_PATH("^/[^/]+\\.$")
+    VIR_CLEAR_CHR_DEF_PATH("^/domain-[^/]+/$")
+    VIR_CLEAR_CHR_DEF_PATH("^/domain-[0-9]+-[^/]+/$")
+
+#undef VIR_CLEAR_CHR_DEF_PATH
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(prefix);
     virObjectUnref(cfg);
+    return ret;
 }
 
 
