@@ -132,6 +132,7 @@ typedef enum {
 
     VIR_FROM_PERF = 65,         /* Error from perf */
     VIR_FROM_LIBSSH = 66,       /* Error from libssh connection transport */
+    VIR_FROM_DOMAIN_BACKUP = 67,/* Error from domain backup */
 
 # ifdef VIR_ENUM_SENTINELS
     VIR_ERR_DOMAIN_LAST
@@ -319,6 +320,7 @@ typedef enum {
     VIR_ERR_AGENT_UNSYNCED = 97,        /* guest agent replies with wrong id
                                            to guest-sync command */
     VIR_ERR_LIBSSH = 98,                /* error in libssh transport driver */
+    VIR_ERR_INVALID_DOMAIN_BACKUP = 99, /* invalid domain backup */
 } virErrorNumber;
 
 /**

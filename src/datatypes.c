@@ -37,6 +37,7 @@ virClassPtr virConnectClass;
 virClassPtr virConnectCloseCallbackDataClass;
 virClassPtr virDomainClass;
 virClassPtr virDomainSnapshotClass;
+virClassPtr virDomainBackupClass;
 virClassPtr virInterfaceClass;
 virClassPtr virNetworkClass;
 virClassPtr virNodeDeviceClass;
@@ -50,6 +51,7 @@ static void virConnectDispose(void *obj);
 static void virConnectCloseCallbackDataDispose(void *obj);
 static void virDomainDispose(void *obj);
 static void virDomainSnapshotDispose(void *obj);
+static void virDomainBackupDispose(void *obj);
 static void virInterfaceDispose(void *obj);
 static void virNetworkDispose(void *obj);
 static void virNodeDeviceDispose(void *obj);
@@ -88,6 +90,7 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS_LOCKABLE(virConnectCloseCallbackData);
     DECLARE_CLASS(virDomain);
     DECLARE_CLASS(virDomainSnapshot);
+    DECLARE_CLASS(virDomainBackup);
     DECLARE_CLASS(virInterface);
     DECLARE_CLASS(virNetwork);
     DECLARE_CLASS(virNodeDevice);
@@ -888,6 +891,63 @@ virDomainSnapshotDispose(void *obj)
 
     VIR_FREE(snapshot->name);
     virObjectUnref(snapshot->domain);
+}
+
+
+/**
+ * virGetDomainBackup:
+ * @domain: the domain to backup
+ * @name: pointer to the domain backup name
+ *
+ * Allocates a new domain backup object. When the object is no longer needed,
+ * virObjectUnref() must be called in order to not leak data.
+ *
+ * Returns a pointer to the domain backup object, or NULL on error.
+ */
+virDomainBackupPtr
+virGetDomainBackup(virDomainPtr domain, const char *name)
+{
+    virDomainBackupPtr ret = NULL;
+
+    if (virDataTypesInitialize() < 0)
+        return NULL;
+
+    virCheckDomainGoto(domain, error);
+    virCheckNonNullArgGoto(name, error);
+
+    if (!(ret = virObjectNew(virDomainBackupClass)))
+        goto error;
+    if (VIR_STRDUP(ret->name, name) < 0)
+        goto error;
+
+    ret->domain = virObjectRef(domain);
+
+    return ret;
+
+ error:
+    virObjectUnref(ret);
+    return NULL;
+}
+
+
+/**
+ * virDomainBackupDispose:
+ * @obj: the domain backup to release
+ *
+ * Unconditionally release all memory associated with a backup.
+ * The backup object must not be used once this method returns.
+ *
+ * It will also unreference the associated connection object,
+ * which may also be released if its ref count hits zero.
+ */
+static void
+virDomainBackupDispose(void *obj)
+{
+    virDomainBackupPtr backup = obj;
+    VIR_DEBUG("release backup %p %s", backup, backup->name);
+
+    VIR_FREE(backup->name);
+    virObjectUnref(backup->domain);
 }
 
 

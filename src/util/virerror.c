@@ -139,6 +139,7 @@ VIR_ENUM_IMPL(virErrorDomain, VIR_ERR_DOMAIN_LAST,
 
               "Perf", /* 65 */
               "Libssh transport layer",
+              "Domain Backup",
     )
 
 
@@ -1400,6 +1401,11 @@ virErrorMsg(virErrorNumber error, const char *info)
                 errmsg = _("guest agent replied with wrong id to guest-sync command");
             else
                 errmsg = _("guest agent replied with wrong id to guest-sync command: %s");
+        case VIR_ERR_INVALID_DOMAIN_BACKUP:
+            if (info == NULL)
+                errmsg = _("Invalid backup");
+            else
+                errmsg = _("Invalid backup: %s");
             break;
         case VIR_ERR_LIBSSH:
             if (info == NULL)

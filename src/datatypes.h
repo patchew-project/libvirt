@@ -32,6 +32,7 @@
 extern virClassPtr virConnectClass;
 extern virClassPtr virDomainClass;
 extern virClassPtr virDomainSnapshotClass;
+extern virClassPtr virDomainBackupClass;
 extern virClassPtr virInterfaceClass;
 extern virClassPtr virNetworkClass;
 extern virClassPtr virNodeDeviceClass;
@@ -285,6 +286,21 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_snap->domain->conn, virConnectClass)) {  \
             virReportErrorHelper(VIR_FROM_DOMAIN_SNAPSHOT,              \
                                  VIR_ERR_INVALID_DOMAIN_SNAPSHOT,       \
+                                 __FILE__, __FUNCTION__, __LINE__,      \
+                                 __FUNCTION__);                         \
+            virDispatchError(NULL);                                     \
+            return retval;                                              \
+        }                                                               \
+    } while (0)
+
+# define virCheckDomainBackupReturn(obj, retval)                        \
+    do {                                                                \
+        virDomainBackupPtr _back = (obj);                               \
+        if (!virObjectIsClass(_back, virDomainBackupClass) ||           \
+            !virObjectIsClass(_back->domain, virDomainClass) ||         \
+            !virObjectIsClass(_back->domain->conn, virConnectClass)) {  \
+            virReportErrorHelper(VIR_FROM_DOMAIN_BACKUP,                \
+                                 VIR_ERR_INVALID_DOMAIN_BACKUP,         \
                                  __FILE__, __FUNCTION__, __LINE__,      \
                                  __FUNCTION__);                         \
             virDispatchError(NULL);                                     \
@@ -675,6 +691,17 @@ struct _virNWFilter {
     unsigned char uuid[VIR_UUID_BUFLEN]; /* the network filter unique identifier */
 };
 
+/**
+ * _virDomainBackup
+ *
+ * Internal structure associated with a domain backup
+ */
+struct _virDomainBackup {
+    virObject object;
+    char *name;
+    virDomainPtr domain;
+};
+
 
 /*
  * Helper APIs for allocating new object instances
@@ -714,6 +741,8 @@ virNWFilterPtr virGetNWFilter(virConnectPtr conn,
                               const unsigned char *uuid);
 virDomainSnapshotPtr virGetDomainSnapshot(virDomainPtr domain,
                                           const char *name);
+virDomainBackupPtr virGetDomainBackup(virDomainPtr domain,
+                                      const char *name);
 
 virAdmConnectPtr virAdmConnectNew(void);
 
