@@ -101,6 +101,7 @@ static void make_nonnull_node_device(remote_nonnull_node_device *dev_dst, virNod
 static void make_nonnull_secret(remote_nonnull_secret *secret_dst, virSecretPtr secret_src);
 static void make_nonnull_nwfilter(remote_nonnull_nwfilter *net_dst, virNWFilterPtr nwfilter_src);
 static void make_nonnull_domain_snapshot(remote_nonnull_domain_snapshot *snapshot_dst, virDomainSnapshotPtr snapshot_src);
+static void make_nonnull_domain_backup(remote_nonnull_domain_backup *backup_dst, virDomainBackupPtr backup_src);
 
 static int
 remoteSerializeDomainDiskErrors(virDomainDiskErrorPtr errors,
@@ -7037,6 +7038,13 @@ make_nonnull_domain_snapshot(remote_nonnull_domain_snapshot *snapshot_dst, virDo
 {
     ignore_value(VIR_STRDUP_QUIET(snapshot_dst->name, snapshot_src->name));
     make_nonnull_domain(&snapshot_dst->dom, snapshot_src->domain);
+}
+
+static void
+make_nonnull_domain_backup(remote_nonnull_domain_backup *backup_dst, virDomainBackupPtr backup_src)
+{
+    ignore_value(VIR_STRDUP_QUIET(backup_dst->name, backup_src->name));
+    make_nonnull_domain(&backup_dst->dom, backup_src->domain);
 }
 
 static int

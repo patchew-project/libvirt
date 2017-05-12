@@ -306,6 +306,12 @@ typedef enum {
      */
     VIR_ACCESS_PERM_DOMAIN_SET_PASSWORD,
 
+    /**
+     * @desc: Backup domain
+     * @message: Backing domain up requires authorization
+     */
+    VIR_ACCESS_PERM_DOMAIN_BACKUP,  /* Backup domain */
+
     VIR_ACCESS_PERM_DOMAIN_LAST,
 } virAccessPermDomain;
 
