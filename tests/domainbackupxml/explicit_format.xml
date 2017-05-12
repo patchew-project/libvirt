@@ -1,0 +1,5 @@
+<domainbackup>
+  <disk name="sda" type="file">
+    <target file="/path/to/backup/file" format="qcow2"/>
+  </disk>
+</domainbackup>

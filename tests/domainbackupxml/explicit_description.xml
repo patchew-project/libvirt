@@ -1,0 +1,6 @@
+<domainbackup>
+  <description>description</description>
+  <disk name="sda">
+    <target file="/path/to/file"/>
+  </disk>
+</domainbackup>

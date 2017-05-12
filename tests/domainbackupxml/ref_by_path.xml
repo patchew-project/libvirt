@@ -1,0 +1,5 @@
+<domainbackup>
+  <disk name="/path/to/disk/file">
+    <target file="/path/to/backup/file"/>
+  </disk>
+</domainbackup>

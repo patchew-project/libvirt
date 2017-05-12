@@ -1,0 +1,5 @@
+<domainbackup>
+  <disk name="sda" type="block">
+    <target dev="/path/to/backup/dev"/>
+  </disk>
+</domainbackup>
