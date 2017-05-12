@@ -77,7 +77,8 @@
           <a href="formatdomaincaps.html">domain capabilities</a>,
           <a href="formatnode.html">node devices</a>,
           <a href="formatsecret.html">secrets</a>,
-          <a href="formatsnapshot.html">snapshots</a></dd>
+          <a href="formatsnapshot.html">snapshots</a>,
+          <a href="formatbackup.html">backups</a></dd>
 
         <dt><a href="uri.html">URI format</a></dt>
         <dd>The URI formats used for connecting to libvirt</dd>
@@ -95,6 +96,7 @@
           <a href="html/libvirt-libvirt-common.html">common</a>,
           <a href="html/libvirt-libvirt-domain.html">domain</a>,
           <a href="html/libvirt-libvirt-domain-snapshot.html">domain snapshot</a>,
+          <a href="html/libvirt-libvirt-domain-backup.html">domain backup</a>,
           <a href="html/libvirt-virterror.html">error</a>,
           <a href="html/libvirt-libvirt-event.html">event</a>,
           <a href="html/libvirt-libvirt-host.html">host</a>,

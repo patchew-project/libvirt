@@ -35,6 +35,7 @@ apihtml_generated = \
   html/libvirt-libvirt-secret.html		\
   html/libvirt-libvirt-storage.html		\
   html/libvirt-libvirt-stream.html		\
+  html/libvirt-libvirt-domain-backup.html	\
   html/libvirt-virterror.html
 
 apipng =	\
@@ -341,6 +342,7 @@ $(APIBUILD_STAMP): $(srcdir)/apibuild.py \
 		$(top_srcdir)/include/libvirt/libvirt-lxc.h \
 		$(top_srcdir)/include/libvirt/libvirt-qemu.h \
 		$(top_srcdir)/include/libvirt/libvirt-admin.h \
+		$(top_srcdir)/include/libvirt/libvirt-domain-backup.h \
 		$(top_srcdir)/include/libvirt/virterror.h \
 		$(top_srcdir)/src/libvirt.c \
 		$(top_srcdir)/src/libvirt-domain-snapshot.c \
@@ -356,6 +358,7 @@ $(APIBUILD_STAMP): $(srcdir)/apibuild.py \
 		$(top_srcdir)/src/libvirt-lxc.c \
 		$(top_srcdir)/src/libvirt-qemu.c \
 		$(top_srcdir)/src/libvirt-admin.c \
+		$(top_srcdir)/src/libvirt-domain-backup.c \
 		$(top_srcdir)/src/util/virerror.c \
 		$(top_srcdir)/src/util/virevent.c \
 		$(top_srcdir)/src/util/virtypedparam.c

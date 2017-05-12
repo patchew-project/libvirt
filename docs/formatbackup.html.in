@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <body>
+    <h1>Backup XML format</h1>
+
+    <pre><![CDATA[
+<domainbackup>
+  <disk name="sda" type="file">
+    <target file="/path/to/backup/file.qcow2" format="qcow2"/>
+  </disk>
+  <disk name="sdb" type="block">
+    <target file="/path/to/backup/dev"/>
+  </disk>
+</domainbackup>]]></pre>
+
+    <p>Backup xml specifies disks to be backed up. It is supported only by QEMU.</p>
+
+    <dl>
+      <dt><code>disk</code></dt>
+      <dd>Specifies single disk backup.
+        <dl>
+          <dt><code>name</code></dt>
+          <dd>Mandatory attribute. It identifies the disk either by
+          <code>&lt;target dev='name'/&gt;</code> or unambiguously by
+          <code>&lt;source file='name'/&gt;</code> among domain
+          <a href="formatdomain.html#elementsDisks">disk devices</a>.</dd>
+
+          <dt><code>type</code></dt>
+          <dd>Optional attribute. Possible values are <code>file</code> and
+          <code>block</code>. Default value is <code>file</code>. This element
+          specifies backup target backend type which is described further
+          in <code>target</code> child element.
+          </dd>
+        </dl>
+      </dd>
+
+      <dt><code>target</code></dt>
+      <dd>Specifies disk backup target backend.
+        <dl>
+          <dt><code>file</code></dt>
+          <dd>This attribute is taken into account if parent element's <code>type</code>
+          attribute has value <code>file</code> and specifies absolute path to the backup
+          file.</dd>
+
+          <dt><code>dev</code></dt>
+          <dd>This attribute is taken into account if parent element's <code>type</code>
+          has value <code>block</code> and specifies absolute path to the
+          backup device.</dd>
+
+          <dt><code>format</code></dt>
+          <dd>Optional attribute that specifies the backup format. If ommitted
+          the backup format will be the same as the disk format.</dd>
+        </dl>
+      </dd>
+    </dl>
+  </body>
+</html>

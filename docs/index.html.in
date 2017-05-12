@@ -68,7 +68,8 @@
           <a href="formatdomaincaps.html" shape="rect">domain capabilities</a>,
           <a href="formatnode.html" shape="rect">node devices</a>,
           <a href="formatsecret.html" shape="rect">secrets</a>,
-          <a href="formatsnapshot.html" shape="rect">snapshots</a></dd>
+          <a href="formatsnapshot.html" shape="rect">snapshots</a>,
+          <a href="formatbackup.html" shape="rect">backups</a></dd>
         <dt><a href="http://wiki.libvirt.org">Wiki</a></dt>
         <dd>Read further community contributed content</dd>
       </dl>

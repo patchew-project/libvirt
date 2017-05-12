@@ -24,6 +24,7 @@
       <li><a href="formatnode.html" shape="rect">Node devices</a></li>
       <li><a href="formatsecret.html" shape="rect">Secrets</a></li>
       <li><a href="formatsnapshot.html" shape="rect">Snapshots</a></li>
+      <li><a href="formatbackup.html" shape="rect">Backups</a></li>
     </ul>
 
     <h2>Command line validation</h2>
