@@ -7647,5 +7647,39 @@ qemuMonitorJSONQueryNamedBlockNodes(qemuMonitorPtr mon)
     virJSONValueFree(cmd);
     virJSONValueFree(reply);
 
+  return ret;
+}
+
+
+int
+qemuMonitorJSONDriveBackup(virJSONValuePtr actions,
+                           const char *device, const char *target,
+                           const char *bitmap, const char *format,
+                           unsigned long long speed, bool reuse)
+{
+    int ret = -1;
+    virJSONValuePtr cmd;
+
+    cmd = qemuMonitorJSONMakeCommandRaw(true,
+                                        "drive-backup",
+                                        "s:device", device,
+                                        "s:target", target,
+                                        "S:bitmap", bitmap,
+                                        "s:sync", bitmap ? "incremental" : "full",
+                                        "S:format", format,
+                                        "Y:speed", speed,
+                                        "S:mode", reuse ? "existing" : NULL,
+                                        NULL);
+    if (!cmd)
+        return -1;
+
+    if (virJSONValueArrayAppend(actions, cmd) < 0)
+        goto cleanup;
+
+    ret = 0;
+    cmd = NULL;
+
+ cleanup:
+    virJSONValueFree(cmd);
     return ret;
 }

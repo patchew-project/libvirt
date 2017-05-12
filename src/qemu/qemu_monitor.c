@@ -4316,3 +4316,17 @@ qemuMonitorEventPanicInfoFree(qemuMonitorEventPanicInfoPtr info)
 
     VIR_FREE(info);
 }
+
+
+int
+qemuMonitorDriveBackup(virJSONValuePtr actions,
+                       const char *device, const char *target,
+                       const char *bitmap, const char *format,
+                       unsigned long long speed, bool reuse)
+{
+    VIR_DEBUG("actions=%p, device=%s, target=%s, bitmap=%s format=%s speed==%llu",
+              actions, device, target, bitmap, format, speed);
+
+    return qemuMonitorJSONDriveBackup(actions, device, target, bitmap, format,
+                                      speed, reuse);
+}
