@@ -1065,7 +1065,8 @@ virQEMUCapsInitGuestFromBinary(virCapsPtr caps,
     }
 
     if (ARCH_IS_X86(guestarch) &&
-        virCapabilitiesAddGuestFeature(guest, "apic", true, false) == NULL) {
+        (virCapabilitiesAddGuestFeature(guest, "apic", true, false) == NULL ||
+         virCapabilitiesAddGuestFeature(guest, "ioapic", true, false) == NULL)) {
         goto cleanup;
     }
 

@@ -23,6 +23,7 @@
       <disksnapshot default='off' toggle='no'/>
       <acpi default='on' toggle='yes'/>
       <apic default='on' toggle='no'/>
+      <ioapic/>
       <pae/>
       <nonpae/>
     </features>

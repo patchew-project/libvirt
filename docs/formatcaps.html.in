@@ -134,6 +134,9 @@
               requires attempting the API and checking for an error to
               find out for sure. <span class="since">Since
               1.2.3</span></dd>
+            <dt><code>apic</code></dt><dd>If this element is present,
+              the I/O APIC chip can be tuned.
+              <span class="since">Since 3.4.0</span></dd>
           </dl>
         </dd>
     </dl>

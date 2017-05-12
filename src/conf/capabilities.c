@@ -1100,7 +1100,8 @@ virCapabilitiesFormatXML(virCapsPtr caps)
                     STREQ(caps->guests[i]->features[j]->name, "nonpae") ||
                     STREQ(caps->guests[i]->features[j]->name, "ia64_be") ||
                     STREQ(caps->guests[i]->features[j]->name, "cpuselection") ||
-                    STREQ(caps->guests[i]->features[j]->name, "deviceboot")) {
+                    STREQ(caps->guests[i]->features[j]->name, "deviceboot") ||
+                    STREQ(caps->guests[i]->features[j]->name, "ioapic")) {
                     virBufferAsprintf(&buf, "<%s/>\n",
                                       caps->guests[i]->features[j]->name);
                 } else {
