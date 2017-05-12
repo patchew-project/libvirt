@@ -1007,12 +1007,17 @@ virNetDevMacVLanCreateWithVPortProfile(const char *ifnameRequested,
              */
             setVlan = false;
         }
-
-        if (virNetDevSaveNetConfig(linkdev, -1, stateDir, setVlan) < 0)
-           return -1;
-
-        if (virNetDevSetNetConfig(linkdev, -1, NULL, vlan, macaddress, setVlan) < 0)
-           return -1;
+        if (vmOp != VIR_NETDEV_VPORT_PROFILE_OP_MIGRATE_IN_START &&
+            virtPortProfile && (virtPortProfile->virtPortType == VIR_NETDEV_VPORT_PROFILE_8021QBH ||
+            virtPortProfile->virtPortType == VIR_NETDEV_VPORT_PROFILE_8021QBG)) {
+            if (virNetDevSaveNetConfig(linkdev, -1, stateDir, setVlan) < 0) {
+                return -1;
+            }
+            if (virNetDevSetNetConfig(linkdev, -1, NULL, vlan, macaddress,
+                setVlan) < 0) {
+                return -1;
+            }
+        }
     }
 
     if (ifnameRequested) {
