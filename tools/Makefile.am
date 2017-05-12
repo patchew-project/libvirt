@@ -228,6 +228,7 @@ virsh_SOURCES =							\
 		virsh-snapshot.c virsh-snapshot.h		\
 		virsh-util.c virsh-util.h			\
 		virsh-volume.c virsh-volume.h			\
+		virsh-backup.c virsh-backup.h			\
 		$(NULL)
 
 virsh_LDFLAGS = \

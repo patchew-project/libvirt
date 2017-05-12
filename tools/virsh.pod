@@ -4439,6 +4439,26 @@ the data contents from that point in time.
 
 =back
 
+=head1 BACKUP COMMANDS
+
+Commands in this section manipulate domain backups. Backup is a state of domain
+some disks at particualar moment in time (namely at the time of the backup
+creation). While the same goal can be archived with the help of domain
+snapshots backup operation is less intrusive - one don't need to merge top
+image after backup is done.
+
+=over 4
+
+=item B<backup-create> I<domain> I<xmlfile>
+
+Start a backup creation for the domain disks specified in I<xmlfile>. Backup
+status can be tracked thru blockjob events. The backup progress can be
+inspected by checking all of its blockjobs progress by calling B<blockjob>
+command with the flag I<--info>. Backup can be cancelled by cancelling any of
+its still active blockjobs calling B<blockjob> with the I<--abort> flag.
+
+=back
+
 =head1 NWFILTER COMMANDS
 
 The following commands manipulate network filters. Network filters allow
