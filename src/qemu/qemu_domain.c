@@ -2559,17 +2559,31 @@ qemuDomainDefEnableDefaultFeatures(virDomainDefPtr def,
     if (def->features[VIR_DOMAIN_FEATURE_GIC] == VIR_TRISTATE_SWITCH_ABSENT &&
         qemuDomainIsVirt(def)) {
 
-        VIR_DEBUG("Looking for usable GIC version in domain capabilities");
-        for (version = VIR_GIC_VERSION_LAST - 1;
-             version > VIR_GIC_VERSION_NONE;
-             version--) {
-            if (virQEMUCapsSupportsGICVersion(qemuCaps,
-                                              def->virtType,
-                                              version)) {
-                VIR_DEBUG("Using GIC version %s",
-                          virGICVersionTypeToString(version));
-                def->gic_version = version;
-                break;
+        /* We want to use the highest available GIC version for guests;
+         * however, the emulated GICv3 is currently lacking a MSI controller,
+         * making it unsuitable for the pure PCIe topology we aim for.
+         *
+         * For that reason, we skip this step entirely for TCG guests,
+         * and rely on the code below to pick the default version, GICv2,
+         * which supports all the features we need.
+         *
+         * We'll want to revisit this once MSI support for GICv3 has been
+         * implemented in QEMU.
+         *
+         * See https://bugzilla.redhat.com/show_bug.cgi?id=1414081 */
+        if (def->virtType == VIR_DOMAIN_VIRT_KVM) {
+            VIR_DEBUG("Looking for usable GIC version in domain capabilities");
+            for (version = VIR_GIC_VERSION_LAST - 1;
+                 version > VIR_GIC_VERSION_NONE;
+                 version--) {
+                if (virQEMUCapsSupportsGICVersion(qemuCaps,
+                                                  def->virtType,
+                                                  version)) {
+                    VIR_DEBUG("Using GIC version %s",
+                              virGICVersionTypeToString(version));
+                    def->gic_version = version;
+                    break;
+                }
             }
         }
 
@@ -2580,8 +2594,11 @@ qemuDomainDefEnableDefaultFeatures(virDomainDefPtr def,
 
     /* Use the default GIC version if no version was specified */
     if (def->features[VIR_DOMAIN_FEATURE_GIC] == VIR_TRISTATE_SWITCH_ON &&
-        def->gic_version == VIR_GIC_VERSION_NONE)
+        def->gic_version == VIR_GIC_VERSION_NONE) {
+        VIR_DEBUG("Using GIC version %s (default)",
+                  virGICVersionTypeToString(VIR_GIC_VERSION_DEFAULT));
         def->gic_version = VIR_GIC_VERSION_DEFAULT;
+    }
 }
 
 
