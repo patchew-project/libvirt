@@ -551,6 +551,11 @@ mymain(void)
     DO_TEST("channel-virtio", NONE);
     DO_TEST("channel-virtio-state", NONE);
 
+    DO_TEST_FULL("channel-unix-gen-path1", WHEN_INACTIVE, GIC_NONE, NONE);
+    DO_TEST_FULL("channel-unix-gen-path2", WHEN_INACTIVE, GIC_NONE, NONE);
+    DO_TEST_FULL("channel-unix-gen-path3", WHEN_INACTIVE, GIC_NONE, NONE);
+    DO_TEST_FULL("channel-unix-user-path", WHEN_INACTIVE, GIC_NONE, NONE);
+
     DO_TEST("hostdev-usb-address", NONE);
     DO_TEST("hostdev-pci-address", NONE);
     DO_TEST("hostdev-vfio", NONE);

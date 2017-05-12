@@ -3154,24 +3154,57 @@ qemuDomainDefaultNetModel(const virDomainDef *def,
 
 
 /*
- * Clear auto generated unix socket path, i.e., the one which starts with our
- * channel directory.
+ * Clear auto generated unix socket paths:
+ *
+ * libvirt 1.2.18 and older:
+ *     {cfg->channelTargetDir}/{dom-name}.{target-name}
+ *
+ * libvirt 1.2.19 - 1.3.2:
+ *     {cfg->channelTargetDir}/domain-{dom-name}/{target-name}
+ *
+ * libvirt 1.3.3 and newer:
+ *     {cfg->channelTargetDir}/domain-{dom-id}-{short-dom-name}/{target-name}
+ *
+ * The unix socket path was stored in config XML until libvirt 1.3.0.
+ * If someone specifies the same path as we generate, they shouldn't do it.
+ *
+ * This function clears the path for migration as well, so we need to clear
+ * the path event if we are not storing it in the XML.
  */
-static void
+static int
 qemuDomainChrDefDropDefaultPath(virDomainChrDefPtr chr,
                                 virQEMUDriverPtr driver)
 {
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+    char *regexp = NULL;
+    int ret = -1;
 
-    if (chr->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL &&
-        chr->targetType == VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_VIRTIO &&
-        chr->source->type == VIR_DOMAIN_CHR_TYPE_UNIX &&
-        chr->source->data.nix.path &&
-        STRPREFIX(chr->source->data.nix.path, cfg->channelTargetDir)) {
-        VIR_FREE(chr->source->data.nix.path);
+    if (chr->deviceType != VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL ||
+        chr->targetType != VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_VIRTIO ||
+        chr->source->type != VIR_DOMAIN_CHR_TYPE_UNIX ||
+        !chr->source->data.nix.path) {
+        ret = 0;
+        goto cleanup;
     }
 
+    virBufferEscapeRegex(&buf, "^%s", cfg->channelTargetDir);
+    virBufferAddLit(&buf, "/([^/]+\\.)|(domain-[^/]+/)");
+    virBufferEscapeRegex(&buf, "%s$", chr->target.name);
+
+    if (virBufferCheckError(&buf) < 0)
+        goto cleanup;
+
+    regexp = virBufferContentAndReset(&buf);
+
+    if (virStringMatch(chr->source->data.nix.path, regexp))
+        VIR_FREE(chr->source->data.nix.path);
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(regexp);
     virObjectUnref(cfg);
+    return ret;
 }
 
 
