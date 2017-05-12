@@ -265,3 +265,35 @@ virDomainBackupDefFree(virDomainBackupDefPtr def)
 
     VIR_FREE(def);
 }
+
+
+int
+virDomainBackupDefResolveDisks(virDomainBackupDefPtr def,
+                               virDomainDefPtr vmdef)
+{
+    int ret = -1;
+    size_t i, j;
+
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainBackupDiskDefPtr disk = &def->disks[i];
+
+        for (j = 0; j < i; j++) {
+            if (STREQ(def->disks[j].name, disk->name)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("disk '%s' specified twice"), disk->name);
+                goto cleanup;
+            }
+        }
+
+        if (!(disk->vmdisk = virDomainDiskByName(vmdef, disk->name, false))) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("no disk named '%s'"), disk->name);
+            goto cleanup;
+        }
+    }
+
+    ret = 0;
+
+ cleanup:
+    return ret;
+}

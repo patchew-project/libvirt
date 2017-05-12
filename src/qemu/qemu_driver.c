@@ -20468,6 +20468,115 @@ qemuDomainSetBlockThreshold(virDomainPtr dom,
 }
 
 
+static virDomainBackupPtr
+qemuDomainBackupCreateXML(virDomainPtr domain,
+                          const char *xmlDesc,
+                          unsigned int flags)
+{
+    virQEMUDriverPtr driver = domain->conn->privateData;
+    qemuDomainObjPrivatePtr priv;
+    virDomainBackupDefPtr def = NULL;
+    virDomainBackupPtr backup = NULL;
+    virDomainBackupPtr ret = NULL;
+    virJSONValuePtr actions = NULL;
+    virDomainObjPtr vm = NULL;
+    char *path = NULL, *device = NULL;
+    bool job = false;
+    int rc;
+    size_t i;
+
+    virCheckFlags(0, NULL);
+
+    if (!(vm = qemuDomObjFromDomain(domain)))
+        goto cleanup;
+
+    if (virDomainBackupCreateXMLEnsureACL(domain->conn, vm->def) < 0)
+        goto cleanup;
+
+    if (!(def = virDomainBackupDefParseString(xmlDesc, NULL, NULL, 0)))
+        goto cleanup;
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+        goto cleanup;
+    job = true;
+
+    if (!virDomainObjIsActive(vm)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       "%s", _("backing up inactive domains is not supported"));
+        goto cleanup;
+    }
+
+    if (virDomainBackupDefResolveDisks(def, vm->def) < 0)
+        goto cleanup;
+
+    if (!(actions = virJSONValueNewArray()))
+        goto cleanup;
+
+    for (i = 0; i < def->ndisks; i++) {
+        virStorageSourcePtr target = def->disks[i].target;
+        virDomainDiskDefPtr disk = def->disks[i].vmdisk;
+        const char *format_str = NULL;
+
+        if (target->type != VIR_STORAGE_TYPE_FILE &&
+            target->type != VIR_STORAGE_TYPE_BLOCK) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("disk '%s' backup type '%s' is not supported"),
+                           def->disks[i].name,
+                           virStorageTypeToString(target->type));
+            goto cleanup;
+        }
+
+        if (qemuDomainDiskBlockJobIsActive(disk))
+            goto cleanup;
+
+        if (qemuGetDriveSourceString(target, NULL, &path) < 0)
+            goto cleanup;
+
+        if (!(device = qemuAliasFromDisk(disk)))
+            goto cleanup;
+
+        if (target->format)
+            format_str = virStorageFileFormatTypeToString(target->format);
+
+        if (qemuMonitorDriveBackup(actions, device, path, NULL, format_str, 0,
+                                   false) < 0)
+            goto cleanup;
+
+        VIR_FREE(path);
+        VIR_FREE(device);
+    }
+
+    priv = vm->privateData;
+    if (!(backup = virGetDomainBackup(domain, def->name)))
+        goto cleanup;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    rc = qemuMonitorTransaction(priv->mon, actions);
+    if (qemuDomainObjExitMonitor(driver, vm) < 0 || rc < 0)
+        goto cleanup;
+
+    ret = backup;
+    backup = NULL;
+
+    for (i = 0; i < def->ndisks; i++)
+        QEMU_DOMAIN_DISK_PRIVATE(def->disks->vmdisk)->blockjob = true;
+
+ cleanup:
+    if (job)
+        qemuDomainObjEndJob(driver, vm);
+
+    VIR_FREE(path);
+    VIR_FREE(device);
+
+    virDomainBackupDefFree(def);
+    virJSONValueFree(actions);
+    virDomainObjEndAPI(&vm);
+    virObjectUnref(backup);
+
+    return ret;
+}
+
+
 static virHypervisorDriver qemuHypervisorDriver = {
     .name = QEMU_DRIVER_NAME,
     .connectOpen = qemuConnectOpen, /* 0.2.0 */
@@ -20682,7 +20791,8 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainGetGuestVcpus = qemuDomainGetGuestVcpus, /* 2.0.0 */
     .domainSetGuestVcpus = qemuDomainSetGuestVcpus, /* 2.0.0 */
     .domainSetVcpu = qemuDomainSetVcpu, /* 3.1.0 */
-    .domainSetBlockThreshold = qemuDomainSetBlockThreshold /* 3.2.0 */
+    .domainSetBlockThreshold = qemuDomainSetBlockThreshold, /* 3.2.0 */
+    .domainBackupCreateXML = qemuDomainBackupCreateXML, /* 3.4.0 */
 };
 
 
