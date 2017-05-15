@@ -4005,6 +4005,55 @@ vzDomainBlockResize(virDomainPtr domain,
     return ret;
 }
 
+static int
+vzDomainGetBlockInfo(virDomainPtr domain,
+                     const char *path,
+                     virDomainBlockInfoPtr info,
+                     unsigned int flags)
+{
+    virDomainObjPtr dom;
+    virDomainDiskDefPtr disk;
+    long long allocation;
+    bool job = false;
+    int ret = -1;
+
+    virCheckFlags(0, -1);
+
+    if (!(dom = vzDomObjFromDomainRef(domain)))
+        return -1;
+
+    if (virDomainGetBlockInfoEnsureACL(domain->conn, dom->def) < 0)
+        goto cleanup;
+
+    if (vzDomainObjBeginJob(dom) < 0)
+        goto cleanup;
+    job = true;
+
+    if (vzEnsureDomainExists(dom) < 0)
+        goto cleanup;
+
+    if (!(disk = virDomainDiskByName(dom->def, path, false))) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("invalid path %s not assigned to domain"), path);
+        goto cleanup;
+    }
+
+    if ((allocation = prlsdkGetDiskAllocation(dom, disk)) < 0)
+        goto cleanup;
+
+    info->capacity = disk->src->capacity;
+    info->allocation = allocation;
+    info->physical = allocation;
+
+    ret = 0;
+
+ cleanup:
+    if (job)
+        vzDomainObjEndJob(dom);
+    virDomainObjEndAPI(&dom);
+    return ret;
+}
+
 static virHypervisorDriver vzHypervisorDriver = {
     .name = "vz",
     .connectOpen = vzConnectOpen,            /* 0.10.0 */
@@ -4106,6 +4155,7 @@ static virHypervisorDriver vzHypervisorDriver = {
     .domainAbortJob = vzDomainAbortJob, /* 3.1.0 */
     .domainReset = vzDomainReset, /* 3.1.0 */
     .domainBlockResize = vzDomainBlockResize, /* 3.3.0 */
+    .domainGetBlockInfo = vzDomainGetBlockInfo, /* 3.4.0 */
 };
 
 static virConnectDriver vzConnectDriver = {

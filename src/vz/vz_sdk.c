@@ -4962,3 +4962,26 @@ int prlsdkResizeImage(virDomainObjPtr dom, virDomainDiskDefPtr disk,
     PrlHandle_Free(prldisk);
     return ret;
 }
+
+long long prlsdkGetDiskAllocation(virDomainObjPtr dom,
+                                  virDomainDiskDefPtr disk)
+{
+    vzDomObjPtr privdom = dom->privateData;
+    PRL_HANDLE job;
+    PRL_HANDLE prldisk;
+    PRL_UINT32 size;
+    PRL_RESULT pret;
+
+    job = PrlVm_RefreshConfig(privdom->sdkdom);
+    if (waitDomainJob(job, dom))
+        return -1;
+
+    prldisk = prlsdkGetDisk(privdom->sdkdom, disk);
+    if (prldisk == PRL_INVALID_HANDLE)
+        return -1;
+
+    pret = PrlVmDevHd_GetSizeOnDisk(prldisk, &size);
+    prlsdkCheckRetExit(pret, -1);
+
+    return ((unsigned long long)size) << 20;
+}

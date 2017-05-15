@@ -91,3 +91,4 @@ PRL_HANDLE
 prlsdkSdkDomainLookupByName(vzDriverPtr driver, const char *name);
 int prlsdkCancelJob(virDomainObjPtr dom);
 int prlsdkResizeImage(virDomainObjPtr dom, virDomainDiskDefPtr disk, unsigned long long newsize);
+long long prlsdkGetDiskAllocation(virDomainObjPtr dom, virDomainDiskDefPtr disk);
