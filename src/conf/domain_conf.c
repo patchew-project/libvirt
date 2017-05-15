@@ -9612,6 +9612,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     char *devaddr = NULL;
     char *mode = NULL;
     char *linkstate = NULL;
+    char *hostlinkstate = NULL;
     char *addrtype = NULL;
     char *domain_name = NULL;
     char *vhostuser_mode = NULL;
@@ -9660,6 +9661,10 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                 if (virDomainNetIPInfoParseXML(_("interface host IP"),
                                                ctxt, &def->hostIP) < 0)
                     goto error;
+
+                if (!hostlinkstate)
+                       hostlinkstate = virXPathString("string(./link/@state)", ctxt);
+
                 ctxt->node = tmpnode;
             }
             if (!macaddr && xmlStrEqual(cur->name, BAD_CAST "mac")) {
@@ -10309,6 +10314,16 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
         }
     }
 
+    def->hostlinkstate = VIR_DOMAIN_NET_INTERFACE_LINK_STATE_DEFAULT;
+    if (hostlinkstate != NULL) {
+        if ((def->hostlinkstate = virDomainNetInterfaceLinkStateTypeFromString(hostlinkstate)) <= 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unknown interface link state '%s'"),
+                           hostlinkstate);
+            goto error;
+        }
+    }
+
     if (filter != NULL) {
         switch (def->type) {
         case VIR_DOMAIN_NET_TYPE_ETHERNET:
@@ -10377,6 +10392,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_FREE(devaddr);
     VIR_FREE(mode);
     VIR_FREE(linkstate);
+    VIR_FREE(hostlinkstate);
     VIR_FREE(addrtype);
     VIR_FREE(domain_name);
     VIR_FREE(trustGuestRxFilters);
@@ -22194,6 +22210,18 @@ virDomainNetDefFormat(virBufferPtr buf,
         case VIR_DOMAIN_NET_TYPE_USER:
         case VIR_DOMAIN_NET_TYPE_LAST:
             break;
+        }
+
+        if (def->hostlinkstate) {
+            if (sourceLines == 0) {
+                virBufferAddLit(buf, "<source>\n");
+                sourceLines += 2;
+            }
+            virBufferAdjustIndent(buf, 2);
+            virBufferAsprintf(buf, "<link state='%s'/>\n",
+                    virDomainNetInterfaceLinkStateTypeToString(def->hostlinkstate));
+            virBufferAdjustIndent(buf, -2);
+            sourceLines += 2;
         }
 
         /* if sourceLines == 0 - no <source> info at all so far
