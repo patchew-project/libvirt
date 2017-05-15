@@ -468,6 +468,13 @@ virNodeDeviceCapMatch(virNodeDeviceObjPtr devobj,
                  VIR_NODE_DEV_CAP_FLAG_HBA_VPORT_OPS))
                 return true;
         }
+
+        if (cap->data.type == VIR_NODE_DEV_CAP_PCI_DEV) {
+            if (type == VIR_NODE_DEV_CAP_MDEV_TYPES &&
+                (cap->data.pci_dev.flags &
+                 VIR_NODE_DEV_CAP_FLAG_PCI_MDEV))
+                return true;
+        }
     }
 
     return false;
