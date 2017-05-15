@@ -2216,6 +2216,9 @@ virSecuritySELinuxSetChardevLabel(virSecurityManagerPtr mgr,
     if (chr_seclabel && !chr_seclabel->relabel)
         return 0;
 
+    if (!chr_seclabel && dev_source->skipRelabel)
+        return 0;
+
     if (chr_seclabel)
         imagelabel = chr_seclabel->label;
     if (!imagelabel)
@@ -2287,6 +2290,9 @@ virSecuritySELinuxRestoreChardevLabel(virSecurityManagerPtr mgr,
         chr_seclabel = virDomainChrDefGetSecurityLabelDef(dev,
                                                           SECURITY_SELINUX_NAME);
     if (chr_seclabel && !chr_seclabel->relabel)
+        return 0;
+
+    if (!chr_seclabel && dev_source->skipRelabel)
         return 0;
 
     switch (dev_source->type) {

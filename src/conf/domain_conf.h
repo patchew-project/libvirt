@@ -1166,6 +1166,7 @@ struct _virDomainChrSourceDef {
     } data;
     char *logfile;
     int logappend;
+    bool skipRelabel;
 };
 
 /* A complete character device, both host and domain views.  */

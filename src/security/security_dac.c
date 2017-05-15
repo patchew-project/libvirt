@@ -1196,6 +1196,9 @@ virSecurityDACSetChardevLabel(virSecurityManagerPtr mgr,
     if (chr_seclabel && !chr_seclabel->relabel)
         return 0;
 
+    if (!chr_seclabel && dev_source->skipRelabel)
+        return 0;
+
     if (chr_seclabel && chr_seclabel->label) {
         if (virParseOwnershipIds(chr_seclabel->label, &user, &group) < 0)
             return -1;
@@ -1274,6 +1277,9 @@ virSecurityDACRestoreChardevLabel(virSecurityManagerPtr mgr,
                                                           SECURITY_DAC_NAME);
 
     if (chr_seclabel && !chr_seclabel->relabel)
+        return 0;
+
+    if (!chr_seclabel && dev_source->skipRelabel)
         return 0;
 
     switch ((virDomainChrType) dev_source->type) {

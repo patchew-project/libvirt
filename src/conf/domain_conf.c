@@ -2064,6 +2064,7 @@ virDomainChrSourceDefCopy(virDomainChrSourceDefPtr dest,
     }
 
     dest->type = src->type;
+    dest->skipRelabel = src->skipRelabel;
 
     return 0;
 }
@@ -10608,6 +10609,7 @@ virDomainChrSourceDefParseXML(virDomainChrSourceDefPtr def,
     char *append = NULL;
     char *haveTLS = NULL;
     char *tlsFromConfig = NULL;
+    char *skipRelabel = NULL;
     int remaining = 0;
 
     while (cur != NULL) {
@@ -10628,6 +10630,8 @@ virDomainChrSourceDefParseXML(virDomainChrSourceDefPtr def,
                 case VIR_DOMAIN_CHR_TYPE_UNIX:
                     if (!append && def->type == VIR_DOMAIN_CHR_TYPE_FILE)
                         append = virXMLPropString(cur, "append");
+                    if (!skipRelabel && def->type == VIR_DOMAIN_CHR_TYPE_FILE)
+                        skipRelabel = virXMLPropString(cur, "skipRelabel");
                     /* PTY path is only parsed from live xml.  */
                     if (!path  &&
                         (def->type != VIR_DOMAIN_CHR_TYPE_PTY ||
@@ -10725,6 +10729,17 @@ virDomainChrSourceDefParseXML(virDomainChrSourceDefPtr def,
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Invalid append attribute value '%s'"), append);
             goto error;
+        }
+        if (skipRelabel && def->type == VIR_DOMAIN_CHR_TYPE_FILE &&
+            (flags & VIR_DOMAIN_DEF_PARSE_STATUS)) {
+            if (STREQ(skipRelabel, "yes")) {
+                def->skipRelabel = true;
+            } else {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("invalid 'skipRelabel' attribute value '%s'"),
+                               skipRelabel);
+                goto error;
+            }
         }
         if (!path &&
             def->type != VIR_DOMAIN_CHR_TYPE_PTY) {
@@ -10902,6 +10917,7 @@ virDomainChrSourceDefParseXML(virDomainChrSourceDefPtr def,
     VIR_FREE(logfile);
     VIR_FREE(haveTLS);
     VIR_FREE(tlsFromConfig);
+    VIR_FREE(skipRelabel);
 
     return remaining;
 
@@ -22324,6 +22340,10 @@ virDomainChrSourceDefFormat(virBufferPtr buf,
                 def->data.file.append != VIR_TRISTATE_SWITCH_ABSENT)
                 virBufferAsprintf(buf, " append='%s'",
                     virTristateSwitchTypeToString(def->data.file.append));
+            if ((flags & VIR_DOMAIN_DEF_FORMAT_STATUS) &&
+                def->type == VIR_DOMAIN_CHR_TYPE_FILE && def->skipRelabel) {
+                virBufferAddLit(buf, " skipRelabel='yes'");
+            }
             virDomainSourceDefFormatSeclabel(buf, nseclabels, seclabels, flags);
         }
         break;

@@ -4998,6 +4998,7 @@ static int
 qemuBuildChrChardevFileStr(virLogManagerPtr logManager,
                            virCommandPtr cmd,
                            const virDomainDef *def,
+                           virDomainChrSourceDefPtr sourceDef,
                            virBufferPtr buf,
                            const char *filearg, const char *fileval,
                            const char *appendarg, int appendval)
@@ -5010,6 +5011,9 @@ qemuBuildChrChardevFileStr(virLogManagerPtr logManager,
         if (appendval == VIR_TRISTATE_SWITCH_ABSENT ||
             appendval == VIR_TRISTATE_SWITCH_OFF)
             flags |= VIR_LOG_MANAGER_PROTOCOL_DOMAIN_OPEN_LOG_FILE_TRUNCATE;
+
+        if (sourceDef)
+            sourceDef->skipRelabel = true;
 
         if ((logfd = virLogManagerDomainOpenLogFile(logManager,
                                                     "qemu",
@@ -5051,7 +5055,7 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
                        virCommandPtr cmd,
                        virQEMUDriverConfigPtr cfg,
                        const virDomainDef *def,
-                       const virDomainChrSourceDef *dev,
+                       virDomainChrSourceDefPtr dev,
                        const char *alias,
                        virQEMUCapsPtr qemuCaps,
                        bool nowait)
@@ -5093,7 +5097,7 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
             goto cleanup;
         }
         if (qemuBuildChrChardevFileStr(virQEMUCapsGet(qemuCaps, QEMU_CAPS_CHARDEV_FILE_APPEND) ?
-                                       logManager : NULL, cmd, def, &buf,
+                                       logManager : NULL, cmd, def, dev, &buf,
                                        "path", dev->data.file.path,
                                        "append", dev->data.file.append) < 0)
             goto cleanup;
@@ -5209,7 +5213,7 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
                            _("logfile not supported in this QEMU binary"));
             goto cleanup;
         }
-        if (qemuBuildChrChardevFileStr(logManager, cmd, def, &buf,
+        if (qemuBuildChrChardevFileStr(logManager, cmd, def, NULL, &buf,
                                        "logfile", dev->logfile,
                                        "logappend", dev->logappend) < 0)
             goto cleanup;
@@ -5573,7 +5577,7 @@ qemuBuildMonitorCommandLine(virLogManagerPtr logManager,
                             virQEMUDriverConfigPtr cfg,
                             virDomainDefPtr def,
                             virQEMUCapsPtr qemuCaps,
-                            const virDomainChrSourceDef *monitor_chr,
+                            virDomainChrSourceDefPtr monitor_chr,
                             bool monitor_json)
 {
     char *chrdev;
