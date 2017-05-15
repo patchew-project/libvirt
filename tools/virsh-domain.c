@@ -9840,9 +9840,13 @@ static const vshCmdOptDef opts_domxmltonative[] = {
      .flags = VSH_OFLAG_REQ,
      .help = N_("target config data type format")
     },
+    {.name = "domain",
+     .type = VSH_OT_DATA,
+     .flags = VSH_OFLAG_REQ_OPT,
+     .help = N_("domain name, id or uuid")
+    },
     {.name = "xml",
      .type = VSH_OT_DATA,
-     .flags = VSH_OFLAG_REQ,
      .help = N_("xml data file to export from")
     },
     {.name = NULL}
@@ -9851,30 +9855,60 @@ static const vshCmdOptDef opts_domxmltonative[] = {
 static bool
 cmdDomXMLToNative(vshControl *ctl, const vshCmd *cmd)
 {
-    bool ret = true;
+    bool ret = false;
     const char *format = NULL;
-    const char *xmlFile = NULL;
-    char *configData;
-    char *xmlData;
+    const char *domain = NULL;
+    const char *xml = NULL;
+    char *xmlData = NULL;
+    char *configData = NULL;
     unsigned int flags = 0;
     virshControlPtr priv = ctl->privData;
+    virDomainPtr dom = NULL;
 
-    if (vshCommandOptStringReq(ctl, cmd, "format", &format) < 0 ||
-        vshCommandOptStringReq(ctl, cmd, "xml", &xmlFile) < 0)
+    if (vshCommandOptStringReq(ctl, cmd, "format", &format) < 0)
         return false;
 
-    if (virFileReadAll(xmlFile, VSH_MAX_XML_FILE, &xmlData) < 0)
+    if (vshCommandOptStringReq(ctl, cmd, "domain", &domain) < 0)
         return false;
+
+    if (vshCommandOptStringReq(ctl, cmd, "xml", &xml) < 0)
+        return false;
+
+    VSH_EXCLUSIVE_OPTIONS_VAR(domain, xml);
+
+    if (domain)
+        dom = virshCommandOptDomain(ctl, cmd, &domain);
+
+    if (!dom && !xml) {
+        vshError(ctl, _("need either domain (ID, UUID, or name) or domain XML configuration file path"));
+        return false;
+    }
+
+    if (dom) {
+        xmlData = virDomainGetXMLDesc(dom, flags);
+        if (xmlData == NULL)
+            goto cleanup;
+    }
+
+    if (xml) {
+        if (virFileReadAll(xml, VSH_MAX_XML_FILE, &xmlData) < 0)
+            goto cleanup;
+    }
 
     configData = virConnectDomainXMLToNative(priv->conn, format, xmlData, flags);
     if (configData != NULL) {
         vshPrint(ctl, "%s", configData);
-        VIR_FREE(configData);
+        ret = true;
+        goto cleanup;
     } else {
-        ret = false;
+        vshError(ctl, _("convert from domain XML to native command failed"));
+        goto cleanup;
     }
 
+ cleanup:
+    virshDomainFree(dom);
     VIR_FREE(xmlData);
+    VIR_FREE(configData);
     return ret;
 }
 
