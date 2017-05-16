@@ -634,10 +634,12 @@ qemuProcessHandleEvent(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
 static int
 qemuProcessHandleShutdown(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
                           virDomainObjPtr vm,
+                          virTristateBool guest_initiated,
                           void *opaque)
 {
     virQEMUDriverPtr driver = opaque;
     qemuDomainObjPrivatePtr priv;
+    virObjectEventPtr pre_event = NULL;
     virObjectEventPtr event = NULL;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
 
@@ -662,6 +664,25 @@ qemuProcessHandleShutdown(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
     virDomainObjSetState(vm,
                          VIR_DOMAIN_SHUTDOWN,
                          VIR_DOMAIN_SHUTDOWN_UNKNOWN);
+
+    switch (guest_initiated) {
+    case VIR_TRISTATE_BOOL_YES:
+        pre_event = virDomainEventLifecycleNewFromObj(vm,
+                                                VIR_DOMAIN_EVENT_SHUTDOWN,
+                                                VIR_DOMAIN_EVENT_SHUTDOWN_GUEST);
+        break;
+
+    case VIR_TRISTATE_BOOL_NO:
+        pre_event = virDomainEventLifecycleNewFromObj(vm,
+                                                VIR_DOMAIN_EVENT_SHUTDOWN,
+                                                VIR_DOMAIN_EVENT_SHUTDOWN_HOST);
+        break;
+
+    case VIR_TRISTATE_BOOL_ABSENT:
+    case VIR_TRISTATE_BOOL_LAST:
+        break;
+    }
+
     event = virDomainEventLifecycleNewFromObj(vm,
                                      VIR_DOMAIN_EVENT_SHUTDOWN,
                                      VIR_DOMAIN_EVENT_SHUTDOWN_FINISHED);
@@ -678,6 +699,7 @@ qemuProcessHandleShutdown(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
 
  unlock:
     virObjectUnlock(vm);
+    qemuDomainEventQueue(driver, pre_event);
     qemuDomainEventQueue(driver, event);
     virObjectUnref(cfg);
 
