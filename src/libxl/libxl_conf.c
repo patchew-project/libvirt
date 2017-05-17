@@ -1227,12 +1227,16 @@ libxlMakeVfb(virPortAllocatorPtr graphicsports,
             }
             x_vfb->vnc.display = l_vfb->data.vnc.port - LIBXL_VNC_PORT_MIN;
 
-            if ((glisten = virDomainGraphicsGetListen(l_vfb, 0)) &&
-                glisten->address) {
-                /* libxl_device_vfb_init() does VIR_STRDUP("127.0.0.1") */
-                VIR_FREE(x_vfb->vnc.listen);
-                if (VIR_STRDUP(x_vfb->vnc.listen, glisten->address) < 0)
-                    return -1;
+            if ((glisten = virDomainGraphicsGetListen(l_vfb, 0))) {
+                if (glisten->address) {
+                    /* libxl_device_vfb_init() does VIR_STRDUP("127.0.0.1") */
+                    VIR_FREE(x_vfb->vnc.listen);
+                    if (VIR_STRDUP(x_vfb->vnc.listen, glisten->address) < 0)
+                        return -1;
+                } else {
+                    if (VIR_STRDUP(glisten->address, "127.0.0.1") < 0)
+                        return -1;
+                }
             }
             if (VIR_STRDUP(x_vfb->vnc.passwd, l_vfb->data.vnc.auth.passwd) < 0)
                 return -1;
