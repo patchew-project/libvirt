@@ -19786,6 +19786,80 @@ virDomainTPMDefCheckABIStability(virDomainTPMDefPtr src,
     return virDomainDeviceInfoCheckABIStability(&src->info, &dst->info);
 }
 
+
+static bool
+virDomainMemtuneCheckABIStability(const virDomainDef *src,
+                                  const virDomainDef *dst,
+                                  unsigned int flags)
+{
+    if (virDomainDefGetMemoryInitial(src) != virDomainDefGetMemoryInitial(dst)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target domain max memory %lld "
+                         "does not match source %lld"),
+                       virDomainDefGetMemoryInitial(dst),
+                       virDomainDefGetMemoryInitial(src));
+        return false;
+    }
+
+    if (!(flags & VIR_DOMAIN_DEF_ABI_CHECK_SKIP_VOLATILE) &&
+        src->mem.cur_balloon != dst->mem.cur_balloon) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target domain current memory %lld "
+                         "does not match source %lld"),
+                       dst->mem.cur_balloon,
+                       src->mem.cur_balloon);
+        return false;
+    }
+
+    if (src->mem.max_memory != dst->mem.max_memory) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target maximum memory size '%llu' "
+                         "doesn't match source '%llu'"),
+                       dst->mem.max_memory,
+                       src->mem.max_memory);
+        return false;
+    }
+
+    if (src->mem.memory_slots != dst->mem.memory_slots) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target domain memory slots "
+                         "count '%u' doesn't match source '%u'"),
+                       dst->mem.memory_slots,
+                       src->mem.memory_slots);
+        return false;
+    }
+
+    if (src->mem.source != dst->mem.source) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target memoryBacking source '%s' doesn't "
+                         "match source memoryBacking source'%s'"),
+                       virDomainMemorySourceTypeToString(dst->mem.source),
+                       virDomainMemorySourceTypeToString(src->mem.source));
+        return false;
+    }
+
+    if (src->mem.access != dst->mem.access) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target memoryBacking access '%s' doesn't "
+                         "match access memoryBacking access'%s'"),
+                       virDomainMemoryAccessTypeToString(dst->mem.access),
+                       virDomainMemoryAccessTypeToString(src->mem.access));
+        return false;
+    }
+
+    if (src->mem.allocation != dst->mem.allocation) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target memoryBacking allocation '%s' doesn't "
+                         "match allocation memoryBacking allocation'%s'"),
+                       virDomainMemoryAllocationTypeToString(dst->mem.allocation),
+                       virDomainMemoryAllocationTypeToString(src->mem.allocation));
+        return false;
+    }
+
+    return true;
+}
+
+
 static bool
 virDomainMemoryDefCheckABIStability(virDomainMemoryDefPtr src,
                                     virDomainMemoryDefPtr dst)
@@ -19940,36 +20014,11 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
         goto error;
     }
 
-    if (virDomainDefGetMemoryInitial(src) != virDomainDefGetMemoryInitial(dst)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("Target domain max memory %lld does not match source %lld"),
-                       virDomainDefGetMemoryInitial(dst),
-                       virDomainDefGetMemoryInitial(src));
+    if (!virDomainMemtuneCheckABIStability(src, dst, flags))
         goto error;
-    }
-    if (!(flags & VIR_DOMAIN_DEF_ABI_CHECK_SKIP_VOLATILE) &&
-        src->mem.cur_balloon != dst->mem.cur_balloon) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("Target domain current memory %lld does not match source %lld"),
-                       dst->mem.cur_balloon, src->mem.cur_balloon);
-        goto error;
-    }
 
     if (!virDomainNumaCheckABIStability(src->numa, dst->numa))
         goto error;
-
-    if (src->mem.memory_slots != dst->mem.memory_slots) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("Target domain memory slots count '%u' doesn't match source '%u'"),
-                       dst->mem.memory_slots, src->mem.memory_slots);
-        goto error;
-    }
-    if (src->mem.max_memory != dst->mem.max_memory) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("Target maximum memory size '%llu' doesn't match source '%llu'"),
-                       dst->mem.max_memory, src->mem.max_memory);
-        goto error;
-    }
 
     if (!virDomainDefVcpuCheckAbiStability(src, dst))
         goto error;
