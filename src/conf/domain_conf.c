@@ -14201,6 +14201,14 @@ virDomainIOMMUDefParseXML(xmlNodePtr node,
         }
         iommu->caching_mode = val;
     }
+    VIR_FREE(tmp);
+    if ((tmp = virXPathString("string(./driver/@eim)", ctxt))) {
+        if ((val = virTristateSwitchTypeFromString(tmp)) < 0) {
+            virReportError(VIR_ERR_XML_ERROR, _("unknown eim value: %s"), tmp);
+            goto cleanup;
+        }
+        iommu->eim = val;
+    }
 
     ret = iommu;
     iommu = NULL;
@@ -19873,6 +19881,14 @@ virDomainIOMMUDefCheckABIStability(virDomainIOMMUDefPtr src,
                        virTristateSwitchTypeToString(src->caching_mode));
         return false;
     }
+    if (src->eim != dst->eim) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target domain IOMMU device eim value '%s' "
+                         "does not match source '%s'"),
+                       virTristateSwitchTypeToString(dst->eim),
+                       virTristateSwitchTypeToString(src->eim));
+        return false;
+    }
     return true;
 }
 
@@ -24215,6 +24231,10 @@ virDomainIOMMUDefFormat(virBufferPtr buf,
         if (iommu->caching_mode != VIR_TRISTATE_SWITCH_ABSENT) {
             virBufferAsprintf(&childBuf, " caching_mode='%s'",
                               virTristateSwitchTypeToString(iommu->caching_mode));
+        }
+        if (iommu->eim != VIR_TRISTATE_SWITCH_ABSENT) {
+            virBufferAsprintf(&childBuf, " eim='%s'",
+                              virTristateSwitchTypeToString(iommu->eim));
         }
         virBufferAddLit(&childBuf, "/>\n");
     }

@@ -7436,6 +7436,16 @@ qemu-kvm -net nic,model=? /dev/null
               <span class="since">Since 3.4.0</span> (QEMU/KVM only)
             </p>
           </dd>
+          <dt><code>eim</code></dt>
+          <dd>
+            <p>
+              The <code>eim</code> attribute with possible values
+              <code>on</code> and <code>off</code> can be used to
+              turn on extended interrupt mode. In combination with intremap
+              and split I/O APIC, this allows for more vCPUs to be used.
+              <span class="since">Since 3.4.0</span> (QEMU/KVM only)
+            </p>
+          </dd>
         </dl>
       </dd>
     </dl>
