@@ -23,20 +23,21 @@ testCompareXMLToConfFiles(const char *inxml, const char *outconf, dnsmasqCapsPtr
 {
     char *actual = NULL;
     int ret = -1;
-    virNetworkDefPtr dev = NULL;
+    virNetworkDefPtr def = NULL;
     virNetworkObjPtr obj = NULL;
+    virNetworkDefPtr objdef;
     virCommandPtr cmd = NULL;
     char *pidfile = NULL;
     dnsmasqContext *dctx = NULL;
 
-    if (!(dev = virNetworkDefParseFile(inxml)))
+    if (!(def = virNetworkDefParseFile(inxml)))
         goto fail;
 
-    if (!(obj = virNetworkObjNew()))
+    if (!(obj = virNetworkObjNew(def)))
         goto fail;
+    objdef = virNetworkObjGetDef(obj);
 
-    obj->def = dev;
-    dctx = dnsmasqContextNew(dev->name, "/var/lib/libvirt/dnsmasq");
+    dctx = dnsmasqContextNew(objdef->name, "/var/lib/libvirt/dnsmasq");
 
     if (dctx == NULL)
         goto fail;
@@ -66,7 +67,7 @@ testCompareXMLToConfFiles(const char *inxml, const char *outconf, dnsmasqCapsPtr
     VIR_FREE(actual);
     VIR_FREE(pidfile);
     virCommandFree(cmd);
-    virObjectUnref(obj);
+    virNetworkObjEndAPI(&obj);
     dnsmasqContextFree(dctx);
     return ret;
 }

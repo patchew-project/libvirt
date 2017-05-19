@@ -69,7 +69,7 @@ virNetworkObjOnceInit(void)
 VIR_ONCE_GLOBAL_INIT(virNetworkObj)
 
 virNetworkObjPtr
-virNetworkObjNew(void)
+virNetworkObjNew(virNetworkDefPtr def)
 {
     virNetworkObjPtr obj;
 
@@ -86,6 +86,9 @@ virNetworkObjNew(void)
     ignore_value(virBitmapSetBit(obj->classIdMap, 0));
     ignore_value(virBitmapSetBit(obj->classIdMap, 1));
     ignore_value(virBitmapSetBit(obj->classIdMap, 2));
+
+    virObjectLock(obj);
+    obj->def = def;
 
     return obj;
 
@@ -650,16 +653,13 @@ virNetworkObjAssignDefLocked(virNetworkObjListPtr nets,
             goto cleanup;
         }
 
-        if (!(obj = virNetworkObjNew()))
+        if (!(obj = virNetworkObjNew(def)))
               goto cleanup;
-
-        virObjectLock(obj);
 
         virUUIDFormat(def->uuid, uuidstr);
         if (virHashAddEntry(nets->objs, uuidstr, obj) < 0)
             goto cleanup;
 
-        obj->def = def;
         obj->persistent = !(flags & VIR_NETWORK_OBJ_LIST_ADD_LIVE);
         virObjectRef(obj);
     }

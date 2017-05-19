@@ -48,7 +48,7 @@ struct _virNetworkObj {
 };
 
 virNetworkObjPtr
-virNetworkObjNew(void);
+virNetworkObjNew(virNetworkDefPtr def);
 
 virNetworkDefPtr
 virNetworkObjGetDef(virNetworkObjPtr obj);
