@@ -121,6 +121,21 @@ virNetworkObjGetNewDef(virNetworkObjPtr obj)
 }
 
 
+bool
+virNetworkObjIsActive(virNetworkObjPtr obj)
+{
+    return obj->active;
+}
+
+
+void
+virNetworkObjSetActive(virNetworkObjPtr obj,
+                       bool active)
+{
+    obj->active = active;
+}
+
+
 int
 virNetworkObjGetAutostart(virNetworkObjPtr obj)
 {
@@ -1005,7 +1020,7 @@ virNetworkLoadState(virNetworkObjListPtr nets,
         net->floor_sum = floor_sum_val;
 
     net->taint = taint;
-    net->active = 1; /* any network with a state file is by definition active */
+    net->active = true; /* any network with a state file is by definition active */
 
  cleanup:
     VIR_FREE(configFile);

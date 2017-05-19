@@ -31,7 +31,7 @@ struct _virNetworkObj {
 
     pid_t dnsmasqPid;
     pid_t radvdPid;
-    unsigned int active : 1;
+    bool active;
     int autostart;
     unsigned int persistent : 1;
 
@@ -55,6 +55,13 @@ virNetworkObjGetDef(virNetworkObjPtr obj);
 
 virNetworkDefPtr
 virNetworkObjGetNewDef(virNetworkObjPtr obj);
+
+bool
+virNetworkObjIsActive(virNetworkObjPtr obj);
+
+void
+virNetworkObjSetActive(virNetworkObjPtr obj,
+                       bool active);
 
 int
 virNetworkObjGetAutostart(virNetworkObjPtr obj);
@@ -120,12 +127,6 @@ virNetworkObjEndAPI(virNetworkObjPtr *net);
 
 typedef struct _virNetworkObjList virNetworkObjList;
 typedef virNetworkObjList *virNetworkObjListPtr;
-
-static inline int
-virNetworkObjIsActive(const virNetworkObj *net)
-{
-    return net->active;
-}
 
 virNetworkObjListPtr
 virNetworkObjListNew(void);

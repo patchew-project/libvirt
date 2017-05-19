@@ -986,7 +986,7 @@ testParseNetworks(testDriverPtr privconn,
             goto error;
         }
 
-        obj->active = 1;
+        virNetworkObjSetActive(obj, true);
         virNetworkObjEndAPI(&obj);
     }
 
@@ -3401,7 +3401,7 @@ testNetworkCreateXML(virConnectPtr conn, const char *xml)
         goto cleanup;
     def = NULL;
     objdef = virNetworkObjGetDef(obj);
-    obj->active = 1;
+    virNetworkObjSetActive(obj, true);
 
     event = virNetworkEventLifecycleNew(objdef->name, objdef->uuid,
                                         VIR_NETWORK_EVENT_STARTED,
@@ -3543,7 +3543,7 @@ testNetworkCreate(virNetworkPtr net)
         goto cleanup;
     }
 
-    obj->active = 1;
+    virNetworkObjSetActive(obj, true);
     event = virNetworkEventLifecycleNew(def->name, def->uuid,
                                         VIR_NETWORK_EVENT_STARTED,
                                         0);
@@ -3569,7 +3569,7 @@ testNetworkDestroy(virNetworkPtr net)
         goto cleanup;
     def = virNetworkObjGetDef(obj);
 
-    obj->active = 0;
+    virNetworkObjSetActive(obj, false);
     event = virNetworkEventLifecycleNew(def->name, def->uuid,
                                         VIR_NETWORK_EVENT_STOPPED,
                                         0);
