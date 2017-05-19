@@ -956,6 +956,7 @@ testParseDomains(testDriverPtr privconn,
     return ret;
 }
 
+
 static int
 testParseNetworks(testDriverPtr privconn,
                   const char *file,
@@ -994,6 +995,7 @@ testParseNetworks(testDriverPtr privconn,
     VIR_FREE(nodes);
     return ret;
 }
+
 
 static int
 testParseInterfaces(testDriverPtr privconn,
@@ -3222,8 +3224,9 @@ testNetworkObjFindByUUID(testDriverPtr privconn,
 }
 
 
-static virNetworkPtr testNetworkLookupByUUID(virConnectPtr conn,
-                                             const unsigned char *uuid)
+static virNetworkPtr
+testNetworkLookupByUUID(virConnectPtr conn,
+                        const unsigned char *uuid)
 {
     testDriverPtr privconn = conn->privateData;
     virNetworkObjPtr net;
@@ -3255,8 +3258,9 @@ testNetworkObjFindByName(testDriverPtr privconn,
 }
 
 
-static virNetworkPtr testNetworkLookupByName(virConnectPtr conn,
-                                             const char *name)
+static virNetworkPtr
+testNetworkLookupByName(virConnectPtr conn,
+                        const char *name)
 {
     testDriverPtr privconn = conn->privateData;
     virNetworkObjPtr net;
@@ -3273,7 +3277,8 @@ static virNetworkPtr testNetworkLookupByName(virConnectPtr conn,
 }
 
 
-static int testConnectNumOfNetworks(virConnectPtr conn)
+static int
+testConnectNumOfNetworks(virConnectPtr conn)
 {
     testDriverPtr privconn = conn->privateData;
     int numActive;
@@ -3283,7 +3288,12 @@ static int testConnectNumOfNetworks(virConnectPtr conn)
     return numActive;
 }
 
-static int testConnectListNetworks(virConnectPtr conn, char **const names, int nnames) {
+
+static int
+testConnectListNetworks(virConnectPtr conn,
+                        char **const names,
+                        int nnames)
+{
     testDriverPtr privconn = conn->privateData;
     int n;
 
@@ -3292,7 +3302,9 @@ static int testConnectListNetworks(virConnectPtr conn, char **const names, int n
     return n;
 }
 
-static int testConnectNumOfDefinedNetworks(virConnectPtr conn)
+
+static int
+testConnectNumOfDefinedNetworks(virConnectPtr conn)
 {
     testDriverPtr privconn = conn->privateData;
     int numInactive;
@@ -3302,7 +3314,12 @@ static int testConnectNumOfDefinedNetworks(virConnectPtr conn)
     return numInactive;
 }
 
-static int testConnectListDefinedNetworks(virConnectPtr conn, char **const names, int nnames) {
+
+static int
+testConnectListDefinedNetworks(virConnectPtr conn,
+                               char **const names,
+                               int nnames)
+{
     testDriverPtr privconn = conn->privateData;
     int n;
 
@@ -3310,6 +3327,7 @@ static int testConnectListDefinedNetworks(virConnectPtr conn, char **const names
                                   false, names, nnames, NULL, conn);
     return n;
 }
+
 
 static int
 testConnectListAllNetworks(virConnectPtr conn,
@@ -3323,7 +3341,9 @@ testConnectListAllNetworks(virConnectPtr conn,
     return virNetworkObjListExport(conn, privconn->networks, nets, NULL, flags);
 }
 
-static int testNetworkIsActive(virNetworkPtr net)
+
+static int
+testNetworkIsActive(virNetworkPtr net)
 {
     testDriverPtr privconn = net->conn->privateData;
     virNetworkObjPtr obj;
@@ -3339,7 +3359,9 @@ static int testNetworkIsActive(virNetworkPtr net)
     return ret;
 }
 
-static int testNetworkIsPersistent(virNetworkPtr net)
+
+static int
+testNetworkIsPersistent(virNetworkPtr net)
 {
     testDriverPtr privconn = net->conn->privateData;
     virNetworkObjPtr obj;
@@ -3356,7 +3378,8 @@ static int testNetworkIsPersistent(virNetworkPtr net)
 }
 
 
-static virNetworkPtr testNetworkCreateXML(virConnectPtr conn, const char *xml)
+static virNetworkPtr
+testNetworkCreateXML(virConnectPtr conn, const char *xml)
 {
     testDriverPtr privconn = conn->privateData;
     virNetworkDefPtr def;
@@ -3387,8 +3410,10 @@ static virNetworkPtr testNetworkCreateXML(virConnectPtr conn, const char *xml)
     return ret;
 }
 
-static
-virNetworkPtr testNetworkDefineXML(virConnectPtr conn, const char *xml)
+
+static virNetworkPtr
+testNetworkDefineXML(virConnectPtr conn,
+                     const char *xml)
 {
     testDriverPtr privconn = conn->privateData;
     virNetworkDefPtr def;
@@ -3416,7 +3441,9 @@ virNetworkPtr testNetworkDefineXML(virConnectPtr conn, const char *xml)
     return ret;
 }
 
-static int testNetworkUndefine(virNetworkPtr network)
+
+static int
+testNetworkUndefine(virNetworkPtr network)
 {
     testDriverPtr privconn = network->conn->privateData;
     virNetworkObjPtr privnet;
@@ -3444,6 +3471,7 @@ static int testNetworkUndefine(virNetworkPtr network)
     virNetworkObjEndAPI(&privnet);
     return ret;
 }
+
 
 static int
 testNetworkUpdate(virNetworkPtr net,
@@ -3487,7 +3515,9 @@ testNetworkUpdate(virNetworkPtr net,
     return ret;
 }
 
-static int testNetworkCreate(virNetworkPtr network)
+
+static int
+testNetworkCreate(virNetworkPtr network)
 {
     testDriverPtr privconn = network->conn->privateData;
     virNetworkObjPtr privnet;
@@ -3515,7 +3545,9 @@ static int testNetworkCreate(virNetworkPtr network)
     return ret;
 }
 
-static int testNetworkDestroy(virNetworkPtr network)
+
+static int
+testNetworkDestroy(virNetworkPtr network)
 {
     testDriverPtr privconn = network->conn->privateData;
     virNetworkObjPtr privnet;
@@ -3540,8 +3572,10 @@ static int testNetworkDestroy(virNetworkPtr network)
     return ret;
 }
 
-static char *testNetworkGetXMLDesc(virNetworkPtr network,
-                                   unsigned int flags)
+
+static char *
+testNetworkGetXMLDesc(virNetworkPtr network,
+                      unsigned int flags)
 {
     testDriverPtr privconn = network->conn->privateData;
     virNetworkObjPtr privnet;
@@ -3559,7 +3593,10 @@ static char *testNetworkGetXMLDesc(virNetworkPtr network,
     return ret;
 }
 
-static char *testNetworkGetBridgeName(virNetworkPtr network) {
+
+static char *
+testNetworkGetBridgeName(virNetworkPtr network)
+{
     testDriverPtr privconn = network->conn->privateData;
     char *bridge = NULL;
     virNetworkObjPtr privnet;
@@ -3581,8 +3618,10 @@ static char *testNetworkGetBridgeName(virNetworkPtr network) {
     return bridge;
 }
 
-static int testNetworkGetAutostart(virNetworkPtr network,
-                                   int *autostart)
+
+static int
+testNetworkGetAutostart(virNetworkPtr network,
+                        int *autostart)
 {
     testDriverPtr privconn = network->conn->privateData;
     virNetworkObjPtr privnet;
@@ -3599,8 +3638,10 @@ static int testNetworkGetAutostart(virNetworkPtr network,
     return ret;
 }
 
-static int testNetworkSetAutostart(virNetworkPtr network,
-                                   int autostart)
+
+static int
+testNetworkSetAutostart(virNetworkPtr network,
+                        int autostart)
 {
     testDriverPtr privconn = network->conn->privateData;
     virNetworkObjPtr privnet;
