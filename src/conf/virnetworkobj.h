@@ -50,6 +50,12 @@ struct _virNetworkObj {
 virNetworkObjPtr
 virNetworkObjNew(void);
 
+virNetworkDefPtr
+virNetworkObjGetDef(virNetworkObjPtr obj);
+
+virNetworkDefPtr
+virNetworkObjGetNewDef(virNetworkObjPtr obj);
+
 virMacMapPtr
 virNetworkObjGetMacMap(virNetworkObjPtr obj);
 
