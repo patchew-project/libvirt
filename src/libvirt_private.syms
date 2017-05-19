@@ -931,6 +931,7 @@ virNetworkObjFindByName;
 virNetworkObjFindByNameLocked;
 virNetworkObjFindByUUID;
 virNetworkObjFindByUUIDLocked;
+virNetworkObjGetClassIdMap;
 virNetworkObjGetDnsmasqPid;
 virNetworkObjGetMacMap;
 virNetworkObjGetPersistentDef;

@@ -38,7 +38,7 @@ struct _virNetworkObj {
     virNetworkDefPtr def; /* The current definition */
     virNetworkDefPtr newDef; /* New definition to activate at shutdown */
 
-    virBitmapPtr class_id; /* bitmap of class IDs for QoS */
+    virBitmapPtr classIdMap; /* bitmap of class IDs for QoS */
     unsigned long long floor_sum; /* sum of all 'floor'-s of attached NICs */
 
     unsigned int taint;
@@ -66,6 +66,9 @@ virNetworkObjGetRadvdPid(virNetworkObjPtr obj);
 void
 virNetworkObjSetRadvdPid(virNetworkObjPtr obj,
                          pid_t radvdPid);
+
+virBitmapPtr
+virNetworkObjGetClassIdMap(virNetworkObjPtr obj);
 
 void
 virNetworkObjSetMacMap(virNetworkObjPtr obj,
