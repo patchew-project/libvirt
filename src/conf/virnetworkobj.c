@@ -121,6 +121,80 @@ virNetworkObjGetNewDef(virNetworkObjPtr obj)
 }
 
 
+int
+virNetworkObjGetAutostart(virNetworkObjPtr obj)
+{
+    return obj->autostart;
+}
+
+
+int
+virNetworkObjSetAutostart(virNetworkObjPtr obj,
+                          const char *configDir,
+                          const char *autostartDir,
+                          int autostart)
+{
+    virNetworkDefPtr def = obj->def;
+    char *configFile = NULL;
+    char *autostartLink = NULL;
+    int ret = -1;
+
+    if (!obj->persistent) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("cannot set autostart for transient network '%s'"),
+                       def->name);
+        return -1;
+    }
+
+    autostart = (autostart != 0);
+
+    if (obj->autostart != autostart) {
+        if (configDir && autostartDir) {
+            if (!(configFile = virNetworkConfigFile(configDir, def->name)))
+                goto cleanup;
+
+            if (!(autostartLink = virNetworkConfigFile(autostartDir,
+                                                       def->name)))
+                goto cleanup;
+
+            if (autostart) {
+                if (virFileMakePath(autostartDir) < 0) {
+                    virReportSystemError(errno,
+                                         _("cannot create autostart dir '%s'"),
+                                         autostartDir);
+                    goto cleanup;
+                }
+
+                if (symlink(configFile, autostartLink) < 0) {
+                    virReportSystemError(errno,
+                                         _("failed to create symlink '%s' "
+                                           "to '%s'"),
+                                         autostartLink, configFile);
+                    goto cleanup;
+                }
+            } else {
+                if (unlink(autostartLink) < 0 &&
+                    errno != ENOENT && errno != ENOTDIR) {
+                    virReportSystemError(errno,
+                                         _("failed to delete symlink '%s'"),
+                                         autostartLink);
+                    goto cleanup;
+                }
+            }
+        }
+
+        obj->autostart = autostart;
+    }
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(configFile);
+    VIR_FREE(autostartLink);
+    return ret;
+}
+
+
 pid_t
 virNetworkObjGetDnsmasqPid(virNetworkObjPtr obj)
 {

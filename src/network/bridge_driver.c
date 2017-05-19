@@ -525,7 +525,7 @@ networkAutostartConfig(virNetworkObjPtr obj,
     int ret = -1;
 
     virObjectLock(obj);
-    if (obj->autostart &&
+    if (virNetworkObjGetAutostart(obj) &&
         !virNetworkObjIsActive(obj) &&
         networkStartNetwork(driver, obj) < 0)
         goto cleanup;
@@ -3963,7 +3963,7 @@ networkGetAutostart(virNetworkPtr net,
     if (virNetworkGetAutostartEnsureACL(net->conn, virNetworkObjGetDef(obj)) < 0)
         goto cleanup;
 
-    *autostart = obj->autostart;
+    *autostart = virNetworkObjGetAutostart(obj);
     ret = 0;
 
  cleanup:
@@ -3978,63 +3978,22 @@ networkSetAutostart(virNetworkPtr net,
 {
     virNetworkDriverStatePtr driver = networkGetDriver();
     virNetworkObjPtr obj;
-    virNetworkDefPtr def;
-    char *configFile = NULL, *autostartLink = NULL;
     int ret = -1;
 
     if (!(obj = networkObjFromNetwork(net)))
         goto cleanup;
-    def = virNetworkObjGetDef(obj);
 
-    if (virNetworkSetAutostartEnsureACL(net->conn, def) < 0)
+    if (virNetworkSetAutostartEnsureACL(net->conn,
+                                        virNetworkObjGetDef(obj)) < 0)
         goto cleanup;
 
-    if (!obj->persistent) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("cannot set autostart for transient network"));
+    if (virNetworkObjSetAutostart(obj, driver->networkConfigDir,
+                                  driver->networkAutostartDir, autostart) < 0)
         goto cleanup;
-    }
 
-    autostart = (autostart != 0);
-
-    if (obj->autostart != autostart) {
-        if ((configFile = virNetworkConfigFile(driver->networkConfigDir,
-                                               def->name)) == NULL)
-            goto cleanup;
-        if ((autostartLink = virNetworkConfigFile(driver->networkAutostartDir,
-                                                  def->name)) == NULL)
-            goto cleanup;
-
-        if (autostart) {
-            if (virFileMakePath(driver->networkAutostartDir) < 0) {
-                virReportSystemError(errno,
-                                     _("cannot create autostart directory '%s'"),
-                                     driver->networkAutostartDir);
-                goto cleanup;
-            }
-
-            if (symlink(configFile, autostartLink) < 0) {
-                virReportSystemError(errno,
-                                     _("Failed to create symlink '%s' to '%s'"),
-                                     autostartLink, configFile);
-                goto cleanup;
-            }
-        } else {
-            if (unlink(autostartLink) < 0 && errno != ENOENT && errno != ENOTDIR) {
-                virReportSystemError(errno,
-                                     _("Failed to delete symlink '%s'"),
-                                     autostartLink);
-                goto cleanup;
-            }
-        }
-
-        obj->autostart = autostart;
-    }
     ret = 0;
 
  cleanup:
-    VIR_FREE(configFile);
-    VIR_FREE(autostartLink);
     virNetworkObjEndAPI(&obj);
     return ret;
 }
