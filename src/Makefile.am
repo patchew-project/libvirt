@@ -462,7 +462,9 @@ SECRET_CONF_SOURCES =                                          \
 # Network driver generic impl APIs
 NODE_DEVICE_CONF_SOURCES =                                     \
 		conf/node_device_conf.c conf/node_device_conf.h \
-		conf/virnodedeviceobj.c conf/virnodedeviceobj.h
+		conf/virnodedeviceobj.c conf/virnodedeviceobj.h \
+		conf/node_device_linux_sysfs.c                  \
+		conf/node_device_linux_sysfs.h
 
 CPU_CONF_SOURCES =						\
 		conf/cpu_conf.c conf/cpu_conf.h
@@ -1162,9 +1164,7 @@ ACCESS_DRIVER_POLKIT_POLICY = \
 
 NODE_DEVICE_DRIVER_SOURCES =					\
 		node_device/node_device_driver.c		\
-		node_device/node_device_driver.h		\
-		node_device/node_device_linux_sysfs.c           \
-		node_device/node_device_linux_sysfs.h
+		node_device/node_device_driver.h
 
 NODE_DEVICE_DRIVER_HAL_SOURCES =				\
 		node_device/node_device_hal.c			\

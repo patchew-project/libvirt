@@ -689,6 +689,11 @@ virNodeDeviceEventStateRegisterID;
 virNodeDeviceEventUpdateNew;
 
 
+# conf/node_device_linux_sysfs.h
+virNodeDeviceSysfsGetPCIRelatedDevCaps;
+virNodeDeviceSysfsGetSCSIHostCaps;
+
+
 # conf/numa_conf.h
 virDomainNumaCheckABIStability;
 virDomainNumaEquals;

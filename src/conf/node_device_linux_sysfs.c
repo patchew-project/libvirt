@@ -26,8 +26,6 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 
-#include "node_device_driver.h"
-#include "node_device_hal.h"
 #include "node_device_linux_sysfs.h"
 #include "virerror.h"
 #include "viralloc.h"
@@ -44,7 +42,7 @@
 VIR_LOG_INIT("node_device.node_device_linux_sysfs");
 
 int
-nodeDeviceSysfsGetSCSIHostCaps(virNodeDevCapSCSIHostPtr scsi_host)
+virNodeDeviceSysfsGetSCSIHostCaps(virNodeDevCapSCSIHostPtr scsi_host)
 {
     char *tmp = NULL;
     int ret = -1;
@@ -125,8 +123,8 @@ nodeDeviceSysfsGetSCSIHostCaps(virNodeDevCapSCSIHostPtr scsi_host)
 
 
 static int
-nodeDeviceSysfsGetPCISRIOVCaps(const char *sysfsPath,
-                               virNodeDevCapPCIDevPtr pci_dev)
+virNodeDeviceSysfsGetPCISRIOVCaps(const char *sysfsPath,
+                                  virNodeDevCapPCIDevPtr pci_dev)
 {
     size_t i;
     int ret;
@@ -164,7 +162,7 @@ nodeDeviceSysfsGetPCISRIOVCaps(const char *sysfsPath,
 
 
 static int
-nodeDeviceSysfsGetPCIIOMMUGroupCaps(virNodeDevCapPCIDevPtr pci_dev)
+virNodeDeviceSysfsGetPCIIOMMUGroupCaps(virNodeDevCapPCIDevPtr pci_dev)
 {
     size_t i;
     int tmpGroup, ret = -1;
@@ -204,19 +202,19 @@ nodeDeviceSysfsGetPCIIOMMUGroupCaps(virNodeDevCapPCIDevPtr pci_dev)
 }
 
 
-/* nodeDeviceSysfsGetPCIRelatedCaps() get info that is stored in sysfs
+/* virNodeDeviceSysfsGetPCIRelatedCaps() get info that is stored in sysfs
  * about devices related to this device, i.e. things that can change
  * without this device itself changing. These must be refreshed
  * anytime full XML of the device is requested, because they can
  * change with no corresponding notification from the kernel/udev.
  */
 int
-nodeDeviceSysfsGetPCIRelatedDevCaps(const char *sysfsPath,
-                                    virNodeDevCapPCIDevPtr pci_dev)
+virNodeDeviceSysfsGetPCIRelatedDevCaps(const char *sysfsPath,
+                                       virNodeDevCapPCIDevPtr pci_dev)
 {
-    if (nodeDeviceSysfsGetPCISRIOVCaps(sysfsPath, pci_dev) < 0)
+    if (virNodeDeviceSysfsGetPCISRIOVCaps(sysfsPath, pci_dev) < 0)
         return -1;
-    if (nodeDeviceSysfsGetPCIIOMMUGroupCaps(pci_dev) < 0)
+    if (virNodeDeviceSysfsGetPCIIOMMUGroupCaps(pci_dev) < 0)
         return -1;
     return 0;
 }
@@ -225,13 +223,13 @@ nodeDeviceSysfsGetPCIRelatedDevCaps(const char *sysfsPath,
 #else
 
 int
-nodeDeviceSysfsGetSCSIHostCaps(virNodeDevCapSCSIHostPtr scsi_host ATTRIBUTE_UNUSED)
+virNodeDeviceSysfsGetSCSIHostCaps(virNodeDevCapSCSIHostPtr scsi_host ATTRIBUTE_UNUSED)
 {
     return -1;
 }
 
 int
-nodeDeviceSysfsGetPCIRelatedDevCaps(const char *sysfsPath ATTRIBUTE_UNUSED,
+virNodeDeviceSysfsGetPCIRelatedDevCaps(const char *sysfsPath ATTRIBUTE_UNUSED,
                                     virNodeDevCapPCIDevPtr pci_dev ATTRIBUTE_UNUSED)
 {
     return -1;

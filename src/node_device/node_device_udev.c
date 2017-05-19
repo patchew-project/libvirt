@@ -474,7 +474,7 @@ static int udevProcessPCI(struct udev_device *device,
                             &pci_dev->numa_node, 10) < 0)
         goto cleanup;
 
-    if (nodeDeviceSysfsGetPCIRelatedDevCaps(def->sysfs_path, pci_dev) < 0)
+    if (virNodeDeviceSysfsGetPCIRelatedDevCaps(def->sysfs_path, pci_dev) < 0)
         goto cleanup;
 
     if (!(pciDev = virPCIDeviceNew(pci_dev->domain,
@@ -688,7 +688,7 @@ static int udevProcessSCSIHost(struct udev_device *device ATTRIBUTE_UNUSED,
         return -1;
     }
 
-    nodeDeviceSysfsGetSCSIHostCaps(&def->caps->data.scsi_host);
+    virNodeDeviceSysfsGetSCSIHostCaps(&def->caps->data.scsi_host);
 
     if (udevGenerateDeviceName(device, def, NULL) != 0)
         return -1;
