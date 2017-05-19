@@ -281,16 +281,16 @@ virNodeDeviceObjRemove(virNodeDeviceObjListPtr devs,
     virNodeDeviceObjUnlock(*dev);
 
     for (i = 0; i < devs->count; i++) {
-        virNodeDeviceObjLock(*dev);
+        virNodeDeviceObjLock(devs->objs[i]);
         if (devs->objs[i] == *dev) {
-            virNodeDeviceObjUnlock(*dev);
+            virNodeDeviceObjUnlock(devs->objs[i]);
             virNodeDeviceObjFree(devs->objs[i]);
             *dev = NULL;
 
             VIR_DELETE_ELEMENT(devs->objs, i, devs->count);
             break;
         }
-        virNodeDeviceObjUnlock(*dev);
+        virNodeDeviceObjUnlock(devs->objs[i]);
     }
 }
 
