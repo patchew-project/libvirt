@@ -316,7 +316,8 @@ xenParseXLDiskSrc(virDomainDiskDefPtr disk, char *srcstr)
     char *tmpstr = NULL;
     int ret = -1;
 
-    if (STRPREFIX(srcstr, "rbd:")) {
+    if (srcstr &&
+        STRPREFIX(srcstr, "rbd:")) {
         if (!(tmpstr = virStringReplace(srcstr, "\\\\", "\\")))
             goto cleanup;
 
