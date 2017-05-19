@@ -50,6 +50,32 @@ struct _virNetworkObj {
 virNetworkObjPtr
 virNetworkObjNew(void);
 
+virMacMapPtr
+virNetworkObjGetMacMap(virNetworkObjPtr obj);
+
+void
+virNetworkObjSetMacMap(virNetworkObjPtr obj,
+                       virMacMapPtr macmap);
+
+void
+virNetworkObjUnrefMacMap(virNetworkObjPtr obj);
+
+char *
+virNetworkObjMacMgrFileName(const char *dnsmasqStateDir,
+                            const char *bridge);
+
+int
+virNetworkObjMacMgrAdd(virNetworkObjPtr obj,
+                       const char *dnsmasqStateDir,
+                       const char *domain,
+                       const virMacAddr *mac);
+
+int
+virNetworkObjMacMgrDel(virNetworkObjPtr obj,
+                       const char *dnsmasqStateDir,
+                       const char *domain,
+                       const virMacAddr *mac);
+
 void
 virNetworkObjEndAPI(virNetworkObjPtr *net);
 
