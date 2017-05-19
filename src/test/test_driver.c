@@ -3296,13 +3296,13 @@ testConnectNumOfNetworks(virConnectPtr conn)
 static int
 testConnectListNetworks(virConnectPtr conn,
                         char **const names,
-                        int nnames)
+                        int maxnames)
 {
     testDriverPtr privconn = conn->privateData;
     int n;
 
     n = virNetworkObjListGetNames(privconn->networks,
-                                  true, names, nnames, NULL, conn);
+                                  true, names, maxnames, NULL, conn);
     return n;
 }
 
@@ -3322,13 +3322,13 @@ testConnectNumOfDefinedNetworks(virConnectPtr conn)
 static int
 testConnectListDefinedNetworks(virConnectPtr conn,
                                char **const names,
-                               int nnames)
+                               int maxnames)
 {
     testDriverPtr privconn = conn->privateData;
     int n;
 
     n = virNetworkObjListGetNames(privconn->networks,
-                                  false, names, nnames, NULL, conn);
+                                  false, names, maxnames, NULL, conn);
     return n;
 }
 

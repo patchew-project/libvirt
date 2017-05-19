@@ -155,8 +155,8 @@ virNetworkObjTaint(virNetworkObjPtr obj,
                    virNetworkTaintFlags taint);
 
 typedef bool
-(*virNetworkObjListFilter)(virConnectPtr conn,
-                           virNetworkDefPtr def);
+(*virNetworkObjListACLFilter)(virConnectPtr conn,
+                              virNetworkDefPtr def);
 
 virNetworkObjPtr
 virNetworkObjAssignDef(virNetworkObjListPtr nets,
@@ -221,7 +221,7 @@ int
 virNetworkObjListExport(virConnectPtr conn,
                         virNetworkObjListPtr netobjs,
                         virNetworkPtr **nets,
-                        virNetworkObjListFilter filter,
+                        virNetworkObjListACLFilter aclfilter,
                         unsigned int flags);
 
 typedef int
@@ -237,14 +237,14 @@ int
 virNetworkObjListGetNames(virNetworkObjListPtr nets,
                           bool active,
                           char **names,
-                          int nnames,
-                          virNetworkObjListFilter filter,
+                          int maxnames,
+                          virNetworkObjListACLFilter aclfilter,
                           virConnectPtr conn);
 
 int
 virNetworkObjListNumOfNetworks(virNetworkObjListPtr nets,
                                bool active,
-                               virNetworkObjListFilter filter,
+                               virNetworkObjListACLFilter aclfilter,
                                virConnectPtr conn);
 
 void

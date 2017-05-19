@@ -1370,7 +1370,7 @@ virNetworkMatch(virNetworkObjPtr obj,
 struct virNetworkObjListData {
     virConnectPtr conn;
     virNetworkPtr *nets;
-    virNetworkObjListFilter filter;
+    virNetworkObjListACLFilter aclfilter;
     unsigned int flags;
     int nnets;
     bool error;
@@ -1390,8 +1390,8 @@ virNetworkObjListPopulate(void *payload,
 
     virObjectLock(obj);
 
-    if (data->filter &&
-        !data->filter(data->conn, obj->def))
+    if (data->aclfilter &&
+        !data->aclfilter(data->conn, obj->def))
         goto cleanup;
 
     if (!virNetworkMatch(obj, data->flags))
@@ -1419,11 +1419,13 @@ int
 virNetworkObjListExport(virConnectPtr conn,
                         virNetworkObjListPtr netobjs,
                         virNetworkPtr **nets,
-                        virNetworkObjListFilter filter,
+                        virNetworkObjListACLFilter aclfilter,
                         unsigned int flags)
 {
     int ret = -1;
-    struct virNetworkObjListData data = { conn, NULL, filter, flags, 0, false};
+    struct virNetworkObjListData data = {
+        .conn = conn, .nets = NULL, .aclfilter = aclfilter, .flags = flags,
+        .nnets = 0, .error = false };
 
     virObjectLock(netobjs);
     if (nets && VIR_ALLOC_N(data.nets, virHashSize(netobjs->objs) + 1) < 0)
@@ -1489,7 +1491,8 @@ virNetworkObjListForEach(virNetworkObjListPtr nets,
                          virNetworkObjListIterator callback,
                          void *opaque)
 {
-    struct virNetworkObjListForEachHelperData data = {callback, opaque, 0};
+    struct virNetworkObjListForEachHelperData data = {
+        .callback = callback, .opaque = opaque, .ret = 0};
     virObjectLock(nets);
     virHashForEach(nets->objs, virNetworkObjListForEachHelper, &data);
     virObjectUnlock(nets);
@@ -1499,9 +1502,9 @@ virNetworkObjListForEach(virNetworkObjListPtr nets,
 
 struct virNetworkObjListGetHelperData {
     virConnectPtr conn;
-    virNetworkObjListFilter filter;
+    virNetworkObjListACLFilter aclfilter;
     char **names;
-    int nnames;
+    int maxnames;
     bool active;
     int got;
     bool error;
@@ -1518,14 +1521,14 @@ virNetworkObjListGetHelper(void *payload,
     if (data->error)
         return 0;
 
-    if (data->nnames >= 0 &&
-        data->got == data->nnames)
+    if (data->maxnames >= 0 &&
+        data->got == data->maxnames)
         return 0;
 
     virObjectLock(obj);
 
-    if (data->filter &&
-        !data->filter(data->conn, obj->def))
+    if (data->aclfilter &&
+        !data->aclfilter(data->conn, obj->def))
         goto cleanup;
 
     if ((data->active && virNetworkObjIsActive(obj)) ||
@@ -1548,14 +1551,15 @@ int
 virNetworkObjListGetNames(virNetworkObjListPtr nets,
                           bool active,
                           char **names,
-                          int nnames,
-                          virNetworkObjListFilter filter,
+                          int maxnames,
+                          virNetworkObjListACLFilter aclfilter,
                           virConnectPtr conn)
 {
     int ret = -1;
 
     struct virNetworkObjListGetHelperData data = {
-        conn, filter, names, nnames, active, 0, false};
+        .conn = conn, .aclfilter = aclfilter, .names = names,
+        .maxnames = maxnames, .active = active, .got = 0, .error = false};
 
     virObjectLock(nets);
     virHashForEach(nets->objs, virNetworkObjListGetHelper, &data);
@@ -1577,11 +1581,12 @@ virNetworkObjListGetNames(virNetworkObjListPtr nets,
 int
 virNetworkObjListNumOfNetworks(virNetworkObjListPtr nets,
                                bool active,
-                               virNetworkObjListFilter filter,
+                               virNetworkObjListACLFilter aclfilter,
                                virConnectPtr conn)
 {
     struct virNetworkObjListGetHelperData data = {
-        conn, filter, NULL, -1, active, 0, false};
+        .conn = conn, .aclfilter = aclfilter, .names = NULL,
+        .maxnames = -1, .active = active, .got = 0, .error = false};
 
     virObjectLock(nets);
     virHashForEach(nets->objs, virNetworkObjListGetHelper, &data);
