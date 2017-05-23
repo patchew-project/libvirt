@@ -11315,6 +11315,10 @@ virConnectGetDomainCapabilities(virConnectPtr conn,
  * VIR_CONNECT_GET_ALL_DOMAINS_STATS_SHUTOFF and/or
  * VIR_CONNECT_GET_ALL_DOMAINS_STATS_OTHER for all other states.
  *
+ * Note that this API is prone to exceeding maximum RPC message size on hosts
+ * with lots of VMs so it's suggested to use virDomainListGetStats with a
+ * reasonable list of VMs as the argument.
+ *
  * Returns the count of returned statistics structures on success, -1 on error.
  * The requested data are returned in the @retStats parameter. The returned
  * array should be freed by the caller. See virDomainStatsRecordListFree.
@@ -11385,6 +11389,10 @@ virConnectGetAllDomainStats(virConnectPtr conn,
  *
  * Note that any of the domain list filtering flags in @flags may be rejected
  * by this function.
+ *
+ * Note that this API is prone to exceeding maximum RPC if querying too many VMs
+ * with lots of statistics. It's suggested to query in batches of 10VMs, which
+ * should be good enough for VMs with 3000 disks + networks.
  *
  * Returns the count of returned statistics structures on success, -1 on error.
  * The requested data are returned in the @retStats parameter. The returned
