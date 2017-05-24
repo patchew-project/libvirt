@@ -1194,7 +1194,8 @@ virDomainSnapshotIsExternal(virDomainSnapshotObjPtr snap)
 }
 
 int
-virDomainSnapshotRedefinePrep(virDomainPtr domain,
+virDomainSnapshotRedefinePrep(virDomainXMLOptionPtr xmlopt,
+                              virDomainPtr domain,
                               virDomainObjPtr vm,
                               virDomainSnapshotDefPtr *defptr,
                               virDomainSnapshotObjPtr *snap,
@@ -1286,7 +1287,7 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
         if (other->def->dom) {
             if (def->dom) {
                 if (!virDomainDefCheckABIStability(other->def->dom,
-                                                   def->dom))
+                                                   def->dom, xmlopt))
                     goto cleanup;
             } else {
                 /* Transfer the domain def */

@@ -5816,6 +5816,7 @@ qemuDomainDefCheckABIStability(virQEMUDriverPtr driver,
 
     if (!virDomainDefCheckABIStabilityFlags(migratableDefSrc,
                                             migratableDefDst,
+                                            driver->xmlopt,
                                             check_flags))
         goto cleanup;
 

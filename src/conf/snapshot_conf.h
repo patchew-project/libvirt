@@ -177,7 +177,8 @@ int virDomainListSnapshots(virDomainSnapshotObjListPtr snapshots,
 bool virDomainSnapshotDefIsExternal(virDomainSnapshotDefPtr def);
 bool virDomainSnapshotIsExternal(virDomainSnapshotObjPtr snap);
 
-int virDomainSnapshotRedefinePrep(virDomainPtr domain,
+int virDomainSnapshotRedefinePrep(virDomainXMLOptionPtr xmlopt,
+                                  virDomainPtr domain,
                                   virDomainObjPtr vm,
                                   virDomainSnapshotDefPtr *def,
                                   virDomainSnapshotObjPtr *snap,

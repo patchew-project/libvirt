@@ -6130,7 +6130,7 @@ qemuDomainSaveImageUpdateDef(virQEMUDriverPtr driver,
                                           VIR_DOMAIN_XML_MIGRATABLE)))
         goto cleanup;
 
-    if (!virDomainDefCheckABIStability(def, newdef_migr)) {
+    if (!virDomainDefCheckABIStability(def, newdef_migr, driver->xmlopt)) {
         virErrorPtr err = virSaveLastError();
 
         /* Due to a bug in older version of external snapshot creation
@@ -6139,7 +6139,7 @@ qemuDomainSaveImageUpdateDef(virQEMUDriverPtr driver,
          * saved XML type, we need to check the ABI compatibility against
          * the user provided XML if the check against the migratable XML
          * fails. Snapshots created prior to v1.1.3 have this issue. */
-        if (!virDomainDefCheckABIStability(def, newdef)) {
+        if (!virDomainDefCheckABIStability(def, newdef, driver->xmlopt)) {
             virSetError(err);
             virFreeError(err);
             goto cleanup;
@@ -14583,7 +14583,8 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
     qemuDomainObjSetAsyncJobMask(vm, QEMU_JOB_NONE);
 
     if (redefine) {
-        if (virDomainSnapshotRedefinePrep(domain, vm, &def, &snap,
+        if (virDomainSnapshotRedefinePrep(driver->xmlopt,
+                                          domain, vm, &def, &snap,
                                           &update_current, flags) < 0)
             goto endjob;
     } else {

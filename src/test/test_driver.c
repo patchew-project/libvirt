@@ -414,7 +414,7 @@ testDriverNew(void)
         goto error;
     }
 
-    if (!(ret->xmlopt = virDomainXMLOptionNew(NULL, NULL, &ns)) ||
+    if (!(ret->xmlopt = virDomainXMLOptionNew(NULL, NULL, &ns, NULL)) ||
         !(ret->eventState = virObjectEventStateNew()) ||
         !(ret->domains = virDomainObjListNew()) ||
         !(ret->networks = virNetworkObjListNew()))
@@ -6359,7 +6359,8 @@ testDomainSnapshotCreateXML(virDomainPtr domain,
         goto cleanup;
 
     if (redefine) {
-        if (virDomainSnapshotRedefinePrep(domain, vm, &def, &snap,
+        if (virDomainSnapshotRedefinePrep(privconn->xmlopt,
+                                          domain, vm, &def, &snap,
                                           &update_current, flags) < 0)
             goto cleanup;
     } else {
@@ -6635,7 +6636,8 @@ testDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
         if (virDomainObjIsActive(vm)) {
             /* Transitions 5, 6, 8, 9 */
             /* Check for ABI compatibility.  */
-            if (!virDomainDefCheckABIStability(vm->def, config)) {
+            if (!virDomainDefCheckABIStability(vm->def, config,
+                                               privconn->xmlopt)) {
                 virErrorPtr err = virGetLastError();
 
                 if (!(flags & VIR_DOMAIN_SNAPSHOT_REVERT_FORCE)) {
