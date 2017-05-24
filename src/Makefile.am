@@ -3303,6 +3303,8 @@ libvirt_nss_la_SOURCES =		\
 		util/viratomic.h		\
 		util/virbitmap.c		\
 		util/virbitmap.h		\
+		util/virhostcpu.c		\
+		util/virhostcpu.h		\
 		util/virbuffer.c		\
 		util/virbuffer.h		\
 		util/vircommand.c		\

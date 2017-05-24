@@ -37,6 +37,7 @@
 #include "count-one-bits.h"
 #include "virstring.h"
 #include "virerror.h"
+#include "virhostcpu.h"
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
@@ -565,9 +566,14 @@ virBitmapParseUnlimited(const char *str)
     const char *cur = str;
     char *tmp;
     size_t i;
-    int start, last;
+    int start, last, bitmapSize;
 
-    if (!(bitmap = virBitmapNewEmpty()))
+    bitmapSize = virHostCPUGetCount();
+
+    if (bitmapSize < 0)
+        return NULL;
+
+    if (!(bitmap = virBitmapNew(bitmapSize)))
         return NULL;
 
     if (!str)
