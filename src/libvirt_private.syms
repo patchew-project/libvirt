@@ -404,11 +404,15 @@ virDomainLockFailureTypeFromString;
 virDomainLockFailureTypeToString;
 virDomainMemballoonModelTypeFromString;
 virDomainMemballoonModelTypeToString;
+virDomainMemoryAllocationTypeFromString;
+virDomainMemoryAllocationTypeToString;
 virDomainMemoryDefFree;
 virDomainMemoryFindByDef;
 virDomainMemoryFindInactiveByDef;
 virDomainMemoryInsert;
 virDomainMemoryRemove;
+virDomainMemorySourceTypeFromString;
+virDomainMemorySourceTypeToString;
 virDomainNetAppendIPAddress;
 virDomainNetDefClear;
 virDomainNetDefFormat;
@@ -690,6 +694,8 @@ virNodeDeviceEventUpdateNew;
 
 
 # conf/numa_conf.h
+virDomainMemoryAccessTypeFromString;
+virDomainMemoryAccessTypeToString;
 virDomainNumaCheckABIStability;
 virDomainNumaEquals;
 virDomainNumaFree;

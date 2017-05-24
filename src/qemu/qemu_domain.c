@@ -5797,6 +5797,46 @@ qemuDomainUpdateMemoryDeviceInfo(virQEMUDriverPtr driver,
 }
 
 
+static bool
+qemuDomainABIStabilityCheck(const virDomainDef *src,
+                            const virDomainDef *dst)
+{
+    if (src->mem.source != dst->mem.source) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target memoryBacking source '%s' doesn't "
+                         "match source memoryBacking source'%s'"),
+                       virDomainMemorySourceTypeToString(dst->mem.source),
+                       virDomainMemorySourceTypeToString(src->mem.source));
+        return false;
+    }
+
+    if (src->mem.access != dst->mem.access) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target memoryBacking access '%s' doesn't "
+                         "match access memoryBacking access'%s'"),
+                       virDomainMemoryAccessTypeToString(dst->mem.access),
+                       virDomainMemoryAccessTypeToString(src->mem.access));
+        return false;
+    }
+
+    if (src->mem.allocation != dst->mem.allocation) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target memoryBacking allocation '%s' doesn't "
+                         "match allocation memoryBacking allocation'%s'"),
+                       virDomainMemoryAllocationTypeToString(dst->mem.allocation),
+                       virDomainMemoryAllocationTypeToString(src->mem.allocation));
+        return false;
+    }
+
+    return true;
+}
+
+
+virDomainABIStability virQEMUDriverDomainABIStability = {
+    .domain = qemuDomainABIStabilityCheck,
+};
+
+
 bool
 qemuDomainDefCheckABIStability(virQEMUDriverPtr driver,
                                virDomainDefPtr src,
