@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/libvirt/libvirt.svg)](https://travis-ci.org/libvirt/libvirt)
+[![Coverage Status](https://coveralls.io/repos/github/libvirt/libvirt/badge.svg)](https://coveralls.io/github/libvirt/libvirt)
 
 Libvirt API for virtualization
 ==============================

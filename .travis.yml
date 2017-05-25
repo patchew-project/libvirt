@@ -39,6 +39,7 @@ addons:
       - dnsmasq-base
       - librbd-dev
       - w3c-dtd-xhtml
+      - lcov
 
 notifications:
   irc:
@@ -64,7 +65,8 @@ before_install:
 
 # the custom PATH is just to pick up OS-X homebrew & its harmless on Linux
 before_script:
-  - PATH="/usr/local/opt/gettext/bin:/usr/local/opt/rpcgen/bin:$PATH" ./autogen.sh
+  - PATH="/usr/local/opt/gettext/bin:/usr/local/opt/rpcgen/bin:$PATH" ./autogen.sh "$COVERAGE"
+  - gem install coveralls-lcov
 script:
   - VIR_TEST_DEBUG=1 make -j3 && make -j3 syntax-check && make -j3 check
 
@@ -77,9 +79,16 @@ matrix:
       dist: trusty
     - compiler: gcc
       dist: trusty
+      env: COVERAGE="--enable-test-coverage"
     - compiler: clang
       os: osx
       script:
         # many unit tests fail & so does syntax-check, so skip for now
         # one day we must fix it though....
         - make -j3
+
+after_success:
+  - 'if [ -n "${COVERAGE}" ]; then
+        make -j3 cov;
+        coveralls-lcov --repo-token ${COVERALLS_TOKEN} coverage/libvirt.info;
+    fi'
