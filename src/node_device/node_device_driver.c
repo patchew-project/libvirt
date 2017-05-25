@@ -47,7 +47,9 @@
 
 virNodeDeviceDriverStatePtr driver;
 
-static int update_caps(virNodeDeviceObjPtr dev)
+
+static int
+nodeDeviceUpdateCaps(virNodeDeviceObjPtr dev)
 {
     virNodeDevCapsDefPtr cap = dev->def->caps;
 
@@ -103,7 +105,8 @@ static int update_caps(virNodeDeviceObjPtr dev)
  * the driver name for a device each time its entry is used, both for
  * udev *and* HAL backends.
  */
-static int update_driver_name(virNodeDeviceObjPtr dev)
+static int
+nodeDeviceUpdateDriverName(virNodeDeviceObjPtr dev)
 {
     char *driver_link = NULL;
     char *devpath = NULL;
@@ -140,7 +143,8 @@ static int update_driver_name(virNodeDeviceObjPtr dev)
 }
 #else
 /* XXX: Implement me for non-linux */
-static int update_driver_name(virNodeDeviceObjPtr dev ATTRIBUTE_UNUSED)
+static int
+nodeDeviceUpdateDriverName(virNodeDeviceObjPtr dev ATTRIBUTE_UNUSED)
 {
     return 0;
 }
@@ -151,10 +155,13 @@ void nodeDeviceLock(void)
 {
     virMutexLock(&driver->lock);
 }
+
+
 void nodeDeviceUnlock(void)
 {
     virMutexUnlock(&driver->lock);
 }
+
 
 int
 nodeNumOfDevices(virConnectPtr conn,
@@ -200,6 +207,7 @@ nodeListDevices(virConnectPtr conn,
     return nnames;
 }
 
+
 int
 nodeConnectListAllNodeDevices(virConnectPtr conn,
                               virNodeDevicePtr **devices,
@@ -220,8 +228,10 @@ nodeConnectListAllNodeDevices(virConnectPtr conn,
     return ret;
 }
 
+
 virNodeDevicePtr
-nodeDeviceLookupByName(virConnectPtr conn, const char *name)
+nodeDeviceLookupByName(virConnectPtr conn,
+                       const char *name)
 {
     virNodeDeviceObjPtr obj;
     virNodeDevicePtr ret = NULL;
@@ -328,8 +338,8 @@ nodeDeviceGetXMLDesc(virNodeDevicePtr dev,
     if (virNodeDeviceGetXMLDescEnsureACL(dev->conn, obj->def) < 0)
         goto cleanup;
 
-    update_driver_name(obj);
-    if (update_caps(obj) < 0)
+    nodeDeviceUpdateDriverName(obj);
+    if (nodeDeviceUpdateCaps(obj) < 0)
         goto cleanup;
 
     ret = virNodeDeviceDefFormat(obj->def);
@@ -421,8 +431,11 @@ nodeDeviceNumOfCaps(virNodeDevicePtr dev)
 }
 
 
+
 int
-nodeDeviceListCaps(virNodeDevicePtr dev, char **const names, int maxnames)
+nodeDeviceListCaps(virNodeDevicePtr dev,
+                   char **const names,
+                   int maxnames)
 {
     virNodeDeviceObjPtr obj;
     virNodeDevCapsDefPtr caps;
@@ -478,8 +491,9 @@ nodeDeviceListCaps(virNodeDevicePtr dev, char **const names, int maxnames)
     return ret;
 }
 
+
 static int
-get_time(time_t *t)
+nodeDeviceGetTime(time_t *t)
 {
     int ret = 0;
 
@@ -522,7 +536,7 @@ find_new_device(virConnectPtr conn, const char *wwnn, const char *wwpn)
      * doesn't become invalid.  */
     nodeDeviceUnlock();
 
-    get_time(&start);
+    nodeDeviceGetTime(&start);
 
     while ((now - start) < LINUX_NEW_DEVICE_WAIT_TIME) {
 
@@ -534,7 +548,7 @@ find_new_device(virConnectPtr conn, const char *wwnn, const char *wwpn)
             break;
 
         sleep(5);
-        if (get_time(&now) == -1)
+        if (nodeDeviceGetTime(&now) == -1)
             break;
     }
 
@@ -542,6 +556,7 @@ find_new_device(virConnectPtr conn, const char *wwnn, const char *wwpn)
 
     return dev;
 }
+
 
 virNodeDevicePtr
 nodeDeviceCreateXML(virConnectPtr conn,
@@ -641,6 +656,7 @@ nodeDeviceDestroy(virNodeDevicePtr dev)
     return ret;
 }
 
+
 int
 nodeConnectNodeDeviceEventRegisterAny(virConnectPtr conn,
                                       virNodeDevicePtr dev,
@@ -662,6 +678,7 @@ nodeConnectNodeDeviceEventRegisterAny(virConnectPtr conn,
     return callbackID;
 }
 
+
 int
 nodeConnectNodeDeviceEventDeregisterAny(virConnectPtr conn,
                                         int callbackID)
@@ -682,7 +699,9 @@ nodeConnectNodeDeviceEventDeregisterAny(virConnectPtr conn,
     return ret;
 }
 
-int nodedevRegister(void)
+
+int
+nodedevRegister(void)
 {
 #ifdef WITH_UDEV
     return udevNodeRegister();

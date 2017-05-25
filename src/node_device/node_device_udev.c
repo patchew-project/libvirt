@@ -71,8 +71,9 @@ udevHasDeviceProperty(struct udev_device *dev,
 }
 
 
-static const char *udevGetDeviceProperty(struct udev_device *udev_device,
-                                         const char *property_key)
+static const char *
+udevGetDeviceProperty(struct udev_device *udev_device,
+                      const char *property_key)
 {
     const char *ret = NULL;
 
@@ -85,9 +86,10 @@ static const char *udevGetDeviceProperty(struct udev_device *udev_device,
 }
 
 
-static int udevGetStringProperty(struct udev_device *udev_device,
-                                 const char *property_key,
-                                 char **value)
+static int
+udevGetStringProperty(struct udev_device *udev_device,
+                      const char *property_key,
+                      char **value)
 {
     if (VIR_STRDUP(*value,
                    udevGetDeviceProperty(udev_device, property_key)) < 0)
@@ -97,10 +99,11 @@ static int udevGetStringProperty(struct udev_device *udev_device,
 }
 
 
-static int udevGetIntProperty(struct udev_device *udev_device,
-                              const char *property_key,
-                              int *value,
-                              int base)
+static int
+udevGetIntProperty(struct udev_device *udev_device,
+                   const char *property_key,
+                   int *value,
+                   int base)
 {
     const char *str = NULL;
 
@@ -115,10 +118,11 @@ static int udevGetIntProperty(struct udev_device *udev_device,
 }
 
 
-static int udevGetUintProperty(struct udev_device *udev_device,
-                               const char *property_key,
-                               unsigned int *value,
-                               int base)
+static int
+udevGetUintProperty(struct udev_device *udev_device,
+                    const char *property_key,
+                    unsigned int *value,
+                    int base)
 {
     const char *str = NULL;
 
@@ -133,8 +137,9 @@ static int udevGetUintProperty(struct udev_device *udev_device,
 }
 
 
-static const char *udevGetDeviceSysfsAttr(struct udev_device *udev_device,
-                                          const char *attr_name)
+static const char *
+udevGetDeviceSysfsAttr(struct udev_device *udev_device,
+                       const char *attr_name)
 {
     const char *ret = NULL;
 
@@ -148,9 +153,10 @@ static const char *udevGetDeviceSysfsAttr(struct udev_device *udev_device,
 }
 
 
-static int udevGetStringSysfsAttr(struct udev_device *udev_device,
-                                  const char *attr_name,
-                                  char **value)
+static int
+udevGetStringSysfsAttr(struct udev_device *udev_device,
+                       const char *attr_name,
+                       char **value)
 {
     if (VIR_STRDUP(*value, udevGetDeviceSysfsAttr(udev_device, attr_name)) < 0)
         return -1;
@@ -164,10 +170,11 @@ static int udevGetStringSysfsAttr(struct udev_device *udev_device,
 }
 
 
-static int udevGetIntSysfsAttr(struct udev_device *udev_device,
-                               const char *attr_name,
-                               int *value,
-                               int base)
+static int
+udevGetIntSysfsAttr(struct udev_device *udev_device,
+                    const char *attr_name,
+                    int *value,
+                    int base)
 {
     const char *str = NULL;
 
@@ -183,10 +190,11 @@ static int udevGetIntSysfsAttr(struct udev_device *udev_device,
 }
 
 
-static int udevGetUintSysfsAttr(struct udev_device *udev_device,
-                                const char *attr_name,
-                                unsigned int *value,
-                                int base)
+static int
+udevGetUintSysfsAttr(struct udev_device *udev_device,
+                     const char *attr_name,
+                     unsigned int *value,
+                     int base)
 {
     const char *str = NULL;
 
@@ -202,9 +210,10 @@ static int udevGetUintSysfsAttr(struct udev_device *udev_device,
 }
 
 
-static int udevGetUint64SysfsAttr(struct udev_device *udev_device,
-                                  const char *attr_name,
-                                  unsigned long long *value)
+static int
+udevGetUint64SysfsAttr(struct udev_device *udev_device,
+                       const char *attr_name,
+                       unsigned long long *value)
 {
     const char *str = NULL;
 
@@ -220,9 +229,10 @@ static int udevGetUint64SysfsAttr(struct udev_device *udev_device,
 }
 
 
-static int udevGenerateDeviceName(struct udev_device *device,
-                                  virNodeDeviceDefPtr def,
-                                  const char *s)
+static int
+udevGenerateDeviceName(struct udev_device *device,
+                       virNodeDeviceDefPtr def,
+                       const char *s)
 {
     size_t i;
     virBuffer buf = VIR_BUFFER_INITIALIZER;
@@ -247,14 +257,16 @@ static int udevGenerateDeviceName(struct udev_device *device,
     return 0;
 }
 
+
 #if HAVE_UDEV_LOGGING
-typedef void (*udevLogFunctionPtr)(struct udev *udev,
-                                   int priority,
-                                   const char *file,
-                                   int line,
-                                   const char *fn,
-                                   const char *format,
-                                   va_list args);
+typedef void
+(*udevLogFunctionPtr)(struct udev *udev,
+                      int priority,
+                      const char *file,
+                      int line,
+                      const char *fn,
+                      const char *format,
+                      va_list args);
 
 static void
 ATTRIBUTE_FMT_PRINTF(6, 0)
@@ -283,10 +295,11 @@ udevLogFunction(struct udev *udev ATTRIBUTE_UNUSED,
 #endif
 
 
-static int udevTranslatePCIIds(unsigned int vendor,
-                               unsigned int product,
-                               char **vendor_string,
-                               char **product_string)
+static int
+udevTranslatePCIIds(unsigned int vendor,
+                    unsigned int product,
+                    char **vendor_string,
+                    char **product_string)
 {
     struct pci_id_match m;
     const char *vendor_name = NULL, *device_name = NULL;
@@ -427,8 +440,9 @@ udevPCIGetMdevTypesCap(struct udev_device *device,
 }
 
 
-static int udevProcessPCI(struct udev_device *device,
-                          virNodeDeviceDefPtr def)
+static int
+udevProcessPCI(struct udev_device *device,
+               virNodeDeviceDefPtr def)
 {
     virNodeDevCapPCIDevPtr pci_dev = &def->caps->data.pci_dev;
     virPCIEDeviceInfoPtr pci_express = NULL;
@@ -527,7 +541,9 @@ static int udevProcessPCI(struct udev_device *device,
     return ret;
 }
 
-static int drmGetMinorType(int minor)
+
+static int
+drmGetMinorType(int minor)
 {
     int type = minor >> 6;
 
@@ -544,8 +560,10 @@ static int drmGetMinorType(int minor)
     }
 }
 
-static int udevProcessDRMDevice(struct udev_device *device,
-                                virNodeDeviceDefPtr def)
+
+static int
+udevProcessDRMDevice(struct udev_device *device,
+                     virNodeDeviceDefPtr def)
 {
     virNodeDevCapDRMPtr drm = &def->caps->data.drm;
     int minor;
@@ -564,8 +582,10 @@ static int udevProcessDRMDevice(struct udev_device *device,
     return 0;
 }
 
-static int udevProcessUSBDevice(struct udev_device *device,
-                                virNodeDeviceDefPtr def)
+
+static int
+udevProcessUSBDevice(struct udev_device *device,
+                     virNodeDeviceDefPtr def)
 {
     virNodeDevCapUSBDevPtr usb_dev = &def->caps->data.usb_dev;
 
@@ -606,8 +626,9 @@ static int udevProcessUSBDevice(struct udev_device *device,
 }
 
 
-static int udevProcessUSBInterface(struct udev_device *device,
-                                   virNodeDeviceDefPtr def)
+static int
+udevProcessUSBInterface(struct udev_device *device,
+                        virNodeDeviceDefPtr def)
 {
     virNodeDevCapUSBIfPtr usb_if = &def->caps->data.usb_if;
 
@@ -634,8 +655,9 @@ static int udevProcessUSBInterface(struct udev_device *device,
 }
 
 
-static int udevProcessNetworkInterface(struct udev_device *device,
-                                       virNodeDeviceDefPtr def)
+static int
+udevProcessNetworkInterface(struct udev_device *device,
+                            virNodeDeviceDefPtr def)
 {
     const char *devtype = udev_device_get_devtype(device);
     virNodeDevCapNetPtr net = &def->caps->data.net;
@@ -671,8 +693,9 @@ static int udevProcessNetworkInterface(struct udev_device *device,
 }
 
 
-static int udevProcessSCSIHost(struct udev_device *device ATTRIBUTE_UNUSED,
-                               virNodeDeviceDefPtr def)
+static int
+udevProcessSCSIHost(struct udev_device *device ATTRIBUTE_UNUSED,
+                    virNodeDeviceDefPtr def)
 {
     virNodeDevCapSCSIHostPtr scsi_host = &def->caps->data.scsi_host;
     char *filename = NULL;
@@ -697,8 +720,9 @@ static int udevProcessSCSIHost(struct udev_device *device ATTRIBUTE_UNUSED,
 }
 
 
-static int udevProcessSCSITarget(struct udev_device *device ATTRIBUTE_UNUSED,
-                                 virNodeDeviceDefPtr def)
+static int
+udevProcessSCSITarget(struct udev_device *device ATTRIBUTE_UNUSED,
+                      virNodeDeviceDefPtr def)
 {
     const char *sysname = NULL;
     virNodeDevCapSCSITargetPtr scsi_target = &def->caps->data.scsi_target;
@@ -715,8 +739,10 @@ static int udevProcessSCSITarget(struct udev_device *device ATTRIBUTE_UNUSED,
 }
 
 
-static int udevGetSCSIType(virNodeDeviceDefPtr def ATTRIBUTE_UNUSED,
-                           unsigned int type, char **typestring)
+static int
+udevGetSCSIType(virNodeDeviceDefPtr def ATTRIBUTE_UNUSED,
+                unsigned int type,
+                char **typestring)
 {
     int ret = 0;
     int foundtype = 1;
@@ -773,8 +799,9 @@ static int udevGetSCSIType(virNodeDeviceDefPtr def ATTRIBUTE_UNUSED,
 }
 
 
-static int udevProcessSCSIDevice(struct udev_device *device ATTRIBUTE_UNUSED,
-                                 virNodeDeviceDefPtr def)
+static int
+udevProcessSCSIDevice(struct udev_device *device ATTRIBUTE_UNUSED,
+                      virNodeDeviceDefPtr def)
 {
     int ret = -1;
     unsigned int tmp = 0;
@@ -816,8 +843,9 @@ static int udevProcessSCSIDevice(struct udev_device *device ATTRIBUTE_UNUSED,
 }
 
 
-static int udevProcessDisk(struct udev_device *device,
-                           virNodeDeviceDefPtr def)
+static int
+udevProcessDisk(struct udev_device *device,
+                virNodeDeviceDefPtr def)
 {
     virNodeDevCapStoragePtr storage = &def->caps->data.storage;
 
@@ -834,9 +862,10 @@ static int udevProcessDisk(struct udev_device *device,
 }
 
 
-static int udevProcessRemoveableMedia(struct udev_device *device,
-                                      virNodeDeviceDefPtr def,
-                                      int has_media)
+static int
+udevProcessRemoveableMedia(struct udev_device *device,
+                           virNodeDeviceDefPtr def,
+                           int has_media)
 {
     virNodeDevCapStoragePtr storage = &def->caps->data.storage;
     int is_removable = 0;
@@ -875,8 +904,10 @@ static int udevProcessRemoveableMedia(struct udev_device *device,
     return 0;
 }
 
-static int udevProcessCDROM(struct udev_device *device,
-                            virNodeDeviceDefPtr def)
+
+static int
+udevProcessCDROM(struct udev_device *device,
+                 virNodeDeviceDefPtr def)
 {
     int has_media = 0;
 
@@ -895,8 +926,10 @@ static int udevProcessCDROM(struct udev_device *device,
     return udevProcessRemoveableMedia(device, def, has_media);
 }
 
-static int udevProcessFloppy(struct udev_device *device,
-                             virNodeDeviceDefPtr def)
+
+static int
+udevProcessFloppy(struct udev_device *device,
+                  virNodeDeviceDefPtr def)
 {
     int has_media = 0;
 
@@ -913,8 +946,9 @@ static int udevProcessFloppy(struct udev_device *device,
 }
 
 
-static int udevProcessSD(struct udev_device *device,
-                         virNodeDeviceDefPtr def)
+static int
+udevProcessSD(struct udev_device *device,
+              virNodeDeviceDefPtr def)
 {
     virNodeDevCapStoragePtr storage = &def->caps->data.storage;
 
@@ -932,12 +966,12 @@ static int udevProcessSD(struct udev_device *device,
 }
 
 
-
 /* This function exists to deal with the case in which a driver does
  * not provide a device type in the usual place, but udev told us it's
  * a storage device, and we can make a good guess at what kind of
  * storage device it is from other information that is provided. */
-static int udevKludgeStorageType(virNodeDeviceDefPtr def)
+static int
+udevKludgeStorageType(virNodeDeviceDefPtr def)
 {
     VIR_DEBUG("Could not find definitive storage type for device "
               "with sysfs path '%s', trying to guess it",
@@ -958,8 +992,9 @@ static int udevKludgeStorageType(virNodeDeviceDefPtr def)
 }
 
 
-static int udevProcessStorage(struct udev_device *device,
-                              virNodeDeviceDefPtr def)
+static int
+udevProcessStorage(struct udev_device *device,
+                   virNodeDeviceDefPtr def)
 {
     virNodeDevCapStoragePtr storage = &def->caps->data.storage;
     int ret = -1;
@@ -1054,6 +1089,7 @@ static int udevProcessStorage(struct udev_device *device,
     return ret;
 }
 
+
 static int
 udevProcessSCSIGeneric(struct udev_device *dev,
                        virNodeDeviceDefPtr def)
@@ -1067,6 +1103,7 @@ udevProcessSCSIGeneric(struct udev_device *dev,
 
     return 0;
 }
+
 
 static int
 udevProcessMediatedDevice(struct udev_device *dev,
@@ -1132,6 +1169,7 @@ udevGetDeviceNodes(struct udev_device *device,
     return 0;
 }
 
+
 static int
 udevGetDeviceType(struct udev_device *device,
                   virNodeDevCapType *type)
@@ -1196,8 +1234,9 @@ udevGetDeviceType(struct udev_device *device,
 }
 
 
-static int udevGetDeviceDetails(struct udev_device *device,
-                                virNodeDeviceDefPtr def)
+static int
+udevGetDeviceDetails(struct udev_device *device,
+                     virNodeDeviceDefPtr def)
 {
     switch (def->caps->data.type) {
     case VIR_NODE_DEV_CAP_PCI_DEV:
@@ -1234,7 +1273,8 @@ static int udevGetDeviceDetails(struct udev_device *device,
 }
 
 
-static int udevRemoveOneDevice(struct udev_device *device)
+static int
+udevRemoveOneDevice(struct udev_device *device)
 {
     virNodeDeviceObjPtr dev = NULL;
     virObjectEventPtr event = NULL;
@@ -1266,8 +1306,9 @@ static int udevRemoveOneDevice(struct udev_device *device)
 }
 
 
-static int udevSetParent(struct udev_device *device,
-                         virNodeDeviceDefPtr def)
+static int
+udevSetParent(struct udev_device *device,
+              virNodeDeviceDefPtr def)
 {
     struct udev_device *parent_device = NULL;
     const char *parent_sysfs_path = NULL;
@@ -1314,7 +1355,8 @@ static int udevSetParent(struct udev_device *device,
 }
 
 
-static int udevAddOneDevice(struct udev_device *device)
+static int
+udevAddOneDevice(struct udev_device *device)
 {
     virNodeDeviceDefPtr def = NULL;
     virNodeDeviceObjPtr dev = NULL;
@@ -1383,8 +1425,9 @@ static int udevAddOneDevice(struct udev_device *device)
 }
 
 
-static int udevProcessDeviceListEntry(struct udev *udev,
-                                      struct udev_list_entry *list_entry)
+static int
+udevProcessDeviceListEntry(struct udev *udev,
+                           struct udev_list_entry *list_entry)
 {
     struct udev_device *device;
     const char *name = NULL;
@@ -1416,7 +1459,8 @@ const char *subsystem_blacklist[] = {
     "acpi", "tty", "vc", "i2c",
 };
 
-static int udevEnumerateAddMatches(struct udev_enumerate *udev_enumerate)
+static int
+udevEnumerateAddMatches(struct udev_enumerate *udev_enumerate)
 {
     size_t i;
 
@@ -1431,7 +1475,8 @@ static int udevEnumerateAddMatches(struct udev_enumerate *udev_enumerate)
 }
 
 
-static int udevEnumerateDevices(struct udev *udev)
+static int
+udevEnumerateDevices(struct udev *udev)
 {
     struct udev_enumerate *udev_enumerate = NULL;
     struct udev_list_entry *list_entry = NULL;
@@ -1461,7 +1506,8 @@ static int udevEnumerateDevices(struct udev *udev)
 }
 
 
-static void udevPCITranslateDeinit(void)
+static void
+udevPCITranslateDeinit(void)
 {
 #if defined __s390__ || defined __s390x_
     /* Nothing was initialized, nothing needs to be cleaned up */
@@ -1473,7 +1519,8 @@ static void udevPCITranslateDeinit(void)
 }
 
 
-static int nodeStateCleanup(void)
+static int
+nodeStateCleanup(void)
 {
     udevPrivate *priv = NULL;
     struct udev_monitor *udev_monitor = NULL;
@@ -1514,10 +1561,11 @@ static int nodeStateCleanup(void)
 }
 
 
-static void udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
-                                    int fd,
-                                    int events ATTRIBUTE_UNUSED,
-                                    void *data ATTRIBUTE_UNUSED)
+static void
+udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
+                        int fd,
+                        int events ATTRIBUTE_UNUSED,
+                        void *data ATTRIBUTE_UNUSED)
 {
     struct udev_device *device = NULL;
     struct udev_monitor *udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
@@ -1618,7 +1666,8 @@ udevGetDMIData(virNodeDevCapSystemPtr syscap)
 #endif
 
 
-static int udevSetupSystemDev(void)
+static int
+udevSetupSystemDev(void)
 {
     virNodeDeviceDefPtr def = NULL;
     virNodeDeviceObjPtr dev = NULL;
@@ -1652,7 +1701,9 @@ static int udevSetupSystemDev(void)
     return ret;
 }
 
-static int udevPCITranslateInit(bool privileged ATTRIBUTE_UNUSED)
+
+static int
+udevPCITranslateInit(bool privileged ATTRIBUTE_UNUSED)
 {
 #if defined __s390__ || defined __s390x_
     /* On s390(x) system there is no PCI bus.
@@ -1674,9 +1725,11 @@ static int udevPCITranslateInit(bool privileged ATTRIBUTE_UNUSED)
     return 0;
 }
 
-static int nodeStateInitialize(bool privileged,
-                               virStateInhibitCallback callback ATTRIBUTE_UNUSED,
-                               void *opaque ATTRIBUTE_UNUSED)
+
+static int
+nodeStateInitialize(bool privileged,
+                    virStateInhibitCallback callback ATTRIBUTE_UNUSED,
+                    void *opaque ATTRIBUTE_UNUSED)
 {
     udevPrivate *priv = NULL;
     struct udev *udev = NULL;
@@ -1762,7 +1815,8 @@ static int nodeStateInitialize(bool privileged,
 }
 
 
-static int nodeStateReload(void)
+static int
+nodeStateReload(void)
 {
     return 0;
 }
@@ -1792,7 +1846,9 @@ static virStateDriver udevStateDriver = {
     .stateReload = nodeStateReload, /* 0.7.3 */
 };
 
-int udevNodeRegister(void)
+
+int
+udevNodeRegister(void)
 {
     VIR_DEBUG("Registering udev node device backend");
 
