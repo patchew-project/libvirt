@@ -248,8 +248,6 @@ virNodeDeviceObjFree(virNodeDeviceObjPtr obj)
         return;
 
     virNodeDeviceDefFree(obj->def);
-    if (obj->privateFree)
-        (*obj->privateFree)(obj->privateData);
 
     virMutexDestroy(&obj->lock);
 
