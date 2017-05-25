@@ -277,6 +277,26 @@
           <attribute name='cpus'>
             <ref name='cpuset'/>
           </attribute>
+          <zeroOrMore>
+            <element name='control'>
+              <attribute name='min'>
+                <ref name='unsignedInt'/>
+              </attribute>
+              <attribute name='unit'>
+                <ref name='unit'/>
+              </attribute>
+              <attribute name='scope'>
+                <choice>
+                  <value>both</value>
+                  <value>code</value>
+                  <value>data</value>
+                </choice>
+              </attribute>
+              <attribute name='max_allocation'>
+                <ref name='unsignedInt'/>
+              </attribute>
+            </element>
+          </zeroOrMore>
         </element>
       </oneOrMore>
     </element>
