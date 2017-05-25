@@ -1168,7 +1168,7 @@ testParseNodedevs(testDriverPtr privconn,
         if (!def)
             goto error;
 
-        if (!(obj = virNodeDeviceObjAssignDef(&privconn->devs, def))) {
+        if (!(obj = virNodeDeviceObjAssignDef(&privconn->devs, &def))) {
             virNodeDeviceDefFree(def);
             goto error;
         }
@@ -5491,9 +5491,8 @@ testNodeDeviceMockCreateVport(testDriverPtr driver,
         caps = caps->next;
     }
 
-    if (!(obj = virNodeDeviceObjAssignDef(&driver->devs, def)))
+    if (!(obj = virNodeDeviceObjAssignDef(&driver->devs, &def)))
         goto cleanup;
-    def = NULL;
     objdef = virNodeDeviceObjGetDef(obj);
 
     event = virNodeDeviceEventLifecycleNew(objdef->name,

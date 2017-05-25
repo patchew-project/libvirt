@@ -53,7 +53,7 @@ virNodeDeviceObjFindBySysfsPath(virNodeDeviceObjListPtr devs,
 
 virNodeDeviceObjPtr
 virNodeDeviceObjAssignDef(virNodeDeviceObjListPtr devs,
-                          virNodeDeviceDefPtr def);
+                          virNodeDeviceDefPtr *def);
 
 void
 virNodeDeviceObjRemove(virNodeDeviceObjListPtr devs,

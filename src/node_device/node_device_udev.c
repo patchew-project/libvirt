@@ -1395,7 +1395,7 @@ udevAddOneDevice(struct udev_device *device)
 
     /* If this is a device change, the old definition will be freed
      * and the current definition will take its place. */
-    if (!(obj = virNodeDeviceObjAssignDef(&driver->devs, def)))
+    if (!(obj = virNodeDeviceObjAssignDef(&driver->devs, &def)))
         goto cleanup;
     objdef = virNodeDeviceObjGetDef(obj);
 
@@ -1685,8 +1685,7 @@ udevSetupSystemDev(void)
     udevGetDMIData(&def->caps->data.system);
 #endif
 
-    obj = virNodeDeviceObjAssignDef(&driver->devs, def);
-    if (obj == NULL)
+    if (!(obj = virNodeDeviceObjAssignDef(&driver->devs, &def)))
         goto cleanup;
 
     virNodeDeviceObjUnlock(obj);
@@ -1694,8 +1693,7 @@ udevSetupSystemDev(void)
     ret = 0;
 
  cleanup:
-    if (ret == -1)
-        virNodeDeviceDefFree(def);
+    virNodeDeviceDefFree(def);
 
     return ret;
 }

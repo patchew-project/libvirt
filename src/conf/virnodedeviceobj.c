@@ -268,13 +268,13 @@ virNodeDeviceObjListFree(virNodeDeviceObjListPtr devs)
 
 virNodeDeviceObjPtr
 virNodeDeviceObjAssignDef(virNodeDeviceObjListPtr devs,
-                          virNodeDeviceDefPtr def)
+                          virNodeDeviceDefPtr *def)
 {
     virNodeDeviceObjPtr obj;
 
-    if ((obj = virNodeDeviceObjFindByName(devs, def->name))) {
+    if ((obj = virNodeDeviceObjFindByName(devs, (*def)->name))) {
         virNodeDeviceDefFree(obj->def);
-        obj->def = def;
+        VIR_STEAL_PTR(obj->def, *def);
         return obj;
     }
 
@@ -294,7 +294,7 @@ virNodeDeviceObjAssignDef(virNodeDeviceObjListPtr devs,
         virNodeDeviceObjFree(obj);
         return NULL;
     }
-    obj->def = def;
+    VIR_STEAL_PTR(obj->def, *def);
 
     return obj;
 

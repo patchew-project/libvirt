@@ -482,7 +482,7 @@ dev_create(const char *udi)
     /* Some devices don't have a path in sysfs, so ignore failure */
     (void)get_str_prop(ctx, udi, "linux.sysfs_path", &devicePath);
 
-    if (!(obj = virNodeDeviceObjAssignDef(&driver->devs, def))) {
+    if (!(obj = virNodeDeviceObjAssignDef(&driver->devs, &def))) {
         VIR_FREE(devicePath);
         goto failure;
     }
