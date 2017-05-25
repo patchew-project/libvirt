@@ -33,6 +33,27 @@
 VIR_LOG_INIT("conf.virnodedeviceobj");
 
 
+static virNodeDeviceObjPtr
+virNodeDeviceObjNew(virNodeDeviceDefPtr *def)
+{
+    virNodeDeviceObjPtr obj;
+
+    if (VIR_ALLOC(obj) < 0)
+        return NULL;
+
+    if (virMutexInit(&obj->lock) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "%s", _("cannot initialize mutex"));
+        VIR_FREE(obj);
+        return NULL;
+    }
+    virNodeDeviceObjLock(obj);
+    VIR_STEAL_PTR(obj->def, *def);
+
+    return obj;
+}
+
+
 virNodeDeviceDefPtr
 virNodeDeviceObjGetDef(virNodeDeviceObjPtr obj)
 {
@@ -278,26 +299,16 @@ virNodeDeviceObjAssignDef(virNodeDeviceObjListPtr devs,
         return obj;
     }
 
-    if (VIR_ALLOC(obj) < 0)
+    if (!(obj = virNodeDeviceObjNew(def)))
         return NULL;
-
-    if (virMutexInit(&obj->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       "%s", _("cannot initialize mutex"));
-        VIR_FREE(obj);
-        return NULL;
-    }
-    virNodeDeviceObjLock(obj);
 
     if (VIR_APPEND_ELEMENT_COPY(devs->objs, devs->count, obj) < 0) {
         virNodeDeviceObjUnlock(obj);
         virNodeDeviceObjFree(obj);
         return NULL;
     }
-    VIR_STEAL_PTR(obj->def, *def);
 
     return obj;
-
 }
 
 
