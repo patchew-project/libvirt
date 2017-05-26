@@ -233,7 +233,7 @@ const REMOTE_DOMAIN_FSFREEZE_MOUNTPOINTS_MAX = 256;
 const REMOTE_NETWORK_DHCP_LEASES_MAX = 65536;
 
 /* Upper limit on count of parameters returned via bulk stats API */
-const REMOTE_CONNECT_GET_ALL_DOMAIN_STATS_MAX = 4096;
+const REMOTE_CONNECT_GET_ALL_DOMAIN_STATS_MAX = 262144;
 
 /* Upper limit of message size for tunable event. */
 const REMOTE_DOMAIN_EVENT_TUNABLE_MAX = 2048;
@@ -3264,7 +3264,7 @@ struct remote_domain_event_callback_agent_lifecycle_msg {
 };
 
 struct remote_connect_get_all_domain_stats_ret {
-    remote_domain_stats_record retStats<REMOTE_DOMAIN_LIST_MAX>;
+    remote_domain_stats_record retStats<REMOTE_CONNECT_GET_ALL_DOMAIN_STATS_MAX>;
 };
 
 struct remote_domain_fsinfo {
