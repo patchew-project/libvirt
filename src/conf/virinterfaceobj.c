@@ -44,6 +44,9 @@ struct _virInterfaceObjList {
     virInterfaceObjPtr *objs;
 };
 
+static void
+virInterfaceObjLock(virInterfaceObjPtr obj);
+
 /* virInterfaceObj manipulation */
 
 static virInterfaceObjPtr
@@ -67,17 +70,27 @@ virInterfaceObjNew(void)
 }
 
 
-void
+static void
 virInterfaceObjLock(virInterfaceObjPtr obj)
 {
     virMutexLock(&obj->lock);
 }
 
 
-void
+static void
 virInterfaceObjUnlock(virInterfaceObjPtr obj)
 {
     virMutexUnlock(&obj->lock);
+}
+
+
+void
+virInterfaceObjEndAPI(virInterfaceObjPtr *obj)
+{
+    if (!*obj)
+        return;
+
+    virInterfaceObjUnlock(*obj);
 }
 
 

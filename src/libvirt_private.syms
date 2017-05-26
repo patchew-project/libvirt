@@ -910,6 +910,7 @@ virDomainObjListRename;
 
 
 # conf/virinterfaceobj.h
+virInterfaceObjEndAPI;
 virInterfaceObjGetDef;
 virInterfaceObjIsActive;
 virInterfaceObjListAssignDef;
@@ -921,9 +922,7 @@ virInterfaceObjListGetNames;
 virInterfaceObjListNew;
 virInterfaceObjListNumOfInterfaces;
 virInterfaceObjListRemove;
-virInterfaceObjLock;
 virInterfaceObjSetActive;
-virInterfaceObjUnlock;
 
 
 # conf/virnetworkobj.h
