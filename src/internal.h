@@ -266,6 +266,10 @@
     _Pragma ("GCC diagnostic push") \
     _Pragma ("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
 
+#  define VIR_WARNINGS_NO_STRICT_PROTOTYPES \
+    _Pragma ("GCC diagnostic push") \
+    _Pragma ("GCC diagnostic ignored \"-Wstrict-prototypes\"")
+
 #  if HAVE_SUGGEST_ATTRIBUTE_FORMAT
 #   define VIR_WARNINGS_NO_PRINTF \
     _Pragma ("GCC diagnostic push") \

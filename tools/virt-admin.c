@@ -27,8 +27,10 @@
 #include <getopt.h>
 
 #if WITH_READLINE
+VIR_WARNINGS_NO_STRICT_PROTOTYPES
 # include <readline/readline.h>
 # include <readline/history.h>
+VIR_WARNINGS_RESET
 #endif
 
 #include "internal.h"
