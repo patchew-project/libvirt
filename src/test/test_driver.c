@@ -1021,7 +1021,7 @@ testParseInterfaces(testDriverPtr privconn,
         if (!def)
             goto error;
 
-        if (!(obj = virInterfaceObjListAssignDef(privconn->ifaces, def))) {
+        if (!(obj = virInterfaceObjListAssignDef(privconn->ifaces, &def))) {
             virInterfaceDefFree(def);
             goto error;
         }
@@ -3903,9 +3903,8 @@ testInterfaceDefineXML(virConnectPtr conn,
     if (!(def = virInterfaceDefParseString(xmlStr)))
         goto cleanup;
 
-    if ((obj = virInterfaceObjListAssignDef(privconn->ifaces, def)) == NULL)
+    if (!(obj = virInterfaceObjListAssignDef(privconn->ifaces, &def)))
         goto cleanup;
-    def = NULL;
     objdef = virInterfaceObjGetDef(obj);
 
     ret = virGetInterface(conn, objdef->name, objdef->mac);

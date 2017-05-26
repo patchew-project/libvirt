@@ -235,8 +235,10 @@ virInterfaceObjListClone(virInterfaceObjListPtr interfaces)
         }
 
         VIR_FREE(xml);
-        if (!(obj = virInterfaceObjListAssignDef(dest, backup)))
+        if (!(obj = virInterfaceObjListAssignDef(dest, &backup))) {
+            virInterfaceDefFree(backup);
             goto error;
+        }
         virInterfaceObjEndAPI(&obj);
     }
 
@@ -250,13 +252,13 @@ virInterfaceObjListClone(virInterfaceObjListPtr interfaces)
 
 virInterfaceObjPtr
 virInterfaceObjListAssignDef(virInterfaceObjListPtr interfaces,
-                             virInterfaceDefPtr def)
+                             virInterfaceDefPtr *def)
 {
     virInterfaceObjPtr obj;
 
-    if ((obj = virInterfaceObjListFindByName(interfaces, def->name))) {
+    if ((obj = virInterfaceObjListFindByName(interfaces, (*def)->name))) {
         virInterfaceDefFree(obj->def);
-        obj->def = def;
+        VIR_STEAL_PTR(obj->def, *def);
 
         return obj;
     }
@@ -270,7 +272,7 @@ virInterfaceObjListAssignDef(virInterfaceObjListPtr interfaces,
         return NULL;
     }
 
-    obj->def = def;
+    VIR_STEAL_PTR(obj->def, *def);
     return virObjectRef(obj);
 
 }

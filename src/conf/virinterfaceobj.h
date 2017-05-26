@@ -65,7 +65,7 @@ virInterfaceObjListClone(virInterfaceObjListPtr interfaces);
 
 virInterfaceObjPtr
 virInterfaceObjListAssignDef(virInterfaceObjListPtr interfaces,
-                             virInterfaceDefPtr def);
+                             virInterfaceDefPtr *def);
 
 void
 virInterfaceObjListRemove(virInterfaceObjListPtr interfaces,
