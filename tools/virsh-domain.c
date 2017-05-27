@@ -6819,8 +6819,8 @@ cmdSetvcpus(vshControl *ctl, const vshCmd *cmd)
     VSH_EXCLUSIVE_OPTIONS_VAR(current, live);
     VSH_EXCLUSIVE_OPTIONS_VAR(current, config);
     VSH_EXCLUSIVE_OPTIONS_VAR(guest, config);
-
-    VSH_REQUIRE_OPTION_VAR(maximum, config);
+    VSH_EXCLUSIVE_OPTIONS_VAR(maximum, live);
+    VSH_EXCLUSIVE_OPTIONS_VAR(maximum, current);
 
     if (config)
         flags |= VIR_DOMAIN_AFFECT_CONFIG;
@@ -6829,7 +6829,8 @@ cmdSetvcpus(vshControl *ctl, const vshCmd *cmd)
     if (guest)
         flags |= VIR_DOMAIN_VCPU_GUEST;
     if (maximum)
-        flags |= VIR_DOMAIN_VCPU_MAXIMUM;
+        flags |= VIR_DOMAIN_VCPU_MAXIMUM |
+                 VIR_DOMAIN_AFFECT_CONFIG;
     if (hotpluggable)
         flags |= VIR_DOMAIN_VCPU_HOTPLUGGABLE;
 
