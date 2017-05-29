@@ -5657,7 +5657,8 @@ qemuProcessLaunch(virConnectPtr conn,
                                      qemuCheckFips(),
                                      priv->autoNodeset,
                                      &nnicindexes, &nicindexes,
-                                     priv->libDir)))
+                                     priv->libDir,
+                                     priv->chardevStdioLogd)))
         goto cleanup;
 
     if (incoming && incoming->fd != -1)
@@ -6091,7 +6092,8 @@ qemuProcessCreatePretendCmd(virConnectPtr conn,
                                priv->autoNodeset,
                                NULL,
                                NULL,
-                               priv->libDir);
+                               priv->libDir,
+                               priv->chardevStdioLogd);
 
  cleanup:
     return cmd;
