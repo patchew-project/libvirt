@@ -1873,6 +1873,9 @@ qemuDomainObjPrivateXMLFormat(virBufferPtr buf,
     virBufferEscapeString(buf, "<channelTargetDir path='%s'/>\n",
                           priv->channelTargetDir);
 
+    if (priv->chardevStdioLogd)
+        virBufferAddLit(buf, "<chardevStdioLogd/>");
+
     return 0;
 }
 
@@ -2140,6 +2143,9 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
 
     if (qemuDomainSetPrivatePathsOld(driver, vm) < 0)
         goto error;
+
+    priv->chardevStdioLogd = virXPathBoolean("boolean(./chardevStdioLogd)",
+                                             ctxt) == 1;
 
     return 0;
 

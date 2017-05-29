@@ -293,6 +293,9 @@ struct _qemuDomainObjPrivate {
     /* Used when fetching/storing the current 'tls-creds' migration setting */
     /* (not to be saved in our private XML). */
     char *migTLSAlias;
+
+    /* If true virtlogd is used as stdio handler for character devices. */
+    bool chardevStdioLogd;
 };
 
 # define QEMU_DOMAIN_PRIVATE(vm)	\
