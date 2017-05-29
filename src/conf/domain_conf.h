@@ -1166,6 +1166,9 @@ struct _virDomainChrSourceDef {
     } data;
     char *logfile;
     int logappend;
+
+    size_t nseclabels;
+    virSecurityDeviceLabelDefPtr *seclabels;
 };
 
 /* A complete character device, both host and domain views.  */
@@ -1188,9 +1191,6 @@ struct _virDomainChrDef {
     virDomainChrSourceDefPtr source;
 
     virDomainDeviceInfo info;
-
-    size_t nseclabels;
-    virSecurityDeviceLabelDefPtr *seclabels;
 };
 
 typedef enum {
@@ -3068,7 +3068,8 @@ virSecurityLabelDefPtr
 virDomainDefGetSecurityLabelDef(virDomainDefPtr def, const char *model);
 
 virSecurityDeviceLabelDefPtr
-virDomainChrDefGetSecurityLabelDef(virDomainChrDefPtr def, const char *model);
+virDomainChrSourceDefGetSecurityLabelDef(virDomainChrSourceDefPtr def,
+                                         const char *model);
 
 typedef const char* (*virEventActionToStringFunc)(int type);
 typedef int (*virEventActionFromStringFunc)(const char *type);
