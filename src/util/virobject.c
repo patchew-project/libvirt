@@ -250,6 +250,32 @@ virObjectLockableNew(virClassPtr klass)
 }
 
 
+void *
+virObjectLockableRecursiveNew(virClassPtr klass)
+{
+    virObjectLockablePtr obj;
+
+    if (!virClassIsDerivedFrom(klass, virClassForObjectLockable())) {
+        virReportInvalidArg(klass,
+                            _("Class %s must derive from virObjectLockable"),
+                            virClassName(klass));
+        return NULL;
+    }
+
+    if (!(obj = virObjectNew(klass)))
+        return NULL;
+
+    if (virMutexInitRecursive(&obj->lock) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Unable to initialize recursive mutex"));
+        virObjectUnref(obj);
+        return NULL;
+    }
+
+    return obj;
+}
+
+
 static void
 virObjectLockableDispose(void *anyobj)
 {
