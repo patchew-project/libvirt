@@ -37,6 +37,9 @@ typedef virObjectLockable *virObjectLockablePtr;
 typedef struct _virObjectPoolableHashElement virObjectPoolableHashElement;
 typedef virObjectPoolableHashElement *virObjectPoolableHashElementPtr;
 
+typedef struct _virObjectPoolableDef virObjectPoolableDef;
+typedef virObjectPoolableDef *virObjectPoolableDefPtr;
+
 typedef void (*virObjectDisposeCallback)(void *obj);
 
 /* Most code should not play with the contents of this struct; however,
@@ -70,10 +73,22 @@ struct _virObjectPoolableHashElement {
     char *secondaryKey;
 };
 
+struct _virObjectPoolableDef {
+    virObjectPoolableHashElement parent;
+
+    /* 'def' is the current config definition.
+     * 'newDef' is the next boot configuration.
+     */
+    void *def;
+    void *newDef;
+    virFreeCallback defFreeFunc;
+};
+
 
 virClassPtr virClassForObject(void);
 virClassPtr virClassForObjectLockable(void);
 virClassPtr virClassForObjectPoolableHashElement(void);
+virClassPtr virClassForObjectPoolableDef(void);
 
 # ifndef VIR_PARENT_REQUIRED
 #  define VIR_PARENT_REQUIRED ATTRIBUTE_NONNULL(1)
@@ -130,6 +145,16 @@ virObjectPoolableHashElementNew(virClassPtr klass,
                                 const char *primaryKey,
                                 const char *secondaryKey)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3);
+
+void *
+virObjectPoolableDefNew(virClassPtr klass,
+                        bool recursive,
+                        const char *primaryKey,
+                        const char *secondaryKey,
+                        void *def,
+                        virFreeCallback defFreeFunc)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(5)
+    ATTRIBUTE_NONNULL(6);
 
 void
 virObjectLock(void *lockableobj)
