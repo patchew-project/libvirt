@@ -155,6 +155,17 @@ typedef virDomainTPMDef *virDomainTPMDefPtr;
 typedef struct _virDomainIOMMUDef virDomainIOMMUDef;
 typedef virDomainIOMMUDef *virDomainIOMMUDefPtr;
 
+typedef struct _virDomainVirtioOptions virDomainVirtioOptions;
+typedef virDomainVirtioOptions *virDomainVirtioOptionsPtr;
+
+typedef enum {
+    VIR_DOMAIN_DRIVER_COMPATIBILITY_DEFAULT,
+    VIR_DOMAIN_DRIVER_COMPATIBILITY_LEGACY,
+    VIR_DOMAIN_DRIVER_COMPATIBILITY_TRANSITIONAL,
+    VIR_DOMAIN_DRIVER_COMPATIBILITY_MODERN,
+    VIR_DOMAIN_DRIVER_COMPATIBILITY_LAST,
+} virDomainDriverCompatibility;
+
 /* Flags for the 'type' field in virDomainDeviceDef */
 typedef enum {
     VIR_DOMAIN_DEVICE_NONE = 0,
@@ -1039,6 +1050,7 @@ struct _virDomainNetDef {
     int linkstate;
     unsigned int mtu;
     virNetDevCoalescePtr coalesce;
+    virDomainVirtioOptionsPtr virtio;
 };
 
 typedef enum {
@@ -2214,6 +2226,12 @@ struct _virDomainIOMMUDef {
     virTristateSwitch eim;
     virTristateSwitch device_iotlb;
 };
+
+struct _virDomainVirtioOptions {
+    virTristateSwitch iommu_platform;
+    virTristateSwitch ats;
+};
+
 /*
  * Guest VM main configuration
  *
@@ -3174,6 +3192,7 @@ VIR_ENUM_DECL(virDomainMemorySource)
 VIR_ENUM_DECL(virDomainMemoryAllocation)
 VIR_ENUM_DECL(virDomainIOMMUModel)
 VIR_ENUM_DECL(virDomainShmemModel)
+VIR_ENUM_DECL(virDomainDriverCompatibility)
 /* from libvirt.h */
 VIR_ENUM_DECL(virDomainState)
 VIR_ENUM_DECL(virDomainNostateReason)

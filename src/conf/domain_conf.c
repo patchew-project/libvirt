@@ -1098,6 +1098,46 @@ virDomainXMLOptionGetNamespace(virDomainXMLOptionPtr xmlopt)
     return &xmlopt->ns;
 }
 
+static int
+virDomainVirtioOptionsParseXML(xmlXPathContextPtr ctxt,
+                               virDomainVirtioOptionsPtr *virtio)
+{
+    char *str = NULL;
+    int ret = -1;
+    int val;
+    virDomainVirtioOptionsPtr res;
+
+    if (VIR_ALLOC(*virtio) < 0)
+        return -1;
+
+    res = *virtio;
+
+    if ((str = virXPathString("string(./driver/@iommu_platform)", ctxt))) {
+        if ((val = virTristateSwitchTypeFromString(str)) <= 0) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("invalid iommu_platform value"));
+            goto cleanup;
+        }
+        res->iommu_platform = val;
+    }
+    VIR_FREE(str);
+
+    if ((str = virXPathString("string(./driver/@ats)", ctxt))) {
+        if ((val = virTristateSwitchTypeFromString(str)) <= 0) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("invalid ats value"));
+            goto cleanup;
+        }
+        res->ats = val;
+    }
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(str);
+    return ret;
+}
+
 
 void
 virBlkioDeviceArrayClear(virBlkioDevicePtr devices,
@@ -1945,6 +1985,7 @@ virDomainNetDefClear(virDomainNetDefPtr def)
     VIR_FREE(def->ifname);
     VIR_FREE(def->ifname_guest);
     VIR_FREE(def->ifname_guest_actual);
+    VIR_FREE(def->virtio);
 
     virNetDevIPInfoClear(&def->guestIP);
     virNetDevIPInfoClear(&def->hostIP);
@@ -5211,6 +5252,24 @@ virDomainDefValidate(virDomainDefPtr def,
         return -1;
 
     return 0;
+}
+
+
+static void
+virDomainVirtioOptionsFormat(virBufferPtr buf,
+                             virDomainVirtioOptionsPtr virtio)
+{
+    if (!virtio)
+        return;
+
+    if (virtio->iommu_platform != VIR_TRISTATE_SWITCH_ABSENT) {
+        virBufferAsprintf(buf, "iommu_platform='%s' ",
+                          virTristateSwitchTypeToString(virtio->iommu_platform));
+    }
+    if (virtio->ats != VIR_TRISTATE_SWITCH_ABSENT) {
+        virBufferAsprintf(buf, "ats='%s' ",
+                          virTristateSwitchTypeToString(virtio->ats));
+    }
 }
 
 
@@ -10359,6 +10418,9 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
         if (!def->coalesce)
             goto error;
     }
+
+    if (virDomainVirtioOptionsParseXML(ctxt, &def->virtio) < 0)
+        goto error;
 
  cleanup:
     ctxt->node = oldnode;
@@ -22092,6 +22154,7 @@ virDomainVirtioNetDriverFormat(char **outstr,
         virBufferAsprintf(&buf, "rx_queue_size='%u' ",
                           def->driver.virtio.rx_queue_size);
 
+    virDomainVirtioOptionsFormat(&buf, def->virtio);
     virBufferTrim(&buf, " ", -1);
 
     if (virBufferCheckError(&buf) < 0)
