@@ -34,6 +34,9 @@ typedef virObject *virObjectPtr;
 typedef struct _virObjectLockable virObjectLockable;
 typedef virObjectLockable *virObjectLockablePtr;
 
+typedef struct _virObjectPoolableHashElement virObjectPoolableHashElement;
+typedef virObjectPoolableHashElement *virObjectPoolableHashElementPtr;
+
 typedef void (*virObjectDisposeCallback)(void *obj);
 
 /* Most code should not play with the contents of this struct; however,
@@ -60,9 +63,17 @@ struct _virObjectLockable {
     virMutex lock;
 };
 
+struct _virObjectPoolableHashElement {
+    virObjectLockable parent;
+
+    char *primaryKey;
+    char *secondaryKey;
+};
+
 
 virClassPtr virClassForObject(void);
 virClassPtr virClassForObjectLockable(void);
+virClassPtr virClassForObjectPoolableHashElement(void);
 
 # ifndef VIR_PARENT_REQUIRED
 #  define VIR_PARENT_REQUIRED ATTRIBUTE_NONNULL(1)
@@ -112,6 +123,13 @@ virObjectLockableNew(virClassPtr klass)
 void *
 virObjectLockableRecursiveNew(virClassPtr klass)
     ATTRIBUTE_NONNULL(1);
+
+void *
+virObjectPoolableHashElementNew(virClassPtr klass,
+                                bool recursive,
+                                const char *primaryKey,
+                                const char *secondaryKey)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3);
 
 void
 virObjectLock(void *lockableobj)
