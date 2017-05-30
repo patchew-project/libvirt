@@ -51,6 +51,7 @@ struct _virObject {
             int refs;
         } s;
     } u;
+    unsigned int magic_marker;
     virClassPtr klass;
 };
 

@@ -47,10 +47,12 @@ struct _virClass {
     virObjectDisposeCallback dispose;
 };
 
+#define VIR_OBJECT_NOTVALID(obj) (!obj || obj->magic_marker != 0xFEEDBEEF)
+
 #define VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, objclass)                    \
     do {                                                                    \
         virObjectPtr obj = anyobj;                                          \
-        if (!obj)                                                           \
+        if (VIR_OBJECT_NOTVALID(obj))                                       \
             VIR_WARN("Object %p is not a virObject class instance", anyobj);\
         else                                                                \
             VIR_WARN("Object %p (%s) is not a %s instance",                 \
@@ -212,6 +214,7 @@ virObjectNew(virClassPtr klass)
         return NULL;
 
     obj->u.s.magic = klass->magic;
+    obj->magic_marker = 0xFEEDBEEF;
     obj->klass = klass;
     virAtomicIntSet(&obj->u.s.refs, 1);
 
@@ -272,7 +275,7 @@ virObjectUnref(void *anyobj)
 {
     virObjectPtr obj = anyobj;
 
-    if (!obj)
+    if (VIR_OBJECT_NOTVALID(obj))
         return false;
 
     bool lastRef = virAtomicIntDecAndTest(&obj->u.s.refs);
@@ -289,6 +292,7 @@ virObjectUnref(void *anyobj)
         /* Clear & poison object */
         memset(obj, 0, obj->klass->objectSize);
         obj->u.s.magic = 0xDEADBEEF;
+        obj->magic_marker = 0xDEADBEEF;
         obj->klass = (void*)0xDEADBEEF;
         VIR_FREE(obj);
     }
@@ -311,7 +315,7 @@ virObjectRef(void *anyobj)
 {
     virObjectPtr obj = anyobj;
 
-    if (!obj)
+    if (VIR_OBJECT_NOTVALID(obj))
         return NULL;
     virAtomicIntInc(&obj->u.s.refs);
     PROBE(OBJECT_REF, "obj=%p", obj);
@@ -389,7 +393,7 @@ virObjectIsClass(void *anyobj,
                  virClassPtr klass)
 {
     virObjectPtr obj = anyobj;
-    if (!obj)
+    if (VIR_OBJECT_NOTVALID(obj))
         return false;
 
     return virClassIsDerivedFrom(obj->klass, klass);
