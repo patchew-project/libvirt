@@ -2271,6 +2271,8 @@ virObjectLock;
 virObjectLockableNew;
 virObjectLockableRecursiveNew;
 virObjectNew;
+virObjectPoolableHashElementGetPrimaryKey;
+virObjectPoolableHashElementGetSecondaryKey;
 virObjectPoolableHashElementNew;
 virObjectRef;
 virObjectUnlock;
