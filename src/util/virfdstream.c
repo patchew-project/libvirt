@@ -312,6 +312,9 @@ static void virFDStreamEvent(int watch ATTRIBUTE_UNUSED,
         return;
     }
 
+    if (fdst->threadErr)
+        events |= VIR_STREAM_EVENT_ERROR;
+
     cb = fdst->cb;
     cbopaque = fdst->opaque;
     ff = fdst->ff;
@@ -764,6 +767,9 @@ static int virFDStreamWrite(virStreamPtr st, const char *bytes, size_t nbytes)
         return -1;
     }
 
+    if (fdst->threadErr)
+        return -1;
+
     if (!fdst) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        "%s", _("stream is not open"));
@@ -843,6 +849,9 @@ static int virFDStreamRead(virStreamPtr st, char *bytes, size_t nbytes)
                              _("Too many bytes to read from stream"));
         return -1;
     }
+
+    if (fdst->threadErr)
+        return -1;
 
     if (!fdst) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -959,6 +968,9 @@ virFDStreamSendHole(virStreamPtr st,
         fdst->offset += length;
     }
 
+    if (fdst->threadErr)
+        goto cleanup;
+
     if (fdst->thread) {
         /* Things are a bit complicated here. If FDStream is in a
          * read mode, then if the message at the queue head is
@@ -1017,6 +1029,9 @@ virFDStreamInData(virStreamPtr st,
     int ret = -1;
 
     virObjectLock(fdst);
+
+    if (fdst->threadErr)
+        goto cleanup;
 
     if (fdst->thread) {
         virFDStreamMsgPtr msg;
