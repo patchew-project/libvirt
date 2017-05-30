@@ -2331,6 +2331,7 @@ void virDomainVideoDefFree(virDomainVideoDefPtr def)
     virDomainDeviceInfoClear(&def->info);
 
     VIR_FREE(def->accel);
+    VIR_FREE(def->virtio);
     VIR_FREE(def);
 }
 
@@ -13471,11 +13472,13 @@ virDomainVideoAccelDefParseXML(xmlNodePtr node)
 
 static virDomainVideoDefPtr
 virDomainVideoDefParseXML(xmlNodePtr node,
+                          xmlXPathContextPtr ctxt,
                           const virDomainDef *dom,
                           unsigned int flags)
 {
     virDomainVideoDefPtr def;
     xmlNodePtr cur;
+    xmlNodePtr saved = ctxt->node;
     char *type = NULL;
     char *heads = NULL;
     char *vram = NULL;
@@ -13483,6 +13486,8 @@ virDomainVideoDefParseXML(xmlNodePtr node,
     char *ram = NULL;
     char *vgamem = NULL;
     char *primary = NULL;
+
+    ctxt->node = node;
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
@@ -13585,7 +13590,12 @@ virDomainVideoDefParseXML(xmlNodePtr node,
     if (virDomainDeviceInfoParseXML(node, NULL, &def->info, flags) < 0)
         goto error;
 
+    if (virDomainVirtioOptionsParseXML(ctxt, &def->virtio) < 0)
+        goto error;
+
  cleanup:
+    ctxt->node = saved;
+
     VIR_FREE(type);
     VIR_FREE(ram);
     VIR_FREE(vram);
@@ -14384,7 +14394,7 @@ virDomainDeviceDefParse(const char *xmlStr,
             goto error;
         break;
     case VIR_DOMAIN_DEVICE_VIDEO:
-        if (!(dev->data.video = virDomainVideoDefParseXML(node, def, flags)))
+        if (!(dev->data.video = virDomainVideoDefParseXML(node, ctxt, def, flags)))
             goto error;
         break;
     case VIR_DOMAIN_DEVICE_HOSTDEV:
@@ -18327,7 +18337,7 @@ virDomainDefParseXML(xmlDocPtr xml,
         virDomainVideoDefPtr video;
         ssize_t insertAt = -1;
 
-        if (!(video = virDomainVideoDefParseXML(nodes[i], def, flags)))
+        if (!(video = virDomainVideoDefParseXML(nodes[i], ctxt, def, flags)))
             goto error;
 
         if (video->primary) {
@@ -23278,6 +23288,7 @@ virDomainVideoDefFormat(virBufferPtr buf,
                         unsigned int flags)
 {
     const char *model = virDomainVideoTypeToString(def->type);
+    virBuffer driverBuf = VIR_BUFFER_INITIALIZER;
 
     if (!model) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -23287,6 +23298,15 @@ virDomainVideoDefFormat(virBufferPtr buf,
 
     virBufferAddLit(buf, "<video>\n");
     virBufferAdjustIndent(buf, 2);
+    virDomainVirtioOptionsFormat(&driverBuf, def->virtio);
+    if (virBufferCheckError(&driverBuf) < 0)
+        return -1;
+    if (virBufferUse(&driverBuf)) {
+        virBufferTrim(&driverBuf, " ", -1);
+        virBufferAddLit(buf, "<driver ");
+        virBufferAddBuffer(buf, &driverBuf);
+        virBufferAddLit(buf, "/>\n");
+    }
     virBufferAsprintf(buf, "<model type='%s'",
                       model);
     if (def->ram)
