@@ -177,4 +177,21 @@ virObjectPoolableHashElementGetPrimaryKey(void *anyobj);
 const char *
 virObjectPoolableHashElementGetSecondaryKey(void *anyobj);
 
+void *
+virObjectPoolableDefGetDef(void *anyobj);
+
+int
+virObjectPoolableDefSetDef(void *anyobj,
+                           void *def);
+
+void *
+virObjectPoolableDefGetNewDef(void *anyobj);
+
+int
+virObjectPoolableDefSetNewDef(void *anyobj,
+                              void *newDef);
+
+int
+virObjectPoolableDefStealNewDef(void *anyobj);
+
 #endif /* __VIR_OBJECT_H */
