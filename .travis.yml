@@ -1,8 +1,6 @@
 sudo: false
 language: c
 dist: precise
-compiler:
-  - gcc
 cache: ccache
 addons:
   apt:
@@ -62,15 +60,14 @@ git:
 before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update && brew install gnutls libgcrypt yajl gettext rpcgen ; fi
 
-# the custom PATH is just to pick up OS-X homebrew & its harmless on Linux
-before_script:
-  - PATH="/usr/local/opt/gettext/bin:/usr/local/opt/rpcgen/bin:$PATH" ./autogen.sh
 script:
-  - VIR_TEST_DEBUG=1 make -j3 && make -j3 syntax-check && make -j3 check
+  - tests/travis-ci.sh
 
 # Environments here are run in addition to the main environment defined above
 matrix:
   include:
+    - compiler: gcc
+      dist: precise
     - compiler: clang
       dist: precise
     - compiler: clang
@@ -79,10 +76,12 @@ matrix:
       dist: trusty
     - compiler: clang
       os: osx
-      script:
-        # many unit tests fail & so does syntax-check, so skip for now
-        # one day we must fix it though....
-        - make -j3
+    - services: docker
+      env: IMAGE=ubuntu:17.04 CC=gcc
+      dist: trusty
+    - services: docker
+      env: IMAGE=ubuntu:17.04 CC=clang
+      dist: trusty
 
 after_failure:
   - echo '============================================================================'
