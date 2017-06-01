@@ -596,8 +596,12 @@ virStreamSendAll(virStreamPtr stream,
     for (;;) {
         int got, offset = 0;
         got = (handler)(stream, bytes, want, opaque);
-        if (got < 0)
+        if (got < 0) {
+            if (!virGetLastError())
+                virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                               _("send handler failed"));
             goto cleanup;
+        }
         if (got == 0)
             break;
         while (offset < got) {
@@ -733,16 +737,21 @@ int virStreamSparseSendAll(virStreamPtr stream,
         const unsigned int skipFlags = 0;
 
         if (!dataLen) {
-            if (holeHandler(stream, &inData, &sectionLen, opaque) < 0)
+            if (holeHandler(stream, &inData, &sectionLen, opaque) < 0) {
+                if (!virGetLastError())
+                    virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                                   _("send holeHandler failed"));
                 goto cleanup;
+            }
 
             if (!inData && sectionLen) {
                 if (virStreamSendHole(stream, sectionLen, skipFlags) < 0)
                     goto cleanup;
 
                 if (skipHandler(stream, sectionLen, opaque) < 0) {
-                    virReportSystemError(errno, "%s",
-                                         _("unable to skip hole"));
+                    if (!virGetLastError())
+                        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                                       _("send skipHandler failed"));
                     goto cleanup;
                 }
                 continue;
@@ -755,8 +764,12 @@ int virStreamSparseSendAll(virStreamPtr stream,
             want = dataLen;
 
         got = (handler)(stream, bytes, want, opaque);
-        if (got < 0)
+        if (got < 0) {
+            if (!virGetLastError())
+                virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                               _("send handler failed"));
             goto cleanup;
+        }
         if (got == 0)
             break;
         while (offset < got) {
@@ -862,8 +875,12 @@ virStreamRecvAll(virStreamPtr stream,
         while (offset < got) {
             int done;
             done = (handler)(stream, bytes + offset, got - offset, opaque);
-            if (done < 0)
+            if (done < 0) {
+                if (!virGetLastError())
+                    virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                                   _("receive handler failed"));
                 goto cleanup;
+            }
             offset += done;
         }
     }
@@ -976,8 +993,12 @@ virStreamSparseRecvAll(virStreamPtr stream,
             if (virStreamRecvHole(stream, &holeLen, holeFlags) < 0)
                 goto cleanup;
 
-            if (holeHandler(stream, holeLen, opaque) < 0)
+            if (holeHandler(stream, holeLen, opaque) < 0) {
+                if (!virGetLastError())
+                    virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                                   _("receive holeHandler failed"));
                 goto cleanup;
+            }
             continue;
         } else if (got < 0) {
             goto cleanup;
@@ -987,8 +1008,12 @@ virStreamSparseRecvAll(virStreamPtr stream,
         while (offset < got) {
             int done;
             done = (handler)(stream, bytes + offset, got - offset, opaque);
-            if (done < 0)
+            if (done < 0) {
+                if (!virGetLastError())
+                    virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                                   _("receive handler failed"));
                 goto cleanup;
+            }
             offset += done;
         }
     }
