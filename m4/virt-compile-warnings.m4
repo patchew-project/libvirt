@@ -166,12 +166,6 @@ AC_DEFUN([LIBVIRT_COMPILE_WARNINGS],[
       wantwarn="$wantwarn -Wno-format"
     fi
 
-    # This should be < 256 really. Currently we're down to 4096,
-    # but using 1024 bytes sized buffers (mostly for virStrerror)
-    # stops us from going down further
-    gl_WARN_ADD(["-Wframe-larger-than=4096"], [STRICT_FRAME_LIMIT_CFLAGS])
-    gl_WARN_ADD(["-Wframe-larger-than=25600"], [RELAXED_FRAME_LIMIT_CFLAGS])
-
     # Extra special flags
     dnl -fstack-protector stuff passes gl_WARN_ADD with gcc
     dnl on Mingw32, but fails when actually used
@@ -259,4 +253,33 @@ AC_DEFUN([LIBVIRT_COMPILE_WARNINGS],[
       AC_DEFINE_UNQUOTED([BROKEN_GCC_WLOGICALOP_EQUAL_EXPR], 1,
         [Define to 1 if gcc -Wlogical-op reports false positive 'or' equal expr])
     fi
+
+    dnl Check for support for Sanitizers
+    dnl Check for -fsanitize=address and -fsanitize=undefined support
+    LIBVIRT_ARG_ENABLE([ASAN], [build with address sanitizer support], [no])
+    SAN_CFLAGS=
+
+    AS_IF([test "x$enable_asan" = "xyes"], [
+        gl_COMPILER_OPTION_IF([-fsanitize=address -fno-omit-frame-pointer], [
+            SAN_CFLAGS="-fsanitize=address"
+        ])
+    ])
+
+    LIBVIRT_ARG_ENABLE([UBSAN], [build with undefined behavior sanitizer support], [no])
+    AS_IF([test "x$enable_ubsan" = "xyes"], [
+        gl_COMPILER_OPTION_IF([-fsanitize=undefined -fno-omit-frame-pointer], [
+            SAN_CFLAGS="$SAN_CFLAGS -fsanitize=undefined"
+        ])
+    ])
+
+    AS_IF([ test -n "${SAN_CFLAGS}"], [
+        gl_AS_VAR_APPEND([WARN_CFLAGS], [" $SAN_CFLAGS -fno-omit-frame-pointer"])
+        gl_AS_VAR_APPEND([LDFLAGS], [" $SAN_CFLAGS -ldl"])
+    ],[
+        # This should be < 256 really. Currently we're down to 4096,
+        # but using 1024 bytes sized buffers (mostly for virStrerror)
+        # stops us from going down further
+        gl_WARN_ADD(["-Wframe-larger-than=4096"], [STRICT_FRAME_LIMIT_CFLAGS])
+        gl_WARN_ADD(["-Wframe-larger-than=25600"], [RELAXED_FRAME_LIMIT_CFLAGS])
+    ])
 ])
