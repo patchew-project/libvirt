@@ -712,14 +712,18 @@ int virNetClientStreamEventUpdateCallback(virNetClientStreamPtr st,
     return ret;
 }
 
-int virNetClientStreamEventRemoveCallback(virNetClientStreamPtr st)
+int virNetClientStreamEventRemoveCallback(virNetClientStreamPtr st, bool quiet)
 {
     int ret = -1;
 
     virObjectLock(st);
     if (!st->cb) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       "%s", _("no stream callback registered"));
+        if (quiet) {
+            ret = 0;
+        } else {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           "%s", _("no stream callback registered"));
+        }
         goto cleanup;
     }
 

@@ -79,7 +79,8 @@ int virNetClientStreamEventAddCallback(virNetClientStreamPtr st,
 
 int virNetClientStreamEventUpdateCallback(virNetClientStreamPtr st,
                                           int events);
-int virNetClientStreamEventRemoveCallback(virNetClientStreamPtr st);
+int virNetClientStreamEventRemoveCallback(virNetClientStreamPtr st,
+                                          bool quiet);
 
 bool virNetClientStreamEOF(virNetClientStreamPtr st)
     ATTRIBUTE_NONNULL(1);

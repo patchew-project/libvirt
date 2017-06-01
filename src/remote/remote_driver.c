@@ -5838,7 +5838,7 @@ remoteStreamEventRemoveCallback(virStreamPtr st)
 
     remoteDriverLock(priv);
 
-    ret = virNetClientStreamEventRemoveCallback(privst);
+    ret = virNetClientStreamEventRemoveCallback(privst, false);
 
     remoteDriverUnlock(priv);
     return ret;
