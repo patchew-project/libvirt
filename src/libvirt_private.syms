@@ -791,7 +791,7 @@ virObjectEventStateDeregisterID;
 virObjectEventStateEventID;
 virObjectEventStateNew;
 virObjectEventStateQueue;
-
+virObjectEventStateSetFreeCB;
 
 # conf/secret_conf.h
 virSecretDefFormat;

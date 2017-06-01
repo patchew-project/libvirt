@@ -90,4 +90,11 @@ virObjectEventStateSetRemote(virConnectPtr conn,
                              int remoteID)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
+void
+virObjectEventStateSetFreeCB(virConnectPtr conn,
+                             virObjectEventStatePtr state,
+                             int callbackID,
+                             virFreeCallback freecb)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(4);
+
 #endif

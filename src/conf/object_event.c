@@ -923,6 +923,40 @@ virObjectEventStateRegisterID(virConnectPtr conn,
 
 
 /**
+ * virObjectEventStateSetFreeCB:
+ * @conn: connection to associate with callback
+ * @state: object event state
+ * @callbackID: ID of the function to remove from event
+ * @freecb: freecb to be added
+ *
+ * Add the callbalck function @freecb for @callbackID with connection @conn,
+ * from @state, for events.
+ */
+void
+virObjectEventStateSetFreeCB(virConnectPtr conn,
+                             virObjectEventStatePtr state,
+                             int callbackID,
+                             virFreeCallback freecb)
+{
+    size_t i;
+    virObjectEventCallbackListPtr cbList;
+
+    virObjectEventStateLock(state);
+    cbList = state->callbacks;
+    for (i = 0; i < cbList->count; i++) {
+        virObjectEventCallbackPtr cb = cbList->callbacks[i];
+
+        if (cb->callbackID == callbackID && cb->conn == conn) {
+            cb->freecb = freecb;
+            break;
+        }
+    }
+
+    virObjectEventStateUnlock(state);
+}
+
+
+/**
  * virObjectEventStateDeregisterID:
  * @conn: connection to associate with callback
  * @state: object event state

@@ -5947,7 +5947,7 @@ remoteConnectDomainEventRegisterAny(virConnectPtr conn,
 
     if ((count = virDomainEventStateRegisterClient(conn, priv->eventState,
                                                    dom, eventID, callback,
-                                                   opaque, freecb, false,
+                                                   opaque, NULL, false,
                                                    &callbackID,
                                                    priv->serverEventFilter)) < 0)
         goto done;
@@ -5993,7 +5993,7 @@ remoteConnectDomainEventRegisterAny(virConnectPtr conn,
     }
 
     rv = callbackID;
-
+    virObjectEventStateSetFreeCB(conn, priv->eventState, callbackID, freecb);
  done:
     remoteDriverUnlock(priv);
     return rv;
