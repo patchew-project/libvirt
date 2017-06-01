@@ -614,7 +614,12 @@ virStreamSendAll(virStreamPtr stream,
     VIR_FREE(bytes);
 
     if (ret != 0) {
+        virErrorPtr orig_err = virSaveLastError();
         virStreamAbort(stream);
+        if (orig_err) {
+            virSetError(orig_err);
+            virFreeError(orig_err);
+        }
         virDispatchError(stream->conn);
     }
 
@@ -769,7 +774,12 @@ int virStreamSparseSendAll(virStreamPtr stream,
     VIR_FREE(bytes);
 
     if (ret != 0) {
+        virErrorPtr orig_err = virSaveLastError();
         virStreamAbort(stream);
+        if (orig_err) {
+            virSetError(orig_err);
+            virFreeError(orig_err);
+        }
         virDispatchError(stream->conn);
     }
 
@@ -863,7 +873,12 @@ virStreamRecvAll(virStreamPtr stream,
     VIR_FREE(bytes);
 
     if (ret != 0) {
+        virErrorPtr orig_err = virSaveLastError();
         virStreamAbort(stream);
+        if (orig_err) {
+            virSetError(orig_err);
+            virFreeError(orig_err);
+        }
         virDispatchError(stream->conn);
     }
 
@@ -983,7 +998,12 @@ virStreamSparseRecvAll(virStreamPtr stream,
     VIR_FREE(bytes);
 
     if (ret != 0) {
+        virErrorPtr orig_err = virSaveLastError();
         virStreamAbort(stream);
+        if (orig_err) {
+            virSetError(orig_err);
+            virFreeError(orig_err);
+        }
         virDispatchError(stream->conn);
     }
 
