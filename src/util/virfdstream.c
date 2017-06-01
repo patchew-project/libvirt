@@ -721,6 +721,15 @@ virFDStreamCloseInt(virStreamPtr st, bool streamAbort)
 
     st->privateData = NULL;
 
+    if (fdst->watch)
+        virEventRemoveHandle(fdst->watch);
+
+    fdst->watch = 0;
+    fdst->ff = NULL;
+    fdst->cb = NULL;
+    fdst->events = 0;
+    fdst->opaque = NULL;
+
     /* call the internal stream closing callback */
     if (fdst->icbCb) {
         /* the mutex is not accessible anymore, as private data is null */
@@ -731,8 +740,11 @@ virFDStreamCloseInt(virStreamPtr st, bool streamAbort)
 
     if (fdst->dispatching) {
         fdst->closed = true;
+        fdst->cbRemoved = true;
         virObjectUnlock(fdst);
     } else {
+        if (fdst->ff)
+            (fdst->ff)(fdst->opaque);
         virObjectUnlock(fdst);
         virObjectUnref(fdst);
     }

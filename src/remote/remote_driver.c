@@ -5870,6 +5870,7 @@ remoteStreamCloseInt(virStreamPtr st, bool streamAbort)
     priv->localUses--;
 
  cleanup:
+    virNetClientStreamEventRemoveCallback(privst, true);
     virNetClientRemoveStream(priv->client, privst);
     virObjectUnref(privst);
     st->privateData = NULL;
