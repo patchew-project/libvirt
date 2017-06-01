@@ -1136,6 +1136,10 @@ mymain(void)
     DO_TEST("cpu-check-default-none2", NONE);
     DO_TEST("cpu-check-default-partial", NONE);
     DO_TEST("cpu-check-default-partial2", NONE);
+    DO_TEST("machine-loadparm-multiple-disks-nets-s390",
+            QEMU_CAPS_MACHINE_OPT, QEMU_CAPS_VIRTIO_CCW,
+            QEMU_CAPS_VIRTIO_S390, QEMU_CAPS_BOOTINDEX,
+            QEMU_CAPS_LOADPARM);
 
     qemuTestDriverFree(&driver);
 

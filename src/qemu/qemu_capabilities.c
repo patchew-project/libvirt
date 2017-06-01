@@ -372,6 +372,8 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "intel-iommu.intremap",
               "intel-iommu.caching-mode",
               "intel-iommu.eim",
+
+              "loadparm", /* 260 */
     );
 
 
@@ -3146,6 +3148,7 @@ static struct virQEMUCapsCommandLineProps virQEMUCapsCommandLine[] = {
     { "drive", "throttling.group", QEMU_CAPS_DRIVE_IOTUNE_GROUP },
     { "spice", "rendernode", QEMU_CAPS_SPICE_RENDERNODE },
     { "machine", "kernel_irqchip", QEMU_CAPS_MACHINE_KERNEL_IRQCHIP },
+    { "machine", "loadparm", QEMU_CAPS_LOADPARM },
 };
 
 static int
