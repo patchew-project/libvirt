@@ -698,8 +698,8 @@ cmdVolUpload(vshControl *ctl, const vshCmd *cmd)
         goto cleanup;
     }
 
-    cbData.ctl = ctl;
     cbData.fd = fd;
+    cbData.filename = file;
 
     if (vshCommandOptBool(cmd, "sparse"))
         flags |= VIR_STORAGE_VOL_UPLOAD_SPARSE_STREAM;
@@ -795,6 +795,7 @@ cmdVolDownload(vshControl *ctl, const vshCmd *cmd)
     bool created = false;
     virshControlPtr priv = ctl->privData;
     unsigned int flags = 0;
+    virshStreamCallbackData cbData;
 
     if (vshCommandOptULongLong(ctl, cmd, "offset", &offset) < 0)
         return false;
@@ -821,6 +822,9 @@ cmdVolDownload(vshControl *ctl, const vshCmd *cmd)
         created = true;
     }
 
+    cbData.fd = fd;
+    cbData.filename = file;
+
     if (!(st = virStreamNew(priv->conn, 0))) {
         vshError(ctl, _("cannot create a new stream"));
         goto cleanup;
@@ -831,7 +835,7 @@ cmdVolDownload(vshControl *ctl, const vshCmd *cmd)
         goto cleanup;
     }
 
-    if (virStreamSparseRecvAll(st, virshStreamSink, virshStreamSkip, &fd) < 0) {
+    if (virStreamSparseRecvAll(st, virshStreamSink, virshStreamSkip, &cbData) < 0) {
         vshError(ctl, _("cannot receive data from volume %s"), name);
         goto cleanup;
     }

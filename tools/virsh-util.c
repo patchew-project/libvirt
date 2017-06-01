@@ -147,9 +147,15 @@ virshStreamSink(virStreamPtr st ATTRIBUTE_UNUSED,
                 size_t nbytes,
                 void *opaque)
 {
-    int *fd = opaque;
+    virshStreamCallbackDataPtr cbData = opaque;
+    int fd = cbData->fd;
+    const char *filename = cbData->filename;
+    int ret;
 
-    return safewrite(*fd, bytes, nbytes);
+    if ((ret = safewrite(fd, bytes, nbytes)) < 0)
+        virReportSystemError(errno, _("unable to write to %s"), filename);
+
+    return ret;
 }
 
 
@@ -161,8 +167,13 @@ virshStreamSource(virStreamPtr st ATTRIBUTE_UNUSED,
 {
     virshStreamCallbackDataPtr cbData = opaque;
     int fd = cbData->fd;
+    const char *filename = cbData->filename;
+    int ret;
 
-    return saferead(fd, bytes, nbytes);
+    if ((ret = saferead(fd, bytes, nbytes)) < 0)
+        virReportSystemError(errno, _("unable to read from %s"), filename);
+
+    return ret;
 }
 
 
@@ -173,10 +184,13 @@ virshStreamSourceSkip(virStreamPtr st ATTRIBUTE_UNUSED,
 {
     virshStreamCallbackDataPtr cbData = opaque;
     int fd = cbData->fd;
+    const char *filename = cbData->filename;
     off_t cur;
 
-    if ((cur = lseek(fd, offset, SEEK_CUR)) == (off_t) -1)
+    if ((cur = lseek(fd, offset, SEEK_CUR)) == (off_t) -1) {
+        virReportSystemError(errno, _("unable to seek in %s"), filename);
         return -1;
+    }
 
     return 0;
 }
@@ -187,14 +201,20 @@ virshStreamSkip(virStreamPtr st ATTRIBUTE_UNUSED,
                 long long offset,
                 void *opaque)
 {
-    int *fd = opaque;
+    virshStreamCallbackDataPtr cbData = opaque;
+    int fd = cbData->fd;
+    const char *filename = cbData->filename;
     off_t cur;
 
-    if ((cur = lseek(*fd, offset, SEEK_CUR)) == (off_t) -1)
+    if ((cur = lseek(fd, offset, SEEK_CUR)) == (off_t) -1) {
+        virReportSystemError(errno, _("unable to seek in %s"), filename);
         return -1;
+    }
 
-    if (ftruncate(*fd, cur) < 0)
+    if (ftruncate(fd, cur) < 0) {
+        virReportSystemError(errno, _("unable to truncate %s"), filename);
         return -1;
+    }
 
     return 0;
 }
@@ -207,12 +227,12 @@ virshStreamInData(virStreamPtr st ATTRIBUTE_UNUSED,
                   void *opaque)
 {
     virshStreamCallbackDataPtr cbData = opaque;
-    vshControl *ctl = cbData->ctl;
     int fd = cbData->fd;
+    const char *filename = cbData->filename;
     int ret;
 
     if ((ret = virFileInData(fd, inData, offset)) < 0)
-        vshError(ctl, "%s", _("Unable to get current position in stream"));
+        virReportSystemError(errno, _("unable to seek in %s"), filename);
 
     return ret;
 }

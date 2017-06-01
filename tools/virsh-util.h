@@ -60,8 +60,8 @@ virshStreamSink(virStreamPtr st,
 typedef struct _virshStreamCallbackData virshStreamCallbackData;
 typedef virshStreamCallbackData *virshStreamCallbackDataPtr;
 struct _virshStreamCallbackData {
-    vshControl *ctl;
     int fd;
+    const char *filename;
 };
 
 int
