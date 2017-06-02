@@ -1433,10 +1433,11 @@ the I<format> argument must be B<qemu-argv>. For Xen hypervisor, the
 I<format> argument may be B<xen-xm>, B<xen-xl>, or B<xen-sxpr>. For
 LXC hypervisor, the I<format> argument must be B<lxc-tools>.
 
-=item B<domxml-to-native> I<format> I<xml>
+=item B<domxml-to-native> I<format>
+{ I<--domain> I<domain-name-or-id-or-uuid> | [I<--xml>] I<xml> }
 
-Convert the file I<xml> in domain XML format to the native guest
-configuration format named by I<format>. For QEMU/KVM hypervisor,
+Convert the file I<xml> in domain XML format or existing domain to the
+native guest configuration format named by I<format>. For QEMU/KVM hypervisor,
 the I<format> argument must be B<qemu-argv>. For Xen hypervisor, the
 I<format> argument may be B<xen-xm>, B<xen-xl>, or B<xen-sxpr>. For
 LXC hypervisor, the I<format> argument must be B<lxc-tools>.
