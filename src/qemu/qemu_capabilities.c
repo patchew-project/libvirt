@@ -372,6 +372,8 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "intel-iommu.intremap",
               "intel-iommu.caching-mode",
               "intel-iommu.eim",
+
+              "spapr-pci-host-bridge", /* 260 */
     );
 
 
@@ -1621,6 +1623,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "nvdimm", QEMU_CAPS_DEVICE_NVDIMM },
     { "pcie-root-port", QEMU_CAPS_DEVICE_PCIE_ROOT_PORT },
     { "qemu-xhci", QEMU_CAPS_DEVICE_QEMU_XHCI },
+    { "spapr-pci-host-bridge", QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {

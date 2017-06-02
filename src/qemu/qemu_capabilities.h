@@ -411,6 +411,9 @@ typedef enum {
     QEMU_CAPS_INTEL_IOMMU_CACHING_MODE, /* intel-iommu.caching-mode */
     QEMU_CAPS_INTEL_IOMMU_EIM, /* intel-iommu.eim */
 
+    /* 260 */
+    QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE, /* -device spapr-pci-host-bridge */
+
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
 
