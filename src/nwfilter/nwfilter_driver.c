@@ -518,6 +518,8 @@ nwfilterDefineXML(virConnectPtr conn,
 
     if (virNWFilterObjSaveConfig(obj) < 0) {
         virNWFilterObjListRemove(driver->nwfilters, obj);
+        virNWFilterObjUnref(obj);
+        obj = NULL;
         goto cleanup;
     }
 
@@ -563,6 +565,8 @@ nwfilterUndefine(virNWFilterPtr nwfilter)
         goto cleanup;
 
     virNWFilterObjListRemove(driver->nwfilters, obj);
+    virNWFilterObjUnref(obj);
+    obj = NULL;
     ret = 0;
 
  cleanup:
