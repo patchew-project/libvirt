@@ -53,12 +53,6 @@ virNWFilterObjGetNewDef(virNWFilterObjPtr obj);
 bool
 virNWFilterObjWantRemoved(virNWFilterObjPtr obj);
 
-virNWFilterObjPtr
-virNWFilterObjRef(virNWFilterObjPtr obj);
-
-bool
-virNWFilterObjUnref(virNWFilterObjPtr obj);
-
 virNWFilterObjListPtr
 virNWFilterObjListNew(void);
 
