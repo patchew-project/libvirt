@@ -502,6 +502,18 @@ virObjectGetPoolableHashElementObj(void *anyobj)
 }
 
 
+static virObjectPoolableDefPtr
+virObjectGetPoolableDefObj(void *anyobj)
+{
+    if (virObjectIsClass(anyobj, virObjectPoolableDefClass))
+        return anyobj;
+
+    VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, virObjectPoolableDefClass);
+
+    return NULL;
+}
+
+
 /**
  * virObjectLock:
  * @anyobj: any instance of virObjectLockablePtr
@@ -690,4 +702,135 @@ virObjectPoolableHashElementGetSecondaryKey(void *anyobj)
         return NULL;
 
     return obj->secondaryKey;
+}
+
+
+/**
+ * virObjectPoolableDefGetDef
+ * @anyobj: Pointer to a locked PoolableDef object
+ *
+ * Returns: Pointer to the object @def or NULL on failure
+ */
+void *
+virObjectPoolableDefGetDef(void *anyobj)
+{
+    virObjectPoolableDefPtr obj = virObjectGetPoolableDefObj(anyobj);
+
+    if (!obj)
+        return NULL;
+
+    return obj->def;
+}
+
+
+/**
+ * virObjectPoolableDefSetDef
+ * @anyobj: Pointer to a locked PoolableDef object
+ * @def: Opaque object definition to replace in the object
+ *
+ * Set the @def of the object - this may be NULL if clearing the @def
+ * from the object in which case it is up to the caller to handle managing
+ * the previous obj->def. If @def is not NULL, this includes a call to the
+ * defFreeFunc prior to the set.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+virObjectPoolableDefSetDef(void *anyobj,
+                           void *def)
+{
+    virObjectPoolableDefPtr obj = virObjectGetPoolableDefObj(anyobj);
+
+    if (!obj)
+        return -1;
+
+    if (def) {
+        obj->defFreeFunc(obj->def);
+        obj->def = def;
+    } else {
+        obj->def = NULL;
+    }
+
+    return 0;
+}
+
+
+/**
+ * virObjectPoolableDefGetNewDef
+ * @anyobj: Pointer to a locked PoolableDef object
+ *
+ * Returns: Pointer to the object 'newDef' or NULL on failure
+ */
+void *
+virObjectPoolableDefGetNewDef(void *anyobj)
+{
+    virObjectPoolableDefPtr obj = virObjectGetPoolableDefObj(anyobj);
+
+    if (!obj)
+        return NULL;
+
+    return obj->newDef;
+}
+
+
+/**
+ * virObjectPoolableDefSetNewDef
+ * @anyobj: Pointer to a locked PoolableDef object
+ * @newDef: Opaque 'newDef' to replace in the object, may be NULL
+ *
+ * Set the 'newDef' of the object - this may be NULL if clearing the newDef
+ * from the object in which case it is up to the caller to handle managing
+ * the previous newDef. If @newDef is not NULL, this includes a call to the
+ * defFreeFunc prior to the set.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+virObjectPoolableDefSetNewDef(void *anyobj,
+                              void *newDef)
+{
+    virObjectPoolableDefPtr obj = virObjectGetPoolableDefObj(anyobj);
+
+    if (!obj)
+        return -1;
+
+    if (newDef) {
+        obj->defFreeFunc(obj->newDef);
+        obj->newDef = newDef;
+    } else {
+        obj->newDef = NULL;
+    }
+
+    return 0;
+}
+
+
+/**
+ * virObjectPoolableDefSwapNewDef
+ * @anyobj: Pointer to a locked PoolableDef object
+ *
+ * Manage swapping the obj->newDef into obj->def in one pass.
+ * When called, the previous obj->def will be free'd and the
+ * existing defDef will take it's place.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+virObjectPoolableDefStealNewDef(void *anyobj)
+{
+    virObjectPoolableDefPtr obj = virObjectGetPoolableDefObj(anyobj);
+
+    if (!obj)
+        return -1;
+
+    if (!obj->newDef) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Unable to steal NULL newDef"));
+        return -1;
+    }
+
+    obj->defFreeFunc(obj->def);
+    VIR_STEAL_PTR(obj->def, obj->newDef);
+
+    return 0;
 }
