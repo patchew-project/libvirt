@@ -9176,6 +9176,15 @@ virDomainControllerDefParseXML(xmlNodePtr node,
                 goto error;
             }
         }
+
+        rc = virXPathInt("string(./isolationGroup)", ctxt,
+                         &def->opts.pciopts.isolationGroup);
+        if (rc == -2 || (rc == 0 && def->opts.pciopts.isolationGroup < 0)) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("invalid isolation group for PCI controller"));
+            goto error;
+        }
+
         if (numaNode >= 0)
             def->opts.pciopts.numaNode = numaNode;
         break;
@@ -21381,6 +21390,7 @@ virDomainControllerDefFormat(virBufferPtr buf,
     const char *model = NULL;
     const char *modelName = NULL;
     bool pcihole64 = false, pciModel = false, pciTarget = false;
+    bool pciIsolationGroup = false;
     virBuffer driverBuf = VIR_BUFFER_INITIALIZER;
 
     if (!type) {
@@ -21437,13 +21447,15 @@ virDomainControllerDefFormat(virBufferPtr buf,
             def->opts.pciopts.idx != -1 ||
             def->opts.pciopts.numaNode != -1)
             pciTarget = true;
+        if (def->opts.pciopts.isolationGroup)
+            pciIsolationGroup = true;
         break;
 
     default:
         break;
     }
 
-    if (pciModel || pciTarget ||
+    if (pciModel || pciTarget || pciIsolationGroup ||
         def->queues || def->cmd_per_lun || def->max_sectors || def->ioeventfd ||
         def->iothread ||
         virDomainDeviceInfoNeedsFormat(&def->info, flags) || pcihole64) {
@@ -21520,6 +21532,11 @@ virDomainControllerDefFormat(virBufferPtr buf,
         if (pcihole64) {
             virBufferAsprintf(buf, "<pcihole64 unit='KiB'>%lu</"
                               "pcihole64>\n", def->opts.pciopts.pcihole64size);
+        }
+
+        if (pciIsolationGroup) {
+            virBufferAsprintf(buf, "<isolationGroup>%d</isolationGroup>\n",
+                              def->opts.pciopts.isolationGroup);
         }
 
         virBufferAdjustIndent(buf, -2);
