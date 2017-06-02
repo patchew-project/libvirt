@@ -51,7 +51,7 @@ struct _virNWFilterObjList {
 
 
 static virNWFilterObjPtr
-virNWFilterObjNew(void)
+virNWFilterObjNew(virNWFilterDefPtr def)
 {
     virNWFilterObjPtr obj;
 
@@ -66,6 +66,8 @@ virNWFilterObjNew(void)
     }
 
     virNWFilterObjLock(obj);
+    obj->def = def;
+
     return obj;
 }
 
@@ -361,20 +363,21 @@ virNWFilterObjListAssignDef(virNWFilterObjListPtr nwfilters,
         return obj;
     }
 
-    if (!(obj = virNWFilterObjNew()))
+    if (!(obj = virNWFilterObjNew(def)))
         return NULL;
+    def = NULL;
+    objdef = obj->def;
 
-    if (!(obj->configFile = virFileBuildPath(configDir, def->name, ".xml")))
+    if (!(obj->configFile = virFileBuildPath(configDir, objdef->name, ".xml")))
         goto error;
 
     if (VIR_APPEND_ELEMENT_COPY(nwfilters->objs, nwfilters->count, obj) < 0)
         goto error;
 
-    obj->def = def;
-
     return obj;
 
  error:
+    obj->def = NULL;
     virNWFilterObjUnlock(obj);
     virNWFilterObjFree(obj);
     return NULL;
