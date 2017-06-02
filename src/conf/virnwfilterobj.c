@@ -485,6 +485,7 @@ virNWFilterObjListLoadConfig(virNWFilterObjListPtr nwfilters,
 {
     virNWFilterDefPtr def = NULL;
     virNWFilterObjPtr obj;
+    virNWFilterDefPtr objdef;
     char *configFile = NULL;
 
     if (!(configFile = virFileBuildPath(configDir, name, ".xml")))
@@ -503,10 +504,12 @@ virNWFilterObjListLoadConfig(virNWFilterObjListPtr nwfilters,
 
     if (!(obj = virNWFilterObjListAssignDef(nwfilters, def)))
         goto error;
+    def = NULL;
+    objdef = obj->def;
 
     /* We generated a UUID, make it permanent by saving the config to disk */
-    if (!def->uuid_specified &&
-        virNWFilterSaveConfig(configDir, def) < 0)
+    if (!objdef->uuid_specified &&
+        virNWFilterSaveConfig(configDir, objdef) < 0)
         goto error;
 
     VIR_FREE(configFile);
