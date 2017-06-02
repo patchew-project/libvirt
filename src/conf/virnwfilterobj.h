@@ -41,6 +41,9 @@ struct _virNWFilterDriverState {
     bool watchingFirewallD;
 };
 
+void
+virNWFilterObjEndAPI(virNWFilterObjPtr *obj);
+
 virNWFilterDefPtr
 virNWFilterObjGetDef(virNWFilterObjPtr obj);
 
@@ -49,6 +52,12 @@ virNWFilterObjGetNewDef(virNWFilterObjPtr obj);
 
 bool
 virNWFilterObjWantRemoved(virNWFilterObjPtr obj);
+
+virNWFilterObjPtr
+virNWFilterObjRef(virNWFilterObjPtr obj);
+
+bool
+virNWFilterObjUnref(virNWFilterObjPtr obj);
 
 virNWFilterObjListPtr
 virNWFilterObjListNew(void);
@@ -108,11 +117,5 @@ virNWFilterObjSaveConfig(virNWFilterObjPtr obj);
 int
 virNWFilterObjListLoadAllConfigs(virNWFilterObjListPtr nwfilters,
                                  const char *configDir);
-
-void
-virNWFilterObjLock(virNWFilterObjPtr obj);
-
-void
-virNWFilterObjUnlock(virNWFilterObjPtr obj);
 
 #endif /* VIRNWFILTEROBJ_H */

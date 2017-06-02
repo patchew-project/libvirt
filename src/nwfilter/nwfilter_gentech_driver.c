@@ -315,7 +315,7 @@ virNWFilterInstReset(virNWFilterInstPtr inst)
     size_t i;
 
     for (i = 0; i < inst->nfilters; i++)
-        virNWFilterObjUnlock(inst->filters[i]);
+        virNWFilterObjEndAPI(&inst->filters[i]);
     VIR_FREE(inst->filters);
     inst->nfilters = 0;
 
@@ -425,8 +425,7 @@ virNWFilterIncludeDefToRuleInst(virNWFilterDriverStatePtr driver,
     if (ret < 0)
         virNWFilterInstReset(inst);
     virNWFilterHashTableFree(tmpvars);
-    if (obj)
-        virNWFilterObjUnlock(obj);
+    virNWFilterObjEndAPI(&obj);
     return ret;
 }
 
@@ -547,7 +546,7 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
                                                             vars);
             if (!tmpvars) {
                 rc = -1;
-                virNWFilterObjUnlock(obj);
+                virNWFilterObjEndAPI(&obj);
                 break;
             }
 
@@ -571,7 +570,7 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
 
             virNWFilterHashTableFree(tmpvars);
 
-            virNWFilterObjUnlock(obj);
+            virNWFilterObjEndAPI(&obj);
             if (rc < 0)
                 break;
         }
@@ -845,7 +844,7 @@ virNWFilterInstantiateFilterUpdate(virNWFilterDriverStatePtr driver,
     virNWFilterHashTableFree(vars1);
 
  err_exit:
-    virNWFilterObjUnlock(obj);
+    virNWFilterObjEndAPI(&obj);
 
     VIR_FREE(str_ipaddr);
     VIR_FREE(str_macaddr);
