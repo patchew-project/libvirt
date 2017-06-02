@@ -2766,33 +2766,6 @@ virNWFilterDefParseFile(const char *filename)
 }
 
 
-int
-virNWFilterSaveConfig(const char *configDir,
-                      virNWFilterDefPtr def)
-{
-    int ret = -1;
-    char *xml;
-    char uuidstr[VIR_UUID_STRING_BUFLEN];
-    char *configFile = NULL;
-
-    if (!(xml = virNWFilterDefFormat(def)))
-        goto cleanup;
-
-    if (!(configFile = virFileBuildPath(configDir, def->name, ".xml")))
-        goto cleanup;
-
-    virUUIDFormat(def->uuid, uuidstr);
-    ret = virXMLSaveFile(configFile,
-                         virXMLPickShellSafeComment(def->name, uuidstr),
-                         "nwfilter-edit", xml);
-
- cleanup:
-    VIR_FREE(configFile);
-    VIR_FREE(xml);
-    return ret;
-}
-
-
 int nCallbackDriver;
 #define MAX_CALLBACK_DRIVER 10
 static virNWFilterCallbackDriverPtr callbackDrvArray[MAX_CALLBACK_DRIVER];

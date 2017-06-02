@@ -478,6 +478,34 @@ virNWFilterObjListExport(virConnectPtr conn,
 }
 
 
+int
+virNWFilterObjSaveConfig(virNWFilterObjPtr obj,
+                         const char *configDir)
+{
+    virNWFilterDefPtr def = obj->def;
+    int ret = -1;
+    char *xml;
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
+    char *configFile = NULL;
+
+    if (!(xml = virNWFilterDefFormat(def)))
+        goto cleanup;
+
+    if (!(configFile = virFileBuildPath(configDir, def->name, ".xml")))
+        goto cleanup;
+
+    virUUIDFormat(def->uuid, uuidstr);
+    ret = virXMLSaveFile(configFile,
+                         virXMLPickShellSafeComment(def->name, uuidstr),
+                         "nwfilter-edit", xml);
+
+ cleanup:
+    VIR_FREE(configFile);
+    VIR_FREE(xml);
+    return ret;
+}
+
+
 static virNWFilterObjPtr
 virNWFilterObjListLoadConfig(virNWFilterObjListPtr nwfilters,
                              const char *configDir,
@@ -512,7 +540,7 @@ virNWFilterObjListLoadConfig(virNWFilterObjListPtr nwfilters,
      * object as a future load would regenerate a UUID and try again,
      * but the existing config would still exist and can be used. */
     if (!objdef->uuid_specified &&
-        virNWFilterSaveConfig(configDir, objdef) < 0)
+        virNWFilterObjSaveConfig(objdef, configDir) < 0)
         VIR_INFO("failed to save generated UUID for filter '%s'", objdef->name);
 
     VIR_FREE(configFile);

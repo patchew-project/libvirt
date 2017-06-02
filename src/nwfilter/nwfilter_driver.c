@@ -517,7 +517,7 @@ nwfilterDefineXML(virConnectPtr conn,
     def = NULL;
     objdef = virNWFilterObjGetDef(obj);
 
-    if (virNWFilterSaveConfig(driver->configDir, objdef) < 0) {
+    if (virNWFilterObjSaveConfig(obj, driver->configDir) < 0) {
         virNWFilterObjListRemove(driver->nwfilters, obj);
         goto cleanup;
     }

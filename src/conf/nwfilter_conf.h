@@ -580,10 +580,6 @@ virNWFilterDefParseNode(xmlDocPtr xml,
 char *
 virNWFilterDefFormat(const virNWFilterDef *def);
 
-int
-virNWFilterSaveConfig(const char *configDir,
-                      virNWFilterDefPtr def);
-
 virNWFilterDefPtr
 virNWFilterDefParseString(const char *xml);
 
