@@ -22,6 +22,7 @@
 #include <config.h>
 
 #define VIR_PARENT_REQUIRED /* empty, to allow virObject to have no parent */
+#include <assert.h>
 #include "virobject.h"
 #include "virthread.h"
 #include "viralloc.h"
@@ -47,10 +48,12 @@ struct _virClass {
     virObjectDisposeCallback dispose;
 };
 
+#define VIR_OBJECT_NOTVALID(obj) (!obj || ((obj->u.s.magic & 0xCAFE0000) != 0xCAFE0000))
+
 #define VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, objclass)                    \
     do {                                                                    \
         virObjectPtr obj = anyobj;                                          \
-        if (!obj)                                                           \
+        if (VIR_OBJECT_NOTVALID(obj))                                       \
             VIR_WARN("Object %p is not a virObject class instance", anyobj);\
         else                                                                \
             VIR_WARN("Object %p (%s) is not a %s instance",                 \
@@ -156,6 +159,7 @@ virClassNew(virClassPtr parent,
     if (VIR_STRDUP(klass->name, name) < 0)
         goto error;
     klass->magic = virAtomicIntInc(&magicCounter);
+    assert(klass->magic <= 0xCAFEFFFF);
     klass->objectSize = objectSize;
     klass->dispose = dispose;
 
@@ -272,7 +276,7 @@ virObjectUnref(void *anyobj)
 {
     virObjectPtr obj = anyobj;
 
-    if (!obj)
+    if (VIR_OBJECT_NOTVALID(obj))
         return false;
 
     bool lastRef = virAtomicIntDecAndTest(&obj->u.s.refs);
@@ -311,7 +315,7 @@ virObjectRef(void *anyobj)
 {
     virObjectPtr obj = anyobj;
 
-    if (!obj)
+    if (VIR_OBJECT_NOTVALID(obj))
         return NULL;
     virAtomicIntInc(&obj->u.s.refs);
     PROBE(OBJECT_REF, "obj=%p", obj);
@@ -389,7 +393,7 @@ virObjectIsClass(void *anyobj,
                  virClassPtr klass)
 {
     virObjectPtr obj = anyobj;
-    if (!obj)
+    if (VIR_OBJECT_NOTVALID(obj))
         return false;
 
     return virClassIsDerivedFrom(obj->klass, klass);
