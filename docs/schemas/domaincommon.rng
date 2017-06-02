@@ -2009,6 +2009,11 @@
                 </optional>
               </element>
             </optional>
+            <optional>
+              <element name='isolationGroup'>
+                <ref name='uint8'/>
+              </element>
+            </optional>
             <!-- *-root controllers have an optional element "pcihole64"-->
             <choice>
               <group>
