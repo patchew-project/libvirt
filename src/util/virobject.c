@@ -63,9 +63,11 @@ struct _virClass {
 static virClassPtr virObjectClass;
 static virClassPtr virObjectLockableClass;
 static virClassPtr virObjectPoolableHashElementClass;
+static virClassPtr virObjectPoolableDefClass;
 
 static void virObjectLockableDispose(void *anyobj);
 static void virObjectPoolableHashElementDispose(void *anyobj);
+static void virObjectPoolableDefDispose(void *anyobj);
 
 static int
 virObjectOnceInit(void)
@@ -87,6 +89,13 @@ virObjectOnceInit(void)
                       "virObjectPoolableHashElement",
                       sizeof(virObjectPoolableHashElement),
                       virObjectPoolableHashElementDispose)))
+        return -1;
+
+    if (!(virObjectPoolableDefClass =
+          virClassNew(virObjectPoolableHashElementClass,
+                      "virObjectPoolableDef",
+                      sizeof(virObjectPoolableDef),
+                      virObjectPoolableDefDispose)))
         return -1;
 
     return 0;
@@ -139,6 +148,23 @@ virClassForObjectPoolableHashElement(void)
     VIR_DEBUG("virObjectPoolableHashElementClass=%p",
               virObjectPoolableHashElementClass);
     return virObjectPoolableHashElementClass;
+}
+
+
+/**
+ * virClassForObjectPoolableDef:
+ *
+ * Returns the class instance for the virObjectPoolableDef type
+ */
+virClassPtr
+virClassForObjectPoolableDef(void)
+{
+    if (virObjectInitialize() < 0)
+        return NULL;
+
+    VIR_DEBUG("virObjectPoolableDefClass=%p",
+              virObjectPoolableDefClass);
+    return virObjectPoolableDefClass;
 }
 
 
@@ -334,6 +360,60 @@ virObjectPoolableHashElementDispose(void *anyobj)
 
 
 /**
+ * virObjectPoolableDefNew:
+ * @klass: the klass to check
+ * @primaryKey: primary key (required)
+ * @secondaryKey: secondary key
+ * @def: XML definition (required)
+ * @defFreeFunc: Free function for @def and @newDef (required)
+ *
+ * Create a new poolable def object for storing "common" domain defs.
+ *
+ * Returns: New object on success, NULL on failure w/ error message set
+ */
+void *
+virObjectPoolableDefNew(virClassPtr klass,
+                        const char *primaryKey,
+                        const char *secondaryKey,
+                        void *def,
+                        virFreeCallback defFreeFunc)
+{
+    virObjectPoolableDefPtr obj;
+
+    if (!virClassIsDerivedFrom(klass, virClassForObjectPoolableDef())) {
+        virReportInvalidArg(klass,
+                            _("Class %s must derive from "
+                              "virObjectPoolableDef"),
+                            virClassName(klass));
+        return NULL;
+    }
+
+    if (!(obj = virObjectPoolableHashElementNew(klass, primaryKey,
+                                                secondaryKey)))
+        return NULL;
+
+    obj->def = def;
+    obj->defFreeFunc = defFreeFunc;
+
+    VIR_DEBUG("obj=%p, def=%p ff=%p", obj, obj->def, obj->defFreeFunc);
+
+    return obj;
+}
+
+
+static void
+virObjectPoolableDefDispose(void *anyobj)
+{
+    virObjectPoolableDefPtr obj = anyobj;
+
+    VIR_DEBUG("dispose obj=%p", obj);
+
+    (obj->defFreeFunc)(obj->def);
+    (obj->defFreeFunc)(obj->newDef);
+}
+
+
+/**
  * virObjectUnref:
  * @anyobj: any instance of virObjectPtr
  *
@@ -400,7 +480,8 @@ static virObjectLockablePtr
 virObjectGetLockableObj(void *anyobj)
 {
     if (virObjectIsClass(anyobj, virObjectLockableClass) ||
-        virObjectIsClass(anyobj, virObjectPoolableHashElementClass))
+        virObjectIsClass(anyobj, virObjectPoolableHashElementClass) ||
+        virObjectIsClass(anyobj, virObjectPoolableDefClass))
         return anyobj;
 
     VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, virObjectLockableClass);
