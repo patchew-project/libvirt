@@ -741,26 +741,12 @@ virDomainPCIAddressGetNextAddr(virDomainPCIAddressSetPtr addrs,
                                virDomainPCIConnectFlags flags,
                                int function)
 {
-    /* default to starting the search for a free slot from
-     * the first slot of domain 0 bus 0...
-     */
     virPCIDeviceAddress a = { 0 };
-    bool found = false;
 
     if (addrs->nbuses == 0) {
         virReportError(VIR_ERR_XML_ERROR, "%s", _("No PCI buses available"));
         goto error;
     }
-
-    /* ...unless this search is for the exact same type of device as
-     * last time, then continue the search from the slot where we
-     * found the previous match (it's possible there will still be a
-     * function available on that slot).
-     */
-    if (flags == addrs->lastFlags)
-        a = addrs->lastaddr;
-    else
-        a.slot = addrs->buses[0].minSlot;
 
     /* if the caller asks for "any function", give them function 0 */
     if (function == -1)
@@ -768,7 +754,13 @@ virDomainPCIAddressGetNextAddr(virDomainPCIAddressSetPtr addrs,
     else
         a.function = function;
 
-    while (a.bus < addrs->nbuses) {
+    /* "Begin at the beginning," the King said, very gravely, "and go on
+     * till you come to the end: then stop." */
+    for (a.bus = 0; a.bus < addrs->nbuses; a.bus++) {
+        bool found = false;
+
+        a.slot = addrs->buses[a.bus].minSlot;
+
         if (virDomainPCIAddressFindUnusedFunctionOnBus(&addrs->buses[a.bus],
                                                        &a, function,
                                                        flags, &found) < 0) {
@@ -777,10 +769,6 @@ virDomainPCIAddressGetNextAddr(virDomainPCIAddressSetPtr addrs,
 
         if (found)
             goto success;
-
-        /* nothing on this bus, go to the next bus */
-        if (++a.bus < addrs->nbuses)
-            a.slot = addrs->buses[a.bus].minSlot;
     }
 
     /* There were no free slots after the last used one */
@@ -791,20 +779,6 @@ virDomainPCIAddressGetNextAddr(virDomainPCIAddressSetPtr addrs,
         /* this device will use the first slot of the new bus */
         a.slot = addrs->buses[a.bus].minSlot;
         goto success;
-    } else if (flags == addrs->lastFlags) {
-        /* Check the buses from 0 up to the last used one */
-        for (a.bus = 0; a.bus <= addrs->lastaddr.bus; a.bus++) {
-            a.slot = addrs->buses[a.bus].minSlot;
-
-            if (virDomainPCIAddressFindUnusedFunctionOnBus(&addrs->buses[a.bus],
-                                                           &a, function,
-                                                           flags, &found) < 0) {
-                goto error;
-            }
-
-            if (found)
-                goto success;
-        }
     }
 
     virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -850,9 +824,6 @@ virDomainPCIAddressReserveNextAddr(virDomainPCIAddressSetPtr addrs,
 
     if (virDomainPCIAddressReserveAddrInternal(addrs, &addr, flags, false) < 0)
         return -1;
-
-    addrs->lastaddr = addr;
-    addrs->lastFlags = flags;
 
     if (!addrs->dryRun) {
         dev->type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
