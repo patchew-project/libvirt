@@ -971,6 +971,7 @@ virNWFilterObjListAssignDef;
 virNWFilterObjListExport;
 virNWFilterObjListFindByName;
 virNWFilterObjListFindByUUID;
+virNWFilterObjListFindInstantiateFilter;
 virNWFilterObjListFree;
 virNWFilterObjListGetNames;
 virNWFilterObjListLoadAllConfigs;
