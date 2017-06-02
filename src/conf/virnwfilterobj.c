@@ -507,10 +507,13 @@ virNWFilterObjListLoadConfig(virNWFilterObjListPtr nwfilters,
     def = NULL;
     objdef = obj->def;
 
-    /* We generated a UUID, make it permanent by saving the config to disk */
+    /* We generated a UUID, atttempt to make it permanent by saving the
+     * config to disk. If not successful, no need to fail or remove the
+     * object as a future load would regenerate a UUID and try again,
+     * but the existing config would still exist and can be used. */
     if (!objdef->uuid_specified &&
         virNWFilterSaveConfig(configDir, objdef) < 0)
-        goto error;
+        VIR_INFO("failed to save generated UUID for filter '%s'", objdef->name);
 
     VIR_FREE(configFile);
     return obj;
