@@ -303,13 +303,22 @@ virNWFilterObjListFindByName(virNWFilterObjListPtr nwfilters,
 }
 
 
+/**
+ * To avoid the need to have recursive locks as a result of how the
+ * virNWFilterInstantiateFilter processing works, this API will not
+ * lock the returned object, instead just increase the refcnt of the
+ * object to the caller to allow the caller to handle.
+ */
 virNWFilterObjPtr
 virNWFilterObjListFindInstantiateFilter(virNWFilterObjListPtr nwfilters,
                                         const char *filtername)
 {
     virNWFilterObjPtr obj;
 
-    if (!(obj = virNWFilterObjListFindByName(nwfilters, filtername))) {
+    virObjectLock(nwfilters);
+    obj = virNWFilterObjListFindByNameLocked(nwfilters, filtername);
+    virObjectUnlock(nwfilters);
+    if (!obj) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("referenced filter '%s' is missing"), filtername);
         return NULL;
@@ -318,7 +327,7 @@ virNWFilterObjListFindInstantiateFilter(virNWFilterObjListPtr nwfilters,
     if (virNWFilterObjWantRemoved(obj)) {
         virReportError(VIR_ERR_NO_NWFILTER,
                        _("Filter '%s' is in use."), filtername);
-        virNWFilterObjEndAPI(&obj);
+        virNWFilterObjUnref(obj);
         return NULL;
     }
 

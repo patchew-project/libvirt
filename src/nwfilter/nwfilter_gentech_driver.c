@@ -56,19 +56,25 @@ static virNWFilterTechDriverPtr filter_tech_drivers[] = {
     NULL
 };
 
-/* Serializes instantiation of filters. This is necessary
- * to avoid lock ordering deadlocks. eg virNWFilterInstantiateFilterUpdate
- * will hold a lock on a virNWFilterObjPtr. This in turn invokes
- * virNWFilterDoInstantiate which invokes virNWFilterDetermineMissingVarsRec
- * which invokes virNWFilterObjListFindInstantiateFilter. This iterates over
- * every single virNWFilterObjPtr in the list. So if 2 threads try to
- * instantiate a filter in parallel, they'll both hold 1 lock at the top level
- * in virNWFilterInstantiateFilterUpdate which will cause the other thread
- * to deadlock in virNWFilterObjListFindInstantiateFilter.
+/* NB: Usage of virNWFilterObjListFindInstantiateFilter will only not lock
+ * the returned object - only increase the refcnt. This is necessary to avoid
+ * lock ordering deadlocks or the need for recursive locks for filter objects.
+ * Since the objects are only used to access the @def for <filterref> and
+ * <rule> elements and having the @def disappear would not be good, but
+ * keeping the locks causes too many problems.
  *
- * XXX better long term solution is to make virNWFilterObjList use a
- * hash table as is done for virDomainObjList. You can then get
- * lockless lookup of objects by name.
+ * During virNWFilterDefToInst processing an object is fetched and placed
+ * into the inst->filters lookaside list during virNWFilterIncludeDefToRuleInst
+ * processing which then recursively calls virNWFilterDefToInst. When the
+ * object is removed during virNWFilterInstReset, the refcnt is decremented.
+ *
+ * Since virNWFilterDefToInst is called during virNWFilterDoInstantiate
+ * processing which can also invoke virNWFilterDetermineMissingVarsRec
+ * which invokes virNWFilterObjListFindInstantiateFilter also taking
+ * reference. In addition the virNWFilterInstantiateFilterUpdate could
+ * have caused locking collisions, so removing the locks from the
+ * equation and replacing with just references ensures that the object
+ * cannot be removed whilst this instantiation is taking place.
  */
 static virMutex updateMutex;
 
@@ -315,7 +321,7 @@ virNWFilterInstReset(virNWFilterInstPtr inst)
     size_t i;
 
     for (i = 0; i < inst->nfilters; i++)
-        virNWFilterObjEndAPI(&inst->filters[i]);
+        virNWFilterObjUnref(inst->filters[i]);
     VIR_FREE(inst->filters);
     inst->nfilters = 0;
 
@@ -425,7 +431,7 @@ virNWFilterIncludeDefToRuleInst(virNWFilterDriverStatePtr driver,
     if (ret < 0)
         virNWFilterInstReset(inst);
     virNWFilterHashTableFree(tmpvars);
-    virNWFilterObjEndAPI(&obj);
+    virNWFilterObjUnref(obj);
     return ret;
 }
 
@@ -546,7 +552,7 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
                                                             vars);
             if (!tmpvars) {
                 rc = -1;
-                virNWFilterObjEndAPI(&obj);
+                virNWFilterObjUnref(obj);
                 break;
             }
 
@@ -570,7 +576,7 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
 
             virNWFilterHashTableFree(tmpvars);
 
-            virNWFilterObjEndAPI(&obj);
+            virNWFilterObjUnref(obj);
             if (rc < 0)
                 break;
         }
@@ -844,7 +850,7 @@ virNWFilterInstantiateFilterUpdate(virNWFilterDriverStatePtr driver,
     virNWFilterHashTableFree(vars1);
 
  err_exit:
-    virNWFilterObjEndAPI(&obj);
+    virNWFilterObjUnref(obj);
 
     VIR_FREE(str_ipaddr);
     VIR_FREE(str_macaddr);
