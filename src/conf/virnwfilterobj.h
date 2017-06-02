@@ -70,7 +70,8 @@ virNWFilterObjListFindByName(virNWFilterObjListPtr nwfilters,
 
 virNWFilterObjPtr
 virNWFilterObjListAssignDef(virNWFilterObjListPtr nwfilters,
-                            virNWFilterDefPtr def);
+                            virNWFilterDefPtr def,
+                            const char *configDir);
 
 int
 virNWFilterObjTestUnassignDef(virNWFilterObjPtr obj);
@@ -98,8 +99,7 @@ virNWFilterObjListExport(virConnectPtr conn,
                          virNWFilterObjListFilter aclfilter);
 
 int
-virNWFilterObjSaveConfig(virNWFilterObjPtr obj,
-                         const char *configDir);
+virNWFilterObjSaveConfig(virNWFilterObjPtr obj);
 
 int
 virNWFilterObjListLoadAllConfigs(virNWFilterObjListPtr nwfilters,

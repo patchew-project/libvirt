@@ -40,6 +40,8 @@ struct _virNWFilterObj {
 
     virNWFilterDefPtr def;
     virNWFilterDefPtr newDef;
+
+    char *configFile;
 };
 
 struct _virNWFilterObjList {
@@ -95,6 +97,7 @@ virNWFilterObjFree(virNWFilterObjPtr obj)
     if (!obj)
         return;
 
+    VIR_FREE(obj->configFile);
     virNWFilterDefFree(obj->def);
     virNWFilterDefFree(obj->newDef);
 
@@ -296,7 +299,8 @@ virNWFilterDefEqual(const virNWFilterDef *def1,
 
 virNWFilterObjPtr
 virNWFilterObjListAssignDef(virNWFilterObjListPtr nwfilters,
-                            virNWFilterDefPtr def)
+                            virNWFilterDefPtr def,
+                            const char *configDir)
 {
     virNWFilterObjPtr obj;
     virNWFilterDefPtr objdef;
@@ -360,15 +364,20 @@ virNWFilterObjListAssignDef(virNWFilterObjListPtr nwfilters,
     if (!(obj = virNWFilterObjNew()))
         return NULL;
 
-    if (VIR_APPEND_ELEMENT_COPY(nwfilters->objs,
-                                nwfilters->count, obj) < 0) {
-        virNWFilterObjUnlock(obj);
-        virNWFilterObjFree(obj);
-        return NULL;
-    }
+    if (!(obj->configFile = virFileBuildPath(configDir, def->name, ".xml")))
+        goto error;
+
+    if (VIR_APPEND_ELEMENT_COPY(nwfilters->objs, nwfilters->count, obj) < 0)
+        goto error;
+
     obj->def = def;
 
     return obj;
+
+ error:
+    virNWFilterObjUnlock(obj);
+    virNWFilterObjFree(obj);
+    return NULL;
 }
 
 
@@ -479,28 +488,22 @@ virNWFilterObjListExport(virConnectPtr conn,
 
 
 int
-virNWFilterObjSaveConfig(virNWFilterObjPtr obj,
-                         const char *configDir)
+virNWFilterObjSaveConfig(virNWFilterObjPtr obj)
 {
     virNWFilterDefPtr def = obj->def;
     int ret = -1;
     char *xml;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
-    char *configFile = NULL;
 
     if (!(xml = virNWFilterDefFormat(def)))
         goto cleanup;
 
-    if (!(configFile = virFileBuildPath(configDir, def->name, ".xml")))
-        goto cleanup;
-
     virUUIDFormat(def->uuid, uuidstr);
-    ret = virXMLSaveFile(configFile,
+    ret = virXMLSaveFile(obj->configFile,
                          virXMLPickShellSafeComment(def->name, uuidstr),
                          "nwfilter-edit", xml);
 
  cleanup:
-    VIR_FREE(configFile);
     VIR_FREE(xml);
     return ret;
 }
@@ -530,7 +533,7 @@ virNWFilterObjListLoadConfig(virNWFilterObjListPtr nwfilters,
         goto error;
     }
 
-    if (!(obj = virNWFilterObjListAssignDef(nwfilters, def)))
+    if (!(obj = virNWFilterObjListAssignDef(nwfilters, def, configDir)))
         goto error;
     def = NULL;
     objdef = obj->def;
@@ -539,8 +542,7 @@ virNWFilterObjListLoadConfig(virNWFilterObjListPtr nwfilters,
      * config to disk. If not successful, no need to fail or remove the
      * object as a future load would regenerate a UUID and try again,
      * but the existing config would still exist and can be used. */
-    if (!objdef->uuid_specified &&
-        virNWFilterObjSaveConfig(objdef, configDir) < 0)
+    if (!objdef->uuid_specified && virNWFilterObjSaveConfig(obj) < 0)
         VIR_INFO("failed to save generated UUID for filter '%s'", objdef->name);
 
     VIR_FREE(configFile);
