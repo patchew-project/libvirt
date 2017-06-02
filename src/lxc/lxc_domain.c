@@ -389,6 +389,20 @@ virLXCDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
         dev->data.chr->targetType == VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_NONE)
         dev->data.chr->targetType = VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_LXC;
 
+    if (dev->type == VIR_DOMAIN_DEVICE_CONTROLLER) {
+        virDomainControllerDefPtr cont = dev->data.controller;
+
+        if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI &&
+            (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT ||
+             cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT) &&
+            cont->idx != 0) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("pci-root and pcie-root controllers "
+                             "should have index 0"));
+            return -1;
+        }
+    }
+
     return 0;
 }
 
