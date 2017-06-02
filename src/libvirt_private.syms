@@ -2270,6 +2270,8 @@ virObjectListFreeCount;
 virObjectLock;
 virObjectLockableNew;
 virObjectNew;
+virObjectPoolableHashElementGetPrimaryKey;
+virObjectPoolableHashElementGetSecondaryKey;
 virObjectPoolableHashElementNew;
 virObjectRef;
 virObjectUnlock;
