@@ -113,7 +113,6 @@ virDomainPCIAddressReserveNextAddr;
 virDomainPCIAddressSetAllMulti;
 virDomainPCIAddressSetAlloc;
 virDomainPCIAddressSetFree;
-virDomainPCIAddressSetGrow;
 virDomainPCIAddressSlotInUse;
 virDomainPCIAddressValidate;
 virDomainPCIControllerModelToConnectType;
