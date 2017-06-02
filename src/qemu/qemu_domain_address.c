@@ -901,6 +901,82 @@ qemuDomainFillAllPCIConnectFlags(virDomainDefPtr def,
 
 
 /**
+ * qemuDomainFillDeviceIsolationGroupIter:
+ * @def: domain definition
+ * @dev: device definition
+ * @info: device information
+ * @opaque: user data
+ *
+ * Fill isolation group information for a single device.
+ *
+ * You're not meant to call this directly, use
+ * qemuDomainFillAllIsolationGroups() instead.
+ *
+ * Return: 0 on success, <0 on failure
+ * */
+static int
+qemuDomainFillDeviceIsolationGroupIter(virDomainDefPtr def,
+                                       virDomainDeviceDefPtr dev,
+                                       virDomainDeviceInfoPtr info,
+                                       void *opaque ATTRIBUTE_UNUSED)
+{
+    virDomainHostdevDefPtr hostdev;
+    virPCIDeviceAddressPtr hostAddr;
+
+    /* Only pSeries guests care about isolation groups at the moment */
+    if (!qemuDomainIsPSeries(def))
+        return 0;
+
+    /* Only hostdev... */
+    if (dev->type != VIR_DOMAIN_DEVICE_HOSTDEV)
+        return 0;
+
+    hostdev = dev->data.hostdev;
+
+    /* ... of the PCI kind need this extra information */
+    if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS ||
+        hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI) {
+        return 0;
+    }
+
+    hostAddr = &hostdev->source.subsys.u.pci.addr;
+
+    /* The isolation group is simply the IOMMU group assigned by the host */
+    info->isolationGroup = virPCIDeviceAddressGetIOMMUGroupNum(hostAddr);
+
+    if (info->isolationGroup < 0) {
+        VIR_WARN("Can't look up isolation group for device %04x:%02x:%02x.%x",
+                 hostAddr->domain, hostAddr->bus,
+                 hostAddr->slot, hostAddr->function);
+    } else {
+        VIR_DEBUG("Isolation group for device %04x:%02x:%02x.%x is %d",
+                  hostAddr->domain, hostAddr->bus,
+                  hostAddr->slot, hostAddr->function,
+                  info->isolationGroup);
+    }
+
+    return info->isolationGroup;
+}
+
+
+/**
+ * qemuDomainFillAllIsolationGroups:
+ * @def: domain definition
+ *
+ * Fill isolation group information for all devices in @def.
+ *
+ * Return: 0 on success, <0 on failure
+ */
+static int
+qemuDomainFillAllIsolationGroups(virDomainDefPtr def)
+{
+    return virDomainDeviceInfoIterate(def,
+                                      qemuDomainFillDeviceIsolationGroupIter,
+                                      NULL);
+}
+
+
+/**
  * qemuDomainFillDevicePCIConnectFlags:
  *
  * @def: the entire DomainDef
@@ -2034,6 +2110,9 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
      * bus when assigning addresses.
      */
     if (qemuDomainFillAllPCIConnectFlags(def, qemuCaps, driver) < 0)
+        goto cleanup;
+
+    if (qemuDomainFillAllIsolationGroups(def) < 0)
         goto cleanup;
 
     if (nbuses > 0) {
