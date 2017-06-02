@@ -1032,7 +1032,8 @@ qemuDomainCollectPCIAddress(virDomainDefPtr def ATTRIBUTE_UNUSED,
     }
 
     if (virDomainPCIAddressReserveAddr(addrs, addr,
-                                       info->pciConnectFlags) < 0) {
+                                       info->pciConnectFlags,
+                                       info->isolationGroup) < 0) {
         goto cleanup;
     }
 
@@ -1076,6 +1077,8 @@ qemuDomainPCIAddressSetCreate(virDomainDefPtr def,
 
         if (virDomainPCIAddressBusSetModel(&addrs->buses[idx], cont->model) < 0)
             goto error;
+
+        addrs->buses[idx].isolationGroup = cont->opts.pciopts.isolationGroup;
 
         if (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT)
             hasPCIeRoot = true;
@@ -1193,7 +1196,7 @@ qemuDomainValidateDevicePCISlotsPIIX3(virDomainDefPtr def,
     if (addrs->nbuses) {
         memset(&tmp_addr, 0, sizeof(tmp_addr));
         tmp_addr.slot = 1;
-        if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags) < 0)
+        if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags, 0) < 0)
             goto cleanup;
     }
 
@@ -1228,7 +1231,7 @@ qemuDomainValidateDevicePCISlotsPIIX3(virDomainDefPtr def,
                     goto cleanup;
                 }
             } else {
-                if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags) < 0)
+                if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags, 0) < 0)
                     goto cleanup;
                 primaryVideo->info.addr.pci = tmp_addr;
                 primaryVideo->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
@@ -1253,7 +1256,7 @@ qemuDomainValidateDevicePCISlotsPIIX3(virDomainDefPtr def,
             VIR_DEBUG("PCI address 0:0:2.0 in use, future addition of a video"
                       " device will not be possible without manual"
                       " intervention");
-        } else if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags) < 0) {
+        } else if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags, 0) < 0) {
             goto cleanup;
         }
     }
@@ -1329,10 +1332,8 @@ qemuDomainValidateDevicePCISlotsQ35(virDomainDefPtr def,
                         assign = true;
                 }
                 if (assign) {
-                    if (virDomainPCIAddressReserveAddr(addrs,
-                                                       &tmp_addr, flags) < 0) {
+                    if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags, 0) < 0)
                         goto cleanup;
-                    }
 
                     cont->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
                     cont->info.addr.pci.domain = 0;
@@ -1354,10 +1355,8 @@ qemuDomainValidateDevicePCISlotsQ35(virDomainDefPtr def,
                 memset(&tmp_addr, 0, sizeof(tmp_addr));
                 tmp_addr.slot = 0x1E;
                 if (!virDomainPCIAddressSlotInUse(addrs, &tmp_addr)) {
-                    if (virDomainPCIAddressReserveAddr(addrs,
-                                                       &tmp_addr, flags) < 0) {
+                    if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags, 0) < 0)
                         goto cleanup;
-                    }
 
                     cont->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
                     cont->info.addr.pci.domain = 0;
@@ -1380,12 +1379,12 @@ qemuDomainValidateDevicePCISlotsQ35(virDomainDefPtr def,
         tmp_addr.slot = 0x1F;
         tmp_addr.function = 0;
         tmp_addr.multi = VIR_TRISTATE_SWITCH_ON;
-        if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags) < 0)
+        if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags, 0) < 0)
            goto cleanup;
 
         tmp_addr.function = 3;
         tmp_addr.multi = VIR_TRISTATE_SWITCH_ABSENT;
-        if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags) < 0)
+        if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags, 0) < 0)
            goto cleanup;
     }
 
@@ -1419,7 +1418,7 @@ qemuDomainValidateDevicePCISlotsQ35(virDomainDefPtr def,
                     goto cleanup;
                 }
             } else {
-                if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags) < 0)
+                if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags, 0) < 0)
                     goto cleanup;
                 primaryVideo->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
                 primaryVideo->info.addr.pci = tmp_addr;
@@ -1445,8 +1444,7 @@ qemuDomainValidateDevicePCISlotsQ35(virDomainDefPtr def,
                       " device will not be possible without manual"
                       " intervention");
             virResetLastError();
-        } else if (virDomainPCIAddressReserveAddr(addrs,
-                                                  &tmp_addr, flags) < 0) {
+        } else if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags, 0) < 0) {
             goto cleanup;
         }
     }
@@ -1467,7 +1465,7 @@ qemuDomainValidateDevicePCISlotsQ35(virDomainDefPtr def,
                 !virDeviceInfoPCIAddressWanted(&sound->info)) {
                 continue;
             }
-            if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags) < 0)
+            if (virDomainPCIAddressReserveAddr(addrs, &tmp_addr, flags, 0) < 0)
                 goto cleanup;
 
             sound->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
@@ -1684,7 +1682,8 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
             if (foundAddr) {
                 /* Reserve this function on the slot we found */
                 if (virDomainPCIAddressReserveAddr(addrs, &addr,
-                                                   cont->info.pciConnectFlags) < 0) {
+                                                   cont->info.pciConnectFlags,
+                                                   cont->info.isolationGroup) < 0) {
                     goto error;
                 }
 
@@ -2150,6 +2149,7 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
             }
             dev.type = VIR_DOMAIN_DEVICE_CONTROLLER;
             dev.data.controller = def->controllers[contIndex];
+            dev.data.controller->opts.pciopts.isolationGroup = bus->isolationGroup;
             /* set connect flags so it will be properly addressed */
             qemuDomainFillDevicePCIConnectFlags(def, &dev, qemuCaps, driver);
 

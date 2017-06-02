@@ -365,7 +365,8 @@ virDomainPCIAddressBusSetModel(virDomainPCIAddressBusPtr bus,
 static int
 virDomainPCIAddressSetGrow(virDomainPCIAddressSetPtr addrs,
                            virPCIDeviceAddressPtr addr,
-                           virDomainPCIConnectFlags flags)
+                           virDomainPCIConnectFlags flags,
+                           int isolationGroup)
 {
     int add;
     size_t i;
@@ -492,6 +493,9 @@ virDomainPCIAddressSetGrow(virDomainPCIAddressSetPtr addrs,
     for (; i < addrs->nbuses; i++) {
         if (virDomainPCIAddressBusSetModel(&addrs->buses[i], model) < 0)
             return -1;
+
+        /* Set isolation group for the new bus */
+        addrs->buses[i].isolationGroup = isolationGroup;
     }
 
     return add;
@@ -534,6 +538,7 @@ static int ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
 virDomainPCIAddressReserveAddrInternal(virDomainPCIAddressSetPtr addrs,
                                        virPCIDeviceAddressPtr addr,
                                        virDomainPCIConnectFlags flags,
+                                       int isolationGroup,
                                        bool fromConfig)
 {
     int ret = -1;
@@ -546,8 +551,10 @@ virDomainPCIAddressReserveAddrInternal(virDomainPCIAddressSetPtr addrs,
         goto cleanup;
 
     /* Add an extra bus if necessary */
-    if (addrs->dryRun && virDomainPCIAddressSetGrow(addrs, addr, flags) < 0)
+    if (addrs->dryRun &&
+        virDomainPCIAddressSetGrow(addrs, addr, flags, isolationGroup) < 0) {
         goto cleanup;
+    }
     /* Check that the requested bus exists, is the correct type, and we
      * are asking for a valid slot
      */
@@ -586,9 +593,11 @@ virDomainPCIAddressReserveAddrInternal(virDomainPCIAddressSetPtr addrs,
 int
 virDomainPCIAddressReserveAddr(virDomainPCIAddressSetPtr addrs,
                                virPCIDeviceAddressPtr addr,
-                               virDomainPCIConnectFlags flags)
+                               virDomainPCIConnectFlags flags,
+                               int isolationGroup)
 {
-    return virDomainPCIAddressReserveAddrInternal(addrs, addr, flags, true);
+    return virDomainPCIAddressReserveAddrInternal(addrs, addr, flags,
+                                                  isolationGroup, true);
 }
 
 int
@@ -624,7 +633,8 @@ virDomainPCIAddressEnsureAddr(virDomainPCIAddressSetPtr addrs,
             goto cleanup;
 
         ret = virDomainPCIAddressReserveAddrInternal(addrs, &dev->addr.pci,
-                                                     flags, true);
+                                                     flags, dev->isolationGroup,
+                                                     true);
     } else {
         ret = virDomainPCIAddressReserveNextAddr(addrs, dev, flags, -1);
     }
@@ -745,6 +755,7 @@ static int ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
 virDomainPCIAddressGetNextAddr(virDomainPCIAddressSetPtr addrs,
                                virPCIDeviceAddressPtr next_addr,
                                virDomainPCIConnectFlags flags,
+                               int isolationGroup,
                                int function)
 {
     virPCIDeviceAddress a = { 0 };
@@ -765,6 +776,10 @@ virDomainPCIAddressGetNextAddr(virDomainPCIAddressSetPtr addrs,
     for (a.bus = 0; a.bus < addrs->nbuses; a.bus++) {
         bool found = false;
 
+        /* Isolation groups for bus and device must match */
+        if (addrs->buses[a.bus].isolationGroup != isolationGroup)
+            continue;
+
         a.slot = addrs->buses[a.bus].minSlot;
 
         if (virDomainPCIAddressFindUnusedFunctionOnBus(&addrs->buses[a.bus],
@@ -780,7 +795,7 @@ virDomainPCIAddressGetNextAddr(virDomainPCIAddressSetPtr addrs,
     /* There were no free slots after the last used one */
     if (addrs->dryRun) {
         /* a is already set to the first new bus */
-        if (virDomainPCIAddressSetGrow(addrs, &a, flags) < 0)
+        if (virDomainPCIAddressSetGrow(addrs, &a, flags, isolationGroup) < 0)
             goto error;
         /* this device will use the first slot of the new bus */
         a.slot = addrs->buses[a.bus].minSlot;
@@ -825,10 +840,12 @@ virDomainPCIAddressReserveNextAddr(virDomainPCIAddressSetPtr addrs,
 {
     virPCIDeviceAddress addr;
 
-    if (virDomainPCIAddressGetNextAddr(addrs, &addr, flags, function) < 0)
+    if (virDomainPCIAddressGetNextAddr(addrs, &addr, flags,
+                                       dev->isolationGroup, function) < 0)
         return -1;
 
-    if (virDomainPCIAddressReserveAddrInternal(addrs, &addr, flags, false) < 0)
+    if (virDomainPCIAddressReserveAddrInternal(addrs, &addr, flags,
+                                               dev->isolationGroup, false) < 0)
         return -1;
 
     if (!addrs->dryRun) {

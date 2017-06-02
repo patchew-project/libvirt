@@ -163,6 +163,10 @@ struct _virDomainDeviceInfo {
      * assignment, never saved and never reported.
      */
     int pciConnectFlags; /* enum virDomainPCIConnectFlags */
+
+    /* PCI devices will only be automatically placed on a PCI bus
+     * that shares the same isolation group */
+    int isolationGroup;
 };
 
 

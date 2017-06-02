@@ -100,6 +100,10 @@ typedef struct {
      * bit is set, that function is in use by a device.
      */
     virDomainPCIAddressSlot slot[VIR_PCI_ADDRESS_SLOT_LAST + 1];
+
+    /* PCI devices will only be automatically placed on a PCI bus
+     * that shares the same isolation group */
+    int isolationGroup;
 } virDomainPCIAddressBus;
 typedef virDomainPCIAddressBus *virDomainPCIAddressBusPtr;
 
@@ -147,7 +151,8 @@ bool virDomainPCIAddressSlotInUse(virDomainPCIAddressSetPtr addrs,
 
 int virDomainPCIAddressReserveAddr(virDomainPCIAddressSetPtr addrs,
                                    virPCIDeviceAddressPtr addr,
-                                   virDomainPCIConnectFlags flags)
+                                   virDomainPCIConnectFlags flags,
+                                   int isolationGroup)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
 int virDomainPCIAddressReserveNextAddr(virDomainPCIAddressSetPtr addrs,

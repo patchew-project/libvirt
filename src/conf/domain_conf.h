@@ -786,6 +786,10 @@ struct _virDomainPCIControllerOpts {
      * item in memory target config) -1 == unspecified
      */
     int numaNode;
+
+    /* PCI devices will only be automatically placed on a PCI bus
+     * that shares the same isolation group */
+    int isolationGroup;
 };
 
 typedef struct _virDomainUSBControllerOpts virDomainUSBControllerOpts;
