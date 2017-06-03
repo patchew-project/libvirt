@@ -918,7 +918,6 @@ virSecretLoad(virSecretObjListPtr secrets,
 {
     virSecretDefPtr def = NULL;
     virSecretObjPtr obj = NULL;
-    virSecretObjPtr ret = NULL;
 
     if (!(def = virSecretDefParseFile(path)))
         goto cleanup;
@@ -930,16 +929,15 @@ virSecretLoad(virSecretObjListPtr secrets,
         goto cleanup;
     def = NULL;
 
-    if (virSecretLoadValue(obj) < 0)
-        goto cleanup;
-
-    ret = obj;
-    obj = NULL;
+    if (virSecretLoadValue(obj) < 0) {
+        virSecretObjListRemove(secrets, obj);
+        virObjectUnref(obj);
+        obj = NULL;
+    }
 
  cleanup:
-    virSecretObjListRemove(secrets, obj);
     virSecretDefFree(def);
-    return ret;
+    return obj;
 }
 
 
