@@ -87,7 +87,7 @@ virSecretObjOnceInit(void)
 VIR_ONCE_GLOBAL_INIT(virSecretObj)
 
 static virSecretObjPtr
-virSecretObjNew(void)
+virSecretObjNew(virSecretDefPtr def)
 {
     virSecretObjPtr obj;
 
@@ -98,6 +98,7 @@ virSecretObjNew(void)
         return NULL;
 
     virObjectLock(obj);
+    obj->def = def;
 
     return obj;
 }
@@ -384,20 +385,23 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
         goto error;
     }
 
-    if (!(obj = virSecretObjNew()))
+    if (!(obj = virSecretObjNew(newdef)))
         goto cleanup;
 
     /* Generate the possible configFile and base64File strings
      * using the configDir, uuidstr, and appropriate suffix
      */
     if (!(obj->configFile = virFileBuildPath(configDir, uuidstr, ".xml")) ||
-        !(obj->base64File = virFileBuildPath(configDir, uuidstr, ".base64")))
+        !(obj->base64File = virFileBuildPath(configDir, uuidstr, ".base64"))) {
+        obj->def = NULL;
         goto error;
+    }
 
-    if (virHashAddEntry(secrets->objs, uuidstr, obj) < 0)
+    if (virHashAddEntry(secrets->objs, uuidstr, obj) < 0) {
+        obj->def = NULL;
         goto error;
+    }
 
-    obj->def = newdef;
     virObjectRef(obj);
 
  cleanup:
