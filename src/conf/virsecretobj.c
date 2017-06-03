@@ -333,7 +333,6 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
 {
     virSecretObjPtr obj;
     virSecretDefPtr objdef;
-    virSecretObjPtr ret = NULL;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
     char *configFile = NULL, *base64File = NULL;
 
@@ -354,13 +353,13 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
                            _("a secret with UUID %s is already defined for "
                              "use with %s"),
                            uuidstr, objdef->usage_id);
-            goto cleanup;
+            goto error;
         }
 
         if (objdef->isprivate && !newdef->isprivate) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("cannot change private flag on existing secret"));
-            goto cleanup;
+            goto error;
         }
 
         if (oldDef)
@@ -368,50 +367,51 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
         else
             virSecretDefFree(objdef);
         obj->def = newdef;
-    } else {
-        /* No existing secret with same UUID,
-         * try look for matching usage instead */
-        if ((obj = virSecretObjListFindByUsageLocked(secrets,
-                                                     newdef->usage_type,
-                                                     newdef->usage_id))) {
-            virObjectLock(obj);
-            objdef = obj->def;
-            virUUIDFormat(objdef->uuid, uuidstr);
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("a secret with UUID %s already defined for "
-                             "use with %s"),
-                           uuidstr, newdef->usage_id);
-            goto cleanup;
-        }
-
-        /* Generate the possible configFile and base64File strings
-         * using the configDir, uuidstr, and appropriate suffix
-         */
-        if (!(configFile = virFileBuildPath(configDir, uuidstr, ".xml")) ||
-            !(base64File = virFileBuildPath(configDir, uuidstr, ".base64")))
-            goto cleanup;
-
-        if (!(obj = virSecretObjNew()))
-            goto cleanup;
-
-        if (virHashAddEntry(secrets->objs, uuidstr, obj) < 0)
-            goto cleanup;
-
-        obj->def = newdef;
-        VIR_STEAL_PTR(obj->configFile, configFile);
-        VIR_STEAL_PTR(obj->base64File, base64File);
-        virObjectRef(obj);
+        goto cleanup;
     }
 
-    ret = obj;
-    obj = NULL;
+    /* No existing secret with same UUID,
+     * try to look for matching usage instead */
+    if ((obj = virSecretObjListFindByUsageLocked(secrets,
+                                                 newdef->usage_type,
+                                                 newdef->usage_id))) {
+        virObjectLock(obj);
+        objdef = obj->def;
+        virUUIDFormat(objdef->uuid, uuidstr);
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("a secret with UUID %s already defined for "
+                         "use with %s"),
+                       uuidstr, newdef->usage_id);
+        goto error;
+    }
+
+    /* Generate the possible configFile and base64File strings
+     * using the configDir, uuidstr, and appropriate suffix
+     */
+    if (!(configFile = virFileBuildPath(configDir, uuidstr, ".xml")) ||
+        !(base64File = virFileBuildPath(configDir, uuidstr, ".base64")))
+        goto cleanup;
+
+    if (!(obj = virSecretObjNew()))
+        goto cleanup;
+
+    if (virHashAddEntry(secrets->objs, uuidstr, obj) < 0)
+        goto error;
+
+    obj->def = newdef;
+    VIR_STEAL_PTR(obj->configFile, configFile);
+    VIR_STEAL_PTR(obj->base64File, base64File);
+    virObjectRef(obj);
 
  cleanup:
-    virSecretObjEndAPI(&obj);
     VIR_FREE(configFile);
     VIR_FREE(base64File);
     virObjectUnlock(secrets);
-    return ret;
+    return obj;
+
+ error:
+    virSecretObjEndAPI(&obj);
+    goto cleanup;
 }
 
 
