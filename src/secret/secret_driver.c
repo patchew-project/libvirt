@@ -210,6 +210,7 @@ secretDefineXML(virConnectPtr conn,
 {
     virSecretPtr ret = NULL;
     virSecretObjPtr obj = NULL;
+    virSecretDefPtr objdef;
     virSecretDefPtr backup = NULL;
     virSecretDefPtr def;
     virObjectEventPtr event = NULL;
@@ -225,8 +226,10 @@ secretDefineXML(virConnectPtr conn,
     if (!(obj = virSecretObjListAdd(driver->secrets, def,
                                     driver->configDir, &backup)))
         goto cleanup;
+    def = NULL;
+    objdef = virSecretObjGetDef(obj);
 
-    if (!def->isephemeral) {
+    if (!objdef->isephemeral) {
         if (backup && backup->isephemeral) {
             if (virSecretObjSaveData(obj) < 0)
                 goto restore_backup;
@@ -248,17 +251,16 @@ secretDefineXML(virConnectPtr conn,
     /* Saved successfully - drop old values */
     virSecretDefFree(backup);
 
-    event = virSecretEventLifecycleNew(def->uuid,
-                                       def->usage_type,
-                                       def->usage_id,
+    event = virSecretEventLifecycleNew(objdef->uuid,
+                                       objdef->usage_type,
+                                       objdef->usage_id,
                                        VIR_SECRET_EVENT_DEFINED,
                                        0);
 
     ret = virGetSecret(conn,
-                       def->uuid,
-                       def->usage_type,
-                       def->usage_id);
-    def = NULL;
+                       objdef->uuid,
+                       objdef->usage_type,
+                       objdef->usage_id);
     goto cleanup;
 
  restore_backup:
