@@ -2020,6 +2020,9 @@ qemuMigrationBeginPhase(virQEMUDriverPtr driver,
          vm->newDef && !qemuDomainVcpuHotplugIsInOrder(vm->newDef)))
         cookieFlags |= QEMU_MIGRATION_COOKIE_CPU_HOTPLUG;
 
+    if (priv->origCPU)
+        cookieFlags |= QEMU_MIGRATION_COOKIE_CPU;
+
     if (!(mig = qemuMigrationEatCookie(driver, vm, NULL, 0, 0)))
         goto cleanup;
 
@@ -2644,7 +2647,8 @@ qemuMigrationPrepareAny(virQEMUDriverPtr driver,
                                        QEMU_MIGRATION_COOKIE_LOCKSTATE |
                                        QEMU_MIGRATION_COOKIE_NBD |
                                        QEMU_MIGRATION_COOKIE_MEMORY_HOTPLUG |
-                                       QEMU_MIGRATION_COOKIE_CPU_HOTPLUG)))
+                                       QEMU_MIGRATION_COOKIE_CPU_HOTPLUG |
+                                       QEMU_MIGRATION_COOKIE_CPU)))
         goto cleanup;
 
     if (STREQ_NULLABLE(protocol, "rdma") &&
@@ -3644,8 +3648,9 @@ qemuMigrationRun(virQEMUDriverPtr driver,
             if (!(persistDef = qemuMigrationPrepareDef(driver, persist_xml,
                                                        NULL, NULL)))
                 goto cleanup;
-        } else if (vm->newDef) {
-            if (!(persistDef = qemuDomainDefCopy(driver, vm->newDef,
+        } else {
+            virDomainDefPtr def = vm->newDef ? vm->newDef : vm->def;
+            if (!(persistDef = qemuDomainDefCopy(driver, def,
                                                  VIR_DOMAIN_XML_SECURE |
                                                  VIR_DOMAIN_XML_MIGRATABLE)))
                 goto cleanup;
