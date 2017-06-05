@@ -276,6 +276,9 @@
               <attribute name='min'>
                 <ref name='unsignedInt'/>
               </attribute>
+              <attribute name='step'>
+                <ref name='unsignedInt'/>
+              </attribute>
               <attribute name='unit'>
                 <ref name='unit'/>
               </attribute>

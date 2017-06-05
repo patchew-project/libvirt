@@ -908,9 +908,10 @@ virCapabilitiesFormatCaches(virBufferPtr buf,
         for (j = 0; j < bank->ncontrols; j++) {
             bool min_kilos = !(bank->controls[j]->min % 1024);
             virBufferAsprintf(&controlBuf,
-                              "<control min='%llu' unit='%s' "
+                              "<control min='%llu' step='%llu' unit='%s' "
                               "type='%s' maxAllocs='%u'/>\n",
                               bank->controls[j]->min >> (min_kilos * 10),
+                              bank->controls[j]->step >> (min_kilos * 10),
                               min_kilos ? "KiB" : "B",
                               virCacheTypeToString(bank->controls[j]->scope),
                               bank->controls[j]->max_allocation);
@@ -1602,6 +1603,8 @@ virCapabilitiesGetCacheControl(virCapsHostCacheBankPtr bank,
     char *cbm_mask = NULL;
     char *type_upper = NULL;
     unsigned int min_cbm_bits = 0;
+    unsigned int cbm_mask_val = 0;
+    unsigned int cbm_mask_len = 0;
     virCapsHostCacheControlPtr control;
 
     if (VIR_ALLOC(control) < 0)
@@ -1632,8 +1635,18 @@ virCapabilitiesGetCacheControl(virCapsHostCacheBankPtr bank,
 
     virStringTrimOptionalNewline(cbm_mask);
 
-    /* cbm_mask: cache bit mask, it's in hex, eg: fffff */
-    control->min = min_cbm_bits * bank->size / (strlen(cbm_mask) * 4);
+    /* cbm_mask: cache bit mask, it's in hex, e.g. fffff or 7ff */
+    if (virStrToLong_uip(cbm_mask, NULL, 16, &cbm_mask_val) < 0)
+        goto cleanup;
+
+    while (cbm_mask_val & 0x1) {
+        cbm_mask_val = cbm_mask_val >> 1;
+        cbm_mask_len ++;
+    }
+
+    control->step = bank->size / cbm_mask_len;
+
+    control->min = min_cbm_bits * control->step;
 
     control->scope = scope;
 
