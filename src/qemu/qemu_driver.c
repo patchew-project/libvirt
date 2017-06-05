@@ -3333,9 +3333,9 @@ qemuDomainSaveInternal(virQEMUDriverPtr driver, virDomainPtr dom,
             virDomainDefFree(def);
             goto endjob;
         }
-        xml = qemuDomainDefFormatLive(driver, def, true, true);
+        xml = qemuDomainDefFormatLive(driver, def, NULL, true, true);
     } else {
-        xml = qemuDomainDefFormatLive(driver, vm->def, true, true);
+        xml = qemuDomainDefFormatLive(driver, vm->def, priv->origCPU, true, true);
     }
     if (!xml) {
         virReportError(VIR_ERR_OPERATION_FAILED,
@@ -14500,7 +14500,8 @@ qemuDomainSnapshotCreateActiveExternal(virConnectPtr conn,
                                                     "snapshot", false)) < 0)
             goto cleanup;
 
-        if (!(xml = qemuDomainDefFormatLive(driver, vm->def, true, true)) ||
+        if (!(xml = qemuDomainDefFormatLive(driver, vm->def, priv->origCPU,
+                                            true, true)) ||
             !(snap->def->cookie = (virObjectPtr) qemuDomainSaveCookieNew(vm)))
             goto cleanup;
 
@@ -14611,6 +14612,7 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
     bool align_match = true;
     virQEMUDriverConfigPtr cfg = NULL;
     virCapsPtr caps = NULL;
+    qemuDomainObjPrivatePtr priv;
 
     virCheckFlags(VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE |
                   VIR_DOMAIN_SNAPSHOT_CREATE_CURRENT |
@@ -14728,6 +14730,8 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
 
     qemuDomainObjSetAsyncJobMask(vm, QEMU_JOB_NONE);
 
+    priv = vm->privateData;
+
     if (redefine) {
         if (virDomainSnapshotRedefinePrep(domain, vm, &def, &snap,
                                           driver->xmlopt,
@@ -14736,7 +14740,8 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
     } else {
         /* Easiest way to clone inactive portion of vm->def is via
          * conversion in and back out of xml.  */
-        if (!(xml = qemuDomainDefFormatLive(driver, vm->def, true, true)) ||
+        if (!(xml = qemuDomainDefFormatLive(driver, vm->def, priv->origCPU,
+                                            true, true)) ||
             !(def->dom = virDomainDefParseString(xml, caps, driver->xmlopt, NULL,
                                                  VIR_DOMAIN_DEF_PARSE_INACTIVE |
                                                  VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE)))
