@@ -152,6 +152,7 @@ typedef struct _virCapsHostCacheControl virCapsHostCacheControl;
 typedef virCapsHostCacheControl *virCapsHostCacheControlPtr;
 struct _virCapsHostCacheControl {
     unsigned long long min; /* minimum cache control size in B */
+    unsigned long long granularity; /* minimum increase step for min in B */
     virCacheType scope;  /* data, code or both */
     unsigned int max_allocation; /* max number of supported allocations */
 };
