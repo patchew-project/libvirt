@@ -14208,6 +14208,14 @@ virDomainIOMMUDefParseXML(xmlNodePtr node,
         }
         iommu->caching_mode = val;
     }
+    VIR_FREE(tmp);
+    if ((tmp = virXPathString("string(./driver/@device_iotlb)", ctxt))) {
+        if ((val = virTristateSwitchTypeFromString(tmp)) < 0) {
+            virReportError(VIR_ERR_XML_ERROR, _("unknown device_iotlb value: %s"), tmp);
+            goto cleanup;
+        }
+        iommu->device_iotlb = val;
+    }
 
     VIR_FREE(tmp);
     if ((tmp = virXPathString("string(./driver/@eim)", ctxt))) {
@@ -24258,7 +24266,8 @@ virDomainIOMMUDefFormat(virBufferPtr buf,
     virBufferAdjustIndent(&childBuf, virBufferGetIndent(buf, false) + 2);
 
     if (iommu->intremap != VIR_TRISTATE_SWITCH_ABSENT ||
-        iommu->caching_mode != VIR_TRISTATE_SWITCH_ABSENT) {
+        iommu->caching_mode != VIR_TRISTATE_SWITCH_ABSENT ||
+        iommu->device_iotlb != VIR_TRISTATE_SWITCH_ABSENT) {
         virBufferAddLit(&childBuf, "<driver");
         if (iommu->intremap != VIR_TRISTATE_SWITCH_ABSENT) {
             virBufferAsprintf(&childBuf, " intremap='%s'",
@@ -24271,6 +24280,10 @@ virDomainIOMMUDefFormat(virBufferPtr buf,
         if (iommu->eim != VIR_TRISTATE_SWITCH_ABSENT) {
             virBufferAsprintf(&childBuf, " eim='%s'",
                               virTristateSwitchTypeToString(iommu->eim));
+        }
+        if (iommu->device_iotlb != VIR_TRISTATE_SWITCH_ABSENT) {
+            virBufferAsprintf(&childBuf, " device_iotlb='%s'",
+                              virTristateSwitchTypeToString(iommu->device_iotlb));
         }
         virBufferAddLit(&childBuf, "/>\n");
     }
