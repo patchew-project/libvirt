@@ -10027,6 +10027,9 @@ virDomainBlockRebase(virDomainPtr dom, const char *disk,
  * or virDomainDetachDevice(), while a copy job is active; they may
  * also restrict a copy job to transient domains.
  *
+ * If @flags contains VIR_DOMAIN_BLOCK_COPY_TRANSIENT_JOB the job will not be
+ * recoverable if the VM is turned of while job is active.
+ *
  * The @disk parameter is either an unambiguous source name of the
  * block device (the <source file='...'/> sub-element, such as
  * "/path/to/image"), or the device target shorthand (the
