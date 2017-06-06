@@ -5324,7 +5324,8 @@ qemuProcessUpdateGuestCPU(virDomainDefPtr def,
         virCPUCompare(caps->host.arch,
                       virQEMUCapsGetHostModel(qemuCaps, def->virtType,
                                               VIR_QEMU_CAPS_HOST_CPU_FULL),
-                      def->cpu, true) < 0)
+                      def->cpu,
+                      def->cpu->fallback != VIR_CPU_FALLBACK_ALLOW) < 0)
         return -1;
 
     if (virCPUUpdate(def->os.arch, def->cpu,
