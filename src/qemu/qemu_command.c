@@ -3361,7 +3361,9 @@ qemuBuildMemoryBackendStr(virJSONValuePtr *backendProps,
         return -1;
 
     if (pagesize || mem->nvdimmPath ||
-        def->mem.source == VIR_DOMAIN_MEMORY_SOURCE_FILE) {
+        def->mem.source == VIR_DOMAIN_MEMORY_SOURCE_FILE ||
+        (memAccess == VIR_DOMAIN_MEMORY_ACCESS_SHARED &&
+         def->mem.nhugepages)) {
         *backendType = "memory-backend-file";
 
         if (mem->nvdimmPath) {
