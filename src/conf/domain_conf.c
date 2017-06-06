@@ -12902,6 +12902,9 @@ virDomainRNGDefParseXML(virDomainXMLOptionPtr xmlopt,
     if (virDomainDeviceInfoParseXML(node, NULL, &def->info, flags) < 0)
         goto error;
 
+    if (virDomainVirtioOptionsParseXML(ctxt, &def->virtio) < 0)
+        goto error;
+
  cleanup:
     VIR_FREE(model);
     VIR_FREE(backend);
@@ -23093,6 +23096,7 @@ virDomainRNGDefFormat(virBufferPtr buf,
 {
     const char *model = virDomainRNGModelTypeToString(def->model);
     const char *backend = virDomainRNGBackendTypeToString(def->backend);
+    virBuffer driverBuf = VIR_BUFFER_INITIALIZER;
 
     virBufferAsprintf(buf, "<rng model='%s'>\n", model);
     virBufferAdjustIndent(buf, 2);
@@ -23119,6 +23123,17 @@ virDomainRNGDefFormat(virBufferPtr buf,
 
     case VIR_DOMAIN_RNG_BACKEND_LAST:
         break;
+    }
+
+    virDomainVirtioOptionsFormat(&driverBuf, def->virtio);
+    if (virBufferCheckError(&driverBuf) < 0)
+        return -1;
+
+    if (virBufferUse(&driverBuf)) {
+        virBufferTrim(&driverBuf, " ", -1);
+        virBufferAddLit(buf, "<driver ");
+        virBufferAddBuffer(buf, &driverBuf);
+        virBufferAddLit(buf, "/>\n");
     }
 
     if (virDomainDeviceInfoNeedsFormat(&def->info, flags)) {
@@ -23149,6 +23164,7 @@ virDomainRNGDefFree(virDomainRNGDefPtr def)
     }
 
     virDomainDeviceInfoClear(&def->info);
+    VIR_FREE(def->virtio);
     VIR_FREE(def);
 }
 
