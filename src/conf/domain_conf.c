@@ -1386,6 +1386,7 @@ void virDomainInputDefFree(virDomainInputDefPtr def)
 
     virDomainDeviceInfoClear(&def->info);
     VIR_FREE(def->source.evdev);
+    VIR_FREE(def->virtio);
     VIR_FREE(def);
 }
 
@@ -11566,6 +11567,9 @@ virDomainInputDefParseXML(const virDomainDef *dom,
                        _("Missing evdev path for input device passthrough"));
         goto error;
     }
+
+    if (virDomainVirtioOptionsParseXML(ctxt, &def->virtio) < 0)
+        goto error;
 
  cleanup:
     VIR_FREE(evdev);
@@ -23359,6 +23363,7 @@ virDomainInputDefFormat(virBufferPtr buf,
     const char *type = virDomainInputTypeToString(def->type);
     const char *bus = virDomainInputBusTypeToString(def->bus);
     virBuffer childbuf = VIR_BUFFER_INITIALIZER;
+    virBuffer driverBuf = VIR_BUFFER_INITIALIZER;
 
     /* don't format keyboard into migratable XML for backward compatibility */
     if (flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE &&
@@ -23382,6 +23387,16 @@ virDomainInputDefFormat(virBufferPtr buf,
                       type, bus);
 
     virBufferAdjustIndent(&childbuf, virBufferGetIndent(buf, false) + 2);
+    virDomainVirtioOptionsFormat(&driverBuf, def->virtio);
+    if (virBufferCheckError(&driverBuf) < 0)
+        return -1;
+
+    if (virBufferUse(&driverBuf)) {
+        virBufferTrim(&driverBuf, " ", -1);
+        virBufferAddLit(&childbuf, "<driver ");
+        virBufferAddBuffer(&childbuf, &driverBuf);
+        virBufferAddLit(&childbuf, "/>\n");
+    }
     virBufferEscapeString(&childbuf, "<source evdev='%s'/>\n", def->source.evdev);
     if (virDomainDeviceInfoFormat(&childbuf, &def->info, flags) < 0)
         return -1;
