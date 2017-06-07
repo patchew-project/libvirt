@@ -10894,8 +10894,10 @@ qemuDomainInterfaceStats(virDomainPtr dom,
 
     /* Check the path is one of the domain's network interfaces. */
     for (i = 0; i < vm->def->nnets; i++) {
-        if (STREQ_NULLABLE(vm->def->nets[i]->ifname, path)) {
-            net = vm->def->nets[i];
+        virDomainNetDefPtr tmp = vm->def->nets[i];
+        if (STREQ_NULLABLE(tmp->ifname, path) ||
+            STREQ(tmp->info.alias, path)) {
+            net = tmp;
             break;
         }
     }

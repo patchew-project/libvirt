@@ -614,7 +614,8 @@ cmdDomiflist(vshControl *ctl, const vshCmd *cmd)
                                 "|./source/@network"
                                 "|./source/@name)", ctxt);
 
-        target = virXPathString("string(./target/@dev)", ctxt);
+        target = virXPathString("string(./target/@dev"
+                                "|./alias/@name)", ctxt);
         model = virXPathString("string(./model/@type)", ctxt);
         mac = virXPathString("string(./mac/@address)", ctxt);
 
