@@ -3289,11 +3289,33 @@ qemuProcessBuildDestroyHugepagesPath(virQEMUDriverPtr driver,
                                      bool build)
 {
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    const long system_pagesize = virGetSystemPageSizeKB();
     char *hugepagePath = NULL;
     size_t i;
+    bool shouldBuild = false;
     int ret = -1;
 
-    if (vm->def->mem.nhugepages) {
+    if (vm->def->mem.source == VIR_DOMAIN_MEMORY_SOURCE_FILE)
+        shouldBuild = true;
+
+    for (i = 0; !shouldBuild && i < vm->def->mem.nhugepages; i++) {
+        if (vm->def->mem.hugepages[i].size != system_pagesize) {
+            shouldBuild = true;
+            break;
+        }
+    }
+
+    for (i = 0; !shouldBuild &&  vm->def->nmems; i++) {
+        if (vm->def->mems[i]->model == VIR_DOMAIN_MEMORY_MODEL_DIMM &&
+            vm->def->mems[i]->pagesize &&
+            vm->def->mems[i]->pagesize != system_pagesize) {
+            shouldBuild = true;
+            break;
+        }
+    }
+
+    if (!build ||
+        (build && shouldBuild)) {
         for (i = 0; i < cfg->nhugetlbfs; i++) {
             VIR_FREE(hugepagePath);
             hugepagePath = qemuGetDomainHugepagePath(vm->def, &cfg->hugetlbfs[i]);
