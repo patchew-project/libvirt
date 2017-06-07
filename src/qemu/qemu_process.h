@@ -194,4 +194,9 @@ int qemuProcessRefreshDisks(virQEMUDriverPtr driver,
                             virDomainObjPtr vm,
                             qemuDomainAsyncJob asyncJob);
 
+int qemuProcessBuildDestroyHugepagesPath(virQEMUDriverPtr driver,
+                                         virDomainObjPtr vm,
+                                         virDomainMemoryDefPtr mem,
+                                         bool build);
+
 #endif /* __QEMU_PROCESS_H__ */
