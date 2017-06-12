@@ -6487,6 +6487,7 @@ qemuMonitorJSONAttachCharDevCommand(const char *chrID,
 
             if (virJSONValueObjectAppendString(data, "tls-creds", tlsalias) < 0)
                 goto error;
+            VIR_FREE(tlsalias);
         }
         break;
 
