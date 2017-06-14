@@ -1734,6 +1734,9 @@ mymain(void)
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
             QEMU_CAPS_DEVICE_QXL,
             QEMU_CAPS_QXL_MAX_OUTPUTS);
+    DO_TEST("video-vga-qxl-heads",
+            QEMU_CAPS_DEVICE_QXL,
+            QEMU_CAPS_QXL_MAX_OUTPUTS);
     DO_TEST("video-qxl-noheads",
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
             QEMU_CAPS_DEVICE_QXL,

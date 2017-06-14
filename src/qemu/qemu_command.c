@@ -4613,6 +4613,14 @@ qemuBuildVgaVideoCommand(virCommandPtr cmd,
             virCommandAddArgFormat(cmd, "%s.vgamem_mb=%u",
                                    dev, vgamem / 1024);
         }
+
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_QXL_MAX_OUTPUTS))
+            video->heads = 0;
+        if (video->heads) {
+            virCommandAddArg(cmd, "-global");
+            virCommandAddArgFormat(cmd, "%s.max_outputs=%u",
+                                   dev, video->heads);
+        }
     }
 
     if (video->vram &&
