@@ -5456,7 +5456,7 @@ qemuProcessPrepareDomain(virConnectPtr conn,
         if (virDomainDefNeedsPlacementAdvice(vm->def)) {
             nodeset = virNumaGetAutoPlacementAdvice(virDomainDefGetVcpus(vm->def),
                                                     virDomainDefGetMemoryTotal(vm->def));
-            if (!nodeset)
+            if (virStringIsEmpty(nodeset))
                 goto cleanup;
 
             VIR_DEBUG("Nodeset returned from numad: %s", nodeset);
