@@ -5032,7 +5032,7 @@ qemuMigrationPerform(virQEMUDriverPtr driver,
 }
 
 static int
-qemuMigrationVPAssociatePortProfiles(virDomainDefPtr def)
+qemuMigrationVPAssociatePortProfiles(virDomainDefPtr def, const char *stateDir)
 {
     size_t i;
     int last_good_net = -1;
@@ -5041,6 +5041,20 @@ qemuMigrationVPAssociatePortProfiles(virDomainDefPtr def)
     for (i = 0; i < def->nnets; i++) {
         net = def->nets[i];
         if (virDomainNetGetActualType(net) == VIR_DOMAIN_NET_TYPE_DIRECT) {
+            if ((!virDomainNetGetActualVirtPortProfile(net) || (virDomainNetGetActualVirtPortProfile(net) &&
+                 virDomainNetGetActualVirtPortProfile(net)->virtPortType != VIR_NETDEV_VPORT_PROFILE_8021QBG &&
+                virDomainNetGetActualVirtPortProfile(net)->virtPortType != VIR_NETDEV_VPORT_PROFILE_8021QBH)) &&
+                virDomainNetGetActualDirectMode(net) ==
+                 VIR_NETDEV_MACVLAN_MODE_PASSTHRU) {
+                if (virNetDevSaveNetConfig(virDomainNetGetActualDirectDev(net),
+                    -1, stateDir, false) < 0) {
+                    goto err_exit;
+                }
+                if (virNetDevSetNetConfig(virDomainNetGetActualDirectDev(net),
+                    -1, NULL, virDomainNetGetActualVlan(net), &net->mac, false) < 0) {
+                    goto err_exit;
+                }
+            }
             if (virNetDevVPortProfileAssociate(net->ifname,
                                                virDomainNetGetActualVirtPortProfile(net),
                                                &net->mac,
@@ -5215,7 +5229,7 @@ qemuMigrationFinish(virQEMUDriverPtr driver,
         goto endjob;
     }
 
-    if (qemuMigrationVPAssociatePortProfiles(vm->def) < 0)
+    if (qemuMigrationVPAssociatePortProfiles(vm->def, cfg->stateDir) < 0)
         goto endjob;
 
     if (mig->network && qemuDomainMigrateOPDRelocate(driver, vm, mig) < 0)
