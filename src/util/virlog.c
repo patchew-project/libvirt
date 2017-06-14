@@ -32,6 +32,9 @@
 #include <unistd.h>
 #include <execinfo.h>
 #include <regex.h>
+#if HAVE_SYS_UIO_H
+# include <sys/uio.h>
+#endif
 #if HAVE_SYSLOG_H
 # include <syslog.h>
 #endif
