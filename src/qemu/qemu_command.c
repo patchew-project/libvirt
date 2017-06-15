@@ -3955,6 +3955,9 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
         }
         if (net->tune.sndbuf_specified)
             virBufferAsprintf(&buf, "sndbuf=%lu,", net->tune.sndbuf);
+        if (net->driver.virtio.pollus)
+            virBufferAsprintf(&buf, "poll-us=%u,",
+                              net->driver.virtio.pollus);
     }
 
     virObjectUnref(cfg);
@@ -8449,6 +8452,25 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
                        _("Multiqueue network is not supported for: %s"),
                        virDomainNetTypeToString(actualType));
         return -1;
+    }
+
+    if (net->driver.virtio.pollus > 0) {
+        if (net->driver.virtio.name != VIR_DOMAIN_NET_BACKEND_TYPE_VHOST) {
+            virReportError(
+                VIR_ERR_CONFIG_UNSUPPORTED,
+                _("Busy polling is only supported with vhost backend driver"));
+            return -1;
+        }
+        /* Nothing besides TAP devices supports busy polling. */
+        if (!(actualType == VIR_DOMAIN_NET_TYPE_NETWORK ||
+              actualType == VIR_DOMAIN_NET_TYPE_BRIDGE ||
+              actualType == VIR_DOMAIN_NET_TYPE_DIRECT ||
+              actualType == VIR_DOMAIN_NET_TYPE_ETHERNET)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Busy polling is not supported for: %s"),
+                           virDomainNetTypeToString(actualType));
+            return -1;
+        }
     }
 
     /* and only TAP devices support nwfilter rules */
