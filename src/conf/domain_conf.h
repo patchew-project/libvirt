@@ -967,6 +967,7 @@ struct _virDomainNetDef {
             virTristateSwitch event_idx;
             unsigned int queues; /* Multiqueue virtio-net */
             unsigned int rx_queue_size;
+            unsigned int pollus; /* busy polling for tap */
             struct {
                 virTristateSwitch csum;
                 virTristateSwitch gso;

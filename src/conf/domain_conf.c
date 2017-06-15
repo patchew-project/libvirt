@@ -9748,6 +9748,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     char *event_idx = NULL;
     char *queues = NULL;
     char *rx_queue_size = NULL;
+    char *pollus = NULL;
     char *str = NULL;
     char *filter = NULL;
     char *internal = NULL;
@@ -9921,6 +9922,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                 event_idx = virXMLPropString(cur, "event_idx");
                 queues = virXMLPropString(cur, "queues");
                 rx_queue_size = virXMLPropString(cur, "rx_queue_size");
+                pollus = virXMLPropString(cur, "poll_us");
             } else if (xmlStrEqual(cur->name, BAD_CAST "filterref")) {
                 if (filter) {
                     virReportError(VIR_ERR_XML_ERROR, "%s",
@@ -10318,6 +10320,17 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
             }
             def->driver.virtio.rx_queue_size = q;
         }
+        if (pollus) {
+            unsigned int us;
+            if (virStrToLong_uip(pollus, NULL, 10, &us) < 0) {
+                virReportError(VIR_ERR_XML_DETAIL,
+                               _("'poll_us' attribute must be positive number: %s"),
+                               pollus);
+                goto error;
+            }
+            if (us > 1)
+                def->driver.virtio.pollus = us;
+        }
         if ((str = virXPathString("string(./driver/host/@csum)", ctxt))) {
             if ((val = virTristateSwitchTypeFromString(str)) <= 0) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -10515,6 +10528,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_FREE(event_idx);
     VIR_FREE(queues);
     VIR_FREE(rx_queue_size);
+    VIR_FREE(pollus);
     VIR_FREE(str);
     VIR_FREE(filter);
     VIR_FREE(type);
@@ -22308,6 +22322,8 @@ virDomainVirtioNetDriverFormat(char **outstr,
     if (def->driver.virtio.rx_queue_size)
         virBufferAsprintf(&buf, " rx_queue_size='%u'",
                           def->driver.virtio.rx_queue_size);
+    if (def->driver.virtio.pollus)
+        virBufferAsprintf(&buf, " poll_us='%u'", def->driver.virtio.pollus);
 
     virDomainVirtioOptionsFormat(&buf, def->virtio);
 
