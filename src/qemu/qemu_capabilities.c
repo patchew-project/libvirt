@@ -376,6 +376,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "intel-iommu.device-iotlb", /* 260 */
               "virtio.iommu_platform",
               "virtio.ats",
+              "vhost-net.poll_us",
     );
 
 
@@ -4772,6 +4773,11 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     /* no way to query if -machine kernel_irqchip supports split */
     if (qemuCaps->version >= 2006000)
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_MACHINE_KERNEL_IRQCHIP_SPLIT);
+
+    /* Support for busy polling on vhost-net devices ("-netdev
+     * tap,...,poll-us=n") */
+    if (qemuCaps->version >= 2007000)
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_VHOST_NET_POLL_US);
 
     if (virQEMUCapsProbeQMPCommands(qemuCaps, mon) < 0)
         goto cleanup;
