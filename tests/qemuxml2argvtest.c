@@ -1709,6 +1709,14 @@ mymain(void)
             QEMU_CAPS_CHARDEV, QEMU_CAPS_NODEFCONFIG);
     DO_TEST_FAILURE("pseries-panic-address",
                     QEMU_CAPS_CHARDEV, QEMU_CAPS_NODEFCONFIG);
+
+    DO_TEST("pseries-phb-simple",
+            QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_CHARDEV,
+            QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE);
+    DO_TEST("pseries-phb-default-missing",
+            QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_CHARDEV,
+            QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE);
+
     DO_TEST("disk-ide-drive-split",
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_IDE_CD);
