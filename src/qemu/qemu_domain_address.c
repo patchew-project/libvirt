@@ -906,6 +906,108 @@ qemuDomainFillAllPCIConnectFlags(virDomainDefPtr def,
 
 
 /**
+ * qemuDomainFillDeviceIsolationGroupIter:
+ * @def: domain definition
+ * @dev: device definition
+ * @info: device information
+ * @opaque: user data
+ *
+ * Fill isolation group information for a single device.
+ *
+ * You're not meant to call this directly, use
+ * qemuDomainFillAllIsolationGroups() instead.
+ *
+ * Return: 0 on success, <0 on failure
+ * */
+static int
+qemuDomainFillDeviceIsolationGroupIter(virDomainDefPtr def ATTRIBUTE_UNUSED,
+                                       virDomainDeviceDefPtr dev,
+                                       virDomainDeviceInfoPtr info,
+                                       void *opaque ATTRIBUTE_UNUSED)
+{
+    virDomainHostdevDefPtr hostdev;
+    virPCIDeviceAddressPtr hostAddr;
+
+    /* Only hostdev... */
+    if (dev->type != VIR_DOMAIN_DEVICE_HOSTDEV)
+        return 0;
+
+    hostdev = dev->data.hostdev;
+
+    /* ... of the PCI kind need this extra information */
+    if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS ||
+        hostdev->source.subsys.type != VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI) {
+        return 0;
+    }
+
+    hostAddr = &hostdev->source.subsys.u.pci.addr;
+
+    /* The isolation group is simply the IOMMU group assigned by the host */
+    info->isolationGroup = virPCIDeviceAddressGetIOMMUGroupNum(hostAddr);
+
+    if (info->isolationGroup < 0) {
+        VIR_WARN("Can't look up isolation group for device %04x:%02x:%02x.%x",
+                 hostAddr->domain, hostAddr->bus,
+                 hostAddr->slot, hostAddr->function);
+    } else {
+        VIR_DEBUG("Isolation group for device %04x:%02x:%02x.%x is %d",
+                  hostAddr->domain, hostAddr->bus,
+                  hostAddr->slot, hostAddr->function,
+                  info->isolationGroup);
+    }
+
+    return info->isolationGroup;
+}
+
+
+/**
+ * qemuDomainFillAllIsolationGroups:
+ * @def: domain definition
+ *
+ * Fill isolation group information for all devices in @def.
+ *
+ * Return: 0 on success, <0 on failure
+ */
+static int
+qemuDomainFillAllIsolationGroups(virDomainDefPtr def)
+{
+    return virDomainDeviceInfoIterate(def,
+                                      qemuDomainFillDeviceIsolationGroupIter,
+                                      NULL);
+}
+
+
+static int
+qemuDomainSetupIsolationGroups(virDomainDefPtr def)
+{
+    virDomainControllerDefPtr defaultPHB;
+    int idx;
+    int ret = -1;
+
+    /* Only pSeries guests care about isolation groups at the moment */
+    if (!qemuDomainIsPSeries(def))
+        return 0;
+
+    if (qemuDomainFillAllIsolationGroups(def) < 0)
+        goto out;
+
+    idx = virDomainControllerFind(def, VIR_DOMAIN_CONTROLLER_TYPE_PCI, 0);
+    if (idx < 0)
+        goto out;
+
+    defaultPHB = def->controllers[idx];
+
+    /* We want to prevent hostdevs from being plugged into the default
+     * PHB, so we lock its isolation group */
+    defaultPHB->info.isolationGroupLocked = true;
+
+    ret = 0;
+
+ out:
+    return ret;
+}
+
+/**
  * qemuDomainFillDevicePCIConnectFlags:
  *
  * @def: the entire DomainDef
@@ -2074,6 +2176,9 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
      * bus when assigning addresses.
      */
     if (qemuDomainFillAllPCIConnectFlags(def, qemuCaps, driver) < 0)
+        goto cleanup;
+
+    if (qemuDomainSetupIsolationGroups(def) < 0)
         goto cleanup;
 
     if (nbuses > 0) {
