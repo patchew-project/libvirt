@@ -534,6 +534,7 @@ static int ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
 virDomainPCIAddressReserveAddrInternal(virDomainPCIAddressSetPtr addrs,
                                        virPCIDeviceAddressPtr addr,
                                        virDomainPCIConnectFlags flags,
+                                       int isolationGroup ATTRIBUTE_UNUSED,
                                        bool fromConfig)
 {
     int ret = -1;
@@ -586,9 +587,11 @@ virDomainPCIAddressReserveAddrInternal(virDomainPCIAddressSetPtr addrs,
 int
 virDomainPCIAddressReserveAddr(virDomainPCIAddressSetPtr addrs,
                                virPCIDeviceAddressPtr addr,
-                               virDomainPCIConnectFlags flags)
+                               virDomainPCIConnectFlags flags,
+                               int isolationGroup)
 {
-    return virDomainPCIAddressReserveAddrInternal(addrs, addr, flags, true);
+    return virDomainPCIAddressReserveAddrInternal(addrs, addr, flags,
+                                                  isolationGroup, true);
 }
 
 int
@@ -624,7 +627,8 @@ virDomainPCIAddressEnsureAddr(virDomainPCIAddressSetPtr addrs,
             goto cleanup;
 
         ret = virDomainPCIAddressReserveAddrInternal(addrs, &dev->addr.pci,
-                                                     flags, true);
+                                                     flags, dev->isolationGroup,
+                                                     true);
     } else {
         ret = virDomainPCIAddressReserveNextAddr(addrs, dev, flags, -1);
     }
@@ -745,6 +749,7 @@ static int ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2)
 virDomainPCIAddressGetNextAddr(virDomainPCIAddressSetPtr addrs,
                                virPCIDeviceAddressPtr next_addr,
                                virDomainPCIConnectFlags flags,
+                               int isolationGroup ATTRIBUTE_UNUSED,
                                int function)
 {
     virPCIDeviceAddress a = { 0 };
@@ -825,10 +830,12 @@ virDomainPCIAddressReserveNextAddr(virDomainPCIAddressSetPtr addrs,
 {
     virPCIDeviceAddress addr;
 
-    if (virDomainPCIAddressGetNextAddr(addrs, &addr, flags, function) < 0)
+    if (virDomainPCIAddressGetNextAddr(addrs, &addr, flags,
+                                       dev->isolationGroup, function) < 0)
         return -1;
 
-    if (virDomainPCIAddressReserveAddrInternal(addrs, &addr, flags, false) < 0)
+    if (virDomainPCIAddressReserveAddrInternal(addrs, &addr, flags,
+                                               dev->isolationGroup, false) < 0)
         return -1;
 
     if (!addrs->dryRun) {

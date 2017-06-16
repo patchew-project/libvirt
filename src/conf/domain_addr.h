@@ -100,6 +100,12 @@ typedef struct {
      * bit is set, that function is in use by a device.
      */
     virDomainPCIAddressSlot slot[VIR_PCI_ADDRESS_SLOT_LAST + 1];
+
+    /* See virDomainDeviceInfo::isolationGroup */
+    int isolationGroup;
+
+    /* See virDomainDeviceInfo::isolationGroupLocked */
+    bool isolationGroupLocked;
 } virDomainPCIAddressBus;
 typedef virDomainPCIAddressBus *virDomainPCIAddressBusPtr;
 
@@ -139,7 +145,8 @@ bool virDomainPCIAddressSlotInUse(virDomainPCIAddressSetPtr addrs,
 
 int virDomainPCIAddressReserveAddr(virDomainPCIAddressSetPtr addrs,
                                    virPCIDeviceAddressPtr addr,
-                                   virDomainPCIConnectFlags flags)
+                                   virDomainPCIConnectFlags flags,
+                                   int isolationGroup)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
 int virDomainPCIAddressReserveNextAddr(virDomainPCIAddressSetPtr addrs,
