@@ -2795,12 +2795,34 @@ virStorageSourceParseBackingJSONUri(virStorageSourcePtr src,
 
 
 static int
+virStorageSourceParseBackingJSONInetSocketAddress(virStorageNetHostDefPtr host,
+                                                  virJSONValuePtr json)
+{
+    const char *hostname = virJSONValueObjectGetString(json, "host");
+    const char *port = virJSONValueObjectGetString(json, "port");
+
+    if (!hostname) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("missing hostname for tcp backing server in "
+                         "JSON backing volume definition"));
+        return -1;
+    }
+
+    if (VIR_STRDUP(host->name, hostname) < 0 ||
+        VIR_STRDUP(host->port, port) < 0)
+        return -1;
+
+    host->transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
+
+    return 0;
+}
+
+
+static int
 virStorageSourceParseBackingJSONSocketAddress(virStorageNetHostDefPtr host,
                                               virJSONValuePtr json)
 {
     const char *type = virJSONValueObjectGetString(json, "type");
-    const char *hostname = virJSONValueObjectGetString(json, "host");
-    const char *port = virJSONValueObjectGetString(json, "port");
     const char *socket = virJSONValueObjectGetString(json, "socket");
     int transport;
 
@@ -2814,17 +2836,7 @@ virStorageSourceParseBackingJSONSocketAddress(virStorageNetHostDefPtr host,
 
     switch ((virStorageNetHostTransport) transport) {
     case VIR_STORAGE_NET_HOST_TRANS_TCP:
-        if (!hostname) {
-            virReportError(VIR_ERR_INVALID_ARG, "%s",
-                           _("missing hostname for tcp backing server in "
-                             "JSON backing volume definition"));
-            return -1;
-        }
-
-        if (VIR_STRDUP(host->name, hostname) < 0 ||
-            VIR_STRDUP(host->port, port) < 0)
-            return -1;
-        break;
+        return virStorageSourceParseBackingJSONInetSocketAddress(host, json);
 
     case VIR_STORAGE_NET_HOST_TRANS_UNIX:
         if (!socket) {
