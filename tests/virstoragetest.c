@@ -1502,6 +1502,16 @@ mymain(void)
                                     "\"driver\": \"file\","
                                     "\"filename\": \"/path/to/file\" } } }",
                        "<source file='/path/to/file'/>\n");
+    TEST_BACKING_PARSE("json:{\"file\":{\"driver\":\"iscsi\","
+                                       "\"transport\":\"tcp\","
+                                       "\"portal\":\"test.org\","
+                                       "\"target\":\"iqn.2016-12.com.virttest:emulated-iscsi-noauth.target\","
+                                       "\"lun\":\"6\""
+                                      "}"
+                            "}",
+                       "<source protocol='iscsi' name='iqn.2016-12.com.virttest:emulated-iscsi-noauth.target/6'>\n"
+                       "  <host name='test.org'/>\n"
+                       "</source>\n");
 
  cleanup:
     /* Final cleanup */
