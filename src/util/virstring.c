@@ -28,6 +28,7 @@
 #include "base64.h"
 #include "c-ctype.h"
 #include "virstring.h"
+#include "virthread.h"
 #include "viralloc.h"
 #include "virbuffer.h"
 #include "virerror.h"
@@ -516,6 +517,22 @@ virStrToLong_ullp(char const *s, char **end_ptr, int base,
     return 0;
 }
 
+#if HAVE_NEWLOCALE
+
+static locale_t virLocale;
+
+static int
+virLocaleOnceInit(void)
+{
+    virLocale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
+    if (!virLocale)
+        return -1;
+    return 0;
+}
+
+VIR_ONCE_GLOBAL_INIT(virLocale);
+#endif
+
 int
 virStrToDouble(char const *s,
                char **end_ptr,
@@ -526,7 +543,17 @@ virStrToDouble(char const *s,
     int err;
 
     errno = 0;
+#if HAVE_NEWLOCALE
+    locale_t old_loc;
+    if (virLocaleInitialize() < 0)
+        return -1;
+
+    old_loc = uselocale(virLocale);
+#endif
     val = strtod(s, &p); /* exempt from syntax-check */
+#if HAVE_NEWLOCALE
+    uselocale(old_loc);
+#endif
     err = (errno || (!end_ptr && *p) || p == s);
     if (end_ptr)
         *end_ptr = p;
