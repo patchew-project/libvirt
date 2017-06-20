@@ -1698,6 +1698,7 @@ virFileStripSuffix;
 virFileTouch;
 virFileUnlock;
 virFileUpdatePerm;
+virFileWaitForAccess;
 virFileWrapperFdClose;
 virFileWrapperFdFree;
 virFileWrapperFdNew;

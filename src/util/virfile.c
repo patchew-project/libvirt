@@ -4164,3 +4164,39 @@ virFileReadValueString(char **value, const char *format, ...)
     VIR_FREE(str);
     return ret;
 }
+
+
+/**
+ * virFileWaitForAccess:
+ * @path: absolute path to a sysfs attribute (can be a symlink)
+ * @ms: how long to wait (in milliseconds)
+ * @tries: how many times should we try to wait for @path to become accessible
+ *
+ * Checks the existence of @path. In case the file defined by @path
+ * doesn't exist, we wait for it to appear in 100ms (for up to @tries times).
+ *
+ * Returns 0 on success, -1 on error (ENOENT is fine here).
+ */
+int
+virFileWaitForAccess(const char *path, size_t ms, size_t tries)
+{
+    errno = 0;
+
+    /* wait for @path to be accessible in @ms milliseconds, up to @tries */
+    while (tries-- > 0 && !virFileExists(path)) {
+        if (errno != ENOENT) {
+            virReportSystemError(errno, "%s", path);
+            return -1;
+        } else if (tries == 10) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Failed to access '%s' after %zu tries"),
+                           path, tries);
+            return -1;
+        } else {
+            VIR_DEBUG("Failed to access '%s', re-try in %zu ms", path, ms);
+            usleep(ms * 1000);
+        }
+    }
+
+    return 0;
+}

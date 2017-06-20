@@ -347,6 +347,8 @@ int virFileReadValueScaledInt(unsigned long long *value, const char *format, ...
 int virFileReadValueString(char **value, const char *format, ...)
  ATTRIBUTE_FMT_PRINTF(2, 3);
 
+int virFileWaitForAccess(const char *path, size_t ms, size_t tries);
+
 
 int virFileInData(int fd,
                   int *inData,
