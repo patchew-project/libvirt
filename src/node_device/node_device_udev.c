@@ -60,6 +60,43 @@ struct _udevPrivate {
 };
 
 
+/**
+ * udevWaitForAttrs:
+ * @sys_path: node device base path
+ * @...: attributes to wait for, last attribute must be NULL
+ *
+ * Takes a list of attributes to wait for, waits until all of them are
+ * available, unless the max number of tries (10) has been reached.
+ *
+ * Returns 0 if all attributes became available, -1 on error.
+ */
+static int
+udevWaitForAttrs(const char *sys_path, ...)
+{
+    int ret = -1;
+    const char *attr = NULL;
+    char *attr_path = NULL;
+    va_list args;
+
+    va_start(args, sys_path);
+    while ((attr = va_arg(args, char *))) {
+        if (virAsprintf(&attr_path, "%s/%s", sys_path, attr) < 0)
+            goto cleanup;
+
+        if (virFileWaitForAccess(attr_path, 100, 10) < 0)
+            goto cleanup;
+
+        VIR_FREE(attr_path);
+    }
+
+    ret = 0;
+ cleanup:
+    va_end(args);
+    VIR_FREE(attr_path);
+    return ret;
+}
+
+
 static bool
 udevHasDeviceProperty(struct udev_device *dev,
                       const char *key)
@@ -1113,12 +1150,21 @@ udevProcessMediatedDevice(struct udev_device *dev,
 {
     int ret = -1;
     const char *uuidstr = NULL;
+    const char *devpath = udev_device_get_syspath(dev);
     int iommugrp = -1;
     char *linkpath = NULL;
     char *canonicalpath = NULL;
     virNodeDevCapMdevPtr data = &def->caps->data.mdev;
 
-    if (virAsprintf(&linkpath, "%s/mdev_type", udev_device_get_syspath(dev)) < 0)
+    /* Because of a kernel uevent race, we might get the 'add' event prior to
+     * the sysfs tree being ready, so any attempt to access any sysfs attribute
+     * would result in ENOENT and us dropping the device, so let's work around
+     * it by waiting for the attributes to become available.
+     */
+    if (udevWaitForAttrs(devpath, "mdev_type", "iommu_group", NULL) < 0)
+        goto cleanup;
+
+    if (virAsprintf(&linkpath, "%s/mdev_type", devpath) < 0)
         goto cleanup;
 
     if (virFileResolveLink(linkpath, &canonicalpath) < 0)
