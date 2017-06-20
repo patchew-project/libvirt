@@ -1970,6 +1970,11 @@ struct remote_domain_managed_save_get_xml_desc_args {
 struct remote_domain_managed_save_get_xml_desc_ret {
         remote_nonnull_string      xml;
 };
+struct remote_domain_managed_save_define_xml_args {
+        remote_nonnull_domain      dom;
+        remote_nonnull_string      dxml;
+        u_int                      flags;
+};
 struct remote_domain_snapshot_create_xml_args {
         remote_nonnull_domain      dom;
         remote_nonnull_string      xml_desc;
@@ -3240,5 +3245,6 @@ enum remote_procedure {
         REMOTE_PROC_DOMAIN_SET_VCPU = 384,
         REMOTE_PROC_DOMAIN_EVENT_BLOCK_THRESHOLD = 385,
         REMOTE_PROC_DOMAIN_SET_BLOCK_THRESHOLD = 386,
-        REMOTE_PROC_DOMAIN_MANAGED_SAVE_GET_XML_DESC = 387
+        REMOTE_PROC_DOMAIN_MANAGED_SAVE_GET_XML_DESC = 387,
+        REMOTE_PROC_DOMAIN_MANAGED_SAVE_DEFINE_XML = 388
 };
