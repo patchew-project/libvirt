@@ -1560,8 +1560,10 @@ virFileResolveLinkHelper(const char *linkpath,
      * directories, if linkpath is absolute and the basename is
      * already a non-symlink.  */
     if (IS_ABSOLUTE_FILE_NAME(linkpath) && !intermediatePaths) {
-        if (lstat(linkpath, &st) < 0)
+        if (lstat(linkpath, &st) < 0) {
+            virReportSystemError(errno, "%s", linkpath);
             return -1;
+        }
 
         if (!S_ISLNK(st.st_mode))
             return VIR_STRDUP_QUIET(*resultpath, linkpath) < 0 ? -1 : 0;
