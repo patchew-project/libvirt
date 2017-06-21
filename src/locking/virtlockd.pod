@@ -67,7 +67,7 @@ upgrades of the virtlockd service.
 
 =over
 
-=item F<SYSCONFDIR/virtlockd.conf>
+=item F<SYSCONFDIR/libvirt/virtlockd.conf>
 
 The default configuration file used by virtlockd, unless overridden on the
 command line using the B<-f>|B<--config> option.

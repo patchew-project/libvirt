@@ -81,7 +81,7 @@ On receipt of B<SIGHUP> libvirtd will reload its configuration.
 
 =over
 
-=item F<SYSCONFDIR/libvirtd.conf>
+=item F<SYSCONFDIR/libvirt/libvirtd.conf>
 
 The default configuration file used by libvirtd, unless overridden on the
 command line using the B<-f>|B<--config> option.
