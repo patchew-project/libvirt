@@ -33,7 +33,7 @@
 VIR_LOG_INIT("conf.virinterfaceobj");
 
 struct _virInterfaceObj {
-    virObjectLockable parent;
+    virObjectLookupKeys parent;
 
     bool active;           /* true if interface is active (up) */
     virInterfaceDefPtr def; /* The interface definition */
@@ -52,7 +52,7 @@ static void virInterfaceObjDispose(void *obj);
 static int
 virInterfaceObjOnceInit(void)
 {
-    if (!(virInterfaceObjClass = virClassNew(virClassForObjectLockable(),
+    if (!(virInterfaceObjClass = virClassNew(virClassForObjectLookupKeys(),
                                              "virInterfaceObj",
                                              sizeof(virInterfaceObj),
                                              virInterfaceObjDispose)))
@@ -81,7 +81,7 @@ virInterfaceObjNew(virInterfaceDefPtr def)
     if (virInterfaceObjInitialize() < 0)
         return NULL;
 
-    if (!(obj = virObjectLockableNew(virInterfaceObjClass)))
+    if (!(obj = virObjectLookupKeysNew(virInterfaceObjClass, NULL, def->name)))
         return NULL;
 
     virObjectLock(obj);
