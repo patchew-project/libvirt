@@ -755,6 +755,86 @@ virObjectLookupKeysGetName(void *anyobj)
 
 
 /**
+ * virObjectLookupHashAdd:
+ * @tableobj: LookupHash object with objsUUID/objsName
+ * @obj: The LookupKeys object to insert in the hash table(s)
+ *
+ * Insert @obj into the hash tables found in @tableobj.
+ *
+ * Returns 0 on success, -1 on failure.
+ */
+int
+virObjectLookupHashAdd(void *tableobj,
+                       virObjectLookupKeysPtr obj)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(tableobj);
+
+    if (!hashObj) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("tableobj=%p is not a lookup hash object"), tableobj);
+        return -1;
+    }
+
+    if (obj->uuid) {
+        if (virHashAddEntry(hashObj->objsUUID, obj->uuid, obj) < 0)
+            return -1;
+        virObjectRef(obj);
+    }
+
+    if (obj->name) {
+        if (virHashAddEntry(hashObj->objsName, obj->name, obj) < 0) {
+            virHashRemoveEntry(hashObj->objsUUID, obj->uuid);
+            return -1;
+        }
+        virObjectRef(obj);
+    }
+
+    return 0;
+}
+
+
+/**
+ * virObjectLookupHashRemove:
+ * @tableobj: LookupHash object with objsUUID/objsName
+ * @obj: The LookupKeys object to remove from the hash table(s)
+ *
+ * Remove @obj from the hash tables found in @tableobj. The common
+ * function to remove an object from a hash table will also cause
+ * the virObjectUnref to be called via virObjectFreeHashData since
+ * the virHashCreate used that as the Free object element argument.
+ *
+ * Even though this is a void, report the error for a bad @tableobj.
+ */
+void
+virObjectLookupHashRemove(void *tableobj,
+                          virObjectLookupKeysPtr obj)
+{
+    virObjectLookupHashPtr hashObj;
+
+    if (!obj)
+        return;
+
+    if (!(hashObj = virObjectGetLookupHashObj(tableobj))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("tableobj=%p is not a lookup hash object"), tableobj);
+        return;
+    }
+
+    virObjectRef(obj);
+    virObjectUnlock(obj);
+    virObjectLock(tableobj);
+    virObjectLock(obj);
+    if (obj->uuid)
+        virHashRemoveEntry(hashObj->objsUUID, obj->uuid);
+    if (obj->name)
+        virHashRemoveEntry(hashObj->objsName, obj->name);
+    virObjectUnlock(obj);
+    virObjectUnref(obj);
+    virObjectUnlock(tableobj);
+}
+
+
+/**
  * virObjectLookupHashGetUUID
  * @anyobj: Pointer to a LookupHash object
  *
