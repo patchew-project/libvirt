@@ -67,6 +67,8 @@ struct _virObjectLookupKeys {
 
     char *uuid;
     char *name;
+
+    bool active;           /* true if object is active */
 };
 
 
@@ -139,6 +141,13 @@ virObjectListFree(void *list);
 void
 virObjectListFreeCount(void *list,
                        size_t count);
+
+bool
+virObjectLookupKeysIsActive(void *anyobj);
+
+void
+virObjectLookupKeysSetActive(void *anyobj,
+                             bool active);
 
 const char *
 virObjectLookupKeysGetUUID(void *anyobj);

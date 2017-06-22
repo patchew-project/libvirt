@@ -585,6 +585,45 @@ virObjectListFreeCount(void *list,
 
 
 /**
+ * virObjectLookupKeysIsActive
+ * @anyobj: Pointer to a locked LookupKeys object
+ *
+ * Returns: True if object is active, false if not
+ */
+bool
+virObjectLookupKeysIsActive(void *anyobj)
+{
+    virObjectLookupKeysPtr obj = virObjectGetLookupKeysObj(anyobj);
+
+    if (!obj)
+        return false;
+
+    return obj->active;
+}
+
+
+/**
+ * virObjectLookupKeysSetActive
+ * @anyobj: Pointer to a locked LookupKeys object
+ * @active: New active setting
+ *
+ * Set the lookup keys active bool value; value not changed if object
+ * is not a lookup keys object
+ */
+void
+virObjectLookupKeysSetActive(void *anyobj,
+                             bool active)
+{
+    virObjectLookupKeysPtr obj = virObjectGetLookupKeysObj(anyobj);
+
+    if (!obj)
+        return;
+
+    obj->active = active;
+}
+
+
+/**
  * virObjectLookupKeysGetUUID
  * @anyobj: Pointer to a LookupKeys object
  *
