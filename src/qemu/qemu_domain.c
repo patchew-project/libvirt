@@ -7573,6 +7573,41 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
 }
 
 
+static char *
+qemuDomainGetPreservedMountPath(virQEMUDriverConfigPtr cfg,
+                                virDomainObjPtr vm,
+                                const char *mount)
+{
+    char *path = NULL;
+    char *tmp;
+    const char *suffix = mount + strlen(DEVPREFIX);
+    size_t off;
+
+    if (STREQ(mount, "/dev"))
+        suffix = "dev";
+
+    if (virAsprintf(&path, "%s/%s.%s",
+                    cfg->stateDir, vm->def->name, suffix) < 0)
+        return NULL;
+
+    /* Now consider that @mount is "/dev/blah/blah2".
+     * @suffix then points to "blah/blah2". However, caller
+     * expects all the @paths to be the same depth. The
+     * caller doesn't always do `mkdir -p` but sometimes bare
+     * `touch`. Therefore fix all the suffixes. */
+    off = strlen(path) - strlen(suffix);
+
+    tmp = path + off;
+    while (*tmp) {
+        if (*tmp == '/')
+            *tmp = '.';
+        tmp++;
+    }
+
+    return path;
+}
+
+
 /**
  * qemuDomainGetPreservedMounts:
  *
@@ -7629,30 +7664,8 @@ qemuDomainGetPreservedMounts(virQEMUDriverConfigPtr cfg,
         goto error;
 
     for (i = 0; i < nmounts; i++) {
-        char *tmp;
-        const char *suffix = mounts[i] + strlen(DEVPREFIX);
-        size_t off;
-
-        if (STREQ(mounts[i], "/dev"))
-            suffix = "dev";
-
-        if (virAsprintf(&paths[i], "%s/%s.%s",
-                        cfg->stateDir, vm->def->name, suffix) < 0)
+        if (!(paths[i] = qemuDomainGetPreservedMountPath(cfg, vm, mounts[i])))
             goto error;
-
-        /* Now consider that mounts[i] is "/dev/blah/blah2".
-         * @suffix then points to "blah/blah2". However, caller
-         * expects all the @paths to be the same depth. The
-         * caller doesn't always do `mkdir -p` but sometimes bare
-         * `touch`. Therefore fix all the suffixes. */
-        off = strlen(paths[i]) - strlen(suffix);
-
-        tmp = paths[i] + off;
-        while (*tmp) {
-            if (*tmp == '/')
-                *tmp = '.';
-            tmp++;
-        }
     }
 
     if (devPath)
