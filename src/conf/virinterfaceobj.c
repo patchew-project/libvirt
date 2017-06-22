@@ -35,7 +35,6 @@ VIR_LOG_INIT("conf.virinterfaceobj");
 struct _virInterfaceObj {
     virObjectLookupKeys parent;
 
-    bool active;           /* true if interface is active (up) */
     virInterfaceDefPtr def; /* The interface definition */
 };
 
@@ -113,7 +112,7 @@ virInterfaceObjGetDef(virInterfaceObjPtr obj)
 bool
 virInterfaceObjIsActive(virInterfaceObjPtr obj)
 {
-    return obj->active;
+    return virObjectLookupKeysIsActive(obj);
 }
 
 
@@ -121,7 +120,7 @@ void
 virInterfaceObjSetActive(virInterfaceObjPtr obj,
                          bool active)
 {
-    obj->active = active;
+    virObjectLookupKeysSetActive(obj, active);
 }
 
 
