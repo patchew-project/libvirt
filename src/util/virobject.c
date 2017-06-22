@@ -893,3 +893,64 @@ virObjectLookupHashGetName(void *anyobj)
 
     return obj->objsName;
 }
+
+
+/**
+ * virObjectLookupHashForEach
+ * @tableobj: poolable hash table pointer to walk through
+ * @useUUID: boolean to use objsUUID
+ * @callback: callback function to handle the object specific checks
+ * @opaque: callback data
+ *
+ * For each element of the objsName hash table make a call into the
+ * callback routine to handle its task
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+virObjectLookupHashForEach(void *tableobj,
+                           bool useUUID,
+                           virHashIterator callback,
+                           virObjectLookupHashForEachDataPtr data)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(tableobj);
+    virHashTablePtr tbl;
+
+    if (!hashObj)
+        return -1;
+
+    if (useUUID)
+        tbl = hashObj->objsUUID;
+    else
+        tbl = hashObj->objsName;
+
+    if (data->maxelems == -1) {
+        if (VIR_ALLOC_N(data->elems, virHashSize(tbl) + 1) < 0)
+            return -1;
+    }
+
+    virObjectLock(hashObj);
+    virHashForEach(tbl, callback, data);
+    virObjectUnlock(hashObj);
+
+    if (data->error)
+        goto error;
+
+    if (data->maxelems == -1) {
+        /* trim the array to the final size */
+        ignore_value(VIR_REALLOC_N(data->elems, data->nelems + 1));
+    }
+
+    return data->nelems;
+
+ error:
+    if (data->elems) {
+        if (data->maxelems == -1) {
+            virObjectListFree(data->elems);
+        } else {
+            while (--data->nelems)
+                VIR_FREE(data->elems[data->nelems]);
+        }
+    }
+    return -1;
+}

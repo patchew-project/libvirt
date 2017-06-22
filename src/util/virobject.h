@@ -198,4 +198,24 @@ virObjectLookupHashGetUUID(void *anyobj);
 virHashTablePtr
 virObjectLookupHashGetName(void *anyobj);
 
+typedef struct _virObjectLookupHashForEachData virObjectLookupHashForEachData;
+typedef virObjectLookupHashForEachData *virObjectLookupHashForEachDataPtr;
+struct _virObjectLookupHashForEachData {
+    virConnectPtr conn;
+    void *aclfilter;
+    bool wantActive;
+    bool error;
+    const char *matchstr;
+    unsigned int flags;
+    int nelems;
+    void **elems;
+    int maxelems;
+};
+
+int
+virObjectLookupHashForEach(void *tableobj,
+                           bool useUUID,
+                           virHashIterator callback,
+                           virObjectLookupHashForEachDataPtr data);
+
 #endif /* __VIR_OBJECT_H */

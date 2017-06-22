@@ -2288,6 +2288,7 @@ virObjectLock;
 virObjectLockableNew;
 virObjectLookupHashAdd;
 virObjectLookupHashFind;
+virObjectLookupHashForEach;
 virObjectLookupHashGetName;
 virObjectLookupHashGetUUID;
 virObjectLookupHashNew;
