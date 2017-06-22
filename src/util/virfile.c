@@ -3900,8 +3900,11 @@ virFileInData(int fd,
     ret = 0;
  cleanup:
     /* At any rate, reposition back to where we started. */
-    if (cur != (off_t) -1)
+    if (cur != (off_t) -1) {
+        int save_errno = errno;
         ignore_value(lseek(fd, cur, SEEK_SET));
+        errno = save_errno;
+    }
     return ret;
 }
 
