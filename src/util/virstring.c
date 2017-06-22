@@ -522,6 +522,7 @@ virStrToLong_ullp(char const *s, char **end_ptr, int base,
 #if HAVE_NEWLOCALE
 
 static locale_t virLocale;
+static locale_t virLocaleOld;
 
 static int
 virLocaleOnceInit(void)
@@ -533,7 +534,58 @@ virLocaleOnceInit(void)
 }
 
 VIR_ONCE_GLOBAL_INIT(virLocale);
-#endif
+
+static int
+virLocaleSet(void)
+{
+    if (virLocaleInitialize() < 0)
+        return -1;
+    virLocaleOld = uselocale(virLocale);
+    return 0;
+}
+
+static void
+virLocaleRevert(void)
+{
+    uselocale(virLocaleOld);
+}
+
+static void
+virLocaleFixupRadix(char **strp ATTRIBUTE_UNUSED)
+{
+}
+
+#else /* !HAVE_NEWLOCALE */
+
+static int
+virLocaleSet(void)
+{
+    return 0;
+}
+
+static void
+virLocaleRevert(void)
+{
+}
+
+static void
+virLocaleFixupRadix(char **strp)
+{
+    char *radix, *tmp;
+    struct lconv *lc;
+
+    lc = localeconv();
+    radix = lc->decimal_point;
+    tmp = strstr(*strp, radix);
+    if (tmp) {
+        *tmp = '.';
+        if (strlen(radix) > 1)
+            memmove(tmp + 1, tmp + strlen(radix), strlen(*strp) - (tmp - *strp));
+    }
+}
+
+#endif /* !HAVE_NEWLOCALE */
+
 
 /**
  * virStrToDouble
@@ -552,17 +604,11 @@ virStrToDouble(char const *s,
     int err;
 
     errno = 0;
-#if HAVE_NEWLOCALE
-    locale_t old_loc;
-    if (virLocaleInitialize() < 0)
+    if (virLocaleSet() < 0)
         return -1;
-
-    old_loc = uselocale(virLocale);
-#endif
     val = strtod(s, &p); /* exempt from syntax-check */
-#if HAVE_NEWLOCALE
-    uselocale(old_loc);
-#endif
+    virLocaleRevert();
+
     err = (errno || (!end_ptr && *p) || p == s);
     if (end_ptr)
         *end_ptr = p;
@@ -584,36 +630,14 @@ virDoubleToStr(char **strp, double number)
 {
     int ret = -1;
 
-#if HAVE_NEWLOCALE
+    if (virLocaleSet() < 0)
+        return -1;
 
-    locale_t old_loc;
-
-    if (virLocaleInitialize() < 0)
-        goto error;
-
-    old_loc = uselocale(virLocale);
     ret = virAsprintf(strp, "%lf", number);
-    uselocale(old_loc);
 
-#else
+    virLocaleRevert();
+    virLocaleFixupRadix(strp);
 
-    char *radix, *tmp;
-    struct lconv *lc;
-
-    if ((ret = virAsprintf(strp, "%lf", number) < 0))
-        goto error;
-
-    lc = localeconv();
-    radix = lc->decimal_point;
-    tmp = strstr(*strp, radix);
-    if (tmp) {
-        *tmp = '.';
-        if (strlen(radix) > 1)
-            memmove(tmp + 1, tmp + strlen(radix), strlen(*strp) - (tmp - *strp));
-    }
-
-#endif /* HAVE_NEWLOCALE */
- error:
     return ret;
 }
 
