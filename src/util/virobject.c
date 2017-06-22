@@ -66,8 +66,10 @@ struct _virClass {
 
 static virClassPtr virObjectClass;
 static virClassPtr virObjectLockableClass;
+static virClassPtr virObjectLookupKeysClass;
 
 static void virObjectLockableDispose(void *anyobj);
+static void virObjectLookupKeysDispose(void *anyobj);
 
 static int
 virObjectOnceInit(void)
@@ -82,6 +84,12 @@ virObjectOnceInit(void)
                                                "virObjectLockable",
                                                sizeof(virObjectLockable),
                                                virObjectLockableDispose)))
+        return -1;
+
+    if (!(virObjectLookupKeysClass = virClassNew(virObjectLockableClass,
+                                                 "virObjectLookupKeys",
+                                                 sizeof(virObjectLookupKeys),
+                                                 virObjectLookupKeysDispose)))
         return -1;
 
     return 0;
@@ -117,6 +125,21 @@ virClassForObjectLockable(void)
         return NULL;
 
     return virObjectLockableClass;
+}
+
+
+/**
+ * virClassForObjectLookupKeys:
+ *
+ * Returns the class instance for the virObjectLookupKeys type
+ */
+virClassPtr
+virClassForObjectLookupKeys(void)
+{
+    if (virObjectInitialize() < 0)
+        return NULL;
+
+    return virObjectLookupKeysClass;
 }
 
 
@@ -268,6 +291,58 @@ virObjectLockableDispose(void *anyobj)
 }
 
 
+void *
+virObjectLookupKeysNew(virClassPtr klass,
+                       const char *uuid,
+                       const char *name)
+{
+    virObjectLookupKeysPtr obj;
+
+    if (!virClassIsDerivedFrom(klass, virClassForObjectLookupKeys())) {
+        virReportInvalidArg(klass,
+                            _("Class %s must derive from virObjectLookupKeys"),
+                            virClassName(klass));
+        return NULL;
+    }
+
+    if (!uuid && !name) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("no key, either 'uuid' or 'name' must be defined"));
+        return NULL;
+    }
+
+    if (!(obj = virObjectLockableNew(klass)))
+        return NULL;
+
+    if (VIR_STRDUP(obj->uuid, uuid) < 0)
+        goto error;
+
+    if (VIR_STRDUP(obj->name, name) < 0)
+        goto error;
+
+    VIR_DEBUG("obj=%p, uuid=%s name=%s",
+              obj, NULLSTR(obj->uuid), NULLSTR(obj->name));
+
+    return obj;
+
+ error:
+    virObjectUnref(obj);
+    return NULL;
+}
+
+
+static void
+virObjectLookupKeysDispose(void *anyobj)
+{
+    virObjectLookupKeysPtr obj = anyobj;
+
+    VIR_DEBUG("dispose obj=%p", obj);
+
+    VIR_FREE(obj->uuid);
+    VIR_FREE(obj->name);
+}
+
+
 /**
  * virObjectUnref:
  * @anyobj: any instance of virObjectPtr
@@ -334,7 +409,8 @@ virObjectRef(void *anyobj)
 static virObjectLockablePtr
 virObjectGetLockableObj(void *anyobj)
 {
-    if (virObjectIsClass(anyobj, virObjectLockableClass))
+    if (virObjectIsClass(anyobj, virObjectLockableClass) ||
+        virObjectIsClass(anyobj, virObjectLookupKeysClass))
         return anyobj;
 
     VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, virObjectLockableClass);

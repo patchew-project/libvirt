@@ -2274,6 +2274,7 @@ virNumaSetupMemoryPolicy;
 # util/virobject.h
 virClassForObject;
 virClassForObjectLockable;
+virClassForObjectLookupKeys;
 virClassIsDerivedFrom;
 virClassName;
 virClassNew;
@@ -2284,6 +2285,7 @@ virObjectListFree;
 virObjectListFreeCount;
 virObjectLock;
 virObjectLockableNew;
+virObjectLookupKeysNew;
 virObjectNew;
 virObjectRef;
 virObjectUnlock;
