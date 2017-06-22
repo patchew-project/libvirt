@@ -10296,10 +10296,6 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
                 goto error;
         }
     } else {
-        virBufferAsprintf(&cmd, "%s,chardev=char%s,id=%s",
-                          virDomainChrSerialTargetTypeToString(serial->targetType),
-                          serial->info.alias, serial->info.alias);
-
         switch (serial->targetType) {
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_USB:
             if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_USB_SERIAL)) {
@@ -10314,9 +10310,6 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
                                _("usb-serial requires address of usb type"));
                 goto error;
             }
-
-            if (qemuBuildDeviceAddressStr(&cmd, def, &serial->info, qemuCaps) < 0)
-                goto error;
             break;
 
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
@@ -10326,9 +10319,6 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
                                _("isa-serial requires address of isa type"));
                 goto error;
             }
-
-            if (qemuBuildDeviceAddressStr(&cmd, def, &serial->info, qemuCaps) < 0)
-                goto error;
             break;
 
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PCI:
@@ -10344,11 +10334,15 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
                                _("pci-serial requires address of pci type"));
                 goto error;
             }
-
-            if (qemuBuildDeviceAddressStr(&cmd, def, &serial->info, qemuCaps) < 0)
-                goto error;
             break;
         }
+
+        virBufferAsprintf(&cmd, "%s,chardev=char%s,id=%s",
+                          virDomainChrSerialTargetTypeToString(serial->targetType),
+                          serial->info.alias, serial->info.alias);
+
+        if (qemuBuildDeviceAddressStr(&cmd, def, &serial->info, qemuCaps) < 0)
+            goto error;
     }
 
     if (virBufferCheckError(&cmd) < 0)
