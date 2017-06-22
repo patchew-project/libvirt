@@ -179,4 +179,10 @@ virObjectLookupKeysGetUUID(void *anyobj);
 const char *
 virObjectLookupKeysGetName(void *anyobj);
 
+virHashTablePtr
+virObjectLookupHashGetUUID(void *anyobj);
+
+virHashTablePtr
+virObjectLookupHashGetName(void *anyobj);
+
 #endif /* __VIR_OBJECT_H */

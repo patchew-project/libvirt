@@ -2286,6 +2286,8 @@ virObjectListFree;
 virObjectListFreeCount;
 virObjectLock;
 virObjectLockableNew;
+virObjectLookupHashGetName;
+virObjectLookupHashGetUUID;
 virObjectLookupHashNew;
 virObjectLookupKeysGetName;
 virObjectLookupKeysGetUUID;

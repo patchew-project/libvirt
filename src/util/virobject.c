@@ -514,6 +514,18 @@ virObjectGetLookupKeysObj(void *anyobj)
 }
 
 
+static virObjectLookupHashPtr
+virObjectGetLookupHashObj(void *anyobj)
+{
+    if (virObjectIsClass(anyobj, virObjectLookupHashClass))
+        return anyobj;
+
+    VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, virObjectLookupHashClass);
+
+    return NULL;
+}
+
+
 /**
  * virObjectLock:
  * @anyobj: any instance of virObjectLockablePtr
@@ -739,4 +751,40 @@ virObjectLookupKeysGetName(void *anyobj)
         return NULL;
 
     return obj->name;
+}
+
+
+/**
+ * virObjectLookupHashGetUUID
+ * @anyobj: Pointer to a LookupHash object
+ *
+ * Returns: Pointer to the UUID Hash Table or NULL on failure
+ */
+virHashTablePtr
+virObjectLookupHashGetUUID(void *anyobj)
+{
+    virObjectLookupHashPtr obj = virObjectGetLookupHashObj(anyobj);
+
+    if (!obj)
+        return NULL;
+
+    return obj->objsUUID;
+}
+
+
+/**
+ * virObjectLookupHashGetName
+ * @anyobj: Pointer to a LookupHash object
+ *
+ * Returns: Pointer to the Name Hash Table or NULL on failure
+ */
+virHashTablePtr
+virObjectLookupHashGetName(void *anyobj)
+{
+    virObjectLookupHashPtr obj = virObjectGetLookupHashObj(anyobj);
+
+    if (!obj)
+        return NULL;
+
+    return obj->objsName;
 }
