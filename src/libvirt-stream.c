@@ -596,10 +596,8 @@ virStreamSendAll(virStreamPtr stream,
     for (;;) {
         int got, offset = 0;
         got = (handler)(stream, bytes, want, opaque);
-        if (got < 0) {
-            virStreamAbort(stream);
+        if (got < 0)
             goto cleanup;
-        }
         if (got == 0)
             break;
         while (offset < got) {
@@ -615,8 +613,10 @@ virStreamSendAll(virStreamPtr stream,
  cleanup:
     VIR_FREE(bytes);
 
-    if (ret != 0)
+    if (ret != 0) {
+        virStreamAbort(stream);
         virDispatchError(stream->conn);
+    }
 
     return ret;
 }
@@ -728,21 +728,16 @@ int virStreamSparseSendAll(virStreamPtr stream,
         const unsigned int skipFlags = 0;
 
         if (!dataLen) {
-            if (holeHandler(stream, &inData, &sectionLen, opaque) < 0) {
-                virStreamAbort(stream);
+            if (holeHandler(stream, &inData, &sectionLen, opaque) < 0)
                 goto cleanup;
-            }
 
             if (!inData && sectionLen) {
-                if (virStreamSendHole(stream, sectionLen, skipFlags) < 0) {
-                    virStreamAbort(stream);
+                if (virStreamSendHole(stream, sectionLen, skipFlags) < 0)
                     goto cleanup;
-                }
 
                 if (skipHandler(stream, sectionLen, opaque) < 0) {
                     virReportSystemError(errno, "%s",
                                          _("unable to skip hole"));
-                    virStreamAbort(stream);
                     goto cleanup;
                 }
                 continue;
@@ -755,10 +750,8 @@ int virStreamSparseSendAll(virStreamPtr stream,
             want = dataLen;
 
         got = (handler)(stream, bytes, want, opaque);
-        if (got < 0) {
-            virStreamAbort(stream);
+        if (got < 0)
             goto cleanup;
-        }
         if (got == 0)
             break;
         while (offset < got) {
@@ -775,8 +768,10 @@ int virStreamSparseSendAll(virStreamPtr stream,
  cleanup:
     VIR_FREE(bytes);
 
-    if (ret != 0)
+    if (ret != 0) {
+        virStreamAbort(stream);
         virDispatchError(stream->conn);
+    }
 
     return ret;
 }
@@ -857,10 +852,8 @@ virStreamRecvAll(virStreamPtr stream,
         while (offset < got) {
             int done;
             done = (handler)(stream, bytes + offset, got - offset, opaque);
-            if (done < 0) {
-                virStreamAbort(stream);
+            if (done < 0)
                 goto cleanup;
-            }
             offset += done;
         }
     }
@@ -869,8 +862,10 @@ virStreamRecvAll(virStreamPtr stream,
  cleanup:
     VIR_FREE(bytes);
 
-    if (ret != 0)
+    if (ret != 0) {
+        virStreamAbort(stream);
         virDispatchError(stream->conn);
+    }
 
     return ret;
 }
@@ -963,15 +958,11 @@ virStreamSparseRecvAll(virStreamPtr stream,
 
         got = virStreamRecvFlags(stream, bytes, want, flags);
         if (got == -3) {
-            if (virStreamRecvHole(stream, &holeLen, holeFlags) < 0) {
-                virStreamAbort(stream);
+            if (virStreamRecvHole(stream, &holeLen, holeFlags) < 0)
                 goto cleanup;
-            }
 
-            if (holeHandler(stream, holeLen, opaque) < 0) {
-                virStreamAbort(stream);
+            if (holeHandler(stream, holeLen, opaque) < 0)
                 goto cleanup;
-            }
             continue;
         } else if (got < 0) {
             goto cleanup;
@@ -981,10 +972,8 @@ virStreamSparseRecvAll(virStreamPtr stream,
         while (offset < got) {
             int done;
             done = (handler)(stream, bytes + offset, got - offset, opaque);
-            if (done < 0) {
-                virStreamAbort(stream);
+            if (done < 0)
                 goto cleanup;
-            }
             offset += done;
         }
     }
@@ -993,8 +982,10 @@ virStreamSparseRecvAll(virStreamPtr stream,
  cleanup:
     VIR_FREE(bytes);
 
-    if (ret != 0)
+    if (ret != 0) {
+        virStreamAbort(stream);
         virDispatchError(stream->conn);
+    }
 
     return ret;
 }
