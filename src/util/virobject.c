@@ -67,9 +67,11 @@ struct _virClass {
 static virClassPtr virObjectClass;
 static virClassPtr virObjectLockableClass;
 static virClassPtr virObjectLookupKeysClass;
+static virClassPtr virObjectLookupHashClass;
 
 static void virObjectLockableDispose(void *anyobj);
 static void virObjectLookupKeysDispose(void *anyobj);
+static void virObjectLookupHashDispose(void *anyobj);
 
 static int
 virObjectOnceInit(void)
@@ -90,6 +92,12 @@ virObjectOnceInit(void)
                                                  "virObjectLookupKeys",
                                                  sizeof(virObjectLookupKeys),
                                                  virObjectLookupKeysDispose)))
+        return -1;
+
+    if (!(virObjectLookupHashClass = virClassNew(virObjectLockableClass,
+                                                 "virObjectLookupHash",
+                                                 sizeof(virObjectLookupHash),
+                                                 virObjectLookupHashDispose)))
         return -1;
 
     return 0;
@@ -140,6 +148,21 @@ virClassForObjectLookupKeys(void)
         return NULL;
 
     return virObjectLookupKeysClass;
+}
+
+
+/**
+ * virClassForObjectLookupHash:
+ *
+ * Returns the class instance for the virObjectLookupHash type
+ */
+virClassPtr
+virClassForObjectLookupHash(void)
+{
+    if (virObjectInitialize() < 0)
+        return NULL;
+
+    return virObjectLookupHashClass;
 }
 
 
@@ -344,6 +367,65 @@ virObjectLookupKeysDispose(void *anyobj)
 
 
 /**
+ * virObjectLookupHashNew:
+ * @klass: the klass to check
+ * @tableElemsStart: number of elements initially in the table
+ *
+ * Create a new poolable hash table object for storing hash tables capable
+ * of storing virObjectLookupKeys objects.
+ *
+ * Returns: New object on success, NULL on failure w/ error message set
+ */
+void *
+virObjectLookupHashNew(virClassPtr klass,
+                       int tableElemsStart)
+{
+    virObjectLookupHashPtr obj;
+
+    if (!virClassIsDerivedFrom(klass, virClassForObjectLookupHash())) {
+        virReportInvalidArg(klass,
+                            _("Class %s must derive from virObjectLookupHash"),
+                            virClassName(klass));
+        return NULL;
+    }
+
+    if (!(obj = virObjectLockableNew(klass)))
+        return NULL;
+
+    obj->tableElemsStart = tableElemsStart;
+
+    if (!(obj->objsUUID = virHashCreate(tableElemsStart,
+                                        virObjectFreeHashData)))
+        goto error;
+
+    if (!(obj->objsName = virHashCreate(tableElemsStart,
+                                        virObjectFreeHashData)))
+        goto error;
+
+    VIR_DEBUG("obj=%p, elems=%d objsUUID=%p objsName=%p",
+              obj, tableElemsStart, obj->objsUUID, obj->objsName);
+
+    return obj;
+
+ error:
+    virObjectUnref(obj);
+    return NULL;
+}
+
+
+static void
+virObjectLookupHashDispose(void *anyobj)
+{
+    virObjectLookupHashPtr obj = anyobj;
+
+    VIR_DEBUG("dispose obj=%p", obj);
+
+    virHashFree(obj->objsUUID);
+    virHashFree(obj->objsName);
+}
+
+
+/**
  * virObjectUnref:
  * @anyobj: any instance of virObjectPtr
  *
@@ -410,7 +492,8 @@ static virObjectLockablePtr
 virObjectGetLockableObj(void *anyobj)
 {
     if (virObjectIsClass(anyobj, virObjectLockableClass) ||
-        virObjectIsClass(anyobj, virObjectLookupKeysClass))
+        virObjectIsClass(anyobj, virObjectLookupKeysClass) ||
+        virObjectIsClass(anyobj, virObjectLookupHashClass))
         return anyobj;
 
     VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, virObjectLockableClass);
