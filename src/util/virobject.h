@@ -218,4 +218,10 @@ virObjectLookupHashForEach(void *tableobj,
                            virHashIterator callback,
                            virObjectLookupHashForEachDataPtr data);
 
+virObjectLookupKeysPtr
+virObjectLookupHashSearch(void *tableobj,
+                          bool useUUID,
+                          virHashSearcher callback,
+                          void *opaque);
+
 #endif /* __VIR_OBJECT_H */

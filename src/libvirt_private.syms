@@ -2293,6 +2293,7 @@ virObjectLookupHashGetName;
 virObjectLookupHashGetUUID;
 virObjectLookupHashNew;
 virObjectLookupHashRemove;
+virObjectLookupHashSearch;
 virObjectLookupKeysGetName;
 virObjectLookupKeysGetUUID;
 virObjectLookupKeysIsActive;

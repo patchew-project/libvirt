@@ -954,3 +954,41 @@ virObjectLookupHashForEach(void *tableobj,
     }
     return -1;
 }
+
+
+/**
+ * virObjectLookupHashSearchName
+ * @tableobj: poolable hash table pointer to search
+ * @useUUID: boolean to use objsUUID
+ * @callback: callback function to handle the object specific checks
+ * @opaque: callback data
+ *
+ * Search the objsName hash table calling the specified @callback routine
+ * with an object and @opaque data in order to determine whether the searched
+ * object is represented by the @opaque data.
+ *
+ * Returns locked/refcnt incremented object on success, NULL on failure
+ */
+virObjectLookupKeysPtr
+virObjectLookupHashSearch(void *tableobj,
+                          bool useUUID,
+                          virHashSearcher callback,
+                          void *opaque)
+{
+    virObjectLookupHashPtr tableObj = virObjectGetLookupHashObj(tableobj);
+    virObjectLookupKeysPtr obj;
+
+    if (!tableObj)
+        return NULL;
+
+    virObjectLock(tableObj);
+    obj = virHashSearch(useUUID ? tableObj->objsUUID : tableObj->objsName,
+                        callback, opaque);
+    virObjectRef(obj);
+    virObjectUnlock(tableObj);
+
+    if (obj)
+        virObjectLock(obj);
+
+    return obj;
+}
