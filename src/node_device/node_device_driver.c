@@ -690,7 +690,7 @@ nodeConnectNodeDeviceEventDeregisterAny(virConnectPtr conn,
 
     if (virObjectEventStateDeregisterID(conn,
                                         driver->nodeDeviceEventState,
-                                        callbackID) < 0)
+                                        callbackID, false) < 0)
         goto cleanup;
 
     ret = 0;

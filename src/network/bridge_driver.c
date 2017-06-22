@@ -3001,7 +3001,7 @@ networkConnectNetworkEventDeregisterAny(virConnectPtr conn,
 
     if (virObjectEventStateDeregisterID(conn,
                                         driver->networkEventState,
-                                        callbackID) < 0)
+                                        callbackID, false) < 0)
         goto cleanup;
 
     ret = 0;

@@ -2721,7 +2721,7 @@ umlConnectDomainEventDeregisterAny(virConnectPtr conn,
     umlDriverLock(driver);
     if (virObjectEventStateDeregisterID(conn,
                                         driver->domainEventState,
-                                        callbackID) < 0)
+                                        callbackID, false) < 0)
         ret = -1;
     umlDriverUnlock(driver);
 
