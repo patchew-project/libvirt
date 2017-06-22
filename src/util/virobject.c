@@ -853,6 +853,31 @@ virObjectLookupHashGetUUID(void *anyobj)
 
 
 /**
+ * virObjectLookupHashFind:
+ * @tableobj: poolable hash table pointer find data
+ * @useUUID: boolean to use objsUUID
+ * @key: Key to use for lookup
+ *
+ * Returns a pointer to the entry or NULL on failure
+ */
+virObjectLookupKeysPtr
+virObjectLookupHashFind(void *tableobj,
+                        bool useUUID,
+                        const char *key)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(tableobj);
+
+    if (!hashObj) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       ("tableobj=%p is not a lookup hash object"), tableobj);
+        return NULL;
+    }
+
+    return virHashLookup(useUUID ? hashObj->objsUUID : hashObj->objsName, key);
+}
+
+
+/**
  * virObjectLookupHashGetName
  * @anyobj: Pointer to a LookupHash object
  *

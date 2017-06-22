@@ -187,6 +187,11 @@ void
 virObjectLookupHashRemove(void *tableobj,
                           virObjectLookupKeysPtr obj);
 
+virObjectLookupKeysPtr
+virObjectLookupHashFind(void *tableobj,
+                        bool useUUID,
+                        const char *key);
+
 virHashTablePtr
 virObjectLookupHashGetUUID(void *anyobj);
 
