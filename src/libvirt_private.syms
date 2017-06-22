@@ -2287,6 +2287,7 @@ virObjectListFreeCount;
 virObjectLock;
 virObjectLockableNew;
 virObjectLookupHashAdd;
+virObjectLookupHashClone;
 virObjectLookupHashFind;
 virObjectLookupHashForEach;
 virObjectLookupHashGetName;

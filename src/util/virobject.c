@@ -992,3 +992,82 @@ virObjectLookupHashSearch(void *tableobj,
 
     return obj;
 }
+
+
+struct cloneData {
+    virObjectLookupHashCloneCallback callback;
+    virObjectLookupHashPtr dst;
+    bool error;
+};
+
+/*
+ * Take the provided virHashForEach element and call the driver @cb function
+ * with the input @dstTable and the source element from the @srcTable in order
+ * to perform the copy - tracking success/failure using the error boolean.
+ * Once there's a failure, no future copy/clone will occur.
+ *
+ * The @cb function can expect the @srcTable object to be locked upon entry.
+ *
+ * Returns 0 to the virHashForEach on success, -1 on failure.
+ */
+static int
+cloneCallback(void *payload,
+              const void *name ATTRIBUTE_UNUSED,
+              void *opaque)
+{
+    virObjectLookupKeysPtr obj = payload;
+    struct cloneData *data = opaque;
+
+    if (data->error)
+        return 0;
+
+    virObjectLock(obj);
+
+    if (data->callback(data->dst, obj) < 0)
+        data->error = true;
+
+    virObjectUnlock(obj);
+
+    if (data->error)
+        return -1;
+
+    return 0;
+}
+
+/**
+ * virObjectLookupHashClone
+ * @srcTable: source poolable hash table pointer to clone from
+ * @dstTable: destination poolable hash table pointer to clone to
+ * @useUUID: Use the objsUUID for clone (or objsName)
+ * @cb: callback function from driver code to handle the clone
+ *
+ * The clone function is designed to traverse each @srcTable hash element
+ * and call the driver specific @cb function with the element from the
+ * @srcTable in order to clone into the @dstTable. If @useUUID is true,
+ * then clone the objsUUID table; otherwise, clone the objsName table.
+ *
+ * Return 0 on success, -1 on failure
+ */
+int
+virObjectLookupHashClone(void *srcTable,
+                         void *dstTable,
+                         bool useUUID,
+                         virObjectLookupHashCloneCallback cb)
+{
+    virObjectLookupHashPtr src = virObjectGetLookupHashObj(srcTable);
+    virObjectLookupHashPtr dst = virObjectGetLookupHashObj(dstTable);
+    struct cloneData data = { .callback = cb, .dst = dst, .error = false };
+
+    if (!src || !dst)
+        return -1;
+
+    virObjectLock(src);
+    virHashForEach(useUUID ? src->objsUUID : src->objsName,
+                   cloneCallback, &data);
+    virObjectUnlock(src);
+
+    if (data.error)
+        return -1;
+
+    return 0;
+}

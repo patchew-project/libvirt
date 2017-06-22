@@ -224,4 +224,14 @@ virObjectLookupHashSearch(void *tableobj,
                           virHashSearcher callback,
                           void *opaque);
 
+typedef int (*virObjectLookupHashCloneCallback)(void *dstTable,
+                                                       void *srcElem);
+int
+virObjectLookupHashClone(void *srcTable,
+                         void *dstTable,
+                         bool useUUID,
+                         virObjectLookupHashCloneCallback cb)
+    ATTRIBUTE_NONNULL(4);
+
+
 #endif /* __VIR_OBJECT_H */
