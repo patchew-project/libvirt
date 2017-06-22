@@ -8532,6 +8532,7 @@ qemuDomainAttachDeviceMknodHelper(pid_t pid ATTRIBUTE_UNUSED,
     bool delDevice = false;
     bool isLink = S_ISLNK(data->sb.st_mode);
     bool isDev = S_ISCHR(data->sb.st_mode) || S_ISBLK(data->sb.st_mode);
+    bool isReg = S_ISREG(data->sb.st_mode);
 
     qemuSecurityPostFork(data->driver->securityManager);
 
@@ -8570,6 +8571,23 @@ qemuDomainAttachDeviceMknodHelper(pid_t pid ATTRIBUTE_UNUSED,
         } else {
             delDevice = true;
         }
+    } else if (isReg) {
+        /* We are not cleaning up disks on virDomainDetachDevice
+         * because disk might be still in use by different disk
+         * as its backing chain. This might however clash here.
+         * Therefore do the cleanup here. */
+        if (umount(data->file) < 0 &&
+            errno != ENOENT) {
+            virReportSystemError(errno,
+                                 _("Unable to umount %s"),
+                                 data->file);
+            goto cleanup;
+        }
+        if (virFileTouch(data->file, data->sb.st_mode) < 0)
+            goto cleanup;
+        delDevice = true;
+        /* Just create the file here so that code below sets
+         * proper owner and mode. Move the mount only after that. */
     } else {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
                        _("unsupported device type %s %o"),
@@ -8580,6 +8598,15 @@ qemuDomainAttachDeviceMknodHelper(pid_t pid ATTRIBUTE_UNUSED,
     if (lchown(data->file, data->sb.st_uid, data->sb.st_gid) < 0) {
         virReportSystemError(errno,
                              _("Failed to chown device %s"),
+                             data->file);
+        goto cleanup;
+    }
+
+    /* Symlinks don't have mode */
+    if (!isLink &&
+        chmod(data->file, data->sb.st_mode) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to set permissions for device %s"),
                              data->file);
         goto cleanup;
     }
@@ -8607,6 +8634,11 @@ qemuDomainAttachDeviceMknodHelper(pid_t pid ATTRIBUTE_UNUSED,
     }
 #endif
 
+    /* Finish mount process started earlier. */
+    if (isReg &&
+        virFileMoveMount(data->target, data->file) < 0)
+        goto cleanup;
+
     ret = 0;
  cleanup:
     if (ret < 0 && delDevice)
@@ -8627,10 +8659,12 @@ qemuDomainAttachDeviceMknodRecursive(virQEMUDriverPtr driver,
                                      size_t ndevMountsPath,
                                      unsigned int ttl)
 {
+    virQEMUDriverConfigPtr cfg = NULL;
     struct qemuDomainAttachDeviceMknodData data;
     int ret = -1;
     char *target = NULL;
     bool isLink;
+    bool isReg;
 
     if (!ttl) {
         virReportSystemError(ELOOP,
@@ -8652,8 +8686,18 @@ qemuDomainAttachDeviceMknodRecursive(virQEMUDriverPtr driver,
     }
 
     isLink = S_ISLNK(data.sb.st_mode);
+    isReg = S_ISREG(data.sb.st_mode);
 
-    if (isLink) {
+    if (isReg && STRPREFIX(file, DEVPREFIX)) {
+        cfg = virQEMUDriverGetConfig(driver);
+        if (!(target = qemuDomainGetPreservedMountPath(cfg, vm, file)))
+            goto cleanup;
+
+        if (virFileBindMountDevice(file, target) < 0)
+            goto cleanup;
+
+        data.target = target;
+    } else if (isLink) {
         if (virFileReadLink(file, &target) < 0) {
             virReportSystemError(errno,
                                  _("unable to resolve symlink %s"),
@@ -8740,7 +8784,10 @@ qemuDomainAttachDeviceMknodRecursive(virQEMUDriverPtr driver,
     freecon(data.tcon);
 #endif
     virFileFreeACLs(&data.acl);
+    if (isReg && target)
+        umount(target);
     VIR_FREE(target);
+    virObjectUnref(cfg);
     return ret;
 }
 
@@ -8818,7 +8865,6 @@ qemuDomainNamespaceSetupDisk(virQEMUDriverPtr driver,
     char **devMountsPath = NULL;
     size_t ndevMountsPath = 0;
     virStorageSourcePtr next;
-    struct stat sb;
     int ret = -1;
 
     if (!qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT))
@@ -8836,15 +8882,6 @@ qemuDomainNamespaceSetupDisk(virQEMUDriverPtr driver,
             /* Not creating device. Just continue. */
             continue;
         }
-
-        if (stat(next->path, &sb) < 0) {
-            virReportSystemError(errno,
-                                 _("Unable to access %s"), next->path);
-            goto cleanup;
-        }
-
-        if (!S_ISBLK(sb.st_mode))
-            continue;
 
         if (qemuDomainAttachDeviceMknod(driver,
                                         vm,
