@@ -47,14 +47,21 @@ struct _virClass {
     virObjectDisposeCallback dispose;
 };
 
+#define VIR_OBJECT_NOTVALID(obj) (!obj || ((obj->u.s.magic & 0xCAFE0000) != 0xCAFE0000))
+
 #define VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, objclass)                    \
     do {                                                                    \
         virObjectPtr obj = anyobj;                                          \
-        if (!obj)                                                           \
-            VIR_WARN("Object cannot be NULL");                              \
-        else                                                                \
+        if (VIR_OBJECT_NOTVALID(obj)) {                                     \
+            if (!obj)                                                       \
+                VIR_WARN("Object cannot be NULL");                          \
+            else                                                            \
+                VIR_WARN("Object %p has a bad magic number %X",             \
+                         obj, obj->u.s.magic);                              \
+        } else {                                                            \
             VIR_WARN("Object %p (%s) is not a %s instance",                 \
                       anyobj, obj->klass->name, #objclass);                 \
+        }                                                                   \
     } while (0)
 
 static virClassPtr virObjectClass;
@@ -153,9 +160,14 @@ virClassNew(virClassPtr parent,
         goto error;
 
     klass->parent = parent;
+    klass->magic = virAtomicIntInc(&magicCounter);
+    if (klass->magic > 0xCAFEFFFF) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("too many object classes defined"));
+        goto error;
+    }
     if (VIR_STRDUP(klass->name, name) < 0)
         goto error;
-    klass->magic = virAtomicIntInc(&magicCounter);
     klass->objectSize = objectSize;
     klass->dispose = dispose;
 
@@ -272,7 +284,7 @@ virObjectUnref(void *anyobj)
 {
     virObjectPtr obj = anyobj;
 
-    if (!obj)
+    if (VIR_OBJECT_NOTVALID(obj))
         return false;
 
     bool lastRef = virAtomicIntDecAndTest(&obj->u.s.refs);
@@ -311,7 +323,7 @@ virObjectRef(void *anyobj)
 {
     virObjectPtr obj = anyobj;
 
-    if (!obj)
+    if (VIR_OBJECT_NOTVALID(obj))
         return NULL;
     virAtomicIntInc(&obj->u.s.refs);
     PROBE(OBJECT_REF, "obj=%p", obj);
@@ -389,7 +401,7 @@ virObjectIsClass(void *anyobj,
                  virClassPtr klass)
 {
     virObjectPtr obj = anyobj;
-    if (!obj)
+    if (VIR_OBJECT_NOTVALID(obj))
         return false;
 
     return virClassIsDerivedFrom(obj->klass, klass);
