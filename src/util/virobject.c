@@ -419,6 +419,18 @@ virObjectGetLockableObj(void *anyobj)
 }
 
 
+static virObjectLookupKeysPtr
+virObjectGetLookupKeysObj(void *anyobj)
+{
+    if (virObjectIsClass(anyobj, virObjectLookupKeysClass))
+        return anyobj;
+
+    VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, virObjectLookupKeysClass);
+
+    return NULL;
+}
+
+
 /**
  * virObjectLock:
  * @anyobj: any instance of virObjectLockablePtr
@@ -569,4 +581,40 @@ virObjectListFreeCount(void *list,
         virObjectUnref(((void **)list)[i]);
 
     VIR_FREE(list);
+}
+
+
+/**
+ * virObjectLookupKeysGetUUID
+ * @anyobj: Pointer to a LookupKeys object
+ *
+ * Returns: Pointer to the object's uuid key value or possibly NULL
+ */
+const char *
+virObjectLookupKeysGetUUID(void *anyobj)
+{
+    virObjectLookupKeysPtr obj = virObjectGetLookupKeysObj(anyobj);
+
+    if (!obj)
+        return NULL;
+
+    return obj->uuid;
+}
+
+
+/**
+ * virObjectLookupKeysGetName
+ * @anyobj: Pointer to a LookupKeys object
+ *
+ * Returns: Pointer to the object's name key value or possibly NULL
+ */
+const char *
+virObjectLookupKeysGetName(void *anyobj)
+{
+    virObjectLookupKeysPtr obj = virObjectGetLookupKeysObj(anyobj);
+
+    if (!obj)
+        return NULL;
+
+    return obj->name;
 }
