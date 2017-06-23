@@ -302,6 +302,9 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
     int ret = -1;
     char *devStr = NULL;
     const char *contAlias = NULL;
+    virDomainControllerModelPCI contModel;
+    virDomainControllerPCIModelName contModelName;
+    int contIndex;
 
     if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
         size_t i;
@@ -314,6 +317,9 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
             if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI &&
                 cont->idx == info->addr.pci.bus) {
                 contAlias = cont->info.alias;
+                contModel = cont->model;
+                contModelName = cont->opts.pciopts.modelName;
+                contIndex = cont->opts.pciopts.idx;
                 if (!contAlias) {
                     virReportError(VIR_ERR_INTERNAL_ERROR,
                                    _("Device alias was not set for PCI "
@@ -349,7 +355,19 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
             }
         }
 
-        virBufferAsprintf(buf, ",bus=%s", contAlias);
+        if (contModel == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT &&
+            contModelName == VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_SPAPR_PCI_HOST_BRIDGE &&
+            contIndex > 0) {
+            /* The PCI bus created by a spapr-pci-host-bridge device with
+             * alias 'x' will be called 'x.0' rather than 'x'; however,
+             * this does not apply to the implicit PHB in a pSeries guest,
+             * which always has the hardcoded name 'pci.0' */
+            virBufferAsprintf(buf, ",bus=%s.0", contAlias);
+        } else {
+            /* For all other controllers, the bus name matches the alias
+             * of the corresponding controller */
+            virBufferAsprintf(buf, ",bus=%s", contAlias);
+        }
 
         if (info->addr.pci.multi == VIR_TRISTATE_SWITCH_ON)
             virBufferAddLit(buf, ",multifunction=on");
