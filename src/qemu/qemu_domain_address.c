@@ -1861,6 +1861,7 @@ qemuDomainSupportsPCI(virDomainDefPtr def,
 
 static void
 qemuDomainPCIControllerSetDefaultModelName(virDomainControllerDefPtr cont,
+                                           virDomainDefPtr def,
                                            virQEMUCapsPtr qemuCaps)
 {
     int *modelName = &cont->opts.pciopts.modelName;
@@ -1897,10 +1898,70 @@ qemuDomainPCIControllerSetDefaultModelName(virDomainControllerDefPtr cont,
         *modelName = VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_PXB_PCIE;
         break;
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT:
+        if (qemuDomainIsPSeries(def))
+            *modelName = VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_SPAPR_PCI_HOST_BRIDGE;
+        break;
     case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
         break;
     }
+}
+
+
+/**
+ * qemuDomainAddressFindNewTargetIndex:
+ * @def: domain definition
+ *
+ * Find a target index that can be used for a PCI controller.
+ *
+ * Returns: an unused target index, or -1 if all available target
+ *          indexes are already taken.
+ */
+static int
+qemuDomainAddressFindNewTargetIndex(virDomainDefPtr def)
+{
+    int idx;
+    int ret = -1;
+
+    /* Try all indexes between 1 and 31 - QEMU only supports 32
+     * PHBs, and 0 is reserved for the default, implicit one */
+    for (idx = 1; idx <= 31; idx++) {
+        bool found = false;
+        size_t i;
+
+        for (i = 0; i < def->ncontrollers; i++) {
+            virDomainControllerDefPtr cont = def->controllers[i];
+            virDomainPCIControllerOptsPtr opts;
+
+            /* We only care about pci-root controllers */
+            if (cont->type != VIR_DOMAIN_CONTROLLER_TYPE_PCI ||
+                cont->model != VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT) {
+                continue;
+            }
+
+            opts = &cont->opts.pciopts;
+
+            /* More specifically, we only care about PHBs */
+            if (opts->modelName != VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_SPAPR_PCI_HOST_BRIDGE)
+                continue;
+
+            /* Stop looking as soon as we find a PHB that's
+             * already using this specific target index */
+            if (opts->idx == idx) {
+                found = true;
+                break;
+            }
+        }
+
+        /* If no existing PCI controller uses this index, great,
+         * it means it's free and we can return it to the caller */
+        if (!found) {
+            ret = idx;
+            break;
+        }
+    }
+
+    return ret;
 }
 
 
@@ -2164,7 +2225,7 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
              * device in qemu) for any controller that doesn't yet
              * have it set.
              */
-            qemuDomainPCIControllerSetDefaultModelName(cont, qemuCaps);
+            qemuDomainPCIControllerSetDefaultModelName(cont, def, qemuCaps);
 
             /* set defaults for any other auto-generated config
              * options for this controller that haven't been
@@ -2201,9 +2262,32 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
                     goto cleanup;
                 }
                 break;
+            case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT:
+                if (!qemuDomainIsPSeries(def))
+                    break;
+                if (options->idx == -1) {
+                    if (cont->idx == 0) {
+                        /* The pci-root controller with controller index 0
+                         * must always be assigned target index 0, because
+                         * it represents the implicit PHB which is treated
+                         * differently than all other PHBs */
+                        options->idx = 0;
+                    } else {
+                        /* For all other PHBs the target index doesn't need
+                         * to match the controller index or have any
+                         * particular value, really */
+                        options->idx = qemuDomainAddressFindNewTargetIndex(def);
+                    }
+                }
+                if (options->idx == -1) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("No usable target index found for %d"),
+                                   addr->bus);
+                    goto cleanup;
+                }
+                break;
             case VIR_DOMAIN_CONTROLLER_MODEL_DMI_TO_PCI_BRIDGE:
             case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_UPSTREAM_PORT:
-            case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT:
             case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT:
             case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
                 break;
