@@ -1476,6 +1476,16 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
 
     if (qemuAssignDeviceHostdevAlias(vm->def, &info->alias, -1) < 0)
         goto error;
+
+    /* When attaching a hostdev to a pSeries guest, we need to set up
+     * its isolation group if we want the assigned address to respect
+     * isolation constraints */
+    if (qemuDomainIsPSeries(vm->def)) {
+        virPCIDeviceAddressPtr hostAddr = &hostdev->source.subsys.u.pci.addr;
+
+        info->isolationGroup = virPCIDeviceAddressGetIOMMUGroupNum(hostAddr);
+    }
+
     if (qemuDomainEnsurePCIAddress(vm, &dev, driver) < 0)
         goto error;
     releaseaddr = true;
