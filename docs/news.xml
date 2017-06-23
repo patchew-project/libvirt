@@ -46,6 +46,27 @@
           select a boot entry.
         </description>
       </change>
+      <change>
+        <summary>
+          qemu: Support multiple PHBs for pSeries guests
+        </summary>
+        <description>
+          pSeries guests can now have multiple PHBs (PCI Host Bridges), which
+          show up as separate PCI domains in the guest. To create additional
+          PHBs, simply add PCI controllers with model <code>pci-root</code>
+          to the guest configuration.
+        </description>
+      </change>
+      <change>
+        <summary>
+          qemu: Isolate hostdevs on pSeries guests
+        </summary>
+        <description>
+          To enable better error reporting and recovery, unrelated hostdevs
+          will now be automatically isolated on pSeries guests by placing them
+          on separate PHBs (PCI Host Bridges).
+        </description>
+      </change>
     </section>
     <section title="Improvements">
       <change>
