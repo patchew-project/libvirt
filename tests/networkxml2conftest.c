@@ -19,9 +19,13 @@
 #define VIR_FROM_THIS VIR_FROM_NONE
 
 static int
-testCompareXMLToConfFiles(const char *inxml, const char *outconf, dnsmasqCapsPtr caps)
+testCompareXMLToConfFiles(const char *inxml,
+                          const char *outconf,
+                          const char *outhostsfile,
+                          dnsmasqCapsPtr caps)
 {
-    char *actual = NULL;
+    char *actualconf = NULL;
+    char *actualhosts = NULL;
     int ret = -1;
     virNetworkDefPtr dev = NULL;
     virNetworkObjPtr obj = NULL;
@@ -41,7 +45,11 @@ testCompareXMLToConfFiles(const char *inxml, const char *outconf, dnsmasqCapsPtr
     if (dctx == NULL)
         goto fail;
 
-    if (networkDnsmasqConfContents(obj, pidfile, &actual, dctx, caps) < 0)
+    if (networkDnsmasqConfContents(obj, pidfile, &actualconf, &actualhosts,
+                        dctx, caps) < 0)
+        goto fail;
+
+    if (virTestCompareToFile(actualconf, outconf) < 0)
         goto fail;
 
     /* Any changes to this function ^^ should be reflected here too. */
@@ -57,13 +65,27 @@ testCompareXMLToConfFiles(const char *inxml, const char *outconf, dnsmasqCapsPtr
     tmp = NULL;
 #endif
 
-    if (virTestCompareToFile(actual, outconf) < 0)
+    if (virFileExists(outhostsfile)) {
+        if (!actualhosts) {
+            fprintf(stderr,
+                    "%s: hostsfile exists but the configuration did not specify any host",
+                    outhostsfile);
+            goto fail;
+        } else if (virTestCompareToFile(actualhosts, outhostsfile) < 0) {
+            goto fail;
+        }
+    } else if (actualhosts) {
+        fprintf(stderr,
+                "%s: file does not exist but actual data was expected",
+                outhostsfile);
         goto fail;
+    }
 
     ret = 0;
 
  fail:
-    VIR_FREE(actual);
+    VIR_FREE(actualconf);
+    VIR_FREE(actualhosts);
     VIR_FREE(pidfile);
     virCommandFree(cmd);
     virObjectUnref(obj);
@@ -83,19 +105,23 @@ testCompareXMLToConfHelper(const void *data)
     const testInfo *info = data;
     char *inxml = NULL;
     char *outconf = NULL;
+    char *outhostsfile = NULL;
 
     if (virAsprintf(&inxml, "%s/networkxml2confdata/%s.xml",
                     abs_srcdir, info->name) < 0 ||
         virAsprintf(&outconf, "%s/networkxml2confdata/%s.conf",
+                    abs_srcdir, info->name) < 0 ||
+        virAsprintf(&outhostsfile, "%s/networkxml2confdata/%s.hostsfile",
                     abs_srcdir, info->name) < 0) {
         goto cleanup;
     }
 
-    result = testCompareXMLToConfFiles(inxml, outconf, info->caps);
+    result = testCompareXMLToConfFiles(inxml, outconf, outhostsfile, info->caps);
 
  cleanup:
     VIR_FREE(inxml);
     VIR_FREE(outconf);
+    VIR_FREE(outhostsfile);
 
     return result;
 }
@@ -143,6 +169,13 @@ mymain(void)
     DO_TEST("dhcp6-nat-network", dhcpv6);
     DO_TEST("dhcp6host-routed-network", dhcpv6);
     DO_TEST("ptr-domains-auto", dhcpv6);
+    DO_TEST("leasetime", dhcpv6);
+    DO_TEST("leasetime-seconds", dhcpv6);
+    DO_TEST("leasetime-hours", dhcpv6);
+    DO_TEST("leasetime-minutes", dhcpv6);
+    DO_TEST("leasetime-hours", dhcpv6);
+    DO_TEST("leasetime-days", dhcpv6);
+    DO_TEST("leasetime-infinite", dhcpv6);
 
     virObjectUnref(dhcpv6);
     virObjectUnref(full);

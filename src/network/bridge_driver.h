@@ -53,6 +53,7 @@ int networkGetActualType(virDomainNetDefPtr iface)
 int networkDnsmasqConfContents(virNetworkObjPtr network,
                         const char *pidfile,
                         char **configstr,
+                        char **hostsfilestr,
                         dnsmasqContext *dctx,
                         dnsmasqCapsPtr caps);
 

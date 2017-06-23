@@ -357,6 +357,14 @@
                 <!-- Define the range(s) of IP addresses that the DHCP
                      server should hand out -->
                 <element name="dhcp">
+                <optional>
+                  <element name="leasetime">
+                    <optional>
+                      <attribute name="unit"><ref name="timeUnit"/></attribute>
+                    </optional>
+                    <ref name="leaseTime"/>
+                  </element>
+                </optional>
                   <interleave>
                     <zeroOrMore>
                       <element name="range">

@@ -564,4 +564,20 @@
     </element>
   </define>
 
+  <define name="timeUnit">
+    <choice>
+      <value>seconds</value>
+      <value>minutes</value>
+      <value>hours</value>
+      <value>days</value>
+    </choice>
+  </define>
+
+  <define name="leaseTime">
+    <data type="long">
+      <param name="minInclusive">-1</param>
+      <param name="maxInclusive">4294967295</param>
+    </data>
+  </define>
+
 </grammar>

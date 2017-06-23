@@ -88,6 +88,7 @@ int              dnsmasqAddDhcpHost(dnsmasqContext *ctx,
                                     virSocketAddr *ip,
                                     const char *name,
                                     const char *id,
+                                    const char *leastime,
                                     bool ipv6);
 int              dnsmasqAddHost(dnsmasqContext *ctx,
                                 virSocketAddr *ip,
@@ -105,6 +106,7 @@ int dnsmasqCapsRefresh(dnsmasqCapsPtr *caps, const char *binaryPath);
 bool dnsmasqCapsGet(dnsmasqCapsPtr caps, dnsmasqCapsFlags flag);
 const char *dnsmasqCapsGetBinaryPath(dnsmasqCapsPtr caps);
 unsigned long dnsmasqCapsGetVersion(dnsmasqCapsPtr caps);
+char *dnsmasqDhcpHostsToString(dnsmasqDhcpHost *hosts, unsigned int nhosts);
 
 # define DNSMASQ_DHCPv6_MAJOR_REQD 2
 # define DNSMASQ_DHCPv6_MINOR_REQD 64

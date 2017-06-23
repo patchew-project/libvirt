@@ -29,6 +29,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+#include <stdlib.h>
+#include <inttypes.h>
 
 #include "virerror.h"
 #include "datatypes.h"
@@ -514,8 +516,92 @@ virNetworkDHCPHostDefParseXML(const char *networkName,
 
 
 static int
+virNetworkDHCPLeaseTimeParseXML (xmlNodePtr node,
+                                 xmlXPathContextPtr ctxt,
+                                 uint32_t *lease,
+                                 bool     *defined)
+{
+    int ret = 0;
+    uint32_t multiplier;
+    char *leaseString, *leaseUnit;
+    xmlNodePtr save;
+
+    *defined = 0;
+
+    save = ctxt->node;
+    ctxt->node = node;
+
+    leaseString = virXPathString ("string(./leasetime/text())", ctxt);
+    leaseUnit   = virXPathString ("string(./leasetime/@unit)", ctxt);
+
+    /* If value is not present we set the value to -2 */
+    if (leaseString == NULL) {
+        goto cleanup;
+    }
+    if (leaseString[0] == '-') {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("<leasetime> value (%s) cannot be negative"),
+                       leaseString);
+    }
+
+    *defined = 1;
+
+    if (leaseUnit == NULL || strcmp (leaseUnit, "seconds") == 0) {
+        multiplier = 1;
+    }
+    else if (strcmp (leaseUnit, "minutes") == 0) {
+        multiplier = 60;
+    }
+    else if (strcmp (leaseUnit, "hours") == 0) {
+        multiplier = 60 * 60;
+    }
+    else if (strcmp (leaseUnit, "days") == 0) {
+        multiplier = 60 * 60 * 24;
+    }
+    else {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("invalid value for unit parameter in <leasetime> element"
+                         "found in <dhcp> network, only 'seconds', 'minutes', "
+                         "'hours' or 'days' are valid: %s"),
+                       leaseUnit);
+        ret = -1;
+        goto cleanup;
+    }
+
+    errno = 0;
+    *lease = (uint32_t) strtoul((const char*)leaseString, NULL, 10);
+
+    /* Report any errors parsing the string */
+    if (errno != 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("<leasetime> value could not be converted to a signed integer: %s"),
+                      leaseString);
+        ret = -1;
+        goto cleanup;
+    }
+
+    if (*lease > (UINT32_MAX / multiplier)) {
+      virReportError (VIR_ERR_XML_ERROR,
+                      _("<leasetime> value %lu %s exceeds the maximum of %lu seconds"),
+                      (unsigned long)*lease, leaseUnit, (unsigned long)UINT32_MAX);
+      ret = -1;
+      goto cleanup;
+    }
+
+    *lease = *lease * multiplier;
+
+cleanup:
+    VIR_FREE(leaseString);
+    VIR_FREE(leaseUnit);
+    ctxt->node = save;
+    return ret;
+}
+
+
+static int
 virNetworkDHCPDefParseXML(const char *networkName,
                           xmlNodePtr node,
+                          xmlXPathContextPtr ctxt,
                           virNetworkIPDefPtr def)
 {
     int ret = -1;
@@ -525,6 +611,11 @@ virNetworkDHCPDefParseXML(const char *networkName,
 
     memset(&range, 0, sizeof(range));
     memset(&host, 0, sizeof(host));
+
+    if (virNetworkDHCPLeaseTimeParseXML (node, ctxt,
+                                         &def->leasetime,
+                                         &def->leasetime_defined))
+        goto cleanup;
 
     cur = node->children;
     while (cur != NULL) {
@@ -1104,7 +1195,7 @@ virNetworkIPDefParseXML(const char *networkName,
     }
 
     if ((dhcp = virXPathNode("./dhcp[1]", ctxt)) &&
-        virNetworkDHCPDefParseXML(networkName, dhcp, def) < 0)
+        virNetworkDHCPDefParseXML(networkName, dhcp, ctxt, def) < 0)
         goto cleanup;
 
     if (virXPathNode("./tftp[1]", ctxt)) {

@@ -1561,6 +1561,7 @@ dnsmasqCapsRefresh;
 dnsmasqContextFree;
 dnsmasqContextNew;
 dnsmasqDelete;
+dnsmasqDhcpHostsToString;
 dnsmasqReload;
 dnsmasqSave;
 
