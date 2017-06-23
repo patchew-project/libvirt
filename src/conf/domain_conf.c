@@ -1871,6 +1871,7 @@ virDomainControllerDefNew(virDomainControllerType type)
         def->opts.pciopts.chassis = -1;
         def->opts.pciopts.port = -1;
         def->opts.pciopts.busNr = -1;
+        def->opts.pciopts.idx = -1;
         def->opts.pciopts.numaNode = -1;
         break;
     case VIR_DOMAIN_CONTROLLER_TYPE_IDE:
@@ -9107,6 +9108,7 @@ virDomainControllerDefParseXML(xmlNodePtr node,
             goto error;
         }
         def->idx = idxVal;
+        VIR_FREE(idx);
     }
 
     cur = node->children;
@@ -9138,6 +9140,7 @@ virDomainControllerDefParseXML(xmlNodePtr node,
                 chassis = virXMLPropString(cur, "chassis");
                 port = virXMLPropString(cur, "port");
                 busNr = virXMLPropString(cur, "busNr");
+                idx = virXMLPropString(cur, "index");
                 processedTarget = true;
             }
         }
@@ -9353,6 +9356,23 @@ virDomainControllerDefParseXML(xmlNodePtr node,
                                _("PCI controller busNr '%s' out of range "
                                  "- must be 1-254"),
                                busNr);
+                goto error;
+            }
+        }
+        if (idx) {
+            if (virStrToLong_i(idx, NULL, 0,
+                               &def->opts.pciopts.idx) < 0) {
+                virReportError(VIR_ERR_XML_ERROR,
+                               _("Invalid target index '%s' in PCI controller"),
+                               idx);
+                goto error;
+            }
+            if (def->opts.pciopts.idx < 0 ||
+                def->opts.pciopts.idx > 31) {
+                virReportError(VIR_ERR_XML_ERROR,
+                               _("PCI controller target index '%s' out of "
+                                 "range - must be 0-31"),
+                               idx);
                 goto error;
             }
         }
@@ -21795,6 +21815,7 @@ virDomainControllerDefFormat(virBufferPtr buf,
             def->opts.pciopts.chassis != -1 ||
             def->opts.pciopts.port != -1 ||
             def->opts.pciopts.busNr != -1 ||
+            def->opts.pciopts.idx != -1 ||
             def->opts.pciopts.numaNode != -1) {
             virBufferAddLit(&childBuf, "<target");
             if (def->opts.pciopts.chassisNr != -1)
@@ -21809,6 +21830,9 @@ virDomainControllerDefFormat(virBufferPtr buf,
             if (def->opts.pciopts.busNr != -1)
                 virBufferAsprintf(&childBuf, " busNr='%d'",
                                   def->opts.pciopts.busNr);
+            if (def->opts.pciopts.idx != -1)
+                virBufferAsprintf(&childBuf, " index='%d'",
+                                  def->opts.pciopts.idx);
             if (def->opts.pciopts.numaNode == -1) {
                 virBufferAddLit(&childBuf, "/>\n");
             } else {

@@ -3768,6 +3768,11 @@
         libvirt API to attach host devices to the correct
         pci-expander-bus when assigning them to the domain).
       </dd>
+      <dt><code>index</code></dt>
+      <dd>
+        pci-root controllers for pSeries guests will use this attribute to
+        record the order they will show up in the guest.
+      </dd>
     </dl>
     <p>
       For machine types which provide an implicit PCI bus, the pci-root
