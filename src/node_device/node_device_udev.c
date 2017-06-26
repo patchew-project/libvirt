@@ -1602,24 +1602,15 @@ nodeStateCleanup(void)
 
 static void
 udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
-                        int fd,
+                        int fd ATTRIBUTE_UNUSED,
                         int events ATTRIBUTE_UNUSED,
                         void *data ATTRIBUTE_UNUSED)
 {
     struct udev_device *device = NULL;
     struct udev_monitor *udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
     const char *action = NULL;
-    int udev_fd = -1;
 
     nodeDeviceLock();
-    udev_fd = udev_monitor_get_fd(udev_monitor);
-    if (fd != udev_fd) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("File descriptor returned by udev %d does not "
-                         "match node device file descriptor %d"),
-                       fd, udev_fd);
-        goto cleanup;
-    }
 
     device = udev_monitor_receive_device(udev_monitor);
     if (device == NULL) {
