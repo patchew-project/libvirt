@@ -7185,6 +7185,8 @@ qemuDomainCreateWithFlags(virDomainPtr dom, unsigned int flags)
 
  endjob:
     qemuProcessEndJob(driver, vm);
+    if (ret < 0)
+        qemuDomainRemoveInactive(driver, vm);
 
  cleanup:
     virDomainObjEndAPI(&vm);
