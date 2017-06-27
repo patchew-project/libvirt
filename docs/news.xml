@@ -48,6 +48,11 @@
       </change>
     </section>
     <section title="Improvements">
+      <change>
+        <summary>
+          hyperv: Implement virDomainSetMemory and virDomainSendKey APIs
+        </summary>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
