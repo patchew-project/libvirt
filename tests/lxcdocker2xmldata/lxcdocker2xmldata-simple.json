@@ -1,0 +1,36 @@
+{
+	"Id": "dbb1ae21dac15973d66e6c2b8516d270b32ca766e0cf7551d8b7973513e5f079",
+        "Created": "2017-05-25T18:55:17.922934825Z",
+        "Path": "/bin/bash",
+        "Args": [],
+        "HostConfig": {
+            "Binds": null,
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "default",
+            "PortBindings": {},
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 2,
+            "Memory": 1073741824,
+            "CgroupParent": "",
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "KernelMemory": 0,
+            "MemoryReservation": 0,
+            "MemorySwap": -1,
+            "MemorySwappiness": -1,
+            "PidsLimit": 0,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0
+        }
+}
