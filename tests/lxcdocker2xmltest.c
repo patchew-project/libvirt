@@ -129,6 +129,7 @@ mymain(void)
     } while (0)
 
     DO_TEST("simple", true);
+    DO_TEST("command", true);
 
     virObjectUnref(xmlopt);
     virObjectUnref(caps);
