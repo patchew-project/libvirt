@@ -905,6 +905,16 @@ virJSONValueObjectGetValue(virJSONValuePtr object,
 
 
 bool
+virJSONValueIsObject(virJSONValuePtr object)
+{
+    if (object)
+        return object->type == VIR_JSON_TYPE_OBJECT;
+    else
+        return NULL;
+}
+
+
+bool
 virJSONValueIsArray(virJSONValuePtr array)
 {
     return array->type == VIR_JSON_TYPE_ARRAY;
