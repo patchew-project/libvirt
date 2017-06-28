@@ -2608,16 +2608,7 @@ qemuParseCommandLine(virCapsPtr caps,
         virDomainVideoDefPtr vid;
         if (VIR_ALLOC(vid) < 0)
             goto error;
-        if (def->virtType == VIR_DOMAIN_VIRT_XEN)
-            vid->type = VIR_DOMAIN_VIDEO_TYPE_XEN;
-        else
-            vid->type = video;
-        if (vid->type == VIR_DOMAIN_VIDEO_TYPE_QXL) {
-            vid->vgamem = QEMU_QXL_VGAMEM_DEFAULT;
-        } else {
-            vid->ram = 0;
-            vid->vgamem = 0;
-        }
+        vid->type = video;
         vid->heads = 1;
 
         if (VIR_APPEND_ELEMENT(def->videos, def->nvideos, vid) < 0) {
