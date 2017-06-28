@@ -440,6 +440,32 @@ virQEMUDriverConfigHugeTLBFSInit(virHugeTLBFSPtr hugetlbfs,
 }
 
 
+static int
+virQEMUDriverConfigSetCertDir(virConfPtr conf,
+                              const char *setting,
+                              char **value)
+{
+    char *tlsCertDir = NULL;
+
+    if (virConfGetValueString(conf, setting, &tlsCertDir) < 0)
+        return -1;
+
+    if (!tlsCertDir)
+        return 0;
+
+    if (!virFileExists(tlsCertDir)) {
+        VIR_INFO("%s, directory '%s' does not exist, retain default",
+                 setting, tlsCertDir);
+        VIR_FREE(tlsCertDir);
+    } else {
+        VIR_FREE(*value);
+        VIR_STEAL_PTR(*value, tlsCertDir);
+    }
+
+    return 0;
+}
+
+
 int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
                                 const char *filename,
                                 bool privileged)
@@ -467,8 +493,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
     if (!(conf = virConfReadFile(filename, 0)))
         goto cleanup;
 
-    if (virConfGetValueString(conf, "default_tls_x509_cert_dir",
-                              &cfg->defaultTLSx509certdir) < 0)
+    if (virQEMUDriverConfigSetCertDir(conf, "default_tls_x509_cert_dir",
+                                      &cfg->defaultTLSx509certdir) < 0)
         goto cleanup;
     if (virConfGetValueBool(conf, "default_tls_x509_verify",
                             &cfg->defaultTLSx509verify) < 0)
@@ -487,8 +513,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         goto cleanup;
     if (rv == 0)
         cfg->vncTLSx509verify = cfg->defaultTLSx509verify;
-    if (virConfGetValueString(conf, "vnc_tls_x509_cert_dir",
-                              &cfg->vncTLSx509certdir) < 0)
+    if (virQEMUDriverConfigSetCertDir(conf, "vnc_tls_x509_cert_dir",
+                                      &cfg->vncTLSx509certdir) < 0)
         goto cleanup;
     if (virConfGetValueString(conf, "vnc_listen", &cfg->vncListen) < 0)
         goto cleanup;
@@ -532,8 +558,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
 
     if (virConfGetValueBool(conf, "spice_tls", &cfg->spiceTLS) < 0)
         goto cleanup;
-    if (virConfGetValueString(conf, "spice_tls_x509_cert_dir",
-                              &cfg->spiceTLSx509certdir) < 0)
+    if (virQEMUDriverConfigSetCertDir(conf, "spice_tls_x509_cert_dir",
+                                      &cfg->spiceTLSx509certdir) < 0)
         goto cleanup;
     if (virConfGetValueBool(conf, "spice_sasl", &cfg->spiceSASL) < 0)
         goto cleanup;
@@ -554,8 +580,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
             goto cleanup;                                                   \
         if (rv == 0)                                                        \
             cfg->val## TLSx509verify = cfg->defaultTLSx509verify;           \
-        if (virConfGetValueString(conf, #val "_tls_x509_cert_dir",          \
-                                  &cfg->val## TLSx509certdir) < 0)          \
+        if (virQEMUDriverConfigSetCertDir(conf, #val "_tls_x509_cert_dir",  \
+                                          &cfg->val## TLSx509certdir) < 0)  \
             goto cleanup;                                                   \
         if (virConfGetValueString(conf,                                     \
                                   #val "_tls_x509_secret_uuid",             \
