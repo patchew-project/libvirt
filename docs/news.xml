@@ -57,6 +57,16 @@
       </change>
     </section>
     <section title="Improvements">
+      <change>
+        <summary>
+          Capabilities now include info about host's CAT settings
+        </summary>
+        <description>
+          Even though it's not usable yet, various information about
+          resource control from the host is gathered and presented in
+          capabilities if available.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
