@@ -5926,7 +5926,6 @@ qemuDomainMigratableDefCheckABIStability(virQEMUDriverPtr driver,
 
 
 #define COPY_FLAGS (VIR_DOMAIN_XML_SECURE | \
-                    VIR_DOMAIN_XML_UPDATE_CPU | \
                     VIR_DOMAIN_XML_MIGRATABLE)
 
 bool
