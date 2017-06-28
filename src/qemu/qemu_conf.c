@@ -467,23 +467,28 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
     if (!(conf = virConfReadFile(filename, 0)))
         goto cleanup;
 
-    if (virConfGetValueString(conf, "default_tls_x509_cert_dir", &cfg->defaultTLSx509certdir) < 0)
+    if (virConfGetValueString(conf, "default_tls_x509_cert_dir",
+                              &cfg->defaultTLSx509certdir) < 0)
         goto cleanup;
-    if (virConfGetValueBool(conf, "default_tls_x509_verify", &cfg->defaultTLSx509verify) < 0)
+    if (virConfGetValueBool(conf, "default_tls_x509_verify",
+                            &cfg->defaultTLSx509verify) < 0)
         goto cleanup;
     if (virConfGetValueString(conf, "default_tls_x509_secret_uuid",
                               &cfg->defaultTLSx509secretUUID) < 0)
         goto cleanup;
 
-    if (virConfGetValueBool(conf, "vnc_auto_unix_socket", &cfg->vncAutoUnixSocket) < 0)
+    if (virConfGetValueBool(conf, "vnc_auto_unix_socket",
+                            &cfg->vncAutoUnixSocket) < 0)
         goto cleanup;
     if (virConfGetValueBool(conf, "vnc_tls", &cfg->vncTLS) < 0)
         goto cleanup;
-    if ((rv = virConfGetValueBool(conf, "vnc_tls_x509_verify", &cfg->vncTLSx509verify)) < 0)
+    if ((rv = virConfGetValueBool(conf, "vnc_tls_x509_verify",
+                                  &cfg->vncTLSx509verify)) < 0)
         goto cleanup;
     if (rv == 0)
         cfg->vncTLSx509verify = cfg->defaultTLSx509verify;
-    if (virConfGetValueString(conf, "vnc_tls_x509_cert_dir", &cfg->vncTLSx509certdir) < 0)
+    if (virConfGetValueString(conf, "vnc_tls_x509_cert_dir",
+                              &cfg->vncTLSx509certdir) < 0)
         goto cleanup;
     if (virConfGetValueString(conf, "vnc_listen", &cfg->vncListen) < 0)
         goto cleanup;
@@ -493,16 +498,20 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         goto cleanup;
     if (virConfGetValueString(conf, "vnc_sasl_dir", &cfg->vncSASLdir) < 0)
         goto cleanup;
-    if (virConfGetValueBool(conf, "vnc_allow_host_audio", &cfg->vncAllowHostAudio) < 0)
+    if (virConfGetValueBool(conf, "vnc_allow_host_audio",
+                            &cfg->vncAllowHostAudio) < 0)
         goto cleanup;
-    if (virConfGetValueBool(conf, "nographics_allow_host_audio", &cfg->nogfxAllowHostAudio) < 0)
-        goto cleanup;
-
-
-    if (virConfGetValueStringList(conf, "security_driver", true, &cfg->securityDriverNames) < 0)
+    if (virConfGetValueBool(conf, "nographics_allow_host_audio",
+                            &cfg->nogfxAllowHostAudio) < 0)
         goto cleanup;
 
-    for (i = 0; cfg->securityDriverNames && cfg->securityDriverNames[i] != NULL; i++) {
+
+    if (virConfGetValueStringList(conf, "security_driver", true,
+                                  &cfg->securityDriverNames) < 0)
+        goto cleanup;
+
+    for (i = 0;
+         cfg->securityDriverNames && cfg->securityDriverNames[i] != NULL; i++) {
         for (j = i + 1; cfg->securityDriverNames[j] != NULL; j++) {
             if (STREQ(cfg->securityDriverNames[i],
                       cfg->securityDriverNames[j])) {
@@ -514,14 +523,17 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         }
     }
 
-    if (virConfGetValueBool(conf, "security_default_confined", &cfg->securityDefaultConfined) < 0)
+    if (virConfGetValueBool(conf, "security_default_confined",
+                            &cfg->securityDefaultConfined) < 0)
         goto cleanup;
-    if (virConfGetValueBool(conf, "security_require_confined", &cfg->securityRequireConfined) < 0)
+    if (virConfGetValueBool(conf, "security_require_confined",
+                            &cfg->securityRequireConfined) < 0)
         goto cleanup;
 
     if (virConfGetValueBool(conf, "spice_tls", &cfg->spiceTLS) < 0)
         goto cleanup;
-    if (virConfGetValueString(conf, "spice_tls_x509_cert_dir", &cfg->spiceTLSx509certdir) < 0)
+    if (virConfGetValueString(conf, "spice_tls_x509_cert_dir",
+                              &cfg->spiceTLSx509certdir) < 0)
         goto cleanup;
     if (virConfGetValueBool(conf, "spice_sasl", &cfg->spiceSASL) < 0)
         goto cleanup;
@@ -531,7 +543,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         goto cleanup;
     if (virConfGetValueString(conf, "spice_password", &cfg->spicePassword) < 0)
         goto cleanup;
-    if (virConfGetValueBool(conf, "spice_auto_unix_socket", &cfg->spiceAutoUnixSocket) < 0)
+    if (virConfGetValueBool(conf, "spice_auto_unix_socket",
+                            &cfg->spiceAutoUnixSocket) < 0)
         goto cleanup;
 
 #define GET_CONFIG_TLS_CERTINFO(val)                                        \
@@ -564,7 +577,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
 
 #undef GET_CONFIG_TLS_CERTINFO
 
-    if (virConfGetValueUInt(conf, "remote_websocket_port_min", &cfg->webSocketPortMin) < 0)
+    if (virConfGetValueUInt(conf, "remote_websocket_port_min",
+                            &cfg->webSocketPortMin) < 0)
         goto cleanup;
     if (cfg->webSocketPortMin < QEMU_WEBSOCKET_PORT_MIN) {
         /* if the port is too low, we can't get the display name
@@ -577,7 +591,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         goto cleanup;
     }
 
-    if (virConfGetValueUInt(conf, "remote_websocket_port_max", &cfg->webSocketPortMax) < 0)
+    if (virConfGetValueUInt(conf, "remote_websocket_port_max",
+                            &cfg->webSocketPortMax) < 0)
         goto cleanup;
     if (cfg->webSocketPortMax > QEMU_WEBSOCKET_PORT_MAX ||
         cfg->webSocketPortMax < cfg->webSocketPortMin) {
@@ -595,7 +610,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         goto cleanup;
     }
 
-    if (virConfGetValueUInt(conf, "remote_display_port_min", &cfg->remotePortMin) < 0)
+    if (virConfGetValueUInt(conf, "remote_display_port_min",
+                            &cfg->remotePortMin) < 0)
         goto cleanup;
     if (cfg->remotePortMin < QEMU_REMOTE_PORT_MIN) {
         /* if the port is too low, we can't get the display name
@@ -608,7 +624,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         goto cleanup;
     }
 
-    if (virConfGetValueUInt(conf, "remote_display_port_max", &cfg->remotePortMax) < 0)
+    if (virConfGetValueUInt(conf, "remote_display_port_max",
+                            &cfg->remotePortMax) < 0)
         goto cleanup;
     if (cfg->remotePortMax > QEMU_REMOTE_PORT_MAX ||
         cfg->remotePortMax < cfg->remotePortMin) {
@@ -626,7 +643,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         goto cleanup;
     }
 
-    if (virConfGetValueUInt(conf, "migration_port_min", &cfg->migrationPortMin) < 0)
+    if (virConfGetValueUInt(conf, "migration_port_min",
+                            &cfg->migrationPortMin) < 0)
         goto cleanup;
     if (cfg->migrationPortMin <= 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -635,7 +653,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         goto cleanup;
     }
 
-    if (virConfGetValueUInt(conf, "migration_port_max", &cfg->migrationPortMax) < 0)
+    if (virConfGetValueUInt(conf, "migration_port_max",
+                            &cfg->migrationPortMax) < 0)
         goto cleanup;
     if (cfg->migrationPortMax > 65535 ||
         cfg->migrationPortMax < cfg->migrationPortMin) {
@@ -656,7 +675,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
     if (group && virGetGroupID(group, &cfg->group) < 0)
         goto cleanup;
 
-    if (virConfGetValueBool(conf, "dynamic_ownership", &cfg->dynamicOwnership) < 0)
+    if (virConfGetValueBool(conf, "dynamic_ownership",
+                            &cfg->dynamicOwnership) < 0)
         goto cleanup;
 
     if (virConfGetValueStringList(conf,  "cgroup_controllers", false,
@@ -681,18 +701,23 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
                                   &cfg->cgroupDeviceACL) < 0)
         goto cleanup;
 
-    if (virConfGetValueString(conf, "save_image_format", &cfg->saveImageFormat) < 0)
+    if (virConfGetValueString(conf, "save_image_format",
+                              &cfg->saveImageFormat) < 0)
         goto cleanup;
-    if (virConfGetValueString(conf, "dump_image_format", &cfg->dumpImageFormat) < 0)
+    if (virConfGetValueString(conf, "dump_image_format",
+                              &cfg->dumpImageFormat) < 0)
         goto cleanup;
-    if (virConfGetValueString(conf, "snapshot_image_format", &cfg->snapshotImageFormat) < 0)
+    if (virConfGetValueString(conf, "snapshot_image_format",
+                              &cfg->snapshotImageFormat) < 0)
         goto cleanup;
 
     if (virConfGetValueString(conf, "auto_dump_path", &cfg->autoDumpPath) < 0)
         goto cleanup;
-    if (virConfGetValueBool(conf, "auto_dump_bypass_cache", &cfg->autoDumpBypassCache) < 0)
+    if (virConfGetValueBool(conf, "auto_dump_bypass_cache",
+                            &cfg->autoDumpBypassCache) < 0)
         goto cleanup;
-    if (virConfGetValueBool(conf, "auto_start_bypass_cache", &cfg->autoStartBypassCache) < 0)
+    if (virConfGetValueBool(conf, "auto_start_bypass_cache",
+                            &cfg->autoStartBypassCache) < 0)
         goto cleanup;
 
     if (virConfGetValueStringList(conf, "hugetlbfs_mount", true,
@@ -718,7 +743,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         }
     }
 
-    if (virConfGetValueString(conf, "bridge_helper", &cfg->bridgeHelperName) < 0)
+    if (virConfGetValueString(conf, "bridge_helper",
+                              &cfg->bridgeHelperName) < 0)
         goto cleanup;
 
     if (virConfGetValueBool(conf, "mac_filter", &cfg->macFilter) < 0)
@@ -726,9 +752,11 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
 
     if (virConfGetValueBool(conf, "relaxed_acs_check", &cfg->relaxedACS) < 0)
         goto cleanup;
-    if (virConfGetValueBool(conf, "clear_emulator_capabilities", &cfg->clearEmulatorCapabilities) < 0)
+    if (virConfGetValueBool(conf, "clear_emulator_capabilities",
+                            &cfg->clearEmulatorCapabilities) < 0)
         goto cleanup;
-    if (virConfGetValueBool(conf, "allow_disk_format_probing", &cfg->allowDiskFormatProbing) < 0)
+    if (virConfGetValueBool(conf, "allow_disk_format_probing",
+                            &cfg->allowDiskFormatProbing) < 0)
         goto cleanup;
     if (virConfGetValueBool(conf, "set_process_name", &cfg->setProcessName) < 0)
         goto cleanup;
@@ -777,7 +805,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
     if (virConfGetValueUInt(conf, "max_queued", &cfg->maxQueuedJobs) < 0)
         goto cleanup;
 
-    if (virConfGetValueInt(conf, "keepalive_interval", &cfg->keepAliveInterval) < 0)
+    if (virConfGetValueInt(conf, "keepalive_interval",
+                           &cfg->keepAliveInterval) < 0)
         goto cleanup;
     if (virConfGetValueUInt(conf, "keepalive_count", &cfg->keepAliveCount) < 0)
         goto cleanup;
@@ -830,7 +859,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
                 goto cleanup;
         }
     }
-    if (virConfGetValueUInt(conf, "gluster_debug_level", &cfg->glusterDebugLevel) < 0)
+    if (virConfGetValueUInt(conf, "gluster_debug_level",
+                            &cfg->glusterDebugLevel) < 0)
         goto cleanup;
 
     if (virConfGetValueStringList(conf, "namespaces", false, &namespaces) < 0)
@@ -871,7 +901,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         }
     }
 
-    if (virConfGetValueString(conf, "memory_backing_dir", &cfg->memoryBackingDir) < 0)
+    if (virConfGetValueString(conf, "memory_backing_dir",
+                              &cfg->memoryBackingDir) < 0)
         goto cleanup;
 
     ret = 0;
