@@ -1565,7 +1565,7 @@ qemuMonitorJSONUpdateVideoMemorySize(qemuMonitorPtr mon,
         {0}
     };
 
-    switch (video->type) {
+    switch ((virDomainVideoType) video->type) {
     case VIR_DOMAIN_VIDEO_TYPE_VGA:
         if (qemuMonitorJSONGetObjectProperty(mon, path, "vgamem_mb", &prop) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -1608,10 +1608,7 @@ qemuMonitorJSONUpdateVideoMemorySize(qemuMonitorPtr mon,
         }
         video->vram = prop.val.ul * 1024;
         break;
-    case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
-    case VIR_DOMAIN_VIDEO_TYPE_XEN:
-    case VIR_DOMAIN_VIDEO_TYPE_VBOX:
-    case VIR_DOMAIN_VIDEO_TYPE_LAST:
+    default:
         break;
     }
 
@@ -1635,7 +1632,7 @@ qemuMonitorJSONUpdateVideoVram64Size(qemuMonitorPtr mon,
         {0}
     };
 
-    switch (video->type) {
+    switch ((virDomainVideoType) video->type) {
     case VIR_DOMAIN_VIDEO_TYPE_QXL:
         if (video->vram64 != 0) {
             if (qemuMonitorJSONGetObjectProperty(mon, path,
@@ -1648,12 +1645,7 @@ qemuMonitorJSONUpdateVideoVram64Size(qemuMonitorPtr mon,
             video->vram64 = prop.val.ul * 1024;
         }
         break;
-    case VIR_DOMAIN_VIDEO_TYPE_VGA:
-    case VIR_DOMAIN_VIDEO_TYPE_VMVGA:
-    case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
-    case VIR_DOMAIN_VIDEO_TYPE_XEN:
-    case VIR_DOMAIN_VIDEO_TYPE_VBOX:
-    case VIR_DOMAIN_VIDEO_TYPE_LAST:
+    default:
         break;
     }
 

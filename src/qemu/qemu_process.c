@@ -2605,7 +2605,7 @@ qemuProcessUpdateVideoRamSize(virQEMUDriverPtr driver,
     for (i = 0; i < vm->def->nvideos; i++) {
         video = vm->def->videos[i];
 
-        switch (video->type) {
+        switch ((virDomainVideoType) video->type) {
         case VIR_DOMAIN_VIDEO_TYPE_VGA:
             if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_VGA_VGAMEM)) {
                 if (qemuMonitorUpdateVideoMemorySize(priv->mon, video, "VGA") < 0)
@@ -2642,10 +2642,7 @@ qemuProcessUpdateVideoRamSize(virQEMUDriverPtr driver,
                     goto error;
             }
             break;
-        case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
-        case VIR_DOMAIN_VIDEO_TYPE_XEN:
-        case VIR_DOMAIN_VIDEO_TYPE_VBOX:
-        case VIR_DOMAIN_VIDEO_TYPE_LAST:
+        default:
             break;
         }
 
