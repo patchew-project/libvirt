@@ -115,12 +115,14 @@ int virTestMain(int argc,
         return virTestMain(argc, argv, func, NULL);     \
     }
 
-# define VIR_TEST_PRELOAD(lib)                                          \
+# define VIR_TEST_PRELOAD(lib, haveap, _ap)                             \
     do {                                                                \
         const char *preload = getenv("LD_PRELOAD");                     \
         if (preload == NULL || strstr(preload, lib) == NULL) {          \
             char *newenv;                                               \
             if (!virFileIsExecutable(lib)) {                            \
+                if (haveap)                                             \
+                    va_end(_ap);                                        \
                 perror(lib);                                            \
                 return EXIT_FAILURE;                                    \
             }                                                           \
@@ -128,6 +130,8 @@ int virTestMain(int argc,
                 newenv = (char *) lib;                                  \
             } else if (virAsprintf(&newenv, "%s:%s", lib, preload) < 0) {   \
                 perror("virAsprintf");                                  \
+                if (haveap)                                             \
+                    va_end(_ap);                                        \
                 return EXIT_FAILURE;                                    \
             }                                                           \
             setenv("LD_PRELOAD", newenv, 1);                            \

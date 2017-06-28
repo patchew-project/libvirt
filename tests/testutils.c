@@ -904,11 +904,11 @@ int virTestMain(int argc,
     virLogOutputPtr *outputs = NULL;
 
     if (getenv("VIR_TEST_FILE_ACCESS"))
-        VIR_TEST_PRELOAD(TEST_MOCK);
+        VIR_TEST_PRELOAD(TEST_MOCK, false, NULL);
 
     va_start(ap, func);
     while ((lib = va_arg(ap, const char *)))
-        VIR_TEST_PRELOAD(lib);
+        VIR_TEST_PRELOAD(lib, true, ap);
     va_end(ap);
 
     progname = last_component(argv[0]);
