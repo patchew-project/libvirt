@@ -96,6 +96,7 @@ VIR_ENUM_IMPL(qemuDiskCacheV2, VIR_DOMAIN_DISK_CACHE_LAST,
               "unsafe");
 
 VIR_ENUM_IMPL(qemuVideo, VIR_DOMAIN_VIDEO_TYPE_LAST,
+              "", /* default value, we shouldn't see this */
               "std",
               "cirrus",
               "vmware",
@@ -109,6 +110,7 @@ VIR_ENUM_IMPL(qemuVideo, VIR_DOMAIN_VIDEO_TYPE_LAST,
 VIR_ENUM_DECL(qemuDeviceVideo)
 
 VIR_ENUM_IMPL(qemuDeviceVideo, VIR_DOMAIN_VIDEO_TYPE_LAST,
+              "", /* default value, we shouldn't see this */
               "VGA",
               "cirrus-vga",
               "vmware-svga",
@@ -122,6 +124,7 @@ VIR_ENUM_IMPL(qemuDeviceVideo, VIR_DOMAIN_VIDEO_TYPE_LAST,
 VIR_ENUM_DECL(qemuDeviceVideoSecondary)
 
 VIR_ENUM_IMPL(qemuDeviceVideoSecondary, VIR_DOMAIN_VIDEO_TYPE_LAST,
+              "", /* default value, we shouldn't see this */
               "", /* no secondary device for VGA */
               "", /* no secondary device for cirrus-vga */
               "", /* no secondary device for vmware-svga */
