@@ -478,11 +478,12 @@ virNetDevBridgeCreate(const char *brname)
              */
             rc = virNetDevBridgeCreateWithIoctl(brname);
             goto cleanup;
-# endif
+# else
             /* intentionally fall through if virNetDevBridgeCreateWithIoctl()
              * isn't available.
              */
             ATTRIBUTE_FALLTHROUGH;
+# endif
         default:
             virReportSystemError(-err->error,
                                  _("error creating bridge interface %s"),
