@@ -31,7 +31,6 @@
   </release>
 
      -->
-
 <libvirt>
   <release version="v3.5.0" date="unreleased">
     <section title="New features">
@@ -44,6 +43,16 @@
           Loadparm is an 8 byte parameter that, when present, is queried by
           S390 guests via sclp or diag 308. Linux guests on S390 use it to
           select a boot entry.
+        </description>
+      </change>
+      <change>
+        <summary>
+          qemu: Add support for live updates of coalesce settings
+        </summary>
+        <description>
+          Users can now use <code>virsh update-device</code> to change
+          the coalesce settings of an interfaces while the domain is
+          running.
         </description>
       </change>
     </section>
