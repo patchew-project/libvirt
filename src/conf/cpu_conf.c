@@ -643,7 +643,7 @@ virCPUDefFormatBufFull(virBufferPtr buf,
     if (virCPUDefFormatBuf(&childrenBuf, def, updateCPU) < 0)
         goto cleanup;
 
-    if (virDomainNumaDefCPUFormat(&childrenBuf, numa) < 0)
+    if (virDomainNumaDefCPUFormatXML(&childrenBuf, numa) < 0)
         goto cleanup;
 
     /* Put it all together */

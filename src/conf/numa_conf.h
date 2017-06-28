@@ -87,11 +87,34 @@ int virDomainNumatuneMaybeGetNodeset(virDomainNumaPtr numatune,
 
 size_t virDomainNumaGetNodeCount(virDomainNumaPtr numa);
 
+size_t virDomainNumaSetNodeCount(virDomainNumaPtr numa,
+                                 size_t nmem_nodes);
+
+size_t virDomainNumaGetNodeDistance(virDomainNumaPtr numa,
+                                    size_t node,
+                                    size_t sibling)
+    ATTRIBUTE_NONNULL(1);
+size_t virDomainNumaSetNodeDistance(virDomainNumaPtr numa,
+                                    size_t node,
+                                    size_t sibling,
+                                    unsigned int value)
+    ATTRIBUTE_NONNULL(1);
+size_t virDomainNumaGetNodeDistanceCount(virDomainNumaPtr numa,
+                                         size_t node)
+    ATTRIBUTE_NONNULL(1);
+size_t virDomainNumaSetNodeDistanceCount(virDomainNumaPtr numa,
+                                         size_t node,
+                                         size_t ndistances)
+    ATTRIBUTE_NONNULL(1);
 virBitmapPtr virDomainNumaGetNodeCpumask(virDomainNumaPtr numa,
                                          size_t node)
     ATTRIBUTE_NONNULL(1);
 virDomainMemoryAccess virDomainNumaGetNodeMemoryAccessMode(virDomainNumaPtr numa,
                                                       size_t node)
+    ATTRIBUTE_NONNULL(1);
+virBitmapPtr virDomainNumaSetNodeCpumask(virDomainNumaPtr numa,
+                                         size_t node,
+                                         virBitmapPtr cpumask)
     ATTRIBUTE_NONNULL(1);
 unsigned long long virDomainNumaGetNodeMemorySize(virDomainNumaPtr numa,
                                                   size_t node)
@@ -151,7 +174,7 @@ bool virDomainNumatuneNodeSpecified(virDomainNumaPtr numatune,
                                     int cellid);
 
 int virDomainNumaDefCPUParseXML(virDomainNumaPtr def, xmlXPathContextPtr ctxt);
-int virDomainNumaDefCPUFormat(virBufferPtr buf, virDomainNumaPtr def);
+int virDomainNumaDefCPUFormatXML(virBufferPtr buf, virDomainNumaPtr def);
 
 unsigned int virDomainNumaGetCPUCountTotal(virDomainNumaPtr numa);
 

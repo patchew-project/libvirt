@@ -1510,7 +1510,69 @@
     </p>
 
     <p>
-      This guest NUMA specification is currently available only for QEMU/KVM.
+      This guest NUMA specification is currently available only for
+      QEMU/KVM and Xen.  Whereas Xen driver also allows for a distinct
+      description of NUMA arranged <code>sibling</code> <code>cell</code>
+      <code>distances</code> <span class="since">Since 3.6.0</span>.
+    </p>
+
+    <p>
+      Under NUMA h/w architecture, distinct resources such as memory
+      create a designated distance between <code>cell</code> and
+      <code>siblings</code> that now can be described with the help of
+      <code>distances</code>. A detailed describtion can be found within
+      the ACPI (Advanced Configuration and Power Interface Specification)
+      within the chapter explaining the system's SLIT (System Locality
+      Distance Information Table).
+    </p>
+
+<pre>
+...
+&lt;cpu&gt;
+  ...
+  &lt;numa&gt;
+    &lt;cell id='0' cpus='0,4-7' memory='512000' unit='KiB'&gt;
+      &lt;distances&gt;
+        &lt;sibling id='0' value='10'/&gt;
+        &lt;sibling id='1' value='21'/&gt;
+        &lt;sibling id='2' value='31'/&gt;
+        &lt;sibling id='3' value='41'/&gt;
+      &lt;/distances&gt;
+    &lt;/cell&gt;
+    &lt;cell id='1' cpus='1,8-10,12-15' memory='512000' unit='KiB' memAccess='shared'&gt;
+      &lt;distances&gt;
+        &lt;sibling id='0' value='21'/&gt;
+        &lt;sibling id='1' value='10'/&gt;
+        &lt;sibling id='2' value='21'/&gt;
+        &lt;sibling id='3' value='31'/&gt;
+      &lt;/distances&gt;
+    &lt;/cell&gt;
+    &lt;cell id='2' cpus='2,11' memory='512000' unit='KiB' memAccess='shared'&gt;
+      &lt;distances&gt;
+        &lt;sibling id='0' value='31'/&gt;
+        &lt;sibling id='1' value='21'/&gt;
+        &lt;sibling id='2' value='10'/&gt;
+        &lt;sibling id='3' value='21'/&gt;
+      &lt;/distances&gt;
+    &lt;/cell&gt;
+    &lt;cell id='3' cpus='3' memory='512000' unit='KiB'&gt;
+      &lt;distances&gt;
+        &lt;sibling id='0' value='41'/&gt;
+        &lt;sibling id='1' value='31'/&gt;
+        &lt;sibling id='2' value='21'/&gt;
+        &lt;sibling id='3' value='10'/&gt;
+      &lt;/distances&gt;
+    &lt;/cell&gt;
+  &lt;/numa&gt;
+  ...
+&lt;/cpu&gt;
+...</pre>
+
+    <p>
+      Under Xen driver, if no <code>distances</code> are given to describe
+      the SLIT data between different cells, it will default to a scheme
+      using 10 for local and 21 for other cells.  Which is the assumption
+      of guest OS when no SLIT is specified.
     </p>
 
     <h3><a name="elementsEvents">Events configuration</a></h3>
