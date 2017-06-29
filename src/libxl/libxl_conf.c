@@ -291,6 +291,93 @@ libxlMakeChrdevStr(virDomainChrDefPtr def, char **buf)
     return 0;
 }
 
+static int libxlMakeCPUID(virArch arch,
+                          const virCPUDef *cpu,
+                          libxl_cpuid_policy_list *cpuid)
+{
+    virCPUDataPtr cpu_policy[4];
+    /* forced, required, disabled, forbidden */
+    char libxl_policy_char[4] = { '1', '1', '0', '0' };
+    int leaf, subleaf, reg;
+    size_t i, j;
+    char leaf_text[48];
+    char *reg_text;
+    int policy_index = 0;
+    uint32_t reg_value;
+    int ret = -1;
+    int cpuid_bit;
+    /* supported values, based on libxl_cpuid.c */
+    int leafs[] = { 1, 6, 7, 0x80000001 };
+    int subleafs[] = { -1, -1, 0, -1 };
+
+    if (cpuEncode(arch,
+                cpu,
+                &cpu_policy[0],
+                &cpu_policy[1],
+                NULL,
+                &cpu_policy[2],
+                &cpu_policy[3],
+                NULL))
+        return -1;
+
+    for (i = 0; i < sizeof(leafs)/sizeof(*leafs); i++) {
+        leaf = leafs[i];
+        subleaf = subleafs[i];
+
+        for (reg = 0; reg < 4; reg++) {
+            if (subleaf != -1)
+                snprintf(leaf_text, sizeof(leaf_text),
+                        "%#x,%d:e%cx=" LIBXL_DEFAULT_CPUID_REG_CONFIG,
+                        leaf, subleaf, 'a'+reg);
+            else
+                snprintf(leaf_text, sizeof(leaf_text),
+                        "%#x:e%cx=" LIBXL_DEFAULT_CPUID_REG_CONFIG,
+                        leaf, 'a'+reg);
+
+            reg_text = strstr(leaf_text, "=") + 1;
+
+            for (policy_index = 0; policy_index < 4; policy_index++) {
+                /* search for this leaf in CPUData structure */
+                for (j = 0; j < cpu_policy[policy_index]->data.x86.len; j++) {
+                    virCPUx86CPUID *cpuid_policy =
+                        &cpu_policy[policy_index]->data.x86.data[j];
+
+                    if (cpuid_policy->eax_in == leaf &&
+                            (subleaf == -1 || cpuid_policy->ecx_in == subleaf)) {
+
+                        switch (reg) {
+                            case 0: reg_value = cpuid_policy->eax; break;
+                            case 1: reg_value = cpuid_policy->ebx; break;
+                            case 2: reg_value = cpuid_policy->ecx; break;
+                            case 3: reg_value = cpuid_policy->edx; break;
+                        }
+
+                        for (cpuid_bit = 0; cpuid_bit < 32; cpuid_bit++) {
+                            if (reg_value & (1<<cpuid_bit))
+                                reg_text[31-cpuid_bit] = libxl_policy_char[policy_index];
+                        }
+                    }
+                }
+            }
+
+            /* set it in domain config only if any bit was modified */
+            if (STRNEQ(reg_text, LIBXL_DEFAULT_CPUID_REG_CONFIG)) {
+                if (libxl_cpuid_parse_config_xend(cpuid, leaf_text))
+                    goto cleanup;
+            }
+        }
+    }
+
+    ret = 0;
+
+ cleanup:
+    virCPUDataFree(cpu_policy[0]);
+    virCPUDataFree(cpu_policy[1]);
+    virCPUDataFree(cpu_policy[2]);
+    virCPUDataFree(cpu_policy[3]);
+    return ret;
+}
+
 static int
 libxlMakeDomBuildInfo(virDomainDefPtr def,
                       libxl_ctx *ctx,
@@ -376,38 +463,42 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
                           def->features[VIR_DOMAIN_FEATURE_ACPI] ==
                           VIR_TRISTATE_SWITCH_ON);
 
-        if (caps &&
-            def->cpu && def->cpu->mode == (VIR_CPU_MODE_HOST_PASSTHROUGH)) {
-            bool hasHwVirt = false;
-            bool svm = false, vmx = false;
+        if (caps && def->cpu) {
+            if (def->cpu->mode == (VIR_CPU_MODE_HOST_PASSTHROUGH)) {
+                bool hasHwVirt = false;
+                bool svm = false, vmx = false;
 
-            if (ARCH_IS_X86(def->os.arch)) {
-                vmx = virCPUCheckFeature(caps->host.arch, caps->host.cpu, "vmx");
-                svm = virCPUCheckFeature(caps->host.arch, caps->host.cpu, "svm");
-                hasHwVirt = vmx | svm;
-            }
+                if (ARCH_IS_X86(def->os.arch)) {
+                    vmx = virCPUCheckFeature(caps->host.arch, caps->host.cpu, "vmx");
+                    svm = virCPUCheckFeature(caps->host.arch, caps->host.cpu, "svm");
+                    hasHwVirt = vmx | svm;
+                }
 
-            if (def->cpu->nfeatures) {
-                for (i = 0; i < def->cpu->nfeatures; i++) {
+                if (def->cpu->nfeatures) {
+                    for (i = 0; i < def->cpu->nfeatures; i++) {
 
-                    switch (def->cpu->features[i].policy) {
+                        switch (def->cpu->features[i].policy) {
 
-                        case VIR_CPU_FEATURE_DISABLE:
-                        case VIR_CPU_FEATURE_FORBID:
-                            if ((vmx && STREQ(def->cpu->features[i].name, "vmx")) ||
-                                (svm && STREQ(def->cpu->features[i].name, "svm")))
-                                hasHwVirt = false;
-                            break;
+                            case VIR_CPU_FEATURE_DISABLE:
+                            case VIR_CPU_FEATURE_FORBID:
+                                if ((vmx && STREQ(def->cpu->features[i].name, "vmx")) ||
+                                    (svm && STREQ(def->cpu->features[i].name, "svm")))
+                                    hasHwVirt = false;
+                                break;
 
-                        case VIR_CPU_FEATURE_FORCE:
-                        case VIR_CPU_FEATURE_REQUIRE:
-                        case VIR_CPU_FEATURE_OPTIONAL:
-                        case VIR_CPU_FEATURE_LAST:
-                            break;
+                            case VIR_CPU_FEATURE_FORCE:
+                            case VIR_CPU_FEATURE_REQUIRE:
+                            case VIR_CPU_FEATURE_OPTIONAL:
+                            case VIR_CPU_FEATURE_LAST:
+                                break;
+                        }
                     }
                 }
+                libxl_defbool_set(&b_info->u.hvm.nested_hvm, hasHwVirt);
             }
-            libxl_defbool_set(&b_info->u.hvm.nested_hvm, hasHwVirt);
+
+            if (libxlMakeCPUID(def->os.arch, def->cpu, &b_info->cpuid))
+                return -1;
         }
 
         if (def->nsounds > 0) {

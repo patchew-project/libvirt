@@ -60,6 +60,7 @@
 # define LIBXL_DUMP_DIR LIBXL_LIB_DIR "/dump"
 # define LIBXL_CHANNEL_DIR LIBXL_LIB_DIR "/channel/target"
 # define LIBXL_BOOTLOADER_PATH "pygrub"
+# define LIBXL_DEFAULT_CPUID_REG_CONFIG "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 
 typedef struct _libxlDriverPrivate libxlDriverPrivate;
