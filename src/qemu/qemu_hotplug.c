@@ -3813,15 +3813,6 @@ qemuDomainRemoveMemoryDevice(virQEMUDriverPtr driver,
 
 
 static void
-qemuDomainRemovePCIHostDevice(virQEMUDriverPtr driver,
-                              virDomainObjPtr vm,
-                              virDomainHostdevDefPtr hostdev)
-{
-    qemuHostdevReAttachPCIDevices(driver, vm->def->name, &hostdev, 1);
-    qemuDomainReleaseDeviceAddress(vm, hostdev->info, NULL);
-}
-
-static void
 qemuDomainRemoveUSBHostDevice(virQEMUDriverPtr driver,
                               virDomainObjPtr vm,
                               virDomainHostdevDefPtr hostdev)
@@ -3913,7 +3904,8 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
 
     switch ((virDomainHostdevSubsysType) hostdev->source.subsys.type) {
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
-        qemuDomainRemovePCIHostDevice(driver, vm, hostdev);
+        qemuHostdevReAttachPCIDevices(driver, vm->def->name, &hostdev, 1);
+        qemuDomainReleaseDeviceAddress(vm, hostdev->info, NULL);
         /* QEMU might no longer need to lock as much memory, eg. we just
          * detached the last VFIO device, so adjust the limit here */
         if (qemuDomainAdjustMaxMemLock(vm) < 0)
