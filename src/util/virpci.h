@@ -176,6 +176,9 @@ typedef int (*virPCIDeviceAddressActor)(virPCIDeviceAddressPtr addr,
 int virPCIDeviceAddressIOMMUGroupIterate(virPCIDeviceAddressPtr orig,
                                          virPCIDeviceAddressActor actor,
                                          void *opaque);
+int virPCIIOMMUGroupIterate(int iommu_group,
+                            virPCIDeviceAddressActor actor,
+                            void *opaque);
 virPCIDeviceListPtr virPCIDeviceGetIOMMUGroupList(virPCIDevicePtr dev);
 int virPCIDeviceAddressGetIOMMUGroupAddresses(virPCIDeviceAddressPtr devAddr,
                                               virPCIDeviceAddressPtr **iommuGroupDevices,

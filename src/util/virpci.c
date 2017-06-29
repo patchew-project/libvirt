@@ -49,6 +49,7 @@
 VIR_LOG_INIT("util.pci");
 
 #define PCI_SYSFS "/sys/bus/pci/"
+#define IOMMU_GROUP_SYSFS "/sys/kernel/iommu_groups/"
 #define PCI_ID_LEN 10   /* "XXXX XXXX" */
 #define PCI_ADDR_LEN 13 /* "XXXX:XX:XX.X" */
 
@@ -2178,16 +2179,13 @@ int virPCIDeviceFileIterate(virPCIDevicePtr dev,
     return ret;
 }
 
-
-/* virPCIDeviceAddressIOMMUGroupIterate:
- *   Call @actor for all devices in the same iommu_group as orig
- *   (including orig itself) Even if there is no iommu_group for the
- *   device, call @actor once for orig.
+/* virPCIIOMMUGroupIterate:
+ *   Call @actor for all devices in a particular iommu_group.
  */
 int
-virPCIDeviceAddressIOMMUGroupIterate(virPCIDeviceAddressPtr orig,
-                                     virPCIDeviceAddressActor actor,
-                                     void *opaque)
+virPCIIOMMUGroupIterate(int iommu_group,
+                        virPCIDeviceAddressActor actor,
+                        void *opaque)
 {
     char *groupPath = NULL;
     DIR *groupDir = NULL;
@@ -2196,13 +2194,11 @@ virPCIDeviceAddressIOMMUGroupIterate(virPCIDeviceAddressPtr orig,
     int direrr;
 
     if (virAsprintf(&groupPath,
-                    PCI_SYSFS "devices/%04x:%02x:%02x.%x/iommu_group/devices",
-                    orig->domain, orig->bus, orig->slot, orig->function) < 0)
+                    IOMMU_GROUP_SYSFS "%d/devices",
+                    iommu_group) < 0)
         goto cleanup;
 
     if (virDirOpenQuiet(&groupDir, groupPath) < 0) {
-        /* just process the original device, nothing more */
-        ret = (actor)(orig, opaque);
         goto cleanup;
     }
 
@@ -2227,6 +2223,28 @@ virPCIDeviceAddressIOMMUGroupIterate(virPCIDeviceAddressPtr orig,
  cleanup:
     VIR_FREE(groupPath);
     VIR_DIR_CLOSE(groupDir);
+    return ret;
+}
+
+/* virPCIDeviceAddressIOMMUGroupIterate:
+ *   Call @actor for all devices in the same iommu_group as orig
+ *   (including orig itself) Even if there is no iommu_group for the
+ *   device, call @actor once for orig.
+ */
+int
+virPCIDeviceAddressIOMMUGroupIterate(virPCIDeviceAddressPtr orig,
+                                     virPCIDeviceAddressActor actor,
+                                     void *opaque)
+{
+    int ret = -1;
+
+    ret = virPCIIOMMUGroupIterate(virPCIDeviceAddressGetIOMMUGroupNum(orig),
+                                  actor, opaque);
+    if (ret < 0) {
+        /* just process the original device, nothing more */
+        ret = (actor)(orig, opaque);
+    }
+
     return ret;
 }
 
