@@ -274,7 +274,7 @@ test_programs += xml2sexprtest sexpr2xmltest \
 endif WITH_XEN
 
 if WITH_LIBXL
-test_programs += xlconfigtest
+test_programs += xlconfigtest libxlxmltest
 endif WITH_LIBXL
 
 if WITH_QEMU
@@ -528,9 +528,13 @@ libxl_LDADDS += $(LDADDS)
 xlconfigtest_SOURCES = \
 	xlconfigtest.c testutilsxen.c testutilsxen.h \
 	testutils.c testutils.h
+libxlxmltest_SOURCES = \
+	libxlxmltest.c testutilsxen.c testutilsxen.h \
+	testutils.c testutils.h
 xlconfigtest_LDADD =$(libxl_LDADDS)
+libxlxmltest_LDADD =$(libxl_LDADDS)
 else ! WITH_LIBXL
-EXTRA_DIST += xlconfigtest.c
+EXTRA_DIST += xlconfigtest.c libxlxmltest.c
 endif ! WITH_LIBXL
 
 QEMUMONITORTESTUTILS_SOURCES = \
