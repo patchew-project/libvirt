@@ -13143,8 +13143,7 @@ virDomainShmemDefParseXML(xmlNodePtr node,
                           unsigned int flags)
 {
     char *tmp = NULL;
-    virDomainShmemDefPtr def = NULL;
-    virDomainShmemDefPtr ret = NULL;
+    virDomainShmemDefPtr def;
     xmlNodePtr msi = NULL;
     xmlNodePtr save = ctxt->node;
     xmlNodePtr server = NULL;
@@ -13163,7 +13162,7 @@ virDomainShmemDefParseXML(xmlNodePtr node,
         if ((def->model = virDomainShmemModelTypeFromString(tmp)) < 0) {
             virReportError(VIR_ERR_XML_ERROR,
                            _("Unknown shmem model type '%s'"), tmp);
-            goto cleanup;
+            goto error;
         }
 
         VIR_FREE(tmp);
@@ -13172,12 +13171,12 @@ virDomainShmemDefParseXML(xmlNodePtr node,
     if (!(def->name = virXMLPropString(node, "name"))) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("shmem element must contain 'name' attribute"));
-        goto cleanup;
+        goto error;
     }
 
     if (virDomainParseScaledValue("./size[1]", NULL, ctxt,
                                   &def->size, 1, ULLONG_MAX, false) < 0)
-        goto cleanup;
+        goto error;
 
     if ((server = virXPathNode("./server[1]", ctxt))) {
         def->server.enabled = true;
@@ -13197,7 +13196,7 @@ virDomainShmemDefParseXML(xmlNodePtr node,
             virReportError(VIR_ERR_XML_ERROR,
                            _("invalid number of vectors for shmem: '%s'"),
                            tmp);
-            goto cleanup;
+            goto error;
         }
         VIR_FREE(tmp);
 
@@ -13208,7 +13207,7 @@ virDomainShmemDefParseXML(xmlNodePtr node,
                 virReportError(VIR_ERR_XML_ERROR,
                                _("invalid msi ioeventfd setting for shmem: '%s'"),
                                tmp);
-                goto cleanup;
+                goto error;
             }
             def->msi.ioeventfd = val;
         }
@@ -13219,20 +13218,21 @@ virDomainShmemDefParseXML(xmlNodePtr node,
     if (def->msi.enabled && !def->server.enabled) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("msi option is only supported with a server"));
-        goto cleanup;
+        goto error;
     }
 
     if (virDomainDeviceInfoParseXML(node, NULL, &def->info, flags) < 0)
-        goto cleanup;
+        goto error;
 
-
-    ret = def;
-    def = NULL;
  cleanup:
-    ctxt->node = save;
     VIR_FREE(tmp);
+    ctxt->node = save;
+    return def;
+
+ error:
     virDomainShmemDefFree(def);
-    return ret;
+    def = NULL;
+    goto cleanup;
 }
 
 static int
@@ -14394,7 +14394,6 @@ virDomainMemoryDefParseXML(xmlNodePtr memdevNode,
 
         def->access = val;
     }
-    VIR_FREE(tmp);
 
     /* source */
     if ((node = virXPathNode("./source", ctxt)) &&
@@ -14414,14 +14413,15 @@ virDomainMemoryDefParseXML(xmlNodePtr memdevNode,
     if (virDomainDeviceInfoParseXML(memdevNode, NULL, &def->info, flags) < 0)
         goto error;
 
+ cleanup:
+    VIR_FREE(tmp);
     ctxt->node = save;
     return def;
 
  error:
-    VIR_FREE(tmp);
     virDomainMemoryDefFree(def);
-    ctxt->node = save;
-    return NULL;
+    def = NULL;
+    goto cleanup;
 }
 
 
