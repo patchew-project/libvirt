@@ -1322,6 +1322,18 @@ bool virDomainObjTaint(virDomainObjPtr obj,
     return true;
 }
 
+
+static void
+virDomainDeviceInfoClear(virDomainDeviceInfoPtr info)
+{
+    VIR_FREE(info->alias);
+    memset(&info->addr, 0, sizeof(info->addr));
+    info->type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE;
+    VIR_FREE(info->romfile);
+    VIR_FREE(info->loadparm);
+}
+
+
 static void
 virDomainDeviceInfoFree(virDomainDeviceInfoPtr info)
 {
@@ -3589,15 +3601,6 @@ virDomainDeviceInfoCopy(virDomainDeviceInfoPtr dst,
         VIR_STRDUP(dst->loadparm, src->loadparm) < 0)
         return -1;
     return 0;
-}
-
-void virDomainDeviceInfoClear(virDomainDeviceInfoPtr info)
-{
-    VIR_FREE(info->alias);
-    memset(&info->addr, 0, sizeof(info->addr));
-    info->type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE;
-    VIR_FREE(info->romfile);
-    VIR_FREE(info->loadparm);
 }
 
 
