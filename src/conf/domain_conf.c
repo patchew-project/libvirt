@@ -1397,6 +1397,8 @@ virDomainInputDefNew(void)
     if (VIR_ALLOC(def) < 0)
         return NULL;
 
+    virDomainDeviceInfoClear(&def->info);
+
     return def;
 }
 
@@ -1725,6 +1727,8 @@ virDomainDiskDefNew(virDomainXMLOptionPtr xmlopt)
     if (VIR_ALLOC(ret->src) < 0)
         goto error;
 
+    virDomainDeviceInfoClear(&ret->info);
+
     if (xmlopt &&
         xmlopt->privateData.diskNew &&
         !(ret->privateData = xmlopt->privateData.diskNew()))
@@ -1854,6 +1858,8 @@ virDomainControllerDefNew(virDomainControllerType type)
     if (VIR_ALLOC(def) < 0)
         return NULL;
 
+    virDomainDeviceInfoClear(&def->info);
+
     def->type = type;
 
     /* initialize anything that has a non-0 default */
@@ -1909,6 +1915,8 @@ virDomainFSDefNew(void)
 
     if (VIR_ALLOC(ret->src) < 0)
         goto cleanup;
+
+    virDomainDeviceInfoClear(&ret->info);
 
     return ret;
 
@@ -2039,6 +2047,8 @@ virDomainNetDefNew(void)
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
+
+    virDomainDeviceInfoClear(&def->info);
 
     return def;
 }
@@ -2278,6 +2288,8 @@ virDomainSmartcardDefNew(void)
     if (VIR_ALLOC(def) < 0)
         return NULL;
 
+    virDomainDeviceInfoClear(&def->info);
+
     return def;
 }
 
@@ -2326,6 +2338,8 @@ virDomainSoundDefNew(void)
     if (VIR_ALLOC(def) < 0)
         return NULL;
 
+    virDomainDeviceInfoClear(&def->info);
+
     return def;
 }
 
@@ -2352,6 +2366,8 @@ virDomainMemballoonDefNew(void)
     if (VIR_ALLOC(def) < 0)
         return NULL;
 
+    virDomainDeviceInfoClear(&def->info);
+
     return def;
 }
 
@@ -2374,6 +2390,8 @@ virDomainNVRAMDefNew(void)
     if (VIR_ALLOC(def) < 0)
         return NULL;
 
+    virDomainDeviceInfoClear(&def->info);
+
     return def;
 }
 
@@ -2395,6 +2413,8 @@ virDomainWatchdogDefNew(void)
     if (VIR_ALLOC(def) < 0)
         return NULL;
 
+    virDomainDeviceInfoClear(&def->info);
+
     return def;
 }
 
@@ -2415,6 +2435,8 @@ virDomainRNGDefNew(void)
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
+
+    virDomainDeviceInfoClear(&def->info);
 
     return def;
 }
@@ -2449,6 +2471,8 @@ virDomainShmemDefNew(void)
     if (VIR_ALLOC(def) < 0)
         return NULL;
 
+    virDomainDeviceInfoClear(&def->info);
+
     return def;
 }
 
@@ -2470,6 +2494,8 @@ virDomainVideoDefNew(void)
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
+
+    virDomainDeviceInfoClear(&def->info);
 
     return def;
 }
@@ -2498,6 +2524,8 @@ virDomainHostdevDefNew(virDomainXMLOptionPtr xmlopt)
 
     if (!(def->info = virDomainDeviceInfoNew()))
         goto error;
+
+    virDomainDeviceInfoClear(def->info);
 
     if (xmlopt &&
         xmlopt->privateData.hostdevNew &&
@@ -2597,6 +2625,8 @@ virDomainTPMDefNew(void)
     if (VIR_ALLOC(def) < 0)
         return NULL;
 
+    virDomainDeviceInfoClear(&def->info);
+
     return def;
 }
 
@@ -2640,6 +2670,8 @@ virDomainHubDefNew(void)
     if (VIR_ALLOC(def) < 0)
         return NULL;
 
+    virDomainDeviceInfoClear(&def->info);
+
     return def;
 }
 
@@ -2659,6 +2691,8 @@ virDomainRedirdevDefNew(void)
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
+
+    virDomainDeviceInfoClear(&def->info);
 
     return def;
 }
@@ -2695,6 +2729,8 @@ virDomainMemoryDefNew(void)
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
+
+    virDomainDeviceInfoClear(&def->info);
 
     return def;
 }
@@ -2916,6 +2952,8 @@ virDomainPanicDefNew(void)
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
+
+    virDomainDeviceInfoClear(&def->info);
 
     return def;
 }
@@ -11228,6 +11266,8 @@ virDomainChrDefNew(virDomainXMLOptionPtr xmlopt)
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
+
+    virDomainDeviceInfoClear(&def->info);
 
     def->target.port = -1;
 
