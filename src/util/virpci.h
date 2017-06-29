@@ -180,6 +180,7 @@ int virPCIIOMMUGroupIterate(int iommu_group,
                             virPCIDeviceAddressActor actor,
                             void *opaque);
 virPCIDeviceListPtr virPCIDeviceGetIOMMUGroupList(virPCIDevicePtr dev);
+virPCIDeviceListPtr virPCIGetIOMMUGroupList(int iommu_group);
 int virPCIDeviceAddressGetIOMMUGroupAddresses(virPCIDeviceAddressPtr devAddr,
                                               virPCIDeviceAddressPtr **iommuGroupDevices,
                                               size_t *nIommuGroupDevices);

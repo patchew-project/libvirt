@@ -2298,6 +2298,33 @@ virPCIDeviceGetIOMMUGroupList(virPCIDevicePtr dev)
 }
 
 
+/*
+ * virPCIGetIOMMUGroupList - return a virPCIDeviceList containing
+ * all of the devices in @iommu_group.
+ *
+ * Return the new list, or NULL on failure
+ */
+virPCIDeviceListPtr
+virPCIGetIOMMUGroupList(int iommu_group)
+{
+    virPCIDeviceListPtr groupList = virPCIDeviceListNew();
+
+    if (!groupList)
+        goto error;
+
+    if (virPCIIOMMUGroupIterate(iommu_group,
+                                virPCIDeviceGetIOMMUGroupAddOne,
+                                groupList) < 0)
+        goto error;
+
+    return groupList;
+
+ error:
+    virObjectUnref(groupList);
+    return NULL;
+}
+
+
 typedef struct {
     virPCIDeviceAddressPtr **iommuGroupDevices;
     size_t *nIommuGroupDevices;

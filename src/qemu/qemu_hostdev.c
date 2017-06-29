@@ -384,6 +384,22 @@ qemuHostdevPrepareDomainDevices(virQEMUDriverPtr driver,
 }
 
 void
+qemuHostdevReleasePCIDevices(virQEMUDriverPtr driver,
+                             const char *name,
+                             virDomainHostdevDefPtr *hostdevs,
+                             int nhostdevs)
+{
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    const char *oldStateDir = cfg->stateDir;
+    virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
+
+    virHostdevReleasePCIDevices(hostdev_mgr, QEMU_DRIVER_NAME, name,
+                                hostdevs, nhostdevs, oldStateDir);
+
+    virObjectUnref(cfg);
+}
+
+void
 qemuHostdevReAttachPCIDevices(virQEMUDriverPtr driver,
                               const char *name,
                               virDomainHostdevDefPtr *hostdevs,

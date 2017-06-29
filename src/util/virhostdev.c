@@ -905,6 +905,96 @@ virHostdevPreparePCIDevices(virHostdevManagerPtr mgr,
     return ret;
 }
 
+static bool
+virHostdevPCIDeviceUnbindableInternal(virHostdevManagerPtr mgr,
+                                      int iommu_group)
+{
+    struct virHostdevIsPCINodeDeviceUsedData data = { mgr, NULL, true };
+
+    if (virPCIIOMMUGroupIterate(iommu_group,
+                                virHostdevIsPCINodeDeviceUsed,
+                                &data) < 0) {
+        VIR_DEBUG("IOMMU group %d is not unbindable", iommu_group);
+        return false;
+    }
+
+    VIR_DEBUG("IOMMU group %d is unbindable", iommu_group);
+    return true;
+}
+
+/*
+ * Check if devices within IOMMU group are in use by any domains
+ */
+bool
+virHostdevPCIDeviceGroupUnbindable(virHostdevManagerPtr mgr,
+                                   int iommu_group)
+{
+    bool result;
+
+    virObjectLock(mgr->activePCIHostdevs);
+    result = virHostdevPCIDeviceUnbindableInternal(mgr, iommu_group);
+    virObjectUnlock(mgr->activePCIHostdevs);
+
+    return result;
+}
+
+/*
+ * Confirm all devices in IOMMU group are in inactiveList
+ * before attempting to reattach to host driver. Devices in IOMMU
+ * group that aren't in either activeList or inactiveList are considered
+ * outside our control, so we treat them as inactive as well.
+ *
+ * Callers can check virHostdevPCIDeviceGroupUnbindable() beforehand
+ * for some indication that the group is ready for reattach to the
+ * host, but since it's possible for a hostdev from the group to get
+ * re-attached to a guest prior to subsequently calling this function
+ * there is no guarantee of this, which should be fine since it would
+ * only be immediately rebound to the stub driver anyway.
+ */
+void
+virHostdevPCIDeviceGroupUnbind(virHostdevManagerPtr mgr,
+                               int iommu_group)
+{
+    virPCIDeviceListPtr pcidevs = NULL;
+    size_t i;
+
+    virObjectLock(mgr->activePCIHostdevs);
+    virObjectLock(mgr->inactivePCIHostdevs);
+
+    if (!virHostdevPCIDeviceUnbindableInternal(mgr, iommu_group)) {
+        VIR_DEBUG("IOMMU group %d still in use, deferring reattach "
+                  "of PCI devices to host", iommu_group);
+        goto cleanup;
+    }
+
+    pcidevs = virPCIGetIOMMUGroupList(iommu_group);
+    for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
+        virPCIDevicePtr actual, pci = virPCIDeviceListGet(pcidevs, i);
+        virPCIDeviceAddressPtr devAddr = virPCIDeviceGetAddress(pci);
+
+        actual = virPCIDeviceListFindByIDs(mgr->inactivePCIHostdevs,
+                                           devAddr->domain,
+                                           devAddr->bus,
+                                           devAddr->slot,
+                                           devAddr->function);
+        if (actual) {
+            VIR_DEBUG("Reattaching PCI device %s", virPCIDeviceGetName(actual));
+            if (virPCIDeviceGetManaged(actual))
+                if (virPCIDeviceReattach(actual, mgr->activePCIHostdevs,
+                                         mgr->inactivePCIHostdevs) < 0) {
+                    VIR_ERROR(_("Failed to re-attach PCI device: %s"),
+                              virGetLastErrorMessage());
+                    virResetLastError();
+                }
+        }
+    }
+
+ cleanup:
+    virObjectUnref(pcidevs);
+    virObjectUnlock(mgr->activePCIHostdevs);
+    virObjectUnlock(mgr->inactivePCIHostdevs);
+}
+
 /*
  * Pre-condition: inactivePCIHostdevs & activePCIHostdevs
  * are locked

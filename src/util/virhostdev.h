@@ -122,6 +122,14 @@ virHostdevReleasePCIDevices(virHostdevManagerPtr mgr,
                             const char *oldStateDir)
     ATTRIBUTE_NONNULL(1);
 void
+virHostdevPCIDeviceGroupUnbind(virHostdevManagerPtr mgr,
+                               int iommu_group)
+    ATTRIBUTE_NONNULL(1);
+bool
+virHostdevPCIDeviceGroupUnbindable(virHostdevManagerPtr mgr,
+                                   int iommu_group)
+    ATTRIBUTE_NONNULL(1);
+void
 virHostdevReAttachUSBDevices(virHostdevManagerPtr hostdev_mgr,
                               const char *drv_name,
                               const char *dom_name,

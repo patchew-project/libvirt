@@ -74,6 +74,10 @@ void qemuHostdevReAttachPCIDevices(virQEMUDriverPtr driver,
                                    const char *name,
                                    virDomainHostdevDefPtr *hostdevs,
                                    int nhostdevs);
+void qemuHostdevReleasePCIDevices(virQEMUDriverPtr driver,
+                                  const char *name,
+                                  virDomainHostdevDefPtr *hostdevs,
+                                  int nhostdevs);
 void qemuHostdevReAttachUSBDevices(virQEMUDriverPtr driver,
                                    const char *name,
                                    virDomainHostdevDefPtr *hostdevs,
