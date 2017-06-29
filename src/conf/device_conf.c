@@ -32,6 +32,19 @@
 
 #define VIR_FROM_THIS VIR_FROM_DEVICE
 
+virDomainDeviceInfoPtr
+virDomainDeviceInfoNew(void)
+{
+    virDomainDeviceInfoPtr info;
+
+    if (VIR_ALLOC(info) < 0)
+        return NULL;
+
+    virDomainDeviceInfoClear(info);
+
+    return info;
+}
+
 void
 virDomainDeviceInfoClear(virDomainDeviceInfoPtr info)
 {

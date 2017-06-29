@@ -170,6 +170,7 @@ struct _virDomainDeviceInfo {
     char *loadparm;
 };
 
+virDomainDeviceInfoPtr virDomainDeviceInfoNew(void);
 void virDomainDeviceInfoClear(virDomainDeviceInfoPtr info);
 int virDomainDeviceInfoCopy(virDomainDeviceInfoPtr dst,
                             virDomainDeviceInfoPtr src);
