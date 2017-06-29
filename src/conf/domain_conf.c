@@ -2364,7 +2364,7 @@ virDomainHostdevDefNew(virDomainXMLOptionPtr xmlopt)
     if (VIR_ALLOC(def) < 0)
         return NULL;
 
-    if (VIR_ALLOC(def->info) < 0)
+    if (!(def->info = virDomainDeviceInfoNew()))
         goto error;
 
     if (xmlopt &&
@@ -2376,7 +2376,7 @@ virDomainHostdevDefNew(virDomainXMLOptionPtr xmlopt)
     return def;
 
  error:
-    VIR_FREE(def->info);
+    virDomainDeviceInfoFree(def->info);
     VIR_FREE(def);
     goto cleanup;
 }

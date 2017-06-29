@@ -91,6 +91,8 @@ virCPUModeTypeToString;
 # conf/device_conf.h
 virDomainDeviceInfoAddressIsEqual;
 virDomainDeviceInfoCopy;
+virDomainDeviceInfoFree;
+virDomainDeviceInfoNew;
 virInterfaceLinkFormat;
 virInterfaceLinkParseXML;
 virPCIDeviceAddressEqual;

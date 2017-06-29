@@ -1983,6 +1983,7 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
     int ret = -1;
     virDomainPCIAddressSetPtr addrs = NULL;
     qemuDomainObjPrivatePtr priv = NULL;
+    virDomainDeviceInfoPtr info = virDomainDeviceInfoNew();
     int max_idx = -1;
     int nbuses = 0;
     size_t i;
@@ -2031,16 +2032,15 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
          */
 
         if (qemuDomainHasPCIRoot(def)) {
-            /* This is a dummy info used to reserve a slot for a
+            bool buses_reserved = true;
+
+            /* The dummy info is used to reserve a slot for a
              * legacy PCI device that doesn't exist, but may in the
              * future, e.g.  if another device is hotplugged into the
              * domain.
              */
-            virDomainDeviceInfo info = {
-                .pciConnectFlags = (VIR_PCI_CONNECT_HOTPLUGGABLE |
-                                    VIR_PCI_CONNECT_TYPE_PCI_DEVICE)
-            };
-            bool buses_reserved = true;
+            info->pciConnectFlags = (VIR_PCI_CONNECT_HOTPLUGGABLE |
+                                     VIR_PCI_CONNECT_TYPE_PCI_DEVICE);
 
             for (i = 0; i < addrs->nbuses; i++) {
                 if (!qemuDomainPCIBusFullyReserved(&addrs->buses[i])) {
@@ -2049,7 +2049,7 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
                 }
             }
             if (!buses_reserved &&
-                qemuDomainPCIAddressReserveNextAddr(addrs, &info) < 0)
+                qemuDomainPCIAddressReserveNextAddr(addrs, info) < 0)
                 goto cleanup;
         }
 
@@ -2073,15 +2073,19 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
         if (max_idx <= 0 &&
             addrs->nbuses > max_idx + 1 &&
             qemuDomainHasPCIeRoot(def)) {
-            virDomainDeviceInfo info = {
-                .pciConnectFlags = (VIR_PCI_CONNECT_HOTPLUGGABLE |
-                                    VIR_PCI_CONNECT_TYPE_PCIE_DEVICE)
-            };
+
+            /* The dummy info is used to reserve a slot for a
+             * PCI Express device that doesn't exist, but may in the
+             * future, e.g.  if another device is hotplugged into the
+             * domain.
+             */
+            info->pciConnectFlags = (VIR_PCI_CONNECT_HOTPLUGGABLE |
+                                     VIR_PCI_CONNECT_TYPE_PCIE_DEVICE);
 
             /* if there isn't an empty pcie-root-port, this will
              * cause one to be added
              */
-            if (qemuDomainPCIAddressReserveNextAddr(addrs, &info) < 0)
+            if (qemuDomainPCIAddressReserveNextAddr(addrs, info) < 0)
                goto cleanup;
         }
 
@@ -2234,6 +2238,7 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
     ret = 0;
 
  cleanup:
+    virDomainDeviceInfoFree(info);
     virDomainPCIAddressSetFree(addrs);
 
     return ret;
