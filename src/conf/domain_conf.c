@@ -2378,7 +2378,7 @@ void virDomainVideoDefFree(virDomainVideoDefPtr def)
 
 
 virDomainHostdevDefPtr
-virDomainHostdevDefAlloc(virDomainXMLOptionPtr xmlopt)
+virDomainHostdevDefNew(virDomainXMLOptionPtr xmlopt)
 {
     virDomainHostdevDefPtr def = NULL;
 
@@ -13801,7 +13801,7 @@ virDomainHostdevDefParseXML(virDomainXMLOptionPtr xmlopt,
 
     ctxt->node = node;
 
-    if (!(def = virDomainHostdevDefAlloc(xmlopt)))
+    if (!(def = virDomainHostdevDefNew(xmlopt)))
         goto error;
 
     if (mode) {
