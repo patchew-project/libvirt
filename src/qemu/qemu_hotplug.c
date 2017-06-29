@@ -68,6 +68,8 @@ VIR_LOG_INIT("qemu.qemu_hotplug");
 /* Wait up to 5 seconds for device removal to finish. */
 unsigned long long qemuDomainRemoveDeviceWaitTime = 1000ull * 5;
 
+/* Wait up to 15 seconds for iommu group close */
+unsigned long long qemuDomainRemoveDeviceGroupWaitTime = 1000ull * 15;
 
 /**
  * qemuDomainPrepareDisk:
@@ -3838,6 +3840,32 @@ qemuDomainRemoveSCSIVHostDevice(virQEMUDriverPtr driver,
 }
 
 static int
+qemuDomainWaitForDeviceGroupClose(virDomainObjPtr vm, int iommu_group)
+{
+    char *group_path;
+    unsigned long long remaining_ms = qemuDomainRemoveDeviceGroupWaitTime;
+    int rc = -1;
+
+    if (virAsprintf(&group_path, "/dev/vfio/%d", iommu_group) < 0)
+        return -1;
+
+    while ((rc = virFileIsOpenByPid(group_path, vm->pid)) == 1) {
+        if (remaining_ms <= 0)
+            break;
+        usleep(100*1000);
+        remaining_ms -= 100;
+    }
+
+    VIR_DEBUG("IOMMU group %d FD status: %d, wait time: %llu ms",
+              iommu_group, rc,
+              qemuDomainRemoveDeviceGroupWaitTime - remaining_ms);
+
+    VIR_FREE(group_path);
+    return rc;
+}
+
+
+static int
 qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
                            virDomainObjPtr vm,
                            virDomainHostdevDefPtr hostdev)
@@ -3941,8 +3969,10 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
             virPCIDeviceAddressGetIOMMUGroupNum(&hostdev->source.subsys.u.pci.addr);
         if (virHostdevPCIDeviceGroupUnbindable(driver->hostdevMgr,
                                                iommu_group)) {
-            virHostdevPCIDeviceGroupUnbind(driver->hostdevMgr,
-                                           iommu_group);
+            if (qemuDomainWaitForDeviceGroupClose(vm, iommu_group) == 0) {
+                virHostdevPCIDeviceGroupUnbind(driver->hostdevMgr,
+                                               iommu_group);
+            }
         }
     }
 

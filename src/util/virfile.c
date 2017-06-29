@@ -4162,3 +4162,55 @@ virFileReadValueString(char **value, const char *format, ...)
     VIR_FREE(str);
     return ret;
 }
+
+int
+virFileIsOpenByPid(const char *path, pid_t pid)
+{
+    struct dirent *ent;
+    DIR *filelist_dir;
+    char *filelist_path;
+    bool found = false;
+    int rc = -1;
+
+    if (!path || !IS_ABSOLUTE_FILE_NAME(path)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("invalid path: %s"), path ? path : "null");
+        goto error;
+    }
+
+    if (virAsprintf(&filelist_path, "/proc/%d/fd", pid) < 0)
+        goto error;
+
+    if (virDirOpen(&filelist_dir, filelist_path) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("unable to open directory: %s"), filelist_path);
+        goto error;
+    }
+
+    while (!found &&
+           (rc = virDirRead(filelist_dir, &ent, filelist_path)) == 1) {
+        char *resolved_path = NULL;
+        char *link_path;
+        if ((rc = virAsprintf(&link_path, "%s/%s", filelist_path, ent->d_name)) < 0)
+            break;
+        if (virFileResolveLink(link_path, &resolved_path) == 0) {
+            if (resolved_path) {
+                VIR_DEBUG("checking absolute path for match (need: %s, got: %s)",
+                          path, resolved_path);
+                if (STREQ(resolved_path, path))
+                    found = true;
+                VIR_FREE(resolved_path);
+            }
+        }
+    }
+
+    VIR_DIR_CLOSE(filelist_dir);
+ error:
+    VIR_FREE(filelist_path);
+
+    VIR_DEBUG("returning, rc: %d, found: %d", rc, found);
+    if (rc < 0)
+        return rc;
+
+    return found ? 1 : 0;
+}

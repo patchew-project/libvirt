@@ -1659,6 +1659,7 @@ virFileIsDir;
 virFileIsExecutable;
 virFileIsLink;
 virFileIsMountPoint;
+virFileIsOpenByPid;
 virFileIsSharedFS;
 virFileIsSharedFSType;
 virFileLength;
