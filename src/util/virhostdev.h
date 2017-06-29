@@ -114,6 +114,14 @@ virHostdevReAttachPCIDevices(virHostdevManagerPtr hostdev_mgr,
                              const char *oldStateDir)
     ATTRIBUTE_NONNULL(1);
 void
+virHostdevReleasePCIDevices(virHostdevManagerPtr mgr,
+                            const char *drv_name,
+                            const char *dom_name,
+                            virDomainHostdevDefPtr *hostdevs,
+                            int nhostdevs,
+                            const char *oldStateDir)
+    ATTRIBUTE_NONNULL(1);
+void
 virHostdevReAttachUSBDevices(virHostdevManagerPtr hostdev_mgr,
                               const char *drv_name,
                               const char *dom_name,

@@ -932,25 +932,26 @@ virHostdevReattachPCIDevice(virHostdevManagerPtr mgr,
     }
 }
 
-/* @oldStateDir:
- * For upgrade purpose: see virHostdevRestoreNetConfig
+/*
+ * Move PCI devices to inactive list and prepare them for reattaching
+ * to host driver
+ *
+ * Pre-condition: inactivePCIHostdevs & activePCIHostdevs
+ * are locked
  */
-void
-virHostdevReAttachPCIDevices(virHostdevManagerPtr mgr,
-                             const char *drv_name,
-                             const char *dom_name,
-                             virDomainHostdevDefPtr *hostdevs,
-                             int nhostdevs,
-                             const char *oldStateDir)
+static void
+virHostdevReleasePCIDevicesInternal(virHostdevManagerPtr mgr,
+                                    const char *drv_name,
+                                    const char *dom_name,
+                                    virDomainHostdevDefPtr *hostdevs,
+                                    int nhostdevs,
+                                    const char *oldStateDir)
 {
     virPCIDeviceListPtr pcidevs;
     size_t i;
 
     if (!nhostdevs)
         return;
-
-    virObjectLock(mgr->activePCIHostdevs);
-    virObjectLock(mgr->inactivePCIHostdevs);
 
     if (!(pcidevs = virHostdevGetPCIHostDeviceList(hostdevs, nhostdevs))) {
         VIR_ERROR(_("Failed to allocate PCI device list: %s"),
@@ -1056,8 +1057,62 @@ virHostdevReAttachPCIDevices(virHostdevManagerPtr mgr,
         }
     }
 
-    /* Step 5: Reattach managed devices to their host drivers; unmanaged
-     *         devices don't need to be processed further */
+ cleanup:
+    virObjectUnref(pcidevs);
+}
+
+void
+virHostdevReleasePCIDevices(virHostdevManagerPtr mgr,
+                            const char *drv_name,
+                            const char *dom_name,
+                            virDomainHostdevDefPtr *hostdevs,
+                            int nhostdevs,
+                            const char *oldStateDir)
+{
+    virObjectLock(mgr->activePCIHostdevs);
+    virObjectLock(mgr->inactivePCIHostdevs);
+
+
+    virHostdevReleasePCIDevicesInternal(mgr, drv_name, dom_name,
+                                        hostdevs, nhostdevs, oldStateDir);
+
+    virObjectUnlock(mgr->activePCIHostdevs);
+    virObjectUnlock(mgr->inactivePCIHostdevs);
+}
+
+/* @oldStateDir:
+ * For upgrade purpose: see virHostdevRestoreNetConfig
+ */
+void
+virHostdevReAttachPCIDevices(virHostdevManagerPtr mgr,
+                             const char *drv_name,
+                             const char *dom_name,
+                             virDomainHostdevDefPtr *hostdevs,
+                             int nhostdevs,
+                             const char *oldStateDir)
+{
+    virPCIDeviceListPtr pcidevs;
+    size_t i;
+
+    if (!nhostdevs)
+        return;
+
+    virObjectLock(mgr->activePCIHostdevs);
+    virObjectLock(mgr->inactivePCIHostdevs);
+
+    /* Release PCI devices to the inactive list */
+    virHostdevReleasePCIDevicesInternal(mgr, drv_name, dom_name,
+                                        hostdevs, nhostdevs, oldStateDir);
+
+    if (!(pcidevs = virHostdevGetPCIHostDeviceList(hostdevs, nhostdevs))) {
+        VIR_ERROR(_("Failed to allocate PCI device list: %s"),
+                  virGetLastErrorMessage());
+        virResetLastError();
+        goto cleanup;
+    }
+
+    /* Reattach managed devices to their host drivers; unmanaged
+     * devices don't need to be processed further */
     for (i = 0; i < virPCIDeviceListCount(pcidevs); i++) {
         virPCIDevicePtr pci = virPCIDeviceListGet(pcidevs, i);
         virPCIDevicePtr actual;
