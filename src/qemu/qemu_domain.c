@@ -2511,7 +2511,7 @@ qemuDomainDefAddDefaultDevices(virDomainDefPtr def,
 
     if (addDefaultMemballoon && !def->memballoon) {
         virDomainMemballoonDefPtr memballoon;
-        if (VIR_ALLOC(memballoon) < 0)
+        if (!(memballoon = virDomainMemballoonDefNew()))
             goto cleanup;
 
         memballoon->model = VIR_DOMAIN_MEMBALLOON_MODEL_VIRTIO;
@@ -2545,10 +2545,13 @@ qemuDomainDefAddDefaultDevices(virDomainDefPtr def,
 
         if (j == def->npanics) {
             virDomainPanicDefPtr panic;
-            if (VIR_ALLOC(panic) < 0 ||
-                VIR_APPEND_ELEMENT_COPY(def->panics,
+
+            if (!(panic = virDomainPanicDefNew()))
+                goto cleanup;
+
+            if (VIR_APPEND_ELEMENT_COPY(def->panics,
                                         def->npanics, panic) < 0) {
-                VIR_FREE(panic);
+                virDomainPanicDefFree(panic);
                 goto cleanup;
             }
         }

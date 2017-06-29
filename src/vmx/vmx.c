@@ -3037,7 +3037,7 @@ virVMXParseSVGA(virConfPtr conf, virDomainVideoDefPtr *def)
         return -1;
     }
 
-    if (VIR_ALLOC(*def) < 0)
+    if (!(*def = virDomainVideoDefNew()))
         return -1;
 
     (*def)->type = VIR_DOMAIN_VIDEO_TYPE_VMVGA;

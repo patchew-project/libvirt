@@ -432,7 +432,7 @@ bhyveParsePCIDisk(virDomainDefPtr def,
     int idx = -1;
     virDomainDiskDefPtr disk = NULL;
 
-    if (VIR_ALLOC(disk) < 0)
+    if (!(disk = virDomainDiskDefNew(NULL)))
         goto cleanup;
     if (VIR_ALLOC(disk->src) < 0)
         goto error;
@@ -505,7 +505,7 @@ bhyveParsePCINet(virDomainDefPtr def,
     const char *separator = NULL;
     const char *mac = NULL;
 
-    if (VIR_ALLOC(net) < 0)
+    if (!(net = virDomainNetDefNew()))
         goto cleanup;
 
     /* As we only support interface type='bridge' and cannot

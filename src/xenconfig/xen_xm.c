@@ -412,7 +412,7 @@ xenParseXMInputDevs(virConfPtr conf, virDomainDefPtr def)
                  STREQ(str, "mouse") ||
                  STREQ(str, "keyboard"))) {
             virDomainInputDefPtr input;
-            if (VIR_ALLOC(input) < 0)
+            if (!(input = virDomainInputDefNew()))
                 return -1;
 
             input->bus = VIR_DOMAIN_INPUT_BUS_USB;

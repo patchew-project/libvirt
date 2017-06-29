@@ -375,7 +375,7 @@ xenDomainDefPostParse(virDomainDefPtr def,
 {
     if (!def->memballoon) {
         virDomainMemballoonDefPtr memballoon;
-        if (VIR_ALLOC(memballoon) < 0)
+        if (!(memballoon = virDomainMemballoonDefNew()))
             return -1;
 
         memballoon->model = VIR_DOMAIN_MEMBALLOON_MODEL_XEN;

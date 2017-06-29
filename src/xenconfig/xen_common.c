@@ -942,7 +942,7 @@ xenParseVif(virConfPtr conf, virDomainDefPtr def, const char *vif_typename)
                 key = nextkey;
             }
 
-            if (VIR_ALLOC(net) < 0)
+            if (!(net = virDomainNetDefNew()))
                 goto cleanup;
 
             if (mac[0]) {

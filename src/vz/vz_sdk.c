@@ -552,7 +552,7 @@ prlsdkAddDomainVideoInfoCt(virDomainDefPtr def)
     if (def->ngraphics == 0)
         return 0;
 
-    if (VIR_ALLOC(video) < 0)
+    if (!(virDomainVideoDefNew()))
         goto cleanup;
 
     video->type = VIR_DOMAIN_VIDEO_TYPE_PARALLELS;
@@ -581,7 +581,7 @@ prlsdkAddDomainVideoInfoVm(PRL_HANDLE sdkdom, virDomainDefPtr def)
     ret = PrlVmCfg_GetVideoRamSize(sdkdom, &videoRam);
     prlsdkCheckRetGoto(ret, error);
 
-    if (VIR_ALLOC(video) < 0)
+    if (!(video = virDomainVideoDefNew()))
         goto error;
 
     if (VIR_ALLOC(accel) < 0)
@@ -1157,7 +1157,7 @@ prlsdkAddDomainNetInfo(PRL_HANDLE sdkdom, virDomainDefPtr def)
         ret = PrlVmCfg_GetNetAdapter(sdkdom, i, &netAdapter);
         prlsdkCheckRetGoto(ret, error);
 
-        if (VIR_ALLOC(net) < 0)
+        if (!(net = virDomainNetDefNew()))
             goto error;
 
         if (prlsdkGetNetInfo(netAdapter, net, IS_CT(def)) < 0)

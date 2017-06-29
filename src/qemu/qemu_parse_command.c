@@ -649,7 +649,7 @@ qemuParseCommandLineDisk(virDomainXMLOptionPtr xmlopt,
                           0) < 0)
         return NULL;
 
-    if (VIR_ALLOC(def) < 0)
+    if (!(def = virDomainDiskDefNew(NULL)))
         goto cleanup;
     if (VIR_ALLOC(def->src) < 0)
         goto error;
@@ -1032,7 +1032,7 @@ qemuParseCommandLineNet(virDomainXMLOptionPtr xmlopt,
         nkeywords = 0;
     }
 
-    if (VIR_ALLOC(def) < 0)
+    if (!(def = virDomainNetDefNew()))
         goto cleanup;
 
     /* 'tap' could turn into libvirt type=ethernet, type=bridge or
@@ -1502,10 +1502,13 @@ qemuParseCommandLineCPU(virDomainDefPtr dom,
 
             if (j == dom->npanics) {
                 virDomainPanicDefPtr panic;
-                if (VIR_ALLOC(panic) < 0 ||
-                    VIR_APPEND_ELEMENT_COPY(dom->panics,
+
+                if (!(panic = virDomainPanicDefNew()))
+                    goto cleanup;
+
+                if (VIR_APPEND_ELEMENT_COPY(dom->panics,
                                             dom->npanics, panic) < 0) {
-                    VIR_FREE(panic);
+                    virDomainPanicDefFree(panic);
                     goto cleanup;
                 }
                 panic->model = VIR_DOMAIN_PANIC_MODEL_HYPERV;
@@ -2240,7 +2243,7 @@ qemuParseCommandLine(virCapsPtr caps,
                 STREQ(val, "mouse") ||
                 STREQ(val, "keyboard")) {
                 virDomainInputDefPtr input;
-                if (VIR_ALLOC(input) < 0)
+                if (!(input = virDomainInputDefNew()))
                     goto error;
                 input->bus = VIR_DOMAIN_INPUT_BUS_USB;
                 if (STREQ(val, "tablet"))
@@ -2330,7 +2333,7 @@ qemuParseCommandLine(virCapsPtr caps,
 
                 if (type != -1) {
                     virDomainSoundDefPtr snd;
-                    if (VIR_ALLOC(snd) < 0)
+                    if (!(snd = virDomainSoundDefNew()))
                         goto error;
                     snd->model = type;
                     if (VIR_APPEND_ELEMENT(def->sounds, def->nsounds, snd) < 0) {
@@ -2347,7 +2350,7 @@ qemuParseCommandLine(virCapsPtr caps,
 
             if (model != -1) {
                 virDomainWatchdogDefPtr wd;
-                if (VIR_ALLOC(wd) < 0)
+                if (!(wd = virDomainWatchdogDefNew()))
                     goto error;
                 wd->model = model;
                 wd->action = VIR_DOMAIN_WATCHDOG_ACTION_RESET;
@@ -2450,7 +2453,7 @@ qemuParseCommandLine(virCapsPtr caps,
                    STRPREFIX(progargv[i + 1], "spapr-nvram.reg=")) {
             WANT_VALUE();
 
-            if (VIR_ALLOC(def->nvram) < 0)
+            if (!(def->nvram = virDomainNVRAMDefNew()))
                 goto error;
 
             def->nvram->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_SPAPRVIO;
@@ -2477,7 +2480,7 @@ qemuParseCommandLine(virCapsPtr caps,
 
             if (STRPREFIX(opts, "virtio-balloon")) {
                 WANT_VALUE();
-                if (VIR_ALLOC(def->memballoon) < 0)
+                if (!(def->memballoon = virDomainMemballoonDefNew()))
                     goto error;
                 def->memballoon->model = VIR_DOMAIN_MEMBALLOON_MODEL_VIRTIO;
             } else {
@@ -2606,7 +2609,7 @@ qemuParseCommandLine(virCapsPtr caps,
 
     if (def->ngraphics) {
         virDomainVideoDefPtr vid;
-        if (VIR_ALLOC(vid) < 0)
+        if (!(vid = virDomainVideoDefNew()))
             goto error;
         if (def->virtType == VIR_DOMAIN_VIRT_XEN)
             vid->type = VIR_DOMAIN_VIDEO_TYPE_XEN;
@@ -2631,7 +2634,7 @@ qemuParseCommandLine(virCapsPtr caps,
      */
     if (!def->memballoon) {
         virDomainMemballoonDefPtr memballoon;
-        if (VIR_ALLOC(memballoon) < 0)
+        if (!(memballoon = virDomainMemballoonDefNew()))
             goto error;
         memballoon->model = VIR_DOMAIN_MEMBALLOON_MODEL_NONE;
 

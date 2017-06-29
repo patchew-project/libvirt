@@ -605,7 +605,7 @@ xenParseSxprNets(virDomainDefPtr def,
             model = sexpr_node(node, "device/vif/model");
             type = sexpr_node(node, "device/vif/type");
 
-            if (VIR_ALLOC(net) < 0)
+            if (!(net = virDomainNetDefNew()))
                 goto cleanup;
 
             if (tmp != NULL ||
@@ -728,7 +728,7 @@ xenParseSxprSound(virDomainDefPtr def,
 
         for (i = 0; i < (VIR_DOMAIN_SOUND_MODEL_ES1370 + 1); i++) {
             virDomainSoundDefPtr sound;
-            if (VIR_ALLOC(sound) < 0)
+            if (!(sound = virDomainSoundDefNew()))
                 goto error;
             sound->model = i;
             def->sounds[def->nsounds++] = sound;
@@ -752,7 +752,7 @@ xenParseSxprSound(virDomainDefPtr def,
                 goto error;
             }
 
-            if (VIR_ALLOC(sound) < 0)
+            if (!(sound = virDomainSoundDefNew()))
                 goto error;
 
             if ((sound->model = virDomainSoundModelTypeFromString(model)) < 0) {
@@ -801,7 +801,7 @@ xenParseSxprUSB(virDomainDefPtr def,
                     STREQ(tmp, "mouse") ||
                     STREQ(tmp, "keyboard")) {
                     virDomainInputDefPtr input;
-                    if (VIR_ALLOC(input) < 0)
+                    if (!(input = virDomainInputDefNew()))
                         goto error;
                     input->bus = VIR_DOMAIN_INPUT_BUS_USB;
                     if (STREQ(tmp, "tablet"))

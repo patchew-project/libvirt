@@ -3223,7 +3223,7 @@ vboxDumpVideo(virDomainDefPtr def, vboxDriverPtr data ATTRIBUTE_UNUSED,
         return -1;
     def->nvideos = 1;
 
-    if (VIR_ALLOC(def->videos[0]) < 0)
+    if (!(def->videos[0] = virDomainVideoDefNew()))
         return -1;
 
     gVBoxAPI.UIMachine.GetVRAMSize(machine, &VRAMSize);
@@ -3390,7 +3390,7 @@ vboxDumpSharedFolders(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine
         char *hostPath = NULL;
         PRBool writable = PR_FALSE;
 
-        if (VIR_ALLOC(def->fss[i]) < 0)
+        if (!(def->fss[i] = virDomainFSDefNew()))
             goto sharedFoldersCleanup;
 
         def->fss[i]->type = VIR_DOMAIN_FS_TYPE_MOUNT;
@@ -3451,7 +3451,7 @@ vboxDumpNetwork(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine, PRUi
     /* Allocate memory for the networkcards which are enabled */
     if ((def->nnets > 0) && (VIR_ALLOC_N(def->nets, def->nnets) >= 0)) {
         for (i = 0; i < def->nnets; i++)
-            ignore_value(VIR_ALLOC(def->nets[i]));
+            def->nets[i] = virDomainNetDefNew();
     }
 
     /* Now get the details about the network cards here */
@@ -3585,7 +3585,7 @@ vboxDumpAudio(virDomainDefPtr def, vboxDriverPtr data ATTRIBUTE_UNUSED,
 
             def->nsounds = 1;
             if (VIR_ALLOC_N(def->sounds, def->nsounds) >= 0) {
-                if (VIR_ALLOC(def->sounds[0]) >= 0) {
+                if ((def->sounds[0] = virDomainSoundDefNew())) {
                     gVBoxAPI.UIAudioAdapter.GetAudioController(audioAdapter, &audioController);
                     if (audioController == AudioControllerType_SB16) {
                         def->sounds[0]->model = VIR_DOMAIN_SOUND_MODEL_SB16;
@@ -3630,7 +3630,7 @@ vboxDumpSerial(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine, PRUin
     /* Allocate memory for the serial ports which are enabled */
     if ((def->nserials > 0) && (VIR_ALLOC_N(def->serials, def->nserials) >= 0)) {
         for (i = 0; i < def->nserials; i++)
-            ignore_value(VIR_ALLOC(def->serials[i]));
+            def->serials[i] = virDomainChrDefNew(NULL);
     }
 
     /* Now get the details about the serial ports here */
@@ -3718,7 +3718,7 @@ vboxDumpParallel(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine, PRU
     /* Allocate memory for the parallel ports which are enabled */
     if ((def->nparallels > 0) && (VIR_ALLOC_N(def->parallels, def->nparallels) >= 0)) {
         for (i = 0; i < def->nparallels; i++)
-            ignore_value(VIR_ALLOC(def->parallels[i]));
+            def->parallels[i] = virDomainChrDefNew(NULL);
     }
 
     /* Now get the details about the parallel ports here */

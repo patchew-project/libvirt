@@ -2342,7 +2342,7 @@ qemuDomainUSBAddressAddHubs(virDomainDefPtr def)
               data.count, available_ports, hubs_needed);
 
     for (i = 0; i < hubs_needed; i++) {
-        if (VIR_ALLOC(hub) < 0)
+        if (!(hub = virDomainHubDefNew()))
             return -1;
         hub->type = VIR_DOMAIN_HUB_TYPE_USB;
 

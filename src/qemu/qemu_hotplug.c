@@ -572,16 +572,15 @@ qemuDomainFindOrCreateSCSIDiskController(virQEMUDriverPtr driver,
 
     /* No SCSI controller present, for backward compatibility we
      * now hotplug a controller */
-    if (VIR_ALLOC(cont) < 0)
+    if (!(cont = virDomainControllerDefNew(VIR_DOMAIN_CONTROLLER_TYPE_SCSI)))
         return NULL;
-    cont->type = VIR_DOMAIN_CONTROLLER_TYPE_SCSI;
     cont->idx = controller;
     cont->model = -1;
 
     VIR_INFO("No SCSI controller present, hotplugging one");
     if (qemuDomainAttachControllerDevice(driver,
                                          vm, cont) < 0) {
-        VIR_FREE(cont);
+        virDomainControllerDefFree(cont);
         return NULL;
     }
 

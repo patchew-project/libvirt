@@ -219,7 +219,7 @@ openvzReadNetworkConf(virDomainDefPtr def,
     } else if (ret > 0) {
         token = strtok_r(temp, " ", &saveptr);
         while (token != NULL) {
-            if (VIR_ALLOC(net) < 0)
+            if (!(net = virDomainNetDefNew()))
                 goto error;
 
             net->type = VIR_DOMAIN_NET_TYPE_ETHERNET;

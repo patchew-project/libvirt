@@ -1548,7 +1548,7 @@ xenapiDomainGetXMLDesc(virDomainPtr dom, unsigned int flags)
             goto error;
         }
         for (i = 0; i < vif_set->size; i++) {
-            if (VIR_ALLOC(defPtr->nets[i]) < 0) {
+            if (!(defPtr->nets[i] = virDomainNetDefNew()))
                 xen_vif_set_free(vif_set);
                 goto error;
             }

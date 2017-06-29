@@ -1389,6 +1389,17 @@ void virDomainGraphicsDefFree(virDomainGraphicsDefPtr def)
     VIR_FREE(def);
 }
 
+virDomainInputDefPtr
+virDomainInputDefNew(void)
+{
+    virDomainInputDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
+}
+
 void virDomainInputDefFree(virDomainInputDefPtr def)
 {
     if (!def)
@@ -2021,6 +2032,17 @@ virDomainNetDefClear(virDomainNetDefPtr def)
     virNetDevVlanClear(&def->vlan);
 }
 
+virDomainNetDefPtr
+virDomainNetDefNew(void)
+{
+    virDomainNetDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
+}
+
 void
 virDomainNetDefFree(virDomainNetDefPtr def)
 {
@@ -2248,6 +2270,17 @@ void virDomainChrDefFree(virDomainChrDefPtr def)
     VIR_FREE(def);
 }
 
+virDomainSmartcardDefPtr
+virDomainSmartcardDefNew(void)
+{
+    virDomainSmartcardDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
+}
+
 void virDomainSmartcardDefFree(virDomainSmartcardDefPtr def)
 {
     size_t i;
@@ -2285,6 +2318,17 @@ void virDomainSoundCodecDefFree(virDomainSoundCodecDefPtr def)
     VIR_FREE(def);
 }
 
+virDomainSoundDefPtr
+virDomainSoundDefNew(void)
+{
+    virDomainSoundDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
+}
+
 void virDomainSoundDefFree(virDomainSoundDefPtr def)
 {
     if (!def)
@@ -2300,6 +2344,17 @@ void virDomainSoundDefFree(virDomainSoundDefPtr def)
     VIR_FREE(def);
 }
 
+virDomainMemballoonDefPtr
+virDomainMemballoonDefNew(void)
+{
+    virDomainMemballoonDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
+}
+
 void virDomainMemballoonDefFree(virDomainMemballoonDefPtr def)
 {
     if (!def)
@@ -2309,6 +2364,17 @@ void virDomainMemballoonDefFree(virDomainMemballoonDefPtr def)
     VIR_FREE(def->virtio);
 
     VIR_FREE(def);
+}
+
+virDomainNVRAMDefPtr
+virDomainNVRAMDefNew(void)
+{
+    virDomainNVRAMDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
 }
 
 void virDomainNVRAMDefFree(virDomainNVRAMDefPtr def)
@@ -2321,6 +2387,17 @@ void virDomainNVRAMDefFree(virDomainNVRAMDefPtr def)
     VIR_FREE(def);
 }
 
+virDomainWatchdogDefPtr
+virDomainWatchdogDefNew(void)
+{
+    virDomainWatchdogDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
+}
+
 void virDomainWatchdogDefFree(virDomainWatchdogDefPtr def)
 {
     if (!def)
@@ -2329,6 +2406,50 @@ void virDomainWatchdogDefFree(virDomainWatchdogDefPtr def)
     virDomainDeviceInfoClear(&def->info);
 
     VIR_FREE(def);
+}
+
+virDomainRNGDefPtr
+virDomainRNGDefNew(void)
+{
+    virDomainRNGDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
+}
+
+void
+virDomainRNGDefFree(virDomainRNGDefPtr def)
+{
+    if (!def)
+        return;
+
+    switch ((virDomainRNGBackend) def->backend) {
+    case VIR_DOMAIN_RNG_BACKEND_RANDOM:
+        VIR_FREE(def->source.file);
+        break;
+    case VIR_DOMAIN_RNG_BACKEND_EGD:
+        virDomainChrSourceDefFree(def->source.chardev);
+        break;
+    case VIR_DOMAIN_RNG_BACKEND_LAST:
+        break;
+    }
+
+    virDomainDeviceInfoClear(&def->info);
+    VIR_FREE(def->virtio);
+    VIR_FREE(def);
+}
+
+virDomainShmemDefPtr
+virDomainShmemDefNew(void)
+{
+    virDomainShmemDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
 }
 
 void virDomainShmemDefFree(virDomainShmemDefPtr def)
@@ -2340,6 +2461,17 @@ void virDomainShmemDefFree(virDomainShmemDefPtr def)
     virDomainChrSourceDefClear(&def->server.chr);
     VIR_FREE(def->name);
     VIR_FREE(def);
+}
+
+virDomainVideoDefPtr
+virDomainVideoDefNew(void)
+{
+    virDomainVideoDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
 }
 
 void virDomainVideoDefFree(virDomainVideoDefPtr def)
@@ -2457,6 +2589,17 @@ void virDomainHostdevDefClear(virDomainHostdevDefPtr def)
     def->privateData = NULL;
 }
 
+virDomainTPMDefPtr
+virDomainTPMDefNew(void)
+{
+    virDomainTPMDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
+}
+
 void virDomainTPMDefFree(virDomainTPMDefPtr def)
 {
     if (!def)
@@ -2489,6 +2632,17 @@ void virDomainHostdevDefFree(virDomainHostdevDefPtr def)
         VIR_FREE(def);
 }
 
+virDomainHubDefPtr
+virDomainHubDefNew(void)
+{
+    virDomainHubDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
+}
+
 void virDomainHubDefFree(virDomainHubDefPtr def)
 {
     if (!def)
@@ -2496,6 +2650,17 @@ void virDomainHubDefFree(virDomainHubDefPtr def)
 
     virDomainDeviceInfoClear(&def->info);
     VIR_FREE(def);
+}
+
+virDomainRedirdevDefPtr
+virDomainRedirdevDefNew(void)
+{
+    virDomainRedirdevDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
 }
 
 void virDomainRedirdevDefFree(virDomainRedirdevDefPtr def)
@@ -2521,6 +2686,17 @@ void virDomainRedirFilterDefFree(virDomainRedirFilterDefPtr def)
 
     VIR_FREE(def->usbdevs);
     VIR_FREE(def);
+}
+
+virDomainMemoryDefPtr
+virDomainMemoryDefNew(void)
+{
+    virDomainMemoryDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
 }
 
 void virDomainMemoryDefFree(virDomainMemoryDefPtr def)
@@ -2731,6 +2907,17 @@ virDomainResourceDefFree(virDomainResourceDefPtr resource)
 
     VIR_FREE(resource->partition);
     VIR_FREE(resource);
+}
+
+virDomainPanicDefPtr
+virDomainPanicDefNew(void)
+{
+    virDomainPanicDefPtr def;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    return def;
 }
 
 void
@@ -9732,8 +9919,8 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     xmlNodePtr oldnode = ctxt->node;
     int rv, val;
 
-    if (VIR_ALLOC(def) < 0)
-        return NULL;
+    if (!(def = virDomainNetDefNew()))
+        goto error;
 
     ctxt->node = node;
 
@@ -11198,8 +11385,8 @@ virDomainSmartcardDefParseXML(virDomainXMLOptionPtr xmlopt,
     virDomainSmartcardDefPtr def;
     size_t i;
 
-    if (VIR_ALLOC(def) < 0)
-        return NULL;
+    if (!(def = virDomainSmartcardDefNew()))
+        goto error;
 
     mode = virXMLPropString(node, "mode");
     if (mode == NULL) {
@@ -11344,8 +11531,8 @@ virDomainTPMDefParseXML(xmlNodePtr node,
     xmlNodePtr *backends = NULL;
     int nbackends;
 
-    if (VIR_ALLOC(def) < 0)
-        return NULL;
+    if (!(def = virDomainTPMDefNew()))
+        goto error;
 
     model = virXMLPropString(node, "model");
     if (model != NULL &&
@@ -11425,8 +11612,8 @@ virDomainPanicDefParseXML(xmlNodePtr node,
     virDomainPanicDefPtr panic;
     char *model = NULL;
 
-    if (VIR_ALLOC(panic) < 0)
-        return NULL;
+    if (!(panic = virDomainPanicDefNew()))
+        goto error;
 
     if (virDomainDeviceInfoParseXML(node, NULL, &panic->info, flags) < 0)
         goto error;
@@ -11462,8 +11649,8 @@ virDomainInputDefParseXML(const virDomainDef *dom,
     char *type = NULL;
     char *bus = NULL;
 
-    if (VIR_ALLOC(def) < 0)
-        return NULL;
+    if (!(def = virDomainInputDefNew()))
+        goto error;
 
     ctxt->node = node;
 
@@ -11606,8 +11793,8 @@ virDomainHubDefParseXML(xmlNodePtr node, unsigned int flags)
     virDomainHubDefPtr def;
     char *type = NULL;
 
-    if (VIR_ALLOC(def) < 0)
-        return NULL;
+    if (!(def = virDomainHubDefNew()))
+        goto error;
 
     type = virXMLPropString(node, "type");
 
@@ -12708,8 +12895,8 @@ virDomainSoundDefParseXML(xmlNodePtr node,
     virDomainSoundDefPtr def;
     xmlNodePtr save = ctxt->node;
 
-    if (VIR_ALLOC(def) < 0)
-        return NULL;
+    if (!(def = virDomainSoundDefNew()))
+        goto error;
 
     ctxt->node = node;
 
@@ -12777,8 +12964,8 @@ virDomainWatchdogDefParseXML(xmlNodePtr node,
     char *action = NULL;
     virDomainWatchdogDefPtr def;
 
-    if (VIR_ALLOC(def) < 0)
-        return NULL;
+    if (!(def = virDomainWatchdogDefNew()))
+        goto error;
 
     model = virXMLPropString(node, "model");
     if (model == NULL) {
@@ -12835,8 +13022,8 @@ virDomainRNGDefParseXML(virDomainXMLOptionPtr xmlopt,
     xmlNodePtr *backends = NULL;
     int nbackends;
 
-    if (VIR_ALLOC(def) < 0)
-        return NULL;
+    if (!(def = virDomainRNGDefNew()))
+        goto error;
 
     if (!(model = virXMLPropString(node, "model"))) {
         virReportError(VIR_ERR_XML_ERROR, "%s", _("missing RNG device model"));
@@ -12949,8 +13136,8 @@ virDomainMemballoonDefParseXML(xmlNodePtr node,
     xmlNodePtr save = ctxt->node;
     unsigned int period = 0;
 
-    if (VIR_ALLOC(def) < 0)
-        return NULL;
+    if (!(def = virDomainMemballoonDefNew()))
+        goto error;
 
     model = virXMLPropString(node, "model");
     if (model == NULL) {
@@ -13010,8 +13197,8 @@ virDomainNVRAMDefParseXML(xmlNodePtr node,
 {
    virDomainNVRAMDefPtr def;
 
-    if (VIR_ALLOC(def) < 0)
-        return NULL;
+    if (!(def = virDomainNVRAMDefNew()))
+        goto error;
 
     if (virDomainDeviceInfoParseXML(node, NULL, &def->info, flags) < 0)
         goto error;
@@ -13034,9 +13221,8 @@ virDomainShmemDefParseXML(xmlNodePtr node,
     xmlNodePtr save = ctxt->node;
     xmlNodePtr server = NULL;
 
-
-    if (VIR_ALLOC(def) < 0)
-        return NULL;
+    if (!(def = virDomainShmemDefNew()))
+        goto error;
 
     ctxt->node = node;
 
@@ -13550,8 +13736,8 @@ virDomainVideoDefParseXML(xmlNodePtr node,
 
     ctxt->node = node;
 
-    if (VIR_ALLOC(def) < 0)
-        return NULL;
+    if (!(def = virDomainVideoDefNew()))
+        goto error;
 
     cur = node->children;
     while (cur != NULL) {
@@ -13789,8 +13975,8 @@ virDomainRedirdevDefParseXML(virDomainXMLOptionPtr xmlopt,
     char *bus = NULL, *type = NULL;
     int remaining;
 
-    if (VIR_ALLOC(def) < 0)
-        return NULL;
+    if (!(def = virDomainRedirdevDefNew()))
+        goto error;
 
     if (!(def->source = virDomainChrSourceDefNew(xmlopt)))
         goto error;
@@ -14255,8 +14441,8 @@ virDomainMemoryDefParseXML(xmlNodePtr memdevNode,
 
     ctxt->node = memdevNode;
 
-    if (VIR_ALLOC(def) < 0)
-        return NULL;
+    if (!(def = virDomainMemoryDefNew()))
+        goto error;
 
     if (!(tmp = virXMLPropString(memdevNode, "model"))) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
@@ -16383,7 +16569,7 @@ virDomainDefAddController(virDomainDefPtr def, int type, int idx, int model)
     cont->model = model;
 
     if (VIR_APPEND_ELEMENT_COPY(def->controllers, def->ncontrollers, cont) < 0) {
-        VIR_FREE(cont);
+        virDomainControllerDefFree(cont);
         return NULL;
     }
 
@@ -16477,14 +16663,14 @@ virDomainDefMaybeAddInput(virDomainDefPtr def,
             return 0;
     }
 
-    if (VIR_ALLOC(input) < 0)
+    if (!(input = virDomainInputDefNew()))
         return -1;
 
     input->type = type;
     input->bus = bus;
 
     if (VIR_APPEND_ELEMENT(def->inputs, def->ninputs, input) < 0) {
-        VIR_FREE(input);
+        virDomainInputDefFree(input);
         return -1;
     }
 
@@ -20827,14 +21013,14 @@ static int
 virDomainDefAddImplicitVideo(virDomainDefPtr def)
 {
     int ret = -1;
-    virDomainVideoDefPtr video = NULL;
+    virDomainVideoDefPtr video;
 
     /* For backwards compatibility, if no <video> tag is set but there
      * is a <graphics> tag, then we add a single video tag */
     if (def->ngraphics == 0 || def->nvideos > 0)
         return 0;
 
-    if (VIR_ALLOC(video) < 0)
+    if (!(video = virDomainVideoDefNew()))
         goto cleanup;
     video->type = virDomainVideoDefaultType(def);
     if (video->type < 0) {
@@ -23251,28 +23437,6 @@ virDomainRNGDefFormat(virBufferPtr buf,
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</rng>\n");
     return 0;
-}
-
-void
-virDomainRNGDefFree(virDomainRNGDefPtr def)
-{
-    if (!def)
-        return;
-
-    switch ((virDomainRNGBackend) def->backend) {
-    case VIR_DOMAIN_RNG_BACKEND_RANDOM:
-        VIR_FREE(def->source.file);
-        break;
-    case VIR_DOMAIN_RNG_BACKEND_EGD:
-        virDomainChrSourceDefFree(def->source.chardev);
-        break;
-    case VIR_DOMAIN_RNG_BACKEND_LAST:
-        break;
-    }
-
-    virDomainDeviceInfoClear(&def->info);
-    VIR_FREE(def->virtio);
-    VIR_FREE(def);
 }
 
 

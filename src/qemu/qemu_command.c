@@ -3522,19 +3522,22 @@ qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
     const char *backendType;
     int ret = -1;
     int rc;
-    virDomainMemoryDef mem = { 0 };
+    virDomainMemoryDefPtr mem;
     unsigned long long memsize = virDomainNumaGetNodeMemorySize(def->numa,
                                                                 cell);
 
+    if (!(mem = virDomainMemoryDefNew()))
+        goto cleanup;
+
     *backendStr = NULL;
-    mem.size = memsize;
-    mem.targetNode = cell;
+    mem->size = memsize;
+    mem->targetNode = cell;
 
     if (virAsprintf(&alias, "ram-node%zu", cell) < 0)
         goto cleanup;
 
     if ((rc = qemuBuildMemoryBackendStr(&props, &backendType, cfg, qemuCaps,
-                                        def, &mem, auto_nodeset, false)) < 0)
+                                        def, mem, auto_nodeset, false)) < 0)
         goto cleanup;
 
     if (!(*backendStr = virQEMUBuildObjectCommandlineFromJSON(backendType,
@@ -3547,6 +3550,7 @@ qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
  cleanup:
     VIR_FREE(alias);
     virJSONValueFree(props);
+    virDomainMemoryDefFree(mem);
 
     return ret;
 }

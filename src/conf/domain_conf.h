@@ -2067,6 +2067,7 @@ struct _virDomainMemoryDef {
     virDomainDeviceInfo info;
 };
 
+virDomainMemoryDefPtr virDomainMemoryDefNew(void);
 void virDomainMemoryDefFree(virDomainMemoryDefPtr def);
 
 struct _virDomainIdMapEntry {
@@ -2641,9 +2642,11 @@ int virDomainObjWait(virDomainObjPtr vm);
 int virDomainObjWaitUntil(virDomainObjPtr vm,
                           unsigned long long whenms);
 
+virDomainPanicDefPtr virDomainPanicDefNew(void);
 void virDomainPanicDefFree(virDomainPanicDefPtr panic);
 void virDomainResourceDefFree(virDomainResourceDefPtr resource);
 void virDomainGraphicsDefFree(virDomainGraphicsDefPtr def);
+virDomainInputDefPtr virDomainInputDefNew(void);
 void virDomainInputDefFree(virDomainInputDefPtr def);
 virDomainDiskDefPtr virDomainDiskDefNew(virDomainXMLOptionPtr xmlopt);
 void virDomainDiskDefFree(virDomainDiskDefPtr def);
@@ -2672,24 +2675,34 @@ virDomainControllerDefNew(virDomainControllerType type);
 void virDomainFSDefFree(virDomainFSDefPtr def);
 void virDomainActualNetDefFree(virDomainActualNetDefPtr def);
 void virDomainNetDefClear(virDomainNetDefPtr def);
+virDomainNetDefPtr virDomainNetDefNew(void);
 void virDomainNetDefFree(virDomainNetDefPtr def);
+virDomainSmartcardDefPtr virDomainSmartcardDefNew(void);
 void virDomainSmartcardDefFree(virDomainSmartcardDefPtr def);
 void virDomainChrDefFree(virDomainChrDefPtr def);
 void virDomainChrSourceDefFree(virDomainChrSourceDefPtr def);
 int virDomainChrSourceDefCopy(virDomainChrSourceDefPtr src,
                               virDomainChrSourceDefPtr dest);
 void virDomainSoundCodecDefFree(virDomainSoundCodecDefPtr def);
+virDomainSoundDefPtr virDomainSoundDefNew(void);
 void virDomainSoundDefFree(virDomainSoundDefPtr def);
+virDomainMemballoonDefPtr virDomainMemballoonDefNew(void);
 void virDomainMemballoonDefFree(virDomainMemballoonDefPtr def);
+virDomainNVRAMDefPtr virDomainNVRAMDefNew(void);
 void virDomainNVRAMDefFree(virDomainNVRAMDefPtr def);
+virDomainWatchdogDefPtr virDomainWatchdogDefNew(void);
 void virDomainWatchdogDefFree(virDomainWatchdogDefPtr def);
+virDomainVideoDefPtr virDomainVideoDefNew(void);
 void virDomainVideoDefFree(virDomainVideoDefPtr def);
 virDomainHostdevDefPtr virDomainHostdevDefNew(virDomainXMLOptionPtr xmlopt);
 void virDomainHostdevDefClear(virDomainHostdevDefPtr def);
 void virDomainHostdevDefFree(virDomainHostdevDefPtr def);
+virDomainHubDefPtr virDomainHubDefNew(void);
 void virDomainHubDefFree(virDomainHubDefPtr def);
+virDomainRedirdevDefPtr virDomainRedirdevDefNew(void);
 void virDomainRedirdevDefFree(virDomainRedirdevDefPtr def);
 void virDomainRedirFilterDefFree(virDomainRedirFilterDefPtr def);
+virDomainShmemDefPtr virDomainShmemDefNew(void);
 void virDomainShmemDefFree(virDomainShmemDefPtr def);
 void virDomainDeviceDefFree(virDomainDeviceDefPtr def);
 virDomainDeviceDefPtr virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
@@ -2699,6 +2712,7 @@ virDomainDeviceDefPtr virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
 int virDomainDeviceAddressIsValid(virDomainDeviceInfoPtr info,
                                   int type);
 virDomainDeviceInfoPtr virDomainDeviceGetInfo(virDomainDeviceDefPtr device);
+virDomainTPMDefPtr virDomainTPMDefNew(void);
 void virDomainTPMDefFree(virDomainTPMDefPtr def);
 
 typedef int (*virDomainDeviceInfoCallback)(virDomainDefPtr def,
@@ -2903,6 +2917,7 @@ int virDomainDefCompatibleDevice(virDomainDefPtr def,
                                  virDomainDeviceDefPtr dev,
                                  virDomainDeviceAction action);
 
+virDomainRNGDefPtr virDomainRNGDefNew(void);
 void virDomainRNGDefFree(virDomainRNGDefPtr def);
 
 int virDomainDiskIndexByAddress(virDomainDefPtr def,
