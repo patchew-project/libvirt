@@ -45,21 +45,44 @@ virDomainDeviceInfoNew(void)
     return info;
 }
 
+/**
+ * virDomainDeviceInfoClear:
+ * @info: device info
+ *
+ * Reset @info to its default state: all members will be set to their default
+ * value, and any memory associated with @info will be released. @info itself
+ * will still be valid after this function returns.
+ *
+ * You only need to call this function if you're allocating a
+ * virDomainDeviceInfo on the stack or embedding one inside your own struct:
+ * virDomainDeviceInfoNew() already takes care of calling it for you.
+ */
 void
 virDomainDeviceInfoClear(virDomainDeviceInfoPtr info)
 {
-    VIR_FREE(info->alias);
-    memset(&info->addr, 0, sizeof(info->addr));
     info->type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE;
+    memset(&info->addr, 0, sizeof(info->addr));
+
+    VIR_FREE(info->alias);
     VIR_FREE(info->romfile);
     VIR_FREE(info->loadparm);
 }
 
+/**
+ * virDomainDeviceInfoCopy:
+ * @dst: destination virDomainDeviceInfo
+ * @src: source virDomainDeviceInfo
+ *
+ * Perform a deep copy of @src into @dst.
+ *
+ * Return: 0 on success, <0 on failure
+ */
 int
 virDomainDeviceInfoCopy(virDomainDeviceInfoPtr dst,
                         virDomainDeviceInfoPtr src)
 {
-    /* Assume that dst is already cleared */
+    /* Clear the destination */
+    virDomainDeviceInfoClear(dst);
 
     /* first a shallow copy of *everything* */
     *dst = *src;
@@ -77,10 +100,11 @@ virDomainDeviceInfoCopy(virDomainDeviceInfoPtr dst,
 void
 virDomainDeviceInfoFree(virDomainDeviceInfoPtr info)
 {
-    if (info) {
-        virDomainDeviceInfoClear(info);
-        VIR_FREE(info);
-    }
+    if (!info)
+        return;
+
+    virDomainDeviceInfoClear(info);
+    VIR_FREE(info);
 }
 
 bool
