@@ -89,6 +89,8 @@ virCPUModeTypeToString;
 
 
 # conf/device_conf.h
+virDomainDeviceInfoAddressIsEqual;
+virDomainDeviceInfoCopy;
 virInterfaceLinkFormat;
 virInterfaceLinkParseXML;
 virPCIDeviceAddressEqual;
@@ -285,8 +287,6 @@ virDomainDeviceDefFree;
 virDomainDeviceDefParse;
 virDomainDeviceFindControllerModel;
 virDomainDeviceGetInfo;
-virDomainDeviceInfoAddressIsEqual;
-virDomainDeviceInfoCopy;
 virDomainDeviceInfoIterate;
 virDomainDeviceTypeToString;
 virDomainDiskBusTypeToString;
