@@ -1575,6 +1575,25 @@ mymain(void)
                        "<source protocol='sheepdog' name='test'>\n"
                        "  <host name='example.com' port='321'/>\n"
                        "</source>\n");
+    TEST_BACKING_PARSE("json:{ \"file\": { "
+                                "\"driver\": \"raw\","
+                                "\"file\": {"
+                                    "\"driver\": \"file\","
+                                    "\"filename\": \"/path/to/file\" } } }",
+                       "<source file='/path/to/file'/>\n");
+    TEST_BACKING_PARSE("json:{\"file\":{\"driver\":\"vxhs\","
+                                       "\"vdisk-id\":\"c6718f6b-0401-441d-a8c3-1f0064d75ee0\","
+                                       "\"server\": { \"host\":\"example.com\","
+                                                      "\"port\":\"1234\""
+                                                   "}"
+                                      "}"
+                            "}",
+                       "<source protocol='vxhs' name='c6718f6b-0401-441d-a8c3-1f0064d75ee0'>\n"
+                       "  <host name='example.com' port='1234'/>\n"
+                       "</source>\n");
+    TEST_BACKING_PARSE("json:{\"file.driver\":\"vxhs\","
+                             "\"file.filename\":\"vxhs://192.168.0.1:9999/c6718f6b-0401-441d-a8c3-1f0064d75ee0\""
+                            "}", NULL);
 #endif /* WITH_YAJL */
 
  cleanup:

@@ -50,6 +50,7 @@ static int testSanitizeDef(virDomainDefPtr vmdef)
 
 typedef enum {
     FLAG_EXPECT_WARNING     = 1 << 0,
+    FLAG_EXPECT_FAIL        = 1 << 1,
 } virQemuXML2ArgvTestFlags;
 
 static int testCompareXMLToArgvFiles(const char *xmlfile,
@@ -67,7 +68,16 @@ static int testCompareXMLToArgvFiles(const char *xmlfile,
 
     if (!(vmdef = qemuParseCommandLineString(driver.caps, driver.xmlopt,
                                              cmd, NULL, NULL, NULL)))
-        goto fail;
+    {
+        if (flags & FLAG_EXPECT_FAIL) {
+            if (virTestLogContentAndReset() == NULL)
+                goto fail;
+
+            VIR_TEST_DEBUG("Got expected error from "
+                        "qemuParseCommandLineString:\n");
+            goto out;
+        }
+    }
 
     if (!virTestOOMActive()) {
         if ((log = virTestLogContentAndReset()) == NULL)
@@ -106,6 +116,7 @@ static int testCompareXMLToArgvFiles(const char *xmlfile,
     if (virTestCompareToFile(actualxml, xmlfile) < 0)
         goto fail;
 
+ out:
     ret = 0;
 
  fail:
@@ -166,6 +177,9 @@ mymain(void)
 # define DO_TEST(name)                                                  \
         DO_TEST_FULL(name, 0)
 
+# define DO_TEST_FAIL(name)                                             \
+        DO_TEST_FULL(name, FLAG_EXPECT_FAIL)
+
     setenv("PATH", "/bin", 1);
     setenv("USER", "test", 1);
     setenv("LOGNAME", "test", 1);
@@ -220,6 +234,7 @@ mymain(void)
     /* older format using CEPH_ARGS env var */
     DO_TEST("disk-drive-network-rbd-ceph-env");
     DO_TEST("disk-drive-network-sheepdog");
+    DO_TEST_FAIL("disk-drive-network-vxhs-fail");
     DO_TEST("disk-usb");
     DO_TEST("graphics-vnc");
     DO_TEST("graphics-vnc-socket");

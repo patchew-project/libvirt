@@ -263,6 +263,17 @@ qemuParseNBDString(virDomainDiskDefPtr disk)
     return -1;
 }
 
+static int
+qemuParseVxHSString(virDomainDiskDefPtr def)
+{
+    virURIPtr uri = NULL;
+
+    if (!(uri = virURIParse(def->src->path)))
+        return -1;
+
+    return qemuParseDriveURIString(def, uri, "vxhs");
+}
+
 
 /*
  * This method takes a string representing a QEMU command line ARGV set
@@ -737,6 +748,11 @@ qemuParseCommandLineDisk(virDomainXMLOptionPtr xmlopt,
                         if (VIR_STRDUP(def->src->path, vdi) < 0)
                             goto error;
                     }
+                } else if (STRPREFIX(def->src->path, "vxhs:")) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   _("VxHS protocol does not support URI syntax '%s'"),
+                                   def->src->path);
+                    goto error;
                 } else {
                     def->src->type = VIR_STORAGE_TYPE_FILE;
                 }
@@ -1945,6 +1961,10 @@ qemuParseCommandLine(virCapsPtr caps,
                 disk->src->type = VIR_STORAGE_TYPE_NETWORK;
                 disk->src->protocol = VIR_STORAGE_NET_PROTOCOL_SHEEPDOG;
                 val += strlen("sheepdog:");
+            } else if (STRPREFIX(val, "vxhs:")) {
+                disk->src->type = VIR_STORAGE_TYPE_NETWORK;
+                disk->src->protocol = VIR_STORAGE_NET_PROTOCOL_VXHS;
+                val += strlen("vxhs:");
             } else {
                 disk->src->type = VIR_STORAGE_TYPE_FILE;
             }
@@ -2018,6 +2038,11 @@ qemuParseCommandLine(virCapsPtr caps,
                     break;
                 case VIR_STORAGE_NET_PROTOCOL_ISCSI:
                     if (qemuParseISCSIString(disk) < 0)
+                        goto error;
+
+                    break;
+                case VIR_STORAGE_NET_PROTOCOL_VXHS:
+                    if (qemuParseVxHSString(disk) < 0)
                         goto error;
 
                     break;

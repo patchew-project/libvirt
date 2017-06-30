@@ -85,7 +85,8 @@ VIR_ENUM_IMPL(virStorageNetProtocol, VIR_STORAGE_NET_PROTOCOL_LAST,
               "ftp",
               "ftps",
               "tftp",
-              "ssh")
+              "ssh",
+              "vxhs")
 
 VIR_ENUM_IMPL(virStorageNetHostTransport, VIR_STORAGE_NET_HOST_TRANS_LAST,
               "tcp",
@@ -2719,6 +2720,7 @@ virStorageSourceParseBackingColon(virStorageSourcePtr src,
     case VIR_STORAGE_NET_PROTOCOL_ISCSI:
     case VIR_STORAGE_NET_PROTOCOL_GLUSTER:
     case VIR_STORAGE_NET_PROTOCOL_SSH:
+    case VIR_STORAGE_NET_PROTOCOL_VXHS:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("malformed backing store path for protocol %s"),
                        protocol);
@@ -3219,6 +3221,65 @@ virStorageSourceParseBackingJSONRaw(virStorageSourcePtr src,
     return virStorageSourceParseBackingJSONInternal(src, json);
 }
 
+#define QEMU_DEFAULT_VXHS_PORT "9999"
+
+static int
+virStorageSourceParseBackingJSONVxHS(virStorageSourcePtr src,
+                                     virJSONValuePtr json,
+                                     int opaque ATTRIBUTE_UNUSED)
+{
+    const char *uri = virJSONValueObjectGetString(json, "filename");
+    const char *vdisk_id = virJSONValueObjectGetString(json, "vdisk-id");
+    virJSONValuePtr server = virJSONValueObjectGetObject(json, "server");
+    const char *hostname;
+    const char *port;
+
+    /* Check for legacy URI based syntax passed via 'filename' option */
+    if (uri) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("'VxHS' protocol does not support URI syntax"));
+        return -1;
+    }
+
+    if (!vdisk_id || !server) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("missing 'vdisk-id' or 'server' attribute in "
+                         "JSON backing definition for VxHS volume"));
+        return -1;
+    }
+
+    hostname = virJSONValueObjectGetString(server, "host");
+    port = virJSONValueObjectGetString(server, "port");
+
+    if (!hostname) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("missing hostname for tcp backing server in "
+                       "JSON backing definition for VxHS volume"));
+        return -1;
+    }
+
+    if (!port)
+        port = QEMU_DEFAULT_VXHS_PORT;
+
+    src->type = VIR_STORAGE_TYPE_NETWORK;
+    src->protocol = VIR_STORAGE_NET_PROTOCOL_VXHS;
+
+    if (VIR_STRDUP(src->path, vdisk_id) < 0)
+        return -1;
+
+    if (VIR_ALLOC_N(src->hosts, 1) < 0)
+        return -1;
+    src->nhosts = 1;
+
+    src->hosts[0].transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
+
+    if (VIR_STRDUP(src->hosts[0].name, hostname) < 0 ||
+        VIR_STRDUP(src->hosts[0].port, port) < 0)
+        return -1;
+
+    return 0;
+}
+
 struct virStorageSourceJSONDriverParser {
     const char *drvname;
     int (*func)(virStorageSourcePtr src, virJSONValuePtr json, int opaque);
@@ -3241,6 +3302,7 @@ static const struct virStorageSourceJSONDriverParser jsonParsers[] = {
     {"ssh", virStorageSourceParseBackingJSONSSH, 0},
     {"rbd", virStorageSourceParseBackingJSONRBD, 0},
     {"raw", virStorageSourceParseBackingJSONRaw, 0},
+    {"vxhs", virStorageSourceParseBackingJSONVxHS, 0},
 };
 
 
