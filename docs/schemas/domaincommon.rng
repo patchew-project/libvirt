@@ -1622,6 +1622,11 @@
       </attribute>
       <attribute name="name"/>
         <ref name="diskSourceNetworkHost"/>
+      <optional>
+        <attribute name="tls">
+          <ref name="virYesNo"/>
+        </attribute>
+      </optional>
     </element>
   </define>
 

@@ -281,6 +281,15 @@ struct _virStorageSource {
     /* metadata that allows identifying given storage source */
     char *nodeformat;  /* name of the format handler object */
     char *nodebacking; /* name of the backing storage object */
+
+    /* This is the domain specific setting.
+     * It may be absent */
+    int haveTLS; /* enum virTristateBool */
+
+    /* This should be set to "true" only when TLS creds are to be added for
+     * the device. For e.g. this could be based on a combination of
+     * global conf setting + domain specific setting */
+    bool addTLS;
 };
 
 
