@@ -6660,12 +6660,16 @@ qemuDomainGetMemLockLimitBytes(virDomainDefPtr def)
         unsigned long long memory;
         unsigned long long baseLimit;
         unsigned long long passthroughLimit;
-        size_t nPCIHostBridges;
+        size_t nPCIHostBridges = 0;
         bool usesVFIO = false;
 
-        /* TODO: Detect at runtime once we start using more than just
-         *       the default PCI Host Bridge */
-        nPCIHostBridges = 1;
+        for (i = 0; i < def->ncontrollers; i++) {
+            if (def->controllers[i]->type != VIR_DOMAIN_CONTROLLER_TYPE_PCI ||
+                def->controllers[i]->model != VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT) {
+                continue;
+            }
+            nPCIHostBridges++;
+        }
 
         for (i = 0; i < def->nhostdevs; i++) {
             virDomainHostdevDefPtr dev = def->hostdevs[i];
