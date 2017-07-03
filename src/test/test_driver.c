@@ -1175,7 +1175,7 @@ testParseNodedevs(testDriverPtr privconn,
             goto error;
         }
 
-        virNodeDeviceObjUnlock(obj);
+        virNodeDeviceObjEndAPI(&obj);
     }
 
     ret = 0;
@@ -4320,7 +4320,7 @@ testCreateVport(testDriverPtr driver,
      * create the vHBA. In the long run the result is the same. */
     if (!(obj = testNodeDeviceMockCreateVport(driver, wwnn, wwpn)))
         return -1;
-    virNodeDeviceObjUnlock(obj);
+    virNodeDeviceObjEndAPI(&obj);
 
     return 0;
 }
@@ -4532,7 +4532,7 @@ testDestroyVport(testDriverPtr privconn,
                                            0);
 
     virNodeDeviceObjListRemove(privconn->devs, obj);
-    virNodeDeviceObjFree(obj);
+    virObjectUnref(obj);
 
     testObjectEventQueue(privconn, event);
     return 0;
@@ -5333,7 +5333,7 @@ testNodeDeviceLookupByName(virConnectPtr conn, const char *name)
         }
     }
 
-    virNodeDeviceObjUnlock(obj);
+    virNodeDeviceObjEndAPI(&obj);
     return ret;
 }
 
@@ -5352,7 +5352,7 @@ testNodeDeviceGetXMLDesc(virNodeDevicePtr dev,
 
     ret = virNodeDeviceDefFormat(virNodeDeviceObjGetDef(obj));
 
-    virNodeDeviceObjUnlock(obj);
+    virNodeDeviceObjEndAPI(&obj);
     return ret;
 }
 
@@ -5375,7 +5375,7 @@ testNodeDeviceGetParent(virNodeDevicePtr dev)
                        "%s", _("no parent for this device"));
     }
 
-    virNodeDeviceObjUnlock(obj);
+    virNodeDeviceObjEndAPI(&obj);
     return ret;
 }
 
@@ -5396,7 +5396,7 @@ testNodeDeviceNumOfCaps(virNodeDevicePtr dev)
     for (caps = def->caps; caps; caps = caps->next)
         ++ncaps;
 
-    virNodeDeviceObjUnlock(obj);
+    virNodeDeviceObjEndAPI(&obj);
     return ncaps;
 }
 
@@ -5421,13 +5421,13 @@ testNodeDeviceListCaps(virNodeDevicePtr dev, char **const names, int maxnames)
         ncaps++;
     }
 
-    virNodeDeviceObjUnlock(obj);
+    virNodeDeviceObjEndAPI(&obj);
     return ncaps;
 
  error:
     while (--ncaps >= 0)
         VIR_FREE(names[ncaps]);
-    virNodeDeviceObjUnlock(obj);
+    virNodeDeviceObjEndAPI(&obj);
     return -1;
 }
 
@@ -5458,7 +5458,7 @@ testNodeDeviceMockCreateVport(testDriverPtr driver,
         goto cleanup;
 
     xml = virNodeDeviceDefFormat(virNodeDeviceObjGetDef(objcopy));
-    virNodeDeviceObjUnlock(objcopy);
+    virNodeDeviceObjEndAPI(&objcopy);
     if (!xml)
         goto cleanup;
 
@@ -5562,8 +5562,7 @@ testNodeDeviceCreateXML(virConnectPtr conn,
     dev = NULL;
 
  cleanup:
-    if (obj)
-        virNodeDeviceObjUnlock(obj);
+    virNodeDeviceObjEndAPI(&obj);
     testDriverUnlock(driver);
     virNodeDeviceDefFree(def);
     virObjectUnref(dev);
@@ -5596,13 +5595,13 @@ testNodeDeviceDestroy(virNodeDevicePtr dev)
      * taken, so we have to dup the parent's name and drop the lock
      * before calling it.  We don't need the reference to the object
      * any more once we have the parent's name.  */
-    virNodeDeviceObjUnlock(obj);
+    virObjectUnlock(obj);
 
     /* We do this just for basic validation, but also avoid finding a
      * vport capable HBA if for some reason our vHBA doesn't exist */
     if (virNodeDeviceObjListGetParentHost(driver->devs, def,
                                           EXISTING_DEVICE) < 0) {
-        obj = NULL;
+        virObjectLock(obj);
         goto cleanup;
     }
 
@@ -5610,14 +5609,13 @@ testNodeDeviceDestroy(virNodeDevicePtr dev)
                                            VIR_NODE_DEVICE_EVENT_DELETED,
                                            0);
 
-    virNodeDeviceObjLock(obj);
+    virObjectLock(obj);
     virNodeDeviceObjListRemove(driver->devs, obj);
-    virNodeDeviceObjFree(obj);
+    virObjectUnref(obj);
     obj = NULL;
 
  cleanup:
-    if (obj)
-        virNodeDeviceObjUnlock(obj);
+    virNodeDeviceObjEndAPI(&obj);
     testObjectEventQueue(driver, event);
     VIR_FREE(parent_name);
     VIR_FREE(wwnn);
