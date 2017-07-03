@@ -227,12 +227,12 @@ createVport(virConnectPtr conn,
               fchost->wwnn, fchost->wwpn);
 
 
-    /* Since we're creating the vHBA, then we need to manage removing it
+    /* Since we're creating the vHBA, then we may need to manage removing it
      * as well. Since we need this setting to "live" through a libvirtd
      * restart, we need to save the persistent configuration. So if not
-     * already defined as YES, then force the issue.
+     * already defined as YES or NO, then force the issue.
      */
-    if (fchost->managed != VIR_TRISTATE_BOOL_YES) {
+    if (fchost->managed == VIR_TRISTATE_BOOL_ABSENT) {
         fchost->managed = VIR_TRISTATE_BOOL_YES;
         if (configFile) {
             if (virStoragePoolSaveConfig(configFile, def) < 0)
