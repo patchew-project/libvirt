@@ -172,12 +172,16 @@ virNodeDeviceObjListFindBySysfsPath(virNodeDeviceObjListPtr devs,
     size_t i;
 
     for (i = 0; i < devs->count; i++) {
-        virNodeDeviceObjLock(devs->objs[i]);
-        if ((devs->objs[i]->def->sysfs_path != NULL) &&
-            (STREQ(devs->objs[i]->def->sysfs_path, sysfs_path))) {
-            return devs->objs[i];
+        virNodeDeviceObjPtr obj = devs->objs[i];
+        virNodeDeviceDefPtr def;
+
+        virNodeDeviceObjLock(obj);
+        def = obj->def;
+        if ((def->sysfs_path != NULL) &&
+            (STREQ(def->sysfs_path, sysfs_path))) {
+            return obj;
         }
-        virNodeDeviceObjUnlock(devs->objs[i]);
+        virNodeDeviceObjUnlock(obj);
     }
 
     return NULL;
@@ -191,10 +195,14 @@ virNodeDeviceObjListFindByName(virNodeDeviceObjListPtr devs,
     size_t i;
 
     for (i = 0; i < devs->count; i++) {
-        virNodeDeviceObjLock(devs->objs[i]);
-        if (STREQ(devs->objs[i]->def->name, name))
-            return devs->objs[i];
-        virNodeDeviceObjUnlock(devs->objs[i]);
+        virNodeDeviceObjPtr obj = devs->objs[i];
+        virNodeDeviceDefPtr def;
+
+        virNodeDeviceObjLock(obj);
+        def = obj->def;
+        if (STREQ(def->name, name))
+            return obj;
+        virNodeDeviceObjUnlock(obj);
     }
 
     return NULL;
@@ -209,14 +217,16 @@ virNodeDeviceObjListFindByWWNs(virNodeDeviceObjListPtr devs,
     size_t i;
 
     for (i = 0; i < devs->count; i++) {
+        virNodeDeviceObjPtr obj = devs->objs[i];
         virNodeDevCapsDefPtr cap;
-        virNodeDeviceObjLock(devs->objs[i]);
-        if ((cap = virNodeDeviceFindFCCapDef(devs->objs[i])) &&
+
+        virNodeDeviceObjLock(obj);
+        if ((cap = virNodeDeviceFindFCCapDef(obj)) &&
             STREQ_NULLABLE(cap->data.scsi_host.wwnn, parent_wwnn) &&
             STREQ_NULLABLE(cap->data.scsi_host.wwpn, parent_wwpn) &&
-            virNodeDeviceFindVPORTCapDef(devs->objs[i]))
-            return devs->objs[i];
-        virNodeDeviceObjUnlock(devs->objs[i]);
+            virNodeDeviceFindVPORTCapDef(obj))
+            return obj;
+        virNodeDeviceObjUnlock(obj);
     }
 
     return NULL;
@@ -230,13 +240,15 @@ virNodeDeviceObjListFindByFabricWWN(virNodeDeviceObjListPtr devs,
     size_t i;
 
     for (i = 0; i < devs->count; i++) {
+        virNodeDeviceObjPtr obj = devs->objs[i];
         virNodeDevCapsDefPtr cap;
-        virNodeDeviceObjLock(devs->objs[i]);
-        if ((cap = virNodeDeviceFindFCCapDef(devs->objs[i])) &&
+
+        virNodeDeviceObjLock(obj);
+        if ((cap = virNodeDeviceFindFCCapDef(obj)) &&
             STREQ_NULLABLE(cap->data.scsi_host.fabric_wwn, parent_fabric_wwn) &&
-            virNodeDeviceFindVPORTCapDef(devs->objs[i]))
-            return devs->objs[i];
-        virNodeDeviceObjUnlock(devs->objs[i]);
+            virNodeDeviceFindVPORTCapDef(obj))
+            return obj;
+        virNodeDeviceObjUnlock(obj);
     }
 
     return NULL;
@@ -250,10 +262,12 @@ virNodeDeviceObjListFindByCap(virNodeDeviceObjListPtr devs,
     size_t i;
 
     for (i = 0; i < devs->count; i++) {
-        virNodeDeviceObjLock(devs->objs[i]);
-        if (virNodeDeviceObjHasCap(devs->objs[i], cap))
-            return devs->objs[i];
-        virNodeDeviceObjUnlock(devs->objs[i]);
+        virNodeDeviceObjPtr obj = devs->objs[i];
+
+        virNodeDeviceObjLock(obj);
+        if (virNodeDeviceObjHasCap(obj, cap))
+            return obj;
+        virNodeDeviceObjUnlock(obj);
     }
 
     return NULL;
