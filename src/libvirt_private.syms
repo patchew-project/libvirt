@@ -971,6 +971,7 @@ virNodeDeviceObjGetNames;
 virNodeDeviceObjGetParentHost;
 virNodeDeviceObjListExport;
 virNodeDeviceObjListFree;
+virNodeDeviceObjListNew;
 virNodeDeviceObjLock;
 virNodeDeviceObjNumOfDevices;
 virNodeDeviceObjRemove;

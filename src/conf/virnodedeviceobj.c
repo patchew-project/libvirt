@@ -274,6 +274,17 @@ virNodeDeviceObjFree(virNodeDeviceObjPtr obj)
 }
 
 
+virNodeDeviceObjListPtr
+virNodeDeviceObjListNew(void)
+{
+    virNodeDeviceObjListPtr devs;
+
+    if (VIR_ALLOC(devs) < 0)
+        return NULL;
+    return devs;
+}
+
+
 void
 virNodeDeviceObjListFree(virNodeDeviceObjListPtr devs)
 {
@@ -281,7 +292,7 @@ virNodeDeviceObjListFree(virNodeDeviceObjListPtr devs)
     for (i = 0; i < devs->count; i++)
         virNodeDeviceObjFree(devs->objs[i]);
     VIR_FREE(devs->objs);
-    devs->count = 0;
+    VIR_FREE(devs);
 }
 
 
