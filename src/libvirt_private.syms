@@ -969,6 +969,7 @@ virNodeDeviceObjListAssignDef;
 virNodeDeviceObjListExport;
 virNodeDeviceObjListFindByName;
 virNodeDeviceObjListFindBySysfsPath;
+virNodeDeviceObjListFindSCSIHostByWWNs;
 virNodeDeviceObjListFree;
 virNodeDeviceObjListGetNames;
 virNodeDeviceObjListGetParentHost;
