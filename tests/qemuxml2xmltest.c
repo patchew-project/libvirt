@@ -28,6 +28,10 @@ enum {
     WHEN_BOTH = 3,
 };
 
+typedef enum {
+    FLAG_EXPECT_PARSE_ERROR = 1 << 0,
+} virQemuXML2XMLTestFlags;
+
 struct testInfo {
     char *inName;
     char *outActiveName;
@@ -36,6 +40,8 @@ struct testInfo {
     virBitmapPtr activeVcpus;
 
     virQEMUCapsPtr qemuCaps;
+
+    virQemuXML2XMLTestFlags flags;
 };
 
 static int
@@ -55,12 +61,15 @@ static int
 testXML2XMLActive(const void *opaque)
 {
     const struct testInfo *info = opaque;
+    testCompareDomXML2XMLResult flags = TEST_COMPARE_DOM_XML2XML_RESULT_SUCCESS;
+
+    if (info->flags & FLAG_EXPECT_PARSE_ERROR)
+        flags = TEST_COMPARE_DOM_XML2XML_RESULT_FAIL_PARSE;
 
     return testCompareDomXML2XMLFiles(driver.caps, driver.xmlopt,
                                       info->inName, info->outActiveName, true,
                                       qemuXML2XMLActivePreFormatCallback,
-                                      opaque, 0,
-                                      TEST_COMPARE_DOM_XML2XML_RESULT_SUCCESS);
+                                      opaque, 0, flags);
 }
 
 
@@ -68,11 +77,14 @@ static int
 testXML2XMLInactive(const void *opaque)
 {
     const struct testInfo *info = opaque;
+    testCompareDomXML2XMLResult flags = TEST_COMPARE_DOM_XML2XML_RESULT_SUCCESS;
+
+    if (info->flags & FLAG_EXPECT_PARSE_ERROR)
+        flags = TEST_COMPARE_DOM_XML2XML_RESULT_FAIL_PARSE;
 
     return testCompareDomXML2XMLFiles(driver.caps, driver.xmlopt, info->inName,
                                       info->outInactiveName, false,
-                                      NULL, opaque, 0,
-                                      TEST_COMPARE_DOM_XML2XML_RESULT_SUCCESS);
+                                      NULL, opaque, 0, flags);
 }
 
 
@@ -195,6 +207,8 @@ testCompareStatusXMLToXMLFiles(const void *opaque)
                                       VIR_DOMAIN_DEF_PARSE_STATUS |
                                       VIR_DOMAIN_DEF_PARSE_ACTUAL_NET |
                                       VIR_DOMAIN_DEF_PARSE_PCI_ORIG_STATES))) {
+        if (data->flags & FLAG_EXPECT_PARSE_ERROR)
+            goto ok;
         VIR_TEST_DEBUG("Failed to parse domain status XML:\n%s", source);
         goto cleanup;
     }
@@ -216,6 +230,17 @@ testCompareStatusXMLToXMLFiles(const void *opaque)
     }
 
     ret = 0;
+
+ ok:
+    if (data->flags & FLAG_EXPECT_PARSE_ERROR) {
+        if (ret < 0) {
+            VIR_TEST_DEBUG("Got expected error");
+            ret = 0;
+        } else {
+            VIR_TEST_DEBUG("Error expected but there wasn't any");
+            ret = -1;
+        }
+    }
 
  cleanup:
     xmlKeepBlanksDefault(keepBlanksDefault);
@@ -249,7 +274,8 @@ static int
 testInfoSet(struct testInfo *info,
             const char *name,
             int when,
-            int gic)
+            int gic,
+            virQemuXML2XMLTestFlags flags)
 {
     if (!(info->qemuCaps = virQEMUCapsNew()))
         goto error;
@@ -296,6 +322,8 @@ testInfoSet(struct testInfo *info,
         }
     }
 
+    info->flags = flags;
+
     return 0;
 
  error:
@@ -321,9 +349,9 @@ mymain(void)
     /* TODO: test with format probing disabled too */
     driver.config->allowDiskFormatProbing = true;
 
-# define DO_TEST_FULL(name, when, gic, ...)                                    \
+# define DO_TEST_FULL(name, when, gic, flags, ...)                             \
     do {                                                                       \
-        if (testInfoSet(&info, name, when, gic) < 0) {                         \
+        if (testInfoSet(&info, name, when, gic, flags) < 0) {                  \
             VIR_TEST_DEBUG("Failed to generate test data for '%s'", name);     \
             return -1;                                                         \
         }                                                                      \
@@ -350,8 +378,10 @@ mymain(void)
 # define NONE QEMU_CAPS_LAST
 
 # define DO_TEST(name, ...) \
-    DO_TEST_FULL(name, WHEN_BOTH, GIC_NONE, __VA_ARGS__)
+    DO_TEST_FULL(name, WHEN_BOTH, GIC_NONE, 0, __VA_ARGS__)
 
+# define DO_TEST_PARSE_ERROR(name, ...) \
+    DO_TEST_FULL(name, WHEN_BOTH, GIC_NONE, FLAG_EXPECT_PARSE_ERROR, __VA_ARGS__)
 
 
     /* Unset or set all envvars here that are copied in qemudBuildCommandLine
@@ -479,7 +509,7 @@ mymain(void)
             QEMU_CAPS_SCSI_DISK_WWN);
     DO_TEST("disk-mirror-old", NONE);
     DO_TEST("disk-mirror", NONE);
-    DO_TEST_FULL("disk-active-commit", WHEN_ACTIVE, GIC_NONE, NONE);
+    DO_TEST_FULL("disk-active-commit", WHEN_ACTIVE, GIC_NONE, 0, NONE);
     DO_TEST("graphics-listen-network", NONE);
     DO_TEST("graphics-vnc", NONE);
     DO_TEST("graphics-vnc-websocket", NONE);
@@ -557,7 +587,7 @@ mymain(void)
     DO_TEST("channel-virtio", NONE);
     DO_TEST("channel-virtio-state", NONE);
 
-    DO_TEST_FULL("channel-unix-source-path", WHEN_INACTIVE, GIC_NONE, NONE);
+    DO_TEST_FULL("channel-unix-source-path", WHEN_INACTIVE, GIC_NONE, 0, NONE);
 
     DO_TEST("hostdev-usb-address", NONE);
     DO_TEST("hostdev-pci-address", NONE);
@@ -630,17 +660,17 @@ mymain(void)
     DO_TEST("blkdeviotune-max-length", NONE);
     DO_TEST("controller-usb-order", NONE);
 
-    DO_TEST_FULL("seclabel-dynamic-baselabel", WHEN_INACTIVE, GIC_NONE, NONE);
-    DO_TEST_FULL("seclabel-dynamic-override", WHEN_INACTIVE, GIC_NONE, NONE);
-    DO_TEST_FULL("seclabel-dynamic-labelskip", WHEN_INACTIVE, GIC_NONE, NONE);
-    DO_TEST_FULL("seclabel-dynamic-relabel", WHEN_INACTIVE, GIC_NONE, NONE);
+    DO_TEST_FULL("seclabel-dynamic-baselabel", WHEN_INACTIVE, GIC_NONE, 0, NONE);
+    DO_TEST_FULL("seclabel-dynamic-override", WHEN_INACTIVE, GIC_NONE, 0, NONE);
+    DO_TEST_FULL("seclabel-dynamic-labelskip", WHEN_INACTIVE, GIC_NONE, 0, NONE);
+    DO_TEST_FULL("seclabel-dynamic-relabel", WHEN_INACTIVE, GIC_NONE, 0, NONE);
     DO_TEST("seclabel-static", NONE);
-    DO_TEST_FULL("seclabel-static-labelskip", WHEN_ACTIVE, GIC_NONE, NONE);
+    DO_TEST_FULL("seclabel-static-labelskip", WHEN_ACTIVE, GIC_NONE, 0, NONE);
     DO_TEST("seclabel-none", NONE);
     DO_TEST("seclabel-dac-none", NONE);
     DO_TEST("seclabel-dynamic-none", NONE);
     DO_TEST("seclabel-device-multiple", NONE);
-    DO_TEST_FULL("seclabel-dynamic-none-relabel", WHEN_INACTIVE, GIC_NONE, NONE);
+    DO_TEST_FULL("seclabel-dynamic-none-relabel", WHEN_INACTIVE, GIC_NONE, 0, NONE);
     DO_TEST("numad-static-vcpu-no-numatune", NONE);
 
     DO_TEST("disk-scsi-lun-passthrough-sgio",
@@ -1074,27 +1104,27 @@ mymain(void)
             QEMU_CAPS_PCI_MULTIFUNCTION, QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
             QEMU_CAPS_DEVICE_VIRTIO_GPU, QEMU_CAPS_BOOTINDEX);
 
-    DO_TEST_FULL("aarch64-gic-none", WHEN_BOTH, GIC_NONE, NONE);
-    DO_TEST_FULL("aarch64-gic-none-v2", WHEN_BOTH, GIC_V2, NONE);
-    DO_TEST_FULL("aarch64-gic-none-v3", WHEN_BOTH, GIC_V3, NONE);
-    DO_TEST_FULL("aarch64-gic-none-both", WHEN_BOTH, GIC_BOTH, NONE);
-    DO_TEST_FULL("aarch64-gic-none-tcg", WHEN_BOTH, GIC_BOTH, NONE);
-    DO_TEST_FULL("aarch64-gic-default", WHEN_BOTH, GIC_NONE, NONE);
-    DO_TEST_FULL("aarch64-gic-default", WHEN_BOTH, GIC_V2, NONE);
-    DO_TEST_FULL("aarch64-gic-default", WHEN_BOTH, GIC_V3, NONE);
-    DO_TEST_FULL("aarch64-gic-default", WHEN_BOTH, GIC_BOTH, NONE);
-    DO_TEST_FULL("aarch64-gic-v2", WHEN_BOTH, GIC_NONE, NONE);
-    DO_TEST_FULL("aarch64-gic-v2", WHEN_BOTH, GIC_V2, NONE);
-    DO_TEST_FULL("aarch64-gic-v2", WHEN_BOTH, GIC_V3, NONE);
-    DO_TEST_FULL("aarch64-gic-v2", WHEN_BOTH, GIC_BOTH, NONE);
-    DO_TEST_FULL("aarch64-gic-v3", WHEN_BOTH, GIC_NONE, NONE);
-    DO_TEST_FULL("aarch64-gic-v3", WHEN_BOTH, GIC_V2, NONE);
-    DO_TEST_FULL("aarch64-gic-v3", WHEN_BOTH, GIC_V3, NONE);
-    DO_TEST_FULL("aarch64-gic-v3", WHEN_BOTH, GIC_BOTH, NONE);
-    DO_TEST_FULL("aarch64-gic-host", WHEN_BOTH, GIC_NONE, NONE);
-    DO_TEST_FULL("aarch64-gic-host", WHEN_BOTH, GIC_V2, NONE);
-    DO_TEST_FULL("aarch64-gic-host", WHEN_BOTH, GIC_V3, NONE);
-    DO_TEST_FULL("aarch64-gic-host", WHEN_BOTH, GIC_BOTH, NONE);
+    DO_TEST_FULL("aarch64-gic-none", WHEN_BOTH, GIC_NONE, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-none-v2", WHEN_BOTH, GIC_V2, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-none-v3", WHEN_BOTH, GIC_V3, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-none-both", WHEN_BOTH, GIC_BOTH, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-none-tcg", WHEN_BOTH, GIC_BOTH, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-default", WHEN_BOTH, GIC_NONE, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-default", WHEN_BOTH, GIC_V2, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-default", WHEN_BOTH, GIC_V3, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-default", WHEN_BOTH, GIC_BOTH, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-v2", WHEN_BOTH, GIC_NONE, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-v2", WHEN_BOTH, GIC_V2, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-v2", WHEN_BOTH, GIC_V3, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-v2", WHEN_BOTH, GIC_BOTH, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-v3", WHEN_BOTH, GIC_NONE, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-v3", WHEN_BOTH, GIC_V2, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-v3", WHEN_BOTH, GIC_V3, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-v3", WHEN_BOTH, GIC_BOTH, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-host", WHEN_BOTH, GIC_NONE, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-host", WHEN_BOTH, GIC_V2, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-host", WHEN_BOTH, GIC_V3, 0, NONE);
+    DO_TEST_FULL("aarch64-gic-host", WHEN_BOTH, GIC_BOTH, 0, NONE);
 
     DO_TEST("memory-hotplug", NONE);
     DO_TEST("memory-hotplug-nonuma", NONE);
