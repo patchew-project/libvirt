@@ -193,4 +193,21 @@ else
 fi
 
 echo
-echo "Now type 'make' to compile libvirt."
+
+# Make sure we can find GNU make and tell the user
+# the right command to run
+make -v | grep "GNU Make" 1>/dev/null 2>&1
+if test $? = 0
+then
+    MAKE=make
+else
+    which gmake 1>/dev/null 2>&1
+    if test $? = 0
+    then
+        MAKE=gmake
+    else
+        die "GNU make is required to build libvirt"
+    fi
+fi
+
+echo "Now type '$MAKE' to compile libvirt."
