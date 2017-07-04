@@ -325,6 +325,67 @@ testJSONCopy(const void *data)
 
 
 static int
+testJSONEscapeObj(const void *data ATTRIBUTE_UNUSED)
+{
+    virJSONValuePtr json = NULL;
+    virJSONValuePtr nestjson = NULL;
+    virJSONValuePtr parsejson = NULL;
+    char *neststr = NULL;
+    char *result = NULL;
+    const char *parsednestedstr;
+    int ret = -1;
+
+    if (virJSONValueObjectCreate(&nestjson,
+                                 "s:stringkey", "stringvalue",
+                                 "i:numberkey", 1234,
+                                 "b:booleankey", false, NULL) < 0) {
+        VIR_TEST_VERBOSE("failed to create nested json object");
+        goto cleanup;
+    }
+
+    if (!(neststr = virJSONValueToString(nestjson, false))) {
+        VIR_TEST_VERBOSE("failed to format nested json object");
+        goto cleanup;
+    }
+
+    if (virJSONValueObjectCreate(&json, "s:test", neststr, NULL) < 0) {
+        VIR_TEST_VERBOSE("Failed to create json object");
+        goto cleanup;
+    }
+
+    if (!(result = virJSONValueToString(json, false))) {
+        VIR_TEST_VERBOSE("Failed to format json object");
+        goto cleanup;
+    }
+
+    if (!(parsejson = virJSONValueFromString(result))) {
+        VIR_TEST_VERBOSE("Failed to parse JSON with nested JSON in string");
+        goto cleanup;
+    }
+
+    if (!(parsednestedstr = virJSONValueObjectGetString(parsejson, "test"))) {
+        VIR_TEST_VERBOSE("Failed to retrieve string containing nested json");
+        goto cleanup;
+    }
+
+    if (STRNEQ(parsednestedstr, neststr)) {
+        virTestDifference(stderr, neststr, parsednestedstr);
+        goto cleanup;
+    }
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(neststr);
+    VIR_FREE(result);
+    virJSONValueFree(json);
+    virJSONValueFree(nestjson);
+    virJSONValueFree(parsejson);
+    return ret;
+}
+
+
+static int
 mymain(void)
 {
     int ret = 0;
@@ -445,6 +506,10 @@ mymain(void)
     DO_TEST_PARSE("integer", "1", NULL);
     DO_TEST_PARSE("boolean", "true", NULL);
     DO_TEST_PARSE("null", "null", NULL);
+
+    DO_TEST_PARSE("escaping symbols", "[\"\\\"\\t\\n\\\\\"]", NULL);
+    DO_TEST_PARSE("escaped strings", "[\"{\\\"blurb\\\":\\\"test\\\"}\"]", NULL);
+
     DO_TEST_PARSE_FAIL("incomplete keyword", "tr");
     DO_TEST_PARSE_FAIL("overdone keyword", "[ truest ]");
     DO_TEST_PARSE_FAIL("unknown keyword", "huh");
@@ -477,6 +542,8 @@ mymain(void)
     DO_TEST_FULL("lookup with correct type", Lookup,
                  "{ \"a\": {}, \"b\": 1, \"c\": \"str\", \"d\": [] }",
                  NULL, true);
+    DO_TEST_FULL("create object with nested json in attribute", EscapeObj,
+                 NULL, NULL, true);
 
     return (ret == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
