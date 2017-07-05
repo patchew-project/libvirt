@@ -5992,6 +5992,129 @@ qemuBuildRNGCommandLine(virLogManagerPtr logManager,
 
 
 static char *
+qemuBuildCryptoBackendStr(virDomainCryptoDefPtr crypto,
+                          virQEMUCapsPtr qemuCaps)
+{
+    const char *type = NULL;
+    char *alias = NULL;
+    char *queue = NULL;
+    char *backstr = NULL;
+
+    if (virAsprintf(&alias, "obj%s", crypto->info.alias) < 0)
+        goto cleanup;
+
+    if (crypto->queues > 0) {
+        if (virAsprintf(&queue, "queues=%u", crypto->queues) < 0)
+            goto cleanup;
+    }
+
+    switch ((virDomainCryptoBackend)crypto->backend) {
+    case VIR_DOMAIN_CRYPTO_BACKEND_BUILTIN:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_CRYPTO_BUILTIN)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("this qemu doesn't support the builtin backend"));
+            goto cleanup;
+        }
+
+        type = "cryptodev-backend-builtin";
+        break;
+
+    case VIR_DOMAIN_CRYPTO_BACKEND_LAST:
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("unknown crypto backend"));
+        goto cleanup;
+    }
+
+    if (queue)
+        ignore_value(virAsprintf(&backstr, "%s,id=%s,%s", type, alias, queue));
+    else
+        ignore_value(virAsprintf(&backstr, "%s,id=%s", type, alias));
+
+ cleanup:
+    VIR_FREE(alias);
+    return backstr;
+}
+
+
+char *
+qemuBuildCryptoDevStr(const virDomainDef *def,
+                      virDomainCryptoDefPtr dev,
+                      virQEMUCapsPtr qemuCaps)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    if (dev->model != VIR_DOMAIN_CRYPTO_MODEL_VIRTIO ||
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_CRYPTO)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("this qemu doesn't support crypto device model '%s'"),
+                       virDomainRNGModelTypeToString(dev->model));
+        goto error;
+    }
+
+    if (dev->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unsupported address type %s for virtio crypto device"),
+                       virDomainDeviceAddressTypeToString(dev->info.type));
+        goto error;
+    }
+
+    virBufferAsprintf(&buf, "virtio-crypto-pci,cryptodev=obj%s,id=%s",
+                      dev->info.alias, dev->info.alias);
+
+    if (qemuBuildDeviceAddressStr(&buf, def, &dev->info, qemuCaps) < 0)
+        goto error;
+
+    return virBufferContentAndReset(&buf);
+
+ error:
+    virBufferFreeAndReset(&buf);
+    return NULL;
+}
+
+
+static int
+qemuBuildCryptoCommandLine(virCommandPtr cmd,
+                           const virDomainDef *def,
+                           virQEMUCapsPtr qemuCaps)
+{
+    size_t i;
+
+    for (i = 0; i < def->ncryptos; i++) {
+        virDomainCryptoDefPtr crypto = def->cryptos[i];
+        char *tmp;
+
+        if (qemuAssignDeviceCryptoAlias(def, crypto)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("crypto device assign alias faile"));
+            return -1;
+        }
+
+        if (!crypto->info.alias) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("crypto device is missing alias"));
+            return -1;
+        }
+
+        /* add the crypto backend */
+        if (!(tmp = qemuBuildCryptoBackendStr(crypto, qemuCaps)))
+            return -1;
+
+        virCommandAddArgList(cmd, "-object", tmp, NULL);
+        VIR_FREE(tmp);
+
+        /* add the device */
+        if (!(tmp = qemuBuildCryptoDevStr(def, crypto, qemuCaps)))
+            return -1;
+
+        virCommandAddArgList(cmd, "-device", tmp, NULL);
+        VIR_FREE(tmp);
+    }
+
+    return 0;
+}
+
+
+static char *
 qemuBuildSmbiosBiosStr(virSysinfoBIOSDefPtr def)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
@@ -10218,6 +10341,9 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
 
     if (qemuBuildRNGCommandLine(logManager, cmd, cfg, def, qemuCaps,
                                 chardevStdioLogd) < 0)
+        goto error;
+
+    if (qemuBuildCryptoCommandLine(cmd, def, qemuCaps) < 0)
         goto error;
 
     if (qemuBuildNVRAMCommandLine(cmd, def, qemuCaps) < 0)

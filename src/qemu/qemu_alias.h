@@ -57,6 +57,9 @@ int qemuAssignDeviceRedirdevAlias(virDomainDefPtr def,
 int qemuAssignDeviceRNGAlias(virDomainDefPtr def,
                              virDomainRNGDefPtr rng);
 
+int qemuAssignDeviceCryptoAlias(const virDomainDef *def,
+                                virDomainCryptoDefPtr crypto);
+
 int qemuAssignDeviceMemoryAlias(virDomainDefPtr def,
                                 virDomainMemoryDefPtr mems,
                                 bool oldAlias);

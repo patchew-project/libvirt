@@ -204,6 +204,9 @@ char *qemuBuildShmemDevStr(virDomainDefPtr def,
                            virQEMUCapsPtr qemuCaps)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
+char *qemuBuildCryptoDevStr(const virDomainDef *def,
+                            virDomainCryptoDefPtr dev,
+                            virQEMUCapsPtr qemuCaps);
 
 
 #endif /* __QEMU_COMMAND_H__*/
