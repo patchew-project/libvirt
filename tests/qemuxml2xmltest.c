@@ -1045,6 +1045,8 @@ mymain(void)
     DO_TEST("smbios", NONE);
     DO_TEST("smbios-multiple-type2", NONE);
 
+    DO_TEST("virtio-crypto-builtin", NONE);
+
     DO_TEST("aarch64-aavmf-virtio-mmio",
             QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_DTB,
             QEMU_CAPS_DEVICE_VIRTIO_MMIO,
