@@ -7547,6 +7547,67 @@ qemu-kvm -net nic,model=? /dev/null
       </dd>
     </dl>
 
+    <h4><a name="elementCrypto">Crypto device</a></h4>
+
+    <p>
+      The virtual crypto device is a virtual crypto accelerator
+      card(provides crypto services, such as CIPHER, HMAC, HASH,
+      and AEAD) for virtual machines and it can be added to the
+      guest via the <code>crypto</code> element.
+      <span class="since">Since 3.6.0, QEMU and KVM only</span>
+    </p>
+
+    <p>
+      Example: usage of the crypto device:
+    </p>
+<pre>
+  ...
+  &lt;devices&gt;
+    &lt;crypto model='virtio'&gt;
+      &lt;backend type='builtin' queues='1'/&gt;
+    &lt;/crypto&gt;
+  &lt;/devices&gt;
+  ...
+</pre>
+    <dl>
+      <dt><code>model</code></dt>
+      <dd>
+        <p>
+          The required <code>model</code> attribute specifies what
+          type of crypto device is provide.
+          Currently only 'virtio' is supported and it needs virtio-crypto
+          guest driver.
+        </p>
+      </dd>
+      <dt><code>backend</code></dt>
+      <dd>
+        <p>
+          The <code>backend</code> element specifies the type and
+          number of queues of the crypto device to be used for the
+          domain.
+        </p>
+        <dl>
+          <dt><code>type</code></dt>
+          <dd>
+            <p>
+                The required <code>type</code> element specifies the
+                type of the crypto device.
+                Currently only supports 'builtin' which uses QEMU's
+                crypto APIs to complete the crypto operations.
+            </p>
+          </dd>
+          <dt><code>queues</code></dt>
+          <dd>
+            <p>
+                The optional <code>queues</code> element specifies the
+                number of queues of the crypto device, the default number
+                of queues is 1.
+            </p>
+          </dd>
+        </dl>
+      </dd>
+    </dl>
+
     <h3><a name="seclabel">Security label</a></h3>
 
     <p>
