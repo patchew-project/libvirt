@@ -81,6 +81,7 @@
 #include "virprocess.h"
 #include "virstring.h"
 #include "virutil.h"
+#include "virsocketaddr.h"
 
 verify(sizeof(gid_t) <= sizeof(unsigned int) &&
        sizeof(uid_t) <= sizeof(unsigned int));
