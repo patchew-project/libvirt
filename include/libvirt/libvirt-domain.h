@@ -1209,6 +1209,8 @@ int                    virDomainHasManagedSaveImage(virDomainPtr dom,
                                                     unsigned int flags);
 int                    virDomainManagedSaveRemove(virDomainPtr dom,
                                                   unsigned int flags);
+char *                 virDomainManagedSaveGetXMLDesc(virDomainPtr domain,
+                                                      unsigned int flags);
 
 /*
  * Domain core dump
