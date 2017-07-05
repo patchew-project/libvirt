@@ -239,15 +239,6 @@
 # define EMPTYSTR(s) ((s) ? (s) : "-")
 
 /**
- * TODO:
- *
- * macro to flag unimplemented blocks
- */
-# define TODO								\
-    fprintf(stderr, "Unimplemented block at %s:%d\n",			\
-            __FILE__, __LINE__);
-
-/**
  * SWAP:
  *
  * In place exchange of two values
