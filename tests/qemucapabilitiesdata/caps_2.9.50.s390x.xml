@@ -1,7 +1,7 @@
 <qemuCaps>
-  <qemuctime>1495812539</qemuctime>
-  <selfctime>1496170776</selfctime>
-  <selfvers>3004000</selfvers>
+  <qemuctime>0</qemuctime>
+  <selfctime>0</selfctime>
+  <selfvers>0</selfvers>
   <usedQMP/>
   <flag name='kvm'/>
   <flag name='mem-path'/>
@@ -133,6 +133,8 @@
   <flag name='query-named-block-nodes'/>
   <flag name='kernel-irqchip'/>
   <flag name='kernel-irqchip.split'/>
+  <flag name='virtio.iommu_platform'/>
+  <flag name='virtio.ats'/>
   <flag name='loadparm'/>
   <version>2009050</version>
   <kvmVersion>0</kvmVersion>
