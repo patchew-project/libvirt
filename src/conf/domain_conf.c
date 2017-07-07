@@ -253,7 +253,8 @@ VIR_ENUM_IMPL(virDomainDevice, VIR_DOMAIN_DEVICE_LAST,
               "tpm",
               "panic",
               "memory",
-              "iommu")
+              "iommu",
+              "crypto")
 
 VIR_ENUM_IMPL(virDomainDeviceAddress, VIR_DOMAIN_DEVICE_ADDRESS_TYPE_LAST,
               "none",
@@ -829,6 +830,14 @@ VIR_ENUM_IMPL(virDomainRNGBackend,
               VIR_DOMAIN_RNG_BACKEND_LAST,
               "random",
               "egd");
+
+VIR_ENUM_IMPL(virDomainCryptoModel,
+              VIR_DOMAIN_CRYPTO_MODEL_LAST,
+              "virtio");
+
+VIR_ENUM_IMPL(virDomainCryptoBackend,
+              VIR_DOMAIN_CRYPTO_BACKEND_LAST,
+              "builtin");
 
 VIR_ENUM_IMPL(virDomainTPMModel, VIR_DOMAIN_TPM_MODEL_LAST,
               "tpm-tis")
@@ -2617,6 +2626,9 @@ void virDomainDeviceDefFree(virDomainDeviceDefPtr def)
     case VIR_DOMAIN_DEVICE_IOMMU:
         VIR_FREE(def->data.iommu);
         break;
+    case VIR_DOMAIN_DEVICE_CRYPTO:
+        virDomainCryptoDefFree(def->data.crypto);
+        break;
     case VIR_DOMAIN_DEVICE_LAST:
     case VIR_DOMAIN_DEVICE_NONE:
         break;
@@ -2865,6 +2877,10 @@ void virDomainDefFree(virDomainDefPtr def)
     VIR_FREE(def->panics);
 
     VIR_FREE(def->iommu);
+
+    for (i = 0; i < def->ncryptos; i++)
+        virDomainCryptoDefFree(def->cryptos[i]);
+    VIR_FREE(def->cryptos);
 
     VIR_FREE(def->idmap.uidmap);
     VIR_FREE(def->idmap.gidmap);
@@ -3453,6 +3469,8 @@ virDomainDeviceGetInfo(virDomainDeviceDefPtr device)
         return &device->data.panic->info;
     case VIR_DOMAIN_DEVICE_MEMORY:
         return &device->data.memory->info;
+    case VIR_DOMAIN_DEVICE_CRYPTO:
+        return &device->data.crypto->info;
 
     /* The following devices do not contain virDomainDeviceInfo */
     case VIR_DOMAIN_DEVICE_LEASE:
@@ -3768,6 +3786,13 @@ virDomainDeviceInfoIterateInternal(virDomainDefPtr def,
             return -1;
     }
 
+    device.type = VIR_DOMAIN_DEVICE_CRYPTO;
+    for (i = 0; i < def->ncryptos; i++) {
+        device.data.crypto = def->cryptos[i];
+        if (cb(def, &device, &def->cryptos[i]->info, opaque) < 0)
+            return -1;
+    }
+
     /* Coverity is not very happy with this - all dead_error_condition */
 #if !STATIC_ANALYSIS
     /* This switch statement is here to trigger compiler warning when adding
@@ -3802,6 +3827,7 @@ virDomainDeviceInfoIterateInternal(virDomainDefPtr def,
     case VIR_DOMAIN_DEVICE_RNG:
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_CRYPTO:
         break;
     }
 #endif
@@ -5095,6 +5121,7 @@ virDomainDeviceDefValidateInternal(const virDomainDeviceDef *dev,
     case VIR_DOMAIN_DEVICE_PANIC:
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_CRYPTO:
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_LAST:
         break;
@@ -13048,6 +13075,88 @@ virDomainRNGDefParseXML(virDomainXMLOptionPtr xmlopt,
 }
 
 
+static virDomainCryptoDefPtr
+virDomainCryptoDefParseXML(xmlNodePtr node,
+                           xmlXPathContextPtr ctxt,
+                           unsigned int flags)
+{
+    char *model = NULL;
+    char *backend = NULL;
+    char *queues = NULL;
+    virDomainCryptoDefPtr def;
+    xmlNodePtr save = ctxt->node;
+    xmlNodePtr *backends = NULL;
+    int nbackends;
+
+    if (VIR_ALLOC(def) < 0)
+        return NULL;
+
+    if (!(model = virXMLPropString(node, "model"))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("missing Crypto device model"));
+        goto error;
+    }
+
+    if ((def->model = virDomainCryptoModelTypeFromString(model)) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unknown Crypto model '%s'"), model);
+        goto error;
+    }
+
+    ctxt->node = node;
+
+    if ((nbackends = virXPathNodeSet("./backend", ctxt, &backends)) < 0)
+        goto error;
+
+    if (nbackends != 1) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("only one Crypto backend is supported"));
+        goto error;
+    }
+
+    if (!(backend = virXMLPropString(backends[0], "type"))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("missing Crypto device backend type"));
+        goto error;
+    }
+
+    if ((def->backend = virDomainCryptoBackendTypeFromString(backend)) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unknown Crypto backend model '%s'"), backend);
+        goto error;
+    }
+
+    switch ((virDomainCryptoBackend) def->backend) {
+    case VIR_DOMAIN_CRYPTO_BACKEND_BUILTIN:
+        queues = virXMLPropString(backends[0], "queues");
+        if (queues && virStrToLong_ui(queues, NULL, 10, &def->queues) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("Malformed 'queues' value '%s'"), queues);
+        }
+        break;
+
+    case VIR_DOMAIN_CRYPTO_BACKEND_LAST:
+        break;
+    }
+
+    if (virDomainDeviceInfoParseXML(node, NULL, &def->info, flags) < 0)
+        goto error;
+
+ cleanup:
+    VIR_FREE(model);
+    VIR_FREE(backend);
+    VIR_FREE(queues);
+    VIR_FREE(backends);
+    ctxt->node = save;
+    return def;
+
+ error:
+    virDomainCryptoDefFree(def);
+    def = NULL;
+    goto cleanup;
+}
+
+
 static virDomainMemballoonDefPtr
 virDomainMemballoonDefParseXML(xmlNodePtr node,
                                xmlXPathContextPtr ctxt,
@@ -14641,6 +14750,10 @@ virDomainDeviceDefParse(const char *xmlStr,
         break;
     case VIR_DOMAIN_DEVICE_IOMMU:
         if (!(dev->data.iommu = virDomainIOMMUDefParseXML(node, ctxt)))
+            goto error;
+        break;
+    case VIR_DOMAIN_DEVICE_CRYPTO:
+        if (!(dev->data.crypto = virDomainCryptoDefParseXML(node, ctxt, flags)))
             goto error;
         break;
     case VIR_DOMAIN_DEVICE_NONE:
@@ -17709,6 +17822,22 @@ virDomainDefParseXML(xmlDocPtr xml,
     }
     VIR_FREE(nodes);
 
+    /* Parse the crypto devices */
+    if ((n = virXPathNodeSet("./devices/crypto", ctxt, &nodes)) < 0)
+        goto error;
+    if (n && VIR_ALLOC_N(def->cryptos, n) < 0)
+        goto error;
+    for (i = 0; i < n; i++) {
+        virDomainCryptoDefPtr crypto = virDomainCryptoDefParseXML(nodes[i],
+                                                                  ctxt,
+                                                                  flags);
+        if (!crypto)
+            goto error;
+
+        def->cryptos[def->ncryptos++] = crypto;
+    }
+    VIR_FREE(nodes);
+
     if (virCPUDefParseXML(ctxt, "./cpu[1]", VIR_CPU_TYPE_GUEST, &def->cpu) < 0)
         goto error;
 
@@ -19815,6 +19944,25 @@ virDomainRNGDefCheckABIStability(virDomainRNGDefPtr src,
 
 
 static bool
+virDomainCryptoDefCheckABIStability(virDomainCryptoDefPtr src,
+                                    virDomainCryptoDefPtr dst)
+{
+    if (src->model != dst->model) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target Crypto model '%s' does not match source '%s'"),
+                       virDomainCryptoModelTypeToString(dst->model),
+                       virDomainCryptoModelTypeToString(src->model));
+        return false;
+    }
+
+    if (!virDomainDeviceInfoCheckABIStability(&src->info, &dst->info))
+        return false;
+
+    return true;
+}
+
+
+static bool
 virDomainHubDefCheckABIStability(virDomainHubDefPtr src,
                                  virDomainHubDefPtr dst)
 {
@@ -20718,6 +20866,17 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
         !xmlopt->abi.domain(src, dst))
         goto error;
 
+    if (src->ncryptos != dst->ncryptos) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target domain crypto device count %zu "
+                         "does not match source %zu"), dst->ncryptos, src->ncryptos);
+        goto error;
+    }
+
+    for (i = 0; i < src->ncryptos; i++)
+        if (!virDomainCryptoDefCheckABIStability(src->cryptos[i], dst->cryptos[i]))
+            goto error;
+
     /* Coverity is not very happy with this - all dead_error_condition */
 #if !STATIC_ANALYSIS
     /* This switch statement is here to trigger compiler warning when adding
@@ -20751,6 +20910,7 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
     case VIR_DOMAIN_DEVICE_SHMEM:
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_CRYPTO:
         break;
     }
 #endif
@@ -23387,6 +23547,49 @@ virDomainRNGDefFree(virDomainRNGDefPtr def)
 
 
 static int
+virDomainCryptoDefFormat(virBufferPtr buf,
+                         virDomainCryptoDefPtr def,
+                         unsigned int flags)
+{
+    const char *model = virDomainCryptoModelTypeToString(def->model);
+    const char *backend = virDomainCryptoBackendTypeToString(def->backend);
+
+    virBufferAsprintf(buf, "<crypto model='%s'>\n", model);
+    virBufferAdjustIndent(buf, 2);
+    virBufferAsprintf(buf, "<backend type='%s'", backend);
+
+    switch ((virDomainCryptoBackend) def->backend) {
+    case VIR_DOMAIN_CRYPTO_BACKEND_BUILTIN:
+        if (def->queues)
+            virBufferAsprintf(buf, " queues='%u'", def->queues);
+
+        virBufferAddLit(buf, "/>\n");
+        break;
+
+    case VIR_DOMAIN_CRYPTO_BACKEND_LAST:
+        break;
+    }
+
+    if (virDomainDeviceInfoFormat(buf, &def->info, flags) < 0)
+        return -1;
+
+    virBufferAdjustIndent(buf, -2);
+    virBufferAddLit(buf, "</crypto>\n");
+    return 0;
+}
+
+void
+virDomainCryptoDefFree(virDomainCryptoDefPtr def)
+{
+    if (!def)
+        return;
+
+    virDomainDeviceInfoClear(&def->info);
+    VIR_FREE(def);
+}
+
+
+static int
 virDomainMemorySourceDefFormat(virBufferPtr buf,
                                virDomainMemoryDefPtr def)
 {
@@ -25418,6 +25621,11 @@ virDomainDefFormatInternal(virDomainDefPtr def,
             goto error;
     }
 
+    for (n = 0; n < def->ncryptos; n++) {
+        if (virDomainCryptoDefFormat(buf, def->cryptos[n], flags))
+            goto error;
+    }
+
     if (def->iommu)
         virDomainIOMMUDefFormat(buf, def->iommu);
 
@@ -26499,6 +26707,9 @@ virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
         break;
     case VIR_DOMAIN_DEVICE_SHMEM:
         rc = virDomainShmemDefFormat(&buf, src->data.shmem, flags);
+        break;
+    case VIR_DOMAIN_DEVICE_CRYPTO:
+        rc = virDomainCryptoDefFormat(&buf, src->data.crypto, flags);
         break;
 
     case VIR_DOMAIN_DEVICE_NONE:

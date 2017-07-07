@@ -159,6 +159,9 @@ typedef virDomainIOMMUDef *virDomainIOMMUDefPtr;
 typedef struct _virDomainVirtioOptions virDomainVirtioOptions;
 typedef virDomainVirtioOptions *virDomainVirtioOptionsPtr;
 
+typedef struct _virDomainCryptoDef virDomainCryptoDef;
+typedef virDomainCryptoDef *virDomainCryptoDefPtr;
+
 /* Flags for the 'type' field in virDomainDeviceDef */
 typedef enum {
     VIR_DOMAIN_DEVICE_NONE = 0,
@@ -185,6 +188,7 @@ typedef enum {
     VIR_DOMAIN_DEVICE_PANIC,
     VIR_DOMAIN_DEVICE_MEMORY,
     VIR_DOMAIN_DEVICE_IOMMU,
+    VIR_DOMAIN_DEVICE_CRYPTO,
 
     VIR_DOMAIN_DEVICE_LAST
 } virDomainDeviceType;
@@ -217,6 +221,7 @@ struct _virDomainDeviceDef {
         virDomainPanicDefPtr panic;
         virDomainMemoryDefPtr memory;
         virDomainIOMMUDefPtr iommu;
+        virDomainCryptoDefPtr crypto;
     } data;
 };
 
@@ -2043,6 +2048,26 @@ struct _virDomainRNGDef {
 };
 
 typedef enum {
+    VIR_DOMAIN_CRYPTO_MODEL_VIRTIO,
+
+    VIR_DOMAIN_CRYPTO_MODEL_LAST
+} virDomainCryptoModel;
+
+typedef enum {
+    VIR_DOMAIN_CRYPTO_BACKEND_BUILTIN,
+
+    VIR_DOMAIN_CRYPTO_BACKEND_LAST
+} virDomainCryptoBackend;
+
+struct _virDomainCryptoDef {
+    int model;
+    int backend;
+    unsigned int queues; /* Multiqueue virtio-crypto */
+
+    virDomainDeviceInfo info;
+};
+
+typedef enum {
     VIR_DOMAIN_MEMORY_MODEL_NONE,
     VIR_DOMAIN_MEMORY_MODEL_DIMM, /* dimm hotpluggable memory device */
     VIR_DOMAIN_MEMORY_MODEL_NVDIMM, /* nvdimm memory device */
@@ -2379,6 +2404,9 @@ struct _virDomainDef {
 
     size_t npanics;
     virDomainPanicDefPtr *panics;
+
+    size_t ncryptos;
+    virDomainCryptoDefPtr *cryptos;
 
     /* Only 1 */
     virDomainWatchdogDefPtr watchdog;
@@ -2908,6 +2936,8 @@ int virDomainDefCompatibleDevice(virDomainDefPtr def,
 
 void virDomainRNGDefFree(virDomainRNGDefPtr def);
 
+void virDomainCryptoDefFree(virDomainCryptoDefPtr def);
+
 int virDomainDiskIndexByAddress(virDomainDefPtr def,
                                 virPCIDeviceAddressPtr pci_controller,
                                 unsigned int bus, unsigned int target,
@@ -3236,6 +3266,8 @@ VIR_ENUM_DECL(virDomainShutdownReason)
 VIR_ENUM_DECL(virDomainShutoffReason)
 VIR_ENUM_DECL(virDomainCrashedReason)
 VIR_ENUM_DECL(virDomainPMSuspendedReason)
+VIR_ENUM_DECL(virDomainCryptoModel)
+VIR_ENUM_DECL(virDomainCryptoBackend)
 
 const char *virDomainStateReasonToString(virDomainState state, int reason);
 int virDomainStateReasonFromString(virDomainState state, const char *reason);
