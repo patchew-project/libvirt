@@ -35,6 +35,16 @@
 <libvirt>
   <release version="v3.6.0" date="unreleased">
     <section title="New features">
+      <change>
+        <summary>
+          qemu: Add support for virtio-crypto device
+        </summary>
+        <description>
+          QEMU 2.8 introduced the support of virtio-crypto device, which is a
+          virtual crypto accelerator card for VMs. Users can now configure one
+          or more virtio-crypto devices for the VM in the XML.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
     </section>
