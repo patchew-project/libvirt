@@ -430,6 +430,10 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "virtio.iommu_platform",
               "virtio.ats",
               "loadparm",
+              "cryptodev-backend-builtin",
+
+              /* 265 */
+              "virtio-crypto",
     );
 
 
@@ -1679,6 +1683,8 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "nvdimm", QEMU_CAPS_DEVICE_NVDIMM },
     { "pcie-root-port", QEMU_CAPS_DEVICE_PCIE_ROOT_PORT },
     { "qemu-xhci", QEMU_CAPS_DEVICE_QEMU_XHCI },
+    { "cryptodev-backend-builtin", QEMU_CAPS_OBJECT_CRYPTO_BUILTIN },
+    { "virtio-crypto-device", QEMU_CAPS_DEVICE_VIRTIO_CRYPTO },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {
