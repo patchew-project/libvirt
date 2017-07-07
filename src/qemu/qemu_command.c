@@ -6051,14 +6051,18 @@ qemuBuildCryptoDevStr(const virDomainDef *def,
         goto error;
     }
 
-    if (dev->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
+    if (dev->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
+        virBufferAddLit(&buf, "virtio-crypto-pci");
+    } else if (dev->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
+        virBufferAddLit(&buf, "virtio-crypto-ccw");
+    } else {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("unsupported address type %s for virtio crypto device"),
                        virDomainDeviceAddressTypeToString(dev->info.type));
         goto error;
     }
 
-    virBufferAsprintf(&buf, "virtio-crypto-pci,cryptodev=obj%s,id=%s",
+    virBufferAsprintf(&buf, ",cryptodev=obj%s,id=%s",
                       dev->info.alias, dev->info.alias);
 
     if (qemuBuildDeviceAddressStr(&buf, def, &dev->info, qemuCaps) < 0)
