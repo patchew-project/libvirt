@@ -474,11 +474,13 @@ struct _virQEMUCaps {
 
     char *binary;
     time_t ctime;
+    time_t libvirtCtime;
 
     virBitmapPtr flags;
 
     unsigned int version;
     unsigned int kvmVersion;
+    unsigned int libvirtVersion;
     char *package;
 
     virArch arch;
@@ -3783,9 +3785,7 @@ virQEMUCapsLoadCPUModels(virQEMUCapsPtr qemuCaps,
 int
 virQEMUCapsLoadCache(virCapsPtr caps,
                      virQEMUCapsPtr qemuCaps,
-                     const char *filename,
-                     time_t *selfctime,
-                     unsigned long *selfvers)
+                     const char *filename)
 {
     xmlDocPtr doc = NULL;
     int ret = -1;
@@ -3827,11 +3827,11 @@ virQEMUCapsLoadCache(virCapsPtr caps,
                        _("missing selfctime in QEMU capabilities XML"));
         goto cleanup;
     }
-    *selfctime = (time_t)l;
+    qemuCaps->libvirtCtime = (time_t)l;
 
-    *selfvers = 0;
+    qemuCaps->libvirtVersion = 0;
     if (virXPathULong("string(./selfvers)", ctxt, &lu) == 0)
-        *selfvers = lu;
+        qemuCaps->libvirtVersion = lu;
 
     qemuCaps->usedQMP = virXPathBoolean("count(./usedQMP) > 0",
                                         ctxt) > 0;
@@ -4104,9 +4104,7 @@ virQEMUCapsFormatCPUModels(virQEMUCapsPtr qemuCaps,
 
 
 char *
-virQEMUCapsFormatCache(virQEMUCapsPtr qemuCaps,
-                       time_t selfCTime,
-                       unsigned long selfVersion)
+virQEMUCapsFormatCache(virQEMUCapsPtr qemuCaps)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
     char *ret = NULL;
@@ -4118,9 +4116,9 @@ virQEMUCapsFormatCache(virQEMUCapsPtr qemuCaps,
     virBufferAsprintf(&buf, "<qemuctime>%llu</qemuctime>\n",
                       (long long) qemuCaps->ctime);
     virBufferAsprintf(&buf, "<selfctime>%llu</selfctime>\n",
-                      (long long) selfCTime);
+                      (long long) qemuCaps->libvirtCtime);
     virBufferAsprintf(&buf, "<selfvers>%lu</selfvers>\n",
-                      (unsigned long) selfVersion);
+                      (unsigned long) qemuCaps->libvirtVersion);
 
     if (qemuCaps->usedQMP)
         virBufferAddLit(&buf, "<usedQMP/>\n");
@@ -4195,9 +4193,7 @@ virQEMUCapsSaveCache(virQEMUCapsPtr qemuCaps, const char *filename)
     char *xml = NULL;
     int ret = -1;
 
-    xml = virQEMUCapsFormatCache(qemuCaps,
-                                 virGetSelfLastChanged(),
-                                 LIBVIR_VERSION_NUMBER);
+    xml = virQEMUCapsFormatCache(qemuCaps);
 
     if (virFileWriteStr(filename, xml, 0600) < 0) {
         virReportSystemError(errno,
@@ -4209,7 +4205,7 @@ virQEMUCapsSaveCache(virQEMUCapsPtr qemuCaps, const char *filename)
     VIR_DEBUG("Saved caps '%s' for '%s' with (%lld, %lld)",
               filename, qemuCaps->binary,
               (long long)qemuCaps->ctime,
-              (long long)virGetSelfLastChanged());
+              (long long)qemuCaps->libvirtCtime);
 
     ret = 0;
  cleanup:
@@ -4299,8 +4295,6 @@ virQEMUCapsInitCached(virCapsPtr caps,
     char *binaryhash = NULL;
     struct stat sb;
     time_t qemuctime = qemuCaps->ctime;
-    time_t selfctime;
-    unsigned long selfvers;
 
     if (virAsprintf(&capsdir, "%s/capabilities", cacheDir) < 0)
         goto cleanup;
@@ -4333,8 +4327,7 @@ virQEMUCapsInitCached(virCapsPtr caps,
         goto cleanup;
     }
 
-    if (virQEMUCapsLoadCache(caps, qemuCaps, capsfile,
-                             &selfctime, &selfvers) < 0) {
+    if (virQEMUCapsLoadCache(caps, qemuCaps, capsfile) < 0) {
         VIR_WARN("Failed to load cached caps from '%s' for '%s': %s",
                  capsfile, qemuCaps->binary, virGetLastErrorMessage());
         virResetLastError();
@@ -4345,13 +4338,15 @@ virQEMUCapsInitCached(virCapsPtr caps,
         goto discard;
 
     /* Discard cache if QEMU binary or libvirtd changed */
-    if (selfctime != virGetSelfLastChanged() ||
-        selfvers != LIBVIR_VERSION_NUMBER) {
+    if (qemuCaps->libvirtCtime != virGetSelfLastChanged() ||
+        qemuCaps->libvirtVersion != LIBVIR_VERSION_NUMBER) {
         VIR_DEBUG("Outdated capabilities for '%s': libvirt changed "
                   "(%lld vs %lld, %lu vs %lu)",
                   qemuCaps->binary,
-                  (long long)selfctime, (long long)virGetSelfLastChanged(),
-                  selfvers, (unsigned long)LIBVIR_VERSION_NUMBER);
+                  (long long)qemuCaps->libvirtCtime,
+                  (long long)virGetSelfLastChanged(),
+                  (unsigned long)qemuCaps->libvirtVersion,
+                  (unsigned long)LIBVIR_VERSION_NUMBER);
         goto discard;
     }
 
@@ -5247,6 +5242,9 @@ virQEMUCapsNewForBinaryInternal(virCapsPtr caps,
             virQEMUCapsLogProbeFailure(binary);
             goto error;
         }
+
+        qemuCaps->libvirtCtime = virGetSelfLastChanged();
+        qemuCaps->libvirtVersion = LIBVIR_VERSION_NUMBER;
 
         if (cacheDir &&
             virQEMUCapsRememberCached(qemuCaps, cacheDir) < 0)
