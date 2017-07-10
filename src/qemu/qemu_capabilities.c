@@ -3767,6 +3767,16 @@ virQEMUCapsLoadCPUModels(virQEMUCapsPtr qemuCaps,
 }
 
 
+struct _virQEMUCapsCachePriv {
+    virCapsPtr caps;
+    char *libDir;
+    uid_t runUid;
+    gid_t runGid;
+};
+typedef struct _virQEMUCapsCachePriv virQEMUCapsCachePriv;
+typedef virQEMUCapsCachePriv *virQEMUCapsCachePrivPtr;
+
+
 static void
 virQEMUCapsCachePrivFree(void *privData)
 {
