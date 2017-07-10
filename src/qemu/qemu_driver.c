@@ -1078,7 +1078,7 @@ qemuStateCleanup(void)
     virObjectUnref(qemu_driver->hostdevMgr);
     virHashFree(qemu_driver->sharedDevices);
     virObjectUnref(qemu_driver->caps);
-    virQEMUCapsCacheFree(qemu_driver->qemuCapsCache);
+    virObjectUnref(qemu_driver->qemuCapsCache);
 
     virObjectUnref(qemu_driver->domains);
     virObjectUnref(qemu_driver->remotePorts);

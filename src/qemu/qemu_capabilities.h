@@ -30,6 +30,7 @@
 # include "qemu_monitor.h"
 # include "domain_capabilities.h"
 # include "virfirmware.h"
+# include "virfilecache.h"
 
 /*
  * Internal flags to keep track of qemu command line capabilities
@@ -423,9 +424,6 @@ typedef enum {
 typedef struct _virQEMUCaps virQEMUCaps;
 typedef virQEMUCaps *virQEMUCapsPtr;
 
-typedef struct _virQEMUCapsCache virQEMUCapsCache;
-typedef virQEMUCapsCache *virQEMUCapsCachePtr;
-
 virQEMUCapsPtr virQEMUCapsNew(void);
 
 void virQEMUCapsSet(virQEMUCapsPtr qemuCaps,
@@ -497,25 +495,24 @@ int virQEMUCapsGetMachineTypesCaps(virQEMUCapsPtr qemuCaps,
 void virQEMUCapsFilterByMachineType(virQEMUCapsPtr qemuCaps,
                                     const char *machineType);
 
-virQEMUCapsCachePtr virQEMUCapsCacheNew(const char *libDir,
+virFileCachePtr virQEMUCapsCacheNew(const char *libDir,
                                         const char *cacheDir,
                                         uid_t uid, gid_t gid);
 virQEMUCapsPtr virQEMUCapsCacheLookup(virCapsPtr caps,
-                                      virQEMUCapsCachePtr cache,
+                                      virFileCachePtr cache,
                                       const char *binary);
 virQEMUCapsPtr virQEMUCapsCacheLookupCopy(virCapsPtr caps,
-                                          virQEMUCapsCachePtr cache,
+                                          virFileCachePtr cache,
                                           const char *binary,
                                           const char *machineType);
 virQEMUCapsPtr virQEMUCapsCacheLookupByArch(virCapsPtr caps,
-                                            virQEMUCapsCachePtr cache,
+                                            virFileCachePtr cache,
                                             virArch arch);
-void virQEMUCapsCacheFree(virQEMUCapsCachePtr cache);
 
-virCapsPtr virQEMUCapsInit(virQEMUCapsCachePtr cache);
+virCapsPtr virQEMUCapsInit(virFileCachePtr cache);
 
 int virQEMUCapsGetDefaultVersion(virCapsPtr caps,
-                                 virQEMUCapsCachePtr capsCache,
+                                 virFileCachePtr capsCache,
                                  unsigned int *version);
 
 VIR_ENUM_DECL(virQEMUCaps);
