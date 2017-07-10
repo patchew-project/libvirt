@@ -723,10 +723,12 @@ qemuSetupCpusetMems(virDomainObjPtr vm)
 {
     virCgroupPtr cgroup_temp = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    virBitmapPtr nodeSet = NULL;
     virDomainNumatuneMemMode mode;
     char *mem_mask = NULL;
     int ret = -1;
 
+    nodeSet = virNumaGetHostMemoryNodeset(); 
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPUSET))
         return 0;
 
@@ -735,7 +737,7 @@ qemuSetupCpusetMems(virDomainObjPtr vm)
         return 0;
 
     if (virDomainNumatuneMaybeFormatNodeset(vm->def->numa,
-                                            priv->autoNodeset,
+                                            nodeSet,
                                             &mem_mask, -1) < 0)
         goto cleanup;
 

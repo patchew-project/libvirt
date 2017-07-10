@@ -2374,6 +2374,7 @@ qemuProcessSetupPid(virDomainObjPtr vm,
     virDomainNumatuneMemMode mem_mode;
     virCgroupPtr cgroup = NULL;
     virBitmapPtr use_cpumask;
+    virBitmapPtr nodeSet = NULL;
     char *mem_mask = NULL;
     int ret = -1;
 
@@ -2397,13 +2398,15 @@ qemuProcessSetupPid(virDomainObjPtr vm,
      * neither period nor quota settings.  And if CPUSET controller is
      * not initialized either, then there's nothing to do anyway.
      */
+    nodeSet = virNumaGetHostMemoryNodeset(); 
+
     if (virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPU) ||
         virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPUSET)) {
 
         if (virDomainNumatuneGetMode(vm->def->numa, -1, &mem_mode) == 0 &&
             mem_mode == VIR_DOMAIN_NUMATUNE_MEM_STRICT &&
             virDomainNumatuneMaybeFormatNodeset(vm->def->numa,
-                                                priv->autoNodeset,
+                                                nodeSet,
                                                 &mem_mask, -1) < 0)
             goto cleanup;
 
