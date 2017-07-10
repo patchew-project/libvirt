@@ -3765,6 +3765,14 @@ virQEMUCapsLoadCPUModels(virQEMUCapsPtr qemuCaps,
 }
 
 
+static void
+virQEMUCapsCachePrivFree(virQEMUCapsCachePrivPtr priv)
+{
+    VIR_FREE(priv->libDir);
+    VIR_FREE(priv);
+}
+
+
 /*
  * Parsing a doc that looks like
  *
@@ -4253,8 +4261,7 @@ virQEMUCapsRememberCached(virQEMUCapsPtr qemuCaps, const char *cacheDir)
 
 static bool
 virQEMUCapsIsValid(virQEMUCapsPtr qemuCaps,
-                   uid_t runUid,
-                   gid_t runGid)
+                   virQEMUCapsCachePrivPtr priv)
 {
     bool kvmUsable;
     struct stat sb;
@@ -4291,7 +4298,7 @@ virQEMUCapsIsValid(virQEMUCapsPtr qemuCaps,
     }
 
     kvmUsable = virFileAccessibleAs("/dev/kvm", R_OK | W_OK,
-                                    runUid, runGid) == 0;
+                                    priv->runUid, priv->runGid) == 0;
 
     if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM) &&
         virQEMUCapsGet(qemuCaps, QEMU_CAPS_ENABLE_KVM) &&
@@ -4319,8 +4326,7 @@ virQEMUCapsInitCached(virCapsPtr caps,
                       virQEMUCapsPtr *qemuCaps,
                       const char *binary,
                       const char *cacheDir,
-                      uid_t runUid,
-                      gid_t runGid)
+                      virQEMUCapsCachePrivPtr priv)
 {
     char *capsdir = NULL;
     char *capsfile = NULL;
@@ -4371,7 +4377,7 @@ virQEMUCapsInitCached(virCapsPtr caps,
         goto discard;
     }
 
-    if (!virQEMUCapsIsValid(qemuCapsNew, runUid, runGid))
+    if (!virQEMUCapsIsValid(qemuCapsNew, priv))
         goto discard;
 
     VIR_DEBUG("Loaded '%s' for '%s' ctime %lld usedQMP=%d",
@@ -5277,22 +5283,21 @@ virQEMUCapsNewForBinaryInternal(virCapsPtr caps,
 static virQEMUCapsPtr
 virQEMUCapsNewForBinary(virCapsPtr caps,
                         const char *binary,
-                        const char *libDir,
                         const char *cacheDir,
-                        uid_t runUid,
-                        gid_t runGid)
+                        virQEMUCapsCachePrivPtr priv)
 {
     int rv;
     virQEMUCapsPtr qemuCaps = NULL;
 
-    if ((rv = virQEMUCapsInitCached(caps, &qemuCaps, binary, cacheDir,
-                                    runUid, runGid)) < 0)
+    if ((rv = virQEMUCapsInitCached(caps, &qemuCaps, binary, cacheDir, priv)) < 0)
         goto error;
 
     if (rv == 0) {
         if (!(qemuCaps = virQEMUCapsNewForBinaryInternal(caps, binary,
-                                                         libDir, runUid,
-                                                         runGid, false))) {
+                                                         priv->libDir,
+                                                         priv->runUid,
+                                                         priv->runGid,
+                                                         false))) {
             goto error;
         }
 
@@ -5366,13 +5371,17 @@ virQEMUCapsCacheNew(const char *libDir,
 
     if (!(cache->binaries = virHashCreate(10, virObjectFreeHashData)))
         goto error;
-    if (VIR_STRDUP(cache->libDir, libDir) < 0)
-        goto error;
     if (VIR_STRDUP(cache->cacheDir, cacheDir) < 0)
         goto error;
 
-    cache->runUid = runUid;
-    cache->runGid = runGid;
+    if (VIR_ALLOC(cache->priv) < 0)
+        goto error;
+
+    if (VIR_STRDUP(cache->priv->libDir, libDir) < 0)
+        goto error;
+
+    cache->priv->runUid = runUid;
+    cache->priv->runGid = runGid;
 
     return cache;
 
@@ -5389,7 +5398,7 @@ virQEMUCapsCacheValidate(virQEMUCapsCachePtr cache,
                          virQEMUCapsPtr *qemuCaps)
 {
     if (*qemuCaps &&
-        !virQEMUCapsIsValid(*qemuCaps, cache->runUid, cache->runGid)) {
+        !virQEMUCapsIsValid(*qemuCaps, cache->priv)) {
         VIR_DEBUG("Cached capabilities %p no longer valid for %s",
                   *qemuCaps, binary);
         virHashRemoveEntry(cache->binaries, binary);
@@ -5399,8 +5408,8 @@ virQEMUCapsCacheValidate(virQEMUCapsCachePtr cache,
     if (!*qemuCaps) {
         VIR_DEBUG("Creating capabilities for %s", binary);
         *qemuCaps = virQEMUCapsNewForBinary(caps, binary,
-                                            cache->libDir, cache->cacheDir,
-                                            cache->runUid, cache->runGid);
+                                            cache->cacheDir,
+                                            cache->priv);
         if (*qemuCaps) {
             VIR_DEBUG("Caching capabilities %p for %s", *qemuCaps, binary);
             if (virHashAddEntry(cache->binaries, binary, *qemuCaps) < 0) {
@@ -5519,7 +5528,7 @@ virQEMUCapsCacheFree(virQEMUCapsCachePtr cache)
     if (!cache)
         return;
 
-    VIR_FREE(cache->libDir);
+    virQEMUCapsCachePrivFree(cache->priv);
     VIR_FREE(cache->cacheDir);
     virHashFree(cache->binaries);
     virMutexDestroy(&cache->lock);
