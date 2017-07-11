@@ -119,7 +119,7 @@ vzBuildCapabilities(void)
         goto error;
 
     if (virCapabilitiesInitCaches(caps) < 0)
-        goto error;
+        VIR_WARN("Failed to get host CPU cache info");
 
     verify(ARRAY_CARDINALITY(archs) == ARRAY_CARDINALITY(emulators));
 
