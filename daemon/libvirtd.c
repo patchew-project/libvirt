@@ -648,6 +648,16 @@ daemonSetupNetDevOpenvswitch(struct daemonConfig *config)
 
 
 /*
+ * Set up the netlink socket  buffer size
+ */
+static void
+daemonSetupNetLink(struct daemonConfig *config)
+{
+    virNetLinkSetBufferSize(config->netlink_sock_buffer_size);
+}
+
+
+/*
  * Set up the logging environment
  * By default if daemonized all errors go to the logfile libvirtd.log,
  * but if verbose or error debugging is asked for then also output
@@ -1256,6 +1266,8 @@ int main(int argc, char **argv) {
         VIR_ERROR(_("Can't initialize logging"));
         exit(EXIT_FAILURE);
     }
+
+    daemonSetupNetLink(config);
 
     daemonSetupNetDevOpenvswitch(config);
 

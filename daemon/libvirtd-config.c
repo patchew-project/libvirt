@@ -33,6 +33,7 @@
 #include "remote/remote_protocol.h"
 #include "remote/remote_driver.h"
 #include "util/virnetdevopenvswitch.h"
+#include "util/virnetlink.h"
 #include "virstring.h"
 #include "virutil.h"
 
@@ -172,6 +173,8 @@ daemonConfigNew(bool privileged ATTRIBUTE_UNUSED)
     data->admin_keepalive_count = 5;
 
     data->ovs_timeout = VIR_NETDEV_OVS_DEFAULT_TIMEOUT;
+    
+    data->netlink_sock_buffer_size = VIRT_NETLINK_SOCK_BUFFER_SIZE;
 
     localhost = virGetHostname();
     if (localhost == NULL) {
@@ -392,6 +395,9 @@ daemonConfigLoadOptions(struct daemonConfig *data,
         goto error;
 
     if (virConfGetValueUInt(conf, "ovs_timeout", &data->ovs_timeout) < 0)
+        goto error;
+
+    if (virConfGetValueUInt(conf, "netlink_sock_buffer_size", &data->netlink_sock_buffer_size) < 0)
         goto error;
 
     return 0;

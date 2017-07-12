@@ -89,6 +89,7 @@ module Libvirtd =
    let misc_entry = str_entry "host_uuid"
                   | str_entry "host_uuid_source"
                   | int_entry "ovs_timeout"
+                  | int_entry "netlink_sock_buffer_size"
 
    (* Each enty in the config is one of the following three ... *)
    let entry = network_entry

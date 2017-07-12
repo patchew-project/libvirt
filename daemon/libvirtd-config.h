@@ -94,6 +94,8 @@ struct daemonConfig {
     unsigned int admin_keepalive_count;
 
     unsigned int ovs_timeout;
+    
+    unsigned int netlink_sock_buffer_size;
 };
 
 

@@ -2251,6 +2251,7 @@ virNetlinkEventServiceStart;
 virNetlinkEventServiceStop;
 virNetlinkEventServiceStopAll;
 virNetlinkGetErrorCode;
+virNetLinkSetBufferSize;
 virNetlinkShutdown;
 virNetlinkStartup;
 

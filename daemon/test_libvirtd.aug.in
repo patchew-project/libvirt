@@ -64,3 +64,4 @@ module Test_libvirtd =
         { "admin_keepalive_interval" = "5" }
         { "admin_keepalive_count" = "5" }
         { "ovs_timeout" = "5" }
+        { "netlink_sock_buffer_size" = "131072" }

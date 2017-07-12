@@ -22,7 +22,6 @@
 
 # include "internal.h"
 # include "virmacaddr.h"
-
 # if defined(__linux__) && defined(HAVE_LIBNL)
 
 /* Work around a bug where older libnl-1 headers expected older gcc
@@ -43,6 +42,8 @@ struct nlattr;
 struct nlmsghdr;
 
 # endif /* __linux__ */
+
+#define VIRT_NETLINK_SOCK_BUFFER_SIZE (131072)
 
 int virNetlinkStartup(void);
 void virNetlinkShutdown(void);
@@ -120,5 +121,9 @@ int virNetlinkEventAddClient(virNetlinkEventHandleCallback handleCB,
  */
 int virNetlinkEventRemoveClient(int watch, const virMacAddr *macaddr,
                                 unsigned int protocol);
+/**
+ *virNetLinkSetBufferSize: set netlink socket buffer size
+ */
+void virNetLinkSetBufferSize(unsigned int size);
 
 #endif /* __VIR_NETLINK_H__ */

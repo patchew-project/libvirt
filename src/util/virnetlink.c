@@ -49,6 +49,7 @@ VIR_LOG_INIT("util.netlink");
 
 #define NETLINK_ACK_TIMEOUT_S  (2*1000)
 
+
 #if defined(__linux__) && defined(HAVE_LIBNL)
 /* State for a single netlink event handle */
 struct virNetlinkEventHandle {
@@ -104,6 +105,22 @@ static int nextWatch = 1;
 static virNetlinkEventSrvPrivatePtr server[MAX_LINKS] = {NULL};
 static virNetlinkHandle *placeholder_nlhandle;
 
+/*
+ * Set netlink  default buffer size
+ */
+static unsigned int virNetLinkBufferSize = VIRT_NETLINK_SOCK_BUFFER_SIZE; 
+
+/**
+ * virNetLinkSetBufferSize:
+ * @size: the buffer size
+ *
+ * Set netlink socket buffer size
+ */
+void
+virNetLinkSetBufferSize(unsigned int size)
+{
+    virNetLinkBufferSize = size;
+}
 /* Function definitions */
 
 /**
@@ -189,7 +206,7 @@ virNetlinkCreateSocket(int protocol)
         goto error;
     }
 
-    if (virNetlinkSetBufferSize(nlhandle, 131702, 0) < 0) {
+    if (virNetlinkSetBufferSize(nlhandle, virNetLinkBufferSize, 0) < 0) {
         virReportSystemError(errno, "%s",
                              _("cannot set netlink socket buffer "
                                "size to 128k"));
