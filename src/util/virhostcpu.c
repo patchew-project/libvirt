@@ -1112,8 +1112,9 @@ virHostCPUGetMap(unsigned char **cpumap,
  *
  * Returns the number of threads per subcore if subcores are in use, zero
  * if subcores are not in use, and a negative value on error */
-int
-virHostCPUGetThreadsPerSubcore(virArch arch)
+VIR_MOCKABLE(int,
+             virHostCPUGetThreadsPerSubcore,
+             virArch arch)
 {
     int threads_per_subcore = 0;
     int kvmfd;
@@ -1167,8 +1168,9 @@ virHostCPUGetThreadsPerSubcore(virArch arch ATTRIBUTE_UNUSED)
 #endif /* HAVE_LINUX_KVM_H && defined(KVM_CAP_PPC_SMT) */
 
 #if HAVE_LINUX_KVM_H
-int
-virHostCPUGetKVMMaxVCPUs(void)
+VIR_MOCKABLE(int,
+             virHostCPUGetKVMMaxVCPUs,
+             void)
 {
     int fd;
     int ret;

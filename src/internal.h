@@ -113,33 +113,6 @@
 # endif
 
 /**
- * ATTRIBUTE_MOCKABLE:
- *
- * Ensure that the symbol can be overridden in a mock
- * library preload. This implies a number of attributes
- *
- *  - noinline: prevents the body being inlined to
- *              callers,
- *  - noclone: prevents specialized copies of the
- *             function body being created for different
- *             callers
- *  - weak: prevents the compiler making optimizations
- *          such as constant return value propagation
- *
- */
-# ifndef ATTRIBUTE_MOCKABLE
-#  if defined(WIN32)
-#   define ATTRIBUTE_MOCKABLE
-#  else
-#   if __GNUC_PREREQ(4, 5)
-#    define ATTRIBUTE_MOCKABLE __attribute__((__noinline__, __noclone__, __weak__))
-#   else
-#    define ATTRIBUTE_MOCKABLE __attribute__((__noinline__, __weak__))
-#   endif
-#  endif
-# endif
-
-/**
  * ATTRIBUTE_FMT_PRINTF
  *
  * Macro used to check printf like functions, if compiling
@@ -249,6 +222,38 @@
 #  define VIR_WARNINGS_NO_WLOGICALOP_STRCHR
 # endif
 
+
+/*
+ * VIR_MOCKABLE(return type, func name, args...)
+ *
+ * Defines a function implementation that can be later overriden in
+ * the test suite
+ *
+ * NB, Win32 can't use 'weak' attribute because such symbols
+ * can't be marked exported in DLLs
+ *
+ * NB, the ${name}Impl function ought to be static, but that
+ * causes CLang to throw bogus errors about unused functions,
+ * despite there being an alias to it
+ */
+# ifdef WIN32
+#  define VIR_MOCKABLE(ret, name, ...) \
+      ret name(__VA_ARGS__) __attribute__((noinline, noclone, __alias__(#name "Impl"))); \
+      ret name ## Impl (__VA_ARGS__); \
+      ret name ## Impl (__VA_ARGS__)
+# else
+#  if __GNUC_PREREQ(4, 5)
+#   define VIR_MOCKABLE(ret, name, ...) \
+      ret name(__VA_ARGS__) __attribute__((noinline, noclone, weak, __alias__(#name "Impl"))); \
+      ret name ## Impl (__VA_ARGS__); \
+      ret name ## Impl (__VA_ARGS__)
+#  else
+#   define VIR_MOCKABLE(ret, name, ...) \
+      ret name(__VA_ARGS__) __attribute__((noinline, weak, __alias__(#name "Impl"))); \
+      ret name ## Impl (__VA_ARGS__); \
+      ret name ## Impl (__VA_ARGS__)
+#  endif
+# endif
 
 /*
  * Use this when passing possibly-NULL strings to printf-a-likes.

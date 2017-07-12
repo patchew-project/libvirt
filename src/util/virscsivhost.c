@@ -83,8 +83,9 @@ virSCSIVHostOnceInit(void)
 VIR_ONCE_GLOBAL_INIT(virSCSIVHost)
 
 
-int
-virSCSIVHostOpenVhostSCSI(int *vhostfd)
+VIR_MOCKABLE(int,
+             virSCSIVHostOpenVhostSCSI,
+             int *vhostfd)
 {
     if (!virFileExists(VHOST_SCSI_DEVICE))
         goto error;

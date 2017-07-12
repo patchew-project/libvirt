@@ -1,28 +1,28 @@
 #!/usr/bin/perl
 
-my %noninlined;
+my %mockable;
 my %mocked;
 
 # Functions in public header don't get the noinline annotation
 # so whitelist them here
-$noninlined{"virEventAddTimeout"} = 1;
+$mockable{"virEventAddTimeout"} = 1;
 
 foreach my $arg (@ARGV) {
-    if ($arg =~ /\.h$/) {
-        #print "Scan header $arg\n";
-        &scan_annotations($arg);
-    } elsif ($arg =~ /mock\.c$/) {
+    if ($arg =~ /mock\.c$/) {
         #print "Scan mock $arg\n";
         &scan_overrides($arg);
+    } elsif ($arg =~ /\.c$/) {
+        #print "Scan source $arg\n";
+        &scan_annotations($arg);
     }
 }
 
 my $warned = 0;
 foreach my $func (keys %mocked) {
-    next if exists $noninlined{$func};
+    next if exists $mockable{$func};
 
     $warned++;
-    print STDERR "$func is mocked at $mocked{$func} but missing noinline annotation\n";
+    print STDERR "$func is mocked at $mocked{$func} but missing VIR_MOCKABLE impl\n";
 }
 
 exit $warned ? 1 : 0;
@@ -34,19 +34,16 @@ sub scan_annotations {
     open FH, $file or die "cannot read $file: $!";
 
     my $func;
+    my $mockable = 0;
     while (<FH>) {
-        if (/^\s*(\w+)\(/ || /^(?:\w+\*?\s+)+(?:\*\s*)?(\w+)\(/) {
-            my $name = $1;
-            if ($name !~ /ATTRIBUTE/) {
-                $func = $name;
+        if (/^VIR_MOCKABLE/) {
+            $mockable = 1;
+        } elsif ($mockable) {
+            if (/^\s*(\w+),$/) {
+                my $func = $1;
+                $mockable{$func} = 1;
             }
-        } elsif (/^\s*$/) {
-            $func = undef;
-        }
-        if (/ATTRIBUTE_MOCKABLE/) {
-            if (defined $func) {
-                $noninlined{$func} = 1;
-            }
+            $mockable = 0;
         }
     }
 

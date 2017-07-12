@@ -98,8 +98,9 @@ virNetDevTapGetName(int tapfd ATTRIBUTE_UNUSED, char **ifname ATTRIBUTE_UNUSED)
  * Returns the proper interface name or NULL if no corresponding interface
  * found.
  */
-char*
-virNetDevTapGetRealDeviceName(char *ifname ATTRIBUTE_UNUSED)
+VIR_MOCKABLE(char *,
+             virNetDevTapGetRealDeviceName,
+             char *ifname ATTRIBUTE_UNUSED)
 {
 #ifdef TAPGIFNAME
     char *ret = NULL;
@@ -238,11 +239,13 @@ virNetDevProbeVnetHdr(int tapfd)
  *
  * Returns 0 in case of success or -1 on failure.
  */
-int virNetDevTapCreate(char **ifname,
-                       const char *tunpath,
-                       int *tapfd,
-                       size_t tapfdSize,
-                       unsigned int flags)
+VIR_MOCKABLE(int,
+             virNetDevTapCreate,
+             char **ifname,
+             const char *tunpath,
+             int *tapfd,
+             size_t tapfdSize,
+             unsigned int flags)
 {
     size_t i;
     struct ifreq ifr;
@@ -608,19 +611,21 @@ virNetDevTapAttachBridge(const char *tapname,
  *
  * Returns 0 in case of success or -1 on failure
  */
-int virNetDevTapCreateInBridgePort(const char *brname,
-                                   char **ifname,
-                                   const virMacAddr *macaddr,
-                                   const unsigned char *vmuuid,
-                                   const char *tunpath,
-                                   int *tapfd,
-                                   size_t tapfdSize,
-                                   virNetDevVPortProfilePtr virtPortProfile,
-                                   virNetDevVlanPtr virtVlan,
-                                   virNetDevCoalescePtr coalesce,
-                                   unsigned int mtu,
-                                   unsigned int *actualMTU,
-                                   unsigned int flags)
+VIR_MOCKABLE(int,
+             virNetDevTapCreateInBridgePort,
+             const char *brname,
+             char **ifname,
+             const virMacAddr *macaddr,
+             const unsigned char *vmuuid,
+             const char *tunpath,
+             int *tapfd,
+             size_t tapfdSize,
+             virNetDevVPortProfilePtr virtPortProfile,
+             virNetDevVlanPtr virtVlan,
+             virNetDevCoalescePtr coalesce,
+             unsigned int mtu,
+             unsigned int *actualMTU,
+             unsigned int flags)
 {
     virMacAddr tapmac;
     char macaddrstr[VIR_MAC_STRING_BUFLEN];

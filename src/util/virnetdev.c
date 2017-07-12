@@ -346,9 +346,9 @@ virNetDevSetMACInternal(const char *ifname,
 #endif
 
 
-int
-virNetDevSetMAC(const char *ifname,
-                const virMacAddr *macaddr)
+VIR_MOCKABLE(int,
+             virNetDevSetMAC,
+             const char *ifname, const virMacAddr *macaddr)
 {
     return virNetDevSetMACInternal(ifname, macaddr, false);
 }
@@ -686,9 +686,9 @@ virNetDevSetIFFlag(const char *ifname,
  *
  * Returns 0 in case of success or -1 on error.
  */
-int
-virNetDevSetOnline(const char *ifname,
-                   bool online)
+VIR_MOCKABLE(int,
+             virNetDevSetOnline,
+             const char *ifname, bool online)
 {
 
     return virNetDevSetIFFlag(ifname, VIR_IFF_UP, online);
@@ -1122,9 +1122,9 @@ int virNetDevValidateConfig(const char *ifname ATTRIBUTE_UNUSED,
 
 #ifdef __linux__
 
-int
-virNetDevSysfsFile(char **pf_sysfs_device_link, const char *ifname,
-                   const char *file)
+VIR_MOCKABLE(int,
+             virNetDevSysfsFile,
+             char **pf_sysfs_device_link, const char *ifname, const char *file)
 {
 
     if (virAsprintf(pf_sysfs_device_link, SYSFS_NET_DIR "%s/%s", ifname, file) < 0)
@@ -3268,8 +3268,9 @@ int virNetDevSetCoalesce(const char *ifname,
  * This function executes script for new tap device created by libvirt.
  * Returns 0 in case of success or -1 on failure
  */
-int
-virNetDevRunEthernetScript(const char *ifname, const char *script)
+VIR_MOCKABLE(int,
+             virNetDevRunEthernetScript,
+             const char *ifname, const char *script)
 {
     virCommandPtr cmd;
     int ret;

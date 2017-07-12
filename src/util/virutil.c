@@ -884,14 +884,18 @@ char *virGetUserRuntimeDirectory(void)
     }
 }
 
-char *virGetUserName(uid_t uid)
+VIR_MOCKABLE(char *,
+             virGetUserName,
+             uid_t uid)
 {
     char *ret;
     virGetUserEnt(uid, &ret, NULL, NULL, NULL, false);
     return ret;
 }
 
-char *virGetGroupName(gid_t gid)
+VIR_MOCKABLE(char *,
+             virGetGroupName,
+             gid_t gid)
 {
     return virGetGroupEnt(gid);
 }
@@ -1340,8 +1344,9 @@ virGetUserRuntimeDirectory(void)
 }
 # endif /* ! HAVE_GETPWUID_R && ! WIN32 */
 
-char *
-virGetUserName(uid_t uid ATTRIBUTE_UNUSED)
+VIR_MOCKABLE(char *,
+             virGetUserName,
+             uid_t uid ATTRIBUTE_UNUSED)
 {
     virReportError(VIR_ERR_INTERNAL_ERROR,
                    "%s", _("virGetUserName is not available"));
@@ -1379,8 +1384,9 @@ virSetUIDGID(uid_t uid ATTRIBUTE_UNUSED,
     return -1;
 }
 
-char *
-virGetGroupName(gid_t gid ATTRIBUTE_UNUSED)
+VIR_MOCKABLE(char *,
+             virGetGroupName,
+             gid_t gid ATTRIBUTE_UNUSED)
 {
     virReportError(VIR_ERR_INTERNAL_ERROR,
                    "%s", _("virGetGroupName is not available"));
@@ -1908,12 +1914,16 @@ virGetListenFDs(void)
 #endif /* WIN32 */
 
 #ifndef WIN32
-long virGetSystemPageSize(void)
+VIR_MOCKABLE(long,
+             virGetSystemPageSize,
+             void)
 {
     return sysconf(_SC_PAGESIZE);
 }
 #else /* WIN32 */
-long virGetSystemPageSize(void)
+VIR_MOCKABLE(long,
+             virGetSystemPageSize,
+             void)
 {
     errno = ENOSYS;
     return -1;
@@ -1959,12 +1969,11 @@ virMemoryLimitIsSet(unsigned long long value)
  * @capped: whether the value must fit into unsigned long
  *   (long long is assumed otherwise)
  *
- * Note: This function is mocked in tests/qemuxml2argvmock.c for test stability
- *
  * Returns the maximum possible memory value in bytes.
  */
-unsigned long long
-virMemoryMaxValue(bool capped)
+VIR_MOCKABLE(unsigned long long,
+             virMemoryMaxValue,
+             bool capped)
 {
     /* On 32-bit machines, our bound is 0xffffffff * KiB. On 64-bit
      * machines, our bound is off_t (2^63).  */

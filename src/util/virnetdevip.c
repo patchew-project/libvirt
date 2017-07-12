@@ -163,11 +163,10 @@ virNetDevCreateNetlinkAddressMessage(int messageType,
  *
  * Returns 0 in case of success or -1 in case of error.
  */
-int
-virNetDevIPAddrAdd(const char *ifname,
-                   virSocketAddr *addr,
-                   virSocketAddr *peer,
-                   unsigned int prefix)
+VIR_MOCKABLE(int,
+             virNetDevIPAddrAdd,
+             const char *ifname, virSocketAddr *addr,
+             virSocketAddr *peer, unsigned int prefix)
 {
     virSocketAddr *broadcast = NULL;
     int ret = -1;

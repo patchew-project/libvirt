@@ -223,8 +223,10 @@ virMacAddrParseHex(const char *str, virMacAddrPtr addr)
     return 0;
 }
 
-void virMacAddrGenerate(const unsigned char prefix[VIR_MAC_PREFIX_BUFLEN],
-                        virMacAddrPtr addr)
+VIR_MOCKABLE(void,
+             virMacAddrGenerate,
+             const unsigned char prefix[VIR_MAC_PREFIX_BUFLEN],
+             virMacAddrPtr addr)
 {
     addr->addr[0] = prefix[0];
     addr->addr[1] = prefix[1];

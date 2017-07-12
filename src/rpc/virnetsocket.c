@@ -1425,11 +1425,13 @@ int virNetSocketGetPort(virNetSocketPtr sock)
 
 
 #if defined(SO_PEERCRED)
-int virNetSocketGetUNIXIdentity(virNetSocketPtr sock,
-                                uid_t *uid,
-                                gid_t *gid,
-                                pid_t *pid,
-                                unsigned long long *timestamp)
+VIR_MOCKABLE(int,
+             virNetSocketGetUNIXIdentity,
+             virNetSocketPtr sock,
+             uid_t *uid,
+             gid_t *gid,
+             pid_t *pid,
+             unsigned long long *timestamp)
 {
 # if defined(HAVE_STRUCT_SOCKPEERCRED)
     struct sockpeercred cr;
@@ -1482,11 +1484,13 @@ int virNetSocketGetUNIXIdentity(virNetSocketPtr sock,
 #  define VIR_SOL_PEERCRED 0
 # endif
 
-int virNetSocketGetUNIXIdentity(virNetSocketPtr sock,
-                                uid_t *uid,
-                                gid_t *gid,
-                                pid_t *pid,
-                                unsigned long long *timestamp)
+VIR_MOCKABLE(int,
+             virNetSocketGetUNIXIdentity,
+             virNetSocketPtr sock,
+             uid_t *uid,
+             gid_t *gid,
+             pid_t *pid,
+             unsigned long long *timestamp)
 {
     struct xucred cr;
     socklen_t cr_len = sizeof(cr);
@@ -1550,11 +1554,13 @@ int virNetSocketGetUNIXIdentity(virNetSocketPtr sock,
     return ret;
 }
 #else
-int virNetSocketGetUNIXIdentity(virNetSocketPtr sock ATTRIBUTE_UNUSED,
-                                uid_t *uid ATTRIBUTE_UNUSED,
-                                gid_t *gid ATTRIBUTE_UNUSED,
-                                pid_t *pid ATTRIBUTE_UNUSED,
-                                unsigned long long *timestamp ATTRIBUTE_UNUSED)
+VIR_MOCKABLE(int,
+             virNetSocketGetUNIXIdentity,
+             virNetSocketPtr sock ATTRIBUTE_UNUSED,
+             uid_t *uid ATTRIBUTE_UNUSED,
+             gid_t *gid ATTRIBUTE_UNUSED,
+             pid_t *pid ATTRIBUTE_UNUSED,
+             unsigned long long *timestamp ATTRIBUTE_UNUSED)
 {
     /* XXX Many more OS support UNIX socket credentials we could port to. See dbus ....*/
     virReportSystemError(ENOSYS, "%s",
@@ -1564,8 +1570,10 @@ int virNetSocketGetUNIXIdentity(virNetSocketPtr sock ATTRIBUTE_UNUSED,
 #endif
 
 #ifdef WITH_SELINUX
-int virNetSocketGetSELinuxContext(virNetSocketPtr sock,
-                                  char **context)
+VIR_MOCKABLE(int,
+             virNetSocketGetSELinuxContext,
+             virNetSocketPtr sock,
+             char **context)
 {
     security_context_t seccon = NULL;
     int ret = -1;
@@ -1593,8 +1601,10 @@ int virNetSocketGetSELinuxContext(virNetSocketPtr sock,
     return ret;
 }
 #else
-int virNetSocketGetSELinuxContext(virNetSocketPtr sock ATTRIBUTE_UNUSED,
-                                  char **context)
+VIR_MOCKABLE(int,
+             virNetSocketGetSELinuxContext,
+             virNetSocketPtr sock ATTRIBUTE_UNUSED,
+             char **context)
 {
     *context = NULL;
     return 0;

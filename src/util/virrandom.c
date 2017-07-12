@@ -99,7 +99,9 @@ VIR_ONCE_GLOBAL_INIT(virRandom)
  *
  * Return: a random number with @nbits entropy
  */
-uint64_t virRandomBits(int nbits)
+VIR_MOCKABLE(uint64_t,
+             virRandomBits,
+             int nbits)
 {
     uint64_t ret = 0;
     int32_t bits;
@@ -170,9 +172,10 @@ uint32_t virRandomInt(uint32_t max)
  *
  * Returns 0 on success or an errno on failure
  */
-int
-virRandomBytes(unsigned char *buf,
-               size_t buflen)
+VIR_MOCKABLE(int,
+             virRandomBytes,
+             unsigned char *buf,
+             size_t buflen)
 {
     int fd;
 
@@ -205,9 +208,10 @@ virRandomBytes(unsigned char *buf,
 #define XEN_OUI "00163e"
 
 
-int
-virRandomGenerateWWN(char **wwn,
-                     const char *virt_type)
+VIR_MOCKABLE(int,
+             virRandomGenerateWWN,
+             char **wwn,
+             const char *virt_type)
 {
     const char *oui = NULL;
 

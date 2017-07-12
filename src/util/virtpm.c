@@ -38,8 +38,9 @@
  *
  * Create the cancel path given the path to the TPM device
  */
-char *
-virTPMCreateCancelPath(const char *devpath)
+VIR_MOCKABLE(char *,
+             virTPMCreateCancelPath,
+             const char *devpath)
 {
     char *path = NULL;
     const char *dev;

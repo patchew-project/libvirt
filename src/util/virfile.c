@@ -1824,8 +1824,9 @@ virFileIsDir(const char *path)
  * Returns true if the file exists, false if it doesn't, setting errno
  * appropriately.
  */
-bool
-virFileExists(const char *path)
+VIR_MOCKABLE(bool,
+             virFileExists,
+             const char *path)
 {
     return access(path, F_OK) == 0;
 }

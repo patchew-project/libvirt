@@ -985,8 +985,9 @@ virCommandNewVAList(const char *binary, va_list list)
  * be closed in the parent no later than Run/RunAsync/Free. The parent
  * should cease using the @fd when this call completes
  */
-void
-virCommandPassFD(virCommandPtr cmd, int fd, unsigned int flags)
+VIR_MOCKABLE(void,
+             virCommandPassFD,
+             virCommandPtr cmd, int fd, unsigned int flags)
 {
     int ret = 0;
 
@@ -1011,6 +1012,7 @@ virCommandPassFD(virCommandPtr cmd, int fd, unsigned int flags)
         return;
     }
 }
+
 
 /**
  * virCommandPassListenFDs:

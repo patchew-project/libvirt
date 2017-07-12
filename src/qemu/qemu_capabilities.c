@@ -1148,10 +1148,11 @@ virQEMUCapsInitGuestFromBinary(virCapsPtr caps,
 }
 
 
-virCPUDefPtr
-virQEMUCapsProbeHostCPUForEmulator(virCapsPtr caps,
-                                   virQEMUCapsPtr qemuCaps,
-                                   virDomainVirtType type)
+VIR_MOCKABLE(virCPUDefPtr,
+             virQEMUCapsProbeHostCPUForEmulator,
+             virCapsPtr caps,
+             virQEMUCapsPtr qemuCaps,
+             virDomainVirtType type)
 {
     size_t nmodels;
     char **models;

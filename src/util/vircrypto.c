@@ -300,8 +300,9 @@ virCryptoEncryptData(virCryptoCipher algorithm,
  *
  * Returns pointer memory containing byte stream on success, NULL on failure
  */
-uint8_t *
-virCryptoGenerateRandom(size_t nbytes)
+VIR_MOCKABLE(uint8_t *,
+             virCryptoGenerateRandom,
+             size_t nbytes)
 {
     uint8_t *buf;
     int ret;
