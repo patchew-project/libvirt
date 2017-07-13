@@ -6326,6 +6326,15 @@ qemuBuildClockCommandLine(virCommandPtr cmd,
             break;
 
         case VIR_DOMAIN_TIMER_NAME_PIT:
+            /* Only RTC timer is supported as hwclock for sPAPR machines */
+            if (ARCH_IS_PPC64(def->os.arch)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("unsupported clock timer '%s' for '%s' architecture"),
+                                 virDomainTimerNameTypeToString(def->clock.timers[i]->name),
+                                 virArchToString(def->os.arch));
+                return -1;
+            }
+
             switch (def->clock.timers[i]->tickpolicy) {
             case -1:
             case VIR_DOMAIN_TIMER_TICKPOLICY_DELAY:
@@ -6369,13 +6378,21 @@ qemuBuildClockCommandLine(virCommandPtr cmd,
             break;
 
         case VIR_DOMAIN_TIMER_NAME_HPET:
+            /* Only RTC timer is supported as hwclock for sPAPR machines */
+            if (ARCH_IS_PPC64(def->os.arch)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("unsupported clock timer '%s' for '%s' architecture"),
+                                 virDomainTimerNameTypeToString(def->clock.timers[i]->name),
+                                 virArchToString(def->os.arch));
+                return -1;
+            }
+
             /* the only meaningful attribute for hpet is "present". If
              * present is -1, that means it wasn't specified, and
              * should be left at the default for the
              * hypervisor. "default" when -no-hpet exists is "yes",
              * and when -no-hpet doesn't exist is "no". "confusing"?
              * "yes"! */
-
             if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_NO_HPET)) {
                 if (def->clock.timers[i]->present == 0)
                     virCommandAddArg(cmd, "-no-hpet");
@@ -6932,6 +6949,15 @@ qemuBuildCpuCommandLine(virCommandPtr cmd,
     /* Handle paravirtual timers  */
     for (i = 0; i < def->clock.ntimers; i++) {
         virDomainTimerDefPtr timer = def->clock.timers[i];
+
+        /* Only RTC timer is supported as hwclock for sPAPR machines */
+        if (ARCH_IS_PPC64(def->os.arch) && timer->name != VIR_DOMAIN_TIMER_NAME_RTC) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unsupported clock timer '%s' for '%s' architecture"),
+                             virDomainTimerNameTypeToString(def->clock.timers[i]->name),
+                             virArchToString(def->os.arch));
+            return -1;
+        }
 
         if (timer->name == VIR_DOMAIN_TIMER_NAME_KVMCLOCK &&
             timer->present != -1) {
