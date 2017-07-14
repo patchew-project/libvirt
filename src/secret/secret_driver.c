@@ -210,6 +210,7 @@ secretDefineXML(virConnectPtr conn,
 {
     virSecretPtr ret = NULL;
     virSecretObjPtr obj = NULL;
+    virSecretDefPtr objdef;
     virSecretDefPtr backup = NULL;
     virSecretDefPtr def;
     virObjectEventPtr event = NULL;
@@ -225,8 +226,9 @@ secretDefineXML(virConnectPtr conn,
     if (!(obj = virSecretObjListAdd(driver->secrets, def,
                                     driver->configDir, &backup)))
         goto cleanup;
+    VIR_STEAL_PTR(objdef, def);
 
-    if (!def->isephemeral) {
+    if (!objdef->isephemeral) {
         if (backup && backup->isephemeral) {
             if (virSecretObjSaveData(obj) < 0)
                 goto restore_backup;
@@ -248,22 +250,21 @@ secretDefineXML(virConnectPtr conn,
     /* Saved successfully - drop old values */
     virSecretDefFree(backup);
 
-    event = virSecretEventLifecycleNew(def->uuid,
-                                       def->usage_type,
-                                       def->usage_id,
+    event = virSecretEventLifecycleNew(objdef->uuid,
+                                       objdef->usage_type,
+                                       objdef->usage_id,
                                        VIR_SECRET_EVENT_DEFINED,
                                        0);
 
     ret = virGetSecret(conn,
-                       def->uuid,
-                       def->usage_type,
-                       def->usage_id);
-    def = NULL;
+                       objdef->uuid,
+                       objdef->usage_type,
+                       objdef->usage_id);
     goto cleanup;
 
  restore_backup:
     /* If we have a backup, then secret was defined before, so just restore
-     * the backup. The current def will be handled below.
+     * the backup. The current def will be Free'd below.
      * Otherwise, this is a new secret, thus remove it.
      */
     if (backup)
