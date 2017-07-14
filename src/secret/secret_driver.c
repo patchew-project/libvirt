@@ -267,10 +267,13 @@ secretDefineXML(virConnectPtr conn,
      * the backup. The current def will be Free'd below.
      * Otherwise, this is a new secret, thus remove it.
      */
-    if (backup)
+    if (backup) {
         virSecretObjSetDef(obj, backup);
-    else
+    } else {
         virSecretObjListRemove(driver->secrets, obj);
+        virObjectUnref(obj);
+        obj = NULL;
+    }
 
  cleanup:
     virSecretDefFree(def);
@@ -410,6 +413,8 @@ secretUndefine(virSecretPtr secret)
     virSecretObjDeleteData(obj);
 
     virSecretObjListRemove(driver->secrets, obj);
+    virObjectUnref(obj);
+    obj = NULL;
 
     ret = 0;
 
