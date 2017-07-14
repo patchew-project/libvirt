@@ -333,7 +333,6 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
 {
     virSecretObjPtr obj;
     virSecretDefPtr objdef;
-    virSecretObjPtr ret = NULL;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
     char *configFile = NULL, *base64File = NULL;
 
@@ -354,13 +353,13 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
                            _("a secret with UUID %s is already defined for "
                              "use with %s"),
                            uuidstr, objdef->usage_id);
-            goto cleanup;
+            goto error;
         }
 
         if (objdef->isprivate && !newdef->isprivate) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("cannot change private flag on existing secret"));
-            goto cleanup;
+            goto error;
         }
 
         if (oldDef)
@@ -369,8 +368,9 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
             virSecretDefFree(objdef);
         obj->def = newdef;
     } else {
+
         /* No existing secret with same UUID,
-         * try look for matching usage instead */
+         * try to look for matching usage instead */
         if ((obj = virSecretObjListFindByUsageLocked(secrets,
                                                      newdef->usage_type,
                                                      newdef->usage_id))) {
@@ -381,7 +381,7 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
                            _("a secret with UUID %s already defined for "
                              "use with %s"),
                            uuidstr, newdef->usage_id);
-            goto cleanup;
+            goto error;
         }
 
         /* Generate the possible configFile and base64File strings
@@ -395,7 +395,7 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
             goto cleanup;
 
         if (virHashAddEntry(secrets->objs, uuidstr, obj) < 0)
-            goto cleanup;
+            goto error;
 
         obj->def = newdef;
         VIR_STEAL_PTR(obj->configFile, configFile);
@@ -403,15 +403,15 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
         virObjectRef(obj);
     }
 
-    ret = obj;
-    obj = NULL;
-
  cleanup:
-    virSecretObjEndAPI(&obj);
     VIR_FREE(configFile);
     VIR_FREE(base64File);
     virObjectUnlock(secrets);
-    return ret;
+    return obj;
+
+ error:
+    virSecretObjEndAPI(&obj);
+    goto cleanup;
 }
 
 
