@@ -334,7 +334,6 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
     virSecretObjPtr obj;
     virSecretDefPtr objdef;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
-    char *configFile = NULL, *base64File = NULL;
 
     virObjectLock(secrets);
 
@@ -384,28 +383,24 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
             goto error;
         }
 
+        if (!(obj = virSecretObjNew()))
+            goto cleanup;
+
         /* Generate the possible configFile and base64File strings
          * using the configDir, uuidstr, and appropriate suffix
          */
-        if (!(configFile = virFileBuildPath(configDir, uuidstr, ".xml")) ||
-            !(base64File = virFileBuildPath(configDir, uuidstr, ".base64")))
-            goto cleanup;
-
-        if (!(obj = virSecretObjNew()))
-            goto cleanup;
+        if (!(obj->configFile = virFileBuildPath(configDir, uuidstr, ".xml")) ||
+            !(obj->base64File = virFileBuildPath(configDir, uuidstr, ".base64")))
+            goto error;
 
         if (virHashAddEntry(secrets->objs, uuidstr, obj) < 0)
             goto error;
 
         obj->def = newdef;
-        VIR_STEAL_PTR(obj->configFile, configFile);
-        VIR_STEAL_PTR(obj->base64File, base64File);
         virObjectRef(obj);
     }
 
  cleanup:
-    VIR_FREE(configFile);
-    VIR_FREE(base64File);
     virObjectUnlock(secrets);
     return obj;
 
