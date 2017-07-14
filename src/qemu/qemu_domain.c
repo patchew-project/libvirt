@@ -3026,6 +3026,7 @@ qemuDomainDefValidate(const virDomainDef *def,
     virQEMUCapsPtr qemuCaps = NULL;
     unsigned int topologycpus;
     int ret = -1;
+    size_t i;
 
     if (!(qemuCaps = virQEMUCapsCacheLookup(caps,
                                             driver->qemuCapsCache,
@@ -3036,6 +3037,18 @@ qemuDomainDefValidate(const virDomainDef *def,
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("Parameter 'min_guarantee' not supported by QEMU."));
         goto cleanup;
+    }
+
+    /* Only RTC timer is supported as hwclock for sPAPR machines */
+    for (i = 0; i < def->clock.ntimers; i++) {
+        virDomainTimerDefPtr timer = def->clock.timers[i];
+        if (ARCH_IS_PPC64(def->os.arch) && timer->name != VIR_DOMAIN_TIMER_NAME_RTC) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unsupported clock timer '%s' for %s architecture"),
+                             virDomainTimerNameTypeToString(def->clock.timers[i]->name),
+                             virArchToString(def->os.arch));
+            goto cleanup;
+        }
     }
 
     /* On x86, UEFI requires ACPI */
