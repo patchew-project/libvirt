@@ -2140,14 +2140,12 @@ static void virNetSocketEventFree(void *opaque)
     virFreeCallback ff;
     void *eopaque;
 
-    virObjectLock(sock);
     ff = sock->ff;
     eopaque = sock->opaque;
     sock->func = NULL;
     sock->ff = NULL;
     sock->opaque = NULL;
-    virObjectUnlock(sock);
-
+  
     if (ff)
         ff(eopaque);
 
@@ -2207,6 +2205,7 @@ void virNetSocketUpdateIOCallback(virNetSocketPtr sock,
 
 void virNetSocketRemoveIOCallback(virNetSocketPtr sock)
 {
+    virObjectRef(sock);
     virObjectLock(sock);
 
     if (sock->watch < 0) {
@@ -2220,6 +2219,7 @@ void virNetSocketRemoveIOCallback(virNetSocketPtr sock)
     sock->watch = -1;
 
     virObjectUnlock(sock);
+    virObjectRef(sock);
 }
 
 void virNetSocketClose(virNetSocketPtr sock)
