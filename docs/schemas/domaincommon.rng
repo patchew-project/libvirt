@@ -2723,6 +2723,11 @@
               <optional>
                 <ref name="event_idx"/>
               </optional>
+              <optional>
+                <attribute name='poll_us'>
+                  <ref name='positiveInteger'/>
+                </attribute>
+              </optional>
             </group>
           </choice>
           <ref name="virtioOptions"/>
