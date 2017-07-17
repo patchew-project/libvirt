@@ -431,6 +431,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "virtio.ats",
               "loadparm",
               "spapr-pci-host-bridge",
+              "netdev.poll-us",
     );
 
 
@@ -4825,6 +4826,10 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     /* no way to query if -machine kernel_irqchip supports split */
     if (qemuCaps->version >= 2006000)
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_MACHINE_KERNEL_IRQCHIP_SPLIT);
+
+    /* Support for busy polling ("-netdev tap,...,poll-us=n") */
+    if (qemuCaps->version >= 2007000)
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_NETDEV_POLL_US);
 
     if (virQEMUCapsProbeQMPCommands(qemuCaps, mon) < 0)
         goto cleanup;
