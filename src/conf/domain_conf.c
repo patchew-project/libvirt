@@ -9457,6 +9457,12 @@ virDomainControllerDefParseXML(xmlNodePtr node,
                 goto error;
             }
         }
+        if (def->idx == 0 && numaNode >= 0) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("Only the PCI controller with index != 0 can "
+                             "have NUMA node property specified"));
+                goto error;
+        }
         if (numaNode >= 0)
             def->opts.pciopts.numaNode = numaNode;
         break;

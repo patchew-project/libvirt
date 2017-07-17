@@ -3786,6 +3786,11 @@
         part of the specified NUMA node (it is up to the user of the
         libvirt API to attach host devices to the correct
         pci-expander-bus when assigning them to the domain).
+        On PPC64, the PCI devices can be specified to be part of a NUMA
+        node using only the pci-root controller with an optional
+        <code>&lt;node&gt;</code> subelement within the
+        <code>&lt;target&gt;</code> subelement. The PCI devices on the
+        given pci-root controller will be part of the specified NUMA node.
       </dd>
       <dt><code>index</code></dt>
       <dd>

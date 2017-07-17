@@ -1,0 +1,29 @@
+LC_ALL=C \
+PATH=/bin \
+HOME=/home/test \
+USER=test \
+LOGNAME=test \
+QEMU_AUDIO_DRV=none \
+/usr/bin/qemu-system-ppc64 \
+-name QEMUGuest1 \
+-S \
+-M pseries \
+-m 2048 \
+-smp 8,sockets=3,cores=1,threads=8 \
+-numa node,nodeid=0,cpus=0-3,mem=1024 \
+-numa node,nodeid=1,cpus=4-7,mem=1024 \
+-uuid 87eedafe-eedc-4336-8130-ed9fe5dc90c8 \
+-nographic \
+-nodefaults \
+-chardev socket,id=charmonitor,path=/tmp/lib/domain--1-QEMUGuest1/monitor.sock,\
+server,nowait \
+-mon chardev=charmonitor,id=monitor,mode=readline \
+-boot c \
+-device spapr-pci-host-bridge,index=1,id=pci.1,numa_node=1 \
+-device spapr-pci-host-bridge,index=2,id=pci.2 \
+-device spapr-pci-host-bridge,index=3,id=pci.3,numa_node=0 \
+-device spapr-vscsi,id=scsi0,reg=0x2000 \
+-usb \
+-drive file=/dev/HostVG/QEMUGuest1,format=raw,if=none,id=drive-scsi0-0-0-0 \
+-device scsi-disk,bus=scsi0.0,channel=0,scsi-id=0,lun=0,\
+drive=drive-scsi0-0-0-0,id=scsi0-0-0-0

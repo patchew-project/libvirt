@@ -3458,9 +3458,14 @@ qemuDomainControllerDefPostParse(virDomainControllerDefPtr cont,
          * that NUMA node is configured in the guest <cpu><numa>
          * array. NUMA cell id's in this array are numbered
          * from 0 .. size-1.
+         *
+         * On PSeries, the NUMA node is set at the PHB.
          */
-        if ((cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_EXPANDER_BUS ||
-             cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_EXPANDER_BUS) &&
+        if (((qemuDomainIsPSeries(def) &&
+              cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI &&
+              cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT) ||
+             (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_EXPANDER_BUS ||
+              cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_EXPANDER_BUS)) &&
             (int) virDomainNumaGetNodeCount(def->numa)
             <= cont->opts.pciopts.numaNode) {
             virReportError(VIR_ERR_XML_ERROR,
