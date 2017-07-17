@@ -5579,8 +5579,13 @@ testNodeDeviceCreateXML(virConnectPtr conn,
 
     /* Unlike the "real" code we don't need the parent_host in order to
      * call virVHBAManageVport, but still let's make sure the code finds
-     * something valid and no one messed up the mock environment. */
-    if (virNodeDeviceObjListGetParentHost(driver->devs, def, CREATE_DEVICE) < 0)
+     * something valid and no one messed up the mock environment. We also
+     * don't need to make local copies since there's no @obj for which
+     * @def is assigned to, so we can use the def-> values directly. */
+    if (virNodeDeviceObjListGetParentHost(driver->devs, def->name, def->parent,
+                                          def->parent_wwnn, def->parent_wwpn,
+                                          def->parent_fabric_wwn,
+                                          CREATE_DEVICE) < 0)
         goto cleanup;
 
     /* In the real code, we'd call virVHBAManageVport followed by
@@ -5619,7 +5624,12 @@ testNodeDeviceDestroy(virNodeDevicePtr dev)
     testDriverPtr driver = dev->conn->privateData;
     virNodeDeviceObjPtr obj = NULL;
     virNodeDeviceDefPtr def;
-    char *parent_name = NULL, *wwnn = NULL, *wwpn = NULL;
+    char *name = NULL;
+    char *parent = NULL;
+    char *parent_wwnn = NULL;
+    char *parent_wwpn = NULL;
+    char *parent_fabric_wwn = NULL;
+    char *wwnn = NULL, *wwpn = NULL;
     virObjectEventPtr event = NULL;
 
     if (!(obj = testNodeDeviceObjFindByName(driver, dev->name)))
@@ -5629,18 +5639,25 @@ testNodeDeviceDestroy(virNodeDevicePtr dev)
     if (virNodeDeviceGetWWNs(def, &wwnn, &wwpn) == -1)
         goto cleanup;
 
-    if (VIR_STRDUP(parent_name, def->parent) < 0)
+    /* Because we're about to release the lock and thus run into a race
+     * possibility (however improbably) with a udevAddOneDevice change
+     * event which would essentially free the existing @def (obj->def) and
+     * replace it with something new, we need to save off and use the
+     * various fields that virNodeDeviceObjListGetParentHost will use */
+    if (VIR_STRDUP(name, def->name) < 0 ||
+        VIR_STRDUP(parent, def->parent) < 0 ||
+        VIR_STRDUP(parent_wwnn, def->parent_wwnn) < 0 ||
+        VIR_STRDUP(parent_wwpn, def->parent_wwpn) < 0 ||
+        VIR_STRDUP(parent_fabric_wwn, def->parent_fabric_wwn) < 0)
         goto cleanup;
 
-    /* virNodeDeviceGetParentHost will cause the device object's lock to be
-     * taken, so we have to dup the parent's name and drop the lock
-     * before calling it.  We don't need the reference to the object
-     * any more once we have the parent's name.  */
     virObjectUnlock(obj);
 
     /* We do this just for basic validation, but also avoid finding a
      * vport capable HBA if for some reason our vHBA doesn't exist */
-    if (virNodeDeviceObjListGetParentHost(driver->devs, def,
+    if (virNodeDeviceObjListGetParentHost(driver->devs, name, parent,
+                                          parent_wwnn, parent_wwpn,
+                                          parent_fabric_wwn,
                                           EXISTING_DEVICE) < 0) {
         virObjectLock(obj);
         goto cleanup;
@@ -5658,7 +5675,11 @@ testNodeDeviceDestroy(virNodeDevicePtr dev)
  cleanup:
     virNodeDeviceObjEndAPI(&obj);
     testObjectEventQueue(driver, event);
-    VIR_FREE(parent_name);
+    VIR_FREE(name);
+    VIR_FREE(parent);
+    VIR_FREE(parent_wwnn);
+    VIR_FREE(parent_wwpn);
+    VIR_FREE(parent_fabric_wwn);
     VIR_FREE(wwnn);
     VIR_FREE(wwpn);
     return ret;

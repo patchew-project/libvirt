@@ -75,8 +75,12 @@ virNodeDeviceObjListRemove(virNodeDeviceObjListPtr devs,
 
 int
 virNodeDeviceObjListGetParentHost(virNodeDeviceObjListPtr devs,
-                                  virNodeDeviceDefPtr def,
-                              int create);
+                                  const char *name,
+                                  const char *parent,
+                                  const char *parent_wwnn,
+                                  const char *parent_wwpn,
+                                  const char *parent_fabric_wwn,
+                                  int create);
 
 virNodeDeviceObjListPtr
 virNodeDeviceObjListNew(void);

@@ -543,24 +543,47 @@ virNodeDeviceObjListFindVportParentHost(virNodeDeviceObjListPtr devs)
 }
 
 
+/**
+ * @devs: Pointer to the device list
+ * @name: The name of the device
+ * @parent: The parent name
+ * @parent_wwnn: Parent's WWNN value
+ * @parent_wwpn: Parent's WWPN value
+ * @parent_fabric_wwn: Parent's fabric WWN value
+ * @create: Whether this is a create or existing device
+ *
+ * Using the input name and parent values, let's look for a parent host.
+ * This API cannot take the @def because it's called in a Destroy path which
+ * needs to unlock the object prior to calling since the searching involves
+ * locking the object (avoids deadlock). Once the lock is removed, it's
+ * possible, but improbable that udevAddOneDevice could have a "change"
+ * event on an existing vHBA causing the @def to be replaced in the object.
+ * If we use that @def, then we run the risk of some bad things happening
+ *
+ * Returns parent_host value on success or -1 on failure
+ */
 int
 virNodeDeviceObjListGetParentHost(virNodeDeviceObjListPtr devs,
-                                  virNodeDeviceDefPtr def,
+                                  const char *name,
+                                  const char *parent,
+                                  const char *parent_wwnn,
+                                  const char *parent_wwpn,
+                                  const char *parent_fabric_wwn,
                                   int create)
 {
     int parent_host = -1;
 
-    if (def->parent) {
-        parent_host = virNodeDeviceObjListGetParentHostByParent(devs, def->name,
-                                                                def->parent);
-    } else if (def->parent_wwnn && def->parent_wwpn) {
-        parent_host = virNodeDeviceObjListGetParentHostByWWNs(devs, def->name,
-                                                              def->parent_wwnn,
-                                                              def->parent_wwpn);
-    } else if (def->parent_fabric_wwn) {
+    if (parent) {
+        parent_host = virNodeDeviceObjListGetParentHostByParent(devs, name,
+                                                                parent);
+    } else if (parent_wwnn && parent_wwpn) {
+        parent_host = virNodeDeviceObjListGetParentHostByWWNs(devs, name,
+                                                              parent_wwnn,
+                                                              parent_wwpn);
+    } else if (parent_fabric_wwn) {
         parent_host =
-            virNodeDeviceObjListGetParentHostByFabricWWN(devs, def->name,
-                                                         def->parent_fabric_wwn);
+            virNodeDeviceObjListGetParentHostByFabricWWN(devs, name,
+                                                         parent_fabric_wwn);
     } else if (create == CREATE_DEVICE) {
         /* Try to find a vport capable scsi_host when no parent supplied */
         parent_host = virNodeDeviceObjListFindVportParentHost(devs);

@@ -563,7 +563,13 @@ nodeDeviceCreateXML(virConnectPtr conn,
     if (virNodeDeviceGetWWNs(def, &wwnn, &wwpn) == -1)
         goto cleanup;
 
-    if ((parent_host = virNodeDeviceObjListGetParentHost(driver->devs, def,
+    /* NB: Since there's no @obj for which @def is assigned to, we can use
+     * the def-> values directly - unlike the Destroy code */
+    if ((parent_host = virNodeDeviceObjListGetParentHost(driver->devs,
+                                                         def->name, def->parent,
+                                                         def->parent_wwnn,
+                                                         def->parent_wwpn,
+                                                         def->parent_fabric_wwn,
                                                          CREATE_DEVICE)) < 0)
         goto cleanup;
 
@@ -594,6 +600,11 @@ nodeDeviceDestroy(virNodeDevicePtr device)
     int ret = -1;
     virNodeDeviceObjPtr obj = NULL;
     virNodeDeviceDefPtr def;
+    char *name = NULL;
+    char *parent = NULL;
+    char *parent_wwnn = NULL;
+    char *parent_wwpn = NULL;
+    char *parent_fabric_wwn = NULL;
     char *wwnn = NULL, *wwpn = NULL;
     int parent_host = -1;
 
@@ -609,12 +620,24 @@ nodeDeviceDestroy(virNodeDevicePtr device)
     if (virNodeDeviceGetWWNs(def, &wwnn, &wwpn) < 0)
         goto cleanup;
 
-    /* virNodeDeviceGetParentHost will cause the device object's lock
-     * to be taken, so grab the object def which will have the various
-     * fields used to search (name, parent, parent_wwnn, parent_wwpn,
-     * or parent_fabric_wwn) and drop the object lock. */
+    /* Because we're about to release the lock and thus run into a race
+     * possibility (however improbably) with a udevAddOneDevice change
+     * event which would essentially free the existing @def (obj->def) and
+     * replace it with something new, we need to save off and use the
+     * various fields that virNodeDeviceObjListGetParentHost will use */
+    if (VIR_STRDUP(name, def->name) < 0 ||
+        VIR_STRDUP(parent, def->parent) < 0 ||
+        VIR_STRDUP(parent_wwnn, def->parent_wwnn) < 0 ||
+        VIR_STRDUP(parent_wwpn, def->parent_wwpn) < 0 ||
+        VIR_STRDUP(parent_fabric_wwn, def->parent_fabric_wwn) < 0)
+        goto cleanup;
+
     virNodeDeviceObjEndAPI(&obj);
-    if ((parent_host = virNodeDeviceObjListGetParentHost(driver->devs, def,
+    if ((parent_host = virNodeDeviceObjListGetParentHost(driver->devs,
+                                                         name, parent,
+                                                         parent_wwnn,
+                                                         parent_wwpn,
+                                                         parent_fabric_wwn,
                                                          EXISTING_DEVICE)) < 0)
         goto cleanup;
 
@@ -626,6 +649,11 @@ nodeDeviceDestroy(virNodeDevicePtr device)
  cleanup:
     nodeDeviceUnlock();
     virNodeDeviceObjEndAPI(&obj);
+    VIR_FREE(name);
+    VIR_FREE(parent);
+    VIR_FREE(parent_wwnn);
+    VIR_FREE(parent_wwpn);
+    VIR_FREE(parent_fabric_wwn);
     VIR_FREE(wwnn);
     VIR_FREE(wwpn);
     return ret;
