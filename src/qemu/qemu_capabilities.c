@@ -431,6 +431,9 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "virtio.ats",
               "loadparm",
               "spapr-pci-host-bridge",
+
+              /* 265 */
+              "virtio-net.tx_queue_size",
     );
 
 
@@ -1697,6 +1700,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioNet[] = {
     { "tx", QEMU_CAPS_VIRTIO_TX_ALG },
     { "event_idx", QEMU_CAPS_VIRTIO_NET_EVENT_IDX },
     { "rx_queue_size", QEMU_CAPS_VIRTIO_NET_RX_QUEUE_SIZE },
+    { "tx_queue_size", QEMU_CAPS_VIRTIO_NET_TX_QUEUE_SIZE },
     { "host_mtu", QEMU_CAPS_VIRTIO_NET_HOST_MTU },
 };
 

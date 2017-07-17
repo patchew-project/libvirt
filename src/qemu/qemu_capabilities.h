@@ -418,6 +418,9 @@ typedef enum {
     QEMU_CAPS_LOADPARM, /* -machine loadparm */
     QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE, /* -device spapr-pci-host-bridge */
 
+    /* 265 */
+    QEMU_CAPS_VIRTIO_NET_TX_QUEUE_SIZE, /* virtio-net-*.tx_queue_size */
+
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
 
