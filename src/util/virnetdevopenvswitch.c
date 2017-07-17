@@ -64,58 +64,19 @@ virNetDevOpenvswitchAddTimeout(virCommandPtr cmd)
 }
 
 /**
- * virNetDevOpenvswitchAddPort:
- * @brname: the bridge name
- * @ifname: the network interface name
- * @macaddr: the mac address of the virtual interface
- * @vmuuid: the Domain UUID that has this interface
- * @ovsport: the ovs specific fields
+ * virNetDevOpenvswitchConstructVlans:
+ * @cmd: command to construct
+ * @virtVlan: VLAN configuration to be applied
  *
- * Add an interface to the OVS bridge
+ * Construct the VLAN configuration parameters to be passed to ovs-vsctl command.
  *
  * Returns 0 in case of success or -1 in case of failure.
  */
-int virNetDevOpenvswitchAddPort(const char *brname, const char *ifname,
-                                   const virMacAddr *macaddr,
-                                   const unsigned char *vmuuid,
-                                   virNetDevVPortProfilePtr ovsport,
-                                   virNetDevVlanPtr virtVlan)
+int virNetDevOpenvswitchConstructVlans(virCommandPtr cmd, virNetDevVlanPtr virtVlan)
 {
     int ret = -1;
     size_t i = 0;
-    virCommandPtr cmd = NULL;
-    char macaddrstr[VIR_MAC_STRING_BUFLEN];
-    char ifuuidstr[VIR_UUID_STRING_BUFLEN];
-    char vmuuidstr[VIR_UUID_STRING_BUFLEN];
-    char *attachedmac_ex_id = NULL;
-    char *ifaceid_ex_id = NULL;
-    char *profile_ex_id = NULL;
-    char *vmid_ex_id = NULL;
     virBuffer buf = VIR_BUFFER_INITIALIZER;
-
-    virMacAddrFormat(macaddr, macaddrstr);
-    virUUIDFormat(ovsport->interfaceID, ifuuidstr);
-    virUUIDFormat(vmuuid, vmuuidstr);
-
-    if (virAsprintf(&attachedmac_ex_id, "external-ids:attached-mac=\"%s\"",
-                    macaddrstr) < 0)
-        goto cleanup;
-    if (virAsprintf(&ifaceid_ex_id, "external-ids:iface-id=\"%s\"",
-                    ifuuidstr) < 0)
-        goto cleanup;
-    if (virAsprintf(&vmid_ex_id, "external-ids:vm-id=\"%s\"",
-                    vmuuidstr) < 0)
-        goto cleanup;
-    if (ovsport->profileID[0] != '\0') {
-        if (virAsprintf(&profile_ex_id, "external-ids:port-profile=\"%s\"",
-                        ovsport->profileID) < 0)
-            goto cleanup;
-    }
-
-    cmd = virCommandNew(OVSVSCTL);
-    virNetDevOpenvswitchAddTimeout(cmd);
-    virCommandAddArgList(cmd, "--", "--if-exists", "del-port",
-                         ifname, "--", "add-port", brname, ifname, NULL);
 
     if (virtVlan && virtVlan->nTags > 0) {
 
@@ -157,6 +118,68 @@ int virNetDevOpenvswitchAddPort(const char *brname, const char *ifname,
         }
     }
 
+    ret = 0;
+    cleanup:
+        virBufferFreeAndReset(&buf);
+        return ret;
+}
+
+/**
+ * virNetDevOpenvswitchAddPort:
+ * @brname: the bridge name
+ * @ifname: the network interface name
+ * @macaddr: the mac address of the virtual interface
+ * @vmuuid: the Domain UUID that has this interface
+ * @ovsport: the ovs specific fields
+ *
+ * Add an interface to the OVS bridge
+ *
+ * Returns 0 in case of success or -1 in case of failure.
+ */
+int virNetDevOpenvswitchAddPort(const char *brname, const char *ifname,
+                                   const virMacAddr *macaddr,
+                                   const unsigned char *vmuuid,
+                                   virNetDevVPortProfilePtr ovsport,
+                                   virNetDevVlanPtr virtVlan)
+{
+    int ret = -1;
+    virCommandPtr cmd = NULL;
+    char macaddrstr[VIR_MAC_STRING_BUFLEN];
+    char ifuuidstr[VIR_UUID_STRING_BUFLEN];
+    char vmuuidstr[VIR_UUID_STRING_BUFLEN];
+    char *attachedmac_ex_id = NULL;
+    char *ifaceid_ex_id = NULL;
+    char *profile_ex_id = NULL;
+    char *vmid_ex_id = NULL;
+
+    virMacAddrFormat(macaddr, macaddrstr);
+    virUUIDFormat(ovsport->interfaceID, ifuuidstr);
+    virUUIDFormat(vmuuid, vmuuidstr);
+
+    if (virAsprintf(&attachedmac_ex_id, "external-ids:attached-mac=\"%s\"",
+                    macaddrstr) < 0)
+        goto cleanup;
+    if (virAsprintf(&ifaceid_ex_id, "external-ids:iface-id=\"%s\"",
+                    ifuuidstr) < 0)
+        goto cleanup;
+    if (virAsprintf(&vmid_ex_id, "external-ids:vm-id=\"%s\"",
+                    vmuuidstr) < 0)
+        goto cleanup;
+    if (ovsport->profileID[0] != '\0') {
+        if (virAsprintf(&profile_ex_id, "external-ids:port-profile=\"%s\"",
+                        ovsport->profileID) < 0)
+            goto cleanup;
+    }
+
+    cmd = virCommandNew(OVSVSCTL);
+    virNetDevOpenvswitchAddTimeout(cmd);
+    virCommandAddArgList(cmd, "--", "--if-exists", "del-port",
+                         ifname, "--", "add-port", brname, ifname, NULL);
+
+    if (virNetDevOpenvswitchConstructVlans(cmd, virtVlan) < 0) {
+        goto cleanup;
+    }
+
     if (ovsport->profileID[0] == '\0') {
         virCommandAddArgList(cmd,
                         "--", "set", "Interface", ifname, attachedmac_ex_id,
@@ -185,7 +208,6 @@ int virNetDevOpenvswitchAddPort(const char *brname, const char *ifname,
 
     ret = 0;
  cleanup:
-    virBufferFreeAndReset(&buf);
     VIR_FREE(attachedmac_ex_id);
     VIR_FREE(ifaceid_ex_id);
     VIR_FREE(vmid_ex_id);

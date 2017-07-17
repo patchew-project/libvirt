@@ -30,10 +30,15 @@
 # include "internal.h"
 # include "virnetdevvportprofile.h"
 # include "virnetdevvlan.h"
+# include "vircommand.h"
+
 
 # define VIR_NETDEV_OVS_DEFAULT_TIMEOUT 5
 
 void virNetDevOpenvswitchSetTimeout(unsigned int timeout);
+
+int virNetDevOpenvswitchConstructVlans(virCommandPtr cmd, virNetDevVlanPtr virtVlan)
+    ATTRIBUTE_RETURN_CHECK;
 
 int virNetDevOpenvswitchAddPort(const char *brname,
                                 const char *ifname,
