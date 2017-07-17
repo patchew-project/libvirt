@@ -3899,6 +3899,9 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
         }
         if (net->tune.sndbuf_specified)
             virBufferAsprintf(&buf, "sndbuf=%lu,", net->tune.sndbuf);
+        if (net->driver.virtio.poll_us)
+            virBufferAsprintf(&buf, "poll-us=%u,",
+                              net->driver.virtio.poll_us);
     }
 
     virObjectUnref(cfg);
@@ -8328,6 +8331,31 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
                        _("Multiqueue network is not supported for: %s"),
                        virDomainNetTypeToString(actualType));
         return -1;
+    }
+
+    if (net->driver.virtio.poll_us > 0) {
+        if (net->driver.virtio.name != VIR_DOMAIN_NET_BACKEND_TYPE_VHOST) {
+            /* virtio.name is set only if driver is specificly
+             * indicated. Since 'poll_us' option is only available for
+             * vhost-net we don't want libvirt to fallback to QEMU if
+             * not available. That's why we request users to set the
+             * driver. */
+            virReportError(
+                VIR_ERR_CONFIG_UNSUPPORTED,
+                _("Busy polling (poll_us) is only supported with vhost "
+                  "backend driver"));
+            return -1;
+        }
+        /* Nothing besides TAP devices supports busy polling. */
+        if (!(actualType == VIR_DOMAIN_NET_TYPE_NETWORK ||
+              actualType == VIR_DOMAIN_NET_TYPE_BRIDGE ||
+              actualType == VIR_DOMAIN_NET_TYPE_DIRECT ||
+              actualType == VIR_DOMAIN_NET_TYPE_ETHERNET)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Busy polling is not supported for: %s"),
+                           virDomainNetTypeToString(actualType));
+            return -1;
+        }
     }
 
     /* and only TAP devices support nwfilter rules */

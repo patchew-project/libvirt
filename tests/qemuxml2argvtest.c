@@ -1156,6 +1156,15 @@ mymain(void)
             QEMU_CAPS_NODEFCONFIG);
     DO_TEST("net-virtio-netdev",
             QEMU_CAPS_NETDEV, QEMU_CAPS_NODEFCONFIG);
+    DO_TEST("net-virtio-netdev-pollus",
+            QEMU_CAPS_NETDEV,
+            QEMU_CAPS_NETDEV_POLL_US);
+    DO_TEST_FAILURE("net-virtio-netdev-pollus-fail",
+                    QEMU_CAPS_NETDEV,
+                    QEMU_CAPS_NETDEV_POLL_US);
+    DO_TEST_FAILURE("net-virtio-netdev-pollus-qemu-fail",
+                    QEMU_CAPS_NETDEV,
+                    QEMU_CAPS_NETDEV_POLL_US);
     DO_TEST("net-virtio-s390",
             QEMU_CAPS_VIRTIO_S390);
     DO_TEST("net-virtio-ccw",

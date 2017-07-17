@@ -1015,6 +1015,18 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
         return -1;
     }
 
+    /* and nothing besides TAP devices supports busy polling. */
+    if (net->driver.virtio.poll_us > 0 &&
+        !(actualType == VIR_DOMAIN_NET_TYPE_NETWORK ||
+          actualType == VIR_DOMAIN_NET_TYPE_BRIDGE ||
+          actualType == VIR_DOMAIN_NET_TYPE_DIRECT ||
+          actualType == VIR_DOMAIN_NET_TYPE_ETHERNET)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Busy polling is not supported for: %s"),
+                       virDomainNetTypeToString(actualType));
+        return -1;
+    }
+
     /* and only TAP devices support nwfilter rules */
     if (net->filter &&
         !(actualType == VIR_DOMAIN_NET_TYPE_NETWORK ||
