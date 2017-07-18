@@ -220,6 +220,7 @@ checkParent(virConnectPtr conn,
             const char *name,
             const char *parent_name)
 {
+    unsigned int host_num;
     char *scsi_host_name = NULL;
     char *vhba_parent = NULL;
     bool retval = false;
@@ -230,18 +231,50 @@ checkParent(virConnectPtr conn,
     if (!conn)
         return true;
 
+    if (virSCSIHostGetNumber(parent_name, &host_num) < 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("parent '%s' is not properly formatted"), name);
+        goto cleanup;
+    }
+
+    if (!virVHBAPathExists(NULL, host_num)) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       ("parent '%s' is not a vHBA/HBA"), parent_name);
+        goto cleanup;
+    }
+
     if (virAsprintf(&scsi_host_name, "scsi_%s", name) < 0)
         goto cleanup;
 
-    if (!(vhba_parent = virNodeDeviceGetParentName(conn, scsi_host_name)))
+    if (virSCSIHostGetNumber(scsi_host_name, &host_num) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("host name '%s' is not properly formatted"), name);
         goto cleanup;
+    }
 
-    if (STRNEQ(parent_name, vhba_parent)) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("Parent attribute '%s' does not match parent '%s' "
-                         "determined for the '%s' wwnn/wwpn lookup."),
-                       parent_name, vhba_parent, name);
-        goto cleanup;
+    /* If scsi_host_name is vport capable, then it's an HBA, thus compare
+     * only against the parent_name; otherwise, as long as the scsi_host_name
+     * path exists, then the scsi_host_name is a vHBA in which case we need
+     * to compare against it's parent. */
+    if (virVHBAIsVportCapable(NULL, host_num)) {
+        if (STRNEQ(parent_name, scsi_host_name)) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("parent HBA '%s' doesn't match the wwnn/wwpn "
+                             "scsi_host '%s'"),
+                           parent_name, scsi_host_name);
+            goto cleanup;
+        }
+    } else {
+        if (!(vhba_parent = virNodeDeviceGetParentName(conn, scsi_host_name)))
+            goto cleanup;
+
+        if (STRNEQ(parent_name, vhba_parent)) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("parent vHBA '%s' doesn't match the wwnn/wwpn "
+                             "scsi_host '%s' parent '%s'"),
+                           parent_name, scsi_host_name, vhba_parent);
+            goto cleanup;
+        }
     }
 
     retval = true;
