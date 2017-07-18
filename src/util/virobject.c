@@ -350,6 +350,30 @@ virObjectLock(void *anyobj)
 
 
 /**
+ * virObjectTryLock:
+ * @anyobj: any instance of virObjectLockablePtr
+ *
+ * Acquire a lock on @anyobj. The lock must be
+ * released by virObjectUnlock.
+ *
+ * The caller is expected to have acquired a reference
+ * on the object before locking it (eg virObjectRef).
+ * The object must be unlocked before releasing this
+ * reference.
+ */
+int
+virObjectTryLock(void *anyobj)
+{
+    virObjectLockablePtr obj = virObjectGetLockableObj(anyobj);
+
+    if (!obj)
+        return EFAULT;
+
+    return virMutexTryLock(&obj->lock);
+}
+
+
+/**
  * virObjectUnlock:
  * @anyobj: any instance of virObjectLockablePtr
  *

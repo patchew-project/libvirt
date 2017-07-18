@@ -995,9 +995,7 @@ virNWFilterObjListLoadAllConfigs;
 virNWFilterObjListNew;
 virNWFilterObjListNumOfNWFilters;
 virNWFilterObjListRemove;
-virNWFilterObjRef;
 virNWFilterObjTestUnassignDef;
-virNWFilterObjUnref;
 virNWFilterObjWantRemoved;
 
 
@@ -2296,6 +2294,7 @@ virObjectLock;
 virObjectLockableNew;
 virObjectNew;
 virObjectRef;
+virObjectTryLock;
 virObjectUnlock;
 virObjectUnref;
 
