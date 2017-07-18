@@ -981,6 +981,7 @@ virNodeDeviceObjListRemove;
 
 # conf/virnwfilterobj.h
 virNWFilterObjEndAPI;
+virNWFilterObjEndInstAPI;
 virNWFilterObjGetDef;
 virNWFilterObjGetNewDef;
 virNWFilterObjListAssignDef;
@@ -2725,6 +2726,7 @@ virMutexDestroy;
 virMutexInit;
 virMutexInitRecursive;
 virMutexLock;
+virMutexTryLock;
 virMutexUnlock;
 virOnce;
 virRWLockDestroy;

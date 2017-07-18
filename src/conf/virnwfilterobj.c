@@ -48,6 +48,12 @@ struct _virNWFilterObj {
 
     virNWFilterDefPtr def;
     virNWFilterDefPtr newDef;
+
+    /* Instantiation locking */
+    virMutex instLock;
+    int instDepth;
+    int instRetry;
+    pthread_t instTID;
 };
 
 struct _virNWFilterObjList {
@@ -88,7 +94,7 @@ virNWFilterObjNew(void)
     if (VIR_ALLOC(obj) < 0)
         return NULL;
 
-    if (virMutexInitRecursive(&obj->lock) < 0) {
+    if (virMutexInit(&obj->lock) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        "%s", _("cannot initialize mutex"));
         VIR_FREE(obj);
@@ -97,6 +103,12 @@ virNWFilterObjNew(void)
 
     virNWFilterObjLock(obj);
     virAtomicIntSet(&obj->refs, 1);
+
+    if (virMutexInit(&obj->instLock) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("cannot initialize instantiation mutex"));
+        virNWFilterObjEndAPI(&obj);
+    }
 
     return obj;
 }
@@ -110,6 +122,96 @@ virNWFilterObjEndAPI(virNWFilterObjPtr *obj)
 
     virNWFilterObjUnlock(*obj);
     virNWFilterObjUnref(*obj);
+    *obj = NULL;
+}
+
+
+/**
+ * virNWFilterObjTryLock(obj)
+ * virNWFilterObjEndInstAPI(&obj)
+ * @obj: nwfilter object
+ *
+ * Rather than use recursive locks, nwfilter instantiation uses a
+ * modified version that will use NORMAL mutex locks except for the
+ * locking mechanism in virNWFilterObjListFindInstantiateFilter which
+ * uses virMutexTryLock processing to lock the object "recursively"
+ * for this thread only.
+ *
+ * In order to do this "safely", the processing of the TryLock and EndInstAPI
+ * will be protected by an "instLock" so that we can track which thread by
+ * pthread id has the lock and how many levels of depth have been taken when
+ * the lock is taken.
+ *
+ * This way when we go to release the lock (EndInstAPI) we can check our level
+ * and once the last lock has been released, call virNWFilterObjUnlock to
+ * release the lock. If we called it too soon, then we'd potentially release
+ * a lock we still need.
+ *
+ * Returns 0 on success and an errno value on failure
+ */
+static int
+virNWFilterObjTryLock(virNWFilterObjPtr obj)
+{
+    int err;
+    pthread_t thisTID = pthread_self();
+
+    virMutexLock(&obj->instLock);
+
+    do {
+        err = virMutexTryLock(&obj->lock);
+        if (err == 0) {
+            /* We are the first, then just like virMutexLock and we
+             * set our markers, instDepth = 1 and thisTID */
+            obj->instDepth = 1;
+            obj->instRetry = 0;
+            obj->instTID = thisTID;
+            goto cleanup;
+        } else if (err == EBUSY) {
+            /* EBUSY indicates this thread or some other thread owns the lock
+             * If it's us, then excellent, similar to recursion.
+             * Else it's some other thread, let's retry for a bit until
+             * it is us. If we cannot get it, then avoid deadlock */
+            if (obj->instTID == thisTID) {
+                obj->instDepth++;
+                obj->instRetry = 0;
+                err = 0;
+                goto cleanup;
+            }
+            if (++obj->instRetry > 20)
+                goto cleanup;
+            usleep(100 * 1000); /* Give the owner a chance */
+        } else {
+            /* Don't handle other errors - return failure */
+            goto cleanup;
+        }
+    } while (1);
+
+ cleanup:
+    virMutexUnlock(&obj->instLock);
+    return err;
+}
+
+
+void
+virNWFilterObjEndInstAPI(virNWFilterObjPtr *obj)
+{
+    if (!*obj)
+        return;
+
+    virMutexLock(&(*obj)->instLock);
+
+    /* Once the last locker has called this EndInstAPI function, then
+     * we can clear the instTID and really release the Lock; otherwise,
+     * we'll just decrement the Refcnt for the object and Unlock our
+     * instLock which protects this code from ourselves. */
+    if (--(*obj)->instDepth == 0) {
+        (*obj)->instTID = 0;
+        virNWFilterObjUnlock(*obj);
+    }
+
+    virNWFilterObjUnref(*obj);
+    virMutexUnlock(&(*obj)->instLock);
+
     *obj = NULL;
 }
 
@@ -298,13 +400,30 @@ virNWFilterObjListFindByName(virNWFilterObjListPtr nwfilters,
 }
 
 
+/**
+ * To avoid the need to have recursive locks as a result of how the
+ * virNWFilterInstantiateFilter processing works, this API uses the
+ * virNWFilterObjTryLock processing in order to perform the pseudo
+ * recursive locking operation.
+ *
+ * NB: Use virNWFilterObjListFindByNameLocked since when called via
+ *     virNWFilterObjListAssignDef path, the lock will already be held.
+ *     For other callers, the single threaded driver level locking via
+ *     virNWFilterWriteLockFilterUpdates ensure that the AssignDef,
+ *     Undefine, and Reload will provide protection that the list cannot
+ *     be adjusted whilst we're processing. Additionally the driver has
+ *     a virNWFilterCallbackDriversLock which gets set to ensure other
+ *     consumers of the NWFilter data cannot be called whilst the
+ *     AssignDef, Undefine, or Reload occurs.
+ */
 virNWFilterObjPtr
 virNWFilterObjListFindInstantiateFilter(virNWFilterObjListPtr nwfilters,
                                         const char *filtername)
 {
     virNWFilterObjPtr obj;
+    int err;
 
-    if (!(obj = virNWFilterObjListFindByName(nwfilters, filtername))) {
+    if (!(obj = virNWFilterObjListFindByNameLocked(nwfilters, filtername))) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("referenced filter '%s' is missing"), filtername);
         return NULL;
@@ -313,7 +432,19 @@ virNWFilterObjListFindInstantiateFilter(virNWFilterObjListPtr nwfilters,
     if (virNWFilterObjWantRemoved(obj)) {
         virReportError(VIR_ERR_NO_NWFILTER,
                        _("Filter '%s' is in use."), filtername);
-        virNWFilterObjEndAPI(&obj);
+        virNWFilterObjUnref(obj);
+        return NULL;
+    }
+
+    if ((err = virNWFilterObjTryLock(obj)) != 0) {
+        virReportSystemError(err,
+                             _("Unable to get mutex for '%s' depth=%d "
+                               "tid=%llu mytid=%llu"),
+                             filtername, obj->instDepth,
+                             (unsigned long long)obj->instTID,
+                             (unsigned long long)pthread_self());
+        virNWFilterObjUnref(obj);
+        return NULL;
     }
 
     return obj;
@@ -424,6 +555,7 @@ virNWFilterObjListAssignDef(virNWFilterObjListPtr nwfilters,
     virNWFilterObjPtr obj;
     virNWFilterDefPtr objdef;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
+    int rebuild_ret;
 
     virObjectLock(nwfilters);
 
@@ -474,8 +606,24 @@ virNWFilterObjListAssignDef(virNWFilterObjListPtr nwfilters,
         }
 
         obj->newDef = def;
+
+        /* Since we have the obj lock, update the instTID
+         * and instDepth because the Rebuild will trigger
+         * the driver to start calling FindInstantiateFilter,
+         * which uses the TryLock processing in order to
+         * acquire and release locks. */
+        obj->instTID = pthread_self();
+        obj->instDepth = 1;
+
         /* trigger the update on VMs referencing the filter */
-        if (virNWFilterTriggerVMFilterRebuild() < 0) {
+        rebuild_ret = virNWFilterTriggerVMFilterRebuild();
+
+        /* We're done, we still hold the original lock, let's reset
+         * the instTID and instDepth for the next consumer */
+        obj->instTID = 0;
+        obj->instDepth = 0;
+
+        if (rebuild_ret < 0) {
             obj->newDef = NULL;
             virNWFilterObjEndAPI(&obj);
             virObjectUnlock(nwfilters);

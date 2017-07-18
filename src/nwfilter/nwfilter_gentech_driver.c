@@ -57,19 +57,50 @@ static virNWFilterTechDriverPtr filter_tech_drivers[] = {
     NULL
 };
 
-/* Serializes instantiation of filters. This is necessary
- * to avoid lock ordering deadlocks. eg virNWFilterInstantiateFilterUpdate
- * will hold a lock on a virNWFilterObjPtr. This in turn invokes
- * virNWFilterDoInstantiate which invokes virNWFilterDetermineMissingVarsRec
- * which invokes virNWFilterObjListFindInstantiateFilter. This iterates over
- * every single virNWFilterObjPtr in the list. So if 2 threads try to
- * instantiate a filter in parallel, they'll both hold 1 lock at the top level
- * in virNWFilterInstantiateFilterUpdate which will cause the other thread
- * to deadlock in virNWFilterObjListFindInstantiateFilter.
+/* NB: Upon return from virNWFilterObjListFindInstantiateFilter the nwfilter
+ * object will be locked via an NWFilter only call to virObjectTryLock as a
+ * way to implement recursive locking, but without requiring the usage of
+ * recursive lock for the object. This mechanism allows the nwfilter object
+ * to use the common virLockableObject API's rather than having to have
+ * recursive mutexes and lock/ref API's for the majority of calls while
+ * leaving the very special case of instantiation to be handled via its
+ * own recursive methodolgy (all handled in the nwfilter object code).
  *
- * XXX better long term solution is to make virNWFilterObjList use a
- * hash table as is done for virDomainObjList. You can then get
- * lockless lookup of objects by name.
+ * The virNWFilterObjListFindInstantiateFilter consumers are a complicated
+ * set of API's that are serialized via the updateMutex. For some consumers,
+ * a simple/shared read lock will suffice, while others will require the
+ * write lock. Serialization is also handled via a pair of driver mutexes
+ * virNWFilterWriteLockFilterUpdates and virNWFilterCallbackDriversLock.
+ *
+ * Processing of the instantiation code can be triggered via a direct
+ * nwfilterInstantiateFilter call or it may be triggered via a driver
+ * callback mechanism. The implementation is an interesting compilation of
+ * recursively called API's in order to handle the filter objects @def
+ * elements <filterref> and <rule> which define the ordering and usage
+ * of the filters.
+ *
+ * Since virNWFilterObjListFindInstantiateFilter provides a single entry
+ * reference point, it was modified to use the TryLock processing to
+ * check if the attempt to get the lock was being done by the same thread
+ * that originally obtained the lock. The corollary for the instantiation
+ * lock processing is usage of virNWFilterObjEndInstAPI when done with
+ * the object instead of virNWFilterObjEndAPI. The virNWFilterObjEndInstAPI
+ * must be used for the nwfilter lock obtained as a result of the call to
+ * virNWFilterObjListFindInstantiateFilter.
+ *
+ * XXX
+ * Some day perhaps the "matrix" of recursive callers and ways to get oneself
+ * very lost in this code will be "fixed" to be more orderly. For example,
+ * during virNWFilterDefToInst processing an object is fetched and placed
+ * into the inst->filters lookaside list during virNWFilterIncludeDefToRuleInst
+ * processing which then recursively calls virNWFilterDefToInst. The object
+ * is removed during virNWFilterInstReset, but in the mean time it's also
+ * possible to call virNWFilterDoInstantiate that has a completely separate
+ * path to calling virNWFilterObjListFindInstantiateFilter via the call to
+ * virNWFilterDetermineMissingVarsRec. This tangled web of interconnected
+ * callers also inludes virNWFilterInstantiateFilterUpdate as well. Each
+ * of these callers will use virNWFilterObjEndInstAPI in order to undo the
+ * lock and reference taken.
  */
 static virMutex updateMutex;
 
@@ -316,7 +347,7 @@ virNWFilterInstReset(virNWFilterInstPtr inst)
     size_t i;
 
     for (i = 0; i < inst->nfilters; i++)
-        virNWFilterObjEndAPI(&inst->filters[i]);
+        virNWFilterObjEndInstAPI(&inst->filters[i]);
     VIR_FREE(inst->filters);
     inst->nfilters = 0;
 
@@ -426,7 +457,7 @@ virNWFilterIncludeDefToRuleInst(virNWFilterDriverStatePtr driver,
     if (ret < 0)
         virNWFilterInstReset(inst);
     virNWFilterHashTableFree(tmpvars);
-    virNWFilterObjEndAPI(&obj);
+    virNWFilterObjEndInstAPI(&obj);
     return ret;
 }
 
@@ -544,7 +575,7 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
             /* create a temporary hashmap for depth-first tree traversal */
             if (!(tmpvars = virNWFilterCreateVarsFrom(inc->params, vars))) {
                 rc = -1;
-                virNWFilterObjEndAPI(&obj);
+                virNWFilterObjEndInstAPI(&obj);
                 break;
             }
 
@@ -568,7 +599,7 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
 
             virNWFilterHashTableFree(tmpvars);
 
-            virNWFilterObjEndAPI(&obj);
+            virNWFilterObjEndInstAPI(&obj);
             if (rc < 0)
                 break;
         }
@@ -842,7 +873,7 @@ virNWFilterInstantiateFilterUpdate(virNWFilterDriverStatePtr driver,
     virNWFilterHashTableFree(vars1);
 
  err_exit:
-    virNWFilterObjEndAPI(&obj);
+    virNWFilterObjEndInstAPI(&obj);
 
     VIR_FREE(str_ipaddr);
     VIR_FREE(str_macaddr);

@@ -44,6 +44,9 @@ struct _virNWFilterDriverState {
 void
 virNWFilterObjEndAPI(virNWFilterObjPtr *obj);
 
+void
+virNWFilterObjEndInstAPI(virNWFilterObjPtr *obj);
+
 virNWFilterDefPtr
 virNWFilterObjGetDef(virNWFilterObjPtr obj);
 

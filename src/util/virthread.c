@@ -84,6 +84,11 @@ void virMutexDestroy(virMutexPtr m)
     pthread_mutex_destroy(&m->lock);
 }
 
+int virMutexTryLock(virMutexPtr m)
+{
+    return pthread_mutex_trylock(&m->lock);
+}
+
 void virMutexLock(virMutexPtr m)
 {
     pthread_mutex_lock(&m->lock);
