@@ -21919,7 +21919,20 @@ virDomainControllerDefFormat(virBufferPtr buf,
     }
 
     if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI) {
-        if (def->opts.pciopts.modelName != VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_NONE) {
+        bool formatModelName = true;
+
+        if (def->opts.pciopts.modelName == VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_NONE)
+            formatModelName = false;
+
+        /* Don't format the model name for PHBs when migrating so that
+         * guests that only use the default one can be migrated to older
+         * libvirt version which don't know about PHBs at all */
+        if (virDomainControllerIsPCIHostBridge(def) &&
+            flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE) {
+            formatModelName = false;
+        }
+
+        if (formatModelName) {
             modelName = virDomainControllerPCIModelNameTypeToString(def->opts.pciopts.modelName);
             if (!modelName) {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
