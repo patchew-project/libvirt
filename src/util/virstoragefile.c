@@ -1688,8 +1688,8 @@ virStorageNetHostDefClear(virStorageNetHostDefPtr def)
     if (!def)
         return;
 
+    def->port = 0;
     VIR_FREE(def->name);
-    VIR_FREE(def->port);
     VIR_FREE(def->socket);
 }
 
@@ -1736,11 +1736,9 @@ virStorageNetHostDefCopy(size_t nhosts,
         virStorageNetHostDefPtr dst = &ret[i];
 
         dst->transport = src->transport;
+        dst->port = src->port;
 
         if (VIR_STRDUP(dst->name, src->name) < 0)
-            goto error;
-
-        if (VIR_STRDUP(dst->port, src->port) < 0)
             goto error;
 
         if (VIR_STRDUP(dst->socket, src->socket) < 0)
@@ -2430,10 +2428,8 @@ virStorageSourceParseBackingURI(virStorageSourcePtr src,
         tmp[0] = '\0';
     }
 
-    if (uri->port > 0) {
-        if (virAsprintf(&src->hosts->port, "%d", uri->port) < 0)
-            goto cleanup;
-    }
+    if (uri->port > 0)
+        src->hosts->port = uri->port;
 
     if (VIR_STRDUP(src->hosts->name, uri->server) < 0)
         goto cleanup;
@@ -2470,8 +2466,14 @@ virStorageSourceRBDAddHost(virStorageSourcePtr src,
     if (port) {
         *port = '\0';
         port += skip;
-        if (VIR_STRDUP(src->hosts[src->nhosts - 1].port, port) < 0)
+        if (virStrToLong_i(port, NULL, 10,
+                           &src->hosts[src->nhosts - 1].port) < 0 ||
+            src->hosts[src->nhosts - 1].port < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("failed to parse port number '%s'"),
+                           port);
             goto error;
+        }
     }
 
     parts = virStringSplit(hostport, "\\:", 0);
@@ -2488,7 +2490,6 @@ virStorageSourceRBDAddHost(virStorageSourcePtr src,
     return 0;
 
  error:
-    VIR_FREE(src->hosts[src->nhosts-1].port);
     VIR_FREE(src->hosts[src->nhosts-1].name);
     return -1;
 }
@@ -2638,7 +2639,7 @@ virStorageSourceParseNBDColonString(const char *nbdstr,
         if (VIR_STRDUP(src->hosts->socket, backing[2]) < 0)
             goto cleanup;
 
-   } else {
+    } else {
         if (VIR_STRDUP(src->hosts->name, backing[1]) < 0)
             goto cleanup;
 
@@ -2649,8 +2650,13 @@ virStorageSourceParseNBDColonString(const char *nbdstr,
             goto cleanup;
         }
 
-        if (VIR_STRDUP(src->hosts->port, backing[2]) < 0)
+        if (virStrToLong_i(backing[2], NULL, 10, &src->hosts->port) < 0 ||
+            src->hosts->port < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("failed to parse port number '%s'"),
+                           backing[2]);
             goto cleanup;
+        }
     }
 
     if (backing[3] && STRPREFIX(backing[3], "exportname=")) {
@@ -2824,8 +2830,16 @@ virStorageSourceParseBackingJSONInetSocketAddress(virStorageNetHostDefPtr host,
 
     host->transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
 
-    if (VIR_STRDUP(host->name, hostname) < 0 ||
-        VIR_STRDUP(host->port, port) < 0)
+    if (port &&
+        (virStrToLong_i(port, NULL, 10, &host->port) < 0 ||
+         host->port < 0)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("failed to parse port number '%s'"),
+                       port);
+        return -1;
+    }
+
+    if (VIR_STRDUP(host->name, hostname) < 0)
         return -1;
 
     return 0;
@@ -2985,11 +2999,12 @@ virStorageSourceParseBackingJSONiSCSI(virStorageSourcePtr src,
         goto cleanup;
 
     if ((port = strchr(src->hosts->name, ':'))) {
-        if (VIR_STRDUP(src->hosts->port, port + 1) < 0)
-            goto cleanup;
-
-        if (strlen(src->hosts->port) == 0)
-            VIR_FREE(src->hosts->port);
+        if (virStrToLong_i(port + 1, NULL, 10, &src->hosts->port) < 0 ||
+            src->hosts->port < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("failed to parse port number '%s'"),
+                           port + 1);
+        }
 
         *port = '\0';
     }
@@ -3050,8 +3065,14 @@ virStorageSourceParseBackingJSONNbd(virStorageSourcePtr src,
             if (VIR_STRDUP(src->hosts[0].name, host) < 0)
                 return -1;
 
-            if (VIR_STRDUP(src->hosts[0].port, port) < 0)
+            if (port &&
+                (virStrToLong_i(port, NULL, 10, &src->hosts[0].port) < 0 ||
+                 src->hosts[0].port < 0)) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("failed to parse port number '%s'"),
+                               port);
                 return -1;
+            }
         }
     }
 
@@ -3136,8 +3157,17 @@ virStorageSourceParseBackingJSONSSH(virStorageSourcePtr src,
             return -1;
     } else {
         src->hosts[0].transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
-        if (VIR_STRDUP(src->hosts[0].name, host) < 0 ||
-            VIR_STRDUP(src->hosts[0].port, port) < 0)
+
+        if (port &&
+            (virStrToLong_i(port, NULL, 10, &src->hosts[0].port) < 0 ||
+             src->hosts[0].port < 0)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("failed to parse port number '%s'"),
+                           port);
+            return -1;
+        }
+
+        if (VIR_STRDUP(src->hosts[0].name, host) < 0)
             return -1;
     }
 
@@ -3961,66 +3991,61 @@ virStorageSourceFindByNodeName(virStorageSourcePtr top,
 }
 
 
-static const char *
+static int
 virStorageSourceNetworkDefaultPort(virStorageNetProtocol protocol)
 {
     switch (protocol) {
         case VIR_STORAGE_NET_PROTOCOL_HTTP:
-            return "80";
+            return 80;
 
         case VIR_STORAGE_NET_PROTOCOL_HTTPS:
-            return "443";
+            return 443;
 
         case VIR_STORAGE_NET_PROTOCOL_FTP:
-            return "21";
+            return 21;
 
         case VIR_STORAGE_NET_PROTOCOL_FTPS:
-            return "990";
+            return 990;
 
         case VIR_STORAGE_NET_PROTOCOL_TFTP:
-            return "69";
+            return 69;
 
         case VIR_STORAGE_NET_PROTOCOL_SHEEPDOG:
-            return "7000";
+            return 7000;
 
         case VIR_STORAGE_NET_PROTOCOL_NBD:
-            return "10809";
+            return 10809;
 
         case VIR_STORAGE_NET_PROTOCOL_SSH:
-            return "22";
+            return 22;
 
         case VIR_STORAGE_NET_PROTOCOL_ISCSI:
-            return "3260";
+            return 3260;
 
         case VIR_STORAGE_NET_PROTOCOL_GLUSTER:
-            return "24007";
+            return 24007;
 
         case VIR_STORAGE_NET_PROTOCOL_RBD:
             /* we don't provide a default for RBD */
-            return NULL;
+            return 0;
 
         case VIR_STORAGE_NET_PROTOCOL_LAST:
         case VIR_STORAGE_NET_PROTOCOL_NONE:
-            return NULL;
+            return 0;
     }
 
-    return NULL;
+    return 0;
 }
 
 
-int
+void
 virStorageSourceNetworkAssignDefaultPorts(virStorageSourcePtr src)
 {
     size_t i;
 
     for (i = 0; i < src->nhosts; i++) {
         if (src->hosts[i].transport == VIR_STORAGE_NET_HOST_TRANS_TCP &&
-            src->hosts[i].port == NULL) {
-            if (VIR_STRDUP(src->hosts[i].port,
-                           virStorageSourceNetworkDefaultPort(src->protocol)) < 0)
-                return -1;
-        }
+            src->hosts[i].port == 0)
+            src->hosts[i].port = virStorageSourceNetworkDefaultPort(src->protocol);
     }
-
-    return 0;
 }

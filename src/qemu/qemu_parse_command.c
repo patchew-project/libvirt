@@ -92,8 +92,7 @@ qemuParseDriveURIString(virDomainDiskDefPtr def, virURIPtr uri,
         if (VIR_STRDUP(def->src->hosts->name, uri->server) < 0)
             goto error;
 
-        if (virAsprintf(&def->src->hosts->port, "%d", uri->port) < 0)
-            goto error;
+        def->src->hosts->port = uri->port;
     } else {
         def->src->hosts->name = NULL;
         def->src->hosts->port = 0;
@@ -240,8 +239,13 @@ qemuParseNBDString(virDomainDiskDefPtr disk)
         if (src)
             *src++ = '\0';
 
-        if (VIR_STRDUP(h->port, port) < 0)
+        if (virStrToLong_i(port, NULL, 10, &h->port) < 0 ||
+            h->port < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("failed to parse port number '%s'"),
+                           port);
             goto error;
+        }
     }
 
     if (src && STRPREFIX(src, "exportname=")) {
@@ -730,8 +734,13 @@ qemuParseCommandLineDisk(virDomainXMLOptionPtr xmlopt,
                             goto error;
                         def->src->nhosts = 1;
                         def->src->hosts->name = def->src->path;
-                        if (VIR_STRDUP(def->src->hosts->port, port) < 0)
+                        if (virStrToLong_i(port, NULL, 10, &def->src->hosts->port) < 0 ||
+                            def->src->hosts->port < 0) {
+                            virReportError(VIR_ERR_INTERNAL_ERROR,
+                                           _("failed to parse port number '%s'"),
+                                           port);
                             goto error;
+                        }
                         def->src->hosts->transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
                         def->src->hosts->socket = NULL;
                         if (VIR_STRDUP(def->src->path, vdi) < 0)
@@ -2005,8 +2014,13 @@ qemuParseCommandLine(virCapsPtr caps,
                             goto error;
                         disk->src->nhosts = 1;
                         disk->src->hosts->name = disk->src->path;
-                        if (VIR_STRDUP(disk->src->hosts->port, port) < 0)
+                        if (virStrToLong_i(port, NULL, 10, &disk->src->hosts->port) < 0 ||
+                            disk->src->hosts->port < 0) {
+                            virReportError(VIR_ERR_INTERNAL_ERROR,
+                                           _("failed to parse port number '%s'"),
+                                           port);
                             goto error;
+                        }
                         if (VIR_STRDUP(disk->src->path, vdi) < 0)
                             goto error;
                     }
@@ -2540,13 +2554,18 @@ qemuParseCommandLine(virCapsPtr caps,
             }
             port = strchr(token, ':');
             if (port) {
+                int port_i;
                 *port++ = '\0';
-                if (VIR_STRDUP(port, port) < 0) {
+                if (virStrToLong_i(port, NULL, 10, &port_i) < 0 ||
+                    port_i < 0) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   _("failed to parse port number '%s'"),
+                                   port);
                     VIR_FREE(hosts);
                     goto error;
                 }
+                first_rbd_disk->src->hosts[first_rbd_disk->src->nhosts].port = port_i;
             }
-            first_rbd_disk->src->hosts[first_rbd_disk->src->nhosts].port = port;
             if (VIR_STRDUP(first_rbd_disk->src->hosts[first_rbd_disk->src->nhosts].name,
                            token) < 0) {
                 VIR_FREE(hosts);

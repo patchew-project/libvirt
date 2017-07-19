@@ -465,7 +465,7 @@ qemuBlockStorageSourceBuildHostsJSONSocketAddress(virStorageSourcePtr src,
             if (virJSONValueObjectCreate(&server,
                                          "s:type", transport,
                                          "s:host", host->name,
-                                         "s:port", host->port,
+                                         "i:port", host->port,
                                          NULL) < 0)
                 goto cleanup;
             break;

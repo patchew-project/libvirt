@@ -491,22 +491,6 @@ qemuSafeSerialParamValue(const char *value)
 }
 
 
-static int
-qemuNetworkDriveGetPort(const char *port)
-{
-    int ret = 0;
-
-    if (virStrToLong_i(port, NULL, 10, &ret) < 0 || ret < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("failed to parse port number '%s'"),
-                       port);
-        return -1;
-    }
-
-    return ret;
-}
-
-
 /**
  * qemuBuildSecretInfoProps:
  * @secinfo: pointer to the secret info object
@@ -825,8 +809,7 @@ qemuBuildNetworkDriveURI(virStorageSourcePtr src,
         goto cleanup;
 
     if (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_TCP) {
-        if ((uri->port = qemuNetworkDriveGetPort(src->hosts->port)) < 0)
-            goto cleanup;
+        uri->port = src->hosts->port;
 
         if (VIR_STRDUP(uri->scheme,
                        virStorageNetProtocolTypeToString(src->protocol)) < 0)
@@ -897,8 +880,7 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
 
                 switch (src->hosts->transport) {
                 case VIR_STORAGE_NET_HOST_TRANS_TCP:
-                    virBufferStrcat(&buf, src->hosts->name, ":",
-                                    src->hosts->port, NULL);
+                    virBufferAsprintf(&buf, "%s:%d", src->hosts->name, src->hosts->port);
                     break;
 
                 case VIR_STORAGE_NET_HOST_TRANS_UNIX:
@@ -953,9 +935,9 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
                 if (virAsprintf(&ret, "sheepdog:%s", src->path) < 0)
                     goto cleanup;
             } else if (src->nhosts == 1) {
-                if (virAsprintf(&ret, "sheepdog:%s:%s:%s",
+                if (virAsprintf(&ret, "sheepdog:%s:%d:%s",
                                 src->hosts->name,
-                                src->hosts->port ? src->hosts->port : "7000",
+                                src->hosts->port ? src->hosts->port : 7000,
                                 src->path) < 0)
                     goto cleanup;
             } else {
@@ -996,7 +978,7 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
                         virBufferAsprintf(&buf, "%s", src->hosts[i].name);
 
                     if (src->hosts[i].port)
-                        virBufferAsprintf(&buf, "\\:%s", src->hosts[i].port);
+                        virBufferAsprintf(&buf, "\\:%d", src->hosts[i].port);
                 }
             }
 
