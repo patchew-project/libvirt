@@ -2728,6 +2728,7 @@ virMutexUnlock;
 virOnce;
 virRWLockDestroy;
 virRWLockInit;
+virRWLockInitPreferWriter;
 virRWLockRead;
 virRWLockUnlock;
 virRWLockWrite;
