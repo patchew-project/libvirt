@@ -5303,11 +5303,7 @@ testNodeDeviceObjFindByName(testDriverPtr driver,
 {
     virNodeDeviceObjPtr obj;
 
-    testDriverLock(driver);
-    obj = virNodeDeviceObjListFindByName(driver->devs, name);
-    testDriverUnlock(driver);
-
-    if (!obj)
+    if (!(obj = virNodeDeviceObjListFindByName(driver->devs, name)))
         virReportError(VIR_ERR_NO_NODE_DEVICE,
                        _("no node device with matching name '%s'"),
                        name);
@@ -5322,15 +5318,10 @@ testNodeNumOfDevices(virConnectPtr conn,
                      unsigned int flags)
 {
     testDriverPtr driver = conn->privateData;
-    int ndevs = 0;
 
     virCheckFlags(0, -1);
 
-    testDriverLock(driver);
-    ndevs = virNodeDeviceObjListNumOfDevices(driver->devs, conn, cap, NULL);
-    testDriverUnlock(driver);
-
-    return ndevs;
+    return virNodeDeviceObjListNumOfDevices(driver->devs, conn, cap, NULL);
 }
 
 
@@ -5342,16 +5333,11 @@ testNodeListDevices(virConnectPtr conn,
                     unsigned int flags)
 {
     testDriverPtr driver = conn->privateData;
-    int nnames = 0;
 
     virCheckFlags(0, -1);
 
-    testDriverLock(driver);
-    nnames = virNodeDeviceObjListGetNames(driver->devs, conn, NULL,
-                                          cap, names, maxnames);
-    testDriverUnlock(driver);
-
-    return nnames;
+    return virNodeDeviceObjListGetNames(driver->devs, conn, NULL,
+                                        cap, names, maxnames);
 }
 
 
@@ -5566,8 +5552,6 @@ testNodeDeviceCreateXML(virConnectPtr conn,
 
     virCheckFlags(0, NULL);
 
-    testDriverLock(driver);
-
     if (!(def = virNodeDeviceDefParseString(xmlDesc, CREATE_DEVICE, NULL)))
         goto cleanup;
 
@@ -5604,7 +5588,6 @@ testNodeDeviceCreateXML(virConnectPtr conn,
 
  cleanup:
     virNodeDeviceObjEndAPI(&obj);
-    testDriverUnlock(driver);
     virNodeDeviceDefFree(def);
     virObjectUnref(dev);
     VIR_FREE(wwnn);
