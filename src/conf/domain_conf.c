@@ -3989,12 +3989,20 @@ virDomainDefPostParseMemory(virDomainDefPtr def,
     unsigned long long numaMemory = 0;
     unsigned long long hotplugMemory = 0;
 
-    /* Attempt to infer the initial memory size from the sum NUMA memory sizes
-     * in case ABI updates are allowed or the <memory> element wasn't specified */
+    /* Attempt to infer the initial memory size from the sum NUMA memory
+     * sizes in case ABI updates are allowed or the <memory> element
+     * wasn't specified.  Also cap the vcpu count to the sum of NUMA cpus
+     * allocated for all nodes. */
     if (def->mem.total_memory == 0 ||
         parseFlags & VIR_DOMAIN_DEF_PARSE_ABI_UPDATE ||
-        parseFlags & VIR_DOMAIN_DEF_PARSE_ABI_UPDATE_MIGRATION)
+        parseFlags & VIR_DOMAIN_DEF_PARSE_ABI_UPDATE_MIGRATION) {
+        unsigned int numaVcpus = 0;
+
+        if ((numaVcpus = virDomainNumaGetCPUCountTotal(def->numa)))
+            virDomainDefSetVcpus(def, numaVcpus);
+
         numaMemory = virDomainNumaGetMemorySize(def->numa);
+    }
 
     /* calculate the sizes of hotplug memory */
     for (i = 0; i < def->nmems; i++)

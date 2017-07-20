@@ -520,7 +520,14 @@
       <dt><code>vcpu</code></dt>
       <dd>The content of this element defines the maximum number of virtual
         CPUs allocated for the guest OS, which must be between 1 and
-        the maximum supported by the hypervisor.
+        the maximum supported by the hypervisor. If a <code>numa</code>
+        element is contained within the <code>cpu</code> element, the
+        number of virtual CPUs to be allocated is compared with the sum
+        of the <code>cpus</code> attributes across the <code>cell</code>
+        elements within the <code>numa</code> element. If the number of
+        virtual CPUs is greater than the sum of the <code>cpus</code>
+        attributes, the number of virtual CPUs is capped at sum of the
+        <code>cpus</code> attributes.
         <dl>
          <dt><code>cpuset</code></dt>
          <dd>
