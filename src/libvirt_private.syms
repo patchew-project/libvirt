@@ -2656,6 +2656,7 @@ virStringListJoin;
 virStringListLength;
 virStringListRemove;
 virStringMatch;
+virStringParsePort;
 virStringReplace;
 virStringSearch;
 virStringSortCompare;
