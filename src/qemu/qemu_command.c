@@ -809,8 +809,7 @@ qemuBuildNetworkDriveURI(virStorageSourcePtr src,
         goto cleanup;
 
     if (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_TCP) {
-        if (virStrToLong_i(src->hosts->port, NULL, 10, &uri->port) < 0 ||
-            uri->port < 0) {
+        if (virStrToLong_uip(src->hosts->port, NULL, 10, &uri->port) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("failed to parse port number '%s'"),
                            src->hosts->port);
