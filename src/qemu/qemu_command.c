@@ -491,22 +491,6 @@ qemuSafeSerialParamValue(const char *value)
 }
 
 
-static int
-qemuNetworkDriveGetPort(const char *port)
-{
-    int ret = 0;
-
-    if (virStrToLong_i(port, NULL, 10, &ret) < 0 || ret < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("failed to parse port number '%s'"),
-                       port);
-        return -1;
-    }
-
-    return ret;
-}
-
-
 /**
  * qemuBuildSecretInfoProps:
  * @secinfo: pointer to the secret info object
@@ -825,8 +809,13 @@ qemuBuildNetworkDriveURI(virStorageSourcePtr src,
         goto cleanup;
 
     if (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_TCP) {
-        if ((uri->port = qemuNetworkDriveGetPort(src->hosts->port)) < 0)
+        if (virStrToLong_i(src->hosts->port, NULL, 10, &uri->port) < 0 ||
+            uri->port < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("failed to parse port number '%s'"),
+                           src->hosts->port);
             goto cleanup;
+        }
 
         if (VIR_STRDUP(uri->scheme,
                        virStorageNetProtocolTypeToString(src->protocol)) < 0)
