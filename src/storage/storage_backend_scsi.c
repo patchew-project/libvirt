@@ -231,22 +231,47 @@ checkParent(virConnectPtr conn,
     if (!conn)
         return true;
 
-    if (virSCSIHostGetNumber(parent_name, &host_num) < 0) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("parent '%s' is not properly formatted"),
-                       parent_name);
-        goto cleanup;
-    }
+    /* If there's a parent_name, then make sure it's valid */
+    if (parent_name) {
+        if (virSCSIHostGetNumber(parent_name, &host_num) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("parent '%s' is not properly formatted"),
+                           parent_name);
+            goto cleanup;
+        }
 
-    if (!virVHBAPathExists(NULL, host_num)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("parent '%s' is not an fc_host for the wwnn/wwpn"),
-                       parent_name);
-        goto cleanup;
+        if (!virVHBAPathExists(NULL, host_num)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("parent '%s' is not an fc_host for the wwnn/wwpn"),
+                           parent_name);
+            goto cleanup;
+        }
     }
 
     if (virAsprintf(&scsi_host_name, "scsi_%s", name) < 0)
         goto cleanup;
+
+    if (virSCSIHostGetNumber(scsi_host_name, &host_num) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("host name '%s' is not properly formatted"),
+                       name);
+        goto cleanup;
+    }
+
+    /* If scsi_host_name is vport capable, then it's an HBA. This is
+     * a configuration error as the wwnn/wwpn should only be for a vHBA */
+    if (virVHBAIsVportCapable(NULL, host_num)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("the wwnn/wwpn for '%s' are assigned to an HBA"),
+                       scsi_host_name);
+        goto cleanup;
+    }
+
+    /* No parent name, then no need to get/compare against vhba_parent */
+    if (!parent_name) {
+        retval = true;
+        goto cleanup;
+    }
 
     if (!(vhba_parent = virNodeDeviceGetParentName(conn, scsi_host_name)))
         goto cleanup;
@@ -288,9 +313,7 @@ createVport(virConnectPtr conn,
      * this pool and we don't have to create the vHBA
      */
     if ((name = virVHBAGetHostByWWN(NULL, fchost->wwnn, fchost->wwpn))) {
-        /* If a parent was provided, let's make sure the 'name' we've
-         * retrieved has the same parent. If not this will cause failure. */
-        if (!fchost->parent || checkParent(conn, name, fchost->parent))
+        if (checkParent(conn, name, fchost->parent))
             ret = 0;
 
         goto cleanup;
