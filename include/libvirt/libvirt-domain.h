@@ -1043,6 +1043,10 @@ int virDomainMigrateSetMaxDowntime (virDomainPtr domain,
                                     unsigned long long downtime,
                                     unsigned int flags);
 
+int virDomainMigrateGetMaxDowntime (virDomainPtr domain,
+                                    unsigned long long *downtime,
+                                    unsigned int flags);
+
 int virDomainMigrateGetCompressionCache(virDomainPtr domain,
                                         unsigned long long *cacheSize,
                                         unsigned int flags);
