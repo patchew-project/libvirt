@@ -431,7 +431,10 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "virtio.ats",
               "loadparm",
               "spapr-pci-host-bridge",
+
+              /* 265 */
               "spapr-pci-host-bridge.numa_node",
+              "vnc-multi-servers"
     );
 
 
@@ -3221,6 +3224,7 @@ static struct virQEMUCapsCommandLineProps virQEMUCapsCommandLine[] = {
     { "spice", "rendernode", QEMU_CAPS_SPICE_RENDERNODE },
     { "machine", "kernel_irqchip", QEMU_CAPS_MACHINE_KERNEL_IRQCHIP },
     { "machine", "loadparm", QEMU_CAPS_LOADPARM },
+    { "vnc", "vnc", QEMU_CAPS_VNC_MULTI_SERVERS },
 };
 
 static int
