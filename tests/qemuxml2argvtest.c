@@ -2655,6 +2655,7 @@ mymain(void)
             QEMU_CAPS_NAME_DEBUG_THREADS,
             QEMU_CAPS_OBJECT_SECRET,
             QEMU_CAPS_VNC,
+            QEMU_CAPS_VNC_MULTI_SERVERS,
             QEMU_CAPS_NAME_GUEST,
             QEMU_CAPS_DEVICE_CIRRUS_VGA,
             QEMU_CAPS_SPICE,
