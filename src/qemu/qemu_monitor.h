@@ -595,6 +595,9 @@ int qemuMonitorSavePhysicalMemory(qemuMonitorPtr mon,
 int qemuMonitorSetMigrationSpeed(qemuMonitorPtr mon,
                                  unsigned long bandwidth);
 
+int qemuMonitorGetMigrationDowntime(qemuMonitorPtr mon,
+                                    unsigned long long *downtime);
+
 int qemuMonitorSetMigrationDowntime(qemuMonitorPtr mon,
                                     unsigned long long downtime);
 

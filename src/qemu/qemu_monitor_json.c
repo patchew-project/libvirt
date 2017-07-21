@@ -2450,6 +2450,46 @@ int qemuMonitorJSONEjectMedia(qemuMonitorPtr mon,
     virJSONValueFree(cmd);
     virJSONValueFree(reply);
     return ret;
+} 
+
+
+int qemuMonitorJSONGetMigrationDowntime(qemuMonitorPtr mon,
+                                        unsigned long long *downtime)
+{
+    int ret = -1;
+    virJSONValuePtr cmd;
+    virJSONValuePtr reply = NULL;
+    virJSONValuePtr result;
+    unsigned int value = 0;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("query-migrate-parameters", NULL)))
+        return -1;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONHasError(reply, "CommandNotFound"))
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
+        goto cleanup;
+
+    if(!(result = virJSONValueObjectGet(reply, "return")))
+        goto cleanup;
+
+    if (virJSONValueObjectGetNumberUint(result, "downtime-limit", &value) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("missing migration capabilities"));
+        goto cleanup;
+    }
+
+    *downtime = value;
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    return ret;
 }
 
 
