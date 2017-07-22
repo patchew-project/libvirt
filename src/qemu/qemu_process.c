@@ -5847,6 +5847,8 @@ qemuProcessStart(virConnectPtr conn,
     if (!migrateFrom && !snapshot)
         flags |= VIR_QEMU_PROCESS_START_NEW;
 
+    vm->starting = true;
+
     if (qemuProcessInit(driver, vm, updatedCPU,
                         asyncJob, !!migrateFrom, flags) < 0)
         goto cleanup;
@@ -5892,6 +5894,7 @@ qemuProcessStart(virConnectPtr conn,
     ret = 0;
 
  cleanup:
+    vm->starting = false;
     qemuProcessIncomingDefFree(incoming);
     return ret;
 

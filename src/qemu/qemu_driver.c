@@ -7317,6 +7317,12 @@ qemuDomainUndefineFlags(virDomainPtr dom,
     if (!(vm = qemuDomObjFromDomain(dom)))
         return -1;
 
+    if (vm->starting) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       "%s", _("cannot undefine during domain starting up"));
+        goto cleanup;
+    }
+
     cfg = virQEMUDriverGetConfig(driver);
 
     if (virDomainUndefineFlagsEnsureACL(dom->conn, vm->def) < 0)
