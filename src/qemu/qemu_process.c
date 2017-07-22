@@ -5259,6 +5259,16 @@ qemuProcessPrepareDomain(virConnectPtr conn,
             goto cleanup;
     }
 
+    VIR_DEBUG("Updating memory source nodes");
+    for (i = 0; i < vm->def->nmems; i++) {
+        virDomainMemoryDefPtr mem = vm->def->mems[i];
+        if (priv->autoNodeset && mem && mem->sourceNodes) {
+            virBitmapFree(mem->sourceNodes);
+            if (!(mem->sourceNodes = virBitmapNewCopy(priv->autoNodeset)))
+                goto cleanup;
+        }
+    }
+
     /* Whether we should use virtlogd as stdio handler for character
      * devices source backend. */
     if (cfg->stdioLogD &&
