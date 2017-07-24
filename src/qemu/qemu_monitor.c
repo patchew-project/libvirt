@@ -2552,6 +2552,18 @@ qemuMonitorSetMigrationDowntime(qemuMonitorPtr mon,
 
 
 int
+qemuMonitorGetMigrationDowntime(qemuMonitorPtr mon,
+                                unsigned long long *downtime)
+{
+    VIR_DEBUG("downtime=%p", downtime);
+
+    QEMU_CHECK_MONITOR_JSON(mon);
+
+    return qemuMonitorJSONGetMigrationDowntime(mon, downtime);
+}
+
+
+int
 qemuMonitorGetMigrationCacheSize(qemuMonitorPtr mon,
                                  unsigned long long *cacheSize)
 {
