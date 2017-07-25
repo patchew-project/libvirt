@@ -5595,7 +5595,7 @@ qemuProcessLaunch(virConnectPtr conn,
     }
 
     VIR_DEBUG("Setting up domain cgroup (if required)");
-    if (qemuSetupCgroup(driver, vm, nnicindexes, nicindexes) < 0)
+    if (qemuSetupCgroup(vm, nnicindexes, nicindexes) < 0)
         goto cleanup;
 
     if (!(priv->perf = virPerfNew()))
@@ -6821,7 +6821,7 @@ qemuProcessReconnect(void *opaque)
     if (qemuHostdevUpdateActiveDomainDevices(driver, obj->def) < 0)
         goto error;
 
-    if (qemuConnectCgroup(driver, obj) < 0)
+    if (qemuConnectCgroup(obj) < 0)
         goto error;
 
     if (qemuDomainPerfRestart(obj) < 0)
