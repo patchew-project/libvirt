@@ -3085,11 +3085,27 @@ qemuDomainDefValidate(const virDomainDef *def,
     virQEMUCapsPtr qemuCaps = NULL;
     unsigned int topologycpus;
     int ret = -1;
+    size_t i;
 
     if (!(qemuCaps = virQEMUCapsCacheLookup(caps,
                                             driver->qemuCapsCache,
                                             def->emulator)))
         goto cleanup;
+
+    /* Restrict usage of unsupported clock sources */
+    for (i = 0; i < def->clock.ntimers; i++) {
+        virDomainTimerDefPtr timer = def->clock.timers[i];
+        if ((!(virQEMUCapsGet(qemuCaps, QEMU_CAPS_NO_HPET)) &&
+             (timer->name == VIR_DOMAIN_TIMER_NAME_HPET)) ||
+            (!(virQEMUCapsGet(qemuCaps, QEMU_CAPS_NO_KVM_PIT)) &&
+             (timer->name == VIR_DOMAIN_TIMER_NAME_PIT))) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unsupported clock timer '%s' for %s architecture"),
+                           virDomainTimerNameTypeToString(def->clock.timers[i]->name),
+                           virArchToString(def->os.arch));
+            goto cleanup;
+        }
+    }
 
     if (def->mem.min_guarantee) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
