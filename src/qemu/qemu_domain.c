@@ -3105,6 +3105,14 @@ qemuDomainDefValidate(const virDomainDef *def,
                            virArchToString(def->os.arch));
             goto cleanup;
         }
+        /* /* Only RTC timer is supported as hwclock for sPAPR machines */
+        if (ARCH_IS_PPC64(def->os.arch) && timer->name != VIR_DOMAIN_TIMER_NAME_RTC) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unsupported clock timer '%s' for %s architecture"),
+                           virDomainTimerNameTypeToString(def->clock.timers[i]->name),
+                           virArchToString(def->os.arch));
+            goto cleanup;
+        }
     }
 
     if (def->mem.min_guarantee) {
