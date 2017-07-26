@@ -62,10 +62,8 @@ QEMULIB_LDFLAGS = \
 	-rpath /evil/libtool/hack/to/force/shared/lib/creation \
 	$(MINGW_EXTRA_LDFLAGS)
 
-if WITH_DRIVER_MODULES
 INCLUDES += \
 	-DTEST_DRIVER_DIR=\"$(top_builddir)/src/.libs\"
-endif WITH_DRIVER_MODULES
 
 PROBES_O =
 if WITH_DTRACE_PROBES
@@ -262,9 +260,7 @@ endif WITH_QEMU
 endif WITH_ATTR
 endif WITH_SECDRIVER_SELINUX
 
-if WITH_DRIVER_MODULES
 test_programs += virdrivermoduletest
-endif WITH_DRIVER_MODULES
 
 # This is a fake SSH we use from virnetsockettest
 ssh_SOURCES = ssh.c
@@ -1395,11 +1391,9 @@ utiltest_SOURCES = \
 	utiltest.c testutils.h testutils.c
 utiltest_LDADD = $(LDADDS)
 
-if WITH_DRIVER_MODULES
 virdrivermoduletest_SOURCES = \
 	virdrivermoduletest.c testutils.h testutils.c
 virdrivermoduletest_LDADD = $(LDADDS)
-endif WITH_DRIVER_MODULES
 
 if WITH_LIBVIRTD
 eventtest_SOURCES = \
