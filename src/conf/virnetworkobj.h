@@ -235,7 +235,7 @@ int
 virNetworkObjListGetNames(virNetworkObjListPtr nets,
                           bool active,
                           char **names,
-                          int nnames,
+                          int maxnames,
                           virNetworkObjListFilter filter,
                           virConnectPtr conn);
 
