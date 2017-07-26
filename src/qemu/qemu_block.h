@@ -34,6 +34,10 @@ struct qemuBlockNodeNameBackingChainData {
     char *nodeformat;   /* node name of the format layer */
     char *nodestorage;  /* node name of the storage backing the format node */
 
+    /* for testing purposes */
+    char *drvformat;
+    char *drvstorage;
+
     qemuBlockNodeNameBackingChainDataPtr backing;
 };
 
