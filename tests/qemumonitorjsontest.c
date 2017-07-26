@@ -2763,6 +2763,9 @@ testBlockNodeNameDetect(const void *opaque)
 
     virBufferTrim(&buf, "\n", -1);
 
+    if (virBufferUse(&buf) == 0)
+        virBufferAddLit(&buf, "nothing\n");
+
     if (virBufferCheckError(&buf) < 0)
         goto cleanup;
 
@@ -2931,6 +2934,8 @@ mymain(void)
     DO_TEST_BLOCK_NODE_DETECT("relative");
     DO_TEST_BLOCK_NODE_DETECT("gluster");
     DO_TEST_BLOCK_NODE_DETECT("blockjob");
+    DO_TEST_BLOCK_NODE_DETECT("old");
+    DO_TEST_BLOCK_NODE_DETECT("empty");
 
 #undef DO_TEST_BLOCK_NODE_DETECT
 
