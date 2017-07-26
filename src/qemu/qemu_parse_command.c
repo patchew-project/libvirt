@@ -1118,8 +1118,14 @@ qemuParseCommandLineNet(virDomainXMLOptionPtr xmlopt,
                 goto cleanup;
             }
         } else if (STREQ(keywords[i], "model")) {
-            def->model = values[i];
-            values[i] = NULL;
+            if ((def->model = virDomainNetModelTypeFromString(values[i])) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("Unknown network interface model '%s'"),
+                               values[i]);
+                virDomainNetDefFree(def);
+                def = NULL;
+                goto cleanup;
+            }
         } else if (STREQ(keywords[i], "vhost")) {
             if ((values[i] == NULL) || STREQ(values[i], "on")) {
                 def->driver.virtio.name = VIR_DOMAIN_NET_BACKEND_TYPE_VHOST;

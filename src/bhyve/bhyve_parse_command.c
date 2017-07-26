@@ -515,8 +515,12 @@ bhyveParsePCINet(virDomainDefPtr def,
     if (VIR_STRDUP(net->data.bridge.brname, "virbr0") < 0)
         goto error;
 
-    if (VIR_STRDUP(net->model, model) < 0)
+    if ((net->model = virDomainNetModelTypeFromString(model)) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("NIC model '%s' is not supported"),
+                       model);
         goto error;
+    }
 
     net->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
     net->info.addr.pci.slot = pcislot;

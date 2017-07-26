@@ -433,6 +433,8 @@ virDomainNetGetActualType;
 virDomainNetGetActualVirtPortProfile;
 virDomainNetGetActualVlan;
 virDomainNetInsert;
+virDomainNetModelTypeFromString;
+virDomainNetModelTypeToString;
 virDomainNetRemove;
 virDomainNetRemoveHostdev;
 virDomainNetTypeFromString;

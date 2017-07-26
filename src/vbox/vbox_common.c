@@ -1294,7 +1294,8 @@ vboxAttachNetwork(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
         macaddrvbox[VIR_MAC_STRING_BUFLEN - 6] = '\0';
 
         VIR_DEBUG("NIC(%zu): Type:   %d", i, def->nets[i]->type);
-        VIR_DEBUG("NIC(%zu): Model:  %s", i, def->nets[i]->model);
+        VIR_DEBUG("NIC(%zu): Model:  %s", i,
+                  NULLSTR(virDomainNetModelTypeToString(def->nets[i]->model)));
         VIR_DEBUG("NIC(%zu): Mac:    %s", i, macaddr);
         VIR_DEBUG("NIC(%zu): ifname: %s", i, def->nets[i]->ifname);
         if (def->nets[i]->type == VIR_DOMAIN_NET_TYPE_NETWORK) {
@@ -1324,18 +1325,18 @@ vboxAttachNetwork(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
         gVBoxAPI.UINetworkAdapter.SetEnabled(adapter, 1);
 
         if (def->nets[i]->model) {
-            if (STRCASEEQ(def->nets[i]->model, "Am79C970A")) {
+            if (def->nets[i]->model == VIR_DOMAIN_NET_MODEL_AM79C970A) {
                 adapterType = NetworkAdapterType_Am79C970A;
-            } else if (STRCASEEQ(def->nets[i]->model, "Am79C973")) {
+            } else if (def->nets[i]->model == VIR_DOMAIN_NET_MODEL_AM79C973) {
                 adapterType = NetworkAdapterType_Am79C973;
-            } else if (STRCASEEQ(def->nets[i]->model, "82540EM")) {
+            } else if (def->nets[i]->model == VIR_DOMAIN_NET_MODEL_82540EM) {
                 adapterType = NetworkAdapterType_I82540EM;
-            } else if (STRCASEEQ(def->nets[i]->model, "82545EM")) {
+            } else if (def->nets[i]->model == VIR_DOMAIN_NET_MODEL_82545EM) {
                 adapterType = NetworkAdapterType_I82545EM;
-            } else if (STRCASEEQ(def->nets[i]->model, "82543GC")) {
+            } else if (def->nets[i]->model == VIR_DOMAIN_NET_MODEL_82543GC) {
                 adapterType = NetworkAdapterType_I82543GC;
             } else if (gVBoxAPI.APIVersion >= 3000051 &&
-                       STRCASEEQ(def->nets[i]->model, "virtio")) {
+                       def->nets[i]->model == VIR_DOMAIN_NET_MODEL_VIRTIO) {
                 /* Only vbox 3.1 and later support NetworkAdapterType_Virto */
                 adapterType = NetworkAdapterType_Virtio;
             }
@@ -3526,19 +3527,19 @@ vboxDumpNetwork(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine, PRUi
 
                 gVBoxAPI.UINetworkAdapter.GetAdapterType(adapter, &adapterType);
                 if (adapterType == NetworkAdapterType_Am79C970A) {
-                    ignore_value(VIR_STRDUP(def->nets[netAdpIncCnt]->model, "Am79C970A"));
+                    def->nets[netAdpIncCnt]->model = VIR_DOMAIN_NET_MODEL_AM79C970A;
                 } else if (adapterType == NetworkAdapterType_Am79C973) {
-                    ignore_value(VIR_STRDUP(def->nets[netAdpIncCnt]->model, "Am79C973"));
+                    def->nets[netAdpIncCnt]->model = VIR_DOMAIN_NET_MODEL_AM79C973;
                 } else if (adapterType == NetworkAdapterType_I82540EM) {
-                    ignore_value(VIR_STRDUP(def->nets[netAdpIncCnt]->model, "82540EM"));
+                    def->nets[netAdpIncCnt]->model = VIR_DOMAIN_NET_MODEL_82540EM;
                 } else if (adapterType == NetworkAdapterType_I82545EM) {
-                    ignore_value(VIR_STRDUP(def->nets[netAdpIncCnt]->model, "82545EM"));
+                    def->nets[netAdpIncCnt]->model = VIR_DOMAIN_NET_MODEL_82545EM;
                 } else if (adapterType == NetworkAdapterType_I82543GC) {
-                    ignore_value(VIR_STRDUP(def->nets[netAdpIncCnt]->model, "82543GC"));
+                    def->nets[netAdpIncCnt]->model = VIR_DOMAIN_NET_MODEL_82543GC;
                 } else if (gVBoxAPI.APIVersion >= 3000051 &&
                            adapterType == NetworkAdapterType_Virtio) {
                     /* Only vbox 3.1 and later support NetworkAdapterType_Virto */
-                    ignore_value(VIR_STRDUP(def->nets[netAdpIncCnt]->model, "virtio"));
+                    def->nets[netAdpIncCnt]->model = VIR_DOMAIN_NET_MODEL_VIRTIO;
                 }
 
                 gVBoxAPI.UINetworkAdapter.GetMACAddress(adapter, &MACAddressUtf16);

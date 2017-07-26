@@ -216,10 +216,8 @@ qemuDomainAssignSpaprVIOAddresses(virDomainDefPtr def,
     for (i = 0; i < def->nnets; i++) {
         virDomainNetDefPtr net = def->nets[i];
 
-        if (net->model &&
-            STREQ(net->model, "spapr-vlan")) {
+        if (net->model == VIR_DOMAIN_NET_MODEL_SPAPR_VLAN)
             net->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_SPAPRVIO;
-        }
 
         if (qemuDomainAssignSpaprVIOAddress(def, &net->info, VIO_ADDR_NET) < 0)
             goto cleanup;
@@ -291,7 +289,7 @@ qemuDomainPrimeVirtioDeviceAddresses(virDomainDefPtr def,
     for (i = 0; i < def->nnets; i++) {
         virDomainNetDefPtr net = def->nets[i];
 
-        if (STREQ(net->model, "virtio") &&
+        if (net->model == VIR_DOMAIN_NET_MODEL_VIRTIO &&
             net->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE) {
             net->info.type = type;
         }
@@ -561,26 +559,43 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         /* the only type of filesystem so far is virtio-9p-pci */
         return virtioFlags;
 
-    case VIR_DOMAIN_DEVICE_NET: {
-        virDomainNetDefPtr net = dev->data.net;
-
+    case VIR_DOMAIN_DEVICE_NET:
         /* NB: a type='hostdev' will use PCI, but its
          * address is assigned when we're assigning the
          * addresses for other hostdev devices.
          */
-        if (net->type == VIR_DOMAIN_NET_TYPE_HOSTDEV ||
-            STREQ(net->model, "usb-net")) {
+        if (dev->data.net->type == VIR_DOMAIN_NET_TYPE_HOSTDEV)
             return 0;
-        }
 
-        if (STREQ(net->model, "virtio"))
-            return  virtioFlags;
-
-        if (STREQ(net->model, "e1000e"))
+        switch ((virDomainNetModel) dev->data.net->model) {
+        case VIR_DOMAIN_NET_MODEL_E1000E:
             return pcieFlags;
 
-        return pciFlags;
-    }
+        case VIR_DOMAIN_NET_MODEL_VIRTIO:
+            return virtioFlags;
+
+        case VIR_DOMAIN_NET_MODEL_RTL8139:
+        case VIR_DOMAIN_NET_MODEL_E1000:
+            return pciFlags;
+
+        case VIR_DOMAIN_NET_MODEL_USB_NET:
+        case VIR_DOMAIN_NET_MODEL_NETFRONT:
+        case VIR_DOMAIN_NET_MODEL_VLANCE:
+        case VIR_DOMAIN_NET_MODEL_VMXNET:
+        case VIR_DOMAIN_NET_MODEL_VMXNET2:
+        case VIR_DOMAIN_NET_MODEL_VMXNET3:
+        case VIR_DOMAIN_NET_MODEL_AM79C970A:
+        case VIR_DOMAIN_NET_MODEL_AM79C973:
+        case VIR_DOMAIN_NET_MODEL_82540EM:
+        case VIR_DOMAIN_NET_MODEL_82545EM:
+        case VIR_DOMAIN_NET_MODEL_82543GC:
+        case VIR_DOMAIN_NET_MODEL_SPAPR_VLAN:
+        case VIR_DOMAIN_NET_MODEL_SMC91C111:
+        case VIR_DOMAIN_NET_MODEL_LAN9118:
+        case VIR_DOMAIN_NET_MODEL_NONE:
+        case VIR_DOMAIN_NET_MODEL_LAST:
+            return 0;
+        }
 
     case VIR_DOMAIN_DEVICE_SOUND:
         switch ((virDomainSoundModel) dev->data.sound->model) {

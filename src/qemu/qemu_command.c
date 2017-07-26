@@ -3582,16 +3582,18 @@ qemuBuildNicStr(virDomainNetDefPtr net,
 {
     char *str;
     char macaddr[VIR_MAC_STRING_BUFLEN];
+    const char *modelName = virDomainNetModelTypeToString(net->model);
 
     ignore_value(virAsprintf(&str,
                              "%smacaddr=%s,vlan=%d%s%s%s%s",
                              prefix ? prefix : "",
                              virMacAddrFormat(&net->mac, macaddr),
                              vlan,
-                             (net->model ? ",model=" : ""),
-                             (net->model ? net->model : ""),
+                             (modelName ? ",model=" : ""),
+                             (modelName ? modelName : ""),
                              (net->info.alias ? ",name=" : ""),
                              (net->info.alias ? net->info.alias : "")));
+
     return str;
 }
 
@@ -3605,11 +3607,11 @@ qemuBuildNicDevStr(virDomainDefPtr def,
                    virQEMUCapsPtr qemuCaps)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
-    const char *nic = net->model;
+    const char *nic = NULL;
     bool usingVirtio = false;
     char macaddr[VIR_MAC_STRING_BUFLEN];
 
-    if (STREQ(net->model, "virtio")) {
+    if (net->model == VIR_DOMAIN_NET_MODEL_VIRTIO) {
         if (net->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW)
             nic = "virtio-net-ccw";
         else if (net->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390)
@@ -3620,9 +3622,11 @@ qemuBuildNicDevStr(virDomainDefPtr def,
             nic = "virtio-net-pci";
 
         usingVirtio = true;
+    } else {
+        nic = virDomainNetModelTypeToString(net->model);
     }
 
-    virBufferAdd(&buf, nic, -1);
+    virBufferAdd(&buf, NULLSTR(nic), -1);
     if (usingVirtio && net->driver.virtio.txmode) {
         if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_TX_ALG)) {
             virBufferAddLit(&buf, ",tx=");

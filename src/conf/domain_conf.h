@@ -900,6 +900,32 @@ typedef enum {
     VIR_DOMAIN_NET_TYPE_LAST
 } virDomainNetType;
 
+typedef enum {
+    VIR_DOMAIN_NET_MODEL_NONE = 0,
+    VIR_DOMAIN_NET_MODEL_USB_NET,
+    VIR_DOMAIN_NET_MODEL_NETFRONT,
+    VIR_DOMAIN_NET_MODEL_VLANCE,
+    VIR_DOMAIN_NET_MODEL_VMXNET,
+    VIR_DOMAIN_NET_MODEL_VMXNET2,
+    VIR_DOMAIN_NET_MODEL_VMXNET3,
+    VIR_DOMAIN_NET_MODEL_AM79C970A,
+    VIR_DOMAIN_NET_MODEL_AM79C973,
+    VIR_DOMAIN_NET_MODEL_82540EM,
+    VIR_DOMAIN_NET_MODEL_82543GC,
+    VIR_DOMAIN_NET_MODEL_82545EM,
+    VIR_DOMAIN_NET_MODEL_SPAPR_VLAN,
+    VIR_DOMAIN_NET_MODEL_SMC91C111,
+    VIR_DOMAIN_NET_MODEL_LAN9118,
+    VIR_DOMAIN_NET_MODEL_RTL8139,
+    VIR_DOMAIN_NET_MODEL_E1000,
+    VIR_DOMAIN_NET_MODEL_E1000E,
+    VIR_DOMAIN_NET_MODEL_VIRTIO,
+
+    VIR_DOMAIN_NET_MODEL_LAST
+} virDomainNetModel;
+
+VIR_ENUM_DECL(virDomainNetModel);
+
 /* the backend driver used for virtio interfaces */
 typedef enum {
     VIR_DOMAIN_NET_BACKEND_TYPE_DEFAULT, /* prefer kernel, fall back to user */
@@ -960,7 +986,7 @@ struct _virDomainActualNetDef {
 struct _virDomainNetDef {
     virDomainNetType type;
     virMacAddr mac;
-    char *model;
+    int model; /* enum virDomainNetModel */
     union {
         struct {
             virDomainNetBackendType name; /* which driver backend to use */

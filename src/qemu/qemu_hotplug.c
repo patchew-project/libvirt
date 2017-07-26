@@ -3053,15 +3053,18 @@ qemuDomainChangeNet(virQEMUDriverPtr driver,
         goto cleanup;
     }
 
-    if (STRNEQ_NULLABLE(olddev->model, newdev->model)) {
+    if (olddev->model != newdev->model) {
+        const char *oldModel = virDomainNetModelTypeToString(olddev->model);
+        const char *newModel = virDomainNetModelTypeToString(newdev->model);
+
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
                        _("cannot modify network device model from %s to %s"),
-                       olddev->model ? olddev->model : "(default)",
-                       newdev->model ? newdev->model : "(default)");
+                       oldModel ? oldModel : "(default)",
+                       newModel ? newModel : "(default)");
         goto cleanup;
     }
 
-    if (olddev->model && STREQ(olddev->model, "virtio") &&
+    if (olddev->model == VIR_DOMAIN_NET_MODEL_VIRTIO &&
         (olddev->driver.virtio.name != newdev->driver.virtio.name ||
          olddev->driver.virtio.txmode != newdev->driver.virtio.txmode ||
          olddev->driver.virtio.ioeventfd != newdev->driver.virtio.ioeventfd ||

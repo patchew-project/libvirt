@@ -2520,6 +2520,7 @@ virVMXParseEthernet(virConfPtr conf, int controller, virDomainNetDefPtr *def)
 
     char virtualDev_name[48] = "";
     char *virtualDev = NULL;
+    int model = VIR_DOMAIN_NET_MODEL_NONE;
 
     char features_name[48] = "";
     long long features = 0;
@@ -2621,11 +2622,13 @@ virVMXParseEthernet(virConfPtr conf, int controller, virDomainNetDefPtr *def)
     }
 
     if (virtualDev != NULL) {
-        if (STRCASENEQ(virtualDev, "vlance") &&
-            STRCASENEQ(virtualDev, "vmxnet") &&
-            STRCASENEQ(virtualDev, "vmxnet3") &&
-            STRCASENEQ(virtualDev, "e1000") &&
-            STRCASENEQ(virtualDev, "e1000e")) {
+        model = virDomainNetModelTypeFromString(virtualDev);
+
+        if (model != VIR_DOMAIN_NET_MODEL_VLANCE &&
+            model != VIR_DOMAIN_NET_MODEL_VMXNET &&
+            model != VIR_DOMAIN_NET_MODEL_VMXNET3 &&
+            model != VIR_DOMAIN_NET_MODEL_E1000 &&
+            model != VIR_DOMAIN_NET_MODEL_E1000E) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Expecting VMX entry '%s' to be 'vlance' or 'vmxnet' or "
                              "'vmxnet3' or 'e1000' or 'e1000e' but found '%s'"),
@@ -2633,12 +2636,8 @@ virVMXParseEthernet(virConfPtr conf, int controller, virDomainNetDefPtr *def)
             goto cleanup;
         }
 
-        if (STRCASEEQ(virtualDev, "vmxnet") && features == 15) {
-            VIR_FREE(virtualDev);
-
-            if (VIR_STRDUP(virtualDev, "vmxnet2") < 0)
-                goto cleanup;
-        }
+        if (model == VIR_DOMAIN_NET_MODEL_VMXNET && features == 15)
+            model = VIR_DOMAIN_NET_MODEL_VMXNET2;
     }
 
     /* vmx:networkName -> def:data.bridge.brname */
@@ -2662,10 +2661,9 @@ virVMXParseEthernet(virConfPtr conf, int controller, virDomainNetDefPtr *def)
     /* Setup virDomainNetDef */
     if (connectionType == NULL || STRCASEEQ(connectionType, "bridged")) {
         (*def)->type = VIR_DOMAIN_NET_TYPE_BRIDGE;
-        (*def)->model = virtualDev;
+        (*def)->model = model;
         (*def)->data.bridge.brname = networkName;
 
-        virtualDev = NULL;
         networkName = NULL;
     } else if (STRCASEEQ(connectionType, "hostonly")) {
         /* FIXME */
@@ -2675,16 +2673,13 @@ virVMXParseEthernet(virConfPtr conf, int controller, virDomainNetDefPtr *def)
         goto cleanup;
     } else if (STRCASEEQ(connectionType, "nat")) {
         (*def)->type = VIR_DOMAIN_NET_TYPE_USER;
-        (*def)->model = virtualDev;
-
-        virtualDev = NULL;
+        (*def)->model = model;
     } else if (STRCASEEQ(connectionType, "custom")) {
         (*def)->type = VIR_DOMAIN_NET_TYPE_BRIDGE;
-        (*def)->model = virtualDev;
+        (*def)->model = model;
         (*def)->data.bridge.brname = networkName;
         (*def)->ifname = vnet;
 
-        virtualDev = NULL;
         networkName = NULL;
         vnet = NULL;
     } else {
@@ -3718,28 +3713,30 @@ virVMXFormatEthernet(virDomainNetDefPtr def, int controller,
     virBufferAsprintf(buffer, "ethernet%d.present = \"true\"\n", controller);
 
     /* def:model -> vmx:virtualDev, vmx:features */
-    if (def->model != NULL) {
-        if (STRCASENEQ(def->model, "vlance") &&
-            STRCASENEQ(def->model, "vmxnet") &&
-            STRCASENEQ(def->model, "vmxnet2") &&
-            STRCASENEQ(def->model, "vmxnet3") &&
-            STRCASENEQ(def->model, "e1000") &&
-            STRCASENEQ(def->model, "e1000e")) {
+    if (def->model) {
+        if (def->model != VIR_DOMAIN_NET_MODEL_VLANCE &&
+            def->model != VIR_DOMAIN_NET_MODEL_VMXNET &&
+            def->model != VIR_DOMAIN_NET_MODEL_VMXNET2 &&
+            def->model != VIR_DOMAIN_NET_MODEL_VMXNET3 &&
+            def->model != VIR_DOMAIN_NET_MODEL_E1000 &&
+            def->model != VIR_DOMAIN_NET_MODEL_E1000E) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Expecting domain XML entry 'devices/interface/model' "
                              "to be 'vlance' or 'vmxnet' or 'vmxnet2' or 'vmxnet3' "
-                             "or 'e1000' or 'e1000e' but found '%s'"), def->model);
+                             "or 'e1000' or 'e1000e' but found '%s'"),
+                           NULLSTR(virDomainNetModelTypeToString(def->model)));
             return -1;
         }
 
-        if (STRCASEEQ(def->model, "vmxnet2")) {
+        if (def->model == VIR_DOMAIN_NET_MODEL_VMXNET2) {
             virBufferAsprintf(buffer, "ethernet%d.virtualDev = \"vmxnet\"\n",
                               controller);
             virBufferAsprintf(buffer, "ethernet%d.features = \"15\"\n",
                               controller);
         } else {
             virBufferAsprintf(buffer, "ethernet%d.virtualDev = \"%s\"\n",
-                              controller, def->model);
+                              controller,
+                              NULLSTR(virDomainNetModelTypeToString(def->model)));
         }
     }
 

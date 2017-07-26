@@ -418,6 +418,28 @@ VIR_ENUM_IMPL(virDomainNet, VIR_DOMAIN_NET_TYPE_LAST,
               "hostdev",
               "udp")
 
+VIR_ENUM_IMPL(virDomainNetModel, VIR_DOMAIN_NET_MODEL_LAST,
+              "none",
+              "usb-net",
+              "netfront",
+              "vlance",
+              "vmxnet",
+              "vmxnet2",
+              "vmxnet3",
+              "am79c970a",
+              "am79c973",
+              "82540em",
+              "82543gc",
+              "82545em",
+              "spapr-vlan",
+              "smc91c111",
+              "lan9118",
+              "rtl8139",
+              "e1000",
+              "e1000e",
+              "virtio",
+);
+
 VIR_ENUM_IMPL(virDomainNetBackend, VIR_DOMAIN_NET_BACKEND_TYPE_LAST,
               "default",
               "qemu",
@@ -1986,7 +2008,7 @@ virDomainNetDefClear(virDomainNetDefPtr def)
     if (!def)
         return;
 
-    VIR_FREE(def->model);
+    def->model = VIR_DOMAIN_NET_MODEL_NONE;
 
     switch (def->type) {
     case VIR_DOMAIN_NET_TYPE_VHOSTUSER:
@@ -4484,7 +4506,7 @@ virDomainDeviceDefPostParseInternal(virDomainDeviceDefPtr dev,
 
     if (dev->type == VIR_DOMAIN_DEVICE_NET) {
         virDomainNetDefPtr net = dev->data.net;
-        if (STRNEQ_NULLABLE(net->model, "virtio") &&
+        if (net->model != VIR_DOMAIN_NET_MODEL_VIRTIO &&
             virDomainCheckVirtioOptions(net->virtio) < 0)
             return -1;
     }
@@ -9769,9 +9791,6 @@ virDomainActualNetDefParseXML(xmlNodePtr node,
     return ret;
 }
 
-#define NET_MODEL_CHARS \
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
-
 
 int
 virDomainNetAppendIPAddress(virDomainNetDefPtr def,
@@ -10330,18 +10349,20 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
      * i82551 i82557b i82559er ne2k_pci pcnet rtl8139 e1000 virtio
      * QEMU PPC64 supports spapr-vlan
      */
-    if (model != NULL) {
-        if (strspn(model, NET_MODEL_CHARS) < strlen(model)) {
-            virReportError(VIR_ERR_INVALID_ARG, "%s",
-                           _("Model name contains invalid characters"));
+    if (model) {
+        if ((val = virDomainNetModelTypeFromString(model)) < 0 ||
+            val == VIR_DOMAIN_NET_MODEL_NONE) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Unknown interface <model type='%s'> "
+                             "has been specified"),
+                           model);
             goto error;
         }
-        def->model = model;
-        model = NULL;
+        def->model = val;
     }
 
     if (def->type != VIR_DOMAIN_NET_TYPE_HOSTDEV &&
-        STREQ_NULLABLE(def->model, "virtio")) {
+        def->model == VIR_DOMAIN_NET_MODEL_VIRTIO) {
         if (backend != NULL) {
             if ((val = virDomainNetBackendTypeFromString(backend)) < 0 ||
                 val == VIR_DOMAIN_NET_BACKEND_TYPE_DEFAULT) {
@@ -19479,10 +19500,11 @@ virDomainNetDefCheckABIStability(virDomainNetDefPtr src,
         return false;
     }
 
-    if (STRNEQ_NULLABLE(src->model, dst->model)) {
+    if (src->model != dst->model) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Target network card model %s does not match source %s"),
-                       NULLSTR(dst->model), NULLSTR(src->model));
+                       NULLSTR(virDomainNetModelTypeToString(dst->model)),
+                       NULLSTR(virDomainNetModelTypeToString(src->model)));
         return false;
     }
 
@@ -22734,9 +22756,18 @@ virDomainNetDefFormat(virBufferPtr buf,
         virBufferAddLit(buf, "/>\n");
     }
     if (def->model) {
+        const char *modelName = virDomainNetModelTypeToString(def->model);
+
+        if (!modelName) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("unexpected net model %d"), def->model);
+            return -1;
+        }
+
         virBufferEscapeString(buf, "<model type='%s'/>\n",
-                              def->model);
-        if (STREQ(def->model, "virtio")) {
+                              modelName);
+
+        if (def->model == VIR_DOMAIN_NET_MODEL_VIRTIO) {
             char *str = NULL, *gueststr = NULL, *hoststr = NULL;
             int rc = 0;
 

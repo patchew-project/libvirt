@@ -972,12 +972,11 @@ xenParseVif(virConfPtr conf, virDomainDefPtr def, const char *vif_typename)
                 goto cleanup;
 
             if (model[0] &&
-                VIR_STRDUP(net->model, model) < 0)
+                (net->model = virDomainNetModelTypeFromString(model)) < 0)
                 goto cleanup;
 
-            if (!model[0] && type[0] && STREQ(type, vif_typename) &&
-                VIR_STRDUP(net->model, "netfront") < 0)
-                goto cleanup;
+            if (!model[0] && type[0] && STREQ(type, vif_typename))
+                net->model = VIR_DOMAIN_NET_MODEL_NETFRONT;
 
             if (vifname[0] &&
                 VIR_STRDUP(net->ifname, vifname) < 0)
@@ -1240,14 +1239,18 @@ xenFormatNet(virConnectPtr conn,
     }
 
     if (!hvm) {
-        if (net->model != NULL)
-            virBufferAsprintf(&buf, ",model=%s", net->model);
+        if (net->model) {
+            virBufferAsprintf(&buf, ",model=%s",
+                              NULLSTR(virDomainNetModelTypeToString(net->model)));
+        }
     } else {
-        if (net->model != NULL && STREQ(net->model, "netfront")) {
+        if (net->model == VIR_DOMAIN_NET_MODEL_NETFRONT) {
             virBufferAsprintf(&buf, ",type=%s", vif_typename);
         } else {
-            if (net->model != NULL)
-                virBufferAsprintf(&buf, ",model=%s", net->model);
+            if (net->model) {
+                virBufferAsprintf(&buf, ",model=%s",
+                                  NULLSTR(virDomainNetModelTypeToString(net->model)));
+            }
         }
     }
 

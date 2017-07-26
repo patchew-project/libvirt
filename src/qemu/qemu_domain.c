@@ -3228,7 +3228,7 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
             goto cleanup;
         }
 
-        if (STREQ_NULLABLE(net->model, "virtio") &&
+        if (net->model == VIR_DOMAIN_NET_MODEL_VIRTIO &&
             net->driver.virtio.rx_queue_size & (net->driver.virtio.rx_queue_size - 1)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("rx_queue_size has to be a power of two"));
@@ -3258,39 +3258,39 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
 }
 
 
-static const char *
+static virDomainNetModel
 qemuDomainDefaultNetModel(const virDomainDef *def,
                           virQEMUCapsPtr qemuCaps)
 {
     if (ARCH_IS_S390(def->os.arch))
-        return "virtio";
+        return VIR_DOMAIN_NET_MODEL_VIRTIO;
 
     if (def->os.arch == VIR_ARCH_ARMV7L ||
         def->os.arch == VIR_ARCH_AARCH64) {
         if (STREQ(def->os.machine, "versatilepb"))
-            return "smc91c111";
+            return VIR_DOMAIN_NET_MODEL_SMC91C111;
 
         if (qemuDomainIsVirt(def))
-            return "virtio";
+            return VIR_DOMAIN_NET_MODEL_VIRTIO;
 
         /* Incomplete. vexpress (and a few others) use this, but not all
          * arm boards */
-        return "lan9118";
+        return VIR_DOMAIN_NET_MODEL_LAN9118;
     }
 
     /* Try several network devices in turn; each of these devices is
      * less likely be supported out-of-the-box by the guest operating
      * system than the previous one */
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_RTL8139))
-        return "rtl8139";
+        return VIR_DOMAIN_NET_MODEL_RTL8139;
     else if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_E1000))
-        return "e1000";
+        return VIR_DOMAIN_NET_MODEL_E1000;
     else if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_NET))
-        return "virtio";
+        return VIR_DOMAIN_NET_MODEL_VIRTIO;
 
     /* We've had no luck detecting support for any network device,
      * but we have to return something: might as well be rtl8139 */
-    return "rtl8139";
+    return VIR_DOMAIN_NET_MODEL_RTL8139;
 }
 
 
@@ -3569,9 +3569,7 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
     if (dev->type == VIR_DOMAIN_DEVICE_NET &&
         dev->data.net->type != VIR_DOMAIN_NET_TYPE_HOSTDEV &&
         !dev->data.net->model) {
-        if (VIR_STRDUP(dev->data.net->model,
-                       qemuDomainDefaultNetModel(def, qemuCaps)) < 0)
-            goto cleanup;
+        dev->data.net->model = qemuDomainDefaultNetModel(def, qemuCaps);
     }
 
     /* set default disk types and drivers */
