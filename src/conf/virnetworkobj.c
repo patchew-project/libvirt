@@ -1360,7 +1360,9 @@ virNetworkObjListExport(virConnectPtr conn,
                         unsigned int flags)
 {
     int ret = -1;
-    struct virNetworkObjListData data = { conn, NULL, aclfilter, flags, 0, false};
+    struct virNetworkObjListData data = {
+        .conn = conn, .nets = NULL, .aclfilter = aclfilter, .flags = flags,
+        .nnets = 0, .error = false };
 
     virObjectLock(netobjs);
     if (nets && VIR_ALLOC_N(data.nets, virHashSize(netobjs->objs) + 1) < 0)
@@ -1426,7 +1428,8 @@ virNetworkObjListForEach(virNetworkObjListPtr nets,
                          virNetworkObjListIterator callback,
                          void *opaque)
 {
-    struct virNetworkObjListForEachHelperData data = {callback, opaque, 0};
+    struct virNetworkObjListForEachHelperData data = {
+        .callback = callback, .opaque = opaque, .ret = 0};
     virObjectLock(nets);
     virHashForEach(nets->objs, virNetworkObjListForEachHelper, &data);
     virObjectUnlock(nets);
@@ -1492,7 +1495,8 @@ virNetworkObjListGetNames(virNetworkObjListPtr nets,
     int ret = -1;
 
     struct virNetworkObjListGetHelperData data = {
-        conn, aclfilter, names, maxnames, active, 0, false};
+        .conn = conn, .aclfilter = aclfilter, .names = names,
+        .maxnames = maxnames, .active = active, .got = 0, .error = false};
 
     virObjectLock(nets);
     virHashForEach(nets->objs, virNetworkObjListGetHelper, &data);
@@ -1518,7 +1522,8 @@ virNetworkObjListNumOfNetworks(virNetworkObjListPtr nets,
                                virConnectPtr conn)
 {
     struct virNetworkObjListGetHelperData data = {
-        conn, aclfilter, NULL, -1, active, 0, false};
+        .conn = conn, .aclfilter = aclfilter, .names = NULL,
+        .maxnames = -1, .active = active, .got = 0, .error = false};
 
     virObjectLock(nets);
     virHashForEach(nets->objs, virNetworkObjListGetHelper, &data);
