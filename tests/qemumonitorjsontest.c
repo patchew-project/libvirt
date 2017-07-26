@@ -2937,6 +2937,7 @@ mymain(void)
     DO_TEST_BLOCK_NODE_DETECT("old");
     DO_TEST_BLOCK_NODE_DETECT("empty");
     DO_TEST_BLOCK_NODE_DETECT("luks");
+    DO_TEST_BLOCK_NODE_DETECT("iscsi");
 
 #undef DO_TEST_BLOCK_NODE_DETECT
 
