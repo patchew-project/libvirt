@@ -129,6 +129,21 @@ virNetworkObjGetNewDef(virNetworkObjPtr obj)
 }
 
 
+int
+virNetworkObjGetAutostart(virNetworkObjPtr obj)
+{
+    return obj->autostart;
+}
+
+
+void
+virNetworkObjSetAutostart(virNetworkObjPtr obj,
+                          int autostart)
+{
+    obj->autostart = autostart;
+}
+
+
 pid_t
 virNetworkObjGetDnsmasqPid(virNetworkObjPtr obj)
 {
