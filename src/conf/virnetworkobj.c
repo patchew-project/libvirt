@@ -1307,7 +1307,7 @@ virNetworkMatch(virNetworkObjPtr obj,
 struct virNetworkObjListData {
     virConnectPtr conn;
     virNetworkPtr *nets;
-    virNetworkObjListFilter filter;
+    virNetworkObjListACLFilter aclfilter;
     unsigned int flags;
     int nnets;
     bool error;
@@ -1327,8 +1327,8 @@ virNetworkObjListPopulate(void *payload,
 
     virObjectLock(obj);
 
-    if (data->filter &&
-        !data->filter(data->conn, obj->def))
+    if (data->aclfilter &&
+        !data->aclfilter(data->conn, obj->def))
         goto cleanup;
 
     if (!virNetworkMatch(obj, data->flags))
@@ -1356,11 +1356,11 @@ int
 virNetworkObjListExport(virConnectPtr conn,
                         virNetworkObjListPtr netobjs,
                         virNetworkPtr **nets,
-                        virNetworkObjListFilter filter,
+                        virNetworkObjListACLFilter aclfilter,
                         unsigned int flags)
 {
     int ret = -1;
-    struct virNetworkObjListData data = { conn, NULL, filter, flags, 0, false};
+    struct virNetworkObjListData data = { conn, NULL, aclfilter, flags, 0, false};
 
     virObjectLock(netobjs);
     if (nets && VIR_ALLOC_N(data.nets, virHashSize(netobjs->objs) + 1) < 0)
@@ -1436,7 +1436,7 @@ virNetworkObjListForEach(virNetworkObjListPtr nets,
 
 struct virNetworkObjListGetHelperData {
     virConnectPtr conn;
-    virNetworkObjListFilter filter;
+    virNetworkObjListACLFilter aclfilter;
     char **names;
     int maxnames;
     bool active;
@@ -1461,8 +1461,8 @@ virNetworkObjListGetHelper(void *payload,
 
     virObjectLock(obj);
 
-    if (data->filter &&
-        !data->filter(data->conn, obj->def))
+    if (data->aclfilter &&
+        !data->aclfilter(data->conn, obj->def))
         goto cleanup;
 
     if ((data->active && virNetworkObjIsActive(obj)) ||
@@ -1486,13 +1486,13 @@ virNetworkObjListGetNames(virNetworkObjListPtr nets,
                           bool active,
                           char **names,
                           int maxnames,
-                          virNetworkObjListFilter filter,
+                          virNetworkObjListACLFilter aclfilter,
                           virConnectPtr conn)
 {
     int ret = -1;
 
     struct virNetworkObjListGetHelperData data = {
-        conn, filter, names, maxnames, active, 0, false};
+        conn, aclfilter, names, maxnames, active, 0, false};
 
     virObjectLock(nets);
     virHashForEach(nets->objs, virNetworkObjListGetHelper, &data);
@@ -1514,11 +1514,11 @@ virNetworkObjListGetNames(virNetworkObjListPtr nets,
 int
 virNetworkObjListNumOfNetworks(virNetworkObjListPtr nets,
                                bool active,
-                               virNetworkObjListFilter filter,
+                               virNetworkObjListACLFilter aclfilter,
                                virConnectPtr conn)
 {
     struct virNetworkObjListGetHelperData data = {
-        conn, filter, NULL, -1, active, 0, false};
+        conn, aclfilter, NULL, -1, active, 0, false};
 
     virObjectLock(nets);
     virHashForEach(nets->objs, virNetworkObjListGetHelper, &data);
