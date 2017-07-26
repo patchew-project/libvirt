@@ -1581,6 +1581,7 @@ nodeStateCleanup(void)
         if (udev_monitor != NULL) {
             udev = udev_monitor_get_udev(udev_monitor);
             udev_monitor_unref(udev_monitor);
+            priv->udev_monitor = NULL;
         }
     }
 
