@@ -1623,8 +1623,12 @@ udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
                         void *data ATTRIBUTE_UNUSED)
 {
     struct udev_device *device = NULL;
-    struct udev_monitor *udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
+    struct udev_monitor *udev_monitor = NULL;
     int udev_fd = -1;
+
+    nodeDeviceLock();
+    if (!(udev_monitor = DRV_STATE_UDEV_MONITOR(driver)))
+        goto error;
 
     udev_fd = udev_monitor_get_fd(udev_monitor);
     if (fd != udev_fd) {
@@ -1640,22 +1644,26 @@ udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
          * the same error multiple times
          */
         virEventRemoveHandle(priv->watch);
-
-        goto cleanup;
+        goto error;
     }
 
     device = udev_monitor_receive_device(udev_monitor);
     if (device == NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("udev_monitor_receive_device returned NULL"));
-        goto cleanup;
+        goto error;
     }
 
+    nodeDeviceUnlock();
     udevHandleOneDevice(device);
 
  cleanup:
     udev_device_unref(device);
     return;
+
+ error:
+    nodeDeviceUnlock();
+    goto cleanup;
 }
 
 
