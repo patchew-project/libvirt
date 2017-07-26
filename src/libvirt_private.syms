@@ -2067,6 +2067,7 @@ virMacAddrSetRaw;
 # util/virmacmap.h
 virMacMapAdd;
 virMacMapDumpStr;
+virMacMapFileName;
 virMacMapLookup;
 virMacMapNew;
 virMacMapRemove;
