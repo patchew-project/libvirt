@@ -453,7 +453,7 @@ struct _virAdmConnectCloseCallbackData {
  * Internal structure associated to a connection
  */
 struct _virConnect {
-    virObjectLockable object;
+    virObjectRWLockable object;
 
     /* All the variables from here, until declared otherwise in one of
      * the following comments, are setup at time of connection open

@@ -482,7 +482,7 @@ virConnCopyLastError(virConnectPtr conn, virErrorPtr to)
 
     if (conn == NULL)
         return -1;
-    virObjectLock(conn);
+    virObjectLockRead(conn);
     if (conn->err.code == VIR_ERR_OK)
         virResetError(to);
     else

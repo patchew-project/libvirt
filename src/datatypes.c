@@ -83,8 +83,10 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS_COMMON(basename, virClassForObject())
 #define DECLARE_CLASS_LOCKABLE(basename)                         \
     DECLARE_CLASS_COMMON(basename, virClassForObjectLockable())
+#define DECLARE_CLASS_RWLOCKABLE(basename)                       \
+    DECLARE_CLASS_COMMON(basename, virClassForObjectRWLockable())
 
-    DECLARE_CLASS_LOCKABLE(virConnect);
+    DECLARE_CLASS_RWLOCKABLE(virConnect);
     DECLARE_CLASS_LOCKABLE(virConnectCloseCallbackData);
     DECLARE_CLASS(virDomain);
     DECLARE_CLASS(virDomainSnapshot);
@@ -124,7 +126,7 @@ virGetConnect(void)
     if (virDataTypesInitialize() < 0)
         return NULL;
 
-    return virObjectLockableNew(virConnectClass);
+    return virObjectRWLockableNew(virConnectClass);
 }
 
 /**
