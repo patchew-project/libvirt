@@ -1631,6 +1631,7 @@ static int lxcStateInitialize(bool privileged,
     if (VIR_ALLOC(lxc_driver) < 0)
         return -1;
     if (virMutexInit(&lxc_driver->lock) < 0) {
+        virReportSystemError(errno, "%s", _("unable to init lxc driver lock"));
         VIR_FREE(lxc_driver);
         return -1;
     }

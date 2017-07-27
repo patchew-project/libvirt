@@ -351,8 +351,10 @@ virshRunConsole(vshControl *ctl,
     if (virDomainOpenConsole(dom, dev_name, con->st, flags) < 0)
         goto cleanup;
 
-    if (virCondInit(&con->cond) < 0 || virMutexInit(&con->lock) < 0)
+    if (virCondInit(&con->cond) < 0 || virMutexInit(&con->lock) < 0) {
+        VIR_ERROR(_("unable to init console lock or condition"));
         goto cleanup;
+    }
 
     virMutexLock(&con->lock);
 

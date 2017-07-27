@@ -458,6 +458,8 @@ secretStateInitialize(bool privileged,
         return -1;
 
     if (virMutexInit(&driver->lock) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("unable to init secret driver lock"));
         VIR_FREE(driver);
         return -1;
     }

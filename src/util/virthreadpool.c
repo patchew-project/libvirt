@@ -239,8 +239,10 @@ virThreadPoolNewFull(size_t minWorkers,
     pool->jobFuncName = funcName;
     pool->jobOpaque = opaque;
 
-    if (virMutexInit(&pool->mutex) < 0)
+    if (virMutexInit(&pool->mutex) < 0) {
+        virReportSystemError(errno, "%s", _("unable to init thread pool lock"));
         goto error;
+    }
     if (virCondInit(&pool->cond) < 0)
         goto error;
     if (virCondInit(&pool->quit_cond) < 0)

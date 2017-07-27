@@ -592,9 +592,13 @@ virNWFilterSnoopReqNew(const char *ifkey)
 
     req->threadStatus = THREAD_STATUS_NONE;
 
-    if (virStrcpyStatic(req->ifkey, ifkey) == NULL ||
-        virMutexInitRecursive(&req->lock) < 0)
+    if (virStrcpyStatic(req->ifkey, ifkey) == NULL)
         goto err_free_req;
+
+    if (virMutexInitRecursive(&req->lock) < 0) {
+        virReportSystemError(errno, "%s", _("unable to init nwfilter lock"));
+        goto err_free_req;
+    }
 
     if (virCondInit(&req->threadStatusCond) < 0)
         goto err_destroy_mutex;
@@ -2085,8 +2089,10 @@ virNWFilterDHCPSnoopInit(void)
     VIR_DEBUG("Initializing DHCP snooping");
 
     if (virMutexInitRecursive(&virNWFilterSnoopState.snoopLock) < 0 ||
-        virMutexInit(&virNWFilterSnoopState.activeLock) < 0)
+        virMutexInit(&virNWFilterSnoopState.activeLock) < 0) {
+        virReportSystemError(errno, "%s", _("unable to init nwfilter lock"));
         return -1;
+    }
 
     virNWFilterSnoopState.ifnameToKey = virHashCreate(0, NULL);
     virNWFilterSnoopState.active = virHashCreate(0, NULL);

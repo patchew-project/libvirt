@@ -176,8 +176,11 @@ vmwareConnectOpen(virConnectPtr conn,
         goto cleanup;
     }
 
-    if (virMutexInit(&driver->lock) < 0)
+    if (virMutexInit(&driver->lock) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("unable to init vmware driver lock"));
         goto cleanup;
+    }
 
     if ((tmp = STRSKIP(conn->uri->scheme, "vmware")) == NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR, _("unable to parse URI "

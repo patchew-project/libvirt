@@ -612,6 +612,7 @@ nodeStateInitialize(bool privileged ATTRIBUTE_UNUSED,
         return -1;
 
     if (virMutexInit(&driver->lock) < 0) {
+        virReportSystemError(errno, "%s", _("unable to init node driver lock"));
         VIR_FREE(driver);
         return -1;
     }

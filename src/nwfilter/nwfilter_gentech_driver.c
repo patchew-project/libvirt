@@ -77,8 +77,10 @@ int virNWFilterTechDriversInit(bool privileged)
 {
     size_t i = 0;
     VIR_DEBUG("Initializing NWFilter technology drivers");
-    if (virMutexInitRecursive(&updateMutex) < 0)
+    if (virMutexInitRecursive(&updateMutex) < 0) {
+        virReportSystemError(errno, "%s", _("unable to init nwfilter lock"));
         return -1;
+    }
 
     while (filter_tech_drivers[i]) {
         if (!(filter_tech_drivers[i]->flags & TECHDRV_FLAG_INITIALIZED))

@@ -4133,8 +4133,10 @@ vzStateInitialize(bool privileged ATTRIBUTE_UNUSED,
         return -1;
     }
 
-   if (virMutexInit(&vz_driver_lock) < 0)
+    if (virMutexInit(&vz_driver_lock) < 0) {
+        virReportSystemError(errno, "%s", _("unable to init vz driver lock"));
         goto error;
+    }
 
     /* Failing to create driver here is not fatal and only means
      * that next driver client will try once more when connecting */

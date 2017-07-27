@@ -254,6 +254,8 @@ storageStateInitialize(bool privileged,
         return ret;
 
     if (virMutexInit(&driver->lock) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("cannot initialize storage driver lock"));
         VIR_FREE(driver);
         return ret;
     }

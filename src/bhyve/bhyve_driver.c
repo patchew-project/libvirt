@@ -1240,6 +1240,7 @@ bhyveStateInitialize(bool privileged,
         return -1;
 
     if (virMutexInit(&bhyve_driver->lock) < 0) {
+        virReportSystemError(errno, "%s", _("unable to init bhyve driver lock"));
         VIR_FREE(bhyve_driver);
         return -1;
     }

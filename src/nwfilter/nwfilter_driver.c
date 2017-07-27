@@ -183,8 +183,11 @@ nwfilterStateInitialize(bool privileged,
     if (VIR_ALLOC(driver) < 0)
         return -1;
 
-    if (virMutexInit(&driver->lock) < 0)
+    if (virMutexInit(&driver->lock) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("unable to init nwfilter driver lock"));
         goto err_free_driverstate;
+    }
 
     /* remember that we are going to use firewalld */
     driver->watchingFirewallD = (sysbus != NULL);

@@ -862,6 +862,7 @@ virNetlinkEventServiceStart(unsigned int protocol, unsigned int groups)
         return -1;
 
     if (virMutexInit(&srv->lock) < 0) {
+        virReportSystemError(errno, "%s", _("unable to init netlink lock"));
         VIR_FREE(srv);
         return -1;
     }

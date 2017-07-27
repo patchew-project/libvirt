@@ -729,6 +729,7 @@ networkStateInitialize(bool privileged,
         goto error;
 
     if (virMutexInit(&network_driver->lock) < 0) {
+        virReportSystemError(errno, "%s", _("unable to init network driver lock"));
         VIR_FREE(network_driver);
         goto error;
     }

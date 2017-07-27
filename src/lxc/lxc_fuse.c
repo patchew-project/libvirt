@@ -309,8 +309,10 @@ int lxcSetupFuse(virLXCFusePtr *f, virDomainDefPtr def)
 
     fuse->def = def;
 
-    if (virMutexInit(&fuse->lock) < 0)
+    if (virMutexInit(&fuse->lock) < 0) {
+        virReportSystemError(errno, "%s", _("unable to init fuse lock"));
         goto cleanup2;
+    }
 
     if (virAsprintf(&fuse->mountpoint, "%s/%s.fuse/", LXC_STATE_DIR,
                     def->name) < 0)

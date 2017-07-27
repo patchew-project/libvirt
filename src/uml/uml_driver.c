@@ -473,6 +473,7 @@ umlStateInitialize(bool privileged,
     uml_driver->inhibitOpaque = opaque;
 
     if (virMutexInit(&uml_driver->lock) < 0) {
+        virReportSystemError(errno, "%s", _("unable to init uml driver lock"));
         VIR_FREE(uml_driver);
         return -1;
     }
