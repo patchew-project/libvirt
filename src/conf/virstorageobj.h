@@ -53,7 +53,7 @@ typedef struct _virStorageDriverState virStorageDriverState;
 typedef virStorageDriverState *virStorageDriverStatePtr;
 
 struct _virStorageDriverState {
-    virMutex lock;
+    virRWLock lock;
 
     virStoragePoolObjList pools;
 
