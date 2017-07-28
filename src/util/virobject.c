@@ -383,6 +383,22 @@ virObjectGetLockableObj(void *anyobj)
 }
 
 
+static virObjectRWLockablePtr
+virObjectGetRWLockableObj(void *anyobj)
+{
+    virObjectPtr obj;
+
+    if (virObjectIsClass(anyobj, virObjectRWLockableClass))
+        return anyobj;
+
+    obj = anyobj;
+    VIR_WARN("Object %p (%s) is not a virObjectRWLockable instance",
+              anyobj, obj ? obj->klass->name : "(unknown)");
+
+    return NULL;
+}
+
+
 /**
  * virObjectLock:
  * @anyobj: any instance of virObjectLockable or virObjectRWLockable
@@ -422,18 +438,13 @@ virObjectLock(void *anyobj)
 int
 virObjectLockRead(void *anyobj)
 {
-    if (virObjectIsClass(anyobj, virObjectRWLockableClass)) {
-        virObjectRWLockablePtr obj = anyobj;
-        virRWLockRead(&obj->lock);
-        return 0;
-    } else {
-        virObjectPtr obj = anyobj;
-        VIR_WARN("Object %p (%s) is not a virObjectRWLockable instance",
-                 anyobj, obj ? obj->klass->name : "(unknown)");
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("unable to obtain rwlock for object=%p"), anyobj);
-    }
-    return -1;
+    virObjectRWLockablePtr obj = virObjectGetRWLockableObj(anyobj);
+
+    if (!obj)
+        return -1;
+
+    virRWLockRead(&obj->lock);
+    return 0;
 }
 
 
@@ -454,18 +465,16 @@ virObjectLockRead(void *anyobj)
 int
 virObjectLockWrite(void *anyobj)
 {
-    if (virObjectIsClass(anyobj, virObjectRWLockableClass)) {
-        virObjectRWLockablePtr obj = anyobj;
-        virRWLockWrite(&obj->lock);
-        return 0;
-    } else {
-        virObjectPtr obj = anyobj;
-        VIR_WARN("Object %p (%s) is not a virObjectRWLockable instance",
-                 anyobj, obj ? obj->klass->name : "(unknown)");
+    virObjectRWLockablePtr obj = virObjectGetRWLockableObj(anyobj);
+
+    if (!obj) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("unable to obtain rwlock for object=%p"), anyobj);
+        return -1;
     }
-    return -1;
+
+    virRWLockWrite(&obj->lock);
+    return 0;
 }
 
 
