@@ -472,25 +472,14 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
             b_info->u.hvm.bios = LIBXL_BIOS_TYPE_OVMF;
 
         if (def->emulator) {
-            if (!virFileExists(def->emulator)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                               _("emulator '%s' not found"),
-                               def->emulator);
+            if (libxlCapsCheckEmulator(def) < 0)
                 return -1;
-            }
-
-            if (!virFileIsExecutable(def->emulator)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                               _("emulator '%s' is not executable"),
-                               def->emulator);
-                return -1;
-            }
 
             VIR_FREE(b_info->device_model);
             if (VIR_STRDUP(b_info->device_model, def->emulator) < 0)
                 return -1;
 
-            b_info->device_model_version = libxlDomainGetEmulatorType(def);
+            b_info->device_model_version = libxlCapsGetEmulatorType(def);
         }
 
         if (def->nserials) {
@@ -2082,7 +2071,7 @@ libxlMakeVideo(virDomainDefPtr def, libxl_domain_config *d_config)
 
 {
     libxl_domain_build_info *b_info = &d_config->b_info;
-    int dm_type = libxlDomainGetEmulatorType(def);
+    int dm_type = libxlCapsGetEmulatorType(def);
 
     if (d_config->c_info.type != LIBXL_DOMAIN_TYPE_HVM)
         return 0;

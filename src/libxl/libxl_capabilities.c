@@ -743,7 +743,7 @@ libxlMakeDomainCapabilities(virDomainCapsPtr domCaps,
 #define LIBXL_QEMU_DM_STR  "Options specific to the Xen version:"
 
 int
-libxlDomainGetEmulatorType(const virDomainDef *def)
+libxlCapsGetEmulatorType(const virDomainDef *def)
 {
     int ret = LIBXL_DEVICE_MODEL_VERSION_QEMU_XEN;
     virCommandPtr cmd = NULL;
@@ -771,4 +771,32 @@ libxlDomainGetEmulatorType(const virDomainDef *def)
     VIR_FREE(output);
     virCommandFree(cmd);
     return ret;
+}
+
+
+/*
+ * Returns 0 if an <emulator> is defined, exists, and is executable.
+ * Returns -1 otherwise.
+ */
+int
+libxlCapsCheckEmulator(const virDomainDef *def)
+{
+    if (def->emulator == NULL)
+        return 0;
+
+    if (!virFileExists(def->emulator)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("emulator '%s' not found"),
+                       def->emulator);
+        return -1;
+    }
+
+    if (!virFileIsExecutable(def->emulator)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("emulator '%s' is not executable"),
+                       def->emulator);
+        return -1;
+    }
+
+    return 0;
 }

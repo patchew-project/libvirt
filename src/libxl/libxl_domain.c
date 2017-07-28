@@ -335,7 +335,7 @@ libxlDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
     }
 
     if (dev->type == VIR_DOMAIN_DEVICE_VIDEO && def->os.type == VIR_DOMAIN_OSTYPE_HVM) {
-        int dm_type = libxlDomainGetEmulatorType(def);
+        int dm_type = libxlCapsGetEmulatorType(def);
 
         switch (dev->data.video->type) {
         case VIR_DOMAIN_VIDEO_TYPE_VGA:

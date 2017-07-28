@@ -52,6 +52,9 @@ libxlMakeDomainCapabilities(virDomainCapsPtr domCaps,
                             size_t nfirmwares);
 
 int
-libxlDomainGetEmulatorType(const virDomainDef *def);
+libxlCapsGetEmulatorType(const virDomainDef *def) ATTRIBUTE_NOINLINE;
+
+int
+libxlCapsCheckEmulator(const virDomainDef *def) ATTRIBUTE_NOINLINE;
 
 #endif /* LIBXL_CAPABILITIES_H */
