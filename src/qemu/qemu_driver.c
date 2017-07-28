@@ -13147,6 +13147,56 @@ qemuDomainMigrateSetMaxDowntime(virDomainPtr dom,
     return ret;
 }
 
+
+static int
+qemuDomainMigrateGetMaxDowntime(virDomainPtr dom,
+                                unsigned long long *downtime,
+                                unsigned int flags)
+{
+    virQEMUDriverPtr driver = dom->conn->privateData;
+    virDomainObjPtr vm;
+    qemuDomainObjPrivatePtr priv;
+    qemuMonitorMigrationParams migparams;
+    int ret = -1;
+
+    virCheckFlags(0, -1);
+
+    if (!(vm = qemuDomObjFromDomain(dom)))
+        goto cleanup;
+
+    if (virDomainMigrateGetMaxDowntimeEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
+        goto cleanup;
+
+    if (!virDomainObjIsActive(vm)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       "%s", _("domain is not running"));
+        goto endjob;
+    }
+
+    priv = vm->privateData;
+    qemuDomainObjEnterMonitor(driver, vm);
+
+    if (!(ret = qemuMonitorGetMigrationParams(priv->mon, &migparams))) {
+        if (migparams.downtimeLimit_set)
+            *downtime = migparams.downtimeLimit;
+        else
+            ret = -1;
+    }
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        ret = -1;
+
+ endjob:
+    qemuDomainObjEndJob(driver, vm);
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
 static int
 qemuDomainMigrateGetCompressionCache(virDomainPtr dom,
                                      unsigned long long *cacheSize,
@@ -20826,6 +20876,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainGetJobInfo = qemuDomainGetJobInfo, /* 0.7.7 */
     .domainGetJobStats = qemuDomainGetJobStats, /* 1.0.3 */
     .domainAbortJob = qemuDomainAbortJob, /* 0.7.7 */
+    .domainMigrateGetMaxDowntime = qemuDomainMigrateGetMaxDowntime, /* 3.6.0 */
     .domainMigrateSetMaxDowntime = qemuDomainMigrateSetMaxDowntime, /* 0.8.0 */
     .domainMigrateGetCompressionCache = qemuDomainMigrateGetCompressionCache, /* 1.0.3 */
     .domainMigrateSetCompressionCache = qemuDomainMigrateSetCompressionCache, /* 1.0.3 */

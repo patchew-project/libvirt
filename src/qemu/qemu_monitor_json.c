@@ -2703,6 +2703,10 @@ qemuMonitorJSONGetMigrationParams(qemuMonitorPtr mon,
     PARSE(cpuThrottleInitial, "cpu-throttle-initial");
     PARSE(cpuThrottleIncrement, "cpu-throttle-increment");
 
+    if (virJSONValueObjectGetNumberUlong(result, "downtime-limit",
+                                         &params->downtimeLimit) == 0)
+        params->downtimeLimit_set = true;
+
 #undef PARSE
 
     if ((tlsStr = virJSONValueObjectGetString(result, "tls-creds"))) {
