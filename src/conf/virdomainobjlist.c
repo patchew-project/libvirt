@@ -330,7 +330,8 @@ virDomainObjPtr virDomainObjListAdd(virDomainObjListPtr doms,
 {
     virDomainObjPtr ret;
 
-    virObjectLock(doms);
+    if (virObjectLockWrite(doms) < 0)
+        return NULL;
     ret = virDomainObjListAddLocked(doms, def, xmlopt, flags, oldDef);
     virObjectUnlock(doms);
     return ret;
@@ -352,7 +353,9 @@ void virDomainObjListRemove(virDomainObjListPtr doms,
     virObjectRef(dom);
     virObjectUnlock(dom);
 
-    virObjectLock(doms);
+    /* We really shouldn't ignore this,
+     * but that ship sailed a long time ago */
+    ignore_value(virObjectLockWrite(doms));
     virObjectLock(dom);
     virHashRemoveEntry(doms->objs, uuidstr);
     virHashRemoveEntry(doms->objsName, dom->def->name);
@@ -397,9 +400,13 @@ virDomainObjListRename(virDomainObjListPtr doms,
      * hold a lock on dom but not refcount it. */
     virObjectRef(dom);
     virObjectUnlock(dom);
-    virObjectLock(doms);
+    rc = virObjectLockWrite(doms);
     virObjectLock(dom);
     virObjectUnref(dom);
+    if (rc < 0) {
+        VIR_FREE(old_name);
+        return ret;
+    }
 
     if (virHashLookup(doms->objsName, new_name) != NULL) {
         virReportError(VIR_ERR_OPERATION_INVALID,
@@ -576,7 +583,10 @@ virDomainObjListLoadAllConfigs(virDomainObjListPtr doms,
     if ((rc = virDirOpenIfExists(&dir, configDir)) <= 0)
         return rc;
 
-    virObjectLock(doms);
+    if (virObjectLockWrite(doms) < 0) {
+        VIR_DIR_CLOSE(dir);
+        return -1;
+    }
 
     while ((ret = virDirRead(dir, &entry, configDir)) > 0) {
         virDomainObjPtr dom;

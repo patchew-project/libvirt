@@ -128,6 +128,10 @@ int
 virObjectLockRead(void *lockableobj)
     ATTRIBUTE_NONNULL(1);
 
+int
+virObjectLockWrite(void *lockableobj)
+    ATTRIBUTE_NONNULL(1);
+
 void
 virObjectUnlock(void *lockableobj)
     ATTRIBUTE_NONNULL(1);

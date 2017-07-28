@@ -429,6 +429,38 @@ virObjectLockRead(void *anyobj)
 
 
 /**
+ * virObjectLockWrite:
+ * @anyobj: any instance of virObjectRWLockable
+ *
+ * Acquire a write lock on @anyobj. The lock must be
+ * released by virObjectUnlock.
+ *
+ * The caller is expected to have acquired a reference
+ * on the object before locking it (eg virObjectRef).
+ * The object must be unlocked before releasing this
+ * reference.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+virObjectLockWrite(void *anyobj)
+{
+    if (virObjectIsClass(anyobj, virObjectRWLockableClass)) {
+        virObjectRWLockablePtr obj = anyobj;
+        virRWLockWrite(&obj->lock);
+        return 0;
+    } else {
+        virObjectPtr obj = anyobj;
+        VIR_WARN("Object %p (%s) is not a virObjectRWLockable instance",
+                 anyobj, obj ? obj->klass->name : "(unknown)");
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("unable to obtain rwlock for object=%p"), anyobj);
+    }
+    return -1;
+}
+
+
+/**
  * virObjectUnlock:
  * @anyobj: any instance of virObjectLockable or virObjectRWLockable
  *

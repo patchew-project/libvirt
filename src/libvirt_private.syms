@@ -2306,6 +2306,7 @@ virObjectListFreeCount;
 virObjectLock;
 virObjectLockableNew;
 virObjectLockRead;
+virObjectLockWrite;
 virObjectNew;
 virObjectRef;
 virObjectRWLockableNew;
