@@ -2310,6 +2310,7 @@ virObjectLockWrite;
 virObjectNew;
 virObjectRef;
 virObjectRWLockableNew;
+virObjectRWUnlock;
 virObjectUnlock;
 virObjectUnref;
 
