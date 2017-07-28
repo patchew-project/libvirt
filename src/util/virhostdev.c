@@ -1390,7 +1390,7 @@ virHostdevFindUSBDevice(virDomainHostdevDefPtr hostdev,
         } else if (!autoAddress) {
             goto out;
         } else {
-            VIR_INFO("USB device %x:%x could not be found at previous"
+            VIR_INFO("USB device %04x:%04x could not be found at previous"
                      " address (bus:%u device:%u)",
                      vendor, product, bus, device);
         }
@@ -1418,12 +1418,12 @@ virHostdevFindUSBDevice(virDomainHostdevDefPtr hostdev,
         } else if (rc > 1) {
             if (autoAddress) {
                 virReportError(VIR_ERR_OPERATION_FAILED,
-                               _("Multiple USB devices for %x:%x were found,"
+                               _("Multiple USB devices for %04x:%04x were found,"
                                  " but none of them is at bus:%u device:%u"),
                                vendor, product, bus, device);
             } else {
                 virReportError(VIR_ERR_OPERATION_FAILED,
-                               _("Multiple USB devices for %x:%x, "
+                               _("Multiple USB devices for %04x:%04x, "
                                  "use <address> to specify one"),
                                vendor, product);
             }
@@ -1435,7 +1435,7 @@ virHostdevFindUSBDevice(virDomainHostdevDefPtr hostdev,
         usbsrc->autoAddress = true;
 
         if (autoAddress) {
-            VIR_INFO("USB device %x:%x found at bus:%u device:%u (moved"
+            VIR_INFO("USB device %04x:%04x found at bus:%u device:%u (moved"
                      " from bus:%u device:%u)",
                      vendor, product,
                      usbsrc->bus, usbsrc->device,
