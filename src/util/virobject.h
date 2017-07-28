@@ -124,7 +124,7 @@ void
 virObjectLock(void *lockableobj)
     ATTRIBUTE_NONNULL(1);
 
-void
+int
 virObjectLockRead(void *lockableobj)
     ATTRIBUTE_NONNULL(1);
 

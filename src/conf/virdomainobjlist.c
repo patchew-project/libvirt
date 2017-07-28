@@ -118,7 +118,8 @@ virDomainObjListFindByIDInternal(virDomainObjListPtr doms,
                                  bool ref)
 {
     virDomainObjPtr obj;
-    virObjectLockRead(doms);
+    if (virObjectLockRead(doms) < 0)
+        return NULL;
     obj = virHashSearch(doms->objs, virDomainObjListSearchID, &id, NULL);
     if (ref) {
         virObjectRef(obj);
@@ -160,7 +161,8 @@ virDomainObjListFindByUUIDInternal(virDomainObjListPtr doms,
     char uuidstr[VIR_UUID_STRING_BUFLEN];
     virDomainObjPtr obj;
 
-    virObjectLockRead(doms);
+    if (virObjectLockRead(doms) < 0)
+        return NULL;
     virUUIDFormat(uuid, uuidstr);
 
     obj = virHashLookup(doms->objs, uuidstr);
@@ -204,7 +206,8 @@ virDomainObjPtr virDomainObjListFindByName(virDomainObjListPtr doms,
 {
     virDomainObjPtr obj;
 
-    virObjectLockRead(doms);
+    if (virObjectLockRead(doms) < 0)
+        return NULL;
     obj = virHashLookup(doms->objsName, name);
     virObjectRef(obj);
     virObjectUnlock(doms);
@@ -653,7 +656,8 @@ virDomainObjListNumOfDomains(virDomainObjListPtr doms,
                              virConnectPtr conn)
 {
     struct virDomainObjListData data = { filter, conn, active, 0 };
-    virObjectLockRead(doms);
+    if (virObjectLockRead(doms) < 0)
+        return -1;
     virHashForEach(doms->objs, virDomainObjListCount, &data);
     virObjectUnlock(doms);
     return data.count;
@@ -697,7 +701,8 @@ virDomainObjListGetActiveIDs(virDomainObjListPtr doms,
 {
     struct virDomainIDData data = { filter, conn,
                                     0, maxids, ids };
-    virObjectLockRead(doms);
+    if (virObjectLockRead(doms) < 0)
+        return -1;
     virHashForEach(doms->objs, virDomainObjListCopyActiveIDs, &data);
     virObjectUnlock(doms);
     return data.numids;
@@ -751,7 +756,8 @@ virDomainObjListGetInactiveNames(virDomainObjListPtr doms,
     struct virDomainNameData data = { filter, conn,
                                       0, 0, maxnames, names };
     size_t i;
-    virObjectLockRead(doms);
+    if (virObjectLockRead(doms) < 0)
+        return -1;
     virHashForEach(doms->objs, virDomainObjListCopyInactiveNames, &data);
     virObjectUnlock(doms);
     if (data.oom) {
@@ -792,7 +798,8 @@ virDomainObjListForEach(virDomainObjListPtr doms,
     struct virDomainListIterData data = {
         callback, opaque, 0,
     };
-    virObjectLockRead(doms);
+    if (virObjectLockRead(doms) < 0)
+        return -1;
     virHashForEach(doms->objs, virDomainObjListHelper, &data);
     virObjectUnlock(doms);
     return data.ret;
@@ -925,7 +932,8 @@ virDomainObjListCollect(virDomainObjListPtr domlist,
 {
     struct virDomainListData data = { NULL, 0 };
 
-    virObjectLockRead(domlist);
+    if (virObjectLockRead(domlist) < 0)
+        return -1;
     sa_assert(domlist->objs);
     if (VIR_ALLOC_N(data.vms, virHashSize(domlist->objs)) < 0) {
         virObjectUnlock(domlist);
@@ -962,7 +970,8 @@ virDomainObjListConvert(virDomainObjListPtr domlist,
     *nvms = 0;
     *vms = NULL;
 
-    virObjectLockRead(domlist);
+    if (virObjectLockRead(domlist) < 0)
+        return -1;
     for (i = 0; i < ndoms; i++) {
         virDomainPtr dom = doms[i];
 

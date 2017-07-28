@@ -410,17 +410,21 @@ virObjectLock(void *anyobj)
  * The object must be unlocked before releasing this
  * reference.
  */
-void
+int
 virObjectLockRead(void *anyobj)
 {
     if (virObjectIsClass(anyobj, virObjectRWLockableClass)) {
         virObjectRWLockablePtr obj = anyobj;
         virRWLockRead(&obj->lock);
+        return 0;
     } else {
         virObjectPtr obj = anyobj;
         VIR_WARN("Object %p (%s) is not a virObjectRWLockable instance",
                  anyobj, obj ? obj->klass->name : "(unknown)");
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("unable to obtain rwlock for object=%p"), anyobj);
     }
+    return -1;
 }
 
 
