@@ -811,6 +811,25 @@ virStorageBackendLogicalRefreshPool(virConnectPtr conn ATTRIBUTE_UNUSED,
 
     virWaitForDevices();
 
+    cmd = virCommandNewArgList("vgchange",
+                               "-aay",
+                               pool->def->source.name,
+                               NULL);
+    if (virCommandRun(cmd, NULL) < 0)
+        goto cleanup;
+
+    virCommandFree(cmd);
+
+    cmd = virCommandNewArgList("vgchange",
+                               "--refresh",
+                               pool->def->source.name,
+                               NULL);
+    if (virCommandRun(cmd, NULL) < 0)
+        goto cleanup;
+
+    virCommandFree(cmd);
+
+
     /* Get list of all logical volumes */
     if (virStorageBackendLogicalFindLVs(pool, NULL) < 0)
         goto cleanup;
