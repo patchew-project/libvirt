@@ -22804,10 +22804,9 @@ virDomainNetDefFormat(virBufferPtr buf,
 /* Assumes that "<device" has already been generated, and starts
  * output at " type='type'>". */
 static int
-virDomainChrSourceDefFormat(virBufferPtr buf,
-                            virDomainChrSourceDefPtr def,
-                            bool tty_compat,
-                            unsigned int flags)
+virDomainChrTypeFormat(virBufferPtr buf,
+                       virDomainChrSourceDefPtr def,
+                       bool tty_compat)
 {
     const char *type = virDomainChrTypeToString(def->type);
 
@@ -22825,6 +22824,15 @@ virDomainChrSourceDefFormat(virBufferPtr buf,
     }
     virBufferAddLit(buf, ">\n");
 
+    return 0;
+}
+
+
+static void
+virDomainChrSourceDefFormat(virBufferPtr buf,
+                            virDomainChrSourceDefPtr def,
+                            unsigned int flags)
+{
     switch ((virDomainChrType)def->type) {
     case VIR_DOMAIN_CHR_TYPE_NULL:
     case VIR_DOMAIN_CHR_TYPE_VC:
@@ -22923,8 +22931,6 @@ virDomainChrSourceDefFormat(virBufferPtr buf,
         }
         virBufferAddLit(buf, "/>\n");
     }
-
-    return 0;
 }
 
 static int
@@ -22953,8 +22959,9 @@ virDomainChrDefFormat(virBufferPtr buf,
                   def->source->type == VIR_DOMAIN_CHR_TYPE_PTY &&
                   !(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE) &&
                   def->source->data.file.path);
-    if (virDomainChrSourceDefFormat(buf, def->source, tty_compat, flags) < 0)
+    if (virDomainChrTypeFormat(buf, def->source, tty_compat) < 0)
         return -1;
+    virDomainChrSourceDefFormat(buf, def->source, flags);
 
     /* Format <target> block */
     switch (def->deviceType) {
@@ -23053,6 +23060,8 @@ virDomainSmartcardDefFormat(virBufferPtr buf,
         return -1;
     }
 
+    virBufferAsprintf(buf, "<smartcard mode='%s'", mode);
+
     switch (def->type) {
     case VIR_DOMAIN_SMARTCARD_TYPE_HOST:
         break;
@@ -23067,9 +23076,9 @@ virDomainSmartcardDefFormat(virBufferPtr buf,
         break;
 
     case VIR_DOMAIN_SMARTCARD_TYPE_PASSTHROUGH:
-        if (virDomainChrSourceDefFormat(&childBuf, def->data.passthru, false,
-                                        flags) < 0)
+        if (virDomainChrTypeFormat(buf, def->data.passthru, false) < 0)
             return -1;
+        virDomainChrSourceDefFormat(&childBuf, def->data.passthru, flags);
         break;
 
     default:
@@ -23082,7 +23091,6 @@ virDomainSmartcardDefFormat(virBufferPtr buf,
     if (virBufferCheckError(&childBuf) < 0)
         return -1;
 
-    virBufferAsprintf(buf, "<smartcard mode='%s'", mode);
     if (virBufferUse(&childBuf)) {
         virBufferAddLit(buf, ">\n");
         virBufferAddBuffer(buf, &childBuf);
@@ -23390,10 +23398,10 @@ virDomainRNGDefFormat(virBufferPtr buf,
         break;
 
     case VIR_DOMAIN_RNG_BACKEND_EGD:
-        virBufferAdjustIndent(buf, 2);
-        if (virDomainChrSourceDefFormat(buf, def->source.chardev,
-                                        false, flags) < 0)
+        if (virDomainChrTypeFormat(buf, def->source.chardev, false) < 0)
             return -1;
+        virBufferAdjustIndent(buf, 2);
+        virDomainChrSourceDefFormat(buf, def->source.chardev, flags);
         virBufferAdjustIndent(buf, -2);
         virBufferAddLit(buf, "</backend>\n");
 
@@ -24234,9 +24242,10 @@ virDomainRedirdevDefFormat(virBufferPtr buf,
     bus = virDomainRedirdevBusTypeToString(def->bus);
 
     virBufferAsprintf(buf, "<redirdev bus='%s'", bus);
-    virBufferAdjustIndent(buf, 2);
-    if (virDomainChrSourceDefFormat(buf, def->source, false, flags) < 0)
+    if (virDomainChrTypeFormat(buf, def->source, false) < 0)
         return -1;
+    virBufferAdjustIndent(buf, 2);
+    virDomainChrSourceDefFormat(buf, def->source, flags);
     virDomainDeviceInfoFormat(buf, &def->info,
                               flags | VIR_DOMAIN_DEF_FORMAT_ALLOW_BOOT);
     virBufferAdjustIndent(buf, -2);
