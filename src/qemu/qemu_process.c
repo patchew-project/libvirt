@@ -478,27 +478,51 @@ qemuProcessFindVolumeQcowPassphrase(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
 static int
 qemuProcessHandleReset(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
                        virDomainObjPtr vm,
+                       virTristateBool guest_initiated,
                        void *opaque)
 {
     virQEMUDriverPtr driver = opaque;
-    virObjectEventPtr event;
+    virObjectEventPtr event = NULL;
     qemuDomainObjPrivatePtr priv;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    bool callOnReboot = false;
 
     virObjectLock(vm);
 
-    event = virDomainEventRebootNewFromObj(vm);
     priv = vm->privateData;
+
+    /* This is a bit tricky. When a guest does 'reboot' we receive RESET event
+     * twice, both times it's guest initiated. However, if users call 'virsh
+     * reset' we still receive two events but the first one is guest_initiated
+     * = no, the second one is guest_initiated = yes. Therefore, to avoid
+     * executing onReboot action in the latter case we need this complicated
+     * construction. */
+    if (guest_initiated == VIR_TRISTATE_BOOL_NO) {
+        VIR_DEBUG("Ignoring not guest initiated RESET event from domain %s",
+                  vm->def->name);
+        priv->gotReset = true;
+    } else if (priv->gotReset && guest_initiated == VIR_TRISTATE_BOOL_YES) {
+        VIR_DEBUG("Ignoring second RESET event from domain %s",
+                  vm->def->name);
+        priv->gotReset = false;
+    } else {
+        callOnReboot = true;
+    }
+
+    event = virDomainEventRebootNewFromObj(vm);
     if (priv->agent)
         qemuAgentNotifyEvent(priv->agent, QEMU_AGENT_EVENT_RESET);
 
     if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0)
         VIR_WARN("Failed to save status on vm %s", vm->def->name);
 
+    if (callOnReboot &&
+        guest_initiated == VIR_TRISTATE_BOOL_YES &&
+        vm->def->onReboot == VIR_DOMAIN_LIFECYCLE_DESTROY)
+        qemuProcessShutdownOrReboot(driver, vm);
+
     virObjectUnlock(vm);
-
     qemuDomainEventQueue(driver, event);
-
     virObjectUnref(cfg);
     return 0;
 }
@@ -555,6 +579,7 @@ qemuProcessFakeReboot(void *opaque)
         goto endjob;
     }
     priv->gotShutdown = false;
+    priv->gotReset = false;
     event = virDomainEventLifecycleNewFromObj(vm,
                                      VIR_DOMAIN_EVENT_RESUMED,
                                      VIR_DOMAIN_EVENT_RESUMED_UNPAUSED);
@@ -5320,6 +5345,7 @@ qemuProcessPrepareDomain(virConnectPtr conn,
     priv->monError = false;
     priv->monStart = 0;
     priv->gotShutdown = false;
+    priv->gotReset = false;
 
     VIR_DEBUG("Updating guest CPU definition");
     if (qemuProcessUpdateGuestCPU(vm->def, priv->qemuCaps, caps, flags) < 0)

@@ -134,6 +134,7 @@ typedef int (*qemuMonitorDomainShutdownCallback)(qemuMonitorPtr mon,
                                                  void *opaque);
 typedef int (*qemuMonitorDomainResetCallback)(qemuMonitorPtr mon,
                                               virDomainObjPtr vm,
+                                              virTristateBool guest,
                                               void *opaque);
 typedef int (*qemuMonitorDomainPowerdownCallback)(qemuMonitorPtr mon,
                                                   virDomainObjPtr vm,
@@ -346,7 +347,7 @@ int qemuMonitorEmitEvent(qemuMonitorPtr mon, const char *event,
                          long long seconds, unsigned int micros,
                          const char *details);
 int qemuMonitorEmitShutdown(qemuMonitorPtr mon, virTristateBool guest);
-int qemuMonitorEmitReset(qemuMonitorPtr mon);
+int qemuMonitorEmitReset(qemuMonitorPtr mon, virTristateBool guest);
 int qemuMonitorEmitPowerdown(qemuMonitorPtr mon);
 int qemuMonitorEmitStop(qemuMonitorPtr mon);
 int qemuMonitorEmitResume(qemuMonitorPtr mon);

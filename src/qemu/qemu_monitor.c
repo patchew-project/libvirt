@@ -1344,12 +1344,12 @@ qemuMonitorEmitShutdown(qemuMonitorPtr mon, virTristateBool guest)
 
 
 int
-qemuMonitorEmitReset(qemuMonitorPtr mon)
+qemuMonitorEmitReset(qemuMonitorPtr mon, virTristateBool guest)
 {
     int ret = -1;
     VIR_DEBUG("mon=%p", mon);
 
-    QEMU_MONITOR_CALLBACK(mon, ret, domainReset, mon->vm);
+    QEMU_MONITOR_CALLBACK(mon, ret, domainReset, mon->vm, guest);
     return ret;
 }
 
