@@ -113,16 +113,6 @@
 # endif
 
 /**
- * ATTRIBUTE_NOINLINE:
- *
- * Force compiler not to inline a method. Should be used if
- * the method need to be overridable by test mocks.
- */
-# ifndef ATTRIBUTE_NOINLINE
-#  define ATTRIBUTE_NOINLINE __attribute__((__noinline__))
-# endif
-
-/**
  * ATTRIBUTE_FMT_PRINTF
  *
  * Macro used to check printf like functions, if compiling
@@ -230,6 +220,32 @@
     _Pragma ("GCC diagnostic ignored \"-Wlogical-op\"")
 # else
 #  define VIR_WARNINGS_NO_WLOGICALOP_STRCHR
+# endif
+
+# if WIN32
+#  if __GNUC_PREREQ(4, 5)
+#   define VIR_MOCKABLE(name)                                           \
+      typeof(name) name  ## Impl;                                       \
+      typeof(name) name                                                 \
+      __attribute__((noinline, noclone, __alias__(#name "Impl")))
+#  else
+#   define VIR_MOCKABLE(name)                                           \
+      typeof(name) name ## Impl;                                        \
+      typeof(name) name                                                 \
+      __attribute__((noinline, __alias__(#name "Impl")))
+#  endif
+# else
+#  if __GNUC_PREREQ(4, 5)
+#   define VIR_MOCKABLE(name)                                           \
+      typeof(name) name ##Impl;                                         \
+      typeof(name) name                                                 \
+      __attribute__((noinline, noclone, weak, __alias__(#name "Impl")))
+#  else
+#   define VIR_MOCKABLE(name)                                           \
+      typeof(name) name ##Impl;                                         \
+      typeof(name) name                                                 \
+      __attribute__((noinline, weak, __alias__(#name "Impl")))
+#  endif
 # endif
 
 

@@ -59,7 +59,7 @@ int virNetDevOpenvswitchInterfaceStats(const char *ifname,
 
 int virNetDevOpenvswitchGetVhostuserIfname(const char *path,
                                            char **ifname)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK ATTRIBUTE_NOINLINE;
+    ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
 
 int virNetDevOpenvswitchUpdateVlan(const char *ifname,
                                    virNetDevVlanPtr virtVlan)

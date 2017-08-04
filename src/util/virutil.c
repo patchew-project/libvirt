@@ -884,14 +884,16 @@ char *virGetUserRuntimeDirectory(void)
     }
 }
 
-char *virGetUserName(uid_t uid)
+VIR_MOCKABLE(virGetUserName);
+char *virGetUserNameImpl(uid_t uid)
 {
     char *ret;
     virGetUserEnt(uid, &ret, NULL, NULL, NULL, false);
     return ret;
 }
 
-char *virGetGroupName(gid_t gid)
+VIR_MOCKABLE(virGetGroupName);
+char *virGetGroupNameImpl(gid_t gid)
 {
     return virGetGroupEnt(gid);
 }
@@ -1340,8 +1342,9 @@ virGetUserRuntimeDirectory(void)
 }
 # endif /* ! HAVE_GETPWUID_R && ! WIN32 */
 
+VIR_MOCKABLE(virGetUserName);
 char *
-virGetUserName(uid_t uid ATTRIBUTE_UNUSED)
+virGetUserNameImpl(uid_t uid ATTRIBUTE_UNUSED)
 {
     virReportError(VIR_ERR_INTERNAL_ERROR,
                    "%s", _("virGetUserName is not available"));
@@ -1379,8 +1382,9 @@ virSetUIDGID(uid_t uid ATTRIBUTE_UNUSED,
     return -1;
 }
 
+VIR_MOCKABLE(virGetGroupName);
 char *
-virGetGroupName(gid_t gid ATTRIBUTE_UNUSED)
+virGetGroupNameImpl(gid_t gid ATTRIBUTE_UNUSED)
 {
     virReportError(VIR_ERR_INTERNAL_ERROR,
                    "%s", _("virGetGroupName is not available"));
@@ -1908,19 +1912,22 @@ virGetListenFDs(void)
 #endif /* WIN32 */
 
 #ifndef WIN32
-long virGetSystemPageSize(void)
+VIR_MOCKABLE(virGetSystemPageSize);
+long virGetSystemPageSizeImpl(void)
 {
     return sysconf(_SC_PAGESIZE);
 }
 #else /* WIN32 */
-long virGetSystemPageSize(void)
+VIR_MOCKABLE(virGetSystemPageSize);
+long virGetSystemPageSizeImpl(void)
 {
     errno = ENOSYS;
     return -1;
 }
 #endif /* WIN32 */
 
-long virGetSystemPageSizeKB(void)
+VIR_MOCKABLE(virGetSystemPageSizeKB);
+long virGetSystemPageSizeKBImpl(void)
 {
     long val = virGetSystemPageSize();
     if (val < 0)
@@ -1963,8 +1970,9 @@ virMemoryLimitIsSet(unsigned long long value)
  *
  * Returns the maximum possible memory value in bytes.
  */
+VIR_MOCKABLE(virMemoryMaxValue);
 unsigned long long
-virMemoryMaxValue(bool capped)
+virMemoryMaxValueImpl(bool capped)
 {
     /* On 32-bit machines, our bound is 0xffffffff * KiB. On 64-bit
      * machines, our bound is off_t (2^63).  */

@@ -8,12 +8,12 @@ my %mocked;
 $noninlined{"virEventAddTimeout"} = 1;
 
 foreach my $arg (@ARGV) {
-    if ($arg =~ /\.h$/) {
-        #print "Scan header $arg\n";
-        &scan_annotations($arg);
-    } elsif ($arg =~ /mock\.c$/) {
+    if ($arg =~ /mock\.c$/) {
         #print "Scan mock $arg\n";
         &scan_overrides($arg);
+    } elsif ($arg =~ /\.c$/) {
+        #print "Scan header $arg\n";
+        &scan_annotations($arg);
     }
 }
 
@@ -35,18 +35,8 @@ sub scan_annotations {
 
     my $func;
     while (<FH>) {
-        if (/^\s*(\w+)\(/ || /^(?:\w+\*?\s+)+(?:\*\s*)?(\w+)\(/) {
-            my $name = $1;
-            if ($name !~ /ATTRIBUTE/) {
-                $func = $name;
-            }
-        } elsif (/^\s*$/) {
-            $func = undef;
-        }
-        if (/ATTRIBUTE_NOINLINE/) {
-            if (defined $func) {
-                $noninlined{$func} = 1;
-            }
+        if (/VIR_MOCKABLE\((\w+)\)/) {
+            $noninlined{$1} = 1;
         }
     }
 

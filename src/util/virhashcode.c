@@ -56,7 +56,8 @@ static inline uint32_t fmix(uint32_t h)
 }
 
 
-uint32_t virHashCodeGen(const void *key, size_t len, uint32_t seed)
+VIR_MOCKABLE(virHashCodeGen);
+uint32_t virHashCodeGenImpl(const void *key, size_t len, uint32_t seed)
 {
     const uint8_t *blocks;
     const uint8_t *tail;

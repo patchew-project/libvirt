@@ -163,11 +163,12 @@ virNetDevCreateNetlinkAddressMessage(int messageType,
  *
  * Returns 0 in case of success or -1 in case of error.
  */
+VIR_MOCKABLE(virNetDevIPAddrAdd);
 int
-virNetDevIPAddrAdd(const char *ifname,
-                   virSocketAddr *addr,
-                   virSocketAddr *peer,
-                   unsigned int prefix)
+virNetDevIPAddrAddImpl(const char *ifname,
+                       virSocketAddr *addr,
+                       virSocketAddr *peer,
+                       unsigned int prefix)
 {
     virSocketAddr *broadcast = NULL;
     int ret = -1;
@@ -680,12 +681,12 @@ virNetDevIPCheckIPv6Forwarding(void)
 
 #else /* defined(__linux__) && defined(HAVE_LIBNL) */
 
-
+VIR_MOCKABLE(virNetDevIPAddrAdd);
 int
-virNetDevIPAddrAdd(const char *ifname,
-                   virSocketAddr *addr,
-                   virSocketAddr *peer,
-                   unsigned int prefix)
+virNetDevIPAddrAddImpl(const char *ifname,
+                       virSocketAddr *addr,
+                       virSocketAddr *peer,
+                       unsigned int prefix)
 {
     virCommandPtr cmd = NULL;
     char *addrstr = NULL, *bcaststr = NULL, *peerstr = NULL;

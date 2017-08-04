@@ -68,8 +68,9 @@ virUUIDGeneratePseudoRandomBytes(unsigned char *buf,
  *
  * Returns 0 in case of success and -1 in case of failure
  */
+VIR_MOCKABLE(virUUIDGenerate);
 int
-virUUIDGenerate(unsigned char *uuid)
+virUUIDGenerateImpl(unsigned char *uuid)
 {
     int err;
 
@@ -105,6 +106,7 @@ virUUIDGenerate(unsigned char *uuid)
 
     return err;
 }
+
 
 /**
  * virUUIDParse:

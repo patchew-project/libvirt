@@ -81,7 +81,7 @@ virQEMUCapsSetCPUModelInfo(virQEMUCapsPtr qemuCaps,
 virCPUDefPtr
 virQEMUCapsProbeHostCPUForEmulator(virArch hostArch,
                                    virQEMUCapsPtr qemuCaps,
-                                   virDomainVirtType type) ATTRIBUTE_NOINLINE;
+                                   virDomainVirtType type);
 
 void
 virQEMUCapsSetGICCapabilities(virQEMUCapsPtr qemuCaps,

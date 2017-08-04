@@ -1112,8 +1112,9 @@ virHostCPUGetMap(unsigned char **cpumap,
  *
  * Returns the number of threads per subcore if subcores are in use, zero
  * if subcores are not in use, and a negative value on error */
+VIR_MOCKABLE(virHostCPUGetThreadsPerSubcore);
 int
-virHostCPUGetThreadsPerSubcore(virArch arch)
+virHostCPUGetThreadsPerSubcoreImpl(virArch arch)
 {
     int threads_per_subcore = 0;
     int kvmfd;
@@ -1158,8 +1159,9 @@ virHostCPUGetThreadsPerSubcore(virArch arch)
 
 /* Fallback for nodeGetThreadsPerSubcore() used when KVM headers
  * are not available on the system */
+VIR_MOCKABLE(virHostCPUGetThreadsPerSubcore);
 int
-virHostCPUGetThreadsPerSubcore(virArch arch ATTRIBUTE_UNUSED)
+virHostCPUGetThreadsPerSubcoreImpl(virArch arch ATTRIBUTE_UNUSED)
 {
     return 0;
 }
@@ -1167,8 +1169,9 @@ virHostCPUGetThreadsPerSubcore(virArch arch ATTRIBUTE_UNUSED)
 #endif /* HAVE_LINUX_KVM_H && defined(KVM_CAP_PPC_SMT) */
 
 #if HAVE_LINUX_KVM_H
+VIR_MOCKABLE(virHostCPUGetKVMMaxVCPUs);
 int
-virHostCPUGetKVMMaxVCPUs(void)
+virHostCPUGetKVMMaxVCPUsImpl(void)
 {
     int fd;
     int ret;
@@ -1198,8 +1201,9 @@ virHostCPUGetKVMMaxVCPUs(void)
     return ret;
 }
 #else
+VIR_MOCKABLE(virHostCPUGetKVMMaxVCPUs);
 int
-virHostCPUGetKVMMaxVCPUs(void)
+virHostCPUGetKVMMaxVCPUsImpl(void)
 {
     virReportSystemError(ENOSYS, "%s",
                          _("KVM is not supported on this platform"));

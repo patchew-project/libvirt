@@ -405,7 +405,7 @@ virNetDevOpenvswitchInterfaceStats(const char *ifname,
 }
 
 /**
- * virNetDevOpenvswitchVhostuserGetIfname:
+ * virNetDevOpenvswitchGetVhostuserIfname:
  * @path: the path of the unix socket
  * @ifname: the retrieved name of the interface
  *
@@ -415,9 +415,10 @@ virNetDevOpenvswitchInterfaceStats(const char *ifname,
  *          0 if it is not, but no other error occurred,
  *         -1 otherwise.
  */
+VIR_MOCKABLE(virNetDevOpenvswitchGetVhostuserIfname);
 int
-virNetDevOpenvswitchGetVhostuserIfname(const char *path,
-                                       char **ifname)
+virNetDevOpenvswitchGetVhostuserIfnameImpl(const char *path,
+                                           char **ifname)
 {
     virCommandPtr cmd = NULL;
     char *tmpIfname = NULL;

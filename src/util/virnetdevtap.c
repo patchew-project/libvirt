@@ -98,8 +98,9 @@ virNetDevTapGetName(int tapfd ATTRIBUTE_UNUSED, char **ifname ATTRIBUTE_UNUSED)
  * Returns the proper interface name or NULL if no corresponding interface
  * found.
  */
+VIR_MOCKABLE(virNetDevTapGetRealDeviceName);
 char*
-virNetDevTapGetRealDeviceName(char *ifname ATTRIBUTE_UNUSED)
+virNetDevTapGetRealDeviceNameImpl(char *ifname ATTRIBUTE_UNUSED)
 {
 #ifdef TAPGIFNAME
     char *ret = NULL;
@@ -238,11 +239,12 @@ virNetDevProbeVnetHdr(int tapfd)
  *
  * Returns 0 in case of success or -1 on failure.
  */
-int virNetDevTapCreate(char **ifname,
-                       const char *tunpath,
-                       int *tapfd,
-                       size_t tapfdSize,
-                       unsigned int flags)
+VIR_MOCKABLE(virNetDevTapCreate);
+int virNetDevTapCreateImpl(char **ifname,
+                           const char *tunpath,
+                           int *tapfd,
+                           size_t tapfdSize,
+                           unsigned int flags)
 {
     size_t i;
     struct ifreq ifr;
@@ -373,11 +375,12 @@ int virNetDevTapDelete(const char *ifname,
     return ret;
 }
 #elif defined(SIOCIFCREATE2) && defined(SIOCIFDESTROY) && defined(IF_MAXUNIT)
-int virNetDevTapCreate(char **ifname,
-                       const char *tunpath ATTRIBUTE_UNUSED,
-                       int *tapfd,
-                       size_t tapfdSize,
-                       unsigned int flags ATTRIBUTE_UNUSED)
+VIR_MOCKABLE(virNetDevTapCreate);
+int virNetDevTapCreateImpl(char **ifname,
+                           const char *tunpath ATTRIBUTE_UNUSED,
+                           int *tapfd,
+                           size_t tapfdSize,
+                           unsigned int flags ATTRIBUTE_UNUSED)
 {
     int s;
     struct ifreq ifr;
@@ -484,11 +487,12 @@ int virNetDevTapDelete(const char *ifname,
 }
 
 #else
-int virNetDevTapCreate(char **ifname ATTRIBUTE_UNUSED,
-                       const char *tunpath ATTRIBUTE_UNUSED,
-                       int *tapfd ATTRIBUTE_UNUSED,
-                       size_t tapfdSize ATTRIBUTE_UNUSED,
-                       unsigned int flags ATTRIBUTE_UNUSED)
+VIR_MOCKABLE(virNetDevTapCreate);
+int virNetDevTapCreateImpl(char **ifname ATTRIBUTE_UNUSED,
+                           const char *tunpath ATTRIBUTE_UNUSED,
+                           int *tapfd ATTRIBUTE_UNUSED,
+                           size_t tapfdSize ATTRIBUTE_UNUSED,
+                           unsigned int flags ATTRIBUTE_UNUSED)
 {
     virReportSystemError(ENOSYS, "%s",
                          _("Unable to create TAP devices on this platform"));
@@ -608,7 +612,9 @@ virNetDevTapAttachBridge(const char *tapname,
  *
  * Returns 0 in case of success or -1 on failure
  */
-int virNetDevTapCreateInBridgePort(const char *brname,
+VIR_MOCKABLE(virNetDevTapCreateInBridgePort);
+int
+virNetDevTapCreateInBridgePortImpl(const char *brname,
                                    char **ifname,
                                    const virMacAddr *macaddr,
                                    const unsigned char *vmuuid,

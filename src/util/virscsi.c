@@ -109,12 +109,13 @@ virSCSIDeviceGetAdapterId(const char *adapter,
     return -1;
 }
 
+VIR_MOCKABLE(virSCSIDeviceGetSgName);
 char *
-virSCSIDeviceGetSgName(const char *sysfs_prefix,
-                       const char *adapter,
-                       unsigned int bus,
-                       unsigned int target,
-                       unsigned long long unit)
+virSCSIDeviceGetSgNameImpl(const char *sysfs_prefix,
+                           const char *adapter,
+                           unsigned int bus,
+                           unsigned int target,
+                           unsigned long long unit)
 {
     DIR *dir = NULL;
     struct dirent *entry;

@@ -160,8 +160,9 @@ virNumaSetupMemoryPolicy(virDomainNumatuneMemMode mode,
     return ret;
 }
 
+VIR_MOCKABLE(virNumaIsAvailable);
 bool
-virNumaIsAvailable(void)
+virNumaIsAvailableImpl(void)
 {
     return numa_available() != -1;
 }
@@ -174,8 +175,9 @@ virNumaIsAvailable(void)
  *
  * Returns the highest NUMA node id on success, -1 on error.
  */
+VIR_MOCKABLE(virNumaGetMaxNode);
 int
-virNumaGetMaxNode(void)
+virNumaGetMaxNodeImpl(void)
 {
     int ret;
 
@@ -207,10 +209,11 @@ virNumaGetMaxNode(void)
  *
  * Returns 0 on success, -1 on error. Does not report errors.
  */
+VIR_MOCKABLE(virNumaGetNodeMemory);
 int
-virNumaGetNodeMemory(int node,
-                     unsigned long long *memsize,
-                     unsigned long long *memfree)
+virNumaGetNodeMemoryImpl(int node,
+                         unsigned long long *memsize,
+                         unsigned long long *memfree)
 {
     long long node_size;
     long long node_free;
@@ -248,9 +251,10 @@ virNumaGetNodeMemory(int node,
 # define n_bits(var) (8 * sizeof(var))
 # define MASK_CPU_ISSET(mask, cpu) \
   (((mask)[((cpu) / n_bits(*(mask)))] >> ((cpu) % n_bits(*(mask)))) & 1)
+VIR_MOCKABLE(virNumaGetNodeCPUs);
 int
-virNumaGetNodeCPUs(int node,
-                   virBitmapPtr *cpus)
+virNumaGetNodeCPUsImpl(int node,
+                       virBitmapPtr *cpus)
 {
     unsigned long *mask = NULL;
     unsigned long *allonesmask = NULL;
@@ -321,15 +325,17 @@ virNumaSetupMemoryPolicy(virDomainNumatuneMemMode mode ATTRIBUTE_UNUSED,
     return 0;
 }
 
+VIR_MOCKABLE(virNumaIsAvailable);
 bool
-virNumaIsAvailable(void)
+virNumaIsAvailableImpl(void)
 {
     return false;
 }
 
 
+VIR_MOCKABLE(virNumaGetMaxNode);
 int
-virNumaGetMaxNode(void)
+virNumaGetMaxNodeImpl(void)
 {
     virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                    _("NUMA isn't available on this host"));
@@ -337,10 +343,11 @@ virNumaGetMaxNode(void)
 }
 
 
+VIR_MOCKABLE(virNumaGetNodeMemory);
 int
-virNumaGetNodeMemory(int node ATTRIBUTE_UNUSED,
-                     unsigned long long *memsize,
-                     unsigned long long *memfree)
+virNumaGetNodeMemoryImpl(int node ATTRIBUTE_UNUSED,
+                         unsigned long long *memsize,
+                         unsigned long long *memfree)
 {
     if (memsize)
         *memsize = 0;
@@ -353,9 +360,10 @@ virNumaGetNodeMemory(int node ATTRIBUTE_UNUSED,
 }
 
 
+VIR_MOCKABLE(virNumaGetNodeCPUs);
 int
-virNumaGetNodeCPUs(int node ATTRIBUTE_UNUSED,
-                   virBitmapPtr *cpus)
+virNumaGetNodeCPUsImpl(int node ATTRIBUTE_UNUSED,
+                       virBitmapPtr *cpus)
 {
     *cpus = NULL;
 
@@ -390,8 +398,9 @@ virNumaGetMaxCPUs(void)
  * Returns: true if @node is available,
  *          false if @node doesn't exist
  */
+VIR_MOCKABLE(virNumaNodeIsAvailable);
 bool
-virNumaNodeIsAvailable(int node)
+virNumaNodeIsAvailableImpl(int node)
 {
     return numa_bitmask_isbitset(numa_nodes_ptr, node);
 }
@@ -416,10 +425,11 @@ virNumaNodeIsAvailable(int node)
  *
  * Returns 0 on success, -1 otherwise.
  */
+VIR_MOCKABLE(virNumaGetDistances);
 int
-virNumaGetDistances(int node,
-                    int **distances,
-                    int *ndistances)
+virNumaGetDistancesImpl(int node,
+                        int **distances,
+                        int *ndistances)
 {
     int ret = -1;
     int max_node;
@@ -454,8 +464,9 @@ virNumaGetDistances(int node,
 
 #else /* !(WITH_NUMACTL && HAVE_NUMA_BITMASK_ISBITSET) */
 
+VIR_MOCKABLE(virNumaNodeIsAvailable);
 bool
-virNumaNodeIsAvailable(int node)
+virNumaNodeIsAvailableImpl(int node)
 {
     int max_node = virNumaGetMaxNode();
 
@@ -467,10 +478,11 @@ virNumaNodeIsAvailable(int node)
 }
 
 
+VIR_MOCKABLE(virNumaGetDistances);
 int
-virNumaGetDistances(int node ATTRIBUTE_UNUSED,
-                    int **distances,
-                    int *ndistances)
+virNumaGetDistancesImpl(int node ATTRIBUTE_UNUSED,
+                        int **distances,
+                        int *ndistances)
 {
     *distances = NULL;
     *ndistances = 0;
@@ -706,12 +718,13 @@ virNumaGetPageInfo(int node,
  *
  * Returns 0 on success, -1 otherwise.
  */
+VIR_MOCKABLE(virNumaGetPages);
 int
-virNumaGetPages(int node,
-                unsigned int **pages_size,
-                unsigned int **pages_avail,
-                unsigned int **pages_free,
-                size_t *npages)
+virNumaGetPagesImpl(int node,
+                    unsigned int **pages_size,
+                    unsigned int **pages_avail,
+                    unsigned int **pages_free,
+                    size_t *npages)
 {
     int ret = -1;
     char *path = NULL;
@@ -943,12 +956,13 @@ virNumaGetPageInfo(int node ATTRIBUTE_UNUSED,
 }
 
 
+VIR_MOCKABLE(virNumaGetPages);
 int
-virNumaGetPages(int node ATTRIBUTE_UNUSED,
-                unsigned int **pages_size ATTRIBUTE_UNUSED,
-                unsigned int **pages_avail ATTRIBUTE_UNUSED,
-                unsigned int **pages_free ATTRIBUTE_UNUSED,
-                size_t *npages ATTRIBUTE_UNUSED)
+virNumaGetPagesImpl(int node ATTRIBUTE_UNUSED,
+                    unsigned int **pages_size ATTRIBUTE_UNUSED,
+                    unsigned int **pages_avail ATTRIBUTE_UNUSED,
+                    unsigned int **pages_free ATTRIBUTE_UNUSED,
+                    size_t *npages ATTRIBUTE_UNUSED)
 {
     virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                    _("page info is not supported on this platform"));
@@ -968,8 +982,9 @@ virNumaSetPagePoolSize(int node ATTRIBUTE_UNUSED,
 }
 #endif /* #ifdef __linux__ */
 
+VIR_MOCKABLE(virNumaNodesetIsAvailable);
 bool
-virNumaNodesetIsAvailable(virBitmapPtr nodeset)
+virNumaNodesetIsAvailableImpl(virBitmapPtr nodeset)
 {
     ssize_t bit = -1;
 
