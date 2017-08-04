@@ -1305,6 +1305,7 @@ virVMXParseConfig(virVMXContext *ctx,
     long long sharedFolder_maxNum = 0;
     int cpumasklen;
     char *namespaceData;
+    size_t i;
 
     if (ctx->parseFileName == NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -1761,10 +1762,12 @@ virVMXParseConfig(virVMXContext *ctx,
     /* FIXME */
 
     /* def:videos */
-    if (VIR_ALLOC_N(def->videos, 1) < 0)
-        goto cleanup;
-
+    for (i = 0; i < def->nvideos; i++)
+        virDomainVideoDefFree(def->videos[i]);
     def->nvideos = 0;
+
+    if (VIR_REALLOC_N(def->videos, 1) < 0)
+        goto cleanup;
 
     if (virVMXParseSVGA(conf, &def->videos[def->nvideos]) < 0)
         goto cleanup;
