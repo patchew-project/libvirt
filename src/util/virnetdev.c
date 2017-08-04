@@ -1262,7 +1262,7 @@ virNetDevGetVirtualFunctions(const char *pfname,
             goto cleanup;
         }
 
-        if (virPCIGetNetName(pci_sysfs_device_link, &((*vfname)[i])) < 0)
+        if (virPCIGetNetName(pci_sysfs_device_link, NULL, &((*vfname)[i])) < 0)
             goto cleanup;
 
         if (!(*vfname)[i])
@@ -1362,7 +1362,7 @@ virNetDevGetPhysicalFunction(const char *ifname, char **pfname)
     if (virNetDevSysfsDeviceFile(&physfn_sysfs_path, ifname, "physfn") < 0)
         return ret;
 
-    if (virPCIGetNetName(physfn_sysfs_path, pfname) < 0)
+    if (virPCIGetNetName(physfn_sysfs_path, NULL, pfname) < 0)
         goto cleanup;
 
     if (!*pfname) {
@@ -1422,7 +1422,7 @@ virNetDevPFGetVF(const char *pfname, int vf, char **vfname)
      * isn't bound to a netdev driver, it won't have a netdev name,
      * and vfname will be NULL).
      */
-    ret = virPCIGetNetName(virtfnSysfsPath, vfname);
+    ret = virPCIGetNetName(virtfnSysfsPath, NULL, vfname);
 
  cleanup:
     VIR_FREE(virtfnName);

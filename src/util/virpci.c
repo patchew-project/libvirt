@@ -24,6 +24,7 @@
 #include <config.h>
 
 #include "virpci.h"
+#include "virnetdev.h"
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -2857,12 +2858,15 @@ virPCIDeviceAddressGetSysfsFile(virPCIDeviceAddressPtr addr,
  * Returns the network device name of a pci device
  */
 int
-virPCIGetNetName(char *device_link_sysfs_path, char **netname)
+virPCIGetNetName(char *device_link_sysfs_path,
+                 char *physPortID,
+                 char **netname)
 {
     char *pcidev_sysfs_net_path = NULL;
     int ret = -1;
     DIR *dir = NULL;
     struct dirent *entry = NULL;
+    char *thisPhysPortID = NULL;
 
     if (virBuildPath(&pcidev_sysfs_net_path, device_link_sysfs_path,
                      "net") == -1) {
@@ -2873,21 +2877,47 @@ virPCIGetNetName(char *device_link_sysfs_path, char **netname)
     if (virDirOpenQuiet(&dir, pcidev_sysfs_net_path) < 0) {
         /* this *isn't* an error - caller needs to check for netname == NULL */
         ret = 0;
-        goto out;
+        goto cleanup;
     }
 
     while (virDirRead(dir, &entry, pcidev_sysfs_net_path) > 0) {
-        /* Assume a single directory entry */
-        if (VIR_STRDUP(*netname, entry->d_name) > 0)
-            ret = 0;
+        /* if the caller sent a physPortID, compare it to the
+         * physportID of this netdev. If not, accept the first netdev
+         */
+        if (physPortID) {
+            if (virNetDevGetPhysPortID(entry->d_name, &thisPhysPortID) < 0)
+                goto cleanup;
+
+            /* if this one doesn't match, keep looking */
+            if (STRNEQ_NULLABLE(physPortID, thisPhysPortID)) {
+                VIR_FREE(thisPhysPortID);
+                continue;
+            }
+        }
+        if (VIR_STRDUP(*netname, entry->d_name) < 0)
+            goto cleanup;
+
+        ret = 0;
         break;
     }
 
+    if (ret < 0) {
+        if (physPortID) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Could not find network device with "
+                             "phys_port_id '%s' under PCI device at %s"),
+                           physPortID, device_link_sysfs_path);
+        } else {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("PCI device at %s had a net directory, "
+                             "but it was empty"),
+                           device_link_sysfs_path);
+        }
+    }
+ cleanup:
     VIR_DIR_CLOSE(dir);
-
- out:
     VIR_FREE(pcidev_sysfs_net_path);
-
+    VIR_FREE(thisPhysPortID);
     return ret;
 }
 
@@ -2915,7 +2945,7 @@ virPCIGetVirtualFunctionInfo(const char *vf_sysfs_device_path,
         goto cleanup;
     }
 
-    if (virPCIGetNetName(pf_sysfs_device_path, pfname) < 0)
+    if (virPCIGetNetName(pf_sysfs_device_path, NULL, pfname) < 0)
         goto cleanup;
 
     if (!*pfname) {
@@ -2992,6 +3022,7 @@ virPCIDeviceAddressGetSysfsFile(virPCIDeviceAddressPtr dev ATTRIBUTE_UNUSED,
 
 int
 virPCIGetNetName(char *device_link_sysfs_path ATTRIBUTE_UNUSED,
+                 char *physPortID ATTRIBUTE_UNUSED,
                  char **netname ATTRIBUTE_UNUSED)
 {
     virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _(unsupported));
