@@ -796,6 +796,7 @@ virTestCompareToFile(const char *strcontent,
         goto failure;
 
     if (filecontent &&
+        strlen(filecontent) > 0 &&
         filecontent[strlen(filecontent) - 1] == '\n' &&
         strcontent[strlen(strcontent) - 1] != '\n') {
         if (virAsprintf(&fixedcontent, "%s\n", strcontent) < 0)
