@@ -1211,6 +1211,10 @@ int                    virDomainManagedSaveRemove(virDomainPtr dom,
                                                   unsigned int flags);
 char *                 virDomainManagedSaveGetXMLDesc(virDomainPtr domain,
                                                       unsigned int flags);
+int                    virDomainManagedSaveDefineXML(virDomainPtr domain,
+                                                     const char *dxml,
+                                                     unsigned int flags);
+
 
 /*
  * Domain core dump
