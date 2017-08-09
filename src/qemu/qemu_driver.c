@@ -7367,10 +7367,15 @@ qemuDomainUndefineFlags(virDomainPtr dom,
         }
     }
 
-    if (!virDomainObjIsActive(vm) &&
-        vm->def->os.loader && vm->def->os.loader->nvram &&
+    if (vm->def->os.loader &&
+        vm->def->os.loader->nvram &&
         virFileExists(vm->def->os.loader->nvram)) {
         if ((flags & VIR_DOMAIN_UNDEFINE_NVRAM)) {
+            if (virDomainObjIsActive(vm)) {
+                virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                               _("cannot delete active domain with nvram"));
+                goto endjob;
+            }
             if (unlink(vm->def->os.loader->nvram) < 0) {
                 virReportSystemError(errno,
                                      _("failed to remove nvram: %s"),
