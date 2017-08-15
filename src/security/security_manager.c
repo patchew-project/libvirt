@@ -670,7 +670,7 @@ virSecurityManagerGenLabel(virSecurityManagerPtr mgr,
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                                _("Unconfined guests are not allowed on this host"));
                 goto cleanup;
-            } else if (vm->nseclabels && generated) {
+            } else if (vm->nseclabels == 0 && generated) {
                 VIR_DEBUG("Skipping auto generated seclabel of type none");
                 virSecurityLabelDefFree(seclabel);
                 seclabel = NULL;
