@@ -6652,9 +6652,9 @@ qemuProcessAutoDestroy(virDomainObjPtr dom,
                                      VIR_DOMAIN_EVENT_STOPPED,
                                      VIR_DOMAIN_EVENT_STOPPED_DESTROYED);
 
-    qemuDomainObjEndJob(driver, dom);
-
     qemuDomainRemoveInactive(driver, dom);
+
+    qemuDomainObjEndJob(driver, dom);
 
     qemuDomainEventQueue(driver, event);
 
@@ -6987,10 +6987,10 @@ qemuProcessReconnect(void *opaque)
         driver->inhibitCallback(true, driver->inhibitOpaque);
 
  cleanup:
-    if (jobStarted)
-        qemuDomainObjEndJob(driver, obj);
     if (!virDomainObjIsActive(obj))
         qemuDomainRemoveInactive(driver, obj);
+    if (jobStarted)
+        qemuDomainObjEndJob(driver, obj);
     virDomainObjEndAPI(&obj);
     virObjectUnref(conn);
     virObjectUnref(cfg);
@@ -7065,7 +7065,7 @@ qemuProcessReconnectHelper(virDomainObjPtr obj,
          */
         qemuProcessStop(src->driver, obj, VIR_DOMAIN_SHUTOFF_FAILED,
                         QEMU_ASYNC_JOB_NONE, 0);
-        qemuDomainRemoveInactive(src->driver, obj);
+        qemuDomainRemoveInactiveJob(src->driver, obj);
 
         virDomainObjEndAPI(&obj);
         virNWFilterUnlockFilterUpdates();
