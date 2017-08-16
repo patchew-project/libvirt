@@ -4672,6 +4672,31 @@ virDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
     return 0;
 }
 
+static int
+virDomainDeviceDefPostParseOne(virDomainDeviceDefPtr dev,
+                               const virDomainDef *def,
+                               virCapsPtr caps,
+                               unsigned int flags,
+                               virDomainXMLOptionPtr xmlopt)
+{
+    void *parseOpaque = NULL;
+    int ret;
+
+    if (xmlopt->config.domainPostParseDataAlloc) {
+        if (xmlopt->config.domainPostParseDataAlloc(def, caps, flags,
+                                                    xmlopt->config.priv,
+                                                    &parseOpaque) < 0)
+            return -1;
+    }
+
+    ret = virDomainDeviceDefPostParse(dev, def, caps, flags, xmlopt, parseOpaque);
+
+    if (parseOpaque && xmlopt->config.domainPostParseDataFree)
+        xmlopt->config.domainPostParseDataFree(parseOpaque);
+
+    return ret;
+}
+
 
 struct virDomainDefPostParseDeviceIteratorData {
     virCapsPtr caps;
@@ -4818,6 +4843,7 @@ virDomainDefPostParse(virDomainDefPtr def,
                       void *parseOpaque)
 {
     int ret;
+    bool localParseOpaque = false;
     struct virDomainDefPostParseDeviceIteratorData data = {
         .caps = caps,
         .xmlopt = xmlopt,
@@ -4834,6 +4860,17 @@ virDomainDefPostParse(virDomainDefPtr def,
             return ret;
     }
 
+    if (!data.parseOpaque &&
+        xmlopt->config.domainPostParseDataAlloc) {
+        ret = xmlopt->config.domainPostParseDataAlloc(def, caps, parseFlags,
+                                                      xmlopt->config.priv,
+                                                      &data.parseOpaque);
+
+        if (ret < 0)
+            return ret;
+        localParseOpaque = true;
+    }
+
     /* this must be done before the hypervisor-specific callback,
      * in case presence of a controller at a specific index is checked
      */
@@ -4843,9 +4880,9 @@ virDomainDefPostParse(virDomainDefPtr def,
     if (xmlopt->config.domainPostParseCallback) {
         ret = xmlopt->config.domainPostParseCallback(def, caps, parseFlags,
                                                      xmlopt->config.priv,
-                                                     parseOpaque);
+                                                     data.parseOpaque);
         if (ret < 0)
-            return ret;
+            goto cleanup;
     }
 
     /* iterate the devices */
@@ -4853,24 +4890,30 @@ virDomainDefPostParse(virDomainDefPtr def,
                                                   virDomainDefPostParseDeviceIterator,
                                                   true,
                                                   &data)) < 0)
-        return ret;
+        goto cleanup;
 
 
     if ((ret = virDomainDefPostParseInternal(def, &data)) < 0)
-        return ret;
+        goto cleanup;
 
     if (xmlopt->config.assignAddressesCallback) {
         ret = xmlopt->config.assignAddressesCallback(def, caps, parseFlags,
                                                      xmlopt->config.priv,
-                                                     parseOpaque);
+                                                     data.parseOpaque);
         if (ret < 0)
-            return ret;
+            goto cleanup;
     }
 
-    if (virDomainDefPostParseCheckFeatures(def, xmlopt) < 0)
-        return -1;
+    if ((ret = virDomainDefPostParseCheckFeatures(def, xmlopt)) < 0)
+        goto cleanup;
 
-    return 0;
+    ret = 0;
+
+ cleanup:
+    if (localParseOpaque && xmlopt->config.domainPostParseDataFree)
+        xmlopt->config.domainPostParseDataFree(data.parseOpaque);
+
+    return ret;
 }
 
 
@@ -14653,7 +14696,7 @@ virDomainDeviceDefParse(const char *xmlStr,
     }
 
     /* callback to fill driver specific device aspects */
-    if (virDomainDeviceDefPostParse(dev, def, caps, flags, xmlopt, NULL) < 0)
+    if (virDomainDeviceDefPostParseOne(dev, def, caps, flags, xmlopt) < 0)
         goto error;
 
     /* validate the configuration */
