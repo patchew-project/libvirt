@@ -9326,10 +9326,10 @@ virDomainControllerDefParseXML(xmlNodePtr node,
                 goto error;
             }
             if (def->opts.pciopts.targetIndex < 0 ||
-                def->opts.pciopts.targetIndex > 31) {
+                def->opts.pciopts.targetIndex > 30) {
                 virReportError(VIR_ERR_XML_ERROR,
                                _("PCI controller target index '%s' out of "
-                                 "range - must be 0-31"),
+                                 "range - must be 0-30"),
                                targetIndex);
                 goto error;
             }

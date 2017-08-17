@@ -2157,9 +2157,9 @@ qemuDomainAddressFindNewTargetIndex(virDomainDefPtr def)
     int targetIndex;
     int ret = -1;
 
-    /* Try all indexes between 1 and 31 - QEMU only supports 32
+    /* Try all indexes between 1 and 30 - QEMU only supports 31
      * PHBs, and 0 is reserved for the default, implicit one */
-    for (targetIndex = 1; targetIndex <= 31; targetIndex++) {
+    for (targetIndex = 1; targetIndex <= 30; targetIndex++) {
         bool found = false;
         size_t i;
 
