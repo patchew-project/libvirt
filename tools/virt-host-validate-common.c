@@ -35,6 +35,7 @@
 #include "virfile.h"
 #include "virt-host-validate-common.h"
 #include "virstring.h"
+#include "virarch.h"
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
@@ -443,7 +444,7 @@ int virHostValidateIOMMU(const char *hvname,
     struct stat sb;
     const char *bootarg = NULL;
     bool isAMD = false, isIntel = false;
-
+    virArch hostarch;
     flags = virHostValidateGetCPUFlags();
 
     if (flags && virBitmapIsBitSet(flags, VIR_HOST_VALIDATE_CPU_FLAG_VMX))
@@ -454,6 +455,7 @@ int virHostValidateIOMMU(const char *hvname,
     virBitmapFree(flags);
 
     virHostMsgCheck(hvname, "%s", _("for device assignment IOMMU support"));
+    hostarch = virArchFromHost();
 
     if (isIntel) {
         if (access("/sys/firmware/acpi/tables/DMAR", F_OK) == 0) {
@@ -477,7 +479,7 @@ int virHostValidateIOMMU(const char *hvname,
                            "hardware platform");
             return -1;
         }
-    } else {
+    } else if (!ARCH_IS_PPC64(hostarch)) {
         virHostMsgFail(level,
                        "Unknown if this platform has IOMMU support");
         return -1;
@@ -490,6 +492,9 @@ int virHostValidateIOMMU(const char *hvname,
 
     if (!S_ISDIR(sb.st_mode))
         return 0;
+
+    if (S_ISDIR(sb.st_mode) && ARCH_IS_PPC64(hostarch))
+        virHostMsgPass();
 
     virHostMsgCheck(hvname, "%s", _("if IOMMU is enabled by kernel"));
     if (sb.st_nlink <= 2) {
