@@ -155,6 +155,7 @@ testDriverFree(testDriverPtr driver)
     virNodeDeviceObjListFree(driver->devs);
     virObjectUnref(driver->networks);
     virInterfaceObjListFree(driver->ifaces);
+    virInterfaceObjListFree(driver->backupIfaces);
     virStoragePoolObjListFree(&driver->pools);
     virObjectUnref(driver->eventState);
     virMutexUnlock(&driver->lock);
@@ -3689,11 +3690,7 @@ testInterfaceObjFindByName(testDriverPtr privconn,
 {
     virInterfaceObjPtr obj;
 
-    testDriverLock(privconn);
-    obj = virInterfaceObjListFindByName(privconn->ifaces, name);
-    testDriverUnlock(privconn);
-
-    if (!obj)
+    if (!(obj = virInterfaceObjListFindByName(privconn->ifaces, name)))
         virReportError(VIR_ERR_NO_INTERFACE,
                        _("no interface with matching name '%s'"),
                        name);
@@ -3706,12 +3703,8 @@ static int
 testConnectNumOfInterfaces(virConnectPtr conn)
 {
     testDriverPtr privconn = conn->privateData;
-    int ninterfaces;
 
-    testDriverLock(privconn);
-    ninterfaces = virInterfaceObjListNumOfInterfaces(privconn->ifaces, true);
-    testDriverUnlock(privconn);
-    return ninterfaces;
+    return virInterfaceObjListNumOfInterfaces(privconn->ifaces, true);
 }
 
 
@@ -3721,14 +3714,8 @@ testConnectListInterfaces(virConnectPtr conn,
                           int maxnames)
 {
     testDriverPtr privconn = conn->privateData;
-    int nnames;
 
-    testDriverLock(privconn);
-    nnames = virInterfaceObjListGetNames(privconn->ifaces, true,
-                                         names, maxnames);
-    testDriverUnlock(privconn);
-
-    return nnames;
+    return virInterfaceObjListGetNames(privconn->ifaces, true, names, maxnames);
 }
 
 
@@ -3736,12 +3723,8 @@ static int
 testConnectNumOfDefinedInterfaces(virConnectPtr conn)
 {
     testDriverPtr privconn = conn->privateData;
-    int ninterfaces;
 
-    testDriverLock(privconn);
-    ninterfaces = virInterfaceObjListNumOfInterfaces(privconn->ifaces, false);
-    testDriverUnlock(privconn);
-    return ninterfaces;
+    return virInterfaceObjListNumOfInterfaces(privconn->ifaces, false);
 }
 
 
@@ -3751,14 +3734,8 @@ testConnectListDefinedInterfaces(virConnectPtr conn,
                                  int maxnames)
 {
     testDriverPtr privconn = conn->privateData;
-    int nnames;
 
-    testDriverLock(privconn);
-    nnames = virInterfaceObjListGetNames(privconn->ifaces, false,
-                                         names, maxnames);
-    testDriverUnlock(privconn);
-
-    return nnames;
+    return virInterfaceObjListGetNames(privconn->ifaces, false, names, maxnames);
 }
 
 
@@ -3791,12 +3768,8 @@ testInterfaceLookupByMACString(virConnectPtr conn,
     char *ifacenames[] = { NULL, NULL };
     virInterfacePtr ret = NULL;
 
-    testDriverLock(privconn);
-    ifacect = virInterfaceObjListFindByMACString(privconn->ifaces, mac,
-                                                 ifacenames, 2);
-    testDriverUnlock(privconn);
-
-    if (ifacect == 0) {
+    if ((ifacect = virInterfaceObjListFindByMACString(privconn->ifaces, mac,
+                                                      ifacenames, 2)) == 0) {
         virReportError(VIR_ERR_NO_INTERFACE,
                        _("no interface with matching mac '%s'"), mac);
         goto cleanup;
@@ -3880,6 +3853,7 @@ testInterfaceChangeCommit(virConnectPtr conn,
     }
 
     virInterfaceObjListFree(privconn->backupIfaces);
+    privconn->backupIfaces = NULL;
     privconn->transaction_running = false;
 
     ret = 0;
@@ -3910,8 +3884,7 @@ testInterfaceChangeRollback(virConnectPtr conn,
     }
 
     virInterfaceObjListFree(privconn->ifaces);
-    privconn->ifaces = privconn->backupIfaces;
-    privconn->backupIfaces = NULL;
+    VIR_STEAL_PTR(privconn->ifaces, privconn->backupIfaces);
 
     privconn->transaction_running = false;
 
@@ -3958,11 +3931,10 @@ testInterfaceDefineXML(virConnectPtr conn,
 
     virCheckFlags(0, NULL);
 
-    testDriverLock(privconn);
-    if ((def = virInterfaceDefParseString(xmlStr)) == NULL)
-        goto cleanup;
+    if (!(def = virInterfaceDefParseString(xmlStr)))
+        return NULL;
 
-    if ((obj = virInterfaceObjListAssignDef(privconn->ifaces, def)) == NULL)
+    if (!(obj = virInterfaceObjListAssignDef(privconn->ifaces, def)))
         goto cleanup;
     def = NULL;
     objdef = virInterfaceObjGetDef(obj);
@@ -3972,7 +3944,6 @@ testInterfaceDefineXML(virConnectPtr conn,
  cleanup:
     virInterfaceDefFree(def);
     virInterfaceObjEndAPI(&obj);
-    testDriverUnlock(privconn);
     return ret;
 }
 
