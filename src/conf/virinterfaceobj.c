@@ -33,15 +33,13 @@
 VIR_LOG_INIT("conf.virinterfaceobj");
 
 struct _virInterfaceObj {
-    virObjectLockable parent;
+    virObjectLookupKeys parent;
 
-    bool active;           /* true if interface is active (up) */
     virInterfaceDefPtr def; /* The interface definition */
 };
 
 struct _virInterfaceObjList {
-    size_t count;
-    virInterfaceObjPtr *objs;
+    virObjectLookupHash parent;
 };
 
 /* virInterfaceObj manipulation */
@@ -52,7 +50,7 @@ static void virInterfaceObjDispose(void *obj);
 static int
 virInterfaceObjOnceInit(void)
 {
-    if (!(virInterfaceObjClass = virClassNew(virClassForObjectLockable(),
+    if (!(virInterfaceObjClass = virClassNew(virClassForObjectLookupKeys(),
                                              "virInterfaceObj",
                                              sizeof(virInterfaceObj),
                                              virInterfaceObjDispose)))
@@ -74,14 +72,14 @@ virInterfaceObjDispose(void *opaque)
 
 
 static virInterfaceObjPtr
-virInterfaceObjNew(void)
+virInterfaceObjNew(const char *name)
 {
     virInterfaceObjPtr obj;
 
     if (virInterfaceObjInitialize() < 0)
         return NULL;
 
-    if (!(obj = virObjectLockableNew(virInterfaceObjClass)))
+    if (!(obj = virObjectLookupKeysNew(virInterfaceObjClass, name, NULL)))
         return NULL;
 
     virObjectLock(obj);
@@ -112,7 +110,7 @@ virInterfaceObjGetDef(virInterfaceObjPtr obj)
 bool
 virInterfaceObjIsActive(virInterfaceObjPtr obj)
 {
-    return obj->active;
+    return virObjectLookupKeysIsActive(obj);
 }
 
 
@@ -120,7 +118,7 @@ void
 virInterfaceObjSetActive(virInterfaceObjPtr obj,
                          bool active)
 {
-    obj->active = active;
+    virObjectLookupKeysSetActive(obj, active);
 }
 
 
@@ -128,11 +126,40 @@ virInterfaceObjSetActive(virInterfaceObjPtr obj,
 virInterfaceObjListPtr
 virInterfaceObjListNew(void)
 {
-    virInterfaceObjListPtr interfaces;
+    return virObjectLookupHashNew(virClassForObjectLookupHash(), 10, false);
+}
 
-    if (VIR_ALLOC(interfaces) < 0)
-        return NULL;
-    return interfaces;
+
+static int
+virInterfaceObjListFindByMACStringCb(void *payload,
+                                     const void *name ATTRIBUTE_UNUSED,
+                                     void *opaque)
+{
+    virInterfaceObjPtr obj = payload;
+    virObjectLookupHashForEachDataPtr data = opaque;
+    char **const matches = (char **const)data->elems;
+    virInterfaceDefPtr def;
+    int ret = -1;
+
+    if (data->error)
+        return 0;
+
+    virObjectLock(obj);
+    def = obj->def;
+    if (STRCASEEQ(def->mac, data->matchStr)) {
+        if (data->nElems < data->maxElems) {
+            if (VIR_STRDUP(matches[data->nElems], def->name) < 0) {
+                data->error = true;
+                goto cleanup;
+            }
+            data->nElems++;
+        }
+    }
+    ret = 0;
+
+ cleanup:
+    virObjectUnlock(obj);
+    return ret;
 }
 
 
@@ -142,33 +169,22 @@ virInterfaceObjListFindByMACString(virInterfaceObjListPtr interfaces,
                                    char **const matches,
                                    int maxmatches)
 {
-    size_t i;
-    int matchct = 0;
+    virObjectLookupHashForEachData data = {
+        .error = false, .matchStr = mac, .nElems = 0,
+        .elems = (void **)matches, .maxElems = maxmatches };
 
-    for (i = 0; i < interfaces->count; i++) {
-        virInterfaceObjPtr obj = interfaces->objs[i];
-        virInterfaceDefPtr def;
+    return virObjectLookupHashForEach(interfaces,
+                                      virInterfaceObjListFindByMACStringCb,
+                                      &data);
+}
 
-        virObjectLock(obj);
-        def = obj->def;
-        if (STRCASEEQ(def->mac, mac)) {
-            if (matchct < maxmatches) {
-                if (VIR_STRDUP(matches[matchct], def->name) < 0) {
-                    virObjectUnlock(obj);
-                    goto error;
-                }
-                matchct++;
-            }
-        }
-        virObjectUnlock(obj);
-    }
-    return matchct;
 
- error:
-    while (--matchct >= 0)
-        VIR_FREE(matches[matchct]);
-
-    return -1;
+static virInterfaceObjPtr
+virInterfaceObjListFindByNameLocked(virInterfaceObjListPtr interfaces,
+                                    const char *name)
+{
+    virObjectLookupKeysPtr obj = virObjectLookupHashFindLocked(interfaces, name);
+    return (virInterfaceObjPtr)obj;
 }
 
 
@@ -176,73 +192,73 @@ virInterfaceObjPtr
 virInterfaceObjListFindByName(virInterfaceObjListPtr interfaces,
                               const char *name)
 {
-    size_t i;
-
-    for (i = 0; i < interfaces->count; i++) {
-        virInterfaceObjPtr obj = interfaces->objs[i];
-        virInterfaceDefPtr def;
-
-        virObjectLock(obj);
-        def = obj->def;
-        if (STREQ(def->name, name))
-            return virObjectRef(obj);
-        virObjectUnlock(obj);
-    }
-
-    return NULL;
+    virObjectLookupKeysPtr obj = virObjectLookupHashFind(interfaces, name);
+    return (virInterfaceObjPtr) obj;
 }
 
 
 void
 virInterfaceObjListFree(virInterfaceObjListPtr interfaces)
 {
-    size_t i;
+    virObjectUnref(interfaces);
+}
 
-    for (i = 0; i < interfaces->count; i++)
-        virObjectUnref(interfaces->objs[i]);
-    VIR_FREE(interfaces->objs);
-    VIR_FREE(interfaces);
+
+struct interfaceCloneData {
+    const char *primaryKey;
+    virInterfaceObjListPtr dest;
+    bool error;
+};
+
+static int
+virInterfaceObjListCloneCb(void *destHashTable,
+                           void *sourceObject)
+{
+    virInterfaceObjListPtr dest = destHashTable;
+    virInterfaceObjPtr srcObj = sourceObject;
+    int ret = -1;
+    char *xml = NULL;
+    virInterfaceObjPtr obj;
+    virInterfaceDefPtr backup = NULL;
+
+    if (!(xml = virInterfaceDefFormat(srcObj->def)))
+        goto cleanup;
+
+    if (!(backup = virInterfaceDefParseString(xml)))
+        goto cleanup;
+
+    if (!(obj = virInterfaceObjListAssignDef(dest, backup)))
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(xml);
+    virInterfaceDefFree(backup);
+
+    return ret;
 }
 
 
 virInterfaceObjListPtr
 virInterfaceObjListClone(virInterfaceObjListPtr interfaces)
 {
-    size_t i;
-    unsigned int cnt;
-    virInterfaceObjListPtr dest;
+    virInterfaceObjListPtr destInterfaces = NULL;
 
     if (!interfaces)
         return NULL;
 
-    if (!(dest = virInterfaceObjListNew()))
+    if (!(destInterfaces = virInterfaceObjListNew()))
         return NULL;
 
-    cnt = interfaces->count;
-    for (i = 0; i < cnt; i++) {
-        virInterfaceObjPtr srcobj = interfaces->objs[i];
-        virInterfaceDefPtr backup;
-        virInterfaceObjPtr obj;
-        char *xml = virInterfaceDefFormat(srcobj->def);
+    if (virObjectLookupHashClone(interfaces, destInterfaces,
+                                 virInterfaceObjListCloneCb) < 0)
+        goto cleanup;
 
-        if (!xml)
-            goto error;
+    return destInterfaces;
 
-        if (!(backup = virInterfaceDefParseString(xml))) {
-            VIR_FREE(xml);
-            goto error;
-        }
-
-        VIR_FREE(xml);
-        if (!(obj = virInterfaceObjListAssignDef(dest, backup)))
-            goto error;
-        virInterfaceObjEndAPI(&obj);
-    }
-
-    return dest;
-
- error:
-    virInterfaceObjListFree(dest);
+ cleanup:
+    virObjectUnref(destInterfaces);
     return NULL;
 }
 
@@ -252,24 +268,29 @@ virInterfaceObjListAssignDef(virInterfaceObjListPtr interfaces,
                              virInterfaceDefPtr def)
 {
     virInterfaceObjPtr obj;
+    virInterfaceObjPtr ret = NULL;
 
-    if ((obj = virInterfaceObjListFindByName(interfaces, def->name))) {
+    virObjectRWLockWrite(interfaces);
+
+    if ((obj = virInterfaceObjListFindByNameLocked(interfaces, def->name))) {
         virInterfaceDefFree(obj->def);
         obj->def = def;
+    } else {
+        if (!(obj = virInterfaceObjNew(def->name)))
+            goto cleanup;
 
-        return obj;
+        if (virObjectLookupHashAdd(interfaces, (virObjectLookupKeysPtr)obj) < 0)
+            goto cleanup;
+        obj->def = def;
     }
 
-    if (!(obj = virInterfaceObjNew()))
-        return NULL;
+    ret = obj;
+    obj = NULL;
 
-    if (VIR_APPEND_ELEMENT_COPY(interfaces->objs,
-                                interfaces->count, obj) < 0) {
-        virInterfaceObjEndAPI(&obj);
-        return NULL;
-    }
-    obj->def = def;
-    return virObjectRef(obj);
+ cleanup:
+    virInterfaceObjEndAPI(&obj);
+    virObjectRWUnlock(interfaces);
+    return ret;
 }
 
 
@@ -277,20 +298,39 @@ void
 virInterfaceObjListRemove(virInterfaceObjListPtr interfaces,
                           virInterfaceObjPtr obj)
 {
-    size_t i;
+    virObjectLookupHashRemove(interfaces, (virObjectLookupKeysPtr)obj);
+}
 
-    virObjectUnlock(obj);
-    for (i = 0; i < interfaces->count; i++) {
-        virObjectLock(interfaces->objs[i]);
-        if (interfaces->objs[i] == obj) {
-            virObjectUnlock(interfaces->objs[i]);
-            virObjectUnref(interfaces->objs[i]);
 
-            VIR_DELETE_ELEMENT(interfaces->objs, i, interfaces->count);
-            break;
+static int
+virInterfaceObjListGetHelper(void *payload,
+                             const void *name ATTRIBUTE_UNUSED,
+                             void *opaque)
+{
+    virInterfaceObjPtr obj = payload;
+    virObjectLookupHashForEachDataPtr data = opaque;
+    char **const names = (char **const)data->elems;
+    virInterfaceDefPtr def;
+
+    if (data->error)
+        return 0;
+
+    if (data->maxElems >= 0 && data->nElems == data->maxElems)
+        return 0;
+
+    virObjectLock(obj);
+    def = obj->def;
+    if (data->wantActive == virInterfaceObjIsActive(obj)) {
+        if (names && VIR_STRDUP(names[data->nElems], def->name) < 0) {
+            data->error = true;
+            goto cleanup;
         }
-        virObjectUnlock(interfaces->objs[i]);
-    }
+        data->nElems++;
+     }
+
+ cleanup:
+    virObjectUnlock(obj);
+    return 0;
 }
 
 
@@ -298,18 +338,12 @@ int
 virInterfaceObjListNumOfInterfaces(virInterfaceObjListPtr interfaces,
                                    bool wantActive)
 {
-    size_t i;
-    int ninterfaces = 0;
+    virObjectLookupHashForEachData data = {
+        .wantActive = wantActive, .error = false, .nElems = 0,
+        .elems = NULL, .maxElems = -2 };
 
-    for (i = 0; (i < interfaces->count); i++) {
-        virInterfaceObjPtr obj = interfaces->objs[i];
-        virObjectLock(obj);
-        if (wantActive == virInterfaceObjIsActive(obj))
-            ninterfaces++;
-        virObjectUnlock(obj);
-    }
-
-    return ninterfaces;
+    return virObjectLookupHashForEach(interfaces, virInterfaceObjListGetHelper,
+                                      &data);
 }
 
 
@@ -319,30 +353,10 @@ virInterfaceObjListGetNames(virInterfaceObjListPtr interfaces,
                             char **const names,
                             int maxnames)
 {
-    int nnames = 0;
-    size_t i;
+    virObjectLookupHashForEachData data = {
+        .wantActive = wantActive, .error = false, .nElems = 0,
+        .elems = (void **)names, .maxElems = maxnames };
 
-    for (i = 0; i < interfaces->count && nnames < maxnames; i++) {
-        virInterfaceObjPtr obj = interfaces->objs[i];
-        virInterfaceDefPtr def;
-
-        virObjectLock(obj);
-        def = obj->def;
-        if (wantActive == virInterfaceObjIsActive(obj)) {
-            if (VIR_STRDUP(names[nnames], def->name) < 0) {
-                virObjectUnlock(obj);
-                goto failure;
-            }
-            nnames++;
-        }
-        virObjectUnlock(obj);
-    }
-
-    return nnames;
-
- failure:
-    while (--nnames >= 0)
-        VIR_FREE(names[nnames]);
-
-    return -1;
+    return virObjectLookupHashForEach(interfaces, virInterfaceObjListGetHelper,
+                                      &data);
 }
