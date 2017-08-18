@@ -38,7 +38,7 @@
 VIR_LOG_INIT("conf.virsecretobj");
 
 struct _virSecretObj {
-    virObjectLockable parent;
+    virObjectLookupKeys parent;
     char *configFile;
     char *base64File;
     virSecretDefPtr def;
@@ -47,16 +47,10 @@ struct _virSecretObj {
 };
 
 static virClassPtr virSecretObjClass;
-static virClassPtr virSecretObjListClass;
 static void virSecretObjDispose(void *obj);
-static void virSecretObjListDispose(void *obj);
 
 struct _virSecretObjList {
-    virObjectLockable parent;
-
-    /* uuid string -> virSecretObj  mapping
-     * for O(1), lockless lookup-by-uuid */
-    virHashTable *objs;
+    virObjectLookupHash parent;
 };
 
 struct virSecretSearchData {
@@ -68,16 +62,10 @@ struct virSecretSearchData {
 static int
 virSecretObjOnceInit(void)
 {
-    if (!(virSecretObjClass = virClassNew(virClassForObjectLockable(),
+    if (!(virSecretObjClass = virClassNew(virClassForObjectLookupKeys(),
                                           "virSecretObj",
                                           sizeof(virSecretObj),
                                           virSecretObjDispose)))
-        return -1;
-
-    if (!(virSecretObjListClass = virClassNew(virClassForObjectLockable(),
-                                              "virSecretObjList",
-                                              sizeof(virSecretObjList),
-                                              virSecretObjListDispose)))
         return -1;
 
     return 0;
@@ -87,14 +75,14 @@ virSecretObjOnceInit(void)
 VIR_ONCE_GLOBAL_INIT(virSecretObj)
 
 static virSecretObjPtr
-virSecretObjNew(void)
+virSecretObjNew(const char *uuidstr)
 {
     virSecretObjPtr obj;
 
     if (virSecretObjInitialize() < 0)
         return NULL;
 
-    if (!(obj = virObjectLockableNew(virSecretObjClass)))
+    if (!(obj = virObjectLookupKeysNew(virSecretObjClass, uuidstr, NULL)))
         return NULL;
 
     virObjectLock(obj);
@@ -118,20 +106,7 @@ virSecretObjEndAPI(virSecretObjPtr *obj)
 virSecretObjListPtr
 virSecretObjListNew(void)
 {
-    virSecretObjListPtr secrets;
-
-    if (virSecretObjInitialize() < 0)
-        return NULL;
-
-    if (!(secrets = virObjectLockableNew(virSecretObjListClass)))
-        return NULL;
-
-    if (!(secrets->objs = virHashCreate(50, virObjectFreeHashData))) {
-        virObjectUnref(secrets);
-        return NULL;
-    }
-
-    return secrets;
+    return virObjectLookupHashNew(virClassForObjectLookupHash(), 50, false);
 }
 
 
@@ -151,15 +126,6 @@ virSecretObjDispose(void *opaque)
 }
 
 
-static void
-virSecretObjListDispose(void *obj)
-{
-    virSecretObjListPtr secrets = obj;
-
-    virHashFree(secrets->objs);
-}
-
-
 /**
  * virSecretObjFindByUUIDLocked:
  * @secrets: list of secret objects
@@ -173,7 +139,8 @@ static virSecretObjPtr
 virSecretObjListFindByUUIDLocked(virSecretObjListPtr secrets,
                                  const char *uuidstr)
 {
-    return virObjectRef(virHashLookup(secrets->objs, uuidstr));
+    virObjectLookupKeysPtr obj = virObjectLookupHashFindLocked(secrets, uuidstr);
+    return (virSecretObjPtr)obj;
 }
 
 
@@ -191,14 +158,9 @@ virSecretObjPtr
 virSecretObjListFindByUUID(virSecretObjListPtr secrets,
                            const char *uuidstr)
 {
-    virSecretObjPtr obj;
+    virObjectLookupKeysPtr obj = virObjectLookupHashFind(secrets, uuidstr);
 
-    virObjectLock(secrets);
-    obj = virSecretObjListFindByUUIDLocked(secrets, uuidstr);
-    virObjectUnlock(secrets);
-    if (obj)
-        virObjectLock(obj);
-    return obj;
+    return (virSecretObjPtr) obj;
 }
 
 
@@ -243,14 +205,12 @@ virSecretObjListFindByUsageLocked(virSecretObjListPtr secrets,
                                   int usageType,
                                   const char *usageID)
 {
-    virSecretObjPtr obj = NULL;
+    virObjectLookupKeysPtr obj = NULL;
     struct virSecretSearchData data = { .usageType = usageType,
                                         .usageID = usageID };
 
-    obj = virHashSearch(secrets->objs, virSecretObjSearchName, &data, NULL);
-    if (obj)
-        virObjectRef(obj);
-    return obj;
+    obj = virObjectLookupHashSearchLocked(secrets, virSecretObjSearchName, &data);
+    return (virSecretObjPtr)obj;
 }
 
 
@@ -263,6 +223,12 @@ virSecretObjListFindByUsageLocked(virSecretObjListPtr secrets,
  * This function locks @secrets and finds the secret object which
  * corresponds to @usageID of @usageType.
  *
+ * NB: The usageID cannot be used as a hash table key because
+ *     virSecretDefParseUsage will not fill in the def->usage_id
+ *     if the def->usage_type is VIR_SECRET_USAGE_TYPE_NONE, thus
+ *     we cannot use def->usage_id as a key since both keys must
+ *     be present in every object in order to be valid.
+ *
  * Returns: locked and ref'd secret object.
  */
 virSecretObjPtr
@@ -270,14 +236,12 @@ virSecretObjListFindByUsage(virSecretObjListPtr secrets,
                             int usageType,
                             const char *usageID)
 {
-    virSecretObjPtr obj;
+    virObjectLookupKeysPtr obj = NULL;
+    struct virSecretSearchData data = { .usageType = usageType,
+                                        .usageID = usageID };
 
-    virObjectLock(secrets);
-    obj = virSecretObjListFindByUsageLocked(secrets, usageType, usageID);
-    virObjectUnlock(secrets);
-    if (obj)
-        virObjectLock(obj);
-    return obj;
+    obj = virObjectLookupHashSearch(secrets, virSecretObjSearchName, &data);
+    return (virSecretObjPtr)obj;
 }
 
 
@@ -294,23 +258,7 @@ void
 virSecretObjListRemove(virSecretObjListPtr secrets,
                        virSecretObjPtr obj)
 {
-    char uuidstr[VIR_UUID_STRING_BUFLEN];
-    virSecretDefPtr def;
-
-    if (!obj)
-        return;
-    def = obj->def;
-
-    virUUIDFormat(def->uuid, uuidstr);
-    virObjectRef(obj);
-    virObjectUnlock(obj);
-
-    virObjectLock(secrets);
-    virObjectLock(obj);
-    virHashRemoveEntry(secrets->objs, uuidstr);
-    virObjectUnlock(obj);
-    virObjectUnref(obj);
-    virObjectUnlock(secrets);
+    virObjectLookupHashRemove(secrets, (virObjectLookupKeysPtr)obj);
 }
 
 
@@ -336,7 +284,7 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
     virSecretObjPtr ret = NULL;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
 
-    virObjectLock(secrets);
+    virObjectRWLockWrite(secrets);
 
     if (oldDef)
         *oldDef = NULL;
@@ -345,7 +293,6 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
 
     /* Is there a secret already matching this UUID */
     if ((obj = virSecretObjListFindByUUIDLocked(secrets, uuidstr))) {
-        virObjectLock(obj);
         objdef = obj->def;
 
         if (STRNEQ_NULLABLE(objdef->usage_id, newdef->usage_id)) {
@@ -373,7 +320,6 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
         if ((obj = virSecretObjListFindByUsageLocked(secrets,
                                                      newdef->usage_type,
                                                      newdef->usage_id))) {
-            virObjectLock(obj);
             objdef = obj->def;
             virUUIDFormat(objdef->uuid, uuidstr);
             virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -383,7 +329,7 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
             goto cleanup;
         }
 
-        if (!(obj = virSecretObjNew()))
+        if (!(obj = virSecretObjNew(uuidstr)))
             goto cleanup;
 
         /* Generate the possible configFile and base64File strings
@@ -393,11 +339,10 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
             !(obj->base64File = virFileBuildPath(configDir, uuidstr, ".base64")))
             goto cleanup;
 
-        if (virHashAddEntry(secrets->objs, uuidstr, obj) < 0)
+        if (virObjectLookupHashAdd(secrets, (virObjectLookupKeysPtr)obj) < 0)
             goto cleanup;
 
         obj->def = newdef;
-        virObjectRef(obj);
     }
 
     ret = obj;
@@ -405,72 +350,35 @@ virSecretObjListAdd(virSecretObjListPtr secrets,
 
  cleanup:
     virSecretObjEndAPI(&obj);
-    virObjectUnlock(secrets);
+    virObjectRWUnlock(secrets);
     return ret;
 }
 
 
-struct virSecretCountData {
-    virConnectPtr conn;
-    virSecretObjListACLFilter filter;
-    int count;
-};
-
 static int
-virSecretObjListNumOfSecretsCallback(void *payload,
-                                     const void *name ATTRIBUTE_UNUSED,
-                                     void *opaque)
+virSecretObjListGetHelper(void *payload,
+                          const void *name ATTRIBUTE_UNUSED,
+                          void *opaque)
 {
-    struct virSecretCountData *data = opaque;
     virSecretObjPtr obj = payload;
-    virSecretDefPtr def;
-
-    virObjectLock(obj);
-    def = obj->def;
-
-    if (data->filter && !data->filter(data->conn, def))
-        goto cleanup;
-
-    data->count++;
-
- cleanup:
-    virObjectUnlock(obj);
-    return 0;
-}
-
-
-struct virSecretListData {
-    virConnectPtr conn;
-    virSecretObjListACLFilter filter;
-    int nuuids;
-    char **uuids;
-    int maxuuids;
-    bool error;
-};
-
-
-static int
-virSecretObjListGetUUIDsCallback(void *payload,
-                                 const void *name ATTRIBUTE_UNUSED,
-                                 void *opaque)
-{
-    struct virSecretListData *data = opaque;
-    virSecretObjPtr obj = payload;
+    virObjectLookupHashForEachDataPtr data = opaque;
+    virSecretObjListACLFilter filter = data->filter;
+    char **uuids = (char **)data->elems;
     virSecretDefPtr def;
 
     if (data->error)
         return 0;
 
-    if (data->maxuuids >= 0 && data->nuuids == data->maxuuids)
+    if (data->maxElems >= 0 && data->nElems == data->maxElems)
         return 0;
 
     virObjectLock(obj);
     def = obj->def;
 
-    if (data->filter && !data->filter(data->conn, def))
+    if (filter && !filter(data->conn, def))
         goto cleanup;
 
-    if (data->uuids) {
+    if (uuids) {
         char *uuidstr;
 
         if (VIR_ALLOC_N(uuidstr, VIR_UUID_STRING_BUFLEN) < 0) {
@@ -479,7 +387,9 @@ virSecretObjListGetUUIDsCallback(void *payload,
         }
 
         virUUIDFormat(def->uuid, uuidstr);
-        data->uuids[data->nuuids++] = uuidstr;
+        uuids[data->nElems++] = uuidstr;
+    } else {
+        data->nElems++;
     }
 
  cleanup:
@@ -493,14 +403,11 @@ virSecretObjListNumOfSecrets(virSecretObjListPtr secrets,
                              virSecretObjListACLFilter filter,
                              virConnectPtr conn)
 {
-    struct virSecretCountData data = {
-        .conn = conn, .filter = filter, .count = 0 };
+    virObjectLookupHashForEachData data = {
+        .conn = conn, .filter = filter, .error = false, .nElems = 0,
+        .elems = NULL, .maxElems = -2 };
 
-    virObjectLock(secrets);
-    virHashForEach(secrets->objs, virSecretObjListNumOfSecretsCallback, &data);
-    virObjectUnlock(secrets);
-
-    return data.count;
+    return virObjectLookupHashForEach(secrets, virSecretObjListGetHelper, &data);
 }
 
 
@@ -532,22 +439,15 @@ virSecretObjMatchFlags(virSecretObjPtr obj,
 #undef MATCH
 
 
-struct virSecretObjListData {
-    virConnectPtr conn;
-    virSecretPtr *secrets;
-    virSecretObjListACLFilter filter;
-    unsigned int flags;
-    int nsecrets;
-    bool error;
-};
-
 static int
 virSecretObjListExportCallback(void *payload,
                                const void *name ATTRIBUTE_UNUSED,
                                void *opaque)
 {
-    struct virSecretObjListData *data = opaque;
     virSecretObjPtr obj = payload;
+    virObjectLookupHashForEachDataPtr data = opaque;
+    virSecretPtr *secrets = (virSecretPtr *)data->elems;
+    virSecretObjListACLFilter filter = data->filter;
     virSecretDefPtr def;
     virSecretPtr secret = NULL;
 
@@ -557,25 +457,24 @@ virSecretObjListExportCallback(void *payload,
     virObjectLock(obj);
     def = obj->def;
 
-    if (data->filter && !data->filter(data->conn, def))
+    if (filter && !filter(data->conn, def))
         goto cleanup;
 
     if (!virSecretObjMatchFlags(obj, data->flags))
         goto cleanup;
 
-    if (!data->secrets) {
-        data->nsecrets++;
+    if (!secrets) {
+        data->nElems++;
         goto cleanup;
     }
 
     if (!(secret = virGetSecret(data->conn, def->uuid,
-                                def->usage_type,
-                                def->usage_id))) {
+                                def->usage_type, def->usage_id))) {
         data->error = true;
         goto cleanup;
     }
 
-    data->secrets[data->nsecrets++] = secret;
+    secrets[data->nElems++] = secret;
 
  cleanup:
     virObjectUnlock(obj);
@@ -590,35 +489,21 @@ virSecretObjListExport(virConnectPtr conn,
                        virSecretObjListACLFilter filter,
                        unsigned int flags)
 {
-    struct virSecretObjListData data = {
-        .conn = conn, .secrets = NULL,
-        .filter = filter, .flags = flags,
-        .nsecrets = 0, .error = false };
+    int ret;
 
-    virObjectLock(secretobjs);
-    if (secrets &&
-        VIR_ALLOC_N(data.secrets, virHashSize(secretobjs->objs) + 1) < 0) {
-        virObjectUnlock(secretobjs);
-        return -1;
-    }
+    virObjectLookupHashForEachData data = {
+        .conn = conn, .filter = filter, .error = false, .nElems = 0,
+        .elems = NULL, .maxElems = 0, .flags = flags };
 
-    virHashForEach(secretobjs->objs, virSecretObjListExportCallback, &data);
-    virObjectUnlock(secretobjs);
+    if (secrets)
+        data.maxElems = -1;
 
-    if (data.error)
-        goto error;
+    ret = virObjectLookupHashForEach(secretobjs, virSecretObjListExportCallback,
+                                     &data);
+    if (secrets)
+        *secrets = (virSecretPtr *)data.elems;
 
-    if (data.secrets) {
-        /* trim the array to the final size */
-        ignore_value(VIR_REALLOC_N(data.secrets, data.nsecrets + 1));
-        *secrets = data.secrets;
-    }
-
-    return data.nsecrets;
-
- error:
-    virObjectListFree(data.secrets);
-    return -1;
+    return ret;
 }
 
 
@@ -629,23 +514,11 @@ virSecretObjListGetUUIDs(virSecretObjListPtr secrets,
                          virSecretObjListACLFilter filter,
                          virConnectPtr conn)
 {
-    struct virSecretListData data = {
-        .conn = conn, .filter = filter, .uuids = uuids, .nuuids = 0,
-        .maxuuids = maxuuids, .error = false };
+    virObjectLookupHashForEachData data = {
+        .conn = conn, .filter = filter, .error = false, .nElems = 0,
+        .elems = (void **)uuids, .maxElems = maxuuids };
 
-    virObjectLock(secrets);
-    virHashForEach(secrets->objs, virSecretObjListGetUUIDsCallback, &data);
-    virObjectUnlock(secrets);
-
-    if (data.error)
-        goto error;
-
-    return data.nuuids;
-
- error:
-    while (--data.nuuids)
-        VIR_FREE(data.uuids[data.nuuids]);
-    return -1;
+    return virObjectLookupHashForEach(secrets, virSecretObjListGetHelper, &data);
 }
 
 
