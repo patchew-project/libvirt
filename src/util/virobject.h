@@ -79,6 +79,8 @@ struct _virObjectLookupKeys {
 
     char *key1;
     char *key2;
+
+    bool active;           /* true if object is active */
 };
 
 struct _virObjectLookupHash {
@@ -187,5 +189,14 @@ virObjectListFree(void *list);
 void
 virObjectListFreeCount(void *list,
                        size_t count);
+
+bool
+virObjectLookupKeysIsActive(void *anyobj)
+    ATTRIBUTE_NONNULL(1);
+
+void
+virObjectLookupKeysSetActive(void *anyobj,
+                             bool active)
+    ATTRIBUTE_NONNULL(1);
 
 #endif /* __VIR_OBJECT_H */
