@@ -209,4 +209,14 @@ virObjectLookupHashRemove(void *anyobj,
                           virObjectLookupKeysPtr obj)
     ATTRIBUTE_NONNULL(1);
 
+virObjectLookupKeysPtr
+virObjectLookupHashFindLocked(void *anyobj,
+                              const char *key)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
+virObjectLookupKeysPtr
+virObjectLookupHashFind(void *anyobj,
+                        const char *key)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
 #endif /* __VIR_OBJECT_H */

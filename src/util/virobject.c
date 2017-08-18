@@ -950,3 +950,72 @@ virObjectLookupHashRemove(void *anyobj,
     virObjectUnref(obj);
     virObjectRWUnlock(hashObj);
 }
+
+
+static virObjectLookupKeysPtr
+virObjectLookupHashFindInternal(virObjectLookupHashPtr hashObj,
+                                const char *key)
+{
+    virObjectLookupKeysPtr obj;
+
+    if ((obj = virHashLookup(hashObj->objsKey1, key)))
+        return virObjectRef(obj);
+
+    if (hashObj->objsKey2)
+        obj = virHashLookup(hashObj->objsKey2, key);
+
+    return virObjectRef(obj);
+}
+
+
+/**
+ * virObjectLookupHashFindLocked:
+ * @anyobj: LookupHash object
+ * @key: Key to use for lookup
+ *
+ * Search through the hash tables looking for the key. The key may be
+ * either key1 or key2 - both tables if they exist will be searched.
+ *
+ * NB: Assumes that the LookupHash has already been locked
+ *
+ * Returns a pointer to the entry with refcnt incremented or NULL on failure
+ */
+virObjectLookupKeysPtr
+virObjectLookupHashFindLocked(void *anyobj,
+                              const char *key)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+
+    if (!hashObj)
+        return NULL;
+
+    return virObjectLookupHashFindInternal(anyobj, key);
+
+}
+
+
+/**
+ * virObjectLookupHashFind:
+ * @anyobj: LookupHash object
+ * @key: Key to use for lookup
+ *
+ * Call virObjectLookupHashFindLocked after locking the LookupHash
+ *
+ * Returns a pointer to the entry with refcnt incremented or NULL on failure
+ */
+virObjectLookupKeysPtr
+virObjectLookupHashFind(void *anyobj,
+                        const char *key)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+    virObjectLookupKeysPtr obj;
+
+    if (!hashObj)
+        return NULL;
+
+    virObjectRWLockRead(hashObj);
+    obj = virObjectLookupHashFindInternal(hashObj, key);
+    virObjectRWUnlock(hashObj);
+
+    return obj;
+}
