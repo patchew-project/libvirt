@@ -858,3 +858,95 @@ virObjectLookupKeysSetActive(void *anyobj,
 
     obj->active = active;
 }
+
+
+static virObjectLookupHashPtr
+virObjectGetLookupHashObj(void *anyobj)
+{
+    if (virObjectIsClass(anyobj, virObjectLookupHashClass))
+        return anyobj;
+
+    VIR_OBJECT_USAGE_PRINT_ERROR(anyobj, virObjectLookupHashClass);
+
+    return NULL;
+}
+
+
+/**
+ * virObjectLookupHashAdd:
+ * @anyobj: LookupHash object
+ * @obj: The LookupKeys object to insert in the hash table(s)
+ *
+ * Insert @obj into the hash tables found in @anyobj. Assumes that the
+ * caller has determined that the key1 and possibly key2 do not already
+ * exist in their respective hash table to be inserted.
+ *
+ * Returns 0 on success, -1 on failure.
+ */
+int
+virObjectLookupHashAdd(void *anyobj,
+                       virObjectLookupKeysPtr obj)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+
+    if (!hashObj)
+        return -1;
+
+    if (obj->key2 && !hashObj->objsKey2) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("hashObj=%p has one table, but two keys from obj=%p"),
+                       hashObj, obj);
+        return -1;
+    }
+
+    if (virHashAddEntry(hashObj->objsKey1, obj->key1, obj) < 0)
+        return -1;
+    virObjectRef(obj);
+
+    if (obj->key2) {
+        if (virHashAddEntry(hashObj->objsKey2, obj->key2, obj) < 0) {
+            virHashRemoveEntry(hashObj->objsKey1, obj->key1);
+            return -1;
+        }
+        virObjectRef(obj);
+    }
+
+    return 0;
+}
+
+
+/**
+ * virObjectLookupHashRemove:
+ * @anyobj: LookupHash object
+ * @obj: The LookupKeys object to remove from the hash table(s)
+ *
+ * Remove @obj from the hash tables found in @anyobj. The common
+ * function to remove an object from a hash table will also cause
+ * the virObjectUnref to be called via virObjectFreeHashData since
+ * the virHashCreate used that as the Free object element argument.
+ *
+ * Even though this is a void, report the error for a bad @anyobj.
+ */
+void
+virObjectLookupHashRemove(void *anyobj,
+                          virObjectLookupKeysPtr obj)
+{
+    virObjectLookupHashPtr hashObj;
+
+    if (!obj)
+        return;
+
+    if (!(hashObj = virObjectGetLookupHashObj(anyobj)))
+        return;
+
+    virObjectRef(obj);
+    virObjectUnlock(obj);
+    virObjectRWLockWrite(hashObj);
+    virObjectLock(obj);
+    virHashRemoveEntry(hashObj->objsKey1, obj->key1);
+    if (obj->key2)
+        virHashRemoveEntry(hashObj->objsKey2, obj->key2);
+    virObjectUnlock(obj);
+    virObjectUnref(obj);
+    virObjectRWUnlock(hashObj);
+}

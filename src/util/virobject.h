@@ -199,4 +199,14 @@ virObjectLookupKeysSetActive(void *anyobj,
                              bool active)
     ATTRIBUTE_NONNULL(1);
 
+int
+virObjectLookupHashAdd(void *anyobj,
+                       virObjectLookupKeysPtr obj)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
+void
+virObjectLookupHashRemove(void *anyobj,
+                          virObjectLookupKeysPtr obj)
+    ATTRIBUTE_NONNULL(1);
+
 #endif /* __VIR_OBJECT_H */
