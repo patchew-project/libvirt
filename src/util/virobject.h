@@ -23,6 +23,7 @@
 # define __VIR_OBJECT_H__
 
 # include "internal.h"
+# include "virhash.h"
 # include "virthread.h"
 
 typedef struct _virClass virClass;
@@ -39,6 +40,9 @@ typedef virObjectRWLockable *virObjectRWLockablePtr;
 
 typedef struct _virObjectLookupKeys virObjectLookupKeys;
 typedef virObjectLookupKeys *virObjectLookupKeysPtr;
+
+typedef struct _virObjectLookupHash virObjectLookupHash;
+typedef virObjectLookupHash *virObjectLookupHashPtr;
 
 typedef void (*virObjectDisposeCallback)(void *obj);
 
@@ -77,11 +81,24 @@ struct _virObjectLookupKeys {
     char *key2;
 };
 
+struct _virObjectLookupHash {
+    virObjectRWLockable parent;
+
+    /* key1 string -> object mapping for O(1),
+     * lockless lookup-by-key1 */
+    virHashTable *objsKey1;
+
+    /* key2 string -> object mapping for O(1),
+     * lockless lookup-by-key2 */
+    virHashTable *objsKey2;
+};
+
 
 virClassPtr virClassForObject(void);
 virClassPtr virClassForObjectLockable(void);
 virClassPtr virClassForObjectRWLockable(void);
 virClassPtr virClassForObjectLookupKeys(void);
+virClassPtr virClassForObjectLookupHash(void);
 
 # ifndef VIR_PARENT_REQUIRED
 #  define VIR_PARENT_REQUIRED ATTRIBUTE_NONNULL(1)
@@ -136,6 +153,12 @@ void *
 virObjectLookupKeysNew(virClassPtr klass,
                        const char *key1,
                        const char *key2)
+    ATTRIBUTE_NONNULL(1);
+
+void *
+virObjectLookupHashNew(virClassPtr klass,
+                       int tableElemsStart,
+                       bool createBoth)
     ATTRIBUTE_NONNULL(1);
 
 void
