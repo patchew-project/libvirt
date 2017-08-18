@@ -1093,3 +1093,77 @@ virObjectLookupHashForEach(void *anyobj,
     }
     return -1;
 }
+
+
+static virObjectLookupKeysPtr
+virObjectLookupHashSearchInternal(virObjectLookupHashPtr hashObj,
+                                  virHashSearcher callback,
+                                  void *opaque)
+{
+    virObjectLookupKeysPtr obj;
+
+    obj = virHashSearch(hashObj->objsKey1, callback, opaque, NULL);
+    virObjectRef(obj);
+
+    if (obj)
+        virObjectLock(obj);
+
+    return obj;
+}
+
+
+/**
+ * virObjectLookupHashSearchLocked
+ * @anyobj: LookupHash object
+ * @callback: callback function to handle the object specific checks
+ * @opaque: callback data
+ *
+ * Search the hash table objsKey1 table calling the specified @callback
+ * routine with an object and @opaque data in order to determine whether
+ * the object is represented by the @opaque data.
+ *
+ * NB: Caller assumes the responsibility for locking LookupHash
+ *
+ * Returns locked/refcnt incremented object on success, NULL on failure
+ */
+virObjectLookupKeysPtr
+virObjectLookupHashSearchLocked(void *anyobj,
+                                virHashSearcher callback,
+                                void *opaque)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+
+    if (!hashObj)
+        return NULL;
+
+    return virObjectLookupHashSearchInternal(hashObj, callback, opaque);
+}
+
+
+/**
+ * virObjectLookupHashSearch
+ * @anyobj: LookupHash object
+ * @callback: callback function to handle the object specific checks
+ * @opaque: callback data
+ *
+ * Call virObjectLookupHashSearchLocked with a locked hash table
+ *
+ * Returns @obj from virObjectLookupHashSearchLocked
+ */
+virObjectLookupKeysPtr
+virObjectLookupHashSearch(void *anyobj,
+                          virHashSearcher callback,
+                          void *opaque)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+    virObjectLookupKeysPtr obj;
+
+    if (!hashObj)
+        return NULL;
+
+    virObjectRWLockRead(hashObj);
+    obj = virObjectLookupHashSearchInternal(hashObj, callback, opaque);
+    virObjectRWUnlock(hashObj);
+
+    return obj;
+}

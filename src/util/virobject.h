@@ -240,4 +240,16 @@ virObjectLookupHashForEach(void *anyobj,
                            virObjectLookupHashForEachDataPtr data)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
+virObjectLookupKeysPtr
+virObjectLookupHashSearchLocked(void *anyobj,
+                                virHashSearcher callback,
+                                void *opaque)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
+virObjectLookupKeysPtr
+virObjectLookupHashSearch(void *anyobj,
+                          virHashSearcher callback,
+                          void *opaque)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
 #endif /* __VIR_OBJECT_H */

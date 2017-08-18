@@ -2337,6 +2337,8 @@ virObjectLookupHashFindLocked;
 virObjectLookupHashForEach;
 virObjectLookupHashNew;
 virObjectLookupHashRemove;
+virObjectLookupHashSearch;
+virObjectLookupHashSearchLocked;
 virObjectLookupKeysIsActive;
 virObjectLookupKeysNew;
 virObjectLookupKeysSetActive;
