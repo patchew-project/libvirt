@@ -1167,3 +1167,82 @@ virObjectLookupHashSearch(void *anyobj,
 
     return obj;
 }
+
+
+struct cloneData {
+    virObjectLookupHashCloneCallback callback;
+    virObjectLookupHashPtr dst;
+    bool error;
+};
+
+/*
+ * Take the provided virHashForEach element and call the @cb function
+ * with the input @dst hash table and the source element from the
+ * @src hash table in order to perform the copy - tracking success/
+ * failure using the error boolean.
+ *
+ * Once there's a failure, no future copy/clone will occur.
+ *
+ * The @cb function can expect the @src hash table object to be
+ * locked upon entry.
+ *
+ * Returns 0 to the virHashForEach on success, -1 on failure.
+ */
+static int
+cloneCallback(void *payload,
+              const void *name ATTRIBUTE_UNUSED,
+              void *opaque)
+{
+    virObjectLookupKeysPtr obj = payload;
+    struct cloneData *data = opaque;
+
+    if (data->error)
+        return 0;
+
+    virObjectLock(obj);
+
+    if (data->callback(data->dst, obj) < 0)
+        data->error = true;
+
+    virObjectUnlock(obj);
+
+    if (data->error)
+        return -1;
+
+    return 0;
+}
+
+/**
+ * virObjectLookupHashClone
+ * @srcAnyobj: source LookupHash object to clone from
+ * @dstAnyobj: destination LookupHash object to clone to
+ * @cb: callback function to handle the clone
+ *
+ * The clone function is designed to traverse each source hash element
+ * and call the driver specific @cb function with the element from the
+ * source hash table in order to clone into the destination hash table.
+ *
+ * Return 0 on success, -1 on failure
+ */
+int
+virObjectLookupHashClone(void *srcAnyobj,
+                         void *dstAnyobj,
+                         virObjectLookupHashCloneCallback cb)
+{
+    virObjectLookupHashPtr srcHashObj = virObjectGetLookupHashObj(srcAnyobj);
+    virObjectLookupHashPtr dstHashObj = virObjectGetLookupHashObj(dstAnyobj);
+    struct cloneData data = { .callback = cb, .dst = dstHashObj,
+        .error = false };
+
+    if (!srcHashObj || !dstHashObj)
+        return -1;
+
+    virObjectRWLockRead(srcHashObj);
+    virHashForEach(srcHashObj->objsKey1, cloneCallback, &data);
+    virObjectRWUnlock(srcHashObj);
+
+    if (data.error)
+        return -1;
+
+    return 0;
+}
