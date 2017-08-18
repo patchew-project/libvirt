@@ -68,9 +68,11 @@ struct _virClass {
 static virClassPtr virObjectClass;
 static virClassPtr virObjectLockableClass;
 static virClassPtr virObjectRWLockableClass;
+static virClassPtr virObjectLookupKeysClass;
 
 static void virObjectLockableDispose(void *anyobj);
 static void virObjectRWLockableDispose(void *anyobj);
+static void virObjectLookupKeysDispose(void *anyobj);
 
 static int
 virObjectOnceInit(void)
@@ -91,6 +93,12 @@ virObjectOnceInit(void)
                                                  "virObjectRWLockable",
                                                  sizeof(virObjectRWLockable),
                                                  virObjectRWLockableDispose)))
+        return -1;
+
+    if (!(virObjectLookupKeysClass = virClassNew(virObjectLockableClass,
+                                                 "virObjectLookupKeys",
+                                                 sizeof(virObjectLookupKeys),
+                                                 virObjectLookupKeysDispose)))
         return -1;
 
     return 0;
@@ -141,6 +149,21 @@ virClassForObjectRWLockable(void)
         return NULL;
 
     return virObjectRWLockableClass;
+}
+
+
+/**
+ * virClassForObjectLookupKeys:
+ *
+ * Returns the class instance for the virObjectLookupKeys type
+ */
+virClassPtr
+virClassForObjectLookupKeys(void)
+{
+    if (virObjectInitialize() < 0)
+        return NULL;
+
+    return virObjectLookupKeysClass;
 }
 
 
@@ -328,6 +351,68 @@ virObjectRWLockableDispose(void *anyobj)
 
 
 /**
+ * virObjectLookupKeysNew:
+ * @klass: the klass to check
+ * @key1: key to be used for unique identifier (required)
+ * @key2: second key to be used as secondary unique identifier
+ *
+ * Create an object with at least @key1 as a means to provide input
+ * of an input object to add the object into a hash table. If @key2 is
+ * provided, then the object will exist into two hash tables for faster
+ * lookups by key for the table; otherwise, hash table searches would
+ * need to be used to find data from an object that matches some specific
+ * search the caller performs.
+ *
+ * Returns: New object on success, NULL on failure w/ error message set
+ */
+void *
+virObjectLookupKeysNew(virClassPtr klass,
+                       const char *key1,
+                       const char *key2)
+{
+    virObjectLookupKeysPtr obj;
+
+    if (!virClassIsDerivedFrom(klass, virClassForObjectLookupKeys())) {
+        virReportInvalidArg(klass,
+                            _("Class %s must derive from virObjectLookupKeys"),
+                            virClassName(klass));
+        return NULL;
+    }
+
+    if (!key1) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("key1 must be provided"));
+        return NULL;
+    }
+
+    if (!(obj = virObjectLockableNew(klass)))
+        return NULL;
+
+    if (VIR_STRDUP(obj->key1, key1) < 0)
+        goto error;
+
+    if (VIR_STRDUP(obj->key2, key2) < 0)
+        goto error;
+
+    return obj;
+
+ error:
+    virObjectUnref(obj);
+    return NULL;
+}
+
+
+static void
+virObjectLookupKeysDispose(void *anyobj)
+{
+    virObjectLookupKeysPtr obj = anyobj;
+
+    VIR_FREE(obj->key1);
+    VIR_FREE(obj->key2);
+}
+
+
+/**
  * virObjectUnref:
  * @anyobj: any instance of virObjectPtr
  *
@@ -393,7 +478,8 @@ virObjectRef(void *anyobj)
 static virObjectLockablePtr
 virObjectGetLockableObj(void *anyobj)
 {
-    if (virObjectIsClass(anyobj, virObjectLockableClass))
+    if (virObjectIsClass(anyobj, virObjectLockableClass) ||
+        virObjectIsClass(anyobj, virObjectLookupKeysClass))
         return anyobj;
 
     VIR_OBJECT_USAGE_PRINT_ERROR(anyobj, virObjectLockable);

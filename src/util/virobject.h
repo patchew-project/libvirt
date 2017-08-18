@@ -37,6 +37,9 @@ typedef virObjectLockable *virObjectLockablePtr;
 typedef struct _virObjectRWLockable virObjectRWLockable;
 typedef virObjectRWLockable *virObjectRWLockablePtr;
 
+typedef struct _virObjectLookupKeys virObjectLookupKeys;
+typedef virObjectLookupKeys *virObjectLookupKeysPtr;
+
 typedef void (*virObjectDisposeCallback)(void *obj);
 
 /* Most code should not play with the contents of this struct; however,
@@ -67,9 +70,18 @@ struct _virObjectRWLockable {
     virRWLock lock;
 };
 
+struct _virObjectLookupKeys {
+    virObjectLockable parent;
+
+    char *key1;
+    char *key2;
+};
+
+
 virClassPtr virClassForObject(void);
 virClassPtr virClassForObjectLockable(void);
 virClassPtr virClassForObjectRWLockable(void);
+virClassPtr virClassForObjectLookupKeys(void);
 
 # ifndef VIR_PARENT_REQUIRED
 #  define VIR_PARENT_REQUIRED ATTRIBUTE_NONNULL(1)
@@ -118,6 +130,12 @@ virObjectLockableNew(virClassPtr klass)
 
 void *
 virObjectRWLockableNew(virClassPtr klass)
+    ATTRIBUTE_NONNULL(1);
+
+void *
+virObjectLookupKeysNew(virClassPtr klass,
+                       const char *key1,
+                       const char *key2)
     ATTRIBUTE_NONNULL(1);
 
 void
