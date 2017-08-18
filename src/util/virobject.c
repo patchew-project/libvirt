@@ -1246,3 +1246,39 @@ virObjectLookupHashClone(void *srcAnyobj,
 
     return 0;
 }
+
+
+/**
+ * virObjectLookupHashPrune
+ * @anyobj: LookupHash object
+ * @callback: callback function to handle the object specific checks
+ * @opaque: callback data
+ *
+ * Call the callback function from virHashRemoveSet in order to determine
+ * if the incoming opaque data should be removed from the hash table(s)
+ * for the LookupHash. If a second hash table exists and we fail to remove
+ * data from it
+ */
+void
+virObjectLookupHashPrune(void *anyobj,
+                         virHashSearcher callback,
+                         void *opaque)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+    ssize_t cntKey1;
+    ssize_t cntKey2;
+
+    if (!hashObj)
+        return;
+
+    virObjectRWLockWrite(hashObj);
+    cntKey1 = virHashRemoveSet(hashObj->objsKey1, callback, opaque);
+    if (cntKey1 > 0 && hashObj->objsKey2) {
+        cntKey2 = virHashRemoveSet(hashObj->objsKey2, callback, opaque);
+
+        if (cntKey2 != cntKey1)
+            VIR_ERROR(_("removed %zd elems from objsKey1 and %zd elems "
+                        "from objsKey2"), cntKey1, cntKey2);
+    }
+    virObjectRWUnlock(hashObj);
+}
