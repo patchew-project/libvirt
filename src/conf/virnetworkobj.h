@@ -28,7 +28,8 @@ typedef struct _virNetworkObj virNetworkObj;
 typedef virNetworkObj *virNetworkObjPtr;
 
 virNetworkObjPtr
-virNetworkObjNew(void);
+virNetworkObjNew(const char *uuidstr,
+                 const char *name);
 
 virNetworkDefPtr
 virNetworkObjGetDef(virNetworkObjPtr obj);

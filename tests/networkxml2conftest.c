@@ -28,11 +28,13 @@ testCompareXMLToConfFiles(const char *inxml, const char *outconf, dnsmasqCapsPtr
     virCommandPtr cmd = NULL;
     char *pidfile = NULL;
     dnsmasqContext *dctx = NULL;
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
 
     if (!(def = virNetworkDefParseFile(inxml)))
         goto fail;
 
-    if (!(obj = virNetworkObjNew()))
+    virUUIDFormat(def->uuid, uuidstr);
+    if (!(obj = virNetworkObjNew(uuidstr, def->name)))
         goto fail;
 
     virNetworkObjSetDef(obj, def);
