@@ -887,6 +887,8 @@ mymain(void)
             QEMU_CAPS_DRIVE_BOOT);
     DO_TEST("floppy-drive-fat",
             QEMU_CAPS_DRIVE_BOOT);
+    DO_TEST("floppy-drive-noformat",
+            QEMU_CAPS_DRIVE_BOOT);
     DO_TEST("disk-drive-readonly-disk",
             QEMU_CAPS_NODEFCONFIG);
     DO_TEST("disk-drive-readonly-no-device",

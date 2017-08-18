@@ -527,10 +527,15 @@ virStorageFileGetMetadata(virStorageSourcePtr src,
               allow_probe, report_broken);
 
     virHashTablePtr cycle = NULL;
+    virStorageType actualType = virStorageSourceGetActualType(src);
     int ret = -1;
 
     if (!(cycle = virHashCreate(5, NULL)))
         return -1;
+
+    /* No backing chains for type='dir' */
+    if (actualType == VIR_STORAGE_TYPE_DIR)
+        return 0;
 
     if (src->format <= VIR_STORAGE_FILE_NONE)
         src->format = allow_probe ?
