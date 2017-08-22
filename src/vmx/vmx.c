@@ -1819,7 +1819,7 @@ virVMXParseConfig(virVMXContext *ctx,
     }
 
     if (virDomainDefPostParse(def, caps, VIR_DOMAIN_DEF_PARSE_ABI_UPDATE,
-                              xmlopt, NULL) < 0)
+                              xmlopt, NULL, NULL) < 0)
         goto cleanup;
 
     success = true;

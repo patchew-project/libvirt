@@ -2643,7 +2643,8 @@ int virDomainDefPostParse(virDomainDefPtr def,
                           virCapsPtr caps,
                           unsigned int parseFlags,
                           virDomainXMLOptionPtr xmlopt,
-                          void *parseOpaque);
+                          void *parseOpaque,
+                          virHashTablePtr bootHash);
 
 int virDomainDefValidate(virDomainDefPtr def,
                          virCapsPtr caps,
