@@ -27131,6 +27131,8 @@ virDomainDefHasMemballoon(const virDomainDef *def)
 }
 
 
+#define VIR_DOMAIN_SHORT_NAME_MAX 20
+
 /**
  * virDomainObjGetShortName:
  * @vm: Machine for which to get a name
@@ -27141,15 +27143,37 @@ virDomainDefHasMemballoon(const virDomainDef *def)
 char *
 virDomainObjGetShortName(const virDomainDef *def)
 {
-    const int dommaxlen = 20;
+    wchar_t wshortname[VIR_DOMAIN_SHORT_NAME_MAX + 1] = {0};
+    size_t len = 0;
+    char *shortname = NULL;
     char *ret = NULL;
 
-    ignore_value(virAsprintf(&ret, "%d-%.*s",
-                             def->id, dommaxlen, def->name));
+    if (mbstowcs(wshortname, def->name, VIR_DOMAIN_SHORT_NAME_MAX) == (size_t) -1) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("Cannot convert domain name to wide character string"));
+        return NULL;
+    }
 
+    len = wcstombs(NULL, wshortname, 0);
+    if (len == (size_t) -1)
+        return NULL;
+
+    if (VIR_ALLOC_N(shortname, len + 1) < 0)
+        return NULL;
+
+    if (wcstombs(shortname, wshortname, len) == (size_t) -1) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("Cannot convert domain name from wide character string"));
+        goto cleanup;
+    }
+
+    ignore_value(virAsprintf(&ret, "%d-%s", def->id, def->name));
+ cleanup:
+    VIR_FREE(shortname);
     return ret;
 }
 
+#undef VIR_DOMAIN_SHORT_NAME_MAX
 
 int
 virDomainGetBlkioParametersAssignFromDef(virDomainDefPtr def,
