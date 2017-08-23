@@ -437,6 +437,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "spapr-pci-host-bridge.numa_node",
               "vnc-multi-servers",
               "virtio-net.tx_queue_size",
+              "virtio-gpu.max_outputs",
     );
 
 
@@ -1786,6 +1787,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsQxl[] = {
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioGpu[] = {
     { "virgl", QEMU_CAPS_VIRTIO_GPU_VIRGL },
+    { "max_outputs", QEMU_CAPS_VIRTIO_GPU_MAX_OUTPUTS },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsICH9[] = {
