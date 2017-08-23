@@ -61,15 +61,11 @@ struct _virNetworkObj {
 };
 
 struct _virNetworkObjList {
-    virObjectLockable parent;
-
-    virHashTablePtr objs;
+    virObjectLookupHash parent;
 };
 
 static virClassPtr virNetworkObjClass;
-static virClassPtr virNetworkObjListClass;
 static void virNetworkObjDispose(void *obj);
-static void virNetworkObjListDispose(void *obj);
 
 static int
 virNetworkObjOnceInit(void)
@@ -80,11 +76,6 @@ virNetworkObjOnceInit(void)
                                            virNetworkObjDispose)))
         return -1;
 
-    if (!(virNetworkObjListClass = virClassNew(virClassForObjectLockable(),
-                                               "virNetworkObjList",
-                                               sizeof(virNetworkObjList),
-                                               virNetworkObjListDispose)))
-        return -1;
     return 0;
 }
 
@@ -332,36 +323,17 @@ virNetworkObjMacMgrDel(virNetworkObjPtr obj,
 virNetworkObjListPtr
 virNetworkObjListNew(void)
 {
-    virNetworkObjListPtr nets;
-
-    if (virNetworkObjInitialize() < 0)
-        return NULL;
-
-    if (!(nets = virObjectLockableNew(virNetworkObjListClass)))
-        return NULL;
-
-    if (!(nets->objs = virHashCreate(50, virObjectFreeHashData))) {
-        virObjectUnref(nets);
-        return NULL;
-    }
-
-    return nets;
+    return virObjectLookupHashNew(virClassForObjectLookupHash(), 50,
+                                  VIR_OBJECT_LOOKUP_HASH_UUID |
+                                  VIR_OBJECT_LOOKUP_HASH_NAME);
 }
 
 
 static virNetworkObjPtr
 virNetworkObjFindByUUIDLocked(virNetworkObjListPtr nets,
-                              const unsigned char *uuid)
+                              const char *uuidstr)
 {
-    virNetworkObjPtr obj = NULL;
-    char uuidstr[VIR_UUID_STRING_BUFLEN];
-
-    virUUIDFormat(uuid, uuidstr);
-
-    obj = virHashLookup(nets->objs, uuidstr);
-    if (obj)
-        virObjectRef(obj);
-    return obj;
+    return virObjectLookupHashFindLocked(nets, uuidstr);
 }
 
 
@@ -379,30 +351,10 @@ virNetworkObjPtr
 virNetworkObjFindByUUID(virNetworkObjListPtr nets,
                         const unsigned char *uuid)
 {
-    virNetworkObjPtr obj;
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
+    virUUIDFormat(uuid, uuidstr);
 
-    virObjectLock(nets);
-    obj = virNetworkObjFindByUUIDLocked(nets, uuid);
-    virObjectUnlock(nets);
-    if (obj)
-        virObjectLock(obj);
-    return obj;
-}
-
-
-static int
-virNetworkObjSearchName(const void *payload,
-                        const void *name ATTRIBUTE_UNUSED,
-                        const void *data)
-{
-    virNetworkObjPtr obj = (virNetworkObjPtr) payload;
-    int want = 0;
-
-    virObjectLock(obj);
-    if (STREQ(obj->def->name, (const char *)data))
-        want = 1;
-    virObjectUnlock(obj);
-    return want;
+    return virObjectLookupHashFind(nets, uuidstr);
 }
 
 
@@ -410,12 +362,7 @@ static virNetworkObjPtr
 virNetworkObjFindByNameLocked(virNetworkObjListPtr nets,
                               const char *name)
 {
-    virNetworkObjPtr obj = NULL;
-
-    obj = virHashSearch(nets->objs, virNetworkObjSearchName, name, NULL);
-    if (obj)
-        virObjectRef(obj);
-    return obj;
+    return virObjectLookupHashFindLocked(nets, name);
 }
 
 
@@ -433,14 +380,7 @@ virNetworkObjPtr
 virNetworkObjFindByName(virNetworkObjListPtr nets,
                         const char *name)
 {
-    virNetworkObjPtr obj;
-
-    virObjectLock(nets);
-    obj = virNetworkObjFindByNameLocked(nets, name);
-    virObjectUnlock(nets);
-    if (obj)
-        virObjectLock(obj);
-    return obj;
+    return virObjectLookupHashFind(nets, name);
 }
 
 
@@ -467,15 +407,6 @@ virNetworkObjDispose(void *opaque)
     virNetworkDefFree(obj->newDef);
     virBitmapFree(obj->classIdMap);
     virObjectUnref(obj->macmap);
-}
-
-
-static void
-virNetworkObjListDispose(void *opaque)
-{
-    virNetworkObjListPtr nets = opaque;
-
-    virHashFree(nets->objs);
 }
 
 
@@ -560,12 +491,12 @@ virNetworkObjAssignDefLocked(virNetworkObjListPtr nets,
     virNetworkObjPtr ret = NULL;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
 
+    virUUIDFormat(def->uuid, uuidstr);
     /* See if a network with matching UUID already exists */
-    if ((obj = virNetworkObjFindByUUIDLocked(nets, def->uuid))) {
+    if ((obj = virNetworkObjFindByUUIDLocked(nets, uuidstr))) {
         virObjectLock(obj);
         /* UUID matches, but if names don't match, refuse it */
         if (STRNEQ(obj->def->name, def->name)) {
-            virUUIDFormat(obj->def->uuid, uuidstr);
             virReportError(VIR_ERR_OPERATION_FAILED,
                            _("network '%s' is already defined with uuid %s"),
                            obj->def->name, uuidstr);
@@ -588,7 +519,6 @@ virNetworkObjAssignDefLocked(virNetworkObjListPtr nets,
         /* UUID does not match, but if a name matches, refuse it */
         if ((obj = virNetworkObjFindByNameLocked(nets, def->name))) {
             virObjectLock(obj);
-            virUUIDFormat(obj->def->uuid, uuidstr);
             virReportError(VIR_ERR_OPERATION_FAILED,
                            _("network '%s' already exists with uuid %s"),
                            def->name, uuidstr);
@@ -596,12 +526,10 @@ virNetworkObjAssignDefLocked(virNetworkObjListPtr nets,
         }
 
         if (!(obj = virNetworkObjNew()))
-              goto cleanup;
-
-        virUUIDFormat(def->uuid, uuidstr);
-        if (virHashAddEntry(nets->objs, uuidstr, obj) < 0)
             goto cleanup;
-        virObjectRef(obj);
+
+        if (virObjectLookupHashAdd(nets, obj, uuidstr, def->name) < 0)
+            goto cleanup;
 
         obj->def = def;
         obj->persistent = !(flags & VIR_NETWORK_OBJ_LIST_ADD_LIVE);
@@ -638,9 +566,9 @@ virNetworkObjAssignDef(virNetworkObjListPtr nets,
 {
     virNetworkObjPtr obj;
 
-    virObjectLock(nets);
+    virObjectRWLockWrite(nets);
     obj = virNetworkObjAssignDefLocked(nets, def, flags);
-    virObjectUnlock(nets);
+    virObjectRWUnlock(nets);
     return obj;
 }
 
@@ -786,14 +714,12 @@ virNetworkObjRemoveInactive(virNetworkObjListPtr nets,
 {
     char uuidstr[VIR_UUID_STRING_BUFLEN];
 
+    if (!obj)
+        return;
+
+    /* @obj is already locked on entry */
     virUUIDFormat(obj->def->uuid, uuidstr);
-    virObjectRef(obj);
-    virObjectUnlock(obj);
-    virObjectLock(nets);
-    virObjectLock(obj);
-    virHashRemoveEntry(nets->objs, uuidstr);
-    virObjectUnlock(nets);
-    virObjectUnref(obj);
+    virObjectLookupHashRemove(nets, obj, uuidstr, obj->def->name);
 }
 
 
@@ -968,7 +894,8 @@ virNetworkLoadState(virNetworkObjListPtr nets,
         obj->floor_sum = floor_sum_val;
 
     obj->taint = taint;
-    obj->active = true; /* network with a state file is by definition active */
+    /* network with a state file is by definition active */
+    virNetworkObjSetActive(obj, true);
 
  cleanup:
     VIR_FREE(configFile);
@@ -1177,14 +1104,16 @@ virNetworkObjBridgeInUse(virNetworkObjListPtr nets,
                          const char *bridge,
                          const char *skipname)
 {
+    bool ret;
     virNetworkObjPtr obj;
     struct virNetworkObjBridgeInUseHelperData data = {bridge, skipname};
 
-    virObjectLock(nets);
-    obj = virHashSearch(nets->objs, virNetworkObjBridgeInUseHelper, &data, NULL);
-    virObjectUnlock(nets);
+    obj = virObjectLookupHashSearchUUID(nets, virNetworkObjBridgeInUseHelper,
+                                        &data);
 
-    return obj != NULL;
+    ret = obj != NULL;
+    virNetworkObjEndAPI(&obj);
+    return ret;
 }
 
 
@@ -1309,21 +1238,14 @@ virNetworkMatch(virNetworkObjPtr obj,
 #undef MATCH
 
 
-struct virNetworkObjListData {
-    virConnectPtr conn;
-    virNetworkPtr *nets;
-    virNetworkObjListFilter filter;
-    unsigned int flags;
-    int nnets;
-    bool error;
-};
-
 static int
-virNetworkObjListPopulate(void *payload,
+virNetworkObjListExportCb(void *payload,
                           const void *name ATTRIBUTE_UNUSED,
                           void *opaque)
 {
-    struct virNetworkObjListData *data = opaque;
+    virObjectLookupHashForEachDataPtr data = opaque;
+    virNetworkPtr *nets = (virNetworkPtr *)data->elems;
+    virNetworkObjListFilter filter = data->filter;
     virNetworkObjPtr obj = payload;
     virNetworkPtr net = NULL;
 
@@ -1332,15 +1254,14 @@ virNetworkObjListPopulate(void *payload,
 
     virObjectLock(obj);
 
-    if (data->filter &&
-        !data->filter(data->conn, obj->def))
+    if (filter && !filter(data->conn, obj->def))
         goto cleanup;
 
     if (!virNetworkMatch(obj, data->flags))
         goto cleanup;
 
-    if (!data->nets) {
-        data->nnets++;
+    if (!nets) {
+        data->nElems++;
         goto cleanup;
     }
 
@@ -1349,7 +1270,7 @@ virNetworkObjListPopulate(void *payload,
         goto cleanup;
     }
 
-    data->nets[data->nnets++] = net;
+    nets[data->nElems++] = net;
 
  cleanup:
     virObjectUnlock(obj);
@@ -1364,34 +1285,20 @@ virNetworkObjListExport(virConnectPtr conn,
                         virNetworkObjListFilter filter,
                         unsigned int flags)
 {
-    int ret = -1;
-    struct virNetworkObjListData data = {
-        .conn = conn, .nets = NULL, .filter = filter, .flags = flags,
-        .nnets = 0, .error = false };
+    int ret;
+    virObjectLookupHashForEachData data = {
+        .conn = conn, .filter = filter, .error = false, .nElems = 0,
+        .elems = NULL, .maxElems = 0, .flags = flags };
 
-    virObjectLock(netobjs);
-    if (nets && VIR_ALLOC_N(data.nets, virHashSize(netobjs->objs) + 1) < 0)
-        goto cleanup;
+    if (nets)
+        data.maxElems = -1;
 
-    virHashForEach(netobjs->objs, virNetworkObjListPopulate, &data);
+    ret = virObjectLookupHashForEachUUID(netobjs, virNetworkObjListExportCb,
+                                         &data);
 
-    if (data.error)
-        goto cleanup;
+    if (nets)
+        *nets = (virNetworkPtr *)data.elems;
 
-    if (data.nets) {
-        /* trim the array to the final size */
-        ignore_value(VIR_REALLOC_N(data.nets, data.nnets + 1));
-        *nets = data.nets;
-        data.nets = NULL;
-    }
-
-    ret = data.nnets;
- cleanup:
-    virObjectUnlock(netobjs);
-    while (data.nets && data.nnets)
-        virObjectUnref(data.nets[--data.nnets]);
-
-    VIR_FREE(data.nets);
     return ret;
 }
 
@@ -1407,10 +1314,11 @@ virNetworkObjListForEachHelper(void *payload,
                                const void *name ATTRIBUTE_UNUSED,
                                void *opaque)
 {
-    struct virNetworkObjListForEachHelperData *data = opaque;
+    virObjectLookupHashForEachDataPtr data = opaque;
+    struct virNetworkObjListForEachHelperData *helperData = data->opaque;
 
-    if (data->callback(payload, data->opaque) < 0)
-        data->ret = -1;
+    if (helperData->callback(payload, helperData->opaque) < 0)
+        helperData->ret = -1;
     return 0;
 }
 
@@ -1433,54 +1341,45 @@ virNetworkObjListForEach(virNetworkObjListPtr nets,
                          virNetworkObjListIterator callback,
                          void *opaque)
 {
-    struct virNetworkObjListForEachHelperData data = {
+    struct virNetworkObjListForEachHelperData helperData = {
         .callback = callback, .opaque = opaque, .ret = 0};
-    virObjectLock(nets);
-    virHashForEach(nets->objs, virNetworkObjListForEachHelper, &data);
-    virObjectUnlock(nets);
-    return data.ret;
+    virObjectLookupHashForEachData data = {
+        .opaque = &helperData, .error = false, .maxElems = 0 };
+
+    return virObjectLookupHashForEachUUID(nets, virNetworkObjListForEachHelper,
+                                          &data);
 }
 
-
-struct virNetworkObjListGetHelperData {
-    virConnectPtr conn;
-    virNetworkObjListFilter filter;
-    char **names;
-    int nnames;
-    int maxnames;
-    bool active;
-    bool error;
-};
 
 static int
 virNetworkObjListGetHelper(void *payload,
                            const void *name ATTRIBUTE_UNUSED,
                            void *opaque)
 {
-    struct virNetworkObjListGetHelperData *data = opaque;
     virNetworkObjPtr obj = payload;
+    virObjectLookupHashForEachDataPtr data = opaque;
+    virNetworkObjListFilter filter = data->filter;
+    char **names = (char **)data->elems;
 
     if (data->error)
         return 0;
 
-    if (data->maxnames >= 0 &&
-        data->nnames == data->maxnames)
+    if (data->maxElems >= 0 &&
+        data->nElems == data->maxElems)
         return 0;
 
     virObjectLock(obj);
 
-    if (data->filter &&
-        !data->filter(data->conn, obj->def))
+    if (filter && !filter(data->conn, obj->def))
         goto cleanup;
 
-    if ((data->active && virNetworkObjIsActive(obj)) ||
-        (!data->active && !virNetworkObjIsActive(obj))) {
-        if (data->names &&
-            VIR_STRDUP(data->names[data->nnames], obj->def->name) < 0) {
+    if ((data->wantActive && virNetworkObjIsActive(obj)) ||
+        (!data->wantActive && !virNetworkObjIsActive(obj))) {
+        if (names && VIR_STRDUP(names[data->nElems], obj->def->name) < 0) {
             data->error = true;
             goto cleanup;
         }
-        data->nnames++;
+        data->nElems++;
     }
 
  cleanup:
@@ -1497,26 +1396,12 @@ virNetworkObjListGetNames(virNetworkObjListPtr nets,
                           virNetworkObjListFilter filter,
                           virConnectPtr conn)
 {
-    int ret = -1;
+    virObjectLookupHashForEachData data = {
+        .conn = conn, .filter = filter, .wantActive = active, .error = false,
+        .nElems = 0, .elems = (void **)names, .maxElems = maxnames };
 
-    struct virNetworkObjListGetHelperData data = {
-        .conn = conn, .filter = filter, .names = names, .nnames = 0,
-        .maxnames = maxnames, .active = active, .error = false};
-
-    virObjectLock(nets);
-    virHashForEach(nets->objs, virNetworkObjListGetHelper, &data);
-    virObjectUnlock(nets);
-
-    if (data.error)
-        goto cleanup;
-
-    ret = data.nnames;
- cleanup:
-    if (ret < 0) {
-        while (data.nnames)
-            VIR_FREE(data.names[--data.nnames]);
-    }
-    return ret;
+    return virObjectLookupHashForEachUUID(nets, virNetworkObjListGetHelper,
+                                          &data);
 }
 
 
@@ -1526,15 +1411,12 @@ virNetworkObjListNumOfNetworks(virNetworkObjListPtr nets,
                                virNetworkObjListFilter filter,
                                virConnectPtr conn)
 {
-    struct virNetworkObjListGetHelperData data = {
-        .conn = conn, .filter = filter, .names = NULL, .nnames = 0,
-        .maxnames = -1, .active = active, .error = false};
+    virObjectLookupHashForEachData data = {
+        .conn = conn, .filter = filter, .wantActive = active, .error = false,
+        .nElems = 0, .elems = NULL, .maxElems = -2 };
 
-    virObjectLock(nets);
-    virHashForEach(nets->objs, virNetworkObjListGetHelper, &data);
-    virObjectUnlock(nets);
-
-    return data.nnames;
+    return virObjectLookupHashForEachUUID(nets, virNetworkObjListGetHelper,
+                                          &data);
 }
 
 
@@ -1572,7 +1454,5 @@ virNetworkObjListPrune(virNetworkObjListPtr nets,
 {
     struct virNetworkObjListPruneHelperData data = {flags};
 
-    virObjectLock(nets);
-    virHashRemoveSet(nets->objs, virNetworkObjListPruneHelper, &data);
-    virObjectUnlock(nets);
+    virObjectLookupHashPrune(nets, virNetworkObjListPruneHelper, &data);
 }
