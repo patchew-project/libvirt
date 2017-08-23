@@ -181,4 +181,18 @@ void
 virObjectListFreeCount(void *list,
                        size_t count);
 
+int
+virObjectLookupHashAdd(void *anyobj,
+                       void *addObj,
+                       const char *uuidstr,
+                       const char *name)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
+void
+virObjectLookupHashRemove(void *anyobj,
+                          void *delObj,
+                          const char *uuidstr,
+                          const char *name)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
 #endif /* __VIR_OBJECT_H */

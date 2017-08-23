@@ -731,3 +731,129 @@ virObjectListFreeCount(void *list,
 
     VIR_FREE(list);
 }
+
+
+static virObjectLookupHashPtr
+virObjectGetLookupHashObj(void *anyobj)
+{
+    if (virObjectIsClass(anyobj, virObjectLookupHashClass))
+        return anyobj;
+
+    VIR_OBJECT_USAGE_PRINT_ERROR(anyobj, virObjectLookupHashClass);
+
+    return NULL;
+}
+
+
+static bool
+virObjectLookupHashValidAddRemoveArgs(virObjectLookupHashPtr hashObj,
+                                      virObjectLockablePtr obj,
+                                      const char *uuidstr,
+                                      const char *name)
+{
+    if (!hashObj || !obj)
+        return false;
+
+    if (uuidstr && !hashObj->objsUUID) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("no objsUUID for hashObj=%p, but uuidstr=%s provided"),
+                       hashObj, uuidstr);
+        return false;
+    }
+
+    if (name && !hashObj->objsName) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("no objsName for hashObj=%p, but name=%s provided"),
+                       hashObj, name);
+        return false;
+    }
+
+    return true;
+
+}
+
+
+/**
+ * virObjectLookupHashAdd:
+ * @anyobj: LookupHash object
+ * @addObj: The (virObjectLockable) object to add to the hash table(s)
+ * @uuidstr: uuid formatted into a char string to add to UUID table
+ * @name: name to add to Name table
+ *
+ * Insert @obj into the hash tables found in @anyobj. Assumes that the
+ * caller has determined that @uuidstr and @name do not already exist
+ * in their respective hash table to be inserted.
+ *
+ * Returns 0 on success, -1 on failure.
+ */
+int
+virObjectLookupHashAdd(void *anyobj,
+                       void *addObj,
+                       const char *uuidstr,
+                       const char *name)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+    virObjectLockablePtr obj = virObjectGetLockableObj(addObj);
+
+    if (!virObjectLookupHashValidAddRemoveArgs(hashObj, obj, uuidstr, name))
+        return -1;
+
+    if (hashObj->objsUUID) {
+        if (virHashAddEntry(hashObj->objsUUID, uuidstr, obj) < 0)
+            return -1;
+        virObjectRef(obj);
+    }
+
+    if (hashObj->objsName) {
+        if (virHashAddEntry(hashObj->objsName, name, obj) < 0) {
+            if (hashObj->objsUUID)
+                virHashRemoveEntry(hashObj->objsUUID, uuidstr);
+            return -1;
+        }
+        virObjectRef(obj);
+    }
+
+    return 0;
+}
+
+
+/**
+ * virObjectLookupHashRemove:
+ * @anyobj: LookupHash object
+ * @delObj: The (virObjectLockable) object to remove from the hash table(s)
+ * @uuidstr: uuid formatted into a char string to add to UUID table
+ * @name: name to add to Name table
+ *
+ * Remove @obj from the hash tables found in @anyobj. The common
+ * function to remove an object from a hash table will also cause
+ * the virObjectUnref to be called via virObjectFreeHashData since
+ * the virHashCreate used that as the Free object element argument.
+ *
+ * NB: Caller must first check if @obj is NULL before calling.
+ *
+ * Even though this is a void, report the error for a bad @anyobj.
+ */
+void
+virObjectLookupHashRemove(void *anyobj,
+                          void *delObj,
+                          const char *uuidstr,
+                          const char *name)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+    virObjectLockablePtr obj = virObjectGetLockableObj(delObj);
+
+    if (!virObjectLookupHashValidAddRemoveArgs(hashObj, obj, uuidstr, name))
+        return;
+
+    virObjectRef(obj);
+    virObjectUnlock(obj);
+    virObjectRWLockWrite(hashObj);
+    virObjectLock(obj);
+    if (uuidstr)
+        virHashRemoveEntry(hashObj->objsUUID, uuidstr);
+    if (name)
+        virHashRemoveEntry(hashObj->objsName, name);
+    virObjectUnlock(obj);
+    virObjectUnref(obj);
+    virObjectRWUnlock(hashObj);
+}
