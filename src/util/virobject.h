@@ -23,6 +23,7 @@
 # define __VIR_OBJECT_H__
 
 # include "internal.h"
+# include "virhash.h"
 # include "virthread.h"
 
 typedef struct _virClass virClass;
@@ -36,6 +37,9 @@ typedef virObjectLockable *virObjectLockablePtr;
 
 typedef struct _virObjectRWLockable virObjectRWLockable;
 typedef virObjectRWLockable *virObjectRWLockablePtr;
+
+typedef struct _virObjectLookupHash virObjectLookupHash;
+typedef virObjectLookupHash *virObjectLookupHashPtr;
 
 typedef void (*virObjectDisposeCallback)(void *obj);
 
@@ -70,6 +74,24 @@ struct _virObjectRWLockable {
 virClassPtr virClassForObject(void);
 virClassPtr virClassForObjectLockable(void);
 virClassPtr virClassForObjectRWLockable(void);
+
+struct _virObjectLookupHash {
+    virObjectRWLockable parent;
+
+    /* key1 string -> object mapping for O(1),
+     * lockless lookup-by-uuid */
+    virHashTable *objsUUID;
+
+    /* key2 string -> object mapping for O(1),
+     * lockless lookup-by-name */
+    virHashTable *objsName;
+};
+
+
+virClassPtr virClassForObject(void);
+virClassPtr virClassForObjectLockable(void);
+virClassPtr virClassForObjectRWLockable(void);
+virClassPtr virClassForObjectLookupHash(void);
 
 # ifndef VIR_PARENT_REQUIRED
 #  define VIR_PARENT_REQUIRED ATTRIBUTE_NONNULL(1)
@@ -118,6 +140,18 @@ virObjectLockableNew(virClassPtr klass)
 
 void *
 virObjectRWLockableNew(virClassPtr klass)
+    ATTRIBUTE_NONNULL(1);
+
+typedef enum {
+    VIR_OBJECT_LOOKUP_HASH_UUID = (1 << 0),
+    VIR_OBJECT_LOOKUP_HASH_NAME = (1 << 1),
+} virObjectLookupHashNewFlags;
+
+void *
+virObjectLookupHashNew(virClassPtr klass,
+                       int tableElemsStart,
+                       virObjectLookupHashNewFlags flags)
+
     ATTRIBUTE_NONNULL(1);
 
 void
