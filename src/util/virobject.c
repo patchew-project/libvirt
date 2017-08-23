@@ -930,3 +930,121 @@ virObjectLookupHashFind(void *anyobj,
 
     return obj;
 }
+
+
+static int
+virObjectLookupHashForEachInternal(virHashTablePtr objsTable,
+                                   virHashIterator iter,
+                                   virObjectLookupHashForEachDataPtr data)
+{
+    if (data->maxElems == -1) {
+        if (VIR_ALLOC_N(data->elems, virHashSize(objsTable) + 1) < 0)
+            return -1;
+    }
+
+    virHashForEach(objsTable, iter, data);
+
+    if (data->error)
+        goto error;
+
+    if (data->maxElems == -1) {
+        /* trim the array to the final size */
+        ignore_value(VIR_REALLOC_N(data->elems, data->nElems + 1));
+    }
+
+    return data->nElems;
+
+ error:
+    if (data->elems) {
+        if (data->maxElems == -1) {
+            virObjectListFree(data->elems);
+        } else {
+            while (--data->nElems)
+                VIR_FREE(data->elems[data->nElems]);
+        }
+    }
+    return -1;
+}
+
+
+/**
+ * virObjectLookupHashForEach{UUID|Name}
+ * @anyobj: LookupHash object
+ * @iter: callback function to handle the object specific checks
+ * @opaque: callback data
+ *
+ * For each element of the UUID or Name hash table make a call into the
+ * callback routine to handle its task. Even if there were two hash
+ * tables all the objects exist in both, so it's only necessary to
+ * run through one of them, but two API's are required since the caller
+ * can use either.
+ *
+ * NB:
+ * struct _virObjectLookupHashForEachData {
+ *     virConnectPtr conn;     -> Connect ptr for @filter APIs
+ *     void *opaque;           -> Opaque data as determined by caller
+ *     void *filter;           -> A pointer to function for ACL calls
+ *     bool wantActive;        -> Filter active objs
+ *     bool error;             -> Set by callback functions for error
+ *     const char *matchStr;   -> Filter for specific string in many objs
+ *     unsigned int flags;     -> @flags argument to for Export calls
+ *     int nElems;             -> # of elements found and passing filters
+ *     void **elems;           -> array of elements
+ *     int maxElems;           -> maximum # of elements to collect
+ *                                Use -1 to allocate array of N table sized
+ *                                elements to use for Export functions
+ *                                Use -2 for NumOf functions to avoid the
+ *                                allocation, but allow sharing with the
+ *                                GetNames type functions
+ * };
+ *
+ * Returns number of elements found on success, -1 on failure
+ */
+int
+virObjectLookupHashForEachUUID(void *anyobj,
+                               virHashIterator iter,
+                               virObjectLookupHashForEachDataPtr data)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+    int ret;
+
+    if (!hashObj)
+        return -1;
+
+    if (!hashObj->objsUUID) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("no objsUUID for hashObj=%p"), hashObj);
+        return -1;
+    }
+
+    virObjectRWLockRead(hashObj);
+    ret = virObjectLookupHashForEachInternal(hashObj->objsUUID, iter, data);
+    virObjectRWUnlock(hashObj);
+
+    return ret;
+}
+
+
+int
+virObjectLookupHashForEachName(void *anyobj,
+                               virHashIterator iter,
+                               virObjectLookupHashForEachDataPtr data)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+    int ret;
+
+    if (!hashObj)
+        return -1;
+
+    if (!hashObj->objsName) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("no objsName for hashObj=%p"), hashObj);
+        return -1;
+    }
+
+    virObjectRWLockRead(hashObj);
+    ret = virObjectLookupHashForEachInternal(hashObj->objsName, iter, data);
+    virObjectRWUnlock(hashObj);
+
+    return ret;
+}

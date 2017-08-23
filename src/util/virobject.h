@@ -205,4 +205,31 @@ virObjectLookupHashFind(void *anyobj,
                         const char *key)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
+typedef struct _virObjectLookupHashForEachData virObjectLookupHashForEachData;
+typedef virObjectLookupHashForEachData *virObjectLookupHashForEachDataPtr;
+struct _virObjectLookupHashForEachData {
+    virConnectPtr conn;
+    void *opaque;
+    void *filter;
+    bool wantActive;
+    bool error;
+    const char *matchStr;
+    unsigned int flags;
+    int nElems;
+    void **elems;
+    int maxElems;
+};
+
+int
+virObjectLookupHashForEachUUID(void *anyobj,
+                               virHashIterator iter,
+                               virObjectLookupHashForEachDataPtr data)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+
+int
+virObjectLookupHashForEachName(void *anyobj,
+                               virHashIterator iter,
+                               virObjectLookupHashForEachDataPtr data)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+
 #endif /* __VIR_OBJECT_H */
