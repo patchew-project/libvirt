@@ -264,5 +264,10 @@ virObjectLookupHashClone(void *srcAnyobj,
                          virObjectLookupHashCloneCallback cb)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
+void
+virObjectLookupHashPrune(void *anyobj,
+                         virHashSearcher callback,
+                         void *opaque)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
 #endif /* __VIR_OBJECT_H */

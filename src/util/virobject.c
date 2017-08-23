@@ -1262,3 +1262,42 @@ virObjectLookupHashClone(void *srcAnyobj,
 
     return 0;
 }
+
+
+/**
+ * virObjectLookupHashPrune
+ * @anyobj: LookupHash object
+ * @callback: callback function to handle the object specific checks
+ * @opaque: callback data
+ *
+ * Call the callback function from virHashRemoveSet in order to determine
+ * if the incoming opaque data should be removed from the hash table(s)
+ * for the LookupHash. If a second hash table exists and we fail to remove
+ * the same number of elements, then issue an ERROR message, but continue
+ * on as there's not much we can do now to restore the data other than
+ * attempt to let someone know.
+ */
+void
+virObjectLookupHashPrune(void *anyobj,
+                         virHashSearcher callback,
+                         void *opaque)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+    ssize_t cntUUIDs = 0;
+    ssize_t cntNames = 0;
+
+    if (!hashObj)
+        return;
+
+    virObjectRWLockWrite(hashObj);
+    if (hashObj->objsUUID)
+        cntUUIDs = virHashRemoveSet(hashObj->objsUUID, callback, opaque);
+
+    if (hashObj->objsName)
+        cntNames = virHashRemoveSet(hashObj->objsName, callback, opaque);
+
+    if (hashObj->objsUUID && hashObj->objsName && cntNames != cntUUIDs)
+        VIR_ERROR(_("removed %zd elems from objsUUID and %zd elems "
+                    "from objsName"), cntUUIDs, cntNames);
+    virObjectRWUnlock(hashObj);
+}
