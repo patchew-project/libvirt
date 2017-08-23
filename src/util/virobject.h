@@ -232,4 +232,28 @@ virObjectLookupHashForEachName(void *anyobj,
                                virObjectLookupHashForEachDataPtr data)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
+void *
+virObjectLookupHashSearchUUIDLocked(void *anyobj,
+                                    virHashSearcher iter,
+                                    void *opaque)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
+void *
+virObjectLookupHashSearchNameLocked(void *anyobj,
+                                    virHashSearcher iter,
+                                    void *opaque)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
+void *
+virObjectLookupHashSearchUUID(void *anyobj,
+                              virHashSearcher iter,
+                              void *opaque)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
+void *
+virObjectLookupHashSearchName(void *anyobj,
+                              virHashSearcher iter,
+                              void *opaque)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
 #endif /* __VIR_OBJECT_H */

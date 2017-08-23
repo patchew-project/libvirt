@@ -1048,3 +1048,134 @@ virObjectLookupHashForEachName(void *anyobj,
 
     return ret;
 }
+
+
+static void *
+virObjectLookupHashSearchInternal(virHashTablePtr objsTable,
+                                  virHashSearcher iter,
+                                  void *opaque)
+{
+    virObjectLockablePtr obj;
+
+    obj = virHashSearch(objsTable, iter, opaque, NULL);
+    virObjectRef(obj);
+
+    if (obj)
+        virObjectLock(obj);
+
+    return obj;
+}
+
+
+/**
+ * virObjectLookupHashSearch{UUID|Name}Locked
+ * @anyobj: LookupHash object
+ * @iter: callback function to handle the object specific checks
+ * @opaque: callback data
+ *
+ * Search the hash table UUID or Name table calling the specified @iter
+ * routine with an object and @opaque data in order to determine whether
+ * the object is represented by the @opaque data.
+ *
+ * NB: Caller assumes the responsibility for locking LookupHash
+ *
+ * Returns locked/refcnt incremented object on success, NULL on failure
+ */
+void *
+virObjectLookupHashSearchUUIDLocked(void *anyobj,
+                                    virHashSearcher iter,
+                                    void *opaque)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+
+    if (!hashObj)
+        return NULL;
+
+    if (!hashObj->objsUUID) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("no objsUUID for hashObj=%p"), hashObj);
+        return NULL;
+    }
+
+    return virObjectLookupHashSearchInternal(hashObj->objsUUID, iter, opaque);
+}
+
+
+void *
+virObjectLookupHashSearchNameLocked(void *anyobj,
+                                    virHashSearcher iter,
+                                    void *opaque)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+
+    if (!hashObj)
+        return NULL;
+
+    if (!hashObj->objsName) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("no objsName for hashObj=%p"), hashObj);
+        return NULL;
+    }
+
+    return virObjectLookupHashSearchInternal(hashObj->objsName, iter, opaque);
+}
+
+
+/**
+ * virObjectLookupHashSearch{UUID|Name}
+ * @anyobj: LookupHash object
+ * @iter: callback function to handle the object specific checks
+ * @opaque: callback data
+ *
+ * Call virObjectLookupHashSearchLocked with a locked hash table
+ *
+ * Returns @obj from virObjectLookupHashSearchLocked
+ */
+void *
+virObjectLookupHashSearchUUID(void *anyobj,
+                              virHashSearcher iter,
+                              void *opaque)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+    virObjectLockablePtr obj;
+
+    if (!hashObj)
+        return NULL;
+
+    if (!hashObj->objsUUID) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("no objsUUID for hashObj=%p"), hashObj);
+        return NULL;
+    }
+
+    virObjectRWLockRead(hashObj);
+    obj = virObjectLookupHashSearchInternal(hashObj->objsUUID, iter, opaque);
+    virObjectRWUnlock(hashObj);
+
+    return obj;
+}
+
+
+void *
+virObjectLookupHashSearchName(void *anyobj,
+                              virHashSearcher iter,
+                              void *opaque)
+{
+    virObjectLookupHashPtr hashObj = virObjectGetLookupHashObj(anyobj);
+    virObjectLockablePtr obj;
+
+    if (!hashObj)
+        return NULL;
+
+    if (!hashObj->objsName) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("no objsName for hashObj=%p"), hashObj);
+        return NULL;
+    }
+
+    virObjectRWLockRead(hashObj);
+    obj = virObjectLookupHashSearchInternal(hashObj->objsName, iter, opaque);
+    virObjectRWUnlock(hashObj);
+
+    return obj;
+}
