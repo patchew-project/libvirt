@@ -256,4 +256,13 @@ virObjectLookupHashSearchName(void *anyobj,
                               void *opaque)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
+typedef int (*virObjectLookupHashCloneCallback)(void *dstHashTable,
+                                                void *sourceObject);
+int
+virObjectLookupHashClone(void *srcAnyobj,
+                         void *dstAnyobj,
+                         virObjectLookupHashCloneCallback cb)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+
+
 #endif /* __VIR_OBJECT_H */
