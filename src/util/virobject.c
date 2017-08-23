@@ -49,17 +49,17 @@ struct _virClass {
 
 #define VIR_OBJECT_NOTVALID(obj) (!obj || ((obj->u.s.magic & 0xFFFF0000) != 0xCAFE0000))
 
-#define VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, objclass)                    \
+#define VIR_OBJECT_USAGE_PRINT_ERROR(anyobj, objclass)                      \
     do {                                                                    \
         virObjectPtr obj = anyobj;                                          \
         if (VIR_OBJECT_NOTVALID(obj)) {                                     \
             if (!obj)                                                       \
-                VIR_WARN("Object cannot be NULL");                          \
+                VIR_ERROR(_("Object cannot be NULL"));                      \
             else                                                            \
-                VIR_WARN("Object %p has a bad magic number %X",             \
+                VIR_ERROR(_("Object %p has a bad magic number %X"),         \
                          obj, obj->u.s.magic);                              \
         } else {                                                            \
-            VIR_WARN("Object %p (%s) is not a %s instance",                 \
+            VIR_ERROR(_("Object %p (%s) is not a %s instance"),             \
                       anyobj, obj->klass->name, #objclass);                 \
         }                                                                   \
     } while (0)
@@ -396,7 +396,7 @@ virObjectGetLockableObj(void *anyobj)
     if (virObjectIsClass(anyobj, virObjectLockableClass))
         return anyobj;
 
-    VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, virObjectLockable);
+    VIR_OBJECT_USAGE_PRINT_ERROR(anyobj, virObjectLockable);
     return NULL;
 }
 
@@ -407,7 +407,7 @@ virObjectGetRWLockableObj(void *anyobj)
     if (virObjectIsClass(anyobj, virObjectRWLockableClass))
         return anyobj;
 
-    VIR_OBJECT_USAGE_PRINT_WARNING(anyobj, virObjectRWLockable);
+    VIR_OBJECT_USAGE_PRINT_ERROR(anyobj, virObjectRWLockable);
     return NULL;
 }
 
