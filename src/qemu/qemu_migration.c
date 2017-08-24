@@ -658,6 +658,7 @@ qemuMigrationDriveMirrorCancelled(virQEMUDriverPtr driver,
     size_t completed = 0;
     int status;
     bool failed = false;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
 
  retry:
     for (i = 0; i < vm->def->ndisks; i++) {
@@ -687,8 +688,14 @@ qemuMigrationDriveMirrorCancelled(virQEMUDriverPtr driver,
             active++;
         }
 
-        if (status == VIR_DOMAIN_BLOCK_JOB_COMPLETED)
+        if (status == VIR_DOMAIN_BLOCK_JOB_COMPLETED) {
+            qemuMonitorMigrationStatsPtr stats = &priv->job.current->stats;
+
+            stats->disk_transferred += diskPriv->blockJobLength;
+            stats->disk_total += diskPriv->blockJobLength;
+
             completed++;
+        }
     }
 
     /* Updating completed block job drops the lock thus we have to recheck
@@ -1388,6 +1395,9 @@ qemuMigrationFetchMigrationStats(virQEMUDriverPtr driver,
 
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
         return -1;
+
+    if (copy)
+        memset(&statsCopy, 0, sizeof(statsCopy));
 
     rv = qemuMonitorGetMigrationStats(priv->mon, copy ? &statsCopy : stats);
 

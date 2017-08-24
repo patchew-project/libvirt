@@ -908,7 +908,7 @@ qemuMonitorJSONHandleBlockJobImpl(qemuMonitorPtr mon,
     }
 
  out:
-    qemuMonitorEmitBlockJob(mon, device, type, event);
+    qemuMonitorEmitBlockJob(mon, device, type, event, len);
 }
 
 static void
@@ -2989,8 +2989,6 @@ int qemuMonitorJSONGetMigrationStats(qemuMonitorPtr mon,
     virJSONValuePtr cmd = qemuMonitorJSONMakeCommand("query-migrate",
                                                      NULL);
     virJSONValuePtr reply = NULL;
-
-    memset(stats, 0, sizeof(*stats));
 
     if (!cmd)
         return -1;

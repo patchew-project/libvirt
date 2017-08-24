@@ -234,6 +234,7 @@ qemuBlockJobSyncBegin(virDomainDiskDefPtr disk)
     VIR_DEBUG("disk=%s", disk->dst);
     diskPriv->blockJobSync = true;
     diskPriv->blockJobStatus = -1;
+    diskPriv->blockJobLength = 0;
 }
 
 

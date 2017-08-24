@@ -332,6 +332,7 @@ struct _qemuDomainDiskPrivate {
     /* for some synchronous block jobs, we need to notify the owner */
     int blockJobType;   /* type of the block job from the event */
     int blockJobStatus; /* status of the finished block job */
+    unsigned long long blockJobLength; /* length of the finished block job */
     bool blockJobSync; /* the block job needs synchronized termination */
 
     bool migrating; /* the disk is being migrated */

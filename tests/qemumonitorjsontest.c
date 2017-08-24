@@ -1934,6 +1934,7 @@ testQemuMonitorJSONqemuMonitorJSONGetMigrationStats(const void *data)
                                "}") < 0)
         goto cleanup;
 
+    memset(&stats, 0, sizeof(stats));
     if (qemuMonitorJSONGetMigrationStats(qemuMonitorTestGetMonitor(test), &stats) < 0)
         goto cleanup;
 

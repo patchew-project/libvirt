@@ -12943,6 +12943,9 @@ qemuDomainGetJobStatsInternal(virQEMUDriverPtr driver,
         jobInfo->status == QEMU_DOMAIN_JOB_STATUS_MIGRATING ||
         jobInfo->status == QEMU_DOMAIN_JOB_STATUS_POSTCOPY) {
 
+        /* Disks stats accounting presumes that fetching migration
+         * stats will not touch disk stats records if disks are migrated via nbd.
+         */
         if (events && jobInfo->status != QEMU_DOMAIN_JOB_STATUS_ACTIVE &&
             qemuMigrationFetchMigrationStats(driver, vm, QEMU_ASYNC_JOB_NONE,
                                              &jobInfo->stats, false) < 0)
