@@ -12941,6 +12941,7 @@ qemuDomainGetJobStatsInternal(virQEMUDriverPtr driver,
 
     if (jobInfo->status == QEMU_DOMAIN_JOB_STATUS_ACTIVE ||
         jobInfo->status == QEMU_DOMAIN_JOB_STATUS_MIGRATING ||
+        jobInfo->status == QEMU_DOMAIN_JOB_STATUS_QEMU_COMPLETED ||
         jobInfo->status == QEMU_DOMAIN_JOB_STATUS_POSTCOPY) {
 
         /* Disks stats accounting presumes that fetching migration
