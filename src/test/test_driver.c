@@ -1130,7 +1130,7 @@ testParseStorage(testDriverPtr privconn,
             virStoragePoolObjUnlock(obj);
             goto error;
         }
-        obj->active = 1;
+        obj->active = true;
 
         /* Find storage volumes */
         if (testOpenVolumesForPool(file, ctxt, obj, i+1) < 0) {
@@ -4322,7 +4322,7 @@ testStoragePoolCreate(virStoragePoolPtr pool,
     if (!(obj = testStoragePoolObjFindInactiveByName(privconn, pool->name)))
         return -1;
 
-    obj->active = 1;
+    obj->active = true;
 
     event = virStoragePoolEventLifecycleNew(pool->name, pool->uuid,
                                             VIR_STORAGE_POOL_EVENT_STARTED,
@@ -4470,7 +4470,7 @@ testStoragePoolCreateXML(virConnectPtr conn,
      * code will not Remove the pool */
     VIR_FREE(obj->configFile);
 
-    obj->active = 1;
+    obj->active = true;
 
     event = virStoragePoolEventLifecycleNew(obj->def->name, obj->def->uuid,
                                             VIR_STORAGE_POOL_EVENT_STARTED,
@@ -4618,7 +4618,7 @@ testStoragePoolDestroy(virStoragePoolPtr pool)
     if (!(obj = testStoragePoolObjFindActiveByName(privconn, pool->name)))
         return -1;
 
-    obj->active = 0;
+    obj->active = false;
 
     if (obj->def->source.adapter.type ==
         VIR_STORAGE_ADAPTER_TYPE_FC_HOST) {
