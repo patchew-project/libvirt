@@ -3867,6 +3867,13 @@ qemuMigrationRun(virQEMUDriverPtr driver,
                                            QEMU_ASYNC_JOB_MIGRATION_OUT,
                                            dconn) < 0)
             ret = -1;
+
+        if (ret == 0 && priv->job.completed) {
+            priv->job.completed->stats.disk_transferred =
+                                    priv->job.current->stats.disk_transferred;
+            priv->job.completed->stats.disk_total =
+                                    priv->job.current->stats.disk_total;
+        }
     }
 
     VIR_FREE(tlsAlias);
