@@ -5922,3 +5922,52 @@ qemuMigrationReset(virQEMUDriverPtr driver,
         virFreeError(err);
     }
 }
+
+
+int
+qemuMigrationFetchMirrorStats(virQEMUDriverPtr driver,
+                              virDomainObjPtr vm,
+                              qemuDomainAsyncJob asyncJob,
+                              qemuMonitorMigrationStatsPtr stats)
+{
+    size_t i;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    bool nbd = false;
+    virHashTablePtr blockinfo = NULL;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+        if (QEMU_DOMAIN_DISK_PRIVATE(disk)->migrating) {
+            nbd = true;
+            break;
+        }
+    }
+
+    if (!nbd)
+        return 0;
+
+    if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
+        return -1;
+
+    blockinfo = qemuMonitorGetAllBlockJobInfo(priv->mon);
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0 || !blockinfo)
+        return -1;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+        qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+        qemuMonitorBlockJobInfoPtr data;
+
+        if (!diskPriv->migrating ||
+            !(data = virHashLookup(blockinfo, disk->info.alias)))
+            continue;
+
+        stats->disk_transferred += data->cur;
+        stats->disk_total += data->end;
+        stats->disk_remaining += data->end - data->cur;
+    }
+
+    virHashFree(blockinfo);
+    return 0;
+}
