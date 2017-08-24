@@ -4761,6 +4761,7 @@ testStoragePoolSetAutostart(virStoragePoolPtr pool,
 {
     testDriverPtr privconn = pool->conn->privateData;
     virStoragePoolObjPtr obj;
+    bool new_autostart = (autostart != 0);
     int ret = -1;
 
     if (!(obj = testStoragePoolObjFindByName(privconn, pool->name)))
@@ -4772,8 +4773,7 @@ testStoragePoolSetAutostart(virStoragePoolPtr pool,
         goto cleanup;
     }
 
-    autostart = (autostart != 0);
-    virStoragePoolObjSetAutostart(obj, autostart);
+    virStoragePoolObjSetAutostart(obj, new_autostart);
     ret = 0;
 
  cleanup:
