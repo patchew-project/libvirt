@@ -1615,6 +1615,37 @@ udevHandleOneDevice(struct udev_device *device)
 }
 
 
+/* the caller must be holding the driver lock prior to calling this function */
+static bool
+udevCheckMonitorFD(struct udev_monitor *udev_monitor, int fd)
+{
+    int real_fd = -1;
+
+    /* sanity check that the monitor socket hasn't changed */
+    real_fd = udev_monitor_get_fd(udev_monitor);
+
+    if (real_fd != fd) {
+        udevPrivate *priv = driver->privateData;
+
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("File descriptor returned by udev %d does not "
+                         "match node device file descriptor %d"),
+                       real_fd, fd);
+
+        /* this is a non-recoverable error, thus the event handle has to be
+         * removed, so that we don't get into the handler again because of some
+         * spurious behaviour
+         */
+        virEventRemoveHandle(priv->watch);
+        priv->watch = -1;
+
+        return false;
+    }
+
+    return true;
+}
+
+
 static void
 udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
                         int fd,
@@ -1622,40 +1653,30 @@ udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
                         void *data ATTRIBUTE_UNUSED)
 {
     struct udev_device *device = NULL;
-    struct udev_monitor *udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
-    int udev_fd = -1;
+    struct udev_monitor *udev_monitor = NULL;
 
-    udev_fd = udev_monitor_get_fd(udev_monitor);
-    if (fd != udev_fd) {
-        udevPrivate *priv = driver->privateData;
+    nodeDeviceLock();
+    udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
 
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("File descriptor returned by udev %d does not "
-                         "match node device file descriptor %d"),
-                       fd, udev_fd);
+    if (!udevCheckMonitorFD(udev_monitor, fd))
+        goto unlock;
 
-        /* this is a non-recoverable error, let's remove the handle, so that we
-         * don't get in here again because of some spurious behaviour and report
-         * the same error multiple times
-         */
-        virEventRemoveHandle(priv->watch);
-        priv->watch = -1;
-
-        goto cleanup;
-    }
-
-    device = udev_monitor_receive_device(udev_monitor);
-    if (device == NULL) {
+    if (!(device = udev_monitor_receive_device(udev_monitor))) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("udev_monitor_receive_device returned NULL"));
-        goto cleanup;
+        goto unlock;
     }
 
+    nodeDeviceUnlock();
     udevHandleOneDevice(device);
 
  cleanup:
     udev_device_unref(device);
     return;
+
+ unlock:
+    nodeDeviceUnlock();
+    goto cleanup;
 }
 
 
