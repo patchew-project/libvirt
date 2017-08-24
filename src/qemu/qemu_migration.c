@@ -1588,6 +1588,7 @@ qemuMigrationWaitForCompletion(virQEMUDriverPtr driver,
         ignore_value(qemuMigrationFetchMigrationStats(driver, vm, asyncJob,
                                                       &jobInfo->stats, true));
 
+    qemuMigrationFetchMirrorStats(driver, vm, asyncJob, NULL);
     qemuDomainJobInfoUpdateTime(jobInfo);
     qemuDomainJobInfoUpdateDowntime(jobInfo);
     VIR_FREE(priv->job.completed);
@@ -5934,6 +5935,9 @@ qemuMigrationReset(virQEMUDriverPtr driver,
 }
 
 
+/* Query qemu for block job stats. If @stats is not NULL then sum them up
+ * in @stats, otherwise store them in disks private area for each disk.
+ */
 int
 qemuMigrationFetchMirrorStats(virQEMUDriverPtr driver,
                               virDomainObjPtr vm,
@@ -5968,14 +5972,33 @@ qemuMigrationFetchMirrorStats(virQEMUDriverPtr driver,
         virDomainDiskDefPtr disk = vm->def->disks[i];
         qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
         qemuMonitorBlockJobInfoPtr data;
+        unsigned long long transferred;
+        unsigned long long total;
 
-        if (!diskPriv->migrating ||
-            !(data = virHashLookup(blockinfo, disk->info.alias)))
+        if (!diskPriv->migrating)
             continue;
 
-        stats->disk_transferred += data->cur;
-        stats->disk_total += data->end;
-        stats->disk_remaining += data->end - data->cur;
+        data = virHashLookup(blockinfo, disk->info.alias);
+
+        if (stats) {
+            if (data) {
+                transferred = data->cur;
+                total = data->end;
+            } else {
+                /* Race condition. There is no blockjob for disk already
+                 * but is has been migrating via nbd. Thanx we store job
+                 * len value just before stopping mirror jobs which can be
+                 * good approximation at this point.
+                 */
+                total = transferred = diskPriv->blockJobLength;
+            }
+
+            stats->disk_transferred += transferred;
+            stats->disk_total += total;
+            stats->disk_remaining += total - transferred;
+        } else if (data) {
+            diskPriv->blockJobLength = data->end;
+        }
     }
 
     virHashFree(blockinfo);
