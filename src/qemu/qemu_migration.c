@@ -1453,6 +1453,7 @@ qemuMigrationCheckJobStatus(virQEMUDriverPtr driver,
 
     case QEMU_DOMAIN_JOB_STATUS_COMPLETED:
     case QEMU_DOMAIN_JOB_STATUS_ACTIVE:
+    case QEMU_DOMAIN_JOB_STATUS_MIGRATING:
     case QEMU_DOMAIN_JOB_STATUS_POSTCOPY:
         break;
     }
@@ -1521,7 +1522,8 @@ qemuMigrationCompleted(virQEMUDriverPtr driver,
         return 0;
 
  error:
-    if (jobInfo->status == QEMU_DOMAIN_JOB_STATUS_ACTIVE ||
+    /* state can not be active at this point */
+    if (jobInfo->status == QEMU_DOMAIN_JOB_STATUS_MIGRATING ||
         jobInfo->status == QEMU_DOMAIN_JOB_STATUS_POSTCOPY) {
         /* The migration was aborted by us rather than QEMU itself. */
         jobInfo->status = QEMU_DOMAIN_JOB_STATUS_FAILED;
@@ -1549,6 +1551,8 @@ qemuMigrationWaitForCompletion(virQEMUDriverPtr driver,
     qemuDomainJobInfoPtr jobInfo = priv->job.current;
     bool events = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_MIGRATION_EVENT);
     int rv;
+
+    jobInfo->status = QEMU_DOMAIN_JOB_STATUS_MIGRATING;
 
     while ((rv = qemuMigrationCompleted(driver, vm, asyncJob,
                                         dconn, flags)) != 1) {
@@ -3870,7 +3874,8 @@ qemuMigrationRun(virQEMUDriverPtr driver,
         ignore_value(virTimeMillisNow(&priv->job.completed->sent));
     }
 
-    if (priv->job.current->status == QEMU_DOMAIN_JOB_STATUS_ACTIVE)
+    if (priv->job.current->status == QEMU_DOMAIN_JOB_STATUS_ACTIVE ||
+        priv->job.current->status == QEMU_DOMAIN_JOB_STATUS_MIGRATING)
         priv->job.current->status = QEMU_DOMAIN_JOB_STATUS_FAILED;
 
     cookieFlags |= QEMU_MIGRATION_COOKIE_NETWORK |
