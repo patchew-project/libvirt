@@ -59,6 +59,54 @@ struct _udevPrivate {
     bool privileged;
 };
 
+typedef struct _udevEventThreadData udevEventThreadData;
+typedef udevEventThreadData *udevEventThreadDataPtr;
+
+struct _udevEventThreadData {
+    virMutex lock;
+    virCond threadCond;
+
+    bool threadQuit;
+    int monitor_fd;
+    unsigned long long nevents; /* number of udev events queuing on monitor */
+};
+
+
+static udevEventThreadDataPtr
+udevEventThreadDataNew(int fd)
+{
+    udevEventThreadDataPtr ret = NULL;
+
+    if (VIR_ALLOC_QUIET(ret) < 0)
+        return NULL;
+
+    if (virMutexInit(&ret->lock) < 0)
+        goto cleanup;
+
+    if (virCondInit(&ret->threadCond) < 0)
+        goto cleanup_mutex;
+
+    ret->monitor_fd = fd;
+
+    return ret;
+
+ cleanup_mutex:
+    virMutexDestroy(&ret->lock);
+
+ cleanup:
+    VIR_FREE(ret);
+    return NULL;
+}
+
+
+static void
+udevEventThreadDataFree(udevEventThreadDataPtr data)
+{
+    virMutexDestroy(&data->lock);
+    virCondDestroy(&data->threadCond);
+    VIR_FREE(data);
+}
+
 
 static bool
 udevHasDeviceProperty(struct udev_device *dev,
@@ -1647,35 +1695,53 @@ udevCheckMonitorFD(struct udev_monitor *udev_monitor, int fd)
 
 
 static void
-udevEventHandleThread(void *opaque ATTRIBUTE_UNUSED)
+udevEventHandleThread(void *opaque)
 {
+    udevEventThreadDataPtr privateData = opaque;
     struct udev_device *device = NULL;
     struct udev_monitor *udev_monitor = NULL;
-    int fd = (intptr_t) opaque;
 
-    nodeDeviceLock();
-    udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
+    /* continue rather than break from the loop on non-fatal errors */
+    while (1) {
+        virMutexLock(&privateData->lock);
+        while (privateData->nevents == 0 && !privateData->threadQuit) {
+            if (virCondWait(&privateData->threadCond, &privateData->lock)) {
+                virReportSystemError(errno, "%s",
+                                     _("handler failed to wait on condition"));
+                goto cleanup;
+            }
+        }
 
-    if (!udevCheckMonitorFD(udev_monitor, fd))
-        goto unlock;
+        privateData->nevents--;
+        virMutexUnlock(&privateData->lock);
 
-    device = udev_monitor_receive_device(udev_monitor);
-    if (device == NULL) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("udev_monitor_receive_device returned NULL"));
-        goto unlock;
+        nodeDeviceLock();
+        udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
+
+        if (!udevCheckMonitorFD(udev_monitor, privateData->monitor_fd)) {
+            nodeDeviceUnlock();
+            goto cleanup;
+        }
+
+        device = udev_monitor_receive_device(udev_monitor);
+        nodeDeviceUnlock();
+
+        if (!device) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("udev_monitor_receive_device returned NULL"));
+            goto next;
+        }
+
+        udevHandleOneDevice(device);
+
+    next:
+        udev_device_unref(device);
     }
-
-    nodeDeviceUnlock();
-    udevHandleOneDevice(device);
 
  cleanup:
     udev_device_unref(device);
+    udevEventThreadDataFree(privateData);
     return;
-
- unlock:
-    nodeDeviceUnlock();
-    goto cleanup;
 }
 
 
@@ -1683,20 +1749,28 @@ static void
 udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
                         int fd,
                         int events ATTRIBUTE_UNUSED,
-                        void *data ATTRIBUTE_UNUSED)
+                        void *opaque)
 {
     struct udev_monitor *udev_monitor = NULL;
+    udevEventThreadDataPtr threadData = opaque;
 
     nodeDeviceLock();
     udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
-
     if (!udevCheckMonitorFD(udev_monitor, fd)) {
+        virMutexLock(&threadData->lock);
+        threadData->threadQuit = true;
+        virCondSignal(&threadData->threadCond);
+        virMutexUnlock(&threadData->lock);
+
         nodeDeviceUnlock();
         return;
     }
     nodeDeviceUnlock();
 
-    udevEventHandleThread((void *)(intptr_t) fd);
+    virMutexLock(&threadData->lock);
+    threadData->nevents++;
+    virCondSignal(&threadData->threadCond);
+    virMutexUnlock(&threadData->lock);
 }
 
 
@@ -1823,6 +1897,9 @@ nodeStateInitialize(bool privileged,
 {
     udevPrivate *priv = NULL;
     struct udev *udev = NULL;
+    int monitor_fd = -1;
+    virThread th;
+    udevEventThreadDataPtr threadData = NULL;
 
     if (VIR_ALLOC(priv) < 0)
         return -1;
@@ -1883,6 +1960,14 @@ nodeStateInitialize(bool privileged,
                                              128 * 1024 * 1024);
 #endif
 
+    monitor_fd = udev_monitor_get_fd(priv->udev_monitor);
+    if (!(threadData = udevEventThreadDataNew(monitor_fd)) ||
+        virThreadCreate(&th, false, udevEventHandleThread, threadData) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("failed to create udev handling thread"));
+        goto cleanup;
+    }
+
     /* We register the monitor with the event callback so we are
      * notified by udev of device changes before we enumerate existing
      * devices because libvirt will simply recreate the device if we
@@ -1891,9 +1976,8 @@ nodeStateInitialize(bool privileged,
      * enumeration.  The alternative is to register the callback after
      * we enumerate, in which case we will fail to create any devices
      * that appear while the enumeration is taking place.  */
-    priv->watch = virEventAddHandle(udev_monitor_get_fd(priv->udev_monitor),
-                                    VIR_EVENT_HANDLE_READABLE,
-                                    udevEventHandleCallback, NULL, NULL);
+    priv->watch = virEventAddHandle(monitor_fd, VIR_EVENT_HANDLE_READABLE,
+                                    udevEventHandleCallback, threadData, NULL);
     if (priv->watch == -1)
         goto unlock;
 
