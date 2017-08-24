@@ -279,10 +279,11 @@ qemuMigrationCancel(virQEMUDriverPtr driver,
                     virDomainObjPtr vm);
 
 int
-qemuMigrationFetchJobStatus(virQEMUDriverPtr driver,
-                            virDomainObjPtr vm,
-                            qemuDomainAsyncJob asyncJob,
-                            qemuDomainJobInfoPtr jobInfo);
+qemuMigrationFetchMigrationStats(virQEMUDriverPtr driver,
+                                 virDomainObjPtr vm,
+                                 qemuDomainAsyncJob asyncJob,
+                                 qemuMonitorMigrationStatsPtr stats,
+                                 bool copy);
 
 int
 qemuMigrationErrorInit(virQEMUDriverPtr driver);
