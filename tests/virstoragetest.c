@@ -1595,6 +1595,17 @@ mymain(void)
                        "<source protocol='vxhs' name='c6718f6b-0401-441d-a8c3-1f0064d75ee0'>\n"
                        "  <host name='example.com' port='1234'/>\n"
                        "</source>\n");
+    TEST_BACKING_PARSE("json:{\"file\":{\"driver\":\"vxhs\","
+                                       "\"vdisk-id\":\"c6718f6b-0401-441d-a8c3-1f0064d75ee0\","
+                                       "\"server\": { \"host\":\"example.com\","
+                                                      "\"port\":\"1234\""
+                                                   "},"
+                                       "\"tls\":\"yes\""
+                                      "}"
+                            "}",
+                       "<source protocol='vxhs' name='c6718f6b-0401-441d-a8c3-1f0064d75ee0' tls='yes'>\n"
+                       "  <host name='example.com' port='1234'/>\n"
+                       "</source>\n");
 #endif /* WITH_YAJL */
 
  cleanup:
