@@ -23,6 +23,7 @@
 
 #include "viralloc.h"
 #include "virstring.h"
+#include "qemu_alias.h"
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
@@ -482,6 +483,60 @@ qemuBlockStorageSourceGetGlusterProps(virStorageSourcePtr src)
 }
 
 
+static virJSONValuePtr
+qemuBuildVxHSDriveJSONHost(virStorageSourcePtr src)
+{
+    virJSONValuePtr server = NULL;
+    virStorageNetHostDefPtr host;
+    unsigned int port;
+
+    if (src->nhosts != 1) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("protocol VxHS accepts only one host"));
+        return NULL;
+    }
+
+    host = src->hosts;
+    port = host->port;
+
+    if (virJSONValueObjectCreate(&server,
+                                 "s:host", host->name,
+                                 "u:port", port,
+                                 NULL) < 0)
+        server = NULL;
+
+    return server;
+}
+
+
+static virJSONValuePtr
+qemuBlockStorageSourceGetVxHSProps(virStorageSourcePtr src)
+{
+    const char *protocol = virStorageNetProtocolTypeToString(src->protocol);
+    virJSONValuePtr server = NULL;
+    virJSONValuePtr ret = NULL;
+
+    if (!(server = qemuBuildVxHSDriveJSONHost(src)))
+        return NULL;
+
+    /* VxHS disk specification example:
+     * { driver:"vxhs",
+     *   vdisk-id:"eb90327c-8302-4725-4e85ed4dc251",
+     *   server.host:"1.2.3.4",
+     *   server.port:1234}
+     */
+    if (virJSONValueObjectCreate(&ret,
+                                 "s:driver", protocol,
+                                 "s:vdisk-id", src->path,
+                                 "a:server", server, NULL) < 0) {
+        virJSONValueFree(server);
+        ret = NULL;
+    }
+
+    return ret;
+}
+
+
 /**
  * qemuBlockStorageSourceGetBackendProps:
  * @src: disk source
@@ -509,6 +564,11 @@ qemuBlockStorageSourceGetBackendProps(virStorageSourcePtr src)
         switch ((virStorageNetProtocol) src->protocol) {
         case VIR_STORAGE_NET_PROTOCOL_GLUSTER:
             if (!(fileprops = qemuBlockStorageSourceGetGlusterProps(src)))
+                goto cleanup;
+            break;
+
+        case VIR_STORAGE_NET_PROTOCOL_VXHS:
+            if (!(fileprops = qemuBlockStorageSourceGetVxHSProps(src)))
                 goto cleanup;
             break;
 

@@ -85,7 +85,8 @@ VIR_ENUM_IMPL(virStorageNetProtocol, VIR_STORAGE_NET_PROTOCOL_LAST,
               "ftp",
               "ftps",
               "tftp",
-              "ssh")
+              "ssh",
+              "vxhs")
 
 VIR_ENUM_IMPL(virStorageNetHostTransport, VIR_STORAGE_NET_HOST_TRANS_LAST,
               "tcp",
@@ -2712,6 +2713,7 @@ virStorageSourceParseBackingColon(virStorageSourcePtr src,
     case VIR_STORAGE_NET_PROTOCOL_ISCSI:
     case VIR_STORAGE_NET_PROTOCOL_GLUSTER:
     case VIR_STORAGE_NET_PROTOCOL_SSH:
+    case VIR_STORAGE_NET_PROTOCOL_VXHS:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("malformed backing store path for protocol %s"),
                        protocol);
@@ -3210,6 +3212,38 @@ virStorageSourceParseBackingJSONRaw(virStorageSourcePtr src,
     return virStorageSourceParseBackingJSONInternal(src, json);
 }
 
+static int
+virStorageSourceParseBackingJSONVxHS(virStorageSourcePtr src,
+                                     virJSONValuePtr json,
+                                     int opaque ATTRIBUTE_UNUSED)
+{
+    const char *vdisk_id = virJSONValueObjectGetString(json, "vdisk-id");
+    virJSONValuePtr server = virJSONValueObjectGetObject(json, "server");
+
+    if (!vdisk_id || !server) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("missing 'vdisk-id' or 'server' attribute in "
+                         "JSON backing definition for VxHS volume"));
+        return -1;
+    }
+
+    src->type = VIR_STORAGE_TYPE_NETWORK;
+    src->protocol = VIR_STORAGE_NET_PROTOCOL_VXHS;
+
+    if (VIR_STRDUP(src->path, vdisk_id) < 0)
+        return -1;
+
+    if (VIR_ALLOC_N(src->hosts, 1) < 0)
+        return -1;
+    src->nhosts = 1;
+
+    if (virStorageSourceParseBackingJSONInetSocketAddress(src->hosts,
+                                                          server) < 0)
+        return -1;
+
+    return 0;
+}
+
 struct virStorageSourceJSONDriverParser {
     const char *drvname;
     int (*func)(virStorageSourcePtr src, virJSONValuePtr json, int opaque);
@@ -3232,6 +3266,7 @@ static const struct virStorageSourceJSONDriverParser jsonParsers[] = {
     {"ssh", virStorageSourceParseBackingJSONSSH, 0},
     {"rbd", virStorageSourceParseBackingJSONRBD, 0},
     {"raw", virStorageSourceParseBackingJSONRaw, 0},
+    {"vxhs", virStorageSourceParseBackingJSONVxHS, 0},
 };
 
 
@@ -3991,6 +4026,9 @@ virStorageSourceNetworkDefaultPort(virStorageNetProtocol protocol)
         case VIR_STORAGE_NET_PROTOCOL_RBD:
             /* we don't provide a default for RBD */
             return 0;
+
+        case VIR_STORAGE_NET_PROTOCOL_VXHS:
+            return 9999;
 
         case VIR_STORAGE_NET_PROTOCOL_LAST:
         case VIR_STORAGE_NET_PROTOCOL_NONE:
