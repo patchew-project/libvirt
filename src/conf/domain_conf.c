@@ -25071,6 +25071,7 @@ virDomainIOMMUDefFormat(virBufferPtr buf,
                         const virDomainIOMMUDef *iommu)
 {
     virBuffer childBuf = VIR_BUFFER_INITIALIZER;
+    virBuffer attrBuf = VIR_BUFFER_INITIALIZER;
     virBuffer driverAttrBuf = VIR_BUFFER_INITIALIZER;
     int ret = -1;
 
@@ -25096,16 +25097,11 @@ virDomainIOMMUDefFormat(virBufferPtr buf,
     if (virXMLFormatElement(&childBuf, "driver", &driverAttrBuf, NULL) < 0)
         goto cleanup;
 
-    virBufferAsprintf(buf, "<iommu model='%s'",
+    virBufferAsprintf(&attrBuf, " model='%s'",
                       virDomainIOMMUModelTypeToString(iommu->model));
 
-    if (virBufferError(&childBuf) != 0 || virBufferUse(&childBuf)) {
-        virBufferAddLit(buf, ">\n");
-        virBufferAddBuffer(buf, &childBuf);
-        virBufferAddLit(buf, "</iommu>\n");
-    } else {
-        virBufferAddLit(buf, "/>\n");
-    }
+    if (virXMLFormatElement(buf, "iommu", &attrBuf, &childBuf) < 0)
+        goto cleanup;
 
     ret = 0;
 
