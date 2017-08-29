@@ -519,20 +519,38 @@ qemuBlockStorageSourceGetVxHSProps(virStorageSourcePtr src)
     if (!(server = qemuBuildVxHSDriveJSONHost(src)))
         return NULL;
 
-    /* VxHS disk specification example:
-     * { driver:"vxhs",
-     *   vdisk-id:"eb90327c-8302-4725-4e85ed4dc251",
-     *   server.host:"1.2.3.4",
-     *   server.port:1234}
-     */
-    if (virJSONValueObjectCreate(&ret,
-                                 "s:driver", protocol,
-                                 "s:vdisk-id", src->path,
-                                 "a:server", server, NULL) < 0) {
-        virJSONValueFree(server);
-        ret = NULL;
+    if (src->addTLS == true) {
+        char *objalias = NULL;
+
+        if (!(objalias = qemuAliasTLSObjFromSrcAlias("vxhs")))
+            goto cleanup;
+
+        if (virJSONValueObjectCreate(&ret,
+                                     "s:driver", protocol,
+                                     "s:tls-creds", objalias,
+                                     "s:vdisk-id", src->path,
+                                     "a:server", server, NULL) < 0) {
+            virJSONValueFree(server);
+            ret = NULL;
+        }
+        VIR_FREE(objalias);
+    } else {
+        /* VxHS disk specification example:
+         * { driver:"vxhs",
+         *   vdisk-id:"eb90327c-8302-4725-4e85ed4dc251",
+         *   server.host:"1.2.3.4",
+         *   server.port:1234}
+         */
+        if (virJSONValueObjectCreate(&ret,
+                                     "s:driver", protocol,
+                                     "s:vdisk-id", src->path,
+                                     "a:server", server, NULL) < 0) {
+            virJSONValueFree(server);
+            ret = NULL;
+        }
     }
 
+ cleanup:
     return ret;
 }
 

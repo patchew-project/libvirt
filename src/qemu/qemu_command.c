@@ -791,6 +791,70 @@ qemuBuildTLSx509CommandLine(virCommandPtr cmd,
 }
 
 
+
+/* qemuBuildDiskVxHSTLSinfoCommandLine:
+ * @cmd: Pointer to the command string
+ * @cfg: Pointer to the qemu driver config
+ * @disk: The disk we are processing
+ * @qemuCaps: qemu capabilities object
+ *
+ * Check if the VxHS disk meets all the criteria to enable TLS.
+ * If yes, add a new TLS object and mention it's ID on the disk
+ * command line.
+ *
+ * Returns 0 on success, -1 w/ error on some sort of failure.
+ */
+static int
+qemuBuildDiskVxHSTLSinfoCommandLine(virCommandPtr cmd,
+                                    virQEMUDriverConfigPtr cfg,
+                                    virDomainDiskDefPtr disk,
+                                    virQEMUCapsPtr qemuCaps)
+{
+    int ret = 0;
+
+    if (cfg->vxhsTLS  == true && disk->src->haveTLS != VIR_TRISTATE_BOOL_NO) {
+            disk->src->addTLS = true;
+            ret = qemuBuildTLSx509CommandLine(cmd, cfg->vxhsTLSx509certdir,
+                                              false,
+                                              true,
+                                              false,
+                                              "vxhs",
+                                              qemuCaps);
+    } else if (cfg->vxhsTLS  == false &&
+               disk->src->haveTLS == VIR_TRISTATE_BOOL_YES) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Please enable VxHS specific TLS options in the qemu "
+                         "conf file before using TLS in VxHS device domain "
+                         "specification"));
+        ret = -1;
+    }
+
+    return ret;
+}
+
+
+/* qemuBuildDiskTLSinfoCommandLine:
+ *
+ * Add TLS object if the disk uses a secure communication channel
+ *
+ * Returns 0 on success, -1 w/ error on some sort of failure.
+ */
+static int
+qemuBuildDiskTLSinfoCommandLine(virCommandPtr cmd,
+                                virQEMUDriverConfigPtr cfg,
+                                virDomainDiskDefPtr disk,
+                                virQEMUCapsPtr qemuCaps)
+{
+    virStorageSourcePtr src = disk->src;
+
+    /* other protocols may be added later */
+    if (src->protocol == VIR_STORAGE_NET_PROTOCOL_VXHS)
+        return qemuBuildDiskVxHSTLSinfoCommandLine(cmd, cfg, disk, qemuCaps);
+
+    return 0;
+}
+
+
 static char *
 qemuBuildNetworkDriveURI(virStorageSourcePtr src,
                          qemuDomainSecretInfoPtr secinfo)
@@ -2216,6 +2280,9 @@ qemuBuildDiskDriveCommandLine(virCommandPtr cmd,
             return -1;
 
         if (qemuBuildDiskSecinfoCommandLine(cmd, encinfo) < 0)
+            return -1;
+
+        if (qemuBuildDiskTLSinfoCommandLine(cmd, cfg, disk, qemuCaps) < 0)
             return -1;
 
         virCommandAddArg(cmd, "-drive");
