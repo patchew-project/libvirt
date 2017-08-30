@@ -937,6 +937,8 @@ mymain(void)
     driver.config->vxhsTLS = 1;
     DO_TEST("disk-drive-network-tlsx509-vxhs", QEMU_CAPS_VXHS,
             QEMU_CAPS_OBJECT_TLS_CREDS_X509);
+    DO_TEST("disk-drive-network-tlsx509-multidisk-vxhs", QEMU_CAPS_VXHS,
+            QEMU_CAPS_OBJECT_TLS_CREDS_X509);
     driver.config->vxhsTLS = 0;
     VIR_FREE(driver.config->vxhsTLSx509certdir);
     DO_TEST("disk-drive-no-boot",
