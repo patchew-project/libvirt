@@ -30,6 +30,7 @@ AC_DEFUN([LIBVIRT_STORAGE_CHECK_LVM], [
     AC_PATH_PROG([VGREMOVE], [vgremove], [], [$LIBVIRT_SBIN_PATH])
     AC_PATH_PROG([LVREMOVE], [lvremove], [], [$LIBVIRT_SBIN_PATH])
     AC_PATH_PROG([LVCHANGE], [lvchange], [], [$LIBVIRT_SBIN_PATH])
+    AC_PATH_PROG([LVRESIZE], [lvresize], [], [$LIBVIRT_SBIN_PATH])
     AC_PATH_PROG([VGCHANGE], [vgchange], [], [$LIBVIRT_SBIN_PATH])
     AC_PATH_PROG([VGSCAN], [vgscan], [], [$LIBVIRT_SBIN_PATH])
     AC_PATH_PROG([PVS], [pvs], [], [$LIBVIRT_SBIN_PATH])
@@ -44,6 +45,7 @@ AC_DEFUN([LIBVIRT_STORAGE_CHECK_LVM], [
       if test -z "$VGREMOVE" ; then AC_MSG_ERROR([We need vgremove for LVM storage driver]) ; fi
       if test -z "$LVREMOVE" ; then AC_MSG_ERROR([We need lvremove for LVM storage driver]) ; fi
       if test -z "$LVCHANGE" ; then AC_MSG_ERROR([We need lvchange for LVM storage driver]) ; fi
+      if test -z "$LVRESIZE" ; then AC_MSG_ERROR([We need lvresize for LVM storage driver]) ; fi
       if test -z "$VGCHANGE" ; then AC_MSG_ERROR([We need vgchange for LVM storage driver]) ; fi
       if test -z "$VGSCAN" ; then AC_MSG_ERROR([We need vgscan for LVM storage driver]) ; fi
       if test -z "$PVS" ; then AC_MSG_ERROR([We need pvs for LVM storage driver]) ; fi
@@ -57,6 +59,7 @@ AC_DEFUN([LIBVIRT_STORAGE_CHECK_LVM], [
       if test -z "$VGREMOVE" ; then with_storage_lvm=no ; fi
       if test -z "$LVREMOVE" ; then with_storage_lvm=no ; fi
       if test -z "$LVCHANGE" ; then with_storage_lvm=no ; fi
+      if test -z "$LVRESIZE" ; then with_storage_lvm=no ; fi
       if test -z "$VGCHANGE" ; then with_storage_lvm=no ; fi
       if test -z "$VGSCAN" ; then with_storage_lvm=no ; fi
       if test -z "$PVS" ; then with_storage_lvm=no ; fi
@@ -75,6 +78,7 @@ AC_DEFUN([LIBVIRT_STORAGE_CHECK_LVM], [
       AC_DEFINE_UNQUOTED([VGREMOVE],["$VGREMOVE"],[Location of vgremove program])
       AC_DEFINE_UNQUOTED([LVREMOVE],["$LVREMOVE"],[Location of lvremove program])
       AC_DEFINE_UNQUOTED([LVCHANGE],["$LVCHANGE"],[Location of lvchange program])
+      AC_DEFINE_UNQUOTED([LVRESIZE],["$LVRESIZE"],[Location of lvresize program])
       AC_DEFINE_UNQUOTED([VGCHANGE],["$VGCHANGE"],[Location of vgchange program])
       AC_DEFINE_UNQUOTED([VGSCAN],["$VGSCAN"],[Location of vgscan program])
       AC_DEFINE_UNQUOTED([PVS],["$PVS"],[Location of pvs program])

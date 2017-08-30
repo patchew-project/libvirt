@@ -1072,6 +1072,27 @@ virStorageBackendLogicalVolWipe(virConnectPtr conn,
     return -1;
 }
 
+static int
+virStorageBackendLogicalResizeVol(virConnectPtr conn ATTRIBUTE_UNUSED,
+                                   virStoragePoolObjPtr pool,
+                                   virStorageVolDefPtr vol,
+                                   unsigned long long capacity,
+                                   unsigned int flags)
+{
+
+    virCheckFlags(0, -1);
+
+    (void)pool;
+    virCommandPtr cmd = virCommandNewArgList(LVRESIZE, "-L", NULL);
+    virCommandAddArgFormat(cmd, "%lluK", VIR_DIV_UP(capacity, 1024));
+    virCommandAddArgFormat(cmd, "%s", vol->target.path);
+    int ret = virCommandRun(cmd, NULL);
+
+    virCommandFree(cmd);
+    return ret;
+
+}
+
 virStorageBackend virStorageBackendLogical = {
     .type = VIR_STORAGE_POOL_LOGICAL,
 
@@ -1089,6 +1110,7 @@ virStorageBackend virStorageBackendLogical = {
     .uploadVol = virStorageBackendVolUploadLocal,
     .downloadVol = virStorageBackendVolDownloadLocal,
     .wipeVol = virStorageBackendLogicalVolWipe,
+    .resizeVol = virStorageBackendLogicalResizeVol,
 };
 
 
