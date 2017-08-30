@@ -5159,8 +5159,8 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
 
         if (dev->data.tcp.listen)
             virBufferAdd(&buf, nowait ? ",server,nowait" : ",server", -1);
-
-        qemuBuildChrChardevReconnectStr(&buf, &dev->data.tcp.reconnect);
+        else
+            qemuBuildChrChardevReconnectStr(&buf, &dev->data.tcp.reconnect);
 
         if (dev->data.tcp.haveTLS == VIR_TRISTATE_BOOL_YES) {
             qemuDomainChrSourcePrivatePtr chrSourcePriv =
@@ -5195,8 +5195,8 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
         virQEMUBuildBufferEscapeComma(&buf, dev->data.nix.path);
         if (dev->data.nix.listen)
             virBufferAdd(&buf, nowait ? ",server,nowait" : ",server", -1);
-
-        qemuBuildChrChardevReconnectStr(&buf, &dev->data.nix.reconnect);
+        else
+            qemuBuildChrChardevReconnectStr(&buf, &dev->data.nix.reconnect);
         break;
 
     case VIR_DOMAIN_CHR_TYPE_SPICEVMC:
