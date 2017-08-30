@@ -280,6 +280,10 @@ struct _virStorageSource {
     /* metadata that allows identifying given storage source */
     char *nodeformat;  /* name of the format handler object */
     char *nodestorage; /* name of the storage object */
+
+    unsigned l2_cache_size; /* qcow2 l2 cache size */
+    unsigned refcount_cache_size; /* qcow2 reference count table cache size */
+    unsigned cache_clean_interval; /* clean unused cache entries interval */
 };
 
 

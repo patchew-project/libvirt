@@ -8590,6 +8590,30 @@ virDomainDiskDefDriverParseXML(virDomainDiskDefPtr def,
         VIR_FREE(tmp);
     }
 
+    if ((tmp = virXMLPropString(cur, "l2-cache-size")) &&
+        (virStrToLong_ui(tmp, NULL, 10, &def->src->l2_cache_size) < 0)) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid l2-cache-size attribute in disk driver element: %s"),
+                       tmp);
+        goto cleanup;
+    }
+
+    if ((tmp = virXMLPropString(cur, "refcount-cache-size")) &&
+        (virStrToLong_ui(tmp, NULL, 10, &def->src->refcount_cache_size) < 0)) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid refcount-cache-size attribute in disk driver element: %s"),
+                       tmp);
+        goto cleanup;
+    }
+
+    if ((tmp = virXMLPropString(cur, "cache-clean-interval")) &&
+        (virStrToLong_ui(tmp, NULL, 10, &def->src->cache_clean_interval) < 0)) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid cache-clean-interval attribute in disk driver element: %s"),
+                       tmp);
+        goto cleanup;
+    }
+
     if ((tmp = virXMLPropString(cur, "detect_zeroes")) &&
         (def->detect_zeroes = virDomainDiskDetectZeroesTypeFromString(tmp)) <= 0) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -21887,6 +21911,12 @@ virDomainDiskDefFormat(virBufferPtr buf,
         virBufferAsprintf(&driverBuf, " iothread='%u'", def->iothread);
     if (def->detect_zeroes)
         virBufferAsprintf(&driverBuf, " detect_zeroes='%s'", detect_zeroes);
+    if (def->src->l2_cache_size > 0)
+        virBufferAsprintf(&driverBuf, " l2-cache-size='%u'", def->src->l2_cache_size);
+    if (def->src->refcount_cache_size > 0)
+        virBufferAsprintf(&driverBuf, " refcount-cache-size='%u'", def->src->refcount_cache_size);
+    if (def->src->cache_clean_interval > 0)
+        virBufferAsprintf(&driverBuf, " cache-clean-interval='%u'", def->src->cache_clean_interval);
 
     virDomainVirtioOptionsFormat(&driverBuf, def->virtio);
 

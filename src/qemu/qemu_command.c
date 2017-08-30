@@ -1430,6 +1430,12 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
             qemuformat = "luks";
         virBufferAsprintf(buf, "format=%s,", qemuformat);
     }
+    if (disk->src->format == VIR_STORAGE_FILE_QCOW2 && disk->src->l2_cache_size > 0)
+        virBufferAsprintf(buf, "l2-cache-size=%u,", disk->src->l2_cache_size);
+    if (disk->src->format == VIR_STORAGE_FILE_QCOW2 && disk->src->refcount_cache_size > 0)
+        virBufferAsprintf(buf, "refcount-cache-size=%u,", disk->src->refcount_cache_size);
+    if (disk->src->format == VIR_STORAGE_FILE_QCOW2 && disk->src->cache_clean_interval > 0)
+        virBufferAsprintf(buf, "cache-clean-interval=%u,", disk->src->cache_clean_interval);
 
     ret = 0;
 
