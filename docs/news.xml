@@ -37,6 +37,16 @@
     <section title="New features">
       <change>
         <summary>
+          qemu: Add managedsave-define and managedsave-edit commands
+        </summary>
+        <description>
+          Using managedsave-define and managedsave-edit commands, now
+          we can edit the host-specific portions of the domain XMl
+          which has managedsave image.
+        </description>
+      </change>
+      <change>
+        <summary>
           qemu: Add migrate-getmaxdowntime command
         </summary>
         <description>
