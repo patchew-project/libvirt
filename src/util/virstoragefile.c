@@ -2039,6 +2039,7 @@ virStorageSourceCopy(const virStorageSource *src,
     ret->physical = src->physical;
     ret->readonly = src->readonly;
     ret->shared = src->shared;
+    ret->haveTLS = src->haveTLS;
 
     /* storage driver metadata are not copied */
     ret->drv = NULL;
@@ -3220,12 +3221,23 @@ virStorageSourceParseBackingJSONVxHS(virStorageSourcePtr src,
 {
     const char *vdisk_id = virJSONValueObjectGetString(json, "vdisk-id");
     virJSONValuePtr server = virJSONValueObjectGetObject(json, "server");
+    const char *haveTLS = virJSONValueObjectGetString(json, "tls");
 
     if (!vdisk_id || !server) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
                        _("missing 'vdisk-id' or 'server' attribute in "
                          "JSON backing definition for VxHS volume"));
         return -1;
+    }
+
+    if (haveTLS) {
+        if ((src->haveTLS =
+            virTristateBoolTypeFromString(haveTLS)) <= 0) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("unknown VxHS 'tls' setting '%s'"),
+                           haveTLS);
+            return -1;
+        }
     }
 
     src->type = VIR_STORAGE_TYPE_NETWORK;
