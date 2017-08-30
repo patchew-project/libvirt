@@ -7520,6 +7520,64 @@ qemuDomainPrepareChardevSource(virDomainDefPtr def,
 }
 
 
+/* qemuProcessPrepareDiskSourceTLS:
+ * @source: pointer to host interface data for disk device
+ * @cfg: driver configuration
+ *
+ * Updates host interface TLS encryption setting based on qemu.conf
+ * for disk devices.  This will be presented as "tls='yes|no'" in
+ * live XML of a guest.
+ *
+ * Returns 0 on success, -1 on bad config/failure
+ */
+static int
+qemuDomainPrepareDiskSourceTLS(virStorageSourcePtr src,
+                               virQEMUDriverConfigPtr cfg)
+{
+
+    /* VxHS doesn't utilize a password protected server certificate,
+     * so no need to add a secinfo for a secret UUID. */
+    if (src->type == VIR_STORAGE_TYPE_NETWORK &&
+        src->protocol == VIR_STORAGE_NET_PROTOCOL_VXHS) {
+
+        if (src->haveTLS == VIR_TRISTATE_BOOL_YES && !cfg->vxhsTLS) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("VxHS TLS protocol is configured in XML, but "
+                             "TLS for VxHS is disabled in qemu.conf"));
+            return -1;
+        }
+
+        if (src->haveTLS == VIR_TRISTATE_BOOL_ABSENT && cfg->vxhsTLS)
+            src->haveTLS = VIR_TRISTATE_BOOL_YES;
+    }
+
+    return 0;
+}
+
+
+/* qemuProcessPrepareDiskSource:
+ * @def: live domain definition
+ * @driver: qemu driver
+ *
+ * Iterate through all disk devices to setup/check any that would be
+ * using TLS.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+qemuDomainPrepareDiskSource(virDomainDefPtr def,
+                            virQEMUDriverConfigPtr cfg)
+{
+    size_t i;
+
+    for (i = 0; i < def->ndisks; i++) {
+        if (qemuDomainPrepareDiskSourceTLS(def->disks[i]->src, cfg) < 0)
+            return -1;
+    }
+
+    return 0;
+}
+
 
 int
 qemuDomainPrepareShmemChardev(virDomainShmemDefPtr shmem)
