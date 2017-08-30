@@ -23257,8 +23257,9 @@ virDomainChrSourceDefFormat(virBufferPtr buf,
             virBufferAsprintf(&attrBuf, " tlsFromConfig='%d'",
                               def->data.tcp.tlsFromConfig);
 
-        virDomainChrSourceReconnectDefFormat(&childBuf,
-                                             &def->data.tcp.reconnect);
+        if (!def->data.tcp.listen)
+            virDomainChrSourceReconnectDefFormat(&childBuf,
+                                                 &def->data.tcp.reconnect);
 
         if (virXMLFormatElement(buf, "source", &attrBuf, &childBuf) < 0)
             goto error;
@@ -23276,8 +23277,9 @@ virDomainChrSourceDefFormat(virBufferPtr buf,
             virDomainSourceDefFormatSeclabel(&childBuf, def->nseclabels,
                                              def->seclabels, flags);
 
-            virDomainChrSourceReconnectDefFormat(&childBuf,
-                                                 &def->data.nix.reconnect);
+            if (!def->data.nix.listen)
+                virDomainChrSourceReconnectDefFormat(&childBuf,
+                                                     &def->data.nix.reconnect);
 
             if (virXMLFormatElement(buf, "source", &attrBuf, &childBuf) < 0)
                 goto error;
