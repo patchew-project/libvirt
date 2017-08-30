@@ -37,6 +37,15 @@
     <section title="New features">
       <change>
         <summary>
+          qemu: Add managedsave-dumpxml command
+        </summary>
+        <description>
+          Using managedsave-dumpxml, now we can dump the XML
+          configuration of a domain with managedsave image.
+        </description>
+      </change>
+      <change>
+        <summary>
           qemu: Add managedsave-define and managedsave-edit commands
         </summary>
         <description>
