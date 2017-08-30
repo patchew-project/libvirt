@@ -4421,6 +4421,14 @@ virDomainDeviceDefPostParseCommon(virDomainDeviceDefPtr dev,
 
             chr->target.port = maxport + 1;
         }
+
+        /* For UNIX chardev if no path is provided we generate one.
+         * This also implies that the mode is 'bind'. */
+        if (chr->source &&
+            chr->source->type == VIR_DOMAIN_CHR_TYPE_UNIX &&
+            !chr->source->data.nix.path) {
+            chr->source->data.nix.listen = true;
+        }
     }
 
     /* set default path for virtio-rng "random" backend to /dev/random */

@@ -3489,8 +3489,10 @@ qemuDomainChrDefDropDefaultPath(virDomainChrDefPtr chr,
 
     regexp = virBufferContentAndReset(&buf);
 
-    if (virStringMatch(chr->source->data.nix.path, regexp))
+    if (virStringMatch(chr->source->data.nix.path, regexp)) {
         VIR_FREE(chr->source->data.nix.path);
+        chr->source->data.nix.listen = true;
+    }
 
     ret = 0;
  cleanup:
@@ -7440,8 +7442,6 @@ qemuDomainPrepareChannel(virDomainChrDefPtr channel,
                         channel->info.addr.vioserial.port) < 0)
             return -1;
     }
-
-    channel->source->data.nix.listen = true;
 
     return 0;
 }
