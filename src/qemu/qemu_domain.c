@@ -7454,7 +7454,7 @@ qemuDomainPrepareChannel(virDomainChrDefPtr channel,
 }
 
 
-/* qemuProcessPrepareDomainChardevSourceTLS:
+/* qemuDomainPrepareChardevSourceTLS:
  * @source: pointer to host interface data for char devices
  * @cfg: driver configuration
  *
@@ -7478,19 +7478,18 @@ qemuDomainPrepareChardevSourceTLS(virDomainChrSourceDefPtr source,
 }
 
 
-/* qemuProcessPrepareDomainChardevSource:
+/* qemuDomainPrepareChardevSource:
  * @def: live domain definition
- * @driver: qemu driver
+ * @cfg: driver configuration
  *
  * Iterate through all devices that use virDomainChrSourceDefPtr as host
  * interface part.
  */
 void
 qemuDomainPrepareChardevSource(virDomainDefPtr def,
-                               virQEMUDriverPtr driver)
+                               virQEMUDriverConfigPtr cfg)
 {
     size_t i;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
 
     for (i = 0; i < def->nserials; i++)
         qemuDomainPrepareChardevSourceTLS(def->serials[i]->source, cfg);
@@ -7515,8 +7514,6 @@ qemuDomainPrepareChardevSource(virDomainDefPtr def,
 
     for (i = 0; i < def->nredirdevs; i++)
         qemuDomainPrepareChardevSourceTLS(def->redirdevs[i]->source, cfg);
-
-    virObjectUnref(cfg);
 }
 
 
