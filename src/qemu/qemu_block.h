@@ -55,6 +55,7 @@ qemuBlockGetNodeData(virJSONValuePtr data);
 
 virJSONValuePtr
 qemuBlockStorageSourceGetBackendProps(virStorageSourcePtr src,
-                                      virQEMUCapsPtr qemuCaps);
+                                      virQEMUCapsPtr qemuCaps,
+                                      const char *diskAlias);
 
 #endif /* __QEMU_BLOCK_H__ */
