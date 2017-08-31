@@ -170,6 +170,7 @@ mymain(void)
     DO_TEST("x86_64", "caps_2.7.0");
     DO_TEST("x86_64", "caps_2.8.0");
     DO_TEST("x86_64", "caps_2.9.0");
+    DO_TEST("x86_64", "caps_2.10.0");
     DO_TEST("aarch64", "caps_2.6.0-gicv2");
     DO_TEST("aarch64", "caps_2.6.0-gicv3");
     DO_TEST("ppc64le", "caps_2.6.0");
@@ -180,7 +181,15 @@ mymain(void)
 
     /*
      * Run "tests/qemucapsprobe /path/to/qemu/binary >foo.replies"
-     * to generate updated or new *.replies data files.
+     * to generate updated or new *.replies data files. Once the
+     * replies file is in tests/qemucapabilitiesdata/ using a proper
+     * name (e.g. caps_2.10.0.x86_64.replies), generate the capabilities
+     * XML file as follows (using an x86_64 example):
+     *
+     *    touch tests/qemucapabilitiesdata/caps_2.10.0.x86_64.xml
+     *    VIR_TEST_REGENERATE_OUTPUT=1 ./tests/qemucapabilitiestest
+     *
+     * Add the new files to the commit along with the added DO_TEST.
      */
 
     qemuTestDriverFree(&driver);
