@@ -18,6 +18,7 @@
 
 #include <config.h>
 
+#include "qemu_alias.h"
 #include "qemu_block.h"
 #include "qemu_domain.h"
 
@@ -484,9 +485,12 @@ qemuBlockStorageSourceGetGlusterProps(virStorageSourcePtr src)
 
 static virJSONValuePtr
 qemuBlockStorageSourceGetVxHSProps(virStorageSourcePtr src,
-                                   virQEMUCapsPtr qemuCaps)
+                                   virQEMUCapsPtr qemuCaps,
+                                   const char *diskAlias)
+
 {
     const char *protocol = virStorageNetProtocolTypeToString(src->protocol);
+    char *objalias = NULL;
     virJSONValuePtr server = NULL;
     virJSONValuePtr ret = NULL;
 
@@ -506,16 +510,33 @@ qemuBlockStorageSourceGetVxHSProps(virStorageSourcePtr src,
     if (!(server = qemuBlockStorageSourceBuildHostsJSONSocketAddress(src, true)))
         return NULL;
 
+    if (src->haveTLS == VIR_TRISTATE_BOOL_YES) {
+        if (!diskAlias) {
+            virReportError(VIR_ERR_INVALID_ARG, "%s",
+                           _("disk does not have an alias"));
+            return NULL;
+        }
+
+        if (!(objalias = qemuAliasTLSObjFromSrcAlias(diskAlias))) {
+            virJSONValueFree(server);
+            return NULL;
+        }
+    }
+
     /* VxHS disk specification example:
      * { driver:"vxhs",
+     *   [tls-creds:"objvirtio-disk0_tls0",]
      *   vdisk-id:"eb90327c-8302-4725-4e85ed4dc251",
      *   server:[{type:"tcp", host:"1.2.3.4", port:9999}]}
      */
     if (virJSONValueObjectCreate(&ret,
                                  "s:driver", protocol,
+                                 "S:tls-creds", objalias,
                                  "s:vdisk-id", src->path,
                                  "a:server", server, NULL) < 0)
         virJSONValueFree(server);
+
+    VIR_FREE(objalias);
 
     return ret;
 }
@@ -530,7 +551,8 @@ qemuBlockStorageSourceGetVxHSProps(virStorageSourcePtr src,
  */
 virJSONValuePtr
 qemuBlockStorageSourceGetBackendProps(virStorageSourcePtr src,
-                                      virQEMUCapsPtr qemuCaps)
+                                      virQEMUCapsPtr qemuCaps,
+                                      const char *diskAlias)
 {
     int actualType = virStorageSourceGetActualType(src);
     virJSONValuePtr fileprops = NULL;
@@ -553,7 +575,8 @@ qemuBlockStorageSourceGetBackendProps(virStorageSourcePtr src,
             break;
 
         case VIR_STORAGE_NET_PROTOCOL_VXHS:
-            if (!(fileprops = qemuBlockStorageSourceGetVxHSProps(src, qemuCaps)))
+            if (!(fileprops = qemuBlockStorageSourceGetVxHSProps(src, qemuCaps,
+                                                                 diskAlias)))
                 goto cleanup;
             break;
 
