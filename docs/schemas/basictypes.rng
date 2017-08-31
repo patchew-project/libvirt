@@ -77,6 +77,15 @@
     </choice>
   </define>
 
+  <define name="numaDistanceValue">
+    <choice>
+      <data type="unsignedInt">
+        <param name="minInclusive">10</param>
+        <param name="maxInclusive">255</param>
+      </data>
+    </choice>
+  </define>
+
   <define name="pciaddress">
     <optional>
       <attribute name="domain">
