@@ -13005,7 +13005,8 @@ qemuDomainGetJobStatsInternal(virQEMUDriverPtr driver,
     }
 
     /* Do not ask QEMU if migration is not even running yet  */
-    if (!priv->job.current || !priv->job.current->stats.status)
+    if (!priv->job.current ||
+        priv->job.current->status == QEMU_DOMAIN_JOB_STATUS_ACTIVE)
         fetch = false;
 
     if (fetch && qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
@@ -13025,6 +13026,7 @@ qemuDomainGetJobStatsInternal(virQEMUDriverPtr driver,
     *jobInfo = *priv->job.current;
 
     if (jobInfo->status == QEMU_DOMAIN_JOB_STATUS_ACTIVE ||
+        jobInfo->status == QEMU_DOMAIN_JOB_STATUS_MIGRATING ||
         jobInfo->status == QEMU_DOMAIN_JOB_STATUS_POSTCOPY) {
         if (fetch &&
             qemuMigrationFetchStats(driver, vm, QEMU_ASYNC_JOB_NONE, jobInfo) < 0)
