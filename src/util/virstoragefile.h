@@ -288,6 +288,12 @@ struct _virStorageSource {
     /* Indication whether the haveTLS value was altered due to qemu.conf
      * setting when haveTLS is missing from the domain config file */
     bool tlsFromConfig;
+
+    /* If TLS is used, then mgmt of the TLS credentials occurs via an
+     * object that is generated using a specific alias. That alias must
+     * be used when generating the disk object in order to link the
+     * two together. */
+    char *tlsAlias;
 };
 
 

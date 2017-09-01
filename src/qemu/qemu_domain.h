@@ -845,6 +845,17 @@ void qemuDomainPrepareChardevSource(virDomainDefPtr def,
                                     virQEMUDriverPtr driver)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
+int
+qemuDomainPrepareDiskSourceTLS(virStorageSourcePtr src,
+                               const char *diskAlias,
+                               virQEMUDriverConfigPtr cfg)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3);
+
+int
+qemuDomainPrepareDiskSource(virDomainDefPtr def,
+                            virQEMUDriverConfigPtr cfg)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
 int qemuDomainPrepareShmemChardev(virDomainShmemDefPtr shmem)
     ATTRIBUTE_NONNULL(1);
 
