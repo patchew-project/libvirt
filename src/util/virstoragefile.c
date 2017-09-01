@@ -3225,6 +3225,7 @@ virStorageSourceParseBackingJSONVxHS(virStorageSourcePtr src,
 {
     const char *vdisk_id = virJSONValueObjectGetString(json, "vdisk-id");
     virJSONValuePtr server = virJSONValueObjectGetObject(json, "server");
+    const char *haveTLS = virJSONValueObjectGetString(json, "tls-creds");
 
     if (!vdisk_id || !server) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
@@ -3242,6 +3243,14 @@ virStorageSourceParseBackingJSONVxHS(virStorageSourcePtr src,
     if (VIR_ALLOC_N(src->hosts, 1) < 0)
         return -1;
     src->nhosts = 1;
+
+    if (haveTLS) {
+        VIR_FREE(src->tlsAlias);
+        if (VIR_STRDUP(src->tlsAlias, haveTLS) < 0)
+            return -1;
+
+        src->haveTLS = VIR_TRISTATE_BOOL_YES;
+    }
 
     if (virStorageSourceParseBackingJSONInetSocketAddress(src->hosts,
                                                           server) < 0)
