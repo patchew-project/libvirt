@@ -13028,6 +13028,11 @@ qemuDomainGetJobStatsInternal(virQEMUDriverPtr driver,
             qemuMigrationFetchStats(driver, vm, QEMU_ASYNC_JOB_NONE, jobInfo) < 0)
             goto cleanup;
 
+        if (jobInfo->status == QEMU_DOMAIN_JOB_STATUS_ACTIVE &&
+            qemuMigrationFetchMirrorStats(driver, vm, QEMU_ASYNC_JOB_NONE,
+                                          jobInfo) < 0)
+            goto cleanup;
+
         if (qemuDomainJobInfoUpdateTime(jobInfo) < 0)
             goto cleanup;
     }
