@@ -13030,8 +13030,7 @@ qemuDomainGetJobStatsInternal(virQEMUDriverPtr driver,
     }
     *jobInfo = *info;
 
-    if (jobInfo->type == VIR_DOMAIN_JOB_BOUNDED ||
-        jobInfo->type == VIR_DOMAIN_JOB_UNBOUNDED) {
+    if (jobInfo->type == VIR_DOMAIN_JOB_UNBOUNDED) {
         if (fetch)
             ret = qemuMigrationFetchJobStatus(driver, vm, QEMU_ASYNC_JOB_NONE,
                                               jobInfo);
