@@ -591,6 +591,7 @@ qemuBuildDiskSecinfoCommandLine(virCommandPtr cmd,
 
 
 /* qemuBuildGeneralSecinfoURI:
+ * @protocol: Disk source protocol
  * @uri: Pointer to the URI structure to add to
  * @secinfo: Pointer to the secret info data (if present)
  *
@@ -602,7 +603,8 @@ qemuBuildDiskSecinfoCommandLine(virCommandPtr cmd,
  * -1 and error message if fail to add secret information
  */
 static int
-qemuBuildGeneralSecinfoURI(virURIPtr uri,
+qemuBuildGeneralSecinfoURI(virStorageNetProtocol protocol,
+                           virURIPtr uri,
                            qemuDomainSecretInfoPtr secinfo)
 {
     if (!secinfo)
@@ -628,6 +630,16 @@ qemuBuildGeneralSecinfoURI(virURIPtr uri,
         break;
 
     case VIR_DOMAIN_SECRET_INFO_TYPE_AES:
+        /* NB: Cannot fill in @user here because that gets formatted into the
+         * URI as "iscsi://{username}@{host}:{port}/{iqn}%3A{target}/{lun}",
+         * but the expectation is it'll be a file parameter "user={username},".
+         * Still we don't want to return -1, so deal with this later */
+        if (protocol == VIR_STORAGE_NET_PROTOCOL_ISCSI)
+            return 0;
+        else
+            return -1;
+        break;
+
     case VIR_DOMAIN_SECRET_INFO_TYPE_LAST:
         return -1;
     }
@@ -841,7 +853,7 @@ qemuBuildNetworkDriveURI(virStorageSourcePtr src,
         virAsprintf(&uri->query, "socket=%s", src->hosts->socket) < 0)
         goto cleanup;
 
-    if (qemuBuildGeneralSecinfoURI(uri, secinfo) < 0)
+    if (qemuBuildGeneralSecinfoURI(src->protocol, uri, secinfo) < 0)
         goto cleanup;
 
     if (VIR_STRDUP(uri->server, src->hosts->name) < 0)
@@ -1418,6 +1430,9 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
          *     filename=%s,...") instead of the legacy model (e.g."-drive
          *     file=%s,..."), then the "file." prefix can be removed
          */
+        if (disk->src->protocol == VIR_STORAGE_NET_PROTOCOL_ISCSI)
+            virBufferAsprintf(buf, "file.user=%s,", secinfo->s.aes.username);
+
         virBufferAsprintf(buf, "file.password-secret=%s,",
                           secinfo->s.aes.alias);
     }
