@@ -4166,3 +4166,51 @@ virFileReadValueString(char **value, const char *format, ...)
     VIR_FREE(str);
     return ret;
 }
+
+
+#if defined(__linux__)
+
+/* virFileIsCDROM
+ * @path: Supplied path.
+ *
+ * Determine if the path is a CD-ROM path. Typically on Linux systems this
+ * is either /dev/cdrom or /dev/sr0, so those are easy checks. Still if
+ * someone is trying to be tricky, we can resolve the link to /dev/cdrom
+ * and compare it to the resolved link of the supplied @path to compare
+ * if they're the same.
+ *
+ * Returns true if the path is a CDROM, false otherwise.
+ */
+bool
+virFileIsCDROM(const char *path)
+{
+    bool ret = false;
+    char *linkpath = NULL;
+    char *cdrompath = NULL;
+
+    if (STREQ(path, "/dev/cdrom") || STREQ(path, "/dev/sr0"))
+        return true;
+
+    if (virFileResolveLink(path, &linkpath) < 0 ||
+        virFileResolveLink("/dev/cdrom", &cdrompath) < 0)
+        goto cleanup;
+
+    ret = STREQ(linkpath, cdrompath);
+
+ cleanup:
+    VIR_FREE(linkpath);
+    VIR_FREE(cdrompath);
+    return ret;
+}
+
+#else /* __linux__ */
+
+bool
+virFileIsCDROM(const char *path)
+{
+    /* XXX implement me :-) */
+    virReportUnsupportedError();
+    return false;
+}
+
+#endif /* __linux__ */

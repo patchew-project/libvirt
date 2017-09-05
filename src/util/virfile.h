@@ -352,4 +352,8 @@ int virFileInData(int fd,
                   int *inData,
                   long long *length);
 
+bool
+virFileIsCDROM(const char *path)
+    ATTRIBUTE_NONNULL(1);
+
 #endif /* __VIR_FILE_H */
