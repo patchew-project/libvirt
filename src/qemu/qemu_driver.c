@@ -7859,6 +7859,7 @@ qemuDomainAttachDeviceConfig(virDomainDefPtr vmdef,
     virDomainFSDefPtr fs;
     virDomainRedirdevDefPtr redirdev;
     virDomainShmemDefPtr shmem;
+    virDomainWatchdogDefPtr watchdog;
 
     switch ((virDomainDeviceType) dev->type) {
     case VIR_DOMAIN_DEVICE_DISK:
@@ -7995,10 +7996,20 @@ qemuDomainAttachDeviceConfig(virDomainDefPtr vmdef,
         dev->data.shmem = NULL;
         break;
 
+    case VIR_DOMAIN_DEVICE_WATCHDOG:
+        watchdog = dev->data.watchdog;
+        if (vmdef->watchdog) {
+            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                           _("domain already has a watchdog"));
+            return -1;
+        }
+        vmdef->watchdog = watchdog;
+        dev->data.watchdog = NULL;
+        break;
+
     case VIR_DOMAIN_DEVICE_INPUT:
     case VIR_DOMAIN_DEVICE_SOUND:
     case VIR_DOMAIN_DEVICE_VIDEO:
-    case VIR_DOMAIN_DEVICE_WATCHDOG:
     case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_SMARTCARD:
