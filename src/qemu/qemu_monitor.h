@@ -1132,4 +1132,6 @@ int qemuMonitorSetBlockThreshold(qemuMonitorPtr mon,
 
 virJSONValuePtr qemuMonitorQueryNamedBlockNodes(qemuMonitorPtr mon);
 
+int qemuMonitorSetWatchdogAction(qemuMonitorPtr mon,
+                                 virDomainWatchdogAction watchdogAction);
 #endif /* QEMU_MONITOR_H */

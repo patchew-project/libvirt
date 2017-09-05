@@ -2866,6 +2866,70 @@ qemuDomainAttachShmemDevice(virQEMUDriverPtr driver,
 }
 
 
+int
+qemuDomainAttachWatchdog(virQEMUDriverPtr driver,
+                         virDomainObjPtr vm,
+                         virDomainWatchdogDefPtr watchdog)
+{
+    int ret = -1;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virDomainDeviceDef dev = { VIR_DOMAIN_DEVICE_WATCHDOG, { .watchdog = watchdog } };
+    virDomainWatchdogAction actualAction = watchdog->action;
+    char *watchdogstr = NULL;
+    bool releaseAddress = false;
+    int rv;
+
+    if (vm->def->watchdog) {
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("domain already has a watchdog"));
+        return -1;
+    }
+
+    if (qemuAssignDeviceWatchdogAlias(watchdog) < 0)
+        return -1;
+
+    if (!(watchdogstr = qemuBuildWatchdogDevStr(vm->def, watchdog, priv->qemuCaps)))
+        return -1;
+
+    if (watchdog->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
+        if (qemuDomainEnsurePCIAddress(vm, &dev, driver) < 0)
+            goto cleanup;
+        releaseAddress = true;
+    }
+
+    /* QEMU doesn't have a 'dump' action; we tell qemu to 'pause', then
+       libvirt listens for the watchdog event, and we perform the dump
+       ourselves. so convert 'dump' to 'pause' for the qemu cli */
+    if (actualAction == VIR_DOMAIN_WATCHDOG_ACTION_DUMP)
+        actualAction = VIR_DOMAIN_WATCHDOG_ACTION_PAUSE;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+
+    rv = qemuMonitorSetWatchdogAction(priv->mon, actualAction);
+
+    if (rv >= 0)
+        rv = qemuMonitorAddDevice(priv->mon, watchdogstr);
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0) {
+        releaseAddress = false;
+        goto cleanup;
+    }
+
+    if (rv < 0)
+        goto cleanup;
+
+    releaseAddress = false;
+    vm->def->watchdog = watchdog;
+    ret = 0;
+
+ cleanup:
+    if (releaseAddress)
+        qemuDomainReleaseDeviceAddress(vm, &watchdog->info, NULL);
+    VIR_FREE(watchdogstr);
+    return ret;
+}
+
+
 static int
 qemuDomainChangeNetBridge(virDomainObjPtr vm,
                           virDomainNetDefPtr olddev,

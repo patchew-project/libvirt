@@ -3932,7 +3932,7 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
 }
 
 
-static char *
+char *
 qemuBuildWatchdogDevStr(const virDomainDef *def,
                         virDomainWatchdogDefPtr dev,
                         virQEMUCapsPtr qemuCaps)

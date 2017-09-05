@@ -4343,3 +4343,15 @@ qemuMonitorEventPanicInfoFree(qemuMonitorEventPanicInfoPtr info)
 
     VIR_FREE(info);
 }
+
+
+int
+qemuMonitorSetWatchdogAction(qemuMonitorPtr mon,
+                             virDomainWatchdogAction watchdogAction)
+{
+    VIR_DEBUG("watchdogAction=%d", watchdogAction);
+
+    QEMU_CHECK_MONITOR_JSON(mon);
+
+    return qemuMonitorJSONSetWatchdogAction(mon, watchdogAction);
+}
