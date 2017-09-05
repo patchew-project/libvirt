@@ -26028,7 +26028,8 @@ virDomainDefCompatibleDevice(virDomainDefPtr def,
 {
     virDomainDeviceInfoPtr info = virDomainDeviceGetInfo(dev);
 
-    if (action != VIR_DOMAIN_DEVICE_ACTION_ATTACH)
+    if (action != VIR_DOMAIN_DEVICE_ACTION_ATTACH &&
+        action != VIR_DOMAIN_DEVICE_ACTION_UPDATE)
         return 0;
 
     if (!virDomainDefHasUSB(def) &&
