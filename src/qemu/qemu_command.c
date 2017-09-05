@@ -3099,6 +3099,8 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
                                   virQEMUCapsPtr qemuCaps)
 {
     size_t i, j;
+    size_t *pciContIndex;
+    size_t npciContIndex;
     int usbcontroller = 0;
     bool usblegacy = false;
     int contOrder[] = {
@@ -3110,14 +3112,10 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
          * machines. For newer Q35 machines it is added out of the
          * controllers loop, after the floppy drives.
          *
-         * We don't add PCI/PCIe root controller either, because it's
-         * implicit, but we do add PCI bridges and other PCI
-         * controllers, so we leave that in to check each
-         * one. Likewise, we don't do anything for the primary IDE
+         * Likewise, we don't do anything for the primary IDE
          * controller on an i440fx machine or primary SATA on q35, but
          * we do add those beyond these two exceptions.
          */
-        VIR_DOMAIN_CONTROLLER_TYPE_PCI,
         VIR_DOMAIN_CONTROLLER_TYPE_USB,
         VIR_DOMAIN_CONTROLLER_TYPE_SCSI,
         VIR_DOMAIN_CONTROLLER_TYPE_IDE,
@@ -3126,6 +3124,54 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
         VIR_DOMAIN_CONTROLLER_TYPE_CCID,
     };
     int ret = -1;
+
+    /* PCI controllers require special handling because they plug into
+     * each other, which makes getting the ordering right on the QEMU
+     * command line crucial: if we don't, and eg. list a pci-bridge
+     * before the pci-root it plugs into, the guest will not start */
+
+    npciContIndex = 0;
+    if (VIR_ALLOC_N(pciContIndex, def->ncontrollers) < 0)
+        goto cleanup;
+
+    for (i = 0; i < def->ncontrollers; i++) {
+        virDomainControllerDefPtr cont = def->controllers[i];
+
+        if (cont->type != VIR_DOMAIN_CONTROLLER_TYPE_PCI)
+            continue;
+
+        pciContIndex[cont->idx] = i;
+        npciContIndex = MAX(npciContIndex, cont->idx + 1);
+    }
+
+    for (i = 0; i < npciContIndex; i++) {
+        virDomainControllerDefPtr cont = def->controllers[pciContIndex[i]];
+        char *devstr;
+
+        if (cont->type != VIR_DOMAIN_CONTROLLER_TYPE_PCI)
+            continue;
+
+        /* skip pcie-root */
+        if (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT)
+            continue;
+
+        /* Skip pci-root, except for pSeries guests (which actually
+         * support more than one PCI Host Bridge per guest) */
+        if (!qemuDomainIsPSeries(def) &&
+            cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT) {
+            continue;
+        }
+
+        if (qemuBuildControllerDevStr(def, cont, qemuCaps,
+                                      &devstr, &usbcontroller) < 0)
+            goto cleanup;
+
+        if (devstr) {
+            virCommandAddArg(cmd, "-device");
+            virCommandAddArg(cmd, devstr);
+            VIR_FREE(devstr);
+        }
+    }
 
     for (j = 0; j < ARRAY_CARDINALITY(contOrder); j++) {
         for (i = 0; i < def->ncontrollers; i++) {
@@ -3139,20 +3185,6 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
             if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
                 cont->model == VIR_DOMAIN_CONTROLLER_MODEL_USB_NONE) {
                 usbcontroller = -1; /* mark we don't want a controller */
-                continue;
-            }
-
-            /* skip pcie-root */
-            if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI &&
-                cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT) {
-                continue;
-            }
-
-            /* Skip pci-root, except for pSeries guests (which actually
-             * support more than one PCI Host Bridge per guest) */
-            if (!qemuDomainIsPSeries(def) &&
-                cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI &&
-                cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT) {
                 continue;
             }
 
@@ -3218,6 +3250,8 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
     ret = 0;
 
  cleanup:
+    VIR_FREE(pciContIndex);
+
     return ret;
 }
 
