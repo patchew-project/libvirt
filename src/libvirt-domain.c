@@ -5802,6 +5802,9 @@ virDomainMemoryStats(virDomainPtr dom, virDomainMemoryStatPtr stats,
  * within the device or file.  'size' may be 0 to test if the
  * call would succeed.
  *
+ * 'size' should be <= 1048576(1M). Since v1.0.5, 'size' had been
+ * raised up to 4194304(4M).
+ *
  * 'buffer' is the return buffer and must be at least 'size' bytes.
  *
  * NB. The remote driver imposes a 64K byte limit on 'size'.
@@ -5940,6 +5943,9 @@ virDomainBlockResize(virDomainPtr dom,
  *
  * 'buffer' is the return buffer and must be at least 'size' bytes.
  * 'size' may be 0 to test if the call would succeed.
+ *
+ * 'size' should be <= 1048576(1M). Since v1.0.5, 'size' had been
+ * raised up to 4194304(4M).
  *
  * NB. The remote driver imposes a 64K byte limit on 'size'.
  * For your program to be able to work reliably over a remote
