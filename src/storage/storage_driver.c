@@ -651,6 +651,22 @@ storagePoolIsPersistent(virStoragePoolPtr pool)
 }
 
 
+/* After a pool build, it's possible the inactive configFile needs to
+ * be updated especially since overwriting the pool more than likely
+ * changes the source format and may change/update a few other fields. */
+static int
+storagePoolBuildCheckUpdateConfig(virStoragePoolObjPtr obj,
+                                  unsigned int flags)
+{
+    int ret = 0;
+
+    if ((flags & VIR_STORAGE_POOL_BUILD_OVERWRITE) && obj->configFile)
+        ret = virStoragePoolSaveConfig(obj->configFile, obj->def);
+
+    return ret;
+}
+
+
 static virStoragePoolPtr
 storagePoolCreateXML(virConnectPtr conn,
                      const char *xml,
@@ -916,6 +932,9 @@ storagePoolCreate(virStoragePoolPtr pool,
             if (backend->buildPool(pool->conn, obj, build_flags) < 0)
                 goto cleanup;
         }
+
+        if (storagePoolBuildCheckUpdateConfig(obj, build_flags) < 0)
+            goto cleanup;
     }
 
     VIR_INFO("Starting up storage pool '%s'", obj->def->name);
@@ -980,6 +999,10 @@ storagePoolBuild(virStoragePoolPtr pool,
     if (backend->buildPool &&
         backend->buildPool(pool->conn, obj, flags) < 0)
         goto cleanup;
+
+    if (storagePoolBuildCheckUpdateConfig(obj, flags) < 0)
+        goto cleanup;
+
     ret = 0;
 
  cleanup:
