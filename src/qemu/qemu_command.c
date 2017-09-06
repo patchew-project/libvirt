@@ -830,10 +830,22 @@ qemuBuildNetworkDriveURI(virStorageSourcePtr src,
                             src->volume, src->path) < 0)
                 goto cleanup;
         } else {
-            if (virAsprintf(&uri->path, "%s%s",
-                            src->path[0] == '/' ? "" : "/",
-                            src->path) < 0)
-                goto cleanup;
+            if (src->protocol == VIR_STORAGE_NET_PROTOCOL_ISCSI &&
+                !strchr(src->path, '/')) {
+
+                /* The details of iqn is defined by RFC 3720 and 3721, but
+                 * we just need to make sure there's a lun provided. If not
+                 * provided, then default to zero. If ISCSI LUN is provided
+                 * by /dev/disk/by-path/... , then that path will have the
+                 * specific lun requested. */
+                if (virAsprintf(&uri->path, "/%s/0", src->path) < 0)
+                    goto cleanup;
+            } else {
+                if (virAsprintf(&uri->path, "%s%s",
+                                src->path[0] == '/' ? "" : "/",
+                                src->path) < 0)
+                    goto cleanup;
+            }
         }
     }
 
