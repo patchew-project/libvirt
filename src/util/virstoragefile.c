@@ -2038,6 +2038,9 @@ virStorageSourceCopy(const virStorageSource *src,
     ret->physical = src->physical;
     ret->readonly = src->readonly;
     ret->shared = src->shared;
+    ret->l2_cache_size = src->l2_cache_size;
+    ret->refcount_cache_size = src->refcount_cache_size;
+    ret->cache_clean_interval = src->cache_clean_interval;
 
     /* storage driver metadata are not copied */
     ret->drv = NULL;

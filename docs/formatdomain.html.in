@@ -3036,6 +3036,49 @@
           set. (<span class="since">Since 3.5.0</span>)
           </li>
         </ul>
+        The <code>drive</code> element may contain a qcow2 sub element, which
+        allows to specifying further details related to qcow2 driver type.
+        <span class="since">Since 3.8.0</span>
+        <ul>
+          <li>
+            The optional <code>l2_cache_size</code> attribute controls how much
+            memory will be consumed by qcow2 l2 table cache in bytes. This
+            option is only valid when the driver type is qcow2. The default
+            size is 2097152. The amount of virtual disk that can be mapped by
+            the L2 caches (in bytes) is:
+              disk_size = l2_cache_size * cluster_size / 8
+            <span class='since'>Since 3.8.0</span>
+
+            <b>In general you should leave this option alone, unless you
+            are very certain you know what you are doing.</b>
+          </li>
+          <li>
+            The optional <code>refcount_cache_size</code> attribute controls
+            how much memory will be consumed by qcow2 reference count table
+            cache in bytes. This option is only valid when the driver type is
+            qcow2. The default size is 262144. The amount of virtual disk that
+            can be mapped by the refcount caches (in bytes) is:
+              disk_size = refcount_cache_size * cluster_size * 8 / refcount_bits
+            <span class='since'>Since 3.8.0</span>
+
+            <b>In general you should leave this option alone, unless you
+            are very certain you know what you are doing.</b>
+          </li>
+          <li>
+            The optional <code>cache_clean_interval</code> attribute defines
+            an interval (in seconds). All cache entries that haven't been
+            accessed during that interval are removed from memory. This option
+            is only valid when the driver type is qcow2. The default
+            value is 0, which disables this feature. If the interval is too
+            short, it will cause frequent cache write back and load, which
+            impact performance. If the interval is too long, unused cache
+            will still consume memory until it's been written back to disk.
+            <span class='since'>Since 3.8.0</span>
+
+            <b>In general you should leave this option alone, unless you
+            are very certain you know what you are doing.</b>
+          </li>
+        </ul>
       </dd>
       <dt><code>backenddomain</code></dt>
       <dd>The optional <code>backenddomain</code> element allows specifying a
