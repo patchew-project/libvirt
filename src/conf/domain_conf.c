@@ -16837,7 +16837,7 @@ virDomainDefAddController(virDomainDefPtr def, int type, int idx, int model)
     virDomainControllerDefPtr cont;
 
     if (!(cont = virDomainControllerDefNew(type)))
-        return NULL;
+        goto error;
 
     if (idx < 0)
         idx = virDomainControllerFindUnusedIndex(def, type);
@@ -16845,12 +16845,14 @@ virDomainDefAddController(virDomainDefPtr def, int type, int idx, int model)
     cont->idx = idx;
     cont->model = model;
 
-    if (VIR_APPEND_ELEMENT_COPY(def->controllers, def->ncontrollers, cont) < 0) {
-        VIR_FREE(cont);
-        return NULL;
-    }
+    if (VIR_APPEND_ELEMENT_COPY(def->controllers, def->ncontrollers, cont) < 0)
+        goto error;
 
     return cont;
+
+ error:
+    virDomainControllerDefFree(cont);
+    return NULL;
 }
 
 
@@ -16870,15 +16872,14 @@ virDomainDefAddController(virDomainDefPtr def, int type, int idx, int model)
 int
 virDomainDefAddUSBController(virDomainDefPtr def, int idx, int model)
 {
-    virDomainControllerDefPtr cont; /* this is a *copy* of the DefPtr */
+    virDomainControllerDefPtr cont;
 
-    cont = virDomainDefAddController(def, VIR_DOMAIN_CONTROLLER_TYPE_USB,
-                                     idx, model);
-    if (!cont)
-        return -1;
+    if (!(cont = virDomainDefAddController(def, VIR_DOMAIN_CONTROLLER_TYPE_USB,
+                                           idx, model)))
+        goto error;
 
     if (model != VIR_DOMAIN_CONTROLLER_MODEL_USB_ICH9_EHCI1)
-        return 0;
+        goto done;
 
     /* When the initial controller is ich9-usb-ehci, also add the
      * companion controllers
@@ -16886,25 +16887,45 @@ virDomainDefAddUSBController(virDomainDefPtr def, int idx, int model)
 
     idx = cont->idx; /* in case original request was "-1" */
 
-    if (!(cont = virDomainDefAddController(def, VIR_DOMAIN_CONTROLLER_TYPE_USB,
-                                           idx, VIR_DOMAIN_CONTROLLER_MODEL_USB_ICH9_UHCI1)))
-        return -1;
+    if (!(cont = virDomainControllerDefNew(VIR_DOMAIN_CONTROLLER_TYPE_USB)))
+        goto error;
+
+    cont->idx = idx;
+    cont->model = VIR_DOMAIN_CONTROLLER_MODEL_USB_ICH9_UHCI1;
     cont->info.mastertype = VIR_DOMAIN_CONTROLLER_MASTER_USB;
     cont->info.master.usb.startport = 0;
 
-    if (!(cont = virDomainDefAddController(def, VIR_DOMAIN_CONTROLLER_TYPE_USB,
-                                           idx, VIR_DOMAIN_CONTROLLER_MODEL_USB_ICH9_UHCI2)))
-        return -1;
+    if (virDomainControllerInsert(def, cont) < 0)
+        goto error;
+
+    if (!(cont = virDomainControllerDefNew(VIR_DOMAIN_CONTROLLER_TYPE_USB)))
+        goto error;
+
+    cont->idx = idx;
+    cont->model = VIR_DOMAIN_CONTROLLER_MODEL_USB_ICH9_UHCI2;
     cont->info.mastertype = VIR_DOMAIN_CONTROLLER_MASTER_USB;
     cont->info.master.usb.startport = 2;
 
-    if (!(cont = virDomainDefAddController(def, VIR_DOMAIN_CONTROLLER_TYPE_USB,
-                                           idx, VIR_DOMAIN_CONTROLLER_MODEL_USB_ICH9_UHCI3)))
-        return -1;
+    if (virDomainControllerInsert(def, cont) < 0)
+        goto error;
+
+    if (!(cont = virDomainControllerDefNew(VIR_DOMAIN_CONTROLLER_TYPE_USB)))
+        goto error;
+
+    cont->idx = idx;
+    cont->model = VIR_DOMAIN_CONTROLLER_MODEL_USB_ICH9_UHCI3;
     cont->info.mastertype = VIR_DOMAIN_CONTROLLER_MASTER_USB;
     cont->info.master.usb.startport = 4;
 
+    if (virDomainControllerInsert(def, cont) < 0)
+        goto error;
+
+ done:
     return 0;
+
+ error:
+    virDomainControllerDefFree(cont);
+    return -1;
 }
 
 
