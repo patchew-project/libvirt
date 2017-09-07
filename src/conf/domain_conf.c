@@ -16845,7 +16845,7 @@ virDomainDefAddController(virDomainDefPtr def, int type, int idx, int model)
     cont->idx = idx;
     cont->model = model;
 
-    if (VIR_APPEND_ELEMENT_COPY(def->controllers, def->ncontrollers, cont) < 0)
+    if (virDomainControllerInsert(def, cont) < 0)
         goto error;
 
     return cont;
