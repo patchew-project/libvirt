@@ -652,6 +652,11 @@ of open file descriptors which should be pass on into the guest. The
 file descriptors will be re-numbered in the guest, starting from 3. This
 is only supported with container based virtualization.
 
+Note that a domain created using this command is transient (temporary), meaning
+that such a domain simply disappears once shut off or destroyed and any
+subsequent attempts to B<start> it will fail. See B<define> command on how to
+make a domain persistent.
+
 B<Example>
 
  virsh dumpxml <domain> > domain.xml
