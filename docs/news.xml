@@ -25,6 +25,14 @@
     <section title="New features">
     </section>
     <section title="Improvements">
+      <change>
+        <summary>
+          logical: Add volume resize
+        </summary>
+        <description>
+          It's now possible to resize LVM volumes.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
