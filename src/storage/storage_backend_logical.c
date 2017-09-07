@@ -1072,6 +1072,42 @@ virStorageBackendLogicalVolWipe(virConnectPtr conn,
     return -1;
 }
 
+static int
+virStorageBackendLogicalResizeVol(virConnectPtr conn ATTRIBUTE_UNUSED,
+                                   virStoragePoolObjPtr pool ATTRIBUTE_UNUSED,
+                                   virStorageVolDefPtr vol,
+                                   unsigned long long capacity,
+                                   unsigned int flags)
+{
+    virCheckFlags(VIR_STORAGE_VOL_RESIZE_SHRINK |
+                  VIR_STORAGE_VOL_RESIZE_DELTA, -1);
+
+    bool delta = flags & VIR_STORAGE_VOL_RESIZE_DELTA;
+    bool shrink = flags & VIR_STORAGE_VOL_RESIZE_SHRINK;
+
+    if (vol->target.sparse) {
+        virReportError(VIR_ERR_NO_SUPPORT,
+                        _("logical volume '%s' is sparse, volume resize "
+                            "not supported"),
+                        vol->target.path);
+        return -1;
+    }
+
+    virCommandPtr cmd = virCommandNewArgList(LVRESIZE, "-L", NULL);
+
+    if (delta) {
+        virCommandAddArgFormat(cmd, "%c%lluB", shrink ? '-' : '+',
+                                 capacity);
+    } else {
+        virCommandAddArgFormat(cmd, "%lluB", capacity);
+    }
+    virCommandAddArgFormat(cmd, "%s", vol->target.path);
+    int ret = virCommandRun(cmd, NULL);
+
+    virCommandFree(cmd);
+    return ret;
+}
+
 virStorageBackend virStorageBackendLogical = {
     .type = VIR_STORAGE_POOL_LOGICAL,
 
@@ -1089,6 +1125,7 @@ virStorageBackend virStorageBackendLogical = {
     .uploadVol = virStorageBackendVolUploadLocal,
     .downloadVol = virStorageBackendVolDownloadLocal,
     .wipeVol = virStorageBackendLogicalVolWipe,
+    .resizeVol = virStorageBackendLogicalResizeVol,
 };
 
 
