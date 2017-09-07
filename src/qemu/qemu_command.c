@@ -1433,12 +1433,39 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
             qemuformat = "luks";
         virBufferAsprintf(buf, "format=%s,", qemuformat);
     }
-    if (disk->src->l2_cache_size > 0)
-        virBufferAsprintf(buf, "l2-cache-size=%llu,", disk->src->l2_cache_size);
-    if (disk->src->refcount_cache_size > 0)
-        virBufferAsprintf(buf, "refcount-cache-size=%llu,", disk->src->refcount_cache_size);
-    if (disk->src->cache_clean_interval > 0)
-        virBufferAsprintf(buf, "cache-clean-interval=%llu,", disk->src->cache_clean_interval);
+
+    if (disk->src->l2_cache_size > 0) {
+        if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_QCOW2_L2_CACHE_SIZE)) {
+            virBufferAsprintf(buf, "l2-cache-size=%llu,",
+                              disk->src->l2_cache_size);
+        } else {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("l2-cache-size is not supported by this QEMU"));
+            goto cleanup;
+        }
+    }
+
+    if (disk->src->refcount_cache_size > 0) {
+        if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_QCOW2_REFCOUNT_CACHE_SIZE)) {
+            virBufferAsprintf(buf, "refcount-cache-size=%llu,",
+                              disk->src->refcount_cache_size);
+        } else {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("refcount-cache-size is not supported by this QEMU"));
+            goto cleanup;
+        }
+    }
+
+    if (disk->src->cache_clean_interval > 0) {
+        if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_QCOW2_CACHE_CLEAN_INTERVAL)) {
+            virBufferAsprintf(buf, "cache-clean-interval=%llu,",
+                              disk->src->cache_clean_interval);
+        } else {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("cache-clean-interval is not supported by this QEMU"));
+            goto cleanup;
+        }
+    }
 
     ret = 0;
 

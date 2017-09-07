@@ -439,6 +439,9 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "virtio-net.tx_queue_size",
               "chardev-reconnect",
               "virtio-gpu.max_outputs",
+              "drive.qcow2.l2-cache-size",
+              "drive.qcow2.refcount-cache-size",
+              "drive.qcow2.cache-clean-interval",
     );
 
 
@@ -1811,6 +1814,12 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsIntelIOMMU[] = {
 static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "blockdev-add/arg-type/options/+gluster/debug-level", QEMU_CAPS_GLUSTER_DEBUG_LEVEL},
     { "blockdev-add/arg-type/+gluster/debug", QEMU_CAPS_GLUSTER_DEBUG_LEVEL},
+    { "blockdev-add/arg-type/options/+qcow2/l2-cache-size", QEMU_CAPS_DRIVE_QCOW2_L2_CACHE_SIZE},
+    { "blockdev-add/arg-type/options/+qcow2/refcount-cache-size", QEMU_CAPS_DRIVE_QCOW2_REFCOUNT_CACHE_SIZE},
+    { "blockdev-add/arg-type/options/+qcow2/cache-clean-interval", QEMU_CAPS_DRIVE_QCOW2_CACHE_CLEAN_INTERVAL},
+    { "blockdev-add/arg-type/+qcow2/l2-cache-size", QEMU_CAPS_DRIVE_QCOW2_L2_CACHE_SIZE},
+    { "blockdev-add/arg-type/+qcow2/refcount-cache-size", QEMU_CAPS_DRIVE_QCOW2_REFCOUNT_CACHE_SIZE},
+    { "blockdev-add/arg-type/+qcow2/cache-clean-interval", QEMU_CAPS_DRIVE_QCOW2_CACHE_CLEAN_INTERVAL},
 };
 
 struct virQEMUCapsObjectTypeProps {
