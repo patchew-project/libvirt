@@ -5660,7 +5660,7 @@ qemu-kvm -net nic,model=? /dev/null
   &lt;/interface&gt;
   &lt;interface type='vhostuser'&gt;
     &lt;mac address='52:54:00:3b:83:1b'/&gt;
-    &lt;source type='unix' path='/tmp/vhost2.sock' mode='client'/&gt;
+    &lt;source type='unix' path='/tmp/vhost2.sock' mode='client' reconnect='10'/&gt;
     &lt;model type='virtio'/&gt;
     &lt;driver queues='5'/&gt;
   &lt;/interface&gt;
@@ -5675,7 +5675,9 @@ qemu-kvm -net nic,model=? /dev/null
       Both <code>mode='server'</code> and <code>mode='client'</code>
       are supported.
       vhost-user requires the virtio model type, thus the
-      <code>&lt;model&gt;</code> element is mandatory.
+      <code>&lt;model&gt;</code> element is mandatory. <code>reconnect</code>
+      is an optional element,which configures reconnect timeout if the
+      connection is lost.
     </p>
 
     <h5><a id="elementNwfilter">Traffic filtering with NWFilter</a></h5>
