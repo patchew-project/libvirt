@@ -4740,6 +4740,9 @@ static void qemuProcessEventHandler(void *data, void *opaque)
 
     VIR_DEBUG("vm=%p, event=%d", vm, processEvent->eventType);
 
+    if (processEvent->eventType == QEMU_PROCESS_EVENT_MONITOR_EOF)
+        sleep(3);
+
     virObjectLock(vm);
 
     switch (processEvent->eventType) {

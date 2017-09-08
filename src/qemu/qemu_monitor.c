@@ -315,6 +315,15 @@ qemuMonitorEscapeNonPrintable(const char *text)
 #endif
 
 
+void
+qemuMonitorShutdown(qemuMonitorPtr mon)
+{
+    virObjectLock(mon);
+    mon->willhangup = 1;
+    virObjectUnlock(mon);
+}
+
+
 static void
 qemuMonitorDispose(void *obj)
 {
@@ -1055,6 +1064,12 @@ qemuMonitorSend(qemuMonitorPtr mon,
         return -1;
     }
 
+    if (mon->willhangup) {
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("Domain is shutting down."));
+        return -1;
+    }
+
     mon->msg = msg;
     qemuMonitorUpdateWatch(mon);
 
@@ -1336,7 +1351,6 @@ qemuMonitorEmitShutdown(qemuMonitorPtr mon, virTristateBool guest)
 {
     int ret = -1;
     VIR_DEBUG("mon=%p guest=%u", mon, guest);
-    mon->willhangup = 1;
 
     QEMU_MONITOR_CALLBACK(mon, ret, domainShutdown, mon->vm, guest);
     return ret;

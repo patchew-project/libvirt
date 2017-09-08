@@ -618,6 +618,7 @@ qemuProcessShutdownOrReboot(virQEMUDriverPtr driver,
             virObjectUnref(vm);
         }
     } else {
+        qemuMonitorShutdown(priv->mon);
         ignore_value(qemuProcessKill(vm, VIR_QEMU_PROCESS_KILL_NOWAIT));
     }
 }

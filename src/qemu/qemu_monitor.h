@@ -303,6 +303,8 @@ void qemuMonitorUnregister(qemuMonitorPtr mon)
     ATTRIBUTE_NONNULL(1);
 void qemuMonitorClose(qemuMonitorPtr mon);
 
+void qemuMonitorShutdown(qemuMonitorPtr mon);
+
 virErrorPtr qemuMonitorLastError(qemuMonitorPtr mon);
 
 int qemuMonitorSetCapabilities(qemuMonitorPtr mon);
