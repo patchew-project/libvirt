@@ -923,6 +923,7 @@ qemuDomainDiskPrivateDispose(void *obj)
 
     qemuDomainSecretInfoFree(&priv->secinfo);
     qemuDomainSecretInfoFree(&priv->encinfo);
+    VIR_FREE(priv->blockJobError);
 }
 
 
