@@ -16816,7 +16816,7 @@ qemuDomainBlockCopyValidateMirror(virStorageSourcePtr mirror,
     if (virStorageFileAccess(mirror, F_OK) < 0) {
         if (errno != ENOENT) {
             virReportSystemError(errno, "%s",
-                                 _("unable to verify existance of "
+                                 _("unable to verify existence of "
                                    "block copy target"));
             return -1;
         }
