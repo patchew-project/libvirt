@@ -4562,13 +4562,20 @@ testStoragePoolBuild(virStoragePoolPtr pool,
 {
     testDriverPtr privconn = pool->conn->privateData;
     virStoragePoolObjPtr obj;
+    virObjectEventPtr event = NULL;
 
     virCheckFlags(0, -1);
 
     if (!(obj = testStoragePoolObjFindInactiveByName(privconn, pool->name)))
         return -1;
 
+    event = virStoragePoolEventLifecycleNew(pool->name, pool->uuid,
+                                            VIR_STORAGE_POOL_EVENT_CREATED,
+                                            0);
+
     virStoragePoolObjUnlock(obj);
+
+    testObjectEventQueue(privconn, event);
     return 0;
 }
 
@@ -4653,11 +4660,18 @@ testStoragePoolDelete(virStoragePoolPtr pool,
 {
     testDriverPtr privconn = pool->conn->privateData;
     virStoragePoolObjPtr obj;
+    virObjectEventPtr event = NULL;
 
     virCheckFlags(0, -1);
 
     if (!(obj = testStoragePoolObjFindInactiveByName(privconn, pool->name)))
         return -1;
+
+    event = virStoragePoolEventLifecycleNew(pool->name, pool->uuid,
+                                            VIR_STORAGE_POOL_EVENT_DELETED,
+                                            0);
+
+    testObjectEventQueue(privconn, event);
 
     virStoragePoolObjUnlock(obj);
     return 0;

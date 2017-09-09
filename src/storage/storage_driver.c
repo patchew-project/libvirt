@@ -959,6 +959,7 @@ storagePoolBuild(virStoragePoolPtr pool,
 {
     virStoragePoolObjPtr obj;
     virStorageBackendPtr backend;
+    virObjectEventPtr event = NULL;
     int ret = -1;
 
     if (!(obj = virStoragePoolObjFromStoragePool(pool)))
@@ -980,9 +981,17 @@ storagePoolBuild(virStoragePoolPtr pool,
     if (backend->buildPool &&
         backend->buildPool(pool->conn, obj, flags) < 0)
         goto cleanup;
+
+    event = virStoragePoolEventLifecycleNew(obj->def->name,
+                                            obj->def->uuid,
+                                            VIR_STORAGE_POOL_EVENT_CREATED,
+                                            0);
+
     ret = 0;
 
  cleanup:
+    if (event)
+        virObjectEventStateQueue(driver->storageEventState, event);
     virStoragePoolObjUnlock(obj);
     return ret;
 }
@@ -1062,6 +1071,7 @@ storagePoolDelete(virStoragePoolPtr pool,
 {
     virStoragePoolObjPtr obj;
     virStorageBackendPtr backend;
+    virObjectEventPtr event = NULL;
     char *stateFile = NULL;
     int ret = -1;
 
@@ -1106,9 +1116,16 @@ storagePoolDelete(virStoragePoolPtr pool,
     if (backend->deletePool(pool->conn, obj, flags) < 0)
         goto cleanup;
 
+    event = virStoragePoolEventLifecycleNew(obj->def->name,
+                                            obj->def->uuid,
+                                            VIR_STORAGE_POOL_EVENT_DELETED,
+                                            0);
+
     ret = 0;
 
  cleanup:
+    if (event)
+        virObjectEventStateQueue(driver->storageEventState, event);
     virStoragePoolObjUnlock(obj);
     return ret;
 }
