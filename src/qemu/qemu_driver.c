@@ -7524,7 +7524,7 @@ qemuDomainAttachDeviceLive(virDomainObjPtr vm,
 
     switch ((virDomainDeviceType) dev->type) {
     case VIR_DOMAIN_DEVICE_DISK:
-        qemuDomainObjCheckDiskTaint(driver, vm, dev->data.disk, NULL);
+        qemuDomainObjCheckDiskTaint(driver, conn, vm, dev->data.disk, NULL);
         ret = qemuDomainAttachDeviceDiskLive(conn, driver, vm, dev);
         if (!ret) {
             alias = dev->data.disk->info.alias;
@@ -7803,7 +7803,7 @@ qemuDomainUpdateDeviceLive(virConnectPtr conn,
 
     switch ((virDomainDeviceType) dev->type) {
     case VIR_DOMAIN_DEVICE_DISK:
-        qemuDomainObjCheckDiskTaint(driver, vm, dev->data.disk, NULL);
+        qemuDomainObjCheckDiskTaint(driver, conn, vm, dev->data.disk, NULL);
         ret = qemuDomainChangeDiskLive(conn, vm, dev, driver, force);
         break;
     case VIR_DOMAIN_DEVICE_GRAPHICS:

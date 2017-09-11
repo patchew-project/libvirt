@@ -41,6 +41,7 @@
 #include "virfile.h"
 #include "domain_addr.h"
 #include "domain_event.h"
+#include "node_device_conf.h"
 #include "virtime.h"
 #include "virnetdevopenvswitch.h"
 #include "virstoragefile.h"
@@ -4723,6 +4724,7 @@ qemuDomainDefFormatLive(virQEMUDriverPtr driver,
 
 
 /* qemuDomainFilePathIsHostCDROM
+ * @conn: A virConnectPtr
  * @path: Supplied path.
  *
  * Determine if the path is a host CD-ROM path. Typically this is
@@ -4730,23 +4732,64 @@ qemuDomainDefFormatLive(virQEMUDriverPtr driver,
  * it's also possible that @path resolves to /dev/srN, so check for
  * those conditions on @path in order to emit the tainted message.
  *
+ * If that doesn't work, then let's check with the nodedev driver to
+ * get a list of all cdrom's on the host and then compare the resolved
+ * linkpath for @path to each cdrom in the list looking for a match.
+ *
  * Returns true if the path is a CDROM, false otherwise or on error.
  */
 static bool
-qemuDomainFilePathIsHostCDROM(const char *path)
+qemuDomainFilePathIsHostCDROM(virConnectPtr conn,
+                              const char *path)
 {
     bool ret = false;
     char *linkpath = NULL;
+    int ndevices = 0;
+    virNodeDevicePtr *devices = NULL;
+    unsigned int flags = VIR_CONNECT_LIST_NODE_DEVICES_CAP_CDROM;
+    size_t i;
+    char *xml = NULL;
+    virNodeDeviceDefPtr def = NULL;
 
     if (virFileResolveLink(path, &linkpath) < 0)
         goto cleanup;
 
     if (STRPREFIX(path, "/dev/cdrom") || STRPREFIX(path, "/dev/sr") ||
-        STRPREFIX(linkpath, "/dev/sr"))
+        STRPREFIX(linkpath, "/dev/sr")) {
         ret = true;
+        goto cleanup;
+    }
+
+    /* Get a list of all 'cdrom' devices from NodeDevice and search
+     * through the list looking to compare the resolved @linkpath
+     * to list of host console device(s). */
+    if (conn &&
+        (ndevices = virConnectListAllNodeDevices(conn, &devices, flags) > 0)) {
+        for (i = 0; i < ndevices; i++) {
+            if (!(xml = virNodeDeviceGetXMLDesc(devices[i], 0)))
+                goto cleanup;
+
+            if (!(def = virNodeDeviceDefParseString(xml, EXISTING_DEVICE, NULL)))
+                goto cleanup;
+            VIR_FREE(xml);
+
+            if (STREQ(def->caps->data.storage.block, linkpath)) {
+                ret = true;
+                goto cleanup;
+            }
+
+            virNodeDeviceDefFree(def);
+            def = NULL;
+        }
+    }
 
  cleanup:
     VIR_FREE(linkpath);
+    virNodeDeviceDefFree(def);
+    VIR_FREE(xml);
+    for (i = 0; i < ndevices; i++)
+        virObjectUnref(devices[i]);
+    VIR_FREE(devices);
     return ret;
 }
 
@@ -4809,6 +4852,7 @@ void qemuDomainObjTaint(virQEMUDriverPtr driver,
 
 
 void qemuDomainObjCheckTaint(virQEMUDriverPtr driver,
+                             virConnectPtr conn,
                              virDomainObjPtr obj,
                              qemuDomainLogContextPtr logCtxt)
 {
@@ -4835,7 +4879,7 @@ void qemuDomainObjCheckTaint(virQEMUDriverPtr driver,
         qemuDomainObjTaint(driver, obj, VIR_DOMAIN_TAINT_HOST_CPU, logCtxt);
 
     for (i = 0; i < obj->def->ndisks; i++)
-        qemuDomainObjCheckDiskTaint(driver, obj, obj->def->disks[i], logCtxt);
+        qemuDomainObjCheckDiskTaint(driver, conn, obj, obj->def->disks[i], logCtxt);
 
     for (i = 0; i < obj->def->nhostdevs; i++)
         qemuDomainObjCheckHostdevTaint(driver, obj, obj->def->hostdevs[i],
@@ -4852,6 +4896,7 @@ void qemuDomainObjCheckTaint(virQEMUDriverPtr driver,
 
 
 void qemuDomainObjCheckDiskTaint(virQEMUDriverPtr driver,
+                                 virConnectPtr conn,
                                  virDomainObjPtr obj,
                                  virDomainDiskDefPtr disk,
                                  qemuDomainLogContextPtr logCtxt)
@@ -4869,7 +4914,7 @@ void qemuDomainObjCheckDiskTaint(virQEMUDriverPtr driver,
 
     if (disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM &&
         virStorageSourceGetActualType(disk->src) == VIR_STORAGE_TYPE_BLOCK &&
-        disk->src->path && qemuDomainFilePathIsHostCDROM(disk->src->path))
+        disk->src->path && qemuDomainFilePathIsHostCDROM(conn, disk->src->path))
         qemuDomainObjTaint(driver, obj, VIR_DOMAIN_TAINT_CDROM_PASSTHROUGH,
                            logCtxt);
 

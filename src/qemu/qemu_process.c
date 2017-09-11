@@ -5557,7 +5557,7 @@ qemuProcessLaunch(virConnectPtr conn,
 
     qemuLogOperation(vm, "starting up", cmd, logCtxt);
 
-    qemuDomainObjCheckTaint(driver, vm, logCtxt);
+    qemuDomainObjCheckTaint(driver, conn, vm, logCtxt);
 
     qemuDomainLogContextMarkPosition(logCtxt);
 

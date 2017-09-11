@@ -552,9 +552,11 @@ void qemuDomainObjTaint(virQEMUDriverPtr driver,
                         qemuDomainLogContextPtr logCtxt);
 
 void qemuDomainObjCheckTaint(virQEMUDriverPtr driver,
+                             virConnectPtr conn,
                              virDomainObjPtr obj,
                              qemuDomainLogContextPtr logCtxt);
 void qemuDomainObjCheckDiskTaint(virQEMUDriverPtr driver,
+                                 virConnectPtr conn,
                                  virDomainObjPtr obj,
                                  virDomainDiskDefPtr disk,
                                  qemuDomainLogContextPtr logCtxt);
