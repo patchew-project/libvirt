@@ -920,6 +920,7 @@ udevProcessCDROM(struct udev_device *device,
     VIR_FREE(def->caps->data.storage.drive_type);
     if (VIR_STRDUP(def->caps->data.storage.drive_type, "cdrom") < 0)
         return -1;
+    def->caps->data.storage.flags |= VIR_NODE_DEV_CAP_STORAGE_CDROM;
 
     if (udevHasDeviceProperty(device, "ID_CDROM_MEDIA") &&
         udevGetIntProperty(device, "ID_CDROM_MEDIA", &has_media, 0) < 0)
@@ -1303,6 +1304,7 @@ udevGetDeviceDetails(struct udev_device *device,
     case VIR_NODE_DEV_CAP_SYSTEM:
     case VIR_NODE_DEV_CAP_FC_HOST:
     case VIR_NODE_DEV_CAP_VPORTS:
+    case VIR_NODE_DEV_CAP_CDROM:
     case VIR_NODE_DEV_CAP_LAST:
         break;
     }

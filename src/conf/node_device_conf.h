@@ -67,6 +67,7 @@ typedef enum {
     VIR_NODE_DEV_CAP_MDEV_TYPES,        /* Device capable of mediated devices */
     VIR_NODE_DEV_CAP_MDEV,              /* Mediated device */
     VIR_NODE_DEV_CAP_CCW_DEV,           /* s390 CCW device */
+    VIR_NODE_DEV_CAP_CDROM,             /* CDROM capable device */
 
     VIR_NODE_DEV_CAP_LAST
 } virNodeDevCapType;
@@ -85,6 +86,7 @@ typedef enum {
     VIR_NODE_DEV_CAP_STORAGE_REMOVABLE			= (1 << 0),
     VIR_NODE_DEV_CAP_STORAGE_REMOVABLE_MEDIA_AVAILABLE	= (1 << 1),
     VIR_NODE_DEV_CAP_STORAGE_HOTPLUGGABLE		= (1 << 2),
+    VIR_NODE_DEV_CAP_STORAGE_CDROM                      = (1 << 3),
 } virNodeDevStorageCapFlags;
 
 typedef enum {
@@ -377,7 +379,8 @@ virNodeDevCapMdevTypeFree(virNodeDevCapMdevTypePtr type);
                  VIR_CONNECT_LIST_NODE_DEVICES_CAP_DRM           | \
                  VIR_CONNECT_LIST_NODE_DEVICES_CAP_MDEV_TYPES    | \
                  VIR_CONNECT_LIST_NODE_DEVICES_CAP_MDEV          | \
-                 VIR_CONNECT_LIST_NODE_DEVICES_CAP_CCW_DEV)
+                 VIR_CONNECT_LIST_NODE_DEVICES_CAP_CCW_DEV       | \
+                 VIR_CONNECT_LIST_NODE_DEVICES_CAP_CDROM)
 
 char *
 virNodeDeviceGetParentName(virConnectPtr conn,

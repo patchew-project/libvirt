@@ -131,6 +131,8 @@ virNodeDeviceObjHasCap(const virNodeDeviceObj *obj,
         virNodeDevCapTypeToString(VIR_NODE_DEV_CAP_VPORTS);
     const char *mdev_types =
         virNodeDevCapTypeToString(VIR_NODE_DEV_CAP_MDEV_TYPES);
+    const char *cdrom_types =
+        virNodeDevCapTypeToString(VIR_NODE_DEV_CAP_CDROM);
 
     while (caps) {
         if (STREQ(cap, virNodeDevCapTypeToString(caps->data.type))) {
@@ -151,13 +153,18 @@ virNodeDeviceObjHasCap(const virNodeDeviceObj *obj,
                     return 1;
                 break;
 
+            case VIR_NODE_DEV_CAP_STORAGE:
+                if ((STREQ(cap, cdrom_types) &&
+                     (caps->data.storage.flags & VIR_NODE_DEV_CAP_STORAGE_CDROM)))
+                    return 1;
+                break;
+
             case VIR_NODE_DEV_CAP_SYSTEM:
             case VIR_NODE_DEV_CAP_USB_DEV:
             case VIR_NODE_DEV_CAP_USB_INTERFACE:
             case VIR_NODE_DEV_CAP_NET:
             case VIR_NODE_DEV_CAP_SCSI_TARGET:
             case VIR_NODE_DEV_CAP_SCSI:
-            case VIR_NODE_DEV_CAP_STORAGE:
             case VIR_NODE_DEV_CAP_FC_HOST:
             case VIR_NODE_DEV_CAP_VPORTS:
             case VIR_NODE_DEV_CAP_SCSI_GENERIC:
@@ -165,6 +172,7 @@ virNodeDeviceObjHasCap(const virNodeDeviceObj *obj,
             case VIR_NODE_DEV_CAP_MDEV_TYPES:
             case VIR_NODE_DEV_CAP_MDEV:
             case VIR_NODE_DEV_CAP_CCW_DEV:
+            case VIR_NODE_DEV_CAP_CDROM:
             case VIR_NODE_DEV_CAP_LAST:
                 break;
             }
@@ -707,13 +715,18 @@ virNodeDeviceCapMatch(virNodeDeviceObjPtr obj,
                 return true;
             break;
 
+        case VIR_NODE_DEV_CAP_STORAGE:
+            if (type == VIR_NODE_DEV_CAP_CDROM &&
+                (cap->data.storage.flags & VIR_NODE_DEV_CAP_STORAGE_CDROM))
+                return true;
+            break;
+
         case VIR_NODE_DEV_CAP_SYSTEM:
         case VIR_NODE_DEV_CAP_USB_DEV:
         case VIR_NODE_DEV_CAP_USB_INTERFACE:
         case VIR_NODE_DEV_CAP_NET:
         case VIR_NODE_DEV_CAP_SCSI_TARGET:
         case VIR_NODE_DEV_CAP_SCSI:
-        case VIR_NODE_DEV_CAP_STORAGE:
         case VIR_NODE_DEV_CAP_FC_HOST:
         case VIR_NODE_DEV_CAP_VPORTS:
         case VIR_NODE_DEV_CAP_SCSI_GENERIC:
@@ -721,6 +734,7 @@ virNodeDeviceCapMatch(virNodeDeviceObjPtr obj,
         case VIR_NODE_DEV_CAP_MDEV_TYPES:
         case VIR_NODE_DEV_CAP_MDEV:
         case VIR_NODE_DEV_CAP_CCW_DEV:
+        case VIR_NODE_DEV_CAP_CDROM:
         case VIR_NODE_DEV_CAP_LAST:
             break;
         }
@@ -867,7 +881,8 @@ virNodeDeviceMatch(virNodeDeviceObjPtr obj,
               MATCH(DRM)           ||
               MATCH(MDEV_TYPES)    ||
               MATCH(MDEV)          ||
-              MATCH(CCW_DEV)))
+              MATCH(CCW_DEV)       ||
+              MATCH(CDROM)))
             return false;
     }
 
