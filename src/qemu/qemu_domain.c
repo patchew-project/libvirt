@@ -3338,9 +3338,11 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
                             void *opaque ATTRIBUTE_UNUSED)
 {
     int ret = -1;
+    size_t i;
 
     if (dev->type == VIR_DOMAIN_DEVICE_NET) {
         const virDomainNetDef *net = dev->data.net;
+        bool hasIPv4 = false, hasIPv6 = false;
 
         if (net->guestIP.nroutes || net->guestIP.nips) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
@@ -3348,6 +3350,53 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
                              "guest-side IP route and/or address info, "
                              "not supported by QEMU"));
             goto cleanup;
+        }
+
+        if (net->type == VIR_DOMAIN_NET_TYPE_USER) {
+            if (net->hostIP.nroutes) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("Invalid attempt to set network interface "
+                                 "guest-side IP address info, "
+                                 "not supported by QEMU"));
+                goto cleanup;
+            }
+
+            for (i = 0; i < net->hostIP.nips; i++) {
+                const virNetDevIPAddr *ip = net->hostIP.ips[i];
+
+                if (VIR_SOCKET_ADDR_VALID(&ip->peer)) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                   _("peers are not supported by QEMU"));
+                    goto cleanup;
+                }
+
+                if (VIR_SOCKET_ADDR_IS_FAMILY(&ip->address, AF_INET)) {
+                    if (hasIPv4) {
+                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                       _("Only one IPv4 address allowed"));
+                        goto cleanup;
+                    }
+                    hasIPv4 = true;
+                }
+
+                if (VIR_SOCKET_ADDR_IS_FAMILY(&ip->address, AF_INET6)) {
+                    if (hasIPv6) {
+                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                       _("Only one IPv6 address allowed"));
+                        goto cleanup;
+                    }
+                    hasIPv6 = true;
+                }
+
+                /* QEMU needs some space to have
+                 * some other 'hosts' on the network. */
+                if ((hasIPv4 && ip->prefix > 27) ||
+                    (hasIPv6 && ip->prefix > 120)) {
+                    virReportError(VIR_ERR_XML_ERROR, "%s",
+                                   _("prefix too long"));
+                    goto cleanup;
+                }
+            }
         }
 
         if (STREQ_NULLABLE(net->model, "virtio")) {
