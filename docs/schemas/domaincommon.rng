@@ -2428,6 +2428,11 @@
             <value>user</value>
           </attribute>
           <interleave>
+            <optional>
+              <element name="source">
+                <ref name="interface-ip-info"/>
+              </element>
+            </optional>
             <ref name="interface-options"/>
           </interleave>
         </group>

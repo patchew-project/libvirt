@@ -5214,12 +5214,13 @@ static int
 virDomainNetDefValidate(const virDomainNetDef *net)
 {
     if ((net->hostIP.nroutes || net->hostIP.nips) &&
-        net->type != VIR_DOMAIN_NET_TYPE_ETHERNET) {
+        net->type != VIR_DOMAIN_NET_TYPE_ETHERNET &&
+        net->type != VIR_DOMAIN_NET_TYPE_USER) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Invalid attempt to set network interface "
                          "host-side IP route and/or address info on "
                          "interface of type '%s'. This is only supported "
-                         "on interfaces of type 'ethernet'"),
+                         "on interfaces of type 'ethernet' and 'user'"),
                        virDomainNetTypeToString(net->type));
         return -1;
     }
