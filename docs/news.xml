@@ -25,6 +25,17 @@
     <section title="New features">
     </section>
     <section title="Improvements">
+      <change>
+        <summary>
+          qemu: DAC permissions properly set for spice renderndoe
+        </summary>
+        <description>
+          When a rendernode= path is set for spice GL on qemu:///system,
+          we now correctly set DAC permissions on the device at VM startup.
+          This is the last remaining hurdle to let spice GL work for
+          qemu:///system without any external host changes.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
