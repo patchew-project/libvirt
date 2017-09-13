@@ -6444,6 +6444,17 @@ int qemuMonitorJSONGetTPMTypes(qemuMonitorPtr mon,
     return qemuMonitorJSONGetStringArray(mon, "query-tpm-types", tpmtypes);
 }
 
+static int
+qemuMonitorJSONBuildChrChardevReconnect(virJSONValuePtr object,
+                                        const virDomainChrSourceReconnectDef *def)
+{
+    int ret = 0;
+
+    if (def->enabled == VIR_TRISTATE_BOOL_YES)
+        ret = virJSONValueObjectAppendNumberUint(object, "reconnect", def->timeout);
+    return ret;
+}
+
 static virJSONValuePtr
 qemuMonitorJSONAttachCharDevCommand(const char *chrID,
                                     const virDomainChrSourceDef *chr)
@@ -6508,6 +6519,9 @@ qemuMonitorJSONAttachCharDevCommand(const char *chrID,
             if (virJSONValueObjectAppendString(data, "tls-creds", tlsalias) < 0)
                 goto cleanup;
         }
+
+        if (qemuMonitorJSONBuildChrChardevReconnect(data, &chr->data.tcp.reconnect) < 0)
+            goto cleanup;
         break;
 
     case VIR_DOMAIN_CHR_TYPE_UDP:
@@ -6544,6 +6558,9 @@ qemuMonitorJSONAttachCharDevCommand(const char *chrID,
 
         if (virJSONValueObjectAppendBoolean(data, "wait", false) < 0 ||
             virJSONValueObjectAppendBoolean(data, "server", chr->data.nix.listen) < 0)
+            goto cleanup;
+
+        if (qemuMonitorJSONBuildChrChardevReconnect(data, &chr->data.nix.reconnect) < 0)
             goto cleanup;
         break;
 
