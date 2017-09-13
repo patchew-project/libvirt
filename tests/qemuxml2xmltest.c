@@ -461,6 +461,7 @@ mymain(void)
     DO_TEST("disk-drive-cache-v2-none", NONE);
     DO_TEST("disk-drive-cache-directsync", NONE);
     DO_TEST("disk-drive-cache-unsafe", NONE);
+    DO_TEST("disk-drive-qcow2-cache", NONE);
     DO_TEST("disk-drive-network-nbd", NONE);
     DO_TEST("disk-drive-network-nbd-export", NONE);
     DO_TEST("disk-drive-network-nbd-ipv6", NONE);

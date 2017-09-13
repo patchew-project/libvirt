@@ -1756,6 +1756,23 @@
     </element>
   </define>
   <!--
+     Parameters for qcow2 driver
+    -->
+  <define name="qcow2Driver">
+    <element name="qcow2">
+      <optional>
+        <ref name="qcow2_l2_cache_size"/>
+      </optional>
+      <optional>
+        <ref name="qcow2_refcount_cache_size"/>
+      </optional>
+      <optional>
+        <ref name="qcow2_cache_clean_interval"/>
+      </optional>
+    </element>
+  </define>
+
+  <!--
       Disk may use a special driver for access.
     -->
   <define name="diskDriver">
@@ -1794,6 +1811,9 @@
         <ref name="detect_zeroes"/>
       </optional>
       <ref name="virtioOptions"/>
+      <zeroOrMore>
+        <ref name="qcow2Driver"/>
+      </zeroOrMore>
       <empty/>
     </element>
   </define>
@@ -1887,6 +1907,21 @@
         <value>on</value>
         <value>unmap</value>
       </choice>
+    </attribute>
+  </define>
+  <define name="qcow2_l2_cache_size">
+    <attribute name='l2_cache_size'>
+      <ref name="unsignedInt"/>
+    </attribute>
+  </define>
+  <define name="qcow2_refcount_cache_size">
+    <attribute name='refcount_cache_size'>
+      <ref name="unsignedInt"/>
+    </attribute>
+  </define>
+  <define name="qcow2_cache_clean_interval">
+    <attribute name='cache_clean_interval'>
+      <ref name="unsignedInt"/>
     </attribute>
   </define>
   <define name="controller">
