@@ -3036,6 +3036,47 @@
           set. (<span class="since">Since 3.5.0</span>)
           </li>
         </ul>
+        The <code>driver</code> element may contain a <code>qcow2</code> sub
+        element, which to specifying further details related to a qcow2 disk.
+        For recommended setting guidelines refer to the QEMU source file
+        <code>docs/qcow2-cache.txt</code>.
+        <span class="since">Since 3.8.0</span>
+        <ul>
+          <li>
+            The optional <code>l2_cache_size</code> attribute controls how much
+            memory will be consumed by qcow2 l2 table cache in bytes. This
+            option is only valid when the driver type is qcow2. The default
+            size is 2097152.
+            <span class='since'>Since 3.8.0</span>
+
+            <b>In general you should leave this option alone, unless you
+            are very certain you know what you are doing.</b>
+          </li>
+          <li>
+            The optional <code>refcount_cache_size</code> attribute controls
+            how much memory will be consumed by qcow2 reference count table
+            cache in bytes. This option is only valid when the driver type is
+            qcow2. The default size is 262144.
+            <span class='since'>Since 3.8.0</span>
+
+            <b>In general you should leave this option alone, unless you
+            are very certain you know what you are doing.</b>
+          </li>
+          <li>
+            The optional <code>cache_clean_interval</code> attribute defines
+            an interval (in seconds). All cache entries that haven't been
+            accessed during that interval are removed from memory. This option
+            is only valid when the driver type is qcow2. The default
+            value is 0, which disables this feature. If the interval is too
+            short, it will cause frequent cache write back and load, which
+            impact performance. If the interval is too long, unused cache
+            will still consume memory until it's been written back to disk.
+            <span class='since'>Since 3.8.0</span>
+
+            <b>In general you should leave this option alone, unless you
+            are very certain you know what you are doing.</b>
+          </li>
+        </ul>
       </dd>
       <dt><code>backenddomain</code></dt>
       <dd>The optional <code>backenddomain</code> element allows specifying a

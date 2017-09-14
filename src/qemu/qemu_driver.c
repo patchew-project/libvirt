@@ -14318,6 +14318,11 @@ qemuDomainSnapshotDiskDataCollect(virQEMUDriverPtr driver,
         if (!(dd->src = virStorageSourceCopy(snap->def->disks[i].src, false)))
             goto error;
 
+        /* keep the qcow2 cache configuration */
+        dd->src->l2_cache_size = vm->def->disks[i]->src->l2_cache_size;
+        dd->src->refcount_cache_size = vm->def->disks[i]->src->refcount_cache_size;
+        dd->src->cache_clean_interval = vm->def->disks[i]->src->cache_clean_interval;
+
         if (virStorageSourceInitChainElement(dd->src, dd->disk->src, false) < 0)
             goto error;
 
