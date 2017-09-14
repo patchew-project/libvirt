@@ -529,16 +529,24 @@ qemuBlockStorageSourceGetVxHSProps(virStorageSourcePtr src)
         return NULL;
     }
 
+    if (src->haveTLS == VIR_TRISTATE_BOOL_YES && !src->tlsAlias) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("VxHS disk does not have TLS alias set"));
+        return NULL;
+    }
+
     if (!(server = qemuBlockStorageSourceBuildJSONSocketAddress(src->hosts, true)))
         return NULL;
 
     /* VxHS disk specification example:
      * { driver:"vxhs",
+     *   [tls-creds:"objvirtio-disk0_tls0",]
      *   vdisk-id:"eb90327c-8302-4725-4e85ed4dc251",
      *   server:[{type:"tcp", host:"1.2.3.4", port:9999}]}
      */
     if (virJSONValueObjectCreate(&ret,
                                  "s:driver", protocol,
+                                 "S:tls-creds", src->tlsAlias,
                                  "s:vdisk-id", src->path,
                                  "a:server", server, NULL) < 0)
         virJSONValueFree(server);
