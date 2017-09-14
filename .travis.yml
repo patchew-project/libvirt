@@ -76,7 +76,9 @@ before_install:
 before_script:
   - ./autogen.sh
 script:
-  - make -j3 && make -j3 syntax-check && make -j3 check
+  - make -j3
+  - make -j3 syntax-check
+  - make -j3 check
 
 # Environments here are run in addition to the main environment defined above
 matrix:
