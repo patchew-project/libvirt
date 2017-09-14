@@ -2054,7 +2054,8 @@ virStorageSourceCopy(const virStorageSource *src,
         VIR_STRDUP(ret->configFile, src->configFile) < 0 ||
         VIR_STRDUP(ret->nodeformat, src->nodeformat) < 0 ||
         VIR_STRDUP(ret->nodestorage, src->nodestorage) < 0 ||
-        VIR_STRDUP(ret->compat, src->compat) < 0)
+        VIR_STRDUP(ret->compat, src->compat) < 0 ||
+        VIR_STRDUP(ret->tlsAlias, src->tlsAlias) < 0)
         goto error;
 
     if (src->nhosts) {
@@ -2278,6 +2279,8 @@ virStorageSourceClear(virStorageSourcePtr def)
     VIR_FREE(def->nodeformat);
 
     virStorageSourceBackingStoreClear(def);
+
+    VIR_FREE(def->tlsAlias);
 
     memset(def, 0, sizeof(*def));
 }
