@@ -1720,6 +1720,11 @@ virDomainDiskDefNew(virDomainXMLOptionPtr xmlopt)
         !(ret->privateData = xmlopt->privateData.diskNew()))
         goto error;
 
+    if (xmlopt &&
+        xmlopt->privateData.diskSrcNew &&
+        !(ret->src->privateData = xmlopt->privateData.diskSrcNew()))
+        goto error;
+
     return ret;
 
  error:

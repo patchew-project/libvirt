@@ -921,8 +921,49 @@ qemuDomainDiskPrivateDispose(void *obj)
 {
     qemuDomainDiskPrivatePtr priv = obj;
 
-    qemuDomainSecretInfoFree(&priv->secinfo);
     qemuDomainSecretInfoFree(&priv->encinfo);
+}
+
+
+static virClassPtr qemuDomainDiskSrcPrivateClass;
+static void qemuDomainDiskSrcPrivateDispose(void *obj);
+
+static int
+qemuDomainDiskSrcPrivateOnceInit(void)
+{
+    qemuDomainDiskSrcPrivateClass = virClassNew(virClassForObject(),
+                                                "qemuDomainDiskSrcPrivate",
+                                                sizeof(qemuDomainDiskSrcPrivate),
+                                                qemuDomainDiskSrcPrivateDispose);
+    if (!qemuDomainDiskSrcPrivateClass)
+        return -1;
+    else
+        return 0;
+}
+
+VIR_ONCE_GLOBAL_INIT(qemuDomainDiskSrcPrivate)
+
+static virObjectPtr
+qemuDomainDiskSrcPrivateNew(void)
+{
+    qemuDomainDiskSrcPrivatePtr priv;
+
+    if (qemuDomainDiskSrcPrivateInitialize() < 0)
+        return NULL;
+
+    if (!(priv = virObjectNew(qemuDomainDiskSrcPrivateClass)))
+        return NULL;
+
+    return (virObjectPtr) priv;
+}
+
+
+static void
+qemuDomainDiskSrcPrivateDispose(void *obj)
+{
+    qemuDomainDiskSrcPrivatePtr priv = obj;
+
+    qemuDomainSecretInfoFree(&priv->secinfo);
 }
 
 
@@ -1294,12 +1335,11 @@ qemuDomainSecretInfoTLSNew(virConnectPtr conn,
 void
 qemuDomainSecretDiskDestroy(virDomainDiskDefPtr disk)
 {
-    qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
-
-    if (!diskPriv || !diskPriv->secinfo)
+    qemuDomainDiskSrcPrivatePtr diskSrcPriv = QEMU_DOMAIN_DISK_SRC_PRIVATE(disk->src);
+    if (!diskSrcPriv || !diskSrcPriv->secinfo)
         return;
 
-    qemuDomainSecretInfoFree(&diskPriv->secinfo);
+    qemuDomainSecretInfoFree(&diskSrcPriv->secinfo);
 }
 
 
@@ -1345,6 +1385,7 @@ qemuDomainSecretDiskPrepare(virConnectPtr conn,
 {
     virStorageSourcePtr src = disk->src;
     qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+    qemuDomainDiskSrcPrivatePtr diskSrcPriv = QEMU_DOMAIN_DISK_SRC_PRIVATE(disk->src);
 
     if (qemuDomainSecretDiskCapable(src)) {
         virSecretUsageType usageType = VIR_SECRET_USAGE_TYPE_ISCSI;
@@ -1352,7 +1393,7 @@ qemuDomainSecretDiskPrepare(virConnectPtr conn,
         if (src->protocol == VIR_STORAGE_NET_PROTOCOL_RBD)
             usageType = VIR_SECRET_USAGE_TYPE_CEPH;
 
-        if (!(diskPriv->secinfo =
+        if (!(diskSrcPriv->secinfo =
               qemuDomainSecretInfoNew(conn, priv, disk->info.alias,
                                       usageType, src->auth->username,
                                       &src->auth->seclookupdef, false)))
@@ -2276,6 +2317,7 @@ virDomainXMLPrivateDataCallbacks virQEMUDriverPrivateDataCallbacks = {
     .alloc = qemuDomainObjPrivateAlloc,
     .free = qemuDomainObjPrivateFree,
     .diskNew = qemuDomainDiskPrivateNew,
+    .diskSrcNew = qemuDomainDiskSrcPrivateNew,
     .vcpuNew = qemuDomainVcpuPrivateNew,
     .hostdevNew = qemuDomainHostdevPrivateNew,
     .chrSourceNew = qemuDomainChrSourcePrivateNew,
