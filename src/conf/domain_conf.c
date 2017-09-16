@@ -8107,6 +8107,29 @@ virDomainDiskSourcePoolDefParse(xmlNodePtr node,
 }
 
 
+static int
+virDomainDiskSourceAuthParse(xmlNodePtr node,
+                             virStorageAuthDefPtr *authdefsrc)
+{
+    xmlNodePtr child;
+    virStorageAuthDefPtr authdef;
+
+    for (child = node->children; child; child = child->next) {
+        if (child->type == XML_ELEMENT_NODE &&
+            virXMLNodeNameEqual(child, "auth")) {
+
+            if (!(authdef = virStorageAuthDefParse(node->doc, child)))
+                return -1;
+
+            *authdefsrc = authdef;
+            return 0;
+        }
+    }
+
+    return 0;
+}
+
+
 int
 virDomainDiskSourceParse(xmlNodePtr node,
                          xmlXPathContextPtr ctxt,
@@ -8192,6 +8215,9 @@ virDomainDiskSourceParse(xmlNodePtr node,
                        virStorageTypeToString(src->type));
         goto cleanup;
     }
+
+    if (virDomainDiskSourceAuthParse(node, &src->auth) < 0)
+        goto cleanup;
 
     /* People sometimes pass a bogus '' source path when they mean to omit the
      * source element completely (e.g. CDROM without media). This is just a
@@ -8770,6 +8796,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
     char *serial = NULL;
     char *startupPolicy = NULL;
     virStorageAuthDefPtr authdef = NULL;
+    bool diskAuth = false;
     char *tray = NULL;
     char *removable = NULL;
     char *logical_block_size = NULL;
@@ -8818,6 +8845,16 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
 
             if (virDomainDiskSourceParse(cur, ctxt, def->src) < 0)
                 goto error;
+
+            /* If we've already found an <auth> as a child of <disk> and
+             * we find one as a child of <source>, then force an error to
+             * avoid ambiguity */
+            if (diskAuth && def->src->auth) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("an <auth> definition already found for "
+                                 "the <disk> definition"));
+                goto error;
+            }
 
             source = true;
 
@@ -8874,10 +8911,20 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                    !(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE)) {
             if (virDomainDiskDefMirrorParse(def, cur, ctxt) < 0)
                 goto error;
-        } else if (!authdef &&
+        } else if (!diskAuth &&
                    virXMLNodeNameEqual(cur, "auth")) {
+            diskAuth = true;
             if (!(authdef = virStorageAuthDefParse(node->doc, cur)))
                 goto error;
+
+            /* If we've already parsed <source> and found an <auth> child,
+             * then generate an error to avoid ambiguity */
+            if (source && def->src->auth) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("an <auth> definition already found for "
+                                 "disk source"));
+                goto error;
+            }
         } else if (virXMLNodeNameEqual(cur, "iotune")) {
             if (virDomainDiskDefIotuneParse(def, ctxt) < 0)
                 goto error;
@@ -9111,8 +9158,8 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
 
     def->dst = target;
     target = NULL;
-    def->src->auth = authdef;
-    authdef = NULL;
+    if (diskAuth)
+        VIR_STEAL_PTR(def->src->auth, authdef);
     def->src->encryption = encryption;
     encryption = NULL;
     def->domain_name = domain_name;
