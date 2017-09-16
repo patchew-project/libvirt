@@ -1648,6 +1648,7 @@ mymain(void)
     DO_TEST("encrypted-disk-usage", NONE);
 # ifdef HAVE_GNUTLS_CIPHER_ENCRYPT
     DO_TEST("luks-disks", QEMU_CAPS_OBJECT_SECRET);
+    DO_TEST("luks-disks-source", QEMU_CAPS_OBJECT_SECRET);
 # else
     DO_TEST_FAILURE("luks-disks", QEMU_CAPS_OBJECT_SECRET);
 # endif

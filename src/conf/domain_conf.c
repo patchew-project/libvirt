@@ -21888,6 +21888,14 @@ virDomainDiskSourceFormatInternal(virBufferPtr buf,
                 goto error;
         }
 
+        /* For encryption formatting that's not the old/default QCOW
+         * format, let's format the <encryption> in source. This started
+         * with LUKS encryption */
+        if (src->encryption &&
+            src->encryption->format >= VIR_STORAGE_ENCRYPTION_FORMAT_LUKS &&
+            virStorageEncryptionFormat(&childBuf, src->encryption) < 0)
+            return -1;
+
         if (virXMLFormatElement(buf, "source", &attrBuf, &childBuf) < 0)
             goto error;
     }
@@ -22207,7 +22215,11 @@ virDomainDiskDefFormat(virBufferPtr buf,
     virBufferEscapeString(buf, "<wwn>%s</wwn>\n", def->wwn);
     virBufferEscapeString(buf, "<vendor>%s</vendor>\n", def->vendor);
     virBufferEscapeString(buf, "<product>%s</product>\n", def->product);
+
+    /* Only for the older QCOW encryption - format the <encryption>
+     * as a child of <disk>. Others will now format as child of <source> */
     if (def->src->encryption &&
+        def->src->encryption->format == VIR_STORAGE_ENCRYPTION_FORMAT_QCOW &&
         virStorageEncryptionFormat(buf, def->src->encryption) < 0)
         return -1;
     virDomainDeviceInfoFormat(buf, &def->info,
