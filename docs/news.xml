@@ -36,6 +36,19 @@
           however, when writing out the XML the new format will be generated.
         </description>
       </change>
+      <change>
+        <summary>
+          conf: Move the encryption definition to disk source
+        </summary>
+        <description>
+          Rather than having the <code>encryption</code> element for the "luks"
+          encryption format be a child of the <code>disk</code> element move
+          to a child of a <code>source</code> element. Still recognize on input
+          the legacy child dependency; however, when writing out the XML the
+          new format will be generated. This does not apply to the legacy
+          "qcow" (or default) encryption format.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
