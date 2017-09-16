@@ -25,6 +25,17 @@
     <section title="New features">
     </section>
     <section title="Improvements">
+      <change>
+        <summary>
+          conf: Move the auth definition to disk source
+        </summary>
+        <description>
+          Rather than having the <code>auth</code> element be a child of the
+          <code>disk</code> element move to a child of a <code>source</code>
+          element. Still recognize on input the legacy child dependency;
+          however, when writing out the XML the new format will be generated.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
