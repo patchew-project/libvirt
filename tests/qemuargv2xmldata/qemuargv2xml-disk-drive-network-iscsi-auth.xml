@@ -16,11 +16,11 @@
     <emulator>/usr/bin/qemu-system-i686</emulator>
     <disk type='network' device='disk'>
       <driver name='qemu' type='raw'/>
-      <auth username='myname'>
-        <secret type='iscsi' usage='qemuargv2xml_usage'/>
-      </auth>
       <source protocol='iscsi' name='iqn.1992-01.com.example:storage/1'>
         <host name='example.org' port='6000'/>
+        <auth username='myname'>
+          <secret type='iscsi' usage='qemuargv2xml_usage'/>
+        </auth>
       </source>
       <target dev='vda' bus='virtio'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>

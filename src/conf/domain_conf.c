@@ -21829,6 +21829,16 @@ virDomainDiskSourceFormatInternal(virBufferPtr buf,
             goto error;
         }
 
+        /* Storage Source formatting will not carry through the blunder
+         * that disk source formatting had at one time to format the
+         * <auth> for a volume source type. The <auth> information is
+         * kept in the storage pool and would be overwritten anyway.
+         * So avoid formatting it for volumes. */
+        if (src->auth && src->type != VIR_STORAGE_TYPE_VOLUME) {
+            if (virStorageAuthDefFormat(&childBuf, src->auth) < 0)
+                goto error;
+        }
+
         if (virXMLFormatElement(buf, "source", &attrBuf, &childBuf) < 0)
             goto error;
     }
@@ -22012,11 +22022,6 @@ virDomainDiskDefFormat(virBufferPtr buf,
         virBufferAddLit(buf, "<driver");
         virBufferAddBuffer(buf, &driverBuf);
         virBufferAddLit(buf, "/>\n");
-    }
-
-    if (def->src->auth) {
-        if (virStorageAuthDefFormat(buf, def->src->auth) < 0)
-            return -1;
     }
 
     if (virDomainDiskSourceFormat(buf, def->src, def->startupPolicy,

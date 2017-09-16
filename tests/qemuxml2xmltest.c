@@ -468,9 +468,11 @@ mymain(void)
     DO_TEST("disk-drive-network-nbd-unix", NONE);
     DO_TEST("disk-drive-network-iscsi", NONE);
     DO_TEST("disk-drive-network-iscsi-auth", NONE);
+    DO_TEST("disk-drive-network-iscsi-source-auth", NONE);
     DO_TEST("disk-drive-network-gluster", NONE);
     DO_TEST("disk-drive-network-rbd", NONE);
     DO_TEST("disk-drive-network-rbd-auth", NONE);
+    DO_TEST("disk-drive-network-rbd-source-auth", NONE);
     DO_TEST("disk-drive-network-rbd-ipv6", NONE);
     DO_TEST("disk-drive-network-rbd-ceph-env", NONE);
     DO_TEST("disk-drive-network-sheepdog", NONE);
