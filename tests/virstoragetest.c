@@ -1577,6 +1577,21 @@ mymain(void)
                        "<source protocol='iscsi' name='iqn.2016-12.com.virttest:emulated-iscsi-noauth.target/6'>\n"
                        "  <host name='test.org' port='1234'/>\n"
                        "</source>\n");
+    TEST_BACKING_PARSE("json:{\"file\":{\"driver\":\"iscsi\","
+                                       "\"transport\":\"tcp\","
+                                       "\"portal\":\"test.org:1234\","
+                                       "\"target\":\"iqn.2016-12.com.virttest:emulated-iscsi-auth.target\","
+                                       "\"lun\":6,"
+                                       "\"user\":\"myname\","
+                                       "\"password-secret\":\"virtio-disk1-secret0\""
+                                      "}"
+                            "}",
+                       "<source protocol='iscsi' name='iqn.2016-12.com.virttest:emulated-iscsi-auth.target/6'>\n"
+                       "  <host name='test.org' port='1234'/>\n"
+                       "  <auth username='myname'>\n"
+                       "    <secret type='iscsi'/>\n"
+                       "  </auth>\n"
+                       "</source>\n");
     TEST_BACKING_PARSE("json:{\"file\":{\"driver\":\"sheepdog\","
                                        "\"vdi\":\"test\","
                                        "\"server\":{ \"type\":\"inet\","

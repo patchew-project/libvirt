@@ -2937,10 +2937,13 @@ virStorageSourceParseBackingJSONiSCSI(virStorageSourcePtr src,
     const char *transport = virJSONValueObjectGetString(json, "transport");
     const char *portal = virJSONValueObjectGetString(json, "portal");
     const char *target = virJSONValueObjectGetString(json, "target");
+    const char *user = virJSONValueObjectGetString(json, "user");
+    const char *secret = virJSONValueObjectGetString(json, "password-secret");
     const char *uri;
     char *port;
     unsigned int lun = 0;
     char *fulltarget = NULL;
+    virStorageAuthDefPtr authdef = NULL;
     int ret = -1;
 
     /* legacy URI based syntax passed via 'filename' option */
@@ -2993,10 +2996,37 @@ virStorageSourceParseBackingJSONiSCSI(virStorageSourcePtr src,
 
     VIR_STEAL_PTR(src->path, fulltarget);
 
+    if (user) {
+        if (!secret) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("missing 'password-secret' in iSCSI backing "
+                             "definition for user '%s'"), user);
+            goto cleanup;
+        }
+
+        /* formulate authdef for src->auth */
+        if (VIR_ALLOC(authdef) < 0)
+            goto cleanup;
+
+        if (VIR_STRDUP(authdef->username, user) < 0)
+            goto cleanup;
+
+        if (VIR_STRDUP(authdef->secrettype,
+                       virSecretUsageTypeToString(VIR_SECRET_USAGE_TYPE_ISCSI)) < 0)
+            goto cleanup;
+        src->auth = authdef;
+        authdef = NULL;
+
+        /* Cannot formulate a secretType (eg, usage or uuid) given
+         * what is provided.
+         */
+    }
+
     ret = 0;
 
  cleanup:
     VIR_FREE(fulltarget);
+    virStorageAuthDefFree(authdef);
     return ret;
 }
 
