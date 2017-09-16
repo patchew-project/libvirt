@@ -8135,6 +8135,29 @@ virDomainDiskSourceAuthParse(xmlNodePtr node,
 }
 
 
+static int
+virDomainDiskSourceEncryptionParse(xmlNodePtr node,
+                                   virStorageEncryptionPtr *encryptionsrc)
+{
+    xmlNodePtr child;
+    virStorageEncryptionPtr encryption = NULL;
+
+    for (child = node->children; child; child = child->next) {
+        if (child->type == XML_ELEMENT_NODE &&
+            virXMLNodeNameEqual(child, "encryption")) {
+
+            if (!(encryption = virStorageEncryptionParseNode(node->doc, child)))
+                return -1;
+
+            *encryptionsrc = encryption;
+            return 0;
+        }
+    }
+
+    return 0;
+}
+
+
 int
 virDomainDiskSourceParse(xmlNodePtr node,
                          xmlXPathContextPtr ctxt,
@@ -8222,6 +8245,9 @@ virDomainDiskSourceParse(xmlNodePtr node,
     }
 
     if (virDomainDiskSourceAuthParse(node, &src->auth) < 0)
+        goto cleanup;
+
+    if (virDomainDiskSourceEncryptionParse(node, &src->encryption) < 0)
         goto cleanup;
 
     /* People sometimes pass a bogus '' source path when they mean to omit the
@@ -8798,6 +8824,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
     char *bus = NULL;
     char *devaddr = NULL;
     virStorageEncryptionPtr encryption = NULL;
+    bool diskEncryption = false;
     char *serial = NULL;
     char *startupPolicy = NULL;
     virStorageAuthDefPtr authdef = NULL;
@@ -8857,6 +8884,15 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
             if (diskAuth && def->src->auth) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                                _("an <auth> definition already found for "
+                                 "the <disk> definition"));
+                goto error;
+            }
+
+            /* Similarly for <encryption> - it's a child of <source> too
+             * and we cannot find in both places */
+            if (diskEncryption && def->src->encryption) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("an <encryption> definition already found for "
                                  "the <disk> definition"));
                 goto error;
             }
@@ -8943,12 +8979,20 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                    virXMLNodeNameEqual(cur, "state")) {
             /* Legacy back-compat. Don't add any more attributes here */
             devaddr = virXMLPropString(cur, "devaddr");
-        } else if (encryption == NULL &&
+        } else if (!diskEncryption &&
                    virXMLNodeNameEqual(cur, "encryption")) {
-            encryption = virStorageEncryptionParseNode(node->doc,
-                                                       cur);
-            if (encryption == NULL)
+            diskEncryption = true;
+            if (!(encryption = virStorageEncryptionParseNode(node->doc, cur)))
                 goto error;
+
+            /* If we've already parsed <source> and found an <encryption> child,
+             * then generate an error to avoid ambiguity */
+            if (source && def->src->encryption) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("an <encryption> definition already found for "
+                                 "disk source"));
+                goto error;
+            }
         } else if (!serial &&
                    virXMLNodeNameEqual(cur, "serial")) {
             serial = (char *)xmlNodeGetContent(cur);
@@ -9165,8 +9209,8 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
     target = NULL;
     if (diskAuth)
         VIR_STEAL_PTR(def->src->auth, authdef);
-    def->src->encryption = encryption;
-    encryption = NULL;
+    if (diskEncryption)
+        VIR_STEAL_PTR(def->src->encryption, encryption);
     def->domain_name = domain_name;
     domain_name = NULL;
     def->serial = serial;

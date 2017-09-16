@@ -1652,6 +1652,7 @@ mymain(void)
     DO_TEST_FAILURE("luks-disks", QEMU_CAPS_OBJECT_SECRET);
 # endif
     DO_TEST_PARSE_ERROR("luks-disk-invalid", NONE);
+    DO_TEST_PARSE_ERROR("luks-disks-source-both", QEMU_CAPS_OBJECT_SECRET);
 
     DO_TEST("memtune", NONE);
     DO_TEST("memtune-unlimited", NONE);
