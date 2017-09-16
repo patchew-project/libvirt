@@ -443,10 +443,16 @@ qemuDomainAttachVirtioDiskDevice(virConnectPtr conn,
         VIR_WARN("Unable to remove drive %s (%s) after failed "
                  "qemuMonitorAddDevice", drivealias, drivestr);
     }
-    if (secobjAdded)
+    if (secobjAdded) {
         ignore_value(qemuMonitorDelObject(priv->mon, secinfo->s.aes.alias));
-    if (encobjAdded)
+        qemuDomainObjDiskSecretObjectAliasEntryRemove(priv,
+                                                      secinfo->s.aes.alias);
+    }
+    if (encobjAdded) {
         ignore_value(qemuMonitorDelObject(priv->mon, encinfo->s.aes.alias));
+        qemuDomainObjDiskSecretObjectAliasEntryRemove(priv,
+                                                      encinfo->s.aes.alias);
+    }
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         releaseaddr = false;
     virErrorRestore(&orig_err);
@@ -728,10 +734,16 @@ qemuDomainAttachSCSIDisk(virConnectPtr conn,
         VIR_WARN("Unable to remove drive %s (%s) after failed "
                  "qemuMonitorAddDevice", drivealias, drivestr);
     }
-    if (secobjAdded)
+    if (secobjAdded) {
         ignore_value(qemuMonitorDelObject(priv->mon, secinfo->s.aes.alias));
-    if (encobjAdded)
+        qemuDomainObjDiskSecretObjectAliasEntryRemove(priv,
+                                                      secinfo->s.aes.alias);
+    }
+    if (encobjAdded) {
         ignore_value(qemuMonitorDelObject(priv->mon, encinfo->s.aes.alias));
+        qemuDomainObjDiskSecretObjectAliasEntryRemove(priv,
+                                                      encinfo->s.aes.alias);
+    }
     ignore_value(qemuDomainObjExitMonitor(driver, vm));
     virErrorRestore(&orig_err);
 
@@ -3669,13 +3681,18 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
     VIR_FREE(drivestr);
 
     /* If it fails, then so be it - it was a best shot */
-    if (objAlias)
+    if (objAlias) {
         ignore_value(qemuMonitorDelObject(priv->mon, objAlias));
+        qemuDomainObjDiskSecretObjectAliasEntryRemove(priv, objAlias);
+    }
+
     VIR_FREE(objAlias);
 
     /* If it fails, then so be it - it was a best shot */
-    if (encAlias)
+    if (encAlias) {
         ignore_value(qemuMonitorDelObject(priv->mon, encAlias));
+        qemuDomainObjDiskSecretObjectAliasEntryRemove(priv, encAlias);
+    }
     VIR_FREE(encAlias);
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)

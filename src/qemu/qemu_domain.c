@@ -43,6 +43,7 @@
 #include "domain_event.h"
 #include "virtime.h"
 #include "virnetdevopenvswitch.h"
+#include "virsecret.h"
 #include "virstoragefile.h"
 #include "virstring.h"
 #include "virthreadjob.h"
@@ -122,6 +123,15 @@ struct _qemuDomainLogContext {
     char *path;
     virLogManagerPtr manager;
 };
+
+
+typedef struct _qemuDomainDiskSecretObjectAliasEntry qemuDomainDiskSecretObjectAliasEntry;
+typedef qemuDomainDiskSecretObjectAliasEntry *qemuDomainDiskSecretObjectAliasEntryPtr;
+struct _qemuDomainDiskSecretObjectAliasEntry {
+    virSecretUsageType usageType;
+    virSecretLookupTypeDef seclookupdef;
+};
+
 
 static virClassPtr qemuDomainLogContextClass;
 static virClassPtr qemuDomainSaveCookieClass;
@@ -623,6 +633,255 @@ qemuDomainJobInfoToParams(qemuDomainJobInfoPtr jobInfo,
  error:
     virTypedParamsFree(par, npar);
     return -1;
+}
+
+
+/* Free memory used by an entry */
+static void
+qemuDomainObjDiskSecretObjectAliasEntryFree(void *payload,
+                                            const void *name ATTRIBUTE_UNUSED)
+{
+    qemuDomainDiskSecretObjectAliasEntryPtr entry = payload;
+
+    if (!entry)
+        return;
+
+    virSecretLookupDefClear(&entry->seclookupdef);
+}
+
+
+/* qemuDomainObjDiskSecretObjectAliasEntryInsert:
+ * @priv: Pointer to qemuDomainPrivateData
+ * @objalias: Alias used to create the Disk Secret object
+ * @usageType: Secret usage type
+ * @seclookupdef: Secret lookup def use to create the secret object
+ *
+ * Using the provided @objalias, create or update the entry in the
+ * @priv->diskSecretObjectAlias hash table with the provided
+ * @usageType and @seclookupdef used to create the disk secret object.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+static int
+qemuDomainObjDiskSecretObjectAliasEntryInsert(qemuDomainObjPrivatePtr priv,
+                                              const char *objalias,
+                                              virSecretUsageType usageType,
+                                              virSecretLookupTypeDefPtr seclookupdef)
+{
+    qemuDomainDiskSecretObjectAliasEntryPtr entry = NULL;
+
+    if ((entry = virHashLookup(priv->diskSecretObjectAlias, objalias))) {
+        /* Replace the previous */
+        virSecretLookupDefClear(&entry->seclookupdef);
+    } else {
+        if (VIR_ALLOC(entry) < 0)
+            return -1;
+
+        if (virHashAddEntry(priv->diskSecretObjectAlias, objalias, entry) < 0) {
+            VIR_FREE(entry);
+            return -1;
+        }
+    }
+    entry->usageType = usageType;
+    virSecretLookupDefCopy(&entry->seclookupdef, seclookupdef);
+
+    return 0;
+}
+
+
+/* qemuDomainObjDiskSecretObjectAliasEntryLookup:
+ * @priv: Pointer to qemuDomainPrivateData
+ * @alias: Alias used to create the Disk Secret object
+ * @usageType: Secret usage type
+ * @seclookupdef: Secret lookup def use to create the secret object
+ *
+ * Using the provided @alias, lookup the entry in the
+ * @priv->diskSecretObjectAlias hash table. If found fill in
+ * @usageType and @seclookupdef.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+static int ATTRIBUTE_UNUSED
+qemuDomainObjDiskSecretObjectAliasEntryLookup(qemuDomainObjPrivatePtr priv,
+                                              const char *objalias,
+                                              virSecretUsageType *usageType,
+                                              virSecretLookupTypeDefPtr seclookupdef)
+{
+    qemuDomainDiskSecretObjectAliasEntryPtr entry = NULL;
+
+    if (!(entry = virHashLookup(priv->diskSecretObjectAlias, objalias))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("cannot find disk secret object alias '%s'"),
+                       objalias);
+        return -1;
+    }
+
+    *usageType = entry->usageType;
+    virSecretLookupDefCopy(seclookupdef, &entry->seclookupdef);
+    return 0;
+}
+
+
+/* qemuDomainObjDiskSecretObjectAliasEntryRemove:
+ * @priv: Pointer to qemuDomainPrivateData
+ * @alias: Alias used to create the Disk Secret object
+ *
+ * Using the provided @alias, remove the entry in the
+ * @priv->diskSecretObjectAlias hash table.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+qemuDomainObjDiskSecretObjectAliasEntryRemove(qemuDomainObjPrivatePtr priv,
+                                              const char *objalias)
+{
+    qemuDomainDiskSecretObjectAliasEntryPtr entry = NULL;
+
+    if (!(entry = virHashLookup(priv->diskSecretObjectAlias, objalias))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("cannot find disk secret object alias '%s'"),
+                       objalias);
+        return -1;
+    }
+
+    ignore_value(virHashRemoveEntry(priv->diskSecretObjectAlias, objalias));
+
+    return 0;
+}
+
+
+/* virHashForEach callback to write out each entry */
+static int
+qemuDomainObjDiskSecretObjectAliasEntryFormat(void *payload,
+                                              const void *name,
+                                              void *opaque)
+{
+    qemuDomainDiskSecretObjectAliasEntryPtr entry = payload;
+    const char *objalias = name;
+    virBufferPtr buf = opaque;
+    const char *secrettype = virSecretUsageTypeToString(entry->usageType);
+
+    virBufferAsprintf(buf, "<diskObject alias='%s'>\n", objalias);
+    virBufferAdjustIndent(buf, 2);
+    virSecretLookupFormatSecret(buf, secrettype, &entry->seclookupdef);
+    virBufferAdjustIndent(buf, -2);
+    virBufferAddLit(buf, "</diskObject>\n");
+    return 0;
+}
+
+
+/* qemuDomainObjPrivateXMLFormatDiskSecretObjectAlias:
+ * @buf: data buffer to write into
+ * @priv: Pointer to qemuDomainPrivateData
+ *
+ * Format the table to the domain private XML file - if there's
+ * any entries
+ */
+static void
+qemuDomainObjPrivateXMLFormatDiskSecretObjectAlias(virBufferPtr buf,
+                                                   qemuDomainObjPrivatePtr priv)
+{
+    if (virHashSize(priv->diskSecretObjectAlias) <= 0)
+        return;
+
+    virBufferAddLit(buf, "<diskSecretObjectAlias>\n");
+    virBufferAdjustIndent(buf, 2);
+    virHashForEach(priv->diskSecretObjectAlias,
+                   qemuDomainObjDiskSecretObjectAliasEntryFormat, buf);
+    virBufferAdjustIndent(buf, -2);
+    virBufferAddLit(buf, "</diskSecretObjectAlias>\n");
+}
+
+
+static int
+qemuDomainObjPrivateXMLParseDiskObject(xmlXPathContextPtr ctxt,
+                                       xmlNodePtr node,
+                                       qemuDomainObjPrivatePtr priv)
+{
+    int ret = -1;
+    char *objalias = NULL;
+    xmlNodePtr saved = ctxt->node;
+    xmlNodePtr secretnode = NULL;
+    const char *secrettype = NULL;
+    virSecretUsageType usageType;
+    virSecretLookupTypeDef seclookupdef = { 0 };
+
+    ctxt->node = node;
+
+    if (!(objalias = virXMLPropString(node, "alias"))) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("missing 'alias' property for diskObject"));
+        return -1;
+    }
+
+    if (!(secretnode = virXPathNode("./secret[1]", ctxt))) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("missing <secret> element"));
+        goto cleanup;
+    }
+
+    if (virSecretLookupParseSecret(secretnode, &seclookupdef) < 0)
+        goto cleanup;
+
+    if (!(secrettype = virXMLPropString(secretnode, "type"))) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("missing secret type attribute"));
+        goto cleanup;
+    }
+
+    if ((usageType = virSecretUsageTypeFromString(secrettype)) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("invalid secret type %s"), secrettype);
+        goto cleanup;
+    }
+
+    if (qemuDomainObjDiskSecretObjectAliasEntryInsert(priv, objalias,
+                                                      usageType,
+                                                      &seclookupdef) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(objalias);
+    virSecretLookupDefClear(&seclookupdef);
+    ctxt->node = saved;
+    return ret;
+
+}
+
+
+/* qemuDomainObjPrivateXMLParseDiskSecretObjectAlias:
+ * @ctx: xml context
+ * @priv: Pointer to qemuDomainPrivateData
+ *
+ * Parse the domain object xml looking for disk secret object entries.
+ * If found, add them into the hash table.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+static int
+qemuDomainObjPrivateXMLParseDiskSecretObjectAlias(xmlXPathContextPtr ctxt,
+                                                  qemuDomainObjPrivatePtr priv)
+{
+    int ret = -1;
+    int n;
+    size_t i;
+    xmlNodePtr *nodes = NULL;
+
+    if ((n = virXPathNodeSet("./diskSecretObjectAlias/diskObject",
+                             ctxt, &nodes)) < 0)
+        return -1;
+
+    for (i = 0; i < n; i++) {
+        if (qemuDomainObjPrivateXMLParseDiskObject(ctxt, nodes[i], priv) < 0)
+            goto cleanup;
+    }
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(nodes);
+    return ret;
 }
 
 
@@ -1388,6 +1647,14 @@ qemuDomainSecretDiskPrepare(virConnectPtr conn,
                                       usageType, src->auth->username,
                                       &src->auth->seclookupdef, false)))
               return -1;
+
+        if (diskSrcPriv->secinfo->type == VIR_DOMAIN_SECRET_INFO_TYPE_AES) {
+            if (qemuDomainObjDiskSecretObjectAliasEntryInsert(priv,
+                                                              diskSrcPriv->secinfo->s.aes.alias,
+                                                              usageType,
+                                                              &src->auth->seclookupdef) < 0)
+                return -1;
+        }
     }
 
     if (qemuDomainDiskHasEncryptionSecret(src)) {
@@ -1397,6 +1664,12 @@ qemuDomainSecretDiskPrepare(virConnectPtr conn,
                                       &src->encryption->secrets[0]->seclookupdef,
                                       true)))
               return -1;
+
+        if (qemuDomainObjDiskSecretObjectAliasEntryInsert(priv,
+                                                          diskSrcPriv->encinfo->s.aes.alias,
+                                                          VIR_SECRET_USAGE_TYPE_VOLUME,
+                                                          &src->encryption->secrets[0]->seclookupdef))
+            return -1;
     }
 
     return 0;
@@ -1452,6 +1725,14 @@ qemuDomainSecretHostdevPrepare(virConnectPtr conn,
                                           &iscsisrc->auth->seclookupdef,
                                           false)))
                 return -1;
+
+            if (hostdevPriv->secinfo->type == VIR_DOMAIN_SECRET_INFO_TYPE_AES) {
+                if (qemuDomainObjDiskSecretObjectAliasEntryInsert(priv,
+                                                                  hostdevPriv->secinfo->s.aes.alias,
+                                                                  VIR_SECRET_USAGE_TYPE_ISCSI,
+                                                                  &iscsisrc->auth->seclookupdef) < 0)
+                    return -1;
+            }
         }
     }
 
@@ -1742,12 +2023,17 @@ qemuDomainObjPrivateAlloc(void *opaque)
     if (!(priv->devs = virChrdevAlloc()))
         goto error;
 
+    if (!(priv->diskSecretObjectAlias =
+          virHashCreate(15, qemuDomainObjDiskSecretObjectAliasEntryFree)))
+        goto error;
+
     priv->migMaxBandwidth = QEMU_DOMAIN_MIG_BANDWIDTH_MAX;
     priv->driver = opaque;
 
     return priv;
 
  error:
+    virChrdevFree(priv->devs);
     VIR_FREE(priv);
     return NULL;
 }
@@ -1794,6 +2080,8 @@ qemuDomainObjPrivateFree(void *data)
     qemuDomainMasterKeyFree(priv);
 
     virCPUDefFree(priv->origCPU);
+
+    virHashFree(priv->diskSecretObjectAlias);
 
     VIR_FREE(priv);
 }
@@ -1980,6 +2268,8 @@ qemuDomainObjPrivateXMLFormat(virBufferPtr buf,
 
     if (priv->chardevStdioLogd)
         virBufferAddLit(buf, "<chardevStdioLogd/>\n");
+
+    qemuDomainObjPrivateXMLFormatDiskSecretObjectAlias(buf, priv);
 
     return 0;
 }
@@ -2286,6 +2576,9 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
 
     priv->chardevStdioLogd = virXPathBoolean("boolean(./chardevStdioLogd)",
                                              ctxt) == 1;
+
+    if (qemuDomainObjPrivateXMLParseDiskSecretObjectAlias(ctxt, priv) < 0)
+        goto error;
 
     return 0;
 

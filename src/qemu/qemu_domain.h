@@ -321,6 +321,8 @@ struct _qemuDomainObjPrivate {
 
     /* If true virtlogd is used as stdio handler for character devices. */
     bool chardevStdioLogd;
+
+    virHashTablePtr diskSecretObjectAlias;
 };
 
 # define QEMU_DOMAIN_PRIVATE(vm)	\
@@ -796,6 +798,10 @@ int qemuDomainSetPrivatePaths(virQEMUDriverPtr driver,
 void qemuDomainClearPrivatePaths(virDomainObjPtr vm);
 
 virDomainDiskDefPtr qemuDomainDiskByName(virDomainDefPtr def, const char *name);
+
+int
+qemuDomainObjDiskSecretObjectAliasEntryRemove(qemuDomainObjPrivatePtr priv,
+                                              const char *objalias);
 
 char *qemuDomainGetMasterKeyFilePath(const char *libDir);
 
