@@ -1615,14 +1615,10 @@ udevHandleOneDevice(struct udev_device *device)
 }
 
 
-static void
-udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
-                        int fd,
-                        int events ATTRIBUTE_UNUSED,
-                        void *data ATTRIBUTE_UNUSED)
+static bool
+udevEventCheckMonitorFD(struct udev_monitor *udev_monitor,
+                        int fd)
 {
-    struct udev_device *device = NULL;
-    struct udev_monitor *udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
     int udev_fd = -1;
 
     udev_fd = udev_monitor_get_fd(udev_monitor);
@@ -1641,21 +1637,39 @@ udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
         virEventRemoveHandle(priv->watch);
         priv->watch = -1;
 
-        goto cleanup;
+        return false;
+    }
+
+    return true;
+}
+
+
+static void
+udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
+                        int fd,
+                        int events ATTRIBUTE_UNUSED,
+                        void *data ATTRIBUTE_UNUSED)
+{
+    struct udev_device *device = NULL;
+    struct udev_monitor *udev_monitor = NULL;
+
+    udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
+
+    if (!udevEventCheckMonitorFD(udev_monitor, fd)) {
+        nodeDeviceUnlock();
+        return;
     }
 
     device = udev_monitor_receive_device(udev_monitor);
-    if (device == NULL) {
+
+    if (!device) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("udev_monitor_receive_device returned NULL"));
-        goto cleanup;
+        return;
     }
 
     udevHandleOneDevice(device);
-
- cleanup:
     udev_device_unref(device);
-    return;
 }
 
 
