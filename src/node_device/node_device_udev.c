@@ -1696,6 +1696,7 @@ udevEventCheckMonitorFD(struct udev_monitor *udev_monitor,
 static void
 udevEventHandleThread(void *opaque)
 {
+    udevPrivate *priv = NULL;
     udevEventThreadDataPtr privateData = opaque;
     struct udev_device *device = NULL;
     struct udev_monitor *udev_monitor = NULL;
@@ -1715,6 +1716,7 @@ udevEventHandleThread(void *opaque)
         virMutexUnlock(&privateData->lock);
 
         nodeDeviceLock();
+        priv = driver->privateData;
         udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
 
         if (!udevEventCheckMonitorFD(udev_monitor, privateData->monitor_fd)) {
@@ -1724,6 +1726,9 @@ udevEventHandleThread(void *opaque)
 
         device = udev_monitor_receive_device(udev_monitor);
         nodeDeviceUnlock();
+
+        /* Re-enable polling for new events on the @udev_monitor */
+        virEventUpdateHandle(priv->watch, VIR_EVENT_HANDLE_READABLE);
 
         if (!device) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -1750,10 +1755,12 @@ udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
                         int events ATTRIBUTE_UNUSED,
                         void *opaque)
 {
+    udevPrivate *priv = NULL;
     struct udev_monitor *udev_monitor = NULL;
     udevEventThreadDataPtr threadData = opaque;
 
     nodeDeviceLock();
+    priv = driver->privateData;
     udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
 
     if (!udevEventCheckMonitorFD(udev_monitor, fd)) {
@@ -1771,6 +1778,16 @@ udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
     threadData->nevents++;
     virCondSignal(&threadData->threadCond);
     virMutexUnlock(&threadData->lock);
+
+    /* Due to scheduling, the eventloop might poll the udev monitor before the
+     * handler thread actually removes the data from the socket, thus causing it
+     * to spam errors about data not being ready yet, because
+     * udevEventHandleCallback would be invoked multiple times incrementing the
+     * counter of events queuing for a single event.
+     * Therefore we need to disable polling on the fd until the thread actually
+     * removes the data from the socket.
+     */
+    virEventUpdateHandle(priv->watch, 0);
 }
 
 
