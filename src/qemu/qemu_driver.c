@@ -13019,7 +13019,7 @@ qemuConnectBaselineCPU(virConnectPtr conn ATTRIBUTE_UNUSED,
         virCPUExpandFeatures(cpus[0]->arch, cpu) < 0)
         goto cleanup;
 
-    cpustr = virCPUDefFormat(cpu, NULL, false);
+    cpustr = virCPUDefFormat(cpu, NULL);
 
  cleanup:
     virCPUDefListFree(cpus);
