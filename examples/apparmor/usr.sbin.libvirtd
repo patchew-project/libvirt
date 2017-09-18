@@ -37,6 +37,10 @@
   network packet dgram,
   network packet raw,
 
+  # Support finer-grained ptrace checks, which were enabled in kernel 4.13
+  ptrace trace peer=/usr/sbin/libvirtd,
+  ptrace trace peer=unconfined,
+
   # Very lenient profile for libvirtd since we want to first focus on confining
   # the guests. Guests will have a very restricted profile.
   / r,
