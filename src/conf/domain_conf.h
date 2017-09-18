@@ -2857,7 +2857,6 @@ typedef enum {
 typedef enum {
     VIR_DOMAIN_DEF_FORMAT_SECURE          = 1 << 0,
     VIR_DOMAIN_DEF_FORMAT_INACTIVE        = 1 << 1,
-    VIR_DOMAIN_DEF_FORMAT_UPDATE_CPU      = 1 << 2,
     VIR_DOMAIN_DEF_FORMAT_MIGRATABLE      = 1 << 3,
     /* format internal domain status information */
     VIR_DOMAIN_DEF_FORMAT_STATUS          = 1 << 4,
