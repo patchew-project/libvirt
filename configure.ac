@@ -630,12 +630,16 @@ fi
 dnl
 dnl check for kernel headers required by devlink
 dnl
+dnl kernel 4.8 introduced DEVLINK_CMD_ESWITCH_MODE_GET, but that was
+dnl later changed in kernel 4.11 to be just DEVLINK_CMD_ESWITCH_GET, so
+dnl for "completeness" let's allow HAVE_DECL_DEVLINK to be define if
+dnl either is defined.
 if test "$with_linux" = "yes"; then
     AC_CHECK_HEADERS([linux/devlink.h])
-    AC_CHECK_DECLS([DEVLINK_GENL_VERSION, DEVLINK_GENL_NAME, DEVLINK_ATTR_MAX, DEVLINK_CMD_ESWITCH_GET, DEVLINK_ATTR_BUS_NAME, DEVLINK_ATTR_DEV_NAME, DEVLINK_ATTR_ESWITCH_MODE, DEVLINK_ESWITCH_MODE_SWITCHDEV],
+    AC_CHECK_DECLS([DEVLINK_CMD_ESWITCH_GET, DEVLINK_CMD_ESWITCH_MODE_GET],
                    [AC_DEFINE([HAVE_DECL_DEVLINK],
                               [1],
-                              [whether devlink declarations are available])],
+                              [whether devlink CMD_ESWITCH_GET is available])],
                    [],
                    [[#include <linux/devlink.h>]])
 fi
