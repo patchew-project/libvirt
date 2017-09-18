@@ -3216,6 +3216,25 @@ qemuOpenFileAs(uid_t fallback_uid, gid_t fallback_gid,
     goto cleanup;
 }
 
+
+static int
+qemuFileWrapperFDClose(virDomainObjPtr vm,
+                       virFileWrapperFdPtr fd)
+{
+    int ret;
+
+    /* virFileWrapperFd uses iohelper to write data onto disk.
+     * However, iohelper calls fdatasync() which may take ages to
+     * finish. Therefore, we shouldn't be waiting with the domain
+     * object locked. */
+
+    virObjectUnlock(vm);
+    ret = virFileWrapperFdClose(fd);
+    virObjectLock(vm);
+    return ret;
+}
+
+
 /* Helper function to execute a migration to file with a correct save header
  * the caller needs to make sure that the processors are stopped and do all other
  * actions besides saving memory */
@@ -3276,7 +3295,7 @@ qemuDomainSaveMemory(virQEMUDriverPtr driver,
         goto cleanup;
     }
 
-    if (virFileWrapperFdClose(wrapperFd) < 0)
+    if (qemuFileWrapperFDClose(vm, wrapperFd) < 0)
         goto cleanup;
 
     if ((fd = qemuOpenFile(driver, vm, path, O_WRONLY, NULL, NULL)) < 0 ||
@@ -3827,7 +3846,7 @@ doCoreDump(virQEMUDriverPtr driver,
                              path);
         goto cleanup;
     }
-    if (virFileWrapperFdClose(wrapperFd) < 0)
+    if (qemuFileWrapperFDClose(vm, wrapperFd) < 0)
         goto cleanup;
 
     ret = 0;
@@ -6687,7 +6706,7 @@ qemuDomainRestoreFlags(virConnectPtr conn,
 
     ret = qemuDomainSaveImageStartVM(conn, driver, vm, &fd, data, path,
                                      false, QEMU_ASYNC_JOB_START);
-    if (virFileWrapperFdClose(wrapperFd) < 0)
+    if (qemuFileWrapperFDClose(vm, wrapperFd) < 0)
         VIR_WARN("Failed to close %s", path);
 
     qemuProcessEndJob(driver, vm);
@@ -6962,7 +6981,7 @@ qemuDomainObjRestore(virConnectPtr conn,
 
     ret = qemuDomainSaveImageStartVM(conn, driver, vm, &fd, data, path,
                                      start_paused, asyncJob);
-    if (virFileWrapperFdClose(wrapperFd) < 0)
+    if (qemuFileWrapperFDClose(vm, wrapperFd) < 0)
         VIR_WARN("Failed to close %s", path);
 
  cleanup:
