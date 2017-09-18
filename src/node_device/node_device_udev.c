@@ -1646,13 +1646,11 @@ udevEventCheckMonitorFD(struct udev_monitor *udev_monitor,
 
 
 static void
-udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
-                        int fd,
-                        int events ATTRIBUTE_UNUSED,
-                        void *data ATTRIBUTE_UNUSED)
+udevEventHandleThread(void *opaque)
 {
     struct udev_device *device = NULL;
     struct udev_monitor *udev_monitor = NULL;
+    int fd = (intptr_t) opaque;
 
     nodeDeviceLock();
     udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
@@ -1673,6 +1671,27 @@ udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
 
     udevHandleOneDevice(device);
     udev_device_unref(device);
+}
+
+
+static void
+udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
+                        int fd,
+                        int events ATTRIBUTE_UNUSED,
+                        void *data ATTRIBUTE_UNUSED)
+{
+    struct udev_monitor *udev_monitor = NULL;
+
+    nodeDeviceLock();
+    udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
+
+    if (!udevEventCheckMonitorFD(udev_monitor, fd)) {
+        nodeDeviceUnlock();
+        return;
+    }
+    nodeDeviceUnlock();
+
+    udevEventHandleThread((void *)(intptr_t) fd);
 }
 
 
