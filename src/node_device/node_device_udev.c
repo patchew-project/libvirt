@@ -1615,6 +1615,7 @@ udevHandleOneDevice(struct udev_device *device)
 }
 
 
+/* the caller must be holding the driver lock prior to calling this function */
 static bool
 udevEventCheckMonitorFD(struct udev_monitor *udev_monitor,
                         int fd)
@@ -1653,6 +1654,7 @@ udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
     struct udev_device *device = NULL;
     struct udev_monitor *udev_monitor = NULL;
 
+    nodeDeviceLock();
     udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
 
     if (!udevEventCheckMonitorFD(udev_monitor, fd)) {
@@ -1661,6 +1663,7 @@ udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
     }
 
     device = udev_monitor_receive_device(udev_monitor);
+    nodeDeviceUnlock();
 
     if (!device) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
