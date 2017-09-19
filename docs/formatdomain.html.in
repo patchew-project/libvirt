@@ -1478,7 +1478,9 @@
 
               <dt><code>passthrough</code></dt>
               <dd>The real CPU cache data reported by the host CPU will be
-                passed through to the virtual CPU.</dd>
+                passed through to the virtual CPU.  Using this mode is not
+                recommended unless the domain CPU and NUMA topology is exactly
+                the same as the host CPU and NUMA topology.</dd>
 
               <dt><code>disable</code></dt>
               <dd>The virtual CPU will report no CPU cache of the specified
