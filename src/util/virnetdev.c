@@ -3245,7 +3245,12 @@ virNetDevSwitchdevFeature(const char *ifname,
     if (!(gmsgh = virNetDevPutExtraHeader(nlmsg_hdr(nl_msg), sizeof(struct genlmsghdr))))
         goto cleanup;
 
+#if HAVE_DEVLINK_CMD_ESWITCH_GET
     gmsgh->cmd = DEVLINK_CMD_ESWITCH_GET;
+#elif HAVE_DEVLINK_CMD_ESWITCH_MODE_GET
+    gmsgh->cmd = DEVLINK_CMD_ESWITCH_MODE_GET;
+#endif
+
     gmsgh->version = DEVLINK_GENL_VERSION;
 
     pci_device_ptr = pfname ? virNetDevGetPCIDevice(pfname) :

@@ -632,12 +632,30 @@ dnl check for kernel headers required by devlink
 dnl
 if test "$with_linux" = "yes"; then
     AC_CHECK_HEADERS([linux/devlink.h])
-    AC_CHECK_DECLS([DEVLINK_GENL_VERSION, DEVLINK_GENL_NAME, DEVLINK_ATTR_MAX, DEVLINK_CMD_ESWITCH_GET, DEVLINK_ATTR_BUS_NAME, DEVLINK_ATTR_DEV_NAME, DEVLINK_ATTR_ESWITCH_MODE, DEVLINK_ESWITCH_MODE_SWITCHDEV],
-                   [AC_DEFINE([HAVE_DECL_DEVLINK],
-                              [1],
-                              [whether devlink declarations are available])],
+
+    dnl DEVLINK_CMD_ESWITCH_MODE_GET was introduced in Linux 4.8, but Linux
+    dnl 4.11 renamed it to DEVLINK_CMD_ESWITCH_GET. We can use either, but
+    dnl we need at least one of them to be available
+    have_eswitch_get=0
+    AC_CHECK_DECLS([DEVLINK_CMD_ESWITCH_GET, DEVLINK_CMD_ESWITCH_MODE_GET],
+                   [have_eswitch_get=1],
                    [],
                    [[#include <linux/devlink.h>]])
+
+    dnl We use a bunch of other symbols as well
+    have_all_others=1
+    AC_CHECK_DECLS([DEVLINK_GENL_VERSION, DEVLINK_GENL_NAME, DEVLINK_ATTR_MAX, DEVLINK_ATTR_BUS_NAME, DEVLINK_ATTR_DEV_NAME, DEVLINK_ATTR_ESWITCH_MODE, DEVLINK_ESWITCH_MODE_SWITCHDEV],
+                   [],
+                   [have_all_others=0],
+                   [[#include <linux/devlink.h>]])
+
+    dnl If we have at least one variation of DEVLINK_CMD_ESWITCH_GET *and*
+    dnl all other symbols, then we can enable the devlink code
+    if test have_eswitch_get = 1 && test have_all_others = 1; then
+        AC_DEFINE_UNQUOTED([HAVE_DECL_DEVLINK],
+                           [1],
+                           [whether devlink declarations are available])
+    fi
 fi
 
 dnl Allow perl/python overrides
