@@ -5734,6 +5734,30 @@ virDomainDeviceLoadparmIsValid(const char *loadparm)
 
 
 static void
+virDomainQcow2CacheOptionsFormat(virBufferPtr buf,
+                                 virDomainDiskDefPtr def)
+{
+    if (def->src->l2_cache_size == 0 &&
+        def->src->refcount_cache_size == 0 &&
+        def->src->cache_clean_interval == 0)
+        return;
+
+    virBufferAddLit(buf, "<qcow2");
+
+    if (def->src->l2_cache_size > 0)
+        virBufferAsprintf(buf, " l2_cache_size='%llu'",
+                          def->src->l2_cache_size);
+    if (def->src->refcount_cache_size > 0)
+        virBufferAsprintf(buf, " refcount_cache_size='%llu'",
+                          def->src->refcount_cache_size);
+    if (def->src->cache_clean_interval > 0)
+        virBufferAsprintf(buf, " cache_clean_interval='%llu'",
+                          def->src->cache_clean_interval);
+    virBufferAddLit(buf, "/>\n");
+}
+
+
+static void
 virDomainVirtioOptionsFormat(virBufferPtr buf,
                              virDomainVirtioOptionsPtr virtio)
 {
@@ -8618,7 +8642,60 @@ virDomainDiskDefParseValidate(const virDomainDiskDef *def)
         }
     }
 
+    if (def->src->format != VIR_STORAGE_FILE_QCOW2 &&
+        (def->src->l2_cache_size > 0 || def->src->refcount_cache_size > 0 ||
+         def->src->cache_clean_interval > 0)) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Setting l2_cache_size, refcount_cache_size, "
+                         "cache_clean_interval is not allowed for types "
+                         "other than QCOW2"));
+        return -1;
+    }
+
     return 0;
+}
+
+
+static int
+virDomainDiskDefQcow2ParseXML(virDomainDiskDefPtr def,
+                              xmlNodePtr cur)
+{
+    char *tmp = NULL;
+    int ret = -1;
+
+    if ((tmp = virXMLPropString(cur, "l2_cache_size")) &&
+        (virStrToLong_ullp(tmp, NULL, 10, &def->src->l2_cache_size) < 0)) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid l2_cache_size attribute in disk "
+                         "driver element: %s"), tmp);
+        goto cleanup;
+    }
+    VIR_FREE(tmp);
+
+    if ((tmp = virXMLPropString(cur, "refcount_cache_size")) &&
+        (virStrToLong_ullp(tmp, NULL, 10, &def->src->refcount_cache_size) < 0)) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid refcount_cache_size attribute in disk "
+                         "driver element: %s"), tmp);
+        goto cleanup;
+    }
+    VIR_FREE(tmp);
+
+    if ((tmp = virXMLPropString(cur, "cache_clean_interval")) &&
+        (virStrToLong_ullp(tmp, NULL, 10, &def->src->cache_clean_interval) < 0)) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid cache_clean_interval attribute in "
+                         "disk driver element: %s"), tmp);
+        goto cleanup;
+    }
+    VIR_FREE(tmp);
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(tmp);
+
+    return ret;
 }
 
 
@@ -8627,6 +8704,7 @@ virDomainDiskDefDriverParseXML(virDomainDiskDefPtr def,
                                xmlNodePtr cur)
 {
     char *tmp = NULL;
+    xmlNodePtr child;
     int ret = -1;
 
     def->src->driverName = virXMLPropString(cur, "name");
@@ -8728,6 +8806,13 @@ virDomainDiskDefDriverParseXML(virDomainDiskDefPtr def,
         goto cleanup;
     }
     VIR_FREE(tmp);
+
+    for (child = cur->children; child != NULL; child = child->next) {
+        if (virXMLNodeNameEqual(child, "qcow2") &&
+            virDomainDiskDefQcow2ParseXML(def, child) < 0) {
+            goto cleanup;
+        }
+    }
 
     ret = 0;
 
@@ -21879,6 +21964,7 @@ virDomainDiskDefFormat(virBufferPtr buf,
     const char *discard = virDomainDiskDiscardTypeToString(def->discard);
     const char *detect_zeroes = virDomainDiskDetectZeroesTypeToString(def->detect_zeroes);
     virBuffer driverBuf = VIR_BUFFER_INITIALIZER;
+    virBuffer driverQcow2Buf = VIR_BUFFER_INITIALIZER;
 
     if (!type || !def->src->type) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -21957,14 +22043,11 @@ virDomainDiskDefFormat(virBufferPtr buf,
 
     virDomainVirtioOptionsFormat(&driverBuf, def->virtio);
 
-    if (virBufferCheckError(&driverBuf) < 0)
-        return -1;
+    virBufferSetChildIndent(&driverQcow2Buf, buf);
+    virDomainQcow2CacheOptionsFormat(&driverQcow2Buf, def);
 
-    if (virBufferUse(&driverBuf)) {
-        virBufferAddLit(buf, "<driver");
-        virBufferAddBuffer(buf, &driverBuf);
-        virBufferAddLit(buf, "/>\n");
-    }
+    if (virXMLFormatElement(buf, "driver", &driverBuf, &driverQcow2Buf) < 0)
+        return -1;
 
     if (def->src->auth) {
         if (virStorageAuthDefFormat(buf, def->src->auth) < 0)
