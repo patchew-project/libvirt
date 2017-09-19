@@ -628,15 +628,12 @@ if test "$with_linux" = "yes"; then
 fi
 
 dnl
-dnl check for kernel headers required by devlink
+dnl check for DEVLINK_CMD_ESWITCH_GET, required for checking
+dnl the DEVLINK_ESWITCH_MODE_SWITCHDEV capability
 dnl
 if test "$with_linux" = "yes"; then
     AC_CHECK_HEADERS([linux/devlink.h])
-    AC_CHECK_DECLS([DEVLINK_GENL_VERSION, DEVLINK_GENL_NAME, DEVLINK_ATTR_MAX, DEVLINK_CMD_ESWITCH_GET, DEVLINK_ATTR_BUS_NAME, DEVLINK_ATTR_DEV_NAME, DEVLINK_ATTR_ESWITCH_MODE, DEVLINK_ESWITCH_MODE_SWITCHDEV],
-                   [AC_DEFINE([HAVE_DECL_DEVLINK],
-                              [1],
-                              [whether devlink declarations are available])],
-                   [],
+    AC_CHECK_DECLS([DEVLINK_CMD_ESWITCH_GET], [], [],
                    [[#include <linux/devlink.h>]])
 fi
 
