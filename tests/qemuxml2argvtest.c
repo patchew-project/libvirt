@@ -910,6 +910,10 @@ mymain(void)
             QEMU_CAPS_DRIVE_CACHE_UNSAFE);
     DO_TEST("disk-drive-copy-on-read",
             QEMU_CAPS_DRIVE_COPY_ON_READ);
+    DO_TEST("disk-drive-qcow2-cache",
+            QEMU_CAPS_DRIVE_QCOW2_L2_CACHE_SIZE,
+            QEMU_CAPS_DRIVE_QCOW2_REFCOUNT_CACHE_SIZE,
+            QEMU_CAPS_DRIVE_QCOW2_CACHE_CLEAN_INTERVAL);
     DO_TEST("disk-drive-network-nbd", NONE);
     DO_TEST("disk-drive-network-nbd-export", NONE);
     DO_TEST("disk-drive-network-nbd-ipv6", NONE);
