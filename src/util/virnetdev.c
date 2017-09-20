@@ -3158,7 +3158,7 @@ virNetDevGetFamilyId(const char *family_name)
     struct nl_msg *nl_msg = NULL;
     struct nlmsghdr *resp = NULL;
     struct genlmsghdr* gmsgh = NULL;
-    struct nlattr *tb[CTRL_ATTR_MAX + 1] = {NULL, };
+    struct nlattr *tb[CTRL_CMD_MAX + 1] = {NULL, };
     unsigned int recvbuflen;
     uint32_t family_id = 0;
 
