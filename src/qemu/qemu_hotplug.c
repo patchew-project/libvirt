@@ -156,6 +156,52 @@ qemuDomainPrepareDisk(virQEMUDriverPtr driver,
 
 
 static int
+qemuDomainAddDiskSrcTLSObject(virQEMUDriverPtr driver,
+                              virDomainObjPtr vm,
+                              virStorageSourcePtr src,
+                              const char *srcalias)
+{
+    int ret = -1;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virJSONValuePtr tlsProps = NULL;
+
+    /* NB: Initial implementation doesn't require/use a secret to decrypt
+     * a server certificate, so there's no need to manage a tlsSecAlias
+     * and tlsSecProps. See qemuDomainAddChardevTLSObjects for the
+     * methodology required to add a secret object. */
+
+    /* Create the TLS object using the source tls* settings */
+    if (qemuDomainGetTLSObjects(priv->qemuCaps, NULL,
+                                src->tlsCertdir,
+                                src->tlsListen,
+                                src->tlsVerify,
+                                srcalias, &tlsProps, &src->tlsAlias,
+                                NULL, NULL) < 0)
+        goto cleanup;
+
+    if (qemuDomainAddTLSObjects(driver, vm, QEMU_ASYNC_JOB_NONE,
+                                NULL, NULL, src->tlsAlias, &tlsProps) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(tlsProps);
+
+    return ret;
+}
+
+
+static void
+qemuDomainDelDiskSrcTLSObject(virQEMUDriverPtr driver,
+                              virDomainObjPtr vm,
+                              virStorageSourcePtr src)
+{
+    qemuDomainDelTLSObjects(driver, vm, QEMU_ASYNC_JOB_NONE, NULL, src->tlsAlias);
+}
+
+
+static int
 qemuHotplugWaitForTrayEject(virQEMUDriverPtr driver,
                             virDomainObjPtr vm,
                             virDomainDiskDefPtr disk,
@@ -376,6 +422,14 @@ qemuDomainAttachVirtioDiskDevice(virConnectPtr conn,
     if (encinfo && qemuBuildSecretInfoProps(encinfo, &encobjProps) < 0)
         goto error;
 
+    if (qemuDomainPrepareDiskSourceTLS(disk->src, disk->info.alias, cfg) < 0)
+        goto error;
+
+    if (disk->src->haveTLS &&
+        qemuDomainAddDiskSrcTLSObject(driver, vm, disk->src,
+                                      disk->info.alias) < 0)
+        goto error;
+
     if (!(drivestr = qemuBuildDriveStr(disk, cfg, false, priv->qemuCaps)))
         goto error;
 
@@ -453,6 +507,8 @@ qemuDomainAttachVirtioDiskDevice(virConnectPtr conn,
     virDomainAuditDisk(vm, NULL, disk->src, "attach", false);
 
  error:
+    qemuDomainDelDiskSrcTLSObject(driver, vm, disk->src);
+
     if (releaseaddr)
         qemuDomainReleaseDeviceAddress(vm, &disk->info, src);
 
@@ -667,6 +723,14 @@ qemuDomainAttachSCSIDisk(virConnectPtr conn,
     if (!(devstr = qemuBuildDriveDevStr(vm->def, disk, 0, priv->qemuCaps)))
         goto error;
 
+    if (qemuDomainPrepareDiskSourceTLS(disk->src, disk->info.alias, cfg) < 0)
+        goto error;
+
+    if (disk->src->haveTLS &&
+        qemuDomainAddDiskSrcTLSObject(driver, vm, disk->src,
+                                      disk->info.alias) < 0)
+        goto error;
+
     if (!(drivestr = qemuBuildDriveStr(disk, cfg, false, priv->qemuCaps)))
         goto error;
 
@@ -737,6 +801,8 @@ qemuDomainAttachSCSIDisk(virConnectPtr conn,
     virDomainAuditDisk(vm, NULL, disk->src, "attach", false);
 
  error:
+    qemuDomainDelDiskSrcTLSObject(driver, vm, disk->src);
+
     ignore_value(qemuDomainPrepareDisk(driver, vm, disk, NULL, true));
     goto cleanup;
 }
@@ -775,6 +841,14 @@ qemuDomainAttachUSBMassStorageDevice(virQEMUDriverPtr driver,
     }
 
     if (qemuAssignDeviceDiskAlias(vm->def, disk, priv->qemuCaps) < 0)
+        goto error;
+
+    if (qemuDomainPrepareDiskSourceTLS(disk->src, disk->info.alias, cfg) < 0)
+        goto error;
+
+    if (disk->src->haveTLS &&
+        qemuDomainAddDiskSrcTLSObject(driver, vm, disk->src,
+                                      disk->info.alias) < 0)
         goto error;
 
     if (!(drivestr = qemuBuildDriveStr(disk, cfg, false, priv->qemuCaps)))
@@ -827,6 +901,8 @@ qemuDomainAttachUSBMassStorageDevice(virQEMUDriverPtr driver,
     virDomainAuditDisk(vm, NULL, disk->src, "attach", false);
 
  error:
+    qemuDomainDelDiskSrcTLSObject(driver, vm, disk->src);
+
     ignore_value(qemuDomainPrepareDisk(driver, vm, disk, NULL, true));
     goto cleanup;
 }
@@ -3676,6 +3752,9 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
     if (encAlias)
         ignore_value(qemuMonitorDelObject(priv->mon, encAlias));
     VIR_FREE(encAlias);
+
+    if (disk->src->haveTLS)
+        ignore_value(qemuMonitorDelObject(priv->mon, disk->src->tlsAlias));
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         return -1;
