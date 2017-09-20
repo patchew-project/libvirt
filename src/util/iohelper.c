@@ -56,6 +56,7 @@ runIO(const char *path, int fd, int oflags)
     unsigned long long total = 0;
     bool direct = O_DIRECT && ((oflags & O_DIRECT) != 0);
     off_t end = 0;
+    off_t cur;
 
 #if HAVE_POSIX_MEMALIGN
     if (posix_memalign(&base, alignMask + 1, buflen)) {
@@ -78,10 +79,22 @@ runIO(const char *path, int fd, int oflags)
         fdoutname = "stdout";
         /* To make the implementation simpler, we give up on any
          * attempt to use O_DIRECT in a non-trivial manner.  */
-        if (direct && ((end = lseek(fd, 0, SEEK_CUR)) != 0)) {
-            virReportSystemError(end < 0 ? errno : EINVAL, "%s",
-                                 _("O_DIRECT read needs entire seekable file"));
-            goto cleanup;
+        if (direct) {
+            if  ((cur = lseek(fd, 0, SEEK_CUR)) != 0) {
+                virReportSystemError(cur < 0 ? errno : EINVAL, "%s",
+                                     _("O_DIRECT read needs entire seekable file"));
+                goto cleanup;
+            }
+
+            if ((end = lseek(fd, 0, SEEK_END)) < 0) {
+                virReportSystemError(errno, "%s", _("can not seek file end"));
+                goto cleanup;
+            }
+
+            if (lseek(fd, cur, SEEK_SET) < 0) {
+                virReportSystemError(errno, "%s", _("can not seek file begin"));
+                goto cleanup;
+            }
         }
         break;
     case O_WRONLY:
@@ -109,7 +122,26 @@ runIO(const char *path, int fd, int oflags)
     while (1) {
         ssize_t got;
 
-        if ((got = saferead(fdin, buf, buflen)) < 0) {
+        /* in case of O_DIRECT we cannot read again to check for EOF
+         * after partial buffer read as it is done in saferead */
+        if (direct && fdin == fd && end - total < buflen) {
+            if (total == end)
+                break;
+
+            while ((got = read(fd, buf, buflen)) < 0 && errno == EINTR)
+                ;
+
+            if (got < end - total) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("Unable to read last chunk from %s"),
+                               fdinname);
+                goto cleanup;
+            }
+        } else {
+            got = saferead(fdin, buf, buflen);
+        }
+
+        if (got < 0) {
             virReportSystemError(errno, _("Unable to read %s"), fdinname);
             goto cleanup;
         }
