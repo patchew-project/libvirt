@@ -8114,6 +8114,7 @@ virDomainDiskSourceParse(xmlNodePtr node,
     int ret = -1;
     char *protocol = NULL;
     xmlNodePtr saveNode = ctxt->node;
+    char *haveTLS = NULL;
 
     ctxt->node = node;
 
@@ -8145,6 +8146,19 @@ virDomainDiskSourceParse(xmlNodePtr node,
             virReportError(VIR_ERR_XML_ERROR, "%s",
                            _("missing name for disk source"));
             goto cleanup;
+        }
+
+        /* Check tls=yes|no domain setting for the block device
+         * At present only VxHS. Other block devices may be added later */
+        if (src->protocol == VIR_STORAGE_NET_PROTOCOL_VXHS &&
+            (haveTLS = virXMLPropString(node, "tls"))) {
+            if ((src->haveTLS =
+                virTristateBoolTypeFromString(haveTLS)) <= 0) {
+                virReportError(VIR_ERR_XML_ERROR,
+                           _("unknown disk source 'tls' setting '%s'"),
+                           haveTLS);
+                goto cleanup;
+            }
         }
 
         /* for historical reasons the volume name for gluster volume is stored
@@ -8202,6 +8216,7 @@ virDomainDiskSourceParse(xmlNodePtr node,
 
  cleanup:
     VIR_FREE(protocol);
+    VIR_FREE(haveTLS);
     ctxt->node = saveNode;
     return ret;
 }
@@ -21673,7 +21688,8 @@ virDomainSourceDefFormatSeclabel(virBufferPtr buf,
 static int
 virDomainDiskSourceFormatNetwork(virBufferPtr attrBuf,
                                  virBufferPtr childBuf,
-                                 virStorageSourcePtr src)
+                                 virStorageSourcePtr src,
+                                 unsigned int flags)
 {
     size_t n;
     char *path = NULL;
@@ -21689,6 +21705,14 @@ virDomainDiskSourceFormatNetwork(virBufferPtr attrBuf,
     virBufferEscapeString(attrBuf, " name='%s'", path ? path : src->path);
 
     VIR_FREE(path);
+
+    if (src->haveTLS != VIR_TRISTATE_BOOL_ABSENT &&
+        !(flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE &&
+          src->tlsFromConfig))
+        virBufferAsprintf(attrBuf, " tls='%s'",
+                          virTristateBoolTypeToString(src->haveTLS));
+    if (flags & VIR_DOMAIN_DEF_FORMAT_STATUS)
+        virBufferAsprintf(attrBuf, " tlsFromConfig='%d'", src->tlsFromConfig);
 
     for (n = 0; n < src->nhosts; n++) {
         virBufferAddLit(childBuf, "<host");
@@ -21754,7 +21778,8 @@ virDomainDiskSourceFormatInternal(virBufferPtr buf,
             break;
 
         case VIR_STORAGE_TYPE_NETWORK:
-            if (virDomainDiskSourceFormatNetwork(&attrBuf, &childBuf, src) < 0)
+            if (virDomainDiskSourceFormatNetwork(&attrBuf, &childBuf,
+                                                 src, flags) < 0)
                 goto error;
             break;
 
