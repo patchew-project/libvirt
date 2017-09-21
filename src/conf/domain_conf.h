@@ -2559,6 +2559,18 @@ typedef int (*virDomainDefAssignAddressesCallback)(virDomainDef *def,
                                                    void *opaque,
                                                    void *parseOpaque);
 
+/* Driver callback for assigning device aliases, called at the
+ * end of parsing, after all defaults and implicit devices have
+ * been added and all addresses were assigned. @parseOpaque is
+ * opaque data passed by virDomainDefParse *caller, @opaque is
+ * opaque data set by driver (usually pointer to driver private
+ * data). */
+typedef int (*virDomainDefAssignAliasesCallback)(virDomainDefPtr def,
+                                                 virCapsPtr caps,
+                                                 unsigned int parseFlags,
+                                                 void *opaque,
+                                                 void *parseOpaque);
+
 typedef int (*virDomainDefPostParseDataAlloc)(const virDomainDef *def,
                                               virCapsPtr caps,
                                               unsigned int parseFlags,
@@ -2588,6 +2600,7 @@ struct _virDomainDefParserConfig {
     virDomainDefPostParseCallback domainPostParseCallback;
     virDomainDeviceDefPostParseCallback devicesPostParseCallback;
     virDomainDefAssignAddressesCallback assignAddressesCallback;
+    virDomainDefAssignAliasesCallback assignAliasesCallback;
     virDomainDefPostParseDataFree domainPostParseDataFree;
 
     /* validation callbacks */

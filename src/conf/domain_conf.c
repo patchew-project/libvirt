@@ -5011,6 +5011,13 @@ virDomainDefPostParseInternal(virDomainDefPtr def,
             goto cleanup;
     }
 
+    if (xmlopt->config.assignAliasesCallback) {
+        ret = xmlopt->config.assignAliasesCallback(def, caps, parseFlags,
+                                                   xmlopt->config.priv,
+                                                   data.parseOpaque);
+        if (virDomainDefPostParseCheckFailure(def, parseFlags, ret) < 0)
+            goto cleanup;
+    }
     if ((ret = virDomainDefPostParseCheckFeatures(def, xmlopt)) < 0)
         goto cleanup;
 
