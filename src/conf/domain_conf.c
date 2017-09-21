@@ -5770,10 +5770,9 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
 
         virBufferAddLit(buf, "/>\n");
     }
-    if (info->alias &&
-        !(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE)) {
+
+    if (info->alias)
         virBufferAsprintf(buf, "<alias name='%s'/>\n", info->alias);
-    }
 
     if (info->mastertype == VIR_DOMAIN_CONTROLLER_MASTER_USB) {
         virBufferAsprintf(buf, "<master startport='%d'/>\n",
@@ -6333,7 +6332,7 @@ virDomainDeviceInfoParseXML(xmlNodePtr node,
     while (cur != NULL) {
         if (cur->type == XML_ELEMENT_NODE) {
             if (alias == NULL &&
-                !(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE) &&
+                !(flags & VIR_DOMAIN_DEF_PARSE_ABI_UPDATE) &&
                 virXMLNodeNameEqual(cur, "alias")) {
                 alias = cur;
             } else if (address == NULL &&

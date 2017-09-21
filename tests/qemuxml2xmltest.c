@@ -13,10 +13,15 @@
 #ifdef WITH_QEMU
 
 # include "internal.h"
+# include "qemu/qemu_alias.h"
 # include "qemu/qemu_domain_address.h"
 # include "qemu/qemu_domain.h"
 # include "testutilsqemu.h"
 # include "virstring.h"
+
+# define __QEMU_CAPSPRIV_H_ALLOW__
+# include "qemu/qemu_capspriv.h"
+# undef __QEMU_CAPSPRIV_H_ALLOW__
 
 # define VIR_FROM_THIS VIR_FROM_NONE
 
@@ -38,6 +43,25 @@ struct testInfo {
     virQEMUCapsPtr qemuCaps;
 };
 
+
+static int
+testUpdateQEMUCaps(virDomainDefPtr def,
+                   virQEMUCapsPtr qemuCaps)
+{
+    virQEMUCapsSetArch(qemuCaps, def->os.arch);
+
+    virQEMUCapsInitQMPBasicArch(qemuCaps);
+
+    /* We need to pretend QEMU 2.0.0 is in use so that pSeries guests
+     * will get the correct alias assigned to their buses.
+     * See virQEMUCapsHasPCIMultiBus() */
+    virQEMUCapsSetVersion(qemuCaps, 2000000);
+
+    return 0;
+}
+
+
+
 static int
 qemuXML2XMLActivePreFormatCallback(virDomainDefPtr def,
                                    const void *opaque)
@@ -47,6 +71,19 @@ qemuXML2XMLActivePreFormatCallback(virDomainDefPtr def,
     /* store vCPU bitmap so that the status XML can be created faithfully */
     if (!info->activeVcpus)
         info->activeVcpus = virDomainDefGetOnlineVcpumap(def);
+
+    /* Update capabilities according to domain definition,
+     * just like we're doing in qemuxml2argvtest. */
+    testUpdateQEMUCaps(def, info->qemuCaps);
+
+    /* Forcibly regenerate device aliases. They are generated in
+     * virDomainDefParseFile(), however, qemuCaps are filled out
+     * just partially therefore the generated aliases might be
+     * wrong. It's only after testUpdateQEMUCaps() call that we
+     * have full set of caps. However, we can't move the call any
+     * sooner because it needs vm->def. */
+    if (qemuAssignDeviceAliases(def, info->qemuCaps, true) < 0)
+        return -1;
 
     return 0;
 }
@@ -65,13 +102,37 @@ testXML2XMLActive(const void *opaque)
 
 
 static int
+qemuXML2XMLInactivePreFormatCallback(virDomainDefPtr def,
+                                     const void *opaque)
+{
+    struct testInfo *info = (struct testInfo *) opaque;
+
+    /* Update capabilities according to domain definition,
+     * just like we're doing in qemuxml2argvtest. */
+    testUpdateQEMUCaps(def, info->qemuCaps);
+
+    /* Forcibly regenerate device aliases. They are generated in
+     * virDomainDefParseFile(), however, qemuCaps are filled out
+     * just partially therefore the generated aliases might be
+     * wrong. It's only after testUpdateQEMUCaps() call that we
+     * have full set of caps. However, we can't move the call any
+     * sooner because it needs vm->def. */
+    if (qemuAssignDeviceAliases(def, info->qemuCaps, true) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+static int
 testXML2XMLInactive(const void *opaque)
 {
     const struct testInfo *info = opaque;
 
     return testCompareDomXML2XMLFiles(driver.caps, driver.xmlopt, info->inName,
                                       info->outInactiveName, false,
-                                      NULL, opaque, 0,
+                                      qemuXML2XMLInactivePreFormatCallback,
+                                      opaque, 0,
                                       TEST_COMPARE_DOM_XML2XML_RESULT_SUCCESS);
 }
 
