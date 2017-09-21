@@ -21,6 +21,7 @@
         <source file='/dev/HostVG/QEMUGuest1Copy'/>
       </mirror>
       <target dev='hda' bus='ide'/>
+      <alias name='ide0-0-0'/>
       <address type='drive' controller='0' bus='0' target='0' unit='0'/>
     </disk>
     <disk type='block' device='cdrom'>
@@ -28,6 +29,7 @@
       <backingStore/>
       <target dev='hdc' bus='ide'/>
       <readonly/>
+      <alias name='ide0-1-0'/>
       <address type='drive' controller='0' bus='1' target='0' unit='0'/>
     </disk>
     <disk type='file' device='disk'>
@@ -38,24 +40,35 @@
         <source file='/tmp/copy.img'/>
       </mirror>
       <target dev='vda' bus='virtio'/>
+      <alias name='virtio-disk0'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
     </disk>
     <disk type='file' device='disk'>
       <source file='/tmp/logs.img'/>
       <backingStore/>
       <target dev='vdb' bus='virtio'/>
+      <alias name='virtio-disk1'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
     </disk>
     <controller type='usb' index='0'>
+      <alias name='usb'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x2'/>
     </controller>
     <controller type='ide' index='0'>
+      <alias name='ide'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x1'/>
     </controller>
-    <controller type='pci' index='0' model='pci-root'/>
-    <input type='mouse' bus='ps2'/>
-    <input type='keyboard' bus='ps2'/>
+    <controller type='pci' index='0' model='pci-root'>
+      <alias name='pci'/>
+    </controller>
+    <input type='mouse' bus='ps2'>
+      <alias name='input0'/>
+    </input>
+    <input type='keyboard' bus='ps2'>
+      <alias name='input1'/>
+    </input>
     <memballoon model='virtio'>
+      <alias name='balloon0'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
     </memballoon>
   </devices>

@@ -3937,6 +3937,29 @@ qemuDomainDefAssignAddresses(virDomainDef *def,
 
 
 static int
+qemuDomainDefAssignAliases(virDomainDef *def,
+                           virCapsPtr caps ATTRIBUTE_UNUSED,
+                           unsigned int parseFlags ATTRIBUTE_UNUSED,
+                           void *opaque ATTRIBUTE_UNUSED,
+                           void *parseOpaque)
+{
+    /* Note that qemuCaps may be NULL when this function is called. This
+     * function shall not fail in that case. It will be re-run on VM startup
+     * with the capabilities populated. */
+    virQEMUCapsPtr qemuCaps = parseOpaque;
+
+    /* Skip address assignment if @qemuCaps is not present. In such case devices
+     * which are automatically added may be missing. Additionally @qemuCaps should
+     * only be missing when reloading configs, thus aliases were already
+     * assigned. */
+    if (!qemuCaps)
+        return 1;
+
+    return qemuAssignDeviceAliases(def, qemuCaps, true);
+}
+
+
+static int
 qemuDomainPostParseDataAlloc(const virDomainDef *def,
                              virCapsPtr caps ATTRIBUTE_UNUSED,
                              unsigned int parseFlags ATTRIBUTE_UNUSED,
@@ -3969,6 +3992,7 @@ virDomainDefParserConfig virQEMUDriverDomainDefParserConfig = {
     .devicesPostParseCallback = qemuDomainDeviceDefPostParse,
     .domainPostParseCallback = qemuDomainDefPostParse,
     .assignAddressesCallback = qemuDomainDefAssignAddresses,
+    .assignAliasesCallback = qemuDomainDefAssignAliases,
     .domainValidateCallback = qemuDomainDefValidate,
     .deviceValidateCallback = qemuDomainDeviceDefValidate,
 

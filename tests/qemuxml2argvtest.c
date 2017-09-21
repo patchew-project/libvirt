@@ -485,6 +485,15 @@ testCompareXMLToArgv(const void *data)
     if (testUpdateQEMUCaps(info, vm, driver.caps) < 0)
         goto cleanup;
 
+    /* Forcibly regenerate device aliases. They are generated in
+     * virDomainDefParseFile(), however, qemuCaps are filled out
+     * just partially therefore the generated aliases might be
+     * wrong. It's only after testUpdateQEMUCaps() call that we
+     * have full set of caps. However, we can't move the call any
+     * sooner because it needs vm->def. */
+    if (qemuAssignDeviceAliases(vm->def, info->qemuCaps, true) < 0)
+        goto cleanup;
+
     log = virTestLogContentAndReset();
     VIR_FREE(log);
     virResetLastError();

@@ -25,6 +25,7 @@
         <backingStore/>
       </backingStore>
       <target dev='vda' bus='virtio'/>
+      <alias name='virtio-disk0'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
     </disk>
     <disk type='network' device='disk'>
@@ -58,6 +59,7 @@
         </backingStore>
       </backingStore>
       <target dev='vdb' bus='virtio'/>
+      <alias name='virtio-disk1'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
     </disk>
     <disk type='network' device='disk'>
@@ -67,6 +69,7 @@
       </source>
       <backingStore/>
       <target dev='vdc' bus='virtio'/>
+      <alias name='virtio-disk2'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
     </disk>
     <disk type='network' device='disk'>
@@ -85,6 +88,7 @@
         <backingStore/>
       </backingStore>
       <target dev='vdd' bus='virtio'/>
+      <alias name='virtio-disk3'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
     </disk>
     <disk type='block' device='disk'>
@@ -92,15 +96,24 @@
       <source dev='/dev/HostVG/QEMUGuest11'/>
       <backingStore/>
       <target dev='vde' bus='virtio'/>
+      <alias name='virtio-disk4'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
     </disk>
     <controller type='usb' index='0'>
+      <alias name='usb'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x2'/>
     </controller>
-    <controller type='pci' index='0' model='pci-root'/>
-    <input type='mouse' bus='ps2'/>
-    <input type='keyboard' bus='ps2'/>
+    <controller type='pci' index='0' model='pci-root'>
+      <alias name='pci'/>
+    </controller>
+    <input type='mouse' bus='ps2'>
+      <alias name='input0'/>
+    </input>
+    <input type='keyboard' bus='ps2'>
+      <alias name='input1'/>
+    </input>
     <memballoon model='virtio'>
+      <alias name='balloon0'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
     </memballoon>
   </devices>

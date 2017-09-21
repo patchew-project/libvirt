@@ -18,33 +18,47 @@
       <source dev='/dev/HostVG/QEMUGuest1'/>
       <backingStore/>
       <target dev='hda' bus='ide'/>
+      <alias name='ide0-0-0'/>
       <address type='drive' controller='0' bus='0' target='0' unit='0'/>
     </disk>
     <controller type='usb' index='0'>
+      <alias name='usb'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x2'/>
     </controller>
     <controller type='ide' index='0'>
+      <alias name='ide'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x1'/>
     </controller>
     <controller type='virtio-serial' index='1'>
+      <alias name='virtio-serial1'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x0a' function='0x0'/>
     </controller>
-    <controller type='pci' index='0' model='pci-root'/>
+    <controller type='pci' index='0' model='pci-root'>
+      <alias name='pci'/>
+    </controller>
     <channel type='pty'>
       <target type='virtio' name='org.linux-kvm.port.foo' state='connected'/>
+      <alias name='channel0'/>
       <address type='virtio-serial' controller='1' bus='0' port='3'/>
     </channel>
     <channel type='pty'>
       <target type='virtio' name='org.linux-kvm.port.foo1' state='disconnected'/>
+      <alias name='channel1'/>
       <address type='virtio-serial' controller='1' bus='0' port='4'/>
     </channel>
     <channel type='pty'>
       <target type='virtio' name='org.linux-kvm.port.foo2'/>
+      <alias name='channel2'/>
       <address type='virtio-serial' controller='1' bus='0' port='5'/>
     </channel>
-    <input type='mouse' bus='ps2'/>
-    <input type='keyboard' bus='ps2'/>
+    <input type='mouse' bus='ps2'>
+      <alias name='input0'/>
+    </input>
+    <input type='keyboard' bus='ps2'>
+      <alias name='input1'/>
+    </input>
     <memballoon model='virtio'>
+      <alias name='balloon0'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
     </memballoon>
   </devices>
