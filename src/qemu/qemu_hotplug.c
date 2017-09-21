@@ -2073,7 +2073,7 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
     int ret = -1;
     int rv;
 
-    if (qemuAssignDeviceRNGAlias(vm->def, rng) < 0)
+    if (qemuAssignDeviceRNGAlias(vm->def, rng, -1) < 0)
         goto cleanup;
 
     /* preallocate space for the device definition */
