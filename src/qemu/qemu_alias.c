@@ -286,6 +286,78 @@ qemuAssignDeviceNetAlias(virDomainDefPtr def,
 }
 
 
+static int
+qemuAssignDeviceFSAlias(virDomainFSDefPtr fss,
+                        int idx)
+{
+    return virAsprintf(&fss->info.alias, "fs%d", idx);
+}
+
+
+static int
+qemuAssignDeviceSoundAlias(virDomainSoundDefPtr sound,
+                           int idx)
+{
+    return virAsprintf(&sound->info.alias, "sound%d", idx);
+}
+
+
+static int
+qemuAssignDeviceVideoAlias(virDomainVideoDefPtr video,
+                           int idx)
+{
+    return virAsprintf(&video->info.alias, "video%d", idx);
+}
+
+
+static int
+qemuAssignDeviceInputAlias(virDomainInputDefPtr input,
+                           int idx)
+{
+    return virAsprintf(&input->info.alias, "input%d", idx);
+}
+
+
+static int
+qemuAssignDeviceHubAlias(virDomainHubDefPtr hub,
+                         int idx)
+{
+    return virAsprintf(&hub->info.alias, "hub%d", idx);
+}
+
+
+static int
+qemuAssignDeviceSmartcardAlias(virDomainSmartcardDefPtr smartcard,
+                               int idx)
+{
+    return virAsprintf(&smartcard->info.alias, "smartcard%d", idx);
+}
+
+
+static int
+qemuAssignDeviceWatchdogAlias(virDomainWatchdogDefPtr watchdog,
+                              int idx)
+{
+    return virAsprintf(&watchdog->info.alias, "watchdog%d", idx);
+}
+
+
+static int
+qemuAssingDeviceMemballoonAlias(virDomainMemballoonDefPtr memballoon,
+                                int idx)
+{
+    return virAsprintf(&memballoon->info.alias, "balloon%d", idx);
+}
+
+
+static int
+qemuAssignDeviceTPMAlias(virDomainTPMDefPtr tpm,
+                         int idx)
+{
+    return virAsprintf(&tpm->info.alias, "tpm%d", idx);
+}
+
+
 int
 qemuAssignDeviceRedirdevAlias(virDomainDefPtr def,
                               virDomainRedirdevDefPtr redirdev,
@@ -424,11 +496,11 @@ qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps)
     }
 
     for (i = 0; i < def->nfss; i++) {
-        if (virAsprintf(&def->fss[i]->info.alias, "fs%zu", i) < 0)
+        if (qemuAssignDeviceFSAlias(def->fss[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nsounds; i++) {
-        if (virAsprintf(&def->sounds[i]->info.alias, "sound%zu", i) < 0)
+        if (qemuAssignDeviceSoundAlias(def->sounds[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nhostdevs; i++) {
@@ -446,7 +518,7 @@ qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps)
             return -1;
     }
     for (i = 0; i < def->nvideos; i++) {
-        if (virAsprintf(&def->videos[i]->info.alias, "video%zu", i) < 0)
+        if (qemuAssignDeviceVideoAlias(def->videos[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->ncontrollers; i++) {
@@ -454,7 +526,7 @@ qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps)
             return -1;
     }
     for (i = 0; i < def->ninputs; i++) {
-        if (virAsprintf(&def->inputs[i]->info.alias, "input%zu", i) < 0)
+        if (qemuAssignDeviceInputAlias(def->inputs[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nparallels; i++) {
@@ -474,7 +546,7 @@ qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps)
             return -1;
     }
     for (i = 0; i < def->nhubs; i++) {
-        if (virAsprintf(&def->hubs[i]->info.alias, "hub%zu", i) < 0)
+        if (qemuAssignDeviceHubAlias(def->hubs[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nshmems; i++) {
@@ -482,15 +554,15 @@ qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps)
             return -1;
     }
     for (i = 0; i < def->nsmartcards; i++) {
-        if (virAsprintf(&def->smartcards[i]->info.alias, "smartcard%zu", i) < 0)
+        if (qemuAssignDeviceSmartcardAlias(def->smartcards[i], i) < 0)
             return -1;
     }
     if (def->watchdog) {
-        if (virAsprintf(&def->watchdog->info.alias, "watchdog%d", 0) < 0)
+        if (qemuAssignDeviceWatchdogAlias(def->watchdog, 0) < 0)
             return -1;
     }
     if (def->memballoon) {
-        if (virAsprintf(&def->memballoon->info.alias, "balloon%d", 0) < 0)
+        if (qemuAssingDeviceMemballoonAlias(def->memballoon, 0) < 0)
             return -1;
     }
     for (i = 0; i < def->nrngs; i++) {
@@ -498,7 +570,7 @@ qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps)
             return -1;
     }
     if (def->tpm) {
-        if (virAsprintf(&def->tpm->info.alias, "tpm%d", 0) < 0)
+        if (qemuAssignDeviceTPMAlias(def->tpm, 0) < 0)
             return -1;
     }
     for (i = 0; i < def->nmems; i++) {
