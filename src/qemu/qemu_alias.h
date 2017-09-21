@@ -66,7 +66,9 @@ int qemuAssignDeviceShmemAlias(virDomainDefPtr def,
                                virDomainShmemDefPtr shmem,
                                int idx);
 
-int qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps);
+int qemuAssignDeviceAliases(virDomainDefPtr def,
+                            virQEMUCapsPtr qemuCaps,
+                            bool regenerate);
 
 int qemuDomainDeviceAliasIndex(const virDomainDeviceInfo *info,
                                const char *prefix);

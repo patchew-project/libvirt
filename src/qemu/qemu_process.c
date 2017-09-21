@@ -5340,7 +5340,7 @@ qemuProcessPrepareDomain(virConnectPtr conn,
         goto cleanup;
     }
 
-    if (qemuAssignDeviceAliases(vm->def, priv->qemuCaps) < 0)
+    if (qemuAssignDeviceAliases(vm->def, priv->qemuCaps, false) < 0)
         goto cleanup;
 
     VIR_DEBUG("Setting graphics devices");

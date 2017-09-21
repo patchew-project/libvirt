@@ -481,25 +481,99 @@ qemuAssignDeviceShmemAlias(virDomainDefPtr def,
 }
 
 
+/*
+ * qemuAssignDeviceAliases:
+ * @def: domain definition
+ * @qemuCaps: qemu capabilities
+ * @regenerate: forcibly regenerate aliases
+ *
+ * Assign aliases to domain devices. If @regenerate is false only
+ * the missing aliases are generated leaving already assigned
+ * aliases untouched. If @regenerate is true any preexisting
+ * aliases are overwritten.
+ *
+ * Returns 0 on success, -1 otherwise.
+ */
 int
-qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps)
+qemuAssignDeviceAliases(virDomainDefPtr def,
+                        virQEMUCapsPtr qemuCaps,
+                        bool regenerate)
 {
     size_t i;
 
+    if (regenerate) {
+        /* If we need to regenerate the aliases, we have to free
+         * them all upfront because there are some dependencies,
+         * e.g. an interface can be a hostdev and so on.
+         * Therefore, if we'd do the freeing in the loop below we
+         * might not start from zero. */
+        for (i = 0; i < def->ndisks; i++)
+            VIR_FREE(def->disks[i]->info.alias);
+        for (i = 0; i < def->nnets; i++)
+            VIR_FREE(def->nets[i]->info.alias);
+        for (i = 0; i < def->nfss; i++)
+            VIR_FREE(def->fss[i]->info.alias);
+        for (i = 0; i < def->nsounds; i++)
+            VIR_FREE(def->sounds[i]->info.alias);
+        for (i = 0; i < def->nhostdevs; i++)
+            VIR_FREE(def->hostdevs[i]->info->alias);
+        for (i = 0; i < def->nredirdevs; i++)
+            VIR_FREE(def->redirdevs[i]->info.alias);
+        for (i = 0; i < def->nvideos; i++)
+            VIR_FREE(def->videos[i]->info.alias);
+        for (i = 0; i < def->ncontrollers; i++)
+            VIR_FREE(def->controllers[i]->info.alias);
+        for (i = 0; i < def->ninputs; i++)
+            VIR_FREE(def->inputs[i]->info.alias);
+        for (i = 0; i < def->nparallels; i++)
+            VIR_FREE(def->parallels[i]->info.alias);
+        for (i = 0; i < def->nserials; i++)
+            VIR_FREE(def->serials[i]->info.alias);
+        for (i = 0; i < def->nchannels; i++)
+            VIR_FREE(def->channels[i]->info.alias);
+        for (i = 0; i < def->nconsoles; i++)
+            VIR_FREE(def->consoles[i]->info.alias);
+        for (i = 0; i < def->nhubs; i++)
+            VIR_FREE(def->hubs[i]->info.alias);
+        for (i = 0; i < def->nshmems; i++)
+            VIR_FREE(def->shmems[i]->info.alias);
+        for (i = 0; i < def->nsmartcards; i++)
+            VIR_FREE(def->smartcards[i]->info.alias);
+        if (def->watchdog)
+            VIR_FREE(def->watchdog->info.alias);
+        if (def->memballoon)
+            VIR_FREE(def->memballoon->info.alias);
+        for (i = 0; i < def->nrngs; i++)
+            VIR_FREE(def->rngs[i]->info.alias);
+        if (def->tpm)
+            VIR_FREE(def->tpm->info.alias);
+        for (i = 0; i < def->nmems; i++)
+            VIR_FREE(def->mems[i]->info.alias);
+    }
+
+
     for (i = 0; i < def->ndisks; i++) {
+        if (def->disks[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceDiskAlias(def, def->disks[i], qemuCaps) < 0)
             return -1;
     }
     for (i = 0; i < def->nnets; i++) {
+        if (def->nets[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceNetAlias(def, def->nets[i], -1) < 0)
             return -1;
     }
 
     for (i = 0; i < def->nfss; i++) {
+        if (def->fss[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceFSAlias(def->fss[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nsounds; i++) {
+        if (def->sounds[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceSoundAlias(def->sounds[i], i) < 0)
             return -1;
     }
@@ -509,71 +583,102 @@ qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps)
          * linked to a NetDef, they will share an info and the alias
          * will already be set, so don't try to set it again.
          */
+        if (def->hostdevs[i]->info->alias && !regenerate)
+            continue;
         if (!def->hostdevs[i]->info->alias &&
             qemuAssignDeviceHostdevAlias(def, &def->hostdevs[i]->info->alias, -1) < 0)
             return -1;
     }
     for (i = 0; i < def->nredirdevs; i++) {
+        if (def->redirdevs[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceRedirdevAlias(def, def->redirdevs[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nvideos; i++) {
+        if (def->videos[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceVideoAlias(def->videos[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->ncontrollers; i++) {
+        if (def->controllers[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceControllerAlias(def, qemuCaps, def->controllers[i]) < 0)
             return -1;
     }
     for (i = 0; i < def->ninputs; i++) {
+        if (def->inputs[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceInputAlias(def->inputs[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nparallels; i++) {
+        if (def->parallels[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceChrAlias(def, def->parallels[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nserials; i++) {
+        if (def->serials[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceChrAlias(def, def->serials[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nchannels; i++) {
+        if (def->channels[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceChrAlias(def, def->channels[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nconsoles; i++) {
+        if (def->consoles[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceChrAlias(def, def->consoles[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nhubs; i++) {
+        if (def->hubs[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceHubAlias(def->hubs[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nshmems; i++) {
+        if (def->shmems[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceShmemAlias(def, def->shmems[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nsmartcards; i++) {
+        if (def->smartcards[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceSmartcardAlias(def->smartcards[i], i) < 0)
             return -1;
     }
-    if (def->watchdog) {
+    if (def->watchdog &&
+        (!def->watchdog->info.alias || regenerate)) {
         if (qemuAssignDeviceWatchdogAlias(def->watchdog, 0) < 0)
             return -1;
     }
-    if (def->memballoon) {
+    if (def->memballoon &&
+        (!def->memballoon->info.alias || regenerate)) {
         if (qemuAssingDeviceMemballoonAlias(def->memballoon, 0) < 0)
             return -1;
     }
     for (i = 0; i < def->nrngs; i++) {
+        if (def->rngs[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceRNGAlias(def, def->rngs[i], i) < 0)
             return -1;
     }
-    if (def->tpm) {
+    if (def->tpm &&
+        (!def->tpm->info.alias || regenerate)) {
         if (qemuAssignDeviceTPMAlias(def->tpm, 0) < 0)
             return -1;
     }
     for (i = 0; i < def->nmems; i++) {
+        if (def->mems[i]->info.alias && !regenerate)
+            continue;
         if (qemuAssignDeviceMemoryAlias(NULL, def->mems[i], false) < 0)
             return -1;
     }

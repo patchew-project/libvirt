@@ -16174,7 +16174,7 @@ static virDomainPtr qemuDomainQemuAttach(virConnectPtr conn,
                                             def->emulator)))
         goto cleanup;
 
-    if (qemuAssignDeviceAliases(def, qemuCaps) < 0)
+    if (qemuAssignDeviceAliases(def, qemuCaps, true) < 0)
         goto cleanup;
 
     if (!(vm = virDomainObjListAdd(driver->domains, def,
