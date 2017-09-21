@@ -3526,12 +3526,6 @@ qemuBuildMemoryDimmBackendStr(virDomainMemoryDefPtr mem,
     const char *backendType;
     char *ret = NULL;
 
-    if (!mem->info.alias) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("memory device alias is not assigned"));
-        return NULL;
-    }
-
     if (virAsprintf(&alias, "mem%s", mem->info.alias) < 0)
         goto cleanup;
 
@@ -3554,12 +3548,6 @@ qemuBuildMemoryDeviceStr(virDomainMemoryDefPtr mem)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
     const char *device;
-
-    if (!mem->info.alias) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("missing alias for memory device"));
-        return NULL;
-    }
 
     switch ((virDomainMemoryModel) mem->model) {
     case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
@@ -3925,8 +3913,7 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
 
     if (vlan >= 0) {
         virBufferAsprintf(&buf, "vlan=%d,", vlan);
-        if (net->info.alias)
-            virBufferAsprintf(&buf, "name=host%s,", net->info.alias);
+        virBufferAsprintf(&buf, "name=host%s,", net->info.alias);
     } else {
         virBufferAsprintf(&buf, "id=host%s,", net->info.alias);
     }
@@ -5859,12 +5846,6 @@ qemuBuildRNGCommandLine(virLogManagerPtr logManager,
     for (i = 0; i < def->nrngs; i++) {
         virDomainRNGDefPtr rng = def->rngs[i];
         char *tmp;
-
-        if (!rng->info.alias) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("RNG device is missing alias"));
-            return -1;
-        }
 
         /* possibly add character device for backend */
         if (qemuBuildRNGBackendChrdevStr(logManager, cmd, cfg, def,
