@@ -1413,13 +1413,18 @@ qemuDomainSecretDiskPrepare(virConnectPtr conn,
 void
 qemuDomainSecretHostdevDestroy(virDomainHostdevDefPtr hostdev)
 {
-    qemuDomainHostdevPrivatePtr hostdevPriv =
-        QEMU_DOMAIN_HOSTDEV_PRIVATE(hostdev);
+    qemuDomainDiskSrcPrivatePtr diskSrcPriv;
 
-    if (!hostdevPriv || !hostdevPriv->secinfo)
-        return;
+    if (virHostdevIsSCSIDevice(hostdev)) {
+        virDomainHostdevSubsysSCSIPtr scsisrc = &hostdev->source.subsys.u.scsi;
+        virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &scsisrc->u.iscsi;
 
-    qemuDomainSecretInfoFree(&hostdevPriv->secinfo);
+        if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI) {
+            diskSrcPriv = QEMU_DOMAIN_DISK_SRC_PRIVATE(iscsisrc->src);
+            if (diskSrcPriv && diskSrcPriv->secinfo)
+                qemuDomainSecretInfoFree(&diskSrcPriv->secinfo);
+        }
+    }
 }
 
 
@@ -1444,10 +1449,10 @@ qemuDomainSecretHostdevPrepare(virConnectPtr conn,
         if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI &&
             iscsisrc->src->auth) {
 
-            qemuDomainHostdevPrivatePtr hostdevPriv =
-                QEMU_DOMAIN_HOSTDEV_PRIVATE(hostdev);
+            qemuDomainDiskSrcPrivatePtr diskSrcPriv =
+                QEMU_DOMAIN_DISK_SRC_PRIVATE(iscsisrc->src);
 
-            if (!(hostdevPriv->secinfo =
+            if (!(diskSrcPriv->secinfo =
                   qemuDomainSecretInfoNew(conn, priv, hostdev->info->alias,
                                           VIR_SECRET_USAGE_TYPE_ISCSI,
                                           iscsisrc->src->auth->username,
