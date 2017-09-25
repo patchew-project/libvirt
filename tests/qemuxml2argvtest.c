@@ -928,6 +928,10 @@ mymain(void)
     DO_TEST_PARSE_ERROR("disk-drive-network-iscsi-auth-secrettype-invalid", NONE);
     DO_TEST_PARSE_ERROR("disk-drive-network-iscsi-auth-wrong-secrettype", NONE);
     DO_TEST_PARSE_ERROR("disk-drive-network-source-auth-both", NONE);
+# ifdef HAVE_GNUTLS_CIPHER_ENCRYPT
+    DO_TEST("disk-drive-network-iscsi-auth-AES",
+            QEMU_CAPS_OBJECT_SECRET, QEMU_CAPS_ISCSI_PASSWORD_SECRET);
+# endif
     DO_TEST("disk-drive-network-iscsi-lun",
             QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_SCSI_BLOCK);
@@ -2324,6 +2328,12 @@ mymain(void)
     DO_TEST("hostdev-scsi-virtio-iscsi-auth",
             QEMU_CAPS_VIRTIO_SCSI, QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_DEVICE_SCSI_GENERIC);
+# ifdef HAVE_GNUTLS_CIPHER_ENCRYPT
+    DO_TEST("hostdev-scsi-virtio-iscsi-auth-AES",
+            QEMU_CAPS_VIRTIO_SCSI, QEMU_CAPS_VIRTIO_SCSI,
+            QEMU_CAPS_DEVICE_SCSI_GENERIC, QEMU_CAPS_OBJECT_SECRET,
+            QEMU_CAPS_ISCSI_PASSWORD_SECRET);
+# endif
     DO_TEST("hostdev-scsi-vhost-scsi-ccw",
             QEMU_CAPS_VIRTIO_SCSI, QEMU_CAPS_DEVICE_VHOST_SCSI,
             QEMU_CAPS_DEVICE_SCSI_GENERIC, QEMU_CAPS_VIRTIO_CCW);
