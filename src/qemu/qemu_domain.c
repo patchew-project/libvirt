@@ -926,6 +926,48 @@ qemuDomainDiskPrivateDispose(void *obj)
 }
 
 
+static virClassPtr qemuDomainDiskSrcPrivateClass;
+static void qemuDomainDiskSrcPrivateDispose(void *obj);
+
+static int
+qemuDomainDiskSrcPrivateOnceInit(void)
+{
+    qemuDomainDiskSrcPrivateClass = virClassNew(virClassForObject(),
+                                                "qemuDomainDiskSrcPrivate",
+                                                sizeof(qemuDomainDiskSrcPrivate),
+                                                qemuDomainDiskSrcPrivateDispose);
+    if (!qemuDomainDiskSrcPrivateClass)
+        return -1;
+    else
+        return 0;
+}
+
+VIR_ONCE_GLOBAL_INIT(qemuDomainDiskSrcPrivate)
+
+static virObjectPtr
+qemuDomainDiskSrcPrivateNew(void)
+{
+    qemuDomainDiskSrcPrivatePtr priv;
+
+    if (qemuDomainDiskSrcPrivateInitialize() < 0)
+        return NULL;
+
+    if (!(priv = virObjectNew(qemuDomainDiskSrcPrivateClass)))
+        return NULL;
+
+    return (virObjectPtr) priv;
+}
+
+
+static void
+qemuDomainDiskSrcPrivateDispose(void *obj)
+{
+    qemuDomainDiskSrcPrivatePtr priv = obj;
+
+    qemuDomainSecretInfoFree(&priv->secinfo);
+}
+
+
 static virClassPtr qemuDomainHostdevPrivateClass;
 static void qemuDomainHostdevPrivateDispose(void *obj);
 
@@ -2276,6 +2318,7 @@ virDomainXMLPrivateDataCallbacks virQEMUDriverPrivateDataCallbacks = {
     .alloc = qemuDomainObjPrivateAlloc,
     .free = qemuDomainObjPrivateFree,
     .diskNew = qemuDomainDiskPrivateNew,
+    .diskSrcNew = qemuDomainDiskSrcPrivateNew,
     .vcpuNew = qemuDomainVcpuPrivateNew,
     .hostdevNew = qemuDomainHostdevPrivateNew,
     .chrSourceNew = qemuDomainChrSourcePrivateNew,
