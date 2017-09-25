@@ -2497,10 +2497,9 @@ virDomainHostdevSubsysSCSIiSCSIClear(virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc
 {
     if (!iscsisrc)
         return;
-    VIR_FREE(iscsisrc->path);
-    virStorageNetHostDefFree(iscsisrc->nhosts, iscsisrc->hosts);
-    virStorageAuthDefFree(iscsisrc->auth);
-    iscsisrc->auth = NULL;
+
+    virStorageSourceFree(iscsisrc->src);
+    iscsisrc->src = NULL;
 }
 
 
@@ -4373,7 +4372,7 @@ virDomainHostdevDefPostParse(virDomainHostdevDefPtr dev,
         if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI) {
             virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &scsisrc->u.iscsi;
 
-            if (virDomainPostParseCheckISCSIPath(&iscsisrc->path) < 0)
+            if (virDomainPostParseCheckISCSIPath(&iscsisrc->src->path) < 0)
                 return -1;
         }
 
@@ -6908,7 +6907,8 @@ virDomainHostdevSubsysSCSIHostDefParseXML(xmlNodePtr sourcenode,
 }
 
 static int
-virDomainHostdevSubsysSCSIiSCSIDefParseXML(xmlNodePtr sourcenode,
+virDomainHostdevSubsysSCSIiSCSIDefParseXML(virDomainXMLOptionPtr xmlopt,
+                                           xmlNodePtr sourcenode,
                                            virDomainHostdevSubsysSCSIPtr def)
 {
     int ret = -1;
@@ -6917,24 +6917,29 @@ virDomainHostdevSubsysSCSIiSCSIDefParseXML(xmlNodePtr sourcenode,
     virStorageAuthDefPtr authdef = NULL;
     virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &def->u.iscsi;
 
-    /* Similar to virDomainDiskSourceParse for a VIR_STORAGE_TYPE_NETWORK */
+    /* For the purposes of command line creation, this needs to look
+     * like a disk storage source */
+    if (!(iscsisrc->src = virDomainDiskStorageSourceNew(xmlopt)))
+        return -1;
+    iscsisrc->src->type = VIR_STORAGE_TYPE_NETWORK;
+    iscsisrc->src->protocol = VIR_STORAGE_NET_PROTOCOL_ISCSI;
 
-    if (!(iscsisrc->path = virXMLPropString(sourcenode, "name"))) {
+    if (!(iscsisrc->src->path = virXMLPropString(sourcenode, "name"))) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("missing iSCSI hostdev source path name"));
         goto cleanup;
     }
 
-    if (virDomainStorageNetworkParseHosts(sourcenode, &iscsisrc->hosts,
-                                          &iscsisrc->nhosts) < 0)
+    if (virDomainStorageNetworkParseHosts(sourcenode, &iscsisrc->src->hosts,
+                                          &iscsisrc->src->nhosts) < 0)
         goto cleanup;
 
-    if (iscsisrc->nhosts < 1) {
+    if (iscsisrc->src->nhosts < 1) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("missing the host address for the iSCSI hostdev"));
         goto cleanup;
     }
-    if (iscsisrc->nhosts > 1) {
+    if (iscsisrc->src->nhosts > 1) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("only one source host address may be specified "
                          "for the iSCSI hostdev"));
@@ -6960,7 +6965,7 @@ virDomainHostdevSubsysSCSIiSCSIDefParseXML(xmlNodePtr sourcenode,
                                authdef->secrettype);
                 goto cleanup;
             }
-            iscsisrc->auth = authdef;
+            iscsisrc->src->auth = authdef;
             authdef = NULL;
         }
         cur = cur->next;
@@ -6973,7 +6978,8 @@ virDomainHostdevSubsysSCSIiSCSIDefParseXML(xmlNodePtr sourcenode,
 }
 
 static int
-virDomainHostdevSubsysSCSIDefParseXML(xmlNodePtr sourcenode,
+virDomainHostdevSubsysSCSIDefParseXML(virDomainXMLOptionPtr xmlopt,
+                                      xmlNodePtr sourcenode,
                                       virDomainHostdevSubsysSCSIPtr scsisrc)
 {
     char *protocol = NULL;
@@ -6991,7 +6997,8 @@ virDomainHostdevSubsysSCSIDefParseXML(xmlNodePtr sourcenode,
     }
 
     if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI)
-        ret = virDomainHostdevSubsysSCSIiSCSIDefParseXML(sourcenode, scsisrc);
+        ret = virDomainHostdevSubsysSCSIiSCSIDefParseXML(xmlopt, sourcenode,
+                                                         scsisrc);
     else
         ret = virDomainHostdevSubsysSCSIHostDefParseXML(sourcenode, scsisrc);
 
@@ -7092,7 +7099,8 @@ virDomainHostdevSubsysMediatedDevDefParseXML(virDomainHostdevDefPtr def,
 }
 
 static int
-virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+virDomainHostdevDefParseXMLSubsys(virDomainXMLOptionPtr xmlopt,
+                                  xmlNodePtr node,
                                   xmlXPathContextPtr ctxt,
                                   const char *type,
                                   virDomainHostdevDefPtr def,
@@ -7236,7 +7244,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
         break;
 
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
-        if (virDomainHostdevSubsysSCSIDefParseXML(sourcenode, scsisrc) < 0)
+        if (virDomainHostdevSubsysSCSIDefParseXML(xmlopt, sourcenode, scsisrc) < 0)
             goto error;
         break;
 
@@ -10101,7 +10109,8 @@ virDomainFSDefParseXML(xmlNodePtr node,
 }
 
 static int
-virDomainActualNetDefParseXML(xmlNodePtr node,
+virDomainActualNetDefParseXML(virDomainXMLOptionPtr xmlopt,
+                              xmlNodePtr node,
                               xmlXPathContextPtr ctxt,
                               virDomainNetDefPtr parent,
                               virDomainActualNetDefPtr *def,
@@ -10211,7 +10220,7 @@ virDomainActualNetDefParseXML(xmlNodePtr node,
             VIR_STRDUP(addrtype, "usb") < 0)
             goto error;
         hostdev->mode = VIR_DOMAIN_HOSTDEV_MODE_SUBSYS;
-        if (virDomainHostdevDefParseXMLSubsys(node, ctxt, addrtype,
+        if (virDomainHostdevDefParseXMLSubsys(xmlopt, node, ctxt, addrtype,
                                               hostdev, flags) < 0) {
             goto error;
         }
@@ -10546,7 +10555,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                        (flags & VIR_DOMAIN_DEF_PARSE_ACTUAL_NET) &&
                        def->type == VIR_DOMAIN_NET_TYPE_NETWORK &&
                        virXMLNodeNameEqual(cur, "actual")) {
-                if (virDomainActualNetDefParseXML(cur, ctxt, def,
+                if (virDomainActualNetDefParseXML(xmlopt, cur, ctxt, def,
                                                   &actual, flags) < 0) {
                     goto error;
                 }
@@ -10823,7 +10832,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
             VIR_STRDUP(addrtype, "usb") < 0)
             goto error;
         hostdev->mode = VIR_DOMAIN_HOSTDEV_MODE_SUBSYS;
-        if (virDomainHostdevDefParseXMLSubsys(node, ctxt, addrtype,
+        if (virDomainHostdevDefParseXMLSubsys(xmlopt, node, ctxt, addrtype,
                                               hostdev, flags) < 0) {
             goto error;
         }
@@ -14422,7 +14431,7 @@ virDomainHostdevDefParseXML(virDomainXMLOptionPtr xmlopt,
     switch (def->mode) {
     case VIR_DOMAIN_HOSTDEV_MODE_SUBSYS:
         /* parse managed/mode/type, and the <source> element */
-        if (virDomainHostdevDefParseXMLSubsys(node, ctxt, type, def, flags) < 0)
+        if (virDomainHostdevDefParseXMLSubsys(xmlopt, node, ctxt, type, def, flags) < 0)
             goto error;
         break;
     case VIR_DOMAIN_HOSTDEV_MODE_CAPABILITIES:
@@ -15396,9 +15405,9 @@ virDomainHostdevMatchSubsysSCSIiSCSI(virDomainHostdevDefPtr first,
     virDomainHostdevSubsysSCSIiSCSIPtr second_iscsisrc =
         &second->source.subsys.u.scsi.u.iscsi;
 
-    if (STREQ(first_iscsisrc->hosts[0].name, second_iscsisrc->hosts[0].name) &&
-        first_iscsisrc->hosts[0].port == second_iscsisrc->hosts[0].port &&
-        STREQ(first_iscsisrc->path, second_iscsisrc->path))
+    if (STREQ(first_iscsisrc->src->hosts[0].name, second_iscsisrc->src->hosts[0].name) &&
+        first_iscsisrc->src->hosts[0].port == second_iscsisrc->src->hosts[0].port &&
+        STREQ(first_iscsisrc->src->path, second_iscsisrc->src->path))
         return 1;
     return 0;
 }
@@ -22675,7 +22684,7 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
             virDomainHostdevSubsysSCSIProtocolTypeToString(scsisrc->protocol);
 
         virBufferAsprintf(buf, " protocol='%s' name='%s'",
-                          protocol, iscsisrc->path);
+                          protocol, iscsisrc->src->path);
     }
 
     if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST) {
@@ -22727,9 +22736,9 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
         if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI) {
             virBufferAddLit(buf, "<host");
-            virBufferEscapeString(buf, " name='%s'", iscsisrc->hosts[0].name);
-            if (iscsisrc->hosts[0].port)
-                virBufferAsprintf(buf, " port='%u'", iscsisrc->hosts[0].port);
+            virBufferEscapeString(buf, " name='%s'", iscsisrc->src->hosts[0].name);
+            if (iscsisrc->src->hosts[0].port)
+                virBufferAsprintf(buf, " port='%u'", iscsisrc->src->hosts[0].port);
             virBufferAddLit(buf, "/>\n");
         } else {
             virBufferAsprintf(buf, "<adapter name='%s'/>\n",
@@ -22756,8 +22765,8 @@ virDomainHostdevDefFormatSubsys(virBufferPtr buf,
 
     if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI &&
         scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI &&
-        iscsisrc->auth) {
-        if (virStorageAuthDefFormat(buf, iscsisrc->auth) < 0)
+        iscsisrc->src->auth) {
+        if (virStorageAuthDefFormat(buf, iscsisrc->src->auth) < 0)
             return -1;
     }
 
