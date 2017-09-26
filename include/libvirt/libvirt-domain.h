@@ -3327,13 +3327,21 @@ typedef enum {
  */
 # define VIR_DOMAIN_JOB_MEMORY_BPS               "memory_bps"
 
-/** VIR_DOMAIN_JOB_MEMORY_DIRTY_RATE:
+/**
+ * VIR_DOMAIN_JOB_MEMORY_DIRTY_RATE:
  *
  * virDomainGetJobStats field: number of memory pages dirtied by the guest
  * per second, as VIR_TYPED_PARAM_ULLONG. This statistics makes sense only
  * when live migration is running.
  */
 # define VIR_DOMAIN_JOB_MEMORY_DIRTY_RATE        "memory_dirty_rate"
+
+/**
+ * VIR_DOMAIN_JOB_MEMORY_PAGE_SIZE:
+ *
+ * virDomainGetJobStats field: page size of the memory in this domian
+ */
+# define VIR_DOMAIN_JOB_MEMORY_PAGE_SIZE        "page_size"
 
 /**
  * VIR_DOMAIN_JOB_MEMORY_ITERATION:

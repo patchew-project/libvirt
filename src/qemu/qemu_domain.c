@@ -571,6 +571,11 @@ qemuDomainJobInfoToParams(qemuDomainJobInfoPtr jobInfo,
         goto error;
 
     if (virTypedParamsAddULLong(&par, &npar, &maxpar,
+                                VIR_DOMAIN_JOB_MEMORY_PAGE_SIZE,
+                                stats->ram_page_size) < 0)
+        goto error;
+
+    if (virTypedParamsAddULLong(&par, &npar, &maxpar,
                                 VIR_DOMAIN_JOB_DISK_TOTAL,
                                 stats->disk_total +
                                 mirrorStats->total) < 0 ||
