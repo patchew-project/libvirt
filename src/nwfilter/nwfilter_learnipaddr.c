@@ -627,6 +627,7 @@ learnIPAddressThread(void *arg)
                           "cache for interface %s"), inetaddr, req->ifname);
             }
 
+            inetaddr = NULL;
             ret = virNWFilterInstantiateFilterLate(req->driver,
                                                    NULL,
                                                    req->ifname,
@@ -636,7 +637,8 @@ learnIPAddressThread(void *arg)
                                                    req->filtername,
                                                    req->filterparams);
             VIR_DEBUG("Result from applying firewall rules on "
-                      "%s with IP addr %s : %d", req->ifname, inetaddr, ret);
+                      "%s with IP addr %s : %d", req->ifname, NULLSTR(inetaddr), ret);
+            VIR_FREE(inetaddr);
         }
     } else {
         if (showError)
