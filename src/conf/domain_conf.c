@@ -8106,6 +8106,29 @@ virDomainDiskSourcePoolDefParse(xmlNodePtr node,
 }
 
 
+static int
+virDomainDiskSourceAuthParse(xmlNodePtr node,
+                             virStorageAuthDefPtr *authdefsrc)
+{
+    xmlNodePtr child;
+    virStorageAuthDefPtr authdef;
+
+    for (child = node->children; child; child = child->next) {
+        if (child->type == XML_ELEMENT_NODE &&
+            virXMLNodeNameEqual(child, "auth")) {
+
+            if (!(authdef = virStorageAuthDefParse(node->doc, child)))
+                return -1;
+
+            *authdefsrc = authdef;
+            return 0;
+        }
+    }
+
+    return 0;
+}
+
+
 int
 virDomainDiskSourceParse(xmlNodePtr node,
                          xmlXPathContextPtr ctxt,
@@ -8191,6 +8214,9 @@ virDomainDiskSourceParse(xmlNodePtr node,
                        virStorageTypeToString(src->type));
         goto cleanup;
     }
+
+    if (virDomainDiskSourceAuthParse(node, &src->auth) < 0)
+        goto cleanup;
 
     /* People sometimes pass a bogus '' source path when they mean to omit the
      * source element completely (e.g. CDROM without media). This is just a
@@ -8818,6 +8844,19 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
             if (virDomainDiskSourceParse(cur, ctxt, def->src) < 0)
                 goto error;
 
+            /* If we've already found an <auth> as a child of <disk> and
+             * we find one as a child of <source>, then force an error to
+             * avoid ambiguity */
+            if (authdef && def->src->auth) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("an <auth> definition already found for "
+                                 "the <disk> definition"));
+                goto error;
+            }
+
+            if (def->src->auth)
+                def->src->authDefined = true;
+
             source = true;
 
             startupPolicy = virXMLPropString(cur, "startupPolicy");
@@ -8875,6 +8914,15 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                 goto error;
         } else if (!authdef &&
                    virXMLNodeNameEqual(cur, "auth")) {
+            /* If we've already parsed <source> and found an <auth> child,
+             * then generate an error to avoid ambiguity */
+            if (def->src->authDefined) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("an <auth> definition already found for "
+                                 "disk source"));
+                goto error;
+            }
+
             if (!(authdef = virStorageAuthDefParse(node->doc, cur)))
                 goto error;
         } else if (virXMLNodeNameEqual(cur, "iotune")) {
@@ -9110,8 +9158,8 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
 
     def->dst = target;
     target = NULL;
-    def->src->auth = authdef;
-    authdef = NULL;
+    if (authdef)
+        VIR_STEAL_PTR(def->src->auth, authdef);
     def->src->encryption = encryption;
     encryption = NULL;
     def->domain_name = domain_name;
@@ -21800,6 +21848,17 @@ virDomainDiskSourceFormatInternal(virBufferPtr buf,
             goto error;
         }
 
+        /* Storage Source formatting will not carry through the blunder
+         * that disk source formatting had at one time to format the
+         * <auth> for a volume source type. The <auth> information is
+         * kept in the storage pool and would be overwritten anyway.
+         * So avoid formatting it for volumes. */
+        if (src->auth && src->authDefined &&
+            src->type != VIR_STORAGE_TYPE_VOLUME) {
+            if (virStorageAuthDefFormat(&childBuf, src->auth) < 0)
+                goto error;
+        }
+
         if (virXMLFormatElement(buf, "source", &attrBuf, &childBuf) < 0)
             goto error;
     }
@@ -21985,7 +22044,9 @@ virDomainDiskDefFormat(virBufferPtr buf,
         virBufferAddLit(buf, "/>\n");
     }
 
-    if (def->src->auth) {
+    /* Format as child of <disk> if defined there; otherwise,
+     * if defined as child of <source>, then format later */
+    if (def->src->auth && !def->src->authDefined) {
         if (virStorageAuthDefFormat(buf, def->src->auth) < 0)
             return -1;
     }
