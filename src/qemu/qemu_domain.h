@@ -814,6 +814,10 @@ void qemuDomainMasterKeyRemove(qemuDomainObjPrivatePtr priv);
 void qemuDomainSecretInfoFree(qemuDomainSecretInfoPtr *secinfo)
     ATTRIBUTE_NONNULL(1);
 
+virStorageSourcePtr
+qemuDomainStorageSourceCopy(const virStorageSource *src,
+                            bool backingChain);
+
 void qemuDomainSecretDiskDestroy(virDomainDiskDefPtr disk)
     ATTRIBUTE_NONNULL(1);
 

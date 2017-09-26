@@ -345,7 +345,7 @@ qemuSecurityChownCallback(const virStorageSource *src,
         if (chown(src->path, uid, gid) < 0)
             goto cleanup;
     } else {
-        if (!(cpy = virStorageSourceCopy(src, false)))
+        if (!(cpy = qemuDomainStorageSourceCopy(src, false)))
             goto cleanup;
 
         /* src file init reports errors, return -2 on failure */
@@ -14392,7 +14392,7 @@ qemuDomainSnapshotDiskDataCollect(virQEMUDriverPtr driver,
 
         dd->disk = vm->def->disks[i];
 
-        if (!(dd->src = virStorageSourceCopy(snap->def->disks[i].src, false)))
+        if (!(dd->src = qemuDomainStorageSourceCopy(snap->def->disks[i].src, false)))
             goto error;
 
         if (virStorageSourceInitChainElement(dd->src, dd->disk->src, false) < 0)
@@ -14421,7 +14421,7 @@ qemuDomainSnapshotDiskDataCollect(virQEMUDriverPtr driver,
             (dd->persistdisk = virDomainDiskByName(vm->newDef, dd->disk->dst,
                                                    false))) {
 
-            if (!(dd->persistsrc = virStorageSourceCopy(dd->src, false)))
+            if (!(dd->persistsrc = qemuDomainStorageSourceCopy(dd->src, false)))
                 goto error;
 
             if (virStorageSourceInitChainElement(dd->persistsrc,
@@ -17438,7 +17438,7 @@ qemuDomainBlockCommit(virDomainPtr dom,
 
     /* For an active commit, clone enough of the base to act as the mirror */
     if (topSource == disk->src) {
-        if (!(mirror = virStorageSourceCopy(baseSource, false)))
+        if (!(mirror = qemuDomainStorageSourceCopy(baseSource, false)))
             goto endjob;
         if (virStorageSourceInitChainElement(mirror,
                                              disk->src,
