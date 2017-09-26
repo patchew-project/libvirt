@@ -1349,7 +1349,8 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
 {
     int actualType = virStorageSourceGetActualType(disk->src);
     qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
-    qemuDomainSecretInfoPtr secinfo = diskPriv->secinfo;
+    qemuDomainDiskSrcPrivatePtr diskSrcPriv = QEMU_DOMAIN_DISK_SRC_PRIVATE(disk->src);
+    qemuDomainSecretInfoPtr secinfo = diskSrcPriv->secinfo;
     qemuDomainSecretInfoPtr encinfo = diskPriv->encinfo;
     virJSONValuePtr srcprops = NULL;
     char *source = NULL;
@@ -2180,7 +2181,8 @@ qemuBuildDiskDriveCommandLine(virCommandPtr cmd,
         bool driveBoot = false;
         virDomainDiskDefPtr disk = def->disks[i];
         qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
-        qemuDomainSecretInfoPtr secinfo = diskPriv->secinfo;
+        qemuDomainDiskSrcPrivatePtr diskSrcPriv = QEMU_DOMAIN_DISK_SRC_PRIVATE(disk->src);
+        qemuDomainSecretInfoPtr secinfo = diskSrcPriv->secinfo;
         qemuDomainSecretInfoPtr encinfo = diskPriv->encinfo;
 
         /* PowerPC pseries based VMs do not support floppy device */
