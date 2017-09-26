@@ -345,11 +345,6 @@ struct _qemuDomainDiskPrivate {
 
     bool migrating; /* the disk is being migrated */
 
-    /* for storage devices using encryption/secret
-     * Can have both <auth> and <encryption> for some disks
-     * NB:*not* to be written to qemu domain object XML */
-    qemuDomainSecretInfoPtr encinfo;
-
     /* information about the device */
     bool tray; /* device has tray */
     bool removable; /* device media can be removed/changed */
@@ -366,6 +361,11 @@ struct _qemuDomainDiskSrcPrivate {
     /* for each storage source using auth/secret
      * NB: *not* to be written to qemu domain object XML */
     qemuDomainSecretInfoPtr secinfo;
+
+    /* for storage devices using encryption/secret
+     * Can have both <auth> and <encryption> for some disks
+     * NB:*not* to be written to qemu domain object XML */
+    qemuDomainSecretInfoPtr encinfo;
 };
 
 # define QEMU_DOMAIN_HOSTDEV_PRIVATE(hostdev)	\
