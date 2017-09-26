@@ -625,6 +625,7 @@ learnIPAddressThread(void *arg)
             if (virNWFilterIPAddrMapAddIPAddr(req->ifname, inetaddr) < 0) {
                 VIR_ERROR(_("Failed to add IP address %s to IP address "
                           "cache for interface %s"), inetaddr, req->ifname);
+                VIR_FREE(inetaddr);
             }
 
             ret = virNWFilterInstantiateFilterLate(req->driver,
@@ -636,7 +637,8 @@ learnIPAddressThread(void *arg)
                                                    req->filtername,
                                                    req->filterparams);
             VIR_DEBUG("Result from applying firewall rules on "
-                      "%s with IP addr %s : %d", req->ifname, inetaddr, ret);
+                      "%s with IP addr %s : %d", req->ifname, NULLSTR(inetaddr), ret);
+
         }
     } else {
         if (showError)
