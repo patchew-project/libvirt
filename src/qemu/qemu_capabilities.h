@@ -428,6 +428,7 @@ typedef enum {
 
     /* 270 */
     QEMU_CAPS_VXHS, /* -drive file.driver=vxhs via query-qmp-schema */
+    QEMU_CAPS_ISCSI_PASSWORD_SECRET, /* -drive file.driver=iscsi,...,password-secret= */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
