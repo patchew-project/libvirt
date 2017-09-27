@@ -61,7 +61,10 @@ virNWFilterIPAddrMapAddIPAddr(const char *ifname, char *addr)
         if (!val)
             goto cleanup;
         ret = virNWFilterHashTablePut(ipAddressMap, ifname, val);
-        goto cleanup;
+	 if (ret < 0) {
+	     virNWFilterVarValueFree(val);
+            goto cleanup;
+	 }
     } else {
         if (virNWFilterVarValueAddValue(val, addr) < 0)
             goto cleanup;
