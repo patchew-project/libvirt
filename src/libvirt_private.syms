@@ -167,6 +167,7 @@ virDomainAuditShmem;
 virDomainAuditStart;
 virDomainAuditStop;
 virDomainAuditVcpu;
+virDomainAuditWatchdog;
 
 
 # conf/domain_capabilities.h

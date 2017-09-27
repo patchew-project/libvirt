@@ -865,6 +865,9 @@ virDomainAuditStart(virDomainObjPtr vm, const char *reason, bool success)
     if (vm->def->tpm)
         virDomainAuditTPM(vm, vm->def->tpm, "start", true);
 
+    if (vm->def->watchdog)
+        virDomainAuditWatchdog(vm, vm->def->watchdog, "start", true);
+
     for (i = 0; i < vm->def->nshmems; i++)
         virDomainAuditShmem(vm, vm->def->shmems[i], "start", true);
 
@@ -982,4 +985,47 @@ virDomainAuditShmem(virDomainObjPtr vm,
     VIR_FREE(vmname);
     VIR_FREE(shmpath);
     return;
+}
+
+
+void
+virDomainAuditWatchdog(virDomainObjPtr vm,
+                       virDomainWatchdogDefPtr def,
+                       const char *reason, bool success)
+{
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
+    char *vmname;
+    char *alias = NULL;
+    char *device = NULL;
+    const char *virt;
+
+    virUUIDFormat(vm->def->uuid, uuidstr);
+    if (!(vmname = virAuditEncode("vm", vm->def->name))) {
+        VIR_WARN("OOM while encoding audit message");
+        return;
+    }
+
+    if (!(virt = virDomainVirtTypeToString(vm->def->virtType))) {
+        VIR_WARN("Unexpected virt type %d while encoding audit message", vm->def->virtType);
+        virt = "?";
+    }
+
+    if (VIR_STRDUP_QUIET(alias, def->info.alias) < 0) {
+        VIR_WARN("OOM while encoding audit message");
+        goto cleanup;
+    }
+
+    if (!(device = virAuditEncode("device", VIR_AUDIT_STR(alias)))) {
+        VIR_WARN("OOM while encoding audit message");
+        goto cleanup;
+    }
+
+    VIR_AUDIT(VIR_AUDIT_RECORD_RESOURCE, success,
+              "virt=%s resrc=dev reason=%s %s uuid=%s %s",
+              virt, reason, vmname, uuidstr, device);
+
+ cleanup:
+    VIR_FREE(vmname);
+    VIR_FREE(device);
+    VIR_FREE(alias);
 }

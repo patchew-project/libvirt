@@ -134,5 +134,10 @@ void virDomainAuditShmem(virDomainObjPtr vm,
                          const char *reason, bool success)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
+void virDomainAuditWatchdog(virDomainObjPtr vm,
+                            virDomainWatchdogDefPtr def,
+                            const char *reason, bool success)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+
 
 #endif /* __VIR_DOMAIN_AUDIT_H__ */
