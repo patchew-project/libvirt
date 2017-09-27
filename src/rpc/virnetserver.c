@@ -764,8 +764,6 @@ void virNetServerDispose(void *obj)
     for (i = 0; i < srv->nservices; i++)
         virNetServerServiceToggle(srv->services[i], false);
 
-    virThreadPoolFree(srv->workers);
-
     for (i = 0; i < srv->nservices; i++)
         virObjectUnref(srv->services[i]);
     VIR_FREE(srv->services);
@@ -795,6 +793,9 @@ void virNetServerClose(virNetServerPtr srv)
 
     for (i = 0; i < srv->nservices; i++)
         virNetServerServiceClose(srv->services[i]);
+
+    virThreadPoolFree(srv->workers);
+    srv->workers = NULL;
 
     virObjectUnlock(srv);
 }
