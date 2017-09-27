@@ -1,0 +1,3 @@
+<watchdog model='ib700' action='poweroff'>
+  <alias name='watchdog0'/>
+</watchdog>
