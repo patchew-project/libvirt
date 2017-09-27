@@ -605,6 +605,7 @@ learnIPAddressThread(void *arg)
 
     if (req->status == 0) {
         int ret;
+        int mapipret = -1;
         virSocketAddr sa;
         sa.len = sizeof(sa.data.inet4);
         sa.data.inet4.sin_family = AF_INET;
@@ -622,7 +623,7 @@ learnIPAddressThread(void *arg)
         virNWFilterUnlockIface(req->ifname);
 
         if ((inetaddr = virSocketAddrFormat(&sa)) != NULL) {
-            if (virNWFilterIPAddrMapAddIPAddr(req->ifname, inetaddr) < 0) {
+            if ((mapipret = virNWFilterIPAddrMapAddIPAddr(req->ifname, inetaddr)) < 0) {
                 VIR_ERROR(_("Failed to add IP address %s to IP address "
                           "cache for interface %s"), inetaddr, req->ifname);
             }
@@ -637,6 +638,9 @@ learnIPAddressThread(void *arg)
                                                    req->filterparams);
             VIR_DEBUG("Result from applying firewall rules on "
                       "%s with IP addr %s : %d", req->ifname, inetaddr, ret);
+            if (mapipret < 0)
+                VIR_FREE(inetaddr);
+
         }
     } else {
         if (showError)
