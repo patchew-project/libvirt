@@ -610,6 +610,7 @@ learnIPAddressThread(void *arg)
         sa.data.inet4.sin_family = AF_INET;
         sa.data.inet4.sin_addr.s_addr = vmaddr;
         char *inetaddr;
+        bool failmap = false;
 
         /* It is necessary to unlock interface here to avoid updateMutex and
          * interface ordering deadlocks. Otherwise we are going to
@@ -625,6 +626,7 @@ learnIPAddressThread(void *arg)
             if (virNWFilterIPAddrMapAddIPAddr(req->ifname, inetaddr) < 0) {
                 VIR_ERROR(_("Failed to add IP address %s to IP address "
                           "cache for interface %s"), inetaddr, req->ifname);
+                failmap = true;
             }
 
             ret = virNWFilterInstantiateFilterLate(req->driver,
@@ -637,7 +639,8 @@ learnIPAddressThread(void *arg)
                                                    req->filterparams);
             VIR_DEBUG("Result from applying firewall rules on "
                       "%s with IP addr %s : %d", req->ifname, inetaddr, ret);
-            VIR_FREE(inetaddr);
+            if (failmap)
+                VIR_FREE(inetaddr);
         }
     } else {
         if (showError)
