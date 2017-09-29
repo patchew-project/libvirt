@@ -5756,6 +5756,8 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
                           virDomainDeviceInfoPtr info,
                           unsigned int flags)
 {
+    bool formatAlias = info->alias && !(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE);
+
     if ((flags & VIR_DOMAIN_DEF_FORMAT_ALLOW_BOOT) && info->bootIndex) {
         virBufferAsprintf(buf, "<boot order='%u'", info->bootIndex);
 
@@ -5764,9 +5766,13 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
 
         virBufferAddLit(buf, "/>\n");
     }
-    if (info->alias &&
-        !(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE)) {
-        virBufferAsprintf(buf, "<alias name='%s'/>\n", info->alias);
+    if (formatAlias || info->user) {
+        virBufferAddLit(buf, "<alias");
+        if (formatAlias)
+            virBufferAsprintf(buf, " name='%s'", info->alias);
+        if (info->user)
+            virBufferAsprintf(buf, " user='%s'", info->user);
+        virBufferAddLit(buf, "/>\n");
     }
 
     if (info->mastertype == VIR_DOMAIN_CONTROLLER_MASTER_USB) {
@@ -6327,7 +6333,6 @@ virDomainDeviceInfoParseXML(xmlNodePtr node,
     while (cur != NULL) {
         if (cur->type == XML_ELEMENT_NODE) {
             if (alias == NULL &&
-                !(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE) &&
                 virXMLNodeNameEqual(cur, "alias")) {
                 alias = cur;
             } else if (address == NULL &&
@@ -6349,8 +6354,11 @@ virDomainDeviceInfoParseXML(xmlNodePtr node,
         cur = cur->next;
     }
 
-    if (alias)
-        info->alias = virXMLPropString(alias, "name");
+    if (alias) {
+        if (!(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE))
+            info->alias = virXMLPropString(alias, "name");
+        info->user = virXMLPropString(alias, "user");
+    }
 
     if (master) {
         info->mastertype = VIR_DOMAIN_CONTROLLER_MASTER_USB;

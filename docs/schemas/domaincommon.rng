@@ -5864,9 +5864,16 @@
   </define>
   <define name='alias'>
     <element name='alias'>
-      <attribute name='name'>
-        <ref name='aliasName'/>
-      </attribute>
+      <optional>
+        <attribute name='name'>
+          <ref name='aliasName'/>
+        </attribute>
+      </optional>
+      <optional>
+        <attribute name='user'>
+          <ref name='aliasName'/>
+        </attribute>
+      </optional>
     </element>
     <empty/>
   </define>
