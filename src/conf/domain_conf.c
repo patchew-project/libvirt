@@ -8761,6 +8761,15 @@ virDomainDiskDefDriverParseXML(virDomainDiskDefPtr def,
     }
     VIR_FREE(tmp);
 
+    if ((tmp = virXMLPropString(cur, "queues")) &&
+        virStrToLong_ui(tmp, NULL, 10, &def->queues) < 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("'queues' attribute must be positive number: %s"),
+                       tmp);
+        goto cleanup;
+    }
+    VIR_FREE(tmp);
+
     ret = 0;
 
  cleanup:
@@ -21996,6 +22005,16 @@ virDomainDiskDefFormat(virBufferPtr buf,
         virBufferAsprintf(&driverBuf, " iothread='%u'", def->iothread);
     if (def->detect_zeroes)
         virBufferAsprintf(&driverBuf, " detect_zeroes='%s'", detect_zeroes);
+    if (def->queues) {
+        if (def->bus == VIR_DOMAIN_DISK_BUS_VIRTIO)
+            virBufferAsprintf(&driverBuf, " queues='%u'", def->queues);
+        else {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("queues attribute in disk driver element is only "
+                             "supported by virtio-blk"));
+            return -1;
+        }
+    }
 
     virDomainVirtioOptionsFormat(&driverBuf, def->virtio);
 

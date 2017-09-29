@@ -2082,6 +2082,10 @@ qemuBuildDriveDevStr(const virDomainDef *def,
                               (disk->device == VIR_DOMAIN_DISK_DEVICE_LUN)
                               ? "on" : "off");
         }
+        if (disk->queues &&
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_BLK_NUM_QUEUES)) {
+            virBufferAsprintf(&opt, ",num-queues=%u", disk->queues);
+        }
 
         if (qemuBuildVirtioOptionsStr(&opt, disk->virtio, qemuCaps) < 0)
             goto error;
