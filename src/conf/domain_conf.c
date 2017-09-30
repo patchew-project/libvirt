@@ -84,6 +84,13 @@ struct _virDomainXMLOption {
     /* Private data for save image stored in snapshot XML */
     virSaveCookieCallbacks saveCookie;
 };
+static int
+virDomainDeviceSourceReconnectDefParseXML(virDomainDeviceSourceReconnectDefPtr def,
+                                       xmlNodePtr node,
+                                       xmlXPathContextPtr ctxt);
+static void
+virDomainDeviceSourceReconnectDefFormat(virBufferPtr buf,
+                                     virDomainDeviceSourceReconnectDefPtr def);
 
 #define VIR_DOMAIN_DEF_FORMAT_COMMON_FLAGS             \
     (VIR_DOMAIN_DEF_FORMAT_SECURE |                    \
@@ -10277,6 +10284,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     virNWFilterHashTablePtr filterparams = NULL;
     virDomainActualNetDefPtr actual = NULL;
     xmlNodePtr oldnode = ctxt->node;
+    virDomainDeviceSourceReconnectDef reconnect = {0};
     int rv, val;
 
     if (VIR_ALLOC(def) < 0)
@@ -10363,6 +10371,8 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                 vhostuser_type = virXMLPropString(cur, "type");
                 vhostuser_path = virXMLPropString(cur, "path");
                 vhostuser_mode = virXMLPropString(cur, "mode");
+                if (virDomainDeviceSourceReconnectDefParseXML(&reconnect, cur, ctxt) < 0)
+                    goto error;
             } else if (!def->virtPortProfile
                        && virXMLNodeNameEqual(cur, "virtualport")) {
                 if (def->type == VIR_DOMAIN_NET_TYPE_NETWORK) {
@@ -10584,8 +10594,17 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
 
         if (STREQ(vhostuser_mode, "server")) {
             def->data.vhostuser->data.nix.listen = true;
+            if (reconnect.enabled != VIR_TRISTATE_BOOL_ABSENT) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("'reconnect' attribute  unsupported "
+                                 "'server' mode for <interface type='vhostuser'>"));
+                goto error;
+           }
         } else if (STREQ(vhostuser_mode, "client")) {
             def->data.vhostuser->data.nix.listen = false;
+            def->data.vhostuser->data.nix.reconnect.enabled = reconnect.enabled;
+            def->data.vhostuser->data.nix.reconnect.timeout = reconnect.timeout;
+            reconnect.enabled = VIR_TRISTATE_BOOL_ABSENT;
         } else {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("Wrong <source> 'mode' attribute "
@@ -11248,7 +11267,7 @@ virDomainChrDefParseTargetXML(virDomainChrDefPtr def,
 }
 
 static int
-virDomainChrSourceReconnectDefParseXML(virDomainChrSourceReconnectDefPtr def,
+virDomainDeviceSourceReconnectDefParseXML(virDomainDeviceSourceReconnectDefPtr def,
                                        xmlNodePtr node,
                                        xmlXPathContextPtr ctxt)
 {
@@ -11370,7 +11389,7 @@ virDomainChrSourceDefParseTCP(virDomainChrSourceDefPtr def,
         VIR_FREE(tmp);
     }
 
-    if (virDomainChrSourceReconnectDefParseXML(&def->data.tcp.reconnect,
+    if (virDomainDeviceSourceReconnectDefParseXML(&def->data.tcp.reconnect,
                                                source,
                                                ctxt) < 0) {
         goto error;
@@ -11421,7 +11440,7 @@ virDomainChrSourceDefParseUnix(virDomainChrSourceDefPtr def,
     def->data.nix.listen = mode == VIR_DOMAIN_CHR_SOURCE_MODE_BIND;
     def->data.nix.path = virXMLPropString(source, "path");
 
-    if (virDomainChrSourceReconnectDefParseXML(&def->data.nix.reconnect,
+    if (virDomainDeviceSourceReconnectDefParseXML(&def->data.nix.reconnect,
                                                source,
                                                ctxt) < 0) {
         return -1;
@@ -23026,6 +23045,13 @@ virDomainNetDefFormat(virBufferPtr buf,
                                   def->data.vhostuser->data.nix.listen ?
                                   "server"  : "client");
                 sourceLines++;
+                if (def->data.vhostuser->data.nix.reconnect.enabled != VIR_TRISTATE_BOOL_ABSENT) {
+                    virBufferAddLit(buf, ">\n");
+                    sourceLines++;
+                    virBufferAdjustIndent(buf, 2);
+                    virDomainDeviceSourceReconnectDefFormat(buf, &def->data.vhostuser->data.nix.reconnect);
+                    virBufferAdjustIndent(buf, -2);
+                }
             }
             break;
 
@@ -23260,8 +23286,8 @@ virDomainChrAttrsDefFormat(virBufferPtr buf,
 
 
 static void
-virDomainChrSourceReconnectDefFormat(virBufferPtr buf,
-                                     virDomainChrSourceReconnectDefPtr def)
+virDomainDeviceSourceReconnectDefFormat(virBufferPtr buf,
+                                     virDomainDeviceSourceReconnectDefPtr def)
 {
     if (def->enabled == VIR_TRISTATE_BOOL_ABSENT)
         return;
@@ -23352,7 +23378,7 @@ virDomainChrSourceDefFormat(virBufferPtr buf,
             virBufferAsprintf(&attrBuf, " tlsFromConfig='%d'",
                               def->data.tcp.tlsFromConfig);
 
-        virDomainChrSourceReconnectDefFormat(&childBuf,
+        virDomainDeviceSourceReconnectDefFormat(&childBuf,
                                              &def->data.tcp.reconnect);
 
         if (virXMLFormatElement(buf, "source", &attrBuf, &childBuf) < 0)
@@ -23371,7 +23397,7 @@ virDomainChrSourceDefFormat(virBufferPtr buf,
             virDomainSourceDefFormatSeclabel(&childBuf, def->nseclabels,
                                              def->seclabels, flags);
 
-            virDomainChrSourceReconnectDefFormat(&childBuf,
+            virDomainDeviceSourceReconnectDefFormat(&childBuf,
                                                  &def->data.nix.reconnect);
 
             if (virXMLFormatElement(buf, "source", &attrBuf, &childBuf) < 0)

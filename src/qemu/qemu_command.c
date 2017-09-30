@@ -5128,7 +5128,7 @@ qemuBuildChrChardevFileStr(virLogManagerPtr logManager,
 
 static void
 qemuBuildChrChardevReconnectStr(virBufferPtr buf,
-                                const virDomainChrSourceReconnectDef *def)
+                                const virDomainDeviceSourceReconnectDef *def)
 {
     if (def->enabled == VIR_TRISTATE_BOOL_YES) {
         virBufferAsprintf(buf, ",reconnect=%u", def->timeout);

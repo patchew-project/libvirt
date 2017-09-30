@@ -3270,7 +3270,7 @@ qemuDomainNetSupportsCoalesce(virDomainNetType type)
 
 
 static int
-qemuDomainChrSourceReconnectDefValidate(const virDomainChrSourceReconnectDef *def)
+qemuDomainChrSourceReconnectDefValidate(const virDomainDeviceSourceReconnectDef *def)
 {
     if (def->enabled == VIR_TRISTATE_BOOL_YES &&
         def->timeout == 0) {
