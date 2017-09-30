@@ -7569,6 +7569,30 @@ qemuDomainDefValidateDiskLunSource(const virStorageSource *src)
 }
 
 
+/**
+ * qemuDomainDefValidateDisk:
+ * @disk: definition of disk
+ * @qemuCaps: qemu capabilities object
+ *
+ * Validates whether the num-queues property is valid for disk.
+ *
+ * Returns 0 on success; -1 and a libvirt error on error.
+ */
+int
+qemuDomainDefValidateDisk(const virDomainDiskDef *disk,
+                          virQEMUCapsPtr qemuCaps)
+{
+    if(disk->queues &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_BLK_NUM_QUEUES)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("num-queues property isn't supported by this "
+                         "QEMU binary"));
+        return -1;
+    }
+    return 0;
+}
+
+
 int
 qemuDomainPrepareChannel(virDomainChrDefPtr channel,
                          const char *domainChannelTargetDir)

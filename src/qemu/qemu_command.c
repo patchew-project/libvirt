@@ -2083,6 +2083,13 @@ qemuBuildDriveDevStr(const virDomainDef *def,
                               ? "on" : "off");
         }
 
+        if (disk->queues) {
+            if (qemuDomainDefValidateDisk(disk, qemuCaps) < 0)
+                goto error;
+            else
+                virBufferAsprintf(&opt, ",num-queues=%u", disk->queues);
+        }
+
         if (qemuBuildVirtioOptionsStr(&opt, disk->virtio, qemuCaps) < 0)
             goto error;
 
