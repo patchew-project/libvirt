@@ -1,0 +1,14 @@
+---
+- name: '{{ project }}: Load variables'
+  include_vars:
+    file: 'vars/{{ project }}/{{ os_name }}-{{ os_version }}.yml'
+
+- name: '{{ project }}: Drop local changes'
+  command: git reset --hard
+  args:
+    chdir: '{{ project }}'
+
+- name: '{{ project }}: Clean up'
+  command: git clean -xdf
+  args:
+    chdir: '{{ project }}'

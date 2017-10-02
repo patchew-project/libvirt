@@ -6,3 +6,11 @@ bash: /bin/bash
 java: /usr/bin/java
 make: /usr/bin/make
 sudo: /usr/bin/sudo
+
+# Wether to build software. While this is useful for figuring out build
+# dependencies, it should not be turned on in production because it causes
+# extra packages to be installed, which can interfere with the CI jobs
+build: false
+
+# How many parallel jobs to use when building software
+smp: 3

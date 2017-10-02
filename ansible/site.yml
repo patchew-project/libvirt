@@ -15,3 +15,15 @@
         loop_var: project
       when:
         - projects is defined
+
+    - include: tasks/build.yml
+      with_items:
+        '{{ projects }}'
+      loop_control:
+        loop_var: project
+      when:
+        - projects is defined
+        # base is a pseudo-projects
+        - project != 'base'
+        # Building can be turned on and off
+        - build
