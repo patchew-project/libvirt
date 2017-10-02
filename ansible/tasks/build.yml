@@ -96,11 +96,13 @@
   args:
     chdir: '{{ project }}'
   when:
-    - project == 'libvirt-go'
+    - ( project == 'libvirt-go' or
+        project == 'libvirt-go-xml' )
 
 - name: '{{ project }}: Run test suite'
   command: go test -tags api
   args:
     chdir: '{{ project }}'
   when:
-    - project == 'libvirt-go'
+    - ( project == 'libvirt-go' or
+        project == 'libvirt-go-xml' )
