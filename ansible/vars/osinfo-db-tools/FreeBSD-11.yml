@@ -1,0 +1,8 @@
+---
+packages:
+  - glib
+  - gnome-common
+  - intltool
+  - libarchive
+  - libxml2
+  - libxslt
