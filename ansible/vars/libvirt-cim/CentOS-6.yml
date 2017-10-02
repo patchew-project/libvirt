@@ -1,0 +1,11 @@
+---
+packages:
+  - libcmpiutil-devel
+  - libconfig-devel
+  - libuuid-devel
+  - libxml2-devel
+  - libxslt
+  - wget
+
+extra_packages:
+  - libvirt-devel

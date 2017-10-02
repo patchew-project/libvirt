@@ -38,7 +38,15 @@
   environment:
   when:
     - ( project == 'libosinfo' or
-        project == 'libvirt' )
+        project == 'libvirt' or
+        project == 'libvirt-cim' )
+
+- name: '{{ project }}: Run configure'
+  command: './configure {{ configure_options }}'
+  args:
+    chdir: '{{ project }}'
+  when:
+   - project == 'libvirt-cim'
 
 - name: '{{ project }}: Build project'
   command: '{{ make }} -j{{ smp }}'
@@ -46,7 +54,8 @@
     chdir: '{{ project }}'
   when:
     - ( project == 'libosinfo' or
-        project == 'libvirt' )
+        project == 'libvirt' or
+        project == 'libvirt-cim' )
 
 - name: '{{ project }}: Run sanity checks'
   command: '{{ make }} -j{{ smp }} syntax-check'
@@ -63,7 +72,8 @@
     chdir: '{{ project }}'
   when:
     - ( ( project == 'libvirt' and
-          os_name != 'FreeBSD' ) )
+          os_name != 'FreeBSD' ) or
+        project == 'libvirt-cim' )
 
 - name: '{{ project }}: Build RPM package'
   command: '{{ make }} -j{{ smp }} rpm'
@@ -72,4 +82,5 @@
   when:
     - ( os_name == 'CentOS' or
         os_name == 'Fedora' )
-    - ( project == 'libvirt' )
+    - ( project == 'libvirt' or
+        project == 'libvirt-cim' )
