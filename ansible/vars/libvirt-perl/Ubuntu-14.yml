@@ -1,0 +1,6 @@
+---
+packages:
+  - libcpan-changes-perl
+  - libtest-pod-coverage-perl
+  - libtest-pod-perl
+  - libxml-xpath-perl

@@ -1,0 +1,8 @@
+---
+packages:
+  - p5-CPAN-Changes
+  - p5-ExtUtils-MakeMaker
+  - p5-Test-Pod
+  - p5-Test-Pod-Coverage
+  - p5-Time-HiRes
+  - p5-XML-XPath

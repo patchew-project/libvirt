@@ -106,3 +106,37 @@
   when:
     - ( project == 'libvirt-go' or
         project == 'libvirt-go-xml' )
+
+# Perl build (makemaker)
+
+- name: '{{ project }}: Run Makefile.PL'
+  command: perl Makefile.PL
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'libvirt-perl'
+    - false
+
+- name: '{{ project }}: Build project'
+  command: '{{ make }}'
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'libvirt-perl'
+    - false
+
+- name: '{{ project }}: Build project manifest'
+  command: '{{ make }} -j{{ smp }} manifest'
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'libvirt-perl'
+    - false
+
+- name: '{{ project }}: Run test suite'
+  command: '{{ make }} -j{{ smp }} test'
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'libvirt-perl'
+    - false
