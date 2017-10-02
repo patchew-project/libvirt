@@ -1,0 +1,18 @@
+---
+packages:
+  - glib
+  - gtk-vnc
+  - gtk3
+  - intltool
+  - libxml2
+  - spice-gtk
+
+extra_packages:
+  - libvirt
+  - libvirt-glib
+
+features:
+  with_gtk_vnc: --with-gtk-vnc
+  with_libvirt: --with-libvirt
+  with_ovirt: --without-ovirt # not available
+  with_spice_gtk: --with-spice-gtk

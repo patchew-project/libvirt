@@ -42,7 +42,8 @@
         project == 'libvirt-cim' or
         project == 'libvirt-glib' or
         project == 'libvirt-sandbox' or
-        project == 'osinfo-db-tools' )
+        project == 'osinfo-db-tools' or
+        project == 'virt-viewer' )
 
 - name: '{{ project }}: Run configure'
   command: './configure {{ configure_options }}'
@@ -62,7 +63,9 @@
         project == 'libvirt-glib' or
         project == 'libvirt-sandbox' or
         project == 'osinfo-db' or
-        project == 'osinfo-db-tools' )
+        project == 'osinfo-db-tools' or
+        ( project == 'virt-viewer' and
+          os_version != 'Rawhide' ) )
 
 - name: '{{ project }}: Run sanity checks'
   command: '{{ make }} -j{{ smp }} syntax-check'
@@ -74,7 +77,9 @@
           os_name != 'FreeBSD' ) or
         project == 'libvirt-glib' or
         project == 'libvirt-sandbox' or
-        project == 'osinfo-db-tools' )
+        project == 'osinfo-db-tools' or
+        ( project == 'virt-viewer' and
+          os_version != 'Rawhide' ) )
 
 - name: '{{ project }}: Run test suite'
   command: '{{ make }} -j{{ smp }} check'
@@ -87,7 +92,9 @@
         project == 'libvirt-glib' or
         project == 'libvirt-sandbox' or
         project == 'osinfo-db' or
-        project == 'osinfo-db-tools' )
+        project == 'osinfo-db-tools' or
+        ( project == 'virt-viewer' and
+          os_version != 'Rawhide' ) )
 
 - name: '{{ project }}: Build RPM package'
   command: '{{ make }} -j{{ smp }} rpm'

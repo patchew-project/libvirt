@@ -1,0 +1,20 @@
+---
+packages:
+  - glib2-devel
+  - gtk-vnc2-devel
+  - gtk3-devel
+  - intltool
+  - libgovirt-devel
+  - libxml2
+  - libxml2-devel
+  - spice-gtk3-devel
+
+extra_packages:
+  - libvirt-devel
+  - libvirt-glib-devel
+
+features:
+  with_gtk_vnc: --with-gtk-vnc
+  with_libvirt: --with-libvirt
+  with_ovirt: --with-ovirt
+  with_spice_gtk: --with-spice-gtk
