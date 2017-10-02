@@ -1,0 +1,17 @@
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+
+    # Bootstrap Ansible itself
+    - include: tasks/bootstrap.yml
+
+
+- hosts: all
+
+  tasks:
+
+    # Prepare the base environment
+    - include: tasks/facts.yml
+    - include: tasks/base.yml

@@ -1,0 +1,14 @@
+---
+packages:
+  - autoconf
+  - automake
+  - autopoint
+  - ccache
+  - gcc
+  - gettext
+  - libc6-dev
+  - libtool
+  - libtool-bin
+  - make
+  - patch
+  - pkgconf

@@ -1,0 +1,17 @@
+---
+- hosts: all
+
+  tasks:
+
+    # Prepare the base environment
+    - include: tasks/facts.yml
+    - include: tasks/base.yml
+
+    # Install build dependencies for each project
+    - include: tasks/packages.yml
+      with_items:
+        '{{ projects }}'
+      loop_control:
+        loop_var: project
+      when:
+        - projects is defined

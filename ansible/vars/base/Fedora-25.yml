@@ -1,0 +1,15 @@
+---
+packages:
+  - autoconf
+  - automake
+  - ccache
+  - cppi
+  - gcc
+  - gettext
+  - gettext-devel
+  - glibc-devel
+  - libtool
+  - make
+  - patch
+  - pkgconfig
+  - rpm-build

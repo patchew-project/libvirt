@@ -1,0 +1,11 @@
+---
+- name: '{{ project }}: Load variables'
+  include_vars:
+    file: 'vars/{{ project }}/{{ os_name }}-{{ os_version }}.yml'
+
+- name: '{{ project }}: Install packages'
+  package:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    '{{ packages }}'
