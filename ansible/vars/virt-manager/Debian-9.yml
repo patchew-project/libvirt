@@ -1,0 +1,12 @@
+---
+packages:
+  - intltool
+  - libglib2.0-bin
+  - python-gi
+  - python-ipaddr
+  - python-libxml2
+  - python-requests
+
+extra_packages:
+  - gir1.2-libosinfo-1.0
+  - python-libvirt

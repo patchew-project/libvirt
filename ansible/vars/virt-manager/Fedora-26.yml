@@ -1,0 +1,12 @@
+---
+packages:
+  - intltool
+  - python-gobject
+  - python-ipaddr
+  - python-libxml2
+  - python2-devel
+  - python2-requests
+
+extra_packages:
+  - libosinfo
+  - libvirt-python

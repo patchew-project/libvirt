@@ -1,0 +1,11 @@
+---
+packages:
+  - intltool
+  - py27-gobject3
+  - py27-ipaddr
+  - py27-libxml2
+  - py27-requests
+
+extra_packages:
+  - libosinfo
+  - py27-libvirt

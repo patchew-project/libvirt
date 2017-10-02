@@ -184,12 +184,20 @@
 
 # Python build
 
+- name: '{{ project }}: Run configure'
+  command: python2 setup.py configure
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'virt-manager'
+
 - name: '{{ project }}: Build project'
   command: python2 setup.py build
   args:
     chdir: '{{ project }}'
   when:
-    - project == 'libvirt-python'
+    - ( project == 'libvirt-python' or
+        project == 'virt-manager' )
 
 - name: '{{ project }}: Run test suite'
   command: python2 setup.py test
@@ -197,3 +205,12 @@
     chdir: '{{ project }}'
   when:
     - project == 'libvirt-python'
+
+- name: '{{ project }}: Build RPM package'
+  command: python2 setup.py rpm
+  args:
+    chdir: '{{ project }}'
+  when:
+    - ( os_name == 'CentOS' or
+        os_name == 'Fedora' )
+    - project == 'virt-manager'
