@@ -1,0 +1,77 @@
+---
+augeas:
+  - augeas       # CentOS, Fedora, FreeBSD
+  - augeas-tools # Debian, Ubuntu
+
+autopoint:
+  - autopoint     # Debian, Ubuntu
+  - gettext-devel # CentOS, Fedora
+  - gettext-tools # FreeBSD
+
+dnsmasq:
+  - dnsmasq      # CentOS, Fedora, FreeBSD
+  - dnsmasq-base # Debian, Ubuntu
+
+dtrace:
+  - systemtap-sdt-dev   # Debian, Ubuntu
+  - systemtap-sdt-devel # CentOS, Fedora
+
+go:
+  - go     # FreeBSD
+  - golang # CentOS, Debian, Fedora, Ubuntu
+
+gtkdocize:
+  - gtk-doc       # CentOS, Fedora, FreeBSD
+  - gtk-doc-tools # Debian, Ubuntu
+
+iscsiadm:
+  - iscsi-initiator-utils # CentOS, Fedora
+  - open-iscsi            # Debian, Ubuntu
+
+java:
+  - java-1.8.0-openjdk-headless # CentOS, Fedora
+  - openjdk-7-jre-headless      # Debian 8, Ubuntu <= 14
+  - openjdk-8-jre-headless      # Debian 9, Ubuntu 16
+  - openjdk8-jre                # FreeBSD
+
+libtool:
+  - libtool-bin # Debian, Ubuntu 16
+  - libtool     # CentOS, Fedora, FreeBSD, Ubuntu <= 14
+
+libtoolize:
+  - libtool
+
+make:
+  - gmake # FreeBSD
+  - make  # CentOS, Debian, Fedora, Ubuntu
+
+pkg-config:
+  - pkgconf   # Debian, FreeBSD, Ubuntu >= 14
+  - pkgconfig # CentOS, Fedora, Ubuntu 12
+
+qemu-img:
+  - qemu-img   # CentOS, Fedora
+  - qemu-utils # Debian, FreeBSD, Ubuntu
+
+scrub:
+  - diskscrub # FreeBSD
+  - scrub     # CentOS, Debian, Fedora Ubuntu
+
+showmount:
+  - nfs-common # Debian, Ubuntu
+  - nfs-utils  # CentOS, Fedora
+
+valac:
+  - vala  # CentOS, Fedora, FreeBSD
+  - valac # Debian, Ubuntu
+
+xmllint:
+  - libxml2       # CentOS, Fedora, FreeBSD
+  - libxml2-utils # Debian, Ubuntu
+
+xsltproc:
+  - libxslt  # CentOS, Fedora, FreeBSD
+  - xsltproc # Debian, Ubuntu
+
+zfs:
+  - zfs-fuse # CentOS, Debian, Fedora, Ubuntu

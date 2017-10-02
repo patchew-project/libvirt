@@ -1,0 +1,35 @@
+---
+gi:
+  - py27-gobject3  # FreeBSD
+  - python-gi      # Debian, Ubuntu
+  - python-gobject # CentOS, Fedora
+
+ipaddr:
+  - py27-ipaddr   # FreeBSD
+  - python-ipaddr # CentOS, Debian, Fedora, Ubuntu
+
+libosinfo:
+  - gir1.2-libosinfo-1.0 # Debian, Ubuntu
+  - libosinfo            # CentOS, Fedora, FreeBSD
+
+libxml2:
+  - libxml2-python # Debian, Ubuntu
+  - py27-libxml2   # FreeBSD
+  - python-libxml2 # CentOS, Fedora
+
+lxml:
+  - py27-lxml   # FreeBSD
+  - python-lxml # CentOS, Debian, Fedora, Ubuntu
+
+nose:
+  - py27-nose   # FreeBSD
+  - python-nose # CentOS, Debian, Fedora, Ubuntu
+
+requests:
+  - py27-requests    # FreeBSD
+  - python-requests  # CentOS, Debian, Ubuntu
+  - python2-requests # Fedora
+
+libvirt:
+  - libvirt-python # CentOS, Debian, Fedora, Ubuntu
+  - py27-libvirt   # FreeBSD

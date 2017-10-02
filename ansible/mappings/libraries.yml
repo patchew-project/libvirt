@@ -1,0 +1,228 @@
+---
+avahi:
+  - avahi               # FreeBSD
+  - avahi-devel         # CentOS, Fedora
+  - libavahi-client-dev # Debian, Ubuntu
+
+check:
+  - check       # Debian, FreeBSD, Ubuntu
+  - check-devel # CentOS, Fedora
+
+cyrus-sasl:
+  - cyrus-sasl       # FreeBSD
+  - cyrus-sasl-devel # CentOS, Fedora
+  - libsasl2-dev     # Debian, Ubuntu
+
+device-mapper:
+  - device-mapper-devel # CentOS, Fedora
+  - libdevmapper-dev    # Debian, Ubuntu
+
+fuse:
+  - fuse-devel  # CentOS, Fedora
+  - fusefs-libs # FreeBSD
+  - libfuse-dev # Debian, Ubuntu
+
+glib2:
+  - glib           # FreeBSD
+  - glib2-devel    # CentOS, Fedora
+  - libglib2.0-dev # Debian, Ubuntu
+
+glibc6:
+  - glibc-devel # CentOS, Fedora
+  - libc6-dev   # Debian, Ubuntu
+
+glusterfs:
+  - glusterfs           # FreeBSD
+  - glusterfs-api-devel # CentOS, Fedora
+  - glusterfs-client    # Debian, Ubuntu
+
+gnutls:
+  - gnutls          # FreeBSD
+  - gnutls-devel    # CentOS, Fedora
+  - libgnutls-dev   # Ubuntu <= 14
+  - libgnutls28-dev # Debian, Ubuntu 16
+
+gobject-introspection:
+  - gobject-introspection       # FreeBSD
+  - gobject-introspection-devel # CentOS, Fedora
+  - libgirepository1.0-dev      # Debian, Ubuntu
+
+gtk-vnc2:
+  - gtk-vnc            # FreeBSD
+  - gtk-vnc2-devel     # CentOS, Fedora
+  - libgtk-vnc-2.0-dev # Debian, Ubuntu
+
+gtk3:
+  - gtk3         # FreeBSD
+  - gtk3-devel   # CentOS, Fedora
+  - libgtk-3-dev # Debian, Ubuntu
+
+libacl:
+  - libacl-devel # CentOS, Fedora
+  - libacl1-dev  # Debian, Ubuntu
+
+libattr:
+  - libattr-devel # CentOS, Fedora
+  - libattr1-dev  # Debian, Ubuntu
+
+libaudit:
+  - audit-libs-devel # CentOS, Fedora
+  - libaudit-dev     # Debian, Ubuntu
+
+libarchive:
+  - libarchive       # FreeBSD
+  - libarchive-dev   # Debian, Ubuntu
+  - libarchive-devel # CentOS, Fedora
+
+libblkid:
+  - libblkid-dev   # Debian, Ubuntu
+  - libblkid-devel # CentOS, Fedora
+
+libcap-ng:
+  - libcap-ng-dev   # Debian, Ubuntu
+  - libcap-ng-devel # CentOS, Fedora
+
+libcurl:
+  - curl                # FreeBSD
+  - libcurl-devel       # CentOS, Fedora
+  - libcurl4-gnutls-dev # Debian, Ubuntu
+
+libdbus:
+  - dbus          # FreeBSD
+  - dbus-devel    # CentOS, Fedora
+  - libdbus-1-dev # Debian, Ubuntu
+
+libgovirt:
+  - libgovirt-dev   # Debian, Ubuntu
+  - libgovirt-devel # Fedora
+
+libnl3:
+  - libnl-3-dev  # Debian, Ubuntu
+  - libnl3-devel # CentOS, Fedora
+
+libnlroute3:
+  - libnl-route-3-dev # Debian, Ubuntu
+  - libnl3-devel      # CentOS, Fedora
+
+libparted:
+  - libparted-dev # Debian, Ubuntu
+  - parted-devel  # CentOS, Fedora
+
+libpcap:
+  - libpcap       # FreeBSD
+  - libpcap-dev   # Debian, Ubuntu
+  - libpcap-devel # CentOS, Fedora
+
+libpciaccess:
+  - libpciaccess       # FreeBSD
+  - libpciaccess-dev   # Debian, Ubuntu
+  - libpciaccess-devel # CentOS, Fedora
+
+librbd:
+  - librbd-dev    # Debian, Ubuntu
+  - librbd-devel  # Fedora
+  - librbd1-devel # CentOS
+
+libselinux:
+  - libselinux-devel # CentOS, Fedora
+  - libselinux1-dev  # Debian, Ubuntu
+
+libsoup:
+  - libsoup        # FreeBSD
+  - libsoup-devel  # CentOS, Fedora
+  - libsoup2.4-dev # Debian, Ubuntu
+
+libssh:
+  - libssh            # FreeBSD
+  - libssh-devel      # CentOS, Fedora
+  - libssh-gcrypt-dev # Debian
+
+libssh2:
+  - libssh2       # FreeBSD
+  - libssh2-1-dev # Debian, Ubuntu
+  - libssh2-devel # CentOS, Fedora
+
+libudev:
+  - libudev-dev   # Debian, Ubuntu
+  - libudev-devel # CentOS, Fedora
+
+libvirt:
+  - libvirt       # FreeBSD
+  - libvirt-dev   # Debian, Ubuntu
+  - libvirt-devel # CentOS, Fedora
+
+libvirt-glib:
+  - libvirt-glib         # FreeBSD
+  - libvirt-glib-1.0-dev # Debian, Ubuntu
+  - libvirt-glib-devel   # CentOS, Fedora
+
+libvirt-gobject:
+  - libvirt-glib          # FreeBSD
+  - libvirt-glib-1.0-dev  # Debian, Ubuntu
+  - libvirt-gobject-devel # CentOS, Fedora
+
+libxml2:
+  - libxml2       # FreeBSD
+  - libxml2-devel # CentOS, Fedora
+  - libxml2-dev   # Debian, Ubuntu
+
+libxslt:
+  - libxslt       # FreeBSD
+  - libxslt-devel # CentOS, Fedora
+  - libxslt1-dev  # Debian, Ubuntu
+
+netcf:
+  - netcf-devel  # CentOS, Fedora
+  - libnetcf-dev # Debian, Ubuntu
+
+numactl:
+  - libnuma-dev   # Debian, Ubuntu
+  - numactl-devel # CentOS, Fedora
+
+openssl:
+  - libssl-dev    # Debian, Ubuntu
+  - openssl-devel # CentOS, Fedora
+
+openwsman:
+  - libopenwsman-dev # Ubuntu
+  - libwsman-devel   # CentOS, Fedora
+
+polkit:
+  - policykit-1  # Debian, Ubuntu
+  - polkit       # FreeBSD
+  - polkit-devel # CentOS, Fedora
+
+readline:
+  - libreadline-dev # Debian, Ubuntu
+  - readline        # FreeBSD
+  - readline-devel  # CentOS, Fedora
+
+sanlock:
+  - libsanlock-dev # Debian, Ubuntu
+  - sanlock-devel  # CentOS, Fedora
+
+spice-gtk3:
+  - libspice-client-gtk-3.0-dev # Debian, Ubuntu
+  - spice-gtk                   # FreeBSD
+  - spice-gtk3-devel            # CentOS, Fedora
+
+wireshark:
+  - wireshark-dev   # Debian, Ubuntu
+  - wireshark-devel # Fedora
+
+xen:
+  - libxen-dev # Debian, Ubuntu
+  - xen-devel  # Fedora
+
+xz:
+  - liblzma-dev # Debian, Ubuntu
+  - xz-devel    # CentOS, Fedora
+
+yajl:
+  - libyajl-dev # Debian, Ubuntu
+  - yajl        # FreeBSD
+  - yajl-devel  # CentOS, Fedora
+
+zlib:
+  - zlib1g-dev # Debian, Ubuntu
+  - zlib-devel # CentOS, Fedora

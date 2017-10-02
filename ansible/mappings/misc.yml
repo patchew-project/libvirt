@@ -1,0 +1,13 @@
+---
+test-screenshot:
+  - libvirt        # FreeBSD
+  - libvirt-daemon # Debian, Ubuntu
+  - libvirt-libs   # CentOS, Fedora
+
+pci-ids:
+  - hwdata # CentOS, Debian, Fedora, Ubuntu
+  - pciids # FreeBSD
+
+usb-ids:
+  - hwdata # CentOS, Debian, Fedora, Ubuntu
+  - usbids # FreeBSD

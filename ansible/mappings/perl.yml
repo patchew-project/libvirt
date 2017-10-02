@@ -1,0 +1,112 @@
+---
+accessors:
+  - libaccessors-perl # Debian, Ubuntu
+  - p5-accessors      # FreeBSD
+  - perl-accessors    # CentOS, Fedora
+
+Config::Record:
+  - libconfig-record-perl # Debian, Ubuntu
+  - p5-Config-Record      # FreeBSD
+  - perl-Config-Record    # CentOS, Fedora
+
+CPAN::Changes:
+  - libcpan-changes-perl # Debian, Ubuntu
+  - p5-CPAN-Changes      # FreeBSD
+  - perl-CPAN-Changes    # CentOS, Fedora
+
+Digest:
+  - libdigest-perl # Debian, Ubuntu
+  - p5-Digest      # FreeBSD
+  - perl-Digest    # CentOS, Fedora
+
+Digest::MD5:
+  - libdigest-perl-md5-perl # Debian, Ubuntu
+  - p5-Digest-MD5           # FreeBSD
+  - perl-Digest-MD5         # CentOS, Fedora
+
+ExtUtils::MakeMaker:
+  - p5-ExtUtils-MakeMaker   # FreeBSD
+  - perl-ExtUtils-MakeMaker # CentOS, Fedora
+
+File::Slurp:
+  - libfile-slurp-perl # Debian, Ubuntu
+  - p5-File-Slurp      # FreeBSD
+  - perl-File-Slurp    # CentOS, Fedora
+
+IO::Compress:Bzip2:
+  - libio-compress-perl    # Debian, Ubuntu
+  - p5-IO-Compress         # FreeBSD
+  - perl-IO-Compress-Bzip2 # CentOS, Fedora
+
+IO::String:
+  - libio-string-perl # Debian, Ubuntu
+  - p5-IO-String      # FreeBSD
+  - perl-IO-String    # CentOS, Fedora
+
+Module::Build:
+  - libmodule-build-perl # Debian, Ubuntu
+  - p5-Module-Build      # FreeBSD
+  - perl-Module-Build    # CentOS, Fedora
+
+Sub::Uplevel:
+  - libsub-uplevel-perl # Debian, Ubuntu
+  - p5-Sub-Uplevel      # FreeBSD
+  - perl-Sub-Uplevel    # CentOS, Fedora
+
+Sys::Virt:
+  - libsys-virt-perl # Debian, Ubuntu
+  - p5-Sys-Virt      # FreeBSD
+  - perl-Sys-Virt    # CentOS, Fedora
+
+TAP::Formatter::HTML:
+  - libtap-formatter-html-perl # Debian, Ubuntu
+  - perl-TAP-Formatter-HTML    # CentOS, Fedora
+
+TAP::Formatter::JUnit:
+  - libtap-formatter-junit-perl # Debian, Ubuntu
+  - p5-TAP-Formatter-JUnit      # FreeBSD
+  - perl-TAP-Formatter-JUnit    # CentOS, Fedora
+
+TAP::Harness::Archive:
+  - libtap-harness-archive-perl # Debian, Ubuntu
+  - perl-TAP-Harness-Archive    # CentOS, Fedora
+
+Test::Exception:
+  - libtest-exception-perl # Debian, Ubuntu
+  - p5-Test-Exception      # FreeBSD
+  - perl-Test-Exception    # CentOS, Fedora
+
+Test::LWP::UserAgent:
+  - libtest-lwp-useragent-perl # Debian, Ubuntu
+  - p5-Test-LWP-UserAgent      # FreeBSD
+  - perl-Test-LWP-UserAgent    # CentOS, Fedora
+
+Test::Pod:
+  - libtest-pod-perl # Debian, Ubuntu
+  - p5-Test-Pod      # FreeBSD
+  - perl-Test-Pod    # CentOS, Fedora
+
+Test::Pod::Coverage:
+  - libtest-pod-coverage-perl # Debian, Ubuntu
+  - p5-Test-Pod-Coverage      # FreeBSD
+  - perl-Test-Pod-Coverage    # CentOS, Fedora
+
+Time::HiRes:
+  - libtime-hr-perl # Debian, Ubuntu
+  - p5-Time-HiRes   # FreeBSD
+  - perl-Time-HiRes # CentOS, Fedora
+
+XML::Twig:
+  - libxml-twig-perl # Debian, Ubuntu
+  - p5-XML-Twig      # FreeBSD
+  - perl-XML-Twig    # CentOS, Fedora
+
+XML::Writer:
+  - libxml-writer-perl # Debian, Ubuntu
+  - p5-XML-Writer      # FreeBSD
+  - perl-XML-Writer    # CentOS, Fedora
+
+XML::XPath:
+  - libxml-xpath-perl # Debian, Ubuntu
+  - p5-XML-XPath      # FreeBSD
+  - perl-XML-XPath    # CentOS, Fedora
