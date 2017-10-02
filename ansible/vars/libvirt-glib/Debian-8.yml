@@ -1,0 +1,16 @@
+---
+packages:
+  - gtk-doc-tools
+  - intltool
+  - libgirepository1.0-dev
+  - libglib2.0-dev
+  - libxml2-dev
+  - valac
+
+extra_packages:
+  - libvirt-dev
+
+features:
+  enable_gtk_doc: --enable-gtk-doc
+  enable_introspection: --enable-introspection
+  enable_vala: --enable-vala

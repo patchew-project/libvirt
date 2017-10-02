@@ -1,0 +1,16 @@
+---
+packages:
+  - glib2-devel
+  - gobject-introspection-devel
+  - gtk-doc
+  - intltool
+  - libxml2-devel
+  - vala
+
+extra_packages:
+  - libvirt-devel
+
+features:
+  enable_gtk_doc: --enable-gtk-doc
+  enable_introspection: --enable-introspection
+  enable_vala: --enable-vala
