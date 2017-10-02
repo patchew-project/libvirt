@@ -1,0 +1,19 @@
+---
+packages:
+  - check-devel
+  - glib2-devel
+  - gnome-common
+  - gobject-introspection-devel
+  - gtk-doc
+  - hwdata
+  - intltool
+  - libsoup-devel
+  - libxml2
+  - libxml2-devel
+  - libxslt-devel
+  - vala
+
+features:
+  enable_gtk_doc: --enable-gtk-doc
+  enable_introspection: --enable-introspection
+  enable_vala: --enable-vala

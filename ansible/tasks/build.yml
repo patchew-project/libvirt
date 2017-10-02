@@ -12,3 +12,43 @@
   command: git clean -xdf
   args:
     chdir: '{{ project }}'
+
+# C build
+
+- name: '{{ project }}: Prepare configure options'
+  set_fact:
+    configure_options: []
+
+- name: '{{ project }}: Prepare configure options'
+  set_fact:
+    configure_options: '{{ configure_options }} + [ "{{ features[item] }}" ]'
+  with_items:
+    '{{ features }}'
+  when:
+    - features is defined
+
+- name: '{{ project }}: Prepare configure options'
+  set_fact:
+    configure_options: '{{ configure_options | join(" ") }}'
+
+- name: '{{ project }}: Run autogen.sh'
+  command: './autogen.sh {{ configure_options }}'
+  args:
+    chdir: '{{ project }}'
+  environment:
+  when:
+    - project == 'libosinfo'
+
+- name: '{{ project }}: Build project'
+  command: '{{ make }} -j{{ smp }}'
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'libosinfo'
+
+- name: '{{ project }}: Run sanity checks'
+  command: '{{ make }} -j{{ smp }} syntax-check'
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'libosinfo'

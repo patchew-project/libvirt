@@ -1,0 +1,19 @@
+---
+packages:
+  - check
+  - gnome-common
+  - gtk-doc-tools
+  - hwdata
+  - intltool
+  - libgirepository1.0-dev
+  - libglib2.0-dev
+  - libsoup2.4-dev
+  - libxml2-dev
+  - libxml2-utils
+  - libxslt1-dev
+  - valac
+
+features:
+  enable_gtk_doc: --enable-gtk-doc
+  enable_introspection: --enable-introspection
+  enable_vala: --enable-vala

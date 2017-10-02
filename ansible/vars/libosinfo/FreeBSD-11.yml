@@ -1,0 +1,19 @@
+---
+packages:
+  - check
+  - glib
+  - gnome-common
+  - gobject-introspection
+  - gtk-doc
+  - intltool
+  - libsoup
+  - libxml2
+  - libxslt
+  - pciids
+  - usbids
+  - vala
+
+features:
+  enable_gtk_doc: --enable-gtk-doc
+  enable_introspection: --enable-introspection
+  enable_vala: --enable-vala
