@@ -1,0 +1,20 @@
+---
+packages:
+  - p5-Config-Record
+  - p5-Digest
+  - p5-Digest-MD5
+  - p5-File-Slurp
+  - p5-IO-Compress
+  - p5-IO-String
+  - p5-Module-Build
+  - p5-Sub-Uplevel
+  - p5-Sys-Virt
+  - p5-TAP-Formatter-JUnit
+  - p5-Test-Exception
+  - p5-Test-LWP-UserAgent
+  - p5-Test-Pod
+  - p5-Test-Pod-Coverage
+  - p5-XML-Twig
+  - p5-XML-Writer
+  - p5-XML-XPath
+  - p5-accessors

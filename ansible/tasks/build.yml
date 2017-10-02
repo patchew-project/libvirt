@@ -145,6 +145,36 @@
     - project == 'libvirt-perl'
     - false
 
+# Perl build (module-build)
+
+- name: '{{ project }}: Run Build.PL'
+  command: perl Build.PL
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'libvirt-tck'
+
+- name: '{{ project }}: Build project'
+  command: perl Build
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'libvirt-tck'
+
+- name: '{{ project }}: Build project manifest'
+  command: perl Build manifest
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'libvirt-tck'
+
+- name: '{{ project }}: Run test suite'
+  command: perl Build test
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'libvirt-tck'
+
 # Python build
 
 - name: '{{ project }}: Build project'
