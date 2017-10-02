@@ -1,0 +1,7 @@
+---
+packages:
+  - intltool
+  - libxml2
+
+extra_packages:
+  - osinfo-db-tools

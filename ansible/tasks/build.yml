@@ -59,7 +59,8 @@
         project == 'libvirt' or
         project == 'libvirt-cim' or
         project == 'libvirt-glib' or
-        project == 'libvirt-sandbox' )
+        project == 'libvirt-sandbox' or
+        project == 'osinfo-db' )
 
 - name: '{{ project }}: Run sanity checks'
   command: '{{ make }} -j{{ smp }} syntax-check'
@@ -81,7 +82,8 @@
           os_name != 'FreeBSD' ) or
         project == 'libvirt-cim' or
         project == 'libvirt-glib' or
-        project == 'libvirt-sandbox' )
+        project == 'libvirt-sandbox' or
+        project == 'osinfo-db' )
 
 - name: '{{ project }}: Build RPM package'
   command: '{{ make }} -j{{ smp }} rpm'
@@ -91,7 +93,8 @@
     - ( os_name == 'CentOS' or
         os_name == 'Fedora' )
     - ( project == 'libvirt' or
-        project == 'libvirt-cim' )
+        project == 'libvirt-cim' or
+        project == 'osinfo-db' )
 
 # Go build
 
