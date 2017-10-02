@@ -1,0 +1,126 @@
+---
+packages:
+  - augeas-tools
+  - dnsmasq-base
+  - ebtables
+  - glusterfs-client
+  - libacl1-dev
+  - libapparmor-dev
+  - libattr1-dev
+  - libaudit-dev
+  - libavahi-client-dev
+  - libblkid-dev
+  - libcap-ng-dev
+  - libcurl4-gnutls-dev
+  - libdbus-1-dev
+  - libdevmapper-dev
+  - libfuse-dev
+  - libgnutls28-dev
+  - libnetcf-dev
+  - libnl-3-dev
+  - libnl-route-3-dev
+  - libnuma-dev
+  - libparted-dev
+  - libpcap-dev
+  - libpciaccess-dev
+  - librbd-dev
+  - libreadline-dev
+  - libsanlock-dev
+  - libsasl2-dev
+  - libselinux1-dev
+  - libssh-gcrypt-dev
+  - libssh2-1-dev
+  - libudev-dev
+  - libxen-dev
+  - libxml2-dev
+  - libxml2-utils
+  - libyajl-dev
+  - lvm2
+  - nfs-common
+  - numad
+  - open-iscsi
+  - parted
+  - policykit-1
+  - qemu-utils
+  - radvd
+  - scrub
+  - sheepdog
+  - systemtap-sdt-dev
+  - wireshark-dev
+  - xsltproc
+  - zfs-fuse
+
+features:
+  with_apparmor: --with-apparmor
+  with_attr: --with-attr
+  with_audit: --with-audit
+  with_avahi: --with-avahi
+  with_bhyve: --without-bhyve # not available
+  with_blkid: --with-blkid
+  with_capng: --with-capng
+  with_curl: --with-curl
+  with_dbus: --with-dbus
+  with_driver_modules: --with-driver-modules
+  with_dtrace: --with-dtrace
+  with_esx: --with-esx
+  with_firewalld: --with-firewalld
+  with_fuse: --with-fuse
+  with_glusterfs: --with-glusterfs
+  with_gnutls: --with-gnutls
+  with_hal: --without-hal # not available
+  with_host_validate: --with-host-validate
+  with_hyperv: --without-hyperv # openwsman not available
+  with_interface: --with-interface
+  with_libpcap: --with-libpcap
+  with_libssh: --with-libssh
+  with_libvirtd: --with-libvirtd
+  with_libxl: --with-libxl
+  with_libxml: --with-libxml
+  with_login_shell: --with-login-shell
+  with_lxc: --with-lxc
+  with_macvtap: --with-macvtap
+  with_netcf: --with-netcf
+  with_network: --with-network
+  with_nss_plugin: --with-nss-plugin
+  with_numactl: --with-numactl
+  with_numad: --with-numad
+  with_openssl: --without-openssl # conflicts with libssl-dev
+  with_openvz: --with-openvz
+  with_openwsman: --without-openwsman # not available
+  with_pciaccess: --with-pciaccess
+  with_phyp: --with-phyp
+  with_pm_utils: --with-pm-utils
+  with_polkit: --with-polkit
+  with_qemu: --with-qemu
+  with_readline: --with-readline
+  with_remote: --with-remote
+  with_sanlock: --with-sanlock
+  with_sasl: --with-sasl
+  with_secrets: --with-secrets
+  with_selinux: --with-selinux
+  with_ssh2: --with-ssh2
+  with_storage_dir: --with-storage-dir
+  with_storage_disk: --with-storage-disk
+  with_storage_fs: --with-storage-fs
+  with_storage_gluster: --with-storage-gluster
+  with_storage_iscsi: --with-storage-iscsi
+  with_storage_lvm: --with-storage-lvm
+  with_storage_mpath: --with-storage-mpath
+  with_storage_rbd: --with-storage-rbd
+  with_storage_scsi: --with-storage-scsi
+  with_storage_sheepdog: --with-storage-sheepdog
+  with_storage_vstorage: --without-storage-vstorage # not available
+  with_storage_zfs: --with-storage-zfs
+  with_test_suite: --with-test-suite
+  with_test: --with-test
+  with_udev: --with-udev
+  with_uml: --with-uml
+  with_vbox: --with-vbox
+  with_virtualport: --with-virtualport
+  with_vmware: --with-vmware
+  with_vz: --without-vz # not available
+  with_wireshark_dissector: --with-wireshark-dissector
+  with_xenapi: --without-xenapi # not available
+  with_xen_inotify: --with-xen-inotify
+  with_xen: --with-xen
+  with_yajl: --with-yajl

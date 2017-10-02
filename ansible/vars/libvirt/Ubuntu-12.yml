@@ -1,0 +1,122 @@
+---
+packages:
+  - augeas-tools
+  - dnsmasq-base
+  - ebtables
+  - libacl1-dev
+  - libapparmor-dev
+  - libattr1-dev
+  - libaudit-dev
+  - libavahi-client-dev
+  - libblkid-dev
+  - libcap-ng-dev
+  - libcurl4-gnutls-dev
+  - libdbus-1-dev
+  - libdevmapper-dev
+  - libfuse-dev
+  - libgnutls-dev
+  - libhal-dev
+  - libnetcf-dev
+  - libnl-3-dev
+  - libnl-route-3-dev
+  - libnuma-dev
+  - libopenwsman-dev
+  - libparted-dev
+  - libpcap-dev
+  - libpciaccess-dev
+  - libreadline-dev
+  - libsasl2-dev
+  - libselinux1-dev
+  - libssl-dev
+  - libudev-dev
+  - libxen-dev
+  - libxml2-dev
+  - libxml2-utils
+  - libyajl-dev
+  - lvm2
+  - nfs-common
+  - open-iscsi
+  - parted
+  - policykit-1
+  - qemu-utils
+  - radvd
+  - scrub
+  - sheepdog
+  - systemtap-sdt-dev
+  - xsltproc
+  - zfs-fuse
+
+features:
+  with_apparmor: --with-apparmor
+  with_attr: --with-attr
+  with_audit: --with-audit
+  with_avahi: --with-avahi
+  with_bhyve: --without-bhyve # not available
+  with_blkid: --with-blkid
+  with_capng: --with-capng
+  with_curl: --with-curl
+  with_dbus: --with-dbus
+  with_driver_modules: --with-driver-modules
+  with_dtrace: --with-dtrace
+  with_esx: --with-esx
+  with_firewalld: --with-firewalld
+  with_fuse: --with-fuse
+  with_glusterfs: --without-glusterfs # too old
+  with_gnutls: --with-gnutls
+  with_hal: --with-hal
+  with_host_validate: --with-host-validate
+  with_hyperv: --with-hyperv
+  with_interface: --with-interface
+  with_libpcap: --with-libpcap
+  with_libssh: --without-libssh # too old
+  with_libvirtd: --with-libvirtd
+  with_libxl: --without-libxl # too old
+  with_libxml: --with-libxml
+  with_login_shell: --with-login-shell
+  with_lxc: --with-lxc
+  with_macvtap: --with-macvtap
+  with_netcf: --with-netcf
+  with_network: --with-network
+  with_nss_plugin: --with-nss-plugin
+  with_numactl: --with-numactl
+  with_numad: --without-numad # not available
+  with_openssl: --with-openssl
+  with_openvz: --with-openvz
+  with_openwsman: --with-openwsman
+  with_pciaccess: --with-pciaccess
+  with_phyp: --without-phyp # libssh2 too old
+  with_pm_utils: --with-pm-utils
+  with_polkit: --with-polkit
+  with_qemu: --with-qemu
+  with_readline: --with-readline
+  with_remote: --with-remote
+  with_sanlock: --without-sanlock # not available
+  with_sasl: --with-sasl
+  with_secrets: --with-secrets
+  with_selinux: --with-selinux
+  with_ssh2: --without-ssh2 # too old
+  with_storage_dir: --with-storage-dir
+  with_storage_disk: --with-storage-disk
+  with_storage_fs: --with-storage-fs
+  with_storage_gluster: --without-storage-gluster # too old
+  with_storage_iscsi: --with-storage-iscsi
+  with_storage_lvm: --with-storage-lvm
+  with_storage_mpath: --with-storage-mpath
+  with_storage_rbd: --without-storage-rbd # too old
+  with_storage_scsi: --with-storage-scsi
+  with_storage_sheepdog: --with-storage-sheepdog
+  with_storage_vstorage: --without-storage-vstorage # not available
+  with_storage_zfs: --with-storage-zfs
+  with_test_suite: --with-test-suite
+  with_test: --with-test
+  with_udev: --with-udev
+  with_uml: --with-uml
+  with_vbox: --with-vbox
+  with_virtualport: --with-virtualport
+  with_vmware: --with-vmware
+  with_vz: --without-vz # not available
+  with_wireshark_dissector: --without-wireshark-dissector # too old
+  with_xenapi: --without-xenapi # not available
+  with_xen_inotify: --with-xen-inotify
+  with_xen: --with-xen
+  with_yajl: --with-yajl

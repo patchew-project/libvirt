@@ -1,0 +1,98 @@
+---
+packages:
+  - augeas
+  - avahi
+  - curl
+  - cyrus-sasl
+  - dbus
+  - diskscrub
+  - dnsmasq
+  - fusefs-libs
+  - glusterfs
+  - gnutls
+  - hal
+  - libpcap
+  - libpciaccess
+  - libssh
+  - libssh2
+  - libxslt
+  - polkit
+  - qemu-utils
+  - radvd
+  - readline
+  - yajl
+
+features:
+  with_apparmor: --without-apparmor # not available
+  with_attr: --without-attr # not available
+  with_audit: --without-audit # not available
+  with_avahi: --with-avahi
+  with_bhyve: --with-bhyve
+  with_blkid: --without-blkid # too old
+  with_capng: --without-capng # not available
+  with_curl: --with-curl
+  with_dbus: --with-dbus
+  with_driver_modules: --with-driver-modules
+  with_dtrace: --with-dtrace
+  with_esx: --with-esx
+  with_firewalld: --with-firewalld
+  with_fuse: --with-fuse
+  with_glusterfs: --with-glusterfs
+  with_gnutls: --with-gnutls
+  with_hal: --with-hal
+  with_host_validate: --with-host-validate
+  with_hyperv: --without-hyperv # not available
+  with_interface: --without-interface # not available
+  with_libpcap: --with-libpcap
+  with_libssh: --with-libssh
+  with_libvirtd: --with-libvirtd
+  with_libxl: --without-libxl # not available
+  with_libxml: --with-libxml
+  with_login_shell: --without-login-shell # not supported
+  with_lxc: --without-lxc # not available
+  with_macvtap: --without-macvtap # not available
+  with_netcf: --without-netcf # not available
+  with_network: --with-network
+  with_nss_plugin: --with-nss-plugin
+  with_numactl: --without-numactl # not available
+  with_numad: --without-numad # not available
+  with_openssl: --with-openssl
+  with_openvz: --without-openvz # not available
+  with_openwsman: --without-openwsman # not available
+  with_pciaccess: --with-pciaccess
+  with_phyp: --with-phyp
+  with_pm_utils: --with-pm-utils
+  with_polkit: --with-polkit
+  with_qemu: --with-qemu
+  with_readline: --with-readline
+  with_remote: --with-remote
+  with_sanlock: --without-sanlock # not available
+  with_sasl: --with-sasl
+  with_secrets: --with-secrets
+  with_selinux: --without-selinux # not available
+  with_ssh2: --with-ssh2
+  with_storage_dir: --with-storage-dir
+  with_storage_disk: --without-storage-disk # not available
+  with_storage_fs: --without-storage-fs # not available
+  with_storage_gluster: --with-storage-gluster
+  with_storage_iscsi: --without-storage-iscsi # not available
+  with_storage_lvm: --without-storage-lvm # not available
+  with_storage_mpath: --without-storage-mpath # not supported
+  with_storage_rbd: --without-storage-rbd # not supported
+  with_storage_scsi: --with-storage-scsi
+  with_storage_sheepdog: --without-storage-sheepdog # not available
+  with_storage_vstorage: --without-storage-vstorage # not available
+  with_storage_zfs: --with-storage-zfs
+  with_test_suite: --with-test-suite
+  with_test: --with-test
+  with_udev: --without-udev # not available
+  with_uml: --without-uml # not available
+  with_vbox: --with-vbox
+  with_virtualport: --without-virtualport # not available
+  with_vmware: --with-vmware
+  with_vz: --without-vz # not available
+  with_wireshark_dissector: --without-wireshark-dissector # broken
+  with_xenapi: --without-xenapi # not supported
+  with_xen_inotify: --without-xen-inotify # not supported
+  with_xen: --without-xen # not supported
+  with_yajl: --with-yajl

@@ -37,18 +37,39 @@
     chdir: '{{ project }}'
   environment:
   when:
-    - project == 'libosinfo'
+    - ( project == 'libosinfo' or
+        project == 'libvirt' )
 
 - name: '{{ project }}: Build project'
   command: '{{ make }} -j{{ smp }}'
   args:
     chdir: '{{ project }}'
   when:
-    - project == 'libosinfo'
+    - ( project == 'libosinfo' or
+        project == 'libvirt' )
 
 - name: '{{ project }}: Run sanity checks'
   command: '{{ make }} -j{{ smp }} syntax-check'
   args:
     chdir: '{{ project }}'
   when:
-    - project == 'libosinfo'
+    - ( project == 'libosinfo' or
+        ( project == 'libvirt' and
+          os_name != 'FreeBSD' ) )
+
+- name: '{{ project }}: Run test suite'
+  command: '{{ make }} -j{{ smp }} check'
+  args:
+    chdir: '{{ project }}'
+  when:
+    - ( ( project == 'libvirt' and
+          os_name != 'FreeBSD' ) )
+
+- name: '{{ project }}: Build RPM package'
+  command: '{{ make }} -j{{ smp }} rpm'
+  args:
+    chdir: '{{ project }}'
+  when:
+    - ( os_name == 'CentOS' or
+        os_name == 'Fedora' )
+    - ( project == 'libvirt' )
