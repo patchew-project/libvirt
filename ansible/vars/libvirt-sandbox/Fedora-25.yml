@@ -1,0 +1,26 @@
+---
+packages:
+  - glib2-devel
+  - glibc-static
+  - gobject-introspection-devel
+  - gtk-doc
+  - intltool
+  - libcap-ng-devel
+  - libselinux-devel
+  - libxml2-devel
+  - xz-devel
+  - xz-static
+  - zlib-devel
+  - zlib-static
+
+extra_packages:
+  - libvirt-devel
+  - libvirt-glib-devel
+  - libvirt-gobject-devel
+
+features:
+  enable_gtk_doc: --enable-gtk-doc
+  enable_introspection: --enable-introspection
+  with_capng: --with-capng
+  with_lzma: --with-lzma
+  with_zlib: --with-zlib

@@ -40,7 +40,8 @@
     - ( project == 'libosinfo' or
         project == 'libvirt' or
         project == 'libvirt-cim' or
-        project == 'libvirt-glib' )
+        project == 'libvirt-glib' or
+        project == 'libvirt-sandbox' )
 
 - name: '{{ project }}: Run configure'
   command: './configure {{ configure_options }}'
@@ -57,7 +58,8 @@
     - ( project == 'libosinfo' or
         project == 'libvirt' or
         project == 'libvirt-cim' or
-        project == 'libvirt-glib' )
+        project == 'libvirt-glib' or
+        project == 'libvirt-sandbox' )
 
 - name: '{{ project }}: Run sanity checks'
   command: '{{ make }} -j{{ smp }} syntax-check'
@@ -67,7 +69,8 @@
     - ( project == 'libosinfo' or
         ( project == 'libvirt' and
           os_name != 'FreeBSD' ) or
-        project == 'libvirt-glib' )
+        project == 'libvirt-glib' or
+        project == 'libvirt-sandbox' )
 
 - name: '{{ project }}: Run test suite'
   command: '{{ make }} -j{{ smp }} check'
@@ -77,7 +80,8 @@
     - ( ( project == 'libvirt' and
           os_name != 'FreeBSD' ) or
         project == 'libvirt-cim' or
-        project == 'libvirt-glib' )
+        project == 'libvirt-glib' or
+        project == 'libvirt-sandbox' )
 
 - name: '{{ project }}: Build RPM package'
   command: '{{ make }} -j{{ smp }} rpm'
