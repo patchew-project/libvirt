@@ -1,0 +1,8 @@
+---
+packages:
+  - python-dev
+  - python-lxml
+  - python-nose
+
+extra_packages:
+  - libvirt-dev

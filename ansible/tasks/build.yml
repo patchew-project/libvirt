@@ -140,3 +140,19 @@
   when:
     - project == 'libvirt-perl'
     - false
+
+# Python build
+
+- name: '{{ project }}: Build project'
+  command: python2 setup.py build
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'libvirt-python'
+
+- name: '{{ project }}: Run test suite'
+  command: python2 setup.py test
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'libvirt-python'

@@ -1,0 +1,7 @@
+---
+packages:
+  - py27-lxml
+  - py27-nose
+
+extra_packages:
+  - libvirt
