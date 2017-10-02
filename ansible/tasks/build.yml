@@ -88,3 +88,19 @@
         os_name == 'Fedora' )
     - ( project == 'libvirt' or
         project == 'libvirt-cim' )
+
+# Go build
+
+- name: '{{ project }}: Build project'
+  command: go build -v
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'libvirt-go'
+
+- name: '{{ project }}: Run test suite'
+  command: go test -tags api
+  args:
+    chdir: '{{ project }}'
+  when:
+    - project == 'libvirt-go'

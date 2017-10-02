@@ -1,0 +1,6 @@
+---
+packages:
+  - go
+
+extra_packages:
+  - libvirt

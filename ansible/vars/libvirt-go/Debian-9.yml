@@ -1,0 +1,7 @@
+---
+packages:
+  - golang
+
+extra_packages:
+  - libvirt-daemon
+  - libvirt-dev
