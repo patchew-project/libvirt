@@ -135,6 +135,7 @@ typedef struct _virDomainDeviceInfo virDomainDeviceInfo;
 typedef virDomainDeviceInfo *virDomainDeviceInfoPtr;
 struct _virDomainDeviceInfo {
     char *alias;
+    unsigned char *uuid;    /* user defined UUID for the device, might be NULL */
     int type; /* virDomainDeviceAddressType */
     union {
         virPCIDeviceAddress pci;

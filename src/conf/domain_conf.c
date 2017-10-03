@@ -5764,9 +5764,16 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
 
         virBufferAddLit(buf, "/>\n");
     }
+
     if (info->alias &&
         !(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE)) {
         virBufferAsprintf(buf, "<alias name='%s'/>\n", info->alias);
+    }
+
+    if (info->uuid) {
+        char uuidstr[VIR_UUID_STRING_BUFLEN];
+        virUUIDFormat(info->uuid, uuidstr);
+        virBufferAsprintf(buf, "<uuid>%s</uuid>\n", uuidstr);
     }
 
     if (info->mastertype == VIR_DOMAIN_CONTROLLER_MASTER_USB) {
@@ -6403,10 +6410,12 @@ virDomainDeviceInfoParseXML(xmlNodePtr node,
     xmlNodePtr address = NULL;
     xmlNodePtr master = NULL;
     xmlNodePtr alias = NULL;
+    xmlNodePtr uuid = NULL;
     xmlNodePtr boot = NULL;
     xmlNodePtr rom = NULL;
     char *type = NULL;
     char *rombar = NULL;
+    char *uuidstr = NULL;
     int ret = -1;
 
     virDomainDeviceInfoClear(info);
@@ -6418,6 +6427,9 @@ virDomainDeviceInfoParseXML(xmlNodePtr node,
                 !(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE) &&
                 virXMLNodeNameEqual(cur, "alias")) {
                 alias = cur;
+            } else if (uuid == NULL &&
+                       virXMLNodeNameEqual(cur, "uuid")) {
+                uuid = cur;
             } else if (address == NULL &&
                        virXMLNodeNameEqual(cur, "address")) {
                 address = cur;
@@ -6439,6 +6451,18 @@ virDomainDeviceInfoParseXML(xmlNodePtr node,
 
     if (alias)
         info->alias = virXMLPropString(alias, "name");
+
+    if (uuid &&
+        (uuidstr = virXMLNodeContentString(uuid))) {
+        if (VIR_ALLOC_N(info->uuid, VIR_UUID_BUFLEN) < 0)
+            goto cleanup;
+
+        if (virUUIDParse(uuidstr, info->uuid) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           "%s", _("malformed uuid element"));
+            goto cleanup;
+        }
+    }
 
     if (master) {
         info->mastertype = VIR_DOMAIN_CONTROLLER_MASTER_USB;
@@ -6472,6 +6496,7 @@ virDomainDeviceInfoParseXML(xmlNodePtr node,
         virDomainDeviceInfoClear(info);
     VIR_FREE(type);
     VIR_FREE(rombar);
+    VIR_FREE(uuidstr);
     return ret;
 }
 

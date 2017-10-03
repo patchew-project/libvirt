@@ -5863,12 +5863,21 @@
     </data>
   </define>
   <define name='alias'>
-    <element name='alias'>
-      <attribute name='name'>
-        <ref name='aliasName'/>
-      </attribute>
-    </element>
-    <empty/>
+    <interleave>
+      <optional>
+        <element name='alias'>
+          <attribute name='name'>
+            <ref name='aliasName'/>
+          </attribute>
+          <empty/>
+        </element>
+      </optional>
+      <optional>
+        <element name='uuid'>
+          <ref name="UUID"/>
+        </element>
+      </optional>
+    </interleave>
   </define>
   <define name="panic">
     <element name="panic">
