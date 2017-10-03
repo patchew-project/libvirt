@@ -985,6 +985,7 @@ hypervEnumAndPull(hypervPrivate *priv, hypervWqlQueryPtr wqlQuery,
     hypervObject *object;
 
     if (virBufferCheckError(wqlQuery->query) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("Invalid query"));
         virBufferFreeAndReset(wqlQuery->query);
         return -1;
     }
