@@ -685,7 +685,7 @@ ppc64DriverDecode(virCPUDefPtr cpu,
         goto cleanup;
     }
 
-    if (!virCPUModelIsAllowed(model->name, models)) {
+    if (!virCPUModelIsAllowed(model->name, models, NULL)) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("CPU model %s is not supported by hypervisor"),
                        model->name);

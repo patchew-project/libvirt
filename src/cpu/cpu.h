@@ -227,7 +227,8 @@ virCPUDataCheckFeature(const virCPUData *data,
 
 bool
 virCPUModelIsAllowed(const char *model,
-                     virDomainCapsCPUModelsPtr models)
+                     virDomainCapsCPUModelsPtr models,
+                     virDomainCapsCPUModelPtr *hvModel)
     ATTRIBUTE_NONNULL(1);
 
 int

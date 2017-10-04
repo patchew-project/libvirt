@@ -819,24 +819,34 @@ virCPUDataParse(const char *xmlStr)
  *
  * @model: CPU model to be checked
  * @models: list of supported CPU models
+ * @hvModel: pointer to matching model from @models will be returned here
  *
  * Checks whether @model can be found in the list of supported @models.
- * If @models is NULL, all models are supported.
+ * If @models is NULL, all models are supported. If both @models and @hvModel
+ * are non-NULL and @model is found in the list of supported models, @hvModel
+ * will be filled with the pointer to the matching CPU model from @models.
  *
  * Returns true if @model is supported, false otherwise.
  */
 bool
 virCPUModelIsAllowed(const char *model,
-                     virDomainCapsCPUModelsPtr models)
+                     virDomainCapsCPUModelsPtr models,
+                     virDomainCapsCPUModelPtr *hvModel)
 {
     size_t i;
+
+    if (hvModel)
+        *hvModel = NULL;
 
     if (!models)
         return true;
 
     for (i = 0; i < models->nmodels; i++) {
-        if (STREQ(models->models[i].name, model))
+        if (STREQ(models->models[i].name, model)) {
+            if (hvModel)
+                *hvModel = models->models + i;
             return true;
+        }
     }
     return false;
 }
@@ -908,7 +918,7 @@ virCPUTranslate(virArch arch,
         cpu->mode == VIR_CPU_MODE_HOST_PASSTHROUGH)
         return 0;
 
-    if (virCPUModelIsAllowed(cpu->model, models))
+    if (virCPUModelIsAllowed(cpu->model, models, NULL))
         return 0;
 
     if (cpu->fallback != VIR_CPU_FALLBACK_ALLOW) {
