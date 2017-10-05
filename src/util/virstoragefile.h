@@ -241,6 +241,7 @@ struct _virStorageSource {
     virStorageAuthDefPtr auth;
     bool authDefined;
     virStorageEncryptionPtr encryption;
+    bool encryptionDefined;
 
     virObjectPtr privateData; /* Usable to store hypervisor specific data */
 
