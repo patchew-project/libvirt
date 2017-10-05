@@ -1703,6 +1703,27 @@ virDomainDefGetVcpusTopology(const virDomainDef *def,
 }
 
 
+static virStorageSourcePtr
+virDomainDiskStorageSourceNew(virDomainXMLOptionPtr xmlopt)
+{
+    virStorageSourcePtr src;
+
+    if (VIR_ALLOC(src) < 0)
+        return NULL;
+
+    if (xmlopt &&
+        xmlopt->privateData.diskSrcNew &&
+        !(src->privateData = xmlopt->privateData.diskSrcNew()))
+        goto error;
+
+    return src;
+
+ error:
+    virStorageSourceFree(src);
+    return NULL;
+}
+
+
 virDomainDiskDefPtr
 virDomainDiskDefNew(virDomainXMLOptionPtr xmlopt)
 {
@@ -1711,7 +1732,7 @@ virDomainDiskDefNew(virDomainXMLOptionPtr xmlopt)
     if (VIR_ALLOC(ret) < 0)
         return NULL;
 
-    if (VIR_ALLOC(ret->src) < 0)
+    if (!(ret->src = virDomainDiskStorageSourceNew(xmlopt)))
         goto error;
 
     if (xmlopt &&
@@ -8286,7 +8307,8 @@ virDomainDiskSourceParse(xmlNodePtr node,
 
 
 static int
-virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
+virDomainDiskBackingStoreParse(virDomainXMLOptionPtr xmlopt,
+                               xmlXPathContextPtr ctxt,
                                virStorageSourcePtr src,
                                unsigned int flags)
 {
@@ -8302,7 +8324,7 @@ virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
         goto cleanup;
     }
 
-    if (VIR_ALLOC(backingStore) < 0)
+    if (!(backingStore = virDomainDiskStorageSourceNew(xmlopt)))
         goto cleanup;
 
     if (!(type = virXMLPropString(ctxt->node, "type"))) {
@@ -8338,7 +8360,7 @@ virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
     }
 
     if (virDomainDiskSourceParse(source, ctxt, backingStore, flags) < 0 ||
-        virDomainDiskBackingStoreParse(ctxt, backingStore, flags) < 0)
+        virDomainDiskBackingStoreParse(xmlopt, ctxt, backingStore, flags) < 0)
         goto cleanup;
 
     src->backingStore = backingStore;
@@ -8439,6 +8461,7 @@ virDomainDiskDefIotuneParse(virDomainDiskDefPtr def,
 static int
 virDomainDiskDefMirrorParse(virDomainDiskDefPtr def,
                             xmlNodePtr cur,
+                            virDomainXMLOptionPtr xmlopt,
                             xmlXPathContextPtr ctxt,
                             unsigned int flags)
 {
@@ -8449,7 +8472,7 @@ virDomainDiskDefMirrorParse(virDomainDiskDefPtr def,
     char *blockJob = NULL;
     int ret = -1;
 
-    if (VIR_ALLOC(def->mirror) < 0)
+    if (!(def->mirror = virDomainDiskStorageSourceNew(xmlopt)))
         goto cleanup;
 
     if ((blockJob = virXMLPropString(cur, "job"))) {
@@ -8973,7 +8996,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
         } else if (!def->mirror &&
                    virXMLNodeNameEqual(cur, "mirror") &&
                    !(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE)) {
-            if (virDomainDiskDefMirrorParse(def, cur, ctxt, flags) < 0)
+            if (virDomainDiskDefMirrorParse(def, cur, xmlopt, ctxt, flags) < 0)
                 goto error;
         } else if (!authdef &&
                    virXMLNodeNameEqual(cur, "auth")) {
@@ -9237,7 +9260,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
     product = NULL;
 
     if (!(flags & VIR_DOMAIN_DEF_PARSE_DISK_SOURCE)) {
-        if (virDomainDiskBackingStoreParse(ctxt, def->src, flags) < 0)
+        if (virDomainDiskBackingStoreParse(xmlopt, ctxt, def->src, flags) < 0)
             goto error;
     }
 
