@@ -35,6 +35,11 @@
 <libvirt>
   <release version="v3.9.0" date="unreleased">
     <section title="New features">
+      <change>
+        <summary>
+          qemu: Added support for hot-(un)plug of watchdog devices
+        </summary>
+      </change>
     </section>
     <section title="Improvements">
     </section>
