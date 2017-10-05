@@ -2006,11 +2006,8 @@ openvzDomainInterfaceStats(virDomainPtr dom,
         goto cleanup;
     }
 
-    if (!(net = virDomainNetFind(vm->def, device))) {
-        virReportError(VIR_ERR_INVALID_ARG,
-                       _("'%s' is not a known interface"), device);
+    if (!(net = virDomainNetFind(vm->def, device)))
         goto cleanup;
-    }
 
     if (virNetDevTapInterfaceStats(device, stats,
                                    !virDomainNetTypeSharesHostView(net)) < 0)

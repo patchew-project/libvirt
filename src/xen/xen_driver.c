@@ -2122,11 +2122,8 @@ xenUnifiedDomainInterfaceStats(virDomainPtr dom, const char *device,
     if (virDomainInterfaceStatsEnsureACL(dom->conn, def) < 0)
         goto cleanup;
 
-    if (!(net = virDomainNetFind(def, device))) {
-        virReportError(VIR_ERR_INVALID_ARG,
-                       _("'%s' is not a known interface"), device);
+    if (!(net = virDomainNetFind(def, device)))
         goto cleanup;
-    }
 
     ret = xenHypervisorDomainInterfaceStats(def, net->ifname, stats);
 

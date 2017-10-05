@@ -3181,11 +3181,8 @@ testDomainInterfaceStats(virDomainPtr domain,
         goto error;
     }
 
-    if (!(net = virDomainNetFind(privdom->def, device))) {
-        virReportError(VIR_ERR_INVALID_ARG,
-                       _("'%s' is not a known interface"), device);
+    if (!(net = virDomainNetFind(privdom->def, device)))
         goto error;
-    }
 
     if (gettimeofday(&tv, NULL) < 0) {
         virReportSystemError(errno,
