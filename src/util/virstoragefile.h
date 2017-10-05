@@ -238,6 +238,7 @@ struct _virStorageSource {
     virStorageNetHostDefPtr hosts;
     virStorageSourcePoolDefPtr srcpool;
     virStorageAuthDefPtr auth;
+    bool authDefined;
     virStorageEncryptionPtr encryption;
 
     char *driverName;
