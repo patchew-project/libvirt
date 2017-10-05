@@ -954,7 +954,6 @@ qemuDomainDiskPrivateDispose(void *obj)
 {
     qemuDomainDiskPrivatePtr priv = obj;
 
-    qemuDomainSecretInfoFree(&priv->secinfo);
     qemuDomainSecretInfoFree(&priv->encinfo);
 }
 
@@ -1399,9 +1398,10 @@ void
 qemuDomainSecretDiskDestroy(virDomainDiskDefPtr disk)
 {
     qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+    qemuDomainDiskSrcPrivatePtr diskSrcPriv = QEMU_DOMAIN_DISK_SRC_PRIVATE(disk->src);
 
-    if (diskPriv && diskPriv->secinfo)
-        qemuDomainSecretInfoFree(&diskPriv->secinfo);
+    if (diskSrcPriv && diskSrcPriv->secinfo)
+        qemuDomainSecretInfoFree(&diskSrcPriv->secinfo);
 
     if (diskPriv && diskPriv->encinfo)
         qemuDomainSecretInfoFree(&diskPriv->encinfo);
@@ -1450,6 +1450,7 @@ qemuDomainSecretDiskPrepare(virConnectPtr conn,
 {
     virStorageSourcePtr src = disk->src;
     qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+    qemuDomainDiskSrcPrivatePtr diskSrcPriv = QEMU_DOMAIN_DISK_SRC_PRIVATE(disk->src);
 
     if (qemuDomainSecretDiskCapable(src)) {
         virSecretUsageType usageType = VIR_SECRET_USAGE_TYPE_ISCSI;
@@ -1457,7 +1458,7 @@ qemuDomainSecretDiskPrepare(virConnectPtr conn,
         if (src->protocol == VIR_STORAGE_NET_PROTOCOL_RBD)
             usageType = VIR_SECRET_USAGE_TYPE_CEPH;
 
-        if (!(diskPriv->secinfo =
+        if (!(diskSrcPriv->secinfo =
               qemuDomainSecretInfoNew(conn, priv, disk->info.alias,
                                       usageType, src->auth->username,
                                       &src->auth->seclookupdef, false)))
