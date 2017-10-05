@@ -2621,6 +2621,7 @@ struct _virDomainXMLPrivateDataCallbacks {
     /* note that private data for devices are not copied when using
      * virDomainDefCopy and similar functions */
     virDomainXMLPrivateDataNewFunc    diskNew;
+    virDomainXMLPrivateDataNewFunc    diskSrcNew;
     virDomainXMLPrivateDataNewFunc    hostdevNew;
     virDomainXMLPrivateDataNewFunc    vcpuNew;
     virDomainXMLPrivateDataNewFunc    chrSourceNew;

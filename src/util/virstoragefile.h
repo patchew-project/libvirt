@@ -27,6 +27,7 @@
 # include <sys/stat.h>
 
 # include "virbitmap.h"
+# include "virobject.h"
 # include "virseclabel.h"
 # include "virstorageencryption.h"
 # include "virutil.h"
@@ -240,6 +241,8 @@ struct _virStorageSource {
     virStorageAuthDefPtr auth;
     bool authDefined;
     virStorageEncryptionPtr encryption;
+
+    virObjectPtr privateData; /* Usable to store hypervisor specific data */
 
     char *driverName;
     int format; /* virStorageFileFormat in domain backing chains, but
