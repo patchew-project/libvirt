@@ -777,7 +777,8 @@ the guest OS via an agent. If unspecified, 'lease' is the default.
 
 Get network interface stats for a running domain. This might be
 unavailable for some types of interface which don't have
-representation in the host, e.g. user.
+representation in the host, e.g. user. I<interface-device> can be
+the interface's target name or the MAC address.
 
 =item B<domif-setlink> I<domain> I<interface-device> I<state> [I<--config>]
 

@@ -4956,7 +4956,7 @@ libxlDomainIsUpdated(virDomainPtr dom)
 
 static int
 libxlDomainInterfaceStats(virDomainPtr dom,
-                          const char *path,
+                          const char *device,
                           virDomainInterfaceStatsPtr stats)
 {
     libxlDriverPrivatePtr driver = dom->conn->privateData;
@@ -4979,13 +4979,13 @@ libxlDomainInterfaceStats(virDomainPtr dom,
         goto endjob;
     }
 
-    if (!(net = virDomainNetFindByName(vm->def, path))) {
+    if (!(net = virDomainNetFind(vm->def, device))) {
         virReportError(VIR_ERR_INVALID_ARG,
-                       _("'%s' is not a known interface"), path);
+                       _("'%s' is not a known interface"), device);
         goto endjob;
     }
 
-    if (virNetDevTapInterfaceStats(path, stats,
+    if (virNetDevTapInterfaceStats(device, stats,
                                    !virDomainNetTypeSharesHostView(net)) < 0)
         goto endjob;
 

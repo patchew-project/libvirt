@@ -2849,7 +2849,7 @@ lxcDomainGetBlkioParameters(virDomainPtr dom,
 
 static int
 lxcDomainInterfaceStats(virDomainPtr dom,
-                        const char *path,
+                        const char *device,
                         virDomainInterfaceStatsPtr stats)
 {
     virDomainObjPtr vm;
@@ -2872,13 +2872,13 @@ lxcDomainInterfaceStats(virDomainPtr dom,
         goto endjob;
     }
 
-    if (!(net = virDomainNetFindByName(vm->def, path))) {
+    if (!(net = virDomainNetFind(vm->def, device))) {
         virReportError(VIR_ERR_INVALID_ARG,
-                       _("Invalid path, '%s' is not a known interface"), path);
+                       _("'%s' is not a known interface"), device);
         goto endjob;
     }
 
-    if (virNetDevTapInterfaceStats(path, stats,
+    if (virNetDevTapInterfaceStats(device, stats,
                                    !virDomainNetTypeSharesHostView(net)) < 0)
         goto endjob;
 
