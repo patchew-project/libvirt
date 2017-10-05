@@ -244,18 +244,24 @@ nwfilterStateInitialize(bool privileged,
         goto error;
     }
 
+    virNWFilterWriteLockFilterUpdates();
+    virNWFilterCallbackDriversLock();
     if (!(driver->nwfilters = virNWFilterObjListNew()))
         goto error;
 
     if (virNWFilterObjListLoadAllConfigs(driver->nwfilters, driver->configDir) < 0)
         goto error;
 
+    virNWFilterCallbackDriversUnlock();
+    virNWFilterUnlockFilterUpdates();
     nwfilterDriverUnlock();
 
     return 0;
 
  error:
     VIR_FREE(base);
+    virNWFilterCallbackDriversUnlock();
+    virNWFilterUnlockFilterUpdates();
     nwfilterDriverUnlock();
     nwfilterStateCleanup();
 
