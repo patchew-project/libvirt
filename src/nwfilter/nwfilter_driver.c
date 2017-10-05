@@ -301,6 +301,10 @@ nwfilterStateReload(void)
     /* shut down all threads -- they will be restarted if necessary */
     virNWFilterLearnThreadsTerminate(true);
 
+    /* Serialization of virNWFilterObjListLoadAllConfigs is extremely
+     * important as it relates to virNWFilterObjListFindInstantiateFilter
+     * processing via virNWFilterTriggerVMFilterRebuild that occurs during
+     * virNWFilterObjListAssignDef */
     nwfilterDriverLock();
     virNWFilterWriteLockFilterUpdates();
     virNWFilterCallbackDriversLock();
@@ -391,11 +395,7 @@ nwfilterLookupByUUID(virConnectPtr conn,
     virNWFilterDefPtr def;
     virNWFilterPtr nwfilter = NULL;
 
-    nwfilterDriverLock();
-    obj = nwfilterObjFromNWFilter(uuid);
-    nwfilterDriverUnlock();
-
-    if (!obj)
+    if (!(obj = nwfilterObjFromNWFilter(uuid)))
         return NULL;
     def = virNWFilterObjGetDef(obj);
 
@@ -418,11 +418,7 @@ nwfilterLookupByName(virConnectPtr conn,
     virNWFilterDefPtr def;
     virNWFilterPtr nwfilter = NULL;
 
-    nwfilterDriverLock();
-    obj = virNWFilterObjListFindByName(driver->nwfilters, name);
-    nwfilterDriverUnlock();
-
-    if (!obj) {
+    if (!(obj = virNWFilterObjListFindByName(driver->nwfilters, name))) {
         virReportError(VIR_ERR_NO_NWFILTER,
                        _("no nwfilter with matching name '%s'"), name);
         return NULL;
@@ -456,17 +452,12 @@ nwfilterConnectListNWFilters(virConnectPtr conn,
                              char **const names,
                              int maxnames)
 {
-    int nnames;
-
     if (virConnectListNWFiltersEnsureACL(conn) < 0)
         return -1;
 
-    nwfilterDriverLock();
-    nnames = virNWFilterObjListGetNames(driver->nwfilters, conn,
-                                    virConnectListNWFiltersCheckACL,
-                                    names, maxnames);
-    nwfilterDriverUnlock();
-    return nnames;
+    return virNWFilterObjListGetNames(driver->nwfilters, conn,
+                                      virConnectListNWFiltersCheckACL,
+                                      names, maxnames);
 }
 
 
@@ -475,19 +466,13 @@ nwfilterConnectListAllNWFilters(virConnectPtr conn,
                                 virNWFilterPtr **nwfilters,
                                 unsigned int flags)
 {
-    int ret;
-
     virCheckFlags(0, -1);
 
     if (virConnectListAllNWFiltersEnsureACL(conn) < 0)
         return -1;
 
-    nwfilterDriverLock();
-    ret = virNWFilterObjListExport(conn, driver->nwfilters, nwfilters,
-                                   virConnectListAllNWFiltersCheckACL);
-    nwfilterDriverUnlock();
-
-    return ret;
+    return virNWFilterObjListExport(conn, driver->nwfilters, nwfilters,
+                                    virConnectListAllNWFiltersCheckACL);
 }
 
 static virNWFilterPtr
@@ -505,6 +490,10 @@ nwfilterDefineXML(virConnectPtr conn,
         return NULL;
     }
 
+    /* Serialization of *one* DefineXML consumer is extremely important
+     * as it relates to virNWFilterObjListFindInstantiateFilter processing
+     * via virNWFilterTriggerVMFilterRebuild that occurs during
+     * virNWFilterObjListAssignDef */
     nwfilterDriverLock();
     virNWFilterWriteLockFilterUpdates();
     virNWFilterCallbackDriversLock();
@@ -547,6 +536,10 @@ nwfilterUndefine(virNWFilterPtr nwfilter)
     virNWFilterDefPtr def;
     int ret = -1;
 
+    /* Serialization of *one* Undefine consumer is extremely important
+     * as it relates to virNWFilterObjListFindInstantiateFilter processing
+     * via virNWFilterTriggerVMFilterRebuild that occurs during
+     * virNWFilterObjTestUnassignDef */
     nwfilterDriverLock();
     virNWFilterWriteLockFilterUpdates();
     virNWFilterCallbackDriversLock();
@@ -593,11 +586,7 @@ nwfilterGetXMLDesc(virNWFilterPtr nwfilter,
 
     virCheckFlags(0, NULL);
 
-    nwfilterDriverLock();
-    obj = nwfilterObjFromNWFilter(nwfilter->uuid);
-    nwfilterDriverUnlock();
-
-    if (!obj)
+    if (!(obj = nwfilterObjFromNWFilter(nwfilter->uuid)))
         return NULL;
     def = virNWFilterObjGetDef(obj);
 
