@@ -1025,49 +1025,6 @@ qemuDomainDiskSrcPrivateDispose(void *obj)
 }
 
 
-static virClassPtr qemuDomainHostdevPrivateClass;
-static void qemuDomainHostdevPrivateDispose(void *obj);
-
-static int
-qemuDomainHostdevPrivateOnceInit(void)
-{
-    qemuDomainHostdevPrivateClass =
-        virClassNew(virClassForObject(),
-                    "qemuDomainHostdevPrivate",
-                    sizeof(qemuDomainHostdevPrivate),
-                    qemuDomainHostdevPrivateDispose);
-    if (!qemuDomainHostdevPrivateClass)
-        return -1;
-    else
-        return 0;
-}
-
-VIR_ONCE_GLOBAL_INIT(qemuDomainHostdevPrivate)
-
-static virObjectPtr
-qemuDomainHostdevPrivateNew(void)
-{
-    qemuDomainHostdevPrivatePtr priv;
-
-    if (qemuDomainHostdevPrivateInitialize() < 0)
-        return NULL;
-
-    if (!(priv = virObjectNew(qemuDomainHostdevPrivateClass)))
-        return NULL;
-
-    return (virObjectPtr) priv;
-}
-
-
-static void
-qemuDomainHostdevPrivateDispose(void *obj)
-{
-    qemuDomainHostdevPrivatePtr priv = obj;
-
-    qemuDomainSecretInfoFree(&priv->secinfo);
-}
-
-
 static virClassPtr qemuDomainVcpuPrivateClass;
 static void qemuDomainVcpuPrivateDispose(void *obj);
 
@@ -1480,14 +1437,14 @@ qemuDomainSecretDiskPrepare(virConnectPtr conn,
 void
 qemuDomainSecretHostdevDestroy(virDomainHostdevDefPtr hostdev)
 {
-    qemuDomainDiskSrcPrivatePtr diskSrcPriv;
-
     if (virHostdevIsSCSIDevice(hostdev)) {
         virDomainHostdevSubsysSCSIPtr scsisrc = &hostdev->source.subsys.u.scsi;
         virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &scsisrc->u.iscsi;
 
         if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI) {
-            diskSrcPriv = QEMU_DOMAIN_DISK_SRC_PRIVATE(iscsisrc->src);
+            qemuDomainDiskSrcPrivatePtr diskSrcPriv =
+                QEMU_DOMAIN_DISK_SRC_PRIVATE(iscsisrc->src);
+
             if (diskSrcPriv && diskSrcPriv->secinfo)
                 qemuDomainSecretInfoFree(&diskSrcPriv->secinfo);
         }
@@ -2409,7 +2366,6 @@ virDomainXMLPrivateDataCallbacks virQEMUDriverPrivateDataCallbacks = {
     .diskNew = qemuDomainDiskPrivateNew,
     .diskSrcNew = qemuDomainDiskSrcPrivateNew,
     .vcpuNew = qemuDomainVcpuPrivateNew,
-    .hostdevNew = qemuDomainHostdevPrivateNew,
     .chrSourceNew = qemuDomainChrSourcePrivateNew,
     .parse = qemuDomainObjPrivateXMLParse,
     .format = qemuDomainObjPrivateXMLFormat,
