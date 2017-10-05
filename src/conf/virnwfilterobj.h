@@ -65,7 +65,7 @@ virNWFilterObjListRemove(virNWFilterObjListPtr nwfilters,
 
 virNWFilterObjPtr
 virNWFilterObjListFindByUUID(virNWFilterObjListPtr nwfilters,
-                             const unsigned char *uuid);
+                             const char *uuidstr);
 
 virNWFilterObjPtr
 virNWFilterObjListFindByName(virNWFilterObjListPtr nwfilters,
