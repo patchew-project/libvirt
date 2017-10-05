@@ -124,7 +124,7 @@ qemuBlockJobEventProcess(virQEMUDriverPtr driver,
 
                 if ((persistDisk = virDomainDiskByName(vm->newDef,
                                                        disk->dst, false))) {
-                    copy = virStorageSourceCopy(disk->mirror, false);
+                    copy = qemuDomainStorageSourceCopy(disk->mirror, false);
                     if (!copy ||
                         virStorageSourceInitChainElement(copy,
                                                          persistDisk->src,

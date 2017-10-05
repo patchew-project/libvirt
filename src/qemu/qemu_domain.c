@@ -883,6 +883,39 @@ qemuDomainSecretInfoFree(qemuDomainSecretInfoPtr *secinfo)
 }
 
 
+static qemuDomainSecretInfoPtr
+qemuDomainSecretInfoCopy(qemuDomainSecretInfoPtr src)
+{
+    qemuDomainSecretInfoPtr dst = NULL;
+    if (VIR_ALLOC(dst) < 0)
+        return NULL;
+
+    dst->type = src->type;
+    if (src->type == VIR_DOMAIN_SECRET_INFO_TYPE_PLAIN) {
+        if (VIR_STRDUP(dst->s.plain.username, src->s.plain.username) < 0)
+            goto error;
+
+        if (VIR_ALLOC_N(dst->s.plain.secret, src->s.plain.secretlen) < 0)
+            goto error;
+
+        memcpy(dst->s.plain.secret, src->s.plain.secret, src->s.plain.secretlen);
+        dst->s.plain.secretlen = src->s.plain.secretlen;
+    } else {
+        if (VIR_STRDUP(dst->s.aes.username, src->s.aes.username) < 0 ||
+            VIR_STRDUP(dst->s.aes.alias, src->s.aes.alias) < 0 ||
+            VIR_STRDUP(dst->s.aes.iv, src->s.aes.alias) < 0 ||
+            VIR_STRDUP(dst->s.aes.ciphertext, src->s.aes.ciphertext) < 0)
+            goto error;
+    }
+
+    return dst;
+
+ error:
+    qemuDomainSecretInfoFree(&dst);
+    return NULL;
+}
+
+
 static virClassPtr qemuDomainDiskPrivateClass;
 static void qemuDomainDiskPrivateDispose(void *obj);
 
@@ -956,6 +989,35 @@ qemuDomainDiskSrcPrivateNew(void)
         return NULL;
 
     return (virObjectPtr) priv;
+}
+
+
+virStorageSourcePtr
+qemuDomainStorageSourceCopy(const virStorageSource *src,
+                            bool backingChain)
+{
+    qemuDomainDiskSrcPrivatePtr srcPriv = QEMU_DOMAIN_DISK_SRC_PRIVATE(src);
+    virStorageSourcePtr dst;
+    qemuDomainDiskSrcPrivatePtr dstPriv;
+
+    if (!(dst = virStorageSourceCopy(src, backingChain)))
+        return NULL;
+
+    if (!srcPriv->secinfo)
+        return dst;
+
+    if (!(dst->privateData = qemuDomainDiskSrcPrivateNew()))
+        goto error;
+
+    dstPriv = QEMU_DOMAIN_DISK_SRC_PRIVATE(dst);
+    if (!(dstPriv->secinfo = qemuDomainSecretInfoCopy(srcPriv->secinfo)))
+        goto error;
+
+    return dst;
+
+ error:
+    virStorageSourceFree(dst);
+    return NULL;
 }
 
 
