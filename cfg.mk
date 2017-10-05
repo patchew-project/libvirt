@@ -91,7 +91,7 @@ endif
 
 # Files that should never cause syntax check failures.
 VC_LIST_ALWAYS_EXCLUDE_REGEX = \
-  (^(docs/(news(-[0-9]*)?\.html\.in|.*\.patch))|\.(po|fig|gif|ico|png))$$
+  \.(po|fig|gif|ico|png|pot|pl|spec|spec\.in|js|woff|diff|patch|html\.in|stp|syms|conf|data|cpuinfo)$$
 
 # Functions like free() that are no-ops on NULL arguments.
 useless_free_options =				\
@@ -1129,12 +1129,12 @@ exclude_file_name_regexp--sc_flags_usage = \
   ^(cfg\.mk|docs/|src/util/virnetdevtap\.c$$|tests/((vir(cgroup|pci|test|usb)|nss|qemuxml2argv)mock|virfilewrapper)\.c$$)
 
 exclude_file_name_regexp--sc_libvirt_unmarked_diagnostics = \
-  ^(src/rpc/gendispatch\.pl$$|tests/)
+  ^tests/
 
-exclude_file_name_regexp--sc_po_check = ^(docs/|src/rpc/gendispatch\.pl$$)
+exclude_file_name_regexp--sc_po_check = ^(docs/)
 
 exclude_file_name_regexp--sc_prohibit_VIR_ERR_NO_MEMORY = \
-  ^(cfg\.mk|include/libvirt/virterror\.h|daemon/dispatch\.c|src/util/virerror\.c|docs/internals/oomtesting\.html\.in)$$
+  ^(cfg\.mk|include/libvirt/virterror\.h|daemon/dispatch\.c|src/util/virerror\.c)$$
 
 exclude_file_name_regexp--sc_prohibit_PATH_MAX = \
 	^cfg\.mk$$
@@ -1143,16 +1143,16 @@ exclude_file_name_regexp--sc_prohibit_access_xok = \
 	^(cfg\.mk|src/util/virutil\.c)$$
 
 exclude_file_name_regexp--sc_prohibit_asprintf = \
-  ^(cfg\.mk|bootstrap.conf$$|examples/|src/util/virstring\.[ch]$$|tests/vircgroupmock\.c$$)
+  ^(cfg\.mk|examples/|src/util/virstring\.[ch]$$|tests/vircgroupmock\.c$$)
 
 exclude_file_name_regexp--sc_prohibit_strdup = \
   ^(docs/|examples/|src/util/virstring\.c|tests/vir(netserverclient|cgroup)mock.c|tests/commandhelper\.c$$)
 
 exclude_file_name_regexp--sc_prohibit_close = \
-  (\.p[yl]$$|\.spec\.in$$|^docs/|^(src/util/virfile\.c|src/libvirt-stream\.c|tests/vir.+mock\.c|tests/commandhelper\.c)$$)
+  (\.py$$|^docs/|^(src/util/virfile\.c|src/libvirt-stream\.c|tests/vir.+mock\.c|tests/commandhelper\.c)$$)
 
 exclude_file_name_regexp--sc_prohibit_empty_lines_at_EOF = \
-  (^tests/(qemuhelp|virhostcpu|virpcitest)data/|docs/js/.*\.js|docs/fonts/.*\.woff|\.diff|tests/virconfdata/no-newline\.conf$$)
+  (^tests/(qemuhelp|virhostcpu|virpcitest)data/)
 
 _src2=src/(util/vircommand|libvirt|lxc/lxc_controller|locking/lock_daemon|logging/log_daemon)
 exclude_file_name_regexp--sc_prohibit_fork_wrappers = \
@@ -1163,17 +1163,14 @@ exclude_file_name_regexp--sc_prohibit_gethostname = ^src/util/virutil\.c$$
 exclude_file_name_regexp--sc_prohibit_internal_functions = \
   ^src/(util/(viralloc|virutil|virfile)\.[hc]|esx/esx_vi\.c)$$
 
-exclude_file_name_regexp--sc_prohibit_newline_at_end_of_diagnostic = \
-  ^src/rpc/gendispatch\.pl$$
-
 exclude_file_name_regexp--sc_prohibit_nonreentrant = \
-  ^((po|tests)/|docs/.*(py|js|html\.in)|run.in$$|tools/wireshark/util/genxdrstub\.pl$$)
+  ^(tests/|docs/.*py|run.in$$)
 
 exclude_file_name_regexp--sc_prohibit_select = \
 	^cfg\.mk$$
 
 exclude_file_name_regexp--sc_prohibit_raw_allocation = \
-  ^(docs/hacking\.html\.in|src/util/viralloc\.[ch]|examples/.*|tests/(securityselinuxhelper|(vircgroup|nss)mock|commandhelper)\.c|tools/wireshark/src/packet-libvirt\.c)$$
+  ^(src/util/viralloc\.[ch]|examples/.*|tests/(securityselinuxhelper|(vircgroup|nss)mock|commandhelper)\.c|tools/wireshark/src/packet-libvirt\.c)$$
 
 exclude_file_name_regexp--sc_prohibit_readlink = \
   ^src/(util/virutil|lxc/lxc_container)\.c$$
@@ -1181,7 +1178,7 @@ exclude_file_name_regexp--sc_prohibit_readlink = \
 exclude_file_name_regexp--sc_prohibit_setuid = ^src/util/virutil\.c$$
 
 exclude_file_name_regexp--sc_prohibit_sprintf = \
-  ^(cfg\.mk|docs/hacking\.html\.in|.*\.stp|.*\.pl)$$
+  ^cfg\.mk$$
 
 exclude_file_name_regexp--sc_prohibit_strncpy = ^src/util/virstring\.c$$
 
@@ -1200,10 +1197,10 @@ exclude_file_name_regexp--sc_require_config_h_first = \
 	^(examples/|tools/virsh-edit\.c$$)
 
 exclude_file_name_regexp--sc_trailing_blank = \
-  /qemuhelpdata/|/sysinfodata/.*\.data|/virhostcpudata/.*\.cpuinfo$$
+  /qemuhelpdata/
 
 exclude_file_name_regexp--sc_unmarked_diagnostics = \
-  ^(docs/apibuild.py|tests/virt-aa-helper-test|docs/js/.*\.js)$$
+  ^(docs/apibuild.py|tests/virt-aa-helper-test)$$
 
 exclude_file_name_regexp--sc_size_of_brackets = cfg.mk
 
@@ -1243,7 +1240,7 @@ exclude_file_name_regexp--sc_prohibit_devname = \
   ^(tools/virsh.pod|cfg.mk|docs/.*)$$
 
 exclude_file_name_regexp--sc_prohibit_virXXXFree = \
-  ^(docs/|tests/|examples/|tools/|cfg.mk|src/test/test_driver.c|src/libvirt_public.syms|include/libvirt/libvirt-(domain|network|nodedev|storage|stream|secret|nwfilter|interface|domain-snapshot).h|src/libvirt-(domain|qemu|network|nodedev|storage|stream|secret|nwfilter|interface|domain-snapshot).c$$)
+  ^(docs/|tests/|examples/|tools/|cfg.mk|src/test/test_driver.c|include/libvirt/libvirt-(domain|network|nodedev|storage|stream|secret|nwfilter|interface|domain-snapshot).h|src/libvirt-(domain|qemu|network|nodedev|storage|stream|secret|nwfilter|interface|domain-snapshot).c$$)
 
 exclude_file_name_regexp--sc_prohibit_sysconf_pagesize = \
   ^(cfg\.mk|src/util/virutil\.c)$$
