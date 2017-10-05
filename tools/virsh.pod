@@ -775,7 +775,9 @@ the guest OS via an agent. If unspecified, 'lease' is the default.
 
 =item B<domifstat> I<domain> I<interface-device>
 
-Get network interface stats for a running domain.
+Get network interface stats for a running domain. This might be
+unavailable for some types of interface which don't have
+representation in the host, e.g. user.
 
 =item B<domif-setlink> I<domain> I<interface-device> I<state> [I<--config>]
 
