@@ -1861,6 +1861,10 @@ mymain(void)
             QEMU_CAPS_VNC,
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
             QEMU_CAPS_DEVICE_QXL);
+    DO_TEST("video-cirrus-vgamem",
+            QEMU_CAPS_DEVICE_CIRRUS_VGA,
+            QEMU_CAPS_CIRRUS_VGAMEM,
+            QEMU_CAPS_DEVICE_VIDEO_PRIMARY);
     DO_TEST("video-vga-nodevice", QEMU_CAPS_DEVICE_VGA);
     DO_TEST("video-vga-device", QEMU_CAPS_DEVICE_VGA,
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY);

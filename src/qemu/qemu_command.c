@@ -4610,6 +4610,9 @@ qemuBuildDeviceVideoStr(const virDomainDef *def,
           virQEMUCapsGet(qemuCaps, QEMU_CAPS_VMWARE_SVGA_VGAMEM)))) {
 
         virBufferAsprintf(&buf, ",vgamem_mb=%u", video->vram / 1024);
+    } else if (video->type == VIR_DOMAIN_VIDEO_TYPE_CIRRUS) {
+        if (video->vram && virQEMUCapsGet(qemuCaps, QEMU_CAPS_CIRRUS_VGAMEM))
+            virBufferAsprintf(&buf, ",vgamem_mb=%u", video->vram / 1024);
     }
 
     if (qemuBuildDeviceAddressStr(&buf, def, &video->info, qemuCaps) < 0)
