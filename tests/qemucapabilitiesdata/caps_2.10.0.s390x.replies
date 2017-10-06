@@ -2975,7 +2975,7 @@
   "id": "libvirt-31",
   "error": {
     "class": "DeviceNotFound",
-    "desc": "Device 'VGA' not found"
+    "desc": "Device 'cirrus-vga' not found"
   }
 }
 
@@ -2983,12 +2983,20 @@
   "id": "libvirt-32",
   "error": {
     "class": "DeviceNotFound",
-    "desc": "Device 'vmware-svga' not found"
+    "desc": "Device 'VGA' not found"
   }
 }
 
 {
   "id": "libvirt-33",
+  "error": {
+    "class": "DeviceNotFound",
+    "desc": "Device 'vmware-svga' not found"
+  }
+}
+
+{
+  "id": "libvirt-34",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'qxl' not found"
@@ -3143,7 +3151,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-34"
+  "id": "libvirt-35"
 }
 
 {
@@ -3190,11 +3198,11 @@
       "type": "size"
     }
   ],
-  "id": "libvirt-35"
+  "id": "libvirt-36"
 }
 
 {
-  "id": "libvirt-36",
+  "id": "libvirt-37",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'ICH9-LPC' not found"
@@ -3341,7 +3349,7 @@
       "type": "str"
     }
   ],
-  "id": "libvirt-37"
+  "id": "libvirt-38"
 }
 
 {
@@ -3403,7 +3411,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-38"
+  "id": "libvirt-39"
 }
 
 {
@@ -3447,11 +3455,11 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-39"
+  "id": "libvirt-40"
 }
 
 {
-  "id": "libvirt-40",
+  "id": "libvirt-41",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'nec-usb-xhci' not found"
@@ -3503,7 +3511,7 @@
       "cpu-max": 248
     }
   ],
-  "id": "libvirt-41"
+  "id": "libvirt-42"
 }
 
 {
@@ -4037,12 +4045,6 @@
       "migration-safe": true
     }
   ],
-  "id": "libvirt-42"
-}
-
-{
-  "return": [
-  ],
   "id": "libvirt-43"
 }
 
@@ -4050,6 +4052,12 @@
   "return": [
   ],
   "id": "libvirt-44"
+}
+
+{
+  "return": [
+  ],
+  "id": "libvirt-45"
 }
 
 {
@@ -5154,7 +5162,7 @@
       "option": "drive"
     }
   ],
-  "id": "libvirt-45"
+  "id": "libvirt-46"
 }
 
 {
@@ -5204,7 +5212,7 @@
       "capability": "return-path"
     }
   ],
-  "id": "libvirt-46"
+  "id": "libvirt-47"
 }
 
 {
@@ -14927,7 +14935,7 @@
       "meta-type": "object"
     }
   ],
-  "id": "libvirt-47"
+  "id": "libvirt-48"
 }
 
 {
@@ -14967,11 +14975,11 @@
       }
     }
   },
-  "id": "libvirt-48"
+  "id": "libvirt-49"
 }
 
 {
-  "id": "libvirt-49",
+  "id": "libvirt-50",
   "error": {
     "class": "GenericError",
     "desc": "Property '.migratable' not found"

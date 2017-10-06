@@ -443,6 +443,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               /* 270 */
               "vxhs",
               "virtio-blk.num-queues",
+              "cirrus-vga.vgamem_mb",
     );
 
 
@@ -1764,6 +1765,10 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsKVMPit[] = {
     { "lost_tick_policy", QEMU_CAPS_KVM_PIT_TICK_POLICY },
 };
 
+static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsCirrus[] = {
+    { "vgamem_mb", QEMU_CAPS_CIRRUS_VGAMEM },
+};
+
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVGA[] = {
     { "vgamem_mb", QEMU_CAPS_VGA_VGAMEM },
 };
@@ -1876,6 +1881,9 @@ static struct virQEMUCapsObjectTypeProps virQEMUCapsObjectProps[] = {
       -1 },
     { "kvm-pit", virQEMUCapsObjectPropsKVMPit,
       ARRAY_CARDINALITY(virQEMUCapsObjectPropsKVMPit),
+      -1 },
+    { "cirrus-vga", virQEMUCapsObjectPropsCirrus,
+      ARRAY_CARDINALITY(virQEMUCapsObjectPropsCirrus),
       -1 },
     { "VGA", virQEMUCapsObjectPropsVGA,
       ARRAY_CARDINALITY(virQEMUCapsObjectPropsVGA),

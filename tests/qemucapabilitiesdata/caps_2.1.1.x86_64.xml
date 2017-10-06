@@ -163,6 +163,7 @@
   <flag name='query-cpu-definitions'/>
   <flag name='query-named-block-nodes'/>
   <flag name='kernel-irqchip'/>
+  <flag name='cirrus-vga.vgamem_mb'/>
   <version>2001001</version>
   <kvmVersion>0</kvmVersion>
   <package></package>

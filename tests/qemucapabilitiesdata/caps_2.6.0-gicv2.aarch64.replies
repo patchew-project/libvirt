@@ -3246,6 +3246,14 @@
 }
 
 {
+  "id": "libvirt-31",
+  "error": {
+    "class": "DeviceNotFound",
+    "desc": "Device 'cirrus-vga' not found"
+  }
+}
+
+{
   "return": [
     {
       "name": "rombar",
@@ -3289,11 +3297,11 @@
       "type": "int32"
     }
   ],
-  "id": "libvirt-31"
+  "id": "libvirt-32"
 }
 
 {
-  "id": "libvirt-32",
+  "id": "libvirt-33",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'vmware-svga' not found"
@@ -3301,7 +3309,7 @@
 }
 
 {
-  "id": "libvirt-33",
+  "id": "libvirt-34",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'qxl' not found"
@@ -3401,7 +3409,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-34"
+  "id": "libvirt-35"
 }
 
 {
@@ -3431,11 +3439,11 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-35"
+  "id": "libvirt-36"
 }
 
 {
-  "id": "libvirt-36",
+  "id": "libvirt-37",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'ICH9-LPC' not found"
@@ -3539,11 +3547,11 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-37"
+  "id": "libvirt-38"
 }
 
 {
-  "id": "libvirt-38",
+  "id": "libvirt-39",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-balloon-ccw' not found"
@@ -3586,7 +3594,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-39"
+  "id": "libvirt-40"
 }
 
 {
@@ -3656,7 +3664,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-40"
+  "id": "libvirt-41"
 }
 
 {
@@ -3831,7 +3839,7 @@
       "cpu-max": 1
     }
   ],
-  "id": "libvirt-41"
+  "id": "libvirt-42"
 }
 
 {
@@ -3930,12 +3938,6 @@
       "name": "pxa270"
     }
   ],
-  "id": "libvirt-42"
-}
-
-{
-  "return": [
-  ],
   "id": "libvirt-43"
 }
 
@@ -3943,6 +3945,12 @@
   "return": [
   ],
   "id": "libvirt-44"
+}
+
+{
+  "return": [
+  ],
+  "id": "libvirt-45"
 }
 
 {
@@ -4914,7 +4922,7 @@
       "option": "drive"
     }
   ],
-  "id": "libvirt-45"
+  "id": "libvirt-46"
 }
 
 {
@@ -4948,7 +4956,7 @@
       "capability": "postcopy-ram"
     }
   ],
-  "id": "libvirt-46"
+  "id": "libvirt-47"
 }
 
 {
@@ -12953,7 +12961,7 @@
       "meta-type": "array"
     }
   ],
-  "id": "libvirt-47"
+  "id": "libvirt-48"
 }
 
 {
@@ -12969,7 +12977,7 @@
       "kernel": true
     }
   ],
-  "id": "libvirt-48"
+  "id": "libvirt-49"
 }
 
 {

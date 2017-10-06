@@ -2775,6 +2775,39 @@
       "type": "uint32"
     },
     {
+      "name": "multifunction",
+      "description": "on/off",
+      "type": "bool"
+    },
+    {
+      "name": "romfile",
+      "type": "str"
+    },
+    {
+      "name": "vgamem_mb",
+      "type": "uint32"
+    },
+    {
+      "name": "command_serr_enable",
+      "description": "on/off",
+      "type": "bool"
+    },
+    {
+      "name": "addr",
+      "description": "Slot and optional function number, example: 06.0 or 06",
+      "type": "int32"
+    }
+  ],
+  "id": "libvirt-31"
+}
+
+{
+  "return": [
+    {
+      "name": "rombar",
+      "type": "uint32"
+    },
+    {
       "name": "mmio",
       "description": "on/off",
       "type": "bool"
@@ -2812,7 +2845,7 @@
       "type": "int32"
     }
   ],
-  "id": "libvirt-31"
+  "id": "libvirt-32"
 }
 
 {
@@ -2845,7 +2878,7 @@
       "type": "int32"
     }
   ],
-  "id": "libvirt-32"
+  "id": "libvirt-33"
 }
 
 {
@@ -2922,7 +2955,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-33"
+  "id": "libvirt-34"
 }
 
 {
@@ -3028,7 +3061,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-34"
+  "id": "libvirt-35"
 }
 
 {
@@ -3068,7 +3101,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-35"
+  "id": "libvirt-36"
 }
 
 {
@@ -3145,7 +3178,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-36"
+  "id": "libvirt-37"
 }
 
 {
@@ -3245,11 +3278,11 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-37"
+  "id": "libvirt-38"
 }
 
 {
-  "id": "libvirt-38",
+  "id": "libvirt-39",
   "error": {
     "class": "DeviceNotFound",
     "desc": "Device 'virtio-balloon-ccw' not found"
@@ -3292,7 +3325,7 @@
       "type": "bool"
     }
   ],
-  "id": "libvirt-39"
+  "id": "libvirt-40"
 }
 
 {
@@ -3362,7 +3395,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-40"
+  "id": "libvirt-41"
 }
 
 {
@@ -3372,7 +3405,7 @@
       "type": "uint32"
     }
   ],
-  "id": "libvirt-41"
+  "id": "libvirt-42"
 }
 
 {
@@ -3485,7 +3518,7 @@
       "cpu-max": 255
     }
   ],
-  "id": "libvirt-42"
+  "id": "libvirt-43"
 }
 
 {
@@ -3575,21 +3608,21 @@
       "name": "qemu64"
     }
   ],
-  "id": "libvirt-43"
+  "id": "libvirt-44"
 }
 
 {
   "return": [
     "tpm-tis"
   ],
-  "id": "libvirt-44"
+  "id": "libvirt-45"
 }
 
 {
   "return": [
     "passthrough"
   ],
-  "id": "libvirt-45"
+  "id": "libvirt-46"
 }
 
 {
@@ -4683,7 +4716,7 @@
       "option": "drive"
     }
   ],
-  "id": "libvirt-46"
+  "id": "libvirt-47"
 }
 
 {
@@ -4717,7 +4750,7 @@
       "capability": "postcopy-ram"
     }
   ],
-  "id": "libvirt-47"
+  "id": "libvirt-48"
 }
 
 {
@@ -12722,7 +12755,7 @@
       "meta-type": "array"
     }
   ],
-  "id": "libvirt-48"
+  "id": "libvirt-49"
 }
 
 {
