@@ -105,8 +105,6 @@ hypervInitConnection(virConnectPtr conn, hypervPrivate *priv,
         priv->wmiVersion = HYPERV_WMI_VERSION_V1;
 
         if (hypervEnumAndPull(priv, &wqlQuery, &computerSystem) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("%s is not a Hyper-V server"), conn->uri->server);
             goto cleanup;
         }
     }
