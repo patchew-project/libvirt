@@ -3336,6 +3336,13 @@ typedef enum {
 # define VIR_DOMAIN_JOB_MEMORY_DIRTY_RATE        "memory_dirty_rate"
 
 /**
+ * VIR_DOMAIN_JOB_MEMORY_PAGE_SIZE:
+ *
+ * virDomainGetJobStats field: page size of the memory in this domain
+ */
+# define VIR_DOMAIN_JOB_MEMORY_PAGE_SIZE        "page_size"
+
+/**
  * VIR_DOMAIN_JOB_MEMORY_ITERATION:
  *
  * virDomainGetJobStats field: current iteration over domain's memory
