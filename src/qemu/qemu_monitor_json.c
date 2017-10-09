@@ -6443,7 +6443,7 @@ int qemuMonitorJSONGetTPMTypes(qemuMonitorPtr mon,
 
 static int
 qemuMonitorJSONBuildChrChardevReconnect(virJSONValuePtr object,
-                                        const virDomainChrSourceReconnectDef *def)
+                                        const virDomainDeviceSourceReconnectDef *def)
 {
     if (def->enabled != VIR_TRISTATE_BOOL_YES)
         return 0;
