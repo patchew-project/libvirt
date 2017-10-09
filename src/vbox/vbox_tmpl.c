@@ -550,6 +550,11 @@ static void* _handleUSBGetDeviceFilters(IUSBCommon *USBCommon)
     return USBCommon->vtbl->GetDeviceFilters;
 }
 
+static void* _handleMachineGetStorageControllers(IMachine *machine)
+{
+    return machine->vtbl->GetStorageControllers;
+}
+
 static void* _handleMachineGetMediumAttachments(IMachine *machine)
 {
     return machine->vtbl->GetMediumAttachments;
@@ -1920,6 +1925,18 @@ _storageControllerGetBus(IStorageController *storageController, PRUint32 *bus)
 }
 
 static nsresult
+_storageControllerGetControllerType(IStorageController *storageController, PRUint32 *controllerType)
+{
+    return storageController->vtbl->GetControllerType(storageController, controllerType);
+}
+
+static nsresult
+_storageControllerSetControllerType(IStorageController *storageController, PRUint32 controllerType)
+{
+    return storageController->vtbl->SetControllerType(storageController, controllerType);
+}
+
+static nsresult
 _sharedFolderGetHostPath(ISharedFolder *sharedFolder, PRUnichar **hostPath)
 {
     return sharedFolder->vtbl->GetHostPath(sharedFolder, hostPath);
@@ -2268,6 +2285,7 @@ static vboxUniformedArray _UArray = {
     .handleGetMachines = _handleGetMachines,
     .handleGetHardDisks = _handleGetHardDisks,
     .handleUSBGetDeviceFilters = _handleUSBGetDeviceFilters,
+    .handleMachineGetStorageControllers = _handleMachineGetStorageControllers,
     .handleMachineGetMediumAttachments = _handleMachineGetMediumAttachments,
     .handleMachineGetSharedFolders = _handleMachineGetSharedFolders,
     .handleSnapshotGetChildren = _handleSnapshotGetChildren,
@@ -2499,6 +2517,8 @@ static vboxUniformedIMediumAttachment _UIMediumAttachment = {
 
 static vboxUniformedIStorageController _UIStorageController = {
     .GetBus = _storageControllerGetBus,
+    .GetControllerType = _storageControllerGetControllerType,
+    .SetControllerType = _storageControllerSetControllerType,
 };
 
 static vboxUniformedISharedFolder _UISharedFolder = {
