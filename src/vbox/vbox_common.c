@@ -3326,7 +3326,8 @@ vboxDumpDisplay(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
         if (VIR_ALLOC(graphics) < 0)
             goto cleanup;
 
-        gVBoxAPI.UIVRDEServer.GetPorts(data, VRDEServer, graphics);
+        gVBoxAPI.UIVRDEServer.GetPorts(data, VRDEServer, machine, graphics);
+        gVBoxAPI.UISession.Close(data->vboxSession);
 
         graphics->type = VIR_DOMAIN_GRAPHICS_TYPE_RDP;
 

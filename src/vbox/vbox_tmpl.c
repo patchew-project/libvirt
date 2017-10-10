@@ -144,12 +144,6 @@ if (strUtf16) {\
           (unsigned)(iid)->m3[7]);\
 }\
 
-#define VBOX_SESSION_OPEN(/* unused */ iid_value, /* in */ machine) \
-    machine->vtbl->LockMachine(machine, data->vboxSession, LockType_Write)
-
-#define VBOX_SESSION_CLOSE() \
-    data->vboxSession->vtbl->UnlockMachine(data->vboxSession)
-
 #define VBOX_IID_INITIALIZER { NULL, true }
 
 /* default RDP port range to use for auto-port setting */
@@ -228,29 +222,6 @@ _vboxIIDFromArrayItem(vboxDriverPtr data, vboxIID *iid,
 #define DEBUGIID(msg, strUtf16) DEBUGPRUnichar(msg, strUtf16)
 
 /**
- * Converts Utf-16 string to int
- */
-static int PRUnicharToInt(PCVBOXXPCOM pFuncs, PRUnichar *strUtf16)
-{
-    char *strUtf8 = NULL;
-    int ret = 0;
-
-    if (!strUtf16)
-        return -1;
-
-    pFuncs->pfnUtf16ToUtf8(strUtf16, &strUtf8);
-    if (!strUtf8)
-        return -1;
-
-    if (virStrToLong_i(strUtf8, NULL, 10, &ret) < 0)
-        ret = -1;
-
-    pFuncs->pfnUtf8Free(strUtf8);
-
-    return ret;
-}
-
-/**
  * Converts int to Utf-16 string
  */
 static PRUnichar *PRUnicharFromInt(PCVBOXXPCOM pFuncs, int n) {
@@ -284,6 +255,56 @@ static virDomainState _vboxConvertState(PRUint32 state)
         default:
             return VIR_DOMAIN_NOSTATE;
     }
+}
+
+static int
+vboxGetActiveVRDEServerPort(ISession *session, IMachine *machine)
+{
+    nsresult rc;
+    PRInt32 port = -1;
+    IVRDEServerInfo *vrdeInfo = NULL;
+    IConsole *console = NULL;
+    int locked = 0;
+
+    rc = machine->vtbl->LockMachine(machine, session, LockType_Shared);
+    if (NS_FAILED(rc)) {
+        VIR_WARN("Could not obtain shared lock on VBox VM, rc=%08x", rc);
+        goto cleanup;
+    } else {
+        locked = 1;
+    }
+
+    rc = session->vtbl->GetConsole(session, &console);
+    if (NS_FAILED(rc)) {
+        VIR_WARN("Could not get VBox session console, rc=%08x", rc);
+        goto cleanup;
+    }
+
+    /* it may be null if VM is not running */
+    if (!console)
+        goto cleanup;
+
+    rc = console->vtbl->GetVRDEServerInfo(console, &vrdeInfo);
+
+    if (NS_FAILED(rc) || !vrdeInfo) {
+        VIR_WARN("Could not get VBox VM VRDEServerInfo, rc=%08x", rc);
+        goto cleanup;
+    }
+
+    rc = vrdeInfo->vtbl->GetPort(vrdeInfo, &port);
+
+    if (NS_FAILED(rc)) {
+        VIR_WARN("Could not read port from VRDEServerInfo, rc=%08x", rc);
+        goto cleanup;
+    }
+
+ cleanup:
+    VBOX_RELEASE(console);
+    VBOX_RELEASE(vrdeInfo);
+    if (locked)
+        session->vtbl->UnlockMachine(session);
+
+    return port;
 }
 
 static int
@@ -326,7 +347,7 @@ _vboxDomainSnapshotRestore(virDomainPtr dom,
         goto cleanup;
     }
 
-    rc = VBOX_SESSION_OPEN(domiid.value, machine);
+    rc = machine->vtbl->LockMachine(machine, data->vboxSession, LockType_Write);
 #if VBOX_API_VERSION < 5000000
     if (NS_SUCCEEDED(rc))
         rc = data->vboxSession->vtbl->GetConsole(data->vboxSession, &console);
@@ -371,7 +392,7 @@ _vboxDomainSnapshotRestore(virDomainPtr dom,
 #if VBOX_API_VERSION < 5000000
     VBOX_RELEASE(console);
 #endif /*VBOX_API_VERSION < 5000000*/
-    VBOX_SESSION_CLOSE();
+    data->vboxSession->vtbl->UnlockMachine(data->vboxSession);
     vboxIIDUnalloc(&domiid);
     return ret;
 }
@@ -1582,23 +1603,55 @@ _vrdeServerSetEnabled(IVRDEServer *VRDEServer, PRBool enabled)
 }
 
 static nsresult
-_vrdeServerGetPorts(vboxDriverPtr data ATTRIBUTE_UNUSED,
-                    IVRDEServer *VRDEServer, virDomainGraphicsDefPtr graphics)
+_vrdeServerGetPorts(vboxDriverPtr data, IVRDEServer *VRDEServer,
+                    IMachine *machine, virDomainGraphicsDefPtr graphics)
 {
     nsresult rc;
     PRUnichar *VRDEPortsKey = NULL;
     PRUnichar *VRDEPortsValue = NULL;
+    PRInt32 port = -1;
+    ssize_t nmatches = 0;
+    char **matches = NULL;
+    char *portUtf8 = NULL;
 
+    /* get active (effective) port, if available */
+    port = vboxGetActiveVRDEServerPort(data->vboxSession, machine);
+
+    /* get the port (or port range) set in VM properties, this info will
+     * be used to determine whether to set autoport flag
+     */
     VBOX_UTF8_TO_UTF16("TCP/Ports", &VRDEPortsKey);
-    rc = VRDEServer->vtbl->GetVRDEProperty(VRDEServer, VRDEPortsKey, &VRDEPortsValue);
-    VBOX_UTF16_FREE(VRDEPortsKey);
-    if (VRDEPortsValue) {
-        /* even if vbox supports mutilpe ports, single port for now here */
-        graphics->data.rdp.port = PRUnicharToInt(data->pFuncs, VRDEPortsValue);
-        VBOX_UTF16_FREE(VRDEPortsValue);
-    } else {
-        graphics->data.rdp.autoport = true;
+    rc = VRDEServer->vtbl->GetVRDEProperty(VRDEServer, VRDEPortsKey,
+                                           &VRDEPortsValue);
+
+    if (NS_FAILED(rc)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Failed to read RDP port value, rc=%08x"),
+                       (unsigned) rc);
+       goto cleanup;
     }
+
+    graphics->data.rdp.port = port;
+
+    VBOX_UTF16_TO_UTF8(VRDEPortsValue, &portUtf8);
+
+    if (portUtf8) {
+        nmatches = virStringSearch(portUtf8, "(^[[:digit:]]+$)", 1, &matches);
+
+        /* vbox port-range -> autoport */
+        if (nmatches != 1) {
+            graphics->data.rdp.autoport = true;
+        } else if (port < 0 && virStrToLong_i(portUtf8, NULL, 10, &port) == 0) {
+            /* no active port available but a single port was set in properties */
+            graphics->data.rdp.port = port;
+        }
+    }
+
+ cleanup:
+    virStringListFree(matches);
+    VBOX_UTF8_FREE(portUtf8);
+    VBOX_UTF16_FREE(VRDEPortsValue);
+    VBOX_UTF16_FREE(VRDEPortsKey);
 
     return rc;
 }
