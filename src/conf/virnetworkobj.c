@@ -1309,47 +1309,61 @@ virNetworkMatch(virNetworkObjPtr obj,
 #undef MATCH
 
 
-struct virNetworkObjListData {
+typedef bool (*virNetworkObjMatch)(virNetworkObjPtr obj, unsigned int flags);
+struct _virNetworkObjForEachData {
     virConnectPtr conn;
-    virNetworkPtr *nets;
     virNetworkObjListFilter filter;
+    virNetworkObjMatch match;
     unsigned int flags;
-    int nnets;
     bool error;
+    bool checkActive;
+    bool active;
+    int nElems;
+    int maxElems;
+    char **const elems;
+    virNetworkPtr *nets;
 };
 
 static int
-virNetworkObjListPopulate(void *payload,
-                          const void *name ATTRIBUTE_UNUSED,
-                          void *opaque)
+virNetworkObjListForEachCb(void *payload,
+                           const void *name ATTRIBUTE_UNUSED,
+                           void *opaque)
 {
-    struct virNetworkObjListData *data = opaque;
+    struct _virNetworkObjForEachData *data = opaque;
     virNetworkObjPtr obj = payload;
     virNetworkPtr net = NULL;
 
     if (data->error)
         return 0;
 
+    if (data->maxElems >= 0 && data->nElems == data->maxElems)
+        return 0;
+
     virObjectLock(obj);
 
-    if (data->filter &&
-        !data->filter(data->conn, obj->def))
+    if (data->filter && !data->filter(data->conn, obj->def))
         goto cleanup;
 
-    if (!virNetworkMatch(obj, data->flags))
+    if (data->match && !virNetworkMatch(obj, data->flags))
         goto cleanup;
 
-    if (!data->nets) {
-        data->nnets++;
+    if (data->checkActive && data->active != virNetworkObjIsActive(obj))
         goto cleanup;
+
+    if (data->elems) {
+        if (VIR_STRDUP(data->elems[data->nElems], obj->def->name) < 0) {
+            data->error = true;
+            goto cleanup;
+        }
+    } else if (data->nets) {
+        if (!(net = virGetNetwork(data->conn, obj->def->name, obj->def->uuid))) {
+            data->error = true;
+            goto cleanup;
+        }
+        data->nets[data->nElems] = net;
     }
 
-    if (!(net = virGetNetwork(data->conn, obj->def->name, obj->def->uuid))) {
-        data->error = true;
-        goto cleanup;
-    }
-
-    data->nets[data->nnets++] = net;
+    data->nElems++;
 
  cleanup:
     virObjectUnlock(obj);
@@ -1365,31 +1379,36 @@ virNetworkObjListExport(virConnectPtr conn,
                         unsigned int flags)
 {
     int ret = -1;
-    struct virNetworkObjListData data = {
-        .conn = conn, .nets = NULL, .filter = filter, .flags = flags,
-        .nnets = 0, .error = false };
+    struct _virNetworkObjForEachData data = {
+        .conn = conn, .filter = filter, .match = virNetworkMatch,
+        .flags = flags, .checkActive = false, .active = false, .error = false,
+        .nElems = 0, .maxElems = -1, .elems = NULL, .nets = NULL };
 
     virObjectRWLockRead(netobjs);
     if (nets && VIR_ALLOC_N(data.nets, virHashSize(netobjs->objs) + 1) < 0)
         goto cleanup;
 
-    virHashForEach(netobjs->objs, virNetworkObjListPopulate, &data);
+    if (data.nets)
+        data.maxElems = virHashSize(netobjs->objs) + 1;
+
+    virHashForEach(netobjs->objs, virNetworkObjListForEachCb, &data);
 
     if (data.error)
         goto cleanup;
 
     if (data.nets) {
         /* trim the array to the final size */
-        ignore_value(VIR_REALLOC_N(data.nets, data.nnets + 1));
+        ignore_value(VIR_REALLOC_N(data.nets, data.nElems + 1));
         *nets = data.nets;
         data.nets = NULL;
     }
 
-    ret = data.nnets;
+    ret = data.nElems;
+
  cleanup:
     virObjectRWUnlock(netobjs);
-    while (data.nets && data.nnets)
-        virObjectUnref(data.nets[--data.nnets]);
+    while (data.nets && data.nElems)
+        virObjectUnref(data.nets[--data.nElems]);
 
     VIR_FREE(data.nets);
     return ret;
@@ -1442,53 +1461,6 @@ virNetworkObjListForEach(virNetworkObjListPtr nets,
 }
 
 
-struct virNetworkObjListGetHelperData {
-    virConnectPtr conn;
-    virNetworkObjListFilter filter;
-    char **names;
-    int nnames;
-    int maxnames;
-    bool active;
-    bool error;
-};
-
-static int
-virNetworkObjListGetHelper(void *payload,
-                           const void *name ATTRIBUTE_UNUSED,
-                           void *opaque)
-{
-    struct virNetworkObjListGetHelperData *data = opaque;
-    virNetworkObjPtr obj = payload;
-
-    if (data->error)
-        return 0;
-
-    if (data->maxnames >= 0 &&
-        data->nnames == data->maxnames)
-        return 0;
-
-    virObjectLock(obj);
-
-    if (data->filter &&
-        !data->filter(data->conn, obj->def))
-        goto cleanup;
-
-    if ((data->active && virNetworkObjIsActive(obj)) ||
-        (!data->active && !virNetworkObjIsActive(obj))) {
-        if (data->names &&
-            VIR_STRDUP(data->names[data->nnames], obj->def->name) < 0) {
-            data->error = true;
-            goto cleanup;
-        }
-        data->nnames++;
-    }
-
- cleanup:
-    virObjectUnlock(obj);
-    return 0;
-}
-
-
 int
 virNetworkObjListGetNames(virNetworkObjListPtr nets,
                           bool active,
@@ -1497,26 +1469,24 @@ virNetworkObjListGetNames(virNetworkObjListPtr nets,
                           virNetworkObjListFilter filter,
                           virConnectPtr conn)
 {
-    int ret = -1;
-
-    struct virNetworkObjListGetHelperData data = {
-        .conn = conn, .filter = filter, .names = names, .nnames = 0,
-        .maxnames = maxnames, .active = active, .error = false};
+    struct _virNetworkObjForEachData data = {
+        .conn = conn, .filter = filter, .match = NULL,
+        .flags = 0, .checkActive = true, .active = active, .error = false,
+        .nElems = 0, .maxElems = maxnames, .elems = names, .nets = NULL };
 
     virObjectRWLockRead(nets);
-    virHashForEach(nets->objs, virNetworkObjListGetHelper, &data);
+    virHashForEach(nets->objs, virNetworkObjListForEachCb, &data);
     virObjectRWUnlock(nets);
 
     if (data.error)
-        goto cleanup;
+        goto error;
 
-    ret = data.nnames;
- cleanup:
-    if (ret < 0) {
-        while (data.nnames)
-            VIR_FREE(data.names[--data.nnames]);
-    }
-    return ret;
+    return data.nElems;
+
+ error:
+    while (data.nElems)
+        VIR_FREE(data.elems[--data.nElems]);
+    return -1;
 }
 
 
@@ -1526,15 +1496,16 @@ virNetworkObjListNumOfNetworks(virNetworkObjListPtr nets,
                                virNetworkObjListFilter filter,
                                virConnectPtr conn)
 {
-    struct virNetworkObjListGetHelperData data = {
-        .conn = conn, .filter = filter, .names = NULL, .nnames = 0,
-        .maxnames = -1, .active = active, .error = false};
+    struct _virNetworkObjForEachData data = {
+        .conn = conn, .filter = filter, .match = NULL,
+        .flags = 0, .checkActive = true, .active = active, .error = false,
+        .nElems = 0, .maxElems = -1, .elems = NULL, .nets = NULL };
 
     virObjectRWLockRead(nets);
-    virHashForEach(nets->objs, virNetworkObjListGetHelper, &data);
+    virHashForEach(nets->objs, virNetworkObjListForEachCb, &data);
     virObjectRWUnlock(nets);
 
-    return data.nnames;
+    return data.nElems;
 }
 
 
