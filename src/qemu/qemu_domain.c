@@ -6657,8 +6657,9 @@ qemuDomainIsQ35(const virDomainDef *def)
 bool
 qemuDomainMachineIsQ35(const char *machine)
 {
-    return (STRPREFIX(machine, "pc-q35") ||
-            STREQ(machine, "q35"));
+    return (machine &&
+            (STREQ(machine, "q35") ||
+             STRPREFIX(machine, "pc-q35")));
 }
 
 
@@ -6672,11 +6673,12 @@ qemuDomainIsI440FX(const virDomainDef *def)
 bool
 qemuDomainMachineIsI440FX(const char *machine)
 {
-    return (STREQ(machine, "pc") ||
-            STRPREFIX(machine, "pc-0.") ||
-            STRPREFIX(machine, "pc-1.") ||
-            STRPREFIX(machine, "pc-i440") ||
-            STRPREFIX(machine, "rhel"));
+    return (machine &&
+            (STREQ(machine, "pc") ||
+             STRPREFIX(machine, "pc-0.") ||
+             STRPREFIX(machine, "pc-1.") ||
+             STRPREFIX(machine, "pc-i440") ||
+             STRPREFIX(machine, "rhel")));
 }
 
 
@@ -6745,7 +6747,8 @@ qemuDomainIsS390CCW(const virDomainDef *def)
 bool
 qemuDomainMachineIsS390CCW(const char *machine)
 {
-    return STRPREFIX(machine, "s390-ccw");
+    return (machine &&
+            STRPREFIX(machine, "s390-ccw"));
 }
 
 
@@ -6764,11 +6767,9 @@ qemuDomainMachineIsVirt(const char *machine,
         arch != VIR_ARCH_AARCH64)
         return false;
 
-    if (STRNEQ(machine, "virt") &&
-        !STRPREFIX(machine, "virt-"))
-        return false;
-
-    return true;
+    return (machine &&
+            (STREQ(machine, "virt") ||
+             STRPREFIX(machine, "virt-")));
 }
 
 
@@ -6786,11 +6787,9 @@ qemuDomainMachineIsPSeries(const char *machine,
     if (!ARCH_IS_PPC64(arch))
         return false;
 
-    if (STRNEQ(machine, "pseries") &&
-        !STRPREFIX(machine, "pseries-"))
-        return false;
-
-    return true;
+    return (machine &&
+            (STREQ(machine, "pseries") ||
+             STRPREFIX(machine, "pseries-")));
 }
 
 
