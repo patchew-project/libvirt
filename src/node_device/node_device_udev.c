@@ -53,11 +53,77 @@ VIR_LOG_INIT("node_device.node_device_udev");
 # define TYPE_RAID 12
 #endif
 
-struct _udevPrivate {
+typedef struct _udevEventData udevEventData;
+typedef udevEventData *udevEventDataPtr;
+
+struct _udevEventData {
+    virObjectLockable parent;
+
     struct udev_monitor *udev_monitor;
     int watch;
     bool privileged;
 };
+
+static virClassPtr udevEventDataClass;
+
+static void
+udevEventDataDispose(void *obj)
+{
+    struct udev *udev = NULL;
+    udevEventDataPtr data = obj;
+
+    if (data->watch != -1)
+        virEventRemoveHandle(data->watch);
+
+    if (data->udev_monitor)
+        udev = udev_monitor_get_udev(data->udev_monitor);
+
+    udev_unref(udev);
+    udev_monitor_unref(data->udev_monitor);
+}
+
+
+static int
+udevEventDataOnceInit(void)
+{
+    if (!(udevEventDataClass = virClassNew(virClassForObjectLockable(),
+                                           "udevEventData",
+                                           sizeof(udevEventData),
+                                           udevEventDataDispose)))
+        return -1;
+
+    return 0;
+}
+
+VIR_ONCE_GLOBAL_INIT(udevEventData)
+
+static udevEventDataPtr
+udevEventDataNew(void)
+{
+    udevEventDataPtr ret = NULL;
+
+    if (udevEventDataInitialize() < 0)
+        return NULL;
+
+    if (!(ret = virObjectLockableNew(udevEventDataClass)))
+        return NULL;
+
+    ret->watch = -1;
+    return ret;
+}
+
+
+static bool
+udevEventDataIsPrivileged(udevEventDataPtr data)
+{
+    bool privileged;
+
+    virObjectLock(data);
+    privileged = data->privileged;
+    virObjectUnlock(data);
+
+    return privileged;
+}
 
 
 static bool
@@ -447,7 +513,7 @@ udevProcessPCI(struct udev_device *device,
     virNodeDevCapPCIDevPtr pci_dev = &def->caps->data.pci_dev;
     virPCIEDeviceInfoPtr pci_express = NULL;
     virPCIDevicePtr pciDev = NULL;
-    udevPrivate *priv = driver->privateData;
+    udevEventDataPtr priv = driver->privateData;
     int ret = -1;
     char *p;
 
@@ -498,7 +564,7 @@ udevProcessPCI(struct udev_device *device,
         goto cleanup;
 
     /* We need to be root to read PCI device configs */
-    if (priv->privileged) {
+    if (udevEventDataIsPrivileged(priv)) {
         if (virPCIGetHeaderType(pciDev, &pci_dev->hdrType) < 0)
             goto cleanup;
 
@@ -1559,39 +1625,18 @@ udevPCITranslateDeinit(void)
 static int
 nodeStateCleanup(void)
 {
-    udevPrivate *priv = NULL;
-    struct udev_monitor *udev_monitor = NULL;
-    struct udev *udev = NULL;
-
     if (!driver)
         return -1;
 
     nodeDeviceLock();
 
+    virObjectUnref(driver->privateData);
     virObjectUnref(driver->nodeDeviceEventState);
-
-    priv = driver->privateData;
-
-    if (priv) {
-        if (priv->watch != -1)
-            virEventRemoveHandle(priv->watch);
-
-        udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
-
-        if (udev_monitor != NULL) {
-            udev = udev_monitor_get_udev(udev_monitor);
-            udev_monitor_unref(udev_monitor);
-        }
-    }
-
-    if (udev != NULL)
-        udev_unref(udev);
 
     virNodeDeviceObjListFree(driver->devs);
     nodeDeviceUnlock();
     virMutexDestroy(&driver->lock);
     VIR_FREE(driver);
-    VIR_FREE(priv);
 
     udevPCITranslateDeinit();
     return 0;
@@ -1615,16 +1660,17 @@ udevHandleOneDevice(struct udev_device *device)
 }
 
 
+/* the caller must be holding the udevEventData object lock prior to calling
+ * this function
+ */
 static bool
-udevEventMonitorSanityCheck(struct udev_monitor *udev_monitor,
+udevEventMonitorSanityCheck(udevEventDataPtr priv,
                             int fd)
 {
     int rc = -1;
 
-    rc = udev_monitor_get_fd(udev_monitor);
+    rc = udev_monitor_get_fd(priv->udev_monitor);
     if (fd != rc) {
-        udevPrivate *priv = driver->privateData;
-
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("File descriptor returned by udev %d does not "
                          "match node device file descriptor %d"),
@@ -1650,15 +1696,19 @@ udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
                         int events ATTRIBUTE_UNUSED,
                         void *data ATTRIBUTE_UNUSED)
 {
+    udevEventDataPtr priv = driver->privateData;
     struct udev_device *device = NULL;
-    struct udev_monitor *udev_monitor = NULL;
 
-    udev_monitor = DRV_STATE_UDEV_MONITOR(driver);
+    virObjectLock(priv);
 
-    if (!udevEventMonitorSanityCheck(udev_monitor, fd))
+    if (!udevEventMonitorSanityCheck(priv, fd)) {
+        virObjectUnlock(priv);
         return;
+    }
 
-    device = udev_monitor_receive_device(udev_monitor);
+    device = udev_monitor_receive_device(priv->udev_monitor);
+    virObjectUnlock(priv);
+
     if (device == NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("udev_monitor_receive_device returned NULL"));
@@ -1675,12 +1725,13 @@ udevEventHandleCallback(int watch ATTRIBUTE_UNUSED,
 static void
 udevGetDMIData(virNodeDevCapSystemPtr syscap)
 {
+    udevEventDataPtr priv = driver->privateData;
     struct udev *udev = NULL;
     struct udev_device *device = NULL;
     virNodeDevCapSystemHardwarePtr hardware = &syscap->hardware;
     virNodeDevCapSystemFirmwarePtr firmware = &syscap->firmware;
 
-    udev = udev_monitor_get_udev(DRV_STATE_UDEV_MONITOR(driver));
+    udev = udev_monitor_get_udev(priv->udev_monitor);
 
     device = udev_device_new_from_syspath(udev, DMI_DEVPATH);
     if (device == NULL) {
@@ -1791,14 +1842,8 @@ nodeStateInitialize(bool privileged,
                     virStateInhibitCallback callback ATTRIBUTE_UNUSED,
                     void *opaque ATTRIBUTE_UNUSED)
 {
-    udevPrivate *priv = NULL;
+    udevEventDataPtr priv = NULL;
     struct udev *udev = NULL;
-
-    if (VIR_ALLOC(priv) < 0)
-        return -1;
-
-    priv->watch = -1;
-    priv->privileged = privileged;
 
     if (VIR_ALLOC(driver) < 0) {
         VIR_FREE(priv);
@@ -1813,12 +1858,13 @@ nodeStateInitialize(bool privileged,
         return -1;
     }
 
-    driver->privateData = priv;
     nodeDeviceLock();
 
-    if (!(driver->devs = virNodeDeviceObjListNew()))
+    if (!(driver->devs = virNodeDeviceObjListNew()) ||
+        !(priv = udevEventDataNew()))
         goto unlock;
 
+    driver->privateData = priv;
     driver->nodeDeviceEventState = virObjectEventStateNew();
 
     if (udevPCITranslateInit(privileged) < 0)
@@ -1836,7 +1882,7 @@ nodeStateInitialize(bool privileged,
 #endif
 
     priv->udev_monitor = udev_monitor_new_from_netlink(udev, "udev");
-    if (priv->udev_monitor == NULL) {
+    if (!priv->udev_monitor) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("udev_monitor_new_from_netlink returned NULL"));
         goto unlock;
