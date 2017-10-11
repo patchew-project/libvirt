@@ -6882,6 +6882,7 @@ qemuProcessRefreshCPU(virQEMUDriverPtr driver,
 {
     virCapsPtr caps = virQEMUDriverGetCapabilities(driver, false);
     virCPUDefPtr host = NULL;
+    virCPUDefPtr cpu = NULL;
     int ret = -1;
 
     if (!virQEMUCapsGuestIsNative(caps->host.arch, vm->def->os.arch) ||
@@ -6901,7 +6902,13 @@ qemuProcessRefreshCPU(virQEMUDriverPtr driver,
         if (!(host = virCPUCopyMigratable(caps->host.cpu->arch, caps->host.cpu)))
             goto cleanup;
 
-        if (virCPUUpdate(vm->def->os.arch, vm->def->cpu, host) < 0)
+        if (!(cpu = virCPUDefCopyWithoutModel(host)) ||
+            virCPUDefCopyModelFilter(cpu, host, false,
+                                     virQEMUCapsCPUFilterFeatures,
+                                     &caps->host.cpu->arch) < 0)
+            goto cleanup;
+
+        if (virCPUUpdate(vm->def->os.arch, vm->def->cpu, cpu) < 0)
             goto cleanup;
 
         if (qemuProcessUpdateCPU(driver, vm, QEMU_ASYNC_JOB_NONE) < 0)
@@ -6911,6 +6918,7 @@ qemuProcessRefreshCPU(virQEMUDriverPtr driver,
     ret = 0;
 
  cleanup:
+    virCPUDefFree(cpu);
     virCPUDefFree(host);
     virObjectUnref(caps);
     return ret;
