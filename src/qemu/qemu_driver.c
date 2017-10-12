@@ -14448,7 +14448,7 @@ qemuDomainSnapshotUpdateDiskSourcesRenumber(virStorageSourcePtr src)
     virStorageSourcePtr next;
     unsigned int idx = 1;
 
-    for (next = src->backingStore; next; next = next->backingStore)
+    for (next = src->backingStore; virStorageSourceIsBacking(next); next = next->backingStore)
         next->id = idx++;
 }
 
@@ -17048,7 +17048,7 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
     }
 
     /* clear the _SHALLOW flag if there is only one layer */
-    if (!disk->src->backingStore)
+    if (!virStorageSourceHasBacking(disk->src))
         flags &= ~VIR_DOMAIN_BLOCK_COPY_SHALLOW;
 
     /* unless the user provides a pre-created file, shallow copy into a raw
@@ -17439,7 +17439,7 @@ qemuDomainBlockCommit(virDomainPtr dom,
         goto endjob;
     }
 
-    if (!topSource->backingStore) {
+    if (!virStorageSourceHasBacking(topSource)) {
         virReportError(VIR_ERR_INVALID_ARG,
                        _("top '%s' in chain for '%s' has no backing file"),
                        topSource->path, path);
@@ -19887,7 +19887,8 @@ qemuDomainGetStatsBlock(virQEMUDriverPtr driver,
         virStorageSourcePtr src = disk->src;
         unsigned int backing_idx = 0;
 
-        while (src && (backing_idx == 0 || visitBacking)) {
+        while (virStorageSourceIsBacking(src) &&
+               (backing_idx == 0 || visitBacking)) {
             if (qemuDomainGetStatsOneBlock(driver, cfg, dom, record, maxparams,
                                            disk, src, visited, backing_idx,
                                            stats, nodestats) < 0)

@@ -26607,7 +26607,7 @@ virDomainDiskDefForeachPath(virDomainDiskDefPtr disk,
         }
     }
 
-    for (tmp = disk->src; tmp; tmp = tmp->backingStore) {
+    for (tmp = disk->src; virStorageSourceIsBacking(tmp); tmp = tmp->backingStore) {
         /* execute the callback only for local storage */
         if (virStorageSourceIsLocalStorage(tmp) &&
             tmp->path) {
