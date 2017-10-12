@@ -2060,6 +2060,7 @@ virStorageSourceCopy(const virStorageSource *src,
     ret->haveTLS = src->haveTLS;
     ret->tlsFromConfig = src->tlsFromConfig;
     ret->tlsVerify = src->tlsVerify;
+    ret->detected = src->detected;
 
     /* storage driver metadata are not copied */
     ret->drv = NULL;
@@ -3435,6 +3436,8 @@ virStorageSourceNewFromBacking(virStorageSourcePtr parent)
         if (virStorageSourceInitChainElement(ret, parent, true) < 0)
             goto error;
     }
+
+    ret->detected = true;
 
     return ret;
 
