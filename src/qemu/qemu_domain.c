@@ -1646,7 +1646,7 @@ qemuDomainSetPrivatePathsOld(virQEMUDriverPtr driver,
 
     if (!priv->libDir &&
         virAsprintf(&priv->libDir, "%s/domain-%s",
-                    cfg->libDir, vm->def->name) < 0)
+                    cfg->stateDir, vm->def->name) < 0)
         goto cleanup;
 
     if (!priv->channelTargetDir &&
@@ -1674,7 +1674,7 @@ qemuDomainSetPrivatePaths(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (!priv->libDir &&
-        virAsprintf(&priv->libDir, "%s/domain-%s", cfg->libDir, domname) < 0)
+        virAsprintf(&priv->libDir, "%s/domain-%s", cfg->stateDir, domname) < 0)
         goto cleanup;
 
     if (!priv->channelTargetDir &&
