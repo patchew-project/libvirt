@@ -381,6 +381,20 @@ static const char *qemuFindEnv(char **progenv,
     return NULL;
 }
 
+
+void
+qemuKeywordsFree(int nkeywords, char **keywords, char **values)
+{
+    size_t i;
+    for (i = 0; i < nkeywords; i++) {
+        VIR_FREE(keywords[i]);
+        VIR_FREE(values[i]);
+    }
+    VIR_FREE(keywords);
+    VIR_FREE(values);
+}
+
+
 /*
  * Takes a string containing a set of key=value,key=value,key...
  * parameters and splits them up, returning two arrays with
@@ -401,7 +415,6 @@ qemuParseKeywords(const char *str,
     char **values = NULL;
     const char *start = str;
     const char *end;
-    size_t i;
 
     *retkeywords = NULL;
     *retvalues = NULL;
@@ -479,12 +492,7 @@ qemuParseKeywords(const char *str,
     return 0;
 
  error:
-    for (i = 0; i < keywordCount; i++) {
-        VIR_FREE(keywords[i]);
-        VIR_FREE(values[i]);
-    }
-    VIR_FREE(keywords);
-    VIR_FREE(values);
+    qemuKeywordsFree(keywordCount, keywords, values);
     return -1;
 }
 
@@ -949,12 +957,7 @@ qemuParseCommandLineDisk(virDomainXMLOptionPtr xmlopt,
     }
 
  cleanup:
-    for (i = 0; i < nkeywords; i++) {
-        VIR_FREE(keywords[i]);
-        VIR_FREE(values[i]);
-    }
-    VIR_FREE(keywords);
-    VIR_FREE(values);
+    qemuKeywordsFree(nkeywords, keywords, values);
     return def;
 
  error:
@@ -1132,12 +1135,7 @@ qemuParseCommandLineNet(virDomainXMLOptionPtr xmlopt,
         virDomainNetGenerateMAC(xmlopt, &def->mac);
 
  cleanup:
-    for (i = 0; i < nkeywords; i++) {
-        VIR_FREE(keywords[i]);
-        VIR_FREE(values[i]);
-    }
-    VIR_FREE(keywords);
-    VIR_FREE(values);
+    qemuKeywordsFree(nkeywords, keywords, values);
     return def;
 
  error:
@@ -1704,13 +1702,7 @@ qemuParseCommandLineMem(virDomainDefPtr dom,
     ret = 0;
 
  cleanup:
-    for (i = 0; i < nkws; i++) {
-        VIR_FREE(kws[i]);
-        VIR_FREE(vals[i]);
-    }
-    VIR_FREE(kws);
-    VIR_FREE(vals);
-
+    qemuKeywordsFree(nkws, kws, vals);
     return ret;
 }
 
@@ -1795,13 +1787,7 @@ qemuParseCommandLineSmp(virDomainDefPtr dom,
     ret = 0;
 
  cleanup:
-    for (i = 0; i < nkws; i++) {
-        VIR_FREE(kws[i]);
-        VIR_FREE(vals[i]);
-    }
-    VIR_FREE(kws);
-    VIR_FREE(vals);
-
+    qemuKeywordsFree(nkws, kws, vals);
     return ret;
 
  syntax:
