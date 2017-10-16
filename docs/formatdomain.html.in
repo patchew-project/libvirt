@@ -1623,6 +1623,12 @@
     </dl>
 
     <p>
+      The lifecycle events can be configured via
+      virDomainSetLifecycleAction() API
+      <span class="since">since 3.9.0 (QEMU only)</span>.
+    </p>
+
+    <p>
       The <code>on_lockfailure</code> element (<span class="since">since
       1.0.0</span>) may be used to configure what action should be
       taken when a lock manager loses resource locks. The following
