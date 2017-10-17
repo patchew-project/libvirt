@@ -978,4 +978,9 @@ qemuDomainFixupCPUs(virDomainObjPtr vm,
 char *
 qemuDomainGetMachineName(virDomainObjPtr vm);
 
+bool qemuCheckCCWS390AddressSupport(const virDomainDef *def,
+                                    virDomainDeviceInfo info,
+                                    virQEMUCapsPtr qemuCaps,
+                                    const char *devicename);
+
 #endif /* __QEMU_DOMAIN_H__ */
