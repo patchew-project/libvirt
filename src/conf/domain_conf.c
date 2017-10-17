@@ -10518,6 +10518,16 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
             } else if (virXMLNodeNameEqual(cur, "backend")) {
                 char *tmp = NULL;
 
+                /* user/direct/hostdev do not support backend */
+                if (def->type == VIR_DOMAIN_NET_TYPE_USER ||
+                    def->type == VIR_DOMAIN_NET_TYPE_DIRECT ||
+                    def->type == VIR_DOMAIN_NET_TYPE_HOSTDEV) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("Custom tap device path is not supported for: %s"),
+                                   virDomainNetTypeToString(def->type));
+                    goto error;
+                }
+
                 if ((tmp = virXMLPropString(cur, "tap")))
                     def->backend.tap = virFileSanitizePath(tmp);
                 VIR_FREE(tmp);

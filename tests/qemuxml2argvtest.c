@@ -1219,9 +1219,9 @@ mymain(void)
             QEMU_CAPS_DEVICE_VFIO_PCI, QEMU_CAPS_HOST_PCI_MULTIDOMAIN);
     DO_TEST_FAILURE("net-hostdev-vfio-multidomain",
                     QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_DEVICE_VFIO_PCI);
-    DO_TEST_FAILURE("net-hostdev-fail",
-                    QEMU_CAPS_NODEFCONFIG,
-                    QEMU_CAPS_DEVICE_VFIO_PCI);
+    DO_TEST_PARSE_ERROR("net-hostdev-fail",
+                        QEMU_CAPS_NODEFCONFIG,
+                        QEMU_CAPS_DEVICE_VFIO_PCI);
 
 
     DO_TEST("serial-file-log",
