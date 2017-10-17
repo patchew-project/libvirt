@@ -60,9 +60,9 @@ static void xenStoreWatchEvent(int watch, int fd, int events, void *data);
 static void xenStoreWatchListFree(xenStoreWatchListPtr list);
 
 /************************************************************************
- *									*
- *		Helper internal APIs					*
- *									*
+ *                                                                      *
+ *              Helper internal APIs                                    *
+ *                                                                      *
  ************************************************************************/
 
 /**
@@ -92,9 +92,9 @@ virDomainDoStoreQuery(virConnectPtr conn, int domid, const char *path)
 }
 
 /************************************************************************
- *									*
- *		Canonical internal APIs					*
- *									*
+ *                                                                      *
+ *              Canonical internal APIs                                 *
+ *                                                                      *
  ************************************************************************/
 /**
  * xenStoreOpen:
@@ -737,10 +737,10 @@ xenStoreWatchEvent(int watch ATTRIBUTE_UNUSED,
                    int fd ATTRIBUTE_UNUSED,
                    int events, void *data)
 {
-    char		 **event;
-    char		 *path;
-    char		 *token;
-    unsigned int	 stringCount;
+    char                 **event;
+    char                 *path;
+    char                 *token;
+    unsigned int         stringCount;
     xenStoreWatchPtr     sw;
 
     virConnectPtr        conn = data;

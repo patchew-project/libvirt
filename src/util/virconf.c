@@ -45,9 +45,9 @@
 VIR_LOG_INIT("util.conf");
 
 /************************************************************************
- *									*
- *	Structures and macros used by the mini parser			*
- *									*
+ *                                                                      *
+ *      Structures and macros used by the mini parser                   *
+ *                                                                      *
  ************************************************************************/
 
 typedef struct _virConfParserCtxt virConfParserCtxt;
@@ -69,16 +69,16 @@ struct _virConfParserCtxt {
 
 #define SKIP_BLANKS_AND_EOL                                             \
   do { while ((ctxt->cur < ctxt->end) && (c_isblank(CUR) || IS_EOL(CUR))) { \
-         if (CUR == '\n') ctxt->line++;	                                \
+         if (CUR == '\n') ctxt->line++;                                 \
          ctxt->cur++; } } while (0)
 #define SKIP_BLANKS                                                     \
   do { while ((ctxt->cur < ctxt->end) && (c_isblank(CUR)))              \
           ctxt->cur++; } while (0)
 
 /************************************************************************
- *									*
- *		Structures used by configuration data			*
- *									*
+ *                                                                      *
+ *              Structures used by configuration data                   *
+ *                                                                      *
  ************************************************************************/
 
 VIR_ENUM_IMPL(virConf, VIR_CONF_LAST,
@@ -134,9 +134,9 @@ virConfErrorHelper(const char *file, const char *func, size_t line,
 
 
 /************************************************************************
- *									*
- *		Structures allocations and deallocations		*
- *									*
+ *                                                                      *
+ *              Structures allocations and deallocations                *
+ *                                                                      *
  ************************************************************************/
 
 /**
@@ -261,9 +261,9 @@ virConfAddEntry(virConfPtr conf, char *name, virConfValuePtr value, char *comm)
 }
 
 /************************************************************************
- *									*
- *			Serialization					*
- *									*
+ *                                                                      *
+ *                      Serialization                                   *
+ *                                                                      *
  ************************************************************************/
 
 /**
@@ -354,9 +354,9 @@ virConfSaveEntry(virBufferPtr buf, virConfEntryPtr cur)
 }
 
 /************************************************************************
- *									*
- *			The parser core					*
- *									*
+ *                                                                      *
+ *                      The parser core                                 *
+ *                                                                      *
  ************************************************************************/
 
 /**
@@ -755,9 +755,9 @@ virConfParse(const char *filename, const char *content, int len,
 }
 
 /************************************************************************
- *									*
- *			The module entry points				*
- *									*
+ *                                                                      *
+ *                      The module entry points                         *
+ *                                                                      *
  ************************************************************************/
 
 /* 10 MB limit on config file size as a sanity check */

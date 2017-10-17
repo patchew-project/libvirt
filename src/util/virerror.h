@@ -28,9 +28,9 @@ extern virErrorFunc virErrorHandler;
 extern void *virUserData;
 
 /************************************************************************
- *									*
- *		API for error handling					*
- *									*
+ *                                                                      *
+ *              API for error handling                                  *
+ *                                                                      *
  ************************************************************************/
 int virErrorInitialize(void);
 void virRaiseErrorFull(const char *filename,
