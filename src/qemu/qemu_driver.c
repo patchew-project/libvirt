@@ -13413,19 +13413,16 @@ qemuDomainMigrateGetCompressionCache(virDomainPtr dom,
 
     priv = vm->privateData;
 
-    qemuDomainObjEnterMonitor(driver, vm);
-
-    ret = qemuMonitorGetMigrationCapability(
-                priv->mon,
-                QEMU_MONITOR_MIGRATION_CAPS_XBZRLE);
-    if (ret == 0) {
+    if (!qemuMigrationCapsGet(vm, QEMU_MONITOR_MIGRATION_CAPS_XBZRLE)) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("Compressed migration is not supported by "
                          "QEMU binary"));
-        ret = -1;
-    } else if (ret > 0) {
-        ret = qemuMonitorGetMigrationCacheSize(priv->mon, cacheSize);
+        goto endjob;
     }
+
+    qemuDomainObjEnterMonitor(driver, vm);
+
+    ret = qemuMonitorGetMigrationCacheSize(priv->mon, cacheSize);
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         ret = -1;
@@ -13467,20 +13464,17 @@ qemuDomainMigrateSetCompressionCache(virDomainPtr dom,
 
     priv = vm->privateData;
 
-    qemuDomainObjEnterMonitor(driver, vm);
-
-    ret = qemuMonitorGetMigrationCapability(
-                priv->mon,
-                QEMU_MONITOR_MIGRATION_CAPS_XBZRLE);
-    if (ret == 0) {
+    if (!qemuMigrationCapsGet(vm, QEMU_MONITOR_MIGRATION_CAPS_XBZRLE)) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("Compressed migration is not supported by "
                          "QEMU binary"));
-        ret = -1;
-    } else if (ret > 0) {
-        VIR_DEBUG("Setting compression cache to %llu B", cacheSize);
-        ret = qemuMonitorSetMigrationCacheSize(priv->mon, cacheSize);
+        goto endjob;
     }
+
+    qemuDomainObjEnterMonitor(driver, vm);
+
+    VIR_DEBUG("Setting compression cache to %llu B", cacheSize);
+    ret = qemuMonitorSetMigrationCacheSize(priv->mon, cacheSize);
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         ret = -1;
