@@ -323,6 +323,10 @@ struct _qemuDomainObjPrivate {
 
     /* Tracks blockjob state for vm. Valid only while reconnecting to qemu. */
     virTristateBool reconnectBlockjobs;
+
+    /* Migration capabilities. Rechecked on reconnect, not to be saved in
+     * private XML. */
+    virBitmapPtr migrationCaps;
 };
 
 # define QEMU_DOMAIN_PRIVATE(vm)	\
@@ -977,5 +981,10 @@ qemuDomainFixupCPUs(virDomainObjPtr vm,
 
 char *
 qemuDomainGetMachineName(virDomainObjPtr vm);
+
+int
+qemuDomainCheckMigrationCapabilities(virQEMUDriverPtr driver,
+                                     virDomainObjPtr vm,
+                                     qemuDomainAsyncJob asyncJob);
 
 #endif /* __QEMU_DOMAIN_H__ */
