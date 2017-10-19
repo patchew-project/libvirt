@@ -294,6 +294,7 @@ virDomainDeviceFindControllerModel;
 virDomainDeviceGetInfo;
 virDomainDeviceInfoIterate;
 virDomainDeviceTypeToString;
+virDomainDeviceValidateAliasForHotplug;
 virDomainDiskBusTypeToString;
 virDomainDiskByAddress;
 virDomainDiskByName;

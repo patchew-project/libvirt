@@ -2659,6 +2659,11 @@ int virDomainDefPostParse(virDomainDefPtr def,
                           virDomainXMLOptionPtr xmlopt,
                           void *parseOpaque);
 
+int virDomainDeviceValidateAliasForHotplug(virDomainXMLOptionPtr xmlopt,
+                                           virDomainObjPtr vm,
+                                           const virDomainDeviceDef *dev,
+                                           unsigned int flags);
+
 int virDomainDefValidate(virDomainDefPtr def,
                          virCapsPtr caps,
                          unsigned int parseFlags,
