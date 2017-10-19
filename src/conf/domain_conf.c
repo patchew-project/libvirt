@@ -3418,12 +3418,13 @@ virDomainObjGetOneDefState(virDomainObjPtr vm,
                            unsigned int flags,
                            bool *live)
 {
-    if (flags & VIR_DOMAIN_AFFECT_LIVE && flags & VIR_DOMAIN_AFFECT_CONFIG) {
-            virReportInvalidArg(ctl, "%s",
-                                _("Flags 'VIR_DOMAIN_AFFECT_LIVE' and "
-                                  "'VIR_DOMAIN_AFFECT_CONFIG' are mutually "
-                                  "exclusive"));
-            return NULL;
+    if (flags & VIR_DOMAIN_AFFECT_LIVE &&
+        flags & VIR_DOMAIN_AFFECT_CONFIG) {
+        virReportInvalidArg(flags, "%s",
+                            _("Flags 'VIR_DOMAIN_AFFECT_LIVE' and "
+                              "'VIR_DOMAIN_AFFECT_CONFIG' are mutually "
+                              "exclusive"));
+        return NULL;
     }
 
     if (virDomainObjUpdateModificationImpact(vm, &flags) < 0)
