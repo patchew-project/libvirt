@@ -6398,6 +6398,10 @@ virDomainDeviceAddressParseXML(xmlNodePtr address,
 }
 
 
+#define USER_ALIAS_PREFIX "ua-"
+#define USER_ALIAS_CHARS \
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
+
 /* Parse the XML definition for a device address
  * @param node XML nodeset to parse for device address definition
  */
@@ -6424,7 +6428,6 @@ virDomainDeviceInfoParseXML(virDomainXMLOptionPtr xmlopt ATTRIBUTE_UNUSED,
     while (cur != NULL) {
         if (cur->type == XML_ELEMENT_NODE) {
             if (alias == NULL &&
-                !(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE) &&
                 virXMLNodeNameEqual(cur, "alias")) {
                 alias = cur;
             } else if (address == NULL &&
@@ -6446,8 +6449,14 @@ virDomainDeviceInfoParseXML(virDomainXMLOptionPtr xmlopt ATTRIBUTE_UNUSED,
         cur = cur->next;
     }
 
-    if (alias)
+    if (alias) {
         info->alias = virXMLPropString(alias, "name");
+        if (flags & VIR_DOMAIN_DEF_PARSE_INACTIVE &&
+            (!STRPREFIX(info->alias, USER_ALIAS_PREFIX) ||
+             !(xmlopt->config.features & VIR_DOMAIN_DEF_FEATURE_USER_ALIAS) ||
+             strspn(info->alias, USER_ALIAS_CHARS) < strlen(info->alias)))
+            VIR_FREE(info->alias);
+    }
 
     if (master) {
         info->mastertype = VIR_DOMAIN_CONTROLLER_MASTER_USB;
