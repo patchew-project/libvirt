@@ -19870,6 +19870,13 @@ virDomainDeviceInfoCheckABIStability(virDomainDeviceInfoPtr src,
         return false;
     }
 
+    if (STRNEQ_NULLABLE(src->alias, dst->alias)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target device alias %s does not match source %s"),
+                       NULLSTR(src->alias), NULLSTR(dst->alias));
+        return false;
+    }
+
     switch ((virDomainDeviceAddressType) src->type) {
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI:
         if (src->addr.pci.domain != dst->addr.pci.domain ||
