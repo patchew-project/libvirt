@@ -2756,7 +2756,7 @@ virDomainDeviceDefPtr virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
                                              virDomainXMLOptionPtr xmlopt);
 int virDomainDeviceAddressIsValid(virDomainDeviceInfoPtr info,
                                   int type);
-virDomainDeviceInfoPtr virDomainDeviceGetInfo(virDomainDeviceDefPtr device);
+virDomainDeviceInfoPtr virDomainDeviceGetInfo(const virDomainDeviceDef *device);
 void virDomainTPMDefFree(virDomainTPMDefPtr def);
 
 typedef int (*virDomainDeviceInfoCallback)(virDomainDefPtr def,

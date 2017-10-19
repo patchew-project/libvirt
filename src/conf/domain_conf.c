@@ -3501,7 +3501,7 @@ int virDomainDeviceAddressIsValid(virDomainDeviceInfoPtr info,
 }
 
 virDomainDeviceInfoPtr
-virDomainDeviceGetInfo(virDomainDeviceDefPtr device)
+virDomainDeviceGetInfo(const virDomainDeviceDef *device)
 {
     switch ((virDomainDeviceType) device->type) {
     case VIR_DOMAIN_DEVICE_DISK:
