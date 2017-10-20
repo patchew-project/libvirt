@@ -4662,10 +4662,8 @@ int qemuDomainDetachControllerDevice(virQEMUDriverPtr driver,
         goto cleanup;
     }
 
-    if (!detach->info.alias) {
-        if (qemuAssignDeviceControllerAlias(vm->def, priv->qemuCaps, detach) < 0)
-            goto cleanup;
-    }
+    if (qemuAssignDeviceControllerAlias(vm->def, priv->qemuCaps, detach) < 0)
+        goto cleanup;
 
     qemuDomainMarkDeviceForRemoval(vm, &detach->info);
 
