@@ -4447,10 +4447,8 @@ qemuDomainDetachVirtioDiskDevice(virQEMUDriverPtr driver,
         goto cleanup;
     }
 
-    if (!detach->info.alias) {
-        if (qemuAssignDeviceDiskAlias(vm->def, detach, priv->qemuCaps) < 0)
-            goto cleanup;
-    }
+    if (qemuAssignDeviceDiskAlias(vm->def, detach, priv->qemuCaps) < 0)
+        goto cleanup;
 
     qemuDomainMarkDeviceForRemoval(vm, &detach->info);
 
