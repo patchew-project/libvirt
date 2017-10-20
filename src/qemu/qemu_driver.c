@@ -11499,7 +11499,7 @@ qemuDomainBlockPeek(virDomainPtr dom,
         goto cleanup;
     }
 
-    if (qemuDomainStorageFileInit(driver, vm, disk->src) < 0)
+    if (qemuDomainStorageFileInit(driver, vm, disk->src, NULL) < 0)
         goto cleanup;
 
     if ((nread = virStorageFileRead(disk->src, offset, size, &tmpbuf)) < 0)
@@ -14416,7 +14416,7 @@ qemuDomainSnapshotDiskDataCollect(virQEMUDriverPtr driver,
         if (virStorageSourceInitChainElement(dd->src, dd->disk->src, false) < 0)
             goto error;
 
-        if (qemuDomainStorageFileInit(driver, vm, dd->src) < 0)
+        if (qemuDomainStorageFileInit(driver, vm, dd->src, NULL) < 0)
             goto error;
 
         dd->initialized = true;
@@ -17091,7 +17091,7 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
         goto endjob;
     }
 
-    if (qemuDomainStorageFileInit(driver, vm, mirror) < 0)
+    if (qemuDomainStorageFileInit(driver, vm, mirror, NULL) < 0)
         goto endjob;
 
     if (qemuDomainBlockCopyValidateMirror(mirror, disk->dst, &reuse) < 0)
