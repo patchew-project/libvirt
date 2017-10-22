@@ -3975,10 +3975,18 @@ qemuDomainControllerDefPostParse(virDomainControllerDefPtr cont,
         }
         break;
 
+    case VIR_DOMAIN_CONTROLLER_TYPE_IDE:
+        if (qemuDomainIsQ35(def)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("IDE controllers are unsupported for q35 "
+                             "machine type"));
+            return -1;
+        }
+        break;
+
     case VIR_DOMAIN_CONTROLLER_TYPE_SATA:
     case VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL:
     case VIR_DOMAIN_CONTROLLER_TYPE_CCID:
-    case VIR_DOMAIN_CONTROLLER_TYPE_IDE:
     case VIR_DOMAIN_CONTROLLER_TYPE_FDC:
     case VIR_DOMAIN_CONTROLLER_TYPE_LAST:
         break;
