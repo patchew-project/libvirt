@@ -49,6 +49,16 @@
           easily.
         </description>
       </change>
+      <change>
+        <summary>
+          Allow generation of predictable paths for qemu memory backends
+        </summary>
+        <description>
+          If enabled in qemu.conf libvirt generates predictable paths for
+          memory-backend-file objects for qemu domains. However, this is
+          experimental feature and shouldn't be used.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
     </section>
