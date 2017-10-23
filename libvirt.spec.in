@@ -1554,13 +1554,11 @@ fi
 if [ $1 -ge 1 ] ; then
     /bin/systemctl reload-or-try-restart virtlockd.service >/dev/null 2>&1 || :
     /bin/systemctl reload-or-try-restart virtlogd.service >/dev/null 2>&1 || :
-    /bin/systemctl try-restart libvirtd.service >/dev/null 2>&1 || :
 fi
 %else
 if [ $1 -ge 1 ]; then
     /sbin/service virtlockd reload > /dev/null 2>&1 || :
     /sbin/service virtlogd reload > /dev/null 2>&1 || :
-    /sbin/service libvirtd condrestart > /dev/null 2>&1
 fi
 %endif
 
@@ -1570,8 +1568,14 @@ fi
 if [ "$1" -ge "1" ]; then
     /sbin/service virtlockd reload > /dev/null 2>&1 || :
     /sbin/service virtlogd reload > /dev/null 2>&1 || :
-    /sbin/service libvirtd condrestart > /dev/null 2>&1
 fi
+%endif
+
+%posttrans daemon
+%if %{with_systemd}
+/bin/systemctl try-restart libvirtd.service >/dev/null 2>&1 || :
+%else
+/sbin/service libvirtd condrestart > /dev/null 2>&1 || :
 %endif
 
 # In upgrade scenario we must explicitly enable virtlockd/virtlogd
@@ -1642,11 +1646,13 @@ fi
 
 %post daemon-config-nwfilter
 cp %{_datadir}/libvirt/nwfilter/*.xml %{_sysconfdir}/libvirt/nwfilter/
+
+%posttrans daemon-config-nwfilter
 # Make sure libvirt picks up the new nwfilter defininitons
 %if %{with_systemd}
-    /bin/systemctl try-restart libvirtd.service >/dev/null 2>&1 ||:
+/bin/systemctl try-restart libvirtd.service >/dev/null 2>&1 || :
 %else
-    /sbin/service libvirtd condrestart > /dev/null 2>&1 || :
+/sbin/service libvirtd condrestart > /dev/null 2>&1 || :
 %endif
 
 
