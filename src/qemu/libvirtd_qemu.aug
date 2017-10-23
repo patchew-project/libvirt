@@ -114,6 +114,7 @@ module Libvirtd_qemu =
    let gluster_debug_level_entry = int_entry "gluster_debug_level"
 
    let memory_entry = str_entry "memory_backing_dir"
+                 | bool_entry "memory_predictable_file_names"
 
    let vxhs_entry = bool_entry "vxhs_tls"
                  | str_entry "vxhs_tls_x509_cert_dir"

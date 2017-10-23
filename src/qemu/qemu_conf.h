@@ -203,6 +203,7 @@ struct _virQEMUDriverConfig {
     unsigned int glusterDebugLevel;
 
     char *memoryBackingDir;
+    bool memoryPredictableFileNames;
 
     bool vxhsTLS;
     char *vxhsTLSx509certdir;
@@ -364,6 +365,13 @@ int qemuGetDomainHupageMemPath(const virDomainDef *def,
                                unsigned long long pagesize,
                                char **memPath);
 
-int qemuGetMemoryBackingPath(virQEMUDriverConfigPtr cfg,
+int qemuGetMemoryBackingBasePath(virQEMUDriverConfigPtr cfg,
+                                 char **path);
+int qemuGetMemoryBackingDomainPath(const virDomainDef *def,
+                                   virQEMUDriverConfigPtr cfg,
+                                   char **path);
+int qemuGetMemoryBackingPath(const virDomainDef *def,
+                             virQEMUDriverConfigPtr cfg,
+                             const char *alias,
                              char **memPath);
 #endif /* __QEMUD_CONF_H */

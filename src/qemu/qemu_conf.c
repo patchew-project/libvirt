@@ -912,6 +912,10 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
     if (virConfGetValueString(conf, "memory_backing_dir", &cfg->memoryBackingDir) < 0)
         goto cleanup;
 
+    if (virConfGetValueBool(conf, "memory_predictable_file_names",
+                            &cfg->memoryPredictableFileNames) < 0)
+        goto cleanup;
+
     ret = 0;
 
  cleanup:
@@ -1750,9 +1754,53 @@ qemuGetDomainHupageMemPath(const virDomainDef *def,
 }
 
 
+int
+qemuGetMemoryBackingBasePath(virQEMUDriverConfigPtr cfg,
+                             char **path)
+{
+    if (!cfg->memoryPredictableFileNames) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("predictable file names are disabled"));
+        return -1;
+    }
+
+    return virAsprintf(path, "%s/libvirt/qemu", cfg->memoryBackingDir);
+}
+
+
+int
+qemuGetMemoryBackingDomainPath(const virDomainDef *def,
+                               virQEMUDriverConfigPtr cfg,
+                               char **path)
+{
+    char *shortName = NULL;
+    char *base = NULL;
+    int ret = -1;
+
+    if (!cfg->memoryPredictableFileNames) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("predictable file names are disabled"));
+        return -1;
+    }
+
+    if (!(shortName = virDomainDefGetShortName(def)) ||
+        qemuGetMemoryBackingBasePath(cfg, &base) < 0 ||
+        virAsprintf(path, "%s/%s", base, shortName) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(base);
+    VIR_FREE(shortName);
+    return ret;
+}
+
+
 /**
  * qemuGetMemoryBackingPath:
+ * @def: domain definition
  * @cfg: the driver config
+ * @alias: memory object alias
  * @memPath: constructed path
  *
  * Constructs path to memory backing dir and stores it at @memPath.
@@ -1761,8 +1809,32 @@ qemuGetDomainHupageMemPath(const virDomainDef *def,
  *          -1 otherwise (with error reported).
  */
 int
-qemuGetMemoryBackingPath(virQEMUDriverConfigPtr cfg,
+qemuGetMemoryBackingPath(const virDomainDef *def,
+                         virQEMUDriverConfigPtr cfg,
+                         const char *alias,
                          char **memPath)
 {
-    return VIR_STRDUP(*memPath, cfg->memoryBackingDir);
+    char *domainPath = NULL;
+    int ret = -1;
+
+    if (cfg->memoryPredictableFileNames) {
+        if (!alias) {
+            /* This should never happen (TM) */
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("memory device alias is not assigned"));
+            goto cleanup;
+        }
+
+        if (qemuGetMemoryBackingDomainPath(def, cfg, &domainPath) < 0 ||
+            virAsprintf(memPath, "%s/%s", domainPath, alias) < 0)
+            goto cleanup;
+    } else {
+        if (VIR_STRDUP(*memPath, cfg->memoryBackingDir) < 0)
+            goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(domainPath);
+    return ret;
 }
