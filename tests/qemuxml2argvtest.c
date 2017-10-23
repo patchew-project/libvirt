@@ -619,6 +619,7 @@ mymain(void)
     VIR_FREE(driver.config->memoryBackingDir);
     if (VIR_STRDUP_QUIET(driver.config->memoryBackingDir, "/var/lib/libvirt/qemu/ram") < 0)
         return EXIT_FAILURE;
+    driver.config->memoryPredictableFileNames = true;
 
 # define DO_TEST_FULL(name, migrateFrom, migrateFd, flags,               \
                       parseFlags, gic, ...)                              \
