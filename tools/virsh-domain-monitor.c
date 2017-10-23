@@ -1384,17 +1384,22 @@ cmdDomTime(vshControl *ctl, const vshCmd *cmd)
             goto cleanup;
 
         if (pretty) {
-            char timestr[100];
+            char timestr[100], localtimestr[100];
             time_t cur_time = seconds;
-            struct tm time_info;
+            struct tm time_info, local_time_info;
 
             if (!gmtime_r(&cur_time, &time_info)) {
                 vshError(ctl, _("Unable to format time"));
                 goto cleanup;
             }
+            if (!localtime_r(&cur_time, &local_time_info)) {
+                vshError(ctl, _("Unable to format local time"));
+                goto cleanup;
+            }
             strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", &time_info);
+            strftime(localtimestr, sizeof(localtimestr), "%Y-%m-%d %H:%M:%S", &local_time_info);
 
-            vshPrint(ctl, _("Time: %s"), timestr);
+            vshPrint(ctl, _("Time: %s\n Local time: %s"), timestr, localtimestr);
         } else {
             vshPrint(ctl, _("Time: %lld"), seconds);
         }
