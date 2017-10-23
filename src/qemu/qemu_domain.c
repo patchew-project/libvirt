@@ -3540,6 +3540,29 @@ qemuDomainWatchdogDefValidate(const virDomainWatchdogDef *dev,
 
 
 static int
+qemuDomainControllerDefValidate(const virDomainControllerDefPtr controller,
+                                const virDomainDef *def)
+{
+    if (controller->type == VIR_DOMAIN_CONTROLLER_TYPE_IDE) {
+        if (qemuDomainHasBuiltinIDE(def) && controller->idx != 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("Only a single IDE controller is supported "
+                             "for this machine type"));
+            return -1;
+        }
+        if (qemuDomainIsQ35(def)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("IDE controllers are unsupported for q35 "
+                             "machine type"));
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
+static int
 qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
                             const virDomainDef *def,
                             void *opaque ATTRIBUTE_UNUSED)
@@ -3649,6 +3672,9 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
             goto cleanup;
     } else if (dev->type == VIR_DOMAIN_DEVICE_WATCHDOG) {
         if (qemuDomainWatchdogDefValidate(dev->data.watchdog, def) < 0)
+            goto cleanup;
+    } else if (dev->type == VIR_DOMAIN_DEVICE_CONTROLLER) {
+        if (qemuDomainControllerDefValidate(dev->data.controller, def) < 0)
             goto cleanup;
     }
 
