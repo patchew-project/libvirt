@@ -1686,25 +1686,16 @@ void remoteRelayConnectionClosedEvent(virConnectPtr conn ATTRIBUTE_UNUSED, int r
                 VIR_WARN("unexpected %s event deregister failure", name);   \
         }                                                                   \
         VIR_FREE(eventCallbacks);                                           \
+        neventCallbacks = 0;                                                \
     } while (0);
 
-/*
- * You must hold lock for at least the client
- * We don't free stuff here, merely disconnect the client's
- * network socket & resources.
- * We keep the libvirt connection open until any async
- * jobs have finished, then clean it up elsewhere
- */
-void remoteClientFreeFunc(void *data)
+static void
+remoteFreePrivCallbacks(void *data)
 {
     struct daemonClientPrivate *priv = data;
 
     /* Deregister event delivery callback */
-    if (priv->conn) {
-        virIdentityPtr sysident = virIdentityGetSystem();
-
-        virIdentitySetCurrent(sysident);
-
+    if (priv && priv->conn) {
         DEREG_CB(priv->conn, priv->domainEventCallbacks,
                  priv->ndomainEventCallbacks,
                  virConnectDomainEventDeregisterAny, "domain");
@@ -1723,6 +1714,26 @@ void remoteClientFreeFunc(void *data)
         DEREG_CB(priv->conn, priv->qemuEventCallbacks,
                  priv->nqemuEventCallbacks,
                  virConnectDomainQemuMonitorEventDeregister, "qemu monitor");
+    }
+}
+#undef DEREG_CB
+
+/*
+ * You must hold lock for at least the client
+ * We don't free stuff here, merely disconnect the client's
+ * network socket & resources.
+ * We keep the libvirt connection open until any async
+ * jobs have finished, then clean it up elsewhere
+ */
+void remoteClientFreeFunc(void *data)
+{
+    struct daemonClientPrivate *priv = data;
+
+    if (priv) {
+        virIdentityPtr sysident = virIdentityGetSystem();
+
+        virIdentitySetCurrent(sysident);
+        remoteFreePrivCallbacks(priv);
 
         if (priv->closeRegistered) {
             if (virConnectUnregisterCloseCallback(priv->conn,
@@ -1734,18 +1745,18 @@ void remoteClientFreeFunc(void *data)
 
         virIdentitySetCurrent(NULL);
         virObjectUnref(sysident);
+        VIR_FREE(priv);
     }
-
-    VIR_FREE(priv);
 }
-#undef DEREG_CB
-
 
 static void remoteClientCloseFunc(virNetServerClientPtr client)
 {
     struct daemonClientPrivate *priv = virNetServerClientGetPrivateData(client);
 
-    daemonRemoveAllClientStreams(priv->streams);
+    if (priv) {
+        daemonRemoveAllClientStreams(priv->streams);
+        remoteFreePrivCallbacks(priv);
+    }
 }
 
 
