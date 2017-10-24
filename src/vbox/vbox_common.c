@@ -1853,6 +1853,8 @@ vboxDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags
     char uuidstr[VIR_UUID_STRING_BUFLEN];
     virDomainPtr ret = NULL;
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_INACTIVE;
+    bool machineReady = false;
+
 
     virCheckFlags(VIR_DOMAIN_DEFINE_VALIDATE, NULL);
 
@@ -1862,12 +1864,12 @@ vboxDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags
     if (!data->vboxObj)
         return ret;
 
-    VBOX_IID_INITIALIZE(&mchiid);
     if (!(def = virDomainDefParseString(xml, data->caps, data->xmlopt,
                                         NULL, parse_flags))) {
-        goto cleanup;
+        return ret;
     }
 
+    VBOX_IID_INITIALIZE(&mchiid);
     virUUIDFormat(def->uuid, uuidstr);
 
     rc = gVBoxAPI.UIVirtualBox.CreateMachine(data, def, &machine, uuidstr);
@@ -1959,30 +1961,41 @@ vboxDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags
     vboxAttachUSB(def, data, machine);
     vboxAttachSharedFolder(def, data, machine);
 
-    /* Save the machine settings made till now and close the
-     * session. also free up the mchiid variable used.
+    machineReady = true;
+
+ cleanup:
+    /* Save the machine settings made till now, even when jumped here on error,
+     * as otherwise unregister won't cleanup properly. For example, it won't
+     * close media that were partially attached. The VBOX SDK docs say that
+     * unregister implicitly calls saveSettings but evidently it's not so...
      */
     rc = gVBoxAPI.UIMachine.SaveSettings(machine);
     if (NS_FAILED(rc)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("failed no saving settings, rc=%08x"), (unsigned)rc);
-        goto cleanup;
+                       _("Failed to save VM settings, rc=%08x"), rc);
+        machineReady = false;
     }
 
     gVBoxAPI.UISession.Close(data->vboxSession);
+
+    if (machineReady) {
+        ret = virGetDomain(conn, def->name, def->uuid, -1);
+    } else {
+        /* Unregister incompletely configured VM to not leave garbage behind */
+        rc = gVBoxAPI.unregisterMachine(data, &mchiid, &machine);
+
+        if (NS_SUCCEEDED(rc))
+            gVBoxAPI.deleteConfig(machine);
+        else
+            VIR_WARN("Could not cleanup partially created VM after failure, "
+                     "rc=%08x", rc);
+    }
+
     vboxIIDUnalloc(&mchiid);
-
-    ret = virGetDomain(conn, def->name, def->uuid, -1);
     VBOX_RELEASE(machine);
-
     virDomainDefFree(def);
 
     return ret;
-
- cleanup:
-    VBOX_RELEASE(machine);
-    virDomainDefFree(def);
-    return NULL;
 }
 
 static virDomainPtr
