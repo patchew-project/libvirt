@@ -102,7 +102,8 @@ virNetDaemonDispose(void *obj)
     if (dmn->sigwatch > 0)
         virEventRemoveHandle(dmn->sigwatch);
 
-    virHashFree(dmn->servers);
+    if (dmn->servers)
+        virHashFree(dmn->servers);
 
     virJSONValueFree(dmn->srvObject);
 }
@@ -880,6 +881,8 @@ virNetDaemonClose(virNetDaemonPtr dmn)
     virObjectLock(dmn);
 
     virHashForEach(dmn->servers, daemonServerClose, NULL);
+    virHashFree(dmn->servers);
+    dmn->servers = NULL;
 
     virObjectUnlock(dmn);
 }
