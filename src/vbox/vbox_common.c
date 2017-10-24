@@ -406,6 +406,160 @@ static char *vboxGenerateMediumName(PRUint32 storageBus,
     return name;
 }
 
+
+static int
+vboxSetStorageController(virDomainControllerDefPtr controller,
+                         vboxDriverPtr data,
+                         IMachine *machine)
+{
+    PRUnichar *controllerName = NULL;
+    PRInt32 vboxModel = StorageControllerType_Null;
+    PRInt32 vboxBusType = StorageBus_Null;
+    IStorageController *vboxController = NULL;
+    nsresult rc = 0;
+    char *debugName = NULL;
+    int ret = -1;
+
+    /* libvirt controller type => vbox bus type */
+    switch ((virDomainControllerType) controller->type) {
+    case VIR_DOMAIN_CONTROLLER_TYPE_FDC:
+        VBOX_UTF8_TO_UTF16(VBOX_CONTROLLER_FLOPPY_NAME, &controllerName);
+        vboxBusType = StorageBus_Floppy;
+
+        break;
+    case VIR_DOMAIN_CONTROLLER_TYPE_IDE:
+        VBOX_UTF8_TO_UTF16(VBOX_CONTROLLER_IDE_NAME, &controllerName);
+        vboxBusType = StorageBus_IDE;
+
+        break;
+    case VIR_DOMAIN_CONTROLLER_TYPE_SCSI:
+        VBOX_UTF8_TO_UTF16(VBOX_CONTROLLER_SCSI_NAME, &controllerName);
+        vboxBusType = StorageBus_SCSI;
+
+        break;
+    case VIR_DOMAIN_CONTROLLER_TYPE_SATA:
+        VBOX_UTF8_TO_UTF16(VBOX_CONTROLLER_SATA_NAME, &controllerName);
+        vboxBusType = StorageBus_SATA;
+
+        break;
+    case VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL:
+    case VIR_DOMAIN_CONTROLLER_TYPE_CCID:
+    case VIR_DOMAIN_CONTROLLER_TYPE_USB:
+    case VIR_DOMAIN_CONTROLLER_TYPE_PCI:
+    case VIR_DOMAIN_CONTROLLER_TYPE_LAST:
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("The vbox driver does not support %s controller type"),
+                       virDomainControllerTypeToString(controller->type));
+        return -1;
+    }
+
+    /* libvirt scsi model => vbox scsi model */
+    if (controller->type == VIR_DOMAIN_CONTROLLER_TYPE_SCSI) {
+        switch ((virDomainControllerModelSCSI) controller->model) {
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSILOGIC:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_AUTO:
+            vboxModel = StorageControllerType_LsiLogic;
+
+            break;
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_BUSLOGIC:
+            vboxModel = StorageControllerType_BusLogic;
+
+            break;
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSISAS1068:
+            /* in vbox, lsisas has a dedicated SAS bus type with no model */
+            VBOX_UTF16_FREE(controllerName);
+            VBOX_UTF8_TO_UTF16(VBOX_CONTROLLER_SAS_NAME, &controllerName);
+            vboxBusType = StorageBus_SAS;
+
+            break;
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VMPVSCSI:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_IBMVSCSI:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSISAS1078:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LAST:
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("The vbox driver does not support %s SCSI "
+                             "controller model"),
+                           virDomainControllerModelSCSITypeToString(controller->model));
+            goto cleanup;
+        }
+    /* libvirt ide model => vbox ide model */
+    } else if (controller->type == VIR_DOMAIN_CONTROLLER_TYPE_IDE) {
+        switch ((virDomainControllerModelIDE) controller->model) {
+        case VIR_DOMAIN_CONTROLLER_MODEL_IDE_PIIX3:
+            vboxModel = StorageControllerType_PIIX3;
+
+            break;
+        case VIR_DOMAIN_CONTROLLER_MODEL_IDE_PIIX4:
+            vboxModel = StorageControllerType_PIIX4;
+
+            break;
+        case VIR_DOMAIN_CONTROLLER_MODEL_IDE_ICH6:
+            vboxModel = StorageControllerType_ICH6;
+
+            break;
+        case VIR_DOMAIN_CONTROLLER_MODEL_IDE_LAST:
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("The vbox driver does not support %s IDE "
+                             "controller model"),
+                             virDomainControllerModelIDETypeToString(controller->model));
+            goto cleanup;
+        }
+    }
+
+    VBOX_UTF16_TO_UTF8(controllerName, &debugName);
+    VIR_DEBUG("Adding VBOX storage controller (name: %s, busType: %d)",
+               debugName, vboxBusType);
+
+    rc = gVBoxAPI.UIMachine.AddStorageController(machine, controllerName,
+                                                 vboxBusType, &vboxController);
+
+    if (NS_FAILED(rc)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Failed to add storage controller "
+                         "(name: %s, busType: %d), rc=%08x"),
+                       debugName, vboxBusType, rc);
+        goto cleanup;
+    }
+
+    /* only IDE or SCSI controller have model choices */
+    if (vboxModel != StorageControllerType_Null) {
+        rc = gVBoxAPI.UIStorageController.SetControllerType(vboxController,
+                                                            vboxModel);
+        if (NS_FAILED(rc)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                            _("Failed to change storage controller model, "
+                              "rc=%08x"), rc);
+            goto cleanup;
+        }
+    }
+
+    ret = 0;
+
+ cleanup:
+    VBOX_UTF16_FREE(controllerName);
+    VBOX_UTF8_FREE(debugName);
+    VBOX_RELEASE(vboxController);
+
+    return ret;
+}
+
+
+static int
+vboxAttachStorageControllers(virDomainDefPtr def,
+                             vboxDriverPtr data,
+                             IMachine *machine)
+{
+    size_t i;
+    for (i = 0; i < def->ncontrollers; i++) {
+        if (vboxSetStorageController(def->controllers[i], data, machine) < 0)
+            return -1;
+    }
+
+    return 0;
+}
+
+
 static virDrvOpenStatus
 vboxConnectOpen(virConnectPtr conn,
                 virConnectAuthPtr auth ATTRIBUTE_UNUSED,
@@ -959,7 +1113,7 @@ static int
 vboxAttachDrives(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
 {
     size_t i;
-    int type, ret = 0;
+    int type, ret = 0, model = -1;
     const char *src = NULL;
     nsresult rc = 0;
     virDomainDiskDefPtr disk = NULL;
@@ -971,46 +1125,6 @@ vboxAttachDrives(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
     vboxIID mediumUUID;
 
     VBOX_IID_INITIALIZE(&mediumUUID);
-
-    /* add a storage controller for the mediums to be attached */
-    /* this needs to change when multiple controller are supported for
-     * ver > 3.1 */
-    {
-        IStorageController *storageCtl = NULL;
-        PRUnichar *sName = NULL;
-
-        VBOX_UTF8_TO_UTF16("IDE Controller", &sName);
-        gVBoxAPI.UIMachine.AddStorageController(machine,
-                                                sName,
-                                                StorageBus_IDE,
-                                                &storageCtl);
-        VBOX_UTF16_FREE(sName);
-        VBOX_RELEASE(storageCtl);
-
-        VBOX_UTF8_TO_UTF16("SATA Controller", &sName);
-        gVBoxAPI.UIMachine.AddStorageController(machine,
-                                                sName,
-                                                StorageBus_SATA,
-                                                &storageCtl);
-        VBOX_UTF16_FREE(sName);
-        VBOX_RELEASE(storageCtl);
-
-        VBOX_UTF8_TO_UTF16("SCSI Controller", &sName);
-        gVBoxAPI.UIMachine.AddStorageController(machine,
-                                                sName,
-                                                StorageBus_SCSI,
-                                                &storageCtl);
-        VBOX_UTF16_FREE(sName);
-        VBOX_RELEASE(storageCtl);
-
-        VBOX_UTF8_TO_UTF16("Floppy Controller", &sName);
-        gVBoxAPI.UIMachine.AddStorageController(machine,
-                                                sName,
-                                                StorageBus_Floppy,
-                                                &storageCtl);
-        VBOX_UTF16_FREE(sName);
-        VBOX_RELEASE(storageCtl);
-    }
 
     for (i = 0; i < def->ndisks; i++) {
         disk = def->disks[i];
@@ -1066,21 +1180,28 @@ vboxAttachDrives(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
 
         switch ((virDomainDiskBus) disk->bus) {
         case VIR_DOMAIN_DISK_BUS_IDE:
-            VBOX_UTF8_TO_UTF16("IDE Controller", &storageCtlName);
+            VBOX_UTF8_TO_UTF16(VBOX_CONTROLLER_IDE_NAME, &storageCtlName);
             devicePort = def->disks[i]->info.addr.drive.bus;
             deviceSlot = def->disks[i]->info.addr.drive.unit;
 
             break;
         case VIR_DOMAIN_DISK_BUS_SATA:
-            VBOX_UTF8_TO_UTF16("SATA Controller", &storageCtlName);
+            VBOX_UTF8_TO_UTF16(VBOX_CONTROLLER_SATA_NAME, &storageCtlName);
 
             break;
         case VIR_DOMAIN_DISK_BUS_SCSI:
-            VBOX_UTF8_TO_UTF16("SCSI Controller", &storageCtlName);
+            VBOX_UTF8_TO_UTF16(VBOX_CONTROLLER_SCSI_NAME, &storageCtlName);
+
+            model = virDomainDeviceFindControllerModel(def, &disk->info,
+                                                       VIR_DOMAIN_CONTROLLER_TYPE_SCSI);
+            if (model == VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSISAS1068) {
+                VBOX_UTF16_FREE(storageCtlName);
+                VBOX_UTF8_TO_UTF16(VBOX_CONTROLLER_SAS_NAME, &storageCtlName);
+            }
 
             break;
         case VIR_DOMAIN_DISK_BUS_FDC:
-            VBOX_UTF8_TO_UTF16("Floppy Controller", &storageCtlName);
+            VBOX_UTF8_TO_UTF16(VBOX_CONTROLLER_FLOPPY_NAME, &storageCtlName);
             devicePort = 0;
             deviceSlot = disk->info.addr.drive.unit;
 
@@ -1148,7 +1269,6 @@ vboxAttachDrives(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
                 gVBoxAPI.UIMedium.SetType(medium, MediumType_Normal);
                 VIR_DEBUG("Setting hard disk type to normal");
             }
-
         }
 
         VBOX_UTF16_TO_UTF8(storageCtlName, &controllerName);
@@ -1918,6 +2038,8 @@ vboxDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags
     gVBoxAPI.UISession.GetMachine(data->vboxSession, &machine);
 
     vboxSetBootDeviceOrder(def, data, machine);
+    if (vboxAttachStorageControllers(def, data, machine) < 0)
+        goto cleanup;
     if (vboxAttachDrives(def, data, machine) < 0)
         goto cleanup;
     vboxAttachSound(def, machine);
