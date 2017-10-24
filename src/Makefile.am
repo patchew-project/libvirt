@@ -903,6 +903,7 @@ QEMU_DRIVER_SOURCES =							\
 		qemu/qemu_domain.c qemu/qemu_domain.h			\
 		qemu/qemu_domain_address.c qemu/qemu_domain_address.h	\
 		qemu/qemu_cgroup.c qemu/qemu_cgroup.h			\
+		qemu/qemu_event.c qemu/qemu_event.h			\
 		qemu/qemu_hostdev.c qemu/qemu_hostdev.h			\
 		qemu/qemu_hotplug.c qemu/qemu_hotplug.h			\
 		qemu/qemu_hotplugpriv.h					\
