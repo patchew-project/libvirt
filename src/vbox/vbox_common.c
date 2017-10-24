@@ -3213,7 +3213,6 @@ vboxDumpDisks(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
     virDomainDiskDefPtr disk = NULL;
     char *mediumLocUtf8 = NULL;
     size_t sdCount = 0, i;
-    int diskCount = 0;
     int ret = -1;
 
     def->ndisks = 0;
@@ -3226,11 +3225,15 @@ vboxDumpDisks(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
         if (!mediumAttachment)
             continue;
 
-        gVBoxAPI.UIMediumAttachment.GetMedium(mediumAttachment, &medium);
-        if (medium) {
-            def->ndisks++;
-            VBOX_RELEASE(medium);
+        rc = gVBoxAPI.UIMediumAttachment.GetMedium(mediumAttachment, &medium);
+        if (NS_FAILED(rc)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Could not get IMedium, rc=%08x"), rc);
+            goto cleanup;
         }
+
+        def->ndisks++;
+        VBOX_RELEASE(medium);
     }
 
     /* Allocate mem, if fails return error */
@@ -3246,7 +3249,7 @@ vboxDumpDisks(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
     }
 
     /* get the attachment details here */
-    for (i = 0; i < mediumAttachments.count && diskCount < def->ndisks; i++) {
+    for (i = 0; i < mediumAttachments.count; i++) {
         mediumAttachment = mediumAttachments.items[i];
         controller = NULL;
         controllerName = NULL;
@@ -3258,7 +3261,7 @@ vboxDumpDisks(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
         mediumLocUtf8 = NULL;
         devicePort = 0;
         deviceSlot = 0;
-        disk = def->disks[diskCount];
+        disk = def->disks[i];
 
         if (!mediumAttachment)
             continue;
@@ -3269,9 +3272,6 @@ vboxDumpDisks(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
                            _("Could not get IMedium, rc=%08x"), rc);
             goto cleanup;
         }
-
-        if (!medium)
-            continue;
 
         rc = gVBoxAPI.UIMediumAttachment.GetController(mediumAttachment,
                                                   &controllerName);
@@ -3289,22 +3289,6 @@ vboxDumpDisks(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Could not get storage controller by name, rc=%08x"),
                            rc);
-            goto cleanup;
-        }
-
-        rc = gVBoxAPI.UIMedium.GetLocation(medium, &mediumLocUtf16);
-        if (NS_FAILED(rc)) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("Could not get medium storage location, rc=%08x"),
-                           rc);
-            goto cleanup;
-        }
-
-        VBOX_UTF16_TO_UTF8(mediumLocUtf16, &mediumLocUtf8);
-
-        if (virDomainDiskSetSource(disk, mediumLocUtf8) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("Could not set disk source"));
             goto cleanup;
         }
 
@@ -3333,11 +3317,30 @@ vboxDumpDisks(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
                            rc);
             goto cleanup;
         }
-        rc = gVBoxAPI.UIMedium.GetReadOnly(medium, &readOnly);
-        if (NS_FAILED(rc)) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("Could not get read only state, rc=%08x"), rc);
-            goto cleanup;
+
+        if (medium) {
+            rc = gVBoxAPI.UIMedium.GetLocation(medium, &mediumLocUtf16);
+            if (NS_FAILED(rc)) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("Could not get medium storage location, rc=%08x"),
+                               rc);
+                goto cleanup;
+            }
+
+            VBOX_UTF16_TO_UTF8(mediumLocUtf16, &mediumLocUtf8);
+
+            if (virDomainDiskSetSource(disk, mediumLocUtf8) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("Could not set disk source"));
+                goto cleanup;
+            }
+
+            rc = gVBoxAPI.UIMedium.GetReadOnly(medium, &readOnly);
+            if (NS_FAILED(rc)) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("Could not get read only state, rc=%08x"), rc);
+                goto cleanup;
+            }
         }
 
         disk->dst = vboxGenerateMediumName(storageBus, devicePort, deviceSlot,
@@ -3374,8 +3377,6 @@ vboxDumpDisks(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
             disk->src->readonly = true;
 
         virDomainDiskSetType(disk, VIR_STORAGE_TYPE_FILE);
-
-        diskCount++;
 
         VBOX_UTF16_FREE(controllerName);
         VBOX_UTF8_FREE(mediumLocUtf8);
@@ -5814,6 +5815,14 @@ vboxSnapshotGetReadWriteDisks(virDomainSnapshotDefPtr def,
 
         /* skip empty removable disk */
         if (!disk) {
+            /* removable disks with empty (ejected) media won't be displayed
+             * in XML, but we need to update "sdCount" so that device names match
+             * in domain dumpxml and snapshot dumpxml
+             */
+            if (storageBus == StorageBus_SATA || storageBus == StorageBus_SCSI ||
+                storageBus == StorageBus_SAS)
+                sdCount++;
+
             VBOX_RELEASE(storageController);
             continue;
         }
@@ -5982,14 +5991,6 @@ vboxSnapshotGetReadOnlyDisks(virDomainSnapshotPtr snapshot,
         IMediumAttachment *imediumattach = mediumAttachments.items[i];
         if (!imediumattach)
             continue;
-        rc = gVBoxAPI.UIMediumAttachment.GetMedium(imediumattach, &disk);
-        if (NS_FAILED(rc)) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("Cannot get medium"));
-            goto cleanup;
-        }
-        if (!disk)
-            continue;
         rc = gVBoxAPI.UIMediumAttachment.GetController(imediumattach, &storageControllerName);
         if (NS_FAILED(rc)) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -6009,19 +6010,6 @@ vboxSnapshotGetReadOnlyDisks(virDomainSnapshotPtr snapshot,
         }
         if (!storageController)
             continue;
-        rc = gVBoxAPI.UIMedium.GetLocation(disk, &mediumLocUtf16);
-        if (NS_FAILED(rc)) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("Cannot get disk location"));
-            goto cleanup;
-        }
-        VBOX_UTF16_TO_UTF8(mediumLocUtf16, &mediumLocUtf8);
-        VBOX_UTF16_FREE(mediumLocUtf16);
-        if (VIR_STRDUP(def->dom->disks[diskCount]->src->path, mediumLocUtf8) < 0)
-            goto cleanup;
-
-        VBOX_UTF8_FREE(mediumLocUtf8);
-
         rc = gVBoxAPI.UIStorageController.GetBus(storageController, &storageBus);
         if (NS_FAILED(rc)) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -6040,6 +6028,38 @@ vboxSnapshotGetReadOnlyDisks(virDomainSnapshotPtr snapshot,
                            _("Cannot get device slot"));
             goto cleanup;
         }
+
+        rc = gVBoxAPI.UIMediumAttachment.GetMedium(imediumattach, &disk);
+        if (NS_FAILED(rc)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Cannot get medium"));
+            goto cleanup;
+        }
+
+        /* skip empty removable disk */
+        if (!disk) {
+            /* removable disks with empty (ejected) media won't be displayed
+             * in XML, but we need to update "sdCount" so that device names match
+             * in domain dumpxml and snapshot dumpxml
+             */
+            if (storageBus == StorageBus_SATA || storageBus == StorageBus_SCSI ||
+                storageBus == StorageBus_SAS)
+                sdCount++;
+            continue;
+        }
+
+        rc = gVBoxAPI.UIMedium.GetLocation(disk, &mediumLocUtf16);
+        if (NS_FAILED(rc)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Cannot get disk location"));
+            goto cleanup;
+        }
+        VBOX_UTF16_TO_UTF8(mediumLocUtf16, &mediumLocUtf8);
+        VBOX_UTF16_FREE(mediumLocUtf16);
+        if (VIR_STRDUP(def->dom->disks[diskCount]->src->path, mediumLocUtf8) < 0)
+            goto cleanup;
+
+        VBOX_UTF8_FREE(mediumLocUtf8);
         rc = gVBoxAPI.UIMedium.GetReadOnly(disk, &readOnly);
         if (NS_FAILED(rc)) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
