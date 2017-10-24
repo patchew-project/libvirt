@@ -3211,8 +3211,9 @@ vboxDumpDisks(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
     PRBool readOnly;
     nsresult rc;
     virDomainDiskDefPtr disk = NULL;
+    virDomainControllerDefPtr ctrl = NULL;
     char *mediumLocUtf8 = NULL;
-    size_t sdCount = 0, i;
+    size_t sdCount = 0, i, j;
     int ret = -1;
 
     def->ndisks = 0;
@@ -3353,25 +3354,82 @@ vboxDumpDisks(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
             goto cleanup;
         }
 
-        if (storageBus == StorageBus_IDE) {
+        disk->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_DRIVE;
+        disk->info.addr.drive.bus = 0;
+        disk->info.addr.drive.unit = devicePort;
+
+        switch ((enum StorageBus) storageBus) {
+        case StorageBus_IDE:
             disk->bus = VIR_DOMAIN_DISK_BUS_IDE;
-        } else if (storageBus == StorageBus_SATA) {
-            sdCount++;
+            disk->info.addr.drive.bus = devicePort; /* primary, secondary */
+            disk->info.addr.drive.unit = deviceSlot; /* master, slave */
+
+            break;
+        case StorageBus_SATA:
             disk->bus = VIR_DOMAIN_DISK_BUS_SATA;
-        } else if (storageBus == StorageBus_SCSI ||
-                   storageBus == StorageBus_SAS) {
             sdCount++;
+
+            break;
+        case StorageBus_SCSI:
+        case StorageBus_SAS:
             disk->bus = VIR_DOMAIN_DISK_BUS_SCSI;
-        } else if (storageBus == StorageBus_Floppy) {
+            sdCount++;
+
+            /* In vbox, if there's a disk attached to SAS controller, there will
+             * be libvirt SCSI controller present with model "lsi1068", and we
+             * need to find its index
+             */
+            for (j = 0; j < def->ncontrollers; j++) {
+                ctrl = def->controllers[j];
+
+                if (ctrl->type != VIR_DOMAIN_CONTROLLER_TYPE_SCSI)
+                    continue;
+
+                if (storageBus == StorageBus_SAS &&
+                    ctrl->model == VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSISAS1068) {
+                    disk->info.addr.drive.controller = ctrl->idx;
+                    break;
+                }
+
+                if (storageBus == StorageBus_SCSI &&
+                    ctrl->model != VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSISAS1068) {
+                    disk->info.addr.drive.controller = ctrl->idx;
+                    break;
+                }
+            }
+
+            break;
+        case StorageBus_Floppy:
             disk->bus = VIR_DOMAIN_DISK_BUS_FDC;
+
+            break;
+        case StorageBus_Null:
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Unsupported null storage bus"));
+            goto cleanup;
         }
 
-        if (deviceType == DeviceType_HardDisk)
+        switch ((enum DeviceType) deviceType) {
+        case DeviceType_HardDisk:
             disk->device = VIR_DOMAIN_DISK_DEVICE_DISK;
-        else if (deviceType == DeviceType_Floppy)
+
+            break;
+        case DeviceType_Floppy:
             disk->device = VIR_DOMAIN_DISK_DEVICE_FLOPPY;
-        else if (deviceType == DeviceType_DVD)
+
+            break;
+        case DeviceType_DVD:
             disk->device = VIR_DOMAIN_DISK_DEVICE_CDROM;
+
+            break;
+        case DeviceType_Network:
+        case DeviceType_USB:
+        case DeviceType_SharedFolder:
+        case DeviceType_Null:
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Unsupported vbox device type: %d"), deviceType);
+            goto cleanup;
+        }
 
         if (readOnly == PR_TRUE)
             disk->src->readonly = true;
@@ -4098,7 +4156,6 @@ static char *vboxDomainGetXMLDesc(virDomainPtr dom, unsigned int flags)
         goto cleanup;
     if (vboxDumpStorageControllers(def, machine) < 0)
         goto cleanup;
-
     if (vboxDumpDisks(def, data, machine) < 0)
         goto cleanup;
 
