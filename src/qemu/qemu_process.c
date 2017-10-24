@@ -3324,60 +3324,117 @@ qemuProcessNeedHugepagesPath(virDomainDefPtr def,
 }
 
 
+static bool
+qemuProcessNeedMemoryBackingPath(virDomainDefPtr def,
+                                 virDomainMemoryDefPtr mem)
+{
+    size_t i;
+    size_t numaNodes;
+
+    if (def->mem.source == VIR_DOMAIN_MEMORY_SOURCE_FILE ||
+        def->mem.access != VIR_DOMAIN_MEMORY_ACCESS_DEFAULT)
+        return true;
+
+    numaNodes = virDomainNumaGetNodeCount(def->numa);
+    for (i = 0; i < numaNodes; i++) {
+        if (virDomainNumaGetNodeMemoryAccessMode(def->numa, i)
+            != VIR_DOMAIN_MEMORY_ACCESS_DEFAULT)
+            return true;
+    }
+
+    if (mem &&
+        mem->model == VIR_DOMAIN_MEMORY_MODEL_DIMM &&
+        (mem->access != VIR_DOMAIN_MEMORY_ACCESS_DEFAULT ||
+         (mem->targetNode >= 0 &&
+          virDomainNumaGetNodeMemoryAccessMode(def->numa, mem->targetNode)
+          != VIR_DOMAIN_MEMORY_ACCESS_DEFAULT)))
+        return true;
+
+    return false;
+}
+
+
+static int
+qemuProcessBuildDestroyMemoryPathsImpl(virQEMUDriverPtr driver,
+                                       virDomainDefPtr def,
+                                       const char *path,
+                                       bool build)
+{
+    if (build) {
+        if (virFileExists(path))
+            return 0;
+
+        if (virFileMakePathWithMode(path, 0700) < 0) {
+            virReportSystemError(errno,
+                                 _("Unable to create %s"),
+                                 path);
+            return -1;
+        }
+
+        if (qemuSecurityDomainSetPathLabel(driver->securityManager,
+                                           def, path) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                            _("Unable to label %s"), path);
+            return -1;
+        }
+    } else {
+        if (virFileDeleteTree(path) < 0 &&
+            errno != ENOENT)
+            VIR_WARN("Unable to remove hugepage path: %s (errno=%d)",
+                     path, errno);
+    }
+
+    return 0;
+}
+
+
 int
-qemuProcessBuildDestroyHugepagesPath(virQEMUDriverPtr driver,
-                                     virDomainObjPtr vm,
-                                     virDomainMemoryDefPtr mem,
-                                     bool build)
+qemuProcessBuildDestroyMemoryPaths(virQEMUDriverPtr driver,
+                                   virDomainObjPtr vm,
+                                   virDomainMemoryDefPtr mem,
+                                   bool build)
 {
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
-    char *hugepagePath = NULL;
+    char *path = NULL;
     size_t i;
-    bool shouldBuild = false;
+    bool shouldBuildHP = false;
+    bool shouldBuildMB = false;
     int ret = -1;
 
-    if (build)
-        shouldBuild = qemuProcessNeedHugepagesPath(vm->def, mem);
+    if (build) {
+        shouldBuildHP = qemuProcessNeedHugepagesPath(vm->def, mem);
+        shouldBuildMB = qemuProcessNeedMemoryBackingPath(vm->def, mem);
+    }
 
-    if (!build || shouldBuild) {
+    if (!build || shouldBuildHP) {
         for (i = 0; i < cfg->nhugetlbfs; i++) {
-            VIR_FREE(hugepagePath);
-            hugepagePath = qemuGetDomainHugepagePath(vm->def, &cfg->hugetlbfs[i]);
+            path = qemuGetDomainHugepagePath(vm->def, &cfg->hugetlbfs[i]);
 
-            if (!hugepagePath)
+            if (!path)
                 goto cleanup;
 
-            if (build) {
-                if (virFileExists(hugepagePath)) {
-                    ret = 0;
-                    goto cleanup;
-                }
+            if (qemuProcessBuildDestroyMemoryPathsImpl(driver, vm->def,
+                                                       path, build) < 0)
+                goto cleanup;
 
-                if (virFileMakePathWithMode(hugepagePath, 0700) < 0) {
-                    virReportSystemError(errno,
-                                         _("Unable to create %s"),
-                                         hugepagePath);
-                    goto cleanup;
-                }
-
-                if (qemuSecurityDomainSetPathLabel(driver->securityManager,
-                                                   vm->def, hugepagePath) < 0) {
-                    virReportError(VIR_ERR_INTERNAL_ERROR,
-                                   "%s", _("Unable to set huge path in security driver"));
-                    goto cleanup;
-                }
-            } else {
-                if (rmdir(hugepagePath) < 0 &&
-                    errno != ENOENT)
-                    VIR_WARN("Unable to remove hugepage path: %s (errno=%d)",
-                             hugepagePath, errno);
-            }
+            VIR_FREE(path);
         }
+    }
+
+    if (!build || shouldBuildMB) {
+        if (qemuGetMemoryBackingDomainPath(vm->def, cfg, &path) < 0)
+            goto cleanup;
+
+        if (qemuProcessBuildDestroyMemoryPathsImpl(driver, vm->def,
+                                                   path, build) < 0)
+            goto cleanup;
+
+        VIR_FREE(path);
     }
 
     ret = 0;
  cleanup:
-    VIR_FREE(hugepagePath);
+    VIR_FREE(path);
     virObjectUnref(cfg);
     return ret;
 }
@@ -5550,7 +5607,7 @@ qemuProcessPrepareHost(virQEMUDriverPtr driver,
                                NULL) < 0)
         goto cleanup;
 
-    if (qemuProcessBuildDestroyHugepagesPath(driver, vm, NULL, true) < 0)
+    if (qemuProcessBuildDestroyMemoryPaths(driver, vm, NULL, true) < 0)
         goto cleanup;
 
     /* Ensure no historical cgroup for this VM is lying around bogus
@@ -6254,7 +6311,7 @@ void qemuProcessStop(virQEMUDriverPtr driver,
         goto endjob;
     }
 
-    qemuProcessBuildDestroyHugepagesPath(driver, vm, NULL, false);
+    qemuProcessBuildDestroyMemoryPaths(driver, vm, NULL, false);
 
     vm->def->id = -1;
 
@@ -7112,7 +7169,7 @@ qemuProcessReconnect(void *opaque)
         goto cleanup;
     }
 
-    if (qemuProcessBuildDestroyHugepagesPath(driver, obj, NULL, true) < 0)
+    if (qemuProcessBuildDestroyMemoryPaths(driver, obj, NULL, true) < 0)
         goto error;
 
     if ((qemuDomainAssignAddresses(obj->def, priv->qemuCaps,

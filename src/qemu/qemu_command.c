@@ -3439,7 +3439,7 @@ qemuBuildMemoryBackendStr(virJSONValuePtr *backendProps,
         } else {
             /* We can have both pagesize and mem source. If that's the case,
              * prefer hugepages as those are more specific. */
-            if (qemuGetMemoryBackingPath(cfg, &memPath) < 0)
+            if (qemuGetMemoryBackingPath(def, cfg, mem->info.alias, &memPath) < 0)
                 goto cleanup;
         }
 
@@ -3542,12 +3542,13 @@ qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
     unsigned long long memsize = virDomainNumaGetNodeMemorySize(def->numa,
                                                                 cell);
 
+    if (virAsprintf(&alias, "ram-node%zu", cell) < 0)
+        goto cleanup;
+
     *backendStr = NULL;
     mem.size = memsize;
     mem.targetNode = cell;
-
-    if (virAsprintf(&alias, "ram-node%zu", cell) < 0)
-        goto cleanup;
+    mem.info.alias = alias;
 
     if ((rc = qemuBuildMemoryBackendStr(&props, &backendType, cfg, priv->qemuCaps,
                                         def, &mem, priv->autoNodeset, false)) < 0)
