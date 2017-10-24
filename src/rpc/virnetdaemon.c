@@ -880,6 +880,8 @@ virNetDaemonClose(virNetDaemonPtr dmn)
     virObjectLock(dmn);
 
     virHashForEach(dmn->servers, daemonServerClose, NULL);
+    virHashFree(dmn->servers);
+    dmn->servers = NULL;
 
     virObjectUnlock(dmn);
 }
