@@ -124,6 +124,10 @@ void
 virObjectLock(void *lockableobj)
     ATTRIBUTE_NONNULL(1);
 
+int
+virObjectTrylock(void *lockableobj)
+    ATTRIBUTE_NONNULL(1);
+
 void
 virObjectRWLockRead(void *lockableobj)
     ATTRIBUTE_NONNULL(1);

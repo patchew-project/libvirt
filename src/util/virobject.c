@@ -495,6 +495,32 @@ virObjectRWLockWrite(void *anyobj)
 
 
 /**
+ * virObjectTrylock:
+ * @anyobj: any instance of virObjectLockable or virObjectRWLockable
+ *
+ * Attempt to acquire a lock on @anyobj. The lock must be released by
+ * virObjectUnlock.
+ * Returns:
+ *    0: If the lock was successfully taken.
+ *    errno : Indicates error.
+ *
+ * The caller is expected to have acquired a reference
+ * on the object before locking it (eg virObjectRef).
+ * The object must be unlocked before releasing this
+ * reference.
+ */
+int
+virObjectTrylock(void *anyobj)
+{
+    virObjectLockablePtr obj = virObjectGetLockableObj(anyobj);
+
+    if (!obj)
+        return -1;
+
+    return virMutexTrylock(&obj->lock);
+}
+
+/**
  * virObjectUnlock:
  * @anyobj: any instance of virObjectLockable
  *

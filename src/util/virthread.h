@@ -132,6 +132,7 @@ int virMutexInitRecursive(virMutexPtr m) ATTRIBUTE_RETURN_CHECK;
 void virMutexDestroy(virMutexPtr m);
 
 void virMutexLock(virMutexPtr m);
+int virMutexTrylock(virMutexPtr m);
 void virMutexUnlock(virMutexPtr m);
 
 
