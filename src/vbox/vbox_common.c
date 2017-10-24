@@ -955,17 +955,17 @@ vboxSetBootDeviceOrder(virDomainDefPtr def, vboxDriverPtr data,
     }
 }
 
-static void
+static int
 vboxAttachDrives(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
 {
     size_t i;
-    int type, format;
+    int type, format, ret = 0;
     const char *src = NULL;
     nsresult rc = 0;
     virDomainDiskDefPtr disk = NULL;
     PRUnichar *storageCtlName = NULL;
     IMedium *medium = NULL;
-    PRUnichar *mediumFileUtf16 = NULL, *mediumEmpty = NULL;
+    PRUnichar *mediumFileUtf16 = NULL;
     PRUint32 devicePort, deviceSlot, deviceType, accessMode;
     vboxIID mediumUUID;
 
@@ -1049,6 +1049,7 @@ vboxAttachDrives(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
                 deviceType = DeviceType_Floppy;
                 accessMode = AccessMode_ReadWrite;
             } else {
+                ret = -1;
                 goto cleanup;
             }
 
@@ -1056,19 +1057,17 @@ vboxAttachDrives(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
                                                deviceType, accessMode, &medium);
 
             if (!medium) {
-                VBOX_UTF8_TO_UTF16("", &mediumEmpty);
-
                 rc = gVBoxAPI.UIVirtualBox.OpenMedium(data->vboxObj,
                                                       mediumFileUtf16,
                                                       deviceType, accessMode,
                                                       &medium);
-                VBOX_UTF16_FREE(mediumEmpty);
             }
 
             if (!medium) {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
                                _("Failed to attach the following disk/dvd/floppy "
                                  "to the machine: %s, rc=%08x"), src, rc);
+                ret = -1;
                 goto cleanup;
             }
 
@@ -1078,6 +1077,7 @@ vboxAttachDrives(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
                                _("Can't get the UUID of the file to be attached "
                                  "as harddisk/dvd/floppy: %s, rc=%08x"),
                                src, rc);
+                ret = -1;
                 goto cleanup;
             }
 
@@ -1117,6 +1117,8 @@ vboxAttachDrives(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
                 virReportError(VIR_ERR_INTERNAL_ERROR,
                                _("Could not attach the file as "
                                  "harddisk/dvd/floppy: %s, rc=%08x"), src, rc);
+                ret = -1;
+                goto cleanup;
             } else {
                 DEBUGIID("Attached HDD/DVD/Floppy with UUID", &mediumUUID);
             }
@@ -1125,8 +1127,13 @@ vboxAttachDrives(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
             vboxIIDUnalloc(&mediumUUID);
             VBOX_UTF16_FREE(mediumFileUtf16);
             VBOX_UTF16_FREE(storageCtlName);
+
+            if (ret < 0)
+                break;
         }
     }
+
+    return ret;
 }
 
 static void
@@ -1857,7 +1864,8 @@ vboxDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags
     gVBoxAPI.UISession.GetMachine(data->vboxSession, &machine);
 
     vboxSetBootDeviceOrder(def, data, machine);
-    vboxAttachDrives(def, data, machine);
+    if (vboxAttachDrives(def, data, machine) < 0)
+        goto cleanup;
     vboxAttachSound(def, machine);
     if (vboxAttachNetwork(def, data, machine) < 0)
         goto cleanup;
