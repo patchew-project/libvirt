@@ -4079,7 +4079,7 @@ getAutoDumpPath(virQEMUDriverPtr driver,
                 virDomainObjPtr vm)
 {
     char *dumpfile = NULL;
-    char *domname = virDomainObjGetShortName(vm->def);
+    char *domname = virDomainDefGetShortName(vm->def);
     char timestr[100];
     struct tm time_info;
     time_t curtime = time(NULL);
