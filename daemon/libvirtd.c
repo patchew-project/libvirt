@@ -1504,6 +1504,8 @@ int main(int argc, char **argv) {
     virObjectUnref(lxcProgram);
     virObjectUnref(qemuProgram);
     virObjectUnref(adminProgram);
+    if (driversInitialized)
+        virStateShutdown();
     virNetDaemonClose(dmn);
     virObjectUnref(srv);
     virObjectUnref(srvAdm);
