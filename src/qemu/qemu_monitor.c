@@ -1000,22 +1000,9 @@ qemuMonitorClose(qemuMonitorPtr mon)
     }
 
     /* In case another thread is waiting for its monitor command to be
-     * processed, we need to wake it up with appropriate error set.
+     * processed, we need to wake it up.
      */
     if (mon->msg) {
-        if (mon->lastError.code == VIR_ERR_OK) {
-            virErrorPtr err = virSaveLastError();
-
-            virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                           _("QEMU monitor was closed"));
-            virCopyLastError(&mon->lastError);
-            if (err) {
-                virSetError(err);
-                virFreeError(err);
-            } else {
-                virResetLastError();
-            }
-        }
         mon->msg->finished = 1;
         virCondSignal(&mon->notify);
     }
@@ -1047,6 +1034,12 @@ qemuMonitorSend(qemuMonitorPtr mon,
 {
     int ret = -1;
 
+    if (mon->fd < 0) {
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("QEMU monitor was closed"));
+        return -1;
+    }
+
     /* Check whether qemu quit unexpectedly */
     if (mon->lastError.code != VIR_ERR_OK) {
         VIR_DEBUG("Attempt to send command while error is set %s",
@@ -1068,6 +1061,12 @@ qemuMonitorSend(qemuMonitorPtr mon,
                            _("Unable to wait on monitor condition"));
             goto cleanup;
         }
+    }
+
+    if (mon->fd < 0) {
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("QEMU monitor was closed"));
+        goto cleanup;
     }
 
     if (mon->lastError.code != VIR_ERR_OK) {
