@@ -30,10 +30,13 @@
   # Needed for vfio
   capability sys_resource,
 
+  mount,
+
   network inet stream,
   network inet dgram,
   network inet6 stream,
   network inet6 dgram,
+  network netlink raw,
   network packet dgram,
   network packet raw,
 
@@ -41,6 +44,9 @@
   ptrace (trace) peer=/usr/sbin/libvirtd,
   ptrace (trace) peer=/usr/sbin/dnsmasq,
   ptrace (trace) peer=libvirt-*,
+
+  signal (send) set=("hup") peer=/usr/sbin/dnsmasq,
+  signal (send) set=("term") peer=libvirt-*,
 
   # Very lenient profile for libvirtd since we want to first focus on confining
   # the guests. Guests will have a very restricted profile.
