@@ -6024,8 +6024,13 @@ qemuDomainDetermineDiskChain(virQEMUDriverPtr driver,
     if (virStorageFileGetMetadata(disk->src,
                                   uid, gid,
                                   cfg->allowDiskFormatProbing,
-                                  report_broken) < 0)
+                                  report_broken) < 0) {
         ret = -1;
+        goto cleanup;
+    }
+
+    if (virDomainDiskGetFormat(disk) == VIR_STORAGE_FILE_ISO)
+        virDomainDiskSetFormat(disk, VIR_STORAGE_FILE_RAW);
 
  cleanup:
     virObjectUnref(cfg);
