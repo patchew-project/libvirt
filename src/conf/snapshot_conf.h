@@ -75,6 +75,7 @@ struct _virDomainSnapshotDef {
     virDomainSnapshotDiskDef *disks;
 
     virDomainDefPtr dom;
+    virDomainDefPtr newDom;
 
     virObjectPtr cookie;
 

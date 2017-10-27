@@ -15035,6 +15035,15 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
                                                  VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE)))
             goto endjob;
 
+        if (vm->newDef) {
+            if (!(xml = qemuDomainDefFormatLive(driver, vm->newDef, priv->origCPU,
+                                                true, true)) ||
+                !(def->newDom = virDomainDefParseString(xml, caps, driver->xmlopt, NULL,
+                                                        VIR_DOMAIN_DEF_PARSE_INACTIVE |
+                                                        VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE)))
+                goto endjob;
+        }
+
         if (flags & VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY) {
             align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL;
             align_match = false;
@@ -15567,6 +15576,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     qemuDomainObjPrivatePtr priv;
     int rc;
     virDomainDefPtr config = NULL;
+    virDomainDefPtr newConfig = NULL;
     virQEMUDriverConfigPtr cfg = NULL;
     virCapsPtr caps = NULL;
     bool was_running = false;
@@ -15678,6 +15688,13 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
             goto endjob;
     }
 
+    if (snap->def->newDom) {
+        newConfig = virDomainDefCopy(snap->def->newDom, caps,
+                                     driver->xmlopt, NULL, true);
+        if (!newConfig)
+            goto endjob;
+    }
+
     cookie = (qemuDomainSaveCookiePtr) snap->def->cookie;
 
     switch ((virDomainState) snap->def->state) {
@@ -15775,12 +15792,16 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                 virCPUDefFree(priv->origCPU);
                 VIR_STEAL_PTR(priv->origCPU, origCPU);
             }
+            if (newConfig)
+                vm->newDef = newConfig;
         } else {
             /* Transitions 2, 3 */
         load:
             was_stopped = true;
             if (config)
                 virDomainObjAssignDef(vm, config, false, NULL);
+            if (newConfig)
+                vm->newDef = newConfig;
 
             /* No cookie means libvirt which saved the domain was too old to
              * mess up the CPU definitions.
@@ -15874,6 +15895,8 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
         }
         if (config)
             virDomainObjAssignDef(vm, config, false, NULL);
+        if (newConfig)
+            vm->newDef = newConfig;
 
         if (flags & (VIR_DOMAIN_SNAPSHOT_REVERT_RUNNING |
                      VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED)) {
