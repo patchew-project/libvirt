@@ -1312,14 +1312,14 @@ int main(int argc, char **argv) {
         srv = virNetDaemonGetServer(lockDaemon->dmn, "virtlockd");
         if ((rv = virLockDaemonSetupNetworkingSystemD(srv)) < 0) {
             ret = VIR_LOCK_DAEMON_ERR_NETWORK;
-            goto cleanup;
+            goto cleanup_srvref;
         }
 
         /* Only do this, if systemd did not pass a FD */
         if (rv == 0 &&
             virLockDaemonSetupNetworkingNative(srv, sock_file) < 0) {
             ret = VIR_LOCK_DAEMON_ERR_NETWORK;
-            goto cleanup;
+            goto cleanup_srvref;
         }
     } else if (rv == 1) {
         srv = virNetDaemonGetServer(lockDaemon->dmn, "virtlockd");
@@ -1333,7 +1333,7 @@ int main(int argc, char **argv) {
 
     if ((virLockDaemonSetupSignals(lockDaemon->dmn)) < 0) {
         ret = VIR_LOCK_DAEMON_ERR_SIGNAL;
-        goto cleanup;
+        goto cleanup_srvref;
     }
 
     if (!(lockProgram = virNetServerProgramNew(VIR_LOCK_SPACE_PROTOCOL_PROGRAM,
@@ -1341,13 +1341,16 @@ int main(int argc, char **argv) {
                                                virLockSpaceProtocolProcs,
                                                virLockSpaceProtocolNProcs))) {
         ret = VIR_LOCK_DAEMON_ERR_INIT;
-        goto cleanup;
+        goto cleanup_srvref;
     }
 
     if (virNetServerAddProgram(srv, lockProgram) < 0) {
         ret = VIR_LOCK_DAEMON_ERR_INIT;
-        goto cleanup;
+        goto cleanup_srvref;
     }
+
+    /* Completed srv usage from virNetDaemonGetServer */
+    virObjectUnref(srv);
 
     /* Disable error func, now logging is setup */
     virSetErrorFunc(NULL, virLockDaemonErrorHandler);
@@ -1403,4 +1406,10 @@ int main(int argc, char **argv) {
  no_memory:
     VIR_ERROR(_("Can't allocate memory"));
     exit(EXIT_FAILURE);
+
+ cleanup_srvref:
+    /* Unref for virNetDaemonGetServer ref - still have "our" ref from
+     * allocation and possibly a ref for being in netserver hash table */
+    virObjectUnref(srv);
+    goto cleanup;
 }
