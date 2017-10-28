@@ -620,6 +620,10 @@ mymain(void)
     if (VIR_STRDUP_QUIET(driver.config->memoryBackingDir, "/var/lib/libvirt/qemu/ram") < 0)
         return EXIT_FAILURE;
 
+    VIR_FREE(driver.config->stateDir);
+    if (VIR_STRDUP(driver.config->stateDir, "/tmp/lib") < 0)
+        return EXIT_FAILURE;
+
 # define DO_TEST_FULL(name, migrateFrom, migrateFd, flags,               \
                       parseFlags, gic, ...)                              \
     do {                                                                 \
