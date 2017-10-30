@@ -522,6 +522,10 @@ static const vshCmdOptDef opts_snapshot_edit[] = {
      .type = VSH_OT_BOOL,
      .help = N_("allow cloning to new name")
     },
+    {.name = "active-only",
+     .type = VSH_OT_BOOL,
+     .help = N_("allow editing active XML configuration and remove inactive XML")
+    },
     {.name = NULL}
 };
 
@@ -544,6 +548,9 @@ cmdSnapshotEdit(vshControl *ctl, const vshCmd *cmd)
     if (vshCommandOptBool(cmd, "current") &&
         vshCommandOptBool(cmd, "snapshotname"))
         define_flags |= VIR_DOMAIN_SNAPSHOT_CREATE_CURRENT;
+
+    if (vshCommandOptBool(cmd, "active-only"))
+        getxml_flags |= VIR_DOMAIN_XML_ACTIVE_ONLY;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;

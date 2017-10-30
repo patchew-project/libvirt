@@ -4400,7 +4400,7 @@ With I<snapshotname>, this is a request to make the existing named
 snapshot become the current snapshot, without reverting the domain.
 
 =item B<snapshot-edit> I<domain> [I<snapshotname>] [I<--current>]
-{[I<--rename>] | [I<--clone>]}
+{[I<--rename>] | [I<--clone>]} [I<--active-only>]
 
 Edit the XML configuration file for I<snapshotname> of a domain.  If
 both I<snapshotname> and I<--current> are specified, also force the
@@ -4426,6 +4426,12 @@ then the edits must not change the snapshot name.  Note that changing
 a snapshot name must be done with care, since the contents of some
 snapshots, such as internal snapshots within a single qcow2 file, are
 accessible only from the original name.
+
+If I<--active-only> is specified, only active XML configuration of the
+snapshot is displayed to edit. Otherwise, both active and inactive XML
+configuration of the snapshot will be displayed to edit. When domain
+snapshot is edited with I<--active-only> flag, inactive XML configuration
+will be removed from snapshot. 
 
 =item B<snapshot-info> I<domain> {I<snapshot> | I<--current>}
 
