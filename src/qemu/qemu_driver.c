@@ -15035,6 +15035,16 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
                                                  VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE)))
             goto endjob;
 
+        if (vm->newDef) {
+            if (!(xml = qemuDomainDefFormatLive(driver, vm->newDef, priv->origCPU,
+                                                true, true)) ||
+                !(def->newDom = virDomainDefParseString(xml, caps, driver->xmlopt, NULL,
+                                                        VIR_DOMAIN_DEF_PARSE_INACTIVE |
+                                                        VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE)))
+                goto endjob;
+        }
+
+
         if (flags & VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY) {
             align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL;
             align_match = false;

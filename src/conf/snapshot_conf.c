@@ -102,6 +102,7 @@ void virDomainSnapshotDefFree(virDomainSnapshotDefPtr def)
         virDomainSnapshotDiskDefClear(&def->disks[i]);
     VIR_FREE(def->disks);
     virDomainDefFree(def->dom);
+    virDomainDefFree(def->newDom);
     virObjectUnref(def->cookie);
     VIR_FREE(def);
 }
@@ -1333,6 +1334,18 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
                     def->dom = NULL;
                 }
                 goto cleanup;
+            }
+        }
+
+        if (other->def->newDom) {
+            if (def->newDom) {
+                if (!virDomainDefCheckABIStability(other->def->newDom,
+                                                   def->newDom, xmlopt))
+                    goto cleanup;
+            } else {
+                /* Transfer the inactive domain def */
+                def->newDom = other->def->newDom;
+                other->def->newDom = NULL;
             }
         }
 
