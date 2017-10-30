@@ -1546,6 +1546,7 @@ typedef enum {
     VIR_DOMAIN_XML_INACTIVE     = (1 << 1), /* dump inactive domain information */
     VIR_DOMAIN_XML_UPDATE_CPU   = (1 << 2), /* update guest CPU requirements according to host CPU */
     VIR_DOMAIN_XML_MIGRATABLE   = (1 << 3), /* dump XML suitable for migration */
+    VIR_DOMAIN_XML_ACTIVE_ONLY  = (1 << 4), /* dump active XML and avoid inactive XML in snapshot */
 } virDomainXMLFlags;
 
 char *                  virDomainGetXMLDesc     (virDomainPtr domain,

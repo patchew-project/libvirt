@@ -25687,8 +25687,8 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                   VIR_DOMAIN_DEF_FORMAT_STATUS |
                   VIR_DOMAIN_DEF_FORMAT_ACTUAL_NET |
                   VIR_DOMAIN_DEF_FORMAT_PCI_ORIG_STATES |
-                  VIR_DOMAIN_DEF_FORMAT_CLOCK_ADJUST,
-                  -1);
+                  VIR_DOMAIN_DEF_FORMAT_CLOCK_ADJUST |
+                  VIR_DOMAIN_DEF_FORMAT_ACTIVE_ONLY, -1);
 
     if (!(type = virDomainVirtTypeToString(def->virtType))) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -26472,6 +26472,8 @@ unsigned int virDomainDefFormatConvertXMLFlags(unsigned int flags)
         formatFlags |= VIR_DOMAIN_DEF_FORMAT_INACTIVE;
     if (flags & VIR_DOMAIN_XML_MIGRATABLE)
         formatFlags |= VIR_DOMAIN_DEF_FORMAT_MIGRATABLE;
+    if (flags & VIR_DOMAIN_XML_ACTIVE_ONLY)
+        formatFlags |= VIR_DOMAIN_DEF_FORMAT_ACTIVE_ONLY;
 
     return formatFlags;
 }

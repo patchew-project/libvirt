@@ -290,6 +290,29 @@ virDomainSnapshotDefParse(xmlXPathContextPtr ctxt,
         } else {
             VIR_WARN("parsing older snapshot that lacks domain");
         }
+
+        /* Older snapshots were created without inactive domain configuration.
+         * In that case, leave the newDom NULL. */
+        if ((tmp = virXPathString("string(./inactiveDomain/domain/@type)", ctxt))) {
+            int domainflags = VIR_DOMAIN_DEF_PARSE_INACTIVE |
+                              VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE;
+            if (flags & VIR_DOMAIN_SNAPSHOT_PARSE_INTERNAL)
+                domainflags |= VIR_DOMAIN_DEF_PARSE_SKIP_OSTYPE_CHECKS;
+            xmlNodePtr domainNode = virXPathNode("./inactiveDomain/domain", ctxt);
+
+            VIR_FREE(tmp);
+            if (domainNode) {
+                def->newDom = virDomainDefParseNode(ctxt->node->doc, domainNode,
+                                                    caps, xmlopt, NULL, domainflags);
+                if (!def->newDom)
+                    goto cleanup;
+            } else {
+                VIR_WARN("missing inactive domain in snapshot");
+            }
+        } else {
+            VIR_WARN("parsing older snapshot that lacks inactive domain");
+        }
+
     } else {
         def->creationTime = tv.tv_sec;
     }
@@ -705,7 +728,8 @@ virDomainSnapshotDefFormat(const char *domain_uuid,
     virBuffer buf = VIR_BUFFER_INITIALIZER;
     size_t i;
 
-    virCheckFlags(VIR_DOMAIN_DEF_FORMAT_SECURE, NULL);
+    virCheckFlags(VIR_DOMAIN_DEF_FORMAT_SECURE |
+                  VIR_DOMAIN_DEF_FORMAT_ACTIVE_ONLY, NULL);
 
     flags |= VIR_DOMAIN_DEF_FORMAT_INACTIVE;
 
@@ -755,6 +779,15 @@ virDomainSnapshotDefFormat(const char *domain_uuid,
         virBufferAsprintf(&buf, "<uuid>%s</uuid>\n", domain_uuid);
         virBufferAdjustIndent(&buf, -2);
         virBufferAddLit(&buf, "</domain>\n");
+    }
+
+    if (def->newDom && !(flags & VIR_DOMAIN_DEF_FORMAT_ACTIVE_ONLY)) {
+        virBufferAddLit(&buf, "<inactiveDomain>\n");
+        virBufferAdjustIndent(&buf, 2);
+        if (virDomainDefFormatInternal(def->newDom, caps, flags, &buf) < 0)
+            goto error;
+        virBufferAdjustIndent(&buf, -2);
+        virBufferAddLit(&buf, "</inactiveDomain>\n");
     }
 
     if (virSaveCookieFormatBuf(&buf, def->cookie,
