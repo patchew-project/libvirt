@@ -1811,6 +1811,10 @@ static const vshCmdOptDef opts_snapshot_revert[] = {
      .type = VSH_OT_BOOL,
      .help = N_("try harder on risky reverts")
     },
+    {.name = "active-only",
+     .type = VSH_OT_BOOL,
+     .help = N_("use only active snapshot configuration when restoring")
+    },
     {.name = NULL}
 };
 
@@ -1835,6 +1839,8 @@ cmdDomainSnapshotRevert(vshControl *ctl, const vshCmd *cmd)
      * when the error says it will make a difference.  */
     if (vshCommandOptBool(cmd, "force"))
         force = true;
+    if (vshCommandOptBool(cmd, "active-only"))
+        flags |= VIR_DOMAIN_SNAPSHOT_REVERT_ACTIVE_ONLY;
 
     dom = virshCommandOptDomain(ctl, cmd, NULL);
     if (dom == NULL)
