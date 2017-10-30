@@ -184,9 +184,13 @@ int virDomainSnapshotHasMetadata(virDomainSnapshotPtr snapshot,
                                  unsigned int flags);
 
 typedef enum {
-    VIR_DOMAIN_SNAPSHOT_REVERT_RUNNING = 1 << 0, /* Run after revert */
-    VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED  = 1 << 1, /* Pause after revert */
-    VIR_DOMAIN_SNAPSHOT_REVERT_FORCE   = 1 << 2, /* Allow risky reverts */
+    VIR_DOMAIN_SNAPSHOT_REVERT_RUNNING       = 1 << 0, /* Run after revert */
+    VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED        = 1 << 1, /* Pause after revert */
+    VIR_DOMAIN_SNAPSHOT_REVERT_FORCE         = 1 << 2, /* Allow risky reverts */
+    VIR_DOMAIN_SNAPSHOT_REVERT_ACTIVE_ONLY   = 1 << 3, /* Use active snapshot
+                                                          configurations as both
+                                                          active and inactive
+                                                          domain configurations*/
 } virDomainSnapshotRevertFlags;
 
 /* Revert the domain to a point-in-time snapshot.  The

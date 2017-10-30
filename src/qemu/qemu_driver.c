@@ -15577,6 +15577,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     qemuDomainObjPrivatePtr priv;
     int rc;
     virDomainDefPtr config = NULL;
+    virDomainDefPtr newConfig = NULL;
     virQEMUDriverConfigPtr cfg = NULL;
     virCapsPtr caps = NULL;
     bool was_running = false;
@@ -15586,7 +15587,8 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
 
     virCheckFlags(VIR_DOMAIN_SNAPSHOT_REVERT_RUNNING |
                   VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED |
-                  VIR_DOMAIN_SNAPSHOT_REVERT_FORCE, -1);
+                  VIR_DOMAIN_SNAPSHOT_REVERT_FORCE |
+                  VIR_DOMAIN_SNAPSHOT_REVERT_ACTIVE_ONLY, -1);
 
     /* We have the following transitions, which create the following events:
      * 1. inactive -> inactive: none
@@ -15688,6 +15690,16 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
             goto endjob;
     }
 
+    /* Prepare to copy snapshot inactive xml as inactive configuration
+     * of this domain unless user exclusively specify not to copy it */
+    if (!(flags & VIR_DOMAIN_SNAPSHOT_REVERT_ACTIVE_ONLY) &&
+        snap->def->newDom) {
+        newConfig = virDomainDefCopy(snap->def->newDom, caps,
+                                     driver->xmlopt, NULL, true);
+        if (!newConfig)
+            goto endjob;
+    }
+
     cookie = (qemuDomainSaveCookiePtr) snap->def->cookie;
 
     switch ((virDomainState) snap->def->state) {
@@ -15785,12 +15797,16 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                 virCPUDefFree(priv->origCPU);
                 VIR_STEAL_PTR(priv->origCPU, origCPU);
             }
+            if (newConfig)
+                vm->newDef = newConfig;
         } else {
             /* Transitions 2, 3 */
         load:
             was_stopped = true;
             if (config)
                 virDomainObjAssignDef(vm, config, false, NULL);
+            if (newConfig)
+                vm->newDef = newConfig;
 
             /* No cookie means libvirt which saved the domain was too old to
              * mess up the CPU definitions.
@@ -15884,6 +15900,8 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
         }
         if (config)
             virDomainObjAssignDef(vm, config, false, NULL);
+        if (newConfig)
+            vm->newDef = newConfig;
 
         if (flags & (VIR_DOMAIN_SNAPSHOT_REVERT_RUNNING |
                      VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED)) {
