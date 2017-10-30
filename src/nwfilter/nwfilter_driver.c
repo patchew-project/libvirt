@@ -81,6 +81,12 @@ static void nwfilterDriverUnlock(void)
 
 #if HAVE_FIREWALLD
 
+static void
+nwfilterStateReloadAdapter(void *opaque ATTRIBUTE_UNUSED)
+{
+    nwfilterStateReload();
+}
+
 static DBusHandlerResult
 nwfilterFirewalldDBusFilter(DBusConnection *connection ATTRIBUTE_UNUSED,
                             DBusMessage *message,
@@ -90,8 +96,12 @@ nwfilterFirewalldDBusFilter(DBusConnection *connection ATTRIBUTE_UNUSED,
                                "NameOwnerChanged") ||
         dbus_message_is_signal(message, "org.fedoraproject.FirewallD1",
                                "Reloaded")) {
+        virThread thread;
+
         VIR_DEBUG("Reload in nwfilter_driver because of firewalld.");
-        nwfilterStateReload();
+        if (virThreadCreate(&thread, false, nwfilterStateReloadAdapter, NULL) < 0)
+            VIR_ERROR(_("Could not create thread. Network filter "
+                        "driver reload failed"));
     }
 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
