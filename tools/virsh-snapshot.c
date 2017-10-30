@@ -1667,6 +1667,10 @@ static const vshCmdOptDef opts_snapshot_dumpxml[] = {
      .type = VSH_OT_BOOL,
      .help = N_("include security sensitive information in XML dump")
     },
+    {.name = "active-only",
+     .type = VSH_OT_BOOL,
+     .help = N_("dump only active XML configuration and avoid inactive XML")
+    },
     {.name = NULL}
 };
 
@@ -1682,6 +1686,9 @@ cmdSnapshotDumpXML(vshControl *ctl, const vshCmd *cmd)
 
     if (vshCommandOptBool(cmd, "security-info"))
         flags |= VIR_DOMAIN_XML_SECURE;
+
+    if (vshCommandOptBool(cmd, "active-only"))
+        flags |= VIR_DOMAIN_XML_ACTIVE_ONLY;
 
     if (vshCommandOptStringReq(ctl, cmd, "snapshotname", &name) < 0)
         return false;

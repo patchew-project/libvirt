@@ -4489,10 +4489,30 @@ is specified, the list will be filtered to snapshots that use external
 files for disk images or memory state.
 
 =item B<snapshot-dumpxml> I<domain> I<snapshot> [I<--security-info>]
+[I<--active-only>]
 
 Output the snapshot XML for the domain's snapshot named I<snapshot>.
 Using I<--security-info> will also include security sensitive information.
 Use B<snapshot-current> to easily access the XML of the current snapshot.
+
+If I<--active-only> is specified, only active XML configuration of the
+snapshot is displayed. Otherwise, both active and inactive XML
+configuration of the snapshot will be displayed.
+
+When both active and inactive XML snapshot configurations are displayed,
+as inactive XML configuration will have same structure as active XML
+it is embedded within <inactiveDomain> tag as shown below:
+
+  <domainsnapshot>
+    ....
+    ....
+    <inactiveDomain>
+      <domain>
+        ....
+        ....
+      </domain>
+    </inactiveDomain>
+  </domainsnapshot>
 
 =item B<snapshot-parent> I<domain> {I<snapshot> | I<--current>}
 
