@@ -84,6 +84,25 @@
           </choice>
         </optional>
         <optional>
+          <choice>
+            <element name='inactiveDomain'>
+              <choice>
+                <element name='domain'>
+                  <element name='uuid'>
+                    <ref name="UUID"/>
+                  </element>
+                </element>
+                <!-- Nested grammar ensures that any of our overrides of
+                     storagecommon/domaincommon defines do not conflict
+                     with any domain.rng overrides.  -->
+                <grammar>
+                  <include href='domain.rng'/>
+                </grammar>
+              </choice>
+            </element>
+          </choice>
+        </optional>
+        <optional>
           <element name='parent'>
             <element name='name'>
               <text/>
