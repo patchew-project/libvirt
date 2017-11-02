@@ -444,6 +444,7 @@ virDomainNetInsert;
 virDomainNetRemove;
 virDomainNetRemoveHostdev;
 virDomainNetTypeFromString;
+virDomainNetTypeSharesHostView;
 virDomainNetTypeToString;
 virDomainNostateReasonTypeFromString;
 virDomainNostateReasonTypeToString;
