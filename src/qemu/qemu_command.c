@@ -1220,6 +1220,9 @@ int
 qemuCheckDiskConfig(virDomainDiskDefPtr disk,
                     virQEMUCapsPtr qemuCaps)
 {
+    if (qemuCheckDiskConfigBlkdeviotune(disk, qemuCaps) < 0)
+        return -1;
+
     if (virDiskNameToIndex(disk->dst) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("unsupported disk type '%s'"), disk->dst);
@@ -1780,9 +1783,6 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
         virBufferAsprintf(&opt, ",aio=%s",
                           virDomainDiskIoTypeToString(disk->iomode));
     }
-
-    if (qemuCheckDiskConfigBlkdeviotune(disk, qemuCaps) < 0)
-        goto error;
 
 #define IOTUNE_ADD(_field, _label)                                             \
     if (disk->blkdeviotune._field) {                                           \
