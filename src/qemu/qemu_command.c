@@ -1428,6 +1428,10 @@ qemuCheckDiskConfig(virDomainDiskDefPtr disk,
         }
     }
 
+    if (disk->serial &&
+        qemuSafeSerialParamValue(disk->serial) < 0)
+        return -1;
+
     return 0;
 }
 
@@ -1713,8 +1717,6 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
 
     if (disk->serial &&
         virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_SERIAL)) {
-        if (qemuSafeSerialParamValue(disk->serial) < 0)
-            goto error;
         virBufferAddLit(&opt, ",serial=");
         virBufferEscape(&opt, '\\', " ", "%s", disk->serial);
     }
