@@ -1005,5 +1005,10 @@ qemuBlockStorageSourceGetBackendProps(virStorageSourcePtr src)
         break;
     }
 
+    if (virJSONValueObjectAdd(fileprops, "S:node-name", src->nodestorage, NULL) < 0) {
+        virJSONValueFree(fileprops);
+        return NULL;
+    }
+
     return fileprops;
 }
