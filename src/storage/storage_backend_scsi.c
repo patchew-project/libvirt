@@ -159,6 +159,7 @@ virStoragePoolFCRefreshThread(void *opaque)
         pool->def->allocation = pool->def->capacity = pool->def->available = 0;
 
         if (virStoragePoolObjIsActive(pool) &&
+            virStoragePoolObjGetAsyncjobs(pool) == 0 &&
             virSCSIHostGetNumber(fchost_name, &host) == 0 &&
             virStorageBackendSCSITriggerRescan(host) == 0) {
             virStoragePoolObjClearVols(pool);
