@@ -1878,6 +1878,10 @@
           which is also known as a split I/O APIC mode.
           <span class="since">Since 3.4.0</span> (QEMU/KVM only)
       </dd>
+      <dt><code>vmcoreinfo</code></dt>
+      <dd>Enable QEMU vmcoreinfo device to let the guest kernel save debug
+          details. <span class="since">Since 3.10.0</span> (QEMU only)
+      </dd>
     </dl>
 
     <h3><a id="elementsTime">Time keeping</a></h3>

@@ -4736,6 +4736,11 @@
           <optional>
             <ref name="ioapic"/>
           </optional>
+          <optional>
+            <element name="vmcoreinfo">
+              <empty/>
+            </element>
+          </optional>
         </interleave>
       </element>
     </optional>
