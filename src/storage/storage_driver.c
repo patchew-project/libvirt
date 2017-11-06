@@ -2257,6 +2257,7 @@ virStorageVolPoolRefreshThread(void *opaque)
     virStorageBackendPtr backend;
     virObjectEventPtr event = NULL;
 
+ retry:
     storageDriverLock();
     if (cbdata->vol_path) {
         if (virStorageBackendPloopRestoreDesc(cbdata->vol_path) < 0)
@@ -2269,6 +2270,14 @@ virStorageVolPoolRefreshThread(void *opaque)
 
     if (!(backend = virStorageBackendForType(def->type)))
         goto cleanup;
+
+    /* Some thread is creating a new volume in the pool, we need to retry */
+    if (virStoragePoolObjGetAsyncjobs(obj) > 0) {
+        virStoragePoolObjUnlock(obj);
+        storageDriverUnlock();
+        usleep(100 * 1000);
+        goto retry;
+    }
 
     virStoragePoolObjClearVols(obj);
     if (backend->refreshPool(NULL, obj) < 0)
