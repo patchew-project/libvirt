@@ -761,6 +761,19 @@ mymain(void)
             QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_DEVICE_VFIO_PCI);
 
+    DO_TEST("pseries-hpt-resizing-enabled",
+            QEMU_CAPS_NODEFCONFIG,
+            QEMU_CAPS_MACHINE_OPT,
+            QEMU_CAPS_MACHINE_PSERIES_RESIZE_HPT);
+    DO_TEST("pseries-hpt-resizing-disabled",
+            QEMU_CAPS_NODEFCONFIG,
+            QEMU_CAPS_MACHINE_OPT,
+            QEMU_CAPS_MACHINE_PSERIES_RESIZE_HPT);
+    DO_TEST("pseries-hpt-resizing-required",
+            QEMU_CAPS_NODEFCONFIG,
+            QEMU_CAPS_MACHINE_OPT,
+            QEMU_CAPS_MACHINE_PSERIES_RESIZE_HPT);
+
     DO_TEST("balloon-device-auto", NONE);
     DO_TEST("balloon-device-period", NONE);
     DO_TEST("channel-virtio-auto", NONE);
