@@ -3419,3 +3419,71 @@ cmdSelfTest(vshControl *ctl ATTRIBUTE_UNUSED,
 
     return true;
 }
+
+/* ----------------------
+ * Autocompletion command
+ * ---------------------- */
+
+const vshCmdOptDef opts_complete[] = {
+    {.name = "string",
+     .type = VSH_OT_ARGV,
+     .flags = VSH_OFLAG_EMPTY_OK,
+     .help = N_("partial string to autocomplete")
+    },
+    {.name = NULL}
+};
+
+const vshCmdInfo info_complete[] = {
+    {.name = "help",
+     .data = N_("internal command for autocompletion")
+    },
+    {.name = "desc",
+     .data = N_("internal use only")
+    },
+    {.name = NULL}
+};
+
+bool
+cmdComplete(vshControl *ctl, const vshCmd *cmd)
+{
+    bool ret = false;
+#ifdef WITH_READLINE
+    const vshClientHooks *hooks = ctl->hooks;
+    int stdin_fileno = STDIN_FILENO;
+    const char *arg = NULL;
+    char **matches = NULL, *tmp = NULL, **iter;
+
+    if (vshCommandOptStringQuiet(ctl, cmd, "string", &arg) <= 0)
+        goto cleanup;
+
+    /* This command is flagged VSH_CMD_FLAG_NOCONNECT because we
+     * need to prevent auth hooks reading any input. Therefore we
+     * have to close stdin and then connect ourselves. */
+    VIR_FORCE_CLOSE(stdin_fileno);
+
+    if (!(hooks && hooks->connHandler && hooks->connHandler(ctl, true)))
+        goto cleanup;
+
+    autoCompleteOpaque = ctl;
+
+    rl_basic_word_break_characters = " \t\n\\`@$><=;|&{(";
+    if (VIR_STRDUP(rl_line_buffer, arg) < 0)
+        goto cleanup;
+
+    while ((tmp = strpbrk(arg, rl_basic_word_break_characters)))
+        arg = tmp + 1;
+
+    if (!(matches = vshReadlineCompletion(arg, 0, 0)))
+        goto cleanup;
+
+    for (iter = matches; *iter; iter++)
+        printf("%s\n", *iter);
+
+    ret = true;
+ cleanup:
+    for (iter = matches; iter && *iter; iter++)
+        VIR_FREE(*iter);
+    VIR_FREE(matches);
+#endif /* WITH_READLINE */
+    return ret;
+}
