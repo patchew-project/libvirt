@@ -144,6 +144,9 @@ typedef enum {
     VIRSH_BYMAC  = (1 << 4),
 } virshLookupByFlags;
 
-virConnectPtr virshConnect(vshControl *ctl, const char *uri, bool readonly);
+virConnectPtr virshConnect(vshControl *ctl,
+                           const char *uri,
+                           bool readonly,
+                           bool silent);
 
 #endif /* VIRSH_H */

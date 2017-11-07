@@ -10931,7 +10931,7 @@ cmdMigrate(vshControl *ctl, const vshCmd *cmd)
         if (vshCommandOptStringReq(ctl, cmd, "desturi", &desturi) < 0)
             goto cleanup;
 
-        dconn = virshConnect(ctl, desturi, false);
+        dconn = virshConnect(ctl, desturi, false, false);
         if (!dconn)
             goto cleanup;
 

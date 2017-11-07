@@ -154,24 +154,26 @@ vshAdmCatchDisconnect(virAdmConnectPtr conn ATTRIBUTE_UNUSED,
 }
 
 static int
-vshAdmConnect(vshControl *ctl, unsigned int flags)
+vshAdmConnect(vshControl *ctl, unsigned int flags, bool silent)
 {
     vshAdmControlPtr priv = ctl->privData;
 
     priv->conn = virAdmConnectOpen(ctl->connname, flags);
 
     if (!priv->conn) {
-        if (priv->wantReconnect)
-            vshError(ctl, "%s", _("Failed to reconnect to the admin server"));
-        else
-            vshError(ctl, "%s", _("Failed to connect to the admin server"));
+        if (!silent) {
+            if (priv->wantReconnect)
+                vshError(ctl, "%s", _("Failed to reconnect to the admin server"));
+            else
+                vshError(ctl, "%s", _("Failed to connect to the admin server"));
+        }
         return -1;
     } else {
         if (virAdmConnectRegisterCloseCallback(priv->conn, vshAdmCatchDisconnect,
-                                               NULL, NULL) < 0)
+                                               NULL, NULL) < 0 && !silent)
             vshError(ctl, "%s", _("Unable to register disconnect callback"));
 
-        if (priv->wantReconnect)
+        if (priv->wantReconnect && !silent)
             vshPrint(ctl, "%s\n", _("Reconnected to the admin server"));
     }
 
@@ -179,7 +181,7 @@ vshAdmConnect(vshControl *ctl, unsigned int flags)
 }
 
 static int
-vshAdmDisconnect(vshControl *ctl)
+vshAdmDisconnect(vshControl *ctl, bool silent)
 {
     int ret = 0;
     vshAdmControlPtr priv = ctl->privData;
@@ -189,11 +191,13 @@ vshAdmDisconnect(vshControl *ctl)
 
     virAdmConnectUnregisterCloseCallback(priv->conn, vshAdmCatchDisconnect);
     ret = virAdmConnectClose(priv->conn);
-    if (ret < 0)
-        vshError(ctl, "%s", _("Failed to disconnect from the admin server"));
-    else if (ret > 0)
-        vshError(ctl, "%s", _("One or more references were leaked after "
-                              "disconnect from the hypervisor"));
+    if (!silent) {
+        if (ret < 0)
+            vshError(ctl, "%s", _("Failed to disconnect from the admin server"));
+        else if (ret > 0)
+            vshError(ctl, "%s", _("One or more references were leaked after "
+                                  "disconnect from the hypervisor"));
+    }
     priv->conn = NULL;
     return ret;
 }
@@ -205,14 +209,14 @@ vshAdmDisconnect(vshControl *ctl)
  *
  */
 static void
-vshAdmReconnect(vshControl *ctl)
+vshAdmReconnect(vshControl *ctl, bool silent)
 {
     vshAdmControlPtr priv = ctl->privData;
     if (priv->conn)
         priv->wantReconnect = true;
 
-    vshAdmDisconnect(ctl);
-    vshAdmConnect(ctl, 0);
+    vshAdmDisconnect(ctl, silent);
+    vshAdmConnect(ctl, 0, silent);
 
     priv->wantReconnect = false;
 }
@@ -350,7 +354,7 @@ cmdConnect(vshControl *ctl, const vshCmd *cmd)
         ctl->connname = vshStrdup(ctl, name);
     }
 
-    vshAdmReconnect(ctl);
+    vshAdmReconnect(ctl, false);
     if (!connected && priv->conn)
         vshPrint(ctl, "%s\n", _("Connected to the admin server"));
 
@@ -1080,15 +1084,16 @@ cmdDaemonLogOutputs(vshControl *ctl, const vshCmd *cmd)
 }
 
 static void *
-vshAdmConnectionHandler(vshControl *ctl)
+vshAdmConnectionHandler(vshControl *ctl, bool silent)
 {
     vshAdmControlPtr priv = ctl->privData;
 
     if (!virAdmConnectIsAlive(priv->conn))
-        vshAdmReconnect(ctl);
+        vshAdmReconnect(ctl, silent);
 
     if (!virAdmConnectIsAlive(priv->conn)) {
-        vshError(ctl, "%s", _("no valid connection"));
+        if (!silent)
+            vshError(ctl, "%s", _("no valid connection"));
         return NULL;
     }
 
@@ -1122,7 +1127,7 @@ vshAdmInit(vshControl *ctl)
     ctl->eventLoopStarted = true;
 
     if (ctl->connname) {
-        vshAdmReconnect(ctl);
+        vshAdmReconnect(ctl, false);
         /* Connecting to a named connection must succeed, but we delay
          * connecting to the default connection until we need it
          * (since the first command might be 'connect' which allows a
@@ -1156,7 +1161,7 @@ vshAdmDeinit(vshControl *ctl)
     VIR_FREE(ctl->connname);
 
     if (priv->conn)
-        vshAdmDisconnect(ctl);
+        vshAdmDisconnect(ctl, false);
 
     virResetLastError();
 

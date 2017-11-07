@@ -137,7 +137,7 @@ virshCatchDisconnect(virConnectPtr conn,
 /* Main Function which should be used for connecting.
  * This function properly handles keepalive settings. */
 virConnectPtr
-virshConnect(vshControl *ctl, const char *uri, bool readonly)
+virshConnect(vshControl *ctl, const char *uri, bool readonly, bool silent)
 {
     virConnectPtr c = NULL;
     int interval = 5; /* Default */
@@ -191,15 +191,19 @@ virshConnect(vshControl *ctl, const char *uri, bool readonly)
     if (interval > 0 &&
         virConnectSetKeepAlive(c, interval, count) != 0) {
         if (keepalive_forced) {
-            vshError(ctl, "%s",
-                     _("Cannot setup keepalive on connection "
-                       "as requested, disconnecting"));
+            if (!silent) {
+                vshError(ctl, "%s",
+                         _("Cannot setup keepalive on connection "
+                           "as requested, disconnecting"));
+            }
             virConnectClose(c);
             c = NULL;
             goto cleanup;
         }
-        vshDebug(ctl, VSH_ERR_INFO, "%s",
-                 _("Failed to setup keepalive on connection\n"));
+        if (!silent) {
+            vshDebug(ctl, VSH_ERR_INFO, "%s",
+                     _("Failed to setup keepalive on connection\n"));
+        }
     }
 
  cleanup:
@@ -214,7 +218,11 @@ virshConnect(vshControl *ctl, const char *uri, bool readonly)
  *
  */
 static int
-virshReconnect(vshControl *ctl, const char *name, bool readonly, bool force)
+virshReconnect(vshControl *ctl,
+               const char *name,
+               bool readonly,
+               bool force,
+               bool silent)
 {
     bool connected = false;
     virshControlPtr priv = ctl->privData;
@@ -232,20 +240,25 @@ virshReconnect(vshControl *ctl, const char *name, bool readonly, bool force)
 
         virConnectUnregisterCloseCallback(priv->conn, virshCatchDisconnect);
         ret = virConnectClose(priv->conn);
-        if (ret < 0)
-            vshError(ctl, "%s", _("Failed to disconnect from the hypervisor"));
-        else if (ret > 0)
-            vshError(ctl, "%s", _("One or more references were leaked after "
-                                  "disconnect from the hypervisor"));
+        if (!silent) {
+            if (ret < 0)
+                vshError(ctl, "%s", _("Failed to disconnect from the hypervisor"));
+            else if (ret > 0)
+                vshError(ctl, "%s", _("One or more references were leaked after "
+                                      "disconnect from the hypervisor"));
+        }
     }
 
-    priv->conn = virshConnect(ctl, name ? name : ctl->connname, readonly);
+    priv->conn = virshConnect(ctl, name ? name : ctl->connname,
+                              readonly, silent);
 
     if (!priv->conn) {
-        if (disconnected)
-            vshError(ctl, "%s", _("Failed to reconnect to the hypervisor"));
-        else
-            vshError(ctl, "%s", _("failed to connect to the hypervisor"));
+        if (!silent) {
+            if (disconnected)
+                vshError(ctl, "%s", _("Failed to reconnect to the hypervisor"));
+            else
+                vshError(ctl, "%s", _("Failed to connect to the hypervisor"));
+        }
         return -1;
     } else {
         if (name) {
@@ -255,8 +268,9 @@ virshReconnect(vshControl *ctl, const char *name, bool readonly, bool force)
         }
         if (virConnectRegisterCloseCallback(priv->conn, virshCatchDisconnect,
                                             ctl, NULL) < 0)
-            vshError(ctl, "%s", _("Unable to register disconnect callback"));
-        if (connected && !force)
+            if (!silent)
+                vshError(ctl, "%s", _("Unable to register disconnect callback"));
+        if (connected && !force && !silent)
             vshError(ctl, "%s", _("Reconnected to the hypervisor"));
     }
     disconnected = 0;
@@ -304,7 +318,7 @@ cmdConnect(vshControl *ctl, const vshCmd *cmd)
     if (vshCommandOptStringReq(ctl, cmd, "name", &name) < 0)
         return false;
 
-    if (virshReconnect(ctl, name, ro, true) < 0)
+    if (virshReconnect(ctl, name, ro, true, false) < 0)
         return false;
 
     return true;
@@ -316,11 +330,12 @@ cmdConnect(vshControl *ctl, const vshCmd *cmd)
  */
 
 static bool
-virshConnectionUsability(vshControl *ctl, virConnectPtr conn)
+virshConnectionUsability(vshControl *ctl, virConnectPtr conn, bool silent)
 {
     if (!conn ||
         virConnectIsAlive(conn) == 0) {
-        vshError(ctl, "%s", _("no valid connection"));
+        if (!silent)
+            vshError(ctl, "%s", _("no valid connection"));
         return false;
     }
 
@@ -333,15 +348,15 @@ virshConnectionUsability(vshControl *ctl, virConnectPtr conn)
 }
 
 static void *
-virshConnectionHandler(vshControl *ctl)
+virshConnectionHandler(vshControl *ctl, bool silent)
 {
     virshControlPtr priv = ctl->privData;
 
     if ((!priv->conn || disconnected) &&
-        virshReconnect(ctl, NULL, false, false) < 0)
+        virshReconnect(ctl, NULL, false, false, silent) < 0)
         return NULL;
 
-    if (virshConnectionUsability(ctl, priv->conn))
+    if (virshConnectionUsability(ctl, priv->conn, silent))
         return priv->conn;
 
     return NULL;
@@ -391,7 +406,7 @@ virshInit(vshControl *ctl)
          * non-default connection, or might be 'help' which needs no
          * connection).
          */
-        if (virshReconnect(ctl, NULL, false, false) < 0) {
+        if (virshReconnect(ctl, NULL, false, false, false) < 0) {
             vshReportError(ctl);
             return false;
         }

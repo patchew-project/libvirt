@@ -232,7 +232,8 @@ struct _vshControl {
 };
 
 typedef void *
-(*vshConnectionHook)(vshControl *ctl);
+(*vshConnectionHook)(vshControl *ctl,
+                     bool silent);
 
 struct _vshClientHooks {
     vshConnectionHook connHandler;
