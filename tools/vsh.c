@@ -2687,7 +2687,7 @@ vshReadlineParse(const char *text, int state)
     uint64_t opts_seen;
     size_t opt_index;
     static bool cmd_exists, opts_filled, opt_exists;
-    static bool non_bool_opt_exists, data_complete;
+    static bool non_bool_opt_exists, complete_data, complete_opts;
 
     if (!state) {
         parser.pos = rl_line_buffer;
@@ -2734,7 +2734,7 @@ vshReadlineParse(const char *text, int state)
         cmd_exists = false;
         opts_filled = false;
         non_bool_opt_exists = false;
-        data_complete = false;
+        complete_data = false;
 
         const_opts_need_arg = 0;
         const_opts_required = 0;
@@ -2800,7 +2800,7 @@ vshReadlineParse(const char *text, int state)
                     }
                     if (STREQ(tkdata, sanitized_text)) {
                         /* auto-complete non-bool option arg */
-                        data_complete = true;
+                        complete_data = true;
                         break;
                     }
                     non_bool_opt_exists = false;
@@ -2847,27 +2847,34 @@ vshReadlineParse(const char *text, int state)
             virSkipSpaces((const char**)&tkdata);
         }
         VIR_FREE(const_tkdata);
+        complete_opts = opts_filled && !non_bool_opt_exists;
     }
 
     if (!cmd_exists) {
         res = vshReadlineCommandGenerator(sanitized_text, state);
-    } else if (opts_filled && !non_bool_opt_exists) {
-        res = vshReadlineOptionsGenerator(sanitized_text, state, cmd);
-    } else if (non_bool_opt_exists && data_complete && opt && opt->completer) {
-        if (!completed_list)
-            completed_list = opt->completer(autoCompleteOpaque,
-                                            opt->completer_flags);
-        if (completed_list) {
-            while ((completed_name = completed_list[completed_list_index])) {
-                completed_list_index++;
-                if (!STRPREFIX(completed_name, sanitized_text))
-                    continue;
-                res = vshStrdup(NULL, completed_name);
-                return res;
+    } else {
+        if (complete_opts) {
+            res = vshReadlineOptionsGenerator(sanitized_text, state, cmd);
+            complete_opts = !!res;
+        }
+
+        if (!complete_opts && complete_data) {
+            if (!completed_list && opt && opt->completer)
+                completed_list = opt->completer(autoCompleteOpaque,
+                                                opt->completer_flags);
+            if (completed_list) {
+                while ((completed_name = completed_list[completed_list_index])) {
+                    completed_list_index++;
+                    if (!STRPREFIX(completed_name, sanitized_text))
+                        continue;
+                    res = vshStrdup(NULL, completed_name);
+                    return res;
+                }
+                res = NULL;
+                virStringListFree(completed_list);
+                completed_list = NULL;
+                completed_list_index = 0;
             }
-            res = NULL;
-            virStringListFree(completed_list);
-            completed_list_index = 0;
         }
     }
 
