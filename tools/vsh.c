@@ -2859,9 +2859,14 @@ vshReadlineParse(const char *text, int state)
         }
 
         if (!complete_opts && complete_data) {
-            if (!completed_list && opt && opt->completer)
+            if (!completed_list && opt && opt->completer) {
+                vshCmd *partial = NULL;
+                vshCommandStringParse(autoCompleteOpaque, rl_line_buffer, &partial);
                 completed_list = opt->completer(autoCompleteOpaque,
+                                                partial,
                                                 opt->completer_flags);
+                vshCommandFree(partial);
+            }
             if (completed_list) {
                 while ((completed_name = completed_list[completed_list_index])) {
                     completed_list_index++;
