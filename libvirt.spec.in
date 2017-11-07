@@ -2043,6 +2043,8 @@ exit 0
 %{_datadir}/systemtap/tapset/libvirt_qemu_probes*.stp
 %{_datadir}/systemtap/tapset/libvirt_functions.stp
 
+%{_datadir}/bash-completion/completions/vsh
+
 
 %if %{with_systemd}
 %{_unitdir}/libvirt-guests.service
