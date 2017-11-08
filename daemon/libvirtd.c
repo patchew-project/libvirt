@@ -1352,7 +1352,10 @@ int main(int argc, char **argv) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
     }
-    if (virNetServerAddProgram(srv, remoteProgram) < 0) {
+
+    rc = virNetServerAddProgram(srv, remoteProgram);
+    virObjectUnref(remoteProgram);
+    if (rc < 0) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
     }
@@ -1364,7 +1367,10 @@ int main(int argc, char **argv) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
     }
-    if (virNetServerAddProgram(srv, lxcProgram) < 0) {
+
+    rc = virNetServerAddProgram(srv, lxcProgram);
+    virObjectUnref(lxcProgram);
+    if (rc < 0) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
     }
@@ -1376,7 +1382,10 @@ int main(int argc, char **argv) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
     }
-    if (virNetServerAddProgram(srv, qemuProgram) < 0) {
+
+    rc = virNetServerAddProgram(srv, qemuProgram);
+    virObjectUnref(qemuProgram);
+    if (rc < 0) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
     }
@@ -1414,7 +1423,10 @@ int main(int argc, char **argv) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
     }
-    if (virNetServerAddProgram(srvAdm, adminProgram) < 0) {
+
+    rc = virNetServerAddProgram(srvAdm, adminProgram);
+    virObjectUnref(adminProgram);
+    if (rc < 0) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
     }
@@ -1513,10 +1525,6 @@ int main(int argc, char **argv) {
 
  cleanup:
     virNetlinkEventServiceStopAll();
-    virObjectUnref(remoteProgram);
-    virObjectUnref(lxcProgram);
-    virObjectUnref(qemuProgram);
-    virObjectUnref(adminProgram);
     virNetDaemonClose(dmn);
     virNetlinkShutdown();
     if (statuswrite != -1) {
