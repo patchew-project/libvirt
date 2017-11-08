@@ -1524,9 +1524,35 @@ int main(int argc, char **argv) {
                 0, "shutdown", NULL, NULL);
 
  cleanup:
-    virNetlinkEventServiceStopAll();
+    /* NB: Order for cleanup should attempt to kept in the inverse order
+     * was was used to create/start the daemon - there are some fairly
+     * important reliances built into the startup processing that use
+     * refcnt's in order to manage objects. Removing too early could
+     * cause crashes. */
     virNetDaemonClose(dmn);
+
+    virNetlinkEventServiceStopAll();
+
+    if (driversInitialized) {
+        /* Set via daemonRunStateInit thread in daemonStateInit.
+         * NB: It is possible that virNetlinkEventServerStart fails
+         * and we jump to cleanup before driversInitialized has
+         * been set. That could leave things inconsistent; however,
+         * resolution of that possibility is perhaps more trouble than
+         * it's worth to handle. */
+        driversInitialized = false;
+        virStateCleanup();
+    }
+
+    virObjectUnref(dmn);
+
     virNetlinkShutdown();
+
+    if (pid_file_fd != -1)
+        virPidFileReleasePath(pid_file, pid_file_fd);
+
+    VIR_FREE(run_dir);
+
     if (statuswrite != -1) {
         if (ret != 0) {
             /* Tell parent of daemon what failed */
@@ -1537,25 +1563,15 @@ int main(int argc, char **argv) {
         }
         VIR_FORCE_CLOSE(statuswrite);
     }
-    if (pid_file_fd != -1)
-        virPidFileReleasePath(pid_file, pid_file_fd);
 
     VIR_FREE(sock_file);
     VIR_FREE(sock_file_ro);
     VIR_FREE(sock_file_adm);
+
     VIR_FREE(pid_file);
+
     VIR_FREE(remote_config_file);
-    VIR_FREE(run_dir);
-
     daemonConfigFree(config);
-
-    if (driversInitialized) {
-        driversInitialized = false;
-        virStateCleanup();
-    }
-    /* Now that the hypervisor shutdown inhibition functions that use
-     * 'dmn' as a parameter are done, we can finally unref 'dmn' */
-    virObjectUnref(dmn);
 
     return ret;
 }
