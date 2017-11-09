@@ -4297,7 +4297,7 @@ qemuDomainObjReleaseAsyncJob(virDomainObjPtr obj)
 }
 
 static bool
-qemuDomainNestedJobAllowed(qemuDomainObjPrivatePtr priv, qemuDomainJob job)
+qemuDomainConcurrentJobAllowed(qemuDomainObjPrivatePtr priv, qemuDomainJob job)
 {
     return !priv->job.asyncJob ||
            (priv->job.asyncInterruptible && (priv->job.mask & JOB_MASK(job)) != 0);
@@ -4306,7 +4306,7 @@ qemuDomainNestedJobAllowed(qemuDomainObjPrivatePtr priv, qemuDomainJob job)
 bool
 qemuDomainJobAllowed(qemuDomainObjPrivatePtr priv, qemuDomainJob job)
 {
-    return !priv->job.active && qemuDomainNestedJobAllowed(priv, job);
+    return !priv->job.active && qemuDomainConcurrentJobAllowed(priv, job);
 }
 
 /* Give up waiting for mutex after 30 seconds */
@@ -4356,7 +4356,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
         goto error;
     }
 
-    while (!qemuDomainNestedJobAllowed(priv, job)) {
+    while (!qemuDomainConcurrentJobAllowed(priv, job)) {
         VIR_DEBUG("Waiting for async job (vm=%p name=%s)", obj, obj->def->name);
         if (virCondWaitUntil(&priv->job.asyncCond, &obj->parent.lock, then) < 0)
             goto error;
@@ -4370,7 +4370,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
 
     /* No job is active but a new async job could have been started while obj
      * was unlocked, so we need to recheck it. */
-    if (!qemuDomainNestedJobAllowed(priv, job))
+    if (!qemuDomainConcurrentJobAllowed(priv, job))
         goto retry;
 
     qemuDomainObjResetJob(priv);
@@ -4426,7 +4426,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
              priv->job.asyncOwner, NULLSTR(priv->job.asyncOwnerAPI),
              duration / 1000, asyncDuration / 1000);
 
-    if (qemuDomainNestedJobAllowed(priv, job))
+    if (qemuDomainConcurrentJobAllowed(priv, job))
         blocker = priv->job.ownerAPI;
     else
         blocker = priv->job.asyncOwnerAPI;
