@@ -4566,10 +4566,9 @@ qemuDomainObjAbortAsyncJob(virDomainObjPtr obj)
  *
  * To be followed with qemuDomainObjExitMonitor() once complete
  */
-static int
-qemuDomainObjEnterMonitorInternal(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
-                                  virDomainObjPtr obj,
-                                  qemuDomainAsyncJob asyncJob ATTRIBUTE_UNUSED)
+void
+qemuDomainObjEnterMonitor(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
+                          virDomainObjPtr obj)
 {
     qemuDomainObjPrivatePtr priv = obj->privateData;
 
@@ -4579,8 +4578,6 @@ qemuDomainObjEnterMonitorInternal(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
     virObjectRef(priv->mon);
     ignore_value(virTimeMillisNow(&priv->monStart));
     virObjectUnlock(obj);
-
-    return 0;
 }
 
 static void ATTRIBUTE_NONNULL(1)
@@ -4602,13 +4599,6 @@ qemuDomainObjExitMonitorInternal(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
     priv->monStart = 0;
     if (!hasRefs)
         priv->mon = NULL;
-}
-
-void qemuDomainObjEnterMonitor(virQEMUDriverPtr driver,
-                               virDomainObjPtr obj)
-{
-    ignore_value(qemuDomainObjEnterMonitorInternal(driver, obj,
-                                                   QEMU_ASYNC_JOB_NONE));
 }
 
 /* obj must NOT be locked before calling
@@ -4640,9 +4630,10 @@ int qemuDomainObjExitMonitor(virQEMUDriverPtr driver,
 int
 qemuDomainObjEnterMonitorAsync(virQEMUDriverPtr driver,
                                virDomainObjPtr obj,
-                               qemuDomainAsyncJob asyncJob)
+                               qemuDomainAsyncJob asyncJob ATTRIBUTE_UNUSED)
 {
-    return qemuDomainObjEnterMonitorInternal(driver, obj, asyncJob);
+    qemuDomainObjEnterMonitor(driver, obj);
+    return 0;
 }
 
 /*
