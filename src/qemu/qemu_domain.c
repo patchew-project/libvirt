@@ -333,6 +333,7 @@ qemuDomainObjResetAsyncJob(qemuDomainObjPrivatePtr priv)
     job->spiceMigration = false;
     job->spiceMigrated = false;
     job->postcopyEnabled = false;
+    job->asyncInterruptible = false;
     VIR_FREE(job->current);
 }
 
@@ -4695,6 +4696,149 @@ qemuDomainObjEnterMonitorAsync(virQEMUDriverPtr driver,
                                qemuDomainAsyncJob asyncJob)
 {
     return qemuDomainObjEnterMonitorInternal(driver, obj, asyncJob);
+}
+
+/*
+ * @obj must be locked before calling. Must be used within context of async job
+ * or non concurrent regular job.
+ *
+ * Enters interruptible state for async job. When async job is in this
+ * state another thread can run concurrent regular job.
+ */
+void
+qemuDomainObjEnterInterruptible(virDomainObjPtr obj)
+{
+    qemuDomainObjPrivatePtr priv = obj->privateData;
+    struct qemuDomainJobObj *job = &priv->job;
+
+    if (job->asyncJob) {
+        /*
+         * Entering interruptible state from concurrent regular job is design
+         * flaw. Let's not return error in this case to try to recover but
+         * drop error message to help detect this situation.
+         */
+        if (job->active) {
+            VIR_ERROR(_("Attempt to enter interruptible state for the concurrent "
+                        "regular job"));
+            return;
+        }
+    } else {
+        /*
+         * Entering interruptible state without any job at all is design flaw.
+         * Let's not return error in this case to try to recover but
+         * drop error message to help detect this situation.
+         */
+        if (!job->active)
+            VIR_ERROR(_("Attempt to enter interruptible state without any job"));
+
+        /* In case of non concurrent regular we don't need to do anything and
+         * this situation can be easily detected on exit interruptible state
+         * as no job con run concurrently to non concurrent regular job. */
+        return;
+    }
+
+    job->asyncInterruptible = true;
+    VIR_DEBUG("Async job enters interruptible state.(obj=%p name=%s, async=%s)",
+              obj, obj->def->name,
+              qemuDomainAsyncJobTypeToString(job->asyncJob));
+    virCondBroadcast(&priv->job.asyncCond);
+}
+
+
+/*
+ * @obj must be locked before calling. Must be used within context of async job
+ * or non concurrent regular job. Must be called if qemuDomainObjEnterInterruptible
+ * is called before.
+ *
+ * Exits async job interruptible state so after exit from this function
+ * no concurrent regular jobs are allowed to run simultaneously. The function
+ * waits until any concurrent regular job started after async job entered
+ * interruptible state is finished before exit.
+ */
+void
+qemuDomainObjExitInterruptible(virDomainObjPtr obj)
+{
+    qemuDomainObjPrivatePtr priv = obj->privateData;
+    struct qemuDomainJobObj *job = &priv->job;
+
+    /* Just noop for the case of non concurrent regular job. See
+     * also entering function. */
+    if (!job->asyncJob && job->active)
+        return;
+
+    job->asyncInterruptible = false;
+    VIR_DEBUG("Async job exits interruptible state. "
+              "(obj=%p name=%s, async=%s)",
+              obj, obj->def->name,
+              qemuDomainAsyncJobTypeToString(job->asyncJob));
+
+    /*
+     * Wait until no concurrent regular job is running. There is no real
+     * conditions for wait to fail thus just do not return error in case
+     * wait fails but log error just for safety.
+     */
+    while (job->active) {
+        if (virCondWait(&priv->job.cond, &obj->parent.lock) < 0) {
+            char buf[1024];
+
+            VIR_ERROR(_("failed to wait for job condition: %s"),
+                      virStrerror(errno, buf, sizeof(buf)));
+            return;
+        }
+    }
+}
+
+
+/*
+ * @obj must be locked before calling. Must be used within context of async job
+ * or non concurrent regular job.
+ *
+ * Wait on @obj lock. Async job is in interruptlible state during wait so
+ * concurrent regular jobs are allowed to run.
+ */
+int
+qemuDomainObjWait(virDomainObjPtr obj)
+{
+    qemuDomainObjEnterInterruptible(obj);
+
+    if (virCondWait(&obj->cond, &obj->parent.lock) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("failed to wait for domain condition"));
+        qemuDomainObjExitInterruptible(obj);
+        return -1;
+    }
+
+    qemuDomainObjExitInterruptible(obj);
+
+    if (!virDomainObjIsActive(obj)) {
+        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                       _("domain is not running"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+/*
+ * obj must be locked before calling. Must be used within context of async job
+ * or nonconcurrent regular job.
+ *
+ * Sleep with obj lock dropped. Async job is in interruptlible state during wait
+ * so concurrent regular jobs are allowed to run.
+ */
+void
+qemuDomainObjSleep(virDomainObjPtr obj, unsigned long nsec)
+{
+    struct timespec ts = { .tv_sec = 0, .tv_nsec = nsec };
+
+    qemuDomainObjEnterInterruptible(obj);
+
+    virObjectUnlock(obj);
+    nanosleep(&ts, NULL);
+    virObjectLock(obj);
+
+    qemuDomainObjExitInterruptible(obj);
 }
 
 

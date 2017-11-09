@@ -151,6 +151,8 @@ struct qemuDomainJobObj {
 
     virCond asyncCond;                  /* Use to coordinate with async jobs */
     qemuDomainAsyncJob asyncJob;        /* Currently active async job */
+    bool asyncInterruptible;            /* Regular jobs compatible with current
+                                           async job are allowed to run */
     unsigned long long asyncOwner;      /* Thread which set current async job */
     const char *asyncOwnerAPI;          /* The API which owns the async job */
     unsigned long long asyncStarted;    /* When the current async job started */
@@ -527,6 +529,16 @@ int qemuDomainObjEnterMonitorAsync(virQEMUDriverPtr driver,
                                    qemuDomainAsyncJob asyncJob)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
 
+void qemuDomainObjEnterInterruptible(virDomainObjPtr obj)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+void qemuDomainObjExitInterruptible(virDomainObjPtr obj)
+    ATTRIBUTE_NONNULL(1);
+
+int qemuDomainObjWait(virDomainObjPtr obj)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+
+void qemuDomainObjSleep(virDomainObjPtr obj, unsigned long nsec)
+    ATTRIBUTE_NONNULL(1);
 
 qemuAgentPtr qemuDomainObjEnterAgent(virDomainObjPtr obj)
     ATTRIBUTE_NONNULL(1);
