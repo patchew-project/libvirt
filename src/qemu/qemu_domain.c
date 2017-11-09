@@ -4872,6 +4872,7 @@ void qemuDomainObjEnterRemote(virDomainObjPtr obj)
 {
     VIR_DEBUG("Entering remote (vm=%p name=%s)",
               obj, obj->def->name);
+    qemuDomainObjEnterInterruptible(obj);
     virObjectUnlock(obj);
 }
 
@@ -4880,6 +4881,7 @@ void qemuDomainObjExitRemote(virDomainObjPtr obj)
     virObjectLock(obj);
     VIR_DEBUG("Exited remote (vm=%p name=%s)",
               obj, obj->def->name);
+    qemuDomainObjExitInterruptible(obj);
 }
 
 

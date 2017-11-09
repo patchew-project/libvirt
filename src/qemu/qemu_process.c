@@ -229,6 +229,7 @@ qemuConnectAgent(virQEMUDriverPtr driver, virDomainObjPtr vm)
      * deleted while the agent is active */
     virObjectRef(vm);
 
+    qemuDomainObjEnterInterruptible(vm);
     virObjectUnlock(vm);
 
     agent = qemuAgentOpen(vm,
@@ -236,6 +237,7 @@ qemuConnectAgent(virQEMUDriverPtr driver, virDomainObjPtr vm)
                           &agentCallbacks);
 
     virObjectLock(vm);
+    qemuDomainObjExitInterruptible(vm);
 
     if (agent == NULL)
         virObjectUnref(vm);

@@ -840,7 +840,7 @@ qemuMigrationCancelDriveMirror(virQEMUDriverPtr driver,
         if (failed && !err)
             err = virSaveLastError();
 
-        if (virDomainObjWait(vm) < 0)
+        if (qemuDomainObjWait(vm) < 0)
             goto cleanup;
     }
 
@@ -979,7 +979,7 @@ qemuMigrationDriveMirror(virQEMUDriverPtr driver,
             goto cleanup;
         }
 
-        if (virDomainObjWait(vm) < 0)
+        if (qemuDomainObjWait(vm) < 0)
             goto cleanup;
     }
 
@@ -1335,7 +1335,7 @@ qemuMigrationWaitForSpice(virDomainObjPtr vm)
 
     VIR_DEBUG("Waiting for SPICE to finish migration");
     while (!priv->job.spiceMigrated && !priv->job.abortJob) {
-        if (virDomainObjWait(vm) < 0)
+        if (qemuDomainObjWait(vm) < 0)
             return -1;
     }
     return 0;
@@ -1603,17 +1603,13 @@ qemuMigrationWaitForCompletion(virQEMUDriverPtr driver,
             return rv;
 
         if (events) {
-            if (virDomainObjWait(vm) < 0) {
+            if (qemuDomainObjWait(vm) < 0) {
                 jobInfo->status = QEMU_DOMAIN_JOB_STATUS_FAILED;
                 return -2;
             }
         } else {
             /* Poll every 50ms for progress & to allow cancellation */
-            struct timespec ts = { .tv_sec = 0, .tv_nsec = 50 * 1000 * 1000ull };
-
-            virObjectUnlock(vm);
-            nanosleep(&ts, NULL);
-            virObjectLock(vm);
+            qemuDomainObjSleep(vm, 50 * 1000 * 1000ul);
         }
     }
 
@@ -1654,7 +1650,7 @@ qemuMigrationWaitForDestCompletion(virQEMUDriverPtr driver,
 
     while ((rv = qemuMigrationCompleted(driver, vm, asyncJob,
                                         NULL, flags)) != 1) {
-        if (rv < 0 || virDomainObjWait(vm) < 0)
+        if (rv < 0 || qemuDomainObjWait(vm) < 0)
             return -1;
     }
 
@@ -3910,7 +3906,7 @@ qemuMigrationRun(virQEMUDriverPtr driver,
     if (priv->monJSON) {
         while (virDomainObjGetState(vm, NULL) == VIR_DOMAIN_RUNNING) {
             priv->signalStop = true;
-            rc = virDomainObjWait(vm);
+            rc = qemuDomainObjWait(vm);
             priv->signalStop = false;
             if (rc < 0)
                 goto error;
