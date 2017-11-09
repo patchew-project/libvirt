@@ -470,7 +470,6 @@ virDomainObjSetMetadata;
 virDomainObjSetState;
 virDomainObjTaint;
 virDomainObjUpdateModificationImpact;
-virDomainObjWait;
 virDomainObjWaitUntil;
 virDomainOSTypeFromString;
 virDomainOSTypeToString;
