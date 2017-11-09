@@ -6296,19 +6296,9 @@ void qemuProcessStop(virQEMUDriverPtr driver,
      * reporting so we don't squash a legit error. */
     orig_err = virSaveLastError();
 
-    if (asyncJob != QEMU_ASYNC_JOB_NONE) {
-        if (qemuDomainObjBeginNestedJob(driver, vm, asyncJob) < 0)
-            goto cleanup;
-    } else if (priv->job.asyncJob != QEMU_ASYNC_JOB_NONE &&
-               priv->job.asyncOwner == virThreadSelfID() &&
-               priv->job.active != QEMU_JOB_ASYNC_NESTED) {
-        VIR_WARN("qemuProcessStop called without a nested job (async=%s)",
-                 qemuDomainAsyncJobTypeToString(asyncJob));
-    }
-
     if (!virDomainObjIsActive(vm)) {
         VIR_DEBUG("VM '%s' not active", vm->def->name);
-        goto endjob;
+        goto cleanup;
     }
 
     qemuProcessBuildDestroyMemoryPaths(driver, vm, NULL, false);
@@ -6564,10 +6554,6 @@ void qemuProcessStop(virQEMUDriverPtr driver,
     }
 
     virDomainObjRemoveTransientDef(vm);
-
- endjob:
-    if (asyncJob != QEMU_ASYNC_JOB_NONE)
-        qemuDomainObjEndJob(driver, vm);
 
  cleanup:
     if (orig_err) {
