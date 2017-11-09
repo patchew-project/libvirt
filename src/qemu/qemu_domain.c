@@ -89,7 +89,6 @@ VIR_ENUM_IMPL(qemuDomainJob, QEMU_JOB_LAST,
               "abort",
               "migration operation",
               "none",   /* async job is never stored in job.active */
-              "async nested",
 );
 
 VIR_ENUM_IMPL(qemuDomainAsyncJob, QEMU_ASYNC_JOB_LAST,
@@ -4277,8 +4276,6 @@ qemuDomainObjDiscardAsyncJob(virQEMUDriverPtr driver, virDomainObjPtr obj)
 {
     qemuDomainObjPrivatePtr priv = obj->privateData;
 
-    if (priv->job.active == QEMU_JOB_ASYNC_NESTED)
-        qemuDomainObjResetJob(priv);
     qemuDomainObjResetAsyncJob(priv);
     qemuDomainObjSaveJob(driver, obj);
 }

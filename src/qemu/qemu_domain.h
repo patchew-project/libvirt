@@ -75,7 +75,6 @@ typedef enum {
 
     /* The following two items must always be the last items before JOB_LAST */
     QEMU_JOB_ASYNC,         /* Asynchronous job */
-    QEMU_JOB_ASYNC_NESTED,  /* Normal job within an async job */
 
     QEMU_JOB_LAST
 } qemuDomainJob;
