@@ -36,6 +36,7 @@
   network inet6 dgram,
   network packet dgram,
   network packet raw,
+  network netlink raw,
 
   ptrace (trace) peer=unconfined,
   ptrace (trace) peer=/usr/sbin/libvirtd,
