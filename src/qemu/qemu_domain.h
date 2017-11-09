@@ -494,10 +494,6 @@ int qemuDomainObjBeginAsyncJob(virQEMUDriverPtr driver,
                                qemuDomainAsyncJob asyncJob,
                                virDomainJobOperation operation)
     ATTRIBUTE_RETURN_CHECK;
-int qemuDomainObjBeginNestedJob(virQEMUDriverPtr driver,
-                                virDomainObjPtr obj,
-                                qemuDomainAsyncJob asyncJob)
-    ATTRIBUTE_RETURN_CHECK;
 
 void qemuDomainObjEndJob(virQEMUDriverPtr driver,
                          virDomainObjPtr obj);
