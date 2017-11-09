@@ -4580,9 +4580,13 @@ qemuDomainObjEnterMonitor(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
     virObjectUnlock(obj);
 }
 
-static void ATTRIBUTE_NONNULL(1)
-qemuDomainObjExitMonitorInternal(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
-                                 virDomainObjPtr obj)
+/* obj must NOT be locked before calling
+ *
+ * Should be paired with an earlier qemuDomainObjEnterMonitor() call
+ */
+int
+qemuDomainObjExitMonitor(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
+                         virDomainObjPtr obj)
 {
     qemuDomainObjPrivatePtr priv = obj->privateData;
     bool hasRefs;
@@ -4599,19 +4603,10 @@ qemuDomainObjExitMonitorInternal(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
     priv->monStart = 0;
     if (!hasRefs)
         priv->mon = NULL;
-}
 
-/* obj must NOT be locked before calling
- *
- * Should be paired with an earlier qemuDomainObjEnterMonitor() call
- *
- */
-int qemuDomainObjExitMonitor(virQEMUDriverPtr driver,
-                             virDomainObjPtr obj)
-{
-    qemuDomainObjExitMonitorInternal(driver, obj);
     return 0;
 }
+
 
 /*
  * obj must be locked before calling
