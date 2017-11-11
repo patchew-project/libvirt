@@ -18141,6 +18141,7 @@ virDomainDefParseXML(xmlDocPtr xml,
 
     def->os.bootloader = virXPathString("string(./bootloader)", ctxt);
     def->os.bootloaderArgs = virXPathString("string(./bootloader_args)", ctxt);
+    def->os.bootloaderGrubRoot = virXPathString("string(./bootloader_grub_root)", ctxt);
 
     tmp = virXPathString("string(./os/type[1])", ctxt);
     if (!tmp) {

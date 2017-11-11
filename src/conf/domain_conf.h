@@ -1884,6 +1884,7 @@ struct _virDomainOSDef {
     char *slic_table;
     virDomainLoaderDefPtr loader;
     char *bootloader;
+    char *bootloaderGrubRoot;
     char *bootloaderArgs;
     int smbios_mode;
 

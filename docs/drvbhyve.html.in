@@ -300,17 +300,26 @@ are omitted, libvirt will try and infer boot ordering from user-supplied
 &lt;boot order='N'&gt; configuration in the domain. Failing that, it will boot
 the first disk in the domain (either <code>cdrom</code>- or
 <code>disk</code>-type devices). If the disk type is <code>disk</code>, it will
-attempt to boot from the first partition in the disk image.</p>
+attempt to boot from the first partition in the disk image, assuming
+an <code>msdos</code> partitioning scheme
+(i.e. <code>grub-bhyve --root hd0,msdos1</code>).
+You can override this behavior using <code>bootloader_args</code> or <code>bootloader_grub_root</code>.
+</p>
 
 <pre>
 ...
 &lt;bootloader&gt;/usr/local/sbin/grub-bhyve&lt;/bootloader&gt;
+&lt;!-- the following tag overrides all args to grub-bhyve --&gt;
 &lt;bootloader_args&gt;...&lt;/bootloader_args&gt;
+&lt;!-- the following tag overrides just the --root argument to grub-bhyve --&gt;
+&lt;bootloader_grub_root&gt;hd0,gpt1&lt;/bootloader_grub_root&gt;
 ...
 </pre>
 
-<p>Caveat: <code>bootloader_args</code> does not support any quoting.
-Filenames, etc, must not have spaces or they will be tokenized incorrectly.</p>
+<p>Caveats when using <code>bootloader_args</code>: it  does not support any quoting.
+Filenames, etc, must not have spaces or they will be tokenized incorrectly.
+Additionally, you will have to maintain your own <code>--device-map</code>
+file and keep it in sync with the domain XML.</p>
 
 <h3><a id="uefi">Using UEFI bootrom, VNC, and USB tablet</a></h3>
 

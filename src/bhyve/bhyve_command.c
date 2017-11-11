@@ -774,15 +774,21 @@ virBhyveProcessBuildGrubbhyveCmd(virDomainDefPtr def,
     }
 
     virCommandAddArg(cmd, "--root");
-    if (userdef != NULL) {
-        if (userdef->device == VIR_DOMAIN_DISK_DEVICE_CDROM)
-            virCommandAddArg(cmd, "cd");
-        else
-            virCommandAddArg(cmd, "hd0,msdos1");
-    } else if (cd != NULL) {
-        virCommandAddArg(cmd, "cd");
+    if (def->os.bootloaderGrubRoot != NULL) {
+        virCommandAddArg(cmd, def->os.bootloaderGrubRoot);
     } else {
-        virCommandAddArg(cmd, "hd0,msdos1");
+
+        if (userdef != NULL) {
+            if (userdef->device == VIR_DOMAIN_DISK_DEVICE_CDROM)
+                virCommandAddArg(cmd, "cd");
+            else
+                virCommandAddArg(cmd, "hd0,msdos1");
+        } else if (cd != NULL) {
+            virCommandAddArg(cmd, "cd");
+        } else {
+            virCommandAddArg(cmd, "hd0,msdos1");
+        }
+
     }
 
     virCommandAddArg(cmd, "--device-map");
