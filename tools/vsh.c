@@ -3446,3 +3446,81 @@ cmdSelfTest(vshControl *ctl ATTRIBUTE_UNUSED,
 
     return true;
 }
+
+/* ----------------------
+ * Autocompletion command
+ * ---------------------- */
+
+const vshCmdOptDef opts_complete[] = {
+    {.name = "string",
+     .type = VSH_OT_ARGV,
+     .flags = VSH_OFLAG_EMPTY_OK,
+     .help = N_("partial string to autocomplete")
+    },
+    {.name = NULL}
+};
+
+const vshCmdInfo info_complete[] = {
+    {.name = "help",
+     .data = N_("internal command for autocompletion")
+    },
+    {.name = "desc",
+     .data = N_("internal use only")
+    },
+    {.name = NULL}
+};
+
+bool
+cmdComplete(vshControl *ctl, const vshCmd *cmd)
+{
+    bool ret = false;
+#ifdef WITH_READLINE
+    const vshClientHooks *hooks = ctl->hooks;
+    int stdin_fileno = STDIN_FILENO;
+    const char *arg = "";
+    const vshCmdOpt *opt = NULL;
+    char **matches = NULL, *tmp = NULL, **iter;
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    if (vshCommandOptStringQuiet(ctl, cmd, "string", &arg) <= 0)
+        goto cleanup;
+
+    /* This command is flagged VSH_CMD_FLAG_NOCONNECT because we
+     * need to prevent auth hooks reading any input. Therefore we
+     * have to close stdin and then connect ourselves. */
+    VIR_FORCE_CLOSE(stdin_fileno);
+
+    if (!(hooks && hooks->connHandler && hooks->connHandler(ctl)))
+        goto cleanup;
+
+    while ((opt = vshCommandOptArgv(ctl, cmd, opt))) {
+        if (virBufferUse(&buf) != 0)
+            virBufferAddChar(&buf, ' ');
+        virBufferAddStr(&buf, opt->data);
+        arg = opt->data;
+    }
+
+    if (virBufferCheckError(&buf) < 0)
+        goto cleanup;
+
+    vshReadlineInit(ctl);
+
+    if (!(rl_line_buffer = virBufferContentAndReset(&buf)) &&
+        VIR_STRDUP(rl_line_buffer, "") < 0)
+        goto cleanup;
+
+    if (!(matches = vshReadlineCompletion(arg, 0, 0)))
+        goto cleanup;
+
+    for (iter = matches; *iter; iter++)
+        printf("%s\n", *iter);
+
+    ret = true;
+ cleanup:
+    virBufferFreeAndReset(&buf);
+    for (iter = matches; iter && *iter; iter++)
+        VIR_FREE(*iter);
+    VIR_FREE(matches);
+#endif /* WITH_READLINE */
+    return ret;
+}
