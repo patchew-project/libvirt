@@ -2874,7 +2874,15 @@ vshReadlineParse(const char *text, int state)
         }
     }
 
-    if (!res) {
+    if (res) {
+        if (!rl_completion_quote_character) {
+            virBuffer buf = VIR_BUFFER_INITIALIZER;
+            virBufferEscapeShell(&buf, res);
+            VIR_FREE(res);
+            if (!(res = virBufferContentAndReset(&buf)))
+                goto error;
+        }
+    } else {
         VIR_FREE(sanitized_text);
         VIR_FREE(ctext);
     }
@@ -2900,6 +2908,16 @@ vshReadlineCompletion(const char *text,
     return matches;
 }
 
+
+static int
+vshReadlineCharIsQuoted(char *line, int index)
+{
+    return index > 0 &&
+           line[index - 1] == '\\' &&
+           !vshReadlineCharIsQuoted(line, index - 1);
+}
+
+
 # define HISTSIZE_MAX 500000
 
 static int
@@ -2924,6 +2942,8 @@ vshReadlineInit(vshControl *ctl)
     rl_attempted_completion_function = vshReadlineCompletion;
 
     rl_basic_word_break_characters = " \t\n\\`@$><=;|&{(";
+    rl_completer_quote_characters = "\"'";
+    rl_char_is_quoted_p = vshReadlineCharIsQuoted;
 
     if (virAsprintf(&histsize_env, "%s_HISTSIZE", ctl->env_prefix) < 0)
         goto cleanup;
