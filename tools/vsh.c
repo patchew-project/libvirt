@@ -1387,26 +1387,27 @@ struct _vshCommandParser {
 };
 
 static bool
-vshCommandParse(vshControl *ctl, vshCommandParser *parser)
+vshCommandParse(vshControl *ctl, vshCommandParser *parser, vshCmd **partial)
 {
     char *tkdata = NULL;
     vshCmd *clast = NULL;
     vshCmdOpt *first = NULL;
+    const vshCmdDef *cmd = NULL;
 
-    if (ctl->cmd) {
+    if (!partial && ctl->cmd) {
         vshCommandFree(ctl->cmd);
         ctl->cmd = NULL;
     }
 
     while (1) {
         vshCmdOpt *last = NULL;
-        const vshCmdDef *cmd = NULL;
         vshCommandToken tk;
         bool data_only = false;
         uint64_t opts_need_arg = 0;
         uint64_t opts_required = 0;
         uint64_t opts_seen = 0;
 
+        cmd = NULL;
         first = NULL;
 
         while (1) {
@@ -1425,7 +1426,8 @@ vshCommandParse(vshControl *ctl, vshCommandParser *parser)
             if (cmd == NULL) {
                 /* first token must be command name */
                 if (!(cmd = vshCmddefSearch(tkdata))) {
-                    vshError(ctl, _("unknown command: '%s'"), tkdata);
+                    if (!partial)
+                        vshError(ctl, _("unknown command: '%s'"), tkdata);
                     goto syntaxError;   /* ... or ignore this command only? */
                 }
 
@@ -1437,9 +1439,10 @@ vshCommandParse(vshControl *ctl, vshCommandParser *parser)
                 }
                 if (vshCmddefOptParse(cmd, &opts_need_arg,
                                       &opts_required) < 0) {
-                    vshError(ctl,
-                             _("internal error: bad options in command: '%s'"),
-                             tkdata);
+                    if (!partial)
+                        vshError(ctl,
+                                 _("internal error: bad options in command: '%s'"),
+                                 tkdata);
                     goto syntaxError;
                 }
                 VIR_FREE(tkdata);
@@ -1474,11 +1477,12 @@ vshCommandParse(vshControl *ctl, vshCommandParser *parser)
                     if (tk == VSH_TK_ERROR)
                         goto syntaxError;
                     if (tk != VSH_TK_ARG) {
-                        vshError(ctl,
-                                 _("expected syntax: --%s <%s>"),
-                                 opt->name,
-                                 opt->type ==
-                                 VSH_OT_INT ? _("number") : _("string"));
+                        if (!partial)
+                            vshError(ctl,
+                                     _("expected syntax: --%s <%s>"),
+                                     opt->name,
+                                     opt->type ==
+                                     VSH_OT_INT ? _("number") : _("string"));
                         goto syntaxError;
                     }
                     if (opt->type != VSH_OT_ARGV)
@@ -1486,8 +1490,9 @@ vshCommandParse(vshControl *ctl, vshCommandParser *parser)
                 } else {
                     tkdata = NULL;
                     if (optstr) {
-                        vshError(ctl, _("invalid '=' after option --%s"),
-                                 opt->name);
+                        if (!partial)
+                            vshError(ctl, _("invalid '=' after option --%s"),
+                                     opt->name);
                         VIR_FREE(optstr);
                         goto syntaxError;
                     }
@@ -1503,7 +1508,8 @@ vshCommandParse(vshControl *ctl, vshCommandParser *parser)
                 if (!(opt = vshCmddefGetData(cmd, &opts_need_arg,
                                              &opts_seen)) &&
                      STRNEQ(cmd->name, "help")) {
-                    vshError(ctl, _("unexpected data '%s'"), tkdata);
+                    if (!partial)
+                        vshError(ctl, _("unexpected data '%s'"), tkdata);
                     goto syntaxError;
                 }
             }
@@ -1559,12 +1565,15 @@ vshCommandParse(vshControl *ctl, vshCommandParser *parser)
             c->def = cmd;
             c->next = NULL;
 
-            if (vshCommandCheckOpts(ctl, c, opts_required, opts_seen) < 0) {
+            if (!partial &&
+                vshCommandCheckOpts(ctl, c, opts_required, opts_seen) < 0) {
                 VIR_FREE(c);
                 goto syntaxError;
             }
 
-            if (!ctl->cmd)
+            if (partial)
+                *partial = c;
+            else if (!ctl->cmd)
                 ctl->cmd = c;
             if (clast)
                 clast->next = c;
@@ -1578,12 +1587,20 @@ vshCommandParse(vshControl *ctl, vshCommandParser *parser)
     return true;
 
  syntaxError:
-    if (ctl->cmd) {
-        vshCommandFree(ctl->cmd);
-        ctl->cmd = NULL;
+    if (partial) {
+        if (!*partial)
+            *partial = vshMalloc(ctl, sizeof(vshCmd));
+
+        (*partial)->opts = first;
+        (*partial)->def = cmd;
+    } else {
+        if (ctl->cmd) {
+            vshCommandFree(ctl->cmd);
+            ctl->cmd = NULL;
+        }
+        if (first)
+            vshCommandOptFree(first);
     }
-    if (first)
-        vshCommandOptFree(first);
     VIR_FREE(tkdata);
     return false;
 }
@@ -1618,7 +1635,7 @@ vshCommandArgvParse(vshControl *ctl, int nargs, char **argv)
     parser.arg_pos = argv;
     parser.arg_end = argv + nargs;
     parser.getNextArg = vshCommandArgvGetArg;
-    return vshCommandParse(ctl, &parser);
+    return vshCommandParse(ctl, &parser, NULL);
 }
 
 /* ----------------------
@@ -1690,7 +1707,7 @@ vshCommandStringGetArg(vshControl *ctl, vshCommandParser *parser, char **res,
 }
 
 bool
-vshCommandStringParse(vshControl *ctl, char *cmdstr)
+vshCommandStringParse(vshControl *ctl, char *cmdstr, vshCmd **partial)
 {
     vshCommandParser parser;
 
@@ -1699,7 +1716,7 @@ vshCommandStringParse(vshControl *ctl, char *cmdstr)
 
     parser.pos = cmdstr;
     parser.getNextArg = vshCommandStringGetArg;
-    return vshCommandParse(ctl, &parser);
+    return vshCommandParse(ctl, &parser, partial);
 }
 
 /**
