@@ -1551,6 +1551,28 @@ mymain(void)
             QEMU_CAPS_HDA_DUPLEX, QEMU_CAPS_HDA_MICRO,
             QEMU_CAPS_DEVICE_ICH9_INTEL_HDA,
             QEMU_CAPS_OBJECT_USB_AUDIO);
+    DO_TEST("sound-default-output-spice",
+            QEMU_CAPS_HDA_DUPLEX,
+            QEMU_CAPS_SPICE,
+            QEMU_CAPS_DEVICE_CIRRUS_VGA);
+    DO_TEST("sound-default-output-vnc",
+            QEMU_CAPS_HDA_DUPLEX,
+            QEMU_CAPS_VNC,
+            QEMU_CAPS_DEVICE_CIRRUS_VGA);
+    DO_TEST("sound-default-output-sdl",
+            QEMU_CAPS_HDA_DUPLEX,
+            QEMU_CAPS_SDL,
+            QEMU_CAPS_DEVICE_CIRRUS_VGA);
+    DO_TEST("sound-default-output-spice-vnc",
+            QEMU_CAPS_HDA_DUPLEX,
+            QEMU_CAPS_SPICE,
+            QEMU_CAPS_VNC,
+            QEMU_CAPS_DEVICE_CIRRUS_VGA);
+    DO_TEST("sound-default-output-vnc-spice",
+            QEMU_CAPS_HDA_DUPLEX,
+            QEMU_CAPS_SPICE,
+            QEMU_CAPS_VNC,
+            QEMU_CAPS_DEVICE_CIRRUS_VGA);
     DO_TEST("fs9p",
             QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_FSDEV,
             QEMU_CAPS_FSDEV_WRITEOUT);
