@@ -1573,6 +1573,18 @@ mymain(void)
             QEMU_CAPS_SPICE,
             QEMU_CAPS_VNC,
             QEMU_CAPS_DEVICE_CIRRUS_VGA);
+    DO_TEST("sound-pa-output-spice",
+            QEMU_CAPS_HDA_DUPLEX,
+            QEMU_CAPS_SPICE,
+            QEMU_CAPS_DEVICE_CIRRUS_VGA);
+    DO_TEST("sound-multi-pa-output-spice",
+            QEMU_CAPS_HDA_DUPLEX,
+            QEMU_CAPS_SPICE,
+            QEMU_CAPS_DEVICE_CIRRUS_VGA);
+    DO_TEST_PARSE_ERROR("sound-multi-different-output-spice",
+                        QEMU_CAPS_HDA_DUPLEX,
+                        QEMU_CAPS_SPICE,
+                        QEMU_CAPS_DEVICE_CIRRUS_VGA);
     DO_TEST("fs9p",
             QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_FSDEV,
             QEMU_CAPS_FSDEV_WRITEOUT);
