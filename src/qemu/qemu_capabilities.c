@@ -443,6 +443,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               /* 270 */
               "vxhs",
               "virtio-blk.num-queues",
+              "numa.dist",
     );
 
 
@@ -4775,6 +4776,10 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     /* no way to query if -machine kernel_irqchip supports split */
     if (qemuCaps->version >= 2006000)
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_MACHINE_KERNEL_IRQCHIP_SPLIT);
+
+    /* no way to query for -numa dist */
+    if (qemuCaps->version >= 2010000)
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_NUMA_DIST);
 
     if (virQEMUCapsProbeQMPCommands(qemuCaps, mon) < 0)
         goto cleanup;
