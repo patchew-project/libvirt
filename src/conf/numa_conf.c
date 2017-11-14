@@ -1154,7 +1154,7 @@ virDomainNumaGetNodeDistance(virDomainNumaPtr numa,
      */
     if (!distances ||
         !distances[cellid].value ||
-        !numa->mem_nodes[node].ndistances)
+        node >= numa->nmem_nodes)
         return (node == cellid) ? LOCAL_DISTANCE : REMOTE_DISTANCE;
 
     return distances[cellid].value;
