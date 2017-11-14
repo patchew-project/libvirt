@@ -5393,6 +5393,45 @@ qemuProcessPrepareAllowReboot(virDomainObjPtr vm)
 }
 
 
+static void
+qemuProcessPrepareSound(virDomainDefPtr def,
+                        virQEMUDriverConfigPtr cfg)
+{
+    virDomainSoundOutputType output = VIR_DOMAIN_SOUND_OUTPUT_TYPE_DEFAULT;
+    size_t i;
+
+    if (def->nsounds == 0)
+        return;
+
+    if (def->ngraphics == 0) {
+        if (!cfg->nogfxAllowHostAudio)
+            output = VIR_DOMAIN_SOUND_OUTPUT_TYPE_NONE;
+    } else {
+        switch (def->graphics[def->ngraphics - 1]->type) {
+        case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
+            output = VIR_DOMAIN_SOUND_OUTPUT_TYPE_SPICE;
+            break;
+
+        case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
+            if (!cfg->vncAllowHostAudio)
+                output = VIR_DOMAIN_SOUND_OUTPUT_TYPE_NONE;
+            break;
+
+        case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
+        case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
+        case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
+        case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
+            break;
+        }
+    }
+
+    for (i = 0; i < def->nsounds; i++) {
+        if (def->sounds[i]->output == VIR_DOMAIN_SOUND_OUTPUT_TYPE_DEFAULT)
+            def->sounds[i]->output = output;
+    }
+}
+
+
 /**
  * qemuProcessPrepareDomain:
  * @conn: connection object (for looking up storage volumes)
@@ -5512,6 +5551,8 @@ qemuProcessPrepareDomain(virConnectPtr conn,
         if (qemuDomainPrepareShmemChardev(vm->def->shmems[i]) < 0)
             goto cleanup;
     }
+
+    qemuProcessPrepareSound(vm->def, cfg);
 
     ret = 0;
  cleanup:

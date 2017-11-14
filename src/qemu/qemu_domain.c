@@ -3156,6 +3156,31 @@ qemuDomainDefVerifyFeatures(const virDomainDef *def)
 }
 
 
+static void
+qemuDomainDefSoundPostParse(virDomainDefPtr def)
+{
+    size_t i;
+    virDomainSoundOutputType output = VIR_DOMAIN_SOUND_OUTPUT_TYPE_DEFAULT;
+
+    for (i = 0; i < def->nsounds; i++) {
+        if (output != def->sounds[i]->output) {
+            output = def->sounds[i]->output;
+            break;
+        }
+    }
+
+    /* For convenience we will copy the first configured sound output to all
+     * sound devices that doesn't have any output configured because QEMU
+     * will use only one output for all sound devices. */
+    if (output != VIR_DOMAIN_SOUND_OUTPUT_TYPE_DEFAULT) {
+        for (i = 0; i < def->nsounds; i++) {
+            if (def->sounds[i]->output == VIR_DOMAIN_SOUND_OUTPUT_TYPE_DEFAULT)
+                def->sounds[i]->output = output;
+        }
+    }
+}
+
+
 static int
 qemuDomainDefPostParseBasic(virDomainDefPtr def,
                             virCapsPtr caps,
@@ -3228,6 +3253,8 @@ qemuDomainDefPostParse(virDomainDefPtr def,
 
     if (qemuDomainDefCPUPostParse(def) < 0)
         goto cleanup;
+
+    qemuDomainDefSoundPostParse(def);
 
     ret = 0;
  cleanup:
@@ -3302,6 +3329,30 @@ qemuDomainDefValidateVideo(const virDomainDef *def)
                                        "1 MiB (1024 KiB)"));
                 return -1;
             }
+        }
+    }
+
+    return 0;
+}
+
+
+static int
+qemuDomainDefValidateSound(const virDomainDef *def)
+{
+    size_t i;
+    virDomainSoundOutputType output = VIR_DOMAIN_SOUND_OUTPUT_TYPE_DEFAULT;
+
+    for (i = 0; i < def->nsounds; i++) {
+        if (output == VIR_DOMAIN_SOUND_OUTPUT_TYPE_DEFAULT) {
+            output = def->sounds[i]->output;
+            continue;
+        }
+
+        if (output != def->sounds[i]->output) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("all sound devices must be configured to use "
+                             "the same output"));
+            return -1;
         }
     }
 
@@ -3409,6 +3460,9 @@ qemuDomainDefValidate(const virDomainDef *def,
     }
 
     if (qemuDomainDefValidateVideo(def) < 0)
+        goto cleanup;
+
+    if (qemuDomainDefValidateSound(def) < 0)
         goto cleanup;
 
     ret = 0;

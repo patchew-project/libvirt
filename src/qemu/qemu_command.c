@@ -4465,67 +4465,57 @@ qemuBuildSoundCodecStr(virDomainSoundDefPtr sound,
 }
 
 
-static void
+static int
 qemuBuildSoundAudioEnv(virCommandPtr cmd,
-                       const virDomainDef *def,
-                       virQEMUDriverConfigPtr cfg)
+                       const virDomainDef *def)
 {
+    char *envStr = NULL;
+
     if (def->nsounds == 0) {
         virCommandAddEnvString(cmd, "QEMU_AUDIO_DRV=none");
-        return;
+        return 0;
     }
 
-    if (def->ngraphics == 0) {
-        if (cfg->nogfxAllowHostAudio)
-            virCommandAddEnvPassBlockSUID(cmd, "QEMU_AUDIO_DRV", NULL);
-        else
-            virCommandAddEnvString(cmd, "QEMU_AUDIO_DRV=none");
-    } else {
-        switch (def->graphics[def->ngraphics - 1]->type) {
-        case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
-            /* If using SDL for video, then we should just let it
-             * use QEMU's host audio drivers, possibly SDL too
-             * User can set these two before starting libvirtd
-             */
-            virCommandAddEnvPassBlockSUID(cmd, "QEMU_AUDIO_DRV", NULL);
+    /* QEMU doesn't allow setting different audio output per sound device
+     * so it will always be the same for all devices. */
+    switch (def->sounds[0]->output) {
+    case VIR_DOMAIN_SOUND_OUTPUT_TYPE_DEFAULT:
+        /* The default output is used only as backward compatible way to
+         * pass-through environment variables configured before starting
+         * libvirtd. */
+        virCommandAddEnvPassBlockSUID(cmd, "QEMU_AUDIO_DRV", NULL);
+        if (def->ngraphics > 0 &&
+            def->graphics[def->ngraphics - 1]->type == VIR_DOMAIN_GRAPHICS_TYPE_SDL) {
             virCommandAddEnvPassBlockSUID(cmd, "SDL_AUDIODRIVER", NULL);
-
-            break;
-
-        case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
-            /* Unless user requested it, set the audio backend to none, to
-             * prevent it opening the host OS audio devices, since that causes
-             * security issues and might not work when using VNC.
-             */
-            if (cfg->vncAllowHostAudio)
-                virCommandAddEnvPassBlockSUID(cmd, "QEMU_AUDIO_DRV", NULL);
-            else
-                virCommandAddEnvString(cmd, "QEMU_AUDIO_DRV=none");
-
-            break;
-
-        case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
-            /* SPICE includes native support for tunnelling audio, so we
-             * set the audio backend to point at SPICE's own driver
-             */
-            virCommandAddEnvString(cmd, "QEMU_AUDIO_DRV=spice");
-
-            break;
-
-        case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
-        case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
-        case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
-            break;
         }
+        break;
+
+    case VIR_DOMAIN_SOUND_OUTPUT_TYPE_NONE:
+    case VIR_DOMAIN_SOUND_OUTPUT_TYPE_SPICE:
+    case VIR_DOMAIN_SOUND_OUTPUT_TYPE_PA:
+    case VIR_DOMAIN_SOUND_OUTPUT_TYPE_SDL:
+    case VIR_DOMAIN_SOUND_OUTPUT_TYPE_ALSA:
+    case VIR_DOMAIN_SOUND_OUTPUT_TYPE_OSS:
+        if (virAsprintf(&envStr, "QEMU_AUDIO_DRV=%s",
+                        virDomainSoundOutputTypeToString(def->sounds[0]->output)) < 0) {
+            return -1;
+        }
+        virCommandAddEnvString(cmd, envStr);
+        VIR_FREE(envStr);
+        break;
+
+    case VIR_DOMAIN_SOUND_OUTPUT_TYPE_LAST:
+        break;
     }
+
+    return 0;
 }
 
 
 static int
 qemuBuildSoundCommandLine(virCommandPtr cmd,
                           const virDomainDef *def,
-                          virQEMUCapsPtr qemuCaps,
-                          virQEMUDriverConfigPtr cfg)
+                          virQEMUCapsPtr qemuCaps)
 {
     size_t i, j;
 
@@ -4579,7 +4569,7 @@ qemuBuildSoundCommandLine(virCommandPtr cmd,
         }
     }
 
-    qemuBuildSoundAudioEnv(cmd, def, cfg);
+    qemuBuildSoundAudioEnv(cmd, def);
 
     return 0;
 }
@@ -10203,7 +10193,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (qemuBuildVideoCommandLine(cmd, def, qemuCaps) < 0)
         goto error;
 
-    if (qemuBuildSoundCommandLine(cmd, def, qemuCaps, cfg) < 0)
+    if (qemuBuildSoundCommandLine(cmd, def, qemuCaps) < 0)
         goto error;
 
     if (qemuBuildWatchdogCommandLine(cmd, def, qemuCaps) < 0)
