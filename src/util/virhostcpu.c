@@ -524,6 +524,7 @@ virHostCPUGetInfoPopulateLinux(FILE *cpuinfo,
     DIR *nodedir = NULL;
     struct dirent *nodedirent = NULL;
     int nodecpus, nodecores, nodesockets, nodethreads, offline = 0;
+    int total_online_cpus = 0;
     int threads_per_subcore = 0;
     unsigned int node;
     int ret = -1;
@@ -622,6 +623,8 @@ virHostCPUGetInfoPopulateLinux(FILE *cpuinfo,
     online_cpus_map = virHostCPUGetOnlineBitmap();
     if (!online_cpus_map)
         goto cleanup;
+
+   total_online_cpus = virBitmapCountBits(online_cpus_map);
 
     /* OK, we've parsed clock speed out of /proc/cpuinfo. Get the
      * core, node, socket, thread and topology information from /sys
@@ -746,10 +749,11 @@ virHostCPUGetInfoPopulateLinux(FILE *cpuinfo,
      * the nodeinfo structure isn't designed to carry the full topology so
      * we're going to lie about the detected topology to notify the user
      * to check the host capabilities for the actual topology. */
-    if ((*nodes *
+    if (((*nodes *
          *sockets *
          *cores *
-         *threads) != (*cpus + offline)) {
+         *threads) != (*cpus + offline)) &&
+        ((total_online_cpus * threads_per_subcore) != (*cpus + offline))) {
         *nodes = 1;
         *sockets = 1;
         *cores = *cpus + offline;
