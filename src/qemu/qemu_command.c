@@ -4465,10 +4465,62 @@ qemuBuildSoundCodecStr(virDomainSoundDefPtr sound,
 }
 
 
+static void
+qemuBuildSoundAudioEnv(virCommandPtr cmd,
+                       const virDomainDef *def,
+                       virQEMUDriverConfigPtr cfg)
+{
+    if (def->ngraphics == 0) {
+        if (cfg->nogfxAllowHostAudio)
+            virCommandAddEnvPassBlockSUID(cmd, "QEMU_AUDIO_DRV", NULL);
+        else
+            virCommandAddEnvString(cmd, "QEMU_AUDIO_DRV=none");
+    } else {
+        switch (def->graphics[def->ngraphics - 1]->type) {
+        case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
+            /* If using SDL for video, then we should just let it
+             * use QEMU's host audio drivers, possibly SDL too
+             * User can set these two before starting libvirtd
+             */
+            virCommandAddEnvPassBlockSUID(cmd, "QEMU_AUDIO_DRV", NULL);
+            virCommandAddEnvPassBlockSUID(cmd, "SDL_AUDIODRIVER", NULL);
+
+            break;
+
+        case VIR_DOMAIN_GRAPHICS_TYPE_VNC:
+            /* Unless user requested it, set the audio backend to none, to
+             * prevent it opening the host OS audio devices, since that causes
+             * security issues and might not work when using VNC.
+             */
+            if (cfg->vncAllowHostAudio)
+                virCommandAddEnvPassBlockSUID(cmd, "QEMU_AUDIO_DRV", NULL);
+            else
+                virCommandAddEnvString(cmd, "QEMU_AUDIO_DRV=none");
+
+            break;
+
+        case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
+            /* SPICE includes native support for tunnelling audio, so we
+             * set the audio backend to point at SPICE's own driver
+             */
+            virCommandAddEnvString(cmd, "QEMU_AUDIO_DRV=spice");
+
+            break;
+
+        case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
+        case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
+        case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
+            break;
+        }
+    }
+}
+
+
 static int
 qemuBuildSoundCommandLine(virCommandPtr cmd,
                           const virDomainDef *def,
-                          virQEMUCapsPtr qemuCaps)
+                          virQEMUCapsPtr qemuCaps,
+                          virQEMUDriverConfigPtr cfg)
 {
     size_t i, j;
 
@@ -4521,6 +4573,9 @@ qemuBuildSoundCommandLine(virCommandPtr cmd,
             }
         }
     }
+
+    qemuBuildSoundAudioEnv(cmd, def, cfg);
+
     return 0;
 }
 
@@ -7994,15 +8049,6 @@ qemuBuildGraphicsVNCCommandLine(virQEMUDriverConfigPtr cfg,
     if (graphics->data.vnc.keymap)
         virCommandAddArgList(cmd, "-k", graphics->data.vnc.keymap, NULL);
 
-    /* Unless user requested it, set the audio backend to none, to
-     * prevent it opening the host OS audio devices, since that causes
-     * security issues and might not work when using VNC.
-     */
-    if (cfg->vncAllowHostAudio)
-        virCommandAddEnvPassBlockSUID(cmd, "QEMU_AUDIO_DRV", NULL);
-    else
-        virCommandAddEnvString(cmd, "QEMU_AUDIO_DRV=none");
-
     return 0;
 
  error:
@@ -8244,10 +8290,6 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
     if (graphics->data.spice.keymap)
         virCommandAddArgList(cmd, "-k",
                              graphics->data.spice.keymap, NULL);
-    /* SPICE includes native support for tunnelling audio, so we
-     * set the audio backend to point at SPICE's own driver
-     */
-    virCommandAddEnvString(cmd, "QEMU_AUDIO_DRV=spice");
 
     return 0;
 
@@ -8277,13 +8319,6 @@ qemuBuildGraphicsCommandLine(virQEMUDriverConfigPtr cfg,
             virCommandAddEnvPair(cmd, "DISPLAY", graphics->data.sdl.display);
         if (graphics->data.sdl.fullscreen)
             virCommandAddArg(cmd, "-full-screen");
-
-        /* If using SDL for video, then we should just let it
-         * use QEMU's host audio drivers, possibly SDL too
-         * User can set these two before starting libvirtd
-         */
-        virCommandAddEnvPassBlockSUID(cmd, "QEMU_AUDIO_DRV", NULL);
-        virCommandAddEnvPassBlockSUID(cmd, "SDL_AUDIODRIVER", NULL);
 
         /* New QEMU has this flag to let us explicitly ask for
          * SDL graphics. This is better than relying on the
@@ -10080,11 +10115,6 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
         } else {
             virCommandAddArg(cmd, "-nographic");
         }
-
-        if (cfg->nogfxAllowHostAudio)
-            virCommandAddEnvPassBlockSUID(cmd, "QEMU_AUDIO_DRV", NULL);
-        else
-            virCommandAddEnvString(cmd, "QEMU_AUDIO_DRV=none");
     }
 
     /* Disable global config files and default devices */
@@ -10168,7 +10198,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (qemuBuildVideoCommandLine(cmd, def, qemuCaps) < 0)
         goto error;
 
-    if (qemuBuildSoundCommandLine(cmd, def, qemuCaps) < 0)
+    if (qemuBuildSoundCommandLine(cmd, def, qemuCaps, cfg) < 0)
         goto error;
 
     if (qemuBuildWatchdogCommandLine(cmd, def, qemuCaps) < 0)
