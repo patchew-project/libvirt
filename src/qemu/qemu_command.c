@@ -4470,6 +4470,11 @@ qemuBuildSoundAudioEnv(virCommandPtr cmd,
                        const virDomainDef *def,
                        virQEMUDriverConfigPtr cfg)
 {
+    if (def->nsounds == 0) {
+        virCommandAddEnvString(cmd, "QEMU_AUDIO_DRV=none");
+        return;
+    }
+
     if (def->ngraphics == 0) {
         if (cfg->nogfxAllowHostAudio)
             virCommandAddEnvPassBlockSUID(cmd, "QEMU_AUDIO_DRV", NULL);
