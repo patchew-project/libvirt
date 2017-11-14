@@ -521,6 +521,15 @@ VIR_ENUM_IMPL(virDomainSoundModel, VIR_DOMAIN_SOUND_MODEL_LAST,
               "ich9",
               "usb")
 
+VIR_ENUM_IMPL(virDomainSoundOutput, VIR_DOMAIN_SOUND_OUTPUT_TYPE_LAST,
+              "default",
+              "none",
+              "spice",
+              "pa",
+              "sdl",
+              "alsa",
+              "oss")
+
 VIR_ENUM_IMPL(virDomainKeyWrapCipherName,
               VIR_DOMAIN_KEY_WRAP_CIPHER_NAME_LAST,
               "aes",
@@ -13711,6 +13720,50 @@ virDomainSoundCodecDefParseXML(xmlNodePtr node)
 }
 
 
+static int
+virDomainSoundOutputParseXML(xmlXPathContextPtr ctxt,
+                             virDomainSoundDefPtr sound)
+{
+    int ret = -1;
+    char *type = NULL;
+    int typeVal;
+    xmlNodePtr *outputNodes = NULL;
+    int noutputs;
+
+    noutputs = virXPathNodeSet("./output", ctxt, &outputNodes);
+    if (noutputs < 0)
+        return -1;
+
+    if (noutputs > 1) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("sound device can have only one output configured"));
+        goto cleanup;
+    }
+
+    if (noutputs > 0) {
+        if (!(type = virXMLPropString(outputNodes[0], "type"))) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("sound output type must be specified"));
+            goto cleanup;
+        }
+
+        if ((typeVal = virDomainSoundOutputTypeFromString(type)) < 0) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("invalid sound output type '%s'"), type);
+            goto cleanup;
+        }
+
+        sound->output = typeVal;
+    }
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(outputNodes);
+    VIR_FREE(type);
+    return ret;
+}
+
+
 static virDomainSoundDefPtr
 virDomainSoundDefParseXML(virDomainXMLOptionPtr xmlopt,
                           xmlNodePtr node,
@@ -13764,6 +13817,9 @@ virDomainSoundDefParseXML(virDomainXMLOptionPtr xmlopt,
             VIR_FREE(codecNodes);
         }
     }
+
+    if (virDomainSoundOutputParseXML(ctxt, def) < 0)
+        goto error;
 
     if (virDomainDeviceInfoParseXML(xmlopt, node, NULL, &def->info, flags) < 0)
         goto error;
@@ -24163,6 +24219,11 @@ virDomainSoundDefFormat(virBufferPtr buf,
         virDomainSoundCodecDefFormat(&childBuf, def->codecs[i]);
 
     virDomainDeviceInfoFormat(&childBuf, &def->info, flags);
+
+    if (def->output != VIR_DOMAIN_SOUND_OUTPUT_TYPE_DEFAULT) {
+        virBufferAsprintf(&childBuf, "<output type='%s'/>\n",
+                          virDomainSoundOutputTypeToString(def->output));
+    }
 
     if (virBufferCheckError(&childBuf) < 0)
         return -1;

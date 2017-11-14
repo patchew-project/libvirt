@@ -7073,6 +7073,15 @@ qemu-kvm -net nic,model=? /dev/null
       slot, <a href="#elementsAddress">documented above</a>.
     </p>
 
+    <p>
+      <span class="since">Since 3.10.0</span> sound device can have
+      an optional <code>output</code> element which configures where
+      the audio output is connected within host. There is mandatory
+      <code>type</code> attribute where valid values are 'none' to
+      disable the audio output, 'spice', 'pa', 'sdl', 'alsa', 'oss'.
+      This might not be supported by all hypervisors.
+    </p>
+
     <h4><a id="elementsWatchdog">Watchdog device</a></h4>
 
     <p>

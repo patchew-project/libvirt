@@ -1332,12 +1332,25 @@ struct _virDomainSoundCodecDef {
     int cad;
 };
 
+typedef enum {
+    VIR_DOMAIN_SOUND_OUTPUT_TYPE_DEFAULT,
+    VIR_DOMAIN_SOUND_OUTPUT_TYPE_NONE,
+    VIR_DOMAIN_SOUND_OUTPUT_TYPE_SPICE,
+    VIR_DOMAIN_SOUND_OUTPUT_TYPE_PA,
+    VIR_DOMAIN_SOUND_OUTPUT_TYPE_SDL,
+    VIR_DOMAIN_SOUND_OUTPUT_TYPE_ALSA,
+    VIR_DOMAIN_SOUND_OUTPUT_TYPE_OSS,
+
+    VIR_DOMAIN_SOUND_OUTPUT_TYPE_LAST
+} virDomainSoundOutputType;
+
 struct _virDomainSoundDef {
     int model;
     virDomainDeviceInfo info;
 
     size_t ncodecs;
     virDomainSoundCodecDefPtr *codecs;
+    virDomainSoundOutputType output;
 };
 
 typedef enum {
@@ -3260,6 +3273,7 @@ VIR_ENUM_DECL(virDomainChrTcpProtocol)
 VIR_ENUM_DECL(virDomainChrSpicevmc)
 VIR_ENUM_DECL(virDomainSoundCodec)
 VIR_ENUM_DECL(virDomainSoundModel)
+VIR_ENUM_DECL(virDomainSoundOutput)
 VIR_ENUM_DECL(virDomainKeyWrapCipherName)
 VIR_ENUM_DECL(virDomainMemballoonModel)
 VIR_ENUM_DECL(virDomainSmbiosMode)

@@ -517,6 +517,8 @@ virDomainSmbiosModeTypeToString;
 virDomainSoundDefFree;
 virDomainSoundModelTypeFromString;
 virDomainSoundModelTypeToString;
+virDomainSoundOutputTypeFromString;
+virDomainSoundOutputTypeToString;
 virDomainStartupPolicyTypeFromString;
 virDomainStartupPolicyTypeToString;
 virDomainStateReasonFromString;

@@ -3803,6 +3803,20 @@
         <zeroOrMore>
           <ref name="codec"/>
         </zeroOrMore>
+        <optional>
+          <element name="output">
+            <attribute name="type">
+              <choice>
+                <value>none</value>
+                <value>spice</value>
+                <value>pa</value>
+                <value>sdl</value>
+                <value>alsa</value>
+                <value>oss</value>
+              </choice>
+            </attribute>
+          </element>
+        </optional>
       </interleave>
     </element>
   </define>
