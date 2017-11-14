@@ -725,6 +725,7 @@ virDomainNumaGetNodeDistance;
 virDomainNumaGetNodeMemoryAccessMode;
 virDomainNumaGetNodeMemorySize;
 virDomainNumaNew;
+virDomainNumaNodeDistanceSpecified;
 virDomainNumaSetNodeCount;
 virDomainNumaSetNodeCpumask;
 virDomainNumaSetNodeDistance;
