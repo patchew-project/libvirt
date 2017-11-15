@@ -10201,74 +10201,75 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
 {
     virBuffer cmd = VIR_BUFFER_INITIALIZER;
 
-    if (qemuDomainIsPSeries(def)) {
-        if (serial->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL &&
-            serial->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_SPAPRVIO) {
-            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_SPAPR_VTY)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("spapr-vty not supported in this QEMU binary"));
-                goto error;
-            }
-
-            virBufferAsprintf(&cmd, "spapr-vty,chardev=char%s",
-                              serial->info.alias);
-        }
-    } else {
-        switch ((virDomainChrSerialTargetType) serial->targetType) {
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_USB:
-            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_USB_SERIAL)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("usb-serial is not supported in this QEMU binary"));
-                goto error;
-            }
-
-            if (serial->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
-                serial->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_USB) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("usb-serial requires address of usb type"));
-                goto error;
-            }
-            break;
-
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
-            if (serial->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
-                serial->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_ISA) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("isa-serial requires address of isa type"));
-                goto error;
-            }
-            break;
-
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PCI:
-            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_PCI_SERIAL)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("pci-serial is not supported with this QEMU binary"));
-                goto error;
-            }
-
-            if (serial->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
-                serial->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("pci-serial requires address of pci type"));
-                goto error;
-            }
-            break;
-
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
-            /* Except from _LAST, which is just a guard value and will never
-             * be used, all of the above are platform devices, which means
-             * qemuBuildSerialCommandLine() will have taken the appropriate
-             * branch and we will not have ended up here */
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("Invalid target type for serial device"));
+    switch ((virDomainChrSerialTargetType) serial->targetType) {
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_USB:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_USB_SERIAL)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("usb-serial is not supported in this QEMU binary"));
             goto error;
         }
 
-        virBufferAsprintf(&cmd, "%s,chardev=char%s,id=%s",
-                          virDomainChrSerialTargetTypeToString(serial->targetType),
-                          serial->info.alias, serial->info.alias);
+        if (serial->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
+            serial->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_USB) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("usb-serial requires address of usb type"));
+            goto error;
+        }
+        break;
+
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
+        if (serial->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
+            serial->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_ISA) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("isa-serial requires address of isa type"));
+            goto error;
+        }
+        break;
+
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PCI:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_PCI_SERIAL)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("pci-serial is not supported with this QEMU binary"));
+            goto error;
+        }
+
+        if (serial->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
+            serial->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("pci-serial requires address of pci type"));
+            goto error;
+        }
+        break;
+
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_SPAPR_VTY)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("spapr-vty not supported in this QEMU binary"));
+            goto error;
+        }
+
+        if (serial->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
+            serial->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_SPAPRVIO) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("spapr-vty requires address of spapr-vio type"));
+            goto error;
+        }
+        break;
+
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
+        /* Except from _LAST, which is just a guard value and will never
+         * be used, all of the above are platform devices, which means
+         * qemuBuildSerialCommandLine() will have taken the appropriate
+         * branch and we will not have ended up here */
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Invalid target type for serial device"));
+        goto error;
     }
+
+    virBufferAsprintf(&cmd, "%s,chardev=char%s,id=%s",
+                      virDomainChrSerialTargetTypeToString(serial->targetType),
+                      serial->info.alias, serial->info.alias);
 
     if (qemuBuildDeviceAddressStr(&cmd, def, &serial->info, qemuCaps) < 0)
         goto error;
