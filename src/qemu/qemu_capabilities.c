@@ -444,6 +444,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "vxhs",
               "virtio-blk.num-queues",
               "machine.pseries.resize-hpt",
+              "drive-l2-cache-size",
     );
 
 
@@ -3193,6 +3194,7 @@ static struct virQEMUCapsCommandLineProps virQEMUCapsCommandLine[] = {
     { "machine", "loadparm", QEMU_CAPS_LOADPARM },
     { "vnc", "vnc", QEMU_CAPS_VNC_MULTI_SERVERS },
     { "chardev", "reconnect", QEMU_CAPS_CHARDEV_RECONNECT },
+    { "drive", "l2-cache-size", QEMU_CAPS_DRIVE_L2_CACHE_SIZE },
 };
 
 static int
@@ -4772,6 +4774,9 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     /* Since 2.4.50 ARM virt machine supports gic-version option */
     if (qemuCaps->version >= 2004050)
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_MACH_VIRT_GIC_VERSION);
+
+    if (qemuCaps->version >= 2005000)
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_DRIVE_L2_CACHE_SIZE);
 
     /* no way to query if -machine kernel_irqchip supports split */
     if (qemuCaps->version >= 2006000)
