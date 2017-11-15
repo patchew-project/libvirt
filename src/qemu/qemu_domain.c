@@ -4036,6 +4036,19 @@ qemuDomainControllerDefPostParse(virDomainControllerDefPtr cont,
     return 0;
 }
 
+static int
+qemuDomainChrDefPostParse(virDomainChrDefPtr chr,
+                          const virDomainDef *def)
+{
+    /* set the default console type for S390 arches */
+    if (chr->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_CONSOLE &&
+        chr->targetType == VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_NONE &&
+        ARCH_IS_S390(def->os.arch)) {
+        chr->targetType = VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_VIRTIO;
+    }
+
+    return 0;
+}
 
 static int
 qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
@@ -4096,13 +4109,6 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
         }
     }
 
-    /* set the default console type for S390 arches */
-    if (dev->type == VIR_DOMAIN_DEVICE_CHR &&
-        dev->data.chr->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_CONSOLE &&
-        dev->data.chr->targetType == VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_NONE &&
-        ARCH_IS_S390(def->os.arch))
-        dev->data.chr->targetType = VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_VIRTIO;
-
     /* clear auto generated unix socket path for inactive definitions */
     if ((parseFlags & VIR_DOMAIN_DEF_PARSE_INACTIVE) &&
         dev->type == VIR_DOMAIN_DEVICE_CHR) {
@@ -4153,6 +4159,11 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
     if (dev->type == VIR_DOMAIN_DEVICE_SHMEM &&
         qemuDomainShmemDefPostParse(dev->data.shmem) < 0)
         goto cleanup;
+
+    if (dev->type == VIR_DOMAIN_DEVICE_CHR &&
+        qemuDomainChrDefPostParse(dev->data.chr, def) < 0) {
+        goto cleanup;
+    }
 
     ret = 0;
 
