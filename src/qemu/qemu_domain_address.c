@@ -784,6 +784,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_USB:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR:
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PL011:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
             return 0;

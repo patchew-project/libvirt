@@ -3513,6 +3513,15 @@ qemuDomainChrDefValidate(const virDomainChrDef *dev,
         return -1;
     }
 
+    if (dev->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL &&
+        dev->targetType == VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PL011 &&
+        !qemuDomainIsVirt(def)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("pl011 serial devices are only supported on "
+                         "mach-virt guests"));
+        return -1;
+    }
+
     return 0;
 }
 
@@ -4071,6 +4080,8 @@ qemuDomainChrDefPostParse(virDomainChrDefPtr chr,
             chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA;
         } else if (qemuDomainIsPSeries(def)) {
             chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR;
+        } else if (qemuDomainIsVirt(def)) {
+            chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PL011;
         }
     }
 
@@ -4985,6 +4996,7 @@ qemuDomainDefFormatBufInternal(virQEMUDriverPtr driver,
             if (flags & VIR_DOMAIN_XML_MIGRATABLE) {
                 switch ((virDomainChrSerialTargetType) serial->targetType) {
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR:
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PL011:
                     serial->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE;
                     break;
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
