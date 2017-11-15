@@ -1338,6 +1338,13 @@ qemuCheckDiskConfig(virDomainDiskDefPtr disk,
         return -1;
     }
 
+    if (disk->l2_cache_size &&
+        disk->src->format != VIR_STORAGE_FILE_QCOW2) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Only 'qcow2' format supports the l2-cache-size"));
+        return -1;
+    }
+
     if (qemuCaps) {
         if (disk->serial &&
             virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_SERIAL)) {
@@ -1389,6 +1396,13 @@ qemuCheckDiskConfig(virDomainDiskDefPtr disk,
             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_AIO)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("disk aio mode not supported with this QEMU binary"));
+            return -1;
+        }
+
+        if (disk->l2_cache_size &&
+            !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_L2_CACHE_SIZE)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("'l2-cache-size' isn't supported with this QEMU binary"));
             return -1;
         }
     }
@@ -1724,6 +1738,10 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
 
         virBufferAsprintf(&opt, ",detect-zeroes=%s",
                           virDomainDiskDetectZeroesTypeToString(detect_zeroes));
+    }
+
+    if (disk->l2_cache_size) {
+        virBufferAsprintf(&opt, ",l2-cache-size=%u", disk->l2_cache_size);
     }
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_MONITOR_JSON)) {

@@ -1864,6 +1864,11 @@
           <ref name="positiveInteger"/>
         </attribute>
       </optional>
+      <optional>
+        <attribute name='l2-cache-size'>
+          <ref name="positiveInteger"/>
+        </attribute>
+      </optional>
       <ref name="virtioOptions"/>
       <empty/>
     </element>

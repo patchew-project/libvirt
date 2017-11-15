@@ -2513,6 +2513,11 @@
     &lt;/backingStore&gt;
     &lt;target dev='vdd' bus='virtio'/&gt;
   &lt;/disk&gt;
+  &lt;disk type='file' device='disk'&gt;
+    &lt;driver name='qemu' type='qcow2' l2-cache-size='2097152'/&gt;
+    &lt;source file='/var/lib/libvirt/images/domain.qcow2'/&gt;
+    &lt;target dev='vde' bus='virtio'/&gt;
+  &lt;/disk&gt;
 &lt;/devices&gt;
 ...</pre>
 
@@ -3193,6 +3198,12 @@
           <li>
             The optional <code>queues</code> attribute specifies the number of
             virt queues for virtio-blk. (<span class="since">Since 3.9.0</span>)
+          </li>
+          <li>
+            The optional <code>l2-cache-size</code> attribute specifies the
+            maximum size of the L2 table cache for qcow2 image. The size must
+            be a multiple of the cluster size.(QEMU currently defaults to 64
+            KB clusters)(<span class="since">Since 3.10.0</span>)
           </li>
           <li>
           For virtio disks,

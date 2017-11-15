@@ -669,6 +669,7 @@ struct _virDomainDiskDef {
     int detect_zeroes; /* enum virDomainDiskDetectZeroes */
     char *domain_name; /* backend domain name */
     unsigned int queues;
+    unsigned int l2_cache_size;
     virDomainVirtioOptionsPtr virtio;
 };
 

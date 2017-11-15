@@ -894,6 +894,8 @@ mymain(void)
             QEMU_CAPS_DRIVE_BOOT, QEMU_CAPS_VIRTIO_BLK_SCSI);
     DO_TEST("disk-virtio-drive-queues",
             QEMU_CAPS_VIRTIO_BLK_NUM_QUEUES);
+    DO_TEST("disk-drive-l2-cache-size",
+            QEMU_CAPS_DRIVE_L2_CACHE_SIZE);
     DO_TEST("disk-drive-boot-disk",
             QEMU_CAPS_DRIVE_BOOT);
     DO_TEST("disk-drive-boot-cdrom",

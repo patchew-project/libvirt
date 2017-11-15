@@ -9082,6 +9082,15 @@ virDomainDiskDefDriverParseXML(virDomainDiskDefPtr def,
     }
     VIR_FREE(tmp);
 
+    if ((tmp = virXMLPropString(cur, "l2-cache-size")) &&
+        virStrToLong_uip(tmp, NULL, 10, &def->l2_cache_size) < 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("'l2-cache-size' attribute must be positive number: %s"),
+                       tmp);
+        goto cleanup;
+    }
+    VIR_FREE(tmp);
+
     ret = 0;
 
  cleanup:
@@ -22495,6 +22504,8 @@ virDomainDiskDefFormat(virBufferPtr buf,
         virBufferAsprintf(&driverBuf, " detect_zeroes='%s'", detect_zeroes);
     if (def->queues)
         virBufferAsprintf(&driverBuf, " queues='%u'", def->queues);
+    if (def->l2_cache_size)
+        virBufferAsprintf(&driverBuf, " l2-cache-size='%u'", def->l2_cache_size);
 
     virDomainVirtioOptionsFormat(&driverBuf, def->virtio);
 
