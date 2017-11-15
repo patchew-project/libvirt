@@ -10249,6 +10249,15 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
         }
         break;
 
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP:
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLPLM:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SCLP_S390)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("sclp/sclplm console requires QEMU to support s390-sclp"));
+            return -1;
+        }
+        break;
+
     case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PL011:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:

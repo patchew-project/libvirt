@@ -3522,6 +3522,16 @@ qemuDomainChrDefValidate(const virDomainChrDef *dev,
         return -1;
     }
 
+    if (dev->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL &&
+        (dev->targetType == VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP ||
+         dev->targetType == VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLPLM) &&
+        !ARCH_IS_S390(def->os.arch)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("sclp/sclplm serial devices are only supported on "
+                         "s390 and s390x guests"));
+        return -1;
+    }
+
     return 0;
 }
 
@@ -4082,6 +4092,8 @@ qemuDomainChrDefPostParse(virDomainChrDefPtr chr,
             chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR;
         } else if (qemuDomainIsVirt(def)) {
             chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PL011;
+        } else if (ARCH_IS_S390(def->os.arch)) {
+            chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP;
         }
     }
 
@@ -5002,6 +5014,8 @@ qemuDomainDefFormatBufInternal(virQEMUDriverPtr driver,
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PCI:
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_USB:
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP:
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLPLM:
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
                     /* Nothing to do */

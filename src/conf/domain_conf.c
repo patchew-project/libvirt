@@ -452,6 +452,8 @@ VIR_ENUM_IMPL(virDomainChrSerialTarget,
               "pci-serial",
               "spapr-vty",
               "pl011",
+              "sclpconsole",
+              "sclplmconsole",
 );
 
 VIR_ENUM_IMPL(virDomainChrChannelTarget,
@@ -4045,6 +4047,8 @@ virDomainDefAddConsoleCompat(virDomainDefPtr def)
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PL011:
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP:
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLPLM:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE: {
 
             /* Create a stub console to match the serial port.

@@ -2046,6 +2046,21 @@ mymain(void)
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_VIRTIO_CCW,
             QEMU_CAPS_VIRTIO_S390);
+    DO_TEST("s390-serial",
+            QEMU_CAPS_NODEFCONFIG,
+            QEMU_CAPS_VIRTIO_CCW,
+            QEMU_CAPS_VIRTIO_S390,
+            QEMU_CAPS_SCLP_S390);
+    DO_TEST("s390-serial-2",
+            QEMU_CAPS_NODEFCONFIG,
+            QEMU_CAPS_VIRTIO_CCW,
+            QEMU_CAPS_VIRTIO_S390,
+            QEMU_CAPS_SCLP_S390);
+    DO_TEST("s390-serial-console",
+            QEMU_CAPS_NODEFCONFIG,
+            QEMU_CAPS_VIRTIO_CCW,
+            QEMU_CAPS_VIRTIO_S390,
+            QEMU_CAPS_SCLP_S390);
 
     DO_TEST("ppc-dtb",
             QEMU_CAPS_KVM,

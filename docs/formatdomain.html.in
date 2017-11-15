@@ -6528,8 +6528,9 @@ qemu-kvm -net nic,model=? /dev/null
       <code>type</code> attribute <span class="since">since 1.0.2</span>
       which can be used to pick between <code>isa-serial</code>,
       <code>usb-serial</code>, <code>pci-serial</code> and,
-      <span class="since">since 3.10.0</span>, <code>spapr-vty</code> and
-      <code>pl011</code>.
+      <span class="since">since 3.10.0</span>, <code>spapr-vty</code>,
+      <code>pl011</code>, <code>sclpconsole</code> and
+      <code>sclplmconsole</code>.
       Some values are not compatible with all architecture and machine types;
       if the value is missing altogether, libvirt will try to pick an
       appropriate default.

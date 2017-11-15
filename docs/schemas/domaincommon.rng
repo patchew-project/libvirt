@@ -3585,6 +3585,8 @@
         <value>isa-serial</value>
         <value>usb-serial</value>
         <value>pci-serial</value>
+        <value>sclpconsole</value>
+        <value>sclplmconsole</value>
         <value>spapr-vty</value>
         <value>pl011</value>
       </choice>
