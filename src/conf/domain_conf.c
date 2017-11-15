@@ -446,6 +446,7 @@ VIR_ENUM_IMPL(virDomainChrDeviceState, VIR_DOMAIN_CHR_DEVICE_STATE_LAST,
 
 VIR_ENUM_IMPL(virDomainChrSerialTarget,
               VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST,
+              "none",
               "isa-serial",
               "usb-serial",
               "pci-serial")
@@ -4014,7 +4015,7 @@ virDomainDefAddConsoleCompat(virDomainDefPtr def)
 
             /* modify it to be a serial port */
             def->serials[0]->deviceType = VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL;
-            def->serials[0]->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA;
+            def->serials[0]->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE;
             def->serials[0]->target.port = 0;
         } else {
             /* if the console source doesn't match */
@@ -4038,7 +4039,8 @@ virDomainDefAddConsoleCompat(virDomainDefPtr def)
                def->serials[0]->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL) {
 
         switch ((virDomainChrSerialTargetType) def->serials[0]->targetType) {
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA: {
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE: {
 
             /* Create a stub console to match the serial port.
              * console[0] either does not exist
@@ -11479,7 +11481,7 @@ virDomainChrDefaultTargetType(int devtype)
         return VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_NONE;
 
     case VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL:
-        return VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA;
+        return VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE;
 
     case VIR_DOMAIN_CHR_DEVICE_TYPE_PARALLEL:
     case VIR_DOMAIN_CHR_DEVICE_TYPE_LAST:
