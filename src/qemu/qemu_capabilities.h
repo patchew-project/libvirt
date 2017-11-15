@@ -451,7 +451,7 @@ bool virQEMUCapsGet(virQEMUCapsPtr qemuCaps,
                     virQEMUCapsFlags flag);
 
 bool virQEMUCapsHasPCIMultiBus(virQEMUCapsPtr qemuCaps,
-                               virDomainDefPtr def);
+                               const virDomainDef *def);
 
 bool virQEMUCapsSupportsVmport(virQEMUCapsPtr qemuCaps,
                                const virDomainDef *def);
