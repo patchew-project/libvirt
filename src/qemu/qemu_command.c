@@ -2070,6 +2070,10 @@ qemuBuildDriveDevStr(const virDomainDef *def,
             virBufferAsprintf(&opt, ",num-queues=%u", disk->queues);
         }
 
+        if (disk->src->shared &&
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_SHARE_RW))
+            virBufferAddLit(&opt, ",share-rw=on");
+
         if (qemuBuildVirtioOptionsStr(&opt, disk->virtio, qemuCaps) < 0)
             goto error;
 
