@@ -1189,6 +1189,7 @@ int virFDStreamConnectUNIX(virStreamPtr st,
             continue;
         }
 
+        virReportSystemError(errno, "%s", _("Unable to connect to UNIX socket"));
         goto error;
     }
 
