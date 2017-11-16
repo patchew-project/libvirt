@@ -16386,6 +16386,8 @@ qemuDomainOpenChannel(virDomainPtr dom,
     size_t i;
     virDomainChrDefPtr chr = NULL;
     qemuDomainObjPrivatePtr priv;
+    virQEMUDriverPtr driver = dom->conn->privateData;
+    bool job = false;
 
     virCheckFlags(VIR_DOMAIN_CHANNEL_FORCE, -1);
 
@@ -16394,6 +16396,10 @@ qemuDomainOpenChannel(virDomainPtr dom,
 
     if (virDomainOpenChannelEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+        goto cleanup;
+    job = true;
 
     if (!virDomainObjIsActive(vm)) {
         virReportError(VIR_ERR_OPERATION_INVALID,
@@ -16432,11 +16438,13 @@ qemuDomainOpenChannel(virDomainPtr dom,
         goto cleanup;
     }
 
+    virObjectUnlock(vm);
     /* handle mutually exclusive access to channel devices */
     ret = virChrdevOpen(priv->devs,
                         chr->source,
                         st,
                         (flags & VIR_DOMAIN_CHANNEL_FORCE) != 0);
+    virObjectLock(vm);
 
     if (ret == 1) {
         virReportError(VIR_ERR_OPERATION_FAILED, "%s",
@@ -16445,6 +16453,9 @@ qemuDomainOpenChannel(virDomainPtr dom,
     }
 
  cleanup:
+    if (job)
+        qemuDomainObjEndJob(driver, vm);
+
     virDomainObjEndAPI(&vm);
     return ret;
 }
