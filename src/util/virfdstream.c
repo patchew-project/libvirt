@@ -1176,6 +1176,11 @@ int virFDStreamConnectUNIX(virStreamPtr st,
             goto error;
     }
 
+    if (virSetNonBlock(fd) < 0) {
+        virReportSystemError(errno, "%s", _("Unable to set non-blocking mode"));
+        goto error;
+    }
+
     if (virTimeBackOffStart(&timeout, 1, 3*1000 /* ms */) < 0)
         goto error;
     while (virTimeBackOffWait(&timeout)) {
@@ -1189,7 +1194,19 @@ int virFDStreamConnectUNIX(virStreamPtr st,
             continue;
         }
 
+        if (errno == EINPROGRESS || errno == EAGAIN) {
+            if (virConnectWait(fd, 30 * 1000) < 0)
+                goto error;
+
+            break;
+        }
+
         virReportSystemError(errno, "%s", _("Unable to connect to UNIX socket"));
+        goto error;
+    }
+
+    if (virSetBlocking(fd, true) < 0) {
+        virReportSystemError(errno, "%s", _("Unable to set blocking mode"));
         goto error;
     }
 

@@ -80,6 +80,7 @@
 #include "nonblocking.h"
 #include "virprocess.h"
 #include "virstring.h"
+#include "virtime.h"
 #include "virutil.h"
 
 verify(sizeof(gid_t) <= sizeof(unsigned int) &&
@@ -193,6 +194,64 @@ int virSetSockReuseAddr(int fd, bool fatal)
     return ret;
 }
 #endif
+
+int
+virConnectWait(int fd, unsigned long long timeout)
+{
+    struct pollfd fds[1];
+    unsigned long long then;
+    unsigned long long now;
+    int rc;
+    int optval;
+    socklen_t optlen = sizeof(optval);
+
+    fds[0].fd = fd;
+    fds[0].events = POLLOUT;
+    fds[0].revents = 0;
+
+    if (virTimeMillisNow(&now) < 0)
+        return -1;
+
+    then = now + timeout;
+
+ retry:
+    rc = poll(fds, 1, then - now);
+
+    if (rc < 0 && (errno == EAGAIN || errno == EINTR)) {
+        if (virTimeMillisNow(&now) < 0)
+            return -1;
+
+        if (now >= then) {
+            virReportError(VIR_ERR_OPERATION_TIMEOUT, "%s",
+                           _("Connection timeout expired"));
+            return -1;
+        }
+
+        goto retry;
+    }
+
+    if (rc < 0) {
+        virReportSystemError(errno, "%s", _("Unable to connect to socket"));
+        return -1;
+    } else if (rc == 0) {
+        virReportError(VIR_ERR_OPERATION_TIMEOUT, "%s",
+                       _("Connection timeout expired"));
+        return -1;
+    }
+
+    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("Cannot check socket connection status"));
+        return -1;
+    }
+
+    if (optval != 0) {
+        virReportSystemError(optval, "%s", _("Unable to connect to socket"));
+        return -1;
+    }
+
+    return 0;
+}
 
 int
 virPipeReadUntilEOF(int outfd, int errfd,
