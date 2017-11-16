@@ -25,6 +25,11 @@ INCLUDES = \
 
 WARN_CFLAGS += $(STRICT_FRAME_LIMIT_CFLAGS)
 
+AM_CFLAGS = \
+	$(WARN_CFLAGS) \
+	$(COVERAGE_CFLAGS) \
+	$(NULL)
+
 AM_LDFLAGS = \
 	$(RELRO_LDFLAGS) \
 	$(NO_INDIRECT_LDFLAGS) \
@@ -182,8 +187,8 @@ virt_host_validate_LDADD = \
 		$(NULL)
 
 virt_host_validate_CFLAGS = \
+		$(AM_CFLAGS) \
 		$(LIBXML_CFLAGS) \
-		$(WARN_CFLAGS) \
 		$(PIE_CFLAGS) \
 		$(COVERAGE_CFLAGS) \
 		$(NULL)
@@ -208,8 +213,8 @@ virt_login_shell_LDADD = \
 
 virt_login_shell_CFLAGS = \
 		-DLIBVIRT_SETUID_RPC_CLIENT \
+		$(AM_CFLAGS) \
 		$(LIBXML_CFLAGS) \
-		$(WARN_CFLAGS) \
 		$(PIE_CFLAGS) \
 		$(COVERAGE_CFLAGS)
 
@@ -241,7 +246,7 @@ virsh_LDADD = \
 		../src/libvirt-qemu.la \
 		libvirt_shell.la
 virsh_CFLAGS = \
-		$(WARN_CFLAGS) \
+		$(AM_CFLAGS) \
 		$(PIE_CFLAGS) \
 		$(COVERAGE_CFLAGS) \
 		$(LIBXML_CFLAGS) \
@@ -263,7 +268,7 @@ virt_admin_LDADD = \
 		$(LIBXML_LIBS) \
 		$(NULL)
 virt_admin_CFLAGS = \
-		$(WARN_CFLAGS) \
+		$(AM_CFLAGS) \
 		$(PIE_CFLAGS) \
 		$(COVERAGE_CFLAGS) \
 		$(LIBXML_CFLAGS) \
@@ -502,9 +507,7 @@ nss_libnss_libvirt_impl_la_SOURCES = \
 nss_libnss_libvirt_impl_la_CFLAGS = \
 	-DLIBVIRT_NSS \
 	$(AM_CFLAGS) \
-	$(WARN_CFLAGS) \
 	$(PIE_CFLAGS) \
-	$(COVERAGE_CFLAGS) \
 	$(LIBXML_CFLAGS)
 
 nss_libnss_libvirt_impl_la_LIBADD = \
@@ -532,9 +535,7 @@ nss_libnss_libvirt_guest_impl_la_CFLAGS = \
 	-DLIBVIRT_NSS \
 	-DLIBVIRT_NSS_GUEST \
 	$(AM_CFLAGS) \
-	$(WARN_CFLAGS) \
 	$(PIE_CFLAGS) \
-	$(COVERAGE_CFLAGS) \
 	$(LIBXML_CFLAGS)
 
 nss_libnss_libvirt_guest_impl_la_LIBADD = \
