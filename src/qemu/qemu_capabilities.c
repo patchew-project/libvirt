@@ -444,6 +444,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "vxhs",
               "virtio-blk.num-queues",
               "machine.pseries.resize-hpt",
+              "drive.share-rw",
     );
 
 
@@ -1719,6 +1720,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsSCSIDisk[] = {
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsIDEDrive[] = {
     { "wwn", QEMU_CAPS_IDE_DRIVE_WWN },
+    { "share-rw", QEMU_CAPS_DRIVE_SHARE_RW },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsPiix4PM[] = {
