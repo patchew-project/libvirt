@@ -3234,7 +3234,7 @@ qemuProcessUpdateDevices(virQEMUDriverPtr driver,
             if (!virStringListHasString(qemuDevices, *tmp) &&
                 virDomainDefFindDevice(vm->def, *tmp, &dev, false) == 0 &&
                 qemuDomainRemoveDevice(driver, vm, &dev) < 0) {
-                goto cleanup;
+                VIR_WARN("failed to remove device %s at reconnect process", *tmp);
             }
             tmp++;
         }
