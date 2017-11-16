@@ -363,12 +363,15 @@ vshCmddefCheckInternals(const vshCmdDef *cmd)
 
         if (i > 63)
             return -1; /* too many options */
-        if (opt->type == VSH_OT_BOOL) {
+
+        switch (opt->type) {
+        case VSH_OT_STRING:
+        case VSH_OT_BOOL:
             if (opt->flags & VSH_OFLAG_REQ)
                 return -1; /* bool options can't be mandatory */
-            continue;
-        }
-        if (opt->type == VSH_OT_ALIAS) {
+            break;
+
+        case VSH_OT_ALIAS: {
             size_t j;
             char *name = (char *)opt->help; /* cast away const */
             char *p;
@@ -391,10 +394,22 @@ vshCmddefCheckInternals(const vshCmdDef *cmd)
             }
             if (!cmd->opts[j].name)
                 return -1; /* alias option must map to a later option name */
-            continue;
         }
-        if (opt->type == VSH_OT_ARGV && cmd->opts[i + 1].name)
-            return -1; /* argv option must be listed last */
+            break;
+        case VSH_OT_ARGV:
+            if (cmd->opts[i + 1].name)
+                return -1; /* argv option must be listed last */
+            break;
+
+        case VSH_OT_DATA:
+            if (!(opt->flags & VSH_OFLAG_REQ))
+                return -1; /* OT_DATA should always be required. */
+            break;
+
+        case VSH_OT_INT:
+            /* nada */
+            break;
+        }
     }
     return 0;
 }
