@@ -756,6 +756,28 @@ int qemuMonitorMigrateCancel(qemuMonitorPtr mon);
 int qemuMonitorGetDumpGuestMemoryCapability(qemuMonitorPtr mon,
                                             const char *capability);
 
+typedef enum {
+    QEMU_MONITOR_DUMP_STATUS_NONE,
+    QEMU_MONITOR_DUMP_STATUS_ACTIVE,
+    QEMU_MONITOR_DUMP_STATUS_COMPLETED,
+    QEMU_MONITOR_DUMP_STATUS_FAILED,
+
+    QEMU_MONITOR_DUMP_STATUS_LAST,
+} qemuMontiorDumpStatus;
+
+VIR_ENUM_DECL(qemuMonitorDumpStatus)
+
+typedef struct _qemuMonitorDumpStats qemuMonitorDumpStats;
+typedef qemuMonitorDumpStats *qemuMonitorDumpStatsPtr;
+struct _qemuMonitorDumpStats {
+    int status; /* qemuMonitorDumpStatus */
+    unsigned long long completed; /* bytes written */
+    unsigned long long total; /* total bytes to be written */
+};
+
+int qemuMonitorQueryDump(qemuMonitorPtr mon,
+                         qemuMonitorDumpStatsPtr stats);
+
 int qemuMonitorDumpToFd(qemuMonitorPtr mon,
                         int fd,
                         const char *dumpformat);

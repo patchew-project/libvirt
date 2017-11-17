@@ -202,6 +202,10 @@ VIR_ENUM_IMPL(qemuMonitorBlockIOStatus,
               QEMU_MONITOR_BLOCK_IO_STATUS_LAST,
               "ok", "failed", "nospace")
 
+VIR_ENUM_IMPL(qemuMonitorDumpStatus,
+              QEMU_MONITOR_DUMP_STATUS_LAST,
+              "none", "active", "completed", "failed")
+
 char *
 qemuMonitorEscapeArg(const char *in)
 {
@@ -2739,6 +2743,20 @@ qemuMonitorMigrateCancel(qemuMonitorPtr mon)
         return qemuMonitorJSONMigrateCancel(mon);
     else
         return qemuMonitorTextMigrateCancel(mon);
+}
+
+
+int
+qemuMonitorQueryDump(qemuMonitorPtr mon,
+                     qemuMonitorDumpStatsPtr stats)
+{
+    QEMU_CHECK_MONITOR(mon);
+
+    /* No capability is supported without JSON monitor */
+    if (!mon->json)
+        return 0;
+
+    return qemuMonitorJSONQueryDump(mon, stats);
 }
 
 
