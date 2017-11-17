@@ -3788,7 +3788,7 @@ qemuDumpToFd(virQEMUDriverPtr driver,
         }
     }
 
-    ret = qemuMonitorDumpToFd(priv->mon, fd, dumpformat);
+    ret = qemuMonitorDumpToFd(priv->mon, fd, dumpformat, false);
 
  cleanup:
     ignore_value(qemuDomainObjExitMonitor(driver, vm));

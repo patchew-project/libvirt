@@ -780,7 +780,8 @@ int qemuMonitorQueryDump(qemuMonitorPtr mon,
 
 int qemuMonitorDumpToFd(qemuMonitorPtr mon,
                         int fd,
-                        const char *dumpformat);
+                        const char *dumpformat,
+                        bool detach);
 
 int qemuMonitorGraphicsRelocate(qemuMonitorPtr mon,
                                 int type,
