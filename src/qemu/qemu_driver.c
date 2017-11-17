@@ -3750,6 +3750,73 @@ qemuDomainManagedSaveRemove(virDomainPtr dom, unsigned int flags)
 }
 
 
+/**
+ * qemuDumpWaitForCompletion:
+ * @driver: qemu driver data
+ * @vm: domain object
+ * @asyncJob: async job id
+ *
+ * If the query dump capability exists, then it's possible to start a
+ * guest memory dump operation using a thread via a 'detach' qualifier
+ * to the dump guest memory command. This allows the async check if the
+ * dump is done.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+static int
+qemuDumpWaitForCompletion(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm,
+                          qemuDomainAsyncJob asyncJob)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    qemuDomainJobInfoPtr jobInfo = priv->job.current;
+    qemuMonitorDumpStats stats;
+    struct timespec ts = { .tv_sec = 0, .tv_nsec = 50 * 1000 * 1000ull };
+    int rv;
+
+    do {
+        if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
+            return -1;
+
+        rv = qemuMonitorQueryDump(priv->mon, &stats);
+
+        if (qemuDomainObjExitMonitor(driver, vm) < 0 || rv < 0)
+            return -1;
+
+        /* Save the stats in the migration stats so that a GetJobInfo
+         * will be able to compute the completion percentage */
+        jobInfo->stats.ram_total = stats.total;
+        jobInfo->stats.ram_remaining = stats.total - stats.completed;
+        jobInfo->stats.ram_transferred = stats.completed;
+        switch (stats.status) {
+        case QEMU_MONITOR_DUMP_STATUS_NONE:
+        case QEMU_MONITOR_DUMP_STATUS_FAILED:
+        case QEMU_MONITOR_DUMP_STATUS_LAST:
+            virReportError(VIR_ERR_OPERATION_FAILED,
+                           _("dump query failed, status=%d"), stats.status);
+            return -1;
+            break;
+
+        case QEMU_MONITOR_DUMP_STATUS_ACTIVE:
+            jobInfo->status = QEMU_DOMAIN_JOB_STATUS_ACTIVE;
+            VIR_DEBUG("dump active, bytes written='%llu' remaining='%llu'",
+                      stats.completed, stats.total - stats.completed);
+            break;
+
+        case QEMU_MONITOR_DUMP_STATUS_COMPLETED:
+            jobInfo->status = QEMU_DOMAIN_JOB_STATUS_COMPLETED;
+            VIR_DEBUG("dump completed, bytes written='%llu'", stats.completed);
+            break;
+        }
+        virObjectUnlock(vm);
+        nanosleep(&ts, NULL);
+        virObjectLock(vm);
+    } while (stats.status == QEMU_MONITOR_DUMP_STATUS_ACTIVE);
+
+    return 0;
+}
+
+
 static int
 qemuDumpToFd(virQEMUDriverPtr driver,
              virDomainObjPtr vm,
@@ -3758,6 +3825,7 @@ qemuDumpToFd(virQEMUDriverPtr driver,
              const char *dumpformat)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    bool detach = false;
     int ret = -1;
 
     if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_DUMP_GUEST_MEMORY)) {
@@ -3766,10 +3834,13 @@ qemuDumpToFd(virQEMUDriverPtr driver,
         return -1;
     }
 
+    detach = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_QUERY_DUMP);
+
     if (qemuSecuritySetImageFDLabel(driver->securityManager, vm->def, fd) < 0)
         return -1;
 
-    VIR_FREE(priv->job.current);
+    if (!detach)
+        VIR_FREE(priv->job.current);
     priv->job.dump_memory_only = true;
 
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
@@ -3784,15 +3855,20 @@ qemuDumpToFd(virQEMUDriverPtr driver,
                              "for this QEMU binary"),
                            dumpformat);
             ret = -1;
+            ignore_value(qemuDomainObjExitMonitor(driver, vm));
             goto cleanup;
         }
     }
 
-    ret = qemuMonitorDumpToFd(priv->mon, fd, dumpformat, false);
+    ret = qemuMonitorDumpToFd(priv->mon, fd, dumpformat, detach);
+
+    if ((qemuDomainObjExitMonitor(driver, vm) < 0) || ret < 0)
+        goto cleanup;
+
+    if (detach)
+        ret = qemuDumpWaitForCompletion(driver, vm, asyncJob);
 
  cleanup:
-    ignore_value(qemuDomainObjExitMonitor(driver, vm));
-
     return ret;
 }
 
