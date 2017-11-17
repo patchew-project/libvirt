@@ -3749,9 +3749,13 @@ qemuDomainManagedSaveRemove(virDomainPtr dom, unsigned int flags)
     return ret;
 }
 
-static int qemuDumpToFd(virQEMUDriverPtr driver, virDomainObjPtr vm,
-                        int fd, qemuDomainAsyncJob asyncJob,
-                        const char *dumpformat)
+
+static int
+qemuDumpToFd(virQEMUDriverPtr driver,
+             virDomainObjPtr vm,
+             int fd,
+             qemuDomainAsyncJob asyncJob,
+             const char *dumpformat)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     int ret = -1;
@@ -3791,6 +3795,7 @@ static int qemuDumpToFd(virQEMUDriverPtr driver, virDomainObjPtr vm,
 
     return ret;
 }
+
 
 static int
 doCoreDump(virQEMUDriverPtr driver,
