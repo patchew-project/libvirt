@@ -444,6 +444,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "vxhs",
               "virtio-blk.num-queues",
               "machine.pseries.resize-hpt",
+              "query-dump",
     );
 
 
@@ -1562,7 +1563,8 @@ struct virQEMUCapsStringFlags virQEMUCapsCommands[] = {
     { "query-qmp-schema", QEMU_CAPS_QUERY_QMP_SCHEMA },
     { "query-cpu-model-expansion", QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION},
     { "query-cpu-definitions", QEMU_CAPS_QUERY_CPU_DEFINITIONS},
-    { "query-named-block-nodes", QEMU_CAPS_QUERY_NAMED_BLOCK_NODES}
+    { "query-named-block-nodes", QEMU_CAPS_QUERY_NAMED_BLOCK_NODES},
+    { "query-dump", QEMU_CAPS_QUERY_DUMP},
 };
 
 struct virQEMUCapsStringFlags virQEMUCapsMigration[] = {
