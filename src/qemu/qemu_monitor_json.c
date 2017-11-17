@@ -3165,19 +3165,11 @@ qemuMonitorJSONDump(qemuMonitorPtr mon,
     virJSONValuePtr cmd = NULL;
     virJSONValuePtr reply = NULL;
 
-    if (dumpformat) {
-        cmd = qemuMonitorJSONMakeCommand("dump-guest-memory",
-                                         "b:paging", false,
-                                         "s:protocol", protocol,
-                                         "s:format", dumpformat,
-                                         NULL);
-    } else {
-        cmd = qemuMonitorJSONMakeCommand("dump-guest-memory",
-                                         "b:paging", false,
-                                         "s:protocol", protocol,
-                                         NULL);
-    }
-
+    cmd = qemuMonitorJSONMakeCommand("dump-guest-memory",
+                                     "b:paging", false,
+                                     "s:protocol", protocol,
+                                     "S:dumpformat", dumpformat,
+                                     NULL);
     if (!cmd)
         return -1;
 
