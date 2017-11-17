@@ -4834,6 +4834,15 @@
             </oneOrMore>
           </element>
         </zeroOrMore>
+        <optional>
+          <element name="oemStrings">
+            <oneOrMore>
+              <element name="entry">
+                <ref name="sysinfo-value"/>
+              </element>
+            </oneOrMore>
+          </element>
+        </optional>
       </interleave>
     </element>
   </define>
