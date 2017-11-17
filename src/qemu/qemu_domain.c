@@ -3608,6 +3608,13 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
                 goto cleanup;
             }
 
+            if (net->backend.tap) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("Custom tap device path is not supported for: %s"),
+                               virDomainNetTypeToString(net->type));
+                goto cleanup;
+            }
+
             for (i = 0; i < net->guestIP.nips; i++) {
                 const virNetDevIPAddr *ip = net->guestIP.ips[i];
 
@@ -3648,6 +3655,14 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
                         goto cleanup;
                     }
                 }
+            }
+        } else if (net->type == VIR_DOMAIN_NET_TYPE_DIRECT ||
+                   net->type == VIR_DOMAIN_NET_TYPE_HOSTDEV) {
+            if (net->backend.tap) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("Custom tap device path is not supported for: %s"),
+                               virDomainNetTypeToString(net->type));
+                goto cleanup;
             }
         } else if (net->guestIP.nroutes || net->guestIP.nips) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
