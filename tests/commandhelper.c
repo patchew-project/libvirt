@@ -94,8 +94,15 @@ int main(int argc, char **argv) {
     for (i = 0; i < n; i++) {
         /* Ignore the variables used to instruct the loader into
          * behaving differently, as they could throw the tests off. */
-        if (!STRPREFIX(newenv[i], "LD_"))
-            fprintf(log, "ENV:%s\n", newenv[i]);
+        if (STRPREFIX(newenv[i], "LD_"))
+            continue;
+
+        /* Fix tests if tcmalloc is used in libraries */
+        if (STRPREFIX(newenv[i], "GLIBCPP_FORCE_NEW=") ||
+            STRPREFIX(newenv[i], "GLIBCXX_FORCE_NEW="))
+            continue;
+
+        fprintf(log, "ENV:%s\n", newenv[i]);
     }
 
     open_max = sysconf(_SC_OPEN_MAX);
