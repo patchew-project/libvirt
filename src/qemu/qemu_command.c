@@ -1703,7 +1703,8 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
     if (disk->src->readonly)
         virBufferAddLit(&opt, ",readonly=on");
 
-    qemuBuildDiskFrontendAttributes(disk, &opt);
+    if (!emitDeviceSyntax)
+        qemuBuildDiskFrontendAttributes(disk, &opt);
 
     if (disk->serial &&
         virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_SERIAL)) {
@@ -2146,6 +2147,8 @@ qemuBuildDriveDevStr(const virDomainDef *def,
             virBufferAsprintf(&opt, ",physical_block_size=%u",
                               disk->blockio.physical_block_size);
     }
+
+    qemuBuildDiskFrontendAttributes(disk, &opt);
 
     if (disk->wwn) {
         if (STRPREFIX(disk->wwn, "0x"))
