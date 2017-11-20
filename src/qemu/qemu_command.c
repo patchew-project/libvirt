@@ -1730,7 +1730,7 @@ qemuBuildDiskFrontendAttributes(virDomainDiskDefPtr disk,
 char *
 qemuBuildDriveStr(virDomainDiskDefPtr disk,
                   virQEMUDriverConfigPtr cfg,
-                  bool bootable,
+                  int bootindex,
                   virQEMUCapsPtr qemuCaps)
 {
     virBuffer opt = VIR_BUFFER_INITIALIZER;
@@ -1778,12 +1778,14 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
         }
     }
 
-    if (bootable &&
+    if (bootindex &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_BOOTINDEX) &&
         virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_BOOT) &&
         (disk->device == VIR_DOMAIN_DISK_DEVICE_DISK ||
          disk->device == VIR_DOMAIN_DISK_DEVICE_LUN) &&
         disk->bus != VIR_DOMAIN_DISK_BUS_IDE)
         virBufferAddLit(&opt, ",boot=on");
+
     if (disk->src->readonly)
         virBufferAddLit(&opt, ",readonly=on");
 
@@ -2242,7 +2244,6 @@ qemuBuildDiskDriveCommandLine(virCommandPtr cmd,
     for (i = 0; i < def->ndisks; i++) {
         char *optstr;
         unsigned int bootindex = 0;
-        bool driveBoot = false;
         virDomainDiskDefPtr disk = def->disks[i];
         qemuDomainStorageSourcePrivatePtr srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(disk->src);
         qemuDomainSecretInfoPtr secinfo = NULL;
@@ -2271,10 +2272,6 @@ qemuBuildDiskDriveCommandLine(virCommandPtr cmd,
                 bootDisk = 0;
                 break;
             }
-            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_BOOTINDEX)) {
-                driveBoot = !!bootindex;
-                bootindex = 0;
-            }
         }
 
         if (qemuBuildDiskSecinfoCommandLine(cmd, secinfo) < 0)
@@ -2289,7 +2286,7 @@ qemuBuildDiskDriveCommandLine(virCommandPtr cmd,
 
         virCommandAddArg(cmd, "-drive");
 
-        if (!(optstr = qemuBuildDriveStr(disk, cfg, driveBoot, qemuCaps)))
+        if (!(optstr = qemuBuildDriveStr(disk, cfg, bootindex, qemuCaps)))
             return -1;
 
         virCommandAddArg(cmd, optstr);
@@ -2310,7 +2307,8 @@ qemuBuildDiskDriveCommandLine(virCommandPtr cmd,
                 }
                 VIR_FREE(optstr);
 
-                if (bootindex) {
+                if (bootindex &&
+                    virQEMUCapsGet(qemuCaps, QEMU_CAPS_BOOTINDEX)) {
                     if (virAsprintf(&optstr, "bootindex%c=%u",
                                     disk->info.addr.drive.unit
                                     ? 'B' : 'A',
