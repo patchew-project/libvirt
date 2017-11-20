@@ -1775,6 +1775,9 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
         qemuBuildDiskFrontendAttributes(disk, qemuCaps, bootindex, &opt);
     }
 
+    /* While this is a frontend attribute, it only makes sense to be used when
+     * legacy -drive is used. In modern qemu the 'ide-cd' or 'scsi-cd' are used.
+     * virtio and other just ignore the attribute anyways */
     if (disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM) {
         if (disk->bus == VIR_DOMAIN_DISK_BUS_SCSI) {
             if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SCSI_CD))
