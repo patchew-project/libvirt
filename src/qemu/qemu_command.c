@@ -1667,16 +1667,12 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
     if (qemuBuildDriveSourceStr(disk, cfg, &opt, qemuCaps) < 0)
         goto error;
 
-    if (emitDeviceSyntax)
-        virBufferAddLit(&opt, "if=none");
-    else
-        virBufferAsprintf(&opt, "if=%s",
-                          virDomainDiskQEMUBusTypeToString(disk->bus));
-
     if (emitDeviceSyntax) {
         char *drivealias = qemuAliasFromDisk(disk);
         if (!drivealias)
             goto error;
+
+        virBufferAddLit(&opt, "if=none");
         virBufferAsprintf(&opt, ",id=%s", drivealias);
         VIR_FREE(drivealias);
     } else {
@@ -1687,11 +1683,11 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
                            _("unsupported disk type '%s'"), disk->dst);
             goto error;
         }
+        virBufferAsprintf(&opt, "if=%s",
+                          virDomainDiskQEMUBusTypeToString(disk->bus));
         virBufferAsprintf(&opt, ",index=%d", idx);
-    }
-
-    if (!emitDeviceSyntax)
         qemuBuildDiskFrontendAttributes(disk, qemuCaps, &opt);
+    }
 
     if (disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM) {
         if (disk->bus == VIR_DOMAIN_DISK_BUS_SCSI) {
