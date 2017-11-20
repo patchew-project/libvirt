@@ -171,7 +171,8 @@ int qemuMonitorJSONGetDumpGuestMemoryCapability(qemuMonitorPtr mon,
 
 int qemuMonitorJSONDump(qemuMonitorPtr mon,
                         const char *protocol,
-                        const char *dumpformat);
+                        const char *dumpformat,
+                        bool detach);
 
 int qemuMonitorJSONGraphicsRelocate(qemuMonitorPtr mon,
                                     int type,
