@@ -1687,6 +1687,28 @@ qemuProcessHandleMigrationPass(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
 }
 
 
+static int
+qemuProcessHandleDumpCompleted(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
+                               virDomainObjPtr vm,
+                               qemuMonitorDumpStatus status,
+                               void *opaque ATTRIBUTE_UNUSED)
+{
+    qemuDomainObjPrivatePtr priv;
+
+    virObjectLock(vm);
+
+    VIR_DEBUG("Dump completed for domain %p %s with status=%s",
+              vm, vm->def->name, qemuMonitorDumpStatusTypeToString(status));
+
+    priv = vm->privateData;
+    priv->job.dumpCompleted = true;
+    if (priv->job.dumpCompletion)
+        virDomainObjBroadcast(vm);
+    virObjectUnlock(vm);
+    return 0;
+}
+
+
 static qemuMonitorCallbacks monitorCallbacks = {
     .eofNotify = qemuProcessHandleMonitorEOF,
     .errorNotify = qemuProcessHandleMonitorError,
@@ -1715,6 +1737,7 @@ static qemuMonitorCallbacks monitorCallbacks = {
     .domainMigrationPass = qemuProcessHandleMigrationPass,
     .domainAcpiOstInfo = qemuProcessHandleAcpiOstInfo,
     .domainBlockThreshold = qemuProcessHandleBlockThreshold,
+    .domainDumpCompleted = qemuProcessHandleDumpCompleted,
 };
 
 static void
