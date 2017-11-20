@@ -19,9 +19,9 @@ server,nowait \
 -no-acpi \
 -boot dnca \
 -usb \
--drive file=/tmp/vda.img,format=raw,if=none,id=drive-virtio-disk0,boot=on \
+-drive file=/tmp/vda.img,format=raw,if=none,id=drive-virtio-disk0 \
 -device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x5,drive=drive-virtio-disk0,\
-id=virtio-disk0 \
+id=virtio-disk0,boot=on \
 -drive file=/tmp/vdb.img,format=raw,if=none,id=drive-virtio-disk1 \
 -device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x6,drive=drive-virtio-disk1,\
 id=virtio-disk1 \

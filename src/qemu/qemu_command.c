@@ -1701,6 +1701,7 @@ qemuBuildDiskFrontendAttributeErrorPolicy(virDomainDiskDefPtr disk,
 static void
 qemuBuildDiskFrontendAttributes(virDomainDiskDefPtr disk,
                                 virQEMUCapsPtr qemuCaps,
+                                int bootindex,
                                 virBufferPtr buf)
 {
     /* generate geometry command string */
@@ -1722,6 +1723,14 @@ qemuBuildDiskFrontendAttributes(virDomainDiskDefPtr disk,
         virBufferAddLit(buf, ",serial=");
         virBufferEscape(buf, '\\', " ", "%s", disk->serial);
     }
+
+    if (bootindex &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_BOOTINDEX) &&
+        virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_BOOT) &&
+        (disk->device == VIR_DOMAIN_DISK_DEVICE_DISK ||
+         disk->device == VIR_DOMAIN_DISK_DEVICE_LUN) &&
+        disk->bus != VIR_DOMAIN_DISK_BUS_IDE)
+        virBufferAddLit(buf, ",boot=on");
 
     qemuBuildDiskFrontendAttributeErrorPolicy(disk, qemuCaps, buf);
 }
@@ -1763,7 +1772,7 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
         virBufferAsprintf(&opt, "if=%s",
                           virDomainDiskQEMUBusTypeToString(disk->bus));
         virBufferAsprintf(&opt, ",index=%d", idx);
-        qemuBuildDiskFrontendAttributes(disk, qemuCaps, &opt);
+        qemuBuildDiskFrontendAttributes(disk, qemuCaps, bootindex, &opt);
     }
 
     if (disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM) {
@@ -1777,14 +1786,6 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
             virBufferAddLit(&opt, ",media=cdrom");
         }
     }
-
-    if (bootindex &&
-        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_BOOTINDEX) &&
-        virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_BOOT) &&
-        (disk->device == VIR_DOMAIN_DISK_DEVICE_DISK ||
-         disk->device == VIR_DOMAIN_DISK_DEVICE_LUN) &&
-        disk->bus != VIR_DOMAIN_DISK_BUS_IDE)
-        virBufferAddLit(&opt, ",boot=on");
 
     if (disk->src->readonly)
         virBufferAddLit(&opt, ",readonly=on");
@@ -2167,7 +2168,7 @@ qemuBuildDriveDevStr(const virDomainDef *def,
                               disk->blockio.physical_block_size);
     }
 
-    qemuBuildDiskFrontendAttributes(disk, qemuCaps, &opt);
+    qemuBuildDiskFrontendAttributes(disk, qemuCaps, bootindex, &opt);
 
     if (disk->wwn) {
         if (STRPREFIX(disk->wwn, "0x"))
