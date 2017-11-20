@@ -90,6 +90,7 @@ static void qemuMonitorJSONHandleMigrationStatus(qemuMonitorPtr mon, virJSONValu
 static void qemuMonitorJSONHandleMigrationPass(qemuMonitorPtr mon, virJSONValuePtr data);
 static void qemuMonitorJSONHandleAcpiOstInfo(qemuMonitorPtr mon, virJSONValuePtr data);
 static void qemuMonitorJSONHandleBlockThreshold(qemuMonitorPtr mon, virJSONValuePtr data);
+static void qemuMonitorJSONHandleDumpCompleted(qemuMonitorPtr mon, virJSONValuePtr data);
 
 typedef struct {
     const char *type;
@@ -106,6 +107,7 @@ static qemuEventHandler eventHandlers[] = {
     { "BLOCK_WRITE_THRESHOLD", qemuMonitorJSONHandleBlockThreshold, },
     { "DEVICE_DELETED", qemuMonitorJSONHandleDeviceDeleted, },
     { "DEVICE_TRAY_MOVED", qemuMonitorJSONHandleTrayChange, },
+    { "DUMP_COMPLETED", qemuMonitorJSONHandleDumpCompleted, },
     { "GUEST_PANICKED", qemuMonitorJSONHandleGuestPanic, },
     { "MIGRATION", qemuMonitorJSONHandleMigrationStatus, },
     { "MIGRATION_PASS", qemuMonitorJSONHandleMigrationPass, },
@@ -1135,6 +1137,35 @@ qemuMonitorJSONHandleBlockThreshold(qemuMonitorPtr mon, virJSONValuePtr data)
 
  error:
     VIR_WARN("malformed 'BLOCK_WRITE_THRESHOLD' event");
+}
+
+
+static void
+qemuMonitorJSONHandleDumpCompleted(qemuMonitorPtr mon,
+                                   virJSONValuePtr data)
+{
+    const char *statusstr;
+    qemuMonitorDumpStatus status;
+    virJSONValuePtr result;
+
+    if (!(result = virJSONValueObjectGetObject(data, "result"))) {
+        VIR_WARN("missing result in dump completed event");
+        return;
+    }
+
+    if (!(statusstr = virJSONValueObjectGetString(result, "status"))) {
+        VIR_WARN("missing status string in dump completed event");
+        return;
+    }
+
+    status = qemuMonitorDumpStatusTypeFromString(statusstr);
+    if (status < 0) {
+        VIR_WARN("invalid status string '%s' in dump completed event",
+                 statusstr);
+        return;
+    }
+
+    qemuMonitorEmitDumpCompleted(mon, status);
 }
 
 
