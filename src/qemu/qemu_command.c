@@ -1625,6 +1625,7 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
 
 static void
 qemuBuildDiskFrontendAttributes(virDomainDiskDefPtr disk,
+                                virQEMUCapsPtr qemuCaps,
                                 virBufferPtr buf)
 {
     /* generate geometry command string */
@@ -1639,6 +1640,12 @@ qemuBuildDiskFrontendAttributes(virDomainDiskDefPtr disk,
         if (disk->geometry.trans != VIR_DOMAIN_DISK_TRANS_DEFAULT)
             virBufferAsprintf(buf, ",trans=%s",
                               virDomainDiskGeometryTransTypeToString(disk->geometry.trans));
+    }
+
+    if (disk->serial &&
+        virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_SERIAL)) {
+        virBufferAddLit(buf, ",serial=");
+        virBufferEscape(buf, '\\', " ", "%s", disk->serial);
     }
 }
 
@@ -1704,13 +1711,7 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
         virBufferAddLit(&opt, ",readonly=on");
 
     if (!emitDeviceSyntax)
-        qemuBuildDiskFrontendAttributes(disk, &opt);
-
-    if (disk->serial &&
-        virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_SERIAL)) {
-        virBufferAddLit(&opt, ",serial=");
-        virBufferEscape(&opt, '\\', " ", "%s", disk->serial);
-    }
+        qemuBuildDiskFrontendAttributes(disk, qemuCaps, &opt);
 
     if (disk->cachemode) {
         virBufferAsprintf(&opt, ",cache=%s",
@@ -2148,7 +2149,7 @@ qemuBuildDriveDevStr(const virDomainDef *def,
                               disk->blockio.physical_block_size);
     }
 
-    qemuBuildDiskFrontendAttributes(disk, &opt);
+    qemuBuildDiskFrontendAttributes(disk, qemuCaps, &opt);
 
     if (disk->wwn) {
         if (STRPREFIX(disk->wwn, "0x"))
