@@ -2064,6 +2064,12 @@ mymain(void)
             QEMU_CAPS_VIRTIO_CCW,
             QEMU_CAPS_VIRTIO_S390,
             QEMU_CAPS_DEVICE_SCLPCONSOLE);
+    DO_TEST_FULL("s390-console2serial", NULL, -1, 0,
+                 VIR_DOMAIN_DEF_PARSE_ABI_UPDATE, GIC_NONE,
+                 QEMU_CAPS_NODEFCONFIG,
+                 QEMU_CAPS_VIRTIO_CCW,
+                 QEMU_CAPS_VIRTIO_S390,
+                 QEMU_CAPS_DEVICE_SCLPCONSOLE);
 
     DO_TEST("ppc-dtb",
             QEMU_CAPS_KVM,

@@ -3979,9 +3979,39 @@ virDomainDefPostParseMemory(virDomainDefPtr def,
 }
 
 
+static void
+virDomainChrConsoleTargetTypeToSerial(virDomainChrConsoleTargetType type,
+                                      int *retType, int *retModel)
+{
+    switch (type) {
+    case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_SCLP:
+        *retType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP;
+        *retModel = VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPCONSOLE;
+        break;
+
+    case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_SCLPLM:
+        *retType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP;
+        *retModel = VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPLMCONSOLE;
+        break;
+
+    case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_NONE:
+    case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_SERIAL:
+    case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_XEN:
+    case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_UML:
+    case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_VIRTIO:
+    case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_LXC:
+    case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_OPENVZ:
+    case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_LAST:
+        *retType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE;
+        *retModel = VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE;
+        break;
+    }
+}
+
+
 static int
 virDomainDefAddConsoleCompat(virDomainDefPtr def,
-                             unsigned int parseFlags ATTRIBUTE_UNUSED)
+                             unsigned int parseFlags)
 {
     size_t i;
 
@@ -3998,6 +4028,10 @@ virDomainDefAddConsoleCompat(virDomainDefPtr def,
      *
      * We then fill def->consoles[0] with a stub just so we get sequencing
      * correct for consoles > 0
+     *
+     * sclp/sclplm consoles (in s390 and s390x guests) are converted to serial
+     * only when we can update the ABI of the guest, to avoid breaking
+     * migrations to old libvirt.
      */
 
     /* Only the first console (if there are any) can be of type serial,
@@ -4014,7 +4048,9 @@ virDomainDefAddConsoleCompat(virDomainDefPtr def,
     }
     if (def->nconsoles > 0 && def->os.type == VIR_DOMAIN_OSTYPE_HVM &&
         (def->consoles[0]->targetType == VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_SERIAL ||
-         def->consoles[0]->targetType == VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_NONE)) {
+         def->consoles[0]->targetType == VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_NONE ||
+         (def->consoles[0]->targetType == VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_SCLP &&
+          (parseFlags & VIR_DOMAIN_DEF_PARSE_ABI_UPDATE)))) {
 
         /* If there isn't a corresponding serial port:
          *  - create one and set, the console to be an alias for it
@@ -4027,6 +4063,8 @@ virDomainDefAddConsoleCompat(virDomainDefPtr def,
 
         /* create the serial port definition from the console definition */
         if (def->nserials == 0) {
+            virDomainChrConsoleTargetType type = def->consoles[0]->targetType;
+
             if (VIR_APPEND_ELEMENT(def->serials,
                                    def->nserials,
                                    def->consoles[0]) < 0)
@@ -4034,7 +4072,9 @@ virDomainDefAddConsoleCompat(virDomainDefPtr def,
 
             /* modify it to be a serial port */
             def->serials[0]->deviceType = VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL;
-            def->serials[0]->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE;
+            virDomainChrConsoleTargetTypeToSerial(type,
+                                                  &def->serials[0]->targetType,
+                                                  &def->serials[0]->targetModel);
             def->serials[0]->target.port = 0;
         } else {
             /* if the console source doesn't match */
