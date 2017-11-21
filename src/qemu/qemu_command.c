@@ -10339,54 +10339,48 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
 {
     virBuffer cmd = VIR_BUFFER_INITIALIZER;
 
-    if (qemuDomainIsPSeries(def)) {
-        if (serial->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL &&
-            serial->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_SPAPRVIO) {
-            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_SPAPR_VTY)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("spapr-vty not supported in this QEMU binary"));
-                goto error;
-            }
-
-            virBufferAsprintf(&cmd, "spapr-vty,chardev=char%s",
-                              serial->info.alias);
-        }
-    } else {
-        switch ((virDomainChrSerialTargetModel) serial->targetModel) {
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_USB_SERIAL:
-            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_USB_SERIAL)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("usb-serial is not supported in this QEMU binary"));
-                goto error;
-            }
-            break;
-
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_ISA_SERIAL:
-            break;
-
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PCI_SERIAL:
-            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_PCI_SERIAL)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("pci-serial is not supported with this QEMU binary"));
-                goto error;
-            }
-            break;
-
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE:
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_LAST:
-            /* Except from _LAST, which is just a guard value and will never
-             * be used, all of the above are platform devices, which means
-             * qemuBuildSerialCommandLine() will have taken the appropriate
-             * branch and we will not have ended up here. */
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("Invalid target type for serial device"));
+    switch ((virDomainChrSerialTargetModel) serial->targetModel) {
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_USB_SERIAL:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_USB_SERIAL)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("usb-serial is not supported in this QEMU binary"));
             goto error;
         }
+        break;
 
-        virBufferAsprintf(&cmd, "%s,chardev=char%s,id=%s",
-                          virDomainChrSerialTargetModelTypeToString(serial->targetModel),
-                          serial->info.alias, serial->info.alias);
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_ISA_SERIAL:
+        break;
+
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PCI_SERIAL:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_PCI_SERIAL)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("pci-serial is not supported with this QEMU binary"));
+            goto error;
+        }
+        break;
+
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SPAPR_VTY:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_SPAPR_VTY)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("spapr-vty not supported in this QEMU binary"));
+            goto error;
+        }
+        break;
+
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE:
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_LAST:
+        /* Except from _LAST, which is just a guard value and will never
+         * be used, all of the above are platform devices, which means
+         * qemuBuildSerialCommandLine() will have taken the appropriate
+         * branch and we will not have ended up here. */
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Invalid target type for serial device"));
+        goto error;
     }
+
+    virBufferAsprintf(&cmd, "%s,chardev=char%s,id=%s",
+                      virDomainChrSerialTargetModelTypeToString(serial->targetModel),
+                      serial->info.alias, serial->info.alias);
 
     if (qemuBuildDeviceAddressStr(&cmd, def, &serial->info, qemuCaps) < 0)
         goto error;

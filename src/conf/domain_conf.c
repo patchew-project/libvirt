@@ -452,6 +452,7 @@ VIR_ENUM_IMPL(virDomainChrSerialTarget,
               "isa",
               "usb",
               "pci",
+              "spapr-vio",
 );
 
 VIR_ENUM_IMPL(virDomainChrChannelTarget,
@@ -479,6 +480,7 @@ VIR_ENUM_IMPL(virDomainChrSerialTargetModel,
               "isa-serial",
               "usb-serial",
               "pci-serial",
+              "spapr-vty",
 );
 
 VIR_ENUM_IMPL(virDomainChrDevice, VIR_DOMAIN_CHR_DEVICE_TYPE_LAST,
@@ -4051,6 +4053,7 @@ virDomainDefAddConsoleCompat(virDomainDefPtr def)
 
         switch ((virDomainChrSerialTargetType) def->serials[0]->targetType) {
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE: {
 
             /* Create a stub console to match the serial port.
@@ -24091,6 +24094,7 @@ virDomainChrTargetDefFormat(virBufferPtr buf,
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PCI:
                     virBufferAddLit(buf, "-serial");
                     break;
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO:
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
                     /* No conversion necessary */

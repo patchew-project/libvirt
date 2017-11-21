@@ -3585,6 +3585,7 @@
         <value>isa</value>
         <value>usb</value>
         <value>pci</value>
+        <value>spapr-vio</value>
         <!-- Legacy values, for backwards compatibility -->
         <value>isa-serial</value>
         <value>usb-serial</value>
@@ -3600,6 +3601,7 @@
           <value>isa-serial</value>
           <value>usb-serial</value>
           <value>pci-serial</value>
+          <value>spapr-vty</value>
         </choice>
       </attribute>
     </element>

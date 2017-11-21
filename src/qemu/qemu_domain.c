@@ -3491,8 +3491,7 @@ qemuDomainChrSourceDefValidate(const virDomainChrSourceDef *def)
 
 
 static int
-qemuDomainChrTargetDefValidate(const virDomainDef *def,
-                               const virDomainChrDef *chr)
+qemuDomainChrTargetDefValidate(const virDomainChrDef *chr)
 {
     switch ((virDomainChrDeviceType) chr->deviceType) {
     case VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL:
@@ -3500,11 +3499,6 @@ qemuDomainChrTargetDefValidate(const virDomainDef *def,
         /* Validate target type */
         switch ((virDomainChrSerialTargetType) chr->targetType) {
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
-            /* Hack required until we have a proper type for pSeries
-             * serial consoles */
-            if (qemuDomainIsPSeries(def))
-                return 0;
-
             if (chr->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
                 chr->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_ISA) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
@@ -3530,6 +3524,16 @@ qemuDomainChrTargetDefValidate(const virDomainDef *def,
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                                _("Target type 'pci-serial' requires address "
                                  "of type 'pci'"));
+                return -1;
+            }
+            break;
+
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO:
+            if (chr->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
+                chr->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_SPAPRVIO) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("Target type 'spapr-vio' requires address "
+                                 "of type 'spapr-vio'"));
                 return -1;
             }
             break;
@@ -3571,6 +3575,16 @@ qemuDomainChrTargetDefValidate(const virDomainDef *def,
             }
             break;
 
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SPAPR_VTY:
+            if (chr->targetType != VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("Target model '%s' requires "
+                                 "target type 'spapr-vio'"),
+                               virDomainChrSerialTargetModelTypeToString(chr->targetModel));
+                return -1;
+            }
+            break;
+
         case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_LAST:
             break;
@@ -3596,7 +3610,7 @@ qemuDomainChrDefValidate(const virDomainChrDef *dev,
     if (qemuDomainChrSourceDefValidate(dev->source) < 0)
         return -1;
 
-    if (qemuDomainChrTargetDefValidate(def, dev) < 0)
+    if (qemuDomainChrTargetDefValidate(dev) < 0)
         return -1;
 
     if (dev->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_PARALLEL &&
@@ -3604,6 +3618,17 @@ qemuDomainChrDefValidate(const virDomainChrDef *dev,
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("parallel ports are not supported"));
             return -1;
+    }
+
+    if (dev->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL &&
+        (dev->targetType == VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO ||
+         dev->targetModel == VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SPAPR_VTY) &&
+        !qemuDomainIsPSeries(def)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Serial devices with target type 'spapr-vio' and "
+                         "target model 'spapr-vty' are only supported on "
+                         "pSeries guests"));
+        return -1;
     }
 
     return 0;
@@ -4165,10 +4190,7 @@ qemuDomainChrDefPostParse(virDomainChrDefPtr chr,
         if (ARCH_IS_X86(def->os.arch)) {
             chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA;
         } else if (qemuDomainIsPSeries(def)) {
-            /* Setting TYPE_ISA here is just a temporary hack to reduce test
-             * suite churn. Later on we will have a proper serial type for
-             * pSeries and this line will be updated accordingly. */
-            chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA;
+            chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO;
         }
     }
 
@@ -4184,6 +4206,9 @@ qemuDomainChrDefPostParse(virDomainChrDefPtr chr,
             break;
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PCI:
             chr->targetModel = VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PCI_SERIAL;
+            break;
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO:
+            chr->targetModel = VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SPAPR_VTY;
             break;
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
@@ -5088,6 +5113,31 @@ qemuDomainDefFormatBufInternal(virQEMUDriverPtr driver,
         for (i = 0; i < def->nchannels; i++) {
             if (qemuDomainChrDefDropDefaultPath(def->channels[i], driver) < 0)
                 goto cleanup;
+        }
+
+        for (i = 0; i < def->nserials; i++) {
+            virDomainChrDefPtr serial = def->serials[i];
+
+            /* Historically, the native console type for some machine types
+             * was not set at all, which means it defaulted to ISA even
+             * though that was not even remotely accurate. To ensure migration
+             * towards older libvirt versions works for such guests, we switch
+             * it back to the default here */
+            if (flags & VIR_DOMAIN_XML_MIGRATABLE) {
+                switch ((virDomainChrSerialTargetType) serial->targetType) {
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO:
+                    serial->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE;
+                    serial->targetModel = VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE;
+                    break;
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PCI:
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_USB:
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
+                    /* Nothing to do */
+                    break;
+                }
+            }
         }
 
         /* Replace the CPU definition updated according to QEMU with the one
