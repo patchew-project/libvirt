@@ -24025,8 +24025,6 @@ virDomainChrDefFormat(virBufferPtr buf,
     const char *elementName = virDomainChrDeviceTypeToString(def->deviceType);
     bool tty_compat;
 
-    int ret = 0;
-
     if (!elementName) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("unexpected char device type %d"),
@@ -24044,7 +24042,9 @@ virDomainChrDefFormat(virBufferPtr buf,
     if (virDomainChrAttrsDefFormat(buf, def->source, tty_compat) < 0)
         return -1;
     virBufferAddLit(buf, ">\n");
-    virDomainChrSourceDefFormat(buf, def->source, flags);
+
+    if (virDomainChrSourceDefFormat(buf, def->source, flags) < 0)
+       return -1;
 
     if (virDomainChrTargetDefFormat(buf, def, flags) < 0)
        return -1;
@@ -24054,7 +24054,7 @@ virDomainChrDefFormat(virBufferPtr buf,
     virBufferAdjustIndent(buf, -2);
     virBufferAsprintf(buf, "</%s>\n", elementName);
 
-    return ret;
+    return 0;
 }
 
 static int
