@@ -3539,6 +3539,7 @@ qemuDomainChrTargetDefValidate(const virDomainChrDef *chr)
             break;
 
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SYSTEM:
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP:
             if (chr->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                _("Target type '%s' cannot have an "
@@ -3605,6 +3606,17 @@ qemuDomainChrTargetDefValidate(const virDomainChrDef *chr)
             }
             break;
 
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPCONSOLE:
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPLMCONSOLE:
+            if (chr->targetType != VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("Target model '%s' requires "
+                                 "target type 'sclp'"),
+                               virDomainChrSerialTargetModelTypeToString(chr->targetModel));
+                return -1;
+            }
+            break;
+
         case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_LAST:
             break;
@@ -3659,6 +3671,18 @@ qemuDomainChrDefValidate(const virDomainChrDef *dev,
                        _("Serial devices with target type 'system' and "
                          "target model 'pl011' are only supported on "
                          "mach-virt guests"));
+        return -1;
+    }
+
+    if (dev->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL &&
+        (dev->targetType == VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP ||
+         dev->targetModel == VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPCONSOLE ||
+         dev->targetModel == VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPLMCONSOLE) &&
+        !ARCH_IS_S390(def->os.arch)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Serial devices with target type 'sclp' and "
+                         "target model 'sclpconsole' or 'sclplmconsole' "
+                         "are only supported on s390 and s390x guests"));
         return -1;
     }
 
@@ -4224,6 +4248,8 @@ qemuDomainChrDefPostParse(virDomainChrDefPtr chr,
             chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO;
         } else if (qemuDomainIsVirt(def)) {
             chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SYSTEM;
+        } else if (ARCH_IS_S390(def->os.arch)) {
+            chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP;
         }
     }
 
@@ -4245,6 +4271,9 @@ qemuDomainChrDefPostParse(virDomainChrDefPtr chr,
             break;
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SYSTEM:
             chr->targetModel = VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PL011;
+            break;
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP:
+            chr->targetModel = VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPCONSOLE;
             break;
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
@@ -5169,6 +5198,7 @@ qemuDomainDefFormatBufInternal(virQEMUDriverPtr driver,
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PCI:
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_USB:
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP:
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
                     /* Nothing to do */

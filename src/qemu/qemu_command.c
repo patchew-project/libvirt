@@ -10361,6 +10361,22 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
         }
         break;
 
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPCONSOLE:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_SCLPCONSOLE)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("sclpconsole not supported in this QEMU binary"));
+            return -1;
+        }
+        break;
+
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPLMCONSOLE:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_SCLPLMCONSOLE)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("sclplmconsole not supported in this QEMU binary"));
+            return -1;
+        }
+        break;
+
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PL011:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_LAST:

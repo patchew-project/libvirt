@@ -3587,6 +3587,7 @@
         <value>pci</value>
         <value>spapr-vio</value>
         <value>system</value>
+        <value>sclp</value>
         <!-- Legacy values, for backwards compatibility -->
         <value>isa-serial</value>
         <value>usb-serial</value>
@@ -3604,6 +3605,8 @@
           <value>pci-serial</value>
           <value>spapr-vty</value>
           <value>pl011</value>
+          <value>sclpconsole</value>
+          <value>sclplmconsole</value>
         </choice>
       </attribute>
     </element>
