@@ -2949,7 +2949,8 @@ bool virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
                                         virDomainXMLOptionPtr xmlopt,
                                         unsigned int flags);
 
-int virDomainDefAddImplicitDevices(virDomainDefPtr def);
+int virDomainDefAddImplicitDevices(virDomainDefPtr def,
+                                   unsigned int parseFlags);
 
 virDomainIOThreadIDDefPtr virDomainIOThreadIDFind(const virDomainDef *def,
                                                   unsigned int iothread_id);
