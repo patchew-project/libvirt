@@ -10352,8 +10352,8 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
                               serial->info.alias);
         }
     } else {
-        switch ((virDomainChrSerialTargetType) serial->targetType) {
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_USB:
+        switch ((virDomainChrSerialTargetModel) serial->targetModel) {
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_USB_SERIAL:
             if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_USB_SERIAL)) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                                _("usb-serial is not supported in this QEMU binary"));
@@ -10361,10 +10361,10 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
             }
             break;
 
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_ISA_SERIAL:
             break;
 
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PCI:
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PCI_SERIAL:
             if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_PCI_SERIAL)) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                                _("pci-serial is not supported with this QEMU binary"));
@@ -10372,8 +10372,8 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
             }
             break;
 
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
-        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE:
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_LAST:
             /* Except from _LAST, which is just a guard value and will never
              * be used, all of the above are platform devices, which means
              * qemuBuildSerialCommandLine() will have taken the appropriate
@@ -10384,7 +10384,7 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
         }
 
         virBufferAsprintf(&cmd, "%s,chardev=char%s,id=%s",
-                          virDomainChrSerialTargetTypeToString(serial->targetType),
+                          virDomainChrSerialTargetModelTypeToString(serial->targetModel),
                           serial->info.alias, serial->info.alias);
     }
 
