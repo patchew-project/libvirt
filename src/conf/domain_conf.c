@@ -449,9 +449,10 @@ VIR_ENUM_IMPL(virDomainChrDeviceState, VIR_DOMAIN_CHR_DEVICE_STATE_LAST,
 VIR_ENUM_IMPL(virDomainChrSerialTarget,
               VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST,
               "none",
-              "isa-serial",
-              "usb-serial",
-              "pci-serial")
+              "isa",
+              "usb",
+              "pci",
+);
 
 VIR_ENUM_IMPL(virDomainChrChannelTarget,
               VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_LAST,
@@ -11510,6 +11511,17 @@ virDomainChrTargetTypeFromString(int devtype,
 
     if (!targetType)
         return virDomainChrDefaultTargetType(devtype);
+
+    /* Perform conversion between the legacy values for targetType, which
+     * are still accepted for backwards compatibility reasons, and the
+     * new values expected by virDomainChrSerialTargetTypeFromString() */
+    if (STREQ(targetType, "isa-serial")) {
+        targetType = "isa";
+    } else if (STREQ(targetType, "usb-serial")) {
+        targetType = "usb";
+    } else if (STREQ(targetType, "pci-serial")) {
+        targetType = "pci";
+    }
 
     switch ((virDomainChrDeviceType) devtype) {
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL:
@@ -24066,8 +24078,27 @@ virDomainChrTargetDefFormat(virBufferPtr buf,
 
         if (def->targetType != VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE) {
             virBufferAsprintf(buf,
-                              "type='%s' ",
+                              "type='%s",
                               targetType);
+
+            /* When formatting a migratable XML, some target types need to
+             * be converted by appending "-serial" to their names, so that
+             * migration to older libvirt versions to work */
+            if ((flags & VIR_DOMAIN_XML_MIGRATABLE)) {
+                switch ((virDomainChrSerialTargetType) def->targetType) {
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_USB:
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PCI:
+                    virBufferAddLit(buf, "-serial");
+                    break;
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
+                    /* No conversion necessary */
+                    break;
+                }
+            }
+
+            virBufferAddLit(buf, "' ");
         }
 
         virBufferAsprintf(buf,

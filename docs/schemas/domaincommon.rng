@@ -3582,6 +3582,10 @@
   <define name='qemucdevSerialTgtType'>
     <attribute name='type'>
       <choice>
+        <value>isa</value>
+        <value>usb</value>
+        <value>pci</value>
+        <!-- Legacy values, for backwards compatibility -->
         <value>isa-serial</value>
         <value>usb-serial</value>
         <value>pci-serial</value>
