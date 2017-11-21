@@ -3538,6 +3538,16 @@ qemuDomainChrTargetDefValidate(const virDomainChrDef *chr)
             }
             break;
 
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SYSTEM:
+            if (chr->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("Target type '%s' cannot have an "
+                                 "associated address"),
+                               virDomainChrSerialTargetTypeToString(chr->targetType));
+                return -1;
+            }
+            break;
+
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
             break;
@@ -3580,6 +3590,16 @@ qemuDomainChrTargetDefValidate(const virDomainChrDef *chr)
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                _("Target model '%s' requires "
                                  "target type 'spapr-vio'"),
+                               virDomainChrSerialTargetModelTypeToString(chr->targetModel));
+                return -1;
+            }
+            break;
+
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PL011:
+            if (chr->targetType != VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SYSTEM) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("Target model '%s' requires "
+                                 "target type 'system'"),
                                virDomainChrSerialTargetModelTypeToString(chr->targetModel));
                 return -1;
             }
@@ -3628,6 +3648,17 @@ qemuDomainChrDefValidate(const virDomainChrDef *dev,
                        _("Serial devices with target type 'spapr-vio' and "
                          "target model 'spapr-vty' are only supported on "
                          "pSeries guests"));
+        return -1;
+    }
+
+    if (dev->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL &&
+        (dev->targetType == VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SYSTEM ||
+         dev->targetModel == VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PL011) &&
+        !qemuDomainIsVirt(def)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Serial devices with target type 'system' and "
+                         "target model 'pl011' are only supported on "
+                         "mach-virt guests"));
         return -1;
     }
 
@@ -4191,6 +4222,8 @@ qemuDomainChrDefPostParse(virDomainChrDefPtr chr,
             chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA;
         } else if (qemuDomainIsPSeries(def)) {
             chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO;
+        } else if (qemuDomainIsVirt(def)) {
+            chr->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SYSTEM;
         }
     }
 
@@ -4209,6 +4242,9 @@ qemuDomainChrDefPostParse(virDomainChrDefPtr chr,
             break;
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO:
             chr->targetModel = VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SPAPR_VTY;
+            break;
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SYSTEM:
+            chr->targetModel = VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PL011;
             break;
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
@@ -5126,6 +5162,7 @@ qemuDomainDefFormatBufInternal(virQEMUDriverPtr driver,
             if (flags & VIR_DOMAIN_XML_MIGRATABLE) {
                 switch ((virDomainChrSerialTargetType) serial->targetType) {
                 case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO:
+                case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SYSTEM:
                     serial->targetType = VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE;
                     serial->targetModel = VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE;
                     break;

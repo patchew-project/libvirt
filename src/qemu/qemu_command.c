@@ -9221,10 +9221,13 @@ qemuChrIsPlatformDevice(const virDomainDef *def,
                         virDomainChrDefPtr chr)
 {
     if (def->os.arch == VIR_ARCH_ARMV7L || def->os.arch == VIR_ARCH_AARCH64) {
-        /* TARGET_TYPE_ISA here really means 'the default platform device' */
+
+        /* pl011 (used on mach-virt) is a platform device */
         if (chr->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL &&
-            chr->targetType == VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA)
+            chr->targetType == VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SYSTEM &&
+            chr->targetModel == VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PL011) {
             return true;
+        }
     }
 
     /* If we got all the way here and we're still stuck with the default
@@ -10358,6 +10361,7 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
         }
         break;
 
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PL011:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_LAST:
         /* Except from _LAST, which is just a guard value and will never
