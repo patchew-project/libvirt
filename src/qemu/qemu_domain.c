@@ -3538,6 +3538,43 @@ qemuDomainChrTargetDefValidate(const virDomainDef *def,
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
             break;
         }
+
+        /* Validate target model */
+        switch ((virDomainChrSerialTargetModel) chr->targetModel) {
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_ISA_SERIAL:
+            if (chr->targetType != VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("Target model '%s' requires "
+                                 "target type 'isa'"),
+                               virDomainChrSerialTargetModelTypeToString(chr->targetModel));
+                return -1;
+            }
+            break;
+
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_USB_SERIAL:
+            if (chr->targetType != VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_USB) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("Target model '%s' requires "
+                                 "target type 'usb'"),
+                               virDomainChrSerialTargetModelTypeToString(chr->targetModel));
+                return -1;
+            }
+            break;
+
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PCI_SERIAL:
+            if (chr->targetType != VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_PCI) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("Target model '%s' requires "
+                                 "target type 'pci'"),
+                               virDomainChrSerialTargetModelTypeToString(chr->targetModel));
+                return -1;
+            }
+            break;
+
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE:
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_LAST:
+            break;
+        }
         break;
 
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CONSOLE:
