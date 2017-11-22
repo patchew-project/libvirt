@@ -449,6 +449,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
 
               /* 275 */
               "sclplmconsole",
+              "disk-share-rw",
     );
 
 
@@ -1693,6 +1694,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBlk[] = {
     { "scsi", QEMU_CAPS_VIRTIO_BLK_SCSI },
     { "logical_block_size", QEMU_CAPS_BLOCKIO },
     { "num-queues", QEMU_CAPS_VIRTIO_BLK_NUM_QUEUES },
+    { "share-rw", QEMU_CAPS_DISK_SHARE_RW },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioNet[] = {
@@ -1723,10 +1725,12 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVfioPCI[] = {
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsSCSIDisk[] = {
     { "channel", QEMU_CAPS_SCSI_DISK_CHANNEL },
     { "wwn", QEMU_CAPS_SCSI_DISK_WWN },
+    { "share-rw", QEMU_CAPS_DISK_SHARE_RW },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsIDEDrive[] = {
     { "wwn", QEMU_CAPS_IDE_DRIVE_WWN },
+    { "share-rw", QEMU_CAPS_DISK_SHARE_RW },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsPiix4PM[] = {
@@ -1757,6 +1761,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsQ35PCIHost[] = {
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsUSBStorage[] = {
     { "removable", QEMU_CAPS_USB_STORAGE_REMOVABLE },
+    { "share-rw", QEMU_CAPS_DISK_SHARE_RW },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsKVMPit[] = {
