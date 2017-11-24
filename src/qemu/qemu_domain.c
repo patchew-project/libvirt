@@ -9766,14 +9766,14 @@ qemuDomainNamespaceTeardownHostdev(virQEMUDriverPtr driver,
     char **devMountsPath = NULL;
     size_t ndevMountsPath = 0;
     int ret = -1;
-    char **path = NULL;
+    char **paths = NULL;
     size_t i, npaths = 0;
 
     if (!qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT))
         return 0;
 
     if (qemuDomainGetHostdevPath(vm->def, hostdev, true,
-                                 &npaths, &path, NULL) < 0)
+                                 &npaths, &paths, NULL) < 0)
         goto cleanup;
 
     cfg = virQEMUDriverGetConfig(driver);
@@ -9783,7 +9783,7 @@ qemuDomainNamespaceTeardownHostdev(virQEMUDriverPtr driver,
         goto cleanup;
 
     for (i = 0; i < npaths; i++) {
-        if (qemuDomainDetachDeviceUnlink(driver, vm, path[i],
+        if (qemuDomainDetachDeviceUnlink(driver, vm, paths[i],
                                          devMountsPath, ndevMountsPath) < 0)
             goto cleanup;
     }
@@ -9791,8 +9791,8 @@ qemuDomainNamespaceTeardownHostdev(virQEMUDriverPtr driver,
     ret = 0;
  cleanup:
     for (i = 0; i < npaths; i++)
-        VIR_FREE(path[i]);
-    VIR_FREE(path);
+        VIR_FREE(paths[i]);
+    VIR_FREE(paths);
     virStringListFreeCount(devMountsPath, ndevMountsPath);
     virObjectUnref(cfg);
     return ret;
