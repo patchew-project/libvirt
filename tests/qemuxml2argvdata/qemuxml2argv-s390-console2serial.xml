@@ -1,0 +1,19 @@
+<domain type='qemu'>
+  <name>QEMUGuest1</name>
+  <uuid>c7a5fdbd-edaf-9455-926a-d65c16db1809</uuid>
+  <memory unit='KiB'>219100</memory>
+  <vcpu placement='static'>1</vcpu>
+  <os>
+    <type arch="s390x" machine="s390-ccw-virtio">hvm</type>
+  </os>
+  <devices>
+    <emulator>/usr/bin/qemu-system-s390x</emulator>
+    <!-- Since this test is run with the flag VIR_DOMAIN_DEF_PARSE_ABI_UPDATE,
+         then it will result in a <serial> element created for it, and thus
+         a serial chardev for QEMU. -->
+    <console type='pty'>
+      <target type='sclp'/>
+    </console>
+    <memballoon model='none'/>
+  </devices>
+</domain>
