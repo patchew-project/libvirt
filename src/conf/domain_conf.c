@@ -3987,7 +3987,8 @@ virDomainDefPostParseMemory(virDomainDefPtr def,
 
 
 static int
-virDomainDefAddConsoleCompat(virDomainDefPtr def)
+virDomainDefAddConsoleCompat(virDomainDefPtr def,
+                             unsigned int parseFlags ATTRIBUTE_UNUSED)
 {
     size_t i;
 
@@ -4948,7 +4949,7 @@ virDomainDefPostParseCommon(virDomainDefPtr def,
     if (virDomainDefPostParseTimer(def) < 0)
         return -1;
 
-    if (virDomainDefAddImplicitDevices(def) < 0)
+    if (virDomainDefAddImplicitDevices(def, data->parseFlags) < 0)
         return -1;
 
     if (def->nvideos != 0) {
@@ -22017,9 +22018,10 @@ virDomainDefAddImplicitVideo(virDomainDefPtr def)
 }
 
 int
-virDomainDefAddImplicitDevices(virDomainDefPtr def)
+virDomainDefAddImplicitDevices(virDomainDefPtr def,
+                               unsigned int parseFlags)
 {
-    if (virDomainDefAddConsoleCompat(def) < 0)
+    if (virDomainDefAddConsoleCompat(def, parseFlags) < 0)
         return -1;
 
     if (virDomainDefAddImplicitControllers(def) < 0)
