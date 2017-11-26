@@ -10350,6 +10350,8 @@ static virQEMUCapsFlags
 qemuChrSerialTargetModelToCaps(virDomainChrSerialTargetModel targetModel)
 {
     switch (targetModel) {
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_ISA_SERIAL:
+        return QEMU_CAPS_DEVICE_ISA_SERIAL;
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_USB_SERIAL:
         return QEMU_CAPS_DEVICE_USB_SERIAL;
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PCI_SERIAL:
@@ -10360,7 +10362,6 @@ qemuChrSerialTargetModelToCaps(virDomainChrSerialTargetModel targetModel)
         return QEMU_CAPS_DEVICE_SCLPCONSOLE;
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPLMCONSOLE:
         return QEMU_CAPS_DEVICE_SCLPLMCONSOLE;
-    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_ISA_SERIAL:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PL011:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_LAST:
@@ -10384,6 +10385,7 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
     virQEMUCapsFlags caps;
 
     switch ((virDomainChrSerialTargetModel) serial->targetModel) {
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_ISA_SERIAL:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_USB_SERIAL:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PCI_SERIAL:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SPAPR_VTY:
@@ -10398,9 +10400,6 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
                            virDomainChrSerialTargetModelTypeToString(serial->targetModel));
             goto error;
         }
-        break;
-
-    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_ISA_SERIAL:
         break;
 
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PL011:
