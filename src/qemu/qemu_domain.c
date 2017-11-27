@@ -3622,6 +3622,16 @@ qemuDomainDeviceDefValidateNetwork(const virDomainNetDef *net)
         return -1;
     }
 
+    if (net->type == VIR_DOMAIN_NET_TYPE_DIRECT ||
+        net->type == VIR_DOMAIN_NET_TYPE_HOSTDEV) {
+        if (net->backend.tap) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Custom tap device path is not supported for: %s"),
+                           virDomainNetTypeToString(net->type));
+            return -1;
+        }
+    }
+
     if (STREQ_NULLABLE(net->model, "virtio")) {
         if (net->driver.virtio.rx_queue_size & (net->driver.virtio.rx_queue_size - 1)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
