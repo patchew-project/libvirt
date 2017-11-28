@@ -3718,6 +3718,27 @@ qemuDomainDeviceDefValidateDisk(const virDomainDiskDef *disk)
 
 
 static int
+qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
+                                      const virDomainDef *def)
+{
+    /* Forbid user aliases for implicit controllers where
+     * the qemu's device alias depends on the version and therefore
+     * we cannot figure it out for an already running domain. */
+    if (controller->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT &&
+        !qemuDomainIsPSeries(def) &&
+        controller->info.alias &&
+        STRPREFIX(controller->info.alias, VIR_DOMAIN_USER_ALIAS_PREFIX)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("user aliases are not available for "
+                         "implicit pci-root controller"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
                             const virDomainDef *def,
                             void *opaque ATTRIBUTE_UNUSED)
@@ -3761,11 +3782,14 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
         ret = qemuDomainDeviceDefValidateDisk(dev->data.disk);
         break;
 
+    case VIR_DOMAIN_DEVICE_CONTROLLER:
+        ret = qemuDomainDeviceDefValidateController(dev->data.controller, def);
+        break;
+
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_FS:
     case VIR_DOMAIN_DEVICE_INPUT:
     case VIR_DOMAIN_DEVICE_SOUND:
-    case VIR_DOMAIN_DEVICE_CONTROLLER:
     case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:

@@ -321,16 +321,12 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
                 contIsPHB = virDomainControllerIsPSeriesPHB(cont);
                 contTargetIndex = cont->opts.pciopts.targetIndex;
 
-                /* When domain has builtin pci-root controller we don't put it
-                 * onto cmd line. Therefore we can't set its alias. In that
-                 * case, use the default one. */
-                if (!qemuDomainIsPSeries(domainDef) &&
-                    cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT) {
-                    if (virQEMUCapsHasPCIMultiBus(qemuCaps, domainDef))
-                        contAlias = "pci.0";
-                    else
-                        contAlias = "pci";
-                } else if (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT) {
+                /* The builtin pcie-root controller is not put on the command line.
+                 * We cannot set a user alias, but we can reliably predict the one
+                 * qemu will use.
+                 * For builtin pci-root controllers we cannot do that once a domain
+                 * is started, but user aliases are forbidden for those. */
+                if (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT) {
                     contAlias = "pcie.0";
                 } else {
                     contAlias = cont->info.alias;

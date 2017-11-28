@@ -6623,7 +6623,6 @@ virDomainDeviceAddressParseXML(xmlNodePtr address,
 }
 
 
-#define USER_ALIAS_PREFIX "ua-"
 #define USER_ALIAS_CHARS \
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
 
@@ -6680,7 +6679,7 @@ virDomainDeviceInfoParseXML(virDomainXMLOptionPtr xmlopt ATTRIBUTE_UNUSED,
 
         if (!(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE) ||
             (xmlopt->config.features & VIR_DOMAIN_DEF_FEATURE_USER_ALIAS &&
-             STRPREFIX(aliasStr, USER_ALIAS_PREFIX) &&
+             STRPREFIX(aliasStr, VIR_DOMAIN_USER_ALIAS_PREFIX) &&
              strspn(aliasStr, USER_ALIAS_CHARS) == strlen(aliasStr)))
             VIR_STEAL_PTR(info->alias, aliasStr);
     }

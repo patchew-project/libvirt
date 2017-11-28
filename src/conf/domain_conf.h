@@ -57,6 +57,8 @@
 # include "virtypedparam.h"
 # include "virsavecookie.h"
 
+# define VIR_DOMAIN_USER_ALIAS_PREFIX "ua-"
+
 /* forward declarations of all device types, required by
  * virDomainDeviceDef
  */
