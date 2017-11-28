@@ -3611,6 +3611,12 @@ qemuDomainChrDefValidate(const virDomainChrDef *dev,
     if (dev->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL) {
         bool isCompatible = true;
 
+        if (!ARCH_IS_X86(def->os.arch) &&
+            (dev->targetType == VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA ||
+             dev->targetModel == VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_ISA_SERIAL)) {
+            isCompatible = false;
+        }
+
         if (!qemuDomainIsPSeries(def) &&
             (dev->targetType == VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO ||
              dev->targetModel == VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SPAPR_VTY)) {
