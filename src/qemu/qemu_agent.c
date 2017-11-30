@@ -354,7 +354,9 @@ qemuAgentIOProcessLine(qemuAgentPtr mon,
                 if (msg->id != id) {
                     VIR_DEBUG("Guest agent returned ID: %llu instead of %llu",
                               id, msg->id);
-                    ret = 0;
+                    virReportError(VIR_ERR_AGENT_UNSYNCED,
+                                   _("Guest agent returned ID: %llu "
+                                     "instead of %llu"), id, msg->id);
                     goto cleanup;
                 }
             }
