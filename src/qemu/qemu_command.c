@@ -3127,17 +3127,9 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
         /* Since we currently only support the integrated IDE
          * controller on various boards, if we ever get to here, it's
          * because some other machinetype had an IDE controller
-         * specified, or one with a single IDE contraller had multiple
+         * specified, or one with a single IDE controller had multiple
          * ide controllers specified.
          */
-        if (qemuDomainHasBuiltinIDE(domainDef))
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("Only a single IDE controller is supported "
-                             "for this machine type"));
-        else
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("IDE controllers are unsupported for "
-                             "this QEMU binary or machine type"));
         goto error;
 
     default:
