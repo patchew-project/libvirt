@@ -3885,6 +3885,36 @@ qemuDomainDeviceDefValidateDisk(const virDomainDiskDef *disk)
 
 
 static int
+qemuDomainControllerDefValidate(const virDomainControllerDef *controller,
+                                const virDomainDef *def)
+{
+    if (controller->type == VIR_DOMAIN_CONTROLLER_TYPE_IDE) {
+        /* No need to check implicit/builtin IDE controller */
+        if (controller->idx == 0 && qemuDomainHasBuiltinIDE(def))
+            return 0;
+
+        /* Since we currently only support the integrated IDE
+         * controller on various boards, if we ever get to here, it's
+         * because some other machinetype had an IDE controller
+         * specified, or one with a single IDE controller had multiple
+         * ide controllers specified.
+         */
+        if (qemuDomainHasBuiltinIDE(def))
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("Only a single IDE controller is supported "
+                             "for this machine type"));
+        else
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("IDE controllers are unsupported for "
+                             "this QEMU binary or machine type: %s"),
+                             def->os.machine);
+        return -1;
+    }
+    return 0;
+}
+
+
+static int
 qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
                             const virDomainDef *def,
                             void *opaque ATTRIBUTE_UNUSED)
@@ -3928,11 +3958,14 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
         ret = qemuDomainDeviceDefValidateDisk(dev->data.disk);
         break;
 
+    case VIR_DOMAIN_DEVICE_CONTROLLER:
+        ret = qemuDomainControllerDefValidate(dev->data.controller, def);
+        break;
+
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_FS:
     case VIR_DOMAIN_DEVICE_INPUT:
     case VIR_DOMAIN_DEVICE_SOUND:
-    case VIR_DOMAIN_DEVICE_CONTROLLER:
     case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
