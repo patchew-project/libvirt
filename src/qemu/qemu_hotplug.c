@@ -112,7 +112,7 @@ qemuHotplugPrepareDiskAccess(virQEMUDriverPtr driver,
                                 vm, disk) < 0)
         goto cleanup;
 
-    if (qemuDomainNamespaceSetupDisk(driver, vm, disk->src) < 0)
+    if (qemuDomainNamespaceSetupDisk(vm, disk->src) < 0)
         goto rollback_lock;
 
     if (qemuSecuritySetDiskLabel(driver, vm, disk) < 0)
@@ -134,7 +134,7 @@ qemuHotplugPrepareDiskAccess(virQEMUDriverPtr driver,
                  virDomainDiskGetSource(disk));
 
  rollback_namespace:
-    if (qemuDomainNamespaceTeardownDisk(driver, vm, disk->src) < 0)
+    if (qemuDomainNamespaceTeardownDisk(vm, disk->src) < 0)
         VIR_WARN("Unable to remove /dev entry for %s",
                  virDomainDiskGetSource(disk));
 
@@ -1304,7 +1304,7 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
     }
     vm->def->hostdevs[--(vm->def->nhostdevs)] = NULL;
 
-    if (qemuDomainNamespaceSetupHostdev(driver, vm, hostdev) < 0)
+    if (qemuDomainNamespaceSetupHostdev(vm, hostdev) < 0)
         goto error;
     teardowndevice = true;
 
@@ -1374,7 +1374,7 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
         qemuSecurityRestoreHostdevLabel(driver, vm, hostdev) < 0)
         VIR_WARN("Unable to restore host device labelling on hotplug fail");
     if (teardowndevice &&
-        qemuDomainNamespaceTeardownHostdev(driver, vm, hostdev) < 0)
+        qemuDomainNamespaceTeardownHostdev(vm, hostdev) < 0)
         VIR_WARN("Unable to remove host device from /dev");
 
     if (releaseaddr)
@@ -1831,7 +1831,7 @@ int qemuDomainAttachChrDevice(virConnectPtr conn,
     if (rc == 1)
         need_release = true;
 
-    if (qemuDomainNamespaceSetupChardev(driver, vm, chr) < 0)
+    if (qemuDomainNamespaceSetupChardev(vm, chr) < 0)
         goto cleanup;
     teardowndevice = true;
 
@@ -1877,7 +1877,7 @@ int qemuDomainAttachChrDevice(virConnectPtr conn,
             qemuDomainReleaseDeviceAddress(vm, &chr->info, NULL);
         if (teardowncgroup && qemuTeardownChardevCgroup(vm, chr) < 0)
             VIR_WARN("Unable to remove chr device cgroup ACL on hotplug fail");
-        if (teardowndevice && qemuDomainNamespaceTeardownChardev(driver, vm, chr) < 0)
+        if (teardowndevice && qemuDomainNamespaceTeardownChardev(vm, chr) < 0)
             VIR_WARN("Unable to remove chr device from /dev");
     }
     VIR_FREE(tlsAlias);
@@ -1934,7 +1934,7 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
     if (qemuDomainEnsureVirtioAddress(&releaseaddr, vm, &dev, "rng") < 0)
         return -1;
 
-    if (qemuDomainNamespaceSetupRNG(driver, vm, rng) < 0)
+    if (qemuDomainNamespaceSetupRNG(vm, rng) < 0)
         goto cleanup;
     teardowndevice = true;
 
@@ -1998,7 +1998,7 @@ qemuDomainAttachRNGDevice(virConnectPtr conn,
             qemuDomainReleaseDeviceAddress(vm, &rng->info, NULL);
         if (teardowncgroup && qemuTeardownRNGCgroup(vm, rng) < 0)
             VIR_WARN("Unable to remove RNG device cgroup ACL on hotplug fail");
-        if (teardowndevice && qemuDomainNamespaceTeardownRNG(driver, vm, rng) < 0)
+        if (teardowndevice && qemuDomainNamespaceTeardownRNG(vm, rng) < 0)
             VIR_WARN("Unable to remove chr device from /dev");
     }
 
@@ -2084,7 +2084,7 @@ qemuDomainAttachMemory(virQEMUDriverPtr driver,
     if (qemuProcessBuildDestroyMemoryPaths(driver, vm, mem, true) < 0)
         goto cleanup;
 
-    if (qemuDomainNamespaceSetupMemory(driver, vm, mem) < 0)
+    if (qemuDomainNamespaceSetupMemory(vm, mem) < 0)
         goto cleanup;
     teardowndevice = true;
 
@@ -2142,7 +2142,7 @@ qemuDomainAttachMemory(virQEMUDriverPtr driver,
         if (teardownlabel && qemuSecurityRestoreMemoryLabel(driver, vm, mem) < 0)
             VIR_WARN("Unable to restore security label on memdev");
         if (teardowndevice &&
-            qemuDomainNamespaceTeardownMemory(driver, vm, mem) <  0)
+            qemuDomainNamespaceTeardownMemory(vm, mem) <  0)
             VIR_WARN("Unable to remove memory device from /dev");
     }
 
@@ -2203,7 +2203,7 @@ qemuDomainAttachHostUSBDevice(virQEMUDriverPtr driver,
 
     added = true;
 
-    if (qemuDomainNamespaceSetupHostdev(driver, vm, hostdev) < 0)
+    if (qemuDomainNamespaceSetupHostdev(vm, hostdev) < 0)
         goto cleanup;
     teardowndevice = true;
 
@@ -2244,7 +2244,7 @@ qemuDomainAttachHostUSBDevice(virQEMUDriverPtr driver,
             qemuSecurityRestoreHostdevLabel(driver, vm, hostdev) < 0)
             VIR_WARN("Unable to restore host device labelling on hotplug fail");
         if (teardowndevice &&
-            qemuDomainNamespaceTeardownHostdev(driver, vm, hostdev) < 0)
+            qemuDomainNamespaceTeardownHostdev(vm, hostdev) < 0)
             VIR_WARN("Unable to remove host device from /dev");
         if (added)
             qemuHostdevReAttachUSBDevices(driver, vm->def->name, &hostdev, 1);
@@ -2302,7 +2302,7 @@ qemuDomainAttachHostSCSIDevice(virConnectPtr conn,
     if (qemuHostdevPrepareSCSIDevices(driver, vm->def->name, &hostdev, 1) < 0)
         return -1;
 
-    if (qemuDomainNamespaceSetupHostdev(driver, vm, hostdev) < 0)
+    if (qemuDomainNamespaceSetupHostdev(vm, hostdev) < 0)
         goto cleanup;
     teardowndevice = true;
 
@@ -2375,7 +2375,7 @@ qemuDomainAttachHostSCSIDevice(virConnectPtr conn,
             qemuSecurityRestoreHostdevLabel(driver, vm, hostdev) < 0)
             VIR_WARN("Unable to restore host device labelling on hotplug fail");
         if (teardowndevice &&
-            qemuDomainNamespaceTeardownHostdev(driver, vm, hostdev) < 0)
+            qemuDomainNamespaceTeardownHostdev(vm, hostdev) < 0)
             VIR_WARN("Unable to remove host device from /dev");
     }
     qemuDomainSecretHostdevDestroy(hostdev);
@@ -2429,7 +2429,7 @@ qemuDomainAttachSCSIVHostDevice(virQEMUDriverPtr driver,
     if (qemuHostdevPrepareSCSIVHostDevices(driver, vm->def->name, &hostdev, 1) < 0)
         return -1;
 
-    if (qemuDomainNamespaceSetupHostdev(driver, vm, hostdev) < 0)
+    if (qemuDomainNamespaceSetupHostdev(vm, hostdev) < 0)
         goto cleanup;
     teardowndevice = true;
 
@@ -2499,7 +2499,7 @@ qemuDomainAttachSCSIVHostDevice(virQEMUDriverPtr driver,
             qemuSecurityRestoreHostdevLabel(driver, vm, hostdev) < 0)
             VIR_WARN("Unable to restore host device labelling on hotplug fail");
         if (teardowndevice &&
-            qemuDomainNamespaceTeardownHostdev(driver, vm, hostdev) < 0)
+            qemuDomainNamespaceTeardownHostdev(vm, hostdev) < 0)
             VIR_WARN("Unable to remove host device from /dev");
         if (releaseaddr)
             qemuDomainReleaseDeviceAddress(vm, hostdev->info, NULL);
@@ -3733,7 +3733,7 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
     if (virDomainLockDiskDetach(driver->lockManager, vm, disk) < 0)
         VIR_WARN("Unable to release lock on %s", src);
 
-    if (qemuDomainNamespaceTeardownDisk(driver, vm, disk->src) < 0)
+    if (qemuDomainNamespaceTeardownDisk(vm, disk->src) < 0)
         VIR_WARN("Unable to remove /dev entry for %s", src);
 
     dev.type = VIR_DOMAIN_DEVICE_DISK;
@@ -3816,7 +3816,7 @@ qemuDomainRemoveMemoryDevice(virQEMUDriverPtr driver,
     if (qemuTeardownMemoryDevicesCgroup(vm, mem) < 0)
         VIR_WARN("Unable to remove memory device cgroup ACL");
 
-    if (qemuDomainNamespaceTeardownMemory(driver, vm, mem) <  0)
+    if (qemuDomainNamespaceTeardownMemory(vm, mem) <  0)
         VIR_WARN("Unable to remove memory device from /dev");
 
     virDomainMemoryDefFree(mem);
@@ -3946,7 +3946,7 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
     if (qemuTeardownHostdevCgroup(vm, hostdev) < 0)
         VIR_WARN("Failed to remove host device cgroup ACL");
 
-    if (qemuDomainNamespaceTeardownHostdev(driver, vm, hostdev) < 0)
+    if (qemuDomainNamespaceTeardownHostdev(vm, hostdev) < 0)
         VIR_WARN("Unable to remove host device from /dev");
 
     switch ((virDomainHostdevSubsysType) hostdev->source.subsys.type) {
@@ -4154,7 +4154,7 @@ qemuDomainRemoveChrDevice(virQEMUDriverPtr driver,
     if (qemuTeardownChardevCgroup(vm, chr) < 0)
         VIR_WARN("Failed to remove chr device cgroup ACL");
 
-    if (qemuDomainNamespaceTeardownChardev(driver, vm, chr) < 0)
+    if (qemuDomainNamespaceTeardownChardev(vm, chr) < 0)
         VIR_WARN("Unable to remove chr device from /dev");
 
     event = virDomainEventDeviceRemovedNewFromObj(vm, chr->info.alias);
@@ -4235,7 +4235,7 @@ qemuDomainRemoveRNGDevice(virQEMUDriverPtr driver,
     if (qemuTeardownRNGCgroup(vm, rng) < 0)
         VIR_WARN("Failed to remove RNG device cgroup ACL");
 
-    if (qemuDomainNamespaceTeardownRNG(driver, vm, rng) < 0)
+    if (qemuDomainNamespaceTeardownRNG(vm, rng) < 0)
         VIR_WARN("Unable to remove RNG device from /dev");
 
     event = virDomainEventDeviceRemovedNewFromObj(vm, rng->info.alias);
