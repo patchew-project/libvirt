@@ -3438,17 +3438,21 @@ virFileGetHugepageSize(const char *path,
         goto cleanup;
     }
 
-    if (fs.f_type != HUGETLBFS_MAGIC) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("not a hugetlbfs mount: '%s'"),
-                       path);
-        goto cleanup;
-    }
-
     *size = fs.f_bsize / 1024; /* we are storing size in KiB */
     ret = 0;
  cleanup:
     return ret;
+}
+
+static bool
+virFileIsHugeTLBFS(const char *path)
+{
+    struct statfs fs;
+
+    if (statfs(path, &fs) < 0) {
+        return false;
+    }
+    return fs.f_type == HUGETLBFS_MAGIC;
 }
 
 # define PROC_MEMINFO "/proc/meminfo"
@@ -3515,6 +3519,9 @@ virFileFindHugeTLBFS(virHugeTLBFSPtr *ret_fs,
         virHugeTLBFSPtr tmp;
 
         if (STRNEQ(mb.mnt_type, "hugetlbfs"))
+            continue;
+
+        if (!virFileIsHugeTLBFS(mb.mnt_dir))
             continue;
 
         if (VIR_EXPAND_N(fs, nfs, 1) < 0)
