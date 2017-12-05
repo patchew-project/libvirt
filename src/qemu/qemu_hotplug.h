@@ -125,6 +125,9 @@ int qemuDomainDetachShmemDevice(virQEMUDriverPtr driver,
 int qemuDomainDetachWatchdog(virQEMUDriverPtr driver,
                              virDomainObjPtr vm,
                              virDomainWatchdogDefPtr watchdog);
+int qemuDomainDetachRedirdevDevice(virQEMUDriverPtr driver,
+                                   virDomainObjPtr vm,
+                                   virDomainRedirdevDefPtr redirdev);
 
 int qemuDomainAttachInputDevice(virQEMUDriverPtr driver,
                                 virDomainObjPtr vm,
