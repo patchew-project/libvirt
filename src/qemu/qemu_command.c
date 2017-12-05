@@ -3180,8 +3180,8 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
                                   virQEMUCapsPtr qemuCaps)
 {
     size_t i, j;
+    unsigned int flags = 0;
     int usbcontroller = 0;
-    bool usblegacy = false;
     int contOrder[] = {
         /*
          * List of controller types that we add commandline args for,
@@ -3216,61 +3216,14 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
             if (cont->type != contOrder[j])
                 continue;
 
-            /* skip USB controllers with type none.*/
-            if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
-                cont->model == VIR_DOMAIN_CONTROLLER_MODEL_USB_NONE) {
-                usbcontroller = -1; /* mark we don't want a controller */
-                continue;
-            }
+            if (qemuDomainDeviceDefSkipController(cont, def, &flags)) {
+                /* mark we don't want a controller */
+                if (flags & QEMU_DOMAIN_DEVICE_SKIP_USB_CONTROLLER_FLAG)
+                    usbcontroller = -1;
 
-            /* skip pcie-root */
-            if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI &&
-                cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT) {
-                continue;
-            }
-
-            /* Skip pci-root, except for pSeries guests (which actually
-             * support more than one PCI Host Bridge per guest) */
-            if (!qemuDomainIsPSeries(def) &&
-                cont->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI &&
-                cont->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT) {
-                continue;
-            }
-
-            /* first SATA controller on Q35 machines is implicit */
-            if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_SATA &&
-                cont->idx == 0 && qemuDomainIsQ35(def))
-                    continue;
-
-            /* first IDE controller is implicit on various machines */
-            if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_IDE &&
-                cont->idx == 0 && qemuDomainHasBuiltinIDE(def))
-                    continue;
-
-            if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
-                cont->model == -1 &&
-                !qemuDomainIsQ35(def) &&
-                !qemuDomainIsVirt(def)) {
-
-                /* An appropriate default USB controller model should already
-                 * have been selected in qemuDomainDeviceDefPostParse(); if
-                 * we still have no model by now, we have to fall back to the
-                 * legacy USB controller.
-                 *
-                 * Note that we *don't* want to end up with the legacy USB
-                 * controller for q35 and virt machines, so we go ahead and
-                 * fail in qemuBuildControllerDevStr(); on the other hand,
-                 * for s390 machines we want to ignore any USB controller
-                 * (see 548ba43028 for the full story), so we skip
-                 * qemuBuildControllerDevStr() but we don't ultimately end
-                 * up adding the legacy USB controller */
-                if (usblegacy) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                                   _("Multiple legacy USB controllers are "
-                                     "not supported"));
+                if (flags & QEMU_DOMAIN_DEVICE_SKIP_USB_LEGACY_FAIL_FLAG)
                     goto cleanup;
-                }
-                usblegacy = true;
+
                 continue;
             }
 

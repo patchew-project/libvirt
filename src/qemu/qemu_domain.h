@@ -999,4 +999,16 @@ qemuDomainPrepareDiskSource(virConnectPtr conn,
                             qemuDomainObjPrivatePtr priv,
                             virQEMUDriverConfigPtr cfg);
 
+typedef enum {
+    QEMU_DOMAIN_DEVICE_SKIP_USB_CONTROLLER_FLAG = (1 << 0),
+    QEMU_DOMAIN_DEVICE_SKIP_USB_LEGACY_FLAG = (1 << 1),
+    QEMU_DOMAIN_DEVICE_SKIP_USB_LEGACY_FAIL_FLAG = (1 << 2),
+} qemuDomainDeviceSkipFlags;
+
+bool
+qemuDomainDeviceDefSkipController(const virDomainControllerDef *controller,
+                                  const virDomainDef *def,
+                                  unsigned int *flags);
+
+
 #endif /* __QEMU_DOMAIN_H__ */
