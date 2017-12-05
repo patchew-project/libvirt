@@ -3131,6 +3131,75 @@ int qemuMonitorJSONMigrateCancel(qemuMonitorPtr mon)
     return ret;
 }
 
+
+/* qemuMonitorJSONQueryDump:
+ * @mon: Monitor pointer
+ * @stats: Dump "stats"
+ *
+ * Attempt to make a "query-dump" call, check for errors, and get/return
+ * the current from the reply
+ *
+ * Returns: 0 on success, -1 on failure
+ */
+int
+qemuMonitorJSONQueryDump(qemuMonitorPtr mon,
+                         qemuMonitorDumpStatsPtr stats)
+{
+    int ret = -1;
+    virJSONValuePtr cmd = qemuMonitorJSONMakeCommand("query-dump", NULL);
+    virJSONValuePtr reply = NULL;
+    virJSONValuePtr result = NULL;
+    const char *statusstr;
+
+    if (!cmd)
+        return -1;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
+        goto cleanup;
+
+    if (!(result = virJSONValueObjectGetObject(reply, "return")))
+        goto cleanup;
+
+    if (!(statusstr = virJSONValueObjectGetString(result, "status"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("incomplete result, failed to get status"));
+        goto cleanup;
+    }
+
+    stats->status = qemuMonitorDumpStatusTypeFromString(statusstr);
+    if (stats->status < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("incomplete result, unknown status string '%s'"),
+                       statusstr);
+        goto cleanup;
+    }
+
+    if (virJSONValueObjectGetNumberUlong(result, "completed",
+                                         &stats->completed) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("incomplete result, failed to get completed"));
+        goto cleanup;
+    }
+
+    if (virJSONValueObjectGetNumberUlong(result, "total", &stats->total) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("incomplete result, failed to get total"));
+        goto cleanup;
+    }
+
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    virJSONValueFree(result);
+    return ret;
+}
+
+
 int
 qemuMonitorJSONGetDumpGuestMemoryCapability(qemuMonitorPtr mon,
                                             const char *capability)
