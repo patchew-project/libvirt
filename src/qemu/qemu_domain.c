@@ -3959,10 +3959,32 @@ qemuDomainDeviceDefSkipController(const virDomainControllerDef *controller,
 
 
 static int
+qemuDomainDeviceDefValidateControllerIDE(const virDomainDef *def)
+{
+    /* Since we currently only support the integrated IDE
+     * controller on various boards, if we ever get to here, it's
+     * because some other machinetype had an IDE controller
+     * specified, or one with a single IDE controller had multiple
+     * IDE controllers specified.
+     */
+    if (qemuDomainHasBuiltinIDE(def))
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Only a single IDE controller is supported "
+                         "for this machine type"));
+    else
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("IDE controllers are unsupported for "
+                         "this QEMU binary or machine type"));
+    return -1;
+}
+
+
+static int
 qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
                                       const virDomainDef *def,
                                       virQEMUCapsPtr qemuCaps)
 {
+    int ret = 0;
     unsigned int flags = 0;
 
     if (qemuDomainDeviceDefSkipController(controller, def, &flags))
@@ -3977,6 +3999,9 @@ qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
 
     switch ((virDomainControllerType) controller->type) {
     case VIR_DOMAIN_CONTROLLER_TYPE_IDE:
+        ret = qemuDomainDeviceDefValidateControllerIDE(def);
+        break;
+
     case VIR_DOMAIN_CONTROLLER_TYPE_FDC:
     case VIR_DOMAIN_CONTROLLER_TYPE_SCSI:
     case VIR_DOMAIN_CONTROLLER_TYPE_SATA:
@@ -3988,7 +4013,7 @@ qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
         break;
     }
 
-    return 0;
+    return ret;
 }
 
 
