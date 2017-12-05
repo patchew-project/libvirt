@@ -3960,7 +3960,8 @@ qemuDomainDeviceDefSkipController(const virDomainControllerDef *controller,
 
 static int
 qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
-                                      const virDomainDef *def)
+                                      const virDomainDef *def,
+                                      virQEMUCapsPtr qemuCaps)
 {
     unsigned int flags = 0;
 
@@ -3968,6 +3969,10 @@ qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
         return 0;
 
     if (flags & QEMU_DOMAIN_DEVICE_SKIP_USB_LEGACY_FAIL_FLAG)
+        return -1;
+
+    if (!qemuDomainCheckCCWS390AddressSupport(def, controller->info, qemuCaps,
+                                              "controller"))
         return -1;
 
     switch ((virDomainControllerType) controller->type) {
@@ -3990,9 +3995,15 @@ qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
 static int
 qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
                             const virDomainDef *def,
-                            void *opaque ATTRIBUTE_UNUSED)
+                            void *opaque)
 {
     int ret = 0;
+    virQEMUDriverPtr driver = opaque;
+    virQEMUCapsPtr qemuCaps = NULL;
+
+    if (!(qemuCaps = virQEMUCapsCacheLookup(driver->qemuCapsCache,
+                                            def->emulator)))
+        return -1;
 
     switch ((virDomainDeviceType) dev->type) {
     case VIR_DOMAIN_DEVICE_NET:
@@ -4032,7 +4043,8 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
         break;
 
     case VIR_DOMAIN_DEVICE_CONTROLLER:
-        ret = qemuDomainDeviceDefValidateController(dev->data.controller, def);
+        ret = qemuDomainDeviceDefValidateController(dev->data.controller, def,
+                                                    qemuCaps);
         break;
 
     case VIR_DOMAIN_DEVICE_LEASE:
