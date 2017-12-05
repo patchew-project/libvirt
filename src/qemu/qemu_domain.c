@@ -4333,6 +4333,18 @@ qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *controlle
 
 
 static int
+qemuDomainDeviceDefValidateControllerSATA(virQEMUCapsPtr qemuCaps)
+{
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_ICH9_AHCI)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("SATA is not supported with this QEMU binary"));
+        return -1;
+    }
+    return 0;
+}
+
+
+static int
 qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
                                       const virDomainDef *def,
                                       virQEMUCapsPtr qemuCaps)
@@ -4364,8 +4376,11 @@ qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
         ret = qemuDomainDeviceDefValidateControllerPCI(controller, qemuCaps);
         break;
 
-    case VIR_DOMAIN_CONTROLLER_TYPE_FDC:
     case VIR_DOMAIN_CONTROLLER_TYPE_SATA:
+        ret = qemuDomainDeviceDefValidateControllerSATA(qemuCaps);
+        break;
+
+    case VIR_DOMAIN_CONTROLLER_TYPE_FDC:
     case VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL:
     case VIR_DOMAIN_CONTROLLER_TYPE_CCID:
     case VIR_DOMAIN_CONTROLLER_TYPE_USB:
