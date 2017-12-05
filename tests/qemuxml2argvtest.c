@@ -1508,10 +1508,10 @@ mymain(void)
             QEMU_CAPS_PCI_OHCI,
             QEMU_CAPS_PIIX3_USB_UHCI,
             QEMU_CAPS_NEC_USB_XHCI);
-    DO_TEST_FAILURE("usb-controller-default-unavailable-q35",
-                    QEMU_CAPS_DEVICE_IOH3420,
-                    QEMU_CAPS_PCI_OHCI,
-                    QEMU_CAPS_NEC_USB_XHCI);
+    DO_TEST_PARSE_ERROR("usb-controller-default-unavailable-q35",
+                        QEMU_CAPS_DEVICE_IOH3420,
+                        QEMU_CAPS_PCI_OHCI,
+                        QEMU_CAPS_NEC_USB_XHCI);
     DO_TEST("usb-controller-explicit-q35",
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_PCI_OHCI,

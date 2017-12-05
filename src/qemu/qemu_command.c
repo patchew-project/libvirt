@@ -2542,12 +2542,6 @@ qemuBuildUSBControllerDevStr(virDomainControllerDefPtr def,
 
     model = def->model;
 
-    if (model == -1) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       "%s", _("no model provided for USB controller"));
-        return -1;
-    }
-
     smodel = qemuControllerModelUSBTypeToString(model);
     flags = qemuControllerModelUSBToCaps(model);
 

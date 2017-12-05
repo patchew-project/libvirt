@@ -4345,6 +4345,19 @@ qemuDomainDeviceDefValidateControllerSATA(virQEMUCapsPtr qemuCaps)
 
 
 static int
+qemuDomainDeviceDefValidateControllerUSB(const virDomainControllerDef *controller)
+{
+    if (controller->model == -1) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("no model provided for USB controller"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
                                       const virDomainDef *def,
                                       virQEMUCapsPtr qemuCaps)
@@ -4380,10 +4393,13 @@ qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
         ret = qemuDomainDeviceDefValidateControllerSATA(qemuCaps);
         break;
 
+    case VIR_DOMAIN_CONTROLLER_TYPE_USB:
+        ret = qemuDomainDeviceDefValidateControllerUSB(controller);
+        break;
+
     case VIR_DOMAIN_CONTROLLER_TYPE_FDC:
     case VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL:
     case VIR_DOMAIN_CONTROLLER_TYPE_CCID:
-    case VIR_DOMAIN_CONTROLLER_TYPE_USB:
     case VIR_DOMAIN_CONTROLLER_TYPE_LAST:
         break;
     }
