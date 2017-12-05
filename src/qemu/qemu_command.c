@@ -142,8 +142,6 @@ VIR_ENUM_IMPL(qemuSoundCodec, VIR_DOMAIN_SOUND_CODEC_TYPE_LAST,
               "hda-duplex",
               "hda-micro");
 
-VIR_ENUM_DECL(qemuControllerModelUSB)
-
 VIR_ENUM_IMPL(qemuControllerModelUSB, VIR_DOMAIN_CONTROLLER_MODEL_USB_LAST,
               "piix3-usb-uhci",
               "piix4-usb-uhci",
@@ -2503,66 +2501,13 @@ qemuBuildFSDevCommandLine(virCommandPtr cmd,
 }
 
 
-static int
-qemuControllerModelUSBToCaps(int model)
-{
-    switch (model) {
-    case VIR_DOMAIN_CONTROLLER_MODEL_USB_PIIX3_UHCI:
-        return QEMU_CAPS_PIIX3_USB_UHCI;
-    case VIR_DOMAIN_CONTROLLER_MODEL_USB_PIIX4_UHCI:
-        return QEMU_CAPS_PIIX4_USB_UHCI;
-    case VIR_DOMAIN_CONTROLLER_MODEL_USB_EHCI:
-        return QEMU_CAPS_USB_EHCI;
-    case VIR_DOMAIN_CONTROLLER_MODEL_USB_ICH9_EHCI1:
-    case VIR_DOMAIN_CONTROLLER_MODEL_USB_ICH9_UHCI1:
-    case VIR_DOMAIN_CONTROLLER_MODEL_USB_ICH9_UHCI2:
-    case VIR_DOMAIN_CONTROLLER_MODEL_USB_ICH9_UHCI3:
-        return QEMU_CAPS_ICH9_USB_EHCI1;
-    case VIR_DOMAIN_CONTROLLER_MODEL_USB_VT82C686B_UHCI:
-        return QEMU_CAPS_VT82C686B_USB_UHCI;
-    case VIR_DOMAIN_CONTROLLER_MODEL_USB_PCI_OHCI:
-        return QEMU_CAPS_PCI_OHCI;
-    case VIR_DOMAIN_CONTROLLER_MODEL_USB_NEC_XHCI:
-        return QEMU_CAPS_NEC_USB_XHCI;
-    case VIR_DOMAIN_CONTROLLER_MODEL_USB_QEMU_XHCI:
-        return QEMU_CAPS_DEVICE_QEMU_XHCI;
-    default:
-        return -1;
-    }
-}
-
-
-static int
+static void
 qemuBuildUSBControllerDevStr(virDomainControllerDefPtr def,
-                             virQEMUCapsPtr qemuCaps,
                              virBuffer *buf)
 {
-    const char *smodel;
-    int model, flags;
-
-    model = def->model;
-
-    smodel = qemuControllerModelUSBTypeToString(model);
-    flags = qemuControllerModelUSBToCaps(model);
-
-    if (flags == -1 || !virQEMUCapsGet(qemuCaps, flags)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("%s not supported in this QEMU binary"), smodel);
-        return -1;
-    }
-
-    virBufferAsprintf(buf, "%s", smodel);
+    virBufferAsprintf(buf, "%s", qemuControllerModelUSBTypeToString(def->model));
 
     if (def->opts.usbopts.ports != -1) {
-        if ((model != VIR_DOMAIN_CONTROLLER_MODEL_USB_NEC_XHCI ||
-             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_NEC_USB_XHCI_PORTS)) &&
-            model != VIR_DOMAIN_CONTROLLER_MODEL_USB_QEMU_XHCI) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("usb controller type %s doesn't support 'ports' "
-                             "with this QEMU binary"), smodel);
-            return -1;
-        }
-
         virBufferAsprintf(buf, ",p2=%d,p3=%d",
                           def->opts.usbopts.ports, def->opts.usbopts.ports);
     }
@@ -2572,8 +2517,6 @@ qemuBuildUSBControllerDevStr(virDomainControllerDefPtr def,
                           def->info.alias, def->info.master.usb.startport);
     else
         virBufferAsprintf(buf, ",id=%s", def->info.alias);
-
-    return 0;
 }
 
 
@@ -2697,8 +2640,7 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
         break;
 
     case VIR_DOMAIN_CONTROLLER_TYPE_USB:
-        if (qemuBuildUSBControllerDevStr(def, qemuCaps, &buf) == -1)
-            goto error;
+        qemuBuildUSBControllerDevStr(def, &buf);
 
         if (nusbcontroller)
             *nusbcontroller += 1;

@@ -678,15 +678,18 @@ mymain(void)
     DO_TEST("ppc64-usb-controller-legacy",
             QEMU_CAPS_PIIX3_USB_UHCI);
     DO_TEST("usb-port-missing", NONE);
-    DO_TEST("usb-redir", NONE);
-    DO_TEST("usb-redir-filter", NONE);
+    DO_TEST("usb-redir",
+            QEMU_CAPS_ICH9_USB_EHCI1);
+    DO_TEST("usb-redir-filter",
+            QEMU_CAPS_ICH9_USB_EHCI1);
     DO_TEST("usb-redir-filter-version", NONE);
     DO_TEST("blkdeviotune", NONE);
     DO_TEST("blkdeviotune-max", NONE);
     DO_TEST("blkdeviotune-group-num", NONE);
     DO_TEST("blkdeviotune-max-length", NONE);
-    DO_TEST("controller-usb-order", NONE);
-
+    DO_TEST("controller-usb-order",
+            QEMU_CAPS_NEC_USB_XHCI,
+            QEMU_CAPS_ICH9_USB_EHCI1);
     DO_TEST_FULL("seclabel-dynamic-baselabel", WHEN_INACTIVE, GIC_NONE, NONE);
     DO_TEST_FULL("seclabel-dynamic-override", WHEN_INACTIVE, GIC_NONE, NONE);
     DO_TEST_FULL("seclabel-dynamic-labelskip", WHEN_INACTIVE, GIC_NONE, NONE);
@@ -829,7 +832,8 @@ mymain(void)
     DO_TEST("numad-auto-vcpu-no-numatune", NONE);
     DO_TEST("numad-auto-memory-vcpu-no-cpuset-and-placement", NONE);
     DO_TEST("numad-auto-memory-vcpu-cpuset", NONE);
-    DO_TEST("usb-ich9-ehci-addr", NONE);
+    DO_TEST("usb-ich9-ehci-addr",
+            QEMU_CAPS_ICH9_USB_EHCI1);
     DO_TEST("disk-copy_on_read", NONE);
     DO_TEST("tpm-passthrough", NONE);
 
@@ -1313,7 +1317,8 @@ mymain(void)
     DO_TEST("intel-iommu-caching-mode",
             QEMU_CAPS_DEVICE_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_IOH3420);
+            QEMU_CAPS_DEVICE_IOH3420,
+            QEMU_CAPS_ICH9_USB_EHCI1);
     DO_TEST("intel-iommu-eim", NONE);
     DO_TEST("intel-iommu-device-iotlb", NONE);
 

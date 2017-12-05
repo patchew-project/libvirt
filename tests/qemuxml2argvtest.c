@@ -1517,10 +1517,10 @@ mymain(void)
             QEMU_CAPS_PCI_OHCI,
             QEMU_CAPS_PIIX3_USB_UHCI,
             QEMU_CAPS_NEC_USB_XHCI);
-    DO_TEST_FAILURE("usb-controller-explicit-unavailable-q35",
-                    QEMU_CAPS_DEVICE_IOH3420,
-                    QEMU_CAPS_PCI_OHCI,
-                    QEMU_CAPS_PIIX3_USB_UHCI);
+    DO_TEST_PARSE_ERROR("usb-controller-explicit-unavailable-q35",
+                        QEMU_CAPS_DEVICE_IOH3420,
+                        QEMU_CAPS_PCI_OHCI,
+                        QEMU_CAPS_PIIX3_USB_UHCI);
     DO_TEST("usb-controller-xhci",
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_PIIX3_USB_UHCI,
@@ -1538,7 +1538,7 @@ mymain(void)
             QEMU_CAPS_NEC_USB_XHCI,
             QEMU_CAPS_NEC_USB_XHCI_PORTS);
     DO_TEST("usb-controller-qemu-xhci", QEMU_CAPS_DEVICE_QEMU_XHCI);
-    DO_TEST_FAILURE("usb-controller-qemu-xhci-unavailable", NONE);
+    DO_TEST_PARSE_ERROR("usb-controller-qemu-xhci-unavailable", NONE);
     DO_TEST_PARSE_ERROR("usb-controller-qemu-xhci-limit",
                         QEMU_CAPS_DEVICE_QEMU_XHCI);
 

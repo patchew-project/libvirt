@@ -43,6 +43,8 @@
 
 VIR_ENUM_DECL(qemuVideo)
 
+VIR_ENUM_DECL(qemuControllerModelUSB)
+
 virCommandPtr qemuBuildCommandLine(virQEMUDriverPtr driver,
                                    virLogManagerPtr logManager,
                                    virDomainObjPtr vm,
