@@ -4322,10 +4322,8 @@ virDomainHostdevAssignAddress(virDomainXMLOptionPtr xmlopt,
                               const virDomainDef *def,
                               virDomainHostdevDefPtr hostdev)
 {
-    int next_unit = 0;
-    unsigned controller = 0;
+    int controller = 0;
     unsigned int max_unit;
-    size_t i;
     int ret;
 
     if (xmlopt->config.features & VIR_DOMAIN_DEF_FEATURE_WIDE_SCSI)
@@ -4333,33 +4331,30 @@ virDomainHostdevAssignAddress(virDomainXMLOptionPtr xmlopt,
     else
         max_unit = SCSI_NARROW_BUS_MAX_CONT_UNIT;
 
-    for (i = 0; i < def->ncontrollers; i++) {
-        if (def->controllers[i]->type != VIR_DOMAIN_CONTROLLER_TYPE_SCSI)
-            continue;
-
-        controller++;
-        ret = virDomainControllerSCSINextUnit(def, max_unit,
-                                              def->controllers[i]->idx);
-        if (ret >= 0) {
-            next_unit = ret;
-            controller = def->controllers[i]->idx;
-            break;
-        }
-    }
-
     /* NB: Do not attempt calling virDomainDefMaybeAddController to
      * automagically add a "new" controller. Doing so will result in
      * qemuDomainFindOrCreateSCSIDiskController "finding" the controller
      * in the domain def list and thus not hotplugging the controller as
      * well as the hostdev in the event that there are either no SCSI
      * controllers defined or there was no space on an existing one.
+     *
+     * Because we cannot add a controller, then we should not walk the
+     * defined controllers list in order to find empty space. Doing
+     * so fails to return the valid next unit number for the 2nd
+     * hostdev being added to the as yet to be created controller.
      */
+    do {
+        ret = virDomainControllerSCSINextUnit(def, max_unit, controller);
+        if (ret < 0)
+            controller++;
+    } while (ret < 0);
+
 
     hostdev->info->type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_DRIVE;
     hostdev->info->addr.drive.controller = controller;
     hostdev->info->addr.drive.bus = 0;
     hostdev->info->addr.drive.target = 0;
-    hostdev->info->addr.drive.unit = next_unit;
+    hostdev->info->addr.drive.unit = ret;
 
     return 0;
 }
