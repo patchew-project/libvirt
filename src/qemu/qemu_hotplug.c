@@ -587,6 +587,7 @@ qemuDomainFindOrCreateSCSIDiskController(virQEMUDriverPtr driver,
 {
     size_t i;
     virDomainControllerDefPtr cont;
+    virDomainControllerModelSCSI model = -1;
 
     for (i = 0; i < vm->def->ncontrollers; i++) {
         cont = vm->def->controllers[i];
@@ -596,6 +597,12 @@ qemuDomainFindOrCreateSCSIDiskController(virQEMUDriverPtr driver,
 
         if (cont->idx == controller)
             return cont;
+
+        /* Save off the model - if we end up creating a controller it's
+         * because the user didn't provide one and we need to automagically
+         * create one because the existing one is full - so let's be sure
+         * to keep the same model in that case. */
+        model = cont->model;
     }
 
     /* No SCSI controller present, for backward compatibility we
@@ -604,11 +611,10 @@ qemuDomainFindOrCreateSCSIDiskController(virQEMUDriverPtr driver,
         return NULL;
     cont->type = VIR_DOMAIN_CONTROLLER_TYPE_SCSI;
     cont->idx = controller;
-    cont->model = -1;
+    cont->model = model;
 
-    VIR_INFO("No SCSI controller present, hotplugging one");
-    if (qemuDomainAttachControllerDevice(driver,
-                                         vm, cont) < 0) {
+    VIR_INFO("No SCSI controller present, hotplugging one model=%d", model);
+    if (qemuDomainAttachControllerDevice(driver, vm, cont) < 0) {
         VIR_FREE(cont);
         return NULL;
     }
