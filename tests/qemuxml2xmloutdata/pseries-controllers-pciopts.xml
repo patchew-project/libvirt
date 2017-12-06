@@ -21,19 +21,17 @@
     <emulator>/usr/bin/qemu-system-ppc64</emulator>
     <controller type='pci' index='0' model='pci-root'>
       <model name='spapr-pci-host-bridge'/>
-      <target chassisNr='1' chassis='1' port='0x1' busNr='1' index='0'/>
+      <target index='0'/>
     </controller>
     <controller type='pci' index='1' model='pci-root'>
       <model name='spapr-pci-host-bridge'/>
-      <target chassisNr='2' chassis='2' port='0x2' busNr='2' index='1'>
+      <target index='1'>
         <node>0</node>
       </target>
     </controller>
     <controller type='pci' index='2' model='pci-bridge'>
       <model name='pci-bridge'/>
-      <target chassisNr='3' chassis='3' port='0x3' busNr='3' index='3'>
-        <node>0</node>
-      </target>
+      <target chassisNr='3'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x0'/>
     </controller>
     <controller type='usb' index='0' model='none'/>

@@ -16,6 +16,7 @@
     <controller type='pci' index='0' model='pci-root'>
       <!-- Only targetIndex should be preserved -->
       <target busNr='1' chassis='1' chassisNr='1' index='0' port='1'/>
+      <pcihole64 unit='KiB'>1024</pcihole64>
     </controller>
     <controller type='pci' index='1' model='pci-root'>
       <!-- Only numaNode and targetIndex should be preserved -->
