@@ -35,6 +35,15 @@
 <libvirt>
   <release version="v4.0.0" date="unreleased">
     <section title="New features">
+      <change>
+        <summary>
+          qemu: Add support for hot unplug redirdev device
+        </summary>
+        <description>
+          We've supported hotplug redirdev device, but lacked of
+          hot unplug feature. Now we can do it by libvirt.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
     </section>
