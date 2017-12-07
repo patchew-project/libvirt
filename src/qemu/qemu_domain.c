@@ -3918,6 +3918,97 @@ qemuDomainDeviceDefValidateControllerIDE(const virDomainControllerDef *controlle
 }
 
 
+/* qemuDomainCheckSCSIControllerIOThreads:
+ * @controller: Pointer to controller def
+ * @def: Pointer to domain def
+ *
+ * If this controller definition has iothreads set, let's make sure the
+ * configuration is right before adding to the command line
+ *
+ * Returns true if either supported or there are no iothreads for controller;
+ * otherwise, returns false if configuration is not quite right.
+ */
+static bool
+qemuDomainCheckSCSIControllerIOThreads(const virDomainControllerDef *controller,
+                                       const virDomainDef *def)
+{
+    if (!controller->iothread)
+        return true;
+
+    if (controller->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI &&
+        controller->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
+       virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("IOThreads only available for virtio pci and "
+                         "virtio ccw controllers"));
+       return false;
+    }
+
+    /* Can we find the controller iothread in the iothreadid list? */
+    if (!virDomainIOThreadIDFind(def, controller->iothread)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("controller iothread '%u' not defined in iothreadid"),
+                       controller->iothread);
+        return false;
+    }
+
+    return true;
+}
+
+
+static int
+qemuDomainDeviceDefValidateControllerSCSI(const virDomainControllerDef *controller,
+                                          const virDomainDef *def,
+                                          virQEMUCapsPtr qemuCaps)
+{
+    int model = controller->model;
+
+    if ((qemuDomainSetSCSIControllerModel(def, qemuCaps, &model)) < 0)
+        return -1;
+
+    if (model != VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI) {
+        if (controller->queues) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("'queues' is only supported by virtio-scsi controller"));
+            return -1;
+        }
+        if (controller->cmd_per_lun) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("'cmd_per_lun' is only supported by virtio-scsi controller"));
+            return -1;
+        }
+        if (controller->max_sectors) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("'max_sectors' is only supported by virtio-scsi controller"));
+            return -1;
+        }
+        if (controller->ioeventfd) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("'ioeventfd' is only supported by virtio-scsi controller"));
+            return -1;
+        }
+    }
+
+    switch ((virDomainControllerModelSCSI) model) {
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
+            if (!qemuDomainCheckSCSIControllerIOThreads(controller, def))
+                return -1;
+            break;
+
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_AUTO:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_BUSLOGIC:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSILOGIC:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSISAS1068:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VMPVSCSI:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_IBMVSCSI:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSISAS1078:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LAST:
+            break;
+    }
+
+    return 0;
+}
+
+
 static int
 qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
                                       const virDomainDef *def,
@@ -3934,8 +4025,12 @@ qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
         ret = qemuDomainDeviceDefValidateControllerIDE(controller, def);
         break;
 
-    case VIR_DOMAIN_CONTROLLER_TYPE_FDC:
     case VIR_DOMAIN_CONTROLLER_TYPE_SCSI:
+        ret = qemuDomainDeviceDefValidateControllerSCSI(controller, def,
+                                                        qemuCaps);
+        break;
+
+    case VIR_DOMAIN_CONTROLLER_TYPE_FDC:
     case VIR_DOMAIN_CONTROLLER_TYPE_SATA:
     case VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL:
     case VIR_DOMAIN_CONTROLLER_TYPE_CCID:

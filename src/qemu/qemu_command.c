@@ -2583,52 +2583,6 @@ qemuBuildUSBControllerDevStr(virDomainControllerDefPtr def,
 }
 
 
-/* qemuCheckSCSIControllerIOThreads:
- * @domainDef: Pointer to domain def
- * @def: Pointer to controller def
- * @qemuCaps: Capabilities
- *
- * If this controller definition has iothreads set, let's make sure the
- * configuration is right before adding to the command line
- *
- * Returns true if either supported or there are no iothreads for controller;
- * otherwise, returns false if configuration is not quite right.
- */
-static bool
-qemuCheckSCSIControllerIOThreads(const virDomainDef *domainDef,
-                                 virDomainControllerDefPtr def)
-{
-    if (!def->iothread)
-        return true;
-
-    if (def->model != VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("IOThreads only supported for virtio-scsi "
-                         "controllers model is '%s'"),
-                       virDomainControllerModelSCSITypeToString(def->model));
-        return false;
-    }
-
-    if (def->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI &&
-        def->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
-       virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("IOThreads only available for virtio pci and "
-                         "virtio ccw controllers"));
-       return false;
-    }
-
-    /* Can we find the controller iothread in the iothreadid list? */
-    if (!virDomainIOThreadIDFind(domainDef, def->iothread)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("controller iothread '%u' not defined in iothreadid"),
-                       def->iothread);
-        return false;
-    }
-
-    return true;
-}
-
-
 /**
  * qemuBuildControllerDevStr:
  * @domainDef: domain definition
@@ -2662,47 +2616,17 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
 
     *devstr = NULL;
 
-    if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_SCSI) {
-        if ((qemuDomainSetSCSIControllerModel(domainDef, qemuCaps, &model)) < 0)
-            return -1;
-    }
-
-    if (!(def->type == VIR_DOMAIN_CONTROLLER_TYPE_SCSI &&
-          model == VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI)) {
-        if (def->queues) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("'queues' is only supported by virtio-scsi controller"));
-            return -1;
-        }
-        if (def->cmd_per_lun) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("'cmd_per_lun' is only supported by virtio-scsi controller"));
-            return -1;
-        }
-        if (def->max_sectors) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("'max_sectors' is only supported by virtio-scsi controller"));
-            return -1;
-        }
-        if (def->ioeventfd) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("'ioeventfd' is only supported by virtio-scsi controller"));
-            return -1;
-        }
-    }
-
     switch ((virDomainControllerType) def->type) {
     case VIR_DOMAIN_CONTROLLER_TYPE_SCSI:
-        switch (model) {
+        if ((qemuDomainSetSCSIControllerModel(domainDef, qemuCaps, &model)) < 0)
+            return -1;
+        switch ((virDomainControllerModelSCSI) model) {
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
             if (def->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
                 virBufferAddLit(&buf, "virtio-scsi-ccw");
-                if (def->iothread) {
-                    if (!qemuCheckSCSIControllerIOThreads(domainDef, def))
-                        goto error;
+                if (def->iothread)
                     virBufferAsprintf(&buf, ",iothread=iothread%u",
                                       def->iothread);
-                }
             } else if (def->info.type ==
                        VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390) {
                 virBufferAddLit(&buf, "virtio-scsi-s390");
@@ -2711,12 +2635,9 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
                 virBufferAddLit(&buf, "virtio-scsi-device");
             } else {
                 virBufferAddLit(&buf, "virtio-scsi-pci");
-                if (def->iothread) {
-                    if (!qemuCheckSCSIControllerIOThreads(domainDef, def))
-                        goto error;
+                if (def->iothread)
                     virBufferAsprintf(&buf, ",iothread=iothread%u",
                                       def->iothread);
-                }
             }
             if (qemuBuildVirtioOptionsStr(&buf, def->virtio, qemuCaps) < 0)
                 goto error;
@@ -2733,7 +2654,10 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSISAS1078:
             virBufferAddLit(&buf, "megasas");
             break;
-        default:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_AUTO:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_BUSLOGIC:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VMPVSCSI:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LAST:
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Unsupported controller model: %s"),
                            virDomainControllerModelSCSITypeToString(def->model));
