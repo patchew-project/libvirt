@@ -1027,6 +1027,7 @@ virNodeDeviceObjListRemove;
 
 
 # conf/virnwfilterobj.h
+virNWFilterObjEndAPI;
 virNWFilterObjGetDef;
 virNWFilterObjGetNewDef;
 virNWFilterObjListAssignDef;
@@ -1040,9 +1041,7 @@ virNWFilterObjListLoadAllConfigs;
 virNWFilterObjListNew;
 virNWFilterObjListNumOfNWFilters;
 virNWFilterObjListRemove;
-virNWFilterObjLock;
 virNWFilterObjTestUnassignDef;
-virNWFilterObjUnlock;
 virNWFilterObjWantRemoved;
 
 
