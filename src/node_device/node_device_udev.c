@@ -551,12 +551,21 @@ udevProcessPCI(struct udev_device *device,
     virPCIEDeviceInfoPtr pci_express = NULL;
     virPCIDevicePtr pciDev = NULL;
     int ret = -1;
+    int rc = 0;
     char *p;
     bool privileged;
 
     nodeDeviceLock();
     privileged = driver->privileged;
+
+    if (!driver->initPCI) {
+        rc = udevPCITranslateInit(driver->privileged);
+        driver->initPCI = true;
+    }
+
     nodeDeviceUnlock();
+    if (rc < 0)
+        goto cleanup;
 
     if (udevGetUintProperty(device, "PCI_CLASS", &pci_dev->class, 16) < 0)
         goto cleanup;
@@ -1681,6 +1690,9 @@ nodeStateCleanup(void)
         virThreadJoin(&priv->th);
     }
 
+    if (driver->initPCI)
+        udevPCITranslateDeinit();
+
     virObjectUnref(priv);
     virObjectUnref(driver->nodeDeviceEventState);
 
@@ -1688,7 +1700,6 @@ nodeStateCleanup(void)
     virMutexDestroy(&driver->lock);
     VIR_FREE(driver);
 
-    udevPCITranslateDeinit();
     return 0;
 }
 
@@ -1961,9 +1972,6 @@ nodeStateInitialize(bool privileged,
 
     driver->privateData = priv;
     driver->nodeDeviceEventState = virObjectEventStateNew();
-
-    if (udevPCITranslateInit(privileged) < 0)
-        goto cleanup;
 
     udev = udev_new();
     if (!udev) {

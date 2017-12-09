@@ -41,6 +41,7 @@ struct _virNodeDeviceDriverState {
     virNodeDeviceObjListPtr devs;       /* currently-known devices */
     void *privateData;                  /* driver-specific private data */
     bool privileged;                    /* whether we run in privileged mode */
+    bool initPCI;                       /* Set when PCI thread completed */
 
     /* Immutable pointer, self-locking APIs */
     virObjectEventStatePtr nodeDeviceEventState;
