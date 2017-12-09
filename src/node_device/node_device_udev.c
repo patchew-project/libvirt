@@ -126,6 +126,43 @@ udevEventDataNew(void)
 }
 
 
+static int
+udevPCITranslateInit(bool privileged ATTRIBUTE_UNUSED)
+{
+#if defined __s390__ || defined __s390x_
+    /* On s390(x) system there is no PCI bus.
+     * Therefore there is nothing to initialize here. */
+#else
+    int rc;
+
+    if ((rc = pci_system_init()) != 0) {
+        /* Ignore failure as non-root; udev is not as helpful in that
+         * situation, but a non-privileged user won't benefit much
+         * from udev in the first place.  */
+        if (errno != ENOENT && (privileged  || errno != EACCES)) {
+            virReportSystemError(rc, "%s",
+                                 _("Failed to initialize libpciaccess"));
+            return -1;
+        }
+    }
+#endif
+    return 0;
+}
+
+
+static void
+udevPCITranslateDeinit(void)
+{
+#if defined __s390__ || defined __s390x_
+    /* Nothing was initialized, nothing needs to be cleaned up */
+#else
+    /* pci_system_cleanup returns void */
+    pci_system_cleanup();
+#endif
+    return;
+}
+
+
 static bool
 udevHasDeviceProperty(struct udev_device *dev,
                       const char *key)
@@ -1627,19 +1664,6 @@ udevEnumerateDevices(struct udev *udev)
 }
 
 
-static void
-udevPCITranslateDeinit(void)
-{
-#if defined __s390__ || defined __s390x_
-    /* Nothing was initialized, nothing needs to be cleaned up */
-#else
-    /* pci_system_cleanup returns void */
-    pci_system_cleanup();
-#endif
-    return;
-}
-
-
 static int
 nodeStateCleanup(void)
 {
@@ -1907,30 +1931,6 @@ nodeStateInitializeEnumerate(void *opaque)
     virObjectLock(priv);
     priv->threadQuit = true;
     virObjectUnlock(priv);
-}
-
-
-static int
-udevPCITranslateInit(bool privileged ATTRIBUTE_UNUSED)
-{
-#if defined __s390__ || defined __s390x_
-    /* On s390(x) system there is no PCI bus.
-     * Therefore there is nothing to initialize here. */
-#else
-    int rc;
-
-    if ((rc = pci_system_init()) != 0) {
-        /* Ignore failure as non-root; udev is not as helpful in that
-         * situation, but a non-privileged user won't benefit much
-         * from udev in the first place.  */
-        if (errno != ENOENT && (privileged  || errno != EACCES)) {
-            virReportSystemError(rc, "%s",
-                                 _("Failed to initialize libpciaccess"));
-            return -1;
-        }
-    }
-#endif
-    return 0;
 }
 
 
