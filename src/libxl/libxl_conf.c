@@ -355,6 +355,7 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
 
         if (caps && def->cpu) {
             bool hasHwVirt = false;
+            int nested_hvm = -1;
             bool svm = false, vmx = false;
 
             if (def->cpu->mode != (VIR_CPU_MODE_HOST_PASSTHROUGH)) {
@@ -379,18 +380,23 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
                         case VIR_CPU_FEATURE_FORBID:
                             if ((vmx && STREQ(def->cpu->features[i].name, "vmx")) ||
                                 (svm && STREQ(def->cpu->features[i].name, "svm")))
-                                hasHwVirt = false;
+                                nested_hvm = 0;
                             break;
 
                         case VIR_CPU_FEATURE_FORCE:
                         case VIR_CPU_FEATURE_REQUIRE:
+                            if ((vmx && STREQ(def->cpu->features[i].name, "vmx")) ||
+                                (svm && STREQ(def->cpu->features[i].name, "svm")))
+                                nested_hvm = 1;
+                            break;
                         case VIR_CPU_FEATURE_OPTIONAL:
                         case VIR_CPU_FEATURE_LAST:
                             break;
                     }
                 }
             }
-            libxl_defbool_set(&b_info->u.hvm.nested_hvm, hasHwVirt);
+            if (hasHwVirt && nested_hvm != -1)
+                libxl_defbool_set(&b_info->u.hvm.nested_hvm, nested_hvm);
         }
 
         if (def->nsounds > 0) {

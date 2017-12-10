@@ -14,7 +14,9 @@
     <apic/>
     <pae/>
   </features>
-  <cpu mode='host-passthrough'/>
+  <cpu mode='host-passthrough'>
+    <feature policy='force' name='vmx'/>
+  </cpu>
   <clock offset='variable' adjustment='0' basis='utc'/>
   <on_poweroff>destroy</on_poweroff>
   <on_reboot>restart</on_reboot>

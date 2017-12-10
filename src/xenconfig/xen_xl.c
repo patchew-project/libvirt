@@ -170,16 +170,7 @@ xenParseXLOS(virConfPtr conf, virDomainDefPtr def, virCapsPtr caps)
         if (xenConfigGetBool(conf, "nestedhvm", &val, -1) < 0)
             return -1;
 
-        if (val == 1) {
-            virCPUDefPtr cpu;
-
-            if (VIR_ALLOC(cpu) < 0)
-                return -1;
-
-            cpu->mode = VIR_CPU_MODE_HOST_PASSTHROUGH;
-            cpu->type = VIR_CPU_TYPE_GUEST;
-            def->cpu = cpu;
-        } else if (val == 0) {
+        if (val != -1) {
             const char *vtfeature = NULL;
 
             if (caps && caps->host.cpu && ARCH_IS_X86(def->os.arch)) {
@@ -190,26 +181,29 @@ xenParseXLOS(virConfPtr conf, virDomainDefPtr def, virCapsPtr caps)
             }
 
             if (vtfeature) {
-                virCPUDefPtr cpu;
+                if (!def->cpu) {
+                    virCPUDefPtr cpu;
+                    if (VIR_ALLOC(cpu) < 0)
+                        return -1;
 
-                if (VIR_ALLOC(cpu) < 0)
-                    return -1;
-
-                if (VIR_ALLOC(cpu->features) < 0) {
-                    VIR_FREE(cpu);
-                    return -1;
+                    cpu->mode = VIR_CPU_MODE_HOST_PASSTHROUGH;
+                    cpu->type = VIR_CPU_TYPE_GUEST;
+                    cpu->nfeatures = 0;
+                    cpu->nfeatures_max = 0;
+                    def->cpu = cpu;
                 }
 
-                if (VIR_STRDUP(cpu->features->name, vtfeature) < 0) {
-                    VIR_FREE(cpu->features);
-                    VIR_FREE(cpu);
-                    return -1;
+                if (val == 0) {
+                    if (virCPUDefAddFeature(def->cpu,
+                                            vtfeature,
+                                            VIR_CPU_FEATURE_DISABLE) < 0)
+                        return -1;
+                } else if (val == 1) {
+                    if (virCPUDefAddFeature(def->cpu,
+                                            vtfeature,
+                                            VIR_CPU_FEATURE_FORCE) < 0)
+                        return -1;
                 }
-                cpu->features->policy = VIR_CPU_FEATURE_DISABLE;
-                cpu->nfeatures = cpu->nfeatures_max = 1;
-                cpu->mode = VIR_CPU_MODE_HOST_PASSTHROUGH;
-                cpu->type = VIR_CPU_TYPE_GUEST;
-                def->cpu = cpu;
             }
         }
     } else {
@@ -1159,6 +1153,7 @@ xenFormatXLOS(virConfPtr conf, virDomainDefPtr def)
         if (def->cpu &&
             def->cpu->mode == VIR_CPU_MODE_HOST_PASSTHROUGH) {
             bool hasHwVirt = true;
+            int nestedhvm = -1;
 
             if (def->cpu->nfeatures) {
                 for (i = 0; i < def->cpu->nfeatures; i++) {
@@ -1168,11 +1163,15 @@ xenFormatXLOS(virConfPtr conf, virDomainDefPtr def)
                         case VIR_CPU_FEATURE_FORBID:
                             if (STREQ(def->cpu->features[i].name, "vmx") ||
                                 STREQ(def->cpu->features[i].name, "svm"))
-                                hasHwVirt = false;
+                                nestedhvm = 0;
                             break;
 
                         case VIR_CPU_FEATURE_FORCE:
                         case VIR_CPU_FEATURE_REQUIRE:
+                            if (STREQ(def->cpu->features[i].name, "vmx") ||
+                                STREQ(def->cpu->features[i].name, "svm"))
+                                nestedhvm = 1;
+                            break;
                         case VIR_CPU_FEATURE_OPTIONAL:
                         case VIR_CPU_FEATURE_LAST:
                             break;
@@ -1180,7 +1179,9 @@ xenFormatXLOS(virConfPtr conf, virDomainDefPtr def)
                 }
             }
 
-            if (xenConfigSetInt(conf, "nestedhvm", hasHwVirt) < 0)
+            if (hasHwVirt &&
+                    nestedhvm != -1 &&
+                    xenConfigSetInt(conf, "nestedhvm", nestedhvm) < 0)
                 return -1;
         }
 

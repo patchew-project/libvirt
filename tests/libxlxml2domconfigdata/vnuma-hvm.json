@@ -113,7 +113,6 @@
             "pae": "True",
             "apic": "True",
             "acpi": "True",
-            "nested_hvm": "True",
             "vga": {
                 "kind": "cirrus"
             },
