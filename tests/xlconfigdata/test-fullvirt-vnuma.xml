@@ -14,7 +14,7 @@
     <apic/>
     <pae/>
   </features>
-  <cpu>
+  <cpu mode='host-passthrough'>
     <numa>
       <cell id='0' cpus='0-1' memory='2097152' unit='KiB'>
         <distances>

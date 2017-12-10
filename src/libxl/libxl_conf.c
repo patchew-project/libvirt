@@ -353,10 +353,16 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
                           def->features[VIR_DOMAIN_FEATURE_ACPI] ==
                           VIR_TRISTATE_SWITCH_ON);
 
-        if (caps &&
-            def->cpu && def->cpu->mode == (VIR_CPU_MODE_HOST_PASSTHROUGH)) {
+        if (caps && def->cpu) {
             bool hasHwVirt = false;
             bool svm = false, vmx = false;
+
+            if (def->cpu->mode != (VIR_CPU_MODE_HOST_PASSTHROUGH)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("unsupported cpu mode '%s'"),
+                               virCPUModeTypeToString(def->cpu->mode));
+                return -1;
+            }
 
             if (ARCH_IS_X86(def->os.arch)) {
                 vmx = virCPUCheckFeature(caps->host.arch, caps->host.cpu, "vmx");
