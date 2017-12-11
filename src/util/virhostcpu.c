@@ -567,9 +567,7 @@ virHostCPUGetInfoParseCPUInfo(FILE *cpuinfo,
             if (virHostCPUGetInfoParseCPUFrequency(line, "BogoMIPS", mhz) < 0)
                 goto cleanup;
         } else if (ARCH_IS_S390(arch)) {
-            /* s390x has no realistic value for CPU speed,
-             * assign a value of zero to signify this */
-            *mhz = 0;
+            /* No reasonable way to obtain CPU frequency */
         } else {
             VIR_WARN("Parser for /proc/cpuinfo needs to be adapted for your architecture");
             break;
