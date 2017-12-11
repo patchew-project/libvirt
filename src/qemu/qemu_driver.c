@@ -7537,8 +7537,13 @@ qemuDomainUndefineFlags(virDomainPtr dom,
                 goto endjob;
             }
         } else if (!(flags & VIR_DOMAIN_UNDEFINE_KEEP_NVRAM)) {
-            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                           _("cannot delete inactive domain with nvram"));
+            if (virDomainObjIsActive(vm)) {
+                virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                               _("cannot delete active domain with nvram"));
+            } else {
+                virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                               _("cannot delete inactive domain with nvram"));
+            }
             goto endjob;
         }
     }
