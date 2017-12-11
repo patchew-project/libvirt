@@ -3,6 +3,7 @@
 
 profile virt-aa-helper /usr/{lib,lib64}/libvirt/virt-aa-helper {
   #include <abstractions/base>
+  #include <local/usr.lib.libvirt.virt-aa-helper>
 
   # needed for searching directories
   capability dac_override,
@@ -50,8 +51,11 @@ profile virt-aa-helper /usr/{lib,lib64}/libvirt/virt-aa-helper {
   /var/lib/libvirt/images/ r,
   /var/lib/libvirt/images/** r,
   /{media,mnt,opt,srv}/** r,
+  # For virt-sandbox
+  /run/libvirt/**/[sv]d[a-z] r
 
   /**.img r,
+  /**.raw r,
   /**.qcow{,2} r,
   /**.qed r,
   /**.vmdk r,
