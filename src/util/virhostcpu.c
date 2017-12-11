@@ -510,6 +510,40 @@ virHostCPUHasValidSubcoreConfiguration(int threads_per_subcore)
 
 
 static int
+virHostCPUGetInfoParseCPUFrequency(const char *buf,
+                                   const char *label,
+                                   unsigned int *mhz)
+{
+    int ret = -1;
+
+    if (STRPREFIX(buf, label)) {
+        char *p;
+        unsigned int ui;
+
+        buf += strlen(label);
+        while (*buf && c_isspace(*buf))
+            buf++;
+
+        if (*buf != ':' || !buf[1]) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("parsing cpu MHz from cpuinfo"));
+            goto cleanup;
+        }
+
+        if (virStrToLong_ui(buf+1, &p, 10, &ui) == 0 &&
+            /* Accept trailing fractional part.  */
+            (*p == '\0' || *p == '.' || c_isspace(*p)))
+            *mhz = ui;
+    }
+
+    ret = 0;
+
+ cleanup:
+    return ret;
+}
+
+
+static int
 virHostCPUGetInfoParseCPUInfo(FILE *cpuinfo,
                               virArch arch,
                               unsigned int *mhz)
@@ -521,73 +555,14 @@ virHostCPUGetInfoParseCPUInfo(FILE *cpuinfo,
 
     while (fgets(line, sizeof(line), cpuinfo) != NULL) {
         if (ARCH_IS_X86(arch)) {
-            char *buf = line;
-            if (STRPREFIX(buf, "cpu MHz")) {
-                char *p;
-                unsigned int ui;
-
-                buf += 7;
-                while (*buf && c_isspace(*buf))
-                    buf++;
-
-                if (*buf != ':' || !buf[1]) {
-                    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                                   _("parsing cpu MHz from cpuinfo"));
-                    goto cleanup;
-                }
-
-                if (virStrToLong_ui(buf+1, &p, 10, &ui) == 0 &&
-                    /* Accept trailing fractional part.  */
-                    (*p == '\0' || *p == '.' || c_isspace(*p)))
-                    *mhz = ui;
-            }
+            if (virHostCPUGetInfoParseCPUFrequency(line, "cpu MHz", mhz) < 0)
+                goto cleanup;
         } else if (ARCH_IS_PPC(arch)) {
-            char *buf = line;
-            if (STRPREFIX(buf, "clock")) {
-                char *p;
-                unsigned int ui;
-
-                buf += 5;
-                while (*buf && c_isspace(*buf))
-                    buf++;
-
-                if (*buf != ':' || !buf[1]) {
-                    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                                   _("parsing cpu MHz from cpuinfo"));
-                    goto cleanup;
-                }
-
-                if (virStrToLong_ui(buf+1, &p, 10, &ui) == 0 &&
-                    /* Accept trailing fractional part.  */
-                    (*p == '\0' || *p == '.' || c_isspace(*p)))
-                    *mhz = ui;
-                /* No other interesting infos are available in /proc/cpuinfo.
-                 * However, there is a line identifying processor's version,
-                 * identification and machine, but we don't want it to be caught
-                 * and parsed in next iteration, because it is not in expected
-                 * format and thus lead to error. */
-            }
+            if (virHostCPUGetInfoParseCPUFrequency(line, "clock", mhz) < 0)
+                goto cleanup;
         } else if (ARCH_IS_ARM(arch)) {
-            char *buf = line;
-            if (STRPREFIX(buf, "BogoMIPS")) {
-                char *p;
-                unsigned int ui;
-
-                buf += 8;
-                while (*buf && c_isspace(*buf))
-                    buf++;
-
-                if (*buf != ':' || !buf[1]) {
-                    virReportError(VIR_ERR_INTERNAL_ERROR,
-                                   "%s", _("parsing cpu MHz from cpuinfo"));
-                    goto cleanup;
-                }
-
-                if (virStrToLong_ui(buf+1, &p, 10, &ui) == 0
-                    /* Accept trailing fractional part.  */
-                    && (*p == '\0' || *p == '.' || c_isspace(*p)))
-                    *mhz = ui;
-            }
+            if (virHostCPUGetInfoParseCPUFrequency(line, "BogoMIPS", mhz) < 0)
+                goto cleanup;
         } else if (ARCH_IS_S390(arch)) {
             /* s390x has no realistic value for CPU speed,
              * assign a value of zero to signify this */
