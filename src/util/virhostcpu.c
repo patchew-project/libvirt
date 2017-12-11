@@ -508,33 +508,17 @@ virHostCPUHasValidSubcoreConfiguration(int threads_per_subcore)
     return ret;
 }
 
-int
-virHostCPUGetInfoPopulateLinux(FILE *cpuinfo,
-                               virArch arch,
-                               unsigned int *cpus,
-                               unsigned int *mhz,
-                               unsigned int *nodes,
-                               unsigned int *sockets,
-                               unsigned int *cores,
-                               unsigned int *threads)
+
+static int
+virHostCPUGetInfoParseCPUInfo(FILE *cpuinfo,
+                              virArch arch,
+                              unsigned int *mhz)
 {
-    virBitmapPtr present_cpus_map = NULL;
-    virBitmapPtr online_cpus_map = NULL;
     char line[1024];
-    DIR *nodedir = NULL;
-    struct dirent *nodedirent = NULL;
-    int nodecpus, nodecores, nodesockets, nodethreads, offline = 0;
-    int threads_per_subcore = 0;
-    unsigned int node;
     int ret = -1;
-    char *sysfs_nodedir = NULL;
-    char *sysfs_cpudir = NULL;
-    int direrr;
 
     *mhz = 0;
-    *cpus = *nodes = *sockets = *cores = *threads = 0;
 
-    /* Start with parsing CPU clock speed from /proc/cpuinfo */
     while (fgets(line, sizeof(line), cpuinfo) != NULL) {
         if (ARCH_IS_X86(arch)) {
             char *buf = line;
@@ -613,6 +597,40 @@ virHostCPUGetInfoPopulateLinux(FILE *cpuinfo,
             break;
         }
     }
+
+    ret = 0;
+
+ cleanup:
+    return ret;
+}
+
+int
+virHostCPUGetInfoPopulateLinux(FILE *cpuinfo,
+                               virArch arch,
+                               unsigned int *cpus,
+                               unsigned int *mhz,
+                               unsigned int *nodes,
+                               unsigned int *sockets,
+                               unsigned int *cores,
+                               unsigned int *threads)
+{
+    virBitmapPtr present_cpus_map = NULL;
+    virBitmapPtr online_cpus_map = NULL;
+    DIR *nodedir = NULL;
+    struct dirent *nodedirent = NULL;
+    int nodecpus, nodecores, nodesockets, nodethreads, offline = 0;
+    int threads_per_subcore = 0;
+    unsigned int node;
+    int ret = -1;
+    char *sysfs_nodedir = NULL;
+    char *sysfs_cpudir = NULL;
+    int direrr;
+
+    *cpus = *nodes = *sockets = *cores = *threads = 0;
+
+    /* Start with parsing CPU clock speed from /proc/cpuinfo */
+    if (virHostCPUGetInfoParseCPUInfo(cpuinfo, arch, mhz) < 0)
+        goto cleanup;
 
     /* Get information about what CPUs are present in the host and what
      * CPUs are online, so that we don't have to so for each node */
