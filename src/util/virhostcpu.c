@@ -524,16 +524,19 @@ virHostCPUGetInfoParseCPUFrequency(const char *buf,
         while (*buf && c_isspace(*buf))
             buf++;
 
-        if (*buf != ':' || !buf[1]) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("parsing cpu MHz from cpuinfo"));
+        if (buf[0] != ':' || !buf[1]) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Missing or invalid CPU frequency in %s"),
+                           CPUINFO_PATH);
             goto cleanup;
         }
 
-        if (virStrToLong_ui(buf+1, &p, 10, &ui) == 0 &&
-            /* Accept trailing fractional part.  */
-            (*p == '\0' || *p == '.' || c_isspace(*p)))
+        /* Accept an unsigned value, optionally followed by
+         * a fractional part (which gets discarded) */
+        if (virStrToLong_ui(buf + 1, &p, 10, &ui) == 0 &&
+            (*p == '\0' || *p == '.' || c_isspace(*p))) {
             *mhz = ui;
+        }
     }
 
     ret = 0;
