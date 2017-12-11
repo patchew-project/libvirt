@@ -563,10 +563,7 @@ virHostCPUGetInfoParseCPUInfo(FILE *cpuinfo,
         } else if (ARCH_IS_PPC(arch)) {
             if (virHostCPUGetInfoParseCPUFrequency(line, "clock", mhz) < 0)
                 goto cleanup;
-        } else if (ARCH_IS_ARM(arch)) {
-            if (virHostCPUGetInfoParseCPUFrequency(line, "BogoMIPS", mhz) < 0)
-                goto cleanup;
-        } else if (ARCH_IS_S390(arch)) {
+        } else if (ARCH_IS_S390(arch) || ARCH_IS_ARM(arch)) {
             /* No reasonable way to obtain CPU frequency */
         } else {
             VIR_WARN("Parser for /proc/cpuinfo needs to be adapted for your architecture");
