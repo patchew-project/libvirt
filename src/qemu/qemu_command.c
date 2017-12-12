@@ -2667,7 +2667,7 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
         if ((qemuDomainSetSCSIControllerModel(domainDef, qemuCaps, &model)) < 0)
             return -1;
 
-        switch (model) {
+        switch ((virDomainControllerModelSCSI) model) {
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
             if (def->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
                 virBufferAddLit(&buf, "virtio-scsi-ccw");
@@ -2707,7 +2707,10 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSISAS1078:
             virBufferAddLit(&buf, "megasas");
             break;
-        default:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_AUTO:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_BUSLOGIC:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VMPVSCSI:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LAST:
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Unsupported controller model: %s"),
                            virDomainControllerModelSCSITypeToString(def->model));
