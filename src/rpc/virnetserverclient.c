@@ -1512,10 +1512,10 @@ int virNetServerClientSendMessage(virNetServerClientPtr client,
 
 bool virNetServerClientNeedAuth(virNetServerClientPtr client)
 {
-    bool need = false;
+    bool need = true;
     virObjectLock(client);
-    if (client->auth)
-        need = true;
+    if (client->auth == VIR_NET_SERVER_SERVICE_AUTH_NONE)
+        need = false;
     virObjectUnlock(client);
     return need;
 }
