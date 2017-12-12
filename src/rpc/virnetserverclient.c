@@ -639,11 +639,10 @@ int virNetServerClientGetAuth(virNetServerClientPtr client)
     return auth;
 }
 
-void virNetServerClientSetAuth(virNetServerClientPtr client, int auth)
+/* @client needs to be locked by the caller */
+void virNetServerClientSetAuthLocked(virNetServerClientPtr client, int auth)
 {
-    virObjectLock(client);
     client->auth = auth;
-    virObjectUnlock(client);
 }
 
 bool virNetServerClientGetReadonly(virNetServerClientPtr client)
