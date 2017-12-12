@@ -948,6 +948,9 @@ void virNetServerClientDispose(void *obj)
     virObjectUnref(client->tlsCtxt);
 #endif
     virObjectUnref(client->sock);
+
+    virNetMessageFree(client->rx);
+    virNetMessageFree(client->tx);
 }
 
 
