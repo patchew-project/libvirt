@@ -285,8 +285,10 @@ int virNetServerAddClient(virNetServerPtr srv,
         goto error;
     srv->clients[srv->nclients-1] = virObjectRef(client);
 
-    if (virNetServerClientNeedAuth(client))
+    virObjectLock(client);
+    if (virNetServerClientNeedAuthLocked(client))
         virNetServerTrackPendingAuthLocked(srv);
+    virObjectUnlock(client);
 
     virNetServerCheckLimits(srv);
 
@@ -860,13 +862,13 @@ virNetServerProcessClients(virNetServerPtr srv)
         virObjectLock(client);
         if (virNetServerClientWantCloseLocked(client))
             virNetServerClientCloseLocked(client);
-        virObjectUnlock(client);
 
-        if (virNetServerClientIsClosed(client)) {
+        if (virNetServerClientIsClosedLocked(client)) {
             VIR_DELETE_ELEMENT(srv->clients, i, srv->nclients);
 
-            if (virNetServerClientNeedAuth(client))
+            if (virNetServerClientNeedAuthLocked(client))
                 virNetServerTrackCompletedAuthLocked(srv);
+            virObjectUnlock(client);
 
             virNetServerCheckLimits(srv);
 
@@ -875,6 +877,8 @@ virNetServerProcessClients(virNetServerPtr srv)
             virObjectLock(srv);
 
             goto reprocess;
+        } else {
+            virObjectUnlock(client);
         }
     }
 

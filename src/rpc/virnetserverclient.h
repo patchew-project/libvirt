@@ -124,7 +124,7 @@ void virNetServerClientSetDispatcher(virNetServerClientPtr client,
                                      void *opaque);
 void virNetServerClientClose(virNetServerClientPtr client);
 void virNetServerClientCloseLocked(virNetServerClientPtr client);
-bool virNetServerClientIsClosed(virNetServerClientPtr client);
+bool virNetServerClientIsClosedLocked(virNetServerClientPtr client);
 
 void virNetServerClientDelayedClose(virNetServerClientPtr client);
 void virNetServerClientImmediateClose(virNetServerClientPtr client);
@@ -147,6 +147,7 @@ int virNetServerClientSendMessage(virNetServerClientPtr client,
                                   virNetMessagePtr msg);
 
 bool virNetServerClientNeedAuth(virNetServerClientPtr client);
+bool virNetServerClientNeedAuthLocked(virNetServerClientPtr client);
 
 int virNetServerClientGetTransport(virNetServerClientPtr client);
 int virNetServerClientGetInfo(virNetServerClientPtr client,

@@ -1050,13 +1050,10 @@ virNetServerClientClose(virNetServerClientPtr client)
 }
 
 
-bool virNetServerClientIsClosed(virNetServerClientPtr client)
+/* @client needs to be locked by the caller */
+bool virNetServerClientIsClosedLocked(virNetServerClientPtr client)
 {
-    bool closed;
-    virObjectLock(client);
-    closed = client->sock == NULL ? true : false;
-    virObjectUnlock(client);
-    return closed;
+    return client->sock == NULL ? true : false;
 }
 
 void virNetServerClientDelayedClose(virNetServerClientPtr client)
@@ -1530,11 +1527,20 @@ int virNetServerClientSendMessage(virNetServerClientPtr client,
 }
 
 
-bool virNetServerClientNeedAuth(virNetServerClientPtr client)
+/* The caller must hold the lock for @client */
+bool
+virNetServerClientNeedAuthLocked(virNetServerClientPtr client)
+{
+    return !virNetServerClientAuthMethodImpliesAuthenticated(client->auth);
+}
+
+
+bool
+virNetServerClientNeedAuth(virNetServerClientPtr client)
 {
     bool need;
     virObjectLock(client);
-    need = !virNetServerClientAuthMethodImpliesAuthenticated(client->auth);
+    need = virNetServerClientNeedAuthLocked(client);
     virObjectUnlock(client);
     return need;
 }
