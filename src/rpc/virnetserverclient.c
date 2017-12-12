@@ -962,17 +962,15 @@ void virNetServerClientDispose(void *obj)
  * Full free of the client is done later in a safe point
  * where it can be guaranteed it is no longer in use
  */
-void virNetServerClientClose(virNetServerClientPtr client)
+void
+virNetServerClientCloseLocked(virNetServerClientPtr client)
 {
     virNetServerClientCloseFunc cf;
     virKeepAlivePtr ka;
 
-    virObjectLock(client);
     VIR_DEBUG("client=%p", client);
-    if (!client->sock) {
-        virObjectUnlock(client);
+    if (!client->sock)
         return;
-    }
 
     if (client->keepalive) {
         virKeepAliveStop(client->keepalive);
@@ -1023,7 +1021,14 @@ void virNetServerClientClose(virNetServerClientPtr client)
         virObjectUnref(client->sock);
         client->sock = NULL;
     }
+}
 
+
+void
+virNetServerClientClose(virNetServerClientPtr client)
+{
+    virObjectLock(client);
+    virNetServerClientCloseLocked(client);
     virObjectUnlock(client);
 }
 
@@ -1051,13 +1056,11 @@ void virNetServerClientImmediateClose(virNetServerClientPtr client)
     virObjectUnlock(client);
 }
 
-bool virNetServerClientWantClose(virNetServerClientPtr client)
+
+/* @client needs to be locked by the caller */
+bool virNetServerClientWantCloseLocked(virNetServerClientPtr client)
 {
-    bool wantClose;
-    virObjectLock(client);
-    wantClose = client->wantClose;
-    virObjectUnlock(client);
-    return wantClose;
+    return client->wantClose;
 }
 
 

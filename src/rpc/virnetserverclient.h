@@ -123,11 +123,12 @@ void virNetServerClientSetDispatcher(virNetServerClientPtr client,
                                      virNetServerClientDispatchFunc func,
                                      void *opaque);
 void virNetServerClientClose(virNetServerClientPtr client);
+void virNetServerClientCloseLocked(virNetServerClientPtr client);
 bool virNetServerClientIsClosed(virNetServerClientPtr client);
 
 void virNetServerClientDelayedClose(virNetServerClientPtr client);
 void virNetServerClientImmediateClose(virNetServerClientPtr client);
-bool virNetServerClientWantClose(virNetServerClientPtr client);
+bool virNetServerClientWantCloseLocked(virNetServerClientPtr client);
 
 int virNetServerClientInit(virNetServerClientPtr client);
 

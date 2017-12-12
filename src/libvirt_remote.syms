@@ -125,6 +125,7 @@ virNetServerUpdateServices;
 # rpc/virnetserverclient.h
 virNetServerClientAddFilter;
 virNetServerClientClose;
+virNetServerClientCloseLocked;
 virNetServerClientDelayedClose;
 virNetServerClientGetAuth;
 virNetServerClientGetFD;
@@ -154,7 +155,7 @@ virNetServerClientSetAuth;
 virNetServerClientSetCloseHook;
 virNetServerClientSetDispatcher;
 virNetServerClientStartKeepAlive;
-virNetServerClientWantClose;
+virNetServerClientWantCloseLocked;
 
 
 # rpc/virnetservermdns.h

@@ -846,6 +846,7 @@ void
 virNetServerProcessClients(virNetServerPtr srv)
 {
     size_t i;
+    virNetServerClientPtr client;
 
     virObjectLock(srv);
 
@@ -854,11 +855,14 @@ virNetServerProcessClients(virNetServerPtr srv)
         /* Coverity 5.3.0 couldn't see that srv->clients is non-NULL
          * if srv->nclients is non-zero.  */
         sa_assert(srv->clients);
-        if (virNetServerClientWantClose(srv->clients[i]))
-            virNetServerClientClose(srv->clients[i]);
-        if (virNetServerClientIsClosed(srv->clients[i])) {
-            virNetServerClientPtr client = srv->clients[i];
 
+        client = srv->clients[i];
+        virObjectLock(client);
+        if (virNetServerClientWantCloseLocked(client))
+            virNetServerClientCloseLocked(client);
+        virObjectUnlock(client);
+
+        if (virNetServerClientIsClosed(client)) {
             VIR_DELETE_ELEMENT(srv->clients, i, srv->nclients);
 
             if (virNetServerClientNeedAuth(client))
