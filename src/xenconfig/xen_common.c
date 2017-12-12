@@ -1198,6 +1198,7 @@ xenMakeIPList(virNetDevIPInfoPtr guestIP)
  cleanup:
     while (i > 0)
         VIR_FREE(address_array[--i]);
+    VIR_FREE(address_array);
     return ret;
 }
 
