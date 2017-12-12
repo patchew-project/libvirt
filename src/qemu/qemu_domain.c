@@ -3966,6 +3966,11 @@ qemuDomainDeviceDefValidateControllerAttributes(const virDomainControllerDef *co
                            _("'ioeventfd' is only supported by virtio-scsi controller"));
             return -1;
         }
+        if (controller->iothread) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("'iothread' is only supported for virtio-scsi controller"));
+            return -1;
+        }
     }
 
     return 0;
