@@ -175,6 +175,18 @@ if test "$OBJ_DIR"; then
     }
 fi
 
+# Make sure we can find GNU make and tell the user
+# the right command to run
+if make -v 2>&1 | grep -q "GNU Make"; then
+    MAKE=make
+else
+    if which gmake >/dev/null 2>&1; then
+        MAKE=gmake
+    else
+        die "GNU make is required to build libvirt"
+    fi
+fi
+
 if test -z "$*" && test -z "$extra_args" && test -f config.status; then
     echo "Running config.status..."
     ./config.status --recheck || {
@@ -193,4 +205,4 @@ else
 fi
 
 echo
-echo "Now type 'make' to compile libvirt."
+echo "Now type '$MAKE' to compile libvirt."
