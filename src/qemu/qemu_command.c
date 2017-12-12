@@ -7682,6 +7682,15 @@ qemuBuildMemPathStr(virQEMUDriverConfigPtr cfg,
         return -1;
     }
 
+    if (def->mem.access != VIR_DOMAIN_MEMORY_ACCESS_DEFAULT &&
+        def->mem.access != VIR_DOMAIN_MEMORY_ACCESS_PRIVATE) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("memory access mode '%s' not supported "
+                         "without guest numa node"),
+                       virDomainMemoryAccessTypeToString(def->mem.access));
+        return -1;
+    }
+
     if (qemuGetDomainHupageMemPath(def, cfg, def->mem.hugepages[0].size, &mem_path) < 0)
         return -1;
 
