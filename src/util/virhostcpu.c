@@ -543,12 +543,14 @@ virHostCPUParseFrequency(FILE *cpuinfo,
     const char *prefix = NULL;
     char line[1024];
 
+    /* No sensible way to retrieve CPU frequency */
+    if (ARCH_IS_ARM(arch))
+        return 0;
+
     if (ARCH_IS_X86(arch))
         prefix = "cpu MHz";
     else if (ARCH_IS_PPC(arch))
         prefix = "clock";
-    else if (ARCH_IS_ARM(arch))
-        prefix = "BogoMIPS";
 
     if (!prefix) {
         VIR_WARN("Parser for /proc/cpuinfo needs to be adapted for your architecture");
