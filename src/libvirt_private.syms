@@ -2550,8 +2550,6 @@ virRandomInt;
 # util/virresctrl.h
 virCacheTypeFromString;
 virCacheTypeToString;
-virResctrlGetCacheControlType;
-virResctrlGetCacheInfo;
 virResctrlGetInfo;
 virResctrlInfoGetCache;
 virResctrlInfoNew;
