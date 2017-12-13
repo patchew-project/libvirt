@@ -709,6 +709,12 @@ qemuParseCommandLineDisk(virDomainXMLOptionPtr xmlopt,
 
                     if (qemuParseISCSIString(def) < 0)
                         goto error;
+		} else if (STRPREFIX(def->src->path, "iser:")) {
+                    def->src->type = VIR_STORAGE_TYPE_NETWORK;
+                    def->src->protocol = VIR_STORAGE_NET_PROTOCOL_ISER;
+
+                    if (qemuParseISCSIString(def) < 0)
+                        goto error;
                 } else if (STRPREFIX(def->src->path, "sheepdog:")) {
                     char *p = def->src->path;
                     char *port, *vdi;
@@ -2157,6 +2163,7 @@ qemuParseCommandLine(virCapsPtr caps,
                         goto error;
 
                     break;
+                case VIR_STORAGE_NET_PROTOCOL_ISER:
                 case VIR_STORAGE_NET_PROTOCOL_ISCSI:
                     if (qemuParseISCSIString(disk) < 0)
                         goto error;

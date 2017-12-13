@@ -932,6 +932,7 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
         case VIR_STORAGE_NET_PROTOCOL_FTPS:
         case VIR_STORAGE_NET_PROTOCOL_TFTP:
         case VIR_STORAGE_NET_PROTOCOL_ISCSI:
+     	case VIR_STORAGE_NET_PROTOCOL_ISER:
         case VIR_STORAGE_NET_PROTOCOL_GLUSTER:
             ret = qemuBuildNetworkDriveURI(src, secinfo);
             break;
@@ -1482,7 +1483,7 @@ qemuDiskSourceNeedsProps(virStorageSourcePtr src,
         return true;
 
     if (actualType == VIR_STORAGE_TYPE_NETWORK &&
-        src->protocol == VIR_STORAGE_NET_PROTOCOL_ISCSI &&
+        (src->protocol == VIR_STORAGE_NET_PROTOCOL_ISCSI || src->protocol == VIR_STORAGE_NET_PROTOCOL_ISER) &&
         virQEMUCapsGet(qemuCaps, QEMU_CAPS_ISCSI_PASSWORD_SECRET))
         return true;
 

@@ -831,7 +831,7 @@ qemuBlockStorageSourceGetISCSIProps(virStorageSourcePtr src)
                                           "s:portal", portal,
                                           "s:target", target,
                                           "u:lun", lun,
-                                          "s:transport", "tcp",
+                                          "s:transport", src->protocol == VIR_STORAGE_NET_PROTOCOL_ISER? "iser":"tcp",
                                           "S:user", username,
                                           "S:password-secret", objalias,
                                           NULL));
@@ -1030,6 +1030,7 @@ qemuBlockStorageSourceGetBackendProps(virStorageSourcePtr src)
             break;
 
         case VIR_STORAGE_NET_PROTOCOL_ISCSI:
+        case VIR_STORAGE_NET_PROTOCOL_ISER:
             if (!(fileprops = qemuBlockStorageSourceGetISCSIProps(src)))
                 return NULL;
             break;

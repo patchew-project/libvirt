@@ -81,6 +81,7 @@ VIR_ENUM_IMPL(virStorageNetProtocol, VIR_STORAGE_NET_PROTOCOL_LAST,
               "sheepdog",
               "gluster",
               "iscsi",
+              "iser",
               "http",
               "https",
               "ftp",
@@ -2750,6 +2751,7 @@ virStorageSourceParseBackingColon(virStorageSourcePtr src,
     case VIR_STORAGE_NET_PROTOCOL_FTPS:
     case VIR_STORAGE_NET_PROTOCOL_TFTP:
     case VIR_STORAGE_NET_PROTOCOL_ISCSI:
+    case VIR_STORAGE_NET_PROTOCOL_ISER:
     case VIR_STORAGE_NET_PROTOCOL_GLUSTER:
     case VIR_STORAGE_NET_PROTOCOL_SSH:
     case VIR_STORAGE_NET_PROTOCOL_VXHS:
@@ -3040,6 +3042,77 @@ virStorageSourceParseBackingJSONiSCSI(virStorageSourcePtr src,
     return ret;
 }
 
+static int 
+virStorageSourceParseBackingJSONiSER(virStorageSourcePtr src,
+                                      virJSONValuePtr json,
+                                      int opaque ATTRIBUTE_UNUSED)
+{
+    const char *transport = virJSONValueObjectGetString(json, "transport");
+    const char *portal = virJSONValueObjectGetString(json, "portal");
+    const char *target = virJSONValueObjectGetString(json, "target");
+    const char *uri;
+    char *port;
+    unsigned int lun = 0;
+    char *fulltarget = NULL;
+    int ret = -1;
+
+    /* legacy URI based syntax passed via 'filename' option */
+    if ((uri = virJSONValueObjectGetString(json, "filename")))
+        return virStorageSourceParseBackingJSONUriStr(src, uri,
+                                                      VIR_STORAGE_NET_PROTOCOL_ISER);
+
+    src->type = VIR_STORAGE_TYPE_NETWORK;
+    src->protocol = VIR_STORAGE_NET_PROTOCOL_ISER;
+
+    if (VIR_ALLOC(src->hosts) < 0)
+        goto cleanup;
+
+    src->nhosts = 1;
+
+    if (STRNEQ_NULLABLE(transport, "iser")) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("only ISER transport is supported for iSER volumes"));
+        goto cleanup;
+    }
+
+    src->hosts->transport = VIR_STORAGE_NET_HOST_TRANS_TCP;
+
+    if (!portal) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("missing 'portal' address in iSER backing definition"));
+        goto cleanup;
+    }
+
+    if (!target) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("missing 'target' in iSER backing definition"));
+        goto cleanup;
+    }
+
+    if (VIR_STRDUP(src->hosts->name, portal) < 0)
+        goto cleanup;
+
+    if ((port = strrchr(src->hosts->name, ':')) &&
+        !strchr(port, ']')) {
+        if (virStringParsePort(port + 1, &src->hosts->port) < 0)
+            goto cleanup;
+
+        *port = '\0';
+    }
+
+    ignore_value(virJSONValueObjectGetNumberUint(json, "lun", &lun));
+
+    if (virAsprintf(&fulltarget, "%s/%u", target, lun) < 0)
+        goto cleanup;
+
+    VIR_STEAL_PTR(src->path, fulltarget);
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(fulltarget);
+    return ret;
+}
 
 static int
 virStorageSourceParseBackingJSONNbd(virStorageSourcePtr src,
@@ -3295,6 +3368,7 @@ static const struct virStorageSourceJSONDriverParser jsonParsers[] = {
     {"tftp", virStorageSourceParseBackingJSONUri, VIR_STORAGE_NET_PROTOCOL_TFTP},
     {"gluster", virStorageSourceParseBackingJSONGluster, 0},
     {"iscsi", virStorageSourceParseBackingJSONiSCSI, 0},
+    {"iser", virStorageSourceParseBackingJSONiSER, 0},
     {"nbd", virStorageSourceParseBackingJSONNbd, 0},
     {"sheepdog", virStorageSourceParseBackingJSONSheepdog, 0},
     {"ssh", virStorageSourceParseBackingJSONSSH, 0},
@@ -4054,6 +4128,7 @@ virStorageSourceNetworkDefaultPort(virStorageNetProtocol protocol)
             return 22;
 
         case VIR_STORAGE_NET_PROTOCOL_ISCSI:
+        case VIR_STORAGE_NET_PROTOCOL_ISER:
             return 3260;
 
         case VIR_STORAGE_NET_PROTOCOL_GLUSTER:

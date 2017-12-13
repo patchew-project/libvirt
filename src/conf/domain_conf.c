@@ -4554,6 +4554,11 @@ virDomainDeviceDefPostParseCommon(virDomainDeviceDefPtr dev,
             disk->src->protocol == VIR_STORAGE_NET_PROTOCOL_ISCSI &&
             virDomainPostParseCheckISCSIPath(&disk->src->path) < 0)
             return -1;
+	
+	if (disk->src->type == VIR_STORAGE_TYPE_NETWORK &&
+            disk->src->protocol == VIR_STORAGE_NET_PROTOCOL_ISER &&
+            virDomainPostParseCheckISCSIPath(&disk->src->path) < 0)
+            return -1;
 
         if (disk->bus != VIR_DOMAIN_DISK_BUS_VIRTIO &&
             virDomainCheckVirtioOptions(disk->virtio) < 0)
@@ -5160,7 +5165,8 @@ virDomainDiskDefValidate(const virDomainDiskDef *disk)
         if (!(disk->src->type == VIR_STORAGE_TYPE_BLOCK ||
               disk->src->type == VIR_STORAGE_TYPE_VOLUME ||
               (disk->src->type == VIR_STORAGE_TYPE_NETWORK &&
-               disk->src->protocol == VIR_STORAGE_NET_PROTOCOL_ISCSI))) {
+               (disk->src->protocol == VIR_STORAGE_NET_PROTOCOL_ISCSI ||
+		        disk->src->protocol == VIR_STORAGE_NET_PROTOCOL_ISER)))) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("disk '%s' improperly configured for a "
                              "device='lun'"), disk->dst);

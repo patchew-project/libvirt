@@ -8201,7 +8201,7 @@ int
 qemuDomainDefValidateDiskLunSource(const virStorageSource *src)
 {
     if (virStorageSourceGetActualType(src) == VIR_STORAGE_TYPE_NETWORK) {
-        if (src->protocol != VIR_STORAGE_NET_PROTOCOL_ISCSI) {
+        if (src->protocol != VIR_STORAGE_NET_PROTOCOL_ISCSI && src->protocol != VIR_STORAGE_NET_PROTOCOL_ISER) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("disk device='lun' is not supported "
                              "for protocol='%s'"),
