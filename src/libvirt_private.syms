@@ -2552,6 +2552,9 @@ virCacheTypeFromString;
 virCacheTypeToString;
 virResctrlGetCacheControlType;
 virResctrlGetCacheInfo;
+virResctrlGetInfo;
+virResctrlInfoGetCache;
+virResctrlInfoNew;
 
 
 # util/virrotatingfile.h
