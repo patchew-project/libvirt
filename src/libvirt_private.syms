@@ -2550,6 +2550,17 @@ virRandomInt;
 # util/virresctrl.h
 virCacheTypeFromString;
 virCacheTypeToString;
+virResctrlAllocAddPID;
+virResctrlAllocCreate;
+virResctrlAllocForeachSize;
+virResctrlAllocFormat;
+virResctrlAllocGetFree;
+virResctrlAllocNew;
+virResctrlAllocRemove;
+virResctrlAllocSetID;
+virResctrlAllocSetSize;
+virResctrlAllocUpdateMask;
+virResctrlAllocUpdateSize;
 virResctrlGetInfo;
 virResctrlInfoGetCache;
 virResctrlInfoNew;
