@@ -3289,6 +3289,36 @@ qemuDomainDefValidateVideo(const virDomainDef *def)
 }
 
 
+/**
+ * qemuDomainDefGetVcpuHotplugGranularity:
+ * @def: domain definition
+ * @granularity: return location for vCPU hotplug granularity
+ *
+ * With QEMU 2.7 and newer, vCPUs can only be hotplugged @granularity at
+ * a time; because of that, QEMU will not allow guests to start unless the
+ * initial number of vCPUs is a multiple of @granularity.
+ *
+ * Returns 0 on success, 1 if topology is not configured and -1 on error.
+ */
+static int
+qemuDomainDefGetVcpuHotplugGranularity(const virDomainDef *def,
+                                       unsigned int *granularity)
+{
+    if (!granularity)
+        return -1;
+
+    if (!def->cpu || def->cpu->sockets == 0)
+        return 1;
+
+    if (qemuDomainIsPSeries(def))
+        *granularity = def->cpu->threads;
+    else
+        *granularity = 1;
+
+    return 0;
+}
+
+
 #define QEMU_MAX_VCPUS_WITHOUT_EIM 255
 
 
@@ -3363,12 +3393,23 @@ qemuDomainDefValidate(const virDomainDef *def,
      * CPU topology. Verify known constraints are respected */
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_HOTPLUGGABLE_CPUS)) {
         unsigned int topologycpus;
+        unsigned int granularity;
 
         /* Max vCPU count and overall vCPU topology must agree */
         if (virDomainDefGetVcpusTopology(def, &topologycpus) == 0 &&
             topologycpus != virDomainDefGetVcpusMax(def)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("CPU topology doesn't match maximum vcpu count"));
+            goto cleanup;
+        }
+
+        /* vCPU hotplug granularity must be respected */
+        if (qemuDomainDefGetVcpuHotplugGranularity(def, &granularity) == 0 &&
+            (virDomainDefGetVcpus(def) % granularity) != 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("vCPUs count must be a multiple of the vCPU "
+                             "hotplug granularity (%u)"),
+                           granularity);
             goto cleanup;
         }
     }
