@@ -747,10 +747,18 @@ virStoragePoolObjAssignDef(virStoragePoolObjListPtr pools,
         return obj;
     }
 
+    virUUIDFormat(def->uuid, uuidstr);
+    if ((obj = virStoragePoolObjFindByUUIDLocked(pools, def->uuid))) {
+        virObjectLock(obj);
+        virReportError(VIR_ERR_OPERATION_FAILED,
+                       _("storage pool '%s' already exists with uuid %s"),
+                       obj->def->name, uuidstr);
+        goto error;
+    }
+
     if (!(obj = virStoragePoolObjNew()))
         return NULL;
 
-    virUUIDFormat(def->uuid, uuidstr);
     if (virHashAddEntry(pools->objs, uuidstr, obj) < 0)
         goto error;
     virObjectRef(obj);
