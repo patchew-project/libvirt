@@ -5026,7 +5026,7 @@ qemuDomainDetachShmemDevice(virQEMUDriverPtr driver,
 
     if ((idx = virDomainShmemDefFind(vm->def, dev)) < 0) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("device not present in domain configuration"));
+                       _("device not found in domain configuration"));
         return -1;
     }
 
@@ -5083,7 +5083,7 @@ qemuDomainDetachWatchdog(virQEMUDriverPtr driver,
           watchdog->action == dev->action &&
           virDomainDeviceInfoAddressIsEqual(&dev->info, &watchdog->info))) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("watchdog device not present in domain configuration"));
+                       _("watchdog device not found in domain configuration"));
         return -1;
     }
 
@@ -5123,8 +5123,11 @@ qemuDomainDetachNetDevice(virQEMUDriverPtr driver,
     virDomainNetDefPtr detach = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
 
-    if ((detachidx = virDomainNetFindIdx(vm->def, dev->data.net)) < 0)
+    if ((detachidx = virDomainNetFindIdx(vm->def, dev->data.net)) < 0) {
+        virReportError(VIR_ERR_OPERATION_FAILED,
+                       _("netdev %s not found"), dev->data.net->mac.addr);
         goto cleanup;
+    }
 
     detach = vm->def->nets[detachidx];
 
@@ -5310,8 +5313,9 @@ int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
     char *devstr = NULL;
 
     if (!(tmpChr = virDomainChrFind(vmdef, chr))) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("device not present in domain configuration"));
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("device %s not found in domain configuration"),
+                       chr->target.name);
         goto cleanup;
     }
 
@@ -5358,7 +5362,7 @@ qemuDomainDetachRNGDevice(virQEMUDriverPtr driver,
 
     if ((idx = virDomainRNGFind(vm->def, rng)) < 0) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("device not present in domain configuration"));
+                       _("device not found in domain configuration"));
         return -1;
     }
 
@@ -5401,7 +5405,7 @@ qemuDomainDetachMemoryDevice(virQEMUDriverPtr driver,
 
     if ((idx = virDomainMemoryFindByDef(vm->def, memdef)) < 0) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("device not present in domain configuration"));
+                       _("device not found in domain configuration"));
         return -1;
     }
 
