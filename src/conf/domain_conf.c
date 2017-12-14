@@ -7201,6 +7201,9 @@ virDomainHostdevSubsysSCSIiSCSIDefParseXML(xmlNodePtr sourcenode,
     iscsisrc->src->type = VIR_STORAGE_TYPE_NETWORK;
     iscsisrc->src->protocol = VIR_STORAGE_NET_PROTOCOL_ISCSI;
 
+virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("virDomainHostdevSubsysSCSIiSCSIDefParseXML"));
+
     if (!(iscsisrc->src->path = virXMLPropString(sourcenode, "name"))) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("missing iSCSI hostdev source path name"));
@@ -8416,6 +8419,7 @@ virDomainDiskSourceNetworkParse(xmlNodePtr node,
                                 unsigned int flags)
 {
     char *protocol = NULL;
+    char *transport = NULL;
     char *haveTLS = NULL;
     char *tlsCfg = NULL;
     int tlsCfgVal;
@@ -8427,6 +8431,10 @@ virDomainDiskSourceNetworkParse(xmlNodePtr node,
         goto cleanup;
     }
 
+    if (!(transport = virXMLPropString(node, "transport"))) {
+        VIR_WARN("missing network source transport type");
+    }
+                       
     if ((src->protocol = virStorageNetProtocolTypeFromString(protocol)) <= 0) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("unknown protocol type '%s'"), protocol);
@@ -8494,6 +8502,9 @@ virDomainDiskSourceNetworkParse(xmlNodePtr node,
 
     if (virDomainStorageNetworkParseHosts(node, &src->hosts, &src->nhosts) < 0)
         goto cleanup;
+
+    if(src->hosts)
+        src->hosts->transport = virStorageNetHostTransportTypeFromString(transport);
 
     virStorageSourceNetworkAssignDefaultPorts(src);
 
@@ -22325,6 +22336,8 @@ virDomainDiskSourceFormatNetwork(virBufferPtr attrBuf,
     virBufferEscapeString(attrBuf, " name='%s'", path ? path : src->path);
 
     VIR_FREE(path);
+
+    virBufferEscapeString(attrBuf, " transport='%s'", "iser");
 
     if (src->haveTLS != VIR_TRISTATE_BOOL_ABSENT &&
         !(flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE &&

@@ -92,7 +92,8 @@ VIR_ENUM_IMPL(virStorageNetProtocol, VIR_STORAGE_NET_PROTOCOL_LAST,
 VIR_ENUM_IMPL(virStorageNetHostTransport, VIR_STORAGE_NET_HOST_TRANS_LAST,
               "tcp",
               "unix",
-              "rdma")
+              "rdma",
+              "iser")
 
 VIR_ENUM_IMPL(virStorageSourcePoolMode,
               VIR_STORAGE_SOURCE_POOL_MODE_LAST,

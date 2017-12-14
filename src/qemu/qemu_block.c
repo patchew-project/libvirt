@@ -506,6 +506,20 @@ qemuBlockStorageSourceBuildJSONSocketAddress(virStorageNetHostDefPtr host,
             goto cleanup;
         break;
 
+    case VIR_STORAGE_NET_HOST_TRANS_ISER:
+        transport = "iser";
+        if (virAsprintf(&port, "%u", host->port) < 0)
+            goto cleanup;
+
+        if (virJSONValueObjectCreate(&server,
+                                     "s:type", transport,
+                                     "s:host", host->name,
+                                     "s:port", port,
+                                     NULL) < 0)
+            goto cleanup;
+
+
+        break;
     case VIR_STORAGE_NET_HOST_TRANS_UNIX:
         if (virJSONValueObjectCreate(&server,
                                      "s:type", "unix",
@@ -831,7 +845,8 @@ qemuBlockStorageSourceGetISCSIProps(virStorageSourcePtr src)
                                           "s:portal", portal,
                                           "s:target", target,
                                           "u:lun", lun,
-                                          "s:transport", "tcp",
+                                          "s:transport", 
+                                          virStorageNetHostTransportTypeToString(src->hosts->transport),
                                           "S:user", username,
                                           "S:password-secret", objalias,
                                           NULL));
