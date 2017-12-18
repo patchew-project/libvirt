@@ -493,19 +493,28 @@ daemonSetupNetworking(virNetServerPtr srv,
                 config->cert_file ||
                 config->key_file) {
                 if (!config->ca_file) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                                   _("No CA certificate path set to match server key/cert"));
-                    goto cleanup;
+                    VIR_WARN("Using default path for ca_file");
+                    if (VIR_STRDUP(config->ca_file, LIBVIRT_CACERT) < 0) {
+                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                       _("No CA certificate path set to match server key/cert"));
+                        goto cleanup;
+                    }
                 }
                 if (!config->cert_file) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                                   _("No server certificate path set to match server key"));
-                    goto cleanup;
+                    VIR_WARN("Using default path for cert_file");
+                    if (VIR_STRDUP(config->cert_file, LIBVIRT_SERVERCERT) < 0) {
+                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                       _("No server certificate path set to match server key"));
+                        goto cleanup;
+                    }
                 }
                 if (!config->key_file) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                                   _("No server key path set to match server cert"));
-                    goto cleanup;
+                    VIR_WARN("Using default path for key_file");
+                    if (VIR_STRDUP(config->key_file, LIBVIRT_SERVERKEY) < 0) {
+                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                       _("No server key path set to match server cert"));
+                        goto cleanup;
+                    }
                 }
                 VIR_DEBUG("Using CA='%s' cert='%s' key='%s'",
                           config->ca_file, config->cert_file, config->key_file);
