@@ -47,6 +47,10 @@ profile virt-aa-helper /usr/{lib,lib64}/libvirt/virt-aa-helper {
   audit deny @{HOME}/bin/** mrwkl,
   @{HOME}/ r,
   @{HOME}/** r,
+  # Alow access to ecryptfs files (LP: #591769)
+  @{HOME}/.Private/** mrwlk,
+  @{HOMEDIRS}/.ecryptfs/*/.Private/** mrwlk,
+
   /var/lib/libvirt/images/ r,
   /var/lib/libvirt/images/** r,
   /{media,mnt,opt,srv}/** r,
