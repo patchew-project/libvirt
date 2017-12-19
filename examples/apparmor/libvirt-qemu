@@ -170,6 +170,10 @@
   /etc/pki/libvirt/ r,
   /etc/pki/libvirt/** r,
 
+  # for use by libvirt-spice (LP: #1690140)
+  /etc/pki/libvirt-spice/ r,
+  /etc/pki/libvirt-spice/** r,
+
   # for save and resume
   /{usr/,}bin/dash rmix,
   /{usr/,}bin/dd rmix,
