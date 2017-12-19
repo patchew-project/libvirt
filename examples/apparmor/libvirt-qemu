@@ -161,6 +161,9 @@
   /usr/{lib,lib64}/qemu/block-curl.so mr,
   /usr/{lib,lib64}/qemu/block-rbd.so mr,
 
+  # for Debian/Ubuntu qemu-block-extra (LP: #1554761)
+  /usr/lib/@{multiarch}/qemu/*.so rm,
+
   # for use by libvirt-vnc (LP: #901272)
   /etc/pki/CA/ r,
   /etc/pki/CA/* r,
