@@ -34,6 +34,10 @@
   owner @{PROC}/@{pid}/task/@{tid}/comm rw,
   @{PROC}/sys/kernel/cap_last_cap r,
 
+  /sys/devices/system/node/ r,
+  /sys/devices/system/node/node[0-9]*/meminfo r,
+  /sys/devices/system/cpu/ r,
+
   # For hostdev access. The actual devices will be added dynamically
   /sys/bus/usb/devices/ r,
   /sys/devices/**/usb[0-9]*/** r,
