@@ -184,6 +184,10 @@
   /sys/bus/ r,
   /sys/class/ r,
 
+  # for access to hugepages (LP: #1250216 and LP: #1524737)
+  owner "/run/hugepages/kvm/libvirt/qemu/**" rw,
+  owner "/dev/hugepages/libvirt/qemu/**" rw,
+
   # for rbd
   /etc/ceph/ceph.conf r,
 
