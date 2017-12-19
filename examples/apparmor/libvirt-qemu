@@ -212,3 +212,6 @@
   # silence refusals to open lttng files (see LP: #1432644)
   deny /dev/shm/lttng-ust-wait-* r,
   deny /run/shm/lttng-ust-wait-* r,
+
+  # for vfio (LP: #1678322)
+  /dev/vfio/vfio rw,
