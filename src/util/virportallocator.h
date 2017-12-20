@@ -42,8 +42,7 @@ void virPortRangeFree(virPortRangePtr range);
 int virPortAllocatorAcquire(virPortRangePtr range,
                             unsigned short *port);
 
-int virPortAllocatorRelease(virPortRangePtr range,
-                            unsigned short port);
+int virPortAllocatorRelease(unsigned short port);
 
 int virPortAllocatorSetUsed(unsigned short port, bool value);
 

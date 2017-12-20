@@ -259,8 +259,7 @@ int virPortAllocatorAcquire(virPortRangePtr range,
     return ret;
 }
 
-int virPortAllocatorRelease(virPortRangePtr range,
-                            unsigned short port)
+int virPortAllocatorRelease(unsigned short port)
 {
     int ret = -1;
     virPortAllocatorPtr pa = virPortAllocatorGet();
@@ -272,13 +271,6 @@ int virPortAllocatorRelease(virPortRangePtr range,
         return 0;
 
     virObjectLock(pa);
-
-    if (port < range->start ||
-        port > range->end) {
-        virReportInvalidArg(port, "port %d must be in range (%d, %d)",
-                            port, range->start, range->end);
-        goto cleanup;
-    }
 
     if (virBitmapClearBit(pa->bitmap, port) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,

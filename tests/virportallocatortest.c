@@ -96,13 +96,13 @@ static int testAllocAll(const void *args ATTRIBUTE_UNUSED)
         goto cleanup;
     }
 
-    virPortAllocatorRelease(ports, p1);
-    virPortAllocatorRelease(ports, p2);
-    virPortAllocatorRelease(ports, p3);
-    virPortAllocatorRelease(ports, p4);
-    virPortAllocatorRelease(ports, p5);
-    virPortAllocatorRelease(ports, p6);
-    virPortAllocatorRelease(ports, p7);
+    virPortAllocatorRelease(p1);
+    virPortAllocatorRelease(p2);
+    virPortAllocatorRelease(p3);
+    virPortAllocatorRelease(p4);
+    virPortAllocatorRelease(p5);
+    virPortAllocatorRelease(p6);
+    virPortAllocatorRelease(p7);
 
     ret = 0;
  cleanup:
@@ -142,8 +142,7 @@ static int testAllocReuse(const void *args ATTRIBUTE_UNUSED)
         goto cleanup;
     }
 
-
-    if (virPortAllocatorRelease(ports, p2) < 0)
+    if (virPortAllocatorRelease(p2) < 0)
         goto cleanup;
 
     if (virPortAllocatorAcquire(ports, &p4) < 0)
@@ -153,9 +152,9 @@ static int testAllocReuse(const void *args ATTRIBUTE_UNUSED)
         goto cleanup;
     }
 
-    virPortAllocatorRelease(ports, p1);
-    virPortAllocatorRelease(ports, p3);
-    virPortAllocatorRelease(ports, p4);
+    virPortAllocatorRelease(p1);
+    virPortAllocatorRelease(p3);
+    virPortAllocatorRelease(p4);
 
     ret = 0;
  cleanup:
