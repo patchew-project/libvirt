@@ -443,16 +443,15 @@ void virDomainObjListRemoveLocked(virDomainObjListPtr doms,
     virObjectUnlock(dom);
 }
 
-
 static virDomainObjPtr
-virDomainObjListLoadConfig(virDomainObjListPtr doms,
-                           virCapsPtr caps,
-                           virDomainXMLOptionPtr xmlopt,
-                           const char *configDir,
-                           const char *autostartDir,
-                           const char *name,
-                           virDomainLoadConfigNotify notify,
-                           void *opaque)
+virDomainObjListLoadConfigLocked(virDomainObjListPtr doms,
+                                 virCapsPtr caps,
+                                 virDomainXMLOptionPtr xmlopt,
+                                 const char *configDir,
+                                 const char *autostartDir,
+                                 const char *name,
+                                 virDomainLoadConfigNotify notify,
+                                 void *opaque)
 {
     char *configFile = NULL, *autostartLink = NULL;
     virDomainDefPtr def = NULL;
@@ -496,14 +495,36 @@ virDomainObjListLoadConfig(virDomainObjListPtr doms,
 }
 
 
-static virDomainObjPtr
-virDomainObjListLoadStatus(virDomainObjListPtr doms,
-                           const char *statusDir,
-                           const char *name,
+virDomainObjPtr
+virDomainObjListLoadConfig(virDomainObjListPtr doms,
                            virCapsPtr caps,
                            virDomainXMLOptionPtr xmlopt,
+                           const char *configDir,
+                           const char *autostartDir,
+                           const char *name,
                            virDomainLoadConfigNotify notify,
                            void *opaque)
+{
+    virDomainObjPtr vm = NULL;
+    virObjectRWLockWrite(doms);
+
+    vm = virDomainObjListLoadConfigLocked(doms, caps, xmlopt, configDir,
+                                          autostartDir, name, notify, opaque);
+    virObjectRef(vm);
+
+    virObjectRWUnlock(doms);
+    return vm;
+}
+
+
+static virDomainObjPtr
+virDomainObjListLoadStatusLocked(virDomainObjListPtr doms,
+                                 const char *statusDir,
+                                 const char *name,
+                                 virCapsPtr caps,
+                                 virDomainXMLOptionPtr xmlopt,
+                                 virDomainLoadConfigNotify notify,
+                                 void *opaque)
 {
     char *statusFile = NULL;
     virDomainObjPtr obj = NULL;
@@ -555,6 +576,27 @@ virDomainObjListLoadStatus(virDomainObjListPtr doms,
 }
 
 
+virDomainObjPtr
+virDomainObjListLoadStatus(virDomainObjListPtr doms,
+                           const char *statusDir,
+                           const char *name,
+                           virCapsPtr caps,
+                           virDomainXMLOptionPtr xmlopt,
+                           virDomainLoadConfigNotify notify,
+                           void *opaque)
+{
+    virDomainObjPtr vm = NULL;
+    virObjectRWLockWrite(doms);
+
+    vm = virDomainObjListLoadStatusLocked(doms, statusDir, name, caps, xmlopt,
+                                          notify, opaque);
+    virObjectRef(vm);
+
+    virObjectRWUnlock(doms);
+    return vm;
+}
+
+
 int
 virDomainObjListLoadAllConfigs(virDomainObjListPtr doms,
                                const char *configDir,
@@ -587,22 +629,22 @@ virDomainObjListLoadAllConfigs(virDomainObjListPtr doms,
            kill the whole process */
         VIR_INFO("Loading config file '%s.xml'", entry->d_name);
         if (liveStatus)
-            dom = virDomainObjListLoadStatus(doms,
-                                             configDir,
-                                             entry->d_name,
-                                             caps,
-                                             xmlopt,
-                                             notify,
-                                             opaque);
+            dom = virDomainObjListLoadStatusLocked(doms,
+                                                   configDir,
+                                                   entry->d_name,
+                                                   caps,
+                                                   xmlopt,
+                                                   notify,
+                                                   opaque);
         else
-            dom = virDomainObjListLoadConfig(doms,
-                                             caps,
-                                             xmlopt,
-                                             configDir,
-                                             autostartDir,
-                                             entry->d_name,
-                                             notify,
-                                             opaque);
+            dom = virDomainObjListLoadConfigLocked(doms,
+                                                   caps,
+                                                   xmlopt,
+                                                   configDir,
+                                                   autostartDir,
+                                                   entry->d_name,
+                                                   notify,
+                                                   opaque);
         if (dom) {
             if (!liveStatus)
                 dom->persistent = 1;

@@ -938,6 +938,8 @@ virDomainObjListForEach;
 virDomainObjListGetActiveIDs;
 virDomainObjListGetInactiveNames;
 virDomainObjListLoadAllConfigs;
+virDomainObjListLoadConfig;
+virDomainObjListLoadStatus;
 virDomainObjListNew;
 virDomainObjListNumOfDomains;
 virDomainObjListRemove;

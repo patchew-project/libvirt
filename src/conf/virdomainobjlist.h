@@ -77,6 +77,23 @@ int virDomainObjListLoadAllConfigs(virDomainObjListPtr doms,
                                    virDomainXMLOptionPtr xmlopt,
                                    virDomainLoadConfigNotify notify,
                                    void *opaque);
+virDomainObjPtr
+virDomainObjListLoadConfig(virDomainObjListPtr doms,
+                           virCapsPtr caps,
+                           virDomainXMLOptionPtr xmlopt,
+                           const char *configDir,
+                           const char *autostartDir,
+                           const char *name,
+                           virDomainLoadConfigNotify notify,
+                           void *opaque);
+virDomainObjPtr
+virDomainObjListLoadStatus(virDomainObjListPtr doms,
+                           const char *statusDir,
+                           const char *name,
+                           virCapsPtr caps,
+                           virDomainXMLOptionPtr xmlopt,
+                           virDomainLoadConfigNotify notify,
+                           void *opaque);
 
 int virDomainObjListNumOfDomains(virDomainObjListPtr doms,
                                  bool active,
