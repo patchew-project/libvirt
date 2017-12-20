@@ -39,6 +39,6 @@ int virPortAllocatorAcquire(virPortRangePtr range,
 
 int virPortAllocatorRelease(unsigned short port);
 
-int virPortAllocatorSetUsed(unsigned short port, bool value);
+int virPortAllocatorSetUsed(unsigned short port);
 
 #endif /* __VIR_PORT_ALLOCATOR_H__ */
