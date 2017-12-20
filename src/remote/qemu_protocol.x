@@ -82,6 +82,15 @@ struct qemu_domain_monitor_event_msg {
     remote_string details;
 };
 
+struct qemu_domain_reconnect_args {
+    remote_nonnull_string name;
+    unsigned int flags;
+};
+
+struct qemu_domain_reconnect_ret {
+    remote_nonnull_domain dom;
+};
+
 /* Define the program number, protocol version and procedure numbers here. */
 const QEMU_PROGRAM = 0x20008087;
 const QEMU_PROTOCOL_VERSION = 1;
@@ -154,5 +163,12 @@ enum qemu_procedure {
      * @generate: both
      * @acl: none
      */
-    QEMU_PROC_DOMAIN_MONITOR_EVENT = 6
+    QEMU_PROC_DOMAIN_MONITOR_EVENT = 6,
+
+    /**
+     * @generate: both
+     * @acl: domain:start
+     * @acl: domain:write
+     */
+    QEMU_PROC_DOMAIN_RECONNECT = 7
 };

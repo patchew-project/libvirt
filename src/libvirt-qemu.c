@@ -164,6 +164,54 @@ virDomainQemuAttach(virConnectPtr conn,
     return NULL;
 }
 
+/**
+ * virDomainQemuReconnect:
+ * @conn: pointer to a hypervisor connection
+ * @name: the libvirt guest name
+ * @flags: optional flags, currently unused
+ *
+ * This API is QEMU specific, so it will only work with hypervisor
+ * connections to the QEMU driver.
+ *
+ * This API will attach to an QEMU process that a separate libvirt
+ * helper has launched. The external QEMU must fully follow the
+ * normal libvirt QEMU configuration.
+ *
+ * If successful, then the guest will appear in the list of running
+ * domains for this connection, and other APIs should operate
+ * normally (provided the above requirements were honored).
+ *
+ * Returns a new domain object on success, NULL otherwise
+ */
+virDomainPtr
+virDomainQemuReconnect(virConnectPtr conn,
+                       const char *name,
+                       unsigned int flags)
+{
+    VIR_DEBUG("conn=%p, name=%s, flags=0x%x", conn, name, flags);
+
+    virResetLastError();
+
+    virCheckConnectReturn(conn, NULL);
+    virCheckNonNullArgGoto(name, error);
+
+    virCheckReadOnlyGoto(conn->flags, error);
+
+    if (conn->driver->domainQemuReconnect) {
+        virDomainPtr ret;
+        ret = conn->driver->domainQemuReconnect(conn, name, flags);
+        if (!ret)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+
+ error:
+    virDispatchError(conn);
+    return NULL;
+}
+
 
 /**
  * virDomainQemuAgentCommand:

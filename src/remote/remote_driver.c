@@ -8431,6 +8431,7 @@ static virHypervisorDriver hypervisor_driver = {
     .domainSnapshotDelete = remoteDomainSnapshotDelete, /* 0.8.0 */
     .domainQemuMonitorCommand = remoteDomainQemuMonitorCommand, /* 0.8.3 */
     .domainQemuAttach = remoteDomainQemuAttach, /* 0.9.4 */
+    .domainQemuReconnect = remoteDomainQemuReconnect, /* 4.1.0 */
     .domainQemuAgentCommand = remoteDomainQemuAgentCommand, /* 0.10.0 */
     .connectDomainQemuMonitorEventRegister = remoteConnectDomainQemuMonitorEventRegister, /* 1.2.3 */
     .connectDomainQemuMonitorEventDeregister = remoteConnectDomainQemuMonitorEventDeregister, /* 1.2.3 */

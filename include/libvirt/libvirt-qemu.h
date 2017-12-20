@@ -44,6 +44,10 @@ virDomainPtr virDomainQemuAttach(virConnectPtr domain,
                                  unsigned int pid_value,
                                  unsigned int flags);
 
+virDomainPtr virDomainQemuReconnect(virConnectPtr domain,
+                                    const char *name,
+                                    unsigned int flags);
+
 typedef enum {
     VIR_DOMAIN_QEMU_AGENT_COMMAND_MIN = -2,
     VIR_DOMAIN_QEMU_AGENT_COMMAND_BLOCK = -2,

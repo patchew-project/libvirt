@@ -848,6 +848,10 @@ typedef virDomainPtr
 (*virDrvDomainQemuAttach)(virConnectPtr conn,
                           unsigned int pid_value,
                           unsigned int flags);
+typedef virDomainPtr
+(*virDrvDomainQemuReconnect)(virConnectPtr conn,
+                             const char *name,
+                             unsigned int flags);
 
 typedef int
 (*virDrvConnectDomainQemuMonitorEventRegister)(virConnectPtr conn,
@@ -1463,6 +1467,7 @@ struct _virHypervisorDriver {
     virDrvDomainSnapshotDelete domainSnapshotDelete;
     virDrvDomainQemuMonitorCommand domainQemuMonitorCommand;
     virDrvDomainQemuAttach domainQemuAttach;
+    virDrvDomainQemuReconnect domainQemuReconnect;
     virDrvDomainQemuAgentCommand domainQemuAgentCommand;
     virDrvConnectDomainQemuMonitorEventRegister connectDomainQemuMonitorEventRegister;
     virDrvConnectDomainQemuMonitorEventDeregister connectDomainQemuMonitorEventDeregister;
