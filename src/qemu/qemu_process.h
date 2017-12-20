@@ -45,6 +45,7 @@ int qemuProcessBuildDestroyMemoryPaths(virQEMUDriverPtr driver,
 
 void qemuProcessAutostartAll(virQEMUDriverPtr driver);
 void qemuProcessReconnectAll(virConnectPtr conn, virQEMUDriverPtr driver);
+int qemuProcessReconnect(virQEMUDriverPtr driver, virDomainObjPtr obj, virConnectPtr conn);
 
 typedef struct _qemuProcessIncomingDef qemuProcessIncomingDef;
 typedef qemuProcessIncomingDef *qemuProcessIncomingDefPtr;

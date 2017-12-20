@@ -16300,6 +16300,62 @@ static virDomainPtr qemuDomainQemuAttach(virConnectPtr conn,
 }
 
 
+static virDomainPtr qemuDomainQemuReconnect(virConnectPtr conn,
+                                            const char *name,
+                                            unsigned int flags)
+{
+    virQEMUDriverPtr driver = conn->privateData;
+    virDomainObjPtr vm = NULL;
+    virDomainPtr dom = NULL;
+    virCapsPtr caps = NULL;
+    virQEMUDriverConfigPtr cfg;
+
+    virCheckFlags(0, NULL);
+
+    cfg = virQEMUDriverGetConfig(driver);
+
+    if (strchr(name, '/')) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("name %s cannot contain '/'"), name);
+        goto cleanup;
+    }
+
+    vm = virDomainObjListFindByName(driver->domains, name);
+    if (vm) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("Domain '%s' already exists"), name);
+        goto cleanup;
+    }
+
+    if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
+        goto cleanup;
+
+    if (!(vm = virDomainObjListLoadStatus(driver->domains,
+                                          cfg->stateDir,
+                                          name,
+                                          caps,
+                                          driver->xmlopt,
+                                          NULL, NULL))) {
+        goto cleanup;
+    }
+
+    if (virDomainQemuReconnectEnsureACL(conn, vm->def) < 0) {
+        qemuDomainRemoveInactive(driver, vm);
+        goto cleanup;
+    }
+
+    dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
+
+    qemuDomainObjEndJob(driver, vm);
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    virObjectUnref(caps);
+    virObjectUnref(cfg);
+    return dom;
+}
+
+
 static int
 qemuDomainOpenConsole(virDomainPtr dom,
                       const char *dev_name,
@@ -21262,6 +21318,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainSnapshotDelete = qemuDomainSnapshotDelete, /* 0.8.0 */
     .domainQemuMonitorCommand = qemuDomainQemuMonitorCommand, /* 0.8.3 */
     .domainQemuAttach = qemuDomainQemuAttach, /* 0.9.4 */
+    .domainQemuReconnect = qemuDomainQemuReconnect, /* 4.1.0 */
     .domainQemuAgentCommand = qemuDomainQemuAgentCommand, /* 0.10.0 */
     .connectDomainQemuMonitorEventRegister = qemuConnectDomainQemuMonitorEventRegister, /* 1.2.3 */
     .connectDomainQemuMonitorEventDeregister = qemuConnectDomainQemuMonitorEventDeregister, /* 1.2.3 */

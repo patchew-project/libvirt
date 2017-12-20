@@ -7088,14 +7088,10 @@ struct qemuProcessReconnectData {
  * We can't do normal MonitorEnter & MonitorExit because these two lock the
  * monitor lock, which does not exists in this early phase.
  */
-static void
-qemuProcessReconnect(void *opaque)
+int
+qemuProcessReconnect(virQEMUDriverPtr driver, virDomainObjPtr obj, virConnectPtr conn)
 {
-    struct qemuProcessReconnectData *data = opaque;
-    virQEMUDriverPtr driver = data->driver;
-    virDomainObjPtr obj = data->obj;
     qemuDomainObjPrivatePtr priv;
-    virConnectPtr conn = data->conn;
     struct qemuDomainJobObj oldjob;
     int state;
     int reason;
@@ -7104,8 +7100,7 @@ qemuProcessReconnect(void *opaque)
     unsigned int stopFlags = 0;
     bool jobStarted = false;
     virCapsPtr caps = NULL;
-
-    VIR_FREE(data);
+    int ret = -1;
 
     qemuDomainObjRestoreJob(obj, &oldjob);
     if (oldjob.asyncJob == QEMU_ASYNC_JOB_MIGRATION_IN)
@@ -7297,6 +7292,7 @@ qemuProcessReconnect(void *opaque)
     if (virAtomicIntInc(&driver->nactive) == 1 && driver->inhibitCallback)
         driver->inhibitCallback(true, driver->inhibitOpaque);
 
+    ret = 0;
  cleanup:
     if (jobStarted) {
         if (!virDomainObjIsActive(obj))
@@ -7311,7 +7307,7 @@ qemuProcessReconnect(void *opaque)
     virObjectUnref(cfg);
     virObjectUnref(caps);
     virNWFilterUnlockFilterUpdates();
-    return;
+    return ret;
 
  error:
     if (virDomainObjIsActive(obj)) {
@@ -7337,6 +7333,21 @@ qemuProcessReconnect(void *opaque)
     }
     goto cleanup;
 }
+
+
+static void
+qemuProcessReconnectThread(void *opaque)
+{
+    struct qemuProcessReconnectData *data = opaque;
+    virQEMUDriverPtr driver = data->driver;
+    virDomainObjPtr obj = data->obj;
+    virConnectPtr conn = data->conn;
+
+    qemuProcessReconnect(driver, obj, conn);
+
+    VIR_FREE(data);
+}
+
 
 static int
 qemuProcessReconnectHelper(virDomainObjPtr obj,
@@ -7369,7 +7380,7 @@ qemuProcessReconnectHelper(virDomainObjPtr obj,
      */
     virObjectRef(data->conn);
 
-    if (virThreadCreate(&thread, false, qemuProcessReconnect, data) < 0) {
+    if (virThreadCreate(&thread, false, qemuProcessReconnectThread, data) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Could not create thread. QEMU initialization "
                          "might be incomplete"));
