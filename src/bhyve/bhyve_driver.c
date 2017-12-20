@@ -1267,7 +1267,7 @@ bhyveStateInitialize(bool privileged,
     if (!(bhyve_driver->domainEventState = virObjectEventStateNew()))
         goto cleanup;
 
-    if (!(bhyve_driver->remotePorts = virPortRangeNew(_("display"), 5900, 65535, 0)))
+    if (!(bhyve_driver->remotePorts = virPortRangeNew(_("display"), 5900, 65535)))
         goto cleanup;
 
     bhyve_driver->hostsysinfo = virSysinfoRead();

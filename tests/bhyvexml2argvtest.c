@@ -145,8 +145,7 @@ mymain(void)
     if ((driver.xmlopt = virBhyveDriverCreateXMLConf(&driver)) == NULL)
         return EXIT_FAILURE;
 
-    if (!(driver.remotePorts = virPortRangeNew("display", 5900, 65535,
-                                               VIR_PORT_ALLOCATOR_SKIP_BIND_CHECK)))
+    if (!(driver.remotePorts = virPortRangeNew("display", 5900, 65535)))
         return EXIT_FAILURE;
 
 
