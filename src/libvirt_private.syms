@@ -2496,9 +2496,10 @@ virPolkitCheckAuth;
 
 # util/virportallocator.h
 virPortAllocatorAcquire;
-virPortAllocatorNew;
 virPortAllocatorRelease;
 virPortAllocatorSetUsed;
+virPortRangeFree;
+virPortRangeNew;
 
 
 # util/virprocess.h

@@ -131,10 +131,10 @@ struct _libxlDriverPrivate {
     virObjectEventStatePtr domainEventState;
 
     /* Immutable pointer, self-locking APIs */
-    virPortAllocatorPtr reservedGraphicsPorts;
+    virPortRangePtr reservedGraphicsPorts;
 
     /* Immutable pointer, self-locking APIs */
-    virPortAllocatorPtr migrationPorts;
+    virPortRangePtr migrationPorts;
 
     /* Immutable pointer, lockless APIs*/
     virSysinfoDefPtr hostsysinfo;
@@ -189,7 +189,7 @@ libxlMakeNic(virDomainDefPtr def,
              libxl_device_nic *x_nic,
              bool attach);
 int
-libxlMakeVfb(virPortAllocatorPtr graphicsports,
+libxlMakeVfb(virPortRangePtr graphicsports,
              virDomainGraphicsDefPtr l_vfb, libxl_device_vfb *x_vfb);
 
 int
@@ -213,7 +213,7 @@ libxlCreateXMLConf(void);
 #  define LIBXL_ATTR_UNUSED ATTRIBUTE_UNUSED
 # endif
 int
-libxlBuildDomainConfig(virPortAllocatorPtr graphicsports,
+libxlBuildDomainConfig(virPortRangePtr graphicsports,
                        virDomainDefPtr def,
                        const char *channelDir LIBXL_ATTR_UNUSED,
                        libxl_ctx *ctx,

@@ -264,13 +264,13 @@ struct _virQEMUDriver {
     virHashTablePtr sharedDevices;
 
     /* Immutable pointer, self-locking APIs */
-    virPortAllocatorPtr remotePorts;
+    virPortRangePtr remotePorts;
 
     /* Immutable pointer, self-locking APIs */
-    virPortAllocatorPtr webSocketPorts;
+    virPortRangePtr webSocketPorts;
 
     /* Immutable pointer, self-locking APIs */
-    virPortAllocatorPtr migrationPorts;
+    virPortRangePtr migrationPorts;
 
     /* Immutable pointer, lockless APIs*/
     virSysinfoDefPtr hostsysinfo;
