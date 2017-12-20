@@ -293,8 +293,7 @@ int virPortAllocatorRelease(virPortRangePtr range,
     return ret;
 }
 
-int virPortAllocatorSetUsed(virPortRangePtr range,
-                            unsigned short port,
+int virPortAllocatorSetUsed(unsigned short port,
                             bool value)
 {
     int ret = -1;
@@ -304,12 +303,6 @@ int virPortAllocatorSetUsed(virPortRangePtr range,
         return -1;
 
     virObjectLock(pa);
-
-    if (port < range->start ||
-        port > range->end) {
-        ret = 0;
-        goto cleanup;
-    }
 
     if (value) {
         if (virBitmapIsBitSet(pa->bitmap, port) ||
