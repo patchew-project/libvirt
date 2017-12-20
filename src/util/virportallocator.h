@@ -34,7 +34,7 @@ virPortRangePtr virPortRangeNew(const char *name,
 
 void virPortRangeFree(virPortRangePtr range);
 
-int virPortAllocatorAcquire(virPortRangePtr range,
+int virPortAllocatorAcquire(const virPortRange *range,
                             unsigned short *port);
 
 int virPortAllocatorRelease(unsigned short port);

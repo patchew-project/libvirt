@@ -130,10 +130,10 @@ struct _libxlDriverPrivate {
     /* Immutable pointer, self-locking APIs */
     virObjectEventStatePtr domainEventState;
 
-    /* Immutable pointer, self-locking APIs */
+    /* Immutable pointer, immutable object */
     virPortRangePtr reservedGraphicsPorts;
 
-    /* Immutable pointer, self-locking APIs */
+    /* Immutable pointer, immutable object */
     virPortRangePtr migrationPorts;
 
     /* Immutable pointer, lockless APIs*/
