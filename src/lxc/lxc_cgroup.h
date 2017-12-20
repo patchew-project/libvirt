@@ -27,6 +27,9 @@
 # include "lxc_fuse.h"
 # include "virusb.h"
 
+int virLXCCgroupMode(virDomainResourceRegister reg,
+                     virCgroupRegister *cgreg);
+
 virCgroupPtr virLXCCgroupCreate(virDomainDefPtr def,
                                 pid_t initpid,
                                 size_t nnicindexes,

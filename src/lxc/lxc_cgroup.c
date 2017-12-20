@@ -478,6 +478,35 @@ static int virLXCCgroupSetupDeviceACL(virDomainDefPtr def,
     return ret;
 }
 
+int virLXCCgroupMode(virDomainResourceRegister reg,
+                     virCgroupRegister *cgreg)
+{
+    switch (reg) {
+    case VIR_DOMAIN_RESOURCE_REGISTER_NONE:
+        goto unsupported;
+    case VIR_DOMAIN_RESOURCE_REGISTER_DEFAULT:
+        *cgreg = VIR_CGROUP_REGISTER_DEFAULT;
+        break;
+    case VIR_DOMAIN_RESOURCE_REGISTER_MACHINED:
+        *cgreg = VIR_CGROUP_REGISTER_MACHINED;
+        break;
+    case VIR_DOMAIN_RESOURCE_REGISTER_CGROUP:
+        *cgreg = VIR_CGROUP_REGISTER_DIRECT;
+        break;
+    case VIR_DOMAIN_RESOURCE_REGISTER_SYSTEMD:
+    default:
+        goto unsupported;
+    }
+
+    return 0;
+
+ unsupported:
+    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                   _("Resource register '%s' not available"),
+                   virDomainResourceRegisterTypeToString(reg));
+    return -1;
+}
+
 
 virCgroupPtr virLXCCgroupCreate(virDomainDefPtr def,
                                 pid_t initpid,
@@ -485,9 +514,13 @@ virCgroupPtr virLXCCgroupCreate(virDomainDefPtr def,
                                 int *nicindexes)
 {
     virCgroupPtr cgroup = NULL;
+    virCgroupRegister reg;
     char *machineName = virLXCDomainGetMachineName(def, 0);
 
     if (!machineName)
+        goto cleanup;
+
+    if (virLXCCgroupMode(def->resource->reg, &reg) < 0)
         goto cleanup;
 
     if (def->resource->partition[0] != '/') {
@@ -504,6 +537,7 @@ virCgroupPtr virLXCCgroupCreate(virDomainDefPtr def,
                             initpid,
                             true,
                             nnicindexes, nicindexes,
+                            &reg,
                             def->resource->partition,
                             -1,
                             &cgroup) < 0)

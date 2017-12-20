@@ -1166,6 +1166,7 @@ virLXCProcessEnsureRootFS(virDomainObjPtr vm)
     return -1;
 }
 
+
 /**
  * virLXCProcessStart:
  * @conn: pointer to connection
@@ -1260,12 +1261,12 @@ int virLXCProcessStart(virConnectPtr conn,
         if (VIR_ALLOC(res) < 0)
             goto cleanup;
 
-        if (VIR_STRDUP(res->partition, "/machine") < 0) {
-            VIR_FREE(res);
-            goto cleanup;
-        }
-
         vm->def->resource = res;
+    }
+    if (vm->def->resource->reg != VIR_DOMAIN_RESOURCE_REGISTER_NONE &&
+        !vm->def->resource->partition) {
+        if (VIR_STRDUP(vm->def->resource->partition, "/machine") < 0)
+            goto cleanup;
     }
 
     if (virAsprintf(&logfile, "%s/%s.log",

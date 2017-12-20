@@ -910,6 +910,14 @@ VIR_ENUM_IMPL(virDomainHPTResizing,
               "required",
 );
 
+VIR_ENUM_IMPL(virDomainResourceRegister,
+              VIR_DOMAIN_RESOURCE_REGISTER_LAST,
+              "default",
+              "none",
+              "cgroup",
+              "machined",
+              "systemd");
+
 /* Internal mapping: subset of block job types that can be present in
  * <mirror> XML (remaining types are not two-phase). */
 VIR_ENUM_DECL(virDomainBlockJob)
@@ -17698,16 +17706,20 @@ virDomainResourceDefParse(xmlNodePtr node,
 {
     virDomainResourceDefPtr def = NULL;
     xmlNodePtr tmp = ctxt->node;
+    char *reg;
 
     ctxt->node = node;
 
     if (VIR_ALLOC(def) < 0)
         goto error;
 
-    /* Find out what type of virtualization to use */
-    if (!(def->partition = virXPathString("string(./partition)", ctxt))) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       "%s", _("missing resource partition attribute"));
+    def->partition = virXPathString("string(./partition)", ctxt);
+
+    reg = virXMLPropString(node, "register");
+    if (reg != NULL &&
+        (def->reg = virDomainResourceRegisterTypeFromString(reg)) <= 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       "%s", _("Invalid register attribute"));
         goto error;
     }
 
@@ -25568,11 +25580,23 @@ static void
 virDomainResourceDefFormat(virBufferPtr buf,
                            virDomainResourceDefPtr def)
 {
-    virBufferAddLit(buf, "<resource>\n");
-    virBufferAdjustIndent(buf, 2);
-    virBufferEscapeString(buf, "<partition>%s</partition>\n", def->partition);
-    virBufferAdjustIndent(buf, -2);
-    virBufferAddLit(buf, "</resource>\n");
+    if (def->reg == VIR_DOMAIN_RESOURCE_REGISTER_DEFAULT &&
+        def->partition == NULL)
+        return;
+
+    virBufferAddLit(buf, "<resource");
+    if (def->reg != VIR_DOMAIN_RESOURCE_REGISTER_DEFAULT)
+        virBufferAsprintf(buf, " register='%s'", virDomainResourceRegisterTypeToString(def->reg));
+
+    if (def->partition) {
+        virBufferAddLit(buf, ">\n");
+        virBufferAdjustIndent(buf, 2);
+        virBufferEscapeString(buf, "<partition>%s</partition>\n", def->partition);
+        virBufferAdjustIndent(buf, -2);
+        virBufferAddLit(buf, "</resource>\n");
+    } else {
+        virBufferAddLit(buf, "/>\n");
+    }
 }
 
 

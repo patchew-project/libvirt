@@ -2145,9 +2145,20 @@ struct _virDomainPanicDef {
 void virBlkioDeviceArrayClear(virBlkioDevicePtr deviceWeights,
                               int ndevices);
 
+typedef enum {
+    VIR_DOMAIN_RESOURCE_REGISTER_DEFAULT,
+    VIR_DOMAIN_RESOURCE_REGISTER_NONE,
+    VIR_DOMAIN_RESOURCE_REGISTER_CGROUP,
+    VIR_DOMAIN_RESOURCE_REGISTER_MACHINED,
+    VIR_DOMAIN_RESOURCE_REGISTER_SYSTEMD,
+
+    VIR_DOMAIN_RESOURCE_REGISTER_LAST,
+} virDomainResourceRegister;
+
 typedef struct _virDomainResourceDef virDomainResourceDef;
 typedef virDomainResourceDef *virDomainResourceDefPtr;
 struct _virDomainResourceDef {
+    int reg;    /* enum virDomainResourceRegister */
     char *partition;
 };
 
@@ -3325,6 +3336,7 @@ VIR_ENUM_DECL(virDomainMemorySource)
 VIR_ENUM_DECL(virDomainMemoryAllocation)
 VIR_ENUM_DECL(virDomainIOMMUModel)
 VIR_ENUM_DECL(virDomainShmemModel)
+VIR_ENUM_DECL(virDomainResourceRegister)
 /* from libvirt.h */
 VIR_ENUM_DECL(virDomainState)
 VIR_ENUM_DECL(virDomainNostateReason)

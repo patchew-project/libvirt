@@ -834,6 +834,46 @@ qemuSetupCpuCgroup(virDomainObjPtr vm)
 }
 
 
+static int qemuGetCgroupMode(virDomainObjPtr vm,
+                             virDomainResourceRegister reg,
+                             virCgroupRegister *cgreg)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    bool avail = virQEMUDriverIsPrivileged(priv->driver) &&
+        virCgroupAvailable();
+
+    switch (reg) {
+    case VIR_DOMAIN_RESOURCE_REGISTER_NONE:
+        return 0;
+    case VIR_DOMAIN_RESOURCE_REGISTER_DEFAULT:
+        if (!avail)
+            return 0;
+        *cgreg = VIR_CGROUP_REGISTER_DEFAULT;
+        break;
+    case VIR_DOMAIN_RESOURCE_REGISTER_MACHINED:
+        if (!avail)
+            goto unsupported;
+        *cgreg = VIR_CGROUP_REGISTER_MACHINED;
+        break;
+    case VIR_DOMAIN_RESOURCE_REGISTER_CGROUP:
+        if (!avail)
+            goto unsupported;
+        *cgreg = VIR_CGROUP_REGISTER_DIRECT;
+        break;
+    case VIR_DOMAIN_RESOURCE_REGISTER_SYSTEMD:
+    default:
+        goto unsupported;
+    }
+
+    return 1;
+
+ unsupported:
+    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                   _("Resource register '%s' not available"),
+                   virDomainResourceRegisterTypeToString(reg));
+    return -1;
+}
+
 static int
 qemuInitCgroup(virDomainObjPtr vm,
                size_t nnicindexes,
@@ -842,11 +882,17 @@ qemuInitCgroup(virDomainObjPtr vm,
     int ret = -1;
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(priv->driver);
+    virCgroupRegister reg;
+    int rv;
 
-    if (!virQEMUDriverIsPrivileged(priv->driver))
-        goto done;
-
-    if (!virCgroupAvailable())
+    rv = qemuGetCgroupMode(vm,
+                           vm->def->resource ?
+                           vm->def->resource->reg :
+                           VIR_DOMAIN_RESOURCE_REGISTER_DEFAULT,
+                           &reg);
+    if (rv < 0)
+        goto cleanup;
+    if (rv == 0)
         goto done;
 
     virCgroupFree(&priv->cgroup);
@@ -857,12 +903,11 @@ qemuInitCgroup(virDomainObjPtr vm,
         if (VIR_ALLOC(res) < 0)
             goto cleanup;
 
-        if (VIR_STRDUP(res->partition, "/machine") < 0) {
-            VIR_FREE(res);
-            goto cleanup;
-        }
-
         vm->def->resource = res;
+    }
+    if (!vm->def->resource->partition) {
+        if (VIR_STRDUP(vm->def->resource->partition, "/machine") < 0)
+            goto cleanup;
     }
 
     if (vm->def->resource->partition[0] != '/') {
@@ -879,6 +924,7 @@ qemuInitCgroup(virDomainObjPtr vm,
                             vm->pid,
                             false,
                             nnicindexes, nicindexes,
+                            &reg,
                             vm->def->resource->partition,
                             cfg->cgroupControllers,
                             &priv->cgroup) < 0) {
@@ -979,6 +1025,11 @@ qemuConnectCgroup(virDomainObjPtr vm)
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(priv->driver);
     int ret = -1;
+
+    if (vm->def->resource &&
+        vm->def->resource->reg == VIR_DOMAIN_RESOURCE_REGISTER_NONE) {
+        goto done;
+    }
 
     if (!virQEMUDriverIsPrivileged(priv->driver))
         goto done;

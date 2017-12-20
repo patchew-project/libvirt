@@ -489,6 +489,8 @@ virDomainRedirdevBusTypeToString;
 virDomainRedirdevDefFind;
 virDomainRedirdevDefFree;
 virDomainRedirdevDefRemove;
+virDomainResourceRegisterTypeFromString;
+virDomainResourceRegisterTypeToString;
 virDomainRNGBackendTypeToString;
 virDomainRNGDefFree;
 virDomainRNGFind;
