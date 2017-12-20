@@ -296,7 +296,7 @@ struct _qemuDomainCmdlineDef {
     char **env_value;
 };
 
-
+int qemuSecurityInit(virQEMUDriverPtr driver);
 
 void qemuDomainCmdlineDefFree(qemuDomainCmdlineDefPtr def);
 

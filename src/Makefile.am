@@ -922,6 +922,9 @@ QEMU_DRIVER_SOURCES = \
 		qemu/qemu_capspriv.h \
 		qemu/qemu_security.c qemu/qemu_security.h
 
+QEMU_CONTROLLER_SOURCES = \
+		qemu/qemu_controller.c
+
 XENAPI_DRIVER_SOURCES = \
 		xenapi/xenapi_driver.c xenapi/xenapi_driver.h \
 		xenapi/xenapi_driver_private.h \
@@ -3114,6 +3117,52 @@ libvirt_lxc_CFLAGS += $(SECDRIVER_CFLAGS)
 endif WITH_LIBVIRTD
 endif WITH_LXC
 EXTRA_DIST += $(LXC_CONTROLLER_SOURCES)
+
+if WITH_QEMU
+if WITH_LIBVIRTD
+libexec_PROGRAMS += libvirt_qemu
+
+libvirt_qemu_SOURCES = \
+		$(QEMU_CONTROLLER_SOURCES) \
+		$(DATATYPES_SOURCES)
+libvirt_qemu_LDFLAGS = \
+		$(AM_LDFLAGS) \
+		$(PIE_LDFLAGS) \
+		$(NULL)
+libvirt_qemu_LDADD = \
+		libvirt.la \
+		libvirt-qemu.la \
+		libvirt_driver_qemu_impl.la
+if WITH_NETWORK
+libvirt_qemu_LDADD += libvirt_driver_network_impl.la
+endif WITH_NETWORK
+if WITH_STORAGE
+libvirt_qemu_LDADD += libvirt_driver_storage_impl.la
+endif WITH_STORAGE
+libvirt_qemu_LDADD += ../gnulib/lib/libgnu.la $(LIBSOCKET)
+if WITH_DTRACE_PROBES
+libvirt_qemu_LDADD += libvirt_probes.lo libvirt_qemu_probes.lo
+endif WITH_DTRACE_PROBES
+libvirt_qemu_LDADD += $(SECDRIVER_LIBS)
+libvirt_qemu_CFLAGS = \
+		-I$(srcdir)/access \
+		-I$(srcdir)/conf \
+		-I$(srcdir)/secret \
+		$(AM_CFLAGS) \
+		$(PIE_CFLAGS) \
+		$(LIBNL_CFLAGS) \
+		$(FUSE_CFLAGS) \
+		$(DBUS_CFLAGS) \
+		$(XDR_CFLAGS) \
+		$(NULL)
+if WITH_BLKID
+libvirt_qemu_CFLAGS += $(BLKID_CFLAGS)
+libvirt_qemu_LDADD += $(BLKID_LIBS)
+endif WITH_BLKID
+libvirt_qemu_CFLAGS += $(SECDRIVER_CFLAGS)
+endif WITH_LIBVIRTD
+endif WITH_QEMU
+EXTRA_DIST += $(QEMU_CONTROLLER_SOURCES)
 
 if WITH_SECDRIVER_APPARMOR
 if WITH_LIBVIRTD

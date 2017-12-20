@@ -262,7 +262,7 @@ qemuDomainDisableNamespace(virDomainObjPtr vm,
 void qemuDomainEventQueue(virQEMUDriverPtr driver,
                           virObjectEventPtr event)
 {
-    if (event)
+    if (event && driver->domainEventState)
         virObjectEventStateQueue(driver->domainEventState, event);
 }
 

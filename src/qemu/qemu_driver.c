@@ -371,7 +371,7 @@ qemuSecurityChownCallback(const virStorageSource *src,
 }
 
 
-static int
+int
 qemuSecurityInit(virQEMUDriverPtr driver)
 {
     char **names;
