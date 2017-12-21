@@ -3389,6 +3389,9 @@ remoteSASLFinish(virNetServerPtr server,
     const char *identity;
     struct daemonClientPrivate *priv = virNetServerClientGetPrivateData(client);
     int ssf;
+    int rv = 0;
+
+    virMutexLock(&priv->lock);
 
     /* TLS or UNIX domain sockets trivially OK */
     if (!virNetServerClientIsSecure(client)) {
@@ -3398,15 +3401,15 @@ remoteSASLFinish(virNetServerPtr server,
         VIR_DEBUG("negotiated an SSF of %d", ssf);
         if (ssf < 56) { /* 56 is good for Kerberos */
             VIR_ERROR(_("negotiated SSF %d was not strong enough"), ssf);
-            return -2;
+            goto rejected;
         }
     }
 
     if (!(identity = virNetSASLSessionGetIdentity(priv->sasl)))
-        return -2;
+        goto rejected;
 
     if (!virNetSASLContextCheckIdentity(saslCtxt, identity))
-        return -2;
+        goto rejected;
 
     if (!(clnt_identity = virNetServerClientGetIdentity(client)))
         goto error;
@@ -3425,10 +3428,17 @@ remoteSASLFinish(virNetServerPtr server,
     virObjectUnref(priv->sasl);
     priv->sasl = NULL;
 
-    return 0;
+ cleanup:
+    virMutexUnlock(&priv->lock);
+    return rv;
 
  error:
-    return -1;
+    rv = -1;
+    goto cleanup;
+
+ rejected:
+    rv = -2;
+    goto cleanup;
 }
 
 /*
