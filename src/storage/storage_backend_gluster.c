@@ -608,6 +608,7 @@ virStorageFileBackendGlusterInitServer(virStorageFileBackendGlusterPrivPtr priv,
         hoststr = host->socket;
         break;
 
+    case VIR_STORAGE_NET_HOST_TRANS_ISER:
     case VIR_STORAGE_NET_HOST_TRANS_LAST:
         break;
     }

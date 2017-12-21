@@ -883,6 +883,8 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
             if (!((src->hosts->name && strchr(src->hosts->name, ':')) ||
                   (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_TCP &&
                    !src->hosts->name) ||
+                  (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_ISER &&
+                   !src->hosts->name) ||
                   (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_UNIX &&
                    src->hosts->socket &&
                    src->hosts->socket[0] != '/'))) {
@@ -891,6 +893,7 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
 
                 switch (src->hosts->transport) {
                 case VIR_STORAGE_NET_HOST_TRANS_TCP:
+                case VIR_STORAGE_NET_HOST_TRANS_ISER:
                     virBufferAsprintf(&buf, "%s:%u",
                                       src->hosts->name, src->hosts->port);
                     break;
