@@ -410,6 +410,7 @@ libvirtd_test_scripts = \
 	virt-admin-self-test \
 	virsh-start \
 	virsh-undefine \
+	virsh-rename \
 	virsh-uriprecedence \
 	virsh-vcpupin \
 	$(NULL)
