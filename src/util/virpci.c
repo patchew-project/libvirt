@@ -2561,7 +2561,7 @@ logStrToLong_ui(char const *s,
 
     ret = virStrToLong_ui(s, end_ptr, base, result);
     if (ret != 0)
-        VIR_ERROR(_("Failed to convert '%s' to unsigned int"), s);
+        VIR_DEBUG("Failed to convert '%s' to unsigned int", s);
     return ret;
 }
 
@@ -2638,9 +2638,7 @@ virPCIGetDeviceAddressFromSysfsLink(const char *device_link)
         goto out;
 
     if (virPCIDeviceAddressParse(config_address, bdf) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Failed to parse PCI config address '%s'"),
-                       config_address);
+        VIR_DEBUG("Failed to parse PCI config address '%s'", config_address);
         VIR_FREE(bdf);
         goto out;
     }
