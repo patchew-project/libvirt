@@ -433,6 +433,12 @@ qemuBlockStorageSourceGetURI(virStorageSourcePtr src)
         if (VIR_STRDUP(uri->scheme,
                        virStorageNetProtocolTypeToString(src->protocol)) < 0)
             goto cleanup;
+    } else if (src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_ISER) {
+        uri->port = src->hosts->port;
+
+        if (VIR_STRDUP(uri->scheme,
+                       virStorageNetHostTransportTypeToString(src->hosts->transport)) < 0)
+            goto cleanup;
     } else {
         if (virAsprintf(&uri->scheme, "%s+%s",
                         virStorageNetProtocolTypeToString(src->protocol),
@@ -495,6 +501,19 @@ qemuBlockStorageSourceBuildJSONSocketAddress(virStorageNetHostDefPtr host,
         else
             transport = "inet";
 
+        if (virAsprintf(&port, "%u", host->port) < 0)
+            goto cleanup;
+
+        if (virJSONValueObjectCreate(&server,
+                                     "s:type", transport,
+                                     "s:host", host->name,
+                                     "s:port", port,
+                                     NULL) < 0)
+            goto cleanup;
+        break;
+
+    case VIR_STORAGE_NET_HOST_TRANS_ISER:
+        transport = "iser";
         if (virAsprintf(&port, "%u", host->port) < 0)
             goto cleanup;
 
@@ -590,7 +609,8 @@ qemuBlockStorageSourceBuildJSONInetSocketAddress(virStorageNetHostDefPtr host)
     virJSONValuePtr ret = NULL;
     char *port = NULL;
 
-    if (host->transport != VIR_STORAGE_NET_HOST_TRANS_TCP) {
+    if (host->transport != VIR_STORAGE_NET_HOST_TRANS_TCP &&
+        host->transport != VIR_STORAGE_NET_HOST_TRANS_ISER) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("only TCP protocol can be converted to InetSocketAddress"));
         return NULL;
@@ -831,7 +851,7 @@ qemuBlockStorageSourceGetISCSIProps(virStorageSourcePtr src)
                                           "s:portal", portal,
                                           "s:target", target,
                                           "u:lun", lun,
-                                          "s:transport", "tcp",
+                                          "s:transport", virStorageNetHostTransportTypeToString(src->hosts->transport),
                                           "S:user", username,
                                           "S:password-secret", objalias,
                                           NULL));
