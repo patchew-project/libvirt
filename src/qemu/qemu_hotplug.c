@@ -4399,6 +4399,54 @@ qemuDomainRemoveInputDevice(virDomainObjPtr vm,
 }
 
 
+static int
+qemuDomainRemoveRedirdevDevice(virQEMUDriverPtr driver,
+                               virDomainObjPtr vm,
+                               virDomainRedirdevDefPtr dev)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virObjectEventPtr event;
+    char *charAlias = NULL;
+    ssize_t idx;
+    int ret = -1;
+
+    VIR_DEBUG("Removing redirdev device %s from domain %p %s",
+              dev->info.alias, vm, vm->def->name);
+
+    if (!(charAlias = qemuAliasChardevFromDevAlias(dev->info.alias)))
+        goto cleanup;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    /* DeviceDel from Detach may remove chardev,
+     * so we cannot rely on return status to delete TLS chardevs.
+     */
+    ignore_value(qemuMonitorDetachCharDev(priv->mon, charAlias));
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        goto cleanup;
+
+    if (qemuDomainDelChardevTLSObjects(driver, vm,
+                                       dev->source, charAlias) < 0)
+        goto cleanup;
+
+    virDomainAuditRedirdev(vm, dev, "detach", true);
+
+    event = virDomainEventDeviceRemovedNewFromObj(vm, dev->info.alias);
+    qemuDomainEventQueue(driver, event);
+
+    if ((idx = virDomainRedirdevDefFind(vm->def, dev)) >= 0)
+        virDomainRedirdevDefRemove(vm->def, idx);
+    qemuDomainReleaseDeviceAddress(vm, &dev->info, NULL);
+    virDomainRedirdevDefFree(dev);
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(charAlias);
+    return ret;
+}
+
+
 int
 qemuDomainRemoveDevice(virQEMUDriverPtr driver,
                        virDomainObjPtr vm,
@@ -5135,6 +5183,49 @@ qemuDomainDetachWatchdog(virQEMUDriverPtr driver,
     }
     qemuDomainResetDeviceRemoval(vm);
 
+    return ret;
+}
+
+
+int
+qemuDomainDetachRedirdevDevice(virQEMUDriverPtr driver,
+                               virDomainObjPtr vm,
+                               virDomainRedirdevDefPtr dev)
+{
+    int ret = -1;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virDomainRedirdevDefPtr tmpRedirdevDef;
+    ssize_t idx;
+
+    if ((idx = virDomainRedirdevDefFind(vm->def, dev)) < 0) {
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("no matching redirdev was not found"));
+        return -1;
+    }
+
+    tmpRedirdevDef = vm->def->redirdevs[idx];
+
+    if (!tmpRedirdevDef->info.alias) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("alias not set for redirdev device"));
+        return -1;
+    }
+
+    qemuDomainMarkDeviceForRemoval(vm, &tmpRedirdevDef->info);
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    if (qemuMonitorDelDevice(priv->mon, tmpRedirdevDef->info.alias) < 0) {
+        ignore_value(qemuDomainObjExitMonitor(driver, vm));
+        goto cleanup;
+    }
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        goto cleanup;
+
+    if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1)
+        ret = qemuDomainRemoveRedirdevDevice(driver, vm, tmpRedirdevDef);
+
+ cleanup:
+    qemuDomainResetDeviceRemoval(vm);
     return ret;
 }
 
