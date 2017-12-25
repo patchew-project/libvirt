@@ -26880,11 +26880,19 @@ virDomainDeviceInfoCheckBootIndex(virDomainDefPtr def ATTRIBUTE_UNUSED,
 {
     virDomainDeviceInfoPtr newinfo = opaque;
 
+    int disk_device = device->data.disk->device;
     if (info->bootIndex == newinfo->bootIndex) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("boot order %u is already used by another device"),
-                       newinfo->bootIndex);
-        return -1;
+        /* Skip check for insert or eject CD-ROM device */
+        if (disk_device == VIR_DOMAIN_DISK_DEVICE_FLOPPY ||
+            disk_device == VIR_DOMAIN_DISK_DEVICE_CDROM) {
+            VIR_DEBUG("Skip boot index check for floppy or CDROM");
+            return 0;
+        } else {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("boot order %u is already used by another device"),
+                           newinfo->bootIndex);
+            return -1;
+        }
     }
     return 0;
 }
