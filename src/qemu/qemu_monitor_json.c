@@ -886,7 +886,7 @@ qemuMonitorJSONHandleBlockJobImpl(qemuMonitorPtr mon,
     case VIR_DOMAIN_BLOCK_JOB_COMPLETED:
         error = virJSONValueObjectGetString(data, "error");
         /* Make sure the whole device has been processed */
-        if (offset != len)
+        if (offset != len || offset == 0)
             event = VIR_DOMAIN_BLOCK_JOB_FAILED;
         break;
     case VIR_DOMAIN_BLOCK_JOB_CANCELED:
