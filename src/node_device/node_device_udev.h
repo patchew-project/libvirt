@@ -19,6 +19,8 @@
  *
  * Author: Dave Allan <dallan@redhat.com>
  */
+#ifndef __VIR_NODE_DEVICE_UDEV_H__
+#define __VIR_NODE_DEVICE_UDEV_H__
 
 #include <libudev.h>
 #include <stdint.h>
@@ -26,3 +28,9 @@
 #define SYSFS_DATA_SIZE 4096
 #define DMI_DEVPATH "/sys/devices/virtual/dmi/id"
 #define DMI_DEVPATH_FALLBACK "/sys/class/dmi/id"
+
+int
+udevPCIGetMdevTypesCap(struct udev_device *device, virNodeDevCapPCIDevPtr pcidata);
+
+
+#endif /* __VIR_NODE_DEVICE_UDEV_H__ */

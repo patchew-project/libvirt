@@ -29,6 +29,7 @@
 #include "dirname.h"
 #include "node_device_driver.h"
 #include "node_device_hal.h"
+#include "node_device_udev.h"
 #include "node_device_linux_sysfs.h"
 #include "virerror.h"
 #include "viralloc.h"
@@ -175,6 +176,45 @@ nodeDeviceSysfsGetPCIIOMMUGroupCaps(virNodeDevCapPCIDevPtr pci_dev)
     return ret;
 }
 
+static int
+nodeDeviceSysfsGetPCIMdevTypesCaps(const char *sysfsPath,
+                                   virNodeDevCapPCIDevPtr pci_dev)
+{
+    size_t i;
+    int ret = -1;
+    struct udev *udev = NULL;
+    struct udev_device *device = NULL;
+
+    /* this could be a refresh, so clear out the old data */
+    for (i = 0; i < pci_dev->nmdev_types; i++)
+       VIR_FREE(pci_dev->mdev_types[i]);
+    VIR_FREE(pci_dev->mdev_types);
+    pci_dev->nmdev_types = 0;
+
+    udev = udev_new();
+    if (!udev) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("failed to create udev context"));
+        goto cleanup;
+    }
+    device = udev_device_new_from_syspath(udev, sysfsPath);
+    if (!device) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("failed to create udev device from path %s"),
+                       sysfsPath);
+        goto cleanup;
+    }
+
+    if (udevPCIGetMdevTypesCap(device, pci_dev) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    udev_device_unref(device);
+    udev_unref(udev);
+    return ret;
+}
+
 
 /* nodeDeviceSysfsGetPCIRelatedCaps() get info that is stored in sysfs
  * about devices related to this device, i.e. things that can change
@@ -189,6 +229,8 @@ nodeDeviceSysfsGetPCIRelatedDevCaps(const char *sysfsPath,
     if (nodeDeviceSysfsGetPCISRIOVCaps(sysfsPath, pci_dev) < 0)
         return -1;
     if (nodeDeviceSysfsGetPCIIOMMUGroupCaps(pci_dev) < 0)
+        return -1;
+    if (nodeDeviceSysfsGetPCIMdevTypesCaps(sysfsPath, pci_dev) < 0)
         return -1;
     return 0;
 }

@@ -432,7 +432,7 @@ udevFillMdevType(struct udev_device *device,
 }
 
 
-static int
+int
 udevPCIGetMdevTypesCap(struct udev_device *device,
                        virNodeDevCapPCIDevPtr pcidata)
 {
@@ -599,8 +599,15 @@ udevProcessPCI(struct udev_device *device,
 
     /* check whether the device is mediated devices framework capable, if so,
      * process it
+     *
+     * UDEV doesn't report attributes under subdirectories by default but is
+     * able to query them if the path to the attribute is relative to the
+     * device's base path, e.g. /sys/devices/../0000:00:01.0/ is the device's
+     * base path as udev reports it, but we're interested in attributes under
+     * /sys/devices/../0000:00:01.0/mdev_supported_types/<type>/. So, we need to
+     * scan the subdirectories ourselves.
      */
-    if (udevPCIGetMdevTypesCap(device, pci_dev) < 0)
+    if (udevPCIGetMdevTypesCap(udev_device_get_syspath(device), pci_dev) < 0)
         goto cleanup;
 
     ret = 0;
