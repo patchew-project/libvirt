@@ -1,0 +1,13 @@
+diff --git i/lib/stat-time.h w/lib/stat-time.h
+index 5f8bf4e12..68871f567 100644
+--- i/lib/stat-time.h
++++ w/lib/stat-time.h
+@@ -212,7 +212,7 @@ get_stat_birthtime (struct stat const *st)
+    errno to EOVERFLOW if normalization overflowed.  This function
+    is intended to be private to this .h file.  */
+ _GL_STAT_TIME_INLINE int
+-stat_time_normalize (int result, struct stat *st)
++stat_time_normalize (int result, struct stat *st _GL_UNUSED)
+ {
+ #if defined __sun && defined STAT_TIMESPEC
+   if (result == 0)
