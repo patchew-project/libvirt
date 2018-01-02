@@ -64,7 +64,10 @@
 #include "virfile.h"
 #include "virjson.h"
 #include "virqemu.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include "stat-time.h"
+#pragma GCC diagnostic pop
 #include "virstring.h"
 #include "virxml.h"
 #include "virfdstream.h"
