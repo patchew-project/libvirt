@@ -815,8 +815,8 @@ vshCommandFree(vshCmd *cmd)
  * to the option if found, 0 with *OPT set to NULL if the name is
  * valid and the option is not required, -1 with *OPT set to NULL if
  * the option is required but not present, and assert if NAME is not
- * valid (which indicates a programming error).  No error messages are
- * issued if a value is returned.
+ * valid (which indicates a programming error) unless cmd->skipChecks
+ * is set. No error messages are issued if a value is returned.
  */
 static int
 vshCommandOpt(const vshCmd *cmd, const char *name, vshCmdOpt **opt,
@@ -829,7 +829,8 @@ vshCommandOpt(const vshCmd *cmd, const char *name, vshCmdOpt **opt,
     /* See if option is valid and/or required.  */
     *opt = NULL;
     while (valid) {
-        assert(valid->name);
+        if (!cmd->skipChecks)
+            assert(valid->name);
         if (STREQ(name, valid->name))
             break;
         valid++;
