@@ -1041,7 +1041,7 @@ int virStringSortRevCompare(const void *a, const void *b)
  * @matches: pointer to an array to be filled with NULL terminated list of matches
  *
  * Performs a POSIX extended regex search against a string and return all matching substrings.
- * The @result value should be freed with virStringListFree() when no longer
+ * The @matches value should be freed with virStringListFree() when no longer
  * required.
  *
  * @code
