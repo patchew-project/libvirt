@@ -704,7 +704,8 @@ virSecurityStackRestoreInputLabel(virSecurityManagerPtr mgr,
 static int
 virSecurityStackDomainSetPathLabel(virSecurityManagerPtr mgr,
                                    virDomainDefPtr vm,
-                                   const char *path)
+                                   const char *path,
+                                   bool fullpath)
 {
     virSecurityStackDataPtr priv = virSecurityManagerGetPrivateData(mgr);
     virSecurityStackItemPtr item = priv->itemsHead;
@@ -712,7 +713,7 @@ virSecurityStackDomainSetPathLabel(virSecurityManagerPtr mgr,
 
     for (; item; item = item->next) {
         if (virSecurityManagerDomainSetPathLabel(item->securityManager,
-                                                 vm, path) < 0)
+                                                 vm, path, fullpath) < 0)
             rc = -1;
     }
 

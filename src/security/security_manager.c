@@ -1048,12 +1048,13 @@ virSecurityManagerGetNested(virSecurityManagerPtr mgr)
 int
 virSecurityManagerDomainSetPathLabel(virSecurityManagerPtr mgr,
                                      virDomainDefPtr vm,
-                                     const char *path)
+                                     const char *path,
+                                     bool fullpath)
 {
     if (mgr->drv->domainSetPathLabel) {
         int ret;
         virObjectLock(mgr);
-        ret = mgr->drv->domainSetPathLabel(mgr, vm, path);
+        ret = mgr->drv->domainSetPathLabel(mgr, vm, path, fullpath);
         virObjectUnlock(mgr);
         return ret;
     }

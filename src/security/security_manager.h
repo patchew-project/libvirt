@@ -182,7 +182,8 @@ int virSecurityManagerRestoreInputLabel(virSecurityManagerPtr mgr,
 
 int virSecurityManagerDomainSetPathLabel(virSecurityManagerPtr mgr,
                                          virDomainDefPtr vm,
-                                         const char *path);
+                                         const char *path,
+                                         bool fullpath);
 
 int virSecurityManagerSetChardevLabel(virSecurityManagerPtr mgr,
                                       virDomainDefPtr def,

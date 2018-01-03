@@ -3028,7 +3028,8 @@ virSecuritySELinuxGetSecurityMountOptions(virSecurityManagerPtr mgr,
 static int
 virSecuritySELinuxDomainSetPathLabel(virSecurityManagerPtr mgr,
                                      virDomainDefPtr def,
-                                     const char *path)
+                                     const char *path,
+                                     bool fullpath ATTRIBUTE_UNUSED)
 {
     virSecurityLabelDefPtr seclabel;
 
