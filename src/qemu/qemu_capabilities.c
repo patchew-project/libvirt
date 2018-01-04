@@ -456,6 +456,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
 
               /* 280 */
               "pl011",
+              "dump-completed",
     );
 
 
@@ -1590,6 +1591,7 @@ struct virQEMUCapsStringFlags virQEMUCapsEvents[] = {
     { "VSERPORT_CHANGE", QEMU_CAPS_VSERPORT_CHANGE },
     { "DEVICE_TRAY_MOVED", QEMU_CAPS_DEVICE_TRAY_MOVED },
     { "BLOCK_WRITE_THRESHOLD", QEMU_CAPS_BLOCK_WRITE_THRESHOLD },
+    { "DUMP_COMPLETED", QEMU_CAPS_DUMP_COMPLETED },
 };
 
 struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {

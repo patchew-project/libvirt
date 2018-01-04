@@ -442,6 +442,7 @@ typedef enum {
 
     /* 280 */
     QEMU_CAPS_DEVICE_PL011, /* -device pl011 (not user-instantiable) */
+    QEMU_CAPS_DUMP_COMPLETED, /* DUMP_COMPLETED event */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
