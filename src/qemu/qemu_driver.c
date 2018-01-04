@@ -3758,6 +3758,34 @@ qemuDomainManagedSaveRemove(virDomainPtr dom, unsigned int flags)
 }
 
 
+/**
+ * qemuDumpWaitForCompletion:
+ * @vm: domain object
+ *
+ * If the query dump capability exists, then it's possible to start a
+ * guest memory dump operation using a thread via a 'detach' qualifier
+ * to the dump guest memory command. This allows the async check if the
+ * dump is done.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+static int
+qemuDumpWaitForCompletion(virDomainObjPtr vm)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+
+    if (!priv->job.dumpCompletion)
+        return 0;
+
+    VIR_DEBUG("Waiting for dump completion");
+    while (!priv->job.dumpCompleted && !priv->job.abortJob) {
+        if (virDomainObjWait(vm) < 0)
+            return -1;
+    }
+    return 0;
+}
+
+
 static int
 qemuDumpToFd(virQEMUDriverPtr driver,
              virDomainObjPtr vm,
@@ -3766,6 +3794,7 @@ qemuDumpToFd(virQEMUDriverPtr driver,
              const char *dumpformat)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    bool detach = false;
     int ret = -1;
 
     if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_DUMP_GUEST_MEMORY)) {
@@ -3774,10 +3803,13 @@ qemuDumpToFd(virQEMUDriverPtr driver,
         return -1;
     }
 
+    detach = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_DUMP_COMPLETED);
+
     if (qemuSecuritySetImageFDLabel(driver->securityManager, vm->def, fd) < 0)
         return -1;
 
-    VIR_FREE(priv->job.current);
+    if (!detach)
+        VIR_FREE(priv->job.current);
     priv->job.dump_memory_only = true;
 
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
@@ -3792,15 +3824,23 @@ qemuDumpToFd(virQEMUDriverPtr driver,
                              "for this QEMU binary"),
                            dumpformat);
             ret = -1;
+            ignore_value(qemuDomainObjExitMonitor(driver, vm));
             goto cleanup;
         }
     }
 
-    ret = qemuMonitorDumpToFd(priv->mon, fd, dumpformat, false);
+    ret = qemuMonitorDumpToFd(priv->mon, fd, dumpformat, detach);
+
+    if (detach && ret == 0)
+        priv->job.dumpCompletion = true;
+
+    if ((qemuDomainObjExitMonitor(driver, vm) < 0) || ret < 0)
+        goto cleanup;
+
+    if (detach)
+        ret = qemuDumpWaitForCompletion(vm);
 
  cleanup:
-    ignore_value(qemuDomainObjExitMonitor(driver, vm));
-
     return ret;
 }
 
