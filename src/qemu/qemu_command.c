@@ -6922,9 +6922,12 @@ qemuBuildCpuModelArgStr(virQEMUDriverPtr driver,
 
     case VIR_CPU_MODE_HOST_MODEL:
         if (ARCH_IS_PPC64(def->os.arch)) {
-            virBufferAddLit(buf, "host");
-            if (cpu->model)
-                virBufferAsprintf(buf, ",compat=%s", cpu->model);
+            if (!virQEMUCapsGet(qemuCaps,
+                                QEMU_CAPS_MACHINE_PSERIES_MAX_CPU_COMPAT)) {
+                virBufferAddLit(buf, "host");
+                if (cpu->model)
+                    virBufferAsprintf(buf, ",compat=%s", cpu->model);
+            }
         } else {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("unexpected host-model CPU for %s architecture"),
@@ -7414,6 +7417,7 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
     } else {
         virTristateSwitch vmport = def->features[VIR_DOMAIN_FEATURE_VMPORT];
         virTristateSwitch smm = def->features[VIR_DOMAIN_FEATURE_SMM];
+        virCPUDefPtr cpu = def->cpu;
 
         virCommandAddArg(cmd, "-machine");
         virBufferAdd(&buf, def->os.machine, -1);
@@ -7587,6 +7591,10 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
 
             virBufferAsprintf(&buf, ",resize-hpt=%s", str);
         }
+
+        if (cpu && cpu->model && cpu->mode == VIR_CPU_MODE_HOST_MODEL &&
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_MACHINE_PSERIES_MAX_CPU_COMPAT))
+            virBufferAsprintf(&buf, ",max-cpu-compat=%s", cpu->model);
 
         if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_BOOTINDEX) &&
             virQEMUCapsGet(qemuCaps, QEMU_CAPS_LOADPARM))
