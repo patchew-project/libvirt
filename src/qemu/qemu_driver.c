@@ -5001,7 +5001,7 @@ qemuDomainPinVcpuLive(virDomainObjPtr vm,
                       int vcpu,
                       virQEMUDriverPtr driver,
                       virQEMUDriverConfigPtr cfg,
-                      virBitmapPtr cpumap)
+                      virBitmapPtr cpumap, bool clear)
 {
     virBitmapPtr tmpmap = NULL;
     virDomainVcpuDefPtr vcpuinfo;
@@ -5049,7 +5049,12 @@ qemuDomainPinVcpuLive(virDomainObjPtr vm,
     }
 
     virBitmapFree(vcpuinfo->cpumask);
-    vcpuinfo->cpumask = tmpmap;
+    if (clear) {
+        virBitmapFree(tmpmap);
+        vcpuinfo->cpumask = NULL;
+    } else {
+        vcpuinfo->cpumask = tmpmap;
+    }
     tmpmap = NULL;
 
     if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0)
@@ -5093,9 +5098,11 @@ qemuDomainPinVcpuFlags(virDomainPtr dom,
     virBitmapPtr pcpumap = NULL;
     virDomainVcpuDefPtr vcpuinfo = NULL;
     virQEMUDriverConfigPtr cfg = NULL;
+    bool clear = false;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
-                  VIR_DOMAIN_AFFECT_CONFIG, -1);
+                  VIR_DOMAIN_AFFECT_CONFIG |
+                  VIR_DOMAIN_VCPU_CLEAR, -1);
 
     cfg = virQEMUDriverGetConfig(driver);
 
@@ -5110,6 +5117,8 @@ qemuDomainPinVcpuFlags(virDomainPtr dom,
 
     if (virDomainObjGetDefs(vm, flags, &def, &persistentDef) < 0)
         goto endjob;
+
+    clear = !!(flags & VIR_DOMAIN_VCPU_CLEAR);
 
     if ((def && def->virtType == VIR_DOMAIN_VIRT_QEMU) ||
         (persistentDef && persistentDef->virtType == VIR_DOMAIN_VIRT_QEMU)) {
@@ -5136,12 +5145,17 @@ qemuDomainPinVcpuFlags(virDomainPtr dom,
     }
 
     if (def &&
-        qemuDomainPinVcpuLive(vm, def, vcpu, driver, cfg, pcpumap) < 0)
+        qemuDomainPinVcpuLive(vm, def, vcpu, driver, cfg, pcpumap, clear) < 0)
         goto endjob;
 
     if (persistentDef) {
         virBitmapFree(vcpuinfo->cpumask);
-        vcpuinfo->cpumask = pcpumap;
+        if (clear) {
+            virBitmapFree(pcpumap);
+            vcpuinfo->cpumask = NULL;
+        } else {
+            vcpuinfo->cpumask = pcpumap;
+        }
         pcpumap = NULL;
 
         ret = virDomainSaveConfig(cfg->configDir, driver->caps, persistentDef);
