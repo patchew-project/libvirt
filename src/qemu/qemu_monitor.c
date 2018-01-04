@@ -2761,6 +2761,20 @@ qemuMonitorMigrateCancel(qemuMonitorPtr mon)
 }
 
 
+int
+qemuMonitorQueryDump(qemuMonitorPtr mon,
+                     qemuMonitorDumpStatsPtr stats)
+{
+    QEMU_CHECK_MONITOR(mon);
+
+    /* No capability is supported without JSON monitor */
+    if (!mon->json)
+        return 0;
+
+    return qemuMonitorJSONQueryDump(mon, stats);
+}
+
+
 /**
  * Returns 1 if @capability is supported, 0 if it's not, or -1 on error.
  */
