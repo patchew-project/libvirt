@@ -3513,8 +3513,9 @@ qemuDomainChangeGraphics(virQEMUDriverPtr driver,
     int ret = -1;
 
     if (!olddev) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("cannot find existing graphics device to modify"));
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("cannot find existing graphics device to modify of"
+                         " type '%s'"), type);
         goto cleanup;
     }
 
@@ -5050,8 +5051,10 @@ qemuDomainDetachShmemDevice(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = vm->privateData;
 
     if ((idx = virDomainShmemDefFind(vm->def, dev)) < 0) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("device not present in domain configuration"));
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("shmem device of model '%s' not found "
+                         "in domain configuration"),
+                       virDomainShmemModelTypeToString(dev->model));
         return -1;
     }
 
@@ -5107,8 +5110,10 @@ qemuDomainDetachWatchdog(virQEMUDriverPtr driver,
           watchdog->model == dev->model &&
           watchdog->action == dev->action &&
           virDomainDeviceInfoAddressIsEqual(&dev->info, &watchdog->info))) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("watchdog device not present in domain configuration"));
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("watchdog device of model '%s' is not "
+                         "found in domain configuration"),
+                       virDomainWatchdogModelTypeToString(watchdog->model));
         return -1;
     }
 
@@ -5148,8 +5153,13 @@ qemuDomainDetachNetDevice(virQEMUDriverPtr driver,
     virDomainNetDefPtr detach = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
 
-    if ((detachidx = virDomainNetFindIdx(vm->def, dev->data.net)) < 0)
+    if ((detachidx = virDomainNetFindIdx(vm->def, dev->data.net)) < 0) {
+        char mac[VIR_MAC_STRING_BUFLEN];
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("netdev '%s' not found in domain configuration"),
+                       virMacAddrFormat(&dev->data.net->mac, mac));
         goto cleanup;
+    }
 
     detach = vm->def->nets[detachidx];
 
@@ -5335,8 +5345,10 @@ int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
     char *devstr = NULL;
 
     if (!(tmpChr = virDomainChrFind(vmdef, chr))) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("device not present in domain configuration"));
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("chr device of type '%s' not found "
+                         "in domain configuration"),
+                       virDomainChrDeviceTypeToString(chr->deviceType));
         goto cleanup;
     }
 
@@ -5382,8 +5394,10 @@ qemuDomainDetachRNGDevice(virQEMUDriverPtr driver,
     int ret = -1;
 
     if ((idx = virDomainRNGFind(vm->def, rng)) < 0) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("device not present in domain configuration"));
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("RNG device of model '%s' not found "
+                         "in domain configuration"),
+                       virDomainRNGBackendTypeToString(rng->model));
         return -1;
     }
 
@@ -5425,8 +5439,10 @@ qemuDomainDetachMemoryDevice(virQEMUDriverPtr driver,
     qemuDomainMemoryDeviceAlignSize(vm->def, memdef);
 
     if ((idx = virDomainMemoryFindByDef(vm->def, memdef)) < 0) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("device not present in domain configuration"));
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("memory device of model '%s' not found "
+                         "in domain configuration"),
+                       virDomainMemoryModelTypeToString(memdef->model));
         return -1;
     }
 
