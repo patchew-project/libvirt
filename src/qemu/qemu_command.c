@@ -2662,13 +2662,11 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
 
     *devstr = NULL;
 
-    if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_SCSI) {
-        if ((qemuDomainResetSCSIControllerModel(domainDef, qemuCaps, &model)) < 0)
-            return -1;
-    }
-
     switch ((virDomainControllerType) def->type) {
     case VIR_DOMAIN_CONTROLLER_TYPE_SCSI:
+        if ((qemuDomainResetSCSIControllerModel(domainDef, qemuCaps, &model)) < 0)
+            return -1;
+
         switch (model) {
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
             if (def->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
