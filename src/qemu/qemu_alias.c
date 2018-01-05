@@ -194,8 +194,8 @@ qemuAssignDeviceDiskAlias(virDomainDefPtr def,
                 virDomainDeviceFindControllerModel(def, &disk->info,
                                                    VIR_DOMAIN_CONTROLLER_TYPE_SCSI);
 
-            if ((qemuDomainSetSCSIControllerModel(def, qemuCaps,
-                                                  &controllerModel)) < 0)
+            if ((qemuDomainResetSCSIControllerModel(def, qemuCaps,
+                                                    &controllerModel)) < 0)
                 return -1;
         }
 

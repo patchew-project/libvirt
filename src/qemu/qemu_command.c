@@ -1888,6 +1888,57 @@ qemuCheckIOThreads(const virDomainDef *def,
 }
 
 
+static bool
+qemuBuildCheckSCSIControllerModel(virQEMUCapsPtr qemuCaps,
+                                  int model)
+{
+    switch (model) {
+    case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSILOGIC:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SCSI_LSI)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("This QEMU doesn't support "
+                             "the LSI 53C895A SCSI controller"));
+            return false;
+        }
+        break;
+    case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_SCSI)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("This QEMU doesn't support "
+                             "virtio scsi controller"));
+            return false;
+        }
+        break;
+    case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_IBMVSCSI:
+        /*TODO: need checking work here if necessary */
+        break;
+    case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSISAS1068:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SCSI_MPTSAS1068)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("This QEMU doesn't support "
+                             "the LSI SAS1068 (MPT Fusion) controller"));
+            return false;
+        }
+        break;
+    case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSISAS1078:
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SCSI_MEGASAS)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("This QEMU doesn't support "
+                             "the LSI SAS1078 (MegaRAID) controller"));
+            return false;
+        }
+        break;
+    default:
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Unsupported controller model: %s"),
+                       virDomainControllerModelSCSITypeToString(model));
+        return false;
+    }
+
+    return true;
+}
+
+
 char *
 qemuBuildDriveDevStr(const virDomainDef *def,
                      virDomainDiskDefPtr disk,
@@ -1983,8 +2034,8 @@ qemuBuildDriveDevStr(const virDomainDef *def,
         controllerModel =
             virDomainDeviceFindControllerModel(def, &disk->info,
                                                VIR_DOMAIN_CONTROLLER_TYPE_SCSI);
-        if ((qemuDomainSetSCSIControllerModel(def, qemuCaps,
-                                              &controllerModel)) < 0)
+        if ((qemuDomainResetSCSIControllerModel(def, qemuCaps,
+                                                &controllerModel)) < 0)
             goto error;
 
         if (disk->device == VIR_DOMAIN_DISK_DEVICE_LUN) {
@@ -2663,7 +2714,10 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
     *devstr = NULL;
 
     if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_SCSI) {
-        if ((qemuDomainSetSCSIControllerModel(domainDef, qemuCaps, &model)) < 0)
+        if ((qemuDomainResetSCSIControllerModel(domainDef, qemuCaps, &model)) < 0)
+            return -1;
+
+        if (!qemuBuildCheckSCSIControllerModel(qemuCaps, model))
             return -1;
     }
 
@@ -5084,7 +5138,7 @@ qemuBuildSCSIHostdevDevStr(const virDomainDef *def,
     model = virDomainDeviceFindControllerModel(def, dev->info,
                                                VIR_DOMAIN_CONTROLLER_TYPE_SCSI);
 
-    if (qemuDomainSetSCSIControllerModel(def, qemuCaps, &model) < 0)
+    if (qemuDomainResetSCSIControllerModel(def, qemuCaps, &model) < 0)
         goto error;
 
     if (model == VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSILOGIC) {
