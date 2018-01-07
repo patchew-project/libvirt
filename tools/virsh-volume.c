@@ -672,6 +672,7 @@ cmdVolUpload(vshControl *ctl, const vshCmd *cmd)
 {
     const char *file = NULL;
     virStorageVolPtr vol = NULL;
+    virStorageVolInfo volumeInfo;
     bool ret = false;
     int fd = -1;
     virStreamPtr st = NULL;
@@ -701,11 +702,19 @@ cmdVolUpload(vshControl *ctl, const vshCmd *cmd)
     cbData.ctl = ctl;
     cbData.fd = fd;
 
+    if (virStorageVolGetInfo(vol, &volumeInfo) < 0)
+        goto cleanup;
+
     if (vshCommandOptBool(cmd, "sparse"))
         flags |= VIR_STORAGE_VOL_UPLOAD_SPARSE_STREAM;
 
     if (!(st = virStreamNew(priv->conn, 0))) {
         vshError(ctl, _("cannot create a new stream"));
+        goto cleanup;
+    }
+
+    if (volumeInfo.capacity <= virFileLength(file, fd)) {
+        vshError(ctl, _("file is bigger than volume %s capacity"), name);
         goto cleanup;
     }
 
