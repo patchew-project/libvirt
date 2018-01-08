@@ -190,6 +190,9 @@ int virPCIDeviceWaitForCleanup(virPCIDevicePtr dev, const char *matcher);
 virPCIDeviceAddressPtr
 virPCIGetDeviceAddressFromSysfsLink(const char *device_link);
 
+bool
+virPCIIsPCIDevice(const char *device_link);
+
 int virPCIGetPhysicalFunction(const char *vf_sysfs_path,
                               virPCIDeviceAddressPtr *pf);
 

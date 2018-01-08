@@ -2458,6 +2458,7 @@ virPCIGetVirtualFunctionInfo;
 virPCIGetVirtualFunctions;
 virPCIHeaderTypeFromString;
 virPCIHeaderTypeToString;
+virPCIIsPCIDevice;
 virPCIIsVirtualFunction;
 virPCIStubDriverTypeFromString;
 virPCIStubDriverTypeToString;

@@ -2652,6 +2652,38 @@ virPCIGetDeviceAddressFromSysfsLink(const char *device_link)
 }
 
 /**
+ * virPCIIsPCIDevice:
+ * @device_link: sysfs path for the device
+ *
+ * Returns true if the device specified in @device_link sysfs
+ * path is a PCI device, otherwise returns false.
+ */
+bool
+virPCIIsPCIDevice(const char *device_link)
+{
+    char *device_path = NULL;
+    char *subsys = NULL;
+    bool ret;
+
+    if (!virFileExists(device_link)) {
+        VIR_DEBUG("'%s' does not exist", device_link);
+        return false;
+    }
+
+    device_path = canonicalize_file_name(device_link);
+    if (device_path == NULL) {
+        VIR_DEBUG("Failed to resolve device link '%s'", device_link);
+        return false;
+    }
+
+    subsys = last_component(device_path);
+    ret = STRPREFIX(subsys, "pci");
+
+    VIR_FREE(device_path);
+    return ret;
+}
+
+/**
  * virPCIGetPhysicalFunction:
  * @vf_sysfs_path: sysfs path for the virtual function
  * @pf: where to store the physical function's address

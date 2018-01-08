@@ -1148,6 +1148,21 @@ virNetDevSysfsDeviceFile(char **pf_sysfs_device_link, const char *ifname,
 }
 
 
+static bool
+virNetDevIsPCIDevice(const char *devName)
+{
+    char *vfSysfsDevicePath = NULL;
+    bool ret;
+
+    if (virNetDevSysfsFile(&vfSysfsDevicePath, devName, "device/subsystem") < 0)
+        return false;
+
+    ret = virPCIIsPCIDevice(vfSysfsDevicePath);
+    VIR_FREE(vfSysfsDevicePath);
+    return ret;
+}
+
+
 static virPCIDevicePtr
 virNetDevGetPCIDevice(const char *devName)
 {
@@ -3236,13 +3251,17 @@ virNetDevSwitchdevFeature(const char *ifname,
     if (is_vf == 1 && virNetDevGetPhysicalFunction(ifname, &pfname) < 0)
         goto cleanup;
 
-    pci_device_ptr = pfname ? virNetDevGetPCIDevice(pfname) :
-                              virNetDevGetPCIDevice(ifname);
+    if (pfname == NULL && VIR_STRDUP(pfname, ifname) < 0)
+        goto cleanup;
+
     /* No PCI device, then no feature bit to check/add */
-    if (pci_device_ptr == NULL) {
+    if (!virNetDevIsPCIDevice(pfname)) {
         ret = 0;
         goto cleanup;
     }
+
+    if ((pci_device_ptr = virNetDevGetPCIDevice(pfname)) == NULL)
+        goto cleanup;
 
     if (!(nl_msg = nlmsg_alloc_simple(family_id,
                                       NLM_F_REQUEST | NLM_F_ACK))) {
