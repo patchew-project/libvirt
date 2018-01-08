@@ -506,6 +506,35 @@ udevPCIGetMdevTypesCap(struct udev_device *device,
 }
 
 
+int
+udevPCISysfsGetMdevTypesCap(const char *sysfsPath,
+                            virNodeDevCapPCIDevPtr pci_dev)
+{
+    int ret = -1;
+    udevEventDataPtr priv = NULL;
+    struct udev *udev = NULL;
+    struct udev_device *device = NULL;
+
+    priv = driver->privateData;
+    udev = udev_monitor_get_udev(priv->udev_monitor);
+    device = udev_device_new_from_syspath(udev, sysfsPath);
+    if (!device) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("failed to create udev device from path %s"),
+                       sysfsPath);
+        goto cleanup;
+    }
+
+    if (udevPCIGetMdevTypesCap(device, pci_dev) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    udev_device_unref(device);
+    return ret;
+}
+
+
 static int
 udevProcessPCI(struct udev_device *device,
                virNodeDeviceDefPtr def)

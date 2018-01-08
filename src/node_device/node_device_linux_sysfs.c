@@ -29,6 +29,7 @@
 #include "dirname.h"
 #include "node_device_driver.h"
 #include "node_device_hal.h"
+#include "node_device_udev.h"
 #include "node_device_linux_sysfs.h"
 #include "virerror.h"
 #include "viralloc.h"
@@ -175,6 +176,24 @@ nodeDeviceSysfsGetPCIIOMMUGroupCaps(virNodeDevCapPCIDevPtr pci_dev)
     return ret;
 }
 
+static int
+nodeDeviceSysfsGetPCIMdevTypesCaps(const char *sysfsPath,
+                                   virNodeDevCapPCIDevPtr pci_dev)
+{
+    size_t i;
+
+    /* this could be a refresh, so clear out the old data */
+    for (i = 0; i < pci_dev->nmdev_types; i++)
+        virNodeDevCapMdevTypeFree(pci_dev->mdev_types[i]);
+    VIR_FREE(pci_dev->mdev_types);
+    pci_dev->nmdev_types = 0;
+
+    if (udevPCISysfsGetMdevTypesCap(sysfsPath, pci_dev) < 0)
+        return -1;
+
+    return 0;
+}
+
 
 /* nodeDeviceSysfsGetPCIRelatedCaps() get info that is stored in sysfs
  * about devices related to this device, i.e. things that can change
@@ -189,6 +208,8 @@ nodeDeviceSysfsGetPCIRelatedDevCaps(const char *sysfsPath,
     if (nodeDeviceSysfsGetPCISRIOVCaps(sysfsPath, pci_dev) < 0)
         return -1;
     if (nodeDeviceSysfsGetPCIIOMMUGroupCaps(pci_dev) < 0)
+        return -1;
+    if (nodeDeviceSysfsGetPCIMdevTypesCaps(sysfsPath, pci_dev) < 0)
         return -1;
     return 0;
 }
