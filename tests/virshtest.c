@@ -40,6 +40,7 @@ static const char *domuuid_fc4 = DOM_UUID "\n\n";
 static const char *domid_fc4 = "2\n\n";
 static const char *domname_fc4 = "fc4\n\n";
 static const char *domstate_fc4 = "running\n\n";
+static const char *domrename_fc4 = "Domain successfully renamed\n\n";
 
 static int testFilterLine(char *buffer,
                           const char *toRemove)
@@ -237,6 +238,14 @@ static int testCompareDomstateByName(const void *data ATTRIBUTE_UNUSED)
   return testCompareOutputLit(exp, NULL, argv);
 }
 
+static int testCompareDomrenameByName(const void *data ATTRIBUTE_UNUSED)
+{
+  const char *const argv[] = { VIRSH_CUSTOM, "domrename", "fc4",
+                                                          "fc4new", NULL };
+  const char *exp = domrename_fc4;
+  return testCompareOutputLit(exp, NULL, argv);
+}
+
 struct testInfo {
     const char *const *argv;
     const char *result;
@@ -320,6 +329,10 @@ mymain(void)
 
     if (virTestRun("virsh domstate (by name)",
                    testCompareDomstateByName, NULL) != 0)
+        ret = -1;
+
+    if (virTestRun("virsh domrename (by name)",
+                   testCompareDomrenameByName, NULL) != 0)
         ret = -1;
 
     /* It's a bit awkward listing result before argument, but that's a
