@@ -32,6 +32,7 @@ linuxTestCompareFiles(const char *cpuinfofile,
                       const char *outputfile)
 {
     int ret = -1;
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
     char *actualData = NULL;
     virNodeInfo nodeinfo;
     FILE *cpuinfo;
@@ -57,13 +58,27 @@ linuxTestCompareFiles(const char *cpuinfofile,
     }
     VIR_FORCE_FCLOSE(cpuinfo);
 
-    if (virAsprintf(&actualData,
-                    "CPUs: %u/%u, MHz: %u, Nodes: %u, Sockets: %u, "
-                    "Cores: %u, Threads: %u\n",
-                    nodeinfo.cpus, VIR_NODEINFO_MAXCPUS(nodeinfo),
-                    nodeinfo.mhz, nodeinfo.nodes, nodeinfo.sockets,
-                    nodeinfo.cores, nodeinfo.threads) < 0)
+    virBufferAsprintf(&buf,
+                      "CPUs: %u/%u, ",
+                      nodeinfo.cpus, VIR_NODEINFO_MAXCPUS(nodeinfo));
+
+    /* Only format the CPU frequency if it's known. This behavior is
+     * consistent with that of 'virsh nodeinfo' */
+    if (nodeinfo.mhz) {
+        virBufferAsprintf(&buf,
+                          "MHz: %u, ",
+                          nodeinfo.mhz);
+    }
+
+    virBufferAsprintf(&buf,
+                      "Nodes: %u, Sockets: %u, Cores: %u, Threads: %u\n",
+                      nodeinfo.nodes, nodeinfo.sockets,
+                      nodeinfo.cores, nodeinfo.threads);
+
+    if (virBufferError(&buf))
         goto fail;
+
+    actualData = virBufferContentAndReset(&buf);
 
     if (virTestCompareToFile(actualData, outputfile) < 0)
         goto fail;
@@ -71,6 +86,7 @@ linuxTestCompareFiles(const char *cpuinfofile,
     ret = 0;
 
  fail:
+    virBufferFreeAndReset(&buf);
     VIR_FREE(actualData);
     return ret;
 }
