@@ -1287,10 +1287,11 @@
         attribute can be used to request a specific way of checking whether
         the virtual CPU matches the specification. It is usually safe to omit
         this attribute when starting a domain and stick with the default
-        value. Once the domain starts, libvirt will automatically change the
-        <code>check</code> attribute to the best supported value to ensure the
-        virtual CPU does not change when the domain is migrated to another
-        host. The following values can be used:
+        value (<code>partial>/code>). Once the domain starts, libvirt will
+        automatically change the <code>check</code> attribute to the best
+        supported value to ensure the virtual CPU does not change when the
+        domain is migrated to another host. The following values can be
+        used:
 
         <dl>
           <dt><code>none</code></dt>
@@ -1303,7 +1304,7 @@
           <dt><code>partial</code></dt>
           <dd>Libvirt will check the guest CPU specification before starting
             a domain, but the rest is left on the hypervisor. It can still
-            provide a different virtual CPU.</dd>
+            provide a different virtual CPU.  (This is the default.)</dd>
 
           <dt><code>full</code></dt>
           <dd>The virtual CPU created by the hypervisor will be checked
