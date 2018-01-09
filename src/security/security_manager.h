@@ -179,10 +179,22 @@ int virSecurityManagerRestoreInputLabel(virSecurityManagerPtr mgr,
                                         virDomainDefPtr vm,
                                         virDomainInputDefPtr input);
 
-
+/**
+ * virSecurityManagerDomainSetPathLabel
+ * @mgr: Storage file to chown
+ * @vm: target uid
+ * @path: string describing the path
+ * @allowSubtree:
+ *
+ * set @allowSubtree to true if the call is not only meant for the actual path
+ * in @path, but instead to also allow access to all potential subtress.
+ * Example on @path = "/path":
+ * False => /path
+ * True  => /path but also /path/... (including all deeper levels) */
 int virSecurityManagerDomainSetPathLabel(virSecurityManagerPtr mgr,
                                          virDomainDefPtr vm,
-                                         const char *path);
+                                         const char *path,
+                                         bool allowSubtree);
 
 int virSecurityManagerSetChardevLabel(virSecurityManagerPtr mgr,
                                       virDomainDefPtr def,
