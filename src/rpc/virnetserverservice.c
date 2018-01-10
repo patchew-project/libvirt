@@ -525,4 +525,6 @@ void virNetServerServiceClose(virNetServerServicePtr svc)
         virNetSocketClose(svc->socks[i]);
         virObjectUnref(svc);
     }
+
+    virNetServerServiceToggle(svc, false);
 }
