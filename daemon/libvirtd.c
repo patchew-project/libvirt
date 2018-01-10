@@ -1529,6 +1529,9 @@ int main(int argc, char **argv) {
 
  cleanup:
     /* Keep cleanup order in inverse order of startup */
+    if (driversInitialized)
+        virStateShutdown();
+
     virNetDaemonClose(dmn);
 
     virNetlinkEventServiceStopAll();

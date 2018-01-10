@@ -812,6 +812,24 @@ virStateCleanup(void)
 
 
 /**
+ * virStateShutdown:
+ *
+ * Run each virtualization driver's shutdown method.
+ *
+ */
+void
+virStateShutdown(void)
+{
+    int r;
+
+    for (r = virStateDriverTabCount - 1; r >= 0; r--) {
+        if (virStateDriverTab[r]->stateShutdown)
+            virStateDriverTab[r]->stateShutdown();
+    }
+}
+
+
+/**
  * virStateReload:
  *
  * Run each virtualization driver's reload method.

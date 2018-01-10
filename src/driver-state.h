@@ -42,6 +42,9 @@ typedef int
 typedef int
 (*virDrvStateStop)(void);
 
+typedef void
+(*virDrvStateShutdown)(void);
+
 typedef struct _virStateDriver virStateDriver;
 typedef virStateDriver *virStateDriverPtr;
 
@@ -52,6 +55,7 @@ struct _virStateDriver {
     virDrvStateCleanup stateCleanup;
     virDrvStateReload stateReload;
     virDrvStateStop stateStop;
+    virDrvStateShutdown stateShutdown;
 };
 
 
