@@ -987,17 +987,17 @@ qemuAgentGuestSync(qemuAgentPtr mon)
         goto cleanup;
 
     if (!sync_msg.rxObject) {
-        if (sync_msg.first) {
+        if (!mon->running) {
+            virReportError(VIR_ERR_AGENT_UNRESPONSIVE, "%s",
+                           _("Guest agent disappeared while executing command"));
+            goto cleanup;
+        } else if (sync_msg.first) {
             VIR_FREE(sync_msg.txBuffer);
             memset(&sync_msg, 0, sizeof(sync_msg));
             goto retry;
         } else {
-            if (mon->running)
-                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                               _("Missing monitor reply object"));
-            else
-                virReportError(VIR_ERR_AGENT_UNRESPONSIVE, "%s",
-                               _("Guest agent disappeared while executing command"));
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Missing monitor reply object"));
             goto cleanup;
         }
     }
