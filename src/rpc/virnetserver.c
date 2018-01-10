@@ -835,6 +835,8 @@ void virNetServerClose(virNetServerPtr srv)
     for (i = 0; i < srv->nservices; i++)
         virNetServerServiceClose(srv->services[i]);
 
+    virThreadPoolDrain(srv->workers);
+
     for (i = 0; i < srv->nclients; i++)
         virNetServerClientClose(srv->clients[i]);
 

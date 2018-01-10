@@ -269,7 +269,8 @@ virThreadPoolNewFull(size_t minWorkers,
 
 }
 
-void virThreadPoolFree(virThreadPoolPtr pool)
+void
+virThreadPoolDrain(virThreadPoolPtr pool)
 {
     virThreadPoolJobPtr job;
     bool priority = false;
@@ -294,15 +295,21 @@ void virThreadPoolFree(virThreadPoolPtr pool)
         VIR_FREE(job);
     }
 
-    VIR_FREE(pool->workers);
-    virMutexUnlock(&pool->mutex);
-    virMutexDestroy(&pool->mutex);
-    virCondDestroy(&pool->quit_cond);
-    virCondDestroy(&pool->cond);
     if (priority) {
         VIR_FREE(pool->prioWorkers);
         virCondDestroy(&pool->prioCond);
     }
+
+    virMutexUnlock(&pool->mutex);
+}
+
+
+void virThreadPoolFree(virThreadPoolPtr pool)
+{
+    VIR_FREE(pool->workers);
+    virMutexDestroy(&pool->mutex);
+    virCondDestroy(&pool->quit_cond);
+    virCondDestroy(&pool->cond);
     VIR_FREE(pool);
 }
 
