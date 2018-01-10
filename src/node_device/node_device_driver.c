@@ -155,6 +155,42 @@ nodeDeviceUpdateDriverName(virNodeDeviceDefPtr def ATTRIBUTE_UNUSED)
 #endif
 
 
+static int
+nodeConnectUpdateAllNodeDevicesCaps(virConnectPtr conn,
+                                    virNodeDeviceObjListFilter filter)
+{
+    int ret = -1;
+    size_t i;
+    virNodeDevicePtr *devices;
+
+    if (virNodeDeviceObjListExport(conn, driver->devs, &devices, filter, 0) < 0)
+        return -1;
+
+    for (i = 0; devices[i]; i++) {
+        virNodeDeviceObjPtr obj;
+        virNodeDeviceDefPtr def;
+
+        if (!(obj = virNodeDeviceObjListFindByName(driver->devs, devices[i]->name)))
+            goto cleanup;
+        def = virNodeDeviceObjGetDef(obj);
+
+        if (nodeDeviceUpdateCaps(def) < 0) {
+            virNodeDeviceObjEndAPI(&obj);
+            goto cleanup;
+        }
+
+        virNodeDeviceObjEndAPI(&obj);
+    }
+
+    ret = 0;
+ cleanup:
+    for (i = 0; devices[i]; i++)
+        virObjectUnref(devices[i]);
+    VIR_FREE(devices);
+    return ret;
+}
+
+
 void
 nodeDeviceLock(void)
 {
@@ -179,6 +215,9 @@ nodeNumOfDevices(virConnectPtr conn,
 
     virCheckFlags(0, -1);
 
+    if (nodeConnectUpdateAllNodeDevicesCaps(conn, virNodeNumOfDevicesCheckACL) < 0)
+        return -1;
+
     return virNodeDeviceObjListNumOfDevices(driver->devs, conn, cap,
                                             virNodeNumOfDevicesCheckACL);
 }
@@ -196,6 +235,9 @@ nodeListDevices(virConnectPtr conn,
 
     virCheckFlags(0, -1);
 
+    if (nodeConnectUpdateAllNodeDevicesCaps(conn, virNodeListDevicesCheckACL) < 0)
+        return -1;
+
     return virNodeDeviceObjListGetNames(driver->devs, conn,
                                         virNodeListDevicesCheckACL,
                                         cap, names, maxnames);
@@ -210,6 +252,10 @@ nodeConnectListAllNodeDevices(virConnectPtr conn,
     virCheckFlags(VIR_CONNECT_LIST_NODE_DEVICES_FILTERS_CAP, -1);
 
     if (virConnectListAllNodeDevicesEnsureACL(conn) < 0)
+        return -1;
+
+    if (nodeConnectUpdateAllNodeDevicesCaps(conn,
+                                            virConnectListAllNodeDevicesCheckACL) < 0)
         return -1;
 
     return virNodeDeviceObjListExport(conn, driver->devs, devices,
@@ -246,6 +292,9 @@ nodeDeviceLookupByName(virConnectPtr conn,
     def = virNodeDeviceObjGetDef(obj);
 
     if (virNodeDeviceLookupByNameEnsureACL(conn, def) < 0)
+        goto cleanup;
+
+    if (nodeDeviceUpdateCaps(def) < 0)
         goto cleanup;
 
     if ((device = virGetNodeDevice(conn, name))) {
@@ -370,6 +419,9 @@ nodeDeviceNumOfCaps(virNodeDevicePtr device)
     if (virNodeDeviceNumOfCapsEnsureACL(device->conn, def) < 0)
         goto cleanup;
 
+    if (nodeDeviceUpdateCaps(def) < 0)
+        goto cleanup;
+
     for (caps = def->caps; caps; caps = caps->next) {
         ++ncaps;
 
@@ -409,6 +461,9 @@ nodeDeviceListCaps(virNodeDevicePtr device,
     def = virNodeDeviceObjGetDef(obj);
 
     if (virNodeDeviceListCapsEnsureACL(device->conn, def) < 0)
+        goto cleanup;
+
+    if (nodeDeviceUpdateCaps(def) < 0)
         goto cleanup;
 
     for (caps = def->caps; caps && ncaps < maxnames; caps = caps->next) {
