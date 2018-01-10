@@ -506,6 +506,37 @@ udevPCIGetMdevTypesCap(struct udev_device *device,
 }
 
 
+int
+udevPCISysfsGetMdevTypesCap(const char *sysfsPath,
+                            virNodeDevCapPCIDevPtr pci_dev)
+{
+    int ret = -1;
+    struct udev *udev = NULL;
+    struct udev_device *device = NULL;
+    udevEventDataPtr priv = driver->privateData;
+
+    virObjectLock(priv);
+    udev = udev_monitor_get_udev(priv->udev_monitor);
+    device = udev_device_new_from_syspath(udev, sysfsPath);
+    virObjectUnlock(priv);
+
+    if (!device) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("failed to create udev device from path %s"),
+                       sysfsPath);
+        goto cleanup;
+    }
+
+    if (udevPCIGetMdevTypesCap(device, pci_dev) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    udev_device_unref(device);
+    return ret;
+}
+
+
 static int
 udevProcessPCI(struct udev_device *device,
                virNodeDeviceDefPtr def)
@@ -596,12 +627,6 @@ udevProcessPCI(struct udev_device *device,
             pci_express = NULL;
         }
     }
-
-    /* check whether the device is mediated devices framework capable, if so,
-     * process it
-     */
-    if (udevPCIGetMdevTypesCap(device, pci_dev) < 0)
-        goto cleanup;
 
     ret = 0;
 
