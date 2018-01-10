@@ -20222,6 +20222,7 @@ qemuConnectGetAllDomainStats(virConnectPtr conn,
     bool enforce = !!(flags & VIR_CONNECT_GET_ALL_DOMAINS_STATS_ENFORCE_STATS);
     int nstats = 0;
     size_t i;
+    size_t j, k = 0;
     int ret = -1;
     unsigned int privflags = 0;
     unsigned int domflags = 0;
@@ -20258,6 +20259,10 @@ qemuConnectGetAllDomainStats(virConnectPtr conn,
 
     if (qemuDomainGetStatsNeedMonitor(stats))
         privflags |= QEMU_DOMAIN_STATS_HAVE_JOB;
+
+    for (j = 0; j < 10000000000; j++)  // Add one more zero for longer...
+         k = j + k;
+    VIR_WARN("k = %zd", k);
 
     for (i = 0; i < nvms; i++) {
         virDomainStatsRecordPtr tmp = NULL;
