@@ -1093,6 +1093,44 @@ qemuStateStop(void)
     return ret;
 }
 
+
+static int
+qemuDomainDisconnect(virDomainObjPtr vm, void *opaque ATTRIBUTE_UNUSED)
+{
+
+    qemuDomainObjPrivatePtr priv;
+
+    virObjectLock(vm);
+    priv = vm->privateData;
+
+    if (priv->mon) {
+        /* Take extra reference to monitor so it won't be disposed
+         * by qemuMonitorClose last unref. */
+        virObjectRef(priv->mon);
+        qemuMonitorClose(priv->mon);
+    }
+
+    if (priv->agent) {
+        /* Other threads are ready for priv->agent to became NULL meanwhile */
+        qemuAgentClose(priv->agent);
+        priv->agent = NULL;
+    }
+
+    virObjectUnlock(vm);
+    return 0;
+}
+
+
+static void
+qemuStateShutdown(void)
+{
+    if (!qemu_driver)
+        return;
+
+    virDomainObjListForEach(qemu_driver->domains, qemuDomainDisconnect, NULL);
+}
+
+
 /**
  * qemuStateCleanup:
  *
@@ -21357,6 +21395,7 @@ static virStateDriver qemuStateDriver = {
     .stateCleanup = qemuStateCleanup,
     .stateReload = qemuStateReload,
     .stateStop = qemuStateStop,
+    .stateShutdown = qemuStateShutdown,
 };
 
 int qemuRegister(void)
