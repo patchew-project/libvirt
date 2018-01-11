@@ -517,12 +517,7 @@ lxcContainerRenameAndEnableInterfaces(virDomainDefPtr vmDef,
         if (virNetDevSetName(veths[i], newname) < 0)
             goto cleanup;
 
-        /* Only enable this device if there is a reason to do so (either
-         * at least one IP was specified, or link state was set to up in
-         * the config)
-         */
-        if (netDef->guestIP.nips ||
-            netDef->linkstate == VIR_DOMAIN_NET_INTERFACE_LINK_STATE_UP) {
+        if (netDef->linkstate != VIR_DOMAIN_NET_INTERFACE_LINK_STATE_DOWN) {
             VIR_DEBUG("Enabling %s", newname);
             if (virNetDevSetOnline(newname, true) < 0)
                 goto cleanup;
