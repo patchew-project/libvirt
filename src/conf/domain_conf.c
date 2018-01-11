@@ -64,27 +64,6 @@
 
 VIR_LOG_INIT("conf.domain_conf");
 
-/* This structure holds various callbacks and data needed
- * while parsing and creating domain XMLs */
-struct _virDomainXMLOption {
-    virObject parent;
-
-    /* XML parser callbacks and defaults */
-    virDomainDefParserConfig config;
-
-    /* domain private data management callbacks */
-    virDomainXMLPrivateDataCallbacks privateData;
-
-    /* XML namespace callbacks */
-    virDomainXMLNamespace ns;
-
-    /* ABI stability callbacks */
-    virDomainABIStability abi;
-
-    /* Private data for save image stored in snapshot XML */
-    virSaveCookieCallbacks saveCookie;
-};
-
 #define VIR_DOMAIN_DEF_FORMAT_COMMON_FLAGS \
     (VIR_DOMAIN_DEF_FORMAT_SECURE | \
      VIR_DOMAIN_DEF_FORMAT_INACTIVE | \

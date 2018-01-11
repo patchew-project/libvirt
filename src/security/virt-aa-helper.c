@@ -699,6 +699,13 @@ get_definition(vahControl * ctl, const char *xmlStr)
         goto exit;
     }
 
+    if (virtType == VIR_DOMAIN_VIRT_QEMU || virtType == VIR_DOMAIN_VIRT_KVM) {
+        ctl->xmlopt->config.features = VIR_DOMAIN_DEF_FEATURE_MEMORY_HOTPLUG |
+                                       VIR_DOMAIN_DEF_FEATURE_OFFLINE_VCPUPIN |
+                                       VIR_DOMAIN_DEF_FEATURE_INDIVIDUAL_VCPUS |
+                                       VIR_DOMAIN_DEF_FEATURE_USER_ALIAS;
+    }
+
     if (virCapabilitiesAddGuestDomain(guest,
                                       virtType,
                                       NULL,

@@ -2662,6 +2662,27 @@ struct _virDomainABIStability {
     virDomainABIStabilityDomain domain;
 };
 
+/* This structure holds various callbacks and data needed
+ * while parsing and creating domain XMLs */
+struct _virDomainXMLOption {
+    virObject parent;
+
+    /* XML parser callbacks and defaults */
+    virDomainDefParserConfig config;
+
+    /* domain private data management callbacks */
+    virDomainXMLPrivateDataCallbacks privateData;
+
+    /* XML namespace callbacks */
+    virDomainXMLNamespace ns;
+
+    /* ABI stability callbacks */
+    virDomainABIStability abi;
+
+    /* Private data for save image stored in snapshot XML */
+    virSaveCookieCallbacks saveCookie;
+};
+
 virDomainXMLOptionPtr virDomainXMLOptionNew(virDomainDefParserConfigPtr config,
                                             virDomainXMLPrivateDataCallbacksPtr priv,
                                             virDomainXMLNamespacePtr xmlns,
