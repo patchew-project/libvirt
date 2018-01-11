@@ -26881,17 +26881,26 @@ virDomainDeviceIsUSB(virDomainDeviceDefPtr dev)
 
 static int
 virDomainDeviceInfoCheckBootIndex(virDomainDefPtr def ATTRIBUTE_UNUSED,
-                                  virDomainDeviceDefPtr device ATTRIBUTE_UNUSED,
+                                  virDomainDeviceDefPtr device,
                                   virDomainDeviceInfoPtr info,
                                   void *opaque)
 {
     virDomainDeviceInfoPtr newinfo = opaque;
+    virDomainDiskDefPtr disk = device->data.disk;
+    int disk_device = disk->device;
 
     if (info->bootIndex == newinfo->bootIndex) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("boot order %u is already used by another device"),
-                       newinfo->bootIndex);
-        return -1;
+        /* Skip check for insert or eject CD-ROM device */
+        if (disk_device == VIR_DOMAIN_DISK_DEVICE_FLOPPY ||
+            disk_device == VIR_DOMAIN_DISK_DEVICE_CDROM) {
+            VIR_DEBUG("Skip boot index check for floppy or CDROM");
+            return 0;
+        } else {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("boot order %u is already used by another device"),
+                           newinfo->bootIndex);
+            return -1;
+        }
     }
     return 0;
 }
