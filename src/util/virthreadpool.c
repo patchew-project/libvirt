@@ -186,6 +186,7 @@ virThreadPoolExpand(virThreadPoolPtr pool, size_t gain, bool priority)
     size_t *curWorkers = priority ? &pool->nPrioWorkers : &pool->nWorkers;
     size_t i = 0;
     struct virThreadPoolWorkerData *data = NULL;
+    size_t oldNWorkers = *curWorkers;
 
     if (VIR_EXPAND_N(*workers, *curWorkers, gain) < 0)
         return -1;
@@ -198,7 +199,7 @@ virThreadPoolExpand(virThreadPoolPtr pool, size_t gain, bool priority)
         data->cond = priority ? &pool->prioCond : &pool->cond;
         data->priority = priority;
 
-        if (virThreadCreateFull(&(*workers)[i],
+        if (virThreadCreateFull(&(*workers)[i + oldNWorkers],
                                 false,
                                 virThreadPoolWorker,
                                 pool->jobFuncName,
