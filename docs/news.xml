@@ -95,6 +95,17 @@
           qemu: Add support for hot unplugging redirdev device
         </summary>
       </change>
+      <change>
+        <summary>
+          virsh: Enhance bash completion
+        </summary>
+        <description>
+          New bash completion script is introduced to enable completion even
+          for non-interactive virsh. At the same time, virsh offers completion
+          of some basic libvirt objects like domains, networks, storage pools,
+          etc. to virsh commands accepting them.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
       <change>
