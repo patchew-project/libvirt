@@ -2798,8 +2798,17 @@ vshReadlineOptionsPrune(char ***list,
         vshCmdOpt *opt =  last->opts;
 
         /* Should never happen (TM) */
-        if (!list_opt)
+        if (!list_opt) {
+            /* But in case it does, we're in a tough situation
+             * because @list[0..i-1] is possibly sparse. That
+             * means if caller were to call virStringListFree
+             * over it some memory is definitely going to be
+             * leaked. The best we can do is to free from list[i]
+             * as our only caller is just fine with it. */
+            virStringListFree(list[i]);
+            virStringListFree(newList);
             return -1;
+        }
 
         while (opt) {
             if (STREQ(opt->def->name, list_opt)) {
