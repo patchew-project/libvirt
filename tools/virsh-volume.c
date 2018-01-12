@@ -43,16 +43,18 @@
 #include "virxml.h"
 #include "virstring.h"
 
-#define VIRSH_COMMON_OPT_POOL_FULL \
-    VIRSH_COMMON_OPT_POOL(N_("pool name or uuid"))
+#define VIRSH_COMMON_OPT_POOL_FULL(cflags) \
+    VIRSH_COMMON_OPT_POOL(N_("pool name or uuid"), cflags)
 
-#define VIRSH_COMMON_OPT_POOL_NAME \
-    VIRSH_COMMON_OPT_POOL(N_("pool name"))
+#define VIRSH_COMMON_OPT_POOL_NAME(cflags) \
+    VIRSH_COMMON_OPT_POOL(N_("pool name"), cflags)
 
-#define VIRSH_COMMON_OPT_POOL_OPTIONAL \
+#define VIRSH_COMMON_OPT_POOL_OPTIONAL(cflags) \
     {.name = "pool", \
      .type = VSH_OT_STRING, \
-     .help = N_("pool name or uuid") \
+     .help = N_("pool name or uuid"), \
+     .completer = virshStoragePoolNameCompleter, \
+     .completer_flags = cflags, \
     }
 
 #define VIRSH_COMMON_OPT_VOLUME_VOL \
@@ -165,7 +167,7 @@ static const vshCmdInfo info_vol_create_as[] = {
 };
 
 static const vshCmdOptDef opts_vol_create_as[] = {
-    VIRSH_COMMON_OPT_POOL_NAME,
+    VIRSH_COMMON_OPT_POOL_NAME(0),
     {.name = "name",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
@@ -378,7 +380,7 @@ static const vshCmdInfo info_vol_create[] = {
 };
 
 static const vshCmdOptDef opts_vol_create[] = {
-    VIRSH_COMMON_OPT_POOL_NAME,
+    VIRSH_COMMON_OPT_POOL_NAME(0),
     VIRSH_COMMON_OPT_FILE(N_("file containing an XML vol description")),
     {.name = "prealloc-metadata",
      .type = VSH_OT_BOOL,
@@ -440,7 +442,7 @@ static const vshCmdInfo info_vol_create_from[] = {
 };
 
 static const vshCmdOptDef opts_vol_create_from[] = {
-    VIRSH_COMMON_OPT_POOL_FULL,
+    VIRSH_COMMON_OPT_POOL_FULL(0),
     VIRSH_COMMON_OPT_FILE(N_("file containing an XML vol description")),
     VIRSH_COMMON_OPT_VOLUME_VOL,
     {.name = "inputpool",
@@ -559,7 +561,7 @@ static const vshCmdOptDef opts_vol_clone[] = {
      .flags = VSH_OFLAG_REQ,
      .help = N_("clone name")
     },
-    VIRSH_COMMON_OPT_POOL_OPTIONAL,
+    VIRSH_COMMON_OPT_POOL_OPTIONAL(0),
     {.name = "prealloc-metadata",
      .type = VSH_OT_BOOL,
      .help = N_("preallocate metadata (for qcow2 instead of full allocation)")
@@ -651,7 +653,7 @@ static const vshCmdInfo info_vol_upload[] = {
 static const vshCmdOptDef opts_vol_upload[] = {
     VIRSH_COMMON_OPT_VOLUME_VOL,
     VIRSH_COMMON_OPT_FILE(N_("file")),
-    VIRSH_COMMON_OPT_POOL_OPTIONAL,
+    VIRSH_COMMON_OPT_POOL_OPTIONAL(0),
     {.name = "offset",
      .type = VSH_OT_INT,
      .help = N_("volume offset to upload to")
@@ -766,7 +768,7 @@ static const vshCmdInfo info_vol_download[] = {
 static const vshCmdOptDef opts_vol_download[] = {
     VIRSH_COMMON_OPT_VOLUME_VOL,
     VIRSH_COMMON_OPT_FILE(N_("file")),
-    VIRSH_COMMON_OPT_POOL_OPTIONAL,
+    VIRSH_COMMON_OPT_POOL_OPTIONAL(0),
     {.name = "offset",
      .type = VSH_OT_INT,
      .help = N_("volume offset to download from")
@@ -875,7 +877,7 @@ static const vshCmdInfo info_vol_delete[] = {
 
 static const vshCmdOptDef opts_vol_delete[] = {
     VIRSH_COMMON_OPT_VOLUME_VOL,
-    VIRSH_COMMON_OPT_POOL_OPTIONAL,
+    VIRSH_COMMON_OPT_POOL_OPTIONAL(0),
     {.name = "delete-snapshots",
      .type = VSH_OT_BOOL,
      .help = N_("delete snapshots associated with volume (must be "
@@ -925,7 +927,7 @@ static const vshCmdInfo info_vol_wipe[] = {
 
 static const vshCmdOptDef opts_vol_wipe[] = {
     VIRSH_COMMON_OPT_VOLUME_VOL,
-    VIRSH_COMMON_OPT_POOL_OPTIONAL,
+    VIRSH_COMMON_OPT_POOL_OPTIONAL(0),
     {.name = "algorithm",
      .type = VSH_OT_STRING,
      .help = N_("perform selected wiping algorithm")
@@ -1012,7 +1014,7 @@ static const vshCmdInfo info_vol_info[] = {
 
 static const vshCmdOptDef opts_vol_info[] = {
     VIRSH_COMMON_OPT_VOLUME_VOL,
-    VIRSH_COMMON_OPT_POOL_OPTIONAL,
+    VIRSH_COMMON_OPT_POOL_OPTIONAL(0),
     {.name = "bytes",
      .type = VSH_OT_BOOL,
      .help = N_("sizes are represented in bytes rather than pretty units")
@@ -1107,7 +1109,7 @@ static const vshCmdOptDef opts_vol_resize[] = {
      .flags = VSH_OFLAG_REQ,
      .help = N_("new capacity for the vol, as scaled integer (default bytes)")
     },
-    VIRSH_COMMON_OPT_POOL_OPTIONAL,
+    VIRSH_COMMON_OPT_POOL_OPTIONAL(0),
     {.name = "allocate",
      .type = VSH_OT_BOOL,
      .help = N_("allocate the new capacity, rather than leaving it sparse")
@@ -1199,7 +1201,7 @@ static const vshCmdInfo info_vol_dumpxml[] = {
 
 static const vshCmdOptDef opts_vol_dumpxml[] = {
     VIRSH_COMMON_OPT_VOLUME_VOL,
-    VIRSH_COMMON_OPT_POOL_OPTIONAL,
+    VIRSH_COMMON_OPT_POOL_OPTIONAL(0),
     {.name = NULL}
 };
 
@@ -1363,7 +1365,7 @@ static const vshCmdInfo info_vol_list[] = {
 };
 
 static const vshCmdOptDef opts_vol_list[] = {
-    VIRSH_COMMON_OPT_POOL_FULL,
+    VIRSH_COMMON_OPT_POOL_FULL(0),
     {.name = "details",
      .type = VSH_OT_BOOL,
      .help = N_("display extended details for volumes")
@@ -1705,7 +1707,7 @@ static const vshCmdOptDef opts_vol_key[] = {
      .flags = VSH_OFLAG_REQ,
      .help = N_("volume name or path")
     },
-    VIRSH_COMMON_OPT_POOL_OPTIONAL,
+    VIRSH_COMMON_OPT_POOL_OPTIONAL(0),
     {.name = NULL}
 };
 
@@ -1741,7 +1743,7 @@ static const vshCmdOptDef opts_vol_path[] = {
      .flags = VSH_OFLAG_REQ,
      .help = N_("volume name or key")
     },
-    VIRSH_COMMON_OPT_POOL_OPTIONAL,
+    VIRSH_COMMON_OPT_POOL_OPTIONAL(0),
     {.name = NULL}
 };
 
