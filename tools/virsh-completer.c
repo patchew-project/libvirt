@@ -31,6 +31,7 @@
 #include "virxml.h"
 
 
+#ifdef WITH_READLINE
 char **
 virshDomainNameCompleter(vshControl *ctl,
                          const vshCmd *cmd ATTRIBUTE_UNUSED,
@@ -147,3 +148,25 @@ virshDomainInterfaceCompleter(vshControl *ctl,
     virStringListFree(ret);
     return NULL;
 }
+#else
+char **
+virshDomainNameCompleter(vshControl *ctl ATTRIBUTE_UNUSED,
+                         const vshCmd *cmd ATTRIBUTE_UNUSED,
+                         unsigned int flags)
+{
+    virCheckFlags(-1, NULL);
+
+    return NULL;
+}
+
+
+char **
+virshDomainInterfaceCompleter(vshControl *ctl ATTRIBUTE_UNUSED,
+                              const vshCmd *cmd ATTRIBUTE_UNUSED,
+                              unsigned int flags)
+{
+    virCheckFlags(-1, NULL);
+
+    return NULL;
+}
+#endif /* WITH_READLINE */

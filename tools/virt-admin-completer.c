@@ -30,6 +30,7 @@
 #include "virstring.h"
 
 
+#ifdef WITH_READLINE
 char **
 vshAdmServerCompleter(vshControl *ctl,
                       const vshCmd *cmd ATTRIBUTE_UNUSED,
@@ -74,3 +75,14 @@ vshAdmServerCompleter(vshControl *ctl,
     VIR_FREE(ret);
     return ret;
 }
+#else
+char **
+vshAdmServerCompleter(vshControl *ctl ATTRIBUTE_UNUSED,
+                      const vshCmd *cmd ATTRIBUTE_UNUSED,
+                      unsigned int flags)
+{
+    virCheckFlags(-1, NULL);
+
+    return NULL;
+}
+#endif /* WITH_READLINE */

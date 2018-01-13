@@ -229,16 +229,8 @@ virsh_SOURCES = \
 		virsh-snapshot.c virsh-snapshot.h \
 		virsh-util.c virsh-util.h \
 		virsh-volume.c virsh-volume.h \
+		virsh-completer.c virsh-completer.h \
 		$(NULL)
-
-VIRSH_COMPLETER = \
-		virsh-completer.c virsh-completer.h
-
-if WITH_READLINE
-virsh_SOURCES += $(VIRSH_COMPLETER)
-else ! WITH_READLINE
-EXTRA_DIST += $(VIRSH_COMPLETER)
-endif ! WITH_READLINE
 
 virsh_LDFLAGS = \
 		$(AM_LDFLAGS) \
@@ -256,16 +248,8 @@ virsh_CFLAGS = \
 
 virt_admin_SOURCES = \
 		virt-admin.c virt-admin.h \
+		virt-admin-completer.c virt-admin-completer.h \
 		$(NULL)
-
-VIRT_ADMIN_COMPLETER = \
-		virt-admin-completer.c virt-admin-completer.h
-
-if WITH_READLINE
-virt_admin_SOURCES += $(VIRT_ADMIN_COMPLETER)
-else ! WITH_READLINE
-EXTRA_DIST += $(VIRT_ADMIN_COMPLETER)
-endif ! WITH_READLINE
 
 virt_admin_LDFLAGS = \
 		$(AM_LDFLAGS) \
