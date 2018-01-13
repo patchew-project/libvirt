@@ -71,7 +71,8 @@
      .help = _helpstr \
     }
 
-# define VIRSH_COMMON_OPT_DOMAIN(_helpstr, cflags) \
+# ifdef WITH_READLINE
+#  define VIRSH_COMMON_OPT_DOMAIN(_helpstr, cflags) \
     {.name = "domain", \
      .type = VSH_OT_DATA, \
      .flags = VSH_OFLAG_REQ, \
@@ -79,6 +80,14 @@
      .completer = virshDomainNameCompleter, \
      .completer_flags = cflags, \
     }
+# else
+#  define VIRSH_COMMON_OPT_DOMAIN(_helpstr, cflags) \
+    {.name = "domain", \
+     .type = VSH_OT_DATA, \
+     .flags = VSH_OFLAG_REQ, \
+     .help = _helpstr, \
+    }
+# endif
 
 # define VIRSH_COMMON_OPT_CONFIG(_helpstr) \
     {.name = "config", \
