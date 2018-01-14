@@ -3500,7 +3500,8 @@ const vshCmdInfo info_complete[] = {
 };
 
 bool
-cmdComplete(vshControl *ctl, const vshCmd *cmd)
+cmdComplete(vshControl *ctl ATTRIBUTE_UNUSED,
+            const vshCmd *cmd ATTRIBUTE_UNUSED)
 {
     bool ret = false;
 #ifdef WITH_READLINE
