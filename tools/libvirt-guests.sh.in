@@ -337,8 +337,6 @@ check_guests_shutdown()
     guests_up=
     for guest in $guests; do
         if ! guest_is_on "$uri" "$guest" >/dev/null 2>&1; then
-            eval_gettext "Failed to determine state of guest: \$guest. Not tracking it anymore."
-            echo
             continue
         fi
         if "$guest_running"; then
@@ -363,6 +361,7 @@ print_guests_shutdown()
         esac
 
         name=$(guest_name "$uri" "$guest")
+        [ -n "$name" ] || name="$guest"
         eval_gettext "Shutdown of guest \$name complete."
         echo
     done
