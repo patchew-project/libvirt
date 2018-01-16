@@ -939,6 +939,13 @@ mymain(void)
     DO_TEST("disk-drive-network-iscsi-lun",
             QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_SCSI_BLOCK);
+    DO_TEST("disk-drive-network-iser", NONE);
+    DO_TEST("disk-drive-network-iser-auth", NONE);
+    DO_TEST_PARSE_ERROR("disk-drive-network-iser-auth-secrettype-invalid", NONE);
+    DO_TEST_PARSE_ERROR("disk-drive-network-iser-auth-wrong-secrettype", NONE);
+    DO_TEST("disk-drive-network-iser-lun",
+            QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_VIRTIO_SCSI,
+            QEMU_CAPS_SCSI_BLOCK);
     DO_TEST("disk-drive-network-gluster",
             QEMU_CAPS_GLUSTER_DEBUG_LEVEL);
     DO_TEST("disk-drive-network-rbd", NONE);

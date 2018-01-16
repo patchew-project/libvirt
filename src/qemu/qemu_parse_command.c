@@ -70,7 +70,9 @@ qemuParseDriveURIString(virDomainDiskDefPtr def, virURIPtr uri,
     if (transp)
         *transp++ = 0;
 
-    if (STRNEQ(uri->scheme, scheme)) {
+    if (STREQ(uri->scheme, "iser")) {
+        transp = (char *)"iser";
+    } else if (STRNEQ(uri->scheme, scheme)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Invalid transport/scheme '%s'"), uri->scheme);
         goto error;
@@ -704,6 +706,12 @@ qemuParseCommandLineDisk(virDomainXMLOptionPtr xmlopt,
                     if (qemuParseGlusterString(def) < 0)
                         goto error;
                 } else if (STRPREFIX(def->src->path, "iscsi:")) {
+                    def->src->type = VIR_STORAGE_TYPE_NETWORK;
+                    def->src->protocol = VIR_STORAGE_NET_PROTOCOL_ISCSI;
+
+                    if (qemuParseISCSIString(def) < 0)
+                        goto error;
+                } else if (STRPREFIX(def->src->path, "iser:")) {
                     def->src->type = VIR_STORAGE_TYPE_NETWORK;
                     def->src->protocol = VIR_STORAGE_NET_PROTOCOL_ISCSI;
 

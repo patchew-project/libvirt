@@ -7075,6 +7075,7 @@ virDomainStorageNetworkParseHosts(xmlNodePtr node,
                                   virStorageNetHostDefPtr *hosts,
                                   size_t *nhosts)
 {
+    char *transport = NULL;
     xmlNodePtr child;
 
     for (child = node->children; child; child = child->next) {
@@ -7085,6 +7086,9 @@ virDomainStorageNetworkParseHosts(xmlNodePtr node,
                 return -1;
         }
     }
+
+    if ((*hosts) && (transport = virXMLPropString(node, "transport")))
+        (*hosts)->transport = virStorageNetHostTransportTypeFromString(transport);
 
     return 0;
 }
@@ -8489,6 +8493,7 @@ virDomainDiskSourceNetworkParse(xmlNodePtr node,
 
     if (virDomainStorageNetworkParseHosts(node, &src->hosts, &src->nhosts) < 0)
         goto cleanup;
+
 
     virStorageSourceNetworkAssignDefaultPorts(src);
 
@@ -22370,6 +22375,9 @@ virDomainDiskSourceFormatNetwork(virBufferPtr attrBuf,
     virBufferEscapeString(attrBuf, " name='%s'", path ? path : src->path);
 
     VIR_FREE(path);
+
+    if (src->hosts && src->hosts->transport == VIR_STORAGE_NET_HOST_TRANS_ISER)
+        virBufferEscapeString(attrBuf, " transport='%s'", "iser");
 
     if (src->haveTLS != VIR_TRISTATE_BOOL_ABSENT &&
         !(flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE &&
