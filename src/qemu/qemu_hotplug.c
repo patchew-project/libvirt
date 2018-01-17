@@ -2343,8 +2343,7 @@ qemuDomainAttachHostSCSIDevice(virConnectPtr conn,
     bool secobjAdded = false;
     virJSONValuePtr secobjProps = NULL;
     virDomainHostdevSubsysSCSIPtr scsisrc = &hostdev->source.subsys.u.scsi;
-    virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &scsisrc->u.iscsi;
-    qemuDomainStorageSourcePrivatePtr srcPriv;
+    qemuDomainStorageSourcePrivatePtr srcPriv = NULL;
     qemuDomainSecretInfoPtr secinfo = NULL;
 
     if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_DEVICE_SCSI_GENERIC)) {
@@ -2386,7 +2385,8 @@ qemuDomainAttachHostSCSIDevice(virConnectPtr conn,
     if (qemuDomainSecretHostdevPrepare(conn, priv, hostdev) < 0)
         goto cleanup;
 
-    srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(iscsisrc->src);
+    if (scsisrc->protocol == VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI)
+        srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(scsisrc->u.iscsi.src);
     if (srcPriv)
         secinfo = srcPriv->secinfo;
     if (secinfo && secinfo->type == VIR_DOMAIN_SECRET_INFO_TYPE_AES) {
