@@ -2635,6 +2635,15 @@ qemuProcessSetupOnePRDaemon(void *payload,
 }
 
 
+int
+qemuProcessSetupPRDaemon(virDomainObjPtr vm,
+                         qemuDomainDiskPRObjectPtr prObj,
+                         const char *prAlias)
+{
+    return qemuProcessSetupOnePRDaemon(prObj, prAlias, vm);
+}
+
+
 static int
 qemuProcessSetupPRDaemons(virDomainObjPtr vm)
 {
