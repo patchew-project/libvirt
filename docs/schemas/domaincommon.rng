@@ -1498,6 +1498,9 @@
         <optional>
           <ref name="encryption"/>
         </optional>
+        <optional>
+          <ref name="reservations"/>
+        </optional>
         <zeroOrMore>
           <ref name='devSeclabel'/>
         </zeroOrMore>
@@ -2447,21 +2450,7 @@
             <value>vhostuser</value>
           </attribute>
           <interleave>
-            <element name="source">
-              <attribute name="type">
-                <value>unix</value>
-              </attribute>
-              <attribute name="path">
-                <ref name="absFilePath"/>
-              </attribute>
-              <attribute name="mode">
-                <choice>
-                  <value>server</value>
-                  <value>client</value>
-                </choice>
-              </attribute>
-              <empty/>
-            </element>
+            <ref name="unixSocketSource"/>
             <ref name="interface-options"/>
           </interleave>
         </group>

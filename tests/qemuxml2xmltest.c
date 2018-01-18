@@ -531,6 +531,10 @@ mymain(void)
             QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_VIRTIO_SCSI);
     DO_TEST("disk-virtio-scsi-num_queues",
             QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_VIRTIO_SCSI);
+    DO_TEST("disk-virtio-scsi-reservations",
+            QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_VIRTIO_SCSI);
+    DO_TEST("disk-virtio-scsi-reservations-not-managed",
+            QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_VIRTIO_SCSI);
     DO_TEST("disk-virtio-scsi-cmd_per_lun",
             QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_VIRTIO_SCSI);
     DO_TEST("disk-virtio-scsi-max_sectors",

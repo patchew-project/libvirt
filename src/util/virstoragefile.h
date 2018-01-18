@@ -216,6 +216,14 @@ struct _virStorageAuthDef {
     virSecretLookupTypeDef seclookupdef;
 };
 
+typedef struct _virStoragePRDef virStoragePRDef;
+typedef virStoragePRDef *virStoragePRDefPtr;
+struct _virStoragePRDef {
+    int enabled; /* enum virTristateBool */
+    int managed; /* enum virTristateBool */
+    char *path;
+};
+
 typedef struct _virStorageDriverData virStorageDriverData;
 typedef virStorageDriverData *virStorageDriverDataPtr;
 
@@ -243,6 +251,7 @@ struct _virStorageSource {
     bool authInherited;
     virStorageEncryptionPtr encryption;
     bool encryptionInherited;
+    virStoragePRDefPtr pr;
 
     virObjectPtr privateData;
 
@@ -368,6 +377,12 @@ void virStorageAuthDefFree(virStorageAuthDefPtr def);
 virStorageAuthDefPtr virStorageAuthDefCopy(const virStorageAuthDef *src);
 virStorageAuthDefPtr virStorageAuthDefParse(xmlDocPtr xml, xmlNodePtr root);
 int virStorageAuthDefFormat(virBufferPtr buf, virStorageAuthDefPtr authdef);
+
+void virStoragePRDefFree(virStoragePRDefPtr prd);
+virStoragePRDefPtr virStoragePRDefParseNode(xmlDocPtr xml,
+                                            xmlNodePtr root);
+void virStoragePRDefFormat(virBufferPtr buf,
+                           virStoragePRDefPtr prd);
 
 virSecurityDeviceLabelDefPtr
 virStorageSourceGetSecurityLabelDef(virStorageSourcePtr src,
