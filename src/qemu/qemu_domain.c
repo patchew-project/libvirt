@@ -2449,6 +2449,74 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
 }
 
 
+static int
+qemuStorageSourcePrivateDataParsePR(xmlXPathContextPtr ctxt,
+                                    virStorageSourcePtr src)
+{
+    qemuDomainStorageSourcePrivatePtr srcPriv;
+
+    if (!src->pr ||
+        src->pr->enabled != VIR_TRISTATE_BOOL_YES)
+        return 0;
+
+    if (!src->privateData &&
+        !(src->privateData = qemuDomainStorageSourcePrivateNew()))
+        return -1;
+
+    srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(src);
+
+    if (!(srcPriv->prAlias = virXPathString("string(./prAlias)", ctxt)))
+        return -1;
+
+    return 0;
+}
+
+
+static int
+qemuStorageSourcePrivateDataFormatPR(virStorageSourcePtr src,
+                                     virBufferPtr buf)
+{
+    qemuDomainStorageSourcePrivatePtr srcPriv;
+
+    if (!src->pr ||
+        src->pr->enabled != VIR_TRISTATE_BOOL_YES)
+        return 0;
+
+    srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(src);
+
+    virBufferAsprintf(buf, "<prAlias>%s</prAlias>\n", srcPriv->prAlias);
+    return 0;
+}
+
+
+static int
+qemuStorageSourcePrivateDataParse(xmlXPathContextPtr ctxt,
+                                  virStorageSourcePtr src)
+{
+    if (virStorageSourcePrivateDataParseRelPath(ctxt, src) < 0)
+        return -1;
+
+    if (qemuStorageSourcePrivateDataParsePR(ctxt, src) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+static int
+qemuStorageSourcePrivateDataFormat(virStorageSourcePtr src,
+                                   virBufferPtr buf)
+{
+    if (virStorageSourcePrivateDataFormatRelPath(src, buf) < 0)
+        return -1;
+
+    if (qemuStorageSourcePrivateDataFormatPR(src, buf) < 0)
+        return -1;
+
+    return 0;
+}
+
+
 virDomainXMLPrivateDataCallbacks virQEMUDriverPrivateDataCallbacks = {
     .alloc = qemuDomainObjPrivateAlloc,
     .free = qemuDomainObjPrivateFree,
@@ -2457,8 +2525,8 @@ virDomainXMLPrivateDataCallbacks virQEMUDriverPrivateDataCallbacks = {
     .chrSourceNew = qemuDomainChrSourcePrivateNew,
     .parse = qemuDomainObjPrivateXMLParse,
     .format = qemuDomainObjPrivateXMLFormat,
-    .storageParse = virStorageSourcePrivateDataParseRelPath,
-    .storageFormat = virStorageSourcePrivateDataFormatRelPath,
+    .storageParse = qemuStorageSourcePrivateDataParse,
+    .storageFormat = qemuStorageSourcePrivateDataFormat,
 };
 
 
