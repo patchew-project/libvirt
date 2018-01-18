@@ -329,6 +329,8 @@ struct _qemuDomainObjPrivate {
     /* Migration capabilities. Rechecked on reconnect, not to be saved in
      * private XML. */
     virBitmapPtr migrationCaps;
+
+    virHashTablePtr prHelpers;
 };
 
 # define QEMU_DOMAIN_PRIVATE(vm) \
@@ -989,5 +991,21 @@ qemuDomainPrepareDiskSource(virConnectPtr conn,
                             virDomainDiskDefPtr disk,
                             qemuDomainObjPrivatePtr priv,
                             virQEMUDriverConfigPtr cfg);
+
+typedef struct _qemuDomainDiskPRObject qemuDomainDiskPRObject;
+typedef qemuDomainDiskPRObject *qemuDomainDiskPRObjectPtr;
+struct _qemuDomainDiskPRObject {
+    bool managed;
+    char *path; /* socket path */
+    pid_t pid; /* daemon pid */
+};
+
+int
+qemuDomainDiskPRObjectRegister(qemuDomainObjPrivatePtr priv,
+                               const char *alias,
+                               bool managed,
+                               char **path);
+void
+qemuDomainDiskPRObjectKillAll(qemuDomainObjPrivatePtr priv);
 
 #endif /* __QEMU_DOMAIN_H__ */

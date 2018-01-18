@@ -65,6 +65,7 @@
 #endif
 #include <sys/time.h>
 #include <fcntl.h>
+#include <signal.h>
 #if defined(HAVE_SYS_MOUNT_H)
 # include <sys/mount.h>
 #endif
@@ -1829,6 +1830,9 @@ qemuDomainObjPrivateDataClear(qemuDomainObjPrivatePtr priv)
 
     virBitmapFree(priv->migrationCaps);
     priv->migrationCaps = NULL;
+
+    virHashFree(priv->prHelpers);
+    priv->prHelpers = NULL;
 }
 
 
@@ -10914,6 +10918,122 @@ qemuDomainCheckMigrationCapabilities(virQEMUDriverPtr driver,
  cleanup:
     virStringListFree(caps);
     return ret;
+}
+
+
+static void
+qemuDomainDiskPRObjectHashFree(void *payload,
+                               const void *name)
+{
+    qemuDomainDiskPRObjectPtr tmp = payload;
+
+    if (tmp->managed &&
+        tmp->pid != (pid_t) -1) {
+        VIR_DEBUG("Forcibly killing pr-manager: %s", (const char *) name);
+        virProcessKillPainfully(tmp->pid, true);
+    }
+    VIR_FREE(tmp->path);
+    VIR_FREE(tmp);
+}
+
+
+/**
+ * qemuDomainDiskPRObjectRegister:
+ * @priv: Domain private data
+ * @alias: alias of the pr-manager object
+ * @managed: true if pr-managed object is manged by libvirt
+ * @path: socket path for the pr-manager object
+ *
+ * Records [alias, managed, path] tuple for pr-manager objects.
+ * On successful return @path is stolen and set to NULL.
+ *
+ * Returns 0 on success (with @path stolen),
+ *        -1 otherwise (with error reported).
+ */
+int
+qemuDomainDiskPRObjectRegister(qemuDomainObjPrivatePtr priv,
+                               const char *alias,
+                               bool managed,
+                               char **path)
+{
+    qemuDomainDiskPRObjectPtr tmp;
+    int ret = -1;
+
+    if (!priv->prHelpers &&
+        !(priv->prHelpers = virHashCreate(10, qemuDomainDiskPRObjectHashFree)))
+        return -1;
+
+    if ((tmp = virHashLookup(priv->prHelpers, alias))) {
+        /* Entry exists, check if it matches path. This shouldn't
+         * happen, but it's better to be safe than sorry. */
+        if (STRNEQ(tmp->path, *path)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("trying to change path for pr helper object"));
+
+            return -1;
+        }
+
+        /* Claim success */
+        VIR_FREE(*path);
+        return 0;
+    }
+
+    if (VIR_ALLOC(tmp) < 0)
+        goto cleanup;
+
+    tmp->managed = managed,
+    tmp->path = *path;
+    tmp->pid = (pid_t) -1;
+
+    if (virHashAddEntry(priv->prHelpers, alias, tmp) < 0)
+        goto cleanup;
+
+    *path = NULL;
+    tmp = NULL;
+    ret = 0;
+ cleanup:
+    VIR_FREE(tmp);
+    return ret;
+}
+
+
+static int
+qemuDomainDiskPRObjectKillOne(void *payload,
+                              const void *name,
+                              void *data ATTRIBUTE_UNUSED)
+{
+    qemuDomainDiskPRObjectPtr tmp = payload;
+
+    if (!tmp->managed)
+        return 0;
+
+    VIR_DEBUG("Killing pr-manager: %s", (const char *) name);
+    if (tmp->pid != (pid_t) -1 &&
+        virProcessKill(tmp->pid, SIGTERM) < 0) {
+        virReportSystemError(errno,
+                             _("Unable to kill pr-manager: %s"),
+                             (const char *) name);
+        /* Don't return error; we want to kill as many as
+         * possible. */
+    } else {
+        tmp->pid = (pid_t) -1;
+    }
+
+    return 0;
+}
+
+
+void
+qemuDomainDiskPRObjectKillAll(qemuDomainObjPrivatePtr priv)
+{
+    if (!priv->prHelpers)
+        return;
+
+    virHashForEach(priv->prHelpers,
+                   qemuDomainDiskPRObjectKillOne, NULL);
+
+    virHashFree(priv->prHelpers);
+    priv->prHelpers = NULL;
 }
 
 
