@@ -457,6 +457,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               /* 280 */
               "pl011",
               "machine.pseries.max-cpu-compat",
+              "pr-manager-helper",
     );
 
 
@@ -1690,6 +1691,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "sclplmconsole", QEMU_CAPS_DEVICE_SCLPLMCONSOLE },
     { "isa-serial", QEMU_CAPS_DEVICE_ISA_SERIAL },
     { "pl011", QEMU_CAPS_DEVICE_PL011 },
+    { "pr-manager-helper", QEMU_CAPS_PR_MANAGER_HELPER },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {
