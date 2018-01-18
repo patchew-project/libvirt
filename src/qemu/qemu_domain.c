@@ -11236,6 +11236,32 @@ qemuDomainDiskPRObjectKillAll(qemuDomainObjPrivatePtr priv)
     priv->prHelpers = NULL;
 }
 
+size_t
+qemuDomainGetPRUsageCount(const virDomainDef *def,
+                          const char *prAlias)
+{
+    size_t used = 0;
+    size_t i;
+
+    for (i = 0; i < def->ndisks; i++) {
+        const virDomainDiskDef *disk = def->disks[i];
+        qemuDomainStorageSourcePrivatePtr srcPriv;
+
+        if (!disk->src ||
+            !disk->src->pr)
+            continue;
+
+        srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(disk->src);
+
+        if (STRNEQ(srcPriv->prAlias, prAlias))
+            continue;
+
+        used++;
+    }
+
+    return used;
+}
+
 
 static int
 qemuDomainPrepareDiskPR(qemuDomainObjPrivatePtr priv,

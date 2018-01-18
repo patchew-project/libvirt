@@ -1011,4 +1011,8 @@ qemuDomainDiskPRObjectRegister(qemuDomainObjPrivatePtr priv,
 void
 qemuDomainDiskPRObjectKillAll(qemuDomainObjPrivatePtr priv);
 
+size_t
+qemuDomainGetPRUsageCount(const virDomainDef *def,
+                          const char *prAlias);
+
 #endif /* __QEMU_DOMAIN_H__ */
