@@ -2508,6 +2508,151 @@ qemuProcessSetupEmulator(virDomainObjPtr vm)
 
 
 static int
+qemuProcessSetupOnePRDaemonHook(void *opaque)
+{
+    virDomainObjPtr vm = opaque;
+    size_t i, nfds = 0;
+    int *fds = NULL;
+    int ret = -1;
+
+    if (virProcessGetNamespaces(vm->pid, &nfds, &fds) < 0)
+        return ret;
+
+    if (virProcessSetNamespaces(nfds, fds) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    for (i = 0; i < nfds; i++)
+        VIR_FORCE_CLOSE(fds[i]);
+    VIR_FREE(fds);
+    return ret;
+}
+
+
+static int
+qemuProcessSetupOnePRDaemon(void *payload,
+                            const void *name,
+                            void *opaque)
+{
+    qemuDomainDiskPRObjectPtr prObj = payload;
+    virDomainObjPtr vm = opaque;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virQEMUDriverPtr driver = priv->driver;
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    char *pidfile = NULL;
+    pid_t cpid = -1;
+    virCommandPtr cmd = NULL;
+    virTimeBackOffVar timebackoff;
+    const unsigned long long timeout = 500000; /* ms */
+    int ret = -1;
+
+    if (!prObj->managed)
+        return 0;
+
+    if (!virFileIsExecutable(cfg->prHelperName)) {
+        virReportSystemError(errno, _("'%s' is not a suitable pr helper"),
+                             cfg->prHelperName);
+        goto cleanup;
+    }
+
+    if (!(pidfile = virPidFileBuildPath(cfg->stateDir, name)))
+        goto cleanup;
+
+    if (unlink(pidfile) < 0 &&
+        errno != ENOENT) {
+        virReportSystemError(errno,
+                             _("Cannot remove stale PID file %s"),
+                             pidfile);
+        goto cleanup;
+    }
+
+    if (!(cmd = virCommandNewArgList(cfg->prHelperName,
+                                     "-k", prObj->path,
+                                     NULL)))
+        goto cleanup;
+
+    virCommandDaemonize(cmd);
+    virCommandSetPidFile(cmd, pidfile);
+    virCommandSetPreExecHook(cmd, qemuProcessSetupOnePRDaemonHook, vm);
+
+#ifdef CAP_SYS_RAWIO
+    virCommandAllowCap(cmd, CAP_SYS_RAWIO);
+#else
+    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                   _("Raw I/O is not supported on this platform"));
+    goto cleanup;
+#endif
+
+    if (virCommandRun(cmd, NULL) < 0)
+        goto cleanup;
+
+    if (virPidFileReadPath(pidfile, &cpid) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("pr helper %s didn't show up"), (const char *) name);
+        goto cleanup;
+    }
+
+    if (virTimeBackOffStart(&timebackoff, 1, timeout) < 0)
+        goto cleanup;
+    while (virTimeBackOffWait(&timebackoff)) {
+        if (virFileExists(prObj->path))
+            break;
+
+        if (virProcessKill(cpid, 0) == 0)
+            continue;
+
+        virReportSystemError(errno, "%s",
+                             _("pr helper died unexpectedly"));
+        goto cleanup;
+    }
+
+    if (priv->cgroup &&
+        virCgroupAddMachineTask(priv->cgroup, cpid) < 0)
+        goto cleanup;
+
+    if (qemuSecurityDomainSetPathLabel(driver->securityManager,
+                                       vm->def, prObj->path, true) < 0)
+        goto cleanup;
+
+    prObj->pid = cpid;
+    ret = 0;
+ cleanup:
+    if (ret < 0) {
+        virCommandAbort(cmd);
+        virProcessKillPainfully(cpid, true);
+    }
+    virCommandFree(cmd);
+    if (unlink(pidfile) < 0 &&
+        errno != ENOENT &&
+        !virGetLastError())
+        virReportSystemError(errno,
+                             _("Cannot remove stale PID file %s"),
+                             pidfile);
+    VIR_FREE(pidfile);
+    virObjectUnref(cfg);
+    return ret;
+}
+
+
+static int
+qemuProcessSetupPRDaemons(virDomainObjPtr vm)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    int ret = -1;
+
+    if (priv->prHelpers &&
+        virHashForEach(priv->prHelpers,
+                       qemuProcessSetupOnePRDaemon, vm) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    return ret;
+}
+
+
+static int
 qemuProcessInitPasswords(virConnectPtr conn,
                          virQEMUDriverPtr driver,
                          virDomainObjPtr vm,
@@ -5896,6 +6041,10 @@ qemuProcessLaunch(virConnectPtr conn,
     if (qemuProcessSetupEmulator(vm) < 0)
         goto cleanup;
 
+    VIR_DEBUG("Setting up PR daemons");
+    if (qemuProcessSetupPRDaemons(vm) < 0)
+        goto cleanup;
+
     VIR_DEBUG("Setting domain security labels");
     if (qemuSecuritySetAllLabel(driver,
                                 vm,
@@ -6474,6 +6623,8 @@ void qemuProcessStop(virQEMUDriverPtr driver,
             VIR_FREE(vm->def->seclabels[i]->label);
         VIR_FREE(vm->def->seclabels[i]->imagelabel);
     }
+
+    qemuDomainDiskPRObjectKillAll(priv);
 
     qemuHostdevReAttachDomainDevices(driver, vm->def);
 
