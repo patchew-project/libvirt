@@ -131,6 +131,10 @@ static virClassPtr qemuDomainSaveCookieClass;
 static void qemuDomainLogContextDispose(void *obj);
 static void qemuDomainSaveCookieDispose(void *obj);
 
+static void
+qemuDomainDiskPRObjectHashFree(void *payload,
+                               const void *name);
+
 static int
 qemuDomainOnceInit(void)
 {
@@ -1955,6 +1959,46 @@ qemuDomainObjPrivateXMLFormatAllowReboot(virBufferPtr buf,
 
 
 static int
+qemuDomainObjPrivateXMLFormatOnePR(void *payload,
+                                   const void *name,
+                                   void *data)
+{
+    qemuDomainDiskPRObjectPtr prObj = payload;
+    virBufferPtr buf = data;
+
+    virBufferAddLit(buf, "<manager>\n");
+    virBufferAdjustIndent(buf, 2);
+    virBufferAsprintf(buf, "<alias>%s</alias>\n", (const char *) name);
+    virBufferAsprintf(buf, "<managed>%s</managed>\n",
+                      virTristateBoolTypeToString(virTristateBoolFromBool(prObj->managed)));
+    virBufferEscapeString(buf, "<path>%s</path>\n", prObj->path);
+    virBufferAsprintf(buf, "<pid>%lld</pid>\n", (long long) prObj->pid);
+    virBufferAdjustIndent(buf, -2);
+    virBufferAddLit(buf, "</manager>\n");
+
+    return 0;
+}
+
+
+static void
+qemuDomainObjPrivateXMLFormatPRs(virBufferPtr buf,
+                                 virDomainObjPtr vm)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+
+    if (!priv->prHelpers)
+        return;
+
+    virBufferAddLit(buf, "<prManagers>\n");
+    virBufferAdjustIndent(buf, 2);
+    virHashForEach(priv->prHelpers,
+                   qemuDomainObjPrivateXMLFormatOnePR, buf);
+    virBufferAdjustIndent(buf, -2);
+    virBufferAddLit(buf, "</prManagers>\n");
+}
+
+
+static int
 qemuDomainObjPrivateXMLFormat(virBufferPtr buf,
                               virDomainObjPtr vm)
 {
@@ -2080,6 +2124,8 @@ qemuDomainObjPrivateXMLFormat(virBufferPtr buf,
 
     if (qemuDomainObjPrivateXMLFormatBlockjobs(buf, vm) < 0)
         return -1;
+
+    qemuDomainObjPrivateXMLFormatPRs(buf, vm);
 
     return 0;
 }
@@ -2209,6 +2255,87 @@ qemuDomainObjPrivateXMLParseAllowReboot(xmlXPathContextPtr ctxt,
 
  cleanup:
     VIR_FREE(valStr);
+    return ret;
+}
+
+
+static qemuDomainDiskPRObjectPtr
+qemuDomainObjPrivateXMLParseOnePR(xmlXPathContextPtr ctxt,
+                                  char **alias)
+{
+    qemuDomainDiskPRObjectPtr ret;
+    char *managedStr = NULL;
+    int managed;
+    char *path = NULL;
+    long long cpid;
+
+    if (VIR_ALLOC(ret) < 0)
+        return NULL;
+
+    if (!(managedStr = virXPathString("string(./managed)", ctxt)) ||
+        !(*alias = virXPathString("string(./alias)", ctxt)) ||
+        !(path = virXPathString("string(./path)", ctxt)) ||
+        virXPathLongLong("string(./pid)", ctxt, &cpid) < 0 ||
+        (managed = virTristateBoolTypeFromString(managedStr)) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Malformed status XML in <prManagers/>"));
+        goto error;
+    }
+
+    VIR_FREE(managedStr);
+    ret->managed = managed == VIR_TRISTATE_BOOL_YES;
+    ret->path = path;
+    ret->pid = cpid;
+    path = NULL;
+
+    return ret;
+
+ error:
+    VIR_FREE(managedStr);
+    VIR_FREE(*alias);
+    VIR_FREE(path);
+    VIR_FREE(ret);
+    return NULL;
+}
+
+
+static int
+qemuDomainObjPrivateXMLParsePRs(qemuDomainObjPrivatePtr priv,
+                                xmlXPathContextPtr ctxt)
+{
+    xmlNodePtr saveNode = ctxt->node;
+    xmlNodePtr *nodeset = NULL;
+    virHashTablePtr prHelpers = NULL;
+    size_t i, n;
+    int ret = -1;
+
+    if ((n = virXPathNodeSet("./prManagers/manager", ctxt, &nodeset)) > 0) {
+        if (!(prHelpers = virHashCreate(10, qemuDomainDiskPRObjectHashFree)))
+            goto cleanup;
+
+        for (i = 0; i < n; i++) {
+            qemuDomainDiskPRObjectPtr tmp;
+            char *alias = NULL;
+
+            ctxt->node = nodeset[i];
+            if (!(tmp = qemuDomainObjPrivateXMLParseOnePR(ctxt, &alias)))
+                goto cleanup;
+
+            if (virHashAddEntry(prHelpers, alias, tmp) < 0) {
+                qemuDomainDiskPRObjectHashFree(tmp, alias);
+                VIR_FREE(alias);
+                goto cleanup;
+            }
+        }
+    }
+
+    priv->prHelpers = prHelpers;
+    prHelpers = NULL;
+    ret = 0;
+ cleanup:
+    virHashFree(prHelpers);
+    VIR_FREE(nodeset);
+    ctxt->node = saveNode;
     return ret;
 }
 
@@ -2431,6 +2558,9 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
     qemuDomainObjPrivateXMLParseAllowReboot(ctxt, &priv->allowReboot);
 
     if (qemuDomainObjPrivateXMLParseBlockjobs(priv, ctxt) < 0)
+        goto error;
+
+    if (qemuDomainObjPrivateXMLParsePRs(priv, ctxt) < 0)
         goto error;
 
     return 0;
