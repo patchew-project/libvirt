@@ -11263,6 +11263,24 @@ qemuDomainGetPRUsageCount(const virDomainDef *def,
 }
 
 
+bool
+qemuDomainDiskNeedRemovePR(virDomainObjPtr vm,
+                           virDomainDiskDefPtr disk)
+{
+    qemuDomainStorageSourcePrivatePtr srcPriv;
+
+    if (!disk->src)
+        return false;
+
+    srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(disk->src);
+    if (!srcPriv ||
+        !srcPriv->prAlias)
+        return false;
+
+    return qemuDomainGetPRUsageCount(vm->def, srcPriv->prAlias) == 1;
+}
+
+
 static int
 qemuDomainPrepareDiskPR(qemuDomainObjPrivatePtr priv,
                         virDomainDiskDefPtr disk)

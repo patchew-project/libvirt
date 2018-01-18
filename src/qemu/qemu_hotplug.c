@@ -3825,6 +3825,7 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
     char *drivestr;
     char *objAlias = NULL;
     char *encAlias = NULL;
+    const char *prAlias = NULL;
 
     VIR_DEBUG("Removing disk %s from domain %p %s",
               disk->info.alias, vm, vm->def->name);
@@ -3862,6 +3863,13 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
         }
     }
 
+    if (qemuDomainDiskNeedRemovePR(vm, disk)) {
+        qemuDomainStorageSourcePrivatePtr srcPriv;
+
+        srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(disk->src);
+        prAlias = srcPriv->prAlias;
+    }
+
     qemuDomainObjEnterMonitor(driver, vm);
 
     qemuMonitorDriveDel(priv->mon, drivestr);
@@ -3876,6 +3884,9 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
     if (encAlias)
         ignore_value(qemuMonitorDelObject(priv->mon, encAlias));
     VIR_FREE(encAlias);
+
+    if (prAlias)
+        ignore_value(qemuMonitorDelObject(priv->mon, prAlias));
 
     if (disk->src->haveTLS)
         ignore_value(qemuMonitorDelObject(priv->mon, disk->src->tlsAlias));
@@ -3894,6 +3905,8 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
             break;
         }
     }
+
+    qemuDestroyPRDefObject(vm, disk);
 
     qemuDomainReleaseDeviceAddress(vm, &disk->info, src);
 

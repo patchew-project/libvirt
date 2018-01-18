@@ -1015,4 +1015,8 @@ size_t
 qemuDomainGetPRUsageCount(const virDomainDef *def,
                           const char *prAlias);
 
+bool
+qemuDomainDiskNeedRemovePR(virDomainObjPtr vm,
+                           virDomainDiskDefPtr disk);
+
 #endif /* __QEMU_DOMAIN_H__ */
