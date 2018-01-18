@@ -1515,6 +1515,20 @@ qemuDiskSourceGetProps(virStorageSourcePtr src)
 }
 
 
+static void
+qemuBuildDriveSourcePR(virBufferPtr buf,
+                       virStorageSourcePtr src)
+{
+    qemuDomainStorageSourcePrivatePtr srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(src);
+
+    if (!src->pr ||
+        src->pr->enabled != VIR_TRISTATE_BOOL_YES)
+        return;
+
+    virBufferAsprintf(buf, ",file.pr-manager=%s", srcPriv->prAlias);
+}
+
+
 static int
 qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
                         virQEMUCapsPtr qemuCaps,
@@ -1591,6 +1605,8 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
 
         if (disk->src->debug)
             virBufferAsprintf(buf, ",file.debug=%d", disk->src->debugLevel);
+
+        qemuBuildDriveSourcePR(buf, disk->src);
     } else {
         if (!(source = virQEMUBuildDriveCommandlineFromJSON(srcprops)))
             goto cleanup;
@@ -10033,6 +10049,46 @@ qemuBuildPanicCommandLine(virCommandPtr cmd,
 }
 
 
+struct qemuBuildMasterPRCommandLineData {
+    virCommandPtr cmd;
+};
+
+
+static int
+qemuBuildMasterPRCommandLineHelper(void *payload,
+                                   const void *name,
+                                   void *opaque)
+{
+    qemuDomainDiskPRObjectPtr obj = payload;
+    struct qemuBuildMasterPRCommandLineData *data = opaque;
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+    const char *alias = name;
+
+    virBufferAsprintf(&buf, "pr-manager-helper,id=%s,path=%s", alias, obj->path);
+    virCommandAddArg(data->cmd, "-object");
+    virCommandAddArgBuffer(data->cmd, &buf);
+    return 0;
+}
+
+
+static int
+qemuBuildMasterPRCommandLine(virCommandPtr cmd,
+                             qemuDomainObjPrivatePtr priv)
+{
+    struct qemuBuildMasterPRCommandLineData data = {.cmd = cmd };
+    int ret = -1;
+
+    if (priv->prHelpers &&
+        virHashForEach(priv->prHelpers,
+                       qemuBuildMasterPRCommandLineHelper, &data) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    return ret;
+}
+
+
 /**
  * qemuBuildCommandLineValidate:
  *
@@ -10183,6 +10239,9 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
         virCommandAddArg(cmd, "-S"); /* freeze CPU */
 
     if (qemuBuildMasterKeyCommandLine(cmd, priv) < 0)
+        goto error;
+
+    if (qemuBuildMasterPRCommandLine(cmd, priv) < 0)
         goto error;
 
     if (enableFips)
