@@ -375,6 +375,9 @@ struct _qemuDomainStorageSourcePrivate {
 
     /* data required for decryption of encrypted storage source */
     qemuDomainSecretInfoPtr encinfo;
+
+    /* alias for pr-manager-helper */
+    char *prAlias;
 };
 
 virObjectPtr qemuDomainStorageSourcePrivateNew(void);

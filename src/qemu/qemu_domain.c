@@ -972,6 +972,8 @@ qemuDomainStorageSourcePrivateDispose(void *obj)
 
     qemuDomainSecretInfoFree(&priv->secinfo);
     qemuDomainSecretInfoFree(&priv->encinfo);
+
+    VIR_FREE(priv->prAlias);
 }
 
 
@@ -11037,6 +11039,62 @@ qemuDomainDiskPRObjectKillAll(qemuDomainObjPrivatePtr priv)
 }
 
 
+static int
+qemuDomainPrepareDiskPR(qemuDomainObjPrivatePtr priv,
+                        virDomainDiskDefPtr disk)
+{
+    qemuDomainStorageSourcePrivatePtr srcPriv;
+    virStoragePRDefPtr prd = disk->src->pr;
+    char *prPath = NULL;
+    bool managed;
+    int ret = -1;
+
+    if (!prd ||
+        prd->enabled != VIR_TRISTATE_BOOL_YES)
+        return 0;
+
+    if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_PR_MANAGER_HELPER)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("reservations not supported with this QEMU binary"));
+        goto cleanup;
+    }
+
+    if (!disk->src->privateData &&
+        !(disk->src->privateData = qemuDomainStorageSourcePrivateNew()))
+        return -1;
+
+    srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(disk->src);
+    managed = prd->managed == VIR_TRISTATE_BOOL_YES;
+
+    if (managed) {
+        /* Generate PR helper socket path & alias that are same
+         * for each disk in the domain. */
+
+        if (VIR_STRDUP(srcPriv->prAlias, "pr-helper0") < 0)
+            return -1;
+
+        if (virAsprintf(&prPath, "%s/pr-helper0.sock", priv->libDir) < 0)
+            return -1;
+
+    } else {
+        if (virAsprintf(&srcPriv->prAlias, "pr-helper-%s", disk->dst) < 0)
+            return -1;
+
+        if (VIR_STRDUP(prPath, prd->path) < 0)
+            return -1;
+    }
+
+    if (qemuDomainDiskPRObjectRegister(priv, srcPriv->prAlias,
+                                       managed, &prPath) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(prPath);
+    return ret;
+}
+
+
 int
 qemuDomainPrepareDiskSource(virConnectPtr conn,
                             virDomainDiskDefPtr disk,
@@ -11047,6 +11105,9 @@ qemuDomainPrepareDiskSource(virConnectPtr conn,
         return -1;
 
     if (qemuDomainSecretDiskPrepare(conn, priv, disk) < 0)
+        return -1;
+
+    if (qemuDomainPrepareDiskPR(priv, disk) < 0)
         return -1;
 
     if (disk->src->type == VIR_STORAGE_TYPE_NETWORK &&
