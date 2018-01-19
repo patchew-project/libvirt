@@ -57,6 +57,8 @@ virNetServerPtr virNetServerNewPostExecRestart(virJSONValuePtr object,
                                                virFreeCallback clientPrivFree,
                                                void *clientPrivOpaque);
 
+void virNetServerQuitRequested(virNetServerPtr srv);
+
 void virNetServerClose(virNetServerPtr srv);
 
 virJSONValuePtr virNetServerPreExecRestart(virNetServerPtr srv);

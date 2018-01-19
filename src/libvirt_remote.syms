@@ -116,6 +116,7 @@ virNetServerNewPostExecRestart;
 virNetServerNextClientID;
 virNetServerPreExecRestart;
 virNetServerProcessClients;
+virNetServerQuitRequested;
 virNetServerSetClientAuthenticated;
 virNetServerStart;
 virNetServerUpdateServices;

@@ -823,6 +823,29 @@ void virNetServerDispose(void *obj)
     virNetServerMDNSFree(srv->mdns);
 }
 
+
+/* virNetServerQuitRequested:
+ * @srv: Netserver pointer
+ *
+ * Disable new connections and drain anything waiting to run.
+ */
+void
+virNetServerQuitRequested(virNetServerPtr srv)
+{
+    size_t i;
+
+    if (!srv)
+        return;
+
+    VIR_DEBUG("Quit server requested '%s'", srv->name);
+
+    for (i = 0; i < srv->nservices; i++)
+        virNetServerServiceToggle(srv->services[i], false);
+
+    virThreadPoolDrain(srv->workers);
+}
+
+
 void virNetServerClose(virNetServerPtr srv)
 {
     size_t i;
