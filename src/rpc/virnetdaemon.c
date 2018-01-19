@@ -73,6 +73,7 @@ struct _virNetDaemon {
     virHashTablePtr servers;
     virJSONValuePtr srvObject;
 
+    bool quitRequested;
     bool quit;
 
     unsigned int autoShutdownTimeout;
@@ -779,6 +780,32 @@ daemonServerProcessClients(void *payload,
     return 0;
 }
 
+
+static int
+daemonServerWorkerCount(void *payload,
+                        const void *key ATTRIBUTE_UNUSED,
+                        void *opaque)
+{
+    size_t *workerCount = opaque;
+    virNetServerPtr srv = payload;
+
+    *workerCount += virNetServerWorkerCount(srv);
+
+    return 0;
+}
+
+
+static bool
+daemonServerWorkersDone(virNetDaemonPtr dmn)
+{
+    size_t workerCount = 0;
+
+    virHashForEach(dmn->servers, daemonServerWorkerCount, &workerCount);
+
+    return workerCount == 0;
+}
+
+
 void
 virNetDaemonRun(virNetDaemonPtr dmn)
 {
@@ -843,6 +870,9 @@ virNetDaemonRun(virNetDaemonPtr dmn)
         virObjectLock(dmn);
 
         virHashForEach(dmn->servers, daemonServerProcessClients, NULL);
+
+        if (dmn->quitRequested && daemonServerWorkersDone(dmn))
+            dmn->quit = true;
     }
 
  cleanup:
@@ -868,7 +898,7 @@ virNetDaemonQuit(virNetDaemonPtr dmn)
     virObjectLock(dmn);
 
     VIR_DEBUG("Quit requested %p", dmn);
-    dmn->quit = true;
+    dmn->quitRequested = true;
     virHashForEach(dmn->servers, daemonServerQuitRequested, NULL);
 
     virObjectUnlock(dmn);
