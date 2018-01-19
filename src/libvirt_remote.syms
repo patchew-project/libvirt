@@ -120,6 +120,7 @@ virNetServerQuitRequested;
 virNetServerSetClientAuthenticated;
 virNetServerStart;
 virNetServerUpdateServices;
+virNetServerWorkerCount;
 
 
 # rpc/virnetserverclient.h

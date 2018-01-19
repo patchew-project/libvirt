@@ -846,6 +846,32 @@ virNetServerQuitRequested(virNetServerPtr srv)
 }
 
 
+/* virNetServerWorkerCount:
+ * @srv: Netserver pointer
+ *
+ * Return the number of workers still waiting to be processed. This
+ * allows the quit requested code to wait for all worker jobs to be
+ * completed before actually quitting.
+ */
+size_t
+virNetServerWorkerCount(virNetServerPtr srv)
+{
+    size_t workerCount;
+
+    virObjectLock(srv);
+
+    workerCount = virThreadPoolGetCurrentWorkers(srv->workers) +
+                  virThreadPoolGetPriorityWorkers(srv->workers);
+
+    if (workerCount > 0)
+        VIR_DEBUG("server '%s' still has %zd workers", srv->name, workerCount);
+
+    virObjectUnlock(srv);
+
+    return workerCount;
+}
+
+
 void virNetServerClose(virNetServerPtr srv)
 {
     size_t i;
