@@ -30,8 +30,11 @@
 #include "viralloc.h"
 #include "virthread.h"
 #include "virerror.h"
+#include "virlog.h"
 
 #define VIR_FROM_THIS VIR_FROM_NONE
+
+VIR_LOG_INIT("util.threadpool");
 
 typedef struct _virThreadPoolJob virThreadPoolJob;
 typedef virThreadPoolJob *virThreadPoolJobPtr;
@@ -93,6 +96,24 @@ static inline bool virThreadPoolWorkerQuitHelper(size_t count, size_t limit)
     return count > limit;
 }
 
+
+static void
+virThreadPoolJobRemove(virThreadPoolPtr pool,
+                       virThreadPoolJobPtr job)
+{
+    if (job->prev)
+        job->prev->next = job->next;
+    else
+        pool->jobList.head = job->next;
+    if (job->next)
+        job->next->prev = job->prev;
+    else
+        pool->jobList.tail = job->prev;
+
+    pool->jobQueueDepth--;
+}
+
+
 static void virThreadPoolWorker(void *opaque)
 {
     struct virThreadPoolWorkerData *data = opaque;
@@ -152,16 +173,7 @@ static void virThreadPoolWorker(void *opaque)
             pool->jobList.firstPrio = tmp;
         }
 
-        if (job->prev)
-            job->prev->next = job->next;
-        else
-            pool->jobList.head = job->next;
-        if (job->next)
-            job->next->prev = job->prev;
-        else
-            pool->jobList.tail = job->prev;
-
-        pool->jobQueueDepth--;
+        virThreadPoolJobRemove(pool, job);
 
         virMutexUnlock(&pool->mutex);
         (pool->jobFunc)(job->data, pool->jobOpaque);
@@ -304,6 +316,38 @@ void virThreadPoolFree(virThreadPoolPtr pool)
         virCondDestroy(&pool->prioCond);
     }
     VIR_FREE(pool);
+}
+
+
+/*
+ * virThreadPoolDrain:
+ * @pool: Pointer to thread pool
+ *
+ * Cause any pending job to be purged and notify the current workers
+ * of the impending quit.
+ */
+void
+virThreadPoolDrain(virThreadPoolPtr pool)
+{
+    virMutexLock(&pool->mutex);
+
+    VIR_DEBUG("nWorkers=%zd, nPrioWorkers=%zd jobQueueDepth=%zd",
+              pool->nWorkers, pool->nPrioWorkers, pool->jobQueueDepth);
+
+    while (pool->jobList.head != pool->jobList.tail) {
+        virThreadPoolJobPtr job = pool->jobList.head;
+
+        virThreadPoolJobRemove(pool, job);
+        VIR_FREE(job);
+    }
+
+    pool->quit = true;
+    if (pool->nWorkers > 0)
+        virCondBroadcast(&pool->cond);
+    if (pool->nPrioWorkers > 0)
+        virCondBroadcast(&pool->prioCond);
+
+    virMutexUnlock(&pool->mutex);
 }
 
 

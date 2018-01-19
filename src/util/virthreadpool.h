@@ -52,6 +52,8 @@ size_t virThreadPoolGetJobQueueDepth(virThreadPoolPtr pool);
 
 void virThreadPoolFree(virThreadPoolPtr pool);
 
+void virThreadPoolDrain(virThreadPoolPtr pool);
+
 int virThreadPoolSendJob(virThreadPoolPtr pool,
                          unsigned int priority,
                          void *jobdata) ATTRIBUTE_NONNULL(1)
