@@ -1063,11 +1063,17 @@ qemuMonitorSend(qemuMonitorPtr mon,
 {
     int ret = -1;
 
-    /* Check whether qemu quit unexpectedly */
+    /* Check whether qemu quit unexpectedly, */
     if (mon->lastError.code != VIR_ERR_OK) {
         VIR_DEBUG("Attempt to send command while error is set %s",
                   NULLSTR(mon->lastError.message));
         virSetError(&mon->lastError);
+        return -1;
+    }
+
+    /* or expectedly. */
+    if (mon->willhangup) {
+        VIR_DEBUG("Attempt to send command while domain is shutting down");
         return -1;
     }
 
