@@ -39,6 +39,18 @@
     <section title="Improvements">
     </section>
     <section title="Bug fixes">
+      <change>
+        <summary>
+          Fix issues with unexpected libvirtd termination
+        </summary>
+        <description>
+          If there were outstanding worker threads when libvirtd
+          received a quit signal via SIGTERM, SIGINT, or SIGQUIT
+          then, libvirtd may have crashed or hung waiting for a
+          worker job to send a completion notification that cannot
+          be received because the event loop was stopped too soon.
+        </description>
+      </change>
     </section>
   </release>
   <release version="v4.0.0" date="2018-01-19">
