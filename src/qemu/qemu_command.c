@@ -3693,7 +3693,8 @@ qemuBuildNicStr(virDomainNetDefPtr net,
 
 
 char *
-qemuBuildNicDevStr(virDomainDefPtr def,
+qemuBuildNicDevStr(virQEMUDriverConfigPtr cfg,
+                   virDomainDefPtr def,
                    virDomainNetDefPtr net,
                    int vlan,
                    unsigned int bootindex,
@@ -3813,21 +3814,40 @@ qemuBuildNicDevStr(virDomainDefPtr def,
             virBufferAsprintf(&buf, ",mq=on,vectors=%zu", 2 * vhostfdSize + 2);
         }
     }
-    if (usingVirtio && net->driver.virtio.rx_queue_size) {
-        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_NET_RX_QUEUE_SIZE)) {
+    if (usingVirtio) {
+        unsigned int rx_queue_size = net->driver.virtio.rx_queue_size;
+
+        if (rx_queue_size == 0 &&
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_NET_RX_QUEUE_SIZE))
+            rx_queue_size = cfg->rx_queue_size;
+
+
+        if (rx_queue_size &&
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_NET_RX_QUEUE_SIZE)) {
+            net->driver.virtio.rx_queue_size = rx_queue_size;
+            virBufferAsprintf(&buf, ",rx_queue_size=%u", rx_queue_size);
+        } else if (rx_queue_size) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("virtio rx_queue_size option is not supported with this QEMU binary"));
             goto error;
         }
-        virBufferAsprintf(&buf, ",rx_queue_size=%u", net->driver.virtio.rx_queue_size);
     }
-    if (usingVirtio && net->driver.virtio.tx_queue_size) {
-        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_NET_TX_QUEUE_SIZE)) {
+    if (usingVirtio) {
+        unsigned int tx_queue_size = net->driver.virtio.tx_queue_size;
+
+        if (tx_queue_size == 0 &&
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_NET_TX_QUEUE_SIZE))
+            tx_queue_size = cfg->tx_queue_size;
+
+        if (tx_queue_size &&
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_NET_TX_QUEUE_SIZE)) {
+            net->driver.virtio.tx_queue_size = tx_queue_size;
+            virBufferAsprintf(&buf, ",tx_queue_size=%u", tx_queue_size);
+        } else if (tx_queue_size) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("virtio tx_queue_size option is not supported with this QEMU binary"));
             goto error;
         }
-        virBufferAsprintf(&buf, ",tx_queue_size=%u", net->driver.virtio.tx_queue_size);
     }
 
     if (usingVirtio && net->mtu) {
@@ -8489,7 +8509,7 @@ qemuBuildVhostuserCommandLine(virQEMUDriverPtr driver,
     virCommandAddArg(cmd, netdev);
     VIR_FREE(netdev);
 
-    if (!(nic = qemuBuildNicDevStr(def, net, -1, bootindex,
+    if (!(nic = qemuBuildNicDevStr(cfg, def, net, -1, bootindex,
                                    queues, qemuCaps))) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        "%s", _("Error generating NIC -device string"));
@@ -8526,6 +8546,7 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
                               int **nicindexes,
                               bool chardevStdioLogd)
 {
+    virQEMUDriverConfigPtr cfg;
     int ret = -1;
     char *nic = NULL, *host = NULL;
     int *tapfd = NULL;
@@ -8586,6 +8607,8 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
                        virDomainNetTypeToString(actualType));
         return -1;
     }
+
+    cfg = virQEMUDriverGetConfig(driver);
 
     switch (actualType) {
     case VIR_DOMAIN_NET_TYPE_NETWORK:
@@ -8782,7 +8805,7 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
         virCommandAddArgList(cmd, "-netdev", host, NULL);
     }
     if (qemuDomainSupportsNicdev(def, net)) {
-        if (!(nic = qemuBuildNicDevStr(def, net, vlan, bootindex,
+        if (!(nic = qemuBuildNicDevStr(cfg, def, net, vlan, bootindex,
                                        vhostfdSize, qemuCaps)))
             goto cleanup;
         virCommandAddArgList(cmd, "-device", nic, NULL);
@@ -8826,6 +8849,7 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
     VIR_FREE(host);
     VIR_FREE(tapfdName);
     VIR_FREE(vhostfdName);
+    virObjectUnref(cfg);
     return ret;
 }
 
