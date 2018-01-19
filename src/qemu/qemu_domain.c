@@ -334,6 +334,8 @@ qemuDomainObjResetAsyncJob(qemuDomainObjPrivatePtr priv)
     job->spiceMigration = false;
     job->spiceMigrated = false;
     job->postcopyEnabled = false;
+    job->dumpCompletion = false;
+    job->dumpCompleted = false;
     VIR_FREE(job->current);
 }
 
