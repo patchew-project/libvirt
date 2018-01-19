@@ -13186,6 +13186,53 @@ qemuDomainGetJobInfoMigrationStats(virQEMUDriverPtr driver,
 
 
 static int
+qemuDomainGetJobInfoDumpStats(virQEMUDriverPtr driver,
+                              virDomainObjPtr vm,
+                              qemuDomainJobInfoPtr jobInfo)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    qemuMonitorDumpStats stats;
+    int rv;
+
+    if (qemuDomainObjEnterMonitorAsync(driver, vm, QEMU_ASYNC_JOB_NONE) < 0)
+        return -1;
+
+    rv = qemuMonitorQueryDump(priv->mon, &stats);
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0 || rv < 0)
+        return -1;
+
+    /* Save the stats in the migration stats so that qemuDomainJobInfoToInfo
+     * will be copy properly */
+    jobInfo->stats.ram_total = stats.total;
+    jobInfo->stats.ram_remaining = stats.total - stats.completed;
+    jobInfo->stats.ram_transferred = stats.completed;
+    switch (stats.status) {
+    case QEMU_MONITOR_DUMP_STATUS_NONE:
+    case QEMU_MONITOR_DUMP_STATUS_FAILED:
+    case QEMU_MONITOR_DUMP_STATUS_LAST:
+        virReportError(VIR_ERR_OPERATION_FAILED,
+                       _("dump query failed, status=%d"), stats.status);
+        return -1;
+        break;
+
+    case QEMU_MONITOR_DUMP_STATUS_ACTIVE:
+        jobInfo->status = QEMU_DOMAIN_JOB_STATUS_ACTIVE;
+        VIR_DEBUG("dump active, bytes written='%llu' remaining='%llu'",
+                  stats.completed, stats.total - stats.completed);
+        break;
+
+    case QEMU_MONITOR_DUMP_STATUS_COMPLETED:
+        jobInfo->status = QEMU_DOMAIN_JOB_STATUS_COMPLETED;
+        VIR_DEBUG("dump completed, bytes written='%llu'", stats.completed);
+        break;
+    }
+
+    return 0;
+}
+
+
+static int
 qemuDomainGetJobStatsInternal(virQEMUDriverPtr driver,
                               virDomainObjPtr vm,
                               bool completed,
@@ -13226,8 +13273,13 @@ qemuDomainGetJobStatsInternal(virQEMUDriverPtr driver,
     }
     *jobInfo = *priv->job.current;
 
-    if (qemuDomainGetJobInfoMigrationStats(driver, vm, jobInfo) < 0)
-        goto cleanup;
+    if (priv->job.asyncJob == QEMU_ASYNC_JOB_DUMP && priv->job.dumpCompletion) {
+        if (qemuDomainGetJobInfoDumpStats(driver, vm, jobInfo) < 0)
+            goto cleanup;
+    } else {
+        if (qemuDomainGetJobInfoMigrationStats(driver, vm, jobInfo) < 0)
+            goto cleanup;
+    }
 
     ret = 0;
 
