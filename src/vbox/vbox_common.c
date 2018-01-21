@@ -3887,8 +3887,19 @@ vboxDumpSerial(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine, PRUin
 
     /* Allocate memory for the serial ports which are enabled */
     if ((def->nserials > 0) && (VIR_ALLOC_N(def->serials, def->nserials) >= 0)) {
-        for (i = 0; i < def->nserials; i++)
-            ignore_value(VIR_ALLOC(def->serials[i]));
+        for (i = 0; i < def->nserials; i++) {
+           def->serials[i] = virDomainChrDefNew(NULL);
+           if (!def->serials[i]) {
+               /* there is no provision for returning an error
+                * (although the libvirtd logs will show an OOM error),
+                * but we need to at least prevent dereferencing
+                * def->serials[i] and later (including continuing in
+                * this function), as it will otherwise cause a SEGV.
+                */
+               def->nserials = i;
+               return;
+           }
+        }
     }
 
     /* Now get the details about the serial ports here */
@@ -3975,8 +3986,19 @@ vboxDumpParallel(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine, PRU
 
     /* Allocate memory for the parallel ports which are enabled */
     if ((def->nparallels > 0) && (VIR_ALLOC_N(def->parallels, def->nparallels) >= 0)) {
-        for (i = 0; i < def->nparallels; i++)
-            ignore_value(VIR_ALLOC(def->parallels[i]));
+        for (i = 0; i < def->nparallels; i++) {
+           def->parallels[i] = virDomainChrDefNew(NULL);
+           if (!def->parallels[i]) {
+               /* there is no provision for returning an error
+                * (although the libvirtd logs will show an OOM error),
+                * but we need to at least prevent dereferencing
+                * def->parallels[i] and later (including continuing in
+                * this function), as it will otherwise cause a SEGV.
+                */
+               def->nparallels = i;
+               return;
+           }
+        }
     }
 
     /* Now get the details about the parallel ports here */
