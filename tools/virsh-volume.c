@@ -672,6 +672,7 @@ cmdVolUpload(vshControl *ctl, const vshCmd *cmd)
 {
     const char *file = NULL;
     virStorageVolPtr vol = NULL;
+    virStorageVolInfo volumeInfo;
     bool ret = false;
     int fd = -1;
     virStreamPtr st = NULL;
@@ -679,6 +680,7 @@ cmdVolUpload(vshControl *ctl, const vshCmd *cmd)
     unsigned long long offset = 0, length = 0;
     virshControlPtr priv = ctl->privData;
     unsigned int flags = 0;
+    off_t fileLen = -1;
     virshStreamCallbackData cbData;
 
     if (vshCommandOptULongLong(ctl, cmd, "offset", &offset) < 0)
@@ -700,6 +702,29 @@ cmdVolUpload(vshControl *ctl, const vshCmd *cmd)
 
     cbData.ctl = ctl;
     cbData.fd = fd;
+
+    if (virStorageVolGetInfo(vol, &volumeInfo) < 0)
+        goto cleanup;
+
+    if ((fileLen = virFileLength(file, fd)) < 0) {
+        vshError(ctl, _("cannot get the file %s length"), file);
+        goto cleanup;
+    }
+
+    if (length < fileLen) {
+        vshError(ctl, _("length parameter is smaller than file size"));
+        goto cleanup;
+    }
+
+    if (volumeInfo.capacity < length) {
+        vshError(ctl, _("lenth parameter is bigger than volume %s capacity"), name);
+        goto cleanup;
+    }
+
+    if (volumeInfo.capacity < fileLen + offset) {
+        vshError(ctl, _("file is bigger than volume %s capacity"), name);
+        goto cleanup;
+    }
 
     if (vshCommandOptBool(cmd, "sparse"))
         flags |= VIR_STORAGE_VOL_UPLOAD_SPARSE_STREAM;
