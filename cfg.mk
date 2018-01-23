@@ -33,6 +33,7 @@ gnulib_dir = $(srcdir)/.gnulib
 # This is all gnulib files, as well as generated files for RPC code.
 generated_files = \
   $(srcdir)/daemon/*_dispatch.h \
+  $(srcdir)/src/*/*_dispatch_stubs.h \
   $(srcdir)/src/*/*_dispatch.h \
   $(srcdir)/src/remote/*_client_bodies.h \
   $(srcdir)/src/*/*_protocol.[ch] \
@@ -768,7 +769,7 @@ sc_prohibit_gettext_markup:
 # lower-level code must not include higher-level headers.
 cross_dirs=$(patsubst $(srcdir)/src/%.,%,$(wildcard $(srcdir)/src/*/.))
 cross_dirs_re=($(subst / ,/|,$(cross_dirs)))
-mid_dirs=access|conf|cpu|locking|logging|network|node_device|rpc|security|storage
+mid_dirs=access|admin|conf|cpu|locking|logging|network|node_device|rpc|security|storage
 sc_prohibit_cross_inclusion:
 	@for dir in $(cross_dirs); do \
 	  case $$dir in \
@@ -1119,7 +1120,7 @@ sc_po_check: \
 		$(srcdir)/daemon/remote_dispatch.h \
 		$(srcdir)/daemon/qemu_dispatch.h \
 		$(srcdir)/src/remote/remote_client_bodies.h \
-		$(srcdir)/daemon/admin_dispatch.h \
+		$(srcdir)/src/admin/admin_server_dispatch_stubs.h \
 		$(srcdir)/src/admin/admin_client.h
 $(srcdir)/daemon/remote_dispatch.h: $(srcdir)/src/remote/remote_protocol.x
 	$(MAKE) -C daemon remote_dispatch.h
@@ -1127,8 +1128,8 @@ $(srcdir)/daemon/qemu_dispatch.h: $(srcdir)/src/remote/qemu_protocol.x
 	$(MAKE) -C daemon qemu_dispatch.h
 $(srcdir)/src/remote/remote_client_bodies.h: $(srcdir)/src/remote/remote_protocol.x
 	$(MAKE) -C src remote/remote_client_bodies.h
-$(srcdir)/daemon/admin_dispatch.h: $(srcdir)/src/admin/admin_protocol.x
-	$(MAKE) -C daemon admin_dispatch.h
+$(srcdir)/src/admin/admin_server_dispatch_stubs.h: $(srcdir)/src/admin/admin_protocol.x
+	$(MAKE) -C src admin/admin_server_dispatch_stubs.h
 $(srcdir)/src/admin/admin_client.h: $(srcdir)/src/admin/admin_protocol.x
 	$(MAKE) -C src admin/admin_client.h
 
