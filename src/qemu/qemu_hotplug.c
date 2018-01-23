@@ -3514,7 +3514,7 @@ qemuDomainChangeGraphics(virQEMUDriverPtr driver,
     int ret = -1;
 
     if (!olddev) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
+        virReportError(VIR_ERR_DEVICE_MISSING,
                        _("cannot find existing graphics device to modify of "
                          "type '%s'"), type);
         goto cleanup;
@@ -4809,7 +4809,7 @@ int qemuDomainDetachControllerDevice(virQEMUDriverPtr driver,
     if ((idx = virDomainControllerFind(vm->def,
                                        dev->data.controller->type,
                                        dev->data.controller->idx)) < 0) {
-        virReportError(VIR_ERR_OPERATION_FAILED,
+        virReportError(VIR_ERR_DEVICE_MISSING,
                        _("controller %s:%d not found"),
                        virDomainControllerTypeToString(dev->data.controller->type),
                        dev->data.controller->idx);
@@ -5038,18 +5038,18 @@ int qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
     if (idx < 0) {
         switch (subsys->type) {
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
-            virReportError(VIR_ERR_OPERATION_FAILED,
+            virReportError(VIR_ERR_DEVICE_MISSING,
                            _("host pci device %.4x:%.2x:%.2x.%.1x not found"),
                            pcisrc->addr.domain, pcisrc->addr.bus,
                            pcisrc->addr.slot, pcisrc->addr.function);
             break;
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
             if (usbsrc->bus && usbsrc->device) {
-                virReportError(VIR_ERR_OPERATION_FAILED,
+                virReportError(VIR_ERR_DEVICE_MISSING,
                                _("host usb device %03d.%03d not found"),
                                usbsrc->bus, usbsrc->device);
             } else {
-                virReportError(VIR_ERR_OPERATION_FAILED,
+                virReportError(VIR_ERR_DEVICE_MISSING,
                                _("host usb device vendor=0x%.4x product=0x%.4x not found"),
                                usbsrc->vendor, usbsrc->product);
             }
@@ -5058,13 +5058,13 @@ int qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
             if (scsisrc->protocol ==
                 VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI) {
                 virDomainHostdevSubsysSCSIiSCSIPtr iscsisrc = &scsisrc->u.iscsi;
-                virReportError(VIR_ERR_OPERATION_FAILED,
+                virReportError(VIR_ERR_DEVICE_MISSING,
                                _("host scsi iSCSI path %s not found"),
                                iscsisrc->src->path);
             } else {
                  virDomainHostdevSubsysSCSIHostPtr scsihostsrc =
                      &scsisrc->u.host;
-                 virReportError(VIR_ERR_OPERATION_FAILED,
+                 virReportError(VIR_ERR_DEVICE_MISSING,
                                 _("host scsi device %s:%u:%u.%llu not found"),
                                 scsihostsrc->adapter, scsihostsrc->bus,
                                 scsihostsrc->target, scsihostsrc->unit);
@@ -5102,7 +5102,7 @@ qemuDomainDetachShmemDevice(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = vm->privateData;
 
     if ((idx = virDomainShmemDefFind(vm->def, dev)) < 0) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
+        virReportError(VIR_ERR_DEVICE_MISSING,
                        _("model '%s' shmem device not present "
                          "in domain configuration"),
                        virDomainShmemModelTypeToString(dev->model));
@@ -5161,7 +5161,7 @@ qemuDomainDetachWatchdog(virQEMUDriverPtr driver,
           watchdog->model == dev->model &&
           watchdog->action == dev->action &&
           virDomainDeviceInfoAddressIsEqual(&dev->info, &watchdog->info))) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
+        virReportError(VIR_ERR_DEVICE_MISSING,
                        _("model '%s' watchdog device not present "
                          "in domain configuration"),
                        virDomainWatchdogModelTypeToString(watchdog->model));
@@ -5434,7 +5434,7 @@ int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
     char *devstr = NULL;
 
     if (!(tmpChr = virDomainChrFind(vmdef, chr))) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
+        virReportError(VIR_ERR_DEVICE_MISSING,
                        _("chr type '%s' device not present "
                          "in domain configuration"),
                        virDomainChrDeviceTypeToString(chr->deviceType));
@@ -5483,7 +5483,7 @@ qemuDomainDetachRNGDevice(virQEMUDriverPtr driver,
     int ret = -1;
 
     if ((idx = virDomainRNGFind(vm->def, rng)) < 0) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
+        virReportError(VIR_ERR_DEVICE_MISSING,
                        _("model '%s' RNG device not present "
                          "in domain configuration"),
                        virDomainRNGBackendTypeToString(rng->model));
@@ -5528,7 +5528,7 @@ qemuDomainDetachMemoryDevice(virQEMUDriverPtr driver,
     qemuDomainMemoryDeviceAlignSize(vm->def, memdef);
 
     if ((idx = virDomainMemoryFindByDef(vm->def, memdef)) < 0) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
+        virReportError(VIR_ERR_DEVICE_MISSING,
                        _("model '%s' memory device not present "
                          "in the domain configuration"),
                        virDomainMemoryModelTypeToString(memdef->model));
