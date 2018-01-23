@@ -150,7 +150,6 @@ VIR_ENUM_IMPL(virDomainFeature, VIR_DOMAIN_FEATURE_LAST,
               "gic",
               "smm",
               "ioapic",
-              "hpt",
               "vmcoreinfo",
               "pseries",
 );
@@ -18857,6 +18856,36 @@ virDomainDefParseXML(xmlDocPtr xml,
         goto error;
 
     for (i = 0; i < n; i++) {
+
+        /* Compatibility code.
+         *
+         * Between 3.10.0 and 4.1.0, we had <features><hpt> instead of
+         * <features><pseries><hpt>, and we need to be able to parse existing
+         * guest configurations; this takes care of it. Note that the compat
+         * code, like the original implementation and unlike the new one,
+         * must handle gracefully the 'resizing' attribute being absent */
+        if (STREQ((const char *) nodes[i]->name, "hpt")) {
+            tmp = virXMLPropString(nodes[i], "resizing");
+            if (tmp) {
+                int value = virDomainHPTResizingTypeFromString(tmp);
+                if (value < 0) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("Invalid value '%s' for '%s' "
+                                     "attribute of '%s' pSeries feature"),
+                                   tmp, "resizing", nodes[i]->name);
+                    goto error;
+                }
+
+                def->features[VIR_DOMAIN_FEATURE_PSERIES] = VIR_TRISTATE_SWITCH_ON;
+                def->pseries_features[VIR_DOMAIN_PSERIES_HPT] = VIR_TRISTATE_SWITCH_ON;
+                def->pseries_hpt_resizing = value;
+
+                VIR_FREE(tmp);
+            }
+            i++;
+            continue;
+        }
+
         int val = virDomainFeatureTypeFromString((const char *)nodes[i]->name);
         if (val < 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -18946,22 +18975,6 @@ virDomainDefParseXML(xmlDocPtr xml,
                     goto error;
                 }
                 def->ioapic = value;
-                def->features[val] = VIR_TRISTATE_SWITCH_ON;
-                VIR_FREE(tmp);
-            }
-            break;
-
-        case VIR_DOMAIN_FEATURE_HPT:
-            tmp = virXMLPropString(nodes[i], "resizing");
-            if (tmp) {
-                int value = virDomainHPTResizingTypeFromString(tmp);
-                if (value < 0) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                   _("Unknown HPT resizing setting: %s"),
-                                   tmp);
-                    goto error;
-                }
-                def->hpt_resizing = value;
                 def->features[val] = VIR_TRISTATE_SWITCH_ON;
                 VIR_FREE(tmp);
             }
@@ -21226,18 +21239,6 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
                        virDomainIOAPICTypeToString(src->ioapic),
                        virDomainIOAPICTypeToString(dst->ioapic));
         return false;
-    }
-
-    /* HPT resizing */
-    if (src->features[VIR_DOMAIN_FEATURE_HPT] == VIR_TRISTATE_SWITCH_ON) {
-        if (src->hpt_resizing != dst->hpt_resizing) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("HPT resizing configuration differs: "
-                             "source: '%s', destination: '%s'"),
-                           virDomainHPTResizingTypeToString(src->hpt_resizing),
-                           virDomainHPTResizingTypeToString(dst->hpt_resizing));
-            return false;
-        }
     }
 
     return true;
@@ -26565,8 +26566,42 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                 virBufferAddLit(buf, "</kvm>\n");
                 break;
 
-            case VIR_DOMAIN_FEATURE_PSERIES:
+            case VIR_DOMAIN_FEATURE_PSERIES: {
+                bool needsPSeriesElement = false;
+
                 if (def->features[i] != VIR_TRISTATE_SWITCH_ON)
+                    break;
+
+                /* Figure out whether we need the <pseries> element.
+                 * For compatibility reasons (see below) we might need to
+                 * skip it even though some pSeries features are enabled:
+                 * namely, if the HPT feature is enabled and we're formatting
+                 * a migratable XML */
+                for (j = 0; j < VIR_DOMAIN_PSERIES_LAST; j++) {
+                    if (def->pseries_features[j] == VIR_TRISTATE_SWITCH_ABSENT)
+                        continue;
+                    if ((virDomainPSeries) j == VIR_DOMAIN_PSERIES_HPT &&
+                        flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE) {
+                        continue;
+                    }
+                    needsPSeriesElement = true;
+                    break;
+                }
+
+                /* Compatibility code.
+                 * Between 3.10.0 and 4.1.0, we had <features><hpt> instead
+                 * of <features><pseries><hpt>, and we need to be able to
+                 * migrate existing guests back and forth between old libvirt
+                 * and new libvirt; this takes care of it, by using the old
+                 * element when formatting a migratable XML */
+                if (def->pseries_features[VIR_DOMAIN_PSERIES_HPT] == VIR_TRISTATE_SWITCH_ON &&
+                    flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE) {
+                    virBufferAsprintf(buf, "<hpt resizing='%s'/>\n",
+                                      virDomainHPTResizingTypeToString(def->pseries_hpt_resizing));
+                }
+
+                /* Stop here unless we need the <pseries> element */
+                if (!needsPSeriesElement)
                     break;
 
                 virBufferAddLit(buf, "<pseries>\n");
@@ -26575,6 +26610,8 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                     switch ((virDomainPSeries) j) {
                     case VIR_DOMAIN_PSERIES_HPT:
                         if (def->pseries_features[j] != VIR_TRISTATE_SWITCH_ON)
+                            break;
+                        if (flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE)
                             break;
 
                         virBufferAsprintf(buf, "<hpt resizing='%s'/>\n",
@@ -26588,6 +26625,7 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                 virBufferAdjustIndent(buf, -2);
                 virBufferAddLit(buf, "</pseries>\n");
                 break;
+            }
 
             case VIR_DOMAIN_FEATURE_CAPABILITIES:
                 if (def->features[i] == VIR_DOMAIN_CAPABILITIES_POLICY_DEFAULT &&
@@ -26622,13 +26660,6 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                 if (def->features[i] == VIR_TRISTATE_SWITCH_ON) {
                     virBufferAsprintf(buf, "<ioapic driver='%s'/>\n",
                                       virDomainIOAPICTypeToString(def->ioapic));
-                }
-                break;
-
-            case VIR_DOMAIN_FEATURE_HPT:
-                if (def->features[i] == VIR_TRISTATE_SWITCH_ON) {
-                    virBufferAsprintf(buf, "<hpt resizing='%s'/>\n",
-                                      virDomainHPTResizingTypeToString(def->hpt_resizing));
                 }
                 break;
 

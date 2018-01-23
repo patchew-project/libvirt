@@ -9,7 +9,9 @@
     <boot dev='hd'/>
   </os>
   <features>
-    <hpt resizing='required'/>
+    <pseries>
+      <hpt resizing='required'/>
+    </pseries>
   </features>
   <clock offset='utc'/>
   <on_poweroff>destroy</on_poweroff>

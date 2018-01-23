@@ -1738,7 +1738,6 @@ typedef enum {
     VIR_DOMAIN_FEATURE_GIC,
     VIR_DOMAIN_FEATURE_SMM,
     VIR_DOMAIN_FEATURE_IOAPIC,
-    VIR_DOMAIN_FEATURE_HPT,
     VIR_DOMAIN_FEATURE_VMCOREINFO,
     VIR_DOMAIN_FEATURE_PSERIES,
 
@@ -2360,7 +2359,6 @@ struct _virDomainDef {
     virGICVersion gic_version;
     char *hyperv_vendor_id;
     virDomainIOAPIC ioapic;
-    virDomainHPTResizing hpt_resizing;
     virDomainHPTResizing pseries_hpt_resizing;
 
     /* These options are of type virTristateSwitch: ON = keep, OFF = drop */
