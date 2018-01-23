@@ -4952,13 +4952,7 @@
 
   <define name="hpt">
     <element name="hpt">
-      <attribute name="resizing">
-        <choice>
-          <value>enabled</value>
-          <value>disabled</value>
-          <value>required</value>
-        </choice>
-      </attribute>
+      <ref name="resizing"/>
     </element>
   </define>
 
@@ -5737,6 +5731,16 @@
   <define name="featurestate">
     <attribute name="state">
       <ref name="virOnOff"/>
+    </attribute>
+  </define>
+
+  <define name="resizing">
+    <attribute name="resizing">
+      <choice>
+        <value>enabled</value>
+        <value>disabled</value>
+        <value>required</value>
+      </choice>
     </attribute>
   </define>
 
