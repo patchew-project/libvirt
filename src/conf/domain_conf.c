@@ -152,6 +152,7 @@ VIR_ENUM_IMPL(virDomainFeature, VIR_DOMAIN_FEATURE_LAST,
               "ioapic",
               "hpt",
               "vmcoreinfo",
+              "pseries",
 );
 
 VIR_ENUM_IMPL(virDomainCapabilitiesPolicy, VIR_DOMAIN_CAPABILITIES_POLICY_LAST,
@@ -172,6 +173,11 @@ VIR_ENUM_IMPL(virDomainHyperv, VIR_DOMAIN_HYPERV_LAST,
 
 VIR_ENUM_IMPL(virDomainKVM, VIR_DOMAIN_KVM_LAST,
               "hidden")
+
+VIR_ENUM_IMPL(virDomainPSeries,
+              VIR_DOMAIN_PSERIES_LAST,
+              "hpt",
+);
 
 VIR_ENUM_IMPL(virDomainCapsFeature, VIR_DOMAIN_CAPS_FEATURE_LAST,
               "audit_control",
@@ -18879,6 +18885,7 @@ virDomainDefParseXML(xmlDocPtr xml,
         case VIR_DOMAIN_FEATURE_HYPERV:
         case VIR_DOMAIN_FEATURE_VMCOREINFO:
         case VIR_DOMAIN_FEATURE_KVM:
+        case VIR_DOMAIN_FEATURE_PSERIES:
             def->features[val] = VIR_TRISTATE_SWITCH_ON;
             break;
 
@@ -19109,6 +19116,54 @@ virDomainDefParseXML(xmlDocPtr xml,
                 /* coverity[dead_error_begin] */
                 case VIR_DOMAIN_KVM_LAST:
                     break;
+            }
+        }
+        VIR_FREE(nodes);
+    }
+
+    if (def->features[VIR_DOMAIN_FEATURE_PSERIES] == VIR_TRISTATE_SWITCH_ON) {
+        int feature;
+        int value;
+
+        if ((n = virXPathNodeSet("./features/pseries/*", ctxt, &nodes)) < 0)
+            goto error;
+
+        for (i = 0; i < n; i++) {
+            feature = virDomainPSeriesTypeFromString((const char *) nodes[i]->name);
+
+            if (feature < 0) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("Unknown '%s' pSeries feature"),
+                               nodes[i]->name);
+                goto error;
+            }
+
+            switch ((virDomainPSeries) feature) {
+            case VIR_DOMAIN_PSERIES_HPT:
+                if (!(tmp = virXMLPropString(nodes[i], "resizing"))) {
+                    virReportError(VIR_ERR_XML_ERROR,
+                                   _("Missing '%s' attribute for "
+                                     "'%s' pSeries feature"),
+                                   "resizing", nodes[i]->name);
+                    goto error;
+                }
+
+                if ((value = virDomainHPTResizingTypeFromString(tmp)) < 0) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("Invalid value '%s' for '%s' "
+                                     "attribute of '%s' pSeries feature"),
+                                   tmp, "resizing", nodes[i]->name);
+                    goto error;
+                }
+
+                def->pseries_features[feature] = VIR_TRISTATE_SWITCH_ON;
+                def->pseries_hpt_resizing = value;
+
+                VIR_FREE(tmp);
+                break;
+
+            case VIR_DOMAIN_PSERIES_LAST:
+                break;
             }
         }
         VIR_FREE(nodes);
@@ -21135,6 +21190,29 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
 
             /* coverity[dead_error_begin] */
             case VIR_DOMAIN_KVM_LAST:
+                break;
+            }
+        }
+    }
+
+    /* pSeries features */
+    if (src->features[VIR_DOMAIN_FEATURE_PSERIES] == VIR_TRISTATE_SWITCH_ON) {
+        for (i = 0; i < VIR_DOMAIN_PSERIES_LAST; i++) {
+            switch ((virDomainPSeries) i) {
+            case VIR_DOMAIN_PSERIES_HPT:
+                if (src->pseries_features[i] != dst->pseries_features[i] ||
+                    src->pseries_hpt_resizing != dst->pseries_hpt_resizing) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("State of '%s' pSeries feature differs: "
+                                     "source: '%s', destination: '%s'"),
+                                   virDomainPSeriesTypeToString(i),
+                                   virDomainHPTResizingTypeToString(src->pseries_hpt_resizing),
+                                   virDomainHPTResizingTypeToString(dst->pseries_hpt_resizing));
+                    return false;
+                }
+                break;
+
+            case VIR_DOMAIN_PSERIES_LAST:
                 break;
             }
         }
@@ -26485,6 +26563,30 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                 }
                 virBufferAdjustIndent(buf, -2);
                 virBufferAddLit(buf, "</kvm>\n");
+                break;
+
+            case VIR_DOMAIN_FEATURE_PSERIES:
+                if (def->features[i] != VIR_TRISTATE_SWITCH_ON)
+                    break;
+
+                virBufferAddLit(buf, "<pseries>\n");
+                virBufferAdjustIndent(buf, 2);
+                for (j = 0; j < VIR_DOMAIN_PSERIES_LAST; j++) {
+                    switch ((virDomainPSeries) j) {
+                    case VIR_DOMAIN_PSERIES_HPT:
+                        if (def->pseries_features[j] != VIR_TRISTATE_SWITCH_ON)
+                            break;
+
+                        virBufferAsprintf(buf, "<hpt resizing='%s'/>\n",
+                                          virDomainHPTResizingTypeToString(def->pseries_hpt_resizing));
+                        break;
+
+                    case VIR_DOMAIN_PSERIES_LAST:
+                        break;
+                    }
+                }
+                virBufferAdjustIndent(buf, -2);
+                virBufferAddLit(buf, "</pseries>\n");
                 break;
 
             case VIR_DOMAIN_FEATURE_CAPABILITIES:

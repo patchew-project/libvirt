@@ -7361,6 +7361,79 @@ qemuBuildNameCommandLine(virCommandPtr cmd,
 }
 
 static int
+virDomainPSeriesToQEMUCaps(int feature)
+{
+    switch ((virDomainPSeries) feature) {
+    case VIR_DOMAIN_PSERIES_HPT:
+        return QEMU_CAPS_MACHINE_PSERIES_RESIZE_HPT;
+    case VIR_DOMAIN_PSERIES_LAST:
+        break;
+    }
+
+    return -1;
+}
+
+static const char*
+virDomainPSeriesToMachineOption(int feature)
+{
+    switch ((virDomainPSeries) feature) {
+    case VIR_DOMAIN_PSERIES_HPT:
+        return "resize-hpt";
+    case VIR_DOMAIN_PSERIES_LAST:
+        break;
+    }
+
+    return NULL;
+}
+
+static int
+qemuBuildMachineCommandLinePSeriesFeature(virBufferPtr buf,
+                                          virDomainPSeries feature,
+                                          const char *value,
+                                          virQEMUCapsPtr qemuCaps)
+{
+    const char *name = virDomainPSeriesTypeToString(feature);
+    const char *option = virDomainPSeriesToMachineOption(feature);
+    int cap;
+    int ret = -1;
+
+    if (!option) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Unknown QEMU option for '%s' pSeries feature"),
+                       name);
+        goto cleanup;
+    }
+
+    if (!value) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Invalid value for '%s' pSeries feature"),
+                       name);
+        goto cleanup;
+    }
+
+    if ((cap = virDomainPSeriesToQEMUCaps(feature)) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Unknown QEMU capability for '%s' pSeries feature"),
+                       name);
+        goto cleanup;
+    }
+
+    if (!virQEMUCapsGet(qemuCaps, cap)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("'%s' pSeries feature not supported by this QEMU binary"),
+                       name);
+        goto cleanup;
+    }
+
+    virBufferAsprintf(buf, ",%s=%s", option, value);
+
+    ret = 0;
+
+ cleanup:
+    return ret;
+}
+
+static int
 qemuBuildMachineCommandLine(virCommandPtr cmd,
                             virQEMUDriverConfigPtr cfg,
                             const virDomainDef *def,
@@ -7590,6 +7663,26 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
             }
 
             virBufferAsprintf(&buf, ",resize-hpt=%s", str);
+        }
+
+        if (def->features[VIR_DOMAIN_FEATURE_PSERIES] == VIR_TRISTATE_SWITCH_ON) {
+            const char *value;
+
+            for (i = 0; i < VIR_DOMAIN_PSERIES_LAST; i++) {
+                switch ((virDomainPSeries) i) {
+                case VIR_DOMAIN_PSERIES_HPT:
+                    if (def->pseries_features[i] != VIR_TRISTATE_SWITCH_ON)
+                        break;
+
+                    value = virDomainHPTResizingTypeToString(def->pseries_hpt_resizing);
+                    if (qemuBuildMachineCommandLinePSeriesFeature(&buf, i, value, qemuCaps) < 0)
+                        goto cleanup;
+                    break;
+
+                case VIR_DOMAIN_PSERIES_LAST:
+                    goto cleanup;
+                }
+            }
         }
 
         if (cpu && cpu->model &&

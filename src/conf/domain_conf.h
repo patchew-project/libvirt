@@ -1740,6 +1740,7 @@ typedef enum {
     VIR_DOMAIN_FEATURE_IOAPIC,
     VIR_DOMAIN_FEATURE_HPT,
     VIR_DOMAIN_FEATURE_VMCOREINFO,
+    VIR_DOMAIN_FEATURE_PSERIES,
 
     VIR_DOMAIN_FEATURE_LAST
 } virDomainFeature;
@@ -1765,6 +1766,14 @@ typedef enum {
 
     VIR_DOMAIN_KVM_LAST
 } virDomainKVM;
+
+typedef enum {
+    VIR_DOMAIN_PSERIES_HPT = 0,
+
+    VIR_DOMAIN_PSERIES_LAST
+} virDomainPSeries;
+
+VIR_ENUM_DECL(virDomainPSeries);
 
 typedef enum {
     VIR_DOMAIN_CAPABILITIES_POLICY_DEFAULT = 0,
@@ -2346,11 +2355,13 @@ struct _virDomainDef {
     int apic_eoi;
     int hyperv_features[VIR_DOMAIN_HYPERV_LAST];
     int kvm_features[VIR_DOMAIN_KVM_LAST];
+    int pseries_features[VIR_DOMAIN_PSERIES_LAST];
     unsigned int hyperv_spinlocks;
     virGICVersion gic_version;
     char *hyperv_vendor_id;
     virDomainIOAPIC ioapic;
     virDomainHPTResizing hpt_resizing;
+    virDomainHPTResizing pseries_hpt_resizing;
 
     /* These options are of type virTristateSwitch: ON = keep, OFF = drop */
     int caps_features[VIR_DOMAIN_CAPS_FEATURE_LAST];

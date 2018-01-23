@@ -1768,6 +1768,9 @@
   &lt;kvm&gt;
     &lt;hidden state='on'/&gt;
   &lt;/kvm&gt;
+  &lt;pseries&gt;
+    &lt;hpt resizing='required'/&gt;
+  &lt;/pseries&gt;
   &lt;pvspinlock state='on'/&gt;
   &lt;gic version='2'/&gt;
   &lt;ioapic driver='qemu'/&gt;
@@ -1901,6 +1904,23 @@
           <td>Hide the KVM hypervisor from standard MSR based discovery</td>
           <td>on, off</td>
           <td><span class="since">1.2.8 (QEMU 2.1.0)</span></td>
+        </tr>
+      </table>
+      </dd>
+      <dt><code>pseries</code></dt>
+      <dd>Various features to change the behavior of pSeries guests.
+      <table class="top_table">
+        <tr>
+          <th>Feature</th>
+          <th>Description</th>
+          <th>Value</th>
+          <th>Since</th>
+        </tr>
+        <tr>
+          <td>hpt</td>
+          <td>Configure HPT (Hash Page Table)</td>
+          <td>resizing: enabled, disabled, required</td>
+          <td><span class="since">4.1.0 (QEMU 2.10)</span></td>
         </tr>
       </table>
       </dd>

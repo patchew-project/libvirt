@@ -3125,6 +3125,13 @@ qemuDomainDefVerifyFeatures(const virDomainDef *def)
         return -1;
     }
 
+    if (def->features[VIR_DOMAIN_FEATURE_PSERIES] == VIR_TRISTATE_SWITCH_ON &&
+        !qemuDomainIsPSeries(def)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("pSeries features are only supported for pSeries guests"));
+        return -1;
+    }
+
     if (def->features[VIR_DOMAIN_FEATURE_HPT] == VIR_TRISTATE_SWITCH_ON &&
         !qemuDomainIsPSeries(def)) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,

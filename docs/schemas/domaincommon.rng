@@ -4704,6 +4704,9 @@
             <ref name="kvm"/>
           </optional>
           <optional>
+            <ref name="pseries"/>
+          </optional>
+          <optional>
             <element name="privnet">
               <empty/>
             </element>
@@ -5520,6 +5523,19 @@
         <optional>
           <element name="hidden">
             <ref name="featurestate"/>
+          </element>
+        </optional>
+      </interleave>
+    </element>
+  </define>
+
+  <!-- Optional pSeries features -->
+  <define name="pseries">
+    <element name="pseries">
+      <interleave>
+        <optional>
+          <element name="hpt">
+            <ref name="resizing"/>
           </element>
         </optional>
       </interleave>

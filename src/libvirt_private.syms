@@ -484,6 +484,8 @@ virDomainPausedReasonTypeFromString;
 virDomainPausedReasonTypeToString;
 virDomainPMSuspendedReasonTypeFromString;
 virDomainPMSuspendedReasonTypeToString;
+virDomainPSeriesTypeFromString;
+virDomainPSeriesTypeToString;
 virDomainRedirdevBusTypeFromString;
 virDomainRedirdevBusTypeToString;
 virDomainRedirdevDefFind;
