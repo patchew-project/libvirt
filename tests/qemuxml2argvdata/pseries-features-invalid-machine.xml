@@ -7,8 +7,10 @@
     <type arch='x86_64' machine='pc'>hvm</type>
   </os>
   <features>
-    <!-- HPT resizing can't be enabled for non-pSeries guests -->
-    <hpt resizing='enabled'/>
+    <!-- pSeries features can't be enabled for non-pSeries guests -->
+    <pseries>
+      <hpt resizing='enabled'/>
+    </pseries>
   </features>
   <devices>
     <emulator>/usr/bin/qemu-system-x86_64</emulator>
