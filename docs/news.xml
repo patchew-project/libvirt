@@ -25,6 +25,11 @@
     <section title="New features">
     </section>
     <section title="Improvements">
+      <change>
+        <summary>
+          qemu: Use VIR_ERR_DEVICE_MISSING for various hotplug/detach messages.
+        </summary>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
