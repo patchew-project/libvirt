@@ -176,6 +176,7 @@ VIR_ENUM_IMPL(virDomainKVM, VIR_DOMAIN_KVM_LAST,
 VIR_ENUM_IMPL(virDomainPSeries,
               VIR_DOMAIN_PSERIES_LAST,
               "hpt",
+              "htm",
 );
 
 VIR_ENUM_IMPL(virDomainCapsFeature, VIR_DOMAIN_CAPS_FEATURE_LAST,
@@ -19175,6 +19176,28 @@ virDomainDefParseXML(xmlDocPtr xml,
                 VIR_FREE(tmp);
                 break;
 
+            case VIR_DOMAIN_PSERIES_HTM:
+                if (!(tmp = virXMLPropString(nodes[i], "state"))) {
+                    virReportError(VIR_ERR_XML_ERROR,
+                                   _("Missing 'state' attribute for "
+                                     "'%s' pSeries feature"),
+                                   nodes[i]->name);
+                    goto error;
+                }
+
+                if ((value = virTristateSwitchTypeFromString(tmp)) < 0) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("Invalid value '%s' for 'state' "
+                                     "attribute of '%s' pSeries feature"),
+                                   nodes[i]->name, tmp);
+                    goto error;
+                }
+
+                def->pseries_features[feature] = value;
+
+                VIR_FREE(tmp);
+                break;
+
             case VIR_DOMAIN_PSERIES_LAST:
                 break;
             }
@@ -21221,6 +21244,18 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
                                    virDomainPSeriesTypeToString(i),
                                    virDomainHPTResizingTypeToString(src->pseries_hpt_resizing),
                                    virDomainHPTResizingTypeToString(dst->pseries_hpt_resizing));
+                    return false;
+                }
+                break;
+
+            case VIR_DOMAIN_PSERIES_HTM:
+                if (src->pseries_features[i] != dst->pseries_features[i]) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("State of '%s' pSeries feature differs: "
+                                     "source: '%s', destination: '%s'"),
+                                   virDomainPSeriesTypeToString(i),
+                                   virTristateSwitchTypeToString(src->pseries_features[i]),
+                                   virTristateSwitchTypeToString(dst->pseries_features[i]));
                     return false;
                 }
                 break;
@@ -26616,6 +26651,15 @@ virDomainDefFormatInternal(virDomainDefPtr def,
 
                         virBufferAsprintf(buf, "<hpt resizing='%s'/>\n",
                                           virDomainHPTResizingTypeToString(def->pseries_hpt_resizing));
+                        break;
+
+                    case VIR_DOMAIN_PSERIES_HTM:
+                        if (def->pseries_features[j] == VIR_TRISTATE_SWITCH_ABSENT)
+                            break;
+
+                        virBufferAsprintf(buf, "<%s state='%s'/>\n",
+                                          virDomainPSeriesTypeToString(j),
+                                          virTristateSwitchTypeToString(def->pseries_features[j]));
                         break;
 
                     case VIR_DOMAIN_PSERIES_LAST:

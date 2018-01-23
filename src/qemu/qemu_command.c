@@ -7366,6 +7366,8 @@ virDomainPSeriesToQEMUCaps(int feature)
     switch ((virDomainPSeries) feature) {
     case VIR_DOMAIN_PSERIES_HPT:
         return QEMU_CAPS_MACHINE_PSERIES_RESIZE_HPT;
+    case VIR_DOMAIN_PSERIES_HTM:
+        return QEMU_CAPS_MACHINE_PSERIES_CAP_HTM;
     case VIR_DOMAIN_PSERIES_LAST:
         break;
     }
@@ -7379,6 +7381,8 @@ virDomainPSeriesToMachineOption(int feature)
     switch ((virDomainPSeries) feature) {
     case VIR_DOMAIN_PSERIES_HPT:
         return "resize-hpt";
+    case VIR_DOMAIN_PSERIES_HTM:
+        return "cap-htm";
     case VIR_DOMAIN_PSERIES_LAST:
         break;
     }
@@ -7655,6 +7659,15 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
                         break;
 
                     value = virDomainHPTResizingTypeToString(def->pseries_hpt_resizing);
+                    if (qemuBuildMachineCommandLinePSeriesFeature(&buf, i, value, qemuCaps) < 0)
+                        goto cleanup;
+                    break;
+
+                case VIR_DOMAIN_PSERIES_HTM:
+                    if (def->pseries_features[i] == VIR_TRISTATE_SWITCH_ABSENT)
+                        break;
+
+                    value = virTristateSwitchTypeToString(def->pseries_features[i]);
                     if (qemuBuildMachineCommandLinePSeriesFeature(&buf, i, value, qemuCaps) < 0)
                         goto cleanup;
                     break;

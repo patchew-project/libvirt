@@ -1770,6 +1770,7 @@
   &lt;/kvm&gt;
   &lt;pseries&gt;
     &lt;hpt resizing='required'/&gt;
+    &lt;htm state='off'/&gt;
   &lt;/pseries&gt;
   &lt;pvspinlock state='on'/&gt;
   &lt;gic version='2'/&gt;
@@ -1920,6 +1921,12 @@
           <td>Configure HPT (Hash Page Table)</td>
           <td>resizing: enabled, disabled, required</td>
           <td><span class="since">4.1.0 (QEMU 2.10)</span></td>
+        </tr>
+        <tr>
+          <td>htm</td>
+          <td>Configure HTM (Hardware Transactional Memory)</td>
+          <td>state: on, off</td>
+          <td><span class="since">4.1.0 (QEMU 2.12)</span></td>
         </tr>
       </table>
       </dd>

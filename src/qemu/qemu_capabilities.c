@@ -458,6 +458,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               /* 280 */
               "pl011",
               "machine.pseries.max-cpu-compat",
+              "machine.pseries.cap-htm",
     );
 
 
@@ -4892,6 +4893,14 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     if (qemuCaps->version >= 2010000 &&
         ARCH_IS_PPC64(qemuCaps->arch)) {
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_MACHINE_PSERIES_MAX_CPU_COMPAT);
+    }
+
+    /* No way to query cap-htm availability... Yet. See
+     * http://lists.nongnu.org/archive/html/qemu-devel/2018-01/msg04674.html
+     * for an attempt at making this introspectable through QMP */
+    if (qemuCaps->version >= 2012000 &&
+        ARCH_IS_PPC64(qemuCaps->arch)) {
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_MACHINE_PSERIES_CAP_HTM);
     }
 
     if (virQEMUCapsProbeQMPCommands(qemuCaps, mon) < 0)

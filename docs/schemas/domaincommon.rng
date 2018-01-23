@@ -5538,6 +5538,11 @@
             <ref name="resizing"/>
           </element>
         </optional>
+        <optional>
+          <element name="htm">
+            <ref name="featurestate"/>
+          </element>
+        </optional>
       </interleave>
     </element>
   </define>

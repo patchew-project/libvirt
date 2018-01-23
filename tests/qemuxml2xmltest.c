@@ -766,6 +766,9 @@ mymain(void)
     DO_TEST("pseries-features-hpt",
             QEMU_CAPS_MACHINE_OPT,
             QEMU_CAPS_MACHINE_PSERIES_RESIZE_HPT);
+    DO_TEST("pseries-features-htm",
+            QEMU_CAPS_MACHINE_OPT,
+            QEMU_CAPS_MACHINE_PSERIES_CAP_HTM);
 
     DO_TEST("pseries-serial-native",
             QEMU_CAPS_NODEFCONFIG,

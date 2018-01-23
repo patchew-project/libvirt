@@ -1768,6 +1768,7 @@ typedef enum {
 
 typedef enum {
     VIR_DOMAIN_PSERIES_HPT = 0,
+    VIR_DOMAIN_PSERIES_HTM,
 
     VIR_DOMAIN_PSERIES_LAST
 } virDomainPSeries;
