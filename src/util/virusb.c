@@ -343,9 +343,13 @@ virUSBDeviceNew(unsigned int bus,
         virUSBDeviceFree(dev);
         return NULL;
     }
-    if (virAsprintf(&dev->path, "%s" USB_DEVFS "%03d/%03d",
-                    vroot ? vroot : "",
-                    dev->bus, dev->dev) < 0) {
+
+    if ((vroot &&
+         virAsprintf(&dev->path, "%s/%03d/%03d",
+                     vroot, dev->bus, dev->dev) < 0) ||
+        (!vroot &&
+         virAsprintf(&dev->path, USB_DEVFS "%03d/%03d",
+                     dev->bus, dev->dev) < 0)) {
         virUSBDeviceFree(dev);
         return NULL;
     }
