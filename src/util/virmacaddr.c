@@ -27,9 +27,14 @@
 #include <stdio.h>
 
 #include "c-ctype.h"
+#include "viralloc.h"
+#include "virfile.h"
 #include "virmacaddr.h"
 #include "virrandom.h"
+#include "virstring.h"
 #include "virutil.h"
+
+#define VIR_FROM_THIS VIR_FROM_NONE
 
 static const unsigned char virMacAddrBroadcastAddrRaw[VIR_MAC_BUFLEN] =
     { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
@@ -256,4 +261,66 @@ bool
 virMacAddrIsBroadcastRaw(const unsigned char s[VIR_MAC_BUFLEN])
 {
     return memcmp(virMacAddrBroadcastAddrRaw, s, sizeof(*s)) == 0;
+}
+
+int
+virGetArpTable(virArpTablePtr *table)
+{
+#define PROC_NET_ARP    "/proc/net/arp"
+    FILE *fp = NULL;
+    char line[1024];
+    int num = 0;
+    int ret = -1;
+
+    if (!(fp = fopen(PROC_NET_ARP, "r")))
+        goto cleanup;
+
+    while (fgets(line, sizeof(line), fp)) {
+        char ip[32], mac[32], dev_name[32], hwtype[32],
+             flags[32], mask[32], nouse[32];
+
+        if (STRPREFIX(line, "IP address"))
+            continue;
+
+        num++;
+        if (VIR_REALLOC_N((*table)->t, num) < 0)
+            goto cleanup;
+        (*table)->n = num;
+        /* /proc/net/arp looks like:
+         * 172.16.17.254  0x1 0x2  e4:68:a3:8d:ed:d3  *   enp3s0
+         */
+        sscanf(line, "%[0-9.]%[ ]%[^ ]%[ ]%[^ ]%[ ]%[^ ]%[ ]%[^ ]%[ ]%[^ \t\n]",
+               ip, nouse,
+               hwtype, nouse,
+               flags, nouse,
+               mac, nouse,
+               mask, nouse,
+               dev_name);
+
+
+        if (VIR_STRDUP((*table)->t[num - 1].ipaddr, ip) < 0)
+            goto cleanup;
+        if (VIR_STRDUP((*table)->t[num - 1].mac, mac) < 0)
+            goto cleanup;
+        if (VIR_STRDUP((*table)->t[num - 1].dev_name, dev_name) < 0)
+            goto cleanup;
+    }
+
+    ret = 0;
+
+ cleanup:
+    VIR_FORCE_FCLOSE(fp);
+    return ret;
+}
+
+void
+virArpTableFree(virArpTablePtr table)
+{
+    size_t i;
+    for (i = 0; i < table->n; i++) {
+        VIR_FREE(table->t[i].ipaddr);
+        VIR_FREE(table->t[i].mac);
+        VIR_FREE(table->t[i].dev_name);
+    }
+    VIR_FREE(table);
 }

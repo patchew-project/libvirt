@@ -2133,6 +2133,8 @@ virLogVMessage;
 
 
 # util/virmacaddr.h
+virArpTableFree;
+virGetArpTable;
 virMacAddrCmp;
 virMacAddrCmpRaw;
 virMacAddrCompare;

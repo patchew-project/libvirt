@@ -40,6 +40,22 @@ struct _virMacAddr {
                        false otherwise. */
 };
 
+typedef struct _virArpTableEntry virArpTableEntry;
+typedef virArpTableEntry *virArpTableEntryPtr;
+typedef struct _virArpTable virArpTable;
+typedef virArpTable *virArpTablePtr;
+
+struct _virArpTableEntry{
+    char *ipaddr;
+    char *mac;
+    char *dev_name;
+};
+
+struct _virArpTable {
+    int n;
+    virArpTableEntryPtr t;
+};
+
 int virMacAddrCompare(const char *mac1, const char *mac2);
 int virMacAddrCmp(const virMacAddr *mac1, const virMacAddr *mac2);
 int virMacAddrCmpRaw(const virMacAddr *mac1,
@@ -59,5 +75,7 @@ int virMacAddrParseHex(const char* str,
 bool virMacAddrIsUnicast(const virMacAddr *addr);
 bool virMacAddrIsMulticast(const virMacAddr *addr);
 bool virMacAddrIsBroadcastRaw(const unsigned char s[VIR_MAC_BUFLEN]);
+int virGetArpTable(virArpTablePtr *table);
+void virArpTableFree(virArpTablePtr table);
 
 #endif /* __VIR_MACADDR_H__ */
