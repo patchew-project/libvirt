@@ -160,6 +160,9 @@ static int qemuGetDHCPInterfaces(virDomainPtr dom,
                                  virDomainObjPtr vm,
                                  virDomainInterfacePtr **ifaces);
 
+static int qemuARPGetInterfaces(virDomainObjPtr vm,
+                                virDomainInterfacePtr **ifaces);
+
 static virQEMUDriverPtr qemu_driver;
 
 
@@ -20384,6 +20387,10 @@ qemuDomainInterfaceAddresses(virDomainPtr dom,
 
         break;
 
+    case VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_ARP:
+        ret = qemuARPGetInterfaces(vm, ifaces);
+        break;
+
     default:
         virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED,
                        _("Unknown IP address data source %d"),
@@ -20482,6 +20489,74 @@ qemuGetDHCPInterfaces(virDomainPtr dom,
     VIR_FREE(leases);
 
     return rv;
+
+ error:
+    if (ifaces_ret) {
+        for (i = 0; i < ifaces_count; i++)
+            virDomainInterfaceFree(ifaces_ret[i]);
+    }
+    VIR_FREE(ifaces_ret);
+
+    goto cleanup;
+}
+
+
+static int
+qemuARPGetInterfaces(virDomainObjPtr vm,
+                     virDomainInterfacePtr **ifaces)
+{
+    size_t i, j;
+    size_t ifaces_count = 0;
+    int ret = -1;
+    char macaddr[VIR_MAC_STRING_BUFLEN];
+    virDomainInterfacePtr *ifaces_ret = NULL;
+    virDomainInterfacePtr iface = NULL;
+
+    virArpTablePtr table;
+    if (VIR_ALLOC(table) < 0)
+        goto error;
+    if (virGetArpTable(&table) < 0)
+        goto cleanup;
+
+    for (i = 0; i < vm->def->nnets; i++) {
+        if (vm->def->nets[i]->type != VIR_DOMAIN_NET_TYPE_NETWORK)
+            continue;
+
+        virMacAddrFormat(&(vm->def->nets[i]->mac), macaddr);
+        virArpTableEntry entry;
+        for (j = 0; j < table->n; j++) {
+            entry = table->t[j];
+            if (STREQ(entry.mac, macaddr)) {
+                    if (VIR_EXPAND_N(ifaces_ret, ifaces_count, 1) < 0)
+                        goto error;
+
+                    if (VIR_ALLOC(ifaces_ret[ifaces_count - 1]) < 0)
+                        goto error;
+
+                    iface = ifaces_ret[ifaces_count - 1];
+                    iface->naddrs = 1;
+                    if (VIR_ALLOC_N(iface->addrs, iface->naddrs) < 0)
+                        goto error;
+
+                    if (VIR_STRDUP(iface->name, vm->def->nets[i]->ifname) < 0)
+                        goto cleanup;
+
+                    if (VIR_STRDUP(iface->hwaddr, macaddr) < 0)
+                        goto cleanup;
+
+                    if (VIR_STRDUP(iface->addrs->addr, entry.ipaddr) < 0)
+                        goto cleanup;
+            }
+        }
+    }
+
+    *ifaces = ifaces_ret;
+    ifaces_ret = NULL;
+    ret = ifaces_count;
+
+ cleanup:
+    virArpTableFree(table);
+    return ret;
 
  error:
     if (ifaces_ret) {
