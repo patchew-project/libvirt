@@ -2456,6 +2456,7 @@ virPCIDeviceWaitForCleanup;
 virPCIEDeviceInfoFree;
 virPCIGetDeviceAddressFromSysfsLink;
 virPCIGetHeaderType;
+virPCIGetMdevTypes;
 virPCIGetNetName;
 virPCIGetPhysicalFunction;
 virPCIGetVirtualFunctionIndex;
