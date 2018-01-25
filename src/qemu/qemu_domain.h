@@ -498,6 +498,8 @@ void qemuDomainObjRestoreJob(virDomainObjPtr obj,
                              struct qemuDomainJobObj *job);
 void qemuDomainObjDiscardAsyncJob(virQEMUDriverPtr driver,
                                   virDomainObjPtr obj);
+void qemuDomainObjFailAsyncJob(virQEMUDriverPtr driver,
+                                  virDomainObjPtr obj);
 void qemuDomainObjReleaseAsyncJob(virDomainObjPtr obj);
 
 qemuMonitorPtr qemuDomainGetMonitor(virDomainObjPtr vm)

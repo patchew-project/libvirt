@@ -4697,6 +4697,22 @@ qemuDomainObjDiscardAsyncJob(virQEMUDriverPtr driver, virDomainObjPtr obj)
     qemuDomainObjSaveJob(driver, obj);
 }
 
+
+void
+qemuDomainObjFailAsyncJob(virQEMUDriverPtr driver, virDomainObjPtr obj)
+{
+    qemuDomainObjPrivatePtr priv = obj->privateData;
+    VIR_FREE(priv->job.completed);
+    if (VIR_ALLOC(priv->job.completed) == 0) {
+        priv->job.current->type = VIR_DOMAIN_JOB_FAILED;
+        priv->job.completed = priv->job.current;
+    } else {
+        VIR_WARN("Unable to allocate job.completed for VM %s", obj->def->name);
+    }
+    qemuDomainObjResetAsyncJob(priv);
+    qemuDomainObjEndJob(driver, obj);
+}
+
 void
 qemuDomainObjReleaseAsyncJob(virDomainObjPtr obj)
 {
