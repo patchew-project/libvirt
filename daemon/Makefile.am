@@ -133,6 +133,7 @@ libvirtd_conf_la_LDFLAGS = \
 	$(PIE_LDFLAGS) \
 	$(COVERAGE_LDFLAGS) \
 	$(NO_INDIRECT_LDFLAGS) \
+	$(NO_UNDEFINED_LDFLAGS) \
 	$(NULL)
 libvirtd_conf_la_LIBADD = $(LIBXML_LIBS)
 
@@ -153,6 +154,7 @@ libvirtd_admin_la_LDFLAGS = \
 		$(RELRO_LDFLAGS) \
 		$(COVERAGE_LDFLAGS) \
 		$(NO_INDIRECT_LDFLAGS) \
+		$(NO_UNDEFINED_LDFLAGS) \
 		$(NULL)
 libvirtd_admin_la_LIBADD = \
 		../src/libvirt-admin.la
@@ -187,6 +189,7 @@ libvirtd_LDFLAGS = \
 	$(PIE_LDFLAGS) \
 	$(COVERAGE_LDFLAGS) \
 	$(NO_INDIRECT_LDFLAGS) \
+	$(NO_UNDEFINED_LDFLAGS) \
 	$(NULL)
 
 libvirtd_LDADD = \
