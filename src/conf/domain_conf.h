@@ -3508,4 +3508,8 @@ virDomainNetResolveActualType(virDomainNetDefPtr iface)
     ATTRIBUTE_NONNULL(1);
 
 
+int virDomainDiskTranslateSourcePool(virConnectPtr conn,
+                                     virDomainDiskDefPtr def);
+
+
 #endif /* __DOMAIN_CONF_H */
