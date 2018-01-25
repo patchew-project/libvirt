@@ -484,7 +484,6 @@ udevProcessPCI(struct udev_device *device,
     }
 
     ret = 0;
-
  cleanup:
     virPCIDeviceFree(pciDev);
     virPCIEDeviceInfoFree(pci_express);
