@@ -4259,9 +4259,95 @@ qemuProcessGraphicsAllocatePorts(virQEMUDriverPtr driver,
     return 0;
 }
 
+static int
+qemuProcessGetNetworkAddress(virConnectPtr conn,
+                             const char *netname,
+                             char **netaddr)
+{
+    int ret = -1;
+    virNetworkPtr net;
+    virNetworkDefPtr netdef = NULL;
+    virNetworkIPDefPtr ipdef;
+    virSocketAddr addr;
+    virSocketAddrPtr addrptr = NULL;
+    char *dev_name = NULL;
+    char *xml = NULL;
+
+    *netaddr = NULL;
+    net = virNetworkLookupByName(conn, netname);
+    if (!net)
+        goto cleanup;
+
+    xml = virNetworkGetXMLDesc(net, 0);
+    if (!xml)
+        goto cleanup;
+
+    netdef = virNetworkDefParseString(xml);
+    if (!netdef)
+        goto cleanup;
+
+    switch (netdef->forward.type) {
+    case VIR_NETWORK_FORWARD_NONE:
+    case VIR_NETWORK_FORWARD_NAT:
+    case VIR_NETWORK_FORWARD_ROUTE:
+    case VIR_NETWORK_FORWARD_OPEN:
+        ipdef = virNetworkDefGetIPByIndex(netdef, AF_UNSPEC, 0);
+        if (!ipdef) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("network '%s' doesn't have an IP address"),
+                           netdef->name);
+            goto cleanup;
+        }
+        addrptr = &ipdef->address;
+        break;
+
+    case VIR_NETWORK_FORWARD_BRIDGE:
+        if ((dev_name = netdef->bridge))
+            break;
+        /*
+         * fall through if netdef->bridge wasn't set, since that is
+         * macvtap bridge mode network.
+         */
+        ATTRIBUTE_FALLTHROUGH;
+
+    case VIR_NETWORK_FORWARD_PRIVATE:
+    case VIR_NETWORK_FORWARD_VEPA:
+    case VIR_NETWORK_FORWARD_PASSTHROUGH:
+        if ((netdef->forward.nifs > 0) && netdef->forward.ifs)
+            dev_name = netdef->forward.ifs[0].device.dev;
+
+        if (!dev_name) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("network '%s' has no associated interface or bridge"),
+                           netdef->name);
+            goto cleanup;
+        }
+        break;
+    }
+
+    if (dev_name) {
+        if (virNetDevIPAddrGet(dev_name, &addr) < 0)
+            goto cleanup;
+        addrptr = &addr;
+    }
+
+    if (!(addrptr &&
+          (*netaddr = virSocketAddrFormat(addrptr)))) {
+        goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    virNetworkDefFree(netdef);
+    virObjectUnref(net);
+    VIR_FREE(xml);
+    return ret;
+}
+
 
 static int
-qemuProcessGraphicsSetupNetworkAddress(virDomainGraphicsListenDefPtr glisten,
+qemuProcessGraphicsSetupNetworkAddress(virConnectPtr conn,
+                                       virDomainGraphicsListenDefPtr glisten,
                                        const char *listenAddr)
 {
     int rc;
@@ -4273,7 +4359,7 @@ qemuProcessGraphicsSetupNetworkAddress(virDomainGraphicsListenDefPtr glisten,
         return 0;
     }
 
-    rc = networkGetNetworkAddress(glisten->network, &glisten->address);
+    rc = qemuProcessGetNetworkAddress(conn, glisten->network, &glisten->address);
     if (rc <= -2) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("network-based listen isn't possible, "
@@ -4288,7 +4374,8 @@ qemuProcessGraphicsSetupNetworkAddress(virDomainGraphicsListenDefPtr glisten,
 
 
 static int
-qemuProcessGraphicsSetupListen(virQEMUDriverPtr driver,
+qemuProcessGraphicsSetupListen(virConnectPtr conn,
+                               virQEMUDriverPtr driver,
                                virDomainGraphicsDefPtr graphics,
                                virDomainObjPtr vm)
 {
@@ -4346,7 +4433,8 @@ qemuProcessGraphicsSetupListen(virQEMUDriverPtr driver,
             if (glisten->address || !listenAddr)
                 continue;
 
-            if (qemuProcessGraphicsSetupNetworkAddress(glisten,
+            if (qemuProcessGraphicsSetupNetworkAddress(conn,
+                                                       glisten,
                                                        listenAddr) < 0)
                 goto cleanup;
             break;
@@ -4375,7 +4463,8 @@ qemuProcessGraphicsSetupListen(virQEMUDriverPtr driver,
 
 
 static int
-qemuProcessSetupGraphics(virQEMUDriverPtr driver,
+qemuProcessSetupGraphics(virConnectPtr conn,
+                         virQEMUDriverPtr driver,
                          virDomainObjPtr vm,
                          unsigned int flags)
 {
@@ -4387,7 +4476,7 @@ qemuProcessSetupGraphics(virQEMUDriverPtr driver,
     for (i = 0; i < vm->def->ngraphics; i++) {
         graphics = vm->def->graphics[i];
 
-        if (qemuProcessGraphicsSetupListen(driver, graphics, vm) < 0)
+        if (qemuProcessGraphicsSetupListen(conn, driver, graphics, vm) < 0)
             goto cleanup;
     }
 
@@ -5529,7 +5618,7 @@ qemuProcessPrepareDomain(virConnectPtr conn,
         goto cleanup;
 
     VIR_DEBUG("Setting graphics devices");
-    if (qemuProcessSetupGraphics(driver, vm, flags) < 0)
+    if (qemuProcessSetupGraphics(conn, driver, vm, flags) < 0)
         goto cleanup;
 
     VIR_DEBUG("Create domain masterKey");
