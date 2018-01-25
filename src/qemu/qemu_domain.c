@@ -2630,7 +2630,8 @@ qemuDomainDefAddImplicitInputDevice(virDomainDef *def)
 
 static int
 qemuDomainDefAddDefaultDevices(virDomainDefPtr def,
-                               virQEMUCapsPtr qemuCaps)
+                               virQEMUCapsPtr qemuCaps,
+                               unsigned int parseFlags)
 {
     bool addDefaultUSB = true;
     int usbModel = -1; /* "default for machinetype" */
@@ -2680,10 +2681,33 @@ qemuDomainDefAddDefaultDevices(virDomainDefPtr def,
 
     case VIR_ARCH_ARMV7L:
     case VIR_ARCH_AARCH64:
-        addDefaultUSB = false;
-        addDefaultMemballoon = false;
-        if (qemuDomainIsVirt(def))
+        if (qemuDomainIsVirt(def)) {
+            /* All mach-virt guests get a PCIe Root, if supported by
+             * the QEMU binary */
             addPCIeRoot = virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_GPEX);
+        }
+
+        if (qemuDomainIsVirt(def) &&
+            parseFlags & VIR_DOMAIN_DEF_PARSE_ABI_UPDATE) {
+            /* In addition to PCIe Root, newly-defined mach-virt guests
+             * also get a couple more devices so that they're more similar
+             * to guests on other architectures, notably x86/q35:
+             *
+             *   1) a USB3 controller, if supported by the QEMU binary;
+             *   2) a virtio memory balloon, as per the defaults defined
+             *      above.
+             */
+            if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_QEMU_XHCI))
+                usbModel = VIR_DOMAIN_CONTROLLER_MODEL_USB_QEMU_XHCI;
+            else
+                addDefaultUSB = false;
+        } else {
+            /* Other ARM guests (and existing mach-virt guests, in order
+             * to preserve guest ABI compatibility) don't get a PCIe Root,
+             * a USB controller or a memory balloon */
+            addDefaultUSB = false;
+            addDefaultMemballoon = false;
+        }
         break;
 
     case VIR_ARCH_PPC64:
@@ -3187,7 +3211,7 @@ qemuDomainDefPostParse(virDomainDefPtr def,
             goto cleanup;
     }
 
-    if (qemuDomainDefAddDefaultDevices(def, qemuCaps) < 0)
+    if (qemuDomainDefAddDefaultDevices(def, qemuCaps, parseFlags) < 0)
         goto cleanup;
 
     if (qemuCanonicalizeMachine(def, qemuCaps) < 0)
