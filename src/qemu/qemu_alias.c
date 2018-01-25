@@ -275,7 +275,7 @@ qemuAssignDeviceNetAlias(virDomainDefPtr def,
      * We must use "-1" as the index because the caller doesn't know
      * that we're now looking for a unique hostdevN rather than netN
      */
-    if (networkGetActualType(net) == VIR_DOMAIN_NET_TYPE_HOSTDEV)
+    if (virDomainNetResolveActualType(net) == VIR_DOMAIN_NET_TYPE_HOSTDEV)
         return qemuAssignDeviceHostdevAlias(def, &net->info.alias, -1);
 
     if (idx == -1) {

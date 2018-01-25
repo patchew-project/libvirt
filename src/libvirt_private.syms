@@ -456,6 +456,7 @@ virDomainNetNotifyActualDevice;
 virDomainNetReleaseActualDevice;
 virDomainNetRemove;
 virDomainNetRemoveHostdev;
+virDomainNetResolveActualType;
 virDomainNetSetDeviceImpl;
 virDomainNetTypeFromString;
 virDomainNetTypeSharesHostView;

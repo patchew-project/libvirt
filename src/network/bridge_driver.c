@@ -5105,8 +5105,7 @@ networkReleaseActualDevice(virDomainDefPtr dom,
 
 
 
-/* networkGetActualType:
- * @dom: domain definition that @iface belongs to
+/* networkResolveActualType:
  * @iface: the original NetDef from the domain
  *
  * Looks up the network reference by iface, and returns the actual
@@ -5114,8 +5113,8 @@ networkReleaseActualDevice(virDomainDefPtr dom,
  *
  * Returns 0 on success, -1 on failure.
  */
-int
-networkGetActualType(virDomainNetDefPtr iface)
+static int
+networkResolveActualType(virDomainNetDefPtr iface)
 {
     virNetworkDriverStatePtr driver = networkGetDriver();
     virNetworkObjPtr obj = NULL;
@@ -5622,7 +5621,8 @@ networkRegister(void)
         networkNotifyActualDevice,
         networkReleaseActualDevice,
         networkBandwidthChangeAllowed,
-        networkBandwidthUpdate);
+        networkBandwidthUpdate,
+        networkResolveActualType);
 
     return 0;
 }
