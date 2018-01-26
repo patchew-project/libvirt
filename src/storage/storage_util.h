@@ -69,6 +69,11 @@ int virStorageBackendVolResizeLocal(virConnectPtr conn,
                                     unsigned long long capacity,
                                     unsigned int flags);
 
+int virStorageBackendVolRenameLocal(virConnectPtr conn,
+                                    virStoragePoolObjPtr pool,
+                                    virStorageVolDefPtr vol,
+                                    const char *name);
+
 int virStorageBackendVolUploadLocal(virConnectPtr conn,
                                     virStoragePoolObjPtr pool,
                                     virStorageVolDefPtr vol,

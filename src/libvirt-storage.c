@@ -2123,6 +2123,45 @@ virStorageVolResize(virStorageVolPtr vol,
 
 
 /**
+ * virStorageVolRename:
+ * @vol: pointer to storage volume
+ * @name: new volume name
+ *
+ * Changes the nmae of the storage volume @vol to @name.
+ *
+ * Returns 0 on success, or -1 on error.
+ */
+int
+virStorageVolRename(virStorageVolPtr vol,
+                    const char *name)
+{
+    virConnectPtr conn;
+    VIR_DEBUG("vol=%p name=%s", vol, name);
+
+    virResetLastError();
+
+    virCheckStorageVolReturn(vol, -1);
+    conn = vol->conn;
+
+    virCheckReadOnlyGoto(conn->flags, error);
+
+    if (conn->storageDriver && conn->storageDriver->storageVolRename) {
+        int ret;
+        ret = conn->storageDriver->storageVolRename(vol, name);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+
+ error:
+    virDispatchError(vol->conn);
+    return -1;
+}
+
+
+/**
  * virStoragePoolIsActive:
  * @pool: pointer to the storage pool object
  *

@@ -1359,6 +1359,45 @@ virStorageFileResize(const char *path,
 }
 
 
+/**
+ * virStorageFileRename:
+ *
+ * Change the name file at 'path'.
+ */
+int
+virStorageFileRename(const char *path,
+                     const char *name)
+{
+    int ret = -1;
+    int rc;
+    char *opath = NULL;
+    char *npath = NULL;
+    char *base = NULL;
+
+    VIR_STRDUP(*opath, path) < 0)
+      goto cleanup;
+
+    base = dirname(npath);
+    if (virAsprintf(npath, "%s/%s", base, name) < 0)
+      goto cleanup;
+
+
+    if (rename(path, name) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to rename file '%s' to '%s'"), opath, npath);
+        goto cleanup;
+    }
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(opath);
+    VIR_FREE(npath);
+    return ret;
+}
+
+
+
 int virStorageFileIsClusterFS(const char *path)
 {
     /* These are coherent cluster filesystems known to be safe for

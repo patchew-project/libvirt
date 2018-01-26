@@ -1092,6 +1092,34 @@ virStorageBackendRBDRefreshVol(virConnectPtr conn,
 }
 
 static int
+virStorageBackendRBDRenameVol(virConnectPtr conn ATTRIBUTE_UNUSED,
+                              virStoragePoolObjPtr pool ATTRIBUTE_UNUSED,
+                              virStorageVolDefPtr vol,
+                              const char *name)
+{
+    virStorageBackendRBDStatePtr ptr = NULL;
+    int ret = -1;
+    int r = 0;
+
+    virCheckFlags(0, -1);
+
+    if (!(ptr = virStorageBackendRBDNewState(conn, pool)))
+        goto cleanup;
+
+    if ((r = rbd_rename(ptr->ioctx, vol->name, name)) < 0) {
+       virReportSystemError(-r, _("failed to rename the RBD image '%s' to '%s'"),
+                            vol->name, name);
+       goto cleanup;
+    }
+
+    ret = 0;
+
+ cleanup:
+    virStorageBackendRBDFreeState(&ptr);
+    return ret;
+}
+
+static int
 virStorageBackendRBDResizeVol(virConnectPtr conn ATTRIBUTE_UNUSED,
                               virStoragePoolObjPtr pool ATTRIBUTE_UNUSED,
                               virStorageVolDefPtr vol,

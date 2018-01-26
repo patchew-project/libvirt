@@ -2475,6 +2475,19 @@ virStorageBackendVolResizeLocal(virConnectPtr conn,
 }
 
 
+/**
+ * Rename a volume
+ */
+int
+virStorageBackendVolRenameLocal(virConnectPtr conn ATTRIBUTE_UNUSED,
+                                virStoragePoolObjPtr pool ATTRIBUTE_UNUSED,
+                                virStorageVolDefPtr vol,
+                                const char *name)
+{
+    return virStorageFileRename(vol->target.path, name);
+}
+
+
 /*
  *  Check whether the ploop image has snapshots.
  *  return: -1 - failed to check

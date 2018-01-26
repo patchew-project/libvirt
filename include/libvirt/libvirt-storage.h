@@ -395,6 +395,9 @@ int                     virStorageVolResize             (virStorageVolPtr vol,
                                                          unsigned long long capacity,
                                                          unsigned int flags);
 
+int                     virStorageVolRename             (virStorageVolPtr vol,
+                                                         const char *name);
+
 int virStoragePoolIsActive(virStoragePoolPtr pool);
 int virStoragePoolIsPersistent(virStoragePoolPtr pool);
 

@@ -903,6 +903,32 @@ virStorageBackendLogicalDeletePool(virConnectPtr conn ATTRIBUTE_UNUSED,
 
 
 static int
+virStorageBackendLogicalRenameVol(virConnectPtr conn ATTRIBUTE_UNUSED,
+                                  virStoragePoolObjPtr pool,
+                                  virStorageVolDefPtr vol,
+                                  const char *name)
+{
+    int ret = -1;
+    virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
+    virCommandPtr lvrename_cmd = NULL;
+
+    virCheckFlags(0, -1);
+
+    virWaitForDevices();
+
+    lvrename_cmd = virCommandNewArgList(LVRENAME, "%s", def->target.path, vol->name, name, NULL);
+
+    if (virCommandRun(lvrename_cmd, NULL) < 0) {
+        goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    virCommandFree(lvrename_cmd);
+    return ret;
+}
+
+static int
 virStorageBackendLogicalDeleteVol(virConnectPtr conn ATTRIBUTE_UNUSED,
                                   virStoragePoolObjPtr pool ATTRIBUTE_UNUSED,
                                   virStorageVolDefPtr vol,
@@ -1107,6 +1133,7 @@ virStorageBackend virStorageBackendLogical = {
     .buildVolFrom = virStorageBackendLogicalBuildVolFrom,
     .createVol = virStorageBackendLogicalCreateVol,
     .deleteVol = virStorageBackendLogicalDeleteVol,
+    .renameVol = virStorageBackendLogicalRenameVol,
     .uploadVol = virStorageBackendVolUploadLocal,
     .downloadVol = virStorageBackendVolDownloadLocal,
     .wipeVol = virStorageBackendLogicalVolWipe,

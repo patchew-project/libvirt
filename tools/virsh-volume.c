@@ -1190,6 +1190,59 @@ cmdVolResize(vshControl *ctl, const vshCmd *cmd)
 }
 
 /*
+ * "vol-rename" command
+ */
+static const vshCmdInfo info_vol_rename[] = {
+    {.name = "help",
+     .data = N_("rename a vol")
+    },
+    {.name = "desc",
+     .data = N_("Renames a storage volume")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_vol_rename[] = {
+    VIRSH_COMMON_OPT_VOLUME_VOL,
+    {.name = "name",
+     .type = VSH_OT_DATA,
+     .flags = VSH_OFLAG_REQ,
+     .help = N_("new name for the vol")
+    },
+    {.name = NULL}
+};
+
+
+static bool
+cmdVolRename(vshControl *ctl, const vshCmd *cmd)
+{
+    virStorageVolPtr vol;
+    const char *name = NULL;
+    bool ret = false;
+
+    if (!(vol = virshCommandOptVol(ctl, cmd, "vol", "pool", NULL)))
+        return false;
+
+    if (vshCommandOptStringReq(ctl, cmd, "name", &name) < 0)
+        goto cleanup;
+    virSkipSpaces(&name);
+
+    if (virStorageVolRename(vol, name) == 0) {
+        vshPrintExtra(ctl, _("Name of volume '%s' successfully changed to %s\n"),
+                      virStorageVolGetName(vol), name);
+        ret = true;
+    } else {
+        vshError(ctl, _("Failed to change name of volume '%s' to %s"),
+                 virStorageVolGetName(vol), name);
+        ret = false;
+    }
+
+ cleanup:
+    virStorageVolFree(vol);
+    return ret;
+}
+
+/*
  * "vol-dumpxml" command
  */
 static const vshCmdInfo info_vol_dumpxml[] = {

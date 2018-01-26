@@ -2358,20 +2358,14 @@ storageVolUpload(virStorageVolPtr vol,
 }
 
 static int
-storageVolResize(virStorageVolPtr vol,
-                 unsigned long long capacity,
-                 unsigned int flags)
+storageVolRename(virStorageVolPtr vol,
+                 const char *name)
 {
     virStorageBackendPtr backend;
     virStoragePoolObjPtr obj = NULL;
     virStoragePoolDefPtr def;
     virStorageVolDefPtr voldef = NULL;
-    unsigned long long abs_capacity, delta = 0;
     int ret = -1;
-
-    virCheckFlags(VIR_STORAGE_VOL_RESIZE_ALLOCATE |
-                  VIR_STORAGE_VOL_RESIZE_DELTA |
-                  VIR_STORAGE_VOL_RESIZE_SHRINK, -1);
 
     if (!(voldef = virStorageVolDefFromVol(vol, &obj, &backend)))
         return -1;
@@ -2394,60 +2388,15 @@ storageVolResize(virStorageVolPtr vol,
         goto cleanup;
     }
 
-    if (flags & VIR_STORAGE_VOL_RESIZE_DELTA) {
-        if (flags & VIR_STORAGE_VOL_RESIZE_SHRINK)
-            abs_capacity = voldef->target.capacity - MIN(capacity, voldef->target.capacity);
-        else
-            abs_capacity = voldef->target.capacity + capacity;
-        flags &= ~VIR_STORAGE_VOL_RESIZE_DELTA;
-    } else {
-        abs_capacity = capacity;
-    }
-
-    if (abs_capacity < voldef->target.allocation) {
-        virReportError(VIR_ERR_INVALID_ARG, "%s",
-                       _("can't shrink capacity below "
-                         "existing allocation"));
-        goto cleanup;
-    }
-
-    if (abs_capacity < voldef->target.capacity &&
-        !(flags & VIR_STORAGE_VOL_RESIZE_SHRINK)) {
-        virReportError(VIR_ERR_INVALID_ARG, "%s",
-                       _("Can't shrink capacity below current "
-                         "capacity unless shrink flag explicitly specified"));
-        goto cleanup;
-    }
-
-    if (flags & VIR_STORAGE_VOL_RESIZE_ALLOCATE)
-        delta = abs_capacity - voldef->target.allocation;
-
-    if (delta > def->available) {
-        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                       _("Not enough space left in storage pool"));
-        goto cleanup;
-    }
-
-    if (!backend->resizeVol) {
+    if (!backend->renameVol) {
         virReportError(VIR_ERR_NO_SUPPORT, "%s",
                        _("storage pool does not support changing of "
-                         "volume capacity"));
+                         "volume name"));
         goto cleanup;
     }
 
-    if (backend->resizeVol(vol->conn, obj, voldef, abs_capacity, flags) < 0)
+    if (backend->renameVol(vol->conn, obj, voldef, name) < 0)
         goto cleanup;
-
-    voldef->target.capacity = abs_capacity;
-    /* Only update the allocation and pool values if we actually did the
-     * allocation; otherwise, this is akin to a create operation with a
-     * capacity value different and potentially much larger than available
-     */
-    if (flags & VIR_STORAGE_VOL_RESIZE_ALLOCATE) {
-        voldef->target.allocation = abs_capacity;
-        def->allocation += delta;
-        def->available -= delta;
-    }
 
     ret = 0;
 
@@ -2732,7 +2681,7 @@ static virStorageDriver storageDriver = {
     .storageVolGetXMLDesc = storageVolGetXMLDesc, /* 0.4.0 */
     .storageVolGetPath = storageVolGetPath, /* 0.4.0 */
     .storageVolResize = storageVolResize, /* 0.9.10 */
-
+    .storageVolRename = storageVolRename, /* 3.9.0 */
     .storagePoolIsActive = storagePoolIsActive, /* 0.7.3 */
     .storagePoolIsPersistent = storagePoolIsPersistent, /* 0.7.3 */
 };

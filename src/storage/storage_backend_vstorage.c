@@ -182,6 +182,7 @@ virStorageBackend virStorageBackendVstorage = {
     .refreshVol = virStorageBackendVolRefreshLocal,
     .deleteVol = virStorageBackendVolDeleteLocal,
     .resizeVol = virStorageBackendVolResizeLocal,
+    .renameVol = virStorageBackendVolRenameLocal,
     .uploadVol = virStorageBackendVolUploadLocal,
     .downloadVol = virStorageBackendVolDownloadLocal,
     .wipeVol = virStorageBackendVolWipeLocal,

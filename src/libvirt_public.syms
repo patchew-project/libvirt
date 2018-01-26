@@ -777,6 +777,12 @@ LIBVIRT_3.7.0 {
 
 LIBVIRT_3.9.0 {
     global:
-        virDomainSetLifecycleAction;
+       virDomainSetLifecycleAction;
 } LIBVIRT_3.7.0;
+
+LIBVIRT_4.0.1 {
+    global:
+       virStorageVolRename;
+} LIBVIRT_3.9.0;
+ 
 # .... define new API here using predicted next version number ....
