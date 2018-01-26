@@ -136,9 +136,9 @@ storagePoolUpdateStateCallback(virStoragePoolObjPtr obj,
      */
     if (active) {
         virStoragePoolObjClearVols(obj);
-        if (backend->refreshPool(NULL, obj) < 0) {
+        if (backend->refreshPool(obj) < 0) {
             if (backend->stopPool)
-                backend->stopPool(NULL, obj);
+                backend->stopPool(obj);
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Failed to restart storage pool '%s': %s"),
                            def->name, virGetLastErrorMessage());
@@ -171,10 +171,9 @@ storagePoolUpdateAllState(void)
 
 static void
 storageDriverAutostartCallback(virStoragePoolObjPtr obj,
-                               const void *opaque)
+                               const void *opaque ATTRIBUTE_UNUSED)
 {
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(obj);
-    virConnectPtr conn = (virConnectPtr) opaque;
     virStorageBackendPtr backend;
     bool started = false;
 
@@ -184,7 +183,7 @@ storageDriverAutostartCallback(virStoragePoolObjPtr obj,
     if (virStoragePoolObjIsAutostart(obj) &&
         !virStoragePoolObjIsActive(obj)) {
         if (backend->startPool &&
-            backend->startPool(conn, obj) < 0) {
+            backend->startPool(obj) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Failed to autostart storage pool '%s': %s"),
                            def->name, virGetLastErrorMessage());
@@ -200,11 +199,11 @@ storageDriverAutostartCallback(virStoragePoolObjPtr obj,
         stateFile = virFileBuildPath(driver->stateDir, def->name, ".xml");
         if (!stateFile ||
             virStoragePoolSaveState(stateFile, def) < 0 ||
-            backend->refreshPool(conn, obj) < 0) {
+            backend->refreshPool(obj) < 0) {
             if (stateFile)
                 unlink(stateFile);
             if (backend->stopPool)
-                backend->stopPool(conn, obj);
+                backend->stopPool(obj);
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Failed to autostart storage pool '%s': %s"),
                            def->name, virGetLastErrorMessage());
@@ -221,16 +220,9 @@ storageDriverAutostart(void)
 {
     virConnectPtr conn = NULL;
 
-    /* XXX Remove hardcoding of QEMU URI */
-    if (driver->privileged)
-        conn = virConnectOpen("qemu:///system");
-    else
-        conn = virConnectOpen("qemu:///session");
-    /* Ignoring NULL conn - let backends decide */
-
     virStoragePoolObjListForEach(driver->pools,
                                  storageDriverAutostartCallback,
-                                 conn);
+                                 NULL);
 
     virObjectUnref(conn);
 }
@@ -651,7 +643,7 @@ storageConnectFindStoragePoolSources(virConnectPtr conn,
         goto cleanup;
     }
 
-    ret = backend->findPoolSources(conn, srcSpec, flags);
+    ret = backend->findPoolSources(srcSpec, flags);
 
  cleanup:
     return ret;
@@ -751,7 +743,7 @@ storagePoolCreateXML(virConnectPtr conn,
 
         if (build_flags ||
             (flags & VIR_STORAGE_POOL_CREATE_WITH_BUILD)) {
-            if (backend->buildPool(conn, obj, build_flags) < 0) {
+            if (backend->buildPool(obj, build_flags) < 0) {
                 virStoragePoolObjRemove(driver->pools, obj);
                 virObjectUnref(obj);
                 obj = NULL;
@@ -761,7 +753,7 @@ storagePoolCreateXML(virConnectPtr conn,
     }
 
     if (backend->startPool &&
-        backend->startPool(conn, obj) < 0) {
+        backend->startPool(obj) < 0) {
         virStoragePoolObjRemove(driver->pools, obj);
         virObjectUnref(obj);
         obj = NULL;
@@ -772,11 +764,11 @@ storagePoolCreateXML(virConnectPtr conn,
 
     virStoragePoolObjClearVols(obj);
     if (!stateFile || virStoragePoolSaveState(stateFile, def) < 0 ||
-        backend->refreshPool(conn, obj) < 0) {
+        backend->refreshPool(obj) < 0) {
         if (stateFile)
             unlink(stateFile);
         if (backend->stopPool)
-            backend->stopPool(conn, obj);
+            backend->stopPool(obj);
         virStoragePoolObjRemove(driver->pools, obj);
         virObjectUnref(obj);
         obj = NULL;
@@ -963,25 +955,25 @@ storagePoolCreate(virStoragePoolPtr pool,
 
         if (build_flags ||
             (flags & VIR_STORAGE_POOL_CREATE_WITH_BUILD)) {
-            if (backend->buildPool(pool->conn, obj, build_flags) < 0)
+            if (backend->buildPool(obj, build_flags) < 0)
                 goto cleanup;
         }
     }
 
     VIR_INFO("Starting up storage pool '%s'", def->name);
     if (backend->startPool &&
-        backend->startPool(pool->conn, obj) < 0)
+        backend->startPool(obj) < 0)
         goto cleanup;
 
     stateFile = virFileBuildPath(driver->stateDir, def->name, ".xml");
 
     virStoragePoolObjClearVols(obj);
     if (!stateFile || virStoragePoolSaveState(stateFile, def) < 0 ||
-        backend->refreshPool(pool->conn, obj) < 0) {
+        backend->refreshPool(obj) < 0) {
         if (stateFile)
             unlink(stateFile);
         if (backend->stopPool)
-            backend->stopPool(pool->conn, obj);
+            backend->stopPool(obj);
         goto cleanup;
     }
 
@@ -1029,7 +1021,7 @@ storagePoolBuild(virStoragePoolPtr pool,
     }
 
     if (backend->buildPool &&
-        backend->buildPool(pool->conn, obj, flags) < 0)
+        backend->buildPool(obj, flags) < 0)
         goto cleanup;
 
     event = virStoragePoolEventLifecycleNew(def->name,
@@ -1089,7 +1081,7 @@ storagePoolDestroy(virStoragePoolPtr pool)
     VIR_FREE(stateFile);
 
     if (backend->stopPool &&
-        backend->stopPool(pool->conn, obj) < 0)
+        backend->stopPool(obj) < 0)
         goto cleanup;
 
     virStoragePoolObjClearVols(obj);
@@ -1160,7 +1152,7 @@ storagePoolDelete(virStoragePoolPtr pool,
                        "%s", _("pool does not support pool deletion"));
         goto cleanup;
     }
-    if (backend->deletePool(pool->conn, obj, flags) < 0)
+    if (backend->deletePool(obj, flags) < 0)
         goto cleanup;
 
     event = virStoragePoolEventLifecycleNew(def->name,
@@ -1214,9 +1206,9 @@ storagePoolRefresh(virStoragePoolPtr pool,
     }
 
     virStoragePoolObjClearVols(obj);
-    if (backend->refreshPool(pool->conn, obj) < 0) {
+    if (backend->refreshPool(obj) < 0) {
         if (backend->stopPool)
-            backend->stopPool(pool->conn, obj);
+            backend->stopPool(obj);
 
         event = virStoragePoolEventLifecycleNew(def->name,
                                                 def->uuid,
@@ -1723,8 +1715,7 @@ storagePoolLookupByTargetPath(virConnectPtr conn,
 
 
 static int
-storageVolDeleteInternal(virStorageVolPtr vol,
-                         virStorageBackendPtr backend,
+storageVolDeleteInternal(virStorageBackendPtr backend,
                          virStoragePoolObjPtr obj,
                          virStorageVolDefPtr voldef,
                          unsigned int flags,
@@ -1740,7 +1731,7 @@ storageVolDeleteInternal(virStorageVolPtr vol,
         goto cleanup;
     }
 
-    if (backend->deleteVol(vol->conn, obj, voldef, flags) < 0)
+    if (backend->deleteVol(obj, voldef, flags) < 0)
         goto cleanup;
 
     /* The disk backend updated the pool data including removing the
@@ -1838,7 +1829,7 @@ storageVolDelete(virStorageVolPtr vol,
         goto cleanup;
     }
 
-    if (storageVolDeleteInternal(vol, backend, obj, voldef, flags, true) < 0)
+    if (storageVolDeleteInternal(backend, obj, voldef, flags, true) < 0)
         goto cleanup;
 
     ret = 0;
@@ -1906,7 +1897,7 @@ storageVolCreateXML(virStoragePoolPtr pool,
     /* Wipe any key the user may have suggested, as volume creation
      * will generate the canonical key.  */
     VIR_FREE(voldef->key);
-    if (backend->createVol(pool->conn, obj, voldef) < 0)
+    if (backend->createVol(obj, voldef) < 0)
         goto cleanup;
 
     if (!(newvol = virGetStorageVol(pool->conn, def->name, voldef->name,
@@ -1937,7 +1928,7 @@ storageVolCreateXML(virStoragePoolPtr pool,
         voldef->building = true;
         virObjectUnlock(obj);
 
-        buildret = backend->buildVol(pool->conn, obj, buildvoldef, flags);
+        buildret = backend->buildVol(obj, buildvoldef, flags);
 
         VIR_FREE(buildvoldef);
 
@@ -1956,8 +1947,8 @@ storageVolCreateXML(virStoragePoolPtr pool,
     }
 
     if (backend->refreshVol &&
-        backend->refreshVol(pool->conn, obj, voldef) < 0) {
-        storageVolDeleteInternal(newvol, backend, obj, voldef,
+        backend->refreshVol(obj, voldef) < 0) {
+        storageVolDeleteInternal(backend, obj, voldef,
                                  0, false);
         voldef = NULL;
         goto cleanup;
@@ -2096,14 +2087,14 @@ storageVolCreateXMLFrom(virStoragePoolPtr pool,
     }
 
     if (backend->refreshVol &&
-        backend->refreshVol(pool->conn, obj, voldefsrc) < 0)
+        backend->refreshVol(obj, voldefsrc) < 0)
         goto cleanup;
 
     /* 'Define' the new volume so we get async progress reporting.
      * Wipe any key the user may have suggested, as volume creation
      * will generate the canonical key.  */
     VIR_FREE(voldef->key);
-    if (backend->createVol(pool->conn, obj, voldef) < 0)
+    if (backend->createVol(obj, voldef) < 0)
         goto cleanup;
 
     /* Make a shallow copy of the 'defined' volume definition, since the
@@ -2134,7 +2125,7 @@ storageVolCreateXMLFrom(virStoragePoolPtr pool,
         virObjectUnlock(objsrc);
     }
 
-    buildret = backend->buildVolFrom(pool->conn, obj, shadowvol, voldefsrc, flags);
+    buildret = backend->buildVolFrom(obj, shadowvol, voldefsrc, flags);
 
     virObjectLock(obj);
     if (objsrc)
@@ -2151,8 +2142,8 @@ storageVolCreateXMLFrom(virStoragePoolPtr pool,
 
     if (buildret < 0 ||
         (backend->refreshVol &&
-         backend->refreshVol(pool->conn, obj, voldef) < 0)) {
-        storageVolDeleteInternal(newvol, backend, obj, voldef, 0, false);
+         backend->refreshVol(obj, voldef) < 0)) {
+        storageVolDeleteInternal(backend, obj, voldef, 0, false);
         voldef = NULL;
         goto cleanup;
     }
@@ -2215,7 +2206,7 @@ storageVolDownload(virStorageVolPtr vol,
         goto cleanup;
     }
 
-    ret = backend->downloadVol(vol->conn, obj, voldef, stream,
+    ret = backend->downloadVol(obj, voldef, stream,
                                offset, length, flags);
 
  cleanup:
@@ -2317,7 +2308,7 @@ virStorageVolPoolRefreshThread(void *opaque)
         goto cleanup;
 
     virStoragePoolObjClearVols(obj);
-    if (backend->refreshPool(NULL, obj) < 0)
+    if (backend->refreshPool(obj) < 0)
         VIR_DEBUG("Failed to refresh storage pool");
 
     event = virStoragePoolEventRefreshNew(def->name, def->uuid);
@@ -2410,7 +2401,7 @@ storageVolUpload(virStorageVolPtr vol,
         VIR_STRDUP(cbdata->vol_path, voldef->target.path) < 0)
         goto cleanup;
 
-    if ((ret = backend->uploadVol(vol->conn, obj, voldef, stream,
+    if ((ret = backend->uploadVol(obj, voldef, stream,
                                   offset, length, flags)) < 0)
         goto cleanup;
 
@@ -2508,7 +2499,7 @@ storageVolResize(virStorageVolPtr vol,
         goto cleanup;
     }
 
-    if (backend->resizeVol(vol->conn, obj, voldef, abs_capacity, flags) < 0)
+    if (backend->resizeVol(obj, voldef, abs_capacity, flags) < 0)
         goto cleanup;
 
     voldef->target.capacity = abs_capacity;
@@ -2578,7 +2569,7 @@ storageVolWipePattern(virStorageVolPtr vol,
         goto cleanup;
     }
 
-    if (backend->wipeVol(vol->conn, obj, voldef, algorithm, flags) < 0)
+    if (backend->wipeVol(obj, voldef, algorithm, flags) < 0)
         goto cleanup;
 
     /* Instead of using the refreshVol, since much changes on the target
@@ -2625,7 +2616,7 @@ storageVolGetInfoFlags(virStorageVolPtr vol,
         goto cleanup;
 
     if (backend->refreshVol &&
-        backend->refreshVol(vol->conn, obj, voldef) < 0)
+        backend->refreshVol(obj, voldef) < 0)
         goto cleanup;
 
     memset(info, 0, sizeof(*info));
@@ -2671,7 +2662,7 @@ storageVolGetXMLDesc(virStorageVolPtr vol,
         goto cleanup;
 
     if (backend->refreshVol &&
-        backend->refreshVol(vol->conn, obj, voldef) < 0)
+        backend->refreshVol(obj, voldef) < 0)
         goto cleanup;
 
     ret = virStorageVolDefFormat(def, voldef);
