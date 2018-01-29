@@ -475,6 +475,12 @@ qemuDomainJobInfoToInfo(qemuDomainJobInfoPtr jobInfo,
         info->fileProcessed = jobInfo->s.migStats.disk_transferred;
         break;
 
+    case QEMU_DOMAIN_JOB_STATS_TYPE_MEMDUMP:
+        info->memTotal = jobInfo->s.dumpStats.total;
+        info->memProcessed = jobInfo->s.dumpStats.completed;
+        info->memRemaining = info->memTotal - info->memProcessed;
+        break;
+
     case QEMU_DOMAIN_JOB_STATS_TYPE_NONE:
     case QEMU_DOMAIN_JOB_STATS_TYPE_LAST:
         break;
@@ -656,6 +662,49 @@ qemuDomainMigrationJobInfoToParams(qemuDomainJobInfoPtr jobInfo,
 }
 
 
+static int
+qemuDomainDumpJobInfoToParams(qemuDomainJobInfoPtr jobInfo,
+                              int *type,
+                              virTypedParameterPtr *params,
+                              int *nparams)
+{
+    qemuMonitorDumpStats *stats = &jobInfo->s.dumpStats;
+    virTypedParameterPtr par = NULL;
+    int maxpar = 0;
+    int npar = 0;
+
+    if (virTypedParamsAddInt(&par, &npar, &maxpar,
+                             VIR_DOMAIN_JOB_OPERATION,
+                             jobInfo->operation) < 0)
+        goto error;
+
+    if (virTypedParamsAddULLong(&par, &npar, &maxpar,
+                                VIR_DOMAIN_JOB_TIME_ELAPSED,
+                                jobInfo->timeElapsed) < 0)
+        goto error;
+
+    if (virTypedParamsAddULLong(&par, &npar, &maxpar,
+                                VIR_DOMAIN_JOB_MEMORY_TOTAL,
+                                stats->total) < 0 ||
+        virTypedParamsAddULLong(&par, &npar, &maxpar,
+                                VIR_DOMAIN_JOB_MEMORY_PROCESSED,
+                                stats->completed) < 0 ||
+        virTypedParamsAddULLong(&par, &npar, &maxpar,
+                                VIR_DOMAIN_JOB_MEMORY_REMAINING,
+                                stats->total - stats->completed) < 0)
+        goto error;
+
+    *type = qemuDomainJobStatusToType(jobInfo->status);
+    *params = par;
+    *nparams = npar;
+    return 0;
+
+ error:
+    virTypedParamsFree(par, npar);
+    return -1;
+}
+
+
 int
 qemuDomainJobInfoToParams(qemuDomainJobInfoPtr jobInfo,
                           int *type,
@@ -666,6 +715,9 @@ qemuDomainJobInfoToParams(qemuDomainJobInfoPtr jobInfo,
     case QEMU_DOMAIN_JOB_STATS_TYPE_MIGRATION:
     case QEMU_DOMAIN_JOB_STATS_TYPE_SAVEDUMP:
         return qemuDomainMigrationJobInfoToParams(jobInfo, type, params, nparams);
+
+    case QEMU_DOMAIN_JOB_STATS_TYPE_MEMDUMP:
+        return qemuDomainDumpJobInfoToParams(jobInfo, type, params, nparams);
 
     case QEMU_DOMAIN_JOB_STATS_TYPE_NONE:
     case QEMU_DOMAIN_JOB_STATS_TYPE_LAST:
