@@ -3170,6 +3170,43 @@ int qemuMonitorJSONMigrateCancel(qemuMonitorPtr mon)
     return ret;
 }
 
+
+/* qemuMonitorJSONQueryDump:
+ * @mon: Monitor pointer
+ *
+ * Attempt to make a "query-dump" call, check for errors, and get/return
+ * the current from the reply
+ *
+ * Returns: @stats on success, NULL on failure
+ */
+qemuMonitorDumpStatsPtr
+qemuMonitorJSONQueryDump(qemuMonitorPtr mon)
+{
+    virJSONValuePtr cmd = qemuMonitorJSONMakeCommand("query-dump", NULL);
+    virJSONValuePtr reply = NULL;
+    virJSONValuePtr result = NULL;
+    qemuMonitorDumpStatsPtr ret = NULL;
+
+    if (!cmd)
+        return NULL;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
+        goto cleanup;
+
+    result = virJSONValueObjectGetObject(reply, "return");
+
+    ret = qemuMonitorJSONExtractDumpStats(result);
+
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    return ret;
+}
+
+
 int
 qemuMonitorJSONGetDumpGuestMemoryCapability(qemuMonitorPtr mon,
                                             const char *capability)

@@ -787,6 +787,8 @@ int qemuMonitorMigrateCancel(qemuMonitorPtr mon);
 int qemuMonitorGetDumpGuestMemoryCapability(qemuMonitorPtr mon,
                                             const char *capability);
 
+qemuMonitorDumpStatsPtr qemuMonitorQueryDump(qemuMonitorPtr mon);
+
 int qemuMonitorDumpToFd(qemuMonitorPtr mon,
                         int fd,
                         const char *dumpformat);

@@ -162,6 +162,9 @@ int qemuMonitorJSONGetSpiceMigrationStatus(qemuMonitorPtr mon,
 
 int qemuMonitorJSONMigrateCancel(qemuMonitorPtr mon);
 
+qemuMonitorDumpStatsPtr
+qemuMonitorJSONQueryDump(qemuMonitorPtr mon);
+
 int qemuMonitorJSONGetDumpGuestMemoryCapability(qemuMonitorPtr mon,
                                                 const char *capability);
 
