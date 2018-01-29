@@ -1690,6 +1690,37 @@ qemuProcessHandleMigrationPass(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
 }
 
 
+static int
+qemuProcessHandleDumpCompleted(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
+                               virDomainObjPtr vm,
+                               qemuMonitorDumpStatsPtr stats,
+                               const char *error,
+                               void *opaque ATTRIBUTE_UNUSED)
+{
+    qemuDomainObjPrivatePtr priv;
+
+    virObjectLock(vm);
+
+    VIR_DEBUG("Dump completed for domain %p %s with stats=%p error='%s'",
+              vm, vm->def->name, stats, NULLSTR(error));
+
+    priv = vm->privateData;
+    if (priv->job.asyncJob == QEMU_ASYNC_JOB_NONE) {
+        VIR_DEBUG("got DUMP_COMPLETED event without a dump_completed job");
+        goto cleanup;
+    }
+    priv->job.dumpCompleted = true;
+    VIR_STEAL_PTR(priv->job.dumpCompletedStats, stats);
+    ignore_value(VIR_STRDUP_QUIET(priv->job.dumpCompletedError, error));
+    virDomainObjBroadcast(vm);
+
+ cleanup:
+    qemuMonitorEventDumpStatsFree(stats);
+    virObjectUnlock(vm);
+    return 0;
+}
+
+
 static qemuMonitorCallbacks monitorCallbacks = {
     .eofNotify = qemuProcessHandleMonitorEOF,
     .errorNotify = qemuProcessHandleMonitorError,
@@ -1718,6 +1749,7 @@ static qemuMonitorCallbacks monitorCallbacks = {
     .domainMigrationPass = qemuProcessHandleMigrationPass,
     .domainAcpiOstInfo = qemuProcessHandleAcpiOstInfo,
     .domainBlockThreshold = qemuProcessHandleBlockThreshold,
+    .domainDumpCompleted = qemuProcessHandleDumpCompleted,
 };
 
 static void
