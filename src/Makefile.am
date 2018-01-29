@@ -98,6 +98,7 @@ augeastest_DATA =
 UTIL_SOURCES = \
 		util/viralloc.c util/viralloc.h \
 		util/virarch.h util/virarch.c \
+		util/virarptable.h util/virarptable.c \
 		util/viratomic.h util/viratomic.c \
 		util/viraudit.c util/viraudit.h \
 		util/virauth.c util/virauth.h \
