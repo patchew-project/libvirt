@@ -410,9 +410,30 @@ virResctrlGetInfo(virResctrlInfoPtr resctrl)
     }
 
     while ((rv = virDirRead(dirp, &ent, SYSFS_RESCTRL_PATH "/info")) > 0) {
+        struct stat st;
+        char *path = NULL;
+
         VIR_DEBUG("Parsing info type '%s'", ent->d_name);
 
-        if (ent->d_type != DT_DIR)
+        if (virAsprintf(&path, SYSFS_RESCTRL_PATH "/info/%s", ent->d_name) < 0)
+            continue;
+
+        if (stat(path, &st) < 0) {
+            virReportSystemError(errno, _("Cannot stat '%s'"), path);
+            VIR_FREE(path);
+            continue;
+        }
+        VIR_FREE(path);
+
+        /*
+         * So this doesn't work on some machines when we're mocking syscalls in tests
+         *
+         * if (ent->d_type != DT_DIR)
+         *     continue;
+         *
+         * But the following does, for some reason.
+         */
+        if ((st.st_mode & S_IFMT) != S_IFDIR)
             continue;
 
         if (ent->d_name[0] != 'L')
@@ -1171,6 +1192,32 @@ virResctrlAllocGetUnused(virResctrlInfoPtr resctrl)
         goto error;
 
     while ((rv = virDirRead(dirp, &ent, SYSFS_RESCTRL_PATH)) > 0) {
+        struct stat st;
+        char *path = NULL;
+
+        VIR_DEBUG("Parsing info type '%s'", ent->d_name);
+
+        if (virAsprintf(&path, SYSFS_RESCTRL_PATH "/%s", ent->d_name) < 0)
+            continue;
+
+        if (stat(path, &st) < 0) {
+            virReportSystemError(errno, _("Cannot stat '%s'"), path);
+            VIR_FREE(path);
+            continue;
+        }
+        VIR_FREE(path);
+
+        /*
+         * So this doesn't work on some machines when we're mocking syscalls in tests
+         *
+         * if (ent->d_type != DT_DIR)
+         *     continue;
+         *
+         * But the following does, for some reason.
+         */
+        if ((st.st_mode & S_IFMT) != S_IFDIR)
+            continue;
+
         if (ent->d_type != DT_DIR)
             continue;
 
