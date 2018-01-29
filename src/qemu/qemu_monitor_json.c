@@ -90,6 +90,7 @@ static void qemuMonitorJSONHandleMigrationStatus(qemuMonitorPtr mon, virJSONValu
 static void qemuMonitorJSONHandleMigrationPass(qemuMonitorPtr mon, virJSONValuePtr data);
 static void qemuMonitorJSONHandleAcpiOstInfo(qemuMonitorPtr mon, virJSONValuePtr data);
 static void qemuMonitorJSONHandleBlockThreshold(qemuMonitorPtr mon, virJSONValuePtr data);
+static void qemuMonitorJSONHandleDumpCompleted(qemuMonitorPtr mon, virJSONValuePtr data);
 
 typedef struct {
     const char *type;
@@ -106,6 +107,7 @@ static qemuEventHandler eventHandlers[] = {
     { "BLOCK_WRITE_THRESHOLD", qemuMonitorJSONHandleBlockThreshold, },
     { "DEVICE_DELETED", qemuMonitorJSONHandleDeviceDeleted, },
     { "DEVICE_TRAY_MOVED", qemuMonitorJSONHandleTrayChange, },
+    { "DUMP_COMPLETED", qemuMonitorJSONHandleDumpCompleted, },
     { "GUEST_PANICKED", qemuMonitorJSONHandleGuestPanic, },
     { "MIGRATION", qemuMonitorJSONHandleMigrationStatus, },
     { "MIGRATION_PASS", qemuMonitorJSONHandleMigrationPass, },
@@ -1140,6 +1142,69 @@ qemuMonitorJSONHandleBlockThreshold(qemuMonitorPtr mon, virJSONValuePtr data)
 
  error:
     VIR_WARN("malformed 'BLOCK_WRITE_THRESHOLD' event");
+}
+
+
+static qemuMonitorDumpStatsPtr
+qemuMonitorJSONExtractDumpStats(virJSONValuePtr result)
+{
+    qemuMonitorDumpStatsPtr ret;
+    const char *statusstr;
+
+    if (VIR_ALLOC(ret) < 0)
+        return NULL;
+
+    if (!(statusstr = virJSONValueObjectGetString(result, "status"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("incomplete result, failed to get status"));
+        goto error;
+    }
+
+    ret->status = qemuMonitorDumpStatusTypeFromString(statusstr);
+    if (ret->status < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("incomplete result, unknown status string '%s'"),
+                       statusstr);
+        goto error;
+    }
+
+    if (virJSONValueObjectGetNumberUlong(result, "completed", &ret->completed) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("incomplete result, failed to get completed"));
+        goto error;
+    }
+
+    if (virJSONValueObjectGetNumberUlong(result, "total", &ret->total) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("incomplete result, failed to get total"));
+        goto error;
+    }
+
+    return ret;
+
+ error:
+    qemuMonitorEventDumpStatsFree(ret);
+    return NULL;
+}
+
+
+static void
+qemuMonitorJSONHandleDumpCompleted(qemuMonitorPtr mon,
+                                   virJSONValuePtr data)
+{
+    virJSONValuePtr result;
+    qemuMonitorDumpStatsPtr stats = NULL;
+    const char *error = NULL;
+
+    if (!(result = virJSONValueObjectGetObject(data, "result"))) {
+        VIR_WARN("missing result in dump completed event");
+        return;
+    }
+
+    stats = qemuMonitorJSONExtractDumpStats(result);
+    error = virJSONValueObjectGetString(data, "error");
+
+    qemuMonitorEmitDumpCompleted(mon, stats, error);
 }
 
 
