@@ -743,9 +743,7 @@ mymain(void)
     DO_TEST("boot-menu-disable-drive-bootindex",
             QEMU_CAPS_BOOT_MENU,
             QEMU_CAPS_BOOTINDEX);
-    DO_TEST_PARSE_ERROR("boot-dev+order",
-            QEMU_CAPS_BOOTINDEX,
-            QEMU_CAPS_VIRTIO_BLK_SCSI);
+    DO_TEST_PARSE_ERROR("boot-dev+order", NONE);
     DO_TEST("boot-order",
             QEMU_CAPS_BOOTINDEX,
             QEMU_CAPS_VIRTIO_BLK_SCSI);
@@ -959,8 +957,7 @@ mymain(void)
     VIR_FREE(driver.config->vxhsTLSx509certdir);
     DO_TEST("disk-drive-no-boot",
             QEMU_CAPS_BOOTINDEX);
-    DO_TEST_PARSE_ERROR("disk-device-lun-type-invalid",
-                        QEMU_CAPS_VIRTIO_SCSI);
+    DO_TEST_PARSE_ERROR("disk-device-lun-type-invalid", NONE);
     DO_TEST_FAILURE("disk-usb-nosupport", NONE);
     DO_TEST("disk-usb-device",
             QEMU_CAPS_DEVICE_USB_STORAGE,
@@ -1037,17 +1034,10 @@ mymain(void)
             QEMU_CAPS_DRIVE_DISCARD,
             QEMU_CAPS_DRIVE_DETECT_ZEROES);
     DO_TEST("disk-snapshot", NONE);
-    DO_TEST_PARSE_ERROR("disk-same-targets",
-                        QEMU_CAPS_SCSI_LSI,
-                        QEMU_CAPS_DEVICE_USB_STORAGE, QEMU_CAPS_NODEFCONFIG);
-    DO_TEST_PARSE_ERROR("disk-drive-address-conflict",
-                        QEMU_CAPS_ICH9_AHCI);
-    DO_TEST_PARSE_ERROR("disk-hostdev-scsi-address-conflict",
-                        QEMU_CAPS_VIRTIO_SCSI,
-                        QEMU_CAPS_DEVICE_SCSI_GENERIC);
-    DO_TEST_PARSE_ERROR("hostdevs-drive-address-conflict",
-                        QEMU_CAPS_VIRTIO_SCSI,
-                        QEMU_CAPS_DEVICE_SCSI_GENERIC);
+    DO_TEST_PARSE_ERROR("disk-same-targets", NONE);
+    DO_TEST_PARSE_ERROR("disk-drive-address-conflict", NONE);
+    DO_TEST_PARSE_ERROR("disk-hostdev-scsi-address-conflict", NONE);
+    DO_TEST_PARSE_ERROR("hostdevs-drive-address-conflict", NONE);
     DO_TEST("event_idx",
             QEMU_CAPS_VIRTIO_BLK_EVENT_IDX,
             QEMU_CAPS_VIRTIO_NET_EVENT_IDX,
@@ -1060,14 +1050,10 @@ mymain(void)
     DO_TEST("disk-serial",
             QEMU_CAPS_KVM,
             QEMU_CAPS_DRIVE_SERIAL);
-    DO_TEST_PARSE_ERROR("disk-fdc-incompatible-address",
-                        NONE);
-    DO_TEST_PARSE_ERROR("disk-ide-incompatible-address",
-                        NONE);
-    DO_TEST_PARSE_ERROR("disk-sata-incompatible-address",
-                        QEMU_CAPS_ICH9_AHCI);
-    DO_TEST_PARSE_ERROR("disk-scsi-incompatible-address",
-                        QEMU_CAPS_VIRTIO_SCSI);
+    DO_TEST_PARSE_ERROR("disk-fdc-incompatible-address", NONE);
+    DO_TEST_PARSE_ERROR("disk-ide-incompatible-address", NONE);
+    DO_TEST_PARSE_ERROR("disk-sata-incompatible-address", NONE);
+    DO_TEST_PARSE_ERROR("disk-scsi-incompatible-address", NONE);
 
     DO_TEST("graphics-vnc", QEMU_CAPS_VNC, QEMU_CAPS_DEVICE_CIRRUS_VGA);
     DO_TEST("graphics-vnc-socket", QEMU_CAPS_VNC, QEMU_CAPS_DEVICE_CIRRUS_VGA);
@@ -1396,12 +1382,8 @@ mymain(void)
             QEMU_CAPS_DEVICE_VIRTIO_RNG,
             QEMU_CAPS_OBJECT_RNG_EGD,
             QEMU_CAPS_CCID_PASSTHRU);
-    DO_TEST_PARSE_ERROR("chardev-reconnect-invalid-timeout",
-                        QEMU_CAPS_NODEFCONFIG,
-                        QEMU_CAPS_CHARDEV_RECONNECT);
-    DO_TEST_PARSE_ERROR("chardev-reconnect-generated-path",
-                        QEMU_CAPS_NODEFCONFIG,
-                        QEMU_CAPS_CHARDEV_RECONNECT);
+    DO_TEST_PARSE_ERROR("chardev-reconnect-invalid-timeout", NONE);
+    DO_TEST_PARSE_ERROR("chardev-reconnect-generated-path", NONE);
 
     DO_TEST("usb-controller",
             QEMU_CAPS_NODEFCONFIG);
@@ -1419,10 +1401,7 @@ mymain(void)
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_PCI_MULTIFUNCTION,
             QEMU_CAPS_ICH9_USB_EHCI1);
-    DO_TEST_PARSE_ERROR("usb-ich9-no-companion",
-            QEMU_CAPS_NODEFCONFIG,
-            QEMU_CAPS_PCI_MULTIFUNCTION,
-            QEMU_CAPS_ICH9_USB_EHCI1);
+    DO_TEST_PARSE_ERROR("usb-ich9-no-companion", NONE);
     DO_TEST("usb-ich9-autoassign",
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_PCI_MULTIFUNCTION,
@@ -1437,12 +1416,8 @@ mymain(void)
     DO_TEST("usb-hub-autoadd-deluxe",
             QEMU_CAPS_USB_HUB,
             QEMU_CAPS_NODEFCONFIG);
-    DO_TEST_PARSE_ERROR("usb-hub-conflict",
-            QEMU_CAPS_USB_HUB,
-            QEMU_CAPS_NODEFCONFIG);
-    DO_TEST_PARSE_ERROR("usb-hub-nonexistent",
-            QEMU_CAPS_USB_HUB,
-            QEMU_CAPS_NODEFCONFIG);
+    DO_TEST_PARSE_ERROR("usb-hub-conflict", NONE);
+    DO_TEST_PARSE_ERROR("usb-hub-nonexistent", NONE);
     DO_TEST("usb-port-missing",
             QEMU_CAPS_USB_HUB,
             QEMU_CAPS_NODEFCONFIG);
@@ -1452,9 +1427,7 @@ mymain(void)
     DO_TEST("usb-ports",
             QEMU_CAPS_USB_HUB,
             QEMU_CAPS_NODEFCONFIG);
-    DO_TEST_PARSE_ERROR("usb-ports-out-of-range",
-            QEMU_CAPS_USB_HUB,
-            QEMU_CAPS_NODEFCONFIG);
+    DO_TEST_PARSE_ERROR("usb-ports-out-of-range", NONE);
     DO_TEST("usb-port-autoassign",
             QEMU_CAPS_USB_HUB,
             QEMU_CAPS_NODEFCONFIG);
@@ -1499,13 +1472,9 @@ mymain(void)
             QEMU_CAPS_ICH9_USB_EHCI1);
     DO_TEST("usb-none",
             QEMU_CAPS_NODEFCONFIG);
-    DO_TEST_PARSE_ERROR("usb-none-other",
-            QEMU_CAPS_NODEFCONFIG);
-    DO_TEST_PARSE_ERROR("usb-none-hub",
-            QEMU_CAPS_NODEFCONFIG,
-            QEMU_CAPS_USB_HUB);
-    DO_TEST_PARSE_ERROR("usb-none-usbtablet",
-            QEMU_CAPS_NODEFCONFIG);
+    DO_TEST_PARSE_ERROR("usb-none-other", NONE);
+    DO_TEST_PARSE_ERROR("usb-none-hub", NONE);
+    DO_TEST_PARSE_ERROR("usb-none-usbtablet", NONE);
     DO_TEST("usb-controller-default-q35",
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_PCI_OHCI,
@@ -1535,19 +1504,14 @@ mymain(void)
             QEMU_CAPS_NEC_USB_XHCI,
             QEMU_CAPS_NEC_USB_XHCI_PORTS,
             QEMU_CAPS_USB_HUB);
-    DO_TEST_PARSE_ERROR("usb-controller-xhci-limit",
-            QEMU_CAPS_NODEFCONFIG,
-            QEMU_CAPS_PIIX3_USB_UHCI,
-            QEMU_CAPS_NEC_USB_XHCI,
-            QEMU_CAPS_NEC_USB_XHCI_PORTS);
+    DO_TEST_PARSE_ERROR("usb-controller-xhci-limit", NONE);
     DO_TEST("usb-controller-qemu-xhci", QEMU_CAPS_DEVICE_QEMU_XHCI);
     DO_TEST_FAILURE("usb-controller-qemu-xhci-unavailable", NONE);
-    DO_TEST_PARSE_ERROR("usb-controller-qemu-xhci-limit",
-                        QEMU_CAPS_DEVICE_QEMU_XHCI);
+    DO_TEST_PARSE_ERROR("usb-controller-qemu-xhci-limit", NONE);
 
     DO_TEST("smbios", QEMU_CAPS_SMBIOS_TYPE);
-    DO_TEST_PARSE_ERROR("smbios-date", QEMU_CAPS_SMBIOS_TYPE);
-    DO_TEST_PARSE_ERROR("smbios-uuid-match", QEMU_CAPS_SMBIOS_TYPE);
+    DO_TEST_PARSE_ERROR("smbios-date", NONE);
+    DO_TEST_PARSE_ERROR("smbios-uuid-match", NONE);
 
     DO_TEST("watchdog", NONE);
     DO_TEST("watchdog-device", QEMU_CAPS_NODEFCONFIG);
@@ -1601,12 +1565,8 @@ mymain(void)
     DO_TEST("hostdev-mdev-precreated",
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_DEVICE_VFIO_PCI);
-    DO_TEST_PARSE_ERROR("hostdev-mdev-src-address-invalid",
-            QEMU_CAPS_NODEFCONFIG,
-            QEMU_CAPS_DEVICE_VFIO_PCI);
-    DO_TEST_PARSE_ERROR("hostdev-mdev-invalid-target-address",
-            QEMU_CAPS_NODEFCONFIG,
-            QEMU_CAPS_DEVICE_VFIO_PCI);
+    DO_TEST_PARSE_ERROR("hostdev-mdev-src-address-invalid", NONE);
+    DO_TEST_PARSE_ERROR("hostdev-mdev-invalid-target-address", NONE);
     DO_TEST_FAILURE("hostdev-vfio-multidomain",
                     QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_DEVICE_VFIO_PCI);
     DO_TEST("pci-rom",
@@ -1695,7 +1655,7 @@ mymain(void)
     DO_TEST_FAILURE("luks-disks", QEMU_CAPS_OBJECT_SECRET);
 # endif
     DO_TEST_PARSE_ERROR("luks-disk-invalid", NONE);
-    DO_TEST_PARSE_ERROR("luks-disks-source-both", QEMU_CAPS_OBJECT_SECRET);
+    DO_TEST_PARSE_ERROR("luks-disks-source-both", NONE);
 
     DO_TEST("memtune", NONE);
     DO_TEST("memtune-unlimited", NONE);
@@ -1799,8 +1759,7 @@ mymain(void)
     DO_TEST("pseries-vio-user-assigned",
             QEMU_CAPS_DEVICE_SPAPR_VTY,
             QEMU_CAPS_NODEFCONFIG);
-    DO_TEST_PARSE_ERROR("pseries-vio-address-clash",
-            QEMU_CAPS_NODEFCONFIG);
+    DO_TEST_PARSE_ERROR("pseries-vio-address-clash", NONE);
     DO_TEST("pseries-nvram", QEMU_CAPS_DEVICE_NVRAM);
     DO_TEST("pseries-usb-kbd", QEMU_CAPS_PCI_OHCI,
             QEMU_CAPS_DEVICE_USB_KBD,
@@ -1809,8 +1768,7 @@ mymain(void)
     DO_TEST("pseries-cpu-exact",
             QEMU_CAPS_DEVICE_SPAPR_VTY,
             QEMU_CAPS_NODEFCONFIG);
-    DO_TEST_PARSE_ERROR("pseries-no-parallel",
-            QEMU_CAPS_NODEFCONFIG);
+    DO_TEST_PARSE_ERROR("pseries-no-parallel", NONE);
 
     qemuTestSetHostArch(driver.caps, VIR_ARCH_PPC64);
     DO_TEST("pseries-cpu-compat", QEMU_CAPS_KVM,
@@ -1898,10 +1856,7 @@ mymain(void)
     DO_TEST_FAILURE("pseries-hpt-resizing",
                     QEMU_CAPS_NODEFCONFIG,
                     QEMU_CAPS_MACHINE_OPT);
-    DO_TEST_PARSE_ERROR("pseries-hpt-resizing-invalid-machine",
-                        QEMU_CAPS_NODEFCONFIG,
-                        QEMU_CAPS_MACHINE_OPT,
-                        QEMU_CAPS_MACHINE_PSERIES_RESIZE_HPT);
+    DO_TEST_PARSE_ERROR("pseries-hpt-resizing-invalid-machine", NONE);
 
     DO_TEST("pseries-serial-native",
             QEMU_CAPS_NODEFCONFIG,
@@ -2041,9 +1996,7 @@ mymain(void)
             QEMU_CAPS_DEVICE_VIRTIO_RNG,
             QEMU_CAPS_OBJECT_RNG_EGD,
             QEMU_CAPS_OBJECT_RNG_RANDOM);
-    DO_TEST_PARSE_ERROR("virtio-rng-egd-crash",
-            QEMU_CAPS_DEVICE_VIRTIO_RNG,
-            QEMU_CAPS_OBJECT_RNG_EGD);
+    DO_TEST_PARSE_ERROR("virtio-rng-egd-crash", NONE);
     DO_TEST("virtio-rng-ccw",
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_BOOTINDEX,
@@ -2077,10 +2030,7 @@ mymain(void)
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_VIRTIO_CCW,
             QEMU_CAPS_VIRTIO_S390);
-    DO_TEST_PARSE_ERROR("s390-no-parallel",
-            QEMU_CAPS_NODEFCONFIG,
-            QEMU_CAPS_VIRTIO_CCW,
-            QEMU_CAPS_VIRTIO_S390);
+    DO_TEST_PARSE_ERROR("s390-no-parallel", NONE);
     DO_TEST("s390-serial",
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_VIRTIO_CCW,
@@ -2106,8 +2056,7 @@ mymain(void)
 
     DO_TEST("tpm-passthrough",
             QEMU_CAPS_DEVICE_TPM_PASSTHROUGH, QEMU_CAPS_DEVICE_TPM_TIS);
-    DO_TEST_PARSE_ERROR("tpm-no-backend-invalid",
-                        QEMU_CAPS_DEVICE_TPM_PASSTHROUGH, QEMU_CAPS_DEVICE_TPM_TIS);
+    DO_TEST_PARSE_ERROR("tpm-no-backend-invalid", NONE);
 
 
     DO_TEST_PARSE_ERROR("pci-domain-invalid", NONE);
@@ -2144,14 +2093,8 @@ mymain(void)
             QEMU_CAPS_ICH9_USB_EHCI1,
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
             QEMU_CAPS_DEVICE_QXL);
-    DO_TEST_PARSE_ERROR("q35-dmi-bad-address1",
-                        QEMU_CAPS_DEVICE_PCI_BRIDGE,
-                        QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
-                        QEMU_CAPS_DEVICE_IOH3420);
-    DO_TEST_PARSE_ERROR("q35-dmi-bad-address2",
-                        QEMU_CAPS_DEVICE_PCI_BRIDGE,
-                        QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
-                        QEMU_CAPS_DEVICE_IOH3420);
+    DO_TEST_PARSE_ERROR("q35-dmi-bad-address1", NONE);
+    DO_TEST_PARSE_ERROR("q35-dmi-bad-address2", NONE);
     DO_TEST("q35-pm-disable",
             QEMU_CAPS_DEVICE_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_IOH3420,
@@ -2382,21 +2325,11 @@ mymain(void)
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_HDA_DUPLEX);
 
-    DO_TEST_PARSE_ERROR("q35-wrong-root",
-            QEMU_CAPS_DEVICE_IOH3420,
-            QEMU_CAPS_ICH9_AHCI,
-            QEMU_CAPS_PCI_MULTIFUNCTION, QEMU_CAPS_ICH9_USB_EHCI1,
-            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
-            QEMU_CAPS_DEVICE_QXL);
+    DO_TEST_PARSE_ERROR("q35-wrong-root", NONE);
     DO_TEST_PARSE_ERROR("440fx-wrong-root", NONE);
     DO_TEST_PARSE_ERROR("440fx-ide-address-conflict", NONE);
 
-    DO_TEST_PARSE_ERROR("pcie-root-port-too-many",
-            QEMU_CAPS_DEVICE_IOH3420,
-            QEMU_CAPS_ICH9_AHCI,
-            QEMU_CAPS_PCI_MULTIFUNCTION,
-            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
-            QEMU_CAPS_DEVICE_QXL);
+    DO_TEST_PARSE_ERROR("pcie-root-port-too-many", NONE);
 
     DO_TEST("pcie-switch-upstream-port",
             QEMU_CAPS_DEVICE_IOH3420,
@@ -2415,26 +2348,17 @@ mymain(void)
 
     DO_TEST("pci-expander-bus",
             QEMU_CAPS_DEVICE_PXB);
-    DO_TEST_PARSE_ERROR("pci-expander-bus-bad-node",
-                        QEMU_CAPS_DEVICE_PXB);
-    DO_TEST_PARSE_ERROR("pci-expander-bus-bad-machine",
-                        QEMU_CAPS_DEVICE_PXB);
-    DO_TEST_PARSE_ERROR("pci-expander-bus-bad-bus",
-                        QEMU_CAPS_DEVICE_PXB);
+    DO_TEST_PARSE_ERROR("pci-expander-bus-bad-node", NONE);
+    DO_TEST_PARSE_ERROR("pci-expander-bus-bad-machine", NONE);
+    DO_TEST_PARSE_ERROR("pci-expander-bus-bad-bus", NONE);
 
     DO_TEST("pcie-expander-bus",
             QEMU_CAPS_DEVICE_IOH3420,
             QEMU_CAPS_DEVICE_X3130_UPSTREAM,
             QEMU_CAPS_DEVICE_XIO3130_DOWNSTREAM,
             QEMU_CAPS_DEVICE_PXB_PCIE);
-    DO_TEST_PARSE_ERROR("pcie-expander-bus-bad-machine",
-                        QEMU_CAPS_DEVICE_IOH3420,
-                        QEMU_CAPS_DEVICE_X3130_UPSTREAM,
-                        QEMU_CAPS_DEVICE_XIO3130_DOWNSTREAM,
-                        QEMU_CAPS_DEVICE_PXB_PCIE);
-    DO_TEST_PARSE_ERROR("pcie-expander-bus-bad-bus",
-                        QEMU_CAPS_DEVICE_IOH3420,
-                        QEMU_CAPS_DEVICE_PXB_PCIE);
+    DO_TEST_PARSE_ERROR("pcie-expander-bus-bad-machine", NONE);
+    DO_TEST_PARSE_ERROR("pcie-expander-bus-bad-bus", NONE);
 
     DO_TEST("hostdev-scsi-lsi",
             QEMU_CAPS_VIRTIO_SCSI, QEMU_CAPS_SCSI_LSI,
@@ -2653,9 +2577,7 @@ mymain(void)
     DO_TEST_GIC("aarch64-gic-host", GIC_BOTH,
             QEMU_CAPS_KVM, QEMU_CAPS_MACHINE_OPT,
             QEMU_CAPS_MACH_VIRT_GIC_VERSION);
-    DO_TEST_PARSE_ERROR("aarch64-gic-invalid",
-            QEMU_CAPS_KVM, QEMU_CAPS_MACHINE_OPT,
-            QEMU_CAPS_MACH_VIRT_GIC_VERSION);
+    DO_TEST_PARSE_ERROR("aarch64-gic-invalid", NONE);
     DO_TEST_FAILURE("aarch64-gic-not-virt",
             QEMU_CAPS_KVM, QEMU_CAPS_MACHINE_OPT,
             QEMU_CAPS_MACH_VIRT_GIC_VERSION);
@@ -2822,14 +2744,8 @@ mymain(void)
             QEMU_CAPS_MACHINE_OPT, QEMU_CAPS_VIRTIO_CCW,
             QEMU_CAPS_VIRTIO_S390, QEMU_CAPS_BOOTINDEX,
             QEMU_CAPS_LOADPARM);
-    DO_TEST_PARSE_ERROR("machine-loadparm-s390-char-invalid",
-                        QEMU_CAPS_MACHINE_OPT, QEMU_CAPS_VIRTIO_CCW,
-                        QEMU_CAPS_VIRTIO_S390, QEMU_CAPS_BOOTINDEX,
-                        QEMU_CAPS_LOADPARM);
-    DO_TEST_PARSE_ERROR("machine-loadparm-s390-len-invalid",
-                        QEMU_CAPS_MACHINE_OPT, QEMU_CAPS_VIRTIO_CCW,
-                        QEMU_CAPS_VIRTIO_S390, QEMU_CAPS_BOOTINDEX,
-                        QEMU_CAPS_LOADPARM);
+    DO_TEST_PARSE_ERROR("machine-loadparm-s390-char-invalid", NONE);
+    DO_TEST_PARSE_ERROR("machine-loadparm-s390-len-invalid", NONE);
 
     DO_TEST("qemu-ns-domain-ns0", NONE);
     DO_TEST("qemu-ns-domain-commandline", NONE);
@@ -2877,8 +2793,7 @@ mymain(void)
     DO_TEST("master-key", QEMU_CAPS_OBJECT_SECRET);
     DO_TEST("usb-long-port-path", QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_USB_HUB);
-    DO_TEST_PARSE_ERROR("usb-too-long-port-path-invalid",
-                        QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_USB_HUB);
+    DO_TEST_PARSE_ERROR("usb-too-long-port-path-invalid", NONE);
 
     DO_TEST("acpi-table", NONE);
     DO_TEST("intel-iommu",
@@ -2915,6 +2830,9 @@ mymain(void)
             QEMU_CAPS_DEVICE_INTEL_IOMMU);
 
     DO_TEST("cpu-hotplug-startup", QEMU_CAPS_QUERY_HOTPLUGGABLE_CPUS);
+    /* The _QUERY_HOTPLUGGABLE_CPUS capability is needed here because, if
+     * not present, libvirt will not perform the vCPU hotplug granularity
+     * validation and the test will pass rather than failing */
     DO_TEST_PARSE_ERROR("cpu-hotplug-granularity",
                         QEMU_CAPS_QUERY_HOTPLUGGABLE_CPUS);
 
@@ -2954,9 +2872,9 @@ mymain(void)
     DO_TEST("cpu-cache-passthrough", QEMU_CAPS_KVM, QEMU_CAPS_CPU_CACHE);
     DO_TEST("cpu-cache-passthrough2", QEMU_CAPS_KVM);
     DO_TEST("cpu-cache-emulate-l3", QEMU_CAPS_KVM, QEMU_CAPS_CPU_CACHE);
-    DO_TEST_PARSE_ERROR("cpu-cache-emulate-l2", QEMU_CAPS_KVM);
-    DO_TEST_PARSE_ERROR("cpu-cache-passthrough3", QEMU_CAPS_KVM);
-    DO_TEST_PARSE_ERROR("cpu-cache-passthrough-l3", QEMU_CAPS_KVM);
+    DO_TEST_PARSE_ERROR("cpu-cache-emulate-l2", NONE);
+    DO_TEST_PARSE_ERROR("cpu-cache-passthrough3", NONE);
+    DO_TEST_PARSE_ERROR("cpu-cache-passthrough-l3", NONE);
     DO_TEST("vmcoreinfo", QEMU_CAPS_DEVICE_VMCOREINFO);
 
     DO_TEST("user-aliases", QEMU_CAPS_KVM, QEMU_CAPS_DEVICE_CIRRUS_VGA,
