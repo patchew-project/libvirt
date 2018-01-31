@@ -344,6 +344,7 @@ virDomainDiskSetDriver;
 virDomainDiskSetFormat;
 virDomainDiskSetSource;
 virDomainDiskSetType;
+virDomainDiskTranslateSourcePool;
 virDomainFSDefFree;
 virDomainFSDefNew;
 virDomainFSDriverTypeToString;
