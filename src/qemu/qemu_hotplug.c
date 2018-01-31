@@ -47,7 +47,6 @@
 #include "virprocess.h"
 #include "qemu_cgroup.h"
 #include "locking/domain_lock.h"
-#include "network/bridge_driver.h"
 #include "virnetdev.h"
 #include "virnetdevbridge.h"
 #include "virnetdevtap.h"
@@ -851,7 +850,7 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
      * network's pool of devices, or resolve bridge device name
      * to the one defined in the network definition.
      */
-    if (networkAllocateActualDevice(vm->def, net) < 0)
+    if (virDomainNetAllocateActualDevice(vm->def, net) < 0)
         goto cleanup;
 
     actualType = virDomainNetGetActualType(net);
@@ -1182,7 +1181,7 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
 
         virDomainNetRemoveHostdev(vm->def, net);
 
-        networkReleaseActualDevice(vm->def, net);
+        virDomainNetReleaseActualDevice(vm->def, net);
     }
 
     VIR_FREE(nicstr);
@@ -3229,7 +3228,7 @@ qemuDomainChangeNet(virQEMUDriverPtr driver,
      * free it if we fail for any reason
      */
     if (newdev->type == VIR_DOMAIN_NET_TYPE_NETWORK &&
-        networkAllocateActualDevice(vm->def, newdev) < 0) {
+        virDomainNetAllocateActualDevice(vm->def, newdev) < 0) {
         goto cleanup;
     }
 
@@ -3437,7 +3436,7 @@ qemuDomainChangeNet(virQEMUDriverPtr driver,
 
         /* this function doesn't work with HOSTDEV networks yet, thus
          * no need to change the pointer in the hostdev structure */
-        networkReleaseActualDevice(vm->def, olddev);
+        virDomainNetReleaseActualDevice(vm->def, olddev);
         virDomainNetDefFree(olddev);
         /* move newdev into the nets list, and NULL it out from the
          * virDomainDeviceDef that we were given so that the caller
@@ -3469,7 +3468,7 @@ qemuDomainChangeNet(virQEMUDriverPtr driver,
      * replace the entire device object.
      */
     if (newdev)
-        networkReleaseActualDevice(vm->def, newdev);
+        virDomainNetReleaseActualDevice(vm->def, newdev);
 
     return ret;
 }
@@ -4051,7 +4050,7 @@ qemuDomainRemoveHostDevice(virQEMUDriverPtr driver,
     virDomainHostdevDefFree(hostdev);
 
     if (net) {
-        networkReleaseActualDevice(vm->def, net);
+        virDomainNetReleaseActualDevice(vm->def, net);
         virDomainNetDefFree(net);
     }
 
@@ -4162,7 +4161,7 @@ qemuDomainRemoveNetDevice(virQEMUDriverPtr driver,
 
     qemuDomainNetDeviceVportRemove(net);
 
-    networkReleaseActualDevice(vm->def, net);
+    virDomainNetReleaseActualDevice(vm->def, net);
     virDomainNetDefFree(net);
     ret = 0;
 

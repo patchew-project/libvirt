@@ -4275,16 +4275,6 @@ static virStateDriver networkStateDriver = {
     .stateReload = networkStateReload,
 };
 
-int
-networkRegister(void)
-{
-    if (virSetSharedNetworkDriver(&networkDriver) < 0)
-        return -1;
-    if (virRegisterStateDriver(&networkStateDriver) < 0)
-        return -1;
-    return 0;
-}
-
 
 /* A unified function to log network connections and disconnections */
 
@@ -4342,7 +4332,7 @@ networkLogAllocation(virNetworkDefPtr netdef,
  *
  * Returns 0 on success, -1 on failure.
  */
-int
+static int
 networkAllocateActualDevice(virDomainDefPtr dom,
                             virDomainNetDefPtr iface)
 {
@@ -4764,7 +4754,7 @@ networkAllocateActualDevice(virDomainDefPtr dom,
  *
  * No return value (but does log any failures)
  */
-void
+static void
 networkNotifyActualDevice(virDomainDefPtr dom,
                           virDomainNetDefPtr iface)
 {
@@ -4981,7 +4971,7 @@ networkNotifyActualDevice(virDomainDefPtr dom,
  *
  * Returns 0 on success, -1 on failure.
  */
-int
+static int
 networkReleaseActualDevice(virDomainDefPtr dom,
                            virDomainNetDefPtr iface)
 {
@@ -5715,4 +5705,20 @@ networkBandwidthUpdate(virDomainNetDefPtr iface,
  cleanup:
     virNetworkObjEndAPI(&obj);
     return ret;
+}
+
+int
+networkRegister(void)
+{
+    if (virSetSharedNetworkDriver(&networkDriver) < 0)
+        return -1;
+    if (virRegisterStateDriver(&networkStateDriver) < 0)
+        return -1;
+
+    virDomainNetSetDeviceImpl(
+        networkAllocateActualDevice,
+        networkNotifyActualDevice,
+        networkReleaseActualDevice);
+
+    return 0;
 }
