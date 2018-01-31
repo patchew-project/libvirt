@@ -3115,11 +3115,7 @@ libvirt_lxc_LDFLAGS = \
 		$(NULL)
 libvirt_lxc_LDADD = \
 		$(FUSE_LIBS) \
-		libvirt-net-rpc-server.la \
-		libvirt-net-rpc.la \
-		libvirt_security_manager.la \
-		libvirt_conf.la \
-		libvirt_util.la \
+		libvirt.la \
 		../gnulib/lib/libgnu.la
 if WITH_DTRACE_PROBES
 libvirt_lxc_LDADD += libvirt_probes.lo
