@@ -28804,15 +28804,22 @@ virDomainNetTypeSharesHostView(const virDomainNetDef *net)
 static virDomainNetAllocateActualDeviceImpl netAllocate;
 static virDomainNetNotifyActualDeviceImpl netNotify;
 static virDomainNetReleaseActualDeviceImpl netRelease;
+static virDomainNetBandwidthChangeAllowedImpl netBandwidthChangeAllowed;
+static virDomainNetBandwidthUpdateImpl netBandwidthUpdate;
+
 
 void
 virDomainNetSetDeviceImpl(virDomainNetAllocateActualDeviceImpl allocate,
                           virDomainNetNotifyActualDeviceImpl notify,
-                          virDomainNetReleaseActualDeviceImpl release)
+                          virDomainNetReleaseActualDeviceImpl release,
+                          virDomainNetBandwidthChangeAllowedImpl bandwidthChangeAllowed,
+                          virDomainNetBandwidthUpdateImpl bandwidthUpdate)
 {
     netAllocate = allocate;
     netNotify = notify;
     netRelease = release;
+    netBandwidthChangeAllowed = bandwidthChangeAllowed;
+    netBandwidthUpdate = bandwidthUpdate;
 }
 
 int
@@ -28853,4 +28860,30 @@ virDomainNetReleaseActualDevice(virDomainDefPtr dom,
     }
 
     return netRelease(dom, iface);
+}
+
+bool
+virDomainNetBandwidthChangeAllowed(virDomainNetDefPtr iface,
+                              virNetDevBandwidthPtr newBandwidth)
+{
+    if (!netBandwidthChangeAllowed) {
+        virReportError(VIR_ERR_NO_SUPPORT, "%s",
+                       _("Network device release not available"));
+        return -1;
+    }
+
+    return netBandwidthChangeAllowed(iface, newBandwidth);
+}
+
+int
+virDomainNetBandwidthUpdate(virDomainNetDefPtr iface,
+                            virNetDevBandwidthPtr newBandwidth)
+{
+    if (!netBandwidthUpdate) {
+        virReportError(VIR_ERR_NO_SUPPORT, "%s",
+                       _("Network device release not available"));
+        return -1;
+    }
+
+    return netBandwidthUpdate(iface, newBandwidth);
 }
