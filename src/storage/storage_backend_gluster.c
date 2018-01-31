@@ -24,6 +24,7 @@
 #include <glusterfs/api/glfs.h>
 
 #include "storage_backend_gluster.h"
+#include "storage_source_backend.h"
 #include "storage_conf.h"
 #include "viralloc.h"
 #include "virerror.h"
@@ -869,7 +870,7 @@ virStorageBackendGlusterRegister(void)
     if (virStorageBackendRegister(&virStorageBackendGluster) < 0)
         return -1;
 
-    if (virStorageBackendFileRegister(&virStorageFileBackendGluster) < 0)
+    if (virStorageFileBackendRegister(&virStorageFileBackendGluster) < 0)
         return -1;
 
     return 0;
