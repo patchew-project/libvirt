@@ -294,8 +294,150 @@ virResctrlAllocNew(void)
 }
 
 
-/* Common functions */
+static virResctrlAllocPerTypePtr
+virResctrlAllocGetType(virResctrlAllocPtr resctrl,
+                       unsigned int level,
+                       virCacheType type)
+{
+    virResctrlAllocPerLevelPtr a_level = NULL;
+
+    if (resctrl->nlevels <= level &&
+        VIR_EXPAND_N(resctrl->levels, resctrl->nlevels, level - resctrl->nlevels + 1) < 0)
+        return NULL;
+
+    if (!resctrl->levels[level]) {
+        virResctrlAllocPerTypePtr *types = NULL;
+
+        if (VIR_ALLOC_N(types, VIR_CACHE_TYPE_LAST) < 0)
+            return NULL;
+
+        if (VIR_ALLOC(resctrl->levels[level]) < 0) {
+            VIR_FREE(types);
+            return NULL;
+        }
+        resctrl->levels[level]->types = types;
+    }
+
+    a_level = resctrl->levels[level];
+
+    if (!a_level->types[type] && VIR_ALLOC(a_level->types[type]) < 0)
+        return NULL;
+
+    return a_level->types[type];
+}
+
+
+static int
+virResctrlAllocUpdateSize(virResctrlAllocPtr resctrl,
+                          unsigned int level,
+                          virCacheType type,
+                          unsigned int cache,
+                          unsigned long long size)
+{
+    virResctrlAllocPerTypePtr a_type = virResctrlAllocGetType(resctrl, level, type);
+
+    if (!a_type)
+        return -1;
+
+    if (a_type->nsizes <= cache &&
+        VIR_EXPAND_N(a_type->sizes, a_type->nsizes,
+                     cache - a_type->nsizes + 1) < 0)
+        return -1;
+
+    if (!a_type->sizes[cache] && VIR_ALLOC(a_type->sizes[cache]) < 0)
+        return -1;
+
+    *(a_type->sizes[cache]) = size;
+
+    return 0;
+}
+
+
+static bool
+virResctrlInfoIsEmpty(virResctrlInfoPtr resctrl)
+{
+    size_t i = 0;
+    size_t j = 0;
+
+    if (!resctrl)
+        return true;
+
+    for (i = 0; i < resctrl->nlevels; i++) {
+        virResctrlInfoPerLevelPtr i_level = resctrl->levels[i];
+
+        if (!i_level)
+            continue;
+
+        for (j = 0; j < VIR_CACHE_TYPE_LAST; j++) {
+            if (i_level->types[j])
+                return false;
+        }
+    }
+
+    return true;
+}
+
+
+/*
+ * Check if there is an allocation for this level/type/cache already.  Called
+ * before updating the structure.  VIR_CACHE_TYPE_BOTH collides with any type,
+ * the other types collide with itself.  This code basically checks if either:
+ * `alloc[level]->types[type]->sizes[cache]`
+ * or
+ * `alloc[level]->types[VIR_CACHE_TYPE_BOTH]->sizes[cache]`
+ * is non-NULL.  All the fuzz around it is checking for NULL pointers along
+ * the way.
+ */
+static bool
+virResctrlAllocCheckCollision(virResctrlAllocPtr alloc,
+                              unsigned int level,
+                              virCacheType type,
+                              unsigned int cache)
+{
+    virResctrlAllocPerLevelPtr a_level = NULL;
+    virResctrlAllocPerTypePtr a_type = NULL;
+
+    if (!alloc)
+        return false;
+
+    if (alloc->nlevels <= level)
+        return false;
+
+    a_level = alloc->levels[level];
+
+    if (!a_level)
+        return false;
+
+    a_type = a_level->types[VIR_CACHE_TYPE_BOTH];
+
+    /* If there is an allocation for type 'both', there can be no other
+     * allocation for the same cache */
+    if (a_type && a_type->nsizes > cache && a_type->sizes[cache])
+        return true;
+
+    if (type == VIR_CACHE_TYPE_BOTH) {
+        a_type = a_level->types[VIR_CACHE_TYPE_CODE];
+
+        if (a_type && a_type->nsizes > cache && a_type->sizes[cache])
+            return true;
+
+        a_type = a_level->types[VIR_CACHE_TYPE_DATA];
+
+        if (a_type && a_type->nsizes > cache && a_type->sizes[cache])
+            return true;
+    } else {
+        a_type = a_level->types[type];
+
+        if (a_type && a_type->nsizes > cache && a_type->sizes[cache])
+            return true;
+    }
+
+    return false;
+}
+
+
 #ifdef __linux__
+
 static int
 virResctrlLockInternal(int op)
 {
@@ -322,20 +464,6 @@ virResctrlLockWrite(void)
     return virResctrlLockInternal(LOCK_EX);
 }
 
-#else
-
-static inline int
-virResctrlLockWrite(void)
-{
-    virReportSystemError(ENOSYS, "%s",
-                         _("resctrl not supported on this platform"));
-    return -1;
-}
-
-#endif
-
-
-
 
 static int
 virResctrlUnlock(int fd)
@@ -343,7 +471,6 @@ virResctrlUnlock(int fd)
     if (fd == -1)
         return 0;
 
-#ifdef __linux__
     /* The lock gets unlocked by closing the fd, which we need to do anyway in
      * order to clean up properly */
     if (VIR_CLOSE(fd) < 0) {
@@ -354,39 +481,10 @@ virResctrlUnlock(int fd)
             virReportSystemError(errno, "%s", _("Cannot unlock resctrl"));
         return -1;
     }
-#endif /* ! __linux__ */
 
     return 0;
 }
 
-
-/* Info-related functions */
-static bool
-virResctrlInfoIsEmpty(virResctrlInfoPtr resctrl)
-{
-    size_t i = 0;
-    size_t j = 0;
-
-    if (!resctrl)
-        return true;
-
-    for (i = 0; i < resctrl->nlevels; i++) {
-        virResctrlInfoPerLevelPtr i_level = resctrl->levels[i];
-
-        if (!i_level)
-            continue;
-
-        for (j = 0; j < VIR_CACHE_TYPE_LAST; j++) {
-            if (i_level->types[j])
-                return false;
-        }
-    }
-
-    return true;
-}
-
-
-#ifdef __linux__
 
 int
 virResctrlGetInfo(virResctrlInfoPtr resctrl)
@@ -518,156 +616,6 @@ virResctrlGetInfo(virResctrlInfoPtr resctrl)
     return ret;
 }
 
-#else /* ! __linux__ */
-
-int
-virResctrlGetInfo(virResctrlInfoPtr resctrl ATTRIBUTE_UNUSED)
-{
-    virReportSystemError(ENOSYS, "%s",
-                         _("Cache tune not supported on this platform"));
-    return -1;
-}
-
-#endif /* ! __linux__ */
-
-
-int
-virResctrlInfoGetCache(virResctrlInfoPtr resctrl,
-                       unsigned int level,
-                       unsigned long long size,
-                       size_t *ncontrols,
-                       virResctrlInfoPerCachePtr **controls)
-{
-    virResctrlInfoPerLevelPtr i_level = NULL;
-    virResctrlInfoPerTypePtr i_type = NULL;
-    size_t i = 0;
-    int ret = -1;
-
-    if (virResctrlInfoIsEmpty(resctrl))
-        return 0;
-
-    if (level >= resctrl->nlevels)
-        return 0;
-
-    i_level = resctrl->levels[level];
-    if (!i_level)
-        return 0;
-
-    for (i = 0; i < VIR_CACHE_TYPE_LAST; i++) {
-        i_type = i_level->types[i];
-        if (!i_type)
-            continue;
-
-        /* Let's take the opportunity to update our internal information about
-         * the cache size */
-        if (!i_type->size) {
-            i_type->size = size;
-            i_type->control.granularity = size / i_type->bits;
-            if (i_type->min_cbm_bits != 1)
-                i_type->control.min = i_type->min_cbm_bits * i_type->control.granularity;
-        } else {
-            if (i_type->size != size) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("level %u cache size %llu does not match "
-                                 "expected size %llu"),
-                                 level, i_type->size, size);
-                goto error;
-            }
-            i_type->max_cache_id++;
-        }
-
-        if (VIR_EXPAND_N(*controls, *ncontrols, 1) < 0)
-            goto error;
-        if (VIR_ALLOC((*controls)[*ncontrols - 1]) < 0)
-            goto error;
-
-        memcpy((*controls)[*ncontrols - 1], &i_type->control, sizeof(i_type->control));
-    }
-
-    ret = 0;
- cleanup:
-    return ret;
- error:
-    while (*ncontrols)
-        VIR_FREE((*controls)[--*ncontrols]);
-    VIR_FREE(*controls);
-    goto cleanup;
-}
-
-
-/* Alloc-related functions */
-bool
-virResctrlAllocIsEmpty(virResctrlAllocPtr resctrl)
-{
-    size_t i = 0;
-    size_t j = 0;
-    size_t k = 0;
-
-    if (!resctrl)
-        return true;
-
-    for (i = 0; i < resctrl->nlevels; i++) {
-        virResctrlAllocPerLevelPtr a_level = resctrl->levels[i];
-
-        if (!a_level)
-            continue;
-
-        for (j = 0; j < VIR_CACHE_TYPE_LAST; j++) {
-            virResctrlAllocPerTypePtr a_type = a_level->types[j];
-
-            if (!a_type)
-                continue;
-
-            for (k = 0; k < a_type->nsizes; k++) {
-                if (a_type->sizes[k])
-                    return false;
-            }
-
-            for (k = 0; k < a_type->nmasks; k++) {
-                if (a_type->masks[k])
-                    return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-
-static virResctrlAllocPerTypePtr
-virResctrlAllocGetType(virResctrlAllocPtr resctrl,
-                       unsigned int level,
-                       virCacheType type)
-{
-    virResctrlAllocPerLevelPtr a_level = NULL;
-
-    if (resctrl->nlevels <= level &&
-        VIR_EXPAND_N(resctrl->levels, resctrl->nlevels, level - resctrl->nlevels + 1) < 0)
-        return NULL;
-
-    if (!resctrl->levels[level]) {
-        virResctrlAllocPerTypePtr *types = NULL;
-
-        if (VIR_ALLOC_N(types, VIR_CACHE_TYPE_LAST) < 0)
-            return NULL;
-
-        if (VIR_ALLOC(resctrl->levels[level]) < 0) {
-            VIR_FREE(types);
-            return NULL;
-        }
-        resctrl->levels[level]->types = types;
-    }
-
-    a_level = resctrl->levels[level];
-
-    if (!a_level->types[type] && VIR_ALLOC(a_level->types[type]) < 0)
-        return NULL;
-
-    return a_level->types[type];
-}
-
-
-#ifdef __linux__
 
 static int
 virResctrlAllocUpdateMask(virResctrlAllocPtr resctrl,
@@ -696,228 +644,6 @@ virResctrlAllocUpdateMask(virResctrlAllocPtr resctrl,
     return virBitmapCopy(a_type->masks[cache], mask);
 }
 
-#endif
-
-
-static int
-virResctrlAllocUpdateSize(virResctrlAllocPtr resctrl,
-                          unsigned int level,
-                          virCacheType type,
-                          unsigned int cache,
-                          unsigned long long size)
-{
-    virResctrlAllocPerTypePtr a_type = virResctrlAllocGetType(resctrl, level, type);
-
-    if (!a_type)
-        return -1;
-
-    if (a_type->nsizes <= cache &&
-        VIR_EXPAND_N(a_type->sizes, a_type->nsizes,
-                     cache - a_type->nsizes + 1) < 0)
-        return -1;
-
-    if (!a_type->sizes[cache] && VIR_ALLOC(a_type->sizes[cache]) < 0)
-        return -1;
-
-    *(a_type->sizes[cache]) = size;
-
-    return 0;
-}
-
-
-/*
- * Check if there is an allocation for this level/type/cache already.  Called
- * before updating the structure.  VIR_CACHE_TYPE_BOTH collides with any type,
- * the other types collide with itself.  This code basically checks if either:
- * `alloc[level]->types[type]->sizes[cache]`
- * or
- * `alloc[level]->types[VIR_CACHE_TYPE_BOTH]->sizes[cache]`
- * is non-NULL.  All the fuzz around it is checking for NULL pointers along
- * the way.
- */
-static bool
-virResctrlAllocCheckCollision(virResctrlAllocPtr alloc,
-                              unsigned int level,
-                              virCacheType type,
-                              unsigned int cache)
-{
-    virResctrlAllocPerLevelPtr a_level = NULL;
-    virResctrlAllocPerTypePtr a_type = NULL;
-
-    if (!alloc)
-        return false;
-
-    if (alloc->nlevels <= level)
-        return false;
-
-    a_level = alloc->levels[level];
-
-    if (!a_level)
-        return false;
-
-    a_type = a_level->types[VIR_CACHE_TYPE_BOTH];
-
-    /* If there is an allocation for type 'both', there can be no other
-     * allocation for the same cache */
-    if (a_type && a_type->nsizes > cache && a_type->sizes[cache])
-        return true;
-
-    if (type == VIR_CACHE_TYPE_BOTH) {
-        a_type = a_level->types[VIR_CACHE_TYPE_CODE];
-
-        if (a_type && a_type->nsizes > cache && a_type->sizes[cache])
-            return true;
-
-        a_type = a_level->types[VIR_CACHE_TYPE_DATA];
-
-        if (a_type && a_type->nsizes > cache && a_type->sizes[cache])
-            return true;
-    } else {
-        a_type = a_level->types[type];
-
-        if (a_type && a_type->nsizes > cache && a_type->sizes[cache])
-            return true;
-    }
-
-    return false;
-}
-
-
-int
-virResctrlAllocSetSize(virResctrlAllocPtr resctrl,
-                       unsigned int level,
-                       virCacheType type,
-                       unsigned int cache,
-                       unsigned long long size)
-{
-    if (virResctrlAllocCheckCollision(resctrl, level, type, cache)) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("Colliding cache allocations for cache "
-                         "level '%u' id '%u', type '%s'"),
-                       level, cache, virCacheTypeToString(type));
-        return -1;
-    }
-
-    return virResctrlAllocUpdateSize(resctrl, level, type, cache, size);
-}
-
-
-int
-virResctrlAllocForeachSize(virResctrlAllocPtr resctrl,
-                           virResctrlAllocForeachSizeCallback cb,
-                           void *opaque)
-{
-    int ret = 0;
-    unsigned int level = 0;
-    unsigned int type = 0;
-    unsigned int cache = 0;
-
-    if (!resctrl)
-        return 0;
-
-    for (level = 0; level < resctrl->nlevels; level++) {
-        virResctrlAllocPerLevelPtr a_level = resctrl->levels[level];
-
-        if (!a_level)
-            continue;
-
-        for (type = 0; type < VIR_CACHE_TYPE_LAST; type++) {
-            virResctrlAllocPerTypePtr a_type = a_level->types[type];
-
-            if (!a_type)
-                continue;
-
-            for (cache = 0; cache < a_type->nsizes; cache++) {
-                unsigned long long *size = a_type->sizes[cache];
-
-                if (!size)
-                    continue;
-
-                ret = cb(level, type, cache, *size, opaque);
-                if (ret < 0)
-                    return ret;
-            }
-        }
-    }
-
-    return 0;
-}
-
-
-int
-virResctrlAllocSetID(virResctrlAllocPtr alloc,
-                     const char *id)
-{
-    if (!id) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Resctrl allocation 'id' cannot be NULL"));
-        return -1;
-    }
-
-    return VIR_STRDUP(alloc->id, id);
-}
-
-
-const char *
-virResctrlAllocGetID(virResctrlAllocPtr alloc)
-{
-    return alloc->id;
-}
-
-
-char *
-virResctrlAllocFormat(virResctrlAllocPtr resctrl)
-{
-    virBuffer buf = VIR_BUFFER_INITIALIZER;
-    unsigned int level = 0;
-    unsigned int type = 0;
-    unsigned int cache = 0;
-
-    if (!resctrl)
-        return NULL;
-
-    for (level = 0; level < resctrl->nlevels; level++) {
-        virResctrlAllocPerLevelPtr a_level = resctrl->levels[level];
-
-        if (!a_level)
-            continue;
-
-        for (type = 0; type < VIR_CACHE_TYPE_LAST; type++) {
-            virResctrlAllocPerTypePtr a_type = a_level->types[type];
-
-            if (!a_type)
-                continue;
-
-            virBufferAsprintf(&buf, "L%u%s:", level, virResctrlTypeToString(type));
-
-            for (cache = 0; cache < a_type->nmasks; cache++) {
-                virBitmapPtr mask = a_type->masks[cache];
-                char *mask_str = NULL;
-
-                if (!mask)
-                    continue;
-
-                mask_str = virBitmapToString(mask, false, true);
-                if (!mask_str) {
-                    virBufferFreeAndReset(&buf);
-                    return NULL;
-                }
-
-                virBufferAsprintf(&buf, "%u=%s;", cache, mask_str);
-                VIR_FREE(mask_str);
-            }
-
-            virBufferTrim(&buf, ";", 1);
-            virBufferAddChar(&buf, '\n');
-        }
-    }
-
-    virBufferCheckError(&buf);
-    return virBufferContentAndReset(&buf);
-}
-
-
-#ifdef __linux__
 
 static int
 virResctrlAllocParseProcessCache(virResctrlInfoPtr resctrl,
@@ -1171,6 +897,7 @@ virResctrlAllocNewFromInfo(virResctrlInfoPtr info)
     goto cleanup;
 }
 
+
 /*
  * This function creates an allocation that represents all unused parts of all
  * caches in the system.  It uses virResctrlInfo for creating a new full
@@ -1242,18 +969,6 @@ virResctrlAllocGetUnused(virResctrlInfoPtr resctrl)
     ret = NULL;
     goto cleanup;
 }
-
-#else /* ! __linux__ */
-
-virResctrlAllocPtr
-virResctrlAllocGetUnused(virResctrlInfoPtr resctrl ATTRIBUTE_UNUSED)
-{
-    virReportSystemError(ENOSYS, "%s",
-                         _("Cache tune not supported on this platform"));
-    return NULL;
-}
-
-#endif /* ! __linux__ */
 
 
 /*
@@ -1589,6 +1304,264 @@ virResctrlAllocCreate(virResctrlInfoPtr resctrl,
     VIR_FREE(alloc_str);
     VIR_FREE(schemata_path);
     return ret;
+}
+
+#else /* ! __linux__ */
+
+int
+virResctrlGetInfo(virResctrlInfoPtr resctrl ATTRIBUTE_UNUSED)
+{
+    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                   _("Resource control is not supported on this host"));
+    return -1;
+}
+
+int
+virResctrlAllocCreate(virResctrlInfoPtr resctrl ATTRIBUTE_UNUSED,
+                      virResctrlAllocPtr alloc ATTRIBUTE_UNUSED,
+                      const char *machinename ATTRIBUTE_UNUSED)
+{
+    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                   _("Resource control is not supported on this host"));
+    return -1;
+}
+
+#endif /* ! __linux__ */
+
+
+int
+virResctrlInfoGetCache(virResctrlInfoPtr resctrl,
+                       unsigned int level,
+                       unsigned long long size,
+                       size_t *ncontrols,
+                       virResctrlInfoPerCachePtr **controls)
+{
+    virResctrlInfoPerLevelPtr i_level = NULL;
+    virResctrlInfoPerTypePtr i_type = NULL;
+    size_t i = 0;
+    int ret = -1;
+
+    if (virResctrlInfoIsEmpty(resctrl))
+        return 0;
+
+    if (level >= resctrl->nlevels)
+        return 0;
+
+    i_level = resctrl->levels[level];
+    if (!i_level)
+        return 0;
+
+    for (i = 0; i < VIR_CACHE_TYPE_LAST; i++) {
+        i_type = i_level->types[i];
+        if (!i_type)
+            continue;
+
+        /* Let's take the opportunity to update our internal information about
+         * the cache size */
+        if (!i_type->size) {
+            i_type->size = size;
+            i_type->control.granularity = size / i_type->bits;
+            if (i_type->min_cbm_bits != 1)
+                i_type->control.min = i_type->min_cbm_bits * i_type->control.granularity;
+        } else {
+            if (i_type->size != size) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("level %u cache size %llu does not match "
+                                 "expected size %llu"),
+                                 level, i_type->size, size);
+                goto error;
+            }
+            i_type->max_cache_id++;
+        }
+
+        if (VIR_EXPAND_N(*controls, *ncontrols, 1) < 0)
+            goto error;
+        if (VIR_ALLOC((*controls)[*ncontrols - 1]) < 0)
+            goto error;
+
+        memcpy((*controls)[*ncontrols - 1], &i_type->control, sizeof(i_type->control));
+    }
+
+    ret = 0;
+ cleanup:
+    return ret;
+ error:
+    while (*ncontrols)
+        VIR_FREE((*controls)[--*ncontrols]);
+    VIR_FREE(*controls);
+    goto cleanup;
+}
+
+
+bool
+virResctrlAllocIsEmpty(virResctrlAllocPtr resctrl)
+{
+    size_t i = 0;
+    size_t j = 0;
+    size_t k = 0;
+
+    if (!resctrl)
+        return true;
+
+    for (i = 0; i < resctrl->nlevels; i++) {
+        virResctrlAllocPerLevelPtr a_level = resctrl->levels[i];
+
+        if (!a_level)
+            continue;
+
+        for (j = 0; j < VIR_CACHE_TYPE_LAST; j++) {
+            virResctrlAllocPerTypePtr a_type = a_level->types[j];
+
+            if (!a_type)
+                continue;
+
+            for (k = 0; k < a_type->nsizes; k++) {
+                if (a_type->sizes[k])
+                    return false;
+            }
+
+            for (k = 0; k < a_type->nmasks; k++) {
+                if (a_type->masks[k])
+                    return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+
+int
+virResctrlAllocSetSize(virResctrlAllocPtr resctrl,
+                       unsigned int level,
+                       virCacheType type,
+                       unsigned int cache,
+                       unsigned long long size)
+{
+    if (virResctrlAllocCheckCollision(resctrl, level, type, cache)) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Colliding cache allocations for cache "
+                         "level '%u' id '%u', type '%s'"),
+                       level, cache, virCacheTypeToString(type));
+        return -1;
+    }
+
+    return virResctrlAllocUpdateSize(resctrl, level, type, cache, size);
+}
+
+
+int
+virResctrlAllocForeachSize(virResctrlAllocPtr resctrl,
+                           virResctrlAllocForeachSizeCallback cb,
+                           void *opaque)
+{
+    int ret = 0;
+    unsigned int level = 0;
+    unsigned int type = 0;
+    unsigned int cache = 0;
+
+    if (!resctrl)
+        return 0;
+
+    for (level = 0; level < resctrl->nlevels; level++) {
+        virResctrlAllocPerLevelPtr a_level = resctrl->levels[level];
+
+        if (!a_level)
+            continue;
+
+        for (type = 0; type < VIR_CACHE_TYPE_LAST; type++) {
+            virResctrlAllocPerTypePtr a_type = a_level->types[type];
+
+            if (!a_type)
+                continue;
+
+            for (cache = 0; cache < a_type->nsizes; cache++) {
+                unsigned long long *size = a_type->sizes[cache];
+
+                if (!size)
+                    continue;
+
+                ret = cb(level, type, cache, *size, opaque);
+                if (ret < 0)
+                    return ret;
+            }
+        }
+    }
+
+    return 0;
+}
+
+
+int
+virResctrlAllocSetID(virResctrlAllocPtr alloc,
+                     const char *id)
+{
+    if (!id) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Resctrl allocation 'id' cannot be NULL"));
+        return -1;
+    }
+
+    return VIR_STRDUP(alloc->id, id);
+}
+
+
+const char *
+virResctrlAllocGetID(virResctrlAllocPtr alloc)
+{
+    return alloc->id;
+}
+
+
+char *
+virResctrlAllocFormat(virResctrlAllocPtr resctrl)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+    unsigned int level = 0;
+    unsigned int type = 0;
+    unsigned int cache = 0;
+
+    if (!resctrl)
+        return NULL;
+
+    for (level = 0; level < resctrl->nlevels; level++) {
+        virResctrlAllocPerLevelPtr a_level = resctrl->levels[level];
+
+        if (!a_level)
+            continue;
+
+        for (type = 0; type < VIR_CACHE_TYPE_LAST; type++) {
+            virResctrlAllocPerTypePtr a_type = a_level->types[type];
+
+            if (!a_type)
+                continue;
+
+            virBufferAsprintf(&buf, "L%u%s:", level, virResctrlTypeToString(type));
+
+            for (cache = 0; cache < a_type->nmasks; cache++) {
+                virBitmapPtr mask = a_type->masks[cache];
+                char *mask_str = NULL;
+
+                if (!mask)
+                    continue;
+
+                mask_str = virBitmapToString(mask, false, true);
+                if (!mask_str) {
+                    virBufferFreeAndReset(&buf);
+                    return NULL;
+                }
+
+                virBufferAsprintf(&buf, "%u=%s;", cache, mask_str);
+                VIR_FREE(mask_str);
+            }
+
+            virBufferTrim(&buf, ";", 1);
+            virBufferAddChar(&buf, '\n');
+        }
+    }
+
+    virBufferCheckError(&buf);
+    return virBufferContentAndReset(&buf);
 }
 
 

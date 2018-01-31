@@ -2564,7 +2564,6 @@ virResctrlAllocDeterminePath;
 virResctrlAllocForeachSize;
 virResctrlAllocFormat;
 virResctrlAllocGetID;
-virResctrlAllocGetUnused;
 virResctrlAllocNew;
 virResctrlAllocRemove;
 virResctrlAllocSetID;
