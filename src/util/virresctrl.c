@@ -618,13 +618,13 @@ virResctrlGetInfo(virResctrlInfoPtr resctrl)
 
 
 static int
-virResctrlAllocUpdateMask(virResctrlAllocPtr resctrl,
+virResctrlAllocUpdateMask(virResctrlAllocPtr alloc,
                           unsigned int level,
                           virCacheType type,
                           unsigned int cache,
                           virBitmapPtr mask)
 {
-    virResctrlAllocPerTypePtr a_type = virResctrlAllocGetType(resctrl, level, type);
+    virResctrlAllocPerTypePtr a_type = virResctrlAllocGetType(alloc, level, type);
 
     if (!a_type)
         return -1;
