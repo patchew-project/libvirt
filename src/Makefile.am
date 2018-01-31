@@ -52,6 +52,7 @@ AM_LDFLAGS =	$(DRIVER_MODULES_LDFLAGS) \
 		$(MINGW_EXTRA_LDFLAGS) \
 		$(NULL)
 AM_LDFLAGS_MOD = -module -avoid-version $(AM_LDFLAGS)
+AM_LDFLAGS_MOD_NOUNDEF = $(AM_LDFLAGS_MOD) $(NO_UNDEFINED_LDFLAGS)
 
 POD2MAN = pod2man -c "Virtualization Support" -r "$(PACKAGE)-$(VERSION)"
 
@@ -1342,7 +1343,7 @@ libvirt_driver_xen_la_SOURCES =
 libvirt_driver_xen_la_LIBADD = libvirt_driver_xen_impl.la
 mod_LTLIBRARIES += libvirt_driver_xen.la
 libvirt_driver_xen_la_LIBADD += libvirt.la ../gnulib/lib/libgnu.la
-libvirt_driver_xen_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+libvirt_driver_xen_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 
 libvirt_driver_xen_impl_la_CFLAGS = \
 		$(XEN_CFLAGS) \
@@ -1388,7 +1389,7 @@ libvirt_driver_vbox_la_LIBADD = libvirt_driver_vbox_impl.la
 mod_LTLIBRARIES += \
 		libvirt_driver_vbox.la
 libvirt_driver_vbox_la_LIBADD += libvirt.la ../gnulib/lib/libgnu.la
-libvirt_driver_vbox_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+libvirt_driver_vbox_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 
 libvirt_driver_vbox_impl_la_CFLAGS = \
 		-I$(srcdir)/conf \
@@ -1417,7 +1418,7 @@ libvirt_driver_libxl_la_SOURCES =
 libvirt_driver_libxl_la_LIBADD = libvirt_driver_libxl_impl.la
 mod_LTLIBRARIES += libvirt_driver_libxl.la
 libvirt_driver_libxl_la_LIBADD += libvirt.la ../gnulib/lib/libgnu.la
-libvirt_driver_libxl_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+libvirt_driver_libxl_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 
 libvirt_driver_libxl_impl_la_CFLAGS = \
 		$(LIBXL_CFLAGS) \
@@ -1446,7 +1447,7 @@ libvirt_driver_qemu_la_SOURCES =
 libvirt_driver_qemu_la_LIBADD = libvirt_driver_qemu_impl.la
 mod_LTLIBRARIES += libvirt_driver_qemu.la
 libvirt_driver_qemu_la_LIBADD += libvirt.la ../gnulib/lib/libgnu.la
-libvirt_driver_qemu_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+libvirt_driver_qemu_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 
 libvirt_driver_qemu_impl_la_CFLAGS = \
 		$(GNUTLS_CFLAGS) \
@@ -1481,7 +1482,7 @@ libvirt_driver_lxc_la_SOURCES =
 libvirt_driver_lxc_la_LIBADD = libvirt_driver_lxc_impl.la
 mod_LTLIBRARIES += libvirt_driver_lxc.la
 libvirt_driver_lxc_la_LIBADD += libvirt.la ../gnulib/lib/libgnu.la
-libvirt_driver_lxc_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+libvirt_driver_lxc_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 
 libvirt_driver_lxc_impl_la_CFLAGS = \
 		$(LIBNL_CFLAGS) \
@@ -1518,7 +1519,7 @@ libvirt_driver_uml_la_SOURCES =
 libvirt_driver_uml_la_LIBADD = libvirt_driver_uml_impl.la
 mod_LTLIBRARIES += libvirt_driver_uml.la
 libvirt_driver_uml_la_LIBADD += libvirt.la ../gnulib/lib/libgnu.la
-libvirt_driver_uml_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+libvirt_driver_uml_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 
 libvirt_driver_uml_impl_la_CFLAGS = \
 		-I$(srcdir)/access \
@@ -1590,7 +1591,7 @@ libvirt_driver_vz_la_SOURCES =
 libvirt_driver_vz_la_LIBADD = libvirt_driver_vz_impl.la
 mod_LTLIBRARIES += libvirt_driver_vz.la
 libvirt_driver_vz_la_LIBADD += libvirt.la ../gnulib/lib/libgnu.la
-libvirt_driver_vz_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+libvirt_driver_vz_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 libvirt_driver_vz_impl_la_CFLAGS = \
 		-I$(srcdir)/conf \
 		-I$(srcdir)/access \
@@ -1606,7 +1607,7 @@ libvirt_driver_bhyve_la_SOURCES =
 libvirt_driver_bhyve_la_LIBADD = libvirt_driver_bhyve_impl.la
 mod_LTLIBRARIES += libvirt_driver_bhyve.la
 libvirt_driver_bhyve_la_LIBADD += libvirt.la ../gnulib/lib/libgnu.la
-libvirt_driver_bhyve_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+libvirt_driver_bhyve_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 
 libvirt_driver_bhyve_impl_la_CFLAGS = \
 	-I$(srcdir)/access \
@@ -1632,7 +1633,7 @@ libvirt_driver_network_la_LIBADD += libvirt.la ../gnulib/lib/libgnu.la \
 	$(LIBNL_LIBS) \
 	$(DBUS_LIBS) \
 	$(NULL)
-libvirt_driver_network_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+libvirt_driver_network_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 
 libvirt_driver_network_impl_la_CFLAGS = \
 		$(LIBNL_CFLAGS) \
@@ -1652,7 +1653,7 @@ libvirt_driver_interface_la_CFLAGS = \
 		-I$(srcdir)/access \
 		-I$(srcdir)/conf \
 		$(AM_CFLAGS) $(LIBNL_CFLAGS)
-libvirt_driver_interface_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+libvirt_driver_interface_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 libvirt_driver_interface_la_LIBADD =
 if WITH_NETCF
 libvirt_driver_interface_la_CFLAGS += $(NETCF_CFLAGS)
@@ -1673,7 +1674,7 @@ libvirt_driver_secret_la_CFLAGS = \
 		-I$(srcdir)/conf \
 		$(AM_CFLAGS)
 libvirt_driver_secret_la_LIBADD = libvirt.la ../gnulib/lib/libgnu.la
-libvirt_driver_secret_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+libvirt_driver_secret_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 libvirt_driver_secret_la_SOURCES = $(SECRET_DRIVER_SOURCES)
 endif WITH_SECRETS
 
@@ -1701,7 +1702,7 @@ libvirt_driver_storage_la_SOURCES =
 libvirt_driver_storage_la_LIBADD = libvirt_driver_storage_impl.la
 mod_LTLIBRARIES += libvirt_driver_storage.la
 libvirt_driver_storage_la_LIBADD += libvirt.la ../gnulib/lib/libgnu.la
-libvirt_driver_storage_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+libvirt_driver_storage_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 libvirt_driver_storage_impl_la_SOURCES += $(STORAGE_DRIVER_SOURCES)
 
 
@@ -1855,7 +1856,7 @@ libvirt_driver_nodedev_la_CFLAGS = \
 		-I$(srcdir)/access \
 		-I$(srcdir)/conf \
 		$(AM_CFLAGS) $(LIBNL_CFLAGS)
-libvirt_driver_nodedev_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+libvirt_driver_nodedev_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 libvirt_driver_nodedev_la_LIBADD =
 
 if WITH_LIBVIRTD
@@ -1880,7 +1881,7 @@ noinst_LTLIBRARIES += libvirt_driver_nwfilter_impl.la
 libvirt_driver_nwfilter_la_SOURCES =
 libvirt_driver_nwfilter_la_LIBADD = libvirt_driver_nwfilter_impl.la
 mod_LTLIBRARIES += libvirt_driver_nwfilter.la
-libvirt_driver_nwfilter_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+libvirt_driver_nwfilter_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 libvirt_driver_nwfilter_impl_la_CFLAGS = \
 		$(LIBPCAP_CFLAGS) \
 		$(LIBNL_CFLAGS) \
@@ -2388,6 +2389,7 @@ libvirt_la_LDFLAGS = \
 		$(VERSION_SCRIPT_FLAGS)$(LIBVIRT_SYMBOL_FILE) \
 		-version-info $(LIBVIRT_VERSION_INFO) \
 		$(LIBVIRT_NODELETE) \
+		$(NO_UNDEFINED_LDFLAGS) \
 		$(AM_LDFLAGS) \
 		$(NULL)
 libvirt_la_BUILT_LIBADD += ../gnulib/lib/libgnu.la
@@ -2590,7 +2592,7 @@ lockd_la_SOURCES = \
 lockd_la_CFLAGS = -I$(srcdir)/conf \
 		$(XDR_CFLAGS) \
 		$(AM_CFLAGS)
-lockd_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+lockd_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 lockd_la_LIBADD = libvirt.la ../gnulib/lib/libgnu.la
 augeas_DATA += locking/libvirt_lockd.aug
 if WITH_DTRACE_PROBES
@@ -2630,6 +2632,7 @@ virtlockd_CFLAGS = \
 virtlockd_LDFLAGS = \
 		$(AM_LDFLAGS) \
 		$(PIE_LDFLAGS) \
+		$(NO_UNDEFINED_LDFLAGS) \
 		$(NULL)
 virtlockd_LDADD = \
 		libvirt_driver_admin.la \
@@ -2657,6 +2660,7 @@ virtlogd_CFLAGS = \
 virtlogd_LDFLAGS = \
 		$(AM_LDFLAGS) \
 		$(PIE_LDFLAGS) \
+		$(NO_UNDEFINED_LDFLAGS) \
 		$(NULL)
 virtlogd_LDADD = \
 		libvirt_driver_admin.la \
@@ -2871,7 +2875,7 @@ if WITH_SANLOCK
 lockdriver_LTLIBRARIES += sanlock.la
 sanlock_la_SOURCES = $(LOCK_DRIVER_SANLOCK_SOURCES)
 sanlock_la_CFLAGS = -I$(srcdir)/conf $(AM_CFLAGS)
-sanlock_la_LDFLAGS = $(AM_LDFLAGS_MOD)
+sanlock_la_LDFLAGS = $(AM_LDFLAGS_MOD_NOUNDEF)
 sanlock_la_LIBADD = -lsanlock_client libvirt.la ../gnulib/lib/libgnu.la
 
 augeas_DATA += locking/libvirt_sanlock.aug
