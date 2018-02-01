@@ -461,6 +461,15 @@ qemuDomainJobInfoToInfo(qemuDomainJobInfoPtr jobInfo,
                               jobInfo->mirrorStats.transferred;
         break;
 
+    case QEMU_DOMAIN_JOB_STATS_TYPE_SAVEDUMP:
+        info->memTotal = jobInfo->s.migStats.ram_total;
+        info->memRemaining = jobInfo->s.migStats.ram_remaining;
+        info->memProcessed = jobInfo->s.migStats.ram_transferred;
+        info->fileTotal = jobInfo->s.migStats.disk_total;
+        info->fileRemaining = jobInfo->s.migStats.disk_remaining;
+        info->fileProcessed = jobInfo->s.migStats.disk_transferred;
+        break;
+
     case QEMU_DOMAIN_JOB_STATS_TYPE_NONE:
     case QEMU_DOMAIN_JOB_STATS_TYPE_LAST:
         break;
@@ -650,6 +659,7 @@ qemuDomainJobInfoToParams(qemuDomainJobInfoPtr jobInfo,
 {
     switch ((qemuDomainJobStatsType) jobInfo->statsType) {
     case QEMU_DOMAIN_JOB_STATS_TYPE_MIGRATION:
+    case QEMU_DOMAIN_JOB_STATS_TYPE_SAVEDUMP:
         return qemuDomainMigrationJobInfoToParams(jobInfo, type, params, nparams);
 
     case QEMU_DOMAIN_JOB_STATS_TYPE_NONE:
