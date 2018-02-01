@@ -246,7 +246,6 @@ typedef int (*qemuMonitorDomainBlockThresholdCallback)(qemuMonitorPtr mon,
                                                        unsigned long long excess,
                                                        void *opaque);
 
-
 typedef enum {
     QEMU_MONITOR_DUMP_STATUS_NONE,
     QEMU_MONITOR_DUMP_STATUS_ACTIVE,
@@ -265,6 +264,13 @@ struct _qemuMonitorDumpStats {
     unsigned long long completed; /* bytes written */
     unsigned long long total; /* total bytes to be written */
 };
+
+typedef int (*qemuMonitorDomainDumpCompletedCallback)(qemuMonitorPtr mon,
+                                                      virDomainObjPtr vm,
+                                                      int status,
+                                                      qemuMonitorDumpStatsPtr stats,
+                                                      const char *error,
+                                                      void *opaque);
 
 typedef struct _qemuMonitorCallbacks qemuMonitorCallbacks;
 typedef qemuMonitorCallbacks *qemuMonitorCallbacksPtr;
@@ -298,6 +304,7 @@ struct _qemuMonitorCallbacks {
     qemuMonitorDomainMigrationPassCallback domainMigrationPass;
     qemuMonitorDomainAcpiOstInfoCallback domainAcpiOstInfo;
     qemuMonitorDomainBlockThresholdCallback domainBlockThreshold;
+    qemuMonitorDomainDumpCompletedCallback domainDumpCompleted;
 };
 
 char *qemuMonitorEscapeArg(const char *in);
@@ -426,6 +433,11 @@ int qemuMonitorEmitBlockThreshold(qemuMonitorPtr mon,
                                   const char *nodename,
                                   unsigned long long threshold,
                                   unsigned long long excess);
+
+int qemuMonitorEmitDumpCompleted(qemuMonitorPtr mon,
+                                 int status,
+                                 qemuMonitorDumpStatsPtr stats,
+                                 const char *error);
 
 int qemuMonitorStartCPUs(qemuMonitorPtr mon,
                          virConnectPtr conn);
