@@ -1213,9 +1213,22 @@ void
 virBitmapShrink(virBitmapPtr map,
                 size_t b)
 {
+    size_t nl = 0;
+    size_t nb = 0;
+
     if (!map)
         return;
 
     if (map->max_bit >= b)
         map->max_bit = b;
+
+    nl = map->max_bit / VIR_BITMAP_BITS_PER_UNIT;
+    nb = map->max_bit % VIR_BITMAP_BITS_PER_UNIT;
+    map->map[nl] &= ((1UL << nb) - 1);
+
+    nl++;
+    if (nl < map->map_len) {
+        memset(map->map + nl, 0,
+               (map->map_len - nl) * (VIR_BITMAP_BITS_PER_UNIT / CHAR_BIT));
+    }
 }
