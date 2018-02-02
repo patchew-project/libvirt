@@ -303,7 +303,7 @@ qemuProcessHandleMonitorEOF(qemuMonitorPtr mon,
 
     if (virThreadPoolSendJob(driver->workerPool, 0, processEvent) < 0) {
         ignore_value(virObjectUnref(vm));
-        VIR_FREE(processEvent);
+        qemuProcessEventFree(processEvent);
         goto cleanup;
     }
 
@@ -917,7 +917,7 @@ qemuProcessHandleWatchdog(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
             if (virThreadPoolSendJob(driver->workerPool, 0, processEvent) < 0) {
                 if (!virObjectUnref(vm))
                     vm = NULL;
-                VIR_FREE(processEvent);
+                qemuProcessEventFree(processEvent);
             }
         }
     }
@@ -1048,9 +1048,7 @@ qemuProcessHandleBlockJob(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
     virObjectUnlock(vm);
     return 0;
  error:
-    if (processEvent)
-        VIR_FREE(processEvent->data);
-    VIR_FREE(processEvent);
+    qemuProcessEventFree(processEvent);
     goto cleanup;
 }
 
@@ -1356,7 +1354,7 @@ qemuProcessHandleGuestPanic(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
     if (virThreadPoolSendJob(driver->workerPool, 0, processEvent) < 0) {
         if (!virObjectUnref(vm))
             vm = NULL;
-        VIR_FREE(processEvent);
+        qemuProcessEventFree(processEvent);
     }
 
  cleanup:
@@ -1404,9 +1402,7 @@ qemuProcessHandleDeviceDeleted(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
     virObjectUnlock(vm);
     return 0;
  error:
-    if (processEvent)
-        VIR_FREE(processEvent->data);
-    VIR_FREE(processEvent);
+    qemuProcessEventFree(processEvent);
     goto cleanup;
 }
 
@@ -1552,9 +1548,7 @@ qemuProcessHandleNicRxFilterChanged(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
     virObjectUnlock(vm);
     return 0;
  error:
-    if (processEvent)
-        VIR_FREE(processEvent->data);
-    VIR_FREE(processEvent);
+    qemuProcessEventFree(processEvent);
     goto cleanup;
 }
 
@@ -1594,9 +1588,7 @@ qemuProcessHandleSerialChanged(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
     virObjectUnlock(vm);
     return 0;
  error:
-    if (processEvent)
-        VIR_FREE(processEvent->data);
-    VIR_FREE(processEvent);
+    qemuProcessEventFree(processEvent);
     goto cleanup;
 }
 
