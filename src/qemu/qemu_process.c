@@ -6626,6 +6626,11 @@ void qemuProcessStop(virQEMUDriverPtr driver,
 
     qemuProcessRemoveDomainStatus(driver, vm);
 
+    VIR_FREE(priv->lockState);
+    if (virDomainLockProcessPause(driver->lockManager, vm, &priv->lockState) < 0)
+        VIR_WARN("Unable to release lease on %s", vm->def->name);
+    VIR_DEBUG("Preserving lock state '%s'", NULLSTR(priv->lockState));
+
     /* Remove VNC and Spice ports from port reservation bitmap, but only if
        they were reserved by the driver (autoport=yes)
     */
