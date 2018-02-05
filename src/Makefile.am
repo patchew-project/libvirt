@@ -305,6 +305,10 @@ DRIVER_SOURCES = \
 		logging/log_manager.c logging/log_manager.h \
 		$(NULL)
 
+LOCK_DRIVER_DLM_SOURCES = \
+		locking/lock_driver_dlm.c \
+		$(NULL)
+
 LOCK_DRIVER_SANLOCK_SOURCES = \
 		locking/lock_driver_sanlock.c
 
@@ -2879,6 +2883,17 @@ virtlogd.socket: logging/virtlogd.socket.in $(top_builddir)/config.status
 	    < $< > $@-t && \
 	    mv $@-t $@
 
+if WITH_DLM
+lockdriver_LTLIBRARIES += dlm.la
+dlm_la_SOURCES = $(LOCK_DRIVER_DLM_SOURCES)
+dlm_la_CFLAGS = -I$(srcdir)/conf $(AM_CFLAGS)
+dlm_la_LDFLAGS = -module -avoid-version $(AM_LDFLAGS)
+dlm_la_LIBADD = ../gnulib/lib/libgnu.la \
+				$(CPG_LIBS) \
+				$(DLM_LIBS)
+else ! WITH_DLM
+EXTRA_DIST += $(LOCK_DRIVER_DLM_SOURCES)
+endif
 
 if WITH_SANLOCK
 lockdriver_LTLIBRARIES += sanlock.la
