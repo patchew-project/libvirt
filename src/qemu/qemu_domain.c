@@ -4717,6 +4717,121 @@ qemuDomainShmemDefPostParse(virDomainShmemDefPtr shm)
 #define QEMU_USB_XHCI_MAXPORTS 15
 
 
+/**
+ * qemuDomainPCIControllerCleanupOpts:
+ * @cont: controller
+ *
+ * Clean up PCI options for @cont so that only options applicable to
+ * the controller model will actually be set.
+ */
+static void
+qemuDomainPCIControllerCleanupOpts(const virDomainDef *def,
+                                   virDomainControllerDefPtr cont)
+{
+    if (cont->type != VIR_DOMAIN_CONTROLLER_TYPE_PCI)
+        return;
+
+    /* pcihole64 and targetIndex */
+    switch ((virDomainControllerModelPCI) cont->model) {
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT:
+        /* These controllers support all options; however,
+         * targetIndex is only supported for pSeries guests and
+         * pcihole64 is only supported on x86 */
+        if (!qemuDomainIsPSeries(def))
+            cont->opts.pciopts.targetIndex = -1;
+        if (!ARCH_IS_X86(def->os.arch)) {
+            cont->opts.pciopts.pcihole64 = false;
+            cont->opts.pciopts.pcihole64size = 0;
+        }
+        break;
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_BRIDGE:
+    case VIR_DOMAIN_CONTROLLER_MODEL_DMI_TO_PCI_BRIDGE:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT_PORT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_UPSTREAM_PORT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_DOWNSTREAM_PORT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_EXPANDER_BUS:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_EXPANDER_BUS:
+        /* These controllers don't support any option */
+        cont->opts.pciopts.pcihole64 = false;
+        cont->opts.pciopts.pcihole64size = 0;
+        ATTRIBUTE_FALLTHROUGH;
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT:
+        /* These controllers support all options except targetIndex */
+        cont->opts.pciopts.targetIndex = -1;
+        break;
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
+        break;
+    }
+
+    /* busNr and numaNode */
+    switch ((virDomainControllerModelPCI) cont->model) {
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_EXPANDER_BUS:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_EXPANDER_BUS:
+        /* These controllers support all options */
+        break;
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_BRIDGE:
+    case VIR_DOMAIN_CONTROLLER_MODEL_DMI_TO_PCI_BRIDGE:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT_PORT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_UPSTREAM_PORT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_DOWNSTREAM_PORT:
+        /* These controllers don't support any option */
+        cont->opts.pciopts.numaNode = -1;
+        ATTRIBUTE_FALLTHROUGH;
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT:
+        /* These controllers support all options except busNr; however,
+         * numaNode is only supported for pSeries guests */
+        cont->opts.pciopts.busNr = -1;
+        if (!qemuDomainIsPSeries(def))
+            cont->opts.pciopts.numaNode = -1;
+        break;
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
+        break;
+    }
+
+    /* chassis and port */
+    switch ((virDomainControllerModelPCI) cont->model) {
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT_PORT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_DOWNSTREAM_PORT:
+        /* These controllers support all options */
+        break;
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_BRIDGE:
+    case VIR_DOMAIN_CONTROLLER_MODEL_DMI_TO_PCI_BRIDGE:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_UPSTREAM_PORT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_EXPANDER_BUS:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_EXPANDER_BUS:
+        /* These controllers don't support any option */
+        cont->opts.pciopts.chassis = -1;
+        cont->opts.pciopts.port = -1;
+        break;
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
+        break;
+    }
+
+    /* chassisNr */
+    switch ((virDomainControllerModelPCI) cont->model) {
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_BRIDGE:
+        /* These controllers support all options */
+        break;
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_DMI_TO_PCI_BRIDGE:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT_PORT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_UPSTREAM_PORT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_DOWNSTREAM_PORT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_EXPANDER_BUS:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_EXPANDER_BUS:
+        /* These controllers don't support any option */
+        cont->opts.pciopts.chassisNr = -1;
+        break;
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
+        break;
+    }
+}
+
+
 static int
 qemuDomainControllerDefPostParse(virDomainControllerDefPtr cont,
                                  const virDomainDef *def,
@@ -4798,6 +4913,8 @@ qemuDomainControllerDefPostParse(virDomainControllerDefPtr cont,
         break;
 
     case VIR_DOMAIN_CONTROLLER_TYPE_PCI:
+
+        qemuDomainPCIControllerCleanupOpts(def, cont);
 
         /* pSeries guests can have multiple pci-root controllers,
          * but other machine types only support a single one */
