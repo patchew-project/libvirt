@@ -2111,6 +2111,19 @@ else ! WITH_LXC
 check-augeas-lxc:
 endif ! WITH_LXC
 
+if WITH_DLM
+test_libvirt_dlm.aug: locking/test_libvirt_dlm.aug.in \
+		locking/qemu-dlm.conf $(AUG_GENTEST)
+	$(AM_V_GEN)$(AUG_GENTEST) locking/qemu-dlm.conf $< $@
+
+check-augeas-dlm: test_libvirt_dlm.aug
+	$(AM_V_GEN)if test -x '$(AUGPARSE)'; then \
+	    '$(AUGPARSE)' -I $(srcdir)/locking test_libvirt_dlm.aug; \
+	fi
+else ! WITH_DLM
+check-augeas-dlm:
+endif ! WITH_DLM
+
 if WITH_SANLOCK
 test_libvirt_sanlock.aug: locking/test_libvirt_sanlock.aug.in \
 		locking/qemu-sanlock.conf $(AUG_GENTEST)
@@ -2891,9 +2904,34 @@ dlm_la_LDFLAGS = -module -avoid-version $(AM_LDFLAGS)
 dlm_la_LIBADD = ../gnulib/lib/libgnu.la \
 				$(CPG_LIBS) \
 				$(DLM_LIBS)
+
+augeas_DATA += locking/libvirt_dlm.aug
+augeastest_DATA += test_libvirt_dlm.aug
+CLEANFILES += test_libvirt_dlm.aug
+
+locking/%-dlm.conf: $(srcdir)/locking/dlm.conf
+	$(AM_V_GEN)$(MKDIR_P) locking ; \
+	cp $< $@
+
+if WITH_QEMU
+nodist_conf_DATA += locking/qemu-dlm.conf
+BUILT_SOURCES += locking/qemu-dlm.conf
+DISTCLEANFILES += locking/qemu-dlm.conf
+endif WITH_QEMU
+
+if WITH_LIBXL
+nodist_conf_DATA += locking/libxl-dlm.conf
+BUILT_SOURCES += locking/libxl-dlm.conf
+DISTCLEANFILES += locking/libxl-dlm.conf
+endif WITH_LIBXL
+
 else ! WITH_DLM
 EXTRA_DIST += $(LOCK_DRIVER_DLM_SOURCES)
-endif
+endif ! WITH_DLM
+
+EXTRA_DIST += locking/dlm.conf \
+	locking/libvirt_dlm.aug \
+	locking/test_libvirt_dlm.aug.in
 
 if WITH_SANLOCK
 lockdriver_LTLIBRARIES += sanlock.la
