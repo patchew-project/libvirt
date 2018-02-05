@@ -4736,6 +4736,9 @@ static int
 virDomainDefPostParseCheckFeatures(virDomainDefPtr def,
                                    virDomainXMLOptionPtr xmlopt)
 {
+    if (!UNSUPPORTED(VIR_DOMAIN_DEF_FEATURE_SKIP_VALIDATE))
+        return 0;
+
     if (UNSUPPORTED(VIR_DOMAIN_DEF_FEATURE_MEMORY_HOTPLUG) &&
         virDomainDefCheckUnsupportedMemoryHotplug(def) < 0)
         return -1;
