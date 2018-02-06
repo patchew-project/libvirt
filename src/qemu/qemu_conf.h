@@ -266,13 +266,13 @@ struct _virQEMUDriver {
     /* Immutable pointer. Unsafe APIs. XXX */
     virHashTablePtr sharedDevices;
 
-    /* Immutable pointer, self-locking APIs */
+    /* Immutable pointer, immutable object */
     virPortAllocatorRangePtr remotePorts;
 
-    /* Immutable pointer, self-locking APIs */
+    /* Immutable pointer, immutable object */
     virPortAllocatorRangePtr webSocketPorts;
 
-    /* Immutable pointer, self-locking APIs */
+    /* Immutable pointer, immutable object */
     virPortAllocatorRangePtr migrationPorts;
 
     /* Immutable pointer, lockless APIs*/
