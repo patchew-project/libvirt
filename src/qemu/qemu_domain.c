@@ -3833,6 +3833,12 @@ qemuDomainDeviceDefValidateNetwork(const virDomainNetDef *net)
                                    _("prefix too long"));
                     return -1;
                 }
+
+                if (ip->prefix < 4) {
+                    virReportError(VIR_ERR_XML_ERROR, "%s",
+                                   _("prefix too short"));
+                    return -1;
+                }
             }
 
             if (VIR_SOCKET_ADDR_IS_FAMILY(&ip->address, AF_INET6)) {
