@@ -2805,6 +2805,7 @@ MAINTAINERCLEANFILES += $(MANINFILES)
 EXTRA_DIST += \
         locking/virtlockd.service.in \
         locking/virtlockd.socket.in \
+        locking/virtlockd-admin.socket.in \
         locking/virtlockd.aug \
         locking/virtlockd.conf \
         locking/test_virtlockd.aug.in \
@@ -2824,18 +2825,20 @@ if LIBVIRT_INIT_SCRIPT_SYSTEMD
 
 SYSTEMD_UNIT_DIR = $(prefix)/lib/systemd/system
 
-BUILT_SOURCES += virtlockd.service virtlockd.socket \
+BUILT_SOURCES += virtlockd.service virtlockd.socket virtlockd-admin.socket \
 		 virtlogd.service virtlogd.socket virtlogd-admin.socket
-DISTCLEANFILES += virtlockd.service virtlockd.socket \
+DISTCLEANFILES += virtlockd.service virtlockd.socket virtlockd-admin.socket \
 		  virtlogd.service virtlogd.socket virtlogd-admin.socket
 
-install-systemd: virtlockd.service virtlockd.socket \
+install-systemd: virtlockd.service virtlockd.socket virtlockd-admin.socket \
                  virtlogd.service virtlogd.socket virtlogd-admin.socket \
 		 install-sysconfig
 	$(MKDIR_P) $(DESTDIR)$(SYSTEMD_UNIT_DIR)
 	$(INSTALL_DATA) virtlockd.service \
 	  $(DESTDIR)$(SYSTEMD_UNIT_DIR)/
 	$(INSTALL_DATA) virtlockd.socket \
+	  $(DESTDIR)$(SYSTEMD_UNIT_DIR)/
+	$(INSTALL_DATA) virtlockd-admin.socket \
 	  $(DESTDIR)$(SYSTEMD_UNIT_DIR)/
 	$(INSTALL_DATA) virtlogd.service \
 	  $(DESTDIR)$(SYSTEMD_UNIT_DIR)/
@@ -2846,7 +2849,8 @@ install-systemd: virtlockd.service virtlockd.socket \
 
 uninstall-systemd: uninstall-sysconfig
 	rm -f $(DESTDIR)$(SYSTEMD_UNIT_DIR)/virtlockd.service \
-	  $(DESTDIR)$(SYSTEMD_UNIT_DIR)/virtlockd.socket
+	  $(DESTDIR)$(SYSTEMD_UNIT_DIR)/virtlockd.socket \
+	  $(DESTDIR)$(SYSTEMD_UNIT_DIR)/virtlockd-admin.socket
 	rm -f $(DESTDIR)$(SYSTEMD_UNIT_DIR)/virtlogd.service \
 	  $(DESTDIR)$(SYSTEMD_UNIT_DIR)/virtlogd.socket \
 	  $(DESTDIR)$(SYSTEMD_UNIT_DIR)/virtlogd-admin.socket
@@ -2867,6 +2871,13 @@ virtlockd.service: locking/virtlockd.service.in $(top_builddir)/config.status
 	    mv $@-t $@
 
 virtlockd.socket: locking/virtlockd.socket.in $(top_builddir)/config.status
+	$(AM_V_GEN)sed \
+	    -e 's|[@]localstatedir[@]|$(localstatedir)|g' \
+	    < $< > $@-t && \
+	    mv $@-t $@
+
+virtlockd-admin.socket: locking/virtlockd-admin.socket.in \
+                        $(top_builddir)/config.status
 	$(AM_V_GEN)sed \
 	    -e 's|[@]localstatedir[@]|$(localstatedir)|g' \
 	    < $< > $@-t && \
