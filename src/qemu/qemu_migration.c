@@ -552,7 +552,7 @@ qemuMigrationStartNBDServer(virQEMUDriverPtr driver,
  cleanup:
     VIR_FREE(diskAlias);
     if (ret < 0 && nbdPort == 0)
-        virPortAllocatorRelease(driver->migrationPorts, port);
+        virPortAllocatorRelease(port);
     return ret;
 
  exit_monitor:
@@ -580,7 +580,7 @@ qemuMigrationStopNBDServer(virQEMUDriverPtr driver,
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         return -1;
 
-    virPortAllocatorRelease(driver->migrationPorts, priv->nbdPort);
+    virPortAllocatorRelease(priv->nbdPort);
     priv->nbdPort = 0;
     return 0;
 }
@@ -2229,7 +2229,7 @@ qemuMigrationPrepareCleanup(virQEMUDriverPtr driver,
               qemuDomainJobTypeToString(priv->job.active),
               qemuDomainAsyncJobTypeToString(priv->job.asyncJob));
 
-    virPortAllocatorRelease(driver->migrationPorts, priv->migrationPort);
+    virPortAllocatorRelease(priv->migrationPort);
     priv->migrationPort = 0;
 
     if (!qemuMigrationJobIsActive(vm, QEMU_ASYNC_JOB_MIGRATION_IN))
@@ -2909,7 +2909,7 @@ qemuMigrationPrepareAny(virQEMUDriverPtr driver,
          * it is given in parameters
          */
         if (nbdPort == 0)
-            virPortAllocatorRelease(driver->migrationPorts, priv->nbdPort);
+            virPortAllocatorRelease(priv->nbdPort);
         priv->nbdPort = 0;
         virDomainObjRemoveTransientDef(vm);
         qemuDomainRemoveInactiveJob(driver, vm);
@@ -3152,7 +3152,7 @@ qemuMigrationPrepareDirect(virQEMUDriverPtr driver,
     if (ret != 0) {
         VIR_FREE(*uri_out);
         if (autoPort)
-            virPortAllocatorRelease(driver->migrationPorts, port);
+            virPortAllocatorRelease(port);
     }
     return ret;
 }
@@ -5514,7 +5514,7 @@ qemuMigrationFinish(virQEMUDriverPtr driver,
 
  cleanup:
     VIR_FREE(jobInfo);
-    virPortAllocatorRelease(driver->migrationPorts, port);
+    virPortAllocatorRelease(port);
     if (priv->mon)
         qemuMonitorSetDomainLog(priv->mon, NULL, NULL, NULL);
     VIR_FREE(priv->origname);
