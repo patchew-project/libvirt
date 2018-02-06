@@ -43,12 +43,21 @@ struct _virNWFilterObj {
 };
 
 struct _virNWFilterObjList {
-    size_t count;
-    virNWFilterObjPtr *objs;
+    virObjectRWLockable parent;
+
+    /* uuid string -> virNWFilterObj  mapping
+     * for O(1), lockless lookup-by-uuid */
+    virHashTable *objs;
+
+    /* name -> virNWFilterObj mapping for O(1),
+     * lockless lookup-by-name */
+    virHashTable *objsName;
 };
 
 static virClassPtr virNWFilterObjClass;
+static virClassPtr virNWFilterObjListClass;
 static void virNWFilterObjDispose(void *opaque);
+static void virNWFilterObjListDispose(void *opaque);
 
 
 static int
@@ -58,6 +67,12 @@ virNWFilterObjOnceInit(void)
                                             "virNWFilterObj",
                                             sizeof(virNWFilterObj),
                                             virNWFilterObjDispose)))
+        return -1;
+
+    if (!(virNWFilterObjListClass = virClassNew(virClassForObjectRWLockable(),
+                                                "virNWFilterObjList",
+                                                sizeof(virNWFilterObjList),
+                                                virNWFilterObjListDispose)))
         return -1;
 
     return 0;
@@ -144,14 +159,20 @@ virNWFilterObjDispose(void *opaque)
 }
 
 
+static void
+virNWFilterObjListDispose(void *opaque)
+{
+    virNWFilterObjListPtr nwfilters = opaque;
+
+    virHashFree(nwfilters->objs);
+    virHashFree(nwfilters->objsName);
+}
+
+
 void
 virNWFilterObjListFree(virNWFilterObjListPtr nwfilters)
 {
-    size_t i;
-    for (i = 0; i < nwfilters->count; i++)
-        virObjectUnref(nwfilters->objs[i]);
-    VIR_FREE(nwfilters->objs);
-    VIR_FREE(nwfilters);
+    virObjectUnref(nwfilters);
 }
 
 
@@ -160,8 +181,23 @@ virNWFilterObjListNew(void)
 {
     virNWFilterObjListPtr nwfilters;
 
-    if (VIR_ALLOC(nwfilters) < 0)
+    if (virNWFilterObjInitialize() < 0)
         return NULL;
+
+    if (!(nwfilters = virObjectRWLockableNew(virNWFilterObjListClass)))
+        return NULL;
+
+    if (!(nwfilters->objs = virHashCreate(10, virObjectFreeHashData))) {
+        virObjectUnref(nwfilters);
+        return NULL;
+    }
+
+    if (!(nwfilters->objsName = virHashCreate(10, virObjectFreeHashData))) {
+        virHashFree(nwfilters->objs);
+        virObjectUnref(nwfilters);
+        return NULL;
+    }
+
     return nwfilters;
 }
 
@@ -170,83 +206,105 @@ void
 virNWFilterObjListRemove(virNWFilterObjListPtr nwfilters,
                          virNWFilterObjPtr obj)
 {
-    size_t i;
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
+    virNWFilterDefPtr def;
 
+    if (!obj)
+        return;
+    def = obj->def;
+
+    virUUIDFormat(def->uuid, uuidstr);
+    virObjectRef(obj);
     virObjectRWUnlock(obj);
-
-    for (i = 0; i < nwfilters->count; i++) {
-        virObjectRWLockWrite(nwfilters->objs[i]);
-        if (nwfilters->objs[i] == obj) {
-            virObjectRWUnlock(nwfilters->objs[i]);
-            virObjectUnref(nwfilters->objs[i]);
-
-            VIR_DELETE_ELEMENT(nwfilters->objs, i, nwfilters->count);
-            break;
-        }
-        virObjectRWUnlock(nwfilters->objs[i]);
-    }
+    virObjectRWLockWrite(nwfilters);
+    virObjectRWLockWrite(obj);
+    virHashRemoveEntry(nwfilters->objs, uuidstr);
+    virHashRemoveEntry(nwfilters->objsName, def->name);
+    virObjectRWUnlock(obj);
+    virObjectUnref(obj);
+    virObjectRWUnlock(nwfilters);
 }
 
 
 /**
- * virNWFilterObjListFindByUUID
+ * virNWFilterObjListFindByUUID[Locked]
  * @nwfilters: Pointer to filter list
- * @uuid: UUID to use to lookup the object
+ * @uuidstr: UUID to use to lookup the object
+ *
+ * The static [Locked] version would only be used when the Object List is
+ * already locked, such as is the case during virNWFilterObjListAssignDef.
+ * The caller is thus responsible for locking the object.
  *
  * Search for the object by uuidstr in the hash table and return a read
  * locked copy of the object.
  *
+ * Returns: A reffed object or NULL on error
+ */
+static virNWFilterObjPtr
+virNWFilterObjListFindByUUIDLocked(virNWFilterObjListPtr nwfilters,
+                                   const char *uuidstr)
+{
+    return virObjectRef(virHashLookup(nwfilters->objs, uuidstr));
+}
+
+
+/*
  * Returns: A reffed and read locked object or NULL on error
  */
 virNWFilterObjPtr
 virNWFilterObjListFindByUUID(virNWFilterObjListPtr nwfilters,
-                             const unsigned char *uuid)
+                             const char *uuidstr)
 {
-    size_t i;
     virNWFilterObjPtr obj;
-    virNWFilterDefPtr def;
 
-    for (i = 0; i < nwfilters->count; i++) {
-        obj = nwfilters->objs[i];
+    virObjectRWLockRead(nwfilters);
+    obj = virNWFilterObjListFindByUUIDLocked(nwfilters, uuidstr);
+    virObjectRWUnlock(nwfilters);
+    if (obj)
         virObjectRWLockRead(obj);
-        def = obj->def;
-        if (!memcmp(def->uuid, uuid, VIR_UUID_BUFLEN))
-            return virObjectRef(obj);
-        virObjectRWUnlock(obj);
-    }
 
-    return NULL;
+    return obj;
 }
 
 
 /**
- * virNWFilterObjListFindByName
+ * virNWFilterObjListFindByName[Locked]
  * @nwfilters: Pointer to filter list
  * @name: filter name to use to lookup the object
+ *
+ * The static [Locked] version would only be used when the Object List is
+ * already locked, such as is the case during virNWFilterObjListAssignDef.
+ * The caller is thus responsible for locking the object.
  *
  * Search for the object by name in the hash table and return a read
  * locked copy of the object.
  *
+ * Returns: A reffed object or NULL on error
+ */
+static virNWFilterObjPtr
+virNWFilterObjListFindByNameLocked(virNWFilterObjListPtr nwfilters,
+                                   const char *name)
+{
+    return virObjectRef(virHashLookup(nwfilters->objsName, name));
+}
+
+
+/*
  * Returns: A reffed and read locked object or NULL on error
  */
 virNWFilterObjPtr
 virNWFilterObjListFindByName(virNWFilterObjListPtr nwfilters,
                              const char *name)
 {
-    size_t i;
     virNWFilterObjPtr obj;
-    virNWFilterDefPtr def;
 
-    for (i = 0; i < nwfilters->count; i++) {
-        obj = nwfilters->objs[i];
+    virObjectRWLockRead(nwfilters);
+    obj = virNWFilterObjListFindByNameLocked(nwfilters, name);
+    virObjectRWUnlock(nwfilters);
+    if (obj)
         virObjectRWLockRead(obj);
-        def = obj->def;
-        if (STREQ_NULLABLE(def->name, name))
-            return virObjectRef(obj);
-        virObjectRWUnlock(obj);
-    }
 
-    return NULL;
+    return obj;
 }
 
 
@@ -392,8 +450,11 @@ virNWFilterObjListAssignDef(virNWFilterObjListPtr nwfilters,
 {
     virNWFilterObjPtr obj;
     virNWFilterDefPtr objdef;
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
 
-    if ((obj = virNWFilterObjListFindByUUID(nwfilters, def->uuid))) {
+    virUUIDFormat(def->uuid, uuidstr);
+
+    if ((obj = virNWFilterObjListFindByUUID(nwfilters, uuidstr))) {
         objdef = obj->def;
 
         if (STRNEQ(def->name, objdef->name)) {
@@ -407,10 +468,7 @@ virNWFilterObjListAssignDef(virNWFilterObjListPtr nwfilters,
         virNWFilterObjEndAPI(&obj);
     } else {
         if ((obj = virNWFilterObjListFindByName(nwfilters, def->name))) {
-            char uuidstr[VIR_UUID_STRING_BUFLEN];
-
             objdef = obj->def;
-            virUUIDFormat(objdef->uuid, uuidstr);
             virReportError(VIR_ERR_OPERATION_FAILED,
                            _("filter '%s' already exists with uuid %s"),
                            def->name, uuidstr);
@@ -425,24 +483,26 @@ virNWFilterObjListAssignDef(virNWFilterObjListPtr nwfilters,
         return NULL;
     }
 
-
-    /* Get a READ lock and immediately promote to WRITE while we adjust
-     * data within. */
-    if ((obj = virNWFilterObjListFindByName(nwfilters, def->name))) {
+    /* We're about to make some changes to objects on the list - so get the
+     * list READ lock in order to Find the object and WRITE lock the object
+     * since both paths would immediately promote it anyway */
+    virObjectRWLockRead(nwfilters);
+    if ((obj = virNWFilterObjListFindByNameLocked(nwfilters, def->name))) {
+        virObjectRWLockWrite(obj);
+        virObjectRWUnlock(nwfilters);
 
         objdef = obj->def;
         if (virNWFilterDefEqual(def, objdef)) {
-            virNWFilterObjPromoteToWrite(obj);
             virNWFilterDefFree(objdef);
             obj->def = def;
             virNWFilterObjDemoteFromWrite(obj);
             return obj;
         }
 
-        /* Set newDef and run the trigger with a demoted lock since it may need
-         * to grab a read lock on this object and promote before returning. */
-        virNWFilterObjPromoteToWrite(obj);
         obj->newDef = def;
+
+        /* Demote while the trigger runs since it may need to grab a read
+         * lock on this object and promote before returning. */
         virNWFilterObjDemoteFromWrite(obj);
 
         /* trigger the update on VMs referencing the filter */
@@ -462,39 +522,113 @@ virNWFilterObjListAssignDef(virNWFilterObjListPtr nwfilters,
         return obj;
     }
 
+    /* Promote the nwfilters to add a new object */
+    virObjectRWUnlock(nwfilters);
+    virObjectRWLockWrite(nwfilters);
     if (!(obj = virNWFilterObjNew()))
-        return NULL;
+        goto cleanup;
 
-    if (VIR_APPEND_ELEMENT_COPY(nwfilters->objs,
-                                nwfilters->count, obj) < 0) {
-        virNWFilterObjEndAPI(&obj);
-        return NULL;
+    if (virHashAddEntry(nwfilters->objs, uuidstr, obj) < 0)
+        goto error;
+    virObjectRef(obj);
+
+    if (virHashAddEntry(nwfilters->objsName, def->name, obj) < 0) {
+        virHashRemoveEntry(nwfilters->objs, uuidstr);
+        goto error;
     }
     virObjectRef(obj);
+
     obj->def = def;
     virNWFilterObjDemoteFromWrite(obj);
 
+ cleanup:
+    virObjectRWUnlock(nwfilters);
     return obj;
+
+ error:
+    virObjectRWUnlock(obj);
+    virObjectUnref(obj);
+    virObjectRWUnlock(nwfilters);
+    return NULL;
 }
 
+
+struct virNWFilterCountData {
+    virConnectPtr conn;
+    virNWFilterObjListFilter filter;
+    int nelems;
+};
+
+static int
+virNWFilterObjListNumOfNWFiltersCallback(void *payload,
+                                         const void *name ATTRIBUTE_UNUSED,
+                                         void *opaque)
+{
+    virNWFilterObjPtr obj = payload;
+    struct virNWFilterCountData *data = opaque;
+
+    virObjectRWLockRead(obj);
+    if (!data->filter || data->filter(data->conn, obj->def))
+        data->nelems++;
+    virObjectRWUnlock(obj);
+    return 0;
+}
 
 int
 virNWFilterObjListNumOfNWFilters(virNWFilterObjListPtr nwfilters,
                                  virConnectPtr conn,
                                  virNWFilterObjListFilter filter)
 {
-    size_t i;
-    int nfilters = 0;
+    struct virNWFilterCountData data = {
+        .conn = conn, .filter = filter, .nelems = 0 };
 
-    for (i = 0; i < nwfilters->count; i++) {
-        virNWFilterObjPtr obj = nwfilters->objs[i];
-        virObjectRWLockRead(obj);
-        if (!filter || filter(conn, obj->def))
-            nfilters++;
-        virObjectRWUnlock(obj);
+    virObjectRWLockRead(nwfilters);
+    virHashForEach(nwfilters->objs, virNWFilterObjListNumOfNWFiltersCallback,
+                   &data);
+    virObjectRWUnlock(nwfilters);
+
+    return data.nelems;
+}
+
+
+struct virNWFilterListData {
+    virConnectPtr conn;
+    virNWFilterObjListFilter filter;
+    int nelems;
+    char **elems;
+    int maxelems;
+    bool error;
+};
+
+static int
+virNWFilterObjListGetNamesCallback(void *payload,
+                                   const void *name ATTRIBUTE_UNUSED,
+                                   void *opaque)
+{
+    virNWFilterObjPtr obj = payload;
+    virNWFilterDefPtr def;
+    struct virNWFilterListData *data = opaque;
+
+    if (data->error)
+        return 0;
+
+    if (data->maxelems >= 0 && data->nelems == data->maxelems)
+        return 0;
+
+    virObjectRWLockRead(obj);
+    def = obj->def;
+
+    if (!data->filter || data->filter(data->conn, def)) {
+        if (VIR_STRDUP(data->elems[data->nelems], def->name) < 0) {
+            data->error = true;
+            goto cleanup;
+        }
+        data->nelems++;
     }
 
-    return nfilters;
+ cleanup:
+    virObjectRWUnlock(obj);
+    return 0;
 }
 
 
@@ -505,31 +639,67 @@ virNWFilterObjListGetNames(virNWFilterObjListPtr nwfilters,
                            char **const names,
                            int maxnames)
 {
-    int nnames = 0;
-    size_t i;
+    struct virNWFilterListData data = { .conn = conn, .filter = filter,
+        .nelems = 0, .elems = names, .maxelems = maxnames, .error = false };
+
+    virObjectRWLockRead(nwfilters);
+    virHashForEach(nwfilters->objs, virNWFilterObjListGetNamesCallback, &data);
+    virObjectRWUnlock(nwfilters);
+
+    if (data.error)
+        goto error;
+
+    return data.nelems;
+
+ error:
+    while (--data.nelems >= 0)
+        VIR_FREE(data.elems[data.nelems]);
+    return -1;
+}
+
+
+struct virNWFilterExportData {
+    virConnectPtr conn;
+    virNWFilterObjListFilter filter;
+    virNWFilterPtr *filters;
+    int nfilters;
+    bool error;
+};
+
+static int
+virNWFilterObjListExportCallback(void *payload,
+                                 const void *name ATTRIBUTE_UNUSED,
+                                 void *opaque)
+{
+    virNWFilterObjPtr obj = payload;
     virNWFilterDefPtr def;
 
-    for (i = 0; i < nwfilters->count && nnames < maxnames; i++) {
-        virNWFilterObjPtr obj = nwfilters->objs[i];
-        virObjectRWLockRead(obj);
-        def = obj->def;
-        if (!filter || filter(conn, def)) {
-            if (VIR_STRDUP(names[nnames], def->name) < 0) {
-                virObjectRWUnlock(obj);
-                goto failure;
-            }
-            nnames++;
-        }
-        virObjectRWUnlock(obj);
+    struct virNWFilterExportData *data = opaque;
+    virNWFilterPtr nwfilter;
+
+    if (data->error)
+        return 0;
+
+    virObjectRWLockRead(obj);
+    def = obj->def;
+
+    if (data->filter && !data->filter(data->conn, def))
+        goto cleanup;
+
+    if (!data->filters) {
+        data->nfilters++;
+        goto cleanup;
     }
 
-    return nnames;
+    if (!(nwfilter = virGetNWFilter(data->conn, def->name, def->uuid))) {
+        data->error = true;
+        goto cleanup;
+    }
+    data->filters[data->nfilters++] = nwfilter;
 
- failure:
-    while (--nnames >= 0)
-        VIR_FREE(names[nnames]);
-
-    return -1;
+ cleanup:
+    virObjectRWUnlock(obj);
+    return 0;
 }
 
 
@@ -539,48 +709,33 @@ virNWFilterObjListExport(virConnectPtr conn,
                          virNWFilterPtr **filters,
                          virNWFilterObjListFilter filter)
 {
-    virNWFilterPtr *tmp_filters = NULL;
-    int nfilters = 0;
-    virNWFilterPtr nwfilter = NULL;
-    virNWFilterObjPtr obj = NULL;
-    virNWFilterDefPtr def;
-    size_t i;
-    int ret = -1;
+    struct virNWFilterExportData data = { .conn = conn, .filter = filter,
+        .filters = NULL, .nfilters = 0, .error = false };
 
-    if (!filters) {
-        ret = nwfilters->count;
-        goto cleanup;
+    virObjectRWLockRead(nwfilters);
+    if (filters &&
+        VIR_ALLOC_N(data.filters, virHashSize(nwfilters->objs) + 1) < 0) {
+        virObjectRWUnlock(nwfilters);
+        return -1;
     }
 
-    if (VIR_ALLOC_N(tmp_filters, nwfilters->count + 1) < 0)
-        goto cleanup;
+    virHashForEach(nwfilters->objs, virNWFilterObjListExportCallback, &data);
+    virObjectRWUnlock(nwfilters);
 
-    for (i = 0; i < nwfilters->count; i++) {
-        obj = nwfilters->objs[i];
-        virObjectRWLockRead(obj);
-        def = obj->def;
-        if (!filter || filter(conn, def)) {
-            if (!(nwfilter = virGetNWFilter(conn, def->name, def->uuid))) {
-                virObjectRWUnlock(obj);
-                goto cleanup;
-            }
-            tmp_filters[nfilters++] = nwfilter;
-        }
-        virObjectRWUnlock(obj);
+    if (data.error)
+         goto cleanup;
+
+    if (data.filters) {
+        /* trim the array to the final size */
+        ignore_value(VIR_REALLOC_N(data.filters, data.nfilters + 1));
+        *filters = data.filters;
     }
 
-    *filters = tmp_filters;
-    tmp_filters = NULL;
-    ret = nfilters;
+    return data.nfilters;
 
  cleanup:
-    if (tmp_filters) {
-        for (i = 0; i < nfilters; i ++)
-            virObjectUnref(tmp_filters[i]);
-    }
-    VIR_FREE(tmp_filters);
-
-    return ret;
+    virObjectListFree(data.filters);
+    return -1;
 }
 
 
