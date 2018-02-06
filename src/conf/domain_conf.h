@@ -1871,7 +1871,8 @@ typedef enum {
 VIR_ENUM_DECL(virDomainIOAPIC);
 
 typedef enum {
-    VIR_DOMAIN_HPT_RESIZING_ENABLED = 0,
+    VIR_DOMAIN_HPT_RESIZING_NONE = 0,
+    VIR_DOMAIN_HPT_RESIZING_ENABLED,
     VIR_DOMAIN_HPT_RESIZING_DISABLED,
     VIR_DOMAIN_HPT_RESIZING_REQUIRED,
 
@@ -2364,7 +2365,6 @@ struct _virDomainDef {
     unsigned int hyperv_spinlocks;
     virGICVersion gic_version;
     char *hyperv_vendor_id;
-    virDomainHPTResizing hpt_resizing;
 
     /* These options are of type virTristateSwitch: ON = keep, OFF = drop */
     int caps_features[VIR_DOMAIN_CAPS_FEATURE_LAST];

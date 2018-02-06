@@ -3336,7 +3336,7 @@ qemuDomainDefValidateFeatures(const virDomainDef *def)
             break;
 
         case VIR_DOMAIN_FEATURE_HPT:
-            if (def->features[i] == VIR_TRISTATE_SWITCH_ON &&
+            if (def->features[i] != VIR_DOMAIN_HPT_RESIZING_NONE &&
                 !qemuDomainIsPSeries(def)) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                _("The '%s' feature is only supported for %s guests"),
