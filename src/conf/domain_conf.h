@@ -1861,7 +1861,8 @@ struct _virDomainLoaderDef {
 void virDomainLoaderDefFree(virDomainLoaderDefPtr loader);
 
 typedef enum {
-    VIR_DOMAIN_IOAPIC_QEMU = 0,
+    VIR_DOMAIN_IOAPIC_NONE = 0,
+    VIR_DOMAIN_IOAPIC_QEMU,
     VIR_DOMAIN_IOAPIC_KVM,
 
     VIR_DOMAIN_IOAPIC_LAST
@@ -2352,9 +2353,10 @@ struct _virDomainDef {
 
     virDomainOSDef os;
     char *emulator;
-    /* These three options are of type virTristateSwitch,
-     * except VIR_DOMAIN_FEATURE_CAPABILITIES that is of type
-     * virDomainCapabilitiesPolicy */
+    /* Most of the values in {kvm_,hyperv_,}features are of type
+     * virTristateSwitch, but there are exceptions: for example,
+     * VIR_DOMAIN_FEATURE_CAPABILITIES is of type virDomainCapabilitiesPolicy,
+     * VIR_DOMAIN_FEATURE_IOAPIC is of type virDomainIOAPIC and so on */
     int features[VIR_DOMAIN_FEATURE_LAST];
     int apic_eoi;
     int hyperv_features[VIR_DOMAIN_HYPERV_LAST];
@@ -2362,7 +2364,6 @@ struct _virDomainDef {
     unsigned int hyperv_spinlocks;
     virGICVersion gic_version;
     char *hyperv_vendor_id;
-    virDomainIOAPIC ioapic;
     virDomainHPTResizing hpt_resizing;
 
     /* These options are of type virTristateSwitch: ON = keep, OFF = drop */
