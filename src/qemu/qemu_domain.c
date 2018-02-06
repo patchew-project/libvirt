@@ -8634,6 +8634,10 @@ qemuDomainRefreshVcpuHalted(virQEMUDriverPtr driver,
     if (vm->def->virtType == VIR_DOMAIN_VIRT_QEMU)
         return 0;
 
+    /* Only supported on s390(x) */
+    if (!ARCH_IS_S390(vm->def->os.arch))
+        return 0;
+
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
         return -1;
 
