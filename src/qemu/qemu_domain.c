@@ -3206,30 +3206,6 @@ qemuDomainDefCPUPostParse(virDomainDefPtr def)
 
 
 static int
-qemuDomainDefVerifyFeatures(const virDomainDef *def)
-{
-    if (def->features[VIR_DOMAIN_FEATURE_IOAPIC] == VIR_TRISTATE_SWITCH_ON &&
-        !ARCH_IS_X86(def->os.arch)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("I/O APIC tuning is not supported "
-                         "for '%s' architecture"),
-                       virArchToString(def->os.arch));
-        return -1;
-    }
-
-    if (def->features[VIR_DOMAIN_FEATURE_HPT] == VIR_TRISTATE_SWITCH_ON &&
-        !qemuDomainIsPSeries(def)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       "%s",
-                       _("HPT tuning is only supported for pSeries guests"));
-        return -1;
-    }
-
-    return 0;
-}
-
-
-static int
 qemuDomainDefPostParseBasic(virDomainDefPtr def,
                             virCapsPtr caps,
                             void *opaque ATTRIBUTE_UNUSED)
@@ -3287,9 +3263,6 @@ qemuDomainDefPostParse(virDomainDefPtr def,
 
     qemuDomainDefEnableDefaultFeatures(def, qemuCaps);
 
-    if (qemuDomainDefVerifyFeatures(def) < 0)
-        goto cleanup;
-
     if (qemuDomainRecheckInternalPaths(def, cfg, parseFlags) < 0)
         goto cleanup;
 
@@ -3340,6 +3313,30 @@ qemuDomainDefGetVcpuHotplugGranularity(const virDomainDef *def)
 
 
 #define QEMU_MAX_VCPUS_WITHOUT_EIM 255
+
+
+static int
+qemuDomainDefValidateFeatures(const virDomainDef *def)
+{
+    if (def->features[VIR_DOMAIN_FEATURE_IOAPIC] == VIR_TRISTATE_SWITCH_ON &&
+        !ARCH_IS_X86(def->os.arch)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("I/O APIC tuning is not supported "
+                         "for '%s' architecture"),
+                       virArchToString(def->os.arch));
+        return -1;
+    }
+
+    if (def->features[VIR_DOMAIN_FEATURE_HPT] == VIR_TRISTATE_SWITCH_ON &&
+        !qemuDomainIsPSeries(def)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       "%s",
+                       _("HPT tuning is only supported for pSeries guests"));
+        return -1;
+    }
+
+    return 0;
+}
 
 
 static int
@@ -3453,6 +3450,9 @@ qemuDomainDefValidate(const virDomainDef *def,
             goto cleanup;
         }
     }
+
+    if (qemuDomainDefValidateFeatures(def) < 0)
+        goto cleanup;
 
     ret = 0;
 
