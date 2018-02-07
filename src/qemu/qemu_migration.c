@@ -409,12 +409,12 @@ qemuMigrateDisk(virDomainDiskDef const *disk,
             if (STREQ(disk->dst, migrate_disks[i]))
                 return true;
         }
-        return false;
     }
 
-    /* Default is to migrate only non-shared non-readonly disks
+    /* Default is to migrate only non-shared non-readonly local disks
      * with source */
     return !disk->src->shared && !disk->src->readonly &&
+           (disk->src->type != VIR_STORAGE_TYPE_NETWORK) &&
            !virStorageSourceIsEmpty(disk->src);
 }
 
