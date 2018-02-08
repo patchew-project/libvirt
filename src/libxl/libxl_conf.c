@@ -366,7 +366,9 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
                 return -1;
             }
 
-            if (ARCH_IS_X86(def->os.arch)) {
+            /* consider host support for nested HVM only if global nested_hvm
+             * option enable it */
+            if (cfg->nested_hvm && ARCH_IS_X86(def->os.arch)) {
                 vmx = virCPUCheckFeature(caps->host.arch, caps->host.cpu, "vmx");
                 svm = virCPUCheckFeature(caps->host.arch, caps->host.cpu, "svm");
                 hasHwVirt = vmx | svm;
@@ -1697,6 +1699,9 @@ int libxlDriverConfigLoadFile(libxlDriverConfigPtr cfg,
         goto cleanup;
 
     if (virConfGetValueUInt(conf, "keepalive_count", &cfg->keepAliveCount) < 0)
+        goto cleanup;
+
+    if (virConfGetValueBool(conf, "nested_hvm", &cfg->nested_hvm) < 0)
         goto cleanup;
 
     ret = 0;
