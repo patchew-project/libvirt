@@ -108,6 +108,18 @@ void virSysinfoBaseBoardDefClear(virSysinfoBaseBoardDefPtr def)
     VIR_FREE(def->location);
 }
 
+void virSysinfoChassisDefFree(virSysinfoChassisDefPtr def)
+{
+    if (def == NULL)
+        return;
+
+    VIR_FREE(def->manufacturer);
+    VIR_FREE(def->version);
+    VIR_FREE(def->serial);
+    VIR_FREE(def->asset);
+    VIR_FREE(def->sku);
+}
+
 void virSysinfoOEMStringsDefFree(virSysinfoOEMStringsDefPtr def)
 {
     size_t i;
@@ -142,6 +154,8 @@ void virSysinfoDefFree(virSysinfoDefPtr def)
     for (i = 0; i < def->nbaseBoard; i++)
         virSysinfoBaseBoardDefClear(def->baseBoard + i);
     VIR_FREE(def->baseBoard);
+
+    virSysinfoChassisDefFree(def->chassis);
 
     for (i = 0; i < def->nprocessor; i++) {
         VIR_FREE(def->processor[i].processor_socket_destination);
@@ -1203,6 +1217,28 @@ virSysinfoBaseBoardFormat(virBufferPtr buf,
 }
 
 static void
+virSysinfoChassisFormat(virBufferPtr buf, virSysinfoChassisDefPtr def)
+{
+    if (!def)
+        return;
+
+    virBufferAddLit(buf, "<chassis>\n");
+    virBufferAdjustIndent(buf, 2);
+    virBufferEscapeString(buf, "<entry name='manufacturer'>%s</entry>\n",
+                          def->manufacturer);
+    virBufferEscapeString(buf, "<entry name='version'>%s</entry>\n",
+                          def->version);
+    virBufferEscapeString(buf, "<entry name='serial'>%s</entry>\n",
+                          def->serial);
+    virBufferEscapeString(buf, "<entry name='asset'>%s</entry>\n",
+                          def->asset);
+    virBufferEscapeString(buf, "<entry name='sku'>%s</entry>\n",
+                          def->sku);
+    virBufferAdjustIndent(buf, -2);
+    virBufferAddLit(buf, "</chassis>\n");
+}
+
+static void
 virSysinfoProcessorFormat(virBufferPtr buf, virSysinfoDefPtr def)
 {
     size_t i;
@@ -1354,6 +1390,7 @@ virSysinfoFormat(virBufferPtr buf, virSysinfoDefPtr def)
     virSysinfoBIOSFormat(&childrenBuf, def->bios);
     virSysinfoSystemFormat(&childrenBuf, def->system);
     virSysinfoBaseBoardFormat(&childrenBuf, def->baseBoard, def->nbaseBoard);
+    virSysinfoChassisFormat(&childrenBuf, def->chassis);
     virSysinfoProcessorFormat(&childrenBuf, def);
     virSysinfoMemoryFormat(&childrenBuf, def);
     virSysinfoOEMStringsFormat(&childrenBuf, def->oemStrings);
