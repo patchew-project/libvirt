@@ -271,10 +271,11 @@ libxlMakeChrdevStr(virDomainChrDefPtr def, char **buf)
 
 static int
 libxlMakeDomBuildInfo(virDomainDefPtr def,
-                      libxl_ctx *ctx,
+                      libxlDriverConfigPtr cfg,
                       virCapsPtr caps,
                       libxl_domain_config *d_config)
 {
+    libxl_ctx *ctx = cfg->ctx;
     libxl_domain_build_info *b_info = &d_config->b_info;
     int hvm = def->os.type == VIR_DOMAIN_OSTYPE_HVM;
     size_t i;
@@ -2288,16 +2289,17 @@ int
 libxlBuildDomainConfig(virPortAllocatorPtr graphicsports,
                        virDomainDefPtr def,
                        const char *channelDir LIBXL_ATTR_UNUSED,
-                       libxl_ctx *ctx,
+                       libxlDriverConfigPtr cfg,
                        virCapsPtr caps,
                        libxl_domain_config *d_config)
 {
+    libxl_ctx *ctx = cfg->ctx;
     libxl_domain_config_init(d_config);
 
     if (libxlMakeDomCreateInfo(ctx, def, &d_config->c_info) < 0)
         return -1;
 
-    if (libxlMakeDomBuildInfo(def, ctx, caps, d_config) < 0)
+    if (libxlMakeDomBuildInfo(def, cfg, caps, d_config) < 0)
         return -1;
 
 #ifdef LIBXL_HAVE_VNUMA
