@@ -494,6 +494,7 @@ xenParseXLVnuma(virConfPtr conf,
         goto cleanup;
     }
 
+    cpu->mode = VIR_CPU_MODE_HOST_PASSTHROUGH;
     cpu->type = VIR_CPU_TYPE_GUEST;
     def->cpu = cpu;
 
