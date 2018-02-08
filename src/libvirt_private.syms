@@ -2367,6 +2367,7 @@ virNetlinkEventServiceStart;
 virNetlinkEventServiceStop;
 virNetlinkEventServiceStopAll;
 virNetlinkGetErrorCode;
+virNetlinkGetNeighbor;
 virNetlinkShutdown;
 virNetlinkStartup;
 
