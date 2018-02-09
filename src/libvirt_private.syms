@@ -2288,6 +2288,11 @@ virNetDevBridgeSetSTPDelay;
 virNetDevBridgeSetVlanFiltering;
 
 
+# util/virnetdevhostdev.h
+virNetdevHostdevCheckVFRepIFName;
+virNetdevHostdevGetVFRepIFName;
+
+
 # util/virnetdevip.h
 virNetDevIPAddrAdd;
 virNetDevIPAddrDel;
