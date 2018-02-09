@@ -67,6 +67,7 @@
 #include "virhostcpu.h"
 #include "virhostmem.h"
 #include "virnetdevtap.h"
+#include "virnetdevhostdev.h"
 #include "virnetdevopenvswitch.h"
 #include "capabilities.h"
 #include "viralloc.h"
@@ -11153,6 +11154,11 @@ qemuDomainInterfaceStats(virDomainPtr dom,
     if (virDomainNetGetActualType(net) == VIR_DOMAIN_NET_TYPE_VHOSTUSER) {
         if (virNetDevOpenvswitchInterfaceStats(net->ifname, stats) < 0)
             goto cleanup;
+    } else if (virDomainNetGetActualType(net) == VIR_DOMAIN_NET_TYPE_HOSTDEV) {
+        if (virNetdevHostdevVFRepInterfaceStats(device, stats,
+                                                !virDomainNetTypeSharesHostView
+                                                (net)) < 0)
+            goto cleanup;
     } else {
         if (virNetDevTapInterfaceStats(net->ifname, stats,
                                        !virDomainNetTypeSharesHostView(net)) < 0)
@@ -19794,6 +19800,7 @@ qemuDomainGetStatsInterface(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
 {
     size_t i;
     struct _virDomainInterfaceStats tmp;
+    char *vf_representor_ifname = NULL;
     int ret = -1;
 
     if (!virDomainObjIsActive(dom))
@@ -19806,21 +19813,40 @@ qemuDomainGetStatsInterface(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
         virDomainNetDefPtr net = dom->def->nets[i];
         virDomainNetType actualType;
 
-        if (!net->ifname)
+        actualType = virDomainNetGetActualType(net);
+
+        if (actualType == VIR_DOMAIN_NET_TYPE_HOSTDEV) {
+            if (virNetdevHostdevGetVFRepIFName(dom->def->hostdevs[i],
+                                               &vf_representor_ifname))
+                continue;
+        }
+        else if (!net->ifname)
             continue;
 
         memset(&tmp, 0, sizeof(tmp));
 
-        actualType = virDomainNetGetActualType(net);
 
-        QEMU_ADD_NAME_PARAM(record, maxparams,
-                            "net", "name", i, net->ifname);
+        if (actualType != VIR_DOMAIN_NET_TYPE_HOSTDEV)
+            QEMU_ADD_NAME_PARAM(record, maxparams,
+                                "net", "name", i, net->ifname);
+        else
+            QEMU_ADD_NAME_PARAM(record, maxparams,
+                                "net", "name", i, vf_representor_ifname);
 
         if (actualType == VIR_DOMAIN_NET_TYPE_VHOSTUSER) {
             if (virNetDevOpenvswitchInterfaceStats(net->ifname, &tmp) < 0) {
                 virResetLastError();
                 continue;
             }
+        } else if (actualType == VIR_DOMAIN_NET_TYPE_HOSTDEV) {
+            if (virNetdevHostdevVFRepInterfaceStats
+                (vf_representor_ifname, &tmp,
+                 !virDomainNetTypeSharesHostView(net)) < 0) {
+                VIR_FREE(vf_representor_ifname);
+                virResetLastError();
+                continue;
+            }
+            VIR_FREE(vf_representor_ifname);
         } else {
             if (virNetDevTapInterfaceStats(net->ifname, &tmp,
                                            !virDomainNetTypeSharesHostView(net)) < 0) {
