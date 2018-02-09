@@ -836,24 +836,21 @@ bool qemuDomainDiskHasEncryptionSecret(virStorageSourcePtr src)
     ATTRIBUTE_NONNULL(1);
 
 qemuDomainSecretInfoPtr
-qemuDomainSecretInfoTLSNew(virConnectPtr conn,
-                           qemuDomainObjPrivatePtr priv,
+qemuDomainSecretInfoTLSNew(qemuDomainObjPrivatePtr priv,
                            const char *srcAlias,
                            const char *secretUUID);
 
 void qemuDomainSecretHostdevDestroy(virDomainHostdevDefPtr disk)
     ATTRIBUTE_NONNULL(1);
 
-int qemuDomainSecretHostdevPrepare(virConnectPtr conn,
-                                   qemuDomainObjPrivatePtr priv,
+int qemuDomainSecretHostdevPrepare(qemuDomainObjPrivatePtr priv,
                                    virDomainHostdevDefPtr hostdev)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
 void qemuDomainSecretChardevDestroy(virDomainChrSourceDefPtr dev)
     ATTRIBUTE_NONNULL(1);
 
-int qemuDomainSecretChardevPrepare(virConnectPtr conn,
-                                   virQEMUDriverConfigPtr cfg,
+int qemuDomainSecretChardevPrepare(virQEMUDriverConfigPtr cfg,
                                    qemuDomainObjPrivatePtr priv,
                                    const char *chrAlias,
                                    virDomainChrSourceDefPtr dev)
@@ -863,8 +860,7 @@ int qemuDomainSecretChardevPrepare(virConnectPtr conn,
 void qemuDomainSecretDestroy(virDomainObjPtr vm)
     ATTRIBUTE_NONNULL(1);
 
-int qemuDomainSecretPrepare(virConnectPtr conn,
-                            virQEMUDriverPtr driver,
+int qemuDomainSecretPrepare(virQEMUDriverPtr driver,
                             virDomainObjPtr vm)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
@@ -1000,8 +996,7 @@ qemuDomainCheckMigrationCapabilities(virQEMUDriverPtr driver,
                                      qemuDomainAsyncJob asyncJob);
 
 int
-qemuDomainPrepareDiskSource(virConnectPtr conn,
-                            virDomainDiskDefPtr disk,
+qemuDomainPrepareDiskSource(virDomainDiskDefPtr disk,
                             qemuDomainObjPrivatePtr priv,
                             virQEMUDriverConfigPtr cfg);
 
