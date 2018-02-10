@@ -241,23 +241,6 @@ virLogGetDefaultOutput(void)
 }
 
 
-static const char *
-virLogPriorityString(virLogPriority lvl)
-{
-    switch (lvl) {
-    case VIR_LOG_DEBUG:
-        return "debug";
-    case VIR_LOG_INFO:
-        return "info";
-    case VIR_LOG_WARN:
-        return "warning";
-    case VIR_LOG_ERROR:
-        return "error";
-    }
-    return "unknown";
-}
-
-
 static int
 virLogOnceInit(void)
 {
@@ -429,6 +412,60 @@ virLogOutputListFree(virLogOutputPtr *list, int count)
 }
 
 
+/**
+ * virLogMessage:
+ * @source: where is that message coming from
+ * @priority: the priority level
+ * @filename: file where the message was emitted
+ * @linenr: line where the message was emitted
+ * @funcname: the function emitting the (debug) message
+ * @metadata: NULL or metadata array, terminated by an item with NULL key
+ * @fmt: the string format
+ * @...: the arguments
+ *
+ * Call the libvirt logger with some information. Based on the configuration
+ * the message may be stored, sent to output or just discarded
+ */
+void
+virLogMessage(virLogSourcePtr source,
+              virLogPriority priority,
+              const char *filename,
+              int linenr,
+              const char *funcname,
+              virLogMetadataPtr metadata,
+              const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    virLogVMessage(source, priority,
+                   filename, linenr, funcname,
+                   metadata, fmt, ap);
+    va_end(ap);
+}
+
+
+/* For the library we compile in logging code and then turn it
+ * on/off depending on user settings. However, for the NSS plugin
+ * we might get into deadlock and logging there is not really
+ * needed. */
+#ifndef DISABLE_LOGGING_FOR_NSS
+static const char *
+virLogPriorityString(virLogPriority lvl)
+{
+    switch (lvl) {
+    case VIR_LOG_DEBUG:
+        return "debug";
+    case VIR_LOG_INFO:
+        return "info";
+    case VIR_LOG_WARN:
+        return "warning";
+    case VIR_LOG_ERROR:
+        return "error";
+    }
+    return "unknown";
+}
+
+
 static int
 virLogFormatString(char **msg,
                    int linenr,
@@ -513,38 +550,6 @@ virLogSourceUpdate(virLogSourcePtr source)
     }
     virLogUnlock();
 }
-
-/**
- * virLogMessage:
- * @source: where is that message coming from
- * @priority: the priority level
- * @filename: file where the message was emitted
- * @linenr: line where the message was emitted
- * @funcname: the function emitting the (debug) message
- * @metadata: NULL or metadata array, terminated by an item with NULL key
- * @fmt: the string format
- * @...: the arguments
- *
- * Call the libvirt logger with some information. Based on the configuration
- * the message may be stored, sent to output or just discarded
- */
-void
-virLogMessage(virLogSourcePtr source,
-              virLogPriority priority,
-              const char *filename,
-              int linenr,
-              const char *funcname,
-              virLogMetadataPtr metadata,
-              const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    virLogVMessage(source, priority,
-                   filename, linenr, funcname,
-                   metadata, fmt, ap);
-    va_end(ap);
-}
-
 
 /**
  * virLogVMessage:
@@ -678,6 +683,22 @@ virLogVMessage(virLogSourcePtr source,
     errno = saved_errno;
 }
 
+#else /* DISABLE_LOGGING_FOR_NSS */
+
+void
+virLogVMessage(virLogSourcePtr source ATTRIBUTE_UNUSED,
+               virLogPriority priority ATTRIBUTE_UNUSED,
+               const char *filename ATTRIBUTE_UNUSED,
+               int linenr ATTRIBUTE_UNUSED,
+               const char *funcname ATTRIBUTE_UNUSED,
+               virLogMetadataPtr metadata ATTRIBUTE_UNUSED,
+               const char *fmt ATTRIBUTE_UNUSED,
+               va_list vargs ATTRIBUTE_UNUSED)
+{
+    return;
+}
+
+#endif /* DISABLE_LOGGING_FOR_NSS */
 
 static void
 virLogStackTraceToFd(int fd)

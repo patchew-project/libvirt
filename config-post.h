@@ -72,6 +72,7 @@
 # undef WITH_SECDRIVER_SELINUX
 # undef WITH_SECDRIVER_APPARMOR
 # undef WITH_CAPNG
+# define DISABLE_LOGGING_FOR_NSS
 #endif /* LIBVIRT_NSS */
 
 #ifndef __GNUC__
