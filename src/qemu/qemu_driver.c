@@ -20569,10 +20569,10 @@ qemuGetDHCPInterfaces(virDomainPtr dom,
                 goto error;
 
             if (VIR_STRDUP(iface->name, vm->def->nets[i]->ifname) < 0)
-                goto cleanup;
+                goto error;
 
             if (VIR_STRDUP(iface->hwaddr, macaddr) < 0)
-                goto cleanup;
+                goto error;
         }
 
         for (j = 0; j < n_leases; j++) {
@@ -20592,8 +20592,7 @@ qemuGetDHCPInterfaces(virDomainPtr dom,
         VIR_FREE(leases);
     }
 
-    *ifaces = ifaces_ret;
-    ifaces_ret = NULL;
+    VIR_STEAL_PTR(*ifaces, ifaces_ret);
     rv = ifaces_count;
 
  cleanup:
