@@ -2893,7 +2893,7 @@ virStorageSourceParseBackingJSONSocketAddress(virStorageNetHostDefPtr host,
     } else if (STREQ(type, "unix")) {
         host->transport = VIR_STORAGE_NET_HOST_TRANS_UNIX;
 
-        if (!(socket = virJSONValueObjectGetString(json, "socket"))) {
+        if (!(socket = virJSONValueObjectGetString(json, "path"))) {
             virReportError(VIR_ERR_INVALID_ARG, "%s",
                            _("missing socket path for udp backing server in "
                              "JSON backing volume definition"));

@@ -509,7 +509,7 @@ qemuBlockStorageSourceBuildJSONSocketAddress(virStorageNetHostDefPtr host,
     case VIR_STORAGE_NET_HOST_TRANS_UNIX:
         if (virJSONValueObjectCreate(&server,
                                      "s:type", "unix",
-                                     "s:socket", host->socket,
+                                     "s:path", host->socket,
                                      NULL) < 0)
             goto cleanup;
         break;
