@@ -351,6 +351,17 @@ virHostdevNetDevice(virDomainHostdevDefPtr hostdev,
 }
 
 
+/* Non static wrapper for virHostdevNetDevice to use outside virhostdev */
+int
+virHostdevNetDeviceWrapper(virDomainHostdevDefPtr hostdev,
+                    int pfNetDevIdx,
+                    char **linkdev,
+                    int *vf)
+{
+    return virHostdevNetDevice(hostdev, pfNetDevIdx, linkdev, vf);
+}
+
+
 static bool
 virHostdevIsPCINetDevice(virDomainHostdevDefPtr hostdev)
 {

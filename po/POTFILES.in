@@ -237,6 +237,7 @@ src/util/virnetdevmacvlan.c
 src/util/virnetdevmidonet.c
 src/util/virnetdevopenvswitch.c
 src/util/virnetdevtap.c
+src/util/virnetdevhostdev.c
 src/util/virnetdevveth.c
 src/util/virnetdevvportprofile.c
 src/util/virnetlink.c

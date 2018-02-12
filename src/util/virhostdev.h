@@ -202,5 +202,11 @@ int virHostdevPCINodeDeviceReAttach(virHostdevManagerPtr mgr,
 int virHostdevPCINodeDeviceReset(virHostdevManagerPtr mgr,
                                  virPCIDevicePtr pci)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+int
+virHostdevNetDeviceWrapper(virDomainHostdevDefPtr hostdev,
+                    int pfNetDevIdx,
+                    char **linkdev,
+                    int *vf)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4);
 
 #endif /* __VIR_HOSTDEV_H__ */
