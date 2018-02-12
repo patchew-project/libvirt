@@ -179,11 +179,11 @@ int virEventAddHandle(int fd, int events,
 void virEventUpdateHandle(int watch, int events);
 int virEventRemoveHandle(int watch);
 
-int virEventAddTimeout(int frequency,
+int virEventAddTimeout(int timeout,
                        virEventTimeoutCallback cb,
                        void *opaque,
                        virFreeCallback ff);
-void virEventUpdateTimeout(int timer, int frequency);
+void virEventUpdateTimeout(int timer, int timeout);
 int virEventRemoveTimeout(int timer);
 
 

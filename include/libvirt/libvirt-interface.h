@@ -71,7 +71,7 @@ int                     virConnectListAllInterfaces (virConnectPtr conn,
 virInterfacePtr         virInterfaceLookupByName  (virConnectPtr conn,
                                                    const char *name);
 virInterfacePtr         virInterfaceLookupByMACString (virConnectPtr conn,
-                                                       const char *mac);
+                                                       const char *macstr);
 
 const char*             virInterfaceGetName       (virInterfacePtr iface);
 const char*             virInterfaceGetMACString  (virInterfacePtr iface);
@@ -83,7 +83,7 @@ typedef enum {
 char *                  virInterfaceGetXMLDesc    (virInterfacePtr iface,
                                                    unsigned int flags);
 virInterfacePtr         virInterfaceDefineXML     (virConnectPtr conn,
-                                                   const char *xmlDesc,
+                                                   const char *xml,
                                                    unsigned int flags);
 
 int                     virInterfaceUndefine      (virInterfacePtr iface);

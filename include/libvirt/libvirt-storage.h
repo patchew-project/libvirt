@@ -262,7 +262,7 @@ virStoragePoolPtr       virStoragePoolLookupByName      (virConnectPtr conn,
 virStoragePoolPtr       virStoragePoolLookupByUUID      (virConnectPtr conn,
                                                          const unsigned char *uuid);
 virStoragePoolPtr       virStoragePoolLookupByUUIDString(virConnectPtr conn,
-                                                         const char *uuid);
+                                                         const char *uuidstr);
 virStoragePoolPtr       virStoragePoolLookupByVolume    (virStorageVolPtr vol);
 virStoragePoolPtr       virStoragePoolLookupByTargetPath(virConnectPtr conn,
                                                          const char *path);
@@ -274,7 +274,7 @@ virStoragePoolPtr       virStoragePoolCreateXML         (virConnectPtr conn,
                                                          const char *xmlDesc,
                                                          unsigned int flags);
 virStoragePoolPtr       virStoragePoolDefineXML         (virConnectPtr conn,
-                                                         const char *xmlDesc,
+                                                         const char *xml,
                                                          unsigned int flags);
 int                     virStoragePoolBuild             (virStoragePoolPtr pool,
                                                          unsigned int flags);
@@ -298,7 +298,7 @@ int                     virStoragePoolGetUUID           (virStoragePoolPtr pool,
 int                     virStoragePoolGetUUIDString     (virStoragePoolPtr pool,
                                                          char *buf);
 
-int                     virStoragePoolGetInfo           (virStoragePoolPtr vol,
+int                     virStoragePoolGetInfo           (virStoragePoolPtr pool,
                                                          virStoragePoolInfoPtr info);
 
 char *                  virStoragePoolGetXMLDesc        (virStoragePoolPtr pool,
@@ -342,10 +342,10 @@ typedef enum {
 } virStorageVolCreateFlags;
 
 virStorageVolPtr        virStorageVolCreateXML          (virStoragePoolPtr pool,
-                                                         const char *xmldesc,
+                                                         const char *xmlDesc,
                                                          unsigned int flags);
 virStorageVolPtr        virStorageVolCreateXMLFrom      (virStoragePoolPtr pool,
-                                                         const char *xmldesc,
+                                                         const char *xmlDesc,
                                                          virStorageVolPtr clonevol,
                                                          unsigned int flags);
 
@@ -382,7 +382,7 @@ int                     virStorageVolGetInfo            (virStorageVolPtr vol,
 int                     virStorageVolGetInfoFlags       (virStorageVolPtr vol,
                                                          virStorageVolInfoPtr info,
                                                          unsigned int flags);
-char *                  virStorageVolGetXMLDesc         (virStorageVolPtr pool,
+char *                  virStorageVolGetXMLDesc         (virStorageVolPtr vol,
                                                          unsigned int flags);
 
 char *                  virStorageVolGetPath            (virStorageVolPtr vol);
