@@ -273,8 +273,8 @@ virObjectLockableNew(virClassPtr klass)
         return NULL;
 
     if (virMutexInit(&obj->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Unable to initialize mutex"));
+        virReportSystemError(errno, "%s",
+                             _("Unable to initialize mutex"));
         virObjectUnref(obj);
         return NULL;
     }
@@ -299,8 +299,8 @@ virObjectRWLockableNew(virClassPtr klass)
         return NULL;
 
     if (virRWLockInit(&obj->lock) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Unable to initialize RW lock"));
+        virReportSystemError(errno, "%s",
+                             _("Unable to initialize RW lock"));
         virObjectUnref(obj);
         return NULL;
     }
