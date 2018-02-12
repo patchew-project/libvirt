@@ -35,13 +35,13 @@ typedef enum {
 
 virStreamPtr virStreamNew(virConnectPtr conn,
                           unsigned int flags);
-int virStreamRef(virStreamPtr st);
+int virStreamRef(virStreamPtr stream);
 
-int virStreamSend(virStreamPtr st,
+int virStreamSend(virStreamPtr stream,
                   const char *data,
                   size_t nbytes);
 
-int virStreamRecv(virStreamPtr st,
+int virStreamRecv(virStreamPtr stream,
                   char *data,
                   size_t nbytes);
 
@@ -49,12 +49,12 @@ typedef enum {
     VIR_STREAM_RECV_STOP_AT_HOLE = (1 << 0),
 } virStreamRecvFlagsValues;
 
-int virStreamRecvFlags(virStreamPtr st,
+int virStreamRecvFlags(virStreamPtr stream,
                        char *data,
                        size_t nbytes,
                        unsigned int flags);
 
-int virStreamSendHole(virStreamPtr st,
+int virStreamSendHole(virStreamPtr stream,
                       long long length,
                       unsigned int flags);
 
@@ -95,7 +95,7 @@ typedef int (*virStreamSourceFunc)(virStreamPtr st,
                                    size_t nbytes,
                                    void *opaque);
 
-int virStreamSendAll(virStreamPtr st,
+int virStreamSendAll(virStreamPtr stream,
                      virStreamSourceFunc handler,
                      void *opaque);
 
@@ -158,7 +158,7 @@ typedef int (*virStreamSourceSkipFunc)(virStreamPtr st,
                                        long long length,
                                        void *opaque);
 
-int virStreamSparseSendAll(virStreamPtr st,
+int virStreamSparseSendAll(virStreamPtr stream,
                            virStreamSourceFunc handler,
                            virStreamSourceHoleFunc holeHandler,
                            virStreamSourceSkipFunc skipHandler,
@@ -196,7 +196,7 @@ typedef int (*virStreamSinkFunc)(virStreamPtr st,
                                  size_t nbytes,
                                  void *opaque);
 
-int virStreamRecvAll(virStreamPtr st,
+int virStreamRecvAll(virStreamPtr stream,
                      virStreamSinkFunc handler,
                      void *opaque);
 
@@ -262,9 +262,9 @@ int virStreamEventUpdateCallback(virStreamPtr stream,
 int virStreamEventRemoveCallback(virStreamPtr stream);
 
 
-int virStreamFinish(virStreamPtr st);
-int virStreamAbort(virStreamPtr st);
+int virStreamFinish(virStreamPtr stream);
+int virStreamAbort(virStreamPtr stream);
 
-int virStreamFree(virStreamPtr st);
+int virStreamFree(virStreamPtr stream);
 
 #endif /* __VIR_LIBVIRT_STREAM_H__ */

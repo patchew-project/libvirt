@@ -84,7 +84,7 @@ int                     virConnectListAllSecrets(virConnectPtr conn,
 virSecretPtr            virSecretLookupByUUID(virConnectPtr conn,
                                               const unsigned char *uuid);
 virSecretPtr            virSecretLookupByUUIDString(virConnectPtr conn,
-                                                    const char *uuid);
+                                                    const char *uuidstr);
 virSecretPtr            virSecretLookupByUsage(virConnectPtr conn,
                                                int usageType,
                                                const char *usageID);
@@ -92,7 +92,7 @@ virSecretPtr            virSecretDefineXML      (virConnectPtr conn,
                                                  const char *xml,
                                                  unsigned int flags);
 int                     virSecretGetUUID        (virSecretPtr secret,
-                                                 unsigned char *buf);
+                                                 unsigned char *uuid);
 int                     virSecretGetUUIDString  (virSecretPtr secret,
                                                  char *buf);
 int                     virSecretGetUsageType   (virSecretPtr secret);

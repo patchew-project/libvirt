@@ -40,7 +40,7 @@ typedef enum {
 int virDomainQemuMonitorCommand(virDomainPtr domain, const char *cmd,
                                 char **result, unsigned int flags);
 
-virDomainPtr virDomainQemuAttach(virConnectPtr domain,
+virDomainPtr virDomainQemuAttach(virConnectPtr conn,
                                  unsigned int pid_value,
                                  unsigned int flags);
 

@@ -109,7 +109,7 @@ virConnectNumOfDomains(virConnectPtr conn)
 
 /**
  * virDomainGetConnect:
- * @dom: pointer to a domain
+ * @domain: pointer to a domain
  *
  * Provides the connection pointer associated with a domain.  The
  * reference counter on the connection is not increased by this
@@ -118,15 +118,15 @@ virConnectNumOfDomains(virConnectPtr conn)
  * Returns the virConnectPtr or NULL in case of failure.
  */
 virConnectPtr
-virDomainGetConnect(virDomainPtr dom)
+virDomainGetConnect(virDomainPtr domain)
 {
-    VIR_DOMAIN_DEBUG(dom);
+    VIR_DOMAIN_DEBUG(domain);
 
     virResetLastError();
 
-    virCheckDomainReturn(dom, NULL);
+    virCheckDomainReturn(domain, NULL);
 
-    return dom->conn;
+    return domain->conn;
 }
 
 
@@ -688,7 +688,7 @@ virDomainResume(virDomainPtr domain)
 
 /**
  * virDomainPMSuspendForDuration:
- * @dom: a domain object
+ * @domain: a domain object
  * @target: a value from virNodeSuspendTarget
  * @duration: duration in seconds to suspend, or 0 for indefinite
  * @flags: extra flags; not used yet, so callers should always pass 0
@@ -713,26 +713,26 @@ virDomainResume(virDomainPtr domain)
  *          -1 on failure.
  */
 int
-virDomainPMSuspendForDuration(virDomainPtr dom,
+virDomainPMSuspendForDuration(virDomainPtr domain,
                               unsigned int target,
                               unsigned long long duration,
                               unsigned int flags)
 {
     virConnectPtr conn;
 
-    VIR_DOMAIN_DEBUG(dom, "target=%u duration=%llu flags=0x%x",
+    VIR_DOMAIN_DEBUG(domain, "target=%u duration=%llu flags=0x%x",
                      target, duration, flags);
 
     virResetLastError();
 
-    virCheckDomainReturn(dom, -1);
-    conn = dom->conn;
+    virCheckDomainReturn(domain, -1);
+    conn = domain->conn;
 
     virCheckReadOnlyGoto(conn->flags, error);
 
     if (conn->driver->domainPMSuspendForDuration) {
         int ret;
-        ret = conn->driver->domainPMSuspendForDuration(dom, target,
+        ret = conn->driver->domainPMSuspendForDuration(domain, target,
                                                        duration, flags);
         if (ret < 0)
             goto error;
@@ -749,7 +749,7 @@ virDomainPMSuspendForDuration(virDomainPtr dom,
 
 /**
  * virDomainPMWakeup:
- * @dom: a domain object
+ * @domain: a domain object
  * @flags: extra flags; not used yet, so callers should always pass 0
  *
  * Inject a wakeup into the guest that previously used
@@ -760,23 +760,23 @@ virDomainPMSuspendForDuration(virDomainPtr dom,
  *          -1 on failure.
  */
 int
-virDomainPMWakeup(virDomainPtr dom,
+virDomainPMWakeup(virDomainPtr domain,
                   unsigned int flags)
 {
     virConnectPtr conn;
 
-    VIR_DOMAIN_DEBUG(dom, "flags=0x%x", flags);
+    VIR_DOMAIN_DEBUG(domain, "flags=0x%x", flags);
 
     virResetLastError();
 
-    virCheckDomainReturn(dom, -1);
-    conn = dom->conn;
+    virCheckDomainReturn(domain, -1);
+    conn = domain->conn;
 
     virCheckReadOnlyGoto(conn->flags, error);
 
     if (conn->driver->domainPMWakeup) {
         int ret;
-        ret = conn->driver->domainPMWakeup(dom, flags);
+        ret = conn->driver->domainPMWakeup(domain, flags);
         if (ret < 0)
             goto error;
         return ret;
@@ -7557,7 +7557,7 @@ virDomainGetMaxVcpus(virDomainPtr domain)
 
 /**
  * virDomainGetIOThreadInfo:
- * @dom: a domain object
+ * @domain: a domain object
  * @info: pointer to an array of virDomainIOThreadInfo structures (OUT)
  * @flags: bitwise-OR of virDomainModificationImpact
  *     Must not be VIR_DOMAIN_AFFECT_LIVE and
@@ -7572,15 +7572,15 @@ virDomainGetMaxVcpus(virDomainPtr domain)
  * then calling free() on @info. On error, @info is set to NULL.
  */
 int
-virDomainGetIOThreadInfo(virDomainPtr dom,
+virDomainGetIOThreadInfo(virDomainPtr domain,
                          virDomainIOThreadInfoPtr **info,
                          unsigned int flags)
 {
-    VIR_DOMAIN_DEBUG(dom, "info=%p flags=0x%x", info, flags);
+    VIR_DOMAIN_DEBUG(domain, "info=%p flags=0x%x", info, flags);
 
     virResetLastError();
 
-    virCheckDomainReturn(dom, -1);
+    virCheckDomainReturn(domain, -1);
     virCheckNonNullArgGoto(info, error);
     *info = NULL;
 
@@ -7588,9 +7588,9 @@ virDomainGetIOThreadInfo(virDomainPtr dom,
                              VIR_DOMAIN_AFFECT_CONFIG,
                              error);
 
-    if (dom->conn->driver->domainGetIOThreadInfo) {
+    if (domain->conn->driver->domainGetIOThreadInfo) {
         int ret;
-        ret = dom->conn->driver->domainGetIOThreadInfo(dom, info, flags);
+        ret = domain->conn->driver->domainGetIOThreadInfo(domain, info, flags);
         if (ret < 0)
             goto error;
         return ret;
@@ -7599,7 +7599,7 @@ virDomainGetIOThreadInfo(virDomainPtr dom,
     virReportUnsupportedError();
 
  error:
-    virDispatchError(dom->conn);
+    virDispatchError(domain->conn);
     return -1;
 }
 

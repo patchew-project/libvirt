@@ -50,7 +50,7 @@ typedef virNetwork *virNetworkPtr;
 /*
  * Get connection from network.
  */
-virConnectPtr           virNetworkGetConnect    (virNetworkPtr network);
+virConnectPtr           virNetworkGetConnect    (virNetworkPtr net);
 
 /*
  * List active networks
@@ -96,7 +96,7 @@ virNetworkPtr           virNetworkLookupByName          (virConnectPtr conn,
 virNetworkPtr           virNetworkLookupByUUID          (virConnectPtr conn,
                                                          const unsigned char *uuid);
 virNetworkPtr           virNetworkLookupByUUIDString    (virConnectPtr conn,
-                                                         const char *uuid);
+                                                         const char *uuidstr);
 
 /*
  * Create active transient network

@@ -427,7 +427,7 @@ virNetworkCreateXML(virConnectPtr conn, const char *xmlDesc)
 /**
  * virNetworkDefineXML:
  * @conn: pointer to the hypervisor connection
- * @xml: the XML description for the network, preferably in UTF-8
+ * @xmlDesc: an XML description of the network, preferably in UTF-8
  *
  * Define an inactive persistent virtual network or modify an existing
  * persistent one from the XML description.
@@ -438,19 +438,19 @@ virNetworkCreateXML(virConnectPtr conn, const char *xmlDesc)
  * Returns NULL in case of error, a pointer to the network otherwise
  */
 virNetworkPtr
-virNetworkDefineXML(virConnectPtr conn, const char *xml)
+virNetworkDefineXML(virConnectPtr conn, const char *xmlDesc)
 {
-    VIR_DEBUG("conn=%p, xml=%s", conn, NULLSTR(xml));
+    VIR_DEBUG("conn=%p, xml=%s", conn, NULLSTR(xmlDesc));
 
     virResetLastError();
 
     virCheckConnectReturn(conn, NULL);
     virCheckReadOnlyGoto(conn->flags, error);
-    virCheckNonNullArgGoto(xml, error);
+    virCheckNonNullArgGoto(xmlDesc, error);
 
     if (conn->networkDriver && conn->networkDriver->networkDefineXML) {
         virNetworkPtr ret;
-        ret = conn->networkDriver->networkDefineXML(conn, xml);
+        ret = conn->networkDriver->networkDefineXML(conn, xmlDesc);
         if (!ret)
             goto error;
         return ret;

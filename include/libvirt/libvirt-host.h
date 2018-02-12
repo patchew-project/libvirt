@@ -665,8 +665,8 @@ char *virConnectBaselineCPU(virConnectPtr conn,
 int virNodeGetFreePages(virConnectPtr conn,
                         unsigned int npages,
                         unsigned int *pages,
-                        int startcell,
-                        unsigned int cellcount,
+                        int startCell,
+                        unsigned int cellCount,
                         unsigned long long *counts,
                         unsigned int flags);
 

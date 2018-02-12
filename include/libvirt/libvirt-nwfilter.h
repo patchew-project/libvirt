@@ -62,7 +62,7 @@ virNWFilterPtr          virNWFilterLookupByName       (virConnectPtr conn,
 virNWFilterPtr          virNWFilterLookupByUUID       (virConnectPtr conn,
                                                        const unsigned char *uuid);
 virNWFilterPtr          virNWFilterLookupByUUIDString (virConnectPtr conn,
-                                                       const char *uuid);
+                                                       const char *uuidstr);
 
 /*
  * Define persistent nwfilter

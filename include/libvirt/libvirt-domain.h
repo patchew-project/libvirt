@@ -1109,7 +1109,7 @@ virDomainPtr            virDomainLookupByID     (virConnectPtr conn,
 virDomainPtr            virDomainLookupByUUID   (virConnectPtr conn,
                                                  const unsigned char *uuid);
 virDomainPtr            virDomainLookupByUUIDString     (virConnectPtr conn,
-                                                         const char *uuid);
+                                                         const char *uuidstr);
 
 typedef enum {
     VIR_DOMAIN_SHUTDOWN_DEFAULT        = 0,        /* hypervisor choice */
@@ -1626,11 +1626,11 @@ int                     virDomainInterfaceStats (virDomainPtr dom,
  */
 # define VIR_DOMAIN_BANDWIDTH_OUT_BURST "outbound.burst"
 
-int                     virDomainSetInterfaceParameters (virDomainPtr dom,
+int                     virDomainSetInterfaceParameters (virDomainPtr domain,
                                                          const char *device,
                                                          virTypedParameterPtr params,
                                                          int nparams, unsigned int flags);
-int                     virDomainGetInterfaceParameters (virDomainPtr dom,
+int                     virDomainGetInterfaceParameters (virDomainPtr domain,
                                                          const char *device,
                                                          virTypedParameterPtr params,
                                                          int *nparams, unsigned int flags);
@@ -1697,7 +1697,7 @@ struct _virDomainBlockInfo {
                                     * offset, similar to 'ls')*/
 };
 
-int                     virDomainGetBlockInfo(virDomainPtr dom,
+int                     virDomainGetBlockInfo(virDomainPtr domain,
                                               const char *disk,
                                               virDomainBlockInfoPtr info,
                                               unsigned int flags);
@@ -1869,7 +1869,7 @@ int                     virDomainPinEmulator   (virDomainPtr domain,
                                                 unsigned int flags);
 
 int                     virDomainGetEmulatorPinInfo (virDomainPtr domain,
-                                                     unsigned char *cpumaps,
+                                                     unsigned char *cpumap,
                                                      int maplen,
                                                      unsigned int flags);
 
@@ -2298,11 +2298,11 @@ void virDomainStatsRecordListFree(virDomainStatsRecordPtr *stats);
  */
 # define VIR_PERF_PARAM_EMULATION_FAULTS  "emulation_faults"
 
-int virDomainGetPerfEvents(virDomainPtr dom,
+int virDomainGetPerfEvents(virDomainPtr domain,
                            virTypedParameterPtr *params,
                            int *nparams,
                            unsigned int flags);
-int virDomainSetPerfEvents(virDomainPtr dom,
+int virDomainSetPerfEvents(virDomainPtr domain,
                            virTypedParameterPtr params,
                            int nparams,
                            unsigned int flags);
@@ -3130,14 +3130,14 @@ typedef enum {
                                               * completed job */
 } virDomainGetJobStatsFlags;
 
-int virDomainGetJobInfo(virDomainPtr dom,
+int virDomainGetJobInfo(virDomainPtr domain,
                         virDomainJobInfoPtr info);
 int virDomainGetJobStats(virDomainPtr domain,
                          int *type,
                          virTypedParameterPtr *params,
                          int *nparams,
                          unsigned int flags);
-int virDomainAbortJob(virDomainPtr dom);
+int virDomainAbortJob(virDomainPtr domain);
 
 typedef enum {
     VIR_DOMAIN_JOB_OPERATION_UNKNOWN = 0,
