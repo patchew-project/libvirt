@@ -206,7 +206,8 @@ virDomainObjPtr virDomainObjListFindByName(virDomainObjListPtr doms,
 
     virObjectRWLockRead(doms);
     obj = virHashLookup(doms->objsName, name);
-    virObjectRef(obj);
+    if (obj)
+        virObjectRef(obj);
     virObjectRWUnlock(doms);
     if (obj) {
         virObjectLock(obj);

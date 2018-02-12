@@ -57,9 +57,6 @@ virNWFilterObjListPtr
 virNWFilterObjListNew(void);
 
 void
-virNWFilterObjListFree(virNWFilterObjListPtr nwfilters);
-
-void
 virNWFilterObjListRemove(virNWFilterObjListPtr nwfilters,
                          virNWFilterObjPtr obj);
 

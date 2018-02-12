@@ -270,7 +270,7 @@ nwfilterStateInitialize(bool privileged,
     virNWFilterIPAddrMapShutdown();
 
  err_free_driverstate:
-    virNWFilterObjListFree(driver->nwfilters);
+    virObjectUnref(driver->nwfilters);
     VIR_FREE(driver);
 
     return -1;
@@ -354,7 +354,7 @@ nwfilterStateCleanup(void)
     }
 
     /* free inactive nwfilters */
-    virNWFilterObjListFree(driver->nwfilters);
+    virObjectUnref(driver->nwfilters);
 
     virMutexDestroy(&driver->lock);
     VIR_FREE(driver);

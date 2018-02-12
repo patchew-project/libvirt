@@ -242,7 +242,6 @@ useless_free_options = \
 # y virNWFilterIncludeDefFree
 # n virNWFilterFreeName (returns int)
 # y virNWFilterObjFree
-# n virNWFilterObjListFree FIXME
 # y virNWFilterRuleDefFree
 # n virNWFilterRuleFreeInstanceData (typedef)
 # y virNWFilterRuleInstFree
