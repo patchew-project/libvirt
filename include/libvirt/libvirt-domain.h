@@ -1847,6 +1847,17 @@ int                     virDomainSetVcpusFlags  (virDomainPtr domain,
 int                     virDomainGetVcpusFlags  (virDomainPtr domain,
                                                  unsigned int flags);
 
+/* Flags for controlling virtual CPU pinning.  */
+typedef enum {
+    /* See virDomainModificationImpact for these flags.  */
+    VIR_DOMAIN_VCPU_PIN_CURRENT = VIR_DOMAIN_AFFECT_CURRENT,
+    VIR_DOMAIN_VCPU_PIN_LIVE    = VIR_DOMAIN_AFFECT_LIVE,
+    VIR_DOMAIN_VCPU_PIN_CONFIG  = VIR_DOMAIN_AFFECT_CONFIG,
+
+    /* Additionally, these flags may be bitwise-OR'd in.  */
+    VIR_DOMAIN_VCPU_PIN_CLEAR = (1 << 2), /* Clear vcpus pin info */
+} virDomainVcpuPinFlags;
+
 int                     virDomainPinVcpu        (virDomainPtr domain,
                                                  unsigned int vcpu,
                                                  unsigned char *cpumap,

@@ -6863,7 +6863,7 @@ virshParseCPUList(vshControl *ctl, int *cpumaplen,
     unsigned char *cpumap = NULL;
     virBitmapPtr map = NULL;
 
-    if (cpulist[0] == 'r') {
+    if (cpulist[0] == 'r' || cpulist[0] == 'c') {
         if (!(map = virBitmapNew(maxcpu)))
             return NULL;
         virBitmapSetAll(map);
@@ -6940,6 +6940,9 @@ cmdVcpuPin(vshControl *ctl, const vshCmd *cmd)
         ret = virshVcpuPinQuery(ctl, dom, vcpu, got_vcpu, maxcpu, flags);
         goto cleanup;
     }
+
+    if (STREQ(cpulist, "c"))
+        flags |= VIR_DOMAIN_VCPU_PIN_CLEAR;
 
     /* Pin mode: pinning specified vcpu to specified physical cpus*/
     if (!(cpumap = virshParseCPUList(ctl, &cpumaplen, cpulist, maxcpu)))
