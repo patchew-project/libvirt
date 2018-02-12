@@ -1052,9 +1052,7 @@ virNWFilterObjListLoadAllConfigs;
 virNWFilterObjListNew;
 virNWFilterObjListNumOfNWFilters;
 virNWFilterObjListRemove;
-virNWFilterObjLock;
 virNWFilterObjTestUnassignDef;
-virNWFilterObjUnlock;
 virNWFilterObjWantRemoved;
 
 

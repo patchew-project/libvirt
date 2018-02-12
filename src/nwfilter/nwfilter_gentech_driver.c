@@ -316,7 +316,7 @@ virNWFilterInstReset(virNWFilterInstPtr inst)
     size_t i;
 
     for (i = 0; i < inst->nfilters; i++)
-        virNWFilterObjUnlock(inst->filters[i]);
+        virObjectUnlock(inst->filters[i]);
     VIR_FREE(inst->filters);
     inst->nfilters = 0;
 
@@ -427,7 +427,7 @@ virNWFilterIncludeDefToRuleInst(virNWFilterDriverStatePtr driver,
         virNWFilterInstReset(inst);
     virNWFilterHashTableFree(tmpvars);
     if (obj)
-        virNWFilterObjUnlock(obj);
+        virObjectUnlock(obj);
     return ret;
 }
 
@@ -541,7 +541,7 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
 
             /* create a temporary hashmap for depth-first tree traversal */
             if (!(tmpvars = virNWFilterCreateVarsFrom(inc->params, vars))) {
-                virNWFilterObjUnlock(obj);
+                virObjectUnlock(obj);
                 return -1;
             }
 
@@ -565,7 +565,7 @@ virNWFilterDetermineMissingVarsRec(virNWFilterDefPtr filter,
 
             virNWFilterHashTableFree(tmpvars);
 
-            virNWFilterObjUnlock(obj);
+            virObjectUnlock(obj);
             if (rc < 0)
                 return -1;
         }
@@ -839,7 +839,7 @@ virNWFilterInstantiateFilterUpdate(virNWFilterDriverStatePtr driver,
     virNWFilterHashTableFree(vars1);
 
  err_exit:
-    virNWFilterObjUnlock(obj);
+    virObjectUnlock(obj);
 
     VIR_FREE(str_ipaddr);
     VIR_FREE(str_macaddr);

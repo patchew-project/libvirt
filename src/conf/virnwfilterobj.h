@@ -105,10 +105,4 @@ int
 virNWFilterObjListLoadAllConfigs(virNWFilterObjListPtr nwfilters,
                                  const char *configDir);
 
-void
-virNWFilterObjLock(virNWFilterObjPtr obj);
-
-void
-virNWFilterObjUnlock(virNWFilterObjPtr obj);
-
 #endif /* VIRNWFILTEROBJ_H */
