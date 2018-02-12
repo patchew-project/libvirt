@@ -41,6 +41,9 @@ struct _virNWFilterDriverState {
     bool watchingFirewallD;
 };
 
+void
+virNWFilterObjEndAPI(virNWFilterObjPtr *obj);
+
 virNWFilterDefPtr
 virNWFilterObjGetDef(virNWFilterObjPtr obj);
 

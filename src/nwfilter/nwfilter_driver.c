@@ -466,7 +466,7 @@ nwfilterLookupByUUID(virConnectPtr conn,
     nwfilter = virGetNWFilter(conn, def->name, def->uuid);
 
  cleanup:
-    virObjectUnlock(obj);
+    virNWFilterObjEndAPI(&obj);
     return nwfilter;
 }
 
@@ -496,7 +496,7 @@ nwfilterLookupByName(virConnectPtr conn,
     nwfilter = virGetNWFilter(conn, def->name, def->uuid);
 
  cleanup:
-    virObjectUnlock(obj);
+    virNWFilterObjEndAPI(&obj);
     return nwfilter;
 }
 
@@ -590,8 +590,7 @@ nwfilterDefineXML(virConnectPtr conn,
 
  cleanup:
     virNWFilterDefFree(def);
-    if (obj)
-        virObjectUnlock(obj);
+    virNWFilterObjEndAPI(&obj);
 
     virNWFilterCallbackDriversUnlock();
     virNWFilterUnlockFilterUpdates();
@@ -629,13 +628,10 @@ nwfilterUndefine(virNWFilterPtr nwfilter)
         goto cleanup;
 
     virNWFilterObjListRemove(driver->nwfilters, obj);
-    obj = NULL;
     ret = 0;
 
  cleanup:
-    if (obj)
-        virObjectUnlock(obj);
-
+    virNWFilterObjEndAPI(&obj);
     virNWFilterCallbackDriversUnlock();
     virNWFilterUnlockFilterUpdates();
     nwfilterDriverUnlock();
@@ -667,7 +663,7 @@ nwfilterGetXMLDesc(virNWFilterPtr nwfilter,
     ret = virNWFilterDefFormat(def);
 
  cleanup:
-    virObjectUnlock(obj);
+    virNWFilterObjEndAPI(&obj);
     return ret;
 }
 

@@ -90,6 +90,18 @@ virNWFilterObjDispose(void *opaque)
 }
 
 
+void
+virNWFilterObjEndAPI(virNWFilterObjPtr *obj)
+{
+    if (!*obj)
+        return;
+
+    virObjectUnlock(*obj);
+    virObjectUnref(*obj);
+    *obj = NULL;
+}
+
+
 virNWFilterDefPtr
 virNWFilterObjGetDef(virNWFilterObjPtr obj)
 {
@@ -144,8 +156,7 @@ virNWFilterObjListRemove(virNWFilterObjListPtr nwfilters,
     for (i = 0; i < nwfilters->count; i++) {
         virObjectLock(nwfilters->objs[i]);
         if (nwfilters->objs[i] == obj) {
-            virObjectUnlock(nwfilters->objs[i]);
-            virObjectUnref(nwfilters->objs[i]);
+            virNWFilterObjEndAPI(&nwfilters->objs[i]);
 
             VIR_DELETE_ELEMENT(nwfilters->objs, i, nwfilters->count);
             break;
@@ -168,7 +179,7 @@ virNWFilterObjListFindByUUID(virNWFilterObjListPtr nwfilters,
         virObjectLock(obj);
         def = obj->def;
         if (!memcmp(def->uuid, uuid, VIR_UUID_BUFLEN))
-            return obj;
+            return virObjectRef(obj);
         virObjectUnlock(obj);
     }
 
@@ -189,7 +200,7 @@ virNWFilterObjListFindByName(virNWFilterObjListPtr nwfilters,
         virObjectLock(obj);
         def = obj->def;
         if (STREQ_NULLABLE(def->name, name))
-            return obj;
+            return virObjectRef(obj);
         virObjectUnlock(obj);
     }
 
@@ -212,7 +223,7 @@ virNWFilterObjListFindInstantiateFilter(virNWFilterObjListPtr nwfilters,
     if (virNWFilterObjWantRemoved(obj)) {
         virReportError(VIR_ERR_NO_NWFILTER,
                        _("Filter '%s' is in use."), filtername);
-        virObjectUnlock(obj);
+        virNWFilterObjEndAPI(&obj);
         return NULL;
     }
 
@@ -247,7 +258,7 @@ _virNWFilterObjListDefLoopDetect(virNWFilterObjListPtr nwfilters,
             if (obj) {
                 rc = _virNWFilterObjListDefLoopDetect(nwfilters, obj->def,
                                                       filtername);
-                virObjectUnlock(obj);
+                virNWFilterObjEndAPI(&obj);
                 if (rc < 0)
                     break;
             }
@@ -329,10 +340,10 @@ virNWFilterObjListAssignDef(virNWFilterObjListPtr nwfilters,
                            _("filter with same UUID but different name "
                              "('%s') already exists"),
                            objdef->name);
-            virObjectUnlock(obj);
+            virNWFilterObjEndAPI(&obj);
             return NULL;
         }
-        virObjectUnlock(obj);
+        virNWFilterObjEndAPI(&obj);
     } else {
         if ((obj = virNWFilterObjListFindByName(nwfilters, def->name))) {
             char uuidstr[VIR_UUID_STRING_BUFLEN];
@@ -342,7 +353,7 @@ virNWFilterObjListAssignDef(virNWFilterObjListPtr nwfilters,
             virReportError(VIR_ERR_OPERATION_FAILED,
                            _("filter '%s' already exists with uuid %s"),
                            def->name, uuidstr);
-            virObjectUnlock(obj);
+            virNWFilterObjEndAPI(&obj);
             return NULL;
         }
     }
@@ -367,7 +378,7 @@ virNWFilterObjListAssignDef(virNWFilterObjListPtr nwfilters,
         /* trigger the update on VMs referencing the filter */
         if (virNWFilterTriggerVMFilterRebuild() < 0) {
             obj->newDef = NULL;
-            virObjectUnlock(obj);
+            virNWFilterObjEndAPI(&obj);
             return NULL;
         }
 
@@ -382,10 +393,10 @@ virNWFilterObjListAssignDef(virNWFilterObjListPtr nwfilters,
 
     if (VIR_APPEND_ELEMENT_COPY(nwfilters->objs,
                                 nwfilters->count, obj) < 0) {
-        virObjectUnlock(obj);
-        virObjectUnref(obj);
+        virNWFilterObjEndAPI(&obj);
         return NULL;
     }
+    virObjectRef(obj);
     obj->def = def;
 
     return obj;
@@ -558,8 +569,7 @@ virNWFilterObjListLoadAllConfigs(virNWFilterObjListPtr nwfilters,
             continue;
 
         obj = virNWFilterObjListLoadConfig(nwfilters, configDir, entry->d_name);
-        if (obj)
-            virObjectUnlock(obj);
+        virNWFilterObjEndAPI(&obj);
     }
 
     VIR_DIR_CLOSE(dir);
