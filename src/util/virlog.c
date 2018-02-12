@@ -276,7 +276,7 @@ virLogOnceInit(void)
      * it might not be possible to load NSS modules via getaddrinfo()
      * (e.g. at container startup the host filesystem will not be
      * accessible anymore. */
-    virLogHostname = virGetHostnameQuiet();
+    virLogHostname = virGetHostnameSimple();
 
     virLogUnlock();
     return 0;

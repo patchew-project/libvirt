@@ -3016,6 +3016,7 @@ virGetGroupList;
 virGetGroupName;
 virGetHostname;
 virGetHostnameQuiet;
+virGetHostnameSimple;
 virGetListenFDs;
 virGetSelfLastChanged;
 virGetSystemPageSize;

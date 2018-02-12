@@ -684,26 +684,23 @@ static char *
 virGetHostnameImpl(bool quiet)
 {
     int r;
-    char hostname[HOST_NAME_MAX+1], *result = NULL;
+    char *result;
     struct addrinfo hints, *info;
 
-    r = gethostname(hostname, sizeof(hostname));
-    if (r == -1) {
+    if (!(result = virGetHostnameSimple())) {
         if (!quiet)
             virReportSystemError(errno,
                                  "%s", _("failed to determine host name"));
         return NULL;
     }
-    NUL_TERMINATE(hostname);
 
-    if (STRPREFIX(hostname, "localhost") || strchr(hostname, '.')) {
+    if (STRPREFIX(result, "localhost") || strchr(result, '.')) {
         /* in this case, gethostname returned localhost (meaning we can't
          * do any further canonicalization), or it returned an FQDN (and
          * we don't need to do any further canonicalization).  Return the
          * string as-is; it's up to callers to check whether "localhost"
          * is allowed.
          */
-        ignore_value(VIR_STRDUP_QUIET(result, hostname));
         goto cleanup;
     }
 
@@ -714,12 +711,11 @@ virGetHostnameImpl(bool quiet)
     memset(&hints, 0, sizeof(hints));
     hints.ai_flags = AI_CANONNAME|AI_CANONIDN;
     hints.ai_family = AF_UNSPEC;
-    r = getaddrinfo(hostname, NULL, &hints, &info);
+    r = getaddrinfo(result, NULL, &hints, &info);
     if (r != 0) {
         if (!quiet)
             VIR_WARN("getaddrinfo failed for '%s': %s",
-                     hostname, gai_strerror(r));
-        ignore_value(VIR_STRDUP_QUIET(result, hostname));
+                     result, gai_strerror(r));
         goto cleanup;
     }
 
@@ -727,15 +723,16 @@ virGetHostnameImpl(bool quiet)
     sa_assert(info);
 
     if (info->ai_canonname == NULL ||
-        STRPREFIX(info->ai_canonname, "localhost"))
+        STRPREFIX(info->ai_canonname, "localhost")) {
         /* in this case, we tried to canonicalize and we ended up back with
          * localhost.  Ignore the canonicalized name and just return the
          * original hostname
          */
-        ignore_value(VIR_STRDUP_QUIET(result, hostname));
-    else
+    } else {
         /* Caller frees this string. */
+        VIR_FREE(result);
         ignore_value(VIR_STRDUP_QUIET(result, info->ai_canonname));
+    }
 
     freeaddrinfo(info);
 
@@ -757,6 +754,31 @@ char *
 virGetHostnameQuiet(void)
 {
     return virGetHostnameImpl(true);
+}
+
+
+/**
+ * virGetHostnameSimple:
+ *
+ * Plain wrapper over gethostname(). The difference to
+ * virGetHostname() is that this function doesn't try to
+ * canonicalize the hostname.
+ *
+ * Returns: hostname string (caller must free),
+ *          NULL on error.
+ */
+char *
+virGetHostnameSimple(void)
+{
+    char hostname[HOST_NAME_MAX+1];
+    char *ret;
+
+    if (gethostname(hostname, sizeof(hostname)) == -1)
+        return NULL;
+
+    NUL_TERMINATE(hostname);
+    ignore_value(VIR_STRDUP_QUIET(ret, hostname));
+    return ret;
 }
 
 
