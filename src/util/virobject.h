@@ -117,6 +117,10 @@ virObjectLockableNew(virClassPtr klass)
     ATTRIBUTE_NONNULL(1);
 
 void *
+virObjectRecursiveLockableNew(virClassPtr klass)
+    ATTRIBUTE_NONNULL(1);
+
+void *
 virObjectRWLockableNew(virClassPtr klass)
     ATTRIBUTE_NONNULL(1);
 

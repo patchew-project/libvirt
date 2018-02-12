@@ -257,8 +257,9 @@ virObjectNew(virClassPtr klass)
 }
 
 
-void *
-virObjectLockableNew(virClassPtr klass)
+static void *
+virObjectLockableNewInternal(virClassPtr klass,
+                             bool recursive)
 {
     virObjectLockablePtr obj;
 
@@ -272,7 +273,8 @@ virObjectLockableNew(virClassPtr klass)
     if (!(obj = virObjectNew(klass)))
         return NULL;
 
-    if (virMutexInit(&obj->lock) < 0) {
+    if ((!recursive && virMutexInit(&obj->lock) < 0) ||
+        (recursive && virMutexInitRecursive(&obj->lock) < 0)) {
         virReportSystemError(errno, "%s",
                              _("Unable to initialize mutex"));
         virObjectUnref(obj);
@@ -280,6 +282,20 @@ virObjectLockableNew(virClassPtr klass)
     }
 
     return obj;
+}
+
+
+void *
+virObjectLockableNew(virClassPtr klass)
+{
+    return virObjectLockableNewInternal(klass, false);
+}
+
+
+void *
+virObjectRecursiveLockableNew(virClassPtr klass)
+{
+    return virObjectLockableNewInternal(klass, true);
 }
 
 
