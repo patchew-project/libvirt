@@ -58,6 +58,7 @@
 #include "virnetdev.h"
 #include "virnetdevmacvlan.h"
 #include "virhostdev.h"
+#include "virnetdevhostdev.h"
 #include "virmdev.h"
 
 #define VIR_FROM_THIS VIR_FROM_DOMAIN
@@ -28110,6 +28111,12 @@ virDomainNetFind(virDomainDefPtr def, const char *device)
 
         if ((net = virDomainNetFindByName(def, device)))
             return net;
+    }
+
+    /* Give a try to hostdev */
+    for (i = 0; i < def->nnets; i++) {
+        if (!virNetdevHostdevCheckVFRepIFName(def->hostdevs[i], device))
+            return def->nets[i];
     }
 
     virReportError(VIR_ERR_INVALID_ARG,
