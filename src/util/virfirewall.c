@@ -827,9 +827,12 @@ virFirewallApplyRule(virFirewallPtr firewall,
         if (virFirewallApplyRuleFirewallD(rule, ignoreErrors, &output) < 0)
             return -1;
         break;
+
+    case VIR_FIREWALL_BACKEND_AUTOMATIC:
+    case VIR_FIREWALL_BACKEND_LAST:
     default:
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Unexpected firewall engine backend"));
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Unexpected firewall engine backend %d"), currentBackend);
         return -1;
     }
 

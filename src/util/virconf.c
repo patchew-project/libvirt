@@ -296,7 +296,10 @@ virConfSaveValue(virBufferPtr buf, virConfValuePtr val)
             virBufferAddLit(buf, " ]");
             break;
         }
+        case VIR_CONF_LAST:
         default:
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Unexpected conf value type %d"), val->type);
             return -1;
     }
     return 0;
@@ -986,12 +989,20 @@ int virConfGetValueStringList(virConfPtr conf,
         }
         ATTRIBUTE_FALLTHROUGH;
 
-    default:
+    case VIR_CONF_LLONG:
+    case VIR_CONF_ULLONG:
+    case VIR_CONF_NONE:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        compatString ?
                        _("%s: expected a string or string list for '%s' parameter") :
                        _("%s: expected a string list for '%s' parameter"),
                        conf->filename, setting);
+        return -1;
+
+    case VIR_CONF_LAST:
+    default:
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Unexpected value type %d"), cval->type);
         return -1;
     }
 
