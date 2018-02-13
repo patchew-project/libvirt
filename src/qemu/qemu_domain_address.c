@@ -532,6 +532,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
             case VIR_DOMAIN_CONTROLLER_MODEL_USB_QUSB2: /* xen only */
             case VIR_DOMAIN_CONTROLLER_MODEL_USB_NONE:
             case VIR_DOMAIN_CONTROLLER_MODEL_USB_LAST:
+            default:
                 return 0;
             }
 
@@ -553,6 +554,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
                 return pciFlags;
 
             case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LAST:
+            default:
                 return 0;
             }
 
@@ -562,6 +564,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_CONTROLLER_TYPE_FDC:
         case VIR_DOMAIN_CONTROLLER_TYPE_CCID:
         case VIR_DOMAIN_CONTROLLER_TYPE_LAST:
+        default:
             /* should be 0 */
             return pciFlags;
         }
@@ -605,6 +608,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_SOUND_MODEL_PCSPK:
         case VIR_DOMAIN_SOUND_MODEL_USB:
         case VIR_DOMAIN_SOUND_MODEL_LAST:
+        default:
             return 0;
         }
 
@@ -622,6 +626,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_DISK_BUS_SATA:
         case VIR_DOMAIN_DISK_BUS_SD:
         case VIR_DOMAIN_DISK_BUS_LAST:
+        default:
             return 0;
         }
 
@@ -734,6 +739,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_MEMBALLOON_MODEL_XEN:
         case VIR_DOMAIN_MEMBALLOON_MODEL_NONE:
         case VIR_DOMAIN_MEMBALLOON_MODEL_LAST:
+        default:
             return 0;
         }
 
@@ -743,6 +749,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
             return virtioFlags;
 
         case VIR_DOMAIN_RNG_MODEL_LAST:
+        default:
             return 0;
         }
 
@@ -755,6 +762,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_WATCHDOG_MODEL_IB700:
         case VIR_DOMAIN_WATCHDOG_MODEL_DIAG288:
         case VIR_DOMAIN_WATCHDOG_MODEL_LAST:
+        default:
             return 0;
         }
 
@@ -775,6 +783,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_VIDEO_TYPE_DEFAULT:
         case VIR_DOMAIN_VIDEO_TYPE_GOP:
         case VIR_DOMAIN_VIDEO_TYPE_LAST:
+        default:
             return 0;
         }
 
@@ -791,6 +800,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_INPUT_BUS_XEN:
         case VIR_DOMAIN_INPUT_BUS_PARALLELS:
         case VIR_DOMAIN_INPUT_BUS_LAST:
+        default:
             return 0;
         }
 
@@ -806,6 +816,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_NONE:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_LAST:
+        default:
             return 0;
         }
 
