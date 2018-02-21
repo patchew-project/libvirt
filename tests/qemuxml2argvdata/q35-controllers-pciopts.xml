@@ -1,0 +1,60 @@
+<domain type='qemu'>
+  <name>guest</name>
+  <uuid>496d7ea8-9739-544b-4ebd-ef08be936e8b</uuid>
+  <memory unit='KiB'>1048576</memory>
+  <vcpu placement='static'>1</vcpu>
+  <os>
+    <type arch='x86_64' machine='q35'>hvm</type>
+  </os>
+  <cpu>
+    <numa>
+      <cell id='0' cpus='0' memory='1048576' unit='KiB'/>
+    </numa>
+  </cpu>
+  <devices>
+    <emulator>/usr/bin/qemu-system-x86_64</emulator>
+    <controller type='pci' index='0' model='pcie-root'>
+      <!-- Only pcihole64 is valid -->
+      <target busNr='1' chassis='1' chassisNr='1' index='0' port='1'/>
+      <pcihole64 unit='KiB'>1024</pcihole64>
+    </controller>
+    <controller type='pci' index='1' model='dmi-to-pci-bridge'>
+      <!-- No option is valid -->
+      <target busNr='2' chassis='2' chassisNr='2' index='2' port='2'>
+        <node>0</node>
+      </target>
+    </controller>
+    <controller type='pci' index='2' model='pci-bridge'>
+      <!-- Only chassisNr is valid -->
+      <target busNr='3' chassis='3' chassisNr='3' index='3' port='3'>
+        <node>0</node>
+      </target>
+    </controller>
+    <controller type='pci' index='3' model='pcie-expander-bus'>
+      <!-- Only busNr and numaNode are valid -->
+      <target busNr='4' chassis='4' chassisNr='4' index='4' port='4'>
+        <node>0</node>
+      </target>
+    </controller>
+    <controller type='pci' index='4' model='pcie-root-port'>
+      <!-- Only chassis and port are valid -->
+      <target busNr='5' chassis='5' chassisNr='5' index='5' port='5'>
+        <node>0</node>
+      </target>
+    </controller>
+    <controller type='pci' index='5' model='pcie-switch-upstream-port'>
+      <!-- No option is valid -->
+      <target busNr='6' chassis='6' chassisNr='6' index='6' port='6'>
+        <node>0</node>
+      </target>
+    </controller>
+    <controller type='pci' index='6' model='pcie-switch-downstream-port'>
+      <!-- Only chassis and port are valid -->
+      <target busNr='7' chassis='7' chassisNr='7' index='7' port='7'>
+        <node>0</node>
+      </target>
+    </controller>
+    <controller type='usb' index='0' model='none'/>
+    <memballoon model='none'/>
+  </devices>
+</domain>
