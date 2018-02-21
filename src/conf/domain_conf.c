@@ -5199,6 +5199,13 @@ virDomainDiskDefValidate(const virDomainDiskDef *disk)
         }
     }
 
+    if (disk->src->pr &&
+        disk->device != VIR_DOMAIN_DISK_DEVICE_LUN) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("<reservations/> allowed only for lun disks"));
+        return -1;
+    }
+
     /* Reject disks with a bus type that is not compatible with the
      * given address type. The function considers only buses that are
      * handled in common code. For other bus types it's not possible
@@ -8613,6 +8620,29 @@ virDomainDiskSourcePrivateDataParse(xmlXPathContextPtr ctxt,
 }
 
 
+static int
+virDomainDiskSourcePRParse(xmlNodePtr node,
+                           virStoragePRDefPtr *prsrc)
+{
+    xmlNodePtr child;
+    virStoragePRDefPtr pr = NULL;
+
+    for (child = node->children; child; child = child->next) {
+        if (child->type == XML_ELEMENT_NODE &&
+            virXMLNodeNameEqual(child, "reservations")) {
+
+            if (!(pr = virStoragePRDefParseNode(node->doc, child)))
+                return -1;
+
+            *prsrc = pr;
+            return 0;
+        }
+    }
+
+    return 0;
+}
+
+
 int
 virDomainDiskSourceParse(xmlNodePtr node,
                          xmlXPathContextPtr ctxt,
@@ -8655,6 +8685,9 @@ virDomainDiskSourceParse(xmlNodePtr node,
         goto cleanup;
 
     if (virDomainDiskSourceEncryptionParse(node, &src->encryption) < 0)
+        goto cleanup;
+
+    if (virDomainDiskSourcePRParse(node, &src->pr) < 0)
         goto cleanup;
 
     if (virDomainDiskSourcePrivateDataParse(ctxt, src, flags, xmlopt) < 0)
@@ -22939,6 +22972,9 @@ virDomainDiskSourceFormatInternal(virBufferPtr buf,
         if (src->encryption && src->encryptionInherited &&
             virStorageEncryptionFormat(&childBuf, src->encryption) < 0)
             goto error;
+
+        if (src->pr)
+            virStoragePRDefFormat(&childBuf, src->pr);
 
         if (virDomainDiskSourceFormatPrivateData(&childBuf, src, flags, xmlopt) < 0)
             goto error;

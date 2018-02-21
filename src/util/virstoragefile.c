@@ -1911,6 +1911,153 @@ virStorageAuthDefFormat(virBufferPtr buf,
 }
 
 
+void
+virStoragePRDefFree(virStoragePRDefPtr prd)
+{
+    if (!prd)
+        return;
+
+    VIR_FREE(prd->path);
+    VIR_FREE(prd);
+}
+
+
+static virStoragePRDefPtr
+virStoragePRDefParseXML(xmlXPathContextPtr ctxt)
+{
+    virStoragePRDefPtr prd, ret = NULL;
+    char *enabled = NULL;
+    char *managed = NULL;
+    char *type = NULL;
+    char *path = NULL;
+    char *mode = NULL;
+
+    if (VIR_ALLOC(prd) < 0)
+        return NULL;
+
+    if (!(enabled = virXPathString("string(./@enabled)", ctxt))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("missing @enabled attribute for <reservations/>"));
+        goto cleanup;
+    }
+
+    if ((prd->enabled = virTristateBoolTypeFromString(enabled)) <= 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("invalid value for 'enabled': %s"), NULLSTR(enabled));
+        goto cleanup;
+    }
+
+    if (prd->enabled == VIR_TRISTATE_BOOL_YES) {
+        managed = virXPathString("string(./@managed)", ctxt);
+        if ((prd->managed = virTristateBoolTypeFromString(managed)) <= 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("invalid value for 'managed': %s"), NULLSTR(managed));
+            goto cleanup;
+        }
+
+        if (prd->managed == VIR_TRISTATE_BOOL_NO) {
+            type = virXPathString("string(./source[1]/@type)", ctxt);
+            path = virXPathString("string(./source[1]/@path)", ctxt);
+            mode = virXPathString("string(./source[1]/@mode)", ctxt);
+
+            if (!type) {
+                virReportError(VIR_ERR_XML_ERROR, "%s",
+                               _("missing connection type"));
+                goto cleanup;
+            }
+
+            if (!path) {
+                virReportError(VIR_ERR_XML_ERROR, "%s",
+                               _("missing path"));
+                goto cleanup;
+            }
+
+            if (!mode) {
+                virReportError(VIR_ERR_XML_ERROR, "%s",
+                               _("missing connection mode"));
+                goto cleanup;
+            }
+
+            if (STRNEQ(type, "unix")) {
+                virReportError(VIR_ERR_XML_ERROR,
+                               _("unsupported type: %s"), type);
+                goto cleanup;
+            }
+
+            if (STRNEQ(mode, "client")) {
+                virReportError(VIR_ERR_XML_ERROR,
+                               _("unsupported mode: %s"),  mode);
+                goto cleanup;
+            }
+
+            prd->path = path;
+            path = NULL;
+
+        }
+    }
+
+    ret = prd;
+    prd = NULL;
+
+ cleanup:
+    VIR_FREE(mode);
+    VIR_FREE(path);
+    VIR_FREE(type);
+    VIR_FREE(managed);
+    VIR_FREE(enabled);
+    virStoragePRDefFree(prd);
+    return ret;
+}
+
+
+virStoragePRDefPtr
+virStoragePRDefParseNode(xmlDocPtr xml,
+                         xmlNodePtr root)
+{
+    xmlXPathContextPtr ctxt = NULL;
+    virStoragePRDefPtr prd = NULL;
+
+    ctxt = xmlXPathNewContext(xml);
+    if (ctxt == NULL) {
+        virReportOOMError();
+        goto cleanup;
+    }
+
+    ctxt->node = root;
+    prd = virStoragePRDefParseXML(ctxt);
+
+ cleanup:
+    xmlXPathFreeContext(ctxt);
+    return prd;
+}
+
+
+void
+virStoragePRDefFormat(virBufferPtr buf,
+                      virStoragePRDefPtr prd)
+{
+    virBufferAsprintf(buf, "<reservations enabled='%s'",
+                      virTristateBoolTypeToString(prd->enabled));
+    if (prd->enabled == VIR_TRISTATE_BOOL_YES) {
+        virBufferAsprintf(buf, " managed='%s'",
+                          virTristateBoolTypeToString(prd->managed));
+        if (prd->managed == VIR_TRISTATE_BOOL_NO) {
+            virBufferAddLit(buf, ">\n");
+            virBufferAdjustIndent(buf, 2);
+            virBufferAddLit(buf, "<source type='unix'");
+            virBufferEscapeString(buf, " path='%s'", prd->path);
+            virBufferAddLit(buf, " mode='client'/>\n");
+            virBufferAdjustIndent(buf, -2);
+            virBufferAddLit(buf, "</reservations>\n");
+        } else {
+            virBufferAddLit(buf, "/>\n");
+        }
+    } else {
+        virBufferAddLit(buf, "/>\n");
+    }
+}
+
+
 virSecurityDeviceLabelDefPtr
 virStorageSourceGetSecurityLabelDef(virStorageSourcePtr src,
                                     const char *model)
@@ -2289,6 +2436,7 @@ virStorageSourceClear(virStorageSourcePtr def)
     virBitmapFree(def->features);
     VIR_FREE(def->compat);
     virStorageEncryptionFree(def->encryption);
+    virStoragePRDefFree(def->pr);
     virStorageSourceSeclabelsClear(def);
     virStoragePermsFree(def->perms);
     VIR_FREE(def->timestamps);
