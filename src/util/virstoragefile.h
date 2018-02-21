@@ -385,6 +385,8 @@ void virStoragePRDefFormat(virBufferPtr buf,
                            virStoragePRDefPtr prd);
 bool virStoragePRDefIsEqual(virStoragePRDefPtr a,
                             virStoragePRDefPtr b);
+bool virStoragePRDefIsEnabled(virStoragePRDefPtr prd);
+bool virStoragePRDefIsManaged(virStoragePRDefPtr prd);
 
 virSecurityDeviceLabelDefPtr
 virStorageSourceGetSecurityLabelDef(virStorageSourcePtr src,

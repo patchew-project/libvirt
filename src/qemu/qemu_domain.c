@@ -982,6 +982,18 @@ qemuDomainSecretInfoFree(qemuDomainSecretInfoPtr *secinfo)
 }
 
 
+static void
+qemuDomainDiskPRDFree(qemuDomainDiskPRDPtr prd)
+{
+    if (!prd)
+        return;
+
+    VIR_FREE(prd->alias);
+    VIR_FREE(prd->path);
+    VIR_FREE(prd);
+}
+
+
 static virClassPtr qemuDomainDiskPrivateClass;
 static void qemuDomainDiskPrivateDispose(void *obj);
 
@@ -1062,6 +1074,7 @@ qemuDomainStorageSourcePrivateDispose(void *obj)
 
     qemuDomainSecretInfoFree(&priv->secinfo);
     qemuDomainSecretInfoFree(&priv->encinfo);
+    qemuDomainDiskPRDFree(priv->prd);
 }
 
 
@@ -1472,9 +1485,6 @@ qemuDomainSecretStorageSourcePrepare(qemuDomainObjPrivatePtr priv,
 
     if (!hasAuth && !hasEnc)
         return 0;
-
-    if (!(src->privateData = qemuDomainStorageSourcePrivateNew()))
-        return -1;
 
     srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(src);
 
@@ -11538,15 +11548,79 @@ qemuDomainCheckMigrationCapabilities(virQEMUDriverPtr driver,
 }
 
 
+static int
+qemuDomainPrepareDiskPRD(qemuDomainObjPrivatePtr priv,
+                         virDomainDiskDefPtr disk)
+{
+    qemuDomainStorageSourcePrivatePtr srcPriv;
+    virStoragePRDefPtr prd = disk->src->pr;
+    char *prAlias = NULL;
+    char *prPath = NULL;
+    int ret = -1;
+
+    if (!virStoragePRDefIsEnabled(prd))
+        return 0;
+
+    if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_PR_MANAGER_HELPER)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("reservations not supported with this QEMU binary"));
+        goto cleanup;
+    }
+
+    if (!virStorageSourceIsLocalStorage(disk->src)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("reservations supported only for local storage"));
+        goto cleanup;
+    }
+
+    srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(disk->src);
+
+    if (virStoragePRDefIsManaged(prd)) {
+        /* Generate PR helper socket path & alias that are same
+         * for each disk in the domain. */
+
+        if (VIR_STRDUP(prAlias, "pr-helper0") < 0)
+            return -1;
+
+        if (virAsprintf(&prPath, "%s/pr-helper0.sock", priv->libDir) < 0)
+            return -1;
+
+    } else {
+        if (virAsprintf(&prAlias, "pr-helper-%s", disk->dst) < 0)
+            return -1;
+
+        if (VIR_STRDUP(prPath, prd->path) < 0)
+            return -1;
+    }
+
+    if (VIR_ALLOC(srcPriv->prd) < 0)
+        goto cleanup;
+    VIR_STEAL_PTR(srcPriv->prd->alias, prAlias);
+    VIR_STEAL_PTR(srcPriv->prd->path, prPath);
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(prPath);
+    VIR_FREE(prAlias);
+    return ret;
+}
+
+
 int
 qemuDomainPrepareDiskSource(virDomainDiskDefPtr disk,
                             qemuDomainObjPrivatePtr priv,
                             virQEMUDriverConfigPtr cfg)
 {
+    if (!(disk->src->privateData = qemuDomainStorageSourcePrivateNew()))
+        return -1;
+
     if (qemuDomainPrepareDiskSourceTLS(disk->src, cfg) < 0)
         return -1;
 
     if (qemuDomainSecretDiskPrepare(priv, disk) < 0)
+        return -1;
+
+    if (qemuDomainPrepareDiskPRD(priv, disk) < 0)
         return -1;
 
     if (disk->src->type == VIR_STORAGE_TYPE_NETWORK &&
