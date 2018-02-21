@@ -1007,6 +1007,9 @@ qemuDomainCheckMigrationCapabilities(virQEMUDriverPtr driver,
                                      virDomainObjPtr vm,
                                      qemuDomainAsyncJob asyncJob);
 
+size_t
+qemuDomainGetPRDManagedCount(const virDomainDef *def);
+
 int
 qemuDomainPrepareDiskSource(virDomainDiskDefPtr disk,
                             qemuDomainObjPrivatePtr priv,
