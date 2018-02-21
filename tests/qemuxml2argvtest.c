@@ -2436,22 +2436,9 @@ mymain(void)
                         QEMU_CAPS_DEVICE_IOH3420,
                         QEMU_CAPS_DEVICE_PXB_PCIE);
 
-    DO_TEST("i440fx-controllers-pciopts",
-            QEMU_CAPS_I440FX_PCI_HOLE64_SIZE,
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_PXB);
-    DO_TEST("q35-controllers-pciopts",
-            QEMU_CAPS_Q35_PCI_HOLE64_SIZE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_PXB_PCIE,
-            QEMU_CAPS_DEVICE_PCIE_ROOT_PORT,
-            QEMU_CAPS_DEVICE_X3130_UPSTREAM,
-            QEMU_CAPS_DEVICE_XIO3130_DOWNSTREAM);
-    DO_TEST("pseries-controllers-pciopts",
-            QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
-            QEMU_CAPS_SPAPR_PCI_HOST_BRIDGE_NUMA_NODE,
-            QEMU_CAPS_DEVICE_PCI_BRIDGE);
+    DO_TEST_PARSE_ERROR("i440fx-controllers-pciopts", NONE);
+    DO_TEST_PARSE_ERROR("q35-controllers-pciopts", NONE);
+    DO_TEST_PARSE_ERROR("pseries-controllers-pciopts", NONE);
 
     DO_TEST("hostdev-scsi-lsi",
             QEMU_CAPS_VIRTIO_SCSI, QEMU_CAPS_SCSI_LSI,
