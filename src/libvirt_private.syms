@@ -2782,6 +2782,7 @@ virStorageNetHostTransportTypeToString;
 virStorageNetProtocolTypeToString;
 virStoragePRDefFormat;
 virStoragePRDefFree;
+virStoragePRDefIsEqual;
 virStoragePRDefParseNode;
 virStorageSourceBackingStoreClear;
 virStorageSourceClear;
