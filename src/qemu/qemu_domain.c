@@ -4268,9 +4268,9 @@ qemuDomainDeviceDefValidateControllerSCSI(const virDomainControllerDef *controll
 
 
 static int
-qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *controller,
-                                         const virDomainDef *def,
-                                         virQEMUCapsPtr qemuCaps)
+qemuDomainDeviceDefValidateControllerPCIOld(const virDomainControllerDef *controller,
+                                            const virDomainDef *def,
+                                            virQEMUCapsPtr qemuCaps)
 {
     virDomainControllerModelPCI model = controller->model;
     const virDomainPCIControllerOpts *pciopts;
@@ -4544,6 +4544,33 @@ qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *controlle
     }
 
     return 0;
+}
+
+
+static int
+qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *cont,
+                                         const virDomainDef *def,
+                                         virQEMUCapsPtr qemuCaps)
+
+{
+    const virDomainPCIControllerOpts *pciopts = &cont->opts.pciopts;
+    const char *model = virDomainControllerModelPCITypeToString(cont->model);
+    const char *modelName = virDomainControllerPCIModelNameTypeToString(pciopts->modelName);
+
+    if (!model) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Unknown virDomainControllerModelPCI value: %d"),
+                       cont->model);
+        return -1;
+    }
+    if (!modelName) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Unknown virDomainControllerPCIModelName value: %d"),
+                       pciopts->modelName);
+        return -1;
+    }
+
+    return qemuDomainDeviceDefValidateControllerPCIOld(cont, def, qemuCaps);
 }
 
 
