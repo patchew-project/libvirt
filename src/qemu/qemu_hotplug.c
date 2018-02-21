@@ -348,6 +348,58 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
 }
 
 
+static int
+qemuBuildPRDefInfoProps(virDomainObjPtr vm,
+                        virDomainDiskDefPtr disk,
+                        virJSONValuePtr *prmgrProps,
+                        const char **prAlias,
+                        const char **prPath)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    qemuDomainStorageSourcePrivatePtr srcPriv;
+    virJSONValuePtr props = NULL;
+    int ret = -1;
+
+    srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(disk->src);
+
+    *prmgrProps = NULL;
+
+    if (priv->prPid != (pid_t) -1 ||
+        !srcPriv->prd ||
+        !srcPriv->prd->alias)
+        return 0;
+
+    if (virJSONValueObjectCreate(&props,
+                                 "s:path", srcPriv->prd->path,
+                                 NULL) < 0)
+        goto cleanup;
+
+    if (qemuProcessSetupOnePRDaemon(vm, disk) < 0)
+        goto cleanup;
+
+    *prAlias = srcPriv->prd->alias;
+    *prPath = srcPriv->prd->path;
+    *prmgrProps = props;
+    props = NULL;
+    ret = 0;
+ cleanup:
+    virJSONValueFree(props);
+    return ret;
+}
+
+
+static void
+qemuDestroyPRDefObject(virDomainObjPtr vm,
+                       const char *alias,
+                       const char *path)
+{
+    if (!alias)
+        return;
+
+    qemuProcessKillPRDaemons(vm, path, false);
+}
+
+
 /**
  * qemuDomainAttachDiskGeneric:
  *
@@ -365,12 +417,16 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     char *devstr = NULL;
     char *drivestr = NULL;
     char *drivealias = NULL;
+    const char *prAlias = NULL;
+    const char *prPath = NULL;
     bool driveAdded = false;
     bool secobjAdded = false;
     bool encobjAdded = false;
+    bool prmgrAdded = false;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     virJSONValuePtr secobjProps = NULL;
     virJSONValuePtr encobjProps = NULL;
+    virJSONValuePtr prmgrProps = NULL;
     qemuDomainStorageSourcePrivatePtr srcPriv;
     qemuDomainSecretInfoPtr secinfo = NULL;
     qemuDomainSecretInfoPtr encinfo = NULL;
@@ -401,6 +457,9 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     if (disk->src->haveTLS &&
         qemuDomainAddDiskSrcTLSObject(driver, vm, disk->src,
                                       disk->info.alias) < 0)
+        goto error;
+
+    if (qemuBuildPRDefInfoProps(vm, disk, &prmgrProps, &prAlias, &prPath) < 0)
         goto error;
 
     if (!(drivestr = qemuBuildDriveStr(disk, false, priv->qemuCaps)))
@@ -435,6 +494,15 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
         encobjAdded = true;
     }
 
+    if (prmgrProps) {
+        rv = qemuMonitorAddObject(priv->mon, "pr-manager-helper", prAlias,
+                                  prmgrProps);
+        prmgrProps = NULL; /* qemuMonitorAddObject consumes */
+        if (rv < 0)
+            goto exit_monitor;
+        prmgrAdded = true;
+    }
+
     if (qemuMonitorAddDrive(priv->mon, drivestr) < 0)
         goto exit_monitor;
     driveAdded = true;
@@ -455,6 +523,7 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
  cleanup:
     virJSONValueFree(secobjProps);
     virJSONValueFree(encobjProps);
+    virJSONValueFree(prmgrProps);
     qemuDomainSecretDiskDestroy(disk);
     VIR_FREE(devstr);
     VIR_FREE(drivestr);
@@ -472,6 +541,8 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
         ignore_value(qemuMonitorDelObject(priv->mon, secinfo->s.aes.alias));
     if (encobjAdded)
         ignore_value(qemuMonitorDelObject(priv->mon, encinfo->s.aes.alias));
+    if (prmgrAdded)
+        ignore_value(qemuMonitorDelObject(priv->mon, prAlias));
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         ret = -2;
     virErrorRestore(&orig_err);
@@ -481,6 +552,7 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
  error:
     qemuDomainDelDiskSrcTLSObject(driver, vm, disk->src);
     ignore_value(qemuHotplugPrepareDiskAccess(driver, vm, disk, NULL, true));
+    qemuDestroyPRDefObject(vm, prAlias, prPath);
     goto cleanup;
 }
 
