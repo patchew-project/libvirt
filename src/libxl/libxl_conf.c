@@ -366,7 +366,9 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
         }
     }
 
-    b_info->sched_params.weight = 1000;
+    if (def->cputune.sharesSpecified)
+        b_info->sched_params.weight = def->cputune.shares;
+
     b_info->max_memkb = virDomainDefGetMemoryInitial(def);
     b_info->target_memkb = def->mem.cur_balloon;
     if (hvm) {
