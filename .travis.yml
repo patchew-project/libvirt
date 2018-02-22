@@ -6,8 +6,13 @@ matrix:
   include:
     - compiler: gcc
       dist: precise
+    # Special scenario to run distcheck, so we don't waste time duplicating
+    # work in all the other scenarios. Doesn't work on precise due to the
+    # CVE-2012-3386 flaw being present on that Ubuntu version
     - compiler: gcc
       dist: trusty
+      script:
+      - make -j3 distcheck
     - compiler: clang
       dist: precise
     - compiler: clang
