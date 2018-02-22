@@ -367,8 +367,8 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
     }
 
     b_info->sched_params.weight = 1000;
-    b_info->max_memkb = virDomainDefGetMemoryInitial(def);
-    b_info->target_memkb = def->mem.cur_balloon;
+    b_info->max_memkb = VIR_ROUND_UP(virDomainDefGetMemoryInitial(def), 1024);
+    b_info->target_memkb = VIR_ROUND_UP(def->mem.cur_balloon, 1024);
     if (hvm) {
         char bootorder[VIR_DOMAIN_BOOT_LAST + 1];
 
