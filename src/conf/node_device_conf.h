@@ -316,6 +316,7 @@ struct _virNodeDeviceDef {
     char *driver;                       /* optional driver name */
     char *devnode;                      /* /dev path */
     char **devlinks;                    /* /dev links */
+    bool testdriver;                    /* if true, skip host checks */
     virNodeDevCapsDefPtr caps;          /* optional device capabilities */
 };
 

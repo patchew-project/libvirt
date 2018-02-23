@@ -2425,6 +2425,9 @@ virNodeDeviceUpdateCaps(virNodeDeviceDefPtr def)
 {
     virNodeDevCapsDefPtr cap = def->caps;
 
+    if (def->testdriver)
+        return 0;
+
     while (cap) {
         switch (cap->data.type) {
         case VIR_NODE_DEV_CAP_SCSI_HOST:
