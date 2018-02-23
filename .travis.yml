@@ -6,6 +6,8 @@ matrix:
   include:
     - compiler: gcc
       dist: precise
+      env:
+        - CONFIGURE_ARGS=--with-init-script=upstart
     # Special scenario to run distcheck, so we don't waste time duplicating
     # work in all the other scenarios. Doesn't work on precise due to the
     # CVE-2012-3386 flaw being present on that Ubuntu version
@@ -103,7 +105,7 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update && brew upgrade && brew install rpcgen yajl; fi
 
 before_script:
-  - mkdir build && cd build && ../autogen.sh
+  - mkdir build && cd build && ../autogen.sh $CONFIGURE_ARGS
 
 script:
   # Many unit tests still fail on macOS, and there are a bunch of issues with
