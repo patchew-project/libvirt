@@ -810,9 +810,14 @@ virXMLParseHelper(int domcode,
     pctxt->sax->error = catchXMLError;
 
     if (filename) {
+        /* Reset any libxml2 file callbacks, other libs (like python lxml)
+         * may have set their own which can get crashy */
+        xmlExternalEntityLoader origloader = xmlGetExternalEntityLoader();
+        xmlSetExternalEntityLoader(xmlNoNetExternalEntityLoader);
         xml = xmlCtxtReadFile(pctxt, filename, NULL,
                               XML_PARSE_NONET |
                               XML_PARSE_NOWARNING);
+        xmlSetExternalEntityLoader(origloader);
     } else {
         xml = xmlCtxtReadDoc(pctxt, BAD_CAST xmlStr, url, NULL,
                              XML_PARSE_NONET |
