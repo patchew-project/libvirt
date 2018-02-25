@@ -22,7 +22,11 @@
     <filter
        style="color-interpolation-filters:sRGB"
        inkscape:label="Drop Shadow"
-       id="filter5799">
+       id="filter5799"
+       x="-0.030000000000000000"
+       y="-0.030000000000000000"
+       width="1.0800000000000000"
+       height="1.0800000000000000">
       <feFlood
          flood-opacity="1"
          flood-color="rgb(0,0,0)"
