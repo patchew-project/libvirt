@@ -251,6 +251,15 @@
           qemu: Add support for hot unplugging redirdev device
         </summary>
       </change>
+      <change>
+        <summary>
+          qemu: Add logging of guest crash information on S390
+        </summary>
+        <description>
+          On S390, when the guest crashes and QEMU exposes the guest crash
+          information, log the relevant data to the domain log file.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
       <change>
