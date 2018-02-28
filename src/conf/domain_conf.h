@@ -816,6 +816,7 @@ struct _virDomainControllerDef {
     int model; /* -1 == undef */
     unsigned int queues;
     unsigned int cmd_per_lun;
+    unsigned int virtqueue_size;
     unsigned int max_sectors;
     int ioeventfd; /* enum virTristateSwitch */
     unsigned int iothread; /* unused = 0, > 0 specific thread # */

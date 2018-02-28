@@ -9976,6 +9976,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
     char *model = NULL;
     char *queues = NULL;
     char *cmd_per_lun = NULL;
+    char *virtqueue_size = NULL;
     char *max_sectors = NULL;
     bool processedModel = false;
     char *modelName = NULL;
@@ -10035,6 +10036,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
                 queues = virXMLPropString(cur, "queues");
                 cmd_per_lun = virXMLPropString(cur, "cmd_per_lun");
                 max_sectors = virXMLPropString(cur, "max_sectors");
+                virtqueue_size = virXMLPropString(cur, "virtqueue_size");
                 ioeventfd = virXMLPropString(cur, "ioeventfd");
                 iothread = virXMLPropString(cur, "iothread");
 
@@ -10086,6 +10088,12 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
     if (cmd_per_lun && virStrToLong_ui(cmd_per_lun, NULL, 10, &def->cmd_per_lun) < 0) {
         virReportError(VIR_ERR_XML_ERROR,
                        _("Malformed 'cmd_per_lun' value '%s'"), cmd_per_lun);
+        goto error;
+    }
+
+    if (virtqueue_size && virStrToLong_ui(virtqueue_size, NULL, 10, &def->virtqueue_size) < 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Malformed 'virtqueue_size' value '%s'"), virtqueue_size);
         goto error;
     }
 
@@ -10310,6 +10318,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_FREE(model);
     VIR_FREE(queues);
     VIR_FREE(cmd_per_lun);
+    VIR_FREE(virtqueue_size);
     VIR_FREE(max_sectors);
     VIR_FREE(modelName);
     VIR_FREE(chassisNr);
@@ -23292,6 +23301,9 @@ virDomainControllerDriverFormat(virBufferPtr buf,
 
     if (def->cmd_per_lun)
         virBufferAsprintf(&driverBuf, " cmd_per_lun='%u'", def->cmd_per_lun);
+
+    if (def->virtqueue_size)
+        virBufferAsprintf(&driverBuf, " virtqueue_size='%u'", def->virtqueue_size);
 
     if (def->max_sectors)
         virBufferAsprintf(&driverBuf, " max_sectors='%u'", def->max_sectors);

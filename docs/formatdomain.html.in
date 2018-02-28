@@ -3867,6 +3867,12 @@
         host.
         <span class="since">Since 1.2.7 (QEMU and KVM only)</span>
       </dd>
+      <dt><code>virtqueue_size</code></dt>
+      <dd>
+        The optional <code>virtqueue_size</code> attribute specifies the size of
+        virtio queue.
+        <span class="since">Since 3.7.0 (QEMU and KVM only)</span>
+      </dd>
       <dt><code>max_sectors</code></dt>
       <dd>
         The optional <code>max_sectors</code> attribute specifies the maximum

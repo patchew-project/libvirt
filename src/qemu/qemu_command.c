@@ -2808,6 +2808,9 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
     if (def->queues)
         virBufferAsprintf(&buf, ",num_queues=%u", def->queues);
 
+    if (def->virtqueue_size)
+        virBufferAsprintf(&buf, ",virtqueue_size=%u", def->virtqueue_size);
+
     if (def->cmd_per_lun)
         virBufferAsprintf(&buf, ",cmd_per_lun=%u", def->cmd_per_lun);
 
