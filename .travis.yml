@@ -94,12 +94,12 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update && brew upgrade && brew install rpcgen yajl; fi
 
 before_script:
-  - mkdir build && cd build && ../autogen.sh
+  - mkdir build install && cd build && ../autogen.sh --prefix=$(pwd)/../install
 
 script:
   # Many unit tests still fail on macOS, and there are a bunch of issues with
   # syntax-check as well, so skip those steps on that platform for now
-  - make -j3 && if [ "$TRAVIS_OS_NAME" != "osx" ]; then make -j3 syntax-check && make -j3 check && make -j3 distcheck; fi
+  - make -j3 && make -j3 install && if [ "$TRAVIS_OS_NAME" != "osx" ]; then make -j3 syntax-check && make -j3 check && make -j3 distcheck; fi
 
 after_failure:
   - echo '============================================================================'
