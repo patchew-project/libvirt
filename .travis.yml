@@ -5,11 +5,7 @@ cache: ccache
 matrix:
   include:
     - compiler: gcc
-      dist: precise
-    - compiler: gcc
       dist: trusty
-    - compiler: clang
-      dist: precise
     - compiler: clang
       dist: trusty
     - compiler: clang
