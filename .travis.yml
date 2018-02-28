@@ -94,7 +94,7 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update && brew upgrade && brew install rpcgen yajl; fi
 
 before_script:
-  - ./autogen.sh
+  - mkdir build && cd build && ../autogen.sh
 
 script:
   # Many unit tests still fail on macOS, and there are a bunch of issues with
