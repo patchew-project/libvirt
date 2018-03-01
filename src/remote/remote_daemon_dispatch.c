@@ -1752,8 +1752,12 @@ static void remoteClientCloseFunc(virNetServerClientPtr client)
     daemonRemoveAllClientStreams(priv->streams);
 
     /* Deregister event delivery callback */
-    if (priv->conn)
+    if (priv->conn) {
+        virMutexLock(&priv->lock);
         remoteClientFreePrivateCallbacks(priv);
+        priv->clientClosed = true;
+        virMutexUnlock(&priv->lock);
+    }
 }
 
 
@@ -3889,6 +3893,11 @@ remoteDispatchConnectDomainEventRegister(virNetServerPtr server ATTRIBUTE_UNUSED
 
     virMutexLock(&priv->lock);
 
+    if (priv->clientClosed) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection want close"));
+        goto cleanup;
+    }
+
     /* If we call register first, we could append a complete callback
      * to our array, but on OOM append failure, we'd have to then hope
      * deregister works to undo our register.  So instead we append an
@@ -4117,6 +4126,11 @@ remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
 
     virMutexLock(&priv->lock);
 
+    if (priv->clientClosed) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection want close"));
+        goto cleanup;
+    }
+
     /* We intentionally do not use VIR_DOMAIN_EVENT_ID_LAST here; any
      * new domain events added after this point should only use the
      * modern callback style of RPC.  */
@@ -4192,6 +4206,11 @@ remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server ATTRI
     }
 
     virMutexLock(&priv->lock);
+
+    if (priv->clientClosed) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection want close"));
+        goto cleanup;
+    }
 
     if (args->dom &&
         !(dom = get_nonnull_domain(priv->conn, *args->dom)))
@@ -5703,6 +5722,11 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server ATTRIBUTE_UN
 
     virMutexLock(&priv->lock);
 
+    if (priv->clientClosed) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection want close"));
+        goto cleanup;
+    }
+
     if (args->net &&
         !(net = get_nonnull_network(priv->conn, *args->net)))
         goto cleanup;
@@ -5825,6 +5849,11 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server ATTRIBUT
 
     virMutexLock(&priv->lock);
 
+    if (priv->clientClosed) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection want close"));
+        goto cleanup;
+    }
+
     if (args->pool &&
         !(pool = get_nonnull_storage_pool(priv->conn, *args->pool)))
         goto cleanup;
@@ -5945,6 +5974,11 @@ remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server ATTRIBUTE
     }
 
     virMutexLock(&priv->lock);
+
+    if (priv->clientClosed) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection want close"));
+        goto cleanup;
+    }
 
     if (args->dev &&
         !(dev = get_nonnull_node_device(priv->conn, *args->dev)))
@@ -6067,6 +6101,11 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
 
     virMutexLock(&priv->lock);
 
+    if (priv->clientClosed) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection want close"));
+        goto cleanup;
+    }
+
     if (args->secret &&
         !(secret = get_nonnull_secret(priv->conn, *args->secret)))
         goto cleanup;
@@ -6188,6 +6227,11 @@ qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server ATTRIBUTE_U
     }
 
     virMutexLock(&priv->lock);
+
+    if (priv->clientClosed) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection want close"));
+        goto cleanup;
+    }
 
     if (args->dom &&
         !(dom = get_nonnull_domain(priv->conn, *args->dom)))

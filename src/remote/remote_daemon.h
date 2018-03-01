@@ -76,6 +76,8 @@ struct daemonClientPrivate {
     virConnectPtr conn;
 
     daemonClientStreamPtr streams;
+
+    bool clientClosed;
 };
 
 
