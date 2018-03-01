@@ -2035,11 +2035,13 @@ qemuDomainObjPrivateXMLFormatAllowReboot(virBufferPtr buf,
 }
 
 
-static void
+static int
 qemuDomainObjPrivateXMLFormatJob(virBufferPtr buf,
                                  virDomainObjPtr vm,
                                  qemuDomainObjPrivatePtr priv)
 {
+    virBuffer attrBuf = VIR_BUFFER_INITIALIZER;
+    virBuffer childBuf = VIR_BUFFER_INITIALIZER;
     qemuDomainJob job = priv->job.active;
 
     if (!qemuDomainTrackJob(job))
@@ -2047,37 +2049,34 @@ qemuDomainObjPrivateXMLFormatJob(virBufferPtr buf,
 
     if (job == QEMU_JOB_NONE &&
         priv->job.asyncJob == QEMU_ASYNC_JOB_NONE)
-        return;
+        return 0;
 
-    virBufferAsprintf(buf, "<job type='%s' async='%s'",
+    virBufferSetChildIndent(&childBuf, buf);
+
+    virBufferAsprintf(&attrBuf, "type='%s' async='%s'",
                       qemuDomainJobTypeToString(job),
                       qemuDomainAsyncJobTypeToString(priv->job.asyncJob));
+
     if (priv->job.phase) {
-        virBufferAsprintf(buf, " phase='%s'",
+        virBufferAsprintf(&attrBuf, " phase='%s'",
                           qemuDomainAsyncJobPhaseToString(priv->job.asyncJob,
                                                           priv->job.phase));
     }
-    if (priv->job.asyncJob != QEMU_ASYNC_JOB_MIGRATION_OUT) {
-        virBufferAddLit(buf, "/>\n");
-    } else {
+
+    if (priv->job.asyncJob == QEMU_ASYNC_JOB_MIGRATION_OUT) {
         size_t i;
         virDomainDiskDefPtr disk;
         qemuDomainDiskPrivatePtr diskPriv;
 
-        virBufferAddLit(buf, ">\n");
-        virBufferAdjustIndent(buf, 2);
-
         for (i = 0; i < vm->def->ndisks; i++) {
             disk = vm->def->disks[i];
             diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
-            virBufferAsprintf(buf, "<disk dev='%s' migrating='%s'/>\n",
-                              disk->dst,
-                              diskPriv->migrating ? "yes" : "no");
+            virBufferAsprintf(&childBuf, "<disk dev='%s' migrating='%s'/>\n",
+                              disk->dst, diskPriv->migrating ? "yes" : "no");
         }
-
-        virBufferAdjustIndent(buf, -2);
-        virBufferAddLit(buf, "</job>\n");
     }
+
+    return virXMLFormatElement(buf, "job", &attrBuf, &childBuf);
 }
 
 
@@ -2137,7 +2136,8 @@ qemuDomainObjPrivateXMLFormat(virBufferPtr buf,
     if (priv->lockState)
         virBufferAsprintf(buf, "<lockstate>%s</lockstate>\n", priv->lockState);
 
-    qemuDomainObjPrivateXMLFormatJob(buf, vm, priv);
+    if (qemuDomainObjPrivateXMLFormatJob(buf, vm, priv) < 0)
+        return -1;
 
     if (priv->fakeReboot)
         virBufferAddLit(buf, "<fakereboot/>\n");
