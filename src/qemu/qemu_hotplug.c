@@ -697,6 +697,7 @@ qemuDomainAttachDeviceDiskLive(virQEMUDriverPtr driver,
     size_t i;
     virDomainDiskDefPtr disk = dev->data.disk;
     virDomainDiskDefPtr orig_disk = NULL;
+    virDomainDeviceDef orig_dev = { .type = dev->type };
     int ret = -1;
 
     if (STRNEQ_NULLABLE(virDomainDiskGetDriver(disk), "qemu")) {
@@ -731,6 +732,13 @@ qemuDomainAttachDeviceDiskLive(virQEMUDriverPtr driver,
                            disk->dst);
             goto cleanup;
         }
+
+        /* Although called in qemuDomainAttachDeviceLiveAndConfig, now we
+         * know the orig_disk/dev so let's make the additional check for
+         * boot order checking */
+        orig_dev.data.disk = orig_disk;
+        if (virDomainDefCompatibleDevice(vm->def, dev, &orig_dev) < 0)
+            goto cleanup;
 
         if (qemuDomainChangeEjectableMedia(driver, vm, orig_disk,
                                            disk->src, false) < 0)
