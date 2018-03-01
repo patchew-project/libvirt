@@ -337,6 +337,7 @@ virLockSpacePtr virLockSpaceNewPostExecRestart(virJSONValuePtr object)
         virJSONValuePtr owners;
         size_t j;
         ssize_t m;
+        bool shared = false;
 
         if (VIR_ALLOC(res) < 0)
             goto error;
@@ -385,6 +386,21 @@ virLockSpacePtr virLockSpaceNewPostExecRestart(virJSONValuePtr object)
         if (virJSONValueObjectGetNumberUint(child, "flags", &res->flags) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Missing resource flags in JSON document"));
+            virLockSpaceResourceFree(res);
+            goto error;
+        }
+
+        shared = !!(res->flags & VIR_LOCK_SPACE_ACQUIRE_SHARED);
+        if (virFileLock(res->fd, shared, 0, 1, false) < 0) {
+            if (errno == EACCES || errno == EAGAIN) {
+                virReportError(VIR_ERR_RESOURCE_BUSY,
+                               _("Lockspace resource '%s' is locked"),
+                               res->name);
+            } else {
+                virReportSystemError(errno,
+                                     _("Unable to acquire lock on '%s'"),
+                                     res->path);
+            }
             virLockSpaceResourceFree(res);
             goto error;
         }
