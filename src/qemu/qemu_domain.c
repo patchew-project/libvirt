@@ -4685,6 +4685,46 @@ qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *cont,
         return -1;
     }
 
+    /* pcihole64 */
+    switch ((virDomainControllerModelPCI) cont->model) {
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT:
+        /* The pcihole64 option only applies to x86 guests */
+        if ((pciopts->pcihole64 ||
+             pciopts->pcihole64size != 0) &&
+            !ARCH_IS_X86(def->os.arch)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Option '%s' is not valid for '%s' controller "
+                             "on '%s' architecture or '%s' machine type"),
+                           "pcihole64", model,
+                           virArchToString(def->os.arch), def->os.machine);
+            return -1;
+        }
+        break;
+
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_BRIDGE:
+    case VIR_DOMAIN_CONTROLLER_MODEL_DMI_TO_PCI_BRIDGE:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT_PORT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_UPSTREAM_PORT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_DOWNSTREAM_PORT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_EXPANDER_BUS:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_EXPANDER_BUS:
+        if (pciopts->pcihole64 ||
+            pciopts->pcihole64size != 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Option '%s' is not valid for '%s' controller"),
+                           "pcihole64", model);
+            return -1;
+        }
+        break;
+
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_DEFAULT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
+    default:
+        virReportEnumRangeError(virDomainControllerModelPCI, cont->model);
+        return -1;
+    }
+
     return qemuDomainDeviceDefValidateControllerPCIOld(cont, def, qemuCaps);
 }
 
