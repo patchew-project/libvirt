@@ -2711,6 +2711,9 @@ testQemuMonitorCPUInfoFormat(qemuMonitorCPUInfoPtr vcpus,
             virBufferAddLit(&buf, "\n");
         }
 
+        if (vcpu->halted)
+            virBufferAddLit(&buf, "halted\n");
+
         virBufferAdjustIndent(&buf, -4);
     }
 
@@ -3028,6 +3031,8 @@ mymain(void)
     DO_TEST_CPU_INFO("ppc64-hotplug-2", 24);
     DO_TEST_CPU_INFO("ppc64-hotplug-4", 24);
     DO_TEST_CPU_INFO("ppc64-no-threads", 16);
+
+    DO_TEST_CPU_INFO_FAST("s390-fast", 2);
 
 #define DO_TEST_BLOCK_NODE_DETECT(testname) \
     do { \
