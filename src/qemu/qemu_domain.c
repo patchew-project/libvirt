@@ -4267,25 +4267,6 @@ qemuDomainDeviceDefValidateControllerSCSI(const virDomainControllerDef *controll
 }
 
 
-static int
-qemuDomainDeviceDefValidateControllerPCIOld(const virDomainControllerDef *controller,
-                                            const virDomainDef *def,
-                                            virQEMUCapsPtr qemuCaps ATTRIBUTE_UNUSED)
-{
-    /* skip pcie-root */
-    if (controller->model == VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT)
-        return 0;
-
-    /* Skip pci-root, except for pSeries guests (which actually
-     * support more than one PCI Host Bridge per guest) */
-    if (!qemuDomainIsPSeries(def) &&
-        controller->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT)
-        return 0;
-
-    return 0;
-}
-
-
 /**
  * virDomainControllerPCIModelNameToQEMUCaps:
  * @modelName: model name
@@ -4823,7 +4804,7 @@ qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *cont,
     }
 
  done:
-    return qemuDomainDeviceDefValidateControllerPCIOld(cont, def, qemuCaps);
+    return 0;
 }
 
 
