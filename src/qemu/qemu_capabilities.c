@@ -1091,7 +1091,6 @@ virQEMUCapsInitGuestFromBinary(virCapsPtr caps,
 
     if (virFileExists("/dev/kvm") &&
         (virQEMUCapsGet(qemubinCaps, QEMU_CAPS_KVM) ||
-         virQEMUCapsGet(qemubinCaps, QEMU_CAPS_ENABLE_KVM) ||
          kvmbin))
         haskvm = true;
 
@@ -1260,7 +1259,7 @@ virQEMUCapsComputeCmdFlags(const char *help,
     if (strstr(help, "-no-kvm"))
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_KVM);
     if (strstr(help, "-enable-kvm"))
-        virQEMUCapsSet(qemuCaps, QEMU_CAPS_ENABLE_KVM);
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_KVM);
     if (strstr(help, ",process="))
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_NAME_PROCESS);
 
@@ -3201,7 +3200,6 @@ virQEMUCapsProbeQMPKVMState(virQEMUCapsPtr qemuCaps,
         virQEMUCapsClear(qemuCaps, QEMU_CAPS_KVM);
     } else if (!enabled) {
         virQEMUCapsClear(qemuCaps, QEMU_CAPS_KVM);
-        virQEMUCapsSet(qemuCaps, QEMU_CAPS_ENABLE_KVM);
     }
 
     return 0;
@@ -4387,15 +4385,6 @@ virQEMUCapsIsValid(void *data,
 
     kvmUsable = virFileAccessibleAs("/dev/kvm", R_OK | W_OK,
                                     priv->runUid, priv->runGid) == 0;
-
-    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM) &&
-        virQEMUCapsGet(qemuCaps, QEMU_CAPS_ENABLE_KVM) &&
-        kvmUsable) {
-        VIR_DEBUG("KVM was not enabled when probing '%s', "
-                  "but it should be usable now",
-                  qemuCaps->binary);
-        return false;
-    }
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM) &&
         !kvmUsable) {

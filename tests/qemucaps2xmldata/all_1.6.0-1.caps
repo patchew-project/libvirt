@@ -2,7 +2,7 @@
     <flag name='mem-path'/>
     <flag name='drive-serial'/>
     <flag name='chardev'/>
-    <flag name='enable-kvm'/>
+    <flag name='kvm'/>
     <flag name='monitor-json'/>
     <flag name='balloon'/>
     <flag name='device'/>
