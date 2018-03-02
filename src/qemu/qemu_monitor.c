@@ -2012,6 +2012,7 @@ qemuMonitorGetCPUInfo(qemuMonitorPtr mon,
     int ret = -1;
     int rc;
     qemuMonitorCPUInfoPtr info = NULL;
+    bool fast;
 
     QEMU_CHECK_MONITOR(mon);
 
@@ -2028,8 +2029,12 @@ qemuMonitorGetCPUInfo(qemuMonitorPtr mon,
         (qemuMonitorJSONGetHotpluggableCPUs(mon, &hotplugcpus, &nhotplugcpus)) < 0)
         goto cleanup;
 
+    fast = virQEMUCapsGet(QEMU_DOMAIN_PRIVATE(mon->vm)->qemuCaps,
+                          QEMU_CAPS_QUERY_CPUS_FAST);
+
     if (mon->json)
-        rc = qemuMonitorJSONQueryCPUs(mon, &cpuentries, &ncpuentries, hotplug);
+        rc = qemuMonitorJSONQueryCPUs(mon, &cpuentries, &ncpuentries, hotplug,
+                                      fast);
     else
         rc = qemuMonitorTextQueryCPUs(mon, &cpuentries, &ncpuentries);
 
@@ -2082,7 +2087,8 @@ qemuMonitorGetCpuHalted(qemuMonitorPtr mon,
     QEMU_CHECK_MONITOR_NULL(mon);
 
     if (mon->json)
-        rc = qemuMonitorJSONQueryCPUs(mon, &cpuentries, &ncpuentries, false);
+        rc = qemuMonitorJSONQueryCPUs(mon, &cpuentries, &ncpuentries, false,
+                                      false);
     else
         rc = qemuMonitorTextQueryCPUs(mon, &cpuentries, &ncpuentries);
 

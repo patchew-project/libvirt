@@ -1466,7 +1466,8 @@ int qemuMonitorJSONSystemReset(qemuMonitorPtr mon)
 static int
 qemuMonitorJSONExtractCPUInfo(virJSONValuePtr data,
                               struct qemuMonitorQueryCpusEntry **entries,
-                              size_t *nentries)
+                              size_t *nentries,
+                              bool fast)
 {
     struct qemuMonitorQueryCpusEntry *cpus = NULL;
     int ret = -1;
@@ -1491,11 +1492,13 @@ qemuMonitorJSONExtractCPUInfo(virJSONValuePtr data,
         }
 
         /* Some older qemu versions don't report the thread_id so treat this as
-         * non-fatal, simply returning no data */
-        ignore_value(virJSONValueObjectGetNumberInt(entry, "CPU", &cpuid));
-        ignore_value(virJSONValueObjectGetNumberInt(entry, "thread_id", &thread));
+         * non-fatal, simply returning no data.
+         * The return data of query-cpus-fast has different field names
+         */
+        ignore_value(virJSONValueObjectGetNumberInt(entry, fast ? "cpu-index" : "CPU", &cpuid));
+        ignore_value(virJSONValueObjectGetNumberInt(entry, fast ? "thread-id" : "thread_id", &thread));
         ignore_value(virJSONValueObjectGetBoolean(entry, "halted", &halted));
-        qom_path = virJSONValueObjectGetString(entry, "qom_path");
+        qom_path = virJSONValueObjectGetString(entry, fast ? "qom-path" : "qom_path");
 
         cpus[i].qemu_id = cpuid;
         cpus[i].tid = thread;
@@ -1520,10 +1523,12 @@ qemuMonitorJSONExtractCPUInfo(virJSONValuePtr data,
  * @mon: monitor object
  * @entries: filled with detected entries on success
  * @nentries: number of entries returned
+ * @force: force exit on error
+ * @fast: use query-cpus-fast
  *
  * Queries qemu for cpu-related information. Failure to execute the command or
  * extract results does not produce an error as libvirt can continue without
- * this information.
+ * this information, unless the caller has specified @force == true.
  *
  * Returns 0 on success, -1 on a fatal error (oom ...) and -2 if the
  * query failed gracefully.
@@ -1532,10 +1537,13 @@ int
 qemuMonitorJSONQueryCPUs(qemuMonitorPtr mon,
                          struct qemuMonitorQueryCpusEntry **entries,
                          size_t *nentries,
-                         bool force)
+                         bool force,
+                         bool fast)
 {
     int ret = -1;
-    virJSONValuePtr cmd = qemuMonitorJSONMakeCommand("query-cpus", NULL);
+    virJSONValuePtr cmd =
+        qemuMonitorJSONMakeCommand(fast ? "query-cpus-fast" : "query-cpus",
+                                   NULL);
     virJSONValuePtr reply = NULL;
     virJSONValuePtr data;
 
@@ -1553,7 +1561,7 @@ qemuMonitorJSONQueryCPUs(qemuMonitorPtr mon,
         goto cleanup;
     }
 
-    ret = qemuMonitorJSONExtractCPUInfo(data, entries, nentries);
+    ret = qemuMonitorJSONExtractCPUInfo(data, entries, nentries, fast);
 
  cleanup:
     virJSONValueFree(cmd);
