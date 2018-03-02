@@ -2083,12 +2083,16 @@ qemuMonitorGetCpuHalted(qemuMonitorPtr mon,
     size_t i;
     int rc;
     virBitmapPtr ret = NULL;
+    bool fast;
 
     QEMU_CHECK_MONITOR_NULL(mon);
 
+    fast = virQEMUCapsGet(QEMU_DOMAIN_PRIVATE(mon->vm)->qemuCaps,
+                          QEMU_CAPS_QUERY_CPUS_FAST);
+
     if (mon->json)
         rc = qemuMonitorJSONQueryCPUs(mon, &cpuentries, &ncpuentries, false,
-                                      false);
+                                      fast);
     else
         rc = qemuMonitorTextQueryCPUs(mon, &cpuentries, &ncpuentries);
 
