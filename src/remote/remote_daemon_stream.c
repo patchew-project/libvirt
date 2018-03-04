@@ -549,21 +549,21 @@ daemonStreamHandleWriteData(virNetServerClientPtr client,
     } else if (ret == -2) {
         /* Blocking, so indicate we have more todo later */
         return 1;
-    } else {
-        virNetMessageError rerr;
+    } else if (ret) {
+            virNetMessageError rerr;
 
-        memset(&rerr, 0, sizeof(rerr));
+            memset(&rerr, 0, sizeof(rerr));
 
-        VIR_INFO("Stream send failed");
-        stream->closed = true;
-        virStreamEventRemoveCallback(stream->st);
-        virStreamAbort(stream->st);
+            VIR_INFO("Stream send failed");
+            stream->closed = true;
+            virStreamEventRemoveCallback(stream->st);
+            virStreamAbort(stream->st);
 
-        return virNetServerProgramSendReplyError(stream->prog,
-                                                 client,
-                                                 msg,
-                                                 &rerr,
-                                                 &msg->header);
+            return virNetServerProgramSendReplyError(stream->prog,
+                                                     client,
+                                                     msg,
+                                                     &rerr,
+                                                     &msg->header);
     }
 
     return 0;

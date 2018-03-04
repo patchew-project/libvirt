@@ -627,9 +627,6 @@ virFDStreamThread(void *opaque)
         if (got < 0)
             goto error;
 
-        if (got == 0)
-            break;
-
         total += got;
     }
 
@@ -783,7 +780,7 @@ static int virFDStreamWrite(virStreamPtr st, const char *bytes, size_t nbytes)
     virObjectLock(fdst);
 
     if (fdst->length) {
-        if (fdst->length == fdst->offset) {
+        if (fdst->offset > fdst->length) {
             virReportSystemError(ENOSPC, "%s",
                                  _("cannot write to stream"));
             virObjectUnlock(fdst);
