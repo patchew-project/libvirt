@@ -8953,7 +8953,12 @@ qemuDomainRefreshVcpuInfo(virQEMUDriverPtr driver,
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
         return -1;
 
-    rc = qemuMonitorGetCPUInfo(qemuDomainGetMonitor(vm), &info, maxvcpus, hotplug);
+    rc = qemuMonitorGetCPUInfo(qemuDomainGetMonitor(vm),
+                               &info,
+                               maxvcpus,
+                               hotplug,
+                               virQEMUCapsGet(QEMU_DOMAIN_PRIVATE(vm)->qemuCaps,
+                                              QEMU_CAPS_QUERY_CPUS_FAST));
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         goto cleanup;
@@ -9073,7 +9078,10 @@ qemuDomainRefreshVcpuHalted(virQEMUDriverPtr driver,
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
         return -1;
 
-    haltedmap = qemuMonitorGetCpuHalted(qemuDomainGetMonitor(vm), maxvcpus);
+    haltedmap = qemuMonitorGetCpuHalted(qemuDomainGetMonitor(vm),
+                                        maxvcpus,
+                                        virQEMUCapsGet(QEMU_DOMAIN_PRIVATE(vm)->qemuCaps,
+                                                       QEMU_CAPS_QUERY_CPUS_FAST));
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0 || !haltedmap)
         goto cleanup;
