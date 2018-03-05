@@ -1456,10 +1456,11 @@ libvirt_driver_nwfilter_impl_la_CFLAGS = \
 		$(AM_CFLAGS)
 libvirt_driver_nwfilter_impl_la_LDFLAGS = $(AM_LDFLAGS)
 libvirt_driver_nwfilter_impl_la_LIBADD = \
+		libvirt.la \
 		$(LIBPCAP_LIBS) \
 		$(LIBNL_LIBS) \
-		$(DBUS_LIBS)
-libvirt_driver_nwfilter_impl_la_LIBADD += libvirt.la ../gnulib/lib/libgnu.la
+		$(DBUS_LIBS) \
+		../gnulib/lib/libgnu.la
 libvirt_driver_nwfilter_impl_la_SOURCES = $(NWFILTER_DRIVER_SOURCES)
 endif WITH_NWFILTER
 
