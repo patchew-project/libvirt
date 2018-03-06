@@ -195,6 +195,7 @@
   <flag name='chardev-reconnect'/>
   <flag name='virtio-gpu.max_outputs'/>
   <flag name='isa-serial'/>
+  <flag name='change-vnc-password'/>
   <version>2005000</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>216775</microcodeVersion>

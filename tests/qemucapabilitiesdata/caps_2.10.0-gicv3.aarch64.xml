@@ -186,6 +186,7 @@
   <flag name='isa-serial'/>
   <flag name='pl011'/>
   <flag name='dump-completed'/>
+  <flag name='change-vnc-password'/>
   <version>2010000</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>304138</microcodeVersion>

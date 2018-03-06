@@ -148,6 +148,7 @@
   <flag name='query-cpu-definitions'/>
   <flag name='kernel-irqchip'/>
   <flag name='isa-serial'/>
+  <flag name='change-vnc-password'/>
   <version>1007000</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>50692</microcodeVersion>

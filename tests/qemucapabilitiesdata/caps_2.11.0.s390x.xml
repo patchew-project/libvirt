@@ -146,6 +146,7 @@
   <flag name='disk-share-rw'/>
   <flag name='iscsi.password-secret'/>
   <flag name='dump-completed'/>
+  <flag name='change-vnc-password'/>
   <version>2011000</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>341724</microcodeVersion>

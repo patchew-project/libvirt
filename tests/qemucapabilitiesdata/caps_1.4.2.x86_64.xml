@@ -129,6 +129,7 @@
   <flag name='display'/>
   <flag name='query-cpu-definitions'/>
   <flag name='isa-serial'/>
+  <flag name='change-vnc-password'/>
   <version>1004002</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>30915</microcodeVersion>

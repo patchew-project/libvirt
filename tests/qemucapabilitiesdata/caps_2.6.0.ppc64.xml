@@ -170,6 +170,7 @@
   <flag name='spapr-vty'/>
   <flag name='isa-serial'/>
   <flag name='dump-completed'/>
+  <flag name='change-vnc-password'/>
   <version>2006000</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>263602</microcodeVersion>

@@ -137,6 +137,7 @@
   <flag name='virtio-blk.num-queues'/>
   <flag name='sclplmconsole'/>
   <flag name='dump-completed'/>
+  <flag name='change-vnc-password'/>
   <version>2007000</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>217559</microcodeVersion>

@@ -459,6 +459,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "pl011",
               "machine.pseries.max-cpu-compat",
               "dump-completed",
+              "change-vnc-password",
     );
 
 
@@ -1580,6 +1581,7 @@ struct virQEMUCapsStringFlags virQEMUCapsCommands[] = {
     { "query-cpu-model-expansion", QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION },
     { "query-cpu-definitions", QEMU_CAPS_QUERY_CPU_DEFINITIONS },
     { "query-named-block-nodes", QEMU_CAPS_QUERY_NAMED_BLOCK_NODES },
+    { "change-vnc-password", QEMU_CAPS_CHANGE_VNC_PASSWORD },
 };
 
 struct virQEMUCapsStringFlags virQEMUCapsMigration[] = {
