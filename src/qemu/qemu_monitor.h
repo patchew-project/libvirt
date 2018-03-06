@@ -595,8 +595,8 @@ int qemuMonitorBlockStatsUpdateCapacity(qemuMonitorPtr mon,
 int qemuMonitorBlockResize(qemuMonitorPtr mon,
                            const char *dev_name,
                            unsigned long long size);
-int qemuMonitorSetVNCPassword(qemuMonitorPtr mon,
-                              const char *password);
+int qemuMonitorSetVNCPasswordLegacy(qemuMonitorPtr mon,
+                                    const char *password);
 int qemuMonitorSetPassword(qemuMonitorPtr mon,
                            int type,
                            const char *password,

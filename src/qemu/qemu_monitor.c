@@ -2370,8 +2370,8 @@ qemuMonitorBlockResize(qemuMonitorPtr mon,
 
 
 int
-qemuMonitorSetVNCPassword(qemuMonitorPtr mon,
-                          const char *password)
+qemuMonitorSetVNCPasswordLegacy(qemuMonitorPtr mon,
+                                const char *password)
 {
     VIR_DEBUG("password=%p", password);
 
@@ -2381,7 +2381,7 @@ qemuMonitorSetVNCPassword(qemuMonitorPtr mon,
         password = "";
 
     if (mon->json)
-        return qemuMonitorJSONSetVNCPassword(mon, password);
+        return qemuMonitorJSONSetVNCPasswordLegacy(mon, password);
     else
         return qemuMonitorTextSetVNCPassword(mon, password);
 }

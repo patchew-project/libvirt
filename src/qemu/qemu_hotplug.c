@@ -5341,7 +5341,7 @@ qemuDomainChangeGraphicsPasswords(virQEMUDriverPtr driver,
                            _("Graphics password only supported for VNC"));
             ret = -1;
         } else {
-            ret = qemuMonitorSetVNCPassword(priv->mon, password);
+            ret = qemuMonitorSetVNCPasswordLegacy(priv->mon, password);
         }
     }
     if (ret != 0)

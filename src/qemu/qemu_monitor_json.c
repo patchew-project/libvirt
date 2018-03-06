@@ -2356,8 +2356,10 @@ int qemuMonitorJSONBlockResize(qemuMonitorPtr mon,
     return ret;
 }
 
-int qemuMonitorJSONSetVNCPassword(qemuMonitorPtr mon,
-                                  const char *password)
+
+int
+qemuMonitorJSONSetVNCPasswordLegacy(qemuMonitorPtr mon,
+                                    const char *password)
 {
     int ret = -1;
     virJSONValuePtr cmd = qemuMonitorJSONMakeCommand("change",
