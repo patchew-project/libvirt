@@ -644,6 +644,10 @@ virNodeDeviceObjHasCap(const virNodeDeviceObj *obj,
 {
     virNodeDevCapsDefPtr cap = NULL;
 
+    /* Refresh the capabilities first, e.g. due to a driver change */
+    if (virNodeDeviceUpdateCaps(obj->def) < 0)
+        return false;
+
     for (cap = obj->def->caps; cap; cap = cap->next) {
         if (type == cap->data.type)
             return true;
@@ -811,10 +815,6 @@ static bool
 virNodeDeviceMatch(virNodeDeviceObjPtr obj,
                    unsigned int flags)
 {
-    /* Refresh the capabilities first, e.g. due to a driver change */
-    if (virNodeDeviceUpdateCaps(obj->def) < 0)
-        return false;
-
     /* filter by cap type */
     if (flags & VIR_CONNECT_LIST_NODE_DEVICES_FILTERS_CAP) {
         if (!(MATCH(SYSTEM)        ||
