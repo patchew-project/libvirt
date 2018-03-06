@@ -2384,6 +2384,34 @@ qemuMonitorJSONSetVNCPasswordLegacy(qemuMonitorPtr mon,
     return ret;
 }
 
+
+int
+qemuMonitorJSONSetVNCPassword(qemuMonitorPtr mon,
+                              const char *password)
+{
+    int ret = -1;
+    virJSONValuePtr cmd = qemuMonitorJSONMakeCommand("change-vnc-password",
+                                                     "s:password", password,
+                                                     NULL);
+    virJSONValuePtr reply = NULL;
+
+    if (!cmd)
+        return -1;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    return ret;
+}
+
+
 /* Returns -1 on error, -2 if not supported */
 int qemuMonitorJSONSetPassword(qemuMonitorPtr mon,
                                const char *protocol,

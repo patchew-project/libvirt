@@ -5333,7 +5333,15 @@ qemuDomainChangeGraphicsPasswords(virQEMUDriverPtr driver,
 
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
         goto cleanup;
-    ret = qemuMonitorSetPassword(priv->mon, type, password, connected);
+
+    /* The connected parameter can only be keep for VNC, thus QMP command
+     * set_password makes the same call hence if available just use the
+     * newer change-vnc-password command. */
+    if (type == VIR_DOMAIN_GRAPHICS_TYPE_VNC &&
+        virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_CHANGE_VNC_PASSWORD))
+        ret = qemuMonitorSetVNCPassword(priv->mon, password);
+    else
+        ret = qemuMonitorSetPassword(priv->mon, type, password, connected);
 
     if (ret == -2) {
         if (type != VIR_DOMAIN_GRAPHICS_TYPE_VNC) {

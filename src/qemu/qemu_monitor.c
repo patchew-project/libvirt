@@ -2387,6 +2387,21 @@ qemuMonitorSetVNCPasswordLegacy(qemuMonitorPtr mon,
 }
 
 
+int
+qemuMonitorSetVNCPassword(qemuMonitorPtr mon,
+                          const char *password)
+{
+    VIR_DEBUG("password=%p", password);
+
+    QEMU_CHECK_MONITOR_JSON(mon);
+
+    if (!password)
+        password = "";
+
+    return qemuMonitorJSONSetVNCPassword(mon, password);
+}
+
+
 static const char *
 qemuMonitorTypeToProtocol(int type)
 {
