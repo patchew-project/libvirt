@@ -75,7 +75,7 @@ EXTRA_DIST += \
 	remote/test_libvirtd.aug.in \
 	remote/libvirtd.aug \
 	remote/libvirtd.conf \
-	remote/libvirtd.policy.in \
+	remote/libvirtd.policy \
 	remote/libvirtd.rules \
 	remote/libvirtd.sasl \
 	remote/libvirtd.sysctl \
@@ -120,17 +120,8 @@ conf_DATA += remote/libvirtd.conf
 CLEANFILES += test_libvirtd.aug
 
 if WITH_POLKIT
-if WITH_POLKIT0
-policydir = $(datadir)/PolicyKit/policy
-policyauth = auth_admin_keep_session
-else ! WITH_POLKIT0
 policydir = $(datadir)/polkit-1/actions
-policyauth = auth_admin_keep
-endif ! WITH_POLKIT0
 endif WITH_POLKIT
-
-BUILT_SOURCES += libvirtd.policy
-CLEANFILES += libvirtd.policy
 
 man8_MANS += libvirtd.8
 
@@ -218,20 +209,17 @@ endif ! WITH_SYSCTL
 if WITH_POLKIT
 install-polkit::
 	$(MKDIR_P) $(DESTDIR)$(policydir)
-	$(INSTALL_DATA) libvirtd.policy $(DESTDIR)$(policydir)/org.libvirt.unix.policy
-if ! WITH_POLKIT0
+	$(INSTALL_DATA) $(srcdir)/remote/libvirtd.policy \
+		$(DESTDIR)$(policydir)/org.libvirt.unix.policy
 	$(MKDIR_P) $(DESTDIR)$(datadir)/polkit-1/rules.d
 	$(INSTALL_DATA) $(srcdir)/remote/libvirtd.rules \
 		$(DESTDIR)$(datadir)/polkit-1/rules.d/50-libvirt.rules
-endif ! WITH_POLKIT0
 
 uninstall-polkit::
 	rm -f $(DESTDIR)$(policydir)/org.libvirt.unix.policy
 	rmdir $(DESTDIR)$(policydir) || :
-if ! WITH_POLKIT0
 	rm -f $(DESTDIR)$(datadir)/polkit-1/rules.d/50-libvirt.rules
 	rmdir $(DESTDIR)$(datadir)/polkit-1/rules.d || :
-endif ! WITH_POLKIT0
 
 else ! WITH_POLKIT
 install-polkit::
@@ -266,12 +254,6 @@ else ! WITH_SASL
 install-sasl:
 uninstall-sasl:
 endif ! WITH_SASL
-
-libvirtd.policy: remote/libvirtd.policy.in $(top_builddir)/config.status
-	$(AM_V_GEN) sed \
-	    -e 's|[@]authaction[@]|$(policyauth)|g' \
-	    < $< > $@-t && \
-	mv $@-t $@
 
 libvirtd.init: remote/libvirtd.init.in $(top_builddir)/config.status
 	$(AM_V_GEN)sed \
