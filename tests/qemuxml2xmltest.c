@@ -1361,6 +1361,8 @@ mymain(void)
 
     DO_TEST("user-aliases", NONE);
 
+    DO_TEST("sev", NONE);
+
     if (getenv("LIBVIRT_SKIP_CLEANUP") == NULL)
         virFileDeleteTree(fakerootdir);
 
