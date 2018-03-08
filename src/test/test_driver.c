@@ -1379,8 +1379,11 @@ testConnectAuthenticate(virConnectPtr conn,
     ssize_t i;
     char *username = NULL, *password = NULL;
 
-    if (privconn->numAuths == 0)
+    testDriverLock(privconn);
+    if (privconn->numAuths == 0) {
+        testDriverUnlock(privconn);
         return 0;
+    }
 
     /* Authentication is required because the test XML contains a
      * non-empty <auth/> section.  First we must ask for a username.
@@ -1420,6 +1423,7 @@ testConnectAuthenticate(virConnectPtr conn,
 
     ret = 0;
  cleanup:
+    testDriverUnlock(privconn);
     VIR_FREE(username);
     VIR_FREE(password);
     return ret;
