@@ -4667,7 +4667,6 @@ static int remoteDispatchConnectSupportsFeature(virNetServerPtr server ATTRIBUTE
     switch ((virDrvFeature) args->feature) {
     case VIR_DRV_FEATURE_FD_PASSING:
     case VIR_DRV_FEATURE_REMOTE_EVENT_CALLBACK:
-    case VIR_DRV_FEATURE_REMOTE_CLOSE_CALLBACK:
         supported = 1;
         break;
     case VIR_DRV_FEATURE_MIGRATION_V1:
@@ -4681,6 +4680,7 @@ static int remoteDispatchConnectSupportsFeature(virNetServerPtr server ATTRIBUTE
     case VIR_DRV_FEATURE_XML_MIGRATABLE:
     case VIR_DRV_FEATURE_MIGRATION_OFFLINE:
     case VIR_DRV_FEATURE_MIGRATION_PARAMS:
+    case VIR_DRV_FEATURE_REMOTE_CLOSE_CALLBACK:
     default:
         if ((supported = virConnectSupportsFeature(priv->conn, args->feature)) < 0)
             goto cleanup;
