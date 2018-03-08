@@ -82,7 +82,4 @@ struct daemonClientPrivate {
 # if WITH_SASL
 extern virNetSASLContextPtr saslCtxt;
 # endif
-extern virNetServerProgramPtr remoteProgram;
-extern virNetServerProgramPtr qemuProgram;
-
 #endif /* __REMOTE_DAEMON_H__ */

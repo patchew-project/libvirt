@@ -3808,9 +3808,9 @@ remoteDispatchNodeDeviceGetParent(virNetServerPtr server ATTRIBUTE_UNUSED,
 }
 
 static int
-remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server,
                                            virNetServerClientPtr client,
-                                           virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                           virNetMessagePtr msg,
                                            virNetMessageErrorPtr rerr)
 {
     int rv = -1;
@@ -3828,7 +3828,7 @@ remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server ATTRIBUTE_UNUS
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(virNetServerGetProgram(server, msg));
     /* eventID, callbackID, and legacy are not used */
     callback->eventID = -1;
     callback->callbackID = -1;
@@ -3912,7 +3912,7 @@ remoteDispatchConnectDomainEventRegister(virNetServerPtr server ATTRIBUTE_UNUSED
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(virNetServerGetProgram(server, msg));
     callback->eventID = VIR_DOMAIN_EVENT_ID_LIFECYCLE;
     callback->callbackID = -1;
     callback->legacy = true;
@@ -4110,9 +4110,9 @@ remoteDispatchDomainGetState(virNetServerPtr server ATTRIBUTE_UNUSED,
  * VIR_DRV_SUPPORTS_FEATURE(VIR_DRV_FEATURE_REMOTE_EVENT_CALLBACK),
  * and must not mix the two styles.  */
 static int
-remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server,
                                             virNetServerClientPtr client,
-                                            virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                            virNetMessagePtr msg,
                                             virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                             remote_connect_domain_event_register_any_args *args)
 {
@@ -4149,7 +4149,7 @@ remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(virNetServerGetProgram(server, msg));
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     callback->legacy = true;
@@ -4185,9 +4185,9 @@ remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
 
 
 static int
-remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server,
                                                     virNetServerClientPtr client,
-                                                    virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                                    virNetMessagePtr msg,
                                                     virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                                     remote_connect_domain_event_callback_register_any_args *args,
                                                     remote_connect_domain_event_callback_register_any_ret *ret)
@@ -4226,7 +4226,7 @@ remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server ATTRI
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(virNetServerGetProgram(server, msg));
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -5352,7 +5352,7 @@ remoteDispatchDomainMigratePrepareTunnel3Params(virNetServerPtr server ATTRIBUTE
         goto cleanup;
 
     if (!(st = virStreamNew(priv->conn, VIR_STREAM_NONBLOCK)) ||
-        !(stream = daemonCreateClientStream(client, st, remoteProgram,
+        !(stream = daemonCreateClientStream(client, st, virNetServerGetProgram(server, msg),
                                             &msg->header, false)))
         goto cleanup;
 
@@ -5709,9 +5709,9 @@ static int remoteDispatchDomainCreateWithFiles(virNetServerPtr server ATTRIBUTE_
 
 
 static int
-remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server,
                                              virNetServerClientPtr client,
-                                             virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                             virNetMessagePtr msg,
                                              virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                              remote_connect_network_event_register_any_args *args,
                                              remote_connect_network_event_register_any_ret *ret)
@@ -5750,7 +5750,7 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server ATTRIBUTE_UN
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(virNetServerGetProgram(server, msg));
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -5832,9 +5832,9 @@ remoteDispatchConnectNetworkEventDeregisterAny(virNetServerPtr server ATTRIBUTE_
 }
 
 static int
-remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server,
                                                  virNetServerClientPtr client,
-                                                 virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                                 virNetMessagePtr msg,
                                                  virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                                  remote_connect_storage_pool_event_register_any_args *args,
                                                  remote_connect_storage_pool_event_register_any_ret *ret)
@@ -5873,7 +5873,7 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server ATTRIBUT
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(virNetServerGetProgram(server, msg));
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -5954,9 +5954,9 @@ remoteDispatchConnectStoragePoolEventDeregisterAny(virNetServerPtr server ATTRIB
 }
 
 static int
-remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server,
                                                 virNetServerClientPtr client,
-                                                virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                                virNetMessagePtr msg,
                                                 virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                                 remote_connect_node_device_event_register_any_args *args,
                                                 remote_connect_node_device_event_register_any_ret *ret)
@@ -5995,7 +5995,7 @@ remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server ATTRIBUTE
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(virNetServerGetProgram(server, msg));
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -6076,9 +6076,9 @@ remoteDispatchConnectNodeDeviceEventDeregisterAny(virNetServerPtr server ATTRIBU
 }
 
 static int
-remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server,
                                             virNetServerClientPtr client,
-                                            virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                            virNetMessagePtr msg,
                                             virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                             remote_connect_secret_event_register_any_args *args,
                                             remote_connect_secret_event_register_any_ret *ret)
@@ -6117,7 +6117,7 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(virNetServerGetProgram(server, msg));
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -6198,9 +6198,9 @@ remoteDispatchConnectSecretEventDeregisterAny(virNetServerPtr server ATTRIBUTE_U
 }
 
 static int
-qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server ATTRIBUTE_UNUSED,
+qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server,
                                               virNetServerClientPtr client,
-                                              virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                              virNetMessagePtr msg,
                                               virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                               qemu_connect_domain_monitor_event_register_args *args,
                                               qemu_connect_domain_monitor_event_register_ret *ret)
@@ -6234,7 +6234,7 @@ qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server ATTRIBUTE_U
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(qemuProgram);
+    callback->program = virObjectRef(virNetServerGetProgram(server, msg));
     callback->eventID = -1;
     callback->callbackID = -1;
     ref = callback;

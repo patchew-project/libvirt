@@ -990,6 +990,7 @@ elsif ($mode eq "server") {
         if ($call->{streamflag} ne "none") {
             print "    virStreamPtr st = NULL;\n";
             print "    daemonClientStreamPtr stream = NULL;\n";
+            print "    virNetServerProgramPtr remoteProgram = NULL;\n";
             if ($call->{sparseflag} ne "none") {
                 print "    const bool sparse = args->flags & $call->{sparseflag};\n"
             } else {
@@ -1037,6 +1038,7 @@ elsif ($mode eq "server") {
             print "    if (!(st = virStreamNew(priv->conn, VIR_STREAM_NONBLOCK)))\n";
             print "        goto cleanup;\n";
             print "\n";
+            print "    remoteProgram = virNetServerGetProgram(server, msg);\n";
             print "    if (!(stream = daemonCreateClientStream(client, st, remoteProgram, &msg->header, sparse)))\n";
             print "        goto cleanup;\n";
             print "\n";
