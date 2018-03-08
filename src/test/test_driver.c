@@ -121,6 +121,7 @@ struct _testDriver {
     virDomainObjListPtr domains;
     virNetworkObjListPtr networks;
     virObjectEventStatePtr eventState;
+    virConnectCloseCallbackDataPtr closeCallback;
 };
 typedef struct _testDriver testDriver;
 typedef testDriver *testDriverPtr;
@@ -157,6 +158,7 @@ testDriverFree(testDriverPtr driver)
     virObjectUnref(driver->ifaces);
     virObjectUnref(driver->pools);
     virObjectUnref(driver->eventState);
+    virObjectUnref(driver->closeCallback);
     virMutexUnlock(&driver->lock);
     virMutexDestroy(&driver->lock);
 
@@ -404,6 +406,7 @@ testDriverNew(void)
         .free = testDomainDefNamespaceFree,
     };
     testDriverPtr ret;
+    virConnectCloseCallbackDataPtr closeCallback;
 
     if (VIR_ALLOC(ret) < 0)
         return NULL;
@@ -422,6 +425,12 @@ testDriverNew(void)
         !(ret->devs = virNodeDeviceObjListNew()) ||
         !(ret->pools = virStoragePoolObjListNew()))
         goto error;
+
+    closeCallback = virNewConnectCloseCallbackData();
+    if (!closeCallback)
+        goto error;
+
+    ret->closeCallback = closeCallback;
 
     virAtomicIntSet(&ret->nextDomID, 1);
 
@@ -6834,9 +6843,9 @@ testConnectSupportsFeature(virConnectPtr conn ATTRIBUTE_UNUSED,
                            int feature)
 {
     switch ((virDrvFeature) feature) {
+    case VIR_DRV_FEATURE_REMOTE_CLOSE_CALLBACK:
     case VIR_DRV_FEATURE_REMOTE_EVENT_CALLBACK:
         return 1;
-    case VIR_DRV_FEATURE_REMOTE_CLOSE_CALLBACK:
     case VIR_DRV_FEATURE_FD_PASSING:
     case VIR_DRV_FEATURE_MIGRATE_CHANGE_PROTECTION:
     case VIR_DRV_FEATURE_MIGRATION_DIRECT:
@@ -6855,6 +6864,56 @@ testConnectSupportsFeature(virConnectPtr conn ATTRIBUTE_UNUSED,
     }
 }
 
+static int
+testConnectRegisterCloseCallback(virConnectPtr conn,
+                                 virConnectCloseFunc cb,
+                                 void *opaque,
+                                 virFreeCallback freecb)
+{
+    testDriverPtr priv = conn->privateData;
+    int ret = -1;
+
+    testDriverLock(priv);
+
+    if (virConnectCloseCallbackDataGetCallback(priv->closeCallback) != NULL) {
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("A close callback is already registered"));
+        goto cleanup;
+    }
+
+    virConnectCloseCallbackDataRegister(priv->closeCallback, conn, cb,
+                                        opaque, freecb);
+    ret = 0;
+
+ cleanup:
+    testDriverUnlock(priv);
+    return ret;
+}
+
+
+static int
+testConnectUnregisterCloseCallback(virConnectPtr conn,
+                                   virConnectCloseFunc cb)
+{
+    testDriverPtr priv = conn->privateData;
+    int ret = -1;
+
+    testDriverLock(priv);
+
+    if (virConnectCloseCallbackDataGetCallback(priv->closeCallback) != cb) {
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("A different callback was requested"));
+        goto cleanup;
+    }
+
+    virConnectCloseCallbackDataUnregister(priv->closeCallback, cb);
+    ret = 0;
+
+ cleanup:
+    testDriverUnlock(priv);
+    return ret;
+}
+
 
 static virHypervisorDriver testHypervisorDriver = {
     .name = "Test",
@@ -6863,7 +6922,9 @@ static virHypervisorDriver testHypervisorDriver = {
     .connectGetVersion = testConnectGetVersion, /* 0.1.1 */
     .connectGetHostname = testConnectGetHostname, /* 0.6.3 */
     .connectGetMaxVcpus = testConnectGetMaxVcpus, /* 0.3.2 */
+    .connectRegisterCloseCallback = testConnectRegisterCloseCallback, /* 4.2.0 */
     .connectSupportsFeature = testConnectSupportsFeature, /* 4.2.0 */
+    .connectUnregisterCloseCallback = testConnectUnregisterCloseCallback, /* 4.2.0 */
     .nodeGetInfo = testNodeGetInfo, /* 0.1.1 */
     .nodeGetCPUStats = testNodeGetCPUStats, /* 2.3.0 */
     .nodeGetFreeMemory = testNodeGetFreeMemory, /* 2.3.0 */
