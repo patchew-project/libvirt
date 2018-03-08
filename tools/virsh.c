@@ -256,8 +256,15 @@ virshReconnect(vshControl *ctl, const char *name, bool readonly, bool force)
         priv->readonly = readonly;
 
         if (virConnectRegisterCloseCallback(priv->conn, virshCatchDisconnect,
-                                            ctl, NULL) < 0)
-            vshError(ctl, "%s", _("Unable to register disconnect callback"));
+                                            ctl, NULL) < 0) {
+            virErrorPtr error = virGetLastError();
+            if (error && error->code == VIR_ERR_NO_SUPPORT) {
+                /* silently ignore the unsupported error */
+                virResetLastError();
+            } else {
+                vshError(ctl, "%s", _("Unable to register disconnect callback"));
+            }
+        }
         if (connected && !force)
             vshError(ctl, "%s", _("Reconnected to the hypervisor"));
     }

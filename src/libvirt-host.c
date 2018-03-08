@@ -1221,12 +1221,14 @@ virConnectRegisterCloseCallback(virConnectPtr conn,
     virCheckConnectReturn(conn, -1);
     virCheckNonNullArgGoto(cb, error);
 
-    if (conn->driver->connectRegisterCloseCallback &&
-        conn->driver->connectRegisterCloseCallback(conn, cb, opaque, freecb) < 0)
-        goto error;
+    if (conn->driver->connectRegisterCloseCallback) {
+        int ret = conn->driver->connectRegisterCloseCallback(conn, cb, opaque, freecb);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
 
-    return 0;
-
+    virReportUnsupportedError();
  error:
     virDispatchError(conn);
     return -1;
@@ -1256,12 +1258,14 @@ virConnectUnregisterCloseCallback(virConnectPtr conn,
     virCheckConnectReturn(conn, -1);
     virCheckNonNullArgGoto(cb, error);
 
-    if (conn->driver->connectUnregisterCloseCallback &&
-        conn->driver->connectUnregisterCloseCallback(conn, cb) < 0)
-        goto error;
+    if (conn->driver->connectUnregisterCloseCallback) {
+        int ret = conn->driver->connectUnregisterCloseCallback(conn, cb);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
 
-    return 0;
-
+    virReportUnsupportedError();
  error:
     virDispatchError(conn);
     return -1;
