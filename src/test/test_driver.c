@@ -1725,7 +1725,7 @@ static virDomainPtr testDomainLookupByUUID(virConnectPtr conn,
     virDomainPtr ret = NULL;
     virDomainObjPtr dom;
 
-    if (!(dom = virDomainObjListFindByUUID(privconn->domains, uuid))) {
+    if (!(dom = virDomainObjListFindByUUIDRef(privconn->domains, uuid))) {
         virReportError(VIR_ERR_NO_DOMAIN, NULL);
         goto cleanup;
     }
@@ -1733,8 +1733,7 @@ static virDomainPtr testDomainLookupByUUID(virConnectPtr conn,
     ret = virGetDomain(conn, dom->def->name, dom->def->uuid, dom->def->id);
 
  cleanup:
-    if (dom)
-        virObjectUnlock(dom);
+    virDomainObjEndAPI(&dom);
     return ret;
 }
 
