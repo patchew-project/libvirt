@@ -59,6 +59,39 @@ vmwareDriverUnlock(struct vmware_driver *driver)
     virMutexUnlock(&driver->lock);
 }
 
+
+static virDomainObjPtr
+vmwareDomObjFromDomainLocked(struct vmware_driver *driver,
+                             const unsigned char *uuid)
+{
+    virDomainObjPtr vm;
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
+
+    if (!(vm = virDomainObjListFindByUUID(driver->domains, uuid))) {
+        virUUIDFormat(uuid, uuidstr);
+
+        virReportError(VIR_ERR_NO_DOMAIN,
+                       _("no domain with matching uuid '%s'"), uuidstr);
+        return NULL;
+    }
+
+    return vm;
+}
+
+
+static virDomainObjPtr
+vmwareDomObjFromDomain(struct vmware_driver *driver,
+                       const unsigned char *uuid)
+{
+    virDomainObjPtr vm;
+
+    vmwareDriverLock(driver);
+    vm = vmwareDomObjFromDomainLocked(driver, uuid);
+    vmwareDriverUnlock(driver);
+    return vm;
+}
+
+
 static void *
 vmwareDataAllocFunc(void *opaque ATTRIBUTE_UNUSED)
 {
@@ -460,13 +493,8 @@ vmwareDomainShutdownFlags(virDomainPtr dom,
 
     vmwareDriverLock(driver);
 
-    vm = virDomainObjListFindByUUID(driver->domains, dom->uuid);
-
-    if (!vm) {
-        virReportError(VIR_ERR_NO_DOMAIN, "%s",
-                       _("no domain with matching uuid"));
+    if (!(vm = vmwareDomObjFromDomainLocked(driver, dom->uuid)))
         goto cleanup;
-    }
 
     if (vmwareUpdateVMStatus(driver, vm) < 0)
         goto cleanup;
@@ -531,15 +559,8 @@ vmwareDomainSuspend(virDomainPtr dom)
         return ret;
     }
 
-    vmwareDriverLock(driver);
-    vm = virDomainObjListFindByUUID(driver->domains, dom->uuid);
-    vmwareDriverUnlock(driver);
-
-    if (!vm) {
-        virReportError(VIR_ERR_NO_DOMAIN, "%s",
-                       _("no domain with matching uuid"));
-        goto cleanup;
-    }
+    if (!(vm = vmwareDomObjFromDomain(driver, dom->uuid)))
+        return -1;
 
     vmwareSetSentinal(cmd, vmwareDriverTypeToString(driver->type));
     vmwareSetSentinal(cmd, ((vmwareDomainPtr) vm->privateData)->vmxPath);
@@ -580,15 +601,8 @@ vmwareDomainResume(virDomainPtr dom)
         return ret;
     }
 
-    vmwareDriverLock(driver);
-    vm = virDomainObjListFindByUUID(driver->domains, dom->uuid);
-    vmwareDriverUnlock(driver);
-
-    if (!vm) {
-        virReportError(VIR_ERR_NO_DOMAIN, "%s",
-                       _("no domain with matching uuid"));
-        goto cleanup;
-    }
+    if (!(vm = vmwareDomObjFromDomain(driver, dom->uuid)))
+        return -1;
 
     vmwareSetSentinal(cmd, vmwareDriverTypeToString(driver->type));
     vmwareSetSentinal(cmd, ((vmwareDomainPtr) vm->privateData)->vmxPath);
@@ -624,15 +638,8 @@ vmwareDomainReboot(virDomainPtr dom, unsigned int flags)
 
     virCheckFlags(0, -1);
 
-    vmwareDriverLock(driver);
-    vm = virDomainObjListFindByUUID(driver->domains, dom->uuid);
-    vmwareDriverUnlock(driver);
-
-    if (!vm) {
-        virReportError(VIR_ERR_NO_DOMAIN, "%s",
-                       _("no domain with matching uuid"));
-        goto cleanup;
-    }
+    if (!(vm = vmwareDomObjFromDomain(driver, dom->uuid)))
+        return -1;
 
     vmxPath = ((vmwareDomainPtr) vm->privateData)->vmxPath;
     vmwareSetSentinal(cmd, vmwareDriverTypeToString(driver->type));
@@ -750,14 +757,8 @@ vmwareDomainCreateWithFlags(virDomainPtr dom,
     virCheckFlags(0, -1);
 
     vmwareDriverLock(driver);
-    vm = virDomainObjListFindByUUID(driver->domains, dom->uuid);
-    if (!vm) {
-        char uuidstr[VIR_UUID_STRING_BUFLEN];
-        virUUIDFormat(dom->uuid, uuidstr);
-        virReportError(VIR_ERR_NO_DOMAIN,
-                       _("No domain with matching uuid '%s'"), uuidstr);
+    if (!(vm = vmwareDomObjFromDomainLocked(driver, dom->uuid)))
         goto cleanup;
-    }
 
     if (vmwareUpdateVMStatus(driver, vm) < 0)
         goto cleanup;
@@ -794,16 +795,8 @@ vmwareDomainUndefineFlags(virDomainPtr dom,
     virCheckFlags(0, -1);
 
     vmwareDriverLock(driver);
-    vm = virDomainObjListFindByUUID(driver->domains, dom->uuid);
-
-    if (!vm) {
-        char uuidstr[VIR_UUID_STRING_BUFLEN];
-
-        virUUIDFormat(dom->uuid, uuidstr);
-        virReportError(VIR_ERR_NO_DOMAIN,
-                       _("no domain with matching uuid '%s'"), uuidstr);
+    if (!(vm = vmwareDomObjFromDomainLocked(driver, dom->uuid)))
         goto cleanup;
-    }
 
     if (!vm->persistent) {
         virReportError(VIR_ERR_OPERATION_INVALID,
@@ -867,18 +860,11 @@ vmwareDomainGetOSType(virDomainPtr dom)
     virDomainObjPtr vm;
     char *ret = NULL;
 
-    vmwareDriverLock(driver);
-    vm = virDomainObjListFindByUUID(driver->domains, dom->uuid);
-    vmwareDriverUnlock(driver);
-
-    if (!vm) {
-        virReportError(VIR_ERR_NO_DOMAIN, NULL);
-        goto cleanup;
-    }
+    if (!(vm = vmwareDomObjFromDomain(driver, dom->uuid)))
+        return NULL;
 
     ignore_value(VIR_STRDUP(ret, virDomainOSTypeToString(vm->def->os.type)));
 
- cleanup:
     if (vm)
         virObjectUnlock(vm);
     return ret;
@@ -892,18 +878,11 @@ vmwareDomainLookupByUUID(virConnectPtr conn, const unsigned char *uuid)
     virDomainObjPtr vm;
     virDomainPtr dom = NULL;
 
-    vmwareDriverLock(driver);
-    vm = virDomainObjListFindByUUID(driver->domains, uuid);
-    vmwareDriverUnlock(driver);
-
-    if (!vm) {
-        virReportError(VIR_ERR_NO_DOMAIN, NULL);
-        goto cleanup;
-    }
+    if (!(vm = vmwareDomObjFromDomain(driver, uuid)))
+        return NULL;
 
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
 
- cleanup:
     if (vm)
         virObjectUnlock(vm);
     return dom;
@@ -940,16 +919,11 @@ vmwareDomainIsActive(virDomainPtr dom)
     virDomainObjPtr obj;
     int ret = -1;
 
-    vmwareDriverLock(driver);
-    obj = virDomainObjListFindByUUID(driver->domains, dom->uuid);
-    vmwareDriverUnlock(driver);
-    if (!obj) {
-        virReportError(VIR_ERR_NO_DOMAIN, NULL);
-        goto cleanup;
-    }
+    if (!(obj = vmwareDomObjFromDomain(driver, dom->uuid)))
+        return -1;
+
     ret = virDomainObjIsActive(obj);
 
- cleanup:
     if (obj)
         virObjectUnlock(obj);
     return ret;
@@ -963,16 +937,11 @@ vmwareDomainIsPersistent(virDomainPtr dom)
     virDomainObjPtr obj;
     int ret = -1;
 
-    vmwareDriverLock(driver);
-    obj = virDomainObjListFindByUUID(driver->domains, dom->uuid);
-    vmwareDriverUnlock(driver);
-    if (!obj) {
-        virReportError(VIR_ERR_NO_DOMAIN, NULL);
-        goto cleanup;
-    }
+    if (!(obj = vmwareDomObjFromDomain(driver, dom->uuid)))
+        return -1;
+
     ret = obj->persistent;
 
- cleanup:
     if (obj)
         virObjectUnlock(obj);
     return ret;
@@ -988,20 +957,12 @@ vmwareDomainGetXMLDesc(virDomainPtr dom, unsigned int flags)
 
     /* Flags checked by virDomainDefFormat */
 
-    vmwareDriverLock(driver);
-    vm = virDomainObjListFindByUUID(driver->domains, dom->uuid);
-    vmwareDriverUnlock(driver);
-
-    if (!vm) {
-        virReportError(VIR_ERR_NO_DOMAIN, "%s",
-                       _("no domain with matching uuid"));
-        goto cleanup;
-    }
+    if (!(vm = vmwareDomObjFromDomain(driver, dom->uuid)))
+        return NULL;
 
     ret = virDomainDefFormat(vm->def, driver->caps,
                              virDomainDefFormatConvertXMLFlags(flags));
 
- cleanup:
     if (vm)
         virObjectUnlock(vm);
     return ret;
@@ -1121,15 +1082,8 @@ vmwareDomainGetInfo(virDomainPtr dom, virDomainInfoPtr info)
     virDomainObjPtr vm;
     int ret = -1;
 
-    vmwareDriverLock(driver);
-    vm = virDomainObjListFindByUUID(driver->domains, dom->uuid);
-    vmwareDriverUnlock(driver);
-
-    if (!vm) {
-        virReportError(VIR_ERR_NO_DOMAIN, "%s",
-                       _("no domain with matching uuid"));
-        goto cleanup;
-    }
+    if (!(vm = vmwareDomObjFromDomain(driver, dom->uuid)))
+        return -1;
 
     if (vmwareUpdateVMStatus(driver, vm) < 0)
         goto cleanup;
@@ -1159,15 +1113,8 @@ vmwareDomainGetState(virDomainPtr dom,
 
     virCheckFlags(0, -1);
 
-    vmwareDriverLock(driver);
-    vm = virDomainObjListFindByUUID(driver->domains, dom->uuid);
-    vmwareDriverUnlock(driver);
-
-    if (!vm) {
-        virReportError(VIR_ERR_NO_DOMAIN, "%s",
-                       _("no domain with matching uuid"));
-        goto cleanup;
-    }
+    if (!(vm = vmwareDomObjFromDomain(driver, dom->uuid)))
+        return -1;
 
     if (vmwareUpdateVMStatus(driver, vm) < 0)
         goto cleanup;
@@ -1214,16 +1161,11 @@ vmwareDomainHasManagedSaveImage(virDomainPtr dom, unsigned int flags)
 
     virCheckFlags(0, -1);
 
-    vmwareDriverLock(driver);
-    obj = virDomainObjListFindByUUID(driver->domains, dom->uuid);
-    vmwareDriverUnlock(driver);
-    if (!obj) {
-        virReportError(VIR_ERR_NO_DOMAIN, NULL);
-        goto cleanup;
-    }
+    if (!(obj = vmwareDomObjFromDomain(driver, dom->uuid)))
+        return -1;
+
     ret = 0;
 
- cleanup:
     if (obj)
         virObjectUnlock(obj);
     return ret;
