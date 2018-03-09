@@ -95,7 +95,7 @@ openvzDomObjFromDomainLocked(struct openvz_driver *driver,
     virDomainObjPtr vm;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
 
-    if (!(vm = virDomainObjListFindByUUID(driver->domains, uuid))) {
+    if (!(vm = virDomainObjListFindByUUIDRef(driver->domains, uuid))) {
         virUUIDFormat(uuid, uuidstr);
 
         virReportError(VIR_ERR_NO_DOMAIN,
@@ -329,8 +329,7 @@ openvzDomainGetHostname(virDomainPtr dom, unsigned int flags)
     }
 
  cleanup:
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return hostname;
 
  error:
@@ -347,7 +346,7 @@ static virDomainPtr openvzDomainLookupByID(virConnectPtr conn,
     virDomainPtr dom = NULL;
 
     openvzDriverLock(driver);
-    vm = virDomainObjListFindByID(driver->domains, id);
+    vm = virDomainObjListFindByIDRef(driver->domains, id);
     openvzDriverUnlock(driver);
 
     if (!vm) {
@@ -359,8 +358,7 @@ static virDomainPtr openvzDomainLookupByID(virConnectPtr conn,
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
 
  cleanup:
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return dom;
 }
 
@@ -391,8 +389,7 @@ static char *openvzDomainGetOSType(virDomainPtr dom)
 
     ignore_value(VIR_STRDUP(ret, virDomainOSTypeToString(vm->def->os.type)));
 
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -409,8 +406,7 @@ static virDomainPtr openvzDomainLookupByUUID(virConnectPtr conn,
 
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
 
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return dom;
 }
 
@@ -469,8 +465,7 @@ static int openvzDomainGetInfo(virDomainPtr dom,
     ret = 0;
 
  cleanup:
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -492,8 +487,7 @@ openvzDomainGetState(virDomainPtr dom,
 
     ret = openvzGetVEStatus(vm, state, reason);
 
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -509,8 +503,7 @@ static int openvzDomainIsActive(virDomainPtr dom)
 
     ret = virDomainObjIsActive(obj);
 
-    if (obj)
-        virObjectUnlock(obj);
+    virDomainObjEndAPI(&obj);
     return ret;
 }
 
@@ -526,8 +519,7 @@ static int openvzDomainIsPersistent(virDomainPtr dom)
 
     ret = obj->persistent;
 
-    if (obj)
-        virObjectUnlock(obj);
+    virDomainObjEndAPI(&obj);
     return ret;
 }
 
@@ -549,8 +541,7 @@ static char *openvzDomainGetXMLDesc(virDomainPtr dom, unsigned int flags) {
     ret = virDomainDefFormat(vm->def, driver->caps,
                              virDomainDefFormatConvertXMLFlags(flags));
 
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -600,8 +591,7 @@ static int openvzDomainSuspend(virDomainPtr dom)
     ret = 0;
 
  cleanup:
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -631,8 +621,7 @@ static int openvzDomainResume(virDomainPtr dom)
     ret = 0;
 
  cleanup:
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -670,8 +659,7 @@ openvzDomainShutdownFlags(virDomainPtr dom,
     ret = 0;
 
  cleanup:
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -724,8 +712,7 @@ static int openvzDomainReboot(virDomainPtr dom,
     virDomainObjSetState(vm, VIR_DOMAIN_RUNNING, VIR_DOMAIN_RUNNING_BOOTED);
 
  cleanup:
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -1183,8 +1170,7 @@ openvzDomainUndefineFlags(virDomainPtr dom,
     ret = 0;
 
  cleanup:
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     openvzDriverUnlock(driver);
     return ret;
 }
@@ -1213,8 +1199,7 @@ openvzDomainSetAutostart(virDomainPtr dom, int autostart)
     ret = 0;
 
  cleanup:
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -1243,8 +1228,7 @@ openvzDomainGetAutostart(virDomainPtr dom, int *autostart)
  cleanup:
     VIR_FREE(value);
 
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -1336,8 +1320,7 @@ static int openvzDomainSetVcpusFlags(virDomainPtr dom, unsigned int nvcpus,
     ret = 0;
 
  cleanup:
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -1934,8 +1917,7 @@ openvzDomainInterfaceStats(virDomainPtr dom,
     ret = 0;
 
  cleanup:
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -2029,8 +2011,7 @@ openvzDomainUpdateDeviceFlags(virDomainPtr dom, const char *xml,
  cleanup:
     openvzDriverUnlock(driver);
     virDomainDeviceDefFree(dev);
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -2166,8 +2147,7 @@ openvzDomainMigrateBegin3Params(virDomainPtr domain,
                              VIR_DOMAIN_DEF_FORMAT_SECURE);
 
  cleanup:
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return xml;
 }
 
@@ -2269,8 +2249,7 @@ openvzDomainMigratePrepare3Params(virConnectPtr dconn,
  done:
     VIR_FREE(my_hostname);
     virURIFree(uri);
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -2323,8 +2302,7 @@ openvzDomainMigratePerform3Params(virDomainPtr domain,
  cleanup:
     virCommandFree(cmd);
     virURIFree(uri);
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -2431,8 +2409,7 @@ openvzDomainMigrateConfirm3Params(virDomainPtr domain,
     ret = 0;
 
  cleanup:
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -2450,8 +2427,7 @@ openvzDomainHasManagedSaveImage(virDomainPtr dom, unsigned int flags)
 
     ret = 0;
 
-    if (obj)
-        virObjectUnlock(obj);
+    virDomainObjEndAPI(&obj);
     return ret;
 }
 
