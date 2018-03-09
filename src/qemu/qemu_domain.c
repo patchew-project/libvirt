@@ -4566,6 +4566,21 @@ qemuDomainDeviceDefValidateControllerSATA(const virDomainControllerDef *controll
 
 
 static int
+qemuDomainDeviceDefValidateControllerUSB(const virDomainControllerDef *controller)
+{
+    if (controller->info.alias &&
+        virDomainDeviceAliasIsUserAlias(controller->info.alias)) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("Providing user alias to USB "
+                         "controllers is not supported yet"));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
                                       const virDomainDef *def,
                                       virQEMUCapsPtr qemuCaps)
@@ -4602,10 +4617,13 @@ qemuDomainDeviceDefValidateController(const virDomainControllerDef *controller,
                                                         qemuCaps);
         break;
 
+    case VIR_DOMAIN_CONTROLLER_TYPE_USB:
+        ret = qemuDomainDeviceDefValidateControllerUSB(controller);
+        break;
+
     case VIR_DOMAIN_CONTROLLER_TYPE_FDC:
     case VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL:
     case VIR_DOMAIN_CONTROLLER_TYPE_CCID:
-    case VIR_DOMAIN_CONTROLLER_TYPE_USB:
     case VIR_DOMAIN_CONTROLLER_TYPE_LAST:
         break;
     }
