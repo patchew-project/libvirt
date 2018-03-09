@@ -222,10 +222,10 @@ static int openvzSetInitialConfig(virDomainDefPtr vmdef)
     ret = 0;
 
  cleanup:
-  VIR_FREE(confdir);
-  virCommandFree(cmd);
+    VIR_FREE(confdir);
+    virCommandFree(cmd);
 
-  return ret;
+    return ret;
 }
 
 
@@ -267,9 +267,9 @@ openvzSetDiskQuota(virDomainDefPtr vmdef,
 
     ret = 0;
  cleanup:
-  virCommandFree(cmd);
+    virCommandFree(cmd);
 
-  return ret;
+    return ret;
 }
 
 
@@ -633,40 +633,40 @@ static int openvzDomainSuspend(virDomainPtr dom)
 
 static int openvzDomainResume(virDomainPtr dom)
 {
-  struct openvz_driver *driver = dom->conn->privateData;
-  virDomainObjPtr vm;
-  const char *prog[] = {VZCTL, "--quiet", "chkpnt", PROGRAM_SENTINEL, "--resume", NULL};
-  int ret = -1;
+    struct openvz_driver *driver = dom->conn->privateData;
+    virDomainObjPtr vm;
+    const char *prog[] = {VZCTL, "--quiet", "chkpnt", PROGRAM_SENTINEL, "--resume", NULL};
+    int ret = -1;
 
-  openvzDriverLock(driver);
-  vm = virDomainObjListFindByUUID(driver->domains, dom->uuid);
-  openvzDriverUnlock(driver);
+    openvzDriverLock(driver);
+    vm = virDomainObjListFindByUUID(driver->domains, dom->uuid);
+    openvzDriverUnlock(driver);
 
-  if (!vm) {
-      virReportError(VIR_ERR_NO_DOMAIN, "%s",
-                     _("no domain with matching uuid"));
-      goto cleanup;
-  }
+    if (!vm) {
+        virReportError(VIR_ERR_NO_DOMAIN, "%s",
+                       _("no domain with matching uuid"));
+        goto cleanup;
+    }
 
-  if (!virDomainObjIsActive(vm)) {
-      virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                     _("Domain is not running"));
-      goto cleanup;
-  }
+    if (!virDomainObjIsActive(vm)) {
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("Domain is not running"));
+        goto cleanup;
+    }
 
-  if (virDomainObjGetState(vm, NULL) == VIR_DOMAIN_PAUSED) {
-      openvzSetProgramSentinal(prog, vm->def->name);
-      if (virRun(prog, NULL) < 0)
-          goto cleanup;
-      virDomainObjSetState(vm, VIR_DOMAIN_RUNNING, VIR_DOMAIN_RUNNING_UNPAUSED);
-  }
+    if (virDomainObjGetState(vm, NULL) == VIR_DOMAIN_PAUSED) {
+        openvzSetProgramSentinal(prog, vm->def->name);
+        if (virRun(prog, NULL) < 0)
+            goto cleanup;
+        virDomainObjSetState(vm, VIR_DOMAIN_RUNNING, VIR_DOMAIN_RUNNING_UNPAUSED);
+    }
 
-  ret = 0;
+    ret = 0;
 
  cleanup:
-  if (vm)
-      virObjectUnlock(vm);
-  return ret;
+    if (vm)
+        virObjectUnlock(vm);
+    return ret;
 }
 
 static int
