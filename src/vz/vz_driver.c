@@ -602,7 +602,7 @@ vzDomainLookupByUUID(virConnectPtr conn, const unsigned char *uuid)
     virDomainPtr ret = NULL;
     virDomainObjPtr dom;
 
-    dom = virDomainObjListFindByUUIDRef(privconn->driver->domains, uuid);
+    dom = virDomainObjListFindByUUID(privconn->driver->domains, uuid);
 
     if (dom == NULL) {
         char uuidstr[VIR_UUID_STRING_BUFLEN];
@@ -837,7 +837,7 @@ vzDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags)
     if (virDomainDefineXMLFlagsEnsureACL(conn, def) < 0)
         goto cleanup;
 
-    dom = virDomainObjListFindByUUIDRef(driver->domains, def->uuid);
+    dom = virDomainObjListFindByUUID(driver->domains, def->uuid);
     if (dom == NULL) {
         virResetLastError();
         if (def->os.type == VIR_DOMAIN_OSTYPE_HVM) {

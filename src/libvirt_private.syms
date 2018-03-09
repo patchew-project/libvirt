@@ -951,7 +951,6 @@ virDomainObjListFindByID;
 virDomainObjListFindByIDRef;
 virDomainObjListFindByName;
 virDomainObjListFindByUUID;
-virDomainObjListFindByUUIDRef;
 virDomainObjListForEach;
 virDomainObjListGetActiveIDs;
 virDomainObjListGetInactiveNames;
