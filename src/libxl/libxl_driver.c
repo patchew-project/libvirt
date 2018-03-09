@@ -5895,9 +5895,10 @@ libxlDomainMigrateBegin3Params(virDomainPtr domain,
         return NULL;
 
     if (STREQ_NULLABLE(vm->def->name, "Domain-0")) {
-            virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                           _("Domain-0 cannot be migrated"));
-            return NULL;
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("Domain-0 cannot be migrated"));
+        virObjectUnlock(vm);
+        return NULL;
     }
 
     if (virDomainMigrateBegin3ParamsEnsureACL(domain->conn, vm->def) < 0) {
