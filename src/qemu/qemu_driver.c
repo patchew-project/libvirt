@@ -1530,7 +1530,7 @@ static virDomainPtr qemuDomainLookupByID(virConnectPtr conn,
     virDomainObjPtr vm;
     virDomainPtr dom = NULL;
 
-    vm  = virDomainObjListFindByID(driver->domains, id);
+    vm = virDomainObjListFindByID(driver->domains, id);
 
     if (!vm) {
         virReportError(VIR_ERR_NO_DOMAIN,
@@ -1544,8 +1544,7 @@ static virDomainPtr qemuDomainLookupByID(virConnectPtr conn,
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
 
  cleanup:
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     return dom;
 }
 
