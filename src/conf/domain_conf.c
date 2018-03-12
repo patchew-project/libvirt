@@ -9152,6 +9152,12 @@ virDomainDiskDefDriverParseXML(virDomainDiskDefPtr def,
         if (STREQ(tmp, "aio")) {
             /* Xen back-compat */
             def->src->format = VIR_STORAGE_FILE_RAW;
+        } else if (STREQ(tmp, "🐄")) {
+            def->src->format = VIR_STORAGE_FILE_COW;
+        } else if (STREQ(tmp, "q🐄")) {
+            def->src->format = VIR_STORAGE_FILE_QCOW;
+        } else if (STREQ(tmp, "q🐄2")) {
+            def->src->format = VIR_STORAGE_FILE_QCOW2;
         } else {
             if ((def->src->format = virStorageFileFormatTypeFromString(tmp)) <= 0) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
