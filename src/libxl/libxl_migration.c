@@ -1400,8 +1400,6 @@ libxlDomainMigrationConfirm(libxlDriverPrivatePtr driver,
  cleanup:
     if (event)
         libxlDomainEventQueue(driver, event);
-    if (vm)
-        virObjectUnlock(vm);
     virObjectUnref(cfg);
     return ret;
 }
