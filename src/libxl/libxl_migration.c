@@ -639,9 +639,7 @@ libxlDomainMigrationPrepareTunnel3(virConnectPtr dconn,
     }
 
  done:
-    if (vm)
-        virObjectUnlock(vm);
-
+    virDomainObjEndAPI(&vm);
     return ret;
 }
 
@@ -820,8 +818,7 @@ libxlDomainMigrationPrepare(virConnectPtr dconn,
         VIR_FREE(hostname);
     else
         virURIFree(uri);
-    if (vm)
-        virObjectUnlock(vm);
+    virDomainObjEndAPI(&vm);
     virObjectUnref(cfg);
     return ret;
 }
