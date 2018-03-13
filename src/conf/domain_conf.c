@@ -8650,6 +8650,66 @@ virDomainStorageSourceParse(xmlNodePtr node,
 }
 
 
+/**
+ * virDomainStorageSourceParseNew:
+ * @node: XML node object to parse
+ * @ctxt: XML XPath context
+ * @flags: virDomainDefParseFlags
+ *
+ * Parses the XML @node and returns a virStorageSource object with the parsed
+ * data. Note that 'format' and 'type' attributes need to be members of the same
+ * object and need to be provided.
+ */
+virStorageSourcePtr
+virDomainStorageSourceParseNew(xmlNodePtr node,
+                               xmlXPathContextPtr ctxt,
+                               unsigned int flags)
+{
+    virStorageSourcePtr src = NULL;
+    virStorageSourcePtr ret = NULL;
+    char *format = NULL;
+    char *type = NULL;
+
+    if (VIR_ALLOC(src) < 0)
+        return NULL;
+
+    if (!(type = virXMLPropString(node, "type"))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("missing storage source type"));
+        goto cleanup;
+    }
+
+    if (!(format = virXMLPropString(node, "format"))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       ("missing storage source format"));
+        goto cleanup;
+    }
+
+    if ((src->type = virStorageTypeFromString(type)) <= 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unknown storage source type '%s'"), type);
+        goto cleanup;
+    }
+
+    if ((src->format = virStorageFileFormatTypeFromString(format)) <= 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unknown storage source format '%s'"), format);
+        goto cleanup;
+    }
+
+    if (virDomainStorageSourceParse(node, ctxt, src, flags) < 0)
+        goto cleanup;
+
+    VIR_STEAL_PTR(ret, src);
+
+ cleanup:
+    virStorageSourceFree(src);
+    VIR_FREE(format);
+    VIR_FREE(type);
+    return ret;
+}
+
+
 int
 virDomainDiskSourceParse(xmlNodePtr node,
                          xmlXPathContextPtr ctxt,

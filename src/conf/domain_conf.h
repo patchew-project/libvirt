@@ -3434,6 +3434,12 @@ int virDomainStorageSourceFormat(virBufferPtr attrBuf,
                                  bool skipSeclabels)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
+virStorageSourcePtr
+virDomainStorageSourceParseNew(xmlNodePtr node,
+                               xmlXPathContextPtr ctxt,
+                               unsigned int flags)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
 int virDomainDefGetVcpuPinInfoHelper(virDomainDefPtr def,
                                      int maplen,
                                      int ncpumaps,
