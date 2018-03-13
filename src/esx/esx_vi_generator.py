@@ -22,6 +22,8 @@
 # <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
+
 import sys
 import os
 import os.path
@@ -1196,7 +1198,7 @@ class Enum(Type):
 
 
 def report_error(message):
-    print "error: " + message
+    print("error: " + message)
     sys.exit(1)
 
 
@@ -1321,11 +1323,11 @@ def is_known_type(type):
 
 def open_and_print(filename):
     if filename.startswith("./"):
-        print "  GEN      " + filename[2:]
+        print("  GEN      " + filename[2:])
     else:
-        print "  GEN      " + filename
+        print("  GEN      " + filename)
 
-    return open(filename, "wb")
+    return open(filename, "wt")
 
 
 
@@ -1433,7 +1435,7 @@ block = None
 
 
 # parse input file
-for line in file(input_filename, "rb").readlines():
+for line in open(input_filename, "rt").readlines():
     number += 1
 
     if "#" in line:
@@ -1702,8 +1704,7 @@ types_typedef.write(separator +
                     " * VI Enums\n" +
                     " */\n\n")
 
-names = enums_by_name.keys()
-names.sort()
+names = sorted(enums_by_name.keys())
 
 for name in names:
     types_typedef.write(enums_by_name[name].generate_typedef())
@@ -1724,8 +1725,7 @@ types_typeenum.write("\n")
 types_typetostring.write("\n")
 types_typefromstring.write("\n")
 
-names = objects_by_name.keys()
-names.sort()
+names = sorted(objects_by_name.keys())
 
 for name in names:
     types_typedef.write(objects_by_name[name].generate_typedef())
@@ -1746,8 +1746,7 @@ types_typeenum.write("\n")
 types_typetostring.write("\n")
 types_typefromstring.write("\n")
 
-names = managed_objects_by_name.keys()
-names.sort()
+names = sorted(managed_objects_by_name.keys())
 
 for name in names:
     types_typedef.write(managed_objects_by_name[name].generate_typedef())
@@ -1760,15 +1759,13 @@ for name in names:
 
 
 # output methods
-names = methods_by_name.keys()
-names.sort()
+names = sorted(methods_by_name.keys())
 
 for name in names:
     methods_header.write(methods_by_name[name].generate_header())
     methods_source.write(methods_by_name[name].generate_source())
 
-names = list(autobind_names)
-names.sort()
+names = sorted(list(autobind_names))
 
 for name in names:
     string = aligned("#define ESX_VI__METHOD__PARAMETER__THIS__%s " % name, "\\\n", 78)
@@ -1780,8 +1777,7 @@ for name in names:
 
 
 # output helpers
-names = managed_objects_by_name.keys()
-names.sort()
+names = sorted(managed_objects_by_name.keys())
 
 for name in names:
     helpers_header.write(managed_objects_by_name[name].generate_helper_header())
