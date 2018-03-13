@@ -5297,8 +5297,13 @@ qemuDomainDetachNetDevice(virQEMUDriverPtr driver,
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         goto cleanup;
 
-    if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1)
+    ret = qemuDomainWaitForDeviceRemoval(vm);
+    if (ret == 1) {
         ret = qemuDomainRemoveNetDevice(driver, vm, detach);
+    } else if (ret == 0) {
+        VIR_WARN("Detach of device %s timed out; treating as a failure", detach->ifname);
+        ret = -1;
+    }
 
  cleanup:
     qemuDomainResetDeviceRemoval(vm);
