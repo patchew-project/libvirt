@@ -197,6 +197,8 @@ MAINTAINERCLEANFILES = \
   $(addprefix $(srcdir)/,$(dot_php)) \
   $(srcdir)/hvsupport.html.in $(srcdir)/aclperms.htmlinc
 
+CLEANFILES =
+
 timestamp="$(shell if test -n "$$SOURCE_DATE_EPOCH"; \
 		   then \
 		     date -u --date="@$$SOURCE_DATE_EPOCH"; \
@@ -243,6 +245,28 @@ EXTRA_DIST += \
 	$(srcdir)/news-html.xsl
 MAINTAINERCLEANFILES += \
 	$(srcdir)/news.html.in
+
+NEWS: \
+	  $(srcdir)/news.xml \
+	  $(srcdir)/news-ascii.xsl \
+	  $(srcdir)/reformat-news.py
+	$(AM_V_GEN) \
+	if [ -x $(XSLTPROC) ]; then \
+	  $(XSLTPROC) --nonet \
+	    $(srcdir)/news-ascii.xsl \
+	    $(srcdir)/news.xml \
+	  >$@-tmp \
+	    || { rm -f $@-tmp; exit 1; }; \
+	  $(srcdir)/reformat-news.py $@-tmp >$@ \
+	    || { rm -f $@-tmp; exit 1; }; \
+	  rm -f $@-tmp; \
+	fi
+EXTRA_DIST += \
+	$(srcdir)/news.xml \
+	$(srcdir)/news-ascii.xsl \
+	$(srcdir)/reformat-news.py
+CLEANFILES += \
+	NEWS
 
 %.png: %.fig
 	convert -rotate 90 $< $@

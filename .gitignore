@@ -59,6 +59,7 @@
 /configure
 /configure.lineno
 /conftest.*
+/docs/NEWS
 /docs/aclperms.htmlinc
 /docs/apibuild.py.stamp
 /docs/devhelp/libvirt.devhelp
