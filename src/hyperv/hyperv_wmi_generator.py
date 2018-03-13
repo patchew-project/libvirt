@@ -20,6 +20,8 @@
 # <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
+
 import sys
 import os
 import os.path
@@ -57,7 +59,7 @@ class WmiClass:
         """
         # sort vesioned classes by version in case input file did not have them
         # in order
-        self.versions = sorted(self.versions, key=lambda cls: cls.version)
+        self.versions = sorted(self.versions, key=lambda cls: cls.version or "")
 
         # if there's more than one verion make sure first one has name suffixed
         # because we'll generate "common" memeber and will be the "base" name
@@ -390,16 +392,16 @@ class Property:
 
 def open_and_print(filename):
     if filename.startswith("./"):
-        print "  GEN      " + filename[2:]
+        print("  GEN      " + filename[2:])
     else:
-        print "  GEN      " + filename
+        print("  GEN      " + filename)
 
-    return open(filename, "wb")
+    return open(filename, "wt")
 
 
 
 def report_error(message):
-    print "error: " + message
+    print("error: " + message)
     sys.exit(1)
 
 
@@ -466,7 +468,7 @@ def main():
     number = 0
     block = None
 
-    for line in file(input_filename, "rb").readlines():
+    for line in open(input_filename, "rt").readlines():
         number += 1
 
         if "#" in line:
@@ -499,8 +501,7 @@ def main():
     classes_header.write(notice)
     classes_source.write(notice)
 
-    names = wmi_classes_by_name.keys()
-    names.sort()
+    names = sorted(wmi_classes_by_name.keys())
 
     for name in names:
         cls = wmi_classes_by_name[name]
