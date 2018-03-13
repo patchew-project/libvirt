@@ -2162,6 +2162,9 @@ qemuDomainAttachMemory(virQEMUDriverPtr driver,
         goto exit_monitor;
     objAdded = true;
 
+    /* !!! REPRODUCER !!! */
+    goto exit_monitor;
+
     if (qemuMonitorAddDevice(priv->mon, devstr) < 0)
         goto exit_monitor;
 
