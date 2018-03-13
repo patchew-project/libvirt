@@ -257,7 +257,7 @@ NEWS: \
 	    $(srcdir)/news.xml \
 	  >$@-tmp \
 	    || { rm -f $@-tmp; exit 1; }; \
-	  $(srcdir)/reformat-news.py $@-tmp >$@ \
+	  $(PYTHON) $(srcdir)/reformat-news.py $@-tmp >$@ \
 	    || { rm -f $@-tmp; exit 1; }; \
 	  rm -f $@-tmp; \
 	fi
