@@ -2219,6 +2219,10 @@ qemuDomainAttachMemory(virQEMUDriverPtr driver,
     if (!mem)
         goto audit;
 
+    /* we need to remove the memory backing file so that it does not hog memory */
+    if (objAdded)
+        ignore_value(qemuProcessDestroyMemoryBackingPath(driver, vm, mem));
+
  removedef:
     if ((id = virDomainMemoryFindByDef(vm->def, mem)) >= 0)
         mem = virDomainMemoryRemove(vm->def, id);
