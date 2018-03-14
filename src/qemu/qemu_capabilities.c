@@ -459,6 +459,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "pl011",
               "machine.pseries.max-cpu-compat",
               "dump-completed",
+              "pr-manager-helper",
     );
 
 
