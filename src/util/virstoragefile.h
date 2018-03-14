@@ -384,6 +384,8 @@ virStoragePRDefPtr virStoragePRDefParseNode(xmlDocPtr xml,
                                             xmlNodePtr root);
 void virStoragePRDefFormat(virBufferPtr buf,
                            virStoragePRDefPtr prd);
+bool virStoragePRDefIsEqual(virStoragePRDefPtr a,
+                            virStoragePRDefPtr b);
 
 virSecurityDeviceLabelDefPtr
 virStorageSourceGetSecurityLabelDef(virStorageSourcePtr src,
