@@ -177,6 +177,12 @@ struct _virDomainDeviceInfo {
     bool isolationGroupLocked;
 };
 
+typedef struct _virDomainPCIMultifunctionAddressInfo virDomainPCIMultifunctionAddressInfo;
+typedef virDomainPCIMultifunctionAddressInfo *virDomainPCIMultifunctionAddressInfoPtr;
+struct _virDomainPCIMultifunctionAddressInfo {
+   virDomainDeviceInfoPtr infos[VIR_PCI_MAX_FUNCTIONS];
+};
+
 int virDomainDeviceInfoCopy(virDomainDeviceInfoPtr dst,
                             virDomainDeviceInfoPtr src);
 void virDomainDeviceInfoClear(virDomainDeviceInfoPtr info);

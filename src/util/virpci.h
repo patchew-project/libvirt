@@ -29,6 +29,8 @@
 # include "virobject.h"
 # include "virutil.h"
 
+# define VIR_PCI_MAX_FUNCTIONS 8
+
 typedef struct _virPCIDevice virPCIDevice;
 typedef virPCIDevice *virPCIDevicePtr;
 typedef struct _virPCIDeviceAddress virPCIDeviceAddress;

@@ -27,6 +27,7 @@
 #include "virlog.h"
 #include "virstring.h"
 #include "domain_addr.h"
+#include "device_conf.h"
 
 #define VIR_FROM_THIS VIR_FROM_DOMAIN
 
@@ -690,6 +691,89 @@ virDomainPCIAddressEnsureAddr(virDomainPCIAddressSetPtr addrs,
     } else {
         ret = virDomainPCIAddressReserveNextAddr(addrs, dev, flags, -1);
     }
+
+ cleanup:
+    VIR_FREE(addrStr);
+    return ret;
+}
+
+
+/*
+ *virDomainPCIAddressEnsureMultifunctionAddress:
+ *
+ *
+ *
+ */
+
+int
+virDomainPCIAddressEnsureMultifunctionAddress(virDomainPCIAddressSetPtr addrs,
+                                              virDomainPCIMultifunctionAddressInfoPtr pcicard)
+{
+    size_t i;
+    int ret = 0;
+    virPCIDeviceAddressPtr addr1 = NULL, addr2 = NULL;
+    virDomainDeviceInfoPtr dev = NULL;
+    char *addrStr = NULL;
+
+    if (!pcicard->infos[0]) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Function-Zero missing on the slot"));
+        return -1;
+    }
+
+    /* If the address is given by the user, make sure they belong
+     * to same slot */
+    for (i = 0; i < VIR_PCI_MAX_FUNCTIONS; i++) {
+        dev = pcicard->infos[i];
+        if (dev && !dev->pciConnectFlags) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Not a PCI Multifunction device."));
+            goto cleanup;
+        }
+        if (dev && virDeviceInfoPCIAddressPresent(dev)) {
+            /* Pick one and compare against rest of the user given */
+            addr1 = addr1 ? addr1 : &dev->addr.pci;
+            addr2 = &dev->addr.pci;
+            if (!(addrStr = virDomainPCIAddressAsString(addr2)))
+                goto cleanup;
+            if (!virDomainPCIAddressValidate(addrs, addr2,
+                                             addrStr, dev->pciConnectFlags, true))
+                goto cleanup;
+            if (!(addr1->domain == addr2->domain && addr1->bus == addr2->bus &&
+                  addr1->slot == addr2->slot)) {
+                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                                _("Addresses belong to different PCI slots"));
+                goto cleanup;
+            }
+            VIR_FREE(addrStr);
+        }
+    }
+
+    /* Reserve all the user given addresses. */
+    for (i = 0; i < VIR_PCI_MAX_FUNCTIONS; i++) {
+        dev = pcicard->infos[i];
+        if (dev && virDeviceInfoPCIAddressPresent(dev)) {
+            ret = virDomainPCIAddressReserveAddrInternal(addrs, &dev->addr.pci,
+                                                         dev->pciConnectFlags, dev->isolationGroup,
+                                                         dev->aggregateSlotIdx,
+                                                         true);
+            if (ret < 0)
+                goto cleanup;
+        }
+    }
+
+    /* If the user has not given addresses, start with function zero */
+    for (i = 0; i < VIR_PCI_MAX_FUNCTIONS; i++) {
+        dev = pcicard->infos[i];
+        if (dev && !virDeviceInfoPCIAddressPresent(dev)) {
+            ret = virDomainPCIAddressReserveNextAddr(addrs, dev, dev->pciConnectFlags, i);
+            if (ret < 0)
+                goto cleanup;
+        }
+    }
+
+    /* Set multi on overriding what user has set. */
+    pcicard->infos[0]->addr.pci.multi = VIR_TRISTATE_SWITCH_ON;
 
  cleanup:
     VIR_FREE(addrStr);
