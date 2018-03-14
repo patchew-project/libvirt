@@ -1514,6 +1514,20 @@ qemuDiskSourceGetProps(virStorageSourcePtr src)
 }
 
 
+static void
+qemuBuildDriveSourcePR(virBufferPtr buf,
+                       virStorageSourcePtr src)
+{
+    qemuDomainStorageSourcePrivatePtr srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(src);
+    qemuDomainDiskPRDPtr prd = srcPriv->prd;
+
+    if (!prd || !prd->alias)
+        return;
+
+    virBufferAsprintf(buf, ",file.pr-manager=%s", prd->alias);
+}
+
+
 static int
 qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
                         virQEMUCapsPtr qemuCaps,
@@ -1590,6 +1604,8 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
 
         if (disk->src->debug)
             virBufferAsprintf(buf, ",file.debug=%d", disk->src->debugLevel);
+
+        qemuBuildDriveSourcePR(buf, disk->src);
     } else {
         if (!(source = virQEMUBuildDriveCommandlineFromJSON(srcprops)))
             goto cleanup;
@@ -9789,6 +9805,36 @@ qemuBuildPanicCommandLine(virCommandPtr cmd,
 }
 
 
+static void
+qemuBuildMasterPRCommandLine(virCommandPtr cmd,
+                             const virDomainDef *def)
+{
+    size_t i;
+    bool managedAdded = false;
+
+    for (i = 0; i < def->ndisks; i++) {
+        const virDomainDiskDef *disk = def->disks[i];
+        qemuDomainStorageSourcePrivatePtr srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(disk->src);
+        qemuDomainDiskPRDPtr prd = srcPriv->prd;
+        virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+        if (!prd || !prd->alias)
+            continue;
+
+        if (virStoragePRDefIsManaged(disk->src->pr)) {
+            if (managedAdded)
+                continue;
+
+            managedAdded = true;
+        }
+
+        virBufferAsprintf(&buf, "pr-manager-helper,id=%s,path=%s", prd->alias, prd->path);
+        virCommandAddArg(cmd, "-object");
+        virCommandAddArgBuffer(cmd, &buf);
+    }
+}
+
+
 /**
  * qemuBuildCommandLineValidate:
  *
@@ -9940,6 +9986,8 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
 
     if (qemuBuildMasterKeyCommandLine(cmd, priv) < 0)
         goto error;
+
+    qemuBuildMasterPRCommandLine(cmd, def);
 
     if (enableFips)
         virCommandAddArg(cmd, "-enable-fips");

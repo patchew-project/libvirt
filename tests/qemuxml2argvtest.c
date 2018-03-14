@@ -2998,6 +2998,14 @@ mymain(void)
             QEMU_CAPS_HDA_DUPLEX);
     DO_TEST("user-aliases2", QEMU_CAPS_DEVICE_IOH3420, QEMU_CAPS_ICH9_AHCI);
 
+    DO_TEST("disk-virtio-scsi-reservations",
+            QEMU_CAPS_DRIVE_BOOT, QEMU_CAPS_VIRTIO_SCSI,
+            QEMU_CAPS_SCSI_BLOCK, QEMU_CAPS_PR_MANAGER_HELPER);
+
+    DO_TEST("disk-virtio-scsi-reservations-not-managed",
+            QEMU_CAPS_DRIVE_BOOT, QEMU_CAPS_VIRTIO_SCSI,
+            QEMU_CAPS_SCSI_BLOCK, QEMU_CAPS_PR_MANAGER_HELPER);
+
     /* Test disks with format probing enabled for legacy reasons.
      * New tests should not go in this section. */
     driver.config->allowDiskFormatProbing = true;
