@@ -5010,8 +5010,62 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
         break;
 
     case VIR_DOMAIN_CHR_TYPE_UNIX:
-        virBufferAsprintf(&buf, "socket,id=%s,path=", charAlias);
-        virQEMUBuildBufferEscapeComma(&buf, dev->data.nix.path);
+#ifndef WIN32
+        if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_CHARDEV_FD_PASS)) {
+            struct sockaddr_un addr;
+            socklen_t addrlen = sizeof(addr);
+            int fd;
+
+            if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+                virReportSystemError(errno, "%s",
+                                     _("Unable to create UNIX socket"));
+                goto cleanup;
+            }
+
+            memset(&addr, 0, sizeof(addr));
+            addr.sun_family = AF_UNIX;
+            if (virStrcpyStatic(addr.sun_path, dev->data.nix.path) == NULL) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("Monitor path %s too big for destination"),
+                               dev->data.nix.path);
+                VIR_FORCE_CLOSE(fd);
+                goto cleanup;
+            }
+
+            if (unlink(dev->data.nix.path) < 0 && errno != ENOENT) {
+                virReportSystemError(errno,
+                                     _("Unable to unlink %s"),
+                                     dev->data.nix.path);
+                VIR_FORCE_CLOSE(fd);
+                goto cleanup;
+            }
+
+            if (bind(fd, (struct sockaddr *)&addr, addrlen) < 0) {
+                virReportSystemError(errno,
+                                     _("Unable to bind to monitor %s"),
+                                     dev->data.nix.path);
+                VIR_FORCE_CLOSE(fd);
+                goto cleanup;
+            }
+
+            if (listen(fd, 1) < 0) {
+                virReportSystemError(errno,
+                                     _("Unable to listen to monitor %s"),
+                                     dev->data.nix.path);
+                VIR_FORCE_CLOSE(fd);
+                goto cleanup;
+            }
+
+            virBufferAsprintf(&buf, "socket,id=%s,fd=%d", charAlias, fd);
+
+            virCommandPassFD(cmd, fd, VIR_COMMAND_PASS_FD_CLOSE_PARENT);
+        } else {
+#endif /* WIN32 */
+            virBufferAsprintf(&buf, "socket,id=%s,path=", charAlias);
+            virQEMUBuildBufferEscapeComma(&buf, dev->data.nix.path);
+#ifndef WIN32
+        }
+#endif /* WIN32 */
         if (dev->data.nix.listen)
             virBufferAdd(&buf, nowait ? ",server,nowait" : ",server", -1);
 
