@@ -1610,6 +1610,15 @@ mymain(void)
             QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY,
             QEMU_CAPS_HOST_PCI_MULTIDOMAIN,
             QEMU_CAPS_PCI_MULTIFUNCTION);
+    DO_TEST("hostdev-pci-validate",
+            QEMU_CAPS_KVM,
+            QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_HOST_PCI_MULTIDOMAIN,
+            QEMU_CAPS_DEVICE_VFIO_PCI);
+    DO_TEST_PARSE_ERROR("hostdev-pci-no-primary-function",
+            QEMU_CAPS_KVM,
+            QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_HOST_PCI_MULTIDOMAIN,
+            QEMU_CAPS_DEVICE_VFIO_PCI);
+
     DO_TEST("hostdev-mdev-precreated",
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_DEVICE_VFIO_PCI);

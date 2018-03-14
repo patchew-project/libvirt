@@ -62,6 +62,8 @@ int
 qemuDomainDefDeviceFindSlotAggregateIdx(virDomainDefPtr def,
                                         virDomainDeviceDefPtr dev);
 
+int qemuDomainDefValidatePCIHostdevs(const virDomainDef *def);
+
 
 void qemuDomainReleaseDeviceAddress(virDomainObjPtr vm,
                                     virDomainDeviceInfoPtr info,
