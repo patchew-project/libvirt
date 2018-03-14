@@ -7858,12 +7858,18 @@ qemuDomainDetachDeviceLiveInternal(virDomainObjPtr vm,
 
 static int
 qemuDomainDetachDeviceLive(virDomainObjPtr vm,
-                           virDomainDeviceDefPtr dev,
+                           virDomainDeviceDefListPtr devlist,
                            virQEMUDriverPtr driver)
 {
     int ret = -1;
+    virDomainDeviceDefPtr dev = devlist->devs[0];
 
-    ret = qemuDomainDetachDeviceLiveInternal(vm, dev, driver);
+    if (devlist->count > 1) {
+        ret = qemuDomainDetachMultifunctionDevice(vm, devlist, driver);
+    } else {
+        ret = qemuDomainDetachDeviceLiveInternal(vm, dev, driver);
+    }
+
     if (ret == 0)
         ret = qemuDomainUpdateDeviceList(driver, vm, QEMU_ASYNC_JOB_NONE);
 
@@ -8392,15 +8398,22 @@ qemuDomainDetachDeviceConfigInternal(virDomainDefPtr vmdef,
 
 static int
 qemuDomainDetachDeviceConfig(virDomainDefPtr vmdef,
-                             virDomainDeviceDefPtr dev,
+                             virDomainDeviceDefListPtr devlist,
                              virCapsPtr caps,
                              unsigned int parse_flags,
                              virDomainXMLOptionPtr xmlopt)
 {
-    if (qemuDomainDetachDeviceConfigInternal(vmdef, dev))
-        return -1;
+    size_t i;
+    for (i = 0; i < devlist->count; i++)
+        if (qemuDomainDetachDeviceConfigInternal(vmdef, devlist->devs[i]))
+            return -1;
 
     if (virDomainDefPostParse(vmdef, caps, parse_flags, xmlopt, NULL) < 0)
+        return -1;
+
+    /* Dont allow removing the primary function alone for a multifunction
+     * device leading to guest start failure later. */
+    if (devlist->count > 1 && qemuDomainDefValidatePCIHostdevs(vmdef) < 0)
         return -1;
 
     return 0;
@@ -8765,8 +8778,9 @@ qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
 {
     virCapsPtr caps = NULL;
     virQEMUDriverConfigPtr cfg = NULL;
-    virDomainDeviceDefPtr dev = NULL, dev_copy = NULL;
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE;
+    virDomainDeviceDefListPtr devlist = NULL, devcopylist = NULL;
+    virDomainDeviceDefListData data = {.def = vm->def, .xmlopt = driver->xmlopt, .caps = NULL};
     virDomainDefPtr vmdef = NULL;
     int ret = -1;
 
@@ -8775,6 +8789,7 @@ qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
 
     if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
         goto cleanup;
+    data.caps = caps;
 
     cfg = virQEMUDriverGetConfig(driver);
 
@@ -8782,11 +8797,10 @@ qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
         !(flags & VIR_DOMAIN_AFFECT_LIVE))
         parse_flags |= VIR_DOMAIN_DEF_PARSE_INACTIVE;
 
-    dev = dev_copy = virDomainDeviceDefParse(xml, vm->def,
-                                             caps, driver->xmlopt,
-                                             parse_flags);
-    if (dev == NULL)
+    devlist = qemuDomainDeviceParseXMLMany(xml, &data, parse_flags);
+    if (!devlist)
         goto cleanup;
+    devcopylist = devlist;
 
     if (flags & VIR_DOMAIN_AFFECT_CONFIG &&
         flags & VIR_DOMAIN_AFFECT_LIVE) {
@@ -8794,8 +8808,8 @@ qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
          * create a deep copy of device as adding
          * to CONFIG takes one instance.
          */
-        dev_copy = virDomainDeviceDefCopy(dev, vm->def, caps, driver->xmlopt);
-        if (!dev_copy)
+        devcopylist =  virDomainDeviceDefListCopy(devlist, &data);
+        if (!devcopylist)
             goto cleanup;
     }
 
@@ -8805,14 +8819,14 @@ qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
         if (!vmdef)
             goto cleanup;
 
-        if ((ret = qemuDomainDetachDeviceConfig(vmdef, dev, caps,
+        if ((ret = qemuDomainDetachDeviceConfig(vmdef, devlist, caps,
                                                 parse_flags,
                                                 driver->xmlopt)) < 0)
             goto cleanup;
     }
 
     if (flags & VIR_DOMAIN_AFFECT_LIVE) {
-        if ((ret = qemuDomainDetachDeviceLive(vm, dev_copy, driver)) < 0)
+        if ((ret = qemuDomainDetachDeviceLive(vm, devcopylist, driver)) < 0)
             goto cleanup;
         /*
          * update domain status forcibly because the domain status may be
@@ -8837,9 +8851,9 @@ qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
  cleanup:
     virObjectUnref(caps);
     virObjectUnref(cfg);
-    if (dev != dev_copy)
-        virDomainDeviceDefFree(dev_copy);
-    virDomainDeviceDefFree(dev);
+    if (devlist != devcopylist)
+        virDomainDeviceDefListFree(devcopylist);
+    virDomainDeviceDefListFree(devlist);
     virDomainDefFree(vmdef);
     return ret;
 }
