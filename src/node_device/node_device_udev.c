@@ -455,7 +455,7 @@ udevProcessPCI(struct udev_device *device,
 
     /* We need to be root to read PCI device configs */
     if (privileged) {
-        if (virPCIGetHeaderType(pciDev, &pci_dev->hdrType) < 0)
+        if (virPCIGetHeaderType(pciDev, &pci_dev->hdrType, NULL) < 0)
             goto cleanup;
 
         if (virPCIDeviceIsPCIExpress(pciDev) > 0) {

@@ -199,6 +199,7 @@ int virPCIGetVirtualFunctions(const char *sysfs_path,
                               size_t *num_virtual_functions,
                               unsigned int *max_virtual_functions);
 
+bool virPCIDeviceIsMultifunction(virPCIDevicePtr dev);
 int virPCIIsVirtualFunction(const char *vf_sysfs_device_link);
 
 int virPCIGetVirtualFunctionIndex(const char *pf_sysfs_device_link,
@@ -246,7 +247,7 @@ int virPCIDeviceGetLinkCapSta(virPCIDevicePtr dev,
                               unsigned int *sta_speed,
                               unsigned int *sta_width);
 
-int virPCIGetHeaderType(virPCIDevicePtr dev, int *hdrType);
+int virPCIGetHeaderType(virPCIDevicePtr dev, int *hdrType, bool *multiFunc);
 
 void virPCIEDeviceInfoFree(virPCIEDeviceInfoPtr dev);
 

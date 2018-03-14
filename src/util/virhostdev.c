@@ -693,7 +693,7 @@ virHostdevPreparePCIDevices(virHostdevManagerPtr mgr,
         struct virHostdevIsPCINodeDeviceUsedData data = { mgr, dom_name, usesVFIO };
         int hdrType = -1;
 
-        if (virPCIGetHeaderType(pci, &hdrType) < 0)
+        if (virPCIGetHeaderType(pci, &hdrType, NULL) < 0)
             goto cleanup;
 
         if (hdrType != VIR_PCI_HEADER_ENDPOINT) {

@@ -936,7 +936,7 @@ virPCIDeviceReset(virPCIDevicePtr dev,
     int fd = -1;
     int hdrType = -1;
 
-    if (virPCIGetHeaderType(dev, &hdrType) < 0)
+    if (virPCIGetHeaderType(dev, &hdrType, NULL) < 0)
         return -1;
 
     if (hdrType != VIR_PCI_HEADER_ENDPOINT) {
@@ -3169,6 +3169,18 @@ virPCIGetMdevTypes(const char *sysfspath ATTRIBUTE_UNUSED,
 }
 #endif /* __linux__ */
 
+bool
+virPCIDeviceIsMultifunction(virPCIDevicePtr dev)
+{
+    bool multifunction = false;
+    int hdrType = -1;
+
+    if (virPCIGetHeaderType(dev, &hdrType, &multifunction) < 0)
+        return false;
+
+    return multifunction;
+}
+
 int
 virPCIDeviceIsPCIExpress(virPCIDevicePtr dev)
 {
@@ -3254,10 +3266,11 @@ virPCIDeviceGetLinkCapSta(virPCIDevicePtr dev,
 }
 
 
-int virPCIGetHeaderType(virPCIDevicePtr dev, int *hdrType)
+int virPCIGetHeaderType(virPCIDevicePtr dev, int *hdrType, bool *multiFunc)
 {
     int fd;
     uint8_t type;
+    bool multi = false;
 
     *hdrType = -1;
 
@@ -3268,6 +3281,7 @@ int virPCIGetHeaderType(virPCIDevicePtr dev, int *hdrType)
 
     virPCIDeviceConfigClose(dev, fd);
 
+    multi = type & PCI_HEADER_TYPE_MULTI;
     type &= PCI_HEADER_TYPE_MASK;
     if (type >= VIR_PCI_HEADER_LAST) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -3276,6 +3290,8 @@ int virPCIGetHeaderType(virPCIDevicePtr dev, int *hdrType)
     }
 
     *hdrType = type;
+    if (multiFunc)
+        *multiFunc = multi;
 
     return 0;
 }
