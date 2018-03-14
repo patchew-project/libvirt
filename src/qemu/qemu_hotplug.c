@@ -4993,16 +4993,7 @@ qemuDomainDetachHostPCIDevice(virQEMUDriverPtr driver,
                               virDomainHostdevDefPtr detach)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    virDomainHostdevSubsysPCIPtr pcisrc = &detach->source.subsys.u.pci;
     int ret;
-
-    if (qemuIsMultiFunctionDevice(vm->def, detach->info)) {
-        virReportError(VIR_ERR_OPERATION_FAILED,
-                       _("cannot hot unplug multifunction PCI device: %.4x:%.2x:%.2x.%.1x"),
-                       pcisrc->addr.domain, pcisrc->addr.bus,
-                       pcisrc->addr.slot, pcisrc->addr.function);
-        return -1;
-    }
 
     qemuDomainMarkDeviceForRemoval(vm, detach->info);
 
@@ -5094,12 +5085,22 @@ qemuDomainDetachThisHostDevice(virQEMUDriverPtr driver,
                                virDomainHostdevDefPtr detach)
 {
     int ret = -1;
+    virDomainHostdevSubsysPtr subsys = &detach->source.subsys;
+    virDomainHostdevSubsysPCIPtr pcisrc = &subsys->u.pci;
 
     if (qemuAssignDeviceHostdevAlias(vm->def, &detach->info->alias, -1) < 0)
         return -1;
 
     switch (detach->source.subsys.type) {
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
+        if (qemuIsMultiFunctionDevice(vm->def, detach->info)) {
+            virReportError(VIR_ERR_OPERATION_FAILED,
+                           _("cannot hot unplug multifunction PCI device: %.4x:%.2x:%.2x.%.1x"),
+                           pcisrc->addr.domain, pcisrc->addr.bus,
+                           pcisrc->addr.slot, pcisrc->addr.function);
+            return -1;
+        }
+
         ret = qemuDomainDetachHostPCIDevice(driver, vm, detach);
         break;
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
