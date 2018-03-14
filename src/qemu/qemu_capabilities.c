@@ -459,6 +459,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "pl011",
               "machine.pseries.max-cpu-compat",
               "dump-completed",
+              "chardev-fd-pass",
     );
 
 
@@ -3196,6 +3197,7 @@ static struct virQEMUCapsCommandLineProps virQEMUCapsCommandLine[] = {
     { "machine", "loadparm", QEMU_CAPS_LOADPARM },
     { "vnc", "vnc", QEMU_CAPS_VNC_MULTI_SERVERS },
     { "chardev", "reconnect", QEMU_CAPS_CHARDEV_RECONNECT },
+    { "chardev", "fd", QEMU_CAPS_CHARDEV_FD_PASS },
 };
 
 static int
