@@ -195,7 +195,8 @@ typedef enum {
 typedef struct _qemuDomainUnpluggingDevice qemuDomainUnpluggingDevice;
 typedef qemuDomainUnpluggingDevice *qemuDomainUnpluggingDevicePtr;
 struct _qemuDomainUnpluggingDevice {
-    const char *alias;
+    const char **aliases;
+    size_t naliases;
     qemuDomainUnpluggingDeviceStatus status;
 };
 
