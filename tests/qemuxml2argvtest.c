@@ -1604,6 +1604,11 @@ mymain(void)
     DO_TEST("hostdev-vfio-multidomain",
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_DEVICE_VFIO_PCI, QEMU_CAPS_HOST_PCI_MULTIDOMAIN);
+    DO_TEST("hostdev-pci-multifunction",
+            QEMU_CAPS_KVM,
+            QEMU_CAPS_DEVICE_VFIO_PCI,
+           QEMU_CAPS_HOST_PCI_MULTIDOMAIN,
+            QEMU_CAPS_PCI_MULTIFUNCTION);
     DO_TEST("hostdev-mdev-precreated",
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_DEVICE_VFIO_PCI);
