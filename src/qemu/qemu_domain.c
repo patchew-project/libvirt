@@ -1864,6 +1864,7 @@ qemuDomainObjPrivateAlloc(void *opaque)
 
     priv->migMaxBandwidth = QEMU_DOMAIN_MIG_BANDWIDTH_MAX;
     priv->driver = opaque;
+    priv->prPid = (pid_t) -1;
 
     return priv;
 
@@ -1926,6 +1927,8 @@ qemuDomainObjPrivateDataClear(qemuDomainObjPrivatePtr priv)
 
     virBitmapFree(priv->migrationCaps);
     priv->migrationCaps = NULL;
+
+    priv->prPid = (pid_t) -1;
 }
 
 
@@ -2182,6 +2185,11 @@ qemuDomainObjPrivateXMLFormat(virBufferPtr buf,
     if (qemuDomainObjPrivateXMLFormatBlockjobs(buf, vm) < 0)
         return -1;
 
+    if (priv->prPid != (pid_t) -1) {
+        virBufferAsprintf(buf, "<prPid>%lld</prPid>\n",
+                          (long long) priv->prPid);
+    }
+
     return 0;
 }
 
@@ -2390,6 +2398,7 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
     xmlNodePtr *nodes = NULL;
     xmlNodePtr node = NULL;
     virQEMUCapsPtr qemuCaps = NULL;
+    long long prPid = -1;
 
     if (VIR_ALLOC(priv->monConfig) < 0)
         goto error;
@@ -2551,6 +2560,13 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
 
     if (qemuDomainObjPrivateXMLParseBlockjobs(priv, ctxt) < 0)
         goto error;
+
+    if (virXPathLongLong("string(./prPid)", ctxt, &prPid) < -1) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("unable to parse <prPid/>"));
+        goto error;
+    }
+    priv->prPid = (pid_t) prPid;
 
     return 0;
 
