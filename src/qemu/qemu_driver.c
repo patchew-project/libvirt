@@ -52,7 +52,6 @@
 #include "qemu_command.h"
 #include "qemu_parse_command.h"
 #include "qemu_cgroup.h"
-#include "qemu_hostdev.h"
 #include "qemu_hotplug.h"
 #include "qemu_monitor.h"
 #include "qemu_process.h"
@@ -12963,8 +12962,8 @@ qemuNodeDeviceDetachFlags(virNodeDevicePtr dev,
     int ret = -1;
     virNodeDeviceDefPtr def = NULL;
     char *xml = NULL;
-    bool legacy = qemuHostdevHostSupportsPassthroughLegacy();
-    bool vfio = qemuHostdevHostSupportsPassthroughVFIO();
+    bool legacy = virHostdevHostSupportsPassthroughKVM();
+    bool vfio = virHostdevHostSupportsPassthroughVFIO();
     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
 
     virCheckFlags(0, -1);

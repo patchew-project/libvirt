@@ -203,4 +203,7 @@ int virHostdevPCINodeDeviceReset(virHostdevManagerPtr mgr,
                                  virPCIDevicePtr pci)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
+bool virHostdevHostSupportsPassthroughKVM(void);
+bool virHostdevHostSupportsPassthroughVFIO(void);
+
 #endif /* __VIR_HOSTDEV_H__ */

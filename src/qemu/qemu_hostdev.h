@@ -27,9 +27,6 @@
 # include "qemu_conf.h"
 # include "domain_conf.h"
 
-bool qemuHostdevHostSupportsPassthroughLegacy(void);
-bool qemuHostdevHostSupportsPassthroughVFIO(void);
-
 int qemuHostdevUpdateActiveMediatedDevices(virQEMUDriverPtr driver,
                                            virDomainDefPtr def);
 int qemuHostdevUpdateActivePCIDevices(virQEMUDriverPtr driver,

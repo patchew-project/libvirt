@@ -1915,6 +1915,8 @@ virHostCPUStatsAssign;
 
 # util/virhostdev.h
 virHostdevFindUSBDevice;
+virHostdevHostSupportsPassthroughKVM;
+virHostdevHostSupportsPassthroughVFIO;
 virHostdevIsSCSIDevice;
 virHostdevManagerGetDefault;
 virHostdevPCINodeDeviceDetach;

@@ -121,78 +121,14 @@ qemuHostdevUpdateActiveDomainDevices(virQEMUDriverPtr driver,
     return 0;
 }
 
-bool
-qemuHostdevHostSupportsPassthroughVFIO(void)
-{
-    DIR *iommuDir = NULL;
-    struct dirent *iommuGroup = NULL;
-    bool ret = false;
-    int direrr;
-
-    /* condition 1 - /sys/kernel/iommu_groups/ contains entries */
-    if (virDirOpenQuiet(&iommuDir, "/sys/kernel/iommu_groups/") < 0)
-        goto cleanup;
-
-    while ((direrr = virDirRead(iommuDir, &iommuGroup, NULL)) > 0) {
-        /* assume we found a group */
-        break;
-    }
-
-    if (direrr < 0 || !iommuGroup)
-        goto cleanup;
-    /* okay, iommu is on and recognizes groups */
-
-    /* condition 2 - /dev/vfio/vfio exists */
-    if (!virFileExists("/dev/vfio/vfio"))
-        goto cleanup;
-
-    ret = true;
-
- cleanup:
-    VIR_DIR_CLOSE(iommuDir);
-    return ret;
-}
-
-
-#if HAVE_LINUX_KVM_H
-# include <linux/kvm.h>
-bool
-qemuHostdevHostSupportsPassthroughLegacy(void)
-{
-    int kvmfd = -1;
-    bool ret = false;
-
-    if ((kvmfd = open("/dev/kvm", O_RDONLY)) < 0)
-        goto cleanup;
-
-# ifdef KVM_CAP_IOMMU
-    if ((ioctl(kvmfd, KVM_CHECK_EXTENSION, KVM_CAP_IOMMU)) <= 0)
-        goto cleanup;
-
-    ret = true;
-# endif
-
- cleanup:
-    VIR_FORCE_CLOSE(kvmfd);
-
-    return ret;
-}
-#else
-bool
-qemuHostdevHostSupportsPassthroughLegacy(void)
-{
-    return false;
-}
-#endif
-
 
 static bool
 qemuHostdevPreparePCIDevicesCheckSupport(virDomainHostdevDefPtr *hostdevs,
                                          size_t nhostdevs,
                                          virQEMUCapsPtr qemuCaps)
 {
-    bool supportsPassthroughKVM = qemuHostdevHostSupportsPassthroughLegacy();
-    bool supportsPassthroughVFIO = qemuHostdevHostSupportsPassthroughVFIO();
+    bool supportsPassthroughKVM = virHostdevHostSupportsPassthroughKVM();
+    bool supportsPassthroughVFIO = virHostdevHostSupportsPassthroughVFIO();
     size_t i;
 
     /* assign defaults for hostdev passthrough */
@@ -330,7 +266,7 @@ qemuHostdevPrepareMediatedDevices(virQEMUDriverPtr driver,
                                   int nhostdevs)
 {
     virHostdevManagerPtr hostdev_mgr = driver->hostdevMgr;
-    bool supportsVFIO = qemuHostdevHostSupportsPassthroughVFIO();
+    bool supportsVFIO = virHostdevHostSupportsPassthroughVFIO();
     size_t i;
 
     for (i = 0; i < nhostdevs; i++) {

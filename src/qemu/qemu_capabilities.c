@@ -42,7 +42,6 @@
 #include "virhostcpu.h"
 #include "qemu_monitor.h"
 #include "virstring.h"
-#include "qemu_hostdev.h"
 #include "qemu_domain.h"
 #define __QEMU_CAPSPRIV_H_ALLOW__
 #include "qemu_capspriv.h"
@@ -5725,8 +5724,8 @@ static int
 virQEMUCapsFillDomainDeviceHostdevCaps(virQEMUCapsPtr qemuCaps,
                                        virDomainCapsDeviceHostdevPtr hostdev)
 {
-    bool supportsPassthroughKVM = qemuHostdevHostSupportsPassthroughLegacy();
-    bool supportsPassthroughVFIO = qemuHostdevHostSupportsPassthroughVFIO();
+    bool supportsPassthroughKVM = virHostdevHostSupportsPassthroughKVM();
+    bool supportsPassthroughVFIO = virHostdevHostSupportsPassthroughVFIO();
 
     hostdev->supported = true;
     /* VIR_DOMAIN_HOSTDEV_MODE_CAPABILITIES is for containers only */
