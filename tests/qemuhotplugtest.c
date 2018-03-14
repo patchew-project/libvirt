@@ -82,6 +82,8 @@ qemuHotplugCreateObjects(virDomainXMLOptionPtr xmlopt,
     virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_DEVICE_VFIO_PCI);
     virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE);
     virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY);
+    virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_HOST_PCI_MULTIDOMAIN);
+    virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_PCI_MULTIFUNCTION);
     if (event)
         virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_DEVICE_DEL_EVENT);
 
@@ -115,9 +117,14 @@ qemuHotplugCreateObjects(virDomainXMLOptionPtr xmlopt,
 
 static int
 testQemuHotplugAttach(virDomainObjPtr vm,
-                      virDomainDeviceDefPtr dev)
+                      virDomainDeviceDefListPtr devlist)
 {
     int ret = -1;
+    virDomainDeviceDefPtr dev;
+
+    if (devlist->count > 1)
+        return qemuDomainAttachMultifunctionDevice(vm, devlist, &driver);
+    dev = devlist->devs[0];
 
     switch (dev->type) {
     case VIR_DOMAIN_DEVICE_DISK:
@@ -249,7 +256,9 @@ testQemuHotplug(const void *data)
     bool keep = test->keep;
     unsigned int device_parse_flags = 0;
     virDomainObjPtr vm = NULL;
-    virDomainDeviceDefPtr dev = NULL;
+    virDomainDeviceDefPtr dev = NULL; /*temperory */
+    virDomainDeviceDefListPtr devlist = NULL;
+    virDomainDeviceDefListData listdata;
     virCapsPtr caps = NULL;
     qemuMonitorTestPtr test_mon = NULL;
     qemuDomainObjPrivatePtr priv = NULL;
@@ -286,10 +295,13 @@ testQemuHotplug(const void *data)
     if (test->action == ATTACH)
         device_parse_flags = VIR_DOMAIN_DEF_PARSE_INACTIVE;
 
-    if (!(dev = virDomainDeviceDefParse(device_xml, vm->def,
-                                        caps, driver.xmlopt,
-                                        device_parse_flags)))
+    listdata.def = vm->def;
+    listdata.xmlopt = driver.xmlopt;
+    listdata.caps = caps;
+    devlist = qemuDomainDeviceParseXMLMany(device_xml, &listdata, device_parse_flags);
+    if (!devlist)
         goto cleanup;
+    dev = devlist->devs[0]; /* temporary */
 
     /* Now is the best time to feed the spoofed monitor with predefined
      * replies. */
@@ -319,11 +331,11 @@ testQemuHotplug(const void *data)
 
     switch (test->action) {
     case ATTACH:
-        ret = testQemuHotplugAttach(vm, dev);
+        ret = testQemuHotplugAttach(vm, devlist);
         if (ret == 0) {
             /* vm->def stolen dev->data.* so we just need to free the dev
              * envelope */
-            VIR_FREE(dev);
+            virDomainDeviceDefListFreeShallow(devlist);
         }
         if (ret == 0 || fail)
             ret = testQemuHotplugCheckResult(vm, result_xml,
@@ -357,7 +369,7 @@ testQemuHotplug(const void *data)
         virObjectUnref(vm);
         test->vm = NULL;
     }
-    virDomainDeviceDefFree(dev);
+    virDomainDeviceDefListFree(devlist);
     virObjectUnref(caps);
     qemuMonitorTestFree(test_mon);
     return ((ret < 0 && fail) || (!ret && !fail)) ? 0 : -1;
@@ -856,6 +868,17 @@ mymain(void)
                    "device_add", QMP_OK);
     DO_TEST_DETACH("pseries-base-live", "hostdev-pci", false, false,
                    "device_del", QMP_DEVICE_DELETED("hostdev0") QMP_OK);
+    DO_TEST_ATTACH("base-live", "multifunction-hostdev-pci", false, false,
+                   "device_add", QMP_OK,
+                   "device_add", QMP_OK,
+                   "device_add", QMP_OK);
+
+    qemuTestSetHostArch(driver.caps, VIR_ARCH_PPC64);
+    DO_TEST_ATTACH("pseries-base-live", "multifunction-hostdev-pci-2", false, false,
+                   "device_add", QMP_OK,
+                   "device_add", QMP_OK,
+                   "device_add", QMP_OK);
+    qemuTestSetHostArch(driver.caps, VIR_ARCH_X86_64);
 
     DO_TEST_ATTACH("base-live", "watchdog", false, true,
                    "watchdog-set-action", QMP_OK,

@@ -33,6 +33,8 @@
 #include "qemu_capabilities.h"
 #include "qemu_migration.h"
 #include "qemu_security.h"
+#include "qemu_hotplug.h"
+#include "qemu_hostdev.h"
 #include "viralloc.h"
 #include "virlog.h"
 #include "virerror.h"

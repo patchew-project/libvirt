@@ -158,6 +158,10 @@ int qemuDomainAttachPCIHostDevicePrepare(virQEMUDriverPtr driver,
                                          virDomainDefPtr def,
                                          virDomainHostdevDefPtr dev,
                                          virQEMUCapsPtr qemuCaps);
+int
+qemuDomainAttachMultifunctionDevice(virDomainObjPtr vm,
+                                    virDomainDeviceDefListPtr devlist,
+                                    virQEMUDriverPtr driver);
 
 int
 qemuDomainChrInsert(virDomainDefPtr vmdef,

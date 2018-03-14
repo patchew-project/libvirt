@@ -7744,15 +7744,26 @@ qemuDomainAttachDeviceLiveInternal(virDomainObjPtr vm,
 
 static int
 qemuDomainAttachDeviceLive(virDomainObjPtr vm,
-                           virDomainDeviceDefPtr dev,
+                           virDomainDeviceDefListPtr devlist,
                            virQEMUDriverPtr driver)
 {
     int ret = -1;
+    size_t i;
 
-    if (virDomainDefCompatibleDevice(vm->def, dev, NULL) < 0)
-        return -1;
+    for (i = 0; i < devlist->count; i++)
+        if (virDomainDefCompatibleDevice(vm->def, devlist->devs[i], NULL) < 0)
+            return ret;
 
-    ret = qemuDomainAttachDeviceLiveInternal(vm, dev, driver);
+    if (devlist->count > 1) {
+        ret = qemuDomainAttachMultifunctionDevice(vm, devlist, driver);
+        if (ret == 0) {
+            for (i = 0; i < devlist->count; i++)
+                devlist->devs[i]->data.hostdev = NULL;
+        }
+    } else if (devlist->count == 1) {
+        ret = qemuDomainAttachDeviceLiveInternal(vm, devlist->devs[0], driver);
+    }
+
     if (ret == 0)
         ret = qemuDomainUpdateDeviceList(driver, vm, QEMU_ASYNC_JOB_NONE);
 
@@ -8178,16 +8189,22 @@ qemuDomainAttachDeviceConfigInternal(virDomainDefPtr vmdef,
 
 static int
 qemuDomainAttachDeviceConfig(virDomainDefPtr vmdef,
-                             virDomainDeviceDefPtr dev,
+                             virDomainDeviceDefListPtr devlist,
                              virCapsPtr caps,
                              unsigned int parse_flags,
                              virDomainXMLOptionPtr xmlopt)
 {
-    if (virDomainDefCompatibleDevice(vmdef, dev, NULL) < 0)
-        return -1;
+    size_t i;
 
-    if (qemuDomainAttachDeviceConfigInternal(vmdef, dev))
-        return -1;
+    for (i = 0; i < devlist->count; i++) {
+       if (virDomainDefCompatibleDevice(vmdef, devlist->devs[i], NULL) < 0)
+           return -1;
+    }
+
+    for (i = 0; i < devlist->count; i++) {
+        if (qemuDomainAttachDeviceConfigInternal(vmdef, devlist->devs[i]))
+            return -1;
+    }
 
     if (virDomainDefPostParse(vmdef, caps, parse_flags, xmlopt, NULL) < 0)
         return -1;
@@ -8493,9 +8510,11 @@ qemuDomainAttachDeviceLiveAndConfig(virDomainObjPtr vm,
                                     const char *xml,
                                     unsigned int flags)
 {
+    size_t i;
     virDomainDefPtr vmdef = NULL;
     virQEMUDriverConfigPtr cfg = NULL;
-    virDomainDeviceDefPtr dev = NULL, dev_copy = NULL;
+    virDomainDeviceDefListPtr devlist = NULL, devcopylist = NULL;
+    virDomainDeviceDefListData data = {.def = vm->def, .xmlopt = driver->xmlopt, .caps = NULL};
     int ret = -1;
     virCapsPtr caps = NULL;
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_INACTIVE |
@@ -8508,15 +8527,16 @@ qemuDomainAttachDeviceLiveAndConfig(virDomainObjPtr vm,
 
     if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
         goto cleanup;
+    data.caps = caps;
 
-    dev = dev_copy = virDomainDeviceDefParse(xml, vm->def,
-                                             caps, driver->xmlopt,
-                                             parse_flags);
-    if (dev == NULL)
+    devlist = qemuDomainDeviceParseXMLMany(xml, &data, parse_flags);
+    if (!devlist)
         goto cleanup;
+    devcopylist = devlist;
 
-    if (virDomainDeviceValidateAliasForHotplug(vm, dev, flags) < 0)
-        goto cleanup;
+    for (i = 0; i < devlist->count; i++)
+        if (virDomainDeviceValidateAliasForHotplug(vm, devlist->devs[i], flags) < 0)
+            goto cleanup;
 
     if (flags & VIR_DOMAIN_AFFECT_CONFIG &&
         flags & VIR_DOMAIN_AFFECT_LIVE) {
@@ -8524,8 +8544,8 @@ qemuDomainAttachDeviceLiveAndConfig(virDomainObjPtr vm,
          * create a deep copy of device as adding
          * to CONFIG takes one instance.
          */
-        dev_copy = virDomainDeviceDefCopy(dev, vm->def, caps, driver->xmlopt);
-        if (!dev_copy)
+        devcopylist =  virDomainDeviceDefListCopy(devlist, &data);
+        if (!devcopylist)
             goto cleanup;
     }
 
@@ -8535,14 +8555,14 @@ qemuDomainAttachDeviceLiveAndConfig(virDomainObjPtr vm,
         if (!vmdef)
             goto cleanup;
 
-        if ((ret = qemuDomainAttachDeviceConfig(vmdef, dev, caps,
+        if ((ret = qemuDomainAttachDeviceConfig(vmdef, devlist, caps,
                                                 parse_flags,
                                                 driver->xmlopt)) < 0)
             goto cleanup;
     }
 
     if (flags & VIR_DOMAIN_AFFECT_LIVE) {
-        if ((ret = qemuDomainAttachDeviceLive(vm, dev_copy, driver)) < 0)
+        if ((ret = qemuDomainAttachDeviceLive(vm, devcopylist, driver)) < 0)
             goto cleanup;
         /*
          * update domain status forcibly because the domain status may be
@@ -8566,9 +8586,9 @@ qemuDomainAttachDeviceLiveAndConfig(virDomainObjPtr vm,
 
  cleanup:
     virDomainDefFree(vmdef);
-    if (dev != dev_copy)
-        virDomainDeviceDefFree(dev_copy);
-    virDomainDeviceDefFree(dev);
+    if (devlist != devcopylist)
+        virDomainDeviceDefListFree(devcopylist);
+    virDomainDeviceDefListFree(devlist);
     virObjectUnref(cfg);
     virObjectUnref(caps);
 
