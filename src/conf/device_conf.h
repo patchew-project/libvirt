@@ -163,6 +163,7 @@ struct _virDomainDeviceInfo {
      * assignment, never saved and never reported.
      */
     int pciConnectFlags; /* enum virDomainPCIConnectFlags */
+    unsigned int aggregateSlotIdx; /* Used when the aggregate flag is set */
     char *loadparm;
 
     /* PCI devices will only be automatically placed on a PCI bus
