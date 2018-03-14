@@ -20,4 +20,4 @@ QEMU_AUDIO_DRV=none \
 -net none \
 -serial none \
 -parallel none \
--pcidevice host=06:12.5
+-pcidevice host=06:12.1

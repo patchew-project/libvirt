@@ -144,12 +144,25 @@ testCompareXMLToArgvHelper(const void *data)
     return result;
 }
 
-
+# define FAKEROOTDIRTEMPLATE abs_builddir "/fakerootdir-XXXXXX"
 
 static int
 mymain(void)
 {
     int ret = 0;
+    char *fakerootdir;
+
+    if (VIR_STRDUP_QUIET(fakerootdir, FAKEROOTDIRTEMPLATE) < 0) {
+        fprintf(stderr, "Out of memory\n");
+        abort();
+    }
+
+    if (!mkdtemp(fakerootdir)) {
+        fprintf(stderr, "Cannot create fakerootdir");
+        abort();
+    }
+
+    setenv("LIBVIRT_FAKE_ROOT_DIR", fakerootdir, 1);
 
     if (qemuTestDriverInit(&driver) < 0)
         return EXIT_FAILURE;
@@ -298,7 +311,8 @@ mymain(void)
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-VIR_TEST_MAIN(mymain)
+VIR_TEST_MAIN_PRELOAD(mymain,
+                      abs_builddir "/.libs/virpcimock.so")
 
 #else
 
