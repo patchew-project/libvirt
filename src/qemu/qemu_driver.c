@@ -7969,11 +7969,8 @@ qemuDomainUpdateDeviceLive(virDomainObjPtr vm,
 }
 
 static int
-qemuDomainAttachDeviceConfig(virDomainDefPtr vmdef,
-                             virDomainDeviceDefPtr dev,
-                             virCapsPtr caps,
-                             unsigned int parse_flags,
-                             virDomainXMLOptionPtr xmlopt)
+qemuDomainAttachDeviceConfigInternal(virDomainDefPtr vmdef,
+                                     virDomainDeviceDefPtr dev)
 {
     virDomainDiskDefPtr disk;
     virDomainNetDefPtr net;
@@ -8151,6 +8148,23 @@ qemuDomainAttachDeviceConfig(virDomainDefPtr vmdef,
          return -1;
     }
 
+    return 0;
+}
+
+
+static int
+qemuDomainAttachDeviceConfig(virDomainDefPtr vmdef,
+                             virDomainDeviceDefPtr dev,
+                             virCapsPtr caps,
+                             unsigned int parse_flags,
+                             virDomainXMLOptionPtr xmlopt)
+{
+    if (virDomainDefCompatibleDevice(vmdef, dev, NULL) < 0)
+        return -1;
+
+    if (qemuDomainAttachDeviceConfigInternal(vmdef, dev))
+        return -1;
+
     if (virDomainDefPostParse(vmdef, caps, parse_flags, xmlopt, NULL) < 0)
         return -1;
 
@@ -8159,11 +8173,8 @@ qemuDomainAttachDeviceConfig(virDomainDefPtr vmdef,
 
 
 static int
-qemuDomainDetachDeviceConfig(virDomainDefPtr vmdef,
-                             virDomainDeviceDefPtr dev,
-                             virCapsPtr caps,
-                             unsigned int parse_flags,
-                             virDomainXMLOptionPtr xmlopt)
+qemuDomainDetachDeviceConfigInternal(virDomainDefPtr vmdef,
+                                     virDomainDeviceDefPtr dev)
 {
     virDomainDiskDefPtr disk, det_disk;
     virDomainNetDefPtr net;
@@ -8334,6 +8345,20 @@ qemuDomainDetachDeviceConfig(virDomainDefPtr vmdef,
         return -1;
     }
 
+    return 0;
+}
+
+
+static int
+qemuDomainDetachDeviceConfig(virDomainDefPtr vmdef,
+                             virDomainDeviceDefPtr dev,
+                             virCapsPtr caps,
+                             unsigned int parse_flags,
+                             virDomainXMLOptionPtr xmlopt)
+{
+    if (qemuDomainDetachDeviceConfigInternal(vmdef, dev))
+        return -1;
+
     if (virDomainDefPostParse(vmdef, caps, parse_flags, xmlopt, NULL) < 0)
         return -1;
 
@@ -8486,8 +8511,6 @@ qemuDomainAttachDeviceLiveAndConfig(virDomainObjPtr vm,
         if (!vmdef)
             goto cleanup;
 
-        if (virDomainDefCompatibleDevice(vmdef, dev, NULL) < 0)
-            goto cleanup;
         if ((ret = qemuDomainAttachDeviceConfig(vmdef, dev, caps,
                                                 parse_flags,
                                                 driver->xmlopt)) < 0)
