@@ -1961,28 +1961,6 @@ qemuDomainObjPrivateFree(void *data)
 }
 
 
-static int
-qemuStorageSourcePrivateDataParse(xmlXPathContextPtr ctxt,
-                                  virStorageSourcePtr src)
-{
-    if (virStorageSourcePrivateDataParseRelPath(ctxt, src) < 0)
-        return -1;
-
-    return 0;
-}
-
-
-static int
-qemuStorageSourcePrivateDataFormat(virStorageSourcePtr src,
-                                   virBufferPtr buf)
-{
-    if (virStorageSourcePrivateDataFormatRelPath(src, buf) < 0)
-        return -1;
-
-    return 0;
-}
-
-
 static void
 qemuDomainObjPrivateXMLFormatVcpus(virBufferPtr buf,
                                    virDomainDefPtr def)
@@ -2587,6 +2565,92 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
     priv->qemuDevices = NULL;
     virObjectUnref(qemuCaps);
     return -1;
+}
+
+
+static int
+qemuStorageSourcePrivateDataParsePR(xmlXPathContextPtr ctxt,
+                                    virStorageSourcePtr src)
+{
+    qemuDomainStorageSourcePrivatePtr srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(src);
+    qemuDomainDiskPRDPtr prd = NULL;
+    int rc;
+    int ret = -1;
+
+    if ((rc = virXPathBoolean("boolean(./prd)", ctxt)) == 0) {
+        return 0;
+    } else if (rc < 0) {
+        return ret;
+    }
+
+    if (VIR_ALLOC(prd) < 0)
+        return ret;
+
+    if (!(prd->alias = virXPathString("string(./prd/alias)", ctxt)) ||
+        !(prd->path = virXPathString("string(./prd/path)", ctxt))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("malformed <prd/>"));
+        goto cleanup;
+    }
+
+    VIR_STEAL_PTR(srcPriv->prd, prd);
+    ret = 0;
+ cleanup:
+    qemuDomainDiskPRDFree(prd);
+    return ret;
+}
+
+
+static int
+qemuStorageSourcePrivateDataFormatPR(virStorageSourcePtr src,
+                                     virBufferPtr buf)
+{
+    qemuDomainStorageSourcePrivatePtr srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(src);
+    qemuDomainDiskPRDPtr prd;
+
+    if (!srcPriv || !srcPriv->prd)
+        return 0;
+
+    prd = srcPriv->prd;
+
+    virBufferAddLit(buf, "<prd>\n");
+    virBufferAdjustIndent(buf, 2);
+    virBufferAsprintf(buf, "<alias>%s</alias>\n", prd->alias);
+    virBufferAsprintf(buf, "<path>%s</path>\n", prd->path);
+    virBufferAdjustIndent(buf, -2);
+    virBufferAddLit(buf, "</prd>\n");
+    return 0;
+}
+
+
+static int
+qemuStorageSourcePrivateDataParse(xmlXPathContextPtr ctxt,
+                                  virStorageSourcePtr src)
+{
+    if (!(src->privateData = qemuDomainStorageSourcePrivateNew()))
+        return -1;
+
+    if (virStorageSourcePrivateDataParseRelPath(ctxt, src) < 0)
+        return -1;
+
+    if (qemuStorageSourcePrivateDataParsePR(ctxt, src) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+static int
+qemuStorageSourcePrivateDataFormat(virStorageSourcePtr src,
+                                   virBufferPtr buf)
+{
+    if (virStorageSourcePrivateDataFormatRelPath(src, buf) < 0)
+        return -1;
+
+    if (qemuStorageSourcePrivateDataFormatPR(src, buf) < 0)
+        return -1;
+
+    return 0;
 }
 
 
