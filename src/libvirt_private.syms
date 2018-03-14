@@ -1918,6 +1918,7 @@ virHostdevFindUSBDevice;
 virHostdevHostSupportsPassthroughKVM;
 virHostdevHostSupportsPassthroughVFIO;
 virHostdevIsSCSIDevice;
+virHostdevIsVirtualFunction;
 virHostdevManagerGetDefault;
 virHostdevPCIDevicesBelongToSameSlot;
 virHostdevPCINodeDeviceDetach;

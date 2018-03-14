@@ -289,7 +289,7 @@ virHostdevPCISysfsPath(virDomainHostdevDefPtr hostdev,
 }
 
 
-static int
+int
 virHostdevIsVirtualFunction(virDomainHostdevDefPtr hostdev)
 {
     char *sysfs_path = NULL;
