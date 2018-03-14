@@ -11892,6 +11892,25 @@ qemuDomainCheckMigrationCapabilities(virQEMUDriverPtr driver,
 }
 
 
+size_t
+qemuDomainGetPRDManagedCount(const virDomainDef *def)
+{
+    size_t i;
+    size_t nmanaged = 0;
+
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainDiskDefPtr disk = def->disks[i];
+
+        if (!virStoragePRDefIsManaged(disk->src->pr))
+            continue;
+
+        nmanaged++;
+    }
+
+    return nmanaged;
+}
+
+
 static int
 qemuDomainPrepareDiskPRD(qemuDomainObjPrivatePtr priv,
                          virDomainDiskDefPtr disk)
