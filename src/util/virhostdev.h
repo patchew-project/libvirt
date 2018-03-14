@@ -155,6 +155,11 @@ virHostdevUpdateActiveUSBDevices(virHostdevManagerPtr mgr,
                                  const char *drv_name,
                                  const char *dom_name)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4) ATTRIBUTE_NONNULL(5);
+
+bool
+virHostdevPCIDevicesBelongToSameSlot(virDomainHostdevDefPtr dev1,
+                                     virDomainHostdevDefPtr dev2);
+
 int
 virHostdevUpdateActiveSCSIDevices(virHostdevManagerPtr mgr,
                                   virDomainHostdevDefPtr *hostdevs,

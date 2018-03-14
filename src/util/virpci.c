@@ -2603,7 +2603,7 @@ virPCIDeviceAddressParse(char *address,
 /*
  * returns true if equal
  */
-static bool
+bool
 virPCIDeviceAddressIsEqual(virPCIDeviceAddressPtr bdf1,
                            virPCIDeviceAddressPtr bdf2)
 {

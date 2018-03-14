@@ -188,6 +188,9 @@ int virPCIDeviceIsAssignable(virPCIDevicePtr dev,
                              int strict_acs_check);
 int virPCIDeviceWaitForCleanup(virPCIDevicePtr dev, const char *matcher);
 
+bool
+virPCIDeviceAddressIsEqual(virPCIDeviceAddressPtr bdf1,
+                           virPCIDeviceAddressPtr bdf2);
 virPCIDeviceAddressPtr
 virPCIGetDeviceAddressFromSysfsLink(const char *device_link);
 
