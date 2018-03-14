@@ -1607,7 +1607,8 @@ mymain(void)
     DO_TEST("hostdev-pci-multifunction",
             QEMU_CAPS_KVM,
             QEMU_CAPS_DEVICE_VFIO_PCI,
-           QEMU_CAPS_HOST_PCI_MULTIDOMAIN,
+            QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY,
+            QEMU_CAPS_HOST_PCI_MULTIDOMAIN,
             QEMU_CAPS_PCI_MULTIFUNCTION);
     DO_TEST("hostdev-mdev-precreated",
             QEMU_CAPS_NODEFCONFIG,
@@ -1905,6 +1906,7 @@ mymain(void)
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
             QEMU_CAPS_HOST_PCI_MULTIDOMAIN,
+            QEMU_CAPS_PCI_MULTIFUNCTION,
             QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_DEVICE_VFIO_PCI);
     DO_TEST("pseries-hostdevs-2",
@@ -1918,6 +1920,7 @@ mymain(void)
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
             QEMU_CAPS_HOST_PCI_MULTIDOMAIN,
             QEMU_CAPS_VIRTIO_SCSI,
+            QEMU_CAPS_PCI_MULTIFUNCTION,
             QEMU_CAPS_DEVICE_VFIO_PCI);
 
     DO_TEST("pseries-features-hpt",

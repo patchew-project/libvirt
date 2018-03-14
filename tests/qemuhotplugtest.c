@@ -81,6 +81,7 @@ qemuHotplugCreateObjects(virDomainXMLOptionPtr xmlopt,
     virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_SCSI_DISK_WWN);
     virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_DEVICE_VFIO_PCI);
     virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE);
+    virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY);
     if (event)
         virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_DEVICE_DEL_EVENT);
 
