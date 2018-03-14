@@ -1011,4 +1011,9 @@ qemuDomainPrepareDiskSource(virDomainDiskDefPtr disk,
                             qemuDomainObjPrivatePtr priv,
                             virQEMUDriverConfigPtr cfg);
 
+virDomainDeviceDefListPtr
+qemuDomainDeviceParseXMLMany(const char *xml,
+                             virDomainDeviceDefListDataPtr data,
+                             unsigned int parse_flags);
+
 #endif /* __QEMU_DOMAIN_H__ */
