@@ -1304,14 +1304,11 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
                               virDomainHostdevDefPtr hostdev)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    virDomainDeviceDef dev = { VIR_DOMAIN_DEVICE_HOSTDEV,
-                               { .hostdev = hostdev } };
     virDomainDeviceInfoPtr info = hostdev->info;
     int ret;
     char *devstr = NULL;
     int configfd = -1;
     char *configfd_name = NULL;
-    bool releaseaddr = false;
     bool teardowncgroup = false;
     bool teardownlabel = false;
     bool teardowndevice = false;
@@ -1350,15 +1347,6 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
     if (qemuAssignDeviceHostdevAlias(vm->def, &info->alias, -1) < 0)
         goto error;
 
-    if (qemuDomainIsPSeries(vm->def)) {
-        /* Isolation groups are only relevant for pSeries guests */
-        if (qemuDomainFillDeviceIsolationGroup(vm->def, &dev) < 0)
-            goto error;
-    }
-
-    if (qemuDomainEnsurePCIAddress(vm, &dev, driver) < 0)
-        goto error;
-    releaseaddr = true;
     if (backend != VIR_DOMAIN_HOSTDEV_PCI_BACKEND_VFIO &&
         virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_PCI_CONFIGFD)) {
         configfd = qemuOpenPCIConfig(hostdev);
@@ -1405,9 +1393,6 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
     if (teardowndevice &&
         qemuDomainNamespaceTeardownHostdev(vm, hostdev) < 0)
         VIR_WARN("Unable to remove host device from /dev");
-
-    if (releaseaddr)
-        qemuDomainReleaseDeviceAddress(vm, info, NULL);
 
     VIR_FREE(devstr);
     VIR_FREE(configfd_name);
@@ -2591,6 +2576,8 @@ qemuDomainAttachHostDevice(virQEMUDriverPtr driver,
                            virDomainHostdevDefPtr hostdev)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    virDomainDeviceDef dev = { VIR_DOMAIN_DEVICE_HOSTDEV,
+                               { .hostdev = hostdev } };
 
     if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -2604,8 +2591,19 @@ qemuDomainAttachHostDevice(virQEMUDriverPtr driver,
         if (qemuDomainAttachPCIHostDevicePrepare(driver, vm->def,
                                                  hostdev, priv->qemuCaps) < 0)
             goto error;
+
+        if (qemuDomainIsPSeries(vm->def)) {
+            /* Isolation groups are only relevant for pSeries guests */
+            if (qemuDomainFillDeviceIsolationGroup(vm->def, &dev) < 0)
+                goto error;
+        }
+
+        if (qemuDomainEnsurePCIAddress(vm, &dev, driver) < 0)
+            goto error;
+
         if (qemuDomainAttachHostPCIDevice(driver, vm,
                                           hostdev) < 0) {
+            qemuDomainReleaseDeviceAddress(vm, hostdev->info, NULL);
             qemuHostdevReAttachPCIDevices(driver, vm->def->name, &hostdev, 1);
             goto error;
         }
