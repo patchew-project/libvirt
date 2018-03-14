@@ -2556,16 +2556,40 @@ qemuProcessResctrlCreate(virQEMUDriverPtr driver,
 }
 
 
-static void
-qemuProcessKillPRDaemon(virDomainObjPtr vm)
+void
+qemuProcessKillPRDaemon(virDomainObjPtr vm,
+                        const char *socketPath,
+                        bool force)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    size_t nmanaged = 0;
+    size_t i;
 
     if (priv->prPid == (pid_t) -1)
         return;
 
-    virProcessKillPainfully(priv->prPid, true);
-    priv->prPid = (pid_t) -1;
+    for (i = 0; i < vm->def->ndisks; i++) {
+        qemuDomainStorageSourcePrivatePtr srcPriv;
+        virDomainDiskDefPtr disk = vm->def->disks[i];
+
+        if (!virStoragePRDefIsManaged(disk->src->pr))
+            continue;
+
+        nmanaged++;
+
+        srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(disk->src);
+        if (!socketPath)
+            socketPath = srcPriv->prd->path;
+    }
+
+    if (force || nmanaged <= 1) {
+        virProcessKillPainfully(priv->prPid, true);
+        priv->prPid = (pid_t) -1;
+        if (socketPath &&
+            unlink(socketPath) < 0 &&
+            errno != ENOENT)
+            VIR_WARN("Unable to remove pr helper socket %s", socketPath);
+    }
 }
 
 
@@ -2593,7 +2617,7 @@ qemuProcessSetupOnePRDaemonHook(void *opaque)
 }
 
 
-static int
+int
 qemuProcessSetupOnePRDaemon(virDomainObjPtr vm,
                             virDomainDiskDefPtr disk)
 {
@@ -2713,7 +2737,7 @@ qemuProcessSetupPRDaemon(virDomainObjPtr vm)
     ret = 0;
  cleanup:
     if (ret < 0)
-        qemuProcessKillPRDaemon(vm);
+        qemuProcessKillPRDaemon(vm, NULL, true);
     return ret;
 }
 
@@ -6812,7 +6836,7 @@ void qemuProcessStop(virQEMUDriverPtr driver,
         VIR_FREE(vm->def->seclabels[i]->imagelabel);
     }
 
-    qemuProcessKillPRDaemon(vm);
+    qemuProcessKillPRDaemon(vm, NULL, true);
 
     qemuHostdevReAttachDomainDevices(driver, vm->def);
 
