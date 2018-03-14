@@ -7599,9 +7599,9 @@ qemuDomainUndefine(virDomainPtr dom)
 }
 
 static int
-qemuDomainAttachDeviceLive(virDomainObjPtr vm,
-                           virDomainDeviceDefPtr dev,
-                           virQEMUDriverPtr driver)
+qemuDomainAttachDeviceLiveInternal(virDomainObjPtr vm,
+                                   virDomainDeviceDefPtr dev,
+                                   virQEMUDriverPtr driver)
 {
     int ret = -1;
     const char *alias = NULL;
@@ -7739,12 +7739,25 @@ qemuDomainAttachDeviceLive(virDomainObjPtr vm,
         qemuDomainEventQueue(driver, event);
     }
 
+    return ret;
+}
+
+static int
+qemuDomainAttachDeviceLive(virDomainObjPtr vm,
+                           virDomainDeviceDefPtr dev,
+                           virQEMUDriverPtr driver)
+{
+    int ret = -1;
+
+    if (virDomainDefCompatibleDevice(vm->def, dev, NULL) < 0)
+        return -1;
+
+    ret = qemuDomainAttachDeviceLiveInternal(vm, dev, driver);
     if (ret == 0)
         ret = qemuDomainUpdateDeviceList(driver, vm, QEMU_ASYNC_JOB_NONE);
 
     return ret;
 }
-
 static int
 qemuDomainDetachDeviceControllerLive(virQEMUDriverPtr driver,
                                      virDomainObjPtr vm,
@@ -7766,9 +7779,9 @@ qemuDomainDetachDeviceControllerLive(virQEMUDriverPtr driver,
 }
 
 static int
-qemuDomainDetachDeviceLive(virDomainObjPtr vm,
-                           virDomainDeviceDefPtr dev,
-                           virQEMUDriverPtr driver)
+qemuDomainDetachDeviceLiveInternal(virDomainObjPtr vm,
+                                   virDomainDeviceDefPtr dev,
+                                   virQEMUDriverPtr driver)
 {
     int ret = -1;
 
@@ -7829,6 +7842,17 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
         break;
     }
 
+    return ret;
+}
+
+static int
+qemuDomainDetachDeviceLive(virDomainObjPtr vm,
+                           virDomainDeviceDefPtr dev,
+                           virQEMUDriverPtr driver)
+{
+    int ret = -1;
+
+    ret = qemuDomainDetachDeviceLiveInternal(vm, dev, driver);
     if (ret == 0)
         ret = qemuDomainUpdateDeviceList(driver, vm, QEMU_ASYNC_JOB_NONE);
 
@@ -8518,9 +8542,6 @@ qemuDomainAttachDeviceLiveAndConfig(virDomainObjPtr vm,
     }
 
     if (flags & VIR_DOMAIN_AFFECT_LIVE) {
-        if (virDomainDefCompatibleDevice(vm->def, dev_copy, NULL) < 0)
-            goto cleanup;
-
         if ((ret = qemuDomainAttachDeviceLive(vm, dev_copy, driver)) < 0)
             goto cleanup;
         /*
