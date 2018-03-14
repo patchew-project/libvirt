@@ -25,7 +25,7 @@
     <interface type='hostdev' managed='yes'>
       <mac address='00:11:22:33:44:55'/>
       <source>
-        <address type='pci' domain='0x2424' bus='0x21' slot='0x1c' function='0x6'/>
+        <address type='pci' domain='0x0021' bus='0xde' slot='0x1f' function='0x1'/>
       </source>
       <vlan>
         <tag id='42'/>

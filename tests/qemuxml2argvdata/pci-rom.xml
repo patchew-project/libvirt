@@ -36,13 +36,13 @@
     <input type='keyboard' bus='ps2'/>
     <hostdev mode='subsystem' type='pci' managed='yes'>
       <source>
-        <address domain='0x0000' bus='0x06' slot='0x12' function='0x5'/>
+        <address domain='0x0000' bus='0x06' slot='0x12' function='0x1'/>
       </source>
       <rom bar='off'/>
     </hostdev>
     <hostdev mode='subsystem' type='pci' managed='yes'>
       <source>
-        <address domain='0x0000' bus='0x06' slot='0x12' function='0x6'/>
+        <address domain='0x0000' bus='0x06' slot='0x12' function='0x2'/>
       </source>
       <rom bar='on' file='/etc/fake/bootrom.bin'/>
     </hostdev>
