@@ -1695,6 +1695,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "sclplmconsole", QEMU_CAPS_DEVICE_SCLPLMCONSOLE },
     { "isa-serial", QEMU_CAPS_DEVICE_ISA_SERIAL },
     { "pl011", QEMU_CAPS_DEVICE_PL011 },
+    { "pr-manager-helper", QEMU_CAPS_PR_MANAGER_HELPER },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {
