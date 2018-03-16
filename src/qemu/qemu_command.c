@@ -474,8 +474,10 @@ qemuBuildRomStr(virBufferPtr buf,
         default:
             break;
         }
-        if (info->romfile)
-           virBufferAsprintf(buf, ",romfile=%s", info->romfile);
+        if (info->romfile) {
+            virBufferAddLit(buf, ",romfile=");
+            virQEMUBuildBufferEscapeComma(buf, info->romfile);
+        }
     }
     return 0;
 }
@@ -2177,11 +2179,15 @@ qemuBuildDriveDevStr(const virDomainDef *def,
             virBufferAsprintf(&opt, ",wwn=0x%s", disk->wwn);
     }
 
-    if (disk->vendor)
-        virBufferAsprintf(&opt, ",vendor=%s", disk->vendor);
+    if (disk->vendor) {
+        virBufferAddLit(&opt, ",vendor=");
+        virQEMUBuildBufferEscapeComma(&opt, disk->vendor);
+    }
 
-    if (disk->product)
-        virBufferAsprintf(&opt, ",product=%s", disk->product);
+    if (disk->product) {
+        virBufferAddLit(&opt, ",product=");
+        virQEMUBuildBufferEscapeComma(&opt, disk->product);
+    }
 
     if (disk->bus == VIR_DOMAIN_DISK_BUS_USB) {
         if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_USB_STORAGE_REMOVABLE)) {
@@ -2418,7 +2424,8 @@ qemuBuildFSStr(virDomainFSDefPtr fs,
     }
 
     virBufferAsprintf(&opt, ",id=%s%s", QEMU_FSDEV_HOST_PREFIX, fs->info.alias);
-    virBufferAsprintf(&opt, ",path=%s", fs->src->path);
+    virBufferAddLit(&opt, ",path=");
+    virQEMUBuildBufferEscapeComma(&opt, fs->src->path);
 
     if (fs->readonly) {
         if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_FSDEV_READONLY)) {
@@ -2463,7 +2470,8 @@ qemuBuildFSDevStr(const virDomainDef *def,
     virBufferAsprintf(&opt, ",id=%s", fs->info.alias);
     virBufferAsprintf(&opt, ",fsdev=%s%s",
                       QEMU_FSDEV_HOST_PREFIX, fs->info.alias);
-    virBufferAsprintf(&opt, ",mount_tag=%s", fs->dst);
+    virBufferAddLit(&opt, ",mount_tag=");
+    virQEMUBuildBufferEscapeComma(&opt, fs->dst);
 
     if (qemuBuildVirtioOptionsStr(&opt, fs->virtio, qemuCaps) < 0)
         goto error;
@@ -3603,10 +3611,9 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
         break;
 
     case VIR_DOMAIN_NET_TYPE_CLIENT:
-        virBufferAsprintf(&buf, "socket%cconnect=%s:%d,",
-                          type_sep,
-                          net->data.socket.address,
-                          net->data.socket.port);
+        virBufferAsprintf(&buf, "socket%cconnect=", type_sep);
+        virQEMUBuildBufferEscapeComma(&buf, net->data.socket.address);
+        virBufferAsprintf(&buf, ":%d,", net->data.socket.port);
         break;
 
     case VIR_DOMAIN_NET_TYPE_SERVER:
@@ -4858,7 +4865,8 @@ qemuBuildChrChardevFileStr(virLogManagerPtr logManager,
         virBufferAsprintf(buf, ",%s=%s,%s=on", filearg, fdpath, appendarg);
         VIR_FREE(fdpath);
     } else {
-        virBufferAsprintf(buf, ",%s=%s", filearg, fileval);
+        virBufferAsprintf(buf, ",%s=", filearg);
+        virQEMUBuildBufferEscapeComma(buf, fileval);
         if (appendval != VIR_TRISTATE_SWITCH_ABSENT) {
             virBufferAsprintf(buf, ",%s=%s", appendarg,
                               virTristateSwitchTypeToString(appendval));
@@ -4916,9 +4924,10 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
         break;
 
     case VIR_DOMAIN_CHR_TYPE_DEV:
-        virBufferAsprintf(&buf, "%s,id=%s,path=%s",
+        virBufferAsprintf(&buf, "%s,id=%s,path=",
                           STRPREFIX(alias, "parallel") ? "parport" : "tty",
-                          charAlias, dev->data.file.path);
+                          charAlias);
+        virQEMUBuildBufferEscapeComma(&buf, dev->data.file.path);
         break;
 
     case VIR_DOMAIN_CHR_TYPE_FILE:
@@ -4938,8 +4947,8 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
         break;
 
     case VIR_DOMAIN_CHR_TYPE_PIPE:
-        virBufferAsprintf(&buf, "pipe,id=%s,path=%s", charAlias,
-                          dev->data.file.path);
+        virBufferAsprintf(&buf, "pipe,id=%s,path=", charAlias);
+        virQEMUBuildBufferEscapeComma(&buf, dev->data.file.path);
         break;
 
     case VIR_DOMAIN_CHR_TYPE_STDIO:
@@ -7829,10 +7838,14 @@ qemuBuildGraphicsVNCCommandLine(virQEMUDriverConfigPtr cfg,
 
     if (cfg->vncTLS) {
         virBufferAddLit(&opt, ",tls");
-        if (cfg->vncTLSx509verify)
-            virBufferAsprintf(&opt, ",x509verify=%s", cfg->vncTLSx509certdir);
-        else
-            virBufferAsprintf(&opt, ",x509=%s", cfg->vncTLSx509certdir);
+        if (cfg->vncTLSx509verify) {
+            virBufferAddLit(&opt, ",x509verify=");
+            virQEMUBuildBufferEscapeComma(&opt, cfg->vncTLSx509certdir);
+        }
+        else {
+            virBufferAddLit(&opt, ",x509=");
+            virQEMUBuildBufferEscapeComma(&opt, cfg->vncTLSx509certdir);
+        }
     }
 
     if (cfg->vncSASL) {
@@ -7977,8 +7990,11 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
         !cfg->spicePassword)
         virBufferAddLit(&opt, "disable-ticketing,");
 
-    if (hasSecure)
-        virBufferAsprintf(&opt, "x509-dir=%s,", cfg->spiceTLSx509certdir);
+    if (hasSecure) {
+        virBufferAddLit(&opt, "x509-dir=");
+        virQEMUBuildBufferEscapeComma(&opt, cfg->spiceTLSx509certdir);
+        virBufferAddLit(&opt, ",");
+    }
 
     switch (graphics->data.spice.defaultMode) {
     case VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_MODE_SECURE:
@@ -9463,9 +9479,9 @@ qemuBuildDomainLoaderCommandLine(virCommandPtr cmd,
                                  NULL);
         }
 
-        virBufferAsprintf(&buf,
-                          "file=%s,if=pflash,format=raw,unit=%d",
-                          loader->path, unit);
+        virBufferAddLit(&buf, "file=");
+        virQEMUBuildBufferEscapeComma(&buf, loader->path);
+        virBufferAsprintf(&buf, ",if=pflash,format=raw,unit=%d", unit);
         unit++;
 
         if (loader->readonly) {
@@ -9478,9 +9494,9 @@ qemuBuildDomainLoaderCommandLine(virCommandPtr cmd,
 
         if (loader->nvram) {
             virBufferFreeAndReset(&buf);
-            virBufferAsprintf(&buf,
-                              "file=%s,if=pflash,format=raw,unit=%d",
-                              loader->nvram, unit);
+            virBufferAddLit(&buf, "file=");
+            virQEMUBuildBufferEscapeComma(&buf, loader->nvram);
+            virBufferAsprintf(&buf, ",if=pflash,format=raw,unit=%d", unit);
 
             virCommandAddArg(cmd, "-drive");
             virCommandAddArgBuffer(cmd, &buf);
