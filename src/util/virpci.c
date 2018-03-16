@@ -1762,6 +1762,13 @@ virPCIDeviceNew(unsigned int domain,
     char *vendor = NULL;
     char *product = NULL;
 
+
+    /* Devices in a 32-bit domain are special. Currently applicable to Intel
+     * VMD PCIe, where individual devices are not individually assignable.
+     */
+    if (domain > USHRT_MAX)
+        return NULL;
+
     if (VIR_ALLOC(dev) < 0)
         return NULL;
 
