@@ -1092,26 +1092,17 @@ class ManagedObject(GenericObject):
 
 
     def generate_helper_source(self):
-        source = ""
-
         # lookup
-        source += "/* esxVI_Lookup%s */\n" % self.name
-        source += "ESX_VI__TEMPLATE__LOOKUP(%s,\n" % self.name
-        source += "{\n"
-
-        source += self.generate_lookup_code1()
-
-        source += "},\n"
-        source += "{\n"
-
-        source += self.generate_lookup_code2()
-
-        source += "})\n\n"
-
-        source += "\n\n"
-
-        return source
-
+        return (
+            "/* esxVI_Lookup{name} */\n"
+            "ESX_VI__TEMPLATE__LOOKUP({name},\n"
+            "{{\n{lookup_code1}}},\n"
+            "{{\n{lookup_code2}}})\n\n\n\n"
+        ).format(
+            name=self.name,
+            lookup_code1=self.generate_lookup_code1(),
+            lookup_code2=self.generate_lookup_code2()
+        )
 
 
 class Enum(Type):
