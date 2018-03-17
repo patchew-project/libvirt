@@ -118,7 +118,7 @@ class Parameter(Member):
             return aligned(string, self.get_occurrence_comment() + "\n")
 
 
-    def generate_return(self, offset = 0, end_of_line = ";"):
+    def generate_return(self, offset=0, end_of_line=";"):
         if self.occurrence == OCCURRENCE__IGNORED:
             raise ValueError("invalid function parameter occurrence value '%s'"
                              % self.occurrence)
@@ -609,7 +609,7 @@ class Object(GenericObject):
         return source
 
 
-    def generate_deep_copy_code(self, add_banner = False):
+    def generate_deep_copy_code(self, add_banner=False):
         source = ""
 
         if self.extends is not None:
