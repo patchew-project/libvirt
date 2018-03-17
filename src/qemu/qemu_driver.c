@@ -20682,6 +20682,8 @@ qemuARPGetInterfaces(virDomainObjPtr vm,
 
                 if (VIR_APPEND_ELEMENT(ifaces_ret, ifaces_count, iface) < 0)
                     goto cleanup;
+
+                virDomainInterfaceFree(iface);
             }
         }
     }
@@ -20691,6 +20693,7 @@ qemuARPGetInterfaces(virDomainObjPtr vm,
 
  cleanup:
     virArpTableFree(table);
+    virDomainInterfaceFree(iface);
 
     if (ifaces_ret) {
         for (i = 0; i < ifaces_count; i++)
