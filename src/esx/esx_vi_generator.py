@@ -75,16 +75,16 @@ class Member:
 
 
     def get_occurrence_comment(self):
-        if self.occurrence == OCCURRENCE__REQUIRED_ITEM:
-            return "/* required */"
-        elif self.occurrence == OCCURRENCE__REQUIRED_LIST:
-            return "/* required, list */"
-        elif self.occurrence == OCCURRENCE__OPTIONAL_ITEM:
-            return "/* optional */"
-        elif self.occurrence == OCCURRENCE__OPTIONAL_LIST:
-            return "/* optional, list */"
+        occurrence_map = {
+            OCCURRENCE__REQUIRED_ITEM: "/* required */",
+            OCCURRENCE__REQUIRED_LIST: "/* required, list */",
+            OCCURRENCE__OPTIONAL_ITEM: "/* optional */",
+            OCCURRENCE__OPTIONAL_LIST: "/* optional, list */"
+        }
+        if self.occurrence not in occurrence_map:
+            raise ValueError("unknown occurrence value '%s'" % self.occurrence)
 
-        raise ValueError("unknown occurrence value '%s'" % self.occurrence)
+        return occurrence_map[self.occurrence]
 
 
 
