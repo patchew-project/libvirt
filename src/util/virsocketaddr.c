@@ -126,6 +126,38 @@ virSocketAddrParseInternal(struct addrinfo **res,
     return 0;
 }
 
+static int
+virSockAddrParseVerbose(virSocketAddrPtr addr,
+                        const char *val,
+                        int family,
+                        bool verbose)
+{
+    int len;
+    struct addrinfo *res;
+
+    if (virSocketAddrParseInternal(&res, val, family, verbose) < 0)
+        return -1;
+
+    if (res == NULL) {
+        if (verbose) {
+            virReportError(VIR_ERR_SYSTEM_ERROR,
+                           _("No socket addresses found for '%s'"),
+                           val);
+        }
+        return -1;
+    }
+
+    len = res->ai_addrlen;
+    if (addr != NULL) {
+        memcpy(&addr->data.stor, res->ai_addr, len);
+        addr->len = res->ai_addrlen;
+    }
+
+    freeaddrinfo(res);
+    return len;
+}
+
+
 /**
  * virSocketAddrParse:
  * @val: a numeric network address IPv4 or IPv6
@@ -139,27 +171,23 @@ virSocketAddrParseInternal(struct addrinfo **res,
  */
 int virSocketAddrParse(virSocketAddrPtr addr, const char *val, int family)
 {
-    int len;
-    struct addrinfo *res;
+    return virSockAddrParseVerbose(addr, val, family, true);
+}
 
-    if (virSocketAddrParseInternal(&res, val, family, true) < 0)
-        return -1;
-
-    if (res == NULL) {
-        virReportError(VIR_ERR_SYSTEM_ERROR,
-                       _("No socket addresses found for '%s'"),
-                       val);
-        return -1;
-    }
-
-    len = res->ai_addrlen;
-    if (addr != NULL) {
-        memcpy(&addr->data.stor, res->ai_addr, len);
-        addr->len = res->ai_addrlen;
-    }
-
-    freeaddrinfo(res);
-    return len;
+/**
+ * virSocketAddrParseQuiet:
+ * @val: a numeric network address IPv4 or IPv6
+ * @addr: where to store the return value, optional.
+ * @family: address family to pass down to getaddrinfo
+ *
+ * A quiet version of virSocketAddrParse. No errors are reported in
+ * error paths.
+ *
+ * Returns the length of the network address or -1 in case of error.
+ */
+int virSocketAddrParseQuiet(virSocketAddrPtr addr, const char *val, int family)
+{
+    return virSockAddrParseVerbose(addr, val, family, false);
 }
 
 /*

@@ -2726,6 +2726,7 @@ virSocketAddrNumericFamily;
 virSocketAddrParse;
 virSocketAddrParseIPv4;
 virSocketAddrParseIPv6;
+virSocketAddrParseQuiet;
 virSocketAddrPrefixToNetmask;
 virSocketAddrPTRDomain;
 virSocketAddrSetIPv4Addr;
