@@ -360,6 +360,7 @@ virNetlinkDumpCommand(struct nl_msg *nl_msg,
         goto cleanup;
 
     while (!end) {
+        VIR_FREE(resp);
         len = nl_recv(nlhandle, &nladdr, (unsigned char **)&resp, NULL);
         VIR_WARNINGS_NO_CAST_ALIGN
         for (msg = resp; NLMSG_OK(msg, len); msg = NLMSG_NEXT(msg, len)) {
@@ -378,6 +379,7 @@ virNetlinkDumpCommand(struct nl_msg *nl_msg,
     ret = 0;
 
  cleanup:
+    VIR_FREE(resp);
     virNetlinkFree(nlhandle);
     return ret;
 }
