@@ -157,6 +157,9 @@ typedef virDomainTPMDef *virDomainTPMDefPtr;
 typedef struct _virDomainIOMMUDef virDomainIOMMUDef;
 typedef virDomainIOMMUDef *virDomainIOMMUDefPtr;
 
+typedef struct _virDomainVMGenIDDef virDomainVMGenIDDef;
+typedef virDomainVMGenIDDef *virDomainVMGenIDDefPtr;
+
 typedef struct _virDomainVirtioOptions virDomainVirtioOptions;
 typedef virDomainVirtioOptions *virDomainVirtioOptionsPtr;
 
@@ -219,6 +222,7 @@ struct _virDomainDeviceDef {
         virDomainPanicDefPtr panic;
         virDomainMemoryDefPtr memory;
         virDomainIOMMUDefPtr iommu;
+        virDomainVMGenIDDefPtr vmgenid;
     } data;
 };
 
@@ -2309,6 +2313,12 @@ struct _virDomainVirtioOptions {
     virTristateSwitch ats;
 };
 
+struct _virDomainVMGenIDDef {
+    bool autogenerate;
+    unsigned char guidstr[VIR_UUID_STRING_BUFLEN];
+};
+
+
 /*
  * Guest VM main configuration
  *
@@ -2449,6 +2459,7 @@ struct _virDomainDef {
     virSysinfoDefPtr sysinfo;
     virDomainRedirFilterDefPtr redirfilter;
     virDomainIOMMUDefPtr iommu;
+    virDomainVMGenIDDefPtr vmgenid;
 
     void *namespaceData;
     virDomainXMLNamespace ns;

@@ -2741,6 +2741,8 @@ void virDomainDeviceDefFree(virDomainDeviceDefPtr def)
         VIR_FREE(def->data.iommu);
         break;
     case VIR_DOMAIN_DEVICE_VMGENID:
+        VIR_FREE(def->data.vmgenid);
+        break;
     case VIR_DOMAIN_DEVICE_LAST:
     case VIR_DOMAIN_DEVICE_NONE:
         break;
@@ -15690,6 +15692,45 @@ virDomainIOMMUDefParseXML(xmlNodePtr node,
 }
 
 
+static virDomainVMGenIDDefPtr
+virDomainVMGenIDDefParseXML(xmlNodePtr node,
+                            xmlXPathContextPtr ctxt)
+{
+    virDomainVMGenIDDefPtr vmgenid = NULL;
+    virDomainVMGenIDDefPtr ret = NULL;
+    xmlNodePtr save = ctxt->node;
+    char *guidxml = NULL;
+
+    ctxt->node = node;
+
+    if (VIR_ALLOC(vmgenid) < 0)
+        goto cleanup;
+
+    if (!(guidxml = virXMLPropString(node, "guid"))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("missing required 'guid' attribute"));
+        goto cleanup;
+    }
+
+    if (STREQ(guidxml, "auto")) {
+        vmgenid->autogenerate = true;
+    } else {
+        if (virUUIDParse(guidxml, vmgenid->guidstr) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("malformed guid='%s' provided"), guidxml);
+            goto cleanup;
+        }
+    }
+
+    VIR_STEAL_PTR(ret, vmgenid);
+
+ cleanup:
+    VIR_FREE(vmgenid);
+    ctxt->node = save;
+    return ret;
+}
+
+
 virDomainDeviceDefPtr
 virDomainDeviceDefParse(const char *xmlStr,
                         const virDomainDef *def,
@@ -15846,6 +15887,9 @@ virDomainDeviceDefParse(const char *xmlStr,
             goto error;
         break;
     case VIR_DOMAIN_DEVICE_VMGENID:
+        if (!(dev->data.vmgenid = virDomainVMGenIDDefParseXML(node, ctxt)))
+            goto error;
+        break;
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_LAST:
         break;
@@ -20249,6 +20293,21 @@ virDomainDefParseXML(xmlDocPtr xml,
     }
     VIR_FREE(nodes);
 
+    if ((n = virXPathNodeSet("./devices/vmgenid", ctxt, &nodes)) < 0)
+        goto error;
+
+    if (n > 1) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("only a single vmgenid device is supported"));
+        goto error;
+    }
+
+    if (n > 0) {
+        if (!(def->vmgenid = virDomainVMGenIDDefParseXML(nodes[0], ctxt)))
+            goto error;
+    }
+    VIR_FREE(nodes);
+
     /* analysis of the user namespace mapping */
     if ((n = virXPathNodeSet("./idmap/uid", ctxt, &nodes)) < 0)
         goto error;
@@ -21812,6 +21871,25 @@ virDomainIOMMUDefCheckABIStability(virDomainIOMMUDefPtr src,
 
 
 static bool
+virDomainVMGenIDDefCheckABIStability(virDomainVMGenIDDefPtr src,
+                                     virDomainVMGenIDDefPtr dst)
+{
+    if (memcmp(src->guidstr, dst->guidstr, VIR_UUID_BUFLEN) != 0) {
+        char guidsrc[VIR_UUID_STRING_BUFLEN];
+        char guiddst[VIR_UUID_STRING_BUFLEN];
+        virUUIDFormat(src->guidstr, guidsrc);
+        virUUIDFormat(dst->guidstr, guiddst);
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target domain vmgenid guid '%s' does not match "
+                         "source '%s'"),
+                       guiddst, guidsrc);
+        return false;
+    }
+    return true;
+}
+
+
+static bool
 virDomainDefVcpuCheckAbiStability(virDomainDefPtr src,
                                   virDomainDefPtr dst)
 {
@@ -22254,6 +22332,17 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
 
     if (src->iommu &&
         !virDomainIOMMUDefCheckABIStability(src->iommu, dst->iommu))
+        goto error;
+
+    if (!!src->vmgenid != !!dst->vmgenid) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Target domain vmgenid device count does not "
+                         "match source"));
+        goto error;
+    }
+
+    if (src->vmgenid &&
+        !virDomainVMGenIDDefCheckABIStability(src->vmgenid, dst->vmgenid))
         goto error;
 
     if (xmlopt && xmlopt->abi.domain &&
@@ -26470,6 +26559,21 @@ virDomainIOMMUDefFormat(virBufferPtr buf,
 }
 
 
+static void
+virDomainVMGenIDDefFormat(virBufferPtr buf,
+                          const virDomainVMGenIDDef *vmgenid)
+{
+    char guidstr[VIR_UUID_STRING_BUFLEN];
+
+    if (vmgenid->autogenerate) {
+        virBufferAddLit(buf, "<vmgenid guid='auto'/>\n");
+    } else {
+        virUUIDFormat(vmgenid->guidstr, guidstr);
+        virBufferAsprintf(buf, "<vmgenid guid='%s'/>\n", guidstr);
+    }
+}
+
+
 /* This internal version appends to an existing buffer
  * (possibly with auto-indent), rather than flattening
  * to string.
@@ -27250,6 +27354,9 @@ virDomainDefFormatInternal(virDomainDefPtr def,
     if (def->iommu &&
         virDomainIOMMUDefFormat(buf, def->iommu) < 0)
         goto error;
+
+    if (def->vmgenid)
+        virDomainVMGenIDDefFormat(buf, def->vmgenid);
 
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</devices>\n");
@@ -28371,13 +28478,16 @@ virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
     case VIR_DOMAIN_DEVICE_SHMEM:
         rc = virDomainShmemDefFormat(&buf, src->data.shmem, flags);
         break;
+    case VIR_DOMAIN_DEVICE_VMGENID:
+        virDomainVMGenIDDefFormat(&buf, src->data.vmgenid);
+        rc = 0;
+        break;
 
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
     case VIR_DOMAIN_DEVICE_IOMMU:
-    case VIR_DOMAIN_DEVICE_VMGENID:
     case VIR_DOMAIN_DEVICE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Copying definition of '%d' type "

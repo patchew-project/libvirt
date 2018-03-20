@@ -8027,6 +8027,60 @@ qemu-kvm -net nic,model=? /dev/null
       </dd>
     </dl>
 
+    <h4><a id="elementsVmgenid">VM Generation ID device</a></h4>
+
+    <p>
+      <span class="since">Since 4.2.0</span>, the <code>vmgenid</code>
+      element can be used to add a Virtual Machine Generation ID device.
+      A <code>vmgenid</code> device is an emulated device which exposes
+      a 128-bit, cryptographically random, integer value identifier,
+      referred to as a Globally Unique Identifier, or GUID. The value is
+      stored within the virtual machine's BIOS so that programs running in
+      the virtual machine can protect themselves from potential corruption
+      by checking that the Generation ID has not changed immediately prior
+      to committing a transaction.
+
+      The <code>vmgenid</code> device will update the BIOS entry each time
+      the virtual machine executes from a different configuration file such
+      as executing from a recovered snapshot or executing after restoring
+      from backup. Programs running in a virtual machine can protect themselves
+      from potential corruption by checking that the generation ID has not
+      changed immediately prior to committing a transaction, they can also
+      use the data provided in the 128-bit identifier as a high entropy
+      random data source.
+    </p>
+
+    <p>
+      Example:
+    </p>
+<pre>
+...
+&lt;devices&gt;
+  &lt;vmgenid guid='3e3fce45-4f53-4fa7-bb32-11f34168b82b'/&gt;
+&lt;/devices&gt;
+...
+</pre>
+
+<pre>
+...
+&lt;devices&gt;
+  &lt;vmgenid guid='auto'/&gt;
+&lt;/devices&gt;
+...
+</pre>
+
+    <dl>
+      <dt><code>guid</code></dt>
+      <dd>
+        <p>
+         The required <code>guid</code> attribute can be either a provided
+         (<a href="#elementsMetadata"><code>uuid</code></a>) formatted value
+         or the string 'auto' if the underlying hypervisor supports creating
+         its own value.
+        </p>
+      </dd>
+    </dl>
+
     <h3><a id="seclabel">Security label</a></h3>
 
     <p>

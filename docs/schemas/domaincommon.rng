@@ -4644,6 +4644,24 @@
       </attribute>
     </element>
   </define>
+
+  <define name="vmgenid">
+    <element name="vmgenid">
+      <choice>
+        <group>
+          <attribute name="guid">
+            <ref name="UUID"/>
+          </attribute>
+        </group>
+        <group>
+          <attribute name="guid">
+            <value>auto</value>
+          </attribute>
+        </group>
+      </choice>
+    </element>
+  </define>
+
   <define name="devices">
     <element name="devices">
       <interleave>
@@ -4690,6 +4708,9 @@
         </zeroOrMore>
         <optional>
           <ref name="iommu"/>
+        </optional>
+        <optional>
+          <ref name="vmgenid"/>
         </optional>
       </interleave>
     </element>

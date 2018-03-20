@@ -1193,6 +1193,9 @@ mymain(void)
     DO_TEST("intel-iommu-eim", NONE);
     DO_TEST("intel-iommu-device-iotlb", NONE);
 
+    DO_TEST("vmgenid", NONE);
+    DO_TEST("vmgenid-auto", NONE);
+
     DO_TEST("cpu-check-none", NONE);
     DO_TEST("cpu-check-partial", NONE);
     DO_TEST("cpu-check-full", NONE);
