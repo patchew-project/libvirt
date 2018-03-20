@@ -256,7 +256,8 @@ VIR_ENUM_IMPL(virDomainDevice, VIR_DOMAIN_DEVICE_LAST,
               "tpm",
               "panic",
               "memory",
-              "iommu")
+              "iommu",
+              "vmgenid")
 
 VIR_ENUM_IMPL(virDomainDeviceAddress, VIR_DOMAIN_DEVICE_ADDRESS_TYPE_LAST,
               "none",
@@ -2739,6 +2740,7 @@ void virDomainDeviceDefFree(virDomainDeviceDefPtr def)
     case VIR_DOMAIN_DEVICE_IOMMU:
         VIR_FREE(def->data.iommu);
         break;
+    case VIR_DOMAIN_DEVICE_VMGENID:
     case VIR_DOMAIN_DEVICE_LAST:
     case VIR_DOMAIN_DEVICE_NONE:
         break;
@@ -3608,6 +3610,7 @@ virDomainDeviceGetInfo(virDomainDeviceDefPtr device)
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_VMGENID:
     case VIR_DOMAIN_DEVICE_LAST:
     case VIR_DOMAIN_DEVICE_NONE:
         break;
@@ -3834,6 +3837,7 @@ virDomainDeviceInfoIterateInternal(virDomainDefPtr def,
     case VIR_DOMAIN_DEVICE_RNG:
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_VMGENID:
         break;
     }
 #endif
@@ -5550,6 +5554,7 @@ virDomainDeviceDefValidateInternal(const virDomainDeviceDef *dev,
     case VIR_DOMAIN_DEVICE_PANIC:
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_VMGENID:
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_LAST:
         break;
@@ -15840,6 +15845,7 @@ virDomainDeviceDefParse(const char *xmlStr,
         if (!(dev->data.iommu = virDomainIOMMUDefParseXML(node, ctxt)))
             goto error;
         break;
+    case VIR_DOMAIN_DEVICE_VMGENID:
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_LAST:
         break;
@@ -22287,6 +22293,7 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
     case VIR_DOMAIN_DEVICE_SHMEM:
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_VMGENID:
         break;
     }
 #endif
@@ -28370,6 +28377,7 @@ virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_VMGENID:
     case VIR_DOMAIN_DEVICE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Copying definition of '%d' type "
