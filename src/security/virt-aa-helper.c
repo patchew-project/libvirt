@@ -1176,6 +1176,13 @@ get_files(vahControl * ctl)
         }
     }
 
+    for (i = 0; i < ctl->def->nmems; i++) {
+        if (ctl->def->mems[i]->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM) {
+            if (vah_add_file(&buf, ctl->def->mems[i]->nvdimmPath, "rw") != 0)
+                goto cleanup;
+        }
+    }
+
     if (ctl->def->virtType == VIR_DOMAIN_VIRT_KVM) {
         for (i = 0; i < ctl->def->nnets; i++) {
             virDomainNetDefPtr net = ctl->def->nets[i];
