@@ -284,11 +284,14 @@ virSecretObjListFindByUsage(virSecretObjListPtr secrets,
 /*
  * virSecretObjListRemove:
  * @secrets: list of secret objects
- * @secret: a secret object
+ * @obj: a secret object
  *
- * Remove the object from the hash table.  The caller must hold the lock
- * on the driver owning @secrets and must have also locked @secret to
- * ensure no one else is either waiting for @secret or still using it.
+ * Remove @obj from the secret obj list hash table. The caller must hold
+ * the lock on @obj to ensure no one else is either waiting for @obj or
+ * still using it.
+ *
+ * Upon return the @obj remains locked with at least 1 reference and
+ * the caller is expected to use virSecretObjEndAPI on it.
  */
 void
 virSecretObjListRemove(virSecretObjListPtr secrets,
@@ -308,7 +311,6 @@ virSecretObjListRemove(virSecretObjListPtr secrets,
     virObjectRWLockWrite(secrets);
     virObjectLock(obj);
     virHashRemoveEntry(secrets->objs, uuidstr);
-    virObjectUnlock(obj);
     virObjectUnref(obj);
     virObjectRWUnlock(secrets);
 }
@@ -927,8 +929,7 @@ virSecretLoad(virSecretObjListPtr secrets,
 
     if (virSecretLoadValue(obj) < 0) {
         virSecretObjListRemove(secrets, obj);
-        virObjectUnref(obj);
-        obj = NULL;
+        virSecretObjEndAPI(&obj); /* clears obj */
     }
 
  cleanup:
