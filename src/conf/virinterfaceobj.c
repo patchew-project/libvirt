@@ -358,6 +358,18 @@ virInterfaceObjListAssignDef(virInterfaceObjListPtr interfaces,
 }
 
 
+/*
+ * virInterfaceObjListRemove:
+ * @interfaces: list of interface objects
+ * @obj: an interface object
+ *
+ * Remove @obj from the interface obj list hash table. The caller must hold
+ * the lock on @obj to ensure no one else is either waiting for @obj or
+ * still using it.
+ *
+ * Upon return the @obj remains locked with at least 1 reference and
+ * the caller is expected to use virInterfaceObjEndAPI on it.
+ */
 void
 virInterfaceObjListRemove(virInterfaceObjListPtr interfaces,
                           virInterfaceObjPtr obj)
@@ -370,7 +382,6 @@ virInterfaceObjListRemove(virInterfaceObjListPtr interfaces,
     virObjectRWLockWrite(interfaces);
     virObjectLock(obj);
     virHashRemoveEntry(interfaces->objsName, obj->def->name);
-    virObjectUnlock(obj);
     virObjectUnref(obj);
     virObjectRWUnlock(interfaces);
 }

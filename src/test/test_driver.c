@@ -4085,7 +4085,7 @@ testInterfaceUndefine(virInterfacePtr iface)
         return -1;
 
     virInterfaceObjListRemove(privconn->ifaces, obj);
-    virObjectUnref(obj);
+    virInterfaceObjEndAPI(&obj);
 
     return 0;
 }
