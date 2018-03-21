@@ -517,6 +517,18 @@ virStoragePoolObjListSearch(virStoragePoolObjListPtr pools,
 }
 
 
+/*
+ * virStoragePoolObjRemove:
+ * @pools: list of storage pool objects
+ * @obj: a storage pool object
+ *
+ * Remove @obj from the storage pool obj list hash tables. The caller must
+ * hold the lock on @obj to ensure no one else is either waiting for @obj or
+ * still using it.
+ *
+ * Upon return the @obj remains locked with at least 1 reference and
+ * the caller is expected to use virStoragePoolObjEndAPI on it.
+ */
 void
 virStoragePoolObjRemove(virStoragePoolObjListPtr pools,
                         virStoragePoolObjPtr obj)
@@ -530,7 +542,6 @@ virStoragePoolObjRemove(virStoragePoolObjListPtr pools,
     virObjectLock(obj);
     virHashRemoveEntry(pools->objs, uuidstr);
     virHashRemoveEntry(pools->objsName, obj->def->name);
-    virObjectUnlock(obj);
     virObjectUnref(obj);
     virObjectRWUnlock(pools);
 }
@@ -1138,13 +1149,13 @@ virStoragePoolObjLoad(virStoragePoolObjListPtr pools,
     VIR_FREE(obj->configFile);  /* for driver reload */
     if (VIR_STRDUP(obj->configFile, path) < 0) {
         virStoragePoolObjRemove(pools, obj);
-        virObjectUnref(obj);
+        virStoragePoolObjEndAPI(&obj);
         return NULL;
     }
     VIR_FREE(obj->autostartLink); /* for driver reload */
     if (VIR_STRDUP(obj->autostartLink, autostartLink) < 0) {
         virStoragePoolObjRemove(pools, obj);
-        virObjectUnref(obj);
+        virStoragePoolObjEndAPI(&obj);
         return NULL;
     }
 
