@@ -470,6 +470,18 @@ virNodeDeviceObjListAssignDef(virNodeDeviceObjListPtr devs,
 }
 
 
+/*
+ * virNodeDeviceObjListRemove:
+ * @devs: list of node device objects
+ * @obj: a node device object
+ *
+ * Remove @obj from the node device obj list hash table. The caller must hold
+ * the lock on @obj to ensure no one else is either waiting for @obj or
+ * still using it.
+ *
+ * Upon return the @obj remains locked with at least 1 reference and
+ * the caller is expected to use virNodeDeviceObjEndAPI on it.
+ */
 void
 virNodeDeviceObjListRemove(virNodeDeviceObjListPtr devs,
                            virNodeDeviceObjPtr obj)
@@ -485,7 +497,6 @@ virNodeDeviceObjListRemove(virNodeDeviceObjListPtr devs,
     virObjectRWLockWrite(devs);
     virObjectLock(obj);
     virHashRemoveEntry(devs->objs, def->name);
-    virObjectUnlock(obj);
     virObjectUnref(obj);
     virObjectRWUnlock(devs);
 }

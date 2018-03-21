@@ -4716,7 +4716,7 @@ testDestroyVport(testDriverPtr privconn,
                                            0);
 
     virNodeDeviceObjListRemove(privconn->devs, obj);
-    virObjectUnref(obj);
+    virNodeDeviceObjEndAPI(&obj);
 
     testObjectEventQueue(privconn, event);
     return 0;
@@ -5695,8 +5695,6 @@ testNodeDeviceDestroy(virNodeDevicePtr dev)
 
     virObjectLock(obj);
     virNodeDeviceObjListRemove(driver->devs, obj);
-    virObjectUnref(obj);
-    obj = NULL;
 
  cleanup:
     virNodeDeviceObjEndAPI(&obj);

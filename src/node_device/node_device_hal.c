@@ -512,7 +512,7 @@ dev_refresh(const char *udi)
          * to sub-capabilities (like net.80203) is nasty ... so avoid it.
          */
         virNodeDeviceObjListRemove(driver->devs, obj);
-        virObjectUnref(obj);
+        virNodeDeviceObjEndAPI(&obj);
         dev_create(udi);
     } else {
         VIR_DEBUG("no device named %s", name);
@@ -541,7 +541,7 @@ device_removed(LibHalContext *ctx ATTRIBUTE_UNUSED,
         virNodeDeviceObjListRemove(driver->devs, obj);
     else
         VIR_DEBUG("no device named %s", name);
-    virObjectUnref(obj);
+    virNodeDeviceObjEndAPI(&obj);
 }
 
 
