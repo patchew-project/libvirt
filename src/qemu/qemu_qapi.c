@@ -31,7 +31,7 @@ VIR_LOG_INIT("qemu.qemu_qapi");
 
 
 /**
- * virQEMUCapsQMPSchemaObjectGetType:
+ * virQEMUQapiSchemaObjectGetType:
  * @field: name of the object containing the requested type
  * @name: name of the requested type
  * @namefield: name of the object property holding @name
@@ -40,10 +40,10 @@ VIR_LOG_INIT("qemu.qemu_qapi");
  * member. Returns the type string on success or NULL on error.
  */
 static const char *
-virQEMUCapsQMPSchemaObjectGetType(const char *field,
-                                  const char *name,
-                                  const char *namefield,
-                                  virJSONValuePtr elem)
+virQEMUQapiSchemaObjectGetType(const char *field,
+                               const char *name,
+                               const char *namefield,
+                               virJSONValuePtr elem)
 {
     virJSONValuePtr arr;
     virJSONValuePtr cur;
@@ -69,9 +69,9 @@ virQEMUCapsQMPSchemaObjectGetType(const char *field,
 
 
 static virJSONValuePtr
-virQEMUCapsQMPSchemaTraverse(const char *baseName,
-                             char **query,
-                             virHashTablePtr schema)
+virQEMUQapiSchemaTraverse(const char *baseName,
+                          char **query,
+                          virHashTablePtr schema)
 {
     virJSONValuePtr base;
     const char *metatype;
@@ -94,11 +94,11 @@ virQEMUCapsQMPSchemaTraverse(const char *baseName,
             continue;
         } else if (STREQ(metatype, "object")) {
             if (**query == '+')
-                baseName = virQEMUCapsQMPSchemaObjectGetType("variants",
+                baseName = virQEMUQapiSchemaObjectGetType("variants",
                                                              *query + 1,
                                                              "case", base);
             else
-                baseName = virQEMUCapsQMPSchemaObjectGetType("members",
+                baseName = virQEMUQapiSchemaObjectGetType("members",
                                                              *query,
                                                              "name", base);
 
@@ -121,7 +121,7 @@ virQEMUCapsQMPSchemaTraverse(const char *baseName,
 
 
 /**
- * virQEMUCapsQMPSchemaGetByPath:
+ * virQEMUQapiSchemaPathGet:
  * @query: string specifying the required data type (see below)
  * @schema: hash table containing the schema data
  * @entry: filled with the located schema object requested by @query
@@ -150,9 +150,9 @@ virQEMUCapsQMPSchemaTraverse(const char *baseName,
  * error message.
  */
 int
-virQEMUCapsQMPSchemaGetByPath(const char *query,
-                              virHashTablePtr schema,
-                              virJSONValuePtr *entry)
+virQEMUQapiSchemaPathGet(const char *query,
+                         virHashTablePtr schema,
+                         virJSONValuePtr *entry)
 {
     char **elems = NULL;
 
@@ -167,7 +167,7 @@ virQEMUCapsQMPSchemaGetByPath(const char *query,
         return -1;
     }
 
-    *entry = virQEMUCapsQMPSchemaTraverse(*elems, elems + 1, schema);
+    *entry = virQEMUQapiSchemaTraverse(*elems, elems + 1, schema);
 
     virStringListFree(elems);
     return 0;
@@ -175,12 +175,12 @@ virQEMUCapsQMPSchemaGetByPath(const char *query,
 
 
 bool
-virQEMUCapsQMPSchemaQueryPath(const char *query,
-                              virHashTablePtr schema)
+virQEMUQapiSchemaPathExists(const char *query,
+                            virHashTablePtr schema)
 {
     virJSONValuePtr entry;
 
-    if (virQEMUCapsQMPSchemaGetByPath(query, schema, &entry))
+    if (virQEMUQapiSchemaPathGet(query, schema, &entry))
         return false;
 
     return !!entry;

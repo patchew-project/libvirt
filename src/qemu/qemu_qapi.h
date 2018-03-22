@@ -25,12 +25,12 @@
 # include "virjson.h"
 
 int
-virQEMUCapsQMPSchemaGetByPath(const char *query,
-                              virHashTablePtr schema,
-                              virJSONValuePtr *entry);
+virQEMUQapiSchemaPathGet(const char *query,
+                         virHashTablePtr schema,
+                         virJSONValuePtr *entry);
 
 bool
-virQEMUCapsQMPSchemaQueryPath(const char *query,
-                              virHashTablePtr schema);
+virQEMUQapiSchemaPathExists(const char *query,
+                            virHashTablePtr schema);
 
 #endif /* __QEMU_QAPI_H__ */
