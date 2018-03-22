@@ -33,4 +33,8 @@ bool
 virQEMUQapiSchemaPathExists(const char *query,
                             virHashTablePtr schema);
 
+virHashTablePtr
+virQEMUQapiSchemaConvert(virJSONValuePtr schemareply);
+
+
 #endif /* __QEMU_QAPI_H__ */
