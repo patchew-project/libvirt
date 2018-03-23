@@ -67,7 +67,7 @@ VIR_ENUM_IMPL(virStorageFileFormat,
               /* Not direct file formats, but used for various drivers */
               "fat", "vhd", "ploop",
               /* Formats with backing file below here */
-              "cow", "qcow", "qcow2", "qed", "vmdk")
+              "qcow", "qcow2", "qed", "vmdk")
 
 VIR_ENUM_IMPL(virStorageFileFeature,
               VIR_STORAGE_FILE_FEATURE_LAST,
@@ -170,8 +170,6 @@ struct FileTypeInfo {
 };
 
 
-static int cowGetBackingStore(char **, int *,
-                              const char *, size_t);
 static int qcow1GetBackingStore(char **, int *,
                                 const char *, size_t);
 static int qcow2GetBackingStore(char **, int *,
@@ -348,11 +346,6 @@ static struct FileTypeInfo const fileTypeInfo[] = {
                                  PLOOP_SIZE_MULTIPLIER, NULL, NULL, NULL },
 
     /* All formats with a backing store probe below here */
-    [VIR_STORAGE_FILE_COW] = {
-        0, "OOOM", NULL,
-        LV_BIG_ENDIAN, 4, 4, {2},
-        4+4+1024+4, 8, 1, NULL, cowGetBackingStore, NULL
-    },
     [VIR_STORAGE_FILE_QCOW] = {
         0, "QFI", NULL,
         LV_BIG_ENDIAN, 4, 4, {1},
@@ -396,28 +389,6 @@ static const int qcow2CompatibleFeatureArray[] = {
 };
 verify(ARRAY_CARDINALITY(qcow2CompatibleFeatureArray) ==
        QCOW2_COMPATIBLE_FEATURE_LAST);
-
-static int
-cowGetBackingStore(char **res,
-                   int *format,
-                   const char *buf,
-                   size_t buf_size)
-{
-#define COW_FILENAME_MAXLEN 1024
-    *res = NULL;
-    *format = VIR_STORAGE_FILE_AUTO;
-
-    if (buf_size < 4+4+ COW_FILENAME_MAXLEN)
-        return BACKING_STORE_INVALID;
-    if (buf[4+4] == '\0') { /* cow_header_v2.backing_file[0] */
-        *format = VIR_STORAGE_FILE_NONE;
-        return BACKING_STORE_OK;
-    }
-
-    if (VIR_STRNDUP(*res, (const char*)buf + 4 + 4, COW_FILENAME_MAXLEN) < 0)
-        return BACKING_STORE_ERROR;
-    return BACKING_STORE_OK;
-}
 
 
 static int

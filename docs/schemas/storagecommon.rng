@@ -78,7 +78,6 @@
        we know how to follow backing chains, and all others -->
   <define name='storageFormatBacking'>
     <choice>
-      <value>cow</value>
       <value>qcow</value>
       <value>qcow2</value>
       <value>qed</value>
