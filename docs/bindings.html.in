@@ -19,6 +19,10 @@
         <a href="https://godoc.org/github.com/libvirt/libvirt-go">Go bindings</a>.
       </li>
       <li>
+        <strong>D-Bus</strong>: Pavel Hrdina develops
+        <a href="dbus.html">D-Bus bindings</a>.
+      </li>
+      <li>
         <strong>Java</strong>: Daniel Veillard develops
         <a href="java.html">Java bindings</a>.
       </li>
