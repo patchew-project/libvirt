@@ -28979,10 +28979,13 @@ int
 virDomainNetAllocateActualDevice(virDomainDefPtr dom,
                                  virDomainNetDefPtr iface)
 {
+    /* Just silently ignore if network driver isn't present. If something
+     * has tried to use a NIC with type=network, other code will already
+     * cause an error. This ensures type=bridge doesn't break when
+     * network driver is compiled out.
+     */
     if (!netAllocate) {
-        virReportError(VIR_ERR_NO_SUPPORT, "%s",
-                       _("Network device allocation not available"));
-        return -1;
+        return 0;
     }
 
     return netAllocate(dom, iface);
@@ -28993,8 +28996,6 @@ virDomainNetNotifyActualDevice(virDomainDefPtr dom,
                                virDomainNetDefPtr iface)
 {
     if (!netNotify) {
-        virReportError(VIR_ERR_NO_SUPPORT, "%s",
-                       _("Network device notification not available"));
         return;
     }
 
@@ -29007,9 +29008,7 @@ virDomainNetReleaseActualDevice(virDomainDefPtr dom,
                                 virDomainNetDefPtr iface)
 {
     if (!netRelease) {
-        virReportError(VIR_ERR_NO_SUPPORT, "%s",
-                       _("Network device release not available"));
-        return -1;
+        return 0;
     }
 
     return netRelease(dom, iface);
@@ -29020,9 +29019,7 @@ virDomainNetBandwidthChangeAllowed(virDomainNetDefPtr iface,
                                    virNetDevBandwidthPtr newBandwidth)
 {
     if (!netBandwidthChangeAllowed) {
-        virReportError(VIR_ERR_NO_SUPPORT, "%s",
-                       _("Network device bandwidth change query not available"));
-        return -1;
+        return 0;
     }
 
     return netBandwidthChangeAllowed(iface, newBandwidth);
@@ -29033,9 +29030,7 @@ virDomainNetBandwidthUpdate(virDomainNetDefPtr iface,
                             virNetDevBandwidthPtr newBandwidth)
 {
     if (!netBandwidthUpdate) {
-        virReportError(VIR_ERR_NO_SUPPORT, "%s",
-                       _("Network device bandwidth update not available"));
-        return -1;
+        return 0;
     }
 
     return netBandwidthUpdate(iface, newBandwidth);
