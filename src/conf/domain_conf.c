@@ -6702,7 +6702,7 @@ virDomainDeviceAddressParseXML(xmlNodePtr address,
 bool
 virDomainDeviceAliasIsUserAlias(const char *aliasStr)
 {
-    return STRPREFIX(aliasStr, USER_ALIAS_PREFIX);
+    return aliasStr && STRPREFIX(aliasStr, USER_ALIAS_PREFIX);
 }
 
 
