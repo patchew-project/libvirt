@@ -40,6 +40,9 @@
 #if HAVE_SYS_UN_H
 # include <sys/un.h>
 #endif
+#if WITH_DEVMAPPER
+# include <libdevmapper.h>
+#endif
 
 #include "virerror.h"
 #include "virlog.h"
@@ -258,6 +261,20 @@ virLogPriorityString(virLogPriority lvl)
 }
 
 
+#ifdef WITH_DEVMAPPER
+static void
+virLogDM(int level ATTRIBUTE_UNUSED,
+         const char *file ATTRIBUTE_UNUSED,
+         int line ATTRIBUTE_UNUSED,
+         int dm_errno ATTRIBUTE_UNUSED,
+         const char *fmt ATTRIBUTE_UNUSED,
+         ...)
+{
+    return;
+}
+#endif
+
+
 static int
 virLogOnceInit(void)
 {
@@ -288,6 +305,12 @@ virLogOnceInit(void)
     } else {
         NUL_TERMINATE(virLogHostname);
     }
+
+#ifdef WITH_DEVMAPPER
+    /* Ideally, we would not need this. But libdevmapper prints
+     * error messages to stderr by default. Sad but true. */
+    dm_log_with_errno_init(virLogDM);
+#endif
 
     virLogUnlock();
     return 0;
