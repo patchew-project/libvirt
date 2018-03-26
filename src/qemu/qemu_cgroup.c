@@ -37,6 +37,7 @@
 #include "virtypedparam.h"
 #include "virnuma.h"
 #include "virsystemd.h"
+#include "virdevmapper.h"
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
@@ -60,7 +61,13 @@ qemuSetupImagePathCgroup(virDomainObjPtr vm,
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     int perms = VIR_CGROUP_DEVICE_READ;
-    int ret;
+    unsigned int *maj = NULL;
+    unsigned int *min = NULL;
+    size_t nmaj = 0;
+    size_t i;
+    char *devPath = NULL;
+    int rv;
+    int ret = -1;
 
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES))
         return 0;
@@ -71,12 +78,41 @@ qemuSetupImagePathCgroup(virDomainObjPtr vm,
     VIR_DEBUG("Allow path %s, perms: %s",
               path, virCgroupGetDevicePermsString(perms));
 
-    ret = virCgroupAllowDevicePath(priv->cgroup, path, perms, true);
+    rv = virCgroupAllowDevicePath(priv->cgroup, path, perms, true);
 
     virDomainAuditCgroupPath(vm, priv->cgroup, "allow", path,
                              virCgroupGetDevicePermsString(perms),
-                             ret);
+                             rv);
+    if (rv < 0)
+        goto cleanup;
 
+    if (virDevMapperGetTargets(path, &maj, &min, &nmaj) < 0 &&
+        errno != ENOSYS && errno != EBADF) {
+        virReportSystemError(errno,
+                             _("Unable to get devmapper targets for %s"),
+                             path);
+        goto cleanup;
+    }
+
+    for (i = 0; i < nmaj; i++) {
+        if (virAsprintf(&devPath, "/dev/block/%u:%u", maj[i], min[i]) < 0)
+            goto cleanup;
+
+        rv = virCgroupAllowDevicePath(priv->cgroup, devPath, perms, true);
+
+        virDomainAuditCgroupPath(vm, priv->cgroup, "allow", devPath,
+                                 virCgroupGetDevicePermsString(perms),
+                                 rv);
+        if (rv < 0)
+            goto cleanup;
+        VIR_FREE(devPath);
+    }
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(devPath);
+    VIR_FREE(min);
+    VIR_FREE(maj);
     return ret;
 }
 

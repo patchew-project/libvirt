@@ -54,6 +54,7 @@
 #include "secret_util.h"
 #include "logging/log_manager.h"
 #include "locking/domain_lock.h"
+#include "virdevmapper.h"
 
 #ifdef MAJOR_IN_MKDEV
 # include <sys/mkdev.h>
@@ -10108,6 +10109,11 @@ qemuDomainSetupDisk(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
 {
     virStorageSourcePtr next;
     char *dst = NULL;
+    unsigned int *maj = NULL;
+    unsigned int *min = NULL;
+    size_t nmaj = 0;
+    char *devPath = NULL;
+    size_t i;
     int ret = -1;
 
     for (next = disk->src; virStorageSourceIsBacking(next); next = next->backingStore) {
@@ -10118,10 +10124,31 @@ qemuDomainSetupDisk(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
 
         if (qemuDomainCreateDevice(next->path, data, false) < 0)
             goto cleanup;
+
+        if (virDevMapperGetTargets(next->path, &maj, &min, &nmaj) < 0 &&
+            errno != ENOSYS && errno != EBADF) {
+            virReportSystemError(errno,
+                                 _("Unable to get mpath targets for %s"),
+                                 next->path);
+            goto cleanup;
+        }
+
+        for (i = 0; i < nmaj; i++) {
+            if (virAsprintf(&devPath, "/dev/block/%u:%u", maj[i], min[i]) < 0)
+                goto cleanup;
+
+            if (qemuDomainCreateDevice(devPath, data, false) < 0)
+                goto cleanup;
+
+            VIR_FREE(devPath);
+        }
     }
 
     ret = 0;
  cleanup:
+    VIR_FREE(devPath);
+    VIR_FREE(min);
+    VIR_FREE(maj);
     VIR_FREE(dst);
     return ret;
 }
@@ -11131,6 +11158,12 @@ qemuDomainNamespaceSetupDisk(virDomainObjPtr vm,
     virStorageSourcePtr next;
     char **paths = NULL;
     size_t npaths = 0;
+    unsigned int *maj = NULL;
+    unsigned int *min = NULL;
+    size_t nmaj = 0;
+    char **devmapperPaths = NULL;
+    size_t ndevmapperPaths = 0;
+    size_t i;
     int ret = -1;
 
     if (!qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT))
@@ -11145,6 +11178,32 @@ qemuDomainNamespaceSetupDisk(virDomainObjPtr vm,
 
         if (VIR_APPEND_ELEMENT_COPY(paths, npaths, next->path) < 0)
             goto cleanup;
+
+        if (virDevMapperGetTargets(next->path, &maj, &min, &nmaj) < 0 &&
+            errno != ENOSYS && errno != EBADF) {
+            virReportSystemError(errno,
+                                 _("Unable to get mpath targets for %s"),
+                                 next->path);
+            goto cleanup;
+        }
+
+        if (VIR_REALLOC_N(devmapperPaths, ndevmapperPaths + nmaj) < 0)
+            goto cleanup;
+
+        for (i = 0; i < nmaj; i++) {
+            if (virAsprintf(&devmapperPaths[ndevmapperPaths],
+                            "/sys/block/%u:%u",
+                            maj[i], min[i]) < 0)
+                goto cleanup;
+            ndevmapperPaths++;
+
+            if (VIR_APPEND_ELEMENT_COPY(paths, npaths,
+                                        devmapperPaths[ndevmapperPaths - 1]) < 0)
+                goto cleanup;
+        }
+
+        VIR_FREE(min);
+        VIR_FREE(maj);
     }
 
     if (qemuDomainNamespaceMknodPaths(vm, (const char **)paths, npaths) < 0)
@@ -11152,6 +11211,11 @@ qemuDomainNamespaceSetupDisk(virDomainObjPtr vm,
 
     ret = 0;
  cleanup:
+    for (i = 0; i < ndevmapperPaths; i++)
+        VIR_FREE(devmapperPaths[i]);
+    VIR_FREE(devmapperPaths);
+    VIR_FREE(min);
+    VIR_FREE(maj);
     VIR_FREE(paths);
     return ret;
 }
