@@ -94,6 +94,16 @@
       </change>
     </section>
     <section title="Bug fixes">
+      <change>
+        <summary>
+          Improve handling of multipath devices
+        </summary>
+        <description>
+          When starting a domain with a disk hidden behind
+          devmapper libvirt needs to allow them both in devices
+          CGroup: the devmapper target and the disk.
+        </description>
+      </change>
     </section>
   </release>
   <release version="v4.1.0" date="2018-03-05">
