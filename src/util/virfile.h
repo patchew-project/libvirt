@@ -358,4 +358,8 @@ int virFileInData(int fd,
                   int *inData,
                   long long *length);
 
+int virFileGetMPathTargets(const char *path,
+                           unsigned long long **devs,
+                           size_t *ndevs);
+
 #endif /* __VIR_FILE_H */

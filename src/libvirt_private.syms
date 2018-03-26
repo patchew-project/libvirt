@@ -1773,6 +1773,7 @@ virFileGetACLs;
 virFileGetHugepageSize;
 virFileGetMountReverseSubtree;
 virFileGetMountSubtree;
+virFileGetMPathTargets;
 virFileHasSuffix;
 virFileInData;
 virFileIsAbsPath;

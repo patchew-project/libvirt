@@ -64,6 +64,10 @@
 # include <sys/ioctl.h>
 #endif
 
+#ifdef WITH_DEVMAPPER
+# include <libdevmapper.h>
+#endif
+
 #include "configmake.h"
 #include "intprops.h"
 #include "viralloc.h"
@@ -4227,3 +4231,89 @@ virFileWaitForExists(const char *path,
 
     return 0;
 }
+
+
+#ifdef WITH_DEVMAPPER
+/**
+ * virFileGetMPathTargets:
+ * @path: multipath device
+ * @devs: returned array of st_rdevs of @path targets
+ * @ndevs: size of @devs and @devNames
+ *
+ * For given @path figure out its targets, and store them in
+ * @devs. Items from @devs are meant to be used in
+ * minor() and major() to receive device MAJ:MIN pairs.
+ *
+ * If @path is not a multipath device, @ndevs is set to 0 and
+ * success is returned.
+ *
+ * If we don't have permissions to talk to kernel, -1 is returned
+ * and errno is set to EBADF.
+ *
+ * Returns 0 on success, -1 otherwise.
+ */
+int
+virFileGetMPathTargets(const char *path,
+                       unsigned long long **devs,
+                       size_t *ndevs)
+{
+    struct dm_deps *deps;
+    struct dm_task *dmt;
+    struct dm_info info;
+    size_t i;
+    int ret = -1;
+
+    *ndevs = 0;
+
+    if (!(dmt = dm_task_create(DM_DEVICE_DEPS)))
+        goto cleanup;
+
+    if (!dm_task_set_name(dmt, path)) {
+        if (errno == ENOENT) {
+            /* It's okay, @path is not managed by devmapper =>
+             * not a multipath device. */
+            ret = 0;
+        }
+        goto cleanup;
+    }
+
+    dm_task_no_open_count(dmt);
+
+    if (!dm_task_run(dmt))
+        goto cleanup;
+
+    if (!dm_task_get_info(dmt, &info))
+        goto cleanup;
+
+    if (!info.exists) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    if (!(deps = dm_task_get_deps(dmt)))
+        goto cleanup;
+
+    if (VIR_ALLOC_N(*devs, deps->count) < 0)
+        goto cleanup;
+    *ndevs = deps->count;
+
+    for (i = 0; i < deps->count; i++)
+        (*devs)[i] = deps->device[i];
+
+    ret = 0;
+ cleanup:
+    dm_task_destroy(dmt);
+    return ret;
+}
+
+#else /* ! WITH_DEVMAPPER */
+
+int
+virFileGetMPathTargets(const char *path ATTRIBUTE_UNUSED,
+                       unsigned long long **devs ATTRIBUTE_UNUSED,
+                       size_t *ndevs ATTRIBUTE_UNUSED)
+{
+    errno = ENOSYS;
+    return -1;
+}
+#endif /* ! WITH_DEVMAPPER */
