@@ -60,7 +60,12 @@ qemuSetupImagePathCgroup(virDomainObjPtr vm,
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     int perms = VIR_CGROUP_DEVICE_READ;
-    int ret;
+    unsigned long long *mpathdevs = NULL;
+    size_t nmpathdevs = 0;
+    size_t i;
+    char *devPath = NULL;
+    int rv;
+    int ret = -1;
 
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES))
         return 0;
@@ -71,12 +76,44 @@ qemuSetupImagePathCgroup(virDomainObjPtr vm,
     VIR_DEBUG("Allow path %s, perms: %s",
               path, virCgroupGetDevicePermsString(perms));
 
-    ret = virCgroupAllowDevicePath(priv->cgroup, path, perms, true);
+    rv = virCgroupAllowDevicePath(priv->cgroup, path, perms, true);
 
     virDomainAuditCgroupPath(vm, priv->cgroup, "allow", path,
                              virCgroupGetDevicePermsString(perms),
-                             ret);
+                             rv);
+    if (rv < 0)
+        goto cleanup;
 
+    if (virFileGetMPathTargets(path, &mpathdevs, &nmpathdevs) < 0 &&
+        errno != ENOSYS && errno != EBADF) {
+        virReportSystemError(errno,
+                             _("Unable to get mpath targets for %s"),
+                             path);
+        goto cleanup;
+    }
+
+    for (i = 0; i < nmpathdevs; i++) {
+        if (virFileMajMinToName(mpathdevs[i], &devPath) < 0) {
+            virReportSystemError(errno,
+                                 _("Unable to translate %llx to device path"),
+                                 mpathdevs[i]);
+            goto cleanup;
+        }
+
+        rv = virCgroupAllowDevicePath(priv->cgroup, devPath, perms, true);
+
+        virDomainAuditCgroupPath(vm, priv->cgroup, "allow", devPath,
+                                 virCgroupGetDevicePermsString(perms),
+                                 rv);
+        if (rv < 0)
+            goto cleanup;
+        VIR_FREE(devPath);
+    }
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(devPath);
+    VIR_FREE(mpathdevs);
     return ret;
 }
 

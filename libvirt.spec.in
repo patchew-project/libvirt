@@ -796,6 +796,8 @@ Requires: gzip
 Requires: bzip2
 Requires: lzop
 Requires: xz
+# For mpath devices
+Requires: device-mapper
     %if 0%{?fedora} || 0%{?rhel} > 7
 Requires: systemd-container
     %endif

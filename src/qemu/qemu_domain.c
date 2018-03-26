@@ -10105,6 +10105,10 @@ qemuDomainSetupDisk(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
 {
     virStorageSourcePtr next;
     char *dst = NULL;
+    unsigned long long *mpathdevs = NULL;
+    size_t nmpathdevs = 0;
+    char *mpathPath = NULL;
+    size_t i;
     int ret = -1;
 
     for (next = disk->src; virStorageSourceIsBacking(next); next = next->backingStore) {
@@ -10115,10 +10119,34 @@ qemuDomainSetupDisk(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
 
         if (qemuDomainCreateDevice(next->path, data, false) < 0)
             goto cleanup;
+
+        if (virFileGetMPathTargets(next->path, &mpathdevs, &nmpathdevs) < 0 &&
+            errno != ENOSYS && errno != EBADF) {
+            virReportSystemError(errno,
+                                 _("Unable to get mpath targets for %s"),
+                                 next->path);
+            goto cleanup;
+        }
+
+        for (i = 0; i < nmpathdevs; i++) {
+            if (virFileMajMinToName(mpathdevs[i], &mpathPath) < 0) {
+                virReportSystemError(errno,
+                                     _("Unable to translate %llx to device path"),
+                                     mpathdevs[i]);
+                goto cleanup;
+            }
+
+            if (qemuDomainCreateDevice(mpathPath, data, false) < 0)
+                goto cleanup;
+
+            VIR_FREE(mpathPath);
+        }
     }
 
     ret = 0;
  cleanup:
+    VIR_FREE(mpathPath);
+    VIR_FREE(mpathdevs);
     VIR_FREE(dst);
     return ret;
 }
@@ -11128,6 +11156,10 @@ qemuDomainNamespaceSetupDisk(virDomainObjPtr vm,
     virStorageSourcePtr next;
     char **paths = NULL;
     size_t npaths = 0;
+    unsigned long long *mpathdevs = NULL;
+    char **mpathdevPaths = NULL;
+    size_t nmpathdevs = 0;
+    size_t i;
     int ret = -1;
 
     if (!qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT))
@@ -11142,6 +11174,29 @@ qemuDomainNamespaceSetupDisk(virDomainObjPtr vm,
 
         if (VIR_APPEND_ELEMENT_COPY(paths, npaths, next->path) < 0)
             goto cleanup;
+
+        if (virFileGetMPathTargets(next->path, &mpathdevs, &nmpathdevs) < 0 &&
+            errno != ENOSYS && errno != EBADF) {
+            virReportSystemError(errno,
+                                 _("Unable to get mpath targets for %s"),
+                                 next->path);
+            goto cleanup;
+        }
+
+        if (VIR_ALLOC_N(mpathdevPaths, nmpathdevs) < 0)
+            goto cleanup;
+
+        for (i = 0; i < nmpathdevs; i++) {
+            if (virFileMajMinToName(mpathdevs[i], &mpathdevPaths[i]) < 0) {
+                virReportSystemError(errno,
+                                     _("Unable to translate %llx to device path"),
+                                     mpathdevs[i]);
+                goto cleanup;
+            }
+
+            if (VIR_APPEND_ELEMENT_COPY(paths, npaths, mpathdevPaths[i]) < 0)
+                goto cleanup;
+        }
     }
 
     if (qemuDomainNamespaceMknodPaths(vm, (const char **)paths, npaths) < 0)
@@ -11149,6 +11204,9 @@ qemuDomainNamespaceSetupDisk(virDomainObjPtr vm,
 
     ret = 0;
  cleanup:
+    for (i = 0; i < nmpathdevs; i++)
+        VIR_FREE(mpathdevPaths[i]);
+    VIR_FREE(mpathdevPaths);
     VIR_FREE(paths);
     return ret;
 }
