@@ -68,6 +68,12 @@
 # include <libdevmapper.h>
 #endif
 
+#ifdef MAJOR_IN_MKDEV
+# include <sys/mkdev.h>
+#elif MAJOR_IN_SYSMACROS
+# include <sys/sysmacros.h>
+#endif
+
 #include "configmake.h"
 #include "intprops.h"
 #include "viralloc.h"
@@ -4317,3 +4323,50 @@ virFileGetMPathTargets(const char *path ATTRIBUTE_UNUSED,
     return -1;
 }
 #endif /* ! WITH_DEVMAPPER */
+
+
+/**
+ * virFileMajMinToName:
+ * @device: device (rdev) to translate
+ * @name: returned name
+ *
+ * For given MAJ:MIN pair (stored in one integer like in st_rdev)
+ * fetch device name, e.g. 8:0 is translated to "/dev/sda".
+ * Caller is responsible for freeing @name when no longer needed.
+ *
+ * Returns 0 on success, -1 otherwise.
+ */
+int
+virFileMajMinToName(unsigned long long device,
+                    char **name)
+{
+    struct stat sb;
+    char *sysfsPath = NULL;
+    char *link = NULL;
+    int ret = -1;
+
+    *name = NULL;
+    if (virAsprintf(&sysfsPath, "/sys/dev/block/%u:%u",
+                    major(device), minor(device)) < 0)
+        goto cleanup;
+
+    if (lstat(sysfsPath, &sb) < 0)
+        goto cleanup;
+
+    if (!S_ISLNK(sb.st_mode)) {
+        errno = ENXIO;
+        goto cleanup;
+    }
+
+    if (virFileReadLink(sysfsPath, &link) < 0)
+        goto cleanup;
+
+    if (virAsprintf(name, "/dev/%s", last_component(link)) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(link);
+    VIR_FREE(sysfsPath);
+    return ret;
+}

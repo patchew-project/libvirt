@@ -1787,6 +1787,7 @@ virFileLength;
 virFileLinkPointsTo;
 virFileLock;
 virFileLoopDeviceAssociate;
+virFileMajMinToName;
 virFileMakeParentPath;
 virFileMakePath;
 virFileMakePathWithMode;

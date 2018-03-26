@@ -362,4 +362,7 @@ int virFileGetMPathTargets(const char *path,
                            unsigned long long **devs,
                            size_t *ndevs);
 
+int virFileMajMinToName(unsigned long long device,
+                        char **name);
+
 #endif /* __VIR_FILE_H */
