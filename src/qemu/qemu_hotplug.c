@@ -5077,7 +5077,8 @@ int qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
             break;
         default:
             virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("unexpected hostdev type %d"), subsys->type);
+                           _("unexpected hostdev type '%s'"),
+                           virDomainHostdevSubsysTypeToString(subsys->type));
             break;
         }
         return -1;
