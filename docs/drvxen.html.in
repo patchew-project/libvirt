@@ -56,12 +56,11 @@
         any other non-config files in this directory.
       </li>
       <li>
-        <strong>libxl</strong>: Starting with Xen 4.2, the legacy XenD/xm
-        toolstack is deprecated in favor of libxl, also commonly called
-        libxenlight.  libvirt supports this new Xen toolstack via the
-        libxl driver.  If XenD is enabled, the legacy xen driver consisting
-        of the above mentioned channels will be used.  If XenD is disabled,
-        the libxl driver will be used.
+        <strong>libxl</strong>: Starting with Xen 4.5, the legacy xm/xend
+        toolstack was removed and replaced with the new xl/libxl toolstack,
+        also commonly called libxenlight.  libvirt has supported this new
+        Xen toolstack since its introduction in Xen 4.2 and currently
+        supports Xen >= 4.6.
       </li>
     </ul>
 
