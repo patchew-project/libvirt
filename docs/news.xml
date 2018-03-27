@@ -56,6 +56,15 @@
           on S390.
         </description>
       </change>
+      <change>
+        <summary>
+          Xen: Drop support for Xen 4.4 and 4.5
+        </summary>
+        <description>
+          Xen 4.4 and 4.5 are no longer supported by the Xen community.
+          Drop support for older Xen versions, requiring Xen >= 4.6.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
       <change>
