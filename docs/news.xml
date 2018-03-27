@@ -92,6 +92,20 @@
           previously started domains to 256, or restart them.
         </description>
       </change>
+      <change>
+        <summary>
+          qemu: Support hot plug and hot unplug with mediated devices
+        </summary>
+        <description>
+          Libvirt now allows mediated devices to be hot plugged and hot
+          unplugged from a guest rather than reporting an error that this isn't
+          supported. In fact, this has been supported with mediated devices
+          since their first appearance in 4.10 kernel. Be ware though that this
+          still doesn't guarantee any functionality with respect to the guest
+          driver which might not cope with a device being hot plugged or
+          unplugged.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
