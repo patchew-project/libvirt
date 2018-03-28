@@ -743,6 +743,7 @@ libvirt_setuid_rpc_client_la_LDFLAGS = \
 		$(AM_LDFLAGS) \
 		$(LIBXML_LIBS) \
 		$(SECDRIVER_LIBS) \
+		$(JSON_LIBS) \
 		$(NULL)
 libvirt_setuid_rpc_client_la_CFLAGS = \
 		-DLIBVIRT_SETUID_RPC_CLIENT \
