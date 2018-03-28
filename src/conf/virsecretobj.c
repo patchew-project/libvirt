@@ -906,12 +906,13 @@ virSecretLoadValue(virSecretObjPtr obj)
 }
 
 
-static virSecretObjPtr
+static int
 virSecretLoad(virSecretObjListPtr secrets,
               const char *file,
               const char *path,
               const char *configDir)
 {
+    int ret = -1;
     virSecretDefPtr def = NULL;
     virSecretObjPtr obj = NULL;
 
@@ -927,13 +928,16 @@ virSecretLoad(virSecretObjListPtr secrets,
 
     if (virSecretLoadValue(obj) < 0) {
         virSecretObjListRemove(secrets, obj);
-        virObjectUnref(obj);
-        obj = NULL;
+        virObjectLock(obj);
+        goto cleanup;
     }
+
+    ret = 0;
 
  cleanup:
     virSecretDefFree(def);
-    return obj;
+    virSecretObjEndAPI(&obj);
+    return ret;
 }
 
 
@@ -952,7 +956,6 @@ virSecretLoadAllConfigs(virSecretObjListPtr secrets,
      * loop (if any).  It's better to keep the secrets we managed to find. */
     while (virDirRead(dir, &de, NULL) > 0) {
         char *path;
-        virSecretObjPtr obj;
 
         if (!virFileHasSuffix(de->d_name, ".xml"))
             continue;
@@ -960,15 +963,10 @@ virSecretLoadAllConfigs(virSecretObjListPtr secrets,
         if (!(path = virFileBuildPath(configDir, de->d_name, NULL)))
             continue;
 
-        if (!(obj = virSecretLoad(secrets, de->d_name, path, configDir))) {
-            VIR_ERROR(_("Error reading secret: %s"),
-                      virGetLastErrorMessage());
-            VIR_FREE(path);
-            continue;
-        }
+        if (virSecretLoad(secrets, de->d_name, path, configDir) < 0)
+            VIR_ERROR(_("Error reading secret: %s"), virGetLastErrorMessage());
 
         VIR_FREE(path);
-        virSecretObjEndAPI(&obj);
     }
 
     VIR_DIR_CLOSE(dir);
