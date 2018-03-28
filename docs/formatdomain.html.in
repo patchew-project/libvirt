@@ -3942,7 +3942,8 @@
       <code>pcie-root-port</code>, <code>pcie-switch-upstream-port</code> and
       <code>pcie-switch-downstream-port</code> (<span class="since">since
       1.2.19</span>), <code>pci-expander-bus</code> and
-      <code>pcie-expander-bus</code> (<span class="since">since 1.3.4</span>).
+      <code>pcie-expander-bus</code> (<span class="since">since 1.3.4</span>),
+      <code>pcie-to-pci-bridge</code> (<span class="since">since 4.3.0</span>).
       The root controllers (<code>pci-root</code>
       and <code>pcie-root</code>) have an
       optional <code>pcihole64</code> element specifying how big (in
