@@ -1705,7 +1705,7 @@ remoteClientFreePrivateCallbacks(struct daemonClientPrivate *priv)
     DEREG_CB(priv->conn, priv->storageEventCallbacks,
              priv->nstorageEventCallbacks,
              virConnectStoragePoolEventDeregisterAny, "storage");
-    DEREG_CB(priv->conn, priv->nodeDeviceEventCallbacks,
+    DEREG_CB(priv->nodedevConn, priv->nodeDeviceEventCallbacks,
              priv->nnodeDeviceEventCallbacks,
              virConnectNodeDeviceEventDeregisterAny, "node device");
     DEREG_CB(priv->conn, priv->secretEventCallbacks,
@@ -1744,6 +1744,8 @@ void remoteClientFree(void *data)
         virConnectClose(priv->interfaceConn);
     if (priv->networkConn)
         virConnectClose(priv->networkConn);
+    if (priv->nodedevConn)
+        virConnectClose(priv->nodedevConn);
 
     VIR_FREE(priv);
 }
@@ -1820,6 +1822,7 @@ remoteDispatchConnectOpen(virNetServerPtr server ATTRIBUTE_UNUSED,
 
     priv->interfaceConn = virObjectRef(priv->conn);
     priv->networkConn = virObjectRef(priv->conn);
+    priv->nodedevConn = virObjectRef(priv->conn);
 
     /* force update the @readonly attribute which was inherited from the
      * virNetServerService object - this is important for sockets that are RW
@@ -3779,12 +3782,12 @@ remoteDispatchNodeDeviceGetParent(virNetServerPtr server ATTRIBUTE_UNUSED,
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
 
-    if (!priv->conn) {
+    if (!priv->nodedevConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
         goto cleanup;
     }
 
-    if (!(dev = virNodeDeviceLookupByName(priv->conn, args->name)))
+    if (!(dev = virNodeDeviceLookupByName(priv->nodedevConn, args->name)))
         goto cleanup;
 
     parent = virNodeDeviceGetParent(dev);
@@ -5959,7 +5962,7 @@ remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server ATTRIBUTE
         virNetServerClientGetPrivateData(client);
     virNodeDevicePtr  dev = NULL;
 
-    if (!priv->conn) {
+    if (!priv->nodedevConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
         goto cleanup;
     }
@@ -5967,7 +5970,7 @@ remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server ATTRIBUTE
     virMutexLock(&priv->lock);
 
     if (args->dev &&
-        !(dev = get_nonnull_node_device(priv->conn, *args->dev)))
+        !(dev = get_nonnull_node_device(priv->nodedevConn, *args->dev)))
         goto cleanup;
 
     if (args->eventID >= VIR_NODE_DEVICE_EVENT_ID_LAST || args->eventID < 0) {
@@ -5993,7 +5996,7 @@ remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server ATTRIBUTE
                            callback) < 0)
         goto cleanup;
 
-    if ((callbackID = virConnectNodeDeviceEventRegisterAny(priv->conn,
+    if ((callbackID = virConnectNodeDeviceEventRegisterAny(priv->nodedevConn,
                                                            dev,
                                                            args->eventID,
                                                            nodeDeviceEventCallbacks[args->eventID],
@@ -6031,7 +6034,7 @@ remoteDispatchConnectNodeDeviceEventDeregisterAny(virNetServerPtr server ATTRIBU
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
 
-    if (!priv->conn) {
+    if (!priv->nodedevConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
         goto cleanup;
     }
@@ -6049,7 +6052,7 @@ remoteDispatchConnectNodeDeviceEventDeregisterAny(virNetServerPtr server ATTRIBU
         goto cleanup;
     }
 
-    if (virConnectNodeDeviceEventDeregisterAny(priv->conn, args->callbackID) < 0)
+    if (virConnectNodeDeviceEventDeregisterAny(priv->nodedevConn, args->callbackID) < 0)
         goto cleanup;
 
     VIR_DELETE_ELEMENT(priv->nodeDeviceEventCallbacks, i,
