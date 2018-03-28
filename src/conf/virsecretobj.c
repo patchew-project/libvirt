@@ -284,32 +284,25 @@ virSecretObjListFindByUsage(virSecretObjListPtr secrets,
 /*
  * virSecretObjListRemove:
  * @secrets: list of secret objects
- * @secret: a secret object
+ * @uuidstr: secret uuid to find
  *
- * Remove the object from the hash table.  The caller must hold the lock
- * on the driver owning @secrets and must have also locked @secret to
- * ensure no one else is either waiting for @secret or still using it.
+ * Find the object by the @uuidstr in the list, remove the object from
+ * the list hash table, and free the object.
+ *
+ * Upon entry it's expected that prior to entry any locks on
+ * the object related to @uuidstr will have been removed.
  */
 void
 virSecretObjListRemove(virSecretObjListPtr secrets,
-                       virSecretObjPtr obj)
+                       const char *uuidstr)
 {
-    char uuidstr[VIR_UUID_STRING_BUFLEN];
-    virSecretDefPtr def;
-
-    if (!obj)
-        return;
-    def = obj->def;
-
-    virUUIDFormat(def->uuid, uuidstr);
-    virObjectRef(obj);
-    virObjectUnlock(obj);
+    virSecretObjPtr obj;
 
     virObjectRWLockWrite(secrets);
-    virObjectLock(obj);
-    virHashRemoveEntry(secrets->objs, uuidstr);
-    virObjectUnlock(obj);
-    virObjectUnref(obj);
+    if ((obj = virSecretObjListFindByUUIDLocked(secrets, uuidstr))) {
+        virHashRemoveEntry(secrets->objs, uuidstr);
+        virSecretObjEndAPI(&obj);
+    }
     virObjectRWUnlock(secrets);
 }
 
@@ -927,8 +920,11 @@ virSecretLoad(virSecretObjListPtr secrets,
     def = NULL;
 
     if (virSecretLoadValue(obj) < 0) {
-        virSecretObjListRemove(secrets, obj);
-        virObjectLock(obj);
+        char uuidstr[VIR_UUID_STRING_BUFLEN];
+
+        virUUIDFormat(obj->def->uuid, uuidstr);
+        virSecretObjEndAPI(&obj);
+        virSecretObjListRemove(secrets, uuidstr);
         goto cleanup;
     }
 

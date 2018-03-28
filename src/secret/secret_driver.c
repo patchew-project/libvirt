@@ -270,9 +270,11 @@ secretDefineXML(virConnectPtr conn,
         virSecretObjSetDef(obj, backup);
         VIR_STEAL_PTR(def, objDef);
     } else {
-        virSecretObjListRemove(driver->secrets, obj);
-        virObjectUnref(obj);
-        obj = NULL;
+        char uuidstr[VIR_UUID_STRING_BUFLEN];
+
+        virUUIDFormat(objDef->uuid, uuidstr);
+        virSecretObjEndAPI(&obj);
+        virSecretObjListRemove(driver->secrets, uuidstr);
     }
 
  cleanup:
@@ -392,6 +394,7 @@ secretUndefine(virSecretPtr secret)
     int ret = -1;
     virSecretObjPtr obj;
     virSecretDefPtr def;
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
     virObjectEventPtr event = NULL;
 
     if (!(obj = secretObjFromSecret(secret)))
@@ -412,9 +415,9 @@ secretUndefine(virSecretPtr secret)
 
     virSecretObjDeleteData(obj);
 
-    virSecretObjListRemove(driver->secrets, obj);
-    virObjectUnref(obj);
-    obj = NULL;
+    virUUIDFormat(def->uuid, uuidstr);
+    virSecretObjEndAPI(&obj);
+    virSecretObjListRemove(driver->secrets, uuidstr);
 
     ret = 0;
 

@@ -49,7 +49,7 @@ virSecretObjListFindByUsage(virSecretObjListPtr secrets,
 
 void
 virSecretObjListRemove(virSecretObjListPtr secrets,
-                       virSecretObjPtr obj);
+                       const char *uuidstr);
 
 virSecretObjPtr
 virSecretObjListAdd(virSecretObjListPtr secrets,
