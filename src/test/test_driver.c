@@ -4562,20 +4562,12 @@ testStoragePoolCreateXML(virConnectPtr conn,
          * rename a few fields to mock that. */
         if (testCreateVport(privconn,
                             def->source.adapter.data.fchost.wwnn,
-                            def->source.adapter.data.fchost.wwpn) < 0) {
-            virStoragePoolObjRemove(privconn->pools, obj);
-            virObjectUnref(obj);
-            obj = NULL;
-            goto cleanup;
-        }
+                            def->source.adapter.data.fchost.wwpn) < 0)
+            goto error;
     }
 
-    if (testStoragePoolObjSetDefaults(obj) == -1) {
-        virStoragePoolObjRemove(privconn->pools, obj);
-        virObjectUnref(obj);
-        obj = NULL;
-        goto cleanup;
-    }
+    if (testStoragePoolObjSetDefaults(obj) == -1)
+        goto error;
 
     /* *SetDefaults fills this in for the persistent pools, but this
      * would be a transient pool so remove it; otherwise, the Destroy
@@ -4596,6 +4588,12 @@ testStoragePoolCreateXML(virConnectPtr conn,
     virStoragePoolObjEndAPI(&obj);
     testDriverUnlock(privconn);
     return pool;
+
+ error:
+    virStoragePoolObjRemove(privconn->pools, obj);
+    virObjectUnref(obj);
+    obj = NULL;
+    goto cleanup;
 }
 
 
