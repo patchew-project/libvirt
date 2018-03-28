@@ -1034,21 +1034,31 @@ virStoragePoolObjVolumeListExport(virConnectPtr conn,
 }
 
 
+/*
+ * virStoragePoolObjRemove:
+ * @pools: list of storage pool objects
+ * @name: name of storage pool to remove
+ *
+ * Find the object by name in the list, remove the object from
+ * each hash table in the list, and free the object.
+ *
+ * Upon entry it's expected that prior to entry any locks on
+ * the object related to @name will have been removed.
+ */
 void
 virStoragePoolObjRemove(virStoragePoolObjListPtr pools,
-                        virStoragePoolObjPtr obj)
+                        const char *name)
 {
+    virStoragePoolObjPtr obj;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
 
-    virUUIDFormat(obj->def->uuid, uuidstr);
-    virObjectRef(obj);
-    virObjectUnlock(obj);
     virObjectRWLockWrite(pools);
-    virObjectLock(obj);
-    virHashRemoveEntry(pools->objs, uuidstr);
-    virHashRemoveEntry(pools->objsName, obj->def->name);
-    virObjectUnlock(obj);
-    virObjectUnref(obj);
+    if ((obj = virStoragePoolObjFindByNameLocked(pools, name))) {
+        virUUIDFormat(obj->def->uuid, uuidstr);
+        virHashRemoveEntry(pools->objs, uuidstr);
+        virHashRemoveEntry(pools->objsName, name);
+        virStoragePoolObjEndAPI(&obj);
+    }
     virObjectRWUnlock(pools);
 }
 
@@ -1117,6 +1127,7 @@ virStoragePoolObjLoad(virStoragePoolObjListPtr pools,
 {
     virStoragePoolDefPtr def = NULL;
     virStoragePoolObjPtr obj = NULL;
+    char *name = NULL;
 
     if (!(def = virStoragePoolDefParseFile(path)))
         return NULL;
@@ -1128,6 +1139,9 @@ virStoragePoolObjLoad(virStoragePoolObjListPtr pools,
                        path, def->name);
         goto error;
     }
+
+    if (VIR_STRDUP(name, def->name) < 0)
+        goto error;
 
     if (!(obj = virStoragePoolObjAssignDef(pools, def)))
         goto error;
@@ -1144,13 +1158,16 @@ virStoragePoolObjLoad(virStoragePoolObjListPtr pools,
     obj->autostart = virFileLinkPointsTo(obj->autostartLink,
                                          obj->configFile);
 
+    VIR_FREE(name);
+
     return obj;
 
  error:
-    if (obj) {
-        virStoragePoolObjRemove(pools, obj);
-        virObjectUnref(obj);
+    if (obj && name) {
+        virStoragePoolObjEndAPI(&obj);
+        virStoragePoolObjRemove(pools, name);
     }
+    VIR_FREE(name);
     virStoragePoolDefFree(def);
     return NULL;
 }

@@ -4540,6 +4540,7 @@ testStoragePoolCreateXML(virConnectPtr conn,
     virStoragePoolDefPtr def;
     virStoragePoolPtr pool = NULL;
     virObjectEventPtr event = NULL;
+    char *name = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -4548,6 +4549,9 @@ testStoragePoolCreateXML(virConnectPtr conn,
         goto cleanup;
 
     if (virStoragePoolObjIsDuplicate(privconn->pools, newDef, true) < 0)
+        goto cleanup;
+
+    if (VIR_STRDUP(name, newDef->name) < 0)
         goto cleanup;
 
     if (!(obj = virStoragePoolObjAssignDef(privconn->pools, newDef)))
@@ -4583,6 +4587,7 @@ testStoragePoolCreateXML(virConnectPtr conn,
     pool = virGetStoragePool(conn, def->name, def->uuid, NULL, NULL);
 
  cleanup:
+    VIR_FREE(name);
     virStoragePoolDefFree(newDef);
     testObjectEventQueue(privconn, event);
     virStoragePoolObjEndAPI(&obj);
@@ -4590,9 +4595,8 @@ testStoragePoolCreateXML(virConnectPtr conn,
     return pool;
 
  error:
-    virStoragePoolObjRemove(privconn->pools, obj);
-    virObjectUnref(obj);
-    obj = NULL;
+    virStoragePoolObjEndAPI(&obj);
+    virStoragePoolObjRemove(privconn->pools, name);
     goto cleanup;
 }
 
@@ -4608,6 +4612,7 @@ testStoragePoolDefineXML(virConnectPtr conn,
     virStoragePoolDefPtr def;
     virStoragePoolPtr pool = NULL;
     virObjectEventPtr event = NULL;
+    char *name = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -4622,6 +4627,9 @@ testStoragePoolDefineXML(virConnectPtr conn,
     if (virStoragePoolObjIsDuplicate(privconn->pools, newDef, false) < 0)
         goto cleanup;
 
+    if (VIR_STRDUP(name, newDef->name) < 0)
+        goto cleanup;
+
     if (!(obj = virStoragePoolObjAssignDef(privconn->pools, newDef)))
         goto cleanup;
     newDef = NULL;
@@ -4632,15 +4640,15 @@ testStoragePoolDefineXML(virConnectPtr conn,
                                             0);
 
     if (testStoragePoolObjSetDefaults(obj) == -1) {
-        virStoragePoolObjRemove(privconn->pools, obj);
-        virObjectUnref(obj);
-        obj = NULL;
+        virStoragePoolObjEndAPI(&obj);
+        virStoragePoolObjRemove(privconn->pools, name);
         goto cleanup;
     }
 
     pool = virGetStoragePool(conn, def->name, def->uuid, NULL, NULL);
 
  cleanup:
+    VIR_FREE(name);
     virStoragePoolDefFree(newDef);
     testObjectEventQueue(privconn, event);
     virStoragePoolObjEndAPI(&obj);
@@ -4663,8 +4671,8 @@ testStoragePoolUndefine(virStoragePoolPtr pool)
                                             VIR_STORAGE_POOL_EVENT_UNDEFINED,
                                             0);
 
-    virStoragePoolObjRemove(privconn->pools, obj);
-    virObjectUnref(obj);
+    virStoragePoolObjEndAPI(&obj);
+    virStoragePoolObjRemove(privconn->pools, pool->name);
 
     testObjectEventQueue(privconn, event);
     return 0;
@@ -4757,10 +4765,10 @@ testStoragePoolDestroy(virStoragePoolPtr pool)
                                             0);
 
     if (!(virStoragePoolObjGetConfigFile(obj))) {
-        virStoragePoolObjRemove(privconn->pools, obj);
-        virObjectUnref(obj);
-        obj = NULL;
+        virStoragePoolObjEndAPI(&obj);
+        virStoragePoolObjRemove(privconn->pools, pool->name);
     }
+
     ret = 0;
 
  cleanup:

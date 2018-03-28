@@ -242,7 +242,7 @@ virStoragePoolObjListNew(void);
 
 void
 virStoragePoolObjRemove(virStoragePoolObjListPtr pools,
-                        virStoragePoolObjPtr obj);
+                        const char *name);
 
 int
 virStoragePoolObjIsDuplicate(virStoragePoolObjListPtr pools,
