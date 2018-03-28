@@ -4092,8 +4092,8 @@ testInterfaceUndefine(virInterfacePtr iface)
     if (!(obj = testInterfaceObjFindByName(privconn, iface->name)))
         return -1;
 
-    virInterfaceObjListRemove(privconn->ifaces, obj);
-    virObjectUnref(obj);
+    virInterfaceObjEndAPI(&obj);
+    virInterfaceObjListRemove(privconn->ifaces, iface->name);
 
     return 0;
 }

@@ -66,7 +66,7 @@ virInterfaceObjListAssignDef(virInterfaceObjListPtr interfaces,
 
 void
 virInterfaceObjListRemove(virInterfaceObjListPtr interfaces,
-                          virInterfaceObjPtr obj);
+                          const char *name);
 
 typedef bool
 (*virInterfaceObjListFilter)(virConnectPtr conn,

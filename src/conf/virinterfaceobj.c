@@ -358,20 +358,28 @@ virInterfaceObjListAssignDef(virInterfaceObjListPtr interfaces,
 }
 
 
+/*
+ * virInterfaceObjListRemove:
+ * @interfaces: list of interface objects
+ * @name: name of interface definition to remove
+ *
+ * Find the object by name in the list, remove the object from the
+ * list hash table, and free the object.
+ *
+ * Upon entry it's expected that prior to entry any locks on
+ * the object related to @name will have been removed.
+ */
 void
 virInterfaceObjListRemove(virInterfaceObjListPtr interfaces,
-                          virInterfaceObjPtr obj)
+                          const char *name)
 {
-    if (!obj)
-        return;
+    virInterfaceObjPtr obj;
 
-    virObjectRef(obj);
-    virObjectUnlock(obj);
     virObjectRWLockWrite(interfaces);
-    virObjectLock(obj);
-    virHashRemoveEntry(interfaces->objsName, obj->def->name);
-    virObjectUnlock(obj);
-    virObjectUnref(obj);
+    if ((obj = virInterfaceObjListFindByNameLocked(interfaces, name))) {
+        virHashRemoveEntry(interfaces->objsName, name);
+        virInterfaceObjEndAPI(&obj);
+    }
     virObjectRWUnlock(interfaces);
 }
 
