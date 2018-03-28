@@ -517,25 +517,6 @@ virStoragePoolObjListSearch(virStoragePoolObjListPtr pools,
 }
 
 
-void
-virStoragePoolObjRemove(virStoragePoolObjListPtr pools,
-                        virStoragePoolObjPtr obj)
-{
-    char uuidstr[VIR_UUID_STRING_BUFLEN];
-
-    virUUIDFormat(obj->def->uuid, uuidstr);
-    virObjectRef(obj);
-    virObjectUnlock(obj);
-    virObjectRWLockWrite(pools);
-    virObjectLock(obj);
-    virHashRemoveEntry(pools->objs, uuidstr);
-    virHashRemoveEntry(pools->objsName, obj->def->name);
-    virObjectUnlock(obj);
-    virObjectUnref(obj);
-    virObjectRWUnlock(pools);
-}
-
-
 static virStoragePoolObjPtr
 virStoragePoolObjFindByUUIDLocked(virStoragePoolObjListPtr pools,
                                   const unsigned char *uuid)
@@ -1050,6 +1031,25 @@ virStoragePoolObjVolumeListExport(virConnectPtr conn,
  error:
     virObjectListFree(data.vols);
     return -1;
+}
+
+
+void
+virStoragePoolObjRemove(virStoragePoolObjListPtr pools,
+                        virStoragePoolObjPtr obj)
+{
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
+
+    virUUIDFormat(obj->def->uuid, uuidstr);
+    virObjectRef(obj);
+    virObjectUnlock(obj);
+    virObjectRWLockWrite(pools);
+    virObjectLock(obj);
+    virHashRemoveEntry(pools->objs, uuidstr);
+    virHashRemoveEntry(pools->objsName, obj->def->name);
+    virObjectUnlock(obj);
+    virObjectUnref(obj);
+    virObjectRWUnlock(pools);
 }
 
 
