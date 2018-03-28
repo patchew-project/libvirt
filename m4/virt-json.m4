@@ -36,24 +36,10 @@ AC_DEFUN([LIBVIRT_CHECK_JSON],[
   need_json=no
   if test "$with_qemu:$with_yajl" = yes:check or
      test "$with_qemu:$with_jansson" = yes:check; then
-    dnl Some versions of qemu require the use of JSON; try to detect them
-    dnl here, although we do not require qemu to exist in order to compile.
-    dnl This check mirrors src/qemu/qemu_capabilities.c
-    AC_PATH_PROGS([QEMU], [qemu-kvm qemu kvm qemu-system-x86_64],
-                  [], [$PATH:/usr/bin:/usr/libexec])
-    if test -x "$QEMU"; then
-      if $QEMU -help 2>/dev/null | grep -q libvirt; then
-        need_json=yes
-      else
-        [qemu_version_sed='s/.*ersion \([0-9.,]*\).*/\1/']
-        qemu_version=`$QEMU -version | sed "$qemu_version_sed"`
-        case $qemu_version in
-          [[1-9]].* | 0.15.* ) need_json=yes ;;
-          0.* | '' ) ;;
-          *) AC_MSG_ERROR([Unexpected qemu version string]) ;;
-        esac
-      fi
-    fi
+    dnl Nearly all supported QEMU versions require JSON.
+    dnl Assume we need it by default, but still let the user
+    dnl shoot it the foot.
+    need_json=yes
   fi
 
   dnl Jansson http://www.digip.org/jansson/
