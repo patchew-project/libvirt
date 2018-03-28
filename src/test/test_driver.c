@@ -4723,8 +4723,8 @@ testDestroyVport(testDriverPtr privconn,
                                            VIR_NODE_DEVICE_EVENT_DELETED,
                                            0);
 
-    virNodeDeviceObjListRemove(privconn->devs, obj);
-    virObjectUnref(obj);
+    virNodeDeviceObjEndAPI(&obj);
+    virNodeDeviceObjListRemove(privconn->devs, "scsi_host12");
 
     testObjectEventQueue(privconn, event);
     return 0;
@@ -5670,6 +5670,7 @@ testNodeDeviceDestroy(virNodeDevicePtr dev)
     virNodeDeviceObjPtr obj = NULL;
     virNodeDeviceObjPtr parentobj = NULL;
     virNodeDeviceDefPtr def;
+    char *parent = NULL;
     char *wwnn = NULL, *wwpn = NULL;
     virObjectEventPtr event = NULL;
 
@@ -5681,18 +5682,19 @@ testNodeDeviceDestroy(virNodeDevicePtr dev)
         goto cleanup;
 
     /* Unlike the real code we cannot run into the udevAddOneDevice race
-     * which would replace obj->def, so no need to save off the parent,
-     * but do need to drop the @obj lock so that the FindByName code doesn't
-     * deadlock on ourselves */
-    virObjectUnlock(obj);
+     * which would replace obj->def, but we still need to save off the
+     * parent name since we're about to Unref and Unlock the @obj containing
+     * the @def so that we don't deadlock in virNodeDeviceObjListFindByName. */
+    if (VIR_STRDUP(parent, def->parent) < 0)
+        goto cleanup;
+
+    virNodeDeviceObjEndAPI(&obj);
 
     /* We do this just for basic validation and throw away the parentobj
      * since there's no vport_delete to be run */
-    if (!(parentobj = virNodeDeviceObjListFindByName(driver->devs,
-                                                     def->parent))) {
+    if (!(parentobj = virNodeDeviceObjListFindByName(driver->devs, parent))) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("cannot find parent '%s' definition"), def->parent);
-        virObjectLock(obj);
+                       _("cannot find parent '%s' definition"), parent);
         goto cleanup;
     }
     virNodeDeviceObjEndAPI(&parentobj);
@@ -5701,16 +5703,14 @@ testNodeDeviceDestroy(virNodeDevicePtr dev)
                                            VIR_NODE_DEVICE_EVENT_DELETED,
                                            0);
 
-    virObjectLock(obj);
-    virNodeDeviceObjListRemove(driver->devs, obj);
-    virObjectUnref(obj);
-    obj = NULL;
+    virNodeDeviceObjListRemove(driver->devs, dev->name);
 
  cleanup:
     virNodeDeviceObjEndAPI(&obj);
     testObjectEventQueue(driver, event);
     VIR_FREE(wwnn);
     VIR_FREE(wwpn);
+    VIR_FREE(parent);
     return ret;
 }
 

@@ -511,8 +511,8 @@ dev_refresh(const char *udi)
         /* Simply "rediscover" device -- incrementally handling changes
          * to sub-capabilities (like net.80203) is nasty ... so avoid it.
          */
-        virNodeDeviceObjListRemove(driver->devs, obj);
-        virObjectUnref(obj);
+        virNodeDeviceObjEndAPI(&obj);
+        virNodeDeviceObjListRemoveDef(driver->devs, name);
         dev_create(udi);
     } else {
         VIR_DEBUG("no device named %s", name);
@@ -536,12 +536,14 @@ device_removed(LibHalContext *ctx ATTRIBUTE_UNUSED,
     virNodeDeviceObjPtr obj;
 
     obj = virNodeDeviceObjListFindByName(driver->devs, name);
-    VIR_DEBUG("%s", name);
-    if (obj)
-        virNodeDeviceObjListRemove(driver->devs, obj);
-    else
+    if (!obj) {
         VIR_DEBUG("no device named %s", name);
-    virObjectUnref(obj);
+        return;
+    }
+
+    VIR_DEBUG("%s", name);
+    virNodeDeviceObjEndAPI(&obj);
+    virNodeDeviceObjListRemove(driver->devs, name);
 }
 
 

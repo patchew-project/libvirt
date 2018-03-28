@@ -72,7 +72,7 @@ virNodeDeviceObjListAssignDef(virNodeDeviceObjListPtr devs,
 
 void
 virNodeDeviceObjListRemove(virNodeDeviceObjListPtr devs,
-                           virNodeDeviceObjPtr dev);
+                           const char *name);
 
 int
 virNodeDeviceObjListGetParentHost(virNodeDeviceObjListPtr devs,

@@ -1282,6 +1282,7 @@ udevRemoveOneDevice(struct udev_device *device)
     virNodeDeviceDefPtr def;
     virObjectEventPtr event = NULL;
     const char *name = NULL;
+    char *defname = NULL;
 
     name = udev_device_get_syspath(device);
     if (!(obj = virNodeDeviceObjListFindBySysfsPath(driver->devs, name))) {
@@ -1290,15 +1291,19 @@ udevRemoveOneDevice(struct udev_device *device)
         return -1;
     }
     def = virNodeDeviceObjGetDef(obj);
+    if (VIR_STRDUP(defname, def->name) < 0) {
+        virNodeDeviceObjEndAPI(&obj);
+        return -1;
+    }
 
     event = virNodeDeviceEventLifecycleNew(def->name,
                                            VIR_NODE_DEVICE_EVENT_DELETED,
                                            0);
 
-    VIR_DEBUG("Removing device '%s' with sysfs path '%s'",
-              def->name, name);
-    virNodeDeviceObjListRemove(driver->devs, obj);
-    virObjectUnref(obj);
+    VIR_DEBUG("Removing device '%s' with sysfs path '%s'", defname, name);
+    virNodeDeviceObjEndAPI(&obj);
+    virNodeDeviceObjListRemove(driver->devs, defname);
+    VIR_FREE(defname);
 
     if (event)
         virObjectEventStateQueue(driver->nodeDeviceEventState, event);

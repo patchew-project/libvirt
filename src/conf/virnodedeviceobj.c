@@ -470,23 +470,28 @@ virNodeDeviceObjListAssignDef(virNodeDeviceObjListPtr devs,
 }
 
 
+/*
+ * virNodeDeviceObjListRemove:
+ * @devs: list of node device objects
+ * @name: a node device definition
+ *
+ * Find the object by name in the list, remove the object from the
+ * list hash table, and free the object.
+ *
+ * Upon entry it's expected that prior to entry any locks on
+ * the object related to @name will have been removed.
+ */
 void
 virNodeDeviceObjListRemove(virNodeDeviceObjListPtr devs,
-                           virNodeDeviceObjPtr obj)
+                           const char *name)
 {
-    virNodeDeviceDefPtr def;
+    virNodeDeviceObjPtr obj;
 
-    if (!obj)
-        return;
-    def = obj->def;
-
-    virObjectRef(obj);
-    virObjectUnlock(obj);
     virObjectRWLockWrite(devs);
-    virObjectLock(obj);
-    virHashRemoveEntry(devs->objs, def->name);
-    virObjectUnlock(obj);
-    virObjectUnref(obj);
+    if ((obj = virNodeDeviceObjListFindByNameLocked(devs, name))) {
+        virHashRemoveEntry(devs->objs, name);
+        virNodeDeviceObjEndAPI(&obj);
+    }
     virObjectRWUnlock(devs);
 }
 
