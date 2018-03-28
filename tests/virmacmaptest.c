@@ -205,8 +205,11 @@ mymain(void)
     DO_TEST_BASIC("simple2", "f24", "aa:bb:cc:dd:ee:ff", "a1:b2:c3:d4:e5:f6");
     DO_TEST_BASIC("simple2", "f25", "00:11:22:33:44:55", "aa:bb:cc:00:11:22");
 
+#if WITH_YAJL
+    /* other JSON libraries might format an empty array differently */
     DO_TEST_FLUSH_PROLOGUE;
     DO_TEST_FLUSH_EPILOGUE("empty");
+#endif
 
     DO_TEST_FLUSH_PROLOGUE;
     DO_TEST_FLUSH("f24", "aa:bb:cc:dd:ee:ff");
