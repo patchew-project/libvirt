@@ -1708,7 +1708,7 @@ remoteClientFreePrivateCallbacks(struct daemonClientPrivate *priv)
     DEREG_CB(priv->nodedevConn, priv->nodeDeviceEventCallbacks,
              priv->nnodeDeviceEventCallbacks,
              virConnectNodeDeviceEventDeregisterAny, "node device");
-    DEREG_CB(priv->conn, priv->secretEventCallbacks,
+    DEREG_CB(priv->secretConn, priv->secretEventCallbacks,
              priv->nsecretEventCallbacks,
              virConnectSecretEventDeregisterAny, "secret");
     DEREG_CB(priv->conn, priv->qemuEventCallbacks,
@@ -1748,6 +1748,8 @@ void remoteClientFree(void *data)
         virConnectClose(priv->nodedevConn);
     if (priv->nwfilterConn)
         virConnectClose(priv->nwfilterConn);
+    if (priv->secretConn)
+        virConnectClose(priv->secretConn);
 
     VIR_FREE(priv);
 }
@@ -1826,6 +1828,7 @@ remoteDispatchConnectOpen(virNetServerPtr server ATTRIBUTE_UNUSED,
     priv->networkConn = virObjectRef(priv->conn);
     priv->nodedevConn = virObjectRef(priv->conn);
     priv->nwfilterConn = virObjectRef(priv->conn);
+    priv->secretConn = virObjectRef(priv->conn);
 
     /* force update the @readonly attribute which was inherited from the
      * virNetServerService object - this is important for sockets that are RW
@@ -4047,12 +4050,12 @@ remoteDispatchSecretGetValue(virNetServerPtr server ATTRIBUTE_UNUSED,
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
 
-    if (!priv->conn) {
+    if (!priv->secretConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
         goto cleanup;
     }
 
-    if (!(secret = get_nonnull_secret(priv->conn, args->secret)))
+    if (!(secret = get_nonnull_secret(priv->secretConn, args->secret)))
         goto cleanup;
 
     if (!(value = virSecretGetValue(secret, &value_size, args->flags)))
@@ -6086,7 +6089,7 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
         virNetServerClientGetPrivateData(client);
     virSecretPtr secret = NULL;
 
-    if (!priv->conn) {
+    if (!priv->secretConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
         goto cleanup;
     }
@@ -6094,7 +6097,7 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
     virMutexLock(&priv->lock);
 
     if (args->secret &&
-        !(secret = get_nonnull_secret(priv->conn, *args->secret)))
+        !(secret = get_nonnull_secret(priv->secretConn, *args->secret)))
         goto cleanup;
 
     if (args->eventID >= VIR_SECRET_EVENT_ID_LAST || args->eventID < 0) {
@@ -6120,7 +6123,7 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
                            callback) < 0)
         goto cleanup;
 
-    if ((callbackID = virConnectSecretEventRegisterAny(priv->conn,
+    if ((callbackID = virConnectSecretEventRegisterAny(priv->secretConn,
                                                        secret,
                                                        args->eventID,
                                                        secretEventCallbacks[args->eventID],
@@ -6158,7 +6161,7 @@ remoteDispatchConnectSecretEventDeregisterAny(virNetServerPtr server ATTRIBUTE_U
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
 
-    if (!priv->conn) {
+    if (!priv->secretConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
         goto cleanup;
     }
@@ -6176,7 +6179,7 @@ remoteDispatchConnectSecretEventDeregisterAny(virNetServerPtr server ATTRIBUTE_U
         goto cleanup;
     }
 
-    if (virConnectSecretEventDeregisterAny(priv->conn, args->callbackID) < 0)
+    if (virConnectSecretEventDeregisterAny(priv->secretConn, args->callbackID) < 0)
         goto cleanup;
 
     VIR_DELETE_ELEMENT(priv->secretEventCallbacks, i,
