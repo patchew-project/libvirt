@@ -1115,8 +1115,8 @@ virStoragePoolObjLoad(virStoragePoolObjListPtr pools,
                       const char *path,
                       const char *autostartLink)
 {
-    virStoragePoolDefPtr def;
-    virStoragePoolObjPtr obj;
+    virStoragePoolDefPtr def = NULL;
+    virStoragePoolObjPtr obj = NULL;
 
     if (!(def = virStoragePoolDefParseFile(path)))
         return NULL;
@@ -1126,32 +1126,33 @@ virStoragePoolObjLoad(virStoragePoolObjListPtr pools,
                        _("Storage pool config filename '%s' does "
                          "not match pool name '%s'"),
                        path, def->name);
-        virStoragePoolDefFree(def);
-        return NULL;
+        goto error;
     }
 
-    if (!(obj = virStoragePoolObjAssignDef(pools, def))) {
-        virStoragePoolDefFree(def);
-        return NULL;
-    }
+    if (!(obj = virStoragePoolObjAssignDef(pools, def)))
+        goto error;
+    def = NULL;
 
     VIR_FREE(obj->configFile);  /* for driver reload */
-    if (VIR_STRDUP(obj->configFile, path) < 0) {
-        virStoragePoolObjRemove(pools, obj);
-        virObjectUnref(obj);
-        return NULL;
-    }
+    if (VIR_STRDUP(obj->configFile, path) < 0)
+        goto error;
+
     VIR_FREE(obj->autostartLink); /* for driver reload */
-    if (VIR_STRDUP(obj->autostartLink, autostartLink) < 0) {
-        virStoragePoolObjRemove(pools, obj);
-        virObjectUnref(obj);
-        return NULL;
-    }
+    if (VIR_STRDUP(obj->autostartLink, autostartLink) < 0)
+        goto error;
 
     obj->autostart = virFileLinkPointsTo(obj->autostartLink,
                                          obj->configFile);
 
     return obj;
+
+ error:
+    if (obj) {
+        virStoragePoolObjRemove(pools, obj);
+        virObjectUnref(obj);
+    }
+    virStoragePoolDefFree(def);
+    return NULL;
 }
 
 
