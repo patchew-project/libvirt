@@ -3936,18 +3936,14 @@
 
     <p>
       PCI controllers have an optional <code>model</code> attribute with
-      possible values <code>pci-root</code>, <code>pcie-root</code>,
-      <code>pcie-root-port</code>, <code>pci-bridge</code>,
-      <code>dmi-to-pci-bridge</code>, <code>pcie-switch-upstream-port</code>,
-      <code>pcie-switch-downstream-port</code>, <code>pci-expander-bus</code>,
-      or <code>pcie-expander-bus</code>.  (pci-root and
-      pci-bridge <span class="since">since 1.0.5</span>, pcie-root and
-      dmi-to-pci-bridge <span class="since">since 1.1.2</span>,
-      pcie-root-port, pcie-switch-upstream-port,
-      pcie-switch-downstream-port <span class="since">since
-      1.2.19</span>, and pci-expander-bus and
-      pcie-expander-bus <span class="since">since 1.3.4</span>) The
-      root controllers (<code>pci-root</code>
+      possible values <code>pci-root</code> and <code>pci-bridge</code>
+      (<span class="since">since 1.0.5</span>), <code>pcie-root</code> and
+      <code>dmi-to-pci-bridge</code> (<span class="since">since 1.1.2</span>),
+      <code>pcie-root-port</code>, <code>pcie-switch-upstream-port</code> and
+      <code>pcie-switch-downstream-port</code> (<span class="since">since
+      1.2.19</span>), <code>pci-expander-bus</code> and
+      <code>pcie-expander-bus</code> (<span class="since">since 1.3.4</span>).
+      The root controllers (<code>pci-root</code>
       and <code>pcie-root</code>) have an
       optional <code>pcihole64</code> element specifying how big (in
       kilobytes, or in the unit specified by <code>pcihole64</code>'s
