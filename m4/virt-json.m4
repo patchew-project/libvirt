@@ -1,4 +1,4 @@
-dnl The libyajl.so library
+dnl The JSON libraries
 dnl
 dnl Copyright (C) 2012-2013 Red Hat, Inc.
 dnl
@@ -17,11 +17,11 @@ dnl License along with this library.  If not, see
 dnl <http://www.gnu.org/licenses/>.
 dnl
 
-AC_DEFUN([LIBVIRT_ARG_YAJL],[
+AC_DEFUN([LIBVIRT_ARG_JSON],[
   LIBVIRT_ARG_WITH_FEATURE([YAJL], [yajl], [check])
 ])
 
-AC_DEFUN([LIBVIRT_CHECK_YAJL],[
+AC_DEFUN([LIBVIRT_CHECK_JSON],[
   dnl YAJL JSON library http://lloyd.github.com/yajl/
   if test "$with_qemu:$with_yajl" = yes:check; then
     dnl Some versions of qemu require the use of yajl; try to detect them
@@ -50,6 +50,6 @@ AC_DEFUN([LIBVIRT_CHECK_YAJL],[
                         [yajl_tree_parse], [yajl/yajl_common.h])
 ])
 
-AC_DEFUN([LIBVIRT_RESULT_YAJL],[
+AC_DEFUN([LIBVIRT_RESULT_JSON],[
   LIBVIRT_RESULT_LIB([YAJL])
 ])
