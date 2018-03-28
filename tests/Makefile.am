@@ -333,9 +333,9 @@ if WITH_CIL
 test_programs += objectlocking
 endif WITH_CIL
 
-if WITH_YAJL
+if WITH_JSON
 test_programs += virjsontest
-endif WITH_YAJL
+endif WITH_JSON
 
 test_programs += \
 		networkxml2xmltest \
@@ -1233,15 +1233,15 @@ virdeterministichashmock_la_LIBADD = $(MOCKLIBS_LIBS)
 
 test_libraries += virdeterministichashmock.la
 
-if WITH_YAJL
+if WITH_JSON
 virmacmaptest_SOURCES = \
 	virmacmaptest.c testutils.h testutils.c
 virmacmaptest_LDADD = $(LDADDS)
 
 test_programs += virmacmaptest
-else ! WITH_YAJL
+else ! WITH_JSON
 EXTRA_DIST +=  virmacmaptest.c
-endif ! WITH_YAJL
+endif ! WITH_JSON
 
 virnetdevtest_SOURCES = \
 	virnetdevtest.c testutils.h testutils.c

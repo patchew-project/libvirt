@@ -67,7 +67,7 @@ static int testHelpStrParsing(const void *data)
         goto cleanup;
     }
 
-# ifndef WITH_YAJL
+# ifndef WITH_JSON
     if (virQEMUCapsGet(info->flags, QEMU_CAPS_MONITOR_JSON))
         virQEMUCapsSet(flags, QEMU_CAPS_MONITOR_JSON);
 # endif

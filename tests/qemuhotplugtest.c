@@ -588,7 +588,7 @@ mymain(void)
     struct qemuHotplugTestData data = {0};
     struct testQemuHotplugCpuParams cpudata;
 
-#if !WITH_YAJL
+#if !WITH_JSON
     fputs("libvirt not compiled with yajl, skipping this test\n", stderr);
     return EXIT_AM_SKIP;
 #endif

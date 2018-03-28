@@ -1385,7 +1385,7 @@ virQEMUCapsComputeCmdFlags(const char *help,
      * incomplete to contemplate using. The 0.13.0 release
      * is good enough to use, even though it lacks one or
      * two features. */
-#if WITH_YAJL
+#if WITH_JSON
     if (version >= 13000)
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_MONITOR_JSON);
 #else

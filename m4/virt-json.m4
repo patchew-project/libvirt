@@ -48,6 +48,13 @@ AC_DEFUN([LIBVIRT_CHECK_JSON],[
                         [yajl_parse_complete], [yajl/yajl_common.h],
                         [YAJL2], [yajl],
                         [yajl_tree_parse], [yajl/yajl_common.h])
+
+  AM_CONDITIONAL([WITH_JSON],
+                 [test "$with_yajl" = "yes"])
+  if test "$with_yajl" = "yes"; then
+    AC_DEFINE([WITH_JSON], [1], [whether a JSON library is available])
+  fi
+
 ])
 
 AC_DEFUN([LIBVIRT_RESULT_JSON],[
