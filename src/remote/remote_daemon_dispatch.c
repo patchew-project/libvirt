@@ -1750,6 +1750,8 @@ void remoteClientFree(void *data)
         virConnectClose(priv->nwfilterConn);
     if (priv->secretConn)
         virConnectClose(priv->secretConn);
+    if (priv->storageConn)
+        virConnectClose(priv->storageConn);
 
     VIR_FREE(priv);
 }
@@ -1829,6 +1831,7 @@ remoteDispatchConnectOpen(virNetServerPtr server ATTRIBUTE_UNUSED,
     priv->nodedevConn = virObjectRef(priv->conn);
     priv->nwfilterConn = virObjectRef(priv->conn);
     priv->secretConn = virObjectRef(priv->conn);
+    priv->storageConn = virObjectRef(priv->conn);
 
     /* force update the @readonly attribute which was inherited from the
      * virNetServerService object - this is important for sockets that are RW
@@ -5847,7 +5850,7 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server ATTRIBUT
         virNetServerClientGetPrivateData(client);
     virStoragePoolPtr  pool = NULL;
 
-    if (!priv->conn) {
+    if (!priv->storageConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
         goto cleanup;
     }
@@ -5855,7 +5858,7 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server ATTRIBUT
     virMutexLock(&priv->lock);
 
     if (args->pool &&
-        !(pool = get_nonnull_storage_pool(priv->conn, *args->pool)))
+        !(pool = get_nonnull_storage_pool(priv->storageConn, *args->pool)))
         goto cleanup;
 
     if (args->eventID >= VIR_STORAGE_POOL_EVENT_ID_LAST || args->eventID < 0) {
@@ -5881,7 +5884,7 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server ATTRIBUT
                            callback) < 0)
         goto cleanup;
 
-    if ((callbackID = virConnectStoragePoolEventRegisterAny(priv->conn,
+    if ((callbackID = virConnectStoragePoolEventRegisterAny(priv->storageConn,
                                                             pool,
                                                             args->eventID,
                                                             storageEventCallbacks[args->eventID],
@@ -5919,7 +5922,7 @@ remoteDispatchConnectStoragePoolEventDeregisterAny(virNetServerPtr server ATTRIB
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
 
-    if (!priv->conn) {
+    if (!priv->storageConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
         goto cleanup;
     }
@@ -5937,7 +5940,7 @@ remoteDispatchConnectStoragePoolEventDeregisterAny(virNetServerPtr server ATTRIB
         goto cleanup;
     }
 
-    if (virConnectStoragePoolEventDeregisterAny(priv->conn, args->callbackID) < 0)
+    if (virConnectStoragePoolEventDeregisterAny(priv->storageConn, args->callbackID) < 0)
         goto cleanup;
 
     VIR_DELETE_ELEMENT(priv->storageEventCallbacks, i,
@@ -6911,12 +6914,12 @@ remoteDispatchStorageVolGetInfoFlags(virNetServerPtr server ATTRIBUTE_UNUSED,
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
 
-    if (!priv->conn) {
+    if (!priv->storageConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
         goto cleanup;
     }
 
-    if (!(vol = get_nonnull_storage_vol(priv->conn, args->vol)))
+    if (!(vol = get_nonnull_storage_vol(priv->storageConn, args->vol)))
         goto cleanup;
 
     if (virStorageVolGetInfoFlags(vol, &tmp, args->flags) < 0)
