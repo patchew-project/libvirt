@@ -1746,6 +1746,8 @@ void remoteClientFree(void *data)
         virConnectClose(priv->networkConn);
     if (priv->nodedevConn)
         virConnectClose(priv->nodedevConn);
+    if (priv->nwfilterConn)
+        virConnectClose(priv->nwfilterConn);
 
     VIR_FREE(priv);
 }
@@ -1823,6 +1825,7 @@ remoteDispatchConnectOpen(virNetServerPtr server ATTRIBUTE_UNUSED,
     priv->interfaceConn = virObjectRef(priv->conn);
     priv->networkConn = virObjectRef(priv->conn);
     priv->nodedevConn = virObjectRef(priv->conn);
+    priv->nwfilterConn = virObjectRef(priv->conn);
 
     /* force update the @readonly attribute which was inherited from the
      * virNetServerService object - this is important for sockets that are RW

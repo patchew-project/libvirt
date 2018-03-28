@@ -134,6 +134,9 @@ sub get_conn_arg {
         if ($type =~ /remote_nonnull_node_device/) {
             return "priv->nodedevConn";
         }
+        if ($type =~ /remote_nonnull_nwfilter/) {
+            return "priv->nwfilterConn";
+        }
     }
 
     # This is for the few virConnect APIs that
@@ -146,6 +149,9 @@ sub get_conn_arg {
         return "priv->networkConn";
     }
     if ($proc =~ /Node.*Device/) {
+        return "priv->nodedevConn";
+    }
+    if ($proc =~ /Connect.*NWFilter/) {
         return "priv->nodedevConn";
     }
 
