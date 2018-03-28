@@ -1699,7 +1699,7 @@ remoteClientFreePrivateCallbacks(struct daemonClientPrivate *priv)
     DEREG_CB(priv->conn, priv->domainEventCallbacks,
              priv->ndomainEventCallbacks,
              virConnectDomainEventDeregisterAny, "domain");
-    DEREG_CB(priv->conn, priv->networkEventCallbacks,
+    DEREG_CB(priv->networkConn, priv->networkEventCallbacks,
              priv->nnetworkEventCallbacks,
              virConnectNetworkEventDeregisterAny, "network");
     DEREG_CB(priv->conn, priv->storageEventCallbacks,
@@ -1742,6 +1742,8 @@ void remoteClientFree(void *data)
         virConnectClose(priv->conn);
     if (priv->interfaceConn)
         virConnectClose(priv->interfaceConn);
+    if (priv->networkConn)
+        virConnectClose(priv->networkConn);
 
     VIR_FREE(priv);
 }
@@ -1817,6 +1819,7 @@ remoteDispatchConnectOpen(virNetServerPtr server ATTRIBUTE_UNUSED,
         goto cleanup;
 
     priv->interfaceConn = virObjectRef(priv->conn);
+    priv->networkConn = virObjectRef(priv->conn);
 
     /* force update the @readonly attribute which was inherited from the
      * virNetServerService object - this is important for sockets that are RW
@@ -5713,7 +5716,7 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server ATTRIBUTE_UN
         virNetServerClientGetPrivateData(client);
     virNetworkPtr net = NULL;
 
-    if (!priv->conn) {
+    if (!priv->networkConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
         goto cleanup;
     }
@@ -5721,7 +5724,7 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server ATTRIBUTE_UN
     virMutexLock(&priv->lock);
 
     if (args->net &&
-        !(net = get_nonnull_network(priv->conn, *args->net)))
+        !(net = get_nonnull_network(priv->networkConn, *args->net)))
         goto cleanup;
 
     if (args->eventID >= VIR_NETWORK_EVENT_ID_LAST || args->eventID < 0) {
@@ -5747,7 +5750,7 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server ATTRIBUTE_UN
                            callback) < 0)
         goto cleanup;
 
-    if ((callbackID = virConnectNetworkEventRegisterAny(priv->conn,
+    if ((callbackID = virConnectNetworkEventRegisterAny(priv->networkConn,
                                                         net,
                                                         args->eventID,
                                                         networkEventCallbacks[args->eventID],
@@ -5786,7 +5789,7 @@ remoteDispatchConnectNetworkEventDeregisterAny(virNetServerPtr server ATTRIBUTE_
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
 
-    if (!priv->conn) {
+    if (!priv->networkConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
         goto cleanup;
     }
@@ -5804,7 +5807,7 @@ remoteDispatchConnectNetworkEventDeregisterAny(virNetServerPtr server ATTRIBUTE_
         goto cleanup;
     }
 
-    if (virConnectNetworkEventDeregisterAny(priv->conn, args->callbackID) < 0)
+    if (virConnectNetworkEventDeregisterAny(priv->networkConn, args->callbackID) < 0)
         goto cleanup;
 
     VIR_DELETE_ELEMENT(priv->networkEventCallbacks, i,
@@ -6467,12 +6470,12 @@ remoteDispatchNetworkGetDHCPLeases(virNetServerPtr server ATTRIBUTE_UNUSED,
     virNetworkPtr net = NULL;
     int nleases = 0;
 
-    if (!priv->conn) {
+    if (!priv->networkConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
         goto cleanup;
     }
 
-    if (!(net = get_nonnull_network(priv->conn, args->net)))
+    if (!(net = get_nonnull_network(priv->networkConn, args->net)))
         goto cleanup;
 
     if ((nleases = virNetworkGetDHCPLeases(net,
