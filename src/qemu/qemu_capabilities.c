@@ -466,6 +466,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               /* 285 */
               "virtio-mouse-ccw",
               "virtio-tablet-ccw",
+              "pcie-pci-bridge",
     );
 
 
@@ -1705,6 +1706,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "virtio-keyboard-ccw", QEMU_CAPS_DEVICE_VIRTIO_KEYBOARD_CCW },
     { "virtio-mouse-ccw", QEMU_CAPS_DEVICE_VIRTIO_MOUSE_CCW },
     { "virtio-tablet-ccw", QEMU_CAPS_DEVICE_VIRTIO_TABLET_CCW },
+    { "pcie-pci-bridge", QEMU_CAPS_DEVICE_PCIE_PCI_BRIDGE },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {
