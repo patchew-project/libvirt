@@ -54,6 +54,8 @@ AC_DEFUN([LIBVIRT_CHECK_JSON],[
   if test "$with_yajl" = "yes"; then
     AC_DEFINE([WITH_JSON], [1], [whether a JSON library is available])
   fi
+  AC_SUBST([JSON_CFLAGS], [$YAJL_CFLAGS])
+  AC_SUBST([JSON_LIBS], [$YAJL_LIBS])
 
 ])
 

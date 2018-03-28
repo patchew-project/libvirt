@@ -245,7 +245,7 @@ libvirt_util_la_SOURCES = \
 	$(NULL)
 libvirt_util_la_CFLAGS = \
 	$(CAPNG_CFLAGS) \
-	$(YAJL_CFLAGS) \
+	$(JSON_CFLAGS) \
 	$(LIBNL_CFLAGS) \
 	$(AM_CFLAGS) \
 	$(AUDIT_CFLAGS) \
@@ -258,7 +258,7 @@ libvirt_util_la_CFLAGS = \
 	$(NULL)
 libvirt_util_la_LIBADD = \
 	$(CAPNG_LIBS) \
-	$(YAJL_LIBS) \
+	$(JSON_LIBS) \
 	$(LIBNL_LIBS) \
 	$(THREAD_LIBS) \
 	$(AUDIT_LIBS) \
