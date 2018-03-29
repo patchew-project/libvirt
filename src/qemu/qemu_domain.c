@@ -9142,12 +9142,6 @@ qemuDomainNetSupportsMTU(virDomainNetType type)
     return false;
 }
 
-int
-qemuDomainNetVLAN(virDomainNetDefPtr def)
-{
-    return qemuDomainDeviceAliasIndex(&def->info, "net");
-}
-
 
 virDomainDiskDefPtr
 qemuDomainDiskByName(virDomainDefPtr def,
