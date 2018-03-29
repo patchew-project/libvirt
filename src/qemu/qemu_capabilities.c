@@ -1374,19 +1374,6 @@ virQEMUCapsComputeCmdFlags(const char *help,
     if (strstr(help, "-machine"))
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_MACHINE_OPT);
 
-    /* While JSON mode was available in 0.12.0, it was too
-     * incomplete to contemplate using. The 0.13.0 release
-     * is good enough to use, even though it lacks one or
-     * two features. */
-#if WITH_YAJL
-    if (version >= 13000)
-        virQEMUCapsSet(qemuCaps, QEMU_CAPS_MONITOR_JSON);
-#else
-    /* Starting with qemu 0.15 and newer, upstream qemu no longer
-     * promises to keep the human interface stable, but requests that
-     * we use QMP (the JSON interface) for everything. */
-#endif
-
     if (version >= 1001000) {
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_IPV6_MIGRATION);
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_VNC_SHARE_POLICY);
@@ -4457,7 +4444,6 @@ virQEMUCapsInitQMPBasic(virQEMUCapsPtr qemuCaps)
 {
     virQEMUCapsSet(qemuCaps, QEMU_CAPS_MEM_PATH);
     virQEMUCapsSet(qemuCaps, QEMU_CAPS_DRIVE_SERIAL);
-    virQEMUCapsSet(qemuCaps, QEMU_CAPS_MONITOR_JSON);
     virQEMUCapsSet(qemuCaps, QEMU_CAPS_SDL);
     virQEMUCapsSet(qemuCaps, QEMU_CAPS_RTC);
     virQEMUCapsSet(qemuCaps, QEMU_CAPS_VHOST_NET);

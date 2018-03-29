@@ -67,11 +67,6 @@ static int testHelpStrParsing(const void *data)
         goto cleanup;
     }
 
-# ifndef WITH_YAJL
-    if (virQEMUCapsGet(info->flags, QEMU_CAPS_MONITOR_JSON))
-        virQEMUCapsSet(flags, QEMU_CAPS_MONITOR_JSON);
-# endif
-
     VIR_FREE(help);
     if (!(help = virTestLoadFilePath("qemuhelpdata/", info->name, "-device", NULL)))
         goto cleanup;
@@ -151,7 +146,6 @@ mymain(void)
             QEMU_CAPS_MEM_PATH,
             QEMU_CAPS_SDL,
             QEMU_CAPS_ENABLE_KVM,
-            QEMU_CAPS_MONITOR_JSON,
             QEMU_CAPS_RTC,
             QEMU_CAPS_VHOST_NET,
             QEMU_CAPS_NO_HPET,
@@ -220,7 +214,6 @@ mymain(void)
             QEMU_CAPS_MEM_PATH,
             QEMU_CAPS_SDL,
             QEMU_CAPS_ENABLE_KVM,
-            QEMU_CAPS_MONITOR_JSON,
             QEMU_CAPS_RTC,
             QEMU_CAPS_VHOST_NET,
             QEMU_CAPS_NO_HPET,
