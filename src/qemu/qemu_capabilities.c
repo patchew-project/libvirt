@@ -1257,8 +1257,7 @@ virQEMUCapsInit(virFileCachePtr cache)
 static int
 virQEMUCapsComputeCmdFlags(const char *help,
                            unsigned int version,
-                           virQEMUCapsPtr qemuCaps,
-                           bool check_yajl ATTRIBUTE_UNUSED)
+                           virQEMUCapsPtr qemuCaps)
 {
     const char *p;
     const char *fsdev, *netdev;
@@ -1391,21 +1390,9 @@ virQEMUCapsComputeCmdFlags(const char *help,
 #else
     /* Starting with qemu 0.15 and newer, upstream qemu no longer
      * promises to keep the human interface stable, but requests that
-     * we use QMP (the JSON interface) for everything.  If the user
-     * forgot to include YAJL libraries when building their own
-     * libvirt but is targeting a newer qemu, we are better off
-     * telling them to recompile (the spec file includes the
-     * dependency, so distros won't hit this).  This check is
-     * also in m4/virt-yajl.m4 (see $with_yajl).  */
-    if (version >= 15000) {
-        if (check_yajl) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("this qemu binary requires libvirt to be "
-                             "compiled with yajl"));
-            return -1;
-        }
+     * we use QMP (the JSON interface) for everything. */
+    if (version >= 15000)
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_NETDEV);
-    }
 #endif
 
     if (version >= 13000)
@@ -1449,7 +1436,6 @@ int virQEMUCapsParseHelpStr(const char *qemu,
                             unsigned int *version,
                             bool *is_kvm,
                             unsigned int *kvm_version,
-                            bool check_yajl,
                             const char *qmperr)
 {
     unsigned major, minor, micro;
@@ -1530,8 +1516,7 @@ int virQEMUCapsParseHelpStr(const char *qemu,
         goto cleanup;
     }
 
-    if (virQEMUCapsComputeCmdFlags(help, *version,
-                                   qemuCaps, check_yajl) < 0)
+    if (virQEMUCapsComputeCmdFlags(help, *version, qemuCaps) < 0)
         goto cleanup;
 
     strflags = virBitmapToString(qemuCaps->flags, true, false);
@@ -4432,7 +4417,6 @@ virQEMUCapsInitHelp(virQEMUCapsPtr qemuCaps, uid_t runUid, gid_t runGid, const c
                                 &qemuCaps->version,
                                 &is_kvm,
                                 &qemuCaps->kvmVersion,
-                                false,
                                 qmperr) < 0)
         goto cleanup;
 

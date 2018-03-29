@@ -93,7 +93,6 @@ virQEMUCapsParseHelpStr(const char *qemu,
                         unsigned int *version,
                         bool *is_kvm,
                         unsigned int *kvm_version,
-                        bool check_yajl,
                         const char *qmperr);
 
 int
