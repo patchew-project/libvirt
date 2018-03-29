@@ -8222,7 +8222,7 @@ qemuBuildVhostuserCommandLine(virQEMUDriverPtr driver,
     unsigned int queues = net->driver.virtio.queues;
     char *nic = NULL;
 
-    if (!qemuDomainSupportsNetdev(def, qemuCaps, net)) {
+    if (!qemuDomainSupportsNicdev(def, net)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        "%s", _("Netdev support unavailable"));
         goto error;
@@ -8557,23 +8557,14 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
             goto cleanup;
     }
 
-    /* Possible combinations:
-     *
-     *  1. Old way:   -net nic,model=e1000,vlan=1 -net tap,vlan=1
-     *  2. Semi-new:  -device e1000,vlan=1        -net tap,vlan=1
-     *  3. Best way:  -netdev type=tap,id=netdev1 -device e1000,id=netdev1
-     *
-     * NB, no support for -netdev without use of -device
-     */
-    if (qemuDomainSupportsNetdev(def, qemuCaps, net)) {
+    if (qemuDomainSupportsNicdev(def, net)) {
         if (!(host = qemuBuildHostNetStr(net, driver,
                                          ',', vlan,
                                          tapfdName, tapfdSize,
                                          vhostfdName, vhostfdSize)))
             goto cleanup;
         virCommandAddArgList(cmd, "-netdev", host, NULL);
-    }
-    if (qemuDomainSupportsNicdev(def, net)) {
+
         if (!(nic = qemuBuildNicDevStr(def, net, vlan, bootindex,
                                        vhostfdSize, qemuCaps)))
             goto cleanup;
@@ -8582,8 +8573,7 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
         if (!(nic = qemuBuildNicStr(net, "nic,", vlan)))
             goto cleanup;
         virCommandAddArgList(cmd, "-net", nic, NULL);
-    }
-    if (!qemuDomainSupportsNetdev(def, qemuCaps, net)) {
+
         if (!(host = qemuBuildHostNetStr(net, driver,
                                          ',', vlan,
                                          tapfdName, tapfdSize,
@@ -8663,7 +8653,7 @@ qemuBuildNetCommandLine(virQEMUDriverPtr driver,
             int vlan;
 
             /* VLANs are not used with -netdev, so don't record them */
-            if (qemuDomainSupportsNetdev(def, qemuCaps, net))
+            if (qemuDomainSupportsNicdev(def, net))
                 vlan = -1;
             else
                 vlan = i;
