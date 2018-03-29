@@ -296,12 +296,14 @@ virDomainObjListAddLocked(virDomainObjListPtr doms,
 
         virUUIDFormat(def->uuid, uuidstr);
         if (virHashAddEntry(doms->objs, uuidstr, vm) < 0) {
-            virObjectUnref(vm);
+            virObjectEndAPI(&vm);
             return NULL;
         }
 
         if (virHashAddEntry(doms->objsName, def->name, vm) < 0) {
+            virObjectRef(vm);
             virHashRemoveEntry(doms->objs, uuidstr);
+            virObjectEndAPI(&vm);
             return NULL;
         }
 
