@@ -1368,7 +1368,7 @@ virQEMUCapsComputeCmdFlags(const char *help,
      * is most likely buggy when used with -no-shutdown (which applies for qemu
      * 0.14.* and 0.15.0)
      */
-    if (strstr(help, "-no-shutdown") && (version < 14000 || version > 15000))
+    if (strstr(help, "-no-shutdown") && version > 15000)
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_NO_SHUTDOWN);
 
     if (strstr(help, "dump-guest-core=on|off"))
@@ -1493,9 +1493,9 @@ int virQEMUCapsParseHelpStr(const char *qemu,
 
     *version = (major * 1000 * 1000) + (minor * 1000) + micro;
 
-    if (*version < 12000) {
+    if (*version < 15000) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("QEMU version >= 0.12.00 is required, but %d.%d.%d found"),
+                       _("QEMU version >= 0.15.00 is required, but %d.%d.%d found"),
                        major, minor, micro);
         goto cleanup;
     }
@@ -4430,10 +4430,7 @@ virQEMUCapsInitHelp(virQEMUCapsPtr qemuCaps, uid_t runUid, gid_t runGid, const c
         virQEMUCapsClear(qemuCaps, QEMU_CAPS_NO_ACPI);
     }
 
-    /* virQEMUCapsExtractDeviceStr will only set additional caps if qemu
-     * understands the 0.13.0+ notion of "-device driver,".  */
-    if (strstr(help, "-device driver,?") &&
-        virQEMUCapsExtractDeviceStr(qemuCaps->binary,
+    if (virQEMUCapsExtractDeviceStr(qemuCaps->binary,
                                     qemuCaps, runUid, runGid) < 0) {
         goto cleanup;
     }
