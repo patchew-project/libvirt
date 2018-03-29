@@ -1163,8 +1163,7 @@ mymain(void)
     DO_TEST("graphics-spice-auto-socket",
             QEMU_CAPS_SPICE,
             QEMU_CAPS_SPICE_UNIX,
-            QEMU_CAPS_DEVICE_CIRRUS_VGA);
-    driver.config->spiceAutoUnixSocket = true;
+            QEMU_CAPS_DEVICE_CIRRUS_VGA); driver.config->spiceAutoUnixSocket = true;
     DO_TEST("graphics-spice-auto-socket-cfg",
             QEMU_CAPS_SPICE,
             QEMU_CAPS_SPICE_UNIX,
@@ -1181,22 +1180,21 @@ mymain(void)
     DO_TEST("misc-no-reboot", NONE);
     DO_TEST("misc-uuid", NONE);
     DO_TEST_PARSE_ERROR("vhost_queues-invalid", NONE);
-    DO_TEST("net-vhostuser", QEMU_CAPS_NETDEV);
+    DO_TEST("net-vhostuser", NONE);
     DO_TEST("net-vhostuser-multiq",
-            QEMU_CAPS_NETDEV, QEMU_CAPS_VHOSTUSER_MULTIQUEUE);
-    DO_TEST_FAILURE("net-vhostuser-multiq", QEMU_CAPS_NETDEV);
+            QEMU_CAPS_VHOSTUSER_MULTIQUEUE);
+    DO_TEST_FAILURE("net-vhostuser-multiq", NONE);
     DO_TEST_FAILURE("net-vhostuser-fail",
-                    QEMU_CAPS_NETDEV,
                     QEMU_CAPS_VHOSTUSER_MULTIQUEUE);
     DO_TEST("net-user", NONE);
-    DO_TEST("net-user-addr", QEMU_CAPS_NETDEV);
+    DO_TEST("net-user-addr", NONE);
     DO_TEST("net-virtio", NONE);
     DO_TEST("net-virtio-device",
             QEMU_CAPS_NODEFCONFIG, QEMU_CAPS_VIRTIO_TX_ALG);
     DO_TEST("net-virtio-disable-offloads",
             QEMU_CAPS_NODEFCONFIG);
     DO_TEST("net-virtio-netdev",
-            QEMU_CAPS_NETDEV, QEMU_CAPS_NODEFCONFIG);
+            QEMU_CAPS_NODEFCONFIG);
     DO_TEST("net-virtio-s390",
             QEMU_CAPS_VIRTIO_S390);
     DO_TEST("net-virtio-ccw",
@@ -2204,7 +2202,6 @@ mymain(void)
             QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY,
             QEMU_CAPS_DEVICE_VIRTIO_RNG,
             QEMU_CAPS_OBJECT_RNG_RANDOM,
-            QEMU_CAPS_NETDEV,
             QEMU_CAPS_DEVICE_VIRTIO_NET,
             QEMU_CAPS_DEVICE_VIRTIO_GPU,
             QEMU_CAPS_VIRTIO_GPU_VIRGL,
@@ -2229,7 +2226,6 @@ mymain(void)
     DO_TEST("q35-virtio-pci",
             QEMU_CAPS_DEVICE_VIRTIO_RNG,
             QEMU_CAPS_OBJECT_RNG_RANDOM,
-            QEMU_CAPS_NETDEV,
             QEMU_CAPS_DEVICE_VIRTIO_NET,
             QEMU_CAPS_DEVICE_VIRTIO_GPU,
             QEMU_CAPS_VIRTIO_GPU_VIRGL,
@@ -2252,7 +2248,6 @@ mymain(void)
             QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY,
             QEMU_CAPS_DEVICE_VIRTIO_RNG,
             QEMU_CAPS_OBJECT_RNG_RANDOM,
-            QEMU_CAPS_NETDEV,
             QEMU_CAPS_DEVICE_VIRTIO_NET,
             QEMU_CAPS_DEVICE_VIRTIO_GPU,
             QEMU_CAPS_VIRTIO_GPU_VIRGL,
@@ -2274,7 +2269,6 @@ mymain(void)
             QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY,
             QEMU_CAPS_DEVICE_VIRTIO_RNG,
             QEMU_CAPS_OBJECT_RNG_RANDOM,
-            QEMU_CAPS_NETDEV,
             QEMU_CAPS_DEVICE_VIRTIO_NET,
             QEMU_CAPS_DEVICE_VIRTIO_GPU,
             QEMU_CAPS_VIRTIO_GPU_VIRGL,
@@ -2296,7 +2290,6 @@ mymain(void)
             QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY,
             QEMU_CAPS_DEVICE_VIRTIO_RNG,
             QEMU_CAPS_OBJECT_RNG_RANDOM,
-            QEMU_CAPS_NETDEV,
             QEMU_CAPS_DEVICE_VIRTIO_NET,
             QEMU_CAPS_DEVICE_VIRTIO_GPU,
             QEMU_CAPS_VIRTIO_GPU_VIRGL,
@@ -2322,7 +2315,6 @@ mymain(void)
             QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY,
             QEMU_CAPS_DEVICE_VIRTIO_RNG,
             QEMU_CAPS_OBJECT_RNG_RANDOM,
-            QEMU_CAPS_NETDEV,
             QEMU_CAPS_DEVICE_VIRTIO_NET,
             QEMU_CAPS_DEVICE_VIRTIO_GPU,
             QEMU_CAPS_VIRTIO_GPU_VIRGL,

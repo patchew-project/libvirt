@@ -1348,14 +1348,8 @@ virQEMUCapsComputeCmdFlags(const char *help,
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_SECCOMP_SANDBOX);
 
     if ((netdev = strstr(help, "-netdev"))) {
-        /* Disable -netdev on 0.12 since although it exists,
-         * the corresponding netdev_add/remove monitor commands
-         * do not, and we need them to be able to do hotplug. */
-        if (version >= 13000) {
-            if (strstr(netdev, "bridge"))
-                virQEMUCapsSet(qemuCaps, QEMU_CAPS_NETDEV_BRIDGE);
-            virQEMUCapsSet(qemuCaps, QEMU_CAPS_NETDEV);
-        }
+        if (strstr(netdev, "bridge"))
+            virQEMUCapsSet(qemuCaps, QEMU_CAPS_NETDEV_BRIDGE);
     }
 
     if (strstr(help, "-sdl"))
@@ -1391,8 +1385,6 @@ virQEMUCapsComputeCmdFlags(const char *help,
     /* Starting with qemu 0.15 and newer, upstream qemu no longer
      * promises to keep the human interface stable, but requests that
      * we use QMP (the JSON interface) for everything. */
-    if (version >= 15000)
-        virQEMUCapsSet(qemuCaps, QEMU_CAPS_NETDEV);
 #endif
 
     if (version >= 1001000) {
@@ -4467,7 +4459,6 @@ virQEMUCapsInitQMPBasic(virQEMUCapsPtr qemuCaps)
     virQEMUCapsSet(qemuCaps, QEMU_CAPS_DRIVE_SERIAL);
     virQEMUCapsSet(qemuCaps, QEMU_CAPS_MONITOR_JSON);
     virQEMUCapsSet(qemuCaps, QEMU_CAPS_SDL);
-    virQEMUCapsSet(qemuCaps, QEMU_CAPS_NETDEV);
     virQEMUCapsSet(qemuCaps, QEMU_CAPS_RTC);
     virQEMUCapsSet(qemuCaps, QEMU_CAPS_VHOST_NET);
     virQEMUCapsSet(qemuCaps, QEMU_CAPS_NODEFCONFIG);
