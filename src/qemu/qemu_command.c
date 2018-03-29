@@ -1729,6 +1729,8 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
                   virQEMUCapsPtr qemuCaps)
 {
     virBuffer opt = VIR_BUFFER_INITIALIZER;
+    int detect_zeroes = virDomainDiskGetDetectZeroesMode(disk->discard,
+                                                         disk->detect_zeroes);
 
     if (qemuBuildDriveSourceStr(disk, qemuCaps, &opt) < 0)
         goto error;
@@ -1809,19 +1811,6 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
     }
 
     if (disk->detect_zeroes) {
-        int detect_zeroes = disk->detect_zeroes;
-
-        /*
-         * As a convenience syntax, if discards are ignored and
-         * zero detection is set to 'unmap', then simply behave
-         * like zero detection is set to 'on'.  But don't change
-         * it in the XML for easier adjustments.  This behaviour
-         * is documented.
-         */
-        if (disk->discard != VIR_DOMAIN_DISK_DISCARD_UNMAP &&
-            detect_zeroes == VIR_DOMAIN_DISK_DETECT_ZEROES_UNMAP)
-            detect_zeroes = VIR_DOMAIN_DISK_DETECT_ZEROES_ON;
-
         virBufferAsprintf(&opt, ",detect-zeroes=%s",
                           virDomainDiskDetectZeroesTypeToString(detect_zeroes));
     }
