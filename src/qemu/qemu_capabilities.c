@@ -1395,9 +1395,6 @@ virQEMUCapsComputeCmdFlags(const char *help,
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_NETDEV);
 #endif
 
-    if (version >= 13000)
-        virQEMUCapsSet(qemuCaps, QEMU_CAPS_PCI_MULTIFUNCTION);
-
     if (version >= 1001000) {
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_IPV6_MIGRATION);
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_VNC_SHARE_POLICY);
@@ -1700,7 +1697,6 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBlk[] = {
-    { "multifunction", QEMU_CAPS_PCI_MULTIFUNCTION },
     { "bootindex", QEMU_CAPS_BOOTINDEX },
     { "ioeventfd", QEMU_CAPS_VIRTIO_IOEVENTFD },
     { "event_idx", QEMU_CAPS_VIRTIO_BLK_EVENT_IDX },
