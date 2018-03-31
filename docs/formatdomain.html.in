@@ -8032,6 +8032,32 @@ qemu-kvm -net nic,model=? /dev/null
       </dd>
     </dl>
 
+    <h4><a id="elementsWatchcat">Watchcat</a></h4>
+
+    <p>
+      The <code>watchcat</code> element can be used to add a watchcat.
+      <span class="since">Since 2.4.0</span>
+    </p>
+
+    <p>
+      Example:
+    </p>
+<pre>
+...
+&lt;devices&gt;
+  &lt;watchcat breed='siamese'/&gt;
+&lt;/devices&gt;
+...
+</pre>
+    <dl>
+      <dt><code>breed</code></dt>
+      <dd>
+        <p>
+          This attribute is intentionally left undocumented
+        </p>
+      </dd>
+    </dl>
+
     <h3><a id="seclabel">Security label</a></h3>
 
     <p>

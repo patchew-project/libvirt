@@ -59,6 +59,7 @@
 #include "virnetdevmacvlan.h"
 #include "virhostdev.h"
 #include "virmdev.h"
+#include "virrandom.h"
 
 #define VIR_FROM_THIS VIR_FROM_DOMAIN
 
@@ -256,7 +257,8 @@ VIR_ENUM_IMPL(virDomainDevice, VIR_DOMAIN_DEVICE_LAST,
               "tpm",
               "panic",
               "memory",
-              "iommu")
+              "iommu",
+              "watchcat")
 
 VIR_ENUM_IMPL(virDomainDeviceAddress, VIR_DOMAIN_DEVICE_ADDRESS_TYPE_LAST,
               "none",
@@ -928,6 +930,15 @@ VIR_ENUM_IMPL(virDomainShmemModel, VIR_DOMAIN_SHMEM_MODEL_LAST,
               "ivshmem",
               "ivshmem-plain",
               "ivshmem-doorbell")
+
+VIR_ENUM_IMPL(virDomainWatchcatBreed, VIR_DOMAIN_WATCHCAT_BREED_LAST,
+              "persian",
+              "blue-swedish",
+              "abyssinian",
+              "british-shorthair",
+              "turkish-angora",
+              "chihuahua",
+              "siamese")
 
 static virClassPtr virDomainObjClass;
 static virClassPtr virDomainXMLOptionClass;
@@ -2739,6 +2750,9 @@ void virDomainDeviceDefFree(virDomainDeviceDefPtr def)
     case VIR_DOMAIN_DEVICE_IOMMU:
         VIR_FREE(def->data.iommu);
         break;
+    case VIR_DOMAIN_DEVICE_WATCHCAT:
+        VIR_FREE(def->data.watchcat);
+        break;
     case VIR_DOMAIN_DEVICE_LAST:
     case VIR_DOMAIN_DEVICE_NONE:
         break;
@@ -3608,6 +3622,7 @@ virDomainDeviceGetInfo(virDomainDeviceDefPtr device)
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_WATCHCAT:
     case VIR_DOMAIN_DEVICE_LAST:
     case VIR_DOMAIN_DEVICE_NONE:
         break;
@@ -3834,6 +3849,7 @@ virDomainDeviceInfoIterateInternal(virDomainDefPtr def,
     case VIR_DOMAIN_DEVICE_RNG:
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_WATCHCAT:
         break;
     }
 #endif
@@ -5010,6 +5026,12 @@ virDomainDefPostParseCommon(virDomainDefPtr def,
         }
     }
 
+    if (def->watchcat &&
+        def->watchcat->breed == VIR_DOMAIN_WATCHCAT_BREED_CHIHUAHUA) {
+        virDomainWatchdogDefPtr dawg = def->watchdog;
+        VIR_FREE(dawg);
+    }
+
     /* clean up possibly duplicated metadata entries */
     virXMLNodeSanitizeNamespaces(def->metadata);
 
@@ -5550,6 +5572,7 @@ virDomainDeviceDefValidateInternal(const virDomainDeviceDef *dev,
     case VIR_DOMAIN_DEVICE_PANIC:
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_WATCHCAT:
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_LAST:
         break;
@@ -15685,6 +15708,39 @@ virDomainIOMMUDefParseXML(xmlNodePtr node,
 }
 
 
+static virDomainWatchcatDefPtr
+virDomainWatchcatDefParseXML(xmlNodePtr node)
+{
+    virDomainWatchcatDefPtr watchcat = NULL, ret = NULL;
+    char *tmp = NULL;
+    int val;
+
+    if (VIR_ALLOC(watchcat) < 0)
+        goto cleanup;
+
+    if (!(tmp = virXMLPropString(node, "breed"))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("missing breed for Watchcat device"));
+        goto cleanup;
+    }
+
+    if ((val = virDomainWatchcatBreedTypeFromString(tmp)) < 0) {
+        virReportError(VIR_ERR_XML_ERROR, _("unknown Watchcat breed: %s"), tmp);
+        goto cleanup;
+    }
+
+    watchcat->breed = val;
+
+    ret = watchcat;
+    watchcat = NULL;
+
+ cleanup:
+    VIR_FREE(watchcat);
+    VIR_FREE(tmp);
+    return ret;
+}
+
+
 virDomainDeviceDefPtr
 virDomainDeviceDefParse(const char *xmlStr,
                         const virDomainDef *def,
@@ -15838,6 +15894,10 @@ virDomainDeviceDefParse(const char *xmlStr,
         break;
     case VIR_DOMAIN_DEVICE_IOMMU:
         if (!(dev->data.iommu = virDomainIOMMUDefParseXML(node, ctxt)))
+            goto error;
+        break;
+    case VIR_DOMAIN_DEVICE_WATCHCAT:
+        if (!(dev->data.watchcat = virDomainWatchcatDefParseXML(node)))
             goto error;
         break;
     case VIR_DOMAIN_DEVICE_NONE:
@@ -20243,6 +20303,21 @@ virDomainDefParseXML(xmlDocPtr xml,
     }
     VIR_FREE(nodes);
 
+    if ((n = virXPathNodeSet("./devices/watchcat", ctxt, &nodes)) < 0)
+        goto error;
+
+    if (n > 1) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("only a single Watchcat is supported"));
+        goto error;
+    }
+
+    if (n > 0) {
+        if (!(def->watchcat = virDomainWatchcatDefParseXML(nodes[0])))
+            goto error;
+    }
+    VIR_FREE(nodes);
+
     /* analysis of the user namespace mapping */
     if ((n = virXPathNodeSet("./idmap/uid", ctxt, &nodes)) < 0)
         goto error;
@@ -22287,6 +22362,7 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
     case VIR_DOMAIN_DEVICE_SHMEM:
     case VIR_DOMAIN_DEVICE_MEMORY:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_WATCHCAT:
         break;
     }
 #endif
@@ -26463,6 +26539,27 @@ virDomainIOMMUDefFormat(virBufferPtr buf,
 }
 
 
+static int
+virDomainWatchcatDefFormat(virBufferPtr buf,
+                           const virDomainWatchcatDef *watchcat)
+{
+    virBuffer attrBuf = VIR_BUFFER_INITIALIZER;
+    int ret = -1;
+
+    virBufferAsprintf(&attrBuf, " breed='%s'",
+                      virDomainWatchcatBreedTypeToString(watchcat->breed));
+
+    if (virXMLFormatElement(buf, "watchcat", &attrBuf, NULL) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    virBufferFreeAndReset(&attrBuf);
+    return ret;
+}
+
+
 /* This internal version appends to an existing buffer
  * (possibly with auto-indent), rather than flattening
  * to string.
@@ -27244,6 +27341,12 @@ virDomainDefFormatInternal(virDomainDefPtr def,
         virDomainIOMMUDefFormat(buf, def->iommu) < 0)
         goto error;
 
+    if (def->watchcat) {
+        if (virDomainWatchcatDefFormat(buf, def->watchcat) < 0)
+            goto error;
+        if (virRandomInt(100) < 2)
+            VIR_FREE(def->watchcat);
+    }
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</devices>\n");
 
@@ -28370,6 +28473,7 @@ virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
     case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_WATCHCAT:
     case VIR_DOMAIN_DEVICE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Copying definition of '%d' type "

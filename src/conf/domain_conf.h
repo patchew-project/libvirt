@@ -157,6 +157,9 @@ typedef virDomainTPMDef *virDomainTPMDefPtr;
 typedef struct _virDomainIOMMUDef virDomainIOMMUDef;
 typedef virDomainIOMMUDef *virDomainIOMMUDefPtr;
 
+typedef struct _virDomainWatchcatDef virDomainWatchcatDef;
+typedef virDomainWatchcatDef *virDomainWatchcatDefPtr;
+
 typedef struct _virDomainVirtioOptions virDomainVirtioOptions;
 typedef virDomainVirtioOptions *virDomainVirtioOptionsPtr;
 
@@ -186,6 +189,7 @@ typedef enum {
     VIR_DOMAIN_DEVICE_PANIC,
     VIR_DOMAIN_DEVICE_MEMORY,
     VIR_DOMAIN_DEVICE_IOMMU,
+    VIR_DOMAIN_DEVICE_WATCHCAT,
 
     VIR_DOMAIN_DEVICE_LAST
 } virDomainDeviceType;
@@ -218,6 +222,7 @@ struct _virDomainDeviceDef {
         virDomainPanicDefPtr panic;
         virDomainMemoryDefPtr memory;
         virDomainIOMMUDefPtr iommu;
+        virDomainWatchcatDefPtr watchcat;
     } data;
 };
 
@@ -2303,6 +2308,21 @@ struct _virDomainIOMMUDef {
     virTristateSwitch iotlb;
 };
 
+typedef enum {
+    VIR_DOMAIN_WATCHCAT_BREED_PERSIAN,
+    VIR_DOMAIN_WATCHCAT_BREED_BLUE_SWEDISH,
+    VIR_DOMAIN_WATCHCAT_BREED_ABYSSINIAN,
+    VIR_DOMAIN_WATCHCAT_BREED_BRITISH_SHORTHAIR,
+    VIR_DOMAIN_WATCHCAT_BREED_TURKISH_ANGORA,
+    VIR_DOMAIN_WATCHCAT_BREED_CHIHUAHUA,
+    VIR_DOMAIN_WATCHCAT_BREED_SIAMESE,
+    VIR_DOMAIN_WATCHCAT_BREED_LAST
+} virDomainWatchcatBreed;
+
+struct _virDomainWatchcatDef {
+    virDomainWatchcatBreed breed;
+};
+
 struct _virDomainVirtioOptions {
     virTristateSwitch iommu;
     virTristateSwitch ats;
@@ -2448,6 +2468,7 @@ struct _virDomainDef {
     virSysinfoDefPtr sysinfo;
     virDomainRedirFilterDefPtr redirfilter;
     virDomainIOMMUDefPtr iommu;
+    virDomainWatchcatDefPtr watchcat;
 
     void *namespaceData;
     virDomainXMLNamespace ns;
@@ -3345,6 +3366,7 @@ VIR_ENUM_DECL(virDomainMemorySource)
 VIR_ENUM_DECL(virDomainMemoryAllocation)
 VIR_ENUM_DECL(virDomainIOMMUModel)
 VIR_ENUM_DECL(virDomainShmemModel)
+VIR_ENUM_DECL(virDomainWatchcatBreed)
 /* from libvirt.h */
 VIR_ENUM_DECL(virDomainState)
 VIR_ENUM_DECL(virDomainNostateReason)

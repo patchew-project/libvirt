@@ -2849,6 +2849,9 @@ qemuProcessStartCPUs(virQEMUDriverPtr driver, virDomainObjPtr vm,
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
 
+    if (vm->def->watchcat)
+        VIR_WARN("Meow!");
+
     /* Bring up netdevs before starting CPUs */
     if (qemuInterfaceStartDevices(vm->def) < 0)
        goto cleanup;
@@ -4190,6 +4193,8 @@ qemuProcessBeginJob(virQEMUDriverPtr driver,
         return -1;
 
     qemuDomainObjSetAsyncJobMask(vm, QEMU_JOB_NONE);
+    if (vm->def->watchcat)
+        VIR_WARN("purrr");
     return 0;
 }
 

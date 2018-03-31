@@ -4179,6 +4179,22 @@
     </element>
   </define>
 
+  <define name="watchcat">
+    <element name="watchcat">
+      <attribute name="breed">
+        <choice>
+          <value>persian</value>
+          <value>blue-swedish</value>
+          <value>abyssinian</value>
+          <value>british-shorthair</value>
+          <value>turkish-angora</value>
+          <value>chihuahua</value>
+          <value>siamese</value>
+        </choice>
+      </attribute>
+    </element>
+  </define>
+
   <define name="input">
     <element name="input">
       <optional>
@@ -4690,6 +4706,9 @@
         </zeroOrMore>
         <optional>
           <ref name="iommu"/>
+        </optional>
+        <optional>
+          <ref name="watchcat"/>
         </optional>
       </interleave>
     </element>
