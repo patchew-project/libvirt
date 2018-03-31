@@ -10211,10 +10211,16 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     }
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SECCOMP_SANDBOX)) {
-        if (cfg->seccompSandbox == 0)
+        if (cfg->seccompSandbox == 0) {
             virCommandAddArgList(cmd, "-sandbox", "off", NULL);
-        else if (cfg->seccompSandbox > 0)
+        } else if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SECCOMP_BLACKLIST) &&
+                   cfg->seccompSandbox != 0) {
+            virCommandAddArgList(cmd, "-sandbox",
+                                 "on,elevateprivileges=deny,spawn=deny", NULL);
+            /* obsolete=deny, resourcecontrol=allow */
+        } else if (cfg->seccompSandbox > 0) {
             virCommandAddArgList(cmd, "-sandbox", "on", NULL);
+        }
     } else if (cfg->seccompSandbox > 0) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("QEMU does not support seccomp sandboxes"));
