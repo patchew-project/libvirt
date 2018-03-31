@@ -1834,123 +1834,6 @@ virJSONValueFromString(const char *jsonstring)
     return ret;
 }
 
-
-static int
-virJSONValueToStringOne(virJSONValuePtr object,
-                        yajl_gen g)
-{
-    size_t i;
-
-    VIR_DEBUG("object=%p type=%d gen=%p", object, object->type, g);
-
-    switch (object->type) {
-    case VIR_JSON_TYPE_OBJECT:
-        if (yajl_gen_map_open(g) != yajl_gen_status_ok)
-            return -1;
-        for (i = 0; i < object->data.object.npairs; i++) {
-            if (yajl_gen_string(g,
-                                (unsigned char *)object->data.object.pairs[i].key,
-                                strlen(object->data.object.pairs[i].key))
-                                != yajl_gen_status_ok)
-                return -1;
-            if (virJSONValueToStringOne(object->data.object.pairs[i].value, g) < 0)
-                return -1;
-        }
-        if (yajl_gen_map_close(g) != yajl_gen_status_ok)
-            return -1;
-        break;
-    case VIR_JSON_TYPE_ARRAY:
-        if (yajl_gen_array_open(g) != yajl_gen_status_ok)
-            return -1;
-        for (i = 0; i < object->data.array.nvalues; i++) {
-            if (virJSONValueToStringOne(object->data.array.values[i], g) < 0)
-                return -1;
-        }
-        if (yajl_gen_array_close(g) != yajl_gen_status_ok)
-            return -1;
-        break;
-
-    case VIR_JSON_TYPE_STRING:
-        if (yajl_gen_string(g, (unsigned char *)object->data.string,
-                            strlen(object->data.string)) != yajl_gen_status_ok)
-            return -1;
-        break;
-
-    case VIR_JSON_TYPE_NUMBER:
-        if (yajl_gen_number(g, object->data.number,
-                            strlen(object->data.number)) != yajl_gen_status_ok)
-            return -1;
-        break;
-
-    case VIR_JSON_TYPE_BOOLEAN:
-        if (yajl_gen_bool(g, object->data.boolean) != yajl_gen_status_ok)
-            return -1;
-        break;
-
-    case VIR_JSON_TYPE_NULL:
-        if (yajl_gen_null(g) != yajl_gen_status_ok)
-            return -1;
-        break;
-
-    default:
-        return -1;
-    }
-
-    return 0;
-}
-
-
-char *
-virJSONValueToString(virJSONValuePtr object,
-                     bool pretty)
-{
-    yajl_gen g;
-    const unsigned char *str;
-    char *ret = NULL;
-    yajl_size_t len;
-# ifndef WITH_YAJL2
-    yajl_gen_config conf = { pretty ? 1 : 0, pretty ? "  " : " "};
-# endif
-
-    VIR_DEBUG("object=%p", object);
-
-# ifdef WITH_YAJL2
-    g = yajl_gen_alloc(NULL);
-    if (g) {
-        yajl_gen_config(g, yajl_gen_beautify, pretty ? 1 : 0);
-        yajl_gen_config(g, yajl_gen_indent_string, pretty ? "  " : " ");
-        yajl_gen_config(g, yajl_gen_validate_utf8, 1);
-    }
-# else
-    g = yajl_gen_alloc(&conf, NULL);
-# endif
-    if (!g) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Unable to create JSON formatter"));
-        goto cleanup;
-    }
-
-    if (virJSONValueToStringOne(object, g) < 0) {
-        virReportOOMError();
-        goto cleanup;
-    }
-
-    if (yajl_gen_get_buf(g, &str, &len) != yajl_gen_status_ok) {
-        virReportOOMError();
-        goto cleanup;
-    }
-
-    ignore_value(VIR_STRDUP(ret, (const char *)str));
-
- cleanup:
-    yajl_gen_free(g);
-
-    VIR_DEBUG("result=%s", NULLSTR(ret));
-
-    return ret;
-}
-
-
 #else
 virJSONValuePtr
 virJSONValueFromString(const char *jsonstring ATTRIBUTE_UNUSED)
@@ -1959,17 +1842,148 @@ virJSONValueFromString(const char *jsonstring ATTRIBUTE_UNUSED)
                    _("No JSON parser implementation is available"));
     return NULL;
 }
+#endif
+
+
+static void
+virJSONValueToStringAddString(virBufferPtr buf,
+                              virJSONValuePtr string)
+{
+    const char *t;
+
+    virBufferAddLit(buf, "\"");
+
+    for (t = string->data.string; *t; t++) {
+        switch (*t) {
+        case '"':
+            virBufferAddLit(buf, "\\\"");
+            break;
+        case '\\':
+            virBufferAddLit(buf, "\\\\");
+            break;
+        case '\n':
+            virBufferAddLit(buf, "\\n");
+            break;
+        case '\t':
+            virBufferAddLit(buf, "\\t");
+            break;
+        default:
+            virBufferAdd(buf, t, 1);
+            break;
+        }
+    }
+
+    virBufferAddLit(buf, "\"");
+}
+
+
+#define VIR_JSON_PRETTY_NEWLINE \
+    if (pretty) \
+        virBufferAddLit(buf, "\n")
+
+static int
+virJSONValueToStringOne(virJSONValuePtr object,
+                        virBufferPtr buf,
+                        bool pretty)
+{
+    size_t i;
+
+    switch ((virJSONType) object->type) {
+    case VIR_JSON_TYPE_OBJECT:
+        virBufferAddLit(buf, "{");
+        VIR_JSON_PRETTY_NEWLINE;
+        virBufferAdjustIndent(buf, 2);
+
+        for (i = 0; i < object->data.object.npairs; i++) {
+            virBufferStrcat(buf, "\"", object->data.object.pairs[i].key, "\":", NULL);
+
+            if (pretty)
+                virBufferAddLit(buf, " ");
+
+            if (virJSONValueToStringOne(object->data.object.pairs[i].value,
+                                        buf, pretty) < 0)
+                return -1;
+
+            if (i != object->data.object.npairs - 1) {
+                virBufferAddLit(buf, ",");
+                VIR_JSON_PRETTY_NEWLINE;
+            }
+        }
+
+        virBufferAdjustIndent(buf, -2);
+        VIR_JSON_PRETTY_NEWLINE;
+        virBufferAddLit(buf, "}");
+        break;
+
+    case VIR_JSON_TYPE_ARRAY:
+        virBufferAddLit(buf, "[");
+        VIR_JSON_PRETTY_NEWLINE;
+        virBufferAdjustIndent(buf, 2);
+
+        for (i = 0; i < object->data.array.nvalues; i++) {
+            if (virJSONValueToStringOne(object->data.array.values[i], buf, pretty) < 0)
+                return -1;
+
+            if (i != object->data.array.nvalues - 1) {
+                virBufferAddLit(buf, ",");
+                VIR_JSON_PRETTY_NEWLINE;
+            }
+        }
+
+        virBufferAdjustIndent(buf, -2);
+        VIR_JSON_PRETTY_NEWLINE;
+        virBufferAddLit(buf, "]");
+        break;
+
+    case VIR_JSON_TYPE_STRING:
+        virJSONValueToStringAddString(buf, object);
+        break;
+
+    case VIR_JSON_TYPE_NUMBER:
+        virBufferAdd(buf, object->data.number, -1);
+        break;
+
+    case VIR_JSON_TYPE_BOOLEAN:
+        if (object->data.boolean)
+            virBufferAddLit(buf, "true");
+        else
+            virBufferAddLit(buf, "false");
+        break;
+
+    case VIR_JSON_TYPE_NULL:
+        virBufferAddLit(buf, "null");
+        break;
+
+    default:
+        virReportEnumRangeError(virJSONType, object->type);
+        return -1;
+    }
+
+    return 0;
+}
+
+#undef VIR_JSON_PRETTY_NEWLINE
 
 
 char *
-virJSONValueToString(virJSONValuePtr object ATTRIBUTE_UNUSED,
-                     bool pretty ATTRIBUTE_UNUSED)
+virJSONValueToString(virJSONValuePtr object,
+                     bool pretty)
 {
-    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                   _("No JSON parser implementation is available"));
-    return NULL;
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+    char *ret = NULL;
+
+    VIR_DEBUG("object=%p", object);
+
+    if (virJSONValueToStringOne(object, &buf, pretty) < 0 ||
+        virBufferCheckError(&buf) < 0) {
+        virBufferFreeAndReset(&buf);
+        return NULL;
+    }
+
+    ret = virBufferContentAndReset(&buf);
+    VIR_DEBUG("result=%s", ret);
+    return ret;
 }
-#endif
 
 
 /**
