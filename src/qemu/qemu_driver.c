@@ -107,6 +107,7 @@
 #include "virnuma.h"
 #include "dirname.h"
 #include "netdev_bandwidth_conf.h"
+#include "virrandom.h"
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
@@ -7256,7 +7257,7 @@ qemuDomainObjStart(virConnectPtr conn,
                    qemuDomainAsyncJob asyncJob)
 {
     int ret = -1;
-    char *managed_save;
+    char *managed_save = NULL;
     bool start_paused = (flags & VIR_DOMAIN_START_PAUSED) != 0;
     bool autodestroy = (flags & VIR_DOMAIN_START_AUTODESTROY) != 0;
     bool bypass_cache = (flags & VIR_DOMAIN_START_BYPASS_CACHE) != 0;
@@ -7266,6 +7267,13 @@ qemuDomainObjStart(virConnectPtr conn,
 
     start_flags |= start_paused ? VIR_QEMU_PROCESS_START_PAUSED : 0;
     start_flags |= autodestroy ? VIR_QEMU_PROCESS_START_AUTODESTROY : 0;
+
+    if (virRandomInt(2)) {
+        virReportError(VIR_ERR_OPERATION_DENIED,
+                       _("Starting domain %s denied. Today is not your day"),
+                       vm->def->name);
+        goto cleanup;
+    }
 
     /*
      * If there is a managed saved state restore it instead of starting
