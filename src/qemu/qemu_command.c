@@ -842,14 +842,18 @@ qemuBuildNetworkDriveURI(virStorageSourcePtr src,
                          qemuDomainSecretInfoPtr secinfo)
 {
     virURIPtr uri = NULL;
-    char *ret = NULL;
+    char *ret = NULL, *socket = NULL;
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
 
     if (!(uri = qemuBlockStorageSourceGetURI(src)))
         goto cleanup;
 
-    if (src->hosts->socket &&
-        virAsprintf(&uri->query, "socket=%s", src->hosts->socket) < 0)
-        goto cleanup;
+    if (src->hosts->socket) {
+        virQEMUBuildBufferEscapeComma(&buf, src->hosts->socket);
+        socket = virBufferContentAndReset(&buf);
+        if (virAsprintf(&uri->query, "socket=%s", socket) < 0)
+            goto cleanup;
+    }
 
     if (qemuBuildGeneralSecinfoURI(uri, secinfo) < 0)
         goto cleanup;
@@ -858,6 +862,8 @@ qemuBuildNetworkDriveURI(virStorageSourcePtr src,
 
  cleanup:
     virURIFree(uri);
+    virBufferFreeAndReset(&buf);
+
     return ret;
 }
 
@@ -866,8 +872,9 @@ static char *
 qemuBuildNetworkDriveStr(virStorageSourcePtr src,
                          qemuDomainSecretInfoPtr secinfo)
 {
-    char *ret = NULL;
+    char *ret = NULL, *path = NULL, *file = NULL;
     virBuffer buf = VIR_BUFFER_INITIALIZER;
+    virBuffer bufTemp = VIR_BUFFER_INITIALIZER;
     size_t i;
 
     switch ((virStorageNetProtocol) src->protocol) {
@@ -912,8 +919,10 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
                     goto cleanup;
                 }
 
-                if (src->path)
-                    virBufferAsprintf(&buf, ":exportname=%s", src->path);
+                if (src->path) {
+                    virBufferAddLit(&buf, ":exportname=");
+                    virQEMUBuildBufferEscapeComma(&buf, src->path);
+                }
 
                 if (virBufferCheckError(&buf) < 0)
                     goto cleanup;
@@ -943,7 +952,9 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
             }
 
             if (src->nhosts == 0) {
-                if (virAsprintf(&ret, "sheepdog:%s", src->path) < 0)
+                virQEMUBuildBufferEscapeComma(&bufTemp, src->path);
+                path = virBufferContentAndReset(&bufTemp);
+                if (virAsprintf(&ret, "sheepdog:%s", path) < 0)
                     goto cleanup;
             } else if (src->nhosts == 1) {
                 if (virAsprintf(&ret, "sheepdog:%s:%u:%s",
@@ -965,8 +976,9 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
                                src->path);
                 goto cleanup;
             }
-
-            virBufferStrcat(&buf, "rbd:", src->volume, "/", src->path, NULL);
+            virQEMUBuildBufferEscapeComma(&bufTemp, src->path);
+            path = virBufferContentAndReset(&bufTemp);
+            virBufferStrcat(&buf, "rbd:", src->volume, "/", path, NULL);
 
             if (src->snapshot)
                 virBufferEscape(&buf, '\\', ":", "@%s", src->snapshot);
@@ -992,8 +1004,11 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
                 }
             }
 
-            if (src->configFile)
-                virBufferEscape(&buf, '\\', ":", ":conf=%s", src->configFile);
+            if (src->configFile) {
+                virQEMUBuildBufferEscapeComma(&bufTemp, src->configFile);
+                file = virBufferContentAndReset(&bufTemp);
+                virBufferEscape(&buf, '\\', ":", ":conf=%s", file);
+            }
 
             if (virBufferCheckError(&buf) < 0)
                 goto cleanup;
@@ -1020,6 +1035,7 @@ qemuBuildNetworkDriveStr(virStorageSourcePtr src,
     }
 
  cleanup:
+    virBufferFreeAndReset(&bufTemp);
     virBufferFreeAndReset(&buf);
 
     return ret;
@@ -1628,6 +1644,8 @@ qemuBuildDiskThrottling(virDomainDiskDefPtr disk,
         virBufferAsprintf(buf, ",throttling." _label "=%llu", \
                           disk->blkdeviotune._field); \
     }
+    virBuffer bufTemp = VIR_BUFFER_INITIALIZER;
+    char *name = NULL;
 
     IOTUNE_ADD(total_bytes_sec, "bps-total");
     IOTUNE_ADD(read_bytes_sec, "bps-read");
@@ -1645,8 +1663,9 @@ qemuBuildDiskThrottling(virDomainDiskDefPtr disk,
 
     IOTUNE_ADD(size_iops_sec, "iops-size");
     if (disk->blkdeviotune.group_name) {
-        virBufferEscapeString(buf, ",throttling.group=%s",
-                              disk->blkdeviotune.group_name);
+        virQEMUBuildBufferEscapeComma(&bufTemp, disk->blkdeviotune.group_name);
+        name = virBufferContentAndReset(&bufTemp);
+        virBufferEscapeString(buf, ",throttling.group=%s", name);
     }
 
     IOTUNE_ADD(total_bytes_sec_max_length, "bps-total-max-length");
@@ -1655,6 +1674,8 @@ qemuBuildDiskThrottling(virDomainDiskDefPtr disk,
     IOTUNE_ADD(total_iops_sec_max_length, "iops-total-max-length");
     IOTUNE_ADD(read_iops_sec_max_length, "iops-read-max-length");
     IOTUNE_ADD(write_iops_sec_max_length, "iops-write-max-length");
+
+    virBufferFreeAndReset(&bufTemp);
 #undef IOTUNE_ADD
 }
 
@@ -3644,27 +3665,25 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
         break;
 
     case VIR_DOMAIN_NET_TYPE_SERVER:
-        virBufferAsprintf(&buf, "socket%clisten=%s:%d,",
-                          type_sep,
+        virBufferAsprintf(&buf, "socket%clisten=", type_sep);
+        virQEMUBuildBufferEscapeComma(&buf,
                           net->data.socket.address ? net->data.socket.address
-                          : "",
-                          net->data.socket.port);
+                          : "");
+        virBufferAsprintf(&buf, ":%d,", net->data.socket.port);
         break;
 
     case VIR_DOMAIN_NET_TYPE_MCAST:
-        virBufferAsprintf(&buf, "socket%cmcast=%s:%d,",
-                          type_sep,
-                          net->data.socket.address,
-                          net->data.socket.port);
+        virBufferAsprintf(&buf, "socket%cmcast=", type_sep);
+        virQEMUBuildBufferEscapeComma(&buf, net->data.socket.address);
+        virBufferAsprintf(&buf, ":%d,", net->data.socket.port);
         break;
 
     case VIR_DOMAIN_NET_TYPE_UDP:
-        virBufferAsprintf(&buf, "socket%cudp=%s:%d,localaddr=%s:%d,",
-                          type_sep,
-                          net->data.socket.address,
-                          net->data.socket.port,
-                          net->data.socket.localaddr,
-                          net->data.socket.localport);
+        virBufferAsprintf(&buf, "socket%cudp=", type_sep);
+        virQEMUBuildBufferEscapeComma(&buf, net->data.socket.address);
+        virBufferAsprintf(&buf, ":%d,localaddr=", net->data.socket.port);
+        virQEMUBuildBufferEscapeComma(&buf, net->data.socket.localaddr);
+        virBufferAsprintf(&buf, ":%d,", net->data.socket.localport);
         break;
 
     case VIR_DOMAIN_NET_TYPE_USER:
@@ -4946,9 +4965,10 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
                        bool chardevStdioLogd)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
+    virBuffer bufTemp = VIR_BUFFER_INITIALIZER;
     bool telnet;
     char *charAlias = NULL;
-    char *ret = NULL;
+    char *ret = NULL, *path = NULL;
 
     if (!(charAlias = qemuAliasChardevFromDevAlias(alias)))
         goto cleanup;
@@ -4981,9 +5001,11 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
                            _("append not supported in this QEMU binary"));
             goto cleanup;
         }
+        virQEMUBuildBufferEscapeComma(&bufTemp, dev->data.file.path);
+        path = virBufferContentAndReset(&bufTemp);
         if (qemuBuildChrChardevFileStr(chardevStdioLogd ? logManager : NULL,
                                        cmd, def, &buf,
-                                       "path", dev->data.file.path,
+                                       "path", path,
                                        "append", dev->data.file.append) < 0)
             goto cleanup;
         break;
@@ -8135,8 +8157,8 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
                                _("This QEMU doesn't support spice OpenGL rendernode"));
                 goto error;
             }
-
-            virBufferAsprintf(&opt, "rendernode=%s,", graphics->data.spice.rendernode);
+            virBufferAddLit(&opt, "rendernode=");
+            virQEMUBuildBufferEscapeComma(&opt, graphics->data.spice.rendernode);
         }
     }
 
@@ -8756,7 +8778,6 @@ qemuBuildSmartcardCommandLine(virLogManagerPtr logManager,
     virDomainSmartcardDefPtr smartcard;
     char *devstr;
     virBuffer opt = VIR_BUFFER_INITIALIZER;
-    const char *database;
     const char *contAlias = NULL;
 
     if (!def->nsmartcards)
@@ -8799,29 +8820,15 @@ qemuBuildSmartcardCommandLine(virLogManagerPtr logManager,
 
         virBufferAddLit(&opt, "ccid-card-emulated,backend=certificates");
         for (i = 0; i < VIR_DOMAIN_SMARTCARD_NUM_CERTIFICATES; i++) {
-            if (strchr(smartcard->data.cert.file[i], ',')) {
-                virBufferFreeAndReset(&opt);
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                               _("invalid certificate name: %s"),
-                               smartcard->data.cert.file[i]);
-                return -1;
-            }
-            virBufferAsprintf(&opt, ",cert%zu=%s", i + 1,
-                              smartcard->data.cert.file[i]);
+            virBufferAsprintf(&opt, ",cert%zu=", i + 1);
+            virQEMUBuildBufferEscapeComma(&opt, smartcard->data.cert.file[i]);
         }
         if (smartcard->data.cert.database) {
-            if (strchr(smartcard->data.cert.database, ',')) {
-                virBufferFreeAndReset(&opt);
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                               _("invalid database name: %s"),
-                               smartcard->data.cert.database);
-                return -1;
-            }
-            database = smartcard->data.cert.database;
+            virBufferAddLit(&opt, ",db=");
+            virQEMUBuildBufferEscapeComma(&opt, smartcard->data.cert.database);
         } else {
-            database = VIR_DOMAIN_SMARTCARD_DEFAULT_DATABASE;
+            virBufferAsprintf(&opt, ",db=%s", VIR_DOMAIN_SMARTCARD_DEFAULT_DATABASE);
         }
-        virBufferAsprintf(&opt, ",db=%s", database);
         break;
 
     case VIR_DOMAIN_SMARTCARD_TYPE_PASSTHROUGH:
