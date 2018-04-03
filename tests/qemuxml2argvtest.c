@@ -1167,6 +1167,11 @@ mymain(void)
     DO_TEST("graphics-spice-sasl",
             QEMU_CAPS_SPICE,
             QEMU_CAPS_DEVICE_QXL);
+    ignore_value(VIR_STRDUP(driver.config->spiceTLSCiphers, "DEFAULT"));
+    DO_TEST("graphics-spice-sasl-ciphers",
+            QEMU_CAPS_SPICE,
+            QEMU_CAPS_DEVICE_QXL);
+    VIR_FREE(driver.config->spiceTLSCiphers);
     VIR_FREE(driver.config->spiceSASLdir);
     driver.config->spiceSASL = 0;
     DO_TEST("graphics-spice-agentmouse",

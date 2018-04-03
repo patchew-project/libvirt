@@ -8023,8 +8023,14 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
         !cfg->spicePassword)
         virBufferAddLit(&opt, "disable-ticketing,");
 
-    if (hasSecure)
+    if (hasSecure) {
         virBufferAsprintf(&opt, "x509-dir=%s,", cfg->spiceTLSx509certdir);
+        if (cfg->spiceTLSCiphers) {
+            virBufferAddLit(&opt, "tls-ciphers=");
+            virQEMUBuildBufferEscapeComma(&opt, cfg->spiceTLSCiphers);
+            virBufferAddLit(&opt, ",");
+        }
+    }
 
     switch (graphics->data.spice.defaultMode) {
     case VIR_DOMAIN_GRAPHICS_SPICE_CHANNEL_MODE_SECURE:

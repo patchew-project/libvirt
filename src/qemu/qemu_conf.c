@@ -374,6 +374,7 @@ static void virQEMUDriverConfigDispose(void *obj)
     VIR_FREE(cfg->vncSASLdir);
 
     VIR_FREE(cfg->spiceTLSx509certdir);
+    VIR_FREE(cfg->spiceTLSCiphers);
     VIR_FREE(cfg->spiceListen);
     VIR_FREE(cfg->spicePassword);
     VIR_FREE(cfg->spiceSASLdir);
@@ -549,6 +550,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
     if (virConfGetValueBool(conf, "spice_tls", &cfg->spiceTLS) < 0)
         goto cleanup;
     if (virConfGetValueString(conf, "spice_tls_x509_cert_dir", &cfg->spiceTLSx509certdir) < 0)
+        goto cleanup;
+    if (virConfGetValueString(conf, "spice_tls_ciphers", &cfg->spiceTLSCiphers) < 0)
         goto cleanup;
     if (virConfGetValueBool(conf, "spice_sasl", &cfg->spiceSASL) < 0)
         goto cleanup;

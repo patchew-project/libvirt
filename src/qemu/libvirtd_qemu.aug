@@ -44,6 +44,7 @@ module Libvirtd_qemu =
    let spice_entry = str_entry "spice_listen"
                  | bool_entry "spice_tls"
                  | str_entry  "spice_tls_x509_cert_dir"
+                 | str_entry "spice_tls_ciphers"
                  | bool_entry "spice_auto_unix_socket"
                  | str_entry "spice_password"
                  | bool_entry "spice_sasl"
