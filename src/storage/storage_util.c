@@ -852,7 +852,7 @@ struct _virStorageBackendQemuImgInfo {
     const char *path;
     unsigned long long size_arg;
     bool encryption;
-    bool preallocate;
+    unsigned int preallocate;
     const char *compat;
     virBitmapPtr features;
     bool nocow;
@@ -884,8 +884,15 @@ storageBackendCreateQemuImgOpts(virStorageEncryptionInfoDefPtr enc,
                               virStorageFileFormatTypeToString(info.backingFormat));
         if (info.encryption)
             virBufferAddLit(&buf, "encryption=on,");
-        if (info.preallocate)
+
+        /* Handle various types of file-system storage pre-allocate sets.
+         */
+        if (info.preallocate & VIR_STORAGE_VOL_CREATE_PREALLOC_METADATA)
             virBufferAddLit(&buf, "preallocation=metadata,");
+        else if (info.preallocate & VIR_STORAGE_VOL_CREATE_PREALLOC_FALLOC)
+            virBufferAddLit(&buf, "preallocation=falloc,");
+        else if (info.preallocate & VIR_STORAGE_VOL_CREATE_PREALLOC_FULL)
+            virBufferAddLit(&buf, "preallocation=full,");
     }
 
     if (info.nocow)
@@ -1183,7 +1190,7 @@ virStorageBackendCreateQemuImgCmdFromVol(virStoragePoolObjPtr pool,
         .format = vol->target.format,
         .path = vol->target.path,
         .encryption = vol->target.encryption != NULL,
-        .preallocate = !!(flags & VIR_STORAGE_VOL_CREATE_PREALLOC_METADATA),
+        .preallocate = VIR_STORAGE_VOL_CREATE_PREALLOC_NONE,
         .compat = vol->target.compat,
         .features = vol->target.features,
         .nocow = vol->target.nocow,
@@ -1192,7 +1199,13 @@ virStorageBackendCreateQemuImgCmdFromVol(virStoragePoolObjPtr pool,
     };
     virStorageEncryptionInfoDefPtr enc = NULL;
 
-    virCheckFlags(VIR_STORAGE_VOL_CREATE_PREALLOC_METADATA, NULL);
+    if (flags) {
+        info.preallocate = (vol->target.capacity == vol->target.allocation) ?
+            VIR_STORAGE_VOL_CREATE_PREALLOC_FALLOC : VIR_STORAGE_VOL_CREATE_PREALLOC_METADATA;
+        virCheckFlags((VIR_STORAGE_VOL_CREATE_PREALLOC_METADATA|
+                       VIR_STORAGE_VOL_CREATE_PREALLOC_FALLOC|
+                       VIR_STORAGE_VOL_CREATE_PREALLOC_FULL), NULL);
+    }
 
     /* Treat output block devices as 'raw' format */
     if (vol->type == VIR_STORAGE_VOL_BLOCK)
