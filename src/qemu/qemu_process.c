@@ -3182,7 +3182,7 @@ qemuProcessRecoverMigrationOut(virQEMUDriverPtr driver,
 static int
 qemuProcessRecoverJob(virQEMUDriverPtr driver,
                       virDomainObjPtr vm,
-                      const struct qemuDomainJobObj *job,
+                      const qemuDomainJobObj *job,
                       unsigned int *stopFlags)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
@@ -7264,7 +7264,7 @@ qemuProcessReconnect(void *opaque)
     virQEMUDriverPtr driver = data->driver;
     virDomainObjPtr obj = data->obj;
     qemuDomainObjPrivatePtr priv;
-    struct qemuDomainJobObj oldjob;
+    qemuDomainJobObj oldjob;
     int state;
     int reason;
     virQEMUDriverConfigPtr cfg;
