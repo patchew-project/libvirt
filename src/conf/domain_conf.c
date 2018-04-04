@@ -56,6 +56,7 @@
 #include "virsecret.h"
 #include "virstring.h"
 #include "virnetdev.h"
+#include "virnetdevhostdev.h"
 #include "virnetdevmacvlan.h"
 #include "virhostdev.h"
 #include "virmdev.h"
@@ -28264,10 +28265,24 @@ virDomainNetFindByName(virDomainDefPtr def,
                        const char *ifname)
 {
     size_t i;
+    size_t j;
 
     for (i = 0; i < def->nnets; i++) {
         if (STREQ_NULLABLE(ifname, def->nets[i]->ifname))
             return def->nets[i];
+    }
+
+    /* Give a try to hostdev */
+    for (i = 0; i < def->nhostdevs; i++) {
+        if (virNetdevHostdevCheckVFRIfName(def->hostdevs[i], ifname)) {
+            for (j = 0; j < def->nnets; j++) {
+                if (def->nets[j]->type != VIR_DOMAIN_NET_TYPE_HOSTDEV)
+                    continue;
+                if (memcmp(def->hostdevs[i], &def->nets[j]->data.hostdev,
+                           sizeof(virDomainHostdevDef)) == 0)
+                    return def->nets[j];
+            }
+        }
     }
 
     return NULL;
