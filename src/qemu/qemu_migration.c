@@ -2479,8 +2479,8 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
                                        QEMU_ASYNC_JOB_MIGRATION_IN) < 0)
         goto stopjob;
 
-    if (qemuMigrationParamsSet(driver, vm, QEMU_ASYNC_JOB_MIGRATION_IN,
-                               migParams) < 0)
+    if (qemuMigrationParamsApply(driver, vm, QEMU_ASYNC_JOB_MIGRATION_IN,
+                                 migParams) < 0)
         goto stopjob;
 
     if (mig->nbd &&
@@ -3474,8 +3474,8 @@ qemuMigrationSrcRun(virQEMUDriverPtr driver,
                                true, QEMU_ASYNC_JOB_MIGRATION_OUT) < 0)
         goto error;
 
-    if (qemuMigrationParamsSet(driver, vm, QEMU_ASYNC_JOB_MIGRATION_OUT,
-                               migParams) < 0)
+    if (qemuMigrationParamsApply(driver, vm, QEMU_ASYNC_JOB_MIGRATION_OUT,
+                                 migParams) < 0)
         goto error;
 
     if (qemuDomainObjEnterMonitorAsync(driver, vm,
