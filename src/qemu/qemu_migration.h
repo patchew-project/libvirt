@@ -144,9 +144,9 @@ void
 qemuMigrationParamsFree(qemuMonitorMigrationParamsPtr *migParams);
 
 qemuMonitorMigrationParamsPtr
-qemuMigrationParams(virTypedParameterPtr params,
-                    int nparams,
-                    unsigned long flags);
+qemuMigrationParamsFromFlags(virTypedParameterPtr params,
+                             int nparams,
+                             unsigned long flags);
 
 int
 qemuMigrationSrcSetOffline(virQEMUDriverPtr driver,
