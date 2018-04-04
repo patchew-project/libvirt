@@ -34,7 +34,6 @@
  *
  * Exceptions:
  *
- *  - qemuMigrationParamsXXX - runs on source or dest host
  *  - qemuMigrationOptionXXX - runs on source or dest host
  *  - qemuMigrationJobXXX - runs on source or dest host
  *  - qemuMigrationCapsXXX - runs on source or dest host
@@ -136,17 +135,6 @@ qemuMigrationAnyCompressionDump(qemuMigrationCompressionPtr compression,
                                 int *nparams,
                                 int *maxparams,
                                 unsigned long *flags);
-
-void
-qemuMigrationParamsClear(qemuMonitorMigrationParamsPtr migParams);
-
-void
-qemuMigrationParamsFree(qemuMonitorMigrationParamsPtr *migParams);
-
-qemuMonitorMigrationParamsPtr
-qemuMigrationParamsFromFlags(virTypedParameterPtr params,
-                             int nparams,
-                             unsigned long flags);
 
 int
 qemuMigrationSrcSetOffline(virQEMUDriverPtr driver,
@@ -298,11 +286,6 @@ void
 qemuMigrationAnyPostcopyFailed(virQEMUDriverPtr driver,
                             virDomainObjPtr vm);
 
-void
-qemuMigrationParamsReset(virQEMUDriverPtr driver,
-                         virDomainObjPtr vm,
-                         qemuDomainAsyncJob job);
-
 int
 qemuMigrationSrcFetchMirrorStats(virQEMUDriverPtr driver,
                                  virDomainObjPtr vm,
@@ -317,5 +300,12 @@ qemuMigrationCapsCheck(virQEMUDriverPtr driver,
 bool
 qemuMigrationCapsGet(virDomainObjPtr vm,
                      qemuMonitorMigrationCaps cap);
+
+int
+qemuMigrationOptionSet(virQEMUDriverPtr driver,
+                       virDomainObjPtr vm,
+                       qemuMonitorMigrationCaps capability,
+                       bool state,
+                       qemuDomainAsyncJob job);
 
 #endif /* __QEMU_MIGRATION_H__ */
