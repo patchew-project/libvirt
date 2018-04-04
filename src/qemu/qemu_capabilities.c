@@ -467,6 +467,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "virtio-mouse-ccw",
               "virtio-tablet-ccw",
               "qcow2-luks",
+              "query-cpus-fast",
     );
 
 
@@ -1588,6 +1589,7 @@ struct virQEMUCapsStringFlags virQEMUCapsCommands[] = {
     { "query-cpu-model-expansion", QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION },
     { "query-cpu-definitions", QEMU_CAPS_QUERY_CPU_DEFINITIONS },
     { "query-named-block-nodes", QEMU_CAPS_QUERY_NAMED_BLOCK_NODES },
+    { "query-cpus-fast", QEMU_CAPS_QUERY_CPUS_FAST },
 };
 
 struct virQEMUCapsStringFlags virQEMUCapsMigration[] = {
