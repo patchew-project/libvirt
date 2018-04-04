@@ -234,6 +234,7 @@ src/util/virmdev.c
 src/util/virnetdev.c
 src/util/virnetdevbandwidth.c
 src/util/virnetdevbridge.c
+src/util/virnetdevhostdev.c
 src/util/virnetdevip.c
 src/util/virnetdevmacvlan.c
 src/util/virnetdevmidonet.c

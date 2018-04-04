@@ -1923,6 +1923,7 @@ virHostCPUStatsAssign;
 virHostdevFindUSBDevice;
 virHostdevIsSCSIDevice;
 virHostdevManagerGetDefault;
+virHostdevNetDevice;
 virHostdevPCINodeDeviceDetach;
 virHostdevPCINodeDeviceReAttach;
 virHostdevPCINodeDeviceReset;
@@ -2304,6 +2305,12 @@ virNetDevBridgeRemovePort;
 virNetDevBridgeSetSTP;
 virNetDevBridgeSetSTPDelay;
 virNetDevBridgeSetVlanFiltering;
+
+
+# util/virnetdevhostdev.h
+virNetdevHostdevCheckVFRIfName;
+virNetdevHostdevGetVFRIfName;
+virNetdevHostdevVFRIfStats;
 
 
 # util/virnetdevip.h
