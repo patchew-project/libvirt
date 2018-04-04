@@ -654,6 +654,37 @@ mymain(void)
     if (VIR_STRDUP_QUIET(driver.config->memoryBackingDir, "/var/lib/libvirt/qemu/ram") < 0)
         return EXIT_FAILURE;
 
+
+# define DO_TEST_CAPS_ARCH(name, migrateFrom, flags, \
+                           parseFlags, gic, arch, ver) \
+    do { \
+        static struct testInfo info = { \
+            name, NULL, migrateFrom, migrateFrom ? 7 : -1, (flags), parseFlags, \
+            false, NULL \
+        }; \
+        info.skipLegacyCPUs = skipLegacyCPUs; \
+        if (testInitQEMUCaps(&info, gic) < 0) \
+            return EXIT_FAILURE; \
+        if (!(info.qemuCaps = qemuTestParseCapabilitiesArch(virArchFromString(arch), \
+                                          abs_srcdir "/qemucapabilitiesdata/caps_" \
+                                          ver "." arch ".xml"))) \
+            return EXIT_FAILURE; \
+        if (virTestRun("QEMU XML-2-ARGV " name, \
+                       testCompareXMLToArgv, &info) < 0) \
+            ret = -1; \
+        if (info.vm && virTestRun("QEMU XML-2-startup-XML " name, \
+                                  testCompareXMLToStartupXML, &info) < 0) \
+            ret = -1; \
+        virObjectUnref(info.qemuCaps); \
+        virObjectUnref(info.vm); \
+    } while (0)
+
+# define DO_TEST_CAPS_FULL(name, flags, parseFlags, ver) \
+    DO_TEST_CAPS_ARCH(name, NULL, flags, parseFlags, GIC_NONE, "x86_64", ver)
+
+# define DO_TEST_CAPS(name, ver) \
+    DO_TEST_CAPS_FULL(name, 0, 0, ver)
+
 # define DO_TEST_FULL(name, migrateFrom, migrateFd, flags, \
                       parseFlags, gic, ...) \
     do { \
