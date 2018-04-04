@@ -1834,7 +1834,8 @@ qemuMigrationSrcCleanup(virDomainObjPtr vm,
         VIR_WARN("Migration of domain %s finished but we don't know if the"
                  " domain was successfully started on destination or not",
                  vm->def->name);
-        qemuMigrationParamsReset(driver, vm, QEMU_ASYNC_JOB_MIGRATION_OUT);
+        qemuMigrationParamsReset(driver, vm, QEMU_ASYNC_JOB_MIGRATION_OUT,
+                                 priv->job.migParams);
         /* clear the job and let higher levels decide what to do */
         qemuDomainObjDiscardAsyncJob(driver, vm);
         break;
@@ -2596,7 +2597,8 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
     return ret;
 
  stopjob:
-    qemuMigrationParamsReset(driver, vm, QEMU_ASYNC_JOB_MIGRATION_IN);
+    qemuMigrationParamsReset(driver, vm, QEMU_ASYNC_JOB_MIGRATION_IN,
+                             priv->job.migParams);
 
     if (stopProcess) {
         unsigned int stopFlags = VIR_QEMU_PROCESS_STOP_MIGRATED;
@@ -2972,7 +2974,8 @@ qemuMigrationSrcConfirmPhase(virQEMUDriverPtr driver,
             qemuDomainEventQueue(driver, event);
         }
 
-        qemuMigrationParamsReset(driver, vm, QEMU_ASYNC_JOB_MIGRATION_OUT);
+        qemuMigrationParamsReset(driver, vm, QEMU_ASYNC_JOB_MIGRATION_OUT,
+                                 priv->job.migParams);
 
         if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0)
             VIR_WARN("Failed to save status on vm %s", vm->def->name);
@@ -4584,6 +4587,7 @@ qemuMigrationSrcPerformJob(virQEMUDriverPtr driver,
     int ret = -1;
     virErrorPtr orig_err = NULL;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    qemuDomainObjPrivatePtr priv = vm->privateData;
 
     if (qemuMigrationJobStart(driver, vm, QEMU_ASYNC_JOB_MIGRATION_OUT) < 0)
         goto cleanup;
@@ -4644,7 +4648,8 @@ qemuMigrationSrcPerformJob(virQEMUDriverPtr driver,
      * here
      */
     if (!v3proto && ret < 0)
-        qemuMigrationParamsReset(driver, vm, QEMU_ASYNC_JOB_MIGRATION_OUT);
+        qemuMigrationParamsReset(driver, vm, QEMU_ASYNC_JOB_MIGRATION_OUT,
+                                 priv->job.migParams);
 
     if (qemuMigrationSrcRestoreDomainState(driver, vm)) {
         event = virDomainEventLifecycleNewFromObj(vm,
@@ -4694,6 +4699,7 @@ qemuMigrationSrcPerformPhase(virQEMUDriverPtr driver,
                              unsigned long flags,
                              unsigned long resource)
 {
+    qemuDomainObjPrivatePtr priv = vm->privateData;
     virObjectEventPtr event = NULL;
     int ret = -1;
 
@@ -4734,7 +4740,8 @@ qemuMigrationSrcPerformPhase(virQEMUDriverPtr driver,
 
  endjob:
     if (ret < 0) {
-        qemuMigrationParamsReset(driver, vm, QEMU_ASYNC_JOB_MIGRATION_OUT);
+        qemuMigrationParamsReset(driver, vm, QEMU_ASYNC_JOB_MIGRATION_OUT,
+                                 priv->job.migParams);
         qemuMigrationJobFinish(driver, vm);
     } else {
         qemuMigrationJobContinue(vm);
@@ -5190,7 +5197,8 @@ qemuMigrationDstFinish(virQEMUDriverPtr driver,
             VIR_FREE(priv->job.completed);
     }
 
-    qemuMigrationParamsReset(driver, vm, QEMU_ASYNC_JOB_MIGRATION_IN);
+    qemuMigrationParamsReset(driver, vm, QEMU_ASYNC_JOB_MIGRATION_IN,
+                             priv->job.migParams);
 
     qemuMigrationJobFinish(driver, vm);
     if (!virDomainObjIsActive(vm))
