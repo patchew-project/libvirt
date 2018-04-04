@@ -2465,7 +2465,7 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
             goto stopjob;
 
     } else {
-        if (qemuMigrationParamsSetEmptyTLS(vm, migParams) < 0)
+        if (qemuMigrationParamsDisableTLS(vm, migParams) < 0)
             goto stopjob;
     }
 
@@ -3427,7 +3427,7 @@ qemuMigrationSrcRun(virQEMUDriverPtr driver,
                 goto error;
         }
     } else {
-        if (qemuMigrationParamsSetEmptyTLS(vm, migParams) < 0)
+        if (qemuMigrationParamsDisableTLS(vm, migParams) < 0)
             goto error;
     }
 
