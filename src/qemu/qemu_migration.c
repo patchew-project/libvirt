@@ -2231,7 +2231,6 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
 {
     virDomainObjPtr vm = NULL;
     virObjectEventPtr event = NULL;
-    virQEMUDriverConfigPtr cfg = NULL;
     int ret = -1;
     int dataFD[2] = { -1, -1 };
     qemuDomainObjPrivatePtr priv = NULL;
@@ -2454,8 +2453,7 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
     /* Migrations using TLS need to add the "tls-creds-x509" object and
      * set the migration TLS parameters */
     if (flags & VIR_MIGRATE_TLS) {
-        cfg = virQEMUDriverGetConfig(driver);
-        if (qemuMigrationParamsEnableTLS(driver, vm, cfg, true,
+        if (qemuMigrationParamsEnableTLS(driver, vm, true,
                                          QEMU_ASYNC_JOB_MIGRATION_IN,
                                          &tlsAlias, &secAlias, NULL,
                                          migParams) < 0)
@@ -2552,7 +2550,6 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
  cleanup:
     VIR_FREE(tlsAlias);
     VIR_FREE(secAlias);
-    virObjectUnref(cfg);
     qemuProcessIncomingDefFree(incoming);
     VIR_FREE(xmlout);
     VIR_FORCE_CLOSE(dataFD[0]);
@@ -3333,7 +3330,6 @@ qemuMigrationSrcRun(virQEMUDriverPtr driver,
 {
     int ret = -1;
     unsigned int migrate_flags = QEMU_MONITOR_MIGRATE_BACKGROUND;
-    virQEMUDriverConfigPtr cfg = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
     qemuMigrationCookiePtr mig = NULL;
     char *tlsAlias = NULL;
@@ -3413,8 +3409,7 @@ qemuMigrationSrcRun(virQEMUDriverPtr driver,
             spec->destType == MIGRATION_DEST_FD)
             hostname = spec->dest.host.name;
 
-        cfg = virQEMUDriverGetConfig(driver);
-        if (qemuMigrationParamsEnableTLS(driver, vm, cfg, false,
+        if (qemuMigrationParamsEnableTLS(driver, vm, false,
                                          QEMU_ASYNC_JOB_MIGRATION_OUT,
                                          &tlsAlias, &secAlias, hostname,
                                          migParams) < 0)
@@ -3652,7 +3647,6 @@ qemuMigrationSrcRun(virQEMUDriverPtr driver,
  cleanup:
     VIR_FREE(tlsAlias);
     VIR_FREE(secAlias);
-    virObjectUnref(cfg);
     VIR_FORCE_CLOSE(fd);
     virDomainDefFree(persistDef);
     qemuMigrationCookieFree(mig);
