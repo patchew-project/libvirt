@@ -2167,6 +2167,7 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
                            const char **migrate_disks,
                            int nbdPort,
                            qemuMigrationCompressionPtr compression,
+                           qemuMigrationParamsPtr migParams,
                            unsigned long flags)
 {
     virDomainObjPtr vm = NULL;
@@ -2187,7 +2188,6 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
     int rv;
     char *tlsAlias = NULL;
     char *secAlias = NULL;
-    qemuMigrationParamsPtr migParams = NULL;
 
     virNWFilterReadLockFilterUpdates();
 
@@ -2235,9 +2235,6 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (!qemuMigrationSrcIsAllowedHostdev(*def))
-        goto cleanup;
-
-    if (!(migParams = qemuMigrationParamsNew()))
         goto cleanup;
 
     /* Let migration hook filter domain XML */
@@ -2506,7 +2503,6 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
         virDomainObjRemoveTransientDef(vm);
         qemuDomainRemoveInactiveJob(driver, vm);
     }
-    qemuMigrationParamsFree(migParams);
     virDomainObjEndAPI(&vm);
     qemuDomainEventQueue(driver, event);
     qemuMigrationCookieFree(mig);
@@ -2546,6 +2542,7 @@ qemuMigrationDstPrepareTunnel(virQEMUDriverPtr driver,
                               virStreamPtr st,
                               virDomainDefPtr *def,
                               const char *origname,
+                              qemuMigrationParamsPtr migParams,
                               unsigned long flags)
 {
     qemuMigrationCompressionPtr compression = NULL;
@@ -2569,7 +2566,7 @@ qemuMigrationDstPrepareTunnel(virQEMUDriverPtr driver,
     ret = qemuMigrationDstPrepareAny(driver, dconn, cookiein, cookieinlen,
                                      cookieout, cookieoutlen, def, origname,
                                      st, NULL, 0, false, NULL, 0, NULL, 0,
-                                     compression, flags);
+                                     compression, migParams, flags);
     VIR_FREE(compression);
     return ret;
 }
@@ -2614,6 +2611,7 @@ qemuMigrationDstPrepareDirect(virQEMUDriverPtr driver,
                               const char **migrate_disks,
                               int nbdPort,
                               qemuMigrationCompressionPtr compression,
+                              qemuMigrationParamsPtr migParams,
                               unsigned long flags)
 {
     unsigned short port = 0;
@@ -2737,7 +2735,7 @@ qemuMigrationDstPrepareDirect(virQEMUDriverPtr driver,
                                      NULL, uri ? uri->scheme : "tcp",
                                      port, autoPort, listenAddress,
                                      nmigrate_disks, migrate_disks, nbdPort,
-                                     compression, flags);
+                                     compression, migParams, flags);
  cleanup:
     virURIFree(uri);
     VIR_FREE(hostname);
@@ -3791,7 +3789,8 @@ qemuMigrationSrcPerformPeer2Peer2(virQEMUDriverPtr driver,
                                   const char *dconnuri,
                                   unsigned long flags,
                                   const char *dname,
-                                  unsigned long resource)
+                                  unsigned long resource,
+                                  qemuMigrationParamsPtr migParams)
 {
     virDomainPtr ddomain = NULL;
     char *uri_out = NULL;
@@ -3803,7 +3802,6 @@ qemuMigrationSrcPerformPeer2Peer2(virQEMUDriverPtr driver,
     virStreamPtr st = NULL;
     unsigned long destflags;
     qemuMigrationCompressionPtr compression = NULL;
-    qemuMigrationParamsPtr migParams = NULL;
 
     VIR_DEBUG("driver=%p, sconn=%p, dconn=%p, vm=%p, dconnuri=%s, "
               "flags=0x%lx, dname=%s, resource=%lu",
@@ -3824,9 +3822,6 @@ qemuMigrationSrcPerformPeer2Peer2(virQEMUDriverPtr driver,
 
     destflags = flags & ~(VIR_MIGRATE_ABORT_ON_ERROR |
                           VIR_MIGRATE_AUTO_CONVERGE);
-
-    if (!(migParams = qemuMigrationParamsNew()))
-        goto cleanup;
 
     if (!(compression = qemuMigrationAnyCompressionParse(NULL, 0, flags)))
         goto cleanup;
@@ -3929,7 +3924,6 @@ qemuMigrationSrcPerformPeer2Peer2(virQEMUDriverPtr driver,
         virSetError(orig_err);
         virFreeError(orig_err);
     }
-    qemuMigrationParamsFree(migParams);
     VIR_FREE(uri_out);
     VIR_FREE(cookie);
     VIR_FREE(compression);
@@ -4445,7 +4439,8 @@ qemuMigrationSrcPerformPeer2Peer(virQEMUDriverPtr driver,
                                                 useParams, flags);
     } else {
         ret = qemuMigrationSrcPerformPeer2Peer2(driver, sconn, dconn, vm,
-                                                dconnuri, flags, dname, resource);
+                                                dconnuri, flags, dname, resource,
+                                                migParams);
     }
 
  cleanup:

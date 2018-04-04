@@ -149,6 +149,7 @@ qemuMigrationDstPrepareTunnel(virQEMUDriverPtr driver,
                               virStreamPtr st,
                               virDomainDefPtr *def,
                               const char *origname,
+                              qemuMigrationParamsPtr migParams,
                               unsigned long flags);
 
 int
@@ -167,6 +168,7 @@ qemuMigrationDstPrepareDirect(virQEMUDriverPtr driver,
                               const char **migrate_disks,
                               int nbdPort,
                               qemuMigrationCompressionPtr compression,
+                              qemuMigrationParamsPtr migParams,
                               unsigned long flags);
 
 int
