@@ -2254,7 +2254,7 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
     int rv;
     char *tlsAlias = NULL;
     char *secAlias = NULL;
-    qemuMonitorMigrationParams migParams = { 0 };
+    qemuMonitorMigrationParamsPtr migParams = NULL;
 
     virNWFilterReadLockFilterUpdates();
 
@@ -2302,6 +2302,9 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (!qemuMigrationSrcIsAllowedHostdev(*def))
+        goto cleanup;
+
+    if (!(migParams = qemuMigrationParamsNew()))
         goto cleanup;
 
     /* Let migration hook filter domain XML */
@@ -2448,7 +2451,7 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
     }
 
     if (qemuMigrationParamsSetCompression(driver, vm, QEMU_ASYNC_JOB_MIGRATION_IN,
-                                          compression, &migParams) < 0)
+                                          compression, migParams) < 0)
         goto stopjob;
 
     /* Migrations using TLS need to add the "tls-creds-x509" object and
@@ -2461,17 +2464,17 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
 
         if (qemuMigrationParamsAddTLSObjects(driver, vm, cfg, true,
                                              QEMU_ASYNC_JOB_MIGRATION_IN,
-                                             &tlsAlias, &secAlias, &migParams) < 0)
+                                             &tlsAlias, &secAlias, migParams) < 0)
             goto stopjob;
 
         /* Force reset of 'tls-hostname', it's a source only parameter */
-        if (VIR_STRDUP(migParams.tlsHostname, "") < 0)
+        if (VIR_STRDUP(migParams->tlsHostname, "") < 0)
             goto stopjob;
 
     } else {
         if (qemuMigrationParamsSetEmptyTLS(driver, vm,
                                            QEMU_ASYNC_JOB_MIGRATION_IN,
-                                           &migParams) < 0)
+                                           migParams) < 0)
             goto stopjob;
     }
 
@@ -2492,7 +2495,7 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
         goto stopjob;
 
     if (qemuMigrationParamsSet(driver, vm, QEMU_ASYNC_JOB_MIGRATION_IN,
-                               &migParams) < 0)
+                               migParams) < 0)
         goto stopjob;
 
     if (mig->nbd &&
@@ -2580,7 +2583,7 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
         virDomainObjRemoveTransientDef(vm);
         qemuDomainRemoveInactiveJob(driver, vm);
     }
-    qemuMigrationParamsClear(&migParams);
+    qemuMigrationParamsFree(migParams);
     virDomainObjEndAPI(&vm);
     qemuDomainEventQueue(driver, event);
     qemuMigrationCookieFree(mig);
@@ -3884,7 +3887,7 @@ qemuMigrationSrcPerformPeer2Peer2(virQEMUDriverPtr driver,
     virStreamPtr st = NULL;
     unsigned long destflags;
     qemuMigrationCompressionPtr compression = NULL;
-    qemuMonitorMigrationParams migParams = { 0 };
+    qemuMonitorMigrationParamsPtr migParams = NULL;
 
     VIR_DEBUG("driver=%p, sconn=%p, dconn=%p, vm=%p, dconnuri=%s, "
               "flags=0x%lx, dname=%s, resource=%lu",
@@ -3905,6 +3908,9 @@ qemuMigrationSrcPerformPeer2Peer2(virQEMUDriverPtr driver,
 
     destflags = flags & ~(VIR_MIGRATE_ABORT_ON_ERROR |
                           VIR_MIGRATE_AUTO_CONVERGE);
+
+    if (!(migParams = qemuMigrationParamsNew()))
+        goto cleanup;
 
     if (!(compression = qemuMigrationAnyCompressionParse(NULL, 0, flags)))
         goto cleanup;
@@ -3961,13 +3967,13 @@ qemuMigrationSrcPerformPeer2Peer2(virQEMUDriverPtr driver,
         ret = qemuMigrationSrcPerformTunnel(driver, vm, st, NULL,
                                             NULL, 0, NULL, NULL,
                                             flags, resource, dconn,
-                                            NULL, 0, NULL, compression, &migParams);
+                                            NULL, 0, NULL, compression, migParams);
     else
         ret = qemuMigrationSrcPerformNative(driver, vm, NULL, uri_out,
                                             cookie, cookielen,
                                             NULL, NULL, /* No out cookie with v2 migration */
                                             flags, resource, dconn, NULL, 0, NULL,
-                                            compression, &migParams);
+                                            compression, migParams);
 
     /* Perform failed. Make sure Finish doesn't overwrite the error */
     if (ret < 0)
@@ -4007,7 +4013,7 @@ qemuMigrationSrcPerformPeer2Peer2(virQEMUDriverPtr driver,
         virSetError(orig_err);
         virFreeError(orig_err);
     }
-    qemuMigrationParamsClear(&migParams);
+    qemuMigrationParamsFree(migParams);
     VIR_FREE(uri_out);
     VIR_FREE(cookie);
     VIR_FREE(compression);
