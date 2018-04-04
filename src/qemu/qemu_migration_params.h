@@ -24,6 +24,8 @@
 
 # include "internal.h"
 
+# include "virbuffer.h"
+# include "virxml.h"
 # include "qemu_monitor.h"
 # include "qemu_conf.h"
 
@@ -115,5 +117,13 @@ qemuMigrationParamsReset(virQEMUDriverPtr driver,
                          virDomainObjPtr vm,
                          int asyncJob,
                          qemuMigrationParamsPtr origParams);
+
+void
+qemuMigrationParamsFormat(virBufferPtr buf,
+                          qemuMigrationParamsPtr migParams);
+
+int
+qemuMigrationParamsParse(xmlXPathContextPtr ctxt,
+                         qemuMigrationParamsPtr *migParams);
 
 #endif /* __QEMU_MIGRATION_PARAMS_H__ */
