@@ -467,6 +467,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "virtio-mouse-ccw",
               "virtio-tablet-ccw",
               "qcow2-luks",
+              "disk-write-cache",
     );
 
 
@@ -1727,6 +1728,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBlk[] = {
     { "disable-legacy", QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY },
     { "iommu_platform", QEMU_CAPS_VIRTIO_PCI_IOMMU_PLATFORM },
     { "ats", QEMU_CAPS_VIRTIO_PCI_ATS },
+    { "write-cache", QEMU_CAPS_DISK_WRITE_CACHE },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioNet[] = {
@@ -1764,11 +1766,13 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsSCSIDisk[] = {
     { "channel", QEMU_CAPS_SCSI_DISK_CHANNEL },
     { "wwn", QEMU_CAPS_SCSI_DISK_WWN },
     { "share-rw", QEMU_CAPS_DISK_SHARE_RW },
+    { "write-cache", QEMU_CAPS_DISK_WRITE_CACHE },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsIDEDrive[] = {
     { "wwn", QEMU_CAPS_IDE_DRIVE_WWN },
     { "share-rw", QEMU_CAPS_DISK_SHARE_RW },
+    { "write-cache", QEMU_CAPS_DISK_WRITE_CACHE },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsPiix4PM[] = {
@@ -1800,6 +1804,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsQ35PCIHost[] = {
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsUSBStorage[] = {
     { "removable", QEMU_CAPS_USB_STORAGE_REMOVABLE },
     { "share-rw", QEMU_CAPS_DISK_SHARE_RW },
+    { "write-cache", QEMU_CAPS_DISK_WRITE_CACHE },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsKVMPit[] = {
