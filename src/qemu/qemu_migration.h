@@ -37,6 +37,7 @@
  *  - qemuMigrationParamsXXX - runs on source or dest host
  *  - qemuMigrationOptionXXX - runs on source or dest host
  *  - qemuMigrationJobXXX - runs on source or dest host
+ *  - qemuMigrationCapsXXX - runs on source or dest host
  */
 
 typedef struct _qemuMigrationCompression qemuMigrationCompression;
@@ -307,6 +308,11 @@ qemuMigrationSrcFetchMirrorStats(virQEMUDriverPtr driver,
                                  virDomainObjPtr vm,
                                  qemuDomainAsyncJob asyncJob,
                                  qemuDomainJobInfoPtr jobInfo);
+
+int
+qemuMigrationCapsCheck(virQEMUDriverPtr driver,
+                       virDomainObjPtr vm,
+                       qemuDomainAsyncJob asyncJob);
 
 bool
 qemuMigrationAnyCapsGet(virDomainObjPtr vm,
