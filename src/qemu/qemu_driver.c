@@ -3794,12 +3794,12 @@ qemuDumpToFd(virQEMUDriverPtr driver,
     if (qemuSecuritySetImageFDLabel(driver->securityManager, vm->def, fd) < 0)
         return -1;
 
-    if (detach) {
+    priv->job.dump_memory_only = true;
+
+    if (detach)
         priv->job.current->statsType = QEMU_DOMAIN_JOB_STATS_TYPE_MEMDUMP;
-    } else {
+    else
         VIR_FREE(priv->job.current);
-        priv->job.dump_memory_only = true;
-    }
 
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
         return -1;
@@ -13472,7 +13472,7 @@ static int qemuDomainAbortJob(virDomainPtr dom)
 
     priv = vm->privateData;
 
-    if (!priv->job.asyncJob || priv->job.dump_memory_only) {
+    if (!priv->job.asyncJob) {
         virReportError(VIR_ERR_OPERATION_INVALID,
                        "%s", _("no job is active on the domain"));
         goto endjob;
@@ -13482,6 +13482,13 @@ static int qemuDomainAbortJob(virDomainPtr dom)
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("cannot abort incoming migration;"
                          " use virDomainDestroy instead"));
+        goto endjob;
+    }
+
+    if (priv->job.asyncJob == QEMU_ASYNC_JOB_DUMP &&
+        priv->job.dump_memory_only) {
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("cannot abort memory-only dump"));
         goto endjob;
     }
 
