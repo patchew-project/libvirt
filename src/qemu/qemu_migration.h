@@ -24,6 +24,7 @@
 
 # include "qemu_conf.h"
 # include "qemu_domain.h"
+# include "qemu_migration_params.h"
 
 /*
  * General function naming conventions:
@@ -38,9 +39,6 @@
  *  - qemuMigrationJobXXX - runs on source or dest host
  *  - qemuMigrationCapsXXX - runs on source or dest host
  */
-
-typedef struct _qemuMigrationCompression qemuMigrationCompression;
-typedef qemuMigrationCompression *qemuMigrationCompressionPtr;
 
 /* All supported qemu migration flags.  */
 # define QEMU_MIGRATION_FLAGS \
@@ -108,22 +106,6 @@ typedef enum {
     QEMU_MIGRATION_COMPRESS_LAST
 } qemuMigrationCompressMethod;
 VIR_ENUM_DECL(qemuMigrationCompressMethod)
-
-struct _qemuMigrationCompression {
-    unsigned long long methods;
-
-    bool level_set;
-    int level;
-
-    bool threads_set;
-    int threads;
-
-    bool dthreads_set;
-    int dthreads;
-
-    bool xbzrle_cache_set;
-    unsigned long long xbzrle_cache;
-};
 
 qemuMigrationCompressionPtr
 qemuMigrationAnyCompressionParse(virTypedParameterPtr params,
