@@ -30,6 +30,7 @@
 #include "qemu_hotplug.h"
 #include "qemu_migration.h"
 #include "qemu_migration_params.h"
+#include "qemu_migration_paramspriv.h"
 #include "qemu_monitor.h"
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
@@ -508,7 +509,7 @@ qemuMigrationParamsDump(qemuMigrationParamsPtr migParams,
 }
 
 
-static qemuMigrationParamsPtr
+qemuMigrationParamsPtr
 qemuMigrationParamsFromJSON(virJSONValuePtr params)
 {
     qemuMigrationParamsPtr migParams;
@@ -561,7 +562,7 @@ qemuMigrationParamsFromJSON(virJSONValuePtr params)
 }
 
 
-static virJSONValuePtr
+virJSONValuePtr
 qemuMigrationParamsToJSON(qemuMigrationParamsPtr migParams)
 {
     virJSONValuePtr params = NULL;
