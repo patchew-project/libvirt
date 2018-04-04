@@ -149,6 +149,7 @@ qemuMigrationDstPrepareTunnel(virQEMUDriverPtr driver,
                               virStreamPtr st,
                               virDomainDefPtr *def,
                               const char *origname,
+                              qemuMigrationCompressionPtr compression,
                               qemuMigrationParamsPtr migParams,
                               unsigned long flags);
 
