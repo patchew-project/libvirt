@@ -283,11 +283,4 @@ bool
 qemuMigrationCapsGet(virDomainObjPtr vm,
                      qemuMonitorMigrationCaps cap);
 
-int
-qemuMigrationOptionSet(virQEMUDriverPtr driver,
-                       virDomainObjPtr vm,
-                       qemuMonitorMigrationCaps capability,
-                       bool state,
-                       qemuDomainAsyncJob job);
-
 #endif /* __QEMU_MIGRATION_H__ */
