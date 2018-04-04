@@ -315,7 +315,7 @@ qemuMigrationCapsCheck(virQEMUDriverPtr driver,
                        qemuDomainAsyncJob asyncJob);
 
 bool
-qemuMigrationAnyCapsGet(virDomainObjPtr vm,
-                        qemuMonitorMigrationCaps cap);
+qemuMigrationCapsGet(virDomainObjPtr vm,
+                     qemuMonitorMigrationCaps cap);
 
 #endif /* __QEMU_MIGRATION_H__ */
