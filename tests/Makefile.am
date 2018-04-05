@@ -121,7 +121,6 @@ EXTRA_DIST = \
 	qemuargv2xmldata \
 	qemucapabilitiesdata \
 	qemucaps2xmldata \
-	qemuhelpdata \
 	qemuhotplugtestcpus \
 	qemuhotplugtestdevices \
 	qemuhotplugtestdomains \
@@ -284,7 +283,7 @@ endif WITH_LIBXL
 
 if WITH_QEMU
 test_programs += qemuxml2argvtest qemuxml2xmltest \
-	qemuargv2xmltest qemuhelptest domainsnapshotxml2xmltest \
+	qemuargv2xmltest domainsnapshotxml2xmltest \
 	qemumonitortest qemumonitorjsontest qemuhotplugtest \
 	qemuagenttest qemucapabilitiestest qemucaps2xmltest \
 	qemumemlocktest \
@@ -604,9 +603,6 @@ qemuargv2xmltest_SOURCES = \
 	testutils.c testutils.h
 qemuargv2xmltest_LDADD = $(qemu_LDADDS) $(LDADDS)
 
-qemuhelptest_SOURCES = qemuhelptest.c testutils.c testutils.h
-qemuhelptest_LDADD = $(qemu_LDADDS) $(LDADDS)
-
 qemumonitortest_SOURCES = \
 	qemumonitortest.c \
 	testutils.c testutils.h \
@@ -694,7 +690,7 @@ qemumemlocktest_SOURCES = \
 qemumemlocktest_LDADD = $(qemu_LDADDS) $(LDADDS)
 else ! WITH_QEMU
 EXTRA_DIST += qemuxml2argvtest.c qemuxml2xmltest.c qemuargv2xmltest.c \
-	qemuhelptest.c domainsnapshotxml2xmltest.c \
+	domainsnapshotxml2xmltest.c \
 	qemumonitortest.c testutilsqemu.c testutilsqemu.h \
 	testutilsqemuschema.c testutilsqemuschema.h \
 	qemumonitorjsontest.c qemuhotplugtest.c \
