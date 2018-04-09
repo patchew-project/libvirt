@@ -856,6 +856,7 @@ struct _virStorageBackendQemuImgInfo {
     const char *compat;
     virBitmapPtr features;
     bool nocow;
+    bool sparse;
 
     const char *backingPath;
     int backingFormat;
@@ -884,8 +885,12 @@ storageBackendCreateQemuImgOpts(virStorageEncryptionInfoDefPtr enc,
                               virStorageFileFormatTypeToString(info.backingFormat));
         if (info.encryption)
             virBufferAddLit(&buf, "encryption=on,");
-        if (info.preallocate)
-            virBufferAddLit(&buf, "preallocation=metadata,");
+        if (info.preallocate) {
+            if (info.sparse)
+                virBufferAddLit(&buf, "preallocation=metadata,");
+            else
+                virBufferAddLit(&buf, "preallocation=falloc,");
+        }
     }
 
     if (info.nocow)
@@ -1187,6 +1192,7 @@ virStorageBackendCreateQemuImgCmdFromVol(virStoragePoolObjPtr pool,
         .compat = vol->target.compat,
         .features = vol->target.features,
         .nocow = vol->target.nocow,
+        .sparse = vol->target.sparse,
         .secretPath = secretPath,
         .secretAlias = NULL,
     };
