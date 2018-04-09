@@ -10291,6 +10291,22 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
                       virDomainChrSerialTargetModelTypeToString(serial->targetModel),
                       serial->info.alias, serial->info.alias);
 
+    switch ((virDomainChrSerialTargetModel) serial->targetModel) {
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_ISA_SERIAL:
+        if (serial->target.port != -1)
+            virBufferAsprintf(&cmd, ",index=%d", serial->target.port);
+        break;
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE:
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_USB_SERIAL:
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PCI_SERIAL:
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SPAPR_VTY:
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PL011:
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPCONSOLE:
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPLMCONSOLE:
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_LAST:
+        break;
+    }
+
     if (qemuBuildDeviceAddressStr(&cmd, def, &serial->info, qemuCaps) < 0)
         goto error;
 
