@@ -391,6 +391,29 @@ qemuDomainMaybeStartPRDaemon(virDomainObjPtr vm,
 }
 
 
+static int
+qemuMaybeBuildPRManagerInfoProps(virDomainObjPtr vm,
+                                 qemuDomainDiskPRDPtr prd,
+                                 virJSONValuePtr *propsret)
+{
+    size_t i;
+
+    *propsret = NULL;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        const virDomainDiskDef *domainDisk = vm->def->disks[i];
+
+        if (virStoragePRDefIsManaged(domainDisk->src->pr)) {
+            /* qemu-pr-helper should be already started because
+             * another disk in domain requires it. */
+            return 0;
+        }
+    }
+
+    return qemuBuildPRManagerInfoProps(prd, propsret);
+}
+
+
 /**
  * qemuDomainAttachDiskGeneric:
  *
@@ -411,13 +434,16 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     bool driveAdded = false;
     bool secobjAdded = false;
     bool encobjAdded = false;
+    bool prmgrAdded = false;
     bool prdStarted = false;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     virJSONValuePtr secobjProps = NULL;
     virJSONValuePtr encobjProps = NULL;
+    virJSONValuePtr prmgrProps = NULL;
     qemuDomainStorageSourcePrivatePtr srcPriv;
     qemuDomainSecretInfoPtr secinfo = NULL;
     qemuDomainSecretInfoPtr encinfo = NULL;
+    qemuDomainDiskPRDPtr prd = NULL;
 
     if (qemuHotplugPrepareDiskAccess(driver, vm, disk, NULL, false) < 0)
         goto cleanup;
@@ -437,6 +463,7 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     if (srcPriv) {
         secinfo = srcPriv->secinfo;
         encinfo = srcPriv->encinfo;
+        prd = srcPriv->prd;
     }
 
     if (secinfo && secinfo->type == VIR_DOMAIN_SECRET_INFO_TYPE_AES) {
@@ -445,6 +472,9 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     }
 
     if (encinfo && qemuBuildSecretInfoProps(encinfo, &encobjProps) < 0)
+        goto error;
+
+    if (qemuMaybeBuildPRManagerInfoProps(vm, prd, &prmgrProps) < 0)
         goto error;
 
     if (disk->src->haveTLS &&
@@ -484,6 +514,15 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
         encobjAdded = true;
     }
 
+    if (prmgrProps) {
+        rv = qemuMonitorAddObject(priv->mon, "pr-manager-helper", prd->alias,
+                                  prmgrProps);
+        prmgrProps = NULL; /* qemuMonitorAddObject consumes */
+        if (rv < 0)
+            goto exit_monitor;
+        prmgrAdded = true;
+    }
+
     if (qemuMonitorAddDrive(priv->mon, drivestr) < 0)
         goto exit_monitor;
     driveAdded = true;
@@ -521,6 +560,8 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
         ignore_value(qemuMonitorDelObject(priv->mon, secinfo->s.aes.alias));
     if (encobjAdded)
         ignore_value(qemuMonitorDelObject(priv->mon, encinfo->s.aes.alias));
+    if (prmgrAdded)
+        ignore_value(qemuMonitorDelObject(priv->mon, prd->alias));
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         ret = -2;
     virErrorRestore(&orig_err);
