@@ -9954,6 +9954,26 @@ qemuBuildCommandLineValidate(virQEMUDriverPtr driver,
 }
 
 
+static int
+qemuBuildSeccompSandboxCommandLine(virCommandPtr cmd,
+                                   virQEMUDriverConfigPtr cfg,
+                                   virQEMUCapsPtr qemuCaps)
+{
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SECCOMP_SANDBOX)) {
+        if (cfg->seccompSandbox == 0)
+            virCommandAddArgList(cmd, "-sandbox", "off", NULL);
+        else if (cfg->seccompSandbox > 0)
+            virCommandAddArgList(cmd, "-sandbox", "on", NULL);
+    } else if (cfg->seccompSandbox > 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("QEMU does not support seccomp sandboxes"));
+        return -1;
+    }
+    return 0;
+
+}
+
+
 /*
  * Constructs a argv suitable for launching qemu with config defined
  * for a given virtual machine.
@@ -10188,16 +10208,8 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
                                  ? qemucmd->env_value[i] : "");
     }
 
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SECCOMP_SANDBOX)) {
-        if (cfg->seccompSandbox == 0)
-            virCommandAddArgList(cmd, "-sandbox", "off", NULL);
-        else if (cfg->seccompSandbox > 0)
-            virCommandAddArgList(cmd, "-sandbox", "on", NULL);
-    } else if (cfg->seccompSandbox > 0) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("QEMU does not support seccomp sandboxes"));
+    if (qemuBuildSeccompSandboxCommandLine(cmd, cfg, qemuCaps) < 0)
         goto error;
-    }
 
     if (qemuBuildPanicCommandLine(cmd, def, qemuCaps) < 0)
         goto error;
