@@ -101,8 +101,14 @@ virDevMapperGetTargetsImpl(const char *path,
 
     dm_task_no_open_count(dmt);
 
-    if (!dm_task_run(dmt))
+    if (!dm_task_run(dmt)) {
+        if (errno == ENXIO) {
+            /* In some cases devmapper realizes this late device
+             * is not managed by it. */
+            ret = 0;
+        }
         goto cleanup;
+    }
 
     if (!dm_task_get_info(dmt, &info))
         goto cleanup;
