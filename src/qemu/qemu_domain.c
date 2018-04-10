@@ -108,6 +108,7 @@ VIR_ENUM_IMPL(qemuDomainNamespace, QEMU_DOMAIN_NS_LAST,
 #define PROC_MOUNTS "/proc/mounts"
 #define DEVPREFIX "/dev/"
 #define DEV_VFIO "/dev/vfio/vfio"
+#define DEVICE_MAPPER_CONTROL_PATH "/dev/mapper/control"
 
 
 struct _qemuDomainLogContext {
@@ -10253,6 +10254,11 @@ qemuDomainSetupDisk(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
             goto cleanup;
     }
 
+    /* qemu-pr-helper might require access to /dev/mapper/control. */
+    if (virStoragePRDefIsEnabled(disk->src->pr) &&
+        qemuDomainCreateDevice(DEVICE_MAPPER_CONTROL_PATH, data, true) < 0)
+        goto cleanup;
+
     ret = 0;
  cleanup:
     VIR_FREE(dst);
@@ -11265,6 +11271,9 @@ qemuDomainNamespaceSetupDisk(virDomainObjPtr vm,
     const char **paths = NULL;
     size_t npaths = 0;
     int ret = -1;
+    /* This is very nasty but we need it to work around some
+     * stupid checks in VIR_APPEND_ELEMENT macro. */
+    char *devMapperControl = (char *) DEVICE_MAPPER_CONTROL_PATH;
 
     if (!qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT))
         return 0;
@@ -11279,6 +11288,11 @@ qemuDomainNamespaceSetupDisk(virDomainObjPtr vm,
         if (VIR_APPEND_ELEMENT_COPY(paths, npaths, next->path) < 0)
             goto cleanup;
     }
+
+    /* qemu-pr-helper might require access to /dev/mapper/control. */
+    if (virStoragePRDefIsEnabled(src->pr) &&
+        VIR_APPEND_ELEMENT_COPY(paths, npaths, devMapperControl) < 0)
+        goto cleanup;
 
     if (qemuDomainNamespaceMknodPaths(vm, paths, npaths) < 0)
         return -1;
