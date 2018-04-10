@@ -725,6 +725,17 @@ mymain(void)
     unsetenv("SDL_AUDIODRIVER");
 
     DO_TEST("minimal", NONE);
+    DO_TEST("minimal-sandbox",
+            QEMU_CAPS_MACHINE_OPT,
+            QEMU_CAPS_MONITOR_JSON,
+            QEMU_CAPS_NO_USER_CONFIG,
+            QEMU_CAPS_RTC,
+            QEMU_CAPS_NO_SHUTDOWN,
+            QEMU_CAPS_DUMP_GUEST_CORE,
+            QEMU_CAPS_DISPLAY,
+            QEMU_CAPS_MACHINE_USB_OPT,
+            QEMU_CAPS_SECCOMP_SANDBOX,
+            QEMU_CAPS_SECCOMP_BLACKLIST);
     DO_TEST_PARSE_ERROR("minimal-no-memory", NONE);
     DO_TEST("minimal-msg-timestamp", QEMU_CAPS_MSG_TIMESTAMP);
     DO_TEST("machine-aliases1", NONE);
