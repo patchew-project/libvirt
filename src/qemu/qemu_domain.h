@@ -373,6 +373,13 @@ struct _qemuDomainDiskPrivate {
     bool removable; /* device media can be removed/changed */
 };
 
+typedef struct _qemuDomainDiskPRD qemuDomainDiskPRD;
+typedef qemuDomainDiskPRD *qemuDomainDiskPRDPtr;
+struct _qemuDomainDiskPRD {
+    char *alias;
+    char *path; /* socket path. */
+};
+
 # define QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(src) \
     ((qemuDomainStorageSourcePrivatePtr) (src)->privateData)
 
@@ -386,6 +393,9 @@ struct _qemuDomainStorageSourcePrivate {
 
     /* data required for decryption of encrypted storage source */
     qemuDomainSecretInfoPtr encinfo;
+
+    /* data required for persistent reservations */
+    qemuDomainDiskPRDPtr prd;
 };
 
 virObjectPtr qemuDomainStorageSourcePrivateNew(void);

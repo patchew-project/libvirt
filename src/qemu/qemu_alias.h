@@ -92,4 +92,6 @@ char *qemuAliasTLSObjFromSrcAlias(const char *srcAlias)
 char *qemuAliasChardevFromDevAlias(const char *devAlias)
     ATTRIBUTE_NONNULL(1);
 
+char * qemuDomainGetManagedPRAlias(void);
+
 #endif /* __QEMU_ALIAS_H__*/

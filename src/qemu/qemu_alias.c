@@ -773,3 +773,14 @@ qemuAliasChardevFromDevAlias(const char *devAlias)
 
     return ret;
 }
+
+
+char *
+qemuDomainGetManagedPRAlias(void)
+{
+    char *alias;
+
+    ignore_value(VIR_STRDUP(alias, "pr-helper0"));
+
+    return alias;
+}
