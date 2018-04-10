@@ -1497,6 +1497,20 @@ qemuDiskSourceGetProps(virStorageSourcePtr src)
 }
 
 
+static void
+qemuBuildDriveSourcePR(virBufferPtr buf,
+                       virStorageSourcePtr src)
+{
+    qemuDomainStorageSourcePrivatePtr srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(src);
+    qemuDomainDiskPRDPtr prd = srcPriv->prd;
+
+    if (!prd || !prd->alias)
+        return;
+
+    virBufferAsprintf(buf, ",file.pr-manager=%s", prd->alias);
+}
+
+
 static int
 qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
                         virQEMUCapsPtr qemuCaps,
@@ -1574,6 +1588,8 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
 
         if (disk->src->debug)
             virBufferAsprintf(buf, ",file.debug=%d", disk->src->debugLevel);
+
+        qemuBuildDriveSourcePR(buf, disk->src);
     } else {
         if (!(source = virQEMUBuildDriveCommandlineFromJSON(srcprops)))
             goto cleanup;
@@ -9858,6 +9874,81 @@ qemuBuildPanicCommandLine(virCommandPtr cmd,
 
 
 /**
+ * qemuBuildPRManagerInfoProps:
+ * @prd: disk PR runtime info
+ * @propsret: JSON properties to return
+ *
+ * Build the JSON properties for the pr-manager object.
+ *
+ * Returns: 0 on success (@propsret is NULL if no properties are needed),
+ *         -1 on failure (with error message set).
+ */
+int
+qemuBuildPRManagerInfoProps(qemuDomainDiskPRDPtr prd,
+                            virJSONValuePtr *propsret)
+{
+    *propsret = NULL;
+
+    if (!prd || !prd->alias)
+        return 0;
+
+    if (virJSONValueObjectCreate(propsret,
+                                 "s:path", prd->path,
+                                 NULL) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+static int
+qemuBuildMasterPRCommandLine(virCommandPtr cmd,
+                             const virDomainDef *def)
+{
+    size_t i;
+    bool managedAdded = false;
+    virJSONValuePtr props = NULL;
+    char *tmp = NULL;
+    int ret = -1;
+
+    for (i = 0; i < def->ndisks; i++) {
+        const virDomainDiskDef *disk = def->disks[i];
+        qemuDomainStorageSourcePrivatePtr srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(disk->src);
+        qemuDomainDiskPRDPtr prd = srcPriv->prd;
+
+
+        if (virStoragePRDefIsManaged(disk->src->pr)) {
+            if (managedAdded)
+                continue;
+
+            managedAdded = true;
+        }
+
+        if (qemuBuildPRManagerInfoProps(prd, &props) < 0)
+            goto cleanup;
+
+        if (!props)
+            continue;
+
+        if (!(tmp = virQEMUBuildObjectCommandlineFromJSON("pr-manager-helper",
+                                                          prd->alias,
+                                                          props)))
+            goto cleanup;
+        virJSONValueFree(props);
+        props = NULL;
+
+        virCommandAddArgList(cmd, "-object", tmp, NULL);
+        VIR_FREE(tmp);
+    }
+
+    ret = 0;
+ cleanup:
+    virJSONValueFree(props);
+    return ret;
+}
+
+
+/**
  * qemuBuildCommandLineValidate:
  *
  * Prior to taking the plunge and building a long command line only
@@ -10007,6 +10098,9 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
         virCommandAddArg(cmd, "-S"); /* freeze CPU */
 
     if (qemuBuildMasterKeyCommandLine(cmd, priv) < 0)
+        goto error;
+
+    if (qemuBuildMasterPRCommandLine(cmd, def) < 0)
         goto error;
 
     if (enableFips)
