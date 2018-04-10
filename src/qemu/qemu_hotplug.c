@@ -3839,6 +3839,34 @@ static bool qemuIsMultiFunctionDevice(virDomainDefPtr def,
 }
 
 
+static qemuDomainDiskPRDPtr
+qemuDomainDiskNeedRemovePR(virDomainObjPtr vm,
+                           virDomainDiskDefPtr disk)
+{
+    qemuDomainStorageSourcePrivatePtr srcPriv;
+    size_t i;
+
+    if (!virStoragePRDefIsManaged(disk->src->pr))
+        return NULL;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        const virDomainDiskDef *domainDisk = vm->def->disks[i];
+
+        if (domainDisk == disk)
+            continue;
+
+        if (virStoragePRDefIsManaged(domainDisk->src->pr))
+            break;
+    }
+
+    if (i != vm->def->ndisks)
+        return NULL;
+
+    srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(disk->src);
+    return srcPriv->prd;
+}
+
+
 static int
 qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
                            virDomainObjPtr vm,
@@ -3852,6 +3880,7 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
     char *drivestr;
     char *objAlias = NULL;
     char *encAlias = NULL;
+    qemuDomainDiskPRDPtr prd = NULL;
 
     VIR_DEBUG("Removing disk %s from domain %p %s",
               disk->info.alias, vm, vm->def->name);
@@ -3889,6 +3918,8 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
         }
     }
 
+    prd = qemuDomainDiskNeedRemovePR(vm, disk);
+
     qemuDomainObjEnterMonitor(driver, vm);
 
     qemuMonitorDriveDel(priv->mon, drivestr);
@@ -3903,6 +3934,10 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
     if (encAlias)
         ignore_value(qemuMonitorDelObject(priv->mon, encAlias));
     VIR_FREE(encAlias);
+
+    /* If it fails, then so be it - it was a best shot */
+    if (prd)
+        ignore_value(qemuMonitorDelObject(priv->mon, prd->alias));
 
     if (disk->src->haveTLS)
         ignore_value(qemuMonitorDelObject(priv->mon, disk->src->tlsAlias));
@@ -3921,6 +3956,9 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
             break;
         }
     }
+
+    if (prd)
+        qemuProcessKillPRDaemon(vm);
 
     qemuDomainReleaseDeviceAddress(vm, &disk->info, src);
 
