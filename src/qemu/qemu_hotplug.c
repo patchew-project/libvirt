@@ -349,6 +349,49 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
 
 
 /**
+ * qemuDomainMaybeStartPRDaemon:
+ * @vm: domain object
+ * @disk: disk to hotplug
+ *
+ * Checks if it's needed to start qemu-pr-helper and starts it.
+ *
+ * Returns: 0 if qemu-pr-helper is not needed
+ *          1 if it is needed and was started
+ *         -1 otherwise.
+ */
+static int
+qemuDomainMaybeStartPRDaemon(virDomainObjPtr vm,
+                             virDomainDiskDefPtr disk)
+{
+    size_t i;
+    qemuDomainStorageSourcePrivatePtr srcPriv;
+
+    if (!virStoragePRDefIsManaged(disk->src->pr)) {
+        /* @disk itself does not require qemu-pr-helper. */
+        return 0;
+    }
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        const virDomainDiskDef *domainDisk = vm->def->disks[i];
+
+        if (virStoragePRDefIsManaged(domainDisk->src->pr)) {
+            /* qemu-pr-helper should be already started because
+             * another disk in domain requires it. */
+            return 0;
+        }
+    }
+
+    /* @disk requires qemu-pr-helper but none is running.
+     * Start it now. */
+    srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(disk->src);
+    if (qemuProcessStartPRDaemon(vm, srcPriv->prd) < 0)
+        return -1;
+
+    return 1;
+}
+
+
+/**
  * qemuDomainAttachDiskGeneric:
  *
  * Attaches disk to a VM. This function aggregates common code for all bus types.
@@ -368,6 +411,7 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     bool driveAdded = false;
     bool secobjAdded = false;
     bool encobjAdded = false;
+    bool prdStarted = false;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     virJSONValuePtr secobjProps = NULL;
     virJSONValuePtr encobjProps = NULL;
@@ -383,6 +427,11 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
 
     if (qemuDomainPrepareDiskSource(disk, priv, cfg) < 0)
         goto error;
+
+    if ((rv = qemuDomainMaybeStartPRDaemon(vm, disk)) < 0)
+        goto cleanup;
+    else if (rv > 0)
+        prdStarted = true;
 
     srcPriv = QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(disk->src);
     if (srcPriv) {
@@ -481,6 +530,8 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
  error:
     qemuDomainDelDiskSrcTLSObject(driver, vm, disk->src);
     ignore_value(qemuHotplugPrepareDiskAccess(driver, vm, disk, NULL, true));
+    if (prdStarted)
+        qemuProcessKillPRDaemon(vm);
     goto cleanup;
 }
 
