@@ -468,6 +468,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "virtio-tablet-ccw",
               "qcow2-luks",
               "pcie-pci-bridge",
+              "pr-manager-helper",
     );
 
 
