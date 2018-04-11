@@ -468,6 +468,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "virtio-tablet-ccw",
               "qcow2-luks",
               "pcie-pci-bridge",
+              "virtual-css-bridge",
     );
 
 
@@ -1098,6 +1099,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "virtio-mouse-ccw", QEMU_CAPS_DEVICE_VIRTIO_MOUSE_CCW },
     { "virtio-tablet-ccw", QEMU_CAPS_DEVICE_VIRTIO_TABLET_CCW },
     { "pcie-pci-bridge", QEMU_CAPS_DEVICE_PCIE_PCI_BRIDGE },
+    { "virtual-css-bridge", QEMU_CAPS_CCW },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {
@@ -3913,6 +3915,13 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     if (ARCH_IS_X86(qemuCaps->arch) &&
         virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION))
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_CPU_CACHE);
+
+    if (ARCH_IS_S390(qemuCaps->arch)) {
+        /* Legacy assurance for QEMU_CAPS_CCW */
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_CCW) &&
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_CCW))
+            virQEMUCapsSet(qemuCaps, QEMU_CAPS_CCW);
+    }
 
     ret = 0;
  cleanup:

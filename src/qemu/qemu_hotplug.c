@@ -1011,7 +1011,7 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
     }
 
     if (qemuDomainIsS390CCW(vm->def) &&
-        virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_VIRTIO_CCW)) {
+        virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_CCW)) {
         net->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW;
         if (!(ccwaddrs = qemuDomainCCWAddrSetCreateFromDomain(vm->def)))
             goto cleanup;
@@ -2447,7 +2447,7 @@ qemuDomainAttachSCSIVHostDevice(virQEMUDriverPtr driver,
 
     if (hostdev->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE) {
         if (qemuDomainIsS390CCW(vm->def) &&
-            virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_VIRTIO_CCW))
+            virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_CCW))
             hostdev->info->type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW;
     }
 
