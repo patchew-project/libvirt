@@ -7997,12 +7997,14 @@ qemuDomainMigratableDefCheckABIStability(virQEMUDriverPtr driver,
                                          virDomainDefPtr src,
                                          virDomainDefPtr migratableSrc,
                                          virDomainDefPtr dst,
-                                         virDomainDefPtr migratableDst)
+                                         virDomainDefPtr migratableDst,
+                                         unsigned flags)
 {
+    flags |= VIR_DOMAIN_DEF_ABI_CHECK_SKIP_VOLATILE;
     if (!virDomainDefCheckABIStabilityFlags(migratableSrc,
                                             migratableDst,
                                             driver->xmlopt,
-                                            VIR_DOMAIN_DEF_ABI_CHECK_SKIP_VOLATILE))
+                                            flags))
         return false;
 
     /* Force update any skipped values from the volatile flag */
@@ -8018,7 +8020,8 @@ qemuDomainMigratableDefCheckABIStability(virQEMUDriverPtr driver,
 bool
 qemuDomainDefCheckABIStability(virQEMUDriverPtr driver,
                                virDomainDefPtr src,
-                               virDomainDefPtr dst)
+                               virDomainDefPtr dst,
+                               unsigned int flags)
 {
     virDomainDefPtr migratableDefSrc = NULL;
     virDomainDefPtr migratableDefDst = NULL;
@@ -8030,7 +8033,8 @@ qemuDomainDefCheckABIStability(virQEMUDriverPtr driver,
 
     ret = qemuDomainMigratableDefCheckABIStability(driver,
                                                    src, migratableDefSrc,
-                                                   dst, migratableDefDst);
+                                                   dst, migratableDefDst,
+                                                   flags);
 
  cleanup:
     virDomainDefFree(migratableDefSrc);
@@ -8042,7 +8046,8 @@ qemuDomainDefCheckABIStability(virQEMUDriverPtr driver,
 bool
 qemuDomainCheckABIStability(virQEMUDriverPtr driver,
                             virDomainObjPtr vm,
-                            virDomainDefPtr dst)
+                            virDomainDefPtr dst,
+                            unsigned int flags)
 {
     virDomainDefPtr migratableSrc = NULL;
     virDomainDefPtr migratableDst = NULL;
@@ -8056,7 +8061,8 @@ qemuDomainCheckABIStability(virQEMUDriverPtr driver,
 
     ret = qemuDomainMigratableDefCheckABIStability(driver,
                                                    vm->def, migratableSrc,
-                                                   dst, migratableDst);
+                                                   dst, migratableDst,
+                                                   flags);
 
  cleanup:
     VIR_FREE(xml);
