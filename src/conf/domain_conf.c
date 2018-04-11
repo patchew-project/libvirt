@@ -3320,7 +3320,7 @@ virDomainObjSetDefTransient(virCapsPtr caps,
     if (domain->newDef)
         return 0;
 
-    if (!(domain->newDef = virDomainDefCopy(domain->def, caps, xmlopt, NULL, false)))
+    if (!(domain->newDef = virDomainDefCopy(domain->def, caps, xmlopt, NULL, 0)))
         goto out;
 
     ret = 0;
@@ -27891,7 +27891,7 @@ virDomainDefCopy(virDomainDefPtr src,
                  virCapsPtr caps,
                  virDomainXMLOptionPtr xmlopt,
                  void *parseOpaque,
-                 bool migratable)
+                 unsigned int flags)
 {
     char *xml;
     virDomainDefPtr ret;
@@ -27899,7 +27899,7 @@ virDomainDefCopy(virDomainDefPtr src,
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_INACTIVE |
                                VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE;
 
-    if (migratable)
+    if (flags & VIR_DOMAIN_DEF_COPY_MIGRATABLE)
         format_flags |= VIR_DOMAIN_DEF_FORMAT_INACTIVE | VIR_DOMAIN_DEF_FORMAT_MIGRATABLE;
 
     /* Easiest to clone via a round-trip through XML.  */
@@ -27920,7 +27920,7 @@ virDomainObjCopyPersistentDef(virDomainObjPtr dom,
     virDomainDefPtr cur;
 
     cur = virDomainObjGetPersistentDef(caps, xmlopt, dom);
-    return virDomainDefCopy(cur, caps, xmlopt, NULL, false);
+    return virDomainDefCopy(cur, caps, xmlopt, NULL, 0);
 }
 
 
