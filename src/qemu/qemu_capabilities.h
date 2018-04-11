@@ -453,6 +453,10 @@ typedef enum {
     QEMU_CAPS_QCOW2_LUKS, /* qcow2 format support LUKS encryption */
     QEMU_CAPS_DEVICE_PCIE_PCI_BRIDGE, /* -device pcie-pci-bridge */
     QEMU_CAPS_CCW, /* -device virtual-css-bridge */
+    QEMU_CAPS_CCW_CSSID_UNRESTRICTED, /* virtual-css-bridge.cssid-unrestricted= */
+
+    /* 290 */
+    QEMU_CAPS_DEVICE_VFIO_CCW, /* -device vfio-ccw */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;

@@ -469,6 +469,10 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "qcow2-luks",
               "pcie-pci-bridge",
               "virtual-css-bridge",
+              "virtual-css-bridge.cssid-unrestricted",
+
+              /* 290 */
+              "vfio-ccw",
     );
 
 
@@ -1100,6 +1104,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "virtio-tablet-ccw", QEMU_CAPS_DEVICE_VIRTIO_TABLET_CCW },
     { "pcie-pci-bridge", QEMU_CAPS_DEVICE_PCIE_PCI_BRIDGE },
     { "virtual-css-bridge", QEMU_CAPS_CCW },
+    { "vfio-ccw", QEMU_CAPS_DEVICE_VFIO_CCW },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtioBalloon[] = {
@@ -1237,6 +1242,10 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsIntelIOMMU[] = {
     { "device-iotlb", QEMU_CAPS_INTEL_IOMMU_DEVICE_IOTLB },
 };
 
+static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsVirtualCSSBridge[] = {
+    { "cssid-unrestricted", QEMU_CAPS_CCW_CSSID_UNRESTRICTED },
+};
+
 /* see documentation for virQEMUQAPISchemaPathGet for the query format */
 static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "blockdev-add/arg-type/options/+gluster/debug-level", QEMU_CAPS_GLUSTER_DEBUG_LEVEL},
@@ -1356,6 +1365,9 @@ static struct virQEMUCapsObjectTypeProps virQEMUCapsObjectProps[] = {
     { "virtio-gpu-ccw", virQEMUCapsObjectPropsVirtioGpu,
       ARRAY_CARDINALITY(virQEMUCapsObjectPropsVirtioGpu),
       QEMU_CAPS_DEVICE_VIRTIO_GPU_CCW },
+    { "virtual-css-bridge", virQEMUCapsObjectPropsVirtualCSSBridge,
+      ARRAY_CARDINALITY(virQEMUCapsObjectPropsVirtualCSSBridge),
+      QEMU_CAPS_CCW },
 };
 
 
@@ -3921,6 +3933,8 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
         if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_CCW) &&
             virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_CCW))
             virQEMUCapsSet(qemuCaps, QEMU_CAPS_CCW);
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_CCW_CSSID_UNRESTRICTED))
+            virQEMUCapsClear(qemuCaps, QEMU_CAPS_DEVICE_VFIO_CCW);
     }
 
     ret = 0;

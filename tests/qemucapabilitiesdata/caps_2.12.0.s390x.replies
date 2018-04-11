@@ -3617,6 +3617,21 @@
 {
   "return": [
     {
+      "name": "cssid-unrestricted",
+      "description": "A css device can use any cssid, regardless whether virtual or not (read only, always true)",
+      "type": "bool"
+    },
+    {
+      "name": "css_dev_path",
+      "type": "bool"
+    }
+  ],
+  "id": "libvirt-35"
+}
+
+{
+  "return": [
+    {
       "hotpluggable-cpus": true,
       "name": "s390-ccw-virtio-2.7",
       "cpu-max": 248
@@ -3669,7 +3684,7 @@
       "alias": "s390-ccw-virtio"
     }
   ],
-  "id": "libvirt-35"
+  "id": "libvirt-36"
 }
 
 {
@@ -6324,20 +6339,20 @@
       "migration-safe": true
     }
   ],
-  "id": "libvirt-36"
+  "id": "libvirt-37"
 }
 
 {
   "return": [
   ],
-  "id": "libvirt-37"
+  "id": "libvirt-38"
 }
 
 {
   "return": [
     "emulator"
   ],
-  "id": "libvirt-38"
+  "id": "libvirt-39"
 }
 
 {
@@ -7493,7 +7508,7 @@
       "option": "drive"
     }
   ],
-  "id": "libvirt-39"
+  "id": "libvirt-40"
 }
 
 {
@@ -7555,7 +7570,7 @@
       "capability": "dirty-bitmaps"
     }
   ],
-  "id": "libvirt-40"
+  "id": "libvirt-41"
 }
 
 {
@@ -18923,11 +18938,11 @@
       "meta-type": "object"
     }
   ],
-  "id": "libvirt-41"
+  "id": "libvirt-42"
 }
 
 {
-  "id": "libvirt-42",
+  "id": "libvirt-43",
   "error": {
     "class": "GenericError",
     "desc": "The CPU definition 'max' is unknown."
