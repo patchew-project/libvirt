@@ -727,6 +727,10 @@ mymain(void)
     DO_TEST("minimal", NONE);
     DO_TEST_PARSE_ERROR("minimal-no-memory", NONE);
     DO_TEST("minimal-msg-timestamp", QEMU_CAPS_MSG_TIMESTAMP);
+
+    DO_TEST("genid", QEMU_CAPS_DEVICE_VMGENID);
+    DO_TEST("genid-auto", QEMU_CAPS_DEVICE_VMGENID);
+
     DO_TEST("machine-aliases1", NONE);
     DO_TEST("machine-aliases2", QEMU_CAPS_KVM);
     DO_TEST("machine-core-on", QEMU_CAPS_MACHINE_OPT,
