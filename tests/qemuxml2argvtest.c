@@ -1306,6 +1306,12 @@ mymain(void)
     DO_TEST("serial-dev-chardev-iobase",
             QEMU_CAPS_DEVICE_ISA_SERIAL,
             QEMU_CAPS_NODEFCONFIG);
+    DO_TEST("serial-dev-with-target-port",
+            QEMU_CAPS_DEVICE_ISA_SERIAL,
+            QEMU_CAPS_NODEFCONFIG);
+    DO_TEST("serial-dev-without-target-port",
+            QEMU_CAPS_DEVICE_ISA_SERIAL,
+            QEMU_CAPS_NODEFCONFIG);
     DO_TEST("serial-file-chardev",
             QEMU_CAPS_NODEFCONFIG,
             QEMU_CAPS_DEVICE_ISA_SERIAL,
@@ -1318,7 +1324,7 @@ mymain(void)
             QEMU_CAPS_NODEFCONFIG);
     DO_TEST("serial-udp-chardev",
             QEMU_CAPS_DEVICE_ISA_SERIAL,
-            QEMU_CAPS_NODEFCONFIG);
+            QEMU_CAPS_NODEFCONFIG);            
     DO_TEST("serial-tcp-telnet-chardev",
             QEMU_CAPS_DEVICE_ISA_SERIAL,
             QEMU_CAPS_NODEFCONFIG);

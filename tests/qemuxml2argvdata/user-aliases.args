@@ -59,9 +59,9 @@ addr=0xa \
 -net socket,connect=127.0.0.1:1234,vlan=2,name=hostua-AndAlsoClientMode \
 -device ccid-card-emulated,backend=nss-emulated,id=smartcard0,bus=ua-myCCID.0 \
 -chardev pty,id=charserial0 \
--device isa-serial,chardev=charserial0,id=serial0 \
+-device isa-serial,chardev=charserial0,id=serial0,index=0 \
 -chardev pty,id=charserial1 \
--device isa-serial,chardev=charserial1,id=serial1 \
+-device isa-serial,chardev=charserial1,id=serial1,index=1 \
 -chardev socket,id=charchannel0,\
 path=/var/lib/libvirt/qemu/channel/target/gentoo.org.qemu.guest_agent.0,server,\
 nowait \

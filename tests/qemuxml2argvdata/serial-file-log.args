@@ -23,4 +23,4 @@ server,nowait \
 -device ide-drive,bus=ide.0,unit=0,drive=drive-ide0-0-0,id=ide0-0-0 \
 -chardev file,id=charserial0,path=/tmp/serial.log,\
 logfile=/var/lib/libvirt/qemu/demo-serial.log,logappend=off \
--device isa-serial,chardev=charserial0,id=serial0
+-device isa-serial,chardev=charserial0,id=serial0,index=0

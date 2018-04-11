@@ -38,7 +38,7 @@ id=virtio-disk0 \
 -device virtio-net-pci,netdev=hostnet0,id=net0,mac=52:54:00:9a:e6:c6,bus=pci.1,\
 addr=0x0 \
 -chardev pty,id=charserial0 \
--device isa-serial,chardev=charserial0,id=serial0 \
+-device isa-serial,chardev=charserial0,id=serial0,index=0 \
 -chardev socket,id=charchannel0,\
 path=/tmp/channel/domain--1-virt-manager-basic/org.qemu.guest_agent.0,server,\
 nowait \

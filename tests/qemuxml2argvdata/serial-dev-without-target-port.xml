@@ -23,12 +23,13 @@
     <controller type='ide' index='0'/>
     <serial type='dev'>
       <source path='/dev/ttyS2'/>
-      <target port='1'/>
     </serial>
-    <console type='dev'>
-      <source path='/dev/ttyS2'/>
-      <target port='1'/>
-    </console>
+    <serial type='dev'>
+      <source path='/dev/ttyS1'/>
+    </serial>
+    <serial type='dev'>
+      <source path='/dev/ttyS3'/>
+    </serial>
     <memballoon model='virtio'/>
   </devices>
 </domain>

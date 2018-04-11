@@ -25,10 +25,14 @@
       <source path='/dev/ttyS2'/>
       <target port='1'/>
     </serial>
-    <console type='dev'>
-      <source path='/dev/ttyS2'/>
-      <target port='1'/>
-    </console>
+    <serial type='dev'>
+      <source path='/dev/ttyS1'/>
+      <target port='2'/>
+    </serial>
+    <serial type='dev'>
+      <source path='/dev/ttyS3'/>
+      <target port='3'/>
+    </serial>
     <memballoon model='virtio'/>
   </devices>
 </domain>
