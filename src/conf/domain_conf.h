@@ -2948,6 +2948,9 @@ typedef enum {
     /* Set when domain lock must be released and there exists the possibility
      * that some external action could alter the value, such as cur_balloon. */
     VIR_DOMAIN_DEF_ABI_CHECK_SKIP_VOLATILE = 1 << 0,
+
+    /* Set when the ABI check should skip the genid comparison */
+    VIR_DOMAIN_DEF_ABI_CHECK_SKIP_GENID = 1 << 1,
 } virDomainDefABICheckFlags;
 
 virDomainDeviceDefPtr virDomainDeviceDefParse(const char *xmlStr,
