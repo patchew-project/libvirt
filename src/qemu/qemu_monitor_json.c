@@ -6033,29 +6033,23 @@ int qemuMonitorJSONSetObjectProperty(qemuMonitorPtr mon,
 #undef MAKE_SET_CMD
 
 
-int qemuMonitorJSONGetDeviceProps(qemuMonitorPtr mon,
-                                  const char *device,
-                                  char ***props)
+static int
+qemuMonitorJSONParsePropsList(qemuMonitorPtr mon,
+                              virJSONValuePtr cmd,
+                              char ***props)
 {
-    int ret = -1;
-    virJSONValuePtr cmd;
     virJSONValuePtr reply = NULL;
     virJSONValuePtr data;
     char **proplist = NULL;
     ssize_t n = 0;
     size_t i;
-
-    *props = NULL;
-
-    if (!(cmd = qemuMonitorJSONMakeCommand("device-list-properties",
-                                           "s:typename", device,
-                                           NULL)))
-        return -1;
+    int ret = -1;
 
     if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
         goto cleanup;
 
-    if (qemuMonitorJSONHasError(reply, "DeviceNotFound")) {
+    if (qemuMonitorJSONHasError(reply, "DeviceNotFound") ||
+        qemuMonitorJSONHasError(reply, "CommandNotFound")) {
         ret = 0;
         goto cleanup;
     }
@@ -6090,8 +6084,48 @@ int qemuMonitorJSONGetDeviceProps(qemuMonitorPtr mon,
 
  cleanup:
     virStringListFree(proplist);
-    virJSONValueFree(cmd);
     virJSONValueFree(reply);
+    return ret;
+}
+
+
+int qemuMonitorJSONGetDeviceProps(qemuMonitorPtr mon,
+                                  const char *device,
+                                  char ***props)
+{
+    int ret = -1;
+    virJSONValuePtr cmd;
+
+    *props = NULL;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("device-list-properties",
+                                           "s:typename", device,
+                                           NULL)))
+        return -1;
+
+    ret = qemuMonitorJSONParsePropsList(mon, cmd, props);
+    virJSONValueFree(cmd);
+    return ret;
+}
+
+
+int
+qemuMonitorJSONGetObjectProps(qemuMonitorPtr mon,
+                              const char *object,
+                              char ***props)
+{
+    int ret = -1;
+    virJSONValuePtr cmd;
+
+    *props = NULL;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("qom-list-properties",
+                                           "s:typename", object,
+                                           NULL)))
+        return -1;
+
+    ret = qemuMonitorJSONParsePropsList(mon, cmd, props);
+    virJSONValueFree(cmd);
     return ret;
 }
 
