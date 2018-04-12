@@ -1221,9 +1221,13 @@ virConnectRegisterCloseCallback(virConnectPtr conn,
     virCheckConnectReturn(conn, -1);
     virCheckNonNullArgGoto(cb, error);
 
-    if (conn->driver->connectRegisterCloseCallback &&
-        conn->driver->connectRegisterCloseCallback(conn, cb, opaque, freecb) < 0)
-        goto error;
+    if (conn->driver->connectRegisterCloseCallback) {
+        if (conn->driver->connectRegisterCloseCallback(conn, cb, opaque, freecb) < 0)
+            goto error;
+    } else {
+        if (freecb)
+            freecb(opaque);
+    }
 
     return 0;
 
