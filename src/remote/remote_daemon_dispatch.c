@@ -3841,8 +3841,6 @@ remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server,
         virNetServerClientGetPrivateData(client);
     virNetServerProgramPtr program;
 
-    virMutexLock(&priv->lock);
-
     if (!priv->conn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
         goto cleanup;
@@ -3852,6 +3850,8 @@ remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server,
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
         goto cleanup;
     }
+
+    virMutexLock(&priv->lock);
 
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
@@ -3887,12 +3887,12 @@ remoteDispatchConnectUnregisterCloseCallback(virNetServerPtr server ATTRIBUTE_UN
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
 
-    virMutexLock(&priv->lock);
-
     if (!priv->conn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
         goto cleanup;
     }
+
+    virMutexLock(&priv->lock);
 
     if (virConnectUnregisterCloseCallback(priv->conn,
                                           remoteRelayConnectionClosedEvent) < 0)
