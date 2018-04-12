@@ -1,0 +1,62 @@
+#!/usr/bin/env perl
+# Automatically resolve QEMU capability conflicts
+#
+# Joins both parts of the conflicting hunk in
+# qemu_capabilities.[ch] and qemucapabilitiesdata XML
+#
+# Also rewraps the groups in qemu_capabilities.c if needed
+# and stages all the affected files.
+#
+# Author: Ján Tomko <jtomko@redhat.com>
+
+use warnings;
+use v5.10;
+
+use Git;
+
+sub union_merge {
+    my $filename = shift;
+
+    open FILE, '<', $filename or die "cannot open $file: $!";
+    my @original = <FILE>;
+    close FILE;
+
+    my @fixed;
+    foreach (@original) {
+        if (/^<<<<</) {
+            next;
+        } elsif (/^=====/) {
+            next;
+        } elsif (/^>>>>>/) {
+            next;
+        }
+
+        push @fixed, $_;
+    }
+
+    open FILE, '>', $filename or die "cannot open $file: $!";
+    foreach my $line (@fixed) {
+        print FILE $line;
+    }
+    close FILE;
+}
+
+my $repo = Git->repository(Directory => '.');
+my ($status_fh, $ctx) = $repo->command_output_pipe('status', '--porcelain');
+
+while (<$status_fh>) {
+    my ($flag, $filename) = split;
+    if ($flag eq 'UU') {
+        if ($filename =~ '^src/qemu/qemu_capabilities.[ch]$' or
+            $filename =~ '^tests/qemucapabilitiesdata/caps.*xml') {
+            say "Trying to fix $filename";
+            &union_merge($filename);
+            $repo->command('add', $filename);
+        }
+    }
+}
+$repo->command_close_pipe($status_fh, $ctx);
+system('tests/group-qemu-caps.pl');
+$repo->command('add', 'src/qemu/qemu_capabilities.c');
+$repo->command('add', 'src/qemu/qemu_capabilities.h');
+$repo->command('rebase', '--continue');
