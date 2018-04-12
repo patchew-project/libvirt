@@ -1039,6 +1039,7 @@ elsif ($mode eq "server") {
         if ($call->{streamflag} ne "none") {
             print "    virStreamPtr st = NULL;\n";
             print "    daemonClientStreamPtr stream = NULL;\n";
+            print "    virNetServerProgramPtr remoteProgram;\n";
             if ($call->{sparseflag} ne "none") {
                 print "    const bool sparse = args->flags & $call->{sparseflag};\n"
             } else {
@@ -1080,6 +1081,11 @@ elsif ($mode eq "server") {
         if ($call->{streamflag} ne "none") {
             print "    if (!(st = virStreamNew($conn, VIR_STREAM_NONBLOCK)))\n";
             print "        goto cleanup;\n";
+            print "\n";
+            print "    if (!(remoteProgram = virNetServerGetProgram(server, msg))) {\n";
+            print "        virReportError(VIR_ERR_INTERNAL_ERROR, \"%s\", _(\"no matching program found\"));\n";
+            print "        goto cleanup;\n";
+            print "    }\n";
             print "\n";
             print "    if (!(stream = daemonCreateClientStream(client, st, remoteProgram, &msg->header, sparse)))\n";
             print "        goto cleanup;\n";

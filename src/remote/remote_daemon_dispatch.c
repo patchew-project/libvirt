@@ -3830,15 +3830,16 @@ remoteDispatchNodeDeviceGetParent(virNetServerPtr server ATTRIBUTE_UNUSED,
 }
 
 static int
-remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server,
                                            virNetServerClientPtr client,
-                                           virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                           virNetMessagePtr msg,
                                            virNetMessageErrorPtr rerr)
 {
     int rv = -1;
     daemonClientEventCallbackPtr callback = NULL;
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
+    virNetServerProgramPtr program;
 
     virMutexLock(&priv->lock);
 
@@ -3847,10 +3848,15 @@ remoteDispatchConnectRegisterCloseCallback(virNetServerPtr server ATTRIBUTE_UNUS
         goto cleanup;
     }
 
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
+        goto cleanup;
+    }
+
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     /* eventID, callbackID, and legacy are not used */
     callback->eventID = -1;
     callback->callbackID = -1;
@@ -3903,9 +3909,9 @@ remoteDispatchConnectUnregisterCloseCallback(virNetServerPtr server ATTRIBUTE_UN
 }
 
 static int
-remoteDispatchConnectDomainEventRegister(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectDomainEventRegister(virNetServerPtr server,
                                          virNetServerClientPtr client,
-                                         virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                         virNetMessagePtr msg,
                                          virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                          remote_connect_domain_event_register_ret *ret ATTRIBUTE_UNUSED)
 {
@@ -3915,9 +3921,15 @@ remoteDispatchConnectDomainEventRegister(virNetServerPtr server ATTRIBUTE_UNUSED
     daemonClientEventCallbackPtr ref;
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
+    virNetServerProgramPtr program;
 
     if (!priv->conn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
+        goto cleanup;
+    }
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
         goto cleanup;
     }
 
@@ -3934,7 +3946,7 @@ remoteDispatchConnectDomainEventRegister(virNetServerPtr server ATTRIBUTE_UNUSED
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = VIR_DOMAIN_EVENT_ID_LIFECYCLE;
     callback->callbackID = -1;
     callback->legacy = true;
@@ -4132,9 +4144,9 @@ remoteDispatchDomainGetState(virNetServerPtr server ATTRIBUTE_UNUSED,
  * VIR_DRV_SUPPORTS_FEATURE(VIR_DRV_FEATURE_REMOTE_EVENT_CALLBACK),
  * and must not mix the two styles.  */
 static int
-remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server,
                                             virNetServerClientPtr client,
-                                            virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                            virNetMessagePtr msg,
                                             virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                             remote_connect_domain_event_register_any_args *args)
 {
@@ -4144,9 +4156,15 @@ remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
     daemonClientEventCallbackPtr ref;
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
+    virNetServerProgramPtr program;
 
     if (!priv->conn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
+        goto cleanup;
+    }
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
         goto cleanup;
     }
 
@@ -4171,7 +4189,7 @@ remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     callback->legacy = true;
@@ -4207,9 +4225,9 @@ remoteDispatchConnectDomainEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
 
 
 static int
-remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server,
                                                     virNetServerClientPtr client,
-                                                    virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                                    virNetMessagePtr msg,
                                                     virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                                     remote_connect_domain_event_callback_register_any_args *args,
                                                     remote_connect_domain_event_callback_register_any_ret *ret)
@@ -4221,9 +4239,15 @@ remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server ATTRI
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
     virDomainPtr dom = NULL;
+    virNetServerProgramPtr program;
 
     if (!priv->conn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
+        goto cleanup;
+    }
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
         goto cleanup;
     }
 
@@ -4248,7 +4272,7 @@ remoteDispatchConnectDomainEventCallbackRegisterAny(virNetServerPtr server ATTRI
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -5355,6 +5379,7 @@ remoteDispatchDomainMigratePrepareTunnel3Params(virNetServerPtr server ATTRIBUTE
         virNetServerClientGetPrivateData(client);
     virStreamPtr st = NULL;
     daemonClientStreamPtr stream = NULL;
+    virNetServerProgramPtr program;
 
     if (!priv->conn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
@@ -5373,8 +5398,13 @@ remoteDispatchDomainMigratePrepareTunnel3Params(virNetServerPtr server ATTRIBUTE
                                   0, &params, &nparams) < 0)
         goto cleanup;
 
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
+        goto cleanup;
+    }
+
     if (!(st = virStreamNew(priv->conn, VIR_STREAM_NONBLOCK)) ||
-        !(stream = daemonCreateClientStream(client, st, remoteProgram,
+        !(stream = daemonCreateClientStream(client, st, program,
                                             &msg->header, false)))
         goto cleanup;
 
@@ -5731,9 +5761,9 @@ static int remoteDispatchDomainCreateWithFiles(virNetServerPtr server ATTRIBUTE_
 
 
 static int
-remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server,
                                              virNetServerClientPtr client,
-                                             virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                             virNetMessagePtr msg,
                                              virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                              remote_connect_network_event_register_any_args *args,
                                              remote_connect_network_event_register_any_ret *ret)
@@ -5745,9 +5775,15 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server ATTRIBUTE_UN
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
     virNetworkPtr net = NULL;
+    virNetServerProgramPtr program;
 
     if (!priv->networkConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
+        goto cleanup;
+    }
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
         goto cleanup;
     }
 
@@ -5772,7 +5808,7 @@ remoteDispatchConnectNetworkEventRegisterAny(virNetServerPtr server ATTRIBUTE_UN
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -5854,9 +5890,9 @@ remoteDispatchConnectNetworkEventDeregisterAny(virNetServerPtr server ATTRIBUTE_
 }
 
 static int
-remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server,
                                                  virNetServerClientPtr client,
-                                                 virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                                 virNetMessagePtr msg,
                                                  virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                                  remote_connect_storage_pool_event_register_any_args *args,
                                                  remote_connect_storage_pool_event_register_any_ret *ret)
@@ -5868,9 +5904,15 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server ATTRIBUT
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
     virStoragePoolPtr  pool = NULL;
+    virNetServerProgramPtr program;
 
     if (!priv->storageConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
+        goto cleanup;
+    }
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
         goto cleanup;
     }
 
@@ -5895,7 +5937,7 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server ATTRIBUT
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -5976,9 +6018,9 @@ remoteDispatchConnectStoragePoolEventDeregisterAny(virNetServerPtr server ATTRIB
 }
 
 static int
-remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server,
                                                 virNetServerClientPtr client,
-                                                virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                                virNetMessagePtr msg,
                                                 virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                                 remote_connect_node_device_event_register_any_args *args,
                                                 remote_connect_node_device_event_register_any_ret *ret)
@@ -5990,9 +6032,15 @@ remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server ATTRIBUTE
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
     virNodeDevicePtr  dev = NULL;
+    virNetServerProgramPtr program;
 
     if (!priv->nodedevConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
+        goto cleanup;
+    }
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
         goto cleanup;
     }
 
@@ -6017,7 +6065,7 @@ remoteDispatchConnectNodeDeviceEventRegisterAny(virNetServerPtr server ATTRIBUTE
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -6098,9 +6146,9 @@ remoteDispatchConnectNodeDeviceEventDeregisterAny(virNetServerPtr server ATTRIBU
 }
 
 static int
-remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNUSED,
+remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server,
                                             virNetServerClientPtr client,
-                                            virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                            virNetMessagePtr msg,
                                             virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                             remote_connect_secret_event_register_any_args *args,
                                             remote_connect_secret_event_register_any_ret *ret)
@@ -6112,9 +6160,15 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
     struct daemonClientPrivate *priv =
         virNetServerClientGetPrivateData(client);
     virSecretPtr secret = NULL;
+    virNetServerProgramPtr program;
 
     if (!priv->secretConn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
+        goto cleanup;
+    }
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
         goto cleanup;
     }
 
@@ -6139,7 +6193,7 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(remoteProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = args->eventID;
     callback->callbackID = -1;
     ref = callback;
@@ -6220,9 +6274,9 @@ remoteDispatchConnectSecretEventDeregisterAny(virNetServerPtr server ATTRIBUTE_U
 }
 
 static int
-qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server ATTRIBUTE_UNUSED,
+qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server,
                                               virNetServerClientPtr client,
-                                              virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                              virNetMessagePtr msg,
                                               virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
                                               qemu_connect_domain_monitor_event_register_args *args,
                                               qemu_connect_domain_monitor_event_register_ret *ret)
@@ -6235,9 +6289,15 @@ qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server ATTRIBUTE_U
         virNetServerClientGetPrivateData(client);
     virDomainPtr dom = NULL;
     const char *event = args->event ? *args->event : NULL;
+    virNetServerProgramPtr program;
 
     if (!priv->conn) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
+        goto cleanup;
+    }
+
+    if (!(program = virNetServerGetProgram(server, msg))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("no matching program found"));
         goto cleanup;
     }
 
@@ -6256,7 +6316,7 @@ qemuDispatchConnectDomainMonitorEventRegister(virNetServerPtr server ATTRIBUTE_U
     if (VIR_ALLOC(callback) < 0)
         goto cleanup;
     callback->client = virObjectRef(client);
-    callback->program = virObjectRef(qemuProgram);
+    callback->program = virObjectRef(program);
     callback->eventID = -1;
     callback->callbackID = -1;
     ref = callback;
