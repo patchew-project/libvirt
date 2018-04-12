@@ -179,6 +179,29 @@ static void virNetServerHandleJob(void *jobOpaque, void *opaque)
     VIR_FREE(job);
 }
 
+
+/**
+ * virNetServerGetProgramLocked:
+ * @srv: server (must be locked by the caller)
+ * @msg: message
+ *
+ * Searches @srv for the right program for a given message @msg.
+ *
+ * Returns a pointer to the server program or NULL if not found.
+ */
+static virNetServerProgramPtr
+virNetServerGetProgramLocked(virNetServerPtr srv,
+                             virNetMessagePtr msg)
+{
+    size_t i;
+    for (i = 0; i < srv->nprograms; i++) {
+        if (virNetServerProgramMatches(srv->programs[i], msg))
+            return srv->programs[i];
+    }
+    return NULL;
+}
+
+
 static void virNetServerDispatchNewMessage(virNetServerClientPtr client,
                                            virNetMessagePtr msg,
                                            void *opaque)
@@ -186,18 +209,12 @@ static void virNetServerDispatchNewMessage(virNetServerClientPtr client,
     virNetServerPtr srv = opaque;
     virNetServerProgramPtr prog = NULL;
     unsigned int priority = 0;
-    size_t i;
 
     VIR_DEBUG("server=%p client=%p message=%p",
               srv, client, msg);
 
     virObjectLock(srv);
-    for (i = 0; i < srv->nprograms; i++) {
-        if (virNetServerProgramMatches(srv->programs[i], msg)) {
-            prog = srv->programs[i];
-            break;
-        }
-    }
+    prog = virNetServerGetProgramLocked(srv, msg);
 
     if (srv->workers) {
         virNetServerJobPtr job;
