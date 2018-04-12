@@ -57,6 +57,7 @@
 # include "virtypedparam.h"
 # include "virsavecookie.h"
 # include "virresctrl.h"
+# include "virobject.h"
 
 /* forward declarations of all device types, required by
  * virDomainDeviceDef
