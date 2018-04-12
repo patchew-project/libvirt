@@ -3148,6 +3148,12 @@ qemuBuildMemoryBackendStr(virJSONValuePtr *backendProps,
                                   NULL) < 0)
             goto cleanup;
 
+        if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_FILE_DISCARD) &&
+            virJSONValueObjectAdd(props,
+                                  "B:discard-data", true,
+                                  NULL) < 0)
+            goto cleanup;
+
         switch (memAccess) {
         case VIR_DOMAIN_MEMORY_ACCESS_SHARED:
             if (virJSONValueObjectAdd(props, "b:share", true, NULL) < 0)
