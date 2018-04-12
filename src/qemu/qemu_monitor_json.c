@@ -6033,8 +6033,8 @@ int qemuMonitorJSONSetObjectProperty(qemuMonitorPtr mon,
 #undef MAKE_SET_CMD
 
 
-int qemuMonitorJSONGetObjectProps(qemuMonitorPtr mon,
-                                  const char *type,
+int qemuMonitorJSONGetDeviceProps(qemuMonitorPtr mon,
+                                  const char *device,
                                   char ***props)
 {
     int ret = -1;
@@ -6048,7 +6048,7 @@ int qemuMonitorJSONGetObjectProps(qemuMonitorPtr mon,
     *props = NULL;
 
     if (!(cmd = qemuMonitorJSONMakeCommand("device-list-properties",
-                                           "s:typename", type,
+                                           "s:typename", device,
                                            NULL)))
         return -1;
 
