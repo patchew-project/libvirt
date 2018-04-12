@@ -3816,6 +3816,14 @@
 }
 
 {
+    "id": "libvirt-37",
+    "error": {
+        "class": "CommandNotFound",
+        "desc": "The command qom-list-properties has not been found"
+    }
+}
+
+{
   "return": [
     {
       "name": "ref405ep",
@@ -3884,7 +3892,7 @@
       "cpu-max": 255
     }
   ],
-  "id": "libvirt-37"
+  "id": "libvirt-38"
 }
 
 {
@@ -5186,12 +5194,6 @@
       "name": "MPC8541E_v11"
     }
   ],
-  "id": "libvirt-38"
-}
-
-{
-  "return": [
-  ],
   "id": "libvirt-39"
 }
 
@@ -5199,6 +5201,12 @@
   "return": [
   ],
   "id": "libvirt-40"
+}
+
+{
+  "return": [
+  ],
+  "id": "libvirt-41"
 }
 
 {
@@ -6165,7 +6173,7 @@
       "option": "drive"
     }
   ],
-  "id": "libvirt-41"
+  "id": "libvirt-42"
 }
 
 {
@@ -6199,7 +6207,7 @@
       "capability": "postcopy-ram"
     }
   ],
-  "id": "libvirt-42"
+  "id": "libvirt-43"
 }
 
 {
@@ -14204,7 +14212,7 @@
       "meta-type": "array"
     }
   ],
-  "id": "libvirt-43"
+  "id": "libvirt-44"
 }
 
 {

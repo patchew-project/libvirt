@@ -2524,6 +2524,14 @@
 }
 
 {
+    "id": "libvirt-37",
+    "error": {
+        "class": "CommandNotFound",
+        "desc": "The command qom-list-properties has not been found"
+    }
+}
+
+{
   "return": [
     {
       "name": "pc-1.3",
@@ -2625,7 +2633,7 @@
       "cpu-max": 255
     }
   ],
-  "id": "libvirt-37"
+  "id": "libvirt-38"
 }
 
 {
@@ -2706,21 +2714,21 @@
       "name": "qemu64"
     }
   ],
-  "id": "libvirt-38"
+  "id": "libvirt-39"
 }
 
 {
   "return": [
     "tpm-tis"
   ],
-  "id": "libvirt-39"
+  "id": "libvirt-40"
 }
 
 {
   "return": [
     "passthrough"
   ],
-  "id": "libvirt-40"
+  "id": "libvirt-41"
 }
 
 {
@@ -3580,7 +3588,7 @@
       "option": "drive"
     }
   ],
-  "id": "libvirt-41"
+  "id": "libvirt-42"
 }
 
 {
@@ -3602,7 +3610,7 @@
       "capability": "zero-blocks"
     }
   ],
-  "id": "libvirt-42"
+  "id": "libvirt-43"
 }
 
 {

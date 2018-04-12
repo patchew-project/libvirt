@@ -3620,6 +3620,14 @@
 }
 
 {
+    "id": "libvirt-36",
+    "error": {
+        "class": "CommandNotFound",
+        "desc": "The command qom-list-properties has not been found"
+    }
+}
+
+{
   "return": [
     {
       "name": "integratorcp",
@@ -3791,7 +3799,7 @@
       "cpu-max": 1
     }
   ],
-  "id": "libvirt-36"
+  "id": "libvirt-37"
 }
 
 {
@@ -3890,12 +3898,6 @@
       "name": "pxa270"
     }
   ],
-  "id": "libvirt-37"
-}
-
-{
-  "return": [
-  ],
   "id": "libvirt-38"
 }
 
@@ -3903,6 +3905,12 @@
   "return": [
   ],
   "id": "libvirt-39"
+}
+
+{
+  "return": [
+  ],
+  "id": "libvirt-40"
 }
 
 {
@@ -4874,7 +4882,7 @@
       "option": "drive"
     }
   ],
-  "id": "libvirt-40"
+  "id": "libvirt-41"
 }
 
 {
@@ -4908,7 +4916,7 @@
       "capability": "postcopy-ram"
     }
   ],
-  "id": "libvirt-41"
+  "id": "libvirt-42"
 }
 
 {
@@ -12913,7 +12921,7 @@
       "meta-type": "array"
     }
   ],
-  "id": "libvirt-42"
+  "id": "libvirt-43"
 }
 
 {
@@ -12929,7 +12937,7 @@
       "kernel": true
     }
   ],
-  "id": "libvirt-43"
+  "id": "libvirt-44"
 }
 
 {

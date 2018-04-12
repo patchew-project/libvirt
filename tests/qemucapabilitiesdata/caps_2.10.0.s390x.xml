@@ -143,7 +143,7 @@
   <flag name='qcow2-luks'/>
   <version>2010000</version>
   <kvmVersion>0</kvmVersion>
-  <microcodeVersion>303326</microcodeVersion>
+  <microcodeVersion>303481</microcodeVersion>
   <package></package>
   <arch>s390x</arch>
   <hostCPU type='kvm' model='z14-base' migratability='no'>
