@@ -653,7 +653,7 @@ virQEMUCapsFindBinary(const char *format,
 
     ret = virFindFileInPath(binary);
     VIR_FREE(binary);
-    if (ret && virFileIsExecutable(ret))
+    if (ret == NULL)
         goto out;
 
     VIR_FREE(ret);
