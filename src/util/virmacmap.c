@@ -43,7 +43,7 @@ VIR_LOG_INIT("util.virmacmap");
  */
 #define VIR_MAC_MAP_FILE_SIZE_MAX (32 * 1024 * 1024)
 
-struct virMacMap {
+struct _virMacMap {
     virObjectLockable parent;
 
     virHashTablePtr macs;

@@ -75,9 +75,9 @@ struct _virFDStreamMsg {
 
 
 /* Tunnelled migration stream support */
-typedef struct virFDStreamData virFDStreamData;
+typedef struct _virFDStreamData virFDStreamData;
 typedef virFDStreamData *virFDStreamDataPtr;
-struct virFDStreamData {
+struct _virFDStreamData {
     virObjectLockable parent;
 
     int fd;

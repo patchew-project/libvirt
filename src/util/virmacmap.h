@@ -24,7 +24,7 @@
 #ifndef __VIR_MACMAP_H__
 # define __VIR_MACMAP_H__
 
-typedef struct virMacMap virMacMap;
+typedef struct _virMacMap virMacMap;
 typedef virMacMap *virMacMapPtr;
 
 char *
