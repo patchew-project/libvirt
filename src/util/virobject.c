@@ -77,6 +77,7 @@ virObjectOnceInit(void)
 {
     if (!(virObjectClass = virClassNew(NULL,
                                        "virObject",
+                                       0,
                                        sizeof(virObject),
                                        NULL)))
         return -1;
@@ -159,21 +160,31 @@ virClassForObjectRWLockable(void)
 virClassPtr
 virClassNew(virClassPtr parent,
             const char *name,
+            size_t off,
             size_t objectSize,
             virObjectDisposeCallback dispose)
 {
     virClassPtr klass;
 
-    if (parent == NULL &&
-        STRNEQ(name, "virObject")) {
-        virReportInvalidNonNullArg(parent);
-        return NULL;
-    } else if (parent &&
-               objectSize <= parent->objectSize) {
-        virReportInvalidArg(objectSize,
-                            _("object size %zu of %s is smaller than parent class %zu"),
-                            objectSize, name, parent->objectSize);
-        return NULL;
+    if (parent == NULL) {
+        if (STRNEQ(name, "virObject")) {
+            virReportInvalidNonNullArg(parent);
+            return NULL;
+        }
+    } else {
+        if (objectSize <= parent->objectSize) {
+            virReportInvalidArg(objectSize,
+                                _("object size %zu of %s is smaller than parent class %zu"),
+                                objectSize, name, parent->objectSize);
+            return NULL;
+        }
+
+        if (off) {
+            virReportInvalidArg(off,
+                                _("struct %s doesn't have 'parent' as its first member"),
+                                name);
+            return NULL;
+        }
     }
 
     if (VIR_ALLOC(klass) < 0)
