@@ -74,10 +74,8 @@ static int
 virDataTypesOnceInit(void)
 {
 #define DECLARE_CLASS_COMMON(basename, parent) \
-    if (!(basename ## Class = virClassNew(parent, \
-                                          #basename, \
-                                          sizeof(basename), \
-                                          basename ## Dispose))) \
+    if (!(basename ## Class = VIR_CLASS_NEW(parent, \
+                                            basename))) \
         return -1;
 #define DECLARE_CLASS(basename) \
     DECLARE_CLASS_COMMON(basename, virClassForObject())

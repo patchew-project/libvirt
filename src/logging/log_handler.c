@@ -76,10 +76,8 @@ static void virLogHandlerDispose(void *obj);
 static int
 virLogHandlerOnceInit(void)
 {
-    if (!(virLogHandlerClass = virClassNew(virClassForObjectLockable(),
-                                          "virLogHandler",
-                                          sizeof(virLogHandler),
-                                          virLogHandlerDispose)))
+    if (!(virLogHandlerClass = VIR_CLASS_NEW(virClassForObjectLockable(),
+                                             virLogHandler)))
         return -1;
 
     return 0;

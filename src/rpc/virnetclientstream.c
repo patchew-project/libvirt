@@ -71,10 +71,8 @@ static void virNetClientStreamDispose(void *obj);
 
 static int virNetClientStreamOnceInit(void)
 {
-    if (!(virNetClientStreamClass = virClassNew(virClassForObjectLockable(),
-                                                "virNetClientStream",
-                                                sizeof(virNetClientStream),
-                                                virNetClientStreamDispose)))
+    if (!(virNetClientStreamClass = VIR_CLASS_NEW(virClassForObjectLockable(),
+                                                  virNetClientStream)))
         return -1;
 
     return 0;

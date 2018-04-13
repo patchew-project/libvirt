@@ -133,10 +133,8 @@ virResctrlInfoDispose(void *obj)
 static int
 virResctrlInfoOnceInit(void)
 {
-    if (!(virResctrlInfoClass = virClassNew(virClassForObject(),
-                                            "virResctrlInfo",
-                                            sizeof(virResctrlInfo),
-                                            virResctrlInfoDispose)))
+    if (!(virResctrlInfoClass = VIR_CLASS_NEW(virClassForObject(),
+                                              virResctrlInfo)))
         return -1;
 
     return 0;
@@ -271,10 +269,8 @@ virResctrlAllocDispose(void *obj)
 static int
 virResctrlAllocOnceInit(void)
 {
-    if (!(virResctrlAllocClass = virClassNew(virClassForObject(),
-                                             "virResctrlAlloc",
-                                             sizeof(virResctrlAlloc),
-                                             virResctrlAllocDispose)))
+    if (!(virResctrlAllocClass = VIR_CLASS_NEW(virClassForObject(),
+                                               virResctrlAlloc)))
         return -1;
 
     return 0;

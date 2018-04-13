@@ -93,17 +93,13 @@ static int
 virObjectEventOnceInit(void)
 {
     if (!(virObjectEventStateClass =
-          virClassNew(virClassForObjectLockable(),
-                      "virObjectEventState",
-                      sizeof(virObjectEventState),
-                      virObjectEventStateDispose)))
+          VIR_CLASS_NEW(virClassForObjectLockable(),
+                        virObjectEventState)))
         return -1;
 
     if (!(virObjectEventClass =
-          virClassNew(virClassForObject(),
-                      "virObjectEvent",
-                      sizeof(virObjectEvent),
-                      virObjectEventDispose)))
+          VIR_CLASS_NEW(virClassForObject(),
+                        virObjectEvent)))
         return -1;
 
     return 0;

@@ -110,16 +110,12 @@ struct _virStoragePoolObjList {
 static int
 virStorageVolObjOnceInit(void)
 {
-    if (!(virStorageVolObjClass = virClassNew(virClassForObjectLockable(),
-                                              "virStorageVolObj",
-                                              sizeof(virStorageVolObj),
-                                              virStorageVolObjDispose)))
+    if (!(virStorageVolObjClass = VIR_CLASS_NEW(virClassForObjectLockable(),
+                                                virStorageVolObj)))
         return -1;
 
-    if (!(virStorageVolObjListClass = virClassNew(virClassForObjectRWLockable(),
-                                                  "virStorageVolObjList",
-                                                  sizeof(virStorageVolObjList),
-                                                  virStorageVolObjListDispose)))
+    if (!(virStorageVolObjListClass = VIR_CLASS_NEW(virClassForObjectRWLockable(),
+                                                    virStorageVolObjList)))
         return -1;
 
     return 0;
@@ -207,16 +203,12 @@ virStorageVolObjListDispose(void *opaque)
 static int
 virStoragePoolObjOnceInit(void)
 {
-    if (!(virStoragePoolObjClass = virClassNew(virClassForObjectLockable(),
-                                               "virStoragePoolObj",
-                                               sizeof(virStoragePoolObj),
-                                               virStoragePoolObjDispose)))
+    if (!(virStoragePoolObjClass = VIR_CLASS_NEW(virClassForObjectLockable(),
+                                                 virStoragePoolObj)))
         return -1;
 
-    if (!(virStoragePoolObjListClass = virClassNew(virClassForObjectRWLockable(),
-                                                   "virStoragePoolObjList",
-                                                   sizeof(virStoragePoolObjList),
-                                                   virStoragePoolObjListDispose)))
+    if (!(virStoragePoolObjListClass = VIR_CLASS_NEW(virClassForObjectRWLockable(),
+                                                     virStoragePoolObjList)))
         return -1;
 
     return 0;

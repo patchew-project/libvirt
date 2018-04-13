@@ -54,10 +54,8 @@ static void virAccessManagerDispose(void *obj);
 
 static int virAccessManagerOnceInit(void)
 {
-    if (!(virAccessManagerClass = virClassNew(virClassForObjectLockable(),
-                                              "virAccessManagerClass",
-                                              sizeof(virAccessManager),
-                                              virAccessManagerDispose)))
+    if (!(virAccessManagerClass = VIR_CLASS_NEW(virClassForObjectLockable(),
+                                                virAccessManager)))
         return -1;
 
     return 0;

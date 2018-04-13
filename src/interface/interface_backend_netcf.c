@@ -55,10 +55,8 @@ static void virNetcfDriverStateDispose(void *obj);
 static int
 virNetcfDriverStateOnceInit(void)
 {
-    if (!(virNetcfDriverStateClass = virClassNew(virClassForObjectLockable(),
-                                       "virNetcfDriverState",
-                                       sizeof(virNetcfDriverState),
-                                       virNetcfDriverStateDispose)))
+    if (!(virNetcfDriverStateClass = VIR_CLASS_NEW(virClassForObjectLockable(),
+                                                   virNetcfDriverStat)))
         return -1;
     return 0;
 }

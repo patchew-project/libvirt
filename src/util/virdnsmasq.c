@@ -641,12 +641,9 @@ dnsmasqCapsDispose(void *obj)
 
 static int dnsmasqCapsOnceInit(void)
 {
-    if (!(dnsmasqCapsClass = virClassNew(virClassForObject(),
-                                         "dnsmasqCaps",
-                                         sizeof(dnsmasqCaps),
-                                         dnsmasqCapsDispose))) {
+    if (!(dnsmasqCapsClass = VIR_CLASS_NEW(virClassForObject(),
+                                           dnsmasqCaps)))
         return -1;
-    }
 
     return 0;
 }

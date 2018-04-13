@@ -165,10 +165,8 @@ static void qemuMonitorDispose(void *obj);
 
 static int qemuMonitorOnceInit(void)
 {
-    if (!(qemuMonitorClass = virClassNew(virClassForObjectLockable(),
-                                         "qemuMonitor",
-                                         sizeof(qemuMonitor),
-                                         qemuMonitorDispose)))
+    if (!(qemuMonitorClass = VIR_CLASS_NEW(virClassForObjectLockable(),
+                                           qemuMonitor)))
         return -1;
 
     return 0;

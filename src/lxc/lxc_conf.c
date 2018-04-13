@@ -48,10 +48,8 @@ static void virLXCDriverConfigDispose(void *obj);
 
 static int virLXCConfigOnceInit(void)
 {
-    if (!(virLXCDriverConfigClass = virClassNew(virClassForObject(),
-                                                 "virLXCDriverConfig",
-                                                 sizeof(virLXCDriverConfig),
-                                                 virLXCDriverConfigDispose)))
+    if (!(virLXCDriverConfigClass = VIR_CLASS_NEW(virClassForObject(),
+                                                  virLXCDriverConfig)))
         return -1;
 
     return 0;

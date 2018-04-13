@@ -66,22 +66,16 @@ static int
 virSecretEventsOnceInit(void)
 {
     if (!(virSecretEventClass =
-          virClassNew(virClassForObjectEvent(),
-                      "virSecretEvent",
-                      sizeof(virSecretEvent),
-                      virSecretEventDispose)))
+          VIR_CLASS_NEW(virClassForObjectEvent(),
+                        virSecretEvent)))
         return -1;
     if (!(virSecretEventLifecycleClass =
-          virClassNew(virSecretEventClass,
-                      "virSecretEventLifecycle",
-                      sizeof(virSecretEventLifecycle),
-                      virSecretEventLifecycleDispose)))
+          VIR_CLASS_NEW(virSecretEventClass,
+                        virSecretEventLifecycle)))
         return -1;
     if (!(virSecretEventValueChangedClass =
-          virClassNew(virSecretEventClass,
-                      "virSecretEventValueChanged",
-                      sizeof(virSecretEventValueChanged),
-                      virSecretEventValueChangedDispose)))
+          VIR_CLASS_NEW(virSecretEventClass,
+                        virSecretEventValueChanged)))
         return -1;
     return 0;
 }

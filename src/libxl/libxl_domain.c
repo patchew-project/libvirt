@@ -58,10 +58,8 @@ libxlDomainObjPrivateDispose(void *obj);
 static int
 libxlDomainObjPrivateOnceInit(void)
 {
-    if (!(libxlDomainObjPrivateClass = virClassNew(virClassForObjectLockable(),
-                                                   "libxlDomainObjPrivate",
-                                                   sizeof(libxlDomainObjPrivate),
-                                                   libxlDomainObjPrivateDispose)))
+    if (!(libxlDomainObjPrivateClass = VIR_CLASS_NEW(virClassForObjectLockable(),
+                                                     libxlDomainObjPrivate)))
         return -1;
 
     return 0;

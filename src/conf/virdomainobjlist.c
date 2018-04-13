@@ -56,10 +56,8 @@ struct _virDomainObjList {
 
 static int virDomainObjListOnceInit(void)
 {
-    if (!(virDomainObjListClass = virClassNew(virClassForObjectRWLockable(),
-                                              "virDomainObjList",
-                                              sizeof(virDomainObjList),
-                                              virDomainObjListDispose)))
+    if (!(virDomainObjListClass = VIR_CLASS_NEW(virClassForObjectRWLockable(),
+                                                virDomainObjList)))
         return -1;
 
     return 0;

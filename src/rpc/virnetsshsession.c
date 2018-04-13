@@ -167,10 +167,8 @@ static virClassPtr virNetSSHSessionClass;
 static int
 virNetSSHSessionOnceInit(void)
 {
-    if (!(virNetSSHSessionClass = virClassNew(virClassForObjectLockable(),
-                                              "virNetSSHSession",
-                                              sizeof(virNetSSHSession),
-                                              virNetSSHSessionDispose)))
+    if (!(virNetSSHSessionClass = VIR_CLASS_NEW(virClassForObjectLockable(),
+                                                virNetSSHSession)))
         return -1;
 
     return 0;

@@ -49,10 +49,8 @@ testFileCacheObjDispose(void *opaque)
 static int
 testFileCacheObjOnceInit(void)
 {
-    if (!(testFileCacheObjClass = virClassNew(virClassForObject(),
-                                              "testFileCacheObj",
-                                              sizeof(testFileCacheObj),
-                                              testFileCacheObjDispose)))
+    if (!(testFileCacheObjClass = VIR_CLASS_NEW(virClassForObject(),
+                                                testFileCacheObj)))
         return -1;
 
     return 0;

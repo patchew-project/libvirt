@@ -90,16 +90,12 @@ static void virNetTLSSessionDispose(void *obj);
 
 static int virNetTLSContextOnceInit(void)
 {
-    if (!(virNetTLSContextClass = virClassNew(virClassForObjectLockable(),
-                                              "virNetTLSContext",
-                                              sizeof(virNetTLSContext),
-                                              virNetTLSContextDispose)))
+    if (!(virNetTLSContextClass = VIR_CLASS_NEW(virClassForObjectLockable(),
+                                                virNetTLSContext)))
         return -1;
 
-    if (!(virNetTLSSessionClass = virClassNew(virClassForObjectLockable(),
-                                              "virNetTLSSession",
-                                              sizeof(virNetTLSSession),
-                                              virNetTLSSessionDispose)))
+    if (!(virNetTLSSessionClass = VIR_CLASS_NEW(virClassForObjectLockable(),
+                                                virNetTLSSession)))
         return -1;
 
     return 0;

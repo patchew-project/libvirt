@@ -86,10 +86,8 @@ virFileCacheDispose(void *obj)
 static int
 virFileCacheOnceInit(void)
 {
-    if (!(virFileCacheClass = virClassNew(virClassForObjectLockable(),
-                                          "virFileCache",
-                                          sizeof(virFileCache),
-                                          virFileCacheDispose)))
+    if (!(virFileCacheClass = VIR_CLASS_NEW(virClassForObjectLockable(),
+                                            virFileCache)))
         return -1;
 
     return 0;

@@ -93,10 +93,8 @@ static inline size_t virNetServerTrackCompletedAuthLocked(virNetServerPtr srv);
 
 static int virNetServerOnceInit(void)
 {
-    if (!(virNetServerClass = virClassNew(virClassForObjectLockable(),
-                                          "virNetServer",
-                                          sizeof(virNetServer),
-                                          virNetServerDispose)))
+    if (!(virNetServerClass = VIR_CLASS_NEW(virClassForObjectLockable(),
+                                            virNetServer)))
         return -1;
 
     return 0;
