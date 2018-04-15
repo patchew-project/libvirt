@@ -1811,6 +1811,9 @@ static int lxcContainerSetupPivotRoot(virDomainDefPtr vmDef,
     if (lxcContainerUnmountSubtree("/.oldroot", true) < 0)
         goto cleanup;
 
+    if (virFileRemove("/.oldroot", 0, 0) < 0)
+        VIR_DEBUG("Failed to remove /.oldroot after start");
+
     ret = 0;
 
  cleanup:
