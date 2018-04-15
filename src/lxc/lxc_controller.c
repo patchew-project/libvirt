@@ -530,9 +530,12 @@ static int virLXCControllerAppendNBDPids(virLXCControllerPtr ctrl,
 }
 
 
-static int virLXCControllerSetupNBDDeviceFS(virDomainFSDefPtr fs)
+static int virLXCControllerSetupNBDDeviceFS(virLXCControllerPtr ctrl,
+                                            virDomainFSDefPtr fs)
 {
-    char *dev;
+    char *dev, *dst, *tmp, *sec_mount_options;
+    virDomainDefPtr def = ctrl->def;
+    virSecurityManagerPtr securityDriver = ctrl->securityManager;
 
     if (fs->format <= VIR_STORAGE_FILE_NONE) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
@@ -540,21 +543,41 @@ static int virLXCControllerSetupNBDDeviceFS(virDomainFSDefPtr fs)
         return -1;
     }
 
+    if (virAsprintf(&dst, "%s/%s.root/",
+                    LXC_STATE_DIR, def->name) < 0)
+        return -1;
+
+    if (!(sec_mount_options = virSecurityManagerGetMountOptions(securityDriver, def)))
+        return -1;
+
     if (virFileNBDDeviceAssociate(fs->src->path,
                                   fs->format,
                                   fs->readonly,
                                   &dev) < 0)
         return -1;
 
-    VIR_DEBUG("Changing fs %s to use type=block for dev %s",
-              fs->src->path, dev);
-    /*
-     * We now change it into a block device type, so that
-     * the rest of container setup 'just works'
-     */
-    fs->type = VIR_DOMAIN_FS_TYPE_BLOCK;
     VIR_FREE(fs->src->path);
     fs->src->path = dev;
+
+    tmp = fs->dst;
+    fs->dst = dst;
+
+    if (lxcContainerMountFSBlock(fs, "", sec_mount_options) < 0) {
+        fs->dst = tmp;
+        VIR_FREE(dst);
+        return -1;
+    }
+
+    fs->dst = tmp;
+    fs->type = VIR_DOMAIN_FS_TYPE_MOUNT;
+
+    /* The NBD device will be cleaned up while the cgroup will end.
+     * For this we need to remember the qemu-nbd pid and add it to
+     * the cgroup*/
+    if (virLXCControllerAppendNBDPids(ctrl, fs->src->path) < 0)
+
+    VIR_FREE(fs->src->path);
+    fs->src->path = dst;
 
     return 0;
 }
@@ -637,13 +660,7 @@ static int virLXCControllerSetupLoopDevices(virLXCControllerPtr ctrl)
             }
             ctrl->loopDevFds[ctrl->nloopDevs - 1] = fd;
         } else if (fs->fsdriver == VIR_DOMAIN_FS_DRIVER_TYPE_NBD) {
-            if (virLXCControllerSetupNBDDeviceFS(fs) < 0)
-                goto cleanup;
-
-            /* The NBD device will be cleaned up while the cgroup will end.
-             * For this we need to remember the qemu-nbd pid and add it to
-             * the cgroup*/
-            if (virLXCControllerAppendNBDPids(ctrl, fs->src->path) < 0)
+            if (virLXCControllerSetupNBDDeviceFS(ctrl, fs) < 0)
                 goto cleanup;
         } else {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
