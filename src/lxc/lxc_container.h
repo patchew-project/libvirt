@@ -68,4 +68,8 @@ int lxcContainerChown(virDomainDefPtr def, const char *path);
 
 bool lxcIsBasicMountLocation(const char *path);
 
+int lxcContainerMountFSBlock(virDomainFSDefPtr fs,
+                             const char *srcprefix,
+                             const char *sec_mount_options);
+
 #endif /* LXC_CONTAINER_H */
