@@ -13100,6 +13100,85 @@ qemuNodeDeviceReset(virNodeDevicePtr dev)
     return ret;
 }
 
+
+/**
+ * qemuCompareCPU:
+ * @binary: QEMU binary to issue the comparison command to
+ * @host: host CPU definition
+ * @xml: XML description of either guest or host CPU to be compared with @host
+ * @failIncompatible: return an error instead of VIR_CPU_COMPARE_INCOMPATIBLE
+ *
+ * Compares the target CPU described by @xml with @host CPU to produce a third
+ * model containing the comparison result and the list of features responsible
+ * format the result. This function discards the responsible features.
+ *
+ * Compared model results:
+ *
+ * "incompatible": target cpu cannot run on @host.
+ *
+ * "subset":    @host is an older cpu model than target, or @host does not
+ *              support all features enabled on target.
+ *
+ *              This result is considered incompatible.
+ *
+ * "identical": @host and target are identical; target can run on @host.
+ *
+ * "superset":  @host is a newer cpu model than target, or @host supports some
+ *              features not supported by target; target can run on @host.
+ *
+ * Returns: virCPUCompareResult based on the produced "compared" model's name,
+ *          or VIR_CPU_COMPARE_ERROR upon error.
+ */
+static virCPUCompareResult
+qemuCompareCPU(char *binary,
+               virCPUDefPtr hostCPU,
+               const char *xml,
+               bool failIncompatible)
+{
+    virCPUDefPtr targetCPU = NULL;
+    qemuMonitorCPUModelInfoPtr result = NULL;
+    virCPUCompareResult ret = VIR_CPU_COMPARE_ERROR;
+
+    VIR_DEBUG("binary=%s, hostCPU=%p, xml=%s", binary, hostCPU, NULLSTR(xml));
+
+    if (!hostCPU || !hostCPU->model) {
+        if (failIncompatible) {
+            virReportError(VIR_ERR_CPU_INCOMPATIBLE, "%s",
+                           _("cannot get host CPU capabilities"));
+        } else {
+            VIR_WARN("cannot get host CPU capabilities");
+            ret = VIR_CPU_COMPARE_INCOMPATIBLE;
+        }
+        goto cleanup;
+    }
+
+    if (virCPUDefParseXMLHelper(xml, NULL, VIR_CPU_TYPE_AUTO, &targetCPU) < 0)
+        goto cleanup;
+
+    if (!(result = virQEMUCapsProbeQMPCPUModelComparison(binary, hostCPU,
+                                                         targetCPU)))
+        goto cleanup;
+
+    if (STREQ(result->name, "incompatible") ||
+        STREQ(result->name, "subset"))
+        ret = VIR_CPU_COMPARE_INCOMPATIBLE;
+    else if (STREQ(result->name, "identical"))
+        ret = VIR_CPU_COMPARE_IDENTICAL;
+    else if (STREQ(result->name, "superset"))
+        ret = VIR_CPU_COMPARE_SUPERSET;
+
+    if (failIncompatible && ret == VIR_CPU_COMPARE_INCOMPATIBLE) {
+        ret = VIR_CPU_COMPARE_ERROR;
+        virReportError(VIR_ERR_CPU_INCOMPATIBLE, NULL);
+    }
+
+ cleanup:
+    virCPUDefFree(targetCPU);
+    qemuMonitorCPUModelInfoFree(result);
+    return ret;
+}
+
+
 static int
 qemuConnectCompareCPU(virConnectPtr conn,
                       const char *xmlDesc,
@@ -13109,6 +13188,8 @@ qemuConnectCompareCPU(virConnectPtr conn,
     int ret = VIR_CPU_COMPARE_ERROR;
     virCapsPtr caps = NULL;
     bool failIncompatible;
+    char *binary = NULL;
+    virQEMUCapsPtr qemuCaps = NULL;
 
     virCheckFlags(VIR_CONNECT_COMPARE_CPU_FAIL_INCOMPATIBLE,
                   VIR_CPU_COMPARE_ERROR);
@@ -13121,11 +13202,26 @@ qemuConnectCompareCPU(virConnectPtr conn,
     if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
         goto cleanup;
 
+    binary = virQEMUCapsFindBinaryForArch(caps->host.arch, caps->host.arch);
+
+    if (binary) {
+        qemuCaps = virQEMUCapsCacheLookup(driver->qemuCapsCache, binary);
+
+        if (qemuCaps &&
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CPU_MODEL_COMPARISON)) {
+            ret = qemuCompareCPU(binary, caps->host.cpu, xmlDesc,
+                                 failIncompatible);
+            goto cleanup;
+        }
+    }
+
     ret = virCPUCompareXML(caps->host.arch, caps->host.cpu,
                            xmlDesc, failIncompatible);
 
  cleanup:
+    VIR_FREE(binary);
     virObjectUnref(caps);
+    virObjectUnref(qemuCaps);
     return ret;
 }
 

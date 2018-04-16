@@ -579,6 +579,9 @@ bool virQEMUCapsGuestIsNative(virArch host,
 bool virQEMUCapsCPUFilterFeatures(const char *name,
                                   void *opaque);
 
+char *virQEMUCapsFindBinaryForArch(virArch hostarch,
+                                   virArch guestarch);
+
 qemuMonitorCPUModelInfoPtr
 virQEMUCapsProbeQMPCPUModelComparison(char *binary,
                                       virCPUDefPtr cpuA,

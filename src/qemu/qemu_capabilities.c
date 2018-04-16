@@ -657,7 +657,7 @@ virQEMUCapsFindBinary(const char *format,
     return ret;
 }
 
-static char *
+char *
 virQEMUCapsFindBinaryForArch(virArch hostarch,
                              virArch guestarch)
 {
