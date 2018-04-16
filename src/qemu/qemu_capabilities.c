@@ -896,6 +896,54 @@ virQEMUCapsProbeHostCPUForEmulator(virArch hostArch,
 }
 
 
+static int
+virQEMUProbeHostCPUModelFromBinary(virFileCachePtr cache,
+                                   virArch hostarch,
+                                   virCPUDefPtr *hostCPU)
+{
+    char *binary;
+    virQEMUCapsPtr qemuCaps = NULL;
+    virCPUDefPtr qemuCpu;
+    virCPUDefPtr tmp = NULL;
+    int ret = -1;
+
+    if (!(binary = virQEMUCapsFindBinaryForArch(hostarch, hostarch)))
+        goto cleanup;
+
+    if (!(qemuCaps = virQEMUCapsCacheLookup(cache, binary)))
+        goto cleanup;
+
+    /* If QEMU does not report the host's cpu model, then fail gracefully */
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION)) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    if (!(qemuCpu = virQEMUCapsGetHostModel(qemuCaps, VIR_DOMAIN_VIRT_KVM,
+                                            VIR_QEMU_CAPS_HOST_CPU_REPORTED)))
+        goto cleanup;
+
+    if (VIR_ALLOC(tmp) < 0)
+        goto cleanup;
+
+    if (!(tmp = virCPUDefCopyWithoutModel(*hostCPU)))
+        goto cleanup;
+
+    if (virCPUDefCopyModel(tmp, qemuCpu, false) < 0)
+        goto cleanup;
+
+    virCPUDefFree(*hostCPU);
+    VIR_STEAL_PTR(*hostCPU, tmp);
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(binary);
+    virCPUDefFree(tmp);
+    virObjectUnref(qemuCaps);
+    return ret;
+}
+
+
 virCapsPtr
 virQEMUCapsInit(virFileCachePtr cache)
 {
@@ -921,6 +969,11 @@ virQEMUCapsInit(virFileCachePtr cache)
 
     if (!(caps->host.cpu = virCPUProbeHost(caps->host.arch)))
         VIR_WARN("Failed to get host CPU");
+
+    /* Some archs get host cpu information via QEMU */
+    if (caps->host.cpu && !caps->host.cpu->model &&
+        virQEMUProbeHostCPUModelFromBinary(cache, hostarch, &caps->host.cpu) < 0)
+        VIR_WARN("Failed to get host CPU model from QEMU");
 
     /* Add the power management features of the host */
     if (virNodeSuspendGetTargetMask(&caps->host.powerMgmt) < 0)
