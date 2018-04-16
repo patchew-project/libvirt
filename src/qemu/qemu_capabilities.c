@@ -468,6 +468,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "virtio-tablet-ccw",
               "qcow2-luks",
               "pcie-pci-bridge",
+              "query-cpu-model-comparison",
     );
 
 
@@ -1030,6 +1031,7 @@ struct virQEMUCapsStringFlags virQEMUCapsCommands[] = {
     { "query-hotpluggable-cpus", QEMU_CAPS_QUERY_HOTPLUGGABLE_CPUS },
     { "query-qmp-schema", QEMU_CAPS_QUERY_QMP_SCHEMA },
     { "query-cpu-model-expansion", QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION },
+    { "query-cpu-model-comparison", QEMU_CAPS_QUERY_CPU_MODEL_COMPARISON },
     { "query-cpu-definitions", QEMU_CAPS_QUERY_CPU_DEFINITIONS },
     { "query-named-block-nodes", QEMU_CAPS_QUERY_NAMED_BLOCK_NODES },
 };
@@ -4929,4 +4931,55 @@ virQEMUCapsSetMicrocodeVersion(virQEMUCapsPtr qemuCaps,
                                unsigned int microcodeVersion)
 {
     qemuCaps->microcodeVersion = microcodeVersion;
+}
+
+
+static virQEMUCapsInitQMPCommandPtr
+virQEMUCapsSetupBinary(char *binary)
+{
+    virQEMUCapsInitQMPCommandPtr cmd;
+    char *qmperr = NULL;
+
+    if (!(cmd = virQEMUCapsInitQMPCommandNew(binary, "/tmp", -1, -1, &qmperr)))
+        goto cleanup;
+
+    if (virQEMUCapsInitQMPCommandRun(cmd, false) != 0)
+        goto cleanup;
+
+    if (qemuMonitorSetCapabilities(cmd->mon) < 0) {
+        VIR_DEBUG("Failed to set monitor capabilities %s",
+                  virGetLastErrorMessage());
+        goto cleanup;
+    }
+
+    return cmd;
+
+ cleanup:
+    virQEMUCapsInitQMPCommandFree(cmd);
+    return NULL;
+}
+
+
+qemuMonitorCPUModelInfoPtr
+virQEMUCapsProbeQMPCPUModelComparison(char *binary,
+                                      virCPUDefPtr cpuA,
+                                      virCPUDefPtr cpuB)
+{
+    virQEMUCapsInitQMPCommandPtr cmd;
+    qemuMonitorCPUModelInfoPtr cpuC = NULL;
+    qemuMonitorCPUModelInfoPtr ret = NULL;
+
+    if (!(cmd = virQEMUCapsSetupBinary(binary)))
+        goto cleanup;
+
+    if (qemuMonitorGetCPUModelComparison(cmd->mon, cpuA, cpuB, &cpuC) < 0)
+        goto cleanup;
+
+    ret = cpuC;
+    cpuC = NULL;
+
+ cleanup:
+    virQEMUCapsInitQMPCommandFree(cmd);
+    qemuMonitorCPUModelInfoFree(cpuC);
+    return ret;
 }

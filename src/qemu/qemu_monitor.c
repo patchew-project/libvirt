@@ -3792,6 +3792,20 @@ qemuMonitorCPUModelInfoFree(qemuMonitorCPUModelInfoPtr model_info)
 }
 
 
+int
+qemuMonitorGetCPUModelComparison(qemuMonitorPtr mon,
+                                 virCPUDefPtr cpuA,
+                                 virCPUDefPtr cpuB,
+                                 qemuMonitorCPUModelInfoPtr *cpuC)
+{
+    VIR_DEBUG("cpuA=%p cpuB=%p", cpuA, cpuB);
+
+    QEMU_CHECK_MONITOR_JSON(mon);
+
+    return qemuMonitorJSONGetCPUModelComparison(mon, cpuA, cpuB, cpuC);
+}
+
+
 qemuMonitorCPUModelInfoPtr
 qemuMonitorCPUModelInfoCopy(const qemuMonitorCPUModelInfo *orig)
 {

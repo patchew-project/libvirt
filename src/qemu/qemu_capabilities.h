@@ -452,6 +452,7 @@ typedef enum {
     QEMU_CAPS_DEVICE_VIRTIO_TABLET_CCW, /* -device virtio-tablet-ccw */
     QEMU_CAPS_QCOW2_LUKS, /* qcow2 format support LUKS encryption */
     QEMU_CAPS_DEVICE_PCIE_PCI_BRIDGE, /* -device pcie-pci-bridge */
+    QEMU_CAPS_QUERY_CPU_MODEL_COMPARISON, /* qmp query-cpu-model-comparison */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
@@ -577,5 +578,10 @@ bool virQEMUCapsGuestIsNative(virArch host,
 
 bool virQEMUCapsCPUFilterFeatures(const char *name,
                                   void *opaque);
+
+qemuMonitorCPUModelInfoPtr
+virQEMUCapsProbeQMPCPUModelComparison(char *binary,
+                                      virCPUDefPtr cpuA,
+                                      virCPUDefPtr cpuB);
 
 #endif /* __QEMU_CAPABILITIES_H__*/
