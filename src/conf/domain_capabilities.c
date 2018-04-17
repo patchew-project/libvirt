@@ -40,18 +40,11 @@ static void virDomainCapsCPUModelsDispose(void *obj);
 
 static int virDomainCapsOnceInit(void)
 {
-    if (!(virDomainCapsClass = virClassNew(virClassForObjectLockable(),
-                                           "virDomainCapsClass",
-                                           sizeof(virDomainCaps),
-                                           virDomainCapsDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectLockable(),
+                  virDomainCaps);
 
-    virDomainCapsCPUModelsClass = virClassNew(virClassForObject(),
-                                              "virDomainCapsCPUModelsClass",
-                                              sizeof(virDomainCapsCPUModels),
-                                              virDomainCapsCPUModelsDispose);
-    if (!virDomainCapsCPUModelsClass)
-        return -1;
+    VIR_CLASS_NEW(virClassForObject(),
+                  virDomainCapsCPUModels);
 
     return 0;
 }

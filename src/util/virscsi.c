@@ -85,11 +85,8 @@ static void virSCSIDeviceListDispose(void *obj);
 static int
 virSCSIOnceInit(void)
 {
-    if (!(virSCSIDeviceListClass = virClassNew(virClassForObjectLockable(),
-                                               "virSCSIDeviceList",
-                                               sizeof(virSCSIDeviceList),
-                                               virSCSIDeviceListDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectLockable(),
+                  virSCSIDeviceList);
 
     return 0;
 }

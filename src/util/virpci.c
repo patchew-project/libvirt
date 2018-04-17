@@ -204,11 +204,8 @@ static void virPCIDeviceListDispose(void *obj);
 
 static int virPCIOnceInit(void)
 {
-    if (!(virPCIDeviceListClass = virClassNew(virClassForObjectLockable(),
-                                              "virPCIDeviceList",
-                                              sizeof(virPCIDeviceList),
-                                              virPCIDeviceListDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectLockable(),
+                  virPCIDeviceList);
 
     return 0;
 }

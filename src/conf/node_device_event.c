@@ -66,24 +66,15 @@ static void virNodeDeviceEventUpdateDispose(void *obj);
 static int
 virNodeDeviceEventsOnceInit(void)
 {
-    if (!(virNodeDeviceEventClass =
-          virClassNew(virClassForObjectEvent(),
-                      "virNodeDeviceEvent",
-                      sizeof(virNodeDeviceEvent),
-                      virNodeDeviceEventDispose)))
-        return -1;
-    if (!(virNodeDeviceEventLifecycleClass =
-          virClassNew(virNodeDeviceEventClass,
-                      "virNodeDeviceEventLifecycle",
-                      sizeof(virNodeDeviceEventLifecycle),
-                      virNodeDeviceEventLifecycleDispose)))
-        return -1;
-    if (!(virNodeDeviceEventUpdateClass =
-          virClassNew(virNodeDeviceEventClass,
-                      "virNodeDeviceEventUpdate",
-                      sizeof(virNodeDeviceEventUpdate),
-                      virNodeDeviceEventUpdateDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectEvent(),
+                  virNodeDeviceEvent);
+
+    VIR_CLASS_NEW(virNodeDeviceEventClass,
+                  virNodeDeviceEventLifecycle);
+
+    VIR_CLASS_NEW(virNodeDeviceEventClass,
+                  virNodeDeviceEventUpdate);
+
     return 0;
 }
 

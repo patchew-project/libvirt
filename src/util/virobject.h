@@ -74,6 +74,15 @@ virClassPtr virClassForObjectRWLockable(void);
 # ifndef VIR_PARENT_REQUIRED
 #  define VIR_PARENT_REQUIRED ATTRIBUTE_NONNULL(1)
 # endif
+
+# define VIR_CLASS_NEW(prnt, name) \
+    if (!(name##Class = virClassNew(prnt, #name, sizeof(name), name##Dispose))) \
+        return -1;
+
+# define VIR_CLASS_NEW_GOTO(prnt, name, label) \
+    if (!(name##Class = virClassNew(prnt, #name, sizeof(name), name##Dispose))) \
+        goto label;
+
 virClassPtr
 virClassNew(virClassPtr parent,
             const char *name,

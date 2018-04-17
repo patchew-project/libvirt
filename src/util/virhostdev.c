@@ -120,11 +120,8 @@ static int virHostdevIsPCINodeDeviceUsed(virPCIDeviceAddressPtr devAddr, void *o
 
 static int virHostdevManagerOnceInit(void)
 {
-    if (!(virHostdevManagerClass = virClassNew(virClassForObject(),
-                                               "virHostdevManager",
-                                               sizeof(virHostdevManager),
-                                               virHostdevManagerDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObject(),
+                  virHostdevManager);
 
     if (!(manager = virHostdevManagerNew()))
         return -1;

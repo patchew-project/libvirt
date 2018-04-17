@@ -74,11 +74,8 @@ virMacMapDispose(void *obj)
 
 static int virMacMapOnceInit(void)
 {
-    if (!(virMacMapClass = virClassNew(virClassForObjectLockable(),
-                                       "virMacMapClass",
-                                       sizeof(virMacMap),
-                                       virMacMapDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectLockable(),
+                  virMacMap);
 
     return 0;
 }

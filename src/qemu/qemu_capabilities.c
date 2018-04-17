@@ -548,11 +548,8 @@ static void virQEMUCapsDispose(void *obj);
 
 static int virQEMUCapsOnceInit(void)
 {
-    if (!(virQEMUCapsClass = virClassNew(virClassForObject(),
-                                         "virQEMUCaps",
-                                         sizeof(virQEMUCaps),
-                                         virQEMUCapsDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObject(),
+                  virQEMUCaps);
 
     return 0;
 }

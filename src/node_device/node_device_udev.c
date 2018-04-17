@@ -93,11 +93,8 @@ udevEventDataDispose(void *obj)
 static int
 udevEventDataOnceInit(void)
 {
-    if (!(udevEventDataClass = virClassNew(virClassForObjectLockable(),
-                                           "udevEventData",
-                                           sizeof(udevEventData),
-                                           udevEventDataDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectLockable(),
+                  udevEventData);
 
     return 0;
 }

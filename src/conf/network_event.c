@@ -57,18 +57,12 @@ static void virNetworkEventLifecycleDispose(void *obj);
 static int
 virNetworkEventsOnceInit(void)
 {
-    if (!(virNetworkEventClass =
-          virClassNew(virClassForObjectEvent(),
-                      "virNetworkEvent",
-                      sizeof(virNetworkEvent),
-                      virNetworkEventDispose)))
-        return -1;
-    if (!(virNetworkEventLifecycleClass =
-          virClassNew(virNetworkEventClass,
-                      "virNetworkEventLifecycle",
-                      sizeof(virNetworkEventLifecycle),
-                      virNetworkEventLifecycleDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectEvent(),
+                  virNetworkEvent);
+
+    VIR_CLASS_NEW(virNetworkEventClass,
+                  virNetworkEventLifecycle);
+
     return 0;
 }
 

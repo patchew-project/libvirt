@@ -57,11 +57,8 @@ static void virNetServerServiceDispose(void *obj);
 
 static int virNetServerServiceOnceInit(void)
 {
-    if (!(virNetServerServiceClass = virClassNew(virClassForObject(),
-                                                 "virNetServerService",
-                                                 sizeof(virNetServerService),
-                                                 virNetServerServiceDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObject(),
+                  virNetServerService);
 
     return 0;
 }

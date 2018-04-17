@@ -58,17 +58,11 @@ static void virInterfaceObjListDispose(void *obj);
 static int
 virInterfaceObjOnceInit(void)
 {
-    if (!(virInterfaceObjClass = virClassNew(virClassForObjectLockable(),
-                                             "virInterfaceObj",
-                                             sizeof(virInterfaceObj),
-                                             virInterfaceObjDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectLockable(),
+                  virInterfaceObj);
 
-    if (!(virInterfaceObjListClass = virClassNew(virClassForObjectRWLockable(),
-                                                 "virInterfaceObjList",
-                                                 sizeof(virInterfaceObjList),
-                                                 virInterfaceObjListDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectRWLockable(),
+                  virInterfaceObjList);
 
     return 0;
 }

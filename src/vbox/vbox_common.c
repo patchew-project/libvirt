@@ -118,11 +118,8 @@ vboxDriverDispose(void *obj)
 static int
 vboxDriverOnceInit(void)
 {
-    if (!(vboxDriverClass = virClassNew(virClassForObjectLockable(),
-                                        "vboxDriver",
-                                        sizeof(vboxDriver),
-                                        vboxDriverDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectLockable(),
+                  vboxDriver);
 
     return 0;
 }

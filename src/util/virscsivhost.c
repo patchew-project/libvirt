@@ -70,11 +70,8 @@ virSCSIVHostDeviceListDispose(void *obj)
 static int
 virSCSIVHostOnceInit(void)
 {
-    if (!(virSCSIVHostDeviceListClass = virClassNew(virClassForObjectLockable(),
-                                                    "virSCSIVHostDeviceList",
-                                                    sizeof(virSCSIVHostDeviceList),
-                                                    virSCSIVHostDeviceListDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectLockable(),
+                  virSCSIVHostDeviceList);
 
     return 0;
 }

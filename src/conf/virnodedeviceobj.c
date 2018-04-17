@@ -58,17 +58,11 @@ static bool virNodeDeviceObjHasCap(const virNodeDeviceObj *obj, int type);
 static int
 virNodeDeviceObjOnceInit(void)
 {
-    if (!(virNodeDeviceObjClass = virClassNew(virClassForObjectLockable(),
-                                              "virNodeDeviceObj",
-                                              sizeof(virNodeDeviceObj),
-                                              virNodeDeviceObjDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectLockable(),
+                  virNodeDeviceObj);
 
-    if (!(virNodeDeviceObjListClass = virClassNew(virClassForObjectRWLockable(),
-                                                  "virNodeDeviceObjList",
-                                                  sizeof(virNodeDeviceObjList),
-                                                  virNodeDeviceObjListDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectRWLockable(),
+                  virNodeDeviceObjList);
 
     return 0;
 }

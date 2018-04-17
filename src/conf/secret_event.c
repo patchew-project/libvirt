@@ -65,24 +65,15 @@ static void virSecretEventValueChangedDispose(void *obj);
 static int
 virSecretEventsOnceInit(void)
 {
-    if (!(virSecretEventClass =
-          virClassNew(virClassForObjectEvent(),
-                      "virSecretEvent",
-                      sizeof(virSecretEvent),
-                      virSecretEventDispose)))
-        return -1;
-    if (!(virSecretEventLifecycleClass =
-          virClassNew(virSecretEventClass,
-                      "virSecretEventLifecycle",
-                      sizeof(virSecretEventLifecycle),
-                      virSecretEventLifecycleDispose)))
-        return -1;
-    if (!(virSecretEventValueChangedClass =
-          virClassNew(virSecretEventClass,
-                      "virSecretEventValueChanged",
-                      sizeof(virSecretEventValueChanged),
-                      virSecretEventValueChangedDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectEvent(),
+                  virSecretEvent);
+
+    VIR_CLASS_NEW(virSecretEventClass,
+                  virSecretEventLifecycle);
+
+    VIR_CLASS_NEW(virSecretEventClass,
+                  virSecretEventValueChanged);
+
     return 0;
 }
 

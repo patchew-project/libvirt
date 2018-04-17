@@ -66,24 +66,15 @@ static void virStoragePoolEventRefreshDispose(void *obj);
 static int
 virStoragePoolEventsOnceInit(void)
 {
-    if (!(virStoragePoolEventClass =
-          virClassNew(virClassForObjectEvent(),
-                      "virStoragePoolEvent",
-                      sizeof(virStoragePoolEvent),
-                      virStoragePoolEventDispose)))
-        return -1;
-    if (!(virStoragePoolEventLifecycleClass =
-          virClassNew(virStoragePoolEventClass,
-                      "virStoragePoolEventLifecycle",
-                      sizeof(virStoragePoolEventLifecycle),
-                      virStoragePoolEventLifecycleDispose)))
-        return -1;
-    if (!(virStoragePoolEventRefreshClass =
-          virClassNew(virStoragePoolEventClass,
-                      "virStoragePoolEventRefresh",
-                      sizeof(virStoragePoolEventRefresh),
-                      virStoragePoolEventRefreshDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectEvent(),
+                  virStoragePoolEvent);
+
+    VIR_CLASS_NEW(virStoragePoolEventClass,
+                  virStoragePoolEventLifecycle);
+
+    VIR_CLASS_NEW(virStoragePoolEventClass,
+                  virStoragePoolEventRefresh);
+
     return 0;
 }
 

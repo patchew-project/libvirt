@@ -54,11 +54,8 @@ static void virIdentityDispose(void *obj);
 
 static int virIdentityOnceInit(void)
 {
-    if (!(virIdentityClass = virClassNew(virClassForObject(),
-                                         "virIdentity",
-                                         sizeof(virIdentity),
-                                         virIdentityDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObject(),
+                  virIdentity);
 
     if (virThreadLocalInit(&virIdentityCurrent,
                            (virThreadLocalCleanup)virObjectUnref) < 0) {

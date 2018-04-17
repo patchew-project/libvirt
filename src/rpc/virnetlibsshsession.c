@@ -161,11 +161,8 @@ virNetLibsshSessionOnceInit(void)
 {
     const char *dbgLevelStr;
 
-    if (!(virNetLibsshSessionClass = virClassNew(virClassForObjectLockable(),
-                                                 "virNetLibsshSession",
-                                                 sizeof(virNetLibsshSession),
-                                                 virNetLibsshSessionDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectLockable(),
+                  virNetLibsshSession);
 
     if (ssh_init() < 0) {
         virReportError(VIR_ERR_LIBSSH, "%s",

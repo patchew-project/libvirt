@@ -77,15 +77,11 @@ static void virHashAtomicDispose(void *obj);
 
 static int virHashAtomicOnceInit(void)
 {
-    virHashAtomicClass = virClassNew(virClassForObjectLockable(),
-                                     "virHashAtomic",
-                                     sizeof(virHashAtomic),
-                                     virHashAtomicDispose);
-    if (!virHashAtomicClass)
-        return -1;
-    else
-        return 0;
+    VIR_CLASS_NEW(virClassForObjectLockable(),
+                  virHashAtomic);
+    return 0;
 }
+
 VIR_ONCE_GLOBAL_INIT(virHashAtomic)
 
 

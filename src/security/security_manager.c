@@ -59,11 +59,8 @@ void virSecurityManagerDispose(void *obj)
 static int
 virSecurityManagerOnceInit(void)
 {
-    if (!(virSecurityManagerClass = virClassNew(virClassForObjectLockable(),
-                                                "virSecurityManagerClass",
-                                                sizeof(virSecurityManager),
-                                                virSecurityManagerDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectLockable(),
+                  virSecurityManager);
 
     return 0;
 }

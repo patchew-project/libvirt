@@ -73,16 +73,10 @@ static void virAdmClientDispose(void *obj);
 static int
 virDataTypesOnceInit(void)
 {
-#define DECLARE_CLASS_COMMON(basename, parent) \
-    if (!(basename ## Class = virClassNew(parent, \
-                                          #basename, \
-                                          sizeof(basename), \
-                                          basename ## Dispose))) \
-        return -1;
 #define DECLARE_CLASS(basename) \
-    DECLARE_CLASS_COMMON(basename, virClassForObject())
+    VIR_CLASS_NEW(virClassForObject(), basename)
 #define DECLARE_CLASS_LOCKABLE(basename) \
-    DECLARE_CLASS_COMMON(basename, virClassForObjectLockable())
+    VIR_CLASS_NEW(virClassForObjectLockable(), basename)
 
     DECLARE_CLASS_LOCKABLE(virConnect);
     DECLARE_CLASS_LOCKABLE(virConnectCloseCallbackData);
@@ -102,7 +96,6 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS(virAdmServer);
     DECLARE_CLASS(virAdmClient);
 
-#undef DECLARE_CLASS_COMMON
 #undef DECLARE_CLASS_LOCKABLE
 #undef DECLARE_CLASS
 

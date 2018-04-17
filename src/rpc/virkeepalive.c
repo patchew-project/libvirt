@@ -58,11 +58,8 @@ static void virKeepAliveDispose(void *obj);
 
 static int virKeepAliveOnceInit(void)
 {
-    if (!(virKeepAliveClass = virClassNew(virClassForObjectLockable(),
-                                          "virKeepAlive",
-                                          sizeof(virKeepAlive),
-                                          virKeepAliveDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectLockable(),
+                  virKeepAlive);
 
     return 0;
 }

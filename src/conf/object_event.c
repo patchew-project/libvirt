@@ -92,19 +92,11 @@ static void virObjectEventStateDispose(void *obj);
 static int
 virObjectEventOnceInit(void)
 {
-    if (!(virObjectEventStateClass =
-          virClassNew(virClassForObjectLockable(),
-                      "virObjectEventState",
-                      sizeof(virObjectEventState),
-                      virObjectEventStateDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObjectLockable(),
+                  virObjectEventState);
 
-    if (!(virObjectEventClass =
-          virClassNew(virClassForObject(),
-                      "virObjectEvent",
-                      sizeof(virObjectEvent),
-                      virObjectEventDispose)))
-        return -1;
+    VIR_CLASS_NEW(virClassForObject(),
+                  virObjectEvent);
 
     return 0;
 }
