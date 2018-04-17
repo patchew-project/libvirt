@@ -76,10 +76,12 @@ virClassPtr virClassForObjectRWLockable(void);
 # endif
 
 # define VIR_CLASS_NEW(prnt, name) \
+    verify(offsetof(name, parent) == 0); \
     if (!(name##Class = virClassNew(prnt, #name, sizeof(name), name##Dispose))) \
         return -1;
 
 # define VIR_CLASS_NEW_GOTO(prnt, name, label) \
+    verify(offsetof(name, parent) == 0); \
     if (!(name##Class = virClassNew(prnt, #name, sizeof(name), name##Dispose))) \
         goto label;
 
