@@ -20,6 +20,10 @@
 
 #include <config.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "internal.h"
 #include "viralloc.h"
 #include "vircommand.h"
@@ -187,4 +191,36 @@ virNetDevOpenvswitchGetVhostuserIfname(const char *path ATTRIBUTE_UNUSED,
                                        char **ifname)
 {
     return VIR_STRDUP(*ifname, "vhost-user0");
+}
+
+static int (*real_open)(const char *path, int flags, ...);
+
+static void init_syms(void)
+{
+    if (real_open)
+        return;
+
+    VIR_MOCK_REAL_INIT(open);
+}
+
+int open(const char *path, int flags, ...)
+{
+    va_list ap;
+    mode_t mode = 0;
+
+    init_syms();
+
+    if (STREQ(path, "/dev/vhost-net"))
+        return -1;
+
+    /* The mode argument is mandatory when O_CREAT is set in flags,
+     * otherwise the argument is ignored.
+     */
+    if (flags & O_CREAT) {
+        va_start(ap, flags);
+        mode = (mode_t) va_arg(ap, int);
+        va_end(ap);
+    }
+
+    return real_open(path, flags, mode);
 }
