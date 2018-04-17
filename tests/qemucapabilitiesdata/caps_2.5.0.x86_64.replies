@@ -3278,6 +3278,14 @@
 }
 
 {
+    "id": "libvirt-40",
+    "error": {
+        "class": "CommandNotFound",
+        "desc": "The command qom-list-properties has not been found"
+    }
+}
+
+{
   "return": [
     {
       "name": "pc-i440fx-2.4",
@@ -3411,7 +3419,7 @@
       "cpu-max": 255
     }
   ],
-  "id": "libvirt-40"
+  "id": "libvirt-41"
 }
 
 {
@@ -3501,21 +3509,21 @@
       "name": "qemu64"
     }
   ],
-  "id": "libvirt-41"
+  "id": "libvirt-42"
 }
 
 {
   "return": [
     "tpm-tis"
   ],
-  "id": "libvirt-42"
+  "id": "libvirt-43"
 }
 
 {
   "return": [
     "passthrough"
   ],
-  "id": "libvirt-43"
+  "id": "libvirt-44"
 }
 
 {
@@ -4560,7 +4568,7 @@
       "option": "drive"
     }
   ],
-  "id": "libvirt-44"
+  "id": "libvirt-45"
 }
 
 {
@@ -4594,7 +4602,7 @@
       "capability": "x-postcopy-ram"
     }
   ],
-  "id": "libvirt-45"
+  "id": "libvirt-46"
 }
 
 {
@@ -12139,7 +12147,7 @@
       "meta-type": "array"
     }
   ],
-  "id": "libvirt-46"
+  "id": "libvirt-47"
 }
 
 {

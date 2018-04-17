@@ -110,7 +110,7 @@
   <flag name='dump-completed'/>
   <version>2007000</version>
   <kvmVersion>0</kvmVersion>
-  <microcodeVersion>216732</microcodeVersion>
+  <microcodeVersion>216887</microcodeVersion>
   <package></package>
   <arch>s390x</arch>
   <cpu type='kvm' name='host'/>
