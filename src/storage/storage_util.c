@@ -797,6 +797,7 @@ storagePloopResize(virStorageVolDefPtr vol,
 enum {
     QEMU_IMG_BACKING_FORMAT_OPTIONS = 0,
     QEMU_IMG_BACKING_FORMAT_OPTIONS_COMPAT,
+    QEMU_IMG_BACKING_FORMAT_OPTIONS_KEY_SECRET,
 };
 
 static char *
@@ -824,6 +825,14 @@ virStorageBackendQemuImgSupportsCompat(const char *output)
     return strstr(output, "\ncompat ");
 }
 
+
+static bool
+virStorageBackendQemuImgRequiresKeySecret(const char *output)
+{
+    return strstr(output, "key-secret");
+}
+
+
 static int
 virStorageBackendQEMUImgBackingFormat(const char *qemuimg)
 {
@@ -842,6 +851,11 @@ virStorageBackendQEMUImgBackingFormat(const char *qemuimg)
      * compat=0.10 option. */
     if (virStorageBackendQemuImgSupportsCompat(output))
         ret = QEMU_IMG_BACKING_FORMAT_OPTIONS_COMPAT;
+
+    /* QEMU 2.9 enforced that qemu-img creation of an encrypted volume
+     * uses LUKS encryption. */
+    if (virStorageBackendQemuImgRequiresKeySecret(output))
+        ret = QEMU_IMG_BACKING_FORMAT_OPTIONS_KEY_SECRET;
 
  cleanup:
     VIR_FREE(output);
@@ -934,6 +948,7 @@ storageBackendCreateQemuImgOpts(virStorageEncryptionInfoDefPtr enc,
 
 /* storageBackendCreateQemuImgCheckEncryption:
  * @format: format of file found
+ * @imgformat: image format capability
  * @conn: pointer to connection
  * @vol: pointer to volume def
  *
@@ -943,6 +958,7 @@ storageBackendCreateQemuImgOpts(virStorageEncryptionInfoDefPtr enc,
  */
 static int
 storageBackendCreateQemuImgCheckEncryption(int format,
+                                           int imgformat,
                                            const char *type,
                                            virStorageVolDefPtr vol)
 {
@@ -954,6 +970,12 @@ storageBackendCreateQemuImgCheckEncryption(int format,
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("unsupported volume encryption format %d"),
                            vol->target.encryption->format);
+            return -1;
+        }
+        if (imgformat >= QEMU_IMG_BACKING_FORMAT_OPTIONS_KEY_SECRET) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("qemu-img no longer supports qcow encryption, "
+                             "use LUKS encryption instead"));
             return -1;
         }
         if (enc->nsecrets > 1) {
@@ -1264,8 +1286,8 @@ virStorageBackendCreateQemuImgCmdFromVol(virStoragePoolObjPtr pool,
         return NULL;
 
     if (info.encryption &&
-        storageBackendCreateQemuImgCheckEncryption(info.format, type,
-                                                   vol) < 0)
+        storageBackendCreateQemuImgCheckEncryption(info.format, imgformat,
+                                                   type, vol) < 0)
         return NULL;
 
 
@@ -2359,6 +2381,7 @@ storageBackendResizeQemuImg(virStoragePoolObjPtr pool,
 {
     int ret = -1;
     char *img_tool = NULL;
+    int imgformat;
     virCommandPtr cmd = NULL;
     const char *type;
     char *secretPath = NULL;
@@ -2371,6 +2394,10 @@ storageBackendResizeQemuImg(virStoragePoolObjPtr pool,
         return -1;
     }
 
+    imgformat = virStorageBackendQEMUImgBackingFormat("qemu-img");
+    if (imgformat < 0)
+        goto cleanup;
+
     if (vol->target.encryption) {
         if (vol->target.format == VIR_STORAGE_FILE_RAW)
             type = "luks";
@@ -2380,6 +2407,7 @@ storageBackendResizeQemuImg(virStoragePoolObjPtr pool,
         storageBackendLoadDefaultSecrets(vol);
 
         if (storageBackendCreateQemuImgCheckEncryption(vol->target.format,
+                                                       imgformat,
                                                        type, vol) < 0)
             goto cleanup;
 
