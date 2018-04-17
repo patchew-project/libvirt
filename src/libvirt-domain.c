@@ -8536,6 +8536,7 @@ virDomainRename(virDomainPtr dom,
     virResetLastError();
     virCheckDomainReturn(dom, -1);
     virCheckNonEmptyStringArgGoto(new_name, error);
+    virCheckNonSlashGoto(new_name, error);
     virCheckReadOnlyGoto(dom->conn->flags, error);
 
     if (dom->conn->driver->domainRename) {

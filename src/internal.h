@@ -484,6 +484,15 @@
             goto label; \
         } \
     } while (0)
+# define virCheckNonSlashGoto(argname, label) \
+    do { \
+        if (strchr(argname, '/')) { \
+           virReportInvalidArg(ctl, \
+                               _("name %s cannot contain '/'"), \
+                               argname); \
+            goto label; \
+        } \
+    } while (0)
 
 
 
