@@ -799,11 +799,10 @@ enum {
     QEMU_IMG_BACKING_FORMAT_OPTIONS_COMPAT,
 };
 
-static bool
-virStorageBackendQemuImgSupportsCompat(const char *qemuimg)
+static char *
+virStorageBackendQemuImgCreateHelp(const char *qemuimg)
 {
-    bool ret = false;
-    char *output;
+    char *output = NULL;
     virCommandPtr cmd = NULL;
 
     cmd = virCommandNewArgList(qemuimg, "create", "-o", "?", "-f", "qcow2",
@@ -812,34 +811,40 @@ virStorageBackendQemuImgSupportsCompat(const char *qemuimg)
     virCommandAddEnvString(cmd, "LC_ALL=C");
     virCommandSetOutputBuffer(cmd, &output);
 
-    if (virCommandRun(cmd, NULL) < 0)
-        goto cleanup;
+    ignore_value(virCommandRun(cmd, NULL));
 
-    if (strstr(output, "\ncompat "))
-        ret = true;
-
- cleanup:
     virCommandFree(cmd);
-    VIR_FREE(output);
-    return ret;
+    return output;
 }
 
+
+static bool
+virStorageBackendQemuImgSupportsCompat(const char *output)
+{
+    return strstr(output, "\ncompat ");
+}
 
 static int
 virStorageBackendQEMUImgBackingFormat(const char *qemuimg)
 {
+    char *output = NULL;
     /* As of QEMU 0.11 the [-o options] support was added via qemu
      * commit id '9ea2ea71', so we start with that base and figure
      * out what else we have */
     int ret = QEMU_IMG_BACKING_FORMAT_OPTIONS;
 
+    if (!(output = virStorageBackendQemuImgCreateHelp(qemuimg)))
+        goto cleanup;
+
     /* QEMU 2.0 changed to using a format that only QEMU 1.1 and newer
      * understands. Since we still support QEMU 0.12 and newer, we need
      * to be able to handle the previous format as can be set via a
      * compat=0.10 option. */
-    if (virStorageBackendQemuImgSupportsCompat(qemuimg))
+    if (virStorageBackendQemuImgSupportsCompat(output))
         ret = QEMU_IMG_BACKING_FORMAT_OPTIONS_COMPAT;
 
+ cleanup:
+    VIR_FREE(output);
     return ret;
 }
 
