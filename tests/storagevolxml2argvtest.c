@@ -40,7 +40,6 @@ testCompareXMLToArgvFiles(bool shouldFail,
                           const char *inputvolxml,
                           const char *cmdline,
                           unsigned int flags,
-                          int imgformat,
                           unsigned long parse_flags)
 {
     char *actualCmdline = NULL;
@@ -82,7 +81,7 @@ testCompareXMLToArgvFiles(bool shouldFail,
 
     cmd = virStorageBackendCreateQemuImgCmdFromVol(obj, vol,
                                                    inputvol, flags,
-                                                   create_tool, imgformat,
+                                                   create_tool,
                                                    NULL);
     if (!cmd) {
         if (shouldFail) {
@@ -154,7 +153,7 @@ testCompareXMLToArgvHelper(const void *data)
     result = testCompareXMLToArgvFiles(info->shouldFail, poolxml, volxml,
                                        inputpoolxml, inputvolxml,
                                        cmdline, info->flags,
-                                       info->imgformat, info->parseflags);
+                                       info->parseflags);
 
  cleanup:
     VIR_FREE(poolxml);
