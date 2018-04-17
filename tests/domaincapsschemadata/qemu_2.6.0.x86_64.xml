@@ -113,5 +113,6 @@
   </devices>
   <features>
     <gic supported='no'/>
+    <vmcoreinfo supported='no'/>
   </features>
 </domainCapabilities>
