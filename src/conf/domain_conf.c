@@ -19306,7 +19306,6 @@ virDomainDefParseXML(xmlDocPtr xml,
         case VIR_DOMAIN_FEATURE_VIRIDIAN:
         case VIR_DOMAIN_FEATURE_PRIVNET:
         case VIR_DOMAIN_FEATURE_HYPERV:
-        case VIR_DOMAIN_FEATURE_VMCOREINFO:
         case VIR_DOMAIN_FEATURE_KVM:
             def->features[val] = VIR_TRISTATE_SWITCH_ON;
             break;
@@ -19325,6 +19324,7 @@ virDomainDefParseXML(xmlDocPtr xml,
             }
             break;
 
+        case VIR_DOMAIN_FEATURE_VMCOREINFO:
         case VIR_DOMAIN_FEATURE_HAP:
         case VIR_DOMAIN_FEATURE_PMU:
         case VIR_DOMAIN_FEATURE_PVSPINLOCK:
@@ -26894,7 +26894,6 @@ virDomainDefFormatInternal(virDomainDefPtr def,
             case VIR_DOMAIN_FEATURE_ACPI:
             case VIR_DOMAIN_FEATURE_PAE:
             case VIR_DOMAIN_FEATURE_VIRIDIAN:
-            case VIR_DOMAIN_FEATURE_VMCOREINFO:
             case VIR_DOMAIN_FEATURE_PRIVNET:
                 switch ((virTristateSwitch) def->features[i]) {
                 case VIR_TRISTATE_SWITCH_ABSENT:
@@ -26915,6 +26914,7 @@ virDomainDefFormatInternal(virDomainDefPtr def,
 
                 break;
 
+            case VIR_DOMAIN_FEATURE_VMCOREINFO:
             case VIR_DOMAIN_FEATURE_HAP:
             case VIR_DOMAIN_FEATURE_PMU:
             case VIR_DOMAIN_FEATURE_PVSPINLOCK:
