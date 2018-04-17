@@ -1839,11 +1839,8 @@ static int qemuDomainSuspend(virDomainPtr dom)
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_SUSPEND) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (priv->job.asyncJob == QEMU_ASYNC_JOB_MIGRATION_OUT) {
         reason = VIR_DOMAIN_PAUSED_MIGRATION;
@@ -1908,11 +1905,8 @@ static int qemuDomainResume(virDomainPtr dom)
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     state = virDomainObjGetState(vm, &reason);
     if (state == VIR_DOMAIN_PMSUSPENDED) {
@@ -2092,11 +2086,8 @@ qemuDomainReboot(virDomainPtr dom, unsigned int flags)
         useAgent = false;
     }
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (useAgent) {
         qemuAgentPtr agent;
@@ -2153,11 +2144,8 @@ qemuDomainReset(virDomainPtr dom, unsigned int flags)
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     priv = vm->privateData;
     qemuDomainObjEnterMonitor(driver, vm);
@@ -2218,11 +2206,8 @@ qemuDomainDestroyFlags(virDomainPtr dom,
     if (virDomainDestroyFlagsEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto cleanup;
-    }
 
     state = virDomainObjGetState(vm, &reason);
     starting = (state == VIR_DOMAIN_PAUSED &&
@@ -2537,11 +2522,8 @@ static int qemuDomainInjectNMI(virDomainPtr domain, unsigned int flags)
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     qemuDomainObjEnterMonitor(driver, vm);
     ret = qemuMonitorInjectNMI(priv->mon);
@@ -2600,11 +2582,8 @@ static int qemuDomainSendKey(virDomainPtr domain,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     qemuDomainObjEnterMonitor(driver, vm);
     ret = qemuMonitorSendKey(priv->mon, holdtime, keycodes, nkeycodes);
@@ -2717,11 +2696,8 @@ qemuDomainGetControlInfo(virDomainPtr dom,
     if (virDomainGetControlInfoEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto cleanup;
-    }
 
     priv = vm->privateData;
 
@@ -3533,11 +3509,8 @@ qemuDomainSaveFlags(virDomainPtr dom, const char *path, const char *dxml,
     if (virDomainSaveFlagsEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto cleanup;
-    }
 
     ret = qemuDomainSaveInternal(driver, vm, path, compressed,
                                  compressedpath, dxml, flags);
@@ -3591,11 +3564,9 @@ qemuDomainManagedSave(virDomainPtr dom, unsigned int flags)
     if (virDomainManagedSaveEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto cleanup;
-    }
+
     if (!vm->persistent) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("cannot do managed save for transient domain"));
@@ -3934,11 +3905,8 @@ qemuDomainCoreDumpWithFormat(virDomainPtr dom,
                                    flags) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     priv = vm->privateData;
     priv->job.current->statsType = QEMU_DOMAIN_JOB_STATS_TYPE_SAVEDUMP;
@@ -4049,11 +4017,8 @@ qemuDomainScreenshot(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     /* Well, even if qemu allows multiple graphic cards, heads, whatever,
      * screenshot command does not */
@@ -4161,11 +4126,8 @@ processWatchdogEvent(virQEMUDriverPtr driver,
             goto cleanup;
         }
 
-        if (!virDomainObjIsActive(vm)) {
-            virReportError(VIR_ERR_OPERATION_INVALID,
-                           "%s", _("domain is not running"));
+        if (virDomainObjCheckActive(vm) < 0)
             goto endjob;
-        }
 
         flags |= cfg->autoDumpBypassCache ? VIR_DUMP_BYPASS_CACHE: 0;
         if ((ret = doCoreDump(driver, vm, dumpfile, flags,
@@ -10840,11 +10802,8 @@ qemuDomainBlockResize(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (!(disk = virDomainDiskByName(vm->def, path, false))) {
         virReportError(VIR_ERR_INVALID_ARG,
@@ -11000,11 +10959,8 @@ qemuDomainBlockStats(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (qemuDomainBlocksStatsGather(driver, vm, path, &blockstats) < 0)
         goto endjob;
@@ -11057,11 +11013,8 @@ qemuDomainBlockStatsFlags(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if ((nstats = qemuDomainBlocksStatsGather(driver, vm, path,
                                               &blockstats)) < 0)
@@ -11127,11 +11080,8 @@ qemuDomainInterfaceStats(virDomainPtr dom,
     if (virDomainInterfaceStatsEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto cleanup;
-    }
 
     if (!(net = virDomainNetFind(vm->def, device)))
         goto cleanup;
@@ -11483,11 +11433,8 @@ qemuDomainMemoryStatsInternal(virQEMUDriverPtr driver,
     int ret = -1;
     long rss;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         return -1;
-    }
 
     if (vm->def->memballoon &&
         vm->def->memballoon->model == VIR_DOMAIN_MEMBALLOON_MODEL_VIRTIO) {
@@ -11637,11 +11584,8 @@ qemuDomainMemoryPeek(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (virAsprintf(&tmp, "%s/qemu.mem.XXXXXX", cfg->cacheDir) < 0)
         goto endjob;
@@ -13308,11 +13252,8 @@ qemuDomainGetJobStatsInternal(virQEMUDriverPtr driver,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
         return -1;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto cleanup;
-    }
 
     if (!priv->job.current) {
         jobInfo->status = QEMU_DOMAIN_JOB_STATUS_NONE;
@@ -13440,11 +13381,8 @@ static int qemuDomainAbortJob(virDomainPtr dom)
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_ABORT) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     priv = vm->privateData;
 
@@ -13514,11 +13452,8 @@ qemuDomainMigrateSetMaxDowntime(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MIGRATION_OP) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     priv = vm->privateData;
 
@@ -13559,11 +13494,8 @@ qemuDomainMigrateGetMaxDowntime(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (qemuMigrationParamsFetch(driver, vm, QEMU_ASYNC_JOB_NONE,
                                  &migParams) < 0)
@@ -13615,11 +13547,8 @@ qemuDomainMigrateGetCompressionCache(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     priv = vm->privateData;
 
@@ -13666,11 +13595,8 @@ qemuDomainMigrateSetCompressionCache(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MIGRATION_OP) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     priv = vm->privateData;
 
@@ -13728,11 +13654,8 @@ qemuDomainMigrateSetMaxSpeed(virDomainPtr dom,
         if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MIGRATION_OP) < 0)
             goto cleanup;
 
-        if (!virDomainObjIsActive(vm)) {
-            virReportError(VIR_ERR_OPERATION_INVALID,
-                           "%s", _("domain is not running"));
+        if (virDomainObjCheckActive(vm) < 0)
             goto endjob;
-        }
 
         VIR_DEBUG("Setting migration bandwidth to %luMbs", bandwidth);
         qemuDomainObjEnterMonitor(driver, vm);
@@ -13803,11 +13726,8 @@ qemuDomainMigrateStartPostCopy(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MIGRATION_OP) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     priv = vm->privateData;
 
@@ -14770,11 +14690,8 @@ qemuDomainSnapshotCreateDiskActive(virQEMUDriverPtr driver,
     qemuDomainSnapshotDiskDataPtr diskdata = NULL;
     virErrorPtr orig_err = NULL;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         return -1;
-    }
 
     if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_TRANSACTION)) {
         if (!(actions = virJSONValueNewArray()))
@@ -16323,11 +16240,8 @@ static int qemuDomainQemuMonitorCommand(virDomainPtr domain, const char *cmd,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     priv = vm->privateData;
 
@@ -16462,11 +16376,8 @@ qemuDomainOpenConsole(virDomainPtr dom,
     if (virDomainOpenConsoleEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto cleanup;
-    }
 
     priv = vm->privateData;
 
@@ -16542,11 +16453,8 @@ qemuDomainOpenChannel(virDomainPtr dom,
     if (virDomainOpenChannelEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto cleanup;
-    }
 
     priv = vm->privateData;
 
@@ -16743,11 +16651,8 @@ qemuDomainBlockPullCommon(virQEMUDriverPtr driver,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (qemuDomainSupportsBlockJobs(vm) < 0)
         goto endjob;
@@ -16859,11 +16764,8 @@ qemuDomainBlockJobAbort(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (qemuDomainSupportsBlockJobs(vm) < 0)
         goto endjob;
@@ -17010,11 +16912,8 @@ qemuDomainGetBlockJobInfo(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (qemuDomainSupportsBlockJobs(vm) < 0)
         goto endjob;
@@ -17097,11 +16996,8 @@ qemuDomainBlockJobSetSpeed(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (qemuDomainSupportsBlockJobs(vm) < 0)
         goto endjob;
@@ -17235,11 +17131,8 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (!(disk = qemuDomainDiskByName(vm->def, path)))
         goto endjob;
@@ -17599,11 +17492,8 @@ qemuDomainBlockCommit(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
     /* Ensure that no one backports commit to RHEL 6.2, where cancel
      * behaved differently */
     if (!(virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCK_COMMIT) &&
@@ -17819,11 +17709,8 @@ qemuDomainOpenGraphics(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     priv = vm->privateData;
 
@@ -17890,11 +17777,8 @@ qemuDomainOpenGraphicsFD(virDomainPtr dom,
     if (virDomainOpenGraphicsFdEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto cleanup;
-    }
 
     priv = vm->privateData;
 
@@ -18547,11 +18431,8 @@ qemuDomainGetDiskErrors(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (!errors) {
         ret = vm->def->ndisks;
@@ -18692,11 +18573,8 @@ qemuDomainGetCPUStats(virDomainPtr domain,
     if (virDomainGetCPUStatsEnsureACL(domain->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto cleanup;
-    }
 
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPUACCT)) {
         virReportError(VIR_ERR_OPERATION_INVALID,
@@ -18757,11 +18635,8 @@ qemuDomainPMSuspendForDuration(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (vm->def->pm.s3 || vm->def->pm.s4) {
         if (vm->def->pm.s3 == VIR_TRISTATE_BOOL_NO &&
@@ -18815,11 +18690,8 @@ qemuDomainPMWakeup(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     priv = vm->privateData;
 
@@ -18879,11 +18751,8 @@ qemuDomainQemuAgentCommand(virDomainPtr domain,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (!qemuDomainAgentAvailable(vm, true))
         goto endjob;
@@ -18985,11 +18854,8 @@ qemuDomainFSTrim(virDomainPtr dom,
     if (!qemuDomainAgentAvailable(vm, true))
         goto endjob;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     agent = qemuDomainObjEnterAgent(vm);
     ret = qemuAgentFSTrim(agent, minimum);
@@ -19167,11 +19033,8 @@ qemuDomainGetTime(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (!qemuDomainAgentAvailable(vm, true))
         goto endjob;
@@ -19220,11 +19083,8 @@ qemuDomainSetTime(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     /* On x86, the rtc-reset-reinjection QMP command must be called after
      * setting the time to avoid trouble down the line. If the command is
@@ -19248,11 +19108,8 @@ qemuDomainSetTime(virDomainPtr dom,
     if (rv < 0)
         goto endjob;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     /* Don't try to call rtc-reset-reinjection if it's not available */
     if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_RTC_RESET_REINJECTION)) {
@@ -19297,11 +19154,8 @@ qemuDomainFSFreeze(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     ret = qemuDomainSnapshotFSFreeze(driver, vm, mountpoints, nmountpoints);
 
@@ -19341,11 +19195,8 @@ qemuDomainFSThaw(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     ret = qemuDomainSnapshotFSThaw(driver, vm, true);
 
@@ -20432,11 +20283,8 @@ qemuDomainGetFSInfo(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (!qemuDomainAgentAvailable(vm, true))
         goto endjob;
@@ -20480,11 +20328,8 @@ qemuDomainInterfaceAddresses(virDomainPtr dom,
     if (virDomainInterfaceAddressesEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto cleanup;
-    }
 
     switch (source) {
     case VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE:
@@ -20707,11 +20552,8 @@ qemuDomainSetUserPassword(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       "%s", _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (!qemuDomainAgentAvailable(vm, true))
         goto endjob;
@@ -21177,11 +21019,8 @@ qemuDomainSetBlockThreshold(virDomainPtr dom,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("domain is not running"));
+    if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
-    }
 
     if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCK_WRITE_THRESHOLD)) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
