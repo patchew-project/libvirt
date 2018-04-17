@@ -507,7 +507,7 @@ struct _virQEMUCapsHostCPUData {
  * And don't forget to update virQEMUCapsNewCopy.
  */
 struct _virQEMUCaps {
-    virObject object;
+    virObject parent;
 
     bool usedQMP;
 
