@@ -97,14 +97,19 @@ struct testQEMUSchemaValidateObjectMemberData {
 
 static virJSONValuePtr
 testQEMUSchemaStealObjectMemberByName(const char *name,
-                                      virJSONValuePtr members)
+                                      virJSONValuePtr members,
+                                      virBufferPtr debug)
 {
     virJSONValuePtr member;
     virJSONValuePtr ret = NULL;
-    size_t n;
+    ssize_t n;
     size_t i;
 
-    n = virJSONValueArraySize(members);
+    if ((n = virJSONValueArraySize(members)) < 0) {
+        virBufferAddLit(debug, "ERROR: members size < 0");
+        return NULL;
+    }
+
     for (i = 0; i < n; i++) {
         member = virJSONValueArrayGet(members, i);
 
@@ -132,7 +137,7 @@ testQEMUSchemaValidateObjectMember(const char *key,
     virBufferStrcat(data->debug, key, ": ", NULL);
 
     /* lookup 'member' entry for key */
-    if (!(keymember = testQEMUSchemaStealObjectMemberByName(key, data->rootmembers))) {
+    if (!(keymember = testQEMUSchemaStealObjectMemberByName(key, data->rootmembers, data->debug))) {
         virBufferAddLit(data->debug, "ERROR: attribute not in schema");
         goto cleanup;
     }
@@ -188,7 +193,7 @@ testQEMUSchemaValidateObjectMergeVariant(virJSONValuePtr root,
                                          virHashTablePtr schema,
                                          virBufferPtr debug)
 {
-    size_t n;
+    ssize_t n;
     size_t i;
     virJSONValuePtr variants = NULL;
     virJSONValuePtr variant;
@@ -203,7 +208,11 @@ testQEMUSchemaValidateObjectMergeVariant(virJSONValuePtr root,
         return -2;
     }
 
-    n = virJSONValueArraySize(variants);
+    if ((n = virJSONValueArraySize(variants)) < 0) {
+        virBufferAddLit(debug, "ERROR: 'variants' array size < 0");
+        return -2;
+    }
+
     for (i = 0; i < n; i++) {
         variant = virJSONValueArrayGet(variants, i);
 
@@ -307,7 +316,10 @@ testQEMUSchemaValidateObject(virJSONValuePtr obj,
 
 
     /* validate members */
-    data.rootmembers = virJSONValueObjectGetArray(localroot, "members");
+    if (!(data.rootmembers = virJSONValueObjectGetArray(localroot, "members"))) {
+        virBufferAddLit(debug, "ERROR: missing attribute 'members'\n");
+        goto cleanup;
+    }
     if (virJSONValueObjectForeachKeyValue(obj,
                                           testQEMUSchemaValidateObjectMember,
                                           &data) < 0)
@@ -342,7 +354,7 @@ testQEMUSchemaValidateEnum(virJSONValuePtr obj,
     const char *objstr;
     virJSONValuePtr values = NULL;
     virJSONValuePtr value;
-    size_t n;
+    ssize_t n;
     size_t i;
 
     if (virJSONValueGetType(obj) != VIR_JSON_TYPE_STRING) {
@@ -358,7 +370,10 @@ testQEMUSchemaValidateEnum(virJSONValuePtr obj,
         return -2;
     }
 
-    n = virJSONValueArraySize(values);
+    if ((n = virJSONValueArraySize(values)) < 0) {
+        virBufferAddLit(debug, "ERROR: enum values array size < 0");
+        return -2;
+    }
     for (i = 0; i < n; i++) {
         value = virJSONValueArrayGet(values, i);
 
@@ -423,7 +438,7 @@ testQEMUSchemaValidateAlternate(virJSONValuePtr obj,
 {
     virJSONValuePtr members;
     virJSONValuePtr member;
-    size_t n;
+    ssize_t n;
     size_t i;
     const char *membertype;
     virJSONValuePtr memberschema;
@@ -439,7 +454,10 @@ testQEMUSchemaValidateAlternate(virJSONValuePtr obj,
     virBufferAdjustIndent(debug, 3);
     indent = virBufferGetIndent(debug, false);
 
-    n = virJSONValueArraySize(members);
+    if ((n = virJSONValueArraySize(members)) < 0) {
+        virBufferAddLit(debug, "ERROR: alternate schema 'members' array size < 0");
+        return -2;
+    }
     for (i = 0; i < n; i++) {
         membertype = NULL;
 
