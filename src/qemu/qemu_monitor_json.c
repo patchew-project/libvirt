@@ -423,7 +423,12 @@ qemuMonitorJSONCheckReply(virJSONValuePtr cmd,
     if (qemuMonitorJSONCheckError(cmd, reply) < 0)
         return -1;
 
-    data = virJSONValueObjectGet(reply, "return");
+    if (!(data = virJSONValueObjectGet(reply, "return"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("missing 'return' for returned data"));
+        return -1;
+    }
+
     if (virJSONValueGetType(data) != type) {
         char *cmdstr = virJSONValueToString(cmd, false);
         char *retstr = virJSONValueToString(data, false);
