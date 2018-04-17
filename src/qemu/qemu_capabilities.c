@@ -1242,14 +1242,19 @@ static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "blockdev-add/arg-type/+qcow2/encrypt/+luks/key-secret", QEMU_CAPS_QCOW2_LUKS },
 };
 
-struct virQEMUCapsObjectTypeProps {
+typedef struct _virQEMUCapsObjectTypeProps virQEMUCapsObjectTypeProps;
+struct _virQEMUCapsObjectTypeProps {
     const char *type;
     struct virQEMUCapsStringFlags *props;
     size_t nprops;
     int capsCondition;
 };
 
-static struct virQEMUCapsObjectTypeProps virQEMUCapsDeviceProps[] = {
+typedef int (*virQEMUCapsObjectTypePropsCB)(qemuMonitorPtr mon,
+                                            const char *type,
+                                            char ***props);
+
+static virQEMUCapsObjectTypeProps virQEMUCapsDeviceProps[] = {
     { "virtio-blk-pci", virQEMUCapsDevicePropsVirtioBlk,
       ARRAY_CARDINALITY(virQEMUCapsDevicePropsVirtioBlk),
       -1 },
@@ -2059,6 +2064,35 @@ virQEMUCapsProbeQMPEvents(virQEMUCapsPtr qemuCaps,
     return 0;
 }
 
+static int
+virQEMUCapsProbeQMPGenericProps(virQEMUCapsPtr qemuCaps,
+                                qemuMonitorPtr mon,
+                                virQEMUCapsObjectTypeProps *props,
+                                size_t nprops,
+                                virQEMUCapsObjectTypePropsCB propsGetCB)
+{
+    int nvalues;
+    char **values;
+    size_t i;
+
+    for (i = 0; i < nprops; i++) {
+        const char *type = props[i].type;
+        int cap = props[i].capsCondition;
+
+        if (cap >= 0 && !virQEMUCapsGet(qemuCaps, cap))
+            continue;
+
+        if ((nvalues = propsGetCB(mon, type, &values)) < 0)
+            return -1;
+        virQEMUCapsProcessStringFlags(qemuCaps,
+                                      props[i].nprops,
+                                      props[i].props,
+                                      nvalues, values);
+        virStringListFreeCount(values, nvalues);
+    }
+
+    return 0;
+}
 
 static int
 virQEMUCapsProbeQMPDevices(virQEMUCapsPtr qemuCaps,
@@ -2066,7 +2100,6 @@ virQEMUCapsProbeQMPDevices(virQEMUCapsPtr qemuCaps,
 {
     int nvalues;
     char **values;
-    size_t i;
 
     if ((nvalues = qemuMonitorGetObjectTypes(mon, &values)) < 0)
         return -1;
@@ -2076,23 +2109,12 @@ virQEMUCapsProbeQMPDevices(virQEMUCapsPtr qemuCaps,
                                   nvalues, values);
     virStringListFreeCount(values, nvalues);
 
-    for (i = 0; i < ARRAY_CARDINALITY(virQEMUCapsDeviceProps); i++) {
-        const char *device = virQEMUCapsDeviceProps[i].type;
-        int cap = virQEMUCapsDeviceProps[i].capsCondition;
-
-        if (cap >= 0 && !virQEMUCapsGet(qemuCaps, cap))
-            continue;
-
-        if ((nvalues = qemuMonitorGetDeviceProps(mon,
-                                                 device,
-                                                 &values)) < 0)
-            return -1;
-        virQEMUCapsProcessStringFlags(qemuCaps,
-                                      virQEMUCapsDeviceProps[i].nprops,
-                                      virQEMUCapsDeviceProps[i].props,
-                                      nvalues, values);
-        virStringListFreeCount(values, nvalues);
-    }
+    if (virQEMUCapsProbeQMPGenericProps(qemuCaps,
+                                        mon,
+                                        virQEMUCapsDeviceProps,
+                                        ARRAY_CARDINALITY(virQEMUCapsDeviceProps),
+                                        qemuMonitorGetDeviceProps) < 0)
+        return -1;
 
     return 0;
 }
