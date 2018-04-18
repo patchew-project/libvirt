@@ -757,6 +757,11 @@ qemuMonitorIO(int watch, int fd, int events, void *opaque)
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                                _("Error while processing monitor IO"));
             virCopyLastError(&mon->lastError);
+
+            /* set error code if due to OOM conditions we fail to set it before */
+            if (mon->lastError.code == VIR_ERR_OK)
+                mon->lastError.code = VIR_ERR_INTERNAL_ERROR;
+
             virResetLastError();
         }
 
