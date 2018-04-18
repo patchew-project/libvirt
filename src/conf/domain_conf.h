@@ -2749,9 +2749,6 @@ bool virDomainObjTaint(virDomainObjPtr obj,
                        virDomainTaintFlags taint);
 
 void virDomainObjBroadcast(virDomainObjPtr vm);
-int virDomainObjWait(virDomainObjPtr vm);
-int virDomainObjWaitUntil(virDomainObjPtr vm,
-                          unsigned long long whenms);
 
 void virDomainPanicDefFree(virDomainPanicDefPtr panic);
 void virDomainResourceDefFree(virDomainResourceDefPtr resource);

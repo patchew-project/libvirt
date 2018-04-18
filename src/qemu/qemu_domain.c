@@ -1909,6 +1909,7 @@ qemuDomainObjPrivateFree(void *data)
     qemuDomainObjFreeJob(priv);
     VIR_FREE(priv->lockState);
     VIR_FREE(priv->origname);
+    virResetError(&priv->monError);
 
     virChrdevFree(priv->devs);
 
@@ -11888,4 +11889,48 @@ qemuProcessEventFree(struct qemuProcessEvent *event)
         break;
     }
     VIR_FREE(event);
+}
+
+
+/**
+ * Waits for domain condition to be triggered for a specific period of time.
+ * if @until is 0 then waits indefinetely.
+ *
+ * Returns:
+ *  -1 on error
+ *   0 on success
+ *   1 on timeout
+ */
+int
+qemuDomainObjWait(virDomainObjPtr vm, unsigned long long until)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    int rc;
+
+    if (until)
+        rc = virCondWaitUntil(&vm->cond, &vm->parent.lock, until);
+    else
+        rc = virCondWait(&vm->cond, &vm->parent.lock);
+
+    if (rc < 0) {
+        if (until && errno == ETIMEDOUT)
+            return 1;
+
+        virReportSystemError(errno, "%s",
+                             _("failed to wait for domain condition"));
+        return -1;
+    }
+
+    if (!virDomainObjIsActive(vm)) {
+        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                       _("domain is not running"));
+        return -1;
+    }
+
+    if (priv->monError.code != VIR_ERR_OK) {
+        virSetError(&priv->monError);
+        return -1;
+    }
+
+    return 0;
 }

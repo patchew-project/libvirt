@@ -3250,49 +3250,6 @@ virDomainObjBroadcast(virDomainObjPtr vm)
 }
 
 
-int
-virDomainObjWait(virDomainObjPtr vm)
-{
-    if (virCondWait(&vm->cond, &vm->parent.lock) < 0) {
-        virReportSystemError(errno, "%s",
-                             _("failed to wait for domain condition"));
-        return -1;
-    }
-
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                       _("domain is not running"));
-        return -1;
-    }
-
-    return 0;
-}
-
-
-/**
- * Waits for domain condition to be triggered for a specific period of time.
- *
- * Returns:
- *  -1 in case of error
- *  0 on success
- *  1 on timeout
- */
-int
-virDomainObjWaitUntil(virDomainObjPtr vm,
-                      unsigned long long whenms)
-{
-    if (virCondWaitUntil(&vm->cond, &vm->parent.lock, whenms) < 0) {
-        if (errno != ETIMEDOUT) {
-            virReportSystemError(errno, "%s",
-                                 _("failed to wait for domain condition"));
-            return -1;
-        }
-        return 1;
-    }
-    return 0;
-}
-
-
 /*
  * Mark the current VM config as transient. Ensures transient hotplug
  * operations do not persist past shutdown.

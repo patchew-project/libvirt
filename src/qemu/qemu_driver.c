@@ -2727,7 +2727,7 @@ qemuDomainGetControlInfo(virDomainPtr dom,
 
     memset(info, 0, sizeof(*info));
 
-    if (priv->monError) {
+    if (priv->monError.code != VIR_ERR_OK) {
         info->state = VIR_DOMAIN_CONTROL_ERROR;
         info->details = VIR_DOMAIN_CONTROL_ERROR_REASON_MONITOR;
     } else if (priv->job.active) {
@@ -3726,7 +3726,7 @@ qemuDumpWaitForCompletion(virDomainObjPtr vm)
 
     VIR_DEBUG("Waiting for dump completion");
     while (!priv->job.dumpCompleted && !priv->job.abortJob) {
-        if (virDomainObjWait(vm) < 0)
+        if (qemuDomainObjWait(vm, 0) < 0)
             return -1;
     }
 
@@ -16924,7 +16924,7 @@ qemuDomainBlockJobAbort(virDomainPtr dom,
         qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
         qemuBlockJobUpdate(driver, vm, QEMU_ASYNC_JOB_NONE, disk, NULL);
         while (diskPriv->blockjob) {
-            if (virDomainObjWait(vm) < 0) {
+            if (qemuDomainObjWait(vm, 0) < 0) {
                 ret = -1;
                 goto endjob;
             }

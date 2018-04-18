@@ -268,6 +268,23 @@ qemuConnectAgent(virQEMUDriverPtr driver, virDomainObjPtr vm)
     return 0;
 }
 
+static void
+qemuProcessNotifyMonitorError(virDomainObjPtr vm,
+                              qemuMonitorPtr mon)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virErrorPtr err = qemuMonitorLastError(mon);
+
+    virCopyError(err, &priv->monError);
+
+    /* set error code if due to OOM conditions we fail to set it before */
+    if (priv->monError.code == VIR_ERR_OK)
+        priv->monError.code = VIR_ERR_INTERNAL_ERROR;
+
+    /* Wake up anything waiting for events from monitor */
+    virDomainObjBroadcast(vm);
+    virFreeError(err);
+}
 
 /*
  * This is a callback registered with a qemuMonitorPtr instance,
@@ -285,6 +302,8 @@ qemuProcessHandleMonitorEOF(qemuMonitorPtr mon,
     struct qemuProcessEvent *processEvent;
 
     virObjectLock(vm);
+
+    qemuProcessNotifyMonitorError(vm, mon);
 
     VIR_DEBUG("Received EOF on %p '%s'", vm, vm->def->name);
 
@@ -338,7 +357,8 @@ qemuProcessHandleMonitorError(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
 
     virObjectLock(vm);
 
-    ((qemuDomainObjPrivatePtr) vm->privateData)->monError = true;
+    qemuProcessNotifyMonitorError(vm, mon);
+
     event = virDomainEventControlErrorNewFromObj(vm);
     qemuDomainEventQueue(driver, event);
 
@@ -5727,7 +5747,7 @@ qemuProcessPrepareDomain(virQEMUDriverPtr driver,
         goto cleanup;
 
     priv->monJSON = true;
-    priv->monError = false;
+    virResetError(&priv->monError);
     priv->monStart = 0;
     priv->gotShutdown = false;
 
@@ -6482,9 +6502,6 @@ qemuProcessBeginStopJob(virQEMUDriverPtr driver,
 
     if (qemuProcessKill(vm, killFlags) < 0)
         goto cleanup;
-
-    /* Wake up anything waiting on domain condition */
-    virDomainObjBroadcast(vm);
 
     if (qemuDomainObjBeginJob(driver, vm, job) < 0)
         goto cleanup;

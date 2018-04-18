@@ -262,7 +262,7 @@ struct _qemuDomainObjPrivate {
     qemuMonitorPtr mon;
     virDomainChrSourceDefPtr monConfig;
     bool monJSON;
-    bool monError;
+    virError monError;
     unsigned long long monStart;
 
     qemuAgentPtr agent;
@@ -993,5 +993,8 @@ int
 qemuDomainPrepareDiskSource(virDomainDiskDefPtr disk,
                             qemuDomainObjPrivatePtr priv,
                             virQEMUDriverConfigPtr cfg);
+
+int
+qemuDomainObjWait(virDomainObjPtr vm, unsigned long long until);
 
 #endif /* __QEMU_DOMAIN_H__ */
