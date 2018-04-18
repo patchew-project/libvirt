@@ -1702,6 +1702,7 @@ ebtablesRemoveForwardAllowIn;
 
 
 # util/virerror.h
+virCopyError;
 virDispatchError;
 virErrorCopyNew;
 virErrorInitialize;

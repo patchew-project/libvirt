@@ -188,10 +188,16 @@ virErrorGenericFailure(virErrorPtr err)
 }
 
 
-/*
- * Internal helper to perform a deep copy of an error
+/**
+ * virCopyError:
+ * @from: error to copy from
+ * @to: error to copy to
+ *
+ * Copy error fields from @from to @to.
+ *
+ * Returns 0 on success, -1 on failure.
  */
-static int
+int
 virCopyError(virErrorPtr from,
              virErrorPtr to)
 {

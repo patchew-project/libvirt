@@ -192,6 +192,7 @@ void virReportOOMErrorFull(int domcode,
 
 int virSetError(virErrorPtr newerr);
 virErrorPtr virErrorCopyNew(virErrorPtr err);
+int virCopyError(virErrorPtr from, virErrorPtr to);
 void virDispatchError(virConnectPtr conn);
 const char *virStrerror(int theerrno, char *errBuf, size_t errBufLen);
 
