@@ -269,7 +269,7 @@ struct _qemuDomainObjPrivate {
     bool agentError;
 
     bool gotShutdown;
-    bool beingDestroyed;
+    bool destroyed;
     char *pidfile;
 
     virDomainPCIAddressSetPtr pciaddrs;

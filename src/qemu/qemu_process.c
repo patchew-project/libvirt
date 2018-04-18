@@ -143,8 +143,8 @@ qemuProcessHandleAgentEOF(qemuAgentPtr agent,
         goto unlock;
     }
 
-    if (priv->beingDestroyed) {
-        VIR_DEBUG("Domain is being destroyed, agent EOF is expected");
+    if (priv->destroyed) {
+        VIR_DEBUG("Domain is destroyed, agent EOF is expected");
         goto unlock;
     }
 
@@ -286,6 +286,7 @@ qemuProcessNotifyMonitorError(virDomainObjPtr vm,
     virFreeError(err);
 }
 
+
 /*
  * This is a callback registered with a qemuMonitorPtr instance,
  * and to be invoked when the monitor console hits an end of file
@@ -308,8 +309,8 @@ qemuProcessHandleMonitorEOF(qemuMonitorPtr mon,
     VIR_DEBUG("Received EOF on %p '%s'", vm, vm->def->name);
 
     priv = vm->privateData;
-    if (priv->beingDestroyed) {
-        VIR_DEBUG("Domain is being destroyed, EOF is expected");
+    if (priv->destroyed) {
+        VIR_DEBUG("Domain is destroyed, EOF is expected");
         goto cleanup;
     }
 
@@ -5750,6 +5751,7 @@ qemuProcessPrepareDomain(virQEMUDriverPtr driver,
     virResetError(&priv->monError);
     priv->monStart = 0;
     priv->gotShutdown = false;
+    priv->destroyed = false;
 
     VIR_DEBUG("Updating guest CPU definition");
     if (qemuProcessUpdateGuestCPU(vm->def, priv->qemuCaps, caps, flags) < 0)
@@ -6490,15 +6492,8 @@ qemuProcessBeginStopJob(virQEMUDriverPtr driver,
                         qemuDomainJob job,
                         bool forceKill)
 {
-    qemuDomainObjPrivatePtr priv = vm->privateData;
     unsigned int killFlags = forceKill ? VIR_QEMU_PROCESS_KILL_FORCE : 0;
     int ret = -1;
-
-    /* We need to prevent monitor EOF callback from doing our work (and
-     * sending misleading events) while the vm is unlocked inside
-     * BeginJob/ProcessKill API
-     */
-    priv->beingDestroyed = true;
 
     if (qemuProcessKill(vm, killFlags) < 0)
         goto cleanup;
@@ -6509,7 +6504,6 @@ qemuProcessBeginStopJob(virQEMUDriverPtr driver,
     ret = 0;
 
  cleanup:
-    priv->beingDestroyed = false;
     return ret;
 }
 
@@ -7087,6 +7081,12 @@ qemuProcessAutoDestroy(virDomainObjPtr dom,
     }
 
     VIR_DEBUG("Killing domain");
+
+    /* We need to prevent monitor EOF callback from doing our work (and
+     * sending misleading events) while the vm is unlocked inside
+     * BeginJob/ProcessKill API
+     */
+    priv->destroyed = true;
 
     if (qemuProcessBeginStopJob(driver, dom, QEMU_JOB_DESTROY, true) < 0)
         return;

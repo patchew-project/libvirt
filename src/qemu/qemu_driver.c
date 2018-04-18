@@ -2227,7 +2227,13 @@ qemuDomainDestroyFlags(virDomainPtr dom,
     state = virDomainObjGetState(vm, &reason);
     starting = (state == VIR_DOMAIN_PAUSED &&
                 reason == VIR_DOMAIN_PAUSED_STARTING_UP &&
-                !priv->beingDestroyed);
+                !priv->destroyed);
+
+    /* We need to prevent monitor EOF callback from doing our work (and
+     * sending misleading events) while the vm is unlocked inside
+     * BeginJob/ProcessKill API
+     */
+    priv->destroyed = true;
 
     if (qemuProcessBeginStopJob(driver, vm, QEMU_JOB_DESTROY,
                                 !(flags & VIR_DOMAIN_DESTROY_GRACEFUL)) < 0)

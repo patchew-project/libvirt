@@ -11921,9 +11921,9 @@ qemuDomainObjWait(virDomainObjPtr vm, unsigned long long until)
         return -1;
     }
 
-    if (!virDomainObjIsActive(vm)) {
+    if (priv->destroyed) {
         virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                       _("domain is not running"));
+                       _("domain is destroyed"));
         return -1;
     }
 
