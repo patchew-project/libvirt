@@ -1895,6 +1895,8 @@ qemuDomainObjPrivateDataClear(qemuDomainObjPrivatePtr priv)
 
     virBitmapFree(priv->migrationCaps);
     priv->migrationCaps = NULL;
+
+    qemuMigrationParamsFree(priv->job.migParams);
 }
 
 
