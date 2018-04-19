@@ -1026,6 +1026,7 @@ qemuProcessHandleBlockJob(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
         processEvent->vm = virObjectRef(vm);
         processEvent->action = type;
         processEvent->status = status;
+        ignore_value(VIR_STRDUP_QUIET(processEvent->error, error));
 
         if (virThreadPoolSendJob(driver->workerPool, 0, processEvent) < 0) {
             ignore_value(virObjectUnref(vm));

@@ -456,6 +456,7 @@ struct qemuProcessEvent {
     int action;
     int status;
     void *data;
+    char *error;
 };
 
 void qemuProcessEventFree(struct qemuProcessEvent *event);

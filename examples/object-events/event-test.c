@@ -936,6 +936,25 @@ myDomainEventBlockJobCallback(virConnectPtr conn ATTRIBUTE_UNUSED,
 
 
 static int
+myDomainEventBlockJobErrorCallback(virConnectPtr conn ATTRIBUTE_UNUSED,
+                                   virDomainPtr dom,
+                                   const char *dev,
+                                   int type,
+                                   unsigned int code,
+                                   const char *message,
+                                   void *opaque)
+{
+    const char *eventName = opaque;
+
+    printf("%s EVENT: Domain %s(%d) block job error callback '%s' disk '%s', "
+           "type '%s' code '%u' message '%s'",
+           __func__, virDomainGetName(dom), virDomainGetID(dom), eventName,
+           dev, blockJobTypeToStr(type), code, NULLSTR(message));
+    return 0;
+}
+
+
+static int
 myDomainEventBlockThresholdCallback(virConnectPtr conn ATTRIBUTE_UNUSED,
                                     virDomainPtr dom,
                                     const char *dev,
@@ -1082,6 +1101,7 @@ struct domainEventData domainEvents[] = {
     DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_DEVICE_REMOVAL_FAILED, myDomainEventDeviceRemovalFailedCallback),
     DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_METADATA_CHANGE, myDomainEventMetadataChangeCallback),
     DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_BLOCK_THRESHOLD, myDomainEventBlockThresholdCallback),
+    DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_BLOCK_JOB_ERROR, myDomainEventBlockJobErrorCallback),
 };
 
 struct storagePoolEventData {

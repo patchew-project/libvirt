@@ -138,6 +138,19 @@ virDomainEventBlockJob2NewFromDom(virDomainPtr dom,
                                   int status);
 
 virObjectEventPtr
+virDomainEventBlockJobErrorNewFromObj(virDomainObjPtr obj,
+                                      const char *dev,
+                                      int type,
+                                      unsigned int code,
+                                      const char *message);
+virObjectEventPtr
+virDomainEventBlockJobErrorNewFromDom(virDomainPtr dom,
+                                      const char *dev,
+                                      int type,
+                                      unsigned int code,
+                                      const char *message);
+
+virObjectEventPtr
 virDomainEventDiskChangeNewFromObj(virDomainObjPtr obj,
                                    const char *oldSrcPath,
                                    const char *newSrcPath,

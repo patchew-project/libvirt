@@ -3103,6 +3103,15 @@ struct remote_domain_event_block_job_2_msg {
     int status;
 };
 
+struct remote_domain_event_block_job_error_msg {
+    int callbackID;
+    remote_nonnull_domain dom;
+    remote_nonnull_string dev;
+    int type;
+    int code;
+    remote_string message;
+};
+
 struct remote_domain_event_block_threshold_msg {
     int callbackID;
     remote_nonnull_domain dom;
@@ -6135,5 +6144,11 @@ enum remote_procedure {
      * @priority: high
      * @acl: storage_pool:getattr
      */
-    REMOTE_PROC_STORAGE_POOL_LOOKUP_BY_TARGET_PATH = 391
+    REMOTE_PROC_STORAGE_POOL_LOOKUP_BY_TARGET_PATH = 391,
+
+    /**
+     * @generate: none
+     * @acl: none
+     */
+    REMOTE_PROC_DOMAIN_EVENT_BLOCK_JOB_ERROR = 392
 };

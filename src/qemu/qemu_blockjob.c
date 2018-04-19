@@ -70,7 +70,8 @@ qemuBlockJobUpdate(virQEMUDriverPtr driver,
     if (status != -1) {
         qemuBlockJobEventProcess(driver, vm, disk, asyncJob,
                                  diskPriv->blockJobType,
-                                 diskPriv->blockJobStatus);
+                                 diskPriv->blockJobStatus,
+                                 diskPriv->blockJobError);
         diskPriv->blockJobStatus = -1;
         if (error)
             VIR_STEAL_PTR(*error, diskPriv->blockJobError);
@@ -100,10 +101,12 @@ qemuBlockJobEventProcess(virQEMUDriverPtr driver,
                          virDomainDiskDefPtr disk,
                          qemuDomainAsyncJob asyncJob,
                          int type,
-                         int status)
+                         int status,
+                         const char *error)
 {
     virObjectEventPtr event = NULL;
     virObjectEventPtr event2 = NULL;
+    virObjectEventPtr errorEvent = NULL;
     const char *path;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     virDomainDiskDefPtr persistDisk = NULL;
@@ -123,6 +126,8 @@ qemuBlockJobEventProcess(virQEMUDriverPtr driver,
     path = virDomainDiskGetSource(disk);
     event = virDomainEventBlockJobNewFromObj(vm, path, type, status);
     event2 = virDomainEventBlockJob2NewFromObj(vm, disk->dst, type, status);
+    if (error)
+        errorEvent = virDomainEventBlockJobErrorNewFromObj(vm, disk->dst, type, 0, error);
 
     /* If we completed a block pull or commit, then update the XML
      * to match.  */
@@ -213,6 +218,7 @@ qemuBlockJobEventProcess(virQEMUDriverPtr driver,
 
     qemuDomainEventQueue(driver, event);
     qemuDomainEventQueue(driver, event2);
+    qemuDomainEventQueue(driver, errorEvent);
 
     virObjectUnref(cfg);
 }

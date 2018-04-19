@@ -4370,6 +4370,30 @@ typedef void (*virConnectDomainEventBlockThresholdCallback)(virConnectPtr conn,
                                                             unsigned long long excess,
                                                             void *opaque);
 
+
+/**
+ * virConnectDomainEventBlockJobErrorCallback:
+ * @conn: connection object
+ * @dom: domain on which the event occurred
+ * @dev: name associated with the affected disk or storage backing chain
+ *       element
+ * @type: type of block job (virDomainBlockJobType)
+ * @code: always 0, reserved for future use
+ * @message: error message with no semantics, can be NULL
+ * @opaque: application specified data
+ *
+ * The callback occurs when block job is completed with error and provides
+ * error message in @message.
+ *
+ */
+typedef void (*virConnectDomainEventBlockJobErrorCallback)(virConnectPtr conn,
+                                                           virDomainPtr dom,
+                                                           const char *dev,
+                                                           int type,
+                                                           unsigned int code,
+                                                           const char *message,
+                                                           void *opaque);
+
 /**
  * VIR_DOMAIN_EVENT_CALLBACK:
  *
@@ -4412,6 +4436,7 @@ typedef enum {
     VIR_DOMAIN_EVENT_ID_DEVICE_REMOVAL_FAILED = 22, /* virConnectDomainEventDeviceRemovalFailedCallback */
     VIR_DOMAIN_EVENT_ID_METADATA_CHANGE = 23, /* virConnectDomainEventMetadataChangeCallback */
     VIR_DOMAIN_EVENT_ID_BLOCK_THRESHOLD = 24, /* virConnectDomainEventBlockThresholdCallback */
+    VIR_DOMAIN_EVENT_ID_BLOCK_JOB_ERROR = 25, /* virConnectDomainEventBlockJobErrorCallback */
 
 # ifdef VIR_ENUM_SENTINELS
     VIR_DOMAIN_EVENT_ID_LAST

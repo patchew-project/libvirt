@@ -2541,6 +2541,14 @@ struct remote_domain_event_block_job_2_msg {
         int                        type;
         int                        status;
 };
+struct remote_domain_event_block_job_error_msg {
+        int                        callbackID;
+        remote_nonnull_domain      dom;
+        remote_nonnull_string      dev;
+        int                        type;
+        int                        code;
+        remote_string              message;
+};
 struct remote_domain_event_block_threshold_msg {
         int                        callbackID;
         remote_nonnull_domain      dom;
@@ -3269,4 +3277,5 @@ enum remote_procedure {
         REMOTE_PROC_DOMAIN_MANAGED_SAVE_DEFINE_XML = 389,
         REMOTE_PROC_DOMAIN_SET_LIFECYCLE_ACTION = 390,
         REMOTE_PROC_STORAGE_POOL_LOOKUP_BY_TARGET_PATH = 391,
+        REMOTE_PROC_DOMAIN_EVENT_BLOCK_JOB_ERROR = 392,
 };

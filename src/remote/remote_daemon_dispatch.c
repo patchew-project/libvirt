@@ -1342,6 +1342,53 @@ remoteRelayDomainEventBlockThreshold(virConnectPtr conn,
 }
 
 
+static int
+remoteRelayDomainEventBlockJobError(virConnectPtr conn,
+                                    virDomainPtr dom,
+                                    const char *dev,
+                                    int type,
+                                    unsigned int code,
+                                    const char *message,
+                                    void *opaque)
+{
+    daemonClientEventCallbackPtr callback = opaque;
+    remote_domain_event_block_job_error_msg msg;
+
+    if (callback->callbackID < 0 ||
+        !remoteRelayDomainEventCheckACL(callback->client, conn, dom))
+        return -1;
+
+    VIR_DEBUG("Relaying domain block job error event %s %d %s %i %u %s, callback %d",
+              dom->name, dom->id, dev, type, code, NULLSTR(message),
+              callback->callbackID);
+
+    memset(&msg, 0, sizeof(msg));
+    msg.callbackID = callback->callbackID;
+    if (VIR_STRDUP(msg.dev, dev) < 0)
+        return -1;
+    if (message) {
+        if (VIR_ALLOC(msg.message) < 0 ||
+            VIR_STRDUP(*(msg.message), message) < 0)
+            goto error;
+    }
+    msg.type = type;
+    msg.code = code;
+    make_nonnull_domain(&msg.dom, dom);
+
+    remoteDispatchObjectEventSend(callback->client, remoteProgram,
+                                  REMOTE_PROC_DOMAIN_EVENT_BLOCK_JOB_ERROR,
+                                  (xdrproc_t)xdr_remote_domain_event_block_job_error_msg,
+                                  &msg);
+    return 0;
+
+ error:
+    VIR_FREE(msg.dev);
+    VIR_FREE(msg.message);
+
+    return -1;
+}
+
+
 static virConnectDomainEventGenericCallback domainEventCallbacks[] = {
     VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventLifecycle),
     VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventReboot),
@@ -1368,6 +1415,7 @@ static virConnectDomainEventGenericCallback domainEventCallbacks[] = {
     VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventDeviceRemovalFailed),
     VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventMetadataChange),
     VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventBlockThreshold),
+    VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventBlockJobError),
 };
 
 verify(ARRAY_CARDINALITY(domainEventCallbacks) == VIR_DOMAIN_EVENT_ID_LAST);

@@ -589,6 +589,8 @@ virDomainEventBalloonChangeNewFromDom;
 virDomainEventBalloonChangeNewFromObj;
 virDomainEventBlockJob2NewFromDom;
 virDomainEventBlockJob2NewFromObj;
+virDomainEventBlockJobErrorNewFromDom;
+virDomainEventBlockJobErrorNewFromObj;
 virDomainEventBlockJobNewFromDom;
 virDomainEventBlockJobNewFromObj;
 virDomainEventBlockThresholdNewFromDom;

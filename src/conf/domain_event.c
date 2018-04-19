@@ -47,6 +47,7 @@ static virClassPtr virDomainEventWatchdogClass;
 static virClassPtr virDomainEventIOErrorClass;
 static virClassPtr virDomainEventGraphicsClass;
 static virClassPtr virDomainEventBlockJobClass;
+static virClassPtr virDomainEventBlockJobErrorClass;
 static virClassPtr virDomainEventDiskChangeClass;
 static virClassPtr virDomainEventTrayChangeClass;
 static virClassPtr virDomainEventBalloonChangeClass;
@@ -69,6 +70,7 @@ static void virDomainEventWatchdogDispose(void *obj);
 static void virDomainEventIOErrorDispose(void *obj);
 static void virDomainEventGraphicsDispose(void *obj);
 static void virDomainEventBlockJobDispose(void *obj);
+static void virDomainEventBlockJobErrorDispose(void *obj);
 static void virDomainEventDiskChangeDispose(void *obj);
 static void virDomainEventTrayChangeDispose(void *obj);
 static void virDomainEventBalloonChangeDispose(void *obj);
@@ -150,6 +152,17 @@ struct _virDomainEventBlockJob {
 };
 typedef struct _virDomainEventBlockJob virDomainEventBlockJob;
 typedef virDomainEventBlockJob *virDomainEventBlockJobPtr;
+
+struct _virDomainEventBlockJobError {
+    virDomainEvent parent;
+
+    char *dev;
+    int type;
+    unsigned int code;
+    char *message;
+};
+typedef struct _virDomainEventBlockJobError virDomainEventBlockJobError;
+typedef virDomainEventBlockJobError *virDomainEventBlockJobErrorPtr;
 
 struct _virDomainEventGraphics {
     virDomainEvent parent;
@@ -309,6 +322,8 @@ virDomainEventsOnceInit(void)
         return -1;
     if (!VIR_CLASS_NEW(virDomainEventBlockJob, virDomainEventClass))
         return -1;
+    if (!VIR_CLASS_NEW(virDomainEventBlockJobError, virDomainEventClass))
+        return -1;
     if (!VIR_CLASS_NEW(virDomainEventDiskChange, virDomainEventClass))
         return -1;
     if (!VIR_CLASS_NEW(virDomainEventTrayChange, virDomainEventClass))
@@ -417,6 +432,16 @@ virDomainEventBlockJobDispose(void *obj)
     VIR_DEBUG("obj=%p", event);
 
     VIR_FREE(event->disk);
+}
+
+static void
+virDomainEventBlockJobErrorDispose(void *obj)
+{
+    virDomainEventBlockJobErrorPtr event = obj;
+    VIR_DEBUG("obj=%p", event);
+
+    VIR_FREE(event->dev);
+    VIR_FREE(event->message);
 }
 
 static void
@@ -975,6 +1000,59 @@ virDomainEventBlockJob2NewFromDom(virDomainPtr dom,
     return virDomainEventBlockJobNew(VIR_DOMAIN_EVENT_ID_BLOCK_JOB_2,
                                      dom->id, dom->name, dom->uuid,
                                      dst, type, status);
+}
+
+static virObjectEventPtr
+virDomainEventBlockJobErrorNew(int id,
+                               const char *name,
+                               unsigned char *uuid,
+                               const char *dev,
+                               int type,
+                               unsigned int code,
+                               const char *message)
+{
+    virDomainEventBlockJobErrorPtr ev;
+
+    if (virDomainEventsInitialize() < 0)
+        return NULL;
+
+    if (!(ev = virDomainEventNew(virDomainEventBlockJobErrorClass,
+                                 VIR_DOMAIN_EVENT_ID_BLOCK_JOB_ERROR,
+                                 id, name, uuid)))
+        return NULL;
+
+    if (VIR_STRDUP(ev->dev, dev) < 0) {
+        virObjectUnref(ev);
+        return NULL;
+    }
+    ignore_value(VIR_STRDUP_QUIET(ev->message, message));
+    ev->type = type;
+    ev->code = code;
+
+    return (virObjectEventPtr)ev;
+}
+
+virObjectEventPtr
+virDomainEventBlockJobErrorNewFromObj(virDomainObjPtr obj,
+                                      const char *dev,
+                                      int type,
+                                      unsigned int code,
+                                      const char *message)
+{
+    return virDomainEventBlockJobErrorNew(obj->def->id, obj->def->name,
+                                          obj->def->uuid, dev, type, code,
+                                          message);
+}
+
+virObjectEventPtr
+virDomainEventBlockJobErrorNewFromDom(virDomainPtr dom,
+                                      const char *dev,
+                                      int type,
+                                      unsigned int code,
+                                      const char *message)
+{
+    return virDomainEventBlockJobErrorNew(dom->id, dom->name, dom->uuid,
+                                          dev, type, code, message);
 }
 
 virObjectEventPtr
@@ -1784,6 +1862,20 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                         blockJobEvent->type,
                                                         blockJobEvent->status,
                                                         cbopaque);
+            goto cleanup;
+        }
+
+    case VIR_DOMAIN_EVENT_ID_BLOCK_JOB_ERROR:
+        {
+            virDomainEventBlockJobErrorPtr blockJobErrorEvent;
+
+            blockJobErrorEvent = (virDomainEventBlockJobErrorPtr)event;
+            ((virConnectDomainEventBlockJobErrorCallback)cb)(conn, dom,
+                                                             blockJobErrorEvent->dev,
+                                                             blockJobErrorEvent->type,
+                                                             blockJobErrorEvent->code,
+                                                             blockJobErrorEvent->message,
+                                                             cbopaque);
             goto cleanup;
         }
 

@@ -4748,7 +4748,8 @@ processBlockJobEvent(virQEMUDriverPtr driver,
                      virDomainObjPtr vm,
                      const char *diskAlias,
                      int type,
-                     int status)
+                     int status,
+                     char *error)
 {
     virDomainDiskDefPtr disk;
 
@@ -4761,7 +4762,8 @@ processBlockJobEvent(virQEMUDriverPtr driver,
     }
 
     if ((disk = qemuProcessFindDomainDiskByAlias(vm, diskAlias)))
-        qemuBlockJobEventProcess(driver, vm, disk, QEMU_ASYNC_JOB_NONE, type, status);
+        qemuBlockJobEventProcess(driver, vm, disk, QEMU_ASYNC_JOB_NONE,
+                                 type, status, error);
 
  endjob:
     qemuDomainObjEndJob(driver, vm);
@@ -4846,7 +4848,8 @@ static void qemuProcessEventHandler(void *data, void *opaque)
         processBlockJobEvent(driver, vm,
                              processEvent->data,
                              processEvent->action,
-                             processEvent->status);
+                             processEvent->status,
+                             processEvent->error);
         break;
     case QEMU_PROCESS_EVENT_MONITOR_EOF:
         processMonitorEOFEvent(driver, vm);

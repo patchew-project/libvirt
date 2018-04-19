@@ -405,6 +405,11 @@ remoteConnectNotifyEventConnectionClosed(virNetClientProgramPtr prog ATTRIBUTE_U
                                          virNetClientPtr client ATTRIBUTE_UNUSED,
                                          void *evdata, void *opaque);
 
+static void
+remoteDomainBuildEventBlockJobError(virNetClientProgramPtr prog,
+                                    virNetClientPtr client,
+                                    void *evdata, void *opaque);
+
 static virNetClientProgramEvent remoteEvents[] = {
     { REMOTE_PROC_DOMAIN_EVENT_LIFECYCLE,
       remoteDomainBuildEventLifecycle,
@@ -611,6 +616,10 @@ static virNetClientProgramEvent remoteEvents[] = {
       remoteDomainBuildEventBlockThreshold,
       sizeof(remote_domain_event_block_threshold_msg),
       (xdrproc_t)xdr_remote_domain_event_block_threshold_msg },
+    { REMOTE_PROC_DOMAIN_EVENT_BLOCK_JOB_ERROR,
+      remoteDomainBuildEventBlockJobError,
+      sizeof(remote_domain_event_block_job_error_msg),
+      (xdrproc_t)xdr_remote_domain_event_block_job_error_msg },
 };
 
 static void
@@ -5526,6 +5535,31 @@ remoteDomainBuildEventBlockThreshold(virNetClientProgramPtr prog ATTRIBUTE_UNUSE
     event = virDomainEventBlockThresholdNewFromDom(dom, msg->dev,
                                                    msg->path ? *msg->path : NULL,
                                                    msg->threshold, msg->excess);
+
+    virObjectUnref(dom);
+
+    remoteEventQueue(priv, event, msg->callbackID);
+}
+
+
+static void
+remoteDomainBuildEventBlockJobError(virNetClientProgramPtr prog ATTRIBUTE_UNUSED,
+                                    virNetClientPtr client ATTRIBUTE_UNUSED,
+                                    void *evdata, void *opaque)
+{
+    virConnectPtr conn = opaque;
+    remote_domain_event_block_job_error_msg *msg = evdata;
+    struct private_data *priv = conn->privateData;
+    virDomainPtr dom;
+    virObjectEventPtr event = NULL;
+
+    dom = get_nonnull_domain(conn, msg->dom);
+    if (!dom)
+        return;
+
+    event = virDomainEventBlockJobErrorNewFromDom(dom, msg->dev, msg->type,
+                                                  msg->code,
+                                                  msg->message ? *msg->message : NULL);
 
     virObjectUnref(dom);
 

@@ -13286,6 +13286,28 @@ virshEventBlockThresholdPrint(virConnectPtr conn ATTRIBUTE_UNUSED,
 }
 
 
+static void
+virshEventBlockJobErrorPrint(virConnectPtr conn ATTRIBUTE_UNUSED,
+                             virDomainPtr dom,
+                             const char *dev,
+                             int type,
+                             unsigned int code ATTRIBUTE_UNUSED,
+                             const char *message,
+                             void *opaque)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    virBufferAsprintf(&buf, _("event '%s' for domain %s: %s for %s, "
+                              "error: %s\n"),
+                      ((virshDomEventData *) opaque)->cb->name,
+                      virDomainGetName(dom),
+                      virshDomainBlockJobToString(type),
+                      dev,
+                      NULLSTR(message));
+    virshEventPrint(opaque, &buf);
+}
+
+
 static vshEventCallback vshEventCallbacks[] = {
     { "lifecycle",
       VIR_DOMAIN_EVENT_CALLBACK(virshEventLifecyclePrint), },
@@ -13335,6 +13357,8 @@ static vshEventCallback vshEventCallbacks[] = {
       VIR_DOMAIN_EVENT_CALLBACK(virshEventMetadataChangePrint), },
     { "block-threshold",
       VIR_DOMAIN_EVENT_CALLBACK(virshEventBlockThresholdPrint), },
+    { "block-job-error",
+      VIR_DOMAIN_EVENT_CALLBACK(virshEventBlockJobErrorPrint), },
 };
 verify(VIR_DOMAIN_EVENT_ID_LAST == ARRAY_CARDINALITY(vshEventCallbacks));
 
