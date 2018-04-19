@@ -51,6 +51,7 @@
 #include "virauth.h"
 #include "virauthconfig.h"
 #include "virstring.h"
+#include "c-ctype.h"
 
 #define VIR_FROM_THIS VIR_FROM_REMOTE
 
@@ -711,8 +712,7 @@ remoteConnectSupportsFeatureUnlocked(virConnectPtr conn,
         continue; \
     }
 
-
-static char *remoteGetUNIXSocketNonRoot(void)
+static char *remoteGetUNIXSocketNonRoot(const char *daemon_name)
 {
     char *sockname = NULL;
     char *userdir = virGetUserRuntimeDirectory();
@@ -720,23 +720,23 @@ static char *remoteGetUNIXSocketNonRoot(void)
     if (!userdir)
         return NULL;
 
-    if (virAsprintf(&sockname, "%s/" LIBVIRTD_USER_UNIX_SOCKET, userdir) < 0) {
+    if (virAsprintf(&sockname, "%s/%s-sock", userdir,
+                    inside_daemon ? daemon_name : "libvirt") < 0) {
         VIR_FREE(userdir);
         return NULL;
     }
-    VIR_FREE(userdir);
 
     VIR_DEBUG("Chosen UNIX sockname %s", sockname);
     return sockname;
 }
 
-static char *remoteGetUNIXSocketRoot(unsigned int flags)
+static char *remoteGetUNIXSocketRoot(const char *daemon_name, unsigned int flags)
 {
     char *sockname = NULL;
 
-    if (VIR_STRDUP(sockname,
-                   flags & VIR_DRV_OPEN_REMOTE_RO ?
-                   LIBVIRTD_PRIV_UNIX_SOCKET_RO : LIBVIRTD_PRIV_UNIX_SOCKET) < 0)
+    if (virAsprintf(&sockname, "%s/%s-%s", LOCALSTATEDIR "/run/libvirt",
+                    inside_daemon ? daemon_name : "libvirt",
+                    flags & VIR_DRV_OPEN_REMOTE_RO ? "sock-ro" : "sock") < 0)
         return NULL;
 
     VIR_DEBUG("Chosen UNIX sockname %s", sockname);
@@ -768,6 +768,8 @@ doRemoteOpen(virConnectPtr conn,
              struct private_data *priv,
              const char *driver_str,
              const char *transport_str,
+             const char *daemon_name,
+             const char *daemon_env,
              virConnectAuthPtr auth ATTRIBUTE_UNUSED,
              virConfPtr conf,
              unsigned int flags)
@@ -1004,7 +1006,7 @@ doRemoteOpen(virConnectPtr conn,
                 goto failed;
             }
 
-            if (!(sockname = remoteGetUNIXSocketRoot(flags)))
+            if (!(sockname = remoteGetUNIXSocketRoot(daemon_name, flags)))
                 goto failed;
         }
 
@@ -1039,7 +1041,7 @@ doRemoteOpen(virConnectPtr conn,
                 goto failed;
             }
 
-            if (!(sockname = remoteGetUNIXSocketRoot(flags)))
+            if (!(sockname = remoteGetUNIXSocketRoot(daemon_name, flags)))
                 goto failed;
         }
 
@@ -1067,20 +1069,21 @@ doRemoteOpen(virConnectPtr conn,
     case trans_unix:
         if (!sockname) {
             if (flags & VIR_DRV_OPEN_REMOTE_USER)
-                sockname = remoteGetUNIXSocketNonRoot();
+                sockname = remoteGetUNIXSocketNonRoot(daemon_name);
             else
-                sockname = remoteGetUNIXSocketRoot(flags);
+                sockname = remoteGetUNIXSocketRoot(daemon_name, flags);
             if (!sockname)
                 goto failed;
         }
 
-        if ((flags & VIR_DRV_OPEN_REMOTE_AUTOSTART) &&
-            !(daemonPath = virFileFindResourceFull("libvirtd",
-                                                   NULL, NULL,
-                                                   abs_topbuilddir "/src",
-                                                   SBINDIR,
-                                                   "LIBVIRTD_PATH")))
-            goto failed;
+        if (flags & VIR_DRV_OPEN_REMOTE_AUTOSTART) {
+            if (!(daemonPath = virFileFindResourceFull(daemon_name,
+                                                       NULL, NULL,
+                                                       abs_topbuilddir "/src",
+                                                       SBINDIR,
+                                                       daemon_env)))
+                goto failed;
+        }
 
         if (!(priv->client = virNetClientNewUNIX(sockname,
                                                  flags & VIR_DRV_OPEN_REMOTE_AUTOSTART,
@@ -1104,7 +1107,7 @@ doRemoteOpen(virConnectPtr conn,
                 goto failed;
             }
 
-            if (!(sockname = remoteGetUNIXSocketRoot(flags)))
+            if (!(sockname = remoteGetUNIXSocketRoot(daemon_name, flags)))
                 goto failed;
         }
 
@@ -1312,6 +1315,9 @@ remoteAllocPrivateData(void)
     return priv;
 }
 
+
+#define DRIVER_SCHEME_CHRS "abcdefghijklmnopqrstuvwxyz"
+
 static virDrvOpenStatus
 remoteConnectOpen(virConnectPtr conn,
                   virConnectAuthPtr auth,
@@ -1324,14 +1330,53 @@ remoteConnectOpen(virConnectPtr conn,
     const char *autostart = virGetEnvBlockSUID("LIBVIRT_AUTOSTART");
     char *driver = NULL;
     char *transport = NULL;
+    char *daemon_name = NULL;
+    char *daemon_env = NULL;
 
-    if (conn->uri &&
-        remoteSplitURIScheme(conn->uri, &driver, &transport) < 0)
-        goto cleanup;
+    if (conn->uri) {
+        if (remoteSplitURIScheme(conn->uri, &driver, &transport) < 0)
+            goto cleanup;
 
-    if (inside_daemon && (!conn->uri || !conn->uri->server)) {
-        ret = VIR_DRV_OPEN_DECLINED;
-        goto cleanup;
+        if (strspn(driver, DRIVER_SCHEME_CHRS) < strlen(driver)) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("Invalid character in driver '%s'"), driver);
+            goto cleanup;
+        }
+
+        if (inside_daemon) {
+            char *tmp;
+            if (virAsprintf(&daemon_name, "virt%sd", driver) < 0 ||
+                virAsprintf(&daemon_env, "virt%sd_path", driver) < 0)
+                goto cleanup;
+
+            tmp = daemon_env;
+            while (*tmp) {
+                *tmp = c_toupper(*tmp);
+                tmp++;
+            }
+        } else {
+            if (VIR_STRDUP(daemon_name, "libvirtd") < 0 ||
+                VIR_STRDUP(daemon_env, "LIBVIRTD_PATH") < 0)
+                goto cleanup;
+        }
+    }
+
+    if (inside_daemon) {
+        if (!conn->uri) {
+            ret = VIR_DRV_OPEN_DECLINED;
+            goto cleanup;
+        }
+
+        /*
+         * If we're inside the daemon and there's a driver
+         * registered for this URI scheme, we should not
+         * handle this URI ourselves
+         */
+        if (!conn->uri->server &&
+            virHasDriverForURIScheme(driver)) {
+            ret = VIR_DRV_OPEN_DECLINED;
+            goto cleanup;
+        }
     }
 
     if (!(priv = remoteAllocPrivateData()))
@@ -1378,7 +1423,8 @@ remoteConnectOpen(virConnectPtr conn,
         }
     }
 
-    ret = doRemoteOpen(conn, priv, driver, transport, auth, conf, rflags);
+    ret = doRemoteOpen(conn, priv, driver, transport,
+                       daemon_name, daemon_env, auth, conf, rflags);
     if (ret != VIR_DRV_OPEN_SUCCESS) {
         conn->privateData = NULL;
         remoteDriverUnlock(priv);

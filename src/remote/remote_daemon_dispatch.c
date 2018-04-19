@@ -1833,7 +1833,16 @@ remoteDispatchConnectOpen(virNetServerPtr server ATTRIBUTE_UNUSED,
     priv->networkConn = virObjectRef(priv->conn);
     priv->nodedevConn = virObjectRef(priv->conn);
     priv->nwfilterConn = virObjectRef(priv->conn);
-    priv->secretConn = virObjectRef(priv->conn);
+    if (STRPREFIX(name, "secret:///")) {
+        priv->secretConn = virObjectRef(priv->conn);
+    } else {
+        const char *uri = geteuid() == 0 ? "secret:///system" : "secret:///session";
+        priv->secretConn = flags & VIR_CONNECT_RO
+            ? virConnectOpenReadOnly(uri)
+            : virConnectOpen(uri);
+        if (!priv->secretConn)
+            goto cleanup;
+    }
     priv->storageConn = virObjectRef(priv->conn);
 
     /* force update the @readonly attribute which was inherited from the
