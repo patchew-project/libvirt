@@ -79,7 +79,7 @@ int
 daemonConfigFilePath(bool privileged, char **configfile)
 {
     if (privileged) {
-        if (VIR_STRDUP(*configfile, SYSCONFDIR "/libvirt/libvirtd.conf") < 0)
+        if (VIR_STRDUP(*configfile, SYSCONFDIR "/libvirt/" APP_NAME ".conf") < 0)
             goto error;
     } else {
         char *configdir = NULL;
@@ -87,7 +87,7 @@ daemonConfigFilePath(bool privileged, char **configfile)
         if (!(configdir = virGetUserConfigDirectory()))
             goto error;
 
-        if (virAsprintf(configfile, "%s/libvirtd.conf", configdir) < 0) {
+        if (virAsprintf(configfile, "%s/" APP_NAME ".conf", configdir) < 0) {
             VIR_FREE(configdir);
             goto error;
         }
@@ -104,18 +104,22 @@ struct daemonConfig*
 daemonConfigNew(bool privileged ATTRIBUTE_UNUSED)
 {
     struct daemonConfig *data;
+#ifdef WITH_NET_IP
     char *localhost;
     int ret;
+#endif
 
     if (VIR_ALLOC(data) < 0)
         return NULL;
 
+#ifdef WITH_NET_IP
     data->listen_tls = 1;
     data->listen_tcp = 0;
 
     if (VIR_STRDUP(data->tls_port, LIBVIRTD_TLS_PORT) < 0 ||
         VIR_STRDUP(data->tcp_port, LIBVIRTD_TCP_PORT) < 0)
         goto error;
+#endif
 
     /* Only default to PolicyKit if running as root */
 #if WITH_POLKIT
@@ -136,14 +140,16 @@ daemonConfigNew(bool privileged ATTRIBUTE_UNUSED)
         VIR_STRDUP(data->unix_sock_admin_perms, "0700") < 0)
         goto error;
 
-#if WITH_SASL
+#ifdef WITH_NET_IP
+# if WITH_SASL
     data->auth_tcp = REMOTE_AUTH_SASL;
-#else
+# else
     data->auth_tcp = REMOTE_AUTH_NONE;
-#endif
+# endif
     data->auth_tls = REMOTE_AUTH_NONE;
 
     data->mdns_adv = 0;
+#endif
 
     data->min_workers = 5;
     data->max_workers = 20;
@@ -172,6 +178,7 @@ daemonConfigNew(bool privileged ATTRIBUTE_UNUSED)
 
     data->ovs_timeout = VIR_NETDEV_OVS_DEFAULT_TIMEOUT;
 
+#ifdef WITH_NET_IP
     localhost = virGetHostname();
     if (localhost == NULL) {
         /* we couldn't resolve the hostname; assume that we are
@@ -190,6 +197,7 @@ daemonConfigNew(bool privileged ATTRIBUTE_UNUSED)
     VIR_FREE(localhost);
     if (ret < 0)
         goto error;
+#endif
 
     return data;
 
@@ -206,9 +214,11 @@ daemonConfigFree(struct daemonConfig *data)
     if (!data)
         return;
 
+#ifdef WITH_NET_IP
     VIR_FREE(data->listen_addr);
     VIR_FREE(data->tls_port);
     VIR_FREE(data->tcp_port);
+#endif
     tmp = data->access_drivers;
     while (tmp && *tmp) {
         VIR_FREE(*tmp);
@@ -221,6 +231,7 @@ daemonConfigFree(struct daemonConfig *data)
     VIR_FREE(data->unix_sock_rw_perms);
     VIR_FREE(data->unix_sock_group);
     VIR_FREE(data->unix_sock_dir);
+#ifdef WITH_NET_IP
     VIR_FREE(data->mdns_name);
 
     tmp = data->tls_allowed_dn_list;
@@ -229,6 +240,7 @@ daemonConfigFree(struct daemonConfig *data)
         tmp++;
     }
     VIR_FREE(data->tls_allowed_dn_list);
+#endif
 
     tmp = data->sasl_allowed_username_list;
     while (tmp && *tmp) {
@@ -236,12 +248,15 @@ daemonConfigFree(struct daemonConfig *data)
         tmp++;
     }
     VIR_FREE(data->sasl_allowed_username_list);
+
+#ifdef WITH_NET_IP
     VIR_FREE(data->tls_priority);
 
     VIR_FREE(data->key_file);
     VIR_FREE(data->ca_file);
     VIR_FREE(data->cert_file);
     VIR_FREE(data->crl_file);
+#endif
 
     VIR_FREE(data->host_uuid);
     VIR_FREE(data->host_uuid_source);
@@ -256,6 +271,7 @@ daemonConfigLoadOptions(struct daemonConfig *data,
                         const char *filename,
                         virConfPtr conf)
 {
+#ifdef WITH_NET_IP
     if (virConfGetValueBool(conf, "listen_tcp", &data->listen_tcp) < 0)
         goto error;
     if (virConfGetValueBool(conf, "listen_tls", &data->listen_tls) < 0)
@@ -266,6 +282,7 @@ daemonConfigLoadOptions(struct daemonConfig *data,
         goto error;
     if (virConfGetValueString(conf, "listen_addr", &data->listen_addr) < 0)
         goto error;
+#endif
 
     if (remoteConfigGetAuth(conf, filename, "auth_unix_rw", &data->auth_unix_rw) < 0)
         goto error;
@@ -281,10 +298,12 @@ daemonConfigLoadOptions(struct daemonConfig *data,
 #endif
     if (remoteConfigGetAuth(conf, filename, "auth_unix_ro", &data->auth_unix_ro) < 0)
         goto error;
+#ifdef WITH_NET_IP
     if (remoteConfigGetAuth(conf, filename, "auth_tcp", &data->auth_tcp) < 0)
         goto error;
     if (remoteConfigGetAuth(conf, filename, "auth_tls", &data->auth_tls) < 0)
         goto error;
+#endif
 
     if (virConfGetValueStringList(conf, "access_drivers", false,
                                   &data->access_drivers) < 0)
@@ -302,6 +321,7 @@ daemonConfigLoadOptions(struct daemonConfig *data,
     if (virConfGetValueString(conf, "unix_sock_dir", &data->unix_sock_dir) < 0)
         goto error;
 
+#ifdef WITH_NET_IP
     if (virConfGetValueBool(conf, "mdns_adv", &data->mdns_adv) < 0)
         goto error;
     if (virConfGetValueString(conf, "mdns_name", &data->mdns_name) < 0)
@@ -325,12 +345,12 @@ daemonConfigLoadOptions(struct daemonConfig *data,
                                   &data->tls_allowed_dn_list) < 0)
         goto error;
 
+    if (virConfGetValueString(conf, "tls_priority", &data->tls_priority) < 0)
+        goto error;
+#endif
 
     if (virConfGetValueStringList(conf, "sasl_allowed_username_list", false,
                                   &data->sasl_allowed_username_list) < 0)
-        goto error;
-
-    if (virConfGetValueString(conf, "tls_priority", &data->tls_priority) < 0)
         goto error;
 
     if (virConfGetValueUInt(conf, "min_workers", &data->min_workers) < 0)

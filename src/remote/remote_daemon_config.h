@@ -30,11 +30,13 @@ struct daemonConfig {
     char *host_uuid;
     char *host_uuid_source;
 
+# ifdef WITH_NET_IP
     bool listen_tls;
     bool listen_tcp;
     char *listen_addr;
     char *tls_port;
     char *tcp_port;
+# endif
 
     char *unix_sock_admin_perms;
     char *unix_sock_ro_perms;
@@ -44,24 +46,29 @@ struct daemonConfig {
 
     int auth_unix_rw;
     int auth_unix_ro;
+# ifdef WITH_NET_IP
     int auth_tcp;
     int auth_tls;
+# endif
 
     char **access_drivers;
 
+# ifdef WITH_NET_IP
     bool mdns_adv;
     char *mdns_name;
 
     bool tls_no_verify_certificate;
     bool tls_no_sanity_certificate;
     char **tls_allowed_dn_list;
-    char **sasl_allowed_username_list;
     char *tls_priority;
 
     char *key_file;
     char *cert_file;
     char *ca_file;
     char *crl_file;
+# endif
+
+    char **sasl_allowed_username_list;
 
     unsigned int min_workers;
     unsigned int max_workers;

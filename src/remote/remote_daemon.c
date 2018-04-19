@@ -221,19 +221,19 @@ daemonUnixSocketPaths(struct daemonConfig *config,
     char *rundir = NULL;
 
     if (config->unix_sock_dir) {
-        if (virAsprintf(sockfile, "%s/libvirt-sock", config->unix_sock_dir) < 0)
+        if (virAsprintf(sockfile, "%s/" SOCK_NAME, config->unix_sock_dir) < 0)
             goto cleanup;
 
         if (privileged) {
-            if (virAsprintf(rosockfile, "%s/libvirt-sock-ro", config->unix_sock_dir) < 0 ||
-                virAsprintf(admsockfile, "%s/libvirt-admin-sock", config->unix_sock_dir) < 0)
+            if (virAsprintf(rosockfile, "%s/" SOCK_NAME_RO, config->unix_sock_dir) < 0 ||
+                virAsprintf(admsockfile, "%s/" SOCK_NAME_ADMIN, config->unix_sock_dir) < 0)
                 goto cleanup;
         }
     } else {
         if (privileged) {
-            if (VIR_STRDUP(*sockfile, LOCALSTATEDIR "/run/libvirt/libvirt-sock") < 0 ||
-                VIR_STRDUP(*rosockfile, LOCALSTATEDIR "/run/libvirt/libvirt-sock-ro") < 0 ||
-                VIR_STRDUP(*admsockfile, LOCALSTATEDIR "/run/libvirt/libvirt-admin-sock") < 0)
+            if (VIR_STRDUP(*sockfile, LOCALSTATEDIR "/run/libvirt/" SOCK_NAME) < 0 ||
+                VIR_STRDUP(*rosockfile, LOCALSTATEDIR "/run/libvirt/" SOCK_NAME_RO) < 0 ||
+                VIR_STRDUP(*admsockfile, LOCALSTATEDIR "/run/libvirt/" SOCK_NAME_ADMIN) < 0)
                 goto cleanup;
         } else {
             mode_t old_umask;
@@ -248,8 +248,8 @@ daemonUnixSocketPaths(struct daemonConfig *config,
             }
             umask(old_umask);
 
-            if (virAsprintf(sockfile, "%s/libvirt-sock", rundir) < 0 ||
-                virAsprintf(admsockfile, "%s/libvirt-admin-sock", rundir) < 0)
+            if (virAsprintf(sockfile, "%s/" SOCK_NAME, rundir) < 0 ||
+                virAsprintf(admsockfile, "%s/" SOCK_NAME_ADMIN, rundir) < 0)
                 goto cleanup;
         }
     }
@@ -305,56 +305,56 @@ static int daemonInitialize(void)
      * driver, since their resources must be auto-started before any
      * domains can be auto-started.
      */
-#ifdef WITH_NETWORK
-    if (virDriverLoadModule("network", "networkRegister", false) < 0)
+#if defined(WITH_NETWORK) && defined(LOAD_NETWORK)
+    if (virDriverLoadModule("network", "networkRegister", REQUIRE_MODULE) < 0)
         return -1;
 #endif
-#ifdef WITH_INTERFACE
-    if (virDriverLoadModule("interface", "interfaceRegister", false) < 0)
+#if defined(WITH_INTERFACE) && defined(LOAD_INTERFACE)
+    if (virDriverLoadModule("interface", "interfaceRegister", REQUIRE_MODULE) < 0)
         return -1;
 #endif
-#ifdef WITH_STORAGE
-    if (virDriverLoadModule("storage", "storageRegister", false) < 0)
+#if defined(WITH_STORAGE) && defined(LOAD_STORAGE)
+    if (virDriverLoadModule("storage", "storageRegister", REQUIRE_MODULE) < 0)
         return -1;
 #endif
-#ifdef WITH_NODE_DEVICES
-    if (virDriverLoadModule("nodedev", "nodedevRegister", false) < 0)
+#if defined(WITH_NODE_DEVICES) && defined(LOAD_NODE_DEVICES)
+    if (virDriverLoadModule("nodedev", "nodedevRegister", REQUIRE_MODULE) < 0)
         return -1;
 #endif
-#ifdef WITH_SECRETS
-    if (virDriverLoadModule("secret", "secretRegister", false) < 0)
+#if defined(WITH_SECRETS) && defined(LOAD_SECRETS)
+    if (virDriverLoadModule("secret", "secretRegister", REQUIRE_MODULE) < 0)
         return -1;
 #endif
-#ifdef WITH_NWFILTER
-    if (virDriverLoadModule("nwfilter", "nwfilterRegister", false) < 0)
+#if defined(WITH_NWFILTER) && defined(LOAD_NWFILTER)
+    if (virDriverLoadModule("nwfilter", "nwfilterRegister", REQUIRE_MODULE) < 0)
         return -1;
 #endif
-#ifdef WITH_LIBXL
-    if (virDriverLoadModule("libxl", "libxlRegister", false) < 0)
+#if defined(WITH_LIBXL) && defined(LOAD_LIBXL)
+    if (virDriverLoadModule("libxl", "libxlRegister", REQUIRE_MODULE) < 0)
         return -1;
 #endif
-#ifdef WITH_QEMU
-    if (virDriverLoadModule("qemu", "qemuRegister", false) < 0)
+#if defined(WITH_QEMU) && defined(LOAD_QEMU)
+    if (virDriverLoadModule("qemu", "qemuRegister", REQUIRE_MODULE) < 0)
         return -1;
 #endif
-#ifdef WITH_LXC
-    if (virDriverLoadModule("lxc", "lxcRegister", false) < 0)
+#if defined(WITH_LXC) && defined(LOAD_LXC)
+    if (virDriverLoadModule("lxc", "lxcRegister", REQUIRE_MODULE) < 0)
         return -1;
 #endif
-#ifdef WITH_UML
-    if (virDriverLoadModule("uml", "umlRegister", false) < 0)
+#if defined(WITH_UML) && defined(LOAD_UML)
+    if (virDriverLoadModule("uml", "umlRegister", REQUIRE_MODULE) < 0)
         return -1;
 #endif
-#ifdef WITH_VBOX
-    if (virDriverLoadModule("vbox", "vboxRegister", false) < 0)
+#if defined(WITH_VBOX) && defined(LOAD_VBOX)
+    if (virDriverLoadModule("vbox", "vboxRegister", REQUIRE_MODULE) < 0)
         return -1;
 #endif
-#ifdef WITH_BHYVE
-    if (virDriverLoadModule("bhyve", "bhyveRegister", false) < 0)
+#if defined(WITH_BHYVE) && defined(LOAD_BHYVE)
+    if (virDriverLoadModule("bhyve", "bhyveRegister", REQUIRE_MODULE) < 0)
         return -1;
 #endif
-#ifdef WITH_VZ
-    if (virDriverLoadModule("vz", "vzRegister", false) < 0)
+#if defined(WITH_VZ) && defined(LOAD_VZ)
+    if (virDriverLoadModule("vz", "vzRegister", REQUIRE_MODULE) < 0)
         return -1;
 #endif
     return 0;
@@ -368,15 +368,19 @@ daemonSetupNetworking(virNetServerPtr srv,
                       const char *sock_path,
                       const char *sock_path_ro,
                       const char *sock_path_adm,
+#ifdef WITH_NET_IP
                       bool ipsock,
-                      bool privileged)
+#endif
+                      bool privileged ATTRIBUTE_UNUSED)
 {
     virNetServerServicePtr svc = NULL;
     virNetServerServicePtr svcAdm = NULL;
     virNetServerServicePtr svcRO = NULL;
+#ifdef WITH_NET_IP
     virNetServerServicePtr svcTCP = NULL;
-#if WITH_GNUTLS
+# if WITH_GNUTLS
     virNetServerServicePtr svcTLS = NULL;
+# endif
 #endif
     gid_t unix_sock_gid = 0;
     int unix_sock_ro_mask = 0;
@@ -440,8 +444,10 @@ daemonSetupNetworking(virNetServerPtr srv,
     }
 
     if (virNetServerAddService(srv, svc,
+#ifdef WITH_NET_IP
                                config->mdns_adv && !ipsock ?
                                "_libvirt._tcp" :
+#endif
                                NULL) < 0)
         goto cleanup;
 
@@ -467,6 +473,7 @@ daemonSetupNetworking(virNetServerPtr srv,
             goto cleanup;
     }
 
+#ifdef WITH_NET_IP
     if (ipsock) {
         if (config->listen_tcp) {
             VIR_DEBUG("Registering TCP socket %s:%s",
@@ -475,9 +482,9 @@ daemonSetupNetworking(virNetServerPtr srv,
                                                      config->tcp_port,
                                                      AF_UNSPEC,
                                                      config->auth_tcp,
-#if WITH_GNUTLS
+# if WITH_GNUTLS
                                                      NULL,
-#endif
+# endif
                                                      false,
                                                      config->max_queued_clients,
                                                      config->max_client_requests)))
@@ -488,7 +495,7 @@ daemonSetupNetworking(virNetServerPtr srv,
                 goto cleanup;
         }
 
-#if WITH_GNUTLS
+# if WITH_GNUTLS
         if (config->listen_tls) {
             virNetTLSContextPtr ctxt = NULL;
 
@@ -552,23 +559,26 @@ daemonSetupNetworking(virNetServerPtr srv,
 
             virObjectUnref(ctxt);
         }
-#else
+# else
         (void)privileged;
         if (config->listen_tls) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("This libvirtd build does not support TLS"));
             goto cleanup;
         }
-#endif
+# endif
     }
+#endif
 
 #if WITH_SASL
-    if (config->auth_unix_rw == REMOTE_AUTH_SASL ||
-        (sock_path_ro && config->auth_unix_ro == REMOTE_AUTH_SASL) ||
-# if WITH_GNUTLS
-        (ipsock && config->listen_tls && config->auth_tls == REMOTE_AUTH_SASL) ||
+    if (config->auth_unix_rw == REMOTE_AUTH_SASL
+# ifdef WITH_NET_IP
+#  if WITH_GNUTLS
+        || (ipsock && config->listen_tls && config->auth_tls == REMOTE_AUTH_SASL)
+#  endif
+        || (ipsock && config->listen_tcp && config->auth_tcp == REMOTE_AUTH_SASL)
 # endif
-        (ipsock && config->listen_tcp && config->auth_tcp == REMOTE_AUTH_SASL)) {
+        || (sock_path_ro && config->auth_unix_ro == REMOTE_AUTH_SASL)) {
         saslCtxt = virNetSASLContextNewServer(
             (const char *const*)config->sasl_allowed_username_list);
         if (!saslCtxt)
@@ -579,10 +589,12 @@ daemonSetupNetworking(virNetServerPtr srv,
     ret = 0;
 
  cleanup:
-#if WITH_GNUTLS
+#ifdef WITH_NET_IP
+# if WITH_GNUTLS
     virObjectUnref(svcTLS);
-#endif
+# endif
     virObjectUnref(svcTCP);
+#endif
     virObjectUnref(svcRO);
     virObjectUnref(svcAdm);
     virObjectUnref(svc);
@@ -643,7 +655,7 @@ daemonSetupLogging(struct daemonConfig *config,
     /* Define the default output. This is only applied if there was no setting
      * from either the config or the environment.
      */
-    if (virLogSetDefaultOutput("libvirtd.log", godaemon, privileged) < 0)
+    if (virLogSetDefaultOutput(APP_NAME ".log", godaemon, privileged) < 0)
         return -1;
 
     if (virLogGetNbOutputs() == 0)
@@ -872,6 +884,7 @@ static int daemonStateInit(virNetDaemonPtr dmn)
     return 0;
 }
 
+#ifdef CONFIG_MIGRATE
 static int migrateProfile(void)
 {
     char *old_base = NULL;
@@ -944,6 +957,7 @@ static int migrateProfile(void)
 
     return ret;
 }
+#endif
 
 static int
 daemonSetupHostUUID(const struct daemonConfig *config)
@@ -1006,46 +1020,55 @@ daemonUsage(const char *argv0, bool privileged)
                   "  Default paths:\n"
                   "\n"
                   "    Configuration file (unless overridden by -f):\n"
-                  "      %s\n"
+                  "      %s.conf\n"
                   "\n"
                   "    Sockets:\n"
                   "      %s\n"
                   "      %s\n"
                   "\n"
+#ifdef WITH_NET_IP
                   "    TLS:\n"
                   "      CA certificate:     %s\n"
                   "      Server certificate: %s\n"
                   "      Server private key: %s\n"
+#endif
                   "\n"
                   "    PID file (unless overridden by -p):\n"
-                  "      %s/run/libvirtd.pid\n"
+                  "      %s/run/%s.pid\n"
                   "\n"),
-                LIBVIRTD_CONFIGURATION_FILE,
-                LIBVIRTD_PRIV_UNIX_SOCKET,
-                LIBVIRTD_PRIV_UNIX_SOCKET_RO,
+                SYSCONFDIR "/libvirt/" APP_NAME,
+                LOCALSTATEDIR "/run/libvirt/" SOCK_NAME,
+                LOCALSTATEDIR "/run/libvirt/" SOCK_NAME_RO,
+#ifdef WITH_NET_IP
                 LIBVIRT_CACERT,
                 LIBVIRT_SERVERCERT,
                 LIBVIRT_SERVERKEY,
-                LOCALSTATEDIR);
+#endif
+                LOCALSTATEDIR, APP_NAME);
     } else {
-        fprintf(stderr, "%s",
+        fprintf(stderr,
                 _("\n"
                   "  Default paths:\n"
                   "\n"
                   "    Configuration file (unless overridden by -f):\n"
-                  "      $XDG_CONFIG_HOME/libvirt/libvirtd.conf\n"
+                  "      $XDG_CONFIG_HOME/libvirt/%s.conf\n"
                   "\n"
                   "    Sockets:\n"
-                  "      $XDG_RUNTIME_DIR/libvirt/libvirt-sock\n"
+                  "      $XDG_RUNTIME_DIR/libvirt/%s\n"
                   "\n"
+#ifdef WITH_NET_IP
                   "    TLS:\n"
                   "      CA certificate:     $HOME/.pki/libvirt/cacert.pem\n"
                   "      Server certificate: $HOME/.pki/libvirt/servercert.pem\n"
                   "      Server private key: $HOME/.pki/libvirt/serverkey.pem\n"
+#endif
                   "\n"
                   "    PID file:\n"
-                  "      $XDG_RUNTIME_DIR/libvirt/libvirtd.pid\n"
-                  "\n"));
+                  "      $XDG_RUNTIME_DIR/libvirt/%s.pid\n"
+                  "\n"),
+                APP_NAME,
+                SOCK_NAME,
+                APP_NAME);
     }
 }
 
@@ -1189,11 +1212,13 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
+#ifdef CONFIG_MIGRATE
     if (!privileged &&
         migrateProfile() < 0) {
         VIR_ERROR(_("Exiting due to failure to migrate profile"));
         exit(EXIT_FAILURE);
     }
+#endif
 
     if (daemonSetupHostUUID(config) < 0) {
         VIR_ERROR(_("Can't setup host uuid"));
@@ -1215,7 +1240,7 @@ int main(int argc, char **argv) {
     if (!pid_file &&
         virPidFileConstructPath(privileged,
                                 LOCALSTATEDIR,
-                                "libvirtd",
+                                APP_NAME,
                                 &pid_file) < 0) {
         VIR_ERROR(_("Can't determine pid file path."));
         exit(EXIT_FAILURE);
@@ -1295,7 +1320,7 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
-    if (!(srv = virNetServerNew("libvirtd", 1,
+    if (!(srv = virNetServerNew(APP_NAME, 1,
                                 config->min_workers,
                                 config->max_workers,
                                 config->prio_workers,
@@ -1303,7 +1328,11 @@ int main(int argc, char **argv) {
                                 config->max_anonymous_clients,
                                 config->keepalive_interval,
                                 config->keepalive_count,
+#ifdef WITH_NET_IP
                                 config->mdns_adv ? config->mdns_name : NULL,
+#else
+                                NULL,
+#endif
                                 remoteClientNew,
                                 NULL,
                                 remoteClientFree,
@@ -1318,7 +1347,7 @@ int main(int argc, char **argv) {
     }
 
     if (daemonInitialize() < 0) {
-        ret = VIR_DAEMON_ERR_INIT;
+        ret = VIR_DAEMON_ERR_DRIVER;
         goto cleanup;
     }
 
@@ -1442,7 +1471,10 @@ int main(int argc, char **argv) {
                               sock_file,
                               sock_file_ro,
                               sock_file_adm,
-                              ipsock, privileged) < 0) {
+#ifdef WITH_NET_IP
+                              ipsock,
+#endif
+                              privileged) < 0) {
         ret = VIR_DAEMON_ERR_NETWORK;
         goto cleanup;
     }

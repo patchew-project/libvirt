@@ -140,6 +140,27 @@ libvirtd_CFLAGS = \
 	-I$(srcdir)/access \
 	-I$(srcdir)/conf \
 	-I$(srcdir)/rpc \
+	-DSOCK_NAME="\"libvirt-sock\"" \
+	-DSOCK_NAME_RO="\"libvirt-sock-ro\"" \
+	-DSOCK_NAME_ADMIN="\"libvirt-admin-sock\"" \
+	-DAPP_NAME="\"libvirtd\"" \
+	-DLOAD_NETWORK \
+	-DLOAD_INTERFACE \
+	-DLOAD_STORAGE \
+	-DLOAD_NODE_DEVICES \
+	-DLOAD_SECRETS \
+	-DLOAD_NWFILTER \
+	-DLOAD_XEN \
+	-DLOAD_LIBXL \
+	-DLOAD_QEMU \
+	-DLOAD_LXC \
+	-DLOAD_UML \
+	-DLOAD_VBOX \
+	-DLOAD_BHYVE \
+	-DLOAD_VZ \
+	-DCONFIG_MIGRATE \
+	-DWITH_NET_IP \
+	-DREQUIRE_MODULE=false \
 	$(NULL)
 
 libvirtd_LDFLAGS = \
