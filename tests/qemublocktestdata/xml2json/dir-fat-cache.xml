@@ -1,0 +1,10 @@
+<disk type='dir' device='disk'>
+  <driver name='qemu' type='fat' cache='directsync'/>
+  <source dir='/var/somefiles'>
+    <privateData>
+      <nodename storage='node-s' format='node-f'/>
+    </privateData>
+  </source>
+  <target dev='vda'/>
+  <readonly/>
+</disk>

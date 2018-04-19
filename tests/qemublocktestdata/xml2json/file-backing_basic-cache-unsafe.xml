@@ -1,0 +1,35 @@
+<disk type='file' device='disk'>
+  <driver name='qemu' type='qcow2' cache='unsafe'/>
+  <source file='/var/lib/libvirt/images/a'>
+    <privateData>
+      <nodename storage='node-a-s' format='node-a-f'/>
+    </privateData>
+  </source>
+  <backingStore type='file' index='1'>
+    <format type='qcow2'/>
+    <source file='/var/lib/libvirt/images/b'>
+      <privateData>
+        <nodename storage='node-b-s' format='node-b-f'/>
+      </privateData>
+    </source>
+    <backingStore type='network' index='2'>
+      <format type='qcow2'/>
+      <source protocol='gluster' name='images/c'>
+        <host name='test.org'/>
+        <privateData>
+          <nodename storage='node-c-s' format='node-c-f'/>
+        </privateData>
+      </source>
+      <backingStore type='file' index='3'>
+        <format type='raw'/>
+        <source file='/var/lib/libvirt/images/d'>
+          <privateData>
+            <nodename storage='node-d-s' format='node-d-f'/>
+          </privateData>
+        </source>
+        <backingStore/>
+      </backingStore>
+    </backingStore>
+  </backingStore>
+  <target dev='vda'/>
+</disk>
