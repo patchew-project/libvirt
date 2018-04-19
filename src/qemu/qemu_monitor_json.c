@@ -5559,6 +5559,63 @@ qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
     return ret;
 }
 
+int
+qemuMonitorJSONGetCPUModelBaseline(qemuMonitorPtr mon,
+                                   qemuMonitorCPUModelInfoPtr model_a,
+                                   qemuMonitorCPUModelInfoPtr model_b,
+                                   qemuMonitorCPUModelInfoPtr *model_baseline)
+{
+    int ret = -1;
+    virJSONValuePtr cmd = NULL;
+    virJSONValuePtr reply = NULL;
+    virJSONValuePtr data = NULL;
+    virJSONValuePtr modela = NULL;
+    virJSONValuePtr modelb = NULL;
+
+    *model_baseline = NULL;
+
+    if (!(modela = qemuMonitorJSONBuildCPUModelInfoToJSON(model_a)))
+        goto cleanup;
+
+    if (!(modelb = qemuMonitorJSONBuildCPUModelInfoToJSON(model_b)))
+        goto cleanup;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("query-cpu-model-baseline",
+                                           "a:modela", &modela,
+                                           "a:modelb", &modelb,
+                                           NULL)))
+        goto cleanup;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    /* Urgh, some QEMU architectures have query-cpu-model-baseline
+     * command but return 'GenericError' with string "Not supported",
+     * instead of simply omitting the command entirely
+     */
+    if (qemuMonitorJSONHasError(reply, "GenericError")) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    if (qemuMonitorJSONCheckReply(cmd, reply, VIR_JSON_TYPE_OBJECT) < 0)
+        goto cleanup;
+
+    data = virJSONValueObjectGetObject(reply, "return");
+
+    if (!(*model_baseline = qemuMonitorJSONBuildCPUModelInfoFromJSON(data)))
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    virJSONValueFree(modela);
+    virJSONValueFree(modelb);
+
+    return ret;
+}
 
 int qemuMonitorJSONGetCommands(qemuMonitorPtr mon,
                                char ***commands)
