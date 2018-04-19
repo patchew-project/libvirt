@@ -1,0 +1,9 @@
+<disk device='disk'>
+  <driver name='qemu' type='ploop'/>
+  <source file='/path/to/i.img'>
+    <privateData>
+      <nodename format='test1' storage='test2'/>
+    </privateData>
+  </source>
+  <target dev='vda'/>
+</disk>
