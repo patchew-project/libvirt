@@ -2107,6 +2107,7 @@ typedef enum {
 
 struct _virDomainMemoryDef {
     virDomainMemoryAccess access;
+    int discard; /* enum virTristateBool */
 
     /* source */
     virBitmapPtr sourceNodes;
@@ -2269,6 +2270,8 @@ struct _virDomainMemtune {
     int source; /* enum virDomainMemorySource */
     int access; /* enum virDomainMemoryAccess */
     int allocation; /* enum virDomainMemoryAllocation */
+
+    int discard; /* enum virTristateBool */
 };
 
 typedef struct _virDomainPowerManagement virDomainPowerManagement;
