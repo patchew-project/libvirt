@@ -1,0 +1,83 @@
+<disk type='file' device='disk'>
+  <driver name='qemu' type='qcow2'/>
+  <source file='/var/lib/libvirt/images/rhel7.3.1507297895'>
+    <privateData>
+      <nodename storage='#block004' format='#block126'/>
+    </privateData>
+  </source>
+  <backingStore type='file' index='1'>
+    <format type='qcow2'/>
+    <source file='/var/lib/libvirt/images/rhel7.3.1484071872'>
+      <privateData>
+        <nodename storage='#block256' format='#block313'/>
+      </privateData>
+    </source>
+    <backingStore type='file' index='2'>
+      <format type='qcow2'/>
+      <source file='/var/lib/libvirt/images/rhel7.3.1483615252'>
+        <privateData>
+          <nodename storage='#block418' format='#block556'/>
+        </privateData>
+      </source>
+      <backingStore type='file' index='3'>
+        <format type='qcow2'/>
+        <source file='/var/lib/libvirt/images/rhel7.3.1483605924'>
+          <privateData>
+            <nodename storage='#block624' format='#block767'/>
+          </privateData>
+        </source>
+        <backingStore type='file' index='4'>
+          <format type='qcow2'/>
+          <source file='/var/lib/libvirt/images/rhel7.3.1483605920'>
+            <privateData>
+              <nodename storage='#block869' format='#block937'/>
+            </privateData>
+          </source>
+          <backingStore type='file' index='5'>
+            <format type='qcow2'/>
+            <source file='/var/lib/libvirt/images/rhel7.3.1483546244'>
+              <privateData>
+                <nodename storage='#block1047' format='#block1157'/>
+              </privateData>
+            </source>
+            <backingStore type='file' index='6'>
+              <format type='qcow2'/>
+              <source file='/var/lib/libvirt/images/rhel7.3.1483545901'>
+                <privateData>
+                  <nodename storage='#block1279' format='#block1392'/>
+                </privateData>
+              </source>
+              <backingStore type='file' index='7'>
+                <format type='qcow2'/>
+                <source file='/var/lib/libvirt/images/rhel7.3.1483545313'>
+                  <privateData>
+                    <nodename storage='#block1444' format='#block1523'/>
+                  </privateData>
+                </source>
+                <backingStore type='file' index='8'>
+                  <format type='qcow2'/>
+                  <source file='/var/lib/libvirt/images/rhel7.3.1483536402'>
+                    <privateData>
+                      <nodename storage='#block1602' format='#block1742'/>
+                    </privateData>
+                  </source>
+                  <backingStore type='file' index='9'>
+                    <format type='qcow2'/>
+                    <source file='/var/lib/libvirt/images/rhel7.3.qcow2'>
+                      <privateData>
+                        <nodename storage='#block1864' format='#block1909'/>
+                      </privateData>
+                    </source>
+                    <backingStore/>
+                  </backingStore>
+                </backingStore>
+              </backingStore>
+            </backingStore>
+          </backingStore>
+        </backingStore>
+      </backingStore>
+    </backingStore>
+  </backingStore>
+  <target dev='vda' bus='virtio'/>
+  <alias name='virtio-disk0'/>
+</disk>
