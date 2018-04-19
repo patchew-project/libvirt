@@ -3102,6 +3102,14 @@
 }
 
 {
+    "id": "libvirt-34",
+    "error": {
+        "class": "CommandNotFound",
+        "desc": "The command qom-list-properties has not been found"
+    }
+}
+
+{
   "return": [
     {
       "hotpluggable-cpus": false,
@@ -3141,7 +3149,7 @@
       "cpu-max": 248
     }
   ],
-  "id": "libvirt-34"
+  "id": "libvirt-35"
 }
 
 {
@@ -3531,12 +3539,6 @@
       "migration-safe": true
     }
   ],
-  "id": "libvirt-35"
-}
-
-{
-  "return": [
-  ],
   "id": "libvirt-36"
 }
 
@@ -3544,6 +3546,12 @@
   "return": [
   ],
   "id": "libvirt-37"
+}
+
+{
+  "return": [
+  ],
+  "id": "libvirt-38"
 }
 
 {
@@ -4618,7 +4626,7 @@
       "option": "drive"
     }
   ],
-  "id": "libvirt-38"
+  "id": "libvirt-39"
 }
 
 {
@@ -4660,7 +4668,7 @@
       "capability": "release-ram"
     }
   ],
-  "id": "libvirt-39"
+  "id": "libvirt-40"
 }
 
 {
@@ -13946,7 +13954,7 @@
       "meta-type": "object"
     }
   ],
-  "id": "libvirt-40"
+  "id": "libvirt-41"
 }
 
 {
@@ -13973,11 +13981,11 @@
       }
     }
   },
-  "id": "libvirt-41"
+  "id": "libvirt-42"
 }
 
 {
-  "id": "libvirt-42",
+  "id": "libvirt-43",
   "error": {
     "class": "GenericError",
     "desc": "Property '.migratable' not found"

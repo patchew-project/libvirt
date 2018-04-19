@@ -473,6 +473,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               /* 290 */
               "query-cpus-fast",
               "disk-write-cache",
+              "memory-backend-file.discard-data",
     );
 
 
@@ -1366,6 +1367,15 @@ static virQEMUCapsObjectTypeProps virQEMUCapsDeviceProps[] = {
       QEMU_CAPS_DEVICE_VIRTIO_GPU_CCW },
 };
 
+static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsMemoryBackendFile[] = {
+    { "discard-data", QEMU_CAPS_OBJECT_MEMORY_FILE_DISCARD },
+};
+
+static virQEMUCapsObjectTypeProps virQEMUCapsObjectProps[] = {
+    { "memory-backend-file", virQEMUCapsObjectPropsMemoryBackendFile,
+      ARRAY_CARDINALITY(virQEMUCapsObjectPropsMemoryBackendFile),
+      QEMU_CAPS_OBJECT_MEMORY_FILE },
+};
 
 static void
 virQEMUCapsProcessStringFlags(virQEMUCapsPtr qemuCaps,
@@ -2121,6 +2131,13 @@ virQEMUCapsProbeQMPDevices(virQEMUCapsPtr qemuCaps,
                                         virQEMUCapsDeviceProps,
                                         ARRAY_CARDINALITY(virQEMUCapsDeviceProps),
                                         qemuMonitorGetDeviceProps) < 0)
+        return -1;
+
+    if (virQEMUCapsProbeQMPGenericProps(qemuCaps,
+                                        mon,
+                                        virQEMUCapsObjectProps,
+                                        ARRAY_CARDINALITY(virQEMUCapsObjectProps),
+                                        qemuMonitorGetObjectProps) < 0)
         return -1;
 
     return 0;

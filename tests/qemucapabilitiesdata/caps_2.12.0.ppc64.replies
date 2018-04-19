@@ -5323,6 +5323,14 @@
 }
 
 {
+    "id": "libvirt-37",
+    "error": {
+        "class": "CommandNotFound",
+        "desc": "The command qom-list-properties has not been found"
+    }
+}
+
+{
   "return": [
     {
       "hotpluggable-cpus": false,
@@ -5457,7 +5465,7 @@
       "cpu-max": 1
     }
   ],
-  "id": "libvirt-37"
+  "id": "libvirt-38"
 }
 
 {
@@ -7653,20 +7661,20 @@
       "static": false
     }
   ],
-  "id": "libvirt-38"
+  "id": "libvirt-39"
 }
 
 {
   "return": [
   ],
-  "id": "libvirt-39"
+  "id": "libvirt-40"
 }
 
 {
   "return": [
     "emulator"
   ],
-  "id": "libvirt-40"
+  "id": "libvirt-41"
 }
 
 {
@@ -8822,7 +8830,7 @@
       "option": "drive"
     }
   ],
-  "id": "libvirt-41"
+  "id": "libvirt-42"
 }
 
 {
@@ -8884,7 +8892,7 @@
       "capability": "dirty-bitmaps"
     }
   ],
-  "id": "libvirt-42"
+  "id": "libvirt-43"
 }
 
 {
@@ -20252,7 +20260,7 @@
       "meta-type": "object"
     }
   ],
-  "id": "libvirt-43"
+  "id": "libvirt-44"
 }
 
 {

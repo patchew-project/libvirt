@@ -457,6 +457,7 @@ typedef enum {
     /* 290 */
     QEMU_CAPS_QUERY_CPUS_FAST, /* query-cpus-fast command */
     QEMU_CAPS_DISK_WRITE_CACHE, /* qemu block frontends support write-cache param */
+    QEMU_CAPS_OBJECT_MEMORY_FILE_DISCARD, /* -object memory-backend-dile,discard-data= */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;

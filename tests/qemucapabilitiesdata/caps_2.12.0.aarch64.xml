@@ -159,7 +159,7 @@
   <flag name='disk-write-cache'/>
   <version>2011090</version>
   <kvmVersion>0</kvmVersion>
-  <microcodeVersion>342346</microcodeVersion>
+  <microcodeVersion>342501</microcodeVersion>
   <package>v2.12.0-rc0</package>
   <arch>aarch64</arch>
   <cpu type='kvm' name='pxa262'/>

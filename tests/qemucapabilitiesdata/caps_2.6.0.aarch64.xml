@@ -142,7 +142,7 @@
   <flag name='dump-completed'/>
   <version>2006000</version>
   <kvmVersion>0</kvmVersion>
-  <microcodeVersion>228241</microcodeVersion>
+  <microcodeVersion>228396</microcodeVersion>
   <package></package>
   <arch>aarch64</arch>
   <cpu type='kvm' name='pxa262'/>
