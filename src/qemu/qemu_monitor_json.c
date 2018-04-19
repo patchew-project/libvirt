@@ -5359,6 +5359,54 @@ qemuMonitorJSONParseCPUModelProperty(const char *key,
 
 /* model_json: {"model": {"name": "IvyBridge", "props": {}}}
  */
+static virJSONValuePtr
+qemuMonitorJSONBuildCPUModelInfoToJSON(qemuMonitorCPUModelInfoPtr model)
+{
+    virJSONValuePtr cpu_props = NULL;
+    virJSONValuePtr model_json = NULL;
+    size_t i;
+
+    if (!(cpu_props = virJSONValueNewObject()))
+        goto cleanup;
+
+    for (i = 0; i < model->nprops; i++) {
+        qemuMonitorCPUPropertyPtr prop = model->props + i;
+
+        switch (prop->type) {
+        case QEMU_MONITOR_CPU_PROPERTY_BOOLEAN:
+            if (virJSONValueObjectAppendBoolean(cpu_props, prop->name, prop->value.boolean) < 0)
+                goto cleanup;
+            break;
+
+        case QEMU_MONITOR_CPU_PROPERTY_STRING:
+            if (virJSONValueObjectAppendString(cpu_props, prop->name, prop->value.string) < 0)
+                goto cleanup;
+            break;
+
+        case QEMU_MONITOR_CPU_PROPERTY_NUMBER:
+            if (virJSONValueObjectAppendNumberLong(cpu_props, prop->name, prop->value.number) < 0)
+                goto cleanup;
+            break;
+
+        case QEMU_MONITOR_CPU_PROPERTY_LAST:
+        default:
+            virReportEnumRangeError(qemuMonitorCPUPropertyPtr, prop->type);
+            goto cleanup;
+        }
+    }
+
+    if (virJSONValueObjectCreate(&model_json, "s:name", model->name,
+                                              "a:props", &cpu_props, NULL) < 0) {
+        virJSONValueFree(cpu_props);
+        goto cleanup;
+    }
+
+ cleanup:
+    return model_json;
+}
+
+/* model_json: {"model": {"name": "IvyBridge", "props": {}}}
+ */
 static qemuMonitorCPUModelInfoPtr
 qemuMonitorJSONBuildCPUModelInfoFromJSON(virJSONValuePtr model_json)
 {
