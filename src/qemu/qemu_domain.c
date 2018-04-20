@@ -3323,8 +3323,10 @@ qemuDomainDefPostParse(virDomainDefPtr def,
     if (def->os.loader &&
         def->os.loader->type == VIR_DOMAIN_LOADER_TYPE_PFLASH &&
         def->os.loader->readonly == VIR_TRISTATE_SWITCH_ON &&
-        !def->os.loader->nvram) {
-        if (virAsprintf(&def->os.loader->nvram, "%s/%s_VARS.fd",
+        def->os.loader->nvram &&
+        def->os.loader->nvram->type == VIR_STORAGE_TYPE_FILE &&
+        !def->os.loader->nvram->path) {
+        if (virAsprintf(&def->os.loader->nvram->path, "%s/%s_VARS.fd",
                         cfg->nvramDir, def->name) < 0)
             goto cleanup;
     }
@@ -10488,19 +10490,21 @@ qemuDomainSetupLoader(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
 
     VIR_DEBUG("Setting up loader");
 
-    if (loader) {
+    if (loader && loader->loader_src &&
+        loader->loader_src->type == VIR_STORAGE_TYPE_FILE) {
         switch ((virDomainLoader) loader->type) {
         case VIR_DOMAIN_LOADER_TYPE_ROM:
-            if (qemuDomainCreateDevice(loader->path, data, false) < 0)
+            if (qemuDomainCreateDevice(loader->loader_src->path, data, false) < 0)
                 goto cleanup;
             break;
 
         case VIR_DOMAIN_LOADER_TYPE_PFLASH:
-            if (qemuDomainCreateDevice(loader->path, data, false) < 0)
+            if (qemuDomainCreateDevice(loader->loader_src->path, data, false) < 0)
                 goto cleanup;
 
             if (loader->nvram &&
-                qemuDomainCreateDevice(loader->nvram, data, false) < 0)
+                loader->nvram->type == VIR_STORAGE_TYPE_FILE &&
+                qemuDomainCreateDevice(loader->nvram->path, data, false) < 0)
                 goto cleanup;
             break;
 

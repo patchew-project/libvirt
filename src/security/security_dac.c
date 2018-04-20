@@ -1604,7 +1604,8 @@ virSecurityDACRestoreAllLabel(virSecurityManagerPtr mgr,
     }
 
     if (def->os.loader && def->os.loader->nvram &&
-        virSecurityDACRestoreFileLabel(priv, def->os.loader->nvram) < 0)
+        def->os.loader->nvram->type == VIR_STORAGE_TYPE_FILE &&
+        virSecurityDACRestoreFileLabel(priv, def->os.loader->nvram->path) < 0)
         rc = -1;
 
     return rc;
@@ -1732,8 +1733,9 @@ virSecurityDACSetAllLabel(virSecurityManagerPtr mgr,
         return -1;
 
     if (def->os.loader && def->os.loader->nvram &&
+        def->os.loader->nvram->type == VIR_STORAGE_TYPE_FILE &&
         virSecurityDACSetOwnership(priv, NULL,
-                                   def->os.loader->nvram, user, group) < 0)
+                                   def->os.loader->nvram->path, user, group) < 0)
         return -1;
 
     if (def->os.kernel &&

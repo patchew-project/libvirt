@@ -9320,6 +9320,7 @@ qemuBuildDomainLoaderCommandLine(virCommandPtr cmd,
     virDomainLoaderDefPtr loader = def->os.loader;
     virBuffer buf = VIR_BUFFER_INITIALIZER;
     int unit = 0;
+    char *source = NULL;
 
     if (!loader)
         return;
@@ -9327,7 +9328,7 @@ qemuBuildDomainLoaderCommandLine(virCommandPtr cmd,
     switch ((virDomainLoader) loader->type) {
     case VIR_DOMAIN_LOADER_TYPE_ROM:
         virCommandAddArg(cmd, "-bios");
-        virCommandAddArg(cmd, loader->path);
+        virCommandAddArg(cmd, loader->loader_src->path);
         break;
 
     case VIR_DOMAIN_LOADER_TYPE_PFLASH:
@@ -9339,9 +9340,14 @@ qemuBuildDomainLoaderCommandLine(virCommandPtr cmd,
                                  NULL);
         }
 
+        if (qemuGetDriveSourceString(loader->loader_src, NULL, &source) < 0)
+            break;
+
         virBufferAddLit(&buf, "file=");
-        virQEMUBuildBufferEscapeComma(&buf, loader->path);
-        virBufferAsprintf(&buf, ",if=pflash,format=raw,unit=%d", unit);
+        virQEMUBuildBufferEscapeComma(&buf, source);
+        free(source);
+        virBufferAsprintf(&buf, ",if=pflash,format=raw,unit=%d",
+                          unit);
         unit++;
 
         if (loader->readonly) {
@@ -9354,9 +9360,14 @@ qemuBuildDomainLoaderCommandLine(virCommandPtr cmd,
 
         if (loader->nvram) {
             virBufferFreeAndReset(&buf);
+            if (qemuGetDriveSourceString(loader->nvram, NULL, &source) < 0)
+                break;
+
             virBufferAddLit(&buf, "file=");
-            virQEMUBuildBufferEscapeComma(&buf, loader->nvram);
-            virBufferAsprintf(&buf, ",if=pflash,format=raw,unit=%d", unit);
+            virQEMUBuildBufferEscapeComma(&buf, source);
+            virBufferAsprintf(&buf, ",if=pflash,format=raw,unit=%d",
+                              unit);
+            unit++;
 
             virCommandAddArg(cmd, "-drive");
             virCommandAddArgBuffer(cmd, &buf);

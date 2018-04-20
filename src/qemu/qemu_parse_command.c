@@ -650,6 +650,7 @@ qemuParseCommandLineDisk(virDomainXMLOptionPtr xmlopt,
     int idx = -1;
     int busid = -1;
     int unitid = -1;
+    bool is_firmware = false;
 
     if (qemuParseKeywords(val,
                           &keywords,
@@ -772,6 +773,9 @@ qemuParseCommandLineDisk(virDomainXMLOptionPtr xmlopt,
                 def->bus = VIR_DOMAIN_DISK_BUS_VIRTIO;
             } else if (STREQ(values[i], "xen")) {
                 def->bus = VIR_DOMAIN_DISK_BUS_XEN;
+            } else if (STREQ(values[i], "pflash")) {
+                def->bus = VIR_DOMAIN_DISK_BUS_LAST;
+                is_firmware = true;
             } else if (STREQ(values[i], "sd")) {
                 def->bus = VIR_DOMAIN_DISK_BUS_SD;
             }
@@ -943,8 +947,25 @@ qemuParseCommandLineDisk(virDomainXMLOptionPtr xmlopt,
         ignore_value(VIR_STRDUP(def->dst, "hda"));
     }
 
-    if (!def->dst)
-        goto error;
+    if (!def->dst) {
+        if (is_firmware && def->bus == VIR_DOMAIN_DISK_BUS_LAST) {
+            if (!dom->os.loader && (VIR_ALLOC(dom->os.loader) < 0))
+                goto error;
+            if (def->src->readonly) {
+                /* Loader spec */
+                dom->os.loader->loader_src = def->src;
+                dom->os.loader->type = VIR_DOMAIN_LOADER_TYPE_PFLASH;
+            } else {
+                /* NVRAM Spec */
+                if (!dom->os.loader->nvram && (VIR_ALLOC(dom->os.loader->nvram) < 0))
+                    goto error;
+                dom->os.loader->nvram = def->src;
+            }
+        } else {
+            goto error;
+        }
+    }
+
     if (STREQ(def->dst, "xvda"))
         def->dst[3] = 'a' + idx;
     else
@@ -2215,8 +2236,11 @@ qemuParseCommandLine(virCapsPtr caps,
         } else if (STREQ(arg, "-bios")) {
             WANT_VALUE();
             if (VIR_ALLOC(def->os.loader) < 0 ||
-                VIR_STRDUP(def->os.loader->path, val) < 0)
+                VIR_ALLOC(def->os.loader->loader_src) < 0 ||
+                VIR_STRDUP(def->os.loader->loader_src->path, val) < 0)
                 goto error;
+            def->os.loader->loader_src->type = VIR_STORAGE_TYPE_FILE;
+            def->os.loader->type = VIR_DOMAIN_LOADER_TYPE_ROM;
         } else if (STREQ(arg, "-initrd")) {
             WANT_VALUE();
             if (VIR_STRDUP(def->os.initrd, val) < 0)
