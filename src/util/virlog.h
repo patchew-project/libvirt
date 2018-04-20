@@ -174,6 +174,7 @@ typedef void (*virLogCloseFunc) (void *data);
 
 typedef enum {
     VIR_LOG_STACK_TRACE = (1 << 0),
+    VIR_LOG_GLOB = (1 << 1),
 } virLogFilterFlags;
 
 int virLogGetNbFilters(void);

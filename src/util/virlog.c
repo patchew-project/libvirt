@@ -40,6 +40,7 @@
 #if HAVE_SYS_UN_H
 # include <sys/un.h>
 #endif
+#include <fnmatch.h>
 
 #include "virerror.h"
 #include "virlog.h"
@@ -508,7 +509,9 @@ virLogSourceUpdate(virLogSourcePtr source)
         size_t i;
 
         for (i = 0; i < virLogNbFilters; i++) {
-            if (strstr(source->name, virLogFilters[i]->match)) {
+            if ((virLogFilters[i]->flags & VIR_LOG_GLOB) ?
+                (fnmatch(virLogFilters[i]->match, source->name, 0) == 0) :
+                (strstr(source->name, virLogFilters[i]->match) != NULL)) {
                 priority = virLogFilters[i]->priority;
                 flags = virLogFilters[i]->flags;
                 break;
@@ -1409,7 +1412,7 @@ virLogFilterNew(const char *match,
     virLogFilterPtr ret = NULL;
     char *mdup = NULL;
 
-    virCheckFlags(VIR_LOG_STACK_TRACE, NULL);
+    virCheckFlags(VIR_LOG_STACK_TRACE | VIR_LOG_GLOB, NULL);
 
     if (priority < VIR_LOG_DEBUG || priority > VIR_LOG_ERROR) {
         virReportError(VIR_ERR_INVALID_ARG, _("Invalid log priority %d"),
@@ -1716,6 +1719,16 @@ virLogParseFilter(const char *src)
                        _("Invalid match string '%s'"), tokens[1]);
 
         goto cleanup;
+    }
+
+    /* Only turn on fnmatch usage if we see special glob
+     * characters, so we use more efficient strstr()
+     * by default
+     */
+    if (strchr(match, '*') ||
+        strchr(match, '?') ||
+        strchr(match, '[')) {
+        flags |= VIR_LOG_GLOB;
     }
 
     if (!(ret = virLogFilterNew(match, prio, flags)))
