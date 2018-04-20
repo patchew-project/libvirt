@@ -4476,6 +4476,9 @@
         virtual function of an sr-iov capable ethernet device (which
         has no boot ROMs for the VFs).
         <span class="since">Since 0.9.10 (QEMU and KVM only)</span>.
+        The optional <code>enabled</code> attribute can be set to
+        <code>no</code> to disable PCI ROM loading completely for the device.
+        <span class="since">Since 4.3.0 (QEMU and KVM only)</span>.
       </dd>
       <dt><code>address</code></dt>
       <dd>The <code>address</code> element for USB devices has a
