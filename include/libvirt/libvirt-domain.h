@@ -447,7 +447,7 @@ int     virDomainSetSchedulerParametersFlags (virDomainPtr domain,
  *
  * Block device stats for virDomainBlockStats.
  *
- * Hypervisors may return a field set to ((long long)-1) which indicates
+ * Hypervisors may return a field set to ((long long) -1) which indicates
  * that the hypervisor does not support that statistic.
  *
  * NB. Here 'long long' means 64 bit integer.
@@ -554,7 +554,7 @@ typedef virDomainBlockStatsStruct *virDomainBlockStatsPtr;
  *
  * Network interface stats for virDomainInterfaceStats.
  *
- * Hypervisors may return a field set to ((long long)-1) which indicates
+ * Hypervisors may return a field set to ((long long) -1) which indicates
  * that the hypervisor does not support that statistic.
  *
  * NB. Here 'long long' means 64 bit integer.

@@ -1728,7 +1728,7 @@ virDomainGetID(virDomainPtr domain)
 
     virResetLastError();
 
-    virCheckDomainReturn(domain, (unsigned int)-1);
+    virCheckDomainReturn(domain, (unsigned int) -1);
 
     return domain->id;
 }
