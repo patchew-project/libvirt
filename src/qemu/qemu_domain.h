@@ -342,6 +342,8 @@ struct _qemuDomainObjPrivate {
     /* Migration capabilities. Rechecked on reconnect, not to be saved in
      * private XML. */
     virBitmapPtr migrationCaps;
+
+    bool prDaemonRunning;
 };
 
 # define QEMU_DOMAIN_PRIVATE(vm) \

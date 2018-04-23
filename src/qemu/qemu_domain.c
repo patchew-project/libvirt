@@ -2040,6 +2040,15 @@ qemuDomainObjPrivateXMLFormatAllowReboot(virBufferPtr buf,
 }
 
 
+static void
+qemuDomainObjPrivateXMLFormatPR(virBufferPtr buf,
+                                qemuDomainObjPrivatePtr priv)
+{
+    if (priv->prDaemonRunning)
+        virBufferAddLit(buf, "<prDaemon running='1'/>\n");
+}
+
+
 static int
 qemuDomainObjPrivateXMLFormatJob(virBufferPtr buf,
                                  virDomainObjPtr vm,
@@ -2179,6 +2188,8 @@ qemuDomainObjPrivateXMLFormat(virBufferPtr buf,
         virBufferAddLit(buf, "<chardevStdioLogd/>\n");
 
     qemuDomainObjPrivateXMLFormatAllowReboot(buf, priv->allowReboot);
+
+    qemuDomainObjPrivateXMLFormatPR(buf, priv);
 
     if (qemuDomainObjPrivateXMLFormatBlockjobs(buf, vm) < 0)
         return -1;
@@ -2320,6 +2331,15 @@ qemuDomainObjPrivateXMLParseAllowReboot(xmlXPathContextPtr ctxt,
  cleanup:
     VIR_FREE(valStr);
     return ret;
+}
+
+
+static void
+qemuDomainObjPrivateXMLParsePR(xmlXPathContextPtr ctxt,
+                               bool *prDaemonRunning)
+{
+    *prDaemonRunning = virXPathBoolean("count(./prDaemon[@running = '1']) > 0",
+                                       ctxt) > 0;
 }
 
 
@@ -2571,6 +2591,8 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
                                              ctxt) == 1;
 
     qemuDomainObjPrivateXMLParseAllowReboot(ctxt, &priv->allowReboot);
+
+    qemuDomainObjPrivateXMLParsePR(ctxt, &priv->prDaemonRunning);
 
     if (qemuDomainObjPrivateXMLParseBlockjobs(priv, ctxt) < 0)
         goto error;
