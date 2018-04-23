@@ -101,7 +101,7 @@ static int vboxStoragePoolNumOfVolumes(virStoragePoolPtr pool)
     if (NS_FAILED(rc)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("could not get number of volumes in the pool: %s, rc=%08x"),
-                       pool->name, (unsigned)rc);
+                       pool->name, (unsigned) rc);
         return ret;
     }
 
@@ -142,7 +142,7 @@ vboxStoragePoolListVolumes(virStoragePoolPtr pool, char **const names, int nname
     if (NS_FAILED(rc)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("could not get the volume list in the pool: %s, rc=%08x"),
-                       pool->name, (unsigned)rc);
+                       pool->name, (unsigned) rc);
         return ret;
     }
 
@@ -460,7 +460,7 @@ vboxStorageVolCreateXML(virStoragePoolPtr pool,
     if (NS_FAILED(rc)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Could not create harddisk, rc=%08x"),
-                       (unsigned)rc);
+                       (unsigned) rc);
         goto cleanup;
     }
 
@@ -473,7 +473,7 @@ vboxStorageVolCreateXML(virStoragePoolPtr pool,
     if (NS_FAILED(rc) || !progress) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Could not create base storage, rc=%08x"),
-                       (unsigned)rc);
+                       (unsigned) rc);
         goto cleanup;
     }
 
@@ -482,7 +482,7 @@ vboxStorageVolCreateXML(virStoragePoolPtr pool,
     if (RC_FAILED(resultCode)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Could not create base storage, rc=%08x"),
-                       (unsigned)resultCode.uResultCode);
+                       (unsigned) resultCode.uResultCode);
         goto cleanup;
     }
 

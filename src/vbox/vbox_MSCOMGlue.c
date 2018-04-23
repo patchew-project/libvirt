@@ -538,7 +538,7 @@ vboxComInitialize_v2(const char *pszVirtualBoxIID, IVirtualBox **ppVirtualBox,
 
     if (FAILED(hrc)) {
         VIR_ERROR(_("Could not parse IID from '%s', rc = 0x%08x"),
-                  pszVirtualBoxIID, (unsigned int)hrc);
+                  pszVirtualBoxIID, (unsigned int) hrc);
         goto cleanup;
     }
 
@@ -546,7 +546,7 @@ vboxComInitialize_v2(const char *pszVirtualBoxIID, IVirtualBox **ppVirtualBox,
 
     if (FAILED(hrc)) {
         VIR_ERROR(_("Could not parse IID from '%s', rc = 0x%08x"),
-                  pszVirtualBoxIID, (unsigned int)hrc);
+                  pszVirtualBoxIID, (unsigned int) hrc);
         goto cleanup;
     }
 
@@ -555,7 +555,7 @@ vboxComInitialize_v2(const char *pszVirtualBoxIID, IVirtualBox **ppVirtualBox,
 
     if (FAILED(hrc)) {
         VIR_ERROR(_("Could not create VirtualBox instance, rc = 0x%08x"),
-                  (unsigned int)hrc);
+                  (unsigned int) hrc);
         goto cleanup;
     }
 
@@ -564,7 +564,7 @@ vboxComInitialize_v2(const char *pszVirtualBoxIID, IVirtualBox **ppVirtualBox,
 
     if (FAILED(hrc)) {
         VIR_ERROR(_("Could not create Session instance, rc = 0x%08x"),
-                  (unsigned int)hrc);
+                  (unsigned int) hrc);
         goto cleanup;
     }
 
@@ -576,12 +576,12 @@ vboxComInitialize_v2(const char *pszVirtualBoxIID, IVirtualBox **ppVirtualBox,
  cleanup:
     if (result < 0) {
         if (vboxVirtualBox != NULL) {
-            vboxVirtualBox->vtbl->nsisupports.Release((nsISupports *)vboxVirtualBox);
+            vboxVirtualBox->vtbl->nsisupports.Release((nsISupports *) vboxVirtualBox);
             vboxVirtualBox = NULL;
         }
 
         if (vboxSession != NULL) {
-            vboxSession->vtbl->nsisupports.Release((nsISupports *)vboxSession);
+            vboxSession->vtbl->nsisupports.Release((nsISupports *) vboxSession);
             vboxSession = NULL;
         }
     }
@@ -601,12 +601,12 @@ static void
 vboxComUninitialize(void)
 {
     if (vboxVirtualBox != NULL) {
-        vboxVirtualBox->vtbl->nsisupports.Release((nsISupports *)vboxVirtualBox);
+        vboxVirtualBox->vtbl->nsisupports.Release((nsISupports *) vboxVirtualBox);
         vboxVirtualBox = NULL;
     }
 
     if (vboxSession != NULL) {
-        vboxSession->vtbl->nsisupports.Release((nsISupports *)vboxSession);
+        vboxSession->vtbl->nsisupports.Release((nsISupports *) vboxSession);
         vboxSession = NULL;
     }
 
@@ -703,7 +703,7 @@ vboxArrayGetHelper(vboxArray *array, HRESULT hrc, SAFEARRAY *safeArray)
     if (FAILED(hrc))
         return hrc;
 
-    hrc = SafeArrayAccessData(safeArray, (void **)&items);
+    hrc = SafeArrayAccessData(safeArray, (void **) &items);
 
     if (FAILED(hrc)) {
         SafeArrayDestroy(safeArray);

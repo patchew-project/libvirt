@@ -419,7 +419,7 @@ virVBoxSnapshotConfSerializeSnapshot(xmlNodePtr node,
     /*hardware*/
     parseError = xmlParseInNodeContext(node,
                                        snapshot->hardware,
-                                       (int)strlen(snapshot->hardware),
+                                       (int) strlen(snapshot->hardware),
                                        0,
                                        &hardwareNode);
     if (parseError != XML_ERR_OK) {
@@ -431,7 +431,7 @@ virVBoxSnapshotConfSerializeSnapshot(xmlNodePtr node,
 
     /*storageController*/
     if (xmlParseInNodeContext(node, snapshot->storageController,
-                              (int)strlen(snapshot->storageController),
+                              (int) strlen(snapshot->storageController),
                               0,
                               &storageControllerNode) != XML_ERR_OK) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
@@ -1136,7 +1136,7 @@ virVBoxSnapshotConfSaveVboxFile(virVBoxSnapshotConfMachinePtr machine,
     for (i = 0; i < machine->mediaRegistry->notherMedia; i++) {
         parseError = xmlParseInNodeContext(mediaRegistryNode,
                               machine->mediaRegistry->otherMedia[i],
-                              (int)strlen(machine->mediaRegistry->otherMedia[i]),
+                              (int) strlen(machine->mediaRegistry->otherMedia[i]),
                               0,
                               &cur);
         if (parseError != XML_ERR_OK) {
@@ -1160,7 +1160,7 @@ virVBoxSnapshotConfSaveVboxFile(virVBoxSnapshotConfMachinePtr machine,
 
     parseError = xmlParseInNodeContext(machineNode,
                                        machine->hardware,
-                                       (int)strlen(machine->hardware),
+                                       (int) strlen(machine->hardware),
                                        0,
                                        &cur);
     if (parseError != XML_ERR_OK) {
@@ -1173,7 +1173,7 @@ virVBoxSnapshotConfSaveVboxFile(virVBoxSnapshotConfMachinePtr machine,
     if (machine->extraData != NULL) {
         parseError = xmlParseInNodeContext(xmlDocGetRootElement(xml),
                                            machine->extraData,
-                                           (int)strlen(machine->extraData),
+                                           (int) strlen(machine->extraData),
                                            0,
                                            &cur);
         if (parseError != XML_ERR_OK) {
@@ -1186,7 +1186,7 @@ virVBoxSnapshotConfSaveVboxFile(virVBoxSnapshotConfMachinePtr machine,
 
     parseError = xmlParseInNodeContext(machineNode,
                                        machine->storageController,
-                                       (int)strlen(machine->storageController),
+                                       (int) strlen(machine->storageController),
                                        0,
                                        &cur);
     if (parseError != XML_ERR_OK) {

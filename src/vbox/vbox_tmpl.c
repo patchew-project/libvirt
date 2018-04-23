@@ -112,7 +112,7 @@ VIR_LOG_INIT("vbox.vbox_tmpl");
 #define VBOX_RELEASE(arg) \
     do { \
         if (arg) { \
-            (arg)->vtbl->nsisupports.Release((nsISupports *)(arg)); \
+            (arg)->vtbl->nsisupports.Release((nsISupports *) (arg)); \
             (arg) = NULL; \
         } \
     } while (0)
@@ -133,17 +133,17 @@ if (strUtf16) {\
 #define DEBUGUUID(msg, iid) \
 {\
     VIR_DEBUG("%s: {%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}", msg,\
-          (unsigned)(iid)->m0,\
-          (unsigned)(iid)->m1,\
-          (unsigned)(iid)->m2,\
-          (unsigned)(iid)->m3[0],\
-          (unsigned)(iid)->m3[1],\
-          (unsigned)(iid)->m3[2],\
-          (unsigned)(iid)->m3[3],\
-          (unsigned)(iid)->m3[4],\
-          (unsigned)(iid)->m3[5],\
-          (unsigned)(iid)->m3[6],\
-          (unsigned)(iid)->m3[7]);\
+          (unsigned) (iid)->m0,\
+          (unsigned) (iid)->m1,\
+          (unsigned) (iid)->m2,\
+          (unsigned) (iid)->m3[0],\
+          (unsigned) (iid)->m3[1],\
+          (unsigned) (iid)->m3[2],\
+          (unsigned) (iid)->m3[3],\
+          (unsigned) (iid)->m3[4],\
+          (unsigned) (iid)->m3[5],\
+          (unsigned) (iid)->m3[6],\
+          (unsigned) (iid)->m3[7]);\
 }\
 
 #define VBOX_IID_INITIALIZER { NULL, true }
@@ -1901,7 +1901,7 @@ static nsresult _mediumDeleteStorage(IMedium *medium,
 
 static nsresult _mediumRelease(IMedium *medium)
 {
-    return medium->vtbl->nsisupports.Release((nsISupports *)medium);
+    return medium->vtbl->nsisupports.Release((nsISupports *) medium);
 }
 static nsresult _mediumClose(IMedium *medium)
 {

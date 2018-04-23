@@ -395,12 +395,12 @@ typedef nsISupports IKeyboard;
 # define VBOX_UTF16_TO_UTF8(arg1, arg2)  gVBoxAPI.UPFN.Utf16ToUtf8(data->pFuncs, arg1, arg2)
 # define VBOX_UTF8_TO_UTF16(arg1, arg2)  gVBoxAPI.UPFN.Utf8ToUtf16(data->pFuncs, arg1, arg2)
 
-# define VBOX_ADDREF(arg)                gVBoxAPI.nsUISupports.AddRef((void *)(arg))
+# define VBOX_ADDREF(arg)                gVBoxAPI.nsUISupports.AddRef((void *) (arg))
 
 # define VBOX_RELEASE(arg) \
     do { \
         if (arg) { \
-            gVBoxAPI.nsUISupports.Release((void *)arg); \
+            gVBoxAPI.nsUISupports.Release((void *) arg); \
             (arg) = NULL; \
         } \
     } while (0)
