@@ -110,7 +110,7 @@ virHostMemGetStatsFreeBSD(virNodeMemoryStatsPtr params,
                            sysctl_map[i].field);
             return -1;
         }
-        param->value = (unsigned long long)value * pagesize;
+        param->value = (unsigned long long) value * pagesize;
     }
 
     {
@@ -128,7 +128,7 @@ virHostMemGetStatsFreeBSD(virNodeMemoryStatsPtr params,
                            VIR_NODE_MEMORY_STATS_BUFFERS);
             return -1;
         }
-        param->value = (unsigned long long)bufpages >> 10;
+        param->value = (unsigned long long) bufpages >> 10;
     }
 
     return 0;
@@ -454,13 +454,13 @@ virHostMemGetParameterValue(const char *field,
     if (STREQ(field, "pages_to_scan")   ||
         STREQ(field, "sleep_millisecs") ||
         STREQ(field, "merge_across_nodes"))
-        rc = virStrToLong_ui(buf, NULL, 10, (unsigned int *)value);
+        rc = virStrToLong_ui(buf, NULL, 10, (unsigned int *) value);
     else if (STREQ(field, "pages_shared")    ||
              STREQ(field, "pages_sharing")   ||
              STREQ(field, "pages_unshared")  ||
              STREQ(field, "pages_volatile")  ||
              STREQ(field, "full_scans"))
-        rc = virStrToLong_ull(buf, NULL, 10, (unsigned long long *)value);
+        rc = virStrToLong_ull(buf, NULL, 10, (unsigned long long *) value);
 
     if (rc < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -635,7 +635,7 @@ virHostMemGetCellsFreeFake(unsigned long long *freeMems,
         return -1;
     }
 
-    freeMems[0] = (unsigned long long)avail;
+    freeMems[0] = (unsigned long long) avail;
 
     if (!freeMems[0]) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",

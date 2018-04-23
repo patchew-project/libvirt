@@ -351,7 +351,7 @@ virFileCacheLookupByFunc(virFileCachePtr cache,
 
     virObjectLock(cache);
 
-    data = virHashSearch(cache->table, iter, iterData, (void **)&name);
+    data = virHashSearch(cache->table, iter, iterData, (void **) &name);
     virFileCacheValidate(cache, name, &data);
 
     virObjectRef(data);

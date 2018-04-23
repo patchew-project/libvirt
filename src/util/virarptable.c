@@ -129,7 +129,7 @@ virArpTableGet(void)
             bzero(&virAddr, sizeof(virAddr));
             virAddr.len = sizeof(virAddr.data.inet4);
             virAddr.data.inet4.sin_family = AF_INET;
-            virAddr.data.inet4.sin_addr = *(struct in_addr *)addr;
+            virAddr.data.inet4.sin_addr = *(struct in_addr *) addr;
             ipstr = virSocketAddrFormat(&virAddr);
 
             if (VIR_STRDUP(table->t[num].ipaddr, ipstr) < 0)

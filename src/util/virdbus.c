@@ -196,7 +196,7 @@ static void virDBusWatchCallback(int fdatch ATTRIBUTE_UNUSED,
     if (events & VIR_EVENT_HANDLE_HANGUP)
         dbus_flags |= DBUS_WATCH_HANGUP;
 
-    (void)dbus_watch_handle(watch, dbus_flags);
+    (void) dbus_watch_handle(watch, dbus_flags);
 
     while (dbus_connection_dispatch(info->bus) == DBUS_DISPATCH_DATA_REMAINS)
         /* keep dispatching while data remains */;
@@ -243,7 +243,7 @@ static dbus_bool_t virDBusAddWatch(DBusWatch *watch,
     fd = dbus_watch_get_fd(watch);
 # endif
     dbus_watch_set_data(watch, info, virDBusWatchFree);
-    info->bus = (DBusConnection *)data;
+    info->bus = (DBusConnection *) data;
     info->watch = virEventAddHandle(fd, flags,
                                     virDBusWatchCallback,
                                     watch, NULL);
@@ -263,7 +263,7 @@ static void virDBusRemoveWatch(DBusWatch *watch,
 
     info = dbus_watch_get_data(watch);
 
-    (void)virEventRemoveHandle(info->watch);
+    (void) virEventRemoveHandle(info->watch);
 }
 
 
@@ -278,7 +278,7 @@ static void virDBusToggleWatch(DBusWatch *watch,
 
     info = dbus_watch_get_data(watch);
 
-    (void)virEventUpdateHandle(info->watch, flags);
+    (void) virEventUpdateHandle(info->watch, flags);
 }
 
 # define VIR_DBUS_TYPE_STACK_MAX_DEPTH 32
@@ -510,7 +510,7 @@ static int virDBusTypeStackPush(virDBusTypeStack **stack,
     (*stack)[(*nstack) - 1].nstruct = nstruct;
     (*stack)[(*nstack) - 1].narray = narray;
     VIR_DEBUG("Pushed types='%s' nstruct=%zu narray=%zd",
-              types, nstruct, (ssize_t)narray);
+              types, nstruct, (ssize_t) narray);
     return 0;
 }
 
@@ -533,7 +533,7 @@ static int virDBusTypeStackPop(virDBusTypeStack **stack,
     *nstruct = (*stack)[(*nstack) - 1].nstruct;
     *narray = (*stack)[(*nstack) - 1].narray;
     VIR_DEBUG("Popped types='%s' nstruct=%zu narray=%zd",
-              *types, *nstruct, (ssize_t)*narray);
+              *types, *nstruct, (ssize_t) *narray);
     VIR_SHRINK_N(*stack, *nstack, 1);
 
     return 0;
@@ -624,16 +624,16 @@ virDBusMessageIterEncode(DBusMessageIter *rootiter,
     if (!types)
         return 0;
 
-    narray = (size_t)-1;
+    narray = (size_t) -1;
     nstruct = strlen(types);
 
     for (;;) {
         const char *t;
 
         VIR_DEBUG("Loop nstack=%zu narray=%zd nstruct=%zu types='%s'",
-                  nstack, (ssize_t)narray, nstruct, types);
+                  nstack, (ssize_t) narray, nstruct, types);
         if (narray == 0 ||
-            (narray == (size_t)-1 &&
+            (narray == (size_t) -1 &&
              nstruct == 0)) {
             DBusMessageIter *thisiter = iter;
             if (*types != '}') {
@@ -662,7 +662,7 @@ virDBusMessageIterEncode(DBusMessageIter *rootiter,
         }
 
         t = types;
-        if (narray != (size_t)-1) {
+        if (narray != (size_t) -1) {
             narray--;
         } else {
             types++;
@@ -739,7 +739,7 @@ virDBusMessageIterEncode(DBusMessageIter *rootiter,
                 goto cleanup;
             }
 
-            if (narray == (size_t)-1) {
+            if (narray == (size_t) -1) {
                 types += skiplen;
                 nstruct -= skiplen;
             }
@@ -761,7 +761,7 @@ virDBusMessageIterEncode(DBusMessageIter *rootiter,
             newiter = NULL;
             types = t + 1;
             nstruct = skiplen;
-            narray = (size_t)va_arg(args, int);
+            narray = (size_t) va_arg(args, int);
             if (arrayref)
                 arrayptr = va_arg(args, void *);
             break;
@@ -788,7 +788,7 @@ virDBusMessageIterEncode(DBusMessageIter *rootiter,
             newiter = NULL;
             types = vsig;
             nstruct = strlen(types);
-            narray = (size_t)-1;
+            narray = (size_t) -1;
             break;
 
         case DBUS_STRUCT_BEGIN_CHAR:
@@ -804,7 +804,7 @@ virDBusMessageIterEncode(DBusMessageIter *rootiter,
                                                   DBUS_TYPE_STRUCT : DBUS_TYPE_DICT_ENTRY,
                                                   NULL, newiter))
                 goto cleanup;
-            if (narray == (size_t)-1) {
+            if (narray == (size_t) -1) {
                 types += skiplen - 1;
                 nstruct -= skiplen - 1;
             }
@@ -820,14 +820,14 @@ virDBusMessageIterEncode(DBusMessageIter *rootiter,
             newiter = NULL;
             types = t + 1;
             nstruct = skiplen - 2;
-            narray = (size_t)-1;
+            narray = (size_t) -1;
 
             break;
 
         default:
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Unknown type '%x' in signature '%s'"),
-                           (int)*t, types);
+                           (int) *t, types);
             goto cleanup;
         }
     }
@@ -857,7 +857,7 @@ virDBusMessageIterEncode(DBusMessageIter *rootiter,
 # define GET_NEXT_VAL(dbustype, member, vargtype, fmt) \
     do { \
         DBusBasicValue v; \
-        dbustype *x = (dbustype *)&v.member; \
+        dbustype *x = (dbustype *) &v.member; \
         vargtype *y; \
         if (arrayref) { \
             VIR_DEBUG("Use arrayref"); \
@@ -901,7 +901,7 @@ virDBusMessageIterDecode(DBusMessageIter *rootiter,
     if (!types)
         return 0;
 
-    narray = (size_t)-1;
+    narray = (size_t) -1;
     nstruct = strlen(types);
 
     for (;;) {
@@ -909,9 +909,9 @@ virDBusMessageIterDecode(DBusMessageIter *rootiter,
         bool advanceiter = true;
 
         VIR_DEBUG("Loop nstack=%zu narray=%zd nstruct=%zu type='%s'",
-                  nstack, (ssize_t)narray, nstruct, types);
+                  nstack, (ssize_t) narray, nstruct, types);
         if (narray == 0 ||
-            (narray == (size_t)-1 &&
+            (narray == (size_t) -1 &&
              nstruct == 0)) {
             DBusMessageIter *thisiter = iter;
             VIR_DEBUG("Popping iter=%p", iter);
@@ -933,10 +933,10 @@ virDBusMessageIterDecode(DBusMessageIter *rootiter,
                     narray = 0;
                 else
                     narray = 1;
-                VIR_DEBUG("Pop set narray=%zd", (ssize_t)narray);
+                VIR_DEBUG("Pop set narray=%zd", (ssize_t) narray);
             }
             if (!(narray == 0 ||
-                  (narray == (size_t)-1 &&
+                  (narray == (size_t) -1 &&
                    nstruct == 0)) &&
                 !dbus_message_iter_next(iter)) {
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -947,7 +947,7 @@ virDBusMessageIterDecode(DBusMessageIter *rootiter,
         }
 
         t = types;
-        if (narray != (size_t)-1) {
+        if (narray != (size_t) -1) {
             if (!arrayref)
                 narray--;
         } else {
@@ -1001,10 +1001,10 @@ virDBusMessageIterDecode(DBusMessageIter *rootiter,
                     char ***xptrptr = arrayptr;
                     if (VIR_EXPAND_N(*xptrptr, *narrayptr, 1) < 0)
                         goto cleanup;
-                    x = (char **)(*xptrptr + (*narrayptr - 1));
+                    x = (char **) (*xptrptr + (*narrayptr - 1));
                     VIR_DEBUG("Expanded to %zu", *narrayptr);
                 } else {
-                    x = (char **)va_arg(args, char **);
+                    x = (char **) va_arg(args, char **);
                 }
                 char *s;
                 dbus_message_iter_get_basic(iter, &s);
@@ -1039,7 +1039,7 @@ virDBusMessageIterDecode(DBusMessageIter *rootiter,
                 goto cleanup;
             }
 
-            if (narray == (size_t)-1) {
+            if (narray == (size_t) -1) {
                 types += skiplen;
                 nstruct -= skiplen;
             }
@@ -1062,7 +1062,7 @@ virDBusMessageIterDecode(DBusMessageIter *rootiter,
                 narrayptr = va_arg(args, size_t *);
                 arrayptr = va_arg(args, void *);
                 *narrayptr = 0;
-                *(char **)arrayptr = NULL;
+                *(char **) arrayptr = NULL;
             } else {
                 narray = va_arg(args, int);
             }
@@ -1089,7 +1089,7 @@ virDBusMessageIterDecode(DBusMessageIter *rootiter,
             newiter = NULL;
             types = vsig;
             nstruct = strlen(types);
-            narray = (size_t)-1;
+            narray = (size_t) -1;
             break;
 
         case DBUS_STRUCT_BEGIN_CHAR:
@@ -1103,7 +1103,7 @@ virDBusMessageIterDecode(DBusMessageIter *rootiter,
             VIR_DEBUG("Dict/struct contsig='%s' skip='%zu' len='%zu' types='%s'",
                       contsig, skiplen, siglen, types);
             dbus_message_iter_recurse(iter, newiter);
-            if (narray == (size_t)-1) {
+            if (narray == (size_t) -1) {
                 types += skiplen - 1;
                 nstruct -= skiplen - 1;
             }
@@ -1117,7 +1117,7 @@ virDBusMessageIterDecode(DBusMessageIter *rootiter,
             newiter = NULL;
             types = t + 1;
             nstruct = skiplen - 2;
-            narray = (size_t)-1;
+            narray = (size_t) -1;
 
             break;
 
@@ -1129,7 +1129,7 @@ virDBusMessageIterDecode(DBusMessageIter *rootiter,
         }
 
         VIR_DEBUG("After nstack=%zu narray=%zd nstruct=%zu types='%s'",
-                  nstack, (ssize_t)narray, nstruct, types);
+                  nstack, (ssize_t) narray, nstruct, types);
 
         if (arrayref) {
             if (dbus_message_iter_get_arg_type(iter) == DBUS_TYPE_INVALID) {
@@ -1143,11 +1143,11 @@ virDBusMessageIterDecode(DBusMessageIter *rootiter,
                     narray = 1;
                 }
             }
-            VIR_DEBUG("Set narray=%zd", (ssize_t)narray);
+            VIR_DEBUG("Set narray=%zd", (ssize_t) narray);
         } else {
             if (advanceiter &&
                 !(narray == 0 ||
-                  (narray == (size_t)-1 &&
+                  (narray == (size_t) -1 &&
                    nstruct == 0)) &&
                 !dbus_message_iter_next(iter)) {
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",

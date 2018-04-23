@@ -491,7 +491,7 @@ void virDispose(void *ptrptr, size_t count, size_t element_size, size_t *countpt
  * arithmetic overflow in the allocation size.  The check is
  * essentially the same as that in gnulib's xalloc_oversized.
  */
-# define VIR_ALLOC_VAR_OVERSIZED(M, N, S) ((((size_t)-1) - (M)) / (S) < (N))
+# define VIR_ALLOC_VAR_OVERSIZED(M, N, S) ((((size_t) -1) - (M)) / (S) < (N))
 
 /**
  * VIR_ALLOC_VAR:

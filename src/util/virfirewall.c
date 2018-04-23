@@ -753,7 +753,7 @@ virFirewallApplyRuleFirewallD(virFirewallRulePtr rule,
                           "passthrough",
                           "sa&s",
                           ipv,
-                          (int)rule->argsLen,
+                          (int) rule->argsLen,
                           rule->args) < 0)
         goto cleanup;
 

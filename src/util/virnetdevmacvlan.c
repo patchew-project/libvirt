@@ -371,7 +371,7 @@ virNetDevMacVLanCreate(const char *ifname,
 
     switch (resp->nlmsg_type) {
     case NLMSG_ERROR:
-        err = (struct nlmsgerr *)NLMSG_DATA(resp);
+        err = (struct nlmsgerr *) NLMSG_DATA(resp);
         if (resp->nlmsg_len < NLMSG_LENGTH(sizeof(*err)))
             goto malformed_resp;
 
@@ -685,15 +685,15 @@ virNetDevMacVLanVPortProfileCallback(struct nlmsghdr *hdr,
     case RTM_GETLINK:
         VIR_DEBUG(" IFINFOMSG");
         VIR_DEBUG("        ifi_family = 0x%02x",
-            ((struct ifinfomsg *)data)->ifi_family);
+            ((struct ifinfomsg *) data)->ifi_family);
         VIR_DEBUG("        ifi_type   = 0x%x",
-            ((struct ifinfomsg *)data)->ifi_type);
+            ((struct ifinfomsg *) data)->ifi_type);
         VIR_DEBUG("        ifi_index  = %i",
-            ((struct ifinfomsg *)data)->ifi_index);
+            ((struct ifinfomsg *) data)->ifi_index);
         VIR_DEBUG("        ifi_flags  = 0x%04x",
-            ((struct ifinfomsg *)data)->ifi_flags);
+            ((struct ifinfomsg *) data)->ifi_flags);
         VIR_DEBUG("        ifi_change = 0x%04x",
-            ((struct ifinfomsg *)data)->ifi_change);
+            ((struct ifinfomsg *) data)->ifi_change);
     }
     /* DEBUG end */
 
@@ -703,7 +703,7 @@ virNetDevMacVLanVPortProfileCallback(struct nlmsghdr *hdr,
         ifinfo.ifi_family, ifinfo.ifi_type, ifinfo.ifi_index,
         ifinfo.ifi_flags, ifinfo.ifi_change);
     if (nlmsg_parse(hdr, sizeof(ifinfo),
-        (struct nlattr **)&tb, IFLA_MAX, NULL)) {
+        (struct nlattr **) &tb, IFLA_MAX, NULL)) {
         VIR_DEBUG("error parsing request...");
         return;
     }
@@ -753,12 +753,12 @@ virNetDevMacVLanVPortProfileCallback(struct nlmsghdr *hdr,
     }
 
     if (tb[IFLA_IFNAME]) {
-        ifname = (char *)RTA_DATA(tb[IFLA_IFNAME]);
+        ifname = (char *) RTA_DATA(tb[IFLA_IFNAME]);
         VIR_DEBUG("IFLA_IFNAME = %s", ifname);
     }
 
     if (tb[IFLA_OPERSTATE]) {
-        rem = *(unsigned short *)RTA_DATA(tb[IFLA_OPERSTATE]);
+        rem = *(unsigned short *) RTA_DATA(tb[IFLA_OPERSTATE]);
         VIR_DEBUG("IFLA_OPERSTATE = %d", rem);
     }
 

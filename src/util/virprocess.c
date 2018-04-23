@@ -207,7 +207,7 @@ void
 virProcessAbort(pid_t pid)
 {
     /* Not yet ported to mingw.  Any volunteers?  */
-    VIR_DEBUG("failed to reap child %lld, abandoning it", (long long)pid);
+    VIR_DEBUG("failed to reap child %lld, abandoning it", (long long) pid);
 }
 #endif
 
@@ -352,7 +352,7 @@ virProcessKillPainfully(pid_t pid, bool force)
     int ret = -1;
     const char *signame = "TERM";
 
-    VIR_DEBUG("vpid=%lld force=%d", (long long)pid, force);
+    VIR_DEBUG("vpid=%lld force=%d", (long long) pid, force);
 
     /* This loop sends SIGTERM, then waits a few iterations (10 seconds)
      * to see if it dies. If the process still hasn't exited, and
@@ -368,7 +368,7 @@ virProcessKillPainfully(pid_t pid, bool force)
             signum = SIGTERM; /* kindly suggest it should exit */
         } else if (i == 50 && force) {
             VIR_DEBUG("Timed out waiting after SIGTERM to process %lld, "
-                      "sending SIGKILL", (long long)pid);
+                      "sending SIGKILL", (long long) pid);
             /* No SIGKILL kill on Win32 ! Use SIGABRT instead which our
              * virProcessKill proc will handle more or less like SIGKILL */
 #ifdef WIN32
@@ -386,7 +386,7 @@ virProcessKillPainfully(pid_t pid, bool force)
             if (errno != ESRCH) {
                 virReportSystemError(errno,
                                      _("Failed to terminate process %lld with SIG%s"),
-                                     (long long)pid, signame);
+                                     (long long) pid, signame);
                 goto cleanup;
             }
             ret = signum == SIGTERM ? 0 : 1;
@@ -398,7 +398,7 @@ virProcessKillPainfully(pid_t pid, bool force)
 
     virReportSystemError(EBUSY,
                          _("Failed to terminate process %lld with SIG%s"),
-                         (long long)pid, signame);
+                         (long long) pid, signame);
 
  cleanup:
     return ret;
@@ -410,7 +410,7 @@ virProcessKillPainfully(pid_t pid, bool force)
 int virProcessSetAffinity(pid_t pid, virBitmapPtr map)
 {
     size_t i;
-    VIR_DEBUG("Set process affinity on %lld", (long long)pid);
+    VIR_DEBUG("Set process affinity on %lld", (long long) pid);
 # ifdef CPU_ALLOC
     /* New method dynamically allocates cpu mask, allowing unlimted cpus */
     int numcpus = 1024;
@@ -768,7 +768,7 @@ virProcessSetMaxMemLock(pid_t pid, unsigned long long bytes)
             virReportSystemError(errno,
                                  _("cannot limit locked memory "
                                    "of process %lld to %llu"),
-                                 (long long int)pid, bytes);
+                                 (long long int) pid, bytes);
             return -1;
         }
     }
@@ -864,7 +864,7 @@ virProcessSetMaxProcesses(pid_t pid, unsigned int procs)
             virReportSystemError(errno,
                                  _("cannot limit number of subprocesses "
                                    "of process %lld to %u"),
-                                 (long long int)pid, procs);
+                                 (long long int) pid, procs);
             return -1;
         }
     }
@@ -912,7 +912,7 @@ virProcessSetMaxFiles(pid_t pid, unsigned int files)
             virReportSystemError(errno,
                                  _("cannot limit number of open files "
                                    "of process %lld to %u"),
-                                 (long long int)pid, files);
+                                 (long long int) pid, files);
             return -1;
         }
     }
@@ -949,7 +949,7 @@ virProcessSetMaxCoreSize(pid_t pid, unsigned long long bytes)
             virReportSystemError(errno,
                                  _("cannot limit core file size "
                                    "of process %lld to %llu"),
-                                 (long long int)pid, bytes);
+                                 (long long int) pid, bytes);
             return -1;
         }
     }
@@ -1055,7 +1055,7 @@ int virProcessGetStartTime(pid_t pid,
         return -1;
     }
 
-    *timestamp = (unsigned long long)p.ki_start.tv_sec;
+    *timestamp = (unsigned long long) p.ki_start.tv_sec;
 
     return 0;
 

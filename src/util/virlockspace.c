@@ -618,7 +618,7 @@ int virLockSpaceAcquireResource(virLockSpacePtr lockspace,
     virLockSpaceResourcePtr res;
 
     VIR_DEBUG("lockspace=%p resname=%s flags=0x%x owner=%lld",
-              lockspace, resname, flags, (unsigned long long)owner);
+              lockspace, resname, flags, (unsigned long long) owner);
 
     virCheckFlags(VIR_LOCK_SPACE_ACQUIRE_SHARED |
                   VIR_LOCK_SPACE_ACQUIRE_AUTOCREATE, -1);
@@ -667,7 +667,7 @@ int virLockSpaceReleaseResource(virLockSpacePtr lockspace,
     size_t i;
 
     VIR_DEBUG("lockspace=%p resname=%s owner=%lld",
-              lockspace, resname, (unsigned long long)owner);
+              lockspace, resname, (unsigned long long) owner);
 
     virMutexLock(&lockspace->lock);
 
@@ -686,7 +686,7 @@ int virLockSpaceReleaseResource(virLockSpacePtr lockspace,
     if (i == res->nOwners) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("owner %lld does not hold the resource lock"),
-                       (unsigned long long)owner);
+                       (unsigned long long) owner);
         goto cleanup;
     }
 
@@ -716,10 +716,10 @@ virLockSpaceRemoveResourcesForOwner(const void *payload,
                                     const void *opaque)
 {
     virLockSpaceResourcePtr res = (virLockSpaceResourcePtr)payload;
-    struct virLockSpaceRemoveData *data = (struct virLockSpaceRemoveData *)opaque;
+    struct virLockSpaceRemoveData *data = (struct virLockSpaceRemoveData *) opaque;
     size_t i;
 
-    VIR_DEBUG("res %s owner %lld", res->name, (unsigned long long)data->owner);
+    VIR_DEBUG("res %s owner %lld", res->name, (unsigned long long) data->owner);
 
     for (i = 0; i < res->nOwners; i++) {
         if (res->owners[i] == data->owner)
@@ -751,7 +751,7 @@ int virLockSpaceReleaseResourcesForOwner(virLockSpacePtr lockspace,
         owner, 0
     };
 
-    VIR_DEBUG("lockspace=%p owner=%lld", lockspace, (unsigned long long)owner);
+    VIR_DEBUG("lockspace=%p owner=%lld", lockspace, (unsigned long long) owner);
 
     virMutexLock(&lockspace->lock);
 

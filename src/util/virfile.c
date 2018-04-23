@@ -1048,7 +1048,7 @@ saferead(int fd, void *buf, size_t count)
             return r;
         if (r == 0)
             return nread;
-        buf = (char *)buf + r;
+        buf = (char *) buf + r;
         count -= r;
         nread += r;
     }
@@ -1073,7 +1073,7 @@ safewrite(int fd, const void *buf, size_t count)
             return r;
         if (r == 0)
             return nwritten;
-        buf = (const char *)buf + r;
+        buf = (const char *) buf + r;
         count -= r;
         nwritten += r;
     }
@@ -1401,7 +1401,7 @@ virFileReadLimFD(int fd, int maxlen, char **buf)
     s = saferead_lim(fd, maxlen+1, &len);
     if (s == NULL)
         return -1;
-    if (len > maxlen || (int)len != len) {
+    if (len > maxlen || (int) len != len) {
         VIR_FREE(s);
         /* There was at least one byte more than MAXLEN.
            Set errno accordingly. */
@@ -3418,7 +3418,7 @@ virFileIsSharedFSType(const char *path,
     }
 
     VIR_DEBUG("Check if path %s with FS magic %lld is shared",
-              path, (long long int)sb.f_type);
+              path, (long long int) sb.f_type);
 
     if ((fstypes & VIR_FILE_SHFS_NFS) &&
         (sb.f_type == NFS_SUPER_MAGIC))

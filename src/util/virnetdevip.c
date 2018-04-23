@@ -415,7 +415,7 @@ virNetDevIPParseDadStatus(struct nlmsghdr *nlh, int len,
             break;
         }
 
-        ifaddrmsg_ptr = (struct ifaddrmsg *)NLMSG_DATA(nlh);
+        ifaddrmsg_ptr = (struct ifaddrmsg *) NLMSG_DATA(nlh);
         if (!(ifaddrmsg_ptr->ifa_flags & IFA_F_TENTATIVE)) {
             /* Not tentative: we are not interested in this entry. */
             continue;
@@ -563,7 +563,7 @@ virNetDevIPCheckIPv6ForwardingCallback(const struct nlmsghdr *resp,
     for (rta = RTM_RTA(rtmsg); RTA_OK(rta, len); rta = RTA_NEXT(rta, len)) {
         VIR_WARNINGS_RESET
         if (rta->rta_type == RTA_OIF) {
-            oif = *(int *)RTA_DATA(rta);
+            oif = *(int *) RTA_DATA(rta);
 
             /* Should never happen: netlink message would be broken */
             if (ifname) {
@@ -856,7 +856,7 @@ virNetDevGetIPv4AddressIoctl(const char *ifname,
     if ((fd = virNetDevSetupControl(ifname, &ifr)) < 0)
         return -1;
 
-    if (ioctl(fd, SIOCGIFADDR, (char *)&ifr) < 0) {
+    if (ioctl(fd, SIOCGIFADDR, (char *) &ifr) < 0) {
         virReportSystemError(errno,
                              _("Unable to get IPv4 address for interface %s via ioctl"),
                              ifname);

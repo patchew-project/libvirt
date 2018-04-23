@@ -1310,7 +1310,7 @@ virCgroupSetPartitionSuffix(const char *path, char **res)
             goto cleanup;
     }
 
-    if (!(*res = virStringListJoin((const char **)tokens, "/")))
+    if (!(*res = virStringListJoin((const char **) tokens, "/")))
         goto cleanup;
 
     ret = 0;
@@ -3623,7 +3623,7 @@ virCgroupKillInternal(virCgroupPtr group, int signum, virHashTablePtr pids)
 static uint32_t
 virCgroupPidCode(const void *name, uint32_t seed)
 {
-    long pid_value = (long)(intptr_t)name;
+    long pid_value = (long) (intptr_t)name;
     return virHashCodeGen(&pid_value, sizeof(pid_value), seed);
 }
 

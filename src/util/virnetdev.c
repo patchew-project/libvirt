@@ -260,7 +260,7 @@ virNetDevSetMACInternal(const char *ifname,
         goto cleanup;
     }
 
-    virMacAddrGetRaw(macaddr, (unsigned char *)ifr.ifr_hwaddr.sa_data);
+    virMacAddrGetRaw(macaddr, (unsigned char *) ifr.ifr_hwaddr.sa_data);
 
     if (ioctl(fd, SIOCSIFHWADDR, &ifr) < 0) {
 
@@ -386,7 +386,7 @@ int virNetDevGetMAC(const char *ifname,
         goto cleanup;
     }
 
-    virMacAddrSetRaw(macaddr, (unsigned char *)ifr.ifr_hwaddr.sa_data);
+    virMacAddrSetRaw(macaddr, (unsigned char *) ifr.ifr_hwaddr.sa_data);
 
     ret = 0;
 
@@ -973,7 +973,7 @@ virNetDevGetMaster(const char *ifname, char **master)
         goto cleanup;
 
     if (tb[IFLA_MASTER]) {
-        if (!(*master = virNetDevGetName(*(int *)RTA_DATA(tb[IFLA_MASTER]))))
+        if (!(*master = virNetDevGetName(*(int *) RTA_DATA(tb[IFLA_MASTER]))))
             goto cleanup;
     }
 
@@ -1092,7 +1092,7 @@ int virNetDevValidateConfig(const char *ifname,
         }
 
         if (virMacAddrCmpRaw(macaddr,
-                             (unsigned char *)ifr.ifr_hwaddr.sa_data) != 0) {
+                             (unsigned char *) ifr.ifr_hwaddr.sa_data) != 0) {
             ret = 0;
             goto cleanup;
         }
@@ -1720,7 +1720,7 @@ virNetDevSetVfConfig(const char *ifname, int vf,
 
     switch (resp->nlmsg_type) {
     case NLMSG_ERROR:
-        err = (struct nlmsgerr *)NLMSG_DATA(resp);
+        err = (struct nlmsgerr *) NLMSG_DATA(resp);
         if (resp->nlmsg_len < NLMSG_LENGTH(sizeof(*err)))
             goto malformed_resp;
 
@@ -2656,7 +2656,7 @@ int virNetDevAddMulti(const char *ifname,
         return -1;
 
     ifr.ifr_hwaddr.sa_family = AF_UNSPEC;
-    virMacAddrGetRaw(macaddr, (unsigned char *)ifr.ifr_hwaddr.sa_data);
+    virMacAddrGetRaw(macaddr, (unsigned char *) ifr.ifr_hwaddr.sa_data);
 
     if (ioctl(fd, SIOCADDMULTI, &ifr) < 0) {
         char macstr[VIR_MAC_STRING_BUFLEN];
@@ -2705,7 +2705,7 @@ int virNetDevDelMulti(const char *ifname,
         return -1;
 
     ifr.ifr_hwaddr.sa_family = AF_UNSPEC;
-    virMacAddrGetRaw(macaddr, (unsigned char *)ifr.ifr_hwaddr.sa_data);
+    virMacAddrGetRaw(macaddr, (unsigned char *) ifr.ifr_hwaddr.sa_data);
 
     if (ioctl(fd, SIOCDELMULTI, &ifr) < 0) {
         char macstr[VIR_MAC_STRING_BUFLEN];
@@ -2751,7 +2751,7 @@ static int virNetDevParseMcast(char *buf, virNetDevMcastEntryPtr mcast)
             return -1;
         }
 
-        switch ((virMCastType)ifindex) {
+        switch ((virMCastType) ifindex) {
             case VIR_MCAST_TYPE_INDEX_TOKEN:
                 if (virStrToLong_i(token, &endptr, 10, &num) < 0) {
                     virReportSystemError(EINVAL,
@@ -3180,7 +3180,7 @@ static void *
 virNetDevPutExtraHeader(struct nlmsghdr *nlh,
                         size_t size)
 {
-    char *ptr = (char *)nlh + nlh->nlmsg_len;
+    char *ptr = (char *) nlh + nlh->nlmsg_len;
     size_t len = NLMSG_ALIGN(size);
     nlh->nlmsg_len += len;
     return ptr;
@@ -3318,7 +3318,7 @@ virNetDevSwitchdevFeature(const char *ifname,
     }
 
     if (tb[DEVLINK_ATTR_ESWITCH_MODE] &&
-        *(int *)RTA_DATA(tb[DEVLINK_ATTR_ESWITCH_MODE]) == DEVLINK_ESWITCH_MODE_SWITCHDEV) {
+        *(int *) RTA_DATA(tb[DEVLINK_ATTR_ESWITCH_MODE]) == DEVLINK_ESWITCH_MODE_SWITCHDEV) {
         ignore_value(virBitmapSetBit(*out, VIR_NET_DEV_FEAT_SWITCHDEV));
     }
 

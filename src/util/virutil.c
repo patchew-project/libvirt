@@ -1904,7 +1904,7 @@ void virUpdateSelfLastChanged(const char *path)
 
     if (sb.st_ctime > selfLastChanged) {
         VIR_DEBUG("Setting self last changed to %lld for '%s'",
-                  (long long)sb.st_ctime, path);
+                  (long long) sb.st_ctime, path);
         selfLastChanged = sb.st_ctime;
     }
 }

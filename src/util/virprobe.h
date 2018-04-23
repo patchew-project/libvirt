@@ -48,7 +48,7 @@
  * can safely go to intptr_t and back to void *, which collapses
  * arrays into pointers; while any integer can be widened to intptr_t
  * then cast to void *.  */
-#  define VIR_ADD_CAST(a) ((void *)(intptr_t)(a))
+#  define VIR_ADD_CAST(a) ((void *) (intptr_t)(a))
 #  define VIR_ADD_CAST1(a) \
     VIR_ADD_CAST(a)
 #  define VIR_ADD_CAST2(a, b) \

@@ -630,7 +630,7 @@ virObjectListFreeCount(void *list,
         return;
 
     for (i = 0; i < count; i++)
-        virObjectUnref(((void **)list)[i]);
+        virObjectUnref(((void **) list)[i]);
 
     VIR_FREE(list);
 }

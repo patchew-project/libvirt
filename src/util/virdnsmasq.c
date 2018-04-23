@@ -103,7 +103,7 @@ addnhostsAdd(dnsmasqAddnHostsfile *addnhostsfile,
         return -1;
 
     for (i = 0; i < addnhostsfile->nhosts; i++) {
-        if (STREQ((const char *)addnhostsfile->hosts[i].ip, (const char *)ipstr)) {
+        if (STREQ((const char *) addnhostsfile->hosts[i].ip, (const char *) ipstr)) {
             idx = i;
             break;
         }
@@ -689,8 +689,8 @@ dnsmasqCapsSetFromBuffer(dnsmasqCapsPtr caps, const char *buf)
 
     VIR_INFO("dnsmasq version is %d.%d, --bind-dynamic is %spresent, "
              "SO_BINDTODEVICE is %sin use, --ra-param is %spresent",
-             (int)caps->version / 1000000,
-             (int)(caps->version % 1000000) / 1000,
+             (int) caps->version / 1000000,
+             (int) (caps->version % 1000000) / 1000,
              dnsmasqCapsGet(caps, DNSMASQ_CAPS_BIND_DYNAMIC) ? "" : "NOT ",
              dnsmasqCapsGet(caps, DNSMASQ_CAPS_BINDTODEVICE) ? "" : "NOT ",
              dnsmasqCapsGet(caps, DNSMASQ_CAPS_RA_PARAM) ? "" : "NOT ");

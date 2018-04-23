@@ -195,7 +195,7 @@ static int virNetDevBridgeGet(const char *brname,
         VIR_FREE(valuestr);
     } else {
         struct __bridge_info info;
-        unsigned long args[] = { BRCTL_GET_BRIDGE_INFO, (unsigned long)&info, 0, 0 };
+        unsigned long args[] = { BRCTL_GET_BRIDGE_INFO, (unsigned long) &info, 0, 0 };
 
         if ((fd = virNetDevSetupControl(brname, &ifr)) < 0)
             goto cleanup;
@@ -464,7 +464,7 @@ virNetDevBridgeCreate(const char *brname)
 
     switch (resp->nlmsg_type) {
     case NLMSG_ERROR:
-        err = (struct nlmsgerr *)NLMSG_DATA(resp);
+        err = (struct nlmsgerr *) NLMSG_DATA(resp);
         if (resp->nlmsg_len < NLMSG_LENGTH(sizeof(*err)))
             goto malformed_resp;
 
@@ -1123,7 +1123,7 @@ virNetDevBridgeFDBAddDel(const virMacAddr *mac, const char *ifname,
 
     switch (resp->nlmsg_type) {
     case NLMSG_ERROR:
-        err = (struct nlmsgerr *)NLMSG_DATA(resp);
+        err = (struct nlmsgerr *) NLMSG_DATA(resp);
         if (resp->nlmsg_len < NLMSG_LENGTH(sizeof(*err)))
             goto malformed_resp;
         if (err->error) {

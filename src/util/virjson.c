@@ -1644,10 +1644,10 @@ virJSONParserHandleString(void *ctx,
                           yajl_size_t stringLen)
 {
     virJSONParserPtr parser = ctx;
-    virJSONValuePtr value = virJSONValueNewStringLen((const char *)stringVal,
+    virJSONValuePtr value = virJSONValueNewStringLen((const char *) stringVal,
                                                      stringLen);
 
-    VIR_DEBUG("parser=%p str=%p", parser, (const char *)stringVal);
+    VIR_DEBUG("parser=%p str=%p", parser, (const char *) stringVal);
 
     if (!value)
         return 0;
@@ -1669,7 +1669,7 @@ virJSONParserHandleMapKey(void *ctx,
     virJSONParserPtr parser = ctx;
     virJSONParserStatePtr state;
 
-    VIR_DEBUG("parser=%p key=%p", parser, (const char *)stringVal);
+    VIR_DEBUG("parser=%p key=%p", parser, (const char *) stringVal);
 
     if (!parser->nstate)
         return 0;
@@ -1677,7 +1677,7 @@ virJSONParserHandleMapKey(void *ctx,
     state = &parser->state[parser->nstate-1];
     if (state->key)
         return 0;
-    if (VIR_STRNDUP(state->key, (const char *)stringVal, stringLen) < 0)
+    if (VIR_STRNDUP(state->key, (const char *) stringVal, stringLen) < 0)
         return 0;
     return 1;
 }
@@ -1835,15 +1835,15 @@ virJSONValueFromString(const char *jsonstring)
      * with no visibility into how much more input remains.  Wrapping
      * things in an array forces yajl to confess the truth.  */
 # ifdef WITH_YAJL2
-    rc = yajl_parse(hand, (const unsigned char *)jsonstring, len);
+    rc = yajl_parse(hand, (const unsigned char *) jsonstring, len);
 # else
-    rc = yajl_parse(hand, (const unsigned char *)"[", 1);
+    rc = yajl_parse(hand, (const unsigned char *) "[", 1);
     parser.wrap = 1;
     if (VIR_YAJL_STATUS_OK(rc))
-        rc = yajl_parse(hand, (const unsigned char *)jsonstring, len);
+        rc = yajl_parse(hand, (const unsigned char *) jsonstring, len);
     parser.wrap = 0;
     if (VIR_YAJL_STATUS_OK(rc))
-        rc = yajl_parse(hand, (const unsigned char *)"]", 1);
+        rc = yajl_parse(hand, (const unsigned char *) "]", 1);
 # endif
     if (!VIR_YAJL_STATUS_OK(rc) ||
         yajl_complete_parse(hand) != yajl_status_ok) {
@@ -1910,7 +1910,7 @@ virJSONValueToStringOne(virJSONValuePtr object,
             return -1;
         for (i = 0; i < object->data.object.npairs; i++) {
             if (yajl_gen_string(g,
-                                (unsigned char *)object->data.object.pairs[i].key,
+                                (unsigned char *) object->data.object.pairs[i].key,
                                 strlen(object->data.object.pairs[i].key))
                                 != yajl_gen_status_ok)
                 return -1;
@@ -1932,7 +1932,7 @@ virJSONValueToStringOne(virJSONValuePtr object,
         break;
 
     case VIR_JSON_TYPE_STRING:
-        if (yajl_gen_string(g, (unsigned char *)object->data.string,
+        if (yajl_gen_string(g, (unsigned char *) object->data.string,
                             strlen(object->data.string)) != yajl_gen_status_ok)
             return -1;
         break;
@@ -2001,7 +2001,7 @@ virJSONValueToString(virJSONValuePtr object,
         goto cleanup;
     }
 
-    ignore_value(VIR_STRDUP(ret, (const char *)str));
+    ignore_value(VIR_STRDUP(ret, (const char *) str));
 
  cleanup:
     yajl_gen_free(g);

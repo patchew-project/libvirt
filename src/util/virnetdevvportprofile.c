@@ -807,7 +807,7 @@ virNetDevVPortProfileOpSetLink(const char *ifname, int ifindex,
 
     switch (resp->nlmsg_type) {
     case NLMSG_ERROR:
-        err = (struct nlmsgerr *)NLMSG_DATA(resp);
+        err = (struct nlmsgerr *) NLMSG_DATA(resp);
         if (resp->nlmsg_len < NLMSG_LENGTH(sizeof(*err)))
             goto malformed_resp;
 
@@ -896,7 +896,7 @@ virNetDevVPortProfileGetNthParent(const char *ifname, int ifindex, unsigned int 
         }
 
         if (tb[IFLA_LINK]) {
-            ifindex = *(int *)RTA_DATA(tb[IFLA_LINK]);
+            ifindex = *(int *) RTA_DATA(tb[IFLA_LINK]);
             ifname = NULL;
         } else {
             end = true;

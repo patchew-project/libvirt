@@ -460,7 +460,7 @@ qcow2GetBackingStoreFormat(int *format,
             if (buf[offset+len] != '\0')
                 break;
             *format = virStorageFileFormatTypeFromString(
-                ((const char *)buf)+offset);
+                ((const char *) buf)+offset);
             if (*format <= VIR_STORAGE_FILE_NONE)
                 return -1;
         }
@@ -2475,7 +2475,7 @@ virStorageSourceRBDAddHost(virStorageSourcePtr src,
     parts = virStringSplit(hostport, "\\:", 0);
     if (!parts)
         goto error;
-    src->hosts[src->nhosts-1].name = virStringListJoin((const char **)parts, ":");
+    src->hosts[src->nhosts-1].name = virStringListJoin((const char **) parts, ":");
     virStringListFree(parts);
     if (!src->hosts[src->nhosts-1].name)
         goto error;
@@ -3510,8 +3510,8 @@ virStorageSourceUpdateBackingSizes(virStorageSourcePtr src,
     /* Get info for normal formats */
     if (S_ISREG(sb->st_mode) || fd == -1) {
 #ifndef WIN32
-        src->allocation = (unsigned long long)sb->st_blocks *
-            (unsigned long long)DEV_BSIZE;
+        src->allocation = (unsigned long long) sb->st_blocks *
+            (unsigned long long) DEV_BSIZE;
 #else
         src->allocation = sb->st_size;
 #endif
@@ -4452,7 +4452,7 @@ virStorageFileChown(const virStorageSource *src,
     }
 
     VIR_DEBUG("chown of storage file %p to %u:%u",
-              src, (unsigned int)uid, (unsigned int)gid);
+              src, (unsigned int) uid, (unsigned int) gid);
 
     return src->drv->backend->storageFileChown(src, uid, gid);
 }
@@ -4523,7 +4523,7 @@ virStorageFileGetMetadataRecurse(virStorageSourcePtr src,
 
     VIR_DEBUG("path=%s format=%d uid=%u gid=%u probe=%d",
               src->path, src->format,
-              (unsigned int)uid, (unsigned int)gid, allow_probe);
+              (unsigned int) uid, (unsigned int) gid, allow_probe);
 
     /* exit if we can't load information about the current image */
     if (!virStorageFileSupportsBackingChainTraversal(src))
@@ -4547,7 +4547,7 @@ virStorageFileGetMetadataRecurse(virStorageSourcePtr src,
         goto cleanup;
     }
 
-    if (virHashAddEntry(cycle, uniqueName, (void *)1) < 0)
+    if (virHashAddEntry(cycle, uniqueName, (void *) 1) < 0)
         goto cleanup;
 
     if ((headerLen = virStorageFileRead(src, 0, VIR_STORAGE_MAX_HEADER,
@@ -4628,7 +4628,7 @@ virStorageFileGetMetadata(virStorageSourcePtr src,
                           bool report_broken)
 {
     VIR_DEBUG("path=%s format=%d uid=%u gid=%u probe=%d, report_broken=%d",
-              src->path, src->format, (unsigned int)uid, (unsigned int)gid,
+              src->path, src->format, (unsigned int) uid, (unsigned int) gid,
               allow_probe, report_broken);
 
     virHashTablePtr cycle = NULL;

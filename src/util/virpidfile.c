@@ -252,7 +252,7 @@ int virPidFileReadPathIfAlive(const char *path,
         goto cleanup;
     }
 
-    if (virAsprintf(&procPath, "/proc/%lld/exe", (long long)retPid) < 0) {
+    if (virAsprintf(&procPath, "/proc/%lld/exe", (long long) retPid) < 0) {
         ret = -ENOMEM;
         goto cleanup;
     }

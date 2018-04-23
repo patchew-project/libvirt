@@ -1176,7 +1176,7 @@ int virFDStreamConnectUNIX(virStreamPtr st,
     if (virTimeBackOffStart(&timeout, 1, 3*1000 /* ms */) < 0)
         goto error;
     while (virTimeBackOffWait(&timeout)) {
-        ret = connect(fd, (struct sockaddr *)&sa, sizeof(sa));
+        ret = connect(fd, (struct sockaddr *) &sa, sizeof(sa));
         if (ret == 0)
             break;
 

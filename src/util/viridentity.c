@@ -463,7 +463,7 @@ int virIdentitySetUNIXUserID(virIdentityPtr ident,
 {
     char *val;
     int ret;
-    if (virAsprintf(&val, "%d", (int)uid) < 0)
+    if (virAsprintf(&val, "%d", (int) uid) < 0)
         return -1;
     ret = virIdentitySetAttr(ident,
                              VIR_IDENTITY_ATTR_UNIX_USER_ID,
@@ -487,7 +487,7 @@ int virIdentitySetUNIXGroupID(virIdentityPtr ident,
 {
     char *val;
     int ret;
-    if (virAsprintf(&val, "%d", (int)gid) < 0)
+    if (virAsprintf(&val, "%d", (int) gid) < 0)
         return -1;
     ret = virIdentitySetAttr(ident,
                              VIR_IDENTITY_ATTR_UNIX_GROUP_ID,

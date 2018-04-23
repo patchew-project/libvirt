@@ -126,7 +126,7 @@ virNetDevTapGetRealDeviceName(char *ifname ATTRIBUTE_UNUSED)
                 goto cleanup;
             }
 
-            if (ioctl(fd, TAPGIFNAME, (void *)&ifr) < 0) {
+            if (ioctl(fd, TAPGIFNAME, (void *) &ifr) < 0) {
                 virReportSystemError(errno, "%s",
                                      _("Unable to query tap interface name"));
                 goto cleanup;
@@ -793,7 +793,7 @@ virNetDevTapInterfaceStats(const char *ifname,
             continue;
 
         if (STREQ(ifa->ifa_name, ifname)) {
-            ifd = (struct if_data *)ifa->ifa_data;
+            ifd = (struct if_data *) ifa->ifa_data;
             if (swapped) {
                 stats->tx_bytes = ifd->ifi_ibytes;
                 stats->tx_packets = ifd->ifi_ipackets;

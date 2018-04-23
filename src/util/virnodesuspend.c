@@ -109,7 +109,7 @@ static int virNodeSuspendSetNodeWakeup(unsigned long long alarmTime)
  */
 static void virNodeSuspendHelper(void *cmdString)
 {
-    virCommandPtr suspendCmd = virCommandNew((const char *)cmdString);
+    virCommandPtr suspendCmd = virCommandNew((const char *) cmdString);
 
     /*
      * Delay for sometime so that the function virNodeSuspend()
@@ -221,7 +221,7 @@ int virNodeSuspend(unsigned int target,
 
     if (virThreadCreate(&thread, false,
                         virNodeSuspendHelper,
-                        (void *)cmdString) < 0) {
+                        (void *) cmdString) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Failed to create thread to suspend the host"));
         goto cleanup;

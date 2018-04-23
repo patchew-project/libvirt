@@ -312,7 +312,7 @@ int virNetlinkCommand(struct nl_msg *nl_msg,
                                            protocol, groups)))
         goto cleanup;
 
-    len = nl_recv(nlhandle, &nladdr, (unsigned char **)resp, NULL);
+    len = nl_recv(nlhandle, &nladdr, (unsigned char **) resp, NULL);
     if (len == 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("nl_recv failed - returned 0 bytes"));
@@ -360,7 +360,7 @@ virNetlinkDumpCommand(struct nl_msg *nl_msg,
         goto cleanup;
 
     while (!end) {
-        len = nl_recv(nlhandle, &nladdr, (unsigned char **)&resp, NULL);
+        len = nl_recv(nlhandle, &nladdr, (unsigned char **) &resp, NULL);
         VIR_WARNINGS_NO_CAST_ALIGN
         for (msg = resp; NLMSG_OK(msg, len); msg = NLMSG_NEXT(msg, len)) {
             VIR_WARNINGS_RESET
@@ -461,7 +461,7 @@ virNetlinkDumpLink(const char *ifname, int ifindex,
 
     switch (resp->nlmsg_type) {
     case NLMSG_ERROR:
-        err = (struct nlmsgerr *)NLMSG_DATA(resp);
+        err = (struct nlmsgerr *) NLMSG_DATA(resp);
         if (resp->nlmsg_len < NLMSG_LENGTH(sizeof(*err)))
             goto malformed_resp;
 
@@ -552,7 +552,7 @@ virNetlinkDelLink(const char *ifname, virNetlinkDelLinkFallback fallback)
 
     switch (resp->nlmsg_type) {
     case NLMSG_ERROR:
-        err = (struct nlmsgerr *)NLMSG_DATA(resp);
+        err = (struct nlmsgerr *) NLMSG_DATA(resp);
         if (resp->nlmsg_len < NLMSG_LENGTH(sizeof(*err)))
             goto malformed_resp;
 
@@ -638,7 +638,7 @@ virNetlinkGetNeighbor(void **nlData, uint32_t src_pid, uint32_t dst_pid)
 
     switch (resp->nlmsg_type) {
     case NLMSG_ERROR:
-        err = (struct nlmsgerr *)NLMSG_DATA(resp);
+        err = (struct nlmsgerr *) NLMSG_DATA(resp);
         if (resp->nlmsg_len < NLMSG_LENGTH(sizeof(*err)))
             goto malformed_resp;
 
@@ -686,7 +686,7 @@ virNetlinkGetErrorCode(struct nlmsghdr *resp, unsigned int recvbuflen)
 
     switch (resp->nlmsg_type) {
     case NLMSG_ERROR:
-        err = (struct nlmsgerr *)NLMSG_DATA(resp);
+        err = (struct nlmsgerr *) NLMSG_DATA(resp);
         if (resp->nlmsg_len < NLMSG_LENGTH(sizeof(*err)))
             goto malformed_resp;
 
@@ -775,7 +775,7 @@ virNetlinkEventCallback(int watch,
     bool handled = false;
 
     length = nl_recv(srv->netlinknh, &peer,
-                     (unsigned char **)&msg, &creds);
+                     (unsigned char **) &msg, &creds);
 
     if (length == 0)
         return;
@@ -788,7 +788,7 @@ virNetlinkEventCallback(int watch,
     virNetlinkEventServerLock(srv);
 
     VIR_DEBUG("dispatching to max %d clients, called from event watch %d",
-            (int)srv->handlesCount, watch);
+            (int) srv->handlesCount, watch);
 
     for (i = 0; i < srv->handlesCount; i++) {
         if (srv->handles[i].deleted != VIR_NETLINK_HANDLE_VALID)
@@ -910,7 +910,7 @@ int virNetlinkEventServiceLocalPid(unsigned int protocol)
                        _("netlink event service not running"));
         return -1;
     }
-    return (int)nl_socket_get_local_port(server[protocol]->netlinknh);
+    return (int) nl_socket_get_local_port(server[protocol]->netlinknh);
 }
 
 

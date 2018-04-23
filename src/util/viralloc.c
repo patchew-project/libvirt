@@ -133,7 +133,7 @@ int virAlloc(void *ptrptr,
 {
 #if TEST_OOM
     if (virAllocTestFail()) {
-        *(void **)ptrptr = NULL;
+        *(void **) ptrptr = NULL;
         if (report)
             virReportOOMErrorFull(domcode, filename, funcname, linenr);
         errno = ENOMEM;
@@ -141,8 +141,8 @@ int virAlloc(void *ptrptr,
     }
 #endif
 
-    *(void **)ptrptr = calloc(1, size);
-    if (*(void **)ptrptr == NULL) {
+    *(void **) ptrptr = calloc(1, size);
+    if (*(void **) ptrptr == NULL) {
         if (report)
             virReportOOMErrorFull(domcode, filename, funcname, linenr);
         return -1;
@@ -180,7 +180,7 @@ int virAllocN(void *ptrptr,
 {
 #if TEST_OOM
     if (virAllocTestFail()) {
-        *(void **)ptrptr = NULL;
+        *(void **) ptrptr = NULL;
         if (report)
             virReportOOMErrorFull(domcode, filename, funcname, linenr);
         errno = ENOMEM;
@@ -294,7 +294,7 @@ int virExpandN(void *ptrptr,
     ret = virReallocN(ptrptr, size, *countptr + add, report,
                       domcode, filename, funcname, linenr);
     if (ret == 0) {
-        memset(*(char **)ptrptr + (size * *countptr), 0, size * add);
+        memset(*(char **) ptrptr + (size * *countptr), 0, size * add);
         *countptr += add;
     }
     return ret;
@@ -557,8 +557,8 @@ int virAllocVar(void *ptrptr,
     }
 
     alloc_size = struct_size + (element_size * count);
-    *(void **)ptrptr = calloc(1, alloc_size);
-    if (*(void **)ptrptr == NULL) {
+    *(void **) ptrptr = calloc(1, alloc_size);
+    if (*(void **) ptrptr == NULL) {
         if (report)
             virReportOOMErrorFull(domcode, filename, funcname, linenr);
         return -1;
@@ -610,7 +610,7 @@ void virDispose(void *ptrptr,
         count = *countptr;
 
     if (*(void**)ptrptr && count > 0)
-        memset(*(void **)ptrptr, 0, count * element_size);
+        memset(*(void **) ptrptr, 0, count * element_size);
 
     free(*(void**)ptrptr);
     *(void**)ptrptr = NULL;

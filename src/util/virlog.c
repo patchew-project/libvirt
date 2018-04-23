@@ -781,7 +781,7 @@ virLogCloseFd(void *data)
 static virLogOutputPtr
 virLogNewOutputToStderr(virLogPriority priority)
 {
-    return virLogOutputNew(virLogOutputToFd, NULL, (void *)STDERR_FILENO,
+    return virLogOutputNew(virLogOutputToFd, NULL, (void *) STDERR_FILENO,
                            priority, VIR_LOG_TO_STDERR, NULL);
 }
 
@@ -800,7 +800,7 @@ virLogNewOutputToFile(virLogPriority priority,
     }
 
     if (!(ret = virLogOutputNew(virLogOutputToFd, virLogCloseFd,
-                                (void *)(intptr_t)fd,
+                                (void *) (intptr_t)fd,
                                 priority, VIR_LOG_TO_FILE, file))) {
         VIR_LOG_CLOSE(fd);
         return NULL;
@@ -965,11 +965,11 @@ journalAddString(struct journalState *state, const char *field,
         if (state->iov_end - state->iov < 4)
             return; /* Silently drop */
         IOVEC_SET_STRING(state->iov[0], field);
-        IOVEC_SET(state->iov[1], (void *)&equals, sizeof(equals));
+        IOVEC_SET(state->iov[1], (void *) &equals, sizeof(equals));
         state->iov += 2;
     }
     IOVEC_SET_STRING(state->iov[0], value);
-    IOVEC_SET(state->iov[1], (void *)&newline, sizeof(newline));
+    IOVEC_SET(state->iov[1], (void *) &newline, sizeof(newline));
     state->iov += 2;
 }
 
@@ -986,9 +986,9 @@ journalAddInt(struct journalState *state, const char *field, int value)
     num = virFormatIntDecimal(state->bufs[0], sizeof(state->bufs[0]), value);
 
     IOVEC_SET_STRING(state->iov[0], field);
-    IOVEC_SET(state->iov[1], (void *)&equals, sizeof(equals));
+    IOVEC_SET(state->iov[1], (void *) &equals, sizeof(equals));
     IOVEC_SET_STRING(state->iov[2], num);
-    IOVEC_SET(state->iov[3], (void *)&newline, sizeof(newline));
+    IOVEC_SET(state->iov[3], (void *) &newline, sizeof(newline));
     state->bufs++;
     state->iov += 4;
 }
@@ -1129,7 +1129,7 @@ virLogNewOutputToJournald(int priority)
     }
 
     if (!(ret = virLogOutputNew(virLogOutputToJournald, virLogCloseFd,
-                                (void *)(intptr_t) journalfd, priority,
+                                (void *) (intptr_t) journalfd, priority,
                                 VIR_LOG_TO_JOURNALD, NULL))) {
         VIR_LOG_CLOSE(journalfd);
         return NULL;

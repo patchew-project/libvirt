@@ -1042,7 +1042,7 @@ int virConfGetValueBool(virConfPtr conf,
         return -1;
     }
 
-    if (((unsigned long long)cval->l) > 1) {
+    if (((unsigned long long) cval->l) > 1) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("%s: value for '%s' parameter must be 0 or 1"),
                        conf->filename, setting);
@@ -1098,7 +1098,7 @@ int virConfGetValueInt(virConfPtr conf,
         return -1;
     }
 
-    *value = (int)cval->l;
+    *value = (int) cval->l;
 
     return 1;
 }
@@ -1139,14 +1139,14 @@ int virConfGetValueUInt(virConfPtr conf,
         return -1;
     }
 
-    if (((unsigned long long)cval->l) > UINT_MAX) {
+    if (((unsigned long long) cval->l) > UINT_MAX) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("%s: value for '%s' parameter must be in range 0:%u"),
                        conf->filename, setting, UINT_MAX);
         return -1;
     }
 
-    *value = (unsigned int)cval->l;
+    *value = (unsigned int) cval->l;
 
     return 1;
 }
@@ -1188,7 +1188,7 @@ int virConfGetValueSizeT(virConfPtr conf,
     }
 
 #if ULLONG_MAX > SIZE_MAX
-    if (((unsigned long long)cval->l) > SIZE_MAX) {
+    if (((unsigned long long) cval->l) > SIZE_MAX) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("%s: value for '%s' parameter must be in range 0:%zu"),
                        conf->filename, setting, SIZE_MAX);
@@ -1196,7 +1196,7 @@ int virConfGetValueSizeT(virConfPtr conf,
     }
 #endif
 
-    *value = (size_t)cval->l;
+    *value = (size_t) cval->l;
 
     return 1;
 }
@@ -1231,10 +1231,10 @@ int virConfGetValueSSizeT(virConfPtr conf,
         return 0;
 
     if (cval->type == VIR_CONF_ULLONG) {
-        if (((unsigned long long)cval->l) > SSIZE_MAX) {
+        if (((unsigned long long) cval->l) > SSIZE_MAX) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("%s: value for '%s' parameter must be in range %zd:%zd"),
-                           conf->filename, setting, (ssize_t)-SSIZE_MAX - 1, (ssize_t)SSIZE_MAX);
+                           conf->filename, setting, (ssize_t) -SSIZE_MAX - 1, (ssize_t) SSIZE_MAX);
             return -1;
         }
     } else if (cval->type == VIR_CONF_LLONG) {
@@ -1242,7 +1242,7 @@ int virConfGetValueSSizeT(virConfPtr conf,
         if (cval->l < (-SSIZE_MAX - 1) || cval->l > SSIZE_MAX) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("%s: value for '%s' parameter must be in range %zd:%zd"),
-                           conf->filename, setting, (ssize_t)-SSIZE_MAX - 1, (ssize_t)SSIZE_MAX);
+                           conf->filename, setting, (ssize_t) -SSIZE_MAX - 1, (ssize_t) SSIZE_MAX);
             return -1;
         }
 #endif
@@ -1253,7 +1253,7 @@ int virConfGetValueSSizeT(virConfPtr conf,
         return -1;
     }
 
-    *value = (ssize_t)cval->l;
+    *value = (ssize_t) cval->l;
 
     return 1;
 }
@@ -1288,7 +1288,7 @@ int virConfGetValueLLong(virConfPtr conf,
         return 0;
 
     if (cval->type == VIR_CONF_ULLONG) {
-        if (((unsigned long long)cval->l) > LLONG_MAX) {
+        if (((unsigned long long) cval->l) > LLONG_MAX) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("%s: value for '%s' parameter must be in range %lld:%lld"),
                            conf->filename, setting, LLONG_MIN, LLONG_MAX);
@@ -1341,7 +1341,7 @@ int virConfGetValueULLong(virConfPtr conf,
         return -1;
     }
 
-    *value = (unsigned long long)cval->l;
+    *value = (unsigned long long) cval->l;
 
     return 1;
 }
@@ -1478,7 +1478,7 @@ virConfWriteFile(const char *filename, virConfPtr conf)
     ret = safewrite(fd, content, use);
     VIR_FREE(content);
     VIR_FORCE_CLOSE(fd);
-    if (ret != (int)use) {
+    if (ret != (int) use) {
         virConfError(NULL, VIR_ERR_WRITE_FAILED, _("failed to save content"));
         return -1;
     }
@@ -1522,8 +1522,8 @@ virConfWriteMem(char *memory, int *len, virConfPtr conf)
     use = virBufferUse(&buf);
     content = virBufferContentAndReset(&buf);
 
-    if ((int)use >= *len) {
-        *len = (int)use;
+    if ((int) use >= *len) {
+        *len = (int) use;
         VIR_FREE(content);
         return -1;
     }

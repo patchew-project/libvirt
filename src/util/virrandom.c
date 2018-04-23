@@ -235,7 +235,7 @@ virRandomGenerateWWN(char **wwn,
     }
 
     if (virAsprintf(wwn, "5" "%s%09llx", oui,
-                    (unsigned long long)virRandomBits(36)) < 0)
+                    (unsigned long long) virRandomBits(36)) < 0)
         return -1;
     return 0;
 }

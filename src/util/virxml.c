@@ -507,7 +507,7 @@ char *
 virXMLPropString(xmlNodePtr node,
                  const char *name)
 {
-    return (char *)xmlGetProp(node, BAD_CAST name);
+    return (char *) xmlGetProp(node, BAD_CAST name);
 }
 
 
@@ -528,7 +528,7 @@ virXMLPropStringLimit(xmlNodePtr node,
                       const char *name,
                       size_t maxlen)
 {
-    char *tmp = (char *)xmlGetProp(node, BAD_CAST name);
+    char *tmp = (char *) xmlGetProp(node, BAD_CAST name);
 
     return virXMLStringLimitInternal(tmp, maxlen, name);
 }
@@ -546,7 +546,7 @@ virXMLPropStringLimit(xmlNodePtr node,
 char *
 virXMLNodeContentString(xmlNodePtr node)
 {
-    return (char *)xmlNodeGetContent(node);
+    return (char *) xmlNodeGetContent(node);
 }
 
 
@@ -986,7 +986,7 @@ virXMLNodeToString(xmlDocPtr doc,
         goto cleanup;
     }
 
-    ignore_value(VIR_STRDUP(ret, (const char *)xmlBufferContent(xmlbuf)));
+    ignore_value(VIR_STRDUP(ret, (const char *) xmlBufferContent(xmlbuf)));
 
  cleanup:
     xmlBufferFree(xmlbuf);
@@ -1043,7 +1043,7 @@ virXMLRemoveElementNamespace(xmlNodePtr node,
     const char *uri = opaque;
 
     if (node->ns &&
-        STREQ_NULLABLE((const char *)node->ns->href, uri))
+        STREQ_NULLABLE((const char *) node->ns->href, uri))
         xmlSetNs(node, NULL);
     return 0;
 }
@@ -1097,12 +1097,12 @@ virXMLExtractNamespaceXML(xmlNodePtr root,
     }
 
     virXMLForeachNode(nodeCopy, virXMLRemoveElementNamespace,
-                      (void *)uri);
+                      (void *) uri);
 
     /* remove the namespace declaration
      *  - it's only a single linked list ... doh */
     for (actualNs = nodeCopy->nsDef; actualNs; actualNs = actualNs->next) {
-        if (STREQ_NULLABLE((const char *)actualNs->href, uri)) {
+        if (STREQ_NULLABLE((const char *) actualNs->href, uri)) {
 
             /* unlink */
             if (prevNs)
@@ -1153,13 +1153,13 @@ virXMLInjectNamespace(xmlNodePtr node,
 {
     xmlNsPtr ns;
 
-    if (xmlValidateNCName((const unsigned char *)key, 1) != 0) {
+    if (xmlValidateNCName((const unsigned char *) key, 1) != 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("failed to validate prefix for a new XML namespace"));
         return -1;
     }
 
-    if (!(ns = xmlNewNs(node, (const unsigned char *)uri, (const unsigned char *)key))) {
+    if (!(ns = xmlNewNs(node, (const unsigned char *) uri, (const unsigned char *) key))) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("failed to create a new XML namespace"));
         return -1;

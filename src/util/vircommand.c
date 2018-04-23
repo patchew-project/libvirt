@@ -471,7 +471,7 @@ virExecCommon(virCommandPtr cmd, gid_t *groups, int ngroups)
     if (cmd->uid != (uid_t)-1 || cmd->gid != (gid_t)-1 ||
         cmd->capabilities || (cmd->flags & VIR_EXEC_CLEAR_CAPS)) {
         VIR_DEBUG("Setting child uid:gid to %d:%d with caps %llx",
-                  (int)cmd->uid, (int)cmd->gid, cmd->capabilities);
+                  (int) cmd->uid, (int) cmd->gid, cmd->capabilities);
         if (virSetUIDGIDWithCaps(cmd->uid, cmd->gid, groups, ngroups,
                                  cmd->capabilities,
                                  !!(cmd->flags & VIR_EXEC_CLEAR_CAPS)) < 0)
@@ -2476,7 +2476,7 @@ virCommandRunAsync(virCommandPtr cmd, pid_t *pid)
     VIR_DEBUG("About to run %s", str ? str : cmd->args[0]);
     ret = virExec(cmd);
     VIR_DEBUG("Command result %d, with PID %d",
-              ret, (int)cmd->pid);
+              ret, (int) cmd->pid);
 
     for (i = 0; i < cmd->npassfd; i++) {
         if (cmd->passfd[i].flags & VIR_COMMAND_PASS_FD_CLOSE_PARENT)

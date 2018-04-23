@@ -533,7 +533,7 @@ virRotatingFileReaderSeek(virRotatingFileReaderPtr file,
         if (ret == (off_t)-1) {
             virReportSystemError(errno,
                                  _("Unable to seek to inode %llu offset %llu"),
-                                 (unsigned long long)inode, (unsigned long long)offset);
+                                 (unsigned long long) inode, (unsigned long long) offset);
             return -1;
         }
 
@@ -546,7 +546,7 @@ virRotatingFileReaderSeek(virRotatingFileReaderPtr file,
     if (ret == (off_t)-1) {
         virReportSystemError(errno,
                              _("Unable to seek to inode %llu offset %llu"),
-                             (unsigned long long)inode, (unsigned long long)offset);
+                             (unsigned long long) inode, (unsigned long long) offset);
         return -1;
     }
     return 0;

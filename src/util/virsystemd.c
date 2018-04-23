@@ -338,7 +338,7 @@ int virSystemdCreateMachine(const char *name,
                               uuid[12], uuid[13], uuid[14], uuid[15],
                               creatorname,
                               iscontainer ? "container" : "vm",
-                              (unsigned int)pidleader,
+                              (unsigned int) pidleader,
                               rootdir ? rootdir : "",
                               nnicindexes, nicindexes,
                               3,
@@ -380,7 +380,7 @@ int virSystemdCreateMachine(const char *name,
                               uuid[12], uuid[13], uuid[14], uuid[15],
                               creatorname,
                               iscontainer ? "container" : "vm",
-                              (unsigned int)pidleader,
+                              (unsigned int) pidleader,
                               rootdir ? rootdir : "",
                               3,
                               "Slice", "s", slicename,
@@ -464,7 +464,7 @@ virSystemdNotifyStartup(void)
         .sun_family = AF_UNIX,
     };
     struct iovec iov = {
-        .iov_base = (char *)msg,
+        .iov_base = (char *) msg,
         .iov_len = strlen(msg),
     };
     struct msghdr mh = {

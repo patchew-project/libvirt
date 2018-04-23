@@ -758,7 +758,7 @@ struct virHashEqualData
 static int virHashEqualSearcher(const void *payload, const void *name,
                                 const void *data)
 {
-    struct virHashEqualData *vhed = (void *)data;
+    struct virHashEqualData *vhed = (void *) data;
     const void *value;
 
     value = virHashLookup(vhed->table2, name);

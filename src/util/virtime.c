@@ -395,7 +395,7 @@ virTimeBackOffStart(virTimeBackOffVar *var,
 
 /**
  * virTimeBackOffWait
- * @var: Timeout variable (with type virTimeBackOffVar *).
+ * @var: Timeout variable (with type virTimeBackOffVar *) .
  *
  * You must initialize @var first by calling the following function,
  * which also starts the timer:
