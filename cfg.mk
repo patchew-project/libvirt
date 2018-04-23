@@ -1050,6 +1050,12 @@ sc_prohibit_backslash_alignment:
 	halt='Do not attempt to right-align backslashes' \
 	  $(_sc_search_regexp)
 
+sc_require_space_after_cast:
+	@prohibit='(\([a-zA-Z _]+ \*+|\(((signed|unsigned|long|short|int|char|s?size_t|void) ?)+|switch \(\(vir[a-zA-Z]*Type)\)([^ );,])' \
+	in_vc_files='*\.[chx]$$' \
+	halt='Use space after cast' \
+	  $(_sc_search_regexp)
+
 # We don't use this feature of maint.mk.
 prev_version_file = /dev/null
 

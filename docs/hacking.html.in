@@ -579,6 +579,15 @@
       int foo(int wizz);    // Good
 </pre>
 
+    <p>
+      There must be a single whitespace immediately following a cast to any
+      type. E.g.
+    </p>
+    <pre>
+      foo = (int)bar;  // Bad
+      foo = (int) bar; // Good
+</pre>
+
     <h2><a id="comma">Commas</a></h2>
 
     <p>
