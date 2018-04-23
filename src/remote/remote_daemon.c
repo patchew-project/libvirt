@@ -548,7 +548,7 @@ daemonSetupNetworking(virNetServerPtr srv,
             virObjectUnref(ctxt);
         }
 #else
-        (void)privileged;
+        (void) privileged;
         if (config->listen_tls) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("This libvirtd build does not support TLS"));
@@ -653,7 +653,7 @@ daemonSetupAccessManager(struct daemonConfig *config)
 {
     virAccessManagerPtr mgr;
     const char *none[] = { "none", NULL };
-    const char **drv = (const char **)config->access_drivers;
+    const char **drv = (const char **) config->access_drivers;
 
     if (!drv ||
         !drv[0])

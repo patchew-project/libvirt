@@ -2648,7 +2648,7 @@ remoteDispatchDomainGetIOThreadInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
              * assumption that unsigned char and char are the same size.
              */
             dst->cpumap.cpumap_len = info[i]->cpumaplen;
-            dst->cpumap.cpumap_val = (char *)info[i]->cpumap;
+            dst->cpumap.cpumap_val = (char *) info[i]->cpumap;
             info[i]->cpumap = NULL;
         }
     } else {
@@ -3495,7 +3495,7 @@ remoteDispatchAuthSaslStart(virNetServerPtr server,
         goto authfail;
 
     if (serveroutlen > REMOTE_AUTH_SASL_DATA_MAX) {
-        VIR_ERROR(_("sasl start reply data too long %d"), (int)serveroutlen);
+        VIR_ERROR(_("sasl start reply data too long %d"), (int) serveroutlen);
         goto authfail;
     }
 
@@ -3593,7 +3593,7 @@ remoteDispatchAuthSaslStep(virNetServerPtr server,
 
     if (serveroutlen > REMOTE_AUTH_SASL_DATA_MAX) {
         VIR_ERROR(_("sasl step reply data too long %d"),
-                  (int)serveroutlen);
+                  (int) serveroutlen);
         goto authfail;
     }
 
@@ -3731,7 +3731,7 @@ remoteDispatchAuthPolkit(virNetServerPtr server,
 
     if (timestamp == 0) {
         VIR_WARN("Failing polkit auth due to missing client (pid=%lld) start time",
-                 (long long)callerPid);
+                 (long long) callerPid);
         goto authfail;
     }
 
@@ -4068,7 +4068,7 @@ remoteDispatchSecretGetValue(virNetServerPtr server ATTRIBUTE_UNUSED,
         goto cleanup;
 
     ret->value.value_len = value_size;
-    ret->value.value_val = (char *)value;
+    ret->value.value_val = (char *) value;
 
     rv = 0;
 
