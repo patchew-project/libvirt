@@ -2325,6 +2325,11 @@ struct _virDomainDef {
     virDomainVirtType virtType;
     int id;
     unsigned char uuid[VIR_UUID_BUFLEN];
+
+    unsigned char genid[VIR_UUID_BUFLEN];
+    bool genidRequested;
+    bool genidGenerated;
+
     char *name;
     char *title;
     char *description;
