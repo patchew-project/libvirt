@@ -1959,7 +1959,7 @@ virNodeDeviceDefParseXML(xmlXPathContextPtr ctxt,
         }
         VIR_FREE(tmp);
 
-        switch ((virNodeDevDevnodeType)val) {
+        switch ((virNodeDevDevnodeType) val) {
         case VIR_NODE_DEV_DEVNODE_DEV:
             def->devnode = (char*)xmlNodeGetContent(node);
             break;

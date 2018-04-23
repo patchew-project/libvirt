@@ -804,7 +804,7 @@ virDomainAuditLifecycle(virDomainObjPtr vm, const char *op,
 
     VIR_AUDIT(VIR_AUDIT_RECORD_MACHINE_CONTROL, success,
               "virt=%s op=%s reason=%s %s uuid=%s vm-pid=%lld",
-              virt, op, reason, vmname, uuidstr, (long long)vm->pid);
+              virt, op, reason, vmname, uuidstr, (long long) vm->pid);
 
     VIR_FREE(vmname);
 }
@@ -904,8 +904,8 @@ virDomainAuditInit(virDomainObjPtr vm,
 
     VIR_AUDIT(VIR_AUDIT_RECORD_MACHINE_CONTROL, true,
               "virt=%s op=init %s uuid=%s vm-pid=%lld init-pid=%lld pid-ns=%lld",
-              virt, vmname, uuidstr, (long long)vm->pid, (long long)initpid,
-              (long long)pidns);
+              virt, vmname, uuidstr, (long long) vm->pid, (long long) initpid,
+              (long long) pidns);
 
     VIR_FREE(vmname);
 }

@@ -231,7 +231,7 @@ virDomainSnapshotDefParse(xmlXPathContextPtr ctxt,
                            _("a redefined snapshot must have a name"));
             goto cleanup;
         }
-        if (virAsprintf(&def->name, "%lld", (long long)tv.tv_sec) < 0)
+        if (virAsprintf(&def->name, "%lld", (long long) tv.tv_sec) < 0)
             goto cleanup;
     }
 

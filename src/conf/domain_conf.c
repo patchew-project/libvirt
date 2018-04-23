@@ -1232,9 +1232,9 @@ virDomainBlkioDeviceParseXML(xmlNodePtr root,
     while (node) {
         if (node->type == XML_ELEMENT_NODE) {
             if (virXMLNodeNameEqual(node, "path") && !dev->path) {
-                dev->path = (char *)xmlNodeGetContent(node);
+                dev->path = (char *) xmlNodeGetContent(node);
             } else if (virXMLNodeNameEqual(node, "weight")) {
-                c = (char *)xmlNodeGetContent(node);
+                c = (char *) xmlNodeGetContent(node);
                 if (virStrToLong_ui(c, NULL, 10, &dev->weight) < 0) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                    _("could not parse weight %s"),
@@ -1243,7 +1243,7 @@ virDomainBlkioDeviceParseXML(xmlNodePtr root,
                 }
                 VIR_FREE(c);
             } else if (virXMLNodeNameEqual(node, "read_bytes_sec")) {
-                c = (char *)xmlNodeGetContent(node);
+                c = (char *) xmlNodeGetContent(node);
                 if (virStrToLong_ull(c, NULL, 10, &dev->rbps) < 0) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                    _("could not parse read bytes sec %s"),
@@ -1252,7 +1252,7 @@ virDomainBlkioDeviceParseXML(xmlNodePtr root,
                 }
                 VIR_FREE(c);
             } else if (virXMLNodeNameEqual(node, "write_bytes_sec")) {
-                c = (char *)xmlNodeGetContent(node);
+                c = (char *) xmlNodeGetContent(node);
                 if (virStrToLong_ull(c, NULL, 10, &dev->wbps) < 0) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                    _("could not parse write bytes sec %s"),
@@ -1261,7 +1261,7 @@ virDomainBlkioDeviceParseXML(xmlNodePtr root,
                 }
                 VIR_FREE(c);
             } else if (virXMLNodeNameEqual(node, "read_iops_sec")) {
-                c = (char *)xmlNodeGetContent(node);
+                c = (char *) xmlNodeGetContent(node);
                 if (virStrToLong_ui(c, NULL, 10, &dev->riops) < 0) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                    _("could not parse read iops sec %s"),
@@ -1270,7 +1270,7 @@ virDomainBlkioDeviceParseXML(xmlNodePtr root,
                 }
                 VIR_FREE(c);
             } else if (virXMLNodeNameEqual(node, "write_iops_sec")) {
-                c = (char *)xmlNodeGetContent(node);
+                c = (char *) xmlNodeGetContent(node);
                 if (virStrToLong_ui(c, NULL, 10, &dev->wiops) < 0) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                    _("could not parse write iops sec %s"),
@@ -2296,7 +2296,7 @@ virDomainChrSourceDefIsEqual(const virDomainChrSourceDef *src,
     if (tgt->type != src->type)
         return false;
 
-    switch ((virDomainChrType)src->type) {
+    switch ((virDomainChrType) src->type) {
     case VIR_DOMAIN_CHR_TYPE_FILE:
         return src->data.file.append == tgt->data.file.append &&
             STREQ_NULLABLE(src->data.file.path, tgt->data.file.path);
@@ -8378,10 +8378,10 @@ virDomainLeaseDefParseXML(xmlNodePtr node)
     while (cur != NULL) {
         if (cur->type == XML_ELEMENT_NODE) {
             if (!key && virXMLNodeNameEqual(cur, "key")) {
-                key = (char *)xmlNodeGetContent(cur);
+                key = (char *) xmlNodeGetContent(cur);
             } else if (!lockspace &&
                        virXMLNodeNameEqual(cur, "lockspace")) {
-                lockspace = (char *)xmlNodeGetContent(cur);
+                lockspace = (char *) xmlNodeGetContent(cur);
             } else if (!path &&
                        virXMLNodeNameEqual(cur, "target")) {
                 path = virXMLPropString(cur, "path");
@@ -8620,7 +8620,7 @@ virDomainStorageSourceParse(xmlNodePtr node,
 
     ctxt->node = node;
 
-    switch ((virStorageType)src->type) {
+    switch ((virStorageType) src->type) {
     case VIR_STORAGE_TYPE_FILE:
         src->path = virXMLPropString(node, "file");
         break;
@@ -9454,16 +9454,16 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                 goto error;
         } else if (!serial &&
                    virXMLNodeNameEqual(cur, "serial")) {
-            serial = (char *)xmlNodeGetContent(cur);
+            serial = (char *) xmlNodeGetContent(cur);
         } else if (!wwn &&
                    virXMLNodeNameEqual(cur, "wwn")) {
-            wwn = (char *)xmlNodeGetContent(cur);
+            wwn = (char *) xmlNodeGetContent(cur);
 
             if (!virValidateWWN(wwn))
                 goto error;
         } else if (!vendor &&
                    virXMLNodeNameEqual(cur, "vendor")) {
-            vendor = (char *)xmlNodeGetContent(cur);
+            vendor = (char *) xmlNodeGetContent(cur);
 
             if (strlen(vendor) > VENDOR_LEN) {
                 virReportError(VIR_ERR_XML_ERROR, "%s",
@@ -9478,7 +9478,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
             }
         } else if (!product &&
                    virXMLNodeNameEqual(cur, "product")) {
-            product = (char *)xmlNodeGetContent(cur);
+            product = (char *) xmlNodeGetContent(cur);
 
             if (strlen(product) > PRODUCT_LEN) {
                 virReportError(VIR_ERR_XML_ERROR, "%s",
@@ -9535,11 +9535,11 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
 
         if ((def->device == VIR_DOMAIN_DISK_DEVICE_DISK ||
              def->device == VIR_DOMAIN_DISK_DEVICE_LUN) &&
-            !STRPREFIX((const char *)target, "hd") &&
-            !STRPREFIX((const char *)target, "sd") &&
-            !STRPREFIX((const char *)target, "vd") &&
-            !STRPREFIX((const char *)target, "xvd") &&
-            !STRPREFIX((const char *)target, "ubd")) {
+            !STRPREFIX((const char *) target, "hd") &&
+            !STRPREFIX((const char *) target, "sd") &&
+            !STRPREFIX((const char *) target, "vd") &&
+            !STRPREFIX((const char *) target, "xvd") &&
+            !STRPREFIX((const char *) target, "ubd")) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Invalid harddisk device name: %s"), target);
             goto error;
@@ -10858,7 +10858,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
 
     type = virXMLPropString(node, "type");
     if (type != NULL) {
-        if ((int)(def->type = virDomainNetTypeFromString(type)) < 0) {
+        if ((int) (def->type = virDomainNetTypeFromString(type)) < 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("unknown interface type '%s'"), type);
             goto error;
@@ -11063,16 +11063,16 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     }
 
     if (macaddr) {
-        if (virMacAddrParse((const char *)macaddr, &def->mac) < 0) {
+        if (virMacAddrParse((const char *) macaddr, &def->mac) < 0) {
             virReportError(VIR_ERR_XML_ERROR,
                            _("unable to parse mac address '%s'"),
-                           (const char *)macaddr);
+                           (const char *) macaddr);
             goto error;
         }
         if (virMacAddrIsMulticast(&def->mac)) {
             virReportError(VIR_ERR_XML_ERROR,
                            _("expected unicast mac address, found multicast '%s'"),
-                           (const char *)macaddr);
+                           (const char *) macaddr);
             goto error;
         }
     } else {
@@ -12459,7 +12459,7 @@ virDomainSmartcardDefParseXML(virDomainXMLOptionPtr xmlopt,
                                      "exactly three certificates"));
                     goto error;
                 }
-                def->data.cert.file[i] = (char *)xmlNodeGetContent(cur);
+                def->data.cert.file[i] = (char *) xmlNodeGetContent(cur);
                 if (!def->data.cert.file[i]) {
                     virReportOOMError();
                     goto error;
@@ -12468,7 +12468,7 @@ virDomainSmartcardDefParseXML(virDomainXMLOptionPtr xmlopt,
             } else if (cur->type == XML_ELEMENT_NODE &&
                        virXMLNodeNameEqual(cur, "database") &&
                        !def->data.cert.database) {
-                def->data.cert.database = (char *)xmlNodeGetContent(cur);
+                def->data.cert.database = (char *) xmlNodeGetContent(cur);
                 if (!def->data.cert.database) {
                     virReportOOMError();
                     goto error;
@@ -12579,7 +12579,7 @@ virDomainTPMDefParseXML(virDomainXMLOptionPtr xmlopt,
 
     model = virXMLPropString(node, "model");
     if (model != NULL &&
-        (int)(def->model = virDomainTPMModelTypeFromString(model)) < 0) {
+        (int) (def->model = virDomainTPMModelTypeFromString(model)) < 0) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Unknown TPM frontend model '%s'"), model);
         goto error;
@@ -12610,7 +12610,7 @@ virDomainTPMDefParseXML(virDomainXMLOptionPtr xmlopt,
         goto error;
     }
 
-    if ((int)(def->type = virDomainTPMBackendTypeFromString(backend)) < 0) {
+    if ((int) (def->type = virDomainTPMBackendTypeFromString(backend)) < 0) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Unknown TPM backend type '%s'"),
                        backend);
@@ -17933,7 +17933,7 @@ virDomainDefMaybeAddHostdevSCSIcontroller(virDomainDefPtr def)
     for (i = 0; i < def->nhostdevs; i++) {
         hostdev = def->hostdevs[i];
         if (virHostdevIsSCSIDevice(hostdev) &&
-            (int)hostdev->info->addr.drive.controller > maxController) {
+            (int) hostdev->info->addr.drive.controller > maxController) {
             virDomainControllerDefPtr cont;
 
             maxController = hostdev->info->addr.drive.controller;
@@ -18682,7 +18682,7 @@ virDomainDefParseXML(xmlDocPtr xml,
     if (!(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE))
         if (virXPathLong("string(./@id)", ctxt, &id) < 0)
             id = -1;
-    def->id = (int)id;
+    def->id = (int) id;
 
     /* Find out what type of virtualization to use */
     if (!(tmp = virXMLPropString(ctxt->node, "type"))) {
@@ -19257,7 +19257,7 @@ virDomainDefParseXML(xmlDocPtr xml,
         goto error;
 
     for (i = 0; i < n; i++) {
-        int val = virDomainFeatureTypeFromString((const char *)nodes[i]->name);
+        int val = virDomainFeatureTypeFromString((const char *) nodes[i]->name);
         if (val < 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("unexpected feature '%s'"), nodes[i]->name);
@@ -19379,7 +19379,7 @@ virDomainDefParseXML(xmlDocPtr xml,
             goto error;
 
         for (i = 0; i < n; i++) {
-            feature = virDomainHypervTypeFromString((const char *)nodes[i]->name);
+            feature = virDomainHypervTypeFromString((const char *) nodes[i]->name);
             if (feature < 0) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                _("unsupported HyperV Enlightenment feature: %s"),
@@ -19480,7 +19480,7 @@ virDomainDefParseXML(xmlDocPtr xml,
             goto error;
 
         for (i = 0; i < n; i++) {
-            feature = virDomainKVMTypeFromString((const char *)nodes[i]->name);
+            feature = virDomainKVMTypeFromString((const char *) nodes[i]->name);
             if (feature < 0) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                _("unsupported KVM feature: %s"),
@@ -19522,7 +19522,7 @@ virDomainDefParseXML(xmlDocPtr xml,
         goto error;
 
     for (i = 0; i < n; i++) {
-        int val = virDomainCapsFeatureTypeFromString((const char *)nodes[i]->name);
+        int val = virDomainCapsFeatureTypeFromString((const char *) nodes[i]->name);
         if (val < 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("unexpected capability feature '%s'"), nodes[i]->name);
@@ -22364,7 +22364,7 @@ virDomainDefAddDiskControllersForType(virDomainDefPtr def,
         if (def->disks[i]->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_DRIVE)
             continue;
 
-        if ((int)def->disks[i]->info.addr.drive.controller > maxController)
+        if ((int) def->disks[i]->info.addr.drive.controller > maxController)
             maxController = def->disks[i]->info.addr.drive.controller;
     }
 
@@ -22871,7 +22871,7 @@ virDomainStorageSourceFormat(virBufferPtr attrBuf,
                              unsigned int flags,
                              bool skipSeclabels)
 {
-    switch ((virStorageType)src->type) {
+    switch ((virStorageType) src->type) {
     case VIR_STORAGE_TYPE_FILE:
         virBufferEscapeString(attrBuf, " file='%s'", src->path);
         break;
@@ -24426,7 +24426,7 @@ virDomainChrSourceDefFormat(virBufferPtr buf,
 
     virBufferSetChildIndent(&childBuf, buf);
 
-    switch ((virDomainChrType)def->type) {
+    switch ((virDomainChrType) def->type) {
     case VIR_DOMAIN_CHR_TYPE_NULL:
     case VIR_DOMAIN_CHR_TYPE_VC:
     case VIR_DOMAIN_CHR_TYPE_STDIO:
@@ -27344,7 +27344,7 @@ virDomainObjFormat(virDomainXMLOptionPtr xmlopt,
     virBufferAsprintf(&buf, "<domstatus state='%s' reason='%s' pid='%lld'>\n",
                       virDomainStateTypeToString(state),
                       virDomainStateReasonToString(state, reason),
-                      (long long)obj->pid);
+                      (long long) obj->pid);
     virBufferAdjustIndent(&buf, 2);
 
     for (i = 0; i < VIR_DOMAIN_TAINT_LAST; i++) {
@@ -28605,7 +28605,7 @@ virDomainDefSetMetadata(virDomainDefPtr def,
 
             /* create the root node if needed */
             if (!def->metadata &&
-                !(def->metadata = xmlNewNode(NULL, (unsigned char *)"metadata"))) {
+                !(def->metadata = xmlNewNode(NULL, (unsigned char *) "metadata"))) {
                 virReportOOMError();
                 goto cleanup;
             }

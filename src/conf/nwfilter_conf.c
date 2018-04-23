@@ -1817,7 +1817,7 @@ virNWFilterRuleDetailsParse(xmlNodePtr node,
         prop = virXMLPropString(node, att[idx].name);
 
         VIR_WARNINGS_NO_CAST_ALIGN
-        item = (nwItemDesc *)((char *)nwf + att[idx].dataIdx);
+        item = (nwItemDesc *) ((char *) nwf + att[idx].dataIdx);
         VIR_WARNINGS_RESET
         flags = &item->flags;
         flags_set = match_flag;
@@ -2740,7 +2740,7 @@ virNWFilterDefParseNode(xmlDocPtr xml,
     xmlXPathContextPtr ctxt = NULL;
     virNWFilterDefPtr def = NULL;
 
-    if (STRNEQ((const char *)root->name, "filter")) {
+    if (STRNEQ((const char *) root->name, "filter")) {
         virReportError(VIR_ERR_XML_ERROR,
                        "%s",
                        _("unknown root element for nw filter"));
@@ -2990,7 +2990,7 @@ virNWFilterRuleDefDetailsFormat(virBufferPtr buf,
 
     while (att[i].name) {
         VIR_WARNINGS_NO_CAST_ALIGN
-        item = (nwItemDesc *)((char *)def + att[i].dataIdx);
+        item = (nwItemDesc *) ((char *) def + att[i].dataIdx);
         VIR_WARNINGS_RESET
         virNWFilterEntryItemFlags flags = item->flags;
         if ((flags & NWFILTER_ENTRY_ITEM_FLAG_EXISTS)) {

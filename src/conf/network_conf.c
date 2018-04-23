@@ -423,7 +423,7 @@ virNetworkDHCPHostDefParseXML(const char *networkName,
             virReportError(VIR_ERR_XML_ERROR,
                            _("expected unicast mac address, found "
                              "multicast '%s' in network '%s'"),
-                           (const char *)mac, networkName);
+                           (const char *) mac, networkName);
             goto cleanup;
         }
     }

@@ -394,7 +394,7 @@ virNetworkObjSearchName(const void *payload,
     int want = 0;
 
     virObjectLock(obj);
-    if (STREQ(obj->def->name, (const char *)data))
+    if (STREQ(obj->def->name, (const char *) data))
         want = 1;
     virObjectUnlock(obj);
     return want;

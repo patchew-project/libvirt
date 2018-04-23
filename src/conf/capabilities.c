@@ -1578,8 +1578,8 @@ static int
 virCapsHostCacheBankSorter(const void *a,
                            const void *b)
 {
-    virCapsHostCacheBankPtr ca = *(virCapsHostCacheBankPtr *)a;
-    virCapsHostCacheBankPtr cb = *(virCapsHostCacheBankPtr *)b;
+    virCapsHostCacheBankPtr ca = *(virCapsHostCacheBankPtr *) a;
+    virCapsHostCacheBankPtr cb = *(virCapsHostCacheBankPtr *) b;
 
     if (ca->level < cb->level)
         return -1;

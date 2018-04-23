@@ -664,7 +664,7 @@ virSecretObjDeleteData(virSecretObjPtr obj)
 {
     /* The configFile will already be removed, so secret won't be
      * loaded again if this fails */
-    (void)unlink(obj->base64File);
+    (void) unlink(obj->base64File);
 }
 
 
@@ -853,7 +853,7 @@ virSecretLoadValue(virSecretObjPtr obj)
         goto cleanup;
     }
 
-    if ((size_t)st.st_size != st.st_size) {
+    if ((size_t) st.st_size != st.st_size) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("'%s' file does not fit in memory"),
                        obj->base64File);
@@ -880,7 +880,7 @@ virSecretLoadValue(virSecretObjPtr obj)
     if (value == NULL)
         goto cleanup;
 
-    obj->value = (unsigned char *)value;
+    obj->value = (unsigned char *) value;
     value = NULL;
     obj->value_size = value_size;
 

@@ -466,7 +466,7 @@ virStoragePoolObjListSearchCb(const void *payload,
 {
     virStoragePoolObjPtr obj = (virStoragePoolObjPtr) payload;
     struct _virStoragePoolObjListSearchData *data =
-        (struct _virStoragePoolObjListSearchData *)opaque;
+        (struct _virStoragePoolObjListSearchData *) opaque;
 
     virObjectLock(obj);
     if (data->searcher(obj, data->opaque))
@@ -1818,7 +1818,7 @@ virStoragePoolObjSourceFindDuplicateCb(const void *payload,
     if (STREQ(obj->def->name, data->def->name))
         return 0;
 
-    switch ((virStoragePoolType)obj->def->type) {
+    switch ((virStoragePoolType) obj->def->type) {
     case VIR_STORAGE_POOL_DIR:
     case VIR_STORAGE_POOL_GLUSTER:
     case VIR_STORAGE_POOL_NETFS:

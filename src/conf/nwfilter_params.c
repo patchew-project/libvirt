@@ -712,7 +712,7 @@ struct addToTableStruct {
 static int
 addToTable(void *payload, const void *name, void *data)
 {
-    struct addToTableStruct *atts = (struct addToTableStruct *)data;
+    struct addToTableStruct *atts = (struct addToTableStruct *) data;
     virNWFilterVarValuePtr val;
 
     if (atts->errOccurred)
@@ -724,10 +724,10 @@ addToTable(void *payload, const void *name, void *data)
         return 0;
     }
 
-    if (virNWFilterHashTablePut(atts->target, (const char *)name, val) < 0) {
+    if (virNWFilterHashTablePut(atts->target, (const char *) name, val) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Could not put variable '%s' into hashmap"),
-                       (const char *)name);
+                       (const char *) name);
         atts->errOccurred = 1;
         virNWFilterVarValueFree(val);
     }
@@ -896,7 +896,7 @@ virNWFilterFormatParamAttributes(virBufferPtr buf,
             for (j = 0; j < card; j++)
                 virBufferAsprintf(buf,
                                   "<parameter name='%s' value='%s'/>\n",
-                                  (const char *)items[i].key,
+                                  (const char *) items[i].key,
                                   virNWFilterVarValueGetNthValue(value, j));
 
         }

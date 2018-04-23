@@ -238,7 +238,7 @@ virDomainCapsCPUModelsAdd(virDomainCapsCPUModelsPtr cpuModels,
     if (VIR_STRNDUP(nameCopy, name, nameLen) < 0)
         goto error;
 
-    if (virStringListCopy(&blockersCopy, (const char **)blockers) < 0)
+    if (virStringListCopy(&blockersCopy, (const char **) blockers) < 0)
         goto error;
 
     if (virDomainCapsCPUModelsAddSteal(cpuModels, &nameCopy,
