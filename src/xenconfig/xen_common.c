@@ -337,7 +337,7 @@ xenParseTimeOffset(virConfPtr conf, virDomainDefPtr def)
         if (xenConfigGetULong(conf, "rtc_timeoffset", &rtc_timeoffset, 0) < 0)
             return -1;
 
-        def->clock.data.variable.adjustment = (int)rtc_timeoffset;
+        def->clock.data.variable.adjustment = (int) rtc_timeoffset;
         def->clock.data.variable.basis = vmlocaltime ?
             VIR_DOMAIN_CLOCK_BASIS_LOCALTIME :
             VIR_DOMAIN_CLOCK_BASIS_UTC;
@@ -612,7 +612,7 @@ xenParseVfb(virConfPtr conf, virDomainDefPtr def)
                 unsigned long vncdisplay;
                 if (xenConfigGetULong(conf, "vncdisplay", &vncdisplay, 0) < 0)
                     goto cleanup;
-                graphics->data.vnc.port = (int)vncdisplay + 5900;
+                graphics->data.vnc.port = (int) vncdisplay + 5900;
             }
 
             if (xenConfigCopyStringOpt(conf, "vnclisten", &listenAddr) < 0)
@@ -1429,7 +1429,7 @@ xenFormatTimeOffset(virConfPtr conf, virDomainDefPtr def)
 
         switch (def->clock.offset) {
         case VIR_DOMAIN_CLOCK_OFFSET_VARIABLE:
-            vmlocaltime = (int)def->clock.data.variable.basis;
+            vmlocaltime = (int) def->clock.data.variable.basis;
             rtc_timeoffset = def->clock.data.variable.adjustment;
             break;
         case VIR_DOMAIN_CLOCK_OFFSET_UTC:

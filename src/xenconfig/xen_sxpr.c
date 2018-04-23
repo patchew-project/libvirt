@@ -2405,7 +2405,7 @@ xenFormatSxpr(virConnectPtr conn, virDomainDefPtr def)
         int rtc_timeoffset;
         switch (def->clock.offset) {
         case VIR_DOMAIN_CLOCK_OFFSET_VARIABLE:
-            vmlocaltime = (int)def->clock.data.variable.basis;
+            vmlocaltime = (int) def->clock.data.variable.basis;
             rtc_timeoffset = def->clock.data.variable.adjustment;
             break;
         case VIR_DOMAIN_CLOCK_OFFSET_UTC:

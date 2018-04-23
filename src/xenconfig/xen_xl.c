@@ -364,12 +364,12 @@ xenParseXLSpice(virConfPtr conf, virDomainDefPtr def)
 
             if (xenConfigGetULong(conf, "spicetls_port", &port, 0) < 0)
                 goto cleanup;
-            graphics->data.spice.tlsPort = (int)port;
+            graphics->data.spice.tlsPort = (int) port;
 
             if (xenConfigGetULong(conf, "spiceport", &port, 0) < 0)
                 goto cleanup;
 
-            graphics->data.spice.port = (int)port;
+            graphics->data.spice.port = (int) port;
 
             if (!graphics->data.spice.tlsPort &&
                 !graphics->data.spice.port)
@@ -1376,7 +1376,7 @@ xenFormatXLCPUID(virConfPtr conf, virDomainDefPtr def)
     cpuid_pairs[j] = NULL;
 
     if (j > 1) {
-        cpuid_string = virStringListJoin((const char **)cpuid_pairs, ",");
+        cpuid_string = virStringListJoin((const char **) cpuid_pairs, ",");
         if (!cpuid_string)
             goto cleanup;
 
