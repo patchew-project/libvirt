@@ -303,7 +303,7 @@ virStorageBackendRBDRefreshVolInfoCb(uint64_t offset ATTRIBUTE_UNUSED,
                                      int exists,
                                      void *arg)
 {
-    size_t *used_size = (size_t *)(arg);
+    size_t *used_size = (size_t *) (arg);
     if (exists)
         (*used_size) += len;
 
@@ -847,10 +847,10 @@ virStorageBackendRBDSnapshotFindNoDiff(rbd_image_t image,
  */
 #if LIBRBD_VERSION_CODE > 265
         r = rbd_diff_iterate2(image, snaps[i].name, 0, info.size, 0, 1,
-                              virStorageBackendRBDIterateCb, (void *)&diff);
+                              virStorageBackendRBDIterateCb, (void *) &diff);
 #else
         r = rbd_diff_iterate(image, snaps[i].name, 0, info.size,
-                             virStorageBackendRBDIterateCb, (void *)&diff);
+                             virStorageBackendRBDIterateCb, (void *) &diff);
 #endif
 
         if (r < 0) {
@@ -988,7 +988,7 @@ virStorageBackendRBDCloneImage(rados_ioctx_t io,
         VIR_DEBUG("No RBD snapshot with zero delta could be found for image %s",
                   origvol);
 
-        virBufferAsprintf(&snapname, "libvirt-%d", (int)virRandomInt(65534));
+        virBufferAsprintf(&snapname, "libvirt-%d", (int) virRandomInt(65534));
 
         if (virBufferCheckError(&snapname) < 0)
             goto cleanup;

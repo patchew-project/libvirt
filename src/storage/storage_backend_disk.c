@@ -553,7 +553,7 @@ static int
 virStorageVolNumOfPartTypes(virStorageVolDefPtr def,
                             const void *opaque)
 {
-    struct virStorageVolNumData *data = (struct virStorageVolNumData *)opaque;
+    struct virStorageVolNumData *data = (struct virStorageVolNumData *) opaque;
 
     if (def->source.partType == VIR_STORAGE_VOL_DISK_TYPE_PRIMARY ||
         def->source.partType == VIR_STORAGE_VOL_DISK_TYPE_EXTENDED)
@@ -670,7 +670,7 @@ virStorageBackendDiskPartBoundaries(virStoragePoolObjPtr pool,
     unsigned long long alignedAllocation = allocation;
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
     virStoragePoolSourceDevicePtr dev = &def->source.devices[0];
-    unsigned long long cylinderSize = (unsigned long long)dev->geometry.heads *
+    unsigned long long cylinderSize = (unsigned long long) dev->geometry.heads *
                                       dev->geometry.sectors * SECTOR_SIZE;
 
     VIR_DEBUG("find free area: allocation %llu, cyl size %llu", allocation,

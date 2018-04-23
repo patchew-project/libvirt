@@ -735,7 +735,7 @@ virStorageFileBackendFileInit(virStorageSourcePtr src)
     VIR_DEBUG("initializing FS storage file %p (%s:%s)[%u:%u]", src,
               virStorageTypeToString(virStorageSourceGetActualType(src)),
               src->path,
-              (unsigned int)src->drv->uid, (unsigned int)src->drv->gid);
+              (unsigned int) src->drv->uid, (unsigned int) src->drv->gid);
 
     if (VIR_ALLOC(priv) < 0)
         return -1;

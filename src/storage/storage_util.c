@@ -3771,10 +3771,10 @@ virStorageBackendRefreshLocal(virStoragePoolObjPtr pool)
         goto cleanup;
     }
 
-    def->capacity = ((unsigned long long)sb.f_frsize *
-                     (unsigned long long)sb.f_blocks);
-    def->available = ((unsigned long long)sb.f_bfree *
-                      (unsigned long long)sb.f_frsize);
+    def->capacity = ((unsigned long long) sb.f_frsize *
+                     (unsigned long long) sb.f_blocks);
+    def->available = ((unsigned long long) sb.f_bfree *
+                      (unsigned long long) sb.f_frsize);
     def->allocation = def->capacity - def->available;
 
     def->target.perms.mode = target->perms->mode;

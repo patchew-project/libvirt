@@ -404,10 +404,10 @@ virStorageBackendGlusterRefreshPool(virStoragePoolObjPtr pool)
         goto cleanup;
     }
 
-    def->capacity = ((unsigned long long)sb.f_frsize *
-                     (unsigned long long)sb.f_blocks);
-    def->available = ((unsigned long long)sb.f_bfree *
-                      (unsigned long long)sb.f_frsize);
+    def->capacity = ((unsigned long long) sb.f_frsize *
+                     (unsigned long long) sb.f_blocks);
+    def->available = ((unsigned long long) sb.f_bfree *
+                      (unsigned long long) sb.f_frsize);
     def->allocation = def->capacity - def->available;
 
     ret = 0;
@@ -642,7 +642,7 @@ virStorageFileBackendGlusterInit(virStorageSourcePtr src)
     VIR_DEBUG("initializing gluster storage file %p "
               "(priv='%p' volume='%s' path='%s') as [%u:%u]",
               src, priv, src->volume, src->path,
-              (unsigned int)src->drv->uid, (unsigned int)src->drv->gid);
+              (unsigned int) src->drv->uid, (unsigned int) src->drv->gid);
 
     if (!(priv->vol = glfs_new(src->volume))) {
         virReportOOMError();

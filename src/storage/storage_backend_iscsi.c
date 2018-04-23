@@ -311,7 +311,7 @@ virStorageBackendISCSISetAuth(const char *portal,
         virISCSINodeUpdate(portal,
                            source->devices[0].path,
                            "node.session.auth.password",
-                           (const char *)secret_value) < 0)
+                           (const char *) secret_value) < 0)
         goto cleanup;
 
     ret = 0;
