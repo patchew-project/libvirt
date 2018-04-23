@@ -267,7 +267,7 @@ virNetSSHKbIntCb(const char *name ATTRIBUTE_UNUSED,
  cleanup:
     if (askcred) {
         for (i = 0; i < num_prompts; i++) {
-            char *prompt = (char *)askcred[i].prompt;
+            char *prompt = (char *) askcred[i].prompt;
             VIR_FREE(askcred[i].result);
             VIR_FREE(prompt);
         }
@@ -373,7 +373,7 @@ virNetSSHCheckHostKey(virNetSSHSessionPtr sess)
             keyhashstr = virBufferContentAndReset(&buff);
 
             askKey.type = VIR_CRED_ECHOPROMPT;
-            if (virAsprintf((char **)&askKey.prompt,
+            if (virAsprintf((char **) &askKey.prompt,
                             _("Accept SSH host key with hash '%s' for "
                               "host '%s:%d' (%s/%s)?"),
                             keyhashstr,
@@ -642,7 +642,7 @@ virNetSSHAuthenticatePrivkey(virNetSSHSessionPtr sess,
         return -1;
     }
 
-    if (virAsprintf((char **)&retr_passphrase.prompt,
+    if (virAsprintf((char **) &retr_passphrase.prompt,
                     _("Passphrase for key '%s'"),
                     priv->filename) < 0)
         return -1;
@@ -651,12 +651,12 @@ virNetSSHAuthenticatePrivkey(virNetSSHSessionPtr sess,
         virReportError(VIR_ERR_SSH, "%s",
                        _("failed to retrieve private key passphrase: "
                          "callback has failed"));
-        tmp = (char *)retr_passphrase.prompt;
+        tmp = (char *) retr_passphrase.prompt;
         VIR_FREE(tmp);
         return -1;
     }
 
-    tmp = (char *)retr_passphrase.prompt;
+    tmp = (char *) retr_passphrase.prompt;
     VIR_FREE(tmp);
 
     ret = libssh2_userauth_publickey_fromfile(sess->session,
@@ -1250,7 +1250,7 @@ virNetSSHSessionPtr virNetSSHSessionNew(void)
     if (!(sess->session = libssh2_session_init_ex(NULL,
                                                   NULL,
                                                   NULL,
-                                                  (void *)sess))) {
+                                                  (void *) sess))) {
         virReportError(VIR_ERR_SSH, "%s",
                        _("Failed to initialize libssh2 session"));
         goto error;

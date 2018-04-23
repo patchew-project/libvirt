@@ -505,7 +505,7 @@ static gnutls_x509_crt_t virNetTLSContextLoadCertFromFile(const char *certFile,
     if (virFileReadAll(certFile, (1<<16), &buf) < 0)
         goto cleanup;
 
-    data.data = (unsigned char *)buf;
+    data.data = (unsigned char *) buf;
     data.size = strlen(buf);
 
     if (gnutls_x509_crt_import(cert, &data, GNUTLS_X509_FMT_PEM) < 0) {
@@ -543,7 +543,7 @@ static int virNetTLSContextLoadCACertListFromFile(const char *certFile,
     if (virFileReadAll(certFile, (1<<16), &buf) < 0)
         goto cleanup;
 
-    data.data = (unsigned char *)buf;
+    data.data = (unsigned char *) buf;
     data.size = strlen(buf);
 
     if (gnutls_x509_crt_list_import(certs, &certMax, &data, GNUTLS_X509_FMT_PEM, 0) < 0) {

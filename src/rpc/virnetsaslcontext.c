@@ -283,7 +283,7 @@ const char *virNetSASLSessionGetIdentity(virNetSASLSessionPtr sasl)
                        _("no client username was found"));
         goto cleanup;
     }
-    VIR_DEBUG("SASL client username %s", (const char *)val);
+    VIR_DEBUG("SASL client username %s", (const char *) val);
 
  cleanup:
     virObjectUnlock(sasl);
@@ -306,7 +306,7 @@ int virNetSASLSessionGetKeySize(virNetSASLSessionPtr sasl)
         ssf = -1;
         goto cleanup;
     }
-    ssf = *(const int *)val;
+    ssf = *(const int *) val;
 
  cleanup:
     virObjectUnlock(sasl);

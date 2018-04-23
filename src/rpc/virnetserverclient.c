@@ -1202,7 +1202,7 @@ static ssize_t virNetServerClientRead(virNetServerClientPtr client)
     if (client->rx->bufferLength <= client->rx->bufferOffset) {
         virReportError(VIR_ERR_RPC,
                        _("unexpected zero/negative length request %lld"),
-                       (long long int)(client->rx->bufferLength - client->rx->bufferOffset));
+                       (long long int) (client->rx->bufferLength - client->rx->bufferOffset));
         client->wantClose = true;
         return -1;
     }
@@ -1379,7 +1379,7 @@ static ssize_t virNetServerClientWrite(virNetServerClientPtr client)
     if (client->tx->bufferLength < client->tx->bufferOffset) {
         virReportError(VIR_ERR_RPC,
                        _("unexpected zero/negative length request %lld"),
-                       (long long int)(client->tx->bufferLength - client->tx->bufferOffset));
+                       (long long int) (client->tx->bufferLength - client->tx->bufferOffset));
         client->wantClose = true;
         return -1;
     }
