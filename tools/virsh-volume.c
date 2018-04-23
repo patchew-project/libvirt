@@ -536,7 +536,7 @@ virshMakeCloneXML(const char *origxml, const char *newname)
         obj->nodesetval->nodeTab == NULL)
         goto cleanup;
 
-    xmlNodeSetContent(obj->nodesetval->nodeTab[0], (const xmlChar *)newname);
+    xmlNodeSetContent(obj->nodesetval->nodeTab[0], (const xmlChar *) newname);
     xmlDocDumpMemory(doc, &newxml, &size);
 
  cleanup:

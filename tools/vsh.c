@@ -162,7 +162,7 @@ _vshStrdup(vshControl *ctl, const char *s, const char *filename, int line)
     if (VIR_STRDUP(x, s) >= 0)
         return x;
     vshError(ctl, _("%s: %d: failed to allocate %lu bytes"),
-             filename, line, (unsigned long)strlen(s));
+             filename, line, (unsigned long) strlen(s));
     exit(EXIT_FAILURE);
 }
 
@@ -373,7 +373,7 @@ vshCmddefCheckInternals(const vshCmdDef *cmd)
 
         case VSH_OT_ALIAS: {
             size_t j;
-            char *name = (char *)opt->help; /* cast away const */
+            char *name = (char *) opt->help; /* cast away const */
             char *p;
 
             if (opt->flags || !opt->help)

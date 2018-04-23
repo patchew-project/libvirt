@@ -1150,7 +1150,7 @@ cmdDominfo(vshControl *ctl, const vshCmd *cmd)
         return false;
 
     id = virDomainGetID(dom);
-    if (id == ((unsigned int)-1))
+    if (id == ((unsigned int) -1))
         vshPrint(ctl, "%-15s %s\n", _("Id:"), "-");
     else
         vshPrint(ctl, "%-15s %d\n", _("Id:"), id);
@@ -1795,7 +1795,7 @@ cmdList(vshControl *ctl, const vshCmd *cmd)
     bool ret = false;
     virshDomainListPtr list = NULL;
     virDomainPtr dom;
-    char id_buf[INT_BUFSIZE_BOUND(unsigned int)];
+    char id_buf[INT_BUFSIZE_BOUND(unsigned int) ];
     unsigned int id;
     unsigned int flags = VIR_CONNECT_LIST_DOMAINS_ACTIVE;
 

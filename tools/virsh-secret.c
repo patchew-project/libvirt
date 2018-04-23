@@ -214,7 +214,7 @@ cmdSecretSetValue(vshControl *ctl, const vshCmd *cmd)
         goto cleanup;
     }
 
-    res = virSecretSetValue(secret, (unsigned char *)value, value_size, 0);
+    res = virSecretSetValue(secret, (unsigned char *) value, value_size, 0);
     memset(value, 0, value_size);
     VIR_FREE(value);
 

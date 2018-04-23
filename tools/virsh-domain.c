@@ -370,7 +370,7 @@ static int str2PCIAddress(const char *str, struct PCIAddress *pciAddr)
     if (!str)
         return -1;
 
-    domain = (char *)str;
+    domain = (char *) str;
 
     if (virStrToLong_uip(domain, &bus, 16, &pciAddr->domain) != 0)
         return -1;
@@ -399,7 +399,7 @@ static int str2SCSIAddress(const char *str, struct SCSIAddress *scsiAddr)
     if (!str)
         return -1;
 
-    controller = (char *)str;
+    controller = (char *) str;
 
     if (virStrToLong_uip(controller, &bus, 10, &scsiAddr->controller) != 0)
         return -1;
@@ -424,7 +424,7 @@ static int str2IDEAddress(const char *str, struct IDEAddress *ideAddr)
     if (!str)
         return -1;
 
-    controller = (char *)str;
+    controller = (char *) str;
 
     if (virStrToLong_uip(controller, &bus, 10, &ideAddr->controller) != 0)
         return -1;
@@ -449,7 +449,7 @@ static int str2CCWAddress(const char *str, struct CCWAddress *ccwAddr)
     if (!str)
         return -1;
 
-    cssid = (char *)str;
+    cssid = (char *) str;
 
     if (virStrToLong_uip(cssid, &ssid, 16, &ccwAddr->cssid) != 0)
         return -1;
@@ -480,7 +480,7 @@ static int str2DiskAddress(const char *str, struct DiskAddress *diskAddr)
     if (!str)
         return -1;
 
-    type = (char *)str;
+    type = (char *) str;
     addr = strchr(type, ':');
     if (!addr)
         return -1;
@@ -625,7 +625,7 @@ cmdAttachDisk(vshControl *ctl, const vshCmd *cmd)
             goto cleanup;
         }
 
-        if (STRPREFIX((const char *)target, "vd")) {
+        if (STRPREFIX((const char *) target, "vd")) {
             if (diskAddr.type == DISK_ADDR_TYPE_PCI) {
                 virBufferAsprintf(&buf,
                                   "<address type='pci' domain='0x%04x'"
@@ -646,7 +646,7 @@ cmdAttachDisk(vshControl *ctl, const vshCmd *cmd)
                          _("expecting a pci:0000.00.00.00 or ccw:00.0.0000 address."));
                 goto cleanup;
             }
-        } else if (STRPREFIX((const char *)target, "sd")) {
+        } else if (STRPREFIX((const char *) target, "sd")) {
             if (diskAddr.type == DISK_ADDR_TYPE_SCSI) {
                 virBufferAsprintf(&buf,
                                   "<address type='drive' controller='%u'"
@@ -657,7 +657,7 @@ cmdAttachDisk(vshControl *ctl, const vshCmd *cmd)
                 vshError(ctl, "%s", _("expecting a scsi:00.00.00 address."));
                 goto cleanup;
             }
-        } else if (STRPREFIX((const char *)target, "hd")) {
+        } else if (STRPREFIX((const char *) target, "hd")) {
             if (diskAddr.type == DISK_ADDR_TYPE_IDE) {
                 virBufferAsprintf(&buf,
                                   "<address type='drive' controller='%u'"
@@ -862,7 +862,7 @@ cmdAttachInterface(vshControl *ctl, const vshCmd *cmd)
         goto cleanup;
 
     /* check interface type */
-    if ((int)(typ = virDomainNetTypeFromString(type)) < 0) {
+    if ((int) (typ = virDomainNetTypeFromString(type)) < 0) {
         vshError(ctl, _("No support for %s in command 'attach-interface'"),
                  type);
         goto cleanup;
@@ -1604,7 +1604,7 @@ virshPrintJobProgress(const char *label, unsigned long long remaining,
         progress = 100;
     } else {
         /* use float to avoid overflow */
-        progress = (int)(100.0 - remaining * 100.0 / total);
+        progress = (int) (100.0 - remaining * 100.0 / total);
         if (progress >= 100) {
             /* migration has not completed, do not print [100 %] */
             progress = 99;
@@ -4021,7 +4021,7 @@ cmdStart(vshControl *ctl, const vshCmd *cmd)
                                         VIRSH_BYNAME | VIRSH_BYUUID)))
         return false;
 
-    if (virDomainGetID(dom) != (unsigned int)-1) {
+    if (virDomainGetID(dom) != (unsigned int) -1) {
         vshError(ctl, "%s", _("Domain is already active"));
         goto cleanup;
     }
@@ -4226,7 +4226,7 @@ virshWatchJob(vshControl *ctl,
 
     GETTIMEOFDAY(&start);
     while (1) {
-        ret = poll((struct pollfd *)&pollfd, npollfd, 500);
+        ret = poll((struct pollfd *) &pollfd, npollfd, 500);
         if (ret > 0) {
             if (pollfd[1].revents & POLLIN &&
                 saferead(STDIN_FILENO, &retchar, sizeof(retchar)) > 0) {
@@ -4259,8 +4259,8 @@ virshWatchJob(vshControl *ctl,
         }
 
         GETTIMEOFDAY(&curr);
-        if (timeout_ms && (((int)(curr.tv_sec - start.tv_sec)  * 1000 +
-                            (int)(curr.tv_usec - start.tv_usec) / 1000) >
+        if (timeout_ms && (((int) (curr.tv_sec - start.tv_sec)  * 1000 +
+                            (int) (curr.tv_usec - start.tv_usec) / 1000) >
                            timeout_ms)) {
             /* suspend the domain when migration timeouts. */
             vshDebug(ctl, VSH_ERR_DEBUG, "%s timeout", label);
@@ -7859,7 +7859,7 @@ cmdCPUBaseline(vshControl *ctl, const vshCmd *cmd)
     }
 
     result = virConnectBaselineCPU(priv->conn,
-                                   (const char **)list, count, flags);
+                                   (const char **) list, count, flags);
 
     if (result) {
         vshPrint(ctl, "%s", result);
@@ -10326,7 +10326,7 @@ cmdDomid(vshControl *ctl, const vshCmd *cmd)
         return false;
 
     id = virDomainGetID(dom);
-    if (id == ((unsigned int)-1))
+    if (id == ((unsigned int) -1))
         vshPrint(ctl, "%s\n", "-");
     else
         vshPrint(ctl, "%d\n", id);
@@ -10626,7 +10626,7 @@ doMigrate(void *opaque)
                                         &nparams,
                                         &maxparams,
                                         VIR_MIGRATE_PARAM_MIGRATE_DISKS,
-                                        (const char **)val) < 0) {
+                                        (const char **) val) < 0) {
             VIR_FREE(val);
             goto save_error;
         }
@@ -10643,7 +10643,7 @@ doMigrate(void *opaque)
                                         &nparams,
                                         &maxparams,
                                         VIR_MIGRATE_PARAM_COMPRESSION,
-                                        (const char **)val) < 0) {
+                                        (const char **) val) < 0) {
             VIR_FREE(val);
             goto save_error;
         }

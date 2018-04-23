@@ -290,8 +290,8 @@ static const vshCmdOptDef opts_freepages[] = {
 static int
 vshPageSizeSorter(const void *a, const void *b)
 {
-    unsigned int pa = *(unsigned int *)a;
-    unsigned int pb = *(unsigned int *)b;
+    unsigned int pa = *(unsigned int *) a;
+    unsigned int pb = *(unsigned int *) b;
 
     return pa - pb;
 }

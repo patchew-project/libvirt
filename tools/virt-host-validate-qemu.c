@@ -40,7 +40,7 @@ int virHostValidateQEMU(void)
     if (!(flags = virHostValidateGetCPUFlags()))
         return -1;
 
-    switch ((int)arch) {
+    switch ((int) arch) {
     case VIR_ARCH_I686:
     case VIR_ARCH_X86_64:
         hasVirtFlag = true;

@@ -681,7 +681,7 @@ _nss_compat_getaddrinfo(void *retval, void *mdata ATTRIBUTE_UNUSED, va_list ap)
         h_errno = HOST_NOT_FOUND;
         return NS_NOTFOUND;
     }
-    *((struct addrinfo **)retval) = sentinel.ai_next;
+    *((struct addrinfo **) retval) = sentinel.ai_next;
 
     return NS_SUCCESS;
 }
@@ -708,7 +708,7 @@ _nss_compat_gethostbyname2_r(void *retval, void *mdata ATTRIBUTE_UNUSED, va_list
     herrnop = va_arg(ap, int *);
 
     ret = NSS_NAME(gethostbyname2)(name, af, result, buffer, buflen, errnop, herrnop);
-    *(struct hostent **)retval = (ret == NS_SUCCESS) ? result : NULL;
+    *(struct hostent **) retval = (ret == NS_SUCCESS) ? result : NULL;
 
     return ret;
 }

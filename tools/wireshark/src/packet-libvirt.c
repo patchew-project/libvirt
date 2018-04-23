@@ -95,7 +95,7 @@ dissect_xdr_string(tvbuff_t *tvb, proto_tree *tree, XDR *xdrs, int hf,
     start = xdr_getpos(xdrs);
     if (xdr_string(xdrs, &val, maxlen)) {
         proto_tree_add_string(tree, hf, tvb, start, xdr_getpos(xdrs) - start, val);
-        xdr_free((xdrproc_t)xdr_string, (char *)&val);
+        xdr_free((xdrproc_t)xdr_string, (char *) &val);
         return TRUE;
     } else {
         proto_tree_add_item(tree, hf_libvirt_unknown, tvb, start, -1, ENC_NA);
@@ -151,7 +151,7 @@ dissect_xdr_bytes(tvbuff_t *tvb, proto_tree *tree, XDR *xdrs, int hf,
     guint32 length;
 
     start = xdr_getpos(xdrs);
-    if (xdr_bytes(xdrs, (char **)&val, &length, maxlen)) {
+    if (xdr_bytes(xdrs, (char **) &val, &length, maxlen)) {
         proto_tree_add_bytes_format_value(tree, hf, tvb, start, xdr_getpos(xdrs) - start,
                                           NULL, "%s", format_xdr_bytes(val, length));
         /* Seems I can't call xdr_free() for this case.
@@ -374,7 +374,7 @@ dissect_libvirt_payload(tvbuff_t *tvb, proto_tree *tree,
 
     if (status == VIR_NET_OK) {
         vir_xdr_dissector_t xd = find_payload_dissector(proc, type, get_program_data(prog, VIR_PROGRAM_DISSECTORS),
-                                                        *(gsize *)get_program_data(prog, VIR_PROGRAM_DISSECTORS_LEN));
+                                                        *(gsize *) get_program_data(prog, VIR_PROGRAM_DISSECTORS_LEN));
         if (xd == NULL)
             goto unknown;
         dissect_libvirt_payload_xdr_data(tvb, tree, payload_length, status, xd);
@@ -445,7 +445,7 @@ dissect_libvirt_message(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree,
         proto_tree_add_item(libvirt_tree, hf_libvirt_program, tvb, offset, 4, ENC_NA); offset += 4;
         proto_tree_add_item(libvirt_tree, hf_libvirt_version, tvb, offset, 4, ENC_NA); offset += 4;
 
-        hf_proc = (int *)get_program_data(prog, VIR_PROGRAM_PROCHFVAR);
+        hf_proc = (int *) get_program_data(prog, VIR_PROGRAM_PROCHFVAR);
         if (hf_proc != NULL && *hf_proc != -1) {
             proto_tree_add_item(libvirt_tree, *hf_proc, tvb, offset, 4, ENC_NA);
         } else {
