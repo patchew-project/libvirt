@@ -6434,7 +6434,7 @@ testDomainSnapshotCreateXML(virDomainPtr domain,
                                           privconn->caps,
                                           privconn->xmlopt,
                                           NULL,
-                                          true)))
+                                          VIR_DOMAIN_DEF_COPY_MIGRATABLE)))
             goto cleanup;
 
         if (testDomainSnapshotAlignDisks(vm, def, flags) < 0)
@@ -6689,7 +6689,8 @@ testDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
 
     snap->def->current = true;
     config = virDomainDefCopy(snap->def->dom, privconn->caps,
-                              privconn->xmlopt, NULL, true);
+                              privconn->xmlopt, NULL,
+                              VIR_DOMAIN_DEF_COPY_MIGRATABLE);
     if (!config)
         goto cleanup;
 

@@ -15857,7 +15857,8 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     snap->def->current = true;
     if (snap->def->dom) {
         config = virDomainDefCopy(snap->def->dom, caps,
-                                  driver->xmlopt, NULL, true);
+                                  driver->xmlopt, NULL,
+                                  VIR_DOMAIN_DEF_COPY_MIGRATABLE);
         if (!config)
             goto endjob;
     }
@@ -20443,7 +20444,7 @@ qemuDomainGetFSInfo(virDomainPtr dom,
     if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
         goto endjob;
 
-    if (!(def = virDomainDefCopy(vm->def, caps, driver->xmlopt, NULL, false)))
+    if (!(def = virDomainDefCopy(vm->def, caps, driver->xmlopt, NULL, 0)))
         goto endjob;
 
     agent = qemuDomainObjEnterAgent(vm);
