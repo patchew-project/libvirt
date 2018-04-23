@@ -30,7 +30,7 @@
 # include "virthread.h"
 
 # define VIR_FROM_THIS VIR_FROM_VMWARE
-# define PROGRAM_SENTINEL ((char *)0x1)
+# define PROGRAM_SENTINEL ((char *) 0x1)
 
 enum vmwareDriverType {
     VMWARE_DRIVER_PLAYER      = 0, /* VMware Player */
