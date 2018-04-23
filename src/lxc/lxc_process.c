@@ -168,7 +168,7 @@ static void virLXCProcessCleanup(virLXCDriverPtr driver,
     virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
 
     VIR_DEBUG("Cleanup VM name=%s pid=%d reason=%d",
-              vm->def->name, (int)vm->pid, (int)reason);
+              vm->def->name, (int) vm->pid, (int) reason);
 
     /* now that we know it's stopped call the hook if present */
     if (virHookPresent(VIR_HOOK_DRIVER_LXC)) {
@@ -403,7 +403,7 @@ static int virLXCProcessSetupNamespaceName(virConnectPtr conn, int ns_type, cons
     }
 
     if (virAsprintf(&path, "/proc/%lld/ns/%s",
-                    (long long int)priv->initpid,
+                    (long long int) priv->initpid,
                     nsInfoLocal[ns_type]) < 0)
         goto cleanup;
 
@@ -833,7 +833,7 @@ int virLXCProcessStop(virLXCDriverPtr driver,
     virLXCDomainObjPrivatePtr priv;
 
     VIR_DEBUG("Stopping VM name=%s pid=%d reason=%d",
-              vm->def->name, (int)vm->pid, (int)reason);
+              vm->def->name, (int) vm->pid, (int) reason);
     if (!virDomainObjIsActive(vm)) {
         VIR_DEBUG("VM '%s' not active", vm->def->name);
         return 0;
@@ -890,7 +890,7 @@ int virLXCProcessStop(virLXCDriverPtr driver,
          * libvirt_lxc process */
         if (virProcessKillPainfully(vm->pid, true) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("Processes %d refused to die"), (int)vm->pid);
+                           _("Processes %d refused to die"), (int) vm->pid);
             return -1;
         }
     }
@@ -1115,7 +1115,7 @@ virLXCProcessReadLogOutput(virDomainObjPtr vm,
     if (lseek(fd, pos, SEEK_SET) < 0) {
         virReportSystemError(errno,
                              _("Unable to seek log file %s to %llu"),
-                             logfile, (unsigned long long)pos);
+                             logfile, (unsigned long long) pos);
         VIR_FORCE_CLOSE(fd);
         return -1;
     }

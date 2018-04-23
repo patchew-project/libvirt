@@ -356,7 +356,7 @@ int lxcSetupFuse(virLXCFusePtr *f, virDomainDefPtr def)
 int lxcStartFuse(virLXCFusePtr fuse)
 {
     if (virThreadCreate(&fuse->thread, false, lxcFuseRun,
-                        (void *)fuse) < 0) {
+                        (void *) fuse) < 0) {
         lxcFuseDestroy(fuse);
         return -1;
     }

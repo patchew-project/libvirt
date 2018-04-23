@@ -232,7 +232,7 @@ static virCommandPtr lxcContainerBuildInitCmd(virDomainDefPtr vmDef,
     cmd = virCommandNew(vmDef->os.init);
 
     if (vmDef->os.initargv && vmDef->os.initargv[0])
-        virCommandAddArgSet(cmd, (const char **)vmDef->os.initargv);
+        virCommandAddArgSet(cmd, (const char **) vmDef->os.initargv);
 
     virCommandAddEnvString(cmd, "PATH=/bin:/sbin");
     virCommandAddEnvString(cmd, "TERM=linux");
@@ -2104,7 +2104,7 @@ static int lxcContainerDropCapabilities(virDomainDefPtr def ATTRIBUTE_UNUSED,
 static int lxcAttachNS(int *ns_fd)
 {
     if (ns_fd &&
-        virProcessSetNamespaces((size_t)VIR_LXC_DOMAIN_NAMESPACE_LAST,
+        virProcessSetNamespaces((size_t) VIR_LXC_DOMAIN_NAMESPACE_LAST,
                                 ns_fd) < 0)
         return -1;
     return 0;

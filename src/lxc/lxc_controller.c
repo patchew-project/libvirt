@@ -1231,7 +1231,7 @@ static void virLXCControllerConsoleIO(int watch, int fd, int events, void *opaqu
         if (done > 0) {
             *len += done;
         } else {
-            VIR_DEBUG("Read fd %d done %d errno %d", fd, (int)done, errno);
+            VIR_DEBUG("Read fd %d done %d errno %d", fd, (int) done, errno);
         }
     }
 
@@ -1260,7 +1260,7 @@ static void virLXCControllerConsoleIO(int watch, int fd, int events, void *opaqu
             memmove(buf, buf + done, (*len - done));
             *len -= done;
         } else {
-            VIR_DEBUG("Write fd %d done %d errno %d", fd, (int)done, errno);
+            VIR_DEBUG("Write fd %d done %d errno %d", fd, (int) done, errno);
         }
     }
 
