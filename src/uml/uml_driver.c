@@ -360,7 +360,7 @@ umlInotifyEvent(int watch,
         tmp += e.len;
         got -= e.len;
 
-        name = (char *)&(e.name);
+        name = (char *) &(e.name);
 
         dom = virDomainObjListFindByName(driver->domains, name);
 
@@ -935,7 +935,7 @@ static int umlOpenMonitor(struct uml_driver *driver,
     snprintf(addr.sun_path + 1, sizeof(addr.sun_path) - 1,
              "libvirt-uml-%u", vm->pid);
     VIR_DEBUG("Reply address for monitor is '%s'", addr.sun_path+1);
-    if (bind(priv->monitor, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+    if (bind(priv->monitor, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
         virReportSystemError(errno,
                              "%s", _("cannot bind socket"));
         VIR_FORCE_CLOSE(priv->monitor);
@@ -1002,7 +1002,7 @@ static int umlMonitorCommand(const struct uml_driver *driver,
     }
 
     if (sendto(priv->monitor, &req, sizeof(req), 0,
-               (struct sockaddr *)&addr, sizeof(addr)) != sizeof(req)) {
+               (struct sockaddr *) &addr, sizeof(addr)) != sizeof(req)) {
         virReportSystemError(errno,
                              _("cannot send command %s"),
                              cmd);
@@ -1013,7 +1013,7 @@ static int umlMonitorCommand(const struct uml_driver *driver,
         ssize_t nbytes;
         addrlen = sizeof(addr);
         nbytes = recvfrom(priv->monitor, &res, sizeof(res), 0,
-                          (struct sockaddr *)&addr, &addrlen);
+                          (struct sockaddr *) &addr, &addrlen);
         if (nbytes < 0) {
             if (errno == EAGAIN || errno == EINTR)
                 continue;
@@ -1317,7 +1317,7 @@ static int umlConnectIsAlive(virConnectPtr conn ATTRIBUTE_UNUSED)
 
 
 static char *umlConnectGetCapabilities(virConnectPtr conn) {
-    struct uml_driver *driver = (struct uml_driver *)conn->privateData;
+    struct uml_driver *driver = (struct uml_driver *) conn->privateData;
     char *xml;
 
     if (virConnectGetCapabilitiesEnsureACL(conn) < 0)
@@ -1361,7 +1361,7 @@ static int umlGetProcessInfo(unsigned long long *cpuTime, pid_t pid)
      * _SC_CLK_TCK is jiffies per second
      * So calculate thus....
      */
-    *cpuTime = 1000ull * 1000ull * 1000ull * (usertime + systime) / (unsigned long long)sysconf(_SC_CLK_TCK);
+    *cpuTime = 1000ull * 1000ull * 1000ull * (usertime + systime) / (unsigned long long) sysconf(_SC_CLK_TCK);
 
     umlDebug("Got %llu %llu %llu", usertime, systime, *cpuTime);
 
@@ -1374,7 +1374,7 @@ static int umlGetProcessInfo(unsigned long long *cpuTime, pid_t pid)
 static virDomainPtr umlDomainLookupByID(virConnectPtr conn,
                                           int id)
 {
-    struct uml_driver *driver = (struct uml_driver *)conn->privateData;
+    struct uml_driver *driver = (struct uml_driver *) conn->privateData;
     virDomainObjPtr vm;
     virDomainPtr dom = NULL;
 
@@ -1401,7 +1401,7 @@ static virDomainPtr umlDomainLookupByID(virConnectPtr conn,
 static virDomainPtr umlDomainLookupByUUID(virConnectPtr conn,
                                           const unsigned char *uuid)
 {
-    struct uml_driver *driver = (struct uml_driver *)conn->privateData;
+    struct uml_driver *driver = (struct uml_driver *) conn->privateData;
     virDomainObjPtr vm;
     virDomainPtr dom = NULL;
 
@@ -1421,7 +1421,7 @@ static virDomainPtr umlDomainLookupByUUID(virConnectPtr conn,
 static virDomainPtr umlDomainLookupByName(virConnectPtr conn,
                                             const char *name)
 {
-    struct uml_driver *driver = (struct uml_driver *)conn->privateData;
+    struct uml_driver *driver = (struct uml_driver *) conn->privateData;
     virDomainObjPtr vm;
     virDomainPtr dom = NULL;
 
