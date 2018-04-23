@@ -836,7 +836,7 @@ struct _libxlTunnelMigrationThread {
  */
 static void libxlTunnel3MigrationSrcFunc(void *arg)
 {
-    libxlTunnelMigrationThread *data = (libxlTunnelMigrationThread *)arg;
+    libxlTunnelMigrationThread *data = (libxlTunnelMigrationThread *) arg;
     char *buffer = NULL;
     struct pollfd fds[1];
     int timeout = -1;

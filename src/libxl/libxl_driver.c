@@ -4452,7 +4452,7 @@ libxlDomainGetSchedulerType(virDomainPtr dom, int *nparams)
 
     if (nparams)
         *nparams = 0;
-    switch ((int)sched_id) {
+    switch ((int) sched_id) {
     case LIBXL_SCHEDULER_SEDF:
         name = "sedf";
         break;

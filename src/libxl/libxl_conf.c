@@ -1692,7 +1692,7 @@ libxlDriverConfigNew(void)
         goto error;
     }
 
-    if (libxl_ctx_alloc(&cfg->ctx, LIBXL_VERSION, 0, (xentoollog_logger *)cfg->logger)) {
+    if (libxl_ctx_alloc(&cfg->ctx, LIBXL_VERSION, 0, (xentoollog_logger *) cfg->logger)) {
         VIR_ERROR(_("cannot initialize libxenlight context, probably not "
                     "running in a Xen Dom0, disabling driver"));
         goto error;

@@ -66,7 +66,7 @@ libvirt_vmessage(xentoollog_logger *logger_in,
                  const char *format,
                  va_list args)
 {
-    xentoollog_logger_libvirt *lg = (xentoollog_logger_libvirt *)logger_in;
+    xentoollog_logger_libvirt *lg = (xentoollog_logger_libvirt *) logger_in;
     FILE *logFile = lg->defaultLogFile;
     char timestamp[VIR_TIME_STRING_BUFLEN];
     char *message = NULL;

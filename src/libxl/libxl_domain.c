@@ -593,7 +593,7 @@ libxlDomainEventHandler(void *data, VIR_LIBXL_EVENT_CONST libxl_event *event)
         goto error;
 
     shutdown_info->driver = driver;
-    shutdown_info->event = (libxl_event *)event;
+    shutdown_info->event = (libxl_event *) event;
     if (virThreadCreate(&thread, false, libxlDomainShutdownThread,
                         shutdown_info) < 0) {
         /*
@@ -611,7 +611,7 @@ libxlDomainEventHandler(void *data, VIR_LIBXL_EVENT_CONST libxl_event *event)
  error:
     cfg = libxlDriverConfigGet(driver);
     /* Cast away any const */
-    libxl_event_free(cfg->ctx, (libxl_event *)event);
+    libxl_event_free(cfg->ctx, (libxl_event *) event);
     virObjectUnref(cfg);
     VIR_FREE(shutdown_info);
 }
@@ -891,7 +891,7 @@ libxlDomainSetVcpuAffinities(libxlDriverPrivatePtr driver, virDomainObjPtr vm)
         if (!cpumask)
             continue;
 
-        if (virBitmapToData(cpumask, &map.map, (int *)&map.size) < 0)
+        if (virBitmapToData(cpumask, &map.map, (int *) &map.size) < 0)
             goto cleanup;
 
         if (libxl_set_vcpuaffinity(cfg->ctx, vm->def->id, i, &map) != 0) {
