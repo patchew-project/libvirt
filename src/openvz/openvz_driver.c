@@ -548,7 +548,7 @@ static char *openvzDomainGetXMLDesc(virDomainPtr dom, unsigned int flags) {
  * key value. This lets us declare the argv on the
  * stack and just splice in the domain name after
  */
-#define PROGRAM_SENTINEL ((char *)0x1)
+#define PROGRAM_SENTINEL ((char *) 0x1)
 static void openvzSetProgramSentinal(const char **prog, const char *key)
 {
     const char **tmp = prog;
@@ -1579,7 +1579,7 @@ Version: 2.2
             /* convert jiffies to nanoseconds */
             *cpuTime = (1000ull * 1000ull * 1000ull
                         * (usertime + nicetime  + systime)
-                        / (unsigned long long)sysconf(_SC_CLK_TCK));
+                        / (unsigned long long) sysconf(_SC_CLK_TCK));
             break;
         }
     }
