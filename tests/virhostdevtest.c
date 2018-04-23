@@ -53,7 +53,7 @@ VIR_LOG_INIT("tests.hostdevtest");
 static const char *drv_name = "test_driver";
 static const char *dom_name = "test_domain";
 static const unsigned char *uuid =
-            (unsigned char *)("f92360b0-2541-8791-fb32-d1f838811541");
+            (unsigned char *) ("f92360b0-2541-8791-fb32-d1f838811541");
 static int nhostdevs = 3;
 static virDomainHostdevDefPtr hostdevs[] = {NULL, NULL, NULL};
 static virPCIDevicePtr dev[] = {NULL, NULL, NULL};

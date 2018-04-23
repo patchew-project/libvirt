@@ -1153,7 +1153,7 @@ qemuMonitorCommonTestNew(virDomainXMLOptionPtr xmlopt,
 
     memset(src, 0, sizeof(*src));
     src->type = VIR_DOMAIN_CHR_TYPE_UNIX;
-    src->data.nix.path = (char *)path;
+    src->data.nix.path = (char *) path;
     src->data.nix.listen = false;
     path = NULL;
 

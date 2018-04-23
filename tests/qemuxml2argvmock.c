@@ -79,7 +79,7 @@ char *
 virTPMCreateCancelPath(const char *devpath)
 {
     char *path;
-    (void)devpath;
+    (void) devpath;
 
     ignore_value(VIR_STRDUP(path, "/sys/class/misc/tpm0/device/cancel"));
 

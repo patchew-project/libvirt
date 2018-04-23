@@ -467,13 +467,13 @@ FILE *fopen(const char *path, const char *mode)
     if (STREQ(path, "/proc/mounts")) {
         if (STREQ(mode, "r")) {
             if (allinone)
-                return fmemopen((void *)procmountsallinone,
+                return fmemopen((void *) procmountsallinone,
                                 strlen(procmountsallinone), mode);
             else if (logind)
-                return fmemopen((void *)procmountslogind,
+                return fmemopen((void *) procmountslogind,
                                 strlen(procmountslogind), mode);
             else
-                return fmemopen((void *)procmounts, strlen(procmounts), mode);
+                return fmemopen((void *) procmounts, strlen(procmounts), mode);
         } else {
             errno = EACCES;
             return NULL;
@@ -482,13 +482,13 @@ FILE *fopen(const char *path, const char *mode)
     if (STREQ(path, "/proc/cgroups")) {
         if (STREQ(mode, "r")) {
             if (allinone)
-                return fmemopen((void *)proccgroupsallinone,
+                return fmemopen((void *) proccgroupsallinone,
                                 strlen(proccgroupsallinone), mode);
             else if (logind)
-                return fmemopen((void *)proccgroupslogind,
+                return fmemopen((void *) proccgroupslogind,
                                 strlen(proccgroupslogind), mode);
             else
-                return fmemopen((void *)proccgroups, strlen(proccgroups), mode);
+                return fmemopen((void *) proccgroups, strlen(proccgroups), mode);
         } else {
             errno = EACCES;
             return NULL;
@@ -497,13 +497,13 @@ FILE *fopen(const char *path, const char *mode)
     if (STREQ(path, "/proc/self/cgroup")) {
         if (STREQ(mode, "r")) {
             if (allinone)
-                return fmemopen((void *)procselfcgroupsallinone,
+                return fmemopen((void *) procselfcgroupsallinone,
                                 strlen(procselfcgroupsallinone), mode);
             else if (logind)
-                return fmemopen((void *)procselfcgroupslogind,
+                return fmemopen((void *) procselfcgroupslogind,
                                 strlen(procselfcgroupslogind), mode);
             else
-                return fmemopen((void *)procselfcgroups, strlen(procselfcgroups), mode);
+                return fmemopen((void *) procselfcgroups, strlen(procselfcgroups), mode);
         } else {
             errno = EACCES;
             return NULL;

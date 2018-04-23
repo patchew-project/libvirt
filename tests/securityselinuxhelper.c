@@ -308,7 +308,7 @@ selabel_open(unsigned int backend,
     /* struct selabel_handle is opaque; fake it */
     if (VIR_ALLOC(fake_handle) < 0)
         return NULL;
-    return (struct selabel_handle *)fake_handle;
+    return (struct selabel_handle *) fake_handle;
 }
 
 void selabel_close(struct selabel_handle *handle)

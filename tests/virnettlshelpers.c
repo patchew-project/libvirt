@@ -74,7 +74,7 @@ gnutls_x509_privkey_t privkey;
 static gnutls_x509_privkey_t testTLSLoadKey(void)
 {
     gnutls_x509_privkey_t key;
-    const gnutls_datum_t data = { (unsigned char *)PRIVATE_KEY, strlen(PRIVATE_KEY) };
+    const gnutls_datum_t data = { (unsigned char *) PRIVATE_KEY, strlen(PRIVATE_KEY) };
     int err;
 
     if ((err = gnutls_x509_privkey_init(&key)) < 0) {
@@ -137,7 +137,7 @@ static void testTLSDerEncode(ASN1_TYPE src,
 
   asn1_der_coding(src, src_name, data, &size, NULL);
 
-  res->data = (unsigned char *)data;
+  res->data = (unsigned char *) data;
   res->size = size;
 }
 

@@ -46,7 +46,7 @@ int virRandomGenerateWWN(char **wwn,
                          const char *virt_type ATTRIBUTE_UNUSED)
 {
     return virAsprintf(wwn, "5100000%09llx",
-                       (unsigned long long)virRandomBits(36));
+                       (unsigned long long) virRandomBits(36));
 }
 
 

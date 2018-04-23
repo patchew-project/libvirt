@@ -331,7 +331,7 @@ testInsertArray(const void *opaque ATTRIBUTE_UNUSED)
     testDummyStruct **t;
     size_t nt = 10, i;
     int ret = -1;
-    testDummyStruct *n = (void *)0xff;
+    testDummyStruct *n = (void *) 0xff;
 
     if (VIR_ALLOC_N(t, nt) < 0)
         return -1;
@@ -361,7 +361,7 @@ testInsertArray(const void *opaque ATTRIBUTE_UNUSED)
     }
 
     for (i = 0; i < nt; i++) {
-        void *expect = i == 3 ? (void *)0xff : (void*)0x50;
+        void *expect = i == 3 ? (void *) 0xff : (void*)0x50;
         if (t[i] != expect) {
             fprintf(stderr, "Expecting %p at offset %zu not %p\n",
                     expect, i, t[i]);

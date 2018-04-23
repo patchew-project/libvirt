@@ -38,7 +38,7 @@ testHashInit(int size)
 
         if (virHashTableSize(hash) != oldsize) {
             VIR_TEST_DEBUG("hash grown from %zd to %zd",
-                     (size_t)oldsize, (size_t)virHashTableSize(hash));
+                     (size_t) oldsize, (size_t) virHashTableSize(hash));
         }
     }
 

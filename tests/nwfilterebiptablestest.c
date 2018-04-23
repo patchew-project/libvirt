@@ -414,7 +414,7 @@ testNWFilterEBIPTablesApplyDHCPOnlyRules(const void *opaque ATTRIBUTE_UNUSED)
         .valType = NWFILTER_VALUE_TYPE_ARRAY,
         .u = {
             .array = {
-                .values = (char **)servers,
+                .values = (char **) servers,
                 .nValues = 3,
             }
         }

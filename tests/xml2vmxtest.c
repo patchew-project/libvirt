@@ -167,7 +167,7 @@ testFormatVMXFileName(const char *src, void *opaque ATTRIBUTE_UNUSED)
         directoryAndFileName = strtok_r(NULL, "", &saveptr);
 
         if (directoryAndFileName == NULL) {
-            directoryAndFileName = (char *)"";
+            directoryAndFileName = (char *) "";
         } else {
             directoryAndFileName += strspn(directoryAndFileName, " ");
         }

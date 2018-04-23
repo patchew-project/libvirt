@@ -179,7 +179,7 @@ static int testAdd(const void *args)
     size_t i;
 
     for (i = 0; data->tokens[i]; i++) {
-        char **tmp = virStringListAdd((const char **)list, data->tokens[i]);
+        char **tmp = virStringListAdd((const char **) list, data->tokens[i]);
         if (!tmp)
             goto cleanup;
         virStringListFree(list);
@@ -191,7 +191,7 @@ static int testAdd(const void *args)
         VIR_ALLOC(list) < 0)
         goto cleanup;
 
-    if (!(got = virStringListJoin((const char **)list, data->delim))) {
+    if (!(got = virStringListJoin((const char **) list, data->delim))) {
         VIR_DEBUG("Got no result");
         goto cleanup;
     }

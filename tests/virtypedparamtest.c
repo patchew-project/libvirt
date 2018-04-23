@@ -48,7 +48,7 @@ static int
 testTypedParamsValidate(const void *opaque)
 {
     int rv;
-    TypedParameterTest *test = (TypedParameterTest *)opaque;
+    TypedParameterTest *test = (TypedParameterTest *) opaque;
     virErrorPtr errptr;
 
     rv = virTypedParamsValidate(

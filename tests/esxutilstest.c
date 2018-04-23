@@ -130,7 +130,7 @@ testConvertDateTimeToCalendarTime(const void *data ATTRIBUTE_UNUSED)
     long long calendarTime;
 
     for (i = 0; i < ARRAY_CARDINALITY(times); ++i) {
-        dateTime.value = (char *)times[i].dateTime;
+        dateTime.value = (char *) times[i].dateTime;
 
         if (esxVI_DateTime_ConvertToCalendarTime(&dateTime,
                                                  &calendarTime) < 0) {

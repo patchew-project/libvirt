@@ -81,7 +81,7 @@ checkProtocols(bool *hasIPv4, bool *hasIPv6,
         in6.sin6_port = htons(BASE_PORT + i);
         in6.sin6_addr = in6addr_loopback;
 
-        if (bind(s4, (struct sockaddr *)&in4, sizeof(in4)) < 0) {
+        if (bind(s4, (struct sockaddr *) &in4, sizeof(in4)) < 0) {
             if (errno == EADDRINUSE) {
                 VIR_FORCE_CLOSE(s4);
                 VIR_FORCE_CLOSE(s6);
@@ -91,7 +91,7 @@ checkProtocols(bool *hasIPv4, bool *hasIPv6,
         }
 
         if (*hasIPv6) {
-            if (bind(s6, (struct sockaddr *)&in6, sizeof(in6)) < 0) {
+            if (bind(s6, (struct sockaddr *) &in6, sizeof(in6)) < 0) {
                 if (errno == EADDRINUSE) {
                     VIR_FORCE_CLOSE(s4);
                     VIR_FORCE_CLOSE(s6);

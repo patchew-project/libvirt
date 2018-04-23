@@ -1258,7 +1258,7 @@ mymain(void)
     test->running = true;
     virMutexUnlock(&test->lock);
 
-    environ = (char **)newenv;
+    environ = (char **) newenv;
 
 # define DO_TEST(NAME) \
     if (virTestRun("Command Exec " #NAME " test", \

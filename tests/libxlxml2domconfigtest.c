@@ -73,7 +73,7 @@ testCompareXMLToDomConfig(const char *xmlfile,
 
     cfg->caps = caps;
 
-    if (!(log = (xentoollog_logger *)xtl_createlogger_stdiostream(stderr, XTL_DEBUG, 0)))
+    if (!(log = (xentoollog_logger *) xtl_createlogger_stdiostream(stderr, XTL_DEBUG, 0)))
         goto cleanup;
 
     /* for testing nested HVM */

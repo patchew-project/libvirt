@@ -58,8 +58,8 @@ static int testRotatingFileWriterAssertOneFileSize(const char *filename,
             return -1;
         } else if (sb.st_size != size) {
             fprintf(stderr, "File %s should be %llu bytes not %llu\n",
-                    filename, (unsigned long long)size,
-                    (unsigned long long)sb.st_size);
+                    filename, (unsigned long long) size,
+                    (unsigned long long) sb.st_size);
             return -1;
         } else {
             return 0;
@@ -127,7 +127,7 @@ static int testRotatingFileInitOne(const char *filename,
         VIR_DEBUG("Deleting %s", filename);
         unlink(filename);
     } else {
-        VIR_DEBUG("Creating %s size %zu", filename, (size_t)size);
+        VIR_DEBUG("Creating %s size %zu", filename, (size_t) size);
         char buf[1024];
         int fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, 0700);
         if (fd < 0) {

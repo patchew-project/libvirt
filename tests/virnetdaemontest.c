@@ -328,7 +328,7 @@ static int testExecRestart(const void *opaque)
                                                data->nservers,
                                                data->serverNames,
                                                testNewServerPostExecRestart,
-                                               (void *)data)))
+                                               (void *) data)))
         goto cleanup;
 
     for (i = 0; i < data->nservers; i++) {

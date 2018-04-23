@@ -31,7 +31,7 @@ VIR_MOCK_STUB_VOID_ARGS(dbus_connection_set_change_sigpipe,
 
 
 VIR_MOCK_STUB_RET_ARGS(dbus_bus_get,
-                       DBusConnection *, (DBusConnection *)0x1,
+                       DBusConnection *, (DBusConnection *) 0x1,
                        DBusBusType, type,
                        DBusError *, error)
 

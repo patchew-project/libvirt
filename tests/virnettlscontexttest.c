@@ -62,7 +62,7 @@ struct testTLSContextData {
  */
 static int testTLSContextInit(const void *opaque)
 {
-    struct testTLSContextData *data = (struct testTLSContextData *)opaque;
+    struct testTLSContextData *data = (struct testTLSContextData *) opaque;
     virNetTLSContextPtr ctxt = NULL;
     int ret = -1;
 

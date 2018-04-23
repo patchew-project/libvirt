@@ -123,13 +123,13 @@ static int testMessageHeaderDecode(const void *args ATTRIBUTE_UNUSED)
 
     if (msg->bufferOffset != 0x4) {
         VIR_DEBUG("Expecting offset %zu got %zu",
-                  (size_t)4, msg->bufferOffset);
+                  (size_t) 4, msg->bufferOffset);
         goto cleanup;
     }
 
     if (msg->bufferLength != 0x1c) {
         VIR_DEBUG("Expecting length %zu got %zu",
-                  (size_t)0x1c, msg->bufferLength);
+                  (size_t) 0x1c, msg->bufferLength);
         goto cleanup;
     }
 
@@ -346,13 +346,13 @@ static int testMessagePayloadDecode(const void *args ATTRIBUTE_UNUSED)
 
     if (msg->bufferOffset != 0x4) {
         VIR_DEBUG("Expecting offset %zu got %zu",
-                  (size_t)4, msg->bufferOffset);
+                  (size_t) 4, msg->bufferOffset);
         goto cleanup;
     }
 
     if (msg->bufferLength != 0x74) {
         VIR_DEBUG("Expecting length %zu got %zu",
-                  (size_t)0x74, msg->bufferLength);
+                  (size_t) 0x74, msg->bufferLength);
         goto cleanup;
     }
 
@@ -365,13 +365,13 @@ static int testMessagePayloadDecode(const void *args ATTRIBUTE_UNUSED)
 
     if (msg->bufferOffset != 28) {
         VIR_DEBUG("Expect message offset %zu got %zu",
-                  msg->bufferOffset, (size_t)28);
+                  msg->bufferOffset, (size_t) 28);
         goto cleanup;
     }
 
     if (msg->bufferLength != 0x74) {
         VIR_DEBUG("Expecting length %zu got %zu",
-                  (size_t)0x1c, msg->bufferLength);
+                  (size_t) 0x1c, msg->bufferLength);
         goto cleanup;
     }
 

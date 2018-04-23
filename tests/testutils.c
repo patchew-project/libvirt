@@ -132,8 +132,8 @@ virTestShowTrace(void)
             strstr(info.dli_fname, ".so")) {
             if (virAsprintf(&cmd, ADDR2LINE " -f -e %s %p",
                             info.dli_fname,
-                            ((void*)((unsigned long long)testAllocStack[j]
-                                     - (unsigned long long)info.dli_fbase))) < 0)
+                            ((void*)((unsigned long long) testAllocStack[j]
+                                     - (unsigned long long) info.dli_fbase))) < 0)
                 continue;
         } else {
             if (virAsprintf(&cmd, ADDR2LINE " -f -e %s %p",
@@ -753,18 +753,18 @@ int virTestDifferenceBin(FILE *stream,
         end = length - 1;
 
     /* Show the trimmed differences */
-    fprintf(stream, "\nExpect [ Region %d-%d", (int)start, (int)end);
+    fprintf(stream, "\nExpect [ Region %d-%d", (int) start, (int) end);
     for (i = start; i < end; i++) {
         if ((i % 4) == 0)
             fprintf(stream, "\n    ");
-        fprintf(stream, "0x%02x, ", ((int)expect[i])&0xff);
+        fprintf(stream, "0x%02x, ", ((int) expect[i])&0xff);
     }
     fprintf(stream, "]\n");
-    fprintf(stream, "Actual [ Region %d-%d", (int)start, (int)end);
+    fprintf(stream, "Actual [ Region %d-%d", (int) start, (int) end);
     for (i = start; i < end; i++) {
         if ((i % 4) == 0)
             fprintf(stream, "\n    ");
-        fprintf(stream, "0x%02x, ", ((int)actual[i])&0xff);
+        fprintf(stream, "0x%02x, ", ((int) actual[i])&0xff);
     }
     fprintf(stream, "]\n");
 
@@ -1122,7 +1122,7 @@ int virTestMain(int argc,
     virResetLastError();
     if (!virTestGetVerbose() && ret != EXIT_AM_SKIP) {
         if (testCounter == 0 || testCounter % 40)
-            fprintf(stderr, "%*s", 40 - (int)(testCounter % 40), "");
+            fprintf(stderr, "%*s", 40 - (int) (testCounter % 40), "");
         fprintf(stderr, " %-3zu %s\n", testCounter, ret == 0 ? "OK" : "FAIL");
     }
     virLogReset();
