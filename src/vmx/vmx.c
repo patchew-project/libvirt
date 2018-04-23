@@ -640,7 +640,7 @@ virVMXEscapeHex(const char *string, char escape, const char *special)
         if (*tmp1 == escape || strspn(tmp1, special) > 0) {
             *tmp2++ = escape;
 
-            snprintf(tmp2, 3, "%02x", (unsigned int)*tmp1);
+            snprintf(tmp2, 3, "%02x", (unsigned int) *tmp1);
 
             tmp2 += 2;
         } else {
@@ -699,7 +699,7 @@ virVMXConvertToUTF8(const char *encoding, const char *string)
         return NULL;
     }
 
-    input = xmlBufferCreateStatic((char *)string, strlen(string));
+    input = xmlBufferCreateStatic((char *) string, strlen(string));
     utf8 = xmlBufferCreate();
 
     if (xmlCharEncInFunc(handler, utf8, input) < 0) {
@@ -708,7 +708,7 @@ virVMXConvertToUTF8(const char *encoding, const char *string)
         goto cleanup;
     }
 
-    result = (char *)utf8->content;
+    result = (char *) utf8->content;
     utf8->content = NULL;
 
  cleanup:
