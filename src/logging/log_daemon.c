@@ -595,7 +595,7 @@ virLogDaemonClientFree(void *opaque)
 
     VIR_DEBUG("priv=%p client=%lld",
               priv,
-              (unsigned long long)priv->clientPid);
+              (unsigned long long) priv->clientPid);
 
     virMutexDestroy(&priv->lock);
     VIR_FREE(priv);
@@ -629,21 +629,21 @@ virLogDaemonClientNew(virNetServerClientPtr client,
         goto error;
 
     VIR_DEBUG("New client pid %llu uid %llu",
-              (unsigned long long)priv->clientPid,
-              (unsigned long long)clientuid);
+              (unsigned long long) priv->clientPid,
+              (unsigned long long) clientuid);
 
     if (!privileged) {
         if (geteuid() != clientuid) {
             virReportRestrictedError(_("Disallowing client %llu with uid %llu"),
-                                     (unsigned long long)priv->clientPid,
-                                     (unsigned long long)clientuid);
+                                     (unsigned long long) priv->clientPid,
+                                     (unsigned long long) clientuid);
             goto error;
         }
     } else {
         if (clientuid != 0) {
             virReportRestrictedError(_("Disallowing client %llu with uid %llu"),
-                                     (unsigned long long)priv->clientPid,
-                                     (unsigned long long)clientuid);
+                                     (unsigned long long) priv->clientPid,
+                                     (unsigned long long) clientuid);
             goto error;
         }
     }
@@ -728,7 +728,7 @@ virLogDaemonGetExecRestartMagic(void)
 {
     char *ret;
 
-    ignore_value(virAsprintf(&ret, "%lld", (long long int)getpid()));
+    ignore_value(virAsprintf(&ret, "%lld", (long long int) getpid()));
     return ret;
 }
 

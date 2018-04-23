@@ -170,10 +170,10 @@ virLogManagerDomainOpenLogFile(virLogManagerPtr mgr,
     memset(&args, 0, sizeof(args));
     memset(&ret, 0, sizeof(ret));
 
-    args.driver = (char *)driver;
+    args.driver = (char *) driver;
     memcpy(args.dom.uuid, domuuid, VIR_UUID_BUFLEN);
-    args.dom.name = (char *)domname;
-    args.path = (char *)path;
+    args.dom.name = (char *) domname;
+    args.path = (char *) path;
     args.flags = flags;
 
     if (virNetClientProgramCall(mgr->program,
@@ -227,7 +227,7 @@ virLogManagerDomainGetLogFilePosition(virLogManagerPtr mgr,
     memset(&args, 0, sizeof(args));
     memset(&ret, 0, sizeof(ret));
 
-    args.path = (char *)path;
+    args.path = (char *) path;
     args.flags = flags;
 
     if (virNetClientProgramCall(mgr->program,
@@ -263,7 +263,7 @@ virLogManagerDomainReadLogFile(virLogManagerPtr mgr,
     memset(&args, 0, sizeof(args));
     memset(&ret, 0, sizeof(ret));
 
-    args.path = (char *)path;
+    args.path = (char *) path;
     args.flags = flags;
     args.pos.inode = inode;
     args.pos.offset = offset;
@@ -298,11 +298,11 @@ virLogManagerDomainAppendMessage(virLogManagerPtr mgr,
 
     memset(&args, 0, sizeof(args));
 
-    args.driver = (char *)driver;
+    args.driver = (char *) driver;
     memcpy(args.dom.uuid, domuuid, VIR_UUID_BUFLEN);
-    args.dom.name = (char *)domname;
-    args.path = (char *)path;
-    args.message = (char *)message;
+    args.dom.name = (char *) domname;
+    args.path = (char *) path;
+    args.message = (char *) message;
     args.flags = flags;
 
     if (virNetClientProgramCall(mgr->program,

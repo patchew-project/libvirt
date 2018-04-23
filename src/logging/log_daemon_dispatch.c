@@ -54,7 +54,7 @@ virLogManagerProtocolDispatchDomainOpenLogFile(virNetServerPtr server ATTRIBUTE_
 
     if ((fd = virLogHandlerDomainOpenLogFile(virLogDaemonGetHandler(logDaemon),
                                              args->driver,
-                                             (unsigned char *)args->dom.uuid,
+                                             (unsigned char *) args->dom.uuid,
                                              args->dom.name,
                                              args->path,
                                              trunc,
@@ -121,7 +121,7 @@ virLogManagerProtocolDispatchDomainReadLogFile(virNetServerPtr server ATTRIBUTE_
     if (args->maxlen > VIR_LOG_MANAGER_PROTOCOL_STRING_MAX) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Requested data len %llu is larger than maximum %d"),
-                       (unsigned long long)args->maxlen,
+                       (unsigned long long) args->maxlen,
                        VIR_LOG_MANAGER_PROTOCOL_STRING_MAX);
         goto cleanup;
     }
@@ -157,7 +157,7 @@ virLogManagerProtocolDispatchDomainAppendLogFile(virNetServerPtr server ATTRIBUT
 
     if ((rv = virLogHandlerDomainAppendLogFile(virLogDaemonGetHandler(logDaemon),
                                                args->driver,
-                                               (unsigned char *)args->dom.uuid,
+                                               (unsigned char *) args->dom.uuid,
                                                args->dom.name,
                                                args->path,
                                                args->message,
