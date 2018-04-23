@@ -273,7 +273,7 @@ virBhyveProcessStop(bhyveConnPtr driver,
     if (vm->pid <= 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Invalid PID %d for VM"),
-                       (int)vm->pid);
+                       (int) vm->pid);
         return -1;
     }
 
@@ -322,7 +322,7 @@ virBhyveProcessShutdown(virDomainObjPtr vm)
     if (vm->pid <= 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Invalid PID %d for VM"),
-                       (int)vm->pid);
+                       (int) vm->pid);
         return -1;
     }
 
@@ -361,7 +361,7 @@ virBhyveGetDomainTotalCpuStats(virDomainObjPtr vm,
     if (kp == NULL || nprocs != 1) {
         virReportError(VIR_ERR_SYSTEM_ERROR,
                        _("Unable to obtain information about pid: %d"),
-                       (int)vm->pid);
+                       (int) vm->pid);
         goto cleanup;
     }
 
