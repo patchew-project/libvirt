@@ -49,7 +49,7 @@ VIR_LOG_INIT("node_device.node_device_hal");
  * Host device enumeration (HAL implementation)
  */
 
-#define DRV_STATE_HAL_CTX(ds) ((LibHalContext *)((ds)->privateData))
+#define DRV_STATE_HAL_CTX(ds) ((LibHalContext *) ((ds)->privateData))
 
 
 static const char *
@@ -157,12 +157,12 @@ gather_pci_cap(LibHalContext *ctx, const char *udi,
         VIR_FREE(sysfs_path);
     }
 
-    (void)get_int_prop(ctx, udi, "pci.vendor_id", (int *)&d->pci_dev.vendor);
+    (void) get_int_prop(ctx, udi, "pci.vendor_id", (int *) &d->pci_dev.vendor);
     if (get_str_prop(ctx, udi, "pci.vendor", &d->pci_dev.vendor_name) != 0)
-        (void)get_str_prop(ctx, udi, "info.vendor", &d->pci_dev.vendor_name);
-    (void)get_int_prop(ctx, udi, "pci.product_id", (int *)&d->pci_dev.product);
+        (void) get_str_prop(ctx, udi, "info.vendor", &d->pci_dev.vendor_name);
+    (void) get_int_prop(ctx, udi, "pci.product_id", (int *) &d->pci_dev.product);
     if (get_str_prop(ctx, udi, "pci.product", &d->pci_dev.product_name) != 0)
-        (void)get_str_prop(ctx, udi, "info.product", &d->pci_dev.product_name);
+        (void) get_str_prop(ctx, udi, "info.product", &d->pci_dev.product_name);
 
     return 0;
 }
@@ -172,15 +172,15 @@ static int
 gather_usb_cap(LibHalContext *ctx, const char *udi,
                virNodeDevCapDataPtr d)
 {
-    (void)get_int_prop(ctx, udi, "usb.interface.number",
-                       (int *)&d->usb_if.number);
-    (void)get_int_prop(ctx, udi, "usb.interface.class",
-                       (int *)&d->usb_if._class);
-    (void)get_int_prop(ctx, udi, "usb.interface.subclass",
-                       (int *)&d->usb_if.subclass);
-    (void)get_int_prop(ctx, udi, "usb.interface.protocol",
-                       (int *)&d->usb_if.protocol);
-    (void)get_str_prop(ctx, udi, "usb.interface.description",
+    (void) get_int_prop(ctx, udi, "usb.interface.number",
+                       (int *) &d->usb_if.number);
+    (void) get_int_prop(ctx, udi, "usb.interface.class",
+                       (int *) &d->usb_if._class);
+    (void) get_int_prop(ctx, udi, "usb.interface.subclass",
+                       (int *) &d->usb_if.subclass);
+    (void) get_int_prop(ctx, udi, "usb.interface.protocol",
+                       (int *) &d->usb_if.protocol);
+    (void) get_str_prop(ctx, udi, "usb.interface.description",
                        &d->usb_if.description);
     return 0;
 }
@@ -190,20 +190,20 @@ static int
 gather_usb_device_cap(LibHalContext *ctx, const char *udi,
                       virNodeDevCapDataPtr d)
 {
-    (void)get_int_prop(ctx, udi, "usb_device.bus_number",
-                       (int *)&d->usb_dev.bus);
-    (void)get_int_prop(ctx, udi, "usb_device.linux.device_number",
-                       (int *)&d->usb_dev.device);
-    (void)get_int_prop(ctx, udi, "usb_device.vendor_id",
-                       (int *)&d->usb_dev.vendor);
+    (void) get_int_prop(ctx, udi, "usb_device.bus_number",
+                       (int *) &d->usb_dev.bus);
+    (void) get_int_prop(ctx, udi, "usb_device.linux.device_number",
+                       (int *) &d->usb_dev.device);
+    (void) get_int_prop(ctx, udi, "usb_device.vendor_id",
+                       (int *) &d->usb_dev.vendor);
     if (get_str_prop(ctx, udi, "usb_device.vendor",
                      &d->usb_dev.vendor_name) != 0)
-        (void)get_str_prop(ctx, udi, "info.vendor", &d->usb_dev.vendor_name);
-    (void)get_int_prop(ctx, udi, "usb_device.product_id",
-                       (int *)&d->usb_dev.product);
+        (void) get_str_prop(ctx, udi, "info.vendor", &d->usb_dev.vendor_name);
+    (void) get_int_prop(ctx, udi, "usb_device.product_id",
+                       (int *) &d->usb_dev.product);
     if (get_str_prop(ctx, udi, "usb_device.product",
                      &d->usb_dev.product_name) != 0)
-        (void)get_str_prop(ctx, udi, "info.product", &d->usb_dev.product_name);
+        (void) get_str_prop(ctx, udi, "info.product", &d->usb_dev.product_name);
     return 0;
 }
 
@@ -213,8 +213,8 @@ gather_net_cap(LibHalContext *ctx, const char *udi,
                virNodeDevCapDataPtr d)
 {
     unsigned long long dummy;
-    (void)get_str_prop(ctx, udi, "net.interface", &d->net.ifname);
-    (void)get_str_prop(ctx, udi, "net.address", &d->net.address);
+    (void) get_str_prop(ctx, udi, "net.interface", &d->net.ifname);
+    (void) get_str_prop(ctx, udi, "net.address", &d->net.address);
     if (get_uint64_prop(ctx, udi, "net.80203.mac_address",
                         &dummy) == 0)
         d->net.subtype = VIR_NODE_DEV_CAP_NET_80203;
@@ -234,7 +234,7 @@ gather_scsi_host_cap(LibHalContext *ctx, const char *udi,
 {
     int retval = 0;
 
-    (void)get_int_prop(ctx, udi, "scsi_host.host", (int *)&d->scsi_host.host);
+    (void) get_int_prop(ctx, udi, "scsi_host.host", (int *) &d->scsi_host.host);
 
     retval = virNodeDeviceGetSCSIHostCaps(&d->scsi_host);
 
@@ -250,11 +250,11 @@ static int
 gather_scsi_cap(LibHalContext *ctx, const char *udi,
                 virNodeDevCapDataPtr d)
 {
-    (void)get_int_prop(ctx, udi, "scsi.host", (int *)&d->scsi.host);
-    (void)get_int_prop(ctx, udi, "scsi.bus", (int *)&d->scsi.bus);
-    (void)get_int_prop(ctx, udi, "scsi.target", (int *)&d->scsi.target);
-    (void)get_int_prop(ctx, udi, "scsi.lun", (int *)&d->scsi.lun);
-    (void)get_str_prop(ctx, udi, "scsi.type", &d->scsi.type);
+    (void) get_int_prop(ctx, udi, "scsi.host", (int *) &d->scsi.host);
+    (void) get_int_prop(ctx, udi, "scsi.bus", (int *) &d->scsi.bus);
+    (void) get_int_prop(ctx, udi, "scsi.target", (int *) &d->scsi.target);
+    (void) get_int_prop(ctx, udi, "scsi.lun", (int *) &d->scsi.lun);
+    (void) get_str_prop(ctx, udi, "scsi.type", &d->scsi.type);
     return 0;
 }
 
@@ -264,23 +264,23 @@ gather_storage_cap(LibHalContext *ctx, const char *udi,
                    virNodeDevCapDataPtr d)
 {
     int val;
-    (void)get_str_prop(ctx, udi, "block.device", &d->storage.block);
-    (void)get_str_prop(ctx, udi, "storage.bus", &d->storage.bus);
-    (void)get_str_prop(ctx, udi, "storage.drive_type", &d->storage.drive_type);
-    (void)get_str_prop(ctx, udi, "storage.model", &d->storage.model);
-    (void)get_str_prop(ctx, udi, "storage.vendor", &d->storage.vendor);
-    (void)get_str_prop(ctx, udi, "storage.serial", &d->storage.serial);
+    (void) get_str_prop(ctx, udi, "block.device", &d->storage.block);
+    (void) get_str_prop(ctx, udi, "storage.bus", &d->storage.bus);
+    (void) get_str_prop(ctx, udi, "storage.drive_type", &d->storage.drive_type);
+    (void) get_str_prop(ctx, udi, "storage.model", &d->storage.model);
+    (void) get_str_prop(ctx, udi, "storage.vendor", &d->storage.vendor);
+    (void) get_str_prop(ctx, udi, "storage.serial", &d->storage.serial);
     if (get_bool_prop(ctx, udi, "storage.removable", &val) == 0 && val) {
         d->storage.flags |= VIR_NODE_DEV_CAP_STORAGE_REMOVABLE;
         if (get_bool_prop(ctx, udi, "storage.removable.media_available",
                           &val) == 0 && val) {
             d->storage.flags |=
                 VIR_NODE_DEV_CAP_STORAGE_REMOVABLE_MEDIA_AVAILABLE;
-            (void)get_uint64_prop(ctx, udi, "storage.removable.media_size",
+            (void) get_uint64_prop(ctx, udi, "storage.removable.media_size",
                                   &d->storage.removable_media_size);
         }
     } else {
-        (void)get_uint64_prop(ctx, udi, "storage.size", &d->storage.size);
+        (void) get_uint64_prop(ctx, udi, "storage.size", &d->storage.size);
     }
     if (get_bool_prop(ctx, udi, "storage.hotpluggable", &val) == 0 && val)
         d->storage.flags |= VIR_NODE_DEV_CAP_STORAGE_HOTPLUGGABLE;
@@ -291,7 +291,7 @@ static int
 gather_scsi_generic_cap(LibHalContext *ctx, const char *udi,
                         virNodeDevCapDataPtr d)
 {
-    (void)get_str_prop(ctx, udi, "scsi_generic.device", &d->sg.path);
+    (void) get_str_prop(ctx, udi, "scsi_generic.device", &d->sg.path);
     return 0;
 }
 
@@ -302,22 +302,22 @@ gather_system_cap(LibHalContext *ctx, const char *udi,
 {
     char *uuidstr;
 
-    (void)get_str_prop(ctx, udi, "system.product", &d->system.product_name);
-    (void)get_str_prop(ctx, udi, "system.hardware.vendor",
+    (void) get_str_prop(ctx, udi, "system.product", &d->system.product_name);
+    (void) get_str_prop(ctx, udi, "system.hardware.vendor",
                        &d->system.hardware.vendor_name);
-    (void)get_str_prop(ctx, udi, "system.hardware.version",
+    (void) get_str_prop(ctx, udi, "system.hardware.version",
                        &d->system.hardware.version);
-    (void)get_str_prop(ctx, udi, "system.hardware.serial",
+    (void) get_str_prop(ctx, udi, "system.hardware.serial",
                        &d->system.hardware.serial);
     if (get_str_prop(ctx, udi, "system.hardware.uuid", &uuidstr) == 0) {
         ignore_value(virUUIDParse(uuidstr, d->system.hardware.uuid));
         VIR_FREE(uuidstr);
     }
-    (void)get_str_prop(ctx, udi, "system.firmware.vendor",
+    (void) get_str_prop(ctx, udi, "system.firmware.vendor",
                        &d->system.firmware.vendor_name);
-    (void)get_str_prop(ctx, udi, "system.firmware.version",
+    (void) get_str_prop(ctx, udi, "system.firmware.version",
                        &d->system.firmware.version);
-    (void)get_str_prop(ctx, udi, "system.firmware.release_date",
+    (void) get_str_prop(ctx, udi, "system.firmware.release_date",
                        &d->system.firmware.release_date);
     return 0;
 }
@@ -479,7 +479,7 @@ dev_create(const char *udi)
         goto cleanup;
 
     /* Some devices don't have a path in sysfs, so ignore failure */
-    (void)get_str_prop(ctx, udi, "linux.sysfs_path", &devicePath);
+    (void) get_str_prop(ctx, udi, "linux.sysfs_path", &devicePath);
 
     if (!(obj = virNodeDeviceObjListAssignDef(driver->devs, def))) {
         VIR_FREE(devicePath);
@@ -556,7 +556,7 @@ device_cap_added(LibHalContext *ctx,
     VIR_DEBUG("%s %s", cap, name);
     if ((obj = virNodeDeviceObjListFindByName(driver->devs, name))) {
         def = virNodeDeviceObjGetDef(obj);
-        (void)gather_capability(ctx, udi, cap, &def->caps);
+        (void) gather_capability(ctx, udi, cap, &def->caps);
         virNodeDeviceObjEndAPI(&obj);
     } else {
         VIR_DEBUG("no device named %s", name);
@@ -695,7 +695,7 @@ nodeStateInitialize(bool privileged ATTRIBUTE_UNUSED,
     }
     virNodeDeviceObjListFree(driver->devs);
     if (hal_ctx)
-        (void)libhal_ctx_free(hal_ctx);
+        (void) libhal_ctx_free(hal_ctx);
     nodeDeviceUnlock();
     VIR_FREE(driver);
 
@@ -710,8 +710,8 @@ nodeStateCleanup(void)
         nodeDeviceLock();
         LibHalContext *hal_ctx = DRV_STATE_HAL_CTX(driver);
         virNodeDeviceObjListFree(driver->devs);
-        (void)libhal_ctx_shutdown(hal_ctx, NULL);
-        (void)libhal_ctx_free(hal_ctx);
+        (void) libhal_ctx_shutdown(hal_ctx, NULL);
+        (void) libhal_ctx_free(hal_ctx);
         nodeDeviceUnlock();
         virMutexDestroy(&driver->lock);
         VIR_FREE(driver);
