@@ -1007,7 +1007,7 @@ static int virLockManagerSanlockAcquire(virLockManagerPtr lock,
                             SANLK_NAME_LEN - 1, SANLK_NAME_LEN));
 
     if (state && STRNEQ(state, "")) {
-        if ((rv = sanlock_state_to_args((char *)state,
+        if ((rv = sanlock_state_to_args((char *) state,
                                         &res_count,
                                         &res_args)) < 0) {
             char *err = NULL;

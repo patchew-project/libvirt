@@ -285,7 +285,7 @@ virLockSpaceProtocolDispatchRegister(virNetServerPtr server ATTRIBUTE_UNUSED,
     priv->ownerId = args->owner.id;
     priv->ownerPid = args->owner.pid;
     VIR_DEBUG("ownerName=%s ownerId=%d ownerPid=%lld",
-              priv->ownerName, priv->ownerId, (unsigned long long)priv->ownerPid);
+              priv->ownerName, priv->ownerId, (unsigned long long) priv->ownerPid);
 
     rv = 0;
 
