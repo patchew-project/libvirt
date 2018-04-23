@@ -366,7 +366,7 @@ esxNetworkDefineXML(virConnectPtr conn, const char *xml)
         }
 
         hostVirtualSwitchSpec->bridge =
-          (esxVI_HostVirtualSwitchBridge *)hostVirtualSwitchBondBridge;
+          (esxVI_HostVirtualSwitchBridge *) hostVirtualSwitchBondBridge;
 
         /* Lookup PhysicalNic list and match by name to get key */
         if (esxVI_LookupPhysicalNicList(priv->primary, &physicalNicList) < 0)

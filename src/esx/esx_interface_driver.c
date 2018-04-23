@@ -205,7 +205,7 @@ esxInterfaceGetXMLDesc(virInterfacePtr iface, unsigned int flags)
 
     /* FIXME: Add support for IPv6, requires to use vSphere API 4.0 */
     if (physicalNic->spec->ip) {
-        protocol.family = (char *)"ipv4";
+        protocol.family = (char *) "ipv4";
 
         if (physicalNic->spec->ip->dhcp == esxVI_Boolean_True)
             protocol.dhcp = 1;

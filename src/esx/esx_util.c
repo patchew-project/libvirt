@@ -250,7 +250,7 @@ esxUtil_ParseDatastorePath(const char *datastorePath, char **datastoreName,
     preliminaryDirectoryAndFileName = strtok_r(NULL, "", &saveptr);
 
     if (!preliminaryDirectoryAndFileName) {
-        preliminaryDirectoryAndFileName = (char *)"";
+        preliminaryDirectoryAndFileName = (char *) "";
     } else {
         preliminaryDirectoryAndFileName +=
           strspn(preliminaryDirectoryAndFileName, " ");

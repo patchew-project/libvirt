@@ -131,7 +131,7 @@ VIR_LOG_INIT("esx.esx_vi_types");
     int \
     esxVI_##_type##_AppendToList(esxVI_##_type **list,  esxVI_##_type *item) \
     { \
-        return esxVI_List_Append((esxVI_List **)list, (esxVI_List *)item); \
+        return esxVI_List_Append((esxVI_List **) list, (esxVI_List *) item); \
     }
 
 
@@ -142,7 +142,7 @@ VIR_LOG_INIT("esx.esx_vi_types");
                                  esxVI_##_type *srcList) \
     { \
         return esxVI_List_DeepCopy \
-                 ((esxVI_List **)destList, (esxVI_List *)srcList, \
+                 ((esxVI_List **) destList, (esxVI_List *) srcList, \
                   (esxVI_List_DeepCopyFunc)esxVI_##_type##_DeepCopy, \
                   (esxVI_List_FreeFunc)esxVI_##_type##_Free); \
     }
@@ -155,7 +155,7 @@ VIR_LOG_INIT("esx.esx_vi_types");
                                         esxVI_##_type **list) \
     { \
         return esxVI_List_CastFromAnyType \
-                 (anyType, (esxVI_List **)list, \
+                 (anyType, (esxVI_List **) list, \
                   (esxVI_List_CastFromAnyTypeFunc) \
                     esxVI_##_type##_CastFromAnyType, \
                   (esxVI_List_FreeFunc)esxVI_##_type##_Free); \
@@ -168,7 +168,7 @@ VIR_LOG_INIT("esx.esx_vi_types");
     esxVI_##_type##_SerializeList(esxVI_##_type *list, const char *element, \
                                   virBufferPtr output) \
     { \
-        return esxVI_List_Serialize((esxVI_List *)list, element, output, \
+        return esxVI_List_Serialize((esxVI_List *) list, element, output, \
                                     (esxVI_List_SerializeFunc) \
                                       esxVI_##_type##_Serialize); \
     }
@@ -180,7 +180,7 @@ VIR_LOG_INIT("esx.esx_vi_types");
     esxVI_##_type##_DeserializeList(xmlNodePtr node, esxVI_##_type **list) \
     { \
         return esxVI_List_Deserialize \
-                 (node, (esxVI_List **)list, \
+                 (node, (esxVI_List **) list, \
                   (esxVI_List_DeserializeFunc)esxVI_##_type##_Deserialize, \
                   (esxVI_List_FreeFunc)esxVI_##_type##_Free); \
     }
@@ -352,7 +352,7 @@ VIR_LOG_INIT("esx.esx_vi_types");
             return -1; \
         } \
  \
-        string = (char *)xmlNodeListGetString(node->doc, node->children, 1); \
+        string = (char *) xmlNodeListGetString(node->doc, node->children, 1); \
  \
         if (!string) { \
             virReportError(VIR_ERR_INTERNAL_ERROR, \
@@ -512,7 +512,7 @@ VIR_LOG_INIT("esx.esx_vi_types");
                                     esxVI_##_type *value) \
     { \
         return esxVI_Enumeration_CastFromAnyType \
-                 (&_esxVI_##_type##_Enumeration, anyType, (int *)value); \
+                 (&_esxVI_##_type##_Enumeration, anyType, (int *) value); \
     }
 
 
@@ -533,7 +533,7 @@ VIR_LOG_INIT("esx.esx_vi_types");
     esxVI_##_type##_Deserialize(xmlNodePtr node, esxVI_##_type *value) \
     { \
         return esxVI_Enumeration_Deserialize(&_esxVI_##_type##_Enumeration, \
-                                             node, (int *)value); \
+                                             node, (int *) value); \
     }
 
 
@@ -544,7 +544,7 @@ VIR_LOG_INIT("esx.esx_vi_types");
 
 #define ESX_VI__TEMPLATE__DISPATCH(_actual_type, _actual_type_name, __type, \
                                    _dispatch,  _error_return) \
-    switch ((int)_actual_type) { \
+    switch ((int) _actual_type) { \
       _dispatch \
  \
       case esxVI_Type_##__type: \
@@ -604,7 +604,7 @@ VIR_LOG_INIT("esx.esx_vi_types");
 
 
 #define ESX_VI__TEMPLATE__DYNAMIC_CAST__ACCEPT(__type) \
-    if (((esxVI_Object *)item)->_type == esxVI_Type_##__type) { \
+    if (((esxVI_Object *) item)->_type == esxVI_Type_##__type) { \
         return item; \
     }
 
@@ -690,7 +690,7 @@ VIR_LOG_INIT("esx.esx_vi_types");
           return -1; \
       } \
  \
-      switch ((int)type) { \
+      switch ((int) type) { \
         _dispatch \
  \
         case esxVI_Type_##__type: \
@@ -719,7 +719,7 @@ esxVI_GetActualObjectType(xmlNodePtr node, esxVI_Type baseType,
         return -1;
     }
 
-    type = (char *)xmlGetNsProp
+    type = (char *) xmlGetNsProp
                      (node, BAD_CAST "type",
                       BAD_CAST "http://www.w3.org/2001/XMLSchema-instance");
 
@@ -967,7 +967,7 @@ esxVI_AnyType_DeepCopy(esxVI_AnyType **dest, esxVI_AnyType *src)
         goto failure;
     }
 
-    switch ((int)src->type) {
+    switch ((int) src->type) {
       case esxVI_Type_Boolean:
         (*dest)->boolean = src->boolean;
         break;
@@ -1026,7 +1026,7 @@ esxVI_AnyType_Deserialize(xmlNodePtr node, esxVI_AnyType **anyType)
     }
 
     (*anyType)->other =
-      (char *)xmlGetNsProp
+      (char *) xmlGetNsProp
                 (node, BAD_CAST "type",
                  BAD_CAST "http://www.w3.org/2001/XMLSchema-instance");
 
@@ -1046,7 +1046,7 @@ esxVI_AnyType_Deserialize(xmlNodePtr node, esxVI_AnyType **anyType)
     }
 
     (*anyType)->value =
-      (char *)xmlNodeListGetString(node->doc, node->children, 1);
+      (char *) xmlNodeListGetString(node->doc, node->children, 1);
 
     if (!(*anyType)->value && VIR_STRDUP((*anyType)->value, "") < 0)
         goto failure;
@@ -1071,7 +1071,7 @@ esxVI_AnyType_Deserialize(xmlNodePtr node, esxVI_AnyType **anyType)
             (*anyType)->_name = number; \
         } while (0)
 
-    switch ((int)(*anyType)->type) {
+    switch ((int) (*anyType)->type) {
       case esxVI_Type_Boolean:
         if (STREQ((*anyType)->value, "true")) {
             (*anyType)->boolean = esxVI_Boolean_True;
@@ -1299,7 +1299,7 @@ esxVI_String_DeserializeValue(xmlNodePtr node, char **value)
         return -1;
     }
 
-    *value = (char *)xmlNodeListGetString(node->doc, node->children, 1);
+    *value = (char *) xmlNodeListGetString(node->doc, node->children, 1);
 
     return *value ? 0 : VIR_STRDUP(*value, "");
 }
@@ -1339,7 +1339,7 @@ ESX_VI__TEMPLATE__LIST__DEEP_COPY(Byte)
 /* esxVI_Byte_Serialize */
 ESX_VI__TEMPLATE__SERIALIZE(Byte,
 {
-    virBufferAsprintf(output, "%d", (int)item->value);
+    virBufferAsprintf(output, "%d", (int) item->value);
 })
 
 /* esxVI_Byte_SerializeList */
@@ -1383,7 +1383,7 @@ ESX_VI__TEMPLATE__CAST_FROM_ANY_TYPE(Int)
 /* esxVI_Int_Serialize */
 ESX_VI__TEMPLATE__SERIALIZE(Int,
 {
-    virBufferAsprintf(output, "%d", (int)item->value);
+    virBufferAsprintf(output, "%d", (int) item->value);
 })
 
 /* esxVI_Int_SerializeList */
@@ -1427,7 +1427,7 @@ ESX_VI__TEMPLATE__CAST_FROM_ANY_TYPE(Long)
 /* esxVI_Long_Serialize */
 ESX_VI__TEMPLATE__SERIALIZE(Long,
 {
-    virBufferAsprintf(output, "%lld", (long long int)item->value);
+    virBufferAsprintf(output, "%lld", (long long int) item->value);
 })
 
 /* esxVI_Long_SerializeList */
@@ -1481,7 +1481,7 @@ esxVI_DateTime_Deserialize(xmlNodePtr node, esxVI_DateTime **dateTime)
         return -1;
 
     (*dateTime)->value =
-      (char *)xmlNodeListGetString(node->doc, node->children, 1);
+      (char *) xmlNodeListGetString(node->doc, node->children, 1);
 
     if (!(*dateTime)->value) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -1653,7 +1653,7 @@ esxVI_MethodFault_Deserialize(xmlNodePtr node, esxVI_MethodFault **methodFault)
         return -1;
 
     (*methodFault)->_actualType =
-      (char *)xmlGetNsProp(node, BAD_CAST "type",
+      (char *) xmlGetNsProp(node, BAD_CAST "type",
                            BAD_CAST "http://www.w3.org/2001/XMLSchema-instance");
 
     if (!(*methodFault)->_actualType) {
@@ -1747,7 +1747,7 @@ esxVI_ManagedObjectReference_Deserialize
         return -1;
 
     (*managedObjectReference)->type =
-      (char *)xmlGetNoNsProp(node, BAD_CAST "type");
+      (char *) xmlGetNoNsProp(node, BAD_CAST "type");
 
     if (!(*managedObjectReference)->type) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -1824,7 +1824,7 @@ ESX_VI__TEMPLATE__LIST__CAST_FROM_ANY_TYPE(Event)
 ESX_VI__TEMPLATE__DESERIALIZE_EXTRA(Event, /* nothing */,
 {
     (*ptrptr)->_actualType =
-      (char *)xmlGetNsProp(node, BAD_CAST "type",
+      (char *) xmlGetNsProp(node, BAD_CAST "type",
                            BAD_CAST "http://www.w3.org/2001/XMLSchema-instance");
 
     if (!(*ptrptr)->_actualType) {

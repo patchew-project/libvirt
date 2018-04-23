@@ -219,7 +219,7 @@ esxStreamSend(virStreamPtr stream, const char *data, size_t nbytes)
 
     virMutexLock(&priv->curl->lock);
 
-    priv->buffer = (char *)data;
+    priv->buffer = (char *) data;
     priv->buffer_size = nbytes;
     priv->buffer_used = nbytes;
 

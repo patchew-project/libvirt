@@ -951,13 +951,13 @@ esxStorageVolCreateXML(virStoragePoolPtr pool,
              * "A preallocated disk has all space allocated at creation time
              *  and the space is zeroed on demand as the space is used."
              */
-            virtualDiskSpec->diskType = (char *)"preallocated";
+            virtualDiskSpec->diskType = (char *) "preallocated";
         } else if (def->target.allocation == 0) {
             /*
              * "Space required for thin-provisioned virtual disk is allocated
              *  and zeroed on demand as the space is used."
              */
-            virtualDiskSpec->diskType = (char *)"thin";
+            virtualDiskSpec->diskType = (char *) "thin";
         } else {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Unsupported capacity-to-allocation relation"));
@@ -969,7 +969,7 @@ esxStorageVolCreateXML(virStoragePoolPtr pool,
          * way to let the user specify it in the volume XML config. Therefore,
          * default to 'lsilogic' here.
          */
-        virtualDiskSpec->adapterType = (char *)"lsilogic";
+        virtualDiskSpec->adapterType = (char *) "lsilogic";
 
         virtualDiskSpec->capacityKb->value =
           VIR_DIV_UP(def->target.capacity, 1024); /* Scale from byte to kilobyte */

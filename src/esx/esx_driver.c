@@ -168,7 +168,7 @@ esxParseVMXFileName(const char *fileName, void *opaque)
                 goto cleanup;
             }
 
-            tmp = (char *)STRSKIP(fileName, hostMount->mountInfo->path);
+            tmp = (char *) STRSKIP(fileName, hostMount->mountInfo->path);
 
             if (!tmp)
                 continue;
@@ -2268,8 +2268,8 @@ esxDomainGetInfo(virDomainPtr domain, virDomainInfoPtr info)
             querySpec->entity = virtualMachine->obj;
             querySpec->maxSample->value = 1;
             querySpec->metricId->counterId->value = priv->usedCpuTimeCounterId;
-            querySpec->metricId->instance = (char *)"";
-            querySpec->format = (char *)"normal";
+            querySpec->metricId->instance = (char *) "";
+            querySpec->format = (char *) "normal";
 
             if (esxVI_QueryPerf(priv->host, querySpec,
                                 &perfEntityMetricBaseList) < 0) {
@@ -2308,7 +2308,7 @@ esxDomainGetInfo(virDomainPtr domain, virDomainInfoPtr info)
                     for (value = perfMetricIntSeries->value;
                          value;
                          value = value->_next) {
-                        VIR_DEBUG("value %lld", (long long int)value->value);
+                        VIR_DEBUG("value %lld", (long long int) value->value);
                     }
                 }
             }
@@ -2757,7 +2757,7 @@ esxConnectDomainXMLFromNative(virConnectPtr conn, const char *nativeFormat,
     }
 
     data.ctx = priv->primary;
-    data.datastorePathWithoutFileName = (char *)"[?] ?";
+    data.datastorePathWithoutFileName = (char *) "[?] ?";
 
     ctx.opaque = &data;
     ctx.parseFileName = esxParseVMXFileName;
@@ -3416,9 +3416,9 @@ esxDomainSetAutostart(virDomainPtr domain, int autostart)
     newPowerInfo->startOrder->value = -1; /* no specific start order */
     newPowerInfo->startDelay->value = -1; /* use system default */
     newPowerInfo->waitForHeartbeat = esxVI_AutoStartWaitHeartbeatSetting_SystemDefault;
-    newPowerInfo->startAction = autostart ? (char *)"powerOn" : (char *)"none";
+    newPowerInfo->startAction = autostart ? (char *) "powerOn" : (char *) "none";
     newPowerInfo->stopDelay->value = -1; /* use system default */
-    newPowerInfo->stopAction = (char *)"none";
+    newPowerInfo->stopAction = (char *) "none";
 
     if (esxVI_AutoStartPowerInfo_AppendToList(&spec->powerInfo,
                                               newPowerInfo) < 0) {
@@ -3865,12 +3865,12 @@ esxDomainMigratePerform(virDomainPtr domain,
 
     resourcePool._next = NULL;
     resourcePool._type = esxVI_Type_ManagedObjectReference;
-    resourcePool.type = (char *)"ResourcePool";
+    resourcePool.type = (char *) "ResourcePool";
     resourcePool.value = path_resourcePool;
 
     hostSystem._next = NULL;
     hostSystem._type = esxVI_Type_ManagedObjectReference;
-    hostSystem.type = (char *)"HostSystem";
+    hostSystem.type = (char *) "HostSystem";
     hostSystem.value = path_hostSystem;
 
     /* Lookup VirtualMachine */

@@ -42,7 +42,7 @@
 VIR_LOG_INIT("esx.esx_vi");
 
 #define ESX_VI__SOAP__RESPONSE_XPATH(_type) \
-    ((char *)"/soapenv:Envelope/soapenv:Body/" \
+    ((char *) "/soapenv:Envelope/soapenv:Body/" \
                "vim:"_type"Response/vim:returnval")
 
 
@@ -121,7 +121,7 @@ ESX_VI__TEMPLATE__FREE(CURL,
 static size_t
 esxVI_CURL_ReadString(char *data, size_t size, size_t nmemb, void *userdata)
 {
-    const char *content = *(const char **)userdata;
+    const char *content = *(const char **) userdata;
     size_t available = 0;
     size_t requested = size * nmemb;
 
@@ -138,7 +138,7 @@ esxVI_CURL_ReadString(char *data, size_t size, size_t nmemb, void *userdata)
 
     memcpy(data, content, requested);
 
-    *(const char **)userdata = content + requested;
+    *(const char **) userdata = content + requested;
 
     return requested;
 }
@@ -483,7 +483,7 @@ esxVI_SharedCURL_Lock(CURL *handle ATTRIBUTE_UNUSED, curl_lock_data data,
     size_t i;
     esxVI_SharedCURL *shared = userptr;
 
-    switch ((int)data) {
+    switch ((int) data) {
       case CURL_LOCK_DATA_SHARE:
         i = 0;
         break;
@@ -497,7 +497,7 @@ esxVI_SharedCURL_Lock(CURL *handle ATTRIBUTE_UNUSED, curl_lock_data data,
         break;
 
       default:
-        VIR_ERROR(_("Trying to lock unknown SharedCURL lock %d"), (int)data);
+        VIR_ERROR(_("Trying to lock unknown SharedCURL lock %d"), (int) data);
         return;
     }
 
@@ -511,7 +511,7 @@ esxVI_SharedCURL_Unlock(CURL *handle ATTRIBUTE_UNUSED, curl_lock_data data,
     size_t i;
     esxVI_SharedCURL *shared = userptr;
 
-    switch ((int)data) {
+    switch ((int) data) {
       case CURL_LOCK_DATA_SHARE:
         i = 0;
         break;
@@ -525,7 +525,7 @@ esxVI_SharedCURL_Unlock(CURL *handle ATTRIBUTE_UNUSED, curl_lock_data data,
         break;
 
       default:
-        VIR_ERROR(_("Trying to unlock unknown SharedCURL lock %d"), (int)data);
+        VIR_ERROR(_("Trying to unlock unknown SharedCURL lock %d"), (int) data);
         return;
     }
 
@@ -2238,7 +2238,7 @@ esxVI_LookupObjectContentByType(esxVI_Context *ctx,
     if (esxVI_PropertySpec_Alloc(&propertySpec) < 0)
         goto cleanup;
 
-    propertySpec->type = (char *)type;
+    propertySpec->type = (char *) type;
     propertySpec->pathSet = propertyNameList;
 
     if (esxVI_PropertyFilterSpec_Alloc(&propertyFilterSpec) < 0 ||
