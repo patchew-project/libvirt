@@ -319,7 +319,7 @@ virNWFilterSnoopActivate(virNWFilterSnoopReqPtr req)
 
     virNWFilterSnoopActiveLock();
 
-    if (virHashAddEntry(virNWFilterSnoopState.active, key, (void *)0x1) < 0)
+    if (virHashAddEntry(virNWFilterSnoopState.active, key, (void *) 0x1) < 0)
         VIR_FREE(key);
 
     virNWFilterSnoopActiveUnlock();
@@ -936,7 +936,7 @@ virNWFilterSnoopDHCPGetOpt(virNWFilterSnoopDHCPHdrPtr pd, int len,
                 goto malformed;
             if (*pleasetime)
                 return -1;  /* duplicate lease time */
-            memcpy(&nwint, (char *)pd->d_opts + oind + 2, sizeof(nwint));
+            memcpy(&nwint, (char *) pd->d_opts + oind + 2, sizeof(nwint));
             *pleasetime = ntohl(nwint);
             break;
         case DHCPO_MTYPE:
@@ -1017,7 +1017,7 @@ virNWFilterSnoopDHCPDecode(virNWFilterSnoopReqPtr req,
      */
     if (!fromVM) {
         if (virMacAddrCmpRaw(&req->macaddr,
-                             (unsigned char *)&pd->d_chaddr) != 0)
+                             (unsigned char *) &pd->d_chaddr) != 0)
             return -2;
     }
 
@@ -1456,7 +1456,7 @@ virNWFilterDHCPSnoopThread(void *req0)
             n--;
 
             rv = pcap_next_ex(pcapConf[i].handle, &hdr,
-                              (const u_char **)&packet);
+                              (const u_char **) &packet);
 
             if (rv < 0) {
                 /* error reading from socket */
@@ -1881,7 +1881,7 @@ virNWFilterSnoopSaveIter(void *payload,
                          void *data)
 {
     virNWFilterSnoopReqPtr req = payload;
-    int tfd = *(int *)data;
+    int tfd = *(int *) data;
     virNWFilterSnoopIPLeasePtr ipl;
 
     /* protect req->start */
@@ -1925,7 +1925,7 @@ virNWFilterSnoopLeaseFileRefresh(void)
                          virNWFilterSnoopPruneIter, NULL);
         /* now save them */
         virHashForEach(virNWFilterSnoopState.snoopReqs,
-                       virNWFilterSnoopSaveIter, (void *)&tfd);
+                       virNWFilterSnoopSaveIter, (void *) &tfd);
     }
 
     if (VIR_CLOSE(tfd) < 0) {
@@ -2147,7 +2147,7 @@ virNWFilterDHCPSnoopEnd(const char *ifname)
         goto cleanup;
 
     if (ifname) {
-        ifkey = (char *)virHashLookup(virNWFilterSnoopState.ifnameToKey,
+        ifkey = (char *) virHashLookup(virNWFilterSnoopState.ifnameToKey,
                                       ifname);
         if (!ifkey)
             goto cleanup;

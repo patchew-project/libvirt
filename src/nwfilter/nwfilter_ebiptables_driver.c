@@ -1188,7 +1188,7 @@ _iptablesCreateRuleInstance(virFirewallPtr fw,
 
     PRINT_IPT_ROOT_CHAIN(chain, chainPrefix, ifname);
 
-    switch ((int)rule->prtclType) {
+    switch ((int) rule->prtclType) {
     case VIR_NWFILTER_RULE_PROTOCOL_TCP:
     case VIR_NWFILTER_RULE_PROTOCOL_TCPoIPV6:
         fwrule = virFirewallAddRule(fw, layer,
@@ -1878,7 +1878,7 @@ ebtablesCreateRuleInstance(virFirewallPtr fw,
 #define INST_ITEM_MASK(S, I, MASK, C) \
     INST_ITEM_2PARMS(S, I, MASK, C, "/")
 
-    switch ((int)rule->prtclType) {
+    switch ((int) rule->prtclType) {
     case VIR_NWFILTER_RULE_PROTOCOL_MAC:
         fwrule = virFirewallAddRule(fw, VIR_FIREWALL_LAYER_ETHERNET,
                                     "-t", "nat",
@@ -2682,7 +2682,7 @@ ebtablesCreateTmpSubChainFW(virFirewallPtr fw,
     fwrule = virFirewallAddRule(fw, VIR_FIREWALL_LAYER_ETHERNET,
                                 "-t", "nat", "-A", rootchain, NULL);
 
-    switch ((int)protoidx) {
+    switch ((int) protoidx) {
     case L2_PROTO_MAC_IDX:
         break;
     case L2_PROTO_STP_IDX:
@@ -2722,7 +2722,7 @@ ebtablesRemoveSubChainsQuery(virFirewallPtr fw,
                 VIR_DEBUG("Processing chain '%s'", tmp);
                 virFirewallAddRuleFull(fw, VIR_FIREWALL_LAYER_ETHERNET,
                                        false, ebtablesRemoveSubChainsQuery,
-                                       (void *)chainprefixes,
+                                       (void *) chainprefixes,
                                         "-t", "nat", "-L", tmp, NULL);
                 virFirewallAddRuleFull(fw, VIR_FIREWALL_LAYER_ETHERNET,
                                        true, NULL, NULL,
@@ -2750,7 +2750,7 @@ _ebtablesRemoveSubChainsFW(virFirewallPtr fw,
         PRINT_ROOT_CHAIN(rootchain, chainprefixes[i], ifname);
         virFirewallAddRuleFull(fw, VIR_FIREWALL_LAYER_ETHERNET,
                                false, ebtablesRemoveSubChainsQuery,
-                               (void *)chainprefixes,
+                               (void *) chainprefixes,
                                "-t", "nat", "-L", rootchain, NULL);
     }
 }
@@ -3195,8 +3195,8 @@ ebiptablesFilterOrderSort(const virHashKeyValuePair *a,
                           const virHashKeyValuePair *b)
 {
     /* elements' values has been limited to range [-1000, 1000] */
-    return *(virNWFilterChainPriority *)a->value -
-           *(virNWFilterChainPriority *)b->value;
+    return *(virNWFilterChainPriority *) a->value -
+           *(virNWFilterChainPriority *) b->value;
 }
 
 
@@ -3336,8 +3336,8 @@ struct ebtablesSubChainInst {
 static int
 ebtablesSubChainInstSort(const void *a, const void *b)
 {
-    const struct ebtablesSubChainInst **insta = (const struct ebtablesSubChainInst **)a;
-    const struct ebtablesSubChainInst **instb = (const struct ebtablesSubChainInst **)b;
+    const struct ebtablesSubChainInst **insta = (const struct ebtablesSubChainInst **) a;
+    const struct ebtablesSubChainInst **instb = (const struct ebtablesSubChainInst **) b;
 
     /* priorities are limited to range [-1000, 1000] */
     return (*insta)->priority - (*instb)->priority;
@@ -3364,12 +3364,12 @@ ebtablesGetSubChainInsts(virHashTablePtr chains,
         enum l3_proto_idx idx = ebtablesGetProtoIdxByFiltername(
                                   filter_names[i].key);
 
-        if ((int)idx < 0)
+        if ((int) idx < 0)
             continue;
 
         if (VIR_ALLOC(inst) < 0)
             goto cleanup;
-        inst->priority = *(const virNWFilterChainPriority *)filter_names[i].value;
+        inst->priority = *(const virNWFilterChainPriority *) filter_names[i].value;
         inst->incoming = incoming;
         inst->protoidx = idx;
         inst->filtername = filter_names[i].key;

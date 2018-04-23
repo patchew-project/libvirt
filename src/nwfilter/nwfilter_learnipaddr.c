@@ -356,7 +356,7 @@ procDHCPOpts(struct dhcp *dhcp, int dhcp_opts_len,
             }
         }
         dhcp_opts_len -= (2 + dhcpopt->len);
-        dhcpopt = (struct dhcp_option*)((char *)dhcpopt + 2 + dhcpopt->len);
+        dhcpopt = (struct dhcp_option*)((char *) dhcpopt + 2 + dhcpopt->len);
     }
 }
 
@@ -499,7 +499,7 @@ learnIPAddressThread(void *arg)
 
             case ETHERTYPE_VLAN:
                 ethHdrSize = sizeof(struct ether_vlan_header);
-                vlan_hdr = (struct ether_vlan_header *)packet;
+                vlan_hdr = (struct ether_vlan_header *) packet;
                 if (ntohs(vlan_hdr->ether_type) != ETHERTYPE_IP ||
                     header.len < ethHdrSize)
                     continue;
@@ -567,7 +567,7 @@ learnIPAddressThread(void *arg)
                                        sizeof(struct udphdr))) {
                         VIR_WARNINGS_NO_CAST_ALIGN
                         struct udphdr *udphdr = (struct udphdr *)
-                                          ((char *)iphdr + iphdr->ihl * 4);
+                                          ((char *) iphdr + iphdr->ihl * 4);
                         VIR_WARNINGS_RESET
                         if (ntohs(udphdr->source) == 67 &&
                             ntohs(udphdr->dest)   == 68 &&
@@ -576,7 +576,7 @@ learnIPAddressThread(void *arg)
                                           sizeof(struct udphdr) +
                                           sizeof(struct dhcp)) {
                             struct dhcp *dhcp = (struct dhcp *)
-                                        ((char *)udphdr + sizeof(udphdr));
+                                        ((char *) udphdr + sizeof(udphdr));
                             if (dhcp->op == 2 /* BOOTREPLY */ &&
                                 virMacAddrCmpRaw(
                                         &req->macaddr,
