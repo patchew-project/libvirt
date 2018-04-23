@@ -719,11 +719,13 @@ int qemuDomainUpdateMemoryDeviceInfo(virQEMUDriverPtr driver,
 
 bool qemuDomainDefCheckABIStability(virQEMUDriverPtr driver,
                                     virDomainDefPtr src,
-                                    virDomainDefPtr dst);
+                                    virDomainDefPtr dst,
+                                    unsigned int flags);
 
 bool qemuDomainCheckABIStability(virQEMUDriverPtr driver,
                                  virDomainObjPtr vm,
-                                 virDomainDefPtr dst);
+                                 virDomainDefPtr dst,
+                                 unsigned int flags);
 
 bool qemuDomainAgentAvailable(virDomainObjPtr vm,
                               bool reportError);

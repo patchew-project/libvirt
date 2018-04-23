@@ -3366,7 +3366,7 @@ qemuDomainSaveInternal(virQEMUDriverPtr driver,
                                             VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE))) {
             goto endjob;
         }
-        if (!qemuDomainCheckABIStability(driver, vm, def)) {
+        if (!qemuDomainCheckABIStability(driver, vm, def, 0)) {
             virDomainDefFree(def);
             goto endjob;
         }
@@ -15893,9 +15893,10 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                         goto endjob;
 
                     compatible = qemuDomainDefCheckABIStability(driver, vm->def,
-                                                                config);
+                                                                config, 0);
                 } else {
-                    compatible = qemuDomainCheckABIStability(driver, vm, config);
+                    compatible = qemuDomainCheckABIStability(driver, vm, config,
+                                                             0);
                 }
 
                 if (!compatible) {
