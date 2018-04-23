@@ -6848,7 +6848,7 @@ qemuBuildCpuCommandLine(virCommandPtr cmd,
     if (cpu_flags && !cpu) {
         const char *default_model;
 
-        switch ((int)def->os.arch) {
+        switch ((int) def->os.arch) {
         case VIR_ARCH_I686:
             default_model = "qemu32";
             break;
@@ -6894,7 +6894,7 @@ qemuBuildObsoleteAccelArg(virCommandPtr cmd,
     bool disableKVM = false;
     bool enableKVM = false;
 
-    switch ((int)def->virtType) {
+    switch ((int) def->virtType) {
     case VIR_DOMAIN_VIRT_QEMU:
         if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
             disableKVM = true;
@@ -8273,7 +8273,7 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
     /* For types whose implementations use a netdev on the host, add
      * an entry to nicindexes for passing on to systemd.
     */
-    switch ((virDomainNetType)actualType) {
+    switch ((virDomainNetType) actualType) {
     case VIR_DOMAIN_NET_TYPE_ETHERNET:
     case VIR_DOMAIN_NET_TYPE_NETWORK:
     case VIR_DOMAIN_NET_TYPE_BRIDGE:

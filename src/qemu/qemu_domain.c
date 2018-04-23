@@ -3624,7 +3624,7 @@ qemuDomainChrSourceReconnectDefValidate(const virDomainChrSourceReconnectDef *de
 static int
 qemuDomainChrSourceDefValidate(const virDomainChrSourceDef *def)
 {
-    switch ((virDomainChrType)def->type) {
+    switch ((virDomainChrType) def->type) {
     case VIR_DOMAIN_CHR_TYPE_TCP:
         if (qemuDomainChrSourceReconnectDefValidate(&def->data.tcp.reconnect) < 0)
             return -1;
@@ -5227,7 +5227,7 @@ qemuDomainControllerDefPostParse(virDomainControllerDefPtr cont,
                                  virQEMUCapsPtr qemuCaps,
                                  unsigned int parseFlags)
 {
-    switch ((virDomainControllerType)cont->type) {
+    switch ((virDomainControllerType) cont->type) {
     case VIR_DOMAIN_CONTROLLER_TYPE_SCSI:
         /* Set the default SCSI controller model if not already set */
         if (qemuDomainSetSCSIControllerModel(def, cont, qemuCaps) < 0)
@@ -6755,8 +6755,8 @@ ssize_t qemuDomainLogContextRead(qemuDomainLogContextPtr ctxt,
 {
     VIR_DEBUG("Context read %p manager=%p inode=%llu pos=%llu",
               ctxt, ctxt->manager,
-              (unsigned long long)ctxt->inode,
-              (unsigned long long)ctxt->pos);
+              (unsigned long long) ctxt->inode,
+              (unsigned long long) ctxt->pos);
     char *buf;
     size_t buflen;
     if (ctxt->manager) {
@@ -11097,7 +11097,7 @@ qemuDomainDetachDeviceUnlink(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
         if (i == ndevMountsPath) {
             if (virProcessRunInMountNamespace(vm->pid,
                                               qemuDomainDetachDeviceUnlinkHelper,
-                                              (void *)file) < 0)
+                                              (void *) file) < 0)
                 goto cleanup;
         }
     }
@@ -11264,7 +11264,7 @@ qemuDomainNamespaceSetupHostdev(virDomainObjPtr vm,
     if (qemuDomainGetHostdevPath(NULL, hostdev, false, &npaths, &paths, NULL) < 0)
         goto cleanup;
 
-    if (qemuDomainNamespaceMknodPaths(vm, (const char **)paths, npaths) < 0)
+    if (qemuDomainNamespaceMknodPaths(vm, (const char **) paths, npaths) < 0)
         goto cleanup;
 
     ret = 0;
@@ -11292,7 +11292,7 @@ qemuDomainNamespaceTeardownHostdev(virDomainObjPtr vm,
         goto cleanup;
 
     if (npaths != 0 &&
-        qemuDomainNamespaceUnlinkPaths(vm, (const char **)paths, npaths) < 0)
+        qemuDomainNamespaceUnlinkPaths(vm, (const char **) paths, npaths) < 0)
         goto cleanup;
 
     ret = 0;

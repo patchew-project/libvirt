@@ -439,7 +439,7 @@ static int
 qemuDomainSnapshotLoad(virDomainObjPtr vm,
                        void *data)
 {
-    char *baseDir = (char *)data;
+    char *baseDir = (char *) data;
     char *snapDir = NULL;
     DIR *dir = NULL;
     struct dirent *entry;
@@ -1331,9 +1331,9 @@ qemuGetSchedInfo(unsigned long long *cpuWait,
     /* In general, we cannot assume pid_t fits in int; but /proc parsing
      * is specific to Linux where int works fine.  */
     if (tid)
-        ret = virAsprintf(&proc, "/proc/%d/task/%d/sched", (int)pid, (int)tid);
+        ret = virAsprintf(&proc, "/proc/%d/task/%d/sched", (int) pid, (int) tid);
     else
-        ret = virAsprintf(&proc, "/proc/%d/sched", (int)pid);
+        ret = virAsprintf(&proc, "/proc/%d/sched", (int) pid);
     if (ret < 0)
         goto cleanup;
     ret = -1;
@@ -1376,7 +1376,7 @@ qemuGetSchedInfo(unsigned long long *cpuWait,
                 goto cleanup;
             }
 
-            *cpuWait = (unsigned long long)(val * 1000000);
+            *cpuWait = (unsigned long long) (val * 1000000);
             break;
         }
     }
@@ -1435,7 +1435,7 @@ qemuGetProcessInfo(unsigned long long *cpuTime, int *lastCpu, long *vm_rss,
      */
     if (cpuTime)
         *cpuTime = 1000ull * 1000ull * 1000ull * (usertime + systime)
-            / (unsigned long long)sysconf(_SC_CLK_TCK);
+            / (unsigned long long) sysconf(_SC_CLK_TCK);
     if (lastCpu)
         *lastCpu = cpu;
 

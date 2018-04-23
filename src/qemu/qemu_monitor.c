@@ -431,11 +431,11 @@ qemuMonitorIOProcess(qemuMonitorPtr mon)
 # if DEBUG_RAW_IO
     char *str1 = qemuMonitorEscapeNonPrintable(msg ? msg->txBuffer : "");
     char *str2 = qemuMonitorEscapeNonPrintable(mon->buffer);
-    VIR_ERROR(_("Process %d %p %p [[[[%s]]][[[%s]]]"), (int)mon->bufferOffset, mon->msg, msg, str1, str2);
+    VIR_ERROR(_("Process %d %p %p [[[[%s]]][[[%s]]]"), (int) mon->bufferOffset, mon->msg, msg, str1, str2);
     VIR_FREE(str1);
     VIR_FREE(str2);
 # else
-    VIR_DEBUG("Process %d", (int)mon->bufferOffset);
+    VIR_DEBUG("Process %d", (int) mon->bufferOffset);
 # endif
 #endif
 
@@ -465,7 +465,7 @@ qemuMonitorIOProcess(qemuMonitorPtr mon)
         mon->bufferOffset = mon->bufferLength = 0;
     }
 #if DEBUG_IO
-    VIR_DEBUG("Process done %d used %d", (int)mon->bufferOffset, len);
+    VIR_DEBUG("Process done %d used %d", (int) mon->bufferOffset, len);
 #endif
     if (msg && msg->finished)
         virCondBroadcast(&mon->notify);
@@ -489,7 +489,7 @@ qemuMonitorIOWriteWithFD(qemuMonitorPtr mon,
     memset(&msg, 0, sizeof(msg));
     memset(control, 0, sizeof(control));
 
-    iov[0].iov_base = (void *)data;
+    iov[0].iov_base = (void *) data;
     iov[0].iov_len = len;
 
     msg.msg_iov = iov;
@@ -617,7 +617,7 @@ qemuMonitorIORead(qemuMonitorPtr mon)
     }
 
 #if DEBUG_IO
-    VIR_DEBUG("Now read %d bytes of data", (int)mon->bufferOffset);
+    VIR_DEBUG("Now read %d bytes of data", (int) mon->bufferOffset);
 #endif
 
     return ret;

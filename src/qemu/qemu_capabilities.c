@@ -3115,7 +3115,7 @@ virQEMUCapsLoadCache(virArch hostArch,
 
     ctxt->node = xmlDocGetRootElement(doc);
 
-    if (STRNEQ((const char *)ctxt->node->name, "qemuCaps")) {
+    if (STRNEQ((const char *) ctxt->node->name, "qemuCaps")) {
         virReportError(VIR_ERR_XML_ERROR,
                        _("unexpected root element <%s>, "
                          "expecting <qemuCaps>"),
@@ -3549,8 +3549,8 @@ virQEMUCapsSaveFile(void *data,
 
     VIR_DEBUG("Saved caps '%s' for '%s' with (%lld, %lld)",
               filename, qemuCaps->binary,
-              (long long)qemuCaps->ctime,
-              (long long)qemuCaps->libvirtCtime);
+              (long long) qemuCaps->ctime,
+              (long long) qemuCaps->libvirtCtime);
 
     ret = 0;
  cleanup:
@@ -3576,10 +3576,10 @@ virQEMUCapsIsValid(void *data,
         VIR_DEBUG("Outdated capabilities for '%s': libvirt changed "
                   "(%lld vs %lld, %lu vs %lu)",
                   qemuCaps->binary,
-                  (long long)qemuCaps->libvirtCtime,
-                  (long long)virGetSelfLastChanged(),
-                  (unsigned long)qemuCaps->libvirtVersion,
-                  (unsigned long)LIBVIR_VERSION_NUMBER);
+                  (long long) qemuCaps->libvirtCtime,
+                  (long long) virGetSelfLastChanged(),
+                  (unsigned long) qemuCaps->libvirtVersion,
+                  (unsigned long) LIBVIR_VERSION_NUMBER);
         return false;
     }
 

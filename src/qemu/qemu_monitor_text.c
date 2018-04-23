@@ -104,7 +104,7 @@ int qemuMonitorTextIOProcess(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
     /* Don't print raw data in debug because its full of control chars */
     /*VIR_DEBUG("Process data %d byts of data [%s]", len - used, data + used);*/
 #if DEBUG_IO
-    VIR_DEBUG("Process data %d byts of data", (int)(len - used));
+    VIR_DEBUG("Process data %d byts of data", (int) (len - used));
 #endif
 
     /* Look for a non-zero reply followed by prompt */
@@ -763,7 +763,7 @@ int qemuMonitorTextGetBlockInfo(qemuMonitorPtr mon,
     p = reply;
 
     while (*p) {
-        p = (char *)qemuAliasDiskDriveSkipPrefix(p);
+        p = (char *) qemuAliasDiskDriveSkipPrefix(p);
 
         eol = strchr(p, '\n');
         if (!eol)
@@ -1039,7 +1039,7 @@ int qemuMonitorTextSetVNCPassword(qemuMonitorPtr mon,
 
     if (qemuMonitorTextCommandWithHandler(mon, "change vnc password",
                                           qemuMonitorSendVNCPassphrase,
-                                          (char *)password,
+                                          (char *) password,
                                           -1, &info) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        "%s", _("setting VNC password failed"));

@@ -160,7 +160,7 @@ qemuDomainExtractTLSSubject(const char *certdir)
         goto error;
     }
 
-    pemdatum.data = (unsigned char *)pemdata;
+    pemdatum.data = (unsigned char *) pemdata;
     pemdatum.size = strlen(pemdata);
 
     ret = gnutls_x509_crt_import(cert, &pemdatum, GNUTLS_X509_FMT_PEM);
