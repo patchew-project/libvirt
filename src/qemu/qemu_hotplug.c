@@ -3825,6 +3825,49 @@ static bool qemuIsMultiFunctionDevice(virDomainDefPtr def,
 
 
 static int
+qemuDomainDiskNeedRemovePR(virDomainObjPtr vm,
+                           virDomainDiskDefPtr disk,
+                           char **aliasret,
+                           bool *stopDaemon)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    size_t i;
+
+    *aliasret = NULL;
+    *stopDaemon = false;
+
+    if (!virStoragePRDefIsEnabled(disk->src->pr))
+        return 0;
+
+    if (!virStoragePRDefIsManaged(disk->src->pr)) {
+        *aliasret = qemuDomainGetUnmanagedPRAlias(disk);
+        return *aliasret ? 0 : -1;
+    }
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        const virDomainDiskDef *domainDisk = vm->def->disks[i];
+
+        if (domainDisk == disk)
+            continue;
+
+        if (virStoragePRDefIsManaged(domainDisk->src->pr))
+            break;
+    }
+
+    if (i != vm->def->ndisks)
+        return 0;
+
+    if (VIR_STRDUP(*aliasret, qemuDomainGetManagedPRAlias()) < 0)
+        return -1;
+
+    if (priv->prDaemonRunning)
+        *stopDaemon = true;
+
+    return 0;
+}
+
+
+static int
 qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
                            virDomainObjPtr vm,
                            virDomainDiskDefPtr disk)
@@ -3837,6 +3880,8 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
     char *drivestr;
     char *objAlias = NULL;
     char *encAlias = NULL;
+    char *prmgrAlias = NULL;
+    bool stopPRDaemon = false;
 
     VIR_DEBUG("Removing disk %s from domain %p %s",
               disk->info.alias, vm, vm->def->name);
@@ -3874,6 +3919,9 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
         }
     }
 
+    if (qemuDomainDiskNeedRemovePR(vm, disk, &prmgrAlias, &stopPRDaemon) < 0)
+        return -1;
+
     qemuDomainObjEnterMonitor(driver, vm);
 
     qemuMonitorDriveDel(priv->mon, drivestr);
@@ -3888,6 +3936,11 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
     if (encAlias)
         ignore_value(qemuMonitorDelObject(priv->mon, encAlias));
     VIR_FREE(encAlias);
+
+    /* If it fails, then so be it - it was a best shot */
+    if (prmgrAlias)
+        ignore_value(qemuMonitorDelObject(priv->mon, prmgrAlias));
+    VIR_FREE(prmgrAlias);
 
     if (disk->src->haveTLS)
         ignore_value(qemuMonitorDelObject(priv->mon, disk->src->tlsAlias));
@@ -3906,6 +3959,9 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
             break;
         }
     }
+
+    if (stopPRDaemon)
+        qemuProcessKillPRDaemon(vm);
 
     qemuDomainReleaseDeviceAddress(vm, &disk->info, src);
 
