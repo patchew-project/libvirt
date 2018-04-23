@@ -733,7 +733,7 @@ hypervSerializeEmbeddedParam(hypervParamPtr p, const char *resourceUri,
     ws_xml_dump_memory_node_tree(xmlNodeInstance, &cdataContent, &len);
 
     if (!(xmlNodeCdata = xmlNewCDataBlock((xmlDocPtr) xmlDocCdata,
-                    (xmlChar *)cdataContent, len))) {
+                    (xmlChar *) cdataContent, len))) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                 _("Could not create CDATA element"));
         goto cleanup;
@@ -745,7 +745,7 @@ hypervSerializeEmbeddedParam(hypervParamPtr p, const char *resourceUri,
      * FIXME: there is no openwsman wrapper for xmlNewCDataBlock, so instead
      * silence clang alignment warnings by casting to a void pointer first
      */
-    if (!(xmlAddChild((xmlNodePtr)(void *)xmlNodeParam, xmlNodeCdata))) {
+    if (!(xmlAddChild((xmlNodePtr)(void *) xmlNodeParam, xmlNodeCdata))) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                 _("Could not add CDATA to doc root"));
         goto cleanup;
@@ -1368,7 +1368,7 @@ hypervInvokeMsvmComputerSystemRequestStateChange(virDomainPtr domain,
         goto cleanup;
 
     /* Check return value */
-    returnValue = ws_xml_get_xpath_value(response, (char *)"/s:Envelope/s:Body/p:RequestStateChange_OUTPUT/p:ReturnValue");
+    returnValue = ws_xml_get_xpath_value(response, (char *) "/s:Envelope/s:Body/p:RequestStateChange_OUTPUT/p:ReturnValue");
 
     if (returnValue == NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -1385,7 +1385,7 @@ hypervInvokeMsvmComputerSystemRequestStateChange(virDomainPtr domain,
 
     if (returnCode == CIM_RETURNCODE_TRANSITION_STARTED) {
         /* Get concrete job object */
-        instanceID = ws_xml_get_xpath_value(response, (char *)"/s:Envelope/s:Body/p:RequestStateChange_OUTPUT/p:Job/a:ReferenceParameters/w:SelectorSet/w:Selector[@Name='InstanceID']");
+        instanceID = ws_xml_get_xpath_value(response, (char *) "/s:Envelope/s:Body/p:RequestStateChange_OUTPUT/p:Job/a:ReferenceParameters/w:SelectorSet/w:Selector[@Name='InstanceID']");
 
         if (instanceID == NULL) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -1415,7 +1415,7 @@ hypervInvokeMsvmComputerSystemRequestStateChange(virDomainPtr domain,
               case MSVM_CONCRETEJOB_JOBSTATE_STARTING:
               case MSVM_CONCRETEJOB_JOBSTATE_RUNNING:
               case MSVM_CONCRETEJOB_JOBSTATE_SHUTTING_DOWN:
-                hypervFreeObject(priv, (hypervObject *)concreteJob);
+                hypervFreeObject(priv, (hypervObject *) concreteJob);
                 concreteJob = NULL;
 
                 usleep(100 * 1000);
@@ -1460,7 +1460,7 @@ hypervInvokeMsvmComputerSystemRequestStateChange(virDomainPtr domain,
     VIR_FREE(properties);
     VIR_FREE(returnValue);
     VIR_FREE(instanceID);
-    hypervFreeObject(priv, (hypervObject *)concreteJob);
+    hypervFreeObject(priv, (hypervObject *) concreteJob);
 
     return result;
 }
