@@ -20773,6 +20773,9 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
     vm->def->name = new_dom_name;
     new_dom_name = NULL;
 
+    if (virDomainDefPostParse(vm->def, driver->caps, 0, driver->xmlopt, NULL) < 0)
+        goto rollback;
+
     if (virDomainSaveConfig(cfg->configDir, driver->caps, vm->def) < 0)
         goto rollback;
 
