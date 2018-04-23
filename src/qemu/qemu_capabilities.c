@@ -473,6 +473,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               /* 290 */
               "query-cpus-fast",
               "disk-write-cache",
+              "pr-manager-helper",
     );
 
 
