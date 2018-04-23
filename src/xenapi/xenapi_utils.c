@@ -51,7 +51,7 @@ xenSessionFree(xen_session *session)
         VIR_FREE(session->error_description);
     }
     /* The session_id member is type of 'const char *'. Sigh. */
-    tmp = (char *)session->session_id;
+    tmp = (char *) session->session_id;
     VIR_FREE(tmp);
     VIR_FREE(session);
 }
@@ -167,13 +167,13 @@ createXenAPIBootOrderString(int nboot, int *bootDevs)
     size_t i;
     for (i = 0; i < nboot; i++) {
         if (bootDevs[i] == VIR_DOMAIN_BOOT_FLOPPY)
-            val = (char *)"a";
+            val = (char *) "a";
         else if (bootDevs[i] == VIR_DOMAIN_BOOT_DISK)
-            val = (char *)"c";
+            val = (char *) "c";
         else if (bootDevs[i] == VIR_DOMAIN_BOOT_CDROM)
-            val = (char *)"d";
+            val = (char *) "d";
         else if (bootDevs[i] == VIR_DOMAIN_BOOT_NET)
-            val = (char *)"n";
+            val = (char *) "n";
         if (val)
             virBufferEscapeString(&ret, "%s", val);
     }
@@ -242,14 +242,14 @@ getStorageVolumeType(char *type)
         STREQ(type, "iso") ||
         STREQ(type, "ext") ||
         STREQ(type, "nfs"))
-        return (int)VIR_STORAGE_VOL_FILE;
+        return (int) VIR_STORAGE_VOL_FILE;
     else if (STREQ(type, "iscsi") ||
              STREQ(type, "equal") ||
              STREQ(type, "hba") ||
              STREQ(type, "cslg") ||
              STREQ(type, "udev") ||
              STREQ(type, "netapp"))
-        return (int)VIR_STORAGE_VOL_BLOCK;
+        return (int) VIR_STORAGE_VOL_BLOCK;
     return -1;
 }
 
@@ -384,7 +384,7 @@ static int
 createVifNetwork(virConnectPtr conn, xen_vm vm, int device,
                  char *bridge, char *mac)
 {
-    xen_session *session = ((struct _xenapiPrivate *)(conn->privateData))->session;
+    xen_session *session = ((struct _xenapiPrivate *) (conn->privateData))->session;
     xen_vm xvm = NULL;
     char *uuid = NULL;
     xen_vm_get_uuid(session, &uuid, vm);
@@ -472,7 +472,7 @@ createVMRecordFromXml(virConnectPtr conn, virDomainDefPtr def,
             boot_order = createXenAPIBootOrderString(def->os.nBootDevs, &def->os.bootDevs[0]);
         if (boot_order != NULL) {
             xen_string_string_map *hvm_boot_params = NULL;
-            allocStringMap(&hvm_boot_params, (char *)"order", boot_order);
+            allocStringMap(&hvm_boot_params, (char *) "order", boot_order);
             (*record)->hvm_boot_params = hvm_boot_params;
             VIR_FREE(boot_order);
         }
@@ -516,15 +516,15 @@ createVMRecordFromXml(virConnectPtr conn, virDomainDefPtr def,
         (*record)->actions_after_crash = actionCrashLibvirt2XenapiEnum(def->onCrash);
 
     if (def->features[VIR_DOMAIN_FEATURE_ACPI] == VIR_TRISTATE_SWITCH_ON)
-        allocStringMap(&strings, (char *)"acpi", (char *)"true");
+        allocStringMap(&strings, (char *) "acpi", (char *) "true");
     if (def->features[VIR_DOMAIN_FEATURE_APIC] == VIR_TRISTATE_SWITCH_ON)
-        allocStringMap(&strings, (char *)"apic", (char *)"true");
+        allocStringMap(&strings, (char *) "apic", (char *) "true");
     if (def->features[VIR_DOMAIN_FEATURE_PAE] == VIR_TRISTATE_SWITCH_ON)
-        allocStringMap(&strings, (char *)"pae", (char *)"true");
+        allocStringMap(&strings, (char *) "pae", (char *) "true");
     if (def->features[VIR_DOMAIN_FEATURE_HAP] == VIR_TRISTATE_SWITCH_ON)
-        allocStringMap(&strings, (char *)"hap", (char *)"true");
+        allocStringMap(&strings, (char *) "hap", (char *) "true");
     if (def->features[VIR_DOMAIN_FEATURE_VIRIDIAN] == VIR_TRISTATE_SWITCH_ON)
-        allocStringMap(&strings, (char *)"viridian", (char *)"true");
+        allocStringMap(&strings, (char *) "viridian", (char *) "true");
     if (strings != NULL)
         (*record)->platform = strings;
 
@@ -533,7 +533,7 @@ createVMRecordFromXml(virConnectPtr conn, virDomainDefPtr def,
     (*record)->last_boot_cpu_flags = xen_string_string_map_alloc(0);
     (*record)->xenstore_data = xen_string_string_map_alloc(0);
     (*record)->hvm_shadow_multiplier = 1.000;
-    if (!xen_vm_create(((struct _xenapiPrivate *)(conn->privateData))->session,
+    if (!xen_vm_create(((struct _xenapiPrivate *) (conn->privateData))->session,
                         vm, *record)) {
         xenapiSessionErrorHandler(conn, VIR_ERR_INTERNAL_ERROR, NULL);
         return -1;
