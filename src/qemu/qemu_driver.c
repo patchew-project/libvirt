@@ -15858,7 +15858,8 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     if (snap->def->dom) {
         config = virDomainDefCopy(snap->def->dom, caps,
                                   driver->xmlopt, NULL,
-                                  VIR_DOMAIN_DEF_COPY_MIGRATABLE);
+                                  VIR_DOMAIN_DEF_COPY_MIGRATABLE |
+                                  VIR_DOMAIN_DEF_COPY_NEWGENID);
         if (!config)
             goto endjob;
     }

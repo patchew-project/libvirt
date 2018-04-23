@@ -27932,6 +27932,18 @@ virDomainDefCopy(virDomainDefPtr src,
 
     ret = virDomainDefParseString(xml, caps, xmlopt, parseOpaque, parse_flags);
 
+    /* If we have a genid and we're being called from a path that would
+     * require a different genid value, then regardless of whether it was
+     * generated or not generate a new one. */
+    if (ret && ret->genidRequested && (flags & VIR_DOMAIN_DEF_COPY_NEWGENID)) {
+        if (virUUIDGenerate(ret->genid)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Failed to generate a new genid"));
+            virDomainDefFree(ret);
+            ret = NULL;
+        }
+    }
+
     VIR_FREE(xml);
     return ret;
 }

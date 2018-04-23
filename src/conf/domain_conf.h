@@ -2875,6 +2875,11 @@ virDomainDefPtr virDomainObjGetOneDef(virDomainObjPtr vm, unsigned int flags);
 typedef enum {
     /* Set when creating a copy of a definition for the purpose of migration */
     VIR_DOMAIN_DEF_COPY_MIGRATABLE = 1 << 0,
+
+    /* Set when the copy should create a new genid value if supported
+     * the domain def.
+     */
+    VIR_DOMAIN_DEF_COPY_NEWGENID = 1 << 1,
 } virDomainDefCopyFlags;
 virDomainDefPtr virDomainDefCopy(virDomainDefPtr src,
                                  virCapsPtr caps,

@@ -6690,7 +6690,8 @@ testDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     snap->def->current = true;
     config = virDomainDefCopy(snap->def->dom, privconn->caps,
                               privconn->xmlopt, NULL,
-                              VIR_DOMAIN_DEF_COPY_MIGRATABLE);
+                              VIR_DOMAIN_DEF_COPY_MIGRATABLE |
+                              VIR_DOMAIN_DEF_COPY_NEWGENID);
     if (!config)
         goto cleanup;
 
