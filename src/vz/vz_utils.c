@@ -470,7 +470,7 @@ vzCheckUnsupportedControllers(const virDomainDef *def, vzCapabilitiesPtr vzCaps)
 int vzGetDefaultSCSIModel(vzDriverPtr driver,
                           PRL_CLUSTERED_DEVICE_SUBTYPE *scsiModel)
 {
-    switch ((int)driver->vzCaps.scsiControllerModel) {
+    switch ((int) driver->vzCaps.scsiControllerModel) {
     case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
         *scsiModel = PCD_VIRTIO_SCSI;
         break;

@@ -714,7 +714,7 @@ prlsdkGetDiskInfo(vzDriverPtr driver,
         pret = PrlVmDevHd_GetDiskSize(prldisk, &size);
         prlsdkCheckRetGoto(pret, cleanup);
         /* from MiB to bytes */
-        disk->src->capacity = ((unsigned long long)size) << 20;
+        disk->src->capacity = ((unsigned long long) size) << 20;
     }
 
     ret = 0;
@@ -1103,7 +1103,7 @@ prlsdkGetNetInfo(PRL_HANDLE netAdapter, virDomainNetDefPtr net, bool isCt)
         pret = PrlVmDevNet_GetAdapterType(netAdapter, &type);
         prlsdkCheckRetGoto(pret, cleanup);
 
-        switch ((int)type) {
+        switch ((int) type) {
         case PNT_RTL:
             if (VIR_STRDUP(net->model, "rtl8139") < 0)
                 goto cleanup;
@@ -1695,10 +1695,10 @@ prlsdkBootOrderCheck(PRL_HANDLE sdkdom, PRL_DEVICE_TYPE sdkType, int sdkIndex,
         return -1;
     }
 
-    switch ((int)sdkType) {
+    switch ((int) sdkType) {
     case PDE_OPTICAL_DISK:
     case PDE_HARD_DISK:
-        switch ((int)sdkType) {
+        switch ((int) sdkType) {
         case PDE_OPTICAL_DISK:
             device = VIR_DOMAIN_DISK_DEVICE_CDROM;
             break;
@@ -1810,7 +1810,7 @@ prlsdkConvertBootOrderVm(PRL_HANDLE sdkdom, virDomainDefPtr def)
             continue;
         }
 
-        switch ((int)sdkType) {
+        switch ((int) sdkType) {
         case PDE_OPTICAL_DISK:
             type = VIR_DOMAIN_BOOT_CDROM;
             break;
@@ -2106,7 +2106,7 @@ prlsdkNewStateToEvent(VIRTUAL_MACHINE_STATE domainState,
     /* We skip all intermediate states here, because
      * libvirt doesn't have correspoding event types for
      * them */
-    switch ((int)domainState) {
+    switch ((int) domainState) {
     case VMS_STOPPED:
     case VMS_MOUNTED:
         *lvEventType = VIR_DOMAIN_EVENT_STOPPED;
@@ -2320,7 +2320,7 @@ prlsdkEventsHandler(PRL_HANDLE prlEvent, PRL_VOID_PTR opaque)
         goto cleanup;
     }
 
-    switch ((int)prlEventType) {
+    switch ((int) prlEventType) {
     case PET_DSP_EVT_VM_STATE_CHANGED:
         prlsdkHandleVmStateEvent(driver, prlEvent, uuid);
         break;
@@ -3893,7 +3893,7 @@ prlsdkSetBootOrderVm(PRL_HANDLE sdkdom, virDomainDefPtr def)
     for (i = 0; i < def->os.nBootDevs; ++i) {
         virType = def->os.bootDevs[i];
 
-        switch ((int)virType) {
+        switch ((int) virType) {
         case VIR_DOMAIN_BOOT_CDROM:
             sdkType = PDE_OPTICAL_DISK;
             break;
@@ -3983,7 +3983,7 @@ prlsdkDoApplyConfig(vzDriverPtr driver,
     prlsdkCheckRetGoto(pret, error);
     VIR_FREE(mask);
 
-    switch ((int)def->os.arch) {
+    switch ((int) def->os.arch) {
     case VIR_ARCH_X86_64:
         pret = PrlVmCfg_SetCpuMode(sdkdom, PCM_CPU_MODE_64);
         break;
@@ -4539,7 +4539,7 @@ prlsdkGetVcpuStats(PRL_HANDLE sdkstats, int idx, unsigned long long *vtime)
     long long ptime = 0;
     int ret = -1;
 
-    if (virAsprintf(&name, "guest.vcpu%u.time", (unsigned int)idx) < 0)
+    if (virAsprintf(&name, "guest.vcpu%u.time", (unsigned int) idx) < 0)
         goto cleanup;
     if (prlsdkExtractStatsParam(sdkstats, name, &ptime) < 0)
         goto cleanup;
