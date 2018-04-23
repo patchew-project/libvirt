@@ -172,8 +172,8 @@ remoteAdminConnectOpen(virAdmConnectPtr conn, unsigned int flags)
                                  virObjectFreeCallback);
 
     if (call(conn, 0, ADMIN_PROC_CONNECT_OPEN,
-             (xdrproc_t)xdr_admin_connect_open_args, (char *)&args,
-             (xdrproc_t)xdr_void, (char *)NULL) == -1) {
+             (xdrproc_t)xdr_admin_connect_open_args, (char *) &args,
+             (xdrproc_t)xdr_void, (char *) NULL) == -1) {
         goto done;
     }
 
@@ -193,8 +193,8 @@ remoteAdminConnectClose(virAdmConnectPtr conn)
     virObjectLock(priv);
 
     if (call(conn, 0, ADMIN_PROC_CONNECT_CLOSE,
-             (xdrproc_t)xdr_void, (char *)NULL,
-             (xdrproc_t)xdr_void, (char *)NULL) == -1) {
+             (xdrproc_t)xdr_void, (char *) NULL,
+             (xdrproc_t)xdr_void, (char *) NULL) == -1) {
         goto done;
     }
 
