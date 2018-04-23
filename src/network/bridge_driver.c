@@ -417,7 +417,7 @@ networkBridgeDummyNicName(const char *brname)
          */
         ignore_value(virAsprintf(&nicname, "%.*s%s%s",
                                  /* space for last 3 chars + "-nic" + NULL */
-                                 (int)(IFNAMSIZ - (3 + sizeof(dummyNicSuffix))),
+                                 (int) (IFNAMSIZ - (3 + sizeof(dummyNicSuffix))),
                                  brname, brname + strlen(brname) - 3,
                                  dummyNicSuffix));
     } else {
@@ -1250,8 +1250,8 @@ networkDnsmasqConfContents(virNetworkObjPtr obj,
                                  "upgrade dnsmasq, or use a private/local "
                                  "subnet range for this network "
                                  "(as described in RFC1918/RFC3484/RFC4193)."),
-                               ipaddr, (int)version / 1000000,
-                               (int)(version % 1000000) / 1000);
+                               ipaddr, (int) version / 1000000,
+                               (int) (version % 1000000) / 1000);
                 VIR_FREE(ipaddr);
                 goto cleanup;
             }
@@ -1367,8 +1367,8 @@ networkDnsmasqConfContents(virNetworkObjPtr obj,
                                      "IPv6 dhcp range or dhcp host "
                                      "specification. Version %d.%d or later "
                                      "is required."),
-                                   (int)version / 1000000,
-                                   (int)(version % 1000000) / 1000,
+                                   (int) version / 1000000,
+                                   (int) (version % 1000000) / 1000,
                                    DNSMASQ_DHCPv6_MAJOR_REQD,
                                    DNSMASQ_DHCPv6_MINOR_REQD);
                     goto cleanup;
