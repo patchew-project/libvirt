@@ -6591,7 +6591,8 @@ qemuDomainSaveImageStartVM(virConnectPtr conn,
     if (qemuProcessStart(conn, driver, vm, cookie ? cookie->cpu : NULL,
                          asyncJob, "stdio", *fd, path, NULL,
                          VIR_NETDEV_VPORT_PROFILE_OP_RESTORE,
-                         VIR_QEMU_PROCESS_START_PAUSED) == 0)
+                         VIR_QEMU_PROCESS_START_PAUSED |
+                         VIR_QEMU_PROCESS_START_GEN_VMID) == 0)
         restored = true;
 
     if (intermediatefd != -1) {
@@ -15881,6 +15882,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
              * the migratable XML or it will always fail otherwise */
             if (config) {
                 bool compatible;
+                bool abiflags = VIR_DOMAIN_DEF_ABI_CHECK_SKIP_GENID;
 
                 /* Replace the CPU in config and put the original one in priv
                  * once we're done. When we have the updated CPU def in the
@@ -15894,10 +15896,19 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                         goto endjob;
 
                     compatible = qemuDomainDefCheckABIStability(driver, vm->def,
-                                                                config, 0);
+                                                                config, abiflags);
                 } else {
                     compatible = qemuDomainCheckABIStability(driver, vm, config,
-                                                             0);
+                                                             abiflags);
+                }
+
+                /* If using VM GenID, there is no way currently to change
+                 * the genid for the running guest, so set an error and
+                 * mark as incompatible. */
+                if (compatible && config->genidRequested) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                   _("domain genid update requires restart"));
+                    compatible = false;
                 }
 
                 if (!compatible) {
@@ -15980,7 +15991,8 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                                   cookie ? cookie->cpu : NULL,
                                   QEMU_ASYNC_JOB_START, NULL, -1, NULL, snap,
                                   VIR_NETDEV_VPORT_PROFILE_OP_CREATE,
-                                  VIR_QEMU_PROCESS_START_PAUSED);
+                                  VIR_QEMU_PROCESS_START_PAUSED |
+                                  VIR_QEMU_PROCESS_START_GEN_VMID);
             virDomainAuditStart(vm, "from-snapshot", rc >= 0);
             detail = VIR_DOMAIN_EVENT_STARTED_FROM_SNAPSHOT;
             event = virDomainEventLifecycleNewFromObj(vm,
@@ -16066,7 +16078,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                      VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED)) {
             /* Flush first event, now do transition 2 or 3 */
             bool paused = (flags & VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED) != 0;
-            unsigned int start_flags = 0;
+            unsigned int start_flags = VIR_QEMU_PROCESS_START_GEN_VMID;
 
             start_flags |= paused ? VIR_QEMU_PROCESS_START_PAUSED : 0;
 
