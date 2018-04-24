@@ -56,6 +56,18 @@
           host-passthrough CPU model.
         </description>
       </change>
+      <change>
+        <summary>
+          Add support for VM Generation ID
+        </summary>
+        <description>
+          The VM Generatation ID exposes a 128-bit, cryptographically
+          random, integer value identifier, referred to as a Globally
+          Unique Identifier (GUID) to the guest in order to notify the
+          guest operating system when the virtual machine is executed
+          with a different configuration.
+        </description>
+      </change>
     </section>
     <section title="Removed features">
       <change>
