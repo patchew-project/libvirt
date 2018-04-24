@@ -34,6 +34,7 @@
 &lt;domain type='kvm' id='1'&gt;
   &lt;name&gt;MyGuest&lt;/name&gt;
   &lt;uuid&gt;4dea22b3-1d52-d8f3-2516-782e98ab3fa0&lt;/uuid&gt;
+  &lt;genid&gt;43dc0cf8-809b-4adb-9bea-a9abb5f3d90e&lt;/genid&gt;
   &lt;title&gt;A short description - title - of the domain&lt;/title&gt;
   &lt;description&gt;Some human readable description&lt;/description&gt;
   &lt;metadata&gt;
@@ -60,6 +61,34 @@
         via a <a href="#elementsSysinfo"><code>sysinfo</code></a>
         specification. <span class="since">Since 0.0.1, sysinfo
         since 0.8.7</span></dd>
+
+      <dt><code>genid</code></dt>
+      <dd><span class="since">Since 4.3.0</span>, the <code>genid</code>
+        element can be used to add a Virtual Machine Generation ID which
+        exposes a 128-bit, cryptographically random, integer value identifier,
+        referred to as a Globally Unique Identifier (GUID) using the same
+        format as the <code>uuid</code>. The value is used to help notify
+        the guest operating system when the virtual machine is executed
+        with a different configuration, such as:
+
+        <ul>
+          <li>snapshot execution</li>
+          <li>backup recovery</li>
+          <li>failover in a disaster recovery environment</li>
+          <li>creation from template (import, copy, clone)</li>
+        </ul>
+
+        The guest operating system notices the change and is then able to
+        react as appropriate by marking its copies of distributed databases
+        as dirty, re-initializing its random number generator, etc.
+
+        <p>
+        When a GUID value is not provided, e.g. using the XML syntax
+        &lt;genid/&gt;, then libvirt will automatically generate a GUID.
+        This is the recommended configuration since the hypervisor then
+        can handle changing the GUID value for specific state transitions.
+        Using a static GUID value may result in failures for starting from
+        snapshot, restoring from backup, starting a cloned domain, etc.</p></dd>
 
       <dt><code>title</code></dt>
       <dd>The optional element <code>title</code> provides space for a
