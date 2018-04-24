@@ -20757,6 +20757,12 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
     if (VIR_STRDUP(new_dom_name, new_name) < 0)
         goto cleanup;
 
+    if (strchr(new_dom_name, '/')) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("name %s cannot contain '/'"), new_dom_name);
+        goto cleanup;
+    }
+
     if (!(new_dom_cfg_file = virDomainConfigFile(cfg->configDir,
                                                  new_dom_name)) ||
         !(old_dom_cfg_file = virDomainConfigFile(cfg->configDir,
