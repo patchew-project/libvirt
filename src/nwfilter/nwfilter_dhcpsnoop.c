@@ -259,7 +259,7 @@ struct _virNWFilterDHCPDecodeJob {
  * libpcap 1.5 requires a 128kb buffer
  * 128 kb is bigger than (DHCP_PKT_BURST * PCAP_PBUFSIZE / 2)
  */
-# define PCAP_BUFFERSIZE        (128 * 1024)
+# define PCAP_BUFFERSIZE        (256 * 1024)
 
 # define MAX_QUEUED_JOBS        (DHCP_PKT_BURST + 2 * DHCP_PKT_RATE)
 
