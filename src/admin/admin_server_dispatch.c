@@ -214,7 +214,7 @@ adminDispatchServerGetThreadpoolParameters(virNetServerPtr server ATTRIBUTE_UNUS
     }
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len, 0) < 0)
         goto cleanup;
 
@@ -297,7 +297,7 @@ adminDispatchClientGetInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
     if (!(clnt = virNetServerGetClient(srv, args->clnt.id))) {
         virReportError(VIR_ERR_NO_CLIENT,
                        _("no client with matching id '%llu' found"),
-                       (unsigned long long) args->clnt.id);
+                       (unsigned long long)args->clnt.id);
         goto cleanup;
     }
 
@@ -313,7 +313,7 @@ adminDispatchClientGetInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
     }
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len,
                                 VIR_TYPED_PARAM_STRING_OKAY) < 0)
         goto cleanup;
@@ -360,7 +360,7 @@ adminDispatchServerGetClientLimits(virNetServerPtr server ATTRIBUTE_UNUSED,
     }
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len, 0) < 0)
         goto cleanup;
 

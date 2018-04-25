@@ -261,8 +261,8 @@ remoteAdminServerGetThreadPoolParameters(virAdmServerPtr srv,
     virObjectLock(priv);
 
     if (call(srv->conn, 0, ADMIN_PROC_SERVER_GET_THREADPOOL_PARAMETERS,
-             (xdrproc_t)xdr_admin_server_get_threadpool_parameters_args, (char *) &args,
-             (xdrproc_t)xdr_admin_server_get_threadpool_parameters_ret, (char *) &ret) == -1)
+             (xdrproc_t)xdr_admin_server_get_threadpool_parameters_args, (char *)&args,
+             (xdrproc_t)xdr_admin_server_get_threadpool_parameters_ret, (char *)&ret) == -1)
         goto cleanup;
 
     if (virTypedParamsDeserialize((virTypedParameterRemotePtr) ret.params.params_val,
@@ -273,7 +273,7 @@ remoteAdminServerGetThreadPoolParameters(virAdmServerPtr srv,
         goto cleanup;
 
     rv = 0;
-    xdr_free((xdrproc_t)xdr_admin_server_get_threadpool_parameters_ret, (char *) &ret);
+    xdr_free((xdrproc_t)xdr_admin_server_get_threadpool_parameters_ret, (char *)&ret);
 
  cleanup:
     virObjectUnlock(priv);
@@ -296,14 +296,14 @@ remoteAdminServerSetThreadPoolParameters(virAdmServerPtr srv,
     virObjectLock(priv);
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &args.params.params_val,
+                                (virTypedParameterRemotePtr *)&args.params.params_val,
                                 &args.params.params_len,
                                 0) < 0)
         goto cleanup;
 
 
     if (call(srv->conn, 0, ADMIN_PROC_SERVER_SET_THREADPOOL_PARAMETERS,
-             (xdrproc_t)xdr_admin_server_set_threadpool_parameters_args, (char *) &args,
+             (xdrproc_t)xdr_admin_server_set_threadpool_parameters_args, (char *)&args,
              (xdrproc_t)xdr_void, (char *) NULL) == -1)
         goto cleanup;
 
@@ -333,8 +333,8 @@ remoteAdminClientGetInfo(virAdmClientPtr client,
     virObjectLock(priv);
 
     if (call(client->srv->conn, 0, ADMIN_PROC_CLIENT_GET_INFO,
-             (xdrproc_t)xdr_admin_client_get_info_args, (char *) &args,
-             (xdrproc_t)xdr_admin_client_get_info_ret, (char *) &ret) == -1)
+             (xdrproc_t)xdr_admin_client_get_info_args, (char *)&args,
+             (xdrproc_t)xdr_admin_client_get_info_ret, (char *)&ret) == -1)
         goto cleanup;
 
     if (virTypedParamsDeserialize((virTypedParameterRemotePtr) ret.params.params_val,
@@ -345,7 +345,7 @@ remoteAdminClientGetInfo(virAdmClientPtr client,
         goto cleanup;
 
     rv = 0;
-    xdr_free((xdrproc_t)xdr_admin_client_get_info_ret, (char *) &ret);
+    xdr_free((xdrproc_t)xdr_admin_client_get_info_ret, (char *)&ret);
 
  cleanup:
     virObjectUnlock(priv);
@@ -369,10 +369,10 @@ remoteAdminServerGetClientLimits(virAdmServerPtr srv,
     virObjectLock(priv);
 
     if (call(srv->conn, 0, ADMIN_PROC_SERVER_GET_CLIENT_LIMITS,
-             (xdrproc_t) xdr_admin_server_get_client_limits_args,
-             (char *) &args,
-             (xdrproc_t) xdr_admin_server_get_client_limits_ret,
-             (char *) &ret) == -1)
+             (xdrproc_t)xdr_admin_server_get_client_limits_args,
+             (char *)&args,
+             (xdrproc_t)xdr_admin_server_get_client_limits_ret,
+             (char *)&ret) == -1)
         goto cleanup;
 
     if (virTypedParamsDeserialize((virTypedParameterRemotePtr) ret.params.params_val,
@@ -383,8 +383,8 @@ remoteAdminServerGetClientLimits(virAdmServerPtr srv,
         goto cleanup;
 
     rv = 0;
-    xdr_free((xdrproc_t) xdr_admin_server_get_client_limits_ret,
-             (char *) &ret);
+    xdr_free((xdrproc_t)xdr_admin_server_get_client_limits_ret,
+             (char *)&ret);
 
  cleanup:
     virObjectUnlock(priv);
@@ -407,15 +407,15 @@ remoteAdminServerSetClientLimits(virAdmServerPtr srv,
     virObjectLock(priv);
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &args.params.params_val,
+                                (virTypedParameterRemotePtr *)&args.params.params_val,
                                 &args.params.params_len,
                                 0) < 0)
         goto cleanup;
 
     if (call(srv->conn, 0, ADMIN_PROC_SERVER_SET_CLIENT_LIMITS,
-             (xdrproc_t) xdr_admin_server_set_client_limits_args,
-             (char *) &args,
-             (xdrproc_t) xdr_void, (char *) NULL) == -1)
+             (xdrproc_t)xdr_admin_server_set_client_limits_args,
+             (char *)&args,
+             (xdrproc_t)xdr_void, (char *) NULL) == -1)
         goto cleanup;
 
     rv = 0;
@@ -444,17 +444,17 @@ remoteAdminConnectGetLoggingOutputs(virAdmConnectPtr conn,
     if (call(conn,
              0,
              ADMIN_PROC_CONNECT_GET_LOGGING_OUTPUTS,
-             (xdrproc_t) xdr_admin_connect_get_logging_outputs_args,
-             (char *) &args,
-             (xdrproc_t) xdr_admin_connect_get_logging_outputs_ret,
-             (char *) &ret) == -1)
+             (xdrproc_t)xdr_admin_connect_get_logging_outputs_args,
+             (char *)&args,
+             (xdrproc_t)xdr_admin_connect_get_logging_outputs_ret,
+             (char *)&ret) == -1)
         goto done;
 
     if (outputs)
         VIR_STEAL_PTR(*outputs, ret.outputs);
 
     rv = ret.noutputs;
-    xdr_free((xdrproc_t) xdr_admin_connect_get_logging_outputs_ret, (char *) &ret);
+    xdr_free((xdrproc_t)xdr_admin_connect_get_logging_outputs_ret, (char *)&ret);
 
  done:
     virObjectUnlock(priv);
@@ -479,10 +479,10 @@ remoteAdminConnectGetLoggingFilters(virAdmConnectPtr conn,
     if (call(conn,
              0,
              ADMIN_PROC_CONNECT_GET_LOGGING_FILTERS,
-             (xdrproc_t) xdr_admin_connect_get_logging_filters_args,
-             (char *) &args,
-             (xdrproc_t) xdr_admin_connect_get_logging_filters_ret,
-             (char *) &ret) == -1)
+             (xdrproc_t)xdr_admin_connect_get_logging_filters_args,
+             (char *)&args,
+             (xdrproc_t)xdr_admin_connect_get_logging_filters_ret,
+             (char *)&ret) == -1)
         goto done;
 
     if (filters)
