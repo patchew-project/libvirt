@@ -1421,7 +1421,7 @@ void virDomainGraphicsDefFree(virDomainGraphicsDefPtr def)
 
 const char *virDomainInputDefGetPath(virDomainInputDefPtr input)
 {
-    switch ((virDomainInputType) input->type) {
+    switch ((virDomainInputType)input->type) {
     case VIR_DOMAIN_INPUT_TYPE_MOUSE:
     case VIR_DOMAIN_INPUT_TYPE_TABLET:
     case VIR_DOMAIN_INPUT_TYPE_KBD:
@@ -1896,7 +1896,7 @@ virDomainControllerDefNew(virDomainControllerType type)
     def->model = -1;
     def->idx = -1;
 
-    switch ((virDomainControllerType) def->type) {
+    switch ((virDomainControllerType)def->type) {
     case VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL:
         def->opts.vioserial.ports = -1;
         def->opts.vioserial.vectors = -1;
@@ -2117,7 +2117,7 @@ virDomainChrSourceDefGetPath(virDomainChrSourceDefPtr chr)
     if (!chr)
         return NULL;
 
-    switch ((virDomainChrType) chr->type) {
+    switch ((virDomainChrType)chr->type) {
     case VIR_DOMAIN_CHR_TYPE_PTY:
     case VIR_DOMAIN_CHR_TYPE_DEV:
     case VIR_DOMAIN_CHR_TYPE_FILE:
@@ -2558,7 +2558,7 @@ void virDomainHostdevDefClear(virDomainHostdevDefPtr def)
 
     switch (def->mode) {
     case VIR_DOMAIN_HOSTDEV_MODE_CAPABILITIES:
-        switch ((virDomainHostdevCapsType) def->source.caps.type) {
+        switch ((virDomainHostdevCapsType)def->source.caps.type) {
         case VIR_DOMAIN_HOSTDEV_CAPS_TYPE_STORAGE:
             VIR_FREE(def->source.caps.u.storage.block);
             break;
@@ -2574,7 +2574,7 @@ void virDomainHostdevDefClear(virDomainHostdevDefPtr def)
         }
         break;
     case VIR_DOMAIN_HOSTDEV_MODE_SUBSYS:
-        switch ((virDomainHostdevSubsysType) def->source.subsys.type) {
+        switch ((virDomainHostdevSubsysType)def->source.subsys.type) {
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
             virDomainHostdevSubsysSCSIClear(&def->source.subsys.u.scsi);
             break;
@@ -2673,7 +2673,7 @@ void virDomainDeviceDefFree(virDomainDeviceDefPtr def)
     if (!def)
         return;
 
-    switch ((virDomainDeviceType) def->type) {
+    switch ((virDomainDeviceType)def->type) {
     case VIR_DOMAIN_DEVICE_DISK:
         virDomainDiskDefFree(def->data.disk);
         break;
@@ -3566,7 +3566,7 @@ int virDomainDeviceAddressIsValid(virDomainDeviceInfoPtr info,
 virDomainDeviceInfoPtr
 virDomainDeviceGetInfo(virDomainDeviceDefPtr device)
 {
-    switch ((virDomainDeviceType) device->type) {
+    switch ((virDomainDeviceType)device->type) {
     case VIR_DOMAIN_DEVICE_DISK:
         return &device->data.disk->info;
     case VIR_DOMAIN_DEVICE_FS:
@@ -3812,7 +3812,7 @@ virDomainDeviceInfoIterateInternal(virDomainDefPtr def,
      * statement has no real function here and should be optimized out by the
      * compiler. */
     i = VIR_DOMAIN_DEVICE_LAST;
-    switch ((virDomainDeviceType) i) {
+    switch ((virDomainDeviceType)i) {
     case VIR_DOMAIN_DEVICE_DISK:
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_FS:
@@ -4086,7 +4086,7 @@ virDomainDefAddConsoleCompat(virDomainDefPtr def)
     } else if (def->os.type == VIR_DOMAIN_OSTYPE_HVM && def->nserials > 0 &&
                def->serials[0]->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL) {
 
-        switch ((virDomainChrSerialTargetType) def->serials[0]->targetType) {
+        switch ((virDomainChrSerialTargetType)def->serials[0]->targetType) {
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SYSTEM:
@@ -5252,7 +5252,7 @@ static int
 virDomainChrSourceDefValidate(const virDomainChrSourceDef *def,
                               const virDomainChrDef *chr_def)
 {
-    switch ((virDomainChrType) def->type) {
+    switch ((virDomainChrType)def->type) {
     case VIR_DOMAIN_CHR_TYPE_NULL:
     case VIR_DOMAIN_CHR_TYPE_PTY:
     case VIR_DOMAIN_CHR_TYPE_VC:
@@ -5451,7 +5451,7 @@ static int
 virDomainHostdevDefValidate(const virDomainHostdevDef *hostdev)
 {
     if (hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
-        switch ((virDomainHostdevSubsysType) hostdev->source.subsys.type) {
+        switch ((virDomainHostdevSubsysType)hostdev->source.subsys.type) {
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
             if (hostdev->info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
                 hostdev->info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
@@ -5512,7 +5512,7 @@ static int
 virDomainDeviceDefValidateInternal(const virDomainDeviceDef *dev,
                                    const virDomainDef *def)
 {
-    switch ((virDomainDeviceType) dev->type) {
+    switch ((virDomainDeviceType)dev->type) {
     case VIR_DOMAIN_DEVICE_DISK:
         return virDomainDiskDefValidate(dev->data.disk);
 
@@ -5602,7 +5602,7 @@ virDomainDeviceDefValidateAliasesIterator(virDomainDefPtr def,
         return -1;
     }
 
-    if (virHashAddEntry(data->aliases, alias, (void *) 1) < 0) {
+    if (virHashAddEntry(data->aliases, alias, (void *)1) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Unable to construct table of device aliases"));
         return -1;
@@ -6124,7 +6124,7 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
     virBufferAsprintf(buf, "<address type='%s'",
                       virDomainDeviceAddressTypeToString(info->type));
 
-    switch ((virDomainDeviceAddressType) info->type) {
+    switch ((virDomainDeviceAddressType)info->type) {
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI:
         if (!virPCIDeviceAddressIsEmpty(&info->addr.pci)) {
             virBufferAsprintf(buf, " domain='0x%.4x' bus='0x%.2x' "
@@ -6534,7 +6534,7 @@ virDomainDeviceBootParseXML(xmlNodePtr node,
             goto cleanup;
         }
 
-        if (virHashAddEntry(bootHash, order, (void *) 1) < 0)
+        if (virHashAddEntry(bootHash, order, (void *)1) < 0)
             goto cleanup;
     }
 
@@ -6650,7 +6650,7 @@ virDomainDeviceAddressParseXML(xmlNodePtr address,
         goto cleanup;
     }
 
-    switch ((virDomainDeviceAddressType) info->type) {
+    switch ((virDomainDeviceAddressType)info->type) {
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI:
         if (virPCIDeviceAddressParseXML(address, &info->addr.pci) < 0)
             goto cleanup;
@@ -7384,7 +7384,7 @@ virDomainHostdevSubsysSCSIVHostDefParseXML(xmlNodePtr sourcenode,
         goto cleanup;
     }
 
-    switch ((virDomainHostdevSubsysSCSIHostProtocolType) hostsrc->protocol) {
+    switch ((virDomainHostdevSubsysSCSIHostProtocolType)hostsrc->protocol) {
     case VIR_DOMAIN_HOSTDEV_SUBSYS_SCSI_HOST_PROTOCOL_TYPE_VHOST:
         if (!(wwpn = virXMLPropString(sourcenode, "wwpn"))) {
             virReportError(VIR_ERR_XML_ERROR, "%s",
@@ -11692,7 +11692,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
 static int
 virDomainChrDefaultTargetType(int devtype)
 {
-    switch ((virDomainChrDeviceType) devtype) {
+    switch ((virDomainChrDeviceType)devtype) {
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL:
         virReportError(VIR_ERR_XML_ERROR,
                        _("target type must be specified for %s device"),
@@ -11723,7 +11723,7 @@ virDomainChrTargetTypeFromString(int devtype,
     if (!targetType)
         return virDomainChrDefaultTargetType(devtype);
 
-    switch ((virDomainChrDeviceType) devtype) {
+    switch ((virDomainChrDeviceType)devtype) {
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL:
         ret = virDomainChrChannelTargetTypeFromString(targetType);
         break;
@@ -11755,7 +11755,7 @@ virDomainChrTargetModelFromString(int devtype,
     if (!targetModel)
         return 0;
 
-    switch ((virDomainChrDeviceType) devtype) {
+    switch ((virDomainChrDeviceType)devtype) {
     case VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL:
         ret = virDomainChrSerialTargetModelTypeFromString(targetModel);
         break;
@@ -12148,7 +12148,7 @@ virDomainChrSourceDefParseXML(virDomainChrSourceDefPtr def,
             }
             sourceParsed++;
 
-            switch ((virDomainChrType) def->type) {
+            switch ((virDomainChrType)def->type) {
             case VIR_DOMAIN_CHR_TYPE_FILE:
                 if (virDomainChrSourceDefParseFile(def, cur) < 0)
                     goto error;
@@ -12370,7 +12370,7 @@ virDomainChrDefParseXML(virDomainXMLOptionPtr xmlopt,
         goto error;
     }
 
-    nodeName = (const char *) node->name;
+    nodeName = (const char *)node->name;
     if ((def->deviceType = virDomainChrDeviceTypeFromString(nodeName)) < 0) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("unknown character device type: %s"),
@@ -15103,7 +15103,7 @@ virDomainHostdevDefParseXML(virDomainXMLOptionPtr xmlopt,
             goto error;
     }
     if (def->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
-        switch ((virDomainHostdevSubsysType) def->source.subsys.type) {
+        switch ((virDomainHostdevSubsysType)def->source.subsys.type) {
         case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
             if (virXPathBoolean("boolean(./readonly)", ctxt))
                 def->readonly = true;
@@ -15763,7 +15763,7 @@ virDomainDeviceDefParse(const char *xmlStr,
     if (VIR_ALLOC(dev) < 0)
         goto error;
 
-    if ((dev->type = virDomainDeviceTypeFromString((const char *) node->name)) < 0) {
+    if ((dev->type = virDomainDeviceTypeFromString((const char *)node->name)) < 0) {
         /* Some crazy mapping of serial, parallel, console and channel to
          * VIR_DOMAIN_DEVICE_CHR. */
         if (virXMLNodeNameEqual(node, "channel") ||
@@ -15779,7 +15779,7 @@ virDomainDeviceDefParse(const char *xmlStr,
         }
     }
 
-    switch ((virDomainDeviceType) dev->type) {
+    switch ((virDomainDeviceType)dev->type) {
     case VIR_DOMAIN_DEVICE_DISK:
         if (!(dev->data.disk = virDomainDiskDefParseXML(xmlopt, node, ctxt,
                                                         NULL, def->seclabels,
@@ -16087,7 +16087,7 @@ virDomainHostdevMatchSubsys(virDomainHostdevDefPtr a,
     if (a->source.subsys.type != b->source.subsys.type)
         return 0;
 
-    switch ((virDomainHostdevSubsysType) a->source.subsys.type) {
+    switch ((virDomainHostdevSubsysType)a->source.subsys.type) {
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
         return virDomainHostdevMatchSubsysPCI(a, b);
     case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
@@ -16785,11 +16785,11 @@ virDomainChrEquals(virDomainChrDefPtr src,
         !virDomainChrSourceDefIsEqual(src->source, tgt->source))
         return false;
 
-    switch ((virDomainChrDeviceType) src->deviceType) {
+    switch ((virDomainChrDeviceType)src->deviceType) {
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL:
         if (src->targetType != tgt->targetType)
             return false;
-        switch ((virDomainChrChannelTargetType) src->targetType) {
+        switch ((virDomainChrChannelTargetType)src->targetType) {
         case VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_XEN:
         case VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_VIRTIO:
             return STREQ_NULLABLE(src->target.name, tgt->target.name);
@@ -16901,7 +16901,7 @@ virDomainChrGetDomainPtrs(const virDomainDef *vmdef,
         *arrPtr = NULL;
         *cntPtr = 0;
     } else {
-        *arrPtr = (const virDomainChrDef **) *arrVar;
+        *arrPtr = (const virDomainChrDef **)*arrVar;
         *cntPtr = *cntVar;
     }
 }
@@ -17994,7 +17994,7 @@ virDomainLoaderDefParseXML(xmlNodePtr node,
     readonly_str = virXMLPropString(node, "readonly");
     secure_str = virXMLPropString(node, "secure");
     type_str = virXMLPropString(node, "type");
-    loader->path = (char *) xmlNodeGetContent(node);
+    loader->path = (char *)xmlNodeGetContent(node);
 
     if (readonly_str &&
         (loader->readonly = virTristateBoolTypeFromString(readonly_str)) <= 0) {
@@ -20668,7 +20668,7 @@ virDomainDeviceInfoCheckABIStability(virDomainDeviceInfoPtr src,
         return false;
     }
 
-    switch ((virDomainDeviceAddressType) src->type) {
+    switch ((virDomainDeviceAddressType)src->type) {
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI:
         if (src->addr.pci.domain != dst->addr.pci.domain ||
             src->addr.pci.bus != dst->addr.pci.bus ||
@@ -22313,7 +22313,7 @@ virDomainDefCheckABIStabilityFlags(virDomainDefPtr src,
      * also have to add an check above. Otherwise the switch statement has no
      * real function here and should be optimized out by the compiler. */
     i = VIR_DOMAIN_DEVICE_LAST;
-    switch ((virDomainDeviceType) i) {
+    switch ((virDomainDeviceType)i) {
     case VIR_DOMAIN_DEVICE_DISK:
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_FS:
@@ -22463,7 +22463,7 @@ virDomainDefMaybeAddSmartcardController(virDomainDefPtr def)
                 virDomainDeviceInfoPtr info = &def->smartcards[j]->info;
                 if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCID &&
                     info->addr.ccid.controller == 0 &&
-                    (int) info->addr.ccid.slot > max)
+                    (int)info->addr.ccid.slot > max)
                     max = info->addr.ccid.slot;
             }
             smartcard->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCID;
@@ -24575,7 +24575,7 @@ virDomainChrTargetDefFormat(virBufferPtr buf,
     const char *targetType = virDomainChrTargetTypeToString(def->deviceType,
                                                             def->targetType);
 
-    switch ((virDomainChrDeviceType) def->deviceType) {
+    switch ((virDomainChrDeviceType)def->deviceType) {
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL: {
         if (!targetType) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -26587,7 +26587,7 @@ virDomainDefFormatInternal(virDomainDefPtr def,
             xmlIndentTreeOutput = oldIndentTreeOutput;
             goto error;
         }
-        virBufferAsprintf(buf, "%s\n", (char *) xmlBufferContent(xmlbuf));
+        virBufferAsprintf(buf, "%s\n", (char *)xmlBufferContent(xmlbuf));
         xmlBufferFree(xmlbuf);
         xmlIndentTreeOutput = oldIndentTreeOutput;
     }
@@ -28357,7 +28357,7 @@ virDomainDeviceDefCopy(virDomainDeviceDefPtr src,
     int rc = -1;
     char *netprefix;
 
-    switch ((virDomainDeviceType) src->type) {
+    switch ((virDomainDeviceType)src->type) {
     case VIR_DOMAIN_DEVICE_DISK:
         rc = virDomainDiskDefFormat(&buf, src->data.disk, flags, xmlopt);
         break;
@@ -28548,7 +28548,7 @@ virDomainObjGetMetadata(virDomainObjPtr vm,
     if (!(def = virDomainObjGetOneDef(vm, flags)))
         goto cleanup;
 
-    switch ((virDomainMetadataType) type) {
+    switch ((virDomainMetadataType)type) {
     case VIR_DOMAIN_METADATA_DESCRIPTION:
         if (VIR_STRDUP(ret, def->description) < 0)
             goto cleanup;
@@ -28600,7 +28600,7 @@ virDomainDefSetMetadata(virDomainDefPtr def,
         goto cleanup;
     }
 
-    switch ((virDomainMetadataType) type) {
+    switch ((virDomainMetadataType)type) {
     case VIR_DOMAIN_METADATA_DESCRIPTION:
         if (VIR_STRDUP(tmp, metadata) < 0)
             goto cleanup;
@@ -28776,21 +28776,21 @@ virDomainDefGetShortName(const virDomainDef *def)
      * characters.  The same applies for illegal sequences as they can occur
      * with incompatible locales. */
     len = mbstowcs(NULL, def->name, 0);
-    if ((len == (size_t) -1 && errno == EILSEQ) ||
+    if ((len == (size_t)-1 && errno == EILSEQ) ||
         len == strlen(def->name)) {
         ignore_value(virAsprintf(&ret, "%d-%.*s", def->id,
                                  VIR_DOMAIN_SHORT_NAME_MAX, def->name));
         return ret;
     }
 
-    if (len == (size_t) -1) {
+    if (len == (size_t)-1) {
         virReportSystemError(errno, "%s",
                              _("Cannot convert domain name to "
                                "wide character string"));
         return NULL;
     }
 
-    if (mbstowcs(wshortname, def->name, VIR_DOMAIN_SHORT_NAME_MAX) == (size_t) -1) {
+    if (mbstowcs(wshortname, def->name, VIR_DOMAIN_SHORT_NAME_MAX) == (size_t)-1) {
         virReportSystemError(errno, "%s",
                              _("Cannot convert domain name to "
                                "wide character string"));
@@ -28798,7 +28798,7 @@ virDomainDefGetShortName(const virDomainDef *def)
     }
 
     len = wcstombs(NULL, wshortname, 0);
-    if (len == (size_t) -1) {
+    if (len == (size_t)-1) {
         virReportSystemError(errno, "%s",
                              _("Cannot convert wide character string "
                                "back to multi-byte domain name"));
@@ -28808,7 +28808,7 @@ virDomainDefGetShortName(const virDomainDef *def)
     if (VIR_ALLOC_N(shortname, len + 1) < 0)
         return NULL;
 
-    if (wcstombs(shortname, wshortname, len) == (size_t) -1) {
+    if (wcstombs(shortname, wshortname, len) == (size_t)-1) {
         virReportSystemError(errno, "%s",
                              _("Cannot convert wide character string "
                                "back to multi-byte domain name"));
@@ -29305,7 +29305,7 @@ virDomainDiskTranslateSourcePool(virDomainDiskDefPtr def)
     virStorageAuthDefFree(def->src->auth);
     def->src->auth = NULL;
 
-    switch ((virStoragePoolType) pooldef->type) {
+    switch ((virStoragePoolType)pooldef->type) {
     case VIR_STORAGE_POOL_DIR:
     case VIR_STORAGE_POOL_FS:
     case VIR_STORAGE_POOL_NETFS:

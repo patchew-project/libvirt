@@ -203,7 +203,7 @@ virSecretObjSearchName(const void *payload,
 {
     virSecretObjPtr obj = (virSecretObjPtr) payload;
     virSecretDefPtr def;
-    struct virSecretSearchData *data = (struct virSecretSearchData *) opaque;
+    struct virSecretSearchData *data = (struct virSecretSearchData *)opaque;
     int found = 0;
 
     virObjectLock(obj);

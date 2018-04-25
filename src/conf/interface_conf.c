@@ -146,7 +146,7 @@ virInterfaceDefParseMtu(virInterfaceDefPtr def,
                        "%s", _("interface mtu value is improper"));
         return -1;
     } else if (ret == 0) {
-        def->mtu = (unsigned int) mtu;
+        def->mtu = (unsigned int)mtu;
     }
     return 0;
 }
@@ -305,7 +305,7 @@ virInterfaceDefParseIP(virInterfaceIPDefPtr def,
     if (tmp != NULL) {
         ret = virXPathLong("string(./@prefix)", ctxt, &l);
         if (ret == 0) {
-            def->prefix = (int) l;
+            def->prefix = (int)l;
         } else if (ret == -2) {
             virReportError(VIR_ERR_XML_ERROR,
                            "%s", _("Invalid ip address prefix value"));

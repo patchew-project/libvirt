@@ -754,7 +754,7 @@ virStoragePoolObjSearchVolumeCb(const void *payload,
 {
     virStorageVolObjPtr volobj = (virStorageVolObjPtr) payload;
     struct _virStoragePoolObjSearchVolData *data =
-        (struct _virStoragePoolObjSearchVolData *) opaque;
+        (struct _virStoragePoolObjSearchVolData *)opaque;
     int found = 0;
 
     virObjectLock(volobj);
@@ -1812,7 +1812,7 @@ virStoragePoolObjSourceFindDuplicateCb(const void *payload,
 {
     virStoragePoolObjPtr obj = (virStoragePoolObjPtr) payload;
     struct _virStoragePoolObjFindDuplicateData *data =
-        (struct _virStoragePoolObjFindDuplicateData *) opaque;
+        (struct _virStoragePoolObjFindDuplicateData *)opaque;
 
     /* Don't match against ourself if re-defining existing pool ! */
     if (STREQ(obj->def->name, data->def->name))

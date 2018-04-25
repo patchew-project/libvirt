@@ -611,7 +611,7 @@ virNetworkDNSHostDefParseXML(const char *networkName,
         if (cur->type == XML_ELEMENT_NODE &&
             virXMLNodeNameEqual(cur, "hostname")) {
               if (cur->children != NULL) {
-                  char *name = (char *) xmlNodeGetContent(cur);
+                  char *name = (char *)xmlNodeGetContent(cur);
 
                   if (!name) {
                       virReportError(VIR_ERR_XML_DETAIL,
@@ -2384,7 +2384,7 @@ virNetworkDefFormatBuf(virBufferPtr buf,
             xmlIndentTreeOutput = oldIndentTreeOutput;
             goto error;
         }
-        virBufferAsprintf(buf, "%s\n", (char *) xmlBufferContent(xmlbuf));
+        virBufferAsprintf(buf, "%s\n", (char *)xmlBufferContent(xmlbuf));
         xmlBufferFree(xmlbuf);
         xmlIndentTreeOutput = oldIndentTreeOutput;
     }

@@ -762,8 +762,8 @@ virNWFilterHashTablePutAll(virNWFilterHashTablePtr src,
 static int
 virNWFilterVarValueCompare(const void *a, const void *b)
 {
-    return virNWFilterVarValueEqual((const virNWFilterVarValue *) a,
-                                    (const virNWFilterVarValue *) b) ? 0 : 1;
+    return virNWFilterVarValueEqual((const virNWFilterVarValue *)a,
+                                    (const virNWFilterVarValue *)b) ? 0 : 1;
 }
 
 bool

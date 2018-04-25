@@ -128,7 +128,7 @@ static int virChrdevLockFileCreate(const char *dev)
         virReportError(VIR_ERR_OPERATION_FAILED,
                        _("Requested device '%s' is locked by "
                          "lock file '%s' held by process %lld"),
-                       dev, path, (long long) pid);
+                       dev, path, (long long)pid);
         goto cleanup;
     } else {
         /* clean up the stale/corrupted/nonexistent lockfile */
@@ -138,7 +138,7 @@ static int virChrdevLockFileCreate(const char *dev)
 
     /* ensure correct format according to filesystem hierarchy standard */
     /* http://www.pathname.com/fhs/pub/fhs-2.3.html#VARLOCKLOCKFILES */
-    if (virAsprintf(&pidStr, "%10lld\n", (long long) getpid()) < 0)
+    if (virAsprintf(&pidStr, "%10lld\n", (long long)getpid()) < 0)
         goto cleanup;
 
     /* create the lock file */

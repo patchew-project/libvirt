@@ -258,7 +258,7 @@ virNodeDeviceObjListFindByWWNsCallback(const void *payload,
 {
     virNodeDeviceObjPtr obj = (virNodeDeviceObjPtr) payload;
     struct virNodeDeviceObjListFindByWWNsData *data =
-        (struct virNodeDeviceObjListFindByWWNsData *) opaque;
+        (struct virNodeDeviceObjListFindByWWNsData *)opaque;
     virNodeDevCapsDefPtr cap;
     int want = 0;
 
@@ -356,7 +356,7 @@ virNodeDeviceObjListFindSCSIHostByWWNsCallback(const void *payload,
 {
     virNodeDeviceObjPtr obj = (virNodeDeviceObjPtr) payload;
     struct virNodeDeviceObjListFindSCSIHostByWWNsData *data =
-        (struct virNodeDeviceObjListFindSCSIHostByWWNsData *) opaque;
+        (struct virNodeDeviceObjListFindSCSIHostByWWNsData *)opaque;
     virNodeDevCapsDefPtr cap;
     int want = 0;
 

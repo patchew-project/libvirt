@@ -162,7 +162,7 @@ virDomainAuditSmartcard(virDomainObjPtr vm,
     size_t i;
 
     if (def) {
-        switch ((virDomainSmartcardType) def->type) {
+        switch ((virDomainSmartcardType)def->type) {
         case VIR_DOMAIN_SMARTCARD_TYPE_HOST:
             virDomainAuditGenericDev(vm, "smartcard",
                                      NULL, "nss-smartcard-device",
@@ -1004,7 +1004,7 @@ virDomainAuditInput(virDomainObjPtr vm,
     if (!(vmname = virAuditEncode("vm", vm->def->name)))
         goto no_memory;
 
-    switch ((virDomainInputType) input->type) {
+    switch ((virDomainInputType)input->type) {
     case VIR_DOMAIN_INPUT_TYPE_MOUSE:
     case VIR_DOMAIN_INPUT_TYPE_TABLET:
     case VIR_DOMAIN_INPUT_TYPE_KBD:

@@ -81,7 +81,7 @@ virDomainDeviceInfoAddressIsEqual(const virDomainDeviceInfo *a,
     if (a->type != b->type)
         return false;
 
-    switch ((virDomainDeviceAddressType) a->type) {
+    switch ((virDomainDeviceAddressType)a->type) {
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE:
     case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_LAST:
     /* address types below don't have any specific data */

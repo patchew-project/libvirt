@@ -448,21 +448,21 @@ virCPUDefParseXML(xmlXPathContextPtr ctxt,
                            _("Missing 'sockets' attribute in CPU topology"));
             goto cleanup;
         }
-        def->sockets = (unsigned int) ul;
+        def->sockets = (unsigned int)ul;
 
         if (virXPathULong("string(./topology[1]/@cores)", ctxt, &ul) < 0) {
             virReportError(VIR_ERR_XML_ERROR, "%s",
                            _("Missing 'cores' attribute in CPU topology"));
             goto cleanup;
         }
-        def->cores = (unsigned int) ul;
+        def->cores = (unsigned int)ul;
 
         if (virXPathULong("string(./topology[1]/@threads)", ctxt, &ul) < 0) {
             virReportError(VIR_ERR_XML_ERROR, "%s",
                            _("Missing 'threads' attribute in CPU topology"));
             goto cleanup;
         }
-        def->threads = (unsigned int) ul;
+        def->threads = (unsigned int)ul;
 
         if (!def->sockets || !def->cores || !def->threads) {
             virReportError(VIR_ERR_XML_ERROR, "%s",
