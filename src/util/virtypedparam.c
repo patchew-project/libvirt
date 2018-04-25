@@ -1402,7 +1402,7 @@ virTypedParamsDeserialize(virTypedParameterRemotePtr remote_params,
             goto cleanup;
         }
     } else {
-        if (VIR_ALLOC_N(*params, remote_params_len) < 0)
+        if (remote_params_len && VIR_ALLOC_N(*params, remote_params_len) < 0)
             goto cleanup;
     }
     *nparams = remote_params_len;
@@ -1467,6 +1467,7 @@ virTypedParamsDeserialize(virTypedParameterRemotePtr remote_params,
         } else {
             virTypedParamsFree(*params, i);
             *params = NULL;
+            *nparams = 0;
         }
     }
     return rv;
