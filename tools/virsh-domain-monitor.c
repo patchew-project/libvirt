@@ -1370,7 +1370,7 @@ cmdDomTime(vshControl *ctl, const vshCmd *cmd)
     }
 
     if (doSet || now || rtcSync) {
-        if (now && ((seconds = time(NULL)) == (time_t) -1)) {
+        if (now && ((seconds = time(NULL)) == (time_t)-1)) {
             vshError(ctl, _("Unable to get current time"));
             goto cleanup;
         }
@@ -1425,11 +1425,11 @@ static const vshCmdInfo info_list[] = {
 static int
 virshDomainSorter(const void *a, const void *b)
 {
-    virDomainPtr *da = (virDomainPtr *) a;
-    virDomainPtr *db = (virDomainPtr *) b;
+    virDomainPtr *da = (virDomainPtr *)a;
+    virDomainPtr *db = (virDomainPtr *)b;
     unsigned int ida;
     unsigned int idb;
-    unsigned int inactive = (unsigned int) -1;
+    unsigned int inactive = (unsigned int)-1;
 
     if (*da && !*db)
         return -1;
@@ -1541,7 +1541,7 @@ virshDomainListCollect(vshControl *ctl, unsigned int flags)
         }
 
         if (nids) {
-            ids = vshMalloc(ctl, sizeof(int) * nids);
+            ids = vshMalloc(ctl, sizeof(int)* nids);
 
             if ((nids = virConnectListDomains(priv->conn, ids, nids)) < 0) {
                 vshError(ctl, "%s", _("Failed to list active domains"));
@@ -1558,7 +1558,7 @@ virshDomainListCollect(vshControl *ctl, unsigned int flags)
         }
 
         if (nnames) {
-            names = vshMalloc(ctl, sizeof(char *) * nnames);
+            names = vshMalloc(ctl, sizeof(char *)* nnames);
 
             if ((nnames = virConnectListDefinedDomains(priv->conn, names,
                                                       nnames)) < 0) {
@@ -1851,7 +1851,7 @@ cmdList(vshControl *ctl, const vshCmd *cmd)
     for (i = 0; i < list->ndomains; i++) {
         dom = list->domains[i];
         id = virDomainGetID(dom);
-        if (id != (unsigned int) -1)
+        if (id != (unsigned int)-1)
             snprintf(id_buf, sizeof(id_buf), "%d", id);
         else
             ignore_value(virStrcpyStatic(id_buf, "-"));

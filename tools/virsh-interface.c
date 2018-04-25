@@ -155,8 +155,8 @@ cmdInterfaceEdit(vshControl *ctl, const vshCmd *cmd)
 static int
 virshInterfaceSorter(const void *a, const void *b)
 {
-    virInterfacePtr *ia = (virInterfacePtr *) a;
-    virInterfacePtr *ib = (virInterfacePtr *) b;
+    virInterfacePtr *ia = (virInterfacePtr *)a;
+    virInterfacePtr *ib = (virInterfacePtr *)b;
 
     if (*ia && !*ib)
         return -1;
@@ -234,7 +234,7 @@ virshInterfaceListCollect(vshControl *ctl,
             goto cleanup;
         }
         if (nActiveIfaces) {
-            activeNames = vshMalloc(ctl, sizeof(char *) * nActiveIfaces);
+            activeNames = vshMalloc(ctl, sizeof(char *)* nActiveIfaces);
 
             if ((nActiveIfaces = virConnectListInterfaces(priv->conn, activeNames,
                                                           nActiveIfaces)) < 0) {
@@ -251,7 +251,7 @@ virshInterfaceListCollect(vshControl *ctl,
             goto cleanup;
         }
         if (nInactiveIfaces) {
-            inactiveNames = vshMalloc(ctl, sizeof(char *) * nInactiveIfaces);
+            inactiveNames = vshMalloc(ctl, sizeof(char *)* nInactiveIfaces);
 
             if ((nInactiveIfaces =
                      virConnectListDefinedInterfaces(priv->conn, inactiveNames,
@@ -965,7 +965,7 @@ cmdInterfaceBridge(vshControl *ctl, const vshCmd *cmd)
     /* br_xml is the new interface to define. It will automatically undefine the
      * independent original interface.
      */
-    if (!(br_handle = virInterfaceDefineXML(priv->conn, (char *) br_xml, 0))) {
+    if (!(br_handle = virInterfaceDefineXML(priv->conn, (char *)br_xml, 0))) {
         vshError(ctl, _("Failed to define new bridge interface %s"),
                  br_name);
         goto cleanup;
@@ -1167,7 +1167,7 @@ cmdInterfaceUnbridge(vshControl *ctl, const vshCmd *cmd)
 
     /* if_xml is the new interface to define.
      */
-    if (!(if_handle = virInterfaceDefineXML(priv->conn, (char *) if_xml, 0))) {
+    if (!(if_handle = virInterfaceDefineXML(priv->conn, (char *)if_xml, 0))) {
         vshError(ctl, _("Failed to define new interface %s"), if_name);
         goto cleanup;
     }

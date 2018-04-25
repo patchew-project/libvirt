@@ -116,8 +116,8 @@ appendAddr(leaseAddress **tmpAddress,
     for (i = 0; i < *ntmpAddress; i++) {
         if (memcmp((*tmpAddress)[i].addr,
                    (family == AF_INET ?
-                    (void *) &sa.data.inet4.sin_addr.s_addr :
-                    (void *) &sa.data.inet6.sin6_addr.s6_addr),
+                    (void *)&sa.data.inet4.sin_addr.s_addr :
+                    (void *)&sa.data.inet6.sin6_addr.s6_addr),
                    FAMILY_ADDRESS_SIZE(family)) == 0) {
             DEBUG("IP address already in the list");
             ret = 0;
@@ -133,8 +133,8 @@ appendAddr(leaseAddress **tmpAddress,
     (*tmpAddress)[*ntmpAddress].af = family;
     memcpy((*tmpAddress)[*ntmpAddress].addr,
            (family == AF_INET ?
-            (void *) &sa.data.inet4.sin_addr.s_addr :
-            (void *) &sa.data.inet6.sin6_addr.s6_addr),
+            (void *)&sa.data.inet4.sin_addr.s_addr :
+            (void *)&sa.data.inet6.sin6_addr.s6_addr),
            FAMILY_ADDRESS_SIZE(family));
     (*ntmpAddress)++;
     ret = 0;
@@ -158,7 +158,7 @@ findLeaseInJSON(leaseAddress **tmpAddress,
     time_t currtime;
     int ret = -1;
 
-    if ((currtime = time(NULL)) == (time_t) - 1) {
+    if ((currtime = time(NULL)) == (time_t)- 1) {
         ERROR("Failed to get current system time");
         goto cleanup;
     }
@@ -197,7 +197,7 @@ findLeaseInJSON(leaseAddress **tmpAddress,
         }
 
         /* Do not report expired lease */
-        if (expirytime < (long long) currtime) {
+        if (expirytime < (long long)currtime) {
             DEBUG("Skipping expired lease for %s", name);
             continue;
         }
@@ -323,7 +323,7 @@ findLease(const char *name,
 
     size_t i;
     for (i = 0; i < nMacmaps; i++) {
-        const char **macs = (const char **) virMacMapLookup(macmaps[i], name);
+        const char **macs = (const char **)virMacMapLookup(macmaps[i], name);
 
         if (!macs)
             continue;

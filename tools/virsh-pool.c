@@ -810,8 +810,8 @@ cmdPoolDumpXML(vshControl *ctl, const vshCmd *cmd)
 static int
 virshStoragePoolSorter(const void *a, const void *b)
 {
-    virStoragePoolPtr *pa = (virStoragePoolPtr *) a;
-    virStoragePoolPtr *pb = (virStoragePoolPtr *) b;
+    virStoragePoolPtr *pa = (virStoragePoolPtr *)a;
+    virStoragePoolPtr *pb = (virStoragePoolPtr *)b;
 
     if (*pa && !*pb)
         return -1;
@@ -925,7 +925,7 @@ virshStoragePoolListCollect(vshControl *ctl,
     if (nAllPools == 0)
         return list;
 
-    names = vshMalloc(ctl, sizeof(char *) * nAllPools);
+    names = vshMalloc(ctl, sizeof(char *)* nAllPools);
 
     /* Retrieve a list of active storage pool names */
     if (!VSH_MATCH(VIR_CONNECT_LIST_STORAGE_POOLS_FILTERS_ACTIVE) ||
@@ -1184,7 +1184,7 @@ cmdPoolList(vshControl *ctl, const vshCmd *cmd ATTRIBUTE_UNUSED)
                 return false;
             }
 
-            switch ((virStoragePoolType) poolType) {
+            switch ((virStoragePoolType)poolType) {
             case VIR_STORAGE_POOL_DIR:
                 flags |= VIR_CONNECT_LIST_STORAGE_POOLS_DIR;
                 break;
@@ -1430,32 +1430,32 @@ cmdPoolList(vshControl *ctl, const vshCmd *cmd ATTRIBUTE_UNUSED)
 
     /* Display the string lengths for debugging. */
     vshDebug(ctl, VSH_ERR_DEBUG, "Longest name string = %lu chars\n",
-             (unsigned long) nameStrLength);
+             (unsigned long)nameStrLength);
     vshDebug(ctl, VSH_ERR_DEBUG, "Longest state string = %lu chars\n",
-             (unsigned long) stateStrLength);
+             (unsigned long)stateStrLength);
     vshDebug(ctl, VSH_ERR_DEBUG, "Longest autostart string = %lu chars\n",
-             (unsigned long) autostartStrLength);
+             (unsigned long)autostartStrLength);
     vshDebug(ctl, VSH_ERR_DEBUG, "Longest persistent string = %lu chars\n",
-             (unsigned long) persistStrLength);
+             (unsigned long)persistStrLength);
     vshDebug(ctl, VSH_ERR_DEBUG, "Longest capacity string = %lu chars\n",
-             (unsigned long) capStrLength);
+             (unsigned long)capStrLength);
     vshDebug(ctl, VSH_ERR_DEBUG, "Longest allocation string = %lu chars\n",
-             (unsigned long) allocStrLength);
+             (unsigned long)allocStrLength);
     vshDebug(ctl, VSH_ERR_DEBUG, "Longest available string = %lu chars\n",
-             (unsigned long) availStrLength);
+             (unsigned long)availStrLength);
 
     /* Create the output template.  Each column is sized according to
      * the longest string.
      */
     if (virAsprintf(&outputStr,
                     " %%-%lus  %%-%lus  %%-%lus  %%-%lus  %%%lus  %%%lus  %%%lus\n",
-                    (unsigned long) nameStrLength,
-                    (unsigned long) stateStrLength,
-                    (unsigned long) autostartStrLength,
-                    (unsigned long) persistStrLength,
-                    (unsigned long) capStrLength,
-                    (unsigned long) allocStrLength,
-                    (unsigned long) availStrLength) < 0)
+                    (unsigned long)nameStrLength,
+                    (unsigned long)stateStrLength,
+                    (unsigned long)autostartStrLength,
+                    (unsigned long)persistStrLength,
+                    (unsigned long)capStrLength,
+                    (unsigned long)allocStrLength,
+                    (unsigned long)availStrLength) < 0)
         goto cleanup;
 
     /* Display the header */

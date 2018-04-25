@@ -136,7 +136,7 @@ _vshMalloc(vshControl *ctl, size_t size, const char *filename, int line)
     if (VIR_ALLOC_N(x, size) == 0)
         return x;
     vshError(ctl, _("%s: %d: failed to allocate %d bytes"),
-             filename, line, (int) size);
+             filename, line, (int)size);
     exit(EXIT_FAILURE);
 }
 
@@ -150,7 +150,7 @@ _vshCalloc(vshControl *ctl, size_t nmemb, size_t size, const char *filename,
         VIR_ALLOC_N(x, nmemb * size) == 0)
         return x;
     vshError(ctl, _("%s: %d: failed to allocate %d bytes"),
-             filename, line, (int) (size*nmemb));
+             filename, line, (int)(size*nmemb));
     exit(EXIT_FAILURE);
 }
 
@@ -1759,7 +1759,7 @@ vshCommandOptTimeoutToMs(vshControl *ctl, const vshCmd *cmd, int *timeout)
                  "timeout");
         ret = -1;
     } else {
-        *timeout = ((int) utimeout) * 1000;
+        *timeout = ((int)utimeout) * 1000;
     }
 
     return ret;
@@ -2232,7 +2232,7 @@ vshOutputLogFile(vshControl *ctl, int log_level, const char *msg_format,
                       stTm.tm_min,
                       stTm.tm_sec,
                       ctl->progname,
-                      (int) getpid());
+                      (int)getpid());
     switch (log_level) {
         case VSH_ERR_DEBUG:
             lvl = LVL_DEBUG;
@@ -2754,7 +2754,7 @@ vshCompleterFilter(char ***list,
     if (!list || !*list)
         return -1;
 
-    list_len = virStringListLength((const char **) *list);
+    list_len = virStringListLength((const char **)*list);
 
     if (VIR_ALLOC_N(newList, list_len + 1) < 0)
         return -1;
@@ -2916,7 +2916,7 @@ vshReadlineInit(vshControl *ctl)
 # if defined(RL_READLINE_VERSION) && RL_READLINE_VERSION > 0x0402
     rl_readline_name = ctl->name;
 # else
-    rl_readline_name = (char *) ctl->name;
+    rl_readline_name = (char *)ctl->name;
 # endif
 
     /* Tell the completer that we want a crack first. */
@@ -2925,15 +2925,15 @@ vshReadlineInit(vshControl *ctl)
 # if defined(RL_READLINE_VERSION) && RL_READLINE_VERSION > 0x0402
     rl_basic_word_break_characters = break_characters;
 # else
-    rl_basic_word_break_characters = (char *) break_characters;
+    rl_basic_word_break_characters = (char *)break_characters;
 # endif
 
 # if defined(RL_READLINE_VERSION) && RL_READLINE_VERSION > 0x0402
     rl_completer_quote_characters = quote_characters;
     rl_char_is_quoted_p = vshReadlineCharIsQuoted;
 # else
-    rl_completer_quote_characters = (char *) quote_characters;
-    rl_char_is_quoted_p = (Function *) vshReadlineCharIsQuoted;
+    rl_completer_quote_characters = (char *)quote_characters;
+    rl_char_is_quoted_p = (Function *)vshReadlineCharIsQuoted;
 # endif
 
     if (virAsprintf(&histsize_env, "%s_HISTSIZE", ctl->env_prefix) < 0)

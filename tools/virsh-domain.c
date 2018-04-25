@@ -2838,7 +2838,7 @@ cmdBlockresize(vshControl *ctl, const vshCmd *cmd)
     unsigned int flags = 0;
     bool ret = false;
 
-    if (vshCommandOptStringReq(ctl, cmd, "path", (const char **) &path) < 0)
+    if (vshCommandOptStringReq(ctl, cmd, "path", (const char **)&path) < 0)
         return false;
 
     if (vshCommandOptScaledInt(ctl, cmd, "size", &size, 1024, ULLONG_MAX) < 0)
@@ -5454,7 +5454,7 @@ cmdScreenshot(vshControl *ctl, const vshCmd *cmd)
     char *mime = NULL;
     virshControlPtr priv = ctl->privData;
 
-    if (vshCommandOptStringReq(ctl, cmd, "file", (const char **) &file) < 0)
+    if (vshCommandOptStringReq(ctl, cmd, "file", (const char **)&file) < 0)
         return false;
 
     if (vshCommandOptUInt(ctl, cmd, "screen", &screen) < 0)
@@ -10826,7 +10826,7 @@ virshMigrateTimeout(vshControl *ctl,
                     virDomainPtr dom,
                     void *opaque)
 {
-    virshMigrateTimeoutAction action = *(virshMigrateTimeoutAction *) opaque;
+    virshMigrateTimeoutAction action = *(virshMigrateTimeoutAction *)opaque;
 
     switch (action) {
     case VIRSH_MIGRATE_TIMEOUT_DEFAULT: /* unreachable */
@@ -11722,8 +11722,8 @@ virshNodeIsSuperset(xmlNodePtr n1, xmlNodePtr n2)
     attr = n2->properties;
     while (attr) {
         if (attr->type == XML_ATTRIBUTE_NODE) {
-            prop1 = virXMLPropString(n1, (const char *) attr->name);
-            prop2 = virXMLPropString(n2, (const char *) attr->name);
+            prop1 = virXMLPropString(n1, (const char *)attr->name);
+            prop2 = virXMLPropString(n2, (const char *)attr->name);
             if (STRNEQ_NULLABLE(prop1, prop2)) {
                 xmlFree(prop1);
                 xmlFree(prop2);
@@ -12705,7 +12705,7 @@ static const char *
 virshDomainEventDetailToString(int event, int detail)
 {
     const char *str = NULL;
-    switch ((virDomainEventType) event) {
+    switch ((virDomainEventType)event) {
     case VIR_DOMAIN_EVENT_DEFINED:
         str = virshDomainEventDefinedTypeToString(detail);
         break;
@@ -12905,7 +12905,7 @@ virshEventGenericPrint(virConnectPtr conn ATTRIBUTE_UNUSED,
     virBuffer buf = VIR_BUFFER_INITIALIZER;
 
     virBufferAsprintf(&buf, _("event '%s' for domain %s\n"),
-                      ((virshDomEventData *) opaque)->cb->name,
+                      ((virshDomEventData *)opaque)->cb->name,
                       virDomainGetName(dom));
     virshEventPrint(opaque, &buf);
 }
@@ -13036,7 +13036,7 @@ virshEventBlockJobPrint(virConnectPtr conn ATTRIBUTE_UNUSED,
     virBuffer buf = VIR_BUFFER_INITIALIZER;
 
     virBufferAsprintf(&buf, _("event '%s' for domain %s: %s for %s %s\n"),
-                      ((virshDomEventData *) opaque)->cb->name,
+                      ((virshDomEventData *)opaque)->cb->name,
                       virDomainGetName(dom),
                       virshDomainBlockJobToString(type),
                       disk,

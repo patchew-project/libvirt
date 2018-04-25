@@ -381,8 +381,8 @@ cmdNetworkInfo(vshControl *ctl, const vshCmd *cmd)
 static int
 virshNetworkSorter(const void *a, const void *b)
 {
-    virNetworkPtr *na = (virNetworkPtr *) a;
-    virNetworkPtr *nb = (virNetworkPtr *) b;
+    virNetworkPtr *na = (virNetworkPtr *)a;
+    virNetworkPtr *nb = (virNetworkPtr *)b;
 
     if (*na && !*nb)
         return -1;
@@ -490,7 +490,7 @@ virshNetworkListCollect(vshControl *ctl,
     if (nAllNets == 0)
          return list;
 
-    names = vshMalloc(ctl, sizeof(char *) * nAllNets);
+    names = vshMalloc(ctl, sizeof(char *)* nAllNets);
 
     /* Retrieve a list of active network names */
     if (!VSH_MATCH(VIR_CONNECT_LIST_NETWORKS_FILTERS_ACTIVE) ||
@@ -1320,8 +1320,8 @@ virshNetworkDHCPLeaseSorter(const void *a, const void *b)
 {
     int rv = -1;
 
-    virNetworkDHCPLeasePtr *lease1 = (virNetworkDHCPLeasePtr *) a;
-    virNetworkDHCPLeasePtr *lease2 = (virNetworkDHCPLeasePtr *) b;
+    virNetworkDHCPLeasePtr *lease1 = (virNetworkDHCPLeasePtr *)a;
+    virNetworkDHCPLeasePtr *lease2 = (virNetworkDHCPLeasePtr *)b;
 
     if (*lease1 && !*lease2)
         return -1;

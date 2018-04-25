@@ -1014,7 +1014,7 @@ cmdDaemonLogFilters(vshControl *ctl, const vshCmd *cmd)
 
     if (vshCommandOptBool(cmd, "filters")) {
         if ((vshCommandOptStringReq(ctl, cmd, "filters",
-                                    (const char **) &filters) < 0 ||
+                                    (const char **)&filters) < 0 ||
              virAdmConnectSetLoggingFilters(priv->conn, filters, 0) < 0)) {
             vshError(ctl, _("Unable to change daemon logging settings"));
             return false;
@@ -1068,7 +1068,7 @@ cmdDaemonLogOutputs(vshControl *ctl, const vshCmd *cmd)
 
     if (vshCommandOptBool(cmd, "outputs")) {
         if ((vshCommandOptStringReq(ctl, cmd, "outputs",
-                                    (const char **) &outputs) < 0 ||
+                                    (const char **)&outputs) < 0 ||
              virAdmConnectSetLoggingOutputs(priv->conn, outputs, 0) < 0)) {
             vshError(ctl, _("Unable to change daemon logging settings"));
             return false;

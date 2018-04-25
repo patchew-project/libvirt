@@ -180,8 +180,8 @@ virshNodeListLookup(int devid, bool parent, void *opaque)
 static int
 virshNodeDeviceSorter(const void *a, const void *b)
 {
-    virNodeDevicePtr *na = (virNodeDevicePtr *) a;
-    virNodeDevicePtr *nb = (virNodeDevicePtr *) b;
+    virNodeDevicePtr *na = (virNodeDevicePtr *)a;
+    virNodeDevicePtr *nb = (virNodeDevicePtr *)b;
 
     if (*na && !*nb)
         return -1;
@@ -260,7 +260,7 @@ virshNodeDeviceListCollect(vshControl *ctl,
     if (ndevices == 0)
         return list;
 
-    names = vshMalloc(ctl, sizeof(char *) * ndevices);
+    names = vshMalloc(ctl, sizeof(char *)* ndevices);
 
     ndevices = virNodeListDevices(priv->conn, NULL, names, ndevices, 0);
     if (ndevices < 0) {
@@ -298,7 +298,7 @@ virshNodeDeviceListCollect(vshControl *ctl,
             goto cleanup;
         }
 
-        caps = vshMalloc(ctl, sizeof(char *) * ncaps);
+        caps = vshMalloc(ctl, sizeof(char *)* ncaps);
 
         if ((ncaps = virNodeDeviceListCaps(device, caps, ncaps)) < 0) {
             vshError(ctl, "%s", _("Failed to get capability names of the device"));
@@ -415,7 +415,7 @@ cmdNodeListDevices(vshControl *ctl, const vshCmd *cmd ATTRIBUTE_UNUSED)
             goto cleanup;
         }
 
-        switch ((virNodeDevCapType) cap_type) {
+        switch ((virNodeDevCapType)cap_type) {
         case VIR_NODE_DEV_CAP_SYSTEM:
             flags |= VIR_CONNECT_LIST_NODE_DEVICES_CAP_SYSTEM;
             break;
@@ -475,8 +475,8 @@ cmdNodeListDevices(vshControl *ctl, const vshCmd *cmd ATTRIBUTE_UNUSED)
     }
 
     if (tree) {
-        char **parents = vshMalloc(ctl, sizeof(char *) * list->ndevices);
-        char **names = vshMalloc(ctl, sizeof(char *) * list->ndevices);
+        char **parents = vshMalloc(ctl, sizeof(char *)* list->ndevices);
+        char **names = vshMalloc(ctl, sizeof(char *)* list->ndevices);
         struct virshNodeList arrays = { names, parents };
 
         for (i = 0; i < list->ndevices; i++)

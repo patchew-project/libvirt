@@ -332,8 +332,8 @@ cmdSecretUndefine(vshControl *ctl, const vshCmd *cmd)
 static int
 virshSecretSorter(const void *a, const void *b)
 {
-    virSecretPtr *sa = (virSecretPtr *) a;
-    virSecretPtr *sb = (virSecretPtr *) b;
+    virSecretPtr *sa = (virSecretPtr *)a;
+    virSecretPtr *sb = (virSecretPtr *)b;
     char uuid_sa[VIR_UUID_STRING_BUFLEN];
     char uuid_sb[VIR_UUID_STRING_BUFLEN];
 
@@ -419,7 +419,7 @@ virshSecretListCollect(vshControl *ctl,
     if (nsecrets == 0)
         return list;
 
-    uuids = vshMalloc(ctl, sizeof(char *) * nsecrets);
+    uuids = vshMalloc(ctl, sizeof(char *)* nsecrets);
 
     nsecrets = virConnectListSecrets(priv->conn, uuids, nsecrets);
     if (nsecrets < 0) {

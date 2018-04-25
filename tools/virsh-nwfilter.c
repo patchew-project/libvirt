@@ -211,8 +211,8 @@ cmdNWFilterDumpXML(vshControl *ctl, const vshCmd *cmd)
 static int
 virshNWFilterSorter(const void *a, const void *b)
 {
-    virNWFilterPtr *fa = (virNWFilterPtr *) a;
-    virNWFilterPtr *fb = (virNWFilterPtr *) b;
+    virNWFilterPtr *fa = (virNWFilterPtr *)a;
+    virNWFilterPtr *fb = (virNWFilterPtr *)b;
 
     if (*fa && !*fb)
         return -1;
@@ -291,7 +291,7 @@ virshNWFilterListCollect(vshControl *ctl,
     if (nfilters == 0)
         return list;
 
-    names = vshMalloc(ctl, sizeof(char *) * nfilters);
+    names = vshMalloc(ctl, sizeof(char *)* nfilters);
 
     nfilters = virConnectListNWFilters(priv->conn, names, nfilters);
     if (nfilters < 0) {

@@ -617,7 +617,7 @@ cmdVolClone(vshControl *ctl, const vshCmd *cmd)
         goto cleanup;
     }
 
-    newvol = virStorageVolCreateXMLFrom(origpool, (char *) newxml, origvol, flags);
+    newvol = virStorageVolCreateXMLFrom(origpool, (char *)newxml, origvol, flags);
 
     if (newvol != NULL) {
         vshPrintExtra(ctl, _("Vol %s cloned from %s\n"),
@@ -1235,8 +1235,8 @@ cmdVolDumpXML(vshControl *ctl, const vshCmd *cmd)
 static int
 virshStorageVolSorter(const void *a, const void *b)
 {
-    virStorageVolPtr *va = (virStorageVolPtr *) a;
-    virStorageVolPtr *vb = (virStorageVolPtr *) b;
+    virStorageVolPtr *va = (virStorageVolPtr *)a;
+    virStorageVolPtr *vb = (virStorageVolPtr *)b;
 
     if (*va && !*vb)
         return -1;
@@ -1542,11 +1542,11 @@ cmdVolList(vshControl *ctl, const vshCmd *cmd ATTRIBUTE_UNUSED)
 
     if (virAsprintf(&outputStr,
                     " %%-%lus  %%-%lus  %%-%lus  %%%lus  %%%lus\n",
-                    (unsigned long) nameStrLength,
-                    (unsigned long) pathStrLength,
-                    (unsigned long) typeStrLength,
-                    (unsigned long) capStrLength,
-                    (unsigned long) allocStrLength) < 0)
+                    (unsigned long)nameStrLength,
+                    (unsigned long)pathStrLength,
+                    (unsigned long)typeStrLength,
+                    (unsigned long)capStrLength,
+                    (unsigned long)allocStrLength) < 0)
         goto cleanup;
 
     /* Display the header */
