@@ -141,7 +141,7 @@ makeSparseFile(const off_t offsets[],
     if (unlink(path) < 0)
         goto error;
 
-    for (i = 0; offsets[i] != (off_t) -1; i++)
+    for (i = 0; offsets[i] != (off_t)-1; i++)
         len += offsets[i] * 1024;
 
     while (len) {
@@ -160,7 +160,7 @@ makeSparseFile(const off_t offsets[],
     }
 
     len = 0;
-    for (i = 0; offsets[i] != (off_t) -1; i++) {
+    for (i = 0; offsets[i] != (off_t)-1; i++) {
         bool inData = startData;
 
         if (i % 2)
@@ -171,14 +171,14 @@ makeSparseFile(const off_t offsets[],
                       FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
                       len, offsets[i] * 1024) < 0) {
             fprintf(stderr, "unable to punch a hole at offset %lld length %lld\n",
-                    (long long) len, (long long) offsets[i]);
+                    (long long)len, (long long)offsets[i]);
             goto error;
         }
 
         len += offsets[i] * 1024;
     }
 
-    if (lseek(fd, 0, SEEK_SET) == (off_t) -1) {
+    if (lseek(fd, 0, SEEK_SET) == (off_t)-1) {
         fprintf(stderr, "unable to lseek (errno=%d)\n", errno);
         goto error;
     }
@@ -205,25 +205,25 @@ holesSupported(void)
     /* The way this works is: there are 4K of data followed by 4K hole followed
      * by 4K hole again. Check if the filesystem we are running the test suite
      * on supports holes. */
-    if ((tmp = lseek(fd, 0, SEEK_DATA)) == (off_t) -1)
+    if ((tmp = lseek(fd, 0, SEEK_DATA)) == (off_t)-1)
         goto cleanup;
 
     if (tmp != 0)
         goto cleanup;
 
-    if ((tmp = lseek(fd, tmp, SEEK_HOLE)) == (off_t) -1)
+    if ((tmp = lseek(fd, tmp, SEEK_HOLE)) == (off_t)-1)
         goto cleanup;
 
     if (tmp != EXTENT * 1024)
         goto cleanup;
 
-    if ((tmp = lseek(fd, tmp, SEEK_DATA)) == (off_t) -1)
+    if ((tmp = lseek(fd, tmp, SEEK_DATA)) == (off_t)-1)
         goto cleanup;
 
     if (tmp != 2 * EXTENT * 1024)
         goto cleanup;
 
-    if ((tmp = lseek(fd, tmp, SEEK_HOLE)) == (off_t) -1)
+    if ((tmp = lseek(fd, tmp, SEEK_HOLE)) == (off_t)-1)
         goto cleanup;
 
     if (tmp != 3 * EXTENT * 1024)
@@ -270,7 +270,7 @@ testFileInData(const void *opaque)
     if ((fd = makeSparseFile(data->offsets, data->startData)) < 0)
         goto cleanup;
 
-    for (i = 0; data->offsets[i] != (off_t) -1; i++) {
+    for (i = 0; data->offsets[i] != (off_t)-1; i++) {
         bool shouldInData = data->startData;
         int realInData;
         long long shouldLen;

@@ -17,7 +17,7 @@ struct virResctrlData {
 static int
 test_virResctrlGetUnused(const void *opaque)
 {
-    struct virResctrlData *data = (struct virResctrlData *) opaque;
+    struct virResctrlData *data = (struct virResctrlData *)opaque;
     char *system_dir = NULL;
     char *resctrl_dir = NULL;
     int ret = -1;

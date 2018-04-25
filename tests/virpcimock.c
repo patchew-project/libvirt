@@ -54,7 +54,7 @@ char *fakesysfspcidir;
 # define SYSFS_PCI_PREFIX "/sys/bus/pci/"
 
 # define STDERR(...) \
-    fprintf(stderr, "%s %zu: ", __FUNCTION__, (size_t) __LINE__); \
+    fprintf(stderr, "%s %zu: ", __FUNCTION__, (size_t)__LINE__); \
     fprintf(stderr, __VA_ARGS__); \
     fprintf(stderr, "\n"); \
 

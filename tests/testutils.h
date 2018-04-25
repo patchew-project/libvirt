@@ -131,7 +131,7 @@ int virTestMain(int argc,
                 return EXIT_FAILURE; \
             } \
             if (!preload) { \
-                newenv = (char *) lib; \
+                newenv = (char *)lib; \
             } else if (virAsprintf(&newenv, "%s:%s", lib, preload) < 0) { \
                 perror("virAsprintf"); \
                 return EXIT_FAILURE; \

@@ -626,7 +626,7 @@ virTestDifferenceFullInternal(FILE *stream,
     /* Show the trimmed differences */
     if (expectName)
         fprintf(stream, "\nIn '%s':", expectName);
-    fprintf(stream, "\nOffset %d\nExpect [", (int) (expectStart - expect));
+    fprintf(stream, "\nOffset %d\nExpect [", (int)(expectStart - expect));
     if ((expectEnd - expectStart + 1) &&
         fwrite(expectStart, (expectEnd-expectStart+1), 1, stream) != 1)
         return -1;

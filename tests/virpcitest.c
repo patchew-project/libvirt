@@ -86,7 +86,7 @@ testVirPCIDeviceNew(const void *opaque ATTRIBUTE_UNUSED)
     if ((count = virPCIDeviceListCount(list)) != cnt) { \
         virReportError(VIR_ERR_INTERNAL_ERROR, \
                        "Unexpected count of items in " #list ": %d, " \
-                       "expecting %zu", count, (size_t) cnt); \
+                       "expecting %zu", count, (size_t)cnt); \
         goto cleanup; \
     }
 

@@ -252,7 +252,7 @@ test4(const void *data ATTRIBUTE_UNUSED)
     if (virBitmapNextSetBit(bitmap, i) != -1)
         goto error;
 
-    j = sizeof(bitsPos)/sizeof(int) - 1;
+    j = sizeof(bitsPos)/sizeof(int)- 1;
 
     if (virBitmapLastSetBit(bitmap) != bitsPos[j])
         goto error;
@@ -314,7 +314,7 @@ test5(const void *v ATTRIBUTE_UNUSED)
 
     i = 0;
     j = -1;
-    while (i < sizeof(bits)/sizeof(int) &&
+    while (i < sizeof(bits)/sizeof(int)&&
            (j = virBitmapNextSetBit(bitmap, j)) >= 0) {
         if (j != bits[i++])
             goto error;

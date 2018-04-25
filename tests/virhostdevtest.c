@@ -44,7 +44,7 @@ VIR_LOG_INIT("tests.hostdevtest");
         if ((actualCount = virPCIDeviceListCount(list)) != cnt) { \
             virReportError(VIR_ERR_INTERNAL_ERROR, \
                            "Unexpected count of items in " #list ": %zu, " \
-                           "expecting %zu", actualCount, (size_t) cnt); \
+                           "expecting %zu", actualCount, (size_t)cnt); \
             goto cleanup; \
         } \
     } while (0)

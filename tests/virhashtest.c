@@ -31,7 +31,7 @@ testHashInit(int size)
      */
     for (i = ARRAY_CARDINALITY(uuids) - 1; i >= 0; i--) {
         ssize_t oldsize = virHashTableSize(hash);
-        if (virHashAddEntry(hash, uuids[i], (void *) uuids[i]) < 0) {
+        if (virHashAddEntry(hash, uuids[i], (void *)uuids[i]) < 0) {
             virHashFree(hash);
             return NULL;
         }
@@ -127,7 +127,7 @@ testHashUpdate(const void *data ATTRIBUTE_UNUSED)
         return -1;
 
     for (i = 0; i < ARRAY_CARDINALITY(uuids_subset); i++) {
-        if (virHashUpdateEntry(hash, uuids_subset[i], (void *) 1) < 0) {
+        if (virHashUpdateEntry(hash, uuids_subset[i], (void *)1) < 0) {
             VIR_TEST_VERBOSE("\nentry \"%s\" could not be updated\n",
                     uuids_subset[i]);
             goto cleanup;
@@ -135,7 +135,7 @@ testHashUpdate(const void *data ATTRIBUTE_UNUSED)
     }
 
     for (i = 0; i < ARRAY_CARDINALITY(uuids_new); i++) {
-        if (virHashUpdateEntry(hash, uuids_new[i], (void *) 1) < 0) {
+        if (virHashUpdateEntry(hash, uuids_new[i], (void *)1) < 0) {
             VIR_TEST_VERBOSE("\nnew entry \"%s\" could not be updated\n",
                     uuids_new[i]);
             goto cleanup;
@@ -282,7 +282,7 @@ testHashRemoveSetIter(const void *payload ATTRIBUTE_UNUSED,
                       const void *name,
                       const void *data)
 {
-    int *count = (int *) data;
+    int *count = (int *)data;
     bool rem = false;
     size_t i;
 

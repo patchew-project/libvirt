@@ -48,7 +48,7 @@ fakeSecretGetValue(virSecretPtr obj ATTRIBUTE_UNUSED,
     if (VIR_STRDUP(secret, "AQCVn5hO6HzFAhAAq0NCv8jtJcIcE+HOBlMQ1A") < 0)
         return NULL;
     *value_size = strlen(secret);
-    return (unsigned char *) secret;
+    return (unsigned char *)secret;
 }
 
 static virSecretPtr
@@ -438,7 +438,7 @@ testCompareXMLToStartupXML(const void *data)
 static int
 testCompareXMLToArgv(const void *data)
 {
-    struct testInfo *info = (void *) data;
+    struct testInfo *info = (void *)data;
     char *xml = NULL;
     char *args = NULL;
     char *migrateURI = NULL;

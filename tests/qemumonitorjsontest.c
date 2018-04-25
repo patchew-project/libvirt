@@ -853,20 +853,20 @@ qemuMonitorJSONTestAttachChardev(virDomainXMLOptionPtr xmlopt)
 
     memset(&chr, 0, sizeof(chr));
     chr.type = VIR_DOMAIN_CHR_TYPE_FILE;
-    chr.data.file.path = (char *) "/test/path";
+    chr.data.file.path = (char *)"/test/path";
     CHECK("file", false,
           "{'id':'alias','backend':{'type':'file','data':{'out':'/test/path'}}}");
 
     memset(&chr, 0, sizeof(chr));
     chr.type = VIR_DOMAIN_CHR_TYPE_DEV;
-    chr.data.file.path = (char *) "/test/path";
+    chr.data.file.path = (char *)"/test/path";
     CHECK("device", false,
           "{'id':'alias','backend':{'type':'serial','data':{'device':'/test/path'}}}");
 
     memset(&chr, 0, sizeof(chr));
     chr.type = VIR_DOMAIN_CHR_TYPE_TCP;
-    chr.data.tcp.host = (char *) "example.com";
-    chr.data.tcp.service = (char *) "1234";
+    chr.data.tcp.host = (char *)"example.com";
+    chr.data.tcp.service = (char *)"1234";
     CHECK("tcp", false,
           "{'id':'alias',"
            "'backend':{'type':'socket',"
@@ -879,8 +879,8 @@ qemuMonitorJSONTestAttachChardev(virDomainXMLOptionPtr xmlopt)
 
     memset(&chr, 0, sizeof(chr));
     chr.type = VIR_DOMAIN_CHR_TYPE_UDP;
-    chr.data.udp.connectHost = (char *) "example.com";
-    chr.data.udp.connectService = (char *) "1234";
+    chr.data.udp.connectHost = (char *)"example.com";
+    chr.data.udp.connectService = (char *)"1234";
     CHECK("udp", false,
           "{'id':'alias',"
            "'backend':{'type':'udp',"
@@ -888,8 +888,8 @@ qemuMonitorJSONTestAttachChardev(virDomainXMLOptionPtr xmlopt)
                                         "'data':{'host':'example.com',"
                                                 "'port':'1234'}}}}}");
 
-    chr.data.udp.bindHost = (char *) "localhost";
-    chr.data.udp.bindService = (char *) "4321";
+    chr.data.udp.bindHost = (char *)"localhost";
+    chr.data.udp.bindService = (char *)"4321";
     CHECK("udp", false,
           "{'id':'alias',"
            "'backend':{'type':'udp',"
@@ -901,7 +901,7 @@ qemuMonitorJSONTestAttachChardev(virDomainXMLOptionPtr xmlopt)
                                                "'port':'4321'}}}}}");
 
     chr.data.udp.bindHost = NULL;
-    chr.data.udp.bindService = (char *) "4321";
+    chr.data.udp.bindService = (char *)"4321";
     CHECK("udp", false,
           "{'id':'alias',"
            "'backend':{'type':'udp',"
@@ -913,7 +913,7 @@ qemuMonitorJSONTestAttachChardev(virDomainXMLOptionPtr xmlopt)
                                                "'port':'4321'}}}}}");
     memset(&chr, 0, sizeof(chr));
     chr.type = VIR_DOMAIN_CHR_TYPE_UNIX;
-    chr.data.nix.path = (char *) "/path/to/socket";
+    chr.data.nix.path = (char *)"/path/to/socket";
     CHECK("unix", false,
           "{'id':'alias',"
            "'backend':{'type':'socket',"
@@ -1185,14 +1185,14 @@ testQemuMonitorJSONGetDeviceAliases(const void *data)
     }
 
     ret = 0;
-    for (alias = (const char **) aliases; *alias; alias++) {
+    for (alias = (const char **)aliases; *alias; alias++) {
         if (!virStringListHasString(expected, *alias)) {
             fprintf(stderr, "got unexpected device alias '%s'\n", *alias);
             ret = -1;
         }
     }
     for (alias = expected; *alias; alias++) {
-        if (!virStringListHasString((const char **) aliases, *alias)) {
+        if (!virStringListHasString((const char **)aliases, *alias)) {
             fprintf(stderr, "missing expected alias '%s'\n", *alias);
             ret = -1;
         }
@@ -1411,14 +1411,14 @@ testQemuMonitorJSONqemuMonitorJSONQueryCPUs(const void *data)
     qemuMonitorTestPtr test = qemuMonitorTestNewSimple(true, xmlopt);
     int ret = -1;
     struct qemuMonitorQueryCpusEntry expect_slow[] = {
-            {0, 17622, (char *) "/machine/unattached/device[0]", true},
-            {1, 17624, (char *) "/machine/unattached/device[1]", true},
-            {2, 17626, (char *) "/machine/unattached/device[2]", true},
+            {0, 17622, (char *)"/machine/unattached/device[0]", true},
+            {1, 17624, (char *)"/machine/unattached/device[1]", true},
+            {2, 17626, (char *)"/machine/unattached/device[2]", true},
             {3, 17628, NULL, true},
     };
     struct qemuMonitorQueryCpusEntry expect_fast[] = {
-            {0, 17629, (char *) "/machine/unattached/device[0]", false},
-            {1, 17630, (char *) "/machine/unattached/device[1]", false},
+            {0, 17629, (char *)"/machine/unattached/device[0]", false},
+            {1, 17630, (char *)"/machine/unattached/device[1]", false},
     };
 
     if (!test)
@@ -1976,8 +1976,8 @@ testQemuMonitorJSONqemuMonitorJSONGetChardevInfo(const void *data)
     int ret = -1;
     virHashTablePtr info = NULL, expectedInfo = NULL;
     qemuMonitorChardevInfo info0 = { NULL, VIR_DOMAIN_CHR_DEVICE_STATE_DEFAULT };
-    qemuMonitorChardevInfo info1 = { (char *) "/dev/pts/21", VIR_DOMAIN_CHR_DEVICE_STATE_CONNECTED };
-    qemuMonitorChardevInfo info2 = { (char *) "/dev/pts/20", VIR_DOMAIN_CHR_DEVICE_STATE_DEFAULT };
+    qemuMonitorChardevInfo info1 = { (char *)"/dev/pts/21", VIR_DOMAIN_CHR_DEVICE_STATE_CONNECTED };
+    qemuMonitorChardevInfo info2 = { (char *)"/dev/pts/20", VIR_DOMAIN_CHR_DEVICE_STATE_DEFAULT };
     qemuMonitorChardevInfo info3 = { NULL, VIR_DOMAIN_CHR_DEVICE_STATE_DISCONNECTED };
 
     if (!test)
@@ -2215,7 +2215,7 @@ testQemuMonitorJSONqemuMonitorJSONGetMigrationCapabilities(const void *data)
         goto cleanup;
 
     cap = qemuMigrationCapabilityTypeToString(QEMU_MIGRATION_CAP_XBZRLE);
-    if (!virStringListHasString((const char **) caps, cap)) {
+    if (!virStringListHasString((const char **)caps, cap)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        "Expected capability %s is missing", cap);
         goto cleanup;
@@ -2601,7 +2601,7 @@ testQemuMonitorCPUInfoFormat(qemuMonitorCPUInfoPtr vcpus,
 
         if (vcpu->tid)
             virBufferAsprintf(&buf, "thread-id='%llu'\n",
-                              (unsigned long long) vcpu->tid);
+                              (unsigned long long)vcpu->tid);
 
         if (vcpu->id != 0)
             virBufferAsprintf(&buf, "enable-id='%d'\n", vcpu->id);

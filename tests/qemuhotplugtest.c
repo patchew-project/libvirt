@@ -227,7 +227,7 @@ static int
 testQemuHotplug(const void *data)
 {
     int ret = -1;
-    struct qemuHotplugTestData *test = (struct qemuHotplugTestData *) data;
+    struct qemuHotplugTestData *test = (struct qemuHotplugTestData *)data;
     char *domain_filename = NULL;
     char *device_filename = NULL;
     char *result_filename = NULL;

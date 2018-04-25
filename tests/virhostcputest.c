@@ -168,7 +168,7 @@ linuxTestHostCPU(const void *opaque)
     char *cpuinfo = NULL;
     char *sysfs_prefix = NULL;
     char *output = NULL;
-    struct linuxTestHostCPUData *data = (struct linuxTestHostCPUData *) opaque;
+    struct linuxTestHostCPUData *data = (struct linuxTestHostCPUData *)opaque;
     const char *archStr = virArchToString(data->arch);
 
     if (virAsprintf(&sysfs_prefix, "%s/virhostcpudata/linux-%s",

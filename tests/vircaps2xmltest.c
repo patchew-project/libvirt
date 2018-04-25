@@ -41,7 +41,7 @@ struct virCapabilitiesData {
 static int
 test_virCapabilities(const void *opaque)
 {
-    struct virCapabilitiesData *data = (struct virCapabilitiesData *) opaque;
+    struct virCapabilitiesData *data = (struct virCapabilitiesData *)opaque;
     const char *archStr = virArchToString(data->arch);
     virCapsPtr caps = NULL;
     char *capsXML = NULL;

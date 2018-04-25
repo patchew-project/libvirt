@@ -47,7 +47,7 @@ static int testStreq(const void *args)
     bool streq_rv, strneq_rv;
     size_t i;
 
-    if ((size_t) data->a ^ (size_t) data->b)
+    if ((size_t)data->a ^ (size_t)data->b)
         equal = false;
     if (data->a && data->b) {
         for (i = 0; data->a[i] != '\0'; i++) {
@@ -65,14 +65,14 @@ static int testStreq(const void *args)
     if (streq_rv != equal) {
         virFilePrintf(stderr,
                       "STREQ not working correctly. Expected %d got %d",
-                      (int) equal, (int) streq_rv);
+                      (int)equal, (int)streq_rv);
         goto cleanup;
     }
 
     if (strneq_rv == equal) {
         virFilePrintf(stderr,
                       "STRNEQ not working correctly. Expected %d got %d",
-                      (int) equal, (int) strneq_rv);
+                      (int)equal, (int)strneq_rv);
         goto cleanup;
     }
 
@@ -225,7 +225,7 @@ static int testRemove(const void *args)
 
     for (i = 0; data->tokens[i]; i++) {
         virStringListRemove(&list, data->tokens[i]);
-        if (virStringListHasString((const char **) list, data->tokens[i])) {
+        if (virStringListHasString((const char **)list, data->tokens[i])) {
             virFilePrintf(stderr, "Not removed %s", data->tokens[i]);
             goto cleanup;
         }
@@ -564,7 +564,7 @@ struct stringToLongData {
  * to try and port libvirt to a platform with 16-bit int.  Gnulib
  * already assumes that signed integers are two's complement. */
 verify(sizeof(int) == 4);
-verify(sizeof(long) == sizeof(int) || sizeof(long) == sizeof(long long));
+verify(sizeof(long) == sizeof(int)|| sizeof(long) == sizeof(long long));
 verify(sizeof(long long) == 8);
 
 static int
@@ -587,7 +587,7 @@ testStringToLong(const void *opaque)
     do { \
         Type value = 5; \
         int result; \
-        end = (char *) "oops"; \
+        end = (char *)"oops"; \
         result = virStrToLong_ ## Fn(Str, Suff ? &end : NULL, \
                                      0, &value); \
         /* On failure, end is modified, value is unchanged */ \

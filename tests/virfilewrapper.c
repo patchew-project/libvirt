@@ -267,7 +267,7 @@ int open(const char *path, int flags, ...)
      */
     if (flags & O_CREAT) {
         va_start(ap, flags);
-        mode = (mode_t) va_arg(ap, int);
+        mode = (mode_t)va_arg(ap, int);
         va_end(ap);
     }
 

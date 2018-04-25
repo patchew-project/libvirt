@@ -144,7 +144,7 @@ testSchemaDirs(const char *schema, virXMLValidatorPtr validator, ...)
 static int
 testSchemaGrammar(const void *opaque)
 {
-    struct testSchemaData *data = (struct testSchemaData *) opaque;
+    struct testSchemaData *data = (struct testSchemaData *)opaque;
     char *schema_path;
     int ret = -1;
 

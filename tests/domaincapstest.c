@@ -68,8 +68,8 @@ fillAllCaps(virDomainCapsPtr domCaps)
     virCPUDef host = {
         .type = VIR_CPU_TYPE_HOST,
         .arch = VIR_ARCH_X86_64,
-        .model = (char *) "host",
-        .vendor = (char *) "CPU Vendorrr",
+        .model = (char *)"host",
+        .vendor = (char *)"CPU Vendorrr",
     };
 
     domCaps->maxvcpus = 255;
