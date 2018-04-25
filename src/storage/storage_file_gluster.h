@@ -1,5 +1,5 @@
 /*
- * storage_backend_gluster.h: storage backend for Gluster handling
+ * storage_file_gluster.h: storage file backend for Gluster handling
  *
  * Copyright (C) 2013-2018 Red Hat, Inc.
  *
@@ -19,9 +19,9 @@
  *
  */
 
-#ifndef __VIR_STORAGE_BACKEND_GLUSTER_H__
-# define __VIR_STORAGE_BACKEND_GLUSTER_H__
+#ifndef __VIR_STORAGE_FILE_GLUSTER_H__
+# define __VIR_STORAGE_FILE_GLUSTER_H__
 
-int virStorageBackendGlusterRegister(void);
+int virStorageFileGlusterRegister(void);
 
-#endif /* __VIR_STORAGE_BACKEND_GLUSTER_H__ */
+#endif /* __VIR_STORAGE_FILE_GLUSTER_H__ */
