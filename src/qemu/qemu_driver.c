@@ -14608,12 +14608,15 @@ qemuDomainSnapshotDiskDataCollect(virQEMUDriverPtr driver,
 
         /* relative backing store paths need to be updated so that relative
          * block commit still works */
-        if (reuse &&
-            (backingStoreStr = virStorageFileGetBackingStoreStr(dd->src))) {
-            if (virStorageIsRelative(backingStoreStr))
-                VIR_STEAL_PTR(dd->relPath, backingStoreStr);
-            else
-                VIR_FREE(backingStoreStr);
+        if (reuse) {
+            if (virStorageFileGetBackingStoreStr(dd->src, &backingStoreStr) < 0)
+                goto error;
+            if (backingStoreStr != NULL) {
+                if (virStorageIsRelative(backingStoreStr))
+                    VIR_STEAL_PTR(dd->relPath, backingStoreStr);
+                else
+                    VIR_FREE(backingStoreStr);
+            }
         }
 
         /* Note that it's unsafe to assume that the disks in the persistent
