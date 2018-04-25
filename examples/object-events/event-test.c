@@ -59,7 +59,7 @@ connectClose(virConnectPtr conn ATTRIBUTE_UNUSED,
 static const char *
 eventToString(int event)
 {
-    switch ((virDomainEventType) event) {
+    switch ((virDomainEventType)event) {
         case VIR_DOMAIN_EVENT_DEFINED:
             return "Defined";
 
@@ -99,9 +99,9 @@ static const char *
 eventDetailToString(int event,
                     int detail)
 {
-    switch ((virDomainEventType) event) {
+    switch ((virDomainEventType)event) {
         case VIR_DOMAIN_EVENT_DEFINED:
-            switch ((virDomainEventDefinedDetailType) detail) {
+            switch ((virDomainEventDefinedDetailType)detail) {
             case VIR_DOMAIN_EVENT_DEFINED_ADDED:
                 return "Added";
 
@@ -120,7 +120,7 @@ eventDetailToString(int event,
             break;
 
         case VIR_DOMAIN_EVENT_UNDEFINED:
-            switch ((virDomainEventUndefinedDetailType) detail) {
+            switch ((virDomainEventUndefinedDetailType)detail) {
             case VIR_DOMAIN_EVENT_UNDEFINED_REMOVED:
                 return "Removed";
 
@@ -133,7 +133,7 @@ eventDetailToString(int event,
             break;
 
         case VIR_DOMAIN_EVENT_STARTED:
-            switch ((virDomainEventStartedDetailType) detail) {
+            switch ((virDomainEventStartedDetailType)detail) {
             case VIR_DOMAIN_EVENT_STARTED_BOOTED:
                 return "Booted";
 
@@ -155,7 +155,7 @@ eventDetailToString(int event,
             break;
 
         case VIR_DOMAIN_EVENT_SUSPENDED:
-            switch ((virDomainEventSuspendedDetailType) detail) {
+            switch ((virDomainEventSuspendedDetailType)detail) {
             case VIR_DOMAIN_EVENT_SUSPENDED_PAUSED:
                 return "Paused";
 
@@ -189,7 +189,7 @@ eventDetailToString(int event,
             break;
 
         case VIR_DOMAIN_EVENT_RESUMED:
-            switch ((virDomainEventResumedDetailType) detail) {
+            switch ((virDomainEventResumedDetailType)detail) {
             case VIR_DOMAIN_EVENT_RESUMED_UNPAUSED:
                 return "Unpaused";
 
@@ -208,7 +208,7 @@ eventDetailToString(int event,
             break;
 
         case VIR_DOMAIN_EVENT_STOPPED:
-            switch ((virDomainEventStoppedDetailType) detail) {
+            switch ((virDomainEventStoppedDetailType)detail) {
             case VIR_DOMAIN_EVENT_STOPPED_SHUTDOWN:
                 return "Shutdown";
 
@@ -236,7 +236,7 @@ eventDetailToString(int event,
             break;
 
         case VIR_DOMAIN_EVENT_SHUTDOWN:
-            switch ((virDomainEventShutdownDetailType) detail) {
+            switch ((virDomainEventShutdownDetailType)detail) {
             case VIR_DOMAIN_EVENT_SHUTDOWN_FINISHED:
                 return "Finished";
 
@@ -252,7 +252,7 @@ eventDetailToString(int event,
             break;
 
         case VIR_DOMAIN_EVENT_PMSUSPENDED:
-            switch ((virDomainEventPMSuspendedDetailType) detail) {
+            switch ((virDomainEventPMSuspendedDetailType)detail) {
             case VIR_DOMAIN_EVENT_PMSUSPENDED_MEMORY:
                 return "Memory";
 
@@ -265,7 +265,7 @@ eventDetailToString(int event,
             break;
 
         case VIR_DOMAIN_EVENT_CRASHED:
-           switch ((virDomainEventCrashedDetailType) detail) {
+           switch ((virDomainEventCrashedDetailType)detail) {
            case VIR_DOMAIN_EVENT_CRASHED_PANICKED:
                return "Panicked";
 
@@ -285,7 +285,7 @@ eventDetailToString(int event,
 static const char *
 networkEventToString(int event)
 {
-    switch ((virNetworkEventLifecycleType) event) {
+    switch ((virNetworkEventLifecycleType)event) {
         case VIR_NETWORK_EVENT_DEFINED:
             return "Defined";
 
@@ -347,7 +347,7 @@ guestAgentLifecycleEventReasonToString(int event)
 static const char *
 storagePoolEventToString(int event)
 {
-    switch ((virStoragePoolEventLifecycleType) event) {
+    switch ((virStoragePoolEventLifecycleType)event) {
         case VIR_STORAGE_POOL_EVENT_DEFINED:
             return "Defined";
         case VIR_STORAGE_POOL_EVENT_UNDEFINED:
@@ -369,7 +369,7 @@ storagePoolEventToString(int event)
 static const char *
 nodeDeviceEventToString(int event)
 {
-    switch ((virNodeDeviceEventLifecycleType) event) {
+    switch ((virNodeDeviceEventLifecycleType)event) {
         case VIR_NODE_DEVICE_EVENT_CREATED:
             return "Created";
         case VIR_NODE_DEVICE_EVENT_DELETED:
@@ -384,7 +384,7 @@ nodeDeviceEventToString(int event)
 static const char *
 secretEventToString(int event)
 {
-    switch ((virSecretEventLifecycleType) event) {
+    switch ((virSecretEventLifecycleType)event) {
         case VIR_SECRET_EVENT_DEFINED:
             return "Defined";
 
@@ -871,7 +871,7 @@ myDomainEventDeviceAddedCallback(virConnectPtr conn ATTRIBUTE_UNUSED,
 static const char *
 blockJobTypeToStr(int type)
 {
-    switch ((virDomainBlockJobType) type) {
+    switch ((virDomainBlockJobType)type) {
     case VIR_DOMAIN_BLOCK_JOB_TYPE_UNKNOWN:
     case VIR_DOMAIN_BLOCK_JOB_TYPE_LAST:
         break;
@@ -995,7 +995,7 @@ myDomainEventDeviceRemovalFailedCallback(virConnectPtr conn ATTRIBUTE_UNUSED,
 static const char *
 metadataTypeToStr(int status)
 {
-    switch ((virDomainMetadataType) status) {
+    switch ((virDomainMetadataType)status) {
     case VIR_DOMAIN_METADATA_DESCRIPTION:
         return "description";
 
