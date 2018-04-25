@@ -294,7 +294,7 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
     for (i = 0; i < virDomainDefGetVcpus(def); i++)
         libxl_bitmap_set((&b_info->avail_vcpus), i);
 
-    switch ((virDomainClockOffsetType) clock.offset) {
+    switch ((virDomainClockOffsetType)clock.offset) {
     case VIR_DOMAIN_CLOCK_OFFSET_VARIABLE:
         if (clock.data.variable.basis == VIR_DOMAIN_CLOCK_BASIS_LOCALTIME)
             libxl_defbool_set(&b_info->localtime, true);
@@ -323,7 +323,7 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
     }
 
     for (i = 0; i < clock.ntimers; i++) {
-        switch ((virDomainTimerNameType) clock.timers[i]->name) {
+        switch ((virDomainTimerNameType)clock.timers[i]->name) {
         case VIR_DOMAIN_TIMER_NAME_TSC:
             switch (clock.timers[i]->mode) {
             case VIR_DOMAIN_TIMER_MODE_NATIVE:
