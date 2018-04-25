@@ -352,7 +352,7 @@ vboxSetStorageController(virDomainControllerDefPtr controller,
     int ret = -1;
 
     /* libvirt controller type => vbox bus type */
-    switch ((virDomainControllerType) controller->type) {
+    switch ((virDomainControllerType)controller->type) {
     case VIR_DOMAIN_CONTROLLER_TYPE_FDC:
         VBOX_UTF8_TO_UTF16(VBOX_CONTROLLER_FLOPPY_NAME, &controllerName);
         vboxBusType = StorageBus_Floppy;
@@ -7517,7 +7517,7 @@ vboxDomainScreenshot(virDomainPtr dom,
                     goto endjob;
                 }
 
-                if (safewrite(tmp_fd, (char *) screenData,
+                if (safewrite(tmp_fd, (char *)screenData,
                               screenDataSize) < 0) {
                     virReportSystemError(errno, _("unable to write data "
                                                   "to '%s'"), tmp);

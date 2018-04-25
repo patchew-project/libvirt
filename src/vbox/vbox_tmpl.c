@@ -1649,7 +1649,7 @@ _vrdeServerGetPorts(vboxDriverPtr data, IVRDEServer *VRDEServer,
     if (NS_FAILED(rc)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Failed to read RDP port value, rc=%08x"),
-                       (unsigned) rc);
+                       (unsigned)rc);
        goto cleanup;
     }
 
