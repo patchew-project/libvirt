@@ -123,17 +123,6 @@ virLogDaemonFree(virLogDaemonPtr logd)
 }
 
 
-static void
-virLogDaemonInhibitor(bool inhibit, void *opaque)
-{
-    virLogDaemonPtr dmn = opaque;
-
-    if (inhibit)
-        virNetDaemonAddShutdownInhibition(dmn->dmn);
-    else
-        virNetDaemonRemoveShutdownInhibition(dmn->dmn);
-}
-
 static virLogDaemonPtr
 virLogDaemonNew(virLogDaemonConfigPtr config, bool privileged)
 {
@@ -185,9 +174,7 @@ virLogDaemonNew(virLogDaemonConfigPtr config, bool privileged)
 
     if (!(logd->handler = virLogHandlerNew(privileged,
                                            config->max_size,
-                                           config->max_backups,
-                                           virLogDaemonInhibitor,
-                                           logd)))
+                                           config->max_backups)))
         goto error;
 
     return logd;
@@ -277,9 +264,7 @@ virLogDaemonNewPostExecRestart(virJSONValuePtr object, bool privileged,
     if (!(logd->handler = virLogHandlerNewPostExecRestart(child,
                                                           privileged,
                                                           config->max_size,
-                                                          config->max_backups,
-                                                          virLogDaemonInhibitor,
-                                                          logd)))
+                                                          config->max_backups)))
         goto error;
 
     return logd;

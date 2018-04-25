@@ -65,9 +65,6 @@ struct _virLogHandler {
 
     virLogHandlerLogFilePtr *files;
     size_t nfiles;
-
-    virLogHandlerShutdownInhibitor inhibitor;
-    void *opaque;
 };
 
 static virClassPtr virLogHandlerClass;
@@ -174,7 +171,6 @@ virLogHandlerDomainLogFileEvent(int watch,
     return;
 
  error:
-    handler->inhibitor(false, handler->opaque);
     virLogHandlerLogFileClose(handler, logfile);
     virObjectUnlock(handler);
 }
@@ -183,9 +179,7 @@ virLogHandlerDomainLogFileEvent(int watch,
 virLogHandlerPtr
 virLogHandlerNew(bool privileged,
                  size_t max_size,
-                 size_t max_backups,
-                 virLogHandlerShutdownInhibitor inhibitor,
-                 void *opaque)
+                 size_t max_backups)
 {
     virLogHandlerPtr handler;
 
@@ -198,8 +192,6 @@ virLogHandlerNew(bool privileged,
     handler->privileged = privileged;
     handler->max_size = max_size;
     handler->max_backups = max_backups;
-    handler->inhibitor = inhibitor;
-    handler->opaque = opaque;
 
     return handler;
 
@@ -219,8 +211,6 @@ virLogHandlerLogFilePostExecRestart(virLogHandlerPtr handler,
 
     if (VIR_ALLOC(file) < 0)
         return NULL;
-
-    handler->inhibitor(true, handler->opaque);
 
     if ((path = virJSONValueObjectGetString(object, "path")) == NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -276,7 +266,6 @@ virLogHandlerLogFilePostExecRestart(virLogHandlerPtr handler,
     return file;
 
  error:
-    handler->inhibitor(false, handler->opaque);
     virLogHandlerLogFileFree(file);
     return NULL;
 }
@@ -286,9 +275,7 @@ virLogHandlerPtr
 virLogHandlerNewPostExecRestart(virJSONValuePtr object,
                                 bool privileged,
                                 size_t max_size,
-                                size_t max_backups,
-                                virLogHandlerShutdownInhibitor inhibitor,
-                                void *opaque)
+                                size_t max_backups)
 {
     virLogHandlerPtr handler;
     virJSONValuePtr files;
@@ -297,9 +284,7 @@ virLogHandlerNewPostExecRestart(virJSONValuePtr object,
 
     if (!(handler = virLogHandlerNew(privileged,
                                      max_size,
-                                     max_backups,
-                                     inhibitor,
-                                     opaque)))
+                                     max_backups)))
         return NULL;
 
     if (!(files = virJSONValueObjectGet(object, "files"))) {
@@ -349,10 +334,8 @@ virLogHandlerDispose(void *obj)
     virLogHandlerPtr handler = obj;
     size_t i;
 
-    for (i = 0; i < handler->nfiles; i++) {
-        handler->inhibitor(false, handler->opaque);
+    for (i = 0; i < handler->nfiles; i++)
         virLogHandlerLogFileFree(handler->files[i]);
-    }
     VIR_FREE(handler->files);
 }
 
@@ -372,8 +355,6 @@ virLogHandlerDomainOpenLogFile(virLogHandlerPtr handler,
     int pipefd[2] = { -1, -1 };
 
     virObjectLock(handler);
-
-    handler->inhibitor(true, handler->opaque);
 
     for (i = 0; i < handler->nfiles; i++) {
         if (STREQ(virRotatingFileWriterGetPath(handler->files[i]->file),
@@ -429,7 +410,6 @@ virLogHandlerDomainOpenLogFile(virLogHandlerPtr handler,
  error:
     VIR_FORCE_CLOSE(pipefd[0]);
     VIR_FORCE_CLOSE(pipefd[1]);
-    handler->inhibitor(false, handler->opaque);
     virLogHandlerLogFileFree(file);
     virObjectUnlock(handler);
     return -1;
