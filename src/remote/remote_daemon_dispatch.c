@@ -1062,7 +1062,7 @@ remoteRelayDomainEventTunable(virConnectPtr conn,
     make_nonnull_domain(&data.dom, dom);
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &data.params.params_val,
+                                (virTypedParameterRemotePtr *)&data.params.params_val,
                                 &data.params.params_len,
                                 VIR_TYPED_PARAM_STRING_OKAY) < 0) {
         VIR_FREE(data.dom.name);
@@ -1204,7 +1204,7 @@ remoteRelayDomainEventJobCompleted(virConnectPtr conn,
     make_nonnull_domain(&data.dom, dom);
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &data.params.params_val,
+                                (virTypedParameterRemotePtr *)&data.params.params_val,
                                 &data.params.params_len,
                                 VIR_TYPED_PARAM_STRING_OKAY) < 0) {
         VIR_FREE(data.dom.name);
@@ -1934,7 +1934,7 @@ remoteDispatchDomainGetSchedulerParameters(virNetServerPtr server ATTRIBUTE_UNUS
         goto cleanup;
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len,
                                 0) < 0)
         goto cleanup;
@@ -1985,7 +1985,7 @@ remoteDispatchDomainGetSchedulerParametersFlags(virNetServerPtr server ATTRIBUTE
         goto cleanup;
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len,
                                 args->flags) < 0)
         goto cleanup;
@@ -2159,7 +2159,7 @@ remoteDispatchDomainBlockStatsFlags(virNetServerPtr server ATTRIBUTE_UNUSED,
 
     /* Serialize the block stats. */
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len,
                                 args->flags) < 0)
         goto cleanup;
@@ -2421,7 +2421,7 @@ remoteDispatchDomainGetVcpuPinInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
      * Note that remoteDispatchClientRequest will free.
      */
     ret->cpumaps.cpumaps_len = args->ncpumaps * args->maplen;
-    ret->cpumaps.cpumaps_val = (char *) cpumaps;
+    ret->cpumaps.cpumaps_val = (char *)cpumaps;
     cpumaps = NULL;
 
     rv = 0;
@@ -2455,7 +2455,7 @@ remoteDispatchDomainPinEmulator(virNetServerPtr server ATTRIBUTE_UNUSED,
         goto cleanup;
 
     if (virDomainPinEmulator(dom,
-                             (unsigned char *) args->cpumap.cpumap_val,
+                             (unsigned char *)args->cpumap.cpumap_val,
                              args->cpumap.cpumap_len,
                              args->flags) < 0)
         goto cleanup;
@@ -2506,7 +2506,7 @@ remoteDispatchDomainGetEmulatorPinInfo(virNetServerPtr server ATTRIBUTE_UNUSED,
 
     ret->ret = r;
     ret->cpumaps.cpumaps_len = args->maplen;
-    ret->cpumaps.cpumaps_val = (char *) cpumaps;
+    ret->cpumaps.cpumaps_val = (char *)cpumaps;
     cpumaps = NULL;
 
     rv = 0;
@@ -2584,7 +2584,7 @@ remoteDispatchDomainGetVcpus(virNetServerPtr server ATTRIBUTE_UNUSED,
      * Note that remoteDispatchClientRequest will free.
      */
     ret->cpumaps.cpumaps_len = args->maxinfo * args->maplen;
-    ret->cpumaps.cpumaps_val = (char *) cpumaps;
+    ret->cpumaps.cpumaps_val = (char *)cpumaps;
     cpumaps = NULL;
 
     rv = 0;
@@ -2825,7 +2825,7 @@ remoteDispatchDomainGetMemoryParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
     }
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len,
                                 args->flags) < 0)
         goto cleanup;
@@ -2887,7 +2887,7 @@ remoteDispatchDomainGetNumaParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
     }
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len,
                                 flags) < 0)
         goto cleanup;
@@ -2949,7 +2949,7 @@ remoteDispatchDomainGetBlkioParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
     }
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len,
                                 args->flags) < 0)
         goto cleanup;
@@ -3141,7 +3141,7 @@ remoteDispatchDomainGetPerfEvents(virNetServerPtr server ATTRIBUTE_UNUSED,
     }
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len,
                                 0) < 0)
         goto cleanup;
@@ -3242,7 +3242,7 @@ remoteDispatchDomainGetBlockIoTune(virNetServerPtr server ATTRIBUTE_UNUSED,
 
     /* Serialize the block I/O tuning parameters. */
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len,
                                 args->flags) < 0)
         goto cleanup;
@@ -3287,7 +3287,7 @@ remoteDispatchAuthList(virNetServerPtr server,
         } else if (callerUid == 0) {
             char *ident;
             if (virAsprintf(&ident, "pid:%lld,uid:%d",
-                            (long long) callerPid, (int) callerUid) < 0)
+                            (long long)callerPid, (int)callerUid) < 0)
                 goto cleanup;
             VIR_INFO("Bypass polkit auth for privileged client %s", ident);
             virNetServerSetClientAuthenticated(server, client);
@@ -3736,7 +3736,7 @@ remoteDispatchAuthPolkit(virNetServerPtr server,
     }
 
     VIR_INFO("Checking PID %lld running as %d",
-             (long long) callerPid, callerUid);
+             (long long)callerPid, callerUid);
 
     rv = virPolkitCheckAuth(action,
                             callerPid,
@@ -3753,7 +3753,7 @@ remoteDispatchAuthPolkit(virNetServerPtr server,
           "client=%p auth=%d identity=%s",
           client, REMOTE_AUTH_POLKIT, ident);
     VIR_INFO("Policy allowed action %s from pid %lld, uid %d",
-             action, (long long) callerPid, callerUid);
+             action, (long long)callerPid, callerUid);
     ret->complete = 1;
 
     virNetServerSetClientAuthenticated(server, client);
@@ -4854,7 +4854,7 @@ remoteDispatchDomainGetInterfaceParameters(virNetServerPtr server ATTRIBUTE_UNUS
     }
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len,
                                 flags) < 0)
         goto cleanup;
@@ -4916,7 +4916,7 @@ remoteDispatchDomainGetCPUStats(virNetServerPtr server ATTRIBUTE_UNUSED,
         goto success;
 
     if (virTypedParamsSerialize(params, args->nparams * args->ncpus,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len,
                                 args->flags) < 0)
         goto cleanup;
@@ -5044,7 +5044,7 @@ remoteDispatchNodeGetMemoryParameters(virNetServerPtr server ATTRIBUTE_UNUSED,
     }
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len,
                                 args->flags) < 0)
         goto cleanup;
@@ -5090,7 +5090,7 @@ remoteDispatchNodeGetCPUMap(virNetServerPtr server ATTRIBUTE_UNUSED,
     /* 'serialize' return cpumap */
     if (args->need_map) {
         ret->cpumap.cpumap_len = VIR_CPU_MAPLEN(cpunum);
-        ret->cpumap.cpumap_val = (char *) cpumap;
+        ret->cpumap.cpumap_val = (char *)cpumap;
         cpumap = NULL;
     }
 
@@ -5191,7 +5191,7 @@ remoteDispatchDomainGetJobStats(virNetServerPtr server ATTRIBUTE_UNUSED,
     }
 
     if (virTypedParamsSerialize(params, nparams,
-                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                (virTypedParameterRemotePtr *)&ret->params.params_val,
                                 &ret->params.params_len,
                                 0) < 0)
         goto cleanup;
@@ -6391,7 +6391,7 @@ remoteDispatchNodeGetFreePages(virNetServerPtr server ATTRIBUTE_UNUSED,
                                    args->pages.pages_val,
                                    args->startCell,
                                    args->cellCount,
-                                   (unsigned long long *) ret->counts.counts_val,
+                                   (unsigned long long *)ret->counts.counts_val,
                                    args->flags)) <= 0)
         goto cleanup;
 
@@ -6601,7 +6601,7 @@ remoteDispatchConnectGetAllDomainStats(virNetServerPtr server ATTRIBUTE_UNUSED,
 
             if (virTypedParamsSerialize(retStats[i]->params,
                                         retStats[i]->nparams,
-                                        (virTypedParameterRemotePtr *) &dst->params.params_val,
+                                        (virTypedParameterRemotePtr *)&dst->params.params_val,
                                         &dst->params.params_len,
                                         VIR_TYPED_PARAM_STRING_OKAY) < 0)
                 goto cleanup;
@@ -6645,7 +6645,7 @@ remoteDispatchNodeAllocPages(virNetServerPtr server ATTRIBUTE_UNUSED,
     if ((len = virNodeAllocPages(priv->conn,
                                  args->pageSizes.pageSizes_len,
                                  args->pageSizes.pageSizes_val,
-                                 (unsigned long long *) args->pageCounts.pageCounts_val,
+                                 (unsigned long long *)args->pageCounts.pageCounts_val,
                                  args->startCell,
                                  args->cellCount,
                                  args->flags)) < 0)

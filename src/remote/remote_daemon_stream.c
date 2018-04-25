@@ -687,7 +687,7 @@ daemonStreamHandleHole(virNetServerClientPtr client,
     }
 
     if (virNetMessageDecodePayload(msg,
-                                   (xdrproc_t) xdr_virNetStreamHole,
+                                   (xdrproc_t)xdr_virNetStreamHole,
                                    &data) < 0)
         return -1;
 

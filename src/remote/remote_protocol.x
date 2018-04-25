@@ -1141,13 +1141,13 @@ struct remote_domain_get_vcpus_flags_ret {
 struct remote_domain_pin_vcpu_args {
     remote_nonnull_domain dom;
     unsigned int vcpu;
-    opaque cpumap<REMOTE_CPUMAP_MAX>; /* (unsigned char *) */
+    opaque cpumap<REMOTE_CPUMAP_MAX>; /* (unsigned char *)*/
 };
 
 struct remote_domain_pin_vcpu_flags_args {
     remote_nonnull_domain dom;
     unsigned int vcpu;
-    opaque cpumap<REMOTE_CPUMAP_MAX>; /* (unsigned char *) */
+    opaque cpumap<REMOTE_CPUMAP_MAX>; /* (unsigned char *)*/
     unsigned int flags;
 };
 
@@ -1165,7 +1165,7 @@ struct remote_domain_get_vcpu_pin_info_ret {
 
 struct remote_domain_pin_emulator_args {
     remote_nonnull_domain dom;
-    opaque cpumap<REMOTE_CPUMAP_MAX>; /* (unsigned char *) */
+    opaque cpumap<REMOTE_CPUMAP_MAX>; /* (unsigned char *)*/
     unsigned int flags;
 };
 
@@ -1217,7 +1217,7 @@ struct remote_domain_get_iothread_info_ret {
 struct remote_domain_pin_iothread_args {
     remote_nonnull_domain dom;
     unsigned int iothreads_id;
-    opaque cpumap<REMOTE_CPUMAP_MAX>; /* (unsigned char *) */
+    opaque cpumap<REMOTE_CPUMAP_MAX>; /* (unsigned char *)*/
     unsigned int flags;
 };
 
@@ -2167,7 +2167,7 @@ struct remote_secret_get_xml_desc_ret {
 
 struct remote_secret_set_value_args {
     remote_nonnull_secret secret;
-    opaque value<REMOTE_SECRET_VALUE_MAX>; /* (const unsigned char *) */
+    opaque value<REMOTE_SECRET_VALUE_MAX>; /* (const unsigned char *)*/
     unsigned int flags;
 };
 
@@ -2285,7 +2285,7 @@ struct remote_connect_compare_cpu_ret {
 
 
 struct remote_connect_baseline_cpu_args {
-    remote_nonnull_string xmlCPUs<REMOTE_CPU_BASELINE_MAX>; /* (const char **) */
+    remote_nonnull_string xmlCPUs<REMOTE_CPU_BASELINE_MAX>; /* (const char **)*/
     unsigned int flags;
 };
 
@@ -3211,7 +3211,7 @@ struct remote_node_device_event_update_msg {
 
 struct remote_domain_fsfreeze_args {
     remote_nonnull_domain dom;
-    remote_nonnull_string mountpoints<REMOTE_DOMAIN_FSFREEZE_MOUNTPOINTS_MAX>; /* (const char **) */
+    remote_nonnull_string mountpoints<REMOTE_DOMAIN_FSFREEZE_MOUNTPOINTS_MAX>; /* (const char **)*/
     unsigned int flags;
 };
 
@@ -3221,7 +3221,7 @@ struct remote_domain_fsfreeze_ret {
 
 struct remote_domain_fsthaw_args {
     remote_nonnull_domain dom;
-    remote_nonnull_string mountpoints<REMOTE_DOMAIN_FSFREEZE_MOUNTPOINTS_MAX>; /* (const char **) */
+    remote_nonnull_string mountpoints<REMOTE_DOMAIN_FSFREEZE_MOUNTPOINTS_MAX>; /* (const char **)*/
     unsigned int flags;
 };
 
@@ -3303,7 +3303,7 @@ struct remote_domain_fsinfo {
     remote_nonnull_string mountpoint;
     remote_nonnull_string name;
     remote_nonnull_string fstype;
-    remote_nonnull_string dev_aliases<REMOTE_DOMAIN_FSINFO_DISKS_MAX>; /* (const char **) */
+    remote_nonnull_string dev_aliases<REMOTE_DOMAIN_FSINFO_DISKS_MAX>; /* (const char **)*/
 };
 
 struct remote_domain_get_fsinfo_args {
