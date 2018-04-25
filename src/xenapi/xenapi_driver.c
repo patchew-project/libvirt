@@ -1490,7 +1490,7 @@ xenapiDomainGetXMLDesc(virDomainPtr dom, unsigned int flags)
     memory = xenapiDomainGetMaxMemory(dom);
     virDomainDefSetMemoryTotal(defPtr, memory);
     if (xen_vm_get_memory_dynamic_max(session, &dynamic_mem, vm)) {
-        defPtr->mem.cur_balloon = (unsigned long) (dynamic_mem / 1024);
+        defPtr->mem.cur_balloon = (unsigned long)(dynamic_mem / 1024);
     } else {
         defPtr->mem.cur_balloon = memory;
     }
@@ -2101,7 +2101,7 @@ write_func(void *ptr, size_t size, size_t nmemb, void *comms_)
     printf("%s\n", (char*) ptr);
     fflush(stdout);
 #endif
-    return (size_t) (comms->func(ptr, n, comms->handle) ? n : 0);
+    return (size_t)(comms->func(ptr, n, comms->handle) ? n : 0);
 }
 
 /*
