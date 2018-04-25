@@ -193,25 +193,25 @@ VIR_STATIC unsigned int virAtomicIntXor(volatile unsigned int *atomic,
     (__extension__ ({ \
             (void)verify_true(sizeof(*(atomic)) == sizeof(int)); \
             (void)(0 ? *(atomic) ^ (val) : 0); \
-            (int) __sync_fetch_and_add((atomic), (val)); \
+            (int)__sync_fetch_and_add((atomic), (val)); \
         }))
 #  define virAtomicIntAnd(atomic, val) \
     (__extension__ ({ \
             (void)verify_true(sizeof(*(atomic)) == sizeof(int)); \
-            (void) (0 ? *(atomic) ^ (val) : 0); \
-            (unsigned int) __sync_fetch_and_and((atomic), (val)); \
+            (void)(0 ? *(atomic) ^ (val) : 0); \
+            (unsigned int)__sync_fetch_and_and((atomic), (val)); \
         }))
 #  define virAtomicIntOr(atomic, val) \
     (__extension__ ({ \
             (void)verify_true(sizeof(*(atomic)) == sizeof(int)); \
-            (void) (0 ? *(atomic) ^ (val) : 0); \
-            (unsigned int) __sync_fetch_and_or((atomic), (val)); \
+            (void)(0 ? *(atomic) ^ (val) : 0); \
+            (unsigned int)__sync_fetch_and_or((atomic), (val)); \
         }))
 #  define virAtomicIntXor(atomic, val) \
     (__extension__ ({ \
             (void)verify_true(sizeof(*(atomic)) == sizeof(int)); \
-            (void) (0 ? *(atomic) ^ (val) : 0); \
-            (unsigned int) __sync_fetch_and_xor((atomic), (val)); \
+            (void)(0 ? *(atomic) ^ (val) : 0); \
+            (unsigned int)__sync_fetch_and_xor((atomic), (val)); \
         }))
 
 

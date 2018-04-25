@@ -53,7 +53,7 @@ struct _virBitmap {
 };
 
 
-#define VIR_BITMAP_BITS_PER_UNIT  ((int) sizeof(unsigned long) * CHAR_BIT)
+#define VIR_BITMAP_BITS_PER_UNIT  ((int)sizeof(unsigned long)* CHAR_BIT)
 #define VIR_BITMAP_UNIT_OFFSET(b) ((b) / VIR_BITMAP_BITS_PER_UNIT)
 #define VIR_BITMAP_BIT_OFFSET(b)  ((b) % VIR_BITMAP_BITS_PER_UNIT)
 #define VIR_BITMAP_BIT(b)         (1UL << VIR_BITMAP_BIT_OFFSET(b))
@@ -777,7 +777,7 @@ virBitmapNewData(const void *data,
             j = 0;
             p++;
         }
-        *p |= (unsigned long) bytes[i] << (j * CHAR_BIT);
+        *p |= (unsigned long)bytes[i] << (j * CHAR_BIT);
     }
 
     return bitmap;

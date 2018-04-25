@@ -167,7 +167,7 @@ virMacAddrParse(const char* str, virMacAddrPtr addr)
             (0xFF < result))
             break;
 
-        addr->addr[i] = (unsigned char) result;
+        addr->addr[i] = (unsigned char)result;
 
         if ((i == 5) && (*end_ptr <= ' '))
             return 0;

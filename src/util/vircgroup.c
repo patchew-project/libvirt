@@ -550,13 +550,13 @@ virCgroupDetectPlacement(virCgroupPtr group,
     char *procfile;
 
     VIR_DEBUG("Detecting placement for pid %lld path %s",
-              (long long) pid, path);
+              (long long)pid, path);
     if (pid == -1) {
         if (VIR_STRDUP(procfile, "/proc/self/cgroup") < 0)
             goto cleanup;
     } else {
         if (virAsprintf(&procfile, "/proc/%lld/cgroup",
-                        (long long) pid) < 0)
+                        (long long)pid) < 0)
             goto cleanup;
     }
 
@@ -744,7 +744,7 @@ virCgroupDetect(virCgroupPtr group,
                   virCgroupControllerTypeToString(i),
                   group->controllers[i].mountPoint,
                   group->controllers[i].placement,
-                  (long long) pid);
+                  (long long)pid);
     }
 
     return 0;
@@ -1155,7 +1155,7 @@ virCgroupNew(pid_t pid,
              virCgroupPtr *group)
 {
     VIR_DEBUG("pid=%lld path=%s parent=%p controllers=%d group=%p",
-              (long long) pid, path, parent, controllers, group);
+              (long long)pid, path, parent, controllers, group);
     *group = NULL;
 
     if (VIR_ALLOC((*group)) < 0)
@@ -2581,7 +2581,7 @@ virCgroupGetMemoryUsage(virCgroupPtr group, unsigned long *kb)
                                VIR_CGROUP_CONTROLLER_MEMORY,
                                "memory.usage_in_bytes", &usage_in_bytes);
     if (ret == 0)
-        *kb = (unsigned long) usage_in_bytes >> 10;
+        *kb = (unsigned long)usage_in_bytes >> 10;
     return ret;
 }
 

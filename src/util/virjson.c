@@ -398,7 +398,7 @@ virJSONValueFree(virJSONValuePtr value)
     if (!value || value->protect)
         return;
 
-    switch ((virJSONType) value->type) {
+    switch ((virJSONType)value->type) {
     case VIR_JSON_TYPE_OBJECT:
         for (i = 0; i < value->data.object.npairs; i++) {
             VIR_FREE(value->data.object.pairs[i].key);
@@ -1463,7 +1463,7 @@ virJSONValueCopy(const virJSONValue *in)
     if (!in)
         return NULL;
 
-    switch ((virJSONType) in->type) {
+    switch ((virJSONType)in->type) {
     case VIR_JSON_TYPE_OBJECT:
         out = virJSONValueNewObject();
         if (!out)

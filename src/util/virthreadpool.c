@@ -443,7 +443,7 @@ virThreadPoolSetParameters(virThreadPoolPtr pool,
     }
 
     if (minWorkers >= 0) {
-        if ((size_t) minWorkers > pool->nWorkers &&
+        if ((size_t)minWorkers > pool->nWorkers &&
             virThreadPoolExpand(pool, minWorkers - pool->nWorkers,
                                 false) < 0)
             goto error;
@@ -458,7 +458,7 @@ virThreadPoolSetParameters(virThreadPoolPtr pool,
     if (prioWorkers >= 0) {
         if (prioWorkers < pool->nPrioWorkers) {
             virCondBroadcast(&pool->prioCond);
-        } else if ((size_t) prioWorkers > pool->nPrioWorkers &&
+        } else if ((size_t)prioWorkers > pool->nPrioWorkers &&
                    virThreadPoolExpand(pool, prioWorkers - pool->nPrioWorkers,
                                        true) < 0) {
             goto error;

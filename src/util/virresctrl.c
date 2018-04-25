@@ -972,7 +972,7 @@ virResctrlAllocParseProcessLine(virResctrlInfoPtr resctrl,
     int ret = -1;
 
     /* For no reason there can be spaces */
-    virSkipSpaces((const char **) &line);
+    virSkipSpaces((const char **)&line);
 
     /* Skip lines that don't concern caches, e.g. MB: etc. */
     if (line[0] != 'L')
@@ -1612,7 +1612,7 @@ virResctrlAllocAddPID(virResctrlAllocPtr alloc,
     if (virAsprintf(&tasks, "%s/tasks", alloc->path) < 0)
         return -1;
 
-    if (virAsprintf(&pidstr, "%lld", (long long int) pid) < 0)
+    if (virAsprintf(&pidstr, "%lld", (long long int)pid) < 0)
         goto cleanup;
 
     if (virFileWriteStr(tasks, pidstr, 0) < 0) {

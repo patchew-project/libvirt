@@ -198,7 +198,7 @@ virNetDevProbeVnetHdr(int tapfd)
 
     return 1;
 # else
-    (void) tapfd;
+    (void)tapfd;
     VIR_INFO("Not enabling IFF_VNET_HDR; disabled at build time");
     return 0;
 # endif

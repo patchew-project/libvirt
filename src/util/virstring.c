@@ -259,8 +259,8 @@ virStringListMerge(char ***dst,
     if (!src || !*src)
         return 0;
 
-    dst_len = virStringListLength((const char **) *dst);
-    src_len = virStringListLength((const char **) *src);
+    dst_len = virStringListLength((const char **)*dst);
+    src_len = virStringListLength((const char **)*src);
 
     if (VIR_REALLOC_N(*dst, dst_len + src_len + 1) < 0)
         return -1;
@@ -405,7 +405,7 @@ virStrToLong_i(char const *s, char **end_ptr, int base, int *result)
 
     errno = 0;
     val = strtol(s, &p, base); /* exempt from syntax-check */
-    err = (errno || (!end_ptr && *p) || p == s || (int) val != val);
+    err = (errno || (!end_ptr && *p) || p == s || (int)val != val);
     if (end_ptr)
         *end_ptr = p;
     if (err)
@@ -431,14 +431,14 @@ virStrToLong_ui(char const *s, char **end_ptr, int base, unsigned int *result)
      * UINT_MAX regardless of whether long is 32-bit or 64-bit.  But
      * strtoul treats "-1" as ULONG_MAX, and going from ulong back
      * to uint differs depending on the size of long. */
-    if (sizeof(long) > sizeof(int) && memchr(s, '-', p - s)) {
+    if (sizeof(long)> sizeof(int)&& memchr(s, '-', p - s)) {
         if (-val > UINT_MAX)
             err = true;
         else
             val &= 0xffffffff;
     }
 
-    err |= (errno || (!end_ptr && *p) || p == s || (unsigned int) val != val);
+    err |= (errno || (!end_ptr && *p) || p == s || (unsigned int)val != val);
     if (end_ptr)
         *end_ptr = p;
     if (err)
@@ -459,7 +459,7 @@ virStrToLong_uip(char const *s, char **end_ptr, int base, unsigned int *result)
     errno = 0;
     val = strtoul(s, &p, base); /* exempt from syntax-check */
     err = (memchr(s, '-', p - s) ||
-           errno || (!end_ptr && *p) || p == s || (unsigned int) val != val);
+           errno || (!end_ptr && *p) || p == s || (unsigned int)val != val);
     if (end_ptr)
         *end_ptr = p;
     if (err)
@@ -1436,7 +1436,7 @@ virStringEncodeBase64(const uint8_t *buf, size_t buflen)
 {
     char *ret;
 
-    base64_encode_alloc((const char *) buf, buflen, &ret);
+    base64_encode_alloc((const char *)buf, buflen, &ret);
     if (!ret) {
         virReportOOMError();
         return NULL;

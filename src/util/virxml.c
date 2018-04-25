@@ -81,7 +81,7 @@ virXPathString(const char *xpath,
         xmlXPathFreeObject(obj);
         return NULL;
     }
-    ignore_value(VIR_STRDUP(ret, (char *) obj->stringval));
+    ignore_value(VIR_STRDUP(ret, (char *)obj->stringval));
     xmlXPathFreeObject(obj);
     return ret;
 }
@@ -184,11 +184,11 @@ virXPathLongBase(const char *xpath,
     ctxt->node = relnode;
     if ((obj != NULL) && (obj->type == XPATH_STRING) &&
         (obj->stringval != NULL) && (obj->stringval[0] != 0)) {
-        if (virStrToLong_l((char *) obj->stringval, NULL, base, value) < 0)
+        if (virStrToLong_l((char *)obj->stringval, NULL, base, value) < 0)
             ret = -2;
     } else if ((obj != NULL) && (obj->type == XPATH_NUMBER) &&
                (!(isnan(obj->floatval)))) {
-        *value = (long) obj->floatval;
+        *value = (long)obj->floatval;
         if (*value != obj->floatval)
             ret = -2;
     } else {
@@ -222,7 +222,7 @@ virXPathInt(const char *xpath,
     ret = virXPathLongBase(xpath, ctxt, 10, &tmp);
     if (ret < 0)
         return ret;
-    if ((int) tmp != tmp)
+    if ((int)tmp != tmp)
         return -2;
     *value = tmp;
     return 0;
@@ -289,11 +289,11 @@ virXPathULongBase(const char *xpath,
     ctxt->node = relnode;
     if ((obj != NULL) && (obj->type == XPATH_STRING) &&
         (obj->stringval != NULL) && (obj->stringval[0] != 0)) {
-        if (virStrToLong_ul((char *) obj->stringval, NULL, base, value) < 0)
+        if (virStrToLong_ul((char *)obj->stringval, NULL, base, value) < 0)
             ret = -2;
     } else if ((obj != NULL) && (obj->type == XPATH_NUMBER) &&
                (!(isnan(obj->floatval)))) {
-        *value = (unsigned long) obj->floatval;
+        *value = (unsigned long)obj->floatval;
         if (*value != obj->floatval)
             ret = -2;
     } else {
@@ -327,7 +327,7 @@ virXPathUInt(const char *xpath,
     ret = virXPathULongBase(xpath, ctxt, 10, &tmp);
     if (ret < 0)
         return ret;
-    if ((unsigned int) tmp != tmp)
+    if ((unsigned int)tmp != tmp)
         return -2;
     *value = tmp;
     return 0;
@@ -405,11 +405,11 @@ virXPathULongLong(const char *xpath,
     ctxt->node = relnode;
     if ((obj != NULL) && (obj->type == XPATH_STRING) &&
         (obj->stringval != NULL) && (obj->stringval[0] != 0)) {
-        if (virStrToLong_ull((char *) obj->stringval, NULL, 10, value) < 0)
+        if (virStrToLong_ull((char *)obj->stringval, NULL, 10, value) < 0)
             ret = -2;
     } else if ((obj != NULL) && (obj->type == XPATH_NUMBER) &&
                (!(isnan(obj->floatval)))) {
-        *value = (unsigned long long) obj->floatval;
+        *value = (unsigned long long)obj->floatval;
         if (*value != obj->floatval)
             ret = -2;
     } else {
@@ -451,11 +451,11 @@ virXPathLongLong(const char *xpath,
     ctxt->node = relnode;
     if ((obj != NULL) && (obj->type == XPATH_STRING) &&
         (obj->stringval != NULL) && (obj->stringval[0] != 0)) {
-        if (virStrToLong_ll((char *) obj->stringval, NULL, 10, value) < 0)
+        if (virStrToLong_ll((char *)obj->stringval, NULL, 10, value) < 0)
             ret = -2;
     } else if ((obj != NULL) && (obj->type == XPATH_NUMBER) &&
                (!(isnan(obj->floatval)))) {
-        *value = (long long) obj->floatval;
+        *value = (long long)obj->floatval;
         if (*value != obj->floatval)
             ret = -2;
     } else {
@@ -715,7 +715,7 @@ catchXMLError(void *ctx, const char *msg ATTRIBUTE_UNUSED, ...)
         return;
 
     if (ctxt->_private)
-        domcode = ((struct virParserData *) ctxt->_private)->domcode;
+        domcode = ((struct virParserData *)ctxt->_private)->domcode;
 
 
     cur = ctxt->input->cur;
@@ -1060,7 +1060,7 @@ virXMLFindChildNodeByNs(xmlNodePtr root,
 
     for (next = root->children; next; next = next->next) {
         if (next->ns &&
-            STREQ_NULLABLE((const char *) next->ns->href, uri))
+            STREQ_NULLABLE((const char *)next->ns->href, uri))
             return next;
     }
 
@@ -1207,8 +1207,8 @@ virXMLNodeSanitizeNamespaces(xmlNodePtr node)
             dupl = NULL;
 
             if (child->ns && next->ns &&
-                STREQ_NULLABLE((const char *) child->ns->href,
-                               (const char *) next->ns->href))
+                STREQ_NULLABLE((const char *)child->ns->href,
+                               (const char *)next->ns->href))
                 dupl = next;
 
             next = next->next;

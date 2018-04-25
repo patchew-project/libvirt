@@ -660,7 +660,7 @@ virHostMemGetInfoFake(unsigned long long *mem,
             goto cleanup;
         }
 
-        *mem = (unsigned long long) total;
+        *mem = (unsigned long long)total;
     }
 
     if (freeMem) {
@@ -672,7 +672,7 @@ virHostMemGetInfoFake(unsigned long long *mem,
             goto cleanup;
         }
 
-        *freeMem = (unsigned long long) avail;
+        *freeMem = (unsigned long long)avail;
     }
 
     ret = 0;
@@ -778,7 +778,7 @@ virHostMemGetFreePages(unsigned int npages,
         goto cleanup;
     }
 
-    lastCell = MIN(lastCell, startCell + (int) cellCount - 1);
+    lastCell = MIN(lastCell, startCell + (int)cellCount - 1);
 
     for (cell = startCell; cell <= lastCell; cell++) {
         for (i = 0; i < npages; i++) {
@@ -825,7 +825,7 @@ virHostMemAllocPages(unsigned int npages,
         goto cleanup;
     }
 
-    lastCell = MIN(lastCell, startCell + (int) cellCount - 1);
+    lastCell = MIN(lastCell, startCell + (int)cellCount - 1);
 
     for (cell = startCell; cell <= lastCell; cell++) {
         for (i = 0; i < npages; i++) {

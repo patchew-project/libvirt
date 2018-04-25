@@ -196,7 +196,7 @@ virProcessAbort(pid_t pid)
             }
         }
     }
-    VIR_DEBUG("failed to reap child %lld, abandoning it", (long long) pid);
+    VIR_DEBUG("failed to reap child %lld, abandoning it", (long long)pid);
 
  cleanup:
     VIR_FREE(tmp);
@@ -242,7 +242,7 @@ virProcessWait(pid_t pid, int *exitstatus, bool raw)
     if (pid <= 0) {
         if (pid != -1)
             virReportSystemError(EINVAL, _("unable to wait for process %lld"),
-                                 (long long) pid);
+                                 (long long)pid);
         return -1;
     }
 
@@ -252,7 +252,7 @@ virProcessWait(pid_t pid, int *exitstatus, bool raw)
 
     if (ret == -1) {
         virReportSystemError(errno, _("unable to wait for process %lld"),
-                             (long long) pid);
+                             (long long)pid);
         return -1;
     }
 
@@ -274,7 +274,7 @@ virProcessWait(pid_t pid, int *exitstatus, bool raw)
         char *st = virProcessTranslateStatus(status);
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Child process (%lld) unexpected %s"),
-                       (long long) pid, NULLSTR(st));
+                       (long long)pid, NULLSTR(st));
         VIR_FREE(st);
     }
     return -1;
@@ -611,7 +611,7 @@ int virProcessGetPids(pid_t pid, size_t *npids, pid_t **pids)
     *npids = 0;
     *pids = NULL;
 
-    if (virAsprintf(&taskPath, "/proc/%llu/task", (long long) pid) < 0)
+    if (virAsprintf(&taskPath, "/proc/%llu/task", (long long)pid) < 0)
         goto cleanup;
 
     if (virDirOpen(&dir, taskPath) < 0)
@@ -659,7 +659,7 @@ int virProcessGetNamespaces(pid_t pid,
         int fd;
 
         if (virAsprintf(&nsfile, "/proc/%llu/ns/%s",
-                        (long long) pid,
+                        (long long)pid,
                         ns[i]) < 0)
             goto cleanup;
 
@@ -774,7 +774,7 @@ virProcessSetMaxMemLock(pid_t pid, unsigned long long bytes)
     }
 
     VIR_DEBUG("Locked memory for process %lld limited to %llu bytes",
-              (long long int) pid, bytes);
+              (long long int)pid, bytes);
 
     return 0;
 }
@@ -812,7 +812,7 @@ virProcessGetMaxMemLock(pid_t pid,
             virReportSystemError(errno,
                                  _("cannot get locked memory limit "
                                    "of process %lld"),
-                                 (long long int) pid);
+                                 (long long int)pid);
             return -1;
         }
     }
@@ -984,7 +984,7 @@ int virProcessGetStartTime(pid_t pid,
     int len;
     char **tokens = NULL;
 
-    if (virAsprintf(&filename, "/proc/%llu/stat", (long long) pid) < 0)
+    if (virAsprintf(&filename, "/proc/%llu/stat", (long long)pid) < 0)
         return -1;
 
     if ((len = virFileReadAll(filename, 1024, &buf)) < 0)
@@ -1067,7 +1067,7 @@ int virProcessGetStartTime(pid_t pid,
     static int warned;
     if (virAtomicIntInc(&warned) == 1) {
         VIR_WARN("Process start time of pid %lld not available on this platform",
-                 (long long) pid);
+                 (long long)pid);
     }
     *timestamp = 0;
     return 0;
@@ -1084,7 +1084,7 @@ static int virProcessNamespaceHelper(int errfd,
     int fd = -1;
     int ret = -1;
 
-    if (virAsprintf(&path, "/proc/%lld/ns/mnt", (long long) pid) < 0)
+    if (virAsprintf(&path, "/proc/%lld/ns/mnt", (long long)pid) < 0)
         goto cleanup;
 
     if ((fd = open(path, O_RDONLY)) < 0) {
@@ -1359,7 +1359,7 @@ virProcessSetScheduler(pid_t pid,
     int pol = virProcessSchedTranslatePolicy(policy);
 
     VIR_DEBUG("pid=%lld, policy=%d, priority=%u",
-              (long long) pid, policy, priority);
+              (long long)pid, policy, priority);
 
     if (!policy)
         return 0;
@@ -1402,7 +1402,7 @@ virProcessSetScheduler(pid_t pid,
     if (sched_setscheduler(pid, pol, &param) < 0) {
         virReportSystemError(errno,
                              _("Cannot set scheduler parameters for pid %lld"),
-                             (long long) pid);
+                             (long long)pid);
         return -1;
     }
 

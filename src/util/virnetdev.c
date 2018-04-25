@@ -534,7 +534,7 @@ int virNetDevSetNamespace(const char *ifname, pid_t pidInNs)
     char *phy_path = NULL;
     int len;
 
-    if (virAsprintf(&pid, "%lld", (long long) pidInNs) == -1)
+    if (virAsprintf(&pid, "%lld", (long long)pidInNs) == -1)
         return -1;
 
     /* The 802.11 wireless devices only move together with their PHY. */
@@ -3448,7 +3448,7 @@ int virNetDevSetCoalesce(const char *ifname,
     if ((fd = virNetDevSetupControl(ifname, &ifr)) < 0)
         return -1;
 
-    ifr.ifr_data = (void *) &coal;
+    ifr.ifr_data = (void *)&coal;
 
     if (virNetDevSendEthtoolIoctl(fd, &ifr) < 0) {
         virReportSystemError(errno,

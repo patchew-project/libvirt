@@ -700,7 +700,7 @@ dnsmasqCapsSetFromBuffer(dnsmasqCapsPtr caps, const char *buf)
     p = strchrnul(buf, '\n');
     virReportError(VIR_ERR_INTERNAL_ERROR,
                    _("cannot parse %s version number in '%.*s'"),
-                   caps->binaryPath, (int) (p - buf), buf);
+                   caps->binaryPath, (int)(p - buf), buf);
     return -1;
 
 }

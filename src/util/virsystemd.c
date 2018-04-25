@@ -189,7 +189,7 @@ virSystemdGetMachineNameByPID(pid_t pid)
     reply = NULL;
 
     VIR_DEBUG("Domain with pid %lld has object path '%s'",
-              (long long) pid, object);
+              (long long)pid, object);
 
     if (virDBusCallMethod(conn, &reply, NULL,
                           "org.freedesktop.machine1",
@@ -205,7 +205,7 @@ virSystemdGetMachineNameByPID(pid_t pid)
         goto cleanup;
 
     VIR_DEBUG("Domain with pid %lld has machine name '%s'",
-              (long long) pid, name);
+              (long long)pid, name);
 
  cleanup:
     VIR_FREE(object);

@@ -606,7 +606,7 @@ virObjectListFree(void *list)
     if (!list)
         return;
 
-    for (next = (void **) list; *next; next++)
+    for (next = (void **)list; *next; next++)
         virObjectUnref(*next);
 
     VIR_FREE(list);

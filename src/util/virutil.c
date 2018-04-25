@@ -86,8 +86,8 @@
 #include "virstring.h"
 #include "virutil.h"
 
-verify(sizeof(gid_t) <= sizeof(unsigned int) &&
-       sizeof(uid_t) <= sizeof(unsigned int));
+verify(sizeof(gid_t)<= sizeof(unsigned int)&&
+       sizeof(uid_t)<= sizeof(unsigned int));
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
@@ -463,7 +463,7 @@ int virEnumFromString(const char *const*types,
 /**
  * Format @val as a base-10 decimal number, in the
  * buffer @buf of size @buflen. To allocate a suitable
- * sized buffer, the INT_BUFLEN(int) macro should be
+ * sized buffer, the INT_BUFLEN(int)macro should be
  * used
  *
  * Returns pointer to start of the number in @buf
@@ -814,7 +814,7 @@ virGetUserEnt(uid_t uid, char **name, gid_t *group, char **dir, char **shell, bo
 
         virReportSystemError(rc,
                              _("Failed to find user record for uid '%u'"),
-                             (unsigned int) uid);
+                             (unsigned int)uid);
         goto cleanup;
     } else if (pw == NULL) {
         if (quiet)
@@ -822,7 +822,7 @@ virGetUserEnt(uid_t uid, char **name, gid_t *group, char **dir, char **shell, bo
 
         virReportError(VIR_ERR_SYSTEM_ERROR,
                        _("Failed to find user record for uid '%u'"),
-                       (unsigned int) uid);
+                       (unsigned int)uid);
         goto cleanup;
     }
 
@@ -883,11 +883,11 @@ static char *virGetGroupEnt(gid_t gid)
         if (rc != 0) {
             virReportSystemError(rc,
                                  _("Failed to find group record for gid '%u'"),
-                                 (unsigned int) gid);
+                                 (unsigned int)gid);
         } else {
             virReportError(VIR_ERR_SYSTEM_ERROR,
                            _("Failed to find group record for gid '%u'"),
-                           (unsigned int) gid);
+                           (unsigned int)gid);
         }
 
         VIR_FREE(strbuf);
@@ -1040,7 +1040,7 @@ virGetUserID(const char *user, uid_t *uid)
     }
 
     if (virStrToLong_ui(user, NULL, 10, &uint_uid) < 0 ||
-        ((uid_t) uint_uid) != uint_uid) {
+        ((uid_t)uint_uid) != uint_uid) {
         virReportError(VIR_ERR_INVALID_ARG, _("Failed to parse user '%s'"),
                        user);
         return -1;
@@ -1120,7 +1120,7 @@ virGetGroupID(const char *group, gid_t *gid)
     }
 
     if (virStrToLong_ui(group, NULL, 10, &uint_gid) < 0 ||
-        ((gid_t) uint_gid) != uint_gid) {
+        ((gid_t)uint_gid) != uint_gid) {
         virReportError(VIR_ERR_INVALID_ARG, _("Failed to parse group '%s'"),
                        group);
         return -1;
@@ -1194,7 +1194,7 @@ virSetUIDGID(uid_t uid, gid_t gid, gid_t *groups ATTRIBUTE_UNUSED,
     if (gid != (gid_t)-1 && setregid(gid, gid) < 0) {
         virReportSystemError(errno,
                              _("cannot change to '%u' group"),
-                             (unsigned int) gid);
+                             (unsigned int)gid);
         return -1;
     }
 
@@ -1209,7 +1209,7 @@ virSetUIDGID(uid_t uid, gid_t gid, gid_t *groups ATTRIBUTE_UNUSED,
     if (uid != (uid_t)-1 && setreuid(uid, uid) < 0) {
         virReportSystemError(errno,
                              _("cannot change to uid to '%u'"),
-                             (unsigned int) uid);
+                             (unsigned int)uid);
         return -1;
     }
 
@@ -1941,7 +1941,7 @@ virGetListenFDs(void)
 
     if ((pid_t)procid != getpid()) {
         VIR_DEBUG("LISTEN_PID %s is not for us %lld",
-                  pidstr, (long long) getpid());
+                  pidstr, (long long)getpid());
         return 0;
     }
 
@@ -2087,7 +2087,7 @@ virMemoryMaxValue(bool capped)
 {
     /* On 32-bit machines, our bound is 0xffffffff * KiB. On 64-bit
      * machines, our bound is off_t (2^63).  */
-    if (capped && sizeof(unsigned long) < sizeof(long long))
+    if (capped && sizeof(unsigned long)< sizeof(long long))
         return 1024ull * ULONG_MAX;
     else
         return LLONG_MAX;

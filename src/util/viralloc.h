@@ -35,12 +35,12 @@
    calculations, so the conservative dividend to use here is
    SIZE_MAX - 1, since SIZE_MAX might represent an overflowed value.
    However, malloc (SIZE_MAX) fails on all known hosts where
-   sizeof(ptrdiff_t) <= sizeof(size_t), so do not bother to test for
+   sizeof(ptrdiff_t)<= sizeof(size_t), so do not bother to test for
    exactly-SIZE_MAX allocations on such hosts; this avoids a test and
    branch when S is known to be 1.  */
 # ifndef xalloc_oversized
 #  define xalloc_oversized(n, s) \
-    ((size_t) (sizeof(ptrdiff_t) <= sizeof(size_t) ? -1 : -2) / (s) < (n))
+    ((size_t)(sizeof(ptrdiff_t)<= sizeof(size_t)? -1 : -2) / (s) < (n))
 # endif
 
 
@@ -551,7 +551,7 @@ void virDispose(void *ptrptr, size_t count, size_t element_size, size_t *countpt
  * integer type, all while evaluating ptr only once.  This gives us
  * extra compiler safety when compiling under gcc.
  */
-# define VIR_FREE(ptr) virFree(1 ? (void *) &(ptr) : (ptr))
+# define VIR_FREE(ptr) virFree(1 ? (void *)&(ptr) : (ptr))
 
 
 /**
@@ -564,7 +564,7 @@ void virDispose(void *ptrptr, size_t count, size_t element_size, size_t *countpt
  *
  * This macro is safe to use on arguments with side effects.
  */
-# define VIR_DISPOSE_N(ptr, count) virDispose(1 ? (void *) &(ptr) : (ptr), 0, \
+# define VIR_DISPOSE_N(ptr, count) virDispose(1 ? (void *)&(ptr) : (ptr), 0, \
                                              sizeof(*(ptr)), &(count))
 
 
@@ -576,7 +576,7 @@ void virDispose(void *ptrptr, size_t count, size_t element_size, size_t *countpt
  *
  * This macro is not safe to be used on arguments with side effects.
  */
-# define VIR_DISPOSE_STRING(ptr) virDispose(1 ? (void *) &(ptr) : (ptr), \
+# define VIR_DISPOSE_STRING(ptr) virDispose(1 ? (void *)&(ptr) : (ptr), \
                                             (ptr) ? strlen((ptr)) : 0, 1, NULL)
 
 
@@ -588,7 +588,7 @@ void virDispose(void *ptrptr, size_t count, size_t element_size, size_t *countpt
  *
  * This macro is safe to be used on arguments with side effects.
  */
-# define VIR_DISPOSE(ptr) virDispose(1 ? (void *) &(ptr) : (ptr), 1, \
+# define VIR_DISPOSE(ptr) virDispose(1 ? (void *)&(ptr) : (ptr), 1, \
                                      sizeof(*(ptr)), NULL)
 
 

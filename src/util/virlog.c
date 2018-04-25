@@ -752,7 +752,7 @@ virLogOutputToFd(virLogSourcePtr source ATTRIBUTE_UNUSED,
                  const char *str,
                  void *data)
 {
-    int fd = (intptr_t) data;
+    int fd = (intptr_t)data;
     char *msg;
 
     if (fd < 0)
@@ -772,7 +772,7 @@ virLogOutputToFd(virLogSourcePtr source ATTRIBUTE_UNUSED,
 static void
 virLogCloseFd(void *data)
 {
-    int fd = (intptr_t) data;
+    int fd = (intptr_t)data;
 
     VIR_LOG_CLOSE(fd);
 }
@@ -1008,7 +1008,7 @@ virLogOutputToJournald(virLogSourcePtr source,
 {
     virCheckFlags(VIR_LOG_STACK_TRACE,);
     int buffd = -1;
-    int journalfd = (intptr_t) data;
+    int journalfd = (intptr_t)data;
     struct msghdr mh;
     struct sockaddr_un sa;
     union {
@@ -1129,7 +1129,7 @@ virLogNewOutputToJournald(int priority)
     }
 
     if (!(ret = virLogOutputNew(virLogOutputToJournald, virLogCloseFd,
-                                (void *)(intptr_t) journalfd, priority,
+                                (void *)(intptr_t)journalfd, priority,
                                 VIR_LOG_TO_JOURNALD, NULL))) {
         VIR_LOG_CLOSE(journalfd);
         return NULL;

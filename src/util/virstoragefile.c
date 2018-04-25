@@ -3462,7 +3462,7 @@ virStorageSourceUpdatePhysicalSize(virStorageSourcePtr src,
         break;
 
     case VIR_STORAGE_TYPE_BLOCK:
-        if ((end = lseek(fd, 0, SEEK_END)) == (off_t) -1) {
+        if ((end = lseek(fd, 0, SEEK_END)) == (off_t)-1) {
             virReportSystemError(errno, _("failed to seek to end of '%s'"),
                                  src->path);
             return -1;
@@ -3768,7 +3768,7 @@ virStorageFileCanonicalizePath(const char *path,
                 goto cleanup;
             }
 
-            if (virHashAddEntry(cycle, currentpath, (void *) 1) < 0)
+            if (virHashAddEntry(cycle, currentpath, (void *)1) < 0)
                 goto cleanup;
 
             if (linkpath[0] == '/') {
@@ -4204,12 +4204,12 @@ virStorageFileInitAs(virStorageSourcePtr src,
     if (VIR_ALLOC(src->drv) < 0)
         return -1;
 
-    if (uid == (uid_t) -1)
+    if (uid == (uid_t)-1)
         src->drv->uid = geteuid();
     else
         src->drv->uid = uid;
 
-    if (gid == (gid_t) -1)
+    if (gid == (gid_t)-1)
         src->drv->gid = getegid();
     else
         src->drv->gid = gid;

@@ -461,7 +461,7 @@ virFDStreamThreadDoRead(virFDStreamDataPtr fdst,
         /* HACK: The message queue is one directional. So caller
          * cannot make us skip the hole. Do that for them instead. */
         if (sectionLen &&
-            lseek(fdin, sectionLen, SEEK_CUR) == (off_t) -1) {
+            lseek(fdin, sectionLen, SEEK_CUR) == (off_t)-1) {
             virReportSystemError(errno,
                                  _("unable to seek in %s"),
                                  fdinname);
@@ -541,7 +541,7 @@ virFDStreamThreadDoWrite(virFDStreamDataPtr fdst,
 
         got = msg->stream.hole.len;
         off = lseek(fdout, got, SEEK_CUR);
-        if (off == (off_t) -1) {
+        if (off == (off_t)-1) {
             virReportSystemError(errno,
                                  _("unable to seek in %s"),
                                  fdoutname);
@@ -1001,7 +1001,7 @@ virFDStreamSendHole(virStreamPtr st,
         }
     } else {
         off = lseek(fdst->fd, length, SEEK_CUR);
-        if (off == (off_t) -1) {
+        if (off == (off_t)-1) {
             virReportSystemError(errno, "%s",
                                  _("unable to seek"));
             goto cleanup;

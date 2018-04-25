@@ -151,7 +151,7 @@ virHostCPUGetStatsFreeBSD(int cpuNum,
         offset = cpu_times_num * CPUSTATES;
     }
 
-    cpu_times_size = sizeof(long) * cpu_times_num * CPUSTATES;
+    cpu_times_size = sizeof(long)* cpu_times_num * CPUSTATES;
 
     if (VIR_ALLOC_N(cpu_times, cpu_times_num * CPUSTATES) < 0)
         goto cleanup;

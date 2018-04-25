@@ -75,7 +75,7 @@ int virPolkitCheckAuth(const char *actionid,
         goto cleanup;
 
     VIR_INFO("Checking PID %lld running as %d",
-             (long long) pid, uid);
+             (long long)pid, uid);
 
     if (virDBusCallMethod(sysbus,
                           &reply,
@@ -179,7 +179,7 @@ virPolkitAgentCreate(void)
 
     agent->cmd = virCommandNewArgList(PKTTYAGENT, "--process", NULL);
 
-    virCommandAddArgFormat(agent->cmd, "%lld", (long long int) getpid());
+    virCommandAddArgFormat(agent->cmd, "%lld", (long long int)getpid());
     virCommandAddArg(agent->cmd, "--notify-fd");
     virCommandAddArgFormat(agent->cmd, "%d", pipe_fd[1]);
     virCommandAddArg(agent->cmd, "--fallback");

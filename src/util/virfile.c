@@ -2153,8 +2153,8 @@ virFileOpenForceOwnerMode(const char *path, int fd, mode_t mode,
         ret = -errno;
         virReportSystemError(errno,
                              _("cannot chown '%s' to (%u, %u)"),
-                             path, (unsigned int) uid,
-                             (unsigned int) gid);
+                             path, (unsigned int)uid,
+                             (unsigned int)gid);
         return ret;
     }
     if ((flags & VIR_FILE_OPEN_FORCE_MODE) &&
@@ -2360,9 +2360,9 @@ virFileOpenAs(const char *path, int openflags, mode_t mode,
     bool created = false;
 
     /* allow using -1 to mean "current value" */
-    if (uid == (uid_t) -1)
+    if (uid == (uid_t)-1)
         uid = geteuid();
-    if (gid == (gid_t) -1)
+    if (gid == (gid_t)-1)
         gid = getegid();
 
     /* treat absence of both flags as presence of both for simpler
@@ -2447,7 +2447,7 @@ virFileRemoveNeedsSetuid(const char *path, uid_t uid, gid_t gid)
         return false;
 
     /* uid/gid weren't specified */
-    if ((uid == (uid_t) -1) && (gid == (gid_t) -1))
+    if ((uid == (uid_t)-1) && (gid == (gid_t)-1))
         return false;
 
     /* already running as proper uid/gid */
@@ -2496,9 +2496,9 @@ virFileRemove(const char *path,
      * to run under the uid/gid that created the volume in order to
      * perform the unlink of the volume.
      */
-    if (uid == (uid_t) -1)
+    if (uid == (uid_t)-1)
         uid = geteuid();
-    if (gid == (gid_t) -1)
+    if (gid == (gid_t)-1)
         gid = getegid();
 
     ngroups = virGetGroupList(uid, gid, &groups);
@@ -2599,15 +2599,15 @@ virDirCreateNoFork(const char *path,
         virReportSystemError(errno, _("stat of '%s' failed"), path);
         goto error;
     }
-    if (((uid != (uid_t) -1 && st.st_uid != uid) ||
-         (gid != (gid_t) -1 && st.st_gid != gid))
+    if (((uid != (uid_t)-1 && st.st_uid != uid) ||
+         (gid != (gid_t)-1 && st.st_gid != gid))
         && (chown(path, uid, gid) < 0)) {
         ret = -errno;
         virReportSystemError(errno, _("cannot chown '%s' to (%u, %u)"),
-                             path, (unsigned int) uid, (unsigned int) gid);
+                             path, (unsigned int)uid, (unsigned int)gid);
         goto error;
     }
-    if (mode != (mode_t) -1 && chmod(path, mode) < 0) {
+    if (mode != (mode_t)-1 && chmod(path, mode) < 0) {
         ret = -errno;
         virReportSystemError(errno,
                              _("cannot set mode of '%s' to %04o"),
@@ -2667,14 +2667,14 @@ virDirCreate(const char *path,
      */
     if ((!(flags & VIR_DIR_CREATE_AS_UID))
         || (geteuid() != 0)
-        || ((uid == (uid_t) -1) && (gid == (gid_t) -1))
+        || ((uid == (uid_t)-1) && (gid == (gid_t)-1))
         || ((flags & VIR_DIR_CREATE_ALLOW_EXIST) && virFileExists(path))) {
         return virDirCreateNoFork(path, mode, uid, gid, flags);
     }
 
-    if (uid == (uid_t) -1)
+    if (uid == (uid_t)-1)
         uid = geteuid();
-    if (gid == (gid_t) -1)
+    if (gid == (gid_t)-1)
         gid = getegid();
 
     ngroups = virGetGroupList(uid, gid, &groups);
@@ -2748,15 +2748,15 @@ virDirCreate(const char *path,
         goto childerror;
     }
 
-    if ((st.st_gid != gid) && (chown(path, (uid_t) -1, gid) < 0)) {
+    if ((st.st_gid != gid) && (chown(path, (uid_t)-1, gid) < 0)) {
         ret = errno;
         virReportSystemError(errno,
                              _("cannot chown '%s' to group %u"),
-                             path, (unsigned int) gid);
+                             path, (unsigned int)gid);
         goto childerror;
     }
 
-    if (mode != (mode_t) -1 && chmod(path, mode) < 0) {
+    if (mode != (mode_t)-1 && chmod(path, mode) < 0) {
         virReportSystemError(errno,
                              _("cannot set mode of '%s' to %04o"),
                              path, mode);
@@ -3869,7 +3869,7 @@ virFileInData(int fd,
 
     /* Get current position */
     cur = lseek(fd, 0, SEEK_CUR);
-    if (cur == (off_t) -1) {
+    if (cur == (off_t)-1) {
         virReportSystemError(errno, "%s",
                              _("Unable to get current position in file"));
         goto cleanup;
@@ -3885,7 +3885,7 @@ virFileInData(int fd,
      * 4) data < 0, errno != ENXIO; we learned nothing
      */
 
-    if (data == (off_t) -1) {
+    if (data == (off_t)-1) {
         /* cases 3 and 4 */
         if (errno != ENXIO) {
             virReportSystemError(errno, "%s",
@@ -3898,7 +3898,7 @@ virFileInData(int fd,
          * implicit hole at EOF. However, there might be a
          * trailing hole just before EOF too. If that's the case
          * report it. */
-        if ((end = lseek(fd, 0, SEEK_END)) == (off_t) -1) {
+        if ((end = lseek(fd, 0, SEEK_END)) == (off_t)-1) {
             virReportSystemError(errno, "%s",
                                  _("Unable to seek to EOF"));
             goto cleanup;
@@ -3916,7 +3916,7 @@ virFileInData(int fd,
          * find out. Here we get the same 4 possibilities as
          * described above.*/
         hole = lseek(fd, data, SEEK_HOLE);
-        if (hole == (off_t) -1 || hole == data) {
+        if (hole == (off_t)-1 || hole == data) {
             /* cases 1, 3 and 4 */
             /* Wait a second. The reason why we are here is
              * because we are in data. But at the same time we
@@ -3934,8 +3934,8 @@ virFileInData(int fd,
     ret = 0;
  cleanup:
     /* At any rate, reposition back to where we started. */
-    if (cur != (off_t) -1 &&
-        lseek(fd, cur, SEEK_SET) == (off_t) -1) {
+    if (cur != (off_t)-1 &&
+        lseek(fd, cur, SEEK_SET) == (off_t)-1) {
         virReportSystemError(errno, "%s",
                              _("unable to restore position in file"));
         ret = -1;

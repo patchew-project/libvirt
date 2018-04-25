@@ -781,7 +781,7 @@ virBufferURIEncodeString(virBufferPtr buf, const char *str)
         if (c_isalnum(*p)) {
             buf->content[buf->use++] = *p;
         } else {
-            uc = (unsigned char) *p;
+            uc = (unsigned char)*p;
             buf->content[buf->use++] = '%';
             buf->content[buf->use++] = hex[uc >> 4];
             buf->content[buf->use++] = hex[uc & 0xf];

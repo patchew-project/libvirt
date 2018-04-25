@@ -127,9 +127,9 @@ static inline int pthread_sigmask(int how,
                                   const void *set,
                                   void *old)
 {
-    (void) how;
-    (void) set;
-    (void) old;
+    (void)how;
+    (void)set;
+    (void)old;
     return 0;
 }
 # endif

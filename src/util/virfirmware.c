@@ -67,9 +67,9 @@ virFirmwareParse(const char *str, virFirmwarePtr firmware)
         goto cleanup;
 
     if (token[0]) {
-        virSkipSpaces((const char **) &token[0]);
+        virSkipSpaces((const char **)&token[0]);
         if (token[1])
-            virSkipSpaces((const char **) &token[1]);
+            virSkipSpaces((const char **)&token[1]);
     }
 
     /* Exactly two tokens are expected */

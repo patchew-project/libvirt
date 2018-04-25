@@ -165,7 +165,7 @@ void virTimeFieldsThen(unsigned long long when, struct tm *fields)
 
     fields->tm_yday = days;
     ip = mon_yday[is_leap_year(y)];
-    for (y = 11; days < (long int) ip[y]; --y)
+    for (y = 11; days < (long int)ip[y]; --y)
         continue;
     days -= ip[y];
     fields->tm_mon = y;
@@ -216,7 +216,7 @@ int virTimeStringThenRaw(unsigned long long when, char *buf)
                  "%4d-%02d-%02d %02d:%02d:%02d.%03d+0000",
                  fields.tm_year, fields.tm_mon, fields.tm_mday,
                  fields.tm_hour, fields.tm_min, fields.tm_sec,
-                 (int) (when % 1000)) >= VIR_TIME_STRING_BUFLEN) {
+                 (int)(when % 1000)) >= VIR_TIME_STRING_BUFLEN) {
         errno = ERANGE;
         return -1;
     }

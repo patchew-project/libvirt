@@ -2320,7 +2320,7 @@ virCommandRun(virCommandPtr cmd, int *exitstatus)
         ret = -1;
 
     str = (exitstatus ? virProcessTranslateStatus(*exitstatus)
-           : (char *) "status 0");
+           : (char *)"status 0");
     VIR_DEBUG("Result %s, stdout: '%s' stderr: '%s'",
               NULLSTR(str),
               cmd->outbuf ? NULLSTR(*cmd->outbuf) : "(null)",
@@ -2428,7 +2428,7 @@ virCommandRunAsync(virCommandPtr cmd, pid_t *pid)
     if (cmd->pid != -1) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("command is already running as pid %lld"),
-                       (long long) cmd->pid);
+                       (long long)cmd->pid);
         goto cleanup;
     }
 

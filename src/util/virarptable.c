@@ -51,7 +51,7 @@ VIR_LOG_INIT("util.arptable");
 static int
 parse_rtattr(struct rtattr *tb[], int max, struct rtattr *rta, int len)
 {
-    memset(tb, 0, sizeof(struct rtattr *) * (max + 1));
+    memset(tb, 0, sizeof(struct rtattr *)* (max + 1));
     VIR_WARNINGS_NO_CAST_ALIGN
     for (; RTA_OK(rta, len); rta = RTA_NEXT(rta, len)) {
         VIR_WARNINGS_RESET

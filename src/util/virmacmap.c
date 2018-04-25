@@ -98,7 +98,7 @@ virMacMapAddLocked(virMacMapPtr mgr,
         goto cleanup;
     }
 
-    if (!(newMacsList = virStringListAdd((const char **) macsList, mac)) ||
+    if (!(newMacsList = virStringListAdd((const char **)macsList, mac)) ||
         virHashUpdateEntry(mgr->macs, domain, newMacsList) < 0)
         goto cleanup;
     newMacsList = NULL;

@@ -141,8 +141,8 @@ sexpr_cons(const struct sexpr *car, const struct sexpr *cdr)
     if (ret == NULL)
         return ret;
     ret->kind = SEXPR_CONS;
-    ret->u.s.car = (struct sexpr *) car;
-    ret->u.s.cdr = (struct sexpr *) cdr;
+    ret->u.s.car = (struct sexpr *)car;
+    ret->u.s.cdr = (struct sexpr *)cdr;
 
     return ret;
 }
@@ -166,7 +166,7 @@ append(struct sexpr *lst, const struct sexpr *value)
         lst = lst->u.s.cdr;
 
     lst->kind = SEXPR_CONS;
-    lst->u.s.car = (struct sexpr *) value;
+    lst->u.s.car = (struct sexpr *)value;
     lst->u.s.cdr = nil;
 
     return 0;
@@ -421,7 +421,7 @@ sexpr_lookup_key(const struct sexpr *sexpr, const char *node)
     if (token != NULL)
         goto cleanup;
 
-    result = (struct sexpr *) sexpr;
+    result = (struct sexpr *)sexpr;
 
  cleanup:
     VIR_FREE(buffer);

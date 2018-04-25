@@ -562,7 +562,7 @@ virSysinfoParseS390Processor(const char *base, virSysinfoDefPtr ret)
     }
 
     /* now, for each processor found, extract the frequency information */
-    tmp_base = (char *) base;
+    tmp_base = (char *)base;
 
     while ((tmp_base = strstr(tmp_base, "cpu number")) &&
            (tmp_base = virSysinfoParseS390Line(tmp_base, "cpu number", &ncpu))) {
