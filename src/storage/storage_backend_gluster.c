@@ -350,7 +350,7 @@ virStorageBackendGlusterRefreshPool(virStoragePoolObjPtr pool)
     struct {
         struct dirent ent;
         /* See comment below about readdir_r needing padding */
-        char padding[MAX(1, 256 - (int) (sizeof(struct dirent)
+        char padding[MAX(1, 256 - (int)(sizeof(struct dirent)
                                          - offsetof(struct dirent, d_name)))];
     } de;
     struct dirent *ent;
@@ -431,7 +431,7 @@ virStorageBackendGlusterVolDelete(virStoragePoolObjPtr pool,
 
     virCheckFlags(0, -1);
 
-    switch ((virStorageVolType) vol->type) {
+    switch ((virStorageVolType)vol->type) {
     case VIR_STORAGE_VOL_FILE:
     case VIR_STORAGE_VOL_DIR:
     case VIR_STORAGE_VOL_BLOCK:
@@ -731,7 +731,7 @@ virStorageFileBackendGlusterRead(virStorageSourcePtr src,
     }
 
     if (offset > 0) {
-        if (glfs_lseek(fd, offset, SEEK_SET) == (off_t) -1) {
+        if (glfs_lseek(fd, offset, SEEK_SET) == (off_t)-1) {
             virReportSystemError(errno, _("cannot seek into '%s'"), src->path);
             goto cleanup;
         }

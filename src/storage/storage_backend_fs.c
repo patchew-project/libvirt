@@ -798,7 +798,7 @@ virStorageFileBackendFileRead(virStorageSourcePtr src,
     }
 
     if (offset > 0) {
-        if (lseek(fd, offset, SEEK_SET) == (off_t) -1) {
+        if (lseek(fd, offset, SEEK_SET) == (off_t)-1) {
             virReportSystemError(errno, _("cannot seek into '%s'"), src->path);
             goto cleanup;
         }
