@@ -1719,7 +1719,7 @@ virDomainGetUUIDString(virDomainPtr domain, char *buf)
  *
  * Get the hypervisor ID number for the domain
  *
- * Returns the domain ID number or (unsigned int) -1 in case of error
+ * Returns the domain ID number or (unsigned int)-1 in case of error
  */
 unsigned int
 virDomainGetID(virDomainPtr domain)
@@ -1799,7 +1799,7 @@ virDomainGetMaxMemory(virDomainPtr domain)
         ret = conn->driver->domainGetMaxMemory(domain);
         if (ret == 0)
             goto error;
-        if ((unsigned long) ret != ret) {
+        if ((unsigned long)ret != ret) {
             virReportError(VIR_ERR_OVERFLOW, _("result too large: %llu"),
                            ret);
             goto error;

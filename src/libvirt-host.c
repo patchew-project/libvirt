@@ -1348,7 +1348,7 @@ virNodeGetCPUMap(virConnectPtr conn,
  *   int startcell = 0;
  *   unsigned int cellcount = 2;
  *
- *   unsigned long long counts = malloc(sizeof(long long) * npages * cellcount);
+ *   unsigned long long counts = malloc(sizeof(long long)* npages * cellcount);
  *
  *   virNodeGetFreePages(conn, pages, npages,
  *                       startcell, cellcount, counts, 0);

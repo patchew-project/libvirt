@@ -659,7 +659,7 @@ virStreamSendAll(virStreamPtr stream,
  *   int myskip(virStreamPtr st, long long offset, void *opaque) {
  *       int *fd = opaque;
  *
- *       return lseek(*fd, offset, SEEK_CUR) == (off_t) -1 ? -1 : 0;
+ *       return lseek(*fd, offset, SEEK_CUR) == (off_t)-1 ? -1 : 0;
  *   }
  *
  *   int myindata(virStreamPtr st, int *inData,
@@ -938,7 +938,7 @@ virStreamRecvAll(virStreamPtr stream,
  *   int myskip(virStreamPtr st, long long offset, void *opaque) {
  *       int *fd = opaque;
  *
- *       return lseek(*fd, offset, SEEK_CUR) == (off_t) -1 ? -1 : 0;
+ *       return lseek(*fd, offset, SEEK_CUR) == (off_t)-1 ? -1 : 0;
  *   }
  *
  *   virStreamPtr st = virStreamNew(conn, 0);

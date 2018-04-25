@@ -215,7 +215,7 @@ virDomainLxcEnterSecurityLabel(virSecurityModelPtr model,
                 goto error;
             }
 
-            if (strlen((char *) ctx) >= VIR_SECURITY_LABEL_BUFLEN) {
+            if (strlen((char *)ctx) >= VIR_SECURITY_LABEL_BUFLEN) {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
                                _("security label exceeds "
                                  "maximum length: %d"),
@@ -224,7 +224,7 @@ virDomainLxcEnterSecurityLabel(virSecurityModelPtr model,
                 goto error;
             }
 
-            strcpy(oldlabel->label, (char *) ctx);
+            strcpy(oldlabel->label, (char *)ctx);
             freecon(ctx);
 
             if ((oldlabel->enforcing = security_getenforce()) < 0) {

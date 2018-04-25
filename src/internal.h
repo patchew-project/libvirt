@@ -496,8 +496,8 @@
 /* Round up to the next closest power of 2. It will return rounded number or 0
  * for 0 or number more than 2^31 (for 32bit unsigned int). */
 # define VIR_ROUND_UP_POWER_OF_TWO(value) \
-    ((value) > 0 && (value) <= 1U << (sizeof(unsigned int) * 8 - 1) ? \
-     1U << (sizeof(unsigned int) * 8 - count_leading_zeros((value) - 1)) : 0)
+    ((value) > 0 && (value) <= 1U << (sizeof(unsigned int)* 8 - 1) ? \
+     1U << (sizeof(unsigned int)* 8 - count_leading_zeros((value) - 1)) : 0)
 
 
 /* Specific error values for use in forwarding programs such as
