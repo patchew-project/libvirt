@@ -36,12 +36,8 @@ enum howDetect {
 };
 
 int virNWFilterLearnIPAddress(virNWFilterTechDriverPtr techdriver,
-                              const char *ifname,
+                              virNWFilterBindingPtr binding,
                               int ifindex,
-                              const char *linkdev,
-                              const virMacAddr *macaddr,
-                              const char *filtername,
-                              virHashTablePtr filterparams,
                               virNWFilterDriverStatePtr driver,
                               enum howDetect howDetect);
 
