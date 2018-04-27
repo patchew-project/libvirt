@@ -600,6 +600,8 @@ mymain(void)
     DO_TEST("pseries-many-buses-2",
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
             QEMU_CAPS_VIRTIO_SCSI);
+
+# ifdef __linux__
     DO_TEST("pseries-hostdevs-1",
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
             QEMU_CAPS_VIRTIO_SCSI,
@@ -612,6 +614,7 @@ mymain(void)
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
             QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_DEVICE_VFIO_PCI);
+# endif /* __linux__ */
 
     DO_TEST("pseries-features",
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
