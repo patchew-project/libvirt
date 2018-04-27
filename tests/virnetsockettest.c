@@ -470,9 +470,19 @@ mymain(void)
         if (virTestRun("Socket TCP/IPv4+IPv6 Accept", testSocketTCPAccept, &tcpData) < 0)
             ret = -1;
 
+        /* From FreeBSD's inet6(4):
+         *
+         *   By default, FreeBSD does not route IPv4 traffic to AF_INET6
+         *   sockets.  The default behavior intentionally violates RFC2553
+         *   for security reasons.  Listen to two sockets if you want to
+         *   accept both IPv4 and IPv6 traffic.
+         *
+         * So this test will never work on FreeBSD, and need to skip it. */
+# ifndef __FreeBSD__
         tcpData.cnode = "::1";
         if (virTestRun("Socket TCP/IPv4+IPv6 Accept", testSocketTCPAccept, &tcpData) < 0)
             ret = -1;
+# endif /* __FreeBSD__ */
     }
 #endif
 
