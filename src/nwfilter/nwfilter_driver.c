@@ -163,6 +163,13 @@ nwfilterDriverInstallDBusMatches(DBusConnection *sysbus ATTRIBUTE_UNUSED)
 
 #endif /* HAVE_FIREWALLD */
 
+static void virNWFilterBindingDataFree(void *payload, const void *name ATTRIBUTE_UNUSED)
+{
+    virNWFilterBindingPtr binding = payload;
+
+    virNWFilterBindingFree(binding);
+}
+
 /**
  * nwfilterStateInitialize:
  *
@@ -188,6 +195,10 @@ nwfilterStateInitialize(bool privileged,
 
     driver->privileged = privileged;
     if (!(driver->nwfilters = virNWFilterObjListNew()))
+        goto error;
+
+    if (!(driver->bindings = virHashCreate(0,
+                                           virNWFilterBindingDataFree)))
         goto error;
 
     if (!privileged)
@@ -334,6 +345,8 @@ nwfilterStateCleanup(void)
         VIR_FREE(driver->configDir);
         nwfilterDriverUnlock();
     }
+
+    virHashFree(driver->bindings);
 
     /* free inactive nwfilters */
     virNWFilterObjListFree(driver->nwfilters);
@@ -649,10 +662,28 @@ nwfilterInstantiateFilter(const char *vmname,
     virNWFilterBindingPtr binding;
     int ret;
 
-    if (!(binding = virNWFilterBindingForNet(vmname, vmuuid, net)))
+    nwfilterDriverLock();
+    binding = virHashLookup(driver->bindings, net->ifname);
+    if (binding) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Filter already present for NIC %s"), net->ifname);
+        nwfilterDriverUnlock();
         return -1;
+    }
+    if (!(binding = virNWFilterBindingForNet(vmname, vmuuid, net))) {
+        nwfilterDriverUnlock();
+        return -1;
+    }
+    virHashAddEntry(driver->bindings, net->ifname, binding);
+    nwfilterDriverUnlock();
+
     ret = virNWFilterInstantiateFilter(driver, binding);
-    virNWFilterBindingFree(binding);
+
+    if (ret < 0) {
+        nwfilterDriverLock();
+        virHashRemoveEntry(driver->bindings, net->ifname);
+        nwfilterDriverUnlock();
+    }
     return ret;
 }
 
@@ -660,16 +691,18 @@ nwfilterInstantiateFilter(const char *vmname,
 static void
 nwfilterTeardownFilter(virDomainNetDefPtr net)
 {
-    virNWFilterBinding binding = {
-        .portdevname = net->ifname,
-        .linkdevname = (net->type == VIR_DOMAIN_NET_TYPE_DIRECT ?
-                        net->data.direct.linkdev : NULL),
-        .mac = net->mac,
-        .filter = net->filter,
-        .filterparams = net->filterparams,
-    };
-    if ((net->ifname) && (net->filter))
-        virNWFilterTeardownFilter(&binding);
+    virNWFilterBindingPtr binding;
+    if (!net->ifname)
+        return;
+
+    nwfilterDriverLock();
+    binding = virHashSteal(driver->bindings, net->ifname);
+    nwfilterDriverUnlock();
+    if (!binding)
+        return;
+
+    virNWFilterTeardownFilter(binding);
+    virNWFilterBindingFree(binding);
 }
 
 

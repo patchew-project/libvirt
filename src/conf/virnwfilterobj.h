@@ -37,6 +37,9 @@ struct _virNWFilterDriverState {
 
     virNWFilterObjListPtr nwfilters;
 
+    /* ifname -> virNWFilterBindingPtr */
+    virHashTablePtr bindings;
+
     char *configDir;
 };
 
