@@ -120,12 +120,18 @@ mymain(void)
 
     DO_TEST("pc-hardlimit", 2147483648);
     DO_TEST("pc-locked", VIR_DOMAIN_MEMORY_PARAM_UNLIMITED);
+
+#  ifdef __linux__
     DO_TEST("pc-hostdev", 2147483648);
+#  endif /* __linux */
 
     DO_TEST("pc-hardlimit+locked", 2147483648);
+
+#  ifdef __linux__
     DO_TEST("pc-hardlimit+hostdev", 2147483648);
     DO_TEST("pc-hardlimit+locked+hostdev", 2147483648);
     DO_TEST("pc-locked+hostdev", VIR_DOMAIN_MEMORY_PARAM_UNLIMITED);
+#  endif /* __linux */
 
     qemuTestSetHostArch(driver.caps, VIR_ARCH_PPC64);
     if (!(qemuCaps = virQEMUCapsNew())) {
@@ -144,12 +150,18 @@ mymain(void)
 
     DO_TEST("pseries-hardlimit", 2147483648);
     DO_TEST("pseries-locked", VIR_DOMAIN_MEMORY_PARAM_UNLIMITED);
+
+#  ifdef __linux__
     DO_TEST("pseries-hostdev", 4320133120);
+#  endif /* __linux */
 
     DO_TEST("pseries-hardlimit+locked", 2147483648);
+
+#  ifdef __linux__
     DO_TEST("pseries-hardlimit+hostdev", 2147483648);
     DO_TEST("pseries-hardlimit+locked+hostdev", 2147483648);
     DO_TEST("pseries-locked+hostdev", VIR_DOMAIN_MEMORY_PARAM_UNLIMITED);
+#  endif /* __linux */
 
  cleanup:
     virObjectUnref(qemuCaps);
