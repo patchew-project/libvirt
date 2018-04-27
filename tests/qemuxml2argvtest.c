@@ -926,6 +926,8 @@ mymain(void)
     DO_TEST("pmu-feature-off", NONE);
 
     DO_TEST("hugepages", NONE);
+
+# ifdef __linux__
     DO_TEST("hugepages-numa",
             QEMU_CAPS_PIIX_DISABLE_S3, QEMU_CAPS_PIIX_DISABLE_S4,
             QEMU_CAPS_VIRTIO_SCSI,
@@ -935,6 +937,8 @@ mymain(void)
             QEMU_CAPS_HDA_DUPLEX, QEMU_CAPS_USB_REDIR,
             QEMU_CAPS_DEVICE_PC_DIMM,
             QEMU_CAPS_OBJECT_MEMORY_FILE);
+# endif /* __linux__ */
+
     DO_TEST_LINUX("hugepages-pages",
                   QEMU_CAPS_OBJECT_MEMORY_RAM,
                   QEMU_CAPS_OBJECT_MEMORY_FILE);
@@ -950,6 +954,8 @@ mymain(void)
             QEMU_CAPS_OBJECT_MEMORY_RAM, QEMU_CAPS_OBJECT_MEMORY_FILE);
     DO_TEST("hugepages-pages5", NONE);
     DO_TEST("hugepages-pages6", NONE);
+
+# ifdef __linux__
     DO_TEST("hugepages-pages7",
             QEMU_CAPS_DEVICE_PC_DIMM, QEMU_CAPS_OBJECT_MEMORY_FILE);
     DO_TEST("hugepages-memaccess", QEMU_CAPS_OBJECT_MEMORY_FILE,
@@ -958,6 +964,8 @@ mymain(void)
     DO_TEST("hugepages-memaccess2", QEMU_CAPS_OBJECT_MEMORY_FILE,
             QEMU_CAPS_OBJECT_MEMORY_RAM, QEMU_CAPS_DEVICE_PC_DIMM,
             QEMU_CAPS_NUMA);
+# endif /* __linux __ */
+
     DO_TEST_FAILURE("hugepages-memaccess3",
             QEMU_CAPS_OBJECT_MEMORY_RAM, QEMU_CAPS_OBJECT_MEMORY_FILE,
             QEMU_CAPS_VIRTIO_SCSI);
@@ -1673,8 +1681,12 @@ mymain(void)
     DO_TEST("numatune-distances", QEMU_CAPS_NUMA, QEMU_CAPS_NUMA_DIST);
 
     DO_TEST("numatune-auto-nodeset-invalid", NONE);
+
+# ifdef __linux__
     DO_TEST("numatune-auto-prefer", QEMU_CAPS_OBJECT_MEMORY_RAM,
             QEMU_CAPS_OBJECT_MEMORY_FILE);
+# endif /* __linux__ */
+
     DO_TEST_FAILURE("numatune-static-nodeset-exceed-hostnode",
                     QEMU_CAPS_OBJECT_MEMORY_RAM);
     DO_TEST_PARSE_ERROR("numatune-memnode-nocpu", NONE);
@@ -1781,11 +1793,15 @@ mymain(void)
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE);
     DO_TEST("pseries-phb-default-missing",
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE);
+
+# ifdef __linux__
     DO_TEST("pseries-phb-numa-node",
             QEMU_CAPS_NUMA,
             QEMU_CAPS_OBJECT_MEMORY_RAM,
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
             QEMU_CAPS_SPAPR_PCI_HOST_BRIDGE_NUMA_NODE);
+# endif /* __linux __ */
+
     DO_TEST_PARSE_ERROR("pseries-default-phb-numa-node", NONE);
     DO_TEST_PARSE_ERROR("pseries-phb-invalid-target-index-1", NONE);
     DO_TEST_PARSE_ERROR("pseries-phb-invalid-target-index-2", NONE);
@@ -1800,6 +1816,8 @@ mymain(void)
     DO_TEST("pseries-many-buses-2",
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
             QEMU_CAPS_VIRTIO_SCSI);
+
+# ifdef __linux__
     DO_TEST("pseries-hostdevs-1",
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
             QEMU_CAPS_VIRTIO_SCSI,
@@ -1812,6 +1830,7 @@ mymain(void)
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
             QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_DEVICE_VFIO_PCI);
+# endif /* __linux__ */
 
     DO_TEST("pseries-features",
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
@@ -2563,10 +2582,14 @@ mymain(void)
     DO_TEST_FAILURE("memory-hotplug-nonuma", QEMU_CAPS_DEVICE_PC_DIMM);
     DO_TEST("memory-hotplug", NONE);
     DO_TEST("memory-hotplug", QEMU_CAPS_DEVICE_PC_DIMM, QEMU_CAPS_NUMA);
+
+# ifdef __linux__
     DO_TEST("memory-hotplug-dimm", QEMU_CAPS_DEVICE_PC_DIMM, QEMU_CAPS_NUMA,
             QEMU_CAPS_OBJECT_MEMORY_RAM, QEMU_CAPS_OBJECT_MEMORY_FILE);
     DO_TEST("memory-hotplug-dimm-addr", QEMU_CAPS_DEVICE_PC_DIMM, QEMU_CAPS_NUMA,
             QEMU_CAPS_OBJECT_MEMORY_RAM, QEMU_CAPS_OBJECT_MEMORY_FILE);
+# endif /* __linux__ */
+
     DO_TEST("memory-hotplug-ppc64-nonuma", QEMU_CAPS_KVM, QEMU_CAPS_DEVICE_PC_DIMM, QEMU_CAPS_NUMA,
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
             QEMU_CAPS_OBJECT_MEMORY_RAM, QEMU_CAPS_OBJECT_MEMORY_FILE);
