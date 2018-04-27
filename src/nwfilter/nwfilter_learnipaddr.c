@@ -133,6 +133,23 @@ struct _virNWFilterIfaceLock {
     int refctr;
 };
 
+typedef struct _virNWFilterIPAddrLearnReq virNWFilterIPAddrLearnReq;
+typedef virNWFilterIPAddrLearnReq *virNWFilterIPAddrLearnReqPtr;
+struct _virNWFilterIPAddrLearnReq {
+    virNWFilterTechDriverPtr techdriver;
+    char ifname[IF_NAMESIZE];
+    int ifindex;
+    char linkdev[IF_NAMESIZE];
+    virMacAddr macaddr;
+    char *filtername;
+    virHashTablePtr filterparams;
+    virNWFilterDriverStatePtr driver;
+    enum howDetect howDetect;
+
+    int status;
+    volatile bool terminate;
+};
+
 
 static bool threadsTerminate;
 
@@ -279,8 +296,8 @@ virNWFilterTerminateLearnReq(const char *ifname)
 }
 
 
-virNWFilterIPAddrLearnReqPtr
-virNWFilterLookupLearnReq(int ifindex)
+bool
+virNWFilterHasLearnReq(int ifindex)
 {
     void *res;
     IFINDEX2STR(ifindex_str, ifindex);
@@ -291,7 +308,7 @@ virNWFilterLookupLearnReq(int ifindex)
 
     virMutexUnlock(&pendingLearnReqLock);
 
-    return res;
+    return res != NULL;
 }
 
 
