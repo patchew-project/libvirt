@@ -37,30 +37,26 @@ enum instCase {
     INSTANTIATE_FOLLOW_NEWFILTER,
 };
 
-
 int virNWFilterInstantiateFilter(virNWFilterDriverStatePtr driver,
-                                 const unsigned char *vmuuid,
-                                 const virDomainNetDef *net);
+                                 virNWFilterBindingPtr binding);
 int virNWFilterUpdateInstantiateFilter(virNWFilterDriverStatePtr driver,
-                                       const unsigned char *vmuuid,
-                                       const virDomainNetDef *net,
+                                       virNWFilterBindingPtr binding,
                                        bool *skipIface);
 
 int virNWFilterInstantiateFilterLate(virNWFilterDriverStatePtr driver,
-                                     const unsigned char *vmuuid,
-                                     const char *ifname,
-                                     int ifindex,
-                                     const char *linkdev,
-                                     const virMacAddr *macaddr,
-                                     const char *filtername,
-                                     virHashTablePtr filterparams);
+                                     virNWFilterBindingPtr binding,
+                                     int ifindex);
 
-int virNWFilterTeardownFilter(const virDomainNetDef *net);
+int virNWFilterTeardownFilter(virNWFilterBindingPtr binding);
 
 virHashTablePtr virNWFilterCreateVarHashmap(const char *macaddr,
                                        const virNWFilterVarValue *value);
 
 int virNWFilterDomainFWUpdateCB(virDomainObjPtr vm,
                                 void *data);
+
+virNWFilterBindingPtr virNWFilterBindingForNet(const char *vmname,
+                                               const unsigned char *vmuuid,
+                                               virDomainNetDefPtr net);
 
 #endif

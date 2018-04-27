@@ -642,19 +642,34 @@ nwfilterGetXMLDesc(virNWFilterPtr nwfilter,
 
 
 static int
-nwfilterInstantiateFilter(const char *vmname ATTRIBUTE_UNUSED,
+nwfilterInstantiateFilter(const char *vmname,
                           const unsigned char *vmuuid,
                           virDomainNetDefPtr net)
 {
-    return virNWFilterInstantiateFilter(driver, vmuuid, net);
+    virNWFilterBindingPtr binding;
+    int ret;
+
+    if (!(binding = virNWFilterBindingForNet(vmname, vmuuid, net)))
+        return -1;
+    ret = virNWFilterInstantiateFilter(driver, binding);
+    virNWFilterBindingFree(binding);
+    return ret;
 }
 
 
 static void
 nwfilterTeardownFilter(virDomainNetDefPtr net)
 {
+    virNWFilterBinding binding = {
+        .portdevname = net->ifname,
+        .linkdevname = (net->type == VIR_DOMAIN_NET_TYPE_DIRECT ?
+                        net->data.direct.linkdev : NULL),
+        .mac = net->mac,
+        .filter = net->filter,
+        .filterparams = net->filterparams,
+    };
     if ((net->ifname) && (net->filter))
-        virNWFilterTeardownFilter(net);
+        virNWFilterTeardownFilter(&binding);
 }
 
 
