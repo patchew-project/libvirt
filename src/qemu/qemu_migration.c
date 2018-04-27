@@ -3552,6 +3552,7 @@ qemuMigrationSrcRun(virQEMUDriverPtr driver,
     orig_err = virSaveLastError();
 
     if (cancel &&
+        priv->job.current &&
         priv->job.current->status != QEMU_DOMAIN_JOB_STATUS_QEMU_COMPLETED &&
         virDomainObjIsActive(vm) &&
         qemuDomainObjEnterMonitorAsync(driver, vm,
@@ -3569,7 +3570,8 @@ qemuMigrationSrcRun(virQEMUDriverPtr driver,
     if (iothread)
         qemuMigrationSrcStopTunnel(iothread, true);
 
-    if (priv->job.current->status != QEMU_DOMAIN_JOB_STATUS_CANCELED)
+    if (priv->job.current &&
+        priv->job.current->status != QEMU_DOMAIN_JOB_STATUS_CANCELED)
         priv->job.current->status = QEMU_DOMAIN_JOB_STATUS_FAILED;
 
     goto cleanup;
