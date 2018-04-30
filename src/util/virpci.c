@@ -2622,7 +2622,7 @@ virPCIGetDeviceAddressFromSysfsLink(const char *device_link)
         return NULL;
     }
 
-    device_path = canonicalize_file_name(device_link);
+    device_path = realpath(device_link, NULL);
     if (device_path == NULL) {
         virReportSystemError(errno,
                              _("Failed to resolve device link '%s'"),

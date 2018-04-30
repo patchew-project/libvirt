@@ -171,7 +171,7 @@ testPrepImages(void)
         fprintf(stderr, "unable to create directory %s\n", datadir "/dir");
         goto cleanup;
     }
-    if (!(canondir = canonicalize_file_name(absdir))) {
+    if (!(canondir = realpath(absdir, NULL))) {
         virReportOOMError();
         goto cleanup;
     }
@@ -186,7 +186,7 @@ testPrepImages(void)
         fprintf(stderr, "unable to create raw file\n");
         goto cleanup;
     }
-    if (!(canonraw = canonicalize_file_name(absraw))) {
+    if (!(canonraw = realpath(absraw, NULL))) {
         virReportOOMError();
         goto cleanup;
     }
@@ -206,7 +206,7 @@ testPrepImages(void)
                                "-F", "raw", "-b", "raw", "qcow2", NULL);
     if (virCommandRun(cmd, NULL) < 0)
         goto skip;
-    if (!(canonqcow2 = canonicalize_file_name(absqcow2))) {
+    if (!(canonqcow2 = realpath(absqcow2, NULL))) {
         virReportOOMError();
         goto cleanup;
     }
@@ -220,7 +220,7 @@ testPrepImages(void)
     virCommandAddArg(cmd, "wrap");
     if (virCommandRun(cmd, NULL) < 0)
         goto skip;
-    if (!(canonwrap = canonicalize_file_name(abswrap))) {
+    if (!(canonwrap = realpath(abswrap, NULL))) {
         virReportOOMError();
         goto cleanup;
     }
@@ -233,7 +233,7 @@ testPrepImages(void)
     virCommandAddArg(cmd, "qed");
     if (virCommandRun(cmd, NULL) < 0)
         goto skip;
-    if (!(canonqed = canonicalize_file_name(absqed))) {
+    if (!(canonqed = realpath(absqed, NULL))) {
         virReportOOMError();
         goto cleanup;
     }
