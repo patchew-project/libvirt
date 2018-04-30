@@ -302,4 +302,17 @@
         } \
     } while (0)
 
+# define VIR_MOCK_REAL_INIT_VERSIONED(name, version) \
+    do { \
+        if (real_##name == NULL && \
+            !(real_##name = dlvsym(RTLD_NEXT, \
+                                   #name, \
+                                   version))) { \
+            fprintf(stderr, "Missing symbol '%s@%s'\n", \
+                            #name, \
+                            version); \
+            abort(); \
+        } \
+    } while (0)
+
 #endif /* __VIR_MOCK_H__ */
