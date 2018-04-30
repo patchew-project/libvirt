@@ -994,11 +994,11 @@ open(const char *path, int flags, ...)
 
     if (flags & O_CREAT) {
         va_list ap;
-        mode_t mode;
+        int mode;
         va_start(ap, flags);
-        mode = va_arg(ap, mode_t);
+        mode = va_arg(ap, int);
         va_end(ap);
-        ret = real_open(newpath ? newpath : path, flags, mode);
+        ret = real_open(newpath ? newpath : path, flags, (mode_t) mode);
     } else {
         ret = real_open(newpath ? newpath : path, flags);
     }
