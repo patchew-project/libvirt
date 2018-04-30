@@ -43,6 +43,7 @@ static char *(*real_canonicalize_file_name)(const char *path);
 static int (*real_open)(const char *path, int flags, ...);
 static int (*real_close)(int fd);
 static DIR * (*real_opendir)(const char *name);
+static char *(*real_realpath)(const char *path, char *resolved);
 
 /* Don't make static, since it causes problems with clang
  * when passed as an arg to virAsprintf()
@@ -814,6 +815,20 @@ init_syms(void)
     VIR_MOCK_REAL_INIT(open);
     VIR_MOCK_REAL_INIT(close);
     VIR_MOCK_REAL_INIT(opendir);
+
+    /* When linking on Linux, the default implementation of realpath() is
+     * realpath@GLIBC_2.3; when using dlsym(), however, we get the older
+     * realpath@GLIBC_2.2.5 instead, which unfortunately doesn't support
+     * passing NULL as the second parameter.
+     *
+     * Ask for a versioned symbol to make sure we get a working realpath()
+     * on Linux; other operating systems such as FreeBSD don't suffer from
+     * the same limitation and can rely on the default dlsym() behavior */
+# ifdef __linux__
+    VIR_MOCK_REAL_INIT_VERSIONED(realpath, "GLIBC_2.3");
+# else
+    VIR_MOCK_REAL_INIT(realpath);
+# endif
 }
 
 static void
@@ -1045,6 +1060,25 @@ close(int fd)
     if (remove_fd(fd) < 0)
         return -1;
     return real_close(fd);
+}
+
+char *
+realpath(const char *path, char *resolved)
+{
+    char *ret;
+
+    init_syms();
+
+    if (STRPREFIX(path, SYSFS_PCI_PREFIX)) {
+        char *newpath;
+        if (getrealpath(&newpath, path) < 0)
+            return NULL;
+        ret = real_realpath(newpath, resolved);
+        VIR_FREE(newpath);
+    } else {
+        ret = real_realpath(path, resolved);
+    }
+    return ret;
 }
 #else
 /* Nothing to override on non-__linux__ platforms */
