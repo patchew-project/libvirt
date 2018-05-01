@@ -487,7 +487,7 @@ VALGRIND = valgrind --quiet --leak-check=full --trace-children=yes \
 	--trace-children-skip="*/tools/virsh","*/tests/commandhelper" \
 	--suppressions=$(srcdir)/.valgrind.supp
 valgrind:
-	$(MAKE) check VG="libtool --mode=execute $(VALGRIND)"
+	$(MAKE) check VG="$(top_srcdir)/libtool --mode=execute $(VALGRIND)"
 
 sockettest_SOURCES = \
 	sockettest.c \
