@@ -7988,6 +7988,7 @@ qemuBuildGraphicsCommandLine(virQEMUDriverConfigPtr cfg,
                              virQEMUCapsPtr qemuCaps,
                              virDomainGraphicsDefPtr graphics)
 {
+    virBuffer opt = VIR_BUFFER_INITIALIZER;
     switch (graphics->type) {
     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
         if (graphics->data.sdl.xauth)
@@ -8008,6 +8009,24 @@ qemuBuildGraphicsCommandLine(virQEMUDriverConfigPtr cfg,
          * SDL graphics. This is better than relying on the
          * default, since the default changes :-( */
         virCommandAddArg(cmd, "-sdl");
+
+        if (graphics->data.sdl.gl == VIR_TRISTATE_BOOL_YES) {
+            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SDL_GL)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("This QEMU doesn't support SDL OpenGL"));
+                return -1;
+
+            }
+
+            virBufferAsprintf(&opt, "gl=%s",
+                              virTristateSwitchTypeToString(graphics->data.sdl.gl));
+        }
+
+        {
+            const char *optContent = virBufferCurrentContent(&opt);
+            if (optContent && STRNEQ(optContent, ""))
+                virCommandAddArgBuffer(cmd, &opt);
+        }
 
         break;
 

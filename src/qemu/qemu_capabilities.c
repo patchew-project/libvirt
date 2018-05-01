@@ -474,6 +474,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "query-cpus-fast",
               "disk-write-cache",
               "nbd-tls",
+              "sdl-gl",
     );
 
 
@@ -2451,6 +2452,7 @@ static struct virQEMUCapsCommandLineProps virQEMUCapsCommandLine[] = {
     { "vnc", "vnc", QEMU_CAPS_VNC_MULTI_SERVERS },
     { "chardev", "reconnect", QEMU_CAPS_CHARDEV_RECONNECT },
     { "sandbox", "elevateprivileges", QEMU_CAPS_SECCOMP_BLACKLIST },
+    { "sdl", "gl", QEMU_CAPS_SDL_GL },
 };
 
 static int

@@ -13448,6 +13448,7 @@ static int
 virDomainGraphicsDefParseXMLSDL(virDomainGraphicsDefPtr def,
                                 xmlNodePtr node)
 {
+    xmlNodePtr cur;
     char *fullscreen = virXMLPropString(node, "fullscreen");
     int ret = -1;
 
@@ -13467,6 +13468,34 @@ virDomainGraphicsDefParseXMLSDL(virDomainGraphicsDefPtr def,
 
     def->data.sdl.xauth = virXMLPropString(node, "xauth");
     def->data.sdl.display = virXMLPropString(node, "display");
+
+    cur = node->children;
+    while (cur != NULL) {
+        if (cur->type == XML_ELEMENT_NODE) {
+            if (virXMLNodeNameEqual(cur, "gl")) {
+                char *enable = virXMLPropString(cur, "enable");
+                int enableVal;
+
+                if (!enable) {
+                    virReportError(VIR_ERR_XML_ERROR, "%s",
+                                   _("sdl gl element missing enable"));
+                    goto cleanup;
+                }
+
+                enableVal = virTristateBoolTypeFromString(enable);
+                if (enableVal < 0) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("unknown enable value '%s'"), enable);
+                    VIR_FREE(enable);
+                    goto cleanup;
+                }
+                VIR_FREE(enable);
+
+                def->data.sdl.gl = enableVal;
+            }
+        }
+        cur = cur->next;
+    }
 
     ret = 0;
  cleanup:
@@ -25651,6 +25680,18 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
                                   def->data.sdl.xauth);
         if (def->data.sdl.fullscreen)
             virBufferAddLit(buf, " fullscreen='yes'");
+
+        if (!children && def->data.sdl.gl) {
+            virBufferAddLit(buf, ">\n");
+            virBufferAdjustIndent(buf, 2);
+            children = true;
+        }
+
+        if (def->data.sdl.gl) {
+            virBufferAsprintf(buf, "<gl enable='%s'",
+                              virTristateBoolTypeToString(def->data.sdl.gl));
+            virBufferAddLit(buf, "/>\n");
+        }
 
         break;
 

@@ -3031,6 +3031,14 @@
               <ref name="virYesNo"/>
             </attribute>
           </optional>
+          <optional>
+            <element name="gl">
+              <attribute name="enable">
+                <ref name="virYesNo"/>
+              </attribute>
+              <empty/>
+            </element>
+          </optional>
         </group>
         <group>
           <attribute name="type">
