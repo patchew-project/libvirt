@@ -133,12 +133,12 @@ checkPath(const char *path)
         virAsprintfQuiet(&relPath, "./%s", path) < 0)
         goto error;
 
-    /* Le sigh. Both canonicalize_file_name() and realpath()
+    /* Le sigh. Both anonicalize_file_name() and realpath()
      * expect @path to exist otherwise they return an error. So
      * if we are called over an non-existent file, this could
      * return an error. In that case do our best and hope we will
      * catch possible error. */
-    if ((fullPath = canonicalize_file_name(relPath ? relPath : path))) {
+    if ((fullPath = virFileCanonicalizePath(relPath ? relPath : path))) {
         path = fullPath;
     } else {
         /* Yeah, our worst nightmares just became true. Path does
@@ -148,7 +148,7 @@ checkPath(const char *path)
 
         virFileRemoveLastComponent(crippledPath);
 
-        if ((fullPath = canonicalize_file_name(crippledPath)))
+        if ((fullPath = virFileCanonicalizePath(crippledPath)))
             path = fullPath;
     }
 
