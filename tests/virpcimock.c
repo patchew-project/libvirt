@@ -20,19 +20,18 @@
 
 #include <config.h>
 
-#ifdef __linux__
-# include "virmock.h"
-# include <stdio.h>
-# include <stdlib.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <sys/stat.h>
-# include <stdarg.h>
-# include <dirent.h>
-# include "viralloc.h"
-# include "virstring.h"
-# include "virfile.h"
-# include "dirname.h"
+#include "virmock.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <stdarg.h>
+#include <dirent.h>
+#include "viralloc.h"
+#include "virstring.h"
+#include "virfile.h"
+#include "dirname.h"
 
 static int (*real_access)(const char *path, int mode);
 static int (*real_lstat)(const char *path, struct stat *sb);
@@ -51,20 +50,20 @@ static char *(*real_virFileCanonicalizePath)(const char *path);
 char *fakerootdir;
 char *fakesysfspcidir;
 
-# define SYSFS_PCI_PREFIX "/sys/bus/pci/"
+#define SYSFS_PCI_PREFIX "/sys/bus/pci/"
 
-# define STDERR(...) \
+#define STDERR(...) \
     fprintf(stderr, "%s %zu: ", __FUNCTION__, (size_t) __LINE__); \
     fprintf(stderr, __VA_ARGS__); \
     fprintf(stderr, "\n"); \
 
-# define ABORT(...) \
+#define ABORT(...) \
     do { \
         STDERR(__VA_ARGS__); \
         abort(); \
     } while (0)
 
-# define ABORT_OOM() \
+#define ABORT_OOM() \
     ABORT("Out of memory")
 /*
  * The plan:
@@ -341,6 +340,7 @@ pci_device_new_from_stub(const struct pciDevice *data)
     char *configSrc;
     char tmp[256];
     struct stat sb;
+    bool configSrcExists = false;
 
     if (VIR_STRDUP_QUIET(id, data->id) < 0)
         ABORT_OOM();
@@ -368,10 +368,18 @@ pci_device_new_from_stub(const struct pciDevice *data)
     if (virFileMakePath(devpath) < 0)
         ABORT("Unable to create: %s", devpath);
 
+    if (real_stat && real_stat(configSrc, &sb) == 0)
+        configSrcExists = true;
+
+#ifdef HAVE___XSTAT
+    if (!configSrcExists &&
+        real___xstat && real___xstat(_STAT_VER, configSrc, &sb) == 0)
+        configSrcExists = true;
+#endif
+
     /* If there is a config file for the device within virpcitestdata dir,
      * symlink it. Otherwise create a dummy config file. */
-    if ((real_stat && real_stat(configSrc, &sb) == 0) ||
-        (real___xstat && real___xstat(_STAT_VER, configSrc, &sb) == 0)) {
+    if (configSrcExists) {
         /* On success, copy @configSrc into the destination (a copy,
          * rather than a symlink, is required since we write into the
          * file, and parallel VPATH builds must not stomp on the
@@ -834,7 +842,7 @@ init_env(void)
 
     make_file(fakesysfspcidir, "drivers_probe", NULL, -1);
 
-# define MAKE_PCI_DRIVER(name, ...) \
+#define MAKE_PCI_DRIVER(name, ...) \
     pci_driver_new(name, 0, __VA_ARGS__, -1, -1)
 
     MAKE_PCI_DRIVER("iwlwifi", 0x8086, 0x0044);
@@ -842,7 +850,7 @@ init_env(void)
     MAKE_PCI_DRIVER("pci-stub", -1, -1);
     pci_driver_new("vfio-pci", PCI_ACTION_BIND, -1, -1);
 
-# define MAKE_PCI_DEVICE(Id, Vendor, Device, ...) \
+#define MAKE_PCI_DEVICE(Id, Vendor, Device, ...) \
     do { \
         struct pciDevice dev = {.id = (char *)Id, .vendor = Vendor, \
                                 .device = Device, __VA_ARGS__}; \
@@ -891,6 +899,7 @@ access(const char *path, int mode)
     return ret;
 }
 
+#ifdef HAVE___LXSTAT
 int
 __lxstat(int ver, const char *path, struct stat *sb)
 {
@@ -909,6 +918,7 @@ __lxstat(int ver, const char *path, struct stat *sb)
     }
     return ret;
 }
+#endif /* HAVE___LXSTAT */
 
 int
 lstat(const char *path, struct stat *sb)
@@ -929,6 +939,7 @@ lstat(const char *path, struct stat *sb)
     return ret;
 }
 
+#ifdef HAVE___XSTAT
 int
 __xstat(int ver, const char *path, struct stat *sb)
 {
@@ -947,6 +958,7 @@ __xstat(int ver, const char *path, struct stat *sb)
     }
     return ret;
 }
+#endif /* HAVE___XSTAT */
 
 int
 stat(const char *path, struct stat *sb)
@@ -1049,6 +1061,3 @@ virFileCanonicalizePath(const char *path)
 
     return ret;
 }
-#else
-/* Nothing to override on non-__linux__ platforms */
-#endif
