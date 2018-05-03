@@ -6870,9 +6870,6 @@ qemuBuildCpuCommandLine(virCommandPtr cmd,
     if (cpu) {
         virCommandAddArg(cmd, "-cpu");
         virCommandAddArgFormat(cmd, "%s%s", cpu, cpu_flags ? cpu_flags : "");
-
-        if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_NESTING) && hasHwVirt)
-            virCommandAddArg(cmd, "-enable-nesting");
     }
 
     ret = 0;
