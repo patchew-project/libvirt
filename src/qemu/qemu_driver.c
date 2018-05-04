@@ -19804,15 +19804,20 @@ qemuDomainGetStatsInterface(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
     struct _virDomainInterfaceStats tmp;
     int ret = -1;
 
-    if (!virDomainObjIsActive(dom))
-        return 0;
-
     QEMU_ADD_COUNT_PARAM(record, maxparams, "net", dom->def->nnets);
 
     /* Check the path is one of the domain's network interfaces. */
     for (i = 0; i < dom->def->nnets; i++) {
         virDomainNetDefPtr net = dom->def->nets[i];
         virDomainNetType actualType;
+
+        QEMU_ADD_NAME_PARAM(record, maxparams,
+                            "net", "type", i, virDomainNetTypeToString(net->type));
+        QEMU_ADD_NAME_PARAM(record, maxparams,
+                            "net", "source", i, net->data.bridge.brname);
+
+        if (!virDomainObjIsActive(dom))
+            return 0;
 
         if (!net->ifname)
             continue;
@@ -19823,10 +19828,6 @@ qemuDomainGetStatsInterface(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
 
         QEMU_ADD_NAME_PARAM(record, maxparams,
                             "net", "name", i, net->ifname);
-        QEMU_ADD_NAME_PARAM(record, maxparams,
-                            "net", "type", i, virDomainNetTypeToString(net->type));
-        QEMU_ADD_NAME_PARAM(record, maxparams,
-                            "net", "source", i, net->data.bridge.brname);
 
         if (actualType == VIR_DOMAIN_NET_TYPE_VHOSTUSER) {
             if (virNetDevOpenvswitchInterfaceStats(net->ifname, &tmp) < 0) {
