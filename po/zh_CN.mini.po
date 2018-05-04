@@ -15340,7 +15340,7 @@ msgid "entry was missing 'type'"
 msgstr "条目缺少 'type' "
 
 msgid "enumerate devices on this host"
-msgstr "这台主机中中的枚举设备"
+msgstr "这台主机中的枚举设备"
 
 msgid "error"
 msgstr "错误"
