@@ -344,6 +344,9 @@ void                    virResetLastError       (void);
 void                    virResetError           (virErrorPtr err);
 void                    virFreeError            (virErrorPtr err);
 
+int                     virHasLastError         (void);
+int                     virGetLastErrorCode     (void);
+int                     virGetLastErrorDomain   (void);
 const char *            virGetLastErrorMessage  (void);
 
 virErrorPtr             virConnGetLastError     (virConnectPtr conn);
