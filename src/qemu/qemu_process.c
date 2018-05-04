@@ -558,7 +558,7 @@ qemuProcessFakeReboot(void *opaque)
     if (qemuProcessStartCPUs(driver, vm,
                              reason,
                              QEMU_ASYNC_JOB_NONE) < 0) {
-        if (virGetLastError() == NULL)
+        if (!virHasLastError())
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            "%s", _("resume operation failed"));
         goto endjob;

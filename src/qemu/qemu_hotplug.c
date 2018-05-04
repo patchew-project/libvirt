@@ -212,7 +212,7 @@ qemuHotplugWaitForTrayEject(virQEMUDriverPtr driver,
         if (rc > 0) {
             /* the caller called qemuMonitorEjectMedia which usually reports an
              * error. Report the failure in an off-chance that it didn't. */
-            if (!virGetLastError()) {
+            if (!virHasLastError()) {
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                                _("timed out waiting for disk tray status update"));
             }

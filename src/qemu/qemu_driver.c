@@ -1929,7 +1929,7 @@ static int qemuDomainResume(virDomainPtr dom)
         if (qemuProcessStartCPUs(driver, vm,
                                  VIR_DOMAIN_RUNNING_UNPAUSED,
                                  QEMU_ASYNC_JOB_NONE) < 0) {
-            if (virGetLastError() == NULL)
+            if (!virHasLastError())
                 virReportError(VIR_ERR_OPERATION_FAILED,
                                "%s", _("resume operation failed"));
             goto endjob;
@@ -3209,7 +3209,7 @@ qemuFileWrapperFDClose(virDomainObjPtr vm,
     ret = virFileWrapperFdClose(fd);
     virObjectLock(vm);
     if (!virDomainObjIsActive(vm)) {
-        if (!virGetLastError())
+        if (!virHasLastError())
             virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                            _("domain is no longer running"));
         ret = -1;
@@ -3991,7 +3991,7 @@ qemuDomainCoreDumpWithFormat(virDomainPtr dom,
                 event = virDomainEventLifecycleNewFromObj(vm,
                                                           VIR_DOMAIN_EVENT_SUSPENDED,
                                                           VIR_DOMAIN_EVENT_SUSPENDED_API_ERROR);
-                if (virGetLastError() == NULL)
+                if (!virHasLastError())
                     virReportError(VIR_ERR_OPERATION_FAILED,
                                    "%s", _("resuming after dump failed"));
             }
@@ -6638,7 +6638,7 @@ qemuDomainSaveImageStartVM(virConnectPtr conn,
         if (qemuProcessStartCPUs(driver, vm,
                                  VIR_DOMAIN_RUNNING_RESTORED,
                                  asyncJob) < 0) {
-            if (virGetLastError() == NULL)
+            if (!virHasLastError())
                 virReportError(VIR_ERR_OPERATION_FAILED,
                                "%s", _("failed to resume domain"));
             goto cleanup;
@@ -14084,7 +14084,7 @@ qemuDomainSnapshotCreateActiveInternal(virQEMUDriverPtr driver,
         event = virDomainEventLifecycleNewFromObj(vm,
                                          VIR_DOMAIN_EVENT_SUSPENDED,
                                          VIR_DOMAIN_EVENT_SUSPENDED_API_ERROR);
-        if (virGetLastError() == NULL) {
+        if (!virHasLastError()) {
             virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                            _("resuming after snapshot failed"));
         }
@@ -15048,7 +15048,7 @@ qemuDomainSnapshotCreateActiveExternal(virQEMUDriverPtr driver,
                                          VIR_DOMAIN_EVENT_SUSPENDED,
                                          VIR_DOMAIN_EVENT_SUSPENDED_API_ERROR);
         qemuDomainEventQueue(driver, event);
-        if (virGetLastError() == NULL) {
+        if (!virHasLastError()) {
             virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                            _("resuming after snapshot failed"));
         }
