@@ -11310,6 +11310,8 @@ virConnectGetDomainCapabilities(virConnectPtr conn,
  *     "net.count" - number of network interfaces on this domain
  *                   as unsigned int.
  *     "net.<num>.name" - name of the interface <num> as string.
+ *     "net.<num>.type" - type of the interface <num> as string.
+ *     "net.<num>.source" - source of the interface <num> as string.
  *     "net.<num>.rx.bytes" - bytes received as unsigned long long.
  *     "net.<num>.rx.pkts" - packets received as unsigned long long.
  *     "net.<num>.rx.errs" - receive errors as unsigned long long.

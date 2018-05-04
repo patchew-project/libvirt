@@ -974,6 +974,8 @@ I<--interface> returns:
 
  "net.count" - number of network interfaces on this domain
  "net.<num>.name" - name of the interface <num>
+ "net.<num>.type" - type of the interface <num>
+ "net.<num>.source" - source of the interface <num>
  "net.<num>.rx.bytes" - number of bytes received
  "net.<num>.rx.pkts" - number of packets received
  "net.<num>.rx.errs" - number of receive errors

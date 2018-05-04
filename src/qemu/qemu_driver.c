@@ -19823,6 +19823,10 @@ qemuDomainGetStatsInterface(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
 
         QEMU_ADD_NAME_PARAM(record, maxparams,
                             "net", "name", i, net->ifname);
+        QEMU_ADD_NAME_PARAM(record, maxparams,
+                            "net", "type", i, virDomainNetTypeToString(net->type));
+        QEMU_ADD_NAME_PARAM(record, maxparams,
+                            "net", "source", i, net->data.bridge.brname);
 
         if (actualType == VIR_DOMAIN_NET_TYPE_VHOSTUSER) {
             if (virNetDevOpenvswitchInterfaceStats(net->ifname, &tmp) < 0) {
