@@ -1297,7 +1297,6 @@ static void virLXCControllerConsoleIO(int watch, int fd, int events, void *opaqu
  */
 static int virLXCControllerMain(virLXCControllerPtr ctrl)
 {
-    virErrorPtr err;
     int rc = -1;
     size_t i;
 
@@ -1349,8 +1348,7 @@ static int virLXCControllerMain(virLXCControllerPtr ctrl)
 
     virNetDaemonRun(ctrl->daemon);
 
-    err = virGetLastError();
-    if (!err || err->code == VIR_ERR_OK)
+    if (!virGetLastErrorCode())
         rc = wantReboot ? 1 : 0;
 
  cleanup:
