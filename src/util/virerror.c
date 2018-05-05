@@ -272,6 +272,48 @@ virGetLastError(void)
 
 
 /**
+ * virGetLastErrorCode:
+ *
+ * Get the most recent error code
+ *
+ * The error object is kept in thread local storage, so separate
+ * threads can safely access this concurrently.
+ *
+ * Returns the most recent error code in this thread,
+ * or VIR_ERR_OK if none is set
+ */
+int
+virGetLastErrorCode(void)
+{
+    virErrorPtr err = virLastErrorObject();
+    if (!err)
+        return VIR_ERR_OK;
+    return err->code;
+}
+
+
+/**
+ * virGetLastErrorDomain:
+ *
+ * Get the most recent error domain
+ *
+ * The error object is kept in thread local storage, so separate
+ * threads can safely access this concurrently.
+ *
+ * Returns the most recent error code in this thread,
+ * or VIR_FROM_NONE if none is set
+ */
+int
+virGetLastErrorDomain(void)
+{
+    virErrorPtr err = virLastErrorObject();
+    if (!err)
+        return VIR_FROM_NONE;
+    return err->domain;
+}
+
+
+/**
  * virGetLastErrorMessage:
  *
  * Get the most recent error message
