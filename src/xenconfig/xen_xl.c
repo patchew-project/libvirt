@@ -17,7 +17,7 @@
  * License along with this library.  If not, see
  * <http://www.gnu.org/licenses/>.
  *
- * Author: Kiarie Kahurani <davidkiarie4@gmail.com>
+ * Author: Oneko <kawaiii.nekomata@mail.com>
  * Author: Jim Fehlig <jfehlig@suse.com>
  */
 
