@@ -461,6 +461,10 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     QEMU_CAPS_DEVICE_TPM_CRB, /* -device tpm-crb */
     QEMU_CAPS_CCW, /* -device virtual-css-bridge */
 
+    /* 295 */
+    QEMU_CAPS_CCW_CSSID_UNRESTRICTED, /* virtual-css-bridge.cssid-unrestricted= */
+    QEMU_CAPS_DEVICE_VFIO_CCW, /* -device vfio-ccw */
+
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
 
