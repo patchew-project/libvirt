@@ -13335,10 +13335,6 @@ static const vshCmdInfo info_event[] = {
 static const vshCmdOptDef opts_event[] = {
     VIRSH_COMMON_OPT_DOMAIN_OT_STRING(N_("filter by domain name, id or uuid"),
                                       0),
-    {.name = "event",
-     .type = VSH_OT_STRING,
-     .help = N_("which event type to wait for")
-    },
     {.name = "all",
      .type = VSH_OT_BOOL,
      .help = N_("wait for all events instead of just one type")
@@ -13359,6 +13355,10 @@ static const vshCmdOptDef opts_event[] = {
      .type = VSH_OT_BOOL,
      .help = N_("show timestamp for each printed event")
     },
+    {.name = "event",
+     .type = VSH_OT_ARGV,
+     .help = N_("which event type to wait for")
+    },
     {.name = NULL}
 };
 
@@ -13368,58 +13368,64 @@ cmdEvent(vshControl *ctl, const vshCmd *cmd)
     virDomainPtr dom = NULL;
     bool ret = false;
     int timeout = 0;
-    virshDomEventData *data = NULL;
+    virshDomEventData *dataList = NULL;
     size_t i;
-    const char *eventName = NULL;
-    int event = -1;
+    int *eventIdxList = NULL;
+    size_t nevents = 0;
+    int eventid = -1;
     bool all = vshCommandOptBool(cmd, "all");
     bool loop = vshCommandOptBool(cmd, "loop");
     bool timestamp = vshCommandOptBool(cmd, "timestamp");
+    bool event = vshCommandOptBool(cmd, "event");
     int count = 0;
+    const vshCmdOpt *opt = NULL;
     virshControlPtr priv = ctl->privData;
 
     if (vshCommandOptBool(cmd, "list")) {
-        for (event = 0; event < VIR_DOMAIN_EVENT_ID_LAST; event++)
-            vshPrint(ctl, "%s\n", vshEventCallbacks[event].name);
+        for (eventid = 0; eventid < VIR_DOMAIN_EVENT_ID_LAST; eventid++)
+            vshPrint(ctl, "%s\n", vshEventCallbacks[eventid].name);
         return true;
     }
 
-    if (vshCommandOptStringReq(ctl, cmd, "event", &eventName) < 0)
-        return false;
-    if (eventName) {
-        for (event = 0; event < VIR_DOMAIN_EVENT_ID_LAST; event++)
-            if (STREQ(eventName, vshEventCallbacks[event].name))
-                break;
-        if (event == VIR_DOMAIN_EVENT_ID_LAST) {
-            vshError(ctl, _("unknown event type %s"), eventName);
-            return false;
+    if (event) {
+        while ((opt = vshCommandOptArgv(ctl, cmd, opt))) {
+            if (opt->data) {
+                for (eventid = 0; eventid < VIR_DOMAIN_EVENT_ID_LAST; eventid++)
+                    if (STREQ(opt->data, vshEventCallbacks[eventid].name))
+                        break;
+                if (eventid == VIR_DOMAIN_EVENT_ID_LAST) {
+                    vshError(ctl, _("unknown event type %s"), opt->data);
+                    goto cleanup;
+                }
+                size_t n = nevents;
+                virshDomEventData data;
+                data.ctl = ctl;
+                data.loop = loop;
+                data.count = &count;
+                data.timestamp = timestamp;
+                data.cb = &vshEventCallbacks[eventid];
+                data.id = -1;
+                if (VIR_APPEND_ELEMENT(dataList, nevents, data) < 0)
+                    goto cleanup;
+                if (VIR_APPEND_ELEMENT(eventIdxList, n, eventid) < 0)
+                    goto cleanup;
+            }
         }
-    } else if (!all) {
+    } else if (all) {
+        if (VIR_ALLOC_N(dataList, VIR_DOMAIN_EVENT_ID_LAST) < 0)
+            goto cleanup;
+        for (i = 0; i < VIR_DOMAIN_EVENT_ID_LAST; i++) {
+            dataList[i].ctl = ctl;
+            dataList[i].loop = loop;
+            dataList[i].count = &count;
+            dataList[i].timestamp = timestamp;
+            dataList[i].cb = &vshEventCallbacks[i];
+            dataList[i].id = -1;
+        }
+    } else {
         vshError(ctl, "%s",
                  _("one of --list, --all, or --event <type> is required"));
         return false;
-    }
-
-    if (all) {
-        if (VIR_ALLOC_N(data, VIR_DOMAIN_EVENT_ID_LAST) < 0)
-            goto cleanup;
-        for (i = 0; i < VIR_DOMAIN_EVENT_ID_LAST; i++) {
-            data[i].ctl = ctl;
-            data[i].loop = loop;
-            data[i].count = &count;
-            data[i].timestamp = timestamp;
-            data[i].cb = &vshEventCallbacks[i];
-            data[i].id = -1;
-        }
-    } else {
-        if (VIR_ALLOC_N(data, 1) < 0)
-            goto cleanup;
-        data[0].ctl = ctl;
-        data[0].loop = vshCommandOptBool(cmd, "loop");
-        data[0].count = &count;
-        data[0].timestamp = timestamp;
-        data[0].cb = &vshEventCallbacks[event];
-        data[0].id = -1;
     }
     if (vshCommandOptTimeoutToMs(ctl, cmd, &timeout) < 0)
         goto cleanup;
@@ -13431,11 +13437,11 @@ cmdEvent(vshControl *ctl, const vshCmd *cmd)
     if (vshEventStart(ctl, timeout) < 0)
         goto cleanup;
 
-    for (i = 0; i < (all ? VIR_DOMAIN_EVENT_ID_LAST : 1); i++) {
-        if ((data[i].id = virConnectDomainEventRegisterAny(priv->conn, dom,
-                                                           all ? i : event,
-                                                           data[i].cb->cb,
-                                                           &data[i],
+    for (i = 0; i < (event ? nevents : VIR_DOMAIN_EVENT_ID_LAST); i++) {
+        if ((dataList[i].id = virConnectDomainEventRegisterAny(priv->conn, dom,
+                                                           event ? eventIdxList[i] : i,
+                                                           dataList[i].cb->cb,
+                                                           &dataList[i],
                                                            NULL)) < 0) {
             /* When registering for all events: if the first
              * registration succeeds, silently ignore failures on all
@@ -13465,14 +13471,15 @@ cmdEvent(vshControl *ctl, const vshCmd *cmd)
 
  cleanup:
     vshEventCleanup(ctl);
-    if (data) {
-        for (i = 0; i < (all ? VIR_DOMAIN_EVENT_ID_LAST : 1); i++) {
-            if (data[i].id >= 0 &&
-                virConnectDomainEventDeregisterAny(priv->conn, data[i].id) < 0)
+    if (dataList) {
+        for (i = 0; i < (event ? nevents : VIR_DOMAIN_EVENT_ID_LAST); i++) {
+            if (dataList[i].id >= 0 &&
+                virConnectDomainEventDeregisterAny(priv->conn, dataList[i].id) < 0)
                 ret = false;
         }
-        VIR_FREE(data);
+        VIR_FREE(dataList);
     }
+    VIR_FREE(eventIdxList);
     virshDomainFree(dom);
     return ret;
 }
