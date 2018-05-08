@@ -1,3 +1,4 @@
 [gitpublishprofile "default"]
 base = master
 to = libvir-list@redhat.com
+cccmd = build-aux/get_maintainer.pl --noroles --norolestats --nogit --nogit-fallback 2>/dev/null
