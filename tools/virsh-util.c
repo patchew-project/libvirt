@@ -285,3 +285,63 @@ virshDomainGetXML(vshControl *ctl,
 
     return ret;
 }
+
+
+const char *
+virshDomainEventGetName(int event)
+{
+    switch ((int)event) {
+    case VIR_DOMAIN_EVENT_ID_LIFECYCLE:
+        return "lifecycle";
+    case VIR_DOMAIN_EVENT_ID_REBOOT:
+        return "reboot";
+    case VIR_DOMAIN_EVENT_ID_RTC_CHANGE:
+        return "rtc-change";
+    case VIR_DOMAIN_EVENT_ID_WATCHDOG:
+        return "watchdog";
+    case VIR_DOMAIN_EVENT_ID_IO_ERROR:
+        return "io-error";
+    case VIR_DOMAIN_EVENT_ID_GRAPHICS:
+        return "graphics";
+    case VIR_DOMAIN_EVENT_ID_IO_ERROR_REASON:
+        return "io-error-reason";
+    case VIR_DOMAIN_EVENT_ID_CONTROL_ERROR:
+        return "control-error";
+    case VIR_DOMAIN_EVENT_ID_BLOCK_JOB:
+        return "block-job";
+    case VIR_DOMAIN_EVENT_ID_DISK_CHANGE:
+        return "disk-change";
+    case VIR_DOMAIN_EVENT_ID_TRAY_CHANGE:
+        return "tray-change";
+    case VIR_DOMAIN_EVENT_ID_PMWAKEUP:
+        return "pm-wakeup";
+    case VIR_DOMAIN_EVENT_ID_PMSUSPEND:
+        return "pm-suspend";
+    case VIR_DOMAIN_EVENT_ID_BALLOON_CHANGE:
+        return "balloon-change";
+    case VIR_DOMAIN_EVENT_ID_PMSUSPEND_DISK:
+        return "pm-suspend-disk";
+    case VIR_DOMAIN_EVENT_ID_DEVICE_REMOVED:
+        return "device-removed";
+    case VIR_DOMAIN_EVENT_ID_BLOCK_JOB_2:
+        return "block-job-2";
+    case VIR_DOMAIN_EVENT_ID_TUNABLE:
+        return "tunable";
+    case VIR_DOMAIN_EVENT_ID_AGENT_LIFECYCLE:
+        return "agent-lifecycle";
+    case VIR_DOMAIN_EVENT_ID_DEVICE_ADDED:
+        return "device-added";
+    case VIR_DOMAIN_EVENT_ID_MIGRATION_ITERATION:
+        return "migration-iteration";
+    case VIR_DOMAIN_EVENT_ID_JOB_COMPLETED:
+        return "job-completed";
+    case VIR_DOMAIN_EVENT_ID_DEVICE_REMOVAL_FAILED:
+        return "device-removal-failed";
+    case VIR_DOMAIN_EVENT_ID_METADATA_CHANGE:
+        return "metadata-change";
+    case VIR_DOMAIN_EVENT_ID_BLOCK_THRESHOLD:
+        return "block-threshold";
+    default:
+        return NULL;
+    }
+}

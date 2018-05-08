@@ -104,4 +104,7 @@ virshDomainGetXML(vshControl *ctl,
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(4)
     ATTRIBUTE_NONNULL(5) ATTRIBUTE_RETURN_CHECK;
 
+const char *
+virshDomainEventGetName(int event);
+
 #endif /* VIRSH_UTIL_H */
