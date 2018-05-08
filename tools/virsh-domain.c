@@ -13357,6 +13357,7 @@ static const vshCmdOptDef opts_event[] = {
     },
     {.name = "event",
      .type = VSH_OT_ARGV,
+     .completer = virshEventNameCompleter,
      .help = N_("which event type to wait for")
     },
     {.name = NULL}

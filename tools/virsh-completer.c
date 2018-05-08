@@ -522,3 +522,40 @@ virshSnapshotNameCompleter(vshControl *ctl,
     virshDomainFree(dom);
     return NULL;
 }
+
+
+char **
+virshEventNameCompleter(vshControl *ctl,
+                        const vshCmd *cmd ATTRIBUTE_UNUSED,
+                        unsigned int flags)
+{
+    virshControlPtr priv = ctl->privData;
+    size_t i = 0;
+    char **ret = NULL;
+
+    virCheckFlags(0, NULL);
+
+    if (!priv->conn || virConnectIsAlive(priv->conn) <= 0)
+        return NULL;
+
+    if (VIR_ALLOC_N(ret, VIR_DOMAIN_EVENT_ID_LAST + 1) < 0)
+        goto error;
+
+    for (i = 0; i < VIR_DOMAIN_EVENT_ID_LAST; i++) {
+        const char *name = virshDomainEventGetName(i);
+
+        if (name == NULL)
+            goto error;
+
+        if (VIR_STRDUP(ret[i], name) < 0)
+            goto error;
+    }
+
+    return ret;
+
+ error:
+    for (i = 0; i < VIR_DOMAIN_EVENT_ID_LAST; i++)
+        VIR_FREE(ret[i]);
+    VIR_FREE(ret);
+    return NULL;
+}
