@@ -3458,6 +3458,7 @@ cmdComplete(vshControl *ctl, const vshCmd *cmd)
     const vshCmdOpt *opt = NULL;
     char **matches = NULL, **iter;
     virBuffer buf = VIR_BUFFER_INITIALIZER;
+    int n;
 
     if (vshCommandOptStringQuiet(ctl, cmd, "string", &arg) <= 0)
         goto cleanup;
@@ -3493,8 +3494,11 @@ cmdComplete(vshControl *ctl, const vshCmd *cmd)
     if (!(matches = vshReadlineCompletion(arg, 0, 0)))
         goto cleanup;
 
-    for (iter = matches; *iter; iter++)
+    for (n = 0, iter = matches; *iter; iter++, n++) {
+        if (n == 0 && matches[1])
+            continue;
         printf("%s\n", *iter);
+    }
 
     ret = true;
  cleanup:
