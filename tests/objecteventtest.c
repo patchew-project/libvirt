@@ -472,6 +472,325 @@ testDomainStartStopEvent(const void *data)
     return ret;
 }
 
+
+typedef struct {
+    int count_boot_order;
+    int count_os_boot;
+    char *bootdeviceIdentifier;
+    char *kernel;
+    char *initrd;
+    char *cmdline;
+} bootConfiguration;
+
+
+static void
+bootConfigurationFree(bootConfiguration *conf)
+{
+    if (!conf)
+        return;
+
+    VIR_FREE(conf->bootdeviceIdentifier);
+    VIR_FREE(conf->kernel);
+    VIR_FREE(conf->initrd);
+    VIR_FREE(conf->cmdline);
+    VIR_FREE(conf);
+}
+
+
+static bool
+bootConfigurationEqual(bootConfiguration *a,
+                       bootConfiguration *b)
+{
+    if (!a || !b)
+        return a == b;
+
+    return a->count_boot_order == b->count_boot_order &&
+        a->count_os_boot == b->count_os_boot &&
+        STREQ_NULLABLE(a->bootdeviceIdentifier, b->bootdeviceIdentifier) &&
+        STREQ_NULLABLE(a->kernel, b->kernel) &&
+        STREQ_NULLABLE(a->initrd, b->initrd) &&
+        STREQ_NULLABLE(a->cmdline, b->cmdline);
+}
+
+
+/* Caller must free() the returned value */
+static bootConfiguration*
+getBootConfiguration(virDomainPtr dom)
+{
+   bootConfiguration* ret;
+   char *xml = NULL;
+   xmlDocPtr doc = NULL;
+   xmlXPathContextPtr ctxt = NULL;
+   xmlNodePtr node = NULL;
+
+   if (VIR_ALLOC(ret) < 0)
+       return NULL;
+
+    if (!(xml = virDomainGetXMLDesc(dom, 0)))
+        goto error;
+
+    if (!(doc = virXMLParseStringCtxt(xml, "(domain_definition)", &ctxt)))
+        goto error;
+
+    ret->kernel = virXPathString("string(./os/kernel[1])", ctxt);
+    ret->initrd = virXPathString("string(./os/initrd[1])", ctxt);
+    ret->cmdline = virXPathString("string(./os/cmdline[1])", ctxt);
+
+    if (virXPathInt("count(./os/boot)", ctxt, &ret->count_boot_order) < 0)
+        goto error;
+
+    if ((virXPathInt("count(./devices/*/boot[@order='1'])", ctxt, &ret->count_boot_order) < 0))
+        goto error;
+
+    if (ret->count_boot_order > 0) {
+        node = virXPathNode("./devices/*/boot[@order='1']/..", ctxt);
+        if (!node)
+            goto error;
+
+        ctxt->node = node;
+
+        /* As we're using a heuristic for setting the boot device do
+         * the same here.
+         *
+         * Represents the XML node a disk? */
+        ret->bootdeviceIdentifier = virXPathString("string(./target/@dev)", ctxt);
+
+        /* Represents the XML node a network interface? (we only allow
+         * MAC addresses as boot device identifier for the tests (at
+         * least for the moment)) */
+        if (!ret->bootdeviceIdentifier)
+            ret->bootdeviceIdentifier = virXPathString("string(./mac/@address)", ctxt);
+    } else {
+        ret->bootdeviceIdentifier = NULL;
+    }
+
+ cleanup:
+    xmlFreeDoc(doc);
+    xmlXPathFreeContext(ctxt);
+    VIR_FREE(xml);
+    return ret;
+
+ error:
+    bootConfigurationFree(ret);
+    ret = NULL;
+    goto cleanup;
+}
+
+
+static int
+verifyOriginalState(virDomainPtr dom, bootConfiguration *original_conf)
+{
+    bool ret;
+    bootConfiguration *current_conf = getBootConfiguration(dom);
+
+    if (!current_conf)
+        return false;
+
+    ret = bootConfigurationEqual(original_conf,
+                                 current_conf);
+    bootConfigurationFree(current_conf);
+    return ret;
+}
+
+
+static int
+verifyChanges(virDomainPtr dom,
+              const char *bootdevice,
+              const char *kernel,
+              const char *initrd,
+              const char *cmdline)
+{
+    int ret = -1;
+    bootConfiguration *current_conf;
+
+    if (!(current_conf = getBootConfiguration(dom)))
+        goto cleanup;
+
+    /* verify the new boot order */
+    if (bootdevice) {
+        if (STRNEQ_NULLABLE(current_conf->bootdeviceIdentifier, bootdevice))
+            goto cleanup;
+
+        if (current_conf->count_os_boot != 0)
+            goto cleanup;
+
+        if (current_conf->count_boot_order < 1)
+            goto cleanup;
+    }
+
+    /* verify the other OS node changes */
+    if ((kernel && virStringIsEmpty(kernel) && current_conf->kernel) ||
+        (!virStringIsEmpty(kernel) && STRNEQ_NULLABLE(current_conf->kernel, kernel)))
+        goto cleanup;
+
+    if ((initrd && virStringIsEmpty(initrd) && current_conf->initrd) ||
+        (!virStringIsEmpty(initrd) && STRNEQ_NULLABLE(current_conf->initrd, initrd)))
+        goto cleanup;
+
+    if ((cmdline && virStringIsEmpty(cmdline) && current_conf->cmdline) ||
+        (!virStringIsEmpty(cmdline) && STRNEQ_NULLABLE(current_conf->cmdline, cmdline)))
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    bootConfigurationFree(current_conf);
+    return ret;
+}
+
+
+static int
+testDomainCreateWithParamsHelper(virDomainPtr dom, lifecycleEventCounter *counter,
+                                 bool failure_expected, const char *bootdevice,
+                                 const char *kernel, const char *initrd,
+                                 const char *cmdline, unsigned int flags, bootConfiguration *original_conf)
+{
+    int rc;
+    int ret = -1;
+    virTypedParameterPtr params = NULL;
+    int nparams = 0;
+    int maxparams = 0;
+
+    lifecycleEventCounter_reset(counter);
+
+    if (bootdevice)
+        virTypedParamsAddFromString(&params,
+                                    &nparams,
+                                    &maxparams,
+                                    VIR_DOMAIN_CREATE_PARM_DEVICE_IDENTIFIER,
+                                    VIR_TYPED_PARAM_STRING,
+                                    bootdevice);
+
+    if (kernel)
+        virTypedParamsAddFromString(&params,
+                                    &nparams,
+                                    &maxparams,
+                                    VIR_DOMAIN_CREATE_PARM_KERNEL,
+                                    VIR_TYPED_PARAM_STRING,
+                                    kernel);
+
+    if (initrd)
+        virTypedParamsAddFromString(&params,
+                                    &nparams,
+                                    &maxparams,
+                                    VIR_DOMAIN_CREATE_PARM_INITRD,
+                                    VIR_TYPED_PARAM_STRING,
+                                    initrd);
+
+    if (cmdline)
+        virTypedParamsAddFromString(&params,
+                                    &nparams,
+                                    &maxparams,
+                                    VIR_DOMAIN_CREATE_PARM_CMDLINE,
+                                    VIR_TYPED_PARAM_STRING,
+                                    cmdline);
+
+    rc = virDomainCreateWithParams(dom,
+                                   params,
+                                   nparams,
+                                   flags);
+    if (rc < 0) {
+        if (failure_expected)
+            ret = 0;
+        goto cleanup;
+    }
+
+    if (virEventRunDefaultImpl() < 0)
+        goto cleanup;
+
+    if (counter->startEvents != 1 ||
+        counter->stopEvents != 0)
+        goto cleanup;
+
+    if (verifyChanges(dom, bootdevice, kernel, initrd, cmdline) < 0)
+        goto cleanup;
+
+    if (virDomainDestroy(dom) < 0)
+        goto cleanup;
+
+    if (verifyOriginalState(dom, original_conf) < 0)
+        goto cleanup;
+
+    if (virEventRunDefaultImpl() < 0)
+        goto cleanup;
+
+    if (counter->startEvents != 1 ||
+        counter->stopEvents != 1)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    virTypedParamsFree(params, nparams);
+    return ret;
+}
+
+
+static int
+testDomainCreateWithParams(const void *data)
+{
+    const objecteventTest *test = data;
+    lifecycleEventCounter counter;
+    int eventId = VIR_DOMAIN_EVENT_ID_LIFECYCLE;
+    int id;
+    int ret = -1;
+    virDomainPtr dom;
+    bootConfiguration *original_boot_conf = NULL;
+
+    dom = virDomainLookupByName(test->conn, "test");
+    if (!dom)
+        return -1;
+
+    /* First clean up, register for the life cycle events, and get the
+     * original, persistent boot configuration of the domain */
+    virDomainDestroy(dom);
+
+    id = virConnectDomainEventRegisterAny(test->conn, dom, eventId,
+                                          VIR_DOMAIN_EVENT_CALLBACK(&domainLifecycleCb),
+                                          &counter, NULL);
+
+    if (!(original_boot_conf = getBootConfiguration(dom)))
+        goto cleanup;
+
+    if (testDomainCreateWithParamsHelper(dom, &counter, true, "notAvailableBootDevice",
+                                         NULL, NULL, NULL, 0, original_boot_conf) < 0)
+        goto cleanup;
+    if (testDomainCreateWithParamsHelper(dom, &counter, false, NULL, NULL, NULL,
+                                         NULL, 0, original_boot_conf) < 0)
+        goto cleanup;
+    if (testDomainCreateWithParamsHelper(dom, &counter, false, NULL, "newKernel",
+                                         NULL, NULL, 0, original_boot_conf) < 0)
+        goto cleanup;
+    if (testDomainCreateWithParamsHelper(dom, &counter, false, NULL, NULL, "newInitrd",
+                                         NULL, 0, original_boot_conf) < 0)
+        goto cleanup;
+    if (testDomainCreateWithParamsHelper(dom, &counter, true, "notAvailableBootDevice",
+                                         "newInitrd", NULL, NULL, 0, original_boot_conf) < 0)
+        goto cleanup;
+    if (testDomainCreateWithParamsHelper(dom, &counter, false, NULL, NULL, NULL, "newCmdline",
+                                         0, original_boot_conf) < 0)
+        goto cleanup;
+    if (testDomainCreateWithParamsHelper(dom, &counter, false, NULL, "newKernel", "newInitrd",
+                                         "newCmdline", 0, original_boot_conf) < 0)
+        goto cleanup;
+    if (testDomainCreateWithParamsHelper(dom, &counter, false, NULL, "", "", "", 0,
+                                         original_boot_conf) < 0)
+        goto cleanup;
+    if (testDomainCreateWithParamsHelper(dom, &counter, false, "vda", NULL, NULL, NULL,
+                                         0, original_boot_conf) < 0)
+        goto cleanup;
+    if (testDomainCreateWithParamsHelper(dom, &counter, false, "vda", NULL, "blaa", "bla",
+                                         0, original_boot_conf) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    bootConfigurationFree(original_boot_conf);
+    virConnectDomainEventDeregisterAny(test->conn, id);
+    virDomainFree(dom);
+
+    return ret;
+}
+
+
 static int
 testNetworkCreateXML(const void *data)
 {
@@ -863,6 +1182,8 @@ mymain(void)
     if (virTestRun("Domain (un)define events", testDomainDefine, &test) < 0)
         ret = EXIT_FAILURE;
     if (virTestRun("Domain start stop events", testDomainStartStopEvent, &test) < 0)
+        ret = EXIT_FAILURE;
+    if (virTestRun("Domain start stop events with params", testDomainCreateWithParams, &test) < 0)
         ret = EXIT_FAILURE;
 
     /* Network event tests */
