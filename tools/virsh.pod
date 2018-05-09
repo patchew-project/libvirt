@@ -2655,6 +2655,8 @@ repeat the command.
 
 =item B<start> I<domain-name-or-uuid> [I<--console>] [I<--paused>]
 [I<--autodestroy>] [I<--bypass-cache>] [I<--force-boot>] [I<--pass-fds N,M,...>]
+[I<--with-bootdevice DEVICE-IDENTIFIER>] [I<--with-kernel KERNEL>]
+[I<--with-initrd INITRD>] [I<--with-cmdline CMDLINE>]
 
 Start a (previously defined) inactive domain, either from the last
 B<managedsave> state, or via a fresh boot if no managedsave state is
@@ -2667,6 +2669,18 @@ exits.  If I<--bypass-cache> is specified, and managedsave state exists,
 the restore will avoid the file system cache, although this may slow
 down the operation.  If I<--force-boot> is specified, then any
 managedsave state is discarded and a fresh boot occurs.
+
+If the I<--with-bootdevice> option is used and supported by the driver
+then the domain will start with the specified device overriding the
+persistent defined boot order for this start only. Valid block devices
+for this option are displayed using B<domblklist>. To specify a block
+device the displayed I<Target> value has to be used. Valid network
+devices are displayed using B<domiflist>. To specify a network device
+the displayed I<MAC> value has to be used.
+
+With I<--with-kernel>, I<--with-initrd>, and I<--with-cmdline> you can
+specify the kernel, initrd, and cmdline to use for this start if the
+used driver supports this.
 
 If I<--pass-fds> is specified, the argument is a comma separated list
 of open file descriptors which should be pass on into the guest. The

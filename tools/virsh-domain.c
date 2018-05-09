@@ -3953,6 +3953,25 @@ static const vshCmdOptDef opts_start[] = {
      .type = VSH_OT_STRING,
      .help = N_("pass file descriptors N,M,... to the guest")
     },
+    {.name = "with-bootdevice",
+     .type = VSH_OT_STRING,
+     .help = N_("set boot device")
+    },
+    {.name = "with-kernel",
+     .type = VSH_OT_STRING,
+     .flags = VSH_OFLAG_EMPTY_OK,
+     .help = N_("set boot kernel")
+    },
+    {.name = "with-initrd",
+     .type = VSH_OT_STRING,
+     .flags = VSH_OFLAG_EMPTY_OK,
+     .help = N_("set boot initrd")
+    },
+    {.name = "with-cmdline",
+     .type = VSH_OT_STRING,
+     .flags = VSH_OFLAG_EMPTY_OK,
+     .help = N_("set boot cmdline")
+    },
     {.name = NULL}
 };
 
@@ -4004,6 +4023,7 @@ cmdStartGetFDs(vshControl *ctl,
     return -1;
 }
 
+
 static bool
 cmdStart(vshControl *ctl, const vshCmd *cmd)
 {
@@ -4016,6 +4036,10 @@ cmdStart(vshControl *ctl, const vshCmd *cmd)
     int rc;
     size_t nfds = 0;
     int *fds = NULL;
+    const char *bootDeviceIdentifier = NULL;
+    const char *kernel = NULL;
+    const char *initrd = NULL;
+    const char *cmdline = NULL;
 
     if (!(dom = virshCommandOptDomainBy(ctl, cmd, NULL,
                                         VIRSH_BYNAME | VIRSH_BYUUID)))
@@ -4038,9 +4062,68 @@ cmdStart(vshControl *ctl, const vshCmd *cmd)
     if (vshCommandOptBool(cmd, "force-boot"))
         flags |= VIR_DOMAIN_START_FORCE_BOOT;
 
+    if (vshCommandOptStringReq(ctl, cmd, "with-bootdevice",
+                               &bootDeviceIdentifier) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "with-kernel",
+                               &kernel) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "with-initrd",
+                               &initrd) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "with-cmdline",
+                               &cmdline) < 0)
+        goto cleanup;
+
+    if (nfds && (bootDeviceIdentifier || kernel || initrd || cmdline)) {
+        vshError(ctl,
+                 _("Passing file descriptors together with temporarily changing"
+                   " the boot configuration is currently not supported."));
+        goto cleanup;
+    }
+
     /* Prefer older API unless we have to pass extra parameters */
     if (nfds) {
         rc = virDomainCreateWithFiles(dom, nfds, fds, flags);
+    } else if (bootDeviceIdentifier || kernel || initrd || cmdline) {
+        virTypedParameterPtr params = NULL;
+        int nparams = 0;
+        int maxparams = 0;
+
+        if (bootDeviceIdentifier)
+            virTypedParamsAddFromString(&params,
+                                        &nparams,
+                                        &maxparams,
+                                        VIR_DOMAIN_CREATE_PARM_DEVICE_IDENTIFIER,
+                                        VIR_TYPED_PARAM_STRING,
+                                        bootDeviceIdentifier);
+
+        if (kernel)
+            virTypedParamsAddFromString(&params,
+                                        &nparams,
+                                        &maxparams,
+                                        VIR_DOMAIN_CREATE_PARM_KERNEL,
+                                        VIR_TYPED_PARAM_STRING,
+                                        kernel);
+
+        if (initrd)
+            virTypedParamsAddFromString(&params,
+                                        &nparams,
+                                        &maxparams,
+                                        VIR_DOMAIN_CREATE_PARM_INITRD,
+                                        VIR_TYPED_PARAM_STRING,
+                                        initrd);
+
+        if (cmdline)
+            virTypedParamsAddFromString(&params,
+                                        &nparams,
+                                        &maxparams,
+                                        VIR_DOMAIN_CREATE_PARM_CMDLINE,
+                                        VIR_TYPED_PARAM_STRING,
+                                        cmdline);
+
+        rc = virDomainCreateWithParams(dom,
+                                       params,
+                                       nparams,
+                                       flags);
+        virTypedParamsFree(params, nparams);
     } else if (flags) {
         rc = virDomainCreateWithFlags(dom, flags);
         /* We can emulate force boot, even for older servers that
@@ -4090,6 +4173,7 @@ cmdStart(vshControl *ctl, const vshCmd *cmd)
     VIR_FREE(fds);
     return ret;
 }
+
 
 /*
  * "save" command
