@@ -8297,6 +8297,7 @@ static virHypervisorDriver hypervisor_driver = {
     .connectListDefinedDomains = remoteConnectListDefinedDomains, /* 0.3.0 */
     .connectNumOfDefinedDomains = remoteConnectNumOfDefinedDomains, /* 0.3.0 */
     .domainCreate = remoteDomainCreate, /* 0.3.0 */
+    .domainCreateWithParams = remoteDomainCreateWithParams, /* 4.4.0 */
     .domainCreateWithFlags = remoteDomainCreateWithFlags, /* 0.8.2 */
     .domainCreateWithFiles = remoteDomainCreateWithFiles, /* 1.1.1 */
     .domainDefineXML = remoteDomainDefineXML, /* 0.3.0 */

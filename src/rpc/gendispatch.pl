@@ -783,9 +783,12 @@ elsif ($mode eq "server") {
                 } elsif ($ret_member =~ m/^remote_nonnull_(domain|network|storage_pool|storage_vol|interface|node_device|secret|nwfilter|domain_snapshot) (\S+);/) {
                     my $type_name = name_to_TypeName($1);
 
-                    if ($call->{ProcName} eq "DomainCreateWithFlags") {
-                        # SPECIAL: virDomainCreateWithFlags updates the given
-                        #          domain object instead of returning a new one
+                    if ($call->{ProcName} eq "DomainCreateWithFlags" ||
+                        $call->{ProcName} eq "DomainCreateWithParams") {
+                        # SPECIAL: virDomainCreateWithFlags,
+                        # virDomainCreateWithParams,
+                        # updates the given domain object instead of
+                        # returning a new one
                         push(@ret_list, "make_nonnull_$1(&ret->$2, $2);");
                         $single_ret_var = undef;
                         $single_ret_by_ref = 1;
@@ -1576,9 +1579,12 @@ elsif ($mode eq "client") {
                     my $arg_name = $2;
                     my $type_name = name_to_TypeName($name);
 
-                    if ($call->{ProcName} eq "DomainCreateWithFlags") {
-                        # SPECIAL: virDomainCreateWithFlags updates the given
-                        #          domain object instead of returning a new one
+                    if ($call->{ProcName} eq "DomainCreateWithFlags" ||
+                        $call->{ProcName} eq "DomainCreateWithParams") {
+                        # SPECIAL: virDomainCreateWithFlags,
+                        # virDomainCreateWithParams
+                        # updates the given domain object instead of
+                        # returning a new one
                         push(@ret_list, "dom->id = ret.dom.id;");
                         push(@ret_list, "xdr_free((xdrproc_t)xdr_$call->{ret}, (char *)&ret);");
                         push(@ret_list, "rv = 0;");

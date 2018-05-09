@@ -73,6 +73,9 @@ const REMOTE_IOTHREAD_INFO_MAX = 16384;
 /* Upper limit on migrate cookie. */
 const REMOTE_MIGRATE_COOKIE_MAX = 4194304;
 
+/* Upper limit on create params. */
+const REMOTE_CREATE_PARAMS_MAX = 4;
+
 /* Upper limit on lists of networks. */
 const REMOTE_NETWORK_LIST_MAX = 16384;
 
@@ -1051,6 +1054,16 @@ struct remote_connect_num_of_defined_domains_ret {
 };
 
 struct remote_domain_create_args {
+    remote_nonnull_domain dom;
+};
+
+struct remote_domain_create_with_params_args {
+    remote_nonnull_domain dom;
+    remote_typed_param params<REMOTE_CREATE_PARAMS_MAX>;
+    unsigned int flags;
+};
+
+struct remote_domain_create_with_params_ret {
     remote_nonnull_domain dom;
 };
 
@@ -6135,5 +6148,12 @@ enum remote_procedure {
      * @priority: high
      * @acl: storage_pool:getattr
      */
-    REMOTE_PROC_STORAGE_POOL_LOOKUP_BY_TARGET_PATH = 391
+    REMOTE_PROC_STORAGE_POOL_LOOKUP_BY_TARGET_PATH = 391,
+
+    /**
+     * @generate: both
+     * @acl: domain:start
+     * @acl: domain:write
+     */
+    REMOTE_PROC_DOMAIN_CREATE_WITH_PARAMS = 392
 };
