@@ -91,6 +91,7 @@ int qemuProcessStart(virConnectPtr conn,
                      const char *stdin_path,
                      virDomainSnapshotObjPtr snapshot,
                      virNetDevVPortProfileOp vmop,
+                     const virCreateParams *params,
                      unsigned int flags);
 
 virCommandPtr qemuProcessCreatePretendCmd(virQEMUDriverPtr driver,
@@ -105,6 +106,7 @@ int qemuProcessInit(virQEMUDriverPtr driver,
                     virCPUDefPtr updatedCPU,
                     qemuDomainAsyncJob asyncJob,
                     bool migration,
+                    const virCreateParams *params,
                     unsigned int flags);
 
 int qemuProcessPrepareDomain(virQEMUDriverPtr driver,

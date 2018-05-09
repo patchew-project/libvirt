@@ -2178,6 +2178,7 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
     int rv;
     char *tlsAlias = NULL;
     char *secAlias = NULL;
+    const virCreateParams createParams = { 0 };
 
     virNWFilterReadLockFilterUpdates();
 
@@ -2335,7 +2336,7 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
     startFlags = VIR_QEMU_PROCESS_START_AUTODESTROY;
 
     if (qemuProcessInit(driver, vm, mig->cpu, QEMU_ASYNC_JOB_MIGRATION_IN,
-                        true, startFlags) < 0)
+                        true, &createParams, startFlags) < 0)
         goto stopjob;
     stopProcess = true;
 

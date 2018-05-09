@@ -5008,6 +5008,7 @@ qemuProcessInit(virQEMUDriverPtr driver,
                 virCPUDefPtr updatedCPU,
                 qemuDomainAsyncJob asyncJob,
                 bool migration,
+                const virCreateParams *createParams,
                 unsigned int flags)
 {
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
@@ -5059,6 +5060,9 @@ qemuProcessInit(virQEMUDriverPtr driver,
      */
     VIR_DEBUG("Setting current domain def as transient");
     if (virDomainObjSetDefTransient(caps, driver->xmlopt, vm) < 0)
+        goto cleanup;
+
+    if (virDomainDefOverrideBootConf(vm->def, createParams) < 0)
         goto cleanup;
 
     if (flags & VIR_QEMU_PROCESS_START_PRETEND) {
@@ -6296,6 +6300,7 @@ qemuProcessStart(virConnectPtr conn,
                  const char *migratePath,
                  virDomainSnapshotObjPtr snapshot,
                  virNetDevVPortProfileOp vmop,
+                 const virCreateParams *createParams,
                  unsigned int flags)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
@@ -6307,11 +6312,11 @@ qemuProcessStart(virConnectPtr conn,
 
     VIR_DEBUG("conn=%p driver=%p vm=%p name=%s id=%d asyncJob=%s "
               "migrateFrom=%s migrateFd=%d migratePath=%s "
-              "snapshot=%p vmop=%d flags=0x%x",
+              "snapshot=%p vmop=%d createParams=%p flags=0x%x",
               conn, driver, vm, vm->def->name, vm->def->id,
               qemuDomainAsyncJobTypeToString(asyncJob),
               NULLSTR(migrateFrom), migrateFd, NULLSTR(migratePath),
-              snapshot, vmop, flags);
+              snapshot, vmop, createParams, flags);
 
     virCheckFlagsGoto(VIR_QEMU_PROCESS_START_COLD |
                       VIR_QEMU_PROCESS_START_PAUSED |
@@ -6320,8 +6325,8 @@ qemuProcessStart(virConnectPtr conn,
     if (!migrateFrom && !snapshot)
         flags |= VIR_QEMU_PROCESS_START_NEW;
 
-    if (qemuProcessInit(driver, vm, updatedCPU,
-                        asyncJob, !!migrateFrom, flags) < 0)
+    if (qemuProcessInit(driver, vm, updatedCPU, asyncJob, !!migrateFrom,
+                        createParams, flags) < 0)
         goto cleanup;
 
     if (migrateFrom) {
@@ -6396,6 +6401,7 @@ qemuProcessCreatePretendCmd(virQEMUDriverPtr driver,
                             unsigned int flags)
 {
     virCommandPtr cmd = NULL;
+    const virCreateParams createParams = { 0 };
 
     virCheckFlagsGoto(VIR_QEMU_PROCESS_START_COLD |
                       VIR_QEMU_PROCESS_START_PAUSED |
@@ -6405,7 +6411,7 @@ qemuProcessCreatePretendCmd(virQEMUDriverPtr driver,
     flags |= VIR_QEMU_PROCESS_START_NEW;
 
     if (qemuProcessInit(driver, vm, NULL, QEMU_ASYNC_JOB_NONE,
-                        !!migrateURI, flags) < 0)
+                        !!migrateURI, &createParams, flags) < 0)
         goto cleanup;
 
     if (qemuProcessPrepareDomain(driver, vm, flags) < 0)

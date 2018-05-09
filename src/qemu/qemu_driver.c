@@ -145,7 +145,8 @@ static int qemuDomainObjStart(virConnectPtr conn,
                               virQEMUDriverPtr driver,
                               virDomainObjPtr vm,
                               unsigned int flags,
-                              qemuDomainAsyncJob asyncJob);
+                              qemuDomainAsyncJob asyncJob,
+                              const virCreateParams *createParams);
 
 static int qemuDomainManagedSaveLoad(virDomainObjPtr vm,
                                      void *opaque);
@@ -257,6 +258,7 @@ qemuAutostartDomain(virDomainObjPtr vm,
     int flags = 0;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     int ret = -1;
+    const virCreateParams createParams = { 0 };
 
     if (cfg->autoStartBypassCache)
         flags |= VIR_DOMAIN_START_BYPASS_CACHE;
@@ -275,7 +277,7 @@ qemuAutostartDomain(virDomainObjPtr vm,
         }
 
         if (qemuDomainObjStart(NULL, driver, vm, flags,
-                               QEMU_ASYNC_JOB_START) < 0) {
+                               QEMU_ASYNC_JOB_START, &createParams) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Failed to autostart VM '%s': %s"),
                            vm->def->name, virGetLastErrorMessage());
@@ -1735,6 +1737,7 @@ static virDomainPtr qemuDomainCreateXML(virConnectPtr conn,
     virCapsPtr caps = NULL;
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_INACTIVE |
                                VIR_DOMAIN_DEF_PARSE_ABI_UPDATE;
+    const virCreateParams createParams = { 0 };
 
     virCheckFlags(VIR_DOMAIN_START_PAUSED |
                   VIR_DOMAIN_START_AUTODESTROY |
@@ -1776,7 +1779,7 @@ static virDomainPtr qemuDomainCreateXML(virConnectPtr conn,
     if (qemuProcessStart(conn, driver, vm, NULL, QEMU_ASYNC_JOB_START,
                          NULL, -1, NULL, NULL,
                          VIR_NETDEV_VPORT_PROFILE_OP_CREATE,
-                         start_flags) < 0) {
+                         &createParams, start_flags) < 0) {
         virDomainAuditStart(vm, "booted", false);
         qemuDomainRemoveInactive(driver, vm);
         qemuProcessEndJob(driver, vm);
@@ -6558,6 +6561,7 @@ qemuDomainSaveImageStartVM(virConnectPtr conn,
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     virQEMUSaveHeaderPtr header = &data->header;
     qemuDomainSaveCookiePtr cookie = NULL;
+    const virCreateParams createParams = { 0 };
 
     if (virSaveCookieParseString(data->cookie, (virObjectPtr *)&cookie,
                                  virDomainXMLOptionGetSaveCookie(driver->xmlopt)) < 0)
@@ -6592,7 +6596,7 @@ qemuDomainSaveImageStartVM(virConnectPtr conn,
     if (qemuProcessStart(conn, driver, vm, cookie ? cookie->cpu : NULL,
                          asyncJob, "stdio", *fd, path, NULL,
                          VIR_NETDEV_VPORT_PROFILE_OP_RESTORE,
-                         VIR_QEMU_PROCESS_START_PAUSED) == 0)
+                         &createParams, VIR_QEMU_PROCESS_START_PAUSED) == 0)
         restored = true;
 
     if (intermediatefd != -1) {
@@ -7234,7 +7238,8 @@ qemuDomainObjStart(virConnectPtr conn,
                    virQEMUDriverPtr driver,
                    virDomainObjPtr vm,
                    unsigned int flags,
-                   qemuDomainAsyncJob asyncJob)
+                   qemuDomainAsyncJob asyncJob,
+                   const virCreateParams *createParams)
 {
     int ret = -1;
     char *managed_save;
@@ -7270,6 +7275,13 @@ qemuDomainObjStart(virConnectPtr conn,
             virDomainJobOperation op = priv->job.current->operation;
             priv->job.current->operation = VIR_DOMAIN_JOB_OPERATION_RESTORE;
 
+            if (createParams->bootDeviceIdentifier || createParams->kernel ||
+                createParams->initrd || createParams->cmdline) {
+                virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                               _("Transient changes are not possible with the managed save option."));
+                goto cleanup;
+            }
+
             ret = qemuDomainObjRestore(conn, driver, vm, managed_save,
                                        start_paused, bypass_cache, asyncJob);
 
@@ -7294,7 +7306,8 @@ qemuDomainObjStart(virConnectPtr conn,
 
     ret = qemuProcessStart(conn, driver, vm, NULL, asyncJob,
                            NULL, -1, NULL, NULL,
-                           VIR_NETDEV_VPORT_PROFILE_OP_CREATE, start_flags);
+                           VIR_NETDEV_VPORT_PROFILE_OP_CREATE,
+                           createParams, start_flags);
     virDomainAuditStart(vm, "booted", ret >= 0);
     if (ret >= 0) {
         virObjectEventPtr event =
@@ -7317,12 +7330,14 @@ qemuDomainObjStart(virConnectPtr conn,
     return ret;
 }
 
+
 static int
 qemuDomainCreateWithFlags(virDomainPtr dom, unsigned int flags)
 {
     virQEMUDriverPtr driver = dom->conn->privateData;
     virDomainObjPtr vm;
     int ret = -1;
+    const virCreateParams createParams = { 0 };
 
     virCheckFlags(VIR_DOMAIN_START_PAUSED |
                   VIR_DOMAIN_START_AUTODESTROY |
@@ -7348,7 +7363,7 @@ qemuDomainCreateWithFlags(virDomainPtr dom, unsigned int flags)
     }
 
     if (qemuDomainObjStart(dom->conn, driver, vm, flags,
-                           QEMU_ASYNC_JOB_START) < 0)
+                           QEMU_ASYNC_JOB_START, &createParams) < 0)
         goto endjob;
 
     dom->id = vm->def->id;
@@ -15769,6 +15784,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     bool was_stopped = false;
     qemuDomainSaveCookiePtr cookie;
     virCPUDefPtr origCPU = NULL;
+    const virCreateParams createParams = { 0 };
 
     virCheckFlags(VIR_DOMAIN_SNAPSHOT_REVERT_RUNNING |
                   VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED |
@@ -15990,7 +16006,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                                   cookie ? cookie->cpu : NULL,
                                   QEMU_ASYNC_JOB_START, NULL, -1, NULL, snap,
                                   VIR_NETDEV_VPORT_PROFILE_OP_CREATE,
-                                  VIR_QEMU_PROCESS_START_PAUSED);
+                                  &createParams, VIR_QEMU_PROCESS_START_PAUSED);
             virDomainAuditStart(vm, "from-snapshot", rc >= 0);
             detail = VIR_DOMAIN_EVENT_STARTED_FROM_SNAPSHOT;
             event = virDomainEventLifecycleNewFromObj(vm,
@@ -16083,7 +16099,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
             qemuDomainEventQueue(driver, event);
             rc = qemuProcessStart(snapshot->domain->conn, driver, vm, NULL,
                                   QEMU_ASYNC_JOB_START, NULL, -1, NULL, NULL,
-                                  VIR_NETDEV_VPORT_PROFILE_OP_CREATE,
+                                  VIR_NETDEV_VPORT_PROFILE_OP_CREATE, &createParams,
                                   start_flags);
             virDomainAuditStart(vm, "from-snapshot", rc >= 0);
             if (rc < 0) {
@@ -18393,7 +18409,7 @@ qemuDomainGetBlockIoTune(virDomainPtr dom,
     qemuDomainObjPrivatePtr priv = NULL;
     virDomainDefPtr def = NULL;
     virDomainDefPtr persistentDef = NULL;
-    virDomainBlockIoTuneInfo reply = {0};
+    virDomainBlockIoTuneInfo reply = { 0 };
     char *device = NULL;
     int ret = -1;
     int maxparams;
