@@ -285,6 +285,7 @@ virDomainDefMaybeAddInput;
 virDomainDefNeedsPlacementAdvice;
 virDomainDefNew;
 virDomainDefNewFull;
+virDomainDefOverrideBootConf;
 virDomainDefParseFile;
 virDomainDefParseNode;
 virDomainDefParseString;

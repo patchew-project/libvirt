@@ -28712,6 +28712,232 @@ virDomainObjSetMetadata(virDomainObjPtr vm,
 }
 
 
+/**
+ * virDomainDefSetBootDevice:
+ * @def: domain definition
+ * @device: set the boot order priority of this device to highest,
+ *          the domain must contain this device
+ *
+ * Set @device as the new boot device for @def
+ *
+ * Increment all boot indices that are set (bootindex > 0) except for
+ * @device and all those devices that have a bootindex greater than
+ * the old bootindex of @device if the index was set. Additionally, it
+ * disables the boot order defined in the 'os' XML node of a domain
+ * definition.
+ *
+ * E.g. a domain has the following devices
+ * diskA: boot order 1
+ * diskB: boot order 2
+ * hostdevA: boot order 3
+ * If we now set diskB to the new boot device. It results in
+ * diskA: boot order 2
+ * diskB: boot order 1
+ * hostdevA: boot order 3 (note: the boot order value remains the same)
+ *
+ * Returns 0 in case of success, -1 in case of error
+ */
+static int
+virDomainDefSetBootDevice(virDomainDefPtr def,
+                          virDomainDeviceDefPtr device)
+{
+    size_t i;
+    unsigned int oldBootIndex = 0;
+    virDomainDeviceInfoPtr info;
+    bool noOldBootIndex;
+
+    /* Set nBootDevs to 0 so the per-device boot configuration will be
+     * used. def->os.bootDevs does not have to be freed here. */
+    def->os.nBootDevs = 0;
+
+    switch ((virDomainDeviceType) device->type) {
+    case VIR_DOMAIN_DEVICE_DISK:
+    case VIR_DOMAIN_DEVICE_NET:
+    case VIR_DOMAIN_DEVICE_HOSTDEV:
+    case VIR_DOMAIN_DEVICE_REDIRDEV:
+        info = virDomainDeviceGetInfo(device);
+        if (!info) {
+            virReportError(VIR_ERR_OPERATION_FAILED,
+                           "%s",
+                           _("No device information found for the selected device"));
+            return -1;
+        }
+        oldBootIndex = info->bootIndex;
+        info->bootIndex = 1;
+        break;
+    case VIR_DOMAIN_DEVICE_NONE:
+    case VIR_DOMAIN_DEVICE_LEASE:
+    case VIR_DOMAIN_DEVICE_FS:
+    case VIR_DOMAIN_DEVICE_INPUT:
+    case VIR_DOMAIN_DEVICE_SOUND:
+    case VIR_DOMAIN_DEVICE_VIDEO:
+    case VIR_DOMAIN_DEVICE_WATCHDOG:
+    case VIR_DOMAIN_DEVICE_CONTROLLER:
+    case VIR_DOMAIN_DEVICE_GRAPHICS:
+    case VIR_DOMAIN_DEVICE_HUB:
+    case VIR_DOMAIN_DEVICE_SMARTCARD:
+    case VIR_DOMAIN_DEVICE_CHR:
+    case VIR_DOMAIN_DEVICE_MEMBALLOON:
+    case VIR_DOMAIN_DEVICE_NVRAM:
+    case VIR_DOMAIN_DEVICE_RNG:
+    case VIR_DOMAIN_DEVICE_SHMEM:
+    case VIR_DOMAIN_DEVICE_TPM:
+    case VIR_DOMAIN_DEVICE_PANIC:
+    case VIR_DOMAIN_DEVICE_MEMORY:
+    case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_LAST:
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("It's not supported to boot from the selected device type '%s'"),
+                       virDomainDeviceTypeToString(device->type));
+        return -1;
+    }
+
+    noOldBootIndex = oldBootIndex == 0;
+
+    /* A precondition is that all the boot indexes must be numbered
+       consecutively or not defined. This is the case here. We must
+       change the boot index only of those devices that are affected
+       by the change of the old boot index. There are only two cases
+       were this is true:
+
+       1. Not the same device and it uses a boot index (> 0) and which
+          is less than the oldBootIndex
+       2. Not the same device and it uses a boot index (> 0) and @device
+          used no boot index
+    */
+    for (i = 0; i < def->ndisks; i++) {
+        if (device->type == VIR_DOMAIN_DEVICE_DISK &&
+            def->disks[i] == device->data.disk)
+            continue;
+
+        if (def->disks[i]->info.bootIndex > 0 &&
+            (def->disks[i]->info.bootIndex < oldBootIndex ||
+             noOldBootIndex))
+            def->disks[i]->info.bootIndex++;
+    }
+
+    for (i = 0; i < def->nnets; i++) {
+        if (device->type == VIR_DOMAIN_DEVICE_NET &&
+            def->nets[i] == device->data.net)
+            continue;
+
+        if (def->nets[i]->info.bootIndex > 0 &&
+            (def->nets[i]->info.bootIndex < oldBootIndex ||
+             noOldBootIndex))
+            def->nets[i]->info.bootIndex++;
+    }
+
+    for (i = 0; i < def->nhostdevs; i++) {
+        if (device->type == VIR_DOMAIN_DEVICE_HOSTDEV &&
+            def->hostdevs[i] == device->data.hostdev)
+            continue;
+
+        if  (def->hostdevs[i]->info->bootIndex > 0 &&
+             (def->hostdevs[i]->info->bootIndex < oldBootIndex ||
+              noOldBootIndex))
+            def->hostdevs[i]->info->bootIndex++;
+    }
+
+    for (i = 0; i < def->nredirdevs; i++) {
+        if (device->type == VIR_DOMAIN_DEVICE_REDIRDEV &&
+            def->redirdevs[i] == device->data.redirdev)
+            continue;
+
+        if (def->redirdevs[i]->info.bootIndex > 0 &&
+            (def->redirdevs[i]->info.bootIndex < oldBootIndex ||
+             noOldBootIndex))
+            def->redirdevs[i]->info.bootIndex++;
+    }
+
+    return 0;
+}
+
+
+/**
+ * virDomainDefSetBootDeviceByIdentifier:
+ * @def: Domain definition
+ * @bootDeviceIdentifier: Selector for the device.
+ *                        Currently only disk and network devices are supported.
+ *
+ * Returns 0 in case of success, -1 in case of error.
+ */
+static int
+virDomainDefSetBootDeviceByIdentifier(virDomainDefPtr def,
+                                      const char *bootDeviceIdentifier)
+{
+    virDomainDiskDefPtr diskDef = NULL;
+    virDomainNetDefPtr netDef = NULL;
+    virDomainDeviceDef bootDevice;
+
+    if (!bootDeviceIdentifier)
+        return 0;
+
+    /* Look for the correct device. At first try to find a disk with
+     * this device name, if not found try to find a network device
+     * with this device name. Disk devices are identified by '<target
+     * dev="name"...' dev value. Network devices are identified by
+     * their MAC address value.
+     */
+    if ((diskDef = virDomainDiskByName(def, bootDeviceIdentifier, false)) != NULL) {
+        bootDevice = (virDomainDeviceDef) {
+            .type = VIR_DOMAIN_DEVICE_DISK,
+            .data.disk = diskDef
+        };
+    } else if ((netDef = virDomainNetFind(def, bootDeviceIdentifier)) != NULL) {
+        bootDevice = (virDomainDeviceDef) {
+            .type = VIR_DOMAIN_DEVICE_NET,
+            .data.net = netDef
+        };
+    } else {
+        virReportError(VIR_ERR_OPERATION_FAILED,
+                       _("no device matching '%s' found"),
+                       bootDeviceIdentifier);
+        return -1;
+    }
+
+    return virDomainDefSetBootDevice(def, &bootDevice);
+}
+
+
+/**
+ * virDomainDefOverrideBootConf:
+ * @def: Domain definition
+ * @params: Parameters that will be used to override the current boot configuration.
+ *
+ * This function allows to override the used boot device, kernel,
+ * initial ramdisk, and the cmdline of the given domain
+ * definition. The parameters for overwriting are passed via @params.
+ * If the passed kernel, initrd, or cmdline is an empty string the
+ * original value of the domain definition will be freed.
+ *
+ * Returns 0 in case of success, -1 in case of error.
+ */
+int
+virDomainDefOverrideBootConf(virDomainDefPtr def,
+                             const virCreateParams *params)
+{
+    virDomainOSDefPtr os = &def->os;
+
+    if (!params)
+        return 0;
+
+    if (params->bootDeviceIdentifier &&
+        virDomainDefSetBootDeviceByIdentifier(def, params->bootDeviceIdentifier) < 0)
+        return -1;
+
+    if (params->kernel && virStringUpdate(&os->kernel, params->kernel) < 0)
+        return -1;
+
+    if (params->initrd && virStringUpdate(&os->initrd, params->initrd) < 0)
+        return -1;
+
+    if (params->cmdline && virStringUpdate(&os->cmdline, params->cmdline) < 0)
+        return -1;
+
+    return 0;
+}
+
+
 bool
 virDomainDefNeedsPlacementAdvice(virDomainDefPtr def)
 {

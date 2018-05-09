@@ -3420,6 +3420,17 @@ int virDomainObjSetMetadata(virDomainObjPtr vm,
                             const char *configDir,
                             unsigned int flags);
 
+typedef struct  {
+    const char *bootDeviceIdentifier;
+    const char *kernel;
+    const char *initrd;
+    const char *cmdline;
+} virCreateParams;
+
+int
+virDomainDefOverrideBootConf(virDomainDefPtr def,
+                             const virCreateParams *params);
+
 int
 virDomainParseMemory(const char *xpath,
                      const char *units_xpath,
