@@ -1790,6 +1790,43 @@ int                     virConnectListAllDomains (virConnectPtr conn,
                                                   virDomainPtr **domains,
                                                   unsigned int flags);
 int                     virDomainCreate         (virDomainPtr domain);
+
+/**
+ * VIR_DOMAIN_CREATE_PARM_KERNEL:
+ *
+ * Macro for typed parameter name that represents the used kernel. It
+ * corresponds to the "kernel" node in the XML.
+ */
+# define VIR_DOMAIN_CREATE_PARM_KERNEL "kernel"
+
+/**
+ * VIR_DOMAIN_CREATE_PARM_CMDLINE:
+ *
+ * Macro for typed parameter name that represents the used cmdline. It
+ * corresponds to the "cmdline" node in the XML.
+ */
+# define VIR_DOMAIN_CREATE_PARM_CMDLINE "cmdline"
+
+/**
+ * VIR_DOMAIN_CREATE_PARM_INITRD:
+ *
+ * Macro for typed parameter name that represents the used initial
+ * ramdisk. It corresponds to the "initrd" node in the XML.
+ */
+# define VIR_DOMAIN_CREATE_PARM_INITRD "initrd"
+
+/**
+ * VIR_DOMAIN_CREATE_PARM_DEVICE_IDENTIFIER:
+ *
+ * Macro for typed parameter name that represents the identifier for
+ * the boot device.
+ */
+# define VIR_DOMAIN_CREATE_PARM_DEVICE_IDENTIFIER "bootdevice"
+
+int                     virDomainCreateWithParams (virDomainPtr domain,
+                                                   virTypedParameterPtr params,
+                                                   int nparams,
+                                                   unsigned int flags);
 int                     virDomainCreateWithFlags (virDomainPtr domain,
                                                   unsigned int flags);
 

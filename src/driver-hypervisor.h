@@ -313,6 +313,11 @@ typedef int
                                unsigned int nfiles,
                                int *files,
                                unsigned int flags);
+typedef int
+(*virDrvDomainCreateWithParams)(virDomainPtr dom,
+                                virTypedParameterPtr params,
+                                int nparams,
+                                unsigned int flags);
 
 typedef virDomainPtr
 (*virDrvDomainDefineXML)(virConnectPtr conn,
@@ -1383,6 +1388,7 @@ struct _virHypervisorDriver {
     virDrvDomainCreate domainCreate;
     virDrvDomainCreateWithFlags domainCreateWithFlags;
     virDrvDomainCreateWithFiles domainCreateWithFiles;
+    virDrvDomainCreateWithParams domainCreateWithParams;
     virDrvDomainDefineXML domainDefineXML;
     virDrvDomainDefineXMLFlags domainDefineXMLFlags;
     virDrvDomainUndefine domainUndefine;

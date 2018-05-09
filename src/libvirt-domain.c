@@ -6682,6 +6682,70 @@ virDomainCreateWithFiles(virDomainPtr domain, unsigned int nfiles,
 
 
 /**
+ * virDomainCreateWithParams:
+ * @domain: pointer to a defined domain
+ * @params: pointer to boot parameter objects
+ * @nparams: number of boot parameter objects
+ * @flags: bitwise-OR of supported virDomainCreateFlags
+ *
+ * Launch a defined domain. If the call succeeds the domain moves from
+ * the defined to the running domains pools.
+ *
+ * @params provides an array of typed parameters with the length
+ * @nparams. This array will be used to configure the domain to be
+ * temporary started from the device specified by the typed parameter
+ * 'bootdevice'. With the typed parameters 'kernel', 'initrd', and
+ * 'cmdline' it's possible to temporarily override the corresponding
+ * values. All typed parameters are optional.
+ *
+ * For more control over @flags, see virDomainCreateWithFlags().
+ *
+ * Returns 0 in case of success, -1 in case of error
+ */
+int
+virDomainCreateWithParams(virDomainPtr domain,
+                          virTypedParameterPtr params,
+                          int nparams,
+                          unsigned int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "params=%p, nparams=%d, flags=0x%x",
+                     params, nparams, flags);
+    VIR_TYPED_PARAMS_DEBUG(params, nparams);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    conn = domain->conn;
+
+    virCheckReadOnlyGoto(conn->flags, error);
+    virCheckNonNegativeArgGoto(nparams, error);
+    if (nparams > 0)
+        virCheckNonNullArgGoto(params, error);
+
+    if (virTypedParameterValidateSet(conn, params, nparams) < 0)
+        goto error;
+
+    if (conn->driver->domainCreateWithParams) {
+        int ret;
+        ret = conn->driver->domainCreateWithParams(domain,
+                                                   params,
+                                                   nparams,
+                                                   flags);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+ error:
+    virDispatchError(domain->conn);
+    return -1;
+}
+
+
+/**
  * virDomainGetAutostart:
  * @domain: a domain object
  * @autostart: the value returned
