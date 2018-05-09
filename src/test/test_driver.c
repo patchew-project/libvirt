@@ -650,7 +650,8 @@ testDomainShutdownState(virDomainPtr domain,
 static int
 testDomainStartState(testDriverPtr privconn,
                      virDomainObjPtr dom,
-                     virDomainRunningReason reason)
+                     virDomainRunningReason reason,
+                     const virCreateParams *createParams)
 {
     int ret = -1;
 
@@ -662,6 +663,9 @@ testDomainStartState(testDriverPtr privconn,
                                     dom) < 0) {
         goto cleanup;
     }
+
+    if (virDomainDefOverrideBootConf(dom->def, createParams) < 0)
+        goto cleanup;
 
     dom->hasManagedSave = false;
     ret = 0;
@@ -930,7 +934,7 @@ testParseDomains(testDriverPtr privconn,
 
         if (nsdata->runstate != VIR_DOMAIN_SHUTOFF) {
             if (testDomainStartState(privconn, obj,
-                                     VIR_DOMAIN_RUNNING_BOOTED) < 0)
+                                     VIR_DOMAIN_RUNNING_BOOTED, NULL) < 0)
                 goto error;
         } else {
             testDomainShutdownState(NULL, obj, 0);
@@ -1674,7 +1678,7 @@ testDomainCreateXML(virConnectPtr conn, const char *xml,
         goto cleanup;
     def = NULL;
 
-    if (testDomainStartState(privconn, dom, VIR_DOMAIN_RUNNING_BOOTED) < 0) {
+    if (testDomainStartState(privconn, dom, VIR_DOMAIN_RUNNING_BOOTED, NULL) < 0) {
         if (!dom->persistent)
             virDomainObjListRemove(privconn->domains, dom);
         goto cleanup;
@@ -2185,7 +2189,7 @@ testDomainRestoreFlags(virConnectPtr conn,
         goto cleanup;
     def = NULL;
 
-    if (testDomainStartState(privconn, dom, VIR_DOMAIN_RUNNING_RESTORED) < 0) {
+    if (testDomainStartState(privconn, dom, VIR_DOMAIN_RUNNING_RESTORED, NULL) < 0) {
         if (!dom->persistent)
             virDomainObjListRemove(privconn->domains, dom);
         goto cleanup;
@@ -2959,17 +2963,50 @@ testNodeGetFreePages(virConnectPtr conn ATTRIBUTE_UNUSED,
     return 0;
 }
 
-static int testDomainCreateWithFlags(virDomainPtr domain, unsigned int flags)
+
+static int
+testDomainCreateWithParams(virDomainPtr domain,
+                           virTypedParameterPtr params,
+                           int nparams,
+                           unsigned int flags)
 {
     testDriverPtr privconn = domain->conn->privateData;
     virDomainObjPtr privdom;
     virObjectEventPtr event = NULL;
     int ret = -1;
+    size_t i;
+    virCreateParams createParams = {0};
 
     virCheckFlags(0, -1);
 
-    testDriverLock(privconn);
+    if (virTypedParamsValidate(params, nparams,
+                               VIR_DOMAIN_CREATE_PARM_DEVICE_IDENTIFIER,
+                               VIR_TYPED_PARAM_STRING,
+                               VIR_DOMAIN_CREATE_PARM_KERNEL,
+                               VIR_TYPED_PARAM_STRING,
+                               VIR_DOMAIN_CREATE_PARM_INITRD,
+                               VIR_TYPED_PARAM_STRING,
+                               VIR_DOMAIN_CREATE_PARM_CMDLINE,
+                               VIR_TYPED_PARAM_STRING,
+                               NULL) < 0)
+        return -1;
 
+    for (i = 0; i < nparams; i++) {
+        virTypedParameterPtr param = &params[i];
+        const char *value_str = param->value.s;
+
+        if (STREQ(param->field, VIR_DOMAIN_CREATE_PARM_DEVICE_IDENTIFIER)) {
+            createParams.bootDeviceIdentifier = value_str;
+        } else if (STREQ(param->field, VIR_DOMAIN_CREATE_PARM_KERNEL)) {
+            createParams.kernel = value_str;
+        } else if (STREQ(param->field, VIR_DOMAIN_CREATE_PARM_INITRD)) {
+            createParams.initrd = value_str;
+        } else if (STREQ(param->field, VIR_DOMAIN_CREATE_PARM_CMDLINE)) {
+            createParams.cmdline = value_str;
+        }
+    }
+
+    testDriverLock(privconn);
     if (!(privdom = testDomObjFromDomain(domain)))
         goto cleanup;
 
@@ -2980,13 +3017,14 @@ static int testDomainCreateWithFlags(virDomainPtr domain, unsigned int flags)
     }
 
     if (testDomainStartState(privconn, privdom,
-                             VIR_DOMAIN_RUNNING_BOOTED) < 0)
+                             VIR_DOMAIN_RUNNING_BOOTED, &createParams) < 0)
         goto cleanup;
+
     domain->id = privdom->def->id;
 
     event = virDomainEventLifecycleNewFromObj(privdom,
-                                     VIR_DOMAIN_EVENT_STARTED,
-                                     VIR_DOMAIN_EVENT_STARTED_BOOTED);
+                                              VIR_DOMAIN_EVENT_STARTED,
+                                              VIR_DOMAIN_EVENT_STARTED_BOOTED);
     ret = 0;
 
  cleanup:
@@ -2996,10 +3034,21 @@ static int testDomainCreateWithFlags(virDomainPtr domain, unsigned int flags)
     return ret;
 }
 
-static int testDomainCreate(virDomainPtr domain)
+
+static int
+testDomainCreateWithFlags(virDomainPtr domain,
+                          unsigned int flags)
 {
-    return testDomainCreateWithFlags(domain, 0);
+    return testDomainCreateWithParams(domain, NULL, 0, flags);
 }
+
+
+static int
+testDomainCreate(virDomainPtr domain)
+{
+    return testDomainCreateWithParams(domain, NULL, 0, 0);
+}
+
 
 static int testDomainUndefineFlags(virDomainPtr domain,
                                    unsigned int flags)
@@ -6728,7 +6777,7 @@ testDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
             was_stopped = true;
             virDomainObjAssignDef(vm, config, false, NULL);
             if (testDomainStartState(privconn, vm,
-                                VIR_DOMAIN_RUNNING_FROM_SNAPSHOT) < 0)
+                                     VIR_DOMAIN_RUNNING_FROM_SNAPSHOT, NULL) < 0)
                 goto cleanup;
             event = virDomainEventLifecycleNewFromObj(vm,
                                 VIR_DOMAIN_EVENT_STARTED,
@@ -6891,6 +6940,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .connectNumOfDefinedDomains = testConnectNumOfDefinedDomains, /* 0.1.11 */
     .domainCreate = testDomainCreate, /* 0.1.11 */
     .domainCreateWithFlags = testDomainCreateWithFlags, /* 0.8.2 */
+    .domainCreateWithParams = testDomainCreateWithParams, /* 4.4.0 */
     .domainDefineXML = testDomainDefineXML, /* 0.1.11 */
     .domainDefineXMLFlags = testDomainDefineXMLFlags, /* 1.2.12 */
     .domainUndefine = testDomainUndefine, /* 0.1.11 */
