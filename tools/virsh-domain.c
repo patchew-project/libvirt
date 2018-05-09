@@ -4038,40 +4038,44 @@ cmdStart(vshControl *ctl, const vshCmd *cmd)
     if (vshCommandOptBool(cmd, "force-boot"))
         flags |= VIR_DOMAIN_START_FORCE_BOOT;
 
-    /* We can emulate force boot, even for older servers that reject it.  */
-    if (flags & VIR_DOMAIN_START_FORCE_BOOT) {
-        if ((nfds ?
-             virDomainCreateWithFiles(dom, nfds, fds, flags) :
-             virDomainCreateWithFlags(dom, flags)) == 0)
-            goto started;
-        if (last_error->code != VIR_ERR_NO_SUPPORT &&
-            last_error->code != VIR_ERR_INVALID_ARG) {
-            vshReportError(ctl);
-            goto cleanup;
-        }
-        vshResetLibvirtError();
-        rc = virDomainHasManagedSaveImage(dom, 0);
-        if (rc < 0) {
-            /* No managed save image to remove */
-            vshResetLibvirtError();
-        } else if (rc > 0) {
-            if (virDomainManagedSaveRemove(dom, 0) < 0) {
+    /* Prefer older API unless we have to pass extra parameters */
+    if (nfds) {
+        rc = virDomainCreateWithFiles(dom, nfds, fds, flags);
+    } else if (flags) {
+        rc = virDomainCreateWithFlags(dom, flags);
+        /* We can emulate force boot, even for older servers that
+         * reject it. */
+        if (rc < 0 && flags & VIR_DOMAIN_START_FORCE_BOOT) {
+            if (last_error->code != VIR_ERR_NO_SUPPORT &&
+                last_error->code != VIR_ERR_INVALID_ARG) {
                 vshReportError(ctl);
                 goto cleanup;
             }
+            vshResetLibvirtError();
+            rc = virDomainHasManagedSaveImage(dom, 0);
+            if (rc < 0) {
+                /* No managed save image to remove */
+                vshResetLibvirtError();
+            } else if (rc > 0) {
+                if (virDomainManagedSaveRemove(dom, 0) < 0) {
+                    vshReportError(ctl);
+                    goto cleanup;
+                }
+            }
+
+            /* now try it again without the force boot flag */
+            flags &= ~VIR_DOMAIN_START_FORCE_BOOT;
+            rc = virDomainCreateWithFlags(dom, flags);
         }
-        flags &= ~VIR_DOMAIN_START_FORCE_BOOT;
+    } else {
+        rc = virDomainCreate(dom);
     }
 
-    /* Prefer older API unless we have to pass a flag.  */
-    if ((nfds ? virDomainCreateWithFiles(dom, nfds, fds, flags) :
-         (flags ? virDomainCreateWithFlags(dom, flags)
-          : virDomainCreate(dom))) < 0) {
+    if (rc < 0) {
         vshError(ctl, _("Failed to start domain %s"), virDomainGetName(dom));
         goto cleanup;
     }
 
- started:
     vshPrintExtra(ctl, _("Domain %s started\n"),
                   virDomainGetName(dom));
 #ifndef WIN32
