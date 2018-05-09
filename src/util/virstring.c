@@ -1248,6 +1248,33 @@ virStringReplace(const char *haystack,
 
 
 /**
+ * virStringUpdate:
+ * @dest: where to update string
+ * @src: string to duplicate
+ *
+ * If @src is an empty string then @dest will be freed otherwise @dest
+ * will be a duplicate of @src.
+ *
+ * Returns -1 on failure (with OOM error reported), 0 if @dest was
+ * freed only, 1 if @src was copied
+ */
+int
+virStringUpdate(char **dest, const char *src)
+{
+    if (virStringIsEmpty(src)) {
+        VIR_FREE(*dest);
+        return 0;
+    } else {
+        char *temp = *dest;
+        if (VIR_STRDUP(*dest, src) < 0)
+            return -1;
+        VIR_FREE(temp);
+        return 1;
+    }
+}
+
+
+/**
  * virStringStripIPv6Brackets:
  * @str: the string to strip
  *

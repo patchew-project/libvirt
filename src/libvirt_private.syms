@@ -2871,6 +2871,7 @@ virStringStripControlChars;
 virStringStripIPv6Brackets;
 virStringToUpper;
 virStringTrimOptionalNewline;
+virStringUpdate;
 virStrncpy;
 virStrndup;
 virStrToDouble;

@@ -290,6 +290,8 @@ char *virStringReplace(const char *haystack,
                        const char *oldneedle,
                        const char *newneedle)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+int virStringUpdate(char **dest, const char *src)
+    ATTRIBUTE_NONNULL(1);
 
 void virStringStripIPv6Brackets(char *str);
 bool virStringHasChars(const char *str,
