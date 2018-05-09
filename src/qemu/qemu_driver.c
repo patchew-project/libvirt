@@ -7332,24 +7332,55 @@ qemuDomainObjStart(virConnectPtr conn,
 
 
 static int
-qemuDomainCreateWithFlags(virDomainPtr dom, unsigned int flags)
+qemuDomainCreateWithParams(virDomainPtr dom,
+                           virTypedParameterPtr params,
+                           int nparams,
+                           unsigned int flags)
 {
     virQEMUDriverPtr driver = dom->conn->privateData;
     virDomainObjPtr vm;
     int ret = -1;
-    const virCreateParams createParams = { 0 };
+    size_t i;
+    virCreateParams createParams = { 0 };
 
     virCheckFlags(VIR_DOMAIN_START_PAUSED |
                   VIR_DOMAIN_START_AUTODESTROY |
                   VIR_DOMAIN_START_BYPASS_CACHE |
                   VIR_DOMAIN_START_FORCE_BOOT, -1);
 
+    if (virTypedParamsValidate(params, nparams,
+                               VIR_DOMAIN_CREATE_PARM_DEVICE_IDENTIFIER,
+                               VIR_TYPED_PARAM_STRING,
+                               VIR_DOMAIN_CREATE_PARM_KERNEL,
+                               VIR_TYPED_PARAM_STRING,
+                               VIR_DOMAIN_CREATE_PARM_INITRD,
+                               VIR_TYPED_PARAM_STRING,
+                               VIR_DOMAIN_CREATE_PARM_CMDLINE,
+                               VIR_TYPED_PARAM_STRING,
+                               NULL) < 0)
+        return -1;
+
+    for (i = 0; i < nparams; i++) {
+        virTypedParameterPtr param = &params[i];
+        const char *value_str = param->value.s;
+
+        if (STREQ(param->field, VIR_DOMAIN_CREATE_PARM_DEVICE_IDENTIFIER)) {
+            createParams.bootDeviceIdentifier = value_str;
+        } else if (STREQ(param->field, VIR_DOMAIN_CREATE_PARM_KERNEL)) {
+            createParams.kernel = value_str;
+        } else if (STREQ(param->field, VIR_DOMAIN_CREATE_PARM_INITRD)) {
+            createParams.initrd = value_str;
+        } else if (STREQ(param->field, VIR_DOMAIN_CREATE_PARM_CMDLINE)) {
+            createParams.cmdline = value_str;
+        }
+    }
+
     virNWFilterReadLockFilterUpdates();
 
     if (!(vm = qemuDomObjFromDomain(dom)))
         goto cleanup;
 
-    if (virDomainCreateWithFlagsEnsureACL(dom->conn, vm->def) < 0)
+    if (virDomainCreateWithParamsEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
     if (qemuProcessBeginJob(driver, vm, VIR_DOMAIN_JOB_OPERATION_START,
@@ -7378,11 +7409,20 @@ qemuDomainCreateWithFlags(virDomainPtr dom, unsigned int flags)
     return ret;
 }
 
+
+static int
+qemuDomainCreateWithFlags(virDomainPtr dom, unsigned int flags)
+{
+    return qemuDomainCreateWithParams(dom, NULL, 0, flags);
+}
+
+
 static int
 qemuDomainCreate(virDomainPtr dom)
 {
-    return qemuDomainCreateWithFlags(dom, 0);
+    return qemuDomainCreateWithParams(dom, NULL, 0, 0);
 }
+
 
 static virDomainPtr
 qemuDomainDefineXMLFlags(virConnectPtr conn,
@@ -21421,6 +21461,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .connectNumOfDefinedDomains = qemuConnectNumOfDefinedDomains, /* 0.2.0 */
     .domainCreate = qemuDomainCreate, /* 0.2.0 */
     .domainCreateWithFlags = qemuDomainCreateWithFlags, /* 0.8.2 */
+    .domainCreateWithParams = qemuDomainCreateWithParams, /* 4.4.0 */
     .domainDefineXML = qemuDomainDefineXML, /* 0.2.0 */
     .domainDefineXMLFlags = qemuDomainDefineXMLFlags, /* 1.2.12 */
     .domainUndefine = qemuDomainUndefine, /* 0.2.0 */
