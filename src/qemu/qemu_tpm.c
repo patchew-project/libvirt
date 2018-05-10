@@ -684,7 +684,26 @@ qemuExtTPMStartEmulator(virQEMUDriverPtr driver,
 
     virCommandSetErrorBuffer(cmd, &errbuf);
 
-    if (virCommandRun(cmd, &exitstatus) < 0 || exitstatus != 0) {
+    if (virSecurityManagerSetTPMLabels(driver->securityManager,
+                                       def) < 0)
+        goto cleanup;
+
+    if (virSecurityManagerSetChildProcessLabel(driver->securityManager,
+                                               def, cmd) < 0)
+        goto cleanup;
+
+    if (virSecurityManagerPreFork(driver->securityManager) < 0)
+        goto cleanup;
+
+    /* make sure we run this with the appropriate user */
+    virCommandSetUID(cmd, cfg->swtpm_user);
+    virCommandSetGID(cmd, cfg->swtpm_group);
+
+    ret = virCommandRun(cmd, &exitstatus);
+
+    virSecurityManagerPostFork(driver->securityManager);
+
+    if (ret < 0 || exitstatus != 0) {
         VIR_ERROR(_("Could not start 'swtpm'. exitstatus: %d "
                     "stderr: %s"), exitstatus, errbuf);
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -696,6 +715,8 @@ qemuExtTPMStartEmulator(virQEMUDriverPtr driver,
     ret = 0;
 
  cleanup:
+    if (ret < 0)
+        virSecurityManagerRestoreTPMLabels(driver->securityManager, def);
     VIR_FREE(shortName);
     VIR_FREE(errbuf);
     virCommandFree(cmd);
@@ -741,6 +762,7 @@ qemuExtTPMStop(virQEMUDriverPtr driver,
             goto cleanup;
 
         qemuTPMEmulatorStop(cfg->swtpmStateDir, shortName);
+        virSecurityManagerRestoreTPMLabels(driver->securityManager, def);
         break;
     case VIR_DOMAIN_TPM_TYPE_PASSTHROUGH:
     case VIR_DOMAIN_TPM_TYPE_LAST:
