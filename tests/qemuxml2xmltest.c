@@ -1096,6 +1096,7 @@ mymain(void)
     DO_TEST("video-virtio-gpu-device", NONE);
     DO_TEST("video-virtio-gpu-virgl", NONE);
     DO_TEST("video-virtio-gpu-spice-gl", NONE);
+    DO_TEST("video-virtio-gpu-sdl-gl", NONE);
     DO_TEST("virtio-input", NONE);
     DO_TEST("virtio-input-passthrough", NONE);
 
