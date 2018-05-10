@@ -9422,6 +9422,7 @@ qemuBuildTPMBackendStr(const virDomainDef *def,
         VIR_FREE(cancel_path);
 
         break;
+    case VIR_DOMAIN_TPM_TYPE_EMULATOR:
     case VIR_DOMAIN_TPM_TYPE_LAST:
         goto error;
     }
