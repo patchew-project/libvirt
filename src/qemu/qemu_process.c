@@ -48,6 +48,7 @@
 #include "qemu_migration_params.h"
 #include "qemu_interface.h"
 #include "qemu_security.h"
+#include "qemu_extdevice.h"
 
 #include "cpu/cpu.h"
 #include "datatypes.h"
@@ -5872,6 +5873,10 @@ qemuProcessPrepareHost(virQEMUDriverPtr driver,
     if (qemuProcessPrepareHostStorage(driver, vm, flags) < 0)
         goto cleanup;
 
+    VIR_DEBUG("Preparing external devices");
+    if (qemuExtDevicesPrepareHost(driver, vm->def) < 0)
+        goto cleanup;
+
     ret = 0;
  cleanup:
     virObjectUnref(cfg);
@@ -5954,6 +5959,9 @@ qemuProcessLaunch(virConnectPtr conn,
                                             QEMU_DOMAIN_LOG_CONTEXT_MODE_START)))
         goto cleanup;
     logfile = qemuDomainLogContextGetWriteFD(logCtxt);
+
+    if (qemuExtDevicesStart(driver, vm->def, logCtxt) < 0)
+        goto cleanup;
 
     VIR_DEBUG("Building emulator command line");
     if (!(cmd = qemuBuildCommandLine(driver,
@@ -6194,6 +6202,8 @@ qemuProcessLaunch(virConnectPtr conn,
     ret = 0;
 
  cleanup:
+    if (ret)
+        qemuExtDevicesStop(driver, vm->def);
     qemuDomainSecretDestroy(vm);
     virCommandFree(cmd);
     virObjectUnref(logCtxt);
@@ -6613,6 +6623,8 @@ void qemuProcessStop(virQEMUDriverPtr driver,
                                  VIR_QEMU_PROCESS_KILL_NOCHECK));
 
     qemuDomainCleanupRun(driver, vm);
+
+    qemuExtDevicesStop(driver, vm->def);
 
     /* Stop autodestroy in case guest is restarted */
     qemuProcessAutoDestroyRemove(driver, vm);

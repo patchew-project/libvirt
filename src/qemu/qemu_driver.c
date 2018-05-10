@@ -60,6 +60,7 @@
 #include "qemu_migration_params.h"
 #include "qemu_blockjob.h"
 #include "qemu_security.h"
+#include "qemu_extdevice.h"
 
 #include "virerror.h"
 #include "virlog.h"
@@ -7557,6 +7558,10 @@ qemuDomainUndefineFlags(virDomainPtr dom,
 
     if (virDomainDeleteConfig(cfg->configDir, cfg->autostartDir, vm) < 0)
         goto endjob;
+
+    /* in case domain is NOT running, remove any TPM storage */
+    if (!vm->persistent)
+        qemuExtDevicesCleanupHost(driver, vm->def);
 
     event = virDomainEventLifecycleNewFromObj(vm,
                                      VIR_DOMAIN_EVENT_UNDEFINED,
