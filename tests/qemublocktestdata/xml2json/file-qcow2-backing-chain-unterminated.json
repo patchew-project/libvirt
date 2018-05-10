@@ -10,8 +10,7 @@
     "discard": "unmap"
   },
   "backing": "#block313"
-}
-{
+}{
   "node-name": "#block313",
   "read-only": true,
   "driver": "qcow2",

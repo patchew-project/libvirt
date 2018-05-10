@@ -30,8 +30,7 @@
     "discard": "unmap"
   },
   "backing": "node-b-f"
-}
-{
+}{
   "node-name": "node-b-f",
   "read-only": true,
   "cache": {

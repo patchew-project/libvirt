@@ -12,8 +12,7 @@
     "discard": "unmap"
   },
   "backing": "node-b-f"
-}
-{
+}{
   "node-name": "node-b-f",
   "read-only": true,
   "discard": "unmap",
@@ -26,8 +25,7 @@
     "discard": "unmap"
   },
   "backing": "node-c-f"
-}
-{
+}{
   "node-name": "node-c-f",
   "read-only": true,
   "discard": "unmap",
@@ -48,8 +46,7 @@
     "discard": "unmap"
   },
   "backing": "node-d-f"
-}
-{
+}{
   "node-name": "node-d-f",
   "read-only": true,
   "discard": "unmap",
