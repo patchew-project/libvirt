@@ -620,7 +620,7 @@ qemucapsprobe_LDADD = \
 qemucapsprobemock_la_SOURCES = \
 	qemucapsprobemock.c
 qemucapsprobemock_la_LDFLAGS = $(MOCKLIBS_LDFLAGS)
-qemucapsprobemock_la_LIBADD = $(MOCKLIBS_LIBS)
+qemucapsprobemock_la_LIBADD = $(MOCKLIBS_LIBS) ../src/libvirt.la
 
 qemucommandutiltest_SOURCES = \
 	qemucommandutiltest.c \
