@@ -153,9 +153,10 @@
   <flag name='chardev-reconnect'/>
   <flag name='virtio-gpu.max_outputs'/>
   <flag name='isa-serial'/>
+  <flag name='sdl-gl'/>
   <version>2004000</version>
   <kvmVersion>0</kvmVersion>
-  <microcodeVersion>75406</microcodeVersion>
+  <microcodeVersion>75544</microcodeVersion>
   <package></package>
   <arch>x86_64</arch>
   <cpu type='kvm' name='Opteron_G5'/>

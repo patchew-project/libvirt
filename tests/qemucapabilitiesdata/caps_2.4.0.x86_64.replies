@@ -3575,6 +3575,15 @@
     },
     {
       "parameters": [
+        {
+          "name": "gl",
+          "type": "boolean"
+        }
+      ],
+      "option": "sdl"
+    },
+    {
+      "parameters": [
       ],
       "option": "acpi"
     },
