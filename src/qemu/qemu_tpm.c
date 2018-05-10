@@ -53,6 +53,41 @@ static char *swtpm_path;
 static char *swtpm_setup;
 static char *swtpm_ioctl;
 
+bool swtpm_supports_tpm2;
+
+/*
+ * qemuTPMCheckForTPM2Support
+ *
+ * Check whether swtpm_setup supports TPM 2
+ */
+static void
+qemuTPMCheckForTPM2Support(void)
+{
+    virCommandPtr cmd;
+    char *help = NULL;
+
+    if (!swtpm_setup)
+        return;
+
+    cmd = virCommandNew(swtpm_setup);
+    if (!cmd)
+        return;
+
+    virCommandAddArg(cmd, "--help");
+    virCommandSetOutputBuffer(cmd, &help);
+
+    if (virCommandRun(cmd, NULL) < 0)
+        goto cleanup;
+
+    if (strstr(help, "--tpm2"))
+        swtpm_supports_tpm2 = true;
+
+ cleanup:
+    virCommandFree(cmd);
+    VIR_FREE(help);
+}
+
+
 /*
  * qemuTPMEmulatorInit
  *
@@ -92,6 +127,7 @@ qemuTPMEmulatorInit(void)
             VIR_FREE(swtpm_setup);
             return -1;
         }
+        qemuTPMCheckForTPM2Support();
     }
 
     if (!swtpm_ioctl) {
@@ -119,16 +155,28 @@ qemuTPMEmulatorInit(void)
  *
  * @swtpmStorageDir: directory for swtpm persistent state
  * @vmname: The name of the VM for which to create the storage
+ * @tpmversion: version of the TPM
  *
  * Create the swtpm's storage path
  */
 static char *
 qemuTPMCreateEmulatorStoragePath(const char *swtpmStorageDir,
-                                 const char *vmname)
+                                 const char *vmname,
+                                 virDomainTPMVersion tpmversion)
 {
     char *path = NULL;
+    const char *dir = "";
 
-    ignore_value(virAsprintf(&path, "%s/%s/tpm1.2", swtpmStorageDir, vmname));
+    switch (tpmversion) {
+    case VIR_DOMAIN_TPM_VERSION_1_2:
+        dir = "tpm1.2";
+        break;
+    case VIR_DOMAIN_TPM_VERSION_2:
+        dir = "tpm2";
+        break;
+    }
+
+    ignore_value(virAsprintf(&path, "%s/%s/%s", swtpmStorageDir, vmname, dir));
 
     return path;
 }
@@ -289,7 +337,8 @@ qemuTPMEmulatorInitPaths(virDomainTPMDefPtr tpm,
 
     if (!tpm->data.emulator.storagepath &&
         !(tpm->data.emulator.storagepath =
-            qemuTPMCreateEmulatorStoragePath(swtpmStorageDir, uuidstr)))
+            qemuTPMCreateEmulatorStoragePath(swtpmStorageDir, uuidstr,
+                                             tpm->version)))
         return -1;
 
     return 0;
@@ -512,6 +561,14 @@ qemuTPMEmulatorBuildCommand(virDomainTPMDefPtr tpm,
 
     virCommandSetUID(cmd, swtpm_user);
     virCommandSetGID(cmd, swtpm_group);
+
+    switch (tpm->version) {
+    case VIR_DOMAIN_TPM_VERSION_1_2:
+        break;
+    case VIR_DOMAIN_TPM_VERSION_2:
+        virCommandAddArg(cmd, "--tpm2");
+        break;
+    }
 
     return cmd;
 
