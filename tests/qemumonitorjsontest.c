@@ -2864,7 +2864,7 @@ mymain(void)
     struct testQAPISchemaData qapiData;
     char *metaschema = NULL;
 
-#if !WITH_YAJL
+#if !WITH_JANSSON
     fputs("libvirt not compiled with JSON, skipping this test\n", stderr);
     return EXIT_AM_SKIP;
 #endif
