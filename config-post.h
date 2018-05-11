@@ -45,8 +45,6 @@
 # undef WITH_SSH2
 # undef WITH_SYSTEMD_DAEMON
 # undef WITH_VIRTUALPORT
-# undef WITH_YAJL
-# undef WITH_YAJL2
 #endif
 
 /*
