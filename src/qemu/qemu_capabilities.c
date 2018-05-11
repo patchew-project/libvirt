@@ -476,6 +476,9 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "nbd-tls",
               "tpm-crb",
               "pr-manager-helper",
+
+              /* 295 */
+              "vmgenid",
     );
 
 
@@ -1103,6 +1106,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "virtio-tablet-ccw", QEMU_CAPS_DEVICE_VIRTIO_TABLET_CCW },
     { "pcie-pci-bridge", QEMU_CAPS_DEVICE_PCIE_PCI_BRIDGE },
     { "pr-manager-helper", QEMU_CAPS_PR_MANAGER_HELPER },
+    { "vmgenid", QEMU_CAPS_DEVICE_VMGENID },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioBalloon[] = {

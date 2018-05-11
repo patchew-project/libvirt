@@ -461,6 +461,9 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     QEMU_CAPS_DEVICE_TPM_CRB, /* -device tpm-crb */
     QEMU_CAPS_PR_MANAGER_HELPER, /* -object pr-manager-helper */
 
+    /* 295 */
+    QEMU_CAPS_DEVICE_VMGENID, /* -device vmgenid */
+
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
 
