@@ -607,16 +607,21 @@ qemuSetupMemoryCgroup(virDomainObjPtr vm)
 static int
 qemuSetupFirmwareCgroup(virDomainObjPtr vm)
 {
+    virStorageSourcePtr src = NULL;
+
     if (!vm->def->os.loader)
         return 0;
 
-    if (vm->def->os.loader->path &&
-        qemuSetupImagePathCgroup(vm, vm->def->os.loader->path,
-                                 vm->def->os.loader->readonly == VIR_TRISTATE_BOOL_YES) < 0)
+    src = vm->def->os.loader->src;
+
+    if (src->type == VIR_STORAGE_TYPE_FILE &&
+        qemuSetupImagePathCgroup(vm, src->path,
+                                 src->readonly == VIR_TRISTATE_BOOL_YES) < 0)
         return -1;
 
     if (vm->def->os.loader->nvram &&
-        qemuSetupImagePathCgroup(vm, vm->def->os.loader->nvram, false) < 0)
+        vm->def->os.loader->nvram->type == VIR_STORAGE_TYPE_FILE &&
+        qemuSetupImagePathCgroup(vm, vm->def->os.loader->nvram->path, false) < 0)
         return -1;
 
     return 0;

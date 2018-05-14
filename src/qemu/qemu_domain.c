@@ -3340,6 +3340,9 @@ qemuDomainDefPostParse(virDomainDefPtr def,
      * function shall not fail in that case. It will be re-run on VM startup
      * with the capabilities populated. */
     virQEMUCapsPtr qemuCaps = parseOpaque;
+    virDomainLoaderDefPtr ldr = NULL;
+    char *nvramPath = NULL;
+
     int ret = -1;
 
     if (def->os.bootloader || def->os.bootloaderArgs) {
@@ -3354,13 +3357,20 @@ qemuDomainDefPostParse(virDomainDefPtr def,
         goto cleanup;
     }
 
-    if (def->os.loader &&
-        def->os.loader->type == VIR_DOMAIN_LOADER_TYPE_PFLASH &&
-        def->os.loader->readonly == VIR_TRISTATE_SWITCH_ON &&
-        !def->os.loader->nvram) {
-        if (virAsprintf(&def->os.loader->nvram, "%s/%s_VARS.fd",
+    ldr = def->os.loader;
+    if (ldr &&
+        ldr->type == VIR_DOMAIN_LOADER_TYPE_PFLASH &&
+        ldr->readonly == VIR_TRISTATE_SWITCH_ON &&
+        !ldr->nvram) {
+        if (virAsprintf(&nvramPath, "%s/%s_VARS.fd",
                         cfg->nvramDir, def->name) < 0)
             goto cleanup;
+        ldr->nvram = virStorageSourceNewFromBackingAbsolute(nvramPath);
+        if (!ldr->nvram) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Unable to add NVRAM drive %s"), nvramPath);
+            goto cleanup;
+        }
     }
 
     if (qemuDomainDefAddDefaultDevices(def, qemuCaps) < 0)
@@ -10526,19 +10536,22 @@ qemuDomainSetupLoader(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
 
     VIR_DEBUG("Setting up loader");
 
-    if (loader) {
+    if (loader && loader->src) {
         switch ((virDomainLoader) loader->type) {
         case VIR_DOMAIN_LOADER_TYPE_ROM:
-            if (qemuDomainCreateDevice(loader->path, data, false) < 0)
+            if (loader->src->type == VIR_STORAGE_TYPE_FILE &&
+                qemuDomainCreateDevice(loader->src->path, data, false) < 0)
                 goto cleanup;
             break;
 
         case VIR_DOMAIN_LOADER_TYPE_PFLASH:
-            if (qemuDomainCreateDevice(loader->path, data, false) < 0)
+            if (loader->src->type == VIR_STORAGE_TYPE_FILE &&
+                qemuDomainCreateDevice(loader->src->path, data, false) < 0)
                 goto cleanup;
 
             if (loader->nvram &&
-                qemuDomainCreateDevice(loader->nvram, data, false) < 0)
+                loader->nvram->type == VIR_STORAGE_TYPE_FILE &&
+                qemuDomainCreateDevice(loader->nvram->path, data, false) < 0)
                 goto cleanup;
             break;
 

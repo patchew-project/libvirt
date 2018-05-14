@@ -2459,7 +2459,8 @@ virSecuritySELinuxRestoreAllLabel(virSecurityManagerPtr mgr,
         rc = -1;
 
     if (def->os.loader && def->os.loader->nvram &&
-        virSecuritySELinuxRestoreFileLabel(mgr, def->os.loader->nvram) < 0)
+        def->os.loader->nvram->type == VIR_STORAGE_TYPE_FILE &&
+        virSecuritySELinuxRestoreFileLabel(mgr, def->os.loader->nvram->path) < 0)
         rc = -1;
 
     return rc;
@@ -2851,8 +2852,9 @@ virSecuritySELinuxSetAllLabel(virSecurityManagerPtr mgr,
     /* This is different than kernel or initrd. The nvram store
      * is really a disk, qemu can read and write to it. */
     if (def->os.loader && def->os.loader->nvram &&
+        def->os.loader->nvram->type == VIR_STORAGE_TYPE_FILE &&
         secdef && secdef->imagelabel &&
-        virSecuritySELinuxSetFilecon(mgr, def->os.loader->nvram,
+        virSecuritySELinuxSetFilecon(mgr, def->os.loader->nvram->path,
                                      secdef->imagelabel) < 0)
         return -1;
 

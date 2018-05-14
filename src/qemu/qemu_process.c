@@ -4212,25 +4212,41 @@ qemuPrepareNVRAM(virQEMUDriverConfigPtr cfg,
     const char *master_nvram_path;
     ssize_t r;
 
-    if (!loader || !loader->nvram || virFileExists(loader->nvram))
+    /* return early if either loader is network-backed
+     * or NVRAM is already specified.
+     */
+    if (!loader || !loader->src || !loader->nvram ||
+        loader->type != VIR_DOMAIN_LOADER_TYPE_PFLASH ||
+        loader->src->type == VIR_STORAGE_TYPE_NETWORK ||
+        loader->nvram->type == VIR_STORAGE_TYPE_NETWORK)
+        return 0;
+
+    if (loader->nvram->type == VIR_STORAGE_TYPE_FILE &&
+        virFileExists(loader->nvram->path))
         return 0;
 
     master_nvram_path = loader->templt;
-    if (!loader->templt) {
+    /* Even if a template is not specified, we associate "known" EFI firmware
+     * to their NVRAM templates.
+     * Ofcourse this only applies to local firmware paths, as it is diffcult
+     * for libvirt to parse all network paths.
+     */
+    if (!loader->templt && loader->src->type == VIR_STORAGE_TYPE_FILE) {
         size_t i;
         for (i = 0; i < cfg->nfirmwares; i++) {
-            if (STREQ(cfg->firmwares[i]->name, loader->path)) {
+            if (STREQ(cfg->firmwares[i]->name, loader->src->path)) {
                 master_nvram_path = cfg->firmwares[i]->nvram;
                 break;
             }
         }
     }
 
-    if (!master_nvram_path) {
-        virReportError(VIR_ERR_OPERATION_FAILED,
-                       _("unable to find any master var store for "
-                         "loader: %s"), loader->path);
-        goto cleanup;
+    if (!master_nvram_path && loader->nvram) {
+        /* There is no template description, but an NVRAM spec
+         * has already been provided.
+         * Trust the client to have generated the right spec here
+         */
+        return 0;
     }
 
     if ((srcFD = virFileOpenAs(master_nvram_path, O_RDONLY,
@@ -4240,13 +4256,13 @@ qemuPrepareNVRAM(virQEMUDriverConfigPtr cfg,
                              master_nvram_path);
         goto cleanup;
     }
-    if ((dstFD = virFileOpenAs(loader->nvram,
+    if ((dstFD = virFileOpenAs(loader->nvram->path,
                                O_WRONLY | O_CREAT | O_EXCL,
                                S_IRUSR | S_IWUSR,
                                cfg->user, cfg->group, 0)) < 0) {
         virReportSystemError(-dstFD,
                              _("Failed to create file '%s'"),
-                             loader->nvram);
+                             loader->nvram->path);
         goto cleanup;
     }
     created = true;
@@ -4264,7 +4280,7 @@ qemuPrepareNVRAM(virQEMUDriverConfigPtr cfg,
         if (safewrite(dstFD, buf, r) < 0) {
             virReportSystemError(errno,
                                  _("Unable to write to file '%s'"),
-                                 loader->nvram);
+                                 loader->nvram->path);
             goto cleanup;
         }
     } while (r);
@@ -4278,7 +4294,7 @@ qemuPrepareNVRAM(virQEMUDriverConfigPtr cfg,
     if (VIR_CLOSE(dstFD) < 0) {
         virReportSystemError(errno,
                              _("Unable to close file '%s'"),
-                             loader->nvram);
+                             loader->nvram->path);
         goto cleanup;
     }
 
@@ -4288,7 +4304,7 @@ qemuPrepareNVRAM(virQEMUDriverConfigPtr cfg,
      * copy the file content. Roll back. */
     if (ret < 0) {
         if (created)
-            unlink(loader->nvram);
+            unlink(loader->nvram->path);
     }
 
     VIR_FORCE_CLOSE(srcFD);

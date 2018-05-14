@@ -7502,12 +7502,13 @@ qemuDomainUndefineFlags(virDomainPtr dom,
 
     if (vm->def->os.loader &&
         vm->def->os.loader->nvram &&
-        virFileExists(vm->def->os.loader->nvram)) {
+        vm->def->os.loader->nvram->type == VIR_STORAGE_TYPE_FILE &&
+        virFileExists(vm->def->os.loader->nvram->path)) {
         if ((flags & VIR_DOMAIN_UNDEFINE_NVRAM)) {
-            if (unlink(vm->def->os.loader->nvram) < 0) {
+            if (unlink(vm->def->os.loader->nvram->path) < 0) {
                 virReportSystemError(errno,
                                      _("failed to remove nvram: %s"),
-                                     vm->def->os.loader->nvram);
+                                     vm->def->os.loader->nvram->path);
                 goto endjob;
             }
         } else if (!(flags & VIR_DOMAIN_UNDEFINE_KEEP_NVRAM)) {
