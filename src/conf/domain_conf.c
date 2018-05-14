@@ -2884,8 +2884,8 @@ virDomainLoaderDefFree(virDomainLoaderDefPtr loader)
     if (!loader)
         return;
 
-    VIR_FREE(loader->path);
-    VIR_FREE(loader->nvram);
+    virStorageSourceFree(loader->src);
+    virStorageSourceFree(loader->nvram);
     VIR_FREE(loader->templt);
     VIR_FREE(loader);
 }
@@ -18047,17 +18047,62 @@ virDomainDefMaybeAddHostdevSCSIcontroller(virDomainDefPtr def)
 
 static int
 virDomainLoaderDefParseXML(xmlNodePtr node,
+                           xmlXPathContextPtr ctxt,
                            virDomainLoaderDefPtr loader)
 {
     int ret = -1;
     char *readonly_str = NULL;
     char *secure_str = NULL;
     char *type_str = NULL;
+    char *tmp = NULL;
+    xmlNodePtr cur;
+    xmlXPathContextPtr cur_ctxt = ctxt;
+
+    if (VIR_ALLOC(loader->src)) {
+        goto cleanup;
+    }
+    loader->src->type = VIR_STORAGE_TYPE_LAST;
+    loader->oldStyleLoader = false;
 
     readonly_str = virXMLPropString(node, "readonly");
     secure_str = virXMLPropString(node, "secure");
     type_str = virXMLPropString(node, "type");
-    loader->path = (char *) xmlNodeGetContent(node);
+
+    if ((tmp = virXMLPropString(node, "backing")) &&
+        (loader->src->type = virStorageTypeFromString(tmp)) <= 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unknown loader type '%s'"), tmp);
+        goto cleanup;
+    }
+    VIR_FREE(tmp);
+
+    for (cur = node->children; cur != NULL; cur = cur->next) {
+        if (cur->type != XML_ELEMENT_NODE) {
+            continue;
+        }
+
+        if (virXMLNodeNameEqual(cur, "source")) {
+            /* new-style declaration found */
+            if (virDomainStorageSourceParse(cur, cur_ctxt, loader->src, 0) < 0) {
+                virReportError(VIR_ERR_XML_DETAIL,
+                               _("Error parsing Loader source element"));
+                goto cleanup;
+            }
+            break;
+        }
+    }
+
+    /* Old-style absolute path found ? */
+    if (loader->src->type == VIR_STORAGE_TYPE_LAST) {
+        if (!(loader->src->path = (char *) xmlNodeGetContent(node))) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("missing loader source"));
+            goto cleanup;
+        } else {
+            loader->src->type = VIR_STORAGE_TYPE_FILE;
+            loader->oldStyleLoader = true;
+        }
+    }
 
     if (readonly_str &&
         (loader->readonly = virTristateBoolTypeFromString(readonly_str)) <= 0) {
@@ -18084,13 +18129,81 @@ virDomainLoaderDefParseXML(xmlNodePtr node,
     }
 
     ret = 0;
- cleanup:
+    goto exit;
+cleanup:
+    if (loader->src)
+      VIR_FREE(loader->src);
+exit:
     VIR_FREE(readonly_str);
     VIR_FREE(secure_str);
     VIR_FREE(type_str);
+
     return ret;
 }
 
+static int
+virDomainLoaderNvramDefParseXML(xmlNodePtr node,
+                           xmlXPathContextPtr ctxt,
+                           virDomainLoaderDefPtr loader)
+{
+    int ret = -1;
+    char *tmp = NULL;
+    xmlNodePtr cur;
+
+    if (VIR_ALLOC(loader->nvram)) {
+        goto cleanup;
+    }
+
+    loader->nvram->type = VIR_STORAGE_TYPE_LAST;
+    loader->nvram->oldStyleNvram = false;
+
+    if ((tmp = virXMLPropString(node, "backing")) &&
+        (loader->nvram->type = virStorageTypeFromString(tmp)) <= 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unknown nvram type '%s'"), tmp);
+        goto cleanup;
+    }
+    VIR_FREE(tmp);
+
+    for (cur = node->children; cur != NULL; cur = cur->next) {
+        if (cur->type != XML_ELEMENT_NODE) {
+            continue;
+        }
+
+        if (virXMLNodeNameEqual(cur, "template")) {
+            loader->templt = virXPathString("string(./os/nvram[1]/@template)", ctxt);
+            continue;
+        }
+
+        if (virXMLNodeNameEqual(cur, "source")) {
+            if (virDomainStorageSourceParse(cur, ctxt, loader->nvram, 0) < 0) {
+                virReportError(VIR_ERR_XML_DETAIL,
+                               _("Error parsing nvram source element"));
+                goto cleanup;
+            }
+            ret = 0;
+        }
+    }
+
+    /* Old-style declaration found */
+    if (loader->nvram->type == VIR_STORAGE_TYPE_LAST) {
+        if (!(loader->nvram->path = (char *) xmlNodeGetContent(node))) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("missing nvram source"));
+            goto cleanup;
+        } else {
+            loader->nvram->type = VIR_STORAGE_TYPE_FILE;
+            loader->oldStyleNvram = true;
+            ret = 0;
+        }
+    }
+    return ret;
+
+cleanup:
+    if (loader->nvram)
+      VIR_FREE(loader->nvram);
+    return ret;
+}
 
 static virBitmapPtr
 virDomainSchedulerParse(xmlNodePtr node,
@@ -18483,11 +18596,15 @@ virDomainDefParseBootOptions(virDomainDefPtr def,
             if (VIR_ALLOC(def->os.loader) < 0)
                 goto error;
 
-            if (virDomainLoaderDefParseXML(loader_node, def->os.loader) < 0)
+            def->os.loader->src = NULL;
+            def->os.loader->nvram = NULL;
+            if (virDomainLoaderDefParseXML(loader_node, ctxt, def->os.loader) < 0)
                 goto error;
 
-            def->os.loader->nvram = virXPathString("string(./os/nvram[1])", ctxt);
-            def->os.loader->templt = virXPathString("string(./os/nvram[1]/@template)", ctxt);
+            if ((loader_node = virXPathNode("./os/nvram[1]", ctxt)) &&
+                (virDomainLoaderNvramDefParseXML(loader_node, ctxt,
+                                                 def->os.loader) < 0))
+                    goto error;
         }
     }
 
