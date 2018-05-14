@@ -18155,7 +18155,7 @@ virDomainLoaderNvramDefParseXML(xmlNodePtr node,
     }
 
     loader->nvram->type = VIR_STORAGE_TYPE_LAST;
-    loader->nvram->oldStyleNvram = false;
+    loader->oldStyleNvram = false;
 
     if ((tmp = virXMLPropString(node, "backing")) &&
         (loader->nvram->type = virStorageTypeFromString(tmp)) <= 0) {
@@ -26282,11 +26282,19 @@ virDomainHugepagesFormat(virBufferPtr buf,
 
 static void
 virDomainLoaderDefFormat(virBufferPtr buf,
-                         virDomainLoaderDefPtr loader)
+                         virDomainLoaderDefPtr loader,
+                         unsigned int flags)
 {
     const char *readonly = virTristateBoolTypeToString(loader->readonly);
     const char *secure = virTristateBoolTypeToString(loader->secure);
     const char *type = virDomainLoaderTypeToString(loader->type);
+    const char *backing = NULL;
+
+    virBuffer attrBuf = VIR_BUFFER_INITIALIZER;
+    virBuffer childBuf = VIR_BUFFER_INITIALIZER;
+
+    virBufferSetChildIndent(&childBuf, buf);
+
 
     virBufferAddLit(buf, "<loader");
 
@@ -26296,17 +26304,75 @@ virDomainLoaderDefFormat(virBufferPtr buf,
     if (loader->secure)
         virBufferAsprintf(buf, " secure='%s'", secure);
 
-    virBufferAsprintf(buf, " type='%s'>", type);
+    virBufferAsprintf(buf, " type='%s'", type);
+    if (loader->src &&
+        loader->src->type < VIR_STORAGE_TYPE_LAST) {
+        if (!loader->oldStyleLoader) {
+            /* Format this in the new style, using the
+             * <source> sub-element */
+            if (virDomainStorageSourceFormat(&attrBuf, &childBuf, loader->src,
+                                             flags, 0) < 0) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                 _("Cannot format loader source"));
+                    goto cleanup;
+            }
 
-    virBufferEscapeString(buf, "%s</loader>\n", loader->path);
+            backing = virStorageTypeToString(loader->src->type);
+            virBufferAsprintf(buf, " backing='%s'>", backing);
+
+            if (virXMLFormatElement(buf, "source", &attrBuf, &childBuf) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("Cannot format loader source"));
+                goto cleanup;
+            }
+
+        } else
+            /* Format this in the old-style, using absolute paths directly. */
+            virBufferAsprintf(buf, ">%s", loader->src->path);
+    } else
+        virBufferAddLit(buf, ">\n");
+
+    virBufferAddLit(buf, "</loader>\n");
+
     if (loader->nvram || loader->templt) {
+        ignore_value(virBufferContentAndReset(&attrBuf));
+        ignore_value(virBufferContentAndReset(&childBuf));
+        virBufferSetChildIndent(&childBuf, buf);
+
         virBufferAddLit(buf, "<nvram");
-        virBufferEscapeString(buf, " template='%s'", loader->templt);
-        if (loader->nvram)
-            virBufferEscapeString(buf, ">%s</nvram>\n", loader->nvram);
-        else
-            virBufferAddLit(buf, "/>\n");
+
+        if (loader->templt)
+            virBufferEscapeString(buf, " template='%s'", loader->templt);
+
+        if (loader->nvram) {
+            backing = virStorageTypeToString(loader->nvram->type);
+            if (!loader->oldStyleNvram) {
+                if (virDomainStorageSourceFormat(&attrBuf, &childBuf,
+                                             loader->nvram, flags, 0) < 0) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                 _("Cannot format NVRAM source"));
+                    virBufferAddLit(buf, ">\n</nvram>\n");
+                    goto cleanup;
+                }
+
+                virBufferEscapeString(buf, " backing='%s'>", backing);
+                if (virXMLFormatElement(buf, "source", &attrBuf, &childBuf) < 0) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                 _("Cannot format NVRAM source"));
+                    virBufferAddLit(buf, "</nvram>\n");
+                    goto cleanup;
+                }
+            } else {
+                /* old-style NVRAM declaration found */
+                virBufferAsprintf(buf, ">%s", loader->nvram->path);
+            }
+            virBufferAddLit(buf, "\n</nvram>\n");
+        }
     }
+cleanup:
+    virBufferFreeAndReset(&attrBuf);
+    virBufferFreeAndReset(&childBuf);
+    return;
 }
 
 static void
@@ -26983,7 +27049,7 @@ virDomainDefFormatInternal(virDomainDefPtr def,
         virBufferAsprintf(buf, "<initgroup>%s</initgroup>\n", def->os.initgroup);
 
     if (def->os.loader)
-        virDomainLoaderDefFormat(buf, def->os.loader);
+        virDomainLoaderDefFormat(buf, def->os.loader, flags);
     virBufferEscapeString(buf, "<kernel>%s</kernel>\n",
                           def->os.kernel);
     virBufferEscapeString(buf, "<initrd>%s</initrd>\n",
