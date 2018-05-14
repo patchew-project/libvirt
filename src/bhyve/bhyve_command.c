@@ -521,10 +521,12 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
     virCommandAddArgList(cmd, "-s", "0:0,hostbridge", NULL);
 
     if (def->os.bootloader == NULL &&
-        def->os.loader) {
+        def->os.loader &&
+        def->os.loader->src &&
+        def->os.loader->src->type == VIR_STORAGE_TYPE_FILE) {
         if ((bhyveDriverGetCaps(conn) & BHYVE_CAP_LPC_BOOTROM)) {
             virCommandAddArg(cmd, "-l");
-            virCommandAddArgFormat(cmd, "bootrom,%s", def->os.loader->path);
+            virCommandAddArgFormat(cmd, "bootrom,%s", def->os.loader->src->path);
             add_lpc = true;
         } else {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
