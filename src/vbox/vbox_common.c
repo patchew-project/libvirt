@@ -998,11 +998,16 @@ vboxSetBootDeviceOrder(virDomainDefPtr def, vboxDriverPtr data,
     VIR_DEBUG("def->os.initrd           %s", def->os.initrd);
     VIR_DEBUG("def->os.cmdline          %s", def->os.cmdline);
     VIR_DEBUG("def->os.root             %s", def->os.root);
-    if (def->os.loader) {
-        VIR_DEBUG("def->os.loader->path     %s", def->os.loader->path);
+    if (def->os.loader &&
+        def->os.loader->src &&
+        def->os.loader->src->type == VIR_STORAGE_TYPE_FILE) {
+
+        VIR_DEBUG("def->os.loader->src->path     %s", def->os.loader->src->path);
         VIR_DEBUG("def->os.loader->readonly %d", def->os.loader->readonly);
         VIR_DEBUG("def->os.loader->type     %d", def->os.loader->type);
-        VIR_DEBUG("def->os.loader->nvram    %s", def->os.loader->nvram);
+        if (def->os.loader->nvram &&
+            def->os.loader->nvram->type == VIR_STORAGE_TYPE_FILE)
+            VIR_DEBUG("def->os.loader->nvram->path    %s", def->os.loader->nvram->path);
     }
     VIR_DEBUG("def->os.bootloader       %s", def->os.bootloader);
     VIR_DEBUG("def->os.bootloaderArgs   %s", def->os.bootloaderArgs);
