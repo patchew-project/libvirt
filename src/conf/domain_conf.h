@@ -1855,15 +1855,22 @@ typedef enum {
 
 VIR_ENUM_DECL(virDomainLoader)
 
+struct _virStorageSource;
+typedef struct _virStorageSource* virStorageSourcePtr;
+
 typedef struct _virDomainLoaderDef virDomainLoaderDef;
 typedef virDomainLoaderDef *virDomainLoaderDefPtr;
 struct _virDomainLoaderDef {
-    char *path;
+    virStorageSourcePtr src;
     int readonly;   /* enum virTristateBool */
     virDomainLoader type;
     int secure;     /* enum virTristateBool */
-    char *nvram;    /* path to non-volatile RAM */
+    virStorageSourcePtr nvram;  /* path to non-voliatile RAM */
     char *templt;   /* user override of path to master nvram */
+    bool oldStyleLoader;  /* is this an old-style XML formatting,
+                           * ie, absolute path is directly specified? */
+    bool oldStyleNvram;   /* is this an old-style XML formatting,
+                           * ie, absolute path is directly specified? */
 };
 
 void virDomainLoaderDefFree(virDomainLoaderDefPtr loader);
