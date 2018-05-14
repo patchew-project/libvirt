@@ -112,6 +112,20 @@
 &lt;/os&gt;
 ...</pre>
 
+    <p>Where loader/NVRAM can also be described as:</p>
+
+<pre>
+...
+  &lt;loader readonly='yes' secure='no' type='rom' backing='file'&gt;
+    &lt;source file='/usr/share/OVMF/OVMF_CODE.fd'/&gt;
+  &lt;/loader&gt;
+  &lt;nvram backing='network' template='/usr/share/OVMF/OVMF_VARS.fd'&gt;
+    &lt;source protocol='iscsi' name='iqn.2013-07.com.example:iscsi-nopool/2'&gt;
+      &lt;host name='example.com' port='3260'/&gt;
+    &lt;/source&gt;
+  &lt;/nvram&gt;
+...</pre>
+
     <dl>
       <dt><code>type</code></dt>
       <dd>The content of the <code>type</code> element specifies the
@@ -143,7 +157,15 @@
         <code>pflash</code>. Moreover, some firmwares may
         implement the Secure boot feature. Attribute
         <code>secure</code> can be used then to control it.
-        <span class="since">Since 2.1.0</span></dd>
+        <span class="since">Since 2.1.0</span><span class="since">Since 4.5.0</span>
+        Loader element can also be specified as a remote disk. The attribute
+        <code>backing</code> (accepted values are
+        <code>file</code> and <code>network</code>)can be used to represent
+        local absolute paths as well as network-backed disks. The details of
+        backing file may be specified as <a href="#elementsDiskSource">storage source</a>
+        Allowed backing type <code>file</code> replaces the old
+        specification and extends to all hypervisors that supported it, while
+        type <code>network</code> is only supported by QEMU.</dd>
       <dt><code>nvram</code></dt>
       <dd>Some UEFI firmwares may want to use a non-volatile memory to store
         some variables. In the host, this is represented as a file and the
@@ -154,7 +176,15 @@
         from the config file. Note, that for transient domains if the NVRAM file
         has been created by libvirt it is left behind and it is management
         application's responsibility to save and remove file (if needed to be
-        persistent). <span class="since">Since 1.2.8</span></dd>
+        persistent). <span class="since">Since 1.2.8</span>
+        <span class="since">Since 4.5.0</span>, attribute
+        <code>backing</code>(accepted values <code>file</code>
+        and <code>network</code>)can be used to specify a
+        <a href='#elementsDiskSource'>storage source</a>
+        of type file or network. The value <code>file</code>describes
+        absolute NVRAM paths and extends the present specification
+        for all hypervisors that support this, while
+        <code>network</code> applies only to QEMU.</dd>
       <dt><code>boot</code></dt>
       <dd>The <code>dev</code> attribute takes one of the values "fd", "hd",
         "cdrom" or "network" and is used to specify the next boot device
@@ -2726,7 +2756,7 @@
             </dd>
         </dl>
       </dd>
-      <dt><code>source</code></dt>
+      <h5><a id="elementsDiskSource">Disk source</a></h5>
       <dd>Representation of the disk <code>source</code> depends on the
       disk <code>type</code> attribute value as follows:
           <dl>
