@@ -276,7 +276,42 @@
                 </choice>
               </attribute>
             </optional>
-            <ref name="absFilePath"/>
+            <optional>
+              <attribute name="backing">
+                <choice>
+                  <value>file</value>
+                  <value>network</value>
+                </choice>
+              </attribute>
+            </optional>
+            <optional>
+              <choice>
+                 <group>
+                  <ref name="absFilePath"/>
+                 </group>
+                 <group>
+                  <ref name="diskSourceFileElement"/>
+                 </group>
+                 <group>
+                  <ref name="diskSourceNetworkProtocolNBD"/>
+                 </group>
+                 <group>
+                  <ref name="diskSourceNetworkProtocolGluster"/>
+                 </group>
+                 <group>
+                  <ref name="diskSourceNetworkProtocolRBD"/>
+                 </group>
+                 <group>
+                  <ref name="diskSourceNetworkProtocolISCSI"/>
+                 </group>
+                 <group>
+                  <ref name="diskSourceNetworkProtocolHTTP"/>
+                 </group>
+                 <group>
+                  <ref name="diskSourceNetworkProtocolSimple"/>
+                 </group>
+              </choice>
+            </optional>
           </element>
         </optional>
         <optional>
@@ -287,7 +322,40 @@
               </attribute>
             </optional>
             <optional>
-              <ref name="absFilePath"/>
+              <attribute name="backing">
+                <choice>
+                  <value>file</value>
+                  <value>network</value>
+                </choice>
+              </attribute>
+            </optional>
+            <optional>
+              <choice>
+                 <group>
+                  <ref name="absFilePath"/>
+                 </group>
+                 <group>
+                  <ref name="diskSourceFileElement"/>
+                 </group>
+                 <group>
+                  <ref name="diskSourceNetworkProtocolNBD"/>
+                 </group>
+                 <group>
+                  <ref name="diskSourceNetworkProtocolGluster"/>
+                 </group>
+                 <group>
+                  <ref name="diskSourceNetworkProtocolRBD"/>
+                 </group>
+                 <group>
+                  <ref name="diskSourceNetworkProtocolISCSI"/>
+                 </group>
+                 <group>
+                  <ref name="diskSourceNetworkProtocolHTTP"/>
+                 </group>
+                 <group>
+                  <ref name="diskSourceNetworkProtocolSimple"/>
+                 </group>
+              </choice>
             </optional>
           </element>
         </optional>
@@ -1499,23 +1567,27 @@
       </attribute>
     </optional>
     <optional>
-      <element name="source">
-        <optional>
-          <attribute name="file">
-            <ref name="absFilePath"/>
-          </attribute>
-        </optional>
-        <optional>
-          <ref name="storageStartupPolicy"/>
-        </optional>
-        <optional>
-          <ref name="encryption"/>
-        </optional>
-        <zeroOrMore>
-          <ref name='devSeclabel'/>
-        </zeroOrMore>
-      </element>
+      <ref name='diskSourceFileElement'/>
     </optional>
+  </define>
+
+  <define name="diskSourceFileElement">
+    <element name="source">
+      <optional>
+        <attribute name="file">
+          <ref name="absFilePath"/>
+        </attribute>
+      </optional>
+      <optional>
+        <ref name="storageStartupPolicy"/>
+      </optional>
+      <optional>
+        <ref name="encryption"/>
+      </optional>
+      <zeroOrMore>
+        <ref name='devSeclabel'/>
+      </zeroOrMore>
+    </element>
   </define>
 
   <define name="diskSourceBlock">
