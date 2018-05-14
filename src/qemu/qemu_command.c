@@ -9687,9 +9687,6 @@ qemuBuildPRManagerInfoProps(const virDomainDiskDef *disk,
     *propsret = NULL;
     *aliasret = NULL;
 
-    if (!disk->src->pr)
-        return 0;
-
     if (virStoragePRDefIsManaged(disk->src->pr)) {
         if (VIR_STRDUP(alias, qemuDomainGetManagedPRAlias()) < 0)
             goto cleanup;
@@ -9725,6 +9722,9 @@ qemuBuildMasterPRCommandLine(virCommandPtr cmd,
     for (i = 0; i < def->ndisks; i++) {
         const virDomainDiskDef *disk = def->disks[i];
 
+        if (!disk->src->pr)
+            continue;
+
         if (virStoragePRDefIsManaged(disk->src->pr)) {
             if (managedAdded)
                 continue;
@@ -9734,9 +9734,6 @@ qemuBuildMasterPRCommandLine(virCommandPtr cmd,
 
         if (qemuBuildPRManagerInfoProps(disk, &props, &alias) < 0)
             goto cleanup;
-
-        if (!props)
-            continue;
 
         if (!(tmp = virQEMUBuildObjectCommandlineFromJSON("pr-manager-helper",
                                                           alias,
