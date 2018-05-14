@@ -87,15 +87,17 @@ xenParseSxprOS(const struct sexpr *node,
                int hvm)
 {
     if (hvm) {
-        if (VIR_ALLOC(def->os.loader) < 0)
+        if ((VIR_ALLOC(def->os.loader) < 0) ||
+            (VIR_ALLOC(def->os.loader->src) < 0))
             goto error;
-        if (sexpr_node_copy(node, "domain/image/hvm/loader", &def->os.loader->path) < 0)
+        def->os.loader->src->type = VIR_STORAGE_TYPE_FILE;
+        if (sexpr_node_copy(node, "domain/image/hvm/loader", &def->os.loader->src->path) < 0)
             goto error;
-        if (def->os.loader->path == NULL) {
-            if (sexpr_node_copy(node, "domain/image/hvm/kernel", &def->os.loader->path) < 0)
+        if (def->os.loader->src->path == NULL) {
+            if (sexpr_node_copy(node, "domain/image/hvm/kernel", &def->os.loader->src->path) < 0)
                 goto error;
 
-            if (def->os.loader->path == NULL) {
+            if (def->os.loader->src->path == NULL) {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
                                "%s", _("domain information incomplete, missing HVM loader"));
                 return -1;
@@ -124,7 +126,8 @@ xenParseSxprOS(const struct sexpr *node,
     /* If HVM kenrel == loader, then old xend, so kill off kernel */
     if (hvm &&
         def->os.kernel &&
-        STREQ(def->os.kernel, def->os.loader->path)) {
+        def->os.loader->src &&
+        STREQ(def->os.kernel, def->os.loader->src->path)) {
         VIR_FREE(def->os.kernel);
     }
     /* Drop kernel argument that has no value */
@@ -2259,9 +2262,9 @@ xenFormatSxpr(virConnectPtr conn, virDomainDefPtr def)
         if (hvm) {
             char bootorder[VIR_DOMAIN_BOOT_LAST+1];
             if (def->os.kernel)
-                virBufferEscapeSexpr(&buf, "(loader '%s')", def->os.loader->path);
+                virBufferEscapeSexpr(&buf, "(loader '%s')", def->os.loader->src->path);
             else
-                virBufferEscapeSexpr(&buf, "(kernel '%s')", def->os.loader->path);
+                virBufferEscapeSexpr(&buf, "(kernel '%s')", def->os.loader->src->path);
 
             virBufferAsprintf(&buf, "(vcpus %u)", virDomainDefGetVcpusMax(def));
             if (virDomainDefHasVcpusOffline(def))

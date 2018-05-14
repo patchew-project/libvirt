@@ -1444,10 +1444,12 @@ xenapiDomainGetXMLDesc(virDomainPtr dom, unsigned int flags)
         char *value = NULL;
         defPtr->os.type = VIR_DOMAIN_OSTYPE_XEN;
         if (VIR_ALLOC(defPtr->os.loader) < 0 ||
-            VIR_STRDUP(defPtr->os.loader->path, "pygrub") < 0) {
+            VIR_ALLOC(defPtr->os.loader->src) < 0 ||
+            VIR_STRDUP(defPtr->os.loader->src->path, "pygrub") < 0) {
             VIR_FREE(boot_policy);
             goto error;
         }
+        defPtr->os.loader->src->type = VIR_STORAGE_TYPE_FILE;
         xen_vm_get_pv_kernel(session, &value, vm);
         if (STRNEQ(value, "")) {
             if (VIR_STRDUP(defPtr->os.kernel, value) < 0) {

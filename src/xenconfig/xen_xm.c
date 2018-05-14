@@ -47,8 +47,10 @@ xenParseXMOS(virConfPtr conf, virDomainDefPtr def)
         const char *boot;
 
         if (VIR_ALLOC(def->os.loader) < 0 ||
-            xenConfigCopyString(conf, "kernel", &def->os.loader->path) < 0)
+            VIR_ALLOC(def->os.loader->src) < 0 ||
+            xenConfigCopyString(conf, "kernel", &def->os.loader->src->path) < 0)
             return -1;
+        def->os.loader->src->type = VIR_STORAGE_TYPE_FILE;
 
         if (xenConfigGetString(conf, "boot", &boot, "c") < 0)
             return -1;
@@ -481,9 +483,10 @@ xenFormatXMOS(virConfPtr conf, virDomainDefPtr def)
         if (xenConfigSetString(conf, "builder", "hvm") < 0)
             return -1;
 
-        if (def->os.loader && def->os.loader->path &&
-            xenConfigSetString(conf, "kernel", def->os.loader->path) < 0)
+        if (def->os.loader && def->os.loader->src &&
+            xenConfigSetString(conf, "kernel", def->os.loader->src->path) < 0)
             return -1;
+        def->os.loader->src->type = VIR_STORAGE_TYPE_FILE;
 
         for (i = 0; i < def->os.nBootDevs; i++) {
             switch (def->os.bootDevs[i]) {
