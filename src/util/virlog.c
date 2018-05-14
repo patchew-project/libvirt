@@ -1409,6 +1409,8 @@ virLogFilterNew(const char *match,
 {
     virLogFilterPtr ret = NULL;
     char *mdup = NULL;
+    size_t mlen = strlen(match);
+    size_t off = 0;
 
     virCheckFlags(VIR_LOG_STACK_TRACE, NULL);
 
@@ -1418,8 +1420,18 @@ virLogFilterNew(const char *match,
         return NULL;
     }
 
-    if (VIR_STRDUP_QUIET(mdup, match) < 0)
+    if (VIR_ALLOC_N_QUIET(mdup, mlen + 3) < 0)
         return NULL;
+
+    if (match[0] != '*') {
+        mdup[off++] = '*';
+    }
+    memcpy(mdup + off, match, mlen + 1);
+    off += mlen;
+    if (match[mlen - 1] != '*') {
+        mdup[off++] = '*';
+        mdup[off++] = '\0';
+    }
 
     if (VIR_ALLOC_QUIET(ret) < 0) {
         VIR_FREE(mdup);
