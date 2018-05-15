@@ -15710,6 +15710,7 @@ virDomainMemoryDefParseXML(virDomainXMLOptionPtr xmlopt,
 
         def->discard = val;
     }
+    VIR_FREE(tmp);
 
     /* source */
     if ((node = virXPathNode("./source", ctxt)) &&
