@@ -24,7 +24,7 @@ matrix:
         - brew uninstall python mercurial postgis sfcgal cgal gdal
         - brew update
         - brew upgrade
-        - brew install python rpcgen yajl
+        - brew install python rpcgen jansson
       script:
         # We can't run make distcheck/syntax-check because they
         # fail on macOS, but doing 'install' and 'dist' gives us
@@ -61,6 +61,7 @@ addons:
       - libdevmapper-dev
       - libfuse-dev
       - libgnutls-dev
+      - libjansson-dev
       - libnetcf-dev
       - libnl-3-dev
       - libnl-route-3-dev
@@ -82,7 +83,6 @@ addons:
       - libxen-dev
       - libxml2-dev
       - libxml2-utils
-      - libyajl-dev
       - lvm2
       - make
 #     - nfs-common    # broken on trusty since build #807 (2018-01-09)
