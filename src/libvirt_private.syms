@@ -1062,6 +1062,17 @@ virNWFilterBindingObjParseFile;
 virNWFilterBindingObjSave;
 
 
+# conf/virnwfilterbindingobjlist.h
+virNWFilterBindingObjListAdd;
+virNWFilterBindingObjListExport;
+virNWFilterBindingObjListFindByPortDev;
+virNWFilterBindingObjListForEach;
+virNWFilterBindingObjListLoadAllConfigs;
+virNWFilterBindingObjListNew;
+virNWFilterBindingObjListRemove;
+virNWFilterBindingObjListRemoveLocked;
+
+
 # conf/virnwfilterobj.h
 virNWFilterObjGetDef;
 virNWFilterObjGetNewDef;
