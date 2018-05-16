@@ -1,3 +1,4 @@
 qemu-img create -f qcow2 -b /dev/null \
--o backing_fmt=raw,encryption=on,nocow=on \
+--object secret,id=OtherDemo.img_encrypt0,file=/path/to/secretFile \
+-o encrypt.format=aes,encrypt.key-secret=OtherDemo.img_encrypt0,nocow=on \
 /var/lib/libvirt/images/OtherDemo.img 5242880K

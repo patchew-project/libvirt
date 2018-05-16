@@ -307,6 +307,7 @@ virQEMUBuildBufferEscapeComma(virBufferPtr buf, const char *str)
  * @buf: buffer to build the string into
  * @enc: pointer to encryption info
  * @alias: alias to use
+ * @qcow: using qcow encryption
  *
  * Generate the string for id=$alias and any encryption options for
  * into the buffer.
@@ -315,7 +316,8 @@ virQEMUBuildBufferEscapeComma(virBufferPtr buf, const char *str)
  * it's expected other arguments are appended after the id=$alias string.
  * So either turn something like:
  *
- *     "key-secret=$alias,"
+ *     "key-secret=$alias," or
+ *     "encrypt.format=aes,encrypt.key-secret=$alias,"
  *
  * or
  *     "key-secret=$alias,cipher-alg=twofish-256,cipher-mode=cbc,
@@ -325,8 +327,12 @@ virQEMUBuildBufferEscapeComma(virBufferPtr buf, const char *str)
 void
 virQEMUBuildQemuImgKeySecretOpts(virBufferPtr buf,
                                  virStorageEncryptionInfoDefPtr enc,
-                                 const char *alias)
+                                 const char *alias,
+                                 bool qcow)
 {
+    if (qcow)
+        virBufferAddLit(buf, "encrypt.format=aes,encrypt.");
+
     virBufferAsprintf(buf, "key-secret=%s,", alias);
 
     if (!enc->cipher_name)

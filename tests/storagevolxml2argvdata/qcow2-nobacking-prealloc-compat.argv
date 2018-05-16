@@ -1,3 +1,5 @@
 qemu-img create -f qcow2 \
--o encryption=on,preallocation=metadata,compat=0.10 \
+--object secret,id=OtherDemo.img_encrypt0,file=/path/to/secretFile \
+-o encrypt.format=aes,encrypt.key-secret=OtherDemo.img_encrypt0,\
+preallocation=metadata,compat=0.10 \
 /var/lib/libvirt/images/OtherDemo.img 5242880K

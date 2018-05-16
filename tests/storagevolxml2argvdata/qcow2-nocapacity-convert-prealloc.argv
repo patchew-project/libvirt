@@ -1,4 +1,5 @@
 qemu-img convert -f raw -O qcow2 \
--o encryption=on,preallocation=falloc,compat=0.10 \
-/var/lib/libvirt/images/sparse.img \
-/var/lib/libvirt/images/OtherDemo.img
+--object secret,id=OtherDemo.img_encrypt0,file=/path/to/secretFile \
+-o encrypt.format=aes,encrypt.key-secret=OtherDemo.img_encrypt0,\
+preallocation=falloc,compat=0.10 \
+/var/lib/libvirt/images/sparse.img /var/lib/libvirt/images/OtherDemo.img

@@ -1,3 +1,4 @@
 qemu-img convert -f raw -O qcow2 \
--o encryption=on,compat=0.10 \
+--object secret,id=OtherDemo.img_encrypt0,file=/path/to/secretFile \
+-o encrypt.format=aes,encrypt.key-secret=OtherDemo.img_encrypt0,compat=0.10 \
 /dev/HostVG/Swap /var/lib/libvirt/images/OtherDemo.img
