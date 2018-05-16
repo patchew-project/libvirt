@@ -7388,8 +7388,9 @@ qemu-kvm -net nic,model=? /dev/null
       sub-elements <code>&lt;codec&gt;</code> to attach various audio
       codecs to the audio device. If not specified, a default codec
       will be attached to allow playback and recording. Valid values
-      are 'duplex' (advertise a line-in and a line-out) and 'micro'
-      (advertise a speaker and a microphone).
+      are 'duplex' (advertise a line-in and a line-out), 'micro'
+       (advertise a speaker and a microphone) and 'output'
+       (advertise a speaker).
     </p>
 
 <pre>

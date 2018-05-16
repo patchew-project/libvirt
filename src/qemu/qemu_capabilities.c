@@ -486,6 +486,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
 
               /* 300 */
               "sdl-gl",
+              "hda-output",
     );
 
 
@@ -1015,6 +1016,7 @@ struct virQEMUCapsStringFlags virQEMUCapsEvents[] = {
 struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "hda-duplex", QEMU_CAPS_HDA_DUPLEX },
     { "hda-micro", QEMU_CAPS_HDA_MICRO },
+    { "hda-output", QEMU_CAPS_HDA_OUTPUT},
     { "ccid-card-emulated", QEMU_CAPS_CCID_EMULATED },
     { "ccid-card-passthru", QEMU_CAPS_CCID_PASSTHRU },
     { "piix3-usb-uhci", QEMU_CAPS_PIIX3_USB_UHCI },
