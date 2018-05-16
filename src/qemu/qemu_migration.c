@@ -39,6 +39,7 @@
 #include "qemu_hotplug.h"
 #include "qemu_blockjob.h"
 #include "qemu_security.h"
+#include "qemu_extdevice.h"
 
 #include "domain_audit.h"
 #include "virlog.h"
@@ -2917,6 +2918,7 @@ qemuMigrationSrcConfirm(virQEMUDriverPtr driver,
     if (!virDomainObjIsActive(vm)) {
         if (flags & VIR_MIGRATE_UNDEFINE_SOURCE) {
             virDomainDeleteConfig(cfg->configDir, cfg->autostartDir, vm);
+            qemuExtDevicesCleanupHost(driver, vm->def);
             vm->persistent = 0;
         }
         qemuDomainRemoveInactiveJob(driver, vm);
@@ -4515,6 +4517,7 @@ qemuMigrationSrcPerformJob(virQEMUDriverPtr driver,
     if (!virDomainObjIsActive(vm) && ret == 0) {
         if (flags & VIR_MIGRATE_UNDEFINE_SOURCE) {
             virDomainDeleteConfig(cfg->configDir, cfg->autostartDir, vm);
+            qemuExtDevicesCleanupHost(driver, vm->def);
             vm->persistent = 0;
         }
         qemuDomainRemoveInactiveJob(driver, vm);
