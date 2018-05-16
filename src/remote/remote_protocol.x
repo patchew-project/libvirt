@@ -3448,6 +3448,19 @@ struct remote_domain_set_lifecycle_action_args {
     unsigned int flags;
 };
 
+struct remote_connect_compare_hypervisor_cpu_args {
+    remote_string emulator;
+    remote_string arch;
+    remote_string machine;
+    remote_string virttype;
+    remote_nonnull_string xmlCPU;
+    unsigned int flags;
+};
+
+struct remote_connect_compare_hypervisor_cpu_ret {
+    int result;
+};
+
 /*----- Protocol. -----*/
 
 /* Define the program number, protocol version and procedure numbers here. */
@@ -6135,5 +6148,11 @@ enum remote_procedure {
      * @priority: high
      * @acl: storage_pool:getattr
      */
-    REMOTE_PROC_STORAGE_POOL_LOOKUP_BY_TARGET_PATH = 391
+    REMOTE_PROC_STORAGE_POOL_LOOKUP_BY_TARGET_PATH = 391,
+
+    /**
+     * @generate: both
+     * @acl: connect:write
+     */
+    REMOTE_PROC_CONNECT_COMPARE_HYPERVISOR_CPU = 392
 };
