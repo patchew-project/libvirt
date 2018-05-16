@@ -1088,20 +1088,26 @@ storageBackendCreateQemuImgSecretObject(virCommandPtr cmd,
 
 
 /* Add a --image-opts to the qemu-img resize command line:
- *    --image-opts driver=luks,file.filename=$volpath,key-secret=$secretAlias
- *
- *    NB: format=raw is assumed
+ *    --image-opts driver=%s,\
+ *        [encrypt.]key-secret=$secretAlias,\
+ *        file.filename=$volpath
  */
 static int
 storageBackendResizeQemuImgImageOpts(virCommandPtr cmd,
+                                     const char *type,
                                      const char *path,
                                      const char *secretAlias)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
     char *commandStr = NULL;
 
-    virBufferAsprintf(&buf, "driver=luks,key-secret=%s,file.filename=",
-                      secretAlias);
+    virBufferAsprintf(&buf, "driver=%s,", type);
+    if (STREQ(type, "luks"))
+        virBufferAsprintf(&buf, "key-secret=%s,", secretAlias);
+    else
+        virBufferAsprintf(&buf, "encrypt.key-secret=%s,", secretAlias);
+    virBufferAddLit(&buf, "file.filename=");
+
     virQEMUBuildBufferEscapeComma(&buf, path);
 
     if (virBufferCheckError(&buf) < 0) {
@@ -2403,7 +2409,7 @@ storageBackendResizeQemuImg(virStoragePoolObjPtr pool,
     int ret = -1;
     char *img_tool = NULL;
     virCommandPtr cmd = NULL;
-    const char *type;
+    const char *type = virStorageFileFormatTypeToString(vol->target.format);
     char *secretPath = NULL;
     char *secretAlias = NULL;
 
@@ -2417,8 +2423,6 @@ storageBackendResizeQemuImg(virStoragePoolObjPtr pool,
     if (vol->target.encryption) {
         if (vol->target.format == VIR_STORAGE_FILE_RAW)
             type = "luks";
-        else
-            type = virStorageFileFormatTypeToString(vol->target.format);
 
         storageBackendLoadDefaultSecrets(vol);
 
@@ -2448,7 +2452,7 @@ storageBackendResizeQemuImg(virStoragePoolObjPtr pool,
                                                     secretAlias) < 0)
             goto cleanup;
 
-        if (storageBackendResizeQemuImgImageOpts(cmd, vol->target.path,
+        if (storageBackendResizeQemuImgImageOpts(cmd, type, vol->target.path,
                                                  secretAlias) < 0)
             goto cleanup;
     }
