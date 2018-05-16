@@ -67,6 +67,18 @@
       </change>
     </section>
     <section title="Bug fixes">
+      <change>
+        <summary>
+          Fix issues with encrypted image creation, conversion, and resize
+        </summary>
+        <description>
+          Changes in QEMU 2.9 to arguments for qemu-img to use secrets for
+          encrypted image creation, conversion, and resize are incompatible
+          with prior versions of qemu-img. Alter encrypted image handling
+          to follow the model currently used for LUKS images for QCOW[2]
+          encrypted images.
+        </description>
+      </change>
     </section>
   </release>
   <release version="v4.3.0" date="2018-05-02">
