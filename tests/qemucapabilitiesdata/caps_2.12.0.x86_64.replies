@@ -2,14 +2,13 @@
   "QMP": {
     "version": {
       "qemu": {
-        "micro": 90,
-        "minor": 11,
+        "micro": 0,
+        "minor": 12,
         "major": 2
       },
-      "package": "v2.12.0-rc0"
+      "package": "v2.12.0"
     },
     "capabilities": [
-      "oob"
     ]
   }
 }
@@ -23,11 +22,11 @@
 {
   "return": {
     "qemu": {
-      "micro": 90,
-      "minor": 11,
+      "micro": 0,
+      "minor": 12,
       "major": 2
     },
-    "package": "v2.12.0-rc0"
+    "package": "v2.12.0"
   },
   "id": "libvirt-2"
 }
@@ -536,7 +535,7 @@
 
 {
   "return": {
-    "fd": 19,
+    "fd": 17,
     "fdset-id": 0
   },
   "id": "libvirt-5"
@@ -736,6 +735,10 @@
       "parent": "virtio-input-hid-pci"
     },
     {
+      "name": "xen-sysbus",
+      "parent": "bus"
+    },
+    {
       "name": "i440FX",
       "parent": "pci-device"
     },
@@ -766,6 +769,10 @@
     {
       "name": "chardev-pty",
       "parent": "chardev"
+    },
+    {
+      "name": "xen-apic",
+      "parent": "apic-common"
     },
     {
       "name": "SUNW,fdtwo",
@@ -1024,6 +1031,10 @@
       "parent": "isa-device"
     },
     {
+      "name": "xen-backend",
+      "parent": "xen-sysdev"
+    },
+    {
       "name": "Haswell-noTSX-IBRS-x86_64-cpu",
       "parent": "x86_64-cpu"
     },
@@ -1064,6 +1075,10 @@
       "parent": "virtio-pci"
     },
     {
+      "name": "chardev-socket",
+      "parent": "chardev"
+    },
+    {
       "name": "iothread",
       "parent": "object"
     },
@@ -1072,12 +1087,8 @@
       "parent": "isa-device"
     },
     {
-      "name": "chardev-socket",
+      "name": "chardev-mux",
       "parent": "chardev"
-    },
-    {
-      "name": "486-x86_64-cpu",
-      "parent": "x86_64-cpu"
     },
     {
       "name": "pc-q35-2.7-machine",
@@ -1088,8 +1099,8 @@
       "parent": "generic-pc-machine"
     },
     {
-      "name": "chardev-mux",
-      "parent": "chardev"
+      "name": "486-x86_64-cpu",
+      "parent": "x86_64-cpu"
     },
     {
       "name": "filter-redirector",
@@ -1224,12 +1235,12 @@
       "parent": "chardev"
     },
     {
-      "name": "pc-q35-2.9-machine",
-      "parent": "generic-pc-machine"
-    },
-    {
       "name": "chardev-pipe",
       "parent": "chardev-fd"
+    },
+    {
+      "name": "pc-q35-2.9-machine",
+      "parent": "generic-pc-machine"
     },
     {
       "name": "pc-i440fx-1.7-machine",
@@ -1420,6 +1431,10 @@
       "parent": "chardev-fd"
     },
     {
+      "name": "xen-sysdev",
+      "parent": "sys-bus-device"
+    },
+    {
       "name": "intel-iommu",
       "parent": "x86-iommu"
     },
@@ -1482,6 +1497,10 @@
     {
       "name": "ccid-bus",
       "parent": "bus"
+    },
+    {
+      "name": "xenpv-machine",
+      "parent": "machine"
     },
     {
       "name": "EPYC-IBPB-x86_64-cpu",
@@ -1816,6 +1835,10 @@
       "parent": "generic-pc-machine"
     },
     {
+      "name": "xen-pci-passthrough",
+      "parent": "pci-device"
+    },
+    {
       "name": "cryptodev-backend",
       "parent": "object"
     },
@@ -1948,7 +1971,15 @@
       "parent": "virtio-pci"
     },
     {
+      "name": "piix3-ide",
+      "parent": "pci-ide"
+    },
+    {
       "name": "ES1370",
+      "parent": "pci-device"
+    },
+    {
+      "name": "xen-pvdevice",
       "parent": "pci-device"
     },
     {
@@ -1960,8 +1991,8 @@
       "parent": "pcie-port"
     },
     {
-      "name": "piix3-ide",
-      "parent": "pci-ide"
+      "name": "xenfv-machine",
+      "parent": "generic-pc-machine"
     },
     {
       "name": "pci-testdev",
@@ -2014,6 +2045,10 @@
     {
       "name": "pc-i440fx-2.6-machine",
       "parent": "generic-pc-machine"
+    },
+    {
+      "name": "xen-platform",
+      "parent": "pci-device"
     },
     {
       "name": "chardev-serial",
@@ -2110,6 +2145,10 @@
     {
       "name": "isa-applesmc",
       "parent": "isa-device"
+    },
+    {
+      "name": "xen-accel",
+      "parent": "accel"
     },
     {
       "name": "secret",
@@ -3192,89 +3231,8 @@
 {
   "return": [
     {
-      "name": "serial",
-      "type": "str"
-    },
-    {
-      "name": "port_index",
-      "type": "uint16"
-    },
-    {
-      "name": "dpofua",
-      "description": "on/off",
-      "type": "bool"
-    },
-    {
-      "name": "bootindex",
-      "type": "int32"
-    },
-    {
-      "name": "logical_block_size",
-      "description": "A power of two between 512 and 32768",
-      "type": "uint16"
-    },
-    {
-      "name": "discard_granularity",
-      "type": "uint32"
-    },
-    {
-      "name": "lun",
-      "type": "uint32"
-    },
-    {
-      "name": "max_unmap_size",
-      "type": "uint64"
-    },
-    {
-      "name": "drive",
-      "description": "Node name or ID of a block device to use as a backend",
-      "type": "str"
-    },
-    {
-      "name": "port_wwn",
-      "type": "uint64"
-    },
-    {
-      "name": "write-cache",
-      "description": "on/off/auto",
-      "type": "OnOffAuto"
-    },
-    {
-      "name": "share-rw",
-      "type": "bool"
-    },
-    {
-      "name": "opt_io_size",
-      "type": "uint32"
-    },
-    {
       "name": "min_io_size",
       "type": "uint16"
-    },
-    {
-      "name": "product",
-      "type": "str"
-    },
-    {
-      "name": "scsi-id",
-      "type": "uint32"
-    },
-    {
-      "name": "channel",
-      "type": "uint32"
-    },
-    {
-      "name": "vendor",
-      "type": "str"
-    },
-    {
-      "name": "wwn",
-      "type": "uint64"
-    },
-    {
-      "name": "werror",
-      "description": "Error handling policy, report/ignore/enospc/stop/auto",
-      "type": "BlockdevOnError"
     },
     {
       "name": "removable",
@@ -3282,12 +3240,84 @@
       "type": "bool"
     },
     {
+      "name": "channel",
+      "type": "uint32"
+    },
+    {
+      "name": "serial",
+      "type": "str"
+    },
+    {
+      "name": "lun",
+      "type": "uint32"
+    },
+    {
+      "name": "dpofua",
+      "description": "on/off",
+      "type": "bool"
+    },
+    {
+      "name": "ver",
+      "type": "str"
+    },
+    {
+      "name": "scsi-id",
+      "type": "uint32"
+    },
+    {
+      "name": "logical_block_size",
+      "description": "A power of two between 512 and 32768",
+      "type": "uint16"
+    },
+    {
+      "name": "drive",
+      "description": "Node name or ID of a block device to use as a backend",
+      "type": "str"
+    },
+    {
+      "name": "scsi_version",
+      "type": "int32"
+    },
+    {
+      "name": "werror",
+      "description": "Error handling policy, report/ignore/enospc/stop/auto",
+      "type": "BlockdevOnError"
+    },
+    {
+      "name": "discard_granularity",
+      "type": "uint32"
+    },
+    {
+      "name": "port_wwn",
+      "type": "uint64"
+    },
+    {
+      "name": "max_unmap_size",
+      "type": "uint64"
+    },
+    {
       "name": "rerror",
       "description": "Error handling policy, report/ignore/enospc/stop/auto",
       "type": "BlockdevOnError"
     },
     {
-      "name": "ver",
+      "name": "max_io_size",
+      "type": "uint64"
+    },
+    {
+      "name": "wwn",
+      "type": "uint64"
+    },
+    {
+      "name": "share-rw",
+      "type": "bool"
+    },
+    {
+      "name": "product",
+      "type": "str"
+    },
+    {
+      "name": "vendor",
       "type": "str"
     },
     {
@@ -3296,8 +3326,21 @@
       "type": "uint16"
     },
     {
-      "name": "max_io_size",
-      "type": "uint64"
+      "name": "port_index",
+      "type": "uint16"
+    },
+    {
+      "name": "bootindex",
+      "type": "int32"
+    },
+    {
+      "name": "write-cache",
+      "description": "on/off/auto",
+      "type": "OnOffAuto"
+    },
+    {
+      "name": "opt_io_size",
+      "type": "uint32"
     }
   ],
   "id": "libvirt-19"
@@ -4104,6 +4147,11 @@
       "type": "uint32"
     },
     {
+      "name": "iommu_platform",
+      "description": "on/off",
+      "type": "bool"
+    },
+    {
       "name": "x-pcie-extcap-init",
       "description": "on/off",
       "type": "bool"
@@ -4121,12 +4169,17 @@
       "type": "bool"
     },
     {
+      "name": "stats",
+      "description": "on/off",
+      "type": "bool"
+    },
+    {
       "name": "notify_on_empty",
       "description": "on/off",
       "type": "bool"
     },
     {
-      "name": "iommu_platform",
+      "name": "virtio-pci-bus-master-bug-migration",
       "description": "on/off",
       "type": "bool"
     },
@@ -4136,7 +4189,7 @@
       "type": "bool"
     },
     {
-      "name": "virtio-pci-bus-master-bug-migration",
+      "name": "virgl",
       "description": "on/off",
       "type": "bool"
     },
@@ -4175,17 +4228,27 @@
       "type": "uint32"
     },
     {
+      "name": "stats",
+      "description": "on/off",
+      "type": "bool"
+    },
+    {
       "name": "iommu_platform",
       "description": "on/off",
       "type": "bool"
+    },
+    {
+      "name": "xres",
+      "type": "uint32"
     },
     {
       "name": "max_outputs",
       "type": "uint32"
     },
     {
-      "name": "xres",
-      "type": "uint32"
+      "name": "virgl",
+      "description": "on/off",
+      "type": "bool"
     },
     {
       "name": "max_hostmem",
@@ -4713,6 +4776,11 @@
     },
     {
       "hotpluggable-cpus": true,
+      "name": "xenfv",
+      "cpu-max": 128
+    },
+    {
+      "hotpluggable-cpus": true,
       "name": "pc-i440fx-2.3",
       "cpu-max": 255
     },
@@ -4751,6 +4819,11 @@
       "name": "pc-q35-2.12",
       "cpu-max": 288,
       "alias": "q35"
+    },
+    {
+      "hotpluggable-cpus": false,
+      "name": "xenpv",
+      "cpu-max": 1
     },
     {
       "hotpluggable-cpus": true,
@@ -5001,7 +5074,6 @@
       "name": "Westmere-IBRS",
       "typename": "Westmere-IBRS-x86_64-cpu",
       "unavailable-features": [
-        "spec-ctrl"
       ],
       "static": false,
       "migration-safe": true
@@ -5051,7 +5123,6 @@
         "avx512cd",
         "avx512bw",
         "avx512vl",
-        "spec-ctrl",
         "3dnowprefetch",
         "xsavec",
         "xgetbv1",
@@ -5093,7 +5164,6 @@
         "rdseed",
         "adx",
         "smap",
-        "spec-ctrl",
         "3dnowprefetch",
         "xsavec",
         "xgetbv1",
@@ -5115,7 +5185,6 @@
       "name": "SandyBridge-IBRS",
       "typename": "SandyBridge-IBRS-x86_64-cpu",
       "unavailable-features": [
-        "spec-ctrl"
       ],
       "static": false,
       "migration-safe": true
@@ -5193,7 +5262,6 @@
       "name": "Nehalem-IBRS",
       "typename": "Nehalem-IBRS-x86_64-cpu",
       "unavailable-features": [
-        "spec-ctrl"
       ],
       "static": false,
       "migration-safe": true
@@ -5210,7 +5278,6 @@
       "name": "IvyBridge-IBRS",
       "typename": "IvyBridge-IBRS-x86_64-cpu",
       "unavailable-features": [
-        "spec-ctrl"
       ],
       "static": false,
       "migration-safe": true
@@ -5237,7 +5304,6 @@
       "name": "Haswell-noTSX-IBRS",
       "typename": "Haswell-noTSX-IBRS-x86_64-cpu",
       "unavailable-features": [
-        "spec-ctrl"
       ],
       "static": false,
       "migration-safe": true
@@ -5247,8 +5313,7 @@
       "typename": "Haswell-IBRS-x86_64-cpu",
       "unavailable-features": [
         "hle",
-        "rtm",
-        "spec-ctrl"
+        "rtm"
       ],
       "static": false,
       "migration-safe": true
@@ -5291,7 +5356,6 @@
         "misalignsse",
         "3dnowprefetch",
         "osvw",
-        "ibpb",
         "xsavec",
         "xgetbv1"
       ],
@@ -5339,7 +5403,6 @@
         "rdseed",
         "adx",
         "smap",
-        "spec-ctrl",
         "3dnowprefetch"
       ],
       "static": false,
@@ -5354,7 +5417,6 @@
         "rdseed",
         "adx",
         "smap",
-        "spec-ctrl",
         "3dnowprefetch"
       ],
       "static": false,
@@ -5516,6 +5578,14 @@
     },
     {
       "parameters": [
+        {
+          "name": "rendernode",
+          "type": "string"
+        },
+        {
+          "name": "gl",
+          "type": "boolean"
+        },
         {
           "name": "head",
           "type": "number"
@@ -6217,6 +6287,10 @@
     },
     {
       "parameters": [
+        {
+          "name": "x-oob",
+          "type": "boolean"
+        },
         {
           "name": "pretty",
           "type": "boolean"
@@ -14363,9 +14437,9 @@
           "type": "int"
         },
         {
-          "name": "static",
+          "name": "preallocation",
           "default": null,
-          "type": "bool"
+          "type": "356"
         }
       ],
       "meta-type": "object"
@@ -18199,7 +18273,7 @@
         "pge": true,
         "avx512bitalg": false,
         "pdcm": false,
-        "model": 63,
+        "model": 60,
         "movbe": true,
         "nrip-save": false,
         "ssse3": true,
@@ -18210,7 +18284,7 @@
         "fma": true,
         "cx16": true,
         "de": true,
-        "stepping": 2,
+        "stepping": 3,
         "xsave": true,
         "clflush": true,
         "skinit": false,
@@ -18224,13 +18298,13 @@
         "osvw": false,
         "apic": true,
         "pmm": false,
-        "spec-ctrl": false,
+        "spec-ctrl": true,
         "tsc-adjust": true,
         "kvm-steal-time": true,
         "kvmclock": true,
         "lwp": false,
         "xop": false,
-        "ibpb": false,
+        "ibpb": true,
         "avx": true,
         "ospke": false,
         "acpi": false,
@@ -18245,7 +18319,7 @@
         "vaes": false,
         "xsaves": false,
         "lm": true,
-        "umip": false,
+        "umip": true,
         "pse": true,
         "avx2": true,
         "sep": true,
@@ -18269,22 +18343,22 @@
         "fxsr-opt": false,
         "xstore": false,
         "rtm": false,
-        "kvm-hint-dedicated": true,
+        "kvm-hint-dedicated": false,
         "lmce": true,
         "perfctr-nb": false,
         "rdrand": true,
         "rdseed": false,
         "avx512-4vnniw": false,
         "vme": true,
-        "vmx": false,
+        "vmx": true,
         "dtes64": false,
         "mtrr": true,
         "rdtscp": true,
         "pse36": true,
-        "kvm-pv-tlb-flush": false,
+        "kvm-pv-tlb-flush": true,
         "tbm": false,
         "wdt": false,
-        "model-id": "Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz",
+        "model-id": "Intel(R) Core(TM) i7-4810MQ CPU @ 2.80GHz",
         "sha-ni": false,
         "abm": true,
         "avx512pf": false,
@@ -18314,6 +18388,7 @@
         "xsavec": false,
         "intel-pt": false,
         "osxsave": false,
+        "hv-frequencies": false,
         "tsc-frequency": 0,
         "xd": true,
         "hv-vendor-id": "",
@@ -18426,7 +18501,7 @@
         "nodeid_msr": false,
         "pdcm": false,
         "movbe": true,
-        "model": 63,
+        "model": 60,
         "nrip_save": false,
         "nrip-save": false,
         "kvm_pv_unhalt": true,
@@ -18439,7 +18514,7 @@
         "cx16": true,
         "de": true,
         "enforce": false,
-        "stepping": 2,
+        "stepping": 3,
         "xsave": true,
         "clflush": true,
         "skinit": false,
@@ -18458,7 +18533,7 @@
         "pmu": false,
         "pmm": false,
         "apic": true,
-        "spec-ctrl": false,
+        "spec-ctrl": true,
         "min-xlevel2": 0,
         "tsc-adjust": true,
         "tsc_adjust": true,
@@ -18467,7 +18542,7 @@
         "kvmclock": true,
         "l3-cache": true,
         "lwp": false,
-        "ibpb": false,
+        "ibpb": true,
         "xop": false,
         "avx": true,
         "ospke": false,
@@ -18485,7 +18560,7 @@
         "xsaves": false,
         "tcg-cpuid": true,
         "lm": true,
-        "umip": false,
+        "umip": true,
         "pse": true,
         "avx2": true,
         "sep": true,
@@ -18519,7 +18594,7 @@
         "hv-synic": false,
         "xstore": false,
         "fxsr_opt": false,
-        "kvm-hint-dedicated": true,
+        "kvm-hint-dedicated": false,
         "rtm": false,
         "lmce": true,
         "hv-time": false,
@@ -18529,18 +18604,18 @@
         "rdrand": true,
         "rdseed": false,
         "avx512-4vnniw": false,
-        "vmx": false,
+        "vmx": true,
         "vme": true,
         "dtes64": false,
         "mtrr": true,
         "rdtscp": true,
         "pse36": true,
-        "kvm-pv-tlb-flush": false,
+        "kvm-pv-tlb-flush": true,
         "tbm": false,
         "wdt": false,
         "pause_filter": false,
         "sha-ni": false,
-        "model-id": "Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz",
+        "model-id": "Intel(R) Core(TM) i7-4810MQ CPU @ 2.80GHz",
         "abm": true,
         "avx512pf": false,
         "xstore-en": false
@@ -18644,7 +18719,7 @@
         "pge": true,
         "avx512bitalg": false,
         "pdcm": false,
-        "model": 63,
+        "model": 60,
         "movbe": true,
         "nrip-save": false,
         "ssse3": true,
@@ -18655,7 +18730,7 @@
         "fma": true,
         "cx16": true,
         "de": true,
-        "stepping": 2,
+        "stepping": 3,
         "xsave": true,
         "clflush": true,
         "skinit": false,
@@ -18669,13 +18744,13 @@
         "osvw": false,
         "apic": true,
         "pmm": false,
-        "spec-ctrl": false,
+        "spec-ctrl": true,
         "tsc-adjust": true,
         "kvm-steal-time": true,
         "kvmclock": true,
         "lwp": false,
         "xop": false,
-        "ibpb": false,
+        "ibpb": true,
         "avx": true,
         "ospke": false,
         "acpi": false,
@@ -18690,7 +18765,7 @@
         "vaes": false,
         "xsaves": false,
         "lm": true,
-        "umip": false,
+        "umip": true,
         "pse": true,
         "avx2": true,
         "sep": true,
@@ -18714,22 +18789,22 @@
         "fxsr-opt": false,
         "xstore": false,
         "rtm": false,
-        "kvm-hint-dedicated": true,
+        "kvm-hint-dedicated": false,
         "lmce": true,
         "perfctr-nb": false,
         "rdrand": true,
         "rdseed": false,
         "avx512-4vnniw": false,
         "vme": true,
-        "vmx": false,
+        "vmx": true,
         "dtes64": false,
         "mtrr": true,
         "rdtscp": true,
         "pse36": true,
-        "kvm-pv-tlb-flush": false,
+        "kvm-pv-tlb-flush": true,
         "tbm": false,
         "wdt": false,
-        "model-id": "Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz",
+        "model-id": "Intel(R) Core(TM) i7-4810MQ CPU @ 2.80GHz",
         "sha-ni": false,
         "abm": true,
         "avx512pf": false,
@@ -18759,6 +18834,7 @@
         "xsavec": false,
         "intel-pt": false,
         "osxsave": false,
+        "hv-frequencies": false,
         "tsc-frequency": 0,
         "xd": true,
         "hv-vendor-id": "",
@@ -18871,7 +18947,7 @@
         "nodeid_msr": false,
         "pdcm": false,
         "movbe": true,
-        "model": 63,
+        "model": 60,
         "nrip_save": false,
         "nrip-save": false,
         "kvm_pv_unhalt": true,
@@ -18884,7 +18960,7 @@
         "cx16": true,
         "de": true,
         "enforce": false,
-        "stepping": 2,
+        "stepping": 3,
         "xsave": true,
         "clflush": true,
         "skinit": false,
@@ -18903,7 +18979,7 @@
         "pmu": false,
         "pmm": false,
         "apic": true,
-        "spec-ctrl": false,
+        "spec-ctrl": true,
         "min-xlevel2": 0,
         "tsc-adjust": true,
         "tsc_adjust": true,
@@ -18912,7 +18988,7 @@
         "kvmclock": true,
         "l3-cache": true,
         "lwp": false,
-        "ibpb": false,
+        "ibpb": true,
         "xop": false,
         "avx": true,
         "ospke": false,
@@ -18930,7 +19006,7 @@
         "xsaves": false,
         "tcg-cpuid": true,
         "lm": true,
-        "umip": false,
+        "umip": true,
         "pse": true,
         "avx2": true,
         "sep": true,
@@ -18964,7 +19040,7 @@
         "hv-synic": false,
         "xstore": false,
         "fxsr_opt": false,
-        "kvm-hint-dedicated": true,
+        "kvm-hint-dedicated": false,
         "rtm": false,
         "lmce": true,
         "hv-time": false,
@@ -18974,18 +19050,18 @@
         "rdrand": true,
         "rdseed": false,
         "avx512-4vnniw": false,
-        "vmx": false,
+        "vmx": true,
         "vme": true,
         "dtes64": false,
         "mtrr": true,
         "rdtscp": true,
         "pse36": true,
-        "kvm-pv-tlb-flush": false,
+        "kvm-pv-tlb-flush": true,
         "tbm": false,
         "wdt": false,
         "pause_filter": false,
         "sha-ni": false,
-        "model-id": "Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz",
+        "model-id": "Intel(R) Core(TM) i7-4810MQ CPU @ 2.80GHz",
         "abm": true,
         "avx512pf": false,
         "xstore-en": false
@@ -19798,6 +19874,7 @@
         "xsavec": false,
         "intel-pt": false,
         "osxsave": false,
+        "hv-frequencies": false,
         "tsc-frequency": 0,
         "xd": true,
         "hv-vendor-id": "",
@@ -20243,6 +20320,7 @@
         "xsavec": false,
         "intel-pt": false,
         "osxsave": false,
+        "hv-frequencies": false,
         "tsc-frequency": 0,
         "xd": true,
         "hv-vendor-id": "",
