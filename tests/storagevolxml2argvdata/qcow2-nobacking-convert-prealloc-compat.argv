@@ -1,5 +1,10 @@
-qemu-img convert -f raw -O qcow2 \
+qemu-img create -f qcow2 \
 --object secret,id=OtherDemo.img_encrypt0,file=/path/to/secretFile \
 -o encrypt.format=aes,encrypt.key-secret=OtherDemo.img_encrypt0,\
 preallocation=metadata,compat=0.10 \
-/var/lib/libvirt/images/sparse.img /var/lib/libvirt/images/OtherDemo.img
+/var/lib/libvirt/images/OtherDemo.img 5242880K
+qemu-img convert --image-opts -n --target-image-opts \
+--object secret,id=OtherDemo.img_encrypt0,file=/path/to/secretFile \
+driver=raw,file.filename=/var/lib/libvirt/images/sparse.img \
+driver=qcow2,file.filename=/var/lib/libvirt/images/OtherDemo.img,\
+encrypt.key-secret=OtherDemo.img_encrypt0

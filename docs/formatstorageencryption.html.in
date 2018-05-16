@@ -38,6 +38,16 @@
       secret value at the time of volume creation, and store it using the
       specified <code>uuid</code>.
     </p>
+    <p>
+      <span class="since">Since 4.4.0,</span> the command line generated
+      by libvirt to create a <code>default</code> or <code>qcow</code>
+      encrypted volume has changed. This is a result of changes made
+      to qemu-img in QEMU 2.9 which requires different arguments to be
+      provided in order to create a qcow encrypted volume. This change
+      is not compatible with older qemu-img images and there is no plan
+      to provide backwards compatibility. It is <b>strongly recommended</b>
+      to use the "luks" encryption format.
+    </p>
     <h3><a id="StorageEncryptionDefault">"default" format</a></h3>
     <p>
       <code>&lt;encryption format="default"/&gt;</code> can be specified only
