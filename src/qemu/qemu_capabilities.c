@@ -2217,15 +2217,38 @@ virQEMUCapsProbeQMPMachineTypes(virQEMUCapsPtr qemuCaps,
 
 
 virDomainCapsCPUModelsPtr
-virQEMUCapsFetchCPUDefinitions(qemuMonitorPtr mon)
+virQEMUCapsFetchCPUDefinitions(qemuMonitorPtr mon,
+                               virArch arch)
 {
     virDomainCapsCPUModelsPtr models = NULL;
     qemuMonitorCPUDefInfoPtr *cpus = NULL;
+    char **libvirtModels = NULL;
     int ncpus = 0;
     size_t i;
 
     if ((ncpus = qemuMonitorGetCPUDefinitions(mon, &cpus)) < 0)
         return NULL;
+
+    if (ARCH_IS_PPC(arch)) {
+        /* QEMU 2.11 for Power renamed all CPU models to lower case, we need
+         * to translate them back to libvirt's upper case model names. */
+        if (virCPUGetModels(arch, &libvirtModels) < 0)
+            goto error;
+
+        if (virStringListLength((const char **)libvirtModels) > 0) {
+            for (i = 0; i < ncpus; i++) {
+                const char *name;
+
+                if (!(name = virStringListSearch((const char **)libvirtModels,
+                                                 cpus[i]->name)))
+                    continue;
+
+                VIR_FREE(cpus[i]->name);
+                if (VIR_STRDUP(cpus[i]->name, name) < 0)
+                    goto error;
+            }
+        }
+    }
 
     if (!(models = virDomainCapsCPUModelsNew(ncpus)))
         goto error;
@@ -2247,6 +2270,7 @@ virQEMUCapsFetchCPUDefinitions(qemuMonitorPtr mon)
     for (i = 0; i < ncpus; i++)
         qemuMonitorCPUDefInfoFree(cpus[i]);
     VIR_FREE(cpus);
+    virStringListFree(libvirtModels);
     return models;
 
  error:
@@ -2266,7 +2290,7 @@ virQEMUCapsProbeQMPCPUDefinitions(virQEMUCapsPtr qemuCaps,
     if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CPU_DEFINITIONS))
         return 0;
 
-    if (!(models = virQEMUCapsFetchCPUDefinitions(mon)))
+    if (!(models = virQEMUCapsFetchCPUDefinitions(mon, qemuCaps->arch)))
         return -1;
 
     if (tcg || !virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))

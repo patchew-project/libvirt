@@ -4127,7 +4127,7 @@ qemuProcessFetchCPUDefinitions(virQEMUDriverPtr driver,
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
         goto error;
 
-    models = virQEMUCapsFetchCPUDefinitions(priv->mon);
+    models = virQEMUCapsFetchCPUDefinitions(priv->mon, vm->def->os.arch);
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         goto error;
