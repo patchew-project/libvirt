@@ -343,7 +343,7 @@ virCopyLastError(virErrorPtr to)
     if (err)
         virCopyError(err, to);
     else
-        virResetError(to);
+        virErrorGenericFailure(err);
     return to->code;
 }
 
