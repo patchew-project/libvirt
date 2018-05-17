@@ -6003,6 +6003,27 @@ qemuBuildSmbiosCommandLine(virCommandPtr cmd,
 
 
 static int
+qemuBuildVMGenIDCommandLine(virCommandPtr cmd,
+                            const virDomainDef *def)
+{
+    virBuffer opts = VIR_BUFFER_INITIALIZER;
+    char guid[VIR_UUID_STRING_BUFLEN];
+
+    if (!def->genidRequested)
+        return 0;
+
+    virUUIDFormat(def->genid, guid);
+    virBufferAsprintf(&opts, "vmgenid,guid=%s,id=vmgenid0", guid);
+
+    virCommandAddArg(cmd, "-device");
+    virCommandAddArgBuffer(cmd, &opts);
+
+    virBufferFreeAndReset(&opts);
+    return 0;
+}
+
+
+static int
 qemuBuildSgaCommandLine(virCommandPtr cmd,
                         const virDomainDef *def,
                         virQEMUCapsPtr qemuCaps)
@@ -9993,6 +10014,9 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     virCommandAddArgList(cmd, "-uuid", uuid, NULL);
 
     if (qemuBuildSmbiosCommandLine(cmd, driver, def) < 0)
+        goto error;
+
+    if (qemuBuildVMGenIDCommandLine(cmd, def) < 0)
         goto error;
 
     /*
