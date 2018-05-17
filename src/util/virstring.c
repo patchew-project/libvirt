@@ -1499,3 +1499,31 @@ virStringParsePort(const char *str,
 
     return 0;
 }
+
+
+/**
+ * virStringListSearch:
+ * @strings: string list
+ * @needle: string to be searched for
+ *
+ * Searches for @needle in @strings ignoring case. See virStringListHasString
+ * for case sensitive search.
+ *
+ * Returns the matching string in @strings or NULL if not found.
+ */
+const char *
+virStringListSearch(const char **strings,
+                    const char *needle)
+{
+    size_t i;
+
+    if (!strings)
+        return NULL;
+
+    for (i = 0; strings[i]; i++) {
+        if (STRCASEEQ(strings[i], needle))
+            return strings[i];
+    }
+
+    return NULL;
+}

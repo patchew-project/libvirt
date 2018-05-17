@@ -2868,6 +2868,7 @@ virStringListJoin;
 virStringListLength;
 virStringListMerge;
 virStringListRemove;
+virStringListSearch;
 virStringMatch;
 virStringParsePort;
 virStringReplace;

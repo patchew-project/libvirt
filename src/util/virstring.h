@@ -309,4 +309,7 @@ int virStringParsePort(const char *str,
                        unsigned int *port)
     ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
 
+const char *virStringListSearch(const char **strings,
+                                const char *needle);
+
 #endif /* __VIR_STRING_H__ */
