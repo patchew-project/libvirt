@@ -313,7 +313,7 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
 
     cfg->keepAliveInterval = 5;
     cfg->keepAliveCount = 5;
-    cfg->seccompSandbox = -1;
+    cfg->seccompSandbox = 0;
 
     cfg->logTimestamp = true;
     cfg->glusterDebugLevel = 4;
