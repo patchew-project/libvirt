@@ -9843,7 +9843,8 @@ qemuBuildSeccompSandboxCommandLine(virCommandPtr cmd,
                                    virQEMUCapsPtr qemuCaps ATTRIBUTE_UNUSED)
 {
     if (cfg->seccompSandbox == 0) {
-        virCommandAddArgList(cmd, "-sandbox", "off", NULL);
+        if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SECCOMP_SANDBOX))
+            virCommandAddArgList(cmd, "-sandbox", "off", NULL);
         return 0;
     }
 
