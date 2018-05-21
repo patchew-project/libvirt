@@ -1267,6 +1267,7 @@ xenFormatNet(virConnectPtr conn,
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
     case VIR_DOMAIN_NET_TYPE_UDP:
     case VIR_DOMAIN_NET_TYPE_USER:
+    case VIR_DOMAIN_NET_TYPE_VSOCK:
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, _("Unsupported net type '%s'"),
                        virDomainNetTypeToString(net->type));
         goto cleanup;

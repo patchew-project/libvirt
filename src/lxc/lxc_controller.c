@@ -395,6 +395,7 @@ static int virLXCControllerGetNICIndexes(virLXCControllerPtr ctrl)
         case VIR_DOMAIN_NET_TYPE_INTERNAL:
         case VIR_DOMAIN_NET_TYPE_DIRECT:
         case VIR_DOMAIN_NET_TYPE_HOSTDEV:
+        case VIR_DOMAIN_NET_TYPE_VSOCK:
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Unsupported net type %s"),
                            virDomainNetTypeToString(ctrl->def->nets[i]->type));

@@ -2675,6 +2675,20 @@
             <ref name="interface-options"/>
           </interleave>
         </group>
+        <group>
+          <attribute name="type">
+            <value>vsock</value>
+          </attribute>
+          <interleave>
+            <element name="target">
+              <attribute name="cid">
+                <ref name="unsignedInt"/>
+              </attribute>
+              <empty/>
+            </element>
+            <ref name="address"/>
+          </interleave>
+        </group>
       </choice>
       <optional>
         <attribute name="trustGuestRxFilters">

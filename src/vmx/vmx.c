@@ -3849,6 +3849,7 @@ virVMXFormatEthernet(virDomainNetDefPtr def, int controller,
       case VIR_DOMAIN_NET_TYPE_DIRECT:
       case VIR_DOMAIN_NET_TYPE_HOSTDEV:
       case VIR_DOMAIN_NET_TYPE_UDP:
+      case VIR_DOMAIN_NET_TYPE_VSOCK:
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, _("Unsupported net type '%s'"),
                        virDomainNetTypeToString(def->type));
         return -1;

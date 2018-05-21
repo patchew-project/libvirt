@@ -426,7 +426,8 @@ VIR_ENUM_IMPL(virDomainNet, VIR_DOMAIN_NET_TYPE_LAST,
               "internal",
               "direct",
               "hostdev",
-              "udp")
+              "udp",
+              "vsock")
 
 VIR_ENUM_IMPL(virDomainNetBackend, VIR_DOMAIN_NET_BACKEND_TYPE_LAST,
               "default",
@@ -2092,6 +2093,10 @@ virDomainNetDefClear(virDomainNetDefPtr def)
 
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
         virDomainHostdevDefClear(&def->data.hostdev.def);
+        break;
+
+    case VIR_DOMAIN_NET_TYPE_VSOCK:
+        def->data.vsock.guest_cid = 0;
         break;
 
     case VIR_DOMAIN_NET_TYPE_ETHERNET:
@@ -10959,6 +10964,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     char *vhostuser_type = NULL;
     char *trustGuestRxFilters = NULL;
     char *vhost_path = NULL;
+    char *cid = NULL;
     virHashTablePtr filterparams = NULL;
     virDomainActualNetDefPtr actual = NULL;
     xmlNodePtr oldnode = ctxt->node;
@@ -11104,6 +11110,8 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                         VIR_FREE(ifname);
                     }
                 }
+                if (!cid && def->type == VIR_DOMAIN_NET_TYPE_VSOCK)
+                    cid = virXMLPropString(cur, "cid");
             } else if ((!ifname_guest || !ifname_guest_actual) &&
                        virXMLNodeNameEqual(cur, "guest")) {
                 ifname_guest = virXMLPropString(cur, "dev");
@@ -11190,7 +11198,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                            (const char *)macaddr);
             goto error;
         }
-    } else {
+    } else if (def->type != VIR_DOMAIN_NET_TYPE_VSOCK) {
         virDomainNetGenerateMAC(xmlopt, &def->mac);
         def->mac_generated = true;
     }
@@ -11421,6 +11429,21 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
         hostdev->mode = VIR_DOMAIN_HOSTDEV_MODE_SUBSYS;
         if (virDomainHostdevDefParseXMLSubsys(node, ctxt, addrtype,
                                               hostdev, flags) < 0) {
+            goto error;
+        }
+        break;
+
+    case VIR_DOMAIN_NET_TYPE_VSOCK:
+        if (cid == NULL) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("No <target> 'cid' attribute "
+                             "specified with <interface type='vsock'/>"));
+            goto error;
+        }
+        if (virStrToLong_uip(cid, NULL, 10, &def->data.vsock.guest_cid) < 0) {
+            virReportError(VIR_ERR_XML_DETAIL,
+                           _("'cid' attribute must be positive number: %s"),
+                           queues);
             goto error;
         }
         break;
@@ -11703,6 +11726,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
         case VIR_DOMAIN_NET_TYPE_DIRECT:
         case VIR_DOMAIN_NET_TYPE_HOSTDEV:
         case VIR_DOMAIN_NET_TYPE_UDP:
+        case VIR_DOMAIN_NET_TYPE_VSOCK:
             break;
         case VIR_DOMAIN_NET_TYPE_LAST:
         default:
@@ -11771,6 +11795,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_FREE(vhost_path);
     VIR_FREE(localaddr);
     VIR_FREE(localport);
+    VIR_FREE(cid);
     virHashFree(filterparams);
 
     return def;
@@ -24290,8 +24315,10 @@ virDomainNetDefFormat(virBufferPtr buf,
     virBufferAddLit(buf, ">\n");
 
     virBufferAdjustIndent(buf, 2);
-    virBufferAsprintf(buf, "<mac address='%s'/>\n",
-                      virMacAddrFormat(&def->mac, macstr));
+    if (def->type != VIR_DOMAIN_NET_TYPE_VSOCK) {
+        virBufferAsprintf(buf, "<mac address='%s'/>\n",
+                          virMacAddrFormat(&def->mac, macstr));
+    }
 
     if (publicActual) {
         /* when there is a virDomainActualNetDef, and we haven't been
@@ -24403,6 +24430,7 @@ virDomainNetDefFormat(virBufferPtr buf,
             break;
 
         case VIR_DOMAIN_NET_TYPE_USER:
+        case VIR_DOMAIN_NET_TYPE_VSOCK:
         case VIR_DOMAIN_NET_TYPE_LAST:
             break;
         }
@@ -24461,6 +24489,8 @@ virDomainNetDefFormat(virBufferPtr buf,
         /* Skip auto-generated target names for inactive config. */
         virBufferEscapeString(buf, "<target dev='%s'/>\n", def->ifname);
     }
+    if (def->type == VIR_DOMAIN_NET_TYPE_VSOCK)
+        virBufferAsprintf(buf, "<target cid='%u'/>\n", def->data.vsock.guest_cid);
 
     if (def->ifname_guest || def->ifname_guest_actual) {
         virBufferAddLit(buf, "<guest");
@@ -28326,6 +28356,7 @@ virDomainNetGetActualVirtPortProfile(virDomainNetDefPtr iface)
     case VIR_DOMAIN_NET_TYPE_MCAST:
     case VIR_DOMAIN_NET_TYPE_INTERNAL:
     case VIR_DOMAIN_NET_TYPE_UDP:
+    case VIR_DOMAIN_NET_TYPE_VSOCK:
     case VIR_DOMAIN_NET_TYPE_LAST:
     default:
         return NULL;
@@ -29165,6 +29196,7 @@ virDomainNetTypeSharesHostView(const virDomainNetDef *net)
     case VIR_DOMAIN_NET_TYPE_INTERNAL:
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
     case VIR_DOMAIN_NET_TYPE_UDP:
+    case VIR_DOMAIN_NET_TYPE_VSOCK:
     case VIR_DOMAIN_NET_TYPE_LAST:
         break;
     }

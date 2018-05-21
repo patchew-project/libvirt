@@ -122,6 +122,7 @@ qemuInterfaceStartDevice(virDomainNetDefPtr net)
     case VIR_DOMAIN_NET_TYPE_UDP:
     case VIR_DOMAIN_NET_TYPE_INTERNAL:
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
+    case VIR_DOMAIN_NET_TYPE_VSOCK:
     case VIR_DOMAIN_NET_TYPE_LAST:
         /* these types all require no action */
         break;
@@ -210,6 +211,7 @@ qemuInterfaceStopDevice(virDomainNetDefPtr net)
     case VIR_DOMAIN_NET_TYPE_UDP:
     case VIR_DOMAIN_NET_TYPE_INTERNAL:
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
+    case VIR_DOMAIN_NET_TYPE_VSOCK:
     case VIR_DOMAIN_NET_TYPE_LAST:
         /* these types all require no action */
         break;

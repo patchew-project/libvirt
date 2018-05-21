@@ -935,6 +935,7 @@ cmdAttachInterface(vshControl *ctl, const vshCmd *cmd)
     case VIR_DOMAIN_NET_TYPE_MCAST:
     case VIR_DOMAIN_NET_TYPE_UDP:
     case VIR_DOMAIN_NET_TYPE_INTERNAL:
+    case VIR_DOMAIN_NET_TYPE_VSOCK:
     case VIR_DOMAIN_NET_TYPE_LAST:
         vshError(ctl, _("No support for %s in command 'attach-interface'"),
                  type);

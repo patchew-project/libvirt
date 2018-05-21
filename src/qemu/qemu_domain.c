@@ -3676,6 +3676,7 @@ qemuDomainNetSupportsCoalesce(virDomainNetType type)
     case VIR_DOMAIN_NET_TYPE_MCAST:
     case VIR_DOMAIN_NET_TYPE_INTERNAL:
     case VIR_DOMAIN_NET_TYPE_UDP:
+    case VIR_DOMAIN_NET_TYPE_VSOCK:
     case VIR_DOMAIN_NET_TYPE_LAST:
         break;
     }
@@ -5570,6 +5571,7 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
 
     if (dev->type == VIR_DOMAIN_DEVICE_NET &&
         dev->data.net->type != VIR_DOMAIN_NET_TYPE_HOSTDEV &&
+        dev->data.net->type != VIR_DOMAIN_NET_TYPE_VSOCK &&
         !dev->data.net->model) {
         if (VIR_STRDUP(dev->data.net->model,
                        qemuDomainDefaultNetModel(def, qemuCaps)) < 0)
@@ -9311,6 +9313,7 @@ qemuDomainNetSupportsMTU(virDomainNetType type)
     case VIR_DOMAIN_NET_TYPE_DIRECT:
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
     case VIR_DOMAIN_NET_TYPE_UDP:
+    case VIR_DOMAIN_NET_TYPE_VSOCK:
     case VIR_DOMAIN_NET_TYPE_LAST:
         break;
     }

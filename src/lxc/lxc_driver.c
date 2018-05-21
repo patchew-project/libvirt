@@ -3949,6 +3949,7 @@ lxcDomainAttachDeviceNetLive(virConnectPtr conn,
     case VIR_DOMAIN_NET_TYPE_INTERNAL:
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
     case VIR_DOMAIN_NET_TYPE_UDP:
+    case VIR_DOMAIN_NET_TYPE_VSOCK:
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("Network device type is not supported"));
         goto cleanup;
@@ -4003,6 +4004,7 @@ lxcDomainAttachDeviceNetLive(virConnectPtr conn,
         case VIR_DOMAIN_NET_TYPE_INTERNAL:
         case VIR_DOMAIN_NET_TYPE_HOSTDEV:
         case VIR_DOMAIN_NET_TYPE_UDP:
+        case VIR_DOMAIN_NET_TYPE_VSOCK:
         case VIR_DOMAIN_NET_TYPE_LAST:
         default:
             /* no-op */
@@ -4449,6 +4451,7 @@ lxcDomainDetachDeviceNetLive(virDomainObjPtr vm,
     case VIR_DOMAIN_NET_TYPE_INTERNAL:
     case VIR_DOMAIN_NET_TYPE_HOSTDEV:
     case VIR_DOMAIN_NET_TYPE_UDP:
+    case VIR_DOMAIN_NET_TYPE_VSOCK:
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("Only bridged veth devices can be detached"));
         goto cleanup;

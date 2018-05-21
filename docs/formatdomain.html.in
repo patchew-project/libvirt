@@ -5388,6 +5388,21 @@
 &lt;/devices&gt;
 ...</pre>
 
+    <h5><a id="elementsNICSVsock">Vsock</a></h5>
+
+    <p>A vsock host/guest interface. Attribute <code>cid</code> of the traget element
+    specifies the CID assigned to the guest.
+    <span class="since">Since 4.4.0</span></p>
+
+<pre>
+...
+&lt;devices&gt;
+  &lt;interface type='vsock'&gt;
+    &lt;target cid='3'/&gt;
+  &lt;/interface&gt;
+&lt;/devices&gt;
+...</pre>
+
     <h5><a id="elementsNICSModel">Setting the NIC model</a></h5>
 
 <pre>

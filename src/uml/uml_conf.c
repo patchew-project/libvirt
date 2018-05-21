@@ -258,6 +258,11 @@ umlBuildCommandLineNet(virConnectPtr conn,
                        _("hostdev networking type not supported"));
         goto error;
 
+    case VIR_DOMAIN_NET_TYPE_VSOCK:
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("vsock networking type not supported"));
+        goto error;
+
     case VIR_DOMAIN_NET_TYPE_LAST:
         break;
     }
