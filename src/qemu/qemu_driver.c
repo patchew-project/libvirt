@@ -8661,15 +8661,16 @@ static int qemuDomainUpdateDeviceFlags(virDomainPtr dom,
     return ret;
 }
 
+
 static int
 qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
                                     virDomainObjPtr vm,
-                                    const char *xml,
+                                    virDomainDeviceDefPtr dev,
                                     unsigned int flags)
 {
     virCapsPtr caps = NULL;
     virQEMUDriverConfigPtr cfg = NULL;
-    virDomainDeviceDefPtr dev = NULL, dev_copy = NULL;
+    virDomainDeviceDefPtr dev_copy = dev;
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE;
     virDomainDefPtr vmdef = NULL;
     int ret = -1;
@@ -8685,12 +8686,6 @@ qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
     if ((flags & VIR_DOMAIN_AFFECT_CONFIG) &&
         !(flags & VIR_DOMAIN_AFFECT_LIVE))
         parse_flags |= VIR_DOMAIN_DEF_PARSE_INACTIVE;
-
-    dev = dev_copy = virDomainDeviceDefParse(xml, vm->def,
-                                             caps, driver->xmlopt,
-                                             parse_flags);
-    if (dev == NULL)
-        goto cleanup;
 
     if (flags & VIR_DOMAIN_AFFECT_CONFIG &&
         flags & VIR_DOMAIN_AFFECT_LIVE) {
@@ -8743,10 +8738,41 @@ qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
     virObjectUnref(cfg);
     if (dev != dev_copy)
         virDomainDeviceDefFree(dev_copy);
-    virDomainDeviceDefFree(dev);
     virDomainDefFree(vmdef);
     return ret;
 }
+
+
+static int
+qemuDomainDetachDeviceXMLLiveAndConfig(virQEMUDriverPtr driver,
+                                       virDomainObjPtr vm,
+                                       const char *xml,
+                                       unsigned int flags)
+{
+    virCapsPtr caps = NULL;
+    virDomainDeviceDefPtr dev = NULL;
+    unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE;
+    int ret = -1;
+
+    if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
+        goto cleanup;
+
+    if ((flags & VIR_DOMAIN_AFFECT_CONFIG) &&
+        !(flags & VIR_DOMAIN_AFFECT_LIVE))
+        parse_flags |= VIR_DOMAIN_DEF_PARSE_INACTIVE;
+
+    if (!(dev = virDomainDeviceDefParse(xml, vm->def,
+                                        caps, driver->xmlopt,
+                                        parse_flags)))
+        goto cleanup;
+
+    ret = qemuDomainDetachDeviceLiveAndConfig(driver, vm, dev, flags);
+ cleanup:
+    virDomainDeviceDefFree(dev);
+    virObjectUnref(caps);
+    return ret;
+}
+
 
 static int
 qemuDomainDetachDeviceFlags(virDomainPtr dom,
@@ -8769,7 +8795,7 @@ qemuDomainDetachDeviceFlags(virDomainPtr dom,
     if (virDomainObjUpdateModificationImpact(vm, &flags) < 0)
         goto endjob;
 
-    if (qemuDomainDetachDeviceLiveAndConfig(driver, vm, xml, flags) < 0)
+    if (qemuDomainDetachDeviceXMLLiveAndConfig(driver, vm, xml, flags) < 0)
         goto endjob;
 
     ret = 0;
