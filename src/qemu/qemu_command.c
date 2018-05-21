@@ -3375,7 +3375,7 @@ qemuBuildNicDevStr(virDomainDefPtr def,
     bool usingVirtio = false;
     char macaddr[VIR_MAC_STRING_BUFLEN];
 
-    if (STREQ(net->model, "virtio")) {
+    if (STREQ_NULLABLE(net->model, "virtio")) {
         if (net->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW)
             nic = "virtio-net-ccw";
         else if (net->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390)

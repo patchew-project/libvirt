@@ -622,14 +622,14 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
          * addresses for other hostdev devices.
          */
         if (net->type == VIR_DOMAIN_NET_TYPE_HOSTDEV ||
-            STREQ(net->model, "usb-net")) {
+            STREQ_NULLABLE(net->model, "usb-net")) {
             return 0;
         }
 
-        if (STREQ(net->model, "virtio"))
+        if (STREQ_NULLABLE(net->model, "virtio"))
             return  virtioFlags;
 
-        if (STREQ(net->model, "e1000e"))
+        if (STREQ_NULLABLE(net->model, "e1000e"))
             return pcieFlags;
 
         return pciFlags;
