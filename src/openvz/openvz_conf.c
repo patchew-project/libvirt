@@ -219,7 +219,7 @@ openvzReadNetworkConf(virDomainDefPtr def,
     } else if (ret > 0) {
         token = strtok_r(temp, " ", &saveptr);
         while (token != NULL) {
-            if (VIR_ALLOC(net) < 0)
+            if (!(net = virDomainNetDefNew(NULL)))
                 goto error;
 
             net->type = VIR_DOMAIN_NET_TYPE_ETHERNET;
@@ -248,7 +248,7 @@ openvzReadNetworkConf(virDomainDefPtr def,
         token = strtok_r(temp, ";", &saveptr);
         while (token != NULL) {
             /*add new device to list*/
-            if (VIR_ALLOC(net) < 0)
+            if (!(net = virDomainNetDefNew(NULL)))
                 goto error;
 
             net->type = VIR_DOMAIN_NET_TYPE_BRIDGE;

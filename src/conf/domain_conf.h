@@ -2788,6 +2788,7 @@ bool virDomainControllerIsPSeriesPHB(const virDomainControllerDef *cont);
 virDomainFSDefPtr virDomainFSDefNew(void);
 void virDomainFSDefFree(virDomainFSDefPtr def);
 void virDomainActualNetDefFree(virDomainActualNetDefPtr def);
+virDomainNetDefPtr virDomainNetDefNew(virDomainXMLOptionPtr xmlopt);
 void virDomainNetDefClear(virDomainNetDefPtr def);
 void virDomainNetDefFree(virDomainNetDefPtr def);
 void virDomainSmartcardDefFree(virDomainSmartcardDefPtr def);

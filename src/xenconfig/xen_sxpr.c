@@ -600,7 +600,7 @@ xenParseSxprNets(virDomainDefPtr def,
             model = sexpr_node(node, "device/vif/model");
             type = sexpr_node(node, "device/vif/type");
 
-            if (VIR_ALLOC(net) < 0)
+            if (!(net = virDomainNetDefNew(NULL)))
                 goto cleanup;
 
             if (tmp != NULL ||

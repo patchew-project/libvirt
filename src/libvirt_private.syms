@@ -447,6 +447,7 @@ virDomainNetBandwidthUpdate;
 virDomainNetDefClear;
 virDomainNetDefFormat;
 virDomainNetDefFree;
+virDomainNetDefNew;
 virDomainNetFind;
 virDomainNetFindByName;
 virDomainNetFindIdx;

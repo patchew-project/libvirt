@@ -2027,6 +2027,19 @@ virDomainActualNetDefFree(virDomainActualNetDefPtr def)
     VIR_FREE(def);
 }
 
+
+virDomainNetDefPtr
+virDomainNetDefNew(virDomainXMLOptionPtr xmlopt ATTRIBUTE_UNUSED)
+{
+    virDomainNetDefPtr net;
+
+    if (VIR_ALLOC(net) < 0)
+        return NULL;
+
+    return net;
+}
+
+
 void
 virDomainNetDefClear(virDomainNetDefPtr def)
 {
@@ -10941,7 +10954,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     virDomainChrSourceReconnectDef reconnect = {0};
     int rv, val;
 
-    if (VIR_ALLOC(def) < 0)
+    if (!(def = virDomainNetDefNew(xmlopt)))
         return NULL;
 
     ctxt->node = node;

@@ -2628,7 +2628,7 @@ virVMXParseEthernet(virConfPtr conf, int controller, virDomainNetDefPtr *def)
     if (! present/* && ! startConnected*/)
         return 0;
 
-    if (VIR_ALLOC(*def) < 0)
+    if (!(*def = virDomainNetDefNew(NULL)))
         return -1;
 
     /* vmx:connectionType -> def:type */

@@ -3690,7 +3690,7 @@ vboxDumpNetwork(vboxDriverPtr data, INetworkAdapter *adapter)
     char *utf8 = NULL;
     virDomainNetDefPtr net = NULL;
 
-    if (VIR_ALLOC(net) < 0)
+    if (!(net = virDomainNetDefNew(NULL)))
         return NULL;
 
     gVBoxAPI.UINetworkAdapter.GetAttachmentType(adapter, &attachmentType);

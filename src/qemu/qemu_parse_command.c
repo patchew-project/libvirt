@@ -1037,7 +1037,7 @@ qemuParseCommandLineNet(virDomainXMLOptionPtr xmlopt,
         nkeywords = 0;
     }
 
-    if (VIR_ALLOC(def) < 0)
+    if (!(def = virDomainNetDefNew(xmlopt)))
         goto cleanup;
 
     /* 'tap' could turn into libvirt type=ethernet, type=bridge or
