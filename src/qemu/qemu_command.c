@@ -7200,6 +7200,22 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
     return ret;
 }
 
+
+static void
+qemuBuildTSEGCommandLine(virCommandPtr cmd,
+                         const virDomainDef *def)
+{
+    if (!def->tseg_size)
+        return;
+
+    virCommandAddArg(cmd, "-global");
+
+    /* PostParse callback guarantees that the size is divisible by 1 MiB */
+    virCommandAddArgFormat(cmd, "mch.extended-tseg-mbytes=%llu",
+                           def->tseg_size >> 20);
+}
+
+
 static int
 qemuBuildSmpCommandLine(virCommandPtr cmd,
                         virDomainDefPtr def)
@@ -9920,6 +9936,8 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
 
     if (qemuBuildMachineCommandLine(cmd, cfg, def, qemuCaps) < 0)
         goto error;
+
+    qemuBuildTSEGCommandLine(cmd, def);
 
     if (qemuBuildCpuCommandLine(cmd, driver, def, qemuCaps) < 0)
         goto error;
