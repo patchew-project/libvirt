@@ -4785,6 +4785,11 @@
                   <ref name="virOnOff"/>
                 </attribute>
               </optional>
+              <optional>
+                <element name="tseg">
+                  <ref name="scaledInteger"/>
+                </element>
+              </optional>
             </element>
           </optional>
           <optional>

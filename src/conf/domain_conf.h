@@ -2377,6 +2377,7 @@ struct _virDomainDef {
     virGICVersion gic_version;
     char *hyperv_vendor_id;
     int apic_eoi;
+    unsigned long long tseg_size;
 
     virDomainClockDef clock;
 

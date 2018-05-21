@@ -19647,6 +19647,16 @@ virDomainDefParseXML(xmlDocPtr xml,
         VIR_FREE(nodes);
     }
 
+    if (def->features[VIR_DOMAIN_FEATURE_SMM] == VIR_TRISTATE_SWITCH_ON &&
+        virDomainParseScaledValue("string(./features/smm/tseg)",
+                                  "string(./features/smm/tseg/@unit)",
+                                  ctxt,
+                                  &def->tseg_size,
+                                  1024 * 1024, /* Defaults to mebibytes */
+                                  ULLONG_MAX,
+                                  false) < 0)
+        goto error;
+
     if ((n = virXPathNodeSet("./features/capabilities/*", ctxt, &nodes)) < 0)
         goto error;
 
@@ -21739,6 +21749,23 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
                 break;
             }
         }
+    }
+
+    /* smm */
+    if (src->features[VIR_DOMAIN_FEATURE_SMM] == VIR_TRISTATE_SWITCH_ON &&
+        src->tseg_size != dst->tseg_size) {
+        const char *unit_src, *unit_dst;
+        unsigned long long short_size_src = virFormatIntPretty(src->tseg_size,
+                                                               &unit_src);
+        unsigned long long short_size_dst = virFormatIntPretty(dst->tseg_size,
+                                                               &unit_dst);
+
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Size of SMM TSEG size differs: "
+                         "source: '%llu %s', destination: '%llu %s'"),
+                       short_size_src, unit_src,
+                       short_size_dst, unit_dst);
+        return false;
     }
 
     return true;
@@ -27059,7 +27086,6 @@ virDomainDefFormatInternal(virDomainDefPtr def,
             case VIR_DOMAIN_FEATURE_PMU:
             case VIR_DOMAIN_FEATURE_PVSPINLOCK:
             case VIR_DOMAIN_FEATURE_VMPORT:
-            case VIR_DOMAIN_FEATURE_SMM:
                 switch ((virTristateSwitch) def->features[i]) {
                 case VIR_TRISTATE_SWITCH_LAST:
                 case VIR_TRISTATE_SWITCH_ABSENT:
@@ -27072,6 +27098,38 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                 case VIR_TRISTATE_SWITCH_OFF:
                    virBufferAsprintf(buf, "<%s state='off'/>\n", name);
                    break;
+                }
+
+                break;
+
+            case VIR_DOMAIN_FEATURE_SMM:
+                switch ((virTristateSwitch) def->features[i]) {
+                case VIR_TRISTATE_SWITCH_LAST:
+                case VIR_TRISTATE_SWITCH_ABSENT:
+                    break;
+
+                case VIR_TRISTATE_SWITCH_ON:
+                    virBufferAddLit(buf, "<smm state='on'");
+                    if (!def->tseg_size) {
+                        virBufferAddLit(buf, "/>\n");
+                    } else {
+                        const char *unit;
+                        unsigned long long short_size = virFormatIntPretty(def->tseg_size,
+                                                                           &unit);
+
+                        virBufferAddLit(buf, ">\n");
+                        virBufferAdjustIndent(buf, 2);
+                        virBufferAsprintf(buf, "<tseg unit='%s'>%llu</tseg>\n",
+                                          unit, short_size);
+                        virBufferAdjustIndent(buf, -2);
+                        virBufferAddLit(buf, "</smm>\n");
+                    }
+
+                    break;
+
+                case VIR_TRISTATE_SWITCH_OFF:
+                    virBufferAddLit(buf, "<smm state='off'/>\n");
+                    break;
                 }
 
                 break;
