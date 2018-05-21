@@ -313,4 +313,8 @@ int virNetDevSysfsFile(char **pf_sysfs_device_link,
 
 int virNetDevRunEthernetScript(const char *ifname, const char *script)
     ATTRIBUTE_NOINLINE;
+
+int
+virNetDevVsockSetGuestCid(int fd,
+                          unsigned int guest_cid);
 #endif /* __VIR_NETDEV_H__ */

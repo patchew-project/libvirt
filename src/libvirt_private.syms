@@ -2287,6 +2287,7 @@ virNetDevSetRcvMulti;
 virNetDevSetupControl;
 virNetDevSysfsFile;
 virNetDevValidateConfig;
+virNetDevVsockSetGuestCid;
 
 
 # util/virnetdevbandwidth.h

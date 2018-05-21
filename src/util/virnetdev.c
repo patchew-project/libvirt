@@ -50,6 +50,10 @@
 # undef HAVE_STRUCT_IFREQ
 #endif
 
+#if HAVE_DECL_VHOST_VSOCK_SET_GUEST_CID
+# include <linux/vhost.h>
+#endif
+
 #if defined(SIOCETHTOOL) && defined(HAVE_STRUCT_IFREQ)
 # include <linux/types.h>
 # include <linux/ethtool.h>
@@ -3605,3 +3609,29 @@ virNetDevRunEthernetScript(const char *ifname, const char *script)
     virCommandFree(cmd);
     return ret;
 }
+
+#if HAVE_DECL_VHOST_VSOCK_SET_GUEST_CID
+int
+virNetDevVsockSetGuestCid(int fd,
+                          unsigned int guest_cid)
+{
+    uint64_t val = guest_cid;
+
+    if (ioctl(fd, VHOST_VSOCK_SET_GUEST_CID, &val) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("failed to set guest cid"));
+        return -1;
+    }
+
+    return 0;
+}
+#else
+int
+virNetDevVsockSetGuestCid(int fd ATTRIBUTE_UNUSED,
+                          unsigned int guest_cid ATTRIBUTE_UNUSED)
+{
+    virReportSystemError(ENOSYS, "%s",
+                         _("vsock is not supported"));
+    return -1;
+}
+#endif
