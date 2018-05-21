@@ -2036,7 +2036,16 @@ virDomainNetDefNew(virDomainXMLOptionPtr xmlopt ATTRIBUTE_UNUSED)
     if (VIR_ALLOC(net) < 0)
         return NULL;
 
+    if (xmlopt &&
+        xmlopt->privateData.netNew &&
+        !(net->privateData = xmlopt->privateData.netNew()))
+        goto error;
+
     return net;
+
+ error:
+    virDomainNetDefFree(net);
+    return NULL;
 }
 
 
@@ -2113,6 +2122,8 @@ virDomainNetDefClear(virDomainNetDefPtr def)
     virNetDevBandwidthFree(def->bandwidth);
     def->bandwidth = NULL;
     virNetDevVlanClear(&def->vlan);
+    virObjectUnref(def->privateData);
+    def->privateData = NULL;
 }
 
 void
