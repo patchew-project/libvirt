@@ -8350,6 +8350,52 @@ virDomainUpdateDeviceFlags(virDomainPtr domain,
 
 
 /**
+ * virDomainDetachDeviceAlias:
+ * @domain: pointer to domain object
+ * @alias: device alias
+ * @flags: bitwise-OR of virDomainDeviceModifyFlags
+ *
+ * Detach a virtual device from a domain, using the alias to
+ * specify device.
+ *
+ * See virDomainDetachDeviceFlags() for more details.
+ *
+ * Returns 0 in case of success, -1 in case of failure.
+ */
+int
+virDomainDetachDeviceAlias(virDomainPtr domain,
+                           const char *alias,
+                           unsigned int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "alias=%s, flags=0x%x", alias, flags);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    conn = domain->conn;
+
+    virCheckNonNullArgGoto(alias, error);
+    virCheckReadOnlyGoto(conn->flags, error);
+
+    if (conn->driver->domainDetachDeviceAlias) {
+        int ret;
+        ret = conn->driver->domainDetachDeviceAlias(domain, alias, flags);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+
+ error:
+    virDispatchError(domain->conn);
+    return -1;
+}
+
+
+/**
  * virConnectDomainEventRegister:
  * @conn: pointer to the connection
  * @cb: callback to the function handling domain events
