@@ -160,9 +160,10 @@
   <flag name='virtio-gpu.max_outputs'/>
   <flag name='isa-serial'/>
   <flag name='sdl-gl'/>
+  <flag name='mch'/>
   <version>2005000</version>
   <kvmVersion>0</kvmVersion>
-  <microcodeVersion>216528</microcodeVersion>
+  <microcodeVersion>216894</microcodeVersion>
   <package></package>
   <arch>x86_64</arch>
   <cpu type='kvm' name='Opteron_G5'/>

@@ -471,6 +471,8 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     /* 300 */
     QEMU_CAPS_SDL_GL, /* -sdl gl */
     QEMU_CAPS_SCREENDUMP_DEVICE, /* screendump command accepts device & head */
+    QEMU_CAPS_DEVICE_MCH, /* Northbridge in q35 machine types */
+    QEMU_CAPS_MCH_EXTENDED_TSEG_MBYTES, /* -global mch.extended-tseg-mbytes */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;

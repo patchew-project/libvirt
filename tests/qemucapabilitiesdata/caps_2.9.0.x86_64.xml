@@ -192,9 +192,10 @@
   <flag name='disk-write-cache'/>
   <flag name='nbd-tls'/>
   <flag name='sdl-gl'/>
+  <flag name='mch'/>
   <version>2009000</version>
   <kvmVersion>0</kvmVersion>
-  <microcodeVersion>320947</microcodeVersion>
+  <microcodeVersion>321313</microcodeVersion>
   <package> (v2.9.0)</package>
   <arch>x86_64</arch>
   <hostCPU type='kvm' model='base' migratability='yes'>
