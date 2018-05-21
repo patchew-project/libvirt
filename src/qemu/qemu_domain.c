@@ -1134,6 +1134,41 @@ qemuDomainChrSourcePrivateDispose(void *obj)
 }
 
 
+static virClassPtr qemuDomainNetPrivateClass;
+static void qemuDomainNetPrivateDispose(void *obj);
+
+static int
+qemuDomainNetPrivateOnceInit(void)
+{
+    if (!VIR_CLASS_NEW(qemuDomainNetPrivate, virClassForObject()))
+        return -1;
+
+    return 0;
+}
+
+VIR_ONCE_GLOBAL_INIT(qemuDomainNetPrivate)
+
+static virObjectPtr
+qemuDomainNetPrivateNew(void)
+{
+    qemuDomainNetPrivatePtr priv;
+
+    if (qemuDomainNetPrivateInitialize() < 0)
+        return NULL;
+
+    if (!(priv = virObjectNew(qemuDomainNetPrivateClass)))
+        return NULL;
+
+    return (virObjectPtr) priv;
+}
+
+
+static void
+qemuDomainNetPrivateDispose(void *obj ATTRIBUTE_UNUSED)
+{
+}
+
+
 /* qemuDomainSecretPlainSetup:
  * @secinfo: Pointer to secret info
  * @usageType: The virSecretUsageType
@@ -2636,6 +2671,7 @@ virDomainXMLPrivateDataCallbacks virQEMUDriverPrivateDataCallbacks = {
     .diskNew = qemuDomainDiskPrivateNew,
     .vcpuNew = qemuDomainVcpuPrivateNew,
     .chrSourceNew = qemuDomainChrSourcePrivateNew,
+    .netNew = qemuDomainNetPrivateNew,
     .parse = qemuDomainObjPrivateXMLParse,
     .format = qemuDomainObjPrivateXMLFormat,
     .storageParse = qemuStorageSourcePrivateDataParse,
