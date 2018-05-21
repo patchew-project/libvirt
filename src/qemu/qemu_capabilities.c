@@ -4561,14 +4561,23 @@ virQEMUCapsSupportsVmport(virQEMUCapsPtr qemuCaps,
 }
 
 
-bool
-virQEMUCapsSupportsSMM(virQEMUCapsPtr qemuCaps,
-                       const virDomainDef *def)
+int
+virQEMUCapsCheckSMMSupport(virQEMUCapsPtr qemuCaps,
+                           const virDomainDef *def)
 {
-    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_MACHINE_SMM_OPT))
-        return false;
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_MACHINE_SMM_OPT)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("smm is not available with this QEMU binary"));
+        return -1;
+    }
 
-    return qemuDomainIsQ35(def);
+    if (!qemuDomainIsQ35(def)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("smm is only supported with q35 machine type"));
+        return -1;
+    }
+
+    return 0;
 }
 
 

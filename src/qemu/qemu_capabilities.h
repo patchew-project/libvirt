@@ -497,8 +497,8 @@ bool virQEMUCapsHasPCIMultiBus(virQEMUCapsPtr qemuCaps,
 bool virQEMUCapsSupportsVmport(virQEMUCapsPtr qemuCaps,
                                const virDomainDef *def);
 
-bool virQEMUCapsSupportsSMM(virQEMUCapsPtr qemuCaps,
-                            const virDomainDef *def);
+int virQEMUCapsCheckSMMSupport(virQEMUCapsPtr qemuCaps,
+                               const virDomainDef *def);
 
 char *virQEMUCapsFlagsString(virQEMUCapsPtr qemuCaps);
 

@@ -3430,7 +3430,8 @@ qemuDomainDefGetVcpuHotplugGranularity(const virDomainDef *def)
 
 
 static int
-qemuDomainDefValidateFeatures(const virDomainDef *def)
+qemuDomainDefValidateFeatures(const virDomainDef *def,
+                              virQEMUCapsPtr qemuCaps)
 {
     size_t i;
 
@@ -3477,6 +3478,12 @@ qemuDomainDefValidateFeatures(const virDomainDef *def)
             }
             break;
 
+        case VIR_DOMAIN_FEATURE_SMM:
+            if (def->features[i] == VIR_TRISTATE_SWITCH_ON &&
+                virQEMUCapsCheckSMMSupport(qemuCaps, def) < 0)
+                return -1;
+            break;
+
         case VIR_DOMAIN_FEATURE_ACPI:
         case VIR_DOMAIN_FEATURE_APIC:
         case VIR_DOMAIN_FEATURE_PAE:
@@ -3489,7 +3496,6 @@ qemuDomainDefValidateFeatures(const virDomainDef *def)
         case VIR_DOMAIN_FEATURE_CAPABILITIES:
         case VIR_DOMAIN_FEATURE_PMU:
         case VIR_DOMAIN_FEATURE_VMPORT:
-        case VIR_DOMAIN_FEATURE_SMM:
         case VIR_DOMAIN_FEATURE_VMCOREINFO:
         case VIR_DOMAIN_FEATURE_LAST:
             break;
@@ -3612,7 +3618,7 @@ qemuDomainDefValidate(const virDomainDef *def,
         }
     }
 
-    if (qemuDomainDefValidateFeatures(def) < 0)
+    if (qemuDomainDefValidateFeatures(def, qemuCaps) < 0)
         goto cleanup;
 
     ret = 0;
