@@ -532,6 +532,19 @@ testCompareXMLToArgv(const void *data)
         }
     }
 
+    for (i = 0; i < vm->def->nnets; i++) {
+        virDomainNetDefPtr net = vm->def->nets[i];
+
+        if (net->type == VIR_DOMAIN_NET_TYPE_VSOCK) {
+            qemuDomainNetPrivatePtr netPriv = QEMU_DOMAIN_NET_PRIVATE(net);
+            if (VIR_ALLOC_N(netPriv->vhostfds, 1) < 0)
+                goto cleanup;
+
+            netPriv->vhostfds[0] = 6789;
+            netPriv->nvhostfds = 1;
+        }
+    }
+
     if (!(cmd = qemuProcessCreatePretendCmd(&driver, vm, migrateURI,
                                             (flags & FLAG_FIPS), false,
                                             VIR_QEMU_PROCESS_START_COLD))) {
@@ -2847,6 +2860,8 @@ mymain(void)
             QEMU_CAPS_DEVICE_VIRTIO_KEYBOARD_CCW,
             QEMU_CAPS_DEVICE_VIRTIO_MOUSE_CCW,
             QEMU_CAPS_DEVICE_VIRTIO_TABLET_CCW);
+
+    DO_TEST_CAPS_LATEST("vhost-vsock");
 
     if (getenv("LIBVIRT_SKIP_CLEANUP") == NULL)
         virFileDeleteTree(fakerootdir);

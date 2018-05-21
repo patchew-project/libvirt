@@ -5348,6 +5348,11 @@ qemuProcessNetworkPrepareDevices(virDomainDefPtr def)
             if (virDomainHostdevInsert(def, hostdev) < 0)
                 goto cleanup;
         }
+
+        if (net->type == VIR_DOMAIN_NET_TYPE_VSOCK) {
+            if (qemuInterfaceOpenVhostVsock(def, net) < 0)
+                goto cleanup;
+        }
     }
     ret = 0;
  cleanup:

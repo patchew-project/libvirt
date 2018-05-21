@@ -353,6 +353,9 @@ struct _qemuDomainObjPrivate {
 # define QEMU_DOMAIN_DISK_PRIVATE(disk) \
     ((qemuDomainDiskPrivatePtr) (disk)->privateData)
 
+# define QEMU_DOMAIN_NET_PRIVATE(net) \
+    ((qemuDomainNetPrivatePtr) (net)->privateData)
+
 typedef struct _qemuDomainDiskPrivate qemuDomainDiskPrivate;
 typedef qemuDomainDiskPrivate *qemuDomainDiskPrivatePtr;
 struct _qemuDomainDiskPrivate {
@@ -446,7 +449,8 @@ typedef qemuDomainNetPrivate *qemuDomainNetPrivatePtr;
 struct _qemuDomainNetPrivate {
     virObject parent;
 
-    virTristateBool maybe;
+    int *vhostfds;
+    size_t nvhostfds;
 };
 
 

@@ -3375,6 +3375,9 @@ qemuBuildNicDevStr(virDomainDefPtr def,
     bool usingVirtio = false;
     char macaddr[VIR_MAC_STRING_BUFLEN];
 
+    if (net->type == VIR_DOMAIN_NET_TYPE_VSOCK)
+        nic = "vhost-vsock-pci";
+
     if (STREQ_NULLABLE(net->model, "virtio")) {
         if (net->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW)
             nic = "virtio-net-ccw";
@@ -3514,13 +3517,23 @@ qemuBuildNicDevStr(virDomainDefPtr def,
         virBufferAsprintf(&buf, ",host_mtu=%u", net->mtu);
     }
 
-    if (vlan == -1)
-        virBufferAsprintf(&buf, ",netdev=host%s", net->info.alias);
-    else
-        virBufferAsprintf(&buf, ",vlan=%d", vlan);
+    if (net->type != VIR_DOMAIN_NET_TYPE_VSOCK) {
+        if (vlan == -1)
+            virBufferAsprintf(&buf, ",netdev=host%s", net->info.alias);
+        else
+            virBufferAsprintf(&buf, ",vlan=%d", vlan);
+    }
     virBufferAsprintf(&buf, ",id=%s", net->info.alias);
-    virBufferAsprintf(&buf, ",mac=%s",
-                      virMacAddrFormat(&net->mac, macaddr));
+    if (net->type != VIR_DOMAIN_NET_TYPE_VSOCK) {
+        virBufferAsprintf(&buf, ",mac=%s",
+                          virMacAddrFormat(&net->mac, macaddr));
+    }
+
+    if (net->type == VIR_DOMAIN_NET_TYPE_VSOCK) {
+        virBufferAsprintf(&buf, ",guest-cid=%u", net->data.vsock.guest_cid);
+        virBufferAsprintf(&buf, ",vhostfd=%u",
+                          QEMU_DOMAIN_NET_PRIVATE(net)->vhostfds[0]);
+    }
 
     if (qemuBuildDeviceAddressStr(&buf, def, &net->info, qemuCaps) < 0)
         goto error;
@@ -8373,6 +8386,18 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
                          VIR_COMMAND_PASS_FD_CLOSE_PARENT);
         if (virAsprintf(&vhostfdName[i], "%d", vhostfd[i]) < 0)
             goto cleanup;
+    }
+
+    if (actualType == VIR_DOMAIN_NET_TYPE_VSOCK) {
+        if (!(nic = qemuBuildNicDevStr(def, net, -1, bootindex, 0, qemuCaps)))
+            goto cleanup;
+
+        virCommandPassFD(cmd, QEMU_DOMAIN_NET_PRIVATE(net)->vhostfds[0],
+                         VIR_COMMAND_PASS_FD_CLOSE_PARENT);
+        QEMU_DOMAIN_NET_PRIVATE(net)->vhostfds[0] = -1;
+        virCommandAddArgList(cmd, "-device", nic, NULL);
+        ret = 0;
+        goto cleanup;
     }
 
     /* Possible combinations:

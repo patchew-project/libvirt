@@ -698,3 +698,34 @@ qemuInterfaceOpenVhostNet(virDomainDefPtr def,
 
     return -1;
 }
+
+
+int
+qemuInterfaceOpenVhostVsock(virDomainDefPtr def,
+                            virDomainNetDefPtr net)
+{
+    qemuDomainNetPrivatePtr netPriv = QEMU_DOMAIN_NET_PRIVATE(net);
+    const char *vsock_path = "/dev/vhost-vsock";
+    int fd;
+
+    if (VIR_ALLOC_N(netPriv->vhostfds, 1) < 0)
+        return -1;
+
+    if ((fd = open(vsock_path, O_RDWR)) < 0) {
+        virDomainAuditNetDevice(def, net, vsock_path, false);
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       "%s", _("unable to open vhost-vsock device"));
+        return -1;
+    }
+    if (virNetDevVsockSetGuestCid(fd, net->data.vsock.guest_cid) < 0)
+        goto error;
+
+    virDomainAuditNetDevice(def, net, vsock_path, true);
+    netPriv->vhostfds[0] = fd;
+    netPriv->nvhostfds = 1;
+    return 0;
+
+ error:
+    VIR_FORCE_CLOSE(fd);
+    return -1;
+}

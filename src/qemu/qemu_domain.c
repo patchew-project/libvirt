@@ -1164,8 +1164,16 @@ qemuDomainNetPrivateNew(void)
 
 
 static void
-qemuDomainNetPrivateDispose(void *obj ATTRIBUTE_UNUSED)
+qemuDomainNetPrivateDispose(void *obj)
 {
+    qemuDomainNetPrivatePtr priv = obj;
+    size_t i;
+
+    if (priv->vhostfds) {
+        for (i = 0; i < priv->nvhostfds; i++)
+            VIR_FORCE_CLOSE(priv->vhostfds[i]);
+    }
+    VIR_FREE(priv->vhostfds);
 }
 
 

@@ -58,4 +58,8 @@ int qemuInterfaceOpenVhostNet(virDomainDefPtr def,
                               virDomainNetDefPtr net,
                               int *vhostfd,
                               size_t *vhostfdSize);
+
+int
+qemuInterfaceOpenVhostVsock(virDomainDefPtr def,
+                            virDomainNetDefPtr net);
 #endif /* __QEMU_INTERFACE_H__ */
