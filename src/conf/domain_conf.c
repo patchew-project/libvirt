@@ -11069,15 +11069,16 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                     }
                     ctxt->node = tmpnode;
                 }
-            } else if (!ifname &&
-                       virXMLNodeNameEqual(cur, "target")) {
-                ifname = virXMLPropString(cur, "dev");
-                if (ifname &&
-                    (flags & VIR_DOMAIN_DEF_PARSE_INACTIVE) &&
-                    (STRPREFIX(ifname, VIR_NET_GENERATED_TAP_PREFIX) ||
-                     (prefix && STRPREFIX(ifname, prefix)))) {
-                    /* An auto-generated target name, blank it out */
-                    VIR_FREE(ifname);
+            } else if (virXMLNodeNameEqual(cur, "target")) {
+                if (!ifname) {
+                    ifname = virXMLPropString(cur, "dev");
+                    if (ifname &&
+                        (flags & VIR_DOMAIN_DEF_PARSE_INACTIVE) &&
+                        (STRPREFIX(ifname, VIR_NET_GENERATED_TAP_PREFIX) ||
+                         (prefix && STRPREFIX(ifname, prefix)))) {
+                        /* An auto-generated target name, blank it out */
+                        VIR_FREE(ifname);
+                    }
                 }
             } else if ((!ifname_guest || !ifname_guest_actual) &&
                        virXMLNodeNameEqual(cur, "guest")) {
