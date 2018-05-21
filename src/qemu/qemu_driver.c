@@ -8808,6 +8808,46 @@ qemuDomainDetachDeviceFlags(virDomainPtr dom,
     return ret;
 }
 
+
+static int
+qemuDomainDetachDeviceAlias(virDomainPtr dom,
+                            const char *alias,
+                            unsigned int flags)
+{
+    virQEMUDriverPtr driver = dom->conn->privateData;
+    virDomainObjPtr vm = NULL;
+    virDomainDeviceDef dev;
+    int ret = -1;
+
+    if (!(vm = qemuDomObjFromDomain(dom)))
+        goto cleanup;
+
+    if (virDomainDetachDeviceAliasEnsureACL(dom->conn, vm->def, flags) < 0)
+        goto cleanup;
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+        goto cleanup;
+
+    if (virDomainDefFindDevice(vm->def, alias, &dev, true) < 0)
+        goto endjob;
+
+    if (virDomainObjUpdateModificationImpact(vm, &flags) < 0)
+        goto endjob;
+
+    if (qemuDomainDetachDeviceLiveAndConfig(driver, vm, &dev, flags) < 0)
+        goto endjob;
+
+    ret = 0;
+
+ endjob:
+    qemuDomainObjEndJob(driver, vm);
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+
 static int qemuDomainDetachDevice(virDomainPtr dom, const char *xml)
 {
     return qemuDomainDetachDeviceFlags(dom, xml,
@@ -21303,6 +21343,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainDetachDevice = qemuDomainDetachDevice, /* 0.5.0 */
     .domainDetachDeviceFlags = qemuDomainDetachDeviceFlags, /* 0.7.7 */
     .domainUpdateDeviceFlags = qemuDomainUpdateDeviceFlags, /* 0.8.0 */
+    .domainDetachDeviceAlias = qemuDomainDetachDeviceAlias, /* 4.4.0 */
     .domainGetAutostart = qemuDomainGetAutostart, /* 0.2.1 */
     .domainSetAutostart = qemuDomainSetAutostart, /* 0.2.1 */
     .domainGetSchedulerType = qemuDomainGetSchedulerType, /* 0.7.0 */
