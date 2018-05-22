@@ -65,6 +65,14 @@
           OpenGL accelerated rendering.
         </description>
       </change>
+      <change>
+        <summary>
+          qemu: Add support for 'output' codec
+        </summary>
+        <description>
+          Support the 'output' codec which advertise only a line-out for a guest.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
