@@ -119,46 +119,34 @@ struct _qemuMonitor {
 /**
  * QEMU_CHECK_MONITOR_FULL:
  * @mon: monitor pointer variable to check, evaluated multiple times, no parentheses
- * @force_json: force JSON monitor, true or false
  * @exit: statement that is used to exit the function
  *
  * This macro checks that the monitor is valid for given operation and exits
  * the function if not. The macro also adds a debug statement regarding the
  * monitor.
  */
-#define QEMU_CHECK_MONITOR_FULL(mon, force_json, exit) \
+#define QEMU_CHECK_MONITOR_FULL(mon, exit) \
     do { \
         if (!mon) { \
             virReportError(VIR_ERR_INVALID_ARG, "%s", \
                            _("monitor must not be NULL")); \
             exit; \
         } \
-        VIR_DEBUG("mon:%p vm:%p json:%d fd:%d", \
-                  mon, mon->vm, mon->json, mon->fd); \
-        if (force_json && !mon->json) { \
-            virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s", \
-                           _("JSON monitor is required")); \
-            exit; \
-        } \
+        VIR_DEBUG("mon:%p vm:%p fd:%d", \
+                  mon, mon->vm, mon->fd); \
     } while (0)
 
 /* Check monitor and return NULL on error */
 #define QEMU_CHECK_MONITOR_NULL(mon) \
-    QEMU_CHECK_MONITOR_FULL(mon, false, return NULL)
-#define QEMU_CHECK_MONITOR_JSON_NULL(mon) \
-    QEMU_CHECK_MONITOR_FULL(mon, true, return NULL)
+    QEMU_CHECK_MONITOR_FULL(mon, return NULL)
 
 /* Check monitor and return -1 on error */
 #define QEMU_CHECK_MONITOR(mon) \
-    QEMU_CHECK_MONITOR_FULL(mon, false, return -1)
-#define QEMU_CHECK_MONITOR_JSON(mon) \
-    QEMU_CHECK_MONITOR_FULL(mon, true, return -1)
+    QEMU_CHECK_MONITOR_FULL(mon, return -1)
 
 /* Check monitor and jump to the provided label */
 #define QEMU_CHECK_MONITOR_GOTO(mon, label) \
-    QEMU_CHECK_MONITOR_FULL(mon, false, goto label)
-#define QEMU_CHECK_MONITOR_JSON_GOTO(mon, label) \
-    QEMU_CHECK_MONITOR_FULL(mon, true, goto label)
+    QEMU_CHECK_MONITOR_FULL(mon, goto label)
 
 static virClassPtr qemuMonitorClass;
 static void qemuMonitorDispose(void *obj);
@@ -2280,7 +2268,7 @@ qemuMonitorGetBlockInfo(qemuMonitorPtr mon)
 virJSONValuePtr
 qemuMonitorQueryBlockstats(qemuMonitorPtr mon)
 {
-    QEMU_CHECK_MONITOR_JSON_NULL(mon);
+    QEMU_CHECK_MONITOR_NULL(mon);
 
     return qemuMonitorJSONQueryBlockstats(mon);
 }
@@ -2345,7 +2333,7 @@ qemuMonitorBlockStatsUpdateCapacity(qemuMonitorPtr mon,
 {
     VIR_DEBUG("stats=%p, backing=%d", stats, backingChain);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONBlockStatsUpdateCapacity(mon, stats, backingChain);
 }
@@ -2602,7 +2590,7 @@ qemuMonitorGetMigrationCacheSize(qemuMonitorPtr mon,
 {
     VIR_DEBUG("cacheSize=%p", cacheSize);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetMigrationCacheSize(mon, cacheSize);
 }
@@ -2614,7 +2602,7 @@ qemuMonitorSetMigrationCacheSize(qemuMonitorPtr mon,
 {
     VIR_DEBUG("cacheSize=%llu", cacheSize);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONSetMigrationCacheSize(mon, cacheSize);
 }
@@ -2635,7 +2623,7 @@ int
 qemuMonitorGetMigrationParams(qemuMonitorPtr mon,
                               virJSONValuePtr *params)
 {
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetMigrationParams(mon, params);
 }
@@ -2655,7 +2643,7 @@ int
 qemuMonitorSetMigrationParams(qemuMonitorPtr mon,
                               virJSONValuePtr params)
 {
-    QEMU_CHECK_MONITOR_JSON_GOTO(mon, error);
+    QEMU_CHECK_MONITOR_GOTO(mon, error);
 
     return qemuMonitorJSONSetMigrationParams(mon, params);
 
@@ -2755,7 +2743,7 @@ int
 qemuMonitorQueryDump(qemuMonitorPtr mon,
                      qemuMonitorDumpStatsPtr stats)
 {
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONQueryDump(mon, stats);
 }
@@ -2789,7 +2777,7 @@ qemuMonitorDumpToFd(qemuMonitorPtr mon,
     int ret;
     VIR_DEBUG("fd=%d dumpformat=%s", fd, dumpformat);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     if (qemuMonitorSendFileHandle(mon, "dump", fd) < 0)
         return -1;
@@ -2899,7 +2887,7 @@ qemuMonitorAddFd(qemuMonitorPtr mon, int fdset, int fd, const char *name)
 {
     VIR_DEBUG("fdset=%d, fd=%d, name=%s", fdset, fd, NULLSTR(name));
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     if (fd < 0 || fdset < 0) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
@@ -2931,7 +2919,7 @@ qemuMonitorRemoveFd(qemuMonitorPtr mon, int fdset, int fd)
 
     error = virSaveLastError();
 
-    QEMU_CHECK_MONITOR_JSON_GOTO(mon, cleanup);
+    QEMU_CHECK_MONITOR_GOTO(mon, cleanup);
 
     ret = qemuMonitorJSONRemoveFd(mon, fdset, fd);
 
@@ -3011,7 +2999,7 @@ qemuMonitorQueryRxFilter(qemuMonitorPtr mon, const char *alias,
 {
     VIR_DEBUG("alias=%s filter=%p", alias, filter);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONQueryRxFilter(mon, alias, filter);
 }
@@ -3143,7 +3131,7 @@ int
 qemuMonitorAddDeviceArgs(qemuMonitorPtr mon,
                          virJSONValuePtr args)
 {
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONAddDeviceArgs(mon, args);
 }
@@ -3167,7 +3155,7 @@ qemuMonitorAddObject(qemuMonitorPtr mon,
 {
     VIR_DEBUG("type=%s objalias=%s props=%p", type, objalias, props);
 
-    QEMU_CHECK_MONITOR_JSON_GOTO(mon, error);
+    QEMU_CHECK_MONITOR_GOTO(mon, error);
 
     return qemuMonitorJSONAddObject(mon, type, objalias, props);
 
@@ -3183,7 +3171,7 @@ qemuMonitorDelObject(qemuMonitorPtr mon,
 {
     VIR_DEBUG("objalias=%s", objalias);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONDelObject(mon, objalias);
 }
@@ -3270,7 +3258,7 @@ qemuMonitorDiskSnapshot(qemuMonitorPtr mon, virJSONValuePtr actions,
     VIR_DEBUG("actions=%p, device=%s, file=%s, format=%s, reuse=%d",
               actions, device, file, format, reuse);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONDiskSnapshot(mon, actions, device, file, format, reuse);
 }
@@ -3289,7 +3277,7 @@ qemuMonitorDriveMirror(qemuMonitorPtr mon,
               device, file, NULLSTR(format), bandwidth, granularity,
               buf_size, flags);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONDriveMirror(mon, device, file, format, bandwidth,
                                       granularity, buf_size, flags);
@@ -3302,7 +3290,7 @@ qemuMonitorTransaction(qemuMonitorPtr mon, virJSONValuePtr *actions)
 {
     VIR_DEBUG("actions=%p", *actions);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONTransaction(mon, actions);
 }
@@ -3318,7 +3306,7 @@ qemuMonitorBlockCommit(qemuMonitorPtr mon, const char *device,
     VIR_DEBUG("device=%s, top=%s, base=%s, backingName=%s, bandwidth=%llu",
               device, top, base, NULLSTR(backingName), bandwidth);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONBlockCommit(mon, device, top, base,
                                          backingName, bandwidth);
@@ -3344,7 +3332,7 @@ qemuMonitorDiskNameLookup(qemuMonitorPtr mon,
                           virStorageSourcePtr top,
                           virStorageSourcePtr target)
 {
-    QEMU_CHECK_MONITOR_JSON_NULL(mon);
+    QEMU_CHECK_MONITOR_NULL(mon);
 
     return qemuMonitorJSONDiskNameLookup(mon, device, top, target);
 }
@@ -3357,7 +3345,7 @@ qemuMonitorDrivePivot(qemuMonitorPtr mon,
 {
     VIR_DEBUG("device=%s", device);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONDrivePivot(mon, device);
 }
@@ -3437,7 +3425,7 @@ qemuMonitorBlockStream(qemuMonitorPtr mon,
     VIR_DEBUG("device=%s, base=%s, backingName=%s, bandwidth=%lluB",
               device, NULLSTR(base), NULLSTR(backingName), bandwidth);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONBlockStream(mon, device, base, backingName, bandwidth);
 }
@@ -3449,7 +3437,7 @@ qemuMonitorBlockJobCancel(qemuMonitorPtr mon,
 {
     VIR_DEBUG("device=%s", device);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONBlockJobCancel(mon, device);
 }
@@ -3462,7 +3450,7 @@ qemuMonitorBlockJobSetSpeed(qemuMonitorPtr mon,
 {
     VIR_DEBUG("device=%s, bandwidth=%lluB", device, bandwidth);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONBlockJobSetSpeed(mon, device, bandwidth);
 }
@@ -3471,7 +3459,7 @@ qemuMonitorBlockJobSetSpeed(qemuMonitorPtr mon,
 virHashTablePtr
 qemuMonitorGetAllBlockJobInfo(qemuMonitorPtr mon)
 {
-    QEMU_CHECK_MONITOR_JSON_NULL(mon);
+    QEMU_CHECK_MONITOR_NULL(mon);
     return qemuMonitorJSONGetAllBlockJobInfo(mon);
 }
 
@@ -3631,7 +3619,7 @@ qemuMonitorOpenGraphics(qemuMonitorPtr mon,
 int
 qemuMonitorSystemWakeup(qemuMonitorPtr mon)
 {
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONSystemWakeup(mon);
 }
@@ -3647,7 +3635,7 @@ qemuMonitorGetVersion(qemuMonitorPtr mon,
     VIR_DEBUG("major=%p minor=%p micro=%p package=%p",
               major, minor, micro, package);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetVersion(mon, major, minor, micro, package);
 }
@@ -3659,7 +3647,7 @@ qemuMonitorGetMachines(qemuMonitorPtr mon,
 {
     VIR_DEBUG("machines=%p", machines);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetMachines(mon, machines);
 }
@@ -3682,7 +3670,7 @@ qemuMonitorGetCPUDefinitions(qemuMonitorPtr mon,
 {
     VIR_DEBUG("cpus=%p", cpus);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetCPUDefinitions(mon, cpus);
 }
@@ -3710,7 +3698,7 @@ qemuMonitorGetCPUModelExpansion(qemuMonitorPtr mon,
     VIR_DEBUG("type=%d model_name=%s migratable=%d",
               type, model_name, migratable);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetCPUModelExpansion(mon, type, model_name,
                                                migratable, model_info);
@@ -3795,7 +3783,7 @@ qemuMonitorGetCommands(qemuMonitorPtr mon,
 {
     VIR_DEBUG("commands=%p", commands);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetCommands(mon, commands);
 }
@@ -3807,7 +3795,7 @@ qemuMonitorGetEvents(qemuMonitorPtr mon,
 {
     VIR_DEBUG("events=%p", events);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetEvents(mon, events);
 }
@@ -3823,7 +3811,7 @@ qemuMonitorGetCommandLineOptionParameters(qemuMonitorPtr mon,
 {
     VIR_DEBUG("option=%s params=%p", option, params);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetCommandLineOptionParameters(mon, option,
                                                          params, found);
@@ -3837,7 +3825,7 @@ qemuMonitorGetKVMState(qemuMonitorPtr mon,
 {
     VIR_DEBUG("enabled=%p present=%p", enabled, present);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetKVMState(mon, enabled, present);
 }
@@ -3849,7 +3837,7 @@ qemuMonitorGetObjectTypes(qemuMonitorPtr mon,
 {
     VIR_DEBUG("types=%p", types);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetObjectTypes(mon, types);
 }
@@ -3862,7 +3850,7 @@ qemuMonitorGetDeviceProps(qemuMonitorPtr mon,
 {
     VIR_DEBUG("device=%s props=%p", device, props);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetDeviceProps(mon, device, props);
 }
@@ -3875,7 +3863,7 @@ qemuMonitorGetObjectProps(qemuMonitorPtr mon,
 {
     VIR_DEBUG("object=%s props=%p", object, props);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetObjectProps(mon, object, props);
 }
@@ -3884,7 +3872,7 @@ qemuMonitorGetObjectProps(qemuMonitorPtr mon,
 char *
 qemuMonitorGetTargetArch(qemuMonitorPtr mon)
 {
-    QEMU_CHECK_MONITOR_JSON_NULL(mon);
+    QEMU_CHECK_MONITOR_NULL(mon);
 
     return qemuMonitorJSONGetTargetArch(mon);
 }
@@ -3918,7 +3906,7 @@ int
 qemuMonitorSetMigrationCapabilities(qemuMonitorPtr mon,
                                     virJSONValuePtr caps)
 {
-    QEMU_CHECK_MONITOR_JSON_GOTO(mon, error);
+    QEMU_CHECK_MONITOR_GOTO(mon, error);
 
     return qemuMonitorJSONSetMigrationCapabilities(mon, caps);
 
@@ -3939,7 +3927,7 @@ int
 qemuMonitorGetGICCapabilities(qemuMonitorPtr mon,
                               virGICCapability **capabilities)
 {
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetGICCapabilities(mon, capabilities);
 }
@@ -3953,7 +3941,7 @@ qemuMonitorNBDServerStart(qemuMonitorPtr mon,
 {
     VIR_DEBUG("host=%s port=%u tls_alias=%s", host, port, NULLSTR(tls_alias));
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONNBDServerStart(mon, host, port, tls_alias);
 }
@@ -3966,7 +3954,7 @@ qemuMonitorNBDServerAdd(qemuMonitorPtr mon,
 {
     VIR_DEBUG("deviceID=%s", deviceID);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONNBDServerAdd(mon, deviceID, writable);
 }
@@ -3975,7 +3963,7 @@ qemuMonitorNBDServerAdd(qemuMonitorPtr mon,
 int
 qemuMonitorNBDServerStop(qemuMonitorPtr mon)
 {
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONNBDServerStop(mon);
 }
@@ -3987,7 +3975,7 @@ qemuMonitorGetTPMModels(qemuMonitorPtr mon,
 {
     VIR_DEBUG("tpmmodels=%p", tpmmodels);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetTPMModels(mon, tpmmodels);
 }
@@ -3999,7 +3987,7 @@ qemuMonitorGetTPMTypes(qemuMonitorPtr mon,
 {
     VIR_DEBUG("tpmtypes=%p", tpmtypes);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetTPMTypes(mon, tpmtypes);
 }
@@ -4012,7 +4000,7 @@ qemuMonitorAttachCharDev(qemuMonitorPtr mon,
 {
     VIR_DEBUG("chrID=%s chr=%p", chrID, chr);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONAttachCharDev(mon, chrID, chr);
 }
@@ -4024,7 +4012,7 @@ qemuMonitorDetachCharDev(qemuMonitorPtr mon,
 {
     VIR_DEBUG("chrID=%s", chrID);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONDetachCharDev(mon, chrID);
 }
@@ -4036,7 +4024,7 @@ qemuMonitorGetDeviceAliases(qemuMonitorPtr mon,
 {
     VIR_DEBUG("aliases=%p", aliases);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetDeviceAliases(mon, aliases);
 }
@@ -4112,7 +4100,7 @@ qemuMonitorGetGuestCPU(qemuMonitorPtr mon,
     VIR_DEBUG("arch=%s data=%p disabled=%p",
               virArchToString(arch), data, disabled);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     *data = NULL;
     if (disabled)
@@ -4137,7 +4125,7 @@ qemuMonitorGetGuestCPU(qemuMonitorPtr mon,
 int
 qemuMonitorRTCResetReinjection(qemuMonitorPtr mon)
 {
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONRTCResetReinjection(mon);
 }
@@ -4217,7 +4205,7 @@ qemuMonitorMigrateIncoming(qemuMonitorPtr mon,
 {
     VIR_DEBUG("uri=%s", uri);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONMigrateIncoming(mon, uri);
 }
@@ -4226,7 +4214,7 @@ qemuMonitorMigrateIncoming(qemuMonitorPtr mon,
 int
 qemuMonitorMigrateStartPostCopy(qemuMonitorPtr mon)
 {
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONMigrateStartPostCopy(mon);
 }
@@ -4238,7 +4226,7 @@ qemuMonitorMigrateContinue(qemuMonitorPtr mon,
 {
     VIR_DEBUG("status=%s", qemuMonitorMigrationStatusTypeToString(status));
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONMigrateContinue(mon, status);
 }
@@ -4248,7 +4236,7 @@ int
 qemuMonitorGetRTCTime(qemuMonitorPtr mon,
                       struct tm *tm)
 {
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONGetRTCTime(mon, tm);
 }
@@ -4257,7 +4245,7 @@ qemuMonitorGetRTCTime(qemuMonitorPtr mon,
 virJSONValuePtr
 qemuMonitorQueryQMPSchema(qemuMonitorPtr mon)
 {
-    QEMU_CHECK_MONITOR_JSON_NULL(mon);
+    QEMU_CHECK_MONITOR_NULL(mon);
 
     return qemuMonitorJSONQueryQMPSchema(mon);
 }
@@ -4270,7 +4258,7 @@ qemuMonitorSetBlockThreshold(qemuMonitorPtr mon,
 {
     VIR_DEBUG("node='%s', threshold=%llu", nodename, threshold);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONSetBlockThreshold(mon, nodename, threshold);
 }
@@ -4279,7 +4267,7 @@ qemuMonitorSetBlockThreshold(qemuMonitorPtr mon,
 virJSONValuePtr
 qemuMonitorQueryNamedBlockNodes(qemuMonitorPtr mon)
 {
-    QEMU_CHECK_MONITOR_JSON_NULL(mon);
+    QEMU_CHECK_MONITOR_NULL(mon);
 
     return qemuMonitorJSONQueryNamedBlockNodes(mon);
 }
@@ -4342,7 +4330,7 @@ qemuMonitorSetWatchdogAction(qemuMonitorPtr mon,
 {
     VIR_DEBUG("watchdogAction=%s", action);
 
-    QEMU_CHECK_MONITOR_JSON(mon);
+    QEMU_CHECK_MONITOR(mon);
 
     return qemuMonitorJSONSetWatchdogAction(mon, action);
 }
