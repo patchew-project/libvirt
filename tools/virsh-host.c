@@ -473,7 +473,7 @@ static const vshCmdOptDef opts_allocpages[] = {
      .type = VSH_OT_INT,
      .flags = VSH_OFLAG_REQ,
      .completer = virshAllocpagesPagesizeCompleter,
-     .help = N_("page size (in kibibytes)")
+     .help = N_("page size")
     },
     {.name = "pagecount",
      .type = VSH_OT_INT,
