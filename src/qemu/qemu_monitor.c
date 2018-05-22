@@ -430,15 +430,9 @@ qemuMonitorIOProcess(qemuMonitorPtr mon)
     PROBE_QUIET(QEMU_MONITOR_IO_PROCESS, "mon=%p buf=%s len=%zu",
                 mon, mon->buffer, mon->bufferOffset);
 
-    if (mon->json)
-        len = qemuMonitorJSONIOProcess(mon,
-                                       mon->buffer, mon->bufferOffset,
-                                       msg);
-    else
-        len = qemuMonitorTextIOProcess(mon,
-                                       mon->buffer, mon->bufferOffset,
-                                       msg);
-
+    len = qemuMonitorJSONIOProcess(mon,
+                                   mon->buffer, mon->bufferOffset,
+                                   msg);
     if (len < 0)
         return -1;
 
@@ -1264,19 +1258,15 @@ qemuMonitorHMPCommandWithFd(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json) {
-        /* hack to avoid complicating each call to text monitor functions */
-        json_cmd = qemuMonitorUnescapeArg(cmd);
-        if (!json_cmd) {
-            VIR_DEBUG("Could not unescape command: %s", cmd);
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("Unable to unescape command"));
-            goto cleanup;
-        }
-        ret = qemuMonitorJSONHumanCommandWithFd(mon, json_cmd, scm_fd, reply);
-    } else {
-        ret = qemuMonitorTextCommandWithFd(mon, cmd, scm_fd, reply);
+    /* hack to avoid complicating each call to text monitor functions */
+    json_cmd = qemuMonitorUnescapeArg(cmd);
+    if (!json_cmd) {
+        VIR_DEBUG("Could not unescape command: %s", cmd);
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Unable to unescape command"));
+        goto cleanup;
     }
+    ret = qemuMonitorJSONHumanCommandWithFd(mon, json_cmd, scm_fd, reply);
 
  cleanup:
     VIR_FREE(json_cmd);
@@ -1683,10 +1673,7 @@ qemuMonitorStartCPUs(qemuMonitorPtr mon)
 {
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONStartCPUs(mon);
-    else
-        return qemuMonitorTextStartCPUs(mon);
+    return qemuMonitorJSONStartCPUs(mon);
 }
 
 
@@ -1695,10 +1682,7 @@ qemuMonitorStopCPUs(qemuMonitorPtr mon)
 {
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONStopCPUs(mon);
-    else
-        return qemuMonitorTextStopCPUs(mon);
+    return qemuMonitorJSONStopCPUs(mon);
 }
 
 
@@ -1719,10 +1703,7 @@ qemuMonitorGetStatus(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONGetStatus(mon, running, reason);
-    else
-        return qemuMonitorTextGetStatus(mon, running, reason);
+    return qemuMonitorJSONGetStatus(mon, running, reason);
 }
 
 
@@ -1731,10 +1712,7 @@ qemuMonitorSystemPowerdown(qemuMonitorPtr mon)
 {
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONSystemPowerdown(mon);
-    else
-        return qemuMonitorTextSystemPowerdown(mon);
+    return qemuMonitorJSONSystemPowerdown(mon);
 }
 
 
@@ -1743,10 +1721,7 @@ qemuMonitorSystemReset(qemuMonitorPtr mon)
 {
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONSystemReset(mon);
-    else
-        return qemuMonitorTextSystemReset(mon);
+    return qemuMonitorJSONSystemReset(mon);
 }
 
 
@@ -2011,11 +1986,8 @@ qemuMonitorGetCPUInfo(qemuMonitorPtr mon,
         (qemuMonitorJSONGetHotpluggableCPUs(mon, &hotplugcpus, &nhotplugcpus)) < 0)
         goto cleanup;
 
-    if (mon->json)
-        rc = qemuMonitorJSONQueryCPUs(mon, &cpuentries, &ncpuentries, hotplug,
-                                      fast);
-    else
-        rc = qemuMonitorTextQueryCPUs(mon, &cpuentries, &ncpuentries);
+    rc = qemuMonitorJSONQueryCPUs(mon, &cpuentries, &ncpuentries, hotplug,
+                                  fast);
 
     if (rc < 0) {
         if (!hotplug && rc == -2) {
@@ -2066,11 +2038,8 @@ qemuMonitorGetCpuHalted(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR_NULL(mon);
 
-    if (mon->json)
-        rc = qemuMonitorJSONQueryCPUs(mon, &cpuentries, &ncpuentries, false,
-                                      fast);
-    else
-        rc = qemuMonitorTextQueryCPUs(mon, &cpuentries, &ncpuentries);
+    rc = qemuMonitorJSONQueryCPUs(mon, &cpuentries, &ncpuentries, false,
+                                  fast);
 
     if (rc < 0)
         goto cleanup;
@@ -2098,10 +2067,7 @@ qemuMonitorSetLink(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONSetLink(mon, name, state);
-    else
-        return qemuMonitorTextSetLink(mon, name, state);
+    return qemuMonitorJSONSetLink(mon, name, state);
 }
 
 
@@ -2111,10 +2077,7 @@ qemuMonitorGetVirtType(qemuMonitorPtr mon,
 {
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONGetVirtType(mon, virtType);
-    else
-        return qemuMonitorTextGetVirtType(mon, virtType);
+    return qemuMonitorJSONGetVirtType(mon, virtType);
 }
 
 
@@ -2128,10 +2091,7 @@ qemuMonitorGetBalloonInfo(qemuMonitorPtr mon,
 {
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONGetBalloonInfo(mon, currmem);
-    else
-        return qemuMonitorTextGetBalloonInfo(mon, currmem);
+    return qemuMonitorJSONGetBalloonInfo(mon, currmem);
 }
 
 
@@ -2145,13 +2105,9 @@ qemuMonitorGetMemoryStats(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json) {
-        qemuMonitorInitBalloonObjectPath(mon, balloon);
-        return qemuMonitorJSONGetMemoryStats(mon, mon->balloonpath,
-                                             stats, nr_stats);
-    } else {
-        return qemuMonitorTextGetMemoryStats(mon, stats, nr_stats);
-    }
+    qemuMonitorInitBalloonObjectPath(mon, balloon);
+    return qemuMonitorJSONGetMemoryStats(mon, mon->balloonpath,
+                                         stats, nr_stats);
 }
 
 
@@ -2245,10 +2201,7 @@ qemuMonitorGetBlockInfo(qemuMonitorPtr mon)
     if (!(table = virHashCreate(32, qemuDomainDiskInfoFree)))
         return NULL;
 
-    if (mon->json)
-        ret = qemuMonitorJSONGetBlockInfo(mon, table);
-    else
-        ret = qemuMonitorTextGetBlockInfo(mon, table);
+    ret = qemuMonitorJSONGetBlockInfo(mon, table);
 
     if (ret < 0) {
         virHashFree(table);
@@ -2299,19 +2252,8 @@ qemuMonitorGetAllBlockStatsInfo(qemuMonitorPtr mon,
     if (!(*ret_stats = virHashCreate(10, virHashValueFree)))
         goto error;
 
-    if (mon->json) {
-        ret = qemuMonitorJSONGetAllBlockStatsInfo(mon, *ret_stats,
-                                                  backingChain);
-    } else {
-         if (backingChain) {
-             virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
-                            _("text monitor doesn't support block stats for "
-                              "backing chain members"));
-             goto error;
-         }
-
-         ret = qemuMonitorTextGetAllBlockStatsInfo(mon, *ret_stats);
-    }
+    ret = qemuMonitorJSONGetAllBlockStatsInfo(mon, *ret_stats,
+                                              backingChain);
 
     if (ret < 0)
         goto error;
@@ -2348,10 +2290,7 @@ qemuMonitorBlockResize(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONBlockResize(mon, device, size);
-    else
-        return qemuMonitorTextBlockResize(mon, device, size);
+    return qemuMonitorJSONBlockResize(mon, device, size);
 }
 
 
@@ -2366,10 +2305,7 @@ qemuMonitorSetVNCPassword(qemuMonitorPtr mon,
     if (!password)
         password = "";
 
-    if (mon->json)
-        return qemuMonitorJSONSetVNCPassword(mon, password);
-    else
-        return qemuMonitorTextSetVNCPassword(mon, password);
+    return qemuMonitorJSONSetVNCPassword(mon, password);
 }
 
 
@@ -2413,10 +2349,7 @@ qemuMonitorSetPassword(qemuMonitorPtr mon,
     if (!action_if_connected)
         action_if_connected = "keep";
 
-    if (mon->json)
-        return qemuMonitorJSONSetPassword(mon, protocol, password, action_if_connected);
-    else
-        return qemuMonitorTextSetPassword(mon, protocol, password, action_if_connected);
+    return qemuMonitorJSONSetPassword(mon, protocol, password, action_if_connected);
 }
 
 
@@ -2437,10 +2370,7 @@ qemuMonitorExpirePassword(qemuMonitorPtr mon,
     if (!expire_time)
         expire_time = "now";
 
-    if (mon->json)
-        return qemuMonitorJSONExpirePassword(mon, protocol, expire_time);
-    else
-        return qemuMonitorTextExpirePassword(mon, protocol, expire_time);
+    return qemuMonitorJSONExpirePassword(mon, protocol, expire_time);
 }
 
 
@@ -2456,10 +2386,7 @@ qemuMonitorSetBalloon(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONSetBalloon(mon, newmem);
-    else
-        return qemuMonitorTextSetBalloon(mon, newmem);
+    return qemuMonitorJSONSetBalloon(mon, newmem);
 }
 
 
@@ -2473,10 +2400,7 @@ qemuMonitorSetCPU(qemuMonitorPtr mon, int cpu, bool online)
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONSetCPU(mon, cpu, online);
-    else
-        return qemuMonitorTextSetCPU(mon, cpu, online);
+    return qemuMonitorJSONSetCPU(mon, cpu, online);
 }
 
 
@@ -2489,10 +2413,7 @@ qemuMonitorEjectMedia(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONEjectMedia(mon, dev_name, force);
-    else
-        return qemuMonitorTextEjectMedia(mon, dev_name, force);
+    return qemuMonitorJSONEjectMedia(mon, dev_name, force);
 }
 
 
@@ -2506,10 +2427,7 @@ qemuMonitorChangeMedia(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONChangeMedia(mon, dev_name, newmedia, format);
-    else
-        return qemuMonitorTextChangeMedia(mon, dev_name, newmedia, format);
+    return qemuMonitorJSONChangeMedia(mon, dev_name, newmedia, format);
 }
 
 
@@ -2523,10 +2441,7 @@ qemuMonitorSaveVirtualMemory(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONSaveVirtualMemory(mon, offset, length, path);
-    else
-        return qemuMonitorTextSaveVirtualMemory(mon, offset, length, path);
+    return qemuMonitorJSONSaveVirtualMemory(mon, offset, length, path);
 }
 
 
@@ -2540,10 +2455,7 @@ qemuMonitorSavePhysicalMemory(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONSavePhysicalMemory(mon, offset, length, path);
-    else
-        return qemuMonitorTextSavePhysicalMemory(mon, offset, length, path);
+    return qemuMonitorJSONSavePhysicalMemory(mon, offset, length, path);
 }
 
 
@@ -2562,10 +2474,7 @@ qemuMonitorSetMigrationSpeed(qemuMonitorPtr mon,
         return -1;
     }
 
-    if (mon->json)
-        return qemuMonitorJSONSetMigrationSpeed(mon, bandwidth);
-    else
-        return qemuMonitorTextSetMigrationSpeed(mon, bandwidth);
+    return qemuMonitorJSONSetMigrationSpeed(mon, bandwidth);
 }
 
 
@@ -2577,10 +2486,7 @@ qemuMonitorSetMigrationDowntime(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONSetMigrationDowntime(mon, downtime);
-    else
-        return qemuMonitorTextSetMigrationDowntime(mon, downtime);
+    return qemuMonitorJSONSetMigrationDowntime(mon, downtime);
 }
 
 
@@ -2663,10 +2569,7 @@ qemuMonitorGetMigrationStats(qemuMonitorPtr mon,
     if (error)
         *error = NULL;
 
-    if (mon->json)
-        return qemuMonitorJSONGetMigrationStats(mon, stats, error);
-    else
-        return qemuMonitorTextGetMigrationStats(mon, stats);
+    return qemuMonitorJSONGetMigrationStats(mon, stats, error);
 }
 
 
@@ -2683,10 +2586,7 @@ qemuMonitorMigrateToFd(qemuMonitorPtr mon,
     if (qemuMonitorSendFileHandle(mon, "migrate", fd) < 0)
         return -1;
 
-    if (mon->json)
-        ret = qemuMonitorJSONMigrate(mon, flags, "fd:migrate");
-    else
-        ret = qemuMonitorTextMigrate(mon, flags, "fd:migrate");
+    ret = qemuMonitorJSONMigrate(mon, flags, "fd:migrate");
 
     if (ret < 0) {
         if (qemuMonitorCloseFileHandle(mon, "migrate") < 0)
@@ -2717,10 +2617,7 @@ qemuMonitorMigrateToHost(qemuMonitorPtr mon,
         return -1;
     }
 
-    if (mon->json)
-        ret = qemuMonitorJSONMigrate(mon, flags, uri);
-    else
-        ret = qemuMonitorTextMigrate(mon, flags, uri);
+    ret = qemuMonitorJSONMigrate(mon, flags, uri);
 
     VIR_FREE(uri);
     return ret;
@@ -2732,10 +2629,7 @@ qemuMonitorMigrateCancel(qemuMonitorPtr mon)
 {
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONMigrateCancel(mon);
-    else
-        return qemuMonitorTextMigrateCancel(mon);
+    return qemuMonitorJSONMigrateCancel(mon);
 }
 
 
@@ -2806,20 +2700,12 @@ qemuMonitorGraphicsRelocate(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONGraphicsRelocate(mon,
-                                               type,
-                                               hostname,
-                                               port,
-                                               tlsPort,
-                                               tlsSubject);
-    else
-        return qemuMonitorTextGraphicsRelocate(mon,
-                                               type,
-                                               hostname,
-                                               port,
-                                               tlsPort,
-                                               tlsSubject);
+    return qemuMonitorJSONGraphicsRelocate(mon,
+                                           type,
+                                           hostname,
+                                           port,
+                                           tlsPort,
+                                           tlsSubject);
 }
 
 
@@ -2845,10 +2731,7 @@ qemuMonitorSendFileHandle(qemuMonitorPtr mon,
         return -1;
     }
 
-    if (mon->json)
-        return qemuMonitorJSONSendFileHandle(mon, fdname, fd);
-    else
-        return qemuMonitorTextSendFileHandle(mon, fdname, fd);
+    return qemuMonitorJSONSendFileHandle(mon, fdname, fd);
 }
 
 
@@ -2865,10 +2748,7 @@ qemuMonitorCloseFileHandle(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR_GOTO(mon, cleanup);
 
-    if (mon->json)
-        ret = qemuMonitorJSONCloseFileHandle(mon, fdname);
-    else
-        ret = qemuMonitorTextCloseFileHandle(mon, fdname);
+    ret = qemuMonitorJSONCloseFileHandle(mon, fdname);
 
  cleanup:
     if (error) {
@@ -2957,10 +2837,7 @@ qemuMonitorAddNetdev(qemuMonitorPtr mon,
             goto cleanup;
     }
 
-    if (mon->json)
-        ret = qemuMonitorJSONAddNetdev(mon, netdevstr);
-    else
-        ret = qemuMonitorTextAddNetdev(mon, netdevstr);
+    ret = qemuMonitorJSONAddNetdev(mon, netdevstr);
 
  cleanup:
     if (ret < 0) {
@@ -2986,10 +2863,7 @@ qemuMonitorRemoveNetdev(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONRemoveNetdev(mon, alias);
-    else
-        return qemuMonitorTextRemoveNetdev(mon, alias);
+    return qemuMonitorJSONRemoveNetdev(mon, alias);
 }
 
 
@@ -3030,10 +2904,7 @@ qemuMonitorGetChardevInfo(qemuMonitorPtr mon,
     if (!(info = virHashCreate(10, qemuMonitorChardevInfoFree)))
         goto error;
 
-    if (mon->json)
-        ret = qemuMonitorJSONGetChardevInfo(mon, info);
-    else
-        ret = qemuMonitorTextGetChardevInfo(mon, info);
+    ret = qemuMonitorJSONGetChardevInfo(mon, info);
 
     if (ret < 0)
         goto error;
@@ -3076,10 +2947,7 @@ qemuMonitorDelDevice(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONDelDevice(mon, devalias);
-    else
-        return qemuMonitorTextDelDevice(mon, devalias);
+    return qemuMonitorJSONDelDevice(mon, devalias);
 }
 
 
@@ -3097,10 +2965,7 @@ qemuMonitorAddDeviceWithFd(qemuMonitorPtr mon,
     if (fd >= 0 && qemuMonitorSendFileHandle(mon, fdname, fd) < 0)
         return -1;
 
-    if (mon->json)
-        ret = qemuMonitorJSONAddDevice(mon, devicestr);
-    else
-        ret = qemuMonitorTextAddDevice(mon, devicestr);
+    ret = qemuMonitorJSONAddDevice(mon, devicestr);
 
     if (ret < 0 && fd >= 0) {
         if (qemuMonitorCloseFileHandle(mon, fdname) < 0)
@@ -3199,10 +3064,7 @@ qemuMonitorSetDrivePassphrase(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONSetDrivePassphrase(mon, alias, passphrase);
-    else
-        return qemuMonitorTextSetDrivePassphrase(mon, alias, passphrase);
+    return qemuMonitorJSONSetDrivePassphrase(mon, alias, passphrase);
 }
 
 
@@ -3355,10 +3217,7 @@ qemuMonitorArbitraryCommand(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONArbitraryCommand(mon, cmd, reply, hmp);
-    else
-        return qemuMonitorTextArbitraryCommand(mon, cmd, reply);
+    return qemuMonitorJSONArbitraryCommand(mon, cmd, reply, hmp);
 }
 
 
@@ -3367,10 +3226,7 @@ qemuMonitorInjectNMI(qemuMonitorPtr mon)
 {
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONInjectNMI(mon);
-    else
-        return qemuMonitorTextInjectNMI(mon);
+    return qemuMonitorJSONInjectNMI(mon);
 }
 
 
@@ -3384,10 +3240,7 @@ qemuMonitorSendKey(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONSendKey(mon, holdtime, keycodes, nkeycodes);
-    else
-        return qemuMonitorTextSendKey(mon, holdtime, keycodes, nkeycodes);
+    return qemuMonitorJSONSendKey(mon, holdtime, keycodes, nkeycodes);
 }
 
 
@@ -3401,10 +3254,7 @@ qemuMonitorScreendump(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONScreendump(mon, device, head, file);
-    else
-        return qemuMonitorTextScreendump(mon, file);
+    return qemuMonitorJSONScreendump(mon, device, head, file);
 }
 
 
@@ -3499,13 +3349,10 @@ qemuMonitorSetBlockIoThrottle(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONSetBlockIoThrottle(mon, device, info,
-                                                 supportMaxOptions,
-                                                 supportGroupNameOption,
-                                                 supportMaxLengthOptions);
-    else
-        return qemuMonitorTextSetBlockIoThrottle(mon, device, info);
+    return qemuMonitorJSONSetBlockIoThrottle(mon, device, info,
+                                             supportMaxOptions,
+                                             supportGroupNameOption,
+                                             supportMaxLengthOptions);
 }
 
 
@@ -3518,10 +3365,7 @@ qemuMonitorGetBlockIoThrottle(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (mon->json)
-        return qemuMonitorJSONGetBlockIoThrottle(mon, device, reply);
-    else
-        return qemuMonitorTextGetBlockIoThrottle(mon, device, reply);
+    return qemuMonitorJSONGetBlockIoThrottle(mon, device, reply);
 }
 
 
@@ -3596,10 +3440,7 @@ qemuMonitorOpenGraphics(qemuMonitorPtr mon,
     if (qemuMonitorSendFileHandle(mon, fdname, fd) < 0)
         return -1;
 
-    if (mon->json)
-        ret = qemuMonitorJSONOpenGraphics(mon, protocol, fdname, skipauth);
-    else
-        ret = qemuMonitorTextOpenGraphics(mon, protocol, fdname, skipauth);
+    ret = qemuMonitorJSONOpenGraphics(mon, protocol, fdname, skipauth);
 
     if (ret < 0) {
         if (qemuMonitorCloseFileHandle(mon, fdname) < 0)
