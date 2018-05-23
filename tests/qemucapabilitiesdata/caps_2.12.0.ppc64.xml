@@ -163,9 +163,10 @@
   <flag name='screendump_device'/>
   <flag name='hda-output'/>
   <flag name='blockdev-del'/>
+  <flag name='machine.pseries.cap-hpt-mps'/>
   <version>2011090</version>
   <kvmVersion>0</kvmVersion>
-  <microcodeVersion>423940</microcodeVersion>
+  <microcodeVersion>424089</microcodeVersion>
   <package>v2.12.0-rc0</package>
   <arch>ppc64</arch>
   <cpu type='kvm' name='default'/>

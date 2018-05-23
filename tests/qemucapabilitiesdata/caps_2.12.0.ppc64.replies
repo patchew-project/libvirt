@@ -5532,6 +5532,11 @@
       "name": "cap-vsx",
       "description": "Allow Vector Scalar Extensions (VSX)",
       "type": "bool"
+    },
+    {
+      "name": "cap-hpt-mps",
+      "description": "Maximum page shift for Hash Page Table guests (12, 16, 24, 34)",
+      "type": "int"
     }
   ],
   "id": "libvirt-38"
