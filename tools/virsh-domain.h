@@ -28,6 +28,14 @@
 
 # include "virsh.h"
 
+struct vshEventCallback {
+    const char *name;
+    virConnectDomainEventGenericCallback cb;
+};
+typedef struct vshEventCallback vshEventCallback;
+
+extern vshEventCallback vshEventCallbacks[];
+
 extern const vshCmdDef domManagementCmds[];
 
 #endif /* VIRSH_DOMAIN_H */

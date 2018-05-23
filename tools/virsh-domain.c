@@ -12832,12 +12832,6 @@ virshDomainEventTrayChangeToString(int reason)
     return str ? _(str) : _("unknown");
 }
 
-struct vshEventCallback {
-    const char *name;
-    virConnectDomainEventGenericCallback cb;
-};
-typedef struct vshEventCallback vshEventCallback;
-
 struct virshDomEventData {
     vshControl *ctl;
     bool loop;
@@ -13278,7 +13272,7 @@ virshEventBlockThresholdPrint(virConnectPtr conn ATTRIBUTE_UNUSED,
 }
 
 
-static vshEventCallback vshEventCallbacks[] = {
+vshEventCallback vshEventCallbacks[] = {
     { "lifecycle",
       VIR_DOMAIN_EVENT_CALLBACK(virshEventLifecyclePrint), },
     { "reboot", virshEventGenericPrint, },
