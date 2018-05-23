@@ -26,6 +26,7 @@
 #include "virsh-domain.h"
 #include "virsh.h"
 #include "virsh-pool.h"
+#include "virsh-nodedev.h"
 #include "virsh-util.h"
 #include "virsh-secret.h"
 #include "internal.h"
@@ -728,6 +729,36 @@ virshPoolEventNameCompleter(vshControl *ctl,
 
     for (i = 0; i < VIR_STORAGE_POOL_EVENT_ID_LAST; i++) {
         if (VIR_STRDUP(ret[i], vshPoolEventCallbacks[i].name) < 0)
+            goto error;
+    }
+
+    return ret;
+
+ error:
+    virStringListFree(ret);
+    return NULL;
+}
+
+
+char **
+virshNodedevEventNameCompleter(vshControl *ctl,
+                               const vshCmd *cmd ATTRIBUTE_UNUSED,
+                               unsigned int flags)
+{
+    virshControlPtr priv = ctl->privData;
+    size_t i = 0;
+    char **ret = NULL;
+
+    virCheckFlags(0, NULL);
+
+    if (!priv->conn || virConnectIsAlive(priv->conn) <= 0)
+        return NULL;
+
+    if (VIR_ALLOC_N(ret, VIR_NODE_DEVICE_EVENT_ID_LAST) < 0)
+        goto error;
+
+    for (i = 0; i < VIR_NODE_DEVICE_EVENT_ID_LAST; i++) {
+        if (VIR_STRDUP(ret[i], vshNodedevEventCallbacks[i].name) < 0)
             goto error;
     }
 

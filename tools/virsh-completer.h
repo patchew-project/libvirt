@@ -89,4 +89,8 @@ char ** virshPoolEventNameCompleter(vshControl *ctl,
                                     const vshCmd *cmd,
                                     unsigned int flags);
 
+char ** virshNodedevEventNameCompleter(vshControl *ctl,
+                                       const vshCmd *cmd,
+                                       unsigned int flags);
+
 #endif
