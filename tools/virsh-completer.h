@@ -73,6 +73,9 @@ char ** virshSecretUUIDCompleter(vshControl *ctl,
 char ** virshSnapshotNameCompleter(vshControl *ctl,
                                    const vshCmd *cmd,
                                    unsigned int flags);
+char ** virshEventNameCompleter(vshControl *ctl,
+                                const vshCmd *cmd,
+                                unsigned int flags);
 
 char ** virshAllocpagesPagesizeCompleter(vshControl *ctl,
                                     const vshCmd *cmd,
