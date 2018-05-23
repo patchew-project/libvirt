@@ -27207,14 +27207,31 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                                   virDomainIOAPICTypeToString(def->features[i]));
                 break;
 
-            case VIR_DOMAIN_FEATURE_HPT:
-                if (def->features[i] != VIR_TRISTATE_SWITCH_ON ||
-                    def->hpt_resizing == VIR_DOMAIN_HPT_RESIZING_NONE)
-                    break;
+            case VIR_DOMAIN_FEATURE_HPT: {
+                bool hasResizing = def->hpt_resizing != VIR_DOMAIN_HPT_RESIZING_NONE;
+                char *resizing = NULL;
 
-                virBufferAsprintf(buf, "<hpt resizing='%s'/>\n",
-                                  virDomainHPTResizingTypeToString(def->hpt_resizing));
+                if (def->features[i] != VIR_TRISTATE_SWITCH_ON ||
+                    !hasResizing) {
+                    break;
+                }
+
+                if (hasResizing) {
+                    if (virAsprintf(&resizing, " resizing='%s'",
+                                    virDomainHPTResizingTypeToString(def->hpt_resizing)) < 0) {
+                        goto error;
+                    }
+                } else {
+                    if (VIR_STRDUP(resizing, "") < 0)
+                        goto error;
+                }
+
+                virBufferAsprintf(buf, "<hpt%s/>\n",
+                                  resizing);
+
+                VIR_FREE(resizing);
                 break;
+            }
 
             /* coverity[dead_error_begin] */
             case VIR_DOMAIN_FEATURE_LAST:
