@@ -37,6 +37,14 @@ virshCommandOptPoolBy(vshControl *ctl, const vshCmd *cmd, const char *optname,
     virshCommandOptPoolBy(_ctl, _cmd, _optname, _name, \
                           VIRSH_BYUUID | VIRSH_BYNAME)
 
+struct vshPoolEventCallback {
+    const char *name;
+    virConnectStoragePoolEventGenericCallback cb;
+};
+typedef struct vshPoolEventCallback vshPoolEventCallback;
+
+extern vshPoolEventCallback vshPoolEventCallbacks[];
+
 extern const vshCmdDef storagePoolCmds[];
 
 #endif /* VIRSH_POOL_H */
