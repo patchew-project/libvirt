@@ -571,18 +571,12 @@ virshSecretEventToString(int event)
     return str ? _(str) : _("unknown");
 }
 
-struct vshEventCallback {
-    const char *name;
-    virConnectSecretEventGenericCallback cb;
-};
-typedef struct vshEventCallback vshEventCallback;
-
 struct virshSecretEventData {
     vshControl *ctl;
     bool loop;
     bool timestamp;
     int count;
-    vshEventCallback *cb;
+    vshSecretEventCallback *cb;
 };
 typedef struct virshSecretEventData virshSecretEventData;
 
@@ -652,11 +646,12 @@ vshEventGenericPrint(virConnectPtr conn ATTRIBUTE_UNUSED,
         vshEventDone(data->ctl);
 }
 
-static vshEventCallback vshEventCallbacks[] = {
+vshSecretEventCallback vshSecretEventCallbacks[] = {
     { "lifecycle",
       VIR_SECRET_EVENT_CALLBACK(vshEventLifecyclePrint), },
     { "value-changed", vshEventGenericPrint, },
 };
+verify(VIR_SECRET_EVENT_ID_LAST == ARRAY_CARDINALITY(vshSecretEventCallbacks));
 
 static const vshCmdInfo info_secret_event[] = {
     {.name = "help",
@@ -713,7 +708,7 @@ cmdSecretEvent(vshControl *ctl, const vshCmd *cmd)
         size_t i;
 
         for (i = 0; i < VIR_SECRET_EVENT_ID_LAST; i++)
-            vshPrint(ctl, "%s\n", vshEventCallbacks[i].name);
+            vshPrint(ctl, "%s\n", vshSecretEventCallbacks[i].name);
         return true;
     }
 
@@ -724,7 +719,7 @@ cmdSecretEvent(vshControl *ctl, const vshCmd *cmd)
         return false;
     }
     for (event = 0; event < VIR_SECRET_EVENT_ID_LAST; event++)
-        if (STREQ(eventName, vshEventCallbacks[event].name))
+        if (STREQ(eventName, vshSecretEventCallbacks[event].name))
             break;
     if (event == VIR_SECRET_EVENT_ID_LAST) {
         vshError(ctl, _("unknown event type %s"), eventName);
@@ -735,7 +730,7 @@ cmdSecretEvent(vshControl *ctl, const vshCmd *cmd)
     data.loop = vshCommandOptBool(cmd, "loop");
     data.timestamp = vshCommandOptBool(cmd, "timestamp");
     data.count = 0;
-    data.cb = &vshEventCallbacks[event];
+    data.cb = &vshSecretEventCallbacks[event];
     if (vshCommandOptTimeoutToMs(ctl, cmd, &timeout) < 0)
         return false;
 
