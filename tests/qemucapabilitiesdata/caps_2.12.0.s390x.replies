@@ -3683,6 +3683,14 @@
 }
 
 {
+    "id": "libvirt-37",
+    "error": {
+        "class": "DeviceNotFound",
+        "desc": "Class 'spapr-machine' not found"
+    }
+}
+
+{
   "return": [
     {
       "hotpluggable-cpus": true,
@@ -3737,7 +3745,7 @@
       "alias": "s390-ccw-virtio"
     }
   ],
-  "id": "libvirt-37"
+  "id": "libvirt-38"
 }
 
 {
@@ -4272,20 +4280,20 @@
       "migration-safe": true
     }
   ],
-  "id": "libvirt-38"
+  "id": "libvirt-39"
 }
 
 {
   "return": [
   ],
-  "id": "libvirt-39"
+  "id": "libvirt-40"
 }
 
 {
   "return": [
     "emulator"
   ],
-  "id": "libvirt-40"
+  "id": "libvirt-41"
 }
 
 {
@@ -5410,7 +5418,7 @@
       "option": "drive"
     }
   ],
-  "id": "libvirt-41"
+  "id": "libvirt-42"
 }
 
 {
@@ -5472,7 +5480,7 @@
       "capability": "dirty-bitmaps"
     }
   ],
-  "id": "libvirt-42"
+  "id": "libvirt-43"
 }
 
 {
@@ -16840,7 +16848,7 @@
       "meta-type": "object"
     }
   ],
-  "id": "libvirt-43"
+  "id": "libvirt-44"
 }
 
 {
@@ -16878,11 +16886,11 @@
       }
     }
   },
-  "id": "libvirt-44"
+  "id": "libvirt-45"
 }
 
 {
-  "id": "libvirt-45",
+  "id": "libvirt-46",
   "error": {
     "class": "GenericError",
     "desc": "Property '.migratable' not found"

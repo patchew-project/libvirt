@@ -489,6 +489,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "screendump_device",
               "hda-output",
               "blockdev-del",
+              "machine.pseries.cap-hpt-mps",
     );
 
 
@@ -1401,10 +1402,17 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsMemoryBackendFile[] =
     { "discard-data", QEMU_CAPS_OBJECT_MEMORY_FILE_DISCARD },
 };
 
+static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsSPAPRMachine[] = {
+    { "cap-hpt-mps", QEMU_CAPS_MACHINE_PSERIES_CAP_HPT_MPS },
+};
+
 static virQEMUCapsObjectTypeProps virQEMUCapsObjectProps[] = {
     { "memory-backend-file", virQEMUCapsObjectPropsMemoryBackendFile,
       ARRAY_CARDINALITY(virQEMUCapsObjectPropsMemoryBackendFile),
       QEMU_CAPS_OBJECT_MEMORY_FILE },
+    { "spapr-machine", virQEMUCapsObjectPropsSPAPRMachine,
+      ARRAY_CARDINALITY(virQEMUCapsObjectPropsSPAPRMachine),
+      -1 },
 };
 
 static void
