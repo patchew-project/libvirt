@@ -7193,6 +7193,32 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
 
             virBufferAsprintf(&buf, ",resize-hpt=%s", str);
         }
+
+        if (def->hpt_maxpagesize > 0) {
+            unsigned long long tmp = def->hpt_maxpagesize;
+            unsigned int shifts = 0;
+
+            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_MACHINE_PSERIES_CAP_HPT_MPS)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("Limiting the page size for HPT guest is "
+                                 "not supported by this QEMU binary"));
+                goto cleanup;
+            }
+
+            /* QEMU expects the argument to be a number of left shifts:
+             * for example, if you wanted to limit the guest to 4 KiB pages,
+             * since 4096 == 1 << 12, you would need to add cap-hpt-mps=12
+             * to the command line.
+             *
+             * Convert from our internal representation, which is bytes,
+             * to the one QEMU expects */
+            while (tmp > 1) {
+                tmp = tmp >> 1;
+                shifts++;
+            }
+
+            virBufferAsprintf(&buf, ",cap-hpt-mps=%u", shifts);
+        }
     }
 
     if (cpu && cpu->model &&
