@@ -64,6 +64,17 @@
           TLS environment which is setup for the migration connection.
         </description>
       </change>
+      <change>
+        <summary>
+          qemu: Added support for PCI device passthrough on S390
+        </summary>
+        <description>
+          The new zPCI attributes uid (user-defined identifier)
+          and fid (PCI function identifier) of the S390 platform
+          extend the PCI device address to support the PCI
+          passthrough on S390.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
       <change>
