@@ -1716,6 +1716,9 @@ bool virQEMUCapsHasPCIMultiBus(virQEMUCapsPtr qemuCaps,
         return false;
     }
 
+    if (ARCH_IS_S390(def->os.arch))
+        return virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_ZPCI);
+
     /* If 'virt' supports PCI, it supports multibus.
      * No extra conditions here for simplicity.
      */
