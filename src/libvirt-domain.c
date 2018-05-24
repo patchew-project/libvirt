@@ -8350,6 +8350,59 @@ virDomainUpdateDeviceFlags(virDomainPtr domain,
 
 
 /**
+ * virDomainDetachDeviceAlias:
+ * @domain: pointer to domain object
+ * @alias: device alias
+ * @flags: bitwise-OR of virDomainDeviceModifyFlags
+ *
+ * Detach a virtual device from a domain, using the alias to
+ * specify device. The value of @flags should be either
+ * VIR_DOMAIN_AFFECT_CURRENT, or a bitwise-or of values from
+ * VIR_DOMAIN_AFFECT_LIVE and VIR_DOMAIN_AFFECT_CURRENT, although
+ * hypervisors vary in which flags are supported.
+ *
+ * In contrast to virDomainDetachDeviceFlags() this API only send
+ * request to the hypervisor and returns immediately. It's
+ * caller's responsibility to wait for
+ * VIR_DOMAIN_EVENT_ID_DEVICE_REMOVED event to signal actual
+ * device removal.
+ *
+ * Returns 0 in case of success, -1 in case of failure.
+ */
+int
+virDomainDetachDeviceAlias(virDomainPtr domain,
+                           const char *alias,
+                           unsigned int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "alias=%s, flags=0x%x", alias, flags);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    conn = domain->conn;
+
+    virCheckNonNullArgGoto(alias, error);
+    virCheckReadOnlyGoto(conn->flags, error);
+
+    if (conn->driver->domainDetachDeviceAlias) {
+        int ret;
+        ret = conn->driver->domainDetachDeviceAlias(domain, alias, flags);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+
+ error:
+    virDispatchError(domain->conn);
+    return -1;
+}
+
+
+/**
  * virConnectDomainEventRegister:
  * @conn: pointer to the connection
  * @cb: callback to the function handling domain events
