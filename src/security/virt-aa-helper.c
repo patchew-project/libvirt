@@ -1185,6 +1185,30 @@ get_files(vahControl * ctl)
         }
     }
 
+    if (ctl->def->tpm) {
+        char *shortName = virDomainDefGetShortName(ctl->def);
+        switch (ctl->def->tpm->type) {
+        case VIR_DOMAIN_TPM_TYPE_EMULATOR:
+            virBufferAsprintf(&buf,
+                "  \"%s/run/libvirt/qemu/swtpm/%s-swtpm.sock\" x,\n",
+                LOCALSTATEDIR, shortName);
+            /* paths for swtpm to use */
+            virBufferAsprintf(&buf,
+                "  \"%s/lib/libvirt/swtpm/%s,tpm2/**\" rw,\n",
+                LOCALSTATEDIR, uuidstr);
+            virBufferAsprintf(&buf,
+                "  \"%s/log/swtpm/libvirt/qemu/%s-swtpm.log\" rw,\n",
+                LOCALSTATEDIR, shortName);
+            virBufferAsprintf(&buf,
+                "  \"%s/run/libvirt/qemu/swtpm/%s-swtpm.pid\" rw,\n",
+                LOCALSTATEDIR, shortName);
+            break;
+        case VIR_DOMAIN_TPM_TYPE_PASSTHROUGH:
+        case VIR_DOMAIN_TPM_TYPE_LAST:
+            break;
+        }
+    }
+
     if (ctl->def->virtType == VIR_DOMAIN_VIRT_KVM) {
         for (i = 0; i < ctl->def->nnets; i++) {
             virDomainNetDefPtr net = ctl->def->nets[i];
