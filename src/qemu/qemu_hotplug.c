@@ -194,6 +194,84 @@ qemuDomainDelDiskSrcTLSObject(virQEMUDriverPtr driver,
 
 
 static int
+qemuDomainAttachZPCIDevice(qemuMonitorPtr mon,
+                           virDomainDeviceInfoPtr info)
+{
+    int ret = -1;
+    char *devstr_zpci = NULL;
+
+    if (!(devstr_zpci = qemuBuildZPCIDevStr(info)))
+        goto cleanup;
+
+    if (qemuMonitorAddDevice(mon, devstr_zpci) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(devstr_zpci);
+    return ret;
+}
+
+
+static int
+qemuDomainDetachZPCIDevice(qemuMonitorPtr mon,
+                           virDomainDeviceInfoPtr info)
+{
+    char *zpciAlias = NULL;
+    int ret = -1;
+
+    if (virAsprintf(&zpciAlias, "zpci%d", info->addr.pci.zpci->zpciuid) < 0)
+        goto cleanup;
+
+    if (qemuMonitorDelDevice(mon, zpciAlias) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(zpciAlias);
+    return ret;
+}
+
+
+static int
+qemuDomainAttachExtensionDevice(qemuMonitorPtr mon,
+                                 virDomainDeviceInfoPtr info,
+                                 virQEMUCapsPtr qemuCaps)
+{
+    if (qemuCheckDeviceIsZPCI(info)) {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_ZPCI)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("This QEMU doesn't support zpci devices"));
+            return -1;
+        }
+        return qemuDomainAttachZPCIDevice(mon, info);
+    }
+
+    return 0;
+}
+
+
+static int
+qemuDomainDetachExtensionDevice(qemuMonitorPtr mon,
+                                 virDomainDeviceInfoPtr info,
+                                 virQEMUCapsPtr qemuCaps)
+{
+    if (qemuCheckDeviceIsZPCI(info)) {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_ZPCI)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("This QEMU doesn't support zpci devices"));
+            return -1;
+        }
+        return qemuDomainDetachZPCIDevice(mon, info);
+    }
+
+    return 0;
+}
+
+
+static int
 qemuHotplugWaitForTrayEject(virQEMUDriverPtr driver,
                             virDomainObjPtr vm,
                             virDomainDiskDefPtr disk,
@@ -521,8 +599,15 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
         goto exit_monitor;
     driveAdded = true;
 
-    if (qemuMonitorAddDevice(priv->mon, devstr) < 0)
+    if (qemuDomainAttachExtensionDevice(priv->mon, &disk->info,
+                                         priv->qemuCaps) < 0)
         goto exit_monitor;
+
+    if (qemuMonitorAddDevice(priv->mon, devstr) < 0) {
+        ignore_value(qemuDomainDetachExtensionDevice(priv->mon, &disk->info,
+                                                      priv->qemuCaps));
+        goto exit_monitor;
+    }
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0) {
         ret = -2;
@@ -1088,17 +1173,19 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
     }
 
     if (qemuDomainIsS390CCW(vm->def) &&
-        virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_CCW)) {
-        net->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW;
-        if (!(ccwaddrs = qemuDomainCCWAddrSetCreateFromDomain(vm->def)))
+        net->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
+        if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_CCW)) {
+            net->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW;
+            if (!(ccwaddrs = qemuDomainCCWAddrSetCreateFromDomain(vm->def)))
+                goto cleanup;
+            if (virDomainCCWAddressAssign(&net->info, ccwaddrs,
+                                          !net->info.addr.ccw.assigned) < 0)
+                goto cleanup;
+        } else if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_VIRTIO_S390)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("virtio-s390 net device cannot be hotplugged."));
             goto cleanup;
-        if (virDomainCCWAddressAssign(&net->info, ccwaddrs,
-                                      !net->info.addr.ccw.assigned) < 0)
-            goto cleanup;
-    } else if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_VIRTIO_S390)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("virtio-s390 net device cannot be hotplugged."));
-        goto cleanup;
+        }
     } else if (qemuDomainEnsurePCIAddress(vm, &dev, driver) < 0) {
         goto cleanup;
     }
@@ -1158,7 +1245,17 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
         goto try_remove;
 
     qemuDomainObjEnterMonitor(driver, vm);
+
+    if (qemuDomainAttachExtensionDevice(priv->mon, &net->info,
+                                         priv->qemuCaps) < 0) {
+        ignore_value(qemuDomainObjExitMonitor(driver, vm));
+        virDomainAuditNet(vm, NULL, net, "attach", false);
+        goto try_remove;
+    }
+
     if (qemuMonitorAddDevice(priv->mon, nicstr) < 0) {
+        ignore_value(qemuDomainDetachExtensionDevice(priv->mon, &net->info,
+                                                      priv->qemuCaps));
         ignore_value(qemuDomainObjExitMonitor(driver, vm));
         virDomainAuditNet(vm, NULL, net, "attach", false);
         goto try_remove;
@@ -1374,8 +1471,17 @@ qemuDomainAttachHostPCIDevice(virQEMUDriverPtr driver,
         goto error;
 
     qemuDomainObjEnterMonitor(driver, vm);
-    ret = qemuMonitorAddDeviceWithFd(priv->mon, devstr,
-                                     configfd, configfd_name);
+
+    if ((ret = qemuDomainAttachExtensionDevice(priv->mon, hostdev->info,
+                                                priv->qemuCaps)) < 0)
+        goto exit_monitor;
+
+    if ((ret = qemuMonitorAddDeviceWithFd(priv->mon, devstr,
+                                          configfd, configfd_name)) < 0)
+        ignore_value(qemuDomainDetachExtensionDevice(priv->mon, hostdev->info,
+                                                      priv->qemuCaps));
+
+ exit_monitor:
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         goto error;
 
@@ -2052,8 +2158,15 @@ qemuDomainAttachRNGDevice(virQEMUDriverPtr driver,
         goto exit_monitor;
     objAdded = true;
 
-    if (qemuMonitorAddDevice(priv->mon, devstr) < 0)
+    if (qemuDomainAttachExtensionDevice(priv->mon, &rng->info,
+                                         priv->qemuCaps) < 0)
         goto exit_monitor;
+
+    if (qemuMonitorAddDevice(priv->mon, devstr) < 0) {
+        ignore_value(qemuDomainDetachExtensionDevice(priv->mon, &rng->info,
+                                                      priv->qemuCaps));
+        goto exit_monitor;
+    }
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0) {
         releaseaddr = false;
@@ -2555,8 +2668,18 @@ qemuDomainAttachSCSIVHostDevice(virQEMUDriverPtr driver,
 
     qemuDomainObjEnterMonitor(driver, vm);
 
-    ret = qemuMonitorAddDeviceWithFd(priv->mon, devstr, vhostfd, vhostfdName);
+    if ((ret = qemuDomainAttachExtensionDevice(priv->mon, hostdev->info,
+                                                priv->qemuCaps)) < 0)
+        goto exit_monitor;
 
+    if ((ret = qemuMonitorAddDeviceWithFd(priv->mon, devstr, vhostfd,
+                                          vhostfdName)) < 0) {
+        ignore_value(qemuDomainDetachExtensionDevice(priv->mon, hostdev->info,
+                                                      priv->qemuCaps));
+        goto exit_monitor;
+    }
+
+ exit_monitor:
     if (qemuDomainObjExitMonitor(driver, vm) < 0 || ret < 0)
         goto audit;
 
@@ -2800,8 +2923,15 @@ qemuDomainAttachShmemDevice(virQEMUDriverPtr driver,
 
     release_backing = true;
 
-    if (qemuMonitorAddDevice(priv->mon, shmstr) < 0)
+    if (qemuDomainAttachExtensionDevice(priv->mon, &shmem->info,
+                                         priv->qemuCaps) < 0)
         goto exit_monitor;
+
+    if (qemuMonitorAddDevice(priv->mon, shmstr) < 0) {
+        ignore_value(qemuDomainDetachExtensionDevice(priv->mon, &shmem->info,
+                                                      priv->qemuCaps));
+        goto exit_monitor;
+    }
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0) {
         release_address = false;
@@ -2974,8 +3104,19 @@ qemuDomainAttachInputDevice(virQEMUDriverPtr driver,
         goto cleanup;
 
     qemuDomainObjEnterMonitor(driver, vm);
-    if (qemuMonitorAddDevice(priv->mon, devstr) < 0)
+
+    if (input->bus == VIR_DOMAIN_INPUT_BUS_VIRTIO) {
+        if (qemuDomainAttachExtensionDevice(priv->mon, &input->info,
+                                             priv->qemuCaps) < 0)
+            goto exit_monitor;
+    }
+
+    if (qemuMonitorAddDevice(priv->mon, devstr) < 0) {
+        if (input->bus == VIR_DOMAIN_INPUT_BUS_VIRTIO)
+            ignore_value(qemuDomainDetachExtensionDevice(priv->mon, &input->info,
+                                                          priv->qemuCaps));
         goto exit_monitor;
+    }
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0) {
         releaseaddr = false;
