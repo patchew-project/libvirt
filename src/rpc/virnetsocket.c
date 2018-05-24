@@ -382,11 +382,8 @@ int virNetSocketNewListenTCP(const char *nodename,
 #endif
 
         if (bind(fd, runp->ai_addr, runp->ai_addrlen) < 0) {
-            if (errno != EADDRINUSE) {
-                virReportSystemError(errno, "%s", _("Unable to bind to port"));
-                goto error;
-            }
-            addrInUse = true;
+            if (errno == EADDRINUSE)
+                addrInUse = true;
             VIR_FORCE_CLOSE(fd);
             runp = runp->ai_next;
             continue;
@@ -409,14 +406,14 @@ int virNetSocketNewListenTCP(const char *nodename,
         fd = -1;
     }
 
-    if (nsocks == 0 && familyNotSupported) {
-        virReportSystemError(EAFNOSUPPORT, "%s", _("Unable to bind to port"));
-        goto error;
-    }
-
-    if (nsocks == 0 &&
-        addrInUse) {
-        virReportSystemError(EADDRINUSE, "%s", _("Unable to bind to port"));
+    if (nsocks == 0) {
+      if (familyNotSupported)
+        errno = EAFNOSUPPORT;
+      else if (addrInUse)
+        errno = EADDRINUSE;
+      else
+        errno = EDESTADDRREQ;
+        virReportSystemError(errno, "%s", _("Unable to bind to port"));
         goto error;
     }
 
