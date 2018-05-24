@@ -2167,6 +2167,68 @@ qemuBuildDriveDevStr(const virDomainDef *def,
     return NULL;
 }
 
+char *
+qemuBuildZPCIDevStr(virDomainDeviceInfoPtr dev)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    virBufferAddLit(&buf, "zpci");
+    virBufferAsprintf(&buf, ",uid=%u", dev->addr.pci.zpci->zpciuid);
+    virBufferAsprintf(&buf, ",fid=%u", dev->addr.pci.zpci->zpcifid);
+    virBufferAsprintf(&buf, ",target=%s", dev->alias);
+    virBufferAsprintf(&buf, ",id=zpci%u", dev->addr.pci.zpci->zpciuid);
+
+    if (virBufferCheckError(&buf) < 0) {
+        virBufferFreeAndReset(&buf);
+        return NULL;
+    }
+
+    return virBufferContentAndReset(&buf);
+}
+
+bool
+qemuCheckDeviceIsZPCI(virDomainDeviceInfoPtr info)
+{
+    if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI &&
+        ((info->pciAddressExtFlags & VIR_PCI_ADDRESS_EXTENSION_ZPCI) ||
+         info->addr.pci.zpci))
+        return true;
+
+    return false;
+}
+
+static int
+qemuAppendZPCIDevStr(virCommandPtr cmd,
+                     virDomainDeviceInfoPtr dev)
+{
+    char *devstr = NULL;
+
+    virCommandAddArg(cmd, "-device");
+    if (!(devstr = qemuBuildZPCIDevStr(dev)))
+        return -1;
+
+    virCommandAddArg(cmd, devstr);
+
+    VIR_FREE(devstr);
+    return 0;
+}
+
+static int
+qemuBuildExtensionCommandLine(virCommandPtr cmd,
+                              virQEMUCapsPtr qemuCaps,
+                              virDomainDeviceInfoPtr dev)
+{
+    if (qemuCheckDeviceIsZPCI(dev)) {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_ZPCI)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("This QEMU doesn't support zpci devices"));
+            return -1;
+        }
+        return qemuAppendZPCIDevStr(cmd, dev);
+    }
+
+    return 0;
+}
 
 static int
 qemuBulildFloppyCommandLineOptions(virCommandPtr cmd,
@@ -2311,6 +2373,9 @@ qemuBuildDiskDriveCommandLine(virCommandPtr cmd,
                                                        bootindex) < 0)
                     return -1;
             } else {
+                if (qemuBuildExtensionCommandLine(cmd, qemuCaps, &disk->info) < 0)
+                    return -1;
+
                 virCommandAddArg(cmd, "-device");
 
                 if (!(optstr = qemuBuildDriveDevStr(def, disk, bootindex,
@@ -2442,6 +2507,9 @@ qemuBuildFSDevCommandLine(virCommandPtr cmd,
             return -1;
         virCommandAddArg(cmd, optstr);
         VIR_FREE(optstr);
+
+        if (qemuBuildExtensionCommandLine(cmd, qemuCaps, &fs->info) < 0)
+            return -1;
 
         virCommandAddArg(cmd, "-device");
         if (!(optstr = qemuBuildFSDevStr(def, fs, qemuCaps)))
@@ -3745,6 +3813,9 @@ qemuBuildWatchdogCommandLine(virCommandPtr cmd,
     if (!def->watchdog)
         return 0;
 
+    if (qemuBuildExtensionCommandLine(cmd, qemuCaps, &def->watchdog->info) < 0)
+        return -1;
+
     virCommandAddArg(cmd, "-device");
 
     optstr = qemuBuildWatchdogDevStr(def, watchdog, qemuCaps);
@@ -3827,6 +3898,9 @@ qemuBuildMemballoonCommandLine(virCommandPtr cmd,
     }
 
     if (qemuBuildVirtioOptionsStr(&buf, def->memballoon->virtio, qemuCaps) < 0)
+        goto error;
+
+    if (qemuBuildExtensionCommandLine(cmd, qemuCaps, &def->memballoon->info) < 0)
         goto error;
 
     virCommandAddArg(cmd, "-device");
@@ -4051,6 +4125,9 @@ qemuBuildInputCommandLine(virCommandPtr cmd,
         virDomainInputDefPtr input = def->inputs[i];
         char *devstr = NULL;
 
+        if (qemuBuildExtensionCommandLine(cmd, qemuCaps, &input->info) < 0)
+            return -1;
+
         if (qemuBuildInputDevStr(&devstr, def, input, qemuCaps) < 0)
             return -1;
 
@@ -4192,6 +4269,9 @@ qemuBuildSoundCommandLine(virCommandPtr cmd,
         if (sound->model == VIR_DOMAIN_SOUND_MODEL_PCSPK) {
             virCommandAddArgList(cmd, "-soundhw", "pcspk", NULL);
         } else {
+            if (qemuBuildExtensionCommandLine(cmd, qemuCaps, &sound->info) < 0)
+                return -1;
+
             virCommandAddArg(cmd, "-device");
             if (!(str = qemuBuildSoundDevStr(def, sound, qemuCaps)))
                 return -1;
@@ -4428,6 +4508,8 @@ qemuBuildVideoCommandLine(virCommandPtr cmd,
         if (video->primary) {
             if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIDEO_PRIMARY)) {
 
+                if (qemuBuildExtensionCommandLine(cmd, qemuCaps, &def->videos[i]->info) < 0)
+                    return -1;
                 virCommandAddArg(cmd, "-device");
 
                 if (!(str = qemuBuildDeviceVideoStr(def, video, qemuCaps)))
@@ -4440,6 +4522,9 @@ qemuBuildVideoCommandLine(virCommandPtr cmd,
                     return -1;
             }
         } else {
+            if (qemuBuildExtensionCommandLine(cmd, qemuCaps, &def->videos[i]->info) < 0)
+                return -1;
+
             virCommandAddArg(cmd, "-device");
 
             if (!(str = qemuBuildDeviceVideoStr(def, video, qemuCaps)))
@@ -5209,6 +5294,10 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
                                      VIR_COMMAND_PASS_FD_CLOSE_PARENT);
                 }
             }
+
+            if (qemuBuildExtensionCommandLine(cmd, qemuCaps, hostdev->info) < 0)
+                return -1;
+
             virCommandAddArg(cmd, "-device");
             devstr = qemuBuildPCIHostdevDevStr(def, hostdev, bootIndex,
                                                configfd_name, qemuCaps);
@@ -5673,6 +5762,9 @@ qemuBuildRNGCommandLine(virLogManagerPtr logManager,
         VIR_FREE(tmp);
 
         /* add the device */
+        if (qemuBuildExtensionCommandLine(cmd, qemuCaps, &rng->info) < 0)
+            return -1;
+
         if (!(tmp = qemuBuildRNGDevStr(def, rng, qemuCaps)))
             return -1;
         virCommandAddArgList(cmd, "-device", tmp, NULL);
@@ -8109,6 +8201,9 @@ qemuBuildVhostuserCommandLine(virQEMUDriverPtr driver,
     virCommandAddArg(cmd, netdev);
     VIR_FREE(netdev);
 
+    if (qemuBuildExtensionCommandLine(cmd, qemuCaps, &net->info) < 0)
+        goto error;
+
     if (!(nic = qemuBuildNicDevStr(def, net, -1, bootindex,
                                    queues, qemuCaps))) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -8399,6 +8494,9 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
                                          vhostfdName, vhostfdSize)))
             goto cleanup;
         virCommandAddArgList(cmd, "-netdev", host, NULL);
+
+        if (qemuBuildExtensionCommandLine(cmd, qemuCaps, &net->info) < 0)
+            goto cleanup;
 
         if (!(nic = qemuBuildNicDevStr(def, net, vlan, bootindex,
                                        vhostfdSize, qemuCaps)))
@@ -8857,6 +8955,9 @@ qemuBuildShmemCommandLine(virLogManagerPtr logManager,
 
     switch ((virDomainShmemModel)shmem->model) {
     case VIR_DOMAIN_SHMEM_MODEL_IVSHMEM:
+        if (qemuBuildExtensionCommandLine(cmd, qemuCaps, &shmem->info) < 0)
+            return -1;
+
         devstr = qemuBuildShmemDevLegacyStr(def, shmem, qemuCaps);
         break;
 
@@ -8869,6 +8970,9 @@ qemuBuildShmemCommandLine(virLogManagerPtr logManager,
 
         ATTRIBUTE_FALLTHROUGH;
     case VIR_DOMAIN_SHMEM_MODEL_IVSHMEM_DOORBELL:
+        if (qemuBuildExtensionCommandLine(cmd, qemuCaps, &shmem->info) < 0)
+            return -1;
+
         devstr = qemuBuildShmemDevStr(def, shmem, qemuCaps);
         break;
 
