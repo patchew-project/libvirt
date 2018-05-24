@@ -1291,12 +1291,20 @@ typedef enum {
     VIR_DOMAIN_TPM_TYPE_LAST
 } virDomainTPMBackendType;
 
+typedef enum {
+    VIR_DOMAIN_TPM_VERSION_1_2,
+    VIR_DOMAIN_TPM_VERSION_2,
+
+    VIR_DOMAIN_TPM_VERSION_LAST
+} virDomainTPMVersion;
+
 # define VIR_DOMAIN_TPM_DEFAULT_DEVICE "/dev/tpm0"
 
 struct _virDomainTPMDef {
     virDomainTPMBackendType type;
     virDomainDeviceInfo info;
     virDomainTPMModel model;
+    virDomainTPMVersion version;
     union {
         struct {
             virDomainChrSourceDef source;
@@ -3358,6 +3366,7 @@ VIR_ENUM_DECL(virDomainRNGModel)
 VIR_ENUM_DECL(virDomainRNGBackend)
 VIR_ENUM_DECL(virDomainTPMModel)
 VIR_ENUM_DECL(virDomainTPMBackend)
+VIR_ENUM_DECL(virDomainTPMVersion)
 VIR_ENUM_DECL(virDomainMemoryModel)
 VIR_ENUM_DECL(virDomainMemoryBackingModel)
 VIR_ENUM_DECL(virDomainMemorySource)
