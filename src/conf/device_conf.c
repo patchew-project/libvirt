@@ -32,6 +32,74 @@
 
 #define VIR_FROM_THIS VIR_FROM_DEVICE
 
+static int
+virZPCIDeviceAddressIsValid(virZPCIDeviceAddressPtr zpci)
+{
+    if (!zpci->uid_assigned)
+        return 1;
+
+    if (zpci->zpciuid > VIR_DOMAIN_DEVICE_ZPCI_MAX_UID ||
+        zpci->zpciuid == 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid PCI address uid='0x%x', "
+                         "must be > 0x0 and <= 0x%x"),
+                       zpci->zpciuid,
+                       VIR_DOMAIN_DEVICE_ZPCI_MAX_UID);
+        return 0;
+    }
+
+    return 1;
+}
+
+static int
+virZPCIDeviceAddressParseXML(xmlNodePtr node,
+                             virPCIDeviceAddressPtr addr)
+{
+    char *uid, *fid;
+    int ret = -1;
+    virZPCIDeviceAddressPtr def = NULL;
+
+    if (VIR_ALLOC(def) < 0)
+        return -1;
+
+    uid = virXMLPropString(node, "uid");
+    fid = virXMLPropString(node, "fid");
+
+    if (uid) {
+        if (virStrToLong_uip(uid, NULL, 0, &def->zpciuid) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Cannot parse <address> 'uid' attribute"));
+            goto cleanup;
+        }
+        def->uid_assigned = true;
+    }
+
+    if (fid) {
+        if (virStrToLong_uip(fid, NULL, 0, &def->zpcifid) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Cannot parse <address> 'fid' attribute"));
+            goto cleanup;
+        }
+        def->fid_assigned = true;
+    }
+
+    if (uid || fid) {
+        if (!virZPCIDeviceAddressIsValid(def))
+            goto cleanup;
+
+        addr->zpci = def;
+        def = NULL;
+    }
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(uid);
+    VIR_FREE(fid);
+    VIR_FREE(def);
+    return ret;
+}
+
 int
 virDomainDeviceInfoCopy(virDomainDeviceInfoPtr dst,
                         virDomainDeviceInfoPtr src)
@@ -57,6 +125,8 @@ void
 virDomainDeviceInfoClear(virDomainDeviceInfoPtr info)
 {
     VIR_FREE(info->alias);
+    if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI)
+        VIR_FREE(info->addr.pci.zpci);
     memset(&info->addr, 0, sizeof(info->addr));
     info->type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE;
     VIR_FREE(info->romfile);
@@ -187,6 +257,7 @@ int virPCIDeviceAddressIsValid(virPCIDeviceAddressPtr addr,
                              "one of domain, bus, or slot must be > 0"));
         return 0;
     }
+
     return 1;
 }
 
@@ -243,6 +314,9 @@ virPCIDeviceAddressParseXML(xmlNodePtr node,
 
     }
     if (!virPCIDeviceAddressIsEmpty(addr) && !virPCIDeviceAddressIsValid(addr, true))
+        goto cleanup;
+
+    if (virZPCIDeviceAddressParseXML(node, addr) < 0)
         goto cleanup;
 
     ret = 0;

@@ -6171,6 +6171,10 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
                               info->addr.pci.slot,
                               info->addr.pci.function);
         }
+        if (info->addr.pci.zpci) {
+            virBufferAsprintf(buf, " uid='0x%.4x'", info->addr.pci.zpci->zpciuid);
+            virBufferAsprintf(buf, " fid='0x%.8x'", info->addr.pci.zpci->zpcifid);
+        }
         if (info->addr.pci.multi) {
            virBufferAsprintf(buf, " multifunction='%s'",
                              virTristateSwitchTypeToString(info->addr.pci.multi));
