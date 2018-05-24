@@ -12727,21 +12727,6 @@ virDomainTPMDefParseXML(virDomainXMLOptionPtr xmlopt,
         def->version = VIR_DOMAIN_TPM_VERSION_1_2;
     else
         def->version = virDomainTPMVersionTypeFromString(version);
-    switch (def->version) {
-    case VIR_DOMAIN_TPM_VERSION_1_2:
-        /* only TIS available for emulator */
-        if (def->type == VIR_DOMAIN_TPM_TYPE_EMULATOR)
-            def->model = VIR_DOMAIN_TPM_MODEL_TIS;
-        break;
-    case VIR_DOMAIN_TPM_VERSION_2:
-        break;
-    case VIR_DOMAIN_TPM_VERSION_LAST:
-    default:
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("Unsupported TPM version '%s'"),
-                       version);
-        goto error;
-    }
 
     switch (def->type) {
     case VIR_DOMAIN_TPM_TYPE_PASSTHROUGH:
