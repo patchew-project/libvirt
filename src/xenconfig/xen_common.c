@@ -145,31 +145,18 @@ xenConfigCopyStringInternal(virConfPtr conf,
                             char **value,
                             int allowMissing)
 {
-    virConfValuePtr val;
+    int result;
 
     *value = NULL;
-    if (!(val = virConfGetValue(conf, name))) {
-        if (allowMissing)
-            return 0;
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("config value %s was missing"), name);
-        return -1;
-    }
 
-    if (val->type != VIR_CONF_STRING) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("config value %s was not a string"), name);
-        return -1;
-    }
-    if (!val->str) {
-        if (allowMissing)
-            return 0;
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("config value %s was missing"), name);
-        return -1;
-    }
+    result = virConfGetValueString(conf, name, value);
+    if (result == 1 && *value != NULL)
+        return 0;
 
-    return VIR_STRDUP(*value, val->str);
+    if (allowMissing)
+        return 0;
+
+    return -1;
 }
 
 
@@ -193,7 +180,8 @@ xenConfigCopyStringOpt(virConfPtr conf, const char *name, char **value)
 static int
 xenConfigGetUUID(virConfPtr conf, const char *name, unsigned char *uuid)
 {
-    virConfValuePtr val;
+    char *string = NULL;
+    int result;
 
     if (!uuid || !name || !conf) {
         virReportError(VIR_ERR_INVALID_ARG, "%s",
@@ -201,35 +189,35 @@ xenConfigGetUUID(virConfPtr conf, const char *name, unsigned char *uuid)
         return -1;
     }
 
-    if (!(val = virConfGetValue(conf, name))) {
-        if (virUUIDGenerate(uuid) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           "%s", _("Failed to generate UUID"));
-            return -1;
-        } else {
-            return 0;
-        }
-    }
-
-    if (val->type != VIR_CONF_STRING) {
-        virReportError(VIR_ERR_CONF_SYNTAX,
-                       _("config value %s not a string"), name);
+    if (virConfGetValueString(conf, name, &string) < 0)
         return -1;
-    }
 
-    if (!val->str) {
+    if (!string) {
         virReportError(VIR_ERR_CONF_SYNTAX,
                        _("%s can't be empty"), name);
         return -1;
     }
 
-    if (virUUIDParse(val->str, uuid) < 0) {
-        virReportError(VIR_ERR_CONF_SYNTAX,
-                       _("%s not parseable"), val->str);
-        return -1;
+    if (virUUIDGenerate(uuid) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "%s", _("Failed to generate UUID"));
+        result = -1;
+        goto cleanup;
     }
 
-    return 0;
+    if (virUUIDParse(string, uuid) < 0) {
+        virReportError(VIR_ERR_CONF_SYNTAX,
+                       _("%s not parseable"), string);
+        result = -1;
+        goto cleanup;
+    }
+
+    result = 1;
+
+ cleanup:
+    VIR_FREE(string);
+
+    return result;
 }
 
 
@@ -242,23 +230,15 @@ xenConfigGetString(virConfPtr conf,
                    const char **value,
                    const char *def)
 {
-    virConfValuePtr val;
+    char *string = NULL;
 
-    *value = NULL;
-    if (!(val = virConfGetValue(conf, name))) {
+    if (virConfGetValueString(conf, name, &string) < 0) {
         *value = def;
-        return 0;
-    }
-
-    if (val->type != VIR_CONF_STRING) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("config value %s was malformed"), name);
         return -1;
     }
-    if (!val->str)
-        *value = def;
-    else
-        *value = val->str;
+
+    *value = string != NULL ? string : def;
+
     return 0;
 }
 
@@ -392,90 +372,84 @@ xenParseEventsActions(virConfPtr conf, virDomainDefPtr def)
 static int
 xenParsePCI(virConfPtr conf, virDomainDefPtr def)
 {
-    virConfValuePtr list = virConfGetValue(conf, "pci");
     virDomainHostdevDefPtr hostdev = NULL;
+    char **pcis = NULL, **entries;
 
-    if (list && list->type == VIR_CONF_LIST) {
-        list = list->list;
-        while (list) {
-            char domain[5];
-            char bus[3];
-            char slot[3];
-            char func[2];
-            char *key, *nextkey;
-            int domainID;
-            int busID;
-            int slotID;
-            int funcID;
+    if (virConfGetValueStringList(conf, "pci", false, &pcis) <= 0)
+        return 0;
 
-            domain[0] = bus[0] = slot[0] = func[0] = '\0';
+    for (entries = pcis; *entries; entries++) {
+       char domain[5];
+       char bus[3];
+       char slot[3];
+       char func[2];
+       char *key, *nextkey;
+       int domainID;
+       int busID;
+       int slotID;
+       int funcID;
 
-            if ((list->type != VIR_CONF_STRING) || (list->str == NULL))
-                goto skippci;
-            /* pci=['0000:00:1b.0','0000:00:13.0'] */
-            if (!(key = list->str))
-                goto skippci;
-            if (!(nextkey = strchr(key, ':')))
-                goto skippci;
-            if (virStrncpy(domain, key, (nextkey - key), sizeof(domain)) == NULL) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("Domain %s too big for destination"), key);
-                goto skippci;
-            }
+       domain[0] = bus[0] = slot[0] = func[0] = '\0';
+       key = *entries;
 
-            key = nextkey + 1;
-            if (!(nextkey = strchr(key, ':')))
-                goto skippci;
-            if (virStrncpy(bus, key, (nextkey - key), sizeof(bus)) == NULL) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("Bus %s too big for destination"), key);
-                goto skippci;
-            }
+       /* pci=['0000:00:1b.0','0000:00:13.0'] */
+       if (!(nextkey = strchr(key, ':')))
+           continue;
+       if (virStrncpy(domain, key, (nextkey - key), sizeof(domain)) == NULL) {
+           virReportError(VIR_ERR_INTERNAL_ERROR,
+                          _("Domain %s too big for destination"), key);
+           continue;
+       }
 
-            key = nextkey + 1;
-            if (!(nextkey = strchr(key, '.')))
-                goto skippci;
-            if (virStrncpy(slot, key, (nextkey - key), sizeof(slot)) == NULL) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("Slot %s too big for destination"), key);
-                goto skippci;
-            }
+       key = nextkey + 1;
+       if (!(nextkey = strchr(key, ':')))
+           continue;
+       if (virStrncpy(bus, key, (nextkey - key), sizeof(bus)) == NULL) {
+           virReportError(VIR_ERR_INTERNAL_ERROR,
+                          _("Bus %s too big for destination"), key);
+           continue;
+       }
 
-            key = nextkey + 1;
-            if (strlen(key) != 1)
-                goto skippci;
-            if (virStrncpy(func, key, 1, sizeof(func)) == NULL) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("Function %s too big for destination"), key);
-                goto skippci;
-            }
+       key = nextkey + 1;
+       if (!(nextkey = strchr(key, '.')))
+           continue;
+       if (virStrncpy(slot, key, (nextkey - key), sizeof(slot)) == NULL) {
+           virReportError(VIR_ERR_INTERNAL_ERROR,
+                          _("Slot %s too big for destination"), key);
+           continue;
+       }
 
-            if (virStrToLong_i(domain, NULL, 16, &domainID) < 0)
-                goto skippci;
-            if (virStrToLong_i(bus, NULL, 16, &busID) < 0)
-                goto skippci;
-            if (virStrToLong_i(slot, NULL, 16, &slotID) < 0)
-                goto skippci;
-            if (virStrToLong_i(func, NULL, 16, &funcID) < 0)
-                goto skippci;
-            if (!(hostdev = virDomainHostdevDefNew()))
-               return -1;
+       key = nextkey + 1;
+       if (strlen(key) != 1)
+           continue;
+       if (virStrncpy(func, key, 1, sizeof(func)) == NULL) {
+           virReportError(VIR_ERR_INTERNAL_ERROR,
+                          _("Function %s too big for destination"), key);
+           continue;
+       }
 
-            hostdev->managed = false;
-            hostdev->source.subsys.type = VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI;
-            hostdev->source.subsys.u.pci.addr.domain = domainID;
-            hostdev->source.subsys.u.pci.addr.bus = busID;
-            hostdev->source.subsys.u.pci.addr.slot = slotID;
-            hostdev->source.subsys.u.pci.addr.function = funcID;
+       if (virStrToLong_i(domain, NULL, 16, &domainID) < 0)
+           continue;
+       if (virStrToLong_i(bus, NULL, 16, &busID) < 0)
+           continue;
+       if (virStrToLong_i(slot, NULL, 16, &slotID) < 0)
+           continue;
+       if (virStrToLong_i(func, NULL, 16, &funcID) < 0)
+           continue;
+       if (!(hostdev = virDomainHostdevDefNew()))
+          return -1;
 
-            if (VIR_APPEND_ELEMENT(def->hostdevs, def->nhostdevs, hostdev) < 0) {
-                virDomainHostdevDefFree(hostdev);
-                return -1;
-            }
+       hostdev->managed = false;
+       hostdev->source.subsys.type = VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI;
+       hostdev->source.subsys.u.pci.addr.domain = domainID;
+       hostdev->source.subsys.u.pci.addr.bus = busID;
+       hostdev->source.subsys.u.pci.addr.slot = slotID;
+       hostdev->source.subsys.u.pci.addr.function = funcID;
 
-        skippci:
-            list = list->next;
-        }
+       if (VIR_APPEND_ELEMENT(def->hostdevs, def->nhostdevs, hostdev) < 0) {
+           virDomainHostdevDefFree(hostdev);
+           return -1;
+       }
     }
 
     return 0;
@@ -595,7 +569,6 @@ xenParseVfb(virConfPtr conf, virDomainDefPtr def)
     int val;
     char *listenAddr = NULL;
     int hvm = def->os.type == VIR_DOMAIN_OSTYPE_HVM;
-    virConfValuePtr list;
     virDomainGraphicsDefPtr graphics = NULL;
 
     if (hvm) {
@@ -651,17 +624,20 @@ xenParseVfb(virConfPtr conf, virDomainDefPtr def)
     }
 
     if (!hvm && def->graphics == NULL) { /* New PV guests use this format */
-        list = virConfGetValue(conf, "vfb");
-        if (list && list->type == VIR_CONF_LIST &&
-            list->list && list->list->type == VIR_CONF_STRING &&
-            list->list->str) {
+        char **vfbs = NULL, **entries;
+
+        if (virConfGetValueStringList(conf, "vfb", false, &vfbs) <= 0)
+            return 0;
+
+        for (entries = vfbs; *entries; entries++) {
             char vfb[MAX_VFB];
             char *key = vfb;
+            char *entry = *entries;
 
-            if (virStrcpyStatic(vfb, list->list->str) == NULL) {
+            if (virStrcpyStatic(vfb, entry) == NULL) {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
                                _("VFB %s too big for destination"),
-                               list->list->str);
+                               entry);
                 goto cleanup;
             }
 
@@ -751,6 +727,9 @@ xenParseCharDev(virConfPtr conf, virDomainDefPtr def, const char *nativeFormat)
     virDomainChrDefPtr chr = NULL;
 
     if (def->os.type == VIR_DOMAIN_OSTYPE_HVM) {
+        char **serials = NULL, **entries;
+        int portnum = -1;
+
         if (xenConfigGetString(conf, "parallel", &str, NULL) < 0)
             goto cleanup;
         if (str && STRNEQ(str, "none") &&
@@ -768,39 +747,7 @@ xenParseCharDev(virConfPtr conf, virDomainDefPtr def, const char *nativeFormat)
         }
 
         /* Try to get the list of values to support multiple serial ports */
-        value = virConfGetValue(conf, "serial");
-        if (value && value->type == VIR_CONF_LIST) {
-            int portnum = -1;
-
-            if (STREQ(nativeFormat, XEN_CONFIG_FORMAT_XM)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("Multiple serial devices are not supported by xen-xm"));
-                goto cleanup;
-            }
-
-            value = value->list;
-            while (value) {
-                char *port = NULL;
-
-                if ((value->type != VIR_CONF_STRING) || (value->str == NULL))
-                    goto cleanup;
-                port = value->str;
-                portnum++;
-                if (STREQ(port, "none")) {
-                    value = value->next;
-                    continue;
-                }
-
-                if (!(chr = xenParseSxprChar(port, NULL)))
-                    goto cleanup;
-                chr->deviceType = VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL;
-                chr->target.port = portnum;
-                if (VIR_APPEND_ELEMENT(def->serials, def->nserials, chr) < 0)
-                    goto cleanup;
-
-                value = value->next;
-            }
-        } else {
+        if (virConfGetValueStringList(conf, "serial", false, &serials) <= 0) {
             /* If domain is not using multiple serial ports we parse data old way */
             if (xenConfigGetString(conf, "serial", &str, NULL) < 0)
                 goto cleanup;
@@ -815,6 +762,31 @@ xenParseCharDev(virConfPtr conf, virDomainDefPtr def, const char *nativeFormat)
                 def->serials[0] = chr;
                 def->nserials++;
             }
+
+            return 0;
+        }
+
+        if (STREQ(nativeFormat, XEN_CONFIG_FORMAT_XM)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("Multiple serial devices are not supported by xen-xm"));
+            goto cleanup;
+        }
+
+        for (entries = serials; *entries; entries++) {
+            char *port = *entries;
+
+            portnum++;
+            if (STREQ(port, "none")) {
+                value = value->next;
+                continue;
+            }
+
+            if (!(chr = xenParseSxprChar(port, NULL)))
+                goto cleanup;
+            chr->deviceType = VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL;
+            chr->target.port = portnum;
+            if (VIR_APPEND_ELEMENT(def->serials, def->nserials, chr) < 0)
+                goto cleanup;
         }
     } else {
         if (VIR_ALLOC_N(def->consoles, 1) < 0)
@@ -838,191 +810,186 @@ xenParseCharDev(virConfPtr conf, virDomainDefPtr def, const char *nativeFormat)
 static int
 xenParseVif(virConfPtr conf, virDomainDefPtr def, const char *vif_typename)
 {
+    char **vifs = NULL, **entries;
     char *script = NULL;
     virDomainNetDefPtr net = NULL;
-    virConfValuePtr list = virConfGetValue(conf, "vif");
 
-    if (list && list->type == VIR_CONF_LIST) {
-        list = list->list;
-        while (list) {
-            char model[10];
-            char type[10];
-            char ip[128];
-            char mac[18];
-            char bridge[50];
-            char vifname[50];
-            char rate[50];
-            char *key;
+    if (virConfGetValueStringList(conf, "vif", false, &vifs) <= 0)
+        return 0;
 
-            bridge[0] = '\0';
-            mac[0] = '\0';
-            ip[0] = '\0';
-            model[0] = '\0';
-            type[0] = '\0';
-            vifname[0] = '\0';
-            rate[0] = '\0';
+    for (entries = vifs; *entries; entries++) {
+        char model[10];
+        char type[10];
+        char ip[128];
+        char mac[18];
+        char bridge[50];
+        char vifname[50];
+        char rate[50];
+        char *key = *entries;
 
-            if ((list->type != VIR_CONF_STRING) || (list->str == NULL))
+        bridge[0] = '\0';
+        mac[0] = '\0';
+        ip[0] = '\0';
+        model[0] = '\0';
+        type[0] = '\0';
+        vifname[0] = '\0';
+        rate[0] = '\0';
+
+        while (key) {
+            char *data;
+            char *nextkey = strchr(key, ',');
+
+            if (!(data = strchr(key, '=')))
                 goto skipnic;
+            data++;
 
-            key = list->str;
-            while (key) {
-                char *data;
-                char *nextkey = strchr(key, ',');
-
-                if (!(data = strchr(key, '=')))
-                    goto skipnic;
-                data++;
-
-                if (STRPREFIX(key, "mac=")) {
-                    int len = nextkey ? (nextkey - data) : sizeof(mac) - 1;
-                    if (virStrncpy(mac, data, len, sizeof(mac)) == NULL) {
-                        virReportError(VIR_ERR_INTERNAL_ERROR,
-                                       _("MAC address %s too big for destination"),
-                                       data);
-                        goto skipnic;
-                    }
-                } else if (STRPREFIX(key, "bridge=")) {
-                    int len = nextkey ? (nextkey - data) : sizeof(bridge) - 1;
-                    if (virStrncpy(bridge, data, len, sizeof(bridge)) == NULL) {
-                        virReportError(VIR_ERR_INTERNAL_ERROR,
-                                       _("Bridge %s too big for destination"),
-                                       data);
-                        goto skipnic;
-                    }
-                } else if (STRPREFIX(key, "script=")) {
-                    int len = nextkey ? (nextkey - data) : strlen(data);
-                    VIR_FREE(script);
-                    if (VIR_STRNDUP(script, data, len) < 0)
-                        goto cleanup;
-                } else if (STRPREFIX(key, "model=")) {
-                    int len = nextkey ? (nextkey - data) : sizeof(model) - 1;
-                    if (virStrncpy(model, data, len, sizeof(model)) == NULL) {
-                        virReportError(VIR_ERR_INTERNAL_ERROR,
-                                       _("Model %s too big for destination"),
-                                       data);
-                        goto skipnic;
-                    }
-                } else if (STRPREFIX(key, "type=")) {
-                    int len = nextkey ? (nextkey - data) : sizeof(type) - 1;
-                    if (virStrncpy(type, data, len, sizeof(type)) == NULL) {
-                        virReportError(VIR_ERR_INTERNAL_ERROR,
-                                       _("Type %s too big for destination"),
-                                       data);
-                        goto skipnic;
-                    }
-                } else if (STRPREFIX(key, "vifname=")) {
-                    int len = nextkey ? (nextkey - data) : sizeof(vifname) - 1;
-                    if (virStrncpy(vifname, data, len, sizeof(vifname)) == NULL) {
-                        virReportError(VIR_ERR_INTERNAL_ERROR,
-                                       _("Vifname %s too big for destination"),
-                                       data);
-                        goto skipnic;
-                    }
-                } else if (STRPREFIX(key, "ip=")) {
-                    int len = nextkey ? (nextkey - data) : sizeof(ip) - 1;
-                    if (virStrncpy(ip, data, len, sizeof(ip)) == NULL) {
-                        virReportError(VIR_ERR_INTERNAL_ERROR,
-                                       _("IP %s too big for destination"), data);
-                        goto skipnic;
-                    }
-                } else if (STRPREFIX(key, "rate=")) {
-                    int len = nextkey ? (nextkey - data) : sizeof(rate) - 1;
-                    if (virStrncpy(rate, data, len, sizeof(rate)) == NULL) {
-                        virReportError(VIR_ERR_INTERNAL_ERROR,
-                                       _("rate %s too big for destination"), data);
-                        goto skipnic;
-                    }
-                }
-
-                while (nextkey && (nextkey[0] == ',' ||
-                                   nextkey[0] == ' ' ||
-                                   nextkey[0] == '\t'))
-                    nextkey++;
-                key = nextkey;
-            }
-
-            if (VIR_ALLOC(net) < 0)
-                goto cleanup;
-
-            if (mac[0]) {
-                if (virMacAddrParse(mac, &net->mac) < 0) {
+            if (STRPREFIX(key, "mac=")) {
+                int len = nextkey ? (nextkey - data) : sizeof(mac) - 1;
+                if (virStrncpy(mac, data, len, sizeof(mac)) == NULL) {
                     virReportError(VIR_ERR_INTERNAL_ERROR,
-                                   _("malformed mac address '%s'"), mac);
+                                   _("MAC address %s too big for destination"),
+                                   data);
+                    goto skipnic;
+                }
+            } else if (STRPREFIX(key, "bridge=")) {
+                int len = nextkey ? (nextkey - data) : sizeof(bridge) - 1;
+                if (virStrncpy(bridge, data, len, sizeof(bridge)) == NULL) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   _("Bridge %s too big for destination"),
+                                   data);
+                    goto skipnic;
+                }
+            } else if (STRPREFIX(key, "script=")) {
+                int len = nextkey ? (nextkey - data) : strlen(data);
+                VIR_FREE(script);
+                if (VIR_STRNDUP(script, data, len) < 0)
                     goto cleanup;
+            } else if (STRPREFIX(key, "model=")) {
+                int len = nextkey ? (nextkey - data) : sizeof(model) - 1;
+                if (virStrncpy(model, data, len, sizeof(model)) == NULL) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   _("Model %s too big for destination"),
+                                   data);
+                    goto skipnic;
+                }
+            } else if (STRPREFIX(key, "type=")) {
+                int len = nextkey ? (nextkey - data) : sizeof(type) - 1;
+                if (virStrncpy(type, data, len, sizeof(type)) == NULL) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   _("Type %s too big for destination"),
+                                   data);
+                    goto skipnic;
+                }
+            } else if (STRPREFIX(key, "vifname=")) {
+                int len = nextkey ? (nextkey - data) : sizeof(vifname) - 1;
+                if (virStrncpy(vifname, data, len, sizeof(vifname)) == NULL) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   _("Vifname %s too big for destination"),
+                                   data);
+                    goto skipnic;
+                }
+            } else if (STRPREFIX(key, "ip=")) {
+                int len = nextkey ? (nextkey - data) : sizeof(ip) - 1;
+                if (virStrncpy(ip, data, len, sizeof(ip)) == NULL) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   _("IP %s too big for destination"), data);
+                    goto skipnic;
+                }
+            } else if (STRPREFIX(key, "rate=")) {
+                int len = nextkey ? (nextkey - data) : sizeof(rate) - 1;
+                if (virStrncpy(rate, data, len, sizeof(rate)) == NULL) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   _("rate %s too big for destination"), data);
+                    goto skipnic;
                 }
             }
 
-            if (bridge[0] || STREQ_NULLABLE(script, "vif-bridge") ||
-                STREQ_NULLABLE(script, "vif-vnic")) {
-                net->type = VIR_DOMAIN_NET_TYPE_BRIDGE;
-            } else {
-                net->type = VIR_DOMAIN_NET_TYPE_ETHERNET;
-            }
-
-            if (net->type == VIR_DOMAIN_NET_TYPE_BRIDGE) {
-                if (bridge[0] && VIR_STRDUP(net->data.bridge.brname, bridge) < 0)
-                    goto cleanup;
-            }
-            if (ip[0]) {
-                char **ip_list = virStringSplit(ip, " ", 0);
-                size_t i;
-
-                if (!ip_list)
-                    goto cleanup;
-
-                for (i = 0; ip_list[i]; i++) {
-                    if (virDomainNetAppendIPAddress(net, ip_list[i], 0, 0) < 0) {
-                        virStringListFree(ip_list);
-                        goto cleanup;
-                    }
-                }
-                virStringListFree(ip_list);
-            }
-
-            if (script && script[0] &&
-                VIR_STRDUP(net->script, script) < 0)
-                goto cleanup;
-
-            if (model[0] &&
-                VIR_STRDUP(net->model, model) < 0)
-                goto cleanup;
-
-            if (!model[0] && type[0] && STREQ(type, vif_typename) &&
-                VIR_STRDUP(net->model, "netfront") < 0)
-                goto cleanup;
-
-            if (vifname[0] &&
-                VIR_STRDUP(net->ifname, vifname) < 0)
-                goto cleanup;
-
-            if (rate[0]) {
-                virNetDevBandwidthPtr bandwidth;
-                unsigned long long kbytes_per_sec;
-
-                if (xenParseSxprVifRate(rate, &kbytes_per_sec) < 0)
-                    goto cleanup;
-
-                if (VIR_ALLOC(bandwidth) < 0)
-                    goto cleanup;
-                if (VIR_ALLOC(bandwidth->out) < 0) {
-                    VIR_FREE(bandwidth);
-                    goto cleanup;
-                }
-
-                bandwidth->out->average = kbytes_per_sec;
-                net->bandwidth = bandwidth;
-            }
-
-            if (VIR_APPEND_ELEMENT(def->nets, def->nnets, net) < 0)
-                goto cleanup;
-
-        skipnic:
-            list = list->next;
-            virDomainNetDefFree(net);
-            net = NULL;
-            VIR_FREE(script);
+            while (nextkey && (nextkey[0] == ',' ||
+                               nextkey[0] == ' ' ||
+                               nextkey[0] == '\t'))
+                nextkey++;
+            key = nextkey;
         }
+
+        if (VIR_ALLOC(net) < 0)
+            goto cleanup;
+
+        if (mac[0]) {
+            if (virMacAddrParse(mac, &net->mac) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("malformed mac address '%s'"), mac);
+                goto cleanup;
+            }
+        }
+
+        if (bridge[0] || STREQ_NULLABLE(script, "vif-bridge") ||
+            STREQ_NULLABLE(script, "vif-vnic")) {
+            net->type = VIR_DOMAIN_NET_TYPE_BRIDGE;
+        } else {
+            net->type = VIR_DOMAIN_NET_TYPE_ETHERNET;
+        }
+
+        if (net->type == VIR_DOMAIN_NET_TYPE_BRIDGE) {
+            if (bridge[0] && VIR_STRDUP(net->data.bridge.brname, bridge) < 0)
+                goto cleanup;
+        }
+        if (ip[0]) {
+            char **ip_list = virStringSplit(ip, " ", 0);
+            size_t i;
+
+            if (!ip_list)
+                goto cleanup;
+
+            for (i = 0; ip_list[i]; i++) {
+                if (virDomainNetAppendIPAddress(net, ip_list[i], 0, 0) < 0) {
+                    virStringListFree(ip_list);
+                    goto cleanup;
+                }
+            }
+            virStringListFree(ip_list);
+        }
+
+        if (script && script[0] &&
+            VIR_STRDUP(net->script, script) < 0)
+            goto cleanup;
+
+        if (model[0] &&
+            VIR_STRDUP(net->model, model) < 0)
+            goto cleanup;
+
+        if (!model[0] && type[0] && STREQ(type, vif_typename) &&
+            VIR_STRDUP(net->model, "netfront") < 0)
+            goto cleanup;
+
+        if (vifname[0] &&
+            VIR_STRDUP(net->ifname, vifname) < 0)
+            goto cleanup;
+
+        if (rate[0]) {
+            virNetDevBandwidthPtr bandwidth;
+            unsigned long long kbytes_per_sec;
+
+            if (xenParseSxprVifRate(rate, &kbytes_per_sec) < 0)
+                goto cleanup;
+
+            if (VIR_ALLOC(bandwidth) < 0)
+                goto cleanup;
+            if (VIR_ALLOC(bandwidth->out) < 0) {
+                VIR_FREE(bandwidth);
+                goto cleanup;
+            }
+
+            bandwidth->out->average = kbytes_per_sec;
+            net->bandwidth = bandwidth;
+        }
+
+        if (VIR_APPEND_ELEMENT(def->nets, def->nnets, net) < 0)
+            goto cleanup;
+
+    skipnic:
+        virDomainNetDefFree(net);
+        net = NULL;
+        VIR_FREE(script);
     }
 
     return 0;
