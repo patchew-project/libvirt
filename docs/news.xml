@@ -93,6 +93,14 @@
           secret-event, pool-event and nodedev-event)
         </description>
       </change>
+      <change>
+        <summary>
+          capabilities: Provide info about host IOMMU support
+        </summary>
+        <description>
+          Capabilities XML now provide information about host IOMMU support.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
