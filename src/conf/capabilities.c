@@ -1020,6 +1020,8 @@ virCapabilitiesFormatXML(virCapsPtr caps)
         }
         virBufferAdjustIndent(&buf, -2);
         virBufferAddLit(&buf, "</power_management>\n");
+        virBufferAsprintf(&buf, "<iommu support='%s'/>\n",
+                          caps->host.iommu  ? "yes" : "no");
     } else {
         /* The host does not support any PM feature. */
         virBufferAddLit(&buf, "<power_management/>\n");
@@ -1742,4 +1744,10 @@ virCapabilitiesInitCaches(virCapsPtr caps)
     virCapsHostCacheBankFree(bank);
     virBitmapFree(cpus);
     return ret;
+}
+
+int
+virCapabilitiesHostInitIOMMU(virCapsPtr caps)
+{
+    return caps->host.iommu = virPCIHasIOMMU();
 }

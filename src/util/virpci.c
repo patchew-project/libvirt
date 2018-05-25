@@ -3288,3 +3288,22 @@ virPCIEDeviceInfoFree(virPCIEDeviceInfoPtr dev)
     VIR_FREE(dev->link_sta);
     VIR_FREE(dev);
 }
+
+bool
+virPCIHasIOMMU(void)
+{
+    struct stat sb;
+
+    /* We can only check on newer kernels with iommu groups & vfio */
+    if (stat("/sys/kernel/iommu_groups", &sb) < 0)
+        return false;
+
+    if (!S_ISDIR(sb.st_mode))
+        return false;
+
+    /* Check if folder is empty */
+    if (sb.st_nlink <= 2)
+        return false;
+
+    return true;
+}

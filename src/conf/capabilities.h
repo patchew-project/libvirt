@@ -183,6 +183,7 @@ struct _virCapsHost {
     int nPagesSize;             /* size of pagesSize array */
     unsigned int *pagesSize;    /* page sizes support on the system */
     unsigned char host_uuid[VIR_UUID_BUFLEN];
+    int iommu;
 };
 
 typedef int (*virDomainDefNamespaceParse)(xmlDocPtr, xmlNodePtr,
@@ -326,5 +327,9 @@ bool virCapsHostCacheBankEquals(virCapsHostCacheBankPtr a,
 void virCapsHostCacheBankFree(virCapsHostCacheBankPtr ptr);
 
 int virCapabilitiesInitCaches(virCapsPtr caps);
+
+int virCapabilitiesInitCaches(virCapsPtr caps);
+
+int virCapabilitiesHostInitIOMMU(virCapsPtr caps);
 
 #endif /* __VIR_CAPABILITIES_H */

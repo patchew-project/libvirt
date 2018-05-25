@@ -253,4 +253,6 @@ void virPCIEDeviceInfoFree(virPCIEDeviceInfoPtr dev);
 ssize_t virPCIGetMdevTypes(const char *sysfspath,
                            virMediatedDeviceType ***types);
 
+bool virPCIHasIOMMU(void);
+
 #endif /* __VIR_PCI_H__ */

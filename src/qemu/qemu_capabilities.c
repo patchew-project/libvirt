@@ -948,6 +948,10 @@ virQEMUCapsInit(virFileCachePtr cache)
     if (virCapabilitiesInitPages(caps) < 0)
         VIR_WARN("Failed to get pages info");
 
+    /* Add IOMMU info */
+    if (virCapabilitiesHostInitIOMMU(caps) < 0)
+        VIR_WARN("Failed to get iommmu info");
+
     /* Add domain migration transport URIs */
     virCapabilitiesAddHostMigrateTransport(caps, "tcp");
     virCapabilitiesAddHostMigrateTransport(caps, "rdma");
