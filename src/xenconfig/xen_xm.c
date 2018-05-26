@@ -112,172 +112,168 @@ xenParseXMDisk(virConfPtr conf, virDomainDefPtr def)
 {
     virDomainDiskDefPtr disk = NULL;
     int hvm = def->os.type == VIR_DOMAIN_OSTYPE_HVM;
-    virConfValuePtr list = virConfGetValue(conf, "disk");
+    char **disks = NULL, **entries;
 
-    if (list && list->type == VIR_CONF_LIST) {
-        list = list->list;
-        while (list) {
-            char *head;
-            char *offset;
-            char *tmp;
-            const char *src;
+    if (virConfGetValueStringList(conf, "disk", false, &disks) < 0)
+        goto cleanup;
 
-            if ((list->type != VIR_CONF_STRING) || (list->str == NULL))
-                goto skipdisk;
+    for (entries = disks; *entries; entries++) {
+        char *head = *entries;
+        char *offset;
+        char *tmp;
+        const char *src;
 
-            head = list->str;
-            if (!(disk = virDomainDiskDefNew(NULL)))
-                return -1;
+        if (!(disk = virDomainDiskDefNew(NULL)))
+            return -1;
 
-            /*
-             * Disks have 3 components, SOURCE,DEST-DEVICE,MODE
-             * eg, phy:/dev/HostVG/XenGuest1,xvda,w
-             * The SOURCE is usually prefixed with a driver type,
-             * and optionally driver sub-type
-             * The DEST-DEVICE is optionally post-fixed with disk type
-             */
+        /*
+         * Disks have 3 components, SOURCE,DEST-DEVICE,MODE
+         * eg, phy:/dev/HostVG/XenGuest1,xvda,w
+         * The SOURCE is usually prefixed with a driver type,
+         * and optionally driver sub-type
+         * The DEST-DEVICE is optionally post-fixed with disk type
+         */
 
-            /* Extract the source file path*/
-            if (!(offset = strchr(head, ',')))
-                goto skipdisk;
+        /* Extract the source file path*/
+        if (!(offset = strchr(head, ',')))
+            goto skipdisk;
 
-            if (offset == head) {
-                /* No source file given, eg CDROM with no media */
-                ignore_value(virDomainDiskSetSource(disk, NULL));
-            } else {
-                if (VIR_STRNDUP(tmp, head, offset - head) < 0)
+        if (offset == head) {
+            /* No source file given, eg CDROM with no media */
+            ignore_value(virDomainDiskSetSource(disk, NULL));
+        } else {
+            if (VIR_STRNDUP(tmp, head, offset - head) < 0)
+                goto cleanup;
+
+            if (virDomainDiskSetSource(disk, tmp) < 0) {
+                VIR_FREE(tmp);
+                goto cleanup;
+            }
+            VIR_FREE(tmp);
+        }
+
+        head = offset + 1;
+        /* Remove legacy ioemu: junk */
+        if (STRPREFIX(head, "ioemu:"))
+            head = head + 6;
+
+        /* Extract the dest device name */
+        if (!(offset = strchr(head, ',')))
+            goto skipdisk;
+
+        if (VIR_ALLOC_N(disk->dst, (offset - head) + 1) < 0)
+            goto cleanup;
+
+        if (virStrncpy(disk->dst, head, offset - head,
+                       (offset - head) + 1) == NULL) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Dest file %s too big for destination"), head);
+            goto cleanup;
+        }
+
+        head = offset + 1;
+        /* Extract source driver type */
+        src = virDomainDiskGetSource(disk);
+        if (src) {
+            size_t len;
+            /* The main type  phy:, file:, tap: ... */
+            if ((tmp = strchr(src, ':')) != NULL) {
+                len = tmp - src;
+                if (VIR_STRNDUP(tmp, src, len) < 0)
                     goto cleanup;
 
-                if (virDomainDiskSetSource(disk, tmp) < 0) {
+                if (virDomainDiskSetDriver(disk, tmp) < 0) {
                     VIR_FREE(tmp);
                     goto cleanup;
                 }
                 VIR_FREE(tmp);
+
+                /* Strip the prefix we found off the source file name */
+                if (virDomainDiskSetSource(disk, src + len + 1) < 0)
+                    goto cleanup;
+
+                src = virDomainDiskGetSource(disk);
             }
 
-            head = offset + 1;
-            /* Remove legacy ioemu: junk */
-            if (STRPREFIX(head, "ioemu:"))
-                head = head + 6;
+            /* And the sub-type for tap:XXX: type */
+            if (STREQ_NULLABLE(virDomainDiskGetDriver(disk), "tap") ||
+                STREQ_NULLABLE(virDomainDiskGetDriver(disk), "tap2")) {
+                char *driverType;
 
-            /* Extract the dest device name */
-            if (!(offset = strchr(head, ',')))
-                goto skipdisk;
+                if (!(tmp = strchr(src, ':')))
+                    goto skipdisk;
+                len = tmp - src;
 
-            if (VIR_ALLOC_N(disk->dst, (offset - head) + 1) < 0)
-                goto cleanup;
+                if (VIR_STRNDUP(driverType, src, len) < 0)
+                    goto cleanup;
 
-            if (virStrncpy(disk->dst, head, offset - head,
-                           (offset - head) + 1) == NULL) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("Dest file %s too big for destination"), head);
-                goto cleanup;
-            }
-
-            head = offset + 1;
-            /* Extract source driver type */
-            src = virDomainDiskGetSource(disk);
-            if (src) {
-                size_t len;
-                /* The main type  phy:, file:, tap: ... */
-                if ((tmp = strchr(src, ':')) != NULL) {
-                    len = tmp - src;
-                    if (VIR_STRNDUP(tmp, src, len) < 0)
-                        goto cleanup;
-
-                    if (virDomainDiskSetDriver(disk, tmp) < 0) {
-                        VIR_FREE(tmp);
-                        goto cleanup;
-                    }
-                    VIR_FREE(tmp);
-
-                    /* Strip the prefix we found off the source file name */
-                    if (virDomainDiskSetSource(disk, src + len + 1) < 0)
-                        goto cleanup;
-
-                    src = virDomainDiskGetSource(disk);
+                if (STREQ(driverType, "aio"))
+                    virDomainDiskSetFormat(disk, VIR_STORAGE_FILE_RAW);
+                else
+                    virDomainDiskSetFormat(disk,
+                                           virStorageFileFormatTypeFromString(driverType));
+                VIR_FREE(driverType);
+                if (virDomainDiskGetFormat(disk) <= 0) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   _("Unknown driver type %s"),
+                                   src);
+                    goto cleanup;
                 }
 
-                /* And the sub-type for tap:XXX: type */
-                if (STREQ_NULLABLE(virDomainDiskGetDriver(disk), "tap") ||
-                    STREQ_NULLABLE(virDomainDiskGetDriver(disk), "tap2")) {
-                    char *driverType;
-
-                    if (!(tmp = strchr(src, ':')))
-                        goto skipdisk;
-                    len = tmp - src;
-
-                    if (VIR_STRNDUP(driverType, src, len) < 0)
-                        goto cleanup;
-
-                    if (STREQ(driverType, "aio"))
-                        virDomainDiskSetFormat(disk, VIR_STORAGE_FILE_RAW);
-                    else
-                        virDomainDiskSetFormat(disk,
-                                               virStorageFileFormatTypeFromString(driverType));
-                    VIR_FREE(driverType);
-                    if (virDomainDiskGetFormat(disk) <= 0) {
-                        virReportError(VIR_ERR_INTERNAL_ERROR,
-                                       _("Unknown driver type %s"),
-                                       src);
-                        goto cleanup;
-                    }
-
-                    /* Strip the prefix we found off the source file name */
-                    if (virDomainDiskSetSource(disk, src + len + 1) < 0)
-                        goto cleanup;
-                    src = virDomainDiskGetSource(disk);
-                }
+                /* Strip the prefix we found off the source file name */
+                if (virDomainDiskSetSource(disk, src + len + 1) < 0)
+                    goto cleanup;
+                src = virDomainDiskGetSource(disk);
             }
-
-            /* No source, or driver name, so fix to phy: */
-            if (!virDomainDiskGetDriver(disk) &&
-                virDomainDiskSetDriver(disk, "phy") < 0)
-                goto cleanup;
-
-            /* phy: type indicates a block device */
-            virDomainDiskSetType(disk,
-                                 STREQ(virDomainDiskGetDriver(disk), "phy") ?
-                                 VIR_STORAGE_TYPE_BLOCK :
-                                 VIR_STORAGE_TYPE_FILE);
-
-            /* Check for a :cdrom/:disk postfix */
-            disk->device = VIR_DOMAIN_DISK_DEVICE_DISK;
-            if ((tmp = strchr(disk->dst, ':')) != NULL) {
-                if (STREQ(tmp, ":cdrom"))
-                    disk->device = VIR_DOMAIN_DISK_DEVICE_CDROM;
-                tmp[0] = '\0';
-            }
-
-            if (STRPREFIX(disk->dst, "xvd") || !hvm) {
-                disk->bus = VIR_DOMAIN_DISK_BUS_XEN;
-            } else if (STRPREFIX(disk->dst, "sd")) {
-                disk->bus = VIR_DOMAIN_DISK_BUS_SCSI;
-            } else {
-                disk->bus = VIR_DOMAIN_DISK_BUS_IDE;
-            }
-
-            if (STREQ(head, "r") ||
-                STREQ(head, "ro"))
-                disk->src->readonly = true;
-            else if ((STREQ(head, "w!")) ||
-                     (STREQ(head, "!")))
-                disk->src->shared = true;
-
-            /* Maintain list in sorted order according to target device name */
-            if (VIR_APPEND_ELEMENT(def->disks, def->ndisks, disk) < 0)
-                goto cleanup;
-
-            skipdisk:
-            list = list->next;
-            virDomainDiskDefFree(disk);
-            disk = NULL;
         }
+
+        /* No source, or driver name, so fix to phy: */
+        if (!virDomainDiskGetDriver(disk) &&
+            virDomainDiskSetDriver(disk, "phy") < 0)
+            goto cleanup;
+
+        /* phy: type indicates a block device */
+        virDomainDiskSetType(disk,
+                             STREQ(virDomainDiskGetDriver(disk), "phy") ?
+                             VIR_STORAGE_TYPE_BLOCK :
+                             VIR_STORAGE_TYPE_FILE);
+
+        /* Check for a :cdrom/:disk postfix */
+        disk->device = VIR_DOMAIN_DISK_DEVICE_DISK;
+        if ((tmp = strchr(disk->dst, ':')) != NULL) {
+            if (STREQ(tmp, ":cdrom"))
+                disk->device = VIR_DOMAIN_DISK_DEVICE_CDROM;
+            tmp[0] = '\0';
+        }
+
+        if (STRPREFIX(disk->dst, "xvd") || !hvm) {
+            disk->bus = VIR_DOMAIN_DISK_BUS_XEN;
+        } else if (STRPREFIX(disk->dst, "sd")) {
+            disk->bus = VIR_DOMAIN_DISK_BUS_SCSI;
+        } else {
+            disk->bus = VIR_DOMAIN_DISK_BUS_IDE;
+        }
+
+        if (STREQ(head, "r") ||
+            STREQ(head, "ro"))
+            disk->src->readonly = true;
+        else if ((STREQ(head, "w!")) ||
+                 (STREQ(head, "!")))
+            disk->src->shared = true;
+
+        /* Maintain list in sorted order according to target device name */
+        if (VIR_APPEND_ELEMENT(def->disks, def->ndisks, disk) < 0)
+            goto cleanup;
+
+        skipdisk:
+        virDomainDiskDefFree(disk);
+        disk = NULL;
     }
 
     return 0;
 
  cleanup:
+    virStringListFree(disks);
     virDomainDiskDefFree(disk);
     return -1;
 }
