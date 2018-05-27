@@ -214,9 +214,20 @@ typedef int
                                             virFreeCallback freecb);
 
 typedef int
+(*virDrvConnectStorageVolEventRegisterAny)(virConnectPtr conn,
+                                           virStorageVolPtr vol,
+                                           int eventID,
+                                           virConnectStorageVolEventGenericCallback cb,
+                                           void *opaque,
+                                           virFreeCallback freecb);
+
+typedef int
 (*virDrvConnectStoragePoolEventDeregisterAny)(virConnectPtr conn,
                                               int callbackID);
 
+typedef int
+(*virDrvConnectStorageVolEventDeregisterAny)(virConnectPtr conn,
+                                             int callbackID);
 
 typedef struct _virStorageDriver virStorageDriver;
 typedef virStorageDriver *virStorageDriverPtr;
@@ -237,6 +248,8 @@ struct _virStorageDriver {
     virDrvConnectFindStoragePoolSources connectFindStoragePoolSources;
     virDrvConnectStoragePoolEventRegisterAny connectStoragePoolEventRegisterAny;
     virDrvConnectStoragePoolEventDeregisterAny connectStoragePoolEventDeregisterAny;
+    virDrvConnectStorageVolEventRegisterAny connectStorageVolEventRegisterAny;
+    virDrvConnectStorageVolEventDeregisterAny connectStorageVolEventDeregisterAny;
     virDrvStoragePoolLookupByName storagePoolLookupByName;
     virDrvStoragePoolLookupByUUID storagePoolLookupByUUID;
     virDrvStoragePoolLookupByVolume storagePoolLookupByVolume;
