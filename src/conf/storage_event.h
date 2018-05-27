@@ -40,6 +40,18 @@ virStoragePoolEventStateRegisterID(virConnectPtr conn,
     ATTRIBUTE_NONNULL(8);
 
 int
+virStorageVolEventStateRegisterID(virConnectPtr conn,
+                                  virObjectEventStatePtr state,
+                                  virStorageVolPtr vol,
+                                  int eventID,
+                                  virConnectStorageVolEventGenericCallback cb,
+                                  void *opaque,
+                                  virFreeCallback freecb,
+                                  int *callbackID)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(5)
+    ATTRIBUTE_NONNULL(8);
+
+int
 virStoragePoolEventStateRegisterClient(virConnectPtr conn,
                                    virObjectEventStatePtr state,
                                    virStoragePoolPtr pool,
@@ -60,5 +72,12 @@ virStoragePoolEventLifecycleNew(const char *name,
 virObjectEventPtr
 virStoragePoolEventRefreshNew(const char *name,
                               const unsigned char *uuid);
+
+virObjectEventPtr
+virStorageVolEventLifecycleNew(const char *pool,
+                               const char *name,
+                               const unsigned char *key,
+                               int type,
+                               int detail);
 
 #endif

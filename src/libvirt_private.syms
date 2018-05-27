@@ -940,6 +940,8 @@ virStorageVolTypeToString;
 virStoragePoolEventLifecycleNew;
 virStoragePoolEventRefreshNew;
 virStoragePoolEventStateRegisterID;
+virStorageVolEventLifecycleNew;
+virStorageVolEventStateRegisterID;
 
 
 # conf/virchrdev.h

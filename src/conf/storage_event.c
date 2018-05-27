@@ -56,12 +56,35 @@ struct _virStoragePoolEventRefresh {
 typedef struct _virStoragePoolEventRefresh virStoragePoolEventRefresh;
 typedef virStoragePoolEventRefresh *virStoragePoolEventRefreshPtr;
 
+struct _virStorageVolEvent {
+    virObjectEvent parent;
+
+    /* Unused attribute to allow for subclass creation */
+    bool dummy;
+};
+typedef struct _virStorageVolEvent virStorageVolEvent;
+typedef virStorageVolEvent *virStorageVolEventPtr;
+
+struct _virStorageVolEventLifecycle {
+    virStorageVolEvent parent;
+
+    int type;
+    int detail;
+};
+typedef struct _virStorageVolEventLifecycle virStorageVolEventLifecycle;
+typedef virStorageVolEventLifecycle *virStorageVolEventLifecyclePtr;
+
 static virClassPtr virStoragePoolEventClass;
 static virClassPtr virStoragePoolEventLifecycleClass;
 static virClassPtr virStoragePoolEventRefreshClass;
 static void virStoragePoolEventDispose(void *obj);
 static void virStoragePoolEventLifecycleDispose(void *obj);
 static void virStoragePoolEventRefreshDispose(void *obj);
+
+static virClassPtr virStorageVolEventClass;
+static virClassPtr virStorageVolEventLifecycleClass;
+static void virStorageVolEventDispose(void *obj);
+static void virStorageVolEventLifecycleDispose(void *obj);
 
 static int
 virStoragePoolEventsOnceInit(void)
@@ -78,7 +101,20 @@ virStoragePoolEventsOnceInit(void)
     return 0;
 }
 
+static int
+virStorageVolEventsOnceInit(void)
+{
+    if (!VIR_CLASS_NEW(virStorageVolEvent, virClassForObjectEvent()))
+        return -1;
+
+    if (!VIR_CLASS_NEW(virStorageVolEventLifecycle, virStorageVolEventClass))
+        return -1;
+
+    return 0;
+}
+
 VIR_ONCE_GLOBAL_INIT(virStoragePoolEvents)
+VIR_ONCE_GLOBAL_INIT(virStorageVolEvents)
 
 static void
 virStoragePoolEventDispose(void *obj)
@@ -103,6 +139,20 @@ virStoragePoolEventRefreshDispose(void *obj)
     VIR_DEBUG("obj=%p", event);
 }
 
+static void
+virStorageVolEventDispose(void *obj)
+{
+    virStorageVolEventPtr event = obj;
+    VIR_DEBUG("obj=%p", event);
+}
+
+
+static void
+virStorageVolEventLifecycleDispose(void *obj)
+{
+    virStorageVolEventLifecyclePtr event = obj;
+    VIR_DEBUG("obj=%p", event);
+}
 
 static void
 virStoragePoolEventDispatchDefaultFunc(virConnectPtr conn,
@@ -147,6 +197,40 @@ virStoragePoolEventDispatchDefaultFunc(virConnectPtr conn,
 }
 
 
+static void
+virStorageVolEventDispatchDefaultFunc(virConnectPtr conn,
+                                      virObjectEventPtr event,
+                                      virConnectObjectEventGenericCallback cb ATTRIBUTE_UNUSED,
+                                      void *cbopaque ATTRIBUTE_UNUSED)
+{
+    virStorageVolPtr vol = virStorageVolLookupByKey(conn,
+                                                    event->meta.key);
+    if (!vol)
+        return;
+
+    switch ((virStorageVolEventID)event->eventID) {
+    case VIR_STORAGE_VOL_EVENT_ID_LIFECYCLE:
+        {
+            virStorageVolEventLifecyclePtr storageVolLifecycleEvent;
+
+            storageVolLifecycleEvent = (virStorageVolEventLifecyclePtr)event;
+            ((virConnectStorageVolEventLifecycleCallback)cb)(conn, vol,
+                                                             storageVolLifecycleEvent->type,
+                                                             storageVolLifecycleEvent->detail,
+                                                             cbopaque);
+            goto cleanup;
+        }
+
+    case VIR_STORAGE_VOL_EVENT_ID_LAST:
+        break;
+    }
+    VIR_WARN("Unexpected event ID %d", event->eventID);
+
+ cleanup:
+    virObjectUnref(vol);
+}
+
+
 /**
  * virStoragePoolEventStateRegisterID:
  * @conn: connection to associate with callback
@@ -184,6 +268,44 @@ virStoragePoolEventStateRegisterID(virConnectPtr conn,
     return virObjectEventStateRegisterID(conn, state, pool ? uuidstr : NULL,
                                          NULL, NULL,
                                          virStoragePoolEventClass, eventID,
+                                         VIR_OBJECT_EVENT_CALLBACK(cb),
+                                         opaque, freecb,
+                                         false, callbackID, false);
+}
+
+/**
+ * virStorageVolEventStateRegisterID:
+ * @conn: connection to associate with callback
+ * @state: object event state
+ * @vol: storage vol to filter on or NULL for all storage volumes
+ * @eventID: ID of the event type to register for
+ * @cb: function to invoke when event occurs
+ * @opaque: data blob to pass to @callback
+ * @freecb: callback to free @opaque
+ * @callbackID: filled with callback ID
+ *
+ * Register the function @cb with connection @conn, from @state, for
+ * events of type @eventID, and return the registration handle in
+ * @callbackID.
+ *
+ * Returns: the number of callbacks now registered, or -1 on error
+ */
+int
+virStorageVolEventStateRegisterID(virConnectPtr conn,
+                                  virObjectEventStatePtr state,
+                                  virStorageVolPtr vol,
+                                  int eventID,
+                                  virConnectStorageVolEventGenericCallback cb,
+                                  void *opaque,
+                                  virFreeCallback freecb,
+                                  int *callbackID)
+{
+    if (virStorageVolEventsInitialize() < 0)
+        return -1;
+
+    return virObjectEventStateRegisterID(conn, state, vol ? vol->key : NULL,
+                                         NULL, NULL,
+                                         virStorageVolEventClass, eventID,
                                          VIR_OBJECT_EVENT_CALLBACK(cb),
                                          opaque, freecb,
                                          false, callbackID, false);
@@ -260,6 +382,39 @@ virStoragePoolEventLifecycleNew(const char *name,
                                     virStoragePoolEventDispatchDefaultFunc,
                                     VIR_STORAGE_POOL_EVENT_ID_LIFECYCLE,
                                     0, name, uuid, uuidstr)))
+        return NULL;
+
+    event->type = type;
+    event->detail = detail;
+
+    return (virObjectEventPtr)event;
+}
+
+/**
+ * virStorageVolEventLifecycleNew:
+ * @name: name of the storage volume object the event describes
+ * @key: key of the storage volume object the event describes
+ * @type: type of lifecycle event
+ * @detail: more details about @type
+ *
+ * Create a new storage volume lifecycle event.
+ */
+virObjectEventPtr
+virStorageVolEventLifecycleNew(const char *pool,
+                               const char *name,
+                               const unsigned char *key,
+                               int type,
+                               int detail)
+{
+    virStorageVolEventLifecyclePtr event;
+
+    if (virStorageVolEventsInitialize() < 0)
+        return NULL;
+
+    if (!(event = virObjectEventNew(virStorageVolEventLifecycleClass,
+                                    virStorageVolEventDispatchDefaultFunc,
+                                    VIR_STORAGE_VOL_EVENT_ID_LIFECYCLE,
+                                    0, name, key, pool)))
         return NULL;
 
     event->type = type;
