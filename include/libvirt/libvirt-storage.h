@@ -496,4 +496,90 @@ typedef void (*virConnectStoragePoolEventLifecycleCallback)(virConnectPtr conn,
                                                             int detail,
                                                             void *opaque);
 
+/**
+ * VIR_STORAGE_VOL_EVENT_CALLBACK:
+ *
+ * Used to cast the event specific callback into the generic one
+ * for use for virConnectStorageVolEventRegisterAny()
+ */
+# define VIR_STORAGE_VOL_EVENT_CALLBACK(cb)((virConnectStorageVolEventGenericCallback)(cb))
+
+/**
+ * virStorageVolEventID:
+ *
+ * An enumeration of supported eventId parameters for
+ * virConnectStorageVolEventRegisterAny(). Each event id determines which
+ * signature of callback function will be used.
+ */
+typedef enum {
+    VIR_STORAGE_VOL_EVENT_ID_LIFECYCLE = 0, /* virConnectStorageVolEventLifecycleCallback */
+
+# ifdef VIR_ENUM_SENTINELS
+    VIR_STORAGE_VOL_EVENT_ID_LAST
+# endif
+} virStorageVolEventID;
+
+/**
+ * virConnectStorageVolEventGenericCallback:
+ * @conn: the connection pointer
+ * @vol: the vol pointer
+ * @opaque: application specified data
+ *
+ * A generic storage vol event callback handler, for use with
+ * virConnectStorageVolEventRegisterAny(). Specific events usually
+ * have a customization with extra parameters, often with @opaque being
+ * passed in a different parameter position; use
+ * VIR_STORAGE_VOL_EVENT_CALLBACK() when registering an appropriate handler.
+ */
+typedef void (*virConnectStorageVolEventGenericCallback)(virConnectPtr conn,
+                                                         virStorageVolPtr vol,
+                                                         void *opaque);
+
+/* Use VIR_STORAGE_VOL_EVENT_CALLBACK() to cast the 'cb' parameter  */
+int virConnectStorageVolEventRegisterAny(virConnectPtr conn,
+                                         virStorageVolPtr vol, /* optional, to filter */
+                                         int eventID,
+                                         virConnectStorageVolEventGenericCallback cb,
+                                         void *opaque,
+                                         virFreeCallback freecb);
+
+int virConnectStorageVolEventDeregisterAny(virConnectPtr conn,
+                                           int callbackID);
+
+/**
+ * virStorageVolEventLifecycleType:
+ *
+ * a virStorageVolEventLifecycleType is emitted during storage vol
+ * lifecycle events
+ */
+typedef enum {
+    VIR_STORAGE_VOL_EVENT_CREATED = 0,
+    VIR_STORAGE_VOL_EVENT_DELETED = 1,
+
+# ifdef VIR_ENUM_SENTINELS
+    VIR_STORAGE_VOL_EVENT_LAST
+# endif
+} virStorageVolEventLifecycleType;
+
+/**
+ * virConnectStorageVolEventLifecycleCallback:
+ * @conn: connection object
+ * @vol: vol on which the event occurred
+ * @event: The specific virStorageVolEventLifeCycleType which occurred
+ * @detail: contains some details on the reason of the event.
+ * @opaque: application specified data
+ *
+ * This callback is called when a vol lifecycle action is performed, like start
+ * or stop.
+ *
+ * The callback signature to use when registering for an event of type
+ * VIR_STORAGE_VOL_EVENT_ID_LIFECYCLE with
+ * virConnectStorageVolEventRegisterAny()
+ */
+typedef void (*virConnectStorageVolEventLifecycleCallback)(virConnectPtr conn,
+                                                           virStorageVolPtr vol,
+                                                           int event,
+                                                           int detail,
+                                                           void *opaque);
+
 #endif /* __VIR_LIBVIRT_STORAGE_H__ */
