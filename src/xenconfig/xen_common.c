@@ -458,14 +458,16 @@ xenParsePCIList(virConfPtr conf, virDomainDefPtr def)
     for (entries = pcis; *entries; entries++) {
         char *entry = *entries;
         virDomainHostdevDefPtr hostdev;
+        int rc;
 
         if (!(hostdev = xenParsePCI(entry)))
             goto cleanup;
 
-        if (VIR_APPEND_ELEMENT(def->hostdevs, def->nhostdevs, hostdev) < 0) {
-            virDomainHostdevDefFree(hostdev);
+        rc = VIR_APPEND_ELEMENT(def->hostdevs, def->nhostdevs, hostdev);
+        virDomainHostdevDefFree(hostdev);
+
+        if (rc < 0)
             goto cleanup;
-        }
     }
 
     ret = 0;
@@ -787,6 +789,7 @@ xenParseCharDev(virConfPtr conf, virDomainDefPtr def, const char *nativeFormat)
 
             for (entries = serials; *entries; entries++) {
                 char *port = *entries;
+                int rc;
 
                 portnum++;
                 if (STREQ(port, "none"))
@@ -796,10 +799,11 @@ xenParseCharDev(virConfPtr conf, virDomainDefPtr def, const char *nativeFormat)
                     goto cleanup;
                 chr->deviceType = VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL;
                 chr->target.port = portnum;
-                if (VIR_APPEND_ELEMENT(def->serials, def->nserials, chr) < 0) {
-                    virDomainChrDefFree(chr);
+                rc = VIR_APPEND_ELEMENT(def->serials, def->nserials, chr);
+                virDomainChrDefFree(chr);
+
+                if (rc < 0)
                     goto cleanup;
-                }
             }
         } else {
             /* If domain is not using multiple serial ports we parse data old way */
@@ -1047,10 +1051,10 @@ xenParseVifList(virConfPtr conf, virDomainDefPtr def, const char *vif_typename)
             goto cleanup;
 
         rc = VIR_APPEND_ELEMENT(def->nets, def->nnets, net);
-        if (rc < 0) {
-            virDomainNetDefFree(net);
+        virDomainNetDefFree(net);
+
+        if (rc < 0)
             goto cleanup;
-        }
     }
 
     ret = 0;
