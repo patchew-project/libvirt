@@ -42,6 +42,7 @@
 #include "virsh-pool.h"
 #include "virxml.h"
 #include "virstring.h"
+#include "virtime.h"
 
 #define VIRSH_COMMON_OPT_POOL_FULL \
     VIRSH_COMMON_OPT_POOL(N_("pool name or uuid"), \
@@ -1772,6 +1773,191 @@ cmdVolPath(vshControl *ctl, const vshCmd *cmd)
     return true;
 }
 
+/*
+ * "vol-event" command
+ */
+VIR_ENUM_DECL(virshVolEvent)
+VIR_ENUM_IMPL(virshVolEvent,
+              VIR_STORAGE_VOL_EVENT_LAST,
+              N_("Created"),
+              N_("Deleted"))
+
+static const char *
+virshVolEventToString(int event)
+{
+    const char *str = virshVolEventTypeToString(event);
+    return str ? _(str) : _("unknown");
+}
+
+struct virshVolEventData {
+    vshControl *ctl;
+    bool loop;
+    bool timestamp;
+    int count;
+    virshVolEventCallback *cb;
+};
+typedef struct virshVolEventData virshVolEventData;
+
+
+static void
+vshEventLifecyclePrint(virConnectPtr conn ATTRIBUTE_UNUSED,
+                       virStorageVolPtr vol,
+                       int event,
+                       int detail ATTRIBUTE_UNUSED,
+                       void *opaque)
+{
+    virshVolEventData *data = opaque;
+
+    if (!data->loop && data->count)
+        return;
+
+    if (data->timestamp) {
+        char timestamp[VIR_TIME_STRING_BUFLEN];
+
+        if (virTimeStringNowRaw(timestamp) < 0)
+            timestamp[0] = '\0';
+
+        vshPrint(data->ctl, _("%s: event 'lifecycle' for storage vol %s: %s\n"),
+                 timestamp,
+                 virStorageVolGetName(vol),
+                 virshVolEventToString(event));
+    } else {
+        vshPrint(data->ctl, _("event 'lifecycle' for storage vol %s: %s\n"),
+                 virStorageVolGetName(vol),
+                 virshVolEventToString(event));
+    }
+
+    data->count++;
+    if (!data->loop)
+        vshEventDone(data->ctl);
+}
+
+virshVolEventCallback virshVolEventCallbacks[] = {
+    { "lifecycle",
+      VIR_STORAGE_VOL_EVENT_CALLBACK(vshEventLifecyclePrint), }
+};
+verify(VIR_STORAGE_VOL_EVENT_ID_LAST == ARRAY_CARDINALITY(virshVolEventCallbacks));
+
+
+static const vshCmdInfo info_vol_event[] = {
+    {.name = "help",
+     .data = N_("Storage Vol Events")
+    },
+    {.name = "desc",
+     .data = N_("List event types, or wait for storage vol events to occur")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_vol_event[] = {
+    {.name = "vol",
+     .type = VSH_OT_STRING,
+     .help = N_("filter by storage vol name or uuid")
+    },
+    {.name = "event",
+     .type = VSH_OT_STRING,
+     .completer = virshVolEventNameCompleter,
+     .help = N_("which event type to wait for")
+    },
+    {.name = "loop",
+     .type = VSH_OT_BOOL,
+     .help = N_("loop until timeout or interrupt, rather than one-shot")
+    },
+    {.name = "timeout",
+     .type = VSH_OT_INT,
+     .help = N_("timeout seconds")
+    },
+    {.name = "list",
+     .type = VSH_OT_BOOL,
+     .help = N_("list valid event types")
+    },
+    {.name = "timestamp",
+     .type = VSH_OT_BOOL,
+     .help = N_("show timestamp for each printed event")
+    },
+    {.name = NULL}
+};
+
+static bool
+cmdVolEvent(vshControl *ctl, const vshCmd *cmd)
+{
+    virStorageVolPtr vol = NULL;
+    bool ret = false;
+    int eventId = -1;
+    int timeout = 0;
+    virshVolEventData data;
+    const char *eventName = NULL;
+    int event;
+    virshControlPtr priv = ctl->privData;
+
+    if (vshCommandOptBool(cmd, "list")) {
+        size_t i;
+
+        for (i = 0; i < VIR_STORAGE_VOL_EVENT_ID_LAST; i++)
+            vshPrint(ctl, "%s\n", virshVolEventCallbacks[i].name);
+        return true;
+    }
+
+    if (vshCommandOptStringReq(ctl, cmd, "event", &eventName) < 0)
+        return false;
+    if (!eventName) {
+        vshError(ctl, "%s", _("either --list or --event <type> is required"));
+        return false;
+    }
+
+    for (event = 0; event < VIR_STORAGE_VOL_EVENT_ID_LAST; event++)
+        if (STREQ(eventName, virshVolEventCallbacks[event].name))
+            break;
+    if (event == VIR_STORAGE_VOL_EVENT_ID_LAST) {
+        vshError(ctl, _("unknown event type %s"), eventName);
+        return false;
+    }
+
+    data.ctl = ctl;
+    data.loop = vshCommandOptBool(cmd, "loop");
+    data.timestamp = vshCommandOptBool(cmd, "timestamp");
+    data.count = 0;
+    data.cb = &virshVolEventCallbacks[event];
+    if (vshCommandOptTimeoutToMs(ctl, cmd, &timeout) < 0)
+        return false;
+
+    if (vshCommandOptBool(cmd, "vol"))
+        vol = virshCommandOptVolBy(ctl, cmd, "vol", NULL, NULL,
+                                   VIRSH_BYUUID);
+
+    if (vshEventStart(ctl, timeout) < 0)
+        goto cleanup;
+
+    if ((eventId = virConnectStorageVolEventRegisterAny(priv->conn, vol, event,
+                                                        data.cb->cb,
+                                                        &data, NULL)) < 0)
+        goto cleanup;
+    switch (vshEventWait(ctl)) {
+    case VSH_EVENT_INTERRUPT:
+        vshPrint(ctl, "%s", _("event loop interrupted\n"));
+        break;
+    case VSH_EVENT_TIMEOUT:
+        vshPrint(ctl, "%s", _("event loop timed out\n"));
+        break;
+    case VSH_EVENT_DONE:
+        break;
+    default:
+        goto cleanup;
+    }
+    vshPrint(ctl, _("events received: %d\n"), data.count);
+    if (data.count)
+        ret = true;
+
+ cleanup:
+    vshEventCleanup(ctl);
+    if (eventId >= 0 &&
+        virConnectStorageVolEventDeregisterAny(priv->conn, eventId) < 0)
+        ret = false;
+    if (vol)
+        virStorageVolFree(vol);
+    return ret;
+}
+
 const vshCmdDef storageVolCmds[] = {
     {.name = "vol-clone",
      .handler = cmdVolClone,
@@ -1867,6 +2053,12 @@ const vshCmdDef storageVolCmds[] = {
      .handler = cmdVolWipe,
      .opts = opts_vol_wipe,
      .info = info_vol_wipe,
+     .flags = 0
+    },
+    {.name = "vol-event",
+     .handler = cmdVolEvent,
+     .opts = opts_vol_event,
+     .info = info_vol_event,
      .flags = 0
     },
     {.name = NULL}

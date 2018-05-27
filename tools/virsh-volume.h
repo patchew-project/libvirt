@@ -38,6 +38,14 @@ virStorageVolPtr virshCommandOptVolBy(vshControl *ctl, const vshCmd *cmd,
     virshCommandOptVolBy(_ctl, _cmd, _optname, _pooloptname, _name, \
                          VIRSH_BYUUID | VIRSH_BYNAME)
 
+struct virshVolEventCallback {
+    const char *name;
+    virConnectStorageVolEventGenericCallback cb;
+};
+typedef struct virshVolEventCallback virshVolEventCallback;
+
+extern virshVolEventCallback virshVolEventCallbacks[];
+
 extern const vshCmdDef storageVolCmds[];
 
 #endif /* VIRSH_VOLUME_H */
