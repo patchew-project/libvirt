@@ -367,6 +367,20 @@ storagePoolEventToString(int event)
 }
 
 static const char *
+storageVolEventToString(int event)
+{
+    switch ((virStorageVolEventLifecycleType) event) {
+        case VIR_STORAGE_VOL_EVENT_CREATED:
+            return "Created";
+        case VIR_STORAGE_VOL_EVENT_DELETED:
+            return "Deleted";
+        case VIR_STORAGE_VOL_EVENT_LAST:
+            break;
+    }
+    return "unknown";
+}
+
+static const char *
 nodeDeviceEventToString(int event)
 {
     switch ((virNodeDeviceEventLifecycleType) event) {
@@ -730,6 +744,19 @@ myStoragePoolEventRefreshCallback(virConnectPtr conn ATTRIBUTE_UNUSED,
     return 0;
 }
 
+static int
+myStorageVolEventCallback(virConnectPtr conn ATTRIBUTE_UNUSED,
+                          virStorageVolPtr vol,
+                          int event,
+                          int detail,
+                          void *opaque ATTRIBUTE_UNUSED)
+{
+    printf("%s EVENT: Storage volume %s %s %d\n", __func__,
+           virStorageVolGetName(vol),
+           storageVolEventToString(event),
+           detail);
+    return 0;
+}
 
 static int
 myNodeDeviceEventCallback(virConnectPtr conn ATTRIBUTE_UNUSED,
@@ -1099,6 +1126,20 @@ struct storagePoolEventData storagePoolEvents[] = {
     STORAGE_POOL_EVENT(VIR_STORAGE_POOL_EVENT_ID_REFRESH, myStoragePoolEventRefreshCallback),
 };
 
+struct storageVolEventData {
+    int event;
+    int id;
+    virConnectStorageVolEventGenericCallback cb;
+    const char *name;
+};
+
+#define STORAGE_VOL_EVENT(event, callback) \
+    {event, -1, VIR_STORAGE_VOL_EVENT_CALLBACK(callback), #event}
+
+struct storageVolEventData storageVolEvents[] = {
+    STORAGE_VOL_EVENT(VIR_STORAGE_VOL_EVENT_ID_LIFECYCLE, myStorageVolEventCallback),
+};
+
 struct nodeDeviceEventData {
     int event;
     int id;
@@ -1132,6 +1173,7 @@ struct secretEventData secretEvents[] = {
 /* make sure that the events are kept in sync */
 verify(ARRAY_CARDINALITY(domainEvents) == VIR_DOMAIN_EVENT_ID_LAST);
 verify(ARRAY_CARDINALITY(storagePoolEvents) == VIR_STORAGE_POOL_EVENT_ID_LAST);
+verify(ARRAY_CARDINALITY(storageVolEvents) == VIR_STORAGE_VOL_EVENT_ID_LAST);
 verify(ARRAY_CARDINALITY(nodeDeviceEvents) == VIR_NODE_DEVICE_EVENT_ID_LAST);
 verify(ARRAY_CARDINALITY(secretEvents) == VIR_SECRET_EVENT_ID_LAST);
 
@@ -1225,6 +1267,22 @@ main(int argc, char **argv)
         }
     }
 
+    /* register common storage volume callbacks */
+    for (i = 0; i < ARRAY_CARDINALITY(storageVolEvents); i++) {
+        struct storageVolEventData *event = storageVolEvents + i;
+
+        event->id = virConnectStorageVolEventRegisterAny(dconn, NULL,
+                                                         event->event,
+                                                         event->cb,
+                                                         strdup(event->name),
+                                                         myFreeFunc);
+
+        if (event->id < 0) {
+            fprintf(stderr, "Failed to register event '%s'\n", event->name);
+            goto cleanup;
+        }
+    }
+
     /* register common node device callbacks */
     for (i = 0; i < ARRAY_CARDINALITY(nodeDeviceEvents); i++) {
         struct nodeDeviceEventData *event = nodeDeviceEvents + i;
@@ -1290,6 +1348,13 @@ main(int argc, char **argv)
     for (i = 0; i < ARRAY_CARDINALITY(storagePoolEvents); i++) {
         if (storagePoolEvents[i].id > 0)
             virConnectStoragePoolEventDeregisterAny(dconn, storagePoolEvents[i].id);
+    }
+
+
+    printf("Deregistering storage volume event callbacks\n");
+    for (i = 0; i < ARRAY_CARDINALITY(storageVolEvents); i++) {
+        if (storageVolEvents[i].id > 0)
+            virConnectStorageVolEventDeregisterAny(dconn, storageVolEvents[i].id);
     }
 
 
