@@ -467,7 +467,22 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
 
     /* CPUs */
     virCommandAddArg(cmd, "-c");
-    virCommandAddArgFormat(cmd, "%d", virDomainDefGetVcpus(def));
+    if (def->cpu && def->cpu->sockets) {
+        if ((bhyveDriverGetCaps(conn) & BHYVE_CAP_CPUTOPOLOGY) != 0) {
+            virCommandAddArgFormat(cmd, "cpus=%d,sockets=%d,cores=%d,threads=%d",
+                                   virDomainDefGetVcpus(def),
+                                   def->cpu->sockets,
+                                   def->cpu->cores,
+                                   def->cpu->threads);
+        } else {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("Installed bhyve binary does not support "
+                             "defining CPU topology"));
+            goto error;
+        }
+    } else {
+        virCommandAddArgFormat(cmd, "%d", virDomainDefGetVcpus(def));
+    }
 
     /* Memory */
     virCommandAddArg(cmd, "-m");
