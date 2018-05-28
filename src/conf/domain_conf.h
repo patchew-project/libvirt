@@ -2662,6 +2662,8 @@ typedef int (*virDomainXMLPrivateDataParseFunc)(xmlXPathContextPtr,
                                                 virDomainObjPtr,
                                                 virDomainDefParserConfigPtr);
 
+typedef void *(*virDomainXMLPrivateDataGetParseOpaqueFunc)(virDomainObjPtr vm);
+
 typedef int (*virDomainXMLPrivateDataStorageSourceParseFunc)(xmlXPathContextPtr ctxt,
                                                              virStorageSourcePtr src);
 typedef int (*virDomainXMLPrivateDataStorageSourceFormatFunc)(virStorageSourcePtr src,
@@ -2680,6 +2682,9 @@ struct _virDomainXMLPrivateDataCallbacks {
     virDomainXMLPrivateDataNewFunc    chrSourceNew;
     virDomainXMLPrivateDataFormatFunc format;
     virDomainXMLPrivateDataParseFunc  parse;
+    /* following function shall return a pointer which will be used as the
+     * 'parseOpaque' argument for virDomainDefPostParse */
+    virDomainXMLPrivateDataGetParseOpaqueFunc getParseOpaque;
     virDomainXMLPrivateDataStorageSourceParseFunc storageParse;
     virDomainXMLPrivateDataStorageSourceFormatFunc storageFormat;
 };
