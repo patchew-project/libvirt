@@ -6587,8 +6587,7 @@ virDomainDeviceUSBMasterParseXML(xmlNodePtr node,
 
 static int
 virDomainDeviceBootParseXML(xmlNodePtr node,
-                            virDomainDeviceInfoPtr info,
-                            virHashTablePtr bootHash)
+                            virDomainDeviceInfoPtr info)
 {
     char *order;
     char *loadparm = NULL;
@@ -6606,18 +6605,6 @@ virDomainDeviceBootParseXML(xmlNodePtr node,
                        _("incorrect boot order '%s', expecting positive integer"),
                        order);
         goto cleanup;
-    }
-
-    if (bootHash) {
-        if (virHashLookup(bootHash, order)) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("boot order '%s' used for more than one device"),
-                           order);
-            goto cleanup;
-        }
-
-        if (virHashAddEntry(bootHash, order, (void *) 1) < 0)
-            goto cleanup;
     }
 
     loadparm = virXMLPropString(node, "loadparm");
@@ -6817,7 +6804,6 @@ virDomainDeviceAliasIsUserAlias(const char *aliasStr)
 static int
 virDomainDeviceInfoParseXML(virDomainXMLOptionPtr xmlopt ATTRIBUTE_UNUSED,
                             xmlNodePtr node,
-                            virHashTablePtr bootHash,
                             virDomainDeviceInfoPtr info,
                             unsigned int flags)
 {
@@ -6877,7 +6863,7 @@ virDomainDeviceInfoParseXML(virDomainXMLOptionPtr xmlopt ATTRIBUTE_UNUSED,
     }
 
     if (boot) {
-        if (virDomainDeviceBootParseXML(boot, info, bootHash))
+        if (virDomainDeviceBootParseXML(boot, info))
             goto cleanup;
     }
 
@@ -9402,7 +9388,6 @@ static virDomainDiskDefPtr
 virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                          xmlNodePtr node,
                          xmlXPathContextPtr ctxt,
-                         virHashTablePtr bootHash,
                          virSecurityLabelDefPtr* vmSeclabels,
                          int nvmSeclabels,
                          unsigned int flags)
@@ -9769,7 +9754,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
         }
         def->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
     } else {
-        if (virDomainDeviceInfoParseXML(xmlopt, node, bootHash, &def->info,
+        if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info,
                                         flags | VIR_DOMAIN_DEF_PARSE_ALLOW_BOOT) < 0)
             goto error;
     }
@@ -10260,7 +10245,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
     if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
         def->model == VIR_DOMAIN_CONTROLLER_MODEL_USB_NONE) {
         VIR_DEBUG("Ignoring device address for none model usb controller");
-    } else if (virDomainDeviceInfoParseXML(xmlopt, node, NULL,
+    } else if (virDomainDeviceInfoParseXML(xmlopt, node,
                                            &def->info, flags) < 0) {
         goto error;
     }
@@ -10648,7 +10633,7 @@ virDomainFSDefParseXML(virDomainXMLOptionPtr xmlopt,
     def->dst = target;
     target = NULL;
 
-    if (virDomainDeviceInfoParseXML(xmlopt, node, NULL, &def->info, flags) < 0)
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
         goto error;
 
  cleanup:
@@ -10938,7 +10923,6 @@ static virDomainNetDefPtr
 virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                         xmlNodePtr node,
                         xmlXPathContextPtr ctxt,
-                        virHashTablePtr bootHash,
                         char *prefix,
                         unsigned int flags)
 {
@@ -11226,7 +11210,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
         }
         def->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
     } else {
-        if (virDomainDeviceInfoParseXML(xmlopt, node, bootHash, &def->info,
+        if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info,
                                         flags | VIR_DOMAIN_DEF_PARSE_ALLOW_BOOT
                                         | VIR_DOMAIN_DEF_PARSE_ALLOW_ROM) < 0)
             goto error;
@@ -12525,7 +12509,7 @@ virDomainChrDefParseXML(virDomainXMLOptionPtr xmlopt,
     if (def->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL &&
         def->targetType == VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_GUESTFWD) {
         VIR_DEBUG("Ignoring device address for gustfwd channel");
-    } else if (virDomainDeviceInfoParseXML(xmlopt, node, NULL,
+    } else if (virDomainDeviceInfoParseXML(xmlopt, node,
                                            &def->info, flags) < 0) {
         goto error;
     }
@@ -12663,7 +12647,7 @@ virDomainSmartcardDefParseXML(virDomainXMLOptionPtr xmlopt,
         goto error;
     }
 
-    if (virDomainDeviceInfoParseXML(xmlopt, node, NULL, &def->info, flags) < 0)
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
         goto error;
     if (def->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
         def->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCID) {
@@ -12764,7 +12748,7 @@ virDomainTPMDefParseXML(virDomainXMLOptionPtr xmlopt,
         goto error;
     }
 
-    if (virDomainDeviceInfoParseXML(xmlopt, node, NULL, &def->info, flags) < 0)
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
         goto error;
 
  cleanup:
@@ -12793,7 +12777,7 @@ virDomainPanicDefParseXML(virDomainXMLOptionPtr xmlopt,
     if (VIR_ALLOC(panic) < 0)
         return NULL;
 
-    if (virDomainDeviceInfoParseXML(xmlopt, node, NULL,
+    if (virDomainDeviceInfoParseXML(xmlopt, node,
                                     &panic->info, flags) < 0)
         goto error;
 
@@ -12929,7 +12913,7 @@ virDomainInputDefParseXML(virDomainXMLOptionPtr xmlopt,
         }
     }
 
-    if (virDomainDeviceInfoParseXML(xmlopt, node, NULL, &def->info, flags) < 0)
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
         goto error;
 
     if (def->bus == VIR_DOMAIN_INPUT_BUS_USB &&
@@ -12993,7 +12977,7 @@ virDomainHubDefParseXML(virDomainXMLOptionPtr xmlopt,
         goto error;
     }
 
-    if (virDomainDeviceInfoParseXML(xmlopt, node, NULL, &def->info, flags) < 0)
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
         goto error;
 
  cleanup:
@@ -14150,7 +14134,7 @@ virDomainSoundDefParseXML(virDomainXMLOptionPtr xmlopt,
         }
     }
 
-    if (virDomainDeviceInfoParseXML(xmlopt, node, NULL, &def->info, flags) < 0)
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
         goto error;
 
  cleanup:
@@ -14204,7 +14188,7 @@ virDomainWatchdogDefParseXML(virDomainXMLOptionPtr xmlopt,
         }
     }
 
-    if (virDomainDeviceInfoParseXML(xmlopt, node, NULL, &def->info, flags) < 0)
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
         goto error;
 
  cleanup:
@@ -14316,7 +14300,7 @@ virDomainRNGDefParseXML(virDomainXMLOptionPtr xmlopt,
         break;
     }
 
-    if (virDomainDeviceInfoParseXML(xmlopt, node, NULL, &def->info, flags) < 0)
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
         goto error;
 
     if (virDomainVirtioOptionsParseXML(virXPathNode("./driver", ctxt),
@@ -14386,7 +14370,7 @@ virDomainMemballoonDefParseXML(virDomainXMLOptionPtr xmlopt,
 
     if (def->model == VIR_DOMAIN_MEMBALLOON_MODEL_NONE)
         VIR_DEBUG("Ignoring device address for none model Memballoon");
-    else if (virDomainDeviceInfoParseXML(xmlopt, node, NULL,
+    else if (virDomainDeviceInfoParseXML(xmlopt, node,
                                          &def->info, flags) < 0)
         goto error;
 
@@ -14417,7 +14401,7 @@ virDomainNVRAMDefParseXML(virDomainXMLOptionPtr xmlopt,
     if (VIR_ALLOC(def) < 0)
         return NULL;
 
-    if (virDomainDeviceInfoParseXML(xmlopt, node, NULL, &def->info, flags) < 0)
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
         goto error;
 
     return def;
@@ -14513,7 +14497,7 @@ virDomainShmemDefParseXML(virDomainXMLOptionPtr xmlopt,
         goto cleanup;
     }
 
-    if (virDomainDeviceInfoParseXML(xmlopt, node, NULL, &def->info, flags) < 0)
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
         goto cleanup;
 
 
@@ -15167,7 +15151,7 @@ virDomainVideoDefParseXML(virDomainXMLOptionPtr xmlopt,
         }
     }
 
-    if (virDomainDeviceInfoParseXML(xmlopt, node, NULL, &def->info, flags) < 0)
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info, flags) < 0)
         goto error;
 
     def->driver = virDomainVideoDriverDefParseXML(node);
@@ -15194,7 +15178,6 @@ static virDomainHostdevDefPtr
 virDomainHostdevDefParseXML(virDomainXMLOptionPtr xmlopt,
                             xmlNodePtr node,
                             xmlXPathContextPtr ctxt,
-                            virHashTablePtr bootHash,
                             unsigned int flags)
 {
     virDomainHostdevDefPtr def;
@@ -15235,7 +15218,7 @@ virDomainHostdevDefParseXML(virDomainXMLOptionPtr xmlopt,
     }
 
     if (def->info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE) {
-        if (virDomainDeviceInfoParseXML(xmlopt, node, bootHash, def->info,
+        if (virDomainDeviceInfoParseXML(xmlopt, node, def->info,
                                         flags  | VIR_DOMAIN_DEF_PARSE_ALLOW_BOOT
                                         | VIR_DOMAIN_DEF_PARSE_ALLOW_ROM) < 0)
             goto error;
@@ -15275,7 +15258,6 @@ static virDomainRedirdevDefPtr
 virDomainRedirdevDefParseXML(virDomainXMLOptionPtr xmlopt,
                              xmlNodePtr node,
                              xmlXPathContextPtr ctxt,
-                             virHashTablePtr bootHash,
                              unsigned int flags)
 {
     xmlNodePtr cur;
@@ -15322,7 +15304,7 @@ virDomainRedirdevDefParseXML(virDomainXMLOptionPtr xmlopt,
     if (def->source->type == VIR_DOMAIN_CHR_TYPE_SPICEVMC)
         def->source->data.spicevmc = VIR_DOMAIN_CHR_SPICEVMC_USBREDIR;
 
-    if (virDomainDeviceInfoParseXML(xmlopt, node, bootHash, &def->info,
+    if (virDomainDeviceInfoParseXML(xmlopt, node, &def->info,
                                     flags | VIR_DOMAIN_DEF_PARSE_ALLOW_BOOT) < 0)
         goto error;
 
@@ -15801,7 +15783,7 @@ virDomainMemoryDefParseXML(virDomainXMLOptionPtr xmlopt,
         goto error;
 
     if (virDomainDeviceInfoParseXML(xmlopt, memdevNode,
-                                    NULL, &def->info, flags) < 0)
+                                    &def->info, flags) < 0)
         goto error;
 
     ctxt->node = save;
@@ -15931,7 +15913,7 @@ virDomainDeviceDefParse(const char *xmlStr,
     switch ((virDomainDeviceType) dev->type) {
     case VIR_DOMAIN_DEVICE_DISK:
         if (!(dev->data.disk = virDomainDiskDefParseXML(xmlopt, node, ctxt,
-                                                        NULL, def->seclabels,
+                                                        def->seclabels,
                                                         def->nseclabels,
                                                         flags)))
             goto error;
@@ -15947,7 +15929,7 @@ virDomainDeviceDefParse(const char *xmlStr,
     case VIR_DOMAIN_DEVICE_NET:
         netprefix = caps->host.netprefix;
         if (!(dev->data.net = virDomainNetDefParseXML(xmlopt, node, ctxt,
-                                                      NULL, netprefix, flags)))
+                                                      netprefix, flags)))
             goto error;
         break;
     case VIR_DOMAIN_DEVICE_INPUT:
@@ -15972,7 +15954,7 @@ virDomainDeviceDefParse(const char *xmlStr,
         break;
     case VIR_DOMAIN_DEVICE_HOSTDEV:
         if (!(dev->data.hostdev = virDomainHostdevDefParseXML(xmlopt, node,
-                                                              ctxt, NULL,
+                                                              ctxt,
                                                               flags)))
             goto error;
         break;
@@ -15991,7 +15973,7 @@ virDomainDeviceDefParse(const char *xmlStr,
         break;
     case VIR_DOMAIN_DEVICE_REDIRDEV:
         if (!(dev->data.redirdev = virDomainRedirdevDefParseXML(xmlopt, node,
-                                                                ctxt, NULL, flags)))
+                                                                ctxt, flags)))
             goto error;
         break;
     case VIR_DOMAIN_DEVICE_RNG:
@@ -16098,7 +16080,7 @@ virDomainDiskDefParse(const char *xmlStr,
     }
 
     disk = virDomainDiskDefParseXML(xmlopt, ctxt->node, ctxt,
-                                    NULL, seclabels, nseclabels, flags);
+                                    seclabels, nseclabels, flags);
 
  cleanup:
     xmlFreeDoc(xml);
@@ -18478,8 +18460,7 @@ virDomainVcpuParse(virDomainDefPtr def,
 
 static int
 virDomainDefParseBootOptions(virDomainDefPtr def,
-                             xmlXPathContextPtr ctxt,
-                             virHashTablePtr *bootHash)
+                             xmlXPathContextPtr ctxt)
 {
     xmlNodePtr *nodes = NULL;
     char *tmp = NULL;
@@ -18610,8 +18591,6 @@ virDomainDefParseBootOptions(virDomainDefPtr def,
         }
 
         if (virDomainDefParseBootXML(ctxt, def) < 0)
-            goto error;
-        if (!(*bootHash = virHashCreate(5, NULL)))
             goto error;
     }
 
@@ -18829,7 +18808,6 @@ virDomainDefParseXML(xmlDocPtr xml,
     long id = -1;
     virDomainDefPtr def;
     bool uuid_generated = false;
-    virHashTablePtr bootHash = NULL;
     bool usb_none = false;
     bool usb_other = false;
     bool usb_master = false;
@@ -19874,7 +19852,7 @@ virDomainDefParseXML(xmlDocPtr xml,
     }
     VIR_FREE(nodes);
 
-    if (virDomainDefParseBootOptions(def, ctxt, &bootHash) < 0)
+    if (virDomainDefParseBootOptions(def, ctxt) < 0)
         goto error;
 
     /* analysis of the disk devices */
@@ -19888,7 +19866,6 @@ virDomainDefParseXML(xmlDocPtr xml,
         virDomainDiskDefPtr disk = virDomainDiskDefParseXML(xmlopt,
                                                             nodes[i],
                                                             ctxt,
-                                                            bootHash,
                                                             def->seclabels,
                                                             def->nseclabels,
                                                             flags);
@@ -19995,7 +19972,6 @@ virDomainDefParseXML(xmlDocPtr xml,
         virDomainNetDefPtr net = virDomainNetDefParseXML(xmlopt,
                                                          nodes[i],
                                                          ctxt,
-                                                         bootHash,
                                                          netprefix,
                                                          flags);
         if (!net)
@@ -20237,7 +20213,7 @@ virDomainDefParseXML(xmlDocPtr xml,
         virDomainHostdevDefPtr hostdev;
 
         hostdev = virDomainHostdevDefParseXML(xmlopt, nodes[i], ctxt,
-                                              bootHash, flags);
+                                              flags);
         if (!hostdev)
             goto error;
 
@@ -20381,7 +20357,7 @@ virDomainDefParseXML(xmlDocPtr xml,
         goto error;
     for (i = 0; i < n; i++) {
         virDomainRedirdevDefPtr redirdev =
-            virDomainRedirdevDefParseXML(xmlopt, nodes[i], ctxt, bootHash, flags);
+            virDomainRedirdevDefParseXML(xmlopt, nodes[i], ctxt, flags);
         if (!redirdev)
             goto error;
 
@@ -20555,14 +20531,11 @@ virDomainDefParseXML(xmlDocPtr xml,
     if (virDomainDefValidate(def, caps, flags, xmlopt) < 0)
         goto error;
 
-    virHashFree(bootHash);
-
     return def;
 
  error:
     VIR_FREE(tmp);
     VIR_FREE(nodes);
-    virHashFree(bootHash);
     virDomainDefFree(def);
     return NULL;
 }
