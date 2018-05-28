@@ -4941,8 +4941,7 @@ virDomainDefPostParseCPU(virDomainDefPtr def)
 
 static int
 virDomainDefPostParseCommon(virDomainDefPtr def,
-                            struct virDomainDefPostParseDeviceIteratorData *data,
-                            virHashTablePtr bootHash)
+                            struct virDomainDefPostParseDeviceIteratorData *data)
 {
     size_t i;
 
@@ -4951,20 +4950,6 @@ virDomainDefPostParseCommon(virDomainDefPtr def,
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("init binary must be specified"));
         return -1;
-    }
-
-    if (def->os.type == VIR_DOMAIN_OSTYPE_HVM && bootHash) {
-        if (def->os.nBootDevs > 0 && virHashSize(bootHash) > 0) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("per-device boot elements cannot be used"
-                             " together with os/boot elements"));
-            return -1;
-        }
-
-        if (def->os.nBootDevs == 0 && virHashSize(bootHash) == 0) {
-            def->os.nBootDevs = 1;
-            def->os.bootDevs[0] = VIR_DOMAIN_BOOT_DISK;
-        }
     }
 
     if (virDomainVcpuDefPostParse(def) < 0)
@@ -5059,13 +5044,12 @@ virDomainDefPostParseCheckFailure(virDomainDefPtr def,
 }
 
 
-static int
-virDomainDefPostParseInternal(virDomainDefPtr def,
-                              virCapsPtr caps,
-                              unsigned int parseFlags,
-                              virDomainXMLOptionPtr xmlopt,
-                              void *parseOpaque,
-                              virHashTablePtr bootHash)
+int
+virDomainDefPostParse(virDomainDefPtr def,
+                      virCapsPtr caps,
+                      unsigned int parseFlags,
+                      virDomainXMLOptionPtr xmlopt,
+                      void *parseOpaque)
 {
     int ret = -1;
     bool localParseOpaque = false;
@@ -5121,7 +5105,7 @@ virDomainDefPostParseInternal(virDomainDefPtr def,
     if (virDomainDefPostParseCheckFailure(def, parseFlags, ret) < 0)
         goto cleanup;
 
-    if ((ret = virDomainDefPostParseCommon(def, &data, bootHash)) < 0)
+    if ((ret = virDomainDefPostParseCommon(def, &data)) < 0)
         goto cleanup;
 
     if (xmlopt->config.assignAddressesCallback) {
@@ -5145,18 +5129,6 @@ virDomainDefPostParseInternal(virDomainDefPtr def,
         ret = -1;
 
     return ret;
-}
-
-
-int
-virDomainDefPostParse(virDomainDefPtr def,
-                      virCapsPtr caps,
-                      unsigned int parseFlags,
-                      virDomainXMLOptionPtr xmlopt,
-                      void *parseOpaque)
-{
-    return virDomainDefPostParseInternal(def, caps, parseFlags, xmlopt,
-                                         parseOpaque, NULL);
 }
 
 
@@ -20502,9 +20474,23 @@ virDomainDefParseXML(xmlDocPtr xml,
         (def->ns.parse)(xml, root, ctxt, &def->namespaceData) < 0)
         goto error;
 
+    /* Fill in default boot device if none was present */
+    if (def->os.type == VIR_DOMAIN_OSTYPE_HVM) {
+        if (def->os.nBootDevs > 0 && virHashSize(bootHash) > 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("per-device boot elements cannot be used"
+                             " together with os/boot elements"));
+            goto error;
+        }
+
+        if (def->os.nBootDevs == 0 && virHashSize(bootHash) == 0) {
+            def->os.nBootDevs = 1;
+            def->os.bootDevs[0] = VIR_DOMAIN_BOOT_DISK;
+        }
+    }
+
     /* callback to fill driver specific domain aspects */
-    if (virDomainDefPostParseInternal(def, caps, flags, xmlopt, parseOpaque,
-                                      bootHash) < 0)
+    if (virDomainDefPostParse(def, caps, flags, xmlopt, parseOpaque) < 0)
         goto error;
 
     /* valdiate configuration */
