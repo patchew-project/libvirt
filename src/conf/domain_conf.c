@@ -5010,8 +5010,7 @@ virDomainDefCheckBootOrder(virDomainDefPtr def)
 
 static int
 virDomainDefPostParseCommon(virDomainDefPtr def,
-                            struct virDomainDefPostParseDeviceIteratorData *data,
-                            virHashTablePtr bootHash ATTRIBUTE_UNUSED)
+                            struct virDomainDefPostParseDeviceIteratorData *data)
 {
     size_t i;
 
@@ -5118,13 +5117,12 @@ virDomainDefPostParseCheckFailure(virDomainDefPtr def,
 }
 
 
-static int
-virDomainDefPostParseInternal(virDomainDefPtr def,
-                              virCapsPtr caps,
-                              unsigned int parseFlags,
-                              virDomainXMLOptionPtr xmlopt,
-                              void *parseOpaque,
-                              virHashTablePtr bootHash)
+int
+virDomainDefPostParse(virDomainDefPtr def,
+                      virCapsPtr caps,
+                      unsigned int parseFlags,
+                      virDomainXMLOptionPtr xmlopt,
+                      void *parseOpaque)
 {
     int ret = -1;
     bool localParseOpaque = false;
@@ -5180,7 +5178,7 @@ virDomainDefPostParseInternal(virDomainDefPtr def,
     if (virDomainDefPostParseCheckFailure(def, parseFlags, ret) < 0)
         goto cleanup;
 
-    if ((ret = virDomainDefPostParseCommon(def, &data, bootHash)) < 0)
+    if ((ret = virDomainDefPostParseCommon(def, &data)) < 0)
         goto cleanup;
 
     if (xmlopt->config.assignAddressesCallback) {
@@ -5204,18 +5202,6 @@ virDomainDefPostParseInternal(virDomainDefPtr def,
         ret = -1;
 
     return ret;
-}
-
-
-int
-virDomainDefPostParse(virDomainDefPtr def,
-                      virCapsPtr caps,
-                      unsigned int parseFlags,
-                      virDomainXMLOptionPtr xmlopt,
-                      void *parseOpaque)
-{
-    return virDomainDefPostParseInternal(def, caps, parseFlags, xmlopt,
-                                         parseOpaque, NULL);
 }
 
 
@@ -20562,8 +20548,7 @@ virDomainDefParseXML(xmlDocPtr xml,
         goto error;
 
     /* callback to fill driver specific domain aspects */
-    if (virDomainDefPostParseInternal(def, caps, flags, xmlopt, parseOpaque,
-                                      bootHash) < 0)
+    if (virDomainDefPostParse(def, caps, flags, xmlopt, parseOpaque) < 0)
         goto error;
 
     /* valdiate configuration */
