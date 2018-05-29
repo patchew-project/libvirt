@@ -3162,6 +3162,10 @@ qemuBuildMemoryBackendStr(virJSONValuePtr *backendProps,
     if (virJSONValueObjectAdd(props, "U:size", mem->size * 1024, NULL) < 0)
         goto cleanup;
 
+    if (mem->align &&
+        virJSONValueObjectAdd(props, "u:align", mem->align * 1024, NULL) < 0)
+        goto cleanup;
+
     if (mem->sourceNodes) {
         nodemask = mem->sourceNodes;
     } else {

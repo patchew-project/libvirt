@@ -2113,6 +2113,7 @@ typedef enum {
 struct _virDomainMemoryDef {
     virDomainMemoryAccess access;
     virTristateBool discard;
+    unsigned long long align;
 
     /* source */
     virBitmapPtr sourceNodes;

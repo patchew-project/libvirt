@@ -15850,6 +15850,12 @@ virDomainMemoryDefParseXML(virDomainXMLOptionPtr xmlopt,
     }
     VIR_FREE(tmp);
 
+    if ((node = virXPathNode("./align", ctxt))) {
+        if (virDomainParseMemory("./align/size", "./align/size/@unit", ctxt,
+                                 &def->align, true, false) < 0)
+            goto error;
+    }
+
     /* source */
     if ((node = virXPathNode("./source", ctxt)) &&
         virDomainMemorySourceDefParseXML(node, ctxt, def) < 0)
@@ -25615,6 +25621,14 @@ virDomainMemoryDefFormat(virBufferPtr buf,
                           virTristateBoolTypeToString(def->discard));
     virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
+
+    if (def->align) {
+        virBufferAddLit(buf, "<align>\n");
+        virBufferAdjustIndent(buf, 2);
+        virBufferAsprintf(buf, "<size unit='KiB'>%llu</size>\n", def->align);
+        virBufferAdjustIndent(buf, -2);
+        virBufferAddLit(buf, "</align>\n");
+    }
 
     if (virDomainMemorySourceDefFormat(buf, def) < 0)
         return -1;
