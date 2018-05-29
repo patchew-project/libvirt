@@ -89,6 +89,11 @@ virResctrlAllocSetSize(virResctrlAllocPtr resctrl,
                        unsigned long long size);
 
 int
+virResctrlSetMemoryBandwidth(virResctrlAllocPtr resctrl,
+             unsigned int id,
+             unsigned int mb);
+
+int
 virResctrlAllocForeachSize(virResctrlAllocPtr resctrl,
                            virResctrlAllocForeachSizeCallback cb,
                            void *opaque);

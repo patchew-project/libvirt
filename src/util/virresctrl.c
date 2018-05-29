@@ -86,6 +86,20 @@ struct _virResctrlInfoPerType {
     virResctrlInfoPerCache control;
 };
 
+/* Information about memory bandwidth allocation */
+typedef struct _virResctrlInfoMB virResctrlInfoMB;
+typedef virResctrlInfoMB *virResctrlInfoMBPtr;
+struct _virResctrlInfoMB {
+    /* minimum memory bandwidth allowed*/
+    unsigned int min_bandwidth;
+    /* bandwidth granularity */
+    unsigned int bandwidth_gran;
+    /* level number of llc*/
+    unsigned int llc;
+    /* number of last level cache */
+    unsigned int max_id;
+};
+
 typedef struct _virResctrlInfoPerLevel virResctrlInfoPerLevel;
 typedef virResctrlInfoPerLevel *virResctrlInfoPerLevelPtr;
 struct _virResctrlInfoPerLevel {
@@ -97,6 +111,8 @@ struct _virResctrlInfo {
 
     virResctrlInfoPerLevelPtr *levels;
     size_t nlevels;
+
+    virResctrlInfoMBPtr mb_info;
 };
 
 static virClassPtr virResctrlInfoClass;
@@ -126,6 +142,7 @@ virResctrlInfoDispose(void *obj)
         VIR_FREE(level);
     }
 
+    VIR_FREE(resctrl->mb_info);
     VIR_FREE(resctrl->levels);
 }
 
@@ -201,6 +218,18 @@ struct _virResctrlAllocPerType {
     size_t nmasks;
 };
 
+/*
+ * virResctrlAllocMB represents one memory bandwidth allocation. Since it can have
+ * multiple last level caches in a NUMA system, it is also represented as a nested
+ * sparse arrays as virRestrlAllocPerLevel
+ */
+typedef struct _virResctrlAllocMB virResctrlAllocMB;
+typedef virResctrlAllocMB *virResctrlAllocMBPtr;
+struct _virResctrlAllocMB {
+    unsigned int **bandwidth;
+    size_t nsizes;
+};
+
 typedef struct _virResctrlAllocPerLevel virResctrlAllocPerLevel;
 typedef virResctrlAllocPerLevel *virResctrlAllocPerLevelPtr;
 struct _virResctrlAllocPerLevel {
@@ -214,7 +243,7 @@ struct _virResctrlAlloc {
 
     virResctrlAllocPerLevelPtr *levels;
     size_t nlevels;
-
+    virResctrlAllocMBPtr mba;
     /* The identifier (any unique string for now) */
     char *id;
     /* libvirt-generated path in /sys/fs/resctrl for this particular
@@ -259,6 +288,13 @@ virResctrlAllocDispose(void *obj)
         VIR_FREE(level);
     }
 
+    if (resctrl->mba) {
+        virResctrlAllocMBPtr mba = resctrl->mba;
+        for (i = 0; i < mba->nsizes; i++)
+            VIR_FREE(mba->bandwidth[i]);
+    }
+
+    VIR_FREE(resctrl->mba);
     VIR_FREE(resctrl->id);
     VIR_FREE(resctrl->path);
     VIR_FREE(resctrl->levels);
@@ -364,6 +400,9 @@ virResctrlInfoIsEmpty(virResctrlInfoPtr resctrl)
     if (!resctrl)
         return true;
 
+    if (resctrl->mb_info)
+        return false;
+
     for (i = 0; i < resctrl->nlevels; i++) {
         virResctrlInfoPerLevelPtr i_level = resctrl->levels[i];
 
@@ -379,11 +418,62 @@ virResctrlInfoIsEmpty(virResctrlInfoPtr resctrl)
     return true;
 }
 
+static int
+virResctrlGetMemoryBandwidthInfo(virResctrlInfoPtr resctrl)
+{
+    DIR *dirp = NULL;
+    int ret = -1;
+    int rv = -1;
+    virResctrlInfoMBPtr i_mb = NULL;
 
-#ifdef __linux__
+    rv = virDirOpenIfExists(&dirp, SYSFS_RESCTRL_PATH "/info");
+    if (rv <= 0) {
+        ret = rv;
+        goto cleanup;
+    }
+    /* query memory bandwidth allocation info */
+    if (VIR_ALLOC(i_mb) < 0) {
+        ret = -1;
+        goto cleanup;
+    }
+    rv = virFileReadValueUint(&i_mb->bandwidth_gran,
+                              SYSFS_RESCTRL_PATH "/info/MB/bandwidth_gran");
+    if (rv == -2) {
+        /* The file doesn't exist, so it's unusable for us,
+         *  properly mba unsupported */
+        VIR_WARN("The path '" SYSFS_RESCTRL_PATH "/info/MB/bandwidth_gran'"
+                 "does not exist");
+        ret = 0;
+        goto cleanup;
+    } else if (rv < 0) {
+        /* File no existing or other failures are fatal, so just quit */
+        goto cleanup;
+    }
 
-int
-virResctrlGetInfo(virResctrlInfoPtr resctrl)
+    rv = virFileReadValueUint(&i_mb->min_bandwidth,
+                              SYSFS_RESCTRL_PATH "/info/MB/min_bandwidth");
+    if (rv == -2) {
+        /* The file doesn't exist, so it's unusable for us,
+         *  properly mba unsupported */
+        VIR_WARN("The path '" SYSFS_RESCTRL_PATH "/info/MB/min_bandwidth'"
+                 "does not exist");
+        ret = 0;
+        goto cleanup;
+    } else if (rv < 0) {
+        /* File no existing or other failures are fatal, so just quit */
+        goto cleanup;
+    }
+
+    VIR_STEAL_PTR(resctrl->mb_info, i_mb);
+    ret = 0;
+ cleanup:
+    VIR_DIR_CLOSE(dirp);
+    VIR_FREE(i_mb);
+    return ret;
+}
+
+static int
+virResctrlGetCacheInfo(virResctrlInfoPtr resctrl)
 {
     DIR *dirp = NULL;
     char *endptr = NULL;
@@ -512,6 +602,23 @@ virResctrlGetInfo(virResctrlInfoPtr resctrl)
     return ret;
 }
 
+#ifdef __linux__
+int
+virResctrlGetInfo(virResctrlInfoPtr resctrl)
+{
+    int ret;
+
+    ret = virResctrlGetMemoryBandwidthInfo(resctrl);
+    if (ret < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Get Memory Bandwidth fail"));
+        goto out;
+    }
+    ret = virResctrlGetCacheInfo(resctrl);
+ out:
+    return ret;
+}
+
 #else /* ! __linux__ */
 
 int
@@ -534,11 +641,25 @@ virResctrlInfoGetCache(virResctrlInfoPtr resctrl,
 {
     virResctrlInfoPerLevelPtr i_level = NULL;
     virResctrlInfoPerTypePtr i_type = NULL;
+    virResctrlInfoMBPtr mb_info = NULL;
     size_t i = 0;
     int ret = -1;
 
     if (virResctrlInfoIsEmpty(resctrl))
         return 0;
+
+    /* Let's take the opportunity to update the number of
+     * last level cache. This number is used to calculate
+     * free memory bandwidth */
+    if (resctrl->mb_info) {
+        mb_info = resctrl->mb_info;
+        if (level > mb_info->llc) {
+            mb_info->llc = level;
+            mb_info->max_id = 1;
+        } else if (mb_info->llc == level) {
+            mb_info->max_id++;
+        }
+    }
 
     if (level >= resctrl->nlevels)
         return 0;
@@ -599,6 +720,9 @@ virResctrlAllocIsEmpty(virResctrlAllocPtr resctrl)
 
     if (!resctrl)
         return true;
+
+    if (resctrl->mba)
+        return false;
 
     for (i = 0; i < resctrl->nlevels; i++) {
         virResctrlAllocPerLevelPtr a_level = resctrl->levels[i];
@@ -855,16 +979,218 @@ virResctrlAllocGetID(virResctrlAllocPtr alloc)
 }
 
 
-char *
-virResctrlAllocFormat(virResctrlAllocPtr resctrl)
+int
+virResctrlSetMemoryBandwidth(virResctrlAllocPtr resctrl,
+                             unsigned int id,
+                             unsigned int memory_bandwidth)
 {
-    virBuffer buf = VIR_BUFFER_INITIALIZER;
+    virResctrlAllocMBPtr mba = resctrl->mba;
+
+    if (!mba) {
+        if (VIR_ALLOC(mba) < 0)
+            return -1;
+        resctrl->mba = mba;
+    }
+
+    if (mba->nsizes <= id &&
+        VIR_EXPAND_N(mba->bandwidth, mba->nsizes,
+                     id - mba->nsizes + 1) < 0)
+        return -1;
+
+    if (mba->bandwidth[id]) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Collision Memory Bandwidth on node %d"),
+                       id);
+        return -1;
+    }
+
+    if (VIR_ALLOC(mba->bandwidth[id]) < 0)
+        return -1;
+
+    *(mba->bandwidth[id]) = memory_bandwidth;
+    return 0;
+}
+
+
+static int
+virResctrlAllocMemoryBandwidthFormat(virResctrlAllocPtr alloc, virBufferPtr buf)
+{
+    int id;
+
+    if (!alloc->mba)
+        goto out;
+
+    virBufferAddLit(buf, "MB:");
+
+    for (id = 0; id < alloc->mba->nsizes; id++) {
+        if (alloc->mba->bandwidth[id]) {
+            virBufferAsprintf(buf, "%u=%u;", id,
+                              *(alloc->mba->bandwidth[id]));
+        }
+    }
+
+    virBufferTrim(buf, ";", 1);
+    virBufferAddChar(buf, '\n');
+    virBufferCheckError(buf);
+ out:
+    return 0;
+}
+
+static int
+virResctrlAllocMemoryBandwidth(virResctrlInfoPtr resctrl,
+                               virResctrlAllocPtr alloc, virResctrlAllocPtr free)
+{
+    int id;
+    int ret;
+    virResctrlAllocMBPtr mb_alloc = alloc->mba;
+    virResctrlAllocMBPtr mb_free = free->mba;
+    virResctrlInfoMBPtr mb_info = resctrl->mb_info;
+
+    if (!mb_alloc)
+        return 0;
+
+    if (mb_alloc && !mb_info) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("RDT Memory Bandwidth allocationi"
+                         " unsupported"));
+        ret = -1;
+        goto out;
+    }
+
+    for (id = 0; id < mb_alloc->nsizes; id ++) {
+        if (!mb_alloc->bandwidth[id])
+            continue;
+
+        if (*(mb_alloc->bandwidth[id]) % mb_info->bandwidth_gran) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Memory Bandwidth allocation of size "
+                             "%u is not divisible by granularity %u"),
+                           *(mb_alloc->bandwidth[id]),
+                           mb_info->bandwidth_gran);
+            ret = -1;
+            goto out;
+        }
+        if (*(mb_alloc->bandwidth[id]) < mb_info->min_bandwidth) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Memory Bandwidth allocation of size "
+                             "%u is smaller than the minimum "
+                             "allowed allocation %u"),
+                           *(mb_alloc->bandwidth[id]),
+                           mb_info->min_bandwidth);
+            ret = -1;
+            goto out;
+        }
+        if (id >= mb_info->max_id) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("bandwidth controller %u not exist,"
+                             " max controller id %u"),
+                           id, mb_info->max_id - 1);
+            return -1;
+        }
+        if (*(mb_alloc->bandwidth[id]) > *(mb_free->bandwidth[id])) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Not enough room for allocation of %u "
+                             "bandwidth for node %u%%, freed %u%%"),
+                           id, *(mb_alloc->bandwidth[id]),
+                           *(mb_free->bandwidth[id]));
+            return -1;
+        }
+    }
+    ret = 0;
+ out:
+    return ret;
+}
+
+
+static int
+virResctrlAllocParseMemoryBandwidthLine(virResctrlInfoPtr resctrl,
+                                        virResctrlAllocPtr alloc,
+                                        char *line)
+{
+    char **mbs = NULL;
+    char *tmp = NULL;
+    unsigned int bandwidth;
+    size_t nmb = 0;
+    unsigned int id;
+    size_t i;
+    int ret;
+
+    /* For no reason there can be spaces */
+    virSkipSpaces((const char **) &line);
+
+    if (STRNEQLEN(line, "MB", 2))
+        return 0;
+
+    if (!resctrl || !resctrl->mb_info ||
+        (!resctrl->mb_info->min_bandwidth)
+        || !(resctrl->mb_info->bandwidth_gran)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Missing or inconsistent resctrl info for "
+                         "memory bandwidth allocation"));
+    }
+
+    if (!alloc->mba)
+        if (VIR_ALLOC(alloc->mba) < 0)
+            return -1;
+
+    tmp = strchr(line, ':');
+    if (!tmp)
+        return 0;
+    tmp++;
+
+    mbs = virStringSplitCount(tmp, ";", 0, &nmb);
+    if (!nmb)
+        return 0;
+
+    for (i = 0; i < nmb; i++) {
+        tmp = strchr(mbs[i], '=');
+        *tmp = '\0';
+        tmp++;
+
+        if (virStrToLong_uip(mbs[i], NULL, 10, &id) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Invalid node id %u "), id);
+            ret = -1;
+            goto clean;
+        }
+        if (virStrToLong_uip(tmp, NULL, 10, &bandwidth) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Invalid bandwidth %u"), bandwidth);
+            ret = -1;
+            goto clean;
+        }
+        if (alloc->mba->nsizes <= id &&
+            VIR_EXPAND_N(alloc->mba->bandwidth, alloc->mba->nsizes,
+                         id - alloc->mba->nsizes + 1) < 0) {
+            ret =  -1;
+            goto clean;
+        }
+        if (!alloc->mba->bandwidth[id]) {
+            if (VIR_ALLOC(alloc->mba->bandwidth[id]) < 0) {
+                ret = -1;
+                goto clean;
+            }
+        }
+
+        *(alloc->mba->bandwidth[id]) = bandwidth;
+    }
+    ret = 0;
+ clean:
+    virStringListFree(mbs);
+    return ret;
+}
+
+
+static int
+virResctrlAllocCacheFormat(virResctrlAllocPtr resctrl, virBufferPtr buf)
+{
     unsigned int level = 0;
     unsigned int type = 0;
     unsigned int cache = 0;
+    int ret = 0;
 
     if (!resctrl)
-        return NULL;
+        return 0;
 
     for (level = 0; level < resctrl->nlevels; level++) {
         virResctrlAllocPerLevelPtr a_level = resctrl->levels[level];
@@ -878,7 +1204,7 @@ virResctrlAllocFormat(virResctrlAllocPtr resctrl)
             if (!a_type)
                 continue;
 
-            virBufferAsprintf(&buf, "L%u%s:", level, virResctrlTypeToString(type));
+            virBufferAsprintf(buf, "L%u%s:", level, virResctrlTypeToString(type));
 
             for (cache = 0; cache < a_type->nmasks; cache++) {
                 virBitmapPtr mask = a_type->masks[cache];
@@ -889,18 +1215,49 @@ virResctrlAllocFormat(virResctrlAllocPtr resctrl)
 
                 mask_str = virBitmapToString(mask, false, true);
                 if (!mask_str) {
-                    virBufferFreeAndReset(&buf);
-                    return NULL;
+                    ret = -1;
+                    goto out;
                 }
 
-                virBufferAsprintf(&buf, "%u=%s;", cache, mask_str);
+                virBufferAsprintf(buf, "%u=%s;", cache, mask_str);
                 VIR_FREE(mask_str);
             }
 
-            virBufferTrim(&buf, ";", 1);
-            virBufferAddChar(&buf, '\n');
+            virBufferTrim(buf, ";", 1);
+            virBufferAddChar(buf, '\n');
         }
     }
+ out:
+    return ret;
+}
+
+
+static void
+virResctrlMemoryBandwidthSubstract(virResctrlAllocPtr free,
+                                  virResctrlAllocPtr used)
+{
+    size_t i;
+
+    if (used->mba) {
+        for (i = 0; i < used->mba->nsizes; i++) {
+            if (used->mba->bandwidth[i])
+                *(free->mba->bandwidth[i]) -= *(used->mba->bandwidth[i]);
+        }
+    }
+}
+
+
+char *
+virResctrlAllocFormat(virResctrlAllocPtr resctrl)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    if (!resctrl)
+        return NULL;
+
+    virResctrlAllocCacheFormat(resctrl, &buf);
+
+    virResctrlAllocMemoryBandwidthFormat(resctrl, &buf);
 
     virBufferCheckError(&buf);
     return virBufferContentAndReset(&buf);
@@ -957,9 +1314,8 @@ virResctrlAllocParseProcessCache(virResctrlInfoPtr resctrl,
     return ret;
 }
 
-
 static int
-virResctrlAllocParseProcessLine(virResctrlInfoPtr resctrl,
+virResctrlAllocParseCacheLine(virResctrlInfoPtr resctrl,
                                 virResctrlAllocPtr alloc,
                                 char *line)
 {
@@ -1029,7 +1385,9 @@ virResctrlAllocParse(virResctrlInfoPtr resctrl,
 
     lines = virStringSplitCount(schemata, "\n", 0, &nlines);
     for (i = 0; i < nlines; i++) {
-        if (virResctrlAllocParseProcessLine(resctrl, alloc, lines[i]) < 0)
+        if (virResctrlAllocParseMemoryBandwidthLine(resctrl, alloc, lines[i]) < 0)
+            goto cleanup;
+        if (virResctrlAllocParseCacheLine(resctrl, alloc, lines[i]) < 0)
             goto cleanup;
     }
 
@@ -1165,6 +1523,23 @@ virResctrlAllocNewFromInfo(virResctrlInfoPtr info)
         }
     }
 
+    if (info->mb_info) {
+        if (VIR_ALLOC(ret->mba) < 0)
+            goto error;
+
+        if (info->mb_info->max_id &&
+            VIR_EXPAND_N(ret->mba->bandwidth, ret->mba->nsizes,
+                         info->mb_info->max_id - ret->mba->nsizes) < 0)
+            goto error;
+
+        for (i = 0; i < ret->mba->nsizes; i++) {
+            if (VIR_ALLOC(ret->mba->bandwidth[i]) < 0)
+                goto error;
+
+            *(ret->mba->bandwidth[i]) = 100;
+        }
+    }
+
  cleanup:
     virBitmapFree(mask);
     return ret;
@@ -1228,6 +1603,7 @@ virResctrlAllocGetUnused(virResctrlInfoPtr resctrl)
             goto error;
         }
 
+        virResctrlMemoryBandwidthSubstract(ret, alloc);
         virResctrlAllocSubtract(ret, alloc);
         virObjectUnref(alloc);
         alloc = NULL;
@@ -1389,7 +1765,6 @@ virResctrlAllocFindUnused(virResctrlAllocPtr alloc,
     return ret;
 }
 
-
 static int
 virResctrlAllocCopyMasks(virResctrlAllocPtr dst,
                          virResctrlAllocPtr src)
@@ -1449,6 +1824,9 @@ virResctrlAllocMasksAssign(virResctrlInfoPtr resctrl,
 
     alloc_default = virResctrlAllocGetDefault(resctrl);
     if (!alloc_default)
+        goto cleanup;
+
+    if (virResctrlAllocMemoryBandwidth(resctrl, alloc, alloc_free) < 0)
         goto cleanup;
 
     if (virResctrlAllocCopyMasks(alloc, alloc_default) < 0)
@@ -1523,7 +1901,6 @@ virResctrlAllocDeterminePath(virResctrlAllocPtr alloc,
 
     return 0;
 }
-
 
 /* This checks if the directory for the alloc exists.  If not it tries to create
  * it and apply appropriate alloc settings. */
