@@ -954,6 +954,13 @@ virResctrlAllocForeachSize(virResctrlAllocPtr resctrl,
         }
     }
 
+    if (resctrl->mba) {
+        virResctrlAllocMBPtr mba = resctrl->mba;
+        for (cache = 0; cache < mba->nsizes; cache++)
+            if (mba->bandwidth[cache])
+                cb(0, VIR_CACHE_TYPE_LAST, cache, *mba->bandwidth[cache], opaque);
+    }
+
     return 0;
 }
 

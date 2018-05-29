@@ -18600,6 +18600,55 @@ virDomainDefParseBootOptions(virDomainDefPtr def,
     return ret;
 }
 
+static int
+virDomainCachetuneDefParseMemoryBandwidth(xmlXPathContextPtr ctxt,
+                                          xmlNodePtr node,
+                                          virResctrlAllocPtr alloc)
+{
+    xmlNodePtr oldnode = ctxt->node;
+    unsigned int id;
+    unsigned int bandwidth;
+    char *tmp = NULL;
+    int ret = -1;
+
+    ctxt->node = node;
+
+    tmp = virXMLPropString(node, "id");
+    if (!tmp) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("Missing cachetune attribute 'id'"));
+        goto cleanup;
+    }
+    if (virStrToLong_uip(tmp, NULL, 10, &id) < 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid cachetune attribute 'id' value '%s'"),
+                       tmp);
+        goto cleanup;
+    }
+    VIR_FREE(tmp);
+
+    tmp = virXMLPropString(node, "bandwidth");
+    if (!tmp) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("Missing cachetune attribute 'bandwidth'"));
+        goto cleanup;
+    }
+    if (virStrToLong_uip(tmp, NULL, 10, &bandwidth) < 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid cachetune attribute 'bandwidth' value '%s'"),
+                       tmp);
+        goto cleanup;
+    }
+    VIR_FREE(tmp);
+    if (virResctrlSetMemoryBandwidth(alloc, id, bandwidth) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    ctxt->node = oldnode;
+    VIR_FREE(tmp);
+    return ret;
+}
 
 static int
 virDomainCachetuneDefParseCache(xmlXPathContextPtr ctxt,
@@ -18692,6 +18741,7 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
     ssize_t i = 0;
     int n;
     int ret = -1;
+    bool mba_available = false;
 
     ctxt->node = node;
 
@@ -18723,12 +18773,26 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
         goto cleanup;
     }
 
+    if ((n = virXPathNodeSet("./llc", ctxt, &nodes)) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Cannot extract Memory Bandwidth  nodes under "
+                         "cachetune. try cache allocation"));
+    }
+
+    for (i = 0; i < n; i++) {
+        if (virDomainCachetuneDefParseMemoryBandwidth(ctxt, nodes[i], alloc) < 0)
+            goto cleanup;
+    }
+
+    if (n)
+        mba_available = true;
+
     if ((n = virXPathNodeSet("./cache", ctxt, &nodes)) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Cannot extract cache nodes under cachetune"));
-        goto cleanup;
+        if (!mba_available)
+            goto cleanup;
     }
-
     for (i = 0; i < n; i++) {
         if (virDomainCachetuneDefParseCache(ctxt, nodes[i], alloc) < 0)
             goto cleanup;
@@ -26426,11 +26490,19 @@ virDomainCachetuneDefFormatHelper(unsigned int level,
     virBufferPtr buf = opaque;
     unsigned long long short_size = virFormatIntPretty(size, &unit);
 
-    virBufferAsprintf(buf,
-                      "<cache id='%u' level='%u' type='%s' "
-                      "size='%llu' unit='%s'/>\n",
-                      cache, level, virCacheTypeToString(type),
-                      short_size, unit);
+    /* If type is VIR_CACHE_TYPE_LAST, this means it's a memory
+     * bandwidth allocation formatting request */
+    if (type == VIR_CACHE_TYPE_LAST)
+        virBufferAsprintf(buf,
+                          "<llc id='%u' bandwidth='%llu'/>\n",
+                          cache, size);
+
+    else
+        virBufferAsprintf(buf,
+                          "<cache id='%u' level='%u' type='%s' "
+                          "size='%llu' unit='%s'/>\n",
+                          cache, level, virCacheTypeToString(type),
+                          short_size, unit);
 
     return 0;
 }
