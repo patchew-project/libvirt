@@ -1650,7 +1650,6 @@ virConfWriteMem;
 
 # util/vircrypto.h
 virCryptoEncryptData;
-virCryptoGenerateRandom;
 virCryptoHashBuf;
 virCryptoHashString;
 virCryptoHaveCipher;
