@@ -486,6 +486,7 @@ mymain(void)
     TEST_DISK_TO_JSON("network-nbd-tls");
 
     TEST_DISK_TO_JSON("block-raw-noopts");
+    TEST_DISK_TO_JSON("block-raw-reservations");
 
  cleanup:
     virHashFree(diskxmljsondata.schema);
