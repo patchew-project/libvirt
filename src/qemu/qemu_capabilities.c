@@ -1857,6 +1857,10 @@ virQEMUCapsSetHostModel(virQEMUCapsPtr qemuCaps,
 {
     virQEMUCapsHostCPUDataPtr cpuData = virQEMUCapsGetHostCPUData(qemuCaps, type);
 
+    virCPUDefFree(cpuData->reported);
+    virCPUDefFree(cpuData->migratable);
+    virCPUDefFree(cpuData->full);
+
     cpuData->reported = reported;
     cpuData->migratable = migratable;
     cpuData->full = full;
