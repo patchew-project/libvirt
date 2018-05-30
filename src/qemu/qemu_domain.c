@@ -5906,6 +5906,35 @@ qemuDomainVsockDefPostParse(virDomainVsockDefPtr vsock)
 
 
 static int
+qemuDomainHostdevDefMdevPostParse(virDomainHostdevSubsysMediatedDevPtr mdevsrc,
+                                  virQEMUCapsPtr qemuCaps)
+{
+    /* QEMU 2.12 added support for vfio-pci display type, we default to
+     * 'display=off' to stay safe from future changes */
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_VFIO_PCI_DISPLAY) &&
+        mdevsrc->display == VIR_TRISTATE_SWITCH_ABSENT)
+        mdevsrc->display = VIR_TRISTATE_SWITCH_OFF;
+
+    return 0;
+}
+
+
+static int
+qemuDomainHostdevDefPostParse(virDomainHostdevDefPtr hostdev,
+                              virQEMUCapsPtr qemuCaps)
+{
+    virDomainHostdevSubsysPtr subsys = &hostdev->source.subsys;
+
+    if (hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS &&
+        hostdev->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV &&
+        qemuDomainHostdevDefMdevPostParse(&subsys->u.mdev, qemuCaps) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+static int
 qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
                              const virDomainDef *def,
                              virCapsPtr caps ATTRIBUTE_UNUSED,
@@ -5960,6 +5989,9 @@ qemuDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
     case VIR_DOMAIN_DEVICE_INPUT:
     case VIR_DOMAIN_DEVICE_SOUND:
     case VIR_DOMAIN_DEVICE_HOSTDEV:
+        ret = qemuDomainHostdevDefPostParse(dev->data.hostdev, qemuCaps);
+        break;
+
     case VIR_DOMAIN_DEVICE_WATCHDOG:
     case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_HUB:
