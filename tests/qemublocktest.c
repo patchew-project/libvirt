@@ -483,6 +483,7 @@ mymain(void)
     TEST_DISK_TO_JSON("file-backing_basic-cache-unsafe");
     TEST_DISK_TO_JSON("network-qcow2-backing-chain-cache-unsafe");
     TEST_DISK_TO_JSON("dir-fat-cache");
+    TEST_DISK_TO_JSON("network-nbd-tls");
 
     TEST_DISK_TO_JSON("block-raw-noopts");
 
