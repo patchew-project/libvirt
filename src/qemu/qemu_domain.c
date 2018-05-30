@@ -9937,6 +9937,29 @@ qemuProcessPrepareStorageSourceTlsVxhs(virStorageSourcePtr src,
 }
 
 
+static int
+qemuProcessPrepareStorageSourceTlsNbd(virStorageSourcePtr src,
+                                      virQEMUDriverConfigPtr cfg,
+                                      virQEMUCapsPtr qemuCaps)
+{
+    /* XXX: for NBD we don't have the qemu.conf knobs for private TLS env */
+    if (src->haveTLS == VIR_TRISTATE_BOOL_YES) {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_NBD_TLS)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("this qemu does not support TLS transport for nbd"));
+            return -1;
+        }
+
+        if (VIR_STRDUP(src->tlsCertdir, cfg->defaultTLSx509certdir) < 0)
+            return -1;
+
+        src->tlsVerify = true;
+    }
+
+    return 0;
+}
+
+
 /* qemuProcessPrepareStorageSourceTLS:
  * @source: source for a disk
  * @cfg: driver configuration
@@ -9951,7 +9974,8 @@ qemuProcessPrepareStorageSourceTlsVxhs(virStorageSourcePtr src,
 static int
 qemuDomainPrepareStorageSourceTLS(virStorageSourcePtr src,
                                   virQEMUDriverConfigPtr cfg,
-                                  const char *parentAlias)
+                                  const char *parentAlias,
+                                  virQEMUCapsPtr qemuCaps)
 {
     if (virStorageSourceGetActualType(src) != VIR_STORAGE_TYPE_NETWORK)
         return 0;
@@ -9963,6 +9987,10 @@ qemuDomainPrepareStorageSourceTLS(virStorageSourcePtr src,
         break;
 
     case VIR_STORAGE_NET_PROTOCOL_NBD:
+        if (qemuProcessPrepareStorageSourceTlsNbd(src, cfg, qemuCaps) < 0)
+            return -1;
+        break;
+
     case VIR_STORAGE_NET_PROTOCOL_RBD:
     case VIR_STORAGE_NET_PROTOCOL_SHEEPDOG:
     case VIR_STORAGE_NET_PROTOCOL_GLUSTER:
@@ -12505,7 +12533,8 @@ qemuDomainPrepareDiskSourceLegacy(virDomainDiskDefPtr disk,
     if (qemuDomainPrepareStorageSourcePR(disk->src, priv, disk->info.alias) < 0)
         return -1;
 
-    if (qemuDomainPrepareStorageSourceTLS(disk->src, cfg, disk->info.alias) < 0)
+    if (qemuDomainPrepareStorageSourceTLS(disk->src, cfg, disk->info.alias,
+                                          priv->qemuCaps) < 0)
         return -1;
 
     return 0;
