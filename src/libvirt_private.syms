@@ -278,6 +278,7 @@ virDomainDefHasDeviceAddress;
 virDomainDefHasManagedPR;
 virDomainDefHasMemballoon;
 virDomainDefHasMemoryHotplug;
+virDomainDefHasSpiceGL;
 virDomainDefHasUSB;
 virDomainDefHasVcpusOffline;
 virDomainDefLifecycleActionAllowed;

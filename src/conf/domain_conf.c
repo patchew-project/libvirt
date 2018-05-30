@@ -29930,3 +29930,27 @@ virDomainDefHasManagedPR(const virDomainDef *def)
 
     return false;
 }
+
+
+/**
+ * virDomainDefHasSpiceGL:
+ * @def: domain definition
+ *
+ * Returns true if we have a SPICE graphic frame buffer with OpenGL enabled,
+ * false otherwise
+ */
+bool
+virDomainDefHasSpiceGL(const virDomainDef *def)
+{
+    size_t i;
+
+    for (i = 0; i < def->ngraphics; i++) {
+        virDomainGraphicsDefPtr gfx = def->graphics[i];
+
+        if (gfx->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE &&
+            gfx->data.spice.gl == VIR_TRISTATE_BOOL_YES)
+            return true;
+    }
+
+    return false;
+}
