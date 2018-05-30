@@ -4278,9 +4278,34 @@ qemuDomainDeviceDefValidateNetwork(const virDomainNetDef *net)
 
 
 static int
+qemuDomainDeviceDefValidateHostdevMdev(const virDomainHostdevSubsysMediatedDev *mdevsrc,
+                                       const virDomainDef *def)
+{
+    if (mdevsrc->display) {
+        if (mdevsrc->model != VIR_MDEV_MODEL_TYPE_VFIO_PCI) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("<hostdev> attribute 'display' is only supported"
+                             " with model='vfio-pci'"));
+
+            return -1;
+        } else if (def->ngraphics == 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("graphics device is needed for attribute value "
+                             "'display=on' in <hostdev>"));
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
+static int
 qemuDomainDeviceDefValidateHostdev(const virDomainHostdevDef *hostdev,
                                    const virDomainDef *def)
 {
+    const virDomainHostdevSubsysMediatedDev *mdevsrc;
+
     /* forbid capabilities mode hostdev in this kind of hypervisor */
     if (hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_CAPABILITIES) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -4288,6 +4313,24 @@ qemuDomainDeviceDefValidateHostdev(const virDomainHostdevDef *hostdev,
                          "supported in %s"),
                        virDomainVirtTypeToString(def->virtType));
         return -1;
+    }
+
+    if (hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
+        switch ((virDomainHostdevSubsysType) hostdev->source.subsys.type) {
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST:
+            break;
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
+            mdevsrc = &hostdev->source.subsys.u.mdev;
+            return qemuDomainDeviceDefValidateHostdevMdev(mdevsrc, def);
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
+        default:
+            virReportEnumRangeError(virDomainHostdevSubsysType,
+                                    hostdev->source.subsys.type);
+            return -1;
+        }
     }
 
     return 0;

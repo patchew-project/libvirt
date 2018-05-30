@@ -477,6 +477,9 @@ mymain(void)
     DO_TEST("hostdev-pci-address", NONE);
     DO_TEST("hostdev-vfio", NONE);
     DO_TEST("hostdev-mdev-precreated", NONE);
+    DO_TEST("hostdev-mdev-display-spice-opengl", NONE);
+    DO_TEST("hostdev-mdev-display-spice-no-opengl", NONE);
+    DO_TEST("hostdev-mdev-display-vnc", NONE);
     DO_TEST("pci-rom", NONE);
     DO_TEST("pci-rom-disabled", NONE);
     DO_TEST("pci-rom-disabled-invalid", NONE);
