@@ -9951,13 +9951,37 @@ static int
 qemuDomainPrepareDiskSourceTLS(virStorageSourcePtr src,
                                virQEMUDriverConfigPtr cfg)
 {
-    virStorageSourcePtr next;
+    virStorageSourcePtr n;
 
-    for (next = src; virStorageSourceIsBacking(next); next = next->backingStore) {
-        if (next->type == VIR_STORAGE_TYPE_NETWORK &&
-            next->protocol == VIR_STORAGE_NET_PROTOCOL_VXHS &&
-            qemuProcessPrepareStorageSourceTlsVxhs(next, cfg) < 0)
+    for (n = src; virStorageSourceIsBacking(n); n = n->backingStore) {
+        if (virStorageSourceGetActualType(n) != VIR_STORAGE_TYPE_NETWORK)
+            continue;
+
+        switch ((virStorageNetProtocol) n->protocol) {
+        case VIR_STORAGE_NET_PROTOCOL_VXHS:
+            if (qemuProcessPrepareStorageSourceTlsVxhs(n, cfg) < 0)
+                return -1;
+            break;
+
+        case VIR_STORAGE_NET_PROTOCOL_NBD:
+        case VIR_STORAGE_NET_PROTOCOL_RBD:
+        case VIR_STORAGE_NET_PROTOCOL_SHEEPDOG:
+        case VIR_STORAGE_NET_PROTOCOL_GLUSTER:
+        case VIR_STORAGE_NET_PROTOCOL_ISCSI:
+        case VIR_STORAGE_NET_PROTOCOL_HTTP:
+        case VIR_STORAGE_NET_PROTOCOL_HTTPS:
+        case VIR_STORAGE_NET_PROTOCOL_FTP:
+        case VIR_STORAGE_NET_PROTOCOL_FTPS:
+        case VIR_STORAGE_NET_PROTOCOL_TFTP:
+        case VIR_STORAGE_NET_PROTOCOL_SSH:
+            break;
+
+        case VIR_STORAGE_NET_PROTOCOL_NONE:
+        case VIR_STORAGE_NET_PROTOCOL_LAST:
+        default:
+            virReportEnumRangeError(virStorageNetProtocol, n->protocol);
             return -1;
+        }
     }
 
     return 0;
