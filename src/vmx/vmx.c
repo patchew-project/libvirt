@@ -1506,10 +1506,10 @@ virVMXParseConfig(virVMXContext *ctx,
     if (virVMXGetConfigLong(conf, "numvcpus", &numvcpus, 1, true) < 0)
         goto cleanup;
 
-    if (numvcpus <= 0 || (numvcpus % 2 != 0 && numvcpus != 1)) {
+    if (numvcpus <= 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Expecting VMX entry 'numvcpus' to be an unsigned "
-                         "integer (1 or a multiple of 2) but found %lld"), numvcpus);
+                       _("Expecting VMX entry 'numvcpus' to be a positive "
+                         "integer >= 1, but found %lld"), numvcpus);
         goto cleanup;
     }
 
