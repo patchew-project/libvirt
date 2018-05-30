@@ -5088,6 +5088,10 @@ qemuBuildHostdevMediatedDevStr(const virDomainDef *def,
     virBufferAdd(&buf, dev_str, -1);
     virBufferAsprintf(&buf, ",id=%s,sysfsdev=%s", dev->info->alias, mdevPath);
 
+    if (mdevsrc->display)
+        virBufferAsprintf(&buf, ",display=%s",
+                          virTristateSwitchTypeToString(mdevsrc->display));
+
     if (qemuBuildDeviceAddressStr(&buf, def, dev->info, qemuCaps) < 0)
         goto cleanup;
 
@@ -5305,7 +5309,9 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
 
         /* MDEV */
         if (virHostdevIsMdevDevice(hostdev)) {
-            switch ((virMediatedDeviceModelType) subsys->u.mdev.model) {
+            virDomainHostdevSubsysMediatedDevPtr mdevsrc = &subsys->u.mdev;
+
+            switch ((virMediatedDeviceModelType) mdevsrc->model) {
             case VIR_MDEV_MODEL_TYPE_VFIO_PCI:
                 if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VFIO_PCI)) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
@@ -5313,6 +5319,15 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
                                      "supported by this version of QEMU"));
                     return -1;
                 }
+
+                if (mdevsrc->display &&
+                    !virQEMUCapsGet(qemuCaps, QEMU_CAPS_VFIO_PCI_DISPLAY)) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                   _("display property of device vfio-pci is "
+                                     "not supported by this version of QEMU"));
+                        return -1;
+                }
+
                 break;
             case VIR_MDEV_MODEL_TYPE_VFIO_CCW:
                 if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VFIO_CCW)) {
@@ -5335,6 +5350,13 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
                 return -1;
             virCommandAddArg(cmd, devstr);
             VIR_FREE(devstr);
+
+            /* we need to add '-display egl-headless' if 'display=on' for
+             * vfio-pci and OpenGL is disabled (either not supported or user
+             * forgot to add 'gl=on' to SPICE or simply wants to use VNC...)
+             */
+            if (mdevsrc->display && !virDomainDefHasSpiceGL(def))
+                virCommandAddArgList(cmd, "-display", "egl-headless", NULL);
         }
     }
 
