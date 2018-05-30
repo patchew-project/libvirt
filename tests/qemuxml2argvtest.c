@@ -699,8 +699,6 @@ mymain(void)
             (flags), parseFlags, false, NULL \
         }; \
         info.skipLegacyCPUs = skipLegacyCPUs; \
-        if (testInitQEMUCaps(&info, gic) < 0) \
-            return EXIT_FAILURE; \
         if (!(info.qemuCaps = qemuTestParseCapabilitiesArch(virArchFromString(arch), \
                                                             capsfile))) \
             return EXIT_FAILURE; \
