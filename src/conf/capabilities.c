@@ -1743,3 +1743,9 @@ virCapabilitiesInitCaches(virCapsPtr caps)
     virBitmapFree(cpus);
     return ret;
 }
+
+void
+virCapabilitiesHostInitIOMMU(virCapsPtr caps)
+{
+    caps->host.iommu = virHostHasIOMMU();
+}
