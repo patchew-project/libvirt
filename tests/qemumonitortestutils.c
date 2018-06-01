@@ -1416,8 +1416,11 @@ qemuMonitorTestNewFromFileFull(const char *fileName,
     tmp = jsonstr;
     command = tmp;
     while ((tmp = strchr(tmp, '\n'))) {
-        bool eof = !tmp[1];
         line++;
+
+        /* eof */
+        if (!tmp[1])
+            break;
 
         if (*(tmp + 1) != '\n') {
             *tmp = ' ';
@@ -1434,21 +1437,16 @@ qemuMonitorTestNewFromFileFull(const char *fileName,
                 response = NULL;
             }
 
-            if (!eof) {
-                /* Move the @tmp and @singleReply. */
-                tmp += 2;
+            /* Move the @tmp and @singleReply. */
+            tmp += 2;
 
-                if (!command) {
-                    commandln = line;
-                    command = tmp;
-                } else {
-                    response = tmp;
-                }
+            if (!command) {
+                commandln = line;
+                command = tmp;
+            } else {
+                response = tmp;
             }
         }
-
-        if (eof)
-            break;
     }
 
     if (command) {
