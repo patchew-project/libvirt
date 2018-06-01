@@ -717,10 +717,12 @@ qemuDomainJobInfoToParams(qemuDomainJobInfoPtr jobInfo,
         return qemuDomainDumpJobInfoToParams(jobInfo, type, params, nparams);
 
     case QEMU_DOMAIN_JOB_STATS_TYPE_NONE:
-        break;
+    default:
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("unexpected type of job stats: %d"),
+                       jobInfo->statsType);
+        return -1;
     }
-
-    return -1;
 }
 
 
