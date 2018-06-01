@@ -181,7 +181,7 @@
   <flag name='hda-output'/>
   <version>2007000</version>
   <kvmVersion>0</kvmVersion>
-  <microcodeVersion>239029</microcodeVersion>
+  <microcodeVersion>243532</microcodeVersion>
   <package> (v2.7.0)</package>
   <arch>x86_64</arch>
   <cpu type='kvm' name='Opteron_G5'/>
