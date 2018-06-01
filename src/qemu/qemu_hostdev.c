@@ -23,7 +23,6 @@
 
 #include <config.h>
 
-#include <dirent.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <errno.h>
@@ -124,33 +123,13 @@ qemuHostdevUpdateActiveDomainDevices(virQEMUDriverPtr driver,
 bool
 qemuHostdevHostSupportsPassthroughVFIO(void)
 {
-    DIR *iommuDir = NULL;
-    struct dirent *iommuGroup = NULL;
-    bool ret = false;
-    int direrr;
+    if (!virHostHasIOMMU())
+        return false;
 
-    /* condition 1 - /sys/kernel/iommu_groups/ contains entries */
-    if (virDirOpenQuiet(&iommuDir, "/sys/kernel/iommu_groups/") < 0)
-        goto cleanup;
-
-    while ((direrr = virDirRead(iommuDir, &iommuGroup, NULL)) > 0) {
-        /* assume we found a group */
-        break;
-    }
-
-    if (direrr < 0 || !iommuGroup)
-        goto cleanup;
-    /* okay, iommu is on and recognizes groups */
-
-    /* condition 2 - /dev/vfio/vfio exists */
     if (!virFileExists("/dev/vfio/vfio"))
-        goto cleanup;
+        return false;
 
-    ret = true;
-
- cleanup:
-    VIR_DIR_CLOSE(iommuDir);
-    return ret;
+    return true;
 }
 
 
