@@ -211,7 +211,7 @@ virFileWrapperFdNew(int *fd, const char *name, unsigned int flags)
     bool output = false;
     int pipefd[2] = { -1, -1 };
     int mode = -1;
-    char *iohelper_path = NULL;
+    VIR_AUTOFREE(char *) iohelper_path = NULL;
 
     if (!flags) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -262,8 +262,6 @@ virFileWrapperFdNew(int *fd, const char *name, unsigned int flags)
 
     ret->cmd = virCommandNewArgList(iohelper_path, name, NULL);
 
-    VIR_FREE(iohelper_path);
-
     if (output) {
         virCommandSetInputFD(ret->cmd, pipefd[0]);
         virCommandSetOutputFD(ret->cmd, fd);
@@ -294,7 +292,6 @@ virFileWrapperFdNew(int *fd, const char *name, unsigned int flags)
     return ret;
 
  error:
-    VIR_FREE(iohelper_path);
     VIR_FORCE_CLOSE(pipefd[0]);
     VIR_FORCE_CLOSE(pipefd[1]);
     virFileWrapperFdFree(ret);
@@ -453,7 +450,7 @@ virFileRewrite(const char *path,
                virFileRewriteFunc rewrite,
                const void *opaque)
 {
-    char *newfile = NULL;
+    VIR_AUTOFREE(char *) newfile = NULL;
     int fd = -1;
     int ret = -1;
 
@@ -494,10 +491,8 @@ virFileRewrite(const char *path,
 
  cleanup:
     VIR_FORCE_CLOSE(fd);
-    if (newfile) {
+    if (newfile)
         unlink(newfile);
-        VIR_FREE(newfile);
-    }
     return ret;
 }
 
@@ -724,7 +719,7 @@ int virFileLoopDeviceAssociate(const char *file,
     int lofd = -1;
     int fsfd = -1;
     struct loop_info64 lo;
-    char *loname = NULL;
+    VIR_AUTOFREE(char *) loname = NULL;
     int ret = -1;
 
     if ((lofd = virFileLoopDeviceOpen(&loname)) < 0)
@@ -762,7 +757,6 @@ int virFileLoopDeviceAssociate(const char *file,
     ret = 0;
 
  cleanup:
-    VIR_FREE(loname);
     VIR_FORCE_CLOSE(fsfd);
     if (ret == -1)
         VIR_FORCE_CLOSE(lofd);
@@ -777,8 +771,7 @@ int virFileLoopDeviceAssociate(const char *file,
 static int
 virFileNBDDeviceIsBusy(const char *dev_name)
 {
-    char *path;
-    int ret = -1;
+    VIR_AUTOFREE(char *) path = NULL;
 
     if (virAsprintf(&path, SYSFS_BLOCK_DIR "/%s/pid",
                     dev_name) < 0)
@@ -786,18 +779,15 @@ virFileNBDDeviceIsBusy(const char *dev_name)
 
     if (!virFileExists(path)) {
         if (errno == ENOENT)
-            ret = 0;
+            return 0;
         else
             virReportSystemError(errno,
                                  _("Cannot check NBD device %s pid"),
                                  dev_name);
-        goto cleanup;
+        return -1;
     }
-    ret = 1;
 
- cleanup:
-    VIR_FREE(path);
-    return ret;
+    return 1;
 }
 
 
@@ -842,15 +832,13 @@ virFileNBDLoadDriver(void)
                          "administratively prohibited"));
         return false;
     } else {
-        char *errbuf = NULL;
+        VIR_AUTOFREE(char *) errbuf = NULL;
 
         if ((errbuf = virKModLoad(NBD_DRIVER, true))) {
-            VIR_FREE(errbuf);
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Failed to load nbd module"));
             return false;
         }
-        VIR_FREE(errbuf);
     }
     return true;
 }
@@ -860,8 +848,8 @@ int virFileNBDDeviceAssociate(const char *file,
                               bool readonly,
                               char **dev)
 {
-    char *nbddev = NULL;
-    char *qemunbd = NULL;
+    VIR_AUTOFREE(char *) nbddev = NULL;
+    VIR_AUTOFREE(char *) qemunbd = NULL;
     virCommandPtr cmd = NULL;
     int ret = -1;
     const char *fmtstr = NULL;
@@ -909,8 +897,6 @@ int virFileNBDDeviceAssociate(const char *file,
     ret = 0;
 
  cleanup:
-    VIR_FREE(nbddev);
-    VIR_FREE(qemunbd);
     virCommandFree(cmd);
     return ret;
 }
@@ -957,7 +943,6 @@ int virFileDeleteTree(const char *dir)
 {
     DIR *dh;
     struct dirent *de;
-    char *filepath = NULL;
     int ret = -1;
     int direrr;
 
@@ -969,6 +954,7 @@ int virFileDeleteTree(const char *dir)
         return -1;
 
     while ((direrr = virDirRead(dh, &de, dir)) > 0) {
+        VIR_AUTOFREE(char *) filepath = NULL;
         struct stat sb;
 
         if (virAsprintf(&filepath, "%s/%s",
@@ -992,8 +978,6 @@ int virFileDeleteTree(const char *dir)
                 goto cleanup;
             }
         }
-
-        VIR_FREE(filepath);
     }
     if (direrr < 0)
         goto cleanup;
@@ -1008,7 +992,6 @@ int virFileDeleteTree(const char *dir)
     ret = 0;
 
  cleanup:
-    VIR_FREE(filepath);
     VIR_DIR_CLOSE(dh);
     return ret;
 }
@@ -1166,7 +1149,7 @@ static int
 safezero_slow(int fd, off_t offset, off_t len)
 {
     int r;
-    char *buf;
+    VIR_AUTOFREE(char *) buf = NULL;
     unsigned long long remain, bytes;
 
     if (lseek(fd, offset, SEEK_SET) < 0)
@@ -1187,15 +1170,12 @@ safezero_slow(int fd, off_t offset, off_t len)
             bytes = remain;
 
         r = safewrite(fd, buf, bytes);
-        if (r < 0) {
-            VIR_FREE(buf);
+        if (r < 0)
             return -1;
-        }
 
         /* safewrite() guarantees all data will be written */
         remain -= bytes;
     }
-    VIR_FREE(buf);
     return 0;
 }
 
@@ -1558,8 +1538,7 @@ virFileRelLinkPointsTo(const char *directory,
                        const char *checkLink,
                        const char *checkDest)
 {
-    char *candidate;
-    int ret;
+    VIR_AUTOFREE(char *) candidate = NULL;
 
     if (*checkLink == '/')
         return virFileLinkPointsTo(checkLink, checkDest);
@@ -1571,9 +1550,8 @@ virFileRelLinkPointsTo(const char *directory,
     }
     if (virAsprintf(&candidate, "%s/%s", directory, checkLink) < 0)
         return -1;
-    ret = virFileLinkPointsTo(candidate, checkDest);
-    VIR_FREE(candidate);
-    return ret;
+
+    return virFileLinkPointsTo(candidate, checkDest);
 }
 
 
@@ -1897,44 +1875,39 @@ virFileIsExecutable(const char *file)
  */
 int virFileIsMountPoint(const char *file)
 {
-    char *parent = NULL;
-    int ret = -1;
+    VIR_AUTOFREE(char *) parent = NULL;
+    int ret;
     struct stat sb1, sb2;
 
     if (!(parent = mdir_name(file))) {
         virReportOOMError();
-        goto cleanup;
+        return -1;
     }
 
     VIR_DEBUG("Comparing '%s' to '%s'", file, parent);
 
     if (stat(file, &sb1) < 0) {
         if (errno == ENOENT)
-            ret = 0;
+            return 0;
         else
             virReportSystemError(errno,
                                  _("Cannot stat '%s'"),
                                  file);
-        goto cleanup;
+        return -1;
     }
 
     if (stat(parent, &sb2) < 0) {
         virReportSystemError(errno,
                              _("Cannot stat '%s'"),
                              parent);
-        goto cleanup;
+        return -1;
     }
 
-    if (!S_ISDIR(sb1.st_mode)) {
-        ret = 0;
-        goto cleanup;
-    }
+    if (!S_ISDIR(sb1.st_mode))
+        return 0;
 
     ret = sb1.st_dev != sb2.st_dev;
     VIR_DEBUG("Is mount %d", ret);
-
- cleanup:
-    VIR_FREE(parent);
     return ret;
 }
 
@@ -2118,7 +2091,7 @@ virFileAccessibleAs(const char *path, int mode,
     pid_t pid = 0;
     int status, ret = 0;
     int forkRet = 0;
-    gid_t *groups;
+    VIR_AUTOFREE(gid_t *) groups = NULL;
     int ngroups;
 
     if (uid == geteuid() &&
@@ -2131,13 +2104,10 @@ virFileAccessibleAs(const char *path, int mode,
 
     pid = virFork();
 
-    if (pid < 0) {
-        VIR_FREE(groups);
+    if (pid < 0)
         return -1;
-    }
 
     if (pid) { /* parent */
-        VIR_FREE(groups);
         if (virProcessWait(pid, &status, false) < 0) {
             /* virProcessWait() already reported error */
             errno = EINTR;
@@ -2242,7 +2212,7 @@ virFileOpenForked(const char *path, int openflags, mode_t mode,
     int recvfd_errno = 0;
     int fd = -1;
     int pair[2] = { -1, -1 };
-    gid_t *groups;
+    VIR_AUTOFREE(gid_t *) groups = NULL;
     int ngroups;
     bool created = false;
 
@@ -2260,16 +2230,12 @@ virFileOpenForked(const char *path, int openflags, mode_t mode,
         virReportSystemError(errno,
                              _("failed to create socket needed for '%s'"),
                              path);
-        VIR_FREE(groups);
         return ret;
     }
 
     pid = virFork();
-    if (pid < 0) {
-        ret = -errno;
-        VIR_FREE(groups);
-        return ret;
-    }
+    if (pid < 0)
+        return -errno;
 
     if (pid == 0) {
 
@@ -2334,7 +2300,6 @@ virFileOpenForked(const char *path, int openflags, mode_t mode,
 
     /* parent */
 
-    VIR_FREE(groups);
     VIR_FORCE_CLOSE(pair[1]);
 
     do {
@@ -2535,7 +2500,7 @@ virFileRemove(const char *path,
 {
     pid_t pid;
     int status = 0, ret = 0;
-    gid_t *groups;
+    VIR_AUTOFREE(gid_t *) groups = NULL;
     int ngroups;
 
     if (!virFileRemoveNeedsSetuid(path, uid, gid)) {
@@ -2560,15 +2525,11 @@ virFileRemove(const char *path,
 
     pid = virFork();
 
-    if (pid < 0) {
-        ret = -errno;
-        VIR_FREE(groups);
-        return ret;
-    }
+    if (pid < 0)
+        return -errno;
 
     if (pid) { /* parent */
         /* wait for child to complete, and retrieve its exit code */
-        VIR_FREE(groups);
 
         if (virProcessWait(pid, &status, 0) < 0) {
             /* virProcessWait() reports errno on waitpid failure, so we'll just
@@ -2700,7 +2661,7 @@ virDirCreate(const char *path,
     struct stat st;
     pid_t pid;
     int status = 0, ret = 0;
-    gid_t *groups;
+    VIR_AUTOFREE(gid_t *) groups = NULL;
     int ngroups;
     bool created = false;
 
@@ -2736,15 +2697,11 @@ virDirCreate(const char *path,
 
     pid = virFork();
 
-    if (pid < 0) {
-        ret = -errno;
-        VIR_FREE(groups);
-        return ret;
-    }
+    if (pid < 0)
+        return -errno;
 
     if (pid) { /* parent */
         /* wait for child to complete, and retrieve its exit code */
-        VIR_FREE(groups);
 
         if (virProcessWait(pid, &status, 0) < 0) {
             /* virProcessWait() reports errno on waitpid failure, so we'll just
@@ -3045,19 +3002,14 @@ int
 virFileMakePathWithMode(const char *path,
                         mode_t mode)
 {
-    int ret = -1;
-    char *tmp;
+    VIR_AUTOFREE(char *) tmp = NULL;
 
     if (VIR_STRDUP(tmp, path) < 0) {
         errno = ENOMEM;
-        goto cleanup;
+        return -1;
     }
 
-    ret = virFileMakePathHelper(tmp, mode);
-
- cleanup:
-    VIR_FREE(tmp);
-    return ret;
+    return virFileMakePathHelper(tmp, mode);
 }
 
 
@@ -3065,8 +3017,7 @@ int
 virFileMakeParentPath(const char *path)
 {
     char *p;
-    char *tmp;
-    int ret = -1;
+    VIR_AUTOFREE(char *) tmp = NULL;
 
     VIR_DEBUG("path=%s", path);
 
@@ -3077,15 +3028,11 @@ virFileMakeParentPath(const char *path)
 
     if ((p = strrchr(tmp, '/')) == NULL) {
         errno = EINVAL;
-        goto cleanup;
+        return -1;
     }
     *p = '\0';
 
-    ret = virFileMakePathHelper(tmp, 0777);
-
- cleanup:
-    VIR_FREE(tmp);
-    return ret;
+    return virFileMakePathHelper(tmp, 0777);
 }
 
 
@@ -3119,7 +3066,7 @@ virFileOpenTty(int *ttymaster, char **ttyName, int rawmode)
      * doesn't have to worry about that mess?  */
     int ret = -1;
     int slave = -1;
-    char *name = NULL;
+    VIR_AUTOFREE(char *) name = NULL;
 
     /* Unfortunately, we can't use the name argument of openpty, since
      * there is no guarantee on how large the buffer has to be.
@@ -3180,7 +3127,6 @@ virFileOpenTty(int *ttymaster, char **ttyName, int rawmode)
     if (ret != 0)
         VIR_FORCE_CLOSE(*ttymaster);
     VIR_FORCE_CLOSE(slave);
-    VIR_FREE(name);
 
     return ret;
 }
@@ -3280,7 +3226,7 @@ virFileSkipRoot(const char *path)
 int
 virFileAbsPath(const char *path, char **abspath)
 {
-    char *buf;
+    VIR_AUTOFREE(char *) buf = NULL;
 
     if (path[0] == '/') {
         if (VIR_STRDUP(*abspath, path) < 0)
@@ -3290,11 +3236,8 @@ virFileAbsPath(const char *path, char **abspath)
         if (buf == NULL)
             return -1;
 
-        if (virAsprintf(abspath, "%s/%s", buf, path) < 0) {
-            VIR_FREE(buf);
+        if (virAsprintf(abspath, "%s/%s", buf, path) < 0)
             return -1;
-        }
-        VIR_FREE(buf);
     }
 
     return 0;
@@ -3394,7 +3337,7 @@ virFileRemoveLastComponent(char *path)
 int virFilePrintf(FILE *fp, const char *msg, ...)
 {
     va_list vargs;
-    char *str;
+    VIR_AUTOFREE(char *) str = NULL;
     int ret;
 
     va_start(vargs, msg);
@@ -3407,8 +3350,6 @@ int virFilePrintf(FILE *fp, const char *msg, ...)
                              _("Could not write to stream"));
         ret = -1;
     }
-
-    VIR_FREE(str);
 
  cleanup:
     va_end(vargs);
@@ -3445,7 +3386,8 @@ int
 virFileIsSharedFSType(const char *path,
                       int fstypes)
 {
-    char *dirpath, *p;
+    VIR_AUTOFREE(char *) dirpath = NULL;
+    char *p;
     struct statfs sb;
     int statfs_ret;
 
@@ -3465,7 +3407,6 @@ virFileIsSharedFSType(const char *path,
         if ((p = strrchr(dirpath, '/')) == NULL) {
             virReportSystemError(EINVAL,
                          _("Invalid relative path '%s'"), path);
-            VIR_FREE(dirpath);
             return -1;
         }
 
@@ -3477,8 +3418,6 @@ virFileIsSharedFSType(const char *path,
         statfs_ret = statfs(dirpath, &sb);
 
     } while ((statfs_ret < 0) && (p != dirpath));
-
-    VIR_FREE(dirpath);
 
     if (statfs_ret < 0) {
         virReportSystemError(errno,
@@ -3546,18 +3485,18 @@ virFileGetHugepageSize(const char *path,
 static int
 virFileGetDefaultHugepageSize(unsigned long long *size)
 {
-    int ret = -1;
-    char *meminfo, *c, *n, *unit;
+    VIR_AUTOFREE(char *) meminfo = NULL;
+    char *c, *n, *unit;
 
     if (virFileReadAll(PROC_MEMINFO, 4096, &meminfo) < 0)
-        goto cleanup;
+        return -1;
 
     if (!(c = strstr(meminfo, HUGEPAGESIZE_STR))) {
         virReportError(VIR_ERR_NO_SUPPORT,
                        _("%s not found in %s"),
                        HUGEPAGESIZE_STR,
                        PROC_MEMINFO);
-        goto cleanup;
+        return -1;
     }
     c += strlen(HUGEPAGESIZE_STR);
 
@@ -3570,13 +3509,10 @@ virFileGetDefaultHugepageSize(unsigned long long *size)
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unable to parse %s %s"),
                        HUGEPAGESIZE_STR, c);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    VIR_FREE(meminfo);
-    return ret;
+    return 0;
 }
 
 # define PROC_MOUNTS "/proc/mounts"
@@ -3589,7 +3525,7 @@ virFileFindHugeTLBFS(virHugeTLBFSPtr *ret_fs,
     FILE *f = NULL;
     struct mntent mb;
     char mntbuf[1024];
-    virHugeTLBFSPtr fs = NULL;
+    VIR_AUTOFREE(virHugeTLBFSPtr) fs = NULL;
     size_t nfs = 0;
     unsigned long long default_hugepagesz = 0;
 
@@ -3634,7 +3570,6 @@ virFileFindHugeTLBFS(virHugeTLBFSPtr *ret_fs,
     endmntent(f);
     while (nfs)
         VIR_FREE(fs[--nfs].mnt_dir);
-    VIR_FREE(fs);
     return ret;
 }
 
@@ -3870,10 +3805,8 @@ virFileCopyACLs(const char *src,
 int
 virFileComparePaths(const char *p1, const char *p2)
 {
-    int ret = -1;
-    char *res1, *res2;
-
-    res1 = res2 = NULL;
+    VIR_AUTOFREE(char *) res1 = NULL;
+    VIR_AUTOFREE(char *) res2 = NULL;
 
     /* Assume p1 and p2 are symlinks, so try to resolve and canonicalize them.
      * Canonicalization fails for example on file systems names like 'proc' or
@@ -3882,19 +3815,13 @@ virFileComparePaths(const char *p1, const char *p2)
      */
     ignore_value(virFileResolveLink(p1, &res1));
     if (!res1 && VIR_STRDUP(res1, p1) < 0)
-        goto cleanup;
+        return -1;
 
     ignore_value(virFileResolveLink(p2, &res2));
     if (!res2 && VIR_STRDUP(res2, p2) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = STREQ_NULLABLE(res1, res2);
-
- cleanup:
-    VIR_FREE(res1);
-    VIR_FREE(res2);
-
-    return ret;
+    return STREQ_NULLABLE(res1, res2);
 }
 
 
@@ -4038,25 +3965,22 @@ virFileInData(int fd ATTRIBUTE_UNUSED,
 int
 virFileReadValueInt(int *value, const char *format, ...)
 {
-    int ret = -1;
-    char *str = NULL;
-    char *path = NULL;
+    VIR_AUTOFREE(char *) str = NULL;
+    VIR_AUTOFREE(char *) path = NULL;
     va_list ap;
 
     va_start(ap, format);
     if (virVasprintf(&path, format, ap) < 0) {
         va_end(ap);
-        goto cleanup;
+        return -1;
     }
     va_end(ap);
 
-    if (!virFileExists(path)) {
-        ret = -2;
-        goto cleanup;
-    }
+    if (!virFileExists(path))
+        return -2;
 
     if (virFileReadAll(path, INT_BUFSIZE_BOUND(*value), &str) < 0)
-        goto cleanup;
+        return -1;
 
     virStringTrimOptionalNewline(str);
 
@@ -4064,14 +3988,10 @@ virFileReadValueInt(int *value, const char *format, ...)
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Invalid integer value '%s' in file '%s'"),
                        str, path);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    VIR_FREE(path);
-    VIR_FREE(str);
-    return ret;
+    return 0;
 }
 
 
@@ -4088,25 +4008,22 @@ virFileReadValueInt(int *value, const char *format, ...)
 int
 virFileReadValueUint(unsigned int *value, const char *format, ...)
 {
-    int ret = -1;
-    char *str = NULL;
-    char *path = NULL;
+    VIR_AUTOFREE(char *) str = NULL;
+    VIR_AUTOFREE(char *) path = NULL;
     va_list ap;
 
     va_start(ap, format);
     if (virVasprintf(&path, format, ap) < 0) {
         va_end(ap);
-        goto cleanup;
+        return -1;
     }
     va_end(ap);
 
-    if (!virFileExists(path)) {
-        ret = -2;
-        goto cleanup;
-    }
+    if (!virFileExists(path))
+        return -2;
 
     if (virFileReadAll(path, INT_BUFSIZE_BOUND(*value), &str) < 0)
-        goto cleanup;
+        return -1;
 
     virStringTrimOptionalNewline(str);
 
@@ -4114,14 +4031,10 @@ virFileReadValueUint(unsigned int *value, const char *format, ...)
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Invalid unsigned integer value '%s' in file '%s'"),
                        str, path);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    VIR_FREE(path);
-    VIR_FREE(str);
-    return ret;
+    return 0;
 }
 
 
@@ -4138,26 +4051,23 @@ virFileReadValueUint(unsigned int *value, const char *format, ...)
 int
 virFileReadValueScaledInt(unsigned long long *value, const char *format, ...)
 {
-    int ret = -1;
-    char *str = NULL;
+    VIR_AUTOFREE(char *) str = NULL;
+    VIR_AUTOFREE(char *) path = NULL;
     char *endp = NULL;
-    char *path = NULL;
     va_list ap;
 
     va_start(ap, format);
     if (virVasprintf(&path, format, ap) < 0) {
         va_end(ap);
-        goto cleanup;
+        return -1;
     }
     va_end(ap);
 
-    if (!virFileExists(path)) {
-        ret = -2;
-        goto cleanup;
-    }
+    if (!virFileExists(path))
+        return -2;
 
     if (virFileReadAll(path, INT_BUFSIZE_BOUND(*value), &str) < 0)
-        goto cleanup;
+        return -1;
 
     virStringTrimOptionalNewline(str);
 
@@ -4165,14 +4075,10 @@ virFileReadValueScaledInt(unsigned long long *value, const char *format, ...)
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Invalid unsigned scaled integer value '%s' in file '%s'"),
                        str, path);
-        goto cleanup;
+        return -1;
     }
 
-    ret = virScaleInteger(value, endp, 1024, ULLONG_MAX);
- cleanup:
-    VIR_FREE(path);
-    VIR_FREE(str);
-    return ret;
+    return virScaleInteger(value, endp, 1024, ULLONG_MAX);
 }
 
 /* Arbitrarily sized number, feel free to change, but the function should be
@@ -4192,37 +4098,30 @@ virFileReadValueScaledInt(unsigned long long *value, const char *format, ...)
 int
 virFileReadValueBitmap(virBitmapPtr *value, const char *format, ...)
 {
-    int ret = -1;
-    char *str = NULL;
-    char *path = NULL;
+    VIR_AUTOFREE(char *) str = NULL;
+    VIR_AUTOFREE(char *) path = NULL;
     va_list ap;
 
     va_start(ap, format);
     if (virVasprintf(&path, format, ap) < 0) {
         va_end(ap);
-        goto cleanup;
+        return -1;
     }
     va_end(ap);
 
-    if (!virFileExists(path)) {
-        ret = -2;
-        goto cleanup;
-    }
+    if (!virFileExists(path))
+        return -2;
 
     if (virFileReadAll(path, VIR_FILE_READ_VALUE_STRING_MAX, &str) < 0)
-        goto cleanup;
+        return -1;
 
     virStringTrimOptionalNewline(str);
 
     *value = virBitmapParseUnlimited(str);
     if (!*value)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
- cleanup:
-    VIR_FREE(path);
-    VIR_FREE(str);
-    return ret;
+    return 0;
 }
 
 /**
@@ -4240,30 +4139,26 @@ virFileReadValueBitmap(virBitmapPtr *value, const char *format, ...)
 int
 virFileReadValueString(char **value, const char *format, ...)
 {
-    int ret = -1;
-    char *str = NULL;
-    char *path = NULL;
+    int ret;
+    VIR_AUTOFREE(char *) str = NULL;
+    VIR_AUTOFREE(char *) path = NULL;
     va_list ap;
 
     va_start(ap, format);
     if (virVasprintf(&path, format, ap) < 0) {
         va_end(ap);
-        goto cleanup;
+        return -1;
     }
     va_end(ap);
 
-    if (!virFileExists(path)) {
-        ret = -2;
-        goto cleanup;
-    }
+    if (!virFileExists(path))
+        return -2;
 
     ret = virFileReadAll(path, VIR_FILE_READ_VALUE_STRING_MAX, value);
 
     if (*value)
         virStringTrimOptionalNewline(*value);
- cleanup:
-    VIR_FREE(path);
-    VIR_FREE(str);
+
     return ret;
 }
 
