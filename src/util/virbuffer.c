@@ -456,7 +456,8 @@ void
 virBufferEscapeString(virBufferPtr buf, const char *format, const char *str)
 {
     int len;
-    char *escaped, *out;
+    VIR_AUTOFREE(char *) escaped = NULL;
+    char *out;
     const char *cur;
     const char forbidden_characters[] = {
         0x01,   0x02,   0x03,   0x04,   0x05,   0x06,   0x07,   0x08,
@@ -533,7 +534,6 @@ virBufferEscapeString(virBufferPtr buf, const char *format, const char *str)
     *out = 0;
 
     virBufferAsprintf(buf, format, escaped);
-    VIR_FREE(escaped);
 }
 
 /**
@@ -612,7 +612,8 @@ virBufferEscape(virBufferPtr buf, char escape, const char *toescape,
                 const char *format, const char *str)
 {
     int len;
-    char *escaped, *out;
+    VIR_AUTOFREE(char *) escaped = NULL;
+    char *out;
     const char *cur;
 
     if ((format == NULL) || (buf == NULL) || (str == NULL))
@@ -644,7 +645,6 @@ virBufferEscape(virBufferPtr buf, char escape, const char *toescape,
     *out = 0;
 
     virBufferAsprintf(buf, format, escaped);
-    VIR_FREE(escaped);
 }
 
 
@@ -675,11 +675,11 @@ virBufferEscapeN(virBufferPtr buf,
 {
     int len;
     size_t i;
-    char *escaped = NULL;
+    VIR_AUTOFREE(char *) escaped = NULL;
     char *out;
     const char *cur;
     struct _virBufferEscapePair escapeItem;
-    struct _virBufferEscapePair *escapeList = NULL;
+    VIR_AUTOFREE(struct _virBufferEscapePair *) escapeList = NULL;
     size_t nescapeList = 0;
     va_list ap;
 
@@ -696,7 +696,8 @@ virBufferEscapeN(virBufferPtr buf,
     while ((escapeItem.escape = va_arg(ap, int))) {
         if (!(escapeItem.toescape = va_arg(ap, char *))) {
             virBufferSetError(buf, errno);
-            goto cleanup;
+            va_end(ap);
+            return;
         }
 
         if (strcspn(str, escapeItem.toescape) == len)
@@ -704,19 +705,22 @@ virBufferEscapeN(virBufferPtr buf,
 
         if (VIR_APPEND_ELEMENT_QUIET(escapeList, nescapeList, escapeItem) < 0) {
             virBufferSetError(buf, errno);
-            goto cleanup;
+            va_end(ap);
+            return;
         }
     }
 
     if (nescapeList == 0) {
         virBufferAsprintf(buf, format, str);
-        goto cleanup;
+        va_end(ap);
+        return;
     }
 
     if (xalloc_oversized(2, len) ||
         VIR_ALLOC_N_QUIET(escaped, 2 * len + 1) < 0) {
         virBufferSetError(buf, errno);
-        goto cleanup;
+        va_end(ap);
+        return;
     }
 
     cur = str;
@@ -734,11 +738,6 @@ virBufferEscapeN(virBufferPtr buf,
     *out = 0;
 
     virBufferAsprintf(buf, format, escaped);
-
- cleanup:
-    va_end(ap);
-    VIR_FREE(escapeList);
-    VIR_FREE(escaped);
 }
 
 
@@ -803,7 +802,8 @@ void
 virBufferEscapeShell(virBufferPtr buf, const char *str)
 {
     int len;
-    char *escaped, *out;
+    VIR_AUTOFREE(char *) escaped = NULL;
+    char *out;
     const char *cur;
 
     if ((buf == NULL) || (str == NULL))
@@ -847,7 +847,6 @@ virBufferEscapeShell(virBufferPtr buf, const char *str)
     *out = 0;
 
     virBufferAdd(buf, escaped, -1);
-    VIR_FREE(escaped);
 }
 
 /**
