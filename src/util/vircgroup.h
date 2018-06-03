@@ -300,4 +300,5 @@ int virCgroupHasEmptyTasks(virCgroupPtr cgroup, int controller);
 bool virCgroupControllerAvailable(int controller);
 
 int virCgroupSetupBlkiotune(virCgroupPtr cgroup, virDomainBlkiotunePtr blkio);
+int virCgroupSetupMemtune(virCgroupPtr cgroup, virDomainMemtunePtr mem);
 #endif /* __VIR_CGROUP_H__ */
