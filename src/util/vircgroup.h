@@ -27,6 +27,7 @@
 
 # include "virutil.h"
 # include "virbitmap.h"
+# include "conf/domain_conf.h"
 
 struct virCgroup;
 typedef struct virCgroup *virCgroupPtr;
@@ -297,4 +298,6 @@ int virCgroupSetOwner(virCgroupPtr cgroup,
 int virCgroupHasEmptyTasks(virCgroupPtr cgroup, int controller);
 
 bool virCgroupControllerAvailable(int controller);
+
+int virCgroupSetupBlkiotune(virCgroupPtr cgroup, virDomainBlkiotunePtr blkio);
 #endif /* __VIR_CGROUP_H__ */

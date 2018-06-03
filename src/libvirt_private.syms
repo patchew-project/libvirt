@@ -1545,6 +1545,7 @@ virCgroupSetMemoryHardLimit;
 virCgroupSetMemorySoftLimit;
 virCgroupSetMemSwapHardLimit;
 virCgroupSetOwner;
+virCgroupSetupBlkiotune;
 virCgroupSupportsCpuBW;
 virCgroupTerminateMachine;
 
