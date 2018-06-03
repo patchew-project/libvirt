@@ -596,4 +596,73 @@ void virAllocTestInit(void);
 int virAllocTestCount(void);
 void virAllocTestOOM(int n, int m);
 void virAllocTestHook(void (*func)(int, void*), void *data);
+
+# define VIR_AUTOPTR_FUNC_NAME(type) virAutoPtr##type
+# define VIR_AUTOCLEAR_FUNC_NAME(type) virAutoClear##type
+
+/**
+ * VIR_DEFINE_AUTOPTR_FUNC:
+ * @type: type of the variables(s) to free automatically
+ * @func: cleanup function to be automatically called
+ *
+ * This macro defines a function for automatic freeing of
+ * resources allocated to a variable of type @type. The newly
+ * defined function calls the corresponding pre-defined
+ * function @func.
+ */
+# define VIR_DEFINE_AUTOPTR_FUNC(type, func) \
+    static inline void VIR_AUTOPTR_FUNC_NAME(type)(type *_ptr) \
+    { \
+        (func)(*_ptr); \
+    } \
+
+/**
+ * VIR_DEFINE_AUTOCLEAR_FUNC:
+ * @type: type of the variables(s) to free automatically
+ * @func: cleanup function to be automatically called
+ *
+ * This macro defines a function for automatic clearing of
+ * a variable of type @type. The newly deifined function calls
+ * the corresponding pre-defined function @func.
+ */
+# define VIR_DEFINE_AUTOCLEAR_FUNC(type, func) \
+    static inline void VIR_AUTOCLEAR_FUNC_NAME(type)(type *_ptr) \
+    { \
+        (func)(_ptr); \
+    } \
+
+/**
+ * VIR_AUTOFREE:
+ * @type: type of the variables(s) to free automatically
+ *
+ * Macro to automatically free the memory allocated to
+ * the variable(s) declared with it by calling virFree
+ * when the variable goes out of scope.
+ */
+# define VIR_AUTOFREE(type) __attribute__((cleanup(virFree))) type
+
+/**
+ * VIR_AUTOPTR:
+ * @type: type of the variables(s) to free automatically
+ *
+ * Macro to automatically free the memory allocated to
+ * the variable(s) declared with it by calling the function
+ * defined by VIR_DEFINE_AUTOPTR_FUNC when the variable
+ * goes out of scope.
+ */
+# define VIR_AUTOPTR(type) \
+    __attribute__((cleanup(VIR_AUTOPTR_FUNC_NAME(type)))) type
+
+/**
+ * VIR_AUTOCLEAR:
+ * @type: type of the variables(s) to free automatically
+ *
+ * Macro to automatically clear the variable(s) declared
+ * with it by calling the function defined by
+ * VIR_DEFINE_AUTOCLEAR_FUNC when the variable goes out
+ * of scope.
+ */
+# define VIR_AUTOCLEAR(type) \
+    __attribute__((cleanup(VIR_AUTOCLEAR_FUNC_NAME(type)))) type
+
 #endif /* __VIR_MEMORY_H_ */
