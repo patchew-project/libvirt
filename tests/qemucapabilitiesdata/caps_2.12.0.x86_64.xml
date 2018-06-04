@@ -210,7 +210,7 @@
   <flag name='tpm-emulator'/>
   <version>2011090</version>
   <kvmVersion>0</kvmVersion>
-  <microcodeVersion>390813</microcodeVersion>
+  <microcodeVersion>414763</microcodeVersion>
   <package>v2.12.0-rc0</package>
   <arch>x86_64</arch>
   <hostCPU type='kvm' model='base' migratability='yes'>
