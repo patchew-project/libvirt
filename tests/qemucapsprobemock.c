@@ -25,6 +25,7 @@
 #include "internal.h"
 #include "viralloc.h"
 #include "virjson.h"
+#include "virfile.h"
 #include "qemu/qemu_monitor.h"
 #include "qemu/qemu_monitor_json.h"
 
@@ -38,19 +39,29 @@
     } while (0)
 
 static bool first = true;
+static const char *dumppath = abs_srcdir "/caps.json";
 
 static void
 printLineSkipEmpty(const char *line,
                    FILE *fp)
 {
+    FILE *fp2;
     const char *p;
+
+    if (!(fp2 = fopen(dumppath, "a"))) {
+        fprintf(stderr, "failed to open '%s'", dumppath);
+        abort();
+    }
 
     for (p = line; *p; p++) {
         if (p[0] == '\n' && p[1] == '\n')
             continue;
 
         fputc(*p, fp);
+        fputc(*p, fp2);
     }
+
+    VIR_FORCE_FCLOSE(fp2);
 }
 
 

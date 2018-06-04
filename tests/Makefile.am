@@ -603,6 +603,7 @@ qemucapabilitiestest_SOURCES = \
 	testutilsqemu.c testutilsqemu.h \
 	$(NULL)
 qemucapabilitiestest_LDADD = libqemumonitortestutils.la \
+	libqemutestdriver.la \
 	$(qemu_LDADDS) $(LDADDS)
 
 qemucapsprobe_SOURCES = \
