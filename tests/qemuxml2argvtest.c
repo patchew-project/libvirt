@@ -705,6 +705,7 @@ mymain(void)
         if (!(info.qemuCaps = qemuTestParseCapabilitiesArch(virArchFromString(arch), \
                                                             capsfile))) \
             return EXIT_FAILURE; \
+        virQEMUCapsStripMachineAliases(info.qemuCaps); \
         if (virTestRun("QEMU XML-2-ARGV " name "." suffix, \
                        testCompareXMLToArgv, &info) < 0) \
             ret = -1; \
