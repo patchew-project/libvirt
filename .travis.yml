@@ -1,16 +1,15 @@
-sudo: false
-language: c
-cache: ccache
-
-branches:
-  except:
-  - /^.*-maint$/
-
 os: osx
+sudo: false
+
+language: c
 compiler: clang
+cache: ccache
 
 git:
   submodules: true
+branches:
+  except:
+    - /^.*-maint$/
 
 env:
   global:
