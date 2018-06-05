@@ -454,7 +454,7 @@ qemuMonitorIOProcess(qemuMonitorPtr mon)
 #if DEBUG_IO
     VIR_DEBUG("Process done %d used %d", (int)mon->bufferOffset, len);
 #endif
-    if (msg && msg->finished)
+    if (msg && msg == mon->msg && msg->finished)
         virCondBroadcast(&mon->notify);
     return len;
 }
