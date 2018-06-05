@@ -62,7 +62,7 @@ addons:
       - libdbus-1-dev
       - libdevmapper-dev
       - libfuse-dev
-      - libgnutls-dev
+      - libgnutls28-dev
       - libnetcf-dev
       - libnl-3-dev
       - libnl-route-3-dev
