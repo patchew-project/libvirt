@@ -440,6 +440,7 @@ EXTRA_DIST += $(top_srcdir)/build-aux/augeas-gentest.pl
 #
 
 USED_SYM_FILES += $(srcdir)/libvirt_driver_modules.syms
+USED_SYM_FILES += $(srcdir)/libvirt_gnutls.syms
 
 if WITH_LINUX
 USED_SYM_FILES += $(srcdir)/libvirt_linux.syms
