@@ -8014,6 +8014,12 @@ qemuDomainAttachDeviceConfig(virDomainDefPtr vmdef,
                            _("device is already in the domain configuration"));
             return -1;
         }
+        if (dev->data.hostdev->info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
+            virDomainDefHasDeviceAddress(vmdef, dev->data.hostdev->info)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("a device with the same address already exists "));
+            return -1;
+        }
         if (virDomainHostdevInsert(vmdef, hostdev))
             return -1;
         dev->data.hostdev = NULL;
