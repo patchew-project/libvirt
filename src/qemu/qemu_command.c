@@ -7641,8 +7641,10 @@ qemuBuildNumaArgStr(virQEMUDriverConfigPtr cfg,
     VIR_FREE(cpumask);
 
     if (nodeBackends) {
-        for (i = 0; i < ncells; i++)
+        for (i = 0; i < ncells; i++) {
             virBufferFreeAndReset(nodeBackends[i]);
+            VIR_FREE(nodeBackends[i]);
+        }
 
         VIR_FREE(nodeBackends);
     }
