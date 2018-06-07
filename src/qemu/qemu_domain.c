@@ -4781,11 +4781,12 @@ qemuDomainCheckSCSIControllerIOThreads(const virDomainControllerDef *controller,
     if (!controller->iothread)
         return true;
 
-    if (controller->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI &&
+    if (controller->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
+        controller->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI &&
         controller->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("IOThreads only available for virtio pci and "
-                         "virtio ccw controllers"));
+                       _("virtio-scsi IOThreads only available for virtio "
+                         "pci and virtio ccw controllers"));
        return false;
     }
 
