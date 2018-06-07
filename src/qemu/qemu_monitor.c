@@ -463,6 +463,14 @@ qemuMonitorIOProcess(qemuMonitorPtr mon)
 #if DEBUG_IO
     VIR_DEBUG("Process done %d used %d", (int)mon->bufferOffset, len);
 #endif
+
+    /* As the monitor mutex was unlocked in qemuMonitorJSONIOProcess()
+     * while dealing with qemu event, mon->msg could be changed,
+     * thus we re-acquire the msg here */
+    msg = NULL;
+    if (mon->msg && mon->msg->txOffset == mon->msg->txLength) {
+        msg = mon->msg;
+
     if (msg && msg->finished)
         virCondBroadcast(&mon->notify);
     return len;
