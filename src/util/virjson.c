@@ -2033,16 +2033,12 @@ char *
 virJSONStringReformat(const char *jsonstr,
                       bool pretty)
 {
-    virJSONValuePtr json;
-    char *ret;
+    VIR_AUTOPTR(virJSONValuePtr) json = NULL;
 
     if (!(json = virJSONValueFromString(jsonstr)))
         return NULL;
 
-    ret = virJSONValueToString(json, pretty);
-
-    virJSONValueFree(json);
-    return ret;
+    return virJSONValueToString(json, pretty);
 }
 
 
@@ -2131,7 +2127,7 @@ virJSONValueObjectDeflattenWorker(const char *key,
 virJSONValuePtr
 virJSONValueObjectDeflatten(virJSONValuePtr json)
 {
-    virJSONValuePtr deflattened;
+    VIR_AUTOPTR(virJSONValuePtr) deflattened = NULL;
     virJSONValuePtr ret = NULL;
 
     if (!(deflattened = virJSONValueNewObject()))
@@ -2140,12 +2136,9 @@ virJSONValueObjectDeflatten(virJSONValuePtr json)
     if (virJSONValueObjectForeachKeyValue(json,
                                           virJSONValueObjectDeflattenWorker,
                                           deflattened) < 0)
-        goto cleanup;
+        return NULL;
 
     VIR_STEAL_PTR(ret, deflattened);
-
- cleanup:
-    virJSONValueFree(deflattened);
 
     return ret;
 }
