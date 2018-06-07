@@ -34,7 +34,7 @@ script:
       -e PACKAGES="$PACKAGES"
       -e DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS"
       "$IMAGE"
-      /bin/sh -xc "$DOCKER_CMD"
+      /bin/sh -xc "$LINUX_CMD"
 
 git:
   submodules: true
@@ -42,7 +42,7 @@ git:
 env:
   global:
     - VIR_TEST_DEBUG=1
-    - DOCKER_CMD="
+    - LINUX_CMD="
         apt-get update &&
         apt-get install -y \$PACKAGES &&
         ./autogen.sh &&
