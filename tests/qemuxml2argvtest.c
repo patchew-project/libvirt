@@ -2852,6 +2852,31 @@ mymain(void)
 
     DO_TEST_CAPS_LATEST("disk-virtio-scsi-reservations");
 
+    DO_TEST_CAPS_LATEST("tseg-explicit-size");
+    DO_TEST_PARSE_ERROR("tseg-i440fx",
+                        QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
+                        QEMU_CAPS_DEVICE_PCI_BRIDGE,
+                        QEMU_CAPS_DEVICE_IOH3420,
+                        QEMU_CAPS_ICH9_AHCI,
+                        QEMU_CAPS_MACHINE_SMM_OPT,
+                        QEMU_CAPS_VIRTIO_SCSI,
+                        QEMU_CAPS_MCH_EXTENDED_TSEG_MBYTES);
+    DO_TEST_PARSE_ERROR("tseg-explicit-size",
+                        QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
+                        QEMU_CAPS_DEVICE_PCI_BRIDGE,
+                        QEMU_CAPS_DEVICE_IOH3420,
+                        QEMU_CAPS_ICH9_AHCI,
+                        QEMU_CAPS_MACHINE_SMM_OPT,
+                        QEMU_CAPS_VIRTIO_SCSI);
+    DO_TEST_PARSE_ERROR("tseg-invalid-size",
+                        QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
+                        QEMU_CAPS_DEVICE_PCI_BRIDGE,
+                        QEMU_CAPS_DEVICE_IOH3420,
+                        QEMU_CAPS_ICH9_AHCI,
+                        QEMU_CAPS_MACHINE_SMM_OPT,
+                        QEMU_CAPS_VIRTIO_SCSI,
+                        QEMU_CAPS_MCH_EXTENDED_TSEG_MBYTES);
+
     /* Test disks with format probing enabled for legacy reasons.
      * New tests should not go in this section. */
     driver.config->allowDiskFormatProbing = true;

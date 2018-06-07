@@ -22043,7 +22043,8 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
             return false;
         }
 
-        if (src->tseg_size != dst->tseg_size) {
+        if (src->tseg_specified &&
+            src->tseg_size != dst->tseg_size) {
             const char *unit_src, *unit_dst;
             unsigned long long short_size_src = virFormatIntPretty(src->tseg_size,
                                                                    &unit_src);
