@@ -26,6 +26,7 @@
 
 # include "internal.h"
 # include "virbitmap.h"
+# include "viralloc.h"
 
 # include <stdarg.h>
 
@@ -44,6 +45,8 @@ typedef virJSONValue *virJSONValuePtr;
 
 void virJSONValueFree(virJSONValuePtr value);
 void virJSONValueHashFree(void *opaque, const void *name);
+
+VIR_DEFINE_AUTOPTR_FUNC(virJSONValuePtr, virJSONValueFree)
 
 virJSONType virJSONValueGetType(const virJSONValue *value);
 
