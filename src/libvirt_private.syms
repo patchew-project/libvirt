@@ -2628,6 +2628,7 @@ virResctrlAllocForeachSize;
 virResctrlAllocFormat;
 virResctrlAllocGetID;
 virResctrlAllocGetUnused;
+virResctrlAllocMasksAssign;
 virResctrlAllocNew;
 virResctrlAllocRemove;
 virResctrlAllocSetID;

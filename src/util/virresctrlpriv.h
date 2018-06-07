@@ -24,4 +24,8 @@
 virResctrlAllocPtr
 virResctrlAllocGetUnused(virResctrlInfoPtr resctrl);
 
+int
+virResctrlAllocMasksAssign(virResctrlInfoPtr resctrl,
+                           virResctrlAllocPtr alloc);
+
 #endif /* __VIR_RESCTRL_PRIV_H__ */
