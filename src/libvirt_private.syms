@@ -2633,7 +2633,6 @@ virResctrlAllocNew;
 virResctrlAllocRemove;
 virResctrlAllocSetID;
 virResctrlAllocSetSize;
-virResctrlGetInfo;
 virResctrlInfoGetCache;
 virResctrlInfoNew;
 
