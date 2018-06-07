@@ -11502,6 +11502,11 @@ virConnectGetDomainCapabilities(virConnectPtr conn,
  * fields for offline domains if the statistics are meaningful only for a
  * running domain.
  *
+ * Passing VIR_CONNECT_GET_ALL_DOMAINS_STATS_BEST_EFFORT in
+ * @flags means when libvirt is unable to fetch stats for any of
+ * the domains (for whatever reason) such domain is silently
+ * ignored.
+ *
  * Similarly to virConnectListAllDomains, @flags can contain various flags to
  * filter the list of domains to provide stats for.
  *
@@ -11585,6 +11590,11 @@ virConnectGetAllDomainStats(virConnectPtr conn,
  * available; as an extreme example, a supported group may produce zero
  * fields for offline domains if the statistics are meaningful only for a
  * running domain.
+ *
+ * Passing VIR_CONNECT_GET_ALL_DOMAINS_STATS_BEST_EFFORT in
+ * @flags means when libvirt is unable to fetch stats for any of
+ * the domains (for whatever reason) such domain is silently
+ * ignored.
  *
  * Note that any of the domain list filtering flags in @flags may be rejected
  * by this function.
