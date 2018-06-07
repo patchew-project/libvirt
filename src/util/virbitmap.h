@@ -25,6 +25,7 @@
 # define __BITMAP_H__
 
 # include "internal.h"
+# include "viralloc.h"
 
 # include <sys/types.h>
 
@@ -43,6 +44,8 @@ virBitmapPtr virBitmapNewEmpty(void) ATTRIBUTE_RETURN_CHECK;
  * Free previously allocated bitmap
  */
 void virBitmapFree(virBitmapPtr bitmap);
+
+VIR_DEFINE_AUTOPTR_FUNC(virBitmapPtr, virBitmapFree)
 
 /*
  * Copy all bits from @src to @dst. The bitmap sizes
