@@ -2619,8 +2619,9 @@ virRandomInt;
 
 
 # util/virresctrl.h
-virCacheKernelTypeFromString;
-virCacheKernelTypeToString;
+virCacheControlForeach;
+virCacheForeachBank;
+virCacheInfoNew;
 virCacheTypeFromString;
 virCacheTypeToString;
 virResctrlAllocAddPID;
@@ -2635,8 +2636,6 @@ virResctrlAllocNew;
 virResctrlAllocRemove;
 virResctrlAllocSetID;
 virResctrlAllocSetSize;
-virResctrlInfoGetCache;
-virResctrlInfoNew;
 
 
 # util/virrotatingfile.h

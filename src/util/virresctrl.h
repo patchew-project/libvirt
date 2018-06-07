@@ -34,34 +34,43 @@ typedef enum {
 } virCacheType;
 
 VIR_ENUM_DECL(virCache);
-VIR_ENUM_DECL(virCacheKernel);
 
+typedef struct _virCacheInfo virCacheInfo;
+typedef virCacheInfo *virCacheInfoPtr;
 
-typedef struct _virResctrlInfoPerCache virResctrlInfoPerCache;
-typedef virResctrlInfoPerCache *virResctrlInfoPerCachePtr;
-struct _virResctrlInfoPerCache {
-    /* Smallest possible increase of the allocation size in bytes */
-    unsigned long long granularity;
-    /* Minimal allocatable size in bytes (if different from granularity) */
-    unsigned long long min;
-    /* Type of the allocation */
-    virCacheType scope;
-    /* Maximum number of simultaneous allocations */
-    unsigned int max_allocation;
-};
+virCacheInfoPtr
+virCacheInfoNew(void);
 
-typedef struct _virResctrlInfo virResctrlInfo;
-typedef virResctrlInfo *virResctrlInfoPtr;
+typedef int virCacheForeachControlCallback(unsigned long long granularity,
+                                           unsigned long long min,
+                                           virCacheType scope,
+                                           unsigned int max_allocations,
+                                           void *opaque);
 
-virResctrlInfoPtr
-virResctrlInfoNew(void);
 
 int
-virResctrlInfoGetCache(virResctrlInfoPtr resctrl,
+virCacheControlForeach(virCacheInfoPtr ci,
                        unsigned int level,
-                       unsigned long long size,
-                       size_t *ncontrols,
-                       virResctrlInfoPerCachePtr **controls);
+                       virCacheType type,
+                       unsigned int id,
+                       virCacheForeachControlCallback cb,
+                       void *opaque);
+
+
+typedef int virCacheForeachBankCallback(virCacheInfoPtr ci,
+                                        unsigned int level,
+                                        virCacheType type,
+                                        unsigned int id,
+                                        unsigned long long size,
+                                        virBitmapPtr cpus,
+                                        void *opaque);
+
+
+int
+virCacheForeachBank(virCacheInfoPtr ci,
+                    virCacheForeachBankCallback cb,
+                    void *opaque);
+
 
 /* Alloc-related things */
 typedef struct _virResctrlAlloc virResctrlAlloc;
@@ -105,8 +114,7 @@ virResctrlAllocDeterminePath(virResctrlAllocPtr alloc,
                              const char *machinename);
 
 int
-virResctrlAllocCreate(virResctrlInfoPtr r_info,
-                      virResctrlAllocPtr alloc,
+virResctrlAllocCreate(virResctrlAllocPtr alloc,
                       const char *machinename);
 
 int

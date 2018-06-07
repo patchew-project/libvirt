@@ -18,13 +18,13 @@ static int
 test_virResctrlGetUnused(const void *opaque)
 {
     struct virResctrlData *data = (struct virResctrlData *) opaque;
-    char *system_dir = NULL;
-    char *resctrl_dir = NULL;
-    int ret = -1;
+    virCacheInfoPtr ci = NULL;
     virResctrlAllocPtr alloc = NULL;
     char *schemata_str = NULL;
     char *schemata_file;
-    virCapsPtr caps = NULL;
+    char *system_dir = NULL;
+    char *resctrl_dir = NULL;
+    int ret = -1;
 
     if (virAsprintf(&system_dir, "%s/vircaps2xmldata/linux-%s/system",
                     abs_srcdir, data->filename) < 0)
@@ -41,13 +41,11 @@ test_virResctrlGetUnused(const void *opaque)
     virFileWrapperAddPrefix("/sys/devices/system", system_dir);
     virFileWrapperAddPrefix("/sys/fs/resctrl", resctrl_dir);
 
-    caps = virCapabilitiesNew(VIR_ARCH_X86_64, false, false);
-    if (!caps || virCapabilitiesInitCaches(caps) < 0) {
-        fprintf(stderr, "Could not initialize capabilities");
+    ci = virCacheInfoNew();
+    if (!ci)
         goto cleanup;
-    }
 
-    alloc = virResctrlAllocGetUnused(caps->host.resctrl);
+    alloc = virResctrlAllocGetUnused(ci);
 
     virFileWrapperClearPrefixes();
 
@@ -68,7 +66,7 @@ test_virResctrlGetUnused(const void *opaque)
 
     ret = 0;
  cleanup:
-    virObjectUnref(caps);
+    virObjectUnref(ci);
     virObjectUnref(alloc);
     VIR_FREE(system_dir);
     VIR_FREE(resctrl_dir);

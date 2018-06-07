@@ -22,10 +22,10 @@
 # include "virresctrl.h"
 
 virResctrlAllocPtr
-virResctrlAllocGetUnused(virResctrlInfoPtr resctrl);
+virResctrlAllocGetUnused(virCacheInfoPtr ci);
 
 int
-virResctrlAllocMasksAssign(virResctrlInfoPtr resctrl,
+virResctrlAllocMasksAssign(virCacheInfoPtr ci,
                            virResctrlAllocPtr alloc);
 
 #endif /* __VIR_RESCTRL_PRIV_H__ */
