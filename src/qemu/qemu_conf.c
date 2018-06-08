@@ -511,7 +511,7 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
     char **nvram = NULL;
     char *corestr = NULL;
     char **namespaces = NULL;
-    bool tmp;
+    bool tmp = false;
 
     /* Just check the file is readable before opening it, otherwise
      * libvirt emits an error.
