@@ -51,8 +51,8 @@ There are a number of locks on various objects
     Since virDomainObjPtr lock must not be held during sleeps, the job
     conditions provide additional protection for code making updates.
 
-    QEMU driver uses two kinds of job conditions: asynchronous and
-    normal.
+    QEMU driver uses three kinds of job conditions: asynchronous, agent
+    and normal.
 
     Asynchronous job condition is used for long running jobs (such as
     migration) that consist of several monitor commands and it is
@@ -69,9 +69,15 @@ There are a number of locks on various objects
     it needs to wait until the asynchronous job ends and try to acquire
     the job again.
 
+    Agent job condition is then used when thread wishes to talk to qemu
+    agent monitor. It is possible to acquire just agent job
+    (qemuDomainObjBeginAgentJob), or only normal job
+    (qemuDomainObjBeginJob) or both at the same time
+    (qemuDomainObjBeginJobWithAgent).
+
     Immediately after acquiring the virDomainObjPtr lock, any method
-    which intends to update state must acquire either asynchronous or
-    normal job condition.  The virDomainObjPtr lock is released while
+    which intends to update state must acquire asynchronous, normal or
+    agent job condition. The virDomainObjPtr lock is released while
     blocking on these condition variables.  Once the job condition is
     acquired, a method can safely release the virDomainObjPtr lock
     whenever it hits a piece of code which may sleep/wait, and
@@ -128,6 +134,30 @@ To acquire the normal job condition
 
   qemuDomainObjEndJob()
     - Sets job.active to 0
+    - Signals on job.cond condition
+
+
+
+To acquire the agent job condition
+
+  qemuDomainObjBeginAgentJob()
+    - Waits until there is no other agent job set
+    - Sets job.agentActive tp the job type
+
+  qemuDomainObjEndAgentJob()
+    - Sets job.agentActive to 0
+    - Signals on job.cond condition
+
+
+
+To acquire both normal and agent job condition
+
+  qemuDomainObjBeginJobWithAgent()
+    - Waits until there is no normal and no agent job set
+    - Sets both job.active and job.agentActive with required job types
+
+  qemuDomainObjEndJobWithAgent()
+    - Sets both job.active and job.agentActive to 0
     - Signals on job.cond condition
 
 
@@ -244,6 +274,30 @@ Design patterns
      ...do final work...
 
      qemuDomainObjEndJob(obj);
+     virDomainObjEndAPI(&obj);
+
+
+ * Invoking an agent command on a virDomainObjPtr
+
+     virDomainObjPtr obj;
+     qemuAgentPtr agent;
+
+     obj = qemuDomObjFromDomain(dom);
+
+     qemuDomainObjBeginAgentJob(obj, QEMU_JOB_TYPE);
+
+     ...do prep work...
+
+     if (!qemuDomainAgentAvailable(obj, true))
+         goto cleanup;
+
+     agent = qemuDomainObjEnterAgent(obj);
+     qemuAgentXXXX(agent, ..);
+     qemuDomainObjExitAgent(obj, agent);
+
+     ...do final work...
+
+     qemuDomainObjEndAgentJob(obj);
      virDomainObjEndAPI(&obj);
 
 
