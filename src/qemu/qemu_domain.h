@@ -84,6 +84,8 @@ VIR_ENUM_DECL(qemuDomainJob)
 
 typedef enum {
     QEMU_AGENT_JOB_NONE = 0,    /* No agent job. */
+    QEMU_AGENT_JOB_QUERY,       /* Does not change state of domain */
+    QEMU_AGENT_JOB_MODIFY,      /* May change state of domain */
 
     QEMU_AGENT_JOB_LAST
 } qemuDomainAgentJob;

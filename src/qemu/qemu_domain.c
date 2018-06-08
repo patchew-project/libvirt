@@ -94,7 +94,9 @@ VIR_ENUM_IMPL(qemuDomainJob, QEMU_JOB_LAST,
 );
 
 VIR_ENUM_IMPL(qemuDomainAgentJob, QEMU_AGENT_JOB_LAST,
-              "none"
+              "none",
+              "query",
+              "modify",
 );
 
 VIR_ENUM_IMPL(qemuDomainAsyncJob, QEMU_ASYNC_JOB_LAST,
