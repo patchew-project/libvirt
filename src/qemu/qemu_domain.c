@@ -93,6 +93,10 @@ VIR_ENUM_IMPL(qemuDomainJob, QEMU_JOB_LAST,
               "async nested",
 );
 
+VIR_ENUM_IMPL(qemuDomainAgentJob, QEMU_AGENT_JOB_LAST,
+              "none"
+);
+
 VIR_ENUM_IMPL(qemuDomainAsyncJob, QEMU_ASYNC_JOB_LAST,
               "none",
               "migration out",
