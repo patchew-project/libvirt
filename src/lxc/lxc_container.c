@@ -658,55 +658,6 @@ static int lxcContainerResolveSymlinks(virDomainFSDefPtr fs, bool gentle)
     return 0;
 }
 
-static int lxcContainerPrepareRoot(virDomainDefPtr def,
-                                   virDomainFSDefPtr root,
-                                   const char *sec_mount_options)
-{
-    char *dst;
-    char *tmp;
-
-    VIR_DEBUG("Prepare root %d", root->type);
-
-    if (root->type == VIR_DOMAIN_FS_TYPE_MOUNT)
-        return 0;
-
-    if (root->type == VIR_DOMAIN_FS_TYPE_FILE) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Unexpected root filesystem without loop device"));
-        return -1;
-    }
-
-    if (root->type != VIR_DOMAIN_FS_TYPE_BLOCK) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("Unsupported root filesystem type %s"),
-                       virDomainFSTypeToString(root->type));
-        return -1;
-    }
-
-    if (lxcContainerResolveSymlinks(root, false) < 0)
-        return -1;
-
-    if (virAsprintf(&dst, "%s/%s.root",
-                    LXC_STATE_DIR, def->name) < 0)
-        return -1;
-
-    tmp = root->dst;
-    root->dst = dst;
-
-    if (lxcContainerMountFSBlock(root, "", sec_mount_options) < 0) {
-        root->dst = tmp;
-        VIR_FREE(dst);
-        return -1;
-    }
-
-    root->dst = tmp;
-    root->type = VIR_DOMAIN_FS_TYPE_MOUNT;
-    VIR_FREE(root->src->path);
-    root->src->path = dst;
-
-    return 0;
-}
-
 static int lxcContainerPivotRoot(virDomainFSDefPtr root)
 {
     int ret;
@@ -1753,10 +1704,6 @@ static int lxcContainerSetupPivotRoot(virDomainDefPtr vmDef,
         goto cleanup;
 
     if (virFileResolveAllLinks(LXC_STATE_DIR, &stateDir) < 0)
-        goto cleanup;
-
-    /* Ensure the root filesystem is mounted */
-    if (lxcContainerPrepareRoot(vmDef, root, sec_mount_options) < 0)
         goto cleanup;
 
     /* Gives us a private root, leaving all parent OS mounts on /.oldroot */
