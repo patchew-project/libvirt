@@ -113,9 +113,6 @@ struct __lxc_child_argv {
     int *nsInheritFDs;
 };
 
-static int lxcContainerMountFSBlock(virDomainFSDefPtr fs,
-                                    const char *srcprefix,
-                                    const char *sec_mount_options);
 
 
 /*
@@ -1499,7 +1496,7 @@ static int lxcContainerMountFSBlockHelper(virDomainFSDefPtr fs,
 }
 
 
-static int lxcContainerMountFSBlock(virDomainFSDefPtr fs,
+int lxcContainerMountFSBlock(virDomainFSDefPtr fs,
                                     const char *srcprefix,
                                     const char *sec_mount_options)
 {
