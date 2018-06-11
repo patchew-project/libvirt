@@ -388,8 +388,7 @@ static const vshCmdInfo info_domblkinfo[] = {
 static const vshCmdOptDef opts_domblkinfo[] = {
     VIRSH_COMMON_OPT_DOMAIN_FULL(0),
     {.name = "device",
-     .type = VSH_OT_DATA,
-     .flags = VSH_OFLAG_REQ,
+     .type = VSH_OT_STRING,
      .completer = virshDomainDiskTargetCompleter,
      .help = N_("block device")
     },
@@ -397,30 +396,71 @@ static const vshCmdOptDef opts_domblkinfo[] = {
      .type = VSH_OT_BOOL,
      .help = N_("Human readable output")
     },
+    {.name = "all",
+     .type = VSH_OT_BOOL,
+     .help = N_("display all block devices info")
+    },
     {.name = NULL}
 };
 
 static void
 cmdDomblkinfoPrint(vshControl *ctl,
                    const virDomainBlockInfo *info,
-                   bool human)
+                   const char *device,
+                   bool human, bool title)
 {
-    if (!human) {
-        vshPrint(ctl, "%-15s %llu\n", _("Capacity:"), info->capacity);
-        vshPrint(ctl, "%-15s %llu\n", _("Allocation:"), info->allocation);
-        vshPrint(ctl, "%-15s %llu\n", _("Physical:"), info->physical);
-    } else {
-        double val;
-        const char *unit;
+    char *cap = NULL, *alloc = NULL, *phy = NULL;
 
-        val = vshPrettyCapacity(info->capacity, &unit);
-        vshPrint(ctl, "%-15s %-.3lf %s\n", _("Capacity:"), val, unit);
-        val = vshPrettyCapacity(info->allocation, &unit);
-        vshPrint(ctl, "%-15s %-.3lf %s\n", _("Allocation:"), val, unit);
-        val = vshPrettyCapacity(info->physical, &unit);
-        vshPrint(ctl, "%-15s %-.3lf %s\n", _("Physical:"), val, unit);
+    if (title) {
+        vshPrintExtra(ctl, "%-10s %-15s %-15s %-15s\n", _("Target"),
+                      _("Capacity"), _("Allocation"), _("Physical"));
+        vshPrintExtra(ctl, "-----------------------------"
+                      "------------------------\n");
+        return;
     }
 
+    if (!human) {
+        if (device) {
+            vshPrint(ctl, "%-10s %-15llu %-15llu %-15llu\n", device,
+                     info->capacity, info->allocation, info->physical);
+        } else {
+            vshPrint(ctl, "%-15s %llu\n", _("Capacity:"), info->capacity);
+            vshPrint(ctl, "%-15s %llu\n", _("Allocation:"), info->allocation);
+            vshPrint(ctl, "%-15s %llu\n", _("Physical:"), info->physical);
+        }
+    } else {
+        double val_cap, val_alloc, val_phy;
+        const char *unit_cap, *unit_alloc, *unit_phy;
+
+        val_cap = vshPrettyCapacity(info->capacity, &unit_cap);
+        val_alloc = vshPrettyCapacity(info->allocation, &unit_alloc);
+        val_phy = vshPrettyCapacity(info->physical, &unit_phy);
+        if (device) {
+            if (virAsprintf(&cap, "%.3lf %s", val_cap, unit_cap) < 0)
+                goto cleanup;
+
+            if (virAsprintf(&alloc, "%.3lf %s", val_alloc, unit_alloc) < 0)
+                goto cleanup;
+
+            if (virAsprintf(&phy, "%.3lf %s", val_phy, unit_phy) < 0)
+                goto cleanup;
+
+            vshPrint(ctl, "%-10s %-15s %-15s %-15s\n",
+                     device, cap, alloc, phy);
+        } else {
+            vshPrint(ctl, "%-15s %-.3lf %s\n", _("Capacity:"),
+                     val_cap, unit_cap);
+            vshPrint(ctl, "%-15s %-.3lf %s\n", _("Allocation:"),
+                     val_alloc, unit_alloc);
+            vshPrint(ctl, "%-15s %-.3lf %s\n", _("Physical:"),
+                     val_phy, unit_phy);
+        }
+    }
+
+ cleanup:
+    VIR_FREE(cap);
+    VIR_FREE(alloc);
+    VIR_FREE(phy);
 }
 
 static bool
@@ -430,25 +470,63 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
     virDomainPtr dom;
     bool ret = false;
     bool human = false;
+    bool all = false;
     const char *device = NULL;
+    xmlDocPtr xmldoc = NULL;
+    xmlXPathContextPtr ctxt = NULL;
+    int ndisks;
+    size_t i;
+    xmlNodePtr *disks = NULL;
+    char *target = NULL;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;
 
-    if (vshCommandOptStringReq(ctl, cmd, "device", &device) < 0)
+    all = vshCommandOptBool(cmd, "all");
+    if (!all && vshCommandOptStringQuiet(ctl, cmd, "device", &device) <= 0) {
+        vshError(ctl, "command 'domblkinfo' requires <device> option");
         goto cleanup;
-
-    if (virDomainGetBlockInfo(dom, device, &info, 0) < 0)
-        goto cleanup;
+    }
 
     human = vshCommandOptBool(cmd, "human");
 
-    cmdDomblkinfoPrint(ctl, &info, human);
+    if (all) {
+        if (virshDomainGetXML(ctl, cmd, 0, &xmldoc, &ctxt) < 0)
+            goto cleanup;
+
+        ndisks = virXPathNodeSet("./devices/disk", ctxt, &disks);
+        if (ndisks < 0)
+            goto cleanup;
+
+        /* print the title */
+        cmdDomblkinfoPrint(ctl, NULL, NULL, false, true);
+
+        for (i = 0; i < ndisks; i++) {
+            ctxt->node = disks[i];
+            target = virXPathString("string(./target/@dev)", ctxt);
+
+            if (virDomainGetBlockInfo(dom, target, &info, 0) < 0)
+                goto cleanup;
+
+            cmdDomblkinfoPrint(ctl, &info, target, human, false);
+
+            VIR_FREE(target);
+        }
+    } else {
+        if (virDomainGetBlockInfo(dom, device, &info, 0) < 0)
+            goto cleanup;
+
+        cmdDomblkinfoPrint(ctl, &info, NULL, human, false);
+    }
 
     ret = true;
 
  cleanup:
     virshDomainFree(dom);
+    VIR_FREE(target);
+    VIR_FREE(disks);
+    xmlXPathFreeContext(ctxt);
+    xmlFreeDoc(xmldoc);
     return ret;
 }
 
