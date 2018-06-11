@@ -204,6 +204,14 @@
           secret-event, pool-event and nodedev-event)
         </description>
       </change>
+      <change>
+        <summary>
+          cmdDomblkinfo: introduce --all to show all block devices info
+        </summary>
+        <description>
+          Add option --all to show all block deviecs info in one command.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
