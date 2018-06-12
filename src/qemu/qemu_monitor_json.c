@@ -6423,7 +6423,6 @@ qemuMonitorJSONGetSEVCapabilities(qemuMonitorPtr mon,
     if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
         goto cleanup;
 
-
     if (qemuMonitorJSONCheckError(cmd, reply) < 0)
         goto cleanup;
 
