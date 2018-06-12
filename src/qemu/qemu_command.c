@@ -9692,7 +9692,7 @@ qemuBuildTPMCommandLine(virCommandPtr cmd,
 
 static int
 qemuBuildSevCommandLine(virDomainObjPtr vm, virCommandPtr cmd,
-                        virDomainSevDefPtr sev)
+                        virDomainSEVDefPtr sev)
 {
     virBuffer obj = VIR_BUFFER_INITIALIZER;
     qemuDomainObjPrivatePtr priv = vm->privateData;
