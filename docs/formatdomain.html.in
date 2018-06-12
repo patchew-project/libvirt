@@ -1566,8 +1566,17 @@
 
         <dl>
           <dt><code>force</code></dt>
-          <dd>The virtual CPU will claim the feature is supported regardless
-            of it being supported by host CPU.</dd>
+          <dd>The virtual CPU will claim the feature is supported
+          regardless of it being supported by host CPU -- this is only
+          true for QEMU version older than 2.9.0.  I.e. when using the
+          CPU mode 'host-model', libvirt identifies which CPU features
+          to use by looking at host CPUID.  For that to take effect, it
+          is mandatory to use <code>force</code> to tell libvirt that a
+          said CPU feature must be used despite it not existing in the
+          host -- this applicable only for a very limited set of CPU
+          features, such as 'x2apic', virt-ssbd' (for AMD CPUs).</dd>
+          <dd>However, when using QEMU 2.9.0 and above, there should
+          never be any need to use <code>force</code>.</dd>
           <dt><code>require</code></dt>
           <dd>Guest creation will fail unless the feature is supported by the
             host CPU or the hypervisor is able to emulate it.</dd>
