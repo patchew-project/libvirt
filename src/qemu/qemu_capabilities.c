@@ -4105,7 +4105,7 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     /* Probe for SEV capabilities */
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SEV_GUEST)) {
         if (virQEMUCapsProbeQMPSEVCapabilities(qemuCaps, mon) < 0)
-            virQEMUCapsClear(qemuCaps, QEMU_CAPS_SEV_GUEST);
+            goto cleanup;
     }
 
     ret = 0;
