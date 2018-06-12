@@ -21526,10 +21526,10 @@ qemuDomainGetSEVMeasurement(virQEMUDriverPtr driver,
                                 tmp) < 0)
         goto endjob;
 
-    VIR_FREE(tmp);
     ret = 0;
 
  endjob:
+    VIR_FREE(tmp);
     qemuDomainObjEndJob(driver, vm);
     return ret;
 }
