@@ -9691,7 +9691,7 @@ qemuBuildTPMCommandLine(virCommandPtr cmd,
 }
 
 static int
-qemuBuildSevCommandLine(virDomainObjPtr vm, virCommandPtr cmd,
+qemuBuildSEVCommandLine(virDomainObjPtr vm, virCommandPtr cmd,
                         virDomainSEVDefPtr sev)
 {
     virBuffer obj = VIR_BUFFER_INITIALIZER;
@@ -10321,7 +10321,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (qemuBuildVMCoreInfoCommandLine(cmd, def, qemuCaps) < 0)
         goto error;
 
-    if (qemuBuildSevCommandLine(vm, cmd, def->sev) < 0)
+    if (qemuBuildSEVCommandLine(vm, cmd, def->sev) < 0)
         goto error;
 
     if (snapshot)
