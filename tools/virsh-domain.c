@@ -5971,7 +5971,8 @@ VIR_ENUM_IMPL(virshDomainJobOperation,
               N_("Outgoing migration"),
               N_("Snapshot"),
               N_("Snapshot revert"),
-              N_("Dump"))
+              N_("Dump"),
+              N_("Backup"))
 
 static const char *
 virshDomainJobOperationToString(int op)
