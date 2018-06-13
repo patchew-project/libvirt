@@ -4,7 +4,7 @@
  * Description: Provides the interfaces of the libvirt library to handle
  *              errors raised while using the library.
  *
- * Copyright (C) 2006-2016 Red Hat, Inc.
+ * Copyright (C) 2006-2018 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -133,6 +133,7 @@ typedef enum {
     VIR_FROM_PERF = 65,         /* Error from perf */
     VIR_FROM_LIBSSH = 66,       /* Error from libssh connection transport */
     VIR_FROM_RESCTRL = 67,      /* Error from resource control */
+    VIR_FROM_DOMAIN_CHECKPOINT = 68,/* Error from domain checkpoint */
 
 # ifdef VIR_ENUM_SENTINELS
     VIR_ERR_DOMAIN_LAST
@@ -321,6 +322,8 @@ typedef enum {
                                            to guest-sync command (DEPRECATED)*/
     VIR_ERR_LIBSSH = 98,                /* error in libssh transport driver */
     VIR_ERR_DEVICE_MISSING = 99,        /* fail to find the desired device */
+    VIR_ERR_INVALID_DOMAIN_CHECKPOINT = 100,/* invalid domain checkpoint */
+    VIR_ERR_NO_DOMAIN_CHECKPOINT = 101, /* domain checkpoint not found */
 } virErrorNumber;
 
 /**

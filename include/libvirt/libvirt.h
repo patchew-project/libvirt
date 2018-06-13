@@ -36,6 +36,8 @@ extern "C" {
 # include <libvirt/libvirt-common.h>
 # include <libvirt/libvirt-host.h>
 # include <libvirt/libvirt-domain.h>
+typedef struct _virDomainCheckpoint virDomainCheckpoint;
+typedef virDomainCheckpoint *virDomainCheckpointPtr;
 # include <libvirt/libvirt-domain-snapshot.h>
 # include <libvirt/libvirt-event.h>
 # include <libvirt/libvirt-interface.h>

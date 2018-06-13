@@ -1,7 +1,7 @@
 /*
  * datatypes.h: management of structs for public data types
  *
- * Copyright (C) 2006-2015 Red Hat, Inc.
+ * Copyright (C) 2006-2018 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,6 +31,7 @@
 
 extern virClassPtr virConnectClass;
 extern virClassPtr virDomainClass;
+extern virClassPtr virDomainCheckpointClass;
 extern virClassPtr virDomainSnapshotClass;
 extern virClassPtr virInterfaceClass;
 extern virClassPtr virNetworkClass;
@@ -285,6 +286,21 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_snap->domain->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_DOMAIN_SNAPSHOT, \
                                  VIR_ERR_INVALID_DOMAIN_SNAPSHOT, \
+                                 __FILE__, __FUNCTION__, __LINE__, \
+                                 __FUNCTION__); \
+            virDispatchError(NULL); \
+            return retval; \
+        } \
+    } while (0)
+
+# define virCheckDomainCheckpointReturn(obj, retval) \
+    do { \
+        virDomainCheckpointPtr _check = (obj); \
+        if (!virObjectIsClass(_check, virDomainCheckpointClass) || \
+            !virObjectIsClass(_check->domain, virDomainClass) || \
+            !virObjectIsClass(_check->domain->conn, virConnectClass)) { \
+            virReportErrorHelper(VIR_FROM_DOMAIN_CHECKPOINT, \
+                                 VIR_ERR_INVALID_DOMAIN_CHECKPOINT, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -653,6 +669,17 @@ struct _virStream {
 };
 
 /**
+ * _virDomainCheckpoint
+ *
+ * Internal structure associated with a domain checkpoint
+ */
+struct _virDomainCheckpoint {
+    virObject parent;
+    char *name;
+    virDomainPtr domain;
+};
+
+/**
  * _virDomainSnapshot
  *
  * Internal structure associated with a domain snapshot
@@ -712,6 +739,8 @@ virStreamPtr virGetStream(virConnectPtr conn);
 virNWFilterPtr virGetNWFilter(virConnectPtr conn,
                               const char *name,
                               const unsigned char *uuid);
+virDomainCheckpointPtr virGetDomainCheckpoint(virDomainPtr domain,
+                                              const char *name);
 virDomainSnapshotPtr virGetDomainSnapshot(virDomainPtr domain,
                                           const char *name);
 
