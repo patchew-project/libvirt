@@ -9,6 +9,8 @@
     <h2><a id="SnapshotAttributes">Snapshot XML</a></h2>
 
     <p>
+      Snapshots are one form
+      of <a href="domainstatecapture.html">domain state capture</a>.
       There are several types of snapshots:
     </p>
     <dl>

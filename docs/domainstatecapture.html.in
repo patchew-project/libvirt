@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <body>
+
+    <h1>Domain state capture using Libvirt</h1>
+
+    <ul id="toc"></ul>
+
+    <p>
+      This page compares the different means for capturing state
+      related to a domain managed by libvirt, in order to aid
+      application developers to choose which operations best suit
+      their needs.
+    </p>
+
+    <h2><a id="definitions">State capture trade-offs</a></h2>
+
+    <p>One of the features made possible with virtual machines is live
+      migration, or transferring all state related to the guest from
+      one host to another, with minimal interruption to the guest's
+      activity.  A clever observer will then note that if all state is
+      available for live migration, there is nothing stopping a user
+      from saving that state at a given point of time, to be able to
+      later rewind guest execution back to the state it previously
+      had.  There are several different libvirt APIs associated with
+      capturing the state of a guest, such that the captured state can
+      later be used to rewind that guest to the conditions it was in
+      earlier.  But since there are multiple APIs, it is best to
+      understand the tradeoffs and differences between them, in order
+      to choose the best API for a given task.
+    </p>
+
+    <dl>
+      <dt>Timing</dt>
+      <dd>Capturing state can be a lengthy process, so while the
+        captured state ideally represents an atomic point in time
+        correpsonding to something the guest was actually executing,
+        some interfaces require up-front preparation (the state
+        captured is not complete until the API ends, which may be some
+        time after the command was first started), while other
+        interfaces track the state when the command was first issued
+        even if it takes some time to finish capturing the state.
+        While it is possible to freeze guest I/O around either point
+        in time (so that the captured state is fully consistent,
+        rather than just crash-consistent), knowing whether the state
+        is captured at the start or end of the command may determine
+        which approach to use.  A related concept is the amount of
+        downtime the guest will experience during the capture,
+        particularly since freezing guest I/O has time
+        constraints.</dd>
+
+      <dt>Amount of state</dt>
+      <dd>For an offline guest, only the contents of the guest disks
+        needs to be captured; restoring that state is merely a fresh
+        boot with the disks restored to that state.  But for an online
+        guest, there is a choice between storing the guest's memory
+        (all that is needed during live migration where the storage is
+        shared between source and destination), the guest's disk state
+        (all that is needed if there are no pending guest I/O
+        transactions that would be lost without the corresponding
+        memory state), or both together.  Unless guest I/O is quiesced
+        prior to capturing state, then reverting to captured disk
+        state of a live guest without the corresponding memory state
+        is comparable to booting a machine that previously lost power
+        without a clean shutdown; but for a guest that uses
+        appropriate journaling methods, this crash-consistent state
+        may be sufficient to avoid the additional storage and time
+        needed to capture memory state.</dd>
+
+      <dt>Quantity of files</dt>
+      <dd>When capturing state, some approaches store all state within
+        the same file (internal), while others expand a chain of
+        related files that must be used together (external), for more
+        files that a management application must track.  There are
+        also differences depending on whether the state is captured in
+        the same file in use by a running guest, or whether the state
+        is captured to a distinct file without impacting the files
+        used to run the guest.</dd>
+
+      <dt>Third-party integration</dt>
+      <dd>When capturing state, particularly for a running, there are
+        tradeoffs to how much of the process must be done directly by
+        the hypervisor, and how much can be off-loaded to third-party
+        software.  Since capturing state is not instantaneous, it is
+        essential that any third-party integration see consistent data
+        even if the running guest continues to modify that data after
+        the point in time of the capture.</dd>
+
+      <dt>Full vs. partial</dt>
+      <dd>When capturing state, it is useful to minimize the amount of
+        state that must be captured in relation to a previous capture,
+        by focusing only on the portions of the disk that the guest
+        has modified since the previous capture.  Some approaches are
+        able to take advantage of checkpoints to provide an
+        incremental backup, while others are only capable of a full
+        backup including portions of the disk that have not changed
+        since the previous state capture.</dd>
+    </dl>
+
+    <h2><a id="apis">State capture APIs</a></h2>
+    <p>With those definitions, the following libvirt APIs have these
+      properties:</p>
+    <dl>
+      <dt>virDomainSnapshotCreateXML()</dt>
+      <dd>This API wraps several approaches for capturing guest state,
+        with a general premise of creating a snapshot (where the
+        current guest resources are frozen in time and a new wrapper
+        layer is opened for tracking subsequent guest changes).  It
+        can operate on both offline and running guests, can choose
+        whether to capture the state of memory, disk, or both when
+        used on a running guest, and can choose between internal and
+        external storage for captured state.  However, it is geared
+        towards post-event captures (when capturing both memory and
+        disk state, the disk state is not captured until all memory
+        state has been collected first).  For qemu as the hypervisor,
+        internal snapshots currently have lengthy downtime that is
+        incompatible with freezing guest I/O, but external snapshots
+        are quick.  Since creating an external snapshot changes which
+        disk image resource is in use by the guest, this API can be
+        coupled with <code>virDomainBlockCommit()</code> to restore
+        things back to the guest using its original disk image, where
+        a third-party tool can read the backing file prior to the live
+        commit.  See also the <a href="formatsnapshot.html">XML
+        details</a> used with this command.</dd>
+      <dt>virDomainBlockCopy()</dt>
+      <dd>This API wraps approaches for capturing the state of disks
+        of a running guest, but does not track accompanying guest
+        memory state, and can only operate on one block device per job
+        (to get a consistent copy of multiple disks, the domain must
+        be paused before ending the multiple jobs).  The capture is
+        consistent only at the end of the operation, with a choice to
+        either pivot to the new file that contains the copy (leaving
+        the old file as the backup), or to return to the original file
+        (leaving the new file as the backup).</dd>
+      <dt>virDomainBackupBegin()</dt>
+      <dd>This API wraps approaches for capturing the state of disks
+        of a running guest, but does not track accompanying guest
+        memory state.  The capture is consistent to the start of the
+        operation, where the captured state is stored independently
+        from the disk image in use with the guest, and where it can be
+        easily integrated with a third-party for capturing the disk
+        state.  Since the backup operation is stored externally from
+        the guest resources, there is no need to commit data back in
+        at the completion of the operation.  When coupled with
+        checkpoints, this can be used to capture incremental backups
+        instead of full.</dd>
+      <dt>virDomainCheckpointCreateXML()</dt>
+      <dd>This API does not actually capture guest state, so much as
+        make it possible to track which portions of guest disks have
+        change between checkpoints or between a current checkpoint and
+        the live execution of the guest.  When performing incremental
+        backups, it is easier to create a new checkpoint at the same
+        time as a new backup, so that the next incremental backup can
+        refer to the incremental state since the checkpoint created
+        during the current backup.  Guest state is then actually
+        captured using <code>virDomainBackupBegin()</code>.  <!--See also
+        the <a href="formatcheckpoint.html">XML details</a> used with
+        this command.--></dd>
+    </dl>
+
+    <h2><a id="examples">Examples</a></h2>
+    <p>The following two sequences both capture the disk state of a
+      running guest, then complete with the guest running on its
+      original disk image; but with a difference that an unexpected
+      interruption during the first mode leaves a temporary wrapper
+      file that must be accounted for, while interruption of the
+      second mode has no impact to the guest.</p>
+    <p>1. Backup via temporary snapshot
+      <pre>
+virDomainFSFreeze()
+virDomainSnapshotCreateXML(VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY)
+virDomainFSThaw()
+third-party copy the backing file to backup storage # most time spent here
+virDomainBlockCommit(VIR_DOMAIN_BLOCK_COMMIT_ACTIVE) per disk
+wait for commit ready event per disk
+virDomainBlockJobAbort() per disk
+      </pre></p>
+
+    <p>2. Direct backup
+      <pre>
+virDomainFSFreeze()
+virDomainBackupBegin()
+virDomainFSThaw()
+wait for push mode event, or pull data over NBD # most time spent here
+virDomainBackeupEnd()
+    </pre></p>
+
+  </body>
+</html>
