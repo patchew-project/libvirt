@@ -1307,7 +1307,7 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
             (def->state == VIR_DOMAIN_DISK_SNAPSHOT)) {
             virReportError(VIR_ERR_INVALID_ARG,
                            _("cannot change between disk snapshot and "
-                             "system checkpoint in snapshot %s"),
+                             "full system state in snapshot %s"),
                            def->name);
             goto cleanup;
         }
