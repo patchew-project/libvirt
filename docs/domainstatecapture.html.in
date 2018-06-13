@@ -154,9 +154,9 @@
         time as a new backup, so that the next incremental backup can
         refer to the incremental state since the checkpoint created
         during the current backup.  Guest state is then actually
-        captured using <code>virDomainBackupBegin()</code>.  <!--See also
+        captured using <code>virDomainBackupBegin()</code>.  See also
         the <a href="formatcheckpoint.html">XML details</a> used with
-        this command.--></dd>
+        this command.</dd>
     </dl>
 
     <h2><a id="examples">Examples</a></h2>
