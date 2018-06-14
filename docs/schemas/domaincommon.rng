@@ -4309,12 +4309,14 @@
           </element>
         </group>
       </choice>
+      <interleave>
       <optional>
         <ref name="alias"/>
       </optional>
       <optional>
         <ref name="address"/>
       </optional>
+      </interleave>
     </element>
   </define>
   <define name="hub">
