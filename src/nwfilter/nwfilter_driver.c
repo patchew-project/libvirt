@@ -654,67 +654,6 @@ nwfilterGetXMLDesc(virNWFilterPtr nwfilter,
 }
 
 
-static int
-nwfilterInstantiateFilter(const char *vmname,
-                          const unsigned char *vmuuid,
-                          virDomainNetDefPtr net)
-{
-    virNWFilterBindingObjPtr obj;
-    virNWFilterBindingDefPtr def;
-    int ret;
-
-    obj = virNWFilterBindingObjListFindByPortDev(driver->bindings, net->ifname);
-    if (obj) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Filter already present for NIC %s"), net->ifname);
-        virNWFilterBindingObjEndAPI(&obj);
-        return -1;
-    }
-
-    if (!(def = virNWFilterBindingDefForNet(vmname, vmuuid, net)))
-        return -1;
-
-    obj = virNWFilterBindingObjListAdd(driver->bindings,
-                                       def);
-    if (!obj) {
-        virNWFilterBindingDefFree(def);
-        return -1;
-    }
-
-    ret = virNWFilterInstantiateFilter(driver, def);
-
-    if (ret >= 0)
-        virNWFilterBindingObjSave(obj, driver->bindingDir);
-    else
-        virNWFilterBindingObjListRemove(driver->bindings, obj);
-
-    virNWFilterBindingObjEndAPI(&obj);
-
-    return ret;
-}
-
-
-static void
-nwfilterTeardownFilter(virDomainNetDefPtr net)
-{
-    virNWFilterBindingObjPtr obj;
-    virNWFilterBindingDefPtr def;
-    if (!net->ifname)
-        return;
-
-    obj = virNWFilterBindingObjListFindByPortDev(driver->bindings, net->ifname);
-    if (!obj)
-        return;
-
-    def = virNWFilterBindingObjGetDef(obj);
-    virNWFilterTeardownFilter(def);
-    virNWFilterBindingObjDelete(obj, driver->bindingDir);
-
-    virNWFilterBindingObjListRemove(driver->bindings, obj);
-    virNWFilterBindingObjEndAPI(&obj);
-}
-
-
 static virNWFilterBindingPtr
 nwfilterBindingLookupByPortDev(virConnectPtr conn,
                                const char *portdev)
@@ -725,8 +664,11 @@ nwfilterBindingLookupByPortDev(virConnectPtr conn,
 
     obj = virNWFilterBindingObjListFindByPortDev(driver->bindings,
                                                  portdev);
-    if (!obj)
+    if (!obj) {
+        virReportError(VIR_ERR_NO_NWFILTER_BINDING,
+                       _("no nwfilter binding for port dev '%s'"), portdev);
         goto cleanup;
+    }
 
     def = virNWFilterBindingObjGetDef(obj);
     if (virNWFilterBindingLookupByPortDevEnsureACL(conn, def) < 0)
@@ -773,8 +715,11 @@ nwfilterBindingGetXMLDesc(virNWFilterBindingPtr binding,
 
     obj = virNWFilterBindingObjListFindByPortDev(driver->bindings,
                                                  binding->portdev);
-    if (!obj)
+    if (!obj) {
+        virReportError(VIR_ERR_NO_NWFILTER_BINDING,
+                       _("no nwfilter binding for port dev '%s'"), binding->portdev);
         goto cleanup;
+    }
 
     def = virNWFilterBindingObjGetDef(obj);
     if (virNWFilterBindingGetXMLDescEnsureACL(binding->conn, def) < 0)
@@ -846,8 +791,11 @@ nwfilterBindingDelete(virNWFilterBindingPtr binding)
     int ret = -1;
 
     obj = virNWFilterBindingObjListFindByPortDev(driver->bindings, binding->portdev);
-    if (!obj)
+    if (!obj) {
+        virReportError(VIR_ERR_NO_NWFILTER_BINDING,
+                       _("no nwfilter binding for port dev '%s'"), binding->portdev);
         return -1;
+    }
 
     def = virNWFilterBindingObjGetDef(obj);
     if (virNWFilterBindingDeleteEnsureACL(binding->conn, def) < 0)
@@ -908,13 +856,6 @@ static virStateDriver stateDriver = {
     .stateReload = nwfilterStateReload,
 };
 
-
-static virDomainConfNWFilterDriver domainNWFilterDriver = {
-    .instantiateFilter = nwfilterInstantiateFilter,
-    .teardownFilter = nwfilterTeardownFilter,
-};
-
-
 int nwfilterRegister(void)
 {
     if (virRegisterConnectDriver(&nwfilterConnectDriver, false) < 0)
@@ -923,6 +864,5 @@ int nwfilterRegister(void)
         return -1;
     if (virRegisterStateDriver(&stateDriver) < 0)
         return -1;
-    virDomainConfNWFilterRegister(&domainNWFilterDriver);
     return 0;
 }
