@@ -103,7 +103,7 @@
 
     <p>With that said, let's begin.</p>
 
-    <h2><a name='publicapi'>Defining the public API</a></h2>
+    <h2><a id='publicapi'>Defining the public API</a></h2>
 
     <p>The first task is to define the public API.  If the new API
       involves an XML extension, you have to enhance the RelaxNG
@@ -137,7 +137,7 @@
     and <a href="api_extension/0002-add-new-public-API.patch">0002-add-new-public-API.patch</a>
     for example code.</p>
 
-    <h2><a name='internalapi'>Defining the internal API</a></h2>
+    <h2><a id='internalapi'>Defining the internal API</a></h2>
 
     <p>
       Each public API call is associated with a driver, such as a host
@@ -166,7 +166,7 @@
 
     <p class="example">See <a href="api_extension/0003-define-internal-driver-API.patch">0003-define-internal-driver-API.patch</a></p>
 
-    <h2><a name='implpublic'>Implementing the public API</a></h2>
+    <h2><a id='implpublic'>Implementing the public API</a></h2>
 
     <p>
       Implementing the public API is largely a formality in which we wire up
@@ -201,7 +201,7 @@
 
     <p class="example">See <a href="api_extension/0004-implement-the-public-APIs.patch">0004-implement-the-public-APIs.patch</a></p>
 
-    <h2><a name='remoteproto'>Implementing the remote protocol</a></h2>
+    <h2><a id='remoteproto'>Implementing the remote protocol</a></h2>
 
     <p>
       Implementing the remote protocol is essentially a
@@ -213,7 +213,7 @@
 
     <p class="example">See <a href="api_extension/0005-implement-the-remote-protocol.patch">0005-implement-the-remote-protocol.patch</a></p>
 
-    <h3><a name='wireproto'>Defining the wire protocol format</a></h3>
+    <h3><a id='wireproto'>Defining the wire protocol format</a></h3>
 
     <p>
       Defining the wire protocol involves making additions to:
@@ -252,7 +252,7 @@
         src/remote/remote_protocol.h
     </code></p>
 
-    <h3><a name='rpcclient'>Implement the RPC client</a></h3>
+    <h3><a id='rpcclient'>Implement the RPC client</a></h3>
 
     <p>
       Implementing the uses the rpcgen generated .h files.  The remote
