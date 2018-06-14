@@ -1072,6 +1072,16 @@ virNWFilterBindingObjSetDef;
 virNWFilterBindingObjSetRemoving;
 
 
+# conf/virnwfilterbindingobjlist.h
+virNWFilterBindingObjListAdd;
+virNWFilterBindingObjListExport;
+virNWFilterBindingObjListFindByPortDev;
+virNWFilterBindingObjListForEach;
+virNWFilterBindingObjListLoadAllConfigs;
+virNWFilterBindingObjListNew;
+virNWFilterBindingObjListRemove;
+
+
 # conf/virnwfilterobj.h
 virNWFilterObjGetDef;
 virNWFilterObjGetNewDef;
