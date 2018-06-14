@@ -788,8 +788,6 @@ virDomainNumatuneSpecifiedMaxNode;
 
 
 # conf/nwfilter_conf.h
-virNWFilterBindingDefCopy;
-virNWFilterBindingDefFree;
 virNWFilterCallbackDriversLock;
 virNWFilterCallbackDriversUnlock;
 virNWFilterChainSuffixTypeToString;
@@ -1048,6 +1046,11 @@ virNodeDeviceObjListGetParentHost;
 virNodeDeviceObjListNew;
 virNodeDeviceObjListNumOfDevices;
 virNodeDeviceObjListRemove;
+
+
+# conf/virnwfilterbindingdef.h
+virNWFilterBindingDefCopy;
+virNWFilterBindingDefFree;
 
 
 # conf/virnwfilterobj.h
