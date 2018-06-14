@@ -1058,6 +1058,20 @@ virNWFilterBindingDefParseNode;
 virNWFilterBindingDefParseString;
 
 
+# conf/virnwfilterbindingobj.h
+virNWFilterBindingObjConfigFile;
+virNWFilterBindingObjDelete;
+virNWFilterBindingObjEndAPI;
+virNWFilterBindingObjFormat;
+virNWFilterBindingObjGetDef;
+virNWFilterBindingObjGetRemoving;
+virNWFilterBindingObjNew;
+virNWFilterBindingObjParseFile;
+virNWFilterBindingObjSave;
+virNWFilterBindingObjSetDef;
+virNWFilterBindingObjSetRemoving;
+
+
 # conf/virnwfilterobj.h
 virNWFilterObjGetDef;
 virNWFilterObjGetNewDef;
