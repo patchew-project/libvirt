@@ -933,13 +933,21 @@ virNetServerGetThreadPoolParameters(virNetServerPtr srv,
                                     size_t *jobQueueDepth)
 {
     virObjectLock(srv);
-
-    *minWorkers = virThreadPoolGetMinWorkers(srv->workers);
-    *maxWorkers = virThreadPoolGetMaxWorkers(srv->workers);
-    *freeWorkers = virThreadPoolGetFreeWorkers(srv->workers);
-    *nWorkers = virThreadPoolGetCurrentWorkers(srv->workers);
-    *nPrioWorkers = virThreadPoolGetPriorityWorkers(srv->workers);
-    *jobQueueDepth = virThreadPoolGetJobQueueDepth(srv->workers);
+    if (srv->workers) {
+        *minWorkers = virThreadPoolGetMinWorkers(srv->workers);
+        *maxWorkers = virThreadPoolGetMaxWorkers(srv->workers);
+        *freeWorkers = virThreadPoolGetFreeWorkers(srv->workers);
+        *nWorkers = virThreadPoolGetCurrentWorkers(srv->workers);
+        *nPrioWorkers = virThreadPoolGetPriorityWorkers(srv->workers);
+        *jobQueueDepth = virThreadPoolGetJobQueueDepth(srv->workers);
+    } else {
+        *minWorkers = 0;
+        *maxWorkers = 0;
+        *freeWorkers = 0;
+        *nWorkers = 0;
+        *nPrioWorkers = 0;
+        *jobQueueDepth = 0;
+    }
 
     virObjectUnlock(srv);
     return 0;
