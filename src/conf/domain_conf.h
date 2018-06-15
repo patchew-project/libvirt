@@ -2228,10 +2228,10 @@ struct _virDomainCputune {
 };
 
 
-typedef struct _virDomainCachetuneDef virDomainCachetuneDef;
-typedef virDomainCachetuneDef *virDomainCachetuneDefPtr;
+typedef struct _virDomainRestuneDef virDomainRestuneDef;
+typedef virDomainRestuneDef *virDomainRestuneDefPtr;
 
-struct _virDomainCachetuneDef {
+struct _virDomainRestuneDef {
     virBitmapPtr vcpus;
     virResctrlAllocPtr alloc;
 };
@@ -2409,8 +2409,8 @@ struct _virDomainDef {
 
     virDomainCputune cputune;
 
-    virDomainCachetuneDefPtr *cachetunes;
-    size_t ncachetunes;
+    virDomainRestuneDefPtr *restunes;
+    size_t nrestunes;
 
     virDomainNumaPtr numa;
     virDomainResourceDefPtr resource;
