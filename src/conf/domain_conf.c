@@ -26882,7 +26882,7 @@ virDomainCachetuneDefFormat(virBufferPtr buf,
     int ret = -1;
 
     virBufferSetChildIndent(&childrenBuf, buf);
-    virResctrlAllocForeachSize(cachetune->alloc,
+    virResctrlAllocForeachCache(cachetune->alloc,
                                virDomainCachetuneDefFormatHelper,
                                &childrenBuf);
 

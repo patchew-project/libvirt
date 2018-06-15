@@ -316,11 +316,9 @@ virResctrlUnlock(int fd)
 }
 
 
-/* virResctrlInfo-related definitions */
 static int
-virResctrlGetInfo(virResctrlInfoPtr resctrl)
+virResctrlGetCacheInfo(virResctrlInfoPtr resctrl, DIR *dirp)
 {
-    DIR *dirp = NULL;
     char *endptr = NULL;
     char *tmp_str = NULL;
     int ret = -1;
@@ -331,12 +329,6 @@ virResctrlGetInfo(virResctrlInfoPtr resctrl)
     virBitmapPtr tmp_map = NULL;
     virResctrlInfoPerLevelPtr i_level = NULL;
     virResctrlInfoPerTypePtr i_type = NULL;
-
-    rv = virDirOpenIfExists(&dirp, SYSFS_RESCTRL_PATH "/info");
-    if (rv <= 0) {
-        ret = rv;
-        goto cleanup;
-    }
 
     while ((rv = virDirRead(dirp, &ent, SYSFS_RESCTRL_PATH "/info")) > 0) {
         VIR_DEBUG("Parsing info type '%s'", ent->d_name);
@@ -443,8 +435,29 @@ virResctrlGetInfo(virResctrlInfoPtr resctrl)
 
     ret = 0;
  cleanup:
-    VIR_DIR_CLOSE(dirp);
     VIR_FREE(i_type);
+    return ret;
+}
+
+
+/* virResctrlInfo-related definitions */
+static int
+virResctrlGetInfo(virResctrlInfoPtr resctrl)
+{
+    DIR *dirp = NULL;
+    int ret = -1;
+
+    ret = virDirOpenIfExists(&dirp, SYSFS_RESCTRL_PATH "/info");
+    if (ret <= 0)
+        goto cleanup;
+
+    ret = virResctrlGetCacheInfo(resctrl, dirp);
+    if (ret < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_DIR_CLOSE(dirp);
     return ret;
 }
 
@@ -773,8 +786,8 @@ virResctrlAllocSetSize(virResctrlAllocPtr alloc,
 
 
 int
-virResctrlAllocForeachSize(virResctrlAllocPtr alloc,
-                           virResctrlAllocForeachSizeCallback cb,
+virResctrlAllocForeachCache(virResctrlAllocPtr alloc,
+                           virResctrlAllocForeachCacheCallback cb,
                            void *opaque)
 {
     int ret = 0;
@@ -835,16 +848,13 @@ virResctrlAllocGetID(virResctrlAllocPtr alloc)
 }
 
 
-char *
-virResctrlAllocFormat(virResctrlAllocPtr alloc)
+static int
+virResctrlAllocFormatCache(virResctrlAllocPtr alloc, virBufferPtr buf)
 {
-    virBuffer buf = VIR_BUFFER_INITIALIZER;
+    int ret = -1;
     unsigned int level = 0;
     unsigned int type = 0;
     unsigned int cache = 0;
-
-    if (!alloc)
-        return NULL;
 
     for (level = 0; level < alloc->nlevels; level++) {
         virResctrlAllocPerLevelPtr a_level = alloc->levels[level];
@@ -858,7 +868,7 @@ virResctrlAllocFormat(virResctrlAllocPtr alloc)
             if (!a_type)
                 continue;
 
-            virBufferAsprintf(&buf, "L%u%s:", level, virResctrlTypeToString(type));
+            virBufferAsprintf(buf, "L%u%s:", level, virResctrlTypeToString(type));
 
             for (cache = 0; cache < a_type->nmasks; cache++) {
                 virBitmapPtr mask = a_type->masks[cache];
@@ -868,18 +878,35 @@ virResctrlAllocFormat(virResctrlAllocPtr alloc)
                     continue;
 
                 mask_str = virBitmapToString(mask, false, true);
-                if (!mask_str) {
-                    virBufferFreeAndReset(&buf);
-                    return NULL;
-                }
+                if (!mask_str)
+                    return ret;
 
-                virBufferAsprintf(&buf, "%u=%s;", cache, mask_str);
+                virBufferAsprintf(buf, "%u=%s;", cache, mask_str);
                 VIR_FREE(mask_str);
             }
 
-            virBufferTrim(&buf, ";", 1);
-            virBufferAddChar(&buf, '\n');
+            virBufferTrim(buf, ";", 1);
+            virBufferAddChar(buf, '\n');
         }
+    }
+
+    ret = 0;
+    virBufferCheckError(buf);
+    return ret;
+}
+
+
+char *
+virResctrlAllocFormat(virResctrlAllocPtr alloc)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    if (!alloc)
+        return NULL;
+
+    if (virResctrlAllocFormatCache(alloc, &buf) < 0) {
+        virBufferFreeAndReset(&buf);
+        return NULL;
     }
 
     virBufferCheckError(&buf);
@@ -939,9 +966,9 @@ virResctrlAllocParseProcessCache(virResctrlInfoPtr resctrl,
 
 
 static int
-virResctrlAllocParseProcessLine(virResctrlInfoPtr resctrl,
-                                virResctrlAllocPtr alloc,
-                                char *line)
+virResctrlAllocParseCacheLine(virResctrlInfoPtr resctrl,
+                              virResctrlAllocPtr alloc,
+                              char *line)
 {
     char **caches = NULL;
     char *tmp = NULL;
@@ -1009,7 +1036,7 @@ virResctrlAllocParse(virResctrlInfoPtr resctrl,
 
     lines = virStringSplitCount(schemata, "\n", 0, &nlines);
     for (i = 0; i < nlines; i++) {
-        if (virResctrlAllocParseProcessLine(resctrl, alloc, lines[i]) < 0)
+        if (virResctrlAllocParseCacheLine(resctrl, alloc, lines[i]) < 0)
             goto cleanup;
     }
 
@@ -1401,8 +1428,8 @@ virResctrlAllocCopyMasks(virResctrlAllocPtr dst,
  * transforming `sizes` into `masks`.
  */
 static int
-virResctrlAllocMasksAssign(virResctrlInfoPtr resctrl,
-                           virResctrlAllocPtr alloc)
+virResctrlAllocAssign(virResctrlInfoPtr resctrl,
+                      virResctrlAllocPtr alloc)
 {
     int ret = -1;
     unsigned int level = 0;
@@ -1526,7 +1553,7 @@ virResctrlAllocCreate(virResctrlInfoPtr resctrl,
     if (lockfd < 0)
         goto cleanup;
 
-    if (virResctrlAllocMasksAssign(resctrl, alloc) < 0)
+    if (virResctrlAllocAssign(resctrl, alloc) < 0)
         goto cleanup;
 
     alloc_str = virResctrlAllocFormat(alloc);
