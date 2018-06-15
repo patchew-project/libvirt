@@ -50,6 +50,17 @@ struct _virResctrlInfoPerCache {
     unsigned int max_allocation;
 };
 
+typedef struct _virResctrlInfoPerNode virResctrlInfoPerNode;
+typedef virResctrlInfoPerNode *virResctrlInfoPerNodePtr;
+struct _virResctrlInfoPerNode {
+    /* Smallest possible increase of the allocation bandwidth in percentage */
+    unsigned int granularity;
+    /* Minimal allocatable bandwidth in percentage */
+    unsigned int min;
+    /* Maximum number of simultaneous allocations */
+    unsigned int max_allocation;
+};
+
 typedef struct _virResctrlInfo virResctrlInfo;
 typedef virResctrlInfo *virResctrlInfoPtr;
 
@@ -63,6 +74,10 @@ virResctrlInfoGetCache(virResctrlInfoPtr resctrl,
                        size_t *ncontrols,
                        virResctrlInfoPerCachePtr **controls);
 
+int
+virResctrlInfoGetMemory(virResctrlInfoPtr resctrl,
+                        unsigned int level,
+                        virResctrlInfoPerNodePtr control);
 /* Alloc-related things */
 typedef struct _virResctrlAlloc virResctrlAlloc;
 typedef virResctrlAlloc *virResctrlAllocPtr;
