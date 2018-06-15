@@ -201,7 +201,7 @@ static void virNetServerDispatchNewMessage(virNetServerClientPtr client,
         virNetServerJobPtr job;
 
         if (VIR_ALLOC(job) < 0)
-            goto error;
+            goto error_unlock;
 
         job->client = client;
         job->msg = msg;
@@ -216,20 +216,23 @@ static void virNetServerDispatchNewMessage(virNetServerClientPtr client,
             virObjectUnref(client);
             VIR_FREE(job);
             virObjectUnref(prog);
-            goto error;
+            goto error_unlock;
         }
+        virObjectUnlock(srv);
     } else {
+        /* @srv must be unlocked for virNetServerProcessMsg */
+        virObjectUnlock(srv);
         if (virNetServerProcessMsg(srv, client, prog, msg) < 0)
             goto error;
     }
 
-    virObjectUnlock(srv);
     return;
 
+ error_unlock:
+    virObjectUnlock(srv);
  error:
     virNetMessageFree(msg);
     virNetServerClientClose(client);
-    virObjectUnlock(srv);
 }
 
 /**
