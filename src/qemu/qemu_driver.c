@@ -21520,10 +21520,8 @@ qemuDomainGetSEVMeasurement(virQEMUDriverPtr driver,
 
     qemuDomainObjEnterMonitor(driver, vm);
     tmp = qemuMonitorGetSEVMeasurement(QEMU_DOMAIN_PRIVATE(vm)->mon);
-    if (tmp == NULL)
-        goto endjob;
 
-    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+    if (qemuDomainObjExitMonitor(driver, vm) < 0 || !tmp)
         goto endjob;
 
     if (virTypedParamsAddString(params, nparams, &maxpar,
