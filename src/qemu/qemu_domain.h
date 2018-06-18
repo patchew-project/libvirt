@@ -518,6 +518,15 @@ int qemuDomainObjBeginJob(virQEMUDriverPtr driver,
                           virDomainObjPtr obj,
                           qemuDomainJob job)
     ATTRIBUTE_RETURN_CHECK;
+int qemuDomainObjBeginAgentJob(virQEMUDriverPtr driver,
+                               virDomainObjPtr obj,
+                               qemuDomainAgentJob agentJob)
+    ATTRIBUTE_RETURN_CHECK;
+int qemuDomainObjBeginJobWithAgent(virQEMUDriverPtr driver,
+                                   virDomainObjPtr obj,
+                                   qemuDomainJob job,
+                                   qemuDomainAgentJob agentJob)
+    ATTRIBUTE_RETURN_CHECK;
 int qemuDomainObjBeginAsyncJob(virQEMUDriverPtr driver,
                                virDomainObjPtr obj,
                                qemuDomainAsyncJob asyncJob,
@@ -531,6 +540,9 @@ int qemuDomainObjBeginNestedJob(virQEMUDriverPtr driver,
 
 void qemuDomainObjEndJob(virQEMUDriverPtr driver,
                          virDomainObjPtr obj);
+void qemuDomainObjEndAgentJob(virDomainObjPtr obj);
+void qemuDomainObjEndJobWithAgent(virQEMUDriverPtr driver,
+                                  virDomainObjPtr obj);
 void qemuDomainObjEndAsyncJob(virQEMUDriverPtr driver,
                               virDomainObjPtr obj);
 void qemuDomainObjAbortAsyncJob(virDomainObjPtr obj);
