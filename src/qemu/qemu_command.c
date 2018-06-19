@@ -3354,15 +3354,15 @@ qemuBuildMemoryDeviceStr(virDomainMemoryDefPtr mem)
 
 static char *
 qemuBuildLegacyNicStr(virDomainNetDefPtr net,
-                      int vlan)
+                      int vlan ATTRIBUTE_UNUSED)
 {
     char *str;
     char macaddr[VIR_MAC_STRING_BUFLEN];
 
     ignore_value(virAsprintf(&str,
-                             "nic,macaddr=%s,vlan=%d%s%s%s%s",
+                             "nic,macaddr=%s,netdev=host%s%s%s%s%s",
                              virMacAddrFormat(&net->mac, macaddr),
-                             vlan,
+                             net->info.alias,
                              (net->model ? ",model=" : ""),
                              (net->model ? net->model : ""),
                              (net->info.alias ? ",name=" : ""),
@@ -3374,7 +3374,7 @@ qemuBuildLegacyNicStr(virDomainNetDefPtr net,
 char *
 qemuBuildNicDevStr(virDomainDefPtr def,
                    virDomainNetDefPtr net,
-                   int vlan,
+                   int vlan ATTRIBUTE_UNUSED,
                    unsigned int bootindex,
                    size_t vhostfdSize,
                    virQEMUCapsPtr qemuCaps)
@@ -3523,10 +3523,7 @@ qemuBuildNicDevStr(virDomainDefPtr def,
         virBufferAsprintf(&buf, ",host_mtu=%u", net->mtu);
     }
 
-    if (vlan == -1)
-        virBufferAsprintf(&buf, ",netdev=host%s", net->info.alias);
-    else
-        virBufferAsprintf(&buf, ",vlan=%d", vlan);
+    virBufferAsprintf(&buf, ",netdev=host%s", net->info.alias);
     virBufferAsprintf(&buf, ",id=%s", net->info.alias);
     virBufferAsprintf(&buf, ",mac=%s",
                       virMacAddrFormat(&net->mac, macaddr));
@@ -3555,7 +3552,7 @@ qemuBuildNicDevStr(virDomainDefPtr def,
 char *
 qemuBuildHostNetStr(virDomainNetDefPtr net,
                     virQEMUDriverPtr driver,
-                    int vlan,
+                    int vlan ATTRIBUTE_UNUSED,
                     char **tapfd,
                     size_t tapfdSize,
                     char **vhostfd,
@@ -3670,13 +3667,7 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
         break;
     }
 
-    if (vlan >= 0) {
-        virBufferAsprintf(&buf, "vlan=%d,", vlan);
-        if (net->info.alias)
-            virBufferAsprintf(&buf, "name=host%s,", net->info.alias);
-    } else {
-        virBufferAsprintf(&buf, "id=host%s,", net->info.alias);
-    }
+    virBufferAsprintf(&buf, "id=host%s,", net->info.alias);
 
     if (is_tap) {
         if (vhostfdSize) {
@@ -8494,22 +8485,20 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
             goto cleanup;
     }
 
+    if (!(host = qemuBuildHostNetStr(net, driver,
+                                     vlan,
+                                     tapfdName, tapfdSize,
+                                     vhostfdName, vhostfdSize)))
+        goto cleanup;
+    virCommandAddArgList(cmd, "-netdev", host, NULL);
+
     /* Possible combinations:
      *
-     *  1. Old way:   -net nic,model=e1000,vlan=1 -net tap,vlan=1
-     *  2. New way:   -netdev type=tap,id=netdev1 -device e1000,id=netdev1
-     *
-     * NB: The backend and frontend are reversed above
+     *   Old way: -netdev type=tap,id=netdev1 \
+     *              -net nic,model=e1000,netdev=netdev1
+     *   New way: -netdev type=tap,id=netdev1 -device e1000,id=netdev1
      */
-
     if (qemuDomainSupportsNicdev(def, net)) {
-        if (!(host = qemuBuildHostNetStr(net, driver,
-                                         vlan,
-                                         tapfdName, tapfdSize,
-                                         vhostfdName, vhostfdSize)))
-            goto cleanup;
-        virCommandAddArgList(cmd, "-netdev", host, NULL);
-
         if (!(nic = qemuBuildNicDevStr(def, net, vlan, bootindex,
                                        vhostfdSize, qemuCaps)))
             goto cleanup;
@@ -8518,13 +8507,6 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
         if (!(nic = qemuBuildLegacyNicStr(net, vlan)))
             goto cleanup;
         virCommandAddArgList(cmd, "-net", nic, NULL);
-
-        if (!(host = qemuBuildHostNetStr(net, driver,
-                                         vlan,
-                                         tapfdName, tapfdSize,
-                                         vhostfdName, vhostfdSize)))
-            goto cleanup;
-        virCommandAddArgList(cmd, "-net", host, NULL);
     }
 
     ret = 0;
