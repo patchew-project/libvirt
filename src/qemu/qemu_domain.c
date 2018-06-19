@@ -3827,6 +3827,19 @@ qemuDomainDefValidateFeatures(const virDomainDef *def,
             }
             break;
 
+        case VIR_DOMAIN_FEATURE_HTM:
+            if (def->features[i] != VIR_TRISTATE_SWITCH_ABSENT &&
+                !qemuDomainIsPSeries(def)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("The '%s' feature is not supported for "
+                                 "architecture '%s' or machine type '%s'"),
+                               featureName,
+                               virArchToString(def->os.arch),
+                               def->os.machine);
+                return -1;
+            }
+            break;
+
         case VIR_DOMAIN_FEATURE_ACPI:
         case VIR_DOMAIN_FEATURE_APIC:
         case VIR_DOMAIN_FEATURE_PAE:

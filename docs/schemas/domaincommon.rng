@@ -4900,6 +4900,11 @@
           <optional>
             <ref name="vmcoreinfo"/>
           </optional>
+          <optional>
+            <element name="htm">
+              <ref name="featurestate"/>
+            </element>
+          </optional>
         </interleave>
       </element>
     </optional>

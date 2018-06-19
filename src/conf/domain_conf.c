@@ -152,6 +152,7 @@ VIR_ENUM_IMPL(virDomainFeature, VIR_DOMAIN_FEATURE_LAST,
               "ioapic",
               "hpt",
               "vmcoreinfo",
+              "htm",
 );
 
 VIR_ENUM_IMPL(virDomainCapabilitiesPolicy, VIR_DOMAIN_CAPABILITIES_POLICY_LAST,
@@ -19830,6 +19831,22 @@ virDomainDefParseXML(xmlDocPtr xml,
             }
             break;
 
+        case VIR_DOMAIN_FEATURE_HTM:
+            if (!(tmp = virXMLPropString(nodes[i], "state"))) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("missing state attribute '%s' of feature '%s'"),
+                               tmp, virDomainFeatureTypeToString(val));
+                goto error;
+            }
+            if ((def->features[val] = virTristateSwitchTypeFromString(tmp)) < 0) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("unknown state attribute '%s' of feature '%s'"),
+                               tmp, virDomainFeatureTypeToString(val));
+                goto error;
+            }
+            VIR_FREE(tmp);
+            break;
+
         /* coverity[dead_error_begin] */
         case VIR_DOMAIN_FEATURE_LAST:
             break;
@@ -21964,6 +21981,7 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
         case VIR_DOMAIN_FEATURE_VMPORT:
         case VIR_DOMAIN_FEATURE_SMM:
         case VIR_DOMAIN_FEATURE_VMCOREINFO:
+        case VIR_DOMAIN_FEATURE_HTM:
             if (src->features[i] != dst->features[i]) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                _("State of feature '%s' differs: "
@@ -27622,6 +27640,7 @@ virDomainDefFormatInternal(virDomainDefPtr def,
             case VIR_DOMAIN_FEATURE_PMU:
             case VIR_DOMAIN_FEATURE_PVSPINLOCK:
             case VIR_DOMAIN_FEATURE_VMPORT:
+            case VIR_DOMAIN_FEATURE_HTM:
                 switch ((virTristateSwitch) def->features[i]) {
                 case VIR_TRISTATE_SWITCH_LAST:
                 case VIR_TRISTATE_SWITCH_ABSENT:
