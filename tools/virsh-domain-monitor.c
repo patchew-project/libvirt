@@ -410,6 +410,15 @@ cmdDomblkinfoPrint(vshControl *ctl,
                    bool human, bool title)
 {
     char *cap = NULL, *alloc = NULL, *phy = NULL;
+    bool invalid = false;
+
+    struct blockInfoText {
+        char *capacity;
+        char *allocation;
+        char *physical;
+    };
+
+    struct blockInfoText *blkInfoText = NULL;
 
     if (title) {
         vshPrintExtra(ctl, "%-10s %-15s %-15s %-15s\n", _("Target"),
@@ -419,15 +428,23 @@ cmdDomblkinfoPrint(vshControl *ctl,
         return;
     }
 
-    if (!human) {
-        if (device) {
-            vshPrint(ctl, "%-10s %-15llu %-15llu %-15llu\n", device,
-                     info->capacity, info->allocation, info->physical);
-        } else {
-            vshPrint(ctl, "%-15s %llu\n", _("Capacity:"), info->capacity);
-            vshPrint(ctl, "%-15s %llu\n", _("Allocation:"), info->allocation);
-            vshPrint(ctl, "%-15s %llu\n", _("Physical:"), info->physical);
-        }
+    invalid = info->capacity == 0 &&
+              info->allocation == 0 &&
+              info->physical == 0;
+    blkInfoText = vshCalloc(ctl, 1, sizeof(*blkInfoText));
+
+    if (invalid) {
+        blkInfoText->capacity = vshStrdup(ctl, "-");
+        blkInfoText->allocation = vshStrdup(ctl, "-");
+        blkInfoText->physical = vshStrdup(ctl, "-");
+    } else if (!human) {
+        if (virAsprintf(&blkInfoText->capacity, "%llu",
+                        info->capacity) < 0 ||
+            virAsprintf(&blkInfoText->allocation, "%llu",
+                        info->allocation) < 0 ||
+            virAsprintf(&blkInfoText->physical, "%llu",
+                        info->physical) < 0)
+            goto cleanup;
     } else {
         double val_cap, val_alloc, val_phy;
         const char *unit_cap, *unit_alloc, *unit_phy;
@@ -435,28 +452,36 @@ cmdDomblkinfoPrint(vshControl *ctl,
         val_cap = vshPrettyCapacity(info->capacity, &unit_cap);
         val_alloc = vshPrettyCapacity(info->allocation, &unit_alloc);
         val_phy = vshPrettyCapacity(info->physical, &unit_phy);
-        if (device) {
-            if (virAsprintf(&cap, "%.3lf %s", val_cap, unit_cap) < 0 ||
-                virAsprintf(&alloc, "%.3lf %s", val_alloc, unit_alloc) < 0 ||
-                virAsprintf(&phy, "%.3lf %s", val_phy, unit_phy) < 0)
-                goto cleanup;
 
-            vshPrint(ctl, "%-10s %-15s %-15s %-15s\n",
-                     device, cap, alloc, phy);
-        } else {
-            vshPrint(ctl, "%-15s %-.3lf %s\n", _("Capacity:"),
-                     val_cap, unit_cap);
-            vshPrint(ctl, "%-15s %-.3lf %s\n", _("Allocation:"),
-                     val_alloc, unit_alloc);
-            vshPrint(ctl, "%-15s %-.3lf %s\n", _("Physical:"),
-                     val_phy, unit_phy);
-        }
+        if (virAsprintf(&blkInfoText->capacity, "%.3lf %s",
+                        val_cap, unit_cap) < 0 ||
+            virAsprintf(&blkInfoText->allocation, "%.3lf %s",
+                        val_alloc, unit_alloc) < 0 ||
+            virAsprintf(&blkInfoText->physical, "%.3lf %s",
+                        val_phy, unit_phy) < 0)
+            goto cleanup;
+    }
+
+    if (device) {
+        vshPrint(ctl, "%-10s %-15s %-15s %-15s\n", device,
+                 blkInfoText->capacity, blkInfoText->allocation,
+                 blkInfoText->physical);
+    } else {
+        vshPrint(ctl, "%-15s %s\n", _("Capacity:"), blkInfoText->capacity);
+        vshPrint(ctl, "%-15s %s\n", _("Allocation:"), blkInfoText->allocation);
+        vshPrint(ctl, "%-15s %s\n", _("Physical:"), blkInfoText->physical);
     }
 
  cleanup:
     VIR_FREE(cap);
     VIR_FREE(alloc);
     VIR_FREE(phy);
+    if (blkInfoText) {
+        VIR_FREE(blkInfoText->capacity);
+        VIR_FREE(blkInfoText->allocation);
+        VIR_FREE(blkInfoText->physical);
+    }
+    VIR_FREE(blkInfoText);
 }
 
 static bool
