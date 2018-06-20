@@ -6420,6 +6420,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
     bool async = job == QEMU_JOB_ASYNC;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     const char *blocker = NULL;
+    const char *agentBlocker = NULL;
     int ret = -1;
     unsigned long long duration = 0;
     unsigned long long agentDuration = 0;
@@ -6549,16 +6550,21 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
              priv->job.apiFlags,
              duration / 1000, agentDuration / 1000, asyncDuration / 1000);
 
-    if (nested || qemuDomainNestedJobAllowed(priv, job))
-        blocker = priv->job.ownerAPI;
-    else
-        blocker = priv->job.asyncOwnerAPI;
+    if (job) {
+        if (nested || qemuDomainNestedJobAllowed(priv, job))
+            blocker = priv->job.ownerAPI;
+        else
+            blocker = priv->job.asyncOwnerAPI;
+    }
+
+    if (agentJob)
+        agentBlocker = priv->job.agentOwnerAPI;
 
     if (errno == ETIMEDOUT) {
-        if (blocker) {
+        if (blocker || agentBlocker) {
             virReportError(VIR_ERR_OPERATION_TIMEOUT,
-                           _("cannot acquire state change lock (held by %s)"),
-                           blocker);
+                           _("cannot acquire state change lock (held by %s %s)"),
+                           NULLSTR(blocker), NULLSTR(agentBlocker));
         } else {
             virReportError(VIR_ERR_OPERATION_TIMEOUT, "%s",
                            _("cannot acquire state change lock"));
@@ -6566,11 +6572,11 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
         ret = -2;
     } else if (cfg->maxQueuedJobs &&
                priv->jobs_queued > cfg->maxQueuedJobs) {
-        if (blocker) {
+        if (blocker || agentBlocker) {
             virReportError(VIR_ERR_OPERATION_FAILED,
-                           _("cannot acquire state change lock (held by %s) "
+                           _("cannot acquire state change lock (held by %s %s) "
                              "due to max_queued limit"),
-                           blocker);
+                           NULLSTR(blocker), NULLSTR(agentBlocker));
         } else {
             virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                            _("cannot acquire state change lock "
