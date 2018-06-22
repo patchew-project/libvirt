@@ -1039,3 +1039,18 @@ virCPUDefListFree(virCPUDefPtr *cpus)
 
     VIR_FREE(cpus);
 }
+
+
+/*
+ * Return number of virCPUDefPtrs in list
+ */
+size_t
+virCPUDefListLength(virCPUDefPtr *cpus)
+{
+    size_t i = 0;
+
+    while (cpus && cpus[i])
+        i++;
+
+    return i;
+}

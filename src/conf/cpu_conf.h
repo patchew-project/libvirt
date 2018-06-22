@@ -227,4 +227,7 @@ virCPUDefListParse(const char **xmlCPUs,
 void
 virCPUDefListFree(virCPUDefPtr *cpus);
 
+size_t
+virCPUDefListLength(virCPUDefPtr *cpus);
+
 #endif /* __VIR_CPU_CONF_H__ */

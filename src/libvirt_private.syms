@@ -85,6 +85,7 @@ virCPUDefFreeFeatures;
 virCPUDefFreeModel;
 virCPUDefIsEqual;
 virCPUDefListFree;
+virCPUDefListLength;
 virCPUDefListParse;
 virCPUDefParseXML;
 virCPUDefStealModel;
