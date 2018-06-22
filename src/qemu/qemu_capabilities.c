@@ -4235,25 +4235,6 @@ virQEMUCapsInitQMPMonitorTCG(virQEMUCapsPtr qemuCaps ATTRIBUTE_UNUSED,
 }
 
 
-typedef struct _virQEMUCapsInitQMPCommand virQEMUCapsInitQMPCommand;
-typedef virQEMUCapsInitQMPCommand *virQEMUCapsInitQMPCommandPtr;
-struct _virQEMUCapsInitQMPCommand {
-    char *binary;
-    uid_t runUid;
-    gid_t runGid;
-    char **qmperr;
-    char *qmperr_internal;
-    char *monarg;
-    char *monpath;
-    char *pidfile;
-    virCommandPtr cmd;
-    qemuMonitorPtr mon;
-    virDomainChrSourceDef config;
-    pid_t pid;
-    virDomainObjPtr vm;
-};
-
-
 static void
 virQEMUCapsInitQMPCommandAbort(virQEMUCapsInitQMPCommandPtr cmd)
 {
@@ -4288,7 +4269,7 @@ virQEMUCapsInitQMPCommandAbort(virQEMUCapsInitQMPCommandPtr cmd)
 }
 
 
-static void
+void
 virQEMUCapsInitQMPCommandFree(virQEMUCapsInitQMPCommandPtr cmd)
 {
     if (!cmd)

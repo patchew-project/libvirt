@@ -488,6 +488,27 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
 
+typedef struct _virQEMUCapsInitQMPCommand virQEMUCapsInitQMPCommand;
+typedef virQEMUCapsInitQMPCommand *virQEMUCapsInitQMPCommandPtr;
+
+struct _virQEMUCapsInitQMPCommand {
+    char *binary;
+    uid_t runUid;
+    gid_t runGid;
+    char **qmperr;
+    char *qmperr_internal;
+    char *monarg;
+    char *monpath;
+    char *pidfile;
+    virCommandPtr cmd;
+    qemuMonitorPtr mon;
+    virDomainChrSourceDef config;
+    pid_t pid;
+    virDomainObjPtr vm;
+};
+
+void virQEMUCapsInitQMPCommandFree(virQEMUCapsInitQMPCommandPtr cmd);
+
 typedef struct _virQEMUCaps virQEMUCaps;
 typedef virQEMUCaps *virQEMUCapsPtr;
 
