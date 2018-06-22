@@ -3702,7 +3702,7 @@ qemuMonitorCPUModelInfoCopy(const qemuMonitorCPUModelInfo *orig)
     if (VIR_STRDUP(copy->name, orig->name) < 0)
         goto error;
 
-    copy->migratability = orig->migratability;
+    copy->props_migratable_valid = orig->props_migratable_valid;
     copy->nprops = orig->nprops;
 
     for (i = 0; i < orig->nprops; i++) {
