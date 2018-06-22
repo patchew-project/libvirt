@@ -507,6 +507,11 @@ struct _virQEMUCapsInitQMPCommand {
     virDomainObjPtr vm;
 };
 
+virQEMUCapsInitQMPCommandPtr
+virQEMUCapsNewQMPCommandConnection(const char *exec,
+                                   const char *libDir, uid_t runUid, gid_t runGid,
+                                   bool forceTCG);
+
 void virQEMUCapsInitQMPCommandFree(virQEMUCapsInitQMPCommandPtr cmd);
 
 typedef struct _virQEMUCaps virQEMUCaps;

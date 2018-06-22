@@ -4285,7 +4285,7 @@ virQEMUCapsInitQMPCommandFree(virQEMUCapsInitQMPCommandPtr cmd)
 
 
 static virQEMUCapsInitQMPCommandPtr
-virQEMUCapsInitQMPCommandNew(char *binary,
+virQEMUCapsInitQMPCommandNew(const char *binary,
                              const char *libDir,
                              uid_t runUid,
                              gid_t runGid,
@@ -4423,6 +4423,44 @@ virQEMUCapsInitQMPCommandRun(virQEMUCapsInitQMPCommandPtr cmd,
  ignore:
     ret = 1;
     goto cleanup;
+}
+
+
+/* Start and connect to QEMU so QMP commands can be performed.
+ */
+virQEMUCapsInitQMPCommandPtr
+virQEMUCapsNewQMPCommandConnection(const char *exec,
+                      const char *libDir, uid_t runUid, gid_t runGid,
+                      bool forceTCG)
+{
+    virQEMUCapsInitQMPCommandPtr cmd = NULL;
+    virQEMUCapsInitQMPCommandPtr rtn_cmd = NULL;
+
+    VIR_DEBUG("exec =%s", NULLSTR(exec));
+
+    /* Allocate and initialize QMPCommand structure */
+    if (!(cmd = virQEMUCapsInitQMPCommandNew(exec, libDir,
+                                             runUid, runGid, NULL)))
+        goto cleanup;
+
+    /* Spawn QEMU and establish connection for QMP commands */
+    if (virQEMUCapsInitQMPCommandRun(cmd, forceTCG) != 0)
+        goto cleanup;
+
+    /* Exit capabilities negotiation mode and enter QEMU command mode
+     * by issuing qmp_capabilities command to QEMU */
+    if (qemuMonitorSetCapabilities(cmd->mon) < 0) {
+        VIR_DEBUG("Failed to set monitor capabilities %s",
+                  virGetLastErrorMessage());
+        goto cleanup;
+    }
+
+    VIR_STEAL_PTR(rtn_cmd, cmd);
+
+ cleanup:
+    virQEMUCapsInitQMPCommandFree(cmd);
+
+    return rtn_cmd;
 }
 
 
