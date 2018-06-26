@@ -4868,6 +4868,12 @@ static int lxcDomainUpdateDeviceFlags(virDomainPtr dom,
             goto endjob;
     }
 
+    if (flags & VIR_DOMAIN_AFFECT_LIVE) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("Unable to modify live devices"));
+        goto endjob;
+    }
+
     if (flags & VIR_DOMAIN_AFFECT_CONFIG) {
         /* Make a copy for updated domain. */
         vmdef = virDomainObjCopyPersistentDef(vm, caps, driver->xmlopt);
@@ -4878,17 +4884,7 @@ static int lxcDomainUpdateDeviceFlags(virDomainPtr dom,
          * device we're going to update. */
         if ((ret = lxcDomainUpdateDeviceConfig(vmdef, dev)) < 0)
             goto endjob;
-    }
 
-    if (flags & VIR_DOMAIN_AFFECT_LIVE) {
-        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
-                       _("Unable to modify live devices"));
-
-        goto endjob;
-    }
-
-    /* Finally, if no error until here, we can save config. */
-    if (flags & VIR_DOMAIN_AFFECT_CONFIG) {
         ret = virDomainSaveConfig(cfg->configDir, driver->caps, vmdef);
         if (!ret) {
             virDomainObjAssignDef(vm, vmdef, false, NULL);
