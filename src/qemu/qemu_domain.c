@@ -6154,7 +6154,7 @@ qemuDomainHostdevMdevDefPostParse(const virDomainHostdevSubsysMediatedDev *mdevs
     }
 
     if (mdevsrc->display == VIR_TRISTATE_SWITCH_ON) {
-        virDomainGraphicsDefPtr graphics = def->graphics[0];
+        virDomainGraphicsDefPtr graphics = NULL;
 
         if (def->ngraphics == 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
@@ -6167,6 +6167,7 @@ qemuDomainHostdevMdevDefPostParse(const virDomainHostdevSubsysMediatedDev *mdevs
          * moment, so print a warning that an extra <gl> element might be
          * necessary to be added.
          */
+        graphics = def->graphics[0];
         if (!graphics->gl ||
             graphics->gl->enable != VIR_TRISTATE_BOOL_YES) {
             VIR_WARN("<hostdev> attribute 'display' may need the OpenGL to "

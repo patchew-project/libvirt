@@ -1582,6 +1582,35 @@ mymain(void)
             QEMU_CAPS_DEVICE_VFIO_PCI);
     DO_TEST_PARSE_ERROR("hostdev-mdev-invalid-target-address",
             QEMU_CAPS_DEVICE_VFIO_PCI);
+    DO_TEST("hostdev-mdev-display-spice-opengl",
+            QEMU_CAPS_SPICE,
+            QEMU_CAPS_SPICE_GL,
+            QEMU_CAPS_SPICE_RENDERNODE,
+            QEMU_CAPS_DEVICE_QXL,
+            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
+            QEMU_CAPS_DEVICE_VFIO_PCI,
+            QEMU_CAPS_VFIO_PCI_DISPLAY);
+    DO_TEST("hostdev-mdev-display-spice-egl-headless",
+            QEMU_CAPS_SPICE,
+            QEMU_CAPS_DEVICE_QXL,
+            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
+            QEMU_CAPS_DEVICE_VFIO_PCI,
+            QEMU_CAPS_VFIO_PCI_DISPLAY);
+    DO_TEST("hostdev-mdev-display-vnc",
+            QEMU_CAPS_VNC,
+            QEMU_CAPS_DEVICE_QXL,
+            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
+            QEMU_CAPS_DEVICE_VFIO_PCI,
+            QEMU_CAPS_VFIO_PCI_DISPLAY);
+    DO_TEST("hostdev-mdev-display-vnc-egl-headless",
+            QEMU_CAPS_VNC,
+            QEMU_CAPS_DEVICE_QXL,
+            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
+            QEMU_CAPS_DEVICE_VFIO_PCI,
+            QEMU_CAPS_VFIO_PCI_DISPLAY);
+    DO_TEST_PARSE_ERROR("hostdev-mdev-display-missing-graphics",
+            QEMU_CAPS_DEVICE_VFIO_PCI,
+            QEMU_CAPS_VFIO_PCI_DISPLAY);
     DO_TEST("pci-rom", NONE);
     DO_TEST("pci-rom-disabled", NONE);
     DO_TEST("pci-rom-disabled-invalid", NONE);

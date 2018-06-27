@@ -5162,6 +5162,16 @@ qemuBuildHostdevMediatedDevStr(const virDomainDef *def,
     virBufferAdd(&buf, dev_str, -1);
     virBufferAsprintf(&buf, ",id=%s,sysfsdev=%s", dev->info->alias, mdevPath);
 
+    /* QEMU 2.12 added support for vfio-pci display type, we default to
+     * 'display=off' to stay safe from future changes */
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_VFIO_PCI_DISPLAY) &&
+        mdevsrc->display == VIR_TRISTATE_SWITCH_ABSENT)
+        mdevsrc->display = VIR_TRISTATE_SWITCH_OFF;
+
+    if (mdevsrc->display > VIR_TRISTATE_SWITCH_ABSENT)
+        virBufferAsprintf(&buf, ",display=%s",
+                          virTristateSwitchTypeToString(mdevsrc->display));
+
     if (qemuBuildDeviceAddressStr(&buf, def, dev->info, qemuCaps) < 0)
         goto cleanup;
 
@@ -5379,7 +5389,9 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
 
         /* MDEV */
         if (virHostdevIsMdevDevice(hostdev)) {
-            switch ((virMediatedDeviceModelType) subsys->u.mdev.model) {
+            virDomainHostdevSubsysMediatedDevPtr mdevsrc = &subsys->u.mdev;
+
+            switch ((virMediatedDeviceModelType) mdevsrc->model) {
             case VIR_MDEV_MODEL_TYPE_VFIO_PCI:
                 if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VFIO_PCI)) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
@@ -5387,6 +5399,15 @@ qemuBuildHostdevCommandLine(virCommandPtr cmd,
                                      "supported by this version of QEMU"));
                     return -1;
                 }
+
+                if (mdevsrc->display != VIR_TRISTATE_SWITCH_ABSENT &&
+                    !virQEMUCapsGet(qemuCaps, QEMU_CAPS_VFIO_PCI_DISPLAY)) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                                   _("display property of device vfio-pci is "
+                                     "not supported by this version of QEMU"));
+                        return -1;
+                }
+
                 break;
             case VIR_MDEV_MODEL_TYPE_VFIO_CCW:
                 if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VFIO_CCW)) {
