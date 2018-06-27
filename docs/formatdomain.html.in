@@ -6350,6 +6350,12 @@ qemu-kvm -net nic,model=? /dev/null
               auto-allocation and <code>autoport</code> having no effect due to
               security reasons) <span class="since">Since 1.0.6</span>.
             </p>
+            <p>
+              <span class="since">Since 4.6.0</span> it's possible to use the
+              <code>gl</code> element with <code>enable='yes'</code> to enable
+              OpenGL support using QEMU's egl-headless display, since VNC
+              doesn't support OpenGL natively like SPICE does.
+            </p>
           </dd>
           <dt><code>spice</code> <span class="since">Since 0.8.6</span></dt>
           <dd>

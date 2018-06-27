@@ -3135,6 +3135,13 @@
             </attribute>
           </optional>
           <ref name="listenElements"/>
+          <optional>
+            <element name="gl">
+              <attribute name="enable">
+                <ref name="virYesNo"/>
+              </attribute>
+            </element>
+          </optional>
         </group>
         <group>
           <attribute name="type">

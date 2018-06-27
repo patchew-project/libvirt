@@ -7879,6 +7879,13 @@ qemuBuildGraphicsVNCCommandLine(virQEMUDriverConfigPtr cfg,
     else
         virCommandAddEnvString(cmd, "QEMU_AUDIO_DRV=none");
 
+    /* OpenGL support */
+    if (graphics->gl &&
+        graphics->gl->enable == VIR_TRISTATE_BOOL_YES) {
+        virCommandAddArg(cmd, "-display");
+        virCommandAddArg(cmd, "egl-headless");
+    }
+
     return 0;
 
  error:

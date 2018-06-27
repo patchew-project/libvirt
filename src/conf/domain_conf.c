@@ -13619,7 +13619,10 @@ virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
     char *websocket = virXMLPropString(node, "websocket");
     char *sharePolicy = virXMLPropString(node, "sharePolicy");
     char *autoport = virXMLPropString(node, "autoport");
+    xmlNodePtr save = ctxt->node;
     int ret = -1;
+
+    ctxt->node = node;
 
     if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
         goto cleanup;
@@ -13681,12 +13684,17 @@ virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
                                          def->type) < 0)
         goto cleanup;
 
+    if (virDomainGraphicsGLDefParseXML(def,
+                                       virXPathNode("./gl[1]", ctxt)) < 0)
+        goto cleanup;
+
     ret = 0;
  cleanup:
     VIR_FREE(port);
     VIR_FREE(autoport);
     VIR_FREE(websocket);
     VIR_FREE(sharePolicy);
+    ctxt->node = save;
     return ret;
 }
 
