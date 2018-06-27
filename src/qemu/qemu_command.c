@@ -7896,27 +7896,39 @@ qemuBuildGraphicsVNCCommandLine(virQEMUDriverConfigPtr cfg,
 
 static int
 qemuBuildGraphicsSPICEGLCommandLine(virDomainGraphicsGLDefPtr gl,
+                                    virCommandPtr cmd,
                                     virBufferPtr opt,
                                     virQEMUCapsPtr qemuCaps)
 {
-    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SPICE_GL)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("This QEMU doesn't support spice OpenGL"));
-        return -1;
-    }
-
-    virBufferAddLit(opt, "gl=on,");
-
-    if (gl->rendernode) {
-        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SPICE_RENDERNODE)) {
+    if (gl->native == VIR_TRISTATE_BOOL_NO) {
+        /* For non-native OpenGL, we need to add egl-headless to the cmdline.
+         *
+         * NB: QEMU defaults to '-spice gl=off', so we don't have to add that
+         * explicitly, especially since we're not testing for GL capability
+         * presence.
+         */
+        virCommandAddArg(cmd, "-display");
+        virCommandAddArg(cmd, "egl-headless");
+    } else {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SPICE_GL)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("This QEMU doesn't support spice OpenGL rendernode"));
+                           _("This QEMU doesn't support spice OpenGL"));
             return -1;
         }
 
-        virBufferAddLit(opt, "rendernode=");
-        virQEMUBuildBufferEscapeComma(opt, gl->rendernode);
-        virBufferAddLit(opt, ",");
+        virBufferAddLit(opt, "gl=on,");
+
+        if (gl->rendernode) {
+            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SPICE_RENDERNODE)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("This QEMU doesn't support spice OpenGL rendernode"));
+                return -1;
+            }
+
+            virBufferAddLit(opt, "rendernode=");
+            virQEMUBuildBufferEscapeComma(opt, gl->rendernode);
+            virBufferAddLit(opt, ",");
+        }
     }
 
     return 0;
@@ -8137,7 +8149,8 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
     /* OpenGL magic */
     if (graphics->gl &&
         graphics->gl->enable == VIR_TRISTATE_BOOL_YES &&
-        qemuBuildGraphicsSPICEGLCommandLine(graphics->gl, &opt, qemuCaps) < 0)
+        qemuBuildGraphicsSPICEGLCommandLine(graphics->gl, cmd,
+                                            &opt, qemuCaps) < 0)
         goto error;
 
     virBufferTrim(&opt, ",", -1);

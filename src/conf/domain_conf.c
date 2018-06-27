@@ -4280,6 +4280,7 @@ virDomainDefPostParseGraphics(virDomainDef *def)
          * same. */
         if (graphics->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE) {
             virDomainGraphicsListenDefPtr glisten = &graphics->listens[0];
+            virDomainGraphicsGLDefPtr gl = graphics->gl;
 
             if (glisten->type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_ADDRESS &&
                 graphics->data.spice.port == 0 &&
@@ -4287,6 +4288,28 @@ virDomainDefPostParseGraphics(virDomainDef *def)
                 !graphics->data.spice.autoport) {
                 VIR_FREE(glisten->address);
                 glisten->type = VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_NONE;
+            }
+
+            /* Next we need to figure out how to properly configure the OpenGL
+             * if that is enabled and the 'native' attribute is missing.
+             * The cases are:
+             *      1) Listen type is either 'socket' or 'none' - SPICE native
+             *      OpenGL support (,gl=on) should be used because we're
+             *      rendering on a local display.
+             *
+             *      2) Listen is either network or address - SPICE can't use
+             *      the native OpenGL support remotely yet, so we use
+             *      native='no' and format '-display egl-headless' onto the
+             *      cmdline.
+             */
+            if (graphics->gl &&
+                graphics->gl->enable == VIR_TRISTATE_BOOL_YES &&
+                graphics->gl->native == VIR_TRISTATE_BOOL_ABSENT) {
+                gl->native = VIR_TRISTATE_BOOL_NO;
+
+                if (glisten->type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_NONE ||
+                    glisten->type == VIR_DOMAIN_GRAPHICS_LISTEN_TYPE_SOCKET)
+                    gl->native = VIR_TRISTATE_BOOL_YES;
             }
         }
     }
@@ -13573,6 +13596,7 @@ virDomainGraphicsGLDefParseXML(virDomainGraphicsDefPtr def,
 {
     virDomainGraphicsGLDefPtr gl = NULL;
     char *enable = NULL;
+    char *native = NULL;
     int ret = -1;
 
     if (!node)
@@ -13596,14 +13620,26 @@ virDomainGraphicsGLDefParseXML(virDomainGraphicsDefPtr def,
         goto cleanup;
     }
 
-    if (def->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE)
-       gl->rendernode = virXMLPropString(node, "rendernode");
+    /* SPICE recognizes a few more attributes */
+    if (def->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE) {
+        gl->rendernode = virXMLPropString(node, "rendernode");
+
+        native = virXMLPropString(node, "native");
+        if (native &&
+            (gl->native = virTristateBoolTypeFromString(native)) <= 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unknown value for attribute enable '%s'"),
+                           enable);
+            goto cleanup;
+        }
+    }
 
     VIR_STEAL_PTR(def->gl, gl);
 
     ret = 0;
  cleanup:
     VIR_FREE(enable);
+    VIR_FREE(native);
     virDomainGraphicsGLDefFree(gl);
     return ret;
 }
@@ -26184,8 +26220,13 @@ virDomainGraphicsGLDefFormat(virBufferPtr buf, virDomainGraphicsDefPtr def)
     virBufferAsprintf(buf, "<gl enable='%s'",
                       virTristateBoolTypeToString(gl->enable));
 
-    if (def->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE)
-        virBufferEscapeString(buf, " rendernode='%s'", gl->rendernode);
+    if (gl->enable == VIR_TRISTATE_BOOL_YES) {
+        if (def->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE) {
+            virBufferAsprintf(buf, " native='%s'",
+                              virTristateBoolTypeToString(gl->native));
+            virBufferEscapeString(buf, " rendernode='%s'", gl->rendernode);
+        }
+    }
 
     virBufferAddLit(buf, "/>\n");
 }

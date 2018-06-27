@@ -1602,6 +1602,7 @@ typedef struct _virDomainGraphicsGLDef virDomainGraphicsGLDef;
 typedef virDomainGraphicsGLDef *virDomainGraphicsGLDefPtr;
 struct _virDomainGraphicsGLDef {
     virTristateBool enable;
+    virTristateBool native; /* -spice gl=on vs -display egl-headless for QEMU */
     char *rendernode;       /* SPICE only */
 };
 

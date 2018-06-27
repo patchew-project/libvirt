@@ -6461,6 +6461,14 @@ qemu-kvm -net nic,model=? /dev/null
               You can enable or disable OpenGL support explicitly with
               the <code>gl</code> element, by setting the <code>enable</code>
               property. (QEMU only, <span class="since">since 1.3.3</span>).
+              Additionally, attribute <code>native</code>
+              (<span class="since">Since 4.6.0</span>) can be used to specify
+              whether native OpenGL support should be used with SPICE or
+              egl-headless should be used instead. Note that the native OpenGL
+              support is only limited to the local setup (<code>listen</code> is
+              either 'none' or 'socket') and for remote access egl-headless
+              needs to be used. The supported values for this attribute are 'on'
+              and 'off'.
             </p>
             <p>
               By default, QEMU will pick the first available GPU DRM render node.

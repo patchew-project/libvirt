@@ -1256,6 +1256,14 @@ mymain(void)
             QEMU_CAPS_SPICE_UNIX,
             QEMU_CAPS_DEVICE_CIRRUS_VGA);
     driver.config->spiceAutoUnixSocket = false;
+    DO_TEST("graphics-spice-gl-native",
+            QEMU_CAPS_SPICE,
+            QEMU_CAPS_SPICE_GL,
+            QEMU_CAPS_SPICE_RENDERNODE,
+            QEMU_CAPS_DEVICE_CIRRUS_VGA);
+    DO_TEST("graphics-spice-gl-non-native",
+            QEMU_CAPS_SPICE,
+            QEMU_CAPS_DEVICE_CIRRUS_VGA);
 
     DO_TEST("input-usbmouse", NONE);
     DO_TEST("input-usbtablet", NONE);
