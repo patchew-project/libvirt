@@ -13568,13 +13568,13 @@ virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
     int ret = -1;
 
     if (virDomainGraphicsListensParseXML(def, node, ctxt, flags) < 0)
-        goto error;
+        goto cleanup;
 
     if (port) {
         if (virStrToLong_i(port, NULL, 10, &def->data.vnc.port) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("cannot parse vnc port %s"), port);
-            goto error;
+            goto cleanup;
         }
         /* Legacy compat syntax, used -1 for auto-port */
         if (def->data.vnc.port == -1) {
@@ -13603,7 +13603,7 @@ virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
                            &def->data.vnc.websocket) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("cannot parse vnc WebSocket port %s"), websocket);
-            goto error;
+            goto cleanup;
         }
     }
 
@@ -13615,7 +13615,7 @@ virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("unknown vnc display sharing policy '%s'"),
                            sharePolicy);
-            goto error;
+            goto cleanup;
         } else {
             def->data.vnc.sharePolicy = policy;
         }
@@ -13625,10 +13625,10 @@ virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
 
     if (virDomainGraphicsAuthDefParseXML(node, &def->data.vnc.auth,
                                          def->type) < 0)
-        goto error;
+        goto cleanup;
 
     ret = 0;
- error:
+ cleanup:
     VIR_FREE(port);
     VIR_FREE(autoport);
     VIR_FREE(websocket);
