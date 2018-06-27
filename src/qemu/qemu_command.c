@@ -7740,7 +7740,8 @@ qemuBuildGraphicsSDLCommandLine(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
     virCommandAddArg(cmd, "-display");
     virBufferAddLit(&opt, "sdl");
 
-    if (graphics->data.sdl.gl != VIR_TRISTATE_BOOL_ABSENT) {
+    if (graphics->gl &&
+        graphics->gl->enable != VIR_TRISTATE_BOOL_ABSENT) {
         if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SDL_GL)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("OpenGL for SDL is not supported with this QEMU "
@@ -7749,7 +7750,7 @@ qemuBuildGraphicsSDLCommandLine(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
         }
 
         virBufferAsprintf(&opt, ",gl=%s",
-                          virTristateSwitchTypeToString(graphics->data.sdl.gl));
+                          virTristateSwitchTypeToString(graphics->gl->enable));
 
     }
 
@@ -7883,6 +7884,35 @@ qemuBuildGraphicsVNCCommandLine(virQEMUDriverConfigPtr cfg,
  error:
     virBufferFreeAndReset(&opt);
     return -1;
+}
+
+
+static int
+qemuBuildGraphicsSPICEGLCommandLine(virDomainGraphicsGLDefPtr gl,
+                                    virBufferPtr opt,
+                                    virQEMUCapsPtr qemuCaps)
+{
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SPICE_GL)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("This QEMU doesn't support spice OpenGL"));
+        return -1;
+    }
+
+    virBufferAddLit(opt, "gl=on,");
+
+    if (gl->rendernode) {
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SPICE_RENDERNODE)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("This QEMU doesn't support spice OpenGL rendernode"));
+            return -1;
+        }
+
+        virBufferAddLit(opt, "rendernode=");
+        virQEMUBuildBufferEscapeComma(opt, gl->rendernode);
+        virBufferAddLit(opt, ",");
+    }
+
+    return 0;
 }
 
 
@@ -8089,31 +8119,6 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
         }
     }
 
-    if (graphics->data.spice.gl == VIR_TRISTATE_BOOL_YES) {
-        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SPICE_GL)) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("This QEMU doesn't support spice OpenGL"));
-            goto error;
-        }
-
-        /* spice.gl is a TristateBool, but qemu expects on/off: use
-         * TristateSwitch helper */
-        virBufferAsprintf(&opt, "gl=%s,",
-                          virTristateSwitchTypeToString(graphics->data.spice.gl));
-
-        if (graphics->data.spice.rendernode) {
-            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SPICE_RENDERNODE)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("This QEMU doesn't support spice OpenGL rendernode"));
-                goto error;
-            }
-
-            virBufferAddLit(&opt, "rendernode=");
-            virQEMUBuildBufferEscapeComma(&opt, graphics->data.spice.rendernode);
-            virBufferAddLit(&opt, ",");
-        }
-    }
-
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SEAMLESS_MIGRATION)) {
         /* If qemu supports seamless migration turn it
          * unconditionally on. If migration destination
@@ -8122,10 +8127,17 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
         virBufferAddLit(&opt, "seamless-migration=on,");
     }
 
+    /* OpenGL magic */
+    if (graphics->gl &&
+        graphics->gl->enable == VIR_TRISTATE_BOOL_YES &&
+        qemuBuildGraphicsSPICEGLCommandLine(graphics->gl, &opt, qemuCaps) < 0)
+        goto error;
+
     virBufferTrim(&opt, ",", -1);
 
     virCommandAddArg(cmd, "-spice");
     virCommandAddArgBuffer(cmd, &opt);
+
     if (graphics->data.spice.keymap)
         virCommandAddArgList(cmd, "-k",
                              graphics->data.spice.keymap, NULL);

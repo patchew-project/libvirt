@@ -1431,10 +1431,11 @@ virSecurityDACSetGraphicsLabel(virSecurityManagerPtr mgr,
         return -1;
 
     if (gfx->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE &&
-        gfx->data.spice.gl == VIR_TRISTATE_BOOL_YES &&
-        gfx->data.spice.rendernode) {
+        gfx->gl &&
+        gfx->gl->enable == VIR_TRISTATE_BOOL_YES &&
+        gfx->gl->rendernode) {
         if (virSecurityDACSetOwnership(priv, NULL,
-                                       gfx->data.spice.rendernode,
+                                       gfx->gl->rendernode,
                                        user, group) < 0)
             return -1;
     }

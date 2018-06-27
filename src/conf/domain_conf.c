@@ -1420,8 +1420,6 @@ void virDomainGraphicsDefFree(virDomainGraphicsDefPtr def)
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
-        VIR_FREE(def->data.spice.rendernode);
-        VIR_FREE(def->data.spice.keymap);
         virDomainGraphicsAuthDefClear(&def->data.spice.auth);
         break;
 
@@ -1429,12 +1427,26 @@ void virDomainGraphicsDefFree(virDomainGraphicsDefPtr def)
         break;
     }
 
+    virDomainGraphicsGLDefFree(def->gl);
+
     for (i = 0; i < def->nListens; i++)
         virDomainGraphicsListenDefClear(&def->listens[i]);
     VIR_FREE(def->listens);
 
     VIR_FREE(def);
 }
+
+
+void
+virDomainGraphicsGLDefFree(virDomainGraphicsGLDefPtr def)
+{
+    if (!def)
+        return;
+
+    VIR_FREE(def->rendernode);
+    VIR_FREE(def);
+}
+
 
 const char *virDomainInputDefGetPath(virDomainInputDefPtr input)
 {
@@ -13556,6 +13568,48 @@ virDomainGraphicsListensParseXML(virDomainGraphicsDefPtr def,
 
 
 static int
+virDomainGraphicsGLDefParseXML(virDomainGraphicsDefPtr def,
+                               xmlNodePtr node)
+{
+    virDomainGraphicsGLDefPtr gl = NULL;
+    char *enable = NULL;
+    int ret = -1;
+
+    if (!node)
+        return 0;
+
+    if (VIR_ALLOC(gl) < 0)
+        return -1;
+
+    if (!(enable = virXMLPropString(node, "enable"))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("'enable' attribute is mandatory for graphics "
+                         "<gl> element"));
+        goto cleanup;
+    }
+
+    if ((gl->enable =
+         virTristateBoolTypeFromString(enable)) <= 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unknown value for attribute enable '%s'"),
+                       enable);
+        goto cleanup;
+    }
+
+    if (def->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE)
+       gl->rendernode = virXMLPropString(node, "rendernode");
+
+    VIR_STEAL_PTR(def->gl, gl);
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(enable);
+    virDomainGraphicsGLDefFree(gl);
+    return ret;
+}
+
+
+static int
 virDomainGraphicsDefParseXMLVNC(virDomainGraphicsDefPtr def,
                                 xmlNodePtr node,
                                 xmlXPathContextPtr ctxt,
@@ -13644,8 +13698,6 @@ virDomainGraphicsDefParseXMLSDL(virDomainGraphicsDefPtr def,
 {
     xmlNodePtr save = ctxt->node;
     char *enable = NULL;
-    int enableVal;
-    xmlNodePtr glNode;
     char *fullscreen = virXMLPropString(node, "fullscreen");
     int ret = -1;
 
@@ -13668,23 +13720,9 @@ virDomainGraphicsDefParseXMLSDL(virDomainGraphicsDefPtr def,
     def->data.sdl.xauth = virXMLPropString(node, "xauth");
     def->data.sdl.display = virXMLPropString(node, "display");
 
-    glNode = virXPathNode("./gl", ctxt);
-    if (glNode) {
-        enable = virXMLPropString(glNode, "enable");
-        if (!enable) {
-            virReportError(VIR_ERR_XML_ERROR, "%s",
-                           _("sdl gl element missing enable"));
-            goto cleanup;
-        }
-
-        enableVal = virTristateBoolTypeFromString(enable);
-        if (enableVal < 0) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("unknown enable value '%s'"), enable);
-            goto cleanup;
-        }
-        def->data.sdl.gl = enableVal;
-    }
+    if (virDomainGraphicsGLDefParseXML(def,
+                                       virXPathNode("./gl[1]", ctxt)) < 0)
+        goto cleanup;
 
     ret = 0;
  cleanup:
@@ -14026,31 +14064,6 @@ virDomainGraphicsDefParseXMLSpice(virDomainGraphicsDefPtr def,
                 VIR_FREE(enable);
 
                 def->data.spice.filetransfer = enableVal;
-            } else if (virXMLNodeNameEqual(cur, "gl")) {
-                char *enable = virXMLPropString(cur, "enable");
-                char *rendernode = virXMLPropString(cur, "rendernode");
-                int enableVal;
-
-                if (!enable) {
-                    virReportError(VIR_ERR_XML_ERROR, "%s",
-                                   _("spice gl element missing enable"));
-                    VIR_FREE(rendernode);
-                    goto error;
-                }
-
-                if ((enableVal =
-                     virTristateBoolTypeFromString(enable)) <= 0) {
-                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                   _("unknown enable value '%s'"), enable);
-                    VIR_FREE(enable);
-                    VIR_FREE(rendernode);
-                    goto error;
-                }
-                VIR_FREE(enable);
-
-                def->data.spice.gl = enableVal;
-                def->data.spice.rendernode = rendernode;
-
             } else if (virXMLNodeNameEqual(cur, "mouse")) {
                 char *mode = virXMLPropString(cur, "mode");
                 int modeVal;
@@ -14071,6 +14084,9 @@ virDomainGraphicsDefParseXMLSpice(virDomainGraphicsDefPtr def,
                 VIR_FREE(mode);
 
                 def->data.spice.mousemode = modeVal;
+            } else if (virXMLNodeNameEqual(cur, "gl")) {
+                if (virDomainGraphicsGLDefParseXML(def, cur) < 0)
+                    goto error;
             }
         }
         cur = cur->next;
@@ -26148,17 +26164,24 @@ virDomainGraphicsListenDefFormatAddr(virBufferPtr buf,
         virBufferAsprintf(buf, " listen='%s'", glisten->address);
 }
 
+
 static void
-virDomainSpiceGLDefFormat(virBufferPtr buf, virDomainGraphicsDefPtr def)
+virDomainGraphicsGLDefFormat(virBufferPtr buf, virDomainGraphicsDefPtr def)
 {
-    if (def->data.spice.gl == VIR_TRISTATE_BOOL_ABSENT)
+    virDomainGraphicsGLDefPtr gl = def->gl;
+
+    if (!gl)
         return;
 
     virBufferAsprintf(buf, "<gl enable='%s'",
-                      virTristateBoolTypeToString(def->data.spice.gl));
-    virBufferEscapeString(buf, " rendernode='%s'", def->data.spice.rendernode);
+                      virTristateBoolTypeToString(gl->enable));
+
+    if (def->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE)
+        virBufferEscapeString(buf, " rendernode='%s'", gl->rendernode);
+
     virBufferAddLit(buf, "/>\n");
 }
+
 
 static int
 virDomainGraphicsDefFormat(virBufferPtr buf,
@@ -26247,16 +26270,10 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
         if (def->data.sdl.fullscreen)
             virBufferAddLit(buf, " fullscreen='yes'");
 
-        if (!children && def->data.sdl.gl != VIR_TRISTATE_BOOL_ABSENT) {
+        if (!children && def->gl) {
             virBufferAddLit(buf, ">\n");
             virBufferAdjustIndent(buf, 2);
             children = true;
-        }
-
-        if (def->data.sdl.gl != VIR_TRISTATE_BOOL_ABSENT) {
-            virBufferAsprintf(buf, "<gl enable='%s'",
-                              virTristateBoolTypeToString(def->data.sdl.gl));
-            virBufferAddLit(buf, "/>\n");
         }
 
         break;
@@ -26405,8 +26422,7 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
         if (!children && (def->data.spice.image || def->data.spice.jpeg ||
                           def->data.spice.zlib || def->data.spice.playback ||
                           def->data.spice.streaming || def->data.spice.copypaste ||
-                          def->data.spice.mousemode || def->data.spice.filetransfer ||
-                          def->data.spice.gl)) {
+                          def->data.spice.mousemode || def->data.spice.filetransfer)) {
             virBufferAddLit(buf, ">\n");
             virBufferAdjustIndent(buf, 2);
             children = true;
@@ -26436,8 +26452,9 @@ virDomainGraphicsDefFormat(virBufferPtr buf,
             virBufferAsprintf(buf, "<filetransfer enable='%s'/>\n",
                               virTristateBoolTypeToString(def->data.spice.filetransfer));
 
-        virDomainSpiceGLDefFormat(buf, def);
     }
+
+    virDomainGraphicsGLDefFormat(buf, def);
 
     if (children) {
         virBufferAdjustIndent(buf, -2);

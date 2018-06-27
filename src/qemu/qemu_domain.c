@@ -11297,11 +11297,12 @@ qemuDomainSetupGraphics(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
                         virDomainGraphicsDefPtr gfx,
                         const struct qemuDomainCreateDeviceData *data)
 {
-    const char *rendernode = gfx->data.spice.rendernode;
+    const char *rendernode = NULL;
 
     if (gfx->type != VIR_DOMAIN_GRAPHICS_TYPE_SPICE ||
-        gfx->data.spice.gl != VIR_TRISTATE_BOOL_YES ||
-        !rendernode)
+        !gfx->gl ||
+        gfx->gl->enable != VIR_TRISTATE_BOOL_YES ||
+        !gfx->gl->rendernode)
         return 0;
 
     return qemuDomainCreateDevice(rendernode, data, false);
