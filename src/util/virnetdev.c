@@ -1541,6 +1541,198 @@ virNetDevGetVirtualFunctionInfo(const char *vfname, char **pfname,
     return ret;
 }
 
+
+/**
+ * virNetDevGetProcNetdevStats:
+ * @ifname: interface
+ * @stats: where to store statistics
+ * @swapped: whether to swap RX/TX fields
+ *
+ * Fetch RX/TX statistics for given named interface (@ifname) and
+ * store them at @stats. The returned statistics are always from
+ * domain POV. Because in some cases this means swapping RX/TX in
+ * the stats and in others this means no swapping (consider TAP
+ * vs macvtap) caller might choose if the returned stats should
+ * be @swapped or not.
+ *
+ * Returns 0 on success, -1 otherwise (with error reported).
+ */
+
+int
+virNetDevGetProcNetdevStats(const char *ifname,
+                            virDomainInterfaceStatsPtr stats,
+                            bool swapped)
+{
+    int ifname_len;
+    FILE *fp;
+    char line[256];
+    size_t i;
+    char *hdr1 = NULL;
+    char *hdr2 = NULL;
+    char *stats_row = NULL;
+    char **components_hdr1 = NULL;
+    char **components_hdr2 = NULL;
+    char **components_stats = NULL;
+    size_t ncomponents_hdr1 = 0;
+    size_t ncomponents_hdr2 = 0;
+    size_t ncomponents_stats = 0;
+    char **rx_hdr = NULL;
+    char **tx_hdr = NULL;
+    size_t rx_nentries, tx_nentries;
+    int rx_bytes_index = 0;
+    int rx_packets_index = 0;
+    int rx_drop_index = 0;
+    int rx_errs_index = 0;
+    int tx_bytes_index = 0;
+    int tx_packets_index = 0;
+    int tx_drop_index = 0;
+    int tx_errs_index = 0;
+    int tx_offset = 0;
+    int rx_offset = 0;
+    int ret = -1;
+
+    fp = fopen("/proc/net/dev", "r");
+    if (!fp) {
+        virReportSystemError(errno, "%s",
+                             _("Could not open /proc/net/dev"));
+        return ret;
+    }
+
+    ifname_len = strlen(ifname);
+
+    /* First two lines contains headers.
+     * Process headers to match with correspondings stats.
+     */
+    if (!fgets(line, sizeof(line), fp)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Interface %s not found in /proc/net/dev"), ifname);
+        VIR_FORCE_FCLOSE(fp);
+        return ret;
+    }
+
+    if (!(hdr1 = virStringCleanExtraSpaces(line)))
+        goto cleanup;
+
+    if (!(components_hdr1 = virStringSplitCount(hdr1, "|", 0,
+                                                &ncomponents_hdr1)))
+        goto cleanup;
+
+    if (!fgets(line, sizeof(line), fp))
+        goto cleanup;
+
+    if (!(hdr2 = virStringCleanExtraSpaces(line)))
+        goto cleanup;
+
+    if (!(components_hdr2 = virStringSplitCount(hdr2, "|", 0,
+                                                &ncomponents_hdr2)))
+        goto cleanup;
+
+    if (!(rx_hdr = virStringSplitCount(components_hdr2[1], " ", 0,
+                                       &rx_nentries)))
+        goto cleanup;
+
+    if (!(tx_hdr = virStringSplitCount(components_hdr2[2], " ", 0,
+                                       &tx_nentries)))
+        goto cleanup;
+
+    if (STREQ(components_hdr1[1], "Receive")) {
+        rx_offset = 0;
+        tx_offset = rx_nentries;
+    } else {
+        rx_offset = tx_nentries;
+        tx_offset = 0;
+    }
+
+    for (i = 0; i < rx_nentries; i++) {
+         if (STREQ(rx_hdr[i], "bytes"))
+            rx_bytes_index = i + rx_offset;
+         else if (STREQ(rx_hdr[i], "packets"))
+            rx_packets_index = i + rx_offset;
+         else if (STREQ(rx_hdr[i], "errs"))
+            rx_errs_index = i + rx_offset;
+         else if (STREQ(rx_hdr[i], "drop"))
+            rx_drop_index = i + rx_offset;
+    }
+
+    for (i = 0; i < tx_nentries; i++) {
+         if (STREQ(tx_hdr[i], "bytes"))
+            tx_bytes_index = i + tx_offset;
+         else if (STREQ(tx_hdr[i], "packets"))
+            tx_packets_index = i + tx_offset;
+         else if (STREQ(tx_hdr[i], "errs"))
+            tx_errs_index = i + tx_offset;
+         else if (STREQ(tx_hdr[i], "drop"))
+            tx_drop_index = i + tx_offset;
+    }
+
+    while (fgets(line, sizeof(line), fp)) {
+        long long *stats_entries;
+
+        /* The stats line looks like:
+         *   "eth0:..."
+         */
+
+        VIR_FREE(stats_row);
+        if (!(stats_row = virStringCleanExtraSpaces(line)))
+            goto cleanup;
+
+        virStringListFree(components_stats);
+        if (!(components_stats = virStringSplitCount(stats_row, " ", 0,
+                                                     &ncomponents_stats)))
+            goto cleanup;
+
+        if (STREQLEN(components_stats[0], ifname, ifname_len)) {
+            if (VIR_ALLOC_N(stats_entries, rx_nentries + tx_nentries) < 0)
+                goto cleanup;
+
+            for (i = 1; i < (rx_nentries + tx_nentries); i++) {
+                 if (virStrToLong_ll(components_stats[i], NULL, 10,
+                                     (stats_entries + i -1)) < 0) {
+                     virReportError(VIR_ERR_INTERNAL_ERROR,
+                                    _("Cannot parse %s stat position at '%zu'"),
+                                    components_stats[i], i);
+                     goto cleanup;
+                 }
+            }
+
+            if (swapped) {
+                stats->rx_bytes = stats_entries[tx_bytes_index];
+                stats->rx_packets = stats_entries[tx_packets_index];
+                stats->rx_errs = stats_entries[tx_errs_index];
+                stats->rx_drop = stats_entries[tx_drop_index];
+                stats->tx_bytes = stats_entries[rx_bytes_index];
+                stats->tx_packets = stats_entries[rx_packets_index];
+                stats->tx_errs = stats_entries[rx_errs_index];
+                stats->tx_drop = stats_entries[rx_drop_index];
+            } else {
+                stats->rx_bytes = stats_entries[rx_bytes_index];
+                stats->rx_packets = stats_entries[rx_packets_index];
+                stats->rx_errs = stats_entries[rx_errs_index];
+                stats->rx_drop = stats_entries[rx_drop_index];
+                stats->tx_bytes = stats_entries[tx_bytes_index];
+                stats->tx_packets = stats_entries[tx_packets_index];
+                stats->tx_errs = stats_entries[tx_errs_index];
+                stats->tx_drop = stats_entries[tx_drop_index];
+            }
+            VIR_FREE(stats_entries);
+            ret = 0;
+            break;
+        }
+    }
+ cleanup:
+    VIR_FORCE_FCLOSE(fp);
+    VIR_FREE(hdr1);
+    VIR_FREE(hdr2);
+    VIR_FREE(stats_row);
+    virStringListFree(components_hdr1);
+    virStringListFree(components_hdr2);
+    virStringListFree(components_stats);
+    virStringListFree(rx_hdr);
+    virStringListFree(tx_hdr);
+
+    return ret;
+}
+
 #else /* !__linux__ */
 int
 virNetDevGetPhysPortID(const char *ifname ATTRIBUTE_UNUSED,
@@ -1622,7 +1814,15 @@ virNetDevSysfsFile(char **pf_sysfs_device_link ATTRIBUTE_UNUSED,
     return -1;
 }
 
-
+int
+virNetDevGetProcNetdevStats(const char *ifname ATTRIBUTE_UNUSED,
+                           virDomainInterfaceStatsPtr stats ATTRIBUTE_UNUSED,
+                           bool swapped ATTRIBUTE_UNUSED)
+{
+    virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                   _("interface stats not implemented on this platform"));
+    return -1;
+}
 #endif /* !__linux__ */
 #if defined(__linux__) && defined(HAVE_LIBNL) && defined(IFLA_VF_MAX)
 

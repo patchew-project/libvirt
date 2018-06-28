@@ -687,76 +687,7 @@ virNetDevTapInterfaceStats(const char *ifname,
                            virDomainInterfaceStatsPtr stats,
                            bool swapped)
 {
-    int ifname_len;
-    FILE *fp;
-    char line[256], *colon;
-
-    fp = fopen("/proc/net/dev", "r");
-    if (!fp) {
-        virReportSystemError(errno, "%s",
-                             _("Could not open /proc/net/dev"));
-        return -1;
-    }
-
-    ifname_len = strlen(ifname);
-
-    while (fgets(line, sizeof(line), fp)) {
-        long long dummy;
-        long long rx_bytes;
-        long long rx_packets;
-        long long rx_errs;
-        long long rx_drop;
-        long long tx_bytes;
-        long long tx_packets;
-        long long tx_errs;
-        long long tx_drop;
-
-        /* The line looks like:
-         *   "   eth0:..."
-         * Split it at the colon.
-         */
-        colon = strchr(line, ':');
-        if (!colon) continue;
-        *colon = '\0';
-        if (colon-ifname_len >= line &&
-            STREQ(colon-ifname_len, ifname)) {
-            if (sscanf(colon+1,
-                       "%lld %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld",
-                       &rx_bytes, &rx_packets, &rx_errs, &rx_drop,
-                       &dummy, &dummy, &dummy, &dummy,
-                       &tx_bytes, &tx_packets, &tx_errs, &tx_drop,
-                       &dummy, &dummy, &dummy, &dummy) != 16)
-                continue;
-
-            if (swapped) {
-                stats->rx_bytes = tx_bytes;
-                stats->rx_packets = tx_packets;
-                stats->rx_errs = tx_errs;
-                stats->rx_drop = tx_drop;
-                stats->tx_bytes = rx_bytes;
-                stats->tx_packets = rx_packets;
-                stats->tx_errs = rx_errs;
-                stats->tx_drop = rx_drop;
-            } else {
-                stats->rx_bytes = rx_bytes;
-                stats->rx_packets = rx_packets;
-                stats->rx_errs = rx_errs;
-                stats->rx_drop = rx_drop;
-                stats->tx_bytes = tx_bytes;
-                stats->tx_packets = tx_packets;
-                stats->tx_errs = tx_errs;
-                stats->tx_drop = tx_drop;
-            }
-
-            VIR_FORCE_FCLOSE(fp);
-            return 0;
-        }
-    }
-    VIR_FORCE_FCLOSE(fp);
-
-    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                   _("/proc/net/dev: Interface not found"));
-    return -1;
+    return virNetDevGetProcNetdevStats(ifname, stats, swapped);
 }
 #elif defined(HAVE_GETIFADDRS) && defined(AF_LINK)
 int

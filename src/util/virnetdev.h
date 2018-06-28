@@ -266,6 +266,11 @@ int virNetDevGetVirtualFunctionInfo(const char *vfname, char **pfname,
                                     int *vf)
     ATTRIBUTE_NONNULL(1);
 
+int virNetDevGetProcNetdevStats(const char *ifname,
+                            virDomainInterfaceStatsPtr stats,
+                            bool swapped)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+
 int virNetDevGetFeatures(const char *ifname,
                          virBitmapPtr *out)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;

@@ -2289,6 +2289,7 @@ virNetDevGetName;
 virNetDevGetOnline;
 virNetDevGetPhysicalFunction;
 virNetDevGetPhysPortID;
+virNetDevGetProcNetdevStats;
 virNetDevGetPromiscuous;
 virNetDevGetRcvAllMulti;
 virNetDevGetRcvMulti;
