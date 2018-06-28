@@ -130,6 +130,15 @@
           or virStorageVolCreateXMLFrom.
         </description>
       </change>
+      <change>
+        <summary>
+          qemu: Support interface network stats for VF Representors
+        </summary>
+        <description>
+          Interface network stats are supported now for SR-IOV device(hostdev)
+          if this interface has VF representor on host in switchdev mode.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
       <change>
