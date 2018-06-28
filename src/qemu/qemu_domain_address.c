@@ -398,7 +398,7 @@ qemuDomainAssignS390Addresses(virDomainDefPtr def,
         qemuDomainPrimeVirtioDeviceAddresses(
             def, VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW);
 
-        if (!(addrs = qemuDomainCCWAddrSetCreateFromDomain(def)))
+        if (!(addrs = virDomainCCWAddrSetCreateFromDomain(def)))
             goto cleanup;
 
     } else if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_S390)) {
@@ -3005,7 +3005,7 @@ qemuDomainEnsureVirtioAddress(bool *releaseAddr,
     }
 
     if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
-        if (!(ccwaddrs = qemuDomainCCWAddrSetCreateFromDomain(vm->def)))
+        if (!(ccwaddrs = virDomainCCWAddrSetCreateFromDomain(vm->def)))
             goto cleanup;
         if (virDomainCCWAddressAssign(info, ccwaddrs,
                                       !info->addr.ccw.assigned) < 0)

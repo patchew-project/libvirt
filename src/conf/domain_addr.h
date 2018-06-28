@@ -206,7 +206,7 @@ int virDomainCCWAddressReleaseAddr(virDomainCCWAddressSetPtr addrs,
 virDomainCCWAddressSetPtr virDomainCCWAddressSetCreate(void);
 
 virDomainCCWAddressSetPtr
-qemuDomainCCWAddrSetCreateFromDomain(virDomainDefPtr def)
+virDomainCCWAddrSetCreateFromDomain(virDomainDefPtr def)
     ATTRIBUTE_NONNULL(1);
 
 struct _virDomainVirtioSerialController {

@@ -1210,7 +1210,7 @@ virDomainCCWAddressSetCreate(void)
 
 
 virDomainCCWAddressSetPtr
-qemuDomainCCWAddrSetCreateFromDomain(virDomainDefPtr def)
+virDomainCCWAddrSetCreateFromDomain(virDomainDefPtr def)
 {
     virDomainCCWAddressSetPtr addrs = NULL;
 
