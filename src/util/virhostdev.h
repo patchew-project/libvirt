@@ -60,6 +60,14 @@ struct _virHostdevManager {
 };
 
 virHostdevManagerPtr virHostdevManagerGetDefault(void);
+
+int
+virHostdevNetDevice(virDomainHostdevDefPtr hostdev,
+                    int pfNetDevIdx,
+                    char **linkdev,
+                    int *vf)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(4);
+
 int
 virHostdevPreparePCIDevices(virHostdevManagerPtr hostdev_mgr,
                             const char *drv_name,

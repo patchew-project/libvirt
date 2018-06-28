@@ -303,7 +303,7 @@ virHostdevIsVirtualFunction(virDomainHostdevDefPtr hostdev)
 }
 
 
-static int
+int
 virHostdevNetDevice(virDomainHostdevDefPtr hostdev,
                     int pfNetDevIdx,
                     char **linkdev,
