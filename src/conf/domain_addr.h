@@ -205,6 +205,10 @@ int virDomainCCWAddressReleaseAddr(virDomainCCWAddressSetPtr addrs,
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 virDomainCCWAddressSetPtr virDomainCCWAddressSetCreate(void);
 
+virDomainCCWAddressSetPtr
+qemuDomainCCWAddrSetCreateFromDomain(virDomainDefPtr def)
+    ATTRIBUTE_NONNULL(1);
+
 struct _virDomainVirtioSerialController {
     unsigned int idx;
     virBitmapPtr ports;
