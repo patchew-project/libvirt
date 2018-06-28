@@ -5097,6 +5097,34 @@ virDomainDefBootOrderPostParse(virDomainDefPtr def)
 
 
 static int
+virDomainDefPostParseVideo(virDomainDefPtr def,
+                           void *opaque)
+{
+    if (def->nvideos == 0)
+        return 0;
+
+    virDomainDeviceDef device = {
+        .type = VIR_DOMAIN_DEVICE_VIDEO,
+        .data.video = def->videos[0],
+    };
+
+    /* Mark the first video as primary. If the user specified
+     * primary="yes", the parser already inserted the device at
+     * def->videos[0]
+     */
+    def->videos[0]->primary = true;
+
+    /* videos[0] might have been added in AddImplicitDevices, after we've
+     * done the per-device post-parse */
+    if (virDomainDefPostParseDeviceIterator(def, &device,
+                                            NULL, opaque) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+static int
 virDomainDefPostParseCommon(virDomainDefPtr def,
                             struct virDomainDefPostParseDeviceIteratorData *data)
 {
@@ -5132,21 +5160,8 @@ virDomainDefPostParseCommon(virDomainDefPtr def,
     if (virDomainDefAddImplicitDevices(def) < 0)
         return -1;
 
-    if (def->nvideos != 0) {
-        virDomainDeviceDef device = {
-            .type = VIR_DOMAIN_DEVICE_VIDEO,
-            .data.video = def->videos[0],
-        };
-
-        /* Mark the first video as primary. If the user specified primary="yes",
-         * the parser already inserted the device at def->videos[0] */
-        def->videos[0]->primary = true;
-
-        /* videos[0] might have been added in AddImplicitDevices, after we've
-         * done the per-device post-parse */
-        if (virDomainDefPostParseDeviceIterator(def, &device, NULL, data) < 0)
-            return -1;
-    }
+    if (virDomainDefPostParseVideo(def, data) < 0)
+        return -1;
 
     if (def->nserials != 0) {
         virDomainDeviceDef device = {
