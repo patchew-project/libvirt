@@ -1141,6 +1141,7 @@ mymain(void)
             QEMU_CAPS_VIRTIO_GPU_MAX_OUTPUTS,
             QEMU_CAPS_VNC,
             QEMU_CAPS_DEVICE_VIRTIO_GPU_CCW);
+    DO_TEST("video-none-device", NONE);
 
     DO_TEST("intel-iommu",
             QEMU_CAPS_DEVICE_INTEL_IOMMU);

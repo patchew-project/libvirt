@@ -4457,6 +4457,9 @@ static int
 qemuDomainDeviceDefValidateVideo(const virDomainVideoDef *video)
 {
     switch ((virDomainVideoType) video->type) {
+    case VIR_DOMAIN_VIDEO_TYPE_NONE:
+        /* nothing to be validated for 'none' */
+        return 0;
     case VIR_DOMAIN_VIDEO_TYPE_XEN:
     case VIR_DOMAIN_VIDEO_TYPE_VBOX:
     case VIR_DOMAIN_VIDEO_TYPE_PARALLELS:

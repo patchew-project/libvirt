@@ -821,6 +821,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
 
         case VIR_DOMAIN_VIDEO_TYPE_DEFAULT:
         case VIR_DOMAIN_VIDEO_TYPE_GOP:
+        case VIR_DOMAIN_VIDEO_TYPE_NONE:
         case VIR_DOMAIN_VIDEO_TYPE_LAST:
             return 0;
         }
@@ -1540,6 +1541,13 @@ qemuDomainValidateDevicePCISlotsPIIX3(virDomainDefPtr def,
          * at slot 2.
          */
         virDomainVideoDefPtr primaryVideo = def->videos[0];
+
+        /* for video type 'none' skip this whole procedure */
+        if (primaryVideo->type == VIR_DOMAIN_VIDEO_TYPE_NONE) {
+            ret = 0;
+            goto cleanup;
+        }
+
         if (virDeviceInfoPCIAddressWanted(&primaryVideo->info)) {
             memset(&tmp_addr, 0, sizeof(tmp_addr));
             tmp_addr.slot = 2;
@@ -2105,6 +2113,8 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
 
     /* Video devices */
     for (i = 0; i < def->nvideos; i++) {
+        if (def->videos[i]->type == VIR_DOMAIN_VIDEO_TYPE_NONE)
+            break;
 
         if (!virDeviceInfoPCIAddressWanted(&def->videos[i]->info))
             continue;
