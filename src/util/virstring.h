@@ -37,6 +37,9 @@ char **virStringSplit(const char *string,
                       size_t max_tokens)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
+char *virStringCleanExtraSpaces(char *src)
+    ATTRIBUTE_NONNULL(1);
+
 char *virStringListJoin(const char **strings,
                         const char *delim)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);

@@ -139,6 +139,42 @@ virStringSplit(const char *string,
 
 
 /**
+ * virCleanExtraSpacesInString:
+ * @src: original null terminated string
+ *
+ * Returns string with all spaces but one removed between words in @src
+ * string. Caller is responsible for freeing the returned string.
+ * Returns NULL if new string could not be allocated.
+ *
+ */
+char *
+virStringCleanExtraSpaces(char *src)
+{
+    char *dst;
+    size_t dstlen;
+    int src_at = 0;
+    int dst_at;
+
+    dstlen = strlen(src);
+    if (VIR_ALLOC_N(dst, dstlen) < 0)
+        return NULL;
+
+    while (src[src_at] == ' ')
+        src_at++;
+
+    for (dst_at = 0; src[src_at] != '\0'; src_at++) {
+        if (src[src_at + 1] == ' ' && src[src_at] == ' ')
+            continue;
+        dst[dst_at] = src[src_at];
+        dst_at++;
+    }
+    dst[dst_at] = '\0';
+
+    return dst;
+}
+
+
+/**
  * virStringListJoin:
  * @strings: a NULL-terminated array of strings to join
  * @delim: a string to insert between each of the strings
