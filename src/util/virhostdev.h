@@ -197,6 +197,9 @@ virHostdevReAttachDomainDevices(virHostdevManagerPtr mgr,
                                 const char *oldStateDir)
     ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 bool
+virHostdevIsPCINetDevice(virDomainHostdevDefPtr hostdev)
+    ATTRIBUTE_NONNULL(1);
+bool
 virHostdevIsSCSIDevice(virDomainHostdevDefPtr hostdev)
     ATTRIBUTE_NONNULL(1);
 bool

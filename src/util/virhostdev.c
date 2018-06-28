@@ -348,7 +348,7 @@ virHostdevNetDevice(virDomainHostdevDefPtr hostdev,
 }
 
 
-static bool
+bool
 virHostdevIsPCINetDevice(virDomainHostdevDefPtr hostdev)
 {
     return hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS &&

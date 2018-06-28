@@ -449,6 +449,7 @@ virDomainNetDefClear;
 virDomainNetDefFormat;
 virDomainNetDefFree;
 virDomainNetFind;
+virDomainNetFindByHostdev;
 virDomainNetFindByName;
 virDomainNetFindIdx;
 virDomainNetGenerateMAC;
@@ -1966,6 +1967,7 @@ virHostCPUStatsAssign;
 # util/virhostdev.h
 virHostdevFindUSBDevice;
 virHostdevIsMdevDevice;
+virHostdevIsPCINetDevice;
 virHostdevIsSCSIDevice;
 virHostdevManagerGetDefault;
 virHostdevNetDevice;

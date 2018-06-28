@@ -3148,6 +3148,8 @@ int virDomainDiskSourceParse(xmlNodePtr node,
 
 int virDomainNetFindIdx(virDomainDefPtr def, virDomainNetDefPtr net);
 virDomainNetDefPtr virDomainNetFind(virDomainDefPtr def, const char *device);
+virDomainNetDefPtr virDomainNetFindByHostdev(virDomainDefPtr def,
+                                             virDomainHostdevDefPtr hostdev);
 virDomainNetDefPtr virDomainNetFindByName(virDomainDefPtr def, const char *ifname);
 bool virDomainHasNet(virDomainDefPtr def, virDomainNetDefPtr net);
 int virDomainNetInsert(virDomainDefPtr def, virDomainNetDefPtr net);

@@ -56,6 +56,7 @@
 #include "virsecret.h"
 #include "virstring.h"
 #include "virnetdev.h"
+#include "virnetdevhostdev.h"
 #include "virnetdevmacvlan.h"
 #include "virhostdev.h"
 #include "virmdev.h"
@@ -29076,6 +29077,37 @@ virDomainNetFind(virDomainDefPtr def, const char *device)
 
 
 /**
+ * virDomainNetFindByHostdev:
+ * @def: domain's def
+ * @hostdev: hostdev whose net def if exists to be retrieved
+ *
+ * Finds net def in domain given the domain's hostdev.
+ *
+ * Returns a pointer to the net def or NULL if not found.
+ */
+virDomainNetDefPtr
+virDomainNetFindByHostdev(virDomainDefPtr def,
+                          virDomainHostdevDefPtr hostdev)
+{
+    size_t i;
+    virDomainNetType actualType;
+    virDomainHostdevDefPtr hostdef = NULL;
+
+    for (i = 0; i < def->nnets; i++) {
+         actualType = virDomainNetGetActualType(def->nets[i]);
+         if (actualType == VIR_DOMAIN_NET_TYPE_HOSTDEV)
+             hostdef = virDomainNetGetActualHostdev(def->nets[i]);
+         else
+             continue;
+         if  (!memcmp(hostdev, hostdef, sizeof(virDomainHostdevDef)))
+              return def->nets[i];
+    }
+
+    return NULL;
+}
+
+
+/**
  * virDomainNetFindByName:
  * @def: domain's def
  * @ifname: interface name
@@ -29089,10 +29121,21 @@ virDomainNetFindByName(virDomainDefPtr def,
                        const char *ifname)
 {
     size_t i;
+    virDomainNetDefPtr net = NULL;
 
     for (i = 0; i < def->nnets; i++) {
         if (STREQ_NULLABLE(ifname, def->nets[i]->ifname))
             return def->nets[i];
+    }
+
+    /* Give a try to hostdev if its a switchdev network device*/
+    for (i = 0; i < def->nhostdevs; i++) {
+         if (!virHostdevIsPCINetDevice(def->hostdevs[i]))
+             continue;
+         if (virNetdevHostdevCheckVFRIfName(def->hostdevs[i], ifname)) {
+             if ((net = virDomainNetFindByHostdev(def, def->hostdevs[i])))
+                 return net;
+         }
     }
 
     return NULL;
