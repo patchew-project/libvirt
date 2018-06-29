@@ -9502,6 +9502,8 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
     char *vendor = NULL;
     char *product = NULL;
     char *domain_name = NULL;
+    char *disk_l2_cache_size = NULL;
+    char *disk_cache_clean_interval = NULL;
 
     if (!(def = virDomainDiskDefNew(xmlopt)))
         return NULL;
@@ -9701,6 +9703,27 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
             }
         } else if (virXMLNodeNameEqual(cur, "boot")) {
             /* boot is parsed as part of virDomainDeviceInfoParseXML */
+        } else if (virXMLNodeNameEqual(cur, "diskCache")) {
+            disk_l2_cache_size =
+                virXMLPropString(cur, "disk_l2_cache_size");
+            if (disk_l2_cache_size &&
+                virStrToLong_ui(disk_l2_cache_size, NULL, 0,
+                                &def->disk_cache.disk_l2_cache_size) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("invalid disk L2 cache size '%s'"),
+                               disk_l2_cache_size);
+                goto error;
+            }
+            disk_cache_clean_interval =
+                virXMLPropString(cur, "disk_cache_clean_interval");
+            if (disk_cache_clean_interval &&
+                virStrToLong_ui(disk_cache_clean_interval, NULL, 0,
+                                &def->disk_cache.disk_cache_clean_interval) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("invalid disk cache clean interval '%s'"),
+                               disk_cache_clean_interval);
+                goto error;
+            }
         }
     }
 
@@ -9903,6 +9926,8 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_FREE(vendor);
     VIR_FREE(product);
     VIR_FREE(domain_name);
+    VIR_FREE(disk_l2_cache_size);
+    VIR_FREE(disk_cache_clean_interval);
 
     ctxt->node = save_ctxt;
     return def;

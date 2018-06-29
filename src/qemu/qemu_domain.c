@@ -8640,6 +8640,10 @@ qemuDomainDiskChangeSupported(virDomainDiskDefPtr disk,
     CHECK_EQ(ioeventfd, "ioeventfd", true);
     CHECK_EQ(event_idx, "event_idx", true);
     CHECK_EQ(copy_on_read, "copy_on_read", true);
+    CHECK_EQ(disk_cache.disk_l2_cache_size,
+             "diskCache disk_l2_cache_size", true);
+    CHECK_EQ(disk_cache.disk_cache_clean_interval,
+             "diskCache disk_cache_clean_interval", true);
     /* "snapshot" is a libvirt internal field and thus can be changed */
     /* startupPolicy is allowed to be updated. Therefore not checked here. */
     CHECK_EQ(transient, "transient", true);
