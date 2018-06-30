@@ -1068,6 +1068,15 @@ sc_require_attribute_cleanup_initialization:
 	halt='variable declared with a cleanup macro must be initialized' \
 	  $(_sc_search_regexp)
 
+# Rule to ensure that there is exactly one blank space between the
+# type name and the asterisk charcater when passed as the argument
+# to VIR_AUTOFREE.
+sc_require_attribute_cleanup_scalar_type_space:
+	@prohibit='VIR_AUTOFREE\([^ ]+(| {2,})\*\) .*;' \
+    in_vc_files='\.[chx]$$' \
+    halt='there must be exactly one space between the type and asterisk inside VIR_AUTOFREE' \
+      $(_sc_search_regexp)
+
 # We don't use this feature of maint.mk.
 prev_version_file = /dev/null
 
