@@ -1077,6 +1077,14 @@ sc_require_attribute_cleanup_scalar_type_space:
     halt='there must be exactly one space between the type and asterisk inside VIR_AUTOFREE' \
       $(_sc_search_regexp)
 
+# Rule to ensure that there is only one variable declaration in
+# a line when the variable is declared using a cleanup macro.
+sc_require_attribute_cleanup_one_per_line:
+	@prohibit='VIR_AUTO(FREE|PTR)\(.+\) ([^\(]*(, .*)+|[^\(]*\(.*\)(, .*)+);' \
+    in_vc_files='\.[chx]$$' \
+    halt='there must be only one variable declaration per line when using cleanup macro' \
+      $(_sc_search_regexp)
+
 # We don't use this feature of maint.mk.
 prev_version_file = /dev/null
 
