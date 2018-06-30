@@ -1085,6 +1085,15 @@ sc_require_attribute_cleanup_one_per_line:
     halt='there must be only one variable declaration per line when using cleanup macro' \
       $(_sc_search_regexp)
 
+# Rule to ensure that there is no trailing semicolon at the line on
+# which a cleanup funciton is defined using a VIR_DEFINE_* macro.
+sc_require_attribute_cleanup_no_semicolon:
+	@prohibit='VIR_DEFINE_AUTOPTR_FUNC\(.+\)\s*;' \
+    in_vc_files='\.[chx]$$' \
+    halt='cleanup macro defining a function must not end with a semicolon' \
+      $(_sc_search_regexp)
+
+
 # We don't use this feature of maint.mk.
 prev_version_file = /dev/null
 
