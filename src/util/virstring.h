@@ -26,6 +26,8 @@
 
 # include "internal.h"
 
+typedef char *virString;
+
 char **virStringSplitCount(const char *string,
                            const char *delim,
                            size_t max_tokens,
