@@ -445,6 +445,12 @@ int virPidFileAcquirePath(const char *path,
     }
 
     snprintf(pidstr, sizeof(pidstr), "%lld", (long long) pid);
+    if (ftruncate(fd, 0) < 0) {
+        VIR_FORCE_CLOSE(fd);
+        return -1;
+    }
+
+    lseek(fd, 0, SEEK_SET);
 
     if (safewrite(fd, pidstr, strlen(pidstr)) < 0) {
         virReportSystemError(errno,
