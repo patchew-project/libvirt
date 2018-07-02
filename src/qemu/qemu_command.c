@@ -1621,8 +1621,6 @@ qemuBuildDiskFrontendAttributes(virDomainDiskDefPtr disk,
         virBufferAddLit(buf, ",serial=");
         virBufferEscape(buf, '\\', " ", "%s", disk->serial);
     }
-
-    qemuBuildDiskFrontendAttributeErrorPolicy(disk, buf);
 }
 
 
@@ -1662,11 +1660,27 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
         virBufferAsprintf(&opt, "if=%s",
                           virDomainDiskQEMUBusTypeToString(disk->bus));
         virBufferAsprintf(&opt, ",index=%d", idx);
+
+        if (disk->serial) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Serial property not supported for drive bus '%s'"),
+                           virDomainDiskBusTypeToString(disk->bus));
+            goto error;
+        }
+        if (disk->geometry.cylinders > 0 &&
+            disk->geometry.heads > 0 &&
+            disk->geometry.sectors > 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Geometry not supported for drive bus '%s'"),
+                           virDomainDiskBusTypeToString(disk->bus));
+            goto error;
+        }
     }
 
-    /* Format attributes for the drive itself (not the storage backing it) which
-     * we've formatted historically with -drive */
-    qemuBuildDiskFrontendAttributes(disk, &opt);
+    /* werror/rerror are really frontend attributes, but older
+     * qemu requires them on -drive instead of -device */
+    qemuBuildDiskFrontendAttributeErrorPolicy(disk, &opt);
+
 
     /* While this is a frontend attribute, it only makes sense to be used when
      * legacy -drive is used. In modern qemu the 'ide-cd' or 'scsi-cd' are used.
@@ -2124,6 +2138,8 @@ qemuBuildDriveDevStr(const virDomainDef *def,
 
     if (qemuBuildDriveDevCacheStr(disk, &opt, qemuCaps) < 0)
         goto error;
+
+    qemuBuildDiskFrontendAttributes(disk, &opt);
 
     if (virBufferCheckError(&opt) < 0)
         goto error;
