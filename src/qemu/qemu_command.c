@@ -1599,7 +1599,7 @@ qemuBuildDiskFrontendAttributeErrorPolicy(virDomainDiskDefPtr disk,
 }
 
 
-static void
+static int
 qemuBuildDiskFrontendAttributes(virDomainDiskDefPtr disk,
                                 virBufferPtr buf)
 {
@@ -1607,14 +1607,27 @@ qemuBuildDiskFrontendAttributes(virDomainDiskDefPtr disk,
     if (disk->geometry.cylinders > 0 &&
         disk->geometry.heads > 0 &&
         disk->geometry.sectors > 0) {
+        if (disk->bus == VIR_DOMAIN_DISK_BUS_USB) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("CHS geometry can not be set for 'usb' bus"));
+            return -1;
+        }
+
         virBufferAsprintf(buf, ",cyls=%u,heads=%u,secs=%u",
                           disk->geometry.cylinders,
                           disk->geometry.heads,
                           disk->geometry.sectors);
 
-        if (disk->geometry.trans != VIR_DOMAIN_DISK_TRANS_DEFAULT)
-            virBufferAsprintf(buf, ",trans=%s",
+        if (disk->geometry.trans != VIR_DOMAIN_DISK_TRANS_DEFAULT) {
+            if (disk->bus != VIR_DOMAIN_DISK_BUS_IDE) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("CHS translation mode can only be set for 'ide' bus not '%s'"),
+                               virDomainDiskBusTypeToString(disk->bus));
+                return -1;
+            }
+            virBufferAsprintf(buf, ",bios-chs-trans=%s",
                               virDomainDiskGeometryTransTypeToString(disk->geometry.trans));
+        }
     }
 
     if (disk->serial) {
@@ -1622,7 +1635,7 @@ qemuBuildDiskFrontendAttributes(virDomainDiskDefPtr disk,
         virBufferEscape(buf, '\\', " ", "%s", disk->serial);
     }
 
-    qemuBuildDiskFrontendAttributeErrorPolicy(disk, buf);
+    return 0;
 }
 
 
@@ -1662,11 +1675,27 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
         virBufferAsprintf(&opt, "if=%s",
                           virDomainDiskQEMUBusTypeToString(disk->bus));
         virBufferAsprintf(&opt, ",index=%d", idx);
+
+        if (disk->serial) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Serial property not supported for drive bus '%s'"),
+                           virDomainDiskBusTypeToString(disk->bus));
+            goto error;
+        }
+        if (disk->geometry.cylinders > 0 &&
+            disk->geometry.heads > 0 &&
+            disk->geometry.sectors > 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Geometry not supported for drive bus '%s'"),
+                           virDomainDiskBusTypeToString(disk->bus));
+            goto error;
+        }
     }
 
-    /* Format attributes for the drive itself (not the storage backing it) which
-     * we've formatted historically with -drive */
-    qemuBuildDiskFrontendAttributes(disk, &opt);
+    /* werror/rerror are really frontend attributes, but older
+     * qemu requires them on -drive instead of -device */
+    qemuBuildDiskFrontendAttributeErrorPolicy(disk, &opt);
+
 
     /* While this is a frontend attribute, it only makes sense to be used when
      * legacy -drive is used. In modern qemu the 'ide-cd' or 'scsi-cd' are used.
@@ -2123,6 +2152,9 @@ qemuBuildDriveDevStr(const virDomainDef *def,
     }
 
     if (qemuBuildDriveDevCacheStr(disk, &opt, qemuCaps) < 0)
+        goto error;
+
+    if (qemuBuildDiskFrontendAttributes(disk, &opt) < 0)
         goto error;
 
     if (virBufferCheckError(&opt) < 0)
