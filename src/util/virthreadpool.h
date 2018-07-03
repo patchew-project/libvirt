@@ -45,6 +45,7 @@ virThreadPoolPtr virThreadPoolNewFull(size_t minWorkers,
 
 size_t virThreadPoolGetMinWorkers(virThreadPoolPtr pool);
 size_t virThreadPoolGetMaxWorkers(virThreadPoolPtr pool);
+size_t virThreadPoolGetMaxWorkersLocked(virThreadPoolPtr pool);
 size_t virThreadPoolGetPriorityWorkers(virThreadPoolPtr pool);
 size_t virThreadPoolGetCurrentWorkers(virThreadPoolPtr pool);
 size_t virThreadPoolGetFreeWorkers(virThreadPoolPtr pool);
@@ -52,10 +53,17 @@ size_t virThreadPoolGetJobQueueDepth(virThreadPoolPtr pool);
 
 void virThreadPoolFree(virThreadPoolPtr pool);
 
+void virThreadPoolLock(virThreadPoolPtr pool);
+void virThreadPoolUnlock(virThreadPoolPtr pool);
+
 int virThreadPoolSendJob(virThreadPoolPtr pool,
                          unsigned int priority,
                          void *jobdata) ATTRIBUTE_NONNULL(1)
                                         ATTRIBUTE_RETURN_CHECK;
+int virThreadPoolSendJobLocked(virThreadPoolPtr pool,
+                               unsigned int priority,
+                               void *jobData) ATTRIBUTE_NONNULL(1)
+                                              ATTRIBUTE_RETURN_CHECK;
 
 int virThreadPoolSetParameters(virThreadPoolPtr pool,
                                long long int minWorkers,

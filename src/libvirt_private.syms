@@ -2999,11 +2999,15 @@ virThreadPoolGetCurrentWorkers;
 virThreadPoolGetFreeWorkers;
 virThreadPoolGetJobQueueDepth;
 virThreadPoolGetMaxWorkers;
+virThreadPoolGetMaxWorkersLocked;
 virThreadPoolGetMinWorkers;
 virThreadPoolGetPriorityWorkers;
+virThreadPoolLock;
 virThreadPoolNewFull;
 virThreadPoolSendJob;
+virThreadPoolSendJobLocked;
 virThreadPoolSetParameters;
+virThreadPoolUnlock;
 
 
 # util/virtime.h

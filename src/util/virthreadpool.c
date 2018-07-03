@@ -318,16 +318,26 @@ size_t virThreadPoolGetMinWorkers(virThreadPoolPtr pool)
     return ret;
 }
 
-size_t virThreadPoolGetMaxWorkers(virThreadPoolPtr pool)
+
+size_t
+virThreadPoolGetMaxWorkersLocked(virThreadPoolPtr pool)
+{
+    return pool->maxWorkers;
+}
+
+
+size_t
+virThreadPoolGetMaxWorkers(virThreadPoolPtr pool)
 {
     size_t ret;
 
     virMutexLock(&pool->mutex);
-    ret = pool->maxWorkers;
+    ret = virThreadPoolGetMaxWorkersLocked(pool);
     virMutexUnlock(&pool->mutex);
 
     return ret;
 }
+
 
 size_t virThreadPoolGetPriorityWorkers(virThreadPoolPtr pool)
 {
@@ -373,27 +383,38 @@ size_t virThreadPoolGetJobQueueDepth(virThreadPoolPtr pool)
     return ret;
 }
 
-/*
- * @priority - job priority
- * Return: 0 on success, -1 otherwise
- */
-int virThreadPoolSendJob(virThreadPoolPtr pool,
-                         unsigned int priority,
-                         void *jobData)
+
+void
+virThreadPoolLock(virThreadPoolPtr pool)
+{
+    virMutexLock(&pool->mutex);
+}
+
+
+void
+virThreadPoolUnlock(virThreadPoolPtr pool)
+{
+    virMutexUnlock(&pool->mutex);
+}
+
+
+int
+virThreadPoolSendJobLocked(virThreadPoolPtr pool,
+                           unsigned int priority,
+                           void *jobData)
 {
     virThreadPoolJobPtr job;
 
-    virMutexLock(&pool->mutex);
     if (pool->quit)
-        goto error;
+        return -1;
 
     if (pool->freeWorkers - pool->jobQueueDepth <= 0 &&
         pool->nWorkers < pool->maxWorkers &&
         virThreadPoolExpand(pool, 1, false) < 0)
-        goto error;
+        return -1;
 
     if (VIR_ALLOC(job) < 0)
-        goto error;
+        return -1;
 
     job->data = jobData;
     job->priority = priority;
@@ -415,13 +436,29 @@ int virThreadPoolSendJob(virThreadPoolPtr pool,
     if (priority)
         virCondSignal(&pool->prioCond);
 
-    virMutexUnlock(&pool->mutex);
     return 0;
-
- error:
-    virMutexUnlock(&pool->mutex);
-    return -1;
 }
+
+
+/*
+ * @priority - job priority
+ * Return: 0 on success, -1 otherwise
+ */
+int
+virThreadPoolSendJob(virThreadPoolPtr pool,
+                     unsigned int priority,
+                     void *jobData)
+{
+    int ret;
+
+    virMutexLock(&pool->mutex);
+    ret = virThreadPoolSendJobLocked(pool,
+                                     priority,
+                                     jobData);
+    virMutexUnlock(&pool->mutex);
+    return ret;
+}
+
 
 int
 virThreadPoolSetParameters(virThreadPoolPtr pool,
