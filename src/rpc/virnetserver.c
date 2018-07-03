@@ -51,6 +51,7 @@ struct _virNetServer {
 
     char *name;
 
+    /* Immutable pointer, self-locking APIs */
     virThreadPoolPtr workers;
 
     char *mdnsGroupName;
@@ -177,9 +178,11 @@ static void virNetServerHandleJob(void *jobOpaque, void *opaque)
     VIR_FREE(job);
 }
 
-static void virNetServerDispatchNewMessage(virNetServerClientPtr client,
-                                           virNetMessagePtr msg,
-                                           void *opaque)
+
+static void
+virNetServerDispatchNewMessage(virNetServerClientPtr client,
+                               virNetMessagePtr msg,
+                               void *opaque)
 {
     virNetServerPtr srv = opaque;
     virNetServerProgramPtr prog = NULL;
@@ -196,6 +199,9 @@ static void virNetServerDispatchNewMessage(virNetServerClientPtr client,
             break;
         }
     }
+    /* we can unlock @srv since @prog can only become invalid in case
+     * of disposing @srv */
+    virObjectUnlock(srv);
 
     if (srv->workers) {
         virNetServerJobPtr job;
@@ -223,14 +229,13 @@ static void virNetServerDispatchNewMessage(virNetServerClientPtr client,
             goto error;
     }
 
-    virObjectUnlock(srv);
     return;
 
  error:
     virNetMessageFree(msg);
     virNetServerClientClose(client);
-    virObjectUnlock(srv);
 }
+
 
 /**
  * virNetServerCheckLimits:
