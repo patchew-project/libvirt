@@ -1538,6 +1538,44 @@ virStorageBackendVolOpen(const char *path, struct stat *sb,
         return -1;
     }
 
+    if (virFileIsCDROM(path) == 1) {
+        switch (virFileCdromStatus(path)) {
+            case VIR_FILE_CDROM_NO_INFO	:
+                if (noerror) {
+                    VIR_WARN("ignoring unavailable information of %s", path);
+                    return -2;
+                }
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("Cdrom %s information is unavailable"), path);
+                return -1;
+            case VIR_FILE_CDROM_NO_DISC :
+                if (noerror) {
+                    VIR_WARN("ignoring no disc %s", path);
+                    return -2;
+                }
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("Cdrom %s has no disc"), path);
+                return -1;
+            case VIR_FILE_CDROM_TREY_OPEN :
+                if (noerror) {
+                    VIR_WARN("ignoring trey open of %s", path);
+                    return -2;
+                }
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("Cdrom %s is on trey-open status"), path);
+                return -1;
+            case VIR_FILE_CDROM_DRIVE_NOT_READY :
+                if (noerror) {
+                    VIR_WARN("ignoring %s not ready", path);
+                    return -2;
+                }
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("Cdrom %s is on not ready"), path);
+                return -1;
+            case VIR_FILE_CDROM_DISC_OK :
+                VIR_INFO("Cdrom %s status is ok", path);
+        }
+    }
     /* O_NONBLOCK should only matter during open() for fifos and
      * sockets, which we already filtered; but using it prevents a
      * TOCTTOU race.  However, later on we will want to read() the
