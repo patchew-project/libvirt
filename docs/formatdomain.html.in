@@ -2727,6 +2727,12 @@
     &lt;backingStore type='file'&gt;
       &lt;format type='qcow2'/&gt;
       &lt;source file='/var/lib/libvirt/images/snapshot.qcow'/&gt;
+      &lt;diskCache&gt;
+        &lt;cache level='2'&gt;
+            &lt;size unit='KiB'&gt;128&lt;/size&gt;
+        &lt;/cache&gt;
+        &lt;clean interval='8'/&gt;
+      &lt;/diskCache&gt;
       &lt;backingStore type='block'&gt;
         &lt;format type='raw'/&gt;
         &lt;source dev='/dev/mapper/base'/&gt;
@@ -3589,6 +3595,25 @@
             size which can be relevant for the alignment of disk data.
           </dd>
         </dl>
+      </dd>
+      <dt><code>diskCache</code></dt>
+      <dd>The <code>diskCache</code> allows setting the L2 cache
+        and cache clean interval values of the qcow2 image with
+        the following properties.
+        <span class="since">Since 2.5(QEMU and KVM)</span>
+        <dl>
+          <dt><code>cache</code></dt>
+          <dd>The <code>level</code> attribute allows you to set the
+            level of the cache, temporarily only supports level 2 cache.
+            The <code>size</code> allows you to set the size of the cache
+            and can specify the unit
+          </dd>
+          <dt><code>clean</code></dt>
+          <dd>The <code>interval</code> allow setting cache expiration time
+            in seconds
+          </dd>
+        </dl>
+
       </dd>
     </dl>
 

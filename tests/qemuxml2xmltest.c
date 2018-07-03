@@ -404,6 +404,7 @@ mymain(void)
             QEMU_CAPS_SCSI_DISK_WWN);
     DO_TEST("disk-mirror-old", NONE);
     DO_TEST("disk-mirror", NONE);
+    DO_TEST("disk-cache", NONE);
     DO_TEST_FULL("disk-active-commit", WHEN_ACTIVE, GIC_NONE, NONE);
     DO_TEST("graphics-listen-network", NONE);
     DO_TEST("graphics-vnc", NONE);

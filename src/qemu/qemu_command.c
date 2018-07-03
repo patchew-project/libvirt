@@ -1637,6 +1637,12 @@ qemuBuildDriveStr(virDomainDiskDefPtr disk,
 
     if (qemuBuildDriveSourceStr(disk, qemuCaps, &opt) < 0)
         goto error;
+    if (disk->disk_cache.cache_level == 2 && disk->disk_cache.cache_size > 0)
+        virBufferAsprintf(&opt, "l2-cache-size=%llu,",
+                disk->disk_cache.cache_size);
+    if (disk->disk_cache.clean_interval > 0)
+        virBufferAsprintf(&opt, "cache-clean-interval=%u,",
+                disk->disk_cache.clean_interval);
 
     if (qemuDiskBusNeedsDeviceArg(disk->bus)) {
         char *drivealias = qemuAliasDiskDriveFromDisk(disk);

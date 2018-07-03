@@ -1008,6 +1008,7 @@ mymain(void)
             QEMU_CAPS_VIRTIO_S390);
     DO_TEST("disk-many", NONE);
     DO_TEST("disk-virtio", QEMU_CAPS_DRIVE_BOOT);
+    DO_TEST("disk-cache", NONE);
     DO_TEST("disk-virtio-ccw",
             QEMU_CAPS_CCW, QEMU_CAPS_VIRTIO_S390);
     DO_TEST("disk-virtio-ccw-many",

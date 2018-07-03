@@ -8895,6 +8895,37 @@ virDomainDiskSourceParse(xmlNodePtr node,
     return 0;
 }
 
+static int
+virDomainDiskCacheParse(xmlNodePtr node,
+                        xmlXPathContextPtr ctxt,
+                        virDomainDiskDefPtr def)
+{
+    int ret = -1;
+    xmlNodePtr saveNode = ctxt->node;
+    ctxt->node = node;
+    if (virXPathUInt("string(./clean/@interval)", ctxt, &def->disk_cache.clean_interval) < -1) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("malformed disk cache clean interval"));
+        goto cleanup;
+    }
+
+    if (virXPathUInt("string(./cache/@level)", ctxt, &def->disk_cache.cache_level) < -1) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("malformed disk cache level"));
+        goto cleanup;
+    }
+
+    if (virDomainParseMemory("./cache/size", NULL, ctxt,
+                             &def->disk_cache.cache_size, false, true) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    ctxt->node = saveNode;
+    return ret;
+
+}
 
 static int
 virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
@@ -9702,6 +9733,10 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
             }
         } else if (virXMLNodeNameEqual(cur, "boot")) {
             /* boot is parsed as part of virDomainDeviceInfoParseXML */
+        } else if (virXMLNodeNameEqual(cur, "diskCache")) {
+
+            if (virDomainDiskCacheParse(cur, ctxt, def) < 0)
+                goto error;
         }
     }
 
@@ -23387,7 +23422,32 @@ virDomainDiskBlockIoDefFormat(virBufferPtr buf,
         virBufferAddLit(buf, "/>\n");
     }
 }
-
+static void
+virDomainDiskCacheDefFormat(virBufferPtr buf,
+                            virDomainDiskDefPtr def)
+{
+    if (def->disk_cache.cache_size > 0 ||
+        def->disk_cache.clean_interval > 0) {
+        virBufferAddLit(buf, "<diskCache>\n");
+        virBufferAdjustIndent(buf, 2);
+        if (def->disk_cache.cache_level == 2 && def->disk_cache.cache_size > 0) {
+            virBufferAddLit(buf, "<cache level='2'>\n");
+            virBufferAdjustIndent(buf, 2);
+            virBufferAsprintf(buf,
+                              "<size unit='KiB'>%llu</size>\n",
+                              def->disk_cache.cache_size);
+            virBufferAdjustIndent(buf, -2);
+            virBufferAddLit(buf, "</cache>\n");
+        }
+        if (def->disk_cache.clean_interval > 0) {
+            virBufferAsprintf(buf,
+                              "<clean interval='%u'/>\n",
+                              def->disk_cache.clean_interval);
+        }
+        virBufferAdjustIndent(buf, -2);
+        virBufferAddLit(buf, "</diskCache>\n");
+    }
+}
 
 static void
 virDomainSourceDefFormatSeclabel(virBufferPtr buf,
@@ -23887,6 +23947,7 @@ virDomainDiskDefFormat(virBufferPtr buf,
 
     virDomainDiskGeometryDefFormat(buf, def);
     virDomainDiskBlockIoDefFormat(buf, def);
+    virDomainDiskCacheDefFormat(buf, def);
 
     if (virDomainDiskDefFormatMirror(buf, def, flags, xmlopt) < 0)
         return -1;

@@ -647,6 +647,11 @@ struct _virDomainDiskDef {
         unsigned int physical_block_size;
     } blockio;
 
+    struct {
+        unsigned int cache_level;
+        unsigned long long cache_size;
+        unsigned int clean_interval;
+    } disk_cache;
     virDomainBlockIoTuneInfo blkdeviotune;
 
     char *driverName;

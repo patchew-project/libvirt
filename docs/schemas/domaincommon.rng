@@ -1388,8 +1388,34 @@
           </data>
         </element>
       </optional>
+      <optional>
+        <ref name="diskCache"/>
+      </optional>
     </interleave>
   </define>
+<define name="diskCache">
+    <element name="diskCache">
+        <interleave>
+            <optional>
+                <element name="cache">
+                    <attribute name="level">
+                        <ref name="unsignedInt"/>
+                    </attribute>
+                    <element name="size">
+                        <ref name='scaledInteger'/>
+                    </element>
+                </element>
+            </optional>
+            <optional>
+                <element name="clean">
+                    <attribute name="interval">
+                        <ref name="unsignedInt"/>
+                    </attribute>
+                </element>
+            </optional>
+        </interleave>
+    </element>
+</define>
   <define name="snapshot">
     <attribute name="snapshot">
       <choice>
