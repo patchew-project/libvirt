@@ -1795,6 +1795,7 @@ virFileActivateDirOverride;
 virFileBindMountDevice;
 virFileBuildPath;
 virFileCanonicalizePath;
+virFileCdromStatus;
 virFileChownFiles;
 virFileClose;
 virFileComparePaths;

@@ -2026,6 +2026,58 @@ virFileIsCDROM(const char *path)
     return ret;
 }
 
+/**
+ * virFileCdromStatus:
+ * @path: Cdrom path
+ *
+ * Returns:
+ *      -1                              error happends.
+ *      VIR_FILE_CDROM_DISC_OK          Cdrom is OK.
+ *      VIR_FILE_CDROM_NO_INFO          Information not available.
+ *      VIR_FILE_CDROM_NO_DISC          No disc in cdrom.
+ *      VIR_FILE_CDROM_TREY_OPEN        Cdrom is trey-open.
+ *      VIR_FILE_CDROM_DRIVE_NOT_READY  Cdrom is not ready.
+ * reported.
+ */
+int
+virFileCdromStatus(const char *path)
+{
+    int ret = -1;
+    int fd;
+
+    if ((fd = open(path, O_RDONLY | O_NONBLOCK)) < 0)
+        goto cleanup;
+
+    /* Attempt to detect CDROM status via ioctl */
+    if ((ret = ioctl(fd, CDROM_DRIVE_STATUS, CDSL_CURRENT)) >= 0) {
+        switch (ret) {
+            case CDS_NO_INFO:
+                ret = VIR_FILE_CDROM_NO_INFO;
+                goto cleanup;
+                break;
+            case CDS_NO_DISC:
+                ret = VIR_FILE_CDROM_NO_DISC;
+                goto cleanup;
+                break;
+            case CDS_TRAY_OPEN:
+                ret = VIR_FILE_CDROM_TREY_OPEN;
+                goto cleanup;
+                break;
+            case CDS_DRIVE_NOT_READY:
+                ret = VIR_FILE_CDROM_DRIVE_NOT_READY;
+                goto cleanup;
+                break;
+            case CDS_DISC_OK:
+                ret = VIR_FILE_CDROM_DISC_OK;
+                goto cleanup;
+                break;
+        }
+    }
+
+ cleanup:
+    VIR_FORCE_CLOSE(fd);
+    return ret;
+}
 #else
 
 int

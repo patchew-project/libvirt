@@ -212,6 +212,16 @@ int virFileIsSharedFS(const char *path) ATTRIBUTE_NONNULL(1);
 int virFileIsMountPoint(const char *file) ATTRIBUTE_NONNULL(1);
 int virFileIsCDROM(const char *path)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+int virFileCdromStatus(const char *path)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
+
+enum {
+    VIR_FILE_CDROM_DISC_OK = 1,
+    VIR_FILE_CDROM_NO_INFO,
+    VIR_FILE_CDROM_NO_DISC,
+    VIR_FILE_CDROM_TREY_OPEN,
+    VIR_FILE_CDROM_DRIVE_NOT_READY,
+};
 
 int virFileGetMountSubtree(const char *mtabpath,
                            const char *prefix,
