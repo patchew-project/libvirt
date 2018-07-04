@@ -2069,6 +2069,81 @@ qemuRefreshVirtioChannelState(virQEMUDriverPtr driver,
     return ret;
 }
 
+
+static int
+qemuProcessRefreshPRManagerState(virDomainObjPtr vm,
+                                 virHashTablePtr info)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    qemuMonitorPRManagerInfoPtr prManagerInfo;
+    size_t i;
+    int ret = -1;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        const char *mgralias;
+
+        mgralias = virStorageSourceChainGetManagedPRAlias(vm->def->disks[i]->src);
+
+        if (!mgralias)
+            continue;
+
+        if (!(prManagerInfo = virHashLookup(info, mgralias))) {
+            virReportError(VIR_ERR_OPERATION_FAILED,
+                           _("missing info on pr-manager %s"),
+                           mgralias);
+            goto cleanup;
+        }
+
+        break;
+    }
+
+    if (i == vm->def->ndisks) {
+        /* no managed pr-manager, return early. */
+        ret = 0;
+        goto cleanup;
+    }
+
+    priv->prDaemonRunning = prManagerInfo->connected;
+
+    if (!priv->prDaemonRunning &&
+        qemuProcessStartManagedPRDaemon(vm) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    return ret;
+}
+
+
+static int
+qemuRefreshPRManagerState(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virHashTablePtr info = NULL;
+    int ret = -1;
+
+    if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_PR_MANAGER_HELPER))
+        return 0;
+
+    if (qemuDomainObjEnterMonitorAsync(driver, vm, QEMU_ASYNC_JOB_NONE) < 0)
+        goto cleanup;
+
+    ret = qemuMonitorGetPRManagerInfo(priv->mon, &info);
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        ret = -1;
+
+    if (ret < 0)
+        goto cleanup;
+
+    ret = qemuProcessRefreshPRManagerState(vm, info);
+
+ cleanup:
+    virHashFree(info);
+    return ret;
+}
+
+
 static void
 qemuRefreshRTC(virQEMUDriverPtr driver,
                virDomainObjPtr vm)
@@ -7720,6 +7795,9 @@ qemuProcessReconnect(void *opaque)
         goto error;
 
     if (qemuRefreshVirtioChannelState(driver, obj, QEMU_ASYNC_JOB_NONE) < 0)
+        goto error;
+
+    if (qemuRefreshPRManagerState(driver, obj) < 0)
         goto error;
 
     /* If querying of guest's RTC failed, report error, but do not kill the domain. */
