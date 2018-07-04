@@ -404,6 +404,9 @@ bool virStoragePRDefIsManaged(virStoragePRDefPtr prd);
 bool
 virStorageSourceChainHasManagedPR(virStorageSourcePtr src);
 
+const char *
+virStorageSourceChainGetManagedPRAlias(virStorageSourcePtr src);
+
 virSecurityDeviceLabelDefPtr
 virStorageSourceGetSecurityLabelDef(virStorageSourcePtr src,
                                     const char *model);

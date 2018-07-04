@@ -2041,6 +2041,20 @@ virStorageSourceChainHasManagedPR(virStorageSourcePtr src)
 }
 
 
+const char *
+virStorageSourceChainGetManagedPRAlias(virStorageSourcePtr src)
+{
+    virStorageSourcePtr n;
+
+    for (n = src; virStorageSourceIsBacking(n); n = n->backingStore) {
+        if (virStoragePRDefIsManaged(src->pr))
+            return src->pr->mgralias;
+    }
+
+    return NULL;
+}
+
+
 virSecurityDeviceLabelDefPtr
 virStorageSourceGetSecurityLabelDef(virStorageSourcePtr src,
                                     const char *model)
