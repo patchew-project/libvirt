@@ -7421,7 +7421,7 @@ qemuBuildMemPathStr(virQEMUDriverConfigPtr cfg,
 
     if (def->mem.hugepages[0].nodemask) {
         ssize_t next_bit = virBitmapNextSetBit(def->mem.hugepages[0].nodemask, -1);
-        if (next_bit >= 0) {
+        if (next_bit > 0) {
             virReportError(VIR_ERR_XML_DETAIL,
                            _("hugepages: node %zd not found"),
                            next_bit);
@@ -7577,7 +7577,7 @@ qemuBuildNumaArgStr(virQEMUDriverConfigPtr cfg,
         }
 
         next_bit = virBitmapNextSetBit(def->mem.hugepages[i].nodemask, pos);
-        if (next_bit >= 0) {
+        if (next_bit > 0) {
             virReportError(VIR_ERR_XML_DETAIL,
                            _("hugepages: node %zd not found"),
                            next_bit);
