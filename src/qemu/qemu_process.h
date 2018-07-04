@@ -214,4 +214,7 @@ int qemuProcessStartManagedPRDaemon(virDomainObjPtr vm);
 
 void qemuProcessKillManagedPRDaemon(virDomainObjPtr vm);
 
+int qemuProcessGraphicsReservePorts(virDomainGraphicsDefPtr graphics,
+                                    bool reconnect);
+
 #endif /* __QEMU_PROCESS_H__ */

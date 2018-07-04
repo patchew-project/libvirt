@@ -4928,6 +4928,7 @@ qemuMigrationDstFinish(virQEMUDriverPtr driver,
     qemuDomainJobInfoPtr jobInfo = NULL;
     bool inPostCopy = false;
     bool doKill = true;
+    size_t i;
 
     VIR_DEBUG("driver=%p, dconn=%p, vm=%p, cookiein=%s, cookieinlen=%d, "
               "cookieout=%p, cookieoutlen=%p, flags=0x%lx, retcode=%d",
@@ -4999,6 +5000,11 @@ qemuMigrationDstFinish(virQEMUDriverPtr driver,
 
     if (qemuConnectAgent(driver, vm) < 0)
         goto endjob;
+
+    for (i = 0; i < vm->def->ngraphics; i++) {
+        if (qemuProcessGraphicsReservePorts(vm->def->graphics[i], true) < 0)
+            goto endjob;
+    }
 
     if (flags & VIR_MIGRATE_PERSIST_DEST) {
         if (qemuMigrationDstPersist(driver, vm, mig, !v3proto) < 0) {

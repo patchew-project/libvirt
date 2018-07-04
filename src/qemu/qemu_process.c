@@ -4417,7 +4417,7 @@ qemuProcessStartHook(virQEMUDriverPtr driver,
 }
 
 
-static int
+int
 qemuProcessGraphicsReservePorts(virDomainGraphicsDefPtr graphics,
                                 bool reconnect)
 {
