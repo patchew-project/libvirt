@@ -10089,10 +10089,21 @@ qemuBuildVsockDevStr(virDomainDefPtr def,
 {
     qemuDomainVsockPrivatePtr priv = (qemuDomainVsockPrivatePtr)vsock->privateData;
     virBuffer buf = VIR_BUFFER_INITIALIZER;
-    const char *device = "vhost-vsock-pci";
     char *ret = NULL;
+    const char *devsuffix;
 
-    virBufferAsprintf(&buf, "%s", device);
+    if (vsock->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
+        devsuffix = "pci";
+    } else if (vsock->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
+        devsuffix = "ccw";
+    } else {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unsupported address type %s for vsock device"),
+                       virDomainDeviceAddressTypeToString(vsock->info.type));
+        goto cleanup;
+    }
+
+    virBufferAsprintf(&buf, "vhost-vsock-%s", devsuffix);
     virBufferAsprintf(&buf, ",id=%s", vsock->info.alias);
     virBufferAsprintf(&buf, ",guest-cid=%u", vsock->guest_cid);
     virBufferAsprintf(&buf, ",vhostfd=%s%u", fdprefix, priv->vhostfd);
