@@ -8065,3 +8065,93 @@ qemuMonitorJSONGetSEVMeasurement(qemuMonitorPtr mon)
     virJSONValueFree(reply);
     return measurement;
 }
+
+
+/*
+ * Example return data
+ *
+ * "return": [
+ *   { "connected": true, "id": "pr-helper0" }
+ *  ]}
+ *
+ */
+static int
+qemuMonitorJSONExtractPRManagerInfo(virJSONValuePtr reply,
+                                    virHashTablePtr info)
+{
+    qemuMonitorPRManagerInfoPtr entry = NULL;
+    virJSONValuePtr data;
+    int ret = -1;
+    size_t i;
+
+    data = virJSONValueObjectGetArray(reply, "return");
+
+    for (i = 0; i < virJSONValueArraySize(data); i++) {
+        virJSONValuePtr prManager = virJSONValueArrayGet(data, i);
+        const char *alias;
+
+        if (!prManager) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("prManager information was missing array element"));
+            goto cleanup;
+        }
+
+        if (!(alias = virJSONValueObjectGetString(prManager, "id"))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("prManager information was missing id"));
+            goto cleanup;
+        }
+
+        if (VIR_ALLOC(entry) < 0)
+            goto cleanup;
+
+        if (virJSONValueObjectGetBoolean(prManager,
+                                         "connected",
+                                         &entry->connected) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("prManager information was missing connected"));
+            goto cleanup;
+        }
+
+        if (virHashAddEntry(info, alias, entry) < 0) {
+            virReportError(VIR_ERR_OPERATION_FAILED,
+                           _("failed to add chardev '%s' info"), alias);
+            VIR_FREE(entry);
+            goto cleanup;
+        }
+
+        entry = NULL;
+    }
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(entry);
+    return ret;
+}
+
+
+int
+qemuMonitorJSONGetPRManagerInfo(qemuMonitorPtr mon,
+                                virHashTablePtr info)
+{
+    int ret = -1;
+    virJSONValuePtr cmd;
+    virJSONValuePtr reply = NULL;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("query-pr-managers",
+                                           NULL)))
+        return -1;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckReply(cmd, reply, VIR_JSON_TYPE_ARRAY) < 0)
+        goto cleanup;
+
+    ret = qemuMonitorJSONExtractPRManagerInfo(reply, info);
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    return ret;
+
+}
