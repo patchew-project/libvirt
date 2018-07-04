@@ -60,6 +60,10 @@ const char *iscsiadmSendtargetsOutput =
     "10.20.30.40:3260,1 iqn.2008-04.example:example1:iscsi.bar\n"
     "10.20.30.40:3260,1 iqn.2009-04.example:example1:iscsi.seven\n";
 
+struct testIscsiadmCbData {
+    bool output_version;
+};
+
 static void testIscsiadmCb(const char *const*args,
                            const char *const*env ATTRIBUTE_UNUSED,
                            const char *input ATTRIBUTE_UNUSED,
@@ -68,12 +72,13 @@ static void testIscsiadmCb(const char *const*args,
                            int *status,
                            void *opaque)
 {
-    int *output_version = opaque;
+    struct testIscsiadmCbData *data = opaque;
+
     if (args[0] && STREQ(args[0], ISCSIADM) &&
         args[1] && STREQ(args[1], "--mode") &&
         args[2] && STREQ(args[2], "session") &&
         args[3] == NULL) {
-        if (*output_version == 1)
+        if (data->output_version)
             ignore_value(VIR_STRDUP(*output, iscsiadmSessionOutputNonFlash));
         else
             ignore_value(VIR_STRDUP(*output, iscsiadmSessionOutput));
@@ -113,11 +118,13 @@ static int
 testISCSIGetSession(const void *data)
 {
     const struct testSessionInfo *info = data;
-    int ver = info->output_version;
+    struct testIscsiadmCbData cbData = { 0 };
     char *actual_session = NULL;
     int ret = -1;
 
-    virCommandSetDryRun(NULL, testIscsiadmCb, &ver);
+    cbData.output_version = info->output_version;
+
+    virCommandSetDryRun(NULL, testIscsiadmCb, &cbData);
 
     actual_session = virISCSIGetSession(info->device_path, true);
 
