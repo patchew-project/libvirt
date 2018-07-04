@@ -1615,6 +1615,58 @@ qemuProcessHandleDumpCompleted(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
 }
 
 
+static int
+qemuProcessHandlePRManagerStatusChanged(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
+                                        virDomainObjPtr vm,
+                                        const char *prManager,
+                                        bool connected,
+                                        void *opaque ATTRIBUTE_UNUSED)
+{
+    qemuDomainObjPrivatePtr priv;
+    size_t i;
+    int ret = -1;
+
+    virObjectLock(vm);
+
+    VIR_DEBUG("pr-manager %s status changed for domain %p %s connected=%d",
+              prManager, vm, vm->def->name, connected);
+
+    if (connected) {
+        /* Connect events are boring. */
+        ret = 0;
+        goto cleanup;
+    }
+    /* Disconnect events are more interesting. */
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        const char *mgralias;
+
+        mgralias = virStorageSourceChainGetManagedPRAlias(vm->def->disks[i]->src);
+
+        if (STREQ_NULLABLE(prManager, mgralias))
+            break;
+    }
+
+    if (i == vm->def->ndisks) {
+        VIR_DEBUG("pr-manager %s not managed, ignoring event",
+                  prManager);
+        ret = 0;
+        goto cleanup;
+    }
+
+    priv = vm->privateData;
+    priv->prDaemonRunning = false;
+
+    if (qemuProcessStartManagedPRDaemon(vm) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    virObjectUnlock(vm);
+    return ret;
+}
+
+
 static qemuMonitorCallbacks monitorCallbacks = {
     .eofNotify = qemuProcessHandleMonitorEOF,
     .errorNotify = qemuProcessHandleMonitorError,
@@ -1643,6 +1695,7 @@ static qemuMonitorCallbacks monitorCallbacks = {
     .domainAcpiOstInfo = qemuProcessHandleAcpiOstInfo,
     .domainBlockThreshold = qemuProcessHandleBlockThreshold,
     .domainDumpCompleted = qemuProcessHandleDumpCompleted,
+    .domainPRManagerStatusChanged = qemuProcessHandlePRManagerStatusChanged,
 };
 
 static void
