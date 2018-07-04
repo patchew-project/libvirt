@@ -3742,12 +3742,14 @@ qemuProcessVNCAllocatePorts(virQEMUDriverPtr driver,
         if (virPortAllocatorAcquire(driver->remotePorts, &port) < 0)
             return -1;
         graphics->data.vnc.port = port;
+        graphics->data.vnc.portReserved = true;
     }
 
     if (graphics->data.vnc.websocket == -1) {
         if (virPortAllocatorAcquire(driver->webSocketPorts, &port) < 0)
             return -1;
         graphics->data.vnc.websocket = port;
+        graphics->data.vnc.websocketReserved = true;
         graphics->data.vnc.websocketGenerated = true;
     }
 
@@ -3819,9 +3821,7 @@ qemuProcessSPICEAllocatePorts(virQEMUDriverPtr driver,
             goto cleanup;
 
         graphics->data.spice.port = port;
-
-        if (!graphics->data.spice.autoport)
-            graphics->data.spice.portReserved = true;
+        graphics->data.spice.portReserved = true;
     }
 
     if (needTLSPort || graphics->data.spice.tlsPort == -1) {
@@ -3836,9 +3836,7 @@ qemuProcessSPICEAllocatePorts(virQEMUDriverPtr driver,
             goto cleanup;
 
         graphics->data.spice.tlsPort = tlsPort;
-
-        if (!graphics->data.spice.autoport)
-            graphics->data.spice.tlsPortReserved = true;
+        graphics->data.spice.tlsPortReserved = true;
     }
 
     ret = 0;
@@ -4442,9 +4440,11 @@ qemuProcessGraphicsReservePorts(virDomainGraphicsDefPtr graphics,
                 return -1;
             graphics->data.vnc.portReserved = true;
         }
-        if (graphics->data.vnc.websocket > 0 &&
-            virPortAllocatorSetUsed(graphics->data.vnc.websocket) < 0)
-            return -1;
+        if (graphics->data.vnc.websocket > 0) {
+            if (virPortAllocatorSetUsed(graphics->data.vnc.websocket) < 0)
+                return -1;
+            graphics->data.vnc.websocketReserved = true;
+        }
         break;
 
     case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
@@ -7088,34 +7088,30 @@ void qemuProcessStop(virQEMUDriverPtr driver,
     for (i = 0; i < vm->def->ngraphics; ++i) {
         virDomainGraphicsDefPtr graphics = vm->def->graphics[i];
         if (graphics->type == VIR_DOMAIN_GRAPHICS_TYPE_VNC) {
-            if (graphics->data.vnc.autoport) {
-                virPortAllocatorRelease(graphics->data.vnc.port);
-            } else if (graphics->data.vnc.portReserved) {
+            if (graphics->data.vnc.portReserved) {
                 virPortAllocatorRelease(graphics->data.vnc.port);
                 graphics->data.vnc.portReserved = false;
             }
-            if (graphics->data.vnc.websocketGenerated) {
+
+            if (graphics->data.vnc.websocketReserved) {
                 virPortAllocatorRelease(graphics->data.vnc.websocket);
+                graphics->data.vnc.websocketReserved = false;
+            }
+
+            if (graphics->data.vnc.websocketGenerated) {
                 graphics->data.vnc.websocketGenerated = false;
                 graphics->data.vnc.websocket = -1;
-            } else if (graphics->data.vnc.websocket) {
-                virPortAllocatorRelease(graphics->data.vnc.websocket);
             }
         }
         if (graphics->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE) {
-            if (graphics->data.spice.autoport) {
+            if (graphics->data.spice.portReserved) {
                 virPortAllocatorRelease(graphics->data.spice.port);
-                virPortAllocatorRelease(graphics->data.spice.tlsPort);
-            } else {
-                if (graphics->data.spice.portReserved) {
-                    virPortAllocatorRelease(graphics->data.spice.port);
-                    graphics->data.spice.portReserved = false;
-                }
+                graphics->data.spice.portReserved = false;
+            }
 
-                if (graphics->data.spice.tlsPortReserved) {
-                    virPortAllocatorRelease(graphics->data.spice.tlsPort);
-                    graphics->data.spice.tlsPortReserved = false;
-                }
+            if (graphics->data.spice.tlsPortReserved) {
+                virPortAllocatorRelease(graphics->data.spice.tlsPort);
+                graphics->data.spice.tlsPortReserved = false;
             }
         }
     }

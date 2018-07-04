@@ -1610,6 +1610,7 @@ struct _virDomainGraphicsDef {
             int port;
             bool portReserved;
             int websocket;
+            bool websocketReserved;
             bool websocketGenerated;
             bool autoport;
             char *keymap;
