@@ -4440,7 +4440,8 @@ qemuProcessGraphicsReservePorts(virDomainGraphicsDefPtr graphics,
                 return -1;
             graphics->data.vnc.portReserved = true;
         }
-        if (graphics->data.vnc.websocket > 0) {
+        if (graphics->data.vnc.websocket > 0 ||
+            reconnect) {
             if (virPortAllocatorSetUsed(graphics->data.vnc.websocket) < 0)
                 return -1;
             graphics->data.vnc.websocketReserved = true;
