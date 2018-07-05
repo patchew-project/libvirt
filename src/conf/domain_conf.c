@@ -23548,7 +23548,8 @@ virDomainStorageSourceFormat(virBufferPtr attrBuf,
         return -1;
 
     if (src->pr)
-        virStoragePRDefFormat(childBuf, src->pr);
+        virStoragePRDefFormat(childBuf, src->pr,
+                              flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE);
 
     return 0;
 }
