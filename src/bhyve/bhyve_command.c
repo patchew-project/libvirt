@@ -329,7 +329,7 @@ static int
 bhyveBuildLPCArgStr(const virDomainDef *def ATTRIBUTE_UNUSED,
                     virCommandPtr cmd)
 {
-    virCommandAddArgList(cmd, "-s", "1,lpc", NULL);
+    virCommandAddArgList(cmd, "-s", "31,lpc", NULL);
     return 0;
 }
 
