@@ -44,6 +44,7 @@
 # include <linux/sockios.h>
 # include <linux/if_vlan.h>
 # define VIR_NETDEV_FAMILY AF_UNIX
+# include "virkmod.h"
 #elif defined(HAVE_STRUCT_IFREQ) && defined(AF_LOCAL)
 # define VIR_NETDEV_FAMILY AF_LOCAL
 #else
@@ -1046,6 +1047,200 @@ int virNetDevGetVLanID(const char *ifname ATTRIBUTE_UNUSED,
     return -1;
 }
 #endif /* ! SIOCGIFVLAN */
+
+
+#if defined(HAVE_STRUCT_IFREQ)
+
+# define MODULE_8021Q "8021q"
+# define PROC_NET_VLAN_CONFIG "/proc/net/vlan/config"
+
+static int
+validate8021Q(void)
+{
+    int fd;
+    if ((fd = open(PROC_NET_VLAN_CONFIG, O_RDONLY)) < 0)
+        return -1;
+    VIR_FORCE_CLOSE(fd);
+    return 0;
+}
+
+static int
+getVlanDevName(const char *ifname, unsigned int vlanid,
+               char vdname[], size_t vdname_size)
+{
+    if (!vdname || vdname_size < IFNAMSIZ)
+        return -1;
+    if (snprintf(vdname, IFNAMSIZ, "%s.%d", ifname, vlanid) >= IFNAMSIZ)
+        return -1;
+    return 0;
+}
+
+static int
+controlVlanDev(unsigned int cmd,
+               const char *ifname, unsigned int vlanid)
+{
+    int fd;
+    struct vlan_ioctl_args if_request;
+    memset(&if_request, 0, sizeof(struct vlan_ioctl_args));
+    if_request.cmd = cmd;
+
+    if (cmd == ADD_VLAN_CMD) {
+        strcpy(if_request.device1, ifname);
+        if_request.u.VID = vlanid;
+    } else if (cmd == DEL_VLAN_CMD) {
+        char vdname[IFNAMSIZ];
+        if (getVlanDevName(ifname, vlanid, vdname, sizeof(vdname)) < 0)
+            return -1;
+        strcpy(if_request.device1, vdname);
+    } else {
+        virReportSystemError(ENOSYS,
+                             _("unsupport cmd: %d"), cmd);
+        return -1;
+    }
+
+    if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("unable to open control socket"));
+        return -1;
+    }
+
+    if (ioctl(fd, SIOCSIFVLAN, &if_request) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("control VLAN device error"));
+        VIR_FORCE_CLOSE(fd);
+        return -1;
+    }
+
+    VIR_FORCE_CLOSE(fd);
+    return 0;
+}
+
+/**
+ * virNetDevLoad8021Q:
+ *
+ * Load 8021q module (since kernel v2.6)
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+virNetDevLoad8021Q(void)
+{
+    if (validate8021Q() < 0) {
+        char *errbuf = NULL;
+        if ((errbuf = virKModLoad(MODULE_8021Q, false))) {
+            VIR_FREE(errbuf);
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Failed to load 8021q module"));
+            return -1;
+        }
+        if (validate8021Q() < 0) {
+            virReportError(VIR_ERR_NO_SUPPORT, "%s",
+                           _("cannot load 8021q module"));
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * virNetDevCreateVLanDev:
+ * @ifname: name of interface we will create vlan-device on
+ * @vlanid: VLAN ID
+ * @vdname: used to return the name of vlan-device
+ *          (it should be pre-defined on stack and its type is char[])
+ * @vdname_size: size of the vlan-device's name (do not less than IFNAMSIZ)
+ *
+ * Create vlan-device which based on 8021q module.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+virNetDevCreateVLanDev(const char *ifname, unsigned int vlanid,
+                       char vdname[], size_t vdname_size)
+{
+    if (controlVlanDev(ADD_VLAN_CMD, ifname, vlanid) < 0)
+        return -1;
+    return getVlanDevName(ifname, vlanid, vdname, vdname_size);
+}
+
+/**
+ * virNetDevDestroyVLanDev:
+ * @ifname: name of interface vlan-device depends on
+ * @vlanid: VLAN ID
+ *
+ * Destroy vlan-device whick has created by virNetDevCreateVLanDev.
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+virNetDevDestroyVLanDev(const char *ifname, unsigned int vlanid)
+{
+    if (controlVlanDev(DEL_VLAN_CMD, ifname, vlanid) < 0)
+        return -1;
+    return 0;
+}
+
+/**
+ * virNetDevGetVLanDevName:
+ * @ifname: name of interface vlan-device depends on
+ * @vlanid: VLAN ID
+ * @vdname: used to return the name of vlan-device
+ *          (it should be pre-defined on stack and its type is char[])
+ * @vdname_size: size of the vlan-device's name (do not less than IFNAMSIZ)
+ *
+ * Get the name of the vlan-device
+ *
+ * Returns 0 on success, -1 on failure
+ */
+int
+virNetDevGetVLanDevName(const char *ifname, unsigned int vlanid,
+                        char vdname[], size_t vdname_size)
+{
+    return getVlanDevName(ifname, vlanid, vdname, vdname_size);
+}
+
+#else /* !HAVE_STRUCT_IFREQ */
+
+int
+virNetDevLoad8021Q(void)
+{
+    virReportSystemError(ENOSYS, "%s",
+                         _("Unable to load 8021q module on this platform"));
+    return -1;
+}
+
+int
+virNetDevCreateVLanDev(const char *ifname ATTRIBUTE_UNUSED,
+                       unsigned int vlanid ATTRIBUTE_UNUSED,
+                       char *vdname[] ATTRIBUTE_UNUSED,
+                       size_t vdname_size ATTRIBUTE_UNUSED)
+{
+    virReportSystemError(ENOSYS, "%s",
+                         _("Unable to create vlan-dev on this platform"));
+    return -1;
+}
+
+int
+virNetDevDestroyVLanDev(const char *ifname ATTRIBUTE_UNUSED,
+                        unsigned int vlanid ATTRIBUTE_UNUSED)
+{
+    virReportSystemError(ENOSYS, "%s",
+                         _("Unable to destroy vlan-dev on this platform"));
+    return -1;
+}
+
+int
+virNetDevGetVLanDevName(const char *ifname ATTRIBUTE_UNUSED,
+                        unsigned int vlanid ATTRIBUTE_UNUSED,
+                        char vdname[] ATTRIBUTE_UNUSED,
+                        size_t vdname_size ATTRIBUTE_UNUSED)
+{
+    virReportSystemError(ENOSYS, "%s",
+                         _("Unable to destroy vlan-dev on this platform"));
+    return -1;
+}
+
+#endif /* HAVE_STRUCT_IFREQ */
 
 
 /**

@@ -769,8 +769,9 @@ then
 fi
 AM_CONDITIONAL([WITH_NODE_DEVICES], [test "$with_nodedev" = "yes"])
 
-dnl GET_VLAN_VID_CMD is required for virNetDevGetVLanID
-AC_CHECK_DECLS([GET_VLAN_VID_CMD], [], [], [[#include <linux/if_vlan.h>]])
+dnl GET_VLAN_VID_CMD, ADD_VLAN_CMD, DEL_VLAN_CMD is required
+AC_CHECK_DECLS([GET_VLAN_VID_CMD, ADD_VLAN_CMD, DEL_VLAN_CMD],
+               [], [], [[#include <linux/if_vlan.h>]])
 
 # Check for Linux vs. BSD ifreq members
 AC_CHECK_MEMBERS([struct ifreq.ifr_newname,

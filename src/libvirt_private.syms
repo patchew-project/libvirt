@@ -2266,7 +2266,9 @@ virModuleLoad;
 
 # util/virnetdev.h
 virNetDevAddMulti;
+virNetDevCreateVLanDev;
 virNetDevDelMulti;
+virNetDevDestroyVLanDev;
 virNetDevExists;
 virNetDevFeatureTypeFromString;
 virNetDevFeatureTypeToString;
@@ -2287,10 +2289,12 @@ virNetDevGetRxFilter;
 virNetDevGetVirtualFunctionIndex;
 virNetDevGetVirtualFunctionInfo;
 virNetDevGetVirtualFunctions;
+virNetDevGetVLanDevName;
 virNetDevGetVLanID;
 virNetDevIfStateTypeFromString;
 virNetDevIfStateTypeToString;
 virNetDevIsVirtualFunction;
+virNetDevLoad8021Q;
 virNetDevPFGetVF;
 virNetDevReadNetConfig;
 virNetDevRunEthernetScript;
