@@ -1012,6 +1012,7 @@ virNetworkLoadConfig(virNetworkObjListPtr nets,
     if (def->forward.type == VIR_NETWORK_FORWARD_NONE ||
         def->forward.type == VIR_NETWORK_FORWARD_NAT ||
         def->forward.type == VIR_NETWORK_FORWARD_ROUTE ||
+        def->forward.type == VIR_NETWORK_FORWARD_VLAN ||
         def->forward.type == VIR_NETWORK_FORWARD_OPEN) {
 
         if (!def->mac_specified) {

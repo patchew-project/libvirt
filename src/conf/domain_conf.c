@@ -29912,6 +29912,7 @@ virDomainNetResolveActualType(virDomainNetDefPtr iface)
     if ((def->forward.type == VIR_NETWORK_FORWARD_NONE) ||
         (def->forward.type == VIR_NETWORK_FORWARD_NAT) ||
         (def->forward.type == VIR_NETWORK_FORWARD_ROUTE) ||
+        (def->forward.type == VIR_NETWORK_FORWARD_VLAN) ||
         (def->forward.type == VIR_NETWORK_FORWARD_OPEN)) {
         /* for these forward types, the actual net type really *is*
          * NETWORK; we just keep the info from the portgroup in
