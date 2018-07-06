@@ -50,7 +50,7 @@ VIR_ENUM_IMPL(virNetworkForward,
               VIR_NETWORK_FORWARD_LAST,
               "none", "nat", "route", "open",
               "bridge", "private", "vepa", "passthrough",
-              "hostdev")
+              "hostdev", "vlan")
 
 VIR_ENUM_IMPL(virNetworkBridgeMACTableManager,
               VIR_NETWORK_BRIDGE_MAC_TABLE_MANAGER_LAST,
@@ -1876,6 +1876,7 @@ virNetworkDefParseXML(xmlXPathContextPtr ctxt)
      */
     switch (def->forward.type) {
     case VIR_NETWORK_FORWARD_NONE:
+    case VIR_NETWORK_FORWARD_VLAN:
         break;
 
     case VIR_NETWORK_FORWARD_ROUTE:
@@ -1963,9 +1964,10 @@ virNetworkDefParseXML(xmlXPathContextPtr ctxt)
         (def->forward.type != VIR_NETWORK_FORWARD_NONE &&
          def->forward.type != VIR_NETWORK_FORWARD_NAT &&
          def->forward.type != VIR_NETWORK_FORWARD_ROUTE &&
-         def->forward.type != VIR_NETWORK_FORWARD_OPEN)) {
+         def->forward.type != VIR_NETWORK_FORWARD_OPEN &&
+         def->forward.type != VIR_NETWORK_FORWARD_VLAN)) {
         virReportError(VIR_ERR_XML_ERROR,
-                       _("mtu size only allowed in open, route, nat, "
+                       _("mtu size only allowed in open, route, nat, vlan "
                          "and isolated mode, not in %s (network '%s')"),
                        virNetworkForwardTypeToString(def->forward.type),
                        def->name);
@@ -2474,6 +2476,7 @@ virNetworkDefFormatBuf(virBufferPtr buf,
         def->forward.type == VIR_NETWORK_FORWARD_NAT ||
         def->forward.type == VIR_NETWORK_FORWARD_ROUTE ||
         def->forward.type == VIR_NETWORK_FORWARD_OPEN ||
+        def->forward.type == VIR_NETWORK_FORWARD_VLAN ||
         def->bridge || def->macTableManager) {
 
         virBufferAddLit(buf, "<bridge");
@@ -2481,7 +2484,8 @@ virNetworkDefFormatBuf(virBufferPtr buf,
         if (def->forward.type == VIR_NETWORK_FORWARD_NONE ||
             def->forward.type == VIR_NETWORK_FORWARD_NAT ||
             def->forward.type == VIR_NETWORK_FORWARD_ROUTE ||
-            def->forward.type == VIR_NETWORK_FORWARD_OPEN) {
+            def->forward.type == VIR_NETWORK_FORWARD_OPEN ||
+            def->forward.type == VIR_NETWORK_FORWARD_VLAN) {
             virBufferAsprintf(buf, " stp='%s' delay='%ld'",
                               def->stp ? "on" : "off", def->delay);
         }
