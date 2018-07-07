@@ -60,6 +60,8 @@ virNetServerPtr virNetServerNewPostExecRestart(virJSONValuePtr object,
 
 void virNetServerQuitRequested(virNetServerPtr srv);
 
+size_t virNetServerWorkerCount(virNetServerPtr srv);
+
 void virNetServerClose(virNetServerPtr srv);
 
 virJSONValuePtr virNetServerPreExecRestart(virNetServerPtr srv);

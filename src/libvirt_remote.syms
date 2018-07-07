@@ -136,6 +136,7 @@ virNetServerSetThreadPoolParameters;
 virNetServerSetTLSContext;
 virNetServerStart;
 virNetServerUpdateServices;
+virNetServerWorkerCount;
 
 
 # rpc/virnetserverclient.h
