@@ -30,8 +30,11 @@
 #include "viralloc.h"
 #include "virthread.h"
 #include "virerror.h"
+#include "virlog.h"
 
 #define VIR_FROM_THIS VIR_FROM_NONE
+
+VIR_LOG_INIT("util.threadpool");
 
 typedef struct _virThreadPoolJob virThreadPoolJob;
 typedef virThreadPoolJob *virThreadPoolJobPtr;
@@ -269,6 +272,18 @@ virThreadPoolNewFull(size_t minWorkers,
 
 }
 
+
+static void
+virThreadPoolSetQuit(virThreadPoolPtr pool)
+{
+    pool->quit = true;
+    if (pool->nWorkers > 0)
+        virCondBroadcast(&pool->cond);
+    if (pool->nPrioWorkers > 0)
+        virCondBroadcast(&pool->prioCond);
+}
+
+
 void virThreadPoolFree(virThreadPoolPtr pool)
 {
     virThreadPoolJobPtr job;
@@ -278,13 +293,9 @@ void virThreadPoolFree(virThreadPoolPtr pool)
         return;
 
     virMutexLock(&pool->mutex);
-    pool->quit = true;
-    if (pool->nWorkers > 0)
-        virCondBroadcast(&pool->cond);
-    if (pool->nPrioWorkers > 0) {
+    if (pool->nPrioWorkers > 0)
         priority = true;
-        virCondBroadcast(&pool->prioCond);
-    }
+    virThreadPoolSetQuit(pool);
 
     while (pool->nWorkers > 0 || pool->nPrioWorkers > 0)
         ignore_value(virCondWait(&pool->quit_cond, &pool->mutex));
@@ -304,6 +315,26 @@ void virThreadPoolFree(virThreadPoolPtr pool)
         virCondDestroy(&pool->prioCond);
     }
     VIR_FREE(pool);
+}
+
+
+/*
+ * virThreadPoolQuitRequested:
+ * @pool: Pointer to thread pool
+ *
+ * When libvirtd quit is requested via the daemonShutdownHandler let's
+ * set the quit flag for current workers and wake them up.
+ */
+void
+virThreadPoolQuitRequested(virThreadPoolPtr pool)
+{
+    virMutexLock(&pool->mutex);
+
+    VIR_DEBUG("nWorkers=%zd, nPrioWorkers=%zd jobQueueDepth=%zd",
+              pool->nWorkers, pool->nPrioWorkers, pool->jobQueueDepth);
+
+    virThreadPoolSetQuit(pool);
+    virMutexUnlock(&pool->mutex);
 }
 
 
