@@ -43,6 +43,7 @@ module Test_libvirtd =
         { "max_workers" = "20" }
         { "prio_workers" = "5" }
         { "max_client_requests" = "5" }
+        { "quit_timeout" = "0" }
         { "admin_min_workers" = "1" }
         { "admin_max_workers" = "5" }
         { "admin_max_clients" = "5" }

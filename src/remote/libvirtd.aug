@@ -62,6 +62,7 @@ module Libvirtd =
                         | int_entry "max_anonymous_clients"
                         | int_entry "max_client_requests"
                         | int_entry "prio_workers"
+                        | int_entry "quit_timeout"
 
    let admin_processing_entry = int_entry "admin_min_workers"
                               | int_entry "admin_max_workers"

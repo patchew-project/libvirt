@@ -73,6 +73,8 @@ struct daemonConfig {
 
     unsigned int max_client_requests;
 
+    unsigned int quit_timeout;
+
     unsigned int log_level;
     char *log_filters;
     char *log_outputs;

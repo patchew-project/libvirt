@@ -155,6 +155,8 @@ daemonConfigNew(bool privileged ATTRIBUTE_UNUSED)
 
     data->max_client_requests = 5;
 
+    data->quit_timeout = 0;
+
     data->audit_level = 1;
     data->audit_logging = 0;
 
@@ -348,6 +350,9 @@ daemonConfigLoadOptions(struct daemonConfig *data,
         goto error;
 
     if (virConfGetValueUInt(conf, "max_client_requests", &data->max_client_requests) < 0)
+        goto error;
+
+    if (virConfGetValueUInt(conf, "quit_timeout", &data->quit_timeout) < 0)
         goto error;
 
     if (virConfGetValueUInt(conf, "admin_min_workers", &data->admin_min_workers) < 0)
