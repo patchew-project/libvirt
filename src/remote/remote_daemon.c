@@ -1273,6 +1273,7 @@ int main(int argc, char **argv) {
         ret = VIR_DAEMON_ERR_DRIVER;
         goto cleanup;
     }
+    virNetDaemonSetQuitTimeout(dmn, config->quit_timeout);
 
     if (!(srv = virNetServerNew("libvirtd", 1,
                                 config->min_workers,

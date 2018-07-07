@@ -35,6 +35,10 @@
 
 virNetDaemonPtr virNetDaemonNew(void);
 
+void
+virNetDaemonSetQuitTimeout(virNetDaemonPtr dmn,
+                           unsigned int quitTimeout);
+
 int virNetDaemonAddServer(virNetDaemonPtr dmn,
                           virNetServerPtr srv);
 

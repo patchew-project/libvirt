@@ -73,6 +73,8 @@ struct _virNetDaemon {
     virHashTablePtr servers;
     virJSONValuePtr srvObject;
 
+    unsigned int quitTimeout;
+    bool quitRequested;
     bool quit;
 
     unsigned int autoShutdownTimeout;
@@ -150,6 +152,14 @@ virNetDaemonNew(void)
  error:
     virObjectUnref(dmn);
     return NULL;
+}
+
+
+void
+virNetDaemonSetQuitTimeout(virNetDaemonPtr dmn,
+                           unsigned int quitTimeout)
+{
+    dmn->quitTimeout = quitTimeout;
 }
 
 
@@ -791,11 +801,50 @@ daemonServerProcessClients(void *payload,
     return 0;
 }
 
+
+static int
+daemonServerWorkerCount(void *payload,
+                        const void *key ATTRIBUTE_UNUSED,
+                        void *opaque)
+{
+    size_t *workerCount = opaque;
+    virNetServerPtr srv = payload;
+
+    *workerCount += virNetServerWorkerCount(srv);
+
+    return 0;
+}
+
+
+static bool
+daemonServerWorkersDone(virNetDaemonPtr dmn)
+{
+    size_t workerCount = 0;
+
+    virHashForEach(dmn->servers, daemonServerWorkerCount, &workerCount);
+
+    return workerCount == 0;
+}
+
+
+static void
+virNetDaemonQuitTimer(int timer ATTRIBUTE_UNUSED,
+                      void *opaque)
+{
+    int *quitCount = opaque;
+
+    (*quitCount)++;
+    VIR_DEBUG("quitCount=%d", *quitCount);
+}
+
+
 void
 virNetDaemonRun(virNetDaemonPtr dmn)
 {
     int timerid = -1;
     bool timerActive = false;
+    int quitTimer = -1;
+    int quitCount = 0;
 
     virObjectLock(dmn);
 
@@ -855,10 +904,27 @@ virNetDaemonRun(virNetDaemonPtr dmn)
         virObjectLock(dmn);
 
         virHashForEach(dmn->servers, daemonServerProcessClients, NULL);
+
+        /* HACK: Add a dummy timeout to break event loop */
+        if (dmn->quitRequested && quitTimer == -1)
+            quitTimer = virEventAddTimeout(500, virNetDaemonQuitTimer,
+                                           &quitCount, NULL);
+
+        if (dmn->quitRequested && daemonServerWorkersDone(dmn)) {
+            dmn->quit = true;
+        } else {
+            /* Firing every 1/2 second and quitTimeout in seconds, force
+             * an exit when there are still worker threads running and we
+             * have waited long enough */
+            if (quitCount > dmn->quitTimeout * 2)
+                _exit(EXIT_FAILURE);
+        }
     }
 
  cleanup:
     virObjectUnlock(dmn);
+    if (quitTimer != -1)
+        virEventRemoveTimeout(quitTimer);
 }
 
 
@@ -880,7 +946,7 @@ virNetDaemonQuit(virNetDaemonPtr dmn)
     virObjectLock(dmn);
 
     VIR_DEBUG("Quit requested %p", dmn);
-    dmn->quit = true;
+    dmn->quitRequested = true;
     virHashForEach(dmn->servers, daemonServerQuitRequested, NULL);
 
     virObjectUnlock(dmn);
