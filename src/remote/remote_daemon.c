@@ -1036,6 +1036,7 @@ int main(int argc, char **argv) {
     char *remote_config_file = NULL;
     int statuswrite = -1;
     int ret = 1;
+    int rc;
     int pid_file_fd = -1;
     char *pid_file = NULL;
     char *sock_file = NULL;
@@ -1290,7 +1291,11 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
-    if (virNetDaemonAddServer(dmn, srv) < 0) {
+    /* Add @srv to @dmn servers hash table and Unref to allow removal from
+     * hash table at @dmn disposal to decide when to free @srv */
+    rc = virNetDaemonAddServer(dmn, srv);
+    virObjectUnref(srv);
+    if (rc < 0) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
     }
@@ -1358,7 +1363,11 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
-    if (virNetDaemonAddServer(dmn, srvAdm) < 0) {
+    /* Add @srvAdm to @dmn servers hash table and Unref to allow removal from
+     * hash table at @dmn disposal to decide when to free @srvAdm */
+    rc = virNetDaemonAddServer(dmn, srvAdm);
+    virObjectUnref(srvAdm);
+    if (rc < 0) {
         ret = VIR_DAEMON_ERR_INIT;
         goto cleanup;
     }
@@ -1479,11 +1488,9 @@ int main(int argc, char **argv) {
     }
 
     virObjectUnref(adminProgram);
-    virObjectUnref(srvAdm);
     virObjectUnref(qemuProgram);
     virObjectUnref(lxcProgram);
     virObjectUnref(remoteProgram);
-    virObjectUnref(srv);
     virObjectUnref(dmn);
 
     virNetlinkShutdown();
