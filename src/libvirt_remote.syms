@@ -129,6 +129,7 @@ virNetServerNewPostExecRestart;
 virNetServerNextClientID;
 virNetServerPreExecRestart;
 virNetServerProcessClients;
+virNetServerQuitRequested;
 virNetServerSetClientAuthenticated;
 virNetServerSetClientLimits;
 virNetServerSetThreadPoolParameters;

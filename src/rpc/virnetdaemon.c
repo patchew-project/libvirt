@@ -862,6 +862,18 @@ virNetDaemonRun(virNetDaemonPtr dmn)
 }
 
 
+static int
+daemonServerQuitRequested(void *payload,
+                          const void *key ATTRIBUTE_UNUSED,
+                          void *opaque ATTRIBUTE_UNUSED)
+{
+    virNetServerPtr srv = payload;
+
+    virNetServerQuitRequested(srv);
+    return 0;
+}
+
+
 void
 virNetDaemonQuit(virNetDaemonPtr dmn)
 {
@@ -869,6 +881,7 @@ virNetDaemonQuit(virNetDaemonPtr dmn)
 
     VIR_DEBUG("Quit requested %p", dmn);
     dmn->quit = true;
+    virHashForEach(dmn->servers, daemonServerQuitRequested, NULL);
 
     virObjectUnlock(dmn);
 }
