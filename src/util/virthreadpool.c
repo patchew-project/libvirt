@@ -136,8 +136,10 @@ static void virThreadPoolWorker(void *opaque)
                 goto out;
         }
 
-        if (pool->quit)
+        if (pool->quit) {
+            VIR_WARN("Quit set");
             break;
+        }
 
         if (priority) {
             job = pool->jobList.firstPrio;
@@ -330,7 +332,7 @@ virThreadPoolQuitRequested(virThreadPoolPtr pool)
 {
     virMutexLock(&pool->mutex);
 
-    VIR_DEBUG("nWorkers=%zd, nPrioWorkers=%zd jobQueueDepth=%zd",
+    VIR_WARN ("nWorkers=%zd, nPrioWorkers=%zd jobQueueDepth=%zd",
               pool->nWorkers, pool->nPrioWorkers, pool->jobQueueDepth);
 
     virThreadPoolSetQuit(pool);
@@ -415,8 +417,10 @@ int virThreadPoolSendJob(virThreadPoolPtr pool,
     virThreadPoolJobPtr job;
 
     virMutexLock(&pool->mutex);
-    if (pool->quit)
+    if (pool->quit) {
+        VIR_WARN("Quit set");
         goto error;
+    }
 
     if (pool->freeWorkers - pool->jobQueueDepth <= 0 &&
         pool->nWorkers < pool->maxWorkers &&

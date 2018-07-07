@@ -833,7 +833,7 @@ virNetServerQuitRequested(virNetServerPtr srv)
     if (!srv)
         return;
 
-    VIR_DEBUG("Quit server requested '%s'", srv->name);
+    VIR_WARN ("Quit server requested '%s'", srv->name);
 
     for (i = 0; i < srv->nservices; i++)
         virNetServerServiceToggle(srv->services[i], false);
@@ -860,7 +860,7 @@ virNetServerWorkerCount(virNetServerPtr srv)
                   virThreadPoolGetPriorityWorkers(srv->workers);
 
     if (workerCount > 0)
-        VIR_DEBUG("server '%s' still has %zd workers", srv->name, workerCount);
+        VIR_WARN ("server '%s' still has %zd workers", srv->name, workerCount);
 
     virObjectUnlock(srv);
 

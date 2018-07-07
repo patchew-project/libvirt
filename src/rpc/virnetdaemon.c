@@ -834,7 +834,7 @@ virNetDaemonQuitTimer(int timer ATTRIBUTE_UNUSED,
     int *quitCount = opaque;
 
     (*quitCount)++;
-    VIR_DEBUG("quitCount=%d", *quitCount);
+    VIR_WARN("quitCount=%d", *quitCount);
 }
 
 
@@ -912,6 +912,7 @@ virNetDaemonRun(virNetDaemonPtr dmn)
 
         if (dmn->quitRequested && daemonServerWorkersDone(dmn)) {
             dmn->quit = true;
+            VIR_WARN ("quitRequested and no workers remain");
         } else {
             /* Firing every 1/2 second and quitTimeout in seconds, force
              * an exit when there are still worker threads running and we
