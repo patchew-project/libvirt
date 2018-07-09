@@ -1645,6 +1645,9 @@ qemuMonitorJSONExtractCPUArchInfo(virJSONValuePtr jsoncpu,
  *    ...},
  *    {...}
  *  ]
+ *
+ *  Note that since QEMU 2.13.0 the "arch" output member of the
+ *  "query-cpus-fast" command is replaced by "target".
  */
 static int
 qemuMonitorJSONExtractCPUInfo(virJSONValuePtr data,
