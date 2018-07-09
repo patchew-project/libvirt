@@ -48,9 +48,9 @@ bhyveCollectPCIAddress(virDomainDefPtr def ATTRIBUTE_UNUSED,
     if (addr->domain == 0 && addr->bus == 0) {
         if (addr->slot == 0) {
             return 0;
-        } else if (addr->slot == 1) {
+        } else if (addr->slot == 31) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("PCI bus 0 slot 1 is reserved for the implicit "
+                           _("PCI bus 0 slot 31 is reserved for the implicit "
                              "LPC PCI-ISA bridge"));
             return -1;
         }
