@@ -233,3 +233,10 @@ qemuOpenChrChardevUNIXSocket(const virDomainChrSourceDef *dev ATTRIBUTE_UNUSED)
         abort();
     return 1729;
 }
+
+
+virConnectPtr
+virGetConnectNWFilter(void)
+{
+    return NULL;
+}

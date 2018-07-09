@@ -113,7 +113,7 @@ int virDriverLoadModule(const char *name,
 
 virConnectPtr virGetConnectInterface(void);
 virConnectPtr virGetConnectNetwork(void);
-virConnectPtr virGetConnectNWFilter(void);
+virConnectPtr virGetConnectNWFilter(void) ATTRIBUTE_NOINLINE;
 virConnectPtr virGetConnectNodeDev(void);
 virConnectPtr virGetConnectSecret(void);
 virConnectPtr virGetConnectStorage(void);
