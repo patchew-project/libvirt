@@ -502,6 +502,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "sev-guest",
               "machine.pseries.cap-hpt-max-page-size",
               "machine.pseries.cap-htm",
+              "egl-headless",
     );
 
 
@@ -4027,6 +4028,11 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
         ARCH_IS_PPC64(qemuCaps->arch)) {
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_MACHINE_PSERIES_RESIZE_HPT);
     }
+
+    /* '-display egl-headless' cmdline option is supported since QEMU 2.10, but
+     * there's no way to probe it */
+    if (qemuCaps->version >= 2010000)
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_EGL_HEADLESS);
 
     /* no way to query for -numa dist */
     if (qemuCaps->version >= 2010000)
