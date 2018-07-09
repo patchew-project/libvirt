@@ -417,6 +417,7 @@ mymain(void)
     cfg->vncAutoUnixSocket = false;
     DO_TEST("graphics-vnc-socket", NONE);
     DO_TEST("graphics-vnc-auto-socket", NONE);
+    DO_TEST("graphics-vnc-egl-headless", NONE);
 
     DO_TEST("graphics-sdl", NONE);
     DO_TEST("graphics-sdl-fullscreen", NONE);
@@ -428,6 +429,7 @@ mymain(void)
     cfg->spiceAutoUnixSocket = true;
     DO_TEST("graphics-spice-auto-socket-cfg", NONE);
     cfg->spiceAutoUnixSocket = false;
+    DO_TEST("graphics-spice-egl-headless", NONE);
 
     DO_TEST("input-usbmouse", NONE);
     DO_TEST("input-usbtablet", NONE);

@@ -18087,6 +18087,7 @@ qemuDomainOpenGraphics(virDomainPtr dom,
     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
+    case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Can only open VNC or SPICE graphics backends, not %s"),
                        virDomainGraphicsTypeToString(vm->def->graphics[idx]->type));
@@ -18155,6 +18156,7 @@ qemuDomainOpenGraphicsFD(virDomainPtr dom,
     case VIR_DOMAIN_GRAPHICS_TYPE_SDL:
     case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
     case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
+    case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Can only open VNC or SPICE graphics backends, not %s"),
                        virDomainGraphicsTypeToString(vm->def->graphics[idx]->type));
