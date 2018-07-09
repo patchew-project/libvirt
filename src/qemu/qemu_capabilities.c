@@ -503,6 +503,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "machine.pseries.cap-hpt-max-page-size",
               "machine.pseries.cap-htm",
               "egl-headless",
+              "vfio-pci.display",
     );
 
 
@@ -1196,6 +1197,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsPCIAssign[] = {
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVfioPCI[] = {
     { "bootindex", QEMU_CAPS_VFIO_PCI_BOOTINDEX },
+    { "display", QEMU_CAPS_VFIO_PCI_DISPLAY },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsSCSIDisk[] = {
