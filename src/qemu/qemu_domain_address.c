@@ -480,6 +480,58 @@ qemuDomainAssignARMVirtioMMIOAddresses(virDomainDefPtr def,
 }
 
 
+static bool
+qemuDomainDeviceSupportZPCI(virDomainDeviceDefPtr device)
+{
+    switch ((virDomainDeviceType) device->type) {
+    case VIR_DOMAIN_DEVICE_CHR:
+        return false;
+
+    case VIR_DOMAIN_DEVICE_CONTROLLER:
+    case VIR_DOMAIN_DEVICE_NONE:
+    case VIR_DOMAIN_DEVICE_DISK:
+    case VIR_DOMAIN_DEVICE_LEASE:
+    case VIR_DOMAIN_DEVICE_FS:
+    case VIR_DOMAIN_DEVICE_NET:
+    case VIR_DOMAIN_DEVICE_INPUT:
+    case VIR_DOMAIN_DEVICE_SOUND:
+    case VIR_DOMAIN_DEVICE_VIDEO:
+    case VIR_DOMAIN_DEVICE_HOSTDEV:
+    case VIR_DOMAIN_DEVICE_WATCHDOG:
+    case VIR_DOMAIN_DEVICE_GRAPHICS:
+    case VIR_DOMAIN_DEVICE_HUB:
+    case VIR_DOMAIN_DEVICE_REDIRDEV:
+    case VIR_DOMAIN_DEVICE_SMARTCARD:
+    case VIR_DOMAIN_DEVICE_MEMBALLOON:
+    case VIR_DOMAIN_DEVICE_NVRAM:
+    case VIR_DOMAIN_DEVICE_RNG:
+    case VIR_DOMAIN_DEVICE_SHMEM:
+    case VIR_DOMAIN_DEVICE_TPM:
+    case VIR_DOMAIN_DEVICE_PANIC:
+    case VIR_DOMAIN_DEVICE_MEMORY:
+    case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_VSOCK:
+    case VIR_DOMAIN_DEVICE_LAST:
+        break;
+    }
+    return true;
+}
+
+
+static virDomainPCIAddressExtensionFlags
+qemuDomainDeviceCalculatePCIAddressExtensionFlags(virQEMUCapsPtr qemuCaps,
+                                                  virDomainDeviceDefPtr dev)
+{
+    virDomainPCIAddressExtensionFlags extFlags = 0;
+
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_ZPCI) &&
+        qemuDomainDeviceSupportZPCI(dev))
+        extFlags |= VIR_PCI_ADDRESS_EXTENSION_ZPCI;
+
+    return extFlags;
+}
+
+
 /**
  * qemuDomainDeviceCalculatePCIConnectFlags:
  *
@@ -962,6 +1014,55 @@ qemuDomainFillAllPCIConnectFlags(virDomainDefPtr def,
 
 
 /**
+ * qemuDomainFillDevicePCIExtensionFlagsIter:
+ *
+ * @def: the entire DomainDef
+ * @dev: The device to be checked
+ * @info: virDomainDeviceInfo within the device
+ * @opaque: qemu capabilities
+ *
+ * Sets the pciAddressExtFlags for a single device's info. Has properly
+ * formatted arguments to be called by virDomainDeviceInfoIterate().
+ *
+ * Always returns 0 - there is no failure.
+ */
+static int
+qemuDomainFillDevicePCIExtensionFlagsIter(virDomainDefPtr def ATTRIBUTE_UNUSED,
+                                          virDomainDeviceDefPtr dev,
+                                          virDomainDeviceInfoPtr info,
+                                          void *opaque)
+{
+    virQEMUCapsPtr qemuCaps = opaque;
+
+    info->pciAddressExtFlags
+        = qemuDomainDeviceCalculatePCIAddressExtensionFlags(qemuCaps, dev);
+    return 0;
+}
+
+
+/**
+ * qemuDomainFillAllPCIExtensionFlags:
+ *
+ * @def: the entire DomainDef
+ * @qemuCaps: as you'd expect
+ *
+ * Set the info->pciAddressExtFlags for all devices in the domain.
+ *
+ * Returns 0 on success or -1 on failure (the only possibility of
+ * failure would be some internal problem with
+ * virDomainDeviceInfoIterate())
+ */
+static int
+qemuDomainFillAllPCIExtensionFlags(virDomainDefPtr def,
+                                   virQEMUCapsPtr qemuCaps)
+{
+    return virDomainDeviceInfoIterate(def,
+                                      qemuDomainFillDevicePCIExtensionFlagsIter,
+                                      qemuCaps);
+}
+
+
+/**
  * qemuDomainFindUnusedIsolationGroupIter:
  * @def: domain definition
  * @dev: device definition
@@ -1231,6 +1332,29 @@ qemuDomainFillDevicePCIConnectFlags(virDomainDefPtr def,
             = qemuDomainDeviceCalculatePCIConnectFlags(dev, data.driver,
                                                        data.pcieFlags,
                                                        data.virtioFlags);
+    }
+}
+
+
+/**
+ * qemuDomainFillDevicePCIExtensionFlags:
+ *
+ * @dev: The device to be checked
+ * @qemuCaps: as you'd expect
+ *
+ * Set the info->pciAddressExtFlags for a single device.
+ *
+ * No return value.
+ */
+static void
+qemuDomainFillDevicePCIExtensionFlags(virDomainDeviceDefPtr dev,
+                                      virQEMUCapsPtr qemuCaps)
+{
+    virDomainDeviceInfoPtr info = virDomainDeviceGetInfo(dev);
+
+    if (info) {
+        info->pciAddressExtFlags
+            = qemuDomainDeviceCalculatePCIAddressExtensionFlags(qemuCaps, dev);
     }
 }
 
@@ -2363,6 +2487,9 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
     if (qemuDomainFillAllPCIConnectFlags(def, qemuCaps, driver) < 0)
         goto cleanup;
 
+    if (qemuDomainFillAllPCIExtensionFlags(def, qemuCaps) < 0)
+        goto cleanup;
+
     if (qemuDomainSetupIsolationGroups(def) < 0)
         goto cleanup;
 
@@ -2398,7 +2525,8 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
              */
             virDomainDeviceInfo info = {
                 .pciConnectFlags = (VIR_PCI_CONNECT_HOTPLUGGABLE |
-                                    VIR_PCI_CONNECT_TYPE_PCI_DEVICE)
+                                    VIR_PCI_CONNECT_TYPE_PCI_DEVICE),
+                .pciAddressExtFlags = VIR_PCI_ADDRESS_EXTENSION_NONE
             };
             bool buses_reserved = true;
 
@@ -2435,7 +2563,8 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
             qemuDomainHasPCIeRoot(def)) {
             virDomainDeviceInfo info = {
                 .pciConnectFlags = (VIR_PCI_CONNECT_HOTPLUGGABLE |
-                                    VIR_PCI_CONNECT_TYPE_PCIE_DEVICE)
+                                    VIR_PCI_CONNECT_TYPE_PCIE_DEVICE),
+                .pciAddressExtFlags = VIR_PCI_ADDRESS_EXTENSION_NONE
             };
 
             /* if there isn't an empty pcie-root-port, this will
@@ -2951,6 +3080,8 @@ qemuDomainEnsurePCIAddress(virDomainObjPtr obj,
         return 0;
 
     qemuDomainFillDevicePCIConnectFlags(obj->def, dev, priv->qemuCaps, driver);
+
+    qemuDomainFillDevicePCIExtensionFlags(dev, priv->qemuCaps);
 
     return virDomainPCIAddressEnsureAddr(priv->pciaddrs, info,
                                          info->pciConnectFlags);
