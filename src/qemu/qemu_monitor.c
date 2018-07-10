@@ -3619,20 +3619,46 @@ qemuMonitorCPUDefInfoFree(qemuMonitorCPUDefInfoPtr cpu)
 }
 
 
+/*
+ * type static:
+ *   Expand to static base model + delta property changes
+ *   Returned model is invariant and migration safe
+ *
+ *   model_info->name = base model name
+ *   model_info->props = features to +/- to base model to achive model_name
+ *
+ * type full:
+ *   Expand model to enumerate all properties
+ *   Returned model isn't guaranteed to be invariant or migration safe.
+ *
+ *   model_info->name = base model name
+ *   model_info->props = features to +/- to empty set to achive model_name
+ *
+ * type static_full:
+ *   Expand to static base model + delta property changes (pass 0)
+ *   Expand model to enumerate all properties (pass 1)
+ *   Returned model is invariant and migration safe
+ *
+ *   model_info->name = base model name
+ *   model_info->props = features to +/- to empty set to achive model_name
+ *
+ * migratable_only:
+ *   true: QEMU excludes non-migratable features
+ *   false: QEMU includes non-migratable features for some archs like X86
+ */
 int
 qemuMonitorGetCPUModelExpansion(qemuMonitorPtr mon,
                                 qemuMonitorCPUModelExpansionType type,
-                                const char *model_name,
-                                bool migratable,
-                                qemuMonitorCPUModelInfoPtr *model_info)
+                                bool migratable_only,
+                                qemuMonitorCPUModelInfoPtr model_info)
 {
     VIR_DEBUG("type=%d model_name=%s migratable=%d",
-              type, model_name, migratable);
+              type, (model_info ? NULLSTR(model_info->name):"NULL"),
+              migratable_only);
 
     QEMU_CHECK_MONITOR(mon);
 
-    return qemuMonitorJSONGetCPUModelExpansion(mon, type, model_name,
-                                               migratable, model_info);
+    return qemuMonitorJSONGetCPUModelExpansion(mon, type, migratable_only, model_info);
 }
 
 

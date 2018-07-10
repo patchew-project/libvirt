@@ -362,10 +362,9 @@ int qemuMonitorJSONGetCPUDefinitions(qemuMonitorPtr mon,
 
 int qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
                                         qemuMonitorCPUModelExpansionType type,
-                                        const char *model_name,
-                                        bool migratable,
-                                        qemuMonitorCPUModelInfoPtr *model_info)
-    ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(5);
+                                        bool migratable_only,
+                                        qemuMonitorCPUModelInfoPtr model_info)
+    ATTRIBUTE_NONNULL(4);
 
 int qemuMonitorJSONGetCPUModelBaseline(qemuMonitorPtr mon,
                                        qemuMonitorCPUModelInfoPtr model_a,

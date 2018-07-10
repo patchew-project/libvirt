@@ -495,9 +495,14 @@ cpuTestMakeQEMUCaps(const struct data *data)
     if (!(testMon = qemuMonitorTestNewFromFile(json, driver.xmlopt, true)))
         goto error;
 
+    if ((VIR_ALLOC(model) < 0) ||
+        (qemuMonitorCPUModelInfoInit("host", model) < 0))
+        goto cleanup;
+
+
     if (qemuMonitorGetCPUModelExpansion(qemuMonitorTestGetMonitor(testMon),
                                         QEMU_MONITOR_CPU_MODEL_EXPANSION_STATIC,
-                                        "host", true, &model) < 0)
+                                        true, model) < 0)
         goto error;
 
     if (!(qemuCaps = virQEMUCapsNew()))

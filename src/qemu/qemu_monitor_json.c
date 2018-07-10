@@ -5390,8 +5390,11 @@ qemuMonitorJSONBuildCPUModelInfoToJSON(qemuMonitorCPUModelInfoPtr model)
         }
     }
 
-    ignore_value(virJSONValueObjectCreate(&model_json, "s:name", model->name,
-                                          "a:props", &cpu_props, NULL));
+    if (model->nprops > 0)
+        ignore_value(virJSONValueObjectCreate(&model_json, "s:name", model->name,
+                                              "a:props", &cpu_props, NULL));
+    else
+        ignore_value(virJSONValueObjectCreate(&model_json, "s:name", model->name, NULL));
 
  cleanup:
     virJSONValueFree(cpu_props);
@@ -5440,37 +5443,51 @@ qemuMonitorJSONBuildCPUModelInfoFromJSON(virJSONValuePtr cpu_model)
     return model;
 }
 
+
+/* return:
+ * -1 - Execution Failure
+ *  0 - Success
+ *  1 - Qemu unable to do expansion leaving "model" unmodified
+ */
 int
 qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
                                     qemuMonitorCPUModelExpansionType type,
-                                    const char *model_name,
-                                    bool migratable,
-                                    qemuMonitorCPUModelInfoPtr *model_info)
+                                    bool migratable_only,
+                                    qemuMonitorCPUModelInfoPtr model)
 {
     int ret = -1;
-    virJSONValuePtr model = NULL;
-    virJSONValuePtr props = NULL;
+    virJSONValuePtr json_model = NULL;
     virJSONValuePtr cmd = NULL;
     virJSONValuePtr reply = NULL;
     virJSONValuePtr data;
     virJSONValuePtr cpu_model;
+    qemuMonitorCPUModelInfoPtr expanded_model = NULL;
+    qemuMonitorCPUModelInfoPtr model_info = NULL;
     const char *typeStr = "";
 
-    *model_info = NULL;
+    if (!(model_info = qemuMonitorCPUModelInfoCopy(model)))
+        return -1;
 
-    if (!(model = virJSONValueNewObject()))
-        goto cleanup;
+    qemuMonitorCPUModelInfoFreeContents(model);
 
-    if (virJSONValueObjectAppendString(model, "name", model_name) < 0)
-        goto cleanup;
+    if (!migratable_only) {
+        /* Add property to input CPUModelInfo causing QEMU to include
+         * non-migratable properties for some architectures like X86 */
 
-    if (!migratable) {
-        if (!(props = virJSONValueNewObject()) ||
-            virJSONValueObjectAppendBoolean(props, "migratable", false) < 0 ||
-            virJSONValueObjectAppend(model, "props", props) < 0)
+        qemuMonitorCPUProperty prop;
+        prop.type = QEMU_MONITOR_CPU_PROPERTY_BOOLEAN;
+        prop.value.boolean = false;
+        prop.migratable = false;
+
+        if (VIR_STRDUP(prop.name, "migratable") < 0)
             goto cleanup;
-        props = NULL;
+
+        if (VIR_APPEND_ELEMENT(model_info->props, model_info->nprops, prop) < 0)
+            goto cleanup;
     }
+
+    if (!(json_model = qemuMonitorJSONBuildCPUModelInfoToJSON(model_info)))
+        goto cleanup;
 
  retry:
     switch (type) {
@@ -5486,7 +5503,7 @@ qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
 
     if (!(cmd = qemuMonitorJSONMakeCommand("query-cpu-model-expansion",
                                            "s:type", typeStr,
-                                           "a:model", &model,
+                                           "a:model", &json_model,
                                            NULL)))
         goto cleanup;
 
@@ -5498,7 +5515,7 @@ qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
      * guest architecture or it is not supported in the host environment.
      */
     if (qemuMonitorJSONHasError(reply, "GenericError")) {
-        ret = 0;
+        ret = 1;
         goto cleanup;
     }
 
@@ -5517,7 +5534,9 @@ qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
      * on the result of the initial "static" expansion.
      */
     if (type == QEMU_MONITOR_CPU_MODEL_EXPANSION_STATIC_FULL) {
-        if (!(model = virJSONValueCopy(cpu_model)))
+        virJSONValueFree(json_model);
+
+        if (!(json_model = virJSONValueCopy(cpu_model)))
             goto cleanup;
 
         virJSONValueFree(cmd);
@@ -5526,16 +5545,20 @@ qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
         goto retry;
     }
 
-    if (!(*model_info = qemuMonitorJSONBuildCPUModelInfoFromJSON(cpu_model)))
+    if (!(expanded_model = qemuMonitorJSONBuildCPUModelInfoFromJSON(cpu_model)))
         goto cleanup;
+
+    *model = *expanded_model; /* overwrite contents */
 
     ret = 0;
 
  cleanup:
+    VIR_FREE(expanded_model); /* Free structure but not reused contents */
+    qemuMonitorCPUModelInfoFreeContents(model_info);
+
     virJSONValueFree(cmd);
     virJSONValueFree(reply);
-    virJSONValueFree(model);
-    virJSONValueFree(props);
+    virJSONValueFree(json_model);
     return ret;
 }
 

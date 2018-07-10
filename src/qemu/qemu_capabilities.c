@@ -2343,22 +2343,31 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
     qemuMonitorCPUModelInfoPtr modelInfo = NULL;
     qemuMonitorCPUModelInfoPtr nonMigratable = NULL;
     virHashTablePtr hash = NULL;
-    const char *model;
+    const char *model_name;
     qemuMonitorCPUModelExpansionType type;
     virDomainVirtType virtType;
     virQEMUCapsHostCPUDataPtr cpuData;
     int ret = -1;
+    int err = -1;
 
     if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION))
         return 0;
 
     if (tcg || !virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
         virtType = VIR_DOMAIN_VIRT_QEMU;
-        model = "max";
+        model_name = "max";
     } else {
         virtType = VIR_DOMAIN_VIRT_KVM;
-        model = "host";
+        model_name = "host";
     }
+
+    if ((VIR_ALLOC(modelInfo) < 0) ||
+        (VIR_ALLOC(nonMigratable) < 0))
+        goto cleanup;
+
+    if ((qemuMonitorCPUModelInfoInit(model_name, modelInfo) < 0) ||
+        (qemuMonitorCPUModelInfoInit(model_name, nonMigratable) < 0))
+        goto cleanup;
 
     cpuData = virQEMUCapsGetHostCPUData(qemuCaps, virtType);
 
@@ -2372,16 +2381,31 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
     else
         type = QEMU_MONITOR_CPU_MODEL_EXPANSION_STATIC;
 
-    if (qemuMonitorGetCPUModelExpansion(mon, type, model, true, &modelInfo) < 0)
+    if ((err = qemuMonitorGetCPUModelExpansion(mon, type, true, modelInfo)) < 0)
         goto cleanup;
 
-    /* Try to check migratability of each feature. */
-    if (modelInfo &&
-        qemuMonitorGetCPUModelExpansion(mon, type, model, false,
-                                        &nonMigratable) < 0)
+    if (err == 1) {
+        ret = 0;      /* Qemu can't do expansion 1, exit without error */
+        goto cleanup; /* We don't have info so don't update cpuData->info */
+    }
+
+    if ((err = qemuMonitorGetCPUModelExpansion(mon, type, false, nonMigratable)) < 0)
         goto cleanup;
 
-    if (nonMigratable) {
+    /* Try to check migratability of each feature */
+    /* Expansion 1 sets migratable features true
+     * Expansion 2 sets migratable and non-migratable features true
+     *             (non-migratable set true only in some archs like X86)
+     *
+     * If delta between Expansion 1 and 2 exists...
+     * - both migratable and non-migratable features set prop->value = true
+     * - migratable features set prop->migatable = VIR_TRISTATE_BOOL_YES
+     * - non-migratable features set prop->migatable = VIR_TRISTATE_BOOL_NO
+     */
+    if (err == 0) {
+        /* Expansion 2 succeded
+         * Qemu expanded both migratable and nonMigratable features */
+
         qemuMonitorCPUPropertyPtr prop;
         qemuMonitorCPUPropertyPtr nmProp;
         size_t i;
