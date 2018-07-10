@@ -116,6 +116,7 @@ virDomainPCIAddressReserveAddr;
 virDomainPCIAddressReserveNextAddr;
 virDomainPCIAddressSetAllMulti;
 virDomainPCIAddressSetAlloc;
+virDomainPCIAddressSetExtensionAlloc;
 virDomainPCIAddressSetFree;
 virDomainPCIAddressSlotInUse;
 virDomainPCIAddressValidate;
