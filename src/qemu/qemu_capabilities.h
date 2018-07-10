@@ -593,6 +593,10 @@ void virQEMUCapsFilterByMachineType(virQEMUCapsPtr qemuCaps,
 qemuMonitorCPUModelInfoPtr virQEMUCapsCPUModelInfoFromCPUDef(const virCPUDef *cpuDef);
 virCPUDefPtr virQEMUCapsCPUModelInfoToCPUDef(bool migratable_only, qemuMonitorCPUModelInfoPtr model);
 
+int virQEMUCapsQMPBaselineCPUModel(virQEMUCapsInitQMPCommandPtr cmd,
+                                   virCPUDefPtr *cpus,
+                                   virCPUDefPtr *baseline);
+
 virFileCachePtr virQEMUCapsCacheNew(const char *libDir,
                                     const char *cacheDir,
                                     uid_t uid,

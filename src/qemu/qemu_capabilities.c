@@ -5424,3 +5424,88 @@ virQEMUCapsStripMachineAliases(virQEMUCapsPtr qemuCaps)
     for (i = 0; i < qemuCaps->nmachineTypes; i++)
         VIR_FREE(qemuCaps->machineTypes[i].alias);
 }
+
+
+/* in:
+ *  cpus[0]->model = "z13-base";
+ *  cpus[0]->features[0].name = "xxx";
+ *  cpus[0]->features[1].name = "yyy";
+ *  ***
+ *  cpus[n]->model = "s390x";
+ *  cpus[n]->features[0].name = "xxx";
+ *  cpus[n]->features[1].name = "yyy";
+ *
+ * out:
+ *  *baseline->model = "s390x";
+ *  *baseline->features[0].name = "yyy";
+ *
+ * (ret==0) && (*baseline==NULL) if a QEMU rejects model name or baseline command
+ */
+int
+virQEMUCapsQMPBaselineCPUModel(virQEMUCapsInitQMPCommandPtr cmd,
+                               virCPUDefPtr *cpus,
+                               virCPUDefPtr *baseline)
+{
+    qemuMonitorCPUModelInfoPtr  model_baseline = NULL;
+    qemuMonitorCPUModelInfoPtr  new_model_baseline = NULL;
+    qemuMonitorCPUModelInfoPtr  next_model = NULL;
+    bool migratable_only = true;
+    int ret = -1;
+    size_t i;
+
+    *baseline = NULL;
+
+    if (!cpus || !cpus[0] || !cpus[1]) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s", _("less than 2 cpus"));
+        goto cleanup;
+    }
+
+    for (i = 0; !cpus[i]; i++) {      /* last element in cpus == NULL */
+        virCPUDefPtr cpu = cpus[i];
+
+        VIR_DEBUG("cpu[%lu]->model = %s", i, NULLSTR(cpu->model));
+
+        if (!(next_model = virQEMUCapsCPUModelInfoFromCPUDef(cpu))) {
+            virReportError(VIR_ERR_INVALID_ARG, "%s", _("cpu without content"));
+            goto cleanup;
+        }
+
+        if (i == 0) {
+            model_baseline = next_model;
+            continue;
+        }
+
+        if (qemuMonitorGetCPUModelBaseline(cmd->mon, model_baseline,
+                                           next_model, &new_model_baseline) < 0)
+            goto cleanup;
+
+        if (!new_model_baseline) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("QEMU doesn't support baseline or recognize model %s or %s"),
+                           model_baseline->name,
+                           next_model->name);
+            ret = 0;
+            goto cleanup;
+        }
+
+        qemuMonitorCPUModelInfoFree(model_baseline);
+        qemuMonitorCPUModelInfoFree(next_model);
+
+        next_model = NULL;
+
+        model_baseline = new_model_baseline;
+    }
+
+    if (!(*baseline = virQEMUCapsCPUModelInfoToCPUDef(migratable_only, model_baseline)))
+        goto cleanup;
+
+    VIR_DEBUG("baseline->model = %s", NULLSTR((*baseline)->model));
+
+    ret = 0;
+
+ cleanup:
+    qemuMonitorCPUModelInfoFree(model_baseline);
+    qemuMonitorCPUModelInfoFree(next_model);
+
+    return ret;
+}
