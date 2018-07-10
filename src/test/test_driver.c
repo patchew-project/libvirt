@@ -1165,6 +1165,7 @@ testParseNodedevs(testDriverPtr privconn,
             goto error;
         }
 
+        virNodeDeviceObjSetSkipUpdateCaps(obj, true);
         virNodeDeviceObjEndAPI(&obj);
     }
 
@@ -5551,6 +5552,7 @@ testNodeDeviceMockCreateVport(testDriverPtr driver,
         goto cleanup;
     def = NULL;
     objdef = virNodeDeviceObjGetDef(obj);
+    virNodeDeviceObjSetSkipUpdateCaps(obj, true);
 
     event = virNodeDeviceEventLifecycleNew(objdef->name,
                                            VIR_NODE_DEVICE_EVENT_CREATED,
