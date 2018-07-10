@@ -174,6 +174,10 @@ char *qemuBuildRedirdevDevStr(const virDomainDef *def,
                               virDomainRedirdevDefPtr dev,
                               virQEMUCapsPtr qemuCaps);
 
+char *qemuBuildZPCIDevStr(virDomainDeviceInfoPtr dev);
+
+bool qemuCheckDeviceIsZPCI(virDomainDeviceInfoPtr info);
+
 int qemuNetworkPrepareDevices(virDomainDefPtr def);
 
 int qemuGetDriveSourceString(virStorageSourcePtr src,
