@@ -1038,6 +1038,9 @@ virDomainPCIAddressReserveNextAddr(virDomainPCIAddressSetPtr addrs,
                                        dev->isolationGroup, function) < 0)
         return -1;
 
+    if (dev->pciAddressExtFlags & VIR_PCI_ADDRESS_EXTENSION_ZPCI)
+        addr.zpci = dev->addr.pci.zpci;
+
     if (virDomainPCIAddressReserveAddrInternal(addrs, &addr, flags,
                                                dev->isolationGroup, false) < 0)
         return -1;

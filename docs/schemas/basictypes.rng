@@ -65,6 +65,17 @@
       </data>
     </choice>
   </define>
+  <define name="uint32">
+    <choice>
+      <data type="string">
+        <param name="pattern">(0x)?[0-9a-fA-F]{1,8}</param>
+      </data>
+      <data type="int">
+        <param name="minInclusive">0</param>
+        <param name="maxInclusive">4294967295</param>
+      </data>
+    </choice>
+  </define>
 
   <define name="UUID">
     <choice>
@@ -108,6 +119,26 @@
     <optional>
       <attribute name="multifunction">
         <ref name="virOnOff"/>
+      </attribute>
+    </optional>
+  </define>
+  <define name="zpciaddress">
+    <optional>
+      <attribute name="uid">
+        <choice>
+          <data type="string">
+            <param name="pattern">(0x)?[0-9a-fA-F]{1,4}</param>
+          </data>
+          <data type="unsignedInt">
+            <param name="minInclusive">1</param>
+            <param name="maxInclusive">65535</param>
+          </data>
+        </choice>
+      </attribute>
+    </optional>
+    <optional>
+      <attribute name="fid">
+        <ref name="uint32"/>
       </attribute>
     </optional>
   </define>
