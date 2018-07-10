@@ -13400,18 +13400,19 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
     virArch arch;
     virDomainVirtType virttype;
     virDomainCapsCPUModelsPtr cpuModels;
-    bool migratable;
+    bool migratable_only;
     virCPUDefPtr cpu = NULL;
     char *cpustr = NULL;
     char **features = NULL;
+    virQEMUCapsInitQMPCommandPtr cmd = NULL;
+    bool forceTCG = false;
+    qemuMonitorCPUModelInfoPtr modelInfo = NULL;
 
     virCheckFlags(VIR_CONNECT_BASELINE_CPU_EXPAND_FEATURES |
                   VIR_CONNECT_BASELINE_CPU_MIGRATABLE, NULL);
 
     if (virConnectBaselineHypervisorCPUEnsureACL(conn) < 0)
         goto cleanup;
-
-    migratable = !!(flags & VIR_CONNECT_BASELINE_CPU_MIGRATABLE);
 
     if (!(cpus = virCPUDefListParse(xmlCPUs, ncpus, VIR_CPU_TYPE_AUTO)))
         goto cleanup;
@@ -13425,6 +13426,19 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
     if (!qemuCaps)
         goto cleanup;
 
+    /* QEMU can enumerate non-migratable cpu model features for some archs like x86
+     * migratable_only == true:  ask for and include only migratable features
+     * migratable_only == false: ask for and include all features
+     */
+    migratable_only = !!(flags & VIR_CONNECT_BASELINE_CPU_MIGRATABLE);
+
+    if (ARCH_IS_S390(arch)) {
+       /* QEMU for S390 arch only enumerates migratable features
+        * No reason to explicitly ask QEMU for or include non-migratable features
+        */
+       migratable_only = true;
+    }
+
     if (!(cpuModels = virQEMUCapsGetCPUDefinitions(qemuCaps, virttype)) ||
         cpuModels->nmodels == 0) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
@@ -13437,18 +13451,31 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
 
     if (ARCH_IS_X86(arch)) {
         int rc = virQEMUCapsGetCPUFeatures(qemuCaps, virttype,
-                                           migratable, &features);
+                                           migratable_only, &features);
         if (rc < 0)
             goto cleanup;
         if (features && rc == 0) {
             /* We got only migratable features from QEMU if we asked for them,
              * no further filtering in virCPUBaseline is desired. */
-            migratable = false;
+            migratable_only = false;
         }
 
         if (!(cpu = virCPUBaseline(arch, cpus, ncpus, cpuModels,
-                                   (const char **)features, migratable)))
+                                   (const char **)features, migratable_only)))
             goto cleanup;
+    } else if (ARCH_IS_S390(arch)) {
+
+       const char *binary = virQEMUCapsGetBinary(qemuCaps);
+       virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+
+       if (!(cmd = virQEMUCapsNewQMPCommandConnection(binary, cfg->libDir,
+                                                      cfg->user, cfg->group,
+                                                      forceTCG)))
+          goto cleanup;
+
+       if ((virQEMUCapsQMPBaselineCPUModel(cmd, cpus, &cpu) < 0) || !cpu)
+          goto cleanup; /* Content Error */
+
     } else {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
                        _("computing baseline hypervisor CPU is not supported "
@@ -13458,9 +13485,36 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
 
     cpu->fallback = VIR_CPU_FALLBACK_FORBID;
 
-    if ((flags & VIR_CONNECT_BASELINE_CPU_EXPAND_FEATURES) &&
-        virCPUExpandFeatures(arch, cpu) < 0)
-        goto cleanup;
+    if (flags & VIR_CONNECT_BASELINE_CPU_EXPAND_FEATURES) {
+       if (ARCH_IS_X86(arch)) {
+          if (virCPUExpandFeatures(arch, cpu) < 0)
+             goto cleanup;
+       } else if (ARCH_IS_S390(arch)) {
+
+          if (!(modelInfo = virQEMUCapsCPUModelInfoFromCPUDef(cpu)))
+             goto cleanup;
+
+          virCPUDefFree(cpu); /* Null on failure, repopulated on success */
+
+          if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION)) {
+             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                            _("Feature Expansion not supported with this QEMU binary"));
+             goto cleanup;
+          }
+
+          if (qemuMonitorGetCPUModelExpansion(cmd->mon,
+                                              QEMU_MONITOR_CPU_MODEL_EXPANSION_FULL,
+                                              migratable_only, modelInfo) < 0)
+             goto cleanup;
+
+          /* Expansion enumerates all features
+           * Baseline reply enumerates only in-model (true) features */
+          qemuMonitorCPUModelInfoRemovePropByBoolValue(modelInfo, false);
+
+          if (!(cpu = virQEMUCapsCPUModelInfoToCPUDef(migratable_only, modelInfo)))
+             goto cleanup;
+       }
+    }
 
     cpustr = virCPUDefFormat(cpu, NULL);
 
@@ -13469,6 +13523,8 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
     virCPUDefFree(cpu);
     virObjectUnref(qemuCaps);
     virStringListFree(features);
+    virQEMUCapsInitQMPCommandFree(cmd);
+    qemuMonitorCPUModelInfoFree(modelInfo);
 
     return cpustr;
 }
