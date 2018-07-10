@@ -33,6 +33,147 @@
 
 VIR_LOG_INIT("conf.domain_addr");
 
+static int
+virDomainZPCIAddressReserveId(virHashTablePtr set, unsigned int id,
+                              const char *name)
+{
+    if (virHashLookup(set, &id)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("zPCI %s %u is already reserved"), name, id);
+        return -1;
+    }
+
+    if (virHashAddEntry(set, &id, (void*)1) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Failed to reserve %s %u"), name, id);
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
+virDomainZPCIAddressReserveUid(virHashTablePtr set, virZPCIDeviceAddressPtr addr)
+{
+    return virDomainZPCIAddressReserveId(set, addr->zpci_uid, "uid");
+}
+
+static int
+virDomainZPCIAddressReserveFid(virHashTablePtr set, virZPCIDeviceAddressPtr addr)
+{
+    return virDomainZPCIAddressReserveId(set, addr->zpci_fid, "fid");
+}
+
+
+static bool
+virDomainZPCIAddressAssignId(virHashTablePtr set, unsigned int *id,
+                             unsigned int min, unsigned int max,
+                             const char *name)
+{
+    while (virHashLookup(set, &min)) {
+        if (min == max) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("There is no more free %s."), name);
+            return false;
+        }
+        ++min;
+    }
+    *id = min;
+
+    return true;
+}
+
+static int
+virDomainZPCIAddressAssignUid(virHashTablePtr set, virZPCIDeviceAddressPtr addr)
+{
+    if (addr->uid_assigned)
+        return 0;
+
+    addr->uid_assigned = virDomainZPCIAddressAssignId(set, &addr->zpci_uid, 1,
+                                       VIR_DOMAIN_DEVICE_ZPCI_MAX_UID, "uid");
+    return addr->uid_assigned ? 0 : -1;
+}
+
+static int
+virDomainZPCIAddressAssignFid(virHashTablePtr set, virZPCIDeviceAddressPtr addr)
+{
+    if (addr->fid_assigned)
+        return 0;
+
+    addr->fid_assigned = virDomainZPCIAddressAssignId(set, &addr->zpci_fid, 0,
+                                       VIR_DOMAIN_DEVICE_ZPCI_MAX_FID, "fid");
+    return addr->fid_assigned ? 0 : -1;
+}
+
+
+static void
+virDomainZPCIAddressReleaseUid(virHashTablePtr set, virZPCIDeviceAddressPtr addr)
+{
+    if (!addr->uid_assigned)
+        return;
+
+    if (virHashRemoveEntry(set, &addr->zpci_uid))
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Release uid %u failed"), addr->zpci_uid);
+
+    addr->uid_assigned = false;
+}
+
+static void
+virDomainZPCIAddressReleaseFid(virHashTablePtr set, virZPCIDeviceAddressPtr addr)
+{
+    if (!addr->fid_assigned)
+        return;
+
+    if (virHashRemoveEntry(set, &addr->zpci_fid))
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Release fid %u failed"), addr->zpci_fid);
+
+    addr->fid_assigned = false;
+}
+
+
+static void
+virDomainZPCIAddressReleaseIds(virDomainZPCIAddressIdsPtr zpciIds,
+                               virPCIDeviceAddressPtr addr)
+{
+    if (!zpciIds || !addr->zpci)
+        return;
+
+    virDomainZPCIAddressReleaseUid(zpciIds->uids, addr->zpci);
+
+    virDomainZPCIAddressReleaseFid(zpciIds->fids, addr->zpci);
+
+    VIR_FREE(addr->zpci);
+}
+
+
+static int
+virDomainZPCIAddressReserveNextUid(virHashTablePtr uids,
+                                   virZPCIDeviceAddressPtr zpci)
+{
+    if (virDomainZPCIAddressAssignUid(uids, zpci) < 0)
+        return -1;
+
+    if (virDomainZPCIAddressReserveUid(uids, zpci) < 0)
+        return -1;
+
+    return 0;
+}
+
+static int
+virDomainZPCIAddressReserveNextFid(virHashTablePtr fids,
+                                   virZPCIDeviceAddressPtr zpci)
+{
+    if (virDomainZPCIAddressAssignFid(fids, zpci) < 0)
+        return -1;
+
+    if (virDomainZPCIAddressReserveFid(fids, zpci) < 0)
+        return -1;
+
+    return 0;
+}
+
 static void
 virDomainPCIAddressSetExtensionFree(virDomainPCIAddressSetPtr addrs)
 {
@@ -42,6 +183,116 @@ virDomainPCIAddressSetExtensionFree(virDomainPCIAddressSetPtr addrs)
     virHashFree(addrs->zpciIds->uids);
     virHashFree(addrs->zpciIds->fids);
     VIR_FREE(addrs->zpciIds);
+}
+
+static int
+virDomainZPCIAddressReserveAddr(virDomainPCIAddressSetPtr addrs,
+                                virPCIDeviceAddressPtr addr)
+{
+    if (!addr->zpci)
+        return 0;
+
+    if (addr->zpci->uid_assigned &&
+        virDomainZPCIAddressReserveUid(addrs->zpciIds->uids, addr->zpci))
+            return -1;
+
+    if (addr->zpci->fid_assigned &&
+        virDomainZPCIAddressReserveFid(addrs->zpciIds->fids, addr->zpci)) {
+        virDomainZPCIAddressReleaseUid(addrs->zpciIds->uids, addr->zpci);
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
+virDomainZPCIAddressReserveNextAddr(virDomainPCIAddressSetPtr addrs,
+                                    virZPCIDeviceAddressPtr zpci)
+{
+    if (!zpci->uid_assigned &&
+        virDomainZPCIAddressReserveNextUid(addrs->zpciIds->uids, zpci))
+            return -1;
+
+    if (!zpci->fid_assigned &&
+        virDomainZPCIAddressReserveNextFid(addrs->zpciIds->fids, zpci)) {
+        virDomainZPCIAddressReleaseUid(addrs->zpciIds->uids, zpci);
+        return -1;
+    }
+
+    return 0;
+}
+
+
+int
+virDomainPCIAddressExtensionReserveAddr(virDomainPCIAddressSetPtr addrs,
+                                        virPCIDeviceAddressPtr addr,
+                                        virDomainPCIAddressExtensionFlags extFlags)
+{
+    if (extFlags & VIR_PCI_ADDRESS_EXTENSION_ZPCI) {
+    /* Reserve uid/fid to ZPCI device which has defined uid/fid
+     * in the domain.
+     */
+        if (virDomainZPCIAddressReserveAddr(addrs, addr) < 0)
+            return -1;
+    }
+
+    return 0;
+}
+
+
+int
+virDomainPCIAddressExtensionReserveNextAddr(virDomainPCIAddressSetPtr addrs,
+                                            virPCIDeviceAddressPtr dev,
+                                            virDomainPCIAddressExtensionFlags extFlags)
+{
+    if (extFlags & VIR_PCI_ADDRESS_EXTENSION_ZPCI) {
+    /* Assign and reserve uid/fid to ZPCI device which has not defined uid/fid
+     * in the domain.
+     */
+        virZPCIDeviceAddress zpci = { 0 };
+
+        if (dev->zpci)
+            zpci = *dev->zpci;
+
+        if (virDomainZPCIAddressReserveNextAddr(addrs, &zpci) < 0)
+            return -1;
+
+        if (!addrs->dryRun) {
+            if (!dev->zpci && VIR_ALLOC(dev->zpci) < 0)
+                return -1;
+            *dev->zpci = zpci;
+        }
+    }
+
+    return 0;
+}
+
+static int
+virDomainPCIAddressEnsureExtensionAddr(virDomainPCIAddressSetPtr addrs,
+                                       virDomainDeviceInfoPtr dev)
+{
+    virZPCIDeviceAddressPtr zpci = dev->addr.pci.zpci;
+
+    if (zpci && !dev->pciAddressExtFlags) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("zPCI is not supported."));
+        return -1;
+    }
+
+    if (!zpci) {
+        return virDomainPCIAddressExtensionReserveNextAddr(addrs, &dev->addr.pci,
+                                                           dev->pciAddressExtFlags);
+    } else {
+        if (virDomainZPCIAddressAssignUid(addrs->zpciIds->uids, zpci))
+            return -1;
+
+        if (virDomainZPCIAddressAssignFid(addrs->zpciIds->fids, zpci))
+            return -1;
+
+        if (virDomainZPCIAddressReserveAddr(addrs, &dev->addr.pci))
+            return -1;
+    }
+
+    return 0;
 }
 
 virDomainPCIConnectFlags
@@ -740,9 +991,22 @@ virDomainPCIAddressEnsureAddr(virDomainPCIAddressSetPtr addrs,
         ret = virDomainPCIAddressReserveNextAddr(addrs, dev, flags, -1);
     }
 
+    if (virDomainPCIAddressEnsureExtensionAddr(addrs, dev) < 0)
+        goto cleanup;
+
  cleanup:
     VIR_FREE(addrStr);
     return ret;
+}
+
+
+void
+virDomainPCIAddressExtensionReleaseAddr(virDomainPCIAddressSetPtr addrs,
+                                        virPCIDeviceAddressPtr addr,
+                                        int extFlags)
+{
+    if ((extFlags & VIR_PCI_ADDRESS_EXTENSION_ZPCI))
+        virDomainZPCIAddressReleaseIds(addrs->zpciIds, addr);
 }
 
 

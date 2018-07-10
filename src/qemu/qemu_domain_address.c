@@ -1369,6 +1369,24 @@ qemuDomainPCIAddressReserveNextAddr(virDomainPCIAddressSetPtr addrs,
 
 
 static int
+qemuDomainAssignPCIAddressExtension(virDomainDefPtr def ATTRIBUTE_UNUSED,
+                                    virDomainDeviceDefPtr device ATTRIBUTE_UNUSED,
+                                    virDomainDeviceInfoPtr info,
+                                    void *opaque)
+{
+    virDomainPCIAddressSetPtr addrs = opaque;
+    virPCIDeviceAddressPtr addr = &info->addr.pci;
+    virDomainPCIAddressExtensionFlags extFlags = info->pciAddressExtFlags;
+
+    if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
+        if (virDomainPCIAddressExtensionReserveNextAddr(addrs, addr, extFlags) < 0)
+            return -1;
+    }
+
+    return 0;
+}
+
+static int
 qemuDomainCollectPCIAddress(virDomainDefPtr def ATTRIBUTE_UNUSED,
                             virDomainDeviceDefPtr device,
                             virDomainDeviceInfoPtr info,
@@ -1385,7 +1403,12 @@ qemuDomainCollectPCIAddress(virDomainDefPtr def ATTRIBUTE_UNUSED,
          * parent, and will have its address collected during the scan
          * of the parent's device type.
         */
-        return 0;
+        if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI ||
+            info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE)
+            return virDomainPCIAddressExtensionReserveAddr(addrs, addr,
+                                                           info->pciAddressExtFlags);
+        else
+            return 0;
     }
 
     /* If we get to here, the device has a PCI address assigned in the
@@ -1453,6 +1476,11 @@ qemuDomainCollectPCIAddress(virDomainDefPtr def ATTRIBUTE_UNUSED,
     if (virDomainPCIAddressReserveAddr(addrs, addr,
                                        info->pciConnectFlags,
                                        info->isolationGroup) < 0) {
+        goto cleanup;
+    }
+
+    if (virDomainPCIAddressExtensionReserveAddr(addrs, addr,
+                                                info->pciAddressExtFlags) < 0) {
         goto cleanup;
     }
 
@@ -2549,6 +2577,9 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
         if (qemuDomainAssignDevicePCISlots(def, qemuCaps, addrs) < 0)
             goto cleanup;
 
+        if (virDomainDeviceInfoIterate(def, qemuDomainAssignPCIAddressExtension, addrs) < 0)
+            goto cleanup;
+
         /* Only for *new* domains with pcie-root (and no other
          * manually specified PCI controllers in the definition): If,
          * after assigning addresses/reserving slots for all devices,
@@ -2641,6 +2672,9 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
             goto cleanup;
 
         if (qemuDomainAssignDevicePCISlots(def, qemuCaps, addrs) < 0)
+            goto cleanup;
+
+        if (virDomainDeviceInfoIterate(def, qemuDomainAssignPCIAddressExtension, addrs) < 0)
             goto cleanup;
 
         /* set multi attribute for devices at function 0 of
@@ -3102,8 +3136,11 @@ qemuDomainReleaseDeviceAddress(virDomainObjPtr vm,
     if (!devstr)
         devstr = info->alias;
 
-    if (virDeviceInfoPCIAddressPresent(info))
+    if (virDeviceInfoPCIAddressPresent(info)) {
         virDomainPCIAddressReleaseAddr(priv->pciaddrs, &info->addr.pci);
+        virDomainPCIAddressExtensionReleaseAddr(priv->pciaddrs, &info->addr.pci,
+                                                info->pciAddressExtFlags);
+    }
 
     if (virDomainUSBAddressRelease(priv->usbaddrs, info) < 0)
         VIR_WARN("Unable to release USB address on %s", NULLSTR(devstr));
