@@ -1028,6 +1028,10 @@ int qemuMonitorCPUModelInfoInit(const char *name, qemuMonitorCPUModelInfoPtr mod
 qemuMonitorCPUModelInfoPtr
 qemuMonitorCPUModelInfoCopy(const qemuMonitorCPUModelInfo *orig);
 
+void qemuMonitorCPUModelInfoRemovePropByBoolValue( qemuMonitorCPUModelInfoPtr model,
+                                                   bool value)
+    ATTRIBUTE_NONNULL(1);
+
 int qemuMonitorGetCPUModelBaseline(qemuMonitorPtr mon,
                                    qemuMonitorCPUModelInfoPtr model_a,
                                    qemuMonitorCPUModelInfoPtr model_b,
