@@ -4272,6 +4272,7 @@ struct _virQEMUCapsInitQMPCommand {
     uid_t runUid;
     gid_t runGid;
     char **qmperr;
+    char *qmperr_internal;
     char *monarg;
     char *monpath;
     char *pidfile;
@@ -4349,7 +4350,11 @@ virQEMUCapsInitQMPCommandNew(char *binary,
 
     cmd->runUid = runUid;
     cmd->runGid = runGid;
-    cmd->qmperr = qmperr;
+
+    if (qmperr)
+        cmd->qmperr = qmperr; /* external storage */
+    else
+        cmd->qmperr = &cmd->qmperr_internal; /* cmd internal storage */
 
     /* the ".sock" sufix is important to avoid a possible clash with a qemu
      * domain called "capabilities"
