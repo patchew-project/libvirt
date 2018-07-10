@@ -3636,8 +3636,31 @@ qemuMonitorGetCPUModelExpansion(qemuMonitorPtr mon,
 }
 
 
+int
+qemuMonitorCPUModelInfoInit(const char *name, qemuMonitorCPUModelInfoPtr model)
+{
+    int ret = -1;
+
+    if (!model)
+        goto cleanup;
+
+    model->name = NULL;
+    model->nprops = 0;
+    model->props = NULL;
+    model->props_migratable_valid = false;
+
+    if (VIR_STRDUP(model->name, name) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    return ret;
+}
+
+
 void
-qemuMonitorCPUModelInfoFree(qemuMonitorCPUModelInfoPtr model_info)
+qemuMonitorCPUModelInfoFreeContents(qemuMonitorCPUModelInfoPtr model_info)
 {
     size_t i;
 
@@ -3652,6 +3675,16 @@ qemuMonitorCPUModelInfoFree(qemuMonitorCPUModelInfoPtr model_info)
 
     VIR_FREE(model_info->props);
     VIR_FREE(model_info->name);
+
+    model_info->nprops = 0;
+    model_info->props_migratable_valid = false;
+}
+
+
+void
+qemuMonitorCPUModelInfoFree(qemuMonitorCPUModelInfoPtr model_info)
+{
+    qemuMonitorCPUModelInfoFreeContents(model_info);
     VIR_FREE(model_info);
 }
 
