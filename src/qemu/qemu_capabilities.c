@@ -2410,7 +2410,7 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
             }
         }
 
-        modelInfo->migratability = true;
+        modelInfo->props_migratable_valid = true;
     }
 
     VIR_STEAL_PTR(cpuData->info, modelInfo);
@@ -2465,7 +2465,7 @@ virQEMUCapsGetCPUFeatures(virQEMUCapsPtr qemuCaps,
     }
 
     VIR_STEAL_PTR(*features, list);
-    if (migratable && !data->info->migratability)
+    if (migratable && !data->info->props_migratable_valid)
         ret = 1;
     else
         ret = 0;
@@ -2864,7 +2864,7 @@ virQEMUCapsInitCPUModel(virQEMUCapsPtr qemuCaps,
     virQEMUCapsHostCPUDataPtr cpuData = virQEMUCapsGetHostCPUData(qemuCaps, type);
     int ret = 1;
 
-    if (migratable && cpuData->info && !cpuData->info->migratability)
+    if (migratable && cpuData->info && !cpuData->info->props_migratable_valid)
         return 1;
 
     if (ARCH_IS_S390(qemuCaps->arch)) {
@@ -3047,7 +3047,7 @@ virQEMUCapsLoadHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
                        _("invalid migratability value for host CPU model"));
         goto cleanup;
     }
-    hostCPU->migratability = val == VIR_TRISTATE_BOOL_YES;
+    hostCPU->props_migratable_valid = val == VIR_TRISTATE_BOOL_YES;
     VIR_FREE(str);
 
     ctxt->node = hostCPUNode;
@@ -3540,7 +3540,7 @@ virQEMUCapsFormatHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
     virBufferAsprintf(buf,
                       "<hostCPU type='%s' model='%s' migratability='%s'>\n",
                       typeStr, model->name,
-                      model->migratability ? "yes" : "no");
+                      model->props_migratable_valid ? "yes" : "no");
     virBufferAdjustIndent(buf, 2);
 
     for (i = 0; i < model->nprops; i++) {

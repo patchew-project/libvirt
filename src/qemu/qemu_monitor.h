@@ -1005,7 +1005,7 @@ struct _qemuMonitorCPUModelInfo {
     char *name;
     size_t nprops;
     qemuMonitorCPUPropertyPtr props;
-    bool migratability;
+    bool props_migratable_valid;
 };
 
 typedef enum {
