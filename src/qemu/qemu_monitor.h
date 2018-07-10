@@ -1025,6 +1025,12 @@ void qemuMonitorCPUModelInfoFree(qemuMonitorCPUModelInfoPtr model_info);
 qemuMonitorCPUModelInfoPtr
 qemuMonitorCPUModelInfoCopy(const qemuMonitorCPUModelInfo *orig);
 
+int qemuMonitorGetCPUModelBaseline(qemuMonitorPtr mon,
+                                   qemuMonitorCPUModelInfoPtr model_a,
+                                   qemuMonitorCPUModelInfoPtr model_b,
+                                   qemuMonitorCPUModelInfoPtr *model_baseline)
+    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(4);
+
 int qemuMonitorGetCommands(qemuMonitorPtr mon,
                            char ***commands);
 int qemuMonitorGetEvents(qemuMonitorPtr mon,

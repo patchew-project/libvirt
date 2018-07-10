@@ -3707,6 +3707,19 @@ qemuMonitorCPUModelInfoCopy(const qemuMonitorCPUModelInfo *orig)
     return NULL;
 }
 
+int
+qemuMonitorGetCPUModelBaseline(qemuMonitorPtr mon,
+                               qemuMonitorCPUModelInfoPtr model_a,
+                               qemuMonitorCPUModelInfoPtr model_b,
+                               qemuMonitorCPUModelInfoPtr *model_baseline)
+{
+    VIR_DEBUG("model_a->name=%s, model_a->nprops=%lu", model_a->name, model_a->nprops);
+    VIR_DEBUG("model_b->name=%s, model_b->nprops=%lu", model_b->name, model_b->nprops);
+
+    QEMU_CHECK_MONITOR(mon);
+
+    return qemuMonitorJSONGetCPUModelBaseline(mon, model_a, model_b, model_baseline);
+}
 
 int
 qemuMonitorGetCommands(qemuMonitorPtr mon,
