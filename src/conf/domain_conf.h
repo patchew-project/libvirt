@@ -2578,6 +2578,7 @@ typedef struct _virDomainStateReason virDomainStateReason;
 struct _virDomainStateReason {
     int state;
     int reason;
+    char *info;
 };
 
 typedef struct _virDomainObj virDomainObj;

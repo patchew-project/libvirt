@@ -3182,6 +3182,7 @@ static void virDomainObjDispose(void *obj)
 
     VIR_DEBUG("obj=%p", dom);
     virCondDestroy(&dom->cond);
+    VIR_FREE(dom->state.info);
     virDomainDefFree(dom->def);
     virDomainDefFree(dom->newDef);
 
