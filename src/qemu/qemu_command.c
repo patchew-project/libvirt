@@ -8213,6 +8213,27 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
     return -1;
 }
 
+
+static int
+qemuBuildGraphicsHeadlessCommandLine(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
+                                     virCommandPtr cmd,
+                                     virQEMUCapsPtr qemuCaps,
+                                     virDomainGraphicsDefPtr def ATTRIBUTE_UNUSED)
+{
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_EGL_HEADLESS)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("egl-headless display is not supported with this "
+                         "QEMU binary"));
+        return -1;
+    }
+
+    virCommandAddArg(cmd, "-display");
+    virCommandAddArg(cmd, "egl-headless");
+
+    return 0;
+}
+
+
 static int
 qemuBuildGraphicsCommandLine(virQEMUDriverConfigPtr cfg,
                              virCommandPtr cmd,
@@ -8240,6 +8261,12 @@ qemuBuildGraphicsCommandLine(virQEMUDriverConfigPtr cfg,
         case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
             if (qemuBuildGraphicsSPICECommandLine(cfg, cmd,
                                                   qemuCaps, graphics) < 0)
+                return -1;
+
+            break;
+        case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
+            if (qemuBuildGraphicsHeadlessCommandLine(cfg, cmd,
+                                                     qemuCaps, graphics) < 0)
                 return -1;
 
             break;
@@ -10069,6 +10096,7 @@ qemuBuildCommandLineValidate(virQEMUDriverPtr driver,
     int sdl = 0;
     int vnc = 0;
     int spice = 0;
+    int egl_headless = 0;
 
     if (!virQEMUDriverIsPrivileged(driver)) {
         /* If we have no cgroups then we can have no tunings that
@@ -10110,6 +10138,9 @@ qemuBuildCommandLineValidate(virQEMUDriverPtr driver,
         case VIR_DOMAIN_GRAPHICS_TYPE_SPICE:
             ++spice;
             break;
+        case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
+            ++egl_headless;
+            break;
         case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
         case VIR_DOMAIN_GRAPHICS_TYPE_DESKTOP:
         case VIR_DOMAIN_GRAPHICS_TYPE_LAST:
@@ -10117,10 +10148,10 @@ qemuBuildCommandLineValidate(virQEMUDriverPtr driver,
         }
     }
 
-    if (sdl > 1 || vnc > 1 || spice > 1) {
+    if (sdl > 1 || vnc > 1 || spice > 1 || egl_headless > 1) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("only 1 graphics device of each type "
-                         "(sdl, vnc, spice) is supported"));
+                         "(sdl, vnc, spice, headless) is supported"));
         return -1;
     }
 

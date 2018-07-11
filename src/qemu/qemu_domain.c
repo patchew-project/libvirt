@@ -5529,6 +5529,53 @@ qemuDomainDeviceDefValidateTPM(virDomainTPMDef *tpm,
 
 
 static int
+qemuDomainDeviceDefValidateGraphics(const virDomainGraphicsDef *graphics,
+                                    const virDomainDef *def)
+{
+    bool have_egl_headless = false;
+    size_t i;
+
+    /* are we running with egl-headless? */
+    for (i = 0; i < def->ngraphics; i++) {
+        graphics = def->graphics[i];
+
+        if (graphics->type == VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS) {
+            have_egl_headless = true;
+            break;
+        }
+    }
+
+    /* Only VNC and SPICE can be paired with egl-headless, the other types
+     * either don't make sense to pair with egl-headless or aren't even
+     * supported by QEMU.
+     */
+    if (have_egl_headless) {
+        if (graphics->type != VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS &&
+            graphics->type != VIR_DOMAIN_GRAPHICS_TYPE_VNC &&
+            graphics->type != VIR_DOMAIN_GRAPHICS_TYPE_SPICE) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("graphics type 'egl-headless' is only supported "
+                             "with one of: 'vnc', 'spice' graphics types"));
+            return -1;
+        }
+
+        /* '-spice gl=on' and '-display egl-headless' are mutually
+         * exclusive
+         */
+        if (graphics->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE &&
+            graphics->data.spice.gl == VIR_TRISTATE_BOOL_YES) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("multiple OpenGL displays are not supported "
+                             "by QEMU"));
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
+static int
 qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
                             const virDomainDef *def,
                             void *opaque)
@@ -5595,11 +5642,14 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
         ret = qemuDomainDeviceDefValidateTPM(dev->data.tpm, def);
         break;
 
+    case VIR_DOMAIN_DEVICE_GRAPHICS:
+        ret = qemuDomainDeviceDefValidateGraphics(dev->data.graphics, def);
+        break;
+
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_FS:
     case VIR_DOMAIN_DEVICE_INPUT:
     case VIR_DOMAIN_DEVICE_SOUND:
-    case VIR_DOMAIN_DEVICE_GRAPHICS:
     case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
