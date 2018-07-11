@@ -1990,19 +1990,21 @@ int virFileIsMountPoint(const char *file)
 
 #if defined(__linux__)
 /**
- * virFileIsCDROM:
+ * virFileCheckCDROM:
  * @path: File to check
+ * @cd_status: Ptr to store CDROM status; Not to store status if NULL
  *
  * Returns 1 if @path is a cdrom device 0 if it is not a cdrom and -1 on
  * error. 'errno' of the failure is preserved and no libvirt errors are
  * reported.
  */
 int
-virFileIsCDROM(const char *path)
+virFileCheckCDROM(const char *path, int *cd_status)
 {
     struct stat st;
     int fd;
     int ret = -1;
+    int *status;
 
     if ((fd = open(path, O_RDONLY | O_NONBLOCK)) < 0)
         goto cleanup;
@@ -2016,10 +2018,40 @@ virFileIsCDROM(const char *path)
     }
 
     /* Attempt to detect via a CDROM specific ioctl */
-    if (ioctl(fd, CDROM_DRIVE_STATUS, CDSL_CURRENT) >= 0)
-        ret = 1;
-    else
+    *status = ioctl(fd, CDROM_DRIVE_STATUS, CDSL_CURRENT);
+
+    if (cd_status == NULL) {
+        if (*status >= 0)
+            ret = 1;
+        else
+            ret = 0;
+        goto cleanup;
+    }
+
+    if (*status < 0) {
         ret = 0;
+        goto cleanup;
+    }
+
+    switch (*status) {
+        case CDS_NO_INFO:
+            *cd_status = VIR_FILE_CDROM_NO_INFO;
+            break;
+        case CDS_NO_DISC:
+            *cd_status = VIR_FILE_CDROM_NO_DISC;
+            break;
+        case CDS_TRAY_OPEN:
+            *cd_status = VIR_FILE_CDROM_TREY_OPEN;
+            break;
+        case CDS_DRIVE_NOT_READY:
+            *cd_status = VIR_FILE_CDROM_DRIVE_NOT_READY;
+            break;
+        case CDS_DISC_OK:
+            *cd_status = VIR_FILE_CDROM_DISC_OK;
+            break;
+    }
+
+    ret = 1;
 
  cleanup:
     VIR_FORCE_CLOSE(fd);
@@ -2029,7 +2061,7 @@ virFileIsCDROM(const char *path)
 #else
 
 int
-virFileIsCDROM(const char *path)
+virFileCheckCDROM(const char *path, int *cd_status)
 {
     if (STRPREFIX(path, "/dev/cd") ||
         STRPREFIX(path, "/dev/acd"))
