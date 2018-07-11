@@ -2650,6 +2650,7 @@ virVMXParseEthernet(virConfPtr conf, int controller, virDomainNetDefPtr *def)
     /* vmx:networkName -> def:data.bridge.brname */
     if (connectionType == NULL ||
         STRCASEEQ(connectionType, "bridged") ||
+        STRCASEEQ(connectionType, "hostonly") ||
         STRCASEEQ(connectionType, "custom")) {
         if (virVMXGetConfigString(conf, networkName_name, &networkName,
                                   true) < 0)
@@ -2674,11 +2675,12 @@ virVMXParseEthernet(virConfPtr conf, int controller, virDomainNetDefPtr *def)
         virtualDev = NULL;
         networkName = NULL;
     } else if (STRCASEEQ(connectionType, "hostonly")) {
-        /* FIXME */
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("No yet handled value '%s' for VMX entry '%s'"),
-                       connectionType, connectionType_name);
-        goto cleanup;
+        (*def)->type = VIR_DOMAIN_NET_TYPE_NETWORK;
+        (*def)->model = virtualDev;
+        (*def)->data.network.name = networkName;
+
+        virtualDev = NULL;
+        networkName = NULL;
     } else if (STRCASEEQ(connectionType, "nat")) {
         (*def)->type = VIR_DOMAIN_NET_TYPE_USER;
         (*def)->model = virtualDev;
@@ -3783,6 +3785,12 @@ virVMXFormatEthernet(virDomainNetDefPtr def, int controller,
       case VIR_DOMAIN_NET_TYPE_USER:
         virBufferAsprintf(buffer, "ethernet%d.connectionType = \"nat\"\n",
                           controller);
+
+        break;
+
+      case VIR_DOMAIN_NET_TYPE_NETWORK:
+        virBufferAsprintf(buffer, "ethernet%d.connectionType = \"hostonly\"\n",
+                              controller);
         break;
 
       case VIR_DOMAIN_NET_TYPE_ETHERNET:
@@ -3790,7 +3798,6 @@ virVMXFormatEthernet(virDomainNetDefPtr def, int controller,
       case VIR_DOMAIN_NET_TYPE_SERVER:
       case VIR_DOMAIN_NET_TYPE_CLIENT:
       case VIR_DOMAIN_NET_TYPE_MCAST:
-      case VIR_DOMAIN_NET_TYPE_NETWORK:
       case VIR_DOMAIN_NET_TYPE_INTERNAL:
       case VIR_DOMAIN_NET_TYPE_DIRECT:
       case VIR_DOMAIN_NET_TYPE_HOSTDEV:

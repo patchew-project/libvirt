@@ -1,0 +1,34 @@
+<domain type='vmware'>
+  <name>Ubuntu16.04</name>
+  <uuid>564d9736-09cb-ba6f-2057-e70150727f3f</uuid>
+  <memory unit='KiB'>5115904</memory>
+  <currentMemory unit='KiB'>5115904</currentMemory>
+  <vcpu placement='static'>1</vcpu>
+  <os>
+    <type arch='x86_64'>hvm</type>
+  </os>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <devices>
+    <disk type='file' device='disk'>
+      <source file='[datastore] directory/Virtual Disk.vmdk'/>
+      <target dev='sda' bus='scsi'/>
+      <address type='drive' controller='0' bus='0' target='0' unit='0'/>
+    </disk>
+    <controller type='scsi' index='0' model='lsilogic'/>
+    <filesystem type='mount' accessmode='passthrough'>
+      <source dir='/Users/johndoe/dev/vmware-shared'/>
+      <target dir='vmware-shared'/>
+    </filesystem>
+    <interface type='network'>
+      <mac address='00:0c:29:72:7f:3f'/>
+      <source network=''/>
+      <model type='e1000'/>
+    </interface>
+    <video>
+      <model type='vmvga' vram='4096' primary='yes'/>
+    </video>
+  </devices>
+</domain>

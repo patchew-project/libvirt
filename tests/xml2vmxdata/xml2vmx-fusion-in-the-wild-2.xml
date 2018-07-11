@@ -1,0 +1,31 @@
+<domain type='vmware'>
+  <name>Windows 10 x64</name>
+  <uuid>564d08c1-40dd-1395-8501-b3af4774247d</uuid>
+  <memory unit='KiB'>6889472</memory>
+  <currentMemory unit='KiB'>6889472</currentMemory>
+  <vcpu placement='static'>1</vcpu>
+  <os>
+    <type arch='x86_64'>hvm</type>
+    <boot dev='hd'/>
+  </os>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <devices>
+    <disk type='file' device='disk'>
+      <source file='/data/vmware/disk.vmdk'/>
+      <target dev='sda' bus='scsi'/>
+      <address type='drive' controller='0' bus='0' target='0' unit='0'/>
+    </disk>
+    <controller type='scsi' index='0' model='lsisas1068'/>
+    <interface type='network'>
+      <mac address='00:90:b9:dc:ea:81'/>
+      <source network=''/>
+      <model type='e1000'/>
+    </interface>
+    <video>
+      <model type='vmvga' vram='4096' primary='yes'/>
+    </video>
+  </devices>
+</domain>
