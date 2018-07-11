@@ -4159,7 +4159,6 @@ remoteDispatchDomainGetState(virNetServerPtr server ATTRIBUTE_UNUSED,
     return rv;
 }
 
-
 /* Due to back-compat reasons, two RPC calls map to the same libvirt
  * API of virConnectDomainEventRegisterAny.  A client should only use
  * the new call if they have probed

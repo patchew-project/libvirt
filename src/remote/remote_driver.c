@@ -8347,6 +8347,7 @@ static virHypervisorDriver hypervisor_driver = {
     .domainSetPerfEvents = remoteDomainSetPerfEvents, /* 1.3.3 */
     .domainGetInfo = remoteDomainGetInfo, /* 0.3.0 */
     .domainGetState = remoteDomainGetState, /* 0.9.2 */
+    .domainGetStateParams = remoteDomainGetStateParams, /* 4.6.0 */
     .domainGetControlInfo = remoteDomainGetControlInfo, /* 0.9.3 */
     .domainSave = remoteDomainSave, /* 0.3.0 */
     .domainSaveFlags = remoteDomainSaveFlags, /* 0.9.4 */
