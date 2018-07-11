@@ -1811,7 +1811,7 @@ virFileGetMountSubtree;
 virFileHasSuffix;
 virFileInData;
 virFileIsAbsPath;
-virFileIsCDROM;
+virFileCheckCDROM;
 virFileIsDir;
 virFileIsExecutable;
 virFileIsLink;
