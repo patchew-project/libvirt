@@ -2672,6 +2672,55 @@ qemuDomainGetState(virDomainPtr dom,
 }
 
 static int
+qemuDomainGetStateParams(virDomainPtr dom,
+                         virTypedParameterPtr *params,
+                         int *nparams,
+                         unsigned int flags)
+{
+    int ret = -1;
+    virDomainObjPtr vm;
+    virTypedParameterPtr par = NULL;
+    int npar, maxparams = 0;
+
+    virCheckFlags(0, -1);
+
+    if (!(vm = qemuDomObjFromDomain(dom)))
+        goto cleanup;
+
+    if (virDomainGetStateParamsEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    if (virTypedParamsAddInt(&par, &npar,
+                             &maxparams,
+                             VIR_DOMAIN_STATE_PARAMS_STATE,
+                             vm->state.state) < 0) {
+        goto cleanup;
+    }
+    if (virTypedParamsAddInt(&par, &npar,
+                             &maxparams,
+                             VIR_DOMAIN_STATE_PARAMS_REASON,
+                             vm->state.reason) < 0) {
+        goto cleanup;
+    }
+    if (virTypedParamsAddString(&par, &npar,
+                                &maxparams,
+                                VIR_DOMAIN_STATE_PARAMS_INFO,
+                                vm->state.info) < 0) {
+        goto cleanup;
+    }
+
+    VIR_STEAL_PTR(*params, par);
+    *nparams = npar;
+    npar = 0;
+    ret = 0;
+
+ cleanup:
+    virTypedParamsFree(par, npar);
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+static int
 qemuDomainGetControlInfo(virDomainPtr dom,
                           virDomainControlInfoPtr info,
                           unsigned int flags)
@@ -21664,6 +21713,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainGetBlkioParameters = qemuDomainGetBlkioParameters, /* 0.9.0 */
     .domainGetInfo = qemuDomainGetInfo, /* 0.2.0 */
     .domainGetState = qemuDomainGetState, /* 0.9.2 */
+    .domainGetStateParams = qemuDomainGetStateParams, /* 4.6.0 */
     .domainGetControlInfo = qemuDomainGetControlInfo, /* 0.9.3 */
     .domainSave = qemuDomainSave, /* 0.2.0 */
     .domainSaveFlags = qemuDomainSaveFlags, /* 0.9.4 */
