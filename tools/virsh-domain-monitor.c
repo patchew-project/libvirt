@@ -1372,6 +1372,10 @@ static const vshCmdOptDef opts_domstate[] = {
      .type = VSH_OT_BOOL,
      .help = N_("also print reason for the state")
     },
+    {.name = "info",
+     .type = VSH_OT_BOOL,
+     .help = N_("also print reason and information for the state")
+    },
     {.name = NULL}
 };
 
@@ -1381,26 +1385,43 @@ cmdDomstate(vshControl *ctl, const vshCmd *cmd)
     virDomainPtr dom;
     bool ret = true;
     bool showReason = vshCommandOptBool(cmd, "reason");
+    bool showInfo = vshCommandOptBool(cmd, "info");
+    virTypedParameterPtr params = NULL;
+    int nparams = 0;
     int state, reason;
+    const char *info = NULL;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;
 
-    if ((state = virshDomainState(ctl, dom, &reason)) < 0) {
-        ret = false;
-        goto cleanup;
+    if (virDomainGetStateParams(dom, &params, &nparams, 0) < 0 ||
+        virTypedParamsGetInt(params, nparams, VIR_DOMAIN_STATE_PARAMS_STATE,
+                             &state) < 0 ||
+        virTypedParamsGetInt(params, nparams, VIR_DOMAIN_STATE_PARAMS_REASON,
+                             &reason) < 0 ||
+        virTypedParamsGetString(params, nparams, VIR_DOMAIN_STATE_PARAMS_INFO,
+                                &info) < 0) {
+        if ((state = virshDomainState(ctl, dom, &reason)) < 0) {
+            ret = false;
+            goto cleanup;
+        }
     }
 
-    if (showReason) {
-        vshPrint(ctl, "%s (%s)\n",
+    if (showInfo || showReason) {
+        vshPrint(ctl, "%s (%s",
                  virshDomainStateToString(state),
                  virshDomainStateReasonToString(state, reason));
+        if (showInfo && info && strlen(info) > 0)
+            vshPrint(ctl, ": %s)\n", info);
+        else
+            vshPrint(ctl, ")\n");
     } else {
         vshPrint(ctl, "%s\n",
                  virshDomainStateToString(state));
     }
 
  cleanup:
+    virTypedParamsFree(params, nparams);
     virshDomainFree(dom);
     return ret;
 }
