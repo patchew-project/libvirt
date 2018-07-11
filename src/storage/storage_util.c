@@ -1506,7 +1506,7 @@ int
 virStorageBackendVolOpen(const char *path, struct stat *sb,
                          unsigned int flags)
 {
-    int fd, mode = 0;
+    int fd, cd_status, mode = 0;
     char *base = last_component(path);
     bool noerror = (flags & VIR_STORAGE_VOL_OPEN_NOERROR);
 
@@ -1543,6 +1543,19 @@ virStorageBackendVolOpen(const char *path, struct stat *sb,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Volume path '%s' is a socket"), path);
         return -1;
+    }
+
+    if (virFileCheckCDROM(path, &cd_status)) {
+        if (cd_status != VIR_FILE_CDROM_DISC_OK) {
+            if (noerror) {
+                VIR_WARN("ignoring CDROM %s is not ready", path);
+                return -2;
+            }
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("CDROM %s is not ready", path);
+            return -1;
+        }
+        VIR_INFO("CDROM backend %s is ok", path);
     }
 
     /* O_NONBLOCK should only matter during open() for fifos and
