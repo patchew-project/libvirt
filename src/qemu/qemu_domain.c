@@ -4451,9 +4451,46 @@ qemuDomainDeviceDefValidateNetwork(const virDomainNetDef *net)
 
 
 static int
+qemuDomainMdevDefValidate(const virDomainHostdevSubsysMediatedDev *mdevsrc,
+                          const virDomainDef *def)
+{
+    if (mdevsrc->display != VIR_TRISTATE_SWITCH_ABSENT &&
+        mdevsrc->model != VIR_MDEV_MODEL_TYPE_VFIO_PCI) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("<hostdev> attribute 'display' is only supported"
+                         " with model='vfio-pci'"));
+
+        return -1;
+    }
+
+    if (mdevsrc->display == VIR_TRISTATE_SWITCH_ON) {
+        if (def->ngraphics == 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("graphics device is needed for attribute value "
+                             "'display=on' in <hostdev>"));
+            return -1;
+        }
+
+        /* We're not able to tell whether an mdev needs OpenGL or not at the
+         * moment, so print a warning that an extra <gl> element or
+         * <graphics type='egl-headless/>' might be necessary to be added,
+         * depending on whether we're running with SPICE or VNC respectively.
+         */
+        if (!virDomainGraphicsDefHasOpenGL(def))
+            VIR_WARN("<hostdev> attribute 'display' may need the OpenGL to "
+                     "be enabled");
+    }
+
+    return 0;
+}
+
+
+static int
 qemuDomainDeviceDefValidateHostdev(const virDomainHostdevDef *hostdev,
                                    const virDomainDef *def)
 {
+    const virDomainHostdevSubsysMediatedDev *mdevsrc;
+
     /* forbid capabilities mode hostdev in this kind of hypervisor */
     if (hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_CAPABILITIES) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -4461,6 +4498,24 @@ qemuDomainDeviceDefValidateHostdev(const virDomainHostdevDef *hostdev,
                          "supported in %s"),
                        virDomainVirtTypeToString(def->virtType));
         return -1;
+    }
+
+    if (hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
+        switch ((virDomainHostdevSubsysType) hostdev->source.subsys.type) {
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB:
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI:
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI:
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST:
+            break;
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_MDEV:
+            mdevsrc = &hostdev->source.subsys.u.mdev;
+            return qemuDomainMdevDefValidate(mdevsrc, def);
+        case VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_LAST:
+        default:
+            virReportEnumRangeError(virDomainHostdevSubsysType,
+                                    hostdev->source.subsys.type);
+            return -1;
+        }
     }
 
     return 0;
