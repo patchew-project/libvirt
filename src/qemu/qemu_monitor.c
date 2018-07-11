@@ -4241,6 +4241,37 @@ qemuMonitorQueryNamedBlockNodes(qemuMonitorPtr mon)
 
 
 char *
+qemuMonitorGuestPanicEventInfoFormatMsgCompact(qemuMonitorEventPanicInfoPtr info)
+{
+    char *ret = NULL;
+
+    switch (info->type) {
+    case QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_HYPERV:
+        ignore_value(virAsprintf(&ret,
+                                 "arg1='0x%llx', arg2='0x%llx', "
+                                 "arg3='0x%llx', arg4='0x%llx', arg5='0x%llx'",
+                                 info->data.hyperv.arg1, info->data.hyperv.arg2,
+                                 info->data.hyperv.arg3, info->data.hyperv.arg4,
+                                 info->data.hyperv.arg5));
+        break;
+    case QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_S390:
+        ignore_value(virAsprintf(&ret, "%s core='%d' psw-mask='0x%016llx' "
+                                 "psw-addr='0x%016llx'",
+                                 info->data.s390.reason,
+                                 info->data.s390.core,
+                                 info->data.s390.psw_mask,
+                                 info->data.s390.psw_addr));
+        break;
+    case QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_NONE:
+    case QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_LAST:
+        break;
+    }
+
+    return ret;
+}
+
+
+char *
 qemuMonitorGuestPanicEventInfoFormatMsg(qemuMonitorEventPanicInfoPtr info)
 {
     char *ret = NULL;

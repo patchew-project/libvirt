@@ -4255,6 +4255,7 @@ processGuestPanicEvent(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virObjectEventPtr event = NULL;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    char *state_info = NULL;
     bool removeInactive = false;
     unsigned long flags = VIR_DUMP_MEMORY_ONLY;
 
@@ -4268,10 +4269,15 @@ processGuestPanicEvent(virQEMUDriverPtr driver,
         goto endjob;
     }
 
-    if (info)
+    if (info) {
         qemuProcessGuestPanicEventInfo(driver, vm, info);
+        state_info = qemuMonitorGuestPanicEventInfoFormatMsgCompact(info);
+    }
 
-    virDomainObjSetState(vm, VIR_DOMAIN_CRASHED, VIR_DOMAIN_CRASHED_PANICKED);
+    virDomainObjSetStateFull(vm,
+                             VIR_DOMAIN_CRASHED,
+                             VIR_DOMAIN_CRASHED_PANICKED,
+                             state_info);
 
     event = virDomainEventLifecycleNewFromObj(vm,
                                               VIR_DOMAIN_EVENT_CRASHED,
@@ -4329,6 +4335,7 @@ processGuestPanicEvent(virQEMUDriverPtr driver,
         qemuDomainRemoveInactiveJob(driver, vm);
 
  cleanup:
+    VIR_FREE(state_info);
     virObjectUnref(cfg);
 }
 
