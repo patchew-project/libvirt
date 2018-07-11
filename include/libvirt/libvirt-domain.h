@@ -1255,6 +1255,30 @@ int                     virDomainGetState       (virDomainPtr domain,
                                                  unsigned int flags);
 
 /**
+ * VIR_DOMAIN_STATE_PARAMS_STATE:
+ * state of the domain (cf. virDomainState) as an int
+ */
+# define VIR_DOMAIN_STATE_PARAMS_STATE "state"
+
+/**
+ * VIR_DOMAIN_STATE_PARAMS_REASON:
+ * state reason of the domain (one of virDomain*Reason) as an int
+ */
+# define VIR_DOMAIN_STATE_PARAMS_REASON "reason"
+
+/**
+ * VIR_DOMAIN_STATE_PARAMS_INFO:
+ * additional information for certain state reasons as a string
+ */
+# define VIR_DOMAIN_STATE_PARAMS_INFO "info"
+
+int                     virDomainGetStateParams(virDomainPtr domain,
+                                                virTypedParameterPtr *params,
+                                                int *nparams,
+                                                unsigned int flags);
+
+
+/**
  * VIR_DOMAIN_CPU_STATS_CPUTIME:
  * cpu usage (sum of both vcpu and hypervisor usage) in nanoseconds,
  * as a ullong

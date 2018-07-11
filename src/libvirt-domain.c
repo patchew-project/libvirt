@@ -2503,6 +2503,62 @@ virDomainGetState(virDomainPtr domain,
 
 
 /**
+ * virDomainGetStateParams:
+ * @domain: a domain object
+ * @params: where to store domain statistics, must be freed by the caller
+ * @nparams: number of items in @params
+ * @flags: bitwise-OR of virDomainGetStateFlags,
+ *         not currently used yet, callers should always pass 0
+ *
+ * Extract domain state. Each state is accompanied by a reason (if known)
+ * and optional detailed information.
+ *
+ * Possible fields returned in @params are defined by VIR_DOMAIN_STATE_PARAMS_*
+ * macros and new fields will likely be introduced in the future so callers
+ * may receive fields that they do not understand in case they talk to a newer
+ * server. The caller is responsible to free allocated memory returned in
+ * @params by calling virTypedParamsFree.
+ *
+ * Returns 0 in case of success and -1 in case of failure.
+ */
+int
+virDomainGetStateParams(virDomainPtr domain,
+                        virTypedParameterPtr *params,
+                        int *nparams,
+                        unsigned int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "params=%p, nparams=%p, flags=0x%x",
+                     params, nparams, flags);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    virCheckNonNullArgGoto(params, error);
+    virCheckNonNullArgGoto(nparams, error);
+
+    conn = domain->conn;
+    if (conn->driver->domainGetStateParams) {
+        int ret;
+        ret = conn->driver->domainGetStateParams(domain,
+                                                 params,
+                                                 nparams,
+                                                 flags);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+
+ error:
+    virDispatchError(domain->conn);
+    return -1;
+}
+
+
+/**
  * virDomainGetControlInfo:
  * @domain: a domain object
  * @info: pointer to a virDomainControlInfo structure allocated by the user
