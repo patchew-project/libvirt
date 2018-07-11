@@ -4286,12 +4286,12 @@ qemuMonitorGuestPanicEventInfoFormatMsg(qemuMonitorEventPanicInfoPtr info)
                                  info->data.hyperv.arg5));
         break;
     case QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_S390:
-        ignore_value(virAsprintf(&ret, "s390: core='%d' psw-mask='0x%016llx' "
-                                 "psw-addr='0x%016llx' reason='%s'",
+        ignore_value(virAsprintf(&ret, "s390: reason='%s' core='%d' psw-mask='0x%016llx' "
+                                 "psw-addr='0x%016llx'",
+                                 info->data.s390.reason,
                                  info->data.s390.core,
                                  info->data.s390.psw_mask,
-                                 info->data.s390.psw_addr,
-                                 info->data.s390.reason));
+                                 info->data.s390.psw_addr));
         break;
     case QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_NONE:
     case QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_LAST:
