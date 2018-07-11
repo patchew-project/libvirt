@@ -28766,7 +28766,10 @@ virDomainObjGetState(virDomainObjPtr dom, int *reason)
 
 
 void
-virDomainObjSetState(virDomainObjPtr dom, virDomainState state, int reason)
+virDomainObjSetStateFull(virDomainObjPtr dom,
+                         virDomainState state,
+                         int reason,
+                         const char *info)
 {
     int last;
 
@@ -28806,6 +28809,16 @@ virDomainObjSetState(virDomainObjPtr dom, virDomainState state, int reason)
         dom->state.reason = reason;
     else
         dom->state.reason = 0;
+
+    VIR_FREE(dom->state.info);
+    ignore_value(VIR_STRDUP(dom->state.info, info));
+}
+
+
+void
+virDomainObjSetState(virDomainObjPtr dom, virDomainState state, int reason)
+{
+    virDomainObjSetStateFull(dom, state, reason, NULL);
 }
 
 

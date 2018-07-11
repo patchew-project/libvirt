@@ -484,6 +484,7 @@ virDomainObjRemoveTransientDef;
 virDomainObjSetDefTransient;
 virDomainObjSetMetadata;
 virDomainObjSetState;
+virDomainObjSetStateFull;
 virDomainObjTaint;
 virDomainObjUpdateModificationImpact;
 virDomainObjWait;

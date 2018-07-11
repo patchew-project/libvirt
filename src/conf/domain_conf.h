@@ -3320,6 +3320,12 @@ int virDomainDiskDefForeachPath(virDomainDiskDefPtr disk,
                                 void *opaque);
 
 void
+virDomainObjSetStateFull(virDomainObjPtr obj,
+                         virDomainState state,
+                         int reason,
+                         const char *info)
+        ATTRIBUTE_NONNULL(1);
+void
 virDomainObjSetState(virDomainObjPtr obj, virDomainState state, int reason)
         ATTRIBUTE_NONNULL(1);
 virDomainState
