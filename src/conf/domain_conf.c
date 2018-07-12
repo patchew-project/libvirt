@@ -6107,6 +6107,8 @@ virDomainDefLifecycleActionValidate(const virDomainDef *def)
 static int
 virDomainDefValidateInternal(const virDomainDef *def)
 {
+    size_t i;
+
     if (virDomainDefCheckDuplicateDiskInfo(def) < 0)
         return -1;
 
@@ -6134,6 +6136,26 @@ virDomainDefValidateInternal(const virDomainDef *def)
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("IOMMU eim requires interrupt remapping to be enabled"));
         return -1;
+    }
+
+    for (i = 0; i < def->nshmems; i++) {
+        if (strchr(def->shmems[i]->name, '/')) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("shmem name cannot include '/' character"));
+            return -1;
+        }
+
+        if (STREQ(def->shmems[i]->name, ".")) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("shmem name cannot be equal to '.'"));
+            return -1;
+        }
+
+        if (STREQ(def->shmems[i]->name, "..")) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("shmem name cannot be equal to '..'"));
+            return -1;
+        }
     }
 
     if (virDomainDefLifecycleActionValidate(def) < 0)
