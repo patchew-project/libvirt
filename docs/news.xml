@@ -46,6 +46,20 @@
       </change>
     </section>
     <section title="Improvements">
+      <change>
+        <summary>
+          qemu: Introduce a new video model of type 'none'
+        </summary>
+        <description>
+          Historically, libvirt would add a default 'cirrus' video device to
+          a guest if the XML specified 'graphics' but lacked 'video'. This can
+          be incovenient with GPU mediated devices which can serve as the only
+          rendering devices within the guest, rather than still relying on an
+          emulated GPU which would also be the primary device. Having a 'none'
+          model is our only backwards compatible option how to turn this legacy
+          behaviour off when needed.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
