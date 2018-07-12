@@ -4531,10 +4531,12 @@
           determines how the host's vfio driver will expose the device to the
           guest. Currently, <code>model='vfio-pci'</code> and
           <code>model='vfio-ccw'</code> (<span class="since">Since 4.4.0</span>)
-          is supported. Refer <a href="drvnodedev.html#MDEV">MDEV</a> to create
-          a mediated device on the host. There are also some implications on the
-          usage of guest's address type depending on the <code>model</code>
-          attribute, see the <code>address</code> element below.
+          is supported. <a href="drvnodedev.html#MDEV">MDEV</a> section
+          provides more information about mediated devices as well as how to
+          create mediated devices on the host. There are also some implications
+          on the usage of guest's address type depending on the
+          <code>model</code> attribute, see the <code>address</code> element
+          below.
           </dd>
         </dl>
         <p>
