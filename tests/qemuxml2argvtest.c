@@ -471,6 +471,10 @@ testCompareXMLToArgv(const void *data)
     conn->secretDriver = &fakeSecretDriver;
     conn->storageDriver = &fakeStorageDriver;
 
+    virSetConnectInterface(conn);
+    virSetConnectNetwork(conn);
+    virSetConnectNWFilter(conn);
+    virSetConnectNodeDev(conn);
     virSetConnectSecret(conn);
     virSetConnectStorage(conn);
 
@@ -651,6 +655,8 @@ mymain(void)
         perror("setenv");
         return EXIT_FAILURE;
     }
+
+    virTestQuiesceLibvirtErrors(true);
 
     if (qemuTestDriverInit(&driver) < 0)
         return EXIT_FAILURE;
