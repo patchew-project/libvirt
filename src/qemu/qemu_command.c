@@ -3254,26 +3254,21 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
 
 
 static int
-qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
-                              virQEMUDriverConfigPtr cfg,
-                              size_t cell,
-                              qemuDomainObjPrivatePtr priv,
-                              virBufferPtr buf)
+qemuBuildMemoryBackendStr(virDomainDefPtr def,
+                          virQEMUDriverConfigPtr cfg,
+                          const char *alias,
+                          int targetNode,
+                          unsigned long long memsize,
+                          qemuDomainObjPrivatePtr priv,
+                          virBufferPtr buf)
 {
     virJSONValuePtr props = NULL;
-    char *alias = NULL;
-    int ret = -1;
-    int rc;
     virDomainMemoryDef mem = { 0 };
-    unsigned long long memsize = virDomainNumaGetNodeMemorySize(def->numa,
-                                                                cell);
-
-    if (virAsprintf(&alias, "ram-node%zu", cell) < 0)
-        goto cleanup;
+    int rc, ret = -1;
 
     mem.size = memsize;
-    mem.targetNode = cell;
-    mem.info.alias = alias;
+    mem.targetNode = targetNode;
+    mem.info.alias = (char *)alias;
 
     if ((rc = qemuBuildMemoryBackendProps(&props, alias, cfg, priv->qemuCaps,
                                           def, &mem, priv->autoNodeset, false)) < 0)
@@ -3284,9 +3279,30 @@ qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
 
     ret = rc;
 
+cleanup:
+    virJSONValueFree(props);
+    return ret;
+}
+
+
+static int
+qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
+                              virQEMUDriverConfigPtr cfg,
+                              size_t cell,
+                              qemuDomainObjPrivatePtr priv,
+                              virBufferPtr buf)
+{
+    char *alias = NULL;
+    int ret = -1;
+    unsigned long long memsize = virDomainNumaGetNodeMemorySize(def->numa, cell);
+
+    if (virAsprintf(&alias, "ram-node%zu", cell) < 0)
+        goto cleanup;
+
+    ret = qemuBuildMemoryBackendStr(def, cfg, alias, cell, memsize, priv, buf);
+
  cleanup:
     VIR_FREE(alias);
-    virJSONValueFree(props);
 
     return ret;
 }
@@ -7590,6 +7606,17 @@ qemuBuildNumaArgStr(virQEMUDriverConfigPtr cfg,
     size_t ncells = virDomainNumaGetNodeCount(def->numa);
     const long system_page_size = virGetSystemPageSizeKB();
     bool numa_distances = false;
+    bool implicit = false;
+
+    if (ncells == 0) {
+        if (def->mem.access == VIR_DOMAIN_MEMORY_ACCESS_SHARED) {
+            ncells = 1;
+            implicit = true;
+        } else {
+            ret = 0;
+            goto cleanup;
+        }
+    }
 
     if (virDomainNumatuneHasPerNodeBinding(def->numa) &&
         !(virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_RAM) ||
@@ -7645,14 +7672,22 @@ qemuBuildNumaArgStr(virQEMUDriverConfigPtr cfg,
         if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_RAM) ||
             virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_FILE)) {
 
-            if ((rc = qemuBuildMemoryCellBackendStr(def, cfg, i, priv,
-                                                    &nodeBackends[i])) < 0)
+
+            if (implicit)
+                rc = qemuBuildMemoryBackendStr(def, cfg, "ram-node", -1,
+                                               def->mem.total_memory,
+                                               priv, &nodeBackends[i]);
+            else
+                rc = qemuBuildMemoryCellBackendStr(def, cfg, i,
+                                                   priv, &nodeBackends[i]);
+            if (rc < 0)
                 goto cleanup;
 
             if (rc == 0)
                 needBackend = true;
         } else {
-            if (virDomainNumaGetNodeMemoryAccessMode(def->numa, i)) {
+            if (implicit ||
+                virDomainNumaGetNodeMemoryAccessMode(def->numa, i)) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                                _("Shared memory mapping is not supported "
                                  "with this QEMU"));
@@ -7667,15 +7702,18 @@ qemuBuildNumaArgStr(virQEMUDriverConfigPtr cfg,
 
     for (i = 0; i < ncells; i++) {
         VIR_FREE(cpumask);
-        if (!(cpumask = virBitmapFormat(virDomainNumaGetNodeCpumask(def->numa, i))))
-            goto cleanup;
 
-        if (strchr(cpumask, ',') &&
-            !virQEMUCapsGet(qemuCaps, QEMU_CAPS_NUMA)) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("disjoint NUMA cpu ranges are not supported "
-                             "with this QEMU"));
-            goto cleanup;
+        if (!implicit) {
+            if (!(cpumask = virBitmapFormat(virDomainNumaGetNodeCpumask(def->numa, i))))
+                goto cleanup;
+
+            if (strchr(cpumask, ',') &&
+                !virQEMUCapsGet(qemuCaps, QEMU_CAPS_NUMA)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("disjoint NUMA cpu ranges are not supported "
+                                 "with this QEMU"));
+                goto cleanup;
+            }
         }
 
         if (needBackend) {
@@ -7694,7 +7732,8 @@ qemuBuildNumaArgStr(virQEMUDriverConfigPtr cfg,
         }
 
         if (needBackend)
-            virBufferAsprintf(&buf, ",memdev=ram-node%zu", i);
+            virBufferAsprintf(&buf, implicit ?
+                              ",memdev=ram-node" : ",memdev=ram-node%zu", i);
         else
             virBufferAsprintf(&buf, ",mem=%llu",
                               virDomainNumaGetNodeMemorySize(def->numa, i) / 1024);
@@ -7717,7 +7756,7 @@ qemuBuildNumaArgStr(virQEMUDriverConfigPtr cfg,
             break;
     }
 
-    if (numa_distances) {
+    if (!implicit && numa_distances) {
         if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_NUMA_DIST)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("setting NUMA distances is not "
@@ -10303,8 +10342,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (qemuBuildIOThreadCommandLine(cmd, def) < 0)
         goto error;
 
-    if (virDomainNumaGetNodeCount(def->numa) &&
-        qemuBuildNumaArgStr(cfg, def, cmd, priv) < 0)
+    if (qemuBuildNumaArgStr(cfg, def, cmd, priv) < 0)
         goto error;
 
     if (qemuBuildMemoryDeviceCommandLine(cmd, cfg, def, priv) < 0)

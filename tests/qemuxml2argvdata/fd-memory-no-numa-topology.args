@@ -11,6 +11,10 @@ QEMU_AUDIO_DRV=none \
 -m 14336 \
 -mem-prealloc \
 -smp 8,sockets=8,cores=1,threads=1 \
+-object memory-backend-file,id=ram-node,\
+mem-path=/var/lib/libvirt/qemu/ram/libvirt/qemu/-1-instance-00000092/ram-node,\
+share=yes,size=15032385536 \
+-numa node,nodeid=0,memdev=ram-node \
 -uuid 126f2720-6f8e-45ab-a886-ec9277079a67 \
 -display none \
 -no-user-config \
