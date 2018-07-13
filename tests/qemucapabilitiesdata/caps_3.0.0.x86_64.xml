@@ -210,6 +210,7 @@
   <flag name='mch.extended-tseg-mbytes'/>
   <flag name='sev-guest'/>
   <flag name='usb-storage.werror'/>
+  <flag name='memory-backend-memfd'/>
   <version>2012050</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>437827</microcodeVersion>

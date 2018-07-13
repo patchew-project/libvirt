@@ -503,6 +503,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "machine.pseries.cap-hpt-max-page-size",
               "machine.pseries.cap-htm",
               "usb-storage.werror",
+              "memory-backend-memfd",
     );
 
 
@@ -1144,6 +1145,7 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "vhost-vsock-device", QEMU_CAPS_DEVICE_VHOST_VSOCK },
     { "mch", QEMU_CAPS_DEVICE_MCH },
     { "sev-guest", QEMU_CAPS_SEV_GUEST },
+    { "memory-backend-memfd", QEMU_CAPS_OBJECT_MEMORY_MEMFD },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioBalloon[] = {
