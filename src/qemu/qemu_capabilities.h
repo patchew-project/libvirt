@@ -489,6 +489,10 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     QEMU_CAPS_USB_STORAGE_WERROR, /* -device usb-storage,werror=..,rerror=.. */
     QEMU_CAPS_OBJECT_MEMORY_MEMFD, /* -object memory-backend-memfd */
 
+    /* 315 */
+    QEMU_CAPS_DEVICE_VHOST_USER_GPU, /* -device vhost-user-gpu */
+    QEMU_CAPS_DEVICE_VHOST_USER_VGA, /* -device vhost-user-vga */
+
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
 
