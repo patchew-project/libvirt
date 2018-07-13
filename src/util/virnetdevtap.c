@@ -691,6 +691,12 @@ virNetDevTapInterfaceStats(const char *ifname,
     FILE *fp;
     char line[256], *colon;
 
+    if (!ifname) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Interface not found"));
+        return -1;
+    }
+
     fp = fopen("/proc/net/dev", "r");
     if (!fp) {
         virReportSystemError(errno, "%s",
@@ -781,7 +787,7 @@ virNetDevTapInterfaceStats(const char *ifname,
         if (ifa->ifa_addr->sa_family != AF_LINK)
             continue;
 
-        if (STREQ(ifa->ifa_name, ifname)) {
+        if (STREQ_NULLABLE(ifa->ifa_name, ifname)) {
             ifd = (struct if_data *)ifa->ifa_data;
             if (swapped) {
                 stats->tx_bytes = ifd->ifi_ibytes;
