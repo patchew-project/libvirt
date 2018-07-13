@@ -105,7 +105,8 @@ VIR_ENUM_IMPL(qemuVideo, VIR_DOMAIN_VIDEO_TYPE_LAST,
               "qxl",
               "", /* don't support parallels */
               "", /* no need for virtio */
-              "" /* don't support gop */);
+              "", /* don't support gop */
+              "", /* no need for virtio */);
 
 VIR_ENUM_DECL(qemuDeviceVideo)
 
@@ -119,7 +120,8 @@ VIR_ENUM_IMPL(qemuDeviceVideo, VIR_DOMAIN_VIDEO_TYPE_LAST,
               "qxl-vga",
               "", /* don't support parallels */
               "virtio-vga",
-              "" /* don't support gop */);
+              "", /* don't support gop */
+              "vhost-user-vga");
 
 VIR_ENUM_DECL(qemuDeviceVideoSecondary)
 
@@ -133,7 +135,8 @@ VIR_ENUM_IMPL(qemuDeviceVideoSecondary, VIR_DOMAIN_VIDEO_TYPE_LAST,
               "qxl",
               "", /* don't support parallels */
               "virtio-gpu",
-              "" /* don't support gop */);
+              "", /* don't support gop */
+              "vhost-user-gpu");
 
 VIR_ENUM_DECL(qemuSoundCodec)
 

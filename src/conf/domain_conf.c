@@ -590,7 +590,8 @@ VIR_ENUM_IMPL(virDomainVideo, VIR_DOMAIN_VIDEO_TYPE_LAST,
               "qxl",
               "parallels",
               "virtio",
-              "gop")
+              "gop",
+              "vhost-user")
 
 VIR_ENUM_IMPL(virDomainVideoVGAConf, VIR_DOMAIN_VIDEO_VGACONF_LAST,
               "io",
@@ -15022,6 +15023,7 @@ virDomainVideoDefaultRAM(const virDomainDef *def,
     case VIR_DOMAIN_VIDEO_TYPE_VBOX:
     case VIR_DOMAIN_VIDEO_TYPE_PARALLELS:
     case VIR_DOMAIN_VIDEO_TYPE_VIRTIO:
+    case VIR_DOMAIN_VIDEO_TYPE_VHOST_USER:
     case VIR_DOMAIN_VIDEO_TYPE_GOP:
     case VIR_DOMAIN_VIDEO_TYPE_LAST:
     default:

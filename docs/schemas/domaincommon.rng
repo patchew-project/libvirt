@@ -3451,6 +3451,7 @@
                 <value>vbox</value>
                 <value>virtio</value>
                 <value>gop</value>
+                <value>vhost-user</value>
               </choice>
             </attribute>
             <group>
