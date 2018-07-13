@@ -945,6 +945,8 @@ mymain(void)
     DO_TEST("pmu-feature", NONE);
     DO_TEST("pmu-feature-off", NONE);
 
+    DO_TEST("memfd",
+            QEMU_CAPS_OBJECT_MEMORY_MEMFD);
     DO_TEST("hugepages", NONE);
     DO_TEST("hugepages-numa",
             QEMU_CAPS_PIIX_DISABLE_S3, QEMU_CAPS_PIIX_DISABLE_S4,

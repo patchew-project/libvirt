@@ -3137,7 +3137,21 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
     if (!(props = virJSONValueNewObject()))
         return -1;
 
-    if (useHugepage || mem->nvdimmPath || memAccess ||
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_MEMFD) &&
+        memAccess == VIR_DOMAIN_MEMORY_ACCESS_SHARED &&
+        !mem->nvdimmPath &&
+        def->mem.source != VIR_DOMAIN_MEMORY_SOURCE_FILE) {
+
+        backendType = "memory-backend-memfd";
+
+        if (useHugepage &&
+            virJSONValueObjectAdd(props,
+                                  "b:hugetlb", true,
+                                  "U:hugetlbsize", pagesize * 1024,
+                                  NULL) < 0)
+            goto cleanup;
+
+    } else if (useHugepage || mem->nvdimmPath || memAccess ||
         def->mem.source == VIR_DOMAIN_MEMORY_SOURCE_FILE) {
 
         if (useHugepage) {
@@ -7670,8 +7684,8 @@ qemuBuildNumaArgStr(virQEMUDriverConfigPtr cfg,
      * need to check which approach to use */
     for (i = 0; i < ncells; i++) {
         if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_RAM) ||
-            virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_FILE)) {
-
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_FILE) ||
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_MEMORY_MEMFD)) {
 
             if (implicit)
                 rc = qemuBuildMemoryBackendStr(def, cfg, "ram-node", -1,
