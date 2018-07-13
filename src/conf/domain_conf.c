@@ -30163,6 +30163,7 @@ virDomainDiskTranslateSourcePool(virDomainDiskDefPtr def)
 
         break;
 
+    case VIR_STORAGE_POOL_ISCSI_DIRECT:
     case VIR_STORAGE_POOL_ISCSI:
         if (def->startupPolicy) {
             virReportError(VIR_ERR_XML_ERROR, "%s",
