@@ -28270,10 +28270,24 @@ virDomainDefCompatibleDevice(virDomainDefPtr def,
                              virDomainDeviceAction action,
                              bool live)
 {
+    int target_bus = -1;
     virDomainCompatibleDeviceData data = {
         .newInfo = virDomainDeviceGetInfo(dev),
         .oldInfo = NULL,
     };
+
+    if (dev->type == VIR_DOMAIN_DEVICE_DISK) {
+        target_bus = dev->data.disk->bus;
+    } else if (dev->type == VIR_DOMAIN_DEVICE_HOSTDEV &&
+               dev->data.hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
+        virDomainHostdevSubsysPtr subsys = &dev->data.hostdev->source.subsys;
+
+        /* If using 'scsi' or 'scsi_host', then the device can be placed
+         * on the same bus as a <disk>, so account for that */
+        if (subsys->type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI ||
+            subsys->type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST)
+            target_bus = VIR_DOMAIN_DISK_BUS_SCSI;
+    }
 
     if (oldDev)
         data.oldInfo = virDomainDeviceGetInfo(oldDev);
@@ -28285,6 +28299,14 @@ virDomainDefCompatibleDevice(virDomainDefPtr def,
           STRNEQ_NULLABLE(data.newInfo->alias, data.oldInfo->alias)))) {
         virReportError(VIR_ERR_OPERATION_DENIED, "%s",
                        _("changing device alias is not allowed"));
+        return -1;
+    }
+
+    if (action == VIR_DOMAIN_DEVICE_ACTION_ATTACH && !live && data.newInfo &&
+        data.newInfo->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
+        virDomainDefHasDeviceAddress(def, target_bus, data.newInfo)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("a device with the same address already exists"));
         return -1;
     }
 
