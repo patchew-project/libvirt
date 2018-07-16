@@ -3688,13 +3688,31 @@ virDomainDeviceGetInfo(virDomainDeviceDefPtr device)
 }
 
 
+struct virDomainDefHasDeviceAddressIteratorData {
+    int target_bus; /* virDomainDiskBus or -1 */
+    virDomainDeviceInfoPtr info;
+};
+
 static int
 virDomainDefHasDeviceAddressIterator(virDomainDefPtr def ATTRIBUTE_UNUSED,
-                                     virDomainDeviceDefPtr dev ATTRIBUTE_UNUSED,
+                                     virDomainDeviceDefPtr dev,
                                      virDomainDeviceInfoPtr info,
                                      void *opaque)
 {
-    virDomainDeviceInfoPtr needle = opaque;
+    struct virDomainDefHasDeviceAddressIteratorData *data = opaque;
+    int target_bus = data->target_bus;
+    virDomainDeviceInfoPtr needle = data->info;
+
+    /* If the target_bus of the about to be cold plugged device needs
+     * to be checked and the currently to be matched device is a disk,
+     * then compare it's target bus against the new device. If they don't
+     * match, then no need to compare. For disks this ensures addresses
+     * using drive won't erroneously match if one is IDE and another is SCSI.
+     * Likewise, for SCSI hostdev's this ensures the new hostdev doesn't
+     * erroneously match an IDE for the address comparison. */
+    if (target_bus != -1 && dev->type == VIR_DOMAIN_DEVICE_DISK &&
+        dev->data.disk->bus != target_bus)
+        return 0;
 
     /* break iteration if the info was found */
     if (virDomainDeviceInfoAddressIsEqual(info, needle))
@@ -3933,12 +3951,18 @@ virDomainDeviceInfoIterate(virDomainDefPtr def,
 
 bool
 virDomainDefHasDeviceAddress(virDomainDefPtr def,
+                             int target_bus,
                              virDomainDeviceInfoPtr info)
 {
+    struct virDomainDefHasDeviceAddressIteratorData data = {
+        .target_bus = target_bus,
+        .info = info,
+    };
+
     if (virDomainDeviceInfoIterateInternal(def,
                                            virDomainDefHasDeviceAddressIterator,
                                            true,
-                                           info) < 0)
+                                           &data) < 0)
         return true;
 
     return false;
@@ -17508,7 +17532,7 @@ virDomainMemoryInsert(virDomainDefPtr def,
     int id = def->nmems;
 
     if (mem->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
-        virDomainDefHasDeviceAddress(def, &mem->info)) {
+        virDomainDefHasDeviceAddress(def, -1, &mem->info)) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("Domain already contains a device with the same "
                          "address"));

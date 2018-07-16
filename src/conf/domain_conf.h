@@ -2912,8 +2912,9 @@ int virDomainDeviceInfoIterate(virDomainDefPtr def,
                                void *opaque);
 
 bool virDomainDefHasDeviceAddress(virDomainDefPtr def,
+                                  int target_bus,
                                   virDomainDeviceInfoPtr info)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3) ATTRIBUTE_RETURN_CHECK;
 
 void virDomainDefFree(virDomainDefPtr vm);
 
