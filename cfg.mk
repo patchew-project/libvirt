@@ -1240,7 +1240,7 @@ exclude_file_name_regexp--sc_prohibit_setuid = ^src/util/virutil\.c$$
 exclude_file_name_regexp--sc_prohibit_sprintf = \
   ^(cfg\.mk|docs/hacking\.html\.in|.*\.stp|.*\.pl)$$
 
-exclude_file_name_regexp--sc_prohibit_strncpy = ^src/util/virstring\.c$$
+exclude_file_name_regexp--sc_prohibit_strncpy = ^(src/util/virstring\.c|m4/virt-compile-warnings\.m4)$$
 
 exclude_file_name_regexp--sc_prohibit_strtol = ^examples/.*$$
 

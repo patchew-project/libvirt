@@ -243,6 +243,11 @@ AC_DEFUN([LIBVIRT_COMPILE_WARNINGS],[
     wantwarn="$wantwarn -Wno-suggest-attribute=pure"
     wantwarn="$wantwarn -Wno-suggest-attribute=const"
 
+    # MinGW freaks out about our use of strncpy(), but we perform proper
+    # bound checking in our wrappers and prevent the underlying POSIX
+    # functions from being used directly through syntax-check
+    wantwarn="$wantwarn -Wno-stringop-truncation -Wno-stringop-overflow"
+
     if test "$enable_werror" = "yes"
     then
       wantwarn="$wantwarn -Werror"
