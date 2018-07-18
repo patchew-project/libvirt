@@ -80,6 +80,9 @@ typedef virResctrlInfoPerType *virResctrlInfoPerTypePtr;
 typedef struct _virResctrlInfoPerLevel virResctrlInfoPerLevel;
 typedef virResctrlInfoPerLevel *virResctrlInfoPerLevelPtr;
 
+typedef struct _virResctrlInfoMemBW virResctrlInfoMemBW;
+typedef virResctrlInfoMemBW *virResctrlInfoMemBWPtr;
+
 typedef struct _virResctrlAllocPerType virResctrlAllocPerType;
 typedef virResctrlAllocPerType *virResctrlAllocPerTypePtr;
 
@@ -116,11 +119,31 @@ struct _virResctrlInfoPerLevel {
     virResctrlInfoPerTypePtr *types;
 };
 
+/* Information about memory bandwidth allocation */
+struct _virResctrlInfoMemBW {
+    /* minimum memory bandwidth allowed */
+    unsigned int min_bandwidth;
+    /* bandwidth granularity */
+    unsigned int bandwidth_granularity;
+    /* Maximum number of simultaneous allocations */
+    unsigned int max_allocation;
+    /* level number of last level cache */
+    unsigned int last_level_cache;
+    /* max id of last level cache, this is used to track
+     * how many last level cache available in host system,
+     * the number of memory bandwidth allocation controller
+     * is identical with last level cache.
+     */
+    unsigned int max_id;
+};
+
 struct _virResctrlInfo {
     virObject parent;
 
     virResctrlInfoPerLevelPtr *levels;
     size_t nlevels;
+
+    virResctrlInfoMemBWPtr membw_info;
 };
 
 
@@ -146,6 +169,7 @@ virResctrlInfoDispose(void *obj)
         VIR_FREE(level);
     }
 
+    VIR_FREE(resctrl->membw_info);
     VIR_FREE(resctrl->levels);
 }
 
@@ -442,6 +466,65 @@ virResctrlGetCacheInfo(virResctrlInfoPtr resctrl, DIR *dirp)
 
 
 static int
+virResctrlGetMemoryBandwidthInfo(virResctrlInfoPtr resctrl)
+{
+    int ret = -1;
+    int rv = -1;
+    virResctrlInfoMemBWPtr i_membw = NULL;
+
+    /* query memory bandwidth allocation info */
+    if (VIR_ALLOC(i_membw) < 0)
+        goto cleanup;
+    rv = virFileReadValueUint(&i_membw->bandwidth_granularity,
+                              SYSFS_RESCTRL_PATH "/info/MB/bandwidth_gran");
+    if (rv == -2) {
+        /* The file doesn't exist, so it's unusable for us,
+         *  properly mba unsupported */
+        VIR_INFO("The path '" SYSFS_RESCTRL_PATH "/info/MB/bandwidth_gran'"
+                 "does not exist");
+        ret = 0;
+        goto cleanup;
+    } else if (rv < 0) {
+        /* Other failures are fatal, so just quit */
+        goto cleanup;
+    }
+
+    rv = virFileReadValueUint(&i_membw->min_bandwidth,
+                              SYSFS_RESCTRL_PATH "/info/MB/min_bandwidth");
+    if (rv == -2) {
+        /* If the previous file exists, so should this one.  Hence -2 is
+         * fatal in this case (errors out in next condition) - the
+         * kernel interface might've changed too much or something else is
+         * wrong. */
+
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Cannot get min bandwidth from resctrl memory info"));
+    }
+    if (rv < 0)
+        goto cleanup;
+
+    rv = virFileReadValueUint(&i_membw->max_allocation,
+                              SYSFS_RESCTRL_PATH "/info/MB/num_closids");
+    if (rv == -2) {
+        /* If the previous file exists, so should this one.  Hence -2 is
+         * fatal in this case as well (errors out in next condition) - the
+         * kernel interface might've changed too much or something else is
+         * wrong. */
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Cannot get max allocation from resctrl memory info"));
+    }
+    if (rv < 0)
+        goto cleanup;
+
+    VIR_STEAL_PTR(resctrl->membw_info, i_membw);
+    ret = 0;
+ cleanup:
+    VIR_FREE(i_membw);
+    return ret;
+}
+
+
+static int
 virResctrlGetInfo(virResctrlInfoPtr resctrl)
 {
     DIR *dirp = NULL;
@@ -449,6 +532,10 @@ virResctrlGetInfo(virResctrlInfoPtr resctrl)
 
     ret = virDirOpenIfExists(&dirp, SYSFS_RESCTRL_PATH "/info");
     if (ret <= 0)
+        goto cleanup;
+
+    ret = virResctrlGetMemoryBandwidthInfo(resctrl);
+    if (ret < 0)
         goto cleanup;
 
     ret = virResctrlGetCacheInfo(resctrl, dirp);
@@ -492,6 +579,9 @@ virResctrlInfoIsEmpty(virResctrlInfoPtr resctrl)
     if (!resctrl)
         return true;
 
+    if (resctrl->membw_info)
+        return false;
+
     for (i = 0; i < resctrl->nlevels; i++) {
         virResctrlInfoPerLevelPtr i_level = resctrl->levels[i];
 
@@ -517,11 +607,25 @@ virResctrlInfoGetCache(virResctrlInfoPtr resctrl,
 {
     virResctrlInfoPerLevelPtr i_level = NULL;
     virResctrlInfoPerTypePtr i_type = NULL;
+    virResctrlInfoMemBWPtr membw_info = NULL;
     size_t i = 0;
     int ret = -1;
 
     if (virResctrlInfoIsEmpty(resctrl))
         return 0;
+
+    /* Let's take the opportunity to update the number of last level
+     * cache. This number of memory bandwidth controller is same with
+     * last level cache */
+    if (resctrl->membw_info) {
+        membw_info = resctrl->membw_info;
+        if (level > membw_info->last_level_cache) {
+            membw_info->last_level_cache = level;
+            membw_info->max_id = 0;
+        } else if (membw_info->last_level_cache == level) {
+            membw_info->max_id++;
+        }
+    }
 
     if (level >= resctrl->nlevels)
         return 0;
