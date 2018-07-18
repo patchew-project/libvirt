@@ -18926,6 +18926,115 @@ virDomainDefParseBootOptions(virDomainDefPtr def,
 
 
 static int
+virDomainRestuneParseVcpus(virDomainDefPtr def,
+                           xmlNodePtr node,
+                           virBitmapPtr *vcpus)
+{
+    char *vcpus_str = NULL;
+    int ret = -1;
+
+    vcpus_str = virXMLPropString(node, "vcpus");
+    if (!vcpus_str) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("Missing cachetune attribute 'vcpus'"));
+        goto cleanup;
+    }
+    if (virBitmapParse(vcpus_str, vcpus, VIR_DOMAIN_CPUMASK_LEN) < 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid cachetune attribute 'vcpus' value '%s'"),
+                       vcpus_str);
+        goto cleanup;
+    }
+
+    /* We need to limit the bitmap to number of vCPUs.  If there's nothing left,
+     * then we can just clean up and return 0 immediately */
+    virBitmapShrink(*vcpus, def->maxvcpus);
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(vcpus_str);
+    return ret;
+}
+
+
+static int
+virDomainFindResctrlAlloc(virDomainDefPtr def,
+                          virBitmapPtr vcpus,
+                          virResctrlAllocPtr *alloc)
+{
+    ssize_t i = 0;
+
+    for (i = 0; i < def->nrestunes; i++) {
+        /* vcpus group has been created, directly use the existing one.
+         * Just updating memory allocation information of that group
+         */
+        if (virBitmapEqual(def->restunes[i]->vcpus, vcpus)) {
+            *alloc = def->restunes[i]->alloc;
+            break;
+        }
+        if (virBitmapOverlaps(def->restunes[i]->vcpus, vcpus)) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("Overlapping vcpus in restunes"));
+            return -1;
+        }
+    }
+    return 0;
+}
+
+
+static int
+virDomainUpdateRestune(virDomainDefPtr def,
+                       xmlNodePtr node,
+                       virResctrlAllocPtr alloc,
+                       virBitmapPtr vcpus,
+                       unsigned int flags)
+{
+    char *vcpus_str = NULL;
+    char *alloc_id = NULL;
+    virDomainRestuneDefPtr tmp_restune = NULL;
+    int ret = -1;
+
+    if (VIR_ALLOC(tmp_restune) < 0)
+        goto cleanup;
+
+    /* We need to format it back because we need to be consistent in the naming
+     * even when users specify some "sub-optimal" string there. */
+    vcpus_str = virBitmapFormat(vcpus);
+    if (!vcpus_str)
+        goto cleanup;
+
+    if (!(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE))
+        alloc_id = virXMLPropString(node, "id");
+
+    if (!alloc_id) {
+        /* The number of allocations is limited and the directory structure is flat,
+         * not hierarchical, so we need to have all same allocations in one
+         * directory, so it's nice to have it named appropriately.  For now it's
+         * 'vcpus_...' but it's designed in order for it to be changeable in the
+         * future (it's part of the status XML). */
+        if (virAsprintf(&alloc_id, "vcpus_%s", vcpus_str) < 0)
+            goto cleanup;
+    }
+
+    if (virResctrlAllocSetID(alloc, alloc_id) < 0)
+        goto cleanup;
+
+    tmp_restune->vcpus = vcpus;
+    tmp_restune->alloc = alloc;
+
+    if (VIR_APPEND_ELEMENT(def->restunes, def->nrestunes, tmp_restune) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    virDomainRestuneDefFree(tmp_restune);
+    VIR_FREE(alloc_id);
+    VIR_FREE(vcpus_str);
+    return ret;
+}
+
+
+static int
 virDomainCachetuneDefParseCache(xmlXPathContextPtr ctxt,
                                 xmlNodePtr node,
                                 virResctrlAllocPtr alloc)
@@ -19008,39 +19117,16 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
     xmlNodePtr oldnode = ctxt->node;
     xmlNodePtr *nodes = NULL;
     virBitmapPtr vcpus = NULL;
-    virResctrlAllocPtr alloc = virResctrlAllocNew();
-    virDomainRestuneDefPtr tmp_restune = NULL;
-    char *tmp = NULL;
-    char *vcpus_str = NULL;
-    char *alloc_id = NULL;
+    virResctrlAllocPtr alloc = NULL;
     ssize_t i = 0;
     int n;
     int ret = -1;
+    bool new_alloc = false;
 
     ctxt->node = node;
 
-    if (!alloc)
+    if (virDomainRestuneParseVcpus(def, node, &vcpus) < 0)
         goto cleanup;
-
-    if (VIR_ALLOC(tmp_restune) < 0)
-        goto cleanup;
-
-    vcpus_str = virXMLPropString(node, "vcpus");
-    if (!vcpus_str) {
-        virReportError(VIR_ERR_XML_ERROR, "%s",
-                       _("Missing cachetune attribute 'vcpus'"));
-        goto cleanup;
-    }
-    if (virBitmapParse(vcpus_str, &vcpus, VIR_DOMAIN_CPUMASK_LEN) < 0) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("Invalid cachetune attribute 'vcpus' value '%s'"),
-                       vcpus_str);
-        goto cleanup;
-    }
-
-    /* We need to limit the bitmap to number of vCPUs.  If there's nothing left,
-     * then we can just clean up and return 0 immediately */
-    virBitmapShrink(vcpus, def->maxvcpus);
 
     if (virBitmapIsAllClear(vcpus)) {
         ret = 0;
@@ -19050,6 +19136,21 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
     if ((n = virXPathNodeSet("./cache", ctxt, &nodes)) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Cannot extract cache nodes under cachetune"));
+        goto cleanup;
+    }
+
+    if (virDomainFindResctrlAlloc(def, vcpus, &alloc) < 0)
+        goto cleanup;
+
+    if (!alloc) {
+        alloc = virResctrlAllocNew();
+        if (!alloc)
+            goto cleanup;
+        new_alloc = true;
+    } else {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("Identical vcpus in cachetunes found"));
+
         goto cleanup;
     }
 
@@ -19063,53 +19164,19 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
         goto cleanup;
     }
 
-    for (i = 0; i < def->nrestunes; i++) {
-        if (virBitmapOverlaps(def->restunes[i]->vcpus, vcpus)) {
-            virReportError(VIR_ERR_XML_ERROR, "%s",
-                           _("Overlapping vcpus in cachetunes"));
+    if (new_alloc) {
+        if (virDomainUpdateRestune(def, node, alloc, vcpus, flags) < 0)
             goto cleanup;
-        }
+        vcpus = NULL;
+        alloc = NULL;
     }
-
-    /* We need to format it back because we need to be consistent in the naming
-     * even when users specify some "sub-optimal" string there. */
-    VIR_FREE(vcpus_str);
-    vcpus_str = virBitmapFormat(vcpus);
-    if (!vcpus_str)
-        goto cleanup;
-
-    if (!(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE))
-        alloc_id = virXMLPropString(node, "id");
-
-    if (!alloc_id) {
-        /* The number of allocations is limited and the directory structure is flat,
-         * not hierarchical, so we need to have all same allocations in one
-         * directory, so it's nice to have it named appropriately.  For now it's
-         * 'vcpus_...' but it's designed in order for it to be changeable in the
-         * future (it's part of the status XML). */
-        if (virAsprintf(&alloc_id, "vcpus_%s", vcpus_str) < 0)
-            goto cleanup;
-    }
-
-    if (virResctrlAllocSetID(alloc, alloc_id) < 0)
-        goto cleanup;
-
-    VIR_STEAL_PTR(tmp_restune->vcpus, vcpus);
-    VIR_STEAL_PTR(tmp_restune->alloc, alloc);
-
-    if (VIR_APPEND_ELEMENT(def->restunes, def->nrestunes, tmp_restune) < 0)
-        goto cleanup;
 
     ret = 0;
  cleanup:
     ctxt->node = oldnode;
-    virDomainRestuneDefFree(tmp_restune);
     virObjectUnref(alloc);
     virBitmapFree(vcpus);
-    VIR_FREE(alloc_id);
-    VIR_FREE(vcpus_str);
     VIR_FREE(nodes);
-    VIR_FREE(tmp);
     return ret;
 }
 
