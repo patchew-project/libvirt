@@ -73,6 +73,10 @@ typedef int virResctrlAllocForeachCacheCallback(unsigned int level,
                                                 unsigned long long size,
                                                 void *opaque);
 
+typedef int virResctrlAllocForeachMemoryCallback(unsigned int id,
+                                                 unsigned int size,
+                                                 void *opaque);
+
 virResctrlAllocPtr
 virResctrlAllocNew(void);
 
@@ -85,6 +89,15 @@ virResctrlAllocSetCacheSize(virResctrlAllocPtr alloc,
                             virCacheType type,
                             unsigned int cache,
                             unsigned long long size);
+int
+virResctrlAllocForeachMemory(virResctrlAllocPtr resctrl,
+                             virResctrlAllocForeachMemoryCallback cb,
+                             void *opaque);
+
+int
+virResctrlSetMemoryBandwidth(virResctrlAllocPtr alloc,
+                             unsigned int id,
+                             unsigned int memory_bandwidth);
 
 int
 virResctrlAllocForeachCache(virResctrlAllocPtr alloc,
