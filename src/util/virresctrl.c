@@ -848,16 +848,12 @@ virResctrlAllocGetID(virResctrlAllocPtr alloc)
 }
 
 
-char *
-virResctrlAllocFormat(virResctrlAllocPtr alloc)
+static int
+virResctrlAllocFormatCache(virResctrlAllocPtr alloc, virBufferPtr buf)
 {
-    virBuffer buf = VIR_BUFFER_INITIALIZER;
     unsigned int level = 0;
     unsigned int type = 0;
     unsigned int cache = 0;
-
-    if (!alloc)
-        return NULL;
 
     for (level = 0; level < alloc->nlevels; level++) {
         virResctrlAllocPerLevelPtr a_level = alloc->levels[level];
@@ -871,7 +867,7 @@ virResctrlAllocFormat(virResctrlAllocPtr alloc)
             if (!a_type)
                 continue;
 
-            virBufferAsprintf(&buf, "L%u%s:", level, virResctrlTypeToString(type));
+            virBufferAsprintf(buf, "L%u%s:", level, virResctrlTypeToString(type));
 
             for (cache = 0; cache < a_type->nmasks; cache++) {
                 virBitmapPtr mask = a_type->masks[cache];
@@ -881,21 +877,38 @@ virResctrlAllocFormat(virResctrlAllocPtr alloc)
                     continue;
 
                 mask_str = virBitmapToString(mask, false, true);
-                if (!mask_str) {
-                    virBufferFreeAndReset(&buf);
-                    return NULL;
-                }
+                if (!mask_str)
+                    return -1;
 
-                virBufferAsprintf(&buf, "%u=%s;", cache, mask_str);
+                virBufferAsprintf(buf, "%u=%s;", cache, mask_str);
                 VIR_FREE(mask_str);
             }
 
-            virBufferTrim(&buf, ";", 1);
-            virBufferAddChar(&buf, '\n');
+            virBufferTrim(buf, ";", 1);
+            virBufferAddChar(buf, '\n');
         }
     }
 
-    virBufferCheckError(&buf);
+    if (virBufferCheckError(buf) < 0)
+        return -1;
+    else
+        return 0;
+}
+
+
+char *
+virResctrlAllocFormat(virResctrlAllocPtr alloc)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    if (!alloc)
+        return NULL;
+
+    if (virResctrlAllocFormatCache(alloc, &buf) < 0) {
+        virBufferFreeAndReset(&buf);
+        return NULL;
+    }
+
     return virBufferContentAndReset(&buf);
 }
 
