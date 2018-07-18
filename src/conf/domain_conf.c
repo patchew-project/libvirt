@@ -2966,14 +2966,14 @@ virDomainLoaderDefFree(virDomainLoaderDefPtr loader)
 
 
 static void
-virDomainCachetuneDefFree(virDomainCachetuneDefPtr cachetune)
+virDomainRestuneDefFree(virDomainRestuneDefPtr restune)
 {
-    if (!cachetune)
+    if (!restune)
         return;
 
-    virObjectUnref(cachetune->alloc);
-    virBitmapFree(cachetune->vcpus);
-    VIR_FREE(cachetune);
+    virObjectUnref(restune->alloc);
+    virBitmapFree(restune->vcpus);
+    VIR_FREE(restune);
 }
 
 
@@ -3163,9 +3163,9 @@ void virDomainDefFree(virDomainDefPtr def)
         virDomainShmemDefFree(def->shmems[i]);
     VIR_FREE(def->shmems);
 
-    for (i = 0; i < def->ncachetunes; i++)
-        virDomainCachetuneDefFree(def->cachetunes[i]);
-    VIR_FREE(def->cachetunes);
+    for (i = 0; i < def->nrestunes; i++)
+        virDomainRestuneDefFree(def->restunes[i]);
+    VIR_FREE(def->restunes);
 
     VIR_FREE(def->keywrap);
 
@@ -19009,7 +19009,7 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
     xmlNodePtr *nodes = NULL;
     virBitmapPtr vcpus = NULL;
     virResctrlAllocPtr alloc = virResctrlAllocNew();
-    virDomainCachetuneDefPtr tmp_cachetune = NULL;
+    virDomainRestuneDefPtr tmp_restune = NULL;
     char *tmp = NULL;
     char *vcpus_str = NULL;
     char *alloc_id = NULL;
@@ -19022,7 +19022,7 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
     if (!alloc)
         goto cleanup;
 
-    if (VIR_ALLOC(tmp_cachetune) < 0)
+    if (VIR_ALLOC(tmp_restune) < 0)
         goto cleanup;
 
     vcpus_str = virXMLPropString(node, "vcpus");
@@ -19063,8 +19063,8 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
         goto cleanup;
     }
 
-    for (i = 0; i < def->ncachetunes; i++) {
-        if (virBitmapOverlaps(def->cachetunes[i]->vcpus, vcpus)) {
+    for (i = 0; i < def->nrestunes; i++) {
+        if (virBitmapOverlaps(def->restunes[i]->vcpus, vcpus)) {
             virReportError(VIR_ERR_XML_ERROR, "%s",
                            _("Overlapping vcpus in cachetunes"));
             goto cleanup;
@@ -19094,16 +19094,16 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
     if (virResctrlAllocSetID(alloc, alloc_id) < 0)
         goto cleanup;
 
-    VIR_STEAL_PTR(tmp_cachetune->vcpus, vcpus);
-    VIR_STEAL_PTR(tmp_cachetune->alloc, alloc);
+    VIR_STEAL_PTR(tmp_restune->vcpus, vcpus);
+    VIR_STEAL_PTR(tmp_restune->alloc, alloc);
 
-    if (VIR_APPEND_ELEMENT(def->cachetunes, def->ncachetunes, tmp_cachetune) < 0)
+    if (VIR_APPEND_ELEMENT(def->restunes, def->nrestunes, tmp_restune) < 0)
         goto cleanup;
 
     ret = 0;
  cleanup:
     ctxt->node = oldnode;
-    virDomainCachetuneDefFree(tmp_cachetune);
+    virDomainRestuneDefFree(tmp_restune);
     virObjectUnref(alloc);
     virBitmapFree(vcpus);
     VIR_FREE(alloc_id);
@@ -26961,7 +26961,7 @@ virDomainCachetuneDefFormatHelper(unsigned int level,
 
 static int
 virDomainCachetuneDefFormat(virBufferPtr buf,
-                            virDomainCachetuneDefPtr cachetune,
+                            virDomainRestuneDefPtr restune,
                             unsigned int flags)
 {
     virBuffer childrenBuf = VIR_BUFFER_INITIALIZER;
@@ -26969,7 +26969,7 @@ virDomainCachetuneDefFormat(virBufferPtr buf,
     int ret = -1;
 
     virBufferSetChildIndent(&childrenBuf, buf);
-    virResctrlAllocForeachCache(cachetune->alloc,
+    virResctrlAllocForeachCache(restune->alloc,
                                 virDomainCachetuneDefFormatHelper,
                                 &childrenBuf);
 
@@ -26982,14 +26982,14 @@ virDomainCachetuneDefFormat(virBufferPtr buf,
         goto cleanup;
     }
 
-    vcpus = virBitmapFormat(cachetune->vcpus);
+    vcpus = virBitmapFormat(restune->vcpus);
     if (!vcpus)
         goto cleanup;
 
     virBufferAsprintf(buf, "<cachetune vcpus='%s'", vcpus);
 
     if (!(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE)) {
-        const char *alloc_id = virResctrlAllocGetID(cachetune->alloc);
+        const char *alloc_id = virResctrlAllocGetID(restune->alloc);
         if (!alloc_id)
             goto cleanup;
 
@@ -27110,8 +27110,8 @@ virDomainCputuneDefFormat(virBufferPtr buf,
                                  def->iothreadids[i]->iothread_id);
     }
 
-    for (i = 0; i < def->ncachetunes; i++)
-        virDomainCachetuneDefFormat(&childrenBuf, def->cachetunes[i], flags);
+    for (i = 0; i < def->nrestunes; i++)
+        virDomainCachetuneDefFormat(&childrenBuf, def->restunes[i], flags);
 
     if (virBufferCheckError(&childrenBuf) < 0)
         return -1;
