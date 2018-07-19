@@ -20917,6 +20917,8 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
     char *old_dom_name = NULL;
     char *new_dom_cfg_file = NULL;
     char *old_dom_cfg_file = NULL;
+    char *new_dom_autostart_link = NULL;
+    char *old_dom_autostart_link = NULL;
 
     virCheckFlags(0, ret);
 
@@ -20937,6 +20939,14 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
                                                  vm->def->name)))
         goto cleanup;
 
+    if (vm->autostart) {
+        if (!(new_dom_autostart_link = virDomainConfigFile(cfg->autostartDir,
+                                                          new_dom_name)) ||
+            !(old_dom_autostart_link = virDomainConfigFile(cfg->autostartDir,
+                                                          vm->def->name)))
+            goto cleanup;
+    }
+
     event_old = virDomainEventLifecycleNewFromObj(vm,
                                             VIR_DOMAIN_EVENT_UNDEFINED,
                                             VIR_DOMAIN_EVENT_UNDEFINED_RENAMED);
@@ -20948,6 +20958,23 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
 
     if (virDomainSaveConfig(cfg->configDir, driver->caps, vm->def) < 0)
         goto rollback;
+
+    if (vm->autostart) {
+        if (virFileIsLink(old_dom_autostart_link) &&
+            unlink(old_dom_autostart_link) < 0) {
+            virReportSystemError(errno,
+                                 _("Failed to delete symlink '%s'"),
+                                 old_dom_autostart_link);
+            goto rollback;
+        }
+
+        if (symlink(new_dom_cfg_file, new_dom_autostart_link) < 0) {
+            virReportSystemError(errno,
+                                 _("Failed to create symlink '%s to '%s'"),
+                                 new_dom_autostart_link, new_dom_cfg_file);
+            goto rollback;
+        }
+    }
 
     if (virFileExists(old_dom_cfg_file) &&
         unlink(old_dom_cfg_file) < 0) {
@@ -20963,6 +20990,8 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
     ret = 0;
 
  cleanup:
+    VIR_FREE(old_dom_autostart_link);
+    VIR_FREE(new_dom_autostart_link);
     VIR_FREE(old_dom_cfg_file);
     VIR_FREE(new_dom_cfg_file);
     VIR_FREE(old_dom_name);
@@ -20981,6 +21010,11 @@ qemuDomainRenameCallback(virDomainObjPtr vm,
 
     if (virFileExists(new_dom_cfg_file))
         unlink(new_dom_cfg_file);
+
+    if (vm->autostart) {
+        if (virFileExists(new_dom_autostart_link))
+            unlink(new_dom_autostart_link);
+    }
 
     goto cleanup;
 }
