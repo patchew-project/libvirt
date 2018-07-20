@@ -2088,19 +2088,22 @@ networkRefreshDaemonsHelper(virNetworkObjPtr obj,
 
     virObjectLock(obj);
     def = virNetworkObjGetDef(obj);
-    if (virNetworkObjIsActive(obj) &&
-        ((def->forward.type == VIR_NETWORK_FORWARD_NONE) ||
-         (def->forward.type == VIR_NETWORK_FORWARD_NAT) ||
-         (def->forward.type == VIR_NETWORK_FORWARD_ROUTE) ||
-         (def->forward.type == VIR_NETWORK_FORWARD_OPEN))) {
-        /* Only the three L3 network types that are configured by
-         * libvirt will have a dnsmasq or radvd daemon associated
-         * with them.  Here we send a SIGHUP to an existing
-         * dnsmasq and/or radvd, or restart them if they've
-         * disappeared.
-         */
-        networkRefreshDhcpDaemon(driver, obj);
-        networkRefreshRadvd(driver, obj);
+    if (virNetworkObjIsActive(obj)) {
+        switch (def->forward.type) {
+        case VIR_NETWORK_FORWARD_NONE:
+        case VIR_NETWORK_FORWARD_NAT:
+        case VIR_NETWORK_FORWARD_ROUTE:
+        case VIR_NETWORK_FORWARD_OPEN:
+            /* Only the three L3 network types that are configured by
+             * libvirt will have a dnsmasq or radvd daemon associated
+             * with them.  Here we send a SIGHUP to an existing
+             * dnsmasq and/or radvd, or restart them if they've
+             * disappeared.
+             */
+            networkRefreshDhcpDaemon(driver, obj);
+            networkRefreshRadvd(driver, obj);
+            break;
+        }
     }
     virObjectUnlock(obj);
     return 0;
@@ -2128,18 +2131,21 @@ networkReloadFirewallRulesHelper(virNetworkObjPtr obj,
 
     virObjectLock(obj);
     def = virNetworkObjGetDef(obj);
-    if (virNetworkObjIsActive(obj) &&
-        ((def->forward.type == VIR_NETWORK_FORWARD_NONE) ||
-         (def->forward.type == VIR_NETWORK_FORWARD_NAT) ||
-         (def->forward.type == VIR_NETWORK_FORWARD_ROUTE))) {
-        /* Only three of the L3 network types that are configured by
-         * libvirt need to have iptables rules reloaded. The 4th L3
-         * network type, forward='open', doesn't need this because it
-         * has no iptables rules.
-         */
-        networkRemoveFirewallRules(def);
-        if (networkAddFirewallRules(def) < 0) {
-            /* failed to add but already logged */
+    if (virNetworkObjIsActive(obj)) {
+        switch (def->forward.type) {
+        case VIR_NETWORK_FORWARD_NONE:
+        case VIR_NETWORK_FORWARD_NAT:
+        case VIR_NETWORK_FORWARD_ROUTE:
+            /* Only three of the L3 network types that are configured by
+             * libvirt need to have iptables rules reloaded. The 4th L3
+             * network type, forward='open', doesn't need this because it
+             * has no iptables rules.
+             */
+            networkRemoveFirewallRules(def);
+            if (networkAddFirewallRules(def) < 0) {
+                /* failed to add but already logged */
+            }
+            break;
         }
     }
     virObjectUnlock(obj);
@@ -3273,11 +3279,11 @@ networkValidate(virNetworkDriverStatePtr driver,
     /* Only the three L3 network types that are configured by libvirt
      * need to have a bridge device name / mac address provided
      */
-    if (def->forward.type == VIR_NETWORK_FORWARD_NONE ||
-        def->forward.type == VIR_NETWORK_FORWARD_NAT ||
-        def->forward.type == VIR_NETWORK_FORWARD_ROUTE ||
-        def->forward.type == VIR_NETWORK_FORWARD_OPEN) {
-
+    switch (def->forward.type) {
+    case VIR_NETWORK_FORWARD_NONE:
+    case VIR_NETWORK_FORWARD_NAT:
+    case VIR_NETWORK_FORWARD_ROUTE:
+    case VIR_NETWORK_FORWARD_OPEN:
         /* if no bridge name was given in the config, find a name
          * unused by any other libvirt networks and assign it.
          */
@@ -3285,7 +3291,9 @@ networkValidate(virNetworkDriverStatePtr driver,
             return -1;
 
         virNetworkSetBridgeMacAddr(def);
-    } else {
+        break;
+
+    default:
         /* They are also the only types that currently support setting
          * a MAC or IP address for the host-side device (bridge), DNS
          * configuration, or network-wide bandwidth limits.
@@ -3331,6 +3339,7 @@ networkValidate(virNetworkDriverStatePtr driver,
             return -1;
         }
         bandwidthAllowed = false;
+        break;
     }
 
     /* we support configs with a single PF defined:
@@ -3755,9 +3764,10 @@ networkUpdate(virNetworkPtr net,
         /* Take care of anything that must be done before updating the
          * live NetworkDef.
          */
-        if (def->forward.type == VIR_NETWORK_FORWARD_NONE ||
-            def->forward.type == VIR_NETWORK_FORWARD_NAT ||
-            def->forward.type == VIR_NETWORK_FORWARD_ROUTE) {
+        switch (def->forward.type) {
+        case VIR_NETWORK_FORWARD_NONE:
+        case VIR_NETWORK_FORWARD_NAT:
+        case VIR_NETWORK_FORWARD_ROUTE:
             switch (section) {
             case VIR_NETWORK_SECTION_FORWARD:
             case VIR_NETWORK_SECTION_FORWARD_INTERFACE:
@@ -3768,14 +3778,13 @@ networkUpdate(virNetworkPtr net,
                  * old rules (and remember to load new ones after the
                  * update).
                  */
-                if (def->forward.type != VIR_NETWORK_FORWARD_OPEN) {
-                    networkRemoveFirewallRules(def);
-                    needFirewallRefresh = true;
-                }
+                networkRemoveFirewallRules(def);
+                needFirewallRefresh = true;
                 break;
             default:
                 break;
             }
+            break;
         }
     }
 
@@ -4440,10 +4449,11 @@ networkAllocateActualDevice(virDomainDefPtr dom,
        iface->data.network.actual->trustGuestRxFilters
           = netdef->trustGuestRxFilters;
 
-    if ((netdef->forward.type == VIR_NETWORK_FORWARD_NONE) ||
-        (netdef->forward.type == VIR_NETWORK_FORWARD_NAT) ||
-        (netdef->forward.type == VIR_NETWORK_FORWARD_ROUTE) ||
-        (netdef->forward.type == VIR_NETWORK_FORWARD_OPEN)) {
+    switch (netdef->forward.type) {
+    case VIR_NETWORK_FORWARD_NONE:
+    case VIR_NETWORK_FORWARD_NAT:
+    case VIR_NETWORK_FORWARD_ROUTE:
+    case VIR_NETWORK_FORWARD_OPEN:
         /* for these forward types, the actual net type really *is*
          * NETWORK; we just keep the info from the portgroup in
          * iface->data.network.actual
@@ -4463,46 +4473,9 @@ networkAllocateActualDevice(virDomainDefPtr dom,
 
         if (networkPlugBandwidth(obj, iface) < 0)
             goto error;
+        break;
 
-    } else if ((netdef->forward.type == VIR_NETWORK_FORWARD_BRIDGE) &&
-               netdef->bridge) {
-
-        /* <forward type='bridge'/> <bridge name='xxx'/>
-         * is VIR_DOMAIN_NET_TYPE_BRIDGE
-         */
-
-        iface->data.network.actual->type = actualType = VIR_DOMAIN_NET_TYPE_BRIDGE;
-        if (VIR_STRDUP(iface->data.network.actual->data.bridge.brname,
-                       netdef->bridge) < 0)
-            goto error;
-        iface->data.network.actual->data.bridge.macTableManager
-           = netdef->macTableManager;
-
-        /* merge virtualports from interface, network, and portgroup to
-         * arrive at actual virtualport to use
-         */
-        if (virNetDevVPortProfileMerge3(&iface->data.network.actual->virtPortProfile,
-                                        iface->virtPortProfile,
-                                        netdef->virtPortProfile,
-                                        portgroup
-                                        ? portgroup->virtPortProfile : NULL) < 0) {
-            goto error;
-        }
-        virtport = iface->data.network.actual->virtPortProfile;
-        if (virtport) {
-            /* only type='openvswitch' is allowed for bridges */
-            if (virtport->virtPortType != VIR_NETDEV_VPORT_PROFILE_OPENVSWITCH) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                               _("<virtualport type='%s'> not supported for network "
-                                 "'%s' which uses a bridge device"),
-                               virNetDevVPortTypeToString(virtport->virtPortType),
-                               netdef->name);
-                goto error;
-            }
-        }
-
-    } else if (netdef->forward.type == VIR_NETWORK_FORWARD_HOSTDEV) {
-
+    case VIR_NETWORK_FORWARD_HOSTDEV: {
         virDomainHostdevSubsysPCIBackendType backend;
 
         iface->data.network.actual->type = actualType = VIR_DOMAIN_NET_TYPE_HOSTDEV;
@@ -4575,12 +4548,55 @@ networkAllocateActualDevice(virDomainDefPtr dom,
                 goto error;
             }
         }
+        break;
+    }
 
-    } else if ((netdef->forward.type == VIR_NETWORK_FORWARD_BRIDGE) ||
-               (netdef->forward.type == VIR_NETWORK_FORWARD_PRIVATE) ||
-               (netdef->forward.type == VIR_NETWORK_FORWARD_VEPA) ||
-               (netdef->forward.type == VIR_NETWORK_FORWARD_PASSTHROUGH)) {
+    case VIR_NETWORK_FORWARD_BRIDGE:
+        if (netdef->bridge) {
+            /* <forward type='bridge'/> <bridge name='xxx'/>
+             * is VIR_DOMAIN_NET_TYPE_BRIDGE
+             */
 
+            iface->data.network.actual->type = actualType = VIR_DOMAIN_NET_TYPE_BRIDGE;
+            if (VIR_STRDUP(iface->data.network.actual->data.bridge.brname,
+                           netdef->bridge) < 0)
+                goto error;
+            iface->data.network.actual->data.bridge.macTableManager
+               = netdef->macTableManager;
+
+            /* merge virtualports from interface, network, and portgroup to
+             * arrive at actual virtualport to use
+             */
+            if (virNetDevVPortProfileMerge3(&iface->data.network.actual->virtPortProfile,
+                                            iface->virtPortProfile,
+                                            netdef->virtPortProfile,
+                                            portgroup
+                                            ? portgroup->virtPortProfile : NULL) < 0) {
+                goto error;
+            }
+            virtport = iface->data.network.actual->virtPortProfile;
+            if (virtport) {
+                /* only type='openvswitch' is allowed for bridges */
+                if (virtport->virtPortType != VIR_NETDEV_VPORT_PROFILE_OPENVSWITCH) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("<virtualport type='%s'> not supported for network "
+                                     "'%s' which uses a bridge device"),
+                                   virNetDevVPortTypeToString(virtport->virtPortType),
+                                   netdef->name);
+                    goto error;
+                }
+            }
+            break;
+        }
+
+        /* intentionally fall through to the direct case for
+         * VIR_NETWORK_FORWARD_BRIDGE with no bridge device defined
+         */
+        ATTRIBUTE_FALLTHROUGH;
+
+    case VIR_NETWORK_FORWARD_PRIVATE:
+    case VIR_NETWORK_FORWARD_VEPA:
+    case VIR_NETWORK_FORWARD_PASSTHROUGH:
         /* <forward type='bridge|private|vepa|passthrough'> are all
          * VIR_DOMAIN_NET_TYPE_DIRECT.
          */
@@ -4680,6 +4696,7 @@ networkAllocateActualDevice(virDomainDefPtr dom,
                            dev->device.dev) < 0)
                 goto error;
         }
+        break;
     }
 
     if (virNetworkObjMacMgrAdd(obj, driver->dnsmasqStateDir,
@@ -5037,13 +5054,15 @@ networkReleaseActualDevice(virDomainDefPtr dom,
     }
     netdef = virNetworkObjGetDef(obj);
 
-    if (iface->data.network.actual &&
-        (netdef->forward.type == VIR_NETWORK_FORWARD_NONE ||
-         netdef->forward.type == VIR_NETWORK_FORWARD_NAT ||
-         netdef->forward.type == VIR_NETWORK_FORWARD_ROUTE ||
-         netdef->forward.type == VIR_NETWORK_FORWARD_OPEN) &&
-        networkUnplugBandwidth(obj, iface) < 0)
-        goto error;
+    switch (netdef->forward.type) {
+    case VIR_NETWORK_FORWARD_NONE:
+    case VIR_NETWORK_FORWARD_NAT:
+    case VIR_NETWORK_FORWARD_ROUTE:
+    case VIR_NETWORK_FORWARD_OPEN:
+        if (iface->data.network.actual && networkUnplugBandwidth(obj, iface) < 0)
+            goto error;
+        break;
+    }
 
     if ((!iface->data.network.actual) ||
         ((actualType != VIR_DOMAIN_NET_TYPE_DIRECT) &&

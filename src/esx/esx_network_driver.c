@@ -326,8 +326,12 @@ esxNetworkDefineXML(virConnectPtr conn, const char *xml)
     }
 
     /* FIXME: Add support for NAT */
-    if (def->forward.type != VIR_NETWORK_FORWARD_NONE &&
-        def->forward.type != VIR_NETWORK_FORWARD_BRIDGE) {
+    switch (def->forward.type) {
+    case VIR_NETWORK_FORWARD_NONE:
+    case VIR_NETWORK_FORWARD_BRIDGE:
+        break;
+
+    default:
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Unsupported forward mode '%s'"),
                        virNetworkForwardTypeToString(def->forward.type));

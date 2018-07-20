@@ -1959,17 +1959,22 @@ virNetworkDefParseXML(xmlXPathContextPtr ctxt)
 
     VIR_FREE(stp);
 
-    if (def->mtu &&
-        (def->forward.type != VIR_NETWORK_FORWARD_NONE &&
-         def->forward.type != VIR_NETWORK_FORWARD_NAT &&
-         def->forward.type != VIR_NETWORK_FORWARD_ROUTE &&
-         def->forward.type != VIR_NETWORK_FORWARD_OPEN)) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("mtu size only allowed in open, route, nat, "
-                         "and isolated mode, not in %s (network '%s')"),
-                       virNetworkForwardTypeToString(def->forward.type),
-                       def->name);
-        goto error;
+    if (def->mtu) {
+        switch (def->forward.type) {
+        case VIR_NETWORK_FORWARD_NONE:
+        case VIR_NETWORK_FORWARD_NAT:
+        case VIR_NETWORK_FORWARD_ROUTE:
+        case VIR_NETWORK_FORWARD_OPEN:
+            break;
+
+        default:
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("mtu size only allowed in open, route, nat, "
+                             "and isolated mode, not in %s (network '%s')"),
+                           virNetworkForwardTypeToString(def->forward.type),
+                           def->name);
+            goto error;
+        }
     }
 
     /* Extract custom metadata */
@@ -2349,6 +2354,7 @@ virNetworkDefFormatBuf(virBufferPtr buf,
     char uuidstr[VIR_UUID_STRING_BUFLEN];
     size_t i;
     bool shortforward;
+    bool hasbridge = false;
 
     virBufferAddLit(buf, "<network");
     if (!(flags & VIR_NETWORK_XML_INACTIVE) && (def->connections > 0))
@@ -2469,22 +2475,21 @@ virNetworkDefFormatBuf(virBufferPtr buf,
             virBufferAddLit(buf, "</forward>\n");
     }
 
+    switch (def->forward.type) {
+    case VIR_NETWORK_FORWARD_NONE:
+    case VIR_NETWORK_FORWARD_NAT:
+    case VIR_NETWORK_FORWARD_ROUTE:
+    case VIR_NETWORK_FORWARD_OPEN:
+        hasbridge = true;
+        break;
+    }
 
-    if (def->forward.type == VIR_NETWORK_FORWARD_NONE ||
-        def->forward.type == VIR_NETWORK_FORWARD_NAT ||
-        def->forward.type == VIR_NETWORK_FORWARD_ROUTE ||
-        def->forward.type == VIR_NETWORK_FORWARD_OPEN ||
-        def->bridge || def->macTableManager) {
-
+    if (hasbridge || def->bridge || def->macTableManager) {
         virBufferAddLit(buf, "<bridge");
         virBufferEscapeString(buf, " name='%s'", def->bridge);
-        if (def->forward.type == VIR_NETWORK_FORWARD_NONE ||
-            def->forward.type == VIR_NETWORK_FORWARD_NAT ||
-            def->forward.type == VIR_NETWORK_FORWARD_ROUTE ||
-            def->forward.type == VIR_NETWORK_FORWARD_OPEN) {
+        if (hasbridge)
             virBufferAsprintf(buf, " stp='%s' delay='%ld'",
                               def->stp ? "on" : "off", def->delay);
-        }
         if (def->macTableManager) {
             virBufferAsprintf(buf, " macTableManager='%s'",
                              virNetworkBridgeMACTableManagerTypeToString(def->macTableManager));
