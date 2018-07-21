@@ -31,7 +31,6 @@
 #define __VIR_BUFFER_C__
 
 #include "virbuffer.h"
-#include "viralloc.h"
 #include "virerror.h"
 #include "virstring.h"
 
@@ -664,6 +663,7 @@ virBufferEscapePairFree(virBufferEscapePairPtr pair)
 
     VIR_FREE(pair);
 }
+VIR_DEFINE_AUTOPTR_FUNC(virBufferEscapePair, virBufferEscapePairFree)
 
 
 /**
