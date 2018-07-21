@@ -83,7 +83,7 @@ virISCSIGetSession(const char *devpath,
     VIR_AUTOFREE(char *) error = NULL;
     int exitstatus = 0;
 
-    virCommandPtr cmd = virCommandNewArgList(ISCSIADM, "--mode",
+    VIR_AUTOPTR(virCommand) cmd = virCommandNewArgList(ISCSIADM, "--mode",
                                              "session", NULL);
     virCommandSetErrorBuffer(cmd, &error);
 
@@ -93,15 +93,13 @@ virISCSIGetSession(const char *devpath,
                            vars,
                            virISCSIExtractSession,
                            &cbdata, NULL, &exitstatus) < 0)
-        goto cleanup;
+        return cbdata.session;
 
     if (cbdata.session == NULL && !probe)
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("cannot find iscsiadm session: %s"),
                        NULLSTR(error));
 
- cleanup:
-    virCommandFree(cmd);
     return cbdata.session;
 }
 
@@ -123,7 +121,7 @@ virStorageBackendIQNFound(const char *initiatoriqn,
     char *newline = NULL;
     char *iqn = NULL;
     char *token = NULL;
-    virCommandPtr cmd = virCommandNewArgList(ISCSIADM,
+    VIR_AUTOPTR(virCommand) cmd = virCommandNewArgList(ISCSIADM,
                                              "--mode", "iface", NULL);
 
     if (VIR_ALLOC_N(line, LINE_SIZE) != 0) {
@@ -196,7 +194,6 @@ virStorageBackendIQNFound(const char *initiatoriqn,
 
     VIR_FORCE_FCLOSE(fp);
     VIR_FORCE_CLOSE(fd);
-    virCommandFree(cmd);
 
     return ret;
 }
@@ -208,7 +205,7 @@ virStorageBackendCreateIfaceIQN(const char *initiatoriqn,
 {
     int ret = -1, exitstatus = -1;
     VIR_AUTOFREE(char *) temp_ifacename = NULL;
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
 
     if (virAsprintf(&temp_ifacename,
                     "libvirt-iface-%08llx",
@@ -267,7 +264,6 @@ virStorageBackendCreateIfaceIQN(const char *initiatoriqn,
     ret = 0;
 
  cleanup:
-    virCommandFree(cmd);
     if (ret != 0)
         VIR_FREE(*ifacename);
     return ret;
@@ -280,7 +276,6 @@ virISCSIConnection(const char *portal,
                    const char *target,
                    const char **extraargv)
 {
-    int ret = -1;
     const char *const baseargv[] = {
         ISCSIADM,
         "--mode", "node",
@@ -288,7 +283,7 @@ virISCSIConnection(const char *portal,
         "--targetname", target,
         NULL
     };
-    virCommandPtr cmd;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     VIR_AUTOFREE(char *) ifacename = NULL;
 
     cmd = virCommandNewArgs(baseargv);
@@ -301,7 +296,7 @@ virISCSIConnection(const char *portal,
             break;
         case IQN_MISSING:
             if (virStorageBackendCreateIfaceIQN(initiatoriqn, &ifacename) != 0)
-                goto cleanup;
+                return -1;
             /*
              * iscsiadm doesn't let you send commands to the Interface IQN,
              * unless you've first issued a 'sendtargets' command to the
@@ -309,25 +304,20 @@ virISCSIConnection(const char *portal,
              * "iscsiadm: No records found"
              */
             if (virISCSIScanTargets(portal, NULL, NULL) < 0)
-                goto cleanup;
+                return -1;
 
             break;
         case IQN_ERROR:
         default:
-            goto cleanup;
+            return -1;
         }
         virCommandAddArgList(cmd, "--interface", ifacename, NULL);
     }
 
     if (virCommandRun(cmd, NULL) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
-
- cleanup:
-    virCommandFree(cmd);
-
-    return ret;
+    return 0;
 }
 
 
@@ -354,14 +344,12 @@ virISCSIConnectionLogout(const char *portal,
 int
 virISCSIRescanLUNs(const char *session)
 {
-    virCommandPtr cmd = virCommandNewArgList(ISCSIADM,
+    VIR_AUTOPTR(virCommand) cmd = virCommandNewArgList(ISCSIADM,
                                              "--mode", "session",
                                              "-r", session,
                                              "-R",
                                              NULL);
-    int ret = virCommandRun(cmd, NULL);
-    virCommandFree(cmd);
-    return ret;
+    return virCommandRun(cmd, NULL);
 }
 
 
@@ -409,8 +397,7 @@ virISCSIScanTargets(const char *portal,
     int vars[] = { 2 };
     struct virISCSITargetList list;
     size_t i;
-    int ret = -1;
-    virCommandPtr cmd = virCommandNewArgList(ISCSIADM,
+    VIR_AUTOPTR(virCommand) cmd = virCommandNewArgList(ISCSIADM,
                                              "--mode", "discovery",
                                              "--type", "sendtargets",
                                              "--portal", portal,
@@ -425,7 +412,7 @@ virISCSIScanTargets(const char *portal,
                            vars,
                            virISCSIGetTargets,
                            &list, NULL, NULL) < 0)
-        goto cleanup;
+        return -1;
 
     if (ntargetsret && targetsret) {
         *ntargetsret = list.ntargets;
@@ -436,10 +423,7 @@ virISCSIScanTargets(const char *portal,
         VIR_FREE(list.targets);
     }
 
-    ret = 0;
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return 0;
 }
 
 /*
@@ -462,9 +446,8 @@ int
 virISCSINodeNew(const char *portal,
                 const char *target)
 {
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     int status;
-    int ret = -1;
 
     cmd = virCommandNewArgList(ISCSIADM,
                                "--mode", "node",
@@ -477,20 +460,17 @@ virISCSINodeNew(const char *portal,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Failed new node mode for target '%s'"),
                        target);
-        goto cleanup;
+        return -1;
     }
 
     if (status != 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("%s failed new mode for target '%s' with status '%d'"),
                        ISCSIADM, target, status);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return 0;
 }
 
 
@@ -500,9 +480,8 @@ virISCSINodeUpdate(const char *portal,
                    const char *name,
                    const char *value)
 {
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     int status;
-    int ret = -1;
 
     cmd = virCommandNewArgList(ISCSIADM,
                                "--mode", "node",
@@ -518,11 +497,8 @@ virISCSINodeUpdate(const char *portal,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Failed to update '%s' of node mode for target '%s'"),
                        name, target);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return 0;
 }
