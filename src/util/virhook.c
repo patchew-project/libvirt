@@ -230,7 +230,7 @@ virHookCall(int driver,
 {
     int ret;
     VIR_AUTOFREE(char *) path = NULL;
-    virCommandPtr cmd;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     const char *drvstr;
     const char *opstr;
     const char *subopstr;
@@ -311,8 +311,6 @@ virHookCall(int driver,
         virReportError(VIR_ERR_HOOK_SCRIPT_FAILED, "%s",
                        virGetLastErrorMessage());
     }
-
-    virCommandFree(cmd);
 
     return ret;
 }
