@@ -109,8 +109,7 @@ void
 virSCSIVHostDeviceListDel(virSCSIVHostDeviceListPtr list,
                           virSCSIVHostDevicePtr dev)
 {
-    virSCSIVHostDevicePtr tmp = virSCSIVHostDeviceListSteal(list, dev);
-    virSCSIVHostDeviceFree(tmp);
+    VIR_AUTOPTR(virSCSIVHostDevice) tmp = virSCSIVHostDeviceListSteal(list, dev);
 }
 
 
@@ -271,13 +270,11 @@ virSCSIVHostDeviceNew(const char *name)
 
     VIR_DEBUG("%s: initialized", dev->name);
 
- cleanup:
     return dev;
 
  error:
     virSCSIVHostDeviceFree(dev);
-    dev = NULL;
-    goto cleanup;
+    return NULL;
 }
 
 
