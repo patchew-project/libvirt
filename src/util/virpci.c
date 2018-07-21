@@ -39,7 +39,6 @@
 
 #include "dirname.h"
 #include "virlog.h"
-#include "viralloc.h"
 #include "vircommand.h"
 #include "virerror.h"
 #include "virfile.h"
