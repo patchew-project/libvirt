@@ -2361,7 +2361,10 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
 
     if (tcg || !virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
         virtType = VIR_DOMAIN_VIRT_QEMU;
-        model = "max";
+        if (ARCH_IS_S390(qemuCaps->arch))
+            model = "qemu";
+        else
+            model = "max";
     } else {
         virtType = VIR_DOMAIN_VIRT_KVM;
         model = "host";
