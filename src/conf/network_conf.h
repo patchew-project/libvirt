@@ -199,7 +199,7 @@ struct _virNetworkForwardPfDef {
 typedef struct _virNetworkForwardDef virNetworkForwardDef;
 typedef virNetworkForwardDef *virNetworkForwardDefPtr;
 struct _virNetworkForwardDef {
-    int type;     /* One of virNetworkForwardType constants */
+    virNetworkForwardType type;
     bool managed;  /* managed attribute for hostdev mode */
     int driverName; /* enum virNetworkForwardDriverNameType */
 

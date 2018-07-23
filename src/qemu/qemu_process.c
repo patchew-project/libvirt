@@ -4582,6 +4582,14 @@ qemuProcessGetNetworkAddress(const char *netname,
             goto cleanup;
         }
         break;
+
+    case VIR_NETWORK_FORWARD_HOSTDEV:
+        break;
+
+    case VIR_NETWORK_FORWARD_LAST:
+    default:
+        virReportEnumRangeError(virNetworkForwardType, netdef->forward.type);
+        goto cleanup;
     }
 
     if (dev_name) {
