@@ -268,6 +268,8 @@ testQemuHotplug(const void *data)
 
     if (test->vm) {
         vm = test->vm;
+        if (!vm->def)
+            goto cleanup;
     } else {
         if (qemuHotplugCreateObjects(driver.xmlopt, &vm, domain_xml,
                                      test->deviceDeletedEvent) < 0)
