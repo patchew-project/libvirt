@@ -67,6 +67,14 @@
           only rendering devices within the guest.
         </description>
       </change>
+      <change>
+        <summary>
+          qemu: Add ccw support for vhost-vsock
+        </summary>
+        <description>
+          Support the vhost-vsock-ccw device on S390.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
