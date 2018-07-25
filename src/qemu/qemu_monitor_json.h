@@ -336,7 +336,8 @@ int qemuMonitorJSONSetBlockIoThrottle(qemuMonitorPtr mon,
                                       bool supportMaxLengthOptions);
 
 int qemuMonitorJSONGetBlockIoThrottle(qemuMonitorPtr mon,
-                                      const char *device,
+                                      const char *drivealias,
+                                      const char *qdevid,
                                       virDomainBlockIoTuneInfoPtr reply);
 
 int qemuMonitorJSONSystemWakeup(qemuMonitorPtr mon);
