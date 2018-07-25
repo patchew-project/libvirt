@@ -2539,7 +2539,8 @@ qemuMonitorJSONGetBlockStatsInfo(qemuMonitorPtr mon,
 static int
 qemuMonitorJSONBlockStatsUpdateCapacityData(virJSONValuePtr image,
                                             const char *name,
-                                            virHashTablePtr stats)
+                                            virHashTablePtr stats,
+                                            qemuBlockStatsPtr *entry)
 {
     qemuBlockStatsPtr bstats;
 
@@ -2552,6 +2553,9 @@ qemuMonitorJSONBlockStatsUpdateCapacityData(virJSONValuePtr image,
             return -1;
         }
     }
+
+    if (entry)
+        *entry = bstats;
 
     /* failures can be ignored after this point */
     if (virJSONValueObjectGetNumberUlong(image, "virtual-size",
@@ -2578,7 +2582,8 @@ qemuMonitorJSONBlockStatsUpdateCapacityOne(virJSONValuePtr image,
     char *entry_name = qemuDomainStorageAlias(dev_name, depth);
     virJSONValuePtr backing;
 
-    if (qemuMonitorJSONBlockStatsUpdateCapacityData(image, entry_name, stats) < 0)
+    if (qemuMonitorJSONBlockStatsUpdateCapacityData(image, entry_name,
+                                                    stats, NULL) < 0)
         goto cleanup;
 
     if (backingChain &&
@@ -2648,6 +2653,8 @@ qemuMonitorJSONBlockStatsUpdateCapacityBlockdevWorker(size_t pos ATTRIBUTE_UNUSE
     virHashTablePtr stats = opaque;
     virJSONValuePtr image;
     const char *nodename;
+    qemuBlockStatsPtr entry;
+    unsigned long long tmp;
 
     if (!(nodename = virJSONValueObjectGetString(val, "node-name")) ||
         !(image = virJSONValueObjectGetObject(val, "image"))) {
@@ -2656,8 +2663,11 @@ qemuMonitorJSONBlockStatsUpdateCapacityBlockdevWorker(size_t pos ATTRIBUTE_UNUSE
         return -1;
     }
 
-    if (qemuMonitorJSONBlockStatsUpdateCapacityData(image, nodename, stats) < 0)
+    if (qemuMonitorJSONBlockStatsUpdateCapacityData(image, nodename, stats, &entry) < 0)
         return -1;
+
+    if (virJSONValueObjectGetNumberUlong(val, "write_threshold", &tmp) == 0)
+        entry->write_threshold = tmp;
 
     return 1; /* we don't want to steal the value from the JSON array */
 }
