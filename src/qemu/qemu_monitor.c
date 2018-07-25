@@ -2300,6 +2300,31 @@ qemuMonitorGetAllBlockStatsInfo(qemuMonitorPtr mon,
 }
 
 
+int
+qemuMonitorGetBlockStatsInfo(qemuMonitorPtr mon,
+                             virHashTablePtr *ret_stats,
+                             int *nstats)
+{
+    virHashTablePtr hash = NULL;
+    int ret = -1;
+
+    QEMU_CHECK_MONITOR(mon);
+
+    if (!(hash = virHashCreate(10, virHashValueFree)))
+        goto cleanup;
+
+    if (qemuMonitorJSONGetBlockStatsInfo(mon, hash, nstats) < 0)
+        goto cleanup;
+
+    VIR_STEAL_PTR(*ret_stats, hash);
+    ret = 0;
+
+ cleanup:
+    virHashFree(hash);
+    return ret;
+}
+
+
 /* Updates "stats" to fill virtual and physical size of the image */
 int
 qemuMonitorBlockStatsUpdateCapacity(qemuMonitorPtr mon,

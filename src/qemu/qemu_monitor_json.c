@@ -2467,6 +2467,75 @@ qemuMonitorJSONGetAllBlockStatsInfo(qemuMonitorPtr mon,
 }
 
 
+struct qemuMonitorJSONGetBlockstatsInfoArrayWorkerData {
+    virHashTablePtr hash;
+    int nstats;
+};
+
+
+static int
+qemuMonitorJSONGetBlockStatsInfoArrayWorker(size_t pos ATTRIBUTE_UNUSED,
+                                            virJSONValuePtr val,
+                                            void *opaque)
+{
+    struct qemuMonitorJSONGetBlockstatsInfoArrayWorkerData *data = opaque;
+    qemuBlockStatsPtr bstats = NULL;
+    const char *nodename;
+    int nstats = 0;
+    int ret = -1;
+
+    if (!(nodename = virJSONValueObjectGetString(val, "node-name"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("missing node name in query-blockstats reply"));
+        return -1;
+    }
+
+    if (!(bstats = qemuMonitorJSONBlockStatsCollectData(val, &nstats)))
+        goto cleanup;
+
+    if (nstats > data->nstats)
+        data->nstats = nstats;
+
+    if (virHashAddEntry(data->hash, nodename, bstats) < 0)
+        goto cleanup;
+    bstats = NULL;
+
+    ret = 1; /* we don't want to steal the value from the JSON array */
+
+ cleanup:
+    VIR_FREE(bstats);
+    return ret;
+}
+
+
+int
+qemuMonitorJSONGetBlockStatsInfo(qemuMonitorPtr mon,
+                                 virHashTablePtr hash,
+                                 int *nstats)
+{
+    struct qemuMonitorJSONGetBlockstatsInfoArrayWorkerData data = { hash, 0 };
+    virJSONValuePtr devices;
+    int ret = -1;
+
+    if (!(devices = qemuMonitorJSONQueryBlockstats(mon, true)))
+        return -1;
+
+    if (virJSONValueArrayForeachSteal(devices,
+                                      qemuMonitorJSONGetBlockStatsInfoArrayWorker,
+                                      &data) < 0)
+        goto cleanup;
+
+    if (nstats)
+        *nstats = data.nstats;
+
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(devices);
+    return ret;
+}
+
+
 static int
 qemuMonitorJSONBlockStatsUpdateCapacityData(virJSONValuePtr image,
                                             const char *name,

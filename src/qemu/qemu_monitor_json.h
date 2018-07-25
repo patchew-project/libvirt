@@ -95,6 +95,10 @@ int qemuMonitorJSONGetAllBlockStatsInfo(qemuMonitorPtr mon,
 int qemuMonitorJSONBlockStatsUpdateCapacity(qemuMonitorPtr mon,
                                             virHashTablePtr stats,
                                             bool backingChain);
+int qemuMonitorJSONGetBlockStatsInfo(qemuMonitorPtr mon,
+                                     virHashTablePtr hash,
+                                     int *nstats);
+
 int qemuMonitorJSONBlockResize(qemuMonitorPtr mon,
                                const char *devce,
                                unsigned long long size);
