@@ -11030,14 +11030,10 @@ qemuDomainBlockResize(virDomainPtr dom,
 }
 
 
-static int
-qemuDomainBlockStatsGatherTotals(void *payload,
-                                 const void *name ATTRIBUTE_UNUSED,
-                                 void *opaque)
+static void
+qemuDomainBlockStatsGatherTotalsData(qemuBlockStatsPtr data,
+                                     qemuBlockStatsPtr total)
 {
-    qemuBlockStatsPtr data = payload;
-    qemuBlockStatsPtr total = opaque;
-
 #define QEMU_BLOCK_STAT_TOTAL(NAME) \
     if (data->NAME > 0) \
         total->NAME += data->NAME
@@ -11051,6 +11047,30 @@ qemuDomainBlockStatsGatherTotals(void *payload,
     QEMU_BLOCK_STAT_TOTAL(rd_total_times);
     QEMU_BLOCK_STAT_TOTAL(flush_total_times);
 #undef QEMU_BLOCK_STAT_TOTAL
+}
+
+
+static int
+qemuDomainBlockStatsGatherTotals(void *payload,
+                                 const void *name ATTRIBUTE_UNUSED,
+                                 void *opaque)
+{
+    qemuDomainBlockStatsGatherTotalsData(payload, opaque);
+    return 0;
+}
+
+
+static int
+qemuDomainBlockStatsGatherTotalsBlockdev(void *payload,
+                                         const void *name,
+                                         void *opaque)
+{
+    const char *nodename = name;
+
+    if (!strstr(nodename, "-format"))
+        return 0;
+
+    qemuDomainBlockStatsGatherTotalsData(payload, opaque);
     return 0;
 }
 
@@ -11079,7 +11099,8 @@ qemuDomainBlocksStatsGather(virQEMUDriverPtr driver,
     virHashTablePtr blockstats = NULL;
     qemuBlockStatsPtr stats;
     int nstats;
-    char *diskAlias = NULL;
+    const char *entryname = NULL;
+    bool blockdev = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV);
     int ret = -1;
 
     if (*path) {
@@ -11088,22 +11109,34 @@ qemuDomainBlocksStatsGather(virQEMUDriverPtr driver,
             goto cleanup;
         }
 
-        if (!disk->info.alias) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("missing disk device alias name for %s"), disk->dst);
-            goto cleanup;
-        }
+        if (blockdev) {
+            entryname = disk->src->nodeformat;
+        } else {
+            if (!disk->info.alias) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("missing disk device alias name for %s"), disk->dst);
+                goto cleanup;
+            }
 
-        if (VIR_STRDUP(diskAlias, disk->info.alias) < 0)
-            goto cleanup;
+            entryname = disk->info.alias;
+        }
     }
 
     qemuDomainObjEnterMonitor(driver, vm);
-    nstats = qemuMonitorGetAllBlockStatsInfo(priv->mon, &blockstats, false);
+    if (blockdev) {
+        if (qemuMonitorGetBlockStatsInfo(priv->mon, &blockstats, &nstats) < 0)
+            nstats = -1;
 
-    if (capacity && nstats >= 0 &&
-        qemuMonitorBlockStatsUpdateCapacity(priv->mon, blockstats, false) < 0)
-        nstats = -1;
+        if (capacity && nstats >= 0 &&
+            qemuMonitorBlockStatsUpdateCapacityBlockdev(priv->mon, blockstats) < 0)
+            nstats = -1;
+    } else {
+        nstats = qemuMonitorGetAllBlockStatsInfo(priv->mon, &blockstats, false);
+
+        if (capacity && nstats >= 0 &&
+            qemuMonitorBlockStatsUpdateCapacity(priv->mon, blockstats, false) < 0)
+            nstats = -1;
+    }
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0 || nstats < 0)
         goto cleanup;
@@ -11111,22 +11144,24 @@ qemuDomainBlocksStatsGather(virQEMUDriverPtr driver,
     if (VIR_ALLOC(*retstats) < 0)
         goto cleanup;
 
-    if (diskAlias) {
-        if (!(stats = virHashLookup(blockstats, diskAlias))) {
+    if (entryname) {
+        if (!(stats = virHashLookup(blockstats, entryname))) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("cannot find statistics for device '%s'"), diskAlias);
+                           _("cannot find statistics for device '%s'"), entryname);
             goto cleanup;
         }
 
         **retstats = *stats;
     } else {
-        virHashForEach(blockstats, qemuDomainBlockStatsGatherTotals, *retstats);
+        if (blockdev)
+            virHashForEach(blockstats, qemuDomainBlockStatsGatherTotalsBlockdev, *retstats);
+        else
+            virHashForEach(blockstats, qemuDomainBlockStatsGatherTotals, *retstats);
     }
 
     ret = nstats;
 
  cleanup:
-    VIR_FREE(diskAlias);
     virHashFree(blockstats);
     return ret;
 }
