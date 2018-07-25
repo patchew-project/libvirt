@@ -18723,6 +18723,7 @@ qemuDomainGetDiskErrors(virDomainPtr dom,
     virDomainObjPtr vm = NULL;
     qemuDomainObjPrivatePtr priv;
     virHashTablePtr table = NULL;
+    bool blockdev = false;
     int ret = -1;
     size_t i;
     int n = 0;
@@ -18733,6 +18734,7 @@ qemuDomainGetDiskErrors(virDomainPtr dom,
         goto cleanup;
 
     priv = vm->privateData;
+    blockdev = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV);
 
     if (virDomainGetDiskErrorsEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
@@ -18749,7 +18751,7 @@ qemuDomainGetDiskErrors(virDomainPtr dom,
     }
 
     qemuDomainObjEnterMonitor(driver, vm);
-    table = qemuMonitorGetBlockInfo(priv->mon, false);
+    table = qemuMonitorGetBlockInfo(priv->mon, blockdev);
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         goto endjob;
     if (!table)
@@ -18758,8 +18760,13 @@ qemuDomainGetDiskErrors(virDomainPtr dom,
     for (i = n = 0; i < vm->def->ndisks; i++) {
         struct qemuDomainDiskInfo *info;
         virDomainDiskDefPtr disk = vm->def->disks[i];
+        qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+        const char *entryname = disk->info.alias;
 
-        if ((info = virHashLookup(table, disk->info.alias)) &&
+        if (blockdev)
+            entryname = diskPriv->backendQomName;
+
+        if ((info = virHashLookup(table, entryname)) &&
             info->io_status != VIR_DOMAIN_DISK_ERROR_NONE) {
             if (n == nerrors)
                 break;

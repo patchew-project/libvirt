@@ -7561,12 +7561,13 @@ qemuProcessRefreshDisks(virQEMUDriverPtr driver,
                         qemuDomainAsyncJob asyncJob)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    bool blockdev = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV);
     virHashTablePtr table = NULL;
     int ret = -1;
     size_t i;
 
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) == 0) {
-        table = qemuMonitorGetBlockInfo(priv->mon, false);
+        table = qemuMonitorGetBlockInfo(priv->mon, blockdev);
         if (qemuDomainObjExitMonitor(driver, vm) < 0)
             goto cleanup;
     }
@@ -7578,8 +7579,12 @@ qemuProcessRefreshDisks(virQEMUDriverPtr driver,
         virDomainDiskDefPtr disk = vm->def->disks[i];
         qemuDomainDiskPrivatePtr diskpriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
         struct qemuDomainDiskInfo *info;
+        const char *entryname = disk->info.alias;
 
-        if (!(info = virHashLookup(table, disk->info.alias)))
+        if (blockdev)
+            entryname = diskpriv->backendQomName;
+
+        if (!(info = virHashLookup(table, entryname)))
             continue;
 
         if (info->removable) {
