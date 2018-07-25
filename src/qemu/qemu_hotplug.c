@@ -4902,11 +4902,6 @@ qemuDomainDetachVirtioDiskDevice(virQEMUDriverPtr driver,
         goto cleanup;
     }
 
-    if (!detach->info.alias) {
-        if (qemuAssignDeviceDiskAlias(vm->def, detach) < 0)
-            goto cleanup;
-    }
-
     if (!async)
         qemuDomainMarkDeviceForRemoval(vm, &detach->info);
 
