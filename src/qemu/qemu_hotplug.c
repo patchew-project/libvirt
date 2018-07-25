@@ -646,7 +646,7 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     if (qemuHotplugPrepareDiskAccess(driver, vm, disk, NULL, false) < 0)
         goto cleanup;
 
-    if (qemuAssignDeviceDiskAlias(vm->def, disk) < 0)
+    if (qemuAssignDeviceDiskAlias(vm->def, disk, priv->qemuCaps) < 0)
         goto error;
 
     if (qemuDomainPrepareDiskSource(disk, priv, cfg) < 0)
