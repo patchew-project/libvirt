@@ -169,6 +169,7 @@
   <flag name='machine.pseries.cap-htm'/>
   <flag name='egl-headless'/>
   <flag name='vfio-pci.display'/>
+  <flag name='blockdev'/>
   <version>2012050</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>446771</microcodeVersion>

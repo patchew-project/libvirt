@@ -1309,6 +1309,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "blockdev-add/arg-type/+qcow2/encrypt/+luks/key-secret", QEMU_CAPS_QCOW2_LUKS },
     { "nbd-server-start/arg-type/tls-creds", QEMU_CAPS_NBD_TLS },
     { "screendump/arg-type/device", QEMU_CAPS_SCREENDUMP_DEVICE },
+    { "blockdev-add/arg-type/+copy-on-read/file", QEMU_CAPS_BLOCKDEV },
 };
 
 typedef struct _virQEMUCapsObjectTypeProps virQEMUCapsObjectTypeProps;
