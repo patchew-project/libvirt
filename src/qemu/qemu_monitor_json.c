@@ -2640,6 +2640,52 @@ qemuMonitorJSONBlockStatsUpdateCapacity(qemuMonitorPtr mon,
 }
 
 
+static int
+qemuMonitorJSONBlockStatsUpdateCapacityBlockdevWorker(size_t pos ATTRIBUTE_UNUSED,
+                                                      virJSONValuePtr val,
+                                                      void *opaque)
+{
+    virHashTablePtr stats = opaque;
+    virJSONValuePtr image;
+    const char *nodename;
+
+    if (!(nodename = virJSONValueObjectGetString(val, "node-name")) ||
+        !(image = virJSONValueObjectGetObject(val, "image"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("query-named-block-nodes entry was not in expected format"));
+        return -1;
+    }
+
+    if (qemuMonitorJSONBlockStatsUpdateCapacityData(image, nodename, stats) < 0)
+        return -1;
+
+    return 1; /* we don't want to steal the value from the JSON array */
+}
+
+
+int
+qemuMonitorJSONBlockStatsUpdateCapacityBlockdev(qemuMonitorPtr mon,
+                                                virHashTablePtr stats)
+{
+    virJSONValuePtr nodes;
+    int ret = -1;
+
+    if (!(nodes = qemuMonitorJSONQueryNamedBlockNodes(mon)))
+        return -1;
+
+    if (virJSONValueArrayForeachSteal(nodes,
+                                      qemuMonitorJSONBlockStatsUpdateCapacityBlockdevWorker,
+                                      stats) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(nodes);
+    return ret;
+}
+
+
 /* Return 0 on success, -1 on failure, or -2 if not supported.  Size
  * is in bytes.  */
 int qemuMonitorJSONBlockResize(qemuMonitorPtr mon,
