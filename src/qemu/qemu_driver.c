@@ -20206,6 +20206,7 @@ qemuDomainGetStatsBlock(virQEMUDriverPtr driver,
     virJSONValuePtr nodedata = NULL;
     qemuDomainObjPrivatePtr priv = dom->privateData;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    bool blockdev = virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV);
     bool fetchnodedata = virQEMUCapsGet(priv->qemuCaps,
                                         QEMU_CAPS_QUERY_NAMED_BLOCK_NODES);
     int count_index = -1;
@@ -20215,14 +20216,24 @@ qemuDomainGetStatsBlock(virQEMUDriverPtr driver,
 
     if (HAVE_JOB(privflags) && virDomainObjIsActive(dom)) {
         qemuDomainObjEnterMonitor(driver, dom);
-        rc = qemuMonitorGetAllBlockStatsInfo(priv->mon, &stats,
-                                             visitBacking);
-        if (rc >= 0)
-            ignore_value(qemuMonitorBlockStatsUpdateCapacity(priv->mon, stats,
-                                                             visitBacking));
 
-        if (fetchnodedata)
-            nodedata = qemuMonitorQueryNamedBlockNodes(priv->mon);
+        if (blockdev) {
+            fetchnodedata = false;
+
+            rc = qemuMonitorGetBlockStatsInfo(priv->mon, &stats, NULL);
+
+            if (rc >= 0)
+                rc = qemuMonitorBlockStatsUpdateCapacityBlockdev(priv->mon, stats);
+        } else {
+            rc = qemuMonitorGetAllBlockStatsInfo(priv->mon, &stats,
+                                                 visitBacking);
+            if (rc >= 0)
+                ignore_value(qemuMonitorBlockStatsUpdateCapacity(priv->mon, stats,
+                                                                 visitBacking));
+
+            if (fetchnodedata)
+                nodedata = qemuMonitorQueryNamedBlockNodes(priv->mon);
+        }
 
         if (qemuDomainObjExitMonitor(driver, dom) < 0)
             goto cleanup;
@@ -20249,12 +20260,17 @@ qemuDomainGetStatsBlock(virQEMUDriverPtr driver,
         while (virStorageSourceIsBacking(src) &&
                (src == disk->src || visitBacking)) {
 
-            /* alias may be NULL if the VM is not running */
-            if (disk->info.alias &&
-                !(alias = qemuDomainStorageAlias(disk->info.alias, src->id)))
-                goto cleanup;
+            if (blockdev) {
+                if (VIR_STRDUP(alias, src->nodeformat) < 0)
+                    goto cleanup;
+            } else {
+                /* alias may be NULL if the VM is not running */
+                if (disk->info.alias &&
+                    !(alias = qemuDomainStorageAlias(disk->info.alias, src->id)))
+                    goto cleanup;
 
-            qemuDomainGetStatsOneBlockRefreshNamed(src, alias, stats, nodestats);
+                qemuDomainGetStatsOneBlockRefreshNamed(src, alias, stats, nodestats);
+            }
 
             if (qemuDomainGetStatsOneBlock(driver, cfg, dom, record, maxparams,
                                            disk->dst, alias, src, visited,
