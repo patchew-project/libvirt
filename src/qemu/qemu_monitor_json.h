@@ -84,7 +84,8 @@ int qemuMonitorJSONSetMemoryStatsPeriod(qemuMonitorPtr mon,
                                         char *balloonpath,
                                         int period);
 int qemuMonitorJSONGetBlockInfo(qemuMonitorPtr mon,
-                                virHashTablePtr table);
+                                virHashTablePtr table,
+                                bool blockdev);
 
 virJSONValuePtr qemuMonitorJSONQueryBlockstats(qemuMonitorPtr mon,
                                                bool nodenames);

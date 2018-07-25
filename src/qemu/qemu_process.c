@@ -7566,7 +7566,7 @@ qemuProcessRefreshDisks(virQEMUDriverPtr driver,
     size_t i;
 
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) == 0) {
-        table = qemuMonitorGetBlockInfo(priv->mon);
+        table = qemuMonitorGetBlockInfo(priv->mon, false);
         if (qemuDomainObjExitMonitor(driver, vm) < 0)
             goto cleanup;
     }

@@ -2219,7 +2219,8 @@ qemuDomainDiskInfoFree(void *value, const void *name ATTRIBUTE_UNUSED)
 
 
 virHashTablePtr
-qemuMonitorGetBlockInfo(qemuMonitorPtr mon)
+qemuMonitorGetBlockInfo(qemuMonitorPtr mon,
+                        bool blockdev)
 {
     int ret;
     virHashTablePtr table;
@@ -2229,7 +2230,7 @@ qemuMonitorGetBlockInfo(qemuMonitorPtr mon)
     if (!(table = virHashCreate(32, qemuDomainDiskInfoFree)))
         return NULL;
 
-    ret = qemuMonitorJSONGetBlockInfo(mon, table);
+    ret = qemuMonitorJSONGetBlockInfo(mon, table, blockdev);
 
     if (ret < 0) {
         virHashFree(table);

@@ -561,7 +561,8 @@ int qemuMonitorSetMemoryStatsPeriod(qemuMonitorPtr mon,
                                     int period);
 
 int qemuMonitorBlockIOStatusToError(const char *status);
-virHashTablePtr qemuMonitorGetBlockInfo(qemuMonitorPtr mon);
+virHashTablePtr qemuMonitorGetBlockInfo(qemuMonitorPtr mon,
+                                        bool blockdev);
 
 virJSONValuePtr qemuMonitorQueryBlockstats(qemuMonitorPtr mon,
                                            bool nodenames);

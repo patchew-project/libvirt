@@ -18749,7 +18749,7 @@ qemuDomainGetDiskErrors(virDomainPtr dom,
     }
 
     qemuDomainObjEnterMonitor(driver, vm);
-    table = qemuMonitorGetBlockInfo(priv->mon);
+    table = qemuMonitorGetBlockInfo(priv->mon, false);
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         goto endjob;
     if (!table)

@@ -2187,11 +2187,12 @@ qemuMonitorJSONGetBlockDev(virJSONValuePtr devices,
 
 
 static const char *
-qemuMonitorJSONGetBlockDevDevice(virJSONValuePtr dev)
+qemuMonitorJSONGetBlockDevName(virJSONValuePtr dev,
+                               const char *key)
 {
     const char *thisdev;
 
-    if (!(thisdev = virJSONValueObjectGetString(dev, "device"))) {
+    if (!(thisdev = virJSONValueObjectGetString(dev, key))) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("query-block device entry was not in expected format"));
         return NULL;
@@ -2201,8 +2202,23 @@ qemuMonitorJSONGetBlockDevDevice(virJSONValuePtr dev)
 }
 
 
+static const char *
+qemuMonitorJSONGetBlockDevDevice(virJSONValuePtr dev)
+{
+    return qemuMonitorJSONGetBlockDevName(dev, "device");
+}
+
+
+static const char *
+qemuMonitorJSONGetBlockDevQdev(virJSONValuePtr dev)
+{
+    return qemuMonitorJSONGetBlockDevName(dev, "qdev");
+}
+
+
 int qemuMonitorJSONGetBlockInfo(qemuMonitorPtr mon,
-                                virHashTablePtr table)
+                                virHashTablePtr table,
+                                bool blockdev)
 {
     int ret = -1;
     size_t i;
@@ -2223,10 +2239,15 @@ int qemuMonitorJSONGetBlockInfo(qemuMonitorPtr mon,
         if (!(dev = qemuMonitorJSONGetBlockDev(devices, i)))
             goto cleanup;
 
-        if (!(thisdev = qemuMonitorJSONGetBlockDevDevice(dev)))
-            goto cleanup;
+        if (blockdev) {
+            if (!(thisdev = qemuMonitorJSONGetBlockDevQdev(dev)))
+                goto cleanup;
+        } else {
+            if (!(thisdev = qemuMonitorJSONGetBlockDevDevice(dev)))
+                goto cleanup;
 
-        thisdev = qemuAliasDiskDriveSkipPrefix(thisdev);
+            thisdev = qemuAliasDiskDriveSkipPrefix(thisdev);
+        }
 
         if (VIR_ALLOC(info) < 0)
             goto cleanup;

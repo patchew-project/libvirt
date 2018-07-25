@@ -1660,7 +1660,7 @@ testQemuMonitorJSONqemuMonitorJSONGetBlockInfo(const void *data)
     if (qemuMonitorTestAddItem(test, "query-block", queryBlockReply) < 0)
         goto cleanup;
 
-    if (qemuMonitorJSONGetBlockInfo(qemuMonitorTestGetMonitor(test), blockDevices) < 0)
+    if (qemuMonitorJSONGetBlockInfo(qemuMonitorTestGetMonitor(test), blockDevices, false) < 0)
         goto cleanup;
 
     if (!virHashEqual(blockDevices, expectedBlockDevices, testHashEqualQemuDomainDiskInfo)) {
