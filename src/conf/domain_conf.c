@@ -19140,7 +19140,7 @@ virDomainDefParseCaps(virDomainDefPtr def,
                        "%s", _("missing domain type attribute"));
         goto cleanup;
     }
-    if ((def->virtType = virDomainVirtTypeFromString(virttype)) < 0) {
+    if ((int)(def->virtType = virDomainVirtTypeFromString(virttype)) < 0) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("invalid domain type %s"), virttype);
         goto cleanup;
