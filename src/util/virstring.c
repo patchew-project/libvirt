@@ -175,32 +175,26 @@ char *virStringListJoin(const char **strings,
  * @strings: a NULL-terminated array of strings
  * @item: string to add
  *
- * Creates new strings list with all strings duplicated and @item
- * at the end of the list. Callers is responsible for freeing
- * both @strings and returned list.
+ * Appends @item into string list @strings. If *@strings is not
+ * allocated yet new string list is created.
+ *
+ * Returns: 0 on success,
+ *         -1 otherwise
  */
-char **
-virStringListAdd(const char **strings,
+int
+virStringListAdd(char ***strings,
                  const char *item)
 {
-    char **ret = NULL;
-    size_t i = virStringListLength(strings);
+    size_t i = virStringListLength((const char **) *strings);
 
-    if (VIR_ALLOC_N(ret, i + 2) < 0)
-        goto error;
+    if (VIR_REALLOC_N(*strings, i + 2) < 0)
+        return -1;
 
-    for (i = 0; strings && strings[i]; i++) {
-        if (VIR_STRDUP(ret[i], strings[i]) < 0)
-            goto error;
-    }
+    (*strings)[i + 1] = NULL;
+    if (VIR_STRDUP((*strings)[i], item) < 0)
+        return -1;
 
-    if (VIR_STRDUP(ret[i], item) < 0)
-        goto error;
-
-    return ret;
- error:
-    virStringListFree(ret);
-    return NULL;
+    return 0;
 }
 
 
