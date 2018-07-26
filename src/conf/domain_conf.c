@@ -103,7 +103,7 @@ VIR_ENUM_IMPL(virDomainTaint, VIR_DOMAIN_TAINT_LAST,
               "custom-dtb",
               "custom-ga-command");
 
-VIR_ENUM_IMPL(virDomainVirt, VIR_DOMAIN_VIRT_LAST,
+VIR_ENUM_IMPL_LABEL(virDomainVirt, "domain type", VIR_DOMAIN_VIRT_LAST,
               "none",
               "qemu",
               "kqemu",
@@ -19141,10 +19141,7 @@ virDomainDefParseCaps(virDomainDefPtr def,
         goto cleanup;
     }
     if ((def->virtType = virDomainVirtTypeFromString(virttype)) < 0) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("invalid domain type %s"), virttype);
         goto cleanup;
-    }
 
     if (!ostype) {
         if (def->os.bootloader) {
@@ -27380,11 +27377,8 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                   VIR_DOMAIN_DEF_FORMAT_CLOCK_ADJUST,
                   -1);
 
-    if (!(type = virDomainVirtTypeToString(def->virtType))) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("unexpected domain type %d"), def->virtType);
+    if (!(type = virDomainVirtTypeToString(def->virtType)))
         goto error;
-    }
 
     if (def->id == -1)
         flags |= VIR_DOMAIN_DEF_FORMAT_INACTIVE;
