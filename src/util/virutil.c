@@ -444,16 +444,22 @@ virParseVersionString(const char *str, unsigned long *version,
 
 int virEnumFromString(const char *const*types,
                       unsigned int ntypes,
-                      const char *type)
+                      const char *type,
+                      const char * const label)
 {
     size_t i;
     if (!type)
-        return -1;
+        goto error;
 
     for (i = 0; i < ntypes; i++)
         if (STREQ(types[i], type))
             return i;
 
+ error:
+    if (label) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("Unknown '%s' value '%s'"), label, type);
+    }
     return -1;
 }
 
@@ -540,10 +546,16 @@ virFormatIntPretty(unsigned long long val,
 
 const char *virEnumToString(const char *const*types,
                             unsigned int ntypes,
-                            int type)
+                            int type,
+                            const char * const label)
 {
-    if (type < 0 || type >= ntypes)
+    if (type < 0 || type >= ntypes) {
+        if (label) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Unknown '%s' internal value %d"), label, type);
+        }
         return NULL;
+    }
 
     return types[type];
 }

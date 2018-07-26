@@ -76,25 +76,30 @@ char *virIndexToDiskName(int idx, const char *prefix);
 
 int virEnumFromString(const char *const*types,
                       unsigned int ntypes,
-                      const char *type);
+                      const char *type,
+                      const char *errmsg);
 
 const char *virEnumToString(const char *const*types,
                             unsigned int ntypes,
-                            int type);
+                            int type,
+                            const char *errmsg);
 
-# define VIR_ENUM_IMPL(name, lastVal, ...) \
+# define VIR_ENUM_IMPL_LABEL(name, label, lastVal, ...) \
     static const char *const name ## TypeList[] = { __VA_ARGS__ }; \
     verify(ARRAY_CARDINALITY(name ## TypeList) == lastVal); \
     const char *name ## TypeToString(int type) { \
         return virEnumToString(name ## TypeList, \
                                ARRAY_CARDINALITY(name ## TypeList), \
-                               type); \
+                               type, label); \
     } \
     int name ## TypeFromString(const char *type) { \
         return virEnumFromString(name ## TypeList, \
                                  ARRAY_CARDINALITY(name ## TypeList), \
-                                 type); \
+                                 type, label); \
     }
+
+# define VIR_ENUM_IMPL(name, lastVal, ...) \
+    VIR_ENUM_IMPL_LABEL(name, NULL, lastVal, __VA_ARGS__)
 
 # define VIR_ENUM_DECL(name) \
     const char *name ## TypeToString(int type); \
