@@ -109,7 +109,8 @@ void
 virSCSIVHostDeviceListDel(virSCSIVHostDeviceListPtr list,
                           virSCSIVHostDevicePtr dev)
 {
-    VIR_AUTOPTR(virSCSIVHostDevice) tmp = virSCSIVHostDeviceListSteal(list, dev);
+    VIR_AUTOPTR(virSCSIVHostDevice) tmp ATTRIBUTE_UNUSED
+            = virSCSIVHostDeviceListSteal(list, dev);
 }
 
 
