@@ -339,8 +339,7 @@ qemuBlockDiskDetectNodes(virDomainDiskDefPtr disk,
 
 
 int
-qemuBlockNodeNamesDetect(virQEMUDriverPtr driver,
-                         virDomainObjPtr vm,
+qemuBlockNodeNamesDetect(virDomainObjPtr vm,
                          qemuDomainAsyncJob asyncJob)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
@@ -354,13 +353,13 @@ qemuBlockNodeNamesDetect(virQEMUDriverPtr driver,
     if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_QUERY_NAMED_BLOCK_NODES))
         return 0;
 
-    if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
+    if (qemuDomainObjEnterMonitorAsync(priv->driver, vm, asyncJob) < 0)
         return -1;
 
     data = qemuMonitorQueryNamedBlockNodes(qemuDomainGetMonitor(vm));
     blockstats = qemuMonitorQueryBlockstats(qemuDomainGetMonitor(vm), false);
 
-    if (qemuDomainObjExitMonitor(driver, vm) < 0 || !data || !blockstats)
+    if (qemuDomainObjExitMonitor(priv->driver, vm) < 0 || !data || !blockstats)
         goto cleanup;
 
     if (!(disktable = qemuBlockNodeNameGetBackingChain(data, blockstats)))
@@ -1689,14 +1688,14 @@ qemuBlockStorageSourceAttachRollback(qemuMonitorPtr mon,
  * monitor internally.
  */
 int
-qemuBlockStorageSourceDetachOneBlockdev(virQEMUDriverPtr driver,
-                                        virDomainObjPtr vm,
+qemuBlockStorageSourceDetachOneBlockdev(virDomainObjPtr vm,
                                         qemuDomainAsyncJob asyncJob,
                                         virStorageSourcePtr src)
 {
+    qemuDomainObjPrivatePtr priv = vm->privateData;
     int ret;
 
-    if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
+    if (qemuDomainObjEnterMonitorAsync(priv->driver, vm, asyncJob) < 0)
         return -1;
 
     ret = qemuMonitorBlockdevDel(qemuDomainGetMonitor(vm), src->nodeformat);
@@ -1704,7 +1703,7 @@ qemuBlockStorageSourceDetachOneBlockdev(virQEMUDriverPtr driver,
     if (ret == 0)
         ret = qemuMonitorBlockdevDel(qemuDomainGetMonitor(vm), src->nodestorage);
 
-    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+    if (qemuDomainObjExitMonitor(priv->driver, vm) < 0)
         return -1;
 
     return ret;
