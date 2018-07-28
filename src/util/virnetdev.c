@@ -535,10 +535,9 @@ int virNetDevSetMTUFromDevice(const char *ifname,
  */
 int virNetDevSetNamespace(const char *ifname, pid_t pidInNs)
 {
-    int ret = -1;
-    char *pid = NULL;
-    char *phy = NULL;
-    char *phy_path = NULL;
+    VIR_AUTOFREE(char *) pid = NULL;
+    VIR_AUTOFREE(char *) phy = NULL;
+    VIR_AUTOFREE(char *) phy_path = NULL;
     int len;
 
     if (virAsprintf(&pid, "%lld", (long long) pidInNs) == -1)
@@ -546,7 +545,7 @@ int virNetDevSetNamespace(const char *ifname, pid_t pidInNs)
 
     /* The 802.11 wireless devices only move together with their PHY. */
     if (virNetDevSysfsFile(&phy_path, ifname, "phy80211/name") < 0)
-        goto cleanup;
+        return -1;
 
     if ((len = virFileReadAllQuiet(phy_path, 1024, &phy)) <= 0) {
         /* Not a wireless device. */
@@ -556,7 +555,7 @@ int virNetDevSetNamespace(const char *ifname, pid_t pidInNs)
 
         argv[5] = pid;
         if (virRun(argv, NULL) < 0)
-            goto cleanup;
+            return -1;
 
     } else {
         const char *argv[] = {
@@ -569,15 +568,10 @@ int virNetDevSetNamespace(const char *ifname, pid_t pidInNs)
         argv[2] = phy;
         argv[5] = pid;
         if (virRun(argv, NULL) < 0)
-            goto cleanup;
+            return -1;
     }
 
-    ret = 0;
- cleanup:
-    VIR_FREE(phy_path);
-    VIR_FREE(phy);
-    VIR_FREE(pid);
-    return ret;
+    return 0;
 }
 
 #if defined(SIOCSIFNAME) && defined(HAVE_STRUCT_IFREQ)
@@ -969,25 +963,21 @@ int virNetDevGetIndex(const char *ifname ATTRIBUTE_UNUSED,
 int
 virNetDevGetMaster(const char *ifname, char **master)
 {
-    int ret = -1;
-    void *nlData = NULL;
+    VIR_AUTOFREE(void *) nlData = NULL;
     struct nlattr *tb[IFLA_MAX + 1] = {NULL, };
 
     *master = NULL;
 
     if (virNetlinkDumpLink(ifname, -1, &nlData, tb, 0, 0) < 0)
-        goto cleanup;
+        return -1;
 
     if (tb[IFLA_MASTER]) {
         if (!(*master = virNetDevGetName(*(int *)RTA_DATA(tb[IFLA_MASTER]))))
-            goto cleanup;
+            return -1;
     }
 
     VIR_DEBUG("IFLA_MASTER for %s is %s", ifname, *master ? *master : "(none)");
-    ret = 0;
- cleanup:
-    VIR_FREE(nlData);
-    return ret;
+    return 0;
 }
 
 
@@ -1168,37 +1158,31 @@ virNetDevSysfsDeviceFile(char **pf_sysfs_device_link, const char *ifname,
 static bool
 virNetDevIsPCIDevice(const char *devpath)
 {
-    char *subsys_link = NULL;
-    char *abs_path = NULL;
+    VIR_AUTOFREE(char *) subsys_link = NULL;
+    VIR_AUTOFREE(char *) abs_path = NULL;
     char *subsys = NULL;
-    bool ret = false;
 
     if (virAsprintf(&subsys_link, "%s/subsystem", devpath) < 0)
         return false;
 
     if (!virFileExists(subsys_link))
-        goto cleanup;
+        return false;
 
     if (virFileResolveLink(subsys_link, &abs_path) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unable to resolve device subsystem symlink %s"),
                        subsys_link);
-        goto cleanup;
+        return false;
     }
 
     subsys = last_component(abs_path);
-    ret = STRPREFIX(subsys, "pci");
-
- cleanup:
-    VIR_FREE(subsys_link);
-    VIR_FREE(abs_path);
-    return ret;
+    return STRPREFIX(subsys, "pci");
 }
 
 static virPCIDevicePtr
 virNetDevGetPCIDevice(const char *devName)
 {
-    char *vfSysfsDevicePath = NULL;
+    VIR_AUTOFREE(char *) vfSysfsDevicePath = NULL;
     virPCIDeviceAddressPtr vfPCIAddr = NULL;
     virPCIDevicePtr vfPCIDevice = NULL;
 
@@ -1216,7 +1200,6 @@ virNetDevGetPCIDevice(const char *devName)
                                   vfPCIAddr->slot, vfPCIAddr->function);
 
  cleanup:
-    VIR_FREE(vfSysfsDevicePath);
     VIR_FREE(vfPCIAddr);
 
     return vfPCIDevice;
@@ -1241,25 +1224,20 @@ int
 virNetDevGetPhysPortID(const char *ifname,
                        char **physPortID)
 {
-    int ret = -1;
-    char *physPortIDFile = NULL;
+    VIR_AUTOFREE(char *) physPortIDFile = NULL;
 
     *physPortID = NULL;
 
     if (virNetDevSysfsFile(&physPortIDFile, ifname, "phys_port_id") < 0)
-        goto cleanup;
+        return -1;
 
     /* a failure to read just means the driver doesn't support
-     * phys_port_id, so set success now and ignore the return from
-     * virFileReadAllQuiet().
+     * phys_port_id, so ignore the return from virFileReadAllQuiet()
+     * and return success.
      */
-    ret = 0;
-
     ignore_value(virFileReadAllQuiet(physPortIDFile, 1024, physPortID));
 
- cleanup:
-    VIR_FREE(physPortIDFile);
-    return ret;
+    return 0;
 }
 
 
@@ -1282,10 +1260,11 @@ virNetDevGetVirtualFunctions(const char *pfname,
 {
     int ret = -1;
     size_t i;
-    char *pf_sysfs_device_link = NULL;
-    char *pci_sysfs_device_link = NULL;
-    char *pciConfigAddr = NULL;
-    char *pfPhysPortID = NULL;
+    VIR_AUTOFREE(char *) pf_sysfs_device_link = NULL;
+    VIR_AUTOFREE(char *) pci_sysfs_device_link = NULL;
+    VIR_AUTOFREE(char *) pciConfigAddr = NULL;
+    VIR_AUTOFREE(char *) pfPhysPortID = NULL;
+    VIR_AUTOFREE(char **) tempVfname = NULL;
 
     *virt_fns = NULL;
     *n_vfname = 0;
@@ -1333,13 +1312,9 @@ virNetDevGetVirtualFunctions(const char *pfname,
 
  cleanup:
     if (ret < 0) {
-        VIR_FREE(*vfname);
+        VIR_STEAL_PTR(tempVfname, *vfname);
         VIR_FREE(*virt_fns);
     }
-    VIR_FREE(pfPhysPortID);
-    VIR_FREE(pf_sysfs_device_link);
-    VIR_FREE(pci_sysfs_device_link);
-    VIR_FREE(pciConfigAddr);
     return ret;
 }
 
@@ -1355,17 +1330,12 @@ virNetDevGetVirtualFunctions(const char *pfname,
 int
 virNetDevIsVirtualFunction(const char *ifname)
 {
-    char *if_sysfs_device_link = NULL;
-    int ret = -1;
+    VIR_AUTOFREE(char *) if_sysfs_device_link = NULL;
 
     if (virNetDevSysfsFile(&if_sysfs_device_link, ifname, "device") < 0)
-        return ret;
+        return -1;
 
-    ret = virPCIIsVirtualFunction(if_sysfs_device_link);
-
-    VIR_FREE(if_sysfs_device_link);
-
-    return ret;
+    return virPCIIsVirtualFunction(if_sysfs_device_link);
 }
 
 /**
@@ -1383,25 +1353,19 @@ int
 virNetDevGetVirtualFunctionIndex(const char *pfname, const char *vfname,
                                  int *vf_index)
 {
-    char *pf_sysfs_device_link = NULL, *vf_sysfs_device_link = NULL;
-    int ret = -1;
+    VIR_AUTOFREE(char *) pf_sysfs_device_link = NULL;
+    VIR_AUTOFREE(char *) vf_sysfs_device_link = NULL;
 
     if (virNetDevSysfsFile(&pf_sysfs_device_link, pfname, "device") < 0)
-        return ret;
+        return -1;
 
-    if (virNetDevSysfsFile(&vf_sysfs_device_link, vfname, "device") < 0) {
-        VIR_FREE(pf_sysfs_device_link);
-        return ret;
-    }
+    if (virNetDevSysfsFile(&vf_sysfs_device_link, vfname, "device") < 0)
+        return -1;
 
-    ret = virPCIGetVirtualFunctionIndex(pf_sysfs_device_link,
+    return virPCIGetVirtualFunctionIndex(pf_sysfs_device_link,
                                         vf_sysfs_device_link,
                                         vf_index);
 
-    VIR_FREE(pf_sysfs_device_link);
-    VIR_FREE(vf_sysfs_device_link);
-
-    return ret;
 }
 
 /**
@@ -1417,19 +1381,18 @@ virNetDevGetVirtualFunctionIndex(const char *pfname, const char *vfname,
 int
 virNetDevGetPhysicalFunction(const char *ifname, char **pfname)
 {
-    char *physfn_sysfs_path = NULL;
-    char *vfPhysPortID = NULL;
-    int ret = -1;
+    VIR_AUTOFREE(char *) physfn_sysfs_path = NULL;
+    VIR_AUTOFREE(char *) vfPhysPortID = NULL;
 
     if (virNetDevGetPhysPortID(ifname, &vfPhysPortID) < 0)
-        goto cleanup;
+        return -1;
 
     if (virNetDevSysfsDeviceFile(&physfn_sysfs_path, ifname, "physfn") < 0)
-        goto cleanup;
+        return -1;
 
     if (virPCIGetNetName(physfn_sysfs_path, 0,
                          vfPhysPortID, pfname) < 0) {
-        goto cleanup;
+        return -1;
     }
 
     if (!*pfname) {
@@ -1439,14 +1402,10 @@ virNetDevGetPhysicalFunction(const char *ifname, char **pfname)
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("The PF device for VF %s has no network device name"),
                        ifname);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    VIR_FREE(vfPhysPortID);
-    VIR_FREE(physfn_sysfs_path);
-    return ret;
+    return 0;
 }
 
 
@@ -1470,26 +1429,25 @@ virNetDevGetPhysicalFunction(const char *ifname, char **pfname)
 int
 virNetDevPFGetVF(const char *pfname, int vf, char **vfname)
 {
-    char *virtfnName = NULL;
-    char *virtfnSysfsPath = NULL;
-    char *pfPhysPortID = NULL;
-    int ret = -1;
+    VIR_AUTOFREE(char *) virtfnName = NULL;
+    VIR_AUTOFREE(char *) virtfnSysfsPath = NULL;
+    VIR_AUTOFREE(char *) pfPhysPortID = NULL;
 
     /* a VF may have multiple "ports", each one having its own netdev,
      * and each netdev having a different phys_port_id. Be sure we get
      * the VF netdev with a phys_port_id matchine that of pfname
      */
     if (virNetDevGetPhysPortID(pfname, &pfPhysPortID) < 0)
-        goto cleanup;
+        return -1;
 
     if (virAsprintf(&virtfnName, "virtfn%d", vf) < 0)
-        goto cleanup;
+        return -1;
 
     /* this provides the path to the VF's directory in sysfs,
      * e.g. "/sys/class/net/enp2s0f0/virtfn3"
      */
     if (virNetDevSysfsDeviceFile(&virtfnSysfsPath, pfname, virtfnName) < 0)
-        goto cleanup;
+        return -1;
 
     /* and this gets the netdev name associated with it, which is a
      * directory entry in [virtfnSysfsPath]/net,
@@ -1498,14 +1456,7 @@ virNetDevPFGetVF(const char *pfname, int vf, char **vfname)
      * isn't bound to a netdev driver, it won't have a netdev name,
      * and vfname will be NULL).
      */
-    ret = virPCIGetNetName(virtfnSysfsPath, 0, pfPhysPortID, vfname);
-
- cleanup:
-    VIR_FREE(virtfnName);
-    VIR_FREE(virtfnSysfsPath);
-    VIR_FREE(pfPhysPortID);
-
-    return ret;
+    return virPCIGetNetName(virtfnSysfsPath, 0, pfPhysPortID, vfname);
 }
 
 
@@ -1522,13 +1473,14 @@ int
 virNetDevGetVirtualFunctionInfo(const char *vfname, char **pfname,
                                 int *vf)
 {
-    char *pf_sysfs_path = NULL, *vf_sysfs_path = NULL;
-    int ret = -1;
+    VIR_AUTOFREE(char *) pf_sysfs_path = NULL;
+    VIR_AUTOFREE(char *) vf_sysfs_path = NULL;
+    VIR_AUTOFREE(char *) tempPfname = NULL;
 
     *pfname = NULL;
 
     if (virNetDevGetPhysicalFunction(vfname, pfname) < 0)
-        return ret;
+        return -1;
 
     if (virNetDevSysfsFile(&pf_sysfs_path, *pfname, "device") < 0)
         goto cleanup;
@@ -1536,16 +1488,12 @@ virNetDevGetVirtualFunctionInfo(const char *vfname, char **pfname,
     if (virNetDevSysfsFile(&vf_sysfs_path, vfname, "device") < 0)
         goto cleanup;
 
-    ret = virPCIGetVirtualFunctionIndex(pf_sysfs_path, vf_sysfs_path, vf);
+    return virPCIGetVirtualFunctionIndex(pf_sysfs_path, vf_sysfs_path, vf);
 
  cleanup:
-    if (ret < 0)
-        VIR_FREE(*pfname);
+    VIR_STEAL_PTR(tempPfname, *pfname);
 
-    VIR_FREE(vf_sysfs_path);
-    VIR_FREE(pf_sysfs_path);
-
-    return ret;
+    return -1;
 }
 
 #else /* !__linux__ */
@@ -1657,7 +1605,7 @@ virNetDevSetVfConfig(const char *ifname, int vf,
 {
     int rc = -1;
     char macstr[VIR_MAC_STRING_BUFLEN];
-    struct nlmsghdr *resp = NULL;
+    VIR_AUTOFREE(struct nlmsghdr *) resp = NULL;
     struct nlmsgerr *err;
     unsigned int recvbuflen = 0;
     struct nl_msg *nl_msg;
@@ -1769,7 +1717,6 @@ virNetDevSetVfConfig(const char *ifname, int vf,
               vlanid, rc < 0 ? "Fail" : "Success");
 
     nlmsg_free(nl_msg);
-    VIR_FREE(resp);
     return rc;
 
  malformed_resp:
@@ -1843,19 +1790,15 @@ virNetDevGetVfConfig(const char *ifname, int vf, virMacAddrPtr mac,
                      int *vlanid)
 {
     int rc = -1;
-    void *nlData = NULL;
+    VIR_AUTOFREE(void *) nlData = NULL;
     struct nlattr *tb[IFLA_MAX + 1] = {NULL, };
     int ifindex = -1;
 
     rc = virNetlinkDumpLink(ifname, ifindex, &nlData, tb, 0, 0);
     if (rc < 0)
-        goto cleanup;
+        return rc;
 
-    rc = virNetDevParseVfConfig(tb, vf, mac, vlanid);
-
- cleanup:
-    VIR_FREE(nlData);
-    return rc;
+    return virNetDevParseVfConfig(tb, vf, mac, vlanid);
 }
 
 
@@ -1914,13 +1857,13 @@ virNetDevSaveNetConfig(const char *linkdev, int vf,
 {
     int ret = -1;
     const char *pfDevName = NULL;
-    char *pfDevOrig = NULL;
-    char *vfDevOrig = NULL;
+    VIR_AUTOFREE(char *) pfDevOrig = NULL;
+    VIR_AUTOFREE(char *) vfDevOrig = NULL;
+    VIR_AUTOFREE(char *) filePath = NULL;
+    VIR_AUTOFREE(char *) fileStr = NULL;
     virMacAddr oldMAC;
     char MACStr[VIR_MAC_STRING_BUFLEN];
     int oldVlanTag = -1;
-    char *filePath = NULL;
-    char *fileStr = NULL;
     virJSONValuePtr configJSON = NULL;
 
     if (vf >= 0) {
@@ -2030,10 +1973,6 @@ virNetDevSaveNetConfig(const char *linkdev, int vf,
 
     ret = 0;
  cleanup:
-    VIR_FREE(pfDevOrig);
-    VIR_FREE(vfDevOrig);
-    VIR_FREE(filePath);
-    VIR_FREE(fileStr);
     virJSONValueFree(configJSON);
     return ret;
 }
@@ -2069,10 +2008,10 @@ virNetDevReadNetConfig(const char *linkdev, int vf,
 {
     int ret = -1;
     const char *pfDevName = NULL;
-    char *pfDevOrig = NULL;
-    char *vfDevOrig = NULL;
-    char *filePath = NULL;
-    char *fileStr = NULL;
+    VIR_AUTOFREE(char *) pfDevOrig = NULL;
+    VIR_AUTOFREE(char *) vfDevOrig = NULL;
+    VIR_AUTOFREE(char *) filePath = NULL;
+    VIR_AUTOFREE(char *) fileStr = NULL;
     virJSONValuePtr configJSON = NULL;
     const char *MACStr = NULL;
     const char *adminMACStr = NULL;
@@ -2245,10 +2184,6 @@ virNetDevReadNetConfig(const char *linkdev, int vf,
         VIR_FREE(*vlan);
     }
 
-    VIR_FREE(pfDevOrig);
-    VIR_FREE(vfDevOrig);
-    VIR_FREE(filePath);
-    VIR_FREE(fileStr);
     virJSONValueFree(configJSON);
     return ret;
 }
@@ -2282,8 +2217,8 @@ virNetDevSetNetConfig(const char *linkdev, int vf,
     int ret = -1;
     char MACStr[VIR_MAC_STRING_BUFLEN];
     const char *pfDevName = NULL;
-    char *pfDevOrig = NULL;
-    char *vfDevOrig = NULL;
+    VIR_AUTOFREE(char *) pfDevOrig = NULL;
+    VIR_AUTOFREE(char *) vfDevOrig = NULL;
     int vlanTag = -1;
     virPCIDevicePtr vfPCIDevice = NULL;
 
@@ -2462,8 +2397,6 @@ virNetDevSetNetConfig(const char *linkdev, int vf,
 
     ret = 0;
  cleanup:
-    VIR_FREE(pfDevOrig);
-    VIR_FREE(vfDevOrig);
     virPCIDeviceFree(vfPCIDevice);
     return ret;
 }
@@ -2543,28 +2476,27 @@ int
 virNetDevGetLinkInfo(const char *ifname,
                      virNetDevIfLinkPtr lnk)
 {
-    int ret = -1;
-    char *path = NULL;
-    char *buf = NULL;
+    VIR_AUTOFREE(char *) path = NULL;
+    VIR_AUTOFREE(char *) buf = NULL;
     char *tmp;
     int tmp_state;
     unsigned int tmp_speed;
 
     if (virNetDevSysfsFile(&path, ifname, "operstate") < 0)
-        goto cleanup;
+        return -1;
 
     if (virFileReadAll(path, 1024, &buf) < 0) {
         virReportSystemError(errno,
                              _("unable to read: %s"),
                              path);
-        goto cleanup;
+        return -1;
     }
 
     if (!(tmp = strchr(buf, '\n'))) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unable to parse: %s"),
                        buf);
-        goto cleanup;
+        return -1;
     }
 
     *tmp = '\0';
@@ -2575,7 +2507,7 @@ virNetDevGetLinkInfo(const char *ifname,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unable to parse: %s"),
                        buf);
-        goto cleanup;
+        return -1;
     }
 
     lnk->state = tmp_state;
@@ -2586,26 +2518,24 @@ virNetDevGetLinkInfo(const char *ifname,
      * speed if that's the case. */
     if (lnk->state != VIR_NETDEV_IF_STATE_UP) {
         lnk->speed = 0;
-        ret = 0;
-        goto cleanup;
+        return 0;
     }
 
     VIR_FREE(path);
     VIR_FREE(buf);
 
     if (virNetDevSysfsFile(&path, ifname, "speed") < 0)
-        goto cleanup;
+        return -1;
 
     if (virFileReadAllQuiet(path, 1024, &buf) < 0) {
         /* Some devices doesn't report speed, in which case we get EINVAL */
-        if (errno == EINVAL) {
-            ret = 0;
-            goto cleanup;
-        }
+        if (errno == EINVAL)
+            return 0;
+
         virReportSystemError(errno,
                              _("unable to read: %s"),
                              path);
-        goto cleanup;
+        return -1;
     }
 
     if (virStrToLong_ui(buf, &tmp, 10, &tmp_speed) < 0 ||
@@ -2613,16 +2543,12 @@ virNetDevGetLinkInfo(const char *ifname,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unable to parse: %s"),
                        buf);
-        goto cleanup;
+        return -1;
     }
 
     lnk->speed = tmp_speed;
 
-    ret = 0;
- cleanup:
-    VIR_FREE(buf);
-    VIR_FREE(path);
-    return ret;
+    return 0;
 }
 
 #else
@@ -2830,7 +2756,7 @@ static int virNetDevGetMcastList(const char *ifname,
                                  virNetDevMcastListPtr mcast)
 {
     char *cur = NULL;
-    char *buf = NULL;
+    VIR_AUTOFREE(char *) buf = NULL;
     char *next = NULL;
     int ret = -1, len;
     virNetDevMcastEntryPtr entry = NULL;
@@ -2866,7 +2792,6 @@ static int virNetDevGetMcastList(const char *ifname,
 
     ret = 0;
  cleanup:
-    VIR_FREE(buf);
     VIR_FREE(entry);
 
     return ret;
@@ -3006,10 +2931,8 @@ static int
 virNetDevRDMAFeature(const char *ifname,
                      virBitmapPtr *out)
 {
-    char *eth_devpath = NULL;
-    char *ib_devpath = NULL;
-    char *eth_res_buf = NULL;
-    char *ib_res_buf = NULL;
+    VIR_AUTOFREE(char *) eth_devpath = NULL;
+    VIR_AUTOFREE(char *) eth_res_buf = NULL;
     DIR *dirp = NULL;
     struct dirent *dp;
     int ret = -1;
@@ -3028,6 +2951,9 @@ virNetDevRDMAFeature(const char *ifname,
         goto cleanup;
 
     while (virDirRead(dirp, &dp, SYSFS_INFINIBAND_DIR) > 0) {
+        VIR_AUTOFREE(char *) ib_devpath = NULL;
+        VIR_AUTOFREE(char *) ib_res_buf = NULL;
+
         if (virAsprintf(&ib_devpath, SYSFS_INFINIBAND_DIR "%s/device/resource",
                         dp->d_name) < 0)
             continue;
@@ -3036,17 +2962,11 @@ virNetDevRDMAFeature(const char *ifname,
             ignore_value(virBitmapSetBit(*out, VIR_NET_DEV_FEAT_RDMA));
             break;
         }
-        VIR_FREE(ib_devpath);
-        VIR_FREE(ib_res_buf);
     }
     ret = 0;
 
  cleanup:
     VIR_DIR_CLOSE(dirp);
-    VIR_FREE(eth_devpath);
-    VIR_FREE(ib_devpath);
-    VIR_FREE(eth_res_buf);
-    VIR_FREE(ib_res_buf);
     return ret;
 }
 
@@ -3205,7 +3125,7 @@ static uint32_t
 virNetDevGetFamilyId(const char *family_name)
 {
     struct nl_msg *nl_msg = NULL;
-    struct nlmsghdr *resp = NULL;
+    VIR_AUTOFREE(struct nlmsghdr *) resp = NULL;
     struct genlmsghdr* gmsgh = NULL;
     struct nlattr *tb[CTRL_ATTR_MAX + 1] = {NULL, };
     unsigned int recvbuflen;
@@ -3245,7 +3165,6 @@ virNetDevGetFamilyId(const char *family_name)
 
  cleanup:
     nlmsg_free(nl_msg);
-    VIR_FREE(resp);
     return family_id;
 }
 
@@ -3265,13 +3184,13 @@ virNetDevSwitchdevFeature(const char *ifname,
                           virBitmapPtr *out)
 {
     struct nl_msg *nl_msg = NULL;
-    struct nlmsghdr *resp = NULL;
+    VIR_AUTOFREE(struct nlmsghdr *) resp = NULL;
     unsigned int recvbuflen;
     struct nlattr *tb[DEVLINK_ATTR_MAX + 1] = {NULL, };
     virPCIDevicePtr pci_device_ptr = NULL;
     struct genlmsghdr* gmsgh = NULL;
     const char *pci_name;
-    char *pfname = NULL;
+    VIR_AUTOFREE(char *) pfname = NULL;
     int is_vf = -1;
     int ret = -1;
     uint32_t family_id;
@@ -3333,8 +3252,6 @@ virNetDevSwitchdevFeature(const char *ifname,
  cleanup:
     nlmsg_free(nl_msg);
     virPCIDeviceFree(pci_device_ptr);
-    VIR_FREE(resp);
-    VIR_FREE(pfname);
     return ret;
 }
 # else
@@ -3375,7 +3292,7 @@ virNetDevGetEthtoolGFeatures(virBitmapPtr bitmap,
                              int fd,
                              struct ifreq *ifr)
 {
-    struct ethtool_gfeatures *g_cmd;
+    VIR_AUTOFREE(struct ethtool_gfeatures *) g_cmd = NULL;
 
     if (VIR_ALLOC_VAR(g_cmd,
                       struct ethtool_get_features_block, GFEATURES_SIZE) < 0)
@@ -3385,7 +3302,6 @@ virNetDevGetEthtoolGFeatures(virBitmapPtr bitmap,
     g_cmd->size = GFEATURES_SIZE;
     if (virNetDevGFeatureAvailable(fd, ifr, g_cmd))
         ignore_value(virBitmapSetBit(bitmap, VIR_NET_DEV_FEAT_TXUDPTNL));
-    VIR_FREE(g_cmd);
     return 0;
 }
 # else
