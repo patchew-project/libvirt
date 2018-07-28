@@ -72,6 +72,10 @@ typedef struct nl_handle virNetlinkHandle;
 typedef struct nl_sock virNetlinkHandle;
 # endif
 
+typedef virNetlinkHandle *virNetlinkHandlePtr;
+
+VIR_DEFINE_AUTOPTR_FUNC(virNetlinkHandle, virNetlinkFree)
+
 typedef struct _virNetlinkEventSrvPrivate virNetlinkEventSrvPrivate;
 typedef virNetlinkEventSrvPrivate *virNetlinkEventSrvPrivatePtr;
 struct _virNetlinkEventSrvPrivate {
@@ -79,7 +83,7 @@ struct _virNetlinkEventSrvPrivate {
     virMutex lock;
     int eventwatch;
     int netlinkfd;
-    virNetlinkHandle *netlinknh;
+    virNetlinkHandlePtr netlinknh;
     /*Events*/
     int handled;
     size_t handlesCount;
@@ -102,7 +106,7 @@ static int nextWatch = 1;
 /* Linux kernel supports up to MAX_LINKS (32 at the time) individual
  * netlink protocols. */
 static virNetlinkEventSrvPrivatePtr server[MAX_LINKS] = {NULL};
-static virNetlinkHandle *placeholder_nlhandle;
+static virNetlinkHandlePtr placeholder_nlhandle;
 
 /* Function definitions */
 
@@ -172,10 +176,10 @@ virNetlinkShutdown(void)
  * Returns a handle to the new netlink socket, or 0 if there was a failure.
  *
  */
-static virNetlinkHandle *
+static virNetlinkHandlePtr
 virNetlinkCreateSocket(int protocol)
 {
-    virNetlinkHandle *nlhandle = NULL;
+    virNetlinkHandlePtr nlhandle = NULL;
 
     if (!(nlhandle = virNetlinkAlloc())) {
         virReportSystemError(errno, "%s",
@@ -209,7 +213,7 @@ virNetlinkCreateSocket(int protocol)
     goto cleanup;
 }
 
-static virNetlinkHandle *
+static virNetlinkHandlePtr
 virNetlinkSendRequest(struct nl_msg *nl_msg, uint32_t src_pid,
                       struct sockaddr_nl nladdr,
                       unsigned int protocol, unsigned int groups)
@@ -217,7 +221,7 @@ virNetlinkSendRequest(struct nl_msg *nl_msg, uint32_t src_pid,
     ssize_t nbytes;
     int fd;
     int n;
-    virNetlinkHandle *nlhandle = NULL;
+    virNetlinkHandlePtr nlhandle = NULL;
     struct pollfd fds[1];
     struct nlmsghdr *nlmsg = nlmsg_hdr(nl_msg);
 
@@ -303,7 +307,7 @@ int virNetlinkCommand(struct nl_msg *nl_msg,
             .nl_groups = 0,
     };
     struct pollfd fds[1];
-    virNetlinkHandle *nlhandle = NULL;
+    virNetlinkHandlePtr nlhandle = NULL;
     int len = 0;
 
     memset(fds, 0, sizeof(fds));
@@ -353,7 +357,7 @@ virNetlinkDumpCommand(struct nl_msg *nl_msg,
             .nl_pid    = dst_pid,
             .nl_groups = 0,
     };
-    virNetlinkHandle *nlhandle = NULL;
+    virNetlinkHandlePtr nlhandle = NULL;
 
     if (!(nlhandle = virNetlinkSendRequest(nl_msg, src_pid, nladdr,
                                            protocol, groups)))
