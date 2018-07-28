@@ -111,7 +111,6 @@ int virNetDevVethCreate(char** veth1, char** veth2)
 {
     int ret = -1;
     int vethNum = 0;
-    virCommandPtr cmd = NULL;
     size_t i;
 
     /*
@@ -124,6 +123,7 @@ int virNetDevVethCreate(char** veth1, char** veth2)
     for (i = 0; i < MAX_VETH_RETRIES; i++) {
         VIR_AUTOFREE(char *) veth1auto = NULL;
         VIR_AUTOFREE(char *) veth2auto = NULL;
+        VIR_AUTOPTR(virCommand) cmd = NULL;
 
         int status;
         if (!*veth1) {
@@ -173,8 +173,6 @@ int virNetDevVethCreate(char** veth1, char** veth2)
                   *veth1 ? *veth1 : veth1auto,
                   *veth2 ? *veth2 : veth2auto,
                   status);
-        virCommandFree(cmd);
-        cmd = NULL;
     }
 
     virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -183,7 +181,6 @@ int virNetDevVethCreate(char** veth1, char** veth2)
 
  cleanup:
     virMutexUnlock(&virNetDevVethCreateMutex);
-    virCommandFree(cmd);
     return ret;
 }
 
@@ -200,26 +197,22 @@ int virNetDevVethCreate(char** veth1, char** veth2)
  */
 int virNetDevVethDelete(const char *veth)
 {
-    virCommandPtr cmd = virCommandNewArgList("ip", "link", "del", veth, NULL);
+    VIR_AUTOPTR(virCommand) cmd = NULL;
+    cmd = virCommandNewArgList("ip", "link", "del", veth, NULL);
     int status;
-    int ret = -1;
 
     if (virCommandRun(cmd, &status) < 0)
-        goto cleanup;
+        return -1;
 
     if (status != 0) {
         if (!virNetDevExists(veth)) {
             VIR_DEBUG("Device %s already deleted (by kernel namespace cleanup)", veth);
-            ret = 0;
-            goto cleanup;
+            return 0;
         }
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Failed to delete veth device %s"), veth);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return 0;
 }
