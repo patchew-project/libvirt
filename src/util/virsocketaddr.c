@@ -26,7 +26,6 @@
 #include "virsocketaddr.h"
 #include "virerror.h"
 #include "virstring.h"
-#include "viralloc.h"
 #include "virbuffer.h"
 
 #include <netdb.h>
@@ -1252,4 +1251,10 @@ virSocketAddrPTRDomain(const virSocketAddr *addr,
  unsupported:
     ret = -2;
     goto cleanup;
+}
+
+void
+virSocketAddrFree(virSocketAddrPtr addr)
+{
+    VIR_FREE(addr);
 }
