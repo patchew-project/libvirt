@@ -27,7 +27,6 @@
 #include "virnetlink.h"
 #include "virfile.h"
 #include "virerror.h"
-#include "viralloc.h"
 #include "virlog.h"
 #include "virstring.h"
 #include "virutil.h"
@@ -1128,4 +1127,10 @@ virNetDevIPInfoAddToDev(const char *ifname,
     ret = 0;
  cleanup:
     return ret;
+}
+
+void
+virNetDevIPAddrFree(virNetDevIPAddrPtr ip)
+{
+    VIR_FREE(ip);
 }
