@@ -576,7 +576,7 @@ static const uint32_t modeMap[VIR_NETDEV_MACVLAN_MODE_LAST] = {
 };
 
 /* Struct to hold the state and configuration of a 802.1qbg port */
-struct virNetlinkCallbackData {
+struct _virNetlinkCallbackData {
     char *cr_ifname;
     virNetDevVPortProfilePtr virtPortProfile;
     virMacAddr macaddress;
@@ -587,7 +587,8 @@ struct virNetlinkCallbackData {
     unsigned int linkState;
 };
 
-typedef struct virNetlinkCallbackData *virNetlinkCallbackDataPtr;
+typedef struct _virNetlinkCallbackData virNetlinkCallbackData;
+typedef virNetlinkCallbackData *virNetlinkCallbackDataPtr;
 
 # define INSTANCE_STRLEN 36
 
@@ -869,6 +870,8 @@ virNetlinkCallbackDataFree(virNetlinkCallbackDataPtr calld)
     }
     VIR_FREE(calld);
 }
+
+VIR_DEFINE_AUTOPTR_FUNC(virNetlinkCallbackData, virNetlinkCallbackDataFree)
 
 /**
  * virNetDevMacVLanVPortProfileDestroyCallback:
