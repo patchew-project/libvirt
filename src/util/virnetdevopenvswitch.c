@@ -149,10 +149,10 @@ int virNetDevOpenvswitchAddPort(const char *brname, const char *ifname,
     char macaddrstr[VIR_MAC_STRING_BUFLEN];
     char ifuuidstr[VIR_UUID_STRING_BUFLEN];
     char vmuuidstr[VIR_UUID_STRING_BUFLEN];
-    char *attachedmac_ex_id = NULL;
-    char *ifaceid_ex_id = NULL;
-    char *profile_ex_id = NULL;
-    char *vmid_ex_id = NULL;
+    VIR_AUTOFREE(char *) attachedmac_ex_id = NULL;
+    VIR_AUTOFREE(char *) ifaceid_ex_id = NULL;
+    VIR_AUTOFREE(char *) profile_ex_id = NULL;
+    VIR_AUTOFREE(char *) vmid_ex_id = NULL;
 
     virMacAddrFormat(macaddr, macaddrstr);
     virUUIDFormat(ovsport->interfaceID, ifuuidstr);
@@ -209,10 +209,6 @@ int virNetDevOpenvswitchAddPort(const char *brname, const char *ifname,
 
     ret = 0;
  cleanup:
-    VIR_FREE(attachedmac_ex_id);
-    VIR_FREE(ifaceid_ex_id);
-    VIR_FREE(vmid_ex_id);
-    VIR_FREE(profile_ex_id);
     virCommandFree(cmd);
     return ret;
 }
@@ -339,7 +335,7 @@ virNetDevOpenvswitchInterfaceStats(const char *ifname,
                                    virDomainInterfaceStatsPtr stats)
 {
     virCommandPtr cmd = NULL;
-    char *output;
+    VIR_AUTOFREE(char *) output = NULL;
     char *tmp;
     bool gotStats = false;
     int ret = -1;
@@ -399,7 +395,6 @@ virNetDevOpenvswitchInterfaceStats(const char *ifname,
     ret = 0;
 
  cleanup:
-    VIR_FREE(output);
     virCommandFree(cmd);
     return ret;
 }
@@ -424,7 +419,6 @@ int
 virNetDevOpenvswitchInterfaceGetMaster(const char *ifname, char **master)
 {
     virCommandPtr cmd = NULL;
-    int ret = -1;
     int exitstatus;
 
     *master = NULL;
@@ -438,7 +432,7 @@ virNetDevOpenvswitchInterfaceGetMaster(const char *ifname, char **master)
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unable to run command to get OVS master for "
                          "interface %s"), ifname);
-        goto cleanup;
+        return -1;
     }
 
     /* non-0 exit code just means that the interface has no master in OVS */
@@ -454,9 +448,7 @@ virNetDevOpenvswitchInterfaceGetMaster(const char *ifname, char **master)
 
     VIR_DEBUG("OVS master for %s is %s", ifname, *master ? *master : "(none)");
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
@@ -476,12 +468,12 @@ virNetDevOpenvswitchGetVhostuserIfname(const char *path,
                                        char **ifname)
 {
     virCommandPtr cmd = NULL;
+    VIR_AUTOFREE(char *) ovs_timeout = NULL;
     char *tmpIfname = NULL;
     char **tokens = NULL;
     size_t ntokens = 0;
     int status;
     int ret = -1;
-    char *ovs_timeout = NULL;
 
     /* Openvswitch vhostuser path are hardcoded to
      * /<runstatedir>/openvswitch/<ifname>
@@ -513,7 +505,6 @@ virNetDevOpenvswitchGetVhostuserIfname(const char *path,
  cleanup:
     virStringListFreeCount(tokens, ntokens);
     virCommandFree(cmd);
-    VIR_FREE(ovs_timeout);
     return ret;
 }
 
