@@ -898,19 +898,20 @@ virNetDevMacVLanVPortProfileRegisterCallback(const char *ifname,
                                              virNetDevVPortProfilePtr virtPortProfile,
                                              virNetDevVPortProfileOp vmOp)
 {
-    virNetlinkCallbackDataPtr calld = NULL;
+    VIR_AUTOPTR(virNetlinkCallbackData) calld = NULL;
+    virNetlinkCallbackDataPtr temp ATTRIBUTE_UNUSED = NULL;
 
     if (virtPortProfile && virNetlinkEventServiceIsRunning(NETLINK_ROUTE)) {
         if (VIR_ALLOC(calld) < 0)
-            goto error;
+            return -1;
         if (VIR_STRDUP(calld->cr_ifname, ifname) < 0)
-            goto error;
+            return -1;
         if (VIR_ALLOC(calld->virtPortProfile) < 0)
-            goto error;
+            return -1;
         memcpy(calld->virtPortProfile, virtPortProfile, sizeof(*virtPortProfile));
         virMacAddrSet(&calld->macaddress, macaddress);
         if (VIR_STRDUP(calld->linkdev, linkdev) < 0)
-            goto error;
+            return -1;
         memcpy(calld->vmuuid, vmuuid, sizeof(calld->vmuuid));
 
         calld->vmOp = vmOp;
@@ -918,14 +919,12 @@ virNetDevMacVLanVPortProfileRegisterCallback(const char *ifname,
         if (virNetlinkEventAddClient(virNetDevMacVLanVPortProfileCallback,
                                      virNetDevMacVLanVPortProfileDestroyCallback,
                                      calld, macaddress, NETLINK_ROUTE) < 0)
-            goto error;
+            return -1;
     }
 
-    return 0;
+    VIR_STEAL_PTR(temp, calld);
 
- error:
-    virNetlinkCallbackDataFree(calld);
-    return -1;
+    return 0;
 }
 
 
@@ -1184,9 +1183,9 @@ int virNetDevMacVLanDeleteWithVPortProfile(const char *ifname,
     }
 
     if (mode == VIR_NETDEV_MACVLAN_MODE_PASSTHRU) {
-        virMacAddrPtr MAC = NULL;
-        virMacAddrPtr adminMAC = NULL;
-        virNetDevVlanPtr vlan = NULL;
+        VIR_AUTOPTR(virMacAddr) MAC = NULL;
+        VIR_AUTOPTR(virMacAddr) adminMAC = NULL;
+        VIR_AUTOPTR(virNetDevVlan) vlan = NULL;
 
         if ((virNetDevReadNetConfig(linkdev, -1, stateDir,
                                     &adminMAC, &vlan, &MAC) == 0) &&
@@ -1194,9 +1193,6 @@ int virNetDevMacVLanDeleteWithVPortProfile(const char *ifname,
 
             ignore_value(virNetDevSetNetConfig(linkdev, -1,
                                                adminMAC, vlan, MAC, !!vlan));
-            VIR_FREE(MAC);
-            VIR_FREE(adminMAC);
-            virNetDevVlanFree(vlan);
         }
     }
 
