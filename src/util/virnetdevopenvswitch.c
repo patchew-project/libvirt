@@ -76,9 +76,7 @@ virNetDevOpenvswitchAddTimeout(virCommandPtr cmd)
 static int
 virNetDevOpenvswitchConstructVlans(virCommandPtr cmd, virNetDevVlanPtr virtVlan)
 {
-    int ret = -1;
     size_t i = 0;
-    virBuffer buf = VIR_BUFFER_INITIALIZER;
 
     if (!virtVlan || !virtVlan->nTags)
         return 0;
@@ -98,7 +96,12 @@ virNetDevOpenvswitchConstructVlans(virCommandPtr cmd, virNetDevVlanPtr virtVlan)
     }
 
     if (virtVlan->trunk) {
-        virBufferAddLit(&buf, "trunk=");
+        VIR_AUTOPTR(virBuffer) buf = NULL;
+
+        if (VIR_ALLOC(buf) < 0)
+            return -1;
+
+        virBufferAddLit(buf, "trunk=");
 
         /*
          * Trunk ports have at least one VLAN. Do the first one
@@ -106,24 +109,21 @@ virNetDevOpenvswitchConstructVlans(virCommandPtr cmd, virNetDevVlanPtr virtVlan)
          * start of the for loop if there are more than one VLANs
          * on this trunk port.
          */
-        virBufferAsprintf(&buf, "%d", virtVlan->tag[i]);
+        virBufferAsprintf(buf, "%d", virtVlan->tag[i]);
 
         for (i = 1; i < virtVlan->nTags; i++) {
-            virBufferAddLit(&buf, ",");
-            virBufferAsprintf(&buf, "%d", virtVlan->tag[i]);
+            virBufferAddLit(buf, ",");
+            virBufferAsprintf(buf, "%d", virtVlan->tag[i]);
         }
 
-        if (virBufferCheckError(&buf) < 0)
-            goto cleanup;
-        virCommandAddArg(cmd, virBufferCurrentContent(&buf));
+        if (virBufferCheckError(buf) < 0)
+            return -1;
+        virCommandAddArg(cmd, virBufferCurrentContent(buf));
     } else if (virtVlan->nTags) {
         virCommandAddArgFormat(cmd, "tag=%d", virtVlan->tag[0]);
     }
 
-    ret = 0;
- cleanup:
-    virBufferFreeAndReset(&buf);
-    return ret;
+    return 0;
 }
 
 /**
@@ -144,11 +144,10 @@ int virNetDevOpenvswitchAddPort(const char *brname, const char *ifname,
                                    virNetDevVPortProfilePtr ovsport,
                                    virNetDevVlanPtr virtVlan)
 {
-    int ret = -1;
-    virCommandPtr cmd = NULL;
     char macaddrstr[VIR_MAC_STRING_BUFLEN];
     char ifuuidstr[VIR_UUID_STRING_BUFLEN];
     char vmuuidstr[VIR_UUID_STRING_BUFLEN];
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     VIR_AUTOFREE(char *) attachedmac_ex_id = NULL;
     VIR_AUTOFREE(char *) ifaceid_ex_id = NULL;
     VIR_AUTOFREE(char *) profile_ex_id = NULL;
@@ -160,17 +159,17 @@ int virNetDevOpenvswitchAddPort(const char *brname, const char *ifname,
 
     if (virAsprintf(&attachedmac_ex_id, "external-ids:attached-mac=\"%s\"",
                     macaddrstr) < 0)
-        goto cleanup;
+        return -1;
     if (virAsprintf(&ifaceid_ex_id, "external-ids:iface-id=\"%s\"",
                     ifuuidstr) < 0)
-        goto cleanup;
+        return -1;
     if (virAsprintf(&vmid_ex_id, "external-ids:vm-id=\"%s\"",
                     vmuuidstr) < 0)
-        goto cleanup;
+        return -1;
     if (ovsport->profileID[0] != '\0') {
         if (virAsprintf(&profile_ex_id, "external-ids:port-profile=\"%s\"",
                         ovsport->profileID) < 0)
-            goto cleanup;
+            return -1;
     }
 
     cmd = virCommandNew(OVSVSCTL);
@@ -179,7 +178,7 @@ int virNetDevOpenvswitchAddPort(const char *brname, const char *ifname,
                          ifname, "--", "add-port", brname, ifname, NULL);
 
     if (virNetDevOpenvswitchConstructVlans(cmd, virtVlan) < 0)
-        goto cleanup;
+        return -1;
 
     if (ovsport->profileID[0] == '\0') {
         virCommandAddArgList(cmd,
@@ -204,13 +203,10 @@ int virNetDevOpenvswitchAddPort(const char *brname, const char *ifname,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unable to add port %s to OVS bridge %s"),
                        ifname, brname);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return 0;
 }
 
 /**
@@ -223,8 +219,7 @@ int virNetDevOpenvswitchAddPort(const char *brname, const char *ifname,
  */
 int virNetDevOpenvswitchRemovePort(const char *brname ATTRIBUTE_UNUSED, const char *ifname)
 {
-    int ret = -1;
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
 
     cmd = virCommandNew(OVSVSCTL);
     virNetDevOpenvswitchAddTimeout(cmd);
@@ -233,13 +228,10 @@ int virNetDevOpenvswitchRemovePort(const char *brname ATTRIBUTE_UNUSED, const ch
     if (virCommandRun(cmd, NULL) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unable to delete port %s from OVS"), ifname);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return 0;
 }
 
 /**
@@ -253,9 +245,8 @@ int virNetDevOpenvswitchRemovePort(const char *brname ATTRIBUTE_UNUSED, const ch
  */
 int virNetDevOpenvswitchGetMigrateData(char **migrate, const char *ifname)
 {
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     size_t len;
-    int ret = -1;
 
     cmd = virCommandNew(OVSVSCTL);
     virNetDevOpenvswitchAddTimeout(cmd);
@@ -269,7 +260,7 @@ int virNetDevOpenvswitchGetMigrateData(char **migrate, const char *ifname)
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unable to run command to get OVS port data for "
                          "interface %s"), ifname);
-        goto cleanup;
+        return -1;
     }
 
     /* Wipeout the newline, if it exists */
@@ -277,10 +268,7 @@ int virNetDevOpenvswitchGetMigrateData(char **migrate, const char *ifname)
     if (len > 0)
         (*migrate)[len - 1] = '\0';
 
-    ret = 0;
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return 0;
 }
 
 /**
@@ -294,8 +282,7 @@ int virNetDevOpenvswitchGetMigrateData(char **migrate, const char *ifname)
  */
 int virNetDevOpenvswitchSetMigrateData(char *migrate, const char *ifname)
 {
-    virCommandPtr cmd = NULL;
-    int ret = -1;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
 
     if (!migrate) {
         VIR_DEBUG("No OVS port data for interface %s", ifname);
@@ -312,13 +299,10 @@ int virNetDevOpenvswitchSetMigrateData(char *migrate, const char *ifname)
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unable to run command to set OVS port data for "
                          "interface %s"), ifname);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return 0;
 }
 
 /**
@@ -334,11 +318,10 @@ int
 virNetDevOpenvswitchInterfaceStats(const char *ifname,
                                    virDomainInterfaceStatsPtr stats)
 {
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     VIR_AUTOFREE(char *) output = NULL;
     char *tmp;
     bool gotStats = false;
-    int ret = -1;
 
     /* Just ensure the interface exists in ovs */
     cmd = virCommandNew(OVSVSCTL);
@@ -350,7 +333,7 @@ virNetDevOpenvswitchInterfaceStats(const char *ifname,
         /* no ovs-vsctl or interface 'ifname' doesn't exists in ovs */
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Interface not found"));
-        goto cleanup;
+        return -1;
     }
 
 #define GET_STAT(name, member) \
@@ -369,7 +352,7 @@ virNetDevOpenvswitchInterfaceStats(const char *ifname,
                 *tmp != '\n') { \
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s", \
                                _("Fail to parse ovs-vsctl output")); \
-                goto cleanup; \
+                return -1; \
             } \
             gotStats = true; \
         } \
@@ -389,14 +372,10 @@ virNetDevOpenvswitchInterfaceStats(const char *ifname,
     if (!gotStats) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Interface doesn't have any statistics"));
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
-
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return 0;
 }
 
 
@@ -467,7 +446,7 @@ int
 virNetDevOpenvswitchGetVhostuserIfname(const char *path,
                                        char **ifname)
 {
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     VIR_AUTOFREE(char *) ovs_timeout = NULL;
     char *tmpIfname = NULL;
     char **tokens = NULL;
@@ -504,7 +483,6 @@ virNetDevOpenvswitchGetVhostuserIfname(const char *path,
 
  cleanup:
     virStringListFreeCount(tokens, ntokens);
-    virCommandFree(cmd);
     return ret;
 }
 
@@ -520,8 +498,7 @@ virNetDevOpenvswitchGetVhostuserIfname(const char *path,
 int virNetDevOpenvswitchUpdateVlan(const char *ifname,
                                    virNetDevVlanPtr virtVlan)
 {
-    int ret = -1;
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
 
     cmd = virCommandNew(OVSVSCTL);
     virNetDevOpenvswitchAddTimeout(cmd);
@@ -532,16 +509,13 @@ int virNetDevOpenvswitchUpdateVlan(const char *ifname,
                          "--", "--if-exists", "set", "Port", ifname, NULL);
 
     if (virNetDevOpenvswitchConstructVlans(cmd, virtVlan) < 0)
-        goto cleanup;
+        return -1;
 
     if (virCommandRun(cmd, NULL) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unable to set vlan configuration on port %s"), ifname);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return 0;
 }
