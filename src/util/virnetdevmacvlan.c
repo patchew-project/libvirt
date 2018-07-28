@@ -308,7 +308,7 @@ virNetDevMacVLanCreate(const char *ifname,
                        int *retry)
 {
     int rc = -1;
-    struct nlmsghdr *resp = NULL;
+    VIR_AUTOFREE(struct nlmsghdr *) resp = NULL;
     struct nlmsgerr *err;
     struct ifinfomsg ifinfo = { .ifi_family = AF_UNSPEC };
     int ifindex;
@@ -403,7 +403,6 @@ virNetDevMacVLanCreate(const char *ifname,
     rc = 0;
  cleanup:
     nlmsg_free(nl_msg);
-    VIR_FREE(resp);
     return rc;
 
  malformed_resp:
@@ -452,7 +451,7 @@ virNetDevMacVLanTapOpen(const char *ifname,
 {
     int ret = -1;
     int ifindex;
-    char *tapname = NULL;
+    VIR_AUTOFREE(char *) tapname = NULL;
     size_t i = 0;
 
     if (virNetDevGetIndex(ifname, &ifindex) < 0)
@@ -487,7 +486,6 @@ virNetDevMacVLanTapOpen(const char *ifname,
         while (i--)
             VIR_FORCE_CLOSE(tapfd[i]);
     }
-    VIR_FREE(tapname);
     return ret;
 }
 
