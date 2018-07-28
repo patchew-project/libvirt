@@ -221,30 +221,31 @@ virNetlinkSendRequest(struct nl_msg *nl_msg, uint32_t src_pid,
     ssize_t nbytes;
     int fd;
     int n;
-    virNetlinkHandlePtr nlhandle = NULL;
+    VIR_AUTOPTR(virNetlinkHandle) nlhandle = NULL;
+    virNetlinkHandlePtr temp = NULL;
     struct pollfd fds[1];
     struct nlmsghdr *nlmsg = nlmsg_hdr(nl_msg);
 
     if (protocol >= MAX_LINKS) {
         virReportSystemError(EINVAL,
                              _("invalid protocol argument: %d"), protocol);
-        goto error;
+        return NULL;
     }
 
     if (!(nlhandle = virNetlinkCreateSocket(protocol)))
-        goto error;
+        return NULL;
 
     fd = nl_socket_get_fd(nlhandle);
     if (fd < 0) {
         virReportSystemError(errno,
                              "%s", _("cannot get netlink socket fd"));
-        goto error;
+        return NULL;
     }
 
     if (groups && nl_socket_add_membership(nlhandle, groups) < 0) {
         virReportSystemError(errno,
                              "%s", _("cannot add netlink membership"));
-        goto error;
+        return NULL;
     }
 
     nlmsg_set_dst(nl_msg, &nladdr);
@@ -255,7 +256,7 @@ virNetlinkSendRequest(struct nl_msg *nl_msg, uint32_t src_pid,
     if (nbytes < 0) {
         virReportSystemError(errno,
                              "%s", _("cannot send to netlink socket"));
-        goto error;
+        return NULL;
     }
 
     memset(fds, 0, sizeof(fds));
@@ -273,11 +274,9 @@ virNetlinkSendRequest(struct nl_msg *nl_msg, uint32_t src_pid,
                                  _("no valid netlink response was received"));
     }
 
-    return nlhandle;
+    VIR_STEAL_PTR(temp, nlhandle);
 
- error:
-    virNetlinkFree(nlhandle);
-    return NULL;
+    return temp;
 }
 
 /**
@@ -307,7 +306,7 @@ int virNetlinkCommand(struct nl_msg *nl_msg,
             .nl_groups = 0,
     };
     struct pollfd fds[1];
-    virNetlinkHandlePtr nlhandle = NULL;
+    VIR_AUTOPTR(virNetlinkHandle) nlhandle = NULL;
     int len = 0;
 
     memset(fds, 0, sizeof(fds));
@@ -335,7 +334,6 @@ int virNetlinkCommand(struct nl_msg *nl_msg,
         *respbuflen = 0;
     }
 
-    virNetlinkFree(nlhandle);
     return ret;
 }
 
@@ -346,10 +344,8 @@ virNetlinkDumpCommand(struct nl_msg *nl_msg,
                       unsigned int protocol, unsigned int groups,
                       void *opaque)
 {
-    int ret = -1;
     bool end = false;
     int len = 0;
-    struct nlmsghdr *resp = NULL;
     struct nlmsghdr *msg = NULL;
 
     struct sockaddr_nl nladdr = {
@@ -357,13 +353,14 @@ virNetlinkDumpCommand(struct nl_msg *nl_msg,
             .nl_pid    = dst_pid,
             .nl_groups = 0,
     };
-    virNetlinkHandlePtr nlhandle = NULL;
+    VIR_AUTOPTR(virNetlinkHandle) nlhandle = NULL;
 
     if (!(nlhandle = virNetlinkSendRequest(nl_msg, src_pid, nladdr,
                                            protocol, groups)))
-        goto cleanup;
+        return -1;
 
     while (!end) {
+        VIR_AUTOFREE(struct nlmsghdr *) resp = NULL;
         len = nl_recv(nlhandle, &nladdr, (unsigned char **)&resp, NULL);
         VIR_WARNINGS_NO_CAST_ALIGN
         for (msg = resp; NLMSG_OK(msg, len); msg = NLMSG_NEXT(msg, len)) {
@@ -372,20 +369,14 @@ virNetlinkDumpCommand(struct nl_msg *nl_msg,
                 end = true;
 
             if (virNetlinkGetErrorCode(msg, len) < 0)
-                goto cleanup;
+                return -1;
 
             if (callback(msg, opaque) < 0)
-                goto cleanup;
+                return -1;
         }
-        VIR_FREE(resp);
     }
 
-    ret = 0;
-
- cleanup:
-    VIR_FREE(resp);
-    virNetlinkFree(nlhandle);
-    return ret;
+    return 0;
 }
 
 /**
@@ -527,7 +518,7 @@ int
 virNetlinkDelLink(const char *ifname, virNetlinkDelLinkFallback fallback)
 {
     int rc = -1;
-    struct nlmsghdr *resp = NULL;
+    VIR_AUTOFREE(struct nlmsghdr *) resp = NULL;
     struct nlmsgerr *err;
     struct ifinfomsg ifinfo = { .ifi_family = AF_UNSPEC };
     unsigned int recvbuflen;
@@ -582,7 +573,6 @@ virNetlinkDelLink(const char *ifname, virNetlinkDelLinkFallback fallback)
     rc = 0;
  cleanup:
     nlmsg_free(nl_msg);
-    VIR_FREE(resp);
     return rc;
 
  malformed_resp:
@@ -771,7 +761,7 @@ virNetlinkEventCallback(int watch,
                         void *opaque)
 {
     virNetlinkEventSrvPrivatePtr srv = opaque;
-    struct nlmsghdr *msg;
+    VIR_AUTOFREE(struct nlmsghdr *) msg = NULL;
     struct sockaddr_nl peer;
     struct ucred *creds = NULL;
     size_t i;
@@ -806,7 +796,7 @@ virNetlinkEventCallback(int watch,
 
     if (!handled)
         VIR_DEBUG("event not handled.");
-    VIR_FREE(msg);
+
     virNetlinkEventServerUnlock(srv);
 }
 
