@@ -634,19 +634,22 @@ virNetDevIPCheckIPv6Forwarding(void)
     }
 
     if (!valid) {
-        virBuffer buf = VIR_BUFFER_INITIALIZER;
+        VIR_AUTOPTR(virBuffer) buf = NULL;
+
+        if (VIR_ALLOC(buf) < 0)
+            goto cleanup;
+
         for (i = 0; i < data.ndevices; i++) {
-            virBufferAdd(&buf, data.devices[i], -1);
+            virBufferAdd(buf, data.devices[i], -1);
             if (i < data.ndevices - 1)
-                virBufferAddLit(&buf, ", ");
+                virBufferAddLit(buf, ", ");
         }
 
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Check the host setup: enabling IPv6 forwarding with "
                          "RA routes without accept_ra set to 2 is likely to cause "
                          "routes loss. Interfaces to look at: %s"),
-                       virBufferCurrentContent(&buf));
-        virBufferFreeAndReset(&buf);
+                       virBufferCurrentContent(buf));
     }
 
  cleanup:
@@ -665,24 +668,23 @@ virNetDevIPAddrAdd(const char *ifname,
                    virSocketAddr *peer,
                    unsigned int prefix)
 {
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     VIR_AUTOFREE(char *) addrstr = NULL;
     VIR_AUTOFREE(char *) bcaststr = NULL;
     VIR_AUTOFREE(char *) peerstr = NULL;
     virSocketAddr broadcast;
-    int ret = -1;
 
     if (!(addrstr = virSocketAddrFormat(addr)))
-        goto cleanup;
+        return -1;
 
     if (peer && VIR_SOCKET_ADDR_VALID(peer) && !(peerstr = virSocketAddrFormat(peer)))
-        goto cleanup;
+        return -1;
 
     /* format up a broadcast address if this is IPv4 */
     if (!peerstr && ((VIR_SOCKET_ADDR_IS_FAMILY(addr, AF_INET)) &&
         ((virSocketAddrBroadcastByPrefix(addr, prefix, &broadcast) < 0) ||
          !(bcaststr = virSocketAddrFormat(&broadcast))))) {
-        goto cleanup;
+        return -1;
     }
 
 # ifdef IFCONFIG_PATH
@@ -710,12 +712,9 @@ virNetDevIPAddrAdd(const char *ifname,
 # endif
 
     if (virCommandRun(cmd, NULL) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return 0;
 }
 
 
@@ -724,12 +723,11 @@ virNetDevIPAddrDel(const char *ifname,
                    virSocketAddr *addr,
                    unsigned int prefix)
 {
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     VIR_AUTOFREE(char *) addrstr = NULL;
-    int ret = -1;
 
     if (!(addrstr = virSocketAddrFormat(addr)))
-        goto cleanup;
+        return -1;
 # ifdef IFCONFIG_PATH
     cmd = virCommandNew(IFCONFIG_PATH);
     virCommandAddArg(cmd, ifname);
@@ -747,12 +745,9 @@ virNetDevIPAddrDel(const char *ifname,
 # endif
 
     if (virCommandRun(cmd, NULL) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return 0;
 }
 
 
@@ -763,15 +758,14 @@ virNetDevIPRouteAdd(const char *ifname,
                     virSocketAddrPtr gateway,
                     unsigned int metric)
 {
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     VIR_AUTOFREE(char *) addrstr = NULL;
     VIR_AUTOFREE(char *) gatewaystr = NULL;
-    int ret = -1;
 
     if (!(addrstr = virSocketAddrFormat(addr)))
-        goto cleanup;
+        return -1;
     if (!(gatewaystr = virSocketAddrFormat(gateway)))
-        goto cleanup;
+        return -1;
     cmd = virCommandNew(IP_PATH);
     virCommandAddArgList(cmd, "route", "add", NULL);
     virCommandAddArgFormat(cmd, "%s/%u", addrstr, prefix);
@@ -780,12 +774,9 @@ virNetDevIPRouteAdd(const char *ifname,
     virCommandAddArgFormat(cmd, "%u", metric);
 
     if (virCommandRun(cmd, NULL) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return 0;
 }
 
 
