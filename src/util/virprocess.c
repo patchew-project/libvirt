@@ -982,16 +982,15 @@ int virProcessGetStartTime(pid_t pid,
 {
     VIR_AUTOFREE(char *) filename = NULL;
     VIR_AUTOFREE(char *) buf = NULL;
+    VIR_AUTOPTR(virString) tokens = NULL;
     char *tmp;
-    int ret = -1;
     int len;
-    char **tokens = NULL;
 
     if (virAsprintf(&filename, "/proc/%llu/stat", (long long) pid) < 0)
         return -1;
 
     if ((len = virFileReadAll(filename, 1024, &buf)) < 0)
-        goto cleanup;
+        return -1;
 
     /* start time is the token at index 19 after the '(process name)' entry - since only this
      * field can contain the ')' character, search backwards for this to avoid malicious
@@ -1002,14 +1001,14 @@ int virProcessGetStartTime(pid_t pid,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Cannot find start time in %s"),
                        filename);
-        goto cleanup;
+        return -1;
     }
     tmp += 2; /* skip ') ' */
     if ((tmp - buf) >= len) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Cannot find start time in %s"),
                        filename);
-        goto cleanup;
+        return -1;
     }
 
     tokens = virStringSplit(tmp, " ", 0);
@@ -1018,7 +1017,7 @@ int virProcessGetStartTime(pid_t pid,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Cannot find start time in %s"),
                        filename);
-        goto cleanup;
+        return -1;
     }
 
     if (virStrToLong_ull(tokens[19],
@@ -1028,14 +1027,10 @@ int virProcessGetStartTime(pid_t pid,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Cannot parse start time %s in %s"),
                        tokens[19], filename);
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
-
- cleanup:
-    virStringListFree(tokens);
-    return ret;
+    return 0;
 }
 #elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
 int virProcessGetStartTime(pid_t pid,
