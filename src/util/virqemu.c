@@ -56,7 +56,7 @@ virQEMUBuildCommandLineJSONArrayBitmap(const char *key,
 {
     ssize_t pos = -1;
     ssize_t end;
-    virBitmapPtr bitmap = NULL;
+    VIR_AUTOPTR(virBitmap) bitmap = NULL;
 
     if (virJSONValueGetArrayAsBitmap(array, &bitmap) < 0)
         return -1;
@@ -72,8 +72,6 @@ virQEMUBuildCommandLineJSONArrayBitmap(const char *key,
             virBufferAsprintf(buf, "%s=%zd,", key, pos);
         }
     }
-
-    virBitmapFree(bitmap);
 
     return 0;
 }
@@ -267,21 +265,19 @@ virQEMUBuildObjectCommandlineFromJSON(virBufferPtr buf,
 char *
 virQEMUBuildDriveCommandlineFromJSON(virJSONValuePtr srcdef)
 {
-    virBuffer buf = VIR_BUFFER_INITIALIZER;
-    char *ret = NULL;
+    VIR_AUTOPTR(virBuffer) buf = NULL;
 
-    if (virQEMUBuildCommandLineJSON(srcdef, &buf,
+    if (VIR_ALLOC(buf) < 0)
+        return NULL;
+
+    if (virQEMUBuildCommandLineJSON(srcdef, buf,
                                     virQEMUBuildCommandLineJSONArrayNumbered) < 0)
-        goto cleanup;
+        return NULL;
 
-    if (virBufferCheckError(&buf) < 0)
-        goto cleanup;
+    if (virBufferCheckError(buf) < 0)
+        return NULL;
 
-    ret = virBufferContentAndReset(&buf);
-
- cleanup:
-    virBufferFreeAndReset(&buf);
-    return ret;
+    return virBufferContentAndReset(buf);
 }
 
 
