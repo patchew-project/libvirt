@@ -26,11 +26,14 @@ testCompareXMLToXMLFiles(const char *inxml, const char *outxml,
     char *actual = NULL;
     int ret = -1;
     virNWFilterDefPtr dev = NULL;
+    unsigned int parse_flags = VIR_NWFILTER_DEF_PARSE_VALIDATE_NAME;
 
     virResetLastError();
 
-    if (!(dev = virNWFilterDefParseFile(inxml, 0))) {
+    if (!(dev = virNWFilterDefParseFile(inxml, parse_flags))) {
         if (expect_error) {
+            VIR_TEST_DEBUG("Got expected parse failure msg='%s'",
+                           virGetLastErrorMessage());
             virResetLastError();
             goto done;
         }
@@ -148,6 +151,8 @@ mymain(void)
     DO_TEST("iter-test3", false);
 
     DO_TEST("ipset-test", false);
+
+    DO_TEST("name-whitespace-invalid", true);
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

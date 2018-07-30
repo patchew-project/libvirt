@@ -559,6 +559,13 @@ int
 virNWFilterDeleteDef(const char *configDir,
                      virNWFilterDefPtr def);
 
+typedef enum {
+    /* Perform extra name validation on new nwfilter names which
+     * will cause failure to parse the XML. Initially just that a
+     * name cannot be all white space. */
+    VIR_NWFILTER_DEF_PARSE_VALIDATE_NAME = 1 << 0,
+} virNWFilterDefParseFlags;
+
 virNWFilterDefPtr
 virNWFilterDefParseNode(xmlDocPtr xml,
                         xmlNodePtr root,

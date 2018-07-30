@@ -2614,7 +2614,7 @@ virNWFilterDefParseXML(xmlXPathContextPtr ctxt,
     int chain_priority;
     const char *name_prefix;
 
-    virCheckFlags(0, NULL);
+    virCheckFlags(VIR_NWFILTER_DEF_PARSE_VALIDATE_NAME, NULL);
 
     if (VIR_ALLOC(ret) < 0)
         return NULL;
@@ -2623,6 +2623,13 @@ virNWFilterDefParseXML(xmlXPathContextPtr ctxt,
     if (!ret->name) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        "%s", _("filter has no name"));
+        goto cleanup;
+    }
+
+    if ((flags & VIR_NWFILTER_DEF_PARSE_VALIDATE_NAME) &&
+        virStringIsEmpty(ret->name)) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("name must contain at least one non blank character"));
         goto cleanup;
     }
 
