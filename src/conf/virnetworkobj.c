@@ -1326,7 +1326,7 @@ struct virNetworkObjListExportData {
 };
 
 static int
-virNetworkObjListPopulate(void *payload,
+virNetworkObjListExportCallback(void *payload,
                           const void *name ATTRIBUTE_UNUSED,
                           void *opaque)
 {
@@ -1380,7 +1380,7 @@ virNetworkObjListExport(virConnectPtr conn,
     if (nets && VIR_ALLOC_N(data.nets, virHashSize(netobjs->objs) + 1) < 0)
         goto cleanup;
 
-    virHashForEach(netobjs->objs, virNetworkObjListPopulate, &data);
+    virHashForEach(netobjs->objs, virNetworkObjListExportCallback, &data);
 
     if (data.error)
         goto cleanup;

@@ -970,7 +970,7 @@ struct virStoragePoolObjVolumeListExportData {
 };
 
 static int
-virStoragePoolObjVolumeListExportCb(void *payload,
+virStoragePoolObjVolumeListExportCallback(void *payload,
                                     const void *name ATTRIBUTE_UNUSED,
                                     void *opaque)
 {
@@ -1029,7 +1029,7 @@ virStoragePoolObjVolumeListExport(virConnectPtr conn,
         return -1;
     }
 
-    virHashForEach(volumes->objsName, virStoragePoolObjVolumeListExportCb, &data);
+    virHashForEach(volumes->objsName, virStoragePoolObjVolumeListExportCallback, &data);
     virObjectRWUnlock(volumes);
 
     if (data.error)
@@ -1983,7 +1983,7 @@ struct virStoragePoolObjListExportData {
 
 
 static int
-virStoragePoolObjListExportCb(void *payload,
+virStoragePoolObjListExportCallback(void *payload,
                               const void *name ATTRIBUTE_UNUSED,
                               void *opaque)
 {
@@ -2035,7 +2035,7 @@ virStoragePoolObjListExport(virConnectPtr conn,
     if (pools && VIR_ALLOC_N(data.pools, virHashSize(poolobjs->objs) + 1) < 0)
         goto error;
 
-    virHashForEach(poolobjs->objs, virStoragePoolObjListExportCb, &data);
+    virHashForEach(poolobjs->objs, virStoragePoolObjListExportCallback, &data);
     virObjectRWUnlock(poolobjs);
 
     if (data.error)
