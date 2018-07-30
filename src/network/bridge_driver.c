@@ -3608,8 +3608,9 @@ networkCreateXML(virConnectPtr conn,
     virNetworkDefPtr def;
     virNetworkPtr net = NULL;
     virObjectEventPtr event = NULL;
+    unsigned int parse_flags = VIR_NETWORK_DEF_PARSE_VALIDATE_NAME;
 
-    if (!(newDef = virNetworkDefParseString(xml, 0)))
+    if (!(newDef = virNetworkDefParseString(xml, parse_flags)))
         goto cleanup;
 
     if (virNetworkCreateXMLEnsureACL(conn, newDef) < 0)
@@ -3660,8 +3661,9 @@ networkDefineXML(virConnectPtr conn,
     virNetworkObjPtr obj = NULL;
     virNetworkPtr net = NULL;
     virObjectEventPtr event = NULL;
+    unsigned int parse_flags = VIR_NETWORK_DEF_PARSE_VALIDATE_NAME;
 
-    if (!(def = virNetworkDefParseString(xml, 0)))
+    if (!(def = virNetworkDefParseString(xml, parse_flags)))
         goto cleanup;
 
     if (virNetworkDefineXMLEnsureACL(conn, def) < 0)

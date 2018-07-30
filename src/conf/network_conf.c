@@ -1604,7 +1604,7 @@ virNetworkDefParseXML(xmlXPathContextPtr ctxt,
     xmlNodePtr vlanNode;
     xmlNodePtr metadataNode = NULL;
 
-    virCheckFlags(0, NULL);
+    virCheckFlags(VIR_NETWORK_DEF_PARSE_VALIDATE_NAME, NULL);
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
@@ -1618,6 +1618,13 @@ virNetworkDefParseXML(xmlXPathContextPtr ctxt,
 
     if (virXMLCheckIllegalChars("name", def->name, "/") < 0)
         goto error;
+
+    if ((flags & VIR_NETWORK_DEF_PARSE_VALIDATE_NAME) &&
+        virStringIsEmpty(def->name)) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("name must contain at least one non blank character"));
+        goto error;
+    }
 
     /* Extract network uuid */
     tmp = virXPathString("string(./uuid[1])", ctxt);

@@ -293,6 +293,13 @@ enum {
 virNetworkDefPtr
 virNetworkDefCopy(virNetworkDefPtr def, unsigned int flags);
 
+typedef enum {
+    /* Perform extra name validation on new network names which
+     * will cause failure to parse the XML. Initially just that a
+     * name cannot be all white space. */
+    VIR_NETWORK_DEF_PARSE_VALIDATE_NAME = 1 << 0,
+} virNetworkDefParseFlags;
+
 virNetworkDefPtr
 virNetworkDefParseXML(xmlXPathContextPtr ctxt,
                       unsigned int flags);

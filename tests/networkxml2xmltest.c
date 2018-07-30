@@ -32,8 +32,9 @@ testCompareXMLToXMLFiles(const char *inxml, const char *outxml,
     int ret;
     testCompareNetXML2XMLResult result = TEST_COMPARE_NET_XML2XML_RESULT_SUCCESS;
     virNetworkDefPtr dev = NULL;
+    unsigned int parse_flags = VIR_NETWORK_DEF_PARSE_VALIDATE_NAME;
 
-    if (!(dev = virNetworkDefParseFile(inxml, 0))) {
+    if (!(dev = virNetworkDefParseFile(inxml, parse_flags))) {
         result = TEST_COMPARE_NET_XML2XML_RESULT_FAIL_PARSE;
         goto cleanup;
     }
@@ -160,6 +161,7 @@ mymain(void)
     DO_TEST_PARSE_ERROR("passthrough-duplicate");
     DO_TEST("metadata");
     DO_TEST("set-mtu");
+    DO_TEST_PARSE_ERROR("network-whitespace-name");
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
