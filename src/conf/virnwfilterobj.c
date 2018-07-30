@@ -503,7 +503,7 @@ virNWFilterObjListLoadConfig(virNWFilterObjListPtr nwfilters,
     if (!(configFile = virFileBuildPath(configDir, name, ".xml")))
         goto error;
 
-    if (!(def = virNWFilterDefParseFile(configFile)))
+    if (!(def = virNWFilterDefParseFile(configFile, 0)))
         goto error;
 
     if (STRNEQ(name, def->name)) {

@@ -2602,7 +2602,8 @@ virNWFilterIsAllowedChain(const char *chainname)
 
 
 static virNWFilterDefPtr
-virNWFilterDefParseXML(xmlXPathContextPtr ctxt)
+virNWFilterDefParseXML(xmlXPathContextPtr ctxt,
+                       unsigned int flags)
 {
     virNWFilterDefPtr ret;
     xmlNodePtr curr = ctxt->node;
@@ -2612,6 +2613,8 @@ virNWFilterDefParseXML(xmlXPathContextPtr ctxt)
     virNWFilterEntryPtr entry;
     int chain_priority;
     const char *name_prefix;
+
+    virCheckFlags(0, NULL);
 
     if (VIR_ALLOC(ret) < 0)
         return NULL;
@@ -2734,7 +2737,8 @@ virNWFilterDefParseXML(xmlXPathContextPtr ctxt)
 
 virNWFilterDefPtr
 virNWFilterDefParseNode(xmlDocPtr xml,
-                        xmlNodePtr root)
+                        xmlNodePtr root,
+                        unsigned int flags)
 {
     xmlXPathContextPtr ctxt = NULL;
     virNWFilterDefPtr def = NULL;
@@ -2753,7 +2757,7 @@ virNWFilterDefParseNode(xmlDocPtr xml,
     }
 
     ctxt->node = root;
-    def = virNWFilterDefParseXML(ctxt);
+    def = virNWFilterDefParseXML(ctxt, flags);
 
  cleanup:
     xmlXPathFreeContext(ctxt);
@@ -2763,13 +2767,14 @@ virNWFilterDefParseNode(xmlDocPtr xml,
 
 static virNWFilterDefPtr
 virNWFilterDefParse(const char *xmlStr,
-                    const char *filename)
+                    const char *filename,
+                    unsigned int flags)
 {
     virNWFilterDefPtr def = NULL;
     xmlDocPtr xml;
 
     if ((xml = virXMLParse(filename, xmlStr, _("(nwfilter_definition)")))) {
-        def = virNWFilterDefParseNode(xml, xmlDocGetRootElement(xml));
+        def = virNWFilterDefParseNode(xml, xmlDocGetRootElement(xml), flags);
         xmlFreeDoc(xml);
     }
 
@@ -2778,16 +2783,18 @@ virNWFilterDefParse(const char *xmlStr,
 
 
 virNWFilterDefPtr
-virNWFilterDefParseString(const char *xmlStr)
+virNWFilterDefParseString(const char *xmlStr,
+                          unsigned int flags)
 {
-    return virNWFilterDefParse(xmlStr, NULL);
+    return virNWFilterDefParse(xmlStr, NULL, flags);
 }
 
 
 virNWFilterDefPtr
-virNWFilterDefParseFile(const char *filename)
+virNWFilterDefParseFile(const char *filename,
+                        unsigned int flags)
 {
-    return virNWFilterDefParse(NULL, filename);
+    return virNWFilterDefParse(NULL, filename, flags);
 }
 
 

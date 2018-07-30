@@ -561,7 +561,8 @@ virNWFilterDeleteDef(const char *configDir,
 
 virNWFilterDefPtr
 virNWFilterDefParseNode(xmlDocPtr xml,
-                        xmlNodePtr root);
+                        xmlNodePtr root,
+                        unsigned int flags);
 
 char *
 virNWFilterDefFormat(const virNWFilterDef *def);
@@ -571,10 +572,12 @@ virNWFilterSaveConfig(const char *configDir,
                       virNWFilterDefPtr def);
 
 virNWFilterDefPtr
-virNWFilterDefParseString(const char *xml);
+virNWFilterDefParseString(const char *xml,
+                          unsigned int flags);
 
 virNWFilterDefPtr
-virNWFilterDefParseFile(const char *filename);
+virNWFilterDefParseFile(const char *filename,
+                        unsigned int flags);
 
 void
 virNWFilterWriteLockFilterUpdates(void);

@@ -29,7 +29,7 @@ testCompareXMLToXMLFiles(const char *inxml, const char *outxml,
 
     virResetLastError();
 
-    if (!(dev = virNWFilterDefParseFile(inxml))) {
+    if (!(dev = virNWFilterDefParseFile(inxml, 0))) {
         if (expect_error) {
             virResetLastError();
             goto done;

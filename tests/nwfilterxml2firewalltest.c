@@ -275,7 +275,7 @@ virNWFilterDefToInst(const char *xml,
 {
     size_t i;
     int ret = -1;
-    virNWFilterDefPtr def = virNWFilterDefParseFile(xml);
+    virNWFilterDefPtr def = virNWFilterDefParseFile(xml, 0);
 
     if (!def)
         return -1;
