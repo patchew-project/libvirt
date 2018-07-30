@@ -494,7 +494,8 @@ testCompareXMLToArgv(const void *data)
     if (!(vm = virDomainObjNew(driver.xmlopt)))
         goto cleanup;
 
-    parseFlags |= VIR_DOMAIN_DEF_PARSE_INACTIVE;
+    parseFlags |= VIR_DOMAIN_DEF_PARSE_INACTIVE |
+                  VIR_DOMAIN_DEF_PARSE_VALIDATE_NAME;
     if (!(vm->def = virDomainDefParseFile(xml, driver.caps, driver.xmlopt,
                                           NULL, parseFlags))) {
         if (flags & FLAG_EXPECT_PARSE_ERROR)
@@ -821,6 +822,8 @@ mymain(void)
             QEMU_CAPS_SECCOMP_BLACKLIST);
     DO_TEST_PARSE_ERROR("minimal-no-memory", NONE);
     DO_TEST("minimal-msg-timestamp", QEMU_CAPS_MSG_TIMESTAMP);
+
+    DO_TEST_PARSE_ERROR("name-whitespace", NONE);
 
     DO_TEST_CAPS_LATEST("genid");
     DO_TEST_CAPS_LATEST("genid-auto");

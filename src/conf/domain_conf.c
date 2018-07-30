@@ -19278,6 +19278,13 @@ virDomainDefParseXML(xmlDocPtr xml,
         goto error;
     }
 
+    if ((flags & VIR_DOMAIN_DEF_PARSE_VALIDATE_NAME) &&
+        virStringIsEmpty(def->name)) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("name must contain at least one non blank character"));
+        goto error;
+    }
+
     /* Extract domain uuid. If both uuid and sysinfo/system/entry/uuid
      * exist, they must match; and if only the latter exists, it can
      * also serve as the uuid. */

@@ -2996,6 +2996,10 @@ typedef enum {
      * post parse callbacks before starting. Failure of the post parse callback
      * is recorded as def->postParseFail */
     VIR_DOMAIN_DEF_PARSE_ALLOW_POST_PARSE_FAIL = 1 << 12,
+    /* Perform extra name validation on new domain names which
+     * will cause failure to parse the XML. Initially just that a
+     * name cannot be all white space. */
+    VIR_DOMAIN_DEF_PARSE_VALIDATE_NAME = 1 << 13,
 } virDomainDefParseFlags;
 
 typedef enum {
