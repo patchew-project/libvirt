@@ -121,28 +121,13 @@ virSecretDefParseUsage(xmlXPathContextPtr ctxt,
     return 0;
 }
 
+
 static virSecretDefPtr
-secretXMLParseNode(xmlDocPtr xml, xmlNodePtr root)
+virSecretDefParseXML(xmlXPathContextPtr ctxt)
 {
-    xmlXPathContextPtr ctxt = NULL;
     virSecretDefPtr def = NULL, ret = NULL;
     char *prop = NULL;
     char *uuidstr = NULL;
-
-    if (!virXMLNodeNameEqual(root, "secret")) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("unexpected root element <%s>, "
-                         "expecting <secret>"),
-                       root->name);
-        goto cleanup;
-    }
-
-    ctxt = xmlXPathNewContext(xml);
-    if (ctxt == NULL) {
-        virReportOOMError();
-        goto cleanup;
-    }
-    ctxt->node = root;
 
     if (VIR_ALLOC(def) < 0)
         goto cleanup;
@@ -195,16 +180,45 @@ secretXMLParseNode(xmlDocPtr xml, xmlNodePtr root)
     if (virXPathNode("./usage", ctxt) != NULL
         && virSecretDefParseUsage(ctxt, def) < 0)
         goto cleanup;
-    ret = def;
-    def = NULL;
+    VIR_STEAL_PTR(ret, def);
 
  cleanup:
     VIR_FREE(prop);
     VIR_FREE(uuidstr);
     virSecretDefFree(def);
-    xmlXPathFreeContext(ctxt);
     return ret;
 }
+
+
+static virSecretDefPtr
+virSecretDefParseNode(xmlDocPtr xml,
+                      xmlNodePtr root)
+{
+    xmlXPathContextPtr ctxt = NULL;
+    virSecretDefPtr def = NULL;
+
+    if (!virXMLNodeNameEqual(root, "secret")) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("unexpected root element <%s>, "
+                         "expecting <secret>"),
+                       root->name);
+        goto cleanup;
+    }
+
+    ctxt = xmlXPathNewContext(xml);
+    if (ctxt == NULL) {
+        virReportOOMError();
+        goto cleanup;
+    }
+    ctxt->node = root;
+
+    def = virSecretDefParseXML(ctxt);
+
+ cleanup:
+    xmlXPathFreeContext(ctxt);
+    return def;
+}
+
 
 static virSecretDefPtr
 virSecretDefParse(const char *xmlStr,
@@ -214,7 +228,7 @@ virSecretDefParse(const char *xmlStr,
     virSecretDefPtr ret = NULL;
 
     if ((xml = virXMLParse(filename, xmlStr, _("(definition_of_secret)")))) {
-        ret = secretXMLParseNode(xml, xmlDocGetRootElement(xml));
+        ret = virSecretDefParseNode(xml, xmlDocGetRootElement(xml));
         xmlFreeDoc(xml);
     }
 
