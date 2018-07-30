@@ -17,14 +17,24 @@
 #define VIR_FROM_THIS VIR_FROM_NONE
 
 static int
-testCompareXMLToXMLFiles(const char *inxml, const char *outxml)
+testCompareXMLToXMLFiles(const char *inxml,
+                         const char *outxml,
+                         bool expect_parse_fail)
 {
     char *actual = NULL;
     int ret = -1;
     virStoragePoolDefPtr dev = NULL;
+    unsigned int parse_flags = VIR_STORAGE_POOL_DEF_PARSE_VALIDATE_NAME;
 
-    if (!(dev = virStoragePoolDefParseFile(inxml, 0)))
+    if (!(dev = virStoragePoolDefParseFile(inxml, parse_flags))) {
+        if (expect_parse_fail) {
+            VIR_TEST_DEBUG("Got expected parse failure msg='%s'",
+                           virGetLastErrorMessage());
+            virResetLastError();
+            ret = 0;
+        }
         goto fail;
+    }
 
     if (!(actual = virStoragePoolDefFormat(dev)))
         goto fail;
@@ -40,21 +50,28 @@ testCompareXMLToXMLFiles(const char *inxml, const char *outxml)
     return ret;
 }
 
+
+typedef struct test_params {
+    const char *name;
+    bool expect_parse_fail;
+} test_params;
+
 static int
 testCompareXMLToXMLHelper(const void *data)
 {
     int result = -1;
     char *inxml = NULL;
     char *outxml = NULL;
+    const test_params *tp = data;
 
     if (virAsprintf(&inxml, "%s/storagepoolxml2xmlin/%s.xml",
-                    abs_srcdir, (const char*)data) < 0 ||
+                    abs_srcdir, tp->name) < 0 ||
         virAsprintf(&outxml, "%s/storagepoolxml2xmlout/%s.xml",
-                    abs_srcdir, (const char*)data) < 0) {
+                    abs_srcdir, tp->name) < 0) {
         goto cleanup;
     }
 
-    result = testCompareXMLToXMLFiles(inxml, outxml);
+    result = testCompareXMLToXMLFiles(inxml, outxml, tp->expect_parse_fail);
 
  cleanup:
     VIR_FREE(inxml);
@@ -68,13 +85,23 @@ mymain(void)
 {
     int ret = 0;
 
+#define DO_TEST_FULL(name, expect_parse_fail) \
+    do { \
+        test_params tp = {name, expect_parse_fail}; \
+        if (virTestRun("Storage Pool XML-2-XML " name, \
+                       testCompareXMLToXMLHelper, &tp) < 0) \
+            ret = -1; \
+    } while (0)
+
 #define DO_TEST(name) \
-    if (virTestRun("Storage Pool XML-2-XML " name, \
-                   testCompareXMLToXMLHelper, (name)) < 0) \
-        ret = -1
+    DO_TEST_FULL(name, false);
+
+#define DO_TEST_PARSE_FAIL(name) \
+    DO_TEST_FULL(name, true);
 
     DO_TEST("pool-dir");
     DO_TEST("pool-dir-naming");
+    DO_TEST_PARSE_FAIL("pool-dir-whitespace-name");
     DO_TEST("pool-fs");
     DO_TEST("pool-logical");
     DO_TEST("pool-logical-nopath");

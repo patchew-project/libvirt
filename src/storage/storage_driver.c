@@ -690,6 +690,7 @@ storagePoolCreateXML(virConnectPtr conn,
     virStorageBackendPtr backend;
     virObjectEventPtr event = NULL;
     char *stateFile = NULL;
+    unsigned int parse_flags = VIR_STORAGE_POOL_DEF_PARSE_VALIDATE_NAME;
     unsigned int build_flags = 0;
 
     virCheckFlags(VIR_STORAGE_POOL_CREATE_WITH_BUILD |
@@ -699,7 +700,7 @@ storagePoolCreateXML(virConnectPtr conn,
     VIR_EXCLUSIVE_FLAGS_RET(VIR_STORAGE_POOL_BUILD_OVERWRITE,
                             VIR_STORAGE_POOL_BUILD_NO_OVERWRITE, NULL);
 
-    if (!(newDef = virStoragePoolDefParseString(xml, 0)))
+    if (!(newDef = virStoragePoolDefParseString(xml, parse_flags)))
         goto cleanup;
 
     if (virStoragePoolCreateXMLEnsureACL(conn, newDef) < 0)
@@ -787,10 +788,11 @@ storagePoolDefineXML(virConnectPtr conn,
     virStoragePoolDefPtr def;
     virStoragePoolPtr pool = NULL;
     virObjectEventPtr event = NULL;
+    unsigned int parse_flags = VIR_STORAGE_POOL_DEF_PARSE_VALIDATE_NAME;
 
     virCheckFlags(0, NULL);
 
-    if (!(newDef = virStoragePoolDefParseString(xml, 0)))
+    if (!(newDef = virStoragePoolDefParseString(xml, parse_flags)))
         goto cleanup;
 
     if (virXMLCheckIllegalChars("name", newDef->name, "\n") < 0)

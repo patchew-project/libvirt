@@ -681,7 +681,7 @@ virStoragePoolDefParseXML(xmlXPathContextPtr ctxt,
     char *uuid = NULL;
     char *target_path = NULL;
 
-    virCheckFlags(0, NULL);
+    virCheckFlags(VIR_STORAGE_POOL_DEF_PARSE_VALIDATE_NAME, NULL);
 
     if (VIR_ALLOC(ret) < 0)
         return NULL;
@@ -726,6 +726,13 @@ virStoragePoolDefParseXML(xmlXPathContextPtr ctxt,
     if (strchr(ret->name, '/')) {
         virReportError(VIR_ERR_XML_ERROR,
                        _("name %s cannot contain '/'"), ret->name);
+        goto error;
+    }
+
+    if ((flags & VIR_STORAGE_POOL_DEF_PARSE_VALIDATE_NAME) &&
+        virStringIsEmpty(ret->name)) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("name must contain at least one non blank character"));
         goto error;
     }
 

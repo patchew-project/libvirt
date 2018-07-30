@@ -235,6 +235,13 @@ struct _virStoragePoolSourceList {
     virStoragePoolSourcePtr sources;
 };
 
+typedef enum {
+    /* Perform extra name validation on new storage pool names which
+     * will cause failure to parse the XML. Initially just that a
+     * name cannot be all white space. */
+    VIR_STORAGE_POOL_DEF_PARSE_VALIDATE_NAME = 1 << 0,
+} virStoragePoolDefParseFlags;
+
 virStoragePoolDefPtr
 virStoragePoolDefParseXML(xmlXPathContextPtr ctxt,
                           unsigned int flags);
