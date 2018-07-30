@@ -39,6 +39,13 @@ struct _virSecretDef {
 
 void virSecretDefFree(virSecretDefPtr def);
 
+typedef enum {
+    /* Perform extra name validation on new secret usage ids which
+     * will cause failure to parse the XML. Initially just that a
+     * name cannot be all white space. */
+    VIR_SECRET_DEF_PARSE_VALIDATE_USAGE_ID = 1 << 0,
+} virSecretDefParseFlags;
+
 virSecretDefPtr virSecretDefParseString(const char *xml,
                                         unsigned int flags);
 

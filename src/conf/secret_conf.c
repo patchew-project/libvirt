@@ -130,7 +130,7 @@ virSecretDefParseXML(xmlXPathContextPtr ctxt,
     char *prop = NULL;
     char *uuidstr = NULL;
 
-    virCheckFlags(0, NULL);
+    virCheckFlags(VIR_SECRET_DEF_PARSE_VALIDATE_USAGE_ID, NULL);
 
     if (VIR_ALLOC(def) < 0)
         goto cleanup;
@@ -183,6 +183,14 @@ virSecretDefParseXML(xmlXPathContextPtr ctxt,
     if (virXPathNode("./usage", ctxt) != NULL
         && virSecretDefParseUsage(ctxt, def) < 0)
         goto cleanup;
+
+    if (def->usage_id && (flags & VIR_SECRET_DEF_PARSE_VALIDATE_USAGE_ID) &&
+        virStringIsEmpty(def->usage_id)) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("usage name must contain at least one non blank character"));
+        goto cleanup;
+    }
+
     VIR_STEAL_PTR(ret, def);
 
  cleanup:

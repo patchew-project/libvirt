@@ -215,10 +215,11 @@ secretDefineXML(virConnectPtr conn,
     virSecretDefPtr backup = NULL;
     virSecretDefPtr def;
     virObjectEventPtr event = NULL;
+    unsigned int parse_flags = VIR_SECRET_DEF_PARSE_VALIDATE_USAGE_ID;
 
     virCheckFlags(0, NULL);
 
-    if (!(def = virSecretDefParseString(xml, 0)))
+    if (!(def = virSecretDefParseString(xml, parse_flags)))
         return NULL;
 
     if (virSecretDefineXMLEnsureACL(conn, def) < 0)
