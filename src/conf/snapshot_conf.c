@@ -235,6 +235,13 @@ virDomainSnapshotDefParse(xmlXPathContextPtr ctxt,
             goto cleanup;
     }
 
+    if ((flags & VIR_DOMAIN_SNAPSHOT_PARSE_VALIDATE_NAME) &&
+        virStringIsEmpty(def->name)) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       ("name must contain at least one non blank character"));
+        goto cleanup;
+    }
+
     def->description = virXPathString("string(./description)", ctxt);
 
     if (flags & VIR_DOMAIN_SNAPSHOT_PARSE_REDEFINE) {

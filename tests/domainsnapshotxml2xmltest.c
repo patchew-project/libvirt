@@ -74,14 +74,16 @@ testCompareXMLToXMLFiles(const char *inxml,
                          const char *outxml,
                          const char *uuid,
                          bool internal,
-                         bool redefine)
+                         bool redefine,
+                         bool expect_parse_fail)
 {
     char *inXmlData = NULL;
     char *outXmlData = NULL;
     char *actual = NULL;
     int ret = -1;
     virDomainSnapshotDefPtr def = NULL;
-    unsigned int flags = VIR_DOMAIN_SNAPSHOT_PARSE_DISKS;
+    unsigned int flags = VIR_DOMAIN_SNAPSHOT_PARSE_DISKS |
+                         VIR_DOMAIN_SNAPSHOT_PARSE_VALIDATE_NAME;
 
     if (internal)
         flags |= VIR_DOMAIN_SNAPSHOT_PARSE_INTERNAL;
@@ -97,8 +99,15 @@ testCompareXMLToXMLFiles(const char *inxml,
 
     if (!(def = virDomainSnapshotDefParseString(inXmlData, driver.caps,
                                                 driver.xmlopt,
-                                                flags)))
+                                                flags))) {
+        if (expect_parse_fail) {
+            VIR_TEST_DEBUG("Got expected parse failure msg='%s'",
+                           virGetLastErrorMessage());
+            virResetLastError();
+            ret = 0;
+        }
         goto cleanup;
+    }
 
     if (!(actual = virDomainSnapshotDefFormat(uuid, def, driver.caps,
                                               driver.xmlopt,
@@ -135,6 +144,7 @@ struct testInfo {
     const char *uuid;
     bool internal;
     bool redefine;
+    bool expect_parse_fail;
 };
 
 
@@ -144,7 +154,8 @@ testCompareXMLToXMLHelper(const void *data)
     const struct testInfo *info = data;
 
     return testCompareXMLToXMLFiles(info->inxml, info->outxml, info->uuid,
-                                    info->internal, info->redefine);
+                                    info->internal, info->redefine,
+                                    info->expect_parse_fail);
 }
 
 
@@ -168,11 +179,13 @@ mymain(void)
     }
 
 
-# define DO_TEST(prefix, name, inpath, outpath, uuid, internal, redefine) \
+# define DO_TEST(prefix, name, inpath, outpath, uuid, internal, redefine, \
+                 expect_parse_fail) \
     do { \
         const struct testInfo info = {abs_srcdir "/" inpath "/" name ".xml", \
                                       abs_srcdir "/" outpath "/" name ".xml", \
-                                      uuid, internal, redefine}; \
+                                      uuid, internal, redefine, \
+                                      expect_parse_fail}; \
         if (virTestRun("SNAPSHOT XML-2-XML " prefix " " name, \
                        testCompareXMLToXMLHelper, &info) < 0) \
             ret = -1; \
@@ -181,18 +194,23 @@ mymain(void)
 # define DO_TEST_IN(name, uuid) DO_TEST("in->in", name,\
                                         "domainsnapshotxml2xmlin",\
                                         "domainsnapshotxml2xmlin",\
-                                        uuid, false, false)
+                                        uuid, false, false, false)
+
+# define DO_TEST_IN_PARSE_FAIL(name, uuid) DO_TEST("in->in", name,\
+                                        "domainsnapshotxml2xmlin",\
+                                        "domainsnapshotxml2xmlin",\
+                                        uuid, false, false, true)
 
 # define DO_TEST_OUT(name, uuid, internal) DO_TEST("out->out", name,\
                                                    "domainsnapshotxml2xmlout",\
                                                    "domainsnapshotxml2xmlout",\
-                                                   uuid, internal, true)
+                                                   uuid, internal, true, false)
 
 # define DO_TEST_INOUT(name, uuid, internal, redefine) \
     DO_TEST("in->out", name,\
             "domainsnapshotxml2xmlin",\
             "domainsnapshotxml2xmlout",\
-            uuid, internal, redefine)
+            uuid, internal, redefine, false)
 
     /* Unset or set all envvars here that are copied in qemudBuildCommandLine
      * using ADD_ENV_COPY, otherwise these tests may fail due to unexpected
@@ -218,6 +236,8 @@ mymain(void)
     DO_TEST_IN("name_and_description", NULL);
     DO_TEST_IN("description_only", NULL);
     DO_TEST_IN("name_only", NULL);
+
+    DO_TEST_IN_PARSE_FAIL("name_whitespace", NULL);
 
  cleanup:
     if (testSnapshotXMLVariableLineRegex)
