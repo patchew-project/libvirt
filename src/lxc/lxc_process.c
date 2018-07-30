@@ -221,6 +221,7 @@ static void virLXCProcessCleanup(virLXCDriverPtr driver,
     if (priv->cgroup) {
         virCgroupRemove(priv->cgroup);
         virCgroupFree(priv->cgroup);
+        priv->cgroup = NULL;
     }
 
     /* Get machined to terminate the machine as it may not have cleaned it

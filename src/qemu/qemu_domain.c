@@ -1921,6 +1921,7 @@ qemuDomainObjPrivateDataClear(qemuDomainObjPrivatePtr priv)
     priv->qemuDevices = NULL;
 
     virCgroupFree(priv->cgroup);
+    priv->cgroup = NULL;
 
     virPerfFree(priv->perf);
     priv->perf = NULL;

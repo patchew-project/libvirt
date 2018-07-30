@@ -1371,6 +1371,7 @@ virCgroupNewDomainPartition(virCgroupPtr partition,
                            VIR_CGROUP_MEM_HIERACHY) < 0) {
         virCgroupRemove(*group);
         virCgroupFree(*group);
+        *group = NULL;
         return -1;
     }
 
@@ -1428,6 +1429,7 @@ virCgroupNewThread(virCgroupPtr domain,
     if (virCgroupMakeGroup(domain, *group, create, VIR_CGROUP_NONE) < 0) {
         virCgroupRemove(*group);
         virCgroupFree(*group);
+        *group = NULL;
         return -1;
     }
 
@@ -1466,6 +1468,7 @@ virCgroupNewDetectMachine(const char *name,
         VIR_DEBUG("Failed to validate machine name for '%s' driver '%s'",
                   name, drivername);
         virCgroupFree(*group);
+        *group = NULL;
         return 0;
     }
 
@@ -1566,6 +1569,7 @@ virCgroupNewMachineSystemd(const char *name,
         virErrorPtr saved = virSaveLastError();
         virCgroupRemove(*group);
         virCgroupFree(*group);
+        *group = NULL;
         if (saved) {
             virSetError(saved);
             virFreeError(saved);
@@ -1617,6 +1621,7 @@ virCgroupNewMachineManual(const char *name,
         virErrorPtr saved = virSaveLastError();
         virCgroupRemove(*group);
         virCgroupFree(*group);
+        *group = NULL;
         if (saved) {
             virSetError(saved);
             virFreeError(saved);

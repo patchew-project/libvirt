@@ -921,6 +921,7 @@ qemuInitCgroup(virDomainObjPtr vm,
         goto done;
 
     virCgroupFree(priv->cgroup);
+    priv->cgroup = NULL;
 
     if (!vm->def->resource) {
         virDomainResourceDefPtr res;
@@ -1058,6 +1059,7 @@ qemuConnectCgroup(virDomainObjPtr vm)
         goto done;
 
     virCgroupFree(priv->cgroup);
+    priv->cgroup = NULL;
 
     if (virCgroupNewDetectMachine(vm->def->name,
                                   "qemu",
