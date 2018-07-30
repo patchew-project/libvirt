@@ -500,7 +500,7 @@ virSecretObjListNumOfSecrets(virSecretObjListPtr secrets,
 
 #define MATCH(FLAG) (flags & (FLAG))
 static bool
-virSecretObjMatchFlags(virSecretObjPtr obj,
+virSecretObjMatch(virSecretObjPtr obj,
                        unsigned int flags)
 {
     virSecretDefPtr def = obj->def;
@@ -554,7 +554,7 @@ virSecretObjListExportCallback(void *payload,
     if (data->filter && !data->filter(data->conn, def))
         goto cleanup;
 
-    if (!virSecretObjMatchFlags(obj, data->flags))
+    if (!virSecretObjMatch(obj, data->flags))
         goto cleanup;
 
     if (!data->secrets) {

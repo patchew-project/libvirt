@@ -804,7 +804,7 @@ virNodeDeviceObjListGetNames(virNodeDeviceObjListPtr devs,
 #define MATCH(FLAG) ((flags & (VIR_CONNECT_LIST_NODE_DEVICES_CAP_ ## FLAG)) && \
                      virNodeDeviceObjHasCap(obj, VIR_NODE_DEV_CAP_ ## FLAG))
 static bool
-virNodeDeviceMatch(virNodeDeviceObjPtr obj,
+virNodeDeviceObjMatch(virNodeDeviceObjPtr obj,
                    unsigned int flags)
 {
     /* Refresh the capabilities first, e.g. due to a driver change */
@@ -864,7 +864,7 @@ virNodeDeviceObjListExportCallback(void *payload,
     def = obj->def;
 
     if ((!data->filter || data->filter(data->conn, def)) &&
-        virNodeDeviceMatch(obj, data->flags)) {
+        virNodeDeviceObjMatch(obj, data->flags)) {
         if (data->devices) {
             if (!(device = virGetNodeDevice(data->conn, def->name)) ||
                 VIR_STRDUP(device->parentName, def->parent) < 0) {
