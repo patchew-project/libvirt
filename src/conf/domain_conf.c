@@ -30183,7 +30183,7 @@ virDomainDiskTranslateSourcePool(virDomainDiskDefPtr def)
     if (!(poolxml = virStoragePoolGetXMLDesc(pool, 0)))
         goto cleanup;
 
-    if (!(pooldef = virStoragePoolDefParseString(poolxml)))
+    if (!(pooldef = virStoragePoolDefParseString(poolxml, 0)))
         goto cleanup;
 
     def->src->srcpool->pooltype = pooldef->type;

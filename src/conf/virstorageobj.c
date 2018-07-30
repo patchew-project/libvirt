@@ -1110,7 +1110,7 @@ virStoragePoolObjLoad(virStoragePoolObjListPtr pools,
     virStoragePoolDefPtr def;
     virStoragePoolObjPtr obj;
 
-    if (!(def = virStoragePoolDefParseFile(path)))
+    if (!(def = virStoragePoolDefParseFile(path, 0)))
         return NULL;
 
     if (!virFileMatchesNameSuffix(file, def->name, ".xml")) {
@@ -1172,7 +1172,7 @@ virStoragePoolObjLoadState(virStoragePoolObjListPtr pools,
     }
 
     ctxt->node = node;
-    if (!(def = virStoragePoolDefParseXML(ctxt)))
+    if (!(def = virStoragePoolDefParseXML(ctxt, 0)))
         goto error;
 
     if (STRNEQ(name, def->name)) {

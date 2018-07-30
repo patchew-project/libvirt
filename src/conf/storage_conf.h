@@ -236,17 +236,21 @@ struct _virStoragePoolSourceList {
 };
 
 virStoragePoolDefPtr
-virStoragePoolDefParseXML(xmlXPathContextPtr ctxt);
+virStoragePoolDefParseXML(xmlXPathContextPtr ctxt,
+                          unsigned int flags);
 
 virStoragePoolDefPtr
-virStoragePoolDefParseString(const char *xml);
+virStoragePoolDefParseString(const char *xml,
+                             unsigned int flags);
 
 virStoragePoolDefPtr
-virStoragePoolDefParseFile(const char *filename);
+virStoragePoolDefParseFile(const char *filename,
+                           unsigned int flags);
 
 virStoragePoolDefPtr
 virStoragePoolDefParseNode(xmlDocPtr xml,
-                           xmlNodePtr root);
+                           xmlNodePtr root,
+                           unsigned int flags);
 
 char *
 virStoragePoolDefFormat(virStoragePoolDefPtr def);

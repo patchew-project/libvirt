@@ -1104,7 +1104,7 @@ testParseStorage(testDriverPtr privconn,
         if (!node)
             goto error;
 
-        def = virStoragePoolDefParseNode(ctxt->doc, node);
+        def = virStoragePoolDefParseNode(ctxt->doc, node, 0);
         if (!def)
             goto error;
 
@@ -4519,7 +4519,7 @@ testStoragePoolCreateXML(virConnectPtr conn,
     virCheckFlags(0, NULL);
 
     testDriverLock(privconn);
-    if (!(newDef = virStoragePoolDefParseString(xml)))
+    if (!(newDef = virStoragePoolDefParseString(xml, 0)))
         goto cleanup;
 
     if (virStoragePoolObjIsDuplicate(privconn->pools, newDef, true) < 0)
@@ -4589,7 +4589,7 @@ testStoragePoolDefineXML(virConnectPtr conn,
     virCheckFlags(0, NULL);
 
     testDriverLock(privconn);
-    if (!(newDef = virStoragePoolDefParseString(xml)))
+    if (!(newDef = virStoragePoolDefParseString(xml, 0)))
         goto cleanup;
 
     newDef->capacity = defaultPoolCap;

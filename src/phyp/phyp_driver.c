@@ -2635,7 +2635,7 @@ phypStoragePoolCreateXML(virConnectPtr conn,
     virStoragePoolPtr dup_sp = NULL;
     virStoragePoolPtr sp = NULL;
 
-    if (!(def = virStoragePoolDefParseString(xml)))
+    if (!(def = virStoragePoolDefParseString(xml, 0)))
         goto err;
 
     /* checking if this name already exists on this system */

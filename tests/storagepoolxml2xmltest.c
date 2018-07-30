@@ -23,7 +23,7 @@ testCompareXMLToXMLFiles(const char *inxml, const char *outxml)
     int ret = -1;
     virStoragePoolDefPtr dev = NULL;
 
-    if (!(dev = virStoragePoolDefParseFile(inxml)))
+    if (!(dev = virStoragePoolDefParseFile(inxml, 0)))
         goto fail;
 
     if (!(actual = virStoragePoolDefFormat(dev)))

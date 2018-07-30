@@ -53,7 +53,7 @@ testCompareXMLToArgvFiles(bool shouldFail,
     virStoragePoolDefPtr inputpool = NULL;
     virStoragePoolObjPtr obj = NULL;
 
-    if (!(def = virStoragePoolDefParseFile(poolxml)))
+    if (!(def = virStoragePoolDefParseFile(poolxml, 0)))
         goto cleanup;
 
     if (!(obj = virStoragePoolObjNew())) {
@@ -63,7 +63,7 @@ testCompareXMLToArgvFiles(bool shouldFail,
     virStoragePoolObjSetDef(obj, def);
 
     if (inputpoolxml) {
-        if (!(inputpool = virStoragePoolDefParseFile(inputpoolxml)))
+        if (!(inputpool = virStoragePoolDefParseFile(inputpoolxml, 0)))
             goto cleanup;
     }
 

@@ -65,7 +65,7 @@ test_node_info_parser(const void *opaque)
     char *output = NULL;
     virStoragePoolDefPtr pool = NULL;
 
-    if (!(pool = virStoragePoolDefParseFile(data->poolxml)))
+    if (!(pool = virStoragePoolDefParseFile(data->poolxml, 0)))
         goto cleanup;
 
     if (VIR_STRDUP(output, test.output) < 0)
@@ -100,7 +100,7 @@ test_vdi_list_parser(const void *opaque)
     virStoragePoolDefPtr pool = NULL;
     virStorageVolDefPtr vol = NULL;
 
-    if (!(pool = virStoragePoolDefParseFile(data->poolxml)))
+    if (!(pool = virStoragePoolDefParseFile(data->poolxml, 0)))
         goto cleanup;
 
     if (!(vol = virStorageVolDefParseFile(pool, data->volxml, 0)))

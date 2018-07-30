@@ -671,7 +671,8 @@ virStorageDefParsePerms(xmlXPathContextPtr ctxt,
 
 
 virStoragePoolDefPtr
-virStoragePoolDefParseXML(xmlXPathContextPtr ctxt)
+virStoragePoolDefParseXML(xmlXPathContextPtr ctxt,
+                          unsigned int flags)
 {
     virStoragePoolOptionsPtr options;
     virStoragePoolDefPtr ret;
@@ -679,6 +680,8 @@ virStoragePoolDefParseXML(xmlXPathContextPtr ctxt)
     char *type = NULL;
     char *uuid = NULL;
     char *target_path = NULL;
+
+    virCheckFlags(0, NULL);
 
     if (VIR_ALLOC(ret) < 0)
         return NULL;
@@ -818,7 +821,8 @@ virStoragePoolDefParseXML(xmlXPathContextPtr ctxt)
 
 virStoragePoolDefPtr
 virStoragePoolDefParseNode(xmlDocPtr xml,
-                           xmlNodePtr root)
+                           xmlNodePtr root,
+                           unsigned int flags)
 {
     xmlXPathContextPtr ctxt = NULL;
     virStoragePoolDefPtr def = NULL;
@@ -838,7 +842,7 @@ virStoragePoolDefParseNode(xmlDocPtr xml,
     }
 
     ctxt->node = root;
-    def = virStoragePoolDefParseXML(ctxt);
+    def = virStoragePoolDefParseXML(ctxt, flags);
  cleanup:
     xmlXPathFreeContext(ctxt);
     return def;
@@ -847,13 +851,14 @@ virStoragePoolDefParseNode(xmlDocPtr xml,
 
 static virStoragePoolDefPtr
 virStoragePoolDefParse(const char *xmlStr,
-                       const char *filename)
+                       const char *filename,
+                       unsigned int flags)
 {
     virStoragePoolDefPtr ret = NULL;
     xmlDocPtr xml;
 
     if ((xml = virXMLParse(filename, xmlStr, _("(storage_pool_definition)")))) {
-        ret = virStoragePoolDefParseNode(xml, xmlDocGetRootElement(xml));
+        ret = virStoragePoolDefParseNode(xml, xmlDocGetRootElement(xml), flags);
         xmlFreeDoc(xml);
     }
 
@@ -862,16 +867,18 @@ virStoragePoolDefParse(const char *xmlStr,
 
 
 virStoragePoolDefPtr
-virStoragePoolDefParseString(const char *xmlStr)
+virStoragePoolDefParseString(const char *xmlStr,
+                             unsigned int flags)
 {
-    return virStoragePoolDefParse(xmlStr, NULL);
+    return virStoragePoolDefParse(xmlStr, NULL, flags);
 }
 
 
 virStoragePoolDefPtr
-virStoragePoolDefParseFile(const char *filename)
+virStoragePoolDefParseFile(const char *filename,
+                           unsigned int flags)
 {
-    return virStoragePoolDefParse(NULL, filename);
+    return virStoragePoolDefParse(NULL, filename, flags);
 }
 
 
