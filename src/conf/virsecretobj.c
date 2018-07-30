@@ -526,7 +526,7 @@ virSecretObjMatchFlags(virSecretObjPtr obj,
 #undef MATCH
 
 
-struct virSecretObjListData {
+struct virSecretObjListExportData {
     virConnectPtr conn;
     virSecretPtr *secrets;
     virSecretObjListACLFilter filter;
@@ -540,7 +540,7 @@ virSecretObjListExportCallback(void *payload,
                                const void *name ATTRIBUTE_UNUSED,
                                void *opaque)
 {
-    struct virSecretObjListData *data = opaque;
+    struct virSecretObjListExportData *data = opaque;
     virSecretObjPtr obj = payload;
     virSecretDefPtr def;
     virSecretPtr secret = NULL;
@@ -584,7 +584,7 @@ virSecretObjListExport(virConnectPtr conn,
                        virSecretObjListACLFilter filter,
                        unsigned int flags)
 {
-    struct virSecretObjListData data = {
+    struct virSecretObjListExportData data = {
         .conn = conn, .secrets = NULL,
         .filter = filter, .flags = flags,
         .nsecrets = 0, .error = false };

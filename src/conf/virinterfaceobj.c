@@ -260,7 +260,7 @@ virInterfaceObjMatch(virInterfaceObjPtr obj,
 #undef MATCH
 
 
-struct virInterfaceObjListData {
+struct virInterfaceObjListExportData {
     virConnectPtr conn;
     virInterfacePtr *ifaces;
     virInterfaceObjListFilter filter;
@@ -274,7 +274,7 @@ virInterfaceObjListPopulate(void *payload,
                             const void *name ATTRIBUTE_UNUSED,
                             void *opaque)
 {
-    struct virInterfaceObjListData *data = opaque;
+    struct virInterfaceObjListExportData *data = opaque;
     virInterfaceObjPtr obj = payload;
     virInterfacePtr iface = NULL;
 
@@ -316,7 +316,7 @@ virInterfaceObjListExport(virConnectPtr conn,
                           unsigned int flags)
 {
     int ret = -1;
-    struct virInterfaceObjListData data = {
+    struct virInterfaceObjListExportData data = {
         .conn = conn, .ifaces = NULL, .filter = filter, .flags = flags,
         .nifaces = 0, .error = false };
 

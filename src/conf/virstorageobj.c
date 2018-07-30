@@ -960,7 +960,7 @@ virStoragePoolObjVolumeGetNames(virStoragePoolObjPtr obj,
 }
 
 
-struct _virStorageVolObjExportData {
+struct virStoragePoolObjVolumeListExportData {
     virConnectPtr conn;
     virStoragePoolVolumeACLFilter filter;
     virStoragePoolDefPtr pooldef;
@@ -975,7 +975,7 @@ virStoragePoolObjVolumeListExportCb(void *payload,
                                     void *opaque)
 {
     virStorageVolObjPtr volobj = payload;
-    struct _virStorageVolObjExportData *data = opaque;
+    struct virStoragePoolObjVolumeListExportData *data = opaque;
     virStorageVolPtr vol = NULL;
 
     if (data->error)
@@ -1012,7 +1012,7 @@ virStoragePoolObjVolumeListExport(virConnectPtr conn,
                                   virStoragePoolVolumeACLFilter filter)
 {
     virStorageVolObjListPtr volumes = obj->volumes;
-    struct _virStorageVolObjExportData data = {
+    struct virStoragePoolObjVolumeListExportData data = {
         .conn = conn, .filter = filter, .pooldef = obj->def, .error = false,
         .nvols = 0, .vols = NULL };
 
@@ -1969,7 +1969,7 @@ virStoragePoolMatch(virStoragePoolObjPtr obj,
 #undef MATCH
 
 
-struct _virStoragePoolExportData {
+struct virStoragePoolObjListExportData {
     virConnectPtr conn;
     virStoragePoolObjListACLFilter filter;
     bool checkActive;
@@ -1988,7 +1988,7 @@ virStoragePoolObjListExportCb(void *payload,
                               void *opaque)
 {
     virStoragePoolObjPtr obj = payload;
-    struct _virStoragePoolExportData *data = opaque;
+    struct virStoragePoolObjListExportData *data = opaque;
     virStoragePoolPtr pool = NULL;
 
     if (data->error)
@@ -2026,7 +2026,7 @@ virStoragePoolObjListExport(virConnectPtr conn,
                             virStoragePoolObjListFilter filter,
                             unsigned int flags)
 {
-    struct _virStoragePoolExportData data = {
+    struct virStoragePoolObjListExportData data = {
         .conn = conn, .filter = filter, .flags = flags, .error = false,
         .nPools = 0, .pools = NULL };
 
