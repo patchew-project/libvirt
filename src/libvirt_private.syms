@@ -2661,6 +2661,7 @@ virResctrlAllocNew;
 virResctrlAllocRemove;
 virResctrlAllocSetCacheSize;
 virResctrlAllocSetID;
+virResctrlAllocSetMemoryBandwidth;
 virResctrlInfoGetCache;
 virResctrlInfoNew;
 
