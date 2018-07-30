@@ -38,8 +38,13 @@ struct _virSecretDef {
 };
 
 void virSecretDefFree(virSecretDefPtr def);
-virSecretDefPtr virSecretDefParseString(const char *xml);
-virSecretDefPtr virSecretDefParseFile(const char *filename);
+
+virSecretDefPtr virSecretDefParseString(const char *xml,
+                                        unsigned int flags);
+
+virSecretDefPtr virSecretDefParseFile(const char *filename,
+                                      unsigned int flags);
+
 char *virSecretDefFormat(const virSecretDef *def);
 
 # define VIR_CONNECT_LIST_SECRETS_FILTERS_EPHEMERAL \

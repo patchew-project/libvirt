@@ -123,11 +123,14 @@ virSecretDefParseUsage(xmlXPathContextPtr ctxt,
 
 
 static virSecretDefPtr
-virSecretDefParseXML(xmlXPathContextPtr ctxt)
+virSecretDefParseXML(xmlXPathContextPtr ctxt,
+                     unsigned int flags)
 {
     virSecretDefPtr def = NULL, ret = NULL;
     char *prop = NULL;
     char *uuidstr = NULL;
+
+    virCheckFlags(0, NULL);
 
     if (VIR_ALLOC(def) < 0)
         goto cleanup;
@@ -192,7 +195,8 @@ virSecretDefParseXML(xmlXPathContextPtr ctxt)
 
 static virSecretDefPtr
 virSecretDefParseNode(xmlDocPtr xml,
-                      xmlNodePtr root)
+                      xmlNodePtr root,
+                      unsigned int flags)
 {
     xmlXPathContextPtr ctxt = NULL;
     virSecretDefPtr def = NULL;
@@ -212,7 +216,7 @@ virSecretDefParseNode(xmlDocPtr xml,
     }
     ctxt->node = root;
 
-    def = virSecretDefParseXML(ctxt);
+    def = virSecretDefParseXML(ctxt, flags);
 
  cleanup:
     xmlXPathFreeContext(ctxt);
@@ -222,13 +226,14 @@ virSecretDefParseNode(xmlDocPtr xml,
 
 static virSecretDefPtr
 virSecretDefParse(const char *xmlStr,
-                  const char *filename)
+                  const char *filename,
+                  unsigned int flags)
 {
     xmlDocPtr xml;
     virSecretDefPtr ret = NULL;
 
     if ((xml = virXMLParse(filename, xmlStr, _("(definition_of_secret)")))) {
-        ret = virSecretDefParseNode(xml, xmlDocGetRootElement(xml));
+        ret = virSecretDefParseNode(xml, xmlDocGetRootElement(xml), flags);
         xmlFreeDoc(xml);
     }
 
@@ -236,15 +241,17 @@ virSecretDefParse(const char *xmlStr,
 }
 
 virSecretDefPtr
-virSecretDefParseString(const char *xmlStr)
+virSecretDefParseString(const char *xmlStr,
+                        unsigned int flags)
 {
-    return virSecretDefParse(xmlStr, NULL);
+    return virSecretDefParse(xmlStr, NULL, flags);
 }
 
 virSecretDefPtr
-virSecretDefParseFile(const char *filename)
+virSecretDefParseFile(const char *filename,
+                      unsigned int flags)
 {
-    return virSecretDefParse(NULL, filename);
+    return virSecretDefParse(NULL, filename, flags);
 }
 
 static int
