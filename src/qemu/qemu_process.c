@@ -4541,7 +4541,7 @@ qemuProcessGetNetworkAddress(const char *netname,
     if (!xml)
         goto cleanup;
 
-    netdef = virNetworkDefParseString(xml);
+    netdef = virNetworkDefParseString(xml, 0);
     if (!netdef)
         goto cleanup;
 

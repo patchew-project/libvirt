@@ -259,7 +259,7 @@ virNetworkDefCopy(virNetworkDefPtr def, unsigned int flags)
     /* deep copy with a format/parse cycle */
     if (!(xml = virNetworkDefFormat(def, flags)))
         goto cleanup;
-    newDef = virNetworkDefParseString(xml);
+    newDef = virNetworkDefParseString(xml, 0);
  cleanup:
     VIR_FREE(xml);
     return newDef;
@@ -1584,7 +1584,8 @@ virNetworkForwardDefParseXML(const char *networkName,
 
 
 virNetworkDefPtr
-virNetworkDefParseXML(xmlXPathContextPtr ctxt)
+virNetworkDefParseXML(xmlXPathContextPtr ctxt,
+                      unsigned int flags)
 {
     virNetworkDefPtr def;
     char *tmp = NULL;
@@ -1602,6 +1603,8 @@ virNetworkDefParseXML(xmlXPathContextPtr ctxt)
     xmlNodePtr bandwidthNode = NULL;
     xmlNodePtr vlanNode;
     xmlNodePtr metadataNode = NULL;
+
+    virCheckFlags(0, NULL);
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
@@ -2016,14 +2019,15 @@ virNetworkDefParseXML(xmlXPathContextPtr ctxt)
 
 static virNetworkDefPtr
 virNetworkDefParse(const char *xmlStr,
-                   const char *filename)
+                   const char *filename,
+                   unsigned int flags)
 {
     xmlDocPtr xml;
     virNetworkDefPtr def = NULL;
     int keepBlanksDefault = xmlKeepBlanksDefault(0);
 
     if ((xml = virXMLParse(filename, xmlStr, _("(network_definition)")))) {
-        def = virNetworkDefParseNode(xml, xmlDocGetRootElement(xml));
+        def = virNetworkDefParseNode(xml, xmlDocGetRootElement(xml), flags);
         xmlFreeDoc(xml);
     }
 
@@ -2033,22 +2037,25 @@ virNetworkDefParse(const char *xmlStr,
 
 
 virNetworkDefPtr
-virNetworkDefParseString(const char *xmlStr)
+virNetworkDefParseString(const char *xmlStr,
+                         unsigned int flags)
 {
-    return virNetworkDefParse(xmlStr, NULL);
+    return virNetworkDefParse(xmlStr, NULL, flags);
 }
 
 
 virNetworkDefPtr
-virNetworkDefParseFile(const char *filename)
+virNetworkDefParseFile(const char *filename,
+                       unsigned int flags)
 {
-    return virNetworkDefParse(NULL, filename);
+    return virNetworkDefParse(NULL, filename, flags);
 }
 
 
 virNetworkDefPtr
 virNetworkDefParseNode(xmlDocPtr xml,
-                       xmlNodePtr root)
+                       xmlNodePtr root,
+                       unsigned int flags)
 {
     xmlXPathContextPtr ctxt = NULL;
     virNetworkDefPtr def = NULL;
@@ -2068,7 +2075,7 @@ virNetworkDefParseNode(xmlDocPtr xml,
     }
 
     ctxt->node = root;
-    def = virNetworkDefParseXML(ctxt);
+    def = virNetworkDefParseXML(ctxt, flags);
 
  cleanup:
     xmlXPathFreeContext(ctxt);

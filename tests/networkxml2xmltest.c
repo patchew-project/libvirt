@@ -33,7 +33,7 @@ testCompareXMLToXMLFiles(const char *inxml, const char *outxml,
     testCompareNetXML2XMLResult result = TEST_COMPARE_NET_XML2XML_RESULT_SUCCESS;
     virNetworkDefPtr dev = NULL;
 
-    if (!(dev = virNetworkDefParseFile(inxml))) {
+    if (!(dev = virNetworkDefParseFile(inxml, 0))) {
         result = TEST_COMPARE_NET_XML2XML_RESULT_FAIL_PARSE;
         goto cleanup;
     }

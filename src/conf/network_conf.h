@@ -294,17 +294,21 @@ virNetworkDefPtr
 virNetworkDefCopy(virNetworkDefPtr def, unsigned int flags);
 
 virNetworkDefPtr
-virNetworkDefParseXML(xmlXPathContextPtr ctxt);
+virNetworkDefParseXML(xmlXPathContextPtr ctxt,
+                      unsigned int flags);
 
 virNetworkDefPtr
-virNetworkDefParseString(const char *xmlStr);
+virNetworkDefParseString(const char *xmlStr,
+                         unsigned int flags);
 
 virNetworkDefPtr
-virNetworkDefParseFile(const char *filename);
+virNetworkDefParseFile(const char *filename,
+                       unsigned int flags);
 
 virNetworkDefPtr
 virNetworkDefParseNode(xmlDocPtr xml,
-                       xmlNodePtr root);
+                       xmlNodePtr root,
+                       unsigned int flags);
 
 char *
 virNetworkDefFormat(const virNetworkDef *def,

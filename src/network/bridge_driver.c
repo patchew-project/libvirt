@@ -3609,7 +3609,7 @@ networkCreateXML(virConnectPtr conn,
     virNetworkPtr net = NULL;
     virObjectEventPtr event = NULL;
 
-    if (!(newDef = virNetworkDefParseString(xml)))
+    if (!(newDef = virNetworkDefParseString(xml, 0)))
         goto cleanup;
 
     if (virNetworkCreateXMLEnsureACL(conn, newDef) < 0)
@@ -3661,7 +3661,7 @@ networkDefineXML(virConnectPtr conn,
     virNetworkPtr net = NULL;
     virObjectEventPtr event = NULL;
 
-    if (!(def = virNetworkDefParseString(xml)))
+    if (!(def = virNetworkDefParseString(xml, 0)))
         goto cleanup;
 
     if (virNetworkDefineXMLEnsureACL(conn, def) < 0)

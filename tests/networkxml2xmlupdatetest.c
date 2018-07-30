@@ -30,7 +30,7 @@ testCompareXMLToXMLFiles(const char *netxml, const char *updatexml,
     if (virTestLoadFile(updatexml, &updateXmlData) < 0)
         goto error;
 
-    if (!(def = virNetworkDefParseFile(netxml)))
+    if (!(def = virNetworkDefParseFile(netxml, 0)))
         goto fail;
 
     if (virNetworkDefUpdateSection(def, command, section, parentIndex,

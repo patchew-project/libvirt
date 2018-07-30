@@ -885,7 +885,7 @@ virNetworkLoadState(virNetworkObjListPtr nets,
 
     /* parse the definition first */
     ctxt->node = node;
-    if (!(def = virNetworkDefParseXML(ctxt)))
+    if (!(def = virNetworkDefParseXML(ctxt, 0)))
         goto error;
 
     if (STRNEQ(name, def->name)) {
@@ -998,7 +998,7 @@ virNetworkLoadConfig(virNetworkObjListPtr nets,
     if ((autostart = virFileLinkPointsTo(autostartLink, configFile)) < 0)
         goto error;
 
-    if (!(def = virNetworkDefParseFile(configFile)))
+    if (!(def = virNetworkDefParseFile(configFile, 0)))
         goto error;
 
     if (STRNEQ(name, def->name)) {

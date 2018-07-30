@@ -966,7 +966,7 @@ testParseNetworks(testDriverPtr privconn,
         if (!node)
             goto error;
 
-        def = virNetworkDefParseNode(ctxt->doc, node);
+        def = virNetworkDefParseNode(ctxt->doc, node, 0);
         if (!def)
             goto error;
 
@@ -3462,7 +3462,7 @@ testNetworkCreateXML(virConnectPtr conn, const char *xml)
     virNetworkPtr net = NULL;
     virObjectEventPtr event = NULL;
 
-    if ((newDef = virNetworkDefParseString(xml)) == NULL)
+    if ((newDef = virNetworkDefParseString(xml, 0)) == NULL)
         goto cleanup;
 
     if (!(obj = virNetworkObjAssignDef(privconn->networks, newDef,
@@ -3498,7 +3498,7 @@ testNetworkDefineXML(virConnectPtr conn,
     virNetworkPtr net = NULL;
     virObjectEventPtr event = NULL;
 
-    if ((newDef = virNetworkDefParseString(xml)) == NULL)
+    if ((newDef = virNetworkDefParseString(xml, 0)) == NULL)
         goto cleanup;
 
     if (!(obj = virNetworkObjAssignDef(privconn->networks, newDef, 0)))
