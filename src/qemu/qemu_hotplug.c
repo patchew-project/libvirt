@@ -3445,17 +3445,14 @@ qemuDomainChangeNet(virQEMUDriverPtr driver,
         goto cleanup;
     }
 
-    /* info: if newdev->info is empty, fill it in from olddev,
-     * otherwise verify that it matches - nothing is allowed to
-     * change. (There is no helper function to do this, so
-     * individually check the few feidls of virDomainDeviceInfo that
-     * are relevant in this case).
+    /* info: if newdev->info.addr.pci is empty, fill it in from olddev,
+     * otherwise verify that it matches.
      */
     if (!virDomainDeviceAddressIsValid(&newdev->info,
-                                       VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) &&
-        virDomainDeviceInfoCopy(&newdev->info, &olddev->info) < 0) {
-        goto cleanup;
+                                       VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI)) {
+        newdev->info.addr.pci = olddev->info.addr.pci;
     }
+
     if (!virPCIDeviceAddressEqual(&olddev->info.addr.pci,
                                   &newdev->info.addr.pci)) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
