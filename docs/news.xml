@@ -37,6 +37,15 @@
     <section title="New features">
       <change>
         <summary>
+          storage: add storage pool iscsi-direct
+        </summary>
+        <description>
+          Introduce a new storage pool backend that uses libiscsi instead of
+          iscsiadm. It support basic pool operations: checkPool and refreshPool.
+        </description>
+      </change>
+      <change>
+        <summary>
           qemu: Implement the HTM pSeries feature
         </summary>
         <description>
