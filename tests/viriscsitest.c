@@ -21,6 +21,7 @@
 #include <config.h>
 
 #include "testutils.h"
+#include "virrandom.h"
 
 #ifdef WIN32
 int
@@ -35,6 +36,32 @@ main(void)
 # include "viriscsi.h"
 
 # define VIR_FROM_THIS VIR_FROM_NONE
+
+bool isLittleEndian(void);
+bool isLittleEndian(void)
+{
+    static int cache = -1;
+    if (cache < 0) {
+        int val = 1;
+        char *ptr = (char *)&val;
+        cache = *ptr ? 1 : 0;
+    }
+    return cache > 0;
+}
+
+
+int
+virRandomBytes(unsigned char *buf,
+               size_t buflen)
+{
+    size_t i;
+    const bool isLE = isLittleEndian();
+
+    for (i = 0; i < buflen; i++)
+        buf[i] = isLE ? i : buflen - i - 1;
+
+    return 0;
+}
 
 static const char *iscsiadmSessionOutput =
     "tcp: [1] 10.20.30.40:3260,1 iqn.2004-06.example:example1:iscsi.test\n"
@@ -368,6 +395,5 @@ mymain(void)
     return EXIT_SUCCESS;
 }
 
-VIR_TEST_MAIN_PRELOAD(mymain,
-                      abs_builddir "/.libs/virrandommock.so")
+VIR_TEST_MAIN(mymain)
 #endif /* WIN32 */
