@@ -3421,7 +3421,9 @@ esxDomainSetAutostart(virDomainPtr domain, int autostart)
         newPowerInfo->stopAction = NULL;
     }
 
-    esxVI_ObjectContent_Free(&virtualMachine);
+    /* HostAutoStartManagerConfig free method will call autoStartPowerInfoFree
+     * in order to free virtualMachine, since  newPowerInfo-> key points to
+     * virtualMachine */
     esxVI_HostAutoStartManagerConfig_Free(&spec);
     esxVI_AutoStartDefaults_Free(&defaults);
     esxVI_AutoStartPowerInfo_Free(&powerInfoList);
