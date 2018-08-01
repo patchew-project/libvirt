@@ -70,6 +70,83 @@ static int load(xmlXPathContextPtr ctxt,
     return ret;
 }
 
+static int
+cpuMapLoadInclude(const char *filename,
+                  cpuMapLoadCallback cb,
+                  void *data)
+{
+    xmlDocPtr xml = NULL;
+    xmlXPathContextPtr ctxt = NULL;
+    int ret = -1;
+    int element;
+    char *mapfile;
+
+    if (!(mapfile = virFileFindResource(filename,
+                                        abs_topsrcdir "/src/cpu",
+                                        PKGDATADIR)))
+        return -1;
+
+    VIR_DEBUG("Loading CPU map include from %s", mapfile);
+
+    if (!(xml = virXMLParseFileCtxt(mapfile, &ctxt)))
+        goto cleanup;
+
+    ctxt->node = xmlDocGetRootElement(xml);
+
+    for (element = 0; element < CPU_MAP_ELEMENT_LAST; element++) {
+        if (load(ctxt, element, cb, data) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("cannot parse CPU map '%s'"), mapfile);
+            goto cleanup;
+        }
+    }
+
+    ret = 0;
+
+ cleanup:
+    xmlXPathFreeContext(ctxt);
+    xmlFreeDoc(xml);
+    VIR_FREE(mapfile);
+
+    return ret;
+}
+
+
+static int loadIncludes(xmlXPathContextPtr ctxt,
+                        cpuMapLoadCallback callback,
+                        void *data)
+{
+    int ret = -1;
+    xmlNodePtr ctxt_node;
+    xmlNodePtr *nodes = NULL;
+    int n;
+    size_t i;
+
+    ctxt_node = ctxt->node;
+
+    n = virXPathNodeSet("include", ctxt, &nodes);
+    if (n < 0)
+        goto cleanup;
+
+    for (i = 0; i < n; i++) {
+        char *filename = virXMLPropString(nodes[i], "filename");
+        VIR_DEBUG("Finding CPU map include '%s'", filename);
+        if (cpuMapLoadInclude(filename, callback, data) < 0) {
+            VIR_FREE(filename);
+            goto cleanup;
+        }
+        VIR_FREE(filename);
+    }
+
+    ret = 0;
+
+ cleanup:
+    ctxt->node = ctxt_node;
+    VIR_FREE(nodes);
+
+    return ret;
+}
+
 
 int cpuMapLoad(const char *arch,
                cpuMapLoadCallback cb,
@@ -88,7 +165,7 @@ int cpuMapLoad(const char *arch,
                                         PKGDATADIR)))
         return -1;
 
-    VIR_DEBUG("Loading CPU map from %s", mapfile);
+    VIR_DEBUG("Loading '%s' CPU map from %s", arch, mapfile);
 
     if (arch == NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -122,10 +199,13 @@ int cpuMapLoad(const char *arch,
     for (element = 0; element < CPU_MAP_ELEMENT_LAST; element++) {
         if (load(ctxt, element, cb, data) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("cannot parse CPU map for %s architecture"), arch);
+                           _("cannot parse CPU map '%s'"), mapfile);
             goto cleanup;
         }
     }
+
+    if (loadIncludes(ctxt, cb, data) < 0)
+        goto cleanup;
 
     ret = 0;
 

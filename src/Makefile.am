@@ -366,7 +366,7 @@ check-local: check-protocol check-symfile check-symsorting \
 
 
 
-pkgdata_DATA =	cpu/cpu_map.xml
+pkgdata_DATA =	$(wildcard $(srcdir)/cpu/cpu_map*.xml)
 
 EXTRA_DIST +=	$(pkgdata_DATA)
 
