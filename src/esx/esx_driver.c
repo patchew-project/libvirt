@@ -3386,7 +3386,9 @@ esxDomainSetAutostart(virDomainPtr domain, int autostart)
     if (esxVI_AutoStartPowerInfo_Alloc(&newPowerInfo) < 0 ||
         esxVI_Int_Alloc(&newPowerInfo->startOrder) < 0 ||
         esxVI_Int_Alloc(&newPowerInfo->startDelay) < 0 ||
-        esxVI_Int_Alloc(&newPowerInfo->stopDelay) < 0) {
+        esxVI_Int_Alloc(&newPowerInfo->stopDelay) < 0 ||
+        VIR_ALLOC_N(newPowerInfo->startAction, 8) < 0 ||
+        VIR_ALLOC_N(newPowerInfo->stopAction, 5) < 0) {
         goto cleanup;
     }
 
@@ -3394,9 +3396,9 @@ esxDomainSetAutostart(virDomainPtr domain, int autostart)
     newPowerInfo->startOrder->value = -1; /* no specific start order */
     newPowerInfo->startDelay->value = -1; /* use system default */
     newPowerInfo->waitForHeartbeat = esxVI_AutoStartWaitHeartbeatSetting_SystemDefault;
-    newPowerInfo->startAction = autostart ? (char *)"powerOn" : (char *)"none";
+    strcpy(newPowerInfo->startAction, autostart ? (char *)"powerOn" : (char *)"none");
     newPowerInfo->stopDelay->value = -1; /* use system default */
-    newPowerInfo->stopAction = (char *)"none";
+    strcpy(newPowerInfo->stopAction, (char *)"none");
 
     if (esxVI_AutoStartPowerInfo_AppendToList(&spec->powerInfo,
                                               newPowerInfo) < 0) {
