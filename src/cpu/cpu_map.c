@@ -35,31 +35,51 @@
 
 VIR_LOG_INIT("cpu.cpu_map");
 
-VIR_ENUM_IMPL(cpuMapElement, CPU_MAP_ELEMENT_LAST,
-    "vendor",
-    "feature",
-    "model")
-
-
-static int load(xmlXPathContextPtr ctxt,
-                cpuMapElement element,
-                cpuMapLoadCallback callback,
-                void *data)
+static int
+loadData(const char *mapfile,
+         xmlXPathContextPtr ctxt,
+         const char *xpath,
+         cpuMapLoadCallback callback,
+         void *data)
 {
     int ret = -1;
     xmlNodePtr ctxt_node;
     xmlNodePtr *nodes = NULL;
     int n;
+    size_t i;
+    int rv;
 
     ctxt_node = ctxt->node;
 
-    n = virXPathNodeSet(cpuMapElementTypeToString(element), ctxt, &nodes);
-    if (n < 0)
+    n = virXPathNodeSet(xpath, ctxt, &nodes);
+    if (n < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("cannot find '%s' in CPU map '%s'"), xpath, mapfile);
         goto cleanup;
+    }
 
-    if (n > 0 &&
-        callback(element, ctxt, nodes, n, data) < 0)
+    if (n > 0 && !callback) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Unexpected %s in CPU map '%s'"), xpath, mapfile);
         goto cleanup;
+    }
+
+    for (i = 0; i < n; i++) {
+        xmlNodePtr old = ctxt->node;
+        char *name = virXMLPropString(nodes[i], "name");
+        if (!name) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("cannot find %s name in CPU map '%s'"), xpath, mapfile);
+            goto cleanup;
+        }
+        VIR_DEBUG("Load %s name %s", xpath, name);
+        ctxt->node = nodes[i];
+        rv = callback(ctxt, name, data);
+        ctxt->node = old;
+        VIR_FREE(name);
+        if (rv < 0)
+            goto cleanup;
+    }
 
     ret = 0;
 
@@ -72,13 +92,14 @@ static int load(xmlXPathContextPtr ctxt,
 
 static int
 cpuMapLoadInclude(const char *filename,
-                  cpuMapLoadCallback cb,
+                  cpuMapLoadCallback vendorCB,
+                  cpuMapLoadCallback featureCB,
+                  cpuMapLoadCallback modelCB,
                   void *data)
 {
     xmlDocPtr xml = NULL;
     xmlXPathContextPtr ctxt = NULL;
     int ret = -1;
-    int element;
     char *mapfile;
 
     if (!(mapfile = virFileFindResource(filename,
@@ -93,13 +114,14 @@ cpuMapLoadInclude(const char *filename,
 
     ctxt->node = xmlDocGetRootElement(xml);
 
-    for (element = 0; element < CPU_MAP_ELEMENT_LAST; element++) {
-        if (load(ctxt, element, cb, data) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("cannot parse CPU map '%s'"), mapfile);
-            goto cleanup;
-        }
-    }
+    if (loadData(mapfile, ctxt, "vendor", vendorCB, data) < 0)
+        goto cleanup;
+
+    if (loadData(mapfile, ctxt, "feature", featureCB, data) < 0)
+        goto cleanup;
+
+    if (loadData(mapfile, ctxt, "model", modelCB, data) < 0)
+        goto cleanup;
 
     ret = 0;
 
@@ -113,7 +135,9 @@ cpuMapLoadInclude(const char *filename,
 
 
 static int loadIncludes(xmlXPathContextPtr ctxt,
-                        cpuMapLoadCallback callback,
+                        cpuMapLoadCallback vendorCB,
+                        cpuMapLoadCallback featureCB,
+                        cpuMapLoadCallback modelCB,
                         void *data)
 {
     int ret = -1;
@@ -131,7 +155,7 @@ static int loadIncludes(xmlXPathContextPtr ctxt,
     for (i = 0; i < n; i++) {
         char *filename = virXMLPropString(nodes[i], "filename");
         VIR_DEBUG("Finding CPU map include '%s'", filename);
-        if (cpuMapLoadInclude(filename, callback, data) < 0) {
+        if (cpuMapLoadInclude(filename, vendorCB, featureCB, modelCB, data) < 0) {
             VIR_FREE(filename);
             goto cleanup;
         }
@@ -149,7 +173,9 @@ static int loadIncludes(xmlXPathContextPtr ctxt,
 
 
 int cpuMapLoad(const char *arch,
-               cpuMapLoadCallback cb,
+               cpuMapLoadCallback vendorCB,
+               cpuMapLoadCallback featureCB,
+               cpuMapLoadCallback modelCB,
                void *data)
 {
     xmlDocPtr xml = NULL;
@@ -157,7 +183,6 @@ int cpuMapLoad(const char *arch,
     virBuffer buf = VIR_BUFFER_INITIALIZER;
     char *xpath = NULL;
     int ret = -1;
-    int element;
     char *mapfile;
 
     if (!(mapfile = virFileFindResource("cpu_map.xml",
@@ -173,9 +198,15 @@ int cpuMapLoad(const char *arch,
         goto cleanup;
     }
 
-    if (cb == NULL) {
+    if (vendorCB == NULL) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                       "%s", _("no callback provided"));
+                       "%s", _("no vendor callback provided"));
+        goto cleanup;
+    }
+
+    if (modelCB == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "%s", _("no model callback provided"));
         goto cleanup;
     }
 
@@ -196,15 +227,16 @@ int cpuMapLoad(const char *arch,
         goto cleanup;
     }
 
-    for (element = 0; element < CPU_MAP_ELEMENT_LAST; element++) {
-        if (load(ctxt, element, cb, data) < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("cannot parse CPU map '%s'"), mapfile);
-            goto cleanup;
-        }
-    }
+    if (loadData(mapfile, ctxt, "vendor", vendorCB, data) < 0)
+        goto cleanup;
 
-    if (loadIncludes(ctxt, cb, data) < 0)
+    if (loadData(mapfile, ctxt, "feature", featureCB, data) < 0)
+        goto cleanup;
+
+    if (loadData(mapfile, ctxt, "model", modelCB, data) < 0)
+        goto cleanup;
+
+    if (loadIncludes(ctxt, vendorCB, featureCB, modelCB, data) < 0)
         goto cleanup;
 
     ret = 0;
