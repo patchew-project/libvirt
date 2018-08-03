@@ -352,8 +352,13 @@ virProcessKillPainfully(pid_t pid, bool force)
     int ret = -1;
     int maxwait = (force ? 200 : 75 );
     const char *signame = "TERM";
+    char *procPath = NULL;
 
     VIR_DEBUG("vpid=%lld force=%d", (long long)pid, force);
+
+    if (virAsprintf(&procPath, "/proc/%llu", (long long) pid) < 0)
+        VIR_WARN("Can't allocate procPath to check for exit of pid %lld, ",
+                 (long long)pid);
 
     /* This loop sends SIGTERM, then waits a few iterations (10 seconds)
      * to see if it dies. If the process still hasn't exited, and
@@ -393,6 +398,24 @@ virProcessKillPainfully(pid_t pid, bool force)
             ret = signum == SIGTERM ? 0 : 1;
             goto cleanup; /* process is dead */
         }
+        /*
+         * There were cases where the process was gone (no /proc/<pid> entry
+         * anymore), but kill with signal=0 still was able to reach the process
+         * as kill (2) only checks for "existence of a process ID" but not the
+         * process itself. For example if the kernel might still clean up
+         * resources. We accept having no /proc/<pid> entry left as valid exit
+         * of the process as well.
+         */
+        if (procPath != NULL && !virFileExists(procPath)) {
+            if (errno == ENOENT) {
+                ret = signum == SIGTERM ? 0 : 1;
+                /* DEBUG as it could be just the race from signal to cleanup */
+                VIR_DEBUG("Process with pid %lld still reachable with signals "
+                         "but %s is no more existing",
+                 (long long) pid, procPath);
+                goto cleanup;
+            }
+        }
 
         usleep(200 * 1000);
     }
@@ -402,6 +425,7 @@ virProcessKillPainfully(pid_t pid, bool force)
                          (long long)pid, signame);
 
  cleanup:
+    VIR_FREE(procPath);
     return ret;
 }
 
