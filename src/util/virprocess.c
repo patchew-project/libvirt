@@ -350,6 +350,7 @@ virProcessKillPainfully(pid_t pid, bool force)
 {
     size_t i;
     int ret = -1;
+    int maxwait = (force ? 200 : 75 );
     const char *signame = "TERM";
 
     VIR_DEBUG("vpid=%lld force=%d", (long long)pid, force);
@@ -357,12 +358,12 @@ virProcessKillPainfully(pid_t pid, bool force)
     /* This loop sends SIGTERM, then waits a few iterations (10 seconds)
      * to see if it dies. If the process still hasn't exited, and
      * @force is requested, a SIGKILL will be sent, and this will
-     * wait up to 5 seconds more for the process to exit before
+     * wait up to 30 seconds more for the process to exit before
      * returning.
      *
      * Note that setting @force could result in dataloss for the process.
      */
-    for (i = 0; i < 75; i++) {
+    for (i = 0; i < maxwait; i++) {
         int signum;
         if (i == 0) {
             signum = SIGTERM; /* kindly suggest it should exit */
