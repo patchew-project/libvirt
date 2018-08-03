@@ -2242,6 +2242,17 @@ virQEMUCapsProbeQMPMachineTypes(virQEMUCapsPtr qemuCaps,
     int ret = -1;
     size_t i;
     size_t defIdx = 0;
+    ssize_t preferredIdx = -1;
+    const char *preferredAlias = NULL;
+
+    /* Historically QEMU defaulted to 'pc' machine type but in
+     * future might switch 'q35'. Such a change is considered
+     * an ABI break from lbivirt's POV, so we must be sure to
+     * keep 'pc' as default machine no matter what QEMU says.
+     */
+    if (qemuCaps->arch == VIR_ARCH_X86_64 ||
+        qemuCaps->arch == VIR_ARCH_I686)
+        preferredAlias = "pc";
 
     if ((nmachines = qemuMonitorGetMachines(mon, &machines)) < 0)
         return -1;
@@ -2263,12 +2274,16 @@ virQEMUCapsProbeQMPMachineTypes(virQEMUCapsPtr qemuCaps,
         mach->maxCpus = machines[i]->maxCpus;
         mach->hotplugCpus = machines[i]->hotplugCpus;
 
+        if (STREQ_NULLABLE(mach->alias, preferredAlias))
+            preferredIdx = qemuCaps->nmachineTypes - 1;
+
         if (machines[i]->isDefault)
             defIdx = qemuCaps->nmachineTypes - 1;
     }
 
-    if (defIdx)
-        virQEMUCapsSetDefaultMachine(qemuCaps, defIdx);
+    if (preferredIdx == -1)
+        preferredIdx = defIdx;
+    virQEMUCapsSetDefaultMachine(qemuCaps, preferredIdx);
 
     ret = 0;
 
