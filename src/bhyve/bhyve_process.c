@@ -416,16 +416,26 @@ virBhyveProcessReconnect(virDomainObjPtr vm,
     if (proc_argv && proc_argv[0]) {
          if (STREQ(expected_proctitle, proc_argv[0])) {
              ret = 0;
-             priv->mon = bhyveMonitorOpen(vm, data->driver);
-             if (vm->def->ngraphics == 1 &&
-                 vm->def->graphics[0]->type == VIR_DOMAIN_GRAPHICS_TYPE_VNC) {
-                 int vnc_port = vm->def->graphics[0]->data.vnc.port;
-                 if (virPortAllocatorSetUsed(vnc_port) < 0) {
-                     VIR_WARN("Failed to mark VNC port '%d' as used by '%s'",
-                              vnc_port, vm->def->name);
-                 }
+         } else {
+             if (STREQ(BHYVE, proc_argv[0])) {
+                 int i = 0;
+                 for (; proc_argv[i+1]; i++);
+                 if ((i != 0) && (STREQ(vm->def->name, proc_argv[i])))
+                     ret = 0;
              }
          }
+    }
+
+    if (ret == 0) {
+        priv->mon = bhyveMonitorOpen(vm, data->driver);
+        if (vm->def->ngraphics == 1 &&
+            vm->def->graphics[0]->type == VIR_DOMAIN_GRAPHICS_TYPE_VNC) {
+            int vnc_port = vm->def->graphics[0]->data.vnc.port;
+            if (virPortAllocatorSetUsed(vnc_port) < 0) {
+                VIR_WARN("Failed to mark VNC port '%d' as used by '%s'",
+                         vnc_port, vm->def->name);
+            }
+        }
     }
 
  cleanup:
