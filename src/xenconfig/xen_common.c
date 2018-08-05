@@ -1081,6 +1081,7 @@ xenParseGeneralMeta(virConfPtr conf, virDomainDefPtr def, virCapsPtr caps)
     virCapsDomainDataPtr capsdata = NULL;
     const char *str;
     int hvm = 0, ret = -1;
+    const char *machine = "xenpv";
 
     if (xenConfigCopyString(conf, "name", &def->name) < 0)
         goto out;
@@ -1089,25 +1090,31 @@ xenParseGeneralMeta(virConfPtr conf, virDomainDefPtr def, virCapsPtr caps)
         goto out;
 
     if (xenConfigGetString(conf, "type", &str, NULL) == 0 && str) {
-        if (STREQ(str, "pv"))
+        if (STREQ(str, "pv")) {
             hvm = 0;
-        else if (STREQ(str, "hvm"))
+        } else if (STREQ(str, "pvh")) {
+            hvm = 0;
+            machine = "xenpvh";
+        } else if (STREQ(str, "hvm")) {
             hvm = 1;
-        else {
+            machine = "xenfv";
+        } else {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("type %s is not supported"), str);
             return -1;
         }
     } else {
         if ((xenConfigGetString(conf, "builder", &str, "linux") == 0) &&
-            STREQ(str, "hvm"))
+            STREQ(str, "hvm")) {
             hvm = 1;
+            machine = "xenfv";
+        }
     }
 
     def->os.type = (hvm ? VIR_DOMAIN_OSTYPE_HVM : VIR_DOMAIN_OSTYPE_XEN);
 
     if (!(capsdata = virCapabilitiesDomainDataLookup(caps, def->os.type,
-            VIR_ARCH_NONE, def->virtType, NULL, NULL)))
+            VIR_ARCH_NONE, def->virtType, NULL, machine)))
         goto out;
 
     def->os.arch = capsdata->arch;
