@@ -57,6 +57,7 @@ struct guest_arch {
     virArch arch;
     int bits;
     int hvm;
+    int pvh;
     int pae;
     int nonpae;
     int ia64_be;
@@ -491,13 +492,29 @@ libxlCapsInitGuests(libxl_ctx *ctx, virCapsPtr caps)
                 guest_archs[i].nonpae = nonpae;
             if (ia64_be)
                 guest_archs[i].ia64_be = ia64_be;
+
+            /* On Xen >= 4.9 add PVH for each HVM guest, and do it only once */
+            if ((ver_info->xen_version_major > 4 ||
+                    (ver_info->xen_version_major == 4 &&
+                     ver_info->xen_version_minor >= 9)) &&
+                    hvm && i == nr_guest_archs-1) {
+                i = nr_guest_archs;
+                /* Too many arch flavours - highly unlikely ! */
+                if (i >= ARRAY_CARDINALITY(guest_archs))
+                    continue;
+                nr_guest_archs++;
+                guest_archs[i].arch = arch;
+                guest_archs[i].pvh = 1;
+            }
         }
     }
     regfree(&regex);
 
     for (i = 0; i < nr_guest_archs; ++i) {
         virCapsGuestPtr guest;
-        char const *const xen_machines[] = {guest_archs[i].hvm ? "xenfv" : "xenpv"};
+        char const *const xen_machines[] = {
+            guest_archs[i].hvm ? "xenfv" :
+                (guest_archs[i].pvh ? "xenpvh" : "xenpv")};
         virCapsGuestMachinePtr *machines;
 
         if ((machines = virCapabilitiesAllocMachines(xen_machines, 1)) == NULL)
@@ -557,7 +574,9 @@ libxlCapsInitGuests(libxl_ctx *ctx, virCapsPtr caps)
                                                1,
                                                0) == NULL)
                 return -1;
+        }
 
+        if (guest_archs[i].hvm || guest_archs[i].pvh) {
             if (virCapabilitiesAddGuestFeature(guest,
                                                "hap",
                                                1,
@@ -580,7 +599,7 @@ libxlMakeDomainOSCaps(const char *machine,
 
     os->supported = true;
 
-    if (STREQ(machine, "xenpv"))
+    if (STREQ(machine, "xenpv") || STREQ(machine, "xenpvh"))
         return 0;
 
     capsLoader->supported = true;

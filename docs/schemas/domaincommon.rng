@@ -341,6 +341,7 @@
           <choice>
             <value>xenpv</value>
             <value>xenfv</value>
+            <value>xenpvh</value>
           </choice>
         </attribute>
       </optional>
