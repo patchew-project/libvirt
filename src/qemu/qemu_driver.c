@@ -7570,6 +7570,7 @@ qemuDomainUndefineFlags(virDomainPtr dom,
     if (!virDomainObjIsActive(vm))
         qemuDomainRemoveInactive(driver, vm);
 
+    virDomainDefFree(vm->newDef);
     ret = 0;
  endjob:
     qemuDomainObjEndJob(driver, vm);
