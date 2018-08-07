@@ -21452,6 +21452,12 @@ qemuGetSEVInfoToParams(virQEMUCapsPtr qemuCaps,
 
     virCheckFlags(VIR_TYPED_PARAM_STRING_OKAY, -1);
 
+    if (!sev) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("SEV is not supported in this guest"));
+        return -1;
+    }
+
     if (virTypedParamsAddString(&sevParams, &n, &maxpar,
                     VIR_NODE_SEV_PDH, sev->pdh) < 0)
         return -1;
