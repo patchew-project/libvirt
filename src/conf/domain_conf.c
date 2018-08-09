@@ -171,7 +171,8 @@ VIR_ENUM_IMPL(virDomainHyperv, VIR_DOMAIN_HYPERV_LAST,
               "reset",
               "vendor_id",
               "frequencies",
-              "reenlightenment")
+              "reenlightenment",
+              "tlbflush")
 
 VIR_ENUM_IMPL(virDomainKVM, VIR_DOMAIN_KVM_LAST,
               "hidden")
@@ -20085,6 +20086,7 @@ virDomainDefParseXML(xmlDocPtr xml,
             case VIR_DOMAIN_HYPERV_RESET:
             case VIR_DOMAIN_HYPERV_FREQUENCIES:
             case VIR_DOMAIN_HYPERV_REENLIGHTENMENT:
+            case VIR_DOMAIN_HYPERV_TLBFLUSH:
                 break;
 
             case VIR_DOMAIN_HYPERV_SPINLOCKS:
@@ -22271,6 +22273,7 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
             case VIR_DOMAIN_HYPERV_RESET:
             case VIR_DOMAIN_HYPERV_FREQUENCIES:
             case VIR_DOMAIN_HYPERV_REENLIGHTENMENT:
+            case VIR_DOMAIN_HYPERV_TLBFLUSH:
                 if (src->hyperv_features[i] != dst->hyperv_features[i]) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                    _("State of HyperV enlightenment "
@@ -27923,6 +27926,7 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                     case VIR_DOMAIN_HYPERV_RESET:
                     case VIR_DOMAIN_HYPERV_FREQUENCIES:
                     case VIR_DOMAIN_HYPERV_REENLIGHTENMENT:
+                    case VIR_DOMAIN_HYPERV_TLBFLUSH:
                         break;
 
                     case VIR_DOMAIN_HYPERV_SPINLOCKS:
