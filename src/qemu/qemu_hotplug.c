@@ -3445,23 +3445,9 @@ qemuDomainChangeNet(virQEMUDriverPtr driver,
         goto cleanup;
     }
 
-    /* info: if newdev->info is empty, fill it in from olddev,
-     * otherwise verify that it matches - nothing is allowed to
-     * change. (There is no helper function to do this, so
-     * individually check the few feidls of virDomainDeviceInfo that
-     * are relevant in this case).
+    /* info: Nothing is allowed to change. First fill the missing newdev->info
+     * from olddev and then check for changes.
      */
-    if (!virDomainDeviceAddressIsValid(&newdev->info,
-                                       VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) &&
-        virDomainDeviceInfoCopy(&newdev->info, &olddev->info) < 0) {
-        goto cleanup;
-    }
-    if (!virPCIDeviceAddressEqual(&olddev->info.addr.pci,
-                                  &newdev->info.addr.pci)) {
-        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
-                       _("cannot modify network device guest PCI address"));
-        goto cleanup;
-    }
     /* grab alias from olddev if not set in newdev */
     if (!newdev->info.alias &&
         VIR_STRDUP(newdev->info.alias, olddev->info.alias) < 0)
@@ -3469,24 +3455,48 @@ qemuDomainChangeNet(virQEMUDriverPtr driver,
 
     /* device alias is checked already in virDomainDefCompatibleDevice */
 
+    if (newdev->info.rombar == VIR_TRISTATE_BOOL_ABSENT)
+        newdev->info.rombar = olddev->info.rombar;
     if (olddev->info.rombar != newdev->info.rombar) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("cannot modify network device rom bar setting"));
         goto cleanup;
     }
+
+    if (!newdev->info.romfile &&
+        VIR_STRDUP(newdev->info.romfile, olddev->info.romfile) < 0)
+        goto cleanup;
     if (STRNEQ_NULLABLE(olddev->info.romfile, newdev->info.romfile)) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("cannot modify network rom file"));
         goto cleanup;
     }
+
+    if (newdev->info.bootIndex == 0)
+        newdev->info.bootIndex = olddev->info.bootIndex;
     if (olddev->info.bootIndex != newdev->info.bootIndex) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("cannot modify network device boot index setting"));
         goto cleanup;
     }
+
+    if (newdev->info.romenabled == VIR_TRISTATE_BOOL_ABSENT)
+        newdev->info.romenabled = olddev->info.romenabled;
     if (olddev->info.romenabled != newdev->info.romenabled) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("cannot modify network device rom enabled setting"));
+        goto cleanup;
+    }
+
+    /* if pci addr is missing or is invalid we overwrite it from olddev */
+    if (!virDomainDeviceAddressIsValid(&newdev->info,
+                                       VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI)) {
+        newdev->info.addr.pci = olddev->info.addr.pci;
+    }
+    if (!virPCIDeviceAddressEqual(&olddev->info.addr.pci,
+                                  &newdev->info.addr.pci)) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("cannot modify network device guest PCI address"));
         goto cleanup;
     }
     /* (end of device info checks) */
