@@ -54,7 +54,8 @@ virLockSpaceProtocolDispatchAcquireResource(virNetServerPtr server ATTRIBUTE_UNU
     virMutexLock(&priv->lock);
 
     virCheckFlagsGoto(VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_SHARED |
-                      VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_AUTOCREATE, cleanup);
+                      VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_AUTOCREATE |
+                      VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_METADATA, cleanup);
 
     if (priv->restricted) {
         virReportError(VIR_ERR_OPERATION_DENIED, "%s",
@@ -80,6 +81,8 @@ virLockSpaceProtocolDispatchAcquireResource(virNetServerPtr server ATTRIBUTE_UNU
         newFlags |= VIR_LOCK_SPACE_ACQUIRE_SHARED;
     if (flags & VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_AUTOCREATE)
         newFlags |= VIR_LOCK_SPACE_ACQUIRE_AUTOCREATE;
+    if (flags & VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_METADATA)
+        newFlags |= VIR_LOCK_SPACE_ACQUIRE_METADATA;
 
     if (virLockSpaceAcquireResource(lockspace,
                                     args->name,
