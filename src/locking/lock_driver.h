@@ -56,6 +56,8 @@ typedef enum {
     VIR_LOCK_MANAGER_RESOURCE_READONLY = (1 << 0),
     /* The resource is assigned in shared, writable mode */
     VIR_LOCK_MANAGER_RESOURCE_SHARED   = (1 << 1),
+    /* The resource is locked for metadata change */
+    VIR_LOCK_MANAGER_RESOURCE_METADATA = (1 << 2),
 } virLockManagerResourceFlags;
 
 typedef enum {
