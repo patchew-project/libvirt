@@ -111,6 +111,8 @@ static void virLockSpaceResourceFree(virLockSpaceResourcePtr res)
     VIR_FREE(res);
 }
 
+#define DEFAULT_OFFSET 0
+#define METADATA_OFFSET 1
 
 static virLockSpaceResourcePtr
 virLockSpaceResourceNew(virLockSpacePtr lockspace,
@@ -120,6 +122,18 @@ virLockSpaceResourceNew(virLockSpacePtr lockspace,
 {
     virLockSpaceResourcePtr res;
     bool shared = !!(flags & VIR_LOCK_SPACE_ACQUIRE_SHARED);
+    bool metadata = !!(flags & VIR_LOCK_SPACE_ACQUIRE_METADATA);
+    off_t start = DEFAULT_OFFSET;
+    bool waitForLock = false;
+
+    if (metadata) {
+        /* We want the metadata lock to act like pthread mutex.
+         * This means waiting for the lock to be acquired. */
+        waitForLock = true;
+
+        /* Also, we are locking different offset. */
+        start = METADATA_OFFSET;
+    }
 
     if (VIR_ALLOC(res) < 0)
         return NULL;
@@ -157,7 +171,7 @@ virLockSpaceResourceNew(virLockSpacePtr lockspace,
                 goto error;
             }
 
-            if (virFileLock(res->fd, shared, 0, 1, false) < 0) {
+            if (virFileLock(res->fd, shared, start, 1, waitForLock) < 0) {
                 if (errno == EACCES || errno == EAGAIN) {
                     virReportError(VIR_ERR_RESOURCE_BUSY,
                                    _("Lockspace resource '%s' is locked"),
@@ -204,7 +218,7 @@ virLockSpaceResourceNew(virLockSpacePtr lockspace,
             goto error;
         }
 
-        if (virFileLock(res->fd, shared, 0, 1, false) < 0) {
+        if (virFileLock(res->fd, shared, start, 1, waitForLock) < 0) {
             if (errno == EACCES || errno == EAGAIN) {
                 virReportError(VIR_ERR_RESOURCE_BUSY,
                                _("Lockspace resource '%s' is locked"),
@@ -621,7 +635,15 @@ int virLockSpaceAcquireResource(virLockSpacePtr lockspace,
               lockspace, resname, flags, (unsigned long long)owner);
 
     virCheckFlags(VIR_LOCK_SPACE_ACQUIRE_SHARED |
-                  VIR_LOCK_SPACE_ACQUIRE_AUTOCREATE, -1);
+                  VIR_LOCK_SPACE_ACQUIRE_AUTOCREATE |
+                  VIR_LOCK_SPACE_ACQUIRE_METADATA, -1);
+
+    if (flags & VIR_LOCK_SPACE_ACQUIRE_METADATA &&
+        flags & VIR_LOCK_SPACE_ACQUIRE_SHARED) {
+        virReportInvalidArg(flags, "%s",
+                            _("metadata and shared are mutually exclusive"));
+        return -1;
+    }
 
     virMutexLock(&lockspace->lock);
 
@@ -635,10 +657,14 @@ int virLockSpaceAcquireResource(virLockSpacePtr lockspace,
 
             goto done;
         }
-        virReportError(VIR_ERR_RESOURCE_BUSY,
-                       _("Lockspace resource '%s' is locked"),
-                       resname);
-        goto cleanup;
+
+        if (!(res->flags & VIR_LOCK_SPACE_ACQUIRE_METADATA) ||
+            !(flags & VIR_LOCK_SPACE_ACQUIRE_METADATA)) {
+            virReportError(VIR_ERR_RESOURCE_BUSY,
+                           _("Lockspace resource '%s' is locked"),
+                           resname);
+            goto cleanup;
+        }
     }
 
     if (!(res = virLockSpaceResourceNew(lockspace, resname, flags, owner)))
