@@ -5721,6 +5721,11 @@
             <ref name="featurestate"/>
           </element>
         </optional>
+        <optional>
+          <element name="reenlightenment">
+            <ref name="featurestate"/>
+          </element>
+        </optional>
       </interleave>
     </element>
   </define>
