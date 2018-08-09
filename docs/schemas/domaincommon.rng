@@ -5716,6 +5716,11 @@
             </optional>
           </element>
         </optional>
+        <optional>
+          <element name="frequencies">
+            <ref name="featurestate"/>
+          </element>
+        </optional>
       </interleave>
     </element>
   </define>
