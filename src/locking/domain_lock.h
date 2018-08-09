@@ -66,4 +66,32 @@ int virDomainLockLeaseDetach(virLockManagerPluginPtr plugin,
                              virDomainObjPtr dom,
                              virDomainLeaseDefPtr lease);
 
+int virDomainLockMetadataLock(virLockManagerPluginPtr plugin,
+                              virDomainObjPtr dom);
+
+int virDomainLockMetadataUnlock(virLockManagerPluginPtr plugin,
+                                virDomainObjPtr dom);
+
+int virDomainLockMetadataDiskLock(virLockManagerPluginPtr plugin,
+                                  virDomainObjPtr dom,
+                                  virDomainDiskDefPtr disk);
+int virDomainLockMetadataDiskUnlock(virLockManagerPluginPtr plugin,
+                                    virDomainObjPtr dom,
+                                    virDomainDiskDefPtr disk);
+
+int virDomainLockMetadataImageLock(virLockManagerPluginPtr plugin,
+                                   virDomainObjPtr dom,
+                                   virStorageSourcePtr src);
+
+int virDomainLockMetadataImageUnlock(virLockManagerPluginPtr plugin,
+                                     virDomainObjPtr dom,
+                                     virStorageSourcePtr src);
+
+int virDomainLockMetadataMemLock(virLockManagerPluginPtr plugin,
+                                 virDomainObjPtr dom,
+                                 virDomainMemoryDefPtr mem);
+int virDomainLockMetadataMemUnlock(virLockManagerPluginPtr plugin,
+                                   virDomainObjPtr dom,
+                                   virDomainMemoryDefPtr mem);
+
 #endif /* __VIR_DOMAIN_LOCK_H__ */
