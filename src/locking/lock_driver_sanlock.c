@@ -791,7 +791,8 @@ static int virLockManagerSanlockAddResource(virLockManagerPtr lock,
     virLockManagerSanlockPrivatePtr priv = lock->privateData;
 
     virCheckFlags(VIR_LOCK_MANAGER_RESOURCE_READONLY |
-                  VIR_LOCK_MANAGER_RESOURCE_SHARED, -1);
+                  VIR_LOCK_MANAGER_RESOURCE_SHARED |
+                  VIR_LOCK_MANAGER_RESOURCE_METADATA, -1);
 
     if (priv->res_count == SANLK_MAX_RESOURCES) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -802,6 +803,11 @@ static int virLockManagerSanlockAddResource(virLockManagerPtr lock,
 
     /* Treat R/O resources as a no-op lock request */
     if (flags & VIR_LOCK_MANAGER_RESOURCE_READONLY)
+        return 0;
+
+    /* No metadata locking support for now.
+     * TODO: implement it. */
+    if (flags & VIR_LOCK_MANAGER_RESOURCE_METADATA)
         return 0;
 
     switch (type) {
@@ -953,12 +959,17 @@ static int virLockManagerSanlockAcquire(virLockManagerPtr lock,
     virCheckFlags(VIR_LOCK_MANAGER_ACQUIRE_RESTRICT |
                   VIR_LOCK_MANAGER_ACQUIRE_REGISTER_ONLY, -1);
 
-    if (priv->res_count == 0 &&
-        priv->hasRWDisks &&
-        driver->requireLeaseForDisks) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("Read/write, exclusive access, disks were present, but no leases specified"));
-        return -1;
+    if (priv->res_count == 0) {
+        if (priv->hasRWDisks &&
+            driver->requireLeaseForDisks) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("Read/write, exclusive access, disks were present, but no leases specified"));
+            return -1;
+        }
+
+        /* We are not handling METADATA flag yet. So no resources
+         * case is no-op for now. */
+        return 0;
     }
 
     /* We only initialize 'sock' if we are in the real
