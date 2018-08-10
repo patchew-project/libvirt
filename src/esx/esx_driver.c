@@ -2583,8 +2583,40 @@ esxDomainGetVcpusFlags(virDomainPtr domain, unsigned int flags)
 static int
 esxDomainGetMaxVcpus(virDomainPtr domain)
 {
-    return esxDomainGetVcpusFlags(domain, (VIR_DOMAIN_AFFECT_LIVE |
-                                           VIR_DOMAIN_VCPU_MAXIMUM));
+    esxPrivate *priv = domain->conn->privateData;
+    esxVI_String *propertyNameList = NULL;
+    esxVI_ObjectContent *hostSystem = NULL;
+    esxVI_Int *supportedVcpus = NULL;
+    esxVI_Int *hostVcpus = NULL;
+
+    if (esxVI_EnsureSession(priv->primary) < 0)
+        return -1;
+
+    priv->maxVcpus = -1;
+
+    if (esxVI_String_AppendValueToList(&propertyNameList,
+                                           "capability.maxHostSupportedVcpus\0"
+                                           "capability.maxSupportedVcpus"
+					   ) < 0 ||
+        esxVI_LookupHostSystemProperties(priv->primary, propertyNameList,
+                                          &hostSystem) < 0 ||
+        esxVI_GetInt(hostSystem, "capability.maxHostSupportedVcpus",
+                      &hostVcpus, esxVI_Occurrence_RequiredItem) < 0 ||
+        esxVI_GetInt(hostSystem, "capability.maxSupportedVcpus",
+                      &supportedVcpus, esxVI_Occurrence_OptionalItem) < 0)
+
+        goto cleanup;
+
+    /* as maxSupportedVcpus is optional, check also for maxHostSupportedVcpus */
+    priv->maxVcpus = supportedVcpus ? supportedVcpus->value : hostVcpus->value;
+
+ cleanup:
+    esxVI_String_Free(&propertyNameList);
+    esxVI_ObjectContent_Free(&hostSystem);
+    esxVI_Int_Free(&supportedVcpus);
+    esxVI_Int_Free(&hostVcpus);
+
+    return priv->maxVcpus;
 }
 
 
