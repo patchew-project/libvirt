@@ -27,6 +27,7 @@
 
 #include "bhyve_capabilities.h"
 #include "bhyve_command.h"
+#include "bhyve_conf.h"
 #include "bhyve_domain.h"
 #include "bhyve_driver.h"
 #include "datatypes.h"
@@ -329,7 +330,11 @@ static int
 bhyveBuildLPCArgStr(const virDomainDef *def ATTRIBUTE_UNUSED,
                     virCommandPtr cmd)
 {
-    virCommandAddArgList(cmd, "-s", "1,lpc", NULL);
+    unsigned int lpcslotnumber = virBhyveGetLPCSlotNumber(def);
+
+    virCommandAddArg(cmd, "-s");
+    virCommandAddArgFormat(cmd, "%d,lpc", lpcslotnumber);
+
     return 0;
 }
 

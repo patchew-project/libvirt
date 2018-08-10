@@ -76,6 +76,9 @@
           <ref name='lxcsharens'/>
         </optional>
         <optional>
+          <ref name='bhyveopt'/>
+        </optional>
+        <optional>
           <ref name='keywrap'/>
         </optional>
         <optional>
@@ -6013,6 +6016,18 @@
         </element>
       </zeroOrMore>
     </element>
+  </define>
+
+  <!--
+       Optional hypervisor extensions in their own namespace:
+         BHYVE
+    -->
+  <define name="bhyveopt">
+    <zeroOrMore>
+      <element name="lpcslotnumber" ns="http://libvirt.org/schemas/domain/bhyve/1.0">
+        <attribute name='value'/>
+      </element>
+    </zeroOrMore>
   </define>
 
   <!--

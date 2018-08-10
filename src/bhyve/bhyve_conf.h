@@ -29,4 +29,13 @@ virBhyveDriverConfigPtr virBhyveDriverGetConfig(bhyveConnPtr driver);
 int virBhyveLoadDriverConfig(virBhyveDriverConfigPtr cfg,
                              const char *filename);
 
+typedef struct _bhyveDomainDef bhyveDomainDef;
+typedef bhyveDomainDef *bhyveDomainDefPtr;
+struct _bhyveDomainDef {
+    unsigned int lpc_slot_number;
+};
+
+void bhyveDomainDefFree(bhyveDomainDefPtr def);
+int virBhyveGetLPCSlotNumber(const virDomainDef *def);
+
 #endif /* BHYVE_CONF_H */

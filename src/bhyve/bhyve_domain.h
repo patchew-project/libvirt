@@ -39,6 +39,7 @@ struct _bhyveDomainObjPrivate {
 
 virDomainXMLOptionPtr virBhyveDriverCreateXMLConf(bhyveConnPtr);
 
+extern virDomainXMLNamespace virBhyveDriverDomainXMLNamespace;
 extern virDomainXMLPrivateDataCallbacks virBhyveDriverPrivateDataCallbacks;
 extern virDomainDefParserConfig virBhyveDriverDomainDefParserConfig;
 

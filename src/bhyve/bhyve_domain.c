@@ -20,17 +20,22 @@
  * Author: Roman Bogorodskiy
  */
 
+#include <libxml/xpathInternals.h>
 #include <config.h>
 
+#include "bhyve_conf.h"
 #include "bhyve_device.h"
 #include "bhyve_domain.h"
 #include "bhyve_capabilities.h"
 #include "viralloc.h"
 #include "virlog.h"
+#include "virstring.h"
 
 #define VIR_FROM_THIS VIR_FROM_BHYVE
 
 VIR_LOG_INIT("bhyve.bhyve_domain");
+
+#define BHYVE_NAMESPACE_HREF "http://libvirt.org/schemas/domain/bhyve/1.0"
 
 static void *
 bhyveDomainObjPrivateAlloc(void *opaque ATTRIBUTE_UNUSED)
@@ -56,6 +61,84 @@ bhyveDomainObjPrivateFree(void *data)
 virDomainXMLPrivateDataCallbacks virBhyveDriverPrivateDataCallbacks = {
     .alloc = bhyveDomainObjPrivateAlloc,
     .free = bhyveDomainObjPrivateFree,
+};
+
+static void
+bhyveDomainDefNamespaceFree(void *nsdata)
+{
+    bhyveDomainDefPtr def = nsdata;
+    
+    bhyveDomainDefFree(def);
+}
+
+static int
+bhyveDomainDefNamespaceParse(xmlDocPtr xml ATTRIBUTE_UNUSED,
+                            xmlNodePtr root ATTRIBUTE_UNUSED,
+                            xmlXPathContextPtr ctxt,
+                            void **data)
+{
+    bhyveDomainDefPtr domainDef = NULL;
+    char *lpcslotnumberstring = NULL;
+
+    if (xmlXPathRegisterNs(ctxt, BAD_CAST "bhyve", BAD_CAST BHYVE_NAMESPACE_HREF) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Failed to register xml namespace '%s'"),
+                       BHYVE_NAMESPACE_HREF);
+        return -1;
+    }
+
+    xmlNodePtr lpcnode = virXPathNode("./bhyve:lpcslotnumber", ctxt);
+    if  (lpcnode == NULL) 
+        return 0;
+
+    if (VIR_ALLOC(domainDef) < 0)
+        return -1;
+
+    lpcslotnumberstring = virXMLPropString(lpcnode, "value");
+    if (lpcslotnumberstring == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+            "%s", _("Bhyve lpcslotnumber value property not found"));
+        goto error;
+    } else if (virStrToLong_ui(lpcslotnumberstring, NULL, 10, &domainDef->lpc_slot_number) != 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+            "%s got %s", _("Bhyve lpcslotnumber value property must be integer"), lpcslotnumberstring);
+        VIR_FREE(lpcslotnumberstring);
+        goto error;
+    }
+    VIR_FREE(lpcslotnumberstring);
+
+    *data = domainDef;
+    return 0;
+ error:
+    bhyveDomainDefFree(domainDef);
+    return -1;
+}
+
+static int
+bhyveDomainDefNamespaceFormatXML(virBufferPtr buf,
+                                void *nsdata)
+{
+    bhyveDomainDefPtr domainDef = nsdata;
+
+    if (domainDef) {
+        virBufferAsprintf(buf, "<bhyve:lpcslotnumber value='%d'/>\n",
+            domainDef->lpc_slot_number);
+    }
+
+    return 0;
+}
+
+static const char *
+bhyveDomainDefNamespaceHref(void)
+{
+    return "xmlns:bhyve='" BHYVE_NAMESPACE_HREF "'";
+}
+
+virDomainXMLNamespace virBhyveDriverDomainXMLNamespace = {
+    .parse = bhyveDomainDefNamespaceParse,
+    .free = bhyveDomainDefNamespaceFree,
+    .format = bhyveDomainDefNamespaceFormatXML,
+    .href = bhyveDomainDefNamespaceHref,
 };
 
 static int
@@ -159,7 +242,8 @@ virBhyveDriverCreateXMLConf(bhyveConnPtr driver)
     virBhyveDriverDomainDefParserConfig.priv = driver;
     return virDomainXMLOptionNew(&virBhyveDriverDomainDefParserConfig,
                                  &virBhyveDriverPrivateDataCallbacks,
-                                 NULL, NULL, NULL);
+                                 &virBhyveDriverDomainXMLNamespace, 
+                                 NULL, NULL);
 }
 
 virDomainDefParserConfig virBhyveDriverDomainDefParserConfig = {

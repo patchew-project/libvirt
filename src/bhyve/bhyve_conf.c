@@ -44,6 +44,18 @@ static int virBhyveConfigOnceInit(void)
 
 VIR_ONCE_GLOBAL_INIT(virBhyveConfig)
 
+void bhyveDomainDefFree(bhyveDomainDefPtr def)
+{
+    VIR_FREE(def);
+}
+
+int virBhyveGetLPCSlotNumber(const virDomainDef *def) {
+    bhyveDomainDefPtr bhyveopts;
+
+    bhyveopts = def->namespaceData;
+    return bhyveopts ? bhyveopts->lpc_slot_number : 1;
+}
+
 virBhyveDriverConfigPtr
 virBhyveDriverConfigNew(void)
 {
