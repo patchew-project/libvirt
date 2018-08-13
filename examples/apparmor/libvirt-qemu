@@ -180,6 +180,16 @@
   # for rbd
   /etc/ceph/ceph.conf r,
 
+  # various functions will need /tmp (e.g. ceph), allow the base dir and a
+  # few known functions.
+  # we want to avoid to give blanket read or even write to everything under /tmp
+  # so users are expected to add site specific addons for more uncommon cases.
+  # allow only dir listing and owner based file read
+  /{,var/}tmp/ r,
+  owner /{,var/}tmp/**/ r,
+  # allow qemu smb feature specific path with write access
+  owner /tmp/qemu-smb.*/{,**} rw,
+
   # for file-posix getting limits since 9103f1ce
   /sys/devices/**/block/*/queue/max_segments r,
 
