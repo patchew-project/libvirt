@@ -396,6 +396,8 @@ struct _qemuDomainDiskPrivate {
     /* information about the device */
     bool tray; /* device has tray */
     bool removable; /* device media can be removed/changed */
+
+    char *backendQomName; /* QOM path to the eligible block backend */
 };
 
 # define QEMU_DOMAIN_STORAGE_SOURCE_PRIVATE(src) \
