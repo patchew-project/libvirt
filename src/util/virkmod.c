@@ -24,11 +24,44 @@
 #include "virkmod.h"
 #include "vircommand.h"
 #include "virstring.h"
+#include "virthread.h"
+#include "virconf.h"
+
+#define VIR_FROM_THIS VIR_FROM_NONE
+
+/*
+ * Kernel module load timeout (milliseconds)
+ * >0, the number of milliseconds before loading expires
+ * =0, waiting indefinitely
+ */
+static int virKModLoadTimeout = 3*1000;
+
+static int virKModOnceInit(void)
+{
+    int timeout = 0;
+    virConfPtr conf = NULL;
+    if (virConfLoadConfig(&conf, "virt-command.conf") < 0)
+        goto cleanup;
+    if (virConfGetValueInt(conf, "kmod_load_timeout", &timeout) <= 0)
+        goto cleanup;
+
+    if (timeout >= 0)
+        virKModLoadTimeout = timeout;
+
+ cleanup:
+    virConfFree(conf);
+    return 0;
+}
+
+VIR_ONCE_GLOBAL_INIT(virKMod)
 
 static int
 doModprobe(const char *opts, const char *module, char **outbuf, char **errbuf)
 {
     VIR_AUTOPTR(virCommand) cmd = NULL;
+
+    if (virKModInitialize() < 0)
+        return -1;
 
     cmd = virCommandNew(MODPROBE);
     if (opts)
@@ -40,8 +73,16 @@ doModprobe(const char *opts, const char *module, char **outbuf, char **errbuf)
     if (errbuf)
         virCommandSetErrorBuffer(cmd, errbuf);
 
-    if (virCommandRun(cmd, NULL) < 0)
+    if (virKModLoadTimeout > 0)
+        virCommandSetTimeout(cmd, virKModLoadTimeout);
+
+    if (virCommandRun(cmd, NULL) < 0) {
+        if (virCommandGetErr(cmd) == ETIME)
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("%s loading timeout. Check kmod_load_timeout from virt-command.conf"),
+                           module);
         return -1;
+    }
 
     return 0;
 }

@@ -150,7 +150,7 @@ lib_LTLIBRARIES = libvirt.la libvirt-qemu.la libvirt-lxc.la
 moddir = $(libdir)/libvirt/connection-driver
 
 confdir = $(sysconfdir)/libvirt
-conf_DATA += libvirt.conf libvirt-admin.conf
+conf_DATA += libvirt.conf libvirt-admin.conf virt-command.conf
 
 augeasdir = $(datadir)/augeas/lenses
 
@@ -951,6 +951,8 @@ libvirt_nss_la_SOURCES = \
 		util/virbuffer.h \
 		util/vircommand.c \
 		util/vircommand.h \
+		util/virconf.c \
+		util/virconf.h \
 		util/virerror.c \
 		util/virerror.h \
 		util/virfile.c \
