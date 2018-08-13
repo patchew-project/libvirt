@@ -691,6 +691,9 @@ virStorageBackenISCSIDirectWipeVol(virStoragePoolObjPtr pool,
     if (!(iscsi = virStorageBackendISCSIDirectSetConnection(pool, NULL)))
         return -1;
 
+    vol->in_use++;
+    virObjectUnlock(pool);
+
     switch ((virStorageVolWipeAlgorithm) algorithm) {
     case VIR_STORAGE_VOL_WIPE_ALG_ZERO:
         if (virStorageBackendISCSIDirectVolWipeZero(vol, iscsi) < 0) {
@@ -719,6 +722,8 @@ virStorageBackenISCSIDirectWipeVol(virStoragePoolObjPtr pool,
  cleanup:
     virISCSIDirectDisconnect(iscsi);
     iscsi_destroy_context(iscsi);
+    virObjectLock(pool);
+    vol->in_use--;
     return ret;
 }
 

@@ -2750,7 +2750,7 @@ storageBackendVolWipePloop(virStorageVolDefPtr vol,
 
 
 int
-virStorageBackendVolWipeLocal(virStoragePoolObjPtr pool ATTRIBUTE_UNUSED,
+virStorageBackendVolWipeLocal(virStoragePoolObjPtr pool,
                               virStorageVolDefPtr vol,
                               unsigned int algorithm,
                               unsigned int flags)
@@ -2758,6 +2758,9 @@ virStorageBackendVolWipeLocal(virStoragePoolObjPtr pool ATTRIBUTE_UNUSED,
     int ret = -1;
 
     virCheckFlags(0, -1);
+
+    vol->in_use++;
+    virObjectUnlock(pool);
 
     VIR_DEBUG("Wiping volume with path '%s' and algorithm %u",
               vol->target.path, algorithm);
@@ -2768,6 +2771,9 @@ virStorageBackendVolWipeLocal(virStoragePoolObjPtr pool ATTRIBUTE_UNUSED,
         ret = storageBackendVolWipeLocalFile(vol->target.path, algorithm,
                                              vol->target.allocation, false);
     }
+
+    virObjectLock(pool);
+    vol->in_use--;
 
     return ret;
 }

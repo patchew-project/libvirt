@@ -1212,7 +1212,10 @@ virStorageBackendRBDVolWipe(virStoragePoolObjPtr pool,
     VIR_DEBUG("Wiping RBD image %s/%s", def->source.name, vol->name);
 
     if (!(ptr = virStorageBackendRBDNewState(pool)))
-        goto cleanup;
+        return -1;
+
+    vol->in_use++;
+    virObjectUnlock(pool);
 
     if ((r = rbd_open(ptr->ioctx, vol->name, &image, NULL)) < 0) {
         virReportSystemError(-r, _("failed to open the RBD image %s"),
@@ -1271,6 +1274,8 @@ virStorageBackendRBDVolWipe(virStoragePoolObjPtr pool,
         rbd_close(image);
 
     virStorageBackendRBDFreeState(&ptr);
+    virObjectLock(pool);
+    vol->in_use--;
 
     return ret;
 }
