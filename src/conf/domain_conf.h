@@ -2735,6 +2735,11 @@ typedef int (*virDomainXMLPrivateDataParseFunc)(xmlXPathContextPtr,
 
 typedef void *(*virDomainXMLPrivateDataGetParseOpaqueFunc)(virDomainObjPtr vm);
 
+typedef int (*virDomainXMLPrivateDataDiskParseFunc)(xmlXPathContextPtr ctxt,
+                                                    virDomainDiskDefPtr disk);
+typedef int (*virDomainXMLPrivateDataDiskFormatFunc)(virDomainDiskDefPtr disk,
+                                                     virBufferPtr buf);
+
 typedef int (*virDomainXMLPrivateDataStorageSourceParseFunc)(xmlXPathContextPtr ctxt,
                                                              virStorageSourcePtr src);
 typedef int (*virDomainXMLPrivateDataStorageSourceFormatFunc)(virStorageSourcePtr src,
@@ -2749,6 +2754,8 @@ struct _virDomainXMLPrivateDataCallbacks {
     /* note that private data for devices are not copied when using
      * virDomainDefCopy and similar functions */
     virDomainXMLPrivateDataNewFunc    diskNew;
+    virDomainXMLPrivateDataDiskParseFunc diskParse;
+    virDomainXMLPrivateDataDiskFormatFunc diskFormat;
     virDomainXMLPrivateDataNewFunc    vcpuNew;
     virDomainXMLPrivateDataNewFunc    chrSourceNew;
     virDomainXMLPrivateDataNewFunc    vsockNew;
