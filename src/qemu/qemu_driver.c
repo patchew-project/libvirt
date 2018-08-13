@@ -11023,13 +11023,9 @@ qemuDomainBlockResize(virDomainPtr dom,
 
 
 static int
-qemuDomainBlockStatsGatherTotals(void *payload,
-                                 const void *name ATTRIBUTE_UNUSED,
-                                 void *opaque)
+qemuDomainBlockStatsGatherTotals(qemuBlockStatsPtr data,
+                                 qemuBlockStatsPtr total)
 {
-    qemuBlockStatsPtr data = payload;
-    qemuBlockStatsPtr total = opaque;
-
 #define QEMU_BLOCK_STAT_TOTAL(NAME) \
     if (data->NAME > 0) \
         total->NAME += data->NAME
@@ -11070,6 +11066,7 @@ qemuDomainBlocksStatsGather(virQEMUDriverPtr driver,
     virDomainDiskDefPtr disk;
     virHashTablePtr blockstats = NULL;
     qemuBlockStatsPtr stats;
+    size_t i;
     int nstats;
     const char *entryname = NULL;
     int ret = -1;
@@ -11111,7 +11108,21 @@ qemuDomainBlocksStatsGather(virQEMUDriverPtr driver,
 
         **retstats = *stats;
     } else {
-        virHashForEach(blockstats, qemuDomainBlockStatsGatherTotals, *retstats);
+        for (i = 0; i < vm->def->ndisks; i++) {
+            disk = vm->def->disks[i];
+            entryname = disk->info.alias;
+
+            if (!entryname)
+                continue;
+
+            if (!(stats = virHashLookup(blockstats, entryname))) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("cannot find statistics for device '%s'"), entryname);
+                goto cleanup;
+            }
+
+            qemuDomainBlockStatsGatherTotals(stats, *retstats);
+        }
     }
 
     ret = nstats;
