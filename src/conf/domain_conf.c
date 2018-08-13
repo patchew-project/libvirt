@@ -9805,6 +9805,13 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
 
             startupPolicy = virXMLPropString(cur, "startupPolicy");
 
+            if (!(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE) &&
+                (tmp = virXMLPropString(cur, "index")) &&
+                virStrToLong_uip(tmp, NULL, 10, &def->src->id) < 0) {
+                virReportError(VIR_ERR_XML_ERROR, _("invalid disk index '%s'"), tmp);
+                goto error;
+            }
+            VIR_FREE(tmp);
         } else if (!target &&
                    virXMLNodeNameEqual(cur, "target")) {
             target = virXMLPropString(cur, "dev");
@@ -23973,6 +23980,7 @@ virDomainDiskSourceFormatInternal(virBufferPtr buf,
                                   int policy,
                                   unsigned int flags,
                                   bool skipSeclabels,
+                                  bool attrIndex,
                                   virDomainXMLOptionPtr xmlopt)
 {
     virBuffer attrBuf = VIR_BUFFER_INITIALIZER;
@@ -23988,6 +23996,9 @@ virDomainDiskSourceFormatInternal(virBufferPtr buf,
     if (policy && src->type != VIR_STORAGE_TYPE_NETWORK)
         virBufferEscapeString(&attrBuf, " startupPolicy='%s'",
                               virDomainStartupPolicyTypeToString(policy));
+
+    if (attrIndex && src->id != 0)
+        virBufferAsprintf(&attrBuf, " index='%u'", src->id);
 
     if (virDomainDiskSourceFormatPrivateData(&childBuf, src, flags, xmlopt) < 0)
         goto cleanup;
@@ -24011,7 +24022,8 @@ virDomainDiskSourceFormat(virBufferPtr buf,
                           unsigned int flags,
                           virDomainXMLOptionPtr xmlopt)
 {
-    return virDomainDiskSourceFormatInternal(buf, src, policy, flags, false, xmlopt);
+    return virDomainDiskSourceFormatInternal(buf, src, policy, flags, false,
+                                             false, xmlopt);
 }
 
 
@@ -24053,7 +24065,8 @@ virDomainDiskBackingStoreFormat(virBufferPtr buf,
 
     virBufferAsprintf(buf, "<format type='%s'/>\n", format);
     /* We currently don't output seclabels for backing chain element */
-    if (virDomainDiskSourceFormatInternal(buf, backingStore, 0, flags, true, xmlopt) < 0 ||
+    if (virDomainDiskSourceFormatInternal(buf, backingStore, 0, flags, true,
+                                          false, xmlopt) < 0 ||
         virDomainDiskBackingStoreFormat(buf, backingStore->backingStore,
                                         xmlopt, flags) < 0)
         return -1;
@@ -24319,8 +24332,8 @@ virDomainDiskDefFormat(virBufferPtr buf,
     if (def->src->auth && !def->src->authInherited)
         virStorageAuthDefFormat(buf, def->src->auth);
 
-    if (virDomainDiskSourceFormat(buf, def->src, def->startupPolicy,
-                                  flags, xmlopt) < 0)
+    if (virDomainDiskSourceFormatInternal(buf, def->src, def->startupPolicy,
+                                          flags, false, true, xmlopt) < 0)
         return -1;
 
     /* Don't format backingStore to inactive XMLs until the code for
