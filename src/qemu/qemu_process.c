@@ -5882,6 +5882,15 @@ qemuProcessPrepareDomain(virQEMUDriverPtr driver,
 
     qemuProcessPrepareAllowReboot(vm);
 
+    /* clear the 'blockdev' capability for VMs which have disks that need
+     * -drive or which have floppies where we can't reliably get the QOM path */
+    for (i = 0; i < vm->def->ndisks; i++) {
+        if (qemuDiskBusNeedsDriveArg(vm->def->disks[i]->bus)) {
+            virQEMUCapsClear(priv->qemuCaps, QEMU_CAPS_BLOCKDEV);
+            break;
+        }
+    }
+
     /*
      * Normally PCI addresses are assigned in the virDomainCreate
      * or virDomainDefine methods. We might still need to assign
