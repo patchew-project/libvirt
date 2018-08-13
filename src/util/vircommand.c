@@ -53,6 +53,7 @@
 #include "virbuffer.h"
 #include "virthread.h"
 #include "virstring.h"
+#include "virtime.h"
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
@@ -136,6 +137,8 @@ struct _virCommand {
     char *appArmorProfile;
 #endif
     int mask;
+
+    int timeout;
 };
 
 /* See virCommandSetDryRun for description for this variable */
@@ -906,6 +909,8 @@ virCommandNewArgs(const char *const*args)
     cmd->uid = -1;
     cmd->gid = -1;
 
+    cmd->timeout = -1;
+
     virCommandAddArgSet(cmd, args);
 
     return cmd;
@@ -1074,6 +1079,13 @@ uid_t
 virCommandGetUID(virCommandPtr cmd)
 {
     return cmd->uid;
+}
+
+
+int
+virCommandGetErr(virCommandPtr cmd)
+{
+    return cmd ? cmd->has_error : -1;
 }
 
 
@@ -2016,6 +2028,8 @@ virCommandProcessIO(virCommandPtr cmd)
     size_t inlen = 0, outlen = 0, errlen = 0;
     size_t inoff = 0;
     int ret = 0;
+    int timeout = -1;
+    unsigned long long start;
 
     if (dryRunBuffer || dryRunCallback) {
         VIR_DEBUG("Dry run requested, skipping I/O processing");
@@ -2039,6 +2053,11 @@ virCommandProcessIO(virCommandPtr cmd)
     if (cmd->errbuf) {
         errfd = cmd->errfd;
         if (VIR_REALLOC_N(*cmd->errbuf, 1) < 0)
+            ret = -1;
+    }
+    if (cmd->timeout > 0) {
+        timeout = cmd->timeout;
+        if (virTimeMillisNow(&start) < 0)
             ret = -1;
     }
     if (ret == -1)
@@ -2069,14 +2088,42 @@ virCommandProcessIO(virCommandPtr cmd)
             nfds++;
         }
 
-        if (nfds == 0)
+        if (nfds == 0) {
+            /*
+             * Timeout can be changed during loops.
+             * Set cmd->timeout with rest of timeout,
+             * and virCommandWait may uses it later
+             */
+            if (timeout != -1 && timeout != cmd->timeout)
+                cmd->timeout = timeout;
             break;
+        }
 
-        if (poll(fds, nfds, -1) < 0) {
-            if (errno == EAGAIN || errno == EINTR)
+        ret = poll(fds, nfds, timeout);
+        if (ret < 0) {
+            if (errno == EAGAIN || errno == EINTR) {
+                if (cmd->timeout > 0) {
+                    unsigned long long now;
+                    if (virTimeMillisNow(&now) < 0)
+                        goto cleanup;
+
+                    if (timeout > (int)(now - start))
+                        timeout -= (int)(now - start);
+                    else
+                        timeout = 0;
+                }
                 continue;
+            }
             virReportSystemError(errno, "%s",
                                  _("unable to poll on child"));
+            goto cleanup;
+        }
+
+        if (ret == 0) {
+            /* Timeout to abort command and return failure */
+            virCommandAbort(cmd);
+            cmd->has_error = ETIME;
+            ret = -1;
             goto cleanup;
         }
 
@@ -2126,6 +2173,7 @@ virCommandProcessIO(virCommandPtr cmd)
 
                 done = write(cmd->inpipe, cmd->inbuf + inoff,
                              inlen - inoff);
+
                 if (done < 0) {
                     if (errno == EPIPE) {
                         VIR_DEBUG("child closed stdin early, ignoring EPIPE "
@@ -2348,7 +2396,9 @@ virCommandDoAsyncIOHelper(void *opaque)
     virCommandPtr cmd = opaque;
     if (virCommandProcessIO(cmd) < 0) {
         /* If something went wrong, save errno or -1*/
-        cmd->has_error = errno ? errno : -1;
+        /* except ETIME which means timeout */
+        if (cmd->has_error != ETIME)
+            cmd->has_error = errno ? errno : -1;
     }
 }
 
@@ -2437,6 +2487,13 @@ virCommandRunAsync(virCommandPtr cmd, pid_t *pid)
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("creation of pid file requires daemonized command"));
         goto cleanup;
+    }
+    if (cmd->timeout > 0) {
+        if (cmd->flags & VIR_EXEC_DAEMON) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("daemonized command cannot use virCommandSetTimeout"));
+            goto cleanup;
+        }
     }
 
     str = virCommandToString(cmd);
@@ -2531,6 +2588,11 @@ virCommandWait(virCommandPtr cmd, int *exitstatus)
         virReportOOMError();
         return -1;
     }
+    if (cmd->has_error == ETIME) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("timeout waiting for child io"));
+        return -1;
+    }
     if (cmd->has_error) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("invalid use of command API"));
@@ -2559,7 +2621,17 @@ virCommandWait(virCommandPtr cmd, int *exitstatus)
      * message is not as detailed as what we can provide.  So, we
      * guarantee that virProcessWait only fails due to failure to wait,
      * and repeat the exitstatus check code ourselves.  */
-    ret = virProcessWait(cmd->pid, &status, true);
+    if (cmd->timeout >= 0) {
+        ret = virProcessWaitTimeout(cmd->pid, &status, true, &(cmd->timeout));
+        if (ret == 1) {
+            virCommandAbort(cmd);
+            cmd->has_error = ETIME;
+            ret = -1;
+        }
+    } else {
+        ret = virProcessWait(cmd->pid, &status, true);
+    }
+
     if (cmd->flags & VIR_EXEC_ASYNC_IO) {
         cmd->flags &= ~VIR_EXEC_ASYNC_IO;
         virThreadJoin(cmd->asyncioThread);
@@ -3163,3 +3235,31 @@ virCommandRunNul(virCommandPtr cmd ATTRIBUTE_UNUSED,
     return -1;
 }
 #endif /* WIN32 */
+
+
+/**
+ * virCommandSetTimeout:
+ * @cmd: the command to set timeout
+ * @timeout: the number of milliseconds for timeout.
+ *           it should be a positive value.
+ *
+ * Set timeout for the command. When timeout, abort the command.
+ * By default, command without calling this function has no timeout.
+ * Note: virCommandSetTimeout should be used under one of the conditions:
+ * 1) virCommandRun WITHOUT setting VIR_EXEC_DAEMON
+ * 2) virCommandRunAsync and virCommandWait
+ */
+void
+virCommandSetTimeout(virCommandPtr cmd, int timeout)
+{
+    if (!cmd || cmd->has_error)
+        return;
+
+    if (timeout <= 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("timeout can't be zero or negative"));
+        return;
+    }
+
+    cmd->timeout = timeout;
+}

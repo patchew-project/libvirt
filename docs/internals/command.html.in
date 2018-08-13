@@ -530,6 +530,74 @@ if (WEXITSTATUS(status)...) {
       virCommandAbort to reap the process.
     </p>
 
+    <h3><a id="timeout">Set timeout for commands</a></h3>
+
+    <p>
+      With <code>virCommandSetTimeout</code>, commands can be set
+      timeout in milliseconds. It can be used under one of these conditions:
+    </p>
+
+    <p>
+      1. In synchronous mode, using <code>virCommandRun</code> NOT in
+      daemon mode. By default, <code>virCommandRun</code> waits for the
+      command to complete &amp; exit and then checks its exit status. If the
+      caller uses <code>virCommandSetTimeout</code> before it, the command will be
+      aborted internally when timeout and there is no need to use
+      <code>virCommandAbort</code> to reap the child process.
+    </p>
+
+<pre>
+int timeout = 3000; /* in milliseconds */
+virCommandSetTimeout(cmd, timeout);
+if (virCommandRun(cmd, NULL) &lt; 0) {
+    if (virCommandGetErr(cmd) == ETIME)
+        ... do something for timeout, e.g. report error ...
+
+    return -1;
+}
+</pre>
+
+    <p>
+      The argument <code>timeout</code> of the <code>virCommandSetTimeout</code>
+      accepts a positive value. When timeout, <code>virCommandRun</code> return
+      -1 and the caller can use <code>virCommandGetErr</code> to check errorcode. And
+      <code>ETIME</code> means command timeout.
+    </p>
+    <p>
+      <strong>Note:</strong> <code>virCommandSetTimeout</code> cannot mix with
+      <code>virCommandDaemonize</code>. Or <code>virCommandRun</code> fails directly.
+    </p>
+
+    <p>
+      2. In asynchronous mode, the caller can also call <code>virCommandSetTimeout</code>
+      before <code>virCommandRunAsync</code> to limit the running time of the command.
+      The caller uses <code>virCommandWait</code> to wait for the child process to complete
+      &amp; exit. <code>virCommandWait</code> returns -1 if timeout and the caller can use
+      <code>virCommandGetErr</code> to check the reason.
+    </p>
+
+<pre>
+char *outbuf = NULL;
+char *errbuf = NULL;
+int timeout = 3000; /* in milliseconds */
+virCommandSetTimeout(cmd, timeout);
+
+virCommandSetOutputBuffer(cmd, &amp;outbuf);
+virCommandSetErrorBuffer(cmd, &amp;errbuf);
+virCommandDoAsyncIO(cmd);
+if (virCommandRunAsync(cmd, NULL) &lt; 0)
+   return -1;
+
+... do something ...
+
+if (virCommandWait(cmd, NULL) &lt; 0) {
+    if (virCommandGetErr(cmd) == ETIME)
+        ... do something for timeout, e.g. report error ...
+
+    return -1;
+}
+</pre>
+
     <h3><a id="release">Releasing resources</a></h3>
 
     <p>

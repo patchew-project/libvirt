@@ -77,6 +77,8 @@ void virCommandSetGID(virCommandPtr cmd, gid_t gid);
 
 void virCommandSetUID(virCommandPtr cmd, uid_t uid);
 
+int virCommandGetErr(virCommandPtr cmd) ATTRIBUTE_NONNULL(1);
+
 void virCommandSetMaxMemLock(virCommandPtr cmd, unsigned long long bytes);
 void virCommandSetMaxProcesses(virCommandPtr cmd, unsigned int procs);
 void virCommandSetMaxFiles(virCommandPtr cmd, unsigned int files);
@@ -218,6 +220,8 @@ int virCommandRunNul(virCommandPtr cmd,
                      size_t n_columns,
                      virCommandRunNulFunc func,
                      void *data);
+
+void virCommandSetTimeout(virCommandPtr cmd, int timeout);
 
 VIR_DEFINE_AUTOPTR_FUNC(virCommand, virCommandFree)
 

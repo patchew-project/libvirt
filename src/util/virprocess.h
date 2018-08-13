@@ -52,6 +52,10 @@ int
 virProcessWait(pid_t pid, int *exitstatus, bool raw)
     ATTRIBUTE_RETURN_CHECK;
 
+int
+virProcessWaitTimeout(pid_t pid, int *exitstatus, bool raw, const int *timeout)
+    ATTRIBUTE_RETURN_CHECK;
+
 int virProcessKill(pid_t pid, int sig);
 
 int virProcessKillPainfully(pid_t pid, bool force);

@@ -51,6 +51,10 @@ struct _virCommandTestData {
     bool running;
 };
 
+struct testdata {
+    int timeout; /* milliseconds */
+};
+
 #ifdef WIN32
 
 int
@@ -113,17 +117,22 @@ static int checkoutput(const char *testname,
     return ret;
 }
 
+
 /*
  * Run program, no args, inherit all ENV, keep CWD.
  * Only stdin/out/err open
  * No slot for return status must log error.
  */
-static int test0(const void *unused ATTRIBUTE_UNUSED)
+static int test0(const void *opaque)
 {
     virCommandPtr cmd;
     int ret = -1;
+    const struct testdata *data = opaque;
 
     cmd = virCommandNew(abs_builddir "/commandhelper-doesnotexist");
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
+
     if (virCommandRun(cmd, NULL) == 0)
         goto cleanup;
 
@@ -138,18 +147,23 @@ static int test0(const void *unused ATTRIBUTE_UNUSED)
     return ret;
 }
 
+
 /*
  * Run program, no args, inherit all ENV, keep CWD.
  * Only stdin/out/err open
  * Capturing return status must not log error.
  */
-static int test1(const void *unused ATTRIBUTE_UNUSED)
+static int test1(const void *opaque)
 {
     virCommandPtr cmd;
     int ret = -1;
     int status;
+    const struct testdata *data = opaque;
 
     cmd = virCommandNew(abs_builddir "/commandhelper-doesnotexist");
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
+
     if (virCommandRun(cmd, &status) < 0)
         goto cleanup;
     if (status != EXIT_ENOENT)
@@ -167,14 +181,18 @@ static int test1(const void *unused ATTRIBUTE_UNUSED)
     return ret;
 }
 
+
 /*
  * Run program (twice), no args, inherit all ENV, keep CWD.
  * Only stdin/out/err open
  */
-static int test2(const void *unused ATTRIBUTE_UNUSED)
+static int test2(const void *opaque)
 {
-    virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
     int ret;
+    virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    const struct testdata *data = opaque;
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
@@ -198,13 +216,15 @@ static int test2(const void *unused ATTRIBUTE_UNUSED)
     return checkoutput("test2", NULL);
 }
 
+
 /*
  * Run program, no args, inherit all ENV, keep CWD.
  * stdin/out/err + two extra FD open
  */
-static int test3(const void *unused ATTRIBUTE_UNUSED)
+static int test3(const void *opaque)
 {
     virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    const struct testdata *data = opaque;
     int newfd1 = dup(STDERR_FILENO);
     int newfd2 = dup(STDERR_FILENO);
     int newfd3 = dup(STDERR_FILENO);
@@ -213,6 +233,9 @@ static int test3(const void *unused ATTRIBUTE_UNUSED)
     virCommandPassFD(cmd, newfd1, 0);
     virCommandPassFD(cmd, newfd3,
                      VIR_COMMAND_PASS_FD_CLOSE_PARENT);
+
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
@@ -282,11 +305,15 @@ static int test4(const void *unused ATTRIBUTE_UNUSED)
  * Run program, no args, inherit filtered ENV, keep CWD.
  * Only stdin/out/err open
  */
-static int test5(const void *unused ATTRIBUTE_UNUSED)
+static int test5(const void *opaque)
 {
     virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    const struct testdata *data = opaque;
 
     virCommandAddEnvPassCommon(cmd);
+
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
@@ -304,12 +331,16 @@ static int test5(const void *unused ATTRIBUTE_UNUSED)
  * Run program, no args, inherit filtered ENV, keep CWD.
  * Only stdin/out/err open
  */
-static int test6(const void *unused ATTRIBUTE_UNUSED)
+static int test6(const void *opaque)
 {
     virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    const struct testdata *data = opaque;
 
     virCommandAddEnvPassBlockSUID(cmd, "DISPLAY", NULL);
     virCommandAddEnvPassBlockSUID(cmd, "DOESNOTEXIST", NULL);
+
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
@@ -327,13 +358,17 @@ static int test6(const void *unused ATTRIBUTE_UNUSED)
  * Run program, no args, inherit filtered ENV, keep CWD.
  * Only stdin/out/err open
  */
-static int test7(const void *unused ATTRIBUTE_UNUSED)
+static int test7(const void *opaque)
 {
     virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    const struct testdata *data = opaque;
 
     virCommandAddEnvPassCommon(cmd);
     virCommandAddEnvPassBlockSUID(cmd, "DISPLAY", NULL);
     virCommandAddEnvPassBlockSUID(cmd, "DOESNOTEXIST", NULL);
+
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
@@ -346,18 +381,23 @@ static int test7(const void *unused ATTRIBUTE_UNUSED)
     return checkoutput("test7", NULL);
 }
 
+
 /*
  * Run program, no args, inherit filtered ENV, keep CWD.
  * Only stdin/out/err open
  */
-static int test8(const void *unused ATTRIBUTE_UNUSED)
+static int test8(const void *opaque)
 {
     virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    const struct testdata *data = opaque;
 
     virCommandAddEnvString(cmd, "USER=bogus");
     virCommandAddEnvString(cmd, "LANG=C");
     virCommandAddEnvPair(cmd, "USER", "also bogus");
     virCommandAddEnvPair(cmd, "USER", "test");
+
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
@@ -375,9 +415,10 @@ static int test8(const void *unused ATTRIBUTE_UNUSED)
  * Run program, some args, inherit all ENV, keep CWD.
  * Only stdin/out/err open
  */
-static int test9(const void *unused ATTRIBUTE_UNUSED)
+static int test9(const void *opaque)
 {
     virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    const struct testdata *data = opaque;
     const char* const args[] = { "arg1", "arg2", NULL };
     virBuffer buf = VIR_BUFFER_INITIALIZER;
 
@@ -396,6 +437,9 @@ static int test9(const void *unused ATTRIBUTE_UNUSED)
         return -1;
     }
 
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
+
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
         virCommandFree(cmd);
@@ -412,14 +456,18 @@ static int test9(const void *unused ATTRIBUTE_UNUSED)
  * Run program, some args, inherit all ENV, keep CWD.
  * Only stdin/out/err open
  */
-static int test10(const void *unused ATTRIBUTE_UNUSED)
+static int test10(const void *opaque)
 {
     virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    const struct testdata *data = opaque;
     const char *const args[] = {
         "-version", "-log=bar.log", NULL,
     };
 
     virCommandAddArgSet(cmd, args);
+
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
@@ -432,17 +480,22 @@ static int test10(const void *unused ATTRIBUTE_UNUSED)
     return checkoutput("test10", NULL);
 }
 
+
 /*
  * Run program, some args, inherit all ENV, keep CWD.
  * Only stdin/out/err open
  */
-static int test11(const void *unused ATTRIBUTE_UNUSED)
+static int test11(const void *opaque)
 {
     const char *args[] = {
         abs_builddir "/commandhelper",
         "-version", "-log=bar.log", NULL,
     };
     virCommandPtr cmd = virCommandNewArgs(args);
+    const struct testdata *data = opaque;
+
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
@@ -455,15 +508,20 @@ static int test11(const void *unused ATTRIBUTE_UNUSED)
     return checkoutput("test11", NULL);
 }
 
+
 /*
  * Run program, no args, inherit all ENV, keep CWD.
  * Only stdin/out/err open. Set stdin data
  */
-static int test12(const void *unused ATTRIBUTE_UNUSED)
+static int test12(const void *opaque)
 {
     virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    const struct testdata *data = opaque;
 
     virCommandSetInputBuffer(cmd, "Hello World\n");
+
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
@@ -476,13 +534,15 @@ static int test12(const void *unused ATTRIBUTE_UNUSED)
     return checkoutput("test12", NULL);
 }
 
+
 /*
  * Run program, no args, inherit all ENV, keep CWD.
  * Only stdin/out/err open. Set stdin data
  */
-static int test13(const void *unused ATTRIBUTE_UNUSED)
+static int test13(const void *opaque)
 {
     virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    const struct testdata *data = opaque;
     char *outactual = NULL;
     const char *outexpect = "BEGIN STDOUT\n"
         "Hello World\n"
@@ -491,6 +551,9 @@ static int test13(const void *unused ATTRIBUTE_UNUSED)
 
     virCommandSetInputBuffer(cmd, "Hello World\n");
     virCommandSetOutputBuffer(cmd, &outactual);
+
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
@@ -515,13 +578,15 @@ static int test13(const void *unused ATTRIBUTE_UNUSED)
     return ret;
 }
 
+
 /*
  * Run program, no args, inherit all ENV, keep CWD.
  * Only stdin/out/err open. Set stdin data
  */
-static int test14(const void *unused ATTRIBUTE_UNUSED)
+static int test14(const void *opaque)
 {
     virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    const struct testdata *data = opaque;
     char *outactual = NULL;
     const char *outexpect = "BEGIN STDOUT\n"
         "Hello World\n"
@@ -544,6 +609,9 @@ static int test14(const void *unused ATTRIBUTE_UNUSED)
     virCommandSetOutputBuffer(cmd, &outactual);
     virCommandSetErrorBuffer(cmd, &erractual);
 
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
+
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
         goto cleanup;
@@ -557,6 +625,9 @@ static int test14(const void *unused ATTRIBUTE_UNUSED)
     virCommandSetInputBuffer(cmd, "Hello World\n");
     virCommandSetOutputBuffer(cmd, &jointactual);
     virCommandSetErrorBuffer(cmd, &jointactual);
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
+
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
         goto cleanup;
@@ -592,9 +663,10 @@ static int test14(const void *unused ATTRIBUTE_UNUSED)
  * Run program, no args, inherit all ENV, change CWD.
  * Only stdin/out/err open
  */
-static int test15(const void *unused ATTRIBUTE_UNUSED)
+static int test15(const void *opaque)
 {
     virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    const struct testdata *data = opaque;
     char *cwd = NULL;
     int ret = -1;
 
@@ -602,6 +674,9 @@ static int test15(const void *unused ATTRIBUTE_UNUSED)
         goto cleanup;
     virCommandSetWorkingDirectory(cmd, cwd);
     virCommandSetUmask(cmd, 002);
+
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
@@ -617,16 +692,21 @@ static int test15(const void *unused ATTRIBUTE_UNUSED)
     return ret;
 }
 
+
 /*
  * Don't run program; rather, log what would be run.
  */
-static int test16(const void *unused ATTRIBUTE_UNUSED)
+static int test16(const void *opaque)
 {
     virCommandPtr cmd = virCommandNew("true");
+    const struct testdata *data = opaque;
     char *outactual = NULL;
     const char *outexpect = "A=B C='D  E' true F 'G  H'";
     int ret = -1;
     int fd = -1;
+
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     virCommandAddEnvPair(cmd, "A", "B");
     virCommandAddEnvPair(cmd, "C", "D  E");
@@ -662,15 +742,20 @@ static int test16(const void *unused ATTRIBUTE_UNUSED)
     return ret;
 }
 
+
 /*
  * Test string handling when no output is present.
  */
-static int test17(const void *unused ATTRIBUTE_UNUSED)
+static int test17(const void *opaque)
 {
     virCommandPtr cmd = virCommandNew("true");
+    const struct testdata *data = opaque;
     int ret = -1;
     char *outbuf;
     char *errbuf = NULL;
+
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     virCommandSetOutputBuffer(cmd, &outbuf);
     if (outbuf != NULL) {
@@ -717,6 +802,7 @@ static int test17(const void *unused ATTRIBUTE_UNUSED)
     VIR_FREE(errbuf);
     return ret;
 }
+
 
 /*
  * Run long-running daemon, to ensure no hang.
@@ -766,14 +852,19 @@ static int test18(const void *unused ATTRIBUTE_UNUSED)
     return ret;
 }
 
+
 /*
  * Asynchronously run long-running daemon, to ensure no hang.
  */
-static int test19(const void *unused ATTRIBUTE_UNUSED)
+static int test19(const void *opaque)
 {
+    const struct testdata *data = opaque;
     virCommandPtr cmd = virCommandNewArgList("sleep", "100", NULL);
     pid_t pid;
     int ret = -1;
+
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     alarm(5);
     if (virCommandRunAsync(cmd, &pid) < 0) {
@@ -802,14 +893,16 @@ static int test19(const void *unused ATTRIBUTE_UNUSED)
     return ret;
 }
 
+
 /*
  * Run program, no args, inherit all ENV, keep CWD.
  * Ignore huge stdin data, to provoke SIGPIPE or EPIPE in parent.
  */
-static int test20(const void *unused ATTRIBUTE_UNUSED)
+static int test20(const void *opaque)
 {
     virCommandPtr cmd = virCommandNewArgList(abs_builddir "/commandhelper",
                                              "--close-stdin", NULL);
+    const struct testdata *data = opaque;
     char *buf;
     int ret = -1;
 
@@ -825,6 +918,9 @@ static int test20(const void *unused ATTRIBUTE_UNUSED)
         goto cleanup;
     virCommandSetInputBuffer(cmd, buf);
 
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
+
     if (virCommandRun(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
         goto cleanup;
@@ -836,6 +932,7 @@ static int test20(const void *unused ATTRIBUTE_UNUSED)
     VIR_FREE(buf);
     return ret;
 }
+
 
 static const char *const newenv[] = {
     "PATH=/usr/bin:/bin",
@@ -849,9 +946,11 @@ static const char *const newenv[] = {
     NULL
 };
 
-static int test21(const void *unused ATTRIBUTE_UNUSED)
+
+static int test21(const void *opaque)
 {
     virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    const struct testdata *data = opaque;
     int ret = -1;
     const char *wrbuf = "Hello world\n";
     char *outbuf = NULL, *errbuf = NULL;
@@ -866,6 +965,9 @@ static int test21(const void *unused ATTRIBUTE_UNUSED)
     virCommandSetOutputBuffer(cmd, &outbuf);
     virCommandSetErrorBuffer(cmd, &errbuf);
     virCommandDoAsyncIO(cmd);
+
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     if (virCommandRunAsync(cmd, NULL) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
@@ -896,14 +998,17 @@ static int test21(const void *unused ATTRIBUTE_UNUSED)
     return ret;
 }
 
-static int
-test22(const void *unused ATTRIBUTE_UNUSED)
+
+static int test22(const void *opaque)
 {
     int ret = -1;
     virCommandPtr cmd;
     int status = -1;
+    const struct testdata *data = opaque;
 
     cmd = virCommandNewArgList("/bin/sh", "-c", "exit 3", NULL);
+    if (data)
+        virCommandSetTimeout(cmd, data->timeout);
 
     if (virCommandRun(cmd, &status) < 0) {
         printf("Cannot run child %s\n", virGetLastErrorMessage());
@@ -949,8 +1054,7 @@ test22(const void *unused ATTRIBUTE_UNUSED)
 }
 
 
-static int
-test23(const void *unused ATTRIBUTE_UNUSED)
+static int test23(const void *unused ATTRIBUTE_UNUSED)
 {
     /* Not strictly a virCommand test, but this is the easiest place
      * to test this lower-level interface.  It takes a double fork to
@@ -1005,6 +1109,7 @@ test23(const void *unused ATTRIBUTE_UNUSED)
  cleanup:
     return ret;
 }
+
 
 static int test24(const void *unused ATTRIBUTE_UNUSED)
 {
@@ -1138,6 +1243,211 @@ static int test25(const void *unused ATTRIBUTE_UNUSED)
 }
 
 
+/*
+ * virCommandSetTimeout cannot mix with daemon
+ */
+static int test26(const void *opaque)
+{
+    const char *expect_msg =
+        "internal error: daemonized command cannot use virCommandSetTimeout";
+    virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    const struct testdata *data = opaque;
+    char *pidfile = virPidFileBuildPath(abs_builddir, "commandhelper");
+    int ret = -1;
+
+    if (!data)
+        goto cleanup;
+    if (!pidfile)
+        goto cleanup;
+
+    virCommandSetPidFile(cmd, pidfile);
+    virCommandDaemonize(cmd);
+    virCommandSetTimeout(cmd, data->timeout);
+
+    if (virCommandRun(cmd, NULL) != -1 ||
+        STRNEQ(virGetLastErrorMessage(), expect_msg)) {
+        printf("virCommandSetTimeout mixes with virCommandDaemonize %s\n",
+               virGetLastErrorMessage());
+        goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    virCommandFree(cmd);
+    if (pidfile)
+        unlink(pidfile);
+    VIR_FREE(pidfile);
+    return ret;
+}
+
+
+/*
+ * virCommandRunAsync without async string io when time-out
+ */
+static int test27(const void *opaque)
+{
+    int ret = -1;
+    virCommandPtr cmd = virCommandNewArgList("sleep", "100", NULL);
+    pid_t pid;
+    const struct testdata *data = opaque;
+    if (!data)
+        goto cleanup;
+
+    virCommandSetTimeout(cmd, data->timeout);
+    if (virCommandRunAsync(cmd, &pid) < 0) {
+        printf("Cannot run child %s\n", virGetLastErrorMessage());
+        goto cleanup;
+    }
+
+    if (virCommandWait(cmd, NULL) != -1 ||
+        virCommandGetErr(cmd) != ETIME) {
+        printf("Timeout doesn't work %s:%d\n",
+               virGetLastErrorMessage(),
+               virCommandGetErr(cmd));
+        goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    virCommandFree(cmd);
+    return ret;
+}
+
+
+/*
+ * synchronous mode: abort command when time-out
+ */
+static int test28(const void *opaque)
+{
+    const char *expect_msg1 = "internal error: timeout waiting for child io";
+    const char *expect_msg2 = "internal error: invalid use of command API";
+    virCommandPtr cmd = virCommandNewArgList("sleep", "100", NULL);
+    const struct testdata *data = opaque;
+    if (!data) {
+        printf("opaque arg NULL\n");
+        virCommandFree(cmd);
+        return -1;
+    }
+
+    virCommandSetTimeout(cmd, data->timeout);
+
+    if (virCommandRun(cmd, NULL) != -1 ||
+        virCommandGetErr(cmd) != ETIME ||
+        STRNEQ(virGetLastErrorMessage(), expect_msg1)) {
+        printf("Timeout doesn't work %s (first)\n", virGetLastErrorMessage());
+        virCommandFree(cmd);
+        return -1;
+    }
+
+    if (virCommandRun(cmd, NULL) != -1 ||
+        virCommandGetErr(cmd) != ETIME ||
+        STRNEQ(virGetLastErrorMessage(), expect_msg2)) {
+        printf("Timeout doesn't work %s (second)\n", virGetLastErrorMessage());
+        virCommandFree(cmd);
+        return -1;
+    }
+
+    virCommandFree(cmd);
+    return 0;
+}
+
+
+/*
+ * asynchronous mode with async string io:
+ * abort command when time-out
+ */
+static int test29(const void *opaque)
+{
+    int ret = -1;
+    const char *wrbuf = "Hello world\n";
+    char *outbuf = NULL;
+    char *errbuf = NULL;
+    const char *expect_msg =
+        "Error while processing command's IO: Timer expired:";
+    virCommandPtr cmd = virCommandNewArgList("sleep", "100", NULL);
+    const struct testdata *data = opaque;
+    if (!data) {
+        printf("opaque arg NULL\n");
+        ret = -1;
+        goto cleanup;
+    }
+
+    virCommandSetTimeout(cmd, data->timeout);
+
+    virCommandSetInputBuffer(cmd, wrbuf);
+    virCommandSetOutputBuffer(cmd, &outbuf);
+    virCommandSetErrorBuffer(cmd, &errbuf);
+    virCommandDoAsyncIO(cmd);
+
+    if (virCommandRunAsync(cmd, NULL) < 0) {
+        printf("Cannot run child %s\n", virGetLastErrorMessage());
+        ret = -1;
+        goto cleanup;
+    }
+
+    if (virCommandWait(cmd, NULL) != -1 ||
+        virCommandGetErr(cmd) != ETIME ||
+        STRPREFIX(virGetLastErrorMessage(), expect_msg)) {
+        printf("Timeout doesn't work %s:%d\n",
+               virGetLastErrorMessage(),
+               virCommandGetErr(cmd));
+        goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(outbuf);
+    VIR_FREE(errbuf);
+    virCommandFree(cmd);
+    return ret;
+}
+
+
+/*
+ * asynchronous mode only with input buffer
+ * abort command when time-out
+ */
+static int test30(const void *opaque)
+{
+    int ret = -1;
+    const char *wrbuf = "Hello world\n";
+    const char *expect_msg =
+        "Error while processing command's IO: Timer expired:";
+    virCommandPtr cmd = virCommandNewArgList("sleep", "10", NULL);
+    const struct testdata *data = opaque;
+    if (!data) {
+        printf("opaque arg NULL\n");
+        ret = -1;
+        goto cleanup;
+    }
+
+    virCommandSetTimeout(cmd, data->timeout);
+
+    virCommandSetInputBuffer(cmd, wrbuf);
+    virCommandDoAsyncIO(cmd);
+
+    if (virCommandRunAsync(cmd, NULL) < 0) {
+        printf("Cannot run child %s\n", virGetLastErrorMessage());
+        ret = -1;
+        goto cleanup;
+    }
+
+    if (virCommandWait(cmd, NULL) != -1 ||
+        virCommandGetErr(cmd) != ETIME ||
+        STRPREFIX(virGetLastErrorMessage(), expect_msg)) {
+        printf("Timeout doesn't work %s:%d\n",
+               virGetLastErrorMessage(),
+               virCommandGetErr(cmd));
+        goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    virCommandFree(cmd);
+    return ret;
+}
+
+
 static void virCommandThreadWorker(void *opaque)
 {
     virCommandTestDataPtr test = opaque;
@@ -1161,12 +1471,14 @@ static void virCommandThreadWorker(void *opaque)
     return;
 }
 
+
 static void
 virCommandTestFreeTimer(int timer ATTRIBUTE_UNUSED,
                         void *opaque ATTRIBUTE_UNUSED)
 {
     /* nothing to be done here */
 }
+
 
 static int
 mymain(void)
@@ -1176,6 +1488,7 @@ mymain(void)
     virCommandTestDataPtr test = NULL;
     int timer = -1;
     int virinitret;
+    struct testdata data;
 
     if (virThreadInitialize() < 0)
         return EXIT_FAILURE;
@@ -1291,6 +1604,54 @@ mymain(void)
     DO_TEST(test23);
     DO_TEST(test24);
     DO_TEST(test25);
+
+
+    /* tests for virCommandSetTimeout */
+    /* 1) NO time-out */
+    data.timeout = 3*1000;
+
+# define DO_TEST_SET_TIMEOUT(NAME) \
+    if (virTestRun("Command Exec " #NAME " test", \
+                   NAME, &data) < 0) \
+        ret = -1
+
+    /* Exclude test4, test18 and test24 for they're in daemon mode.
+     * Exclude test25, there's no meaning to set timeout
+     */
+    DO_TEST_SET_TIMEOUT(test0);
+    DO_TEST_SET_TIMEOUT(test1);
+    DO_TEST_SET_TIMEOUT(test2);
+    DO_TEST_SET_TIMEOUT(test3);
+    DO_TEST_SET_TIMEOUT(test5);
+    DO_TEST_SET_TIMEOUT(test6);
+    DO_TEST_SET_TIMEOUT(test7);
+    DO_TEST_SET_TIMEOUT(test8);
+    DO_TEST_SET_TIMEOUT(test9);
+    DO_TEST_SET_TIMEOUT(test10);
+    DO_TEST_SET_TIMEOUT(test11);
+    DO_TEST_SET_TIMEOUT(test12);
+    DO_TEST_SET_TIMEOUT(test13);
+    DO_TEST_SET_TIMEOUT(test14);
+    DO_TEST_SET_TIMEOUT(test15);
+    DO_TEST_SET_TIMEOUT(test16);
+    DO_TEST_SET_TIMEOUT(test17);
+    DO_TEST_SET_TIMEOUT(test19);
+    DO_TEST_SET_TIMEOUT(test20);
+    DO_TEST_SET_TIMEOUT(test21);
+    DO_TEST_SET_TIMEOUT(test22);
+    DO_TEST_SET_TIMEOUT(test23);
+
+    /* 2) unsupported usage */
+    /* Failure: virCommandSetTimeout mixes with daemon */
+    DO_TEST_SET_TIMEOUT(test26);
+
+    /* 3) when time-out */
+    data.timeout = 100;
+    DO_TEST_SET_TIMEOUT(test27); /* timeout in async mode without async string io */
+    DO_TEST_SET_TIMEOUT(test28); /* timeout in sync mode */
+    DO_TEST_SET_TIMEOUT(test29); /* timeout in async mode with async string io */
+    DO_TEST_SET_TIMEOUT(test30); /* timeout in async mode with only input buffer */
+
 
     virMutexLock(&test->lock);
     if (test->running) {

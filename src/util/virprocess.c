@@ -61,6 +61,7 @@
 #include "virutil.h"
 #include "virstring.h"
 #include "vircommand.h"
+#include "virtime.h"
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
@@ -211,32 +212,12 @@ virProcessAbort(pid_t pid)
 #endif
 
 
-/**
- * virProcessWait:
- * @pid: child to wait on
- * @exitstatus: optional status collection
- * @raw: whether to pass non-normal status back to caller
- *
- * Wait for a child process to complete.  If @pid is -1, do nothing, but
- * return -1 (useful for error cleanup, and assumes an earlier message was
- * already issued).  All other pids issue an error message on failure.
- *
- * If @exitstatus is NULL, then the child must exit normally with status 0.
- * Otherwise, if @raw is false, the child must exit normally, and
- * @exitstatus will contain the final exit status (no need for the caller
- * to use WEXITSTATUS()).  If @raw is true, then the result of waitpid() is
- * returned in @exitstatus, and the caller must use WIFEXITED() and friends
- * to decipher the child's status.
- *
- * Returns 0 on a successful wait.  Returns -1 on any error waiting for
- * completion, or if the command completed with a status that cannot be
- * reflected via the choice of @exitstatus and @raw.
- */
-int
-virProcessWait(pid_t pid, int *exitstatus, bool raw)
+static int
+virProcessWaitHelper(pid_t pid, int *exitstatus, bool raw, const int *timeout)
 {
     int ret;
     int status;
+    unsigned long long start;
     VIR_AUTOFREE(char *) st = NULL;
 
     if (pid <= 0) {
@@ -246,9 +227,32 @@ virProcessWait(pid_t pid, int *exitstatus, bool raw)
         return -1;
     }
 
+    if (virTimeMillisNow(&start) < 0)
+        return -1;
+
     /* Wait for intermediate process to exit */
-    while ((ret = waitpid(pid, &status, 0)) == -1 &&
-           errno == EINTR);
+    if (timeout && *timeout >= 0) {
+        for (;;) {
+            while ((ret = waitpid(pid, &status, WNOHANG)) == -1 &&
+                   errno == EINTR);
+
+            if (ret == 0) {
+                unsigned long long now;
+                if (virTimeMillisNow(&now) < 0)
+                    return -1;
+
+                if ((int)(now - start) >= *timeout)
+                    return 1; /* Timeout */
+
+                usleep(100 * 1000);
+                continue;
+            }
+
+            break;
+        }
+    } else {
+        while ((ret = waitpid(pid, &status, 0)) == -1 && errno == EINTR);
+    }
 
     if (ret == -1) {
         virReportSystemError(errno, _("unable to wait for process %lld"),
@@ -275,6 +279,59 @@ virProcessWait(pid_t pid, int *exitstatus, bool raw)
                    _("Child process (%lld) unexpected %s"),
                    (long long) pid, NULLSTR(st));
     return -1;
+}
+
+
+/**
+ * virProcessWait:
+ * @pid: child to wait on
+ * @exitstatus: optional status collection
+ * @raw: whether to pass non-normal status back to caller
+ *
+ * Wait for a child process to complete.  If @pid is -1, do nothing, but
+ * return -1 (useful for error cleanup, and assumes an earlier message was
+ * already issued).  All other pids issue an error message on failure.
+ *
+ * If @exitstatus is NULL, then the child must exit normally with status 0.
+ * Otherwise, if @raw is false, the child must exit normally, and
+ * @exitstatus will contain the final exit status (no need for the caller
+ * to use WEXITSTATUS()).  If @raw is true, then the result of waitpid() is
+ * returned in @exitstatus, and the caller must use WIFEXITED() and friends
+ * to decipher the child's status.
+ *
+ * Returns 0 on a successful wait.  Returns -1 on any error waiting for
+ * completion, or if the command completed with a status that cannot be
+ * reflected via the choice of @exitstatus and @raw.
+ */
+int
+virProcessWait(pid_t pid, int *exitstatus, bool raw)
+{
+    return virProcessWaitHelper(pid, exitstatus, raw, NULL);
+}
+
+
+/**
+ * virProcessWaitTimeout:
+ * @pid: child to wait on
+ * @exitstatus: optional status collection
+ * @raw: whether to pass non-normal status back to caller
+ * @timeout: pointer to timeout.
+ *
+ * Just like virProcessWait, but it has timeout.
+ * Expect @timeout to be altered by outside, so passes pointer of it.
+ *
+ * Returns 0 on a successful wait.
+ * Returns 1 on timeout.
+ * Returns -1 on any error waiting for completion.
+ */
+int
+virProcessWaitTimeout(pid_t pid, int *exitstatus, bool raw, const int *timeout)
+{
+    if (!timeout || *timeout < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("timeout invalid"));
+        return -1;
+    }
+    return virProcessWaitHelper(pid, exitstatus, raw, timeout);
 }
 
 
