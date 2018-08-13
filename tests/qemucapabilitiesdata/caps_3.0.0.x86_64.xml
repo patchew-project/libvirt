@@ -215,6 +215,7 @@
   <flag name='usb-storage.werror'/>
   <flag name='egl-headless'/>
   <flag name='vfio-pci.display'/>
+  <flag name='blockdev'/>
   <version>2012093</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>427343</microcodeVersion>
