@@ -122,6 +122,7 @@ virLockSpaceResourceNew(virLockSpacePtr lockspace,
 {
     virLockSpaceResourcePtr res;
     bool shared = !!(flags & VIR_LOCK_SPACE_ACQUIRE_SHARED);
+    bool waitForLock = !!(flags & VIR_LOCK_SPACE_ACQUIRE_WAIT);
 
     if (VIR_ALLOC(res) < 0)
         return NULL;
@@ -159,7 +160,7 @@ virLockSpaceResourceNew(virLockSpacePtr lockspace,
                 goto error;
             }
 
-            if (virFileLock(res->fd, shared, start, len, false) < 0) {
+            if (virFileLock(res->fd, shared, start, len, waitForLock) < 0) {
                 if (errno == EACCES || errno == EAGAIN) {
                     virReportError(VIR_ERR_RESOURCE_BUSY,
                                    _("Lockspace resource '%s' is locked"),
@@ -206,7 +207,7 @@ virLockSpaceResourceNew(virLockSpacePtr lockspace,
             goto error;
         }
 
-        if (virFileLock(res->fd, shared, start, len, false) < 0) {
+        if (virFileLock(res->fd, shared, start, len, waitForLock) < 0) {
             if (errno == EACCES || errno == EAGAIN) {
                 virReportError(VIR_ERR_RESOURCE_BUSY,
                                _("Lockspace resource '%s' is locked"),
@@ -625,11 +626,16 @@ int virLockSpaceAcquireResource(virLockSpacePtr lockspace,
               lockspace, resname, flags, (unsigned long long)owner);
 
     virCheckFlags(VIR_LOCK_SPACE_ACQUIRE_SHARED |
-                  VIR_LOCK_SPACE_ACQUIRE_AUTOCREATE, -1);
+                  VIR_LOCK_SPACE_ACQUIRE_AUTOCREATE |
+                  VIR_LOCK_SPACE_ACQUIRE_WAIT, -1);
+
+    VIR_EXCLUSIVE_FLAGS_RET(VIR_LOCK_SPACE_ACQUIRE_WAIT,
+                            VIR_LOCK_SPACE_ACQUIRE_SHARED, -1);
 
     virMutexLock(&lockspace->lock);
 
-    if ((res = virHashLookup(lockspace->resources, resname))) {
+    if (!(flags & VIR_LOCK_SPACE_ACQUIRE_WAIT) &&
+        (res = virHashLookup(lockspace->resources, resname))) {
         if ((res->flags & VIR_LOCK_SPACE_ACQUIRE_SHARED) &&
             (flags & VIR_LOCK_SPACE_ACQUIRE_SHARED)) {
 

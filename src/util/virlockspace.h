@@ -47,6 +47,7 @@ int virLockSpaceDeleteResource(virLockSpacePtr lockspace,
 typedef enum {
     VIR_LOCK_SPACE_ACQUIRE_SHARED     = (1 << 0),
     VIR_LOCK_SPACE_ACQUIRE_AUTOCREATE = (1 << 1),
+    VIR_LOCK_SPACE_ACQUIRE_WAIT       = (1 << 2),
 } virLockSpaceAcquireFlags;
 
 int virLockSpaceAcquireResource(virLockSpacePtr lockspace,
