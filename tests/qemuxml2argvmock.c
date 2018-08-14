@@ -184,14 +184,6 @@ virNetDevRunEthernetScript(const char *ifname ATTRIBUTE_UNUSED,
     return 0;
 }
 
-void
-virCommandPassFD(virCommandPtr cmd ATTRIBUTE_UNUSED,
-                 int fd ATTRIBUTE_UNUSED,
-                 unsigned int flags ATTRIBUTE_UNUSED)
-{
-    /* nada */
-}
-
 int
 virNetDevOpenvswitchGetVhostuserIfname(const char *path ATTRIBUTE_UNUSED,
                                        char **ifname)
