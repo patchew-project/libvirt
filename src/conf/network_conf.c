@@ -50,7 +50,7 @@ VIR_ENUM_IMPL(virNetworkForward,
               VIR_NETWORK_FORWARD_LAST,
               "none", "nat", "route", "open",
               "bridge", "private", "vepa", "passthrough",
-              "hostdev")
+              "hostdev", "vlan")
 
 VIR_ENUM_IMPL(virNetworkBridgeMACTableManager,
               VIR_NETWORK_BRIDGE_MAC_TABLE_MANAGER_LAST,
@@ -1914,6 +1914,24 @@ virNetworkDefParseXML(xmlXPathContextPtr ctxt)
         }
         break;
 
+    case VIR_NETWORK_FORWARD_VLAN:
+        if (def->forward.nifs != 1 ||
+            strlen(def->forward.ifs[0].device.dev) == 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("network '%s' in forward mode 'vlan' requests "
+                             "one and only one interface"),
+                           def->name);
+            goto error;
+        }
+        if (def->vlan.nTags != 1 || def->vlan.tag[0] >= 4096) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("network '%s' in forward mode 'vlan' requests "
+                             "one and only one VLan-Tag"),
+                           def->name);
+            goto error;
+        }
+        break;
+
     case VIR_NETWORK_FORWARD_PRIVATE:
     case VIR_NETWORK_FORWARD_VEPA:
     case VIR_NETWORK_FORWARD_PASSTHROUGH:
@@ -1970,6 +1988,7 @@ virNetworkDefParseXML(xmlXPathContextPtr ctxt)
         case VIR_NETWORK_FORWARD_NAT:
         case VIR_NETWORK_FORWARD_ROUTE:
         case VIR_NETWORK_FORWARD_OPEN:
+        case VIR_NETWORK_FORWARD_VLAN:
             break;
 
         case VIR_NETWORK_FORWARD_BRIDGE:
@@ -1978,7 +1997,7 @@ virNetworkDefParseXML(xmlXPathContextPtr ctxt)
         case VIR_NETWORK_FORWARD_PASSTHROUGH:
         case VIR_NETWORK_FORWARD_HOSTDEV:
             virReportError(VIR_ERR_XML_ERROR,
-                           _("mtu size only allowed in open, route, nat, "
+                           _("mtu size only allowed in open, route, nat, vlan "
                              "and isolated mode, not in %s (network '%s')"),
                            virNetworkForwardTypeToString(def->forward.type),
                            def->name);
@@ -2494,6 +2513,7 @@ virNetworkDefFormatBuf(virBufferPtr buf,
     case VIR_NETWORK_FORWARD_NAT:
     case VIR_NETWORK_FORWARD_ROUTE:
     case VIR_NETWORK_FORWARD_OPEN:
+    case VIR_NETWORK_FORWARD_VLAN:
         hasbridge = true;
         break;
 

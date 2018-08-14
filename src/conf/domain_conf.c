@@ -30369,6 +30369,7 @@ virDomainNetResolveActualType(virDomainNetDefPtr iface)
     case VIR_NETWORK_FORWARD_NAT:
     case VIR_NETWORK_FORWARD_ROUTE:
     case VIR_NETWORK_FORWARD_OPEN:
+    case VIR_NETWORK_FORWARD_VLAN:
         /* for these forward types, the actual net type really *is*
          * NETWORK; we just keep the info from the portgroup in
          * iface->data.network.actual

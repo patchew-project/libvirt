@@ -4550,6 +4550,7 @@ qemuProcessGetNetworkAddress(const char *netname,
     case VIR_NETWORK_FORWARD_NAT:
     case VIR_NETWORK_FORWARD_ROUTE:
     case VIR_NETWORK_FORWARD_OPEN:
+    case VIR_NETWORK_FORWARD_VLAN:
         ipdef = virNetworkDefGetIPByIndex(netdef, AF_UNSPEC, 0);
         if (!ipdef) {
             virReportError(VIR_ERR_INTERNAL_ERROR,

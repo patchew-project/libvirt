@@ -451,6 +451,7 @@ networkUpdateState(virNetworkObjPtr obj,
     case VIR_NETWORK_FORWARD_NAT:
     case VIR_NETWORK_FORWARD_ROUTE:
     case VIR_NETWORK_FORWARD_OPEN:
+    case VIR_NETWORK_FORWARD_VLAN:
         /* If bridge doesn't exist, then mark it inactive */
         if (!(def->bridge && virNetDevExists(def->bridge) == 1))
             virNetworkObjSetActive(obj, false);
@@ -2099,6 +2100,7 @@ networkRefreshDaemonsHelper(virNetworkObjPtr obj,
         case VIR_NETWORK_FORWARD_NAT:
         case VIR_NETWORK_FORWARD_ROUTE:
         case VIR_NETWORK_FORWARD_OPEN:
+        case VIR_NETWORK_FORWARD_VLAN:
             /* Only the three L3 network types that are configured by
              * libvirt will have a dnsmasq or radvd daemon associated
              * with them.  Here we send a SIGHUP to an existing
@@ -2155,6 +2157,7 @@ networkReloadFirewallRulesHelper(virNetworkObjPtr obj,
         case VIR_NETWORK_FORWARD_NONE:
         case VIR_NETWORK_FORWARD_NAT:
         case VIR_NETWORK_FORWARD_ROUTE:
+        case VIR_NETWORK_FORWARD_VLAN:
             /* Only three of the L3 network types that are configured by
              * libvirt need to have iptables rules reloaded. The 4th L3
              * network type, forward='open', doesn't need this because it
@@ -2552,6 +2555,29 @@ networkStartNetworkVirtual(virNetworkDriverStatePtr driver,
     if (virNetDevBandwidthSet(def->bridge, def->bandwidth, true, true) < 0)
         goto err5;
 
+    if (def->forward.type == VIR_NETWORK_FORWARD_VLAN) {
+        /* ifs[0].device.dev and vlan.tag[0] have been validated
+         * in virNetworkDefParseXML
+         */
+        VIR_AUTOFREE(char *) vlanDevName = NULL;
+        if (virNetDevCreateVLanDev(def->forward.ifs[0].device.dev, def->vlan.tag[0],
+                                   &vlanDevName) < 0)
+            goto err5;
+
+        if (virNetDevBridgeAddPort(def->bridge, vlanDevName) < 0) {
+            virNetDevDestroyVLanDev(def->forward.ifs[0].device.dev,
+                                    def->vlan.tag[0], vlanDevName);
+            goto err5;
+        }
+
+        if (virNetDevSetOnline(vlanDevName, true) < 0) {
+            ignore_value(virNetDevBridgeRemovePort(def->bridge, vlanDevName));
+            virNetDevDestroyVLanDev(def->forward.ifs[0].device.dev,
+                                    def->vlan.tag[0], vlanDevName);
+            goto err5;
+        }
+    }
+
     VIR_FREE(macTapIfName);
     VIR_FREE(macMapFile);
 
@@ -2615,6 +2641,17 @@ networkShutdownNetworkVirtual(virNetworkDriverStatePtr driver,
     virNetworkDefPtr def = virNetworkObjGetDef(obj);
     pid_t radvdPid;
     pid_t dnsmasqPid;
+
+    if (def->forward.type == VIR_NETWORK_FORWARD_VLAN) {
+        VIR_AUTOFREE(char *) vlanDevName = NULL;
+        if (!virNetDevGetVLanDevName(def->forward.ifs[0].device.dev,
+                                     def->vlan.tag[0], &vlanDevName)) {
+            ignore_value(virNetDevSetOnline(vlanDevName, false));
+            ignore_value(virNetDevBridgeRemovePort(def->bridge, vlanDevName));
+            virNetDevDestroyVLanDev(def->forward.ifs[0].device.dev,
+                                    def->vlan.tag[0], vlanDevName);
+        }
+    }
 
     if (def->bandwidth)
         virNetDevBandwidthClear(def->bridge);
@@ -2759,6 +2796,7 @@ networkCreateInterfacePool(virNetworkDefPtr netdef)
         case VIR_NETWORK_FORWARD_NAT:
         case VIR_NETWORK_FORWARD_ROUTE:
         case VIR_NETWORK_FORWARD_OPEN:
+        case VIR_NETWORK_FORWARD_VLAN:
             /* by definition these will never be encountered here */
             break;
 
@@ -2861,6 +2899,7 @@ networkStartNetwork(virNetworkDriverStatePtr driver,
     case VIR_NETWORK_FORWARD_NAT:
     case VIR_NETWORK_FORWARD_ROUTE:
     case VIR_NETWORK_FORWARD_OPEN:
+    case VIR_NETWORK_FORWARD_VLAN:
         if (networkStartNetworkVirtual(driver, obj) < 0)
             goto cleanup;
         break;
@@ -2948,6 +2987,7 @@ networkShutdownNetwork(virNetworkDriverStatePtr driver,
     case VIR_NETWORK_FORWARD_NAT:
     case VIR_NETWORK_FORWARD_ROUTE:
     case VIR_NETWORK_FORWARD_OPEN:
+    case VIR_NETWORK_FORWARD_VLAN:
         ret = networkShutdownNetworkVirtual(driver, obj);
         break;
 
@@ -3332,6 +3372,7 @@ networkValidate(virNetworkDriverStatePtr driver,
     case VIR_NETWORK_FORWARD_NAT:
     case VIR_NETWORK_FORWARD_ROUTE:
     case VIR_NETWORK_FORWARD_OPEN:
+    case VIR_NETWORK_FORWARD_VLAN:
         /* if no bridge name was given in the config, find a name
          * unused by any other libvirt networks and assign it.
          */
@@ -3510,11 +3551,12 @@ networkValidate(virNetworkDriverStatePtr driver,
 
     /* The only type of networks that currently support transparent
      * vlan configuration are those using hostdev sr-iov devices from
-     * a pool, and those using an Open vSwitch bridge.
+     * a pool, and those using an Open vSwitch bridge or based on 8021q.
      */
 
     vlanAllowed = (def->forward.type == VIR_NETWORK_FORWARD_HOSTDEV ||
                    def->forward.type == VIR_NETWORK_FORWARD_PASSTHROUGH ||
+                   def->forward.type == VIR_NETWORK_FORWARD_VLAN ||
                    (def->forward.type == VIR_NETWORK_FORWARD_BRIDGE &&
                     def->virtPortProfile &&
                     def->virtPortProfile->virtPortType
@@ -3595,6 +3637,11 @@ networkValidate(virNetworkDriverStatePtr driver,
                 return -1;
             }
         }
+    }
+
+    if (def->forward.type == VIR_NETWORK_FORWARD_VLAN) {
+        if (virNetDevLoad8021Q() < 0)
+            return -1;
     }
     return 0;
 }
@@ -3825,6 +3872,7 @@ networkUpdate(virNetworkPtr net,
         case VIR_NETWORK_FORWARD_NONE:
         case VIR_NETWORK_FORWARD_NAT:
         case VIR_NETWORK_FORWARD_ROUTE:
+        case VIR_NETWORK_FORWARD_VLAN:
             switch (section) {
             case VIR_NETWORK_SECTION_FORWARD:
             case VIR_NETWORK_SECTION_FORWARD_INTERFACE:
@@ -4531,6 +4579,7 @@ networkAllocateActualDevice(virDomainDefPtr dom,
     case VIR_NETWORK_FORWARD_NAT:
     case VIR_NETWORK_FORWARD_ROUTE:
     case VIR_NETWORK_FORWARD_OPEN:
+    case VIR_NETWORK_FORWARD_VLAN:
         /* for these forward types, the actual net type really *is*
          * NETWORK; we just keep the info from the portgroup in
          * iface->data.network.actual
@@ -4792,7 +4841,8 @@ networkAllocateActualDevice(virDomainDefPtr dom,
          * mode) and openvswitch bridges. Otherwise log an error and
          * fail
          */
-        if (!(actualType == VIR_DOMAIN_NET_TYPE_HOSTDEV ||
+        if (!(netdef->forward.type == VIR_NETWORK_FORWARD_VLAN ||
+              actualType == VIR_DOMAIN_NET_TYPE_HOSTDEV ||
               (actualType == VIR_DOMAIN_NET_TYPE_DIRECT &&
                virDomainNetGetActualDirectMode(iface)
                == VIR_NETDEV_MACVLAN_MODE_PASSTHRU) ||
@@ -5133,6 +5183,7 @@ networkReleaseActualDevice(virDomainDefPtr dom,
     case VIR_NETWORK_FORWARD_NAT:
     case VIR_NETWORK_FORWARD_ROUTE:
     case VIR_NETWORK_FORWARD_OPEN:
+    case VIR_NETWORK_FORWARD_VLAN:
         if (iface->data.network.actual && networkUnplugBandwidth(obj, iface) < 0)
             goto error;
         break;
