@@ -225,3 +225,19 @@ qemuOpenChrChardevUNIXSocket(const virDomainChrSourceDef *dev ATTRIBUTE_UNUSED)
         abort();
     return 1729;
 }
+
+
+int
+qemuBuildTPMOpenBackendFDs(const char *tpmdev ATTRIBUTE_UNUSED,
+                           const char *cancel_path ATTRIBUTE_UNUSED,
+                           int *tpmfd,
+                           int *cancelfd)
+{
+    if (fcntl(1730, F_GETFD) != -1 ||
+        fcntl(1731, F_GETFD) != -1)
+        abort();
+
+    *tpmfd = 1730;
+    *cancelfd = 1731;
+    return 0;
+}
