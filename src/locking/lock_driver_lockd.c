@@ -475,9 +475,11 @@ static int virLockManagerLockDaemonAddResource(virLockManagerPtr lock,
     bool autoCreate = false;
 
     virCheckFlags(VIR_LOCK_MANAGER_RESOURCE_READONLY |
-                  VIR_LOCK_MANAGER_RESOURCE_SHARED, -1);
+                  VIR_LOCK_MANAGER_RESOURCE_SHARED |
+                  VIR_LOCK_MANAGER_RESOURCE_METADATA, -1);
 
-    if (flags & VIR_LOCK_MANAGER_RESOURCE_READONLY)
+    if (flags & VIR_LOCK_MANAGER_RESOURCE_READONLY &&
+        !(flags & VIR_LOCK_MANAGER_RESOURCE_METADATA))
         return 0;
 
     switch (type) {
@@ -489,7 +491,8 @@ static int virLockManagerLockDaemonAddResource(virLockManagerPtr lock,
         }
         if (!driver->autoDiskLease) {
             if (!(flags & (VIR_LOCK_MANAGER_RESOURCE_SHARED |
-                           VIR_LOCK_MANAGER_RESOURCE_READONLY)))
+                           VIR_LOCK_MANAGER_RESOURCE_READONLY |
+                           VIR_LOCK_MANAGER_RESOURCE_METADATA)))
                 priv->hasRWDisks = true;
             return 0;
         }
@@ -602,6 +605,10 @@ static int virLockManagerLockDaemonAddResource(virLockManagerPtr lock,
         priv->resources[priv->nresources-1].flags |=
             VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_AUTOCREATE;
 
+    if (flags & VIR_LOCK_MANAGER_RESOURCE_METADATA)
+        priv->resources[priv->nresources-1].flags |=
+            VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_METADATA;
+
     return 0;
 
  error:
@@ -626,12 +633,15 @@ static int virLockManagerLockDaemonAcquire(virLockManagerPtr lock,
     virCheckFlags(VIR_LOCK_MANAGER_ACQUIRE_REGISTER_ONLY |
                   VIR_LOCK_MANAGER_ACQUIRE_RESTRICT, -1);
 
-    if (priv->nresources == 0 &&
-        priv->hasRWDisks &&
-        driver->requireLeaseForDisks) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("Read/write, exclusive access, disks were present, but no leases specified"));
-        return -1;
+    if (priv->nresources == 0) {
+        if (priv->hasRWDisks &&
+            driver->requireLeaseForDisks) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("Read/write, exclusive access, disks were present, but no leases specified"));
+            return -1;
+        }
+
+        return 0;
     }
 
     if (!(client = virLockManagerLockDaemonConnect(lock, &program, &counter)))
@@ -711,7 +721,8 @@ static int virLockManagerLockDaemonRelease(virLockManagerPtr lock,
 
         args.flags &=
             ~(VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_SHARED |
-              VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_AUTOCREATE);
+              VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_AUTOCREATE |
+              VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_METADATA);
 
         if (virNetClientProgramCall(program,
                                     client,
