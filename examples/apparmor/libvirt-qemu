@@ -191,6 +191,11 @@
   # want more unique paths per rule.
   /{,var/}tmp/ r,
   owner /{,var/}tmp/**/ r,
+  # allow qemu smb feature specific path with write access
+  # TODO: This is a compromise between security and usability - once e.g. samba
+  # would be expressed in libvirt XML it should be added on demand via
+  # virt-aa-helper instead.
+  owner /tmp/qemu-smb.*/{,**} rw,
 
   # for file-posix getting limits since 9103f1ce
   /sys/devices/**/block/*/queue/max_segments r,
