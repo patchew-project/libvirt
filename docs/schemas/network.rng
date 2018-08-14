@@ -114,6 +114,7 @@
                   <value>private</value>
                   <value>vepa</value>
                   <value>hostdev</value>
+                  <value>vlan</value>
                 </choice>
               </attribute>
             </optional>

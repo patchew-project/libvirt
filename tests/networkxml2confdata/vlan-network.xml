@@ -1,0 +1,13 @@
+<network>
+  <name>vlanB</name>
+  <forward mode="vlan" dev="p5p1"/>
+  <bridge name='virbr1'/>
+  <vlan>
+    <tag id="20"/>
+  </vlan>
+  <ip address="192.168.126.2" netmask="255.255.255.0">
+    <dhcp>
+      <range start="192.168.126.60" end="192.168.126.69"/>
+    </dhcp>
+  </ip>
+</network>

@@ -44,6 +44,7 @@ testCompareXMLToXMLFiles(const char *inxml, const char *outxml,
         result = TEST_COMPARE_NET_XML2XML_RESULT_FAIL_FORMAT;
         goto cleanup;
     }
+
     if (expectResult == TEST_COMPARE_NET_XML2XML_RESULT_FAIL_FORMAT)
         goto cleanup;
 
@@ -160,6 +161,10 @@ mymain(void)
     DO_TEST_PARSE_ERROR("passthrough-duplicate");
     DO_TEST("metadata");
     DO_TEST("set-mtu");
+    DO_TEST("vlan-network");
+    DO_TEST("vlan-network-with-dhcp");
+    DO_TEST_PARSE_ERROR("vlan-network-no-forward-dev");
+    DO_TEST_PARSE_ERROR("vlan-network-multi-vlan-tag");
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

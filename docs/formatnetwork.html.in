@@ -156,7 +156,7 @@
 
       <dt><code>mtu</code></dt>
       <dd>
-        The <code>size</code> attribute of the <code>mtu></code>
+        The <code>size</code> attribute of the <code>mtu</code>
         element specifies the Maximum Transmission Unit (MTU) for the
         network. <span class="since">Since 3.1.0</span>. In the case
         of a libvirt-managed network (one with forward mode
@@ -297,6 +297,31 @@
             <a href="formatnwfilter.html">nwfilter rules</a> on the
             guests' interfaces.)
             <span class="since">Since 2.2.0</span>
+          </dd>
+
+          <dt><code>vlan</code></dt>
+          <dd>
+            All guests linked to this network will belong to a VLan.
+            Guests communicate with each other directly and communicate
+            with outside network via this network. Egress traffic from
+            this network will be tagged transparently by the VLan-Tag;
+            ingress traffic will be untagged and transport into this
+            network only if traffic has the same VLan-Tag, or be dropped.
+            The <code>dev</code> attribute must be set to specify the
+            host's interface which forwards traffice between this network
+            and outside. The <code>vlan</code> element and its <code>tag</code>
+            element must be one and only, and the <code>id</code> attribute
+            specifies the tag of this VLan. The <code>bridge</code> element
+            can be ignored since it is a internal bridge. This network
+            supports <code>ip</code> and <code>dhcp</code>.
+            <span class="since">Since 4.7.0</span>
+            <pre>
+...
+  &lt;forward mode='vlan' dev='eth1'/&gt;
+  &lt;vlan&gt;
+    &lt;tag id="20"/&gt;
+  &lt;/vlan&gt;
+...</pre>
           </dd>
 
           <dt><code>bridge</code></dt>

@@ -1,0 +1,12 @@
+<network>
+  <name>vlanB</name>
+  <uuid>d29b765a-896c-450c-b94a-1b6b21c340db</uuid>
+  <forward dev='eth1' mode='vlan'>
+    <interface dev='eth1'/>
+  </forward>
+  <bridge name='virbr1' stp='on' delay='0'/>
+  <mac address='12:34:56:78:9a:bc'/>
+  <vlan>
+    <tag id='20'/>
+  </vlan>
+</network>

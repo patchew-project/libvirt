@@ -1,0 +1,15 @@
+<network>
+  <name>vlanB</name>
+  <uuid>d29b765a-896c-450c-b94a-1b6b21c340db</uuid>
+  <forward mode="vlan" dev="eth1"/>
+  <bridge name='virbr1'/>
+  <mac address='12:34:56:78:9A:BC'/>
+  <vlan>
+    <tag id="20"/>
+  </vlan>
+  <ip address="192.168.126.2" netmask="255.255.255.0">
+    <dhcp>
+      <range start="192.168.126.60" end="192.168.126.69"/>
+    </dhcp>
+  </ip>
+</network>
