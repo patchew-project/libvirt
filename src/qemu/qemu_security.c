@@ -26,6 +26,7 @@
 #include "qemu_domain.h"
 #include "qemu_security.h"
 #include "virlog.h"
+#include "locking/domain_lock.h"
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
@@ -39,6 +40,12 @@ qemuSecuritySetAllLabel(virQEMUDriverPtr driver,
 {
     int ret = -1;
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    bool locked = false;
+
+    if (virDomainLockMetadataLock(driver->lockManager, vm) < 0)
+        goto cleanup;
+
+    locked = true;
 
     if (qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT) &&
         virSecurityManagerTransactionStart(driver->securityManager) < 0)
@@ -55,9 +62,17 @@ qemuSecuritySetAllLabel(virQEMUDriverPtr driver,
                                             vm->pid) < 0)
         goto cleanup;
 
+    locked = false;
+
+    if (virDomainLockMetadataUnlock(driver->lockManager, vm) < 0)
+        goto cleanup;
+
     ret = 0;
  cleanup:
     virSecurityManagerTransactionAbort(driver->securityManager);
+    if (locked &&
+        virDomainLockMetadataUnlock(driver->lockManager, vm) < 0)
+        VIR_WARN("unable to release metadata lock");
     return ret;
 }
 
@@ -68,6 +83,10 @@ qemuSecurityRestoreAllLabel(virQEMUDriverPtr driver,
                             bool migrated)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    bool unlock = true;
+
+    if (virDomainLockMetadataLock(driver->lockManager, vm) < 0)
+        unlock = false;
 
     /* In contrast to qemuSecuritySetAllLabel, do not use
      * secdriver transactions here. This function is called from
@@ -79,6 +98,10 @@ qemuSecurityRestoreAllLabel(virQEMUDriverPtr driver,
                                       vm->def,
                                       migrated,
                                       priv->chardevStdioLogd);
+
+    if (unlock &&
+        virDomainLockMetadataUnlock(driver->lockManager, vm) < 0)
+        VIR_WARN("unable to release metadata lock");
 }
 
 
@@ -88,6 +111,12 @@ qemuSecuritySetDiskLabel(virQEMUDriverPtr driver,
                          virDomainDiskDefPtr disk)
 {
     int ret = -1;
+    bool locked = false;
+
+    if (virDomainLockMetadataDiskLock(driver->lockManager, vm, disk) < 0)
+        goto cleanup;
+
+    locked = true;
 
     if (qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT) &&
         virSecurityManagerTransactionStart(driver->securityManager) < 0)
@@ -103,9 +132,17 @@ qemuSecuritySetDiskLabel(virQEMUDriverPtr driver,
                                             vm->pid) < 0)
         goto cleanup;
 
+    locked = false;
+
+    if (virDomainLockMetadataDiskUnlock(driver->lockManager, vm, disk) < 0)
+        goto cleanup;
+
     ret = 0;
  cleanup:
     virSecurityManagerTransactionAbort(driver->securityManager);
+    if (locked &&
+        virDomainLockMetadataDiskUnlock(driver->lockManager, vm, disk) < 0)
+        VIR_WARN("unable to release disk metadata lock");
     return ret;
 }
 
@@ -116,6 +153,12 @@ qemuSecurityRestoreDiskLabel(virQEMUDriverPtr driver,
                              virDomainDiskDefPtr disk)
 {
     int ret = -1;
+    bool locked = false;
+
+    if (virDomainLockMetadataDiskLock(driver->lockManager, vm, disk) < 0)
+        goto cleanup;
+
+    locked = true;
 
     if (qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT) &&
         virSecurityManagerTransactionStart(driver->securityManager) < 0)
@@ -131,9 +174,17 @@ qemuSecurityRestoreDiskLabel(virQEMUDriverPtr driver,
                                             vm->pid) < 0)
         goto cleanup;
 
+    locked = false;
+
+    if (virDomainLockMetadataDiskUnlock(driver->lockManager, vm, disk) < 0)
+        goto cleanup;
+
     ret = 0;
  cleanup:
     virSecurityManagerTransactionAbort(driver->securityManager);
+    if (locked &&
+        virDomainLockMetadataDiskUnlock(driver->lockManager, vm, disk) < 0)
+        VIR_WARN("unable to release disk metadata lock");
     return ret;
 }
 
@@ -144,6 +195,12 @@ qemuSecuritySetImageLabel(virQEMUDriverPtr driver,
                           virStorageSourcePtr src)
 {
     int ret = -1;
+    bool locked = false;
+
+    if (virDomainLockMetadataImageLock(driver->lockManager, vm, src) < 0)
+        goto cleanup;
+
+    locked = true;
 
     if (qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT) &&
         virSecurityManagerTransactionStart(driver->securityManager) < 0)
@@ -159,9 +216,17 @@ qemuSecuritySetImageLabel(virQEMUDriverPtr driver,
                                             vm->pid) < 0)
         goto cleanup;
 
+    locked = false;
+
+    if (virDomainLockMetadataImageUnlock(driver->lockManager, vm, src) < 0)
+        goto cleanup;
+
     ret = 0;
  cleanup:
     virSecurityManagerTransactionAbort(driver->securityManager);
+    if (locked &&
+        virDomainLockMetadataImageUnlock(driver->lockManager, vm, src) < 0)
+        VIR_WARN("unable to release image metadata lock");
     return ret;
 }
 
@@ -172,6 +237,12 @@ qemuSecurityRestoreImageLabel(virQEMUDriverPtr driver,
                               virStorageSourcePtr src)
 {
     int ret = -1;
+    bool locked = false;
+
+    if (virDomainLockMetadataImageLock(driver->lockManager, vm, src) < 0)
+        goto cleanup;
+
+    locked = true;
 
     if (qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT) &&
         virSecurityManagerTransactionStart(driver->securityManager) < 0)
@@ -187,9 +258,17 @@ qemuSecurityRestoreImageLabel(virQEMUDriverPtr driver,
                                             vm->pid) < 0)
         goto cleanup;
 
+    locked = false;
+
+    if (virDomainLockMetadataImageUnlock(driver->lockManager, vm, src) < 0)
+        goto cleanup;
+
     ret = 0;
  cleanup:
     virSecurityManagerTransactionAbort(driver->securityManager);
+    if (locked &&
+        virDomainLockMetadataImageUnlock(driver->lockManager, vm, src) < 0)
+        VIR_WARN("unable to release image metadata lock");
     return ret;
 }
 
@@ -258,6 +337,12 @@ qemuSecuritySetMemoryLabel(virQEMUDriverPtr driver,
                            virDomainMemoryDefPtr mem)
 {
     int ret = -1;
+    bool locked = false;
+
+    if (virDomainLockMetadataMemLock(driver->lockManager, vm, mem) < 0)
+        goto cleanup;
+
+    locked = true;
 
     if (qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT) &&
         virSecurityManagerTransactionStart(driver->securityManager) < 0)
@@ -273,9 +358,17 @@ qemuSecuritySetMemoryLabel(virQEMUDriverPtr driver,
                                             vm->pid) < 0)
         goto cleanup;
 
+    locked = false;
+
+    if (virDomainLockMetadataMemUnlock(driver->lockManager, vm, mem) < 0)
+        goto cleanup;
+
     ret = 0;
  cleanup:
     virSecurityManagerTransactionAbort(driver->securityManager);
+    if (locked &&
+        virDomainLockMetadataMemUnlock(driver->lockManager, vm, mem) < 0)
+        VIR_WARN("unable to release memory metadata lock");
     return ret;
 }
 
@@ -286,6 +379,12 @@ qemuSecurityRestoreMemoryLabel(virQEMUDriverPtr driver,
                                virDomainMemoryDefPtr mem)
 {
     int ret = -1;
+    bool locked = false;
+
+    if (virDomainLockMetadataMemLock(driver->lockManager, vm, mem) < 0)
+        goto cleanup;
+
+    locked = true;
 
     if (qemuDomainNamespaceEnabled(vm, QEMU_DOMAIN_NS_MOUNT) &&
         virSecurityManagerTransactionStart(driver->securityManager) < 0)
@@ -301,9 +400,17 @@ qemuSecurityRestoreMemoryLabel(virQEMUDriverPtr driver,
                                             vm->pid) < 0)
         goto cleanup;
 
+    locked = false;
+
+    if (virDomainLockMetadataMemUnlock(driver->lockManager, vm, mem) < 0)
+        goto cleanup;
+
     ret = 0;
  cleanup:
     virSecurityManagerTransactionAbort(driver->securityManager);
+    if (locked &&
+        virDomainLockMetadataMemUnlock(driver->lockManager, vm, mem) < 0)
+        VIR_WARN("unable to release memory metadata lock");
     return ret;
 }
 
