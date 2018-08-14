@@ -207,6 +207,24 @@ int virNetDevGetIndex(const char *ifname, int *ifindex)
 int virNetDevGetVLanID(const char *ifname, int *vlanid)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
 
+int virNetDevGetVLanDevName(const char *ifname,
+                            unsigned int vlanid,
+                            char **vdname)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3) ATTRIBUTE_RETURN_CHECK;
+
+int virNetDevLoad8021Q(void)
+    ATTRIBUTE_RETURN_CHECK;
+
+int virNetDevCreateVLanDev(const char *ifname,
+                           unsigned int vlanid,
+                           char **vdname)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3) ATTRIBUTE_RETURN_CHECK;
+
+void virNetDevDestroyVLanDev(const char *ifname,
+                            unsigned int vlanid,
+                            const char *vdname)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3);
+
 int virNetDevGetMaster(const char *ifname, char **master)
    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
 
