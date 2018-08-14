@@ -6817,8 +6817,9 @@ qemuProcessKill(virDomainObjPtr vm, unsigned int flags)
         return 0;
     }
 
-    ret = virProcessKillPainfully(vm->pid,
-                                  !!(flags & VIR_QEMU_PROCESS_KILL_FORCE));
+    ret = virProcessKillPainfullyDelay(vm->pid,
+                                       !!(flags & VIR_QEMU_PROCESS_KILL_FORCE),
+                                       vm->def->nhostdevs * 2);
 
     return ret;
 }
