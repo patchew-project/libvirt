@@ -484,22 +484,6 @@
 }
 
 {
-  "execute": "block-commit",
-  "arguments": {
-    "device": "bogus"
-  },
-  "id": "libvirt-6"
-}
-
-{
-  "id": "libvirt-6",
-  "error": {
-    "class": "DeviceNotFound",
-    "desc": "Device 'bogus' not found"
-  }
-}
-
-{
   "execute": "query-kvm",
   "id": "libvirt-7"
 }
