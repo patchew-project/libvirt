@@ -6459,11 +6459,12 @@ qemuMonitorJSONGetSEVCapabilities(qemuMonitorPtr mon,
         goto cleanup;
 
     /* Both -object sev-guest and query-sev-capabilities can be present
-     * even if SEV is not available */
-    if (qemuMonitorJSONHasError(reply, "GenericError")) {
-        ret = 0;
+     * even if SEV is not available. We have to check for "GenericError" first,
+     * in order not to spam libvirtd logs.
+     * NOTE: We return failure here too so that the capability gets cleared
+     * later */
+    if (qemuMonitorJSONHasError(reply, "GenericError"))
         goto cleanup;
-    }
 
     if (qemuMonitorJSONCheckError(cmd, reply) < 0)
         goto cleanup;
