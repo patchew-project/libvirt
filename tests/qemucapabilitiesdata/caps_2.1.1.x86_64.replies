@@ -380,23 +380,6 @@
 }
 
 {
-  "execute": "add-fd",
-  "arguments": {
-    "fdset-id": 0,
-    "opaque": "/dev/null"
-  },
-  "id": "libvirt-5"
-}
-
-{
-  "return": {
-    "fd": 13,
-    "fdset-id": 0
-  },
-  "id": "libvirt-5"
-}
-
-{
   "execute": "block-commit",
   "arguments": {
     "device": "bogus"

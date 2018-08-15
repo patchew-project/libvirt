@@ -506,23 +506,6 @@
 }
 
 {
-  "execute": "add-fd",
-  "arguments": {
-    "fdset-id": 0,
-    "opaque": "/dev/null"
-  },
-  "id": "libvirt-5"
-}
-
-{
-  "return": {
-    "fd": 15,
-    "fdset-id": 0
-  },
-  "id": "libvirt-5"
-}
-
-{
   "execute": "query-kvm",
   "id": "libvirt-6"
 }
