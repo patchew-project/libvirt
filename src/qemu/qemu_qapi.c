@@ -105,6 +105,7 @@ virQEMUQAPISchemaTraverse(const char *baseName,
                           virHashTablePtr schema)
 {
     virJSONValuePtr base;
+    virJSONValuePtr obj;
     const char *metatype;
     const char *querystr;
     char modifier;
@@ -132,14 +133,20 @@ virQEMUQAPISchemaTraverse(const char *baseName,
             if (!c_isalpha(modifier))
                 querystr++;
 
-            if (modifier == '+')
+            if (modifier == '+') {
                 baseName = virQEMUQAPISchemaObjectGetType("variants",
                                                           querystr,
                                                           "case", base);
-            else
-                baseName = virQEMUQAPISchemaObjectGetType("members",
-                                                          querystr,
-                                                          "name", base);
+            } else {
+                obj = virQEMUQAPISchemaObjectGet("members", querystr,
+                                                 "name", base);
+
+                if (modifier == '*' &&
+                    !virJSONValueObjectHasKey(obj, "default"))
+                    return NULL;
+
+                baseName = virQEMUQAPISchemaTypeFromObject(obj);
+            }
 
             if (!baseName)
                 return NULL;
@@ -175,6 +182,7 @@ virQEMUQAPISchemaTraverse(const char *baseName,
  * attribute: selects whether arguments or return type should be introspected
  *            ("arg-type" or "ret-type" for commands, "arg-type" for events)
  * subattribute: specifies member name of object types
+ * *subattribute: same as above but must be optional
  * +variant_discriminator: In the case of unionized objects, select a
  *                         specific case to introspect.
  *
