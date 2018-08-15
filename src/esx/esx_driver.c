@@ -2542,45 +2542,49 @@ esxDomainGetVcpusFlags(virDomainPtr domain, unsigned int flags)
 {
     esxPrivate *priv = domain->conn->privateData;
     esxVI_String *propertyNameList = NULL;
-    esxVI_ObjectContent *hostSystem = NULL;
-    esxVI_DynamicProperty *dynamicProperty = NULL;
+    esxVI_ObjectContent *obj = NULL;
+    esxVI_Int *vcpus = NULL;
 
     virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
                   VIR_DOMAIN_VCPU_MAXIMUM, -1);
-
-    if (priv->maxVcpus > 0)
-        return priv->maxVcpus;
 
     priv->maxVcpus = -1;
 
     if (esxVI_EnsureSession(priv->primary) < 0)
         return -1;
 
-    if (esxVI_String_AppendValueToList(&propertyNameList,
-                                       "capability.maxSupportedVcpus") < 0 ||
-        esxVI_LookupHostSystemProperties(priv->primary, propertyNameList,
-                                         &hostSystem) < 0) {
-        goto cleanup;
+
+    if (flags & VIR_DOMAIN_VCPU_MAXIMUM) {
+        if (esxVI_String_AppendValueToList(&propertyNameList,
+                                           "capability.maxHostSupportedVcpus\0"
+                                           "capability.maxSupportedVcpus") < 0 ||
+            esxVI_LookupHostSystemProperties(priv->primary,
+                                             propertyNameList, &obj) < 0 ||
+            esxVI_GetInt(obj, "capability.maxSupportedVcpus", &vcpus,
+                         esxVI_Occurrence_OptionalItem) < 0)
+            goto cleanup;
+
+        if (!vcpus && esxVI_GetInt(obj, "capability.maxHostSupportedVcpus",
+                                   &vcpus, esxVI_Occurrence_RequiredItem) < 0)
+            goto cleanup;
+
+    } else {
+        if (esxVI_String_AppendValueToList(&propertyNameList,
+                                          "config.hardware.numCPU\0") < 0 ||
+            esxVI_LookupVirtualMachineByUuid(priv->primary, domain->uuid,
+                                             propertyNameList, &obj,
+                                             esxVI_Occurrence_RequiredItem) < 0 ||
+            esxVI_GetInt(obj, "config.hardware.numCPU", &vcpus,
+                         esxVI_Occurrence_RequiredItem) < 0)
+            goto cleanup;
     }
 
-    for (dynamicProperty = hostSystem->propSet; dynamicProperty;
-         dynamicProperty = dynamicProperty->_next) {
-        if (STREQ(dynamicProperty->name, "capability.maxSupportedVcpus")) {
-            if (esxVI_AnyType_ExpectType(dynamicProperty->val,
-                                         esxVI_Type_Int) < 0) {
-                goto cleanup;
-            }
-
-            priv->maxVcpus = dynamicProperty->val->int32;
-            break;
-        } else {
-            VIR_WARN("Unexpected '%s' property", dynamicProperty->name);
-        }
-    }
+    priv->maxVcpus = vcpus->value;
 
  cleanup:
     esxVI_String_Free(&propertyNameList);
-    esxVI_ObjectContent_Free(&hostSystem);
+    esxVI_ObjectContent_Free(&obj);
+    esxVI_Int_Free(&vcpus);
 
     return priv->maxVcpus;
 }
