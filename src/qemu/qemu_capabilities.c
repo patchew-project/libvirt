@@ -1645,6 +1645,7 @@ virQEMUCapsPtr virQEMUCapsNewCopy(virQEMUCapsPtr qemuCaps)
             goto error;
         ret->machineTypes[i].maxCpus = qemuCaps->machineTypes[i].maxCpus;
         ret->machineTypes[i].hotplugCpus = qemuCaps->machineTypes[i].hotplugCpus;
+        ret->machineTypes[i].qemuDefault = qemuCaps->machineTypes[i].qemuDefault;
     }
 
     if (VIR_ALLOC_N(ret->gicCapabilities, qemuCaps->ngicCapabilities) < 0)
@@ -2067,6 +2068,17 @@ const char *virQEMUCapsGetCanonicalMachine(virQEMUCapsPtr qemuCaps,
     return name;
 }
 
+const char *virQEMUCapsGetDefaultMachine(virQEMUCapsPtr qemuCaps)
+{
+    size_t i;
+
+    for (i = 0; i < qemuCaps->nmachineTypes; i++) {
+        if (qemuCaps->machineTypes[i].qemuDefault)
+            return qemuCaps->machineTypes[i].name;
+    }
+
+    return NULL;
+}
 
 int virQEMUCapsGetMachineMaxCpus(virQEMUCapsPtr qemuCaps,
                                  const char *name)
@@ -3866,10 +3878,11 @@ virQEMUCapsFormatCache(virQEMUCapsPtr qemuCaps)
                               qemuCaps->machineTypes[i].alias);
         if (qemuCaps->machineTypes[i].hotplugCpus)
             virBufferAddLit(&buf, " hotplugCpus='yes'");
+        virBufferAsprintf(&buf, " maxCpus='%u'",
+                          qemuCaps->machineTypes[i].maxCpus);
         if (qemuCaps->machineTypes[i].qemuDefault)
             virBufferAddLit(&buf, " default='yes'");
-        virBufferAsprintf(&buf, " maxCpus='%u'/>\n",
-                          qemuCaps->machineTypes[i].maxCpus);
+        virBufferAddLit(&buf, "/>\n");
     }
 
     for (i = 0; i < qemuCaps->ngicCapabilities; i++) {
