@@ -101,7 +101,7 @@
 %endif
 
 # Numactl is not available on s390[x] and ARM
-%ifarch s390 s390x %{arm}
+%ifarch s390 s390x %{arm} riscv64
     %define with_numactl 0
 %endif
 
@@ -120,7 +120,7 @@
 %endif
 
 # zfs-fuse is not available on some architectures
-%ifarch s390 s390x aarch64
+%ifarch s390 s390x aarch64 riscv64
     %define with_storage_zfs 0
 %endif
 
@@ -195,7 +195,7 @@
 %if %{with_qemu} || %{with_lxc} || %{with_uml}
 # numad is used to manage the CPU and memory placement dynamically,
 # it's not available on s390[x] and ARM.
-    %ifnarch s390 s390x %{arm}
+    %ifnarch s390 s390x %{arm} riscv64
         %define with_numad    0%{!?_without_numad:1}
     %endif
 %endif
