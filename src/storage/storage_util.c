@@ -2343,7 +2343,7 @@ virStorageBackendVolResizeLocal(virStoragePoolObjPtr pool,
     } else if (vol->target.format == VIR_STORAGE_FILE_RAW && vol->target.encryption) {
         if (pre_allocate) {
             virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
-                           _("preallocate is only supported for raw "
+                           _("preallocate is only supported for unencrypted raw "
                              "type volume"));
             return -1;
         }
