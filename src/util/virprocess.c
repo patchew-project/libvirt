@@ -598,7 +598,7 @@ int virProcessSetAffinity(pid_t pid ATTRIBUTE_UNUSED,
 {
     virReportSystemError(ENOSYS, "%s",
                          _("Process CPU affinity is not supported on this platform"));
-    return -1;
+    return 0;
 }
 
 virBitmapPtr

@@ -5245,6 +5245,12 @@ qemuDomainPinEmulator(virDomainPtr dom,
     if (virDomainPinEmulatorEnsureACL(dom->conn, vm->def, flags) < 0)
         goto cleanup;
 
+    if (!qemuDomainHasVcpuPids(vm)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       "%s", _("cpu affinity is not supported"));
+        goto cleanup;
+    }
+
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
 
