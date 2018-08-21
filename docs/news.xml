@@ -63,6 +63,15 @@
           Support the vhost-vsock-ccw device on S390.
         </description>
       </change>
+      <change>
+        <summary>
+          virsh: Add subcommand nodesevinfo
+        </summary>
+        <description>
+          Implement virNodeGetSEVInfo in virsh nodesevinfo to get AMD SEV
+          features of host.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
