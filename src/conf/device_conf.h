@@ -179,6 +179,7 @@ struct _virDomainDeviceInfo {
 
 int virDomainDeviceInfoCopy(virDomainDeviceInfoPtr dst,
                             virDomainDeviceInfoPtr src);
+void virDomainDeviceInfoClearAddress(virDomainDeviceInfoPtr info);
 void virDomainDeviceInfoClear(virDomainDeviceInfoPtr info);
 void virDomainDeviceInfoFree(virDomainDeviceInfoPtr info);
 
