@@ -317,6 +317,11 @@ of cpu statistics during 1 second.
 Returns memory stats of the node.
 If I<cell> is specified, this will print the specified cell statistics only.
 
+=item B<nodesevinfo>
+
+Display AMD's SEV feature of this host, including PDH, cert-chain, cbitpos
+and reduced-phys-bits.
+
 =item B<nodesuspend> [I<target>] [I<duration>]
 
 Puts the node (host machine) into a system-wide sleep state and schedule

@@ -953,6 +953,67 @@ cmdNodeMemStats(vshControl *ctl, const vshCmd *cmd)
 }
 
 /*
+ * "nodesevinfo" command
+ */
+static const vshCmdInfo info_nodesevinfo[] = {
+    {.name = "help",
+     .data = N_("AMD SEV feature information.")
+    },
+    {.name = "desc",
+     .data = N_("Returns information of SEV feature about the node.")
+    },
+    {.name = NULL}
+};
+
+static bool
+cmdNodesevinfo(vshControl *ctl, const vshCmd *cmd ATTRIBUTE_UNUSED)
+{
+    virTypedParameterPtr params = NULL;
+    int nparams = 0;
+    unsigned int flags = 0;
+    bool ret = false;
+    size_t i;
+    virshControlPtr priv = ctl->privData;
+
+    if (nparams == 0) {
+        /* Get the number of SEV info parameters */
+        if (virNodeGetSEVInfo(priv->conn, NULL, &nparams, flags) != 0) {
+            vshError(ctl, "%s",
+                     _("Unable to get number of SEV info parameters"));
+            goto cleanup;
+        }
+    }
+
+    if (nparams == 0) {
+        ret = true;
+        goto cleanup;
+    }
+
+    /* Now get all the SEV info parameters */
+    params = vshCalloc(ctl, nparams, sizeof(params));
+    if (virNodeGetSEVInfo(priv->conn, &params, &nparams, flags) != 0) {
+        vshError(ctl, "%s", _("Unable to get SEV info parameters"));
+        goto cleanup;
+    }
+
+    /* XXX: Need to sort the returned params once new parameter
+     * fields not of shared memory are added.
+     */
+    vshPrint(ctl, _("SEV info:\n"));
+    for (i = 0; i < nparams; i++) {
+        char *str = vshGetTypedParamValue(ctl, &params[i]);
+        vshPrint(ctl, "\t%-15s %s\n", params[i].field, str);
+        VIR_FREE(str);
+    }
+
+    ret = true;
+
+ cleanup:
+    virTypedParamsFree(params, nparams);
+    return ret;
+}
+
+/*
  * "nodesuspend" command
  */
 static const vshCmdInfo info_nodesuspend[] = {
@@ -1898,6 +1959,11 @@ const vshCmdDef hostAndHypervisorCmds[] = {
      .handler = cmdNodeMemStats,
      .opts = opts_node_memstats,
      .info = info_nodememstats,
+     .flags = 0
+    },
+    {.name = "nodesevinfo",
+     .handler = cmdNodesevinfo,
+     .info = info_nodesevinfo,
      .flags = 0
     },
     {.name = "nodesuspend",
