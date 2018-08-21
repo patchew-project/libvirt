@@ -98,17 +98,25 @@ virRotatingFileReaderEntryFree(virRotatingFileReaderEntryPtr entry)
 
 static virRotatingFileWriterEntryPtr
 virRotatingFileWriterEntryNew(const char *path,
-                              mode_t mode)
+                              mode_t mode,
+                              bool truncate)
 {
     virRotatingFileWriterEntryPtr entry;
     struct stat sb;
+    /* O_APPEND is also useful in combination with O_TRUNC since it
+     * guarantees the atomicity of a write operation (at least for
+     * POSIX systems) */
+    int oflag = O_CREAT|O_APPEND|O_WRONLY|O_CLOEXEC;
 
     VIR_DEBUG("Opening %s mode=0%02o", path, mode);
 
     if (VIR_ALLOC(entry) < 0)
         return NULL;
 
-    if ((entry->fd = open(path, O_CREAT|O_APPEND|O_WRONLY|O_CLOEXEC, mode)) < 0) {
+    if (truncate)
+        oflag |= O_TRUNC;
+
+    if ((entry->fd = open(path, oflag, mode)) < 0) {
         virReportSystemError(errno,
                              _("Unable to open file: %s"), path);
         goto error;
@@ -182,17 +190,9 @@ virRotatingFileReaderEntryNew(const char *path)
 
 
 static int
-virRotatingFileWriterDelete(virRotatingFileWriterPtr file)
+virRotatingFileWriterDeleteBackup(virRotatingFileWriterPtr file)
 {
     size_t i;
-
-    if (unlink(file->basepath) < 0 &&
-        errno != ENOENT) {
-        virReportSystemError(errno,
-                             _("Unable to delete file %s"),
-                             file->basepath);
-        return -1;
-    }
 
     for (i = 0; i < file->maxbackup; i++) {
         char *oldpath;
@@ -209,6 +209,24 @@ virRotatingFileWriterDelete(virRotatingFileWriterPtr file)
         }
         VIR_FREE(oldpath);
     }
+
+    return 0;
+}
+
+
+static int ATTRIBUTE_UNUSED
+virRotatingFileWriterDelete(virRotatingFileWriterPtr file)
+{
+    if (unlink(file->basepath) < 0 &&
+        errno != ENOENT) {
+        virReportSystemError(errno,
+                             _("Unable to delete file %s"),
+                             file->basepath);
+        return -1;
+    }
+
+    if (virRotatingFileWriterDeleteBackup(file) < 0)
+        return -1;
 
     return 0;
 }
@@ -257,12 +275,12 @@ virRotatingFileWriterNew(const char *path,
     file->maxbackup = maxbackup;
     file->maxlen = maxlen;
 
-    if (trunc &&
-        virRotatingFileWriterDelete(file) < 0)
+    if (trunc && virRotatingFileWriterDeleteBackup(file) < 0)
         goto error;
 
     if (!(file->entry = virRotatingFileWriterEntryNew(file->basepath,
-                                                      mode)))
+                                                      mode,
+                                                      trunc)))
         goto error;
 
     return file;
@@ -491,7 +509,8 @@ virRotatingFileWriterAppend(virRotatingFileWriterPtr file,
                 return -1;
 
             if (!(tmp = virRotatingFileWriterEntryNew(file->basepath,
-                                                      file->mode)))
+                                                      file->mode,
+                                                      false)))
                 return -1;
 
             virRotatingFileWriterEntryFree(file->entry);
