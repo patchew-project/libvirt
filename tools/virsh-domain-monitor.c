@@ -476,7 +476,6 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
     size_t i;
     xmlNodePtr *disks = NULL;
     char *target = NULL;
-    char *protocol = NULL;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;
@@ -490,7 +489,6 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
     human = vshCommandOptBool(cmd, "human");
 
     if (all) {
-        bool active = virDomainIsActive(dom) == 1;
         int rc;
 
         if (virshDomainGetXML(ctl, cmd, 0, &xmldoc, &ctxt) < 0)
@@ -505,29 +503,18 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
 
         for (i = 0; i < ndisks; i++) {
             ctxt->node = disks[i];
-            protocol = virXPathString("string(./source/@protocol)", ctxt);
             target = virXPathString("string(./target/@dev)", ctxt);
 
             rc = virDomainGetBlockInfo(dom, target, &info, 0);
 
             if (rc < 0) {
-                /* If protocol is present that's an indication of a networked
-                 * storage device which cannot provide statistics, so generate
-                 * 0 based data and get the next disk. */
-                if (protocol && !active &&
-                    virGetLastErrorCode() == VIR_ERR_INTERNAL_ERROR &&
-                    virGetLastErrorDomain() == VIR_FROM_STORAGE) {
-                    memset(&info, 0, sizeof(info));
-                    vshResetLibvirtError();
-                } else {
-                    goto cleanup;
-                }
+                memset(&info, 0, sizeof(info));
+                vshResetLibvirtError();
             }
 
             cmdDomblkinfoPrint(ctl, &info, target, human, false);
 
             VIR_FREE(target);
-            VIR_FREE(protocol);
         }
     } else {
         if (virDomainGetBlockInfo(dom, device, &info, 0) < 0)
@@ -541,7 +528,6 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
  cleanup:
     virshDomainFree(dom);
     VIR_FREE(target);
-    VIR_FREE(protocol);
     VIR_FREE(disks);
     xmlXPathFreeContext(ctxt);
     xmlFreeDoc(xmldoc);
