@@ -19353,6 +19353,45 @@ qemuConnectGetCPUModelNames(virConnectPtr conn,
     return virCPUGetModels(arch, models);
 }
 
+static char *
+qemuDomainGetHostname(virDomainPtr dom,
+                      unsigned int flags)
+{
+    virQEMUDriverPtr driver = dom->conn->privateData;
+    virDomainObjPtr vm = NULL;
+    qemuAgentPtr agent;
+    char *hostname = NULL;
+
+    virCheckFlags(0, NULL);
+
+    if (!(vm = qemuDomObjFromDomain(dom)))
+        return NULL;
+
+    if (virDomainGetHostnameEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    if (qemuDomainObjBeginAgentJob(driver, vm, QEMU_AGENT_JOB_QUERY) < 0)
+        goto cleanup;
+
+    if (virDomainObjCheckActive(vm) < 0)
+        goto endjob;
+
+    if (!qemuDomainAgentAvailable(vm, true))
+        goto endjob;
+
+    agent = qemuDomainObjEnterAgent(vm);
+    ignore_value(qemuAgentGetHostname(agent, &hostname));
+    qemuDomainObjExitAgent(vm, agent);
+
+ endjob:
+    qemuDomainObjEndAgentJob(vm);
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return hostname;
+}
+
+
 static int
 qemuDomainGetTime(virDomainPtr dom,
                   long long *seconds,
@@ -21957,6 +21996,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .connectGetCPUModelNames = qemuConnectGetCPUModelNames, /* 1.1.3 */
     .domainFSFreeze = qemuDomainFSFreeze, /* 1.2.5 */
     .domainFSThaw = qemuDomainFSThaw, /* 1.2.5 */
+    .domainGetHostname = qemuDomainGetHostname, /* 4.7.0 */
     .domainGetTime = qemuDomainGetTime, /* 1.2.5 */
     .domainSetTime = qemuDomainSetTime, /* 1.2.5 */
     .nodeGetFreePages = qemuNodeGetFreePages, /* 1.2.6 */
