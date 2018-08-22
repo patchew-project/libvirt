@@ -467,7 +467,8 @@ qemuInterfaceEthernetConnect(virDomainDefPtr def,
         goto cleanup;
 
     if (net->filter &&
-        virDomainConfNWFilterInstantiate(def->name, def->uuid, net, false) < 0) {
+        virDomainConfNWFilterInstantiate(def->name, def->uuid, net,
+                                         false, false) < 0) {
         goto cleanup;
     }
 
@@ -586,7 +587,8 @@ qemuInterfaceBridgeConnect(virDomainDefPtr def,
         goto cleanup;
 
     if (net->filter &&
-        virDomainConfNWFilterInstantiate(def->name, def->uuid, net, false) < 0) {
+        virDomainConfNWFilterInstantiate(def->name, def->uuid, net,
+                                         false, false) < 0) {
         goto cleanup;
     }
 

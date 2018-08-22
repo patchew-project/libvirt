@@ -3434,8 +3434,8 @@ qemuDomainChangeNetFilter(virDomainObjPtr vm,
     virDomainConfNWFilterTeardown(olddev);
 
     if (newdev->filter &&
-        virDomainConfNWFilterInstantiate(vm->def->name,
-                                         vm->def->uuid, newdev, false) < 0) {
+        virDomainConfNWFilterInstantiate(vm->def->name, vm->def->uuid, newdev,
+                                        false, false) < 0) {
         virErrorPtr errobj;
 
         virReportError(VIR_ERR_OPERATION_FAILED,
@@ -3444,7 +3444,8 @@ qemuDomainChangeNetFilter(virDomainObjPtr vm,
                        olddev->ifname);
         virErrorPreserveLast(&errobj);
         ignore_value(virDomainConfNWFilterInstantiate(vm->def->name,
-                                                      vm->def->uuid, olddev, false));
+                                                      vm->def->uuid, olddev,
+                                                      false, false));
         virErrorRestore(&errobj);
         return -1;
     }

@@ -85,16 +85,19 @@ int
 virDomainConfNWFilterInstantiate(const char *vmname,
                                  const unsigned char *vmuuid,
                                  virDomainNetDefPtr net,
-                                 bool ignoreExists)
+                                 bool ignoreExists,
+                                 bool ignoreDeleted)
 {
     virConnectPtr conn = virGetConnectNWFilter();
     virNWFilterBindingDefPtr def = NULL;
     virNWFilterBindingPtr binding = NULL;
+    virNWFilterPtr nwfilter = NULL;
     char *xml = NULL;
     int ret = -1;
 
-    VIR_DEBUG("vmname=%s portdev=%s filter=%s ignoreExists=%d",
-              vmname, NULLSTR(net->ifname), NULLSTR(net->filter), ignoreExists);
+    VIR_DEBUG("vmname=%s portdev=%s filter=%s ignoreExists=%d ignoreDeleted=%d",
+              vmname, NULLSTR(net->ifname), NULLSTR(net->filter),
+              ignoreExists, ignoreDeleted);
 
     if (!conn)
         goto cleanup;
@@ -113,14 +116,34 @@ virDomainConfNWFilterInstantiate(const char *vmname,
     if (!(xml = virNWFilterBindingDefFormat(def)))
         goto cleanup;
 
-    if (!(binding = virNWFilterBindingCreateXML(conn, xml, 0)))
-        goto cleanup;
+    if (!(binding = virNWFilterBindingCreateXML(conn, xml, 0))) {
+        virErrorPtr orig_err;
+
+        if (!ignoreDeleted)
+            goto cleanup;
+
+        /* Let's determine if the error was because the filter was deleted.
+         * Save the orig_err just in case it's not a failure to find the
+         * filter by name. */
+        orig_err = virSaveLastError();
+        nwfilter = virNWFilterLookupByName(conn, def->filter);
+        virSetError(orig_err);
+        virFreeError(orig_err);
+        if (nwfilter)
+            goto cleanup;
+
+        VIR_WARN("filter '%s' for binding '%s' has been deleted while the "
+                 "guest was running, ignoring for restart processing",
+                 def->filter, def->portdevname);
+        virResetLastError();
+    }
 
     ret = 0;
 
  cleanup:
     VIR_FREE(xml);
     virNWFilterBindingDefFree(def);
+    virObjectUnref(nwfilter);
     virObjectUnref(binding);
     virObjectUnref(conn);
     return ret;

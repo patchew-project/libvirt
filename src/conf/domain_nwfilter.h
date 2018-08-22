@@ -26,7 +26,8 @@
 int virDomainConfNWFilterInstantiate(const char *vmname,
                                      const unsigned char *vmuuid,
                                      virDomainNetDefPtr net,
-                                     bool ignoreExists);
+                                     bool ignoreExists,
+                                     bool ignoreDeleted);
 void virDomainConfNWFilterTeardown(virDomainNetDefPtr net);
 void virDomainConfVMNWFilterTeardown(virDomainObjPtr vm);
 
