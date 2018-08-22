@@ -30,8 +30,6 @@
 # define __VIR_FIREWALL_PRIV_H_ALLOW__
 # include "virfirewallpriv.h"
 
-# define __VIR_COMMAND_PRIV_H_ALLOW__
-# include "vircommandpriv.h"
 
 # define VIR_FROM_THIS VIR_FROM_NONE
 
@@ -380,7 +378,7 @@ static int testCompareXMLToArgvFiles(const char *xml,
 
     memset(&inst, 0, sizeof(inst));
 
-    virCommandSetDryRun(&buf, NULL, NULL);
+    virTestSetDryRun(&buf, NULL, NULL);
 
     if (!vars)
         goto cleanup;
@@ -401,7 +399,6 @@ static int testCompareXMLToArgvFiles(const char *xml,
 
     actualargv = virBufferContentAndReset(&buf);
     virTestClearCommandPath(actualargv);
-    virCommandSetDryRun(NULL, NULL, NULL);
 
     testRemoveCommonRules(actualargv);
 
@@ -411,6 +408,7 @@ static int testCompareXMLToArgvFiles(const char *xml,
     ret = 0;
 
  cleanup:
+    virTestSetDryRun(NULL, NULL, NULL);
     virBufferFreeAndReset(&buf);
     VIR_FREE(actualargv);
     virNWFilterInstReset(&inst);

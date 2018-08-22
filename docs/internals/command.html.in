@@ -398,16 +398,39 @@ virCommandSetWorkingDirectory(cmd, LOCALSTATEDIR);
     <h3><a id="hooks">Any additional hooks</a></h3>
 
     <p>
-      If anything else is needed, it is possible to request a hook
-      function that is called in the child after the fork, as the
+      If anything else is needed, it is possible to request hook
+      functions that are called in the child after the fork, as the
       last thing before changing directories, dropping capabilities,
-      and executing the new process.  If hook(opaque) returns
-      non-zero, then the child process will not be run.
+      and executing the new process.
+
+      There are two types of hooks:
+    <ul>
+      <li>Global hook takes effect to all command.
+      Setting global hook if passing NULL to @cmd.
+      </li>
+      <li>Command hook takes effect only to the command.
+      Passing the pointer of the command to @cmd.
+      </li>
+    </ul>
+
+      If hook(opaque) returns -1, then the child process will not be
+      run for error. And if it returns 1, the child process will exit
+      with status in advance and this mode is used for command dryrun.
+
+      Since @hook runs in the child, it should be careful to avoid
+      any functions that are not async-signal-safe.
+
+      For global hook, Passing NULL for @cmd, @hook and @opaque to
+      cancel the effect.
     </p>
 
 <pre>
-virCommandSetPreExecHook(cmd, hook, opaque);
+virCommandSetPreExecHook(NULL, hook, opaque); /* global hook */
+virCommandSetPreExecHook(cmd, hook, opaque); /* command hook */
+
+virCommandSetPreExecHook(NULL, NULL, NULL); /* cancel global hook */
 </pre>
+
 
     <h3><a id="logging">Logging commands</a></h3>
 

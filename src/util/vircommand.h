@@ -29,10 +29,22 @@
 typedef struct _virCommand virCommand;
 typedef virCommand *virCommandPtr;
 
-/* This will execute in the context of the first child
+/*
+ * virExecHook:
+ * @data: opaque for this hook
+ * @cmd: pointer to virCommand
+ * @status: get status for exit status of the child,
+ *          valid only if return code is 1.
+ *
+ * This will execute in the context of the first child
  * after fork() but before execve().  As such, it is unsafe to
- * call any function that is not async-signal-safe.  */
-typedef int (*virExecHook)(void *data);
+ * call any function that is not async-signal-safe.
+ *
+ * Returns: 0 on success,
+ *          -1 on usage error (errno is ENOMEM on OOM),
+ *          1 to notify child exit with status from child in advance
+ */
+typedef int (*virExecHook)(void *data, virCommandPtr cmd, int *status);
 
 pid_t virFork(void) ATTRIBUTE_RETURN_CHECK;
 

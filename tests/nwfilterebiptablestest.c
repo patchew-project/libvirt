@@ -29,11 +29,7 @@
 #define __VIR_FIREWALL_PRIV_H_ALLOW__
 #include "virfirewallpriv.h"
 
-#define __VIR_COMMAND_PRIV_H_ALLOW__
-#include "vircommandpriv.h"
-
 #define VIR_FROM_THIS VIR_FROM_NONE
-
 
 #define VIR_NWFILTER_NEW_RULES_TEARDOWN \
     "iptables -D libvirt-out -m physdev --physdev-is-bridged --physdev-out vnet0 -g FP-vnet0\n" \
@@ -104,7 +100,7 @@ testNWFilterEBIPTablesAllTeardown(const void *opaque ATTRIBUTE_UNUSED)
     char *actual = NULL;
     int ret = -1;
 
-    virCommandSetDryRun(&buf, NULL, NULL);
+    virTestSetDryRun(&buf, NULL, NULL);
 
     if (ebiptables_driver.allTeardown("vnet0") < 0)
         goto cleanup;
@@ -122,7 +118,7 @@ testNWFilterEBIPTablesAllTeardown(const void *opaque ATTRIBUTE_UNUSED)
 
     ret = 0;
  cleanup:
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virBufferFreeAndReset(&buf);
     VIR_FREE(actual);
     return ret;
@@ -175,7 +171,7 @@ testNWFilterEBIPTablesTearOldRules(const void *opaque ATTRIBUTE_UNUSED)
     char *actual = NULL;
     int ret = -1;
 
-    virCommandSetDryRun(&buf, NULL, NULL);
+    virTestSetDryRun(&buf, NULL, NULL);
 
     if (ebiptables_driver.tearOldRules("vnet0") < 0)
         goto cleanup;
@@ -193,7 +189,7 @@ testNWFilterEBIPTablesTearOldRules(const void *opaque ATTRIBUTE_UNUSED)
 
     ret = 0;
  cleanup:
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virBufferFreeAndReset(&buf);
     VIR_FREE(actual);
     return ret;
@@ -224,7 +220,7 @@ testNWFilterEBIPTablesRemoveBasicRules(const void *opaque ATTRIBUTE_UNUSED)
     char *actual = NULL;
     int ret = -1;
 
-    virCommandSetDryRun(&buf, NULL, NULL);
+    virTestSetDryRun(&buf, NULL, NULL);
 
     if (ebiptables_driver.removeBasicRules("vnet0") < 0)
         goto cleanup;
@@ -242,7 +238,7 @@ testNWFilterEBIPTablesRemoveBasicRules(const void *opaque ATTRIBUTE_UNUSED)
 
     ret = 0;
  cleanup:
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virBufferFreeAndReset(&buf);
     VIR_FREE(actual);
     return ret;
@@ -258,7 +254,7 @@ testNWFilterEBIPTablesTearNewRules(const void *opaque ATTRIBUTE_UNUSED)
     char *actual = NULL;
     int ret = -1;
 
-    virCommandSetDryRun(&buf, NULL, NULL);
+    virTestSetDryRun(&buf, NULL, NULL);
 
     if (ebiptables_driver.tearNewRules("vnet0") < 0)
         goto cleanup;
@@ -276,7 +272,7 @@ testNWFilterEBIPTablesTearNewRules(const void *opaque ATTRIBUTE_UNUSED)
 
     ret = 0;
  cleanup:
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virBufferFreeAndReset(&buf);
     VIR_FREE(actual);
     return ret;
@@ -330,7 +326,7 @@ testNWFilterEBIPTablesApplyBasicRules(const void *opaque ATTRIBUTE_UNUSED)
     int ret = -1;
     virMacAddr mac = { .addr = { 0x10, 0x20, 0x30, 0x40, 0x50, 0x60 } };
 
-    virCommandSetDryRun(&buf, NULL, NULL);
+    virTestSetDryRun(&buf, NULL, NULL);
 
     if (ebiptables_driver.applyBasicRules("vnet0", &mac) < 0)
         goto cleanup;
@@ -348,7 +344,7 @@ testNWFilterEBIPTablesApplyBasicRules(const void *opaque ATTRIBUTE_UNUSED)
 
     ret = 0;
  cleanup:
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virBufferFreeAndReset(&buf);
     VIR_FREE(actual);
     return ret;
@@ -420,7 +416,7 @@ testNWFilterEBIPTablesApplyDHCPOnlyRules(const void *opaque ATTRIBUTE_UNUSED)
         }
     };
 
-    virCommandSetDryRun(&buf, NULL, NULL);
+    virTestSetDryRun(&buf, NULL, NULL);
 
     if (ebiptables_driver.applyDHCPOnlyRules("vnet0", &mac, &val, false) < 0)
         goto cleanup;
@@ -438,7 +434,7 @@ testNWFilterEBIPTablesApplyDHCPOnlyRules(const void *opaque ATTRIBUTE_UNUSED)
 
     ret = 0;
  cleanup:
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virBufferFreeAndReset(&buf);
     VIR_FREE(actual);
     return ret;
@@ -493,7 +489,7 @@ testNWFilterEBIPTablesApplyDropAllRules(const void *opaque ATTRIBUTE_UNUSED)
     char *actual = NULL;
     int ret = -1;
 
-    virCommandSetDryRun(&buf, NULL, NULL);
+    virTestSetDryRun(&buf, NULL, NULL);
 
     if (ebiptables_driver.applyDropAllRules("vnet0") < 0)
         goto cleanup;
@@ -511,7 +507,7 @@ testNWFilterEBIPTablesApplyDropAllRules(const void *opaque ATTRIBUTE_UNUSED)
 
     ret = 0;
  cleanup:
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virBufferFreeAndReset(&buf);
     VIR_FREE(actual);
     return ret;

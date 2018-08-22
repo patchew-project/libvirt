@@ -21,14 +21,12 @@
 #include <config.h>
 
 #define __VIR_FIREWALL_PRIV_H_ALLOW__
-#define __VIR_COMMAND_PRIV_H_ALLOW__
 
 #include "testutils.h"
 
 #if defined(__linux__)
 
 # include "virbuffer.h"
-# include "vircommandpriv.h"
 # include "virfirewallpriv.h"
 # include "virmock.h"
 # include "virdbuspriv.h"
@@ -213,7 +211,7 @@ testFirewallSingleGroup(const void *opaque)
         goto cleanup;
 
     if (data->expectBackend == VIR_FIREWALL_BACKEND_DIRECT)
-        virCommandSetDryRun(&cmdbuf, NULL, NULL);
+        virTestSetDryRun(&cmdbuf, NULL, NULL);
     else
         fwBuf = &cmdbuf;
 
@@ -249,7 +247,7 @@ testFirewallSingleGroup(const void *opaque)
  cleanup:
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virFirewallFree(fw);
     return ret;
 }
@@ -273,7 +271,7 @@ testFirewallRemoveRule(const void *opaque)
         goto cleanup;
 
     if (data->expectBackend == VIR_FIREWALL_BACKEND_DIRECT)
-        virCommandSetDryRun(&cmdbuf, NULL, NULL);
+        virTestSetDryRun(&cmdbuf, NULL, NULL);
     else
         fwBuf = &cmdbuf;
 
@@ -315,7 +313,7 @@ testFirewallRemoveRule(const void *opaque)
  cleanup:
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virFirewallFree(fw);
     return ret;
 }
@@ -340,7 +338,7 @@ testFirewallManyGroups(const void *opaque ATTRIBUTE_UNUSED)
         goto cleanup;
 
     if (data->expectBackend == VIR_FIREWALL_BACKEND_DIRECT)
-        virCommandSetDryRun(&cmdbuf, NULL, NULL);
+        virTestSetDryRun(&cmdbuf, NULL, NULL);
     else
         fwBuf = &cmdbuf;
 
@@ -388,19 +386,16 @@ testFirewallManyGroups(const void *opaque ATTRIBUTE_UNUSED)
  cleanup:
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virFirewallFree(fw);
     return ret;
 }
 
-static void
+static int
 testFirewallRollbackHook(const char *const*args,
                          const char *const*env ATTRIBUTE_UNUSED,
                          const char *input ATTRIBUTE_UNUSED,
-                         char **output ATTRIBUTE_UNUSED,
-                         char **error ATTRIBUTE_UNUSED,
-                         int *status,
-                         void *opaque ATTRIBUTE_UNUSED)
+                         const void *opaque ATTRIBUTE_UNUSED)
 {
     bool isAdd = false;
     while (*args) {
@@ -408,11 +403,11 @@ testFirewallRollbackHook(const char *const*args,
         if (STREQ(*args, "-A")) {
             isAdd = true;
         } else if (isAdd && STREQ(*args, "192.168.122.255")) {
-            *status = 127;
-            break;
+            return 127;
         }
         args++;
     }
+    return 0;
 }
 
 static int
@@ -434,7 +429,7 @@ testFirewallIgnoreFailGroup(const void *opaque ATTRIBUTE_UNUSED)
         goto cleanup;
 
     if (data->expectBackend == VIR_FIREWALL_BACKEND_DIRECT) {
-        virCommandSetDryRun(&cmdbuf, testFirewallRollbackHook, NULL);
+        virTestSetDryRun(&cmdbuf, testFirewallRollbackHook, NULL);
     } else {
         fwBuf = &cmdbuf;
         fwError = true;
@@ -484,7 +479,7 @@ testFirewallIgnoreFailGroup(const void *opaque ATTRIBUTE_UNUSED)
  cleanup:
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virFirewallFree(fw);
     return ret;
 }
@@ -509,7 +504,7 @@ testFirewallIgnoreFailRule(const void *opaque ATTRIBUTE_UNUSED)
         goto cleanup;
 
     if (data->expectBackend == VIR_FIREWALL_BACKEND_DIRECT) {
-        virCommandSetDryRun(&cmdbuf, testFirewallRollbackHook, NULL);
+        virTestSetDryRun(&cmdbuf, testFirewallRollbackHook, NULL);
     } else {
         fwBuf = &cmdbuf;
         fwError = true;
@@ -558,7 +553,7 @@ testFirewallIgnoreFailRule(const void *opaque ATTRIBUTE_UNUSED)
  cleanup:
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virFirewallFree(fw);
     return ret;
 }
@@ -581,7 +576,7 @@ testFirewallNoRollback(const void *opaque ATTRIBUTE_UNUSED)
         goto cleanup;
 
     if (data->expectBackend == VIR_FIREWALL_BACKEND_DIRECT) {
-        virCommandSetDryRun(&cmdbuf, testFirewallRollbackHook, NULL);
+        virTestSetDryRun(&cmdbuf, testFirewallRollbackHook, NULL);
     } else {
         fwBuf = &cmdbuf;
         fwError = true;
@@ -629,7 +624,7 @@ testFirewallNoRollback(const void *opaque ATTRIBUTE_UNUSED)
  cleanup:
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virFirewallFree(fw);
     return ret;
 }
@@ -654,7 +649,7 @@ testFirewallSingleRollback(const void *opaque ATTRIBUTE_UNUSED)
         goto cleanup;
 
     if (data->expectBackend == VIR_FIREWALL_BACKEND_DIRECT) {
-        virCommandSetDryRun(&cmdbuf, testFirewallRollbackHook, NULL);
+        virTestSetDryRun(&cmdbuf, testFirewallRollbackHook, NULL);
     } else {
         fwError = true;
         fwBuf = &cmdbuf;
@@ -719,7 +714,7 @@ testFirewallSingleRollback(const void *opaque ATTRIBUTE_UNUSED)
  cleanup:
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virFirewallFree(fw);
     return ret;
 }
@@ -743,7 +738,7 @@ testFirewallManyRollback(const void *opaque ATTRIBUTE_UNUSED)
         goto cleanup;
 
     if (data->expectBackend == VIR_FIREWALL_BACKEND_DIRECT) {
-        virCommandSetDryRun(&cmdbuf, testFirewallRollbackHook, NULL);
+        virTestSetDryRun(&cmdbuf, testFirewallRollbackHook, NULL);
     } else {
         fwBuf = &cmdbuf;
         fwError = true;
@@ -812,7 +807,7 @@ testFirewallManyRollback(const void *opaque ATTRIBUTE_UNUSED)
  cleanup:
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virFirewallFree(fw);
     return ret;
 }
@@ -840,7 +835,7 @@ testFirewallChainedRollback(const void *opaque ATTRIBUTE_UNUSED)
         goto cleanup;
 
     if (data->expectBackend == VIR_FIREWALL_BACKEND_DIRECT) {
-        virCommandSetDryRun(&cmdbuf, testFirewallRollbackHook, NULL);
+        virTestSetDryRun(&cmdbuf, testFirewallRollbackHook, NULL);
     } else {
         fwBuf = &cmdbuf;
         fwError = true;
@@ -935,7 +930,7 @@ testFirewallChainedRollback(const void *opaque ATTRIBUTE_UNUSED)
  cleanup:
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virFirewallFree(fw);
     return ret;
 }
@@ -967,26 +962,26 @@ static const char *expectedLines[] = {
 static size_t expectedLineNum;
 static bool expectedLineError;
 
-static void
+static int
 testFirewallQueryHook(const char *const*args,
                       const char *const*env ATTRIBUTE_UNUSED,
                       const char *input ATTRIBUTE_UNUSED,
-                      char **output,
-                      char **error ATTRIBUTE_UNUSED,
-                      int *status,
-                      void *opaque ATTRIBUTE_UNUSED)
+                      const void *opaque ATTRIBUTE_UNUSED)
 {
     if (STREQ(args[0], IPTABLES_PATH) &&
         STREQ(args[1], "-L")) {
-        if (VIR_STRDUP(*output, TEST_FILTER_TABLE_LIST) < 0)
-            *status = 127;
+        if (safewrite(STDOUT_FILENO, TEST_FILTER_TABLE_LIST,
+                      strlen(TEST_FILTER_TABLE_LIST)) < 0)
+            return 127;
     } else if (STREQ(args[0], IPTABLES_PATH) &&
                STREQ(args[1], "-t") &&
                STREQ(args[2], "nat") &&
                STREQ(args[3], "-L")) {
-        if (VIR_STRDUP(*output, TEST_NAT_TABLE_LIST) < 0)
-            *status = 127;
+        if (safewrite(STDOUT_FILENO, TEST_NAT_TABLE_LIST,
+                      strlen(TEST_NAT_TABLE_LIST)) < 0)
+            return 127;
     }
+    return 0;
 }
 
 
@@ -1044,7 +1039,7 @@ testFirewallQuery(const void *opaque ATTRIBUTE_UNUSED)
         goto cleanup;
 
     if (data->expectBackend == VIR_FIREWALL_BACKEND_DIRECT) {
-        virCommandSetDryRun(&cmdbuf, testFirewallQueryHook, NULL);
+        virTestSetDryRun(&cmdbuf, testFirewallQueryHook, NULL);
     } else {
         fwBuf = &cmdbuf;
         fwError = true;
@@ -1118,7 +1113,7 @@ testFirewallQuery(const void *opaque ATTRIBUTE_UNUSED)
  cleanup:
     virBufferFreeAndReset(&cmdbuf);
     fwBuf = NULL;
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virFirewallFree(fw);
     return ret;
 }

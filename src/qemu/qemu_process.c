@@ -2656,7 +2656,9 @@ qemuProcessKillManagedPRDaemon(virDomainObjPtr vm)
 
 
 static int
-qemuProcessStartPRDaemonHook(void *opaque)
+qemuProcessStartPRDaemonHook(void *opaque,
+                             virCommandPtr ptr ATTRIBUTE_UNUSED,
+                             int *status ATTRIBUTE_UNUSED)
 {
     virDomainObjPtr vm = opaque;
     size_t i, nfds = 0;
@@ -2972,7 +2974,9 @@ struct qemuProcessHookData {
     virQEMUDriverConfigPtr cfg;
 };
 
-static int qemuProcessHook(void *data)
+static int qemuProcessHook(void *data,
+                           virCommandPtr ptr ATTRIBUTE_UNUSED,
+                           int *status ATTRIBUTE_UNUSED)
 {
     struct qemuProcessHookData *h = data;
     qemuDomainObjPrivatePtr priv = h->vm->privateData;

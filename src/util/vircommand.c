@@ -138,11 +138,9 @@ struct _virCommand {
     int mask;
 };
 
-/* See virCommandSetDryRun for description for this variable */
-static virBufferPtr dryRunBuffer;
-static virCommandDryRunCallback dryRunCallback;
-static void *dryRunOpaque;
-static int dryRunStatus;
+/* See virCommandSetPreExecHook for these variable */
+static virExecHook preExecHook;
+static void *preExecOpaque;
 
 /*
  * virCommandFDIsSet:
@@ -717,12 +715,32 @@ virExec(virCommandPtr cmd)
         virProcessSetMaxCoreSize(0, cmd->maxCore) < 0)
         goto fork_error;
 
+    if (preExecHook) {
+        int status = 0;
+        ret = preExecHook(preExecOpaque, cmd, &status);
+        if (ret < 0)
+            goto fork_error;
+
+        if (ret == 1) {
+            /* Child skips followed steps and exits with status in advance. */
+            ret = status;
+            goto fork_error;
+        }
+    }
+
     if (cmd->hook) {
+        int status = 0;
         VIR_DEBUG("Run hook %p %p", cmd->hook, cmd->opaque);
-        ret = cmd->hook(cmd->opaque);
+        ret = cmd->hook(cmd->opaque, cmd, &status);
         VIR_DEBUG("Done hook %d", ret);
         if (ret < 0)
            goto fork_error;
+
+        if (ret == 1) {
+            /* Child skips followed steps and exits with status in advance. */
+            ret = status;
+            goto fork_error;
+        }
     }
 
 # if defined(WITH_SECDRIVER_SELINUX)
@@ -1733,6 +1751,13 @@ virCommandSetInputBuffer(virCommandPtr cmd, const char *inbuf)
 }
 
 
+const char *
+virCommandGetInputBuffer(virCommandPtr cmd)
+{
+    return (const char *) cmd->inbuf;
+}
+
+
 /**
  * virCommandSetOutputBuffer:
  * @cmd: the command to modify
@@ -1879,7 +1904,9 @@ virCommandSetErrorFD(virCommandPtr cmd, int *errfd)
 
 /**
  * virCommandSetPreExecHook:
- * @cmd: the command to modify
+ * @cmd: the command pointer or NULL.
+ *       NonNull, means that it registers a hook for the command
+ *       Null, means that it registers the global PreExecHook
  * @hook: the hook to run
  * @opaque: argument to pass to the hook
  *
@@ -1887,13 +1914,30 @@ virCommandSetErrorFD(virCommandPtr cmd, int *errfd)
  * directories, dropping capabilities, and executing the new process.
  * Force the child to fail if HOOK does not return zero.
  *
+ * There are two types of hooks:
+ * 1. Global hook take effect to all command.
+ *    Setting global hook if passing NULL to @cmd.
+ * 2. Command hook take effect only to the command.
+ *    Passing the pointer of the command to @cmd.
+ *
  * Since @hook runs in the child, it should be careful to avoid
  * any functions that are not async-signal-safe.
+
+ * For global hook, Passing NULL for @cmd, @hook and @opaque to cancel
+ * the effect.
  */
 void
 virCommandSetPreExecHook(virCommandPtr cmd, virExecHook hook, void *opaque)
 {
-    if (!cmd || cmd->has_error)
+    if (!cmd) {
+        /* Global hook */
+        preExecHook = hook;
+        preExecOpaque = opaque;
+        return;
+    }
+
+    /* Command hook */
+    if (cmd->has_error)
         return;
 
     if (cmd->hook) {
@@ -2016,11 +2060,6 @@ virCommandProcessIO(virCommandPtr cmd)
     size_t inlen = 0, outlen = 0, errlen = 0;
     size_t inoff = 0;
     int ret = 0;
-
-    if (dryRunBuffer || dryRunCallback) {
-        VIR_DEBUG("Dry run requested, skipping I/O processing");
-        return 0;
-    }
 
     /* With an input buffer, feed data to child
      * via pipe */
@@ -2439,31 +2478,6 @@ virCommandRunAsync(virCommandPtr cmd, pid_t *pid)
         goto cleanup;
     }
 
-    str = virCommandToString(cmd);
-    if (dryRunBuffer || dryRunCallback) {
-        dryRunStatus = 0;
-        if (!str) {
-            /* error already reported by virCommandToString */
-            goto cleanup;
-        }
-
-        if (dryRunBuffer) {
-            VIR_DEBUG("Dry run requested, appending stringified "
-                      "command to dryRunBuffer=%p", dryRunBuffer);
-            virBufferAdd(dryRunBuffer, str, -1);
-            virBufferAddChar(dryRunBuffer, '\n');
-        }
-        if (dryRunCallback) {
-            dryRunCallback((const char *const*)cmd->args,
-                           (const char *const*)cmd->env,
-                           cmd->inbuf, cmd->outbuf, cmd->errbuf,
-                           &dryRunStatus, dryRunOpaque);
-        }
-        ret = 0;
-        goto cleanup;
-    }
-
-    VIR_DEBUG("About to run %s", str ? str : cmd->args[0]);
     ret = virExec(cmd);
     VIR_DEBUG("Command result %d, with PID %d",
               ret, (int)cmd->pid);
@@ -2535,16 +2549,6 @@ virCommandWait(virCommandPtr cmd, int *exitstatus)
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("invalid use of command API"));
         return -1;
-    }
-
-    if (dryRunBuffer || dryRunCallback) {
-        VIR_DEBUG("Dry run requested, returning status %d",
-                  dryRunStatus);
-        if (exitstatus)
-            *exitstatus = dryRunStatus;
-        else if (dryRunStatus)
-            return -1;
-        return 0;
     }
 
     if (cmd->pid == -1) {
@@ -2878,47 +2882,20 @@ virCommandDoAsyncIO(virCommandPtr cmd)
    cmd->flags |= VIR_EXEC_ASYNC_IO | VIR_EXEC_NONBLOCK;
 }
 
-/**
- * virCommandSetDryRun:
- * @buf: buffer to store stringified commands
- * @callback: callback to process input/output/args
- *
- * Sometimes it's desired to not actually run given command, but
- * see its string representation without having to change the
- * callee. Unit testing serves as a great example. In such cases,
- * the callee constructs the command and calls it via
- * virCommandRun* API. The virCommandSetDryRun allows you to
- * modify this behavior: once called, every call to
- * virCommandRun* results in command string representation being
- * appended to @buf instead of being executed. If @callback is
- * provided, then it is invoked with the argv, env and stdin
- * data string for the command. It is expected to fill the stdout
- * and stderr data strings and exit status variables.
- *
- * The strings stored in @buf are escaped for a shell and
- * separated by a newline. For example:
- *
- * virBuffer buffer = VIR_BUFFER_INITIALIZER;
- * virCommandSetDryRun(&buffer);
- *
- * virCommandPtr echocmd = virCommandNewArgList("/bin/echo", "Hello world", NULL);
- * virCommandRun(echocmd, NULL);
- *
- * After this, the @buffer should contain:
- *
- * /bin/echo 'Hello world'\n
- *
- * To cancel this effect pass NULL for @buf and @callback.
- */
-void
-virCommandSetDryRun(virBufferPtr buf,
-                    virCommandDryRunCallback cb,
-                    void *opaque)
+
+const char *const*
+virCommandGetArgs(virCommandPtr cmd)
 {
-    dryRunBuffer = buf;
-    dryRunCallback = cb;
-    dryRunOpaque = opaque;
+    return (const char *const*) cmd->args;
 }
+
+
+const char *const*
+virCommandGetEnv(virCommandPtr cmd)
+{
+    return (const char *const*) cmd->env;
+}
+
 
 #ifndef WIN32
 /**

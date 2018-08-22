@@ -21,8 +21,6 @@
 #include <config.h>
 
 #include "testutils.h"
-#define __VIR_COMMAND_PRIV_H_ALLOW__
-#include "vircommandpriv.h"
 #include "virnetdevbandwidth.h"
 #include "netdev_bandwidth_conf.c"
 
@@ -79,7 +77,7 @@ testVirNetDevBandwidthSet(const void *data)
     if (!iface)
         iface = "eth0";
 
-    virCommandSetDryRun(&buf, NULL, NULL);
+    virTestSetDryRun(&buf, NULL, NULL);
 
     if (virNetDevBandwidthSet(iface, band, info->hierarchical_class, true) < 0)
         goto cleanup;
@@ -103,7 +101,7 @@ testVirNetDevBandwidthSet(const void *data)
 
     ret = 0;
  cleanup:
-    virCommandSetDryRun(NULL, NULL, NULL);
+    virTestSetDryRun(NULL, NULL, NULL);
     virNetDevBandwidthFree(band);
     virBufferFreeAndReset(&buf);
     VIR_FREE(actual_cmd);

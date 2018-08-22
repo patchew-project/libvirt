@@ -167,4 +167,6 @@ int testCompareDomXML2XMLFiles(virCapsPtr caps,
                                unsigned int parseFlags,
                                testCompareDomXML2XMLResult expectResult);
 
+void virTestSetDryRun(virBufferPtr buf, void *callback, void *opaque);
+
 #endif /* __VIR_TEST_UTILS_H__ */

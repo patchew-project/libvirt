@@ -20,7 +20,7 @@
  */
 
 #ifndef __VIR_COMMAND_PRIV_H_ALLOW__
-# error "vircommandpriv.h may only be included by vircommand.c or test suites"
+# error "vircommandpriv.h may only be included by vircommand.c or testutils.c"
 #endif
 
 #ifndef __VIR_COMMAND_PRIV_H__
@@ -28,16 +28,13 @@
 
 # include "vircommand.h"
 
-typedef void (*virCommandDryRunCallback)(const char *const*args,
-                                         const char *const*env,
-                                         const char *input,
-                                         char **output,
-                                         char **error,
-                                         int *status,
-                                         void *opaque);
+const char *const*
+virCommandGetArgs(virCommandPtr cmd);
 
-void virCommandSetDryRun(virBufferPtr buf,
-                         virCommandDryRunCallback cb,
-                         void *opaque);
+const char *const*
+virCommandGetEnv(virCommandPtr cmd);
+
+const char *
+virCommandGetInputBuffer(virCommandPtr cmd);
 
 #endif /* __VIR_COMMAND_PRIV_H__ */

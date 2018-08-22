@@ -48,6 +48,9 @@
 #include "virprocess.h"
 #include "virstring.h"
 
+#define __VIR_COMMAND_PRIV_H_ALLOW__
+#include "vircommandpriv.h"
+
 #ifdef TEST_OOM
 # ifdef TEST_OOM_TRACE
 #  include <dlfcn.h>
@@ -1413,4 +1416,211 @@ const char
     snprintf(virtTestCounterPrefixEndOffset, len, "%d", ++virtTestCounter);
 
     return virtTestCounterStr;
+}
+
+
+#define VIR_TEST_DRYRUN_PIPE "/tmp/vir_test_pipe"
+
+/* According to old virCommandDryRunCallback */
+typedef int (*dryRunCallback)(const char *const*args,
+                              const char *const*env,
+                              const char *input,
+                              const void *opaque);
+
+typedef struct _dryRunHookData dryRunHookData;
+typedef dryRunHookData *dryRunHookDataPtr;
+
+struct _dryRunHookData
+{
+    dryRunCallback callback;
+    void *opaque;
+    virBufferPtr buffer;
+    virThreadPtr thread;
+    int readfd;
+};
+
+static dryRunHookData hookdata = { NULL, NULL, NULL, NULL, -1 };
+
+
+/* of virExecHook type */
+static int
+dryRunHookForTest(void *opaque, virCommandPtr cmd, int *status)
+{
+    dryRunHookDataPtr data = opaque;
+
+    virThreadCancel(data->thread);
+    virThreadJoin(data->thread);
+    VIR_FREE(data->thread);
+    if (data->readfd != -1)
+        VIR_FORCE_CLOSE(data->readfd);
+
+    if (!status)
+        return -1;
+
+    *status = 0;
+
+    if (data->buffer) {
+        int fd;
+        int len = 0;
+        int pos = 0;
+        VIR_AUTOFREE(char *) str = NULL;
+        str = virCommandToString(cmd);
+        if (!str)
+            return -1;
+
+        len = strlen(str);
+        if (len == 0)
+            return -1;
+
+        if ((fd = open(VIR_TEST_DRYRUN_PIPE, O_WRONLY)) < 0)
+            return -1;
+
+        while (len > 0) {
+            int size = len > PIPE_BUF ? PIPE_BUF : len;
+            if (safewrite(fd, str + pos, size) != size) {
+                VIR_FORCE_CLOSE(fd);
+                return -1;
+            }
+            pos += size;
+            len -= size;
+        }
+
+        if (safewrite(fd, "\n", 1) != 1) {
+            VIR_FORCE_CLOSE(fd);
+            return -1;
+        }
+
+        VIR_FORCE_CLOSE(fd);
+    }
+
+    if (data->callback) {
+        *status = data->callback(virCommandGetArgs(cmd),
+                                 virCommandGetEnv(cmd),
+                                 virCommandGetInputBuffer(cmd),
+                                 data->opaque);
+    }
+
+    /* For dry-run:
+     * It returns 1 to exit from child in advance */
+    return 1;
+}
+
+
+static void
+dryRunWaitHelper(void *opaque)
+{
+    int *fd = (int *) opaque;
+    while (true) {
+        if ((*fd = open(VIR_TEST_DRYRUN_PIPE, O_RDONLY)) < 0) {
+            fprintf(stderr, "cannot open dryrun pipe for read\n");
+            return;
+        }
+
+        while (true) {
+            int ret;
+            char str[PIPE_BUF];
+            memset(str, 0, sizeof(str));
+            ret = read(*fd, str, PIPE_BUF);
+            if (ret < 0) {
+                fprintf(stderr, "read dryrun pipe error: %d\n", errno);
+                VIR_FORCE_CLOSE(*fd);
+                return;
+            }
+
+            if (ret == 0)
+                break;
+
+            virBufferAdd(hookdata.buffer, str, ret);
+        }
+
+        VIR_FORCE_CLOSE(*fd);
+    }
+
+    /* Never reach here */
+}
+
+
+/**
+ * virTestSetDryRun: (substitute for old virCommandSetDryRun)
+ * @buf: buffer to store stringified commands
+ * @callback: callback to process input/output/args
+ * @opaque: argument passed to callback
+ *
+ * In unit testing, it's desired to not actually run given command,
+ * but see its string representation without having to change the
+ * callee. The callee constructs the command and calls it via
+ * virCommandRun* API. The virTestSetDryRun allows you to
+ * modify this behavior: once called, every call to
+ * virCommandRun* results in command string representation being
+ * appended to @buf instead of being executed. If @callback is
+ * provided, then it is invoked with the argv, env and stdin
+ * data string for the command. It is expected to fill the stdout
+ * and stderr data strings and exit status variables.
+ *
+ * The strings stored in @buf are escaped for a shell and
+ * separated by a newline. For example:
+ *
+ * virBuffer buffer = VIR_BUFFER_INITIALIZER;
+ * virTestSetDryRun(&buffer, NULL, NULL);
+ *
+ * virCommandPtr echocmd = virCommandNewArgList("/bin/echo", "Hello world", NULL);
+ * virCommandRun(echocmd, NULL);
+ *
+ * After this, the @buffer should contain:
+ *
+ * /bin/echo 'Hello world'\n
+ *
+ * To cancel this effect pass NULL for @buf, @callback and @opaque.
+ * virTestSetDryRun(NULL, NULL, NULL);
+ *
+ */
+void
+virTestSetDryRun(virBufferPtr buf, void *callback, void *opaque)
+{
+    if (!buf && !callback && !opaque) {
+        /* Passing NULL for @buf, @callback and @opaque to cancel dry-run */
+        if (hookdata.thread) {
+            virThreadCancel(hookdata.thread);
+            virThreadJoin(hookdata.thread);
+            VIR_FREE(hookdata.thread);
+        }
+
+        hookdata.buffer = NULL;
+        hookdata.callback = NULL;
+        hookdata.opaque = NULL;
+        if (hookdata.readfd != -1)
+            VIR_FORCE_CLOSE(hookdata.readfd);
+
+        virCommandSetPreExecHook(NULL, NULL, NULL);
+        unlink(VIR_TEST_DRYRUN_PIPE);
+        return;
+    }
+
+    if (hookdata.buffer || hookdata.callback || hookdata.opaque || hookdata.thread) {
+        fprintf(stderr, "cannot set dryrun twice buf(%p) cb(%p) opaque(%p) thread(%p)\n",
+                hookdata.buffer, hookdata.callback, hookdata.opaque, hookdata.thread);
+        return;
+    }
+
+    if (hookdata.readfd != -1)
+        VIR_FORCE_CLOSE(hookdata.readfd);
+
+    if (!virFileExists(VIR_TEST_DRYRUN_PIPE)) {
+        if (mkfifo(VIR_TEST_DRYRUN_PIPE, 0600) < 0) {
+            fprintf(stderr, "cannot create dryrun pipe. err: %d\n", errno);
+            return;
+        }
+    }
+
+    if (VIR_ALLOC(hookdata.thread) < 0 ||
+        virThreadCreate(hookdata.thread, true, dryRunWaitHelper, &hookdata.readfd) < 0) {
+        fprintf(stderr, "cannot create thread for dryrun. err: %d\n", errno);
+        VIR_FREE(hookdata.thread);
+        return;
+    }
+
+    hookdata.buffer = buf;
+    hookdata.callback = callback;
+    hookdata.opaque = opaque;
+    virCommandSetPreExecHook(NULL, dryRunHookForTest, &hookdata);
 }

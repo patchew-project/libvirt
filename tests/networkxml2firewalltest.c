@@ -31,9 +31,6 @@
 # define __VIR_FIREWALL_PRIV_H_ALLOW__
 # include "virfirewallpriv.h"
 
-# define __VIR_COMMAND_PRIV_H_ALLOW__
-# include "vircommandpriv.h"
-
 # define VIR_FROM_THIS VIR_FROM_NONE
 
 static const char *abs_top_srcdir;
@@ -53,7 +50,7 @@ static int testCompareXMLToArgvFiles(const char *xml,
     virNetworkDefPtr def = NULL;
     int ret = -1;
 
-    virCommandSetDryRun(&buf, NULL, NULL);
+    virTestSetDryRun(&buf, NULL, NULL);
 
     if (!(def = virNetworkDefParseFile(xml)))
         goto cleanup;
@@ -66,7 +63,6 @@ static int testCompareXMLToArgvFiles(const char *xml,
 
     actualargv = virBufferContentAndReset(&buf);
     virTestClearCommandPath(actualargv);
-    virCommandSetDryRun(NULL, NULL, NULL);
 
     if (virTestCompareToFile(actualargv, cmdline) < 0)
         goto cleanup;
@@ -74,6 +70,7 @@ static int testCompareXMLToArgvFiles(const char *xml,
     ret = 0;
 
  cleanup:
+    virTestSetDryRun(NULL, NULL, NULL);
     virBufferFreeAndReset(&buf);
     VIR_FREE(expectargv);
     VIR_FREE(actualargv);
