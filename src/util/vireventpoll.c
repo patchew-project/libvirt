@@ -643,6 +643,12 @@ int virEventPollRunOnce(void)
         EVENT_DEBUG("Poll got error event %d", errno);
         if (errno == EINTR || errno == EAGAIN)
             goto retry;
+#ifdef __APPLE__
+        if (errno == EBADF) {
+            virMutexLock(&eventLoop.lock);
+            goto stop;
+        }
+#endif
         virReportSystemError(errno, "%s",
                              _("Unable to poll on file handles"));
         return -1;
@@ -660,6 +666,7 @@ int virEventPollRunOnce(void)
     virEventPollCleanupTimeouts();
     virEventPollCleanupHandles();
 
+ stop:
     eventLoop.running = 0;
     virMutexUnlock(&eventLoop.lock);
     return 0;
