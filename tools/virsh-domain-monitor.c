@@ -475,6 +475,7 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
     int ndisks;
     size_t i;
     xmlNodePtr *disks = NULL;
+    char *source = NULL;
     char *target = NULL;
     char *protocol = NULL;
 
@@ -505,18 +506,20 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
 
         for (i = 0; i < ndisks; i++) {
             ctxt->node = disks[i];
+            source = virXPathString("string(./source)", ctxt);
             protocol = virXPathString("string(./source/@protocol)", ctxt);
             target = virXPathString("string(./target/@dev)", ctxt);
 
             rc = virDomainGetBlockInfo(dom, target, &info, 0);
 
             if (rc < 0) {
-                /* If protocol is present that's an indication of a networked
-                 * storage device which cannot provide statistics, so generate
-                 * 0 based data and get the next disk. */
-                if (protocol && !active &&
+                /* For the case of empty cdrom, networked disk which cannot
+                 * provide statistics, generate 0 based data and get the next
+                 * disk.
+                 */
+                if (!source || (protocol && !active &&
                     virGetLastErrorCode() == VIR_ERR_INTERNAL_ERROR &&
-                    virGetLastErrorDomain() == VIR_FROM_STORAGE) {
+                    virGetLastErrorDomain() == VIR_FROM_STORAGE)) {
                     memset(&info, 0, sizeof(info));
                     vshResetLibvirtError();
                 } else {
@@ -526,6 +529,7 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
 
             cmdDomblkinfoPrint(ctl, &info, target, human, false);
 
+            VIR_FREE(source);
             VIR_FREE(target);
             VIR_FREE(protocol);
         }
@@ -540,6 +544,7 @@ cmdDomblkinfo(vshControl *ctl, const vshCmd *cmd)
 
  cleanup:
     virshDomainFree(dom);
+    VIR_FREE(source);
     VIR_FREE(target);
     VIR_FREE(protocol);
     VIR_FREE(disks);
