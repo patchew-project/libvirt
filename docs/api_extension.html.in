@@ -363,9 +363,7 @@
     <p>
       Once you have working functionality, run make check and make
       syntax-check on each patch of the series before submitting
-      patches.  It may also be worth writing tests for the libvirt-TCK
-      testsuite to exercise your new API, although those patches are
-      not kept in the libvirt repository.
+      patches.
     </p>
   </body>
 </html>
