@@ -489,6 +489,110 @@ virNetlinkDumpLink(const char *ifname, int ifindex,
 
 
 /**
+ * virNetlinkNewLink:
+ *
+ * @ifindex: The index for the 'link' device
+ * @ifname: The name of the link
+ * @mac: The MAC address of the device
+ * @type: The type of device, i.e., "bridge", "macvtap", "macvlan"
+ * @cb: The callback for filling in IFLA_INFO_DATA for this type
+ * @opaque: opaque for the callback
+ * @error: for retrieving error code
+ *
+ * Create a network "link" (aka interface aka device) with the given
+ * args. This works for many different types of network devices,
+ * including macvtap and bridges.
+ *
+ * Returns 0 on success, -1 on fatal error.
+ */
+int
+virNetlinkNewLink(const int *ifindex,
+                  const char *ifname,
+                  const virMacAddr *mac,
+                  const char *type,
+                  virNetlinkNewLinkCallback cb,
+                  const void *opaque,
+                  int *error)
+{
+    struct nlmsgerr *err;
+    struct nlattr *linkinfo;
+    unsigned int buflen;
+    struct ifinfomsg ifinfo = { .ifi_family = AF_UNSPEC };
+    VIR_AUTOPTR(virNetlinkMsg) nl_msg = NULL;
+    VIR_AUTOFREE(struct nlmsghdr *) resp = NULL;
+
+    *error = 0;
+
+    nl_msg = nlmsg_alloc_simple(RTM_NEWLINK,
+                                NLM_F_REQUEST | NLM_F_CREATE | NLM_F_EXCL);
+    if (!nl_msg) {
+        virReportOOMError();
+        return -1;
+    }
+
+    if (nlmsg_append(nl_msg,  &ifinfo, sizeof(ifinfo), NLMSG_ALIGNTO) < 0)
+        goto buffer_too_small;
+
+    if (ifindex && nla_put_u32(nl_msg, IFLA_LINK, *ifindex) < 0)
+        goto buffer_too_small;
+
+    if (mac && nla_put(nl_msg, IFLA_ADDRESS, VIR_MAC_BUFLEN, mac) < 0)
+        goto buffer_too_small;
+
+    if (ifname && nla_put(nl_msg, IFLA_IFNAME, strlen(ifname)+1, ifname) < 0)
+        goto buffer_too_small;
+
+    if (!(linkinfo = nla_nest_start(nl_msg, IFLA_LINKINFO)))
+        goto buffer_too_small;
+
+    if (nla_put(nl_msg, IFLA_INFO_KIND, strlen(type), type) < 0)
+        goto buffer_too_small;
+
+    if (cb && cb(nl_msg, opaque) < 0)
+        return -1;
+
+    nla_nest_end(nl_msg, linkinfo);
+
+    if (virNetlinkCommand(nl_msg, &resp, &buflen, 0, 0, NETLINK_ROUTE, 0) < 0)
+        return -1;
+
+    if (buflen < NLMSG_LENGTH(0) || resp == NULL)
+        goto malformed_resp;
+
+    switch (resp->nlmsg_type) {
+    case NLMSG_ERROR:
+        err = (struct nlmsgerr *)NLMSG_DATA(resp);
+        if (resp->nlmsg_len < NLMSG_LENGTH(sizeof(*err)))
+            goto malformed_resp;
+
+        if (err->error < 0) {
+            *error = err->error;
+            return -1;
+        }
+        break;
+
+    case NLMSG_DONE:
+        break;
+
+    default:
+        goto malformed_resp;
+    }
+
+    return 0;
+
+ malformed_resp:
+    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                   _("malformed netlink response message"));
+    return -1;
+
+ buffer_too_small:
+    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                   _("allocated netlink buffer is too small"));
+    return -1;
+}
+
+
+/**
  * virNetlinkDelLink:
  *
  * @ifname:   Name of the link

@@ -65,6 +65,14 @@ int virNetlinkDumpCommand(struct nl_msg *nl_msg,
                           unsigned int protocol, unsigned int groups,
                           void *opaque);
 
+typedef int (*virNetlinkNewLinkCallback)(struct nl_msg *nl_msg,
+                                         const void *opaque);
+
+int virNetlinkNewLink(const int *ifindex, const char *ifname,
+                      const virMacAddr *macaddress, const char *type,
+                      virNetlinkNewLinkCallback cb, const void *opaque,
+                      int *error);
+
 typedef int (*virNetlinkDelLinkFallback)(const char *ifname);
 
 int virNetlinkDelLink(const char *ifname, virNetlinkDelLinkFallback fallback);
