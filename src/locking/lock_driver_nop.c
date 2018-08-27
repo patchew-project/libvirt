@@ -102,6 +102,12 @@ static int virLockManagerNopInquire(virLockManagerPtr lock ATTRIBUTE_UNUSED,
     return 0;
 }
 
+static int virLockManagerLockNopCloseConn(virLockManagerPtr lock ATTRIBUTE_UNUSED,
+                                          unsigned int flags_unused ATTRIBUTE_UNUSED)
+{
+    return 1;
+}
+
 static void virLockManagerNopFree(virLockManagerPtr lock ATTRIBUTE_UNUSED)
 {
 }
@@ -122,6 +128,8 @@ virLockDriver virLockDriverNop =
 
     .drvAcquire = virLockManagerNopAcquire,
     .drvRelease = virLockManagerNopRelease,
+
+    .drvCloseConn = virLockManagerLockNopCloseConn,
 
     .drvInquire = virLockManagerNopInquire,
 };

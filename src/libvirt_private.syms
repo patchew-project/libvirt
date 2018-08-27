@@ -1297,6 +1297,7 @@ virDomainLockProcessStart;
 virLockManagerAcquire;
 virLockManagerAddResource;
 virLockManagerClearResources;
+virLockManagerCloseConn;
 virLockManagerFree;
 virLockManagerInquire;
 virLockManagerNew;

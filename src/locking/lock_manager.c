@@ -382,6 +382,17 @@ int virLockManagerRelease(virLockManagerPtr lock,
 }
 
 
+int virLockManagerCloseConn(virLockManagerPtr lock,
+                            unsigned int flags)
+{
+    VIR_DEBUG("lock=%p flags=0x%x", lock, flags);
+
+    CHECK_MANAGER(drvCloseConn, -1);
+
+    return lock->driver->drvCloseConn(lock, flags);
+}
+
+
 int virLockManagerInquire(virLockManagerPtr lock,
                           char **state,
                           unsigned int flags)

@@ -283,6 +283,27 @@ typedef int (*virLockDriverRelease)(virLockManagerPtr man,
                                     unsigned int flags);
 
 /**
+ * virLockDriverCloseConn:
+ * @man: the lock manager context
+ * @flags: optional flags, currently unused
+ *
+ * Close any connection that was saved via
+ * VIR_LOCK_MANAGER_ACQUIRE_KEEP_OPEN or
+ * VIR_LOCK_MANAGER_RELEASE_KEEP_OPEN flags.
+ * However, if there is still a resource locked, do not actually
+ * close the connection as it would result in killing the
+ * resource owner. This is similar to refcounting when all
+ * threads call virLockDriverCloseConn() but only the last one
+ * actually closes the connection.
+ *
+ * Returns: 0 on success and connection not actually closed,
+ *          1 on success and connection closed,
+ *         -1 otherwise
+ */
+typedef int (*virLockDriverCloseConn)(virLockManagerPtr man,
+                                      unsigned int flags);
+
+/**
  * virLockDriverInquire:
  * @manager: the lock manager context
  * @state: pointer to be filled with lock state
@@ -328,6 +349,7 @@ struct _virLockDriver {
 
     virLockDriverAcquire drvAcquire;
     virLockDriverRelease drvRelease;
+    virLockDriverCloseConn drvCloseConn;
     virLockDriverInquire drvInquire;
 };
 

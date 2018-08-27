@@ -64,6 +64,10 @@ int virLockManagerAcquire(virLockManagerPtr manager,
 int virLockManagerRelease(virLockManagerPtr manager,
                           char **state,
                           unsigned int flags);
+
+int virLockManagerCloseConn(virLockManagerPtr lock,
+                            unsigned int flags);
+
 int virLockManagerInquire(virLockManagerPtr manager,
                           char **state,
                           unsigned int flags);

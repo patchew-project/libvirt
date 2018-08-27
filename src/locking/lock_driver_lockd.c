@@ -937,6 +937,28 @@ static int virLockManagerLockDaemonRelease(virLockManagerPtr lock,
 }
 
 
+static int virLockManagerLockDaemonCloseConn(virLockManagerPtr lock,
+                                             unsigned int flags)
+{
+    virLockManagerLockDaemonPrivatePtr priv = lock->privateData;
+
+    virCheckFlags(0, -1);
+
+    if (priv->clientRefs)
+        return 0;
+
+    virNetClientClose(priv->client);
+    virObjectUnref(priv->client);
+    virObjectUnref(priv->program);
+
+    priv->client = NULL;
+    priv->program = NULL;
+    priv->counter = 0;
+
+    return 1;
+}
+
+
 static int virLockManagerLockDaemonInquire(virLockManagerPtr lock ATTRIBUTE_UNUSED,
                                            char **state,
                                            unsigned int flags)
@@ -965,6 +987,8 @@ virLockDriver virLockDriverImpl =
 
     .drvAcquire = virLockManagerLockDaemonAcquire,
     .drvRelease = virLockManagerLockDaemonRelease,
+
+    .drvCloseConn = virLockManagerLockDaemonCloseConn,
 
     .drvInquire = virLockManagerLockDaemonInquire,
 };
