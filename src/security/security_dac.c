@@ -563,9 +563,6 @@ virSecurityDACSetOwnershipInternal(const virSecurityDACData *priv,
     else if (rc > 0)
         return 0;
 
-    VIR_INFO("Setting DAC user and group on '%s' to '%ld:%ld'",
-             NULLSTR(src ? src->path : path), (long)uid, (long)gid);
-
     if (priv && src && priv->chownCallback) {
         rc = priv->chownCallback(src, uid, gid);
         /* here path is used only for error messages */
@@ -649,6 +646,9 @@ virSecurityDACSetOwnership(virSecurityManagerPtr mgr,
             return -1;
     }
 
+    VIR_INFO("Setting DAC user and group on '%s' to '%ld:%ld'",
+             NULLSTR(src ? src->path : path), (long)uid, (long)gid);
+
     return virSecurityDACSetOwnershipInternal(priv, src, path, uid, gid);
 }
 
@@ -663,9 +663,6 @@ virSecurityDACRestoreFileLabelInternal(virSecurityManagerPtr mgr,
     uid_t uid = 0;  /* By default return to root:root */
     gid_t gid = 0;
 
-    VIR_INFO("Restoring DAC user and group on '%s'",
-             NULLSTR(src ? src->path : path));
-
     if (!path && src && src->path &&
         virStorageSourceIsLocalStorage(src))
         path = src->path;
@@ -677,6 +674,9 @@ virSecurityDACRestoreFileLabelInternal(virSecurityManagerPtr mgr,
         if (rv > 0)
             return 0;
     }
+
+    VIR_INFO("Restoring DAC user and group on '%s' to %ld:%ld",
+             NULLSTR(src ? src->path : path), (long)uid, (long)gid);
 
     return virSecurityDACSetOwnershipInternal(priv, src, path, uid, gid);
 }
