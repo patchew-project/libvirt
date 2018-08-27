@@ -2082,22 +2082,91 @@ virResctrlAllocAssign(virResctrlInfoPtr resctrl,
 }
 
 
+static int
+virResctrlDeterminePath(const char *id,
+                        const char *root,
+                        const char *parentpath,
+                        const char *prefix,
+                        char **path)
+{
+    if (!id) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Resctrl resource ID must be set before creation"));
+        return -1;
+    }
+
+    if (*path) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Resctrl group (%s) already created, path=%s."),
+                      id, *path);
+        return -1;
+    }
+
+    if (!parentpath && !root) {
+        if (virAsprintf(path, "%s/%s-%s",
+                        SYSFS_RESCTRL_PATH, prefix, id) < 0)
+            return -1;
+    } else if (!parentpath) {
+        if (virAsprintf(path, "%s/%s/%s-%s",
+                        SYSFS_RESCTRL_PATH, parentpath, prefix, id) < 0)
+            return -1;
+    } else {
+        if (virAsprintf(path, "%s/%s/%s-%s",
+                        root, parentpath, prefix, id) < 0)
+            return -1;
+    }
+
+    return 0;
+}
+
+
 int
 virResctrlAllocDeterminePath(virResctrlAllocPtr alloc,
                              const char *machinename)
 {
-    if (!alloc->id) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Resctrl Allocation ID must be set before creation"));
+    return virResctrlDeterminePath(alloc->id, NULL, NULL,
+                                   machinename, &alloc->path);
+}
+
+static int
+virResctrlCreateGroup(virResctrlInfoPtr resctrl,
+                      char *path)
+{
+    int ret = -1;
+    int lockfd = -1;
+
+    if (!path)
+        return -1;
+
+    if (virResctrlInfoIsEmpty(resctrl)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("Resource control is not supported on this host"));
         return -1;
     }
 
-    if (!alloc->path &&
-        virAsprintf(&alloc->path, "%s/%s-%s",
-                    SYSFS_RESCTRL_PATH, machinename, alloc->id) < 0)
-        return -1;
+    if (STREQ(path, SYSFS_RESCTRL_PATH))
+        return 0;
 
-    return 0;
+    if (virFileExists(path)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Path '%s' for resctrl resource group exists"), path);
+        goto cleanup;
+    }
+
+    lockfd = virResctrlLockWrite();
+    if (lockfd < 0)
+        goto cleanup;
+
+    if (virFileMakePath(path) < 0) {
+        virReportSystemError(errno,
+                             _("Cannot create resctrl directory '%s'"), path);
+        goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    virResctrlUnlock(lockfd);
+    return ret;
 }
 
 
@@ -2116,21 +2185,11 @@ virResctrlAllocCreate(virResctrlInfoPtr resctrl,
     if (!alloc)
         return 0;
 
-    if (virResctrlInfoIsEmpty(resctrl)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("Resource control is not supported on this host"));
-        return -1;
-    }
-
     if (virResctrlAllocDeterminePath(alloc, machinename) < 0)
         return -1;
 
-    if (virFileExists(alloc->path)) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Path '%s' for resctrl allocation exists"),
-                       alloc->path);
-        goto cleanup;
-    }
+    if (virResctrlCreateGroup(resctrl, alloc->path) < 0)
+        return -1;
 
     lockfd = virResctrlLockWrite();
     if (lockfd < 0)
@@ -2145,13 +2204,6 @@ virResctrlAllocCreate(virResctrlInfoPtr resctrl,
 
     if (virAsprintf(&schemata_path, "%s/schemata", alloc->path) < 0)
         goto cleanup;
-
-    if (virFileMakePath(alloc->path) < 0) {
-        virReportSystemError(errno,
-                             _("Cannot create resctrl directory '%s'"),
-                             alloc->path);
-        goto cleanup;
-    }
 
     VIR_DEBUG("Writing resctrl schemata '%s' into '%s'", alloc_str, schemata_path);
     if (virFileWriteStr(schemata_path, alloc_str, 0) < 0) {
@@ -2171,21 +2223,21 @@ virResctrlAllocCreate(virResctrlInfoPtr resctrl,
 }
 
 
-int
-virResctrlAllocAddPID(virResctrlAllocPtr alloc,
-                      pid_t pid)
+static int
+virResctrlAddPID(char *path,
+                 pid_t pid)
 {
     char *tasks = NULL;
     char *pidstr = NULL;
     int ret = 0;
 
-    if (!alloc->path) {
+    if (!path) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Cannot add pid to non-existing resctrl allocation"));
+                       _("Cannot add pid to non-existing resctrl group"));
         return -1;
     }
 
-    if (virAsprintf(&tasks, "%s/tasks", alloc->path) < 0)
+    if (virAsprintf(&tasks, "%s/tasks", path) < 0)
         return -1;
 
     if (virAsprintf(&pidstr, "%lld", (long long int) pid) < 0)
@@ -2203,6 +2255,14 @@ virResctrlAllocAddPID(virResctrlAllocPtr alloc,
     VIR_FREE(tasks);
     VIR_FREE(pidstr);
     return ret;
+}
+
+
+int
+virResctrlAllocAddPID(virResctrlAllocPtr alloc,
+                      pid_t pid)
+{
+    return virResctrlAddPID(alloc->path, pid);
 }
 
 
