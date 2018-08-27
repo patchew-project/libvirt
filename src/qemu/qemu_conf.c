@@ -129,6 +129,9 @@ void qemuDomainCmdlineDefFree(qemuDomainCmdlineDefPtr def)
 #endif
 
 
+/* Give up waiting for mutex after 30 seconds */
+#define QEMU_JOB_WAIT_TIME (1000ull * 30)
+
 virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
 {
     virQEMUDriverConfigPtr cfg;
@@ -345,6 +348,8 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
     cfg->logTimestamp = true;
     cfg->glusterDebugLevel = 4;
     cfg->stdioLogD = true;
+
+    cfg->stateLockTimeout = QEMU_JOB_WAIT_TIME;
 
     if (!(cfg->namespaces = virBitmapNew(QEMU_DOMAIN_NS_LAST)))
         goto error;
@@ -861,6 +866,9 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
     if (virConfGetValueInt(conf, "keepalive_interval", &cfg->keepAliveInterval) < 0)
         goto cleanup;
     if (virConfGetValueUInt(conf, "keepalive_count", &cfg->keepAliveCount) < 0)
+        goto cleanup;
+
+    if (virConfGetValueInt(conf, "state_lock_timeout", &cfg->stateLockTimeout) < 0)
         goto cleanup;
 
     if (virConfGetValueInt(conf, "seccomp_sandbox", &cfg->seccompSandbox) < 0)

@@ -105,3 +105,4 @@ module Test_libvirtd_qemu =
 { "pr_helper" = "/usr/bin/qemu-pr-helper" }
 { "swtpm_user" = "tss" }
 { "swtpm_group" = "tss" }
+{ "state_lock_timeout" = "60" }
