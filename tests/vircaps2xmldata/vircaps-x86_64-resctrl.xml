@@ -44,9 +44,15 @@
     <cache>
       <bank id='0' level='3' type='both' size='15' unit='MiB' cpus='0-5'>
         <control granularity='768' min='1536' unit='KiB' type='both' maxAllocs='4'/>
+        <monitor threshold='270336' unit='B' maxAllocs='176'>
+          <feature name='llc_occupancy'/>
+        </monitor>
       </bank>
       <bank id='1' level='3' type='both' size='15' unit='MiB' cpus='6-11'>
         <control granularity='768' min='1536' unit='KiB' type='both' maxAllocs='4'/>
+        <monitor threshold='270336' unit='B' maxAllocs='176'>
+          <feature name='llc_occupancy'/>
+        </monitor>
       </bank>
     </cache>
     <memory_bandwidth>
