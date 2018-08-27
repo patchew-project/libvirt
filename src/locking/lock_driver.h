@@ -67,7 +67,14 @@ typedef enum {
     VIR_LOCK_MANAGER_ACQUIRE_REGISTER_ONLY = (1 << 0),
     /* Prevent further lock/unlock calls from this process */
     VIR_LOCK_MANAGER_ACQUIRE_RESTRICT = (1 << 1),
+    /* Causes driver to keep connection open and reuse it for further use. */
+    VIR_LOCK_MANAGER_ACQUIRE_KEEP_OPEN = (1 << 2),
 } virLockManagerAcquireFlags;
+
+typedef enum {
+    /* Reuse previously saved connection. */
+    VIR_LOCK_MANAGER_RELEASE_KEEP_OPEN = (1 << 0),
+} virLockManagerReleaseFlags;
 
 typedef enum {
     /* virLockManagerNew called for a freshly started domain */

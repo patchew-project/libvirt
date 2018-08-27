@@ -76,6 +76,11 @@ struct _virLockManagerLockDaemonPrivate {
 
     size_t nresources;
     virLockManagerLockDaemonResourcePtr resources;
+
+    int clientRefs;
+    virNetClientPtr client;
+    virNetClientProgramPtr program;
+    int counter;
 };
 
 
@@ -440,6 +445,13 @@ virLockManagerLockDaemonPrivateFree(virLockManagerLockDaemonPrivatePtr priv)
     default:
         break;
     }
+
+    if (priv->client) {
+        virNetClientClose(priv->client);
+        virObjectUnref(priv->client);
+        virObjectUnref(priv->program);
+    }
+
     VIR_FREE(priv);
 }
 
@@ -770,7 +782,8 @@ static int virLockManagerLockDaemonAcquire(virLockManagerPtr lock,
     virLockManagerLockDaemonPrivatePtr priv = lock->privateData;
 
     virCheckFlags(VIR_LOCK_MANAGER_ACQUIRE_REGISTER_ONLY |
-                  VIR_LOCK_MANAGER_ACQUIRE_RESTRICT, -1);
+                  VIR_LOCK_MANAGER_ACQUIRE_RESTRICT |
+                  VIR_LOCK_MANAGER_ACQUIRE_KEEP_OPEN, -1);
 
     if (priv->type == VIR_LOCK_MANAGER_OBJECT_TYPE_DOMAIN &&
         priv->nresources == 0 &&
@@ -781,7 +794,14 @@ static int virLockManagerLockDaemonAcquire(virLockManagerPtr lock,
         return -1;
     }
 
-    if (!(client = virLockManagerLockDaemonConnect(lock, &program, &counter)))
+    if (flags & VIR_LOCK_MANAGER_ACQUIRE_KEEP_OPEN) {
+        client = priv->client;
+        program = priv->program;
+        counter = priv->counter;
+    }
+
+    if (!client &&
+        !(client = virLockManagerLockDaemonConnect(lock, &program, &counter)))
         goto cleanup;
 
     if (fd &&
@@ -814,11 +834,25 @@ static int virLockManagerLockDaemonAcquire(virLockManagerPtr lock,
         virLockManagerLockDaemonConnectionRestrict(lock, client, program, &counter) < 0)
         goto cleanup;
 
+    if (flags & VIR_LOCK_MANAGER_ACQUIRE_KEEP_OPEN) {
+        VIR_STEAL_PTR(priv->client, client);
+        VIR_STEAL_PTR(priv->program, program);
+        priv->counter = counter;
+    }
+
     rv = 0;
 
  cleanup:
-    if (rv != 0 && fd)
-        VIR_FORCE_CLOSE(*fd);
+    if (rv < 0) {
+        if (fd)
+            VIR_FORCE_CLOSE(*fd);
+
+        priv->client = NULL;
+        priv->program = NULL;
+        priv->counter = 0;
+        priv->clientRefs = 0;
+    }
+
     virNetClientClose(client);
     virObjectUnref(client);
     virObjectUnref(program);
@@ -837,12 +871,20 @@ static int virLockManagerLockDaemonRelease(virLockManagerPtr lock,
     size_t i;
     virLockManagerLockDaemonPrivatePtr priv = lock->privateData;
 
-    virCheckFlags(0, -1);
+    virCheckFlags(VIR_LOCK_MANAGER_RELEASE_KEEP_OPEN, -1);
 
     if (state)
         *state = NULL;
 
-    if (!(client = virLockManagerLockDaemonConnect(lock, &program, &counter)))
+    if (flags & VIR_LOCK_MANAGER_RELEASE_KEEP_OPEN) {
+        client = priv->client;
+        program = priv->program;
+        counter = priv->counter;
+        priv->clientRefs--;
+    }
+
+    if (!client &&
+        !(client = virLockManagerLockDaemonConnect(lock, &program, &counter)))
         goto cleanup;
 
     for (i = 0; i < priv->nresources; i++) {
@@ -870,9 +912,23 @@ static int virLockManagerLockDaemonRelease(virLockManagerPtr lock,
             goto cleanup;
     }
 
+    if (flags & VIR_LOCK_MANAGER_RELEASE_KEEP_OPEN) {
+        /* Avoid freeing in cleanup. */
+        client = NULL;
+        program = NULL;
+        counter = 0;
+    }
+
     rv = 0;
 
  cleanup:
+    if (rv < 0) {
+        priv->client = NULL;
+        priv->program = NULL;
+        priv->counter = 0;
+        priv->clientRefs = 0;
+    }
+
     virNetClientClose(client);
     virObjectUnref(client);
     virObjectUnref(program);
