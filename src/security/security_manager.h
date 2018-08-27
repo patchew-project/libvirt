@@ -47,7 +47,8 @@ virSecurityManagerPtr virSecurityManagerNew(const char *name,
                                             const char *virtDriver,
                                             unsigned int flags);
 
-virSecurityManagerPtr virSecurityManagerNewStack(virSecurityManagerPtr primary);
+virSecurityManagerPtr virSecurityManagerNewStack(virSecurityManagerPtr primary,
+                                                 const char *lockManagerName);
 int virSecurityManagerStackAddNested(virSecurityManagerPtr stack,
                                      virSecurityManagerPtr nested);
 

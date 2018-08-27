@@ -28,10 +28,24 @@
 #include "viralloc.h"
 #include "virobject.h"
 #include "virlog.h"
+#include "locking/lock_manager.h"
 
 #define VIR_FROM_THIS VIR_FROM_SECURITY
 
 VIR_LOG_INIT("security.security_manager");
+
+typedef struct _virSecurityManagerLock virSecurityManagerLock;
+typedef virSecurityManagerLock *virSecurityManagerLockPtr;
+struct _virSecurityManagerLock {
+    virObjectLockable parent;
+
+    virCond cond;
+
+    virLockManagerPluginPtr lockPlugin;
+    virLockManagerPtr lock;
+
+    bool pathLocked;
+};
 
 struct _virSecurityManager {
     virObjectLockable parent;
@@ -39,10 +53,14 @@ struct _virSecurityManager {
     virSecurityDriverPtr drv;
     unsigned int flags;
     const char *virtDriver;
+
+    virSecurityManagerLockPtr lock;
+
     void *privateData;
 };
 
 static virClassPtr virSecurityManagerClass;
+static virClassPtr virSecurityManagerLockClass;
 
 
 static
@@ -52,7 +70,24 @@ void virSecurityManagerDispose(void *obj)
 
     if (mgr->drv->close)
         mgr->drv->close(mgr);
+
+    virObjectUnref(mgr->lock);
+
     VIR_FREE(mgr->privateData);
+}
+
+
+static void
+virSecurityManagerLockDispose(void *obj)
+{
+    virSecurityManagerLockPtr lock = obj;
+
+    virCondDestroy(&lock->cond);
+
+    if (lock->lock)
+        virLockManagerCloseConn(lock->lock, 0);
+    virLockManagerFree(lock->lock);
+    virLockManagerPluginUnref(lock->lockPlugin);
 }
 
 
@@ -60,6 +95,9 @@ static int
 virSecurityManagerOnceInit(void)
 {
     if (!VIR_CLASS_NEW(virSecurityManager, virClassForObjectLockable()))
+        return -1;
+
+    if (!VIR_CLASS_NEW(virSecurityManagerLock, virClassForObjectLockable()))
         return -1;
 
     return 0;
@@ -106,8 +144,32 @@ virSecurityManagerNewDriver(virSecurityDriverPtr drv,
 }
 
 
+static virSecurityManagerLockPtr
+virSecurityManagerLockNew(const char *lockManagerName)
+{
+    virSecurityManagerLockPtr ret;
+
+    if (!(ret = virObjectLockableNew(virSecurityManagerLockClass)))
+        return NULL;
+
+    if (virCondInit(&ret->cond) < 0)
+        goto error;
+
+    if (!(ret->lockPlugin = virLockManagerPluginNew(lockManagerName,
+                                                    NULL, NULL, 0))) {
+        goto error;
+    }
+
+    return ret;
+ error:
+    virObjectUnref(ret);
+    return NULL;
+}
+
+
 virSecurityManagerPtr
-virSecurityManagerNewStack(virSecurityManagerPtr primary)
+virSecurityManagerNewStack(virSecurityManagerPtr primary,
+                           const char *lockManagerName)
 {
     virSecurityManagerPtr mgr =
         virSecurityManagerNewDriver(&virSecurityDriverStack,
@@ -117,8 +179,15 @@ virSecurityManagerNewStack(virSecurityManagerPtr primary)
     if (!mgr)
         return NULL;
 
+    if (!(mgr->lock = virSecurityManagerLockNew(lockManagerName)))
+        goto error;
+
     if (virSecurityStackAddNested(mgr, primary) < 0)
         goto error;
+
+    /* Propagate lock manager */
+    if (!primary->lock)
+        primary->lock = virObjectRef(mgr->lock);
 
     return mgr;
  error:
@@ -133,7 +202,15 @@ virSecurityManagerStackAddNested(virSecurityManagerPtr stack,
 {
     if (STRNEQ("stack", stack->drv->name))
         return -1;
-    return virSecurityStackAddNested(stack, nested);
+
+    if (virSecurityStackAddNested(stack, nested) < 0)
+        return -1;
+
+    /* Propagate lock manager */
+    if (!nested->lock)
+        nested->lock = virObjectRef(stack->lock);
+
+    return 0;
 }
 
 

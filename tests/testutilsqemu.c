@@ -721,7 +721,7 @@ int qemuTestDriverInit(virQEMUDriver *driver)
     if (!(mgr = virSecurityManagerNew("none", "qemu",
                                       VIR_SECURITY_MANAGER_PRIVILEGED)))
         goto error;
-    if (!(driver->securityManager = virSecurityManagerNewStack(mgr)))
+    if (!(driver->securityManager = virSecurityManagerNewStack(mgr, "nop")))
         goto error;
 
     return 0;

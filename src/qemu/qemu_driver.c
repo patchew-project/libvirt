@@ -358,7 +358,9 @@ qemuSecurityInit(virQEMUDriverPtr driver)
                                         flags)))
                 goto error;
             if (!stack) {
-                if (!(stack = qemuSecurityNewStack(mgr)))
+                if (!(stack = qemuSecurityNewStack(mgr,
+                                                   cfg->metadataLockManagerName ?
+                                                   cfg->metadataLockManagerName : "nop")))
                     goto error;
             } else {
                 if (qemuSecurityStackAddNested(stack, mgr) < 0)
@@ -372,7 +374,9 @@ qemuSecurityInit(virQEMUDriverPtr driver)
                                     QEMU_DRIVER_NAME,
                                     flags)))
             goto error;
-        if (!(stack = qemuSecurityNewStack(mgr)))
+        if (!(stack = qemuSecurityNewStack(mgr,
+                                           cfg->metadataLockManagerName ?
+                                           cfg->metadataLockManagerName : "nop")))
             goto error;
         mgr = NULL;
     }
@@ -389,7 +393,9 @@ qemuSecurityInit(virQEMUDriverPtr driver)
                                        qemuSecurityChownCallback)))
             goto error;
         if (!stack) {
-            if (!(stack = qemuSecurityNewStack(mgr)))
+            if (!(stack = qemuSecurityNewStack(mgr,
+                                               cfg->metadataLockManagerName ?
+                                               cfg->metadataLockManagerName : "nop")))
                 goto error;
         } else {
             if (qemuSecurityStackAddNested(stack, mgr) < 0)
