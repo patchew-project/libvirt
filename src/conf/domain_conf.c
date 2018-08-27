@@ -2956,13 +2956,30 @@ virDomainLoaderDefFree(virDomainLoaderDefPtr loader)
 
 
 static void
+virDomainResctrlMonFree(virDomainResctrlMonitorPtr monitor)
+{
+    if (!monitor)
+        return;
+
+    VIR_FREE(monitor->id);
+    virBitmapFree(monitor->vcpus);
+    VIR_FREE(monitor);
+}
+
+
+static void
 virDomainResctrlDefFree(virDomainResctrlDefPtr resctrl)
 {
+    size_t i = 0;
+
     if (!resctrl)
         return;
 
     virObjectUnref(resctrl->alloc);
     virBitmapFree(resctrl->vcpus);
+    for (i = 0; i < resctrl->nmonitors; i++)
+        virDomainResctrlMonFree(resctrl->monitors[i]);
+    VIR_FREE(resctrl->monitors);
     VIR_FREE(resctrl);
 }
 
@@ -18983,6 +19000,71 @@ virDomainResctrlAppend(virDomainDefPtr def,
 
 
 static int
+virDomainResctrlParseMonitor(virDomainDefPtr def,
+                             xmlXPathContextPtr ctxt,
+                             xmlNodePtr node,
+                             virDomainResctrlDefPtr resctrl)
+{
+    xmlNodePtr oldnode = ctxt->node;
+    virBitmapPtr vcpus = NULL;
+    char *id = NULL;
+    int vcpu = -1;
+    char *vcpus_str = NULL;
+    virDomainResctrlMonitorPtr tmp_domresmon = NULL;
+    int ret = -1;
+
+    if (!resctrl || !resctrl->vcpus || !resctrl->alloc)
+        return -1;
+
+    ctxt->node = node;
+
+    if (VIR_ALLOC(tmp_domresmon) < 0)
+        goto cleanup;
+
+    if (virDomainResctrlParseVcpus(def, node, &vcpus) < 0)
+        goto cleanup;
+
+    /* empty monitoring group is not allowed */
+    if (virBitmapIsAllClear(vcpus))
+        goto cleanup;
+
+    while ((vcpu = virBitmapNextSetBit(vcpus, vcpu)) >= 0) {
+        if (!virBitmapIsBitSet(resctrl->vcpus, vcpu))
+            goto cleanup;
+    }
+
+    vcpus_str = virBitmapFormat(vcpus);
+    if (!vcpus_str)
+        goto cleanup;
+
+    if (virAsprintf(&id, "vcpus_%s", vcpus_str) < 0)
+        goto cleanup;
+
+    if (VIR_STRDUP(tmp_domresmon->id, id) < 0)
+        goto cleanup;
+
+    tmp_domresmon->vcpus = vcpus;
+
+    if (VIR_APPEND_ELEMENT(resctrl->monitors,
+                           resctrl->nmonitors,
+                           tmp_domresmon) < 0)
+        goto cleanup;
+
+    if (virResctrlAllocSetMonitor(resctrl->alloc, id) < 0)
+        goto cleanup;
+
+    tmp_domresmon = NULL;
+    ret = 0;
+ cleanup:
+    ctxt->node = oldnode;
+    VIR_FREE(id);
+    VIR_FREE(vcpus_str);
+    virDomainResctrlMonFree(tmp_domresmon);
+    return ret;
+}
+
+
+static int
 virDomainCachetuneDefParse(virDomainDefPtr def,
                            xmlXPathContextPtr ctxt,
                            xmlNodePtr node,
@@ -18996,6 +19078,9 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
     ssize_t i = 0;
     int n;
     int ret = -1;
+
+    if (VIR_ALLOC(tmp_resctrl) < 0)
+        return -1;
 
     ctxt->node = node;
 
@@ -19031,30 +19116,40 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
             goto cleanup;
     }
 
+    tmp_resctrl->vcpus = vcpus;
+    tmp_resctrl->alloc = virObjectRef(alloc);
+
+    VIR_FREE(nodes);
+    ctxt->node = node;
+
+    if ((n = virXPathNodeSet("./monitor", ctxt, &nodes)) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Cannot extract monitor nodes under cachetune"));
+        goto cleanup;
+    }
+
+    for (i = 0; i < n; i++) {
+        if (virDomainResctrlParseMonitor(def, ctxt,
+                                         nodes[i], tmp_resctrl) < 0)
+
+            goto cleanup;
+    }
+
     if (virResctrlAllocIsEmpty(alloc)) {
+        VIR_WARN("cachetune: resctrl alloc is empty");
         ret = 0;
         goto cleanup;
     }
 
-    if (VIR_ALLOC(tmp_resctrl) < 0)
-        goto cleanup;
-
-    tmp_resctrl->vcpus = vcpus;
-    tmp_resctrl->alloc = virObjectRef(alloc);
-
     if (virDomainResctrlAppend(def, node, tmp_resctrl, flags) < 0)
         goto cleanup;
 
-    alloc = NULL;
-    vcpus = NULL;
     tmp_resctrl = NULL;
 
     ret = 0;
  cleanup:
     ctxt->node = oldnode;
-    virObjectUnref(alloc);
-    VIR_FREE(tmp_resctrl);
-    virBitmapFree(vcpus);
+    virDomainResctrlDefFree(tmp_resctrl);
     VIR_FREE(nodes);
     return ret;
 }
@@ -19273,10 +19368,8 @@ virDomainMemorytuneDefParse(virDomainDefPtr def,
     ret = 0;
  cleanup:
     ctxt->node = oldnode;
-    virBitmapFree(vcpus);
-    virObjectUnref(alloc);
-    VIR_FREE(tmp_resctrl);
     VIR_FREE(nodes);
+    virDomainResctrlDefFree(tmp_resctrl);
     return ret;
 }
 
@@ -27149,6 +27242,7 @@ virDomainMemorytuneDefFormat(virBufferPtr buf,
 {
     virBuffer childrenBuf = VIR_BUFFER_INITIALIZER;
     char *vcpus = NULL;
+    size_t i = 0;
     int ret = -1;
 
     virBufferSetChildIndent(&childrenBuf, buf);
@@ -27159,6 +27253,15 @@ virDomainMemorytuneDefFormat(virBufferPtr buf,
 
     if (virBufferCheckError(&childrenBuf) < 0)
         goto cleanup;
+
+    for (i = 0; i < resctrl->nmonitors; i++) {
+        vcpus = virBitmapFormat(resctrl->monitors[i]->vcpus);
+        if (!vcpus)
+            goto cleanup;
+
+        virBufferAsprintf(&childrenBuf, "<monitor vcpus='%s'/>\n", vcpus);
+        VIR_FREE(vcpus);
+    }
 
     if (!virBufferUse(&childrenBuf)) {
         ret = 0;

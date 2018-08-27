@@ -8,7 +8,7 @@
     <cachetune vcpus='0-1'>
       <cache id='0' level='3' type='both' size='3' unit='MiB'/>
       <cache id='1' level='3' type='both' size='3' unit='MiB'/>
-      <monitor vcpus='0-1'/>
+      <monitor vcpus='0-2'/>
       <monitor vcpus='0'/>
     </cachetune>
     <cachetune vcpus='3'>
