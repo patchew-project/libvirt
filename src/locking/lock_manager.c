@@ -340,6 +340,18 @@ int virLockManagerAddResource(virLockManagerPtr lock,
                                         flags);
 }
 
+
+int virLockManagerClearResources(virLockManagerPtr lock,
+                                 unsigned int flags)
+{
+    VIR_DEBUG("lock=%p flags=0X%x", lock, flags);
+
+    CHECK_MANAGER(drvClearResources, -1);
+
+    return lock->driver->drvClearResources(lock, flags);
+}
+
+
 int virLockManagerAcquire(virLockManagerPtr lock,
                           const char *state,
                           unsigned int flags,

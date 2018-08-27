@@ -67,6 +67,11 @@ static int virLockManagerNopAddResource(virLockManagerPtr lock ATTRIBUTE_UNUSED,
     return 0;
 }
 
+static int virLockManagerNopClearResources(virLockManagerPtr lock ATTRIBUTE_UNUSED,
+                                           unsigned int flags_unused ATTRIBUTE_UNUSED)
+{
+    return 0;
+}
 
 static int virLockManagerNopAcquire(virLockManagerPtr lock ATTRIBUTE_UNUSED,
                                     const char *state ATTRIBUTE_UNUSED,
@@ -113,6 +118,7 @@ virLockDriver virLockDriverNop =
     .drvFree = virLockManagerNopFree,
 
     .drvAddResource = virLockManagerNopAddResource,
+    .drvClearResources = virLockManagerNopClearResources,
 
     .drvAcquire = virLockManagerNopAcquire,
     .drvRelease = virLockManagerNopRelease,

@@ -402,8 +402,9 @@ static int virLockManagerLockDaemonDeinit(void)
     return 0;
 }
 
+
 static void
-virLockManagerLockDaemonPrivateFree(virLockManagerLockDaemonPrivatePtr priv)
+virLockManagerLockDaemonFreeResources(virLockManagerLockDaemonPrivatePtr priv)
 {
     size_t i;
 
@@ -415,6 +416,17 @@ virLockManagerLockDaemonPrivateFree(virLockManagerLockDaemonPrivatePtr priv)
         VIR_FREE(priv->resources[i].name);
     }
     VIR_FREE(priv->resources);
+    priv->nresources = 0;
+}
+
+
+static void
+virLockManagerLockDaemonPrivateFree(virLockManagerLockDaemonPrivatePtr priv)
+{
+    if (!priv)
+        return;
+
+    virLockManagerLockDaemonFreeResources(priv);
 
     switch (priv->type) {
     case VIR_LOCK_MANAGER_OBJECT_TYPE_DOMAIN:
@@ -733,6 +745,18 @@ static int virLockManagerLockDaemonAddResource(virLockManagerPtr lock,
 }
 
 
+static int virLockManagerLockDaemonClearResources(virLockManagerPtr lock,
+                                                  unsigned int flags)
+{
+    virLockManagerLockDaemonPrivatePtr priv = lock->privateData;
+
+    virCheckFlags(0, -1);
+
+    virLockManagerLockDaemonFreeResources(priv);
+    return 0;
+}
+
+
 static int virLockManagerLockDaemonAcquire(virLockManagerPtr lock,
                                            const char *state ATTRIBUTE_UNUSED,
                                            unsigned int flags,
@@ -881,6 +905,7 @@ virLockDriver virLockDriverImpl =
     .drvFree = virLockManagerLockDaemonFree,
 
     .drvAddResource = virLockManagerLockDaemonAddResource,
+    .drvClearResources = virLockManagerLockDaemonClearResources,
 
     .drvAcquire = virLockManagerLockDaemonAcquire,
     .drvRelease = virLockManagerLockDaemonRelease,

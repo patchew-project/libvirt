@@ -1296,6 +1296,7 @@ virDomainLockProcessStart;
 # locking/lock_manager.h
 virLockManagerAcquire;
 virLockManagerAddResource;
+virLockManagerClearResources;
 virLockManagerFree;
 virLockManagerInquire;
 virLockManagerNew;

@@ -228,6 +228,10 @@ typedef int (*virLockDriverAddResource)(virLockManagerPtr man,
                                         virLockManagerParamPtr params,
                                         unsigned int flags);
 
+
+typedef int (*virLockDriverClearResource)(virLockManagerPtr mgr,
+                                          unsigned int flags);
+
 /**
  * virLockDriverAcquire:
  * @manager: the lock manager context
@@ -313,6 +317,7 @@ struct _virLockDriver {
     virLockDriverFree drvFree;
 
     virLockDriverAddResource drvAddResource;
+    virLockDriverClearResource drvClearResources;
 
     virLockDriverAcquire drvAcquire;
     virLockDriverRelease drvRelease;
