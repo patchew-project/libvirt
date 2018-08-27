@@ -942,6 +942,23 @@ virCapabilitiesFormatCaches(virBufferPtr buf,
                               controls->max_allocation);
         }
 
+        if (bank->monitor &&
+            bank->monitor->nfeatures) {
+            virBufferAsprintf(&childrenBuf,
+                              "<monitor threshold='%u' unit='B' "
+                              "maxAllocs='%u'>\n",
+                              bank->monitor->cache_threshold,
+                              bank->monitor->max_allocation);
+            for (j = 0; j < bank->monitor->nfeatures; j++) {
+                virBufferAdjustIndent(&childrenBuf, 2);
+                virBufferAsprintf(&childrenBuf,
+                                  "<feature name='%s'/>\n",
+                                  bank->monitor->features[j]);
+                virBufferAdjustIndent(&childrenBuf, -2);
+            }
+            virBufferAddLit(&childrenBuf, "</monitor>\n");
+        }
+
         if (virBufferCheckError(&childrenBuf) < 0)
             return -1;
 
