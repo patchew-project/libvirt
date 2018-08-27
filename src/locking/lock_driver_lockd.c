@@ -63,6 +63,8 @@ struct _virLockManagerLockDaemonPrivate {
             char *name;
             int id;
             pid_t pid;
+
+            bool hasRWDisks;
         } dom;
 
         struct {
@@ -74,8 +76,6 @@ struct _virLockManagerLockDaemonPrivate {
 
     size_t nresources;
     virLockManagerLockDaemonResourcePtr resources;
-
-    bool hasRWDisks;
 };
 
 
@@ -566,107 +566,119 @@ static int virLockManagerLockDaemonAddResource(virLockManagerPtr lock,
     if (flags & VIR_LOCK_MANAGER_RESOURCE_READONLY)
         return 0;
 
-    switch (type) {
-    case VIR_LOCK_MANAGER_RESOURCE_TYPE_DISK:
-        if (params || nparams) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("Unexpected parameters for disk resource"));
-            goto cleanup;
-        }
-        if (!driver->autoDiskLease) {
-            if (!(flags & (VIR_LOCK_MANAGER_RESOURCE_SHARED |
-                           VIR_LOCK_MANAGER_RESOURCE_READONLY)))
-                priv->hasRWDisks = true;
-            return 0;
-        }
+    switch (priv->type) {
+    case VIR_LOCK_MANAGER_OBJECT_TYPE_DOMAIN:
 
-        /* XXX we should somehow pass in TYPE=BLOCK info
-         * from the domain_lock code, instead of assuming /dev
-         */
-        if (STRPREFIX(name, "/dev") &&
-            driver->lvmLockSpaceDir) {
-            VIR_DEBUG("Trying to find an LVM UUID for %s", name);
-            if (virStorageFileGetLVMKey(name, &newName) < 0)
+        switch (type) {
+        case VIR_LOCK_MANAGER_RESOURCE_TYPE_DISK:
+            if (params || nparams) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("Unexpected parameters for disk resource"));
                 goto cleanup;
+            }
+            if (!driver->autoDiskLease) {
+                if (!(flags & (VIR_LOCK_MANAGER_RESOURCE_SHARED |
+                               VIR_LOCK_MANAGER_RESOURCE_READONLY)))
+                    priv->t.dom.hasRWDisks = true;
+                return 0;
+            }
 
-            if (newName) {
-                VIR_DEBUG("Got an LVM UUID %s for %s", newName, name);
-                if (VIR_STRDUP(newLockspace, driver->lvmLockSpaceDir) < 0)
+            /* XXX we should somehow pass in TYPE=BLOCK info
+             * from the domain_lock code, instead of assuming /dev
+             */
+            if (STRPREFIX(name, "/dev") &&
+                driver->lvmLockSpaceDir) {
+                VIR_DEBUG("Trying to find an LVM UUID for %s", name);
+                if (virStorageFileGetLVMKey(name, &newName) < 0)
+                    goto cleanup;
+
+                if (newName) {
+                    VIR_DEBUG("Got an LVM UUID %s for %s", newName, name);
+                    if (VIR_STRDUP(newLockspace, driver->lvmLockSpaceDir) < 0)
+                        goto cleanup;
+                    autoCreate = true;
+                    break;
+                }
+                virResetLastError();
+                /* Fallback to generic non-block code */
+            }
+
+            if (STRPREFIX(name, "/dev") &&
+                driver->scsiLockSpaceDir) {
+                VIR_DEBUG("Trying to find an SCSI ID for %s", name);
+                if (virStorageFileGetSCSIKey(name, &newName) < 0)
+                    goto cleanup;
+
+                if (newName) {
+                    VIR_DEBUG("Got an SCSI ID %s for %s", newName, name);
+                    if (VIR_STRDUP(newLockspace, driver->scsiLockSpaceDir) < 0)
+                        goto cleanup;
+                    autoCreate = true;
+                    break;
+                }
+                virResetLastError();
+                /* Fallback to generic non-block code */
+            }
+
+            if (driver->fileLockSpaceDir) {
+                if (VIR_STRDUP(newLockspace, driver->fileLockSpaceDir) < 0)
+                    goto cleanup;
+                if (virCryptoHashString(VIR_CRYPTO_HASH_SHA256, name, &newName) < 0)
                     goto cleanup;
                 autoCreate = true;
-                break;
-            }
-            virResetLastError();
-            /* Fallback to generic non-block code */
-        }
-
-        if (STRPREFIX(name, "/dev") &&
-            driver->scsiLockSpaceDir) {
-            VIR_DEBUG("Trying to find an SCSI ID for %s", name);
-            if (virStorageFileGetSCSIKey(name, &newName) < 0)
-                goto cleanup;
-
-            if (newName) {
-                VIR_DEBUG("Got an SCSI ID %s for %s", newName, name);
-                if (VIR_STRDUP(newLockspace, driver->scsiLockSpaceDir) < 0)
+                VIR_DEBUG("Using indirect lease %s for %s", newName, name);
+            } else {
+                if (VIR_STRDUP(newLockspace, "") < 0)
                     goto cleanup;
-                autoCreate = true;
-                break;
+                if (VIR_STRDUP(newName, name) < 0)
+                    goto cleanup;
+                VIR_DEBUG("Using direct lease for %s", name);
             }
-            virResetLastError();
-            /* Fallback to generic non-block code */
-        }
 
-        if (driver->fileLockSpaceDir) {
-            if (VIR_STRDUP(newLockspace, driver->fileLockSpaceDir) < 0)
+            break;
+        case VIR_LOCK_MANAGER_RESOURCE_TYPE_LEASE: {
+            size_t i;
+            char *path = NULL;
+            char *lockspace = NULL;
+            for (i = 0; i < nparams; i++) {
+                if (STREQ(params[i].key, "offset")) {
+                    if (params[i].value.ul != 0) {
+                        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                                       _("Offset must be zero for this lock manager"));
+                        goto cleanup;
+                    }
+                } else if (STREQ(params[i].key, "lockspace")) {
+                    lockspace = params[i].value.str;
+                } else if (STREQ(params[i].key, "path")) {
+                    path = params[i].value.str;
+                } else {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   _("Unexpected parameter %s for lease resource"),
+                                   params[i].key);
+                    goto cleanup;
+                }
+            }
+            if (!path || !lockspace) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("Missing path or lockspace for lease resource"));
                 goto cleanup;
-            if (virCryptoHashString(VIR_CRYPTO_HASH_SHA256, name, &newName) < 0)
-                goto cleanup;
-            autoCreate = true;
-            VIR_DEBUG("Using indirect lease %s for %s", newName, name);
-        } else {
-            if (VIR_STRDUP(newLockspace, "") < 0)
+            }
+            if (virAsprintf(&newLockspace, "%s/%s",
+                            path, lockspace) < 0)
                 goto cleanup;
             if (VIR_STRDUP(newName, name) < 0)
                 goto cleanup;
-            VIR_DEBUG("Using direct lease for %s", name);
-        }
 
+        }   break;
+        default:
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Unknown lock manager object type %d for domain lock object"),
+                           type);
+            goto cleanup;
+        }
         break;
-    case VIR_LOCK_MANAGER_RESOURCE_TYPE_LEASE: {
-        size_t i;
-        char *path = NULL;
-        char *lockspace = NULL;
-        for (i = 0; i < nparams; i++) {
-            if (STREQ(params[i].key, "offset")) {
-                if (params[i].value.ul != 0) {
-                    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                                   _("Offset must be zero for this lock manager"));
-                    goto cleanup;
-                }
-            } else if (STREQ(params[i].key, "lockspace")) {
-                lockspace = params[i].value.str;
-            } else if (STREQ(params[i].key, "path")) {
-                path = params[i].value.str;
-            } else {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("Unexpected parameter %s for lease resource"),
-                               params[i].key);
-                goto cleanup;
-            }
-        }
-        if (!path || !lockspace) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("Missing path or lockspace for lease resource"));
-            goto cleanup;
-        }
-        if (virAsprintf(&newLockspace, "%s/%s",
-                        path, lockspace) < 0)
-            goto cleanup;
-        if (VIR_STRDUP(newName, name) < 0)
-            goto cleanup;
 
-    }   break;
+    case VIR_LOCK_MANAGER_OBJECT_TYPE_DAEMON:
     default:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unknown lock manager object type %d"),
@@ -711,8 +723,9 @@ static int virLockManagerLockDaemonAcquire(virLockManagerPtr lock,
     virCheckFlags(VIR_LOCK_MANAGER_ACQUIRE_REGISTER_ONLY |
                   VIR_LOCK_MANAGER_ACQUIRE_RESTRICT, -1);
 
-    if (priv->nresources == 0 &&
-        priv->hasRWDisks &&
+    if (priv->type == VIR_LOCK_MANAGER_OBJECT_TYPE_DOMAIN &&
+        priv->nresources == 0 &&
+        priv->t.dom.hasRWDisks &&
         driver->requireLeaseForDisks) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("Read/write, exclusive access, disks were present, but no leases specified"));
