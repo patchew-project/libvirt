@@ -211,6 +211,12 @@ virDeviceInfoPCIAddressPresent(const virDomainDeviceInfo *info)
        !virPCIDeviceAddressIsEmpty(&info->addr.pci);
 }
 
+static inline bool
+virZPCIDeviceAddressIsEmpty(const virZPCIDeviceAddress *addr)
+{
+    return !(addr->uid || addr->fid);
+}
+
 int virPCIDeviceAddressParseXML(xmlNodePtr node,
                                 virPCIDeviceAddressPtr addr);
 

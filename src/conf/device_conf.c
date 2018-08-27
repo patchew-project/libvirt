@@ -32,6 +32,65 @@
 
 #define VIR_FROM_THIS VIR_FROM_DEVICE
 
+static int
+virZPCIDeviceAddressIsValid(virZPCIDeviceAddressPtr zpci)
+{
+    /* We don't need to check fid because fid covers
+     * all range of uint32 type.
+     */
+    if (zpci->uid > VIR_DOMAIN_DEVICE_ZPCI_MAX_UID ||
+        zpci->uid == 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("Invalid PCI address uid='0x%x', "
+                         "must be > 0x0 and <= 0x%x"),
+                       zpci->uid,
+                       VIR_DOMAIN_DEVICE_ZPCI_MAX_UID);
+        return 0;
+    }
+
+    return 1;
+}
+
+static int
+virZPCIDeviceAddressParseXML(xmlNodePtr node,
+                             virPCIDeviceAddressPtr addr)
+{
+    char *uid, *fid;
+    int ret = -1;
+    virZPCIDeviceAddress def = { 0 };
+
+    uid = virXMLPropString(node, "uid");
+    fid = virXMLPropString(node, "fid");
+
+    if (uid) {
+        if (virStrToLong_uip(uid, NULL, 0, &def.uid) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Cannot parse <address> 'uid' attribute"));
+            goto cleanup;
+        }
+    }
+
+    if (fid) {
+        if (virStrToLong_uip(fid, NULL, 0, &def.fid) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Cannot parse <address> 'fid' attribute"));
+            goto cleanup;
+        }
+    }
+
+    if (!virZPCIDeviceAddressIsEmpty(&def) &&
+        !virZPCIDeviceAddressIsValid(&def))
+        goto cleanup;
+
+    addr->zpci = def;
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(uid);
+    VIR_FREE(fid);
+    return ret;
+}
+
 int
 virDomainDeviceInfoCopy(virDomainDeviceInfoPtr dst,
                         virDomainDeviceInfoPtr src)
@@ -243,6 +302,9 @@ virPCIDeviceAddressParseXML(xmlNodePtr node,
 
     }
     if (!virPCIDeviceAddressIsEmpty(addr) && !virPCIDeviceAddressIsValid(addr, true))
+        goto cleanup;
+
+    if (virZPCIDeviceAddressParseXML(node, addr) < 0)
         goto cleanup;
 
     ret = 0;

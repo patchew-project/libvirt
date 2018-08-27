@@ -37,6 +37,9 @@ typedef virPCIDeviceAddress *virPCIDeviceAddressPtr;
 typedef struct _virPCIDeviceList virPCIDeviceList;
 typedef virPCIDeviceList *virPCIDeviceListPtr;
 
+# define VIR_DOMAIN_DEVICE_ZPCI_MAX_UID UINT16_MAX
+# define VIR_DOMAIN_DEVICE_ZPCI_MAX_FID UINT32_MAX
+
 typedef struct _virZPCIDeviceAddress virZPCIDeviceAddress;
 typedef virZPCIDeviceAddress *virZPCIDeviceAddressPtr;
 struct _virZPCIDeviceAddress {

@@ -5717,6 +5717,27 @@ qemuDomainDeviceDefValidateGraphics(const virDomainGraphicsDef *graphics,
 
 
 static int
+qemuDomainZPCIAddressDefValidate(virDomainDeviceDef *dev,
+                                 virQEMUCapsPtr qemuCaps)
+{
+    virDomainDeviceInfoPtr info = virDomainDeviceGetInfo(dev);
+
+    if (!info || (info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI))
+        return 0;
+
+    if (!virZPCIDeviceAddressIsEmpty(&info->addr.pci.zpci) &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_ZPCI)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       "%s",
+                       _("This QEMU binary doesn't support zPCI."));
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
                             const virDomainDef *def,
                             void *opaque)
@@ -5728,6 +5749,10 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
     if (!(qemuCaps = virQEMUCapsCacheLookup(driver->qemuCapsCache,
                                             def->emulator)))
         return -1;
+
+    ret = qemuDomainZPCIAddressDefValidate((virDomainDeviceDef *)dev, qemuCaps);
+    if (ret < 0)
+        goto out;
 
     switch ((virDomainDeviceType)dev->type) {
     case VIR_DOMAIN_DEVICE_NET:
@@ -5804,6 +5829,7 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
         break;
     }
 
+ out:
     virObjectUnref(qemuCaps);
     return ret;
 }
