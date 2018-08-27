@@ -557,6 +557,7 @@ static int virLockManagerLockDaemonAddResource(virLockManagerPtr lock,
     virLockManagerLockDaemonPrivatePtr priv = lock->privateData;
     char *newName = NULL;
     char *newLockspace = NULL;
+    int newFlags = 0;
     bool autoCreate = false;
     int ret = -1;
 
@@ -569,7 +570,7 @@ static int virLockManagerLockDaemonAddResource(virLockManagerPtr lock,
     switch (priv->type) {
     case VIR_LOCK_MANAGER_OBJECT_TYPE_DOMAIN:
 
-        switch (type) {
+        switch ((virLockManagerResourceType) type) {
         case VIR_LOCK_MANAGER_RESOURCE_TYPE_DISK:
             if (params || nparams) {
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -670,6 +671,8 @@ static int virLockManagerLockDaemonAddResource(virLockManagerPtr lock,
                 goto cleanup;
 
         }   break;
+
+        case VIR_LOCK_MANAGER_RESOURCE_TYPE_METADATA:
         default:
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Unknown lock manager object type %d for domain lock object"),
@@ -679,6 +682,29 @@ static int virLockManagerLockDaemonAddResource(virLockManagerPtr lock,
         break;
 
     case VIR_LOCK_MANAGER_OBJECT_TYPE_DAEMON:
+        switch ((virLockManagerResourceType) type) {
+        case VIR_LOCK_MANAGER_RESOURCE_TYPE_METADATA:
+            if (params || nparams) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("Unexpected parameters for metadata resource"));
+                goto cleanup;
+            }
+            if (VIR_STRDUP(newLockspace, "") < 0 ||
+                VIR_STRDUP(newName, name) < 0)
+                goto cleanup;
+            newFlags |= VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_METADATA;
+            break;
+
+        case VIR_LOCK_MANAGER_RESOURCE_TYPE_DISK:
+        case VIR_LOCK_MANAGER_RESOURCE_TYPE_LEASE:
+        default:
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Unknown lock manager object type %d for daemon lock object"),
+                           type);
+            goto cleanup;
+        }
+        break;
+
     default:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unknown lock manager object type %d"),
@@ -686,19 +712,18 @@ static int virLockManagerLockDaemonAddResource(virLockManagerPtr lock,
         goto cleanup;
     }
 
+    if (flags & VIR_LOCK_MANAGER_RESOURCE_SHARED)
+        newFlags |= VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_SHARED;
+
+    if (autoCreate)
+        newFlags |= VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_AUTOCREATE;
+
     if (VIR_EXPAND_N(priv->resources, priv->nresources, 1) < 0)
         goto cleanup;
 
     VIR_STEAL_PTR(priv->resources[priv->nresources-1].lockspace, newLockspace);
     VIR_STEAL_PTR(priv->resources[priv->nresources-1].name, newName);
-
-    if (flags & VIR_LOCK_MANAGER_RESOURCE_SHARED)
-        priv->resources[priv->nresources-1].flags |=
-            VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_SHARED;
-
-    if (autoCreate)
-        priv->resources[priv->nresources-1].flags |=
-            VIR_LOCK_SPACE_PROTOCOL_ACQUIRE_RESOURCE_AUTOCREATE;
+    priv->resources[priv->nresources-1].flags = newFlags;
 
     ret = 0;
  cleanup:
