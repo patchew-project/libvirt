@@ -11345,6 +11345,15 @@ virConnectGetDomainCapabilities(virConnectPtr conn,
  *     "cpu.user" - user cpu time spent in nanoseconds as unsigned long long.
  *     "cpu.system" - system cpu time spent in nanoseconds as unsigned long
  *                    long.
+ *     "cpu.cache.monitor.count" - tocal cache monitoring groups
+ *     "cpu.cache.M.name" - name for cache monitoring group 'M'
+ *     "cpu.cache.M.vcpus" - vcpus for cache monitoring group 'M'
+ *     "cpu.cache.M.bank.count" - total bank number for cache monitoring
+ *                                group 'M'
+ *     "cpu.cache.M.bank.N.id" - OS assigned cache bank id for cache 'N' in
+ *                               cache monitoring group 'M'
+ *     "cpu.cache.M.bank.N.bytes" - cache occupancy of cache bank 'N' in
+ *                                  cache monitoring group 'M'
  *
  * VIR_DOMAIN_STATS_BALLOON:
  *     Return memory balloon device information.
