@@ -160,4 +160,35 @@ virResctrlAllocAddPID(virResctrlAllocPtr alloc,
 int
 virResctrlAllocRemove(virResctrlAllocPtr alloc);
 
+int
+virResctrlAllocDetermineMonitorPath(virResctrlAllocPtr alloc,
+                                    const char *id,
+                                    const char *machinename);
+
+int
+virResctrlAllocAddMonitorPID(virResctrlAllocPtr alloc,
+                             const char *id,
+                             pid_t pid);
+
+int
+virResctrlAllocSetMonitor(virResctrlAllocPtr alloc,
+                          const char *id);
+
+int
+virResctrlAllocCreateMonitor(virResctrlInfoPtr resctrl,
+                             virResctrlAllocPtr alloc,
+                             const char *machinename,
+                             const char *id);
+
+int
+virResctrlAllocDeleteMonitor(virResctrlAllocPtr alloc,
+                             const char *id);
+
+int
+virResctrlAllocGetCacheOccupancy(virResctrlAllocPtr alloc,
+                                 const char *id,
+                                 unsigned int *nbank,
+                                 unsigned int **bankids,
+                                 unsigned int **bankcaches);
+
 #endif /*  __VIR_RESCTRL_H__ */

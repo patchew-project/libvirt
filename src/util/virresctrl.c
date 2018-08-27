@@ -257,6 +257,19 @@ struct _virResctrlAllocMemBW {
     size_t nbandwidths;
 };
 
+
+typedef struct _virResctrlAllocMon virResctrlAllocMon;
+typedef virResctrlAllocMon *virResctrlAllocMonPtr;
+/* virResctrlAllocMon denotes a resctrl monitoring group reporting the resource
+ * consumption information for resource of either cache or memory
+ * bandwidth. */
+struct _virResctrlAllocMon {
+    /* monitoring group identifier, should be unique in scope of allocation */
+    char *id;
+    /* directory path under /sys/fs/resctrl*/
+    char *path;
+};
+
 struct _virResctrlAlloc {
     virObject parent;
 
@@ -265,11 +278,21 @@ struct _virResctrlAlloc {
 
     virResctrlAllocMemBWPtr mem_bw;
 
+    /* monintoring groups associated with current resource allocation
+     * it might report resource consumption information at a finer
+     * granularity */
+    virResctrlAllocMonPtr *monitors;
+    size_t nmonitors;
+
     /* The identifier (any unique string for now) */
     char *id;
     /* libvirt-generated path in /sys/fs/resctrl for this particular
      * allocation */
     char *path;
+    /* is this a default resctrl group?
+     * true : default group, directory path equals '/sys/fs/resctrl'
+     * false: non-default group */
+    bool default_group;
 };
 
 
@@ -315,6 +338,13 @@ virResctrlAllocDispose(void *obj)
         VIR_FREE(alloc->mem_bw);
     }
 
+    for (i = 0; i < alloc->nmonitors; i++) {
+        virResctrlAllocMonPtr monitor = alloc->monitors[i];
+        VIR_FREE(monitor->id);
+        VIR_FREE(monitor->path);
+        VIR_FREE(monitor);
+    }
+    VIR_FREE(alloc->monitors);
     VIR_FREE(alloc->id);
     VIR_FREE(alloc->path);
     VIR_FREE(alloc->levels);
@@ -805,6 +835,7 @@ virResctrlInfoGetCache(virResctrlInfoPtr resctrl,
         memcpy((*controls)[*ncontrols - 1], &i_type->control, sizeof(i_type->control));
     }
 
+    cachemon->nfeatures = 0;
     cachemon->max_allocation = 0;
 
     if (resctrl->monitor_info) {
@@ -817,7 +848,7 @@ virResctrlInfoGetCache(virResctrlInfoPtr resctrl,
             if (STREQLEN(info->features[i], "llc_", strlen("llc_"))) {
                 if (virStringListAdd(&cachemon->features,
                                      info->features[i]) < 0)
-                     goto error;
+                    goto error;
                 cachemon->nfeatures++;
             }
         }
@@ -841,10 +872,19 @@ virResctrlInfoGetCache(virResctrlInfoPtr resctrl,
 virResctrlAllocPtr
 virResctrlAllocNew(void)
 {
+    virResctrlAllocPtr ret = NULL;
+
     if (virResctrlInitialize() < 0)
         return NULL;
 
-    return virObjectNew(virResctrlAllocClass);
+    ret = virObjectNew(virResctrlAllocClass);
+    if (!ret)
+        return NULL;
+
+    /* By default, a resource group is a default group */
+    ret->default_group = true;
+
+    return ret;
 }
 
 
@@ -859,6 +899,9 @@ virResctrlAllocIsEmpty(virResctrlAllocPtr alloc)
         return true;
 
     if (alloc->mem_bw)
+        return false;
+
+    if (alloc->nmonitors)
         return false;
 
     for (i = 0; i < alloc->nlevels; i++) {
@@ -2124,9 +2167,17 @@ int
 virResctrlAllocDeterminePath(virResctrlAllocPtr alloc,
                              const char *machinename)
 {
-    return virResctrlDeterminePath(alloc->id, NULL, NULL,
-                                   machinename, &alloc->path);
+    if (alloc->default_group) {
+        if (VIR_STRDUP(alloc->path, SYSFS_RESCTRL_PATH) < 0)
+            return -1;
+        return 0;
+    } else {
+
+        return virResctrlDeterminePath(alloc->id, NULL, NULL,
+                                       machinename, &alloc->path);
+    }
 }
+
 
 static int
 virResctrlCreateGroup(virResctrlInfoPtr resctrl,
@@ -2169,6 +2220,27 @@ virResctrlCreateGroup(virResctrlInfoPtr resctrl,
     return ret;
 }
 
+ /* In case of no explicit requirement for allocating cache and memory
+  * bandwidth, set 'alloc->default' to 'true', then the monitoring
+  * group will be created under '/sys/fs/resctrl/mon_groups' in later
+  * invocation of virResctrlAllocCreate.
+  * Otherwise, set 'alloc->default' to false, create a new directory
+  * under '/sys/fs/resctrl/'. This is will cost a hardware 'COSID'.*/
+static int
+virResctrlAllocCheckDefault(virResctrlAllocPtr alloc)
+{
+    bool default_group = true;
+    if (!alloc)
+        return -1;
+
+    if (alloc->nlevels)
+        default_group = false;
+    if (alloc->mem_bw && alloc->mem_bw->nbandwidths)
+        default_group = false;
+
+    alloc->default_group = default_group;
+    return 0;
+}
 
 /* This checks if the directory for the alloc exists.  If not it tries to create
  * it and apply appropriate alloc settings. */
@@ -2184,6 +2256,8 @@ virResctrlAllocCreate(virResctrlInfoPtr resctrl,
 
     if (!alloc)
         return 0;
+
+    virResctrlAllocCheckDefault(alloc);
 
     if (virResctrlAllocDeterminePath(alloc, machinename) < 0)
         return -1;
@@ -2275,10 +2349,289 @@ virResctrlAllocRemove(virResctrlAllocPtr alloc)
         return 0;
 
     VIR_DEBUG("Removing resctrl allocation %s", alloc->path);
+
+    while (alloc->nmonitors > 0) {
+        ret = virResctrlAllocDeleteMonitor(alloc, alloc->monitors[0]->id);
+        if (ret < 0)
+            goto cleanup;
+    }
+
     if (rmdir(alloc->path) != 0 && errno != ENOENT) {
         ret = -errno;
         VIR_ERROR(_("Unable to remove %s (%d)"), alloc->path, errno);
     }
+
+    ret = 0;
+ cleanup:
+    return ret;
+}
+
+
+static int
+virResctrlAllocGetMonitor(virResctrlAllocPtr alloc,
+                          const char *id,
+                          virResctrlAllocMonPtr *monitor,
+                          size_t *pos)
+{
+    size_t i = 0;
+
+    if (!alloc || !id)
+        return -1;
+
+    for (i = 0; i < alloc->nmonitors; i++) {
+        if (alloc->monitors[i]->id &&
+            STREQ(id, (alloc->monitors[i])->id)) {
+            if (monitor)
+                *monitor = alloc->monitors[i];
+            if (pos)
+                *pos = i;
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
+
+int
+virResctrlAllocDetermineMonitorPath(virResctrlAllocPtr alloc,
+                                    const char *id,
+                                    const char *machinename)
+{
+    virResctrlAllocMonPtr monitor = NULL;
+
+    if (virResctrlAllocGetMonitor(alloc, id, &monitor, NULL) < 0)
+        return -1;
+
+
+    return virResctrlDeterminePath(monitor->id,
+                                   alloc->path,
+                                   "mon_groups",
+                                   machinename,
+                                   &monitor->path);
+}
+
+
+int
+virResctrlAllocAddMonitorPID(virResctrlAllocPtr alloc,
+                             const char *id,
+                             pid_t pid)
+{
+    virResctrlAllocMonPtr monitor = NULL;
+
+    if (virResctrlAllocGetMonitor(alloc, id, &monitor, NULL) < 0)
+        return -1;
+
+    return virResctrlAddPID(monitor->path, pid);
+}
+
+
+int
+virResctrlAllocSetMonitor(virResctrlAllocPtr alloc,
+                          const char *id)
+{
+    virResctrlAllocMonPtr monitor = NULL;
+
+    if (!alloc || !id)
+        return - 1;
+
+    if (virResctrlAllocGetMonitor(alloc, id, &monitor, NULL) < 0) {
+        if (VIR_ALLOC(monitor) < 0)
+            return -1;
+    }
+
+    if (VIR_STRDUP(monitor->id, (char*)id) < 0)
+        return -1;
+
+    if (VIR_APPEND_ELEMENT(alloc->monitors, alloc->nmonitors, monitor) < 0)
+        return -1;
+
+    return 0;
+}
+
+int
+virResctrlAllocCreateMonitor(virResctrlInfoPtr resctrl,
+                             virResctrlAllocPtr alloc,
+                             const char *machinename,
+                             const char *id)
+{
+    virResctrlAllocMonPtr monitor = NULL;
+
+    if (virResctrlAllocGetMonitor(alloc, id, &monitor, NULL) < 0)
+        return - 1;
+
+    if (virResctrlAllocDetermineMonitorPath(alloc, id, machinename) < 0)
+        return -1;
+
+    VIR_DEBUG("Creating resctrl monitor %s", monitor->path);
+    if (virResctrlCreateGroup(resctrl, monitor->path) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+int
+virResctrlAllocDeleteMonitor(virResctrlAllocPtr alloc,
+                             const char *id)
+{
+    int ret = 0;
+
+    virResctrlAllocMonPtr monitor = NULL;
+    size_t pos = 0;
+
+    if (virResctrlAllocGetMonitor(alloc, id, &monitor, &pos) < 0)
+        return -1;
+
+    VIR_DELETE_ELEMENT(alloc->monitors, pos, alloc->nmonitors);
+
+    VIR_DEBUG("Deleting resctrl monitor %s  ", monitor->path);
+    if (rmdir(monitor->path) != 0 && errno != ENOENT) {
+        ret = -errno;
+        VIR_ERROR(_("Unable to remove %s (%d)"), monitor->path, errno);
+    }
+
+    VIR_FREE(monitor->id);
+    VIR_FREE(monitor->path);
+    VIR_FREE(monitor);
+    return ret;
+}
+
+
+static int
+virResctrlAllocGetStatistic(virResctrlAllocPtr alloc,
+                            const char *id,
+                            const char *resfile,
+                            unsigned int *nnodes,
+                            unsigned int **nodeids,
+                            unsigned int **nodevals)
+{
+    DIR *dirp = NULL;
+    int ret = -1;
+    int rv = -1;
+    struct dirent *ent = NULL;
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+    char *mondatapath = NULL;
+    size_t ntmpid = 0;
+    size_t ntmpval = 0;
+    virResctrlAllocMonPtr monitor = NULL;
+
+    if (!nnodes || !nodeids || !nodevals)
+        return -1;
+
+    if (virResctrlAllocGetMonitor(alloc, id, &monitor, NULL) < 0)
+        goto cleanup;
+
+    if (!monitor || !monitor->path)
+        goto cleanup;
+
+    rv = virDirOpenIfExists(&dirp, monitor->path);
+    if (rv <= 0)
+        goto cleanup;
+
+    *nnodes = 0;
+
+    virBufferAsprintf(&buf, "%s/mon_data", monitor->path);
+
+    mondatapath = virBufferContentAndReset(&buf);
+    if (!mondatapath)
+        goto cleanup;
+
+    if (virDirOpen(&dirp, mondatapath) < 0)
+        goto cleanup;
+
+    while ((rv = virDirRead(dirp, &ent, mondatapath)) > 0) {
+        char *pstrid = NULL;
+        size_t i = 0;
+        unsigned int len = 0;
+        unsigned int counter = 0;
+        unsigned int cacheid = 0;
+        unsigned int cur_cacheid = 0;
+        unsigned int val = 0;
+        int tmpnodeid = 0;
+        int tmpnodeval = 0;
+
+        if (ent->d_type != DT_DIR)
+            continue;
+
+        /* mon_L3(|CODE|DATA)_xx, xx is cache id */
+        if (STRNEQLEN(ent->d_name, "mon_L", 5))
+            continue;
+
+        len = strlen(ent->d_name);
+        pstrid = ent->d_name;
+        /* locating the cache id string: 'xx' */
+        for (i = 0; i < len; i++) {
+            if (*(pstrid + i) == '_')
+                counter ++;
+            if (counter == 2)
+                break;
+        }
+        i++;
+
+        if (i >= len)
+            goto cleanup;
+
+        if (virStrToLong_uip(pstrid + i, NULL, 0, &cacheid) < 0) {
+            VIR_DEBUG("Cannot parse id from folder '%s'", ent->d_name);
+            goto cleanup;
+        }
+
+        rv = virFileReadValueUint(&val,
+                                  "%s/%s/%s",
+                                  mondatapath, ent->d_name, resfile);
+
+        if (rv == -2) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("file %s/%s/%s does not exist"),
+                           mondatapath, ent->d_name, resfile);
+            goto cleanup;
+        } else {
+            if (rv < 0)
+                goto cleanup;
+        }
+
+        /* The ultimate caller will be responiblefor free memory of
+         * 'nodeids' an 'nodevals' */
+        if (VIR_APPEND_ELEMENT(*nodeids, ntmpid, cacheid) < 0)
+            goto cleanup;
+        if (VIR_APPEND_ELEMENT(*nodevals, ntmpval, val) < 0)
+            goto cleanup;
+
+        cur_cacheid = ntmpval - 1;
+        /* sort the cache information in caach bank id's ascending order */
+        for (i = 0; i < cur_cacheid; i++) {
+            if ((*nodeids)[cur_cacheid] < (*nodeids)[i]) {
+                tmpnodeid  = (*nodeids)[cur_cacheid];
+                tmpnodeval = (*nodevals)[cur_cacheid];
+                (*nodeids)[cur_cacheid]  = (*nodeids)[i];
+                (*nodevals)[cur_cacheid] = (*nodevals)[i];
+                (*nodeids)[i]  = tmpnodeid;
+                (*nodevals)[i] = tmpnodeval;
+            }
+        }
+    }
+
+    (*nnodes) = ntmpval;
+    ret = 0;
+ cleanup:
+    VIR_FREE(mondatapath);
+    VIR_DIR_CLOSE(dirp);
+    return ret;
+}
+
+
+int
+virResctrlAllocGetCacheOccupancy(virResctrlAllocPtr alloc,
+                                 const char *id,
+                                 unsigned int *nbank,
+                                 unsigned int **bankids,
+                                 unsigned int **bankcaches)
+{
+    int ret = - 1;
+
+    ret = virResctrlAllocGetStatistic(alloc, id, "llc_occupancy",
+                                      nbank, bankids, bankcaches);
 
     return ret;
 }
