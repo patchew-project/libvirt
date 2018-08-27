@@ -28,7 +28,10 @@
 #include "viralloc.h"
 #include "virobject.h"
 #include "virlog.h"
+#include "virstring.h"
 #include "locking/lock_manager.h"
+#include "virrandom.h"
+#include "virtime.h"
 
 #define VIR_FROM_THIS VIR_FROM_SECURITY
 
@@ -1388,4 +1391,185 @@ virSecurityManagerRestoreTPMLabels(virSecurityManagerPtr mgr,
     }
 
     return 0;
+}
+
+
+static virLockManagerPtr
+virSecurityManagerNewLockManager(virSecurityManagerLockPtr mgrLock)
+{
+    virLockManagerPtr lock;
+    virLockManagerParam params[] = {
+        { .type = VIR_LOCK_MANAGER_PARAM_TYPE_UUID,
+            .key = "uuid",
+        },
+        { .type = VIR_LOCK_MANAGER_PARAM_TYPE_STRING,
+            .key = "name",
+            .value = { .cstr = "libvirtd-sec" },
+        },
+        { .type = VIR_LOCK_MANAGER_PARAM_TYPE_UINT,
+            .key = "pid",
+            .value = { .iv = getpid() },
+        },
+    };
+    const unsigned int flags = 0;
+
+    if (virGetHostUUID(params[0].value.uuid) < 0)
+        return NULL;
+
+    if (!(lock = virLockManagerNew(virLockManagerPluginGetDriver(mgrLock->lockPlugin),
+                                   VIR_LOCK_MANAGER_OBJECT_TYPE_DAEMON,
+                                   ARRAY_CARDINALITY(params),
+                                   params,
+                                   flags)))
+        return NULL;
+
+    return lock;
+}
+
+
+/* How many miliseconds should we wait for the lock to be
+ * acquired before claiming error. */
+#define METADATA_LOCK_WAIT_MAX (10 * 1000)
+
+/* What is the maximum sleeping time (in miliseconds) between
+ * retries. */
+#define METADATA_LOCK_SLEEP_MAX (100)
+
+int
+virSecurityManagerMetadataLock(virSecurityManagerPtr mgr,
+                               const char *path)
+{
+    virSecurityManagerLockPtr lock = mgr->lock;
+    unsigned long long now;
+    unsigned long long then;
+    int ret = -1;
+
+    VIR_DEBUG("mgr=%p path=%s lock=%p", mgr, path, lock);
+
+    if (!lock)
+        return 0;
+
+    virObjectLock(lock);
+
+    while (lock->pathLocked) {
+        if (virCondWait(&lock->cond, &lock->parent.lock) < 0) {
+            virReportSystemError(errno, "%s",
+                                 _("failed to wait on metadata condition"));
+            goto cleanup;
+        }
+    }
+
+    if (!lock->lock &&
+        !(lock->lock = virSecurityManagerNewLockManager(lock)))
+        goto cleanup;
+
+    if (virLockManagerAddResource(lock->lock,
+                                  VIR_LOCK_MANAGER_RESOURCE_TYPE_METADATA,
+                                  path, 0, NULL, 0) < 0)
+        goto cleanup;
+
+    if (virTimeMillisNowRaw(&now) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("Unable to get system time"));
+        goto cleanup;
+    }
+
+    then = now + METADATA_LOCK_WAIT_MAX;
+    while (1) {
+        uint32_t s;
+        int rc;
+
+        rc = virLockManagerAcquire(lock->lock, NULL,
+                                   VIR_LOCK_MANAGER_ACQUIRE_KEEP_OPEN,
+                                   VIR_DOMAIN_LOCK_FAILURE_DEFAULT, NULL);
+
+        if (!rc)
+            break;
+
+        if (rc < 0) {
+            virErrorPtr err = virGetLastError();
+
+            if (err->code == VIR_ERR_SYSTEM_ERROR &&
+                err->int1 == EPIPE) {
+                /* Because we are sharing a connection, virtlockd
+                 * might have been restarted and thus closed our
+                 * connection. Retry. */
+                continue;
+            } else if (err->code != VIR_ERR_RESOURCE_BUSY) {
+                /* Some regular error. Exit now. */
+                goto cleanup;
+            }
+
+            /* Proceed to waiting & retry. */
+        }
+
+        if (now  >= then)
+            goto cleanup;
+
+        s = virRandomInt(METADATA_LOCK_SLEEP_MAX) + 1;
+
+        if (now + s > then)
+            s = then - now;
+
+        usleep(1000 * s);
+
+        if (virTimeMillisNowRaw(&now) < 0) {
+            virReportSystemError(errno, "%s",
+                                 _("Unable to get system time"));
+            goto cleanup;
+        }
+    }
+
+    lock->pathLocked = true;
+    ret = 0;
+ cleanup:
+    if (lock->lock)
+        virLockManagerClearResources(lock->lock, 0);
+    if (ret < 0)
+        virSecurityManagerLockCloseConnLocked(lock, false);
+    virObjectUnlock(lock);
+    return ret;
+}
+
+
+int
+virSecurityManagerMetadataUnlock(virSecurityManagerPtr mgr,
+                                 const char *path)
+{
+    virSecurityManagerLockPtr lock = mgr->lock;
+    int ret = -1;
+
+    VIR_DEBUG("mgr=%p path=%s lock=%p", mgr, path, lock);
+
+    if (!lock)
+        return 0;
+
+    virObjectLock(lock);
+
+    /* Shouldn't happen, but doesn't hurt to check. */
+    if (!lock->lock) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("unlock mismatch"));
+        goto cleanup;
+    }
+
+    if (virLockManagerAddResource(lock->lock,
+                                  VIR_LOCK_MANAGER_RESOURCE_TYPE_METADATA,
+                                  path, 0, NULL, 0) < 0)
+        goto cleanup;
+
+    if (virLockManagerRelease(lock->lock, NULL,
+                              VIR_LOCK_MANAGER_RELEASE_KEEP_OPEN) < 0)
+        goto cleanup;
+
+    lock->pathLocked = false;
+    virCondSignal(&lock->cond);
+    ret = 0;
+ cleanup:
+    if (lock->lock)
+        virLockManagerClearResources(lock->lock, 0);
+    if (ret < 0)
+        virSecurityManagerLockCloseConnLocked(lock, true);
+    virObjectUnlock(lock);
+    return ret;
 }

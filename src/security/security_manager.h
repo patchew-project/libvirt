@@ -198,4 +198,18 @@ int virSecurityManagerSetTPMLabels(virSecurityManagerPtr mgr,
 int virSecurityManagerRestoreTPMLabels(virSecurityManagerPtr mgr,
                                        virDomainDefPtr vm);
 
+/* Ideally, these APIs wouldn't be here and the security manager
+ * would call lock and unlock from these APIs above just before
+ * calling corresponding callback from the driver. However, that
+ * means we would have to dig out paths from all the possible
+ * devices that APIs above handle which effectively means
+ * duplicating code from the driver (which has to do it already
+ * anyway).
+ * Therefore, have these APIs and let the driver call them when
+ * needed. */
+int virSecurityManagerMetadataLock(virSecurityManagerPtr mgr,
+                                   const char *path);
+int virSecurityManagerMetadataUnlock(virSecurityManagerPtr mgr,
+                                     const char *path);
+
 #endif /* VIR_SECURITY_MANAGER_H__ */
