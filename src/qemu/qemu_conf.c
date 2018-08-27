@@ -863,6 +863,9 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
     if (virConfGetValueUInt(conf, "keepalive_count", &cfg->keepAliveCount) < 0)
         goto cleanup;
 
+    if (virConfGetValueInt(conf, "state_lock_timeout", &cfg->stateLockTimeout) < 0)
+        goto cleanup;
+
     if (virConfGetValueInt(conf, "seccomp_sandbox", &cfg->seccompSandbox) < 0)
         goto cleanup;
 

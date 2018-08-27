@@ -6714,7 +6714,11 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
     }
 
     priv->jobs_queued++;
-    then = now + QEMU_JOB_WAIT_TIME;
+    if (cfg->stateLockTimeout > 0)
+        then = now + cfg->stateLockTimeout;
+    else
+        then = now + QEMU_JOB_WAIT_TIME;
+
 
  retry:
     if ((!async && job != QEMU_JOB_DESTROY) &&
