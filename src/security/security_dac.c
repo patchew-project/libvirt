@@ -638,6 +638,8 @@ virSecurityDACSetOwnership(virSecurityManagerPtr mgr,
     virSecurityDACDataPtr priv = virSecurityManagerGetPrivateData(mgr);
     struct stat sb;
     int rc;
+    bool locked = false;
+    int ret = -1;
 
     if (!path && src && src->path &&
         virStorageSourceIsLocalStorage(src))
@@ -657,14 +659,28 @@ virSecurityDACSetOwnership(virSecurityManagerPtr mgr,
             return -1;
         }
 
+        if (!S_ISDIR(sb.st_mode)) {
+            if (virSecurityManagerMetadataLock(mgr, path) < 0)
+                return -1;
+            locked = true;
+        }
+
         if (virSecurityDACRememberLabel(priv, path, sb.st_uid, sb.st_gid) < 0)
-            return -1;
+            goto cleanup;
     }
 
     VIR_INFO("Setting DAC user and group on '%s' to '%ld:%ld'",
              NULLSTR(src ? src->path : path), (long)uid, (long)gid);
 
-    return virSecurityDACSetOwnershipInternal(priv, src, path, uid, gid);
+    if (virSecurityDACSetOwnershipInternal(priv, src, path, uid, gid) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    if (locked &&
+        virSecurityManagerMetadataUnlock(mgr, path) < 0)
+        VIR_WARN("Unable to unlock metadata on %s", path);
+    return ret;
 }
 
 
@@ -677,6 +693,9 @@ virSecurityDACRestoreFileLabelInternal(virSecurityManagerPtr mgr,
     int rv;
     uid_t uid = 0;  /* By default return to root:root */
     gid_t gid = 0;
+    struct stat sb;
+    bool locked;
+    int ret = -1;
 
     if (!path && src && src->path &&
         virStorageSourceIsLocalStorage(src))
@@ -691,17 +710,38 @@ virSecurityDACRestoreFileLabelInternal(virSecurityManagerPtr mgr,
         return 0;
 
     if (path) {
+        if (stat(path, &sb) < 0) {
+            virReportSystemError(errno, _("unable to stat: %s"), path);
+            return -1;
+        }
+
+        if (!S_ISDIR(sb.st_mode)) {
+            if (virSecurityManagerMetadataLock(mgr, path) < 0)
+                return -1;
+            locked = true;
+        }
+
         rv = virSecurityDACRecallLabel(priv, path, &uid, &gid);
         if (rv < 0)
-            return -1;
-        if (rv > 0)
-            return 0;
+            goto cleanup;
+        if (rv > 0) {
+            ret = 0;
+            goto cleanup;
+        }
     }
 
     VIR_INFO("Restoring DAC user and group on '%s' to %ld:%ld",
              NULLSTR(src ? src->path : path), (long)uid, (long)gid);
 
-    return virSecurityDACSetOwnershipInternal(priv, src, path, uid, gid);
+    if (virSecurityDACSetOwnershipInternal(priv, src, path, uid, gid) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    if (locked &&
+        virSecurityManagerMetadataUnlock(mgr, path) < 0)
+        VIR_WARN("Unable to unlock metadata on %s", path);
+    return ret;
 }
 
 
