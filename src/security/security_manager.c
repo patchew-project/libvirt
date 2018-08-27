@@ -91,6 +91,56 @@ virSecurityManagerLockDispose(void *obj)
 }
 
 
+static void
+virSecurityManagerLockCloseConnLocked(virSecurityManagerLockPtr lock,
+                                      bool force)
+{
+    int rc;
+
+    if (!lock)
+        return;
+
+    while (!force &&
+           lock->pathLocked) {
+        if (virCondWait(&lock->cond, &lock->parent.lock) < 0) {
+            VIR_WARN("Unable to wait on metadata condition");
+            return;
+        }
+    }
+
+    rc = virLockManagerCloseConn(lock->lock, 0);
+    if (rc < 0)
+        return;
+    if (rc > 0)
+        lock->lock = NULL;
+
+    if (force) {
+        /* We've closed the connection. Wake up anybody who might be
+         * waiting. */
+        lock->pathLocked = false;
+        virCondSignal(&lock->cond);
+    }
+}
+
+
+static void
+virSecurityManagerLockCloseConn(virSecurityManagerLockPtr lock)
+{
+    if (!lock)
+        return;
+
+    virObjectLock(lock);
+
+    if (!lock->lock)
+        goto cleanup;
+
+    virSecurityManagerLockCloseConnLocked(lock, false);
+
+ cleanup:
+    virObjectUnlock(lock);
+}
+
+
 static int
 virSecurityManagerOnceInit(void)
 {
@@ -334,6 +384,7 @@ virSecurityManagerTransactionStart(virSecurityManagerPtr mgr)
     virObjectLock(mgr);
     if (mgr->drv->transactionStart)
         ret = mgr->drv->transactionStart(mgr);
+    virSecurityManagerLockCloseConn(mgr->lock);
     virObjectUnlock(mgr);
     return ret;
 }
@@ -362,6 +413,7 @@ virSecurityManagerTransactionCommit(virSecurityManagerPtr mgr,
     virObjectLock(mgr);
     if (mgr->drv->transactionCommit)
         ret = mgr->drv->transactionCommit(mgr, pid);
+    virSecurityManagerLockCloseConn(mgr->lock);
     virObjectUnlock(mgr);
     return ret;
 }
@@ -379,6 +431,7 @@ virSecurityManagerTransactionAbort(virSecurityManagerPtr mgr)
     virObjectLock(mgr);
     if (mgr->drv->transactionAbort)
         mgr->drv->transactionAbort(mgr);
+    virSecurityManagerLockCloseConn(mgr->lock);
     virObjectUnlock(mgr);
 }
 
@@ -487,6 +540,7 @@ virSecurityManagerRestoreDiskLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainRestoreSecurityDiskLabel(mgr, vm, disk);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -515,6 +569,7 @@ virSecurityManagerRestoreImageLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainRestoreSecurityImageLabel(mgr, vm, src);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -532,6 +587,7 @@ virSecurityManagerSetDaemonSocketLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainSetSecurityDaemonSocketLabel(mgr, vm);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -549,6 +605,7 @@ virSecurityManagerSetSocketLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainSetSecuritySocketLabel(mgr, vm);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -566,6 +623,7 @@ virSecurityManagerClearSocketLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainClearSecuritySocketLabel(mgr, vm);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -595,6 +653,7 @@ virSecurityManagerSetDiskLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainSetSecurityDiskLabel(mgr, vm, disk);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -623,6 +682,7 @@ virSecurityManagerSetImageLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainSetSecurityImageLabel(mgr, vm, src);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -642,6 +702,7 @@ virSecurityManagerRestoreHostdevLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainRestoreSecurityHostdevLabel(mgr, vm, dev, vroot);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -661,6 +722,7 @@ virSecurityManagerSetHostdevLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainSetSecurityHostdevLabel(mgr, vm, dev, vroot);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -679,6 +741,7 @@ virSecurityManagerSetSavedStateLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainSetSavedStateLabel(mgr, vm, savefile);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -696,6 +759,7 @@ virSecurityManagerRestoreSavedStateLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainRestoreSavedStateLabel(mgr, vm, savefile);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -939,6 +1003,7 @@ virSecurityManagerSetAllLabel(virSecurityManagerPtr mgr,
         virObjectLock(mgr);
         ret = mgr->drv->domainSetSecurityAllLabel(mgr, vm, stdin_path,
                                                   chardevStdioLogd);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -959,6 +1024,7 @@ virSecurityManagerRestoreAllLabel(virSecurityManagerPtr mgr,
         virObjectLock(mgr);
         ret = mgr->drv->domainRestoreSecurityAllLabel(mgr, vm, migrated,
                                                       chardevStdioLogd);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -1140,6 +1206,7 @@ virSecurityManagerDomainSetPathLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainSetPathLabel(mgr, vm, path, allowSubtree);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -1167,6 +1234,7 @@ virSecurityManagerSetMemoryLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainSetSecurityMemoryLabel(mgr, vm, mem);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -1195,6 +1263,7 @@ virSecurityManagerRestoreMemoryLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainRestoreSecurityMemoryLabel(mgr, vm, mem);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -1213,6 +1282,7 @@ virSecurityManagerSetInputLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainSetSecurityInputLabel(mgr, vm, input);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -1231,6 +1301,7 @@ virSecurityManagerRestoreInputLabel(virSecurityManagerPtr mgr,
         int ret;
         virObjectLock(mgr);
         ret = mgr->drv->domainRestoreSecurityInputLabel(mgr, vm, input);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -1251,6 +1322,7 @@ virSecurityManagerSetChardevLabel(virSecurityManagerPtr mgr,
         virObjectLock(mgr);
         ret = mgr->drv->domainSetSecurityChardevLabel(mgr, def, dev_source,
                                                       chardevStdioLogd);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -1271,6 +1343,7 @@ virSecurityManagerRestoreChardevLabel(virSecurityManagerPtr mgr,
         virObjectLock(mgr);
         ret = mgr->drv->domainRestoreSecurityChardevLabel(mgr, def, dev_source,
                                                           chardevStdioLogd);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
         return ret;
     }
@@ -1289,6 +1362,7 @@ virSecurityManagerSetTPMLabels(virSecurityManagerPtr mgr,
     if (mgr->drv->domainSetSecurityTPMLabels) {
         virObjectLock(mgr);
         ret = mgr->drv->domainSetSecurityTPMLabels(mgr, vm);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
 
         return ret;
@@ -1307,6 +1381,7 @@ virSecurityManagerRestoreTPMLabels(virSecurityManagerPtr mgr,
     if (mgr->drv->domainRestoreSecurityTPMLabels) {
         virObjectLock(mgr);
         ret = mgr->drv->domainRestoreSecurityTPMLabels(mgr, vm);
+        virSecurityManagerLockCloseConn(mgr->lock);
         virObjectUnlock(mgr);
 
         return ret;
