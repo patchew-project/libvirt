@@ -56,10 +56,21 @@ struct _virLockManagerLockDaemonResource {
 };
 
 struct _virLockManagerLockDaemonPrivate {
-    unsigned char uuid[VIR_UUID_BUFLEN];
-    char *name;
-    int id;
-    pid_t pid;
+    virLockManagerObjectType type;
+    union {
+        struct {
+            unsigned char uuid[VIR_UUID_BUFLEN];
+            char *name;
+            int id;
+            pid_t pid;
+        } dom;
+
+        struct {
+            unsigned char uuid[VIR_UUID_BUFLEN];
+            char *name;
+            pid_t pid;
+        } daemon;
+    } t;
 
     size_t nresources;
     virLockManagerLockDaemonResourcePtr resources;
@@ -156,10 +167,24 @@ virLockManagerLockDaemonConnectionRegister(virLockManagerPtr lock,
     memset(&args, 0, sizeof(args));
 
     args.flags = 0;
-    memcpy(args.owner.uuid, priv->uuid, VIR_UUID_BUFLEN);
-    args.owner.name = priv->name;
-    args.owner.id = priv->id;
-    args.owner.pid = priv->pid;
+
+    switch (priv->type) {
+    case VIR_LOCK_MANAGER_OBJECT_TYPE_DOMAIN:
+        memcpy(args.owner.uuid, priv->t.dom.uuid, VIR_UUID_BUFLEN);
+        args.owner.name = priv->t.dom.name;
+        args.owner.id = priv->t.dom.id;
+        args.owner.pid = priv->t.dom.pid;
+        break;
+
+    case VIR_LOCK_MANAGER_OBJECT_TYPE_DAEMON:
+        memcpy(args.owner.uuid, priv->t.daemon.uuid, VIR_UUID_BUFLEN);
+        args.owner.name = priv->t.daemon.name;
+        args.owner.pid = priv->t.daemon.pid;
+        break;
+
+    default:
+        return -1;
+    }
 
     if (virNetClientProgramCall(program,
                                 client,
@@ -391,7 +416,18 @@ virLockManagerLockDaemonPrivateFree(virLockManagerLockDaemonPrivatePtr priv)
     }
     VIR_FREE(priv->resources);
 
-    VIR_FREE(priv->name);
+    switch (priv->type) {
+    case VIR_LOCK_MANAGER_OBJECT_TYPE_DOMAIN:
+        VIR_FREE(priv->t.dom.name);
+        break;
+
+    case VIR_LOCK_MANAGER_OBJECT_TYPE_DAEMON:
+        VIR_FREE(priv->t.daemon.name);
+        break;
+
+    default:
+        break;
+    }
     VIR_FREE(priv);
 }
 
@@ -420,42 +456,78 @@ static int virLockManagerLockDaemonNew(virLockManagerPtr lock,
     if (VIR_ALLOC(priv) < 0)
         return -1;
 
-    switch (type) {
+    priv->type = type;
+
+    switch ((virLockManagerObjectType) type) {
     case VIR_LOCK_MANAGER_OBJECT_TYPE_DOMAIN:
         for (i = 0; i < nparams; i++) {
             if (STREQ(params[i].key, "uuid")) {
-                memcpy(priv->uuid, params[i].value.uuid, VIR_UUID_BUFLEN);
+                memcpy(priv->t.dom.uuid, params[i].value.uuid, VIR_UUID_BUFLEN);
             } else if (STREQ(params[i].key, "name")) {
-                if (VIR_STRDUP(priv->name, params[i].value.str) < 0)
+                if (VIR_STRDUP(priv->t.dom.name, params[i].value.str) < 0)
                     goto cleanup;
             } else if (STREQ(params[i].key, "id")) {
-                priv->id = params[i].value.iv;
+                priv->t.dom.id = params[i].value.iv;
             } else if (STREQ(params[i].key, "pid")) {
-                priv->pid = params[i].value.iv;
+                priv->t.dom.pid = params[i].value.iv;
             } else if (STREQ(params[i].key, "uri")) {
                 /* ignored */
             } else {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("Unexpected parameter %s for object"),
+                               _("Unexpected parameter %s for domain object"),
                                params[i].key);
                 goto cleanup;
             }
         }
-        if (priv->id == 0) {
+        if (priv->t.dom.id == 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Missing ID parameter for domain object"));
             goto cleanup;
         }
-        if (priv->pid == 0)
+        if (priv->t.dom.pid == 0)
             VIR_DEBUG("Missing PID parameter for domain object");
-        if (!priv->name) {
+        if (!priv->t.dom.name) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Missing name parameter for domain object"));
             goto cleanup;
         }
-        if (!virUUIDIsValid(priv->uuid)) {
+        if (!virUUIDIsValid(priv->t.dom.uuid)) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Missing UUID parameter for domain object"));
+            goto cleanup;
+        }
+        break;
+
+    case VIR_LOCK_MANAGER_OBJECT_TYPE_DAEMON:
+        for (i = 0; i < nparams; i++) {
+            if (STREQ(params[i].key, "uuid")) {
+                memcpy(priv->t.daemon.uuid, params[i].value.uuid, VIR_UUID_BUFLEN);
+            } else if (STREQ(params[i].key, "name")) {
+                if (VIR_STRDUP(priv->t.daemon.name, params[i].value.str) < 0)
+                    goto cleanup;
+            } else if (STREQ(params[i].key, "pid")) {
+                priv->t.daemon.pid = params[i].value.iv;
+            } else {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("Unexpected parameter %s for daemon object"),
+                               params[i].key);
+                goto cleanup;
+            }
+        }
+
+        if (!virUUIDIsValid(priv->t.daemon.uuid)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Missing UUID parameter for daemon object"));
+            goto cleanup;
+        }
+        if (!priv->t.daemon.name) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Missing name parameter for daemon object"));
+            goto cleanup;
+        }
+        if (priv->t.daemon.pid == 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Missing PID parameter for daemon object"));
             goto cleanup;
         }
         break;
