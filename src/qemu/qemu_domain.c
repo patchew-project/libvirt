@@ -5840,6 +5840,10 @@ qemuDomainDefaultNetModel(const virDomainDef *def,
         return "lan9118";
     }
 
+    /* virtio is a sensible default for RISC-V virt guests */
+    if (qemuDomainIsRISCVVirt(def))
+        return "virtio";
+
     /* In all other cases the model depends on the capabilities. If they were
      * not provided don't report any default. */
     if (!qemuCaps)
@@ -6326,7 +6330,9 @@ qemuDomainDeviceVideoDefPostParse(virDomainVideoDefPtr video,
     if (video->type == VIR_DOMAIN_VIDEO_TYPE_DEFAULT) {
         if (ARCH_IS_PPC64(def->os.arch))
             video->type = VIR_DOMAIN_VIDEO_TYPE_VGA;
-        else if (qemuDomainIsARMVirt(def) || ARCH_IS_S390(def->os.arch))
+        else if (qemuDomainIsARMVirt(def) ||
+                 qemuDomainIsRISCVVirt(def) ||
+                 ARCH_IS_S390(def->os.arch))
             video->type = VIR_DOMAIN_VIDEO_TYPE_VIRTIO;
         else
             video->type = VIR_DOMAIN_VIDEO_TYPE_CIRRUS;
