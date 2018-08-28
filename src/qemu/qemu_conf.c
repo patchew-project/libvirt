@@ -129,6 +129,9 @@ void qemuDomainCmdlineDefFree(qemuDomainCmdlineDefPtr def)
 #endif
 
 
+/* Give up waiting for mutex after 30 seconds */
+#define QEMU_JOB_WAIT_TIME (1000ull * 30)
+
 virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
 {
     virQEMUDriverConfigPtr cfg;
@@ -345,6 +348,8 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
     cfg->logTimestamp = true;
     cfg->glusterDebugLevel = 4;
     cfg->stdioLogD = true;
+
+    cfg->stateLockTimeout = QEMU_JOB_WAIT_TIME;
 
     if (!(cfg->namespaces = virBitmapNew(QEMU_DOMAIN_NS_LAST)))
         goto error;
@@ -863,6 +868,9 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
     if (virConfGetValueUInt(conf, "keepalive_count", &cfg->keepAliveCount) < 0)
         goto cleanup;
 
+    if (virConfGetValueInt(conf, "state_lock_timeout", &cfg->stateLockTimeout) < 0)
+        goto cleanup;
+
     if (virConfGetValueInt(conf, "seccomp_sandbox", &cfg->seccompSandbox) < 0)
         goto cleanup;
 
@@ -1052,6 +1060,12 @@ virQEMUDriverConfigValidate(virQEMUDriverConfigPtr cfg)
         virReportError(VIR_ERR_CONF_SYNTAX,
                        _("nbd_tls_x509_cert_dir directory '%s' does not exist"),
                        cfg->nbdTLSx509certdir);
+        return -1;
+    }
+
+    if (cfg->stateLockTimeout <= 0) {
+        virReportError(VIR_ERR_CONF_SYNTAX,
+                       _("state_lock_timeout should larger than zero"));
         return -1;
     }
 
