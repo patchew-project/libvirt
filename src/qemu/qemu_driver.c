@@ -15248,6 +15248,7 @@ qemuDomainSnapshotCreateActiveExternal(virQEMUDriverPtr driver,
         virObjectEventStateQueue(driver->domainEventState, event);
     }
 
+    memory_unlink = false;
     ret = 0;
 
  cleanup:
