@@ -54,6 +54,10 @@
 #include <sys/wait.h>
 #include <stdarg.h>
 #include <sys/utsname.h>
+#if defined(HAVE_LINUX_SECCOMP_H) && defined(HAVE_SYS_SYSCALL_H)
+#include <linux/seccomp.h>
+#include <sys/syscall.h>
+#endif
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
@@ -4615,6 +4619,15 @@ virQEMUCapsLogProbeFailure(const char *binary)
 }
 
 
+#if defined(HAVE_LINUX_SECCOMP_H) && defined(HAVE_SYS_SYSCALL_H)
+static int
+virSeccomp(unsigned int op, unsigned int flags, void *args)
+{
+        errno = 0;
+        return syscall(__NR_seccomp, op, flags, args);
+}
+#endif
+
 virQEMUCapsPtr
 virQEMUCapsNewForBinaryInternal(virArch hostArch,
                                 const char *binary,
@@ -4677,6 +4690,20 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
 
         if (VIR_STRDUP(qemuCaps->kernelVersion, kernelVersion) < 0)
             goto error;
+    }
+
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SECCOMP_SANDBOX)) {
+        bool have_seccomp = false;
+#if defined(HAVE_LINUX_SECCOMP_H) && defined(HAVE_SYS_SYSCALL_H)
+        /* check the TSYNC flag - it returns errno == ENOSYS if unavailable */
+        if (virSeccomp(SECCOMP_SET_MODE_FILTER, SECCOMP_FILTER_FLAG_TSYNC, NULL) < 0 &&
+            errno == EFAULT) {
+            have_seccomp = true;
+        }
+#endif
+        if (!have_seccomp) {
+            virQEMUCapsClear(qemuCaps, QEMU_CAPS_SECCOMP_SANDBOX);
+        }
     }
 
  cleanup:

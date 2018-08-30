@@ -330,7 +330,7 @@ AC_CHECK_FUNCS_ONCE([cfmakeraw fallocate geteuid getgid getgrnam_r \
 
 dnl Availability of various common headers (non-fatal if missing).
 AC_CHECK_HEADERS([pwd.h regex.h sys/un.h \
-  sys/poll.h syslog.h mntent.h net/ethernet.h linux/magic.h \
+  sys/poll.h syslog.h mntent.h net/ethernet.h linux/magic.h linux/seccomp.h \
   sys/un.h sys/syscall.h sys/sysctl.h netinet/tcp.h ifaddrs.h \
   libtasn1.h sys/ucred.h sys/mount.h stdarg.h])
 dnl Check whether endian provides handy macros.
