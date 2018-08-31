@@ -310,7 +310,7 @@ virPCIDeviceAddressFormat(virBufferPtr buf,
 }
 
 char *
-virDomainPCIAddressAsString(virPCIDeviceAddressPtr addr)
+virPCIDeviceAddressAsString(virPCIDeviceAddressPtr addr)
 {
     char *str;
 
