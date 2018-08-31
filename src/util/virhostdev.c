@@ -235,6 +235,7 @@ virHostdevGetPCIHostDeviceList(virDomainHostdevDefPtr *hostdevs, int nhostdevs)
     for (i = 0; i < nhostdevs; i++) {
         virDomainHostdevDefPtr hostdev = hostdevs[i];
         virDomainHostdevSubsysPCIPtr pcisrc = &hostdev->source.subsys.u.pci;
+        virDomainHostdevOrigStatesPtr origstates = &hostdev->origstates;
         virPCIDevicePtr pci;
 
         if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS)
@@ -262,6 +263,10 @@ virHostdevGetPCIHostDeviceList(virDomainHostdevDefPtr *hostdevs, int nhostdevs)
             virPCIDeviceSetStubDriver(pci, VIR_PCI_STUB_DRIVER_XEN);
         else
             virPCIDeviceSetStubDriver(pci, VIR_PCI_STUB_DRIVER_KVM);
+
+        virPCIDeviceSetUnbindFromStub(pci, origstates->states.pci.unbind_from_stub);
+        virPCIDeviceSetRemoveSlot(pci, origstates->states.pci.remove_slot);
+        virPCIDeviceSetReprobe(pci, origstates->states.pci.reprobe);
     }
 
     return pcidevs;
@@ -1008,8 +1013,19 @@ virHostdevReAttachPCIDevices(virHostdevManagerPtr mgr,
                 continue;
             }
         } else {
-            virPCIDeviceListDel(pcidevs, pci);
-            continue;
+            int stub = virPCIDeviceGetStubDriver(pci);
+            if (stub > VIR_PCI_STUB_DRIVER_NONE &&
+                stub < VIR_PCI_STUB_DRIVER_LAST) {
+                /* The device is bound to a known stub driver: add a copy
+                 * to the inactive list */
+                VIR_DEBUG("Adding PCI device %s to inactive list",
+                          virPCIDeviceGetName(pci));
+                if (virPCIDeviceListAddCopy(mgr->inactivePCIHostdevs, pci) < 0) {
+                    VIR_ERROR(_("Failed to add PCI device %s to the inactive list"),
+                              virGetLastErrorMessage());
+                    virResetLastError();
+                }
+            }
         }
 
         i++;
