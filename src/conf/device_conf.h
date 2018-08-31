@@ -205,6 +205,9 @@ int virPCIDeviceAddressFormat(virBufferPtr buf,
                               virPCIDeviceAddress addr,
                               bool includeTypeInAddr);
 
+char *virDomainPCIAddressAsString(virPCIDeviceAddressPtr addr)
+      ATTRIBUTE_NONNULL(1);
+
 bool virPCIDeviceAddressEqual(virPCIDeviceAddress *addr1,
                               virPCIDeviceAddress *addr2);
 

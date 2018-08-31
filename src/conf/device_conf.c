@@ -309,6 +309,19 @@ virPCIDeviceAddressFormat(virBufferPtr buf,
     return 0;
 }
 
+char *
+virDomainPCIAddressAsString(virPCIDeviceAddressPtr addr)
+{
+    char *str;
+
+    ignore_value(virAsprintf(&str, "%.4x:%.2x:%.2x.%.1x",
+                             addr->domain,
+                             addr->bus,
+                             addr->slot,
+                             addr->function));
+    return str;
+}
+
 bool
 virPCIDeviceAddressEqual(virPCIDeviceAddress *addr1,
                          virPCIDeviceAddress *addr2)
