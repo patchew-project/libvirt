@@ -1812,6 +1812,62 @@ qemuBuildDriveDevCacheStr(virDomainDiskDefPtr disk,
 }
 
 
+static char*
+qemuBuildVirtioDevStr(const virDomainDeviceInfo *info,
+                      const char *baseName)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+    const char *implName = NULL;
+
+    switch ((virDomainDeviceAddressType)info->type) {
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI:
+        implName = "pci";
+        break;
+
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO:
+        implName = "device";
+        break;
+
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW:
+        implName = "ccw";
+        break;
+
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390:
+        implName = "s390";
+        break;
+
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_DRIVE:
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_SERIAL:
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCID:
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_USB:
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_SPAPRVIO:
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_ISA:
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_DIMM:
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Unexpected address type for %s"), baseName);
+        goto error;
+
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE:
+    case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_LAST:
+    default:
+        virReportEnumRangeError(virDomainDeviceAddressType,
+                                info->type);
+        goto error;
+    }
+
+    virBufferAsprintf(&buf, "%s-%s", baseName, implName);
+
+    if (virBufferCheckError(&buf) < 0)
+        goto error;
+
+    return virBufferContentAndReset(&buf);
+
+ error:
+    virBufferFreeAndReset(&buf);
+    return NULL;
+}
+
+
 char *
 qemuBuildDiskDeviceStr(const virDomainDef *def,
                        virDomainDiskDefPtr disk,
@@ -1822,6 +1878,7 @@ qemuBuildDiskDeviceStr(const virDomainDef *def,
     const char *bus = virDomainDiskQEMUBusTypeToString(disk->bus);
     const char *contAlias;
     char *backendAlias = NULL;
+    char *devStr = NULL;
     int controllerModel;
 
     if (qemuCheckDiskConfig(disk, qemuCaps) < 0)
@@ -2002,21 +2059,19 @@ qemuBuildDiskDeviceStr(const virDomainDef *def,
         break;
 
     case VIR_DOMAIN_DISK_BUS_VIRTIO:
-        if (disk->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
-            virBufferAddLit(&opt, "virtio-blk-ccw");
-            if (disk->iothread)
-                virBufferAsprintf(&opt, ",iothread=iothread%u", disk->iothread);
-        } else if (disk->info.type ==
-                   VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390) {
-            virBufferAddLit(&opt, "virtio-blk-s390");
-        } else if (disk->info.type ==
-                   VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO) {
-            virBufferAddLit(&opt, "virtio-blk-device");
-        } else {
-            virBufferAddLit(&opt, "virtio-blk-pci");
-            if (disk->iothread)
-                virBufferAsprintf(&opt, ",iothread=iothread%u", disk->iothread);
+
+        if (!(devStr = qemuBuildVirtioDevStr(&(disk->info), "virtio-blk")))
+            goto error;
+
+        virBufferAddStr(&opt, devStr);
+        VIR_FREE(devStr);
+
+        if (disk->iothread &&
+            (disk->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW ||
+             disk->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI)) {
+            virBufferAsprintf(&opt, ",iothread=iothread%u", disk->iothread);
         }
+
         qemuBuildIoEventFdStr(&opt, disk->ioeventfd, qemuCaps);
         if (disk->event_idx &&
             virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_BLK_EVENT_IDX)) {
@@ -2150,6 +2205,7 @@ qemuBuildDiskDeviceStr(const virDomainDef *def,
     return virBufferContentAndReset(&opt);
 
  error:
+    VIR_FREE(devStr);
     VIR_FREE(backendAlias);
     virBufferFreeAndReset(&opt);
     return NULL;
@@ -2539,6 +2595,7 @@ qemuBuildFSDevStr(const virDomainDef *def,
                   virQEMUCapsPtr qemuCaps)
 {
     virBuffer opt = VIR_BUFFER_INITIALIZER;
+    char *devStr = NULL;
 
     if (fs->type != VIR_DOMAIN_FS_TYPE_MOUNT) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
@@ -2546,10 +2603,11 @@ qemuBuildFSDevStr(const virDomainDef *def,
         goto error;
     }
 
-    if (fs->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW)
-        virBufferAddLit(&opt, "virtio-9p-ccw");
-    else
-        virBufferAddLit(&opt, "virtio-9p-pci");
+    if (!(devStr = qemuBuildVirtioDevStr(&(fs->info), "virtio-9p")))
+        goto error;
+
+    virBufferAddStr(&opt, devStr);
+    VIR_FREE(devStr);
 
     virBufferAsprintf(&opt, ",id=%s", fs->info.alias);
     virBufferAsprintf(&opt, ",fsdev=%s%s",
@@ -2569,6 +2627,7 @@ qemuBuildFSDevStr(const virDomainDef *def,
     return virBufferContentAndReset(&opt);
 
  error:
+    VIR_FREE(devStr);
     virBufferFreeAndReset(&opt);
     return NULL;
 }
@@ -2744,7 +2803,7 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
                           int *nusbcontroller)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
-    int address_type = def->info.type;
+    char *devStr = NULL;
 
     *devstr = NULL;
 
@@ -2752,19 +2811,11 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
     case VIR_DOMAIN_CONTROLLER_TYPE_SCSI:
         switch ((virDomainControllerModelSCSI) def->model) {
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
-            switch (address_type) {
-            case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW:
-                virBufferAddLit(&buf, "virtio-scsi-ccw");
-                break;
-            case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390:
-                virBufferAddLit(&buf, "virtio-scsi-s390");
-                break;
-            case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO:
-                virBufferAddLit(&buf, "virtio-scsi-device");
-                break;
-            default:
-                virBufferAddLit(&buf, "virtio-scsi-pci");
-            }
+            if (!(devStr = qemuBuildVirtioDevStr(&(def->info), "virtio-scsi")))
+                goto error;
+
+            virBufferAddStr(&buf, devStr);
+            VIR_FREE(devStr);
 
             if (def->iothread) {
                 virBufferAsprintf(&buf, ",iothread=iothread%u",
@@ -2804,22 +2855,12 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
         break;
 
     case VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL:
-        switch (address_type) {
-        case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI:
-            virBufferAddLit(&buf, "virtio-serial-pci");
-            break;
-        case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW:
-            virBufferAddLit(&buf, "virtio-serial-ccw");
-            break;
-        case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390:
-            virBufferAddLit(&buf, "virtio-serial-s390");
-            break;
-        case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO:
-            virBufferAddLit(&buf, "virtio-serial-device");
-            break;
-        default:
-            virBufferAddLit(&buf, "virtio-serial");
-        }
+        if (!(devStr = qemuBuildVirtioDevStr(&(def->info), "virtio-serial")))
+            goto error;
+
+        virBufferAddStr(&buf, devStr);
+        VIR_FREE(devStr);
+
         virBufferAsprintf(&buf, ",id=%s", def->info.alias);
         if (def->opts.vioserial.ports != -1) {
             virBufferAsprintf(&buf, ",max_ports=%d",
@@ -2948,6 +2989,7 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
     return 0;
 
  error:
+    VIR_FREE(devStr);
     virBufferFreeAndReset(&buf);
     return -1;
 }
@@ -3520,21 +3562,20 @@ qemuBuildNicDevStr(virDomainDefPtr def,
     const char *nic = net->model;
     bool usingVirtio = false;
     char macaddr[VIR_MAC_STRING_BUFLEN];
+    char *devStr = NULL;
 
     if (STREQ(net->model, "virtio")) {
-        if (net->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW)
-            nic = "virtio-net-ccw";
-        else if (net->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390)
-            nic = "virtio-net-s390";
-        else if (net->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO)
-            nic = "virtio-net-device";
-        else
-            nic = "virtio-net-pci";
-
         usingVirtio = true;
+
+        if (!(devStr = qemuBuildVirtioDevStr(&(net->info), "virtio-net")))
+            goto error;
+
+        virBufferAddStr(&buf, devStr);
+        VIR_FREE(devStr);
+    } else {
+        virBufferAddStr(&buf, nic);
     }
 
-    virBufferAdd(&buf, nic, -1);
     if (usingVirtio && net->driver.virtio.txmode) {
         if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_TX_ALG)) {
             virBufferAddLit(&buf, ",tx=");
@@ -3681,6 +3722,7 @@ qemuBuildNicDevStr(virDomainDefPtr def,
     return virBufferContentAndReset(&buf);
 
  error:
+    VIR_FREE(devStr);
     virBufferFreeAndReset(&buf);
     return NULL;
 }
@@ -3914,6 +3956,7 @@ qemuBuildMemballoonCommandLine(virCommandPtr cmd,
                                virQEMUCapsPtr qemuCaps)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
+    char *devStr = NULL;
 
     if (STRPREFIX(def->os.machine, "s390-virtio") &&
         virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_S390) && def->memballoon)
@@ -3929,22 +3972,11 @@ qemuBuildMemballoonCommandLine(virCommandPtr cmd,
         return -1;
     }
 
-    switch (def->memballoon->info.type) {
-        case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI:
-            virBufferAddLit(&buf, "virtio-balloon-pci");
-            break;
-        case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW:
-            virBufferAddLit(&buf, "virtio-balloon-ccw");
-            break;
-        case VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO:
-            virBufferAddLit(&buf, "virtio-balloon-device");
-            break;
-        default:
-            virReportError(VIR_ERR_XML_ERROR,
-                           _("memballoon unsupported with address type '%s'"),
-                           virDomainDeviceAddressTypeToString(def->memballoon->info.type));
-            goto error;
-    }
+    if (!(devStr = qemuBuildVirtioDevStr(&(def->memballoon->info), "virtio-balloon")))
+        goto error;
+
+    virBufferAddStr(&buf, devStr);
+    VIR_FREE(devStr);
 
     virBufferAsprintf(&buf, ",id=%s", def->memballoon->info.alias);
     if (qemuBuildDeviceAddressStr(&buf, def, &def->memballoon->info, qemuCaps) < 0)
@@ -3969,6 +4001,7 @@ qemuBuildMemballoonCommandLine(virCommandPtr cmd,
     return 0;
 
  error:
+    VIR_FREE(devStr);
     virBufferFreeAndReset(&buf);
     return -1;
 }
@@ -4040,63 +4073,57 @@ qemuBuildVirtioInputDevStr(const virDomainDef *def,
                            virQEMUCapsPtr qemuCaps)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
-    const char *suffix;
-
-    if (dev->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI) {
-        suffix = "-pci";
-    } else if (dev->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
-        suffix = "-ccw";
-    } else if (dev->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO) {
-        suffix = "-device";
-    } else {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("unsupported address type %s for virtio input device"),
-                       virDomainDeviceAddressTypeToString(dev->info.type));
-        goto error;
-    }
+    const char *baseName;
+    char *devStr;
+    int cap;
+    int ccwCap;
 
     switch ((virDomainInputType)dev->type) {
     case VIR_DOMAIN_INPUT_TYPE_MOUSE:
-        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_MOUSE) ||
-            (dev->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW &&
-             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_MOUSE_CCW))) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("virtio-mouse is not supported by this QEMU binary"));
-            goto error;
-        }
-        virBufferAsprintf(&buf, "virtio-mouse%s,id=%s", suffix, dev->info.alias);
+        baseName = "virtio-mouse";
+        cap = QEMU_CAPS_VIRTIO_MOUSE;
+        ccwCap = QEMU_CAPS_DEVICE_VIRTIO_MOUSE_CCW;
         break;
     case VIR_DOMAIN_INPUT_TYPE_TABLET:
-        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_TABLET) ||
-            (dev->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW &&
-             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_TABLET_CCW))) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("virtio-tablet is not supported by this QEMU binary"));
-            goto error;
-        }
-        virBufferAsprintf(&buf, "virtio-tablet%s,id=%s", suffix, dev->info.alias);
+        baseName = "virtio-tablet";
+        cap = QEMU_CAPS_VIRTIO_TABLET;
+        ccwCap = QEMU_CAPS_DEVICE_VIRTIO_TABLET_CCW;
         break;
     case VIR_DOMAIN_INPUT_TYPE_KBD:
-        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_KEYBOARD) ||
-            (dev->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW &&
-             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_KEYBOARD_CCW))) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("virtio-keyboard is not supported by this QEMU binary"));
-            goto error;
-        }
-        virBufferAsprintf(&buf, "virtio-keyboard%s,id=%s", suffix, dev->info.alias);
+        baseName = "virtio-keyboard";
+        cap = QEMU_CAPS_VIRTIO_KEYBOARD;
+        ccwCap = QEMU_CAPS_DEVICE_VIRTIO_KEYBOARD_CCW;
         break;
     case VIR_DOMAIN_INPUT_TYPE_PASSTHROUGH:
-        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_INPUT_HOST)) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("virtio-input-host is not supported by this QEMU binary"));
-            goto error;
-        }
-        virBufferAsprintf(&buf, "virtio-input-host%s,id=%s,evdev=", suffix, dev->info.alias);
-        virQEMUBuildBufferEscapeComma(&buf, dev->source.evdev);
+        baseName = "virtio-input-host";
+        cap = QEMU_CAPS_VIRTIO_INPUT_HOST;
+        ccwCap = QEMU_CAPS_VIRTIO_INPUT_HOST;
         break;
     case VIR_DOMAIN_INPUT_TYPE_LAST:
-        break;
+    default:
+        virReportEnumRangeError(virDomainInputType,
+                                dev->type);
+        goto error;
+    }
+
+    if (!virQEMUCapsGet(qemuCaps, cap) ||
+        (dev->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW &&
+         !virQEMUCapsGet(qemuCaps, ccwCap))) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("%s is not supported by this QEMU binary"),
+                       baseName);
+        goto error;
+    }
+
+    if (!(devStr = qemuBuildVirtioDevStr(&(dev->info), baseName)))
+        goto error;
+
+    virBufferAsprintf(&buf, "%s,id=%s", devStr, dev->info.alias);
+    VIR_FREE(devStr);
+
+    if (dev->type == VIR_DOMAIN_INPUT_TYPE_PASSTHROUGH) {
+        virBufferAddLit(&buf, ",evdev=");
+        virQEMUBuildBufferEscapeComma(&buf, dev->source.evdev);
     }
 
     if (qemuBuildDeviceAddressStr(&buf, def, &dev->info, qemuCaps) < 0)
@@ -4111,6 +4138,7 @@ qemuBuildVirtioInputDevStr(const virDomainDef *def,
     return virBufferContentAndReset(&buf);
 
  error:
+    VIR_FREE(devStr);
     virBufferFreeAndReset(&buf);
     return NULL;
 }
@@ -4378,6 +4406,7 @@ qemuBuildDeviceVideoStr(const virDomainDef *def,
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
     const char *model;
+    char *devStr = NULL;
 
     /* We try to chose the best model for primary video device by preferring
      * model with VGA compatibility mode.  For some video devices on some
@@ -4396,10 +4425,11 @@ qemuBuildDeviceVideoStr(const virDomainDef *def,
     }
 
     if (STREQ(model, "virtio-gpu")) {
-        if (video->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW)
-            virBufferAsprintf(&buf, "%s-ccw", model);
-        else
-            virBufferAsprintf(&buf, "%s-pci", model);
+        if (!(devStr = qemuBuildVirtioDevStr(&(video->info), "virtio-gpu")))
+            goto error;
+
+        virBufferAddStr(&buf, devStr);
+        VIR_FREE(devStr);
     } else {
         virBufferAsprintf(&buf, "%s", model);
     }
@@ -4462,6 +4492,7 @@ qemuBuildDeviceVideoStr(const virDomainDef *def,
     return virBufferContentAndReset(&buf);
 
  error:
+    VIR_FREE(devStr);
     virBufferFreeAndReset(&buf);
     return NULL;
 }
@@ -5817,6 +5848,7 @@ qemuBuildRNGDevStr(const virDomainDef *def,
                    virQEMUCapsPtr qemuCaps)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
+    char *devStr = NULL;
 
     if (dev->model != VIR_DOMAIN_RNG_MODEL_VIRTIO ||
         !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_RNG)) {
@@ -5830,18 +5862,12 @@ qemuBuildRNGDevStr(const virDomainDef *def,
                                               dev->source.file))
         goto error;
 
-    if (dev->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW)
-        virBufferAsprintf(&buf, "virtio-rng-ccw,rng=obj%s,id=%s",
-                          dev->info.alias, dev->info.alias);
-    else if (dev->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_S390)
-        virBufferAsprintf(&buf, "virtio-rng-s390,rng=obj%s,id=%s",
-                          dev->info.alias, dev->info.alias);
-    else if (dev->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO)
-        virBufferAsprintf(&buf, "virtio-rng-device,rng=obj%s,id=%s",
-                          dev->info.alias, dev->info.alias);
-    else
-        virBufferAsprintf(&buf, "virtio-rng-pci,rng=obj%s,id=%s",
-                          dev->info.alias, dev->info.alias);
+    if (!(devStr = qemuBuildVirtioDevStr(&(dev->info), "virtio-rng")))
+        goto error;
+
+    virBufferAsprintf(&buf, "%s,rng=obj%s,id=%s",
+                      devStr, dev->info.alias, dev->info.alias);
+    VIR_FREE(devStr);
 
     if (dev->rate > 0) {
         virBufferAsprintf(&buf, ",max-bytes=%u", dev->rate);
@@ -5862,6 +5888,7 @@ qemuBuildRNGDevStr(const virDomainDef *def,
     return virBufferContentAndReset(&buf);
 
  error:
+    VIR_FREE(devStr);
     virBufferFreeAndReset(&buf);
     return NULL;
 }
