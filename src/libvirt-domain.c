@@ -12223,3 +12223,61 @@ int virDomainGetLaunchSecurityInfo(virDomainPtr domain,
     virDispatchError(domain->conn);
     return -1;
 }
+
+
+/*
+ * virDomainSetBlockLatencyHistogram:
+ * @domain: pointer to domain object
+ * @dev: string specifying the block device
+ * @op: selects io operation to set histogram for
+ * @boundaries: borders of histogram bins in nanoseconds, 0 ns and +inf ns
+ *              borders are implicit and should not be specified
+ * @nboundaries: number of boundaries
+ * @flags: currently unused, callers should pass 0
+ *
+ * Configures latency histogram parameters for IO operation @op for disk @dev
+ * of the @domain. If @op is VIR_DOMAIN_BLOCK_LATENCY_ALL then histograms
+ * for all IO operations will be configured.
+ *
+ * @boundaries is list of histogram iterval boundaries in nanoseconds in acsending
+ * order. Boundaries 0 and +inf are implicit and should not be specified.
+ * For example 10, 50, 100 will configure histogram with intervals
+ * [0, 10), [10, 50), [50, 100) and [100, +inf). If @boundaries is NULL
+ * and @op is VIR_DOMAIN_BLOCK_LATENCY_ALL then all the histograms will be removed
+ * that is they will not be collected and will not be in the domain stats output.
+ *
+ * Returns 0 on success, -1 on failure.
+ */
+int virDomainSetBlockLatencyHistogram(virDomainPtr domain,
+                                      const char *dev,
+                                      unsigned int op,
+                                      unsigned long long *boundaries,
+                                      int nboundaries,
+                                      unsigned int flags)
+{
+    VIR_DOMAIN_DEBUG(domain, "dev='%s' op=%d boundaries=%p "
+                             "nboundaries=%d flags=0x%x",
+                     NULLSTR(dev), op, boundaries, nboundaries, flags);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    virCheckReadOnlyGoto(domain->conn->flags, error);
+
+    virCheckNonNullArgGoto(dev, error);
+
+    if (domain->conn->driver->domainSetBlockLatencyHistogram) {
+        int ret;
+        ret = domain->conn->driver->domainSetBlockLatencyHistogram(
+                domain, dev, op, boundaries, nboundaries, flags);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+
+ error:
+    virDispatchError(domain->conn);
+    return -1;
+}

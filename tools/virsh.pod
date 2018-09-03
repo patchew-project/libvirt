@@ -2988,6 +2988,24 @@ See B<vcpupin> for information on I<cpulist>.
 Output the IP address and port number for the VNC display. If the information
 is not available the processes will provide an exit code of 1.
 
+=item B<block-set-latency-histogram> I<domain> I<disk> [I<boundaries>]
+[I<--op> I<operation>]
+
+Configures latency histogram parameters for IO operation I<operation> for disk
+I<disk> and resets all histogram's bins to zero. I<operation> is one of
+C<read>, C<write> or C<flush>. If I<operation> is omitted then histograms for
+all operations will be configured. Histogram itself is available via
+B<domstats>.
+
+I<boundaries> is a comma separated list of histogram iterval boundaries in
+nanoseconds in acsending order. Boundaries 0 and +inf are implicit and should
+not be specified. For example "10, 50, 100" will configure histogram with
+intervals [0, 10), [10, 50), [50, 100) and [100, +inf).
+
+If both I<boundaries> and I<operation> are omitted then the histograms for all
+operations will be removed that is they will not be collected and will not be
+in the B<domstats> output.
+
 =back
 
 =head1 DEVICE COMMANDS

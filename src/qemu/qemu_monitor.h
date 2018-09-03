@@ -569,6 +569,14 @@ virHashTablePtr qemuMonitorGetBlockInfo(qemuMonitorPtr mon);
 
 virJSONValuePtr qemuMonitorQueryBlockstats(qemuMonitorPtr mon);
 
+typedef struct _qemuBlockLatencyStats qemuBlockLatencyStats;
+typedef qemuBlockLatencyStats *qemuBlockLatencyStatsPtr;
+struct _qemuBlockLatencyStats {
+    unsigned long long *boundaries;
+    unsigned long long *bins;
+    unsigned int nbins;
+};
+
 typedef struct _qemuBlockStats qemuBlockStats;
 typedef qemuBlockStats *qemuBlockStatsPtr;
 struct _qemuBlockStats {
@@ -580,6 +588,9 @@ struct _qemuBlockStats {
     long long wr_total_times;
     long long flush_req;
     long long flush_total_times;
+    qemuBlockLatencyStats rd_latency;
+    qemuBlockLatencyStats wr_latency;
+    qemuBlockLatencyStats flush_latency;
     unsigned long long capacity;
     unsigned long long physical;
 
@@ -591,6 +602,8 @@ struct _qemuBlockStats {
     /* write_threshold is valid only if it's non-zero, conforming to qemu semantics */
     unsigned long long write_threshold;
 };
+
+void qemuBlockStatsFree(void *value, const void *name);
 
 int qemuMonitorGetAllBlockStatsInfo(qemuMonitorPtr mon,
                                     virHashTablePtr *ret_stats,
@@ -1187,5 +1200,11 @@ struct _qemuMonitorPRManagerInfo {
 
 int qemuMonitorGetPRManagerInfo(qemuMonitorPtr mon,
                                 virHashTablePtr *retinfo);
+
+int qemuMonitorBlockLatencyHistogramSet(qemuMonitorPtr mon,
+                                        const char *device,
+                                        unsigned int op,
+                                        unsigned long long *boundaries,
+                                        int nboundaries);
 
 #endif /* QEMU_MONITOR_H */

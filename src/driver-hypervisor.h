@@ -1322,6 +1322,14 @@ typedef int
                                         unsigned int flags);
 
 
+typedef int
+(*virDrvDomainSetBlockLatencyHistogram)(virDomainPtr dom,
+                                        const char *dev,
+                                        unsigned int op,
+                                        unsigned long long *boundaries,
+                                        int nboundaries,
+                                        unsigned int flags);
+
 typedef struct _virHypervisorDriver virHypervisorDriver;
 typedef virHypervisorDriver *virHypervisorDriverPtr;
 
@@ -1572,6 +1580,7 @@ struct _virHypervisorDriver {
     virDrvConnectBaselineHypervisorCPU connectBaselineHypervisorCPU;
     virDrvNodeGetSEVInfo nodeGetSEVInfo;
     virDrvDomainGetLaunchSecurityInfo domainGetLaunchSecurityInfo;
+    virDrvDomainSetBlockLatencyHistogram domainSetBlockLatencyHistogram;
 };
 
 

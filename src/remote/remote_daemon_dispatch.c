@@ -7030,6 +7030,45 @@ remoteDispatchStorageVolGetInfoFlags(virNetServerPtr server ATTRIBUTE_UNUSED,
 }
 
 
+static int
+remoteDispatchDomainSetBlockLatencyHistogram(virNetServerPtr server ATTRIBUTE_UNUSED,
+                                             virNetServerClientPtr client,
+                                             virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                             virNetMessageErrorPtr rerr,
+                                             remote_domain_set_block_latency_histogram_args *args,
+                                             remote_domain_set_block_latency_histogram_ret *ret)
+{
+    int rv = -1;
+    virDomainPtr dom = NULL;
+    int result;
+    struct daemonClientPrivate *priv = virNetServerClientGetPrivateData(client);
+
+    if (!priv->conn) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
+        goto cleanup;
+    }
+
+    if (!(dom = get_nonnull_domain(priv->conn, args->dom)))
+        goto cleanup;
+
+    if ((result = virDomainSetBlockLatencyHistogram(dom, args->dev,
+                                                    args->op,
+                                                    (unsigned long long *)args->boundaries.boundaries_val,
+                                                    args->boundaries.boundaries_len,
+                                                    args->flags)) < 0)
+        goto cleanup;
+
+    ret->result = result;
+    rv = 0;
+
+ cleanup:
+    if (rv < 0)
+        virNetMessageSaveError(rerr);
+    virObjectUnref(dom);
+    return rv;
+}
+
+
 /*----- Helpers. -----*/
 
 /* get_nonnull_domain and get_nonnull_network turn an on-wire

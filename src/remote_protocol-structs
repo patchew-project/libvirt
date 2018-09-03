@@ -2966,6 +2966,16 @@ struct remote_connect_list_all_nwfilter_bindings_ret {
         } bindings;
         u_int                      ret;
 };
+struct remote_domain_set_block_latency_histogram_args {
+    remote_nonnull_domain dom;
+    remote_nonnull_string dev;
+    u_int op;
+    struct {
+            u_int boundaries_len;
+            uint64_t boundaries_val;
+    } boundaries;
+    u_int flags;
+};
 enum remote_procedure {
         REMOTE_PROC_CONNECT_OPEN = 1,
         REMOTE_PROC_CONNECT_CLOSE = 2,
@@ -3368,4 +3378,5 @@ enum remote_procedure {
         REMOTE_PROC_NWFILTER_BINDING_CREATE_XML = 399,
         REMOTE_PROC_NWFILTER_BINDING_DELETE = 400,
         REMOTE_PROC_CONNECT_LIST_ALL_NWFILTER_BINDINGS = 401,
+        REMOTE_PROC_DOMAIN_SET_BLOCK_LATENCY_HISTOGRAM = 402,
 };

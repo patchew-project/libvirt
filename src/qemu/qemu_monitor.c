@@ -2257,6 +2257,25 @@ qemuMonitorQueryBlockstats(qemuMonitorPtr mon)
 }
 
 
+void
+qemuBlockStatsFree(void *value, const void *name ATTRIBUTE_UNUSED)
+{
+    qemuBlockStatsPtr stats = value;
+
+    if (!stats)
+        return;
+
+    VIR_FREE(stats->rd_latency.bins);
+    VIR_FREE(stats->rd_latency.boundaries);
+    VIR_FREE(stats->wr_latency.bins);
+    VIR_FREE(stats->wr_latency.boundaries);
+    VIR_FREE(stats->flush_latency.bins);
+    VIR_FREE(stats->flush_latency.boundaries);
+
+    VIR_FREE(stats);
+}
+
+
 /**
  * qemuMonitorGetAllBlockStatsInfo:
  * @mon: monitor object
@@ -2279,7 +2298,7 @@ qemuMonitorGetAllBlockStatsInfo(qemuMonitorPtr mon,
 
     QEMU_CHECK_MONITOR(mon);
 
-    if (!(*ret_stats = virHashCreate(10, virHashValueFree)))
+    if (!(*ret_stats = virHashCreate(10, qemuBlockStatsFree)))
         goto error;
 
     ret = qemuMonitorJSONGetAllBlockStatsInfo(mon, *ret_stats,
@@ -4428,4 +4447,20 @@ qemuMonitorGetPRManagerInfo(qemuMonitorPtr mon,
  cleanup:
     virHashFree(info);
     return ret;
+}
+
+int
+qemuMonitorBlockLatencyHistogramSet(qemuMonitorPtr mon,
+                                    const char *device,
+                                    unsigned int op,
+                                    unsigned long long *boundaries,
+                                    int nboundaries)
+{
+    VIR_DEBUG("mon=%p, device=%s op=%d boundaries=%p nboundaries=%d",
+              mon, device, op, boundaries, nboundaries);
+
+    QEMU_CHECK_MONITOR(mon);
+
+    return qemuMonitorJSONBlockLatencyHistogramSet(mon, device, op,
+                                                   boundaries, nboundaries);
 }

@@ -577,4 +577,12 @@ int qemuMonitorJSONGetPRManagerInfo(qemuMonitorPtr mon,
                                     virHashTablePtr info)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
+int
+qemuMonitorJSONBlockLatencyHistogramSet(qemuMonitorPtr mon,
+                                        const char *device,
+                                        unsigned int op,
+                                        unsigned long long *boundaries,
+                                        int nboundaries)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
 #endif /* QEMU_MONITOR_JSON_H */

@@ -4793,4 +4793,31 @@ int virDomainGetLaunchSecurityInfo(virDomainPtr domain,
                                    int *nparams,
                                    unsigned int flags);
 
+/*
+ * virDomainBlockLatencyHistogram:
+ *
+ * Selects a IO operation for which latency histogram is to be configured
+ */
+typedef enum {
+    VIR_DOMAIN_BLOCK_LATENCY_ALL      = 0,
+    VIR_DOMAIN_BLOCK_LATENCY_READ     = 1,
+    VIR_DOMAIN_BLOCK_LATENCY_WRITE    = 2,
+    VIR_DOMAIN_BLOCK_LATENCY_FLUSH    = 3,
+
+# ifdef VIR_ENUM_SENTINELS
+    VIR_DOMAIN_BLOCK_LATENCY_LAST
+    /*
+     * NB: this enum value will increase over time. It reflects the last state
+     * supported by this version of the libvirt API.
+     */
+# endif
+} virDomainBlockLatencyHistogram;
+
+int virDomainSetBlockLatencyHistogram(virDomainPtr dom,
+                                      const char *dev,
+                                      unsigned int op,
+                                      unsigned long long *boundaries,
+                                      int nboundaries,
+                                      unsigned int flags);
+
 #endif /* __VIR_LIBVIRT_DOMAIN_H__ */

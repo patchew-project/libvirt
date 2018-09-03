@@ -2319,6 +2319,64 @@ int qemuMonitorJSONGetBlockInfo(qemuMonitorPtr mon,
 }
 
 
+static int
+qemuMonitorJSONGetBlockLatencyStats(virJSONValuePtr stats,
+                                    const char *name,
+                                    qemuBlockLatencyStatsPtr latency)
+{
+    virJSONValuePtr latencyJSON;
+    virJSONValuePtr bins;
+    virJSONValuePtr boundaries;
+    size_t i;
+
+    if (!(latencyJSON = virJSONValueObjectGetObject(stats, name)))
+        return 0;
+
+    if (!(bins = virJSONValueObjectGetArray(latencyJSON, "bins"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("cannot read bins in latency %s"), name);
+        return -1;
+    }
+
+    if (!(boundaries = virJSONValueObjectGetArray(latencyJSON, "boundaries"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("cannot read boundaries in latency %s"), name);
+        return -1;
+    }
+
+    if (virJSONValueArraySize(bins) != virJSONValueArraySize(boundaries) + 1) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("bins and boundaries size mismatch in latency %s"), name);
+        return -1;
+    }
+    latency->nbins = virJSONValueArraySize(bins);
+
+    if (VIR_ALLOC_N(latency->boundaries, latency->nbins - 1) < 0 ||
+        VIR_ALLOC_N(latency->bins, latency->nbins) < 0)
+        return -1;
+
+    for (i = 0; i < latency->nbins; i++) {
+        if (virJSONValueGetNumberUlong(virJSONValueArrayGet(bins, i),
+                                       &latency->bins[i]) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("invalid bins in latency %s"), name);
+            return -1;
+        }
+    }
+
+    for (i = 0; i < latency->nbins - 1; i++) {
+        if (virJSONValueGetNumberUlong(virJSONValueArrayGet(boundaries, i),
+                                       &latency->boundaries[i]) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("invalid boundaries in latency %s"), name);
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
 static qemuBlockStatsPtr
 qemuMonitorJSONBlockStatsCollectData(virJSONValuePtr dev,
                                      int *nstats)
@@ -2358,6 +2416,17 @@ qemuMonitorJSONBlockStatsCollectData(virJSONValuePtr dev,
     QEMU_MONITOR_BLOCK_STAT_GET("flush_total_time_ns", bstats->flush_total_times, false);
 #undef QEMU_MONITOR_BLOCK_STAT_GET
 
+#define QEMU_MONITOR_BLOCK_LATENCY_GET(NAME) \
+    if (qemuMonitorJSONGetBlockLatencyStats(stats, \
+                                            #NAME "_latency_histogram", \
+                                            &bstats->NAME ## _latency) < 0) \
+        goto cleanup;
+
+    QEMU_MONITOR_BLOCK_LATENCY_GET(rd);
+    QEMU_MONITOR_BLOCK_LATENCY_GET(wr);
+    QEMU_MONITOR_BLOCK_LATENCY_GET(flush);
+#undef QEMU_MONITOR_BLOCK_LATENCY_GET
+
     if ((parent = virJSONValueObjectGetObject(dev, "parent")) &&
         (parentstats = virJSONValueObjectGetObject(parent, "stats"))) {
         if (virJSONValueObjectGetNumberUlong(parentstats, "wr_highest_offset",
@@ -2368,30 +2437,28 @@ qemuMonitorJSONBlockStatsCollectData(virJSONValuePtr dev,
     VIR_STEAL_PTR(ret, bstats);
 
  cleanup:
-    VIR_FREE(bstats);
+    qemuBlockStatsFree(bstats, NULL);
     return ret;
 }
 
 
 static int
-qemuMonitorJSONAddOneBlockStatsInfo(qemuBlockStatsPtr bstats,
+qemuMonitorJSONAddOneBlockStatsInfo(virJSONValuePtr dev,
                                     const char *name,
                                     virHashTablePtr stats)
 {
-    qemuBlockStatsPtr copy = NULL;
+    qemuBlockStatsPtr bstats;
+    int nstats;
 
-    if (VIR_ALLOC(copy) < 0)
+    if (!(bstats = qemuMonitorJSONBlockStatsCollectData(dev, &nstats)))
         return -1;
 
-    if (bstats)
-        *copy = *bstats;
-
-    if (virHashAddEntry(stats, name, copy) < 0) {
-        VIR_FREE(copy);
+    if (virHashAddEntry(stats, name, bstats) < 0) {
+        qemuBlockStatsFree(bstats, NULL);
         return -1;
     }
 
-    return 0;
+    return nstats;
 }
 
 
@@ -2402,7 +2469,6 @@ qemuMonitorJSONGetOneBlockStatsInfo(virJSONValuePtr dev,
                                     virHashTablePtr hash,
                                     bool backingChain)
 {
-    qemuBlockStatsPtr bstats = NULL;
     int ret = -1;
     int nstats = 0;
     const char *qdevname = NULL;
@@ -2423,19 +2489,16 @@ qemuMonitorJSONGetOneBlockStatsInfo(virJSONValuePtr dev,
         goto cleanup;
     }
 
-    if (!(bstats = qemuMonitorJSONBlockStatsCollectData(dev, &nstats)))
-        goto cleanup;
-
     if (devicename &&
-        qemuMonitorJSONAddOneBlockStatsInfo(bstats, devicename, hash) < 0)
+        (nstats = qemuMonitorJSONAddOneBlockStatsInfo(dev, devicename, hash)) < 0)
         goto cleanup;
 
     if (qdevname && STRNEQ_NULLABLE(qdevname, devicename) &&
-        qemuMonitorJSONAddOneBlockStatsInfo(bstats, qdevname, hash) < 0)
+        qemuMonitorJSONAddOneBlockStatsInfo(dev, qdevname, hash) < 0)
         goto cleanup;
 
     if (nodename &&
-        qemuMonitorJSONAddOneBlockStatsInfo(bstats, nodename, hash) < 0)
+        qemuMonitorJSONAddOneBlockStatsInfo(dev, nodename, hash) < 0)
         goto cleanup;
 
     if (backingChain &&
@@ -2446,7 +2509,6 @@ qemuMonitorJSONGetOneBlockStatsInfo(virJSONValuePtr dev,
 
     ret = nstats;
  cleanup:
-    VIR_FREE(bstats);
     VIR_FREE(devicename);
     return ret;
 }
@@ -8395,4 +8457,69 @@ qemuMonitorJSONGetPRManagerInfo(qemuMonitorPtr mon,
     virJSONValueFree(reply);
     return ret;
 
+}
+
+
+int
+qemuMonitorJSONBlockLatencyHistogramSet(qemuMonitorPtr mon,
+                                        const char *device,
+                                        unsigned int op,
+                                        unsigned long long *boundaries,
+                                        int nboundaries)
+{
+    int ret = -1;
+    char *specOp = NULL;
+    virJSONValuePtr cmd = NULL;
+    virJSONValuePtr reply = NULL;
+    const char *specAll = "A:boundaries";
+    const char *spec;
+    virJSONValuePtr boundariesJSON = NULL;
+
+    if (op != VIR_DOMAIN_BLOCK_LATENCY_ALL) {
+        if (virAsprintf(&specOp, "A:boundaries-%s",
+                        virDomainBlockLatencyHistogramTypeToString(op)) < 0)
+            return -1;
+        spec = specOp;
+    } else {
+        spec = specAll;
+    }
+
+    if (boundaries) {
+        size_t i;
+
+        if (!(boundariesJSON = virJSONValueNewArray()))
+            goto cleanup;
+
+        for (i = 0; i < nboundaries; i++) {
+            virJSONValuePtr val;
+
+            if (!(val = virJSONValueNewNumberUlong(boundaries[i])) ||
+                virJSONValueArrayAppend(boundariesJSON, val) < 0) {
+                virJSONValueFree(val);
+                goto cleanup;
+            }
+        }
+    }
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("block-latency-histogram-set",
+                                           "s:device", device,
+                                           spec, &boundariesJSON,
+                                           NULL)))
+        return -1;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    virJSONValueFree(boundariesJSON);
+    VIR_FREE(specOp);
+
+    return ret;
 }

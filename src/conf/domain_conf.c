@@ -802,6 +802,12 @@ VIR_ENUM_IMPL(virDomainCrashedReason, VIR_DOMAIN_CRASHED_LAST,
 VIR_ENUM_IMPL(virDomainPMSuspendedReason, VIR_DOMAIN_PMSUSPENDED_LAST,
               "unknown")
 
+VIR_ENUM_IMPL(virDomainBlockLatencyHistogram, VIR_DOMAIN_BLOCK_LATENCY_LAST,
+              "all",
+              "read",
+              "write",
+              "flush")
+
 VIR_ENUM_IMPL(virDomainSeclabel, VIR_DOMAIN_SECLABEL_LAST,
               "default",
               "none",

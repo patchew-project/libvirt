@@ -8153,6 +8153,52 @@ remoteStorageVolGetInfoFlags(virStorageVolPtr vol,
 }
 
 
+static int
+remoteDomainSetBlockLatencyHistogram(virDomainPtr dom,
+                                      const char *dev,
+                                      unsigned int op,
+                                      unsigned long long *boundaries,
+                                      int nboundaries,
+                                      unsigned int flags)
+{
+    int rv = -1;
+    struct private_data *priv = dom->conn->privateData;
+    remote_domain_set_block_latency_histogram_args args;
+    remote_domain_set_block_latency_histogram_ret ret;
+
+    remoteDriverLock(priv);
+
+    if (nboundaries > REMOTE_DOMAIN_SET_BLOCK_LATENCY_HISTOGRAM_BOUNDARIES_MAX) {
+        virReportError(VIR_ERR_RPC,
+                       _("boundaries length greater than maximum: %d > %d"),
+                       nboundaries,
+                       REMOTE_DOMAIN_SET_BLOCK_LATENCY_HISTOGRAM_BOUNDARIES_MAX);
+        goto done;
+    }
+
+    make_nonnull_domain(&args.dom, dom);
+    args.dev = (char *)dev;
+    args.op = op;
+    args.boundaries.boundaries_val = (uint64_t *) boundaries;
+    args.boundaries.boundaries_len = nboundaries;
+    args.flags = flags;
+
+    memset(&ret, 0, sizeof(ret));
+
+    if (call(dom->conn, priv, 0, REMOTE_PROC_DOMAIN_SET_BLOCK_LATENCY_HISTOGRAM,
+             (xdrproc_t)xdr_remote_domain_set_block_latency_histogram_args, (char *)&args,
+             (xdrproc_t)xdr_remote_domain_set_block_latency_histogram_ret, (char *)&ret) == -1) {
+        goto done;
+    }
+
+    rv = ret.result;
+
+ done:
+    remoteDriverUnlock(priv);
+    return rv;
+}
+
+
 /* get_nonnull_domain and get_nonnull_network turn an on-wire
  * (name, uuid) pair into virDomainPtr or virNetworkPtr object.
  * These can return NULL if underlying memory allocations fail,
@@ -8536,7 +8582,8 @@ static virHypervisorDriver hypervisor_driver = {
     .connectCompareHypervisorCPU = remoteConnectCompareHypervisorCPU, /* 4.4.0 */
     .connectBaselineHypervisorCPU = remoteConnectBaselineHypervisorCPU, /* 4.4.0 */
     .nodeGetSEVInfo = remoteNodeGetSEVInfo, /* 4.5.0 */
-    .domainGetLaunchSecurityInfo = remoteDomainGetLaunchSecurityInfo /* 4.5.0 */
+    .domainGetLaunchSecurityInfo = remoteDomainGetLaunchSecurityInfo, /* 4.5.0 */
+    .domainSetBlockLatencyHistogram = remoteDomainSetBlockLatencyHistogram, /* 4.8.0 */
 };
 
 static virNetworkDriver network_driver = {

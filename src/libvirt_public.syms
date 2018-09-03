@@ -809,4 +809,9 @@ LIBVIRT_4.5.0 {
         virNWFilterBindingGetFilterName;
 } LIBVIRT_4.4.0;
 
+LIBVIRT_4.8.0 {
+    global:
+        virDomainSetBlockLatencyHistogram;
+} LIBVIRT_4.5.0;
+
 # .... define new API here using predicted next version number ....

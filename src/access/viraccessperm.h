@@ -312,6 +312,12 @@ typedef enum {
      */
     VIR_ACCESS_PERM_DOMAIN_SET_PASSWORD,
 
+    /**
+     * @desc: Configure block stats gathering
+     * @message: Configuring block stats gathering requires authorization
+     */
+    VIR_ACCESS_PERM_DOMAIN_BLOCK_STATS_CONF,
+
     VIR_ACCESS_PERM_DOMAIN_LAST,
 } virAccessPermDomain;
 

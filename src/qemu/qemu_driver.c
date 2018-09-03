@@ -20099,6 +20099,48 @@ qemuDomainGetStatsOneBlockRefreshNamed(virStorageSourcePtr src,
 
 
 static int
+qemuDomainGetBlockLatency(virDomainStatsRecordPtr record,
+                          int *maxparams,
+                          size_t block_idx,
+                          const char *op,
+                          qemuBlockLatencyStatsPtr latency)
+{
+    char param_name[VIR_TYPED_PARAM_FIELD_LENGTH];
+    size_t i;
+    int ret = -1;
+
+    if (!latency->nbins)
+        return 0;
+
+    snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH,
+             "block.%zu.latency.%s.bincount", block_idx, op);
+    if (virTypedParamsAddUInt(&record->params, &record->nparams, maxparams,
+                              param_name, latency->nbins) < 0)
+        goto cleanup;
+
+    for (i = 0; i < latency->nbins; i++) {
+        snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH,
+                 "block.%zu.latency.%s.bin.%zu", block_idx, op, i);
+        if (virTypedParamsAddULLong(&record->params, &record->nparams, maxparams,
+                                    param_name, latency->bins[i]) < 0)
+            goto cleanup;
+    }
+
+    for (i = 0; i < latency->nbins - 1; i++) {
+        snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH,
+                 "block.%zu.latency.%s.boundary.%zu", block_idx, op, i);
+        if (virTypedParamsAddULLong(&record->params, &record->nparams, maxparams,
+                                    param_name, latency->boundaries[i]) < 0)
+            goto cleanup;
+    }
+
+    ret = 0;
+ cleanup:
+    return ret;
+}
+
+
+static int
 qemuDomainGetStatsOneBlock(virQEMUDriverPtr driver,
                            virQEMUDriverConfigPtr cfg,
                            virDomainObjPtr dom,
@@ -20127,6 +20169,14 @@ qemuDomainGetStatsOneBlock(virQEMUDriverPtr driver,
         ret = 0;
         goto cleanup;
     }
+
+    if (qemuDomainGetBlockLatency(record, maxparams, block_idx, "rd",
+                                  &entry->rd_latency) < 0 ||
+        qemuDomainGetBlockLatency(record, maxparams, block_idx, "wr",
+                                  &entry->wr_latency) < 0 ||
+        qemuDomainGetBlockLatency(record, maxparams, block_idx, "fl",
+                                  &entry->flush_latency) < 0)
+        goto cleanup;
 
     QEMU_ADD_BLOCK_PARAM_ULL(record, maxparams, block_idx,
                              "allocation", entry->wr_highest_offset);
@@ -21752,6 +21802,91 @@ qemuDomainGetLaunchSecurityInfo(virDomainPtr domain,
     return ret;
 }
 
+
+static
+int qemuDomainSetBlockLatencyHistogram(virDomainPtr dom,
+                                       const char *dev,
+                                       unsigned int op,
+                                       unsigned long long *boundaries,
+                                       int nboundaries,
+                                       unsigned int flags)
+{
+    virQEMUDriverPtr driver = dom->conn->privateData;
+    qemuDomainObjPrivatePtr priv;
+    virDomainObjPtr vm;
+    virDomainDiskDefPtr disk;
+    char *device = NULL;
+    bool job = false;
+    int ret = -1;
+    int rc;
+
+    virCheckFlags(0, -1);
+
+    if (op >= VIR_DOMAIN_BLOCK_LATENCY_LAST) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("unknown latency histogram: %d"), op);
+        return -1;
+    }
+
+    if (!boundaries && op) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("per operation histogram deletion is not supported"));
+        return -1;
+    }
+
+    if (boundaries && nboundaries > 1) {
+        size_t i;
+
+        for (i = 0; i < nboundaries - 1; i++) {
+            if (boundaries[i] > boundaries[i + 1]) {
+                virReportError(VIR_ERR_INVALID_ARG, "%s",
+                               _("boundaries should be in ascending order"));
+                return -1;
+            }
+        }
+    }
+
+    if (!(vm = qemuDomObjFromDomain(dom)))
+        return -1;
+
+    if (virDomainSetBlockLatencyHistogramEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+        goto cleanup;
+    job = true;
+
+    if (!virDomainObjIsActive(vm)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       "%s", _("domain is not running"));
+        goto cleanup;
+    }
+
+    priv = vm->privateData;
+
+    if (!(disk = qemuDomainDiskByName(vm->def, dev)))
+        goto cleanup;
+
+    if (!(device = qemuAliasDiskDriveFromDisk(disk)))
+        goto cleanup;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    rc = qemuMonitorBlockLatencyHistogramSet(priv->mon, device, op,
+                                             boundaries, nboundaries);
+    if (qemuDomainObjExitMonitor(driver, vm) < 0 || rc < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    if (job)
+        qemuDomainObjEndJob(driver, vm);
+    virDomainObjEndAPI(&vm);
+    VIR_FREE(device);
+
+    return ret;
+}
+
+
 static virHypervisorDriver qemuHypervisorDriver = {
     .name = QEMU_DRIVER_NAME,
     .connectURIProbe = qemuConnectURIProbe,
@@ -21977,6 +22112,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .connectBaselineHypervisorCPU = qemuConnectBaselineHypervisorCPU, /* 4.4.0 */
     .nodeGetSEVInfo = qemuNodeGetSEVInfo, /* 4.5.0 */
     .domainGetLaunchSecurityInfo = qemuDomainGetLaunchSecurityInfo, /* 4.5.0 */
+    .domainSetBlockLatencyHistogram = qemuDomainSetBlockLatencyHistogram, /* 4.8.0 */
 };
 
 

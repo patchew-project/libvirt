@@ -13816,6 +13816,118 @@ cmdDomFSInfo(vshControl *ctl, const vshCmd *cmd)
     return ret >= 0;
 }
 
+/*
+ * "block-set-latency-histogram" command
+ */
+static const vshCmdInfo info_block_set_latency_histogram[] = {
+    {.name = "help",
+     .data = N_("configures latency histogram for given device for given operation")
+    },
+    {.name = "desc",
+     .data = N_("configures latency histogram for given device for given operation")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_block_set_latency_histogram[] = {
+    VIRSH_COMMON_OPT_DOMAIN_FULL(VIR_CONNECT_LIST_DOMAINS_ACTIVE),
+    {.name = "dev",
+     .type = VSH_OT_DATA,
+     .flags = VSH_OFLAG_REQ,
+     .help = N_("device to set latency histogram for")
+    },
+    {.name = "boundaries",
+     .type = VSH_OT_STRING,
+     .help = N_("comma separated histogram boundaries in nanoseconds")
+    },
+    {.name = "op",
+     .type = VSH_OT_STRING,
+     .help = N_("operation to set latency histogram for, all if omitted")
+    },
+    {.name = NULL}
+};
+
+static bool
+cmdBlockSetLatencyHistogram(vshControl *ctl, const vshCmd *cmd)
+{
+    const char *dev = NULL;
+    const char *opstr = NULL;
+    const char *boundariesstr = NULL;
+    char **boundarieslist = NULL;
+    char **tmp = NULL;
+    unsigned long long *boundaries = NULL;
+    size_t nboundaries = 0;
+    unsigned char op;
+    virDomainPtr dom;
+    bool ret = false;
+
+    if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
+        return false;
+
+    if (vshCommandOptStringReq(ctl, cmd, "dev", &dev) < 0)
+        goto cleanup;
+
+    if (vshCommandOptStringReq(ctl, cmd, "op", &opstr) < 0)
+        goto cleanup;
+
+    if (opstr) {
+        if (STREQ(opstr, "read")) {
+            op = VIR_DOMAIN_BLOCK_LATENCY_READ;
+        } else if (STREQ(opstr, "write")) {
+            op = VIR_DOMAIN_BLOCK_LATENCY_WRITE;
+        } else if (STREQ(opstr, "flush")) {
+            op = VIR_DOMAIN_BLOCK_LATENCY_FLUSH;
+        } else {
+            vshError(ctl, _("Unknown operation %s value, expecting "
+                            "'read', 'write', 'flush'."), opstr);
+            goto cleanup;
+        }
+    } else {
+        op = VIR_DOMAIN_BLOCK_LATENCY_ALL;
+    }
+
+    if (vshCommandOptStringReq(ctl, cmd, "boundaries", &boundariesstr) < 0)
+        goto cleanup;
+
+    if (!boundariesstr && op) {
+        vshError(ctl, _("per operation histogram deletion is not supported"));
+        goto cleanup;
+    }
+
+    if (boundariesstr &&
+        !(boundarieslist = virStringSplit(boundariesstr, ",", 0))) {
+        vshError(ctl, "%s", _("Cannot parse boundaries string"));
+        goto cleanup;
+    }
+
+    tmp = boundarieslist;
+    while (boundarieslist && *tmp) {
+        unsigned long long val;
+
+        if (virStrToLong_ull(*tmp, NULL, 10, &val) < 0) {
+            vshError(ctl, _("Cannot parse boundaries value: %s"), *tmp);
+            goto cleanup;
+        }
+
+        if (VIR_APPEND_ELEMENT(boundaries, nboundaries, val) < 0)
+            goto cleanup;
+
+        tmp++;
+    }
+
+    if (virDomainSetBlockLatencyHistogram(dom, dev, op,
+                                          boundaries, nboundaries, 0) < 0)
+        goto cleanup;
+
+    ret = true;
+
+ cleanup:
+    virshDomainFree(dom);
+    virStringListFree(boundarieslist);
+    VIR_FREE(boundaries);
+    return ret;
+}
+
 const vshCmdDef domManagementCmds[] = {
     {.name = "attach-device",
      .handler = cmdAttachDevice,
@@ -14423,6 +14535,12 @@ const vshCmdDef domManagementCmds[] = {
      .handler = cmdDomblkthreshold,
      .opts = opts_domblkthreshold,
      .info = info_domblkthreshold,
+     .flags = 0
+    },
+    {.name = "block-set-latency-histogram",
+     .handler = cmdBlockSetLatencyHistogram,
+     .opts = opts_block_set_latency_histogram,
+     .info = info_block_set_latency_histogram,
      .flags = 0
     },
     {.name = NULL}

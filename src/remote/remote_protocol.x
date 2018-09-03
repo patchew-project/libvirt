@@ -262,6 +262,9 @@ const REMOTE_NODE_SEV_INFO_MAX = 64;
 /* Upper limit on number of launch security information entries */
 const REMOTE_DOMAIN_LAUNCH_SECURITY_INFO_PARAMS_MAX = 64;
 
+/* Upper limit on block latency histogram boundaries. */
+const REMOTE_DOMAIN_SET_BLOCK_LATENCY_HISTOGRAM_BOUNDARIES_MAX = 1024;
+
 /* UUID.  VIR_UUID_BUFLEN definition comes from libvirt.h */
 typedef opaque remote_uuid[VIR_UUID_BUFLEN];
 
@@ -3557,6 +3560,18 @@ struct remote_connect_list_all_nwfilter_bindings_ret { /* insert@1 */
     unsigned int ret;
 };
 
+struct remote_domain_set_block_latency_histogram_args {
+    remote_nonnull_domain dom;
+    remote_nonnull_string dev;
+    unsigned int op;
+    unsigned hyper boundaries<REMOTE_DOMAIN_SET_BLOCK_LATENCY_HISTOGRAM_BOUNDARIES_MAX>;
+    unsigned int flags;
+};
+
+struct remote_domain_set_block_latency_histogram_ret {
+    int result;
+};
+
 /*----- Protocol. -----*/
 
 /* Define the program number, protocol version and procedure numbers here. */
@@ -6312,5 +6327,11 @@ enum remote_procedure {
      * @acl: connect:search_nwfilter_bindings
      * @aclfilter: nwfilter_binding:getattr
      */
-    REMOTE_PROC_CONNECT_LIST_ALL_NWFILTER_BINDINGS = 401
+    REMOTE_PROC_CONNECT_LIST_ALL_NWFILTER_BINDINGS = 401,
+
+    /**
+     * @generate: none
+     * @acl: domain:block_stats_conf
+     */
+    REMOTE_PROC_DOMAIN_SET_BLOCK_LATENCY_HISTOGRAM = 402
 };
