@@ -278,6 +278,13 @@ virZPCIDeviceAddressIsEmpty(const virZPCIDeviceAddress *addr)
     return !(addr->uid || addr->fid);
 }
 
+bool
+virDeviceInfoPCIAddressExtensionIsPresent(const virDomainDeviceInfo *info)
+{
+    return info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI &&
+        !virZPCIDeviceAddressIsEmpty(&info->addr.pci.zpci);
+}
+
 
 int
 virPCIDeviceAddressParseXML(xmlNodePtr node,

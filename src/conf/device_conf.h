@@ -195,6 +195,7 @@ bool virDeviceInfoPCIAddressIsWanted(const virDomainDeviceInfo *info);
 bool virDeviceInfoPCIAddressIsPresent(const virDomainDeviceInfo *info);
 
 bool virZPCIDeviceAddressIsEmpty(const virZPCIDeviceAddress *addr);
+bool virDeviceInfoPCIAddressExtensionIsPresent(const virDomainDeviceInfo *info);
 
 int virPCIDeviceAddressParseXML(xmlNodePtr node,
                                 virPCIDeviceAddressPtr addr);

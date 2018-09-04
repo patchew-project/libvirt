@@ -93,6 +93,7 @@ virCPUModeTypeToString;
 
 
 # conf/device_conf.h
+virDeviceInfoPCIAddressExtensionIsPresent;
 virDeviceInfoPCIAddressIsPresent;
 virDeviceInfoPCIAddressIsWanted;
 virDomainDeviceInfoAddressIsEqual;
@@ -115,6 +116,9 @@ virDomainPCIAddressAsString;
 virDomainPCIAddressBusIsFullyReserved;
 virDomainPCIAddressBusSetModel;
 virDomainPCIAddressEnsureAddr;
+virDomainPCIAddressExtensionReleaseAddr;
+virDomainPCIAddressExtensionReserveAddr;
+virDomainPCIAddressExtensionReserveNextAddr;
 virDomainPCIAddressReleaseAddr;
 virDomainPCIAddressReserveAddr;
 virDomainPCIAddressReserveNextAddr;
