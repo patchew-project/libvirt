@@ -118,6 +118,7 @@
   <flag name='blockdev-del'/>
   <flag name='vhost-vsock'/>
   <flag name='egl-headless'/>
+  <flag name='zpci'/>
   <version>2010000</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>307493</microcodeVersion>
