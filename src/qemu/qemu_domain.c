@@ -3289,6 +3289,7 @@ qemuDomainDefAddDefaultDevices(virDomainDefPtr def,
     case VIR_ARCH_S390X:
         addDefaultUSB = false;
         addPanicDevice = true;
+        addPCIRoot = virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_ZPCI);
         break;
 
     case VIR_ARCH_SPARC:
