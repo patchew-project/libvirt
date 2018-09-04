@@ -194,6 +194,8 @@ bool virPCIDeviceAddressIsEmpty(const virPCIDeviceAddress *addr);
 bool virDeviceInfoPCIAddressIsWanted(const virDomainDeviceInfo *info);
 bool virDeviceInfoPCIAddressIsPresent(const virDomainDeviceInfo *info);
 
+bool virZPCIDeviceAddressIsEmpty(const virZPCIDeviceAddress *addr);
+
 int virPCIDeviceAddressParseXML(xmlNodePtr node,
                                 virPCIDeviceAddressPtr addr);
 
