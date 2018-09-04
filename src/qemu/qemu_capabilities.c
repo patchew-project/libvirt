@@ -1793,6 +1793,10 @@ bool virQEMUCapsHasPCIMultiBus(virQEMUCapsPtr qemuCaps,
         return false;
     }
 
+    /* S390 supports PCI-multibus. */
+    if (ARCH_IS_S390(def->os.arch))
+        return true;
+
     /* If ARM 'virt' supports PCI, it supports multibus.
      * No extra conditions here for simplicity.
      */
