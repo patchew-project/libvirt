@@ -164,6 +164,7 @@ struct _virDomainDeviceInfo {
      * assignment, never saved and never reported.
      */
     int pciConnectFlags; /* enum virDomainPCIConnectFlags */
+    int pciAddressExtFlags; /* enum virDomainPCIAddressExtensionFlags */
     char *loadparm;
 
     /* PCI devices will only be automatically placed on a PCI bus
