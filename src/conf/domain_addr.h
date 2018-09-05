@@ -124,9 +124,6 @@ struct _virDomainPCIAddressSet {
 typedef struct _virDomainPCIAddressSet virDomainPCIAddressSet;
 typedef virDomainPCIAddressSet *virDomainPCIAddressSetPtr;
 
-char *virDomainPCIAddressAsString(virPCIDeviceAddressPtr addr)
-      ATTRIBUTE_NONNULL(1);
-
 virDomainPCIAddressSetPtr virDomainPCIAddressSetAlloc(unsigned int nbuses);
 
 void virDomainPCIAddressSetFree(virDomainPCIAddressSetPtr addrs);
@@ -137,7 +134,6 @@ bool virDomainPCIAddressValidate(virDomainPCIAddressSetPtr addrs,
                                  virDomainPCIConnectFlags flags,
                                  bool fromConfig)
      ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
-
 
 int virDomainPCIAddressBusSetModel(virDomainPCIAddressBusPtr bus,
                                    virDomainControllerModelPCI model)
