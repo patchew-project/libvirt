@@ -1305,11 +1305,7 @@ virNetDevGetVirtualFunctions(const char *pfname,
         goto cleanup;
 
     for (i = 0; i < *n_vfname; i++) {
-        if (virPCIGetAddrString((*virt_fns)[i]->domain,
-                                (*virt_fns)[i]->bus,
-                                (*virt_fns)[i]->slot,
-                                (*virt_fns)[i]->function,
-                                &pciConfigAddr) < 0) {
+        if (!(pciConfigAddr = virPCIDeviceAddressAsString((*virt_fns)[i]))) {
             virReportSystemError(ENOSYS, "%s",
                                  _("Failed to get PCI Config Address String"));
             goto cleanup;
