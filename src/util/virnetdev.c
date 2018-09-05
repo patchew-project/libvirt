@@ -1657,11 +1657,11 @@ virNetDevSetVfConfig(const char *ifname, int vf,
 {
     int rc = -1;
     char macstr[VIR_MAC_STRING_BUFLEN];
-    struct nlmsghdr *resp = NULL;
     struct nlmsgerr *err;
     unsigned int recvbuflen = 0;
-    struct nl_msg *nl_msg;
     struct nlattr *vfinfolist, *vfinfo;
+    VIR_AUTOPTR(virNetlinkMsg) nl_msg = NULL;
+    VIR_AUTOFREE(struct nlmsghdr *) resp = NULL;
     struct ifinfomsg ifinfo = {
         .ifi_family = AF_UNSPEC,
         .ifi_index  = -1,
@@ -1676,47 +1676,41 @@ virNetDevSetVfConfig(const char *ifname, int vf,
         return rc;
     }
 
-    if (nlmsg_append(nl_msg,  &ifinfo, sizeof(ifinfo), NLMSG_ALIGNTO) < 0)
-        goto buffer_too_small;
+    if (nlmsg_append(nl_msg,  &ifinfo, sizeof(ifinfo), NLMSG_ALIGNTO) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("nlmsg_append error"));
+        return rc;
+    }
 
-    if (ifname &&
-        nla_put(nl_msg, IFLA_IFNAME, strlen(ifname)+1, ifname) < 0)
-        goto buffer_too_small;
+    NETLINK_MSG_PUT_STRING(nl_msg, IFLA_IFNAME, ifname);
 
-
-    if (!(vfinfolist = nla_nest_start(nl_msg, IFLA_VFINFO_LIST)))
-        goto buffer_too_small;
-
-    if (!(vfinfo = nla_nest_start(nl_msg, IFLA_VF_INFO)))
-        goto buffer_too_small;
+    NETLINK_MSG_NEST_START(nl_msg, vfinfolist, IFLA_VFINFO_LIST);
+    NETLINK_MSG_NEST_START(nl_msg, vfinfo, IFLA_VF_INFO);
 
     if (macaddr) {
         struct ifla_vf_mac ifla_vf_mac = {
-             .vf = vf,
-             .mac = { 0, },
+            .vf = vf,
+            .mac = { 0, },
         };
 
         virMacAddrGetRaw(macaddr, ifla_vf_mac.mac);
 
-        if (nla_put(nl_msg, IFLA_VF_MAC, sizeof(ifla_vf_mac),
-                    &ifla_vf_mac) < 0)
-            goto buffer_too_small;
+        NETLINK_MSG_PUT(nl_msg, IFLA_VF_MAC,
+                        sizeof(ifla_vf_mac), &ifla_vf_mac);
     }
 
     if (vlanid >= 0) {
         struct ifla_vf_vlan ifla_vf_vlan = {
-             .vf = vf,
-             .vlan = vlanid,
-             .qos = 0,
+            .vf = vf,
+            .vlan = vlanid,
+            .qos = 0,
         };
 
-        if (nla_put(nl_msg, IFLA_VF_VLAN, sizeof(ifla_vf_vlan),
-                    &ifla_vf_vlan) < 0)
-            goto buffer_too_small;
+        NETLINK_MSG_PUT(nl_msg, IFLA_VF_VLAN,
+                        sizeof(ifla_vf_vlan), &ifla_vf_vlan);
     }
 
-    nla_nest_end(nl_msg, vfinfo);
-    nla_nest_end(nl_msg, vfinfolist);
+    NETLINK_MSG_NEST_END(nl_msg, vfinfo);
+    NETLINK_MSG_NEST_END(nl_msg, vfinfolist);
 
     if (virNetlinkCommand(nl_msg, &resp, &recvbuflen, 0, 0,
                           NETLINK_ROUTE, 0) < 0)
@@ -1767,19 +1761,11 @@ virNetDevSetVfConfig(const char *ifname, int vf,
               ifname, vf,
               macaddr ? virMacAddrFormat(macaddr, macstr) : "(unchanged)",
               vlanid, rc < 0 ? "Fail" : "Success");
-
-    nlmsg_free(nl_msg);
-    VIR_FREE(resp);
     return rc;
 
  malformed_resp:
     virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                    _("malformed netlink response message"));
-    goto cleanup;
-
- buffer_too_small:
-    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                   _("allocated netlink buffer is too small"));
     goto cleanup;
 }
 

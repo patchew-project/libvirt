@@ -417,11 +417,12 @@ virNetlinkDumpLink(const char *ifname, int ifindex,
         return -1;
     }
 
-    if (nlmsg_append(nl_msg,  &ifinfo, sizeof(ifinfo), NLMSG_ALIGNTO) < 0)
-        goto buffer_too_small;
+    if (nlmsg_append(nl_msg,  &ifinfo, sizeof(ifinfo), NLMSG_ALIGNTO) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("nlmsg_append error"));
+        return -1;
+    }
 
-    if (ifname && nla_put_string(nl_msg, IFLA_IFNAME, ifname) < 0)
-        goto buffer_too_small;
+    NETLINK_MSG_PUT_STRING(nl_msg, IFLA_IFNAME, ifname);
 
 # ifdef RTEXT_FILTER_VF
     /* if this filter exists in the kernel's netlink implementation,
@@ -430,11 +431,7 @@ virNetlinkDumpLink(const char *ifname, int ifindex,
      */
     {
         uint32_t ifla_ext_mask = RTEXT_FILTER_VF;
-
-        if (nla_put(nl_msg, IFLA_EXT_MASK,
-                    sizeof(ifla_ext_mask), &ifla_ext_mask) < 0) {
-            goto buffer_too_small;
-        }
+        NETLINK_MSG_PUT_U32PTR(nl_msg, IFLA_EXT_MASK, &ifla_ext_mask);
     }
 # endif
 
@@ -477,11 +474,6 @@ virNetlinkDumpLink(const char *ifname, int ifindex,
  malformed_resp:
     virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                    _("malformed netlink response message"));
-    return rc;
-
- buffer_too_small:
-    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                   _("allocated netlink buffer is too small"));
     return rc;
 }
 
@@ -528,36 +520,27 @@ virNetlinkNewLink(const char *ifname,
         return -1;
     }
 
-    if (nlmsg_append(nl_msg,  &ifinfo, sizeof(ifinfo), NLMSG_ALIGNTO) < 0)
-        goto buffer_too_small;
+    if (nlmsg_append(nl_msg,  &ifinfo, sizeof(ifinfo), NLMSG_ALIGNTO) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("nlmsg_append error"));
+        return -1;
+    }
 
-    if (ifindex && nla_put_u32(nl_msg, IFLA_LINK, *ifindex) < 0)
-        goto buffer_too_small;
+    NETLINK_MSG_PUT_U32PTR(nl_msg, IFLA_LINK, ifindex);
+    NETLINK_MSG_PUT(nl_msg, IFLA_ADDRESS, VIR_MAC_BUFLEN, data->mac);
+    NETLINK_MSG_PUT_STRING(nl_msg, IFLA_IFNAME, ifname);
 
-    if (data->mac && nla_put(nl_msg, IFLA_ADDRESS, VIR_MAC_BUFLEN, data->mac) < 0)
-        goto buffer_too_small;
+    NETLINK_MSG_NEST_START(nl_msg, linkinfo, IFLA_LINKINFO);
 
-    if (ifname && nla_put_string(nl_msg, IFLA_IFNAME, ifname) < 0)
-        goto buffer_too_small;
-
-    if (!(linkinfo = nla_nest_start(nl_msg, IFLA_LINKINFO)))
-        goto buffer_too_small;
-
-    if (type && nla_put_string(nl_msg, IFLA_INFO_KIND, type) < 0)
-        goto buffer_too_small;
+    NETLINK_MSG_PUT_STRING(nl_msg, IFLA_INFO_KIND, type);
 
     if ((STREQ(type, "macvtap") || STREQ(type, "macvlan")) &&
         data->macvlan_mode && *data->macvlan_mode > 0) {
-        if (!(infodata = nla_nest_start(nl_msg, IFLA_INFO_DATA)))
-            goto buffer_too_small;
-
-        if (nla_put_u32(nl_msg, IFLA_MACVLAN_MODE, *data->macvlan_mode) < 0)
-            goto buffer_too_small;
-
-        nla_nest_end(nl_msg, infodata);
+        NETLINK_MSG_NEST_START(nl_msg, infodata, IFLA_INFO_DATA);
+        NETLINK_MSG_PUT_U32PTR(nl_msg, IFLA_MACVLAN_MODE, data->macvlan_mode);
+        NETLINK_MSG_NEST_END(nl_msg, infodata);
     }
 
-    nla_nest_end(nl_msg, linkinfo);
+    NETLINK_MSG_NEST_END(nl_msg, linkinfo);
 
     if (virNetlinkCommand(nl_msg, &resp, &buflen, 0, 0, NETLINK_ROUTE, 0) < 0)
         return -1;
@@ -589,11 +572,6 @@ virNetlinkNewLink(const char *ifname,
  malformed_resp:
     virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                    _("malformed netlink response message"));
-    return -1;
-
- buffer_too_small:
-    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                   _("allocated netlink buffer is too small"));
     return -1;
 }
 
@@ -629,11 +607,12 @@ virNetlinkDelLink(const char *ifname, virNetlinkDelLinkFallback fallback)
         return -1;
     }
 
-    if (nlmsg_append(nl_msg,  &ifinfo, sizeof(ifinfo), NLMSG_ALIGNTO) < 0)
-        goto buffer_too_small;
+    if (nlmsg_append(nl_msg,  &ifinfo, sizeof(ifinfo), NLMSG_ALIGNTO) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("nlmsg_append error"));
+        return -1;
+    }
 
-    if (ifname && nla_put_string(nl_msg, IFLA_IFNAME, ifname) < 0)
-        goto buffer_too_small;
+    NETLINK_MSG_PUT_STRING(nl_msg, IFLA_IFNAME, ifname);
 
     if (virNetlinkCommand(nl_msg, &resp, &recvbuflen, 0, 0,
                           NETLINK_ROUTE, 0) < 0) {
@@ -672,11 +651,6 @@ virNetlinkDelLink(const char *ifname, virNetlinkDelLinkFallback fallback)
  malformed_resp:
     virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                    _("malformed netlink response message"));
-    return -1;
-
- buffer_too_small:
-    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                   _("allocated netlink buffer is too small"));
     return -1;
 }
 

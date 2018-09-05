@@ -641,8 +641,6 @@ virNetDevVPortProfileOpSetLink(const char *ifname, int ifindex,
                                int32_t vf,
                                uint8_t op)
 {
-    int rc = -1;
-    struct nlmsghdr *resp = NULL;
     struct nlmsgerr *err;
     struct ifinfomsg ifinfo = {
         .ifi_family = AF_UNSPEC,
@@ -651,12 +649,14 @@ virNetDevVPortProfileOpSetLink(const char *ifname, int ifindex,
     unsigned int recvbuflen = 0;
     int src_pid = 0;
     uint32_t dst_pid = 0;
-    struct nl_msg *nl_msg;
     struct nlattr *vfports = NULL, *vfport;
     char macStr[VIR_MAC_STRING_BUFLEN];
     char hostUUIDStr[VIR_UUID_STRING_BUFLEN];
     char instanceUUIDStr[VIR_UUID_STRING_BUFLEN];
     const char *opName;
+    int vfport_type = IFLA_PORT_SELF;
+    VIR_AUTOPTR(virNetlinkMsg) nl_msg = NULL;
+    VIR_AUTOFREE(struct nlmsghdr *) resp = NULL;
 
     switch (op) {
     case PORT_REQUEST_PREASSOCIATE:
@@ -691,24 +691,21 @@ virNetDevVPortProfileOpSetLink(const char *ifname, int ifindex,
     nl_msg = nlmsg_alloc_simple(RTM_SETLINK, NLM_F_REQUEST);
     if (!nl_msg) {
         virReportOOMError();
-        return rc;
+        return -1;
     }
 
-    if (nlmsg_append(nl_msg,  &ifinfo, sizeof(ifinfo), NLMSG_ALIGNTO) < 0)
-        goto buffer_too_small;
+    if (nlmsg_append(nl_msg,  &ifinfo, sizeof(ifinfo), NLMSG_ALIGNTO) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("nlmsg_append error"));
+        return -1;
+    }
 
-    if (ifname &&
-        nla_put(nl_msg, IFLA_IFNAME, strlen(ifname)+1, ifname) < 0)
-        goto buffer_too_small;
+    NETLINK_MSG_PUT_STRING(nl_msg, IFLA_IFNAME, ifname);
 
     if (macaddr || vlanid >= 0) {
         struct nlattr *vfinfolist, *vfinfo;
 
-        if (!(vfinfolist = nla_nest_start(nl_msg, IFLA_VFINFO_LIST)))
-            goto buffer_too_small;
-
-        if (!(vfinfo = nla_nest_start(nl_msg, IFLA_VF_INFO)))
-            goto buffer_too_small;
+        NETLINK_MSG_NEST_START(nl_msg, vfinfolist, IFLA_VFINFO_LIST);
+        NETLINK_MSG_NEST_START(nl_msg, vfinfo, IFLA_VF_INFO);
 
         if (macaddr) {
             struct ifla_vf_mac ifla_vf_mac = {
@@ -718,9 +715,8 @@ virNetDevVPortProfileOpSetLink(const char *ifname, int ifindex,
 
             virMacAddrGetRaw(macaddr, ifla_vf_mac.mac);
 
-            if (nla_put(nl_msg, IFLA_VF_MAC, sizeof(ifla_vf_mac),
-                        &ifla_vf_mac) < 0)
-                goto buffer_too_small;
+            NETLINK_MSG_PUT(nl_msg, IFLA_VF_MAC,
+                            sizeof(ifla_vf_mac), &ifla_vf_mac);
         }
 
         if (vlanid >= 0) {
@@ -730,77 +726,49 @@ virNetDevVPortProfileOpSetLink(const char *ifname, int ifindex,
                 .qos = 0,
             };
 
-            if (nla_put(nl_msg, IFLA_VF_VLAN, sizeof(ifla_vf_vlan),
-                        &ifla_vf_vlan) < 0)
-                goto buffer_too_small;
+            NETLINK_MSG_PUT(nl_msg, IFLA_VF_VLAN,
+                            sizeof(ifla_vf_vlan), &ifla_vf_vlan);
         }
 
-        nla_nest_end(nl_msg, vfinfo);
-        nla_nest_end(nl_msg, vfinfolist);
+        NETLINK_MSG_NEST_END(nl_msg, vfinfo);
+        NETLINK_MSG_NEST_END(nl_msg, vfinfolist);
     }
 
-    if (vf == PORT_SELF_VF && nltarget_kernel) {
-        if (!(vfport = nla_nest_start(nl_msg, IFLA_PORT_SELF)))
-            goto buffer_too_small;
-    } else {
-        if (!(vfports = nla_nest_start(nl_msg, IFLA_VF_PORTS)))
-            goto buffer_too_small;
-
-        /* begin nesting vfports */
-        if (!(vfport = nla_nest_start(nl_msg, IFLA_VF_PORT)))
-            goto buffer_too_small;
+    if (vf != PORT_SELF_VF || !nltarget_kernel) {
+        NETLINK_MSG_NEST_START(nl_msg, vfports, IFLA_VF_PORTS);
+        /* begin nesting of vfports */
+        vfport_type = IFLA_VF_PORT;
     }
+    /* begin nesting of vfport */
+    NETLINK_MSG_NEST_START(nl_msg, vfport, vfport_type);
 
-    if (profileId) {
-        if (nla_put(nl_msg, IFLA_PORT_PROFILE, strlen(profileId) + 1,
-                    profileId) < 0)
-            goto buffer_too_small;
-    }
+    NETLINK_MSG_PUT_STRING(nl_msg, IFLA_PORT_PROFILE, profileId);
+    NETLINK_MSG_PUT(nl_msg, IFLA_PORT_VSI_TYPE, sizeof(*portVsi), portVsi);
+    NETLINK_MSG_PUT(nl_msg, IFLA_PORT_INSTANCE_UUID, VIR_UUID_BUFLEN, instanceId);
+    NETLINK_MSG_PUT(nl_msg, IFLA_PORT_HOST_UUID, VIR_UUID_BUFLEN, hostUUID);
 
-    if (portVsi) {
-        if (nla_put(nl_msg, IFLA_PORT_VSI_TYPE, sizeof(*portVsi),
-                    portVsi) < 0)
-            goto buffer_too_small;
-    }
+    if (vf != PORT_SELF_VF)
+        NETLINK_MSG_PUT(nl_msg, IFLA_PORT_VF, sizeof(vf), &vf);
 
-    if (instanceId) {
-        if (nla_put(nl_msg, IFLA_PORT_INSTANCE_UUID, VIR_UUID_BUFLEN,
-                    instanceId) < 0)
-            goto buffer_too_small;
-    }
-
-    if (hostUUID) {
-        if (nla_put(nl_msg, IFLA_PORT_HOST_UUID, VIR_UUID_BUFLEN,
-                    hostUUID) < 0)
-            goto buffer_too_small;
-    }
-
-    if (vf != PORT_SELF_VF) {
-        if (nla_put(nl_msg, IFLA_PORT_VF, sizeof(vf), &vf) < 0)
-            goto buffer_too_small;
-    }
-
-    if (nla_put(nl_msg, IFLA_PORT_REQUEST, sizeof(op), &op) < 0)
-        goto buffer_too_small;
+    NETLINK_MSG_PUT(nl_msg, IFLA_PORT_REQUEST, sizeof(op), &op);
 
     /* end nesting of vport */
-    nla_nest_end(nl_msg, vfport);
-
+    NETLINK_MSG_NEST_END(nl_msg, vfport);
     if (vfports) {
         /* end nesting of vfports */
-        nla_nest_end(nl_msg, vfports);
+        NETLINK_MSG_NEST_END(nl_msg, vfports);
     }
 
     if (!nltarget_kernel) {
         if ((src_pid = virNetlinkEventServiceLocalPid(NETLINK_ROUTE)) < 0)
-            goto cleanup;
+            return -1;
         if ((dst_pid = virNetDevVPortProfileGetLldpadPid()) == 0)
-            goto cleanup;
+            return -1;
     }
 
     if (virNetlinkCommand(nl_msg, &resp, &recvbuflen,
                           src_pid, dst_pid, NETLINK_ROUTE, 0) < 0)
-        goto cleanup;
+        return -1;
 
     if (recvbuflen < NLMSG_LENGTH(0) || resp == NULL)
         goto malformed_resp;
@@ -815,7 +783,7 @@ virNetDevVPortProfileOpSetLink(const char *ifname, int ifindex,
             virReportSystemError(-err->error,
                 _("error during virtual port configuration of ifindex %d"),
                 ifindex);
-            goto cleanup;
+            return -1;
         }
         break;
 
@@ -826,21 +794,12 @@ virNetDevVPortProfileOpSetLink(const char *ifname, int ifindex,
         goto malformed_resp;
     }
 
-    rc = 0;
- cleanup:
-    nlmsg_free(nl_msg);
-    VIR_FREE(resp);
-    return rc;
+    return 0;
 
  malformed_resp:
     virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                    _("malformed netlink response message"));
-    goto cleanup;
-
- buffer_too_small:
-    virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                   _("allocated netlink buffer is too small"));
-    goto cleanup;
+    return -1;
 }
 
 

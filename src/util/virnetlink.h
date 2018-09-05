@@ -48,6 +48,58 @@ struct nlmsghdr;
 
 # endif /* __linux__ */
 
+
+# define NETLINK_MSG_NEST_START(msg, container, attrtype) \
+do { \
+    container = nla_nest_start(msg, attrtype); \
+    if (!container) { \
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", \
+                       _("nla_nest_start error [" #attrtype "]")); \
+        return -1; \
+    } \
+} while(0)
+
+# define NETLINK_MSG_NEST_END(msg, container) \
+do { nla_nest_end(msg, container); } while(0)
+
+/*
+ * When data is an rvalue, compiler will report error as below:
+ * "the address of [...] will always evaluate as 'true' [-Werror=address]"
+ * Add a dummy(as an lvalue) to solve it.
+ */
+# define NETLINK_MSG_PUT(msg, attrtype, datalen, data) \
+do { \
+    const void *dummy = data; \
+    if (dummy && nla_put(msg, attrtype, datalen, data) < 0) { \
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", \
+                       _("nla_put error [" #attrtype "]")); \
+        return -1; \
+    } \
+} while(0)
+
+# define NETLINK_MSG_PUT_STRING(msg, attrtype, str) \
+do { \
+    const void *dummy = str; \
+    if (dummy && nla_put_string(msg, attrtype, str) < 0) { \
+        virReportError(VIR_ERR_INTERNAL_ERROR, \
+                       _("nla_put_string error [" #attrtype "]: '%s'"), \
+                       str); \
+        return -1; \
+    } \
+} while(0)
+
+# define NETLINK_MSG_PUT_U32PTR(msg, attrtype, ptr) \
+do { \
+    const void *dummy = ptr; \
+    if (dummy && nla_put_u32(msg, attrtype, *ptr) < 0) { \
+        virReportError(VIR_ERR_INTERNAL_ERROR, \
+                       _("nla_put_u32 error [" #attrtype "]: '%u'"), \
+                       *ptr); \
+        return -1; \
+    } \
+} while(0)
+
+
 int virNetlinkStartup(void);
 void virNetlinkShutdown(void);
 
