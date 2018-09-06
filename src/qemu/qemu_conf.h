@@ -191,6 +191,8 @@ struct _virQEMUDriverConfig {
     int keepAliveInterval;
     unsigned int keepAliveCount;
 
+    int stateLockTimeout;
+
     int seccompSandbox;
 
     char *migrateHost;
