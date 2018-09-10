@@ -8219,6 +8219,8 @@ qemuBuildVhostuserCommandLine(virQEMUDriverPtr driver,
                               virQEMUCapsPtr qemuCaps,
                               unsigned int bootindex)
 {
+    virNetDevBandwidthPtr actualBandwidth = virDomainNetGetActualBandwidth(net);
+    virDomainNetType actualType = virDomainNetGetActualType(net);
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     char *chardev = NULL;
     char *netdev = NULL;
@@ -8230,6 +8232,19 @@ qemuBuildVhostuserCommandLine(virQEMUDriverPtr driver,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        "%s", _("Nicdev support unavailable"));
         goto cleanup;
+    }
+
+    /* Set bandwidth or warn if requested and not supported. */
+    if (actualBandwidth) {
+        if (virNetDevSupportBandwidth(actualType)) {
+            if (virNetDevBandwidthSet(net->ifname, actualBandwidth, false,
+                                      !virDomainNetTypeSharesHostView(net)) < 0)
+                goto cleanup;
+        } else {
+            VIR_WARN("setting bandwidth on interfaces of "
+                     "type '%s' is not implemented yet",
+                     virDomainNetTypeToString(actualType));
+        }
     }
 
     switch ((virDomainChrType)net->data.vhostuser->type) {
