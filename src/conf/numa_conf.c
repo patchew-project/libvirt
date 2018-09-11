@@ -29,6 +29,10 @@
 #include "virnuma.h"
 #include "virstring.h"
 
+#if WITH_NUMACTL
+#include <numa.h>
+#endif
+
 /*
  * Distance definitions defined Conform ACPI 2.0 SLIT.
  * See include/linux/topology.h
@@ -66,6 +70,7 @@ typedef virDomainNumaNode *virDomainNumaNodePtr;
 struct _virDomainNuma {
     struct {
         bool specified;
+        bool allnode;
         virBitmapPtr nodeset;
         virDomainNumatuneMemMode mode;
         virDomainNumatunePlacement placement;
@@ -259,13 +264,17 @@ virDomainNumatuneParseXML(virDomainNumaPtr numa,
 
         tmp = virXMLPropString(node, "nodeset");
         if (tmp) {
-            if (virBitmapParse(tmp, &nodeset, VIR_DOMAIN_CPUMASK_LEN) < 0)
-                goto cleanup;
+            if (strcmp(tmp, "all") == 0) {
+                numa->memory.allnode = true;
+            } else {
+                if (virBitmapParse(tmp, &nodeset, VIR_DOMAIN_CPUMASK_LEN) < 0)
+                    goto cleanup;
 
-            if (virBitmapIsAllClear(nodeset)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                               _("Invalid value of 'nodeset': %s"), tmp);
-                goto cleanup;
+                if (virBitmapIsAllClear(nodeset)) {
+                    virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                   _("Invalid value of 'nodeset': %s"), tmp);
+                    goto cleanup;
+                }
             }
 
             VIR_FREE(tmp);
@@ -319,10 +328,14 @@ virDomainNumatuneFormatXML(virBufferPtr buf,
         virBufferAsprintf(buf, "<memory mode='%s' ", tmp);
 
         if (numatune->memory.placement == VIR_DOMAIN_NUMATUNE_PLACEMENT_STATIC) {
-            if (!(nodeset = virBitmapFormat(numatune->memory.nodeset)))
-                return -1;
-            virBufferAsprintf(buf, "nodeset='%s'/>\n", nodeset);
-            VIR_FREE(nodeset);
+            if (numatune->memory.allnode == true) {    
+                virBufferAsprintf(buf, "nodeset='all'/>\n");
+            } else {
+                if (!(nodeset = virBitmapFormat(numatune->memory.nodeset)))
+                    return -1;
+                virBufferAsprintf(buf, "nodeset='%s'/>\n", nodeset);
+                VIR_FREE(nodeset);
+            }
         } else if (numatune->memory.placement) {
             tmp = virDomainNumatunePlacementTypeToString(numatune->memory.placement);
             virBufferAsprintf(buf, "placement='%s'/>\n", tmp);
@@ -497,6 +510,9 @@ virDomainNumatuneSet(virDomainNumaPtr numa,
                      virBitmapPtr nodeset)
 {
     int ret = -1;
+    int i = 0, maxnode = 0;
+    virBitmapPtr bitmap = NULL;
+
 
     /* No need to do anything in this case */
     if (mode == -1 && placement == -1 && !nodeset)
@@ -538,7 +554,7 @@ virDomainNumatuneSet(virDomainNumaPtr numa,
     }
 
     if (placement == VIR_DOMAIN_NUMATUNE_PLACEMENT_DEFAULT) {
-        if (numa->memory.nodeset || placement_static)
+        if (numa->memory.nodeset || placement_static || numa->memory.allnode)
             placement = VIR_DOMAIN_NUMATUNE_PLACEMENT_STATIC;
         else
             placement = VIR_DOMAIN_NUMATUNE_PLACEMENT_AUTO;
@@ -546,10 +562,35 @@ virDomainNumatuneSet(virDomainNumaPtr numa,
 
     if (placement == VIR_DOMAIN_NUMATUNE_PLACEMENT_STATIC &&
         !numa->memory.nodeset) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("nodeset for NUMA memory tuning must be set "
-                         "if 'placement' is 'static'"));
-        goto cleanup;
+        if (mode != VIR_DOMAIN_NUMATUNE_MEM_INTERLEAVE) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("nodeset for NUMA memory tuning must be set "
+                             "if 'placement' is 'static'"));
+            goto cleanup;
+        } else {
+            /* default set all node if nodeset is NULL, when placement 
+             * is static and mode is interleave.
+             */
+             numa->memory.allnode = true;
+        }
+    }
+
+    if (placement == VIR_DOMAIN_NUMATUNE_PLACEMENT_STATIC &&
+        mode == VIR_DOMAIN_NUMATUNE_MEM_INTERLEAVE &&
+        numa->memory.allnode) {
+        if ((bitmap = virBitmapNew(VIR_DOMAIN_CPUMASK_LEN)) == NULL)
+            goto cleanup;
+        virBitmapClearAll(bitmap);
+        maxnode = numa_max_node();
+        for (i = 0; i <= maxnode; i++) {
+            if (virBitmapSetBit(bitmap, i) < 0) {
+                virBitmapFree(bitmap);
+                goto cleanup;
+            }
+        }
+        if (numa->memory.nodeset)
+            virBitmapFree(numa->memory.nodeset);
+        numa->memory.nodeset = bitmap;
     }
 
     /* setting nodeset when placement auto is invalid */
