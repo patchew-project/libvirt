@@ -3202,8 +3202,8 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
         mode = VIR_DOMAIN_NUMATUNE_MEM_STRICT;
 
     if (pagesize == 0) {
-        virDomainHugePagePtr master_hugepage = NULL;
-        virDomainHugePagePtr hugepage = NULL;
+        virMemHugePagePtr master_hugepage = NULL;
+        virMemHugePagePtr hugepage = NULL;
         bool thisHugepage = false;
 
         /* Find the huge page size we want to use */
