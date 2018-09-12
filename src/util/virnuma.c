@@ -381,7 +381,10 @@ virNumaGetMaxCPUs(void)
 bool
 virNumaNodeIsAvailable(int node)
 {
-    return numa_bitmask_isbitset(numa_nodes_ptr, node);
+    if (numa_nodes_ptr)        
+        return numa_bitmask_isbitset(numa_nodes_ptr, node);
+    else
+        return false;
 }
 
 
