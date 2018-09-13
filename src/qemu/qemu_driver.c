@@ -20945,7 +20945,9 @@ qemuARPGetInterfaces(virDomainObjPtr vm,
         goto cleanup;
 
     for (i = 0; i < vm->def->nnets; i++) {
-        if (vm->def->nets[i]->type != VIR_DOMAIN_NET_TYPE_NETWORK)
+        if (vm->def->nets[i]->type == VIR_DOMAIN_NET_TYPE_ETHERNET ||
+            vm->def->nets[i]->type == VIR_DOMAIN_NET_TYPE_VHOSTUSER ||
+            vm->def->nets[i]->type == VIR_DOMAIN_NET_TYPE_DIRECT)
             continue;
 
         virMacAddrFormat(&(vm->def->nets[i]->mac), macaddr);
