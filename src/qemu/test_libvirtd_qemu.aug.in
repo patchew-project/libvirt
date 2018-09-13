@@ -83,6 +83,7 @@ module Test_libvirtd_qemu =
 { "lock_manager" = "lockd" }
 { "metadata_lock_manager" = "lockd" }
 { "max_queued" = "0" }
+{ "state_lock_timeout" = "60" }
 { "keepalive_interval" = "5" }
 { "keepalive_count" = "5" }
 { "seccomp_sandbox" = "1" }

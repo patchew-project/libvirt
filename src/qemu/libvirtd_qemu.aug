@@ -101,6 +101,7 @@ module Libvirtd_qemu =
                  | str_entry "metadata_lock_manager"
 
    let rpc_entry = int_entry "max_queued"
+                 | int_entry "state_lock_timeout"
                  | int_entry "keepalive_interval"
                  | int_entry "keepalive_count"
 
