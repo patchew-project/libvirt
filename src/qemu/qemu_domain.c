@@ -54,6 +54,7 @@
 #include "vircrypto.h"
 #include "virrandom.h"
 #include "virsystemd.h"
+#include "virmem.h"
 #include "secret_util.h"
 #include "logging/log_manager.h"
 #include "locking/domain_lock.h"
@@ -3952,7 +3953,7 @@ static int
 qemuDomainDefValidateMemory(const virDomainDef *def)
 {
     const long system_page_size = virGetSystemPageSizeKB();
-    const virDomainMemtune *mem = &def->mem;
+    const virMemTune *mem = &def->mem;
 
     if (mem->nhugepages == 0)
         return 0;

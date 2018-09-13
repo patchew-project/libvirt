@@ -60,6 +60,7 @@
 #include "virhostdev.h"
 #include "virmdev.h"
 #include "virblkio.h"
+#include "virmem.h"
 
 #define VIR_FROM_THIS VIR_FROM_DOMAIN
 
@@ -6173,7 +6174,7 @@ virDomainDefLifecycleActionValidate(const virDomainDef *def)
 static int
 virDomainDefMemtuneValidate(const virDomainDef *def)
 {
-    const virDomainMemtune *mem = &(def->mem);
+    const virMemTune *mem = &(def->mem);
     size_t i;
     ssize_t pos = virDomainNumaGetNodeCount(def->numa) - 1;
 
@@ -18185,7 +18186,7 @@ virDomainDefMaybeAddInput(virDomainDefPtr def,
 static int
 virDomainHugepagesParseXML(xmlNodePtr node,
                            xmlXPathContextPtr ctxt,
-                           virDomainHugePagePtr hugepage)
+                           virMemHugePagePtr hugepage)
 {
     int ret = -1;
     xmlNodePtr oldnode = ctxt->node;
@@ -26833,7 +26834,7 @@ virDomainResourceDefFormat(virBufferPtr buf,
 
 static int
 virDomainHugepagesFormatBuf(virBufferPtr buf,
-                            virDomainHugePagePtr hugepage)
+                            virMemHugePagePtr hugepage)
 {
     int ret = -1;
 
@@ -26857,7 +26858,7 @@ virDomainHugepagesFormatBuf(virBufferPtr buf,
 
 static void
 virDomainHugepagesFormat(virBufferPtr buf,
-                         virDomainHugePagePtr hugepages,
+                         virMemHugePagePtr hugepages,
                          size_t nhugepages)
 {
     size_t i;
@@ -27395,7 +27396,7 @@ virDomainIOMMUDefFormat(virBufferPtr buf,
 
 static int
 virDomainMemtuneFormat(virBufferPtr buf,
-                       const virDomainMemtune *mem)
+                       const virMemTune *mem)
 {
     virBuffer childBuf = VIR_BUFFER_INITIALIZER;
     int ret = -1;

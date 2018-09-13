@@ -58,6 +58,7 @@
 # include "virsavecookie.h"
 # include "virresctrl.h"
 # include "virblkio.h"
+# include "virmem.h"
 
 /* forward declarations of all device types, required by
  * virDomainDeviceDef
@@ -2180,14 +2181,6 @@ struct _virDomainResourceDef {
     char *partition;
 };
 
-typedef struct _virDomainHugePage virDomainHugePage;
-typedef virDomainHugePage *virDomainHugePagePtr;
-
-struct _virDomainHugePage {
-    virBitmapPtr nodemask;      /* guest's NUMA node mask */
-    unsigned long long size;    /* hugepage size in KiB */
-};
-
 # define VIR_DOMAIN_CPUMASK_LEN 1024
 
 typedef struct _virDomainIOThreadIDDef virDomainIOThreadIDDef;
@@ -2245,38 +2238,6 @@ struct _virDomainVcpuDef {
     virDomainThreadSchedParam sched;
 
     virObjectPtr privateData;
-};
-
-typedef struct _virDomainMemtune virDomainMemtune;
-typedef virDomainMemtune *virDomainMemtunePtr;
-
-struct _virDomainMemtune {
-    /* total memory size including memory modules in kibibytes, this field
-     * should be accessed only via accessors */
-    unsigned long long total_memory;
-    unsigned long long cur_balloon; /* in kibibytes, capped at ulong thanks
-                                       to virDomainGetInfo */
-
-    virDomainHugePagePtr hugepages;
-    size_t nhugepages;
-
-    /* maximum supported memory for a guest, for hotplugging */
-    unsigned long long max_memory; /* in kibibytes */
-    unsigned int memory_slots; /* maximum count of RAM memory slots */
-
-    bool nosharepages;
-    bool locked;
-    int dump_core; /* enum virTristateSwitch */
-    unsigned long long hard_limit; /* in kibibytes, limit at off_t bytes */
-    unsigned long long soft_limit; /* in kibibytes, limit at off_t bytes */
-    unsigned long long min_guarantee; /* in kibibytes, limit at off_t bytes */
-    unsigned long long swap_hard_limit; /* in kibibytes, limit at off_t bytes */
-
-    int source; /* enum virDomainMemorySource */
-    int access; /* enum virDomainMemoryAccess */
-    int allocation; /* enum virDomainMemoryAllocation */
-
-    virTristateBool discard;
 };
 
 typedef struct _virDomainPowerManagement virDomainPowerManagement;
@@ -2380,7 +2341,7 @@ struct _virDomainDef {
     char *description;
 
     virBlkioTune blkio;
-    virDomainMemtune mem;
+    virMemTune mem;
 
     virDomainVcpuDefPtr *vcpus;
     size_t maxvcpus;
