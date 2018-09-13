@@ -57,6 +57,7 @@
 # include "virtypedparam.h"
 # include "virsavecookie.h"
 # include "virresctrl.h"
+# include "virblkio.h"
 
 /* forward declarations of all device types, required by
  * virDomainDeviceDef
@@ -2084,17 +2085,6 @@ struct _virDomainClockDef {
 };
 
 
-typedef struct _virBlkioDevice virBlkioDevice;
-typedef virBlkioDevice *virBlkioDevicePtr;
-struct _virBlkioDevice {
-    char *path;
-    unsigned int weight;
-    unsigned int riops;
-    unsigned int wiops;
-    unsigned long long rbps;
-    unsigned long long wbps;
-};
-
 typedef enum {
     VIR_DOMAIN_RNG_MODEL_VIRTIO,
 
@@ -2184,9 +2174,6 @@ struct _virDomainPanicDef {
 };
 
 
-void virBlkioDeviceArrayClear(virBlkioDevicePtr deviceWeights,
-                              int ndevices);
-
 typedef struct _virDomainResourceDef virDomainResourceDef;
 typedef virDomainResourceDef *virDomainResourceDefPtr;
 struct _virDomainResourceDef {
@@ -2258,16 +2245,6 @@ struct _virDomainVcpuDef {
     virDomainThreadSchedParam sched;
 
     virObjectPtr privateData;
-};
-
-typedef struct _virDomainBlkiotune virDomainBlkiotune;
-typedef virDomainBlkiotune *virDomainBlkiotunePtr;
-
-struct _virDomainBlkiotune {
-    unsigned int weight;
-
-    size_t ndevices;
-    virBlkioDevicePtr devices;
 };
 
 typedef struct _virDomainMemtune virDomainMemtune;
@@ -2402,7 +2379,7 @@ struct _virDomainDef {
     char *title;
     char *description;
 
-    virDomainBlkiotune blkio;
+    virBlkioTune blkio;
     virDomainMemtune mem;
 
     virDomainVcpuDefPtr *vcpus;

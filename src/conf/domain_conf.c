@@ -59,6 +59,7 @@
 #include "virnetdevmacvlan.h"
 #include "virhostdev.h"
 #include "virmdev.h"
+#include "virblkio.h"
 
 #define VIR_FROM_THIS VIR_FROM_DOMAIN
 
@@ -1203,16 +1204,6 @@ virDomainXMLOptionGetSaveCookie(virDomainXMLOptionPtr xmlopt)
     return &xmlopt->saveCookie;
 }
 
-
-void
-virBlkioDeviceArrayClear(virBlkioDevicePtr devices,
-                         int ndevices)
-{
-    size_t i;
-
-    for (i = 0; i < ndevices; i++)
-        VIR_FREE(devices[i].path);
-}
 
 /**
  * virDomainBlkioDeviceParseXML

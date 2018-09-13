@@ -187,7 +187,6 @@ virSEVCapabilitiesFree;
 
 
 # conf/domain_conf.h
-virBlkioDeviceArrayClear;
 virDiskNameParse;
 virDiskNameToBusDeviceIndex;
 virDiskNameToIndex;
@@ -1466,6 +1465,10 @@ virBitmapSubtract;
 virBitmapToData;
 virBitmapToDataBuf;
 virBitmapToString;
+
+
+# util/virblkio.h
+virBlkioDeviceArrayClear;
 
 
 # util/virbuffer.h
