@@ -18544,7 +18544,7 @@ virDomainVcpuParse(virDomainDefPtr def,
 
         if (def->placement_mode != VIR_DOMAIN_CPU_PLACEMENT_MODE_AUTO) {
             tmp = virXMLPropString(vcpuNode, "cpuset");
-            if (tmp) {
+            if (tmp && strlen(tmp) != 0) {
                 if (virBitmapParse(tmp, &def->cpumask, VIR_DOMAIN_CPUMASK_LEN) < 0)
                     goto cleanup;
 
