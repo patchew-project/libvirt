@@ -509,6 +509,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "vfio-pci.display",
               "blockdev",
               "memory-backend-memfd",
+              "memory-backend-memfd.hugetlb",
     );
 
 
@@ -1356,6 +1357,10 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsMemoryBackendFile[] =
     { "discard-data", QEMU_CAPS_OBJECT_MEMORY_FILE_DISCARD },
 };
 
+static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsMemoryBackendMemfd[] = {
+    { "hugetlb", QEMU_CAPS_OBJECT_MEMORY_MEMFD_HUGETLB },
+};
+
 static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsSPAPRMachine[] = {
     { "cap-hpt-max-page-size", QEMU_CAPS_MACHINE_PSERIES_CAP_HPT_MAX_PAGE_SIZE },
     { "cap-htm", QEMU_CAPS_MACHINE_PSERIES_CAP_HTM },
@@ -1364,6 +1369,9 @@ static struct virQEMUCapsStringFlags virQEMUCapsObjectPropsSPAPRMachine[] = {
 static virQEMUCapsObjectTypeProps virQEMUCapsObjectProps[] = {
     { "memory-backend-file", virQEMUCapsObjectPropsMemoryBackendFile,
       ARRAY_CARDINALITY(virQEMUCapsObjectPropsMemoryBackendFile),
+      QEMU_CAPS_OBJECT_MEMORY_FILE },
+    { "memory-backend-memfd", virQEMUCapsObjectPropsMemoryBackendMemfd,
+      ARRAY_CARDINALITY(virQEMUCapsObjectPropsMemoryBackendMemfd),
       QEMU_CAPS_OBJECT_MEMORY_FILE },
     { "spapr-machine", virQEMUCapsObjectPropsSPAPRMachine,
       ARRAY_CARDINALITY(virQEMUCapsObjectPropsSPAPRMachine),
