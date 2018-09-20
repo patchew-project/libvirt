@@ -281,7 +281,8 @@ vzDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
 static int
 vzDomainDeviceDefValidate(const virDomainDeviceDef *dev,
                           const virDomainDef *def,
-                          void *opaque ATTRIBUTE_UNUSED)
+                          void *opaque ATTRIBUTE_UNUSED,
+                          void *parseOpaque ATTRIBUTE_UNUSED)
 {
     if (dev->type == VIR_DOMAIN_DEVICE_DISK)
         return vzCheckUnsupportedDisk(def, dev->data.disk, opaque);

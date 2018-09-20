@@ -5961,18 +5961,20 @@ virDomainDeviceValidateAliasForHotplug(virDomainObjPtr vm,
 }
 
 
+/* parseOpaque: must not be NULL */
 static int
 virDomainDeviceDefValidate(const virDomainDeviceDef *dev,
                            const virDomainDef *def,
                            unsigned int parseFlags,
-                           virDomainXMLOptionPtr xmlopt)
+                           virDomainXMLOptionPtr xmlopt,
+                           void *parseOpaque)
 {
     /* validate configuration only in certain places */
     if (parseFlags & VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE)
         return 0;
 
     if (xmlopt->config.deviceValidateCallback &&
-        xmlopt->config.deviceValidateCallback(dev, def, xmlopt->config.priv))
+        xmlopt->config.deviceValidateCallback(dev, def, xmlopt->config.priv, parseOpaque))
         return -1;
 
     if (virDomainDeviceDefValidateInternal(dev, def) < 0)
@@ -5990,7 +5992,7 @@ virDomainDefValidateDeviceIterator(virDomainDefPtr def,
 {
     struct virDomainDefPostParseDeviceIteratorData *data = opaque;
     return virDomainDeviceDefValidate(dev, def,
-                                      data->parseFlags, data->xmlopt);
+                                      data->parseFlags, data->xmlopt, data->parseOpaque);
 }
 
 
@@ -16234,7 +16236,7 @@ virDomainDeviceDefParse(const char *xmlStr,
         goto error;
 
     /* validate the configuration */
-    if (virDomainDeviceDefValidate(dev, def, flags, xmlopt) < 0)
+    if (virDomainDeviceDefValidate(dev, def, flags, xmlopt, parseOpaque) < 0)
         goto error;
 
  cleanup:

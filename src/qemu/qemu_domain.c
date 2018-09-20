@@ -5790,7 +5790,8 @@ qemuDomainDeviceDefValidateInput(const virDomainInputDef *input,
 static int
 qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
                             const virDomainDef *def,
-                            void *opaque)
+                            void *opaque,
+                            void *parseOpaque ATTRIBUTE_UNUSED)
 {
     int ret = 0;
     virQEMUDriverPtr driver = opaque;

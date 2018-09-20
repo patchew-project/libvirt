@@ -2703,7 +2703,8 @@ typedef int (*virDomainDefValidateCallback)(const virDomainDef *def,
  * leaving the overall domain otherwise unchanged.  */
 typedef int (*virDomainDeviceDefValidateCallback)(const virDomainDeviceDef *dev,
                                                   const virDomainDef *def,
-                                                  void *opaque);
+                                                  void *opaque,
+                                                  void *parseOpaque);
 
 typedef struct _virDomainDefParserConfig virDomainDefParserConfig;
 typedef virDomainDefParserConfig *virDomainDefParserConfigPtr;
