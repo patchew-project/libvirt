@@ -4900,31 +4900,6 @@ virDomainDeviceDefPostParse(virDomainDeviceDefPtr dev,
     return 0;
 }
 
-static int
-virDomainDeviceDefPostParseOne(virDomainDeviceDefPtr dev,
-                               const virDomainDef *def,
-                               virCapsPtr caps,
-                               unsigned int flags,
-                               virDomainXMLOptionPtr xmlopt)
-{
-    void *parseOpaque = NULL;
-    int ret;
-
-    if (xmlopt->config.domainPostParseDataAlloc) {
-        if (xmlopt->config.domainPostParseDataAlloc(def, caps, flags,
-                                                    xmlopt->config.priv,
-                                                    &parseOpaque) < 0)
-            return -1;
-    }
-
-    ret = virDomainDeviceDefPostParse(dev, def, caps, flags, xmlopt, parseOpaque);
-
-    if (parseOpaque && xmlopt->config.domainPostParseDataFree)
-        xmlopt->config.domainPostParseDataFree(parseOpaque);
-
-    return ret;
-}
-
 
 struct virDomainDefPostParseDeviceIteratorData {
     virCapsPtr caps;
@@ -16066,6 +16041,7 @@ virDomainDeviceDefParse(const char *xmlStr,
 {
     xmlDocPtr xml;
     xmlNodePtr node;
+    void *parseOpaque = NULL;
     xmlXPathContextPtr ctxt = NULL;
     virDomainDeviceDefPtr dev = NULL;
     char *netprefix;
@@ -16222,8 +16198,15 @@ virDomainDeviceDefParse(const char *xmlStr,
         break;
     }
 
+    if (xmlopt->config.domainPostParseDataAlloc) {
+        if (xmlopt->config.domainPostParseDataAlloc(def, caps, flags,
+                                                    xmlopt->config.priv,
+                                                    &parseOpaque) < 0)
+            goto error;
+    }
+
     /* callback to fill driver specific device aspects */
-    if (virDomainDeviceDefPostParseOne(dev, def, caps, flags, xmlopt) < 0)
+    if (virDomainDeviceDefPostParse(dev, def, caps, flags, xmlopt, parseOpaque) < 0)
         goto error;
 
     /* validate the configuration */
@@ -16231,6 +16214,8 @@ virDomainDeviceDefParse(const char *xmlStr,
         goto error;
 
  cleanup:
+    if (parseOpaque && xmlopt->config.domainPostParseDataFree)
+        xmlopt->config.domainPostParseDataFree(parseOpaque);
     xmlFreeDoc(xml);
     xmlXPathFreeContext(ctxt);
     return dev;
