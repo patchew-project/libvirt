@@ -5790,16 +5790,11 @@ qemuDomainDeviceDefValidateInput(const virDomainInputDef *input,
 static int
 qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
                             const virDomainDef *def,
-                            void *opaque,
-                            void *parseOpaque ATTRIBUTE_UNUSED)
+                            void *opaque ATTRIBUTE_UNUSED,
+                            void *parseOpaque)
 {
     int ret = 0;
-    virQEMUDriverPtr driver = opaque;
-    virQEMUCapsPtr qemuCaps = NULL;
-
-    if (!(qemuCaps = virQEMUCapsCacheLookup(driver->qemuCapsCache,
-                                            def->emulator)))
-        return -1;
+    virQEMUCapsPtr qemuCaps = parseOpaque;
 
     switch ((virDomainDeviceType)dev->type) {
     case VIR_DOMAIN_DEVICE_NET:
@@ -5876,7 +5871,6 @@ qemuDomainDeviceDefValidate(const virDomainDeviceDef *dev,
         break;
     }
 
-    virObjectUnref(qemuCaps);
     return ret;
 }
 
