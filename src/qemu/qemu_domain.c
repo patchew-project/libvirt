@@ -3990,21 +3990,15 @@ qemuDomainDefValidateMemory(const virDomainDef *def)
 static int
 qemuDomainDefValidate(const virDomainDef *def,
                       virCapsPtr caps ATTRIBUTE_UNUSED,
-                      void *opaque,
-                      void *parseOpaque ATTRIBUTE_UNUSED)
+                      void *opaque ATTRIBUTE_UNUSED,
+                      void *parseOpaque)
 {
-    virQEMUDriverPtr driver = opaque;
-    virQEMUCapsPtr qemuCaps = NULL;
-    int ret = -1;
-
-    if (!(qemuCaps = virQEMUCapsCacheLookup(driver->qemuCapsCache,
-                                            def->emulator)))
-        goto cleanup;
+    virQEMUCapsPtr qemuCaps = parseOpaque;
 
     if (def->mem.min_guarantee) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("Parameter 'min_guarantee' not supported by QEMU."));
-        goto cleanup;
+        return -1;
     }
 
     /* On x86, UEFI requires ACPI */
@@ -4014,7 +4008,7 @@ qemuDomainDefValidate(const virDomainDef *def,
         def->features[VIR_DOMAIN_FEATURE_ACPI] != VIR_TRISTATE_SWITCH_ON) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("UEFI requires ACPI on this architecture"));
-        goto cleanup;
+        return -1;
     }
 
     /* On aarch64, ACPI requires UEFI */
@@ -4024,7 +4018,7 @@ qemuDomainDefValidate(const virDomainDef *def,
          def->os.loader->type != VIR_DOMAIN_LOADER_TYPE_PFLASH)) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("ACPI requires UEFI on this architecture"));
-        goto cleanup;
+        return -1;
     }
 
     if (def->os.loader &&
@@ -4035,7 +4029,7 @@ qemuDomainDefValidate(const virDomainDef *def,
         if (!qemuDomainIsQ35(def)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("Secure boot is supported with q35 machine types only"));
-            goto cleanup;
+            return -1;
         }
 
         /* Now, technically it is possible to have secure boot on
@@ -4044,13 +4038,13 @@ qemuDomainDefValidate(const virDomainDef *def,
         if (def->os.arch != VIR_ARCH_X86_64) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("Secure boot is supported for x86_64 architecture only"));
-            goto cleanup;
+            return -1;
         }
 
         if (def->features[VIR_DOMAIN_FEATURE_SMM] != VIR_TRISTATE_SWITCH_ON) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("Secure boot requires SMM feature enabled"));
-            goto cleanup;
+            return -1;
         }
     }
 
@@ -4068,7 +4062,7 @@ qemuDomainDefValidate(const virDomainDef *def,
             topologycpus != virDomainDefGetVcpusMax(def)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("CPU topology doesn't match maximum vcpu count"));
-            goto cleanup;
+            return -1;
         }
 
         /* vCPU hotplug granularity must be respected */
@@ -4078,7 +4072,7 @@ qemuDomainDefValidate(const virDomainDef *def,
                            _("vCPUs count must be a multiple of the vCPU "
                              "hotplug granularity (%u)"),
                            granularity);
-            goto cleanup;
+            return -1;
         }
     }
 
@@ -4089,14 +4083,14 @@ qemuDomainDefValidate(const virDomainDef *def,
                            _("more than %d vCPUs are only supported on "
                              "q35-based machine types"),
                            QEMU_MAX_VCPUS_WITHOUT_EIM);
-            goto cleanup;
+            return -1;
         }
         if (!def->iommu || def->iommu->eim != VIR_TRISTATE_SWITCH_ON) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("more than %d vCPUs require extended interrupt "
                              "mode enabled on the iommu device"),
                            QEMU_MAX_VCPUS_WITHOUT_EIM);
-            goto cleanup;
+            return -1;
         }
     }
 
@@ -4104,20 +4098,16 @@ qemuDomainDefValidate(const virDomainDef *def,
         def->virtType != VIR_DOMAIN_VIRT_KVM) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("cachetune is only supported for KVM domains"));
-        goto cleanup;
+        return -1;
     }
 
     if (qemuDomainDefValidateFeatures(def, qemuCaps) < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuDomainDefValidateMemory(def) < 0)
-        goto cleanup;
+        return -1;
 
-    ret = 0;
-
- cleanup:
-    virObjectUnref(qemuCaps);
-    return ret;
+    return 0;
 }
 
 
