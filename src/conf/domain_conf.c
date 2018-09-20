@@ -3366,6 +3366,7 @@ virDomainObjSetDefTransient(virCapsPtr caps,
                             virDomainObjPtr domain)
 {
     int ret = -1;
+    void *parseOpaque = NULL;
 
     if (!domain->persistent)
         return 0;
@@ -3373,7 +3374,10 @@ virDomainObjSetDefTransient(virCapsPtr caps,
     if (domain->newDef)
         return 0;
 
-    if (!(domain->newDef = virDomainDefCopy(domain->def, caps, xmlopt, NULL, false)))
+    if (xmlopt->privateData.getParseOpaque)
+        parseOpaque = xmlopt->privateData.getParseOpaque(domain);
+
+    if (!(domain->newDef = virDomainDefCopy(domain->def, caps, xmlopt, parseOpaque, false)))
         goto out;
 
     ret = 0;
