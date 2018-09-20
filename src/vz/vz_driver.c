@@ -250,7 +250,8 @@ vzDomainDefPostParse(virDomainDefPtr def,
 static int
 vzDomainDefValidate(const virDomainDef *def,
                     virCapsPtr caps ATTRIBUTE_UNUSED,
-                    void *opaque)
+                    void *opaque,
+                    void *parserOpaque ATTRIBUTE_UNUSED)
 {
     if (vzCheckUnsupportedControllers(def, opaque) < 0)
         return -1;

@@ -3990,7 +3990,8 @@ qemuDomainDefValidateMemory(const virDomainDef *def)
 static int
 qemuDomainDefValidate(const virDomainDef *def,
                       virCapsPtr caps ATTRIBUTE_UNUSED,
-                      void *opaque)
+                      void *opaque,
+                      void *parseOpaque ATTRIBUTE_UNUSED)
 {
     virQEMUDriverPtr driver = opaque;
     virQEMUCapsPtr qemuCaps = NULL;

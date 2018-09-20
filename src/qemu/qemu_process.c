@@ -5172,7 +5172,7 @@ qemuProcessStartValidateXML(virQEMUDriverPtr driver,
      * VM that was running before (migration, snapshots, save). It's more
      * important to start such VM than keep the configuration clean */
     if ((flags & VIR_QEMU_PROCESS_START_NEW) &&
-        virDomainDefValidate(vm->def, caps, 0, driver->xmlopt) < 0)
+        virDomainDefValidate(vm->def, caps, 0, driver->xmlopt, qemuCaps) < 0)
         return -1;
 
     return 0;

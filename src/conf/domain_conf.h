@@ -2696,7 +2696,8 @@ typedef void (*virDomainDefPostParseDataFree)(void *parseOpaque);
  * config. */
 typedef int (*virDomainDefValidateCallback)(const virDomainDef *def,
                                             virCapsPtr caps,
-                                            void *opaque);
+                                            void *opaque,
+                                            void *domainOpaque);
 
 /* Called once per device, for adjusting per-device settings while
  * leaving the overall domain otherwise unchanged.  */
@@ -2812,7 +2813,8 @@ bool virDomainDeviceAliasIsUserAlias(const char *aliasStr);
 int virDomainDefValidate(virDomainDefPtr def,
                          virCapsPtr caps,
                          unsigned int parseFlags,
-                         virDomainXMLOptionPtr xmlopt);
+                         virDomainXMLOptionPtr xmlopt,
+                         void *parseOpaque);
 
 static inline bool
 virDomainObjIsActive(virDomainObjPtr dom)

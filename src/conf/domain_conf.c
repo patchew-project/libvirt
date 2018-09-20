@@ -6271,6 +6271,7 @@ virDomainDefValidateInternal(const virDomainDef *def)
  * @caps: driver capabilities object
  * @parseFlags: virDomainDefParseFlags
  * @xmlopt: XML parser option object
+ * @parseOpaque: opaque data and it might be NULL (for QEMU driver it's qemuCaps)
  *
  * This validation function is designed to take checks of globally invalid
  * configurations that the parser needs to accept so that VMs don't vanish upon
@@ -6284,12 +6285,14 @@ int
 virDomainDefValidate(virDomainDefPtr def,
                      virCapsPtr caps,
                      unsigned int parseFlags,
-                     virDomainXMLOptionPtr xmlopt)
+                     virDomainXMLOptionPtr xmlopt,
+                     void *parseOpaque)
 {
     struct virDomainDefPostParseDeviceIteratorData data = {
         .caps = caps,
         .xmlopt = xmlopt,
         .parseFlags = parseFlags,
+        .parseOpaque = parseOpaque,
     };
 
     /* validate configuration only in certain places */
@@ -6298,7 +6301,7 @@ virDomainDefValidate(virDomainDefPtr def,
 
     /* call the domain config callback */
     if (xmlopt->config.domainValidateCallback &&
-        xmlopt->config.domainValidateCallback(def, caps, xmlopt->config.priv) < 0)
+        xmlopt->config.domainValidateCallback(def, caps, xmlopt->config.priv, data.parseOpaque) < 0)
         return -1;
 
     /* iterate the devices */
@@ -21063,7 +21066,7 @@ virDomainObjParseXML(xmlDocPtr xml,
         goto error;
 
     /* valdiate configuration */
-    if (virDomainDefValidate(obj->def, caps, flags, xmlopt) < 0)
+    if (virDomainDefValidate(obj->def, caps, flags, xmlopt, parseOpaque) < 0)
         goto error;
 
     return obj;
@@ -21154,7 +21157,7 @@ virDomainDefParseNode(xmlDocPtr xml,
         goto cleanup;
 
     /* valdiate configuration */
-    if (virDomainDefValidate(def, caps, flags, xmlopt) < 0)
+    if (virDomainDefValidate(def, caps, flags, xmlopt, parseOpaque) < 0)
         goto cleanup;
 
     VIR_STEAL_PTR(ret, def);
