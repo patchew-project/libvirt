@@ -5215,6 +5215,19 @@ virDomainDefPostParseCheckFailure(virDomainDefPtr def,
 }
 
 
+/**
+ * virDomainDefPostParse:
+ * @def: domain definition
+ * @caps: driver capabilities object
+ * @parseFlags: virDomainDefParseFlags
+ * @xmlopt: XML parser option object
+ * @parseOpaque: opaque data and it might be NULL (for QEMU driver it's qemuCaps)
+ *
+ * This function does various common and hypervisor specific auto
+ * generation, verification, and validation.
+ *
+ * Returns 0 on success, -1 on error
+ */
 int
 virDomainDefPostParse(virDomainDefPtr def,
                       virCapsPtr caps,
