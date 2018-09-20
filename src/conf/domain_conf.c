@@ -6288,6 +6288,9 @@ virDomainDefValidate(virDomainDefPtr def,
                      virDomainXMLOptionPtr xmlopt,
                      void *parseOpaque)
 {
+    int ret = -1;
+    bool localParseOpaque = false;
+
     struct virDomainDefPostParseDeviceIteratorData data = {
         .caps = caps,
         .xmlopt = xmlopt,
@@ -6298,6 +6301,17 @@ virDomainDefValidate(virDomainDefPtr def,
     /* validate configuration only in certain places */
     if (parseFlags & VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE)
         return 0;
+
+    if (!data.parseOpaque &&
+        xmlopt->config.domainPostParseDataAlloc) {
+        ret = xmlopt->config.domainPostParseDataAlloc(def, caps, parseFlags,
+                                                      xmlopt->config.priv,
+                                                      &data.parseOpaque);
+
+        if (virDomainDefPostParseCheckFailure(def, parseFlags, ret) < 0)
+            goto cleanup;
+        localParseOpaque = true;
+    }
 
     /* call the domain config callback */
     if (xmlopt->config.domainValidateCallback &&
@@ -6311,6 +6325,13 @@ virDomainDefValidate(virDomainDefPtr def,
         return -1;
 
     if (virDomainDefValidateInternal(def) < 0)
+        return -1;
+
+ cleanup:
+    if (localParseOpaque && xmlopt->config.domainPostParseDataFree)
+        xmlopt->config.domainPostParseDataFree(data.parseOpaque);
+
+    if (ret == 1)
         return -1;
 
     return 0;
