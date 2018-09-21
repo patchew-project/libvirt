@@ -712,19 +712,12 @@ int virNetClientGetFD(virNetClientPtr client)
 }
 
 
-int virNetClientDupFD(virNetClientPtr client, bool cloexec)
+int virNetClientDupFD(virNetClientPtr client)
 {
     int fd;
 
     virObjectLock(client);
-
     fd = virNetSocketDupFD(client->sock);
-    if (!cloexec && fd >= 0 && virSetInherit(fd, true)) {
-        virReportSystemError(errno, "%s",
-                             _("Cannot disable close-on-exec flag"));
-        VIR_FORCE_CLOSE(fd);
-    }
-
     virObjectUnlock(client);
     return fd;
 }

@@ -796,7 +796,7 @@ static int virLockManagerLockDaemonAcquire(virLockManagerPtr lock,
         goto cleanup;
 
     if (fd &&
-        (*fd = virNetClientDupFD(client, false)) < 0)
+        (*fd = virNetClientDupFD(client)) < 0)
         goto cleanup;
 
     if (!(flags & VIR_LOCK_MANAGER_ACQUIRE_REGISTER_ONLY)) {

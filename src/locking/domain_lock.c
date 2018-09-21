@@ -188,6 +188,24 @@ int virDomainLockProcessStart(virLockManagerPluginPtr plugin,
     ret = virLockManagerAcquire(lock, NULL, flags,
                                 dom->def->onLockFailure, fd);
 
+    if (ret >= 0 && fd && *fd >= 0 && virSetInherit(*fd, true) < 0) {
+        int saved_errno = errno;
+        virErrorPtr origerr;
+
+        virErrorPreserveLast(&origerr);
+
+        if (virLockManagerRelease(lock, NULL, 0) < 0)
+            VIR_WARN("Unable to release acquired resourced in cleanup path");
+
+        virErrorRestore(&origerr);
+        errno = saved_errno;
+
+        virReportSystemError(errno, "%s",
+                             _("Cannot disable close-on-exec flag"));
+
+        ret = -1;
+    }
+
     virLockManagerFree(lock);
 
     return ret;

@@ -95,7 +95,7 @@ void virNetClientSetCloseCallback(virNetClientPtr client,
                                   virFreeCallback ff);
 
 int virNetClientGetFD(virNetClientPtr client);
-int virNetClientDupFD(virNetClientPtr client, bool cloexec);
+int virNetClientDupFD(virNetClientPtr client);
 
 bool virNetClientHasPassFD(virNetClientPtr client);
 
