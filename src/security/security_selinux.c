@@ -1102,12 +1102,12 @@ virSecuritySELinuxTransactionCommit(virSecurityManagerPtr mgr ATTRIBUTE_UNUSED,
         goto cleanup;
     }
 
-    if ((pid == -1 &&
-         virSecuritySELinuxTransactionRun(pid, list) < 0) ||
-        (pid != -1 &&
-         virProcessRunInMountNamespace(pid,
-                                       virSecuritySELinuxTransactionRun,
-                                       list) < 0))
+    if (pid == -1)
+        pid = getpid();
+
+    if (virProcessRunInMountNamespace(pid,
+                                      virSecuritySELinuxTransactionRun,
+                                      list) < 0)
         goto cleanup;
 
     ret = 0;
