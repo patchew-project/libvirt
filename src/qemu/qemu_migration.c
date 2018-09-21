@@ -3303,7 +3303,7 @@ qemuMigrationSrcConnect(virQEMUDriverPtr driver,
     if (virNetSocketNewConnectTCP(host, port,
                                   AF_UNSPEC,
                                   &sock) == 0) {
-        spec->dest.fd.qemu = virNetSocketDupFD(sock, true);
+        spec->dest.fd.qemu = virNetSocketDupFD(sock);
         virObjectUnref(sock);
     }
     if (qemuSecurityClearSocketLabel(driver->securityManager, vm->def) < 0 ||

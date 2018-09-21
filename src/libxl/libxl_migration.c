@@ -310,7 +310,7 @@ libxlMigrateDstReceive(virNetSocketPtr sock,
     }
     VIR_DEBUG("Accepted migration connection."
               "  Spawning thread to process migration data");
-    recvfd = virNetSocketDupFD(client_sock, true);
+    recvfd = virNetSocketDupFD(client_sock);
     virObjectUnref(client_sock);
 
     /*
@@ -1254,7 +1254,7 @@ libxlDomainMigrationSrcPerform(libxlDriverPrivatePtr driver,
         goto cleanup;
     }
 
-    sockfd = virNetSocketDupFD(sock, true);
+    sockfd = virNetSocketDupFD(sock);
     virObjectUnref(sock);
 
     if (virDomainLockProcessPause(driver->lockManager, vm, &priv->lockState) < 0)

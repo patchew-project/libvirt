@@ -1372,14 +1372,11 @@ int virNetSocketGetFD(virNetSocketPtr sock)
 }
 
 
-int virNetSocketDupFD(virNetSocketPtr sock, bool cloexec)
+int virNetSocketDupFD(virNetSocketPtr sock)
 {
     int fd;
 
-    if (cloexec)
-        fd = fcntl(sock->fd, F_DUPFD_CLOEXEC, 0);
-    else
-        fd = dup(sock->fd);
+    fd = fcntl(sock->fd, F_DUPFD_CLOEXEC, 0);
     if (fd < 0) {
         virReportSystemError(errno, "%s",
                              _("Unable to copy socket file handle"));

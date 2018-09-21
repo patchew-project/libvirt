@@ -124,7 +124,7 @@ virNetSocketPtr virNetSocketNewPostExecRestart(virJSONValuePtr object);
 virJSONValuePtr virNetSocketPreExecRestart(virNetSocketPtr sock);
 
 int virNetSocketGetFD(virNetSocketPtr sock);
-int virNetSocketDupFD(virNetSocketPtr sock, bool cloexec);
+int virNetSocketDupFD(virNetSocketPtr sock);
 
 bool virNetSocketIsLocal(virNetSocketPtr sock);
 
