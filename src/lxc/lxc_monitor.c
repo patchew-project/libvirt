@@ -161,6 +161,10 @@ virLXCMonitorPtr virLXCMonitorNew(virDomainObjPtr vm,
     if (virNetClientRegisterAsyncIO(mon->client) < 0)
         goto error;
 
+    /* avoid deadlock by making this call before assigning virLXCMonitorEvents */
+    virNetClientSetCloseCallback(mon->client, virLXCMonitorEOFNotify, mon,
+                                 virLXCMonitorCloseFreeCallback);
+
     if (!(mon->program = virNetClientProgramNew(VIR_LXC_MONITOR_PROGRAM,
                                                 VIR_LXC_MONITOR_PROGRAM_VERSION,
                                                 virLXCMonitorEvents,
@@ -176,8 +180,6 @@ virLXCMonitorPtr virLXCMonitorNew(virDomainObjPtr vm,
     memcpy(&mon->cb, cb, sizeof(mon->cb));
 
     virObjectRef(mon);
-    virNetClientSetCloseCallback(mon->client, virLXCMonitorEOFNotify, mon,
-                                 virLXCMonitorCloseFreeCallback);
 
  cleanup:
     VIR_FREE(sockpath);
