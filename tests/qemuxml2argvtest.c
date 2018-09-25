@@ -1745,6 +1745,8 @@ mymain(void)
                  FLAG_SKIP_LEGACY_CPUS | FLAG_EXPECT_FAILURE,
                  0, GIC_NONE, NONE);
     DO_TEST("cpu-host-passthrough", QEMU_CAPS_KVM);
+    DO_TEST("cpu-host-passthrough-numa", QEMU_CAPS_NUMA);
+    DO_TEST("cpu-host-passthrough-nonuma", QEMU_CAPS_NUMA);
     DO_TEST_FAILURE("cpu-qemu-host-passthrough", QEMU_CAPS_KVM);
 
     qemuTestSetHostArch(driver.caps, VIR_ARCH_S390X);
