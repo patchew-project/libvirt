@@ -207,9 +207,16 @@ mymain(void)
     DO_TEST("cpu-shares-hvm");
     DO_TEST("variable-clock-hvm");
     DO_TEST("moredevs-hvm");
+
+# ifdef LIBXL_HAVE_BUILDINFO_NESTED_HVM
     DO_TEST("vnuma-hvm");
+# endif
+
     DO_TEST("multiple-ip");
+
+# ifdef LIBXL_HAVE_BUILDINFO_NESTED_HVM
     DO_TEST("fullvirt-cpuid");
+# endif
 
     unlink("libxl-driver.log");
 
