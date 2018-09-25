@@ -327,7 +327,6 @@ AC_CHECK_FUNCS_ONCE([\
   fallocate \
   geteuid \
   getgid \
-  getgrnam_r \
   getmntent_r \
   getpwuid_r \
   getrlimit \
@@ -338,7 +337,6 @@ AC_CHECK_FUNCS_ONCE([\
   posix_fallocate \
   posix_memalign \
   prlimit \
-  regexec \
   sched_getaffinity \
   setgroups \
   setns \
