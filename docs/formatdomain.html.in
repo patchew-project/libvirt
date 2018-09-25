@@ -1501,6 +1501,13 @@
           <dd>The virtual CPU created by the hypervisor will be checked
             against the CPU specification and the domain will not be started
             unless the two CPUs match.</dd>
+
+          <dt><code>numa</code></dt>
+          <dd>When the CPU mode='host-passthrough' check='numa' option
+            combination is set, libvirt auto partitions the guest domain
+            by rendering the host NUMA architecture.  Here the virtual
+            CPUs and memory are evenly balanced across the defined NUMA
+            nodes. The vCPUs are also pinned to their physical CPUs.</dd>
         </dl>
 
         <span class="since">Since 0.9.10</span>, an optional <code>mode</code>

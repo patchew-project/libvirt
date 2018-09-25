@@ -52,7 +52,8 @@ VIR_ENUM_IMPL(virCPUCheck, VIR_CPU_CHECK_LAST,
               "default",
               "none",
               "partial",
-              "full")
+              "full",
+              "numa")
 
 VIR_ENUM_IMPL(virCPUFallback, VIR_CPU_FALLBACK_LAST,
               "allow",

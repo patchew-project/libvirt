@@ -29,6 +29,7 @@
         <value>none</value>
         <value>partial</value>
         <value>full</value>
+        <value>numa</value>
       </choice>
     </attribute>
   </define>

@@ -68,6 +68,7 @@ typedef enum {
     VIR_CPU_CHECK_NONE,
     VIR_CPU_CHECK_PARTIAL,
     VIR_CPU_CHECK_FULL,
+    VIR_CPU_CHECK_NUMA,
 
     VIR_CPU_CHECK_LAST
 } virCPUCheck;

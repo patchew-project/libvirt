@@ -1759,6 +1759,168 @@ virDomainDefGetVcpusTopology(const virDomainDef *def,
 }
 
 
+/**
+ * virDomainNumaAutoconfig: auto partition guest vNUMA XML definitions
+ * taking the machine NUMA topology creating a small guest copy instance.
+ * @def: domain definition
+ * @caps: host capabilities
+ *
+ * Auto partitioning vNUMA guests is requested under XML configuration
+ * <cpu mode="host-passthrough" check="numa">.  Here libvirt takes the
+ * host NUMA topology, including maxvcpus, online vcpus, memory and
+ * pinning node cpu's where it renders the guest domain vNUMA topology
+ * building an architectural copy of the host.
+ *
+ * Returns 0 on success and -1 on error.
+ */
+static int
+virDomainNumaAutoconfig(virDomainDefPtr def,
+                        virCapsPtr caps)
+{
+    int ret = -1;
+
+    if (caps && def->cpu &&
+        def->cpu->mode == VIR_CPU_MODE_HOST_PASSTHROUGH &&
+        def->cpu->check == VIR_CPU_CHECK_NUMA) {
+
+        size_t i, cell;
+        size_t nvcpus = 0;
+        size_t nnumaCell = 0;
+        unsigned long long memsizeCell = 0;
+        virBitmapPtr vnumask = NULL;
+        virCapsHostPtr host = &caps->host;
+
+        nnumaCell = host->nnumaCell;
+        if (!nnumaCell)
+            goto cleanup;
+
+        /* Compute the online vcpus */
+        for (i = 0; i < def->maxvcpus; i++)
+            if (def->vcpus[i]->online)
+                nvcpus++;
+
+        if (nvcpus < nnumaCell) {
+            VIR_WARN("vNUMA disabled: %ld vcpus is insufficient "
+                     "to arrange a vNUMA topology for %ld nodes.",
+                      nvcpus, nnumaCell);
+            goto cleanup;
+        }
+
+        /* Compute the memory size (memsizeCell) per arranged nnumaCell
+         */
+        if ((memsizeCell = def->mem.total_memory / nnumaCell) == 0)
+            goto cleanup;
+
+        /* Correct vNUMA can only be accomplished if the number of maxvcpus
+         * is a multiple of the number of physical nodes.  If this is not
+         * possible we set sockets, cores and threads to 0 so libvirt
+         * creates a default topology where all vcpus appear as sockets and
+         * cores and threads are set to 1.
+         */
+        if (def->maxvcpus % nnumaCell) {
+            VIR_WARN("vNUMA: configured %ld vcpus do not meet the host "
+                     "%ld NUMA nodes for an evenly balanced cpu topology.",
+                      def->maxvcpus, nnumaCell);
+            def->cpu->sockets = def->cpu->cores = def->cpu->threads = 0;
+        } else {
+            /* Below artificial cpu topology computed aims for best host
+             * matching cores/threads alignment fitting the configured vcpus.
+             */
+            unsigned int sockets = host->numaCell[nnumaCell-1]->cpus->socket_id + 1;
+            unsigned int threads = host->cpu->threads;
+
+            if (def->maxvcpus % (sockets * threads))
+                threads = 1;
+
+            def->cpu->cores = def->maxvcpus / (sockets * threads);
+            def->cpu->threads = threads;
+            def->cpu->sockets = sockets;
+        }
+
+        /* Build the vNUMA topology.  Our former universe might have
+         * changed entirely where it did grow beyond former dimensions
+         * so fully free current allocations and start from scratch
+         * building new vNUMA topology.
+         */
+        virDomainNumaFree(def->numa);
+        if (!(def->numa = virDomainNumaNew()))
+            goto error;
+
+        if (!virDomainNumaSetNodeCount(def->numa, nnumaCell))
+            goto error;
+
+        for (cell = 0; cell < nnumaCell; cell++) {
+            char *vcpus = NULL;
+            size_t ndistances;
+            virBitmapPtr cpumask = NULL;
+            virCapsHostNUMACell *numaCell = host->numaCell[cell];
+
+            /* per NUMA cell memory size */
+            virDomainNumaSetNodeMemorySize(def->numa, cell, memsizeCell);
+
+            /* per NUMA cell vcpu range to mask */
+            for (i = cell; i < def->maxvcpus; i += nnumaCell) {
+                char *tmp = NULL;
+
+                if ((virAsprintf(&tmp, "%ld%s", i,
+                        ((def->maxvcpus - i) > nnumaCell) ? "," : "") < 0) ||
+                    (virAsprintf(&vcpus, "%s%s",
+                        (vcpus ? vcpus : ""), tmp) < 0)) {
+                    VIR_FREE(tmp);
+                    VIR_FREE(vcpus);
+                    goto error;
+                }
+                VIR_FREE(tmp);
+            }
+
+            if ((virBitmapParse(vcpus, &cpumask, VIR_DOMAIN_CPUMASK_LEN) < 0) ||
+                (virDomainNumaSetNodeCpumask(def->numa, cell, cpumask) == NULL)) {
+                VIR_FREE(vcpus);
+                goto error;
+            }
+            VIR_FREE(vcpus);
+
+            /* per NUMA cpus sibling vNUMA pinning */
+            if (!(vnumask = virBitmapNew(nnumaCell * numaCell->ncpus)))
+                goto error;
+
+            for (i = 0; i < numaCell->ncpus; i++) {
+                unsigned int id = numaCell->cpus[i].id;
+
+                if (virBitmapSetBit(vnumask, id) < 0) {
+                    virBitmapFree(vnumask);
+                    goto error;
+                }
+            }
+
+            for (i = 0; i < def->maxvcpus; i++) {
+                if (virBitmapIsBitSet(cpumask, i))
+                    def->vcpus[i]->cpumask = virBitmapNewCopy(vnumask);
+            }
+            virBitmapFree(vnumask);
+
+            /* per NUMA cell sibling distances */
+            ndistances = numaCell->nsiblings;
+            if (ndistances &&
+                virDomainNumaSetNodeDistanceCount(def->numa, cell, ndistances) != nnumaCell)
+                goto error;
+
+            for (i = 0; i < ndistances; i++) {
+                unsigned int distance = numaCell->siblings[i].distance;
+
+                if (virDomainNumaSetNodeDistance(def->numa, cell, i, distance) != distance)
+                    goto error;
+            }
+        }
+    }
+ cleanup:
+    ret = 0;
+
+ error:
+    return ret;
+}
+
+
 virDomainDiskDefPtr
 virDomainDiskDefNew(virDomainXMLOptionPtr xmlopt)
 {
@@ -19747,6 +19909,10 @@ virDomainDefParseXML(xmlDocPtr xml,
         goto error;
 
     if (virDomainNumaDefCPUParseXML(def->numa, ctxt) < 0)
+        goto error;
+
+    /* Check and apply auto partition vNUMA topology to the guest if requested */
+    if (virDomainNumaAutoconfig(def, caps))
         goto error;
 
     if (virDomainNumaGetCPUCountTotal(def->numa) > virDomainDefGetVcpusMax(def)) {
