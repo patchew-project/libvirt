@@ -29,8 +29,16 @@
 #ifndef __VIR_CGROUP_PRIV_H__
 # define __VIR_CGROUP_PRIV_H__
 
+# include <dirent.h>
+# include <unistd.h>
+
 # include "vircgroup.h"
 # include "vircgroupbackend.h"
+
+# if defined(__linux__) && defined(HAVE_GETMNTENT_R) && \
+    defined(_DIRENT_HAVE_D_TYPE) && defined(_SC_CLK_TCK)
+#  define VIR_CGROUP_SUPPORTED
+# endif
 
 struct _virCgroupV1Controller {
     int type;

@@ -55,6 +55,8 @@ VIR_ENUM_IMPL(virCgroupV1Controller, VIR_CGROUP_CONTROLLER_LAST,
               "name=systemd");
 
 
+#ifdef VIR_CGROUP_SUPPORTED
+
 /* We're looking for at least one 'cgroup' fs mount,
  * which is *not* a named mount. */
 static bool
@@ -2099,3 +2101,14 @@ virCgroupV1Register(void)
 {
     virCgroupBackendRegister(&virCgroupV1Backend);
 }
+
+#else /* !VIR_CGROUP_SUPPORTED */
+
+void
+virCgroupV1Register(void)
+{
+    virReportSystemError(ENOSYS, "%s",
+                         _("Control groups not supported on this platform"));
+}
+
+#endif /* !VIR_CGROUP_SUPPORTED */
