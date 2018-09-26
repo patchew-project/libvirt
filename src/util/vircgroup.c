@@ -1104,7 +1104,8 @@ virCgroupNewMachineSystemd(const char *name,
 
  error:
     saved = virSaveLastError();
-    virCgroupRemove(*group);
+    if (*group)
+        virCgroupRemove(*group);
     virCgroupFree(group);
     if (saved) {
         virSetError(saved);
