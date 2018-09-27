@@ -3653,20 +3653,57 @@ qemuMonitorCPUDefInfoFree(qemuMonitorCPUDefInfoPtr cpu)
 }
 
 
+/**
+ * qemuMonitorGetCPUModelExpansion:
+ * @mon:
+ * @type: qemuMonitorCPUModelExpansionType
+ * @migratable: Prompt QEMU to include non-migratable features for X86 models if false.
+ * @input: Non-expanded input model
+ * @expansion: Expanded output model (or NULL if QEMU rejects model / request)
+ *
+ * CPU property lists are computed from CPUModelInfo structures by 1) converting
+ * model->name into a property list using a static lookup table and 2) adding or
+ * removing properties in the resulting list from model->props.
+ *
+ * This function uses QEMU to identify a base model name that most closely
+ * matches the migratable CPU properties in the input CPU Model.
+ *
+ * This function also uses QEMU to enumerate model->props in various ways based
+ * on the qemuMonitorCPUModelExpansionType.
+ *
+ * full_input_props = LookupProps(input->name) then +/- input->props
+ *
+ * migratable_input_props = full_input_props - non_migratable_input_props
+ *
+ * base_model = FindClosestBaseModel(migratable_input_props)
+ *
+ * expansion->name = base_model->name
+ *
+ * @type == QEMU_MONITOR_CPU_MODEL_EXPANSION_STATIC
+ *   expansion->props = props to +/- to base_model to approximate migratable_input_props
+ *
+ * @type == QEMU_MONITOR_CPU_MODEL_EXPANSION_FULL
+ *   expansion->props = full_input_props
+ *
+ * @type == QEMU_MONITOR_CPU_MODEL_EXPANSION_STATIC_FULL
+ *   expansion->props = migratable_input_props
+ *
+ * Returns 0 in case of success, -1 in case of failure
+ */
 int
 qemuMonitorGetCPUModelExpansion(qemuMonitorPtr mon,
                                 qemuMonitorCPUModelExpansionType type,
-                                const char *model_name,
                                 bool migratable,
-                                qemuMonitorCPUModelInfoPtr *model_info)
+                                qemuMonitorCPUModelInfoPtr input,
+                                qemuMonitorCPUModelInfoPtr *expansion
+                               )
 {
     VIR_DEBUG("type=%d model_name=%s migratable=%d",
-              type, model_name, migratable);
+              type, input->name, migratable);
 
     QEMU_CHECK_MONITOR(mon);
 
-    return qemuMonitorJSONGetCPUModelExpansion(mon, type, model_name,
-                                               migratable, model_info);
+    return qemuMonitorJSONGetCPUModelExpansion(mon, type, migratable, input, expansion);
 }
 
 
