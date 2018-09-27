@@ -74,6 +74,36 @@ int qemuProcessBeginJob(virQEMUDriverPtr driver,
 void qemuProcessEndJob(virQEMUDriverPtr driver,
                        virDomainObjPtr vm);
 
+typedef struct _qmpDomainObjPrivate qmpDomainObjPrivate;
+typedef qmpDomainObjPrivate *qmpDomainObjPrivatePtr;
+struct _qmpDomainObjPrivate {
+    char *libDir;
+    uid_t runUid;
+    gid_t runGid;
+    char *qmperr;  /* qemu proc stderr */
+    char *monarg;  // "unix:{priv->monpath},server,nowait"
+    char *monpath; // {libDir}/capabilities.monitor.sock
+    char *pidfile;
+    virCommandPtr cmd;
+    qemuMonitorPtr mon;
+    bool forceTCG;
+};
+
+virDomainObjPtr qmpDomainObjNew(const char *binary,
+                                bool forceTCG,
+                                const char *libDir,
+                                uid_t runUid,
+                                gid_t runGid);
+
+#define QMP_DOMAIN_PRIVATE(dom) \
+    ((qmpDomainObjPrivatePtr) (dom)->privateData)
+
+#define QMP_DOMAIN_MONITOR(dom) \
+   ((qemuMonitorPtr) (QMP_DOMAIN_PRIVATE(dom) ? QMP_DOMAIN_PRIVATE(dom)->mon : NULL))
+
+#define QMP_DOMAIN_ERROR(dom) \
+   ((char *) (QMP_DOMAIN_PRIVATE(dom) ? QMP_DOMAIN_PRIVATE(dom)->qmperr: NULL))
+
 typedef enum {
     VIR_QEMU_PROCESS_START_COLD         = 1 << 0,
     VIR_QEMU_PROCESS_START_PAUSED       = 1 << 1,
@@ -96,6 +126,9 @@ int qemuProcessStart(virConnectPtr conn,
                      virDomainSnapshotObjPtr snapshot,
                      virNetDevVPortProfileOp vmop,
                      unsigned int flags);
+
+int
+qemuProcessStartQmp(virDomainObjPtr dom);
 
 virCommandPtr qemuProcessCreatePretendCmd(virQEMUDriverPtr driver,
                                           virDomainObjPtr vm,
@@ -154,6 +187,8 @@ void qemuProcessStop(virQEMUDriverPtr driver,
                      virDomainShutoffReason reason,
                      qemuDomainAsyncJob asyncJob,
                      unsigned int flags);
+
+void qemuProcessStopQmp(virDomainObjPtr dom);
 
 int qemuProcessAttach(virConnectPtr conn,
                       virQEMUDriverPtr driver,

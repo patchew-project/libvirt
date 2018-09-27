@@ -8068,3 +8068,401 @@ qemuProcessReconnectAll(virQEMUDriverPtr driver)
     struct qemuProcessReconnectData data = {.driver = driver};
     virDomainObjListForEach(driver->domains, qemuProcessReconnectHelper, &data);
 }
+
+
+static void *
+qmpDomainObjPrivateAlloc(void *opaque)
+{
+    qmpDomainObjPrivatePtr priv;
+
+    if (VIR_ALLOC(priv) < 0)
+        return NULL;
+
+    VIR_DEBUG("priv=%p opaque=%p", priv, opaque);
+
+    return priv;
+}
+
+
+static void
+qmpDomainObjPrivateFree(void *data)
+{
+    qmpDomainObjPrivatePtr priv = data;
+
+    VIR_DEBUG("priv=%p, priv->mon=%p", priv, (priv ? priv->mon : NULL));
+
+    if (!priv)
+        return;
+
+    /* This should never be non-NULL if we get here, but just in case... */
+    if (priv->mon) {
+        VIR_ERROR(_("Unexpected QEMU monitor still active during domain deletion"));
+        qemuMonitorClose(priv->mon);
+        priv->mon = NULL;
+    }
+
+    VIR_FREE(priv->libDir);
+    VIR_FREE(priv->monpath);
+    VIR_FREE(priv->monarg);
+    VIR_FREE(priv->pidfile);
+    VIR_FREE(priv->qmperr);
+    VIR_FREE(priv);
+}
+
+/**
+ * qmpDomainObjNew:
+ * @binary: Qemu binary
+ * @forceTCG: Force TCG mode if true
+ * @libDir: Directory for process and connection artifacts
+ * @runUid: UserId for Qemu Process
+ * @runGid: GroupId for Qemu Process
+ *
+ * Allocate and initialize domain structure encapsulating
+ * QEMU Process state and monitor connection to QEMU
+ * for completing QMP Queries.
+ */
+virDomainObjPtr
+qmpDomainObjNew(const char *binary,
+                bool forceTCG,
+                const char *libDir,
+                uid_t runUid, gid_t runGid)
+{
+    virDomainXMLOptionPtr xmlopt = NULL;
+    virDomainObjPtr ret = NULL;
+    virDomainObjPtr dom = NULL;
+    qmpDomainObjPrivatePtr priv = NULL;
+
+    virDomainXMLPrivateDataCallbacks callbacks = {
+        .alloc = qmpDomainObjPrivateAlloc,
+        .free = qmpDomainObjPrivateFree,
+    };
+
+    VIR_DEBUG("exec=%s, libDir=%s, runUid=%u, runGid=%u ",
+              NULLSTR(binary), NULLSTR(libDir), runUid, runGid);
+
+    xmlopt = virDomainXMLOptionNew(NULL,
+                                   &callbacks,
+                                   NULL, NULL, NULL);
+
+    if (!xmlopt ||
+        !(dom = virDomainObjNew(xmlopt)))
+        goto cleanup;
+
+    if (VIR_ALLOC(dom->def) < 0 ||
+        VIR_STRDUP(dom->def->name, "QmpQuery") < 0 ||
+        VIR_STRDUP(dom->def->emulator, binary) < 0)
+        goto cleanup;
+
+    priv = QMP_DOMAIN_PRIVATE(dom);
+
+    priv->forceTCG = forceTCG;
+
+    if (VIR_STRDUP(priv->libDir, libDir) < 0)
+        goto cleanup;
+
+    priv->runUid = runUid;
+    priv->runGid = runGid;
+
+    VIR_STEAL_PTR(ret, dom);
+
+ cleanup:
+    virDomainObjEndAPI(&dom);
+    return ret;
+}
+
+
+/* Initialize configuration and paths prior to starting QEMU
+ */
+static int
+qemuProcessInitQmp(virDomainObjPtr dom)
+{
+    int ret = -1;
+    qmpDomainObjPrivatePtr priv = QMP_DOMAIN_PRIVATE(dom);
+
+    /* Allow multiple QEMU Procs and make clashes very unlikely */
+    unsigned int seed = time(NULL);
+    dom->def->id = rand_r(&seed) % 1000000;
+
+    VIR_DEBUG("Beginning VM startup process"
+              "dom=%p name=%s emulator=%s, id=%d",
+              dom, dom->def->name, dom->def->emulator, dom->def->id);
+
+    /* the ".sock" sufix is important to avoid a possible clash with a qemu
+     * domain called "capabilities"
+     */
+    if (virAsprintf(&priv->monpath, "%s/%s.%d.%s",
+                    priv->libDir, dom->def->name, dom->def->id,
+                    "monitor.sock") < 0)
+        goto cleanup;
+
+    if (virAsprintf(&priv->monarg, "unix:%s,server,nowait", priv->monpath) < 0)
+        goto cleanup;
+
+    /* Normally we'd use runDir for pid files, but because we're using
+     * -daemonize we need QEMU to be allowed to create them, rather
+     * than libvirtd. So we're using libDir which QEMU can write to
+     */
+    if (virAsprintf(&priv->pidfile, "%s/%s.%d.%s",
+                    priv->libDir, dom->def->name, dom->def->id,
+                    "pidfile") < 0)
+        goto cleanup;
+
+    virPidFileForceCleanupPath(priv->pidfile);
+
+    ret = 0;
+
+ cleanup:
+    VIR_DEBUG("ret=%i", ret);
+    return ret;
+}
+
+
+/* Launch QEMU Process
+ *
+ * Returns -1 on fatal error,
+ *          0 on success,
+ *          1 when probing QEMU failed
+ */
+static int
+qemuProcessLaunchQmp(virDomainObjPtr dom)
+{
+    const char *machine;
+    int status = 0;
+    int ret = -1;
+
+    qmpDomainObjPrivatePtr priv = QMP_DOMAIN_PRIVATE(dom);
+
+    VIR_DEBUG("dom=%p, emulator=%s, id=%d",
+              dom, NULLSTR(dom->def->emulator), dom->def->id);
+
+    if (priv->forceTCG) {
+        machine = "none,accel=tcg";
+    } else {
+        machine = "none,accel=kvm:tcg";
+    }
+
+    VIR_DEBUG("Try to probe capabilities of '%s' via QMP, machine %s",
+              NULLSTR(dom->def->emulator), machine);
+
+    /* We explicitly need to use -daemonize here, rather than
+     * virCommandDaemonize, because we need to synchronize
+     * with QEMU creating its monitor socket API. Using
+     * daemonize guarantees control won't return to libvirt
+     * until the socket is present.
+     */
+    priv->cmd = virCommandNewArgList(dom->def->emulator,
+                                     "-S",
+                                     "-no-user-config",
+                                     "-nodefaults",
+                                     "-nographic",
+                                     "-machine", machine,
+                                     "-qmp", priv->monarg,
+                                     "-pidfile", priv->pidfile,
+                                     "-daemonize",
+                                     NULL);
+
+    virCommandAddEnvPassCommon(priv->cmd);
+    virCommandClearCaps(priv->cmd);
+    virCommandSetGID(priv->cmd, priv->runGid);
+    virCommandSetUID(priv->cmd, priv->runUid);
+
+    virCommandSetErrorBuffer(priv->cmd, &(priv->qmperr));
+
+    if (virCommandRun(priv->cmd, &status) < 0) {
+        VIR_DEBUG("QEMU %s dom=%p name=%s failed to spawn",
+                  dom->def->emulator, dom, dom->def->name);
+        goto cleanup;
+    }
+
+    /* Log, but otherwise ignore, non-zero status. */
+    if (status != 0) {
+        VIR_DEBUG("QEMU %s exited with status %d: %s",
+                  dom->def->emulator, status, priv->qmperr);
+        goto ignore;
+    }
+
+    if (virPidFileReadPath(priv->pidfile, &dom->pid) < 0) {
+        VIR_DEBUG("Failed to read pidfile %s", priv->pidfile);
+        goto ignore;
+    }
+
+    ret = 0;
+
+ cleanup:
+    return ret;
+
+ ignore:
+    ret = 1;
+    goto cleanup;
+}
+
+
+/* Connect Monitor to QEMU Process
+ *
+ * Returns -1 on fatal error,
+ *          0 on success,
+ *          1 when probing QEMU failed
+ */
+static int
+qemuConnectMonitorQmp(virDomainObjPtr dom)
+{
+    int ret = 0;
+
+    qemuMonitorPtr mon = NULL;
+    virDomainChrSourceDef monConfig;
+    unsigned long long timeout = 0;
+    bool retry = true;
+    bool enableJson = true;
+    qemuMonitorCallbacksPtr monCallbacks = NULL;
+
+    qmpDomainObjPrivatePtr priv = QMP_DOMAIN_PRIVATE(dom);
+
+    VIR_DEBUG("emulator=%s, dom->pid=%lld",
+              dom->def->emulator, (long long)dom->pid);
+
+    priv->mon = NULL;
+
+    if (!dom->pid)
+        goto ignore;
+
+    monConfig.type = VIR_DOMAIN_CHR_TYPE_UNIX;
+    monConfig.data.nix.path = priv->monpath;
+    monConfig.data.nix.listen = false;
+
+    /* Hold an extra reference because we can't allow dom to be
+     * deleted until the monitor gets its own reference. */
+    virObjectRef(dom);
+    virObjectUnlock(dom);
+
+    mon = qemuMonitorOpen(dom,
+                          &monConfig,
+                          enableJson,
+                          retry,
+                          timeout,
+                          monCallbacks,
+                          NULL);
+
+    virObjectLock(dom);
+    virObjectUnref(dom);
+
+    if (!mon) {
+        VIR_INFO("Failed to connect monitor for %s", dom->def->name);
+        goto ignore;
+    }
+
+    VIR_STEAL_PTR(priv->mon, mon);
+
+    /* Exit capabilities negotiation mode and enter QEMU command mode
+     * by issuing qmp_capabilities command to QEMU */
+    if (qemuMonitorSetCapabilities(priv->mon) < 0) {
+        VIR_DEBUG("Failed to set monitor capabilities %s",
+                  virGetLastErrorMessage());
+        goto ignore;
+    }
+
+    ret = 0;
+
+ cleanup:
+    VIR_DEBUG("ret=%i", ret);
+    return ret;
+
+ ignore:
+    ret = 1;
+    goto cleanup;
+}
+
+
+/**
+ * qemuProcessStartQmp:
+ * @dom: Qmp Specific Domain storing Process and Connection State
+ *
+ * Start and connect to QEMU binary so QMP queries can be made.
+ *
+ * Usage:
+ *   dom = qmpDomainObjNew(binary, forceTCG, libDir, runUid, runGid);
+ *   qemuProcessStartQmp(dom);
+ *   mon = QMP_DOMAIN_MONITOR(dom);
+ *   ** Send QMP Queries to QEMU using monitor **
+ *   qemuProcessStopQmp(dom);
+ *   virDomainObjEndAPI(&dom);
+ *
+ * QEMU probing failure is not an error case (negative return value.)
+ * Check monitor before using.
+ *
+ * Resources remain allocated until qemuProcessStopQmp and virDomainObjEndAPI
+ * are called (even in failure cases.)  Error string (dom->priv->qmperr)
+ * remains valid until virDomainObjEndAPI(&dom) is called.
+ */
+int
+qemuProcessStartQmp(virDomainObjPtr dom)
+{
+    int ret = -1;
+
+    VIR_DEBUG("dom=%p name=%s emulator=%s",
+              dom, dom->def->name, dom->def->emulator);
+
+    if (qemuProcessInitQmp(dom) < 0)
+        goto stop;
+
+    if (qemuProcessLaunchQmp(dom) < 0)
+        goto stop;
+
+    if (qemuConnectMonitorQmp(dom) < 0)
+        goto stop;
+
+    ret = 0;
+
+ cleanup:
+    VIR_DEBUG("ret=%i", ret);
+    return ret;
+
+ stop:
+    qemuProcessStopQmp(dom);
+    goto cleanup;
+}
+
+/**
+ * qemuProcessStop:
+ * @dom: Qmp Specific Domain storing Process and Connection State
+ *
+ * Stop Monitor Connection and QEMU Process
+ */
+void qemuProcessStopQmp(virDomainObjPtr dom)
+{
+    if (!dom)
+        return;
+
+    qmpDomainObjPrivatePtr priv = QMP_DOMAIN_PRIVATE(dom);
+
+    VIR_DEBUG("Shutting down dom=%p name=%s emulator=%s id->%d pid=%lld",
+              dom, dom->def->name, dom->def->emulator, dom->def->id,
+              (long long)dom->pid);
+
+    if (priv->mon) {
+        virObjectUnlock(priv->mon);
+        qemuMonitorClose(priv->mon);
+        priv->mon = NULL;
+    }
+
+    virCommandAbort(priv->cmd);
+    virCommandFree(priv->cmd);
+    priv->cmd = NULL;
+
+    if (priv->monpath)
+        ignore_value(unlink(priv->monpath));
+
+    if (dom->pid != 0) {
+        char ebuf[1024];
+
+        VIR_DEBUG("Killing QMP caps process %lld", (long long)dom->pid);
+        if (virProcessKill(dom->pid, SIGKILL) < 0 && errno != ESRCH)
+            VIR_ERROR(_("Failed to kill process %lld: %s"),
+                      (long long)dom->pid,
+                      virStrerror(errno, ebuf, sizeof(ebuf)));
+    }
+
+    if (priv->pidfile)
+        unlink(priv->pidfile);
+
+    dom->pid = 0;
+}

@@ -47,6 +47,7 @@
 #define __QEMU_CAPSPRIV_H_ALLOW__
 #include "qemu_capspriv.h"
 #include "qemu_qapi.h"
+#include "qemu_process.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -3960,18 +3961,6 @@ virQEMUCapsIsValid(void *data,
 }
 
 
-static void virQEMUCapsMonitorNotify(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
-                                     virDomainObjPtr vm ATTRIBUTE_UNUSED,
-                                     void *opaque ATTRIBUTE_UNUSED)
-{
-}
-
-static qemuMonitorCallbacks callbacks = {
-    .eofNotify = virQEMUCapsMonitorNotify,
-    .errorNotify = virQEMUCapsMonitorNotify,
-};
-
-
 /**
  * virQEMUCapsInitQMPArch:
  * @qemuCaps: QEMU capabilities
@@ -4066,13 +4055,6 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     char *package = NULL;
 
     /* @mon is supposed to be locked by callee */
-
-    if (qemuMonitorSetCapabilities(mon) < 0) {
-        VIR_DEBUG("Failed to set monitor capabilities %s",
-                  virGetLastErrorMessage());
-        ret = 0;
-        goto cleanup;
-    }
 
     if (qemuMonitorGetVersion(mon,
                               &major, &minor, &micro,
@@ -4247,13 +4229,6 @@ virQEMUCapsInitQMPMonitorTCG(virQEMUCapsPtr qemuCaps ATTRIBUTE_UNUSED,
 {
     int ret = -1;
 
-    if (qemuMonitorSetCapabilities(mon) < 0) {
-        VIR_DEBUG("Failed to set monitor capabilities %s",
-                  virGetLastErrorMessage());
-        ret = 0;
-        goto cleanup;
-    }
-
     if (virQEMUCapsProbeQMPCPUDefinitions(qemuCaps, mon, true) < 0)
         goto cleanup;
 
@@ -4266,251 +4241,75 @@ virQEMUCapsInitQMPMonitorTCG(virQEMUCapsPtr qemuCaps ATTRIBUTE_UNUSED,
 }
 
 
-typedef struct _virQEMUCapsInitQMPCommand virQEMUCapsInitQMPCommand;
-typedef virQEMUCapsInitQMPCommand *virQEMUCapsInitQMPCommandPtr;
-struct _virQEMUCapsInitQMPCommand {
-    char *binary;
-    uid_t runUid;
-    gid_t runGid;
-    char **qmperr;
-    char *monarg;
-    char *monpath;
-    char *pidfile;
-    virCommandPtr cmd;
-    qemuMonitorPtr mon;
-    virDomainChrSourceDef config;
-    pid_t pid;
-    virDomainObjPtr vm;
-};
-
-
-static void
-virQEMUCapsInitQMPCommandAbort(virQEMUCapsInitQMPCommandPtr cmd)
-{
-    if (cmd->mon)
-        virObjectUnlock(cmd->mon);
-    qemuMonitorClose(cmd->mon);
-    cmd->mon = NULL;
-
-    virCommandAbort(cmd->cmd);
-    virCommandFree(cmd->cmd);
-    cmd->cmd = NULL;
-
-    if (cmd->monpath)
-        unlink(cmd->monpath);
-
-    virDomainObjEndAPI(&cmd->vm);
-
-    if (cmd->pid != 0) {
-        char ebuf[1024];
-
-        VIR_DEBUG("Killing QMP caps process %lld", (long long)cmd->pid);
-        if (virProcessKill(cmd->pid, SIGKILL) < 0 && errno != ESRCH)
-            VIR_ERROR(_("Failed to kill process %lld: %s"),
-                      (long long)cmd->pid,
-                      virStrerror(errno, ebuf, sizeof(ebuf)));
-
-        VIR_FREE(*cmd->qmperr);
-    }
-    if (cmd->pidfile)
-        unlink(cmd->pidfile);
-    cmd->pid = 0;
-}
-
-
-static void
-virQEMUCapsInitQMPCommandFree(virQEMUCapsInitQMPCommandPtr cmd)
-{
-    if (!cmd)
-        return;
-
-    virQEMUCapsInitQMPCommandAbort(cmd);
-    VIR_FREE(cmd->binary);
-    VIR_FREE(cmd->monpath);
-    VIR_FREE(cmd->monarg);
-    VIR_FREE(cmd->pidfile);
-    VIR_FREE(cmd);
-}
-
-
-static virQEMUCapsInitQMPCommandPtr
-virQEMUCapsInitQMPCommandNew(char *binary,
-                             const char *libDir,
-                             uid_t runUid,
-                             gid_t runGid,
-                             char **qmperr)
-{
-    virQEMUCapsInitQMPCommandPtr cmd = NULL;
-
-    if (VIR_ALLOC(cmd) < 0)
-        goto error;
-
-    if (VIR_STRDUP(cmd->binary, binary) < 0)
-        goto error;
-
-    cmd->runUid = runUid;
-    cmd->runGid = runGid;
-    cmd->qmperr = qmperr;
-
-    /* the ".sock" sufix is important to avoid a possible clash with a qemu
-     * domain called "capabilities"
-     */
-    if (virAsprintf(&cmd->monpath, "%s/%s", libDir,
-                    "capabilities.monitor.sock") < 0)
-        goto error;
-    if (virAsprintf(&cmd->monarg, "unix:%s,server,nowait", cmd->monpath) < 0)
-        goto error;
-
-    /* ".pidfile" suffix is used rather than ".pid" to avoid a possible clash
-     * with a qemu domain called "capabilities"
-     * Normally we'd use runDir for pid files, but because we're using
-     * -daemonize we need QEMU to be allowed to create them, rather
-     * than libvirtd. So we're using libDir which QEMU can write to
-     */
-    if (virAsprintf(&cmd->pidfile, "%s/%s", libDir, "capabilities.pidfile") < 0)
-        goto error;
-
-    virPidFileForceCleanupPath(cmd->pidfile);
-
-    cmd->config.type = VIR_DOMAIN_CHR_TYPE_UNIX;
-    cmd->config.data.nix.path = cmd->monpath;
-    cmd->config.data.nix.listen = false;
-
-    return cmd;
-
- error:
-    virQEMUCapsInitQMPCommandFree(cmd);
-    return NULL;
-}
-
-
-/* Returns -1 on fatal error,
- *          0 on success,
- *          1 when probing QEMU failed
- */
-static int
-virQEMUCapsInitQMPCommandRun(virQEMUCapsInitQMPCommandPtr cmd,
-                             bool forceTCG)
-{
-    virDomainXMLOptionPtr xmlopt = NULL;
-    const char *machine;
-    int status = 0;
-    int ret = -1;
-
-    if (forceTCG)
-        machine = "none,accel=tcg";
-    else
-        machine = "none,accel=kvm:tcg";
-
-    VIR_DEBUG("Try to probe capabilities of '%s' via QMP, machine %s",
-              cmd->binary, machine);
-
-    /*
-     * We explicitly need to use -daemonize here, rather than
-     * virCommandDaemonize, because we need to synchronize
-     * with QEMU creating its monitor socket API. Using
-     * daemonize guarantees control won't return to libvirt
-     * until the socket is present.
-     */
-    cmd->cmd = virCommandNewArgList(cmd->binary,
-                                    "-S",
-                                    "-no-user-config",
-                                    "-nodefaults",
-                                    "-nographic",
-                                    "-machine", machine,
-                                    "-qmp", cmd->monarg,
-                                    "-pidfile", cmd->pidfile,
-                                    "-daemonize",
-                                    NULL);
-    virCommandAddEnvPassCommon(cmd->cmd);
-    virCommandClearCaps(cmd->cmd);
-    virCommandSetGID(cmd->cmd, cmd->runGid);
-    virCommandSetUID(cmd->cmd, cmd->runUid);
-
-    virCommandSetErrorBuffer(cmd->cmd, cmd->qmperr);
-
-    /* Log, but otherwise ignore, non-zero status.  */
-    if (virCommandRun(cmd->cmd, &status) < 0)
-        goto cleanup;
-
-    if (status != 0) {
-        VIR_DEBUG("QEMU %s exited with status %d: %s",
-                  cmd->binary, status, *cmd->qmperr);
-        goto ignore;
-    }
-
-    if (virPidFileReadPath(cmd->pidfile, &cmd->pid) < 0) {
-        VIR_DEBUG("Failed to read pidfile %s", cmd->pidfile);
-        goto ignore;
-    }
-
-    if (!(xmlopt = virDomainXMLOptionNew(NULL, NULL, NULL, NULL, NULL)) ||
-        !(cmd->vm = virDomainObjNew(xmlopt)))
-        goto cleanup;
-
-    cmd->vm->pid = cmd->pid;
-
-    if (!(cmd->mon = qemuMonitorOpen(cmd->vm, &cmd->config, true, true,
-                                     0, &callbacks, NULL)))
-        goto ignore;
-
-    virObjectLock(cmd->mon);
-
-    ret = 0;
-
- cleanup:
-    if (!cmd->mon)
-        virQEMUCapsInitQMPCommandAbort(cmd);
-    virObjectUnref(xmlopt);
-
-    return ret;
-
- ignore:
-    ret = 1;
-    goto cleanup;
-}
-
-
 static int
 virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
                    const char *libDir,
                    uid_t runUid,
-                   gid_t runGid,
-                   char **qmperr)
+                   gid_t runGid)
 {
-    virQEMUCapsInitQMPCommandPtr cmd = NULL;
     int ret = -1;
-    int rc;
+    virDomainObjPtr dom = NULL;
+    virDomainObjPtr dom_kvm = NULL;
+    qemuMonitorPtr mon = NULL;
+    qemuMonitorPtr mon_kvm = NULL;
+    bool forceTCG = false;
 
-    if (!(cmd = virQEMUCapsInitQMPCommandNew(qemuCaps->binary, libDir,
-                                             runUid, runGid, qmperr)))
+    VIR_DEBUG("qemuCaps->binary=%s, libDir=%s, runUid=%u, runGid=%u ",
+              NULLSTR(qemuCaps->binary), NULLSTR(libDir), runUid, runGid);
+
+    if (!(dom = qmpDomainObjNew(qemuCaps->binary, forceTCG, libDir, runUid, runGid)))
         goto cleanup;
 
-    if ((rc = virQEMUCapsInitQMPCommandRun(cmd, false)) != 0) {
-        if (rc == 1)
-            ret = 0;
+    if (qemuProcessStartQmp(dom) < 0)
+        goto cleanup;
+
+    if (!(mon = QMP_DOMAIN_MONITOR(dom))) {
+        ret = 0; /* Failure probing QEMU not considered error case */
         goto cleanup;
     }
 
-    if (virQEMUCapsInitQMPMonitor(qemuCaps, cmd->mon) < 0)
+    /* Pull capabilities from QEMU */
+    if (virQEMUCapsInitQMPMonitor(qemuCaps, mon) < 0)
         goto cleanup;
 
+    /* Pull capabilities again if KVM supported */
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
-        virQEMUCapsInitQMPCommandAbort(cmd);
-        if ((rc = virQEMUCapsInitQMPCommandRun(cmd, true)) != 0) {
-            if (rc == 1)
-                ret = 0;
+
+        qemuProcessStopQmp(dom);
+        virDomainObjEndAPI(&dom);
+
+        forceTCG = true;
+        dom_kvm = qmpDomainObjNew(qemuCaps->binary, forceTCG, libDir, runUid, runGid);
+
+        if (qemuProcessStartQmp(dom_kvm) < 0)
+            goto cleanup;
+
+        if (!(mon_kvm = QMP_DOMAIN_MONITOR(dom_kvm))) {
+            ret = 0; /* Failure probing QEMU not considered error case */
             goto cleanup;
         }
 
-        if (virQEMUCapsInitQMPMonitorTCG(qemuCaps, cmd->mon) < 0)
+        if (virQEMUCapsInitQMPMonitorTCG(qemuCaps, mon_kvm) < 0)
             goto cleanup;
     }
 
     ret = 0;
 
  cleanup:
-    virQEMUCapsInitQMPCommandFree(cmd);
+    if (!mon) {
+        char *err = QMP_DOMAIN_ERROR(dom) ? QMP_DOMAIN_ERROR(dom) : _("unknown error");
+
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Failed to probe QEMU binary with QMP: %s"), err);
+    }
+
+    qemuProcessStopQmp(dom);
+    virDomainObjEndAPI(&dom);
+    qemuProcessStopQmp(dom_kvm);
+    virDomainObjEndAPI(&dom_kvm);
+
+    VIR_DEBUG("ret=%i", ret);
+
     return ret;
 }
 
@@ -4546,7 +4345,6 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
 {
     virQEMUCapsPtr qemuCaps;
     struct stat sb;
-    char *qmperr = NULL;
 
     if (!(qemuCaps = virQEMUCapsNew()))
         goto error;
@@ -4573,15 +4371,8 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
         goto error;
     }
 
-    if (virQEMUCapsInitQMP(qemuCaps, libDir, runUid, runGid, &qmperr) < 0) {
-        virQEMUCapsLogProbeFailure(binary);
-        goto error;
-    }
-
-    if (!qemuCaps->usedQMP) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Failed to probe QEMU binary with QMP: %s"),
-                       qmperr ? qmperr : _("unknown error"));
+    if (virQEMUCapsInitQMP(qemuCaps, libDir, runUid, runGid) < 0 ||
+        !qemuCaps->usedQMP) {
         virQEMUCapsLogProbeFailure(binary);
         goto error;
     }
@@ -4600,7 +4391,6 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
     }
 
  cleanup:
-    VIR_FREE(qmperr);
     return qemuCaps;
 
  error:
