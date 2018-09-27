@@ -269,6 +269,7 @@ qemuConnectAgent(virQEMUDriverPtr driver, virDomainObjPtr vm)
         virResetLastError();
     }
 
+    priv->agentError = false;
     return 0;
 }
 
