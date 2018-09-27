@@ -3670,6 +3670,31 @@ qemuMonitorGetCPUModelExpansion(qemuMonitorPtr mon,
 }
 
 
+qemuMonitorCPUModelInfoPtr
+qemuMonitorCPUModelInfoNew(const char *name)
+{
+    qemuMonitorCPUModelInfoPtr ret = NULL;
+    qemuMonitorCPUModelInfoPtr model;
+
+    if (VIR_ALLOC(model) < 0)
+        return NULL;
+
+    model->name = NULL;
+    model->nprops = 0;
+    model->props = NULL;
+    model->migratability = false;
+
+    if (VIR_STRDUP(model->name, name) < 0)
+        goto cleanup;
+
+    VIR_STEAL_PTR(ret, model);
+
+ cleanup:
+    qemuMonitorCPUModelInfoFree(model);
+    return ret;
+}
+
+
 void
 qemuMonitorCPUModelInfoFree(qemuMonitorCPUModelInfoPtr model_info)
 {
@@ -3693,16 +3718,13 @@ qemuMonitorCPUModelInfoFree(qemuMonitorCPUModelInfoPtr model_info)
 qemuMonitorCPUModelInfoPtr
 qemuMonitorCPUModelInfoCopy(const qemuMonitorCPUModelInfo *orig)
 {
-    qemuMonitorCPUModelInfoPtr copy;
+    qemuMonitorCPUModelInfoPtr copy = NULL;
     size_t i;
 
-    if (VIR_ALLOC(copy) < 0)
+    if (!orig || !(copy = qemuMonitorCPUModelInfoNew(orig->name)))
         goto error;
 
     if (VIR_ALLOC_N(copy->props, orig->nprops) < 0)
-        goto error;
-
-    if (VIR_STRDUP(copy->name, orig->name) < 0)
         goto error;
 
     copy->migratability = orig->migratability;
