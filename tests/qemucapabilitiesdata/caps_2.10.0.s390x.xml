@@ -118,36 +118,36 @@
   <microcodeVersion>306247</microcodeVersion>
   <package></package>
   <arch>s390x</arch>
-  <hostCPU type='kvm' model='z14-base' migratability='no'>
-    <property name='aen' type='boolean' value='true'/>
-    <property name='cmmnt' type='boolean' value='true'/>
-    <property name='aefsi' type='boolean' value='true'/>
-    <property name='mepoch' type='boolean' value='true'/>
-    <property name='msa8' type='boolean' value='true'/>
-    <property name='msa7' type='boolean' value='true'/>
-    <property name='msa6' type='boolean' value='true'/>
-    <property name='msa5' type='boolean' value='true'/>
-    <property name='msa4' type='boolean' value='true'/>
-    <property name='msa3' type='boolean' value='true'/>
-    <property name='msa2' type='boolean' value='true'/>
-    <property name='msa1' type='boolean' value='true'/>
-    <property name='sthyi' type='boolean' value='true'/>
-    <property name='edat' type='boolean' value='true'/>
-    <property name='ri' type='boolean' value='true'/>
-    <property name='edat2' type='boolean' value='true'/>
-    <property name='vx' type='boolean' value='true'/>
-    <property name='ipter' type='boolean' value='true'/>
-    <property name='vxeh' type='boolean' value='true'/>
-    <property name='vxpd' type='boolean' value='true'/>
-    <property name='esop' type='boolean' value='true'/>
-    <property name='iep' type='boolean' value='true'/>
-    <property name='cte' type='boolean' value='true'/>
-    <property name='ais' type='boolean' value='true'/>
-    <property name='gs' type='boolean' value='true'/>
-    <property name='zpci' type='boolean' value='true'/>
-    <property name='sea_esop2' type='boolean' value='true'/>
-    <property name='te' type='boolean' value='true'/>
-    <property name='cmm' type='boolean' value='true'/>
+  <hostCPU type='kvm' model='z14-base' migratability='yes'>
+    <property name='aen' type='boolean' value='true' migratable='yes'/>
+    <property name='cmmnt' type='boolean' value='true' migratable='yes'/>
+    <property name='aefsi' type='boolean' value='true' migratable='yes'/>
+    <property name='mepoch' type='boolean' value='true' migratable='yes'/>
+    <property name='msa8' type='boolean' value='true' migratable='yes'/>
+    <property name='msa7' type='boolean' value='true' migratable='yes'/>
+    <property name='msa6' type='boolean' value='true' migratable='yes'/>
+    <property name='msa5' type='boolean' value='true' migratable='yes'/>
+    <property name='msa4' type='boolean' value='true' migratable='yes'/>
+    <property name='msa3' type='boolean' value='true' migratable='yes'/>
+    <property name='msa2' type='boolean' value='true' migratable='yes'/>
+    <property name='msa1' type='boolean' value='true' migratable='yes'/>
+    <property name='sthyi' type='boolean' value='true' migratable='yes'/>
+    <property name='edat' type='boolean' value='true' migratable='yes'/>
+    <property name='ri' type='boolean' value='true' migratable='yes'/>
+    <property name='edat2' type='boolean' value='true' migratable='yes'/>
+    <property name='vx' type='boolean' value='true' migratable='yes'/>
+    <property name='ipter' type='boolean' value='true' migratable='yes'/>
+    <property name='vxeh' type='boolean' value='true' migratable='yes'/>
+    <property name='vxpd' type='boolean' value='true' migratable='yes'/>
+    <property name='esop' type='boolean' value='true' migratable='yes'/>
+    <property name='iep' type='boolean' value='true' migratable='yes'/>
+    <property name='cte' type='boolean' value='true' migratable='yes'/>
+    <property name='ais' type='boolean' value='true' migratable='yes'/>
+    <property name='gs' type='boolean' value='true' migratable='yes'/>
+    <property name='zpci' type='boolean' value='true' migratable='yes'/>
+    <property name='sea_esop2' type='boolean' value='true' migratable='yes'/>
+    <property name='te' type='boolean' value='true' migratable='yes'/>
+    <property name='cmm' type='boolean' value='true' migratable='yes'/>
   </hostCPU>
   <cpu type='kvm' name='z10EC-base' usable='yes'/>
   <cpu type='kvm' name='z9EC-base' usable='yes'/>

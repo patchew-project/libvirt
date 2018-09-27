@@ -3698,12 +3698,31 @@ qemuMonitorGetCPUModelExpansion(qemuMonitorPtr mon,
                                 qemuMonitorCPUModelInfoPtr *expansion
                                )
 {
+    int ret = -1;
+    qemuMonitorCPUModelInfoPtr tmp;
+
     VIR_DEBUG("type=%d model_name=%s migratable=%d",
               type, input->name, migratable);
 
+    *expansion = NULL;
+
     QEMU_CHECK_MONITOR(mon);
 
-    return qemuMonitorJSONGetCPUModelExpansion(mon, type, migratable, input, expansion);
+    if ((ret = qemuMonitorJSONGetCPUModelExpansion(mon, type, migratable, input, &tmp)) < 0)
+        goto cleanup;
+
+    if (migratable) {
+        /* Only migratable props were included in expanded CPU model */
+        *expansion = qemuMonitorCPUModelInfoCopyDefaultMigratable(tmp);
+    } else {
+        VIR_STEAL_PTR(*expansion, tmp);
+    }
+
+    ret = 0;
+
+ cleanup:
+    qemuMonitorCPUModelInfoFree(tmp);
+    return ret;
 }
 
 
@@ -3798,6 +3817,38 @@ qemuMonitorCPUModelInfoCopy(const qemuMonitorCPUModelInfo *orig)
  error:
     qemuMonitorCPUModelInfoFree(copy);
     return NULL;
+}
+
+
+qemuMonitorCPUModelInfoPtr
+qemuMonitorCPUModelInfoCopyDefaultMigratable(const qemuMonitorCPUModelInfo *orig)
+{
+    qemuMonitorCPUModelInfoPtr ret = NULL;
+    qemuMonitorCPUModelInfoPtr tmp = NULL;
+    qemuMonitorCPUPropertyPtr prop = NULL;
+    size_t i;
+
+    if (!(tmp = qemuMonitorCPUModelInfoCopy(orig)))
+        goto cleanup;
+
+    for (i = 0; i < tmp->nprops; i++) {
+        prop = tmp->props + i;
+
+        /* Default prop thats in cpu model (true) to migratable (_YES)
+         * unless prop already explicitly set not migratable (_NO)
+         */
+        if (prop->type == QEMU_MONITOR_CPU_PROPERTY_BOOLEAN &&
+            prop->value.boolean &&
+            prop->migratable != VIR_TRISTATE_BOOL_NO)
+            prop->migratable = VIR_TRISTATE_BOOL_YES;
+    }
+
+    tmp->migratability = true; /* prop->migratable = YES/NO for all CPU props */
+
+    VIR_STEAL_PTR(ret, tmp);
+
+ cleanup:
+    return ret;
 }
 
 
