@@ -729,12 +729,16 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
                                virStorageSourcePtr newsrc,
                                bool force)
 {
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virStorageSourcePtr oldsrc = disk->src;
     int ret = -1;
     int rc;
 
     disk->src = newsrc;
+
+    if (qemuDomainPrepareDiskSource(disk, priv, cfg) < 0)
+        goto cleanup;
 
     if (qemuHotplugPrepareDiskAccess(driver, vm, disk, newsrc, false) < 0)
         goto cleanup;
@@ -770,6 +774,7 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
     if (oldsrc)
         disk->src = oldsrc;
 
+    virObjectUnref(cfg);
     return ret;
 }
 
