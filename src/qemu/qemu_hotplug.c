@@ -737,6 +737,15 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
 
     disk->src = newsrc;
 
+    if (virDomainDiskTranslateSourcePool(disk) < 0)
+        goto cleanup;
+
+    if (qemuAddSharedDisk(driver, disk, vm->def->name) < 0)
+        goto cleanup;
+
+    if (qemuDomainDetermineDiskChain(driver, vm, disk, true) < 0)
+        goto cleanup;
+
     if (qemuDomainPrepareDiskSource(disk, priv, cfg) < 0)
         goto cleanup;
 
@@ -1068,8 +1077,14 @@ qemuDomainAttachDeviceDiskLiveInternal(virQEMUDriverPtr driver,
 {
     size_t i;
     virDomainDiskDefPtr disk = dev->data.disk;
-    virDomainDiskDefPtr orig_disk = NULL;
     int ret = -1;
+
+    if (disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM ||
+        disk->device == VIR_DOMAIN_DISK_DEVICE_FLOPPY) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("cdrom/floppy device hotplug isn't supported"));
+        return -1;
+    }
 
     if (virDomainDiskTranslateSourcePool(disk) < 0)
         goto cleanup;
@@ -1084,27 +1099,6 @@ qemuDomainAttachDeviceDiskLiveInternal(virQEMUDriverPtr driver,
         goto cleanup;
 
     switch ((virDomainDiskDevice) disk->device)  {
-    case VIR_DOMAIN_DISK_DEVICE_CDROM:
-    case VIR_DOMAIN_DISK_DEVICE_FLOPPY:
-        if (!(orig_disk = virDomainDiskFindByBusAndDst(vm->def,
-                                                       disk->bus, disk->dst))) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("No device with bus '%s' and target '%s'. "
-                             "cdrom and floppy device hotplug isn't supported "
-                             "by libvirt"),
-                           virDomainDiskBusTypeToString(disk->bus),
-                           disk->dst);
-            goto cleanup;
-        }
-
-        if (qemuDomainChangeEjectableMedia(driver, vm, orig_disk,
-                                           disk->src, false) < 0)
-            goto cleanup;
-
-        disk->src = NULL;
-        ret = 0;
-        break;
-
     case VIR_DOMAIN_DISK_DEVICE_DISK:
     case VIR_DOMAIN_DISK_DEVICE_LUN:
         for (i = 0; i < vm->def->ndisks; i++) {
@@ -1146,6 +1140,8 @@ qemuDomainAttachDeviceDiskLiveInternal(virQEMUDriverPtr driver,
         }
         break;
 
+    case VIR_DOMAIN_DISK_DEVICE_CDROM:
+    case VIR_DOMAIN_DISK_DEVICE_FLOPPY:
     case VIR_DOMAIN_DISK_DEVICE_LAST:
         break;
     }
@@ -1172,6 +1168,22 @@ qemuDomainAttachDeviceDiskLive(virQEMUDriverPtr driver,
                                virDomainObjPtr vm,
                                virDomainDeviceDefPtr dev)
 {
+    virDomainDiskDefPtr disk = dev->data.disk;
+    virDomainDiskDefPtr orig_disk = NULL;
+
+    /* this API overloads media change semantics on disk hotplug
+     * for devices supporting media changes */
+    if ((disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM ||
+         disk->device == VIR_DOMAIN_DISK_DEVICE_FLOPPY) &&
+        (orig_disk = virDomainDiskFindByBusAndDst(vm->def, disk->bus, disk->dst))) {
+        if (qemuDomainChangeEjectableMedia(driver, vm, orig_disk,
+                                           disk->src, false) < 0)
+            return -1;
+
+        disk->src = NULL;
+        return 0;
+    }
+
     return qemuDomainAttachDeviceDiskLiveInternal(driver, vm, dev);
 }
 
