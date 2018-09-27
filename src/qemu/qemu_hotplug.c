@@ -730,8 +730,11 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
                                bool force)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    virStorageSourcePtr oldsrc = disk->src;
     int ret = -1;
     int rc;
+
+    disk->src = newsrc;
 
     if (qemuHotplugPrepareDiskAccess(driver, vm, disk, newsrc, false) < 0)
         goto cleanup;
@@ -744,7 +747,7 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
     else
         rc = qemuDomainChangeMediaLegacy(driver, vm, disk, newsrc, force);
 
-    virDomainAuditDisk(vm, disk->src, newsrc, "update", rc >= 0);
+    virDomainAuditDisk(vm, oldsrc, newsrc, "update", rc >= 0);
 
     if (rc < 0) {
         ignore_value(qemuHotplugPrepareDiskAccess(driver, vm, disk, newsrc, true));
@@ -755,7 +758,8 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
     ignore_value(qemuRemoveSharedDisk(driver, disk, vm->def->name));
     ignore_value(qemuHotplugPrepareDiskAccess(driver, vm, disk, NULL, true));
 
-    virStorageSourceFree(disk->src);
+    virStorageSourceFree(oldsrc);
+    oldsrc = NULL;
     VIR_STEAL_PTR(disk->src, newsrc);
 
     ignore_value(qemuHotplugRemoveManagedPR(driver, vm, QEMU_ASYNC_JOB_NONE));
@@ -763,6 +767,9 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
     ret = 0;
 
  cleanup:
+    if (oldsrc)
+        disk->src = oldsrc;
+
     return ret;
 }
 
