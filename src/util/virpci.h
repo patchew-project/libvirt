@@ -37,12 +37,20 @@ typedef virPCIDeviceAddress *virPCIDeviceAddressPtr;
 typedef struct _virPCIDeviceList virPCIDeviceList;
 typedef virPCIDeviceList *virPCIDeviceListPtr;
 
+typedef struct _virZPCIDeviceAddress virZPCIDeviceAddress;
+typedef virZPCIDeviceAddress *virZPCIDeviceAddressPtr;
+struct _virZPCIDeviceAddress {
+    unsigned int uid; /* exempt from syntax-check */
+    unsigned int fid;
+};
+
 struct _virPCIDeviceAddress {
     unsigned int domain;
     unsigned int bus;
     unsigned int slot;
     unsigned int function;
     int multi; /* virTristateSwitch */
+    virZPCIDeviceAddress zpci;
 };
 
 typedef enum {
