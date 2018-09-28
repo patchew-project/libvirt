@@ -3236,3 +3236,10 @@ virPCIDeviceAddressFree(virPCIDeviceAddressPtr address)
 {
     VIR_FREE(address);
 }
+
+
+bool
+virZPCIDeviceAddressIsEmpty(const virZPCIDeviceAddress *addr)
+{
+    return !(addr->uid || addr->fid);
+}

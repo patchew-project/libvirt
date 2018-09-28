@@ -6528,7 +6528,19 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
         break;
     }
 
-    virBufferAddLit(buf, "/>\n");
+    if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI &&
+        !virZPCIDeviceAddressIsEmpty(&info->addr.pci.zpci)) {
+        virBufferAddLit(buf, ">\n");
+        virBufferAdjustIndent(buf, 2);
+        virBufferAsprintf(buf,
+                          "<zpci uid='0x%.4x' fid='0x%.8x'/>\n",
+                          info->addr.pci.zpci.uid,
+                          info->addr.pci.zpci.fid);
+        virBufferAdjustIndent(buf, -2);
+        virBufferAddLit(buf, "</address>\n");
+    } else {
+        virBufferAddLit(buf, "/>\n");
+    }
 }
 
 static int
