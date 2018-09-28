@@ -52,6 +52,17 @@
           and virDomainPMWakeup APIs.
         </description>
       </change>
+      <change>
+        <summary>
+          qemu: Added support for PCI device passthrough on S390
+        </summary>
+        <description>
+          PCI addresses can now include the new zpci element which contains
+          uid (user-defined identifier) and fid (PCI function identifier)
+          attributes and makes the corresponding devices usable by S390
+          guests.
+        </description>
+      </change>
     </section>
     <section title="Removed features">
       <change>
