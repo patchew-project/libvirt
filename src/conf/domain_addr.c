@@ -27,10 +27,22 @@
 #include "virlog.h"
 #include "virstring.h"
 #include "domain_addr.h"
+#include "virhashcode.h"
 
 #define VIR_FROM_THIS VIR_FROM_DOMAIN
 
 VIR_LOG_INIT("conf.domain_addr");
+
+static void
+virDomainPCIAddressSetExtensionFree(virDomainPCIAddressSetPtr addrs)
+{
+    if (!addrs || !addrs->zpciIds)
+        return;
+
+    virHashFree(addrs->zpciIds->uids);
+    virHashFree(addrs->zpciIds->fids);
+    VIR_FREE(addrs->zpciIds);
+}
 
 virDomainPCIConnectFlags
 virDomainPCIControllerModelToConnectType(virDomainControllerModelPCI model)
@@ -727,6 +739,78 @@ virDomainPCIAddressReleaseAddr(virDomainPCIAddressSetPtr addrs,
     addrs->buses[addr->bus].slot[addr->slot].functions &= ~(1 << addr->function);
 }
 
+
+static uint32_t
+virZPCIAddrCode(const void *name,
+                uint32_t seed)
+{
+    unsigned int value = *((unsigned int *)name);
+    return virHashCodeGen(&value, sizeof(value), seed);
+}
+
+
+static bool
+virZPCIAddrEqual(const void *namea,
+                 const void *nameb)
+{
+    return *((unsigned int *)namea) == *((unsigned int *)nameb);
+}
+
+
+static void *
+virZPCIAddrCopy(const void *name)
+{
+    unsigned int *copy;
+
+    if (VIR_ALLOC(copy) < 0)
+        return NULL;
+
+    *copy = *((unsigned int *)name);
+    return (void *)copy;
+}
+
+
+static void
+virZPCIAddrKeyFree(void *name)
+{
+    VIR_FREE(name);
+}
+
+
+int
+virDomainPCIAddressSetExtensionAlloc(virDomainPCIAddressSetPtr addrs,
+                                     virPCIDeviceAddressExtensionFlags extFlags)
+{
+    if (extFlags & VIR_PCI_ADDRESS_EXTENSION_ZPCI) {
+        if (addrs->zpciIds)
+            return 0;
+
+        if (VIR_ALLOC(addrs->zpciIds) < 0)
+            return -1;
+
+        if (!(addrs->zpciIds->uids = virHashCreateFull(10, NULL,
+                                                       virZPCIAddrCode,
+                                                       virZPCIAddrEqual,
+                                                       virZPCIAddrCopy,
+                                                       virZPCIAddrKeyFree)))
+            goto error;
+
+        if (!(addrs->zpciIds->fids = virHashCreateFull(10, NULL,
+                                                       virZPCIAddrCode,
+                                                       virZPCIAddrEqual,
+                                                       virZPCIAddrCopy,
+                                                       virZPCIAddrKeyFree)))
+            goto error;
+    }
+
+    return 0;
+
+ error:
+    virDomainPCIAddressSetExtensionFree(addrs);
+    return -1;
+}
+
+
 virDomainPCIAddressSetPtr
 virDomainPCIAddressSetAlloc(unsigned int nbuses)
 {
@@ -753,6 +837,7 @@ virDomainPCIAddressSetFree(virDomainPCIAddressSetPtr addrs)
     if (!addrs)
         return;
 
+    virDomainPCIAddressSetExtensionFree(addrs);
     VIR_FREE(addrs->buses);
     VIR_FREE(addrs);
 }

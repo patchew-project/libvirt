@@ -1509,6 +1509,13 @@ qemuDomainPCIAddressSetCreate(virDomainDefPtr def,
 
     addrs->dryRun = dryRun;
 
+    /* create zpci address set for s390 domain */
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_ZPCI) &&
+        virDomainPCIAddressSetExtensionAlloc(addrs,
+                                             VIR_PCI_ADDRESS_EXTENSION_ZPCI)) {
+        goto error;
+    }
+
     /* pSeries domains support multiple pci-root controllers */
     if (qemuDomainIsPSeries(def))
         addrs->areMultipleRootsSupported = true;

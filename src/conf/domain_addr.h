@@ -116,6 +116,12 @@ typedef struct {
 } virDomainPCIAddressBus;
 typedef virDomainPCIAddressBus *virDomainPCIAddressBusPtr;
 
+typedef struct {
+    virHashTablePtr uids;
+    virHashTablePtr fids;
+} virDomainZPCIAddressIds;
+typedef virDomainZPCIAddressIds *virDomainZPCIAddressIdsPtr;
+
 struct _virDomainPCIAddressSet {
     virDomainPCIAddressBus *buses;
     size_t nbuses;
@@ -125,9 +131,16 @@ struct _virDomainPCIAddressSet {
     bool areMultipleRootsSupported;
     /* If true, the guest can use the pcie-to-pci-bridge controller */
     bool isPCIeToPCIBridgeSupported;
+    virDomainZPCIAddressIdsPtr zpciIds;
 };
 typedef struct _virDomainPCIAddressSet virDomainPCIAddressSet;
 typedef virDomainPCIAddressSet *virDomainPCIAddressSetPtr;
+
+char *virDomainPCIAddressAsString(virPCIDeviceAddressPtr addr)
+      ATTRIBUTE_NONNULL(1);
+
+int virDomainPCIAddressSetExtensionAlloc(virDomainPCIAddressSetPtr addrs,
+                                         virPCIDeviceAddressExtensionFlags extFlags);
 
 virDomainPCIAddressSetPtr virDomainPCIAddressSetAlloc(unsigned int nbuses);
 
