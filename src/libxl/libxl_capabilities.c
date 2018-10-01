@@ -57,6 +57,7 @@ struct guest_arch {
     virArch arch;
     int bits;
     int hvm;
+    int pvh;
     int pae;
     int nonpae;
     int ia64_be;
@@ -439,6 +440,9 @@ libxlCapsInitGuests(libxl_ctx *ctx, virCapsPtr caps)
             int hvm = STRPREFIX(&token[subs[1].rm_so], "hvm");
             virArch arch;
             int pae = 0, nonpae = 0, ia64_be = 0;
+#ifdef LIBXL_DOMAIN_TYPE_PVH
+            bool new_arch_added = false;
+#endif
 
             if (STRPREFIX(&token[subs[2].rm_so], "x86_32")) {
                 arch = VIR_ARCH_I686;
@@ -475,8 +479,12 @@ libxlCapsInitGuests(libxl_ctx *ctx, virCapsPtr caps)
             if (i >= ARRAY_CARDINALITY(guest_archs))
                 continue;
             /* Didn't find a match, so create a new one */
-            if (i == nr_guest_archs)
+            if (i == nr_guest_archs) {
                 nr_guest_archs++;
+#ifdef LIBXL_DOMAIN_TYPE_PVH
+                new_arch_added = true;
+#endif
+            }
 
             guest_archs[i].arch = arch;
             guest_archs[i].hvm = hvm;
@@ -491,13 +499,33 @@ libxlCapsInitGuests(libxl_ctx *ctx, virCapsPtr caps)
                 guest_archs[i].nonpae = nonpae;
             if (ia64_be)
                 guest_archs[i].ia64_be = ia64_be;
+
+            /*
+             * Xen 4.9 introduced support for the PVH guest type, which
+             * requires hardware virtualization support similar to the
+             * HVM guest type. Add a PVH guest type for each new HVM
+             * guest type.
+             */
+#ifdef LIBXL_DOMAIN_TYPE_PVH
+            if (hvm && new_arch_added) {
+                i = nr_guest_archs;
+                /* Ensure we have not exhausted the guest_archs array */
+                if (nr_guest_archs >= ARRAY_CARDINALITY(guest_archs))
+                    continue;
+                guest_archs[nr_guest_archs].arch = arch;
+                guest_archs[nr_guest_archs].pvh = 1;
+                nr_guest_archs++;
+            }
+#endif
         }
     }
     regfree(&regex);
 
     for (i = 0; i < nr_guest_archs; ++i) {
         virCapsGuestPtr guest;
-        char const *const xen_machines[] = {guest_archs[i].hvm ? "xenfv" : "xenpv"};
+        char const *const xen_machines[] = {
+            guest_archs[i].hvm ? "xenfv" :
+                (guest_archs[i].pvh ? "xenpvh" : "xenpv")};
         virCapsGuestMachinePtr *machines;
 
         if ((machines = virCapabilitiesAllocMachines(xen_machines, 1)) == NULL)
@@ -557,7 +585,9 @@ libxlCapsInitGuests(libxl_ctx *ctx, virCapsPtr caps)
                                                1,
                                                0) == NULL)
                 return -1;
+        }
 
+        if (guest_archs[i].hvm || guest_archs[i].pvh) {
             if (virCapabilitiesAddGuestFeature(guest,
                                                "hap",
                                                1,
@@ -580,7 +610,7 @@ libxlMakeDomainOSCaps(const char *machine,
 
     os->supported = true;
 
-    if (STREQ(machine, "xenpv"))
+    if (STREQ(machine, "xenpv") || STREQ(machine, "xenpvh"))
         return 0;
 
     capsLoader->supported = true;
@@ -732,11 +762,14 @@ libxlMakeDomainCapabilities(virDomainCapsPtr domCaps,
         domCaps->maxvcpus = PV_MAX_VCPUS;
 
     if (libxlMakeDomainOSCaps(domCaps->machine, os, firmwares, nfirmwares) < 0 ||
-        libxlMakeDomainDeviceDiskCaps(disk) < 0 ||
-        libxlMakeDomainDeviceGraphicsCaps(graphics) < 0 ||
-        libxlMakeDomainDeviceVideoCaps(video) < 0 ||
-        libxlMakeDomainDeviceHostdevCaps(hostdev) < 0)
+        libxlMakeDomainDeviceDiskCaps(disk) < 0)
         return -1;
+    if (STRNEQ(domCaps->machine, "xenpvh") &&
+        (libxlMakeDomainDeviceGraphicsCaps(graphics) < 0 ||
+         libxlMakeDomainDeviceVideoCaps(video) < 0 ||
+         libxlMakeDomainDeviceHostdevCaps(hostdev) < 0))
+        return -1;
+
     return 0;
 }
 
