@@ -44,6 +44,18 @@
           and virDomainPMWakeup APIs.
         </description>
       </change>
+      <change>
+        <summary>
+          utils: Introduce monitor capability interface
+        </summary>
+        <description>
+          The resource monitor has been introduced and it creates the interface
+          for getting the host capability of the resource monitor from the system
+          resource control.
+          The resource monitor takes the role of RDT monitoring groups and could
+          be used to monitor the resource consumption information.
+        </description>
+      </change>
     </section>
     <section title="Removed features">
       <change>
@@ -53,6 +65,15 @@
         <description>
           Xen 4.4 and 4.5 are no longer supported by the Xen community.
           Drop support for these older versions and require Xen >= 4.6.
+        </description>
+      </change>
+      <change>
+        <summary>
+          nwfilter: Disallow binding creation in session mode
+        </summary>
+        <description>
+          Ensure that a filter binding creation is not attempted in session
+          mode and generates a proper error message.
         </description>
       </change>
     </section>
@@ -68,8 +89,64 @@
           Guest Agent.
         </description>
       </change>
+      <change>
+        <summary>
+          storage: Allow to use any format as input volume for encryption
+        </summary>
+        <description>
+          Libvirt has supported 'raw' input volumes for encryption since 4.5.0.
+          Now, it's not going to limit the usage to 'raw' only anymore.
+        </description>
+      </change>
+      <change>
+        <summary>
+          libxl: Add support to set shadow memory for any guest type
+        </summary>
+        <description>
+          PVH guests now can take advantage of using shadow memory.
+        </description>
+      </change>
+      <change>
+        <summary>
+          util: Introduce VIR_AUTOCLOSE macro to automatically close files' fds
+        </summary>
+        <description>
+          The Macro automatically force closes the fds by calling
+          <code>virForceCloseHelper</code> when the fd goes out of scope and is
+          used to eliminate <code>VIR_FORCE_CLOSE</code> in cleanup sections.
+        </description>
+      </change>
+      <change>
+        <summary>
+          virsh: Implement vsh-table in virsh and virsh-admin
+        </summary>
+        <description>
+          The new API fixes problems with table-alignment, making the tables
+          more readable and deals with unicode.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
+      <change>
+        <summary>
+          virsh: Require explicit --domain for domxml-to-native
+        </summary>
+        <description>
+          The --domain option for domxml-to-native virsh command has always
+          been documented as required, but commit v4.3.0-127-gd86531daf2
+          accidentally made it optional.
+        </description>
+      </change>
+      <change>
+        <summary>
+          lxc_monitor: Avoid AB / BA lock race
+        </summary>
+        <description>
+          A deadlock situation could occur when autostarting a LXC domain
+          'guest' due to two threads attempting to take opposing locks while
+          holding opposing locks (AB BA problem).
+        </description>
+      </change>
     </section>
   </release>
   <release version="v4.7.0" date="2018-09-03">
