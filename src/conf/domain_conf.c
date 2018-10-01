@@ -2979,6 +2979,7 @@ virDomainResctrlDefFree(virDomainResctrlDefPtr resctrl)
     virObjectUnref(resctrl->alloc);
     virBitmapFree(resctrl->vcpus);
     VIR_FREE(resctrl->monitors);
+    VIR_FREE(resctrl->id);
     VIR_FREE(resctrl);
 }
 
@@ -19138,6 +19139,9 @@ virDomainResctrlAppend(virDomainDefPtr def,
             goto cleanup;
     }
 
+    if (VIR_STRDUP(resctrl->id, alloc_id) < 0)
+        goto cleanup;
+
     if (virResctrlAllocSetID(resctrl->alloc, alloc_id) < 0)
         goto cleanup;
 
@@ -27320,13 +27324,9 @@ virDomainCachetuneDefFormat(virBufferPtr buf,
 
     virBufferAsprintf(buf, "<cachetune vcpus='%s'", vcpus);
 
-    if (!(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE)) {
-        const char *alloc_id = virResctrlAllocGetID(resctrl->alloc);
-        if (!alloc_id)
-            goto cleanup;
+    if (!(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE))
+        virBufferAsprintf(buf, " id='%s'", resctrl->id);
 
-        virBufferAsprintf(buf, " id='%s'", alloc_id);
-    }
     virBufferAddLit(buf, ">\n");
 
     virBufferAddBuffer(buf, &childrenBuf);
@@ -27383,13 +27383,9 @@ virDomainMemorytuneDefFormat(virBufferPtr buf,
 
     virBufferAsprintf(buf, "<memorytune vcpus='%s'", vcpus);
 
-    if (!(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE)) {
-        const char *alloc_id = virResctrlAllocGetID(resctrl->alloc);
-        if (!alloc_id)
-            goto cleanup;
+    if (!(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE))
+        virBufferAsprintf(buf, " id='%s'", resctrl->id);
 
-        virBufferAsprintf(buf, " id='%s'", alloc_id);
-    }
     virBufferAddLit(buf, ">\n");
 
     virBufferAddBuffer(buf, &childrenBuf);
