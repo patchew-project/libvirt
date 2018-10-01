@@ -225,11 +225,19 @@ virResctrlInfoMonFree(virResctrlInfoMonPtr mon)
 }
 
 
+
+/*
+ * virResctrlAlloc and virResctrlMonitor are representing a resource control
+ * group (in XML under cputune/cachetune and consequently a directory under
+ * /sys/fs/resctrl). virResctrlAlloc is the data structure for resource
+ * allocation, while the virResctrlMonitor represents the resource monitoring
+ * part.
+ */
+
 /* virResctrlAlloc */
 
 /*
- * virResctrlAlloc represents one allocation (in XML under cputune/cachetune and
- * consequently a directory under /sys/fs/resctrl).  Since it can have multiple
+ * virResctrlAlloc represents one allocation. Since it can have multiple
  * parts of multiple caches allocated it is represented as bunch of nested
  * sparse arrays (by sparse I mean array of pointers so that each might be NULL
  * in case there is no allocation for that particular cache allocation (level,
@@ -347,6 +355,8 @@ struct _virResctrlMonitor {
     /* libvirt-generated path in /sys/fs/resctrl for this particular
      * monitor */
     char *path;
+    /* The cache 'level', special for cache monitor */
+    unsigned int cache_level;
 };
 
 
@@ -2512,6 +2522,27 @@ virResctrlMonitorDeterminePath(virResctrlMonitorPtr monitor,
 
 
 int
+virResctrlMonitorSetID(virResctrlMonitorPtr monitor,
+                       const char *id)
+{
+    if (!id) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Resctrl monitor 'id' cannot be NULL"));
+        return -1;
+    }
+
+    return VIR_STRDUP(monitor->id, id);
+}
+
+
+const char *
+virResctrlMonitorGetID(virResctrlMonitorPtr monitor)
+{
+    return monitor->id;
+}
+
+
+int
 virResctrlMonitorCreate(virResctrlAllocPtr alloc,
                         virResctrlMonitorPtr monitor,
                         const char *machinename)
@@ -2535,4 +2566,178 @@ virResctrlMonitorCreate(virResctrlAllocPtr alloc,
 
     virResctrlUnlock(lockfd);
     return ret;
+}
+
+
+int
+virResctrlMonitorRemove(virResctrlMonitorPtr monitor)
+{
+    int ret = 0;
+
+    if (!monitor->path)
+        return 0;
+
+    VIR_DEBUG("Removing resctrl monitor%s", monitor->path);
+    if (rmdir(monitor->path) != 0 && errno != ENOENT) {
+        virReportSystemError(errno,
+                             _("Unable to remove %s (%d)"),
+                             monitor->path, errno);
+        ret = -errno;
+        VIR_ERROR(_("Unable to remove %s (%d)"), monitor->path, errno);
+    }
+
+    return ret;
+}
+
+
+int
+virResctrlMonitorSetCacheLevel(virResctrlMonitorPtr monitor,
+                               unsigned int level)
+{
+    /* Only supports cache level 3 CMT */
+    if (level != 3) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Invalid resctrl monitor cache level"));
+        return -1;
+    }
+
+    monitor->cache_level = level;
+
+    return 0;
+}
+
+unsigned int
+virResctrlMonitorGetCacheLevel(virResctrlMonitorPtr monitor)
+{
+    return monitor->cache_level;
+}
+
+
+/*
+ * virResctrlMonitorGetStatistic
+ *
+ * @monitor: The monitor that the statistic data will be retrieved from.
+ * @resource: The name for resource name. 'llc_occpancy' for cache resource.
+ * "mbm_totol_bytes" and "mbm_local_bytes" for memory bandwidth resource.
+ * @len: The array length for @ids, and @vals
+ * @ids: The id array for resource statistic information, ids[0]
+ * stores the first node id value, ids[1] stores the second node id value,
+ * ... and so on.
+ * @vals: The resource resource utilization information array. vals[0]
+ * stores the cache or memory bandwidth utilization value for first node,
+ * vals[1] stores the second value ... and so on.
+ *
+ * Get cache or memory bandwidth utilization information from monitor that
+ * specified by @id.
+ *
+ * Returns 0 for success, -1 for error.
+ */
+static int
+virResctrlMonitorGetStatistic(virResctrlMonitorPtr monitor,
+                              const char *resource,
+                              size_t *len,
+                              unsigned int **ids,
+                              unsigned int **vals)
+{
+    int rv = -1;
+    int ret = -1;
+    size_t nids = 0;
+    size_t nvals = 0;
+    DIR *dirp = NULL;
+    char *datapath = NULL;
+    struct dirent *ent = NULL;
+
+    if (!monitor) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Invalid resctrl monitor"));
+        return -1;
+    }
+
+    if (virAsprintf(&datapath, "%s/mon_data", monitor->path) < 0)
+        return -1;
+
+    if (virDirOpen(&dirp, datapath) < 0)
+        goto cleanup;
+
+    *len = 0;
+    while (virDirRead(dirp, &ent, datapath) > 0) {
+        char *str_id = NULL;
+        unsigned int id = 0;
+        unsigned int val = 0;
+        size_t i = 0;
+        size_t cur_id_pos = 0;
+        unsigned int tmp_id = 0;
+        unsigned int tmp_val = 0;
+
+        /* Looking for directory that contains resource utilization
+         * information file. The directory name is arranged in format
+         * "mon_<node_name>_<node_id>". For example, "mon_L3_00" and
+         * "mon_l3_01" are two target directories for a two nodes system
+         * with resource utilization data file for each node respectively.
+         */
+        if (ent->d_type != DT_DIR)
+            continue;
+
+        if (STRNEQLEN(ent->d_name, "mon_L", 5))
+            continue;
+
+        str_id = strchr(ent->d_name, '_');
+        if (!str_id)
+            continue;
+
+        str_id = strchr(++str_id, '_');
+        if (!str_id)
+            continue;
+
+        if (virStrToLong_uip(++str_id, NULL, 0, &id) < 0)
+            goto cleanup;
+
+        rv = virFileReadValueUint(&val, "%s/%s/%s", datapath,
+                                  ent->d_name, resource);
+        if (rv == -2) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("File '%s/%s/%s' does not exist."),
+                           datapath, ent->d_name, resource);
+        }
+        if (rv < 0)
+            goto cleanup;
+
+        if (VIR_APPEND_ELEMENT(*ids, nids, id) < 0)
+            goto cleanup;
+
+        if (VIR_APPEND_ELEMENT(*vals, nvals, val) < 0)
+            goto cleanup;
+
+        /* Sort @ids and @vals arrays in the ascending order of id */
+        cur_id_pos = nids - 1;
+        for (i = 0; i < cur_id_pos; i++) {
+            if ((*ids)[cur_id_pos] < (*ids)[i]) {
+                tmp_id = (*ids)[cur_id_pos];
+                tmp_val = (*vals)[cur_id_pos];
+                (*ids)[cur_id_pos] = (*ids)[i];
+                (*vals)[cur_id_pos] = (*vals)[i];
+                (*ids)[i] = tmp_id;
+                (*vals)[i] = tmp_val;
+            }
+        }
+    }
+
+    *len = nids;
+    ret = 0;
+ cleanup:
+    VIR_FREE(datapath);
+    VIR_DIR_CLOSE(dirp);
+    return ret;
+}
+
+
+/* Get cache occupancy data from @monitor */
+int
+virResctrlMonitorGetCacheOccupancy(virResctrlMonitorPtr monitor,
+                                   size_t *nbank,
+                                   unsigned int **bankids,
+                                   unsigned int **bankcaches)
+{
+    return virResctrlMonitorGetStatistic(monitor, "llc_occupancy",
+                                         nbank, bankids, bankcaches);
 }
