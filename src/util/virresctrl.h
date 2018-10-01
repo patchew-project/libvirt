@@ -192,4 +192,8 @@ typedef virResctrlMonitor *virResctrlMonitorPtr;
 
 virResctrlMonitorPtr
 virResctrlMonitorNew(void);
+
+int
+virResctrlMonitorAddPID(virResctrlMonitorPtr monitor,
+                        pid_t pid);
 #endif /*  __VIR_RESCTRL_H__ */
