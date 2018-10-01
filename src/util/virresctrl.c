@@ -105,6 +105,7 @@ typedef virResctrlAllocMemBW *virResctrlAllocMemBWPtr;
 /* Class definitions and initializations */
 static virClassPtr virResctrlInfoClass;
 static virClassPtr virResctrlAllocClass;
+static virClassPtr virResctrlMonitorClass;
 
 
 /* virResctrlInfo */
@@ -319,6 +320,35 @@ struct _virResctrlAlloc {
     char *path;
 };
 
+/* virResctrlMonitor */
+
+/*
+ * virResctrlMonitor is the data structure for resctrl monitor. Resctrl
+ * monitor represents a resctrl monitoring group, which can be used to
+ * monitor the resource utilization information for either cache or
+ * memory bandwidth.
+ *
+ * From hardware perspective, cache monitoring technology (CMT), memory
+ * bandwidth technology (MBM), as well as the CAT and MBA, are all orthogonal
+ * features. The monitor will be created under the scope of default allocation
+ * if no CAT or MBA supported in the system.
+ */
+struct _virResctrlMonitor {
+    virObject parent;
+
+    /* In resctrl, each monitor is associated with one specific allocation,
+     * either the allocation under /sys/fs/resctrl or the default allocation.
+     * If this pointer is NULL, then the monitor will be associated with
+     * default allocation, otherwise, this pointer points to the allocation
+     * this monitor associated with. */
+    virResctrlAllocPtr alloc;
+    /* The monitor identifier */
+    char *id;
+    /* libvirt-generated path in /sys/fs/resctrl for this particular
+     * monitor */
+    char *path;
+};
+
 
 static void
 virResctrlAllocDispose(void *obj)
@@ -368,6 +398,17 @@ virResctrlAllocDispose(void *obj)
 }
 
 
+static void
+virResctrlMonitorDispose(void *obj)
+{
+    virResctrlMonitorPtr monitor = obj;
+
+    virObjectUnref(monitor->alloc);
+    VIR_FREE(monitor->id);
+    VIR_FREE(monitor->path);
+}
+
+
 /* Global initialization for classes */
 static int
 virResctrlOnceInit(void)
@@ -376,6 +417,9 @@ virResctrlOnceInit(void)
         return -1;
 
     if (!VIR_CLASS_NEW(virResctrlAlloc, virClassForObject()))
+        return -1;
+
+    if (!VIR_CLASS_NEW(virResctrlMonitor, virClassForObject()))
         return -1;
 
     return 0;
@@ -2373,4 +2417,16 @@ virResctrlAllocRemove(virResctrlAllocPtr alloc)
     }
 
     return ret;
+}
+
+
+/* virResctrlMonitor-related definitions */
+
+virResctrlMonitorPtr
+virResctrlMonitorNew(void)
+{
+    if (virResctrlInitialize() < 0)
+        return NULL;
+
+    return virObjectNew(virResctrlMonitorClass);
 }

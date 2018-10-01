@@ -2677,6 +2677,7 @@ virResctrlInfoGetCache;
 virResctrlInfoGetMonitorPrefix;
 virResctrlInfoMonFree;
 virResctrlInfoNew;
+virResctrlMonitorNew;
 
 
 # util/virrotatingfile.h
