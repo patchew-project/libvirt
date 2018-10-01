@@ -234,6 +234,10 @@ virResctrlInfoMonFree(virResctrlInfoMonPtr mon)
  * in case there is no allocation for that particular cache allocation (level,
  * cache, ...) or memory allocation for particular node).
  *
+ * Resctrl file system root directory, /sys/fs/sysctrl/, is called the default
+ * allocation, which is created, immediately after mounting, owns all the
+ * tasks and cpus in the system and can make full use of all resources.
+ *
  * =====Cache allocation technology (CAT)=====
  *
  * Since one allocation can be made for caches on different levels, the first
@@ -1167,6 +1171,9 @@ virResctrlAllocSetCacheSize(virResctrlAllocPtr alloc,
                             unsigned int cache,
                             unsigned long long size)
 {
+    if (!alloc)
+        return 0;
+
     if (virResctrlAllocCheckCollision(alloc, level, type, cache)) {
         virReportError(VIR_ERR_XML_ERROR,
                        _("Colliding cache allocations for cache "
@@ -1237,6 +1244,9 @@ virResctrlAllocSetMemoryBandwidth(virResctrlAllocPtr alloc,
 {
     virResctrlAllocMemBWPtr mem_bw = alloc->mem_bw;
 
+    if (!alloc)
+        return 0;
+
     if (memory_bandwidth > 100) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("Memory Bandwidth value exceeding 100 is invalid."));
@@ -1306,6 +1316,11 @@ int
 virResctrlAllocSetID(virResctrlAllocPtr alloc,
                      const char *id)
 {
+    /* If passed a default allocation in, @alloc will be NULL. This is
+     * a valid case, return normally. */
+    if (!alloc)
+        return 0;
+
     if (!id) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Resctrl allocation 'id' cannot be NULL"));
@@ -1319,6 +1334,9 @@ virResctrlAllocSetID(virResctrlAllocPtr alloc,
 const char *
 virResctrlAllocGetID(virResctrlAllocPtr alloc)
 {
+    if (!alloc)
+        return NULL;
+
     return alloc->id;
 }
 
@@ -2211,6 +2229,9 @@ int
 virResctrlAllocDeterminePath(virResctrlAllocPtr alloc,
                              const char *machinename)
 {
+    if (!alloc)
+        return 0;
+
     if (!alloc->id) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Resctrl Allocation ID must be set before creation"));
@@ -2304,6 +2325,9 @@ virResctrlAllocAddPID(virResctrlAllocPtr alloc,
     char *pidstr = NULL;
     int ret = 0;
 
+    if (!alloc)
+        return 0;
+
     if (!alloc->path) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Cannot add pid to non-existing resctrl allocation"));
@@ -2335,6 +2359,9 @@ int
 virResctrlAllocRemove(virResctrlAllocPtr alloc)
 {
     int ret = 0;
+
+    if (!alloc)
+        return 0;
 
     if (!alloc->path)
         return 0;

@@ -19002,22 +19002,27 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
         goto cleanup;
     }
 
-    if (virDomainResctrlVcpuMatch(def, vcpus, &alloc) < 0)
-        goto cleanup;
-
-    if (!alloc) {
-        alloc = virResctrlAllocNew();
-        if (!alloc)
+    /* If 'n' equals 0, then no <cache> element found in <cachetune>,
+     * this means it is a default alloction. For default allocation,
+     * @SetvirDomainResctrlDefPtr->alloc is set to NULL */
+    if (n != 0) {
+        if (virDomainResctrlVcpuMatch(def, vcpus, &alloc) < 0)
             goto cleanup;
-    } else {
-        virReportError(VIR_ERR_XML_ERROR, "%s",
-                       _("Identical vcpus in cachetunes found"));
-        goto cleanup;
-    }
 
-    for (i = 0; i < n; i++) {
-        if (virDomainCachetuneDefParseCache(ctxt, nodes[i], alloc) < 0)
+        if (!alloc) {
+            alloc = virResctrlAllocNew();
+            if (!alloc)
+                goto cleanup;
+        } else {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("Identical vcpus in cachetunes found"));
             goto cleanup;
+        }
+
+        for (i = 0; i < n; i++) {
+            if (virDomainCachetuneDefParseCache(ctxt, nodes[i], alloc) < 0)
+                goto cleanup;
+        }
     }
 
     if (virResctrlAllocIsEmpty(alloc)) {
@@ -19027,6 +19032,7 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
 
     if (virDomainResctrlAppend(def, node, alloc, vcpus, flags) < 0)
         goto cleanup;
+
     vcpus = NULL;
     alloc = NULL;
 
