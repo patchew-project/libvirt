@@ -6216,6 +6216,7 @@ virDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags)
         ret = conn->driver->domainDefineXMLFlags(conn, xml, flags);
         if (!ret)
             goto error;
+        virDispatchError(conn);
         return ret;
     }
 

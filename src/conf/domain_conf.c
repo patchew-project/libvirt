@@ -19114,9 +19114,14 @@ virDomainDefParseCaps(virDomainDefPtr def,
     } else {
         if (!def->os.arch)
             def->os.arch = capsdata->arch;
-        if ((!def->os.machine &&
-             VIR_STRDUP(def->os.machine, capsdata->machinetype) < 0))
-            goto cleanup;
+        if (!def->os.machine) {
+            virReportWarning(VIR_ERR_DEPRECATED_FEATURE,
+                             "%s",
+                             _("Missing machine type"));
+
+            if (VIR_STRDUP(def->os.machine, capsdata->machinetype) < 0)
+                goto cleanup;
+        }
     }
 
     ret = 0;
