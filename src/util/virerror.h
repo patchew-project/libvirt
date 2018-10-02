@@ -189,6 +189,10 @@ void virReportOOMErrorFull(int domcode,
     virReportErrorHelper(VIR_FROM_THIS, code, VIR_ERR_ERROR, __FILE__, \
                          __FUNCTION__, __LINE__, __VA_ARGS__)
 
+# define virReportWarning(code, ...) \
+    virReportErrorHelper(VIR_FROM_THIS, code, VIR_ERR_WARNING, __FILE__, \
+                         __FUNCTION__, __LINE__, __VA_ARGS__)
+
 # define virReportErrorObject(obj) \
     virRaiseErrorObject(__FILE__, __FUNCTION__, __LINE__, obj)
 
