@@ -1509,6 +1509,12 @@ virErrorMsg(virErrorNumber error, const char *info)
             else
                 errmsg = _("Network filter binding not found: %s");
             break;
+        case VIR_ERR_DEPRECATED_FEATURE:
+            if (info == NULL)
+                errmsg = _("Deprecated feature");
+            else
+                errmsg = _("Deprecated feature: %s");
+            break;
     }
     return errmsg;
 }

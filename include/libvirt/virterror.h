@@ -323,6 +323,7 @@ typedef enum {
     VIR_ERR_DEVICE_MISSING = 99,        /* fail to find the desired device */
     VIR_ERR_INVALID_NWFILTER_BINDING = 100,  /* invalid nwfilter binding */
     VIR_ERR_NO_NWFILTER_BINDING = 101,  /* no nwfilter binding */
+    VIR_ERR_DEPRECATED_FEATURE = 102, /* deprecated feature */
 } virErrorNumber;
 
 /**
