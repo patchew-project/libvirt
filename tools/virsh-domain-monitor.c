@@ -1609,6 +1609,8 @@ virshDomainListCollect(vshControl *ctl, unsigned int flags)
     int mansave;
     virshControlPtr priv = ctl->privData;
 
+    goto fallback;
+
     /* try the list with flags support (0.9.13 and later) */
     if ((ret = virConnectListAllDomains(priv->conn, &list->domains,
                                         flags)) >= 0) {
