@@ -242,6 +242,9 @@ vshErrorHandler(void *opaque ATTRIBUTE_UNUSED,
 {
     virFreeError(last_error);
     last_error = virSaveLastError();
+
+    if (last_error && last_error->level == VIR_ERR_WARNING)
+        fprintf(stderr, "Warning: %s\n", NULLSTR(last_error->message));
 }
 
 /* Store a libvirt error that is from a helper API that doesn't raise errors
