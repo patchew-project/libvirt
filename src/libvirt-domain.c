@@ -97,6 +97,11 @@ virConnectNumOfDomains(virConnectPtr conn)
         int ret = conn->driver->connectNumOfDomains(conn);
         if (ret < 0)
             goto error;
+
+        virReportWarning(VIR_ERR_DEPRECATED_FEATURE,
+                         "%s",
+                         "virConnectNumOfDomains()");
+        virDispatchError(conn);
         return ret;
     }
 
