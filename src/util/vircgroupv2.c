@@ -446,6 +446,22 @@ virCgroupV2AddTask(virCgroupPtr group,
 }
 
 
+static int
+virCgroupV2HasEmptyTasks(virCgroupPtr cgroup,
+                         int controller)
+{
+    int ret = -1;
+    VIR_AUTOFREE(char *) content = NULL;
+
+    ret = virCgroupGetValueStr(cgroup, controller, "cgroup.procs", &content);
+
+    if (ret == 0 && content[0] == '\0')
+        ret = 1;
+
+    return ret;
+}
+
+
 virCgroupBackend virCgroupV2Backend = {
     .type = VIR_CGROUP_BACKEND_TYPE_V2,
 
@@ -464,6 +480,7 @@ virCgroupBackend virCgroupV2Backend = {
     .makeGroup = virCgroupV2MakeGroup,
     .remove = virCgroupV2Remove,
     .addTask = virCgroupV2AddTask,
+    .hasEmptyTasks = virCgroupV2HasEmptyTasks,
 };
 
 
