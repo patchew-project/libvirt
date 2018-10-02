@@ -1518,6 +1518,7 @@ virErrorMsg(virErrorNumber error, const char *info)
  *
  * @domcode: the virErrorDomain indicating where it's coming from
  * @errorcode: the virErrorNumber code for the error
+ * @level: the virErrorLevel level for the error
  * @filename: Source file error is dispatched from
  * @funcname: Function error is dispatched from
  * @linenr: Line number error is dispatched from
@@ -1529,6 +1530,7 @@ virErrorMsg(virErrorNumber error, const char *info)
  */
 void virReportErrorHelper(int domcode,
                           int errorcode,
+                          virErrorLevel level,
                           const char *filename,
                           const char *funcname,
                           size_t linenr,
@@ -1549,7 +1551,7 @@ void virReportErrorHelper(int domcode,
 
     virerr = virErrorMsg(errorcode, (errorMessage[0] ? errorMessage : NULL));
     virRaiseErrorFull(filename, funcname, linenr,
-                      domcode, errorcode, VIR_ERR_ERROR,
+                      domcode, errorcode, level,
                       virerr, errorMessage, NULL,
                       -1, -1, virerr, errorMessage);
     errno = save_errno;

@@ -93,10 +93,12 @@ virKeyFileErrorHelper(const char *file, const char *func, size_t line,
 {
     /* Construct the string 'filename:line: info' if we have that. */
     if (ctxt && ctxt->filename) {
-        virReportErrorHelper(VIR_FROM_CONF, error, file, func, line,
+        virReportErrorHelper(VIR_FROM_CONF, error, VIR_ERR_ERROR,
+                             file, func, line,
                              _("%s:%zu: %s '%s'"), ctxt->filename, ctxt->line, info, ctxt->cur);
     } else {
-        virReportErrorHelper(VIR_FROM_CONF, error, file, func, line,
+        virReportErrorHelper(VIR_FROM_CONF, error, VIR_ERR_ERROR,
+                             file, func, line,
                              "%s", info);
     }
 }

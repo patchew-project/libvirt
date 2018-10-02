@@ -34,7 +34,7 @@
 VIR_LOG_INIT("access.accessdriverpolkit");
 
 #define virAccessError(code, ...) \
-    virReportErrorHelper(VIR_FROM_THIS, code, __FILE__, \
+    virReportErrorHelper(VIR_FROM_THIS, code, VIR_ERR_ERROR, __FILE__, \
                          __FUNCTION__, __LINE__, __VA_ARGS__)
 
 #define VIR_ACCESS_DRIVER_POLKIT_ACTION_PREFIX "org.libvirt.api"

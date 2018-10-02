@@ -988,6 +988,7 @@ virConnectOpenInternal(const char *name,
 #endif
              false)) {
             virReportErrorHelper(VIR_FROM_NONE, VIR_ERR_CONFIG_UNSUPPORTED,
+                                 VIR_ERR_ERROR,
                                  __FILE__, __FUNCTION__, __LINE__,
                                  _("libvirt was built without the '%s' driver"),
                                  ret->uri->scheme);

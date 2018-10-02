@@ -51,11 +51,12 @@ void virRaiseErrorObject(const char *filename,
                          virErrorPtr err);
 
 void virReportErrorHelper(int domcode, int errcode,
+                          virErrorLevel level,
                           const char *filename,
                           const char *funcname,
                           size_t linenr,
                           const char *fmt, ...)
-  ATTRIBUTE_FMT_PRINTF(6, 7);
+  ATTRIBUTE_FMT_PRINTF(7, 8);
 
 void virReportSystemErrorFull(int domcode,
                               int theerrno,
@@ -160,10 +161,10 @@ void virReportSystemErrorFull(int domcode,
                       (fmt), __VA_ARGS__)
 
 # define virReportUnsupportedError() \
-    virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_NO_SUPPORT, \
+    virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_NO_SUPPORT, VIR_ERR_ERROR, \
                          __FILE__, __FUNCTION__, __LINE__, __FUNCTION__)
 # define virReportRestrictedError(...) \
-    virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_OPERATION_DENIED, \
+    virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_OPERATION_DENIED, VIR_ERR_ERROR, \
                          __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
 /* The sizeof(...) comparison here is a hack to catch typos
  * in the name of the enum by triggering a compile error, as well
@@ -171,7 +172,7 @@ void virReportSystemErrorFull(int domcode,
  * or struct type, instead of an enum. It should get optimized away
  * since sizeof() is known at compile time  */
 # define virReportEnumRangeError(typname, value) \
-    virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INTERNAL_ERROR, \
+    virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INTERNAL_ERROR, VIR_ERR_ERROR, \
                          __FILE__, __FUNCTION__, __LINE__, \
                          "Unexpected enum value %d for %s", \
                          value, sizeof((typname)1) != 0 ? #typname : #typname);
@@ -185,7 +186,7 @@ void virReportOOMErrorFull(int domcode,
     virReportOOMErrorFull(VIR_FROM_THIS, __FILE__, __FUNCTION__, __LINE__)
 
 # define virReportError(code, ...) \
-    virReportErrorHelper(VIR_FROM_THIS, code, __FILE__, \
+    virReportErrorHelper(VIR_FROM_THIS, code, VIR_ERR_ERROR, __FILE__, \
                          __FUNCTION__, __LINE__, __VA_ARGS__)
 
 # define virReportErrorObject(obj) \

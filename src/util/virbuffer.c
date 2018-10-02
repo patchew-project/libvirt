@@ -339,8 +339,8 @@ virBufferCheckErrorInternal(const virBuffer *buf,
         virReportOOMErrorFull(domcode, filename, funcname, linenr);
         errno = ENOMEM;
     } else {
-        virReportErrorHelper(domcode, VIR_ERR_INTERNAL_ERROR, filename,
-                             funcname, linenr, "%s",
+        virReportErrorHelper(domcode, VIR_ERR_INTERNAL_ERROR, VIR_ERR_ERROR,
+                             filename, funcname, linenr, "%s",
                              _("Invalid buffer API usage"));
         errno = EINVAL;
     }

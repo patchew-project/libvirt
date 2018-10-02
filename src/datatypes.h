@@ -49,7 +49,7 @@ extern virClassPtr virAdmClientClass;
 # define virCheckConnectReturn(obj, retval) \
     do { \
         if (!virObjectIsClass(obj, virConnectClass)) { \
-            virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, \
+            virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -59,7 +59,7 @@ extern virClassPtr virAdmClientClass;
 # define virCheckConnectGoto(obj, label) \
     do { \
         if (!virObjectIsClass(obj, virConnectClass)) { \
-            virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, \
+            virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             goto label; \
@@ -71,7 +71,7 @@ extern virClassPtr virAdmClientClass;
         virDomainPtr _dom = (obj); \
         if (!virObjectIsClass(_dom, virDomainClass) || \
             !virObjectIsClass(_dom->conn, virConnectClass)) { \
-            virReportErrorHelper(VIR_FROM_DOM, VIR_ERR_INVALID_DOMAIN, \
+            virReportErrorHelper(VIR_FROM_DOM, VIR_ERR_INVALID_DOMAIN, VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -83,7 +83,7 @@ extern virClassPtr virAdmClientClass;
         virDomainPtr _dom = (obj); \
         if (!virObjectIsClass(_dom, virDomainClass) || \
             !virObjectIsClass(_dom->conn, virConnectClass)) { \
-            virReportErrorHelper(VIR_FROM_DOM, VIR_ERR_INVALID_DOMAIN, \
+            virReportErrorHelper(VIR_FROM_DOM, VIR_ERR_INVALID_DOMAIN, VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             goto label; \
@@ -97,6 +97,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_net->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_NETWORK, \
                                  VIR_ERR_INVALID_NETWORK, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -110,6 +111,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_net->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_NETWORK, \
                                  VIR_ERR_INVALID_NETWORK, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             goto label; \
@@ -123,6 +125,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_iface->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_INTERFACE, \
                                  VIR_ERR_INVALID_INTERFACE, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -137,6 +140,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_pool->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_STORAGE, \
                                  VIR_ERR_INVALID_STORAGE_POOL, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -151,6 +155,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_pool->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_STORAGE, \
                                  VIR_ERR_INVALID_STORAGE_POOL, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             goto label; \
@@ -164,6 +169,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_vol->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_STORAGE, \
                                  VIR_ERR_INVALID_STORAGE_VOL, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -177,6 +183,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_vol->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_STORAGE, \
                                  VIR_ERR_INVALID_STORAGE_VOL, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             goto label; \
@@ -190,6 +197,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_node->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_NODEDEV, \
                                  VIR_ERR_INVALID_NODE_DEVICE, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -204,6 +212,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_dev->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_NODEDEV, \
                                  VIR_ERR_INVALID_NODE_DEVICE, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             goto label; \
@@ -217,6 +226,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_secret->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_SECRET, \
                                  VIR_ERR_INVALID_SECRET, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -231,6 +241,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_secret->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_SECRET, \
                                  VIR_ERR_INVALID_SECRET, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -245,6 +256,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_st->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_STREAMS, \
                                  VIR_ERR_INVALID_STREAM, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -258,6 +270,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_st->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_STREAMS, \
                                  VIR_ERR_INVALID_STREAM, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             goto label; \
@@ -271,6 +284,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_nw->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_NWFILTER, \
                                  VIR_ERR_INVALID_NWFILTER, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -285,6 +299,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_nw->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_NWFILTER, \
                                  VIR_ERR_INVALID_NWFILTER_BINDING, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -300,6 +315,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_snap->domain->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_DOMAIN_SNAPSHOT, \
                                  VIR_ERR_INVALID_DOMAIN_SNAPSHOT, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -358,6 +374,7 @@ extern virClassPtr virAdmClientClass;
     do { \
         if (!virObjectIsClass(obj, virAdmConnectClass)) { \
             virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -368,6 +385,7 @@ extern virClassPtr virAdmClientClass;
     do { \
         if (!virObjectIsClass(obj, virAdmConnectClass)) { \
             virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             goto label; \
@@ -380,6 +398,7 @@ extern virClassPtr virAdmClientClass;
         if (!virObjectIsClass(_srv, virAdmServerClass) || \
             !virObjectIsClass(_srv->conn, virAdmConnectClass)) { \
             virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -392,6 +411,7 @@ extern virClassPtr virAdmClientClass;
         if (!virObjectIsClass(_srv, virAdmServerClass) || \
             !virObjectIsClass(_srv->conn, virAdmConnectClass)) { \
             virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             goto label; \
@@ -405,6 +425,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_clt->srv, virAdmServerClass) || \
             !virObjectIsClass(_clt->srv->conn, virAdmConnectClass)) { \
             virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             virDispatchError(NULL); \
@@ -418,6 +439,7 @@ extern virClassPtr virAdmClientClass;
             !virObjectIsClass(_clt->srv, virAdmServerClass) || \
             !virObjectIsClass(_clt->srv->conn, virAdmConnectClass)) { \
             virReportErrorHelper(VIR_FROM_THIS, VIR_ERR_INVALID_CONN, \
+                                 VIR_ERR_ERROR, \
                                  __FILE__, __FUNCTION__, __LINE__, \
                                  __FUNCTION__); \
             goto label; \

@@ -37,7 +37,7 @@
 #define VIR_FROM_THIS VIR_FROM_XML
 
 #define virGenericReportError(from, code, ...) \
-        virReportErrorHelper(from, code, __FILE__, \
+        virReportErrorHelper(from, code, VIR_ERR_ERROR, __FILE__, \
                              __FUNCTION__, __LINE__, __VA_ARGS__)
 
 /* Internal data to be passed to SAX parser and used by error handler. */
