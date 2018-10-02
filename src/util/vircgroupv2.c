@@ -495,6 +495,57 @@ virCgroupV2BindMount(virCgroupPtr group,
 }
 
 
+static int
+virCgroupV2SetOwner(virCgroupPtr cgroup,
+                    uid_t uid,
+                    gid_t gid,
+                    int controllers ATTRIBUTE_UNUSED)
+{
+    int ret = -1;
+    VIR_AUTOFREE(char *) base = NULL;
+    DIR *dh = NULL;
+    int direrr;
+
+    struct dirent *de;
+
+    if (virAsprintf(&base, "%s%s", cgroup->unified.mountPoint,
+                    cgroup->unified.placement) < 0) {
+        goto cleanup;
+    }
+
+    if (virDirOpen(&dh, base) < 0)
+        goto cleanup;
+
+    while ((direrr = virDirRead(dh, &de, base)) > 0) {
+        VIR_AUTOFREE(char *) entry = NULL;
+
+        if (virAsprintf(&entry, "%s/%s", base, de->d_name) < 0)
+            goto cleanup;
+
+        if (chown(entry, uid, gid) < 0) {
+            virReportSystemError(errno, _("cannot chown '%s' to (%u, %u)"),
+                                 entry, uid, gid);
+            goto cleanup;
+        }
+    }
+
+    if (direrr < 0)
+        goto cleanup;
+
+    if (chown(base, uid, gid) < 0) {
+        virReportSystemError(errno, _("cannot chown '%s' to (%u, %u)"),
+                             base, uid, gid);
+        goto cleanup;
+    }
+
+    ret = 0;
+
+ cleanup:
+    VIR_DIR_CLOSE(dh);
+    return ret;
+}
+
+
 virCgroupBackend virCgroupV2Backend = {
     .type = VIR_CGROUP_BACKEND_TYPE_V2,
 
@@ -515,6 +566,7 @@ virCgroupBackend virCgroupV2Backend = {
     .addTask = virCgroupV2AddTask,
     .hasEmptyTasks = virCgroupV2HasEmptyTasks,
     .bindMount = virCgroupV2BindMount,
+    .setOwner = virCgroupV2SetOwner,
 };
 
 
