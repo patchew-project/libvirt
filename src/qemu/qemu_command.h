@@ -46,7 +46,6 @@ VIR_ENUM_DECL(qemuVideo)
 
 virCommandPtr qemuBuildCommandLine(virQEMUDriverPtr driver,
                                    virLogManagerPtr logManager,
-                                   virSecurityManagerPtr secManager,
                                    virDomainObjPtr vm,
                                    const char *migrateURI,
                                    virDomainSnapshotObjPtr snapshot,
