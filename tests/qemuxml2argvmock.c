@@ -38,6 +38,7 @@
 #include "virutil.h"
 #include "qemu/qemu_interface.h"
 #include "qemu/qemu_command.h"
+#include "qemu/qemu_process.h"
 #include <time.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -233,7 +234,7 @@ qemuInterfaceOpenVhostNet(virDomainDefPtr def ATTRIBUTE_UNUSED,
 
 
 int
-qemuOpenChrChardevUNIXSocket(const virDomainChrSourceDef *dev ATTRIBUTE_UNUSED)
+qemuProcessOpenChrChardevUNIXSocket(const virDomainChrSourceDef *dev ATTRIBUTE_UNUSED)
 
 {
     /* We need to return an FD number for a UNIX listener socket,

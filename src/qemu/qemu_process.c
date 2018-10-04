@@ -6136,6 +6136,63 @@ qemuProcessOpenVhostVsock(virDomainVsockDefPtr vsock)
 }
 
 
+int
+qemuProcessOpenChrChardevUNIXSocket(const virDomainChrSourceDef *dev)
+{
+    struct sockaddr_un addr;
+    socklen_t addrlen = sizeof(addr);
+    int fd;
+
+    if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("Unable to create UNIX socket"));
+        goto error;
+    }
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    if (virStrcpyStatic(addr.sun_path, dev->data.nix.path) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("UNIX socket path '%s' too long"),
+                       dev->data.nix.path);
+        goto error;
+    }
+
+    if (unlink(dev->data.nix.path) < 0 && errno != ENOENT) {
+        virReportSystemError(errno,
+                             _("Unable to unlink %s"),
+                             dev->data.nix.path);
+        goto error;
+    }
+
+    if (bind(fd, (struct sockaddr *)&addr, addrlen) < 0) {
+        virReportSystemError(errno,
+                             _("Unable to bind to UNIX socket path '%s'"),
+                             dev->data.nix.path);
+        goto error;
+    }
+
+    if (listen(fd, 1) < 0) {
+        virReportSystemError(errno,
+                             _("Unable to listen to UNIX socket path '%s'"),
+                             dev->data.nix.path);
+        goto error;
+    }
+
+    /* We run QEMU with umask 0002. Compensate for the umask
+     * libvirtd might be running under to get the same permission
+     * QEMU would have. */
+    if (virFileUpdatePerm(dev->data.nix.path, 0002, 0664) < 0)
+        goto error;
+
+    return fd;
+
+ error:
+    VIR_FORCE_CLOSE(fd);
+    return -1;
+}
+
+
 static int
 qemuProcessMaybeOpenChrSource(virDomainObjPtr vm,
                               const virDomainChrSourceDef *src)
@@ -6158,7 +6215,7 @@ qemuProcessMaybeOpenChrSource(virDomainObjPtr vm,
 
     if (qemuSecuritySetSocketLabel(driver->securityManager, vm->def) < 0)
         goto cleanup;
-    fd = qemuOpenChrChardevUNIXSocket(src);
+    fd = qemuProcessOpenChrChardevUNIXSocket(src);
     if (qemuSecurityClearSocketLabel(driver->securityManager, vm->def) < 0)
         goto cleanup;
 

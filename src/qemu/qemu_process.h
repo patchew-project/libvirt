@@ -116,6 +116,9 @@ int qemuProcessPrepareDomain(virQEMUDriverPtr driver,
                              unsigned int flags);
 
 int qemuProcessOpenVhostVsock(virDomainVsockDefPtr vsock);
+/* Open a UNIX socket for chardev FD passing */
+int qemuProcessOpenChrChardevUNIXSocket(const virDomainChrSourceDef *dev);
+
 
 int qemuProcessPrepareHost(virQEMUDriverPtr driver,
                            virDomainObjPtr vm,
