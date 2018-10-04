@@ -466,6 +466,8 @@ struct _qemuDomainChrSourcePrivate {
     /* for char devices using secret
      * NB: *not* to be written to qemu domain object XML */
     qemuDomainSecretInfoPtr secinfo;
+
+    int fd;
 };
 
 

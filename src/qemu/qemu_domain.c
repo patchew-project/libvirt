@@ -1180,6 +1180,8 @@ qemuDomainChrSourcePrivateNew(void)
     if (!(priv = virObjectNew(qemuDomainChrSourcePrivateClass)))
         return NULL;
 
+    priv->fd = -1;
+
     return (virObjectPtr) priv;
 }
 
@@ -1190,6 +1192,7 @@ qemuDomainChrSourcePrivateDispose(void *obj)
     qemuDomainChrSourcePrivatePtr priv = obj;
 
     qemuDomainSecretInfoFree(&priv->secinfo);
+    VIR_FORCE_CLOSE(priv->fd);
 }
 
 
