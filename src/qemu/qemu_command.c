@@ -5058,7 +5058,7 @@ enum {
  * host side of the character device */
 static char *
 qemuBuildChrChardevStr(virLogManagerPtr logManager,
-                       virSecurityManagerPtr secManager,
+                       virSecurityManagerPtr secManager ATTRIBUTE_UNUSED,
                        virCommandPtr cmd,
                        virQEMUDriverConfigPtr cfg,
                        const virDomainDef *def,
@@ -5195,22 +5195,11 @@ qemuBuildChrChardevStr(virLogManagerPtr logManager,
 
     case VIR_DOMAIN_CHR_TYPE_UNIX:
         virBufferAsprintf(&buf, "socket,id=%s", charAlias);
-        if (dev->data.nix.listen &&
-            (flags & QEMU_BUILD_CHARDEV_UNIX_FD_PASS) &&
-            virQEMUCapsGet(qemuCaps, QEMU_CAPS_CHARDEV_FD_PASS)) {
-            if (qemuSecuritySetSocketLabel(secManager, (virDomainDefPtr)def) < 0)
-                goto cleanup;
-            int fd = qemuOpenChrChardevUNIXSocket(dev);
-            if (qemuSecurityClearSocketLabel(secManager, (virDomainDefPtr)def) < 0) {
-                VIR_FORCE_CLOSE(fd);
-                goto cleanup;
-            }
-            if (fd < 0)
-                goto cleanup;
-
-            virBufferAsprintf(&buf, ",fd=%d", fd);
-
-            virCommandPassFD(cmd, fd, VIR_COMMAND_PASS_FD_CLOSE_PARENT);
+        if (chrSourcePriv &&
+            chrSourcePriv->fd != -1) {
+            virBufferAsprintf(&buf, ",fd=%d", chrSourcePriv->fd);
+            virCommandPassFD(cmd, chrSourcePriv->fd, VIR_COMMAND_PASS_FD_CLOSE_PARENT);
+            chrSourcePriv->fd = -1;
         } else {
             virBufferAddLit(&buf, ",path=");
             virQEMUBuildBufferEscapeComma(&buf, dev->data.nix.path);

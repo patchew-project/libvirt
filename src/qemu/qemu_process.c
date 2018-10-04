@@ -6136,6 +6136,127 @@ qemuProcessOpenVhostVsock(virDomainVsockDefPtr vsock)
 }
 
 
+static int
+qemuProcessMaybeOpenChrSource(virDomainObjPtr vm,
+                              const virDomainChrSourceDef *src)
+{
+    qemuDomainChrSourcePrivatePtr srcPriv = QEMU_DOMAIN_CHR_SOURCE_PRIVATE(src);
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virQEMUDriverPtr driver = priv->driver;
+    virQEMUCapsPtr qemuCaps = priv->qemuCaps;
+    int fd = -1;
+    int ret = -1;
+
+    if (src->type != VIR_DOMAIN_CHR_TYPE_UNIX)
+        return 0;
+
+    if (!src->data.nix.listen)
+        return 0;
+
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_CHARDEV_FD_PASS))
+        return 0;
+
+    if (qemuSecuritySetSocketLabel(driver->securityManager, vm->def) < 0)
+        goto cleanup;
+    fd = qemuOpenChrChardevUNIXSocket(src);
+    if (qemuSecurityClearSocketLabel(driver->securityManager, vm->def) < 0)
+        goto cleanup;
+
+    if (fd < 0)
+        goto cleanup;
+
+    srcPriv->fd = fd;
+    fd = -1;
+    ret = 0;
+
+ cleanup:
+    VIR_FORCE_CLOSE(fd);
+    return ret;
+}
+
+
+static int
+qemuProcessPrepareChrFDs(virDomainObjPtr vm,
+                         virDomainDefPtr def)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    int ret = -1;
+    size_t i;
+
+    if (priv->monConfig) {
+        if (qemuProcessMaybeOpenChrSource(vm, priv->monConfig) < 0)
+            goto cleanup;
+    }
+
+    /* VIR_DOMAIN_NET_TYPE_VHOSTUSER can be backed by a chardev
+     * but FD passing does not work, see commit ed5aa85f3 */
+
+    for (i = 0; i < def->nsmartcards; i++) {
+        virDomainSmartcardDefPtr smartcard = def->smartcards[i];
+        if (smartcard->type != VIR_DOMAIN_SMARTCARD_TYPE_PASSTHROUGH)
+            continue;
+        if (qemuProcessMaybeOpenChrSource(vm, smartcard->data.passthru) < 0)
+            goto cleanup;
+    }
+
+    /* Shmems can also have a chardev source, but the listen mode is
+     * set to false in the XML parser. Nothing to do here */
+
+    for (i = 0; i < def->nserials; i++) {
+        virDomainChrDefPtr serial = def->serials[i];
+        if (qemuProcessMaybeOpenChrSource(vm, serial->source) < 0)
+            goto cleanup;
+    }
+
+    for (i = 0; i < def->nparallels; i++) {
+        virDomainChrDefPtr parallel = def->parallels[i];
+        if (qemuProcessMaybeOpenChrSource(vm, parallel->source) < 0)
+            goto cleanup;
+    }
+
+    for (i = 0; i < def->nchannels; i++) {
+        virDomainChrDefPtr channel = def->channels[i];
+        if (channel->targetType != VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_GUESTFWD &&
+            channel->targetType != VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_VIRTIO)
+            continue;
+        if (qemuProcessMaybeOpenChrSource(vm, channel->source) < 0)
+            goto cleanup;
+    }
+
+    for (i = 0; i < def->nconsoles; i++) {
+        virDomainChrDefPtr console = def->consoles[i];
+        if (console->targetType == VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_SERIAL)
+            continue;
+        if (qemuProcessMaybeOpenChrSource(vm, console->source) < 0)
+            goto cleanup;
+    }
+
+    for (i = 0; i < def->nredirdevs; i++) {
+        virDomainRedirdevDefPtr redirdev = def->redirdevs[i];
+        if (qemuProcessMaybeOpenChrSource(vm, redirdev->source) < 0)
+            goto cleanup;
+    }
+
+    for (i = 0; i < def->nrngs; i++) {
+        virDomainRNGDefPtr rng = def->rngs[i];
+        switch ((virDomainRNGBackend) rng->backend) {
+        case VIR_DOMAIN_RNG_BACKEND_RANDOM:
+        case VIR_DOMAIN_RNG_BACKEND_LAST:
+            /* no chardev backend is needed */
+            return 0;
+
+        case VIR_DOMAIN_RNG_BACKEND_EGD:
+            if (qemuProcessMaybeOpenChrSource(vm, rng->source.chardev) < 0)
+                goto cleanup;
+        }
+    }
+
+    ret = 0;
+ cleanup:
+    return ret;
+}
+
+
 /**
  * qemuProcessPrepareHost:
  * @driver: qemu driver
@@ -6226,6 +6347,9 @@ qemuProcessPrepareHost(virQEMUDriverPtr driver,
      */
     if (qemuProcessMakeDir(driver, vm, priv->libDir) < 0 ||
         qemuProcessMakeDir(driver, vm, priv->channelTargetDir) < 0)
+        goto cleanup;
+
+    if (qemuProcessPrepareChrFDs(vm, vm->def) < 0)
         goto cleanup;
 
     VIR_DEBUG("Write domain masterKey");
@@ -6884,6 +7008,9 @@ qemuProcessCreatePretendCmd(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (qemuProcessPrepareDomain(driver, vm, flags) < 0)
+        goto cleanup;
+
+    if (qemuProcessPrepareChrFDs(vm, vm->def) < 0)
         goto cleanup;
 
     VIR_DEBUG("Building emulator command line");
