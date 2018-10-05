@@ -291,7 +291,7 @@ adminClientGetInfo(virNetServerClientPtr client,
     if (virIdentityGetSELinuxContext(identity, &attr) < 0 ||
         (attr &&
          virTypedParamsAddString(&tmpparams, nparams, &maxparams,
-                                VIR_CLIENT_INFO_SELINUX_CONTEXT, attr) < 0))
+                                 VIR_CLIENT_INFO_SELINUX_CONTEXT, attr) < 0))
         goto cleanup;
 
     *params = tmpparams;
