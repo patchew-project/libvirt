@@ -727,12 +727,12 @@ bhyveConnectDomainXMLToNative(virConnectPtr conn,
         if ((bhyveDriverGetCaps(conn) & BHYVE_CAP_LPC_BOOTROM) == 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("Installed bhyve binary does not support "
-                          "bootrom"));
+                             "bootrom"));
             goto cleanup;
         }
     } else {
         if (!(loadcmd = virBhyveProcessBuildLoadCmd(conn, def, "<device.map>",
-                                                NULL)))
+                                                    NULL)))
             goto cleanup;
 
         virBufferAdd(&buf, virCommandToString(loadcmd), -1);
@@ -1107,9 +1107,9 @@ bhyveDomainSetMetadata(virDomainPtr dom,
 
 static char *
 bhyveDomainGetMetadata(virDomainPtr dom,
-                      int type,
-                      const char *uri,
-                      unsigned int flags)
+                       int type,
+                       const char *uri,
+                       unsigned int flags)
 {
     virDomainObjPtr vm;
     char *ret = NULL;

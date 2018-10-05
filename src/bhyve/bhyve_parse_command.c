@@ -63,7 +63,7 @@ bhyveParseCommandLineUnescape(const char *command)
     /* Iterate over characters in the command, skipping "\\\n", "\\\r" as well
      * as "\\\r\n". */
     for (curr_src = (char*) command, curr_dst = unescaped; *curr_src != '\0';
-        curr_src++, curr_dst++) {
+         curr_src++, curr_dst++) {
         if (*curr_src == '\\') {
             switch (*(curr_src + 1)) {
                 case '\n': /* \LF */
@@ -122,10 +122,10 @@ bhyveParseMemsize(const char *arg, size_t *ret_memsize)
  */
 static int
 bhyveCommandLineToArgv(const char *nativeConfig,
-                      int *loader_argc,
-                      char ***loader_argv,
-                      int *bhyve_argc,
-                      char ***bhyve_argv)
+                       int *loader_argc,
+                       char ***loader_argv,
+                       int *bhyve_argc,
+                       char ***bhyve_argv)
 {
     const char *curr = NULL;
     char *nativeConfig_unescaped = NULL;
@@ -663,7 +663,7 @@ bhyveParseBhyveCommandLine(virDomainDefPtr def,
         goto error;
 
     while ((c = _getopt_internal_r(argc, argv, optstr,
-            NULL, NULL, 0, parser, 0)) != -1) {
+                                   NULL, NULL, 0, parser, 0)) != -1) {
         switch (c) {
         case 'A':
             def->features[VIR_DOMAIN_FEATURE_ACPI] = VIR_TRISTATE_SWITCH_ON;
@@ -700,7 +700,7 @@ bhyveParseBhyveCommandLine(virDomainDefPtr def,
             }
             if (def->mem.cur_balloon != 0 && def->mem.cur_balloon != memory) {
                 virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                           _("Failed to parse memory: size mismatch"));
+                               _("Failed to parse memory: size mismatch"));
                 goto error;
             }
             def->mem.cur_balloon = memory;
@@ -778,7 +778,7 @@ bhyveParseBhyveLoadCommandLine(virDomainDefPtr def,
         goto error;
 
     while ((c = _getopt_internal_r(argc, argv, optstr,
-            NULL, NULL, 0, parser, 0)) != -1) {
+                                   NULL, NULL, 0, parser, 0)) != -1) {
         switch (c) {
         case 'd':
             arguments |= 1;

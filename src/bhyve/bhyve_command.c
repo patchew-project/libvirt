@@ -293,8 +293,8 @@ bhyveBuildUSBControllerArgStr(const virDomainDef *def,
 
 static int
 bhyveBuildVirtIODiskArgStr(const virDomainDef *def ATTRIBUTE_UNUSED,
-                     virDomainDiskDefPtr disk,
-                     virCommandPtr cmd)
+                           virDomainDiskDefPtr disk,
+                           virCommandPtr cmd)
 {
     const char *disk_source;
 
@@ -516,7 +516,7 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
         } else {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("Installed bhyve binary does not support "
-                          "UTC clock"));
+                             "UTC clock"));
             goto error;
         }
         break;
