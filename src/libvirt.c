@@ -581,7 +581,7 @@ virRegisterConnectDriver(virConnectDriverPtr driver,
     }
 
     VIR_DEBUG("registering %s as driver %d",
-           driver->hypervisorDriver->name, virConnectDriverTabCount);
+              driver->hypervisorDriver->name, virConnectDriverTabCount);
 
     if (setSharedDrivers) {
         if (driver->interfaceDriver == NULL)
@@ -1046,7 +1046,7 @@ virConnectOpenInternal(const char *name,
                   i, virConnectDriverTab[i]->hypervisorDriver->name,
                   res == VIR_DRV_OPEN_SUCCESS ? "SUCCESS" :
                   (res == VIR_DRV_OPEN_DECLINED ? "DECLINED" :
-                  (res == VIR_DRV_OPEN_ERROR ? "ERROR" : "unknown status")));
+                   (res == VIR_DRV_OPEN_ERROR ? "ERROR" : "unknown status")));
 
         if (res == VIR_DRV_OPEN_SUCCESS) {
             break;

@@ -258,7 +258,7 @@ virNodeDeviceLookupSCSIHostByWWN(virConnectPtr conn,
         conn->nodeDeviceDriver->nodeDeviceLookupSCSIHostByWWN) {
         virNodeDevicePtr ret;
         ret = conn->nodeDeviceDriver->nodeDeviceLookupSCSIHostByWWN(conn, wwnn,
-                                                             wwpn, flags);
+                                                                    wwpn, flags);
         if (!ret)
             goto error;
         return ret;
@@ -410,7 +410,7 @@ virNodeDeviceListCaps(virNodeDevicePtr dev,
                       int maxnames)
 {
     VIR_DEBUG("dev=%p, conn=%p, names=%p, maxnames=%d",
-          dev, dev ? dev->conn : NULL, names, maxnames);
+              dev, dev ? dev->conn : NULL, names, maxnames);
 
     virResetLastError();
 

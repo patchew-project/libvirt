@@ -3626,7 +3626,7 @@ virDomainMigrate(virDomainPtr domain,
         } else if (VIR_DRV_SUPPORTS_FEATURE(domain->conn->driver, domain->conn,
                                             VIR_DRV_FEATURE_MIGRATION_V2) &&
                    VIR_DRV_SUPPORTS_FEATURE(dconn->driver, dconn,
-                                          VIR_DRV_FEATURE_MIGRATION_V2)) {
+                                            VIR_DRV_FEATURE_MIGRATION_V2)) {
             VIR_DEBUG("Using migration protocol 2");
             ddomain = virDomainMigrateVersion2(domain, dconn, flags,
                                                dname, uri, bandwidth);
@@ -3778,7 +3778,7 @@ virDomainMigrate2(virDomainPtr domain,
         } else if (VIR_DRV_SUPPORTS_FEATURE(domain->conn->driver, domain->conn,
                                             VIR_DRV_FEATURE_MIGRATION_V2) &&
                    VIR_DRV_SUPPORTS_FEATURE(dconn->driver, dconn,
-                                          VIR_DRV_FEATURE_MIGRATION_V2)) {
+                                            VIR_DRV_FEATURE_MIGRATION_V2)) {
             VIR_DEBUG("Using migration protocol 2");
             if (dxml) {
                 virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED, "%s",
@@ -3967,7 +3967,7 @@ virDomainMigrate3(virDomainPtr domain,
     } else if (VIR_DRV_SUPPORTS_FEATURE(domain->conn->driver, domain->conn,
                                         VIR_DRV_FEATURE_MIGRATION_V2) &&
                VIR_DRV_SUPPORTS_FEATURE(dconn->driver, dconn,
-                                      VIR_DRV_FEATURE_MIGRATION_V2)) {
+                                        VIR_DRV_FEATURE_MIGRATION_V2)) {
         VIR_DEBUG("Using migration protocol 2");
         if (dxml) {
             virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED, "%s",
@@ -11051,8 +11051,8 @@ virDomainFSFreeze(virDomainPtr dom,
         virCheckNullArgGoto(mountpoints, error);
 
     if (dom->conn->driver->domainFSFreeze) {
-        int ret = dom->conn->driver->domainFSFreeze(
-            dom, mountpoints, nmountpoints, flags);
+        int ret = dom->conn->driver->domainFSFreeze(dom, mountpoints,
+                                                    nmountpoints, flags);
         if (ret < 0)
             goto error;
         return ret;
@@ -11096,8 +11096,8 @@ virDomainFSThaw(virDomainPtr dom,
         virCheckNullArgGoto(mountpoints, error);
 
     if (dom->conn->driver->domainFSThaw) {
-        int ret = dom->conn->driver->domainFSThaw(
-            dom, mountpoints, nmountpoints, flags);
+        int ret = dom->conn->driver->domainFSThaw(dom, mountpoints,
+                                                  nmountpoints, flags);
         if (ret < 0)
             goto error;
         return ret;

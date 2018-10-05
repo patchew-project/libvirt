@@ -1200,7 +1200,7 @@ virNetworkGetDHCPLeases(virNetworkPtr network,
 {
     virConnectPtr conn;
     VIR_DEBUG("network=%p, mac='%s' leases=%p, flags=0x%x",
-               network, NULLSTR(mac), leases, flags);
+              network, NULLSTR(mac), leases, flags);
 
     virResetLastError();
 

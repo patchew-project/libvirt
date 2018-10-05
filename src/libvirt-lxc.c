@@ -235,9 +235,8 @@ virDomainLxcEnterSecurityLabel(virSecurityModelPtr model,
         }
 
         if (setexeccon(label->label) < 0) {
-            virReportSystemError(errno,
-                            _("Cannot set context %s"),
-                            label->label);
+            virReportSystemError(errno, _("Cannot set context %s"),
+                                 label->label);
             goto error;
         }
 #else

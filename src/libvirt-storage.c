@@ -1561,8 +1561,10 @@ virStorageVolCreateXMLFrom(virStoragePoolPtr pool,
     if (pool->conn->storageDriver &&
         pool->conn->storageDriver->storageVolCreateXMLFrom) {
         virStorageVolPtr ret;
-        ret = pool->conn->storageDriver->storageVolCreateXMLFrom(pool, xmlDesc,
-                                                          clonevol, flags);
+        ret = pool->conn->storageDriver->storageVolCreateXMLFrom(pool,
+                                                                 xmlDesc,
+                                                                 clonevol,
+                                                                 flags);
         if (!ret)
             goto error;
         return ret;
@@ -1709,11 +1711,8 @@ virStorageVolUpload(virStorageVolPtr vol,
     if (vol->conn->storageDriver &&
         vol->conn->storageDriver->storageVolUpload) {
         int ret;
-        ret = vol->conn->storageDriver->storageVolUpload(vol,
-                                                  stream,
-                                                  offset,
-                                                  length,
-                                                  flags);
+        ret = vol->conn->storageDriver->storageVolUpload(vol, stream, offset,
+                                                         length, flags);
         if (ret < 0)
             goto error;
         return ret;

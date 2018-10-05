@@ -784,7 +784,7 @@ virNodeSetMemoryParameters(virConnectPtr conn,
     if (conn->driver->nodeSetMemoryParameters) {
         int ret;
         ret = conn->driver->nodeSetMemoryParameters(conn, params,
-                                                          nparams, flags);
+                                                    nparams, flags);
         if (ret < 0)
             goto error;
         return ret;
@@ -857,7 +857,7 @@ virNodeGetCellsFreeMemory(virConnectPtr conn, unsigned long long *freeMems,
                           int startCell, int maxCells)
 {
     VIR_DEBUG("conn=%p, freeMems=%p, startCell=%d, maxCells=%d",
-          conn, freeMems, startCell, maxCells);
+              conn, freeMems, startCell, maxCells);
 
     virResetLastError();
 
