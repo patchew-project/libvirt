@@ -481,7 +481,7 @@ int vzGetDefaultSCSIModel(vzDriverPtr driver,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Unknown SCSI controller model %s"),
                        virDomainControllerModelSCSITypeToString(
-                           driver->vzCaps.scsiControllerModel));
+                        driver->vzCaps.scsiControllerModel));
         return -1;
     }
     return 0;

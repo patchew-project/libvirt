@@ -1844,8 +1844,8 @@ vzDomainBlockStatsFlags(virDomainPtr domain,
 
 static int
 vzDomainInterfaceStats(virDomainPtr domain,
-                         const char *device,
-                         virDomainInterfaceStatsPtr stats)
+                       const char *device,
+                       virDomainInterfaceStatsPtr stats)
 {
     virDomainObjPtr dom = NULL;
     vzDomObjPtr privdom;
@@ -2157,8 +2157,8 @@ vzSnapObjFromSnapshot(virDomainSnapshotObjListPtr snapshots,
 
 static int
 vzCurrentSnapshotIterator(void *payload,
-                              const void *name ATTRIBUTE_UNUSED,
-                              void *data)
+                          const void *name ATTRIBUTE_UNUSED,
+                          void *data)
 {
     virDomainSnapshotObjPtr snapshot = payload;
     virDomainSnapshotObjPtr *current = data;
@@ -2569,7 +2569,7 @@ vzDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot, unsigned int flags)
 
 static int
 vzDomainSnapshotHasMetadata(virDomainSnapshotPtr snapshot,
-                              unsigned int flags)
+                            unsigned int flags)
 {
     virDomainObjPtr dom;
     int ret = -1;
@@ -2790,8 +2790,8 @@ vzBakeCookie(vzDriverPtr driver,
     if (flags & VZ_MIGRATION_COOKIE_DOMAIN_NAME) {
         /* if dom is NULL just pass some name for backward compat.
          * It is not used by peer */
-        virBufferAsprintf(&buf, "<name>%s</name>\n", dom ? dom->def->name :
-                                                           "__fakename__");
+        virBufferAsprintf(&buf, "<name>%s</name>\n",
+                          dom ? dom->def->name : "__fakename__");
     }
 
     virBufferAdjustIndent(&buf, -2);

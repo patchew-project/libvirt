@@ -1003,8 +1003,8 @@ prlsdkGetRoutes(PRL_HANDLE sdknet, virDomainNetDefPtr net)
     if (*gw != '\0') {
 
         if (!(route = virNetDevIPRouteCreate(_("Domain interface"),
-                                               "ipv4", VIR_SOCKET_ADDR_IPV4_ALL,
-                                               NULL, gw, 0, true, 0, false)))
+                                             "ipv4", VIR_SOCKET_ADDR_IPV4_ALL,
+                                             NULL, gw, 0, true, 0, false)))
             goto cleanup;
 
         if (VIR_APPEND_ELEMENT(net->guestIP.routes, net->guestIP.nroutes, route) < 0)
@@ -1013,8 +1013,8 @@ prlsdkGetRoutes(PRL_HANDLE sdknet, virDomainNetDefPtr net)
 
     if (*gw6 != '\0') {
         if (!(route = virNetDevIPRouteCreate(_("Domain interface"),
-                                               "ipv6", VIR_SOCKET_ADDR_IPV6_ALL,
-                                               NULL, gw6, 0, true, 0, false)))
+                                             "ipv6", VIR_SOCKET_ADDR_IPV6_ALL,
+                                             NULL, gw6, 0, true, 0, false)))
             goto cleanup;
 
         if (VIR_APPEND_ELEMENT(net->guestIP.routes, net->guestIP.nroutes, route) < 0)
@@ -2897,7 +2897,7 @@ static int prlsdkCheckSerialUnsupportedParams(virDomainChrDefPtr chr)
     }
 
    if (chr->source->type == VIR_DOMAIN_CHR_TYPE_TCP &&
-        chr->source->data.tcp.protocol != VIR_DOMAIN_CHR_TCP_PROTOCOL_RAW) {
+       chr->source->data.tcp.protocol != VIR_DOMAIN_CHR_TCP_PROTOCOL_RAW) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("Protocol '%s' is not supported for "
                          "tcp character device."),
@@ -3078,8 +3078,9 @@ static int prlsdkApplyGraphicsParams(PRL_HANDLE sdkdom,
     }
 
     glisten = virDomainGraphicsGetListen(gr, 0);
-    pret = PrlVmCfg_SetVNCHostName(sdkdom, glisten && glisten->address ?
-                                           glisten->address : VIR_LOOPBACK_IPV4_ADDR);
+    pret = PrlVmCfg_SetVNCHostName(sdkdom,
+                                   glisten && glisten->address ?
+                                   glisten->address : VIR_LOOPBACK_IPV4_ADDR);
     prlsdkCheckRetGoto(pret, cleanup);
 
     ret = 0;
@@ -3219,10 +3220,10 @@ static int prlsdkConfigureGateways(PRL_HANDLE sdknet, virDomainNetDefPtr net)
         gateway = virNetDevIPRouteGetGateway(net->guestIP.routes[i]);
 
         ignore_value(virSocketAddrParse(&zero,
-                                (VIR_SOCKET_ADDR_IS_FAMILY(addrdst, AF_INET)
-                                 ? VIR_SOCKET_ADDR_IPV4_ALL
-                                 : VIR_SOCKET_ADDR_IPV6_ALL),
-                                VIR_SOCKET_ADDR_FAMILY(addrdst)));
+                                        (VIR_SOCKET_ADDR_IS_FAMILY(addrdst, AF_INET)
+                                         ? VIR_SOCKET_ADDR_IPV4_ALL
+                                         : VIR_SOCKET_ADDR_IPV6_ALL),
+                                        VIR_SOCKET_ADDR_FAMILY(addrdst)));
         /* virSocketAddrParse raises an error
          * and we are not going to report it, reset it expicitly*/
         virResetLastError();
@@ -3419,7 +3420,8 @@ static int prlsdkConfigureNet(vzDriverPtr driver ATTRIBUTE_UNUSED,
     }
 
     pret = PrlVmDevNet_SetPktFilterPreventMacSpoof(sdknet,
-                net->trustGuestRxFilters == VIR_TRISTATE_BOOL_YES);
+                                                   (net->trustGuestRxFilters ==
+                                                    VIR_TRISTATE_BOOL_YES));
     prlsdkCheckRetGoto(pret, cleanup);
 
     ret = 0;
