@@ -634,7 +634,7 @@ int virNetSocketNewConnectUNIX(const char *path,
     bool daemonLaunched = false;
 
     VIR_DEBUG("path=%s spawnDaemon=%d binary=%s", path, spawnDaemon,
-        NULLSTR(binary));
+              NULLSTR(binary));
 
     memset(&localAddr, 0, sizeof(localAddr));
     memset(&remoteAddr, 0, sizeof(remoteAddr));
@@ -883,14 +883,17 @@ int virNetSocketNewConnectSSH(const char *nodename,
      * Fedora's 'nc' doesn't have this option, and defaults to the desired
      * behavior.
      */
-    virCommandAddArgFormat(cmd,
-         "'if '%s' -q 2>&1 | grep \"requires an argument\" >/dev/null 2>&1; then "
-             "ARG=-q0;"
-         "else "
-             "ARG=;"
-         "fi;"
-         "'%s' $ARG -U %s'",
-         quoted, quoted, path);
+#define COMMAND_FORMAT "" \
+    "'if '%s' -q 2>&1 | grep \"requires an argument\" >/dev/null 2>&1; then " \
+        "ARG=-q0;" \
+    "else " \
+        "ARG=;" \
+    "fi;" \
+    "'%s' $ARG -U %s'"
+
+    virCommandAddArgFormat(cmd, COMMAND_FORMAT, quoted, quoted, path);
+
+#undef COMMAND_FORMAT
 
     VIR_FREE(quoted);
     return virNetSocketNewConnectCommand(cmd, retsock);
@@ -1534,7 +1537,7 @@ int virNetSocketGetUNIXIdentity(virNetSocketPtr sock,
          */
         if (errno != EOPNOTSUPP) {
             virReportSystemError(errno, "%s",
-                    _("Failed to get client socket PID"));
+                                 _("Failed to get client socket PID"));
             goto cleanup;
         }
     }

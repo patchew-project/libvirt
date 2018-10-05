@@ -347,8 +347,8 @@ static AvahiTimeout *virNetServerMDNSTimeoutNew(const AvahiPoll *api ATTRIBUTE_U
     }
 
     VIR_DEBUG("Trigger timed for %d %d      %d %d",
-               (int)now.tv_sec, (int)now.tv_usec,
-               (int)(tv ? tv->tv_sec : 0), (int)(tv ? tv->tv_usec : 0));
+              (int)now.tv_sec, (int)now.tv_usec,
+              (int)(tv ? tv->tv_sec : 0), (int)(tv ? tv->tv_usec : 0));
     nowms = (now.tv_sec * 1000ll) + (now.tv_usec / 1000ll);
     if (tv) {
         thenms = (tv->tv_sec * 1000ll) + (tv->tv_usec/1000ll);

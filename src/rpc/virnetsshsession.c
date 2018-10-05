@@ -462,7 +462,7 @@ virNetSSHCheckHostKey(virNetSSHSessionPtr sess)
         if (sess->knownHostsFile) {
             if (libssh2_knownhost_writefile(sess->knownHosts,
                                             sess->knownHostsFile,
-                                         LIBSSH2_KNOWNHOST_FILE_OPENSSH) < 0) {
+                                            LIBSSH2_KNOWNHOST_FILE_OPENSSH) < 0) {
                 libssh2_session_last_error(sess->session, &errmsg, NULL, 0);
                 virReportError(VIR_ERR_SSH,
                                _("failed to write known_host file '%s': %s"),

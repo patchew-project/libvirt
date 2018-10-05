@@ -493,15 +493,17 @@ virNetClientPtr virNetClientNewLibSSH2(const char *host,
     if (!(nc = virBufferContentAndReset(&buf)))
         goto no_memory;
 
-    virBufferAsprintf(&buf,
-         "sh -c "
-         "'if '%s' -q 2>&1 | grep \"requires an argument\" >/dev/null 2>&1; then "
-             "ARG=-q0;"
-         "else "
-             "ARG=;"
-         "fi;"
-         "'%s' $ARG -U %s'",
-         nc, nc, socketPath);
+#define COMMAND_FORMAT "sh -c " \
+    "'if '%s' -q 2>&1 | grep \"requires an argument\" >/dev/null 2>&1; then " \
+        "ARG=-q0;" \
+    "else " \
+        "ARG=;" \
+    "fi;" \
+    "'%s' $ARG -U %s'"
+
+    virBufferAsprintf(&buf, COMMAND_FORMAT, nc, nc, socketPath);
+
+#undef COMMAND_FORMAT
 
     if (!(command = virBufferContentAndReset(&buf)))
         goto no_memory;
@@ -601,16 +603,18 @@ virNetClientPtr virNetClientNewLibssh(const char *host,
     if (!(nc = virBufferContentAndReset(&buf)))
         goto no_memory;
 
-    if (virAsprintf(&command,
-         "sh -c "
-         "'if '%s' -q 2>&1 | grep \"requires an argument\" >/dev/null 2>&1; then "
-             "ARG=-q0;"
-         "else "
-             "ARG=;"
-         "fi;"
-         "'%s' $ARG -U %s'",
-         nc, nc, socketPath) < 0)
+#define COMMAND_FORMAT "sh -c " \
+    "'if '%s' -q 2>&1 | grep \"requires an argument\" >/dev/null 2>&1; then " \
+        "ARG=-q0;" \
+    "else " \
+        "ARG=;" \
+    "fi;" \
+    "'%s' $ARG -U %s'"
+
+    if (virAsprintf(&command, COMMAND_FORMAT, nc, nc, socketPath) < 0)
         goto cleanup;
+
+#undef COMMAND_FORMAT
 
     if (virNetSocketNewConnectLibssh(host, port,
                                      family,

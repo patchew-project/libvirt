@@ -1124,7 +1124,7 @@ virNetLibsshSessionAuthAddKeyboardAuth(virNetLibsshSessionPtr sess,
 
 int
 virNetLibsshSessionSetChannelCommand(virNetLibsshSessionPtr sess,
-                                      const char *command)
+                                     const char *command)
 {
     int ret = 0;
     virObjectLock(sess);
