@@ -1537,12 +1537,12 @@ virNWFilterDHCPSnoopThread(void *req0)
                 }
 
                 if (virNWFilterSnoopDHCPDecodeJobSubmit(worker, packet,
-                                                      hdr->caplen,
-                                                      pcapConf[i].dir,
-                                                      &pcapConf[i].qCtr) < 0) {
+                                                        hdr->caplen,
+                                                        pcapConf[i].dir,
+                                                        &pcapConf[i].qCtr) < 0) {
                     virReportError(VIR_ERR_INTERNAL_ERROR,
-                                   _("Job submission failed on "
-                                     "interface '%s'"), req->binding->portdevname);
+                                   _("Job submission failed on interface '%s'"),
+                                   req->binding->portdevname);
                     error = true;
                     break;
                 }

@@ -556,11 +556,9 @@ learnIPAddressThread(void *arg)
                 /* packets from the VM */
 
                 if (etherType == ETHERTYPE_IP &&
-                    (header.len >= ethHdrSize +
-                                   sizeof(struct iphdr))) {
+                    (header.len >= ethHdrSize + sizeof(struct iphdr))) {
                     VIR_WARNINGS_NO_CAST_ALIGN
-                    struct iphdr *iphdr = (struct iphdr*)(packet +
-                                                          ethHdrSize);
+                    struct iphdr *iphdr = (struct iphdr*)(packet + ethHdrSize);
                     VIR_WARNINGS_RESET
                     vmaddr = iphdr->saddr;
                     /* skip mcast addresses (224.0.0.0 - 239.255.255.255),
@@ -574,11 +572,10 @@ learnIPAddressThread(void *arg)
 
                     howDetected = DETECT_STATIC;
                 } else if (etherType == ETHERTYPE_ARP &&
-                           (header.len >= ethHdrSize +
-                                          sizeof(struct f_arphdr))) {
+                           (header.len >= ethHdrSize + sizeof(struct f_arphdr))) {
                     VIR_WARNINGS_NO_CAST_ALIGN
                     struct f_arphdr *arphdr = (struct f_arphdr*)(packet +
-                                                         ethHdrSize);
+                                                                 ethHdrSize);
                     VIR_WARNINGS_RESET
                     switch (ntohs(arphdr->arphdr.ar_op)) {
                     case ARPOP_REPLY:
@@ -597,32 +594,27 @@ learnIPAddressThread(void *arg)
                        virMacAddrIsBroadcastRaw(ether_hdr->ether_dhost)) {
                 /* packets to the VM */
                 if (etherType == ETHERTYPE_IP &&
-                    (header.len >= ethHdrSize +
-                                   sizeof(struct iphdr))) {
+                    (header.len >= ethHdrSize + sizeof(struct iphdr))) {
                     VIR_WARNINGS_NO_CAST_ALIGN
-                    struct iphdr *iphdr = (struct iphdr*)(packet +
-                                                          ethHdrSize);
+                    struct iphdr *iphdr = (struct iphdr*)(packet + ethHdrSize);
                     VIR_WARNINGS_RESET
                     if ((iphdr->protocol == IPPROTO_UDP) &&
-                        (header.len >= ethHdrSize +
-                                       iphdr->ihl * 4 +
-                                       sizeof(struct udphdr))) {
+                        (header.len >=
+                         ethHdrSize + iphdr->ihl * 4 + sizeof(struct udphdr))) {
                         VIR_WARNINGS_NO_CAST_ALIGN
                         struct udphdr *udphdr = (struct udphdr *)
                                           ((char *)iphdr + iphdr->ihl * 4);
                         VIR_WARNINGS_RESET
                         if (ntohs(udphdr->source) == 67 &&
                             ntohs(udphdr->dest)   == 68 &&
-                            header.len >= ethHdrSize +
-                                          iphdr->ihl * 4 +
-                                          sizeof(struct udphdr) +
-                                          sizeof(struct dhcp)) {
+                            (header.len >= (ethHdrSize + iphdr->ihl * 4 +
+                                            sizeof(struct udphdr) +
+                                            sizeof(struct dhcp)))) {
                             struct dhcp *dhcp = (struct dhcp *)
                                         ((char *)udphdr + sizeof(udphdr));
                             if (dhcp->op == 2 /* BOOTREPLY */ &&
-                                virMacAddrCmpRaw(
-                                        &req->binding->mac,
-                                        &dhcp->chaddr[0]) == 0) {
+                                virMacAddrCmpRaw(&req->binding->mac,
+                                                 &dhcp->chaddr[0]) == 0) {
                                 dhcp_opts_len = header.len -
                                     (ethHdrSize + iphdr->ihl * 4 +
                                      sizeof(struct udphdr) +
@@ -670,7 +662,7 @@ learnIPAddressThread(void *arg)
         if ((inetaddr = virSocketAddrFormat(&sa)) != NULL) {
             if (virNWFilterIPAddrMapAddIPAddr(req->binding->portdevname, inetaddr) < 0) {
                 VIR_ERROR(_("Failed to add IP address %s to IP address "
-                          "cache for interface %s"), inetaddr, req->binding->portdevname);
+                            "cache for interface %s"), inetaddr, req->binding->portdevname);
             }
 
             ret = virNWFilterInstantiateFilterLate(req->driver,

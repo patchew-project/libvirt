@@ -1703,7 +1703,7 @@ iptablesCreateRuleInstance(virFirewallPtr fw,
     const char *matchState;
 
     if (!(rule->flags & RULE_FLAG_NO_STATEMATCH) &&
-         (rule->flags & IPTABLES_STATE_FLAGS)) {
+        (rule->flags & IPTABLES_STATE_FLAGS)) {
         return iptablesCreateRuleInstanceStateCtrl(fw,
                                                    layer,
                                                    rule,
@@ -1833,8 +1833,7 @@ ebtablesCreateRuleInstance(virFirewallPtr fw,
     virBuffer buf = VIR_BUFFER_INITIALIZER;
 
     if (STREQ(chainSuffix,
-              virNWFilterChainSuffixTypeToString(
-                  VIR_NWFILTER_CHAINSUFFIX_ROOT)))
+              virNWFilterChainSuffixTypeToString(VIR_NWFILTER_CHAINSUFFIX_ROOT)))
         PRINT_ROOT_CHAIN(chain, chainPrefix, ifname);
     else
         PRINT_CHAIN(chain, chainPrefix, ifname,
@@ -1927,7 +1926,7 @@ ebtablesCreateRuleInstance(virFirewallPtr fw,
                            _("STP filtering in %s direction with "
                              "source MAC address set is not supported"),
                            virNWFilterRuleDirectionTypeToString(
-                               VIR_NWFILTER_RULE_DIRECTION_INOUT));
+                            VIR_NWFILTER_RULE_DIRECTION_INOUT));
             return -1;
         }
 
@@ -2441,8 +2440,7 @@ ebtablesCreateRuleInstance(virFirewallPtr fw,
     switch (rule->action) {
     case VIR_NWFILTER_RULE_ACTION_REJECT:
         /* REJECT not supported */
-        target = virNWFilterJumpTargetTypeToString(
-                                     VIR_NWFILTER_RULE_ACTION_DROP);
+        target = virNWFilterJumpTargetTypeToString(VIR_NWFILTER_RULE_ACTION_DROP);
         break;
     default:
         target = virNWFilterJumpTargetTypeToString(rule->action);
@@ -2722,7 +2720,7 @@ ebtablesRemoveSubChainsQuery(virFirewallPtr fw,
                 virFirewallAddRuleFull(fw, VIR_FIREWALL_LAYER_ETHERNET,
                                        false, ebtablesRemoveSubChainsQuery,
                                        (void *)chainprefixes,
-                                        "-t", "nat", "-L", tmp, NULL);
+                                       "-t", "nat", "-L", tmp, NULL);
                 virFirewallAddRuleFull(fw, VIR_FIREWALL_LAYER_ETHERNET,
                                        true, NULL, NULL,
                                        "-t", "nat", "-F", tmp, NULL);
@@ -3161,7 +3159,7 @@ virNWFilterRuleInstSort(const void *a, const void *b)
     const virNWFilterRuleInst *insta = a;
     const virNWFilterRuleInst *instb = b;
     const char *root = virNWFilterChainSuffixTypeToString(
-                                     VIR_NWFILTER_CHAINSUFFIX_ROOT);
+                        VIR_NWFILTER_CHAINSUFFIX_ROOT);
     bool root_a = STREQ(insta->chainSuffix, root);
     bool root_b = STREQ(instb->chainSuffix, root);
 
@@ -3222,7 +3220,7 @@ iptablesCheckBridgeNFCallEnabled(bool isIPv6)
                     char msg[256];
                     snprintf(msg, sizeof(msg),
                              _("To enable ip%stables filtering for the VM do "
-                              "'echo 1 > %s'"),
+                               "'echo 1 > %s'"),
                              isIPv6 ? "6" : "",
                              pathname);
                     VIR_WARN("%s", msg);
@@ -3361,7 +3359,7 @@ ebtablesGetSubChainInsts(virHashTablePtr chains,
     for (i = 0; filter_names[i].key; i++) {
         struct ebtablesSubChainInst *inst;
         enum l3_proto_idx idx = ebtablesGetProtoIdxByFiltername(
-                                  filter_names[i].key);
+                                    filter_names[i].key);
 
         if ((int)idx < 0)
             continue;

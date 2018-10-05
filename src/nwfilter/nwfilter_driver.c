@@ -228,7 +228,7 @@ nwfilterStateInitialize(bool privileged,
         nwfilterDriverInstallDBusMatches(sysbus) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("DBus matches could not be installed. "
-                       "Disabling nwfilter driver"));
+                         "Disabling nwfilter driver"));
         /*
          * unfortunately this is fatal since virNWFilterTechDriversInit
          * may have caused the ebiptables driver to use the firewall tool
@@ -495,7 +495,7 @@ nwfilterConnectNumOfNWFilters(virConnectPtr conn)
         return -1;
 
     return virNWFilterObjListNumOfNWFilters(driver->nwfilters, conn,
-                                        virConnectNumOfNWFiltersCheckACL);
+                                            virConnectNumOfNWFiltersCheckACL);
 }
 
 
@@ -511,8 +511,8 @@ nwfilterConnectListNWFilters(virConnectPtr conn,
 
     nwfilterDriverLock();
     nnames = virNWFilterObjListGetNames(driver->nwfilters, conn,
-                                    virConnectListNWFiltersCheckACL,
-                                    names, maxnames);
+                                        virConnectListNWFiltersCheckACL,
+                                        names, maxnames);
     nwfilterDriverUnlock();
     return nnames;
 }
