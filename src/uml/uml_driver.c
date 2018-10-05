@@ -192,8 +192,8 @@ umlAutostartDomain(virDomainObjPtr vm,
         } else {
             virObjectEventPtr event =
                 virDomainEventLifecycleNewFromObj(vm,
-                                         VIR_DOMAIN_EVENT_STARTED,
-                                         VIR_DOMAIN_EVENT_STARTED_BOOTED);
+                                                  VIR_DOMAIN_EVENT_STARTED,
+                                                  VIR_DOMAIN_EVENT_STARTED_BOOTED);
             virObjectEventStateQueue(data->driver->domainEventState, event);
         }
     }
@@ -342,8 +342,8 @@ umlInotifyEvent(int watch,
             umlShutdownVMDaemon(driver, dom, VIR_DOMAIN_SHUTOFF_SHUTDOWN);
             virDomainAuditStop(dom, "shutdown");
             event = virDomainEventLifecycleNewFromObj(dom,
-                                             VIR_DOMAIN_EVENT_STOPPED,
-                                             VIR_DOMAIN_EVENT_STOPPED_SHUTDOWN);
+                                                      VIR_DOMAIN_EVENT_STOPPED,
+                                                      VIR_DOMAIN_EVENT_STOPPED_SHUTDOWN);
             if (!dom->persistent)
                 virDomainObjListRemove(driver->domains, dom);
         } else if (e.mask & (IN_CREATE | IN_MODIFY)) {
@@ -373,8 +373,8 @@ umlInotifyEvent(int watch,
                                     VIR_DOMAIN_SHUTOFF_FAILED);
                 virDomainAuditStop(dom, "failed");
                 event = virDomainEventLifecycleNewFromObj(dom,
-                                                 VIR_DOMAIN_EVENT_STOPPED,
-                                                 VIR_DOMAIN_EVENT_STOPPED_FAILED);
+                                                          VIR_DOMAIN_EVENT_STOPPED,
+                                                          VIR_DOMAIN_EVENT_STOPPED_FAILED);
                 if (!dom->persistent)
                     virDomainObjListRemove(driver->domains, dom);
             } else if (umlIdentifyChrPTY(driver, dom) < 0) {
@@ -383,8 +383,8 @@ umlInotifyEvent(int watch,
                                     VIR_DOMAIN_SHUTOFF_FAILED);
                 virDomainAuditStop(dom, "failed");
                 event = virDomainEventLifecycleNewFromObj(dom,
-                                                 VIR_DOMAIN_EVENT_STOPPED,
-                                                 VIR_DOMAIN_EVENT_STOPPED_FAILED);
+                                                          VIR_DOMAIN_EVENT_STOPPED,
+                                                          VIR_DOMAIN_EVENT_STOPPED_FAILED);
                 if (!dom->persistent)
                     virDomainObjListRemove(driver->domains, dom);
             }
@@ -606,8 +606,8 @@ static void umlNotifyLoadDomain(virDomainObjPtr vm, int newVM, void *opaque)
     if (newVM) {
         virObjectEventPtr event =
             virDomainEventLifecycleNewFromObj(vm,
-                                     VIR_DOMAIN_EVENT_DEFINED,
-                                     VIR_DOMAIN_EVENT_DEFINED_ADDED);
+                                              VIR_DOMAIN_EVENT_DEFINED,
+                                              VIR_DOMAIN_EVENT_DEFINED_ADDED);
         virObjectEventStateQueue(driver->domainEventState, event);
     }
 }
@@ -736,8 +736,8 @@ static int umlProcessAutoDestroyDom(void *payload,
     umlShutdownVMDaemon(data->driver, dom, VIR_DOMAIN_SHUTOFF_DESTROYED);
     virDomainAuditStop(dom, "destroyed");
     event = virDomainEventLifecycleNewFromObj(dom,
-                                     VIR_DOMAIN_EVENT_STOPPED,
-                                     VIR_DOMAIN_EVENT_STOPPED_DESTROYED);
+                                              VIR_DOMAIN_EVENT_STOPPED,
+                                              VIR_DOMAIN_EVENT_STOPPED_DESTROYED);
 
     if (!dom->persistent)
         virDomainObjListRemove(data->driver->domains, dom);
@@ -1154,7 +1154,7 @@ static void umlShutdownVMDaemon(struct uml_driver *driver,
 
     if ((ret = waitpid(vm->pid, NULL, 0)) != vm->pid) {
         VIR_WARN("Got unexpected pid %d != %d",
-               ret, vm->pid);
+                 ret, vm->pid);
     }
 
     vm->pid = -1;
@@ -1323,7 +1323,7 @@ static int umlGetProcessInfo(unsigned long long *cpuTime, pid_t pid)
 
 
 static virDomainPtr umlDomainLookupByID(virConnectPtr conn,
-                                          int id)
+                                        int id)
 {
     struct uml_driver *driver = (struct uml_driver *)conn->privateData;
     virDomainObjPtr vm;
@@ -1370,7 +1370,7 @@ static virDomainPtr umlDomainLookupByUUID(virConnectPtr conn,
 }
 
 static virDomainPtr umlDomainLookupByName(virConnectPtr conn,
-                                            const char *name)
+                                          const char *name)
 {
     struct uml_driver *driver = (struct uml_driver *)conn->privateData;
     virDomainObjPtr vm;
@@ -1566,8 +1566,8 @@ static virDomainPtr umlDomainCreateXML(virConnectPtr conn, const char *xml,
     }
     virDomainAuditStart(vm, "booted", true);
     event = virDomainEventLifecycleNewFromObj(vm,
-                                     VIR_DOMAIN_EVENT_STARTED,
-                                     VIR_DOMAIN_EVENT_STARTED_BOOTED);
+                                              VIR_DOMAIN_EVENT_STARTED,
+                                              VIR_DOMAIN_EVENT_STARTED_BOOTED);
 
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
 
@@ -1639,8 +1639,8 @@ umlDomainDestroyFlags(virDomainPtr dom,
     umlShutdownVMDaemon(driver, vm, VIR_DOMAIN_SHUTOFF_DESTROYED);
     virDomainAuditStop(vm, "destroyed");
     event = virDomainEventLifecycleNewFromObj(vm,
-                                     VIR_DOMAIN_EVENT_STOPPED,
-                                     VIR_DOMAIN_EVENT_STOPPED_DESTROYED);
+                                              VIR_DOMAIN_EVENT_STOPPED,
+                                              VIR_DOMAIN_EVENT_STOPPED_DESTROYED);
     if (!vm->persistent)
         virDomainObjListRemove(driver->domains, vm);
     ret = 0;
@@ -1758,7 +1758,7 @@ static int umlDomainSetMemory(virDomainPtr dom, unsigned long newmem)
 }
 
 static int umlDomainGetInfo(virDomainPtr dom,
-                              virDomainInfoPtr info)
+                            virDomainInfoPtr info)
 {
     struct uml_driver *driver = dom->conn->privateData;
     virDomainObjPtr vm;
@@ -1901,8 +1901,8 @@ static int umlDomainCreateWithFlags(virDomainPtr dom, unsigned int flags)
     virDomainAuditStart(vm, "booted", ret >= 0);
     if (ret == 0)
         event = virDomainEventLifecycleNewFromObj(vm,
-                                         VIR_DOMAIN_EVENT_STARTED,
-                                         VIR_DOMAIN_EVENT_STARTED_BOOTED);
+                                                  VIR_DOMAIN_EVENT_STARTED,
+                                                  VIR_DOMAIN_EVENT_STARTED_BOOTED);
 
  cleanup:
     virDomainObjEndAPI(&vm);
@@ -2240,7 +2240,7 @@ umlDomainDetachDeviceFlags(virDomainPtr dom,
 
 
 static int umlDomainGetAutostart(virDomainPtr dom,
-                            int *autostart)
+                                 int *autostart)
 {
     struct uml_driver *driver = dom->conn->privateData;
     virDomainObjPtr vm;
@@ -2263,7 +2263,7 @@ static int umlDomainGetAutostart(virDomainPtr dom,
 }
 
 static int umlDomainSetAutostart(virDomainPtr dom,
-                                   int autostart)
+                                 int autostart)
 {
     struct uml_driver *driver = dom->conn->privateData;
     virDomainObjPtr vm;
@@ -2437,7 +2437,7 @@ umlDomainOpenConsole(virDomainPtr dom,
 
     if (chr->source->type != VIR_DOMAIN_CHR_TYPE_PTY) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                        _("character device %s is not using a PTY"),
+                       _("character device %s is not using a PTY"),
                        dev_name ? dev_name : NULLSTR(chr->info.alias));
         goto cleanup;
     }
