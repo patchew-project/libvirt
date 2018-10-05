@@ -56,7 +56,7 @@ xenSessionFree(xen_session *session)
 
 char *
 xenapiUtil_RequestPassword(virConnectAuthPtr auth, const char *username,
-                        const char *hostname)
+                           const char *hostname)
 {
     unsigned int ncred;
     virConnectCredential cred;
@@ -107,7 +107,8 @@ xenapiUtil_ParseQuery(virConnectPtr conn, virURIPtr uri, int *noVerify)
             if (virStrToLong_i(queryParam->value, NULL, 10, noVerify) < 0 ||
                 (*noVerify != 0 && *noVerify != 1)) {
                 xenapiSessionErrorHandler(conn, VIR_ERR_INVALID_ARG,
-      _("Query parameter 'no_verify' has unexpected value (should be 0 or 1)"));
+                                          _("Query parameter 'no_verify' has "
+                                            "unexpected value (should be 0 or 1)"));
                 goto failure;
             }
         }
@@ -344,8 +345,9 @@ allocStringMap(xen_string_string_map **strings, char *key, char *val)
 {
     int sz = ((*strings) == NULL) ? 0 : (*strings)->size;
     sz++;
-    if (VIR_REALLOC_N(*strings, sizeof(xen_string_string_map) +
-                                sizeof(xen_string_string_map_contents) * sz) < 0)
+    if (VIR_REALLOC_N(*strings,
+                      (sizeof(xen_string_string_map) +
+                       sizeof(xen_string_string_map_contents) * sz)) < 0)
         return -1;
     (*strings)->size = sz;
     if (VIR_STRDUP((*strings)->contents[sz-1].key, key) < 0 ||
@@ -532,7 +534,7 @@ createVMRecordFromXml(virConnectPtr conn, virDomainDefPtr def,
     (*record)->xenstore_data = xen_string_string_map_alloc(0);
     (*record)->hvm_shadow_multiplier = 1.000;
     if (!xen_vm_create(((struct _xenapiPrivate *)(conn->privateData))->session,
-                        vm, *record)) {
+                       vm, *record)) {
         xenapiSessionErrorHandler(conn, VIR_ERR_INTERNAL_ERROR, NULL);
         return -1;
     }
