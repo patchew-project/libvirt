@@ -367,9 +367,9 @@ virAccessDriverPolkitCheckSecret(virAccessManagerPtr manager,
                 };
 
         return virAccessDriverPolkitCheck(manager,
-                                         "secret",
-                                         virAccessPermSecretTypeToString(perm),
-                                         attrs);
+                                          "secret",
+                                          virAccessPermSecretTypeToString(perm),
+                                          attrs);
     }   break;
     }
 }
