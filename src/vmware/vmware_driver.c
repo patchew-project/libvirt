@@ -206,8 +206,9 @@ vmwareConnectOpen(virConnectPtr conn,
         goto cleanup;
 
     if ((tmp = STRSKIP(conn->uri->scheme, "vmware")) == NULL) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, _("unable to parse URI "
-                       "scheme '%s'"), conn->uri->scheme);
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("unable to parse URI scheme '%s'"),
+                       conn->uri->scheme);
         goto cleanup;
     }
 
@@ -215,8 +216,9 @@ vmwareConnectOpen(virConnectPtr conn,
     driver->type = vmwareDriverTypeFromString(tmp);
 
     if (driver->type == -1) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, _("unable to find valid "
-                       "requested VMware backend '%s'"), tmp);
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("unable to find valid requested VMware backend '%s'"),
+                       tmp);
         goto cleanup;
     }
 

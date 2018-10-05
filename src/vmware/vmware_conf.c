@@ -152,7 +152,7 @@ vmwareLoadDomains(struct vmware_driver *driver)
         goto cleanup;
 
     for (str = outbuf; (vmxPath = strtok_r(str, "\n", &saveptr)) != NULL;
-        str = NULL) {
+         str = NULL) {
 
         if (vmxPath[0] != '/')
             continue;
