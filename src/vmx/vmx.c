@@ -803,8 +803,8 @@ virVMXGetConfigLong(virConfPtr conf, const char *name, long long *number,
         *number = -1;
     } else if (virStrToLong_ll(string, NULL, 10, number) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Config entry '%s' must represent an integer value"),
-                name);
+                       _("Config entry '%s' must represent an integer value"),
+                       name);
         goto cleanup;
     }
 
@@ -1183,9 +1183,8 @@ virVMXGatherSCSIControllers(virVMXContext *ctx, virDomainDefPtr def,
 
                 if (disk->bus == VIR_DOMAIN_DISK_BUS_SCSI &&
                     disk->info.addr.drive.controller == controller->idx) {
-                    if (ctx->autodetectSCSIControllerModel
-                               (disk, &autodetectedModels[count],
-                                ctx->opaque) < 0) {
+                    if (ctx->autodetectSCSIControllerModel(
+                            disk, &autodetectedModels[count], ctx->opaque) < 0) {
                         goto cleanup;
                     }
 
@@ -1667,8 +1666,8 @@ virVMXParseConfig(virVMXContext *ctx,
             }
 
             if (virVMXParseDisk(ctx, xmlopt, conf, VIR_DOMAIN_DISK_DEVICE_CDROM,
-                                 VIR_DOMAIN_DISK_BUS_SCSI, controller, unit,
-                                 &def->disks[def->ndisks], def) < 0) {
+                                VIR_DOMAIN_DISK_BUS_SCSI, controller, unit,
+                                &def->disks[def->ndisks], def) < 0) {
                 goto cleanup;
             }
 
@@ -1904,7 +1903,7 @@ virVMXParseVNC(virConfPtr conf, virDomainGraphicsDefPtr *def)
 
     if (port < 0) {
         VIR_WARN("VNC is enabled but VMX entry 'RemoteDisplay.vnc.port' "
-                  "is missing, the VNC port is unknown");
+                 "is missing, the VNC port is unknown");
 
         (*def)->data.vnc.port = 0;
         (*def)->data.vnc.autoport = true;
@@ -3316,8 +3315,8 @@ virVMXFormatConfig(virVMXContext *ctx, virDomainXMLOptionPtr xmlopt, virDomainDe
 
             if (scsi_virtualDev[i] != -1) {
                 virBufferAsprintf(&buffer, "scsi%zu.virtualDev = \"%s\"\n", i,
-                                  virVMXControllerModelSCSITypeToString
-                                    (scsi_virtualDev[i]));
+                                  virVMXControllerModelSCSITypeToString(
+                                    scsi_virtualDev[i]));
             }
         }
     }
@@ -3461,7 +3460,7 @@ virVMXFormatVNC(virDomainGraphicsDefPtr def, virBufferPtr buffer)
 
     if (def->data.vnc.autoport) {
         VIR_WARN("VNC autoport is enabled, but the automatically assigned "
-                  "VNC port cannot be read back");
+                 "VNC port cannot be read back");
     } else {
         if (def->data.vnc.port < 5900 || def->data.vnc.port > 5964) {
             VIR_WARN("VNC port %d it out of [5900..5964] range",
@@ -3918,7 +3917,7 @@ virVMXFormatSerial(virVMXContext *ctx, virDomainChrDefPtr def,
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Unsupported character device TCP protocol '%s'"),
                            virDomainChrTcpProtocolTypeToString(
-                               def->source->data.tcp.protocol));
+                            def->source->data.tcp.protocol));
             return -1;
         }
 
