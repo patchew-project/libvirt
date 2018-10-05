@@ -602,13 +602,14 @@ udevGetIfaceDefBond(struct udev *udev,
     tmp_str = udev_device_get_sysattr_value(dev, "bonding/downdelay");
     if (!tmp_str) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not retrieve 'bonding/downdelay' for '%s'"), name);
+                       _("Could not retrieve 'bonding/downdelay' for '%s'"),
+                       name);
         goto error;
     }
     if (virStrToLong_i(tmp_str, NULL, 10, &tmp_int) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not parse 'bonding/downdelay' '%s' for '%s'"),
-                tmp_str, name);
+                       _("Could not parse 'bonding/downdelay' '%s' for '%s'"),
+                       tmp_str, name);
         goto error;
     }
     ifacedef->data.bond.downdelay = tmp_int;
@@ -616,13 +617,14 @@ udevGetIfaceDefBond(struct udev *udev,
     tmp_str = udev_device_get_sysattr_value(dev, "bonding/updelay");
     if (!tmp_str) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not retrieve 'bonding/updelay' for '%s'"), name);
+                       _("Could not retrieve 'bonding/updelay' for '%s'"),
+                       name);
         goto error;
     }
     if (virStrToLong_i(tmp_str, NULL, 10, &tmp_int) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not parse 'bonding/updelay' '%s' for '%s'"),
-                tmp_str, name);
+                       _("Could not parse 'bonding/updelay' '%s' for '%s'"),
+                       tmp_str, name);
         goto error;
     }
     ifacedef->data.bond.updelay = tmp_int;
@@ -630,13 +632,14 @@ udevGetIfaceDefBond(struct udev *udev,
     tmp_str = udev_device_get_sysattr_value(dev, "bonding/miimon");
     if (!tmp_str) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not retrieve 'bonding/miimon' for '%s'"), name);
+                       _("Could not retrieve 'bonding/miimon' for '%s'"),
+                       name);
         goto error;
     }
     if (virStrToLong_i(tmp_str, NULL, 10, &tmp_int) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not parse 'bonding/miimon' '%s' for '%s'"),
-                tmp_str, name);
+                       _("Could not parse 'bonding/miimon' '%s' for '%s'"),
+                       tmp_str, name);
         goto error;
     }
     ifacedef->data.bond.frequency = tmp_int;
@@ -644,13 +647,14 @@ udevGetIfaceDefBond(struct udev *udev,
     tmp_str = udev_device_get_sysattr_value(dev, "bonding/arp_interval");
     if (!tmp_str) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not retrieve 'bonding/arp_interval' for '%s'"), name);
+                       _("Could not retrieve 'bonding/arp_interval' for '%s'"),
+                       name);
         goto error;
     }
     if (virStrToLong_i(tmp_str, NULL, 10, &tmp_int) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not parse 'bonding/arp_interval' '%s' for '%s'"),
-                tmp_str, name);
+                       _("Could not parse 'bonding/arp_interval' '%s' for '%s'"),
+                       tmp_str, name);
         goto error;
     }
     ifacedef->data.bond.interval = tmp_int;
@@ -663,25 +667,25 @@ udevGetIfaceDefBond(struct udev *udev,
     tmp_str = udev_device_get_sysattr_value(dev, "bonding/mode");
     if (!tmp_str) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not retrieve 'bonding/mode' for '%s'"), name);
+                       _("Could not retrieve 'bonding/mode' for '%s'"), name);
         goto error;
     }
     tmp_str = strchr(tmp_str, ' ');
     if (!tmp_str) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Invalid format for 'bonding/mode' for '%s'"), name);
+                       _("Invalid format for 'bonding/mode' for '%s'"), name);
         goto error;
     }
     if (strlen(tmp_str) < 2) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Unable to find correct value in 'bonding/mode' for '%s'"),
-                name);
+                       _("Unable to find correct value in 'bonding/mode' for '%s'"),
+                       name);
         goto error;
     }
     if (virStrToLong_i(tmp_str + 1, NULL, 10, &tmp_int) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not parse 'bonding/mode' '%s' for '%s'"),
-                tmp_str, name);
+                       _("Could not parse 'bonding/mode' '%s' for '%s'"),
+                       tmp_str, name);
         goto error;
     }
     ifacedef->data.bond.mode = tmp_int + 1;
@@ -693,25 +697,27 @@ udevGetIfaceDefBond(struct udev *udev,
     tmp_str = udev_device_get_sysattr_value(dev, "bonding/arp_validate");
     if (!tmp_str) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not retrieve 'bonding/arp_validate' for '%s'"), name);
+                       _("Could not retrieve 'bonding/arp_validate' for '%s'"),
+                       name);
         goto error;
     }
     tmp_str = strchr(tmp_str, ' ');
     if (!tmp_str) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Invalid format for 'bonding/arp_validate' for '%s'"), name);
+                       _("Invalid format for 'bonding/arp_validate' for '%s'"),
+                       name);
         goto error;
     }
     if (strlen(tmp_str) < 2) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Unable to find correct value in 'bonding/arp_validate' "
-                "for '%s'"), name);
+                       _("Unable to find correct value in 'bonding/arp_validate' "
+                         "for '%s'"), name);
         goto error;
     }
     if (virStrToLong_i(tmp_str + 1, NULL, 10, &tmp_int) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not parse 'bonding/arp_validate' '%s' for '%s'"),
-                tmp_str, name);
+                       _("Could not parse 'bonding/arp_validate' '%s' for '%s'"),
+                       tmp_str, name);
         goto error;
     }
     ifacedef->data.bond.validate = tmp_int;
@@ -720,13 +726,14 @@ udevGetIfaceDefBond(struct udev *udev,
     tmp_str = udev_device_get_sysattr_value(dev, "bonding/use_carrier");
     if (!tmp_str) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not retrieve 'bonding/use_carrier' for '%s'"), name);
+                       _("Could not retrieve 'bonding/use_carrier' for '%s'"),
+                       name);
         goto error;
     }
     if (virStrToLong_i(tmp_str, NULL, 10, &tmp_int) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not parse 'bonding/use_carrier' '%s' for '%s'"),
-                tmp_str, name);
+                       _("Could not parse 'bonding/use_carrier' '%s' for '%s'"),
+                       tmp_str, name);
         goto error;
     }
     ifacedef->data.bond.carrier = tmp_int + 1;
@@ -745,7 +752,8 @@ udevGetIfaceDefBond(struct udev *udev,
     tmp_str = udev_device_get_sysattr_value(dev, "bonding/arp_ip_target");
     if (!tmp_str) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not retrieve 'bonding/arp_ip_target' for '%s'"), name);
+                       _("Could not retrieve 'bonding/arp_ip_target' for '%s'"),
+                       name);
         goto error;
     }
     if (VIR_STRDUP(ifacedef->data.bond.target, tmp_str) < 0)
@@ -754,11 +762,11 @@ udevGetIfaceDefBond(struct udev *udev,
     /* Slaves of the bond */
     /* Get each slave in the bond */
     slave_count = scandir(udev_device_get_syspath(dev), &slave_list,
-            udevBondScanDirFilter, alphasort);
+                          udevBondScanDirFilter, alphasort);
 
     if (slave_count < 0) {
         virReportSystemError(errno,
-                _("Could not get slaves of bond '%s'"), name);
+                             _("Could not get slaves of bond '%s'"), name);
         goto error;
     }
 
@@ -785,8 +793,9 @@ udevGetIfaceDefBond(struct udev *udev,
             udevGetIfaceDef(udev, tmp_str);
         if (!ifacedef->data.bond.itf[i]) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not get interface information for '%s', which is "
-                  "a enslaved in bond '%s'"), slave_list[i]->d_name, name);
+                           _("Could not get interface information for '%s',"
+                             " which is a enslaved in bond '%s'"),
+                           slave_list[i]->d_name, name);
             goto error;
         }
         VIR_FREE(slave_list[i]);
@@ -826,7 +835,8 @@ udevGetIfaceDefBridge(struct udev *udev,
     tmp_str = udev_device_get_sysattr_value(dev, "bridge/forward_delay");
     if (!tmp_str) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not retrieve 'bridge/forward_delay' for '%s'"), name);
+                       _("Could not retrieve 'bridge/forward_delay' for '%s'"),
+                       name);
         goto error;
     }
 
@@ -837,14 +847,15 @@ udevGetIfaceDefBridge(struct udev *udev,
     tmp_str = udev_device_get_sysattr_value(dev, "bridge/stp_state");
     if (!tmp_str) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-            _("Could not retrieve 'bridge/stp_state' for '%s'"), name);
+                       _("Could not retrieve 'bridge/stp_state' for '%s'"),
+                       name);
         goto error;
     }
 
     if (virStrToLong_i(tmp_str, NULL, 10, &stp) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not parse 'bridge/stp_state' '%s' for '%s'"),
-                tmp_str, name);
+                       _("Could not parse 'bridge/stp_state' '%s' for '%s'"),
+                       tmp_str, name);
         goto error;
     }
 
@@ -856,27 +867,27 @@ udevGetIfaceDefBridge(struct udev *udev,
         break;
     default:
         virReportError(VIR_ERR_INTERNAL_ERROR,
-            _("Invalid STP state value %d received for '%s'. Must be "
-              "-1, 0, or 1."), stp, name);
+                       _("Invalid STP state value %d received for '%s'."
+                         " Must be -1, 0, or 1."), stp, name);
         goto error;
     }
 
     /* Members of the bridge */
     if (virAsprintf(&member_path, "%s/%s",
-                udev_device_get_syspath(dev), "brif") < 0)
+                    udev_device_get_syspath(dev), "brif") < 0)
         goto error;
 
     /* Get each member of the bridge */
     member_count = scandir(member_path, &member_list,
-            udevBridgeScanDirFilter, alphasort);
+                           udevBridgeScanDirFilter, alphasort);
 
     /* Don't need the path anymore */
     VIR_FREE(member_path);
 
     if (member_count < 0) {
         virReportSystemError(errno,
-                _("Could not get members of bridge '%s'"),
-                name);
+                             _("Could not get members of bridge '%s'"),
+                             name);
         goto error;
     }
 
@@ -891,8 +902,9 @@ udevGetIfaceDefBridge(struct udev *udev,
             udevGetIfaceDef(udev, member_list[i]->d_name);
         if (!ifacedef->data.bridge.itf[i]) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not get interface information for '%s', which is "
-                  "a member of bridge '%s'"), member_list[i]->d_name, name);
+                           _("Could not get interface information for '%s', "
+                             "which is a member of bridge '%s'"),
+                           member_list[i]->d_name, name);
             goto error;
         }
         VIR_FREE(member_list[i]);
@@ -1018,7 +1030,7 @@ udevGetIfaceDef(struct udev *udev, const char *name)
     mtu_str = udev_device_get_sysattr_value(dev, "mtu");
     if (virStrToLong_ui(mtu_str, NULL, 10, &mtu) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                _("Could not parse MTU value '%s'"), mtu_str);
+                       _("Could not parse MTU value '%s'"), mtu_str);
         goto error;
     }
     ifacedef->mtu = mtu;
