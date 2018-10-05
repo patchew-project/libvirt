@@ -467,8 +467,7 @@ xenParseXLVnuma(virConfPtr conf,
                 const char *data;
                 const char *str = vnode->str;
 
-                if (!str ||
-                   !(data = strrchr(str, '='))) {
+                if (!str || !(data = strrchr(str, '='))) {
                     virReportError(VIR_ERR_INTERNAL_ERROR,
                                    _("vnuma vnode invalid format '%s'"),
                                    str);
@@ -545,8 +544,9 @@ xenParseXLVnuma(virConfPtr conf,
 
                         if (ndistances != nr_nodes) {
                             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                       _("vnuma pnode %d configured '%s' (count %zu) doesn't fit the number of specified vnodes %zu"),
-                                       pnode, str, ndistances, nr_nodes);
+                                           _("vnuma pnode %d configured '%s' (count %zu)"
+                                             " doesn't fit the number of specified vnodes %zu"),
+                                           pnode, str, ndistances, nr_nodes);
                             goto cleanup;
                         }
 
@@ -844,9 +844,9 @@ xenParseXLInputDevs(virConfPtr conf, virDomainDefPtr def)
             str = val->str;
 
             if (str &&
-                    (STREQ(str, "tablet") ||
-                     STREQ(str, "mouse") ||
-                     STREQ(str, "keyboard"))) {
+                (STREQ(str, "tablet") ||
+                 STREQ(str, "mouse") ||
+                 STREQ(str, "keyboard"))) {
                 virDomainInputDefPtr input;
                 if (VIR_ALLOC(input) < 0)
                     return -1;
@@ -1288,7 +1288,7 @@ xenFormatXLOS(virConfPtr conf, virDomainDefPtr def)
         /* XXX floppy disks */
     } else {
         if (def->os.bootloader &&
-             xenConfigSetString(conf, "bootloader", def->os.bootloader) < 0)
+            xenConfigSetString(conf, "bootloader", def->os.bootloader) < 0)
             return -1;
 
          if (def->os.bootloaderArgs &&
@@ -1337,9 +1337,8 @@ xenFormatXLCPUID(virConfPtr conf, virDomainDefPtr def)
 
     j = 1;
     for (i = 0; i < def->cpu->nfeatures; i++) {
-        const char *feature_name = xenTranslateCPUFeature(
-                def->cpu->features[i].name,
-                false);
+        const char *feature_name = xenTranslateCPUFeature(def->cpu->features[i].name,
+                                                          false);
         const char *policy = NULL;
 
         if (STREQ(feature_name, "vmx") || STREQ(feature_name, "svm"))
@@ -1453,7 +1452,7 @@ xenFormatXLVnuma(virConfValuePtr list,
     virBufferAddLit(&buf, "vdistances=");
     for (i = 0; i < nr_nodes; i++) {
         virBufferAsprintf(&buf, "%zu",
-            virDomainNumaGetNodeDistance(numa, node, i));
+                          virDomainNumaGetNodeDistance(numa, node, i));
         if ((nr_nodes - i) > 1)
             virBufferAddLit(&buf, ",");
     }

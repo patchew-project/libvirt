@@ -295,11 +295,11 @@ xenParseMem(virConfPtr conf, virDomainDefPtr def)
     unsigned long long memory;
 
     if (xenConfigGetULongLong(conf, "memory", &def->mem.cur_balloon,
-                                MIN_XEN_GUEST_SIZE * 2) < 0)
+                              MIN_XEN_GUEST_SIZE * 2) < 0)
         return -1;
 
     if (xenConfigGetULongLong(conf, "maxmem", &memory,
-                                def->mem.cur_balloon) < 0)
+                              def->mem.cur_balloon) < 0)
         return -1;
 
     def->mem.cur_balloon *= 1024;
@@ -1104,8 +1104,12 @@ xenParseGeneralMeta(virConfPtr conf, virDomainDefPtr def, virCapsPtr caps)
 
     def->os.type = (hvm ? VIR_DOMAIN_OSTYPE_HVM : VIR_DOMAIN_OSTYPE_XEN);
 
-    if (!(capsdata = virCapabilitiesDomainDataLookup(caps, def->os.type,
-            VIR_ARCH_NONE, def->virtType, NULL, NULL)))
+    if (!(capsdata = virCapabilitiesDomainDataLookup(caps,
+                                                     def->os.type,
+                                                     VIR_ARCH_NONE,
+                                                     def->virtType,
+                                                     NULL,
+                                                     NULL)))
         goto out;
 
     def->os.arch = capsdata->arch;
@@ -1680,17 +1684,17 @@ xenFormatCPUFeatures(virConfPtr conf, virDomainDefPtr def)
     if (hvm) {
         if (xenConfigSetInt(conf, "pae",
                             (def->features[VIR_DOMAIN_FEATURE_PAE] ==
-                            VIR_TRISTATE_SWITCH_ON) ? 1 : 0) < 0)
+                             VIR_TRISTATE_SWITCH_ON) ? 1 : 0) < 0)
             return -1;
 
         if (xenConfigSetInt(conf, "acpi",
                             (def->features[VIR_DOMAIN_FEATURE_ACPI] ==
-                            VIR_TRISTATE_SWITCH_ON) ? 1 : 0) < 0)
+                             VIR_TRISTATE_SWITCH_ON) ? 1 : 0) < 0)
             return -1;
 
         if (xenConfigSetInt(conf, "apic",
                             (def->features[VIR_DOMAIN_FEATURE_APIC] ==
-                            VIR_TRISTATE_SWITCH_ON) ? 1 : 0) < 0)
+                             VIR_TRISTATE_SWITCH_ON) ? 1 : 0) < 0)
             return -1;
 
         if (def->features[VIR_DOMAIN_FEATURE_HAP] == VIR_TRISTATE_SWITCH_OFF) {
@@ -1805,7 +1809,8 @@ xenFormatVfb(virConfPtr conf, virDomainDefPtr def)
                     return -1;
 
                 if (xenConfigSetInt(conf, "vncunused",
-                              def->graphics[0]->data.vnc.autoport ? 1 : 0) < 0)
+                                    (def->graphics[0]->data.vnc.autoport ?
+                                     1 : 0)) < 0)
                     return -1;
 
                 if (!def->graphics[0]->data.vnc.autoport &&

@@ -424,9 +424,9 @@ xenParseXMInputDevs(virConfPtr conf, virDomainDefPtr def)
         if (xenConfigGetString(conf, "usbdevice", &str, NULL) < 0)
             return -1;
         if (str &&
-                (STREQ(str, "tablet") ||
-                 STREQ(str, "mouse") ||
-                 STREQ(str, "keyboard"))) {
+            (STREQ(str, "tablet") ||
+             STREQ(str, "mouse") ||
+             STREQ(str, "keyboard"))) {
             virDomainInputDefPtr input;
             if (VIR_ALLOC(input) < 0)
                 return -1;
@@ -532,7 +532,7 @@ xenFormatXMOS(virConfPtr conf, virDomainDefPtr def)
         /* XXX floppy disks */
     } else {
         if (def->os.bootloader &&
-             xenConfigSetString(conf, "bootloader", def->os.bootloader) < 0)
+            xenConfigSetString(conf, "bootloader", def->os.bootloader) < 0)
             return -1;
 
          if (def->os.bootloaderArgs &&
