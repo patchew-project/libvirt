@@ -277,11 +277,22 @@ sub CheckMisalignment {
             my $code = $$paren_stack[-1][2];
             if ($pos != length($`)) {
                 my $pad = "";
+                my $indicator = "";
                 if ($. > $linenum + 1) {
                     $pad = " " x $pos . "...\n";
                 }
                 print "Misaligned line in parenthesis:\n";
-                print "$$file:$linenum-$.:\n$code$pad$$line\n";
+                print "$$file:$linenum-$.:\n$code$pad$$line";
+                if ($pos > length($`)) {
+                    $indicator = " " x length($`);
+                    $indicator .= "~" x ($pos - length($`));
+                    $indicator .= "^";
+                } else {
+                    $indicator = " " x $pos;
+                    $indicator .= "^";
+                    $indicator .= "~" x (length($`) - $pos);
+                }
+                print "$indicator\n";
                 $ret = 1;
             }
         }
