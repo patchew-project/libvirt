@@ -2040,12 +2040,8 @@ cpuidCall(virCPUx86CPUID *cpuid)
     asm("xor %%ebx, %%ebx;" /* clear the other registers as some cpuid */
         "xor %%edx, %%edx;" /* functions may use them as additional arguments */
         "cpuid;"
-        : "=a" (cpuid->eax),
-          "=b" (cpuid->ebx),
-          "=c" (cpuid->ecx),
-          "=d" (cpuid->edx)
-        : "a" (cpuid->eax_in),
-          "c" (cpuid->ecx_in));
+        : "=a" (cpuid->eax), "=b" (cpuid->ebx), "=c" (cpuid->ecx), "=d" (cpuid->edx)
+        : "a" (cpuid->eax_in), "c" (cpuid->ecx_in));
 # else
     /* we need to avoid direct use of ebx for CPUID output as it is used
      * for global offset table on i386 with -fPIC
@@ -2056,12 +2052,8 @@ cpuidCall(virCPUx86CPUID *cpuid)
         "cpuid;"
         "mov %%ebx, %1;"
         "pop %%ebx;"
-        : "=a" (cpuid->eax),
-          "=r" (cpuid->ebx),
-          "=c" (cpuid->ecx),
-          "=d" (cpuid->edx)
-        : "a" (cpuid->eax_in),
-          "c" (cpuid->ecx_in)
+        : "=a" (cpuid->eax), "=r" (cpuid->ebx), "=c" (cpuid->ecx), "=d" (cpuid->edx)
+        : "a" (cpuid->eax_in), "c" (cpuid->ecx_in)
         : "cc");
 # endif
 }

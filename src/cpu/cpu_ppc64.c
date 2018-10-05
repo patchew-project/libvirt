@@ -488,7 +488,7 @@ ppc64Compute(virCPUDefPtr host,
         if (message &&
             virAsprintf(message,
                         _("host CPU vendor does not match required "
-                        "CPU vendor %s"),
+                          "CPU vendor %s"),
                         cpu->vendor) < 0)
             goto cleanup;
 
@@ -543,7 +543,7 @@ ppc64Compute(virCPUDefPtr host,
         if (message &&
             virAsprintf(message,
                         _("host CPU model does not match required "
-                        "CPU model %s"),
+                          "CPU model %s"),
                         guest_model->name) < 0)
             goto cleanup;
 
