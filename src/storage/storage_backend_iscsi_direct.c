@@ -669,7 +669,7 @@ virStorageBackendISCSIDirectVolWipeZero(virStorageVolDefPtr vol,
             lba += BLOCK_PER_PACKET;
         } else {
             if (!(task = iscsi_write10_sync(iscsi, lun, lba, data, block_size,
-                                        block_size, 0, 0, 0, 0, 0)))
+                                            block_size, 0, 0, 0, 0, 0)))
                 goto cleanup;
             scsi_free_scsi_task(task);
             lba++;

@@ -681,7 +681,7 @@ virStorageBackendDiskPartBoundaries(virStoragePoolObjPtr pool,
                                       dev->geometry.sectors * SECTOR_SIZE;
 
     VIR_DEBUG("find free area: allocation %llu, cyl size %llu", allocation,
-          cylinderSize);
+              cylinderSize);
     int partType = virStorageBackendDiskPartTypeToCreate(pool);
 
     /* how many extra bytes we have since we allocate
@@ -708,8 +708,7 @@ virStorageBackendDiskPartBoundaries(virStoragePoolObjPtr pool,
                  size -= SECTOR_SIZE;
          }
          if (size > neededSize &&
-             (smallestSize == 0 ||
-             size < smallestSize)) {
+             (smallestSize == 0 || size < smallestSize)) {
              /* for logical partition, the free extent
                 must be within a logical free area */
              if (partType == VIR_STORAGE_VOL_DISK_TYPE_LOGICAL &&
@@ -798,7 +797,7 @@ virStorageBackendDiskDeleteVol(virStoragePoolObjPtr pool,
     if (!vol->target.path) {
         virReportError(VIR_ERR_INVALID_ARG,
                        _("volume target path empty for source path '%s'"),
-                      src_path);
+                       src_path);
         return -1;
     }
 

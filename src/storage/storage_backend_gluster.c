@@ -350,7 +350,7 @@ virStorageBackendGlusterRefreshPool(virStoragePoolObjPtr pool)
         struct dirent ent;
         /* See comment below about readdir_r needing padding */
         char padding[MAX(1, 256 - (int)(sizeof(struct dirent)
-                                         - offsetof(struct dirent, d_name)))];
+                                        - offsetof(struct dirent, d_name)))];
     } de;
     struct dirent *ent;
     glfs_fd_t *dir = NULL;

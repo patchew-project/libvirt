@@ -1537,7 +1537,7 @@ virStorageBackendDetectBlockVolFormatFD(virStorageSourcePtr target,
         if (disk_types[i].offset + disk_types[i].length > bytes)
             continue;
         if (memcmp(buffer+disk_types[i].offset, &disk_types[i].magic,
-            disk_types[i].length) == 0) {
+                   disk_types[i].length) == 0) {
             target->format = disk_types[i].part_table_type;
             break;
         }
@@ -3760,13 +3760,11 @@ virStorageBackendSCSISerial(const char *dev)
 {
     char *serial = NULL;
 #ifdef WITH_UDEV
-    virCommandPtr cmd = virCommandNewArgList(
-        "/lib/udev/scsi_id",
-        "--replace-whitespace",
-        "--whitelisted",
-        "--device", dev,
-        NULL
-        );
+    virCommandPtr cmd = virCommandNewArgList("/lib/udev/scsi_id",
+                                             "--replace-whitespace",
+                                             "--whitelisted",
+                                             "--device", dev,
+                                             NULL);
 
     /* Run the program and capture its output */
     virCommandSetOutputBuffer(cmd, &serial);
@@ -4156,7 +4154,7 @@ processLU(virStoragePoolObjPtr pool,
 
 int
 virStorageBackendSCSIFindLUs(virStoragePoolObjPtr pool,
-                              uint32_t scanhost)
+                             uint32_t scanhost)
 {
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
     int retval = 0;

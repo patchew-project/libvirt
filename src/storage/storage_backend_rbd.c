@@ -136,7 +136,7 @@ virStorageBackendRBDOpenRADOSConn(virStorageBackendRBDStatePtr ptr,
             virBufferAsprintf(&mon_host, "%s,",
                               source->hosts[i].name);
         } else if (source->hosts[i].name != NULL &&
-            source->hosts[i].port) {
+                   source->hosts[i].port) {
             virBufferAsprintf(&mon_host, "%s:%d,",
                               source->hosts[i].name,
                               source->hosts[i].port);
@@ -281,7 +281,7 @@ volStorageBackendRBDGetFeatures(rbd_image_t image,
 
     if ((r = rbd_get_features(image, features)) < 0) {
         virReportSystemError(-r, _("failed to get the features of RBD image "
-                                 "%s"), volname);
+                                   "%s"), volname);
         goto cleanup;
     }
     ret = 0;
@@ -397,7 +397,7 @@ volStorageBackendRBDRefreshVolInfo(virStorageVolDefPtr vol,
     }
 
     VIR_DEBUG("Refreshed RBD image %s/%s (capacity: %llu allocation: %llu "
-                      "obj_size: %"PRIu64" num_objs: %"PRIu64")",
+              "obj_size: %"PRIu64" num_objs: %"PRIu64")",
               def->source.name, vol->name, vol->target.capacity,
               vol->target.allocation, info.obj_size, info.num_objs);
 
@@ -895,7 +895,7 @@ virStorageBackendRBDSnapshotCreate(rbd_image_t image,
 
     if ((r = rbd_snap_create(image, snapname)) < 0) {
         virReportSystemError(-r, _("failed to create RBD snapshot %s@%s"),
-                                   imgname, snapname);
+                             imgname, snapname);
         goto cleanup;
     }
 
@@ -928,7 +928,7 @@ virStorageBackendRBDSnapshotProtect(rbd_image_t image,
 
         if ((r = rbd_snap_protect(image, snapname)) < 0) {
             virReportSystemError(-r, _("failed to protect RBD snapshot %s@%s"),
-                                       imgname, snapname);
+                                 imgname, snapname);
             goto cleanup;
         }
     } else {
@@ -1140,7 +1140,7 @@ virStorageBackendRBDVolWipeZero(rbd_image_t image,
         if ((r = rbd_write(image, offset, length, writebuf)) < 0) {
             virReportSystemError(-r, _("writing %llu bytes failed on "
                                        "RBD image %s at offset %llu"),
-                                       length, imgname, offset);
+                                 length, imgname, offset);
             goto cleanup;
         }
 
@@ -1177,7 +1177,7 @@ virStorageBackendRBDVolWipeDiscard(rbd_image_t image,
         if ((r = rbd_discard(image, offset, length)) < 0) {
             virReportSystemError(-r, _("discarding %llu bytes failed on "
                                        "RBD image %s at offset %llu"),
-                                     length, imgname, offset);
+                                 length, imgname, offset);
             goto cleanup;
         }
 

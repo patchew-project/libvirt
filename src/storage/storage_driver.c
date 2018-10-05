@@ -273,9 +273,9 @@ storageStateInitialize(bool privileged,
             goto error;
 
         if ((virAsprintf(&driver->configDir,
-                        "%s/storage", configdir) < 0) ||
+                         "%s/storage", configdir) < 0) ||
             (virAsprintf(&driver->autostartDir,
-                        "%s/storage/autostart", configdir) < 0) ||
+                         "%s/storage/autostart", configdir) < 0) ||
             (virAsprintf(&driver->stateDir,
                          "%s/storage/run", rundir) < 0))
             goto error;
@@ -586,7 +586,7 @@ storageConnectNumOfDefinedStoragePools(virConnectPtr conn)
         return -1;
 
     return virStoragePoolObjNumOfStoragePools(driver->pools, conn, false,
-                                               virConnectNumOfDefinedStoragePoolsCheckACL);
+                                              virConnectNumOfDefinedStoragePoolsCheckACL);
 }
 
 
