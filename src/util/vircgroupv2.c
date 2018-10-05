@@ -503,6 +503,32 @@ virCgroupV2BindMount(virCgroupPtr group,
 }
 
 
+static int
+virCgroupV2SetOwner(virCgroupPtr cgroup,
+                    uid_t uid,
+                    gid_t gid,
+                    int controllers ATTRIBUTE_UNUSED)
+{
+    VIR_AUTOFREE(char *) base = NULL;
+
+    if (virAsprintf(&base, "%s%s", cgroup->unified.mountPoint,
+                    cgroup->unified.placement) < 0) {
+        return -1;
+    }
+
+    if (virFileChownFiles(base, uid, gid) < 0)
+        return -1;
+
+    if (chown(base, uid, gid) < 0) {
+        virReportSystemError(errno, _("cannot chown '%s' to (%u, %u)"),
+                             base, uid, gid);
+        return -1;
+    }
+
+    return 0;
+}
+
+
 virCgroupBackend virCgroupV2Backend = {
     .type = VIR_CGROUP_BACKEND_TYPE_V2,
 
@@ -523,6 +549,7 @@ virCgroupBackend virCgroupV2Backend = {
     .addTask = virCgroupV2AddTask,
     .hasEmptyTasks = virCgroupV2HasEmptyTasks,
     .bindMount = virCgroupV2BindMount,
+    .setOwner = virCgroupV2SetOwner,
 };
 
 
