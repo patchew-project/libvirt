@@ -3478,9 +3478,9 @@ networkValidate(virNetworkDriverStatePtr driver,
             if (ipdef->nranges || ipdef->nhosts) {
                 if (ipv4def) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("Multiple IPv4 dhcp sections found -- "
-                                 "dhcp is supported only for a "
-                                 "single IPv4 address on each network"));
+                                   _("Multiple IPv4 dhcp sections found -- "
+                                     "dhcp is supported only for a "
+                                     "single IPv4 address on each network"));
                     return -1;
                 } else {
                     ipv4def = true;
@@ -3491,9 +3491,9 @@ networkValidate(virNetworkDriverStatePtr driver,
             if (ipdef->nranges || ipdef->nhosts) {
                 if (ipv6def) {
                     virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("Multiple IPv6 dhcp sections found -- "
-                                 "dhcp is supported only for a "
-                                 "single IPv6 address on each network"));
+                                   _("Multiple IPv6 dhcp sections found -- "
+                                     "dhcp is supported only for a "
+                                     "single IPv6 address on each network"));
                     return -1;
                 } else {
                     ipv6def = true;
@@ -4321,7 +4321,7 @@ networkGetDHCPLeases(virNetworkPtr net,
                     break;
                 }
                 if (!ipv6 && VIR_SOCKET_ADDR_IS_FAMILY(&ipdef_tmp->address,
-                                                      AF_INET)) {
+                                                       AF_INET)) {
                     lease->prefix = virSocketAddrGetIPPrefix(&ipdef_tmp->address,
                                                              &ipdef_tmp->netmask,
                                                              ipdef_tmp->prefix);
@@ -5740,12 +5740,11 @@ networkRegister(void)
     if (virRegisterStateDriver(&networkStateDriver) < 0)
         return -1;
 
-    virDomainNetSetDeviceImpl(
-        networkAllocateActualDevice,
-        networkNotifyActualDevice,
-        networkReleaseActualDevice,
-        networkBandwidthChangeAllowed,
-        networkBandwidthUpdate);
+    virDomainNetSetDeviceImpl(networkAllocateActualDevice,
+                              networkNotifyActualDevice,
+                              networkReleaseActualDevice,
+                              networkBandwidthChangeAllowed,
+                              networkBandwidthUpdate);
 
     return 0;
 }
