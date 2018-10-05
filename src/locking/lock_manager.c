@@ -44,8 +44,8 @@ VIR_LOG_INIT("locking.lock_manager");
 #define CHECK_DRIVER(field, errret) \
     if (!driver->field) { \
         virReportError(VIR_ERR_INTERNAL_ERROR, \
-                     _("Missing '%s' field in lock manager driver"), \
-                     #field); \
+                       _("Missing '%s' field in lock manager driver"), \
+                       #field); \
         return errret; \
     }
 
