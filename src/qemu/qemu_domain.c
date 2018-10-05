@@ -6364,9 +6364,7 @@ qemuDomainDeviceDiskDefPostParse(virDomainDiskDefPtr disk,
         return -1;
 
     /* default disk format for drives */
-    if (virDomainDiskGetFormat(disk) == VIR_STORAGE_FILE_NONE &&
-        (virDomainDiskGetType(disk) == VIR_STORAGE_TYPE_FILE ||
-         virDomainDiskGetType(disk) == VIR_STORAGE_TYPE_BLOCK))
+    if (virDomainDiskGetFormat(disk) == VIR_STORAGE_FILE_NONE)
         virDomainDiskSetFormat(disk, VIR_STORAGE_FILE_RAW);
 
     /* default disk format for mirrored drive */
