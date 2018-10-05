@@ -275,10 +275,10 @@ sub CheckMisalignment {
             my $pos = $$paren_stack[-1][0];
             my $linenum = $$paren_stack[-1][1];
             my $code = $$paren_stack[-1][2];
-            if ($pos + 1 != length($`)) {
+            if ($pos != length($`)) {
                 my $pad = "";
                 if ($. > $linenum + 1) {
-                    $pad = " " x $pos . " ...\n";
+                    $pad = " " x $pos . "...\n";
                 }
                 print "Misaligned line in parenthesis:\n";
                 print "$$file:$linenum-$.:\n$code$pad$$line\n";
@@ -291,6 +291,7 @@ sub CheckMisalignment {
     if ($$data =~ /.*[()]/) {
         my $pos = 0;
         my $temp = $$data;
+        $temp =~ s/\s+$//;
 
         # Kill the content between matched parenthesis and themselves
         # within the current line.
@@ -310,9 +311,20 @@ sub CheckMisalignment {
         }
 
         # Push the item for open-paren on @paren_stack
-        # @item = [ position of the open-paren, linenum, code-line ]
+        # @item = [ correct-indent, linenum, code-line ]
         while (($pos = index($temp, "\(", $pos)) >= 0) {
-            push @$paren_stack, [$pos, $., $$line];
+            if ($pos+1 == length($temp)) {
+                my $recent = rindex($temp, "\(", $pos-1) + 1;
+                my $correct = rindex($temp, " ", $pos-1) + 1;
+                $correct = ($correct >= $recent) ? $correct : $recent;
+                $correct += 4 - ($correct % 4);
+                if ($correct < $pos) {
+                    push @$paren_stack, [$correct, $., $$line];
+                    last;
+                }
+            }
+
+            push @$paren_stack, [$pos+1, $., $$line];
             $pos++;
         }
     }
@@ -370,7 +382,7 @@ foreach my $file (@ARGV) {
         # We _need_ fix these misalignment in batches.
         # We _should_ remove it as soon as fixing all.
         #####################################################################
-        next unless $file =~ /^src\/util\//;
+        next unless $file =~ /^src\/(?!esx|qemu|hyperv|lxc|conf|libxl|vbox|test|security)/;
 
         $ret = 1 if CheckMisalignment(\$data, \$file, \$line, \@paren_stack);
     }
