@@ -326,8 +326,8 @@ remoteDomainBuildEventCallbackBalloonChange(virNetClientProgramPtr prog,
 
 static void
 remoteDomainBuildEventPMSuspendDisk(virNetClientProgramPtr prog,
-                                  virNetClientPtr client,
-                                  void *evdata, void *opaque);
+                                    virNetClientPtr client,
+                                    void *evdata, void *opaque);
 static void
 remoteDomainBuildEventCallbackPMSuspendDisk(virNetClientProgramPtr prog,
                                             virNetClientPtr client,
@@ -914,7 +914,7 @@ doRemoteOpen(virConnectPtr conn,
             }
 
             VIR_DEBUG("passing through variable '%s' ('%s') to remote end",
-                       var->name, var->value);
+                      var->name, var->value);
         }
 
         /* Construct the original name. */
@@ -1197,8 +1197,8 @@ doRemoteOpen(virConnectPtr conn,
         goto failed;
 
     if (virNetClientKeepAliveIsSupported(priv->client)) {
-        priv->serverKeepAlive = remoteConnectSupportsFeatureUnlocked(conn,
-                                    priv, VIR_DRV_FEATURE_PROGRAM_KEEPALIVE);
+        priv->serverKeepAlive = remoteConnectSupportsFeatureUnlocked(
+                                    conn, priv, VIR_DRV_FEATURE_PROGRAM_KEEPALIVE);
         if (!priv->serverKeepAlive) {
             VIR_INFO("Disabling keepalive protocol since it is not supported"
                      " by the server");
@@ -1239,15 +1239,16 @@ doRemoteOpen(virConnectPtr conn,
     if (!(priv->eventState = virObjectEventStateNew()))
         goto failed;
 
-    priv->serverEventFilter = remoteConnectSupportsFeatureUnlocked(conn,
-                                priv, VIR_DRV_FEATURE_REMOTE_EVENT_CALLBACK);
+    priv->serverEventFilter = remoteConnectSupportsFeatureUnlocked(
+                                conn, priv, VIR_DRV_FEATURE_REMOTE_EVENT_CALLBACK);
     if (!priv->serverEventFilter) {
         VIR_INFO("Avoiding server event filtering since it is not "
                  "supported by the server");
     }
 
-    priv->serverCloseCallback = remoteConnectSupportsFeatureUnlocked(conn,
-                                    priv, VIR_DRV_FEATURE_REMOTE_CLOSE_CALLBACK);
+    priv->serverCloseCallback = remoteConnectSupportsFeatureUnlocked(
+                                    conn, priv,
+                                    VIR_DRV_FEATURE_REMOTE_CLOSE_CALLBACK);
     if (!priv->serverCloseCallback) {
         VIR_INFO("Close callback registering isn't supported "
                  "by the remote side.");
@@ -2913,9 +2914,9 @@ static int remoteDomainGetBlockJobInfo(virDomainPtr domain,
 
     if (call(domain->conn, priv, 0, REMOTE_PROC_DOMAIN_GET_BLOCK_JOB_INFO,
              (xdrproc_t)xdr_remote_domain_get_block_job_info_args,
-               (char *)&args,
+             (char *)&args,
              (xdrproc_t)xdr_remote_domain_get_block_job_info_ret,
-               (char *)&ret) == -1)
+             (char *)&ret) == -1)
         goto done;
 
     if (ret.found) {
@@ -2956,9 +2957,9 @@ static int remoteDomainGetBlockIoTune(virDomainPtr domain,
 
     if (call(domain->conn, priv, 0, REMOTE_PROC_DOMAIN_GET_BLOCK_IO_TUNE,
              (xdrproc_t) xdr_remote_domain_get_block_io_tune_args,
-               (char *) &args,
+             (char *) &args,
              (xdrproc_t) xdr_remote_domain_get_block_io_tune_ret,
-               (char *) &ret) == -1) {
+             (char *) &ret) == -1) {
         goto done;
     }
 
@@ -3426,7 +3427,7 @@ remoteConnectSecretEventRegisterAny(virConnectPtr conn,
 
 static int
 remoteConnectSecretEventDeregisterAny(virConnectPtr conn,
-                                          int callbackID)
+                                      int callbackID)
 {
     struct private_data *priv = conn->privateData;
     int rv = -1;
@@ -8239,7 +8240,7 @@ make_nonnull_network(remote_nonnull_network *net_dst, virNetworkPtr net_src)
 
 static void
 make_nonnull_interface(remote_nonnull_interface *interface_dst,
-                        virInterfacePtr interface_src)
+                       virInterfacePtr interface_src)
 {
     interface_dst->name = interface_src->name;
     interface_dst->mac = interface_src->mac;

@@ -549,7 +549,7 @@ daemonSetupNetworking(virNetServerPtr srv,
         (ipsock && config->listen_tls && config->auth_tls == REMOTE_AUTH_SASL) ||
         (ipsock && config->listen_tcp && config->auth_tcp == REMOTE_AUTH_SASL)) {
         saslCtxt = virNetSASLContextNewServer(
-            (const char *const*)config->sasl_allowed_username_list);
+                    (const char *const*)config->sasl_allowed_username_list);
         if (!saslCtxt)
             goto cleanup;
     }

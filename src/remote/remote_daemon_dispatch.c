@@ -6004,10 +6004,10 @@ remoteDispatchConnectStoragePoolEventRegisterAny(virNetServerPtr server ATTRIBUT
 
 static int
 remoteDispatchConnectStoragePoolEventDeregisterAny(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                               virNetServerClientPtr client,
-                                               virNetMessagePtr msg ATTRIBUTE_UNUSED,
-                                               virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
-                                               remote_connect_storage_pool_event_deregister_any_args *args)
+                                                   virNetServerClientPtr client,
+                                                   virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                                   virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
+                                                   remote_connect_storage_pool_event_deregister_any_args *args)
 {
     int rv = -1;
     size_t i;
@@ -6246,10 +6246,10 @@ remoteDispatchConnectSecretEventRegisterAny(virNetServerPtr server ATTRIBUTE_UNU
 
 static int
 remoteDispatchConnectSecretEventDeregisterAny(virNetServerPtr server ATTRIBUTE_UNUSED,
-                                                  virNetServerClientPtr client,
-                                                  virNetMessagePtr msg ATTRIBUTE_UNUSED,
-                                                  virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
-                                                  remote_connect_secret_event_deregister_any_args *args)
+                                              virNetServerClientPtr client,
+                                              virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                              virNetMessageErrorPtr rerr ATTRIBUTE_UNUSED,
+                                              remote_connect_secret_event_deregister_any_args *args)
 {
     int rv = -1;
     size_t i;
