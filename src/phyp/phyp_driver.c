@@ -1792,9 +1792,8 @@ phypDomainAttachDevice(virDomainPtr domain, const char *xml)
     ret = phypExecBuffer(session, &buf, &exit_status, conn, false);
 
     if (exit_status < 0 || ret == NULL) {
-        VIR_ERROR(_
-                   ("Possibly you don't have IBM Tools installed in your LPAR."
-                    "Contact your support to enable this feature."));
+        VIR_ERROR(_("Possibly you don't have IBM Tools installed in your LPAR."
+                    " Contact your support to enable this feature."));
         goto cleanup;
     }
 
@@ -2825,9 +2824,8 @@ phypInterfaceDefineXML(virConnectPtr conn, const char *xml,
         if (system_type == HMC)
             virBufferAsprintf(&buf, "-m %s ", managed_system);
 
-        virBufferAsprintf(&buf,
-                " -r virtualio --rsubtype eth"
-                " -p %s -o r -s %d", def->name, slot);
+        virBufferAsprintf(&buf, " -r virtualio --rsubtype eth -p %s -o r -s %d",
+                          def->name, slot);
         VIR_FREE(ret);
         ret = phypExecBuffer(session, &buf, &exit_status, conn, false);
         goto cleanup;
@@ -3127,8 +3125,9 @@ phypConnectListDefinedDomains(virConnectPtr conn, char **const names, int nnames
     virBufferAddLit(&buf, "lssyscfg -r lpar");
     if (system_type == HMC)
         virBufferAsprintf(&buf, " -m %s", managed_system);
-    virBufferAddLit(&buf, " -F name,state"
-                      "|sed -n '/Not Activated/ {\n s/,.*$//\n p\n}'");
+    virBufferAddLit(&buf,
+                    " -F name,state"
+                    "|sed -n '/Not Activated/ {\n s/,.*$//\n p\n}'");
     ret = phypExecBuffer(session, &buf, &exit_status, conn, false);
 
     /* I need to parse the textual return in order to get the domains */
@@ -3605,7 +3604,7 @@ phypDomainSetVcpusFlags(virDomainPtr dom, unsigned int nvcpus,
 
     if (nvcpus > phypDomainGetMaxVcpus(dom)) {
         VIR_ERROR(_("You are trying to set a number of CPUs bigger than "
-                     "the max possible."));
+                    "the max possible."));
         return 0;
     }
 
@@ -3628,8 +3627,7 @@ phypDomainSetVcpusFlags(virDomainPtr dom, unsigned int nvcpus,
     ret = phypExecBuffer(session, &buf, &exit_status, dom->conn, false);
 
     if (exit_status < 0) {
-        VIR_ERROR(_
-                   ("Possibly you don't have IBM Tools installed in your LPAR."
+        VIR_ERROR(_("Possibly you don't have IBM Tools installed in your LPAR."
                     " Contact your support to enable this feature."));
     }
 
