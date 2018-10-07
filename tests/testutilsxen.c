@@ -17,7 +17,8 @@ testXLInitCaps(void)
         "xenfv"
     };
     static const char *const xen_machines[] = {
-        "xenpv"
+        "xenpv",
+        "xenpvh"
     };
 
     if ((caps = virCapabilitiesNew(virArchFromHost(),

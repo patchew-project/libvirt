@@ -1287,6 +1287,11 @@ xenFormatXLOS(virConfPtr conf, virDomainDefPtr def)
 
         /* XXX floppy disks */
     } else {
+        if (STREQ(def->os.machine, "xenpvh")) {
+            if (xenConfigSetString(conf, "type", "pvh") < 0)
+                return -1;
+        }
+
         if (def->os.bootloader &&
              xenConfigSetString(conf, "bootloader", def->os.bootloader) < 0)
             return -1;
