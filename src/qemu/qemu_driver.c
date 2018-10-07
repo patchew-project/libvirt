@@ -5486,20 +5486,18 @@ qemuDomainGetMaxVcpus(virDomainPtr dom)
                                          VIR_DOMAIN_VCPU_MAXIMUM));
 }
 
+
 static int
-qemuDomainGetIOThreadsLive(virQEMUDriverPtr driver,
-                           virDomainObjPtr vm,
-                           virDomainIOThreadInfoPtr **info)
+qemuDomainGetIOThreadsMon(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm,
+                          qemuMonitorIOThreadInfoPtr **iothreads)
 {
     qemuDomainObjPrivatePtr priv;
-    qemuMonitorIOThreadInfoPtr *iothreads = NULL;
-    virDomainIOThreadInfoPtr *info_ret = NULL;
     int niothreads = 0;
-    size_t i;
     int ret = -1;
 
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
-        goto cleanup;
+        return -1;
 
     if (!virDomainObjIsActive(vm)) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
@@ -5515,45 +5513,56 @@ qemuDomainGetIOThreadsLive(virQEMUDriverPtr driver,
     }
 
     qemuDomainObjEnterMonitor(driver, vm);
-    niothreads = qemuMonitorGetIOThreads(priv->mon, &iothreads);
-    if (qemuDomainObjExitMonitor(driver, vm) < 0)
-        goto endjob;
-    if (niothreads < 0)
+    niothreads = qemuMonitorGetIOThreads(priv->mon, iothreads);
+    if (qemuDomainObjExitMonitor(driver, vm) < 0 || niothreads < 0)
         goto endjob;
 
-    /* Nothing to do */
-    if (niothreads == 0) {
-        ret = 0;
-        goto endjob;
-    }
+    ret = niothreads;
+
+ endjob:
+    qemuDomainObjEndJob(driver, vm);
+
+    return ret;
+}
+
+
+static int
+qemuDomainGetIOThreadsLive(virQEMUDriverPtr driver,
+                           virDomainObjPtr vm,
+                           virDomainIOThreadInfoPtr **info)
+{
+    qemuMonitorIOThreadInfoPtr *iothreads = NULL;
+    virDomainIOThreadInfoPtr *info_ret = NULL;
+    int niothreads;
+    size_t i;
+    int ret = -1;
+
+    if ((niothreads = qemuDomainGetIOThreadsMon(driver, vm, &iothreads)) <= 0)
+        return niothreads;
 
     if (VIR_ALLOC_N(info_ret, niothreads) < 0)
-        goto endjob;
+        goto cleanup;
 
     for (i = 0; i < niothreads; i++) {
         virBitmapPtr map = NULL;
 
         if (VIR_ALLOC(info_ret[i]) < 0)
-            goto endjob;
+            goto cleanup;
         info_ret[i]->iothread_id = iothreads[i]->iothread_id;
 
         if (!(map = virProcessGetAffinity(iothreads[i]->thread_id)))
-            goto endjob;
+            goto cleanup;
 
         if (virBitmapToData(map, &info_ret[i]->cpumap,
                             &info_ret[i]->cpumaplen) < 0) {
             virBitmapFree(map);
-            goto endjob;
+            goto cleanup;
         }
         virBitmapFree(map);
     }
 
-    *info = info_ret;
-    info_ret = NULL;
+    VIR_STEAL_PTR(*info, info_ret);
     ret = niothreads;
-
- endjob:
-    qemuDomainObjEndJob(driver, vm);
 
  cleanup:
     if (info_ret) {
