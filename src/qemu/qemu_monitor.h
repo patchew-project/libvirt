@@ -1123,6 +1123,8 @@ struct _qemuMonitorIOThreadInfo {
 };
 int qemuMonitorGetIOThreads(qemuMonitorPtr mon,
                             qemuMonitorIOThreadInfoPtr **iothreads);
+int qemuMonitorSetIOThread(qemuMonitorPtr mon,
+                           qemuMonitorIOThreadInfoPtr iothreadInfo);
 
 typedef struct _qemuMonitorMemoryDeviceInfo qemuMonitorMemoryDeviceInfo;
 typedef qemuMonitorMemoryDeviceInfo *qemuMonitorMemoryDeviceInfoPtr;
