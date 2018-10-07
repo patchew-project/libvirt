@@ -19094,7 +19094,8 @@ virDomainDefParseCaps(virDomainDefPtr def,
      * be 'xen'. So we accept the former and convert
      */
     if (def->os.type == VIR_DOMAIN_OSTYPE_LINUX &&
-        def->virtType == VIR_DOMAIN_VIRT_XEN) {
+        def->virtType == VIR_DOMAIN_VIRT_XEN &&
+        (!def->os.machine || STREQ(def->os.machine, "xenpv"))) {
         def->os.type = VIR_DOMAIN_OSTYPE_XEN;
     }
 
@@ -27705,7 +27706,8 @@ virDomainDefFormatInternal(virDomainDefPtr def,
      * be 'xen'. So we convert to the former for backcompat
      */
     if (def->virtType == VIR_DOMAIN_VIRT_XEN &&
-        def->os.type == VIR_DOMAIN_OSTYPE_XEN)
+        def->os.type == VIR_DOMAIN_OSTYPE_XEN &&
+        (!def->os.machine || STREQ(def->os.machine, "xenpv")))
         virBufferAsprintf(buf, ">%s</type>\n",
                           virDomainOSTypeToString(VIR_DOMAIN_OSTYPE_LINUX));
     else
