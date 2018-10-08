@@ -290,9 +290,12 @@ qemuProcessHandleMonitorEOF(qemuMonitorPtr mon,
 
     virObjectLock(vm);
 
+    priv = vm->privateData;
+    priv->monEOF = true;
+    virDomainObjBroadcast(vm);
+
     VIR_DEBUG("Received EOF on %p '%s'", vm, vm->def->name);
 
-    priv = vm->privateData;
     if (priv->beingDestroyed) {
         VIR_DEBUG("Domain is being destroyed, EOF is expected");
         goto cleanup;
@@ -5993,6 +5996,7 @@ qemuProcessPrepareDomain(virQEMUDriverPtr driver,
 
     priv->monJSON = true;
     priv->monError = false;
+    priv->monEOF = false;
     priv->monStart = 0;
     priv->gotShutdown = false;
     priv->runningReason = VIR_DOMAIN_RUNNING_UNKNOWN;
@@ -6961,9 +6965,6 @@ qemuProcessBeginStopJob(virQEMUDriverPtr driver,
 
     if (qemuProcessKill(vm, killFlags) < 0)
         goto cleanup;
-
-    /* Wake up anything waiting on domain condition */
-    virDomainObjBroadcast(vm);
 
     if (qemuDomainObjBeginJob(driver, vm, job) < 0)
         goto cleanup;

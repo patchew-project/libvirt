@@ -165,7 +165,7 @@ qemuHotplugWaitForTrayEject(virDomainObjPtr vm,
         return -1;
 
     while (disk->tray_status != VIR_DOMAIN_DISK_TRAY_OPEN) {
-        if ((rc = virDomainObjWaitUntil(vm, now + CHANGE_MEDIA_TIMEOUT)) < 0)
+        if ((rc = qemuDomainObjWait(vm, now + CHANGE_MEDIA_TIMEOUT)) < 0)
             return -1;
 
         if (rc > 0) {
@@ -5002,7 +5002,7 @@ qemuDomainWaitForDeviceRemoval(virDomainObjPtr vm)
     until += qemuDomainRemoveDeviceWaitTime;
 
     while (priv->unplug.alias) {
-        if ((rc = virDomainObjWaitUntil(vm, until)) == 1)
+        if ((rc = qemuDomainObjWait(vm, until)) == 1)
             return 0;
 
         if (rc < 0) {

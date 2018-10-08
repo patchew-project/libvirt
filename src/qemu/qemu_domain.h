@@ -281,6 +281,7 @@ struct _qemuDomainObjPrivate {
     virDomainChrSourceDefPtr monConfig;
     bool monJSON;
     bool monError;
+    bool monEOF;
     unsigned long long monStart;
 
     qemuAgentPtr agent;
@@ -1088,5 +1089,8 @@ void qemuDomainStorageIdReset(qemuDomainObjPrivatePtr priv);
 
 virDomainEventResumedDetailType
 qemuDomainRunningReasonToResumeEvent(virDomainRunningReason reason);
+
+int
+qemuDomainObjWait(virDomainObjPtr vm, unsigned long long until);
 
 #endif /* __QEMU_DOMAIN_H__ */
