@@ -3466,7 +3466,7 @@ int virFilePrintf(FILE *fp, const char *msg, ...)
 
 static int
 virFileIsSharedFixFUSE(const char *path,
-                       long *f_type)
+                       unsigned int *f_type)
 {
     char *dirpath = NULL;
     const char **mounts = NULL;
@@ -3575,7 +3575,7 @@ virFileIsSharedFSType(const char *path,
 
     if (sb.f_type == FUSE_SUPER_MAGIC) {
         VIR_DEBUG("Found FUSE mount for path=%s. Trying to fix it", path);
-        virFileIsSharedFixFUSE(path, (long *) &sb.f_type);
+        virFileIsSharedFixFUSE(path, &sb.f_type);
     }
 
     VIR_DEBUG("Check if path %s with FS magic %lld is shared",
