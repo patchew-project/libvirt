@@ -7988,15 +7988,12 @@ qemuProcessReconnect(void *opaque)
         /* We can't get the monitor back, so must kill the VM
          * to remove danger of it ending up running twice if
          * user tries to start it again later
-         * If we couldn't get the monitor since QEMU supports
-         * no-shutdown, we can safely say that the domain
-         * crashed ... */
-        state = VIR_DOMAIN_SHUTOFF_CRASHED;
-        /* If BeginJob failed, we jumped here without a job, let's hope another
+         * If BeginJob failed, we jumped here without a job, let's hope another
          * thread didn't have a chance to start playing with the domain yet
          * (it's all we can do anyway).
          */
-        qemuProcessStop(driver, obj, state, QEMU_ASYNC_JOB_NONE, stopFlags);
+        qemuProcessStop(driver, obj, VIR_DOMAIN_SHUTOFF_DAEMON,
+                        QEMU_ASYNC_JOB_NONE, stopFlags);
     }
     goto cleanup;
 }
@@ -8035,7 +8032,7 @@ qemuProcessReconnectHelper(virDomainObjPtr obj,
          * is no thread that could be doing anything else with the same domain
          * object.
          */
-        qemuProcessStop(src->driver, obj, VIR_DOMAIN_SHUTOFF_FAILED,
+        qemuProcessStop(src->driver, obj, VIR_DOMAIN_SHUTOFF_DAEMON,
                         QEMU_ASYNC_JOB_NONE, 0);
         qemuDomainRemoveInactiveJobLocked(src->driver, obj);
 
