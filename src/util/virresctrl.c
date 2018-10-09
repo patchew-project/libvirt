@@ -2475,6 +2475,7 @@ virResctrlMonitorAddPID(virResctrlMonitorPtr monitor,
     return virResctrlAddPID(monitor->path, pid);
 }
 
+
 int
 virResctrlMonitorDeterminePath(virResctrlMonitorPtr monitor,
                                const char *machinename)
@@ -2505,4 +2506,31 @@ virResctrlMonitorDeterminePath(virResctrlMonitorPtr monitor,
         return -1;
 
     return 0;
+}
+
+
+int
+virResctrlMonitorCreate(virResctrlAllocPtr alloc,
+                        virResctrlMonitorPtr monitor,
+                        const char *machinename)
+{
+    int lockfd = -1;
+    int ret = -1;
+
+    if (!monitor)
+        return 0;
+
+    monitor->alloc = virObjectRef(alloc);
+
+    if (virResctrlMonitorDeterminePath(monitor, machinename) < 0)
+        return -1;
+
+    lockfd = virResctrlLockWrite();
+    if (lockfd < 0)
+        return -1;
+
+    ret = virResctrlCreateGroupPath(monitor->path);
+
+    virResctrlUnlock(lockfd);
+    return ret;
 }
