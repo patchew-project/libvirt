@@ -228,4 +228,6 @@ virResctrlMonitorGetCacheOccupancy(virResctrlMonitorPtr monitor,
                                    size_t *nbank,
                                    unsigned int **bankids,
                                    unsigned int **bankcaches);
+void
+virResctrlMonitorSetDefault(virResctrlMonitorPtr monitor);
 #endif /*  __VIR_RESCTRL_H__ */

@@ -340,6 +340,13 @@ struct _virResctrlAlloc {
  * bandwidth technology (MBM), as well as the CAT and MBA, are all orthogonal
  * features. The monitor will be created under the scope of default allocation
  * if no CAT or MBA supported in the system.
+ *
+ * In resctrl file sytem, more than one monitoring groups could be created
+ * within one allocation group, along with the creation of allocation group,
+ * a monitoring group is created at the same, which monitors the resource
+ * utilization information of whole allocation group.
+ * A virResctrlMonitor with @default_monitor marked as 'true' is representing
+ * the monitoring group created along with the creation of allocation group.
  */
 struct _virResctrlMonitor {
     virObject parent;
@@ -355,6 +362,8 @@ struct _virResctrlMonitor {
     /* libvirt-generated path in /sys/fs/resctrl for this particular
      * monitor */
     char *path;
+    /* Boolean flag for default monitor */
+    bool default_monitor;
     /* The cache 'level', special for cache monitor */
     unsigned int cache_level;
 };
@@ -2499,6 +2508,13 @@ virResctrlMonitorDeterminePath(virResctrlMonitorPtr monitor,
         return -1;
     }
 
+    if (monitor->default_monitor) {
+        if (VIR_STRDUP(monitor->path, monitor->alloc->path) < 0)
+            return -1;
+
+        return 0;
+    }
+
     if (monitor->alloc)
         alloc_path = monitor->alloc->path;
     else
@@ -2738,4 +2754,11 @@ virResctrlMonitorGetCacheOccupancy(virResctrlMonitorPtr monitor,
 {
     return virResctrlMonitorGetStatistic(monitor, "llc_occupancy",
                                          nbank, bankids, bankcaches);
+}
+
+
+void
+virResctrlMonitorSetDefault(virResctrlMonitorPtr monitor)
+{
+    monitor->default_monitor = true;
 }
