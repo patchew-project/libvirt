@@ -2436,3 +2436,11 @@ virResctrlMonitorNew(void)
 
     return virObjectNew(virResctrlMonitorClass);
 }
+
+
+int
+virResctrlMonitorAddPID(virResctrlMonitorPtr monitor,
+                        pid_t pid)
+{
+    return virResctrlAddPID(monitor->path, pid);
+}
