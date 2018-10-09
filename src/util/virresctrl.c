@@ -2267,6 +2267,26 @@ virResctrlAllocAssign(virResctrlInfoPtr resctrl,
 }
 
 
+static char *
+virResctrlDeterminePath(const char *pathparent,
+                        const char *prefix,
+                        const char *id)
+{
+    char *path = NULL;
+
+    if (!id) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Resctrl resource ID must be set before creation"));
+        return NULL;
+    }
+
+    if (virAsprintf(&path, "%s/%s-%s", pathparent, prefix, id) < 0)
+        return NULL;
+
+    return path;
+}
+
+
 int
 virResctrlAllocDeterminePath(virResctrlAllocPtr alloc,
                              const char *machinename)
@@ -2274,15 +2294,16 @@ virResctrlAllocDeterminePath(virResctrlAllocPtr alloc,
     if (!alloc)
         return 0;
 
-    if (!alloc->id) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Resctrl Allocation ID must be set before creation"));
+    if (alloc->path) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("Resctrl group path is expected to be NULL"));
         return -1;
     }
 
-    if (!alloc->path &&
-        virAsprintf(&alloc->path, "%s/%s-%s",
-                    SYSFS_RESCTRL_PATH, machinename, alloc->id) < 0)
+    alloc->path = virResctrlDeterminePath(SYSFS_RESCTRL_PATH,
+                                          machinename,
+                                          alloc->id);
+    if (!alloc->path)
         return -1;
 
     return 0;
