@@ -364,6 +364,9 @@ struct _virResctrlMonitor {
     char *path;
     /* Boolean flag for default monitor */
     bool default_monitor;
+    /* Tracking the tasks' PID associated with this monitor */
+    pid_t *pids;
+    size_t npids;
     /* The cache 'level', special for cache monitor */
     unsigned int cache_level;
 };
@@ -425,6 +428,7 @@ virResctrlMonitorDispose(void *obj)
     virObjectUnref(monitor->alloc);
     VIR_FREE(monitor->id);
     VIR_FREE(monitor->path);
+    VIR_FREE(monitor->pids);
 }
 
 
@@ -2491,7 +2495,13 @@ int
 virResctrlMonitorAddPID(virResctrlMonitorPtr monitor,
                         pid_t pid)
 {
-    return virResctrlAddPID(monitor->path, pid);
+    if (virResctrlAddPID(monitor->path, pid) < 0)
+        return -1;
+
+    if (VIR_APPEND_ELEMENT(monitor->pids, monitor->npids, pid) < 0)
+        return -1;
+
+    return 0;
 }
 
 
@@ -2761,4 +2771,76 @@ void
 virResctrlMonitorSetDefault(virResctrlMonitorPtr monitor)
 {
     monitor->default_monitor = true;
+}
+
+
+static int
+virResctrlPIDCompare(const void *pida, const void *pidb)
+{
+    return *(pid_t*)pida - *(pid_t*)pidb;
+}
+
+
+bool
+virResctrlMonitorIsRunning(virResctrlMonitorPtr monitor)
+{
+    char *pidstr = NULL;
+    char **spids = NULL;
+    size_t nspids = 0;
+    pid_t *pids = NULL;
+    size_t npids = 0;
+    size_t i = 0;
+    int rv = -1;
+    bool ret = false;
+
+    if (!monitor->path)
+        return false;
+
+    if (monitor->npids == 0)
+        return false;
+
+    rv = virFileReadValueString(&pidstr, "%s/tasks", monitor->path);
+    if (rv == -2)
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Task file '%s/tasks' does not exist"),
+                       monitor->path);
+    if (rv < 0)
+        goto cleanup;
+
+    /* no PID in task file */
+    if (!*pidstr)
+        goto cleanup;
+
+    spids = virStringSplitCount(pidstr, "\n", 0, &nspids);
+    if (nspids != monitor->npids)
+        return false;
+
+    for (i = 0; i < nspids; i++) {
+        unsigned int val = 0;
+        pid_t pid = 0;
+
+        if (virStrToLong_uip(spids[i], NULL, 0, &val) < 0)
+            goto cleanup;
+
+        pid = (pid_t)val;
+
+        if (VIR_APPEND_ELEMENT(pids, npids, pid) < 0)
+            goto cleanup;
+    }
+
+    qsort(pids, npids, sizeof(pid_t), virResctrlPIDCompare);
+    qsort(monitor->pids, monitor->npids, sizeof(pid_t), virResctrlPIDCompare);
+
+    for (i = 0; i < monitor->npids; i++) {
+        if (monitor->pids[i] != pids[i])
+            goto cleanup;
+    }
+
+    ret = true;
+ cleanup:
+    virStringListFree(spids);
+    VIR_FREE(pids);
+    VIR_FREE(pidstr);
+
+    return ret;
 }

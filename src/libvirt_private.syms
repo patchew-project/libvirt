@@ -2686,6 +2686,7 @@ virResctrlMonitorDeterminePath;
 virResctrlMonitorGetCacheLevel;
 virResctrlMonitorGetCacheOccupancy;
 virResctrlMonitorGetID;
+virResctrlMonitorIsRunning;
 virResctrlMonitorNew;
 virResctrlMonitorRemove;
 virResctrlMonitorSetCacheLevel;
