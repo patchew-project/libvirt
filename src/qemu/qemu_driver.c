@@ -19711,30 +19711,29 @@ qemuDomainGetStatsCpu(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
     unsigned long long sys_time = 0;
     int err = 0;
 
-    if (!priv->cgroup)
-        return 0;
+    if (priv->cgroup) {
+        err = virCgroupGetCpuacctUsage(priv->cgroup, &cpu_time);
+        if (!err && virTypedParamsAddULLong(&record->params,
+                                            &record->nparams,
+                                            maxparams,
+                                            "cpu.time",
+                                            cpu_time) < 0)
+            return -1;
 
-    err = virCgroupGetCpuacctUsage(priv->cgroup, &cpu_time);
-    if (!err && virTypedParamsAddULLong(&record->params,
-                                        &record->nparams,
-                                        maxparams,
-                                        "cpu.time",
-                                        cpu_time) < 0)
-        return -1;
-
-    err = virCgroupGetCpuacctStat(priv->cgroup, &user_time, &sys_time);
-    if (!err && virTypedParamsAddULLong(&record->params,
-                                        &record->nparams,
-                                        maxparams,
-                                        "cpu.user",
-                                        user_time) < 0)
-        return -1;
-    if (!err && virTypedParamsAddULLong(&record->params,
-                                        &record->nparams,
-                                        maxparams,
-                                        "cpu.system",
-                                        sys_time) < 0)
-        return -1;
+        err = virCgroupGetCpuacctStat(priv->cgroup, &user_time, &sys_time);
+        if (!err && virTypedParamsAddULLong(&record->params,
+                                            &record->nparams,
+                                            maxparams,
+                                            "cpu.user",
+                                            user_time) < 0)
+            return -1;
+        if (!err && virTypedParamsAddULLong(&record->params,
+                                            &record->nparams,
+                                            maxparams,
+                                            "cpu.system",
+                                            sys_time) < 0)
+            return -1;
+    }
 
     return 0;
 }
