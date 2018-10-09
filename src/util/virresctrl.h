@@ -202,7 +202,30 @@ virResctrlMonitorDeterminePath(virResctrlMonitorPtr monitor,
                                const char *machinename);
 
 int
+virResctrlMonitorSetID(virResctrlMonitorPtr monitor,
+                       const char *id);
+
+const char *
+virResctrlMonitorGetID(virResctrlMonitorPtr monitor);
+
+int
 virResctrlMonitorCreate(virResctrlAllocPtr alloc,
                         virResctrlMonitorPtr monitor,
                         const char *machinename);
+
+int
+virResctrlMonitorRemove(virResctrlMonitorPtr monitor);
+
+int
+virResctrlMonitorSetCacheLevel(virResctrlMonitorPtr monitor,
+                               unsigned int level);
+
+unsigned int
+virResctrlMonitorGetCacheLevel(virResctrlMonitorPtr monitor);
+
+int
+virResctrlMonitorGetCacheOccupancy(virResctrlMonitorPtr monitor,
+                                   size_t *nbank,
+                                   unsigned int **bankids,
+                                   unsigned int **bankcaches);
 #endif /*  __VIR_RESCTRL_H__ */
