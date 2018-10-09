@@ -2955,13 +2955,30 @@ virDomainLoaderDefFree(virDomainLoaderDefPtr loader)
 
 
 static void
+virDomainResctrlMonDefFree(virDomainResctrlMonDefPtr domresmon)
+{
+    if (!domresmon)
+        return;
+
+    virBitmapFree(domresmon->vcpus);
+    virObjectUnref(domresmon->instance);
+}
+
+
+static void
 virDomainResctrlDefFree(virDomainResctrlDefPtr resctrl)
 {
+    size_t i = 0;
+
     if (!resctrl)
         return;
 
+    for (i = 0; i < resctrl->nmonitors; i++)
+        virDomainResctrlMonDefFree(resctrl->monitors[i]);
+
     virObjectUnref(resctrl->alloc);
     virBitmapFree(resctrl->vcpus);
+    VIR_FREE(resctrl->monitors);
     VIR_FREE(resctrl);
 }
 
@@ -18919,6 +18936,154 @@ virDomainCachetuneDefParseCache(xmlXPathContextPtr ctxt,
     return ret;
 }
 
+/* Checking if the monitor's vcpus is conflicted with existing allocation
+ * and monitors.
+ *
+ * Returns 1 if @vcpus equals to @resctrl->vcpus, means it is a default
+ * monitor. Returns - 1 if a conflict found. Returns 0 if no conflict and
+ * @vcpus is not equal to @resctrl->vcpus.
+ * */
+static int
+virDomainResctrlMonValidateVcpu(virDomainResctrlDefPtr resctrl,
+                                virBitmapPtr vcpus)
+{
+    size_t i = 0;
+    int vcpu = -1;
+
+    if (virBitmapIsAllClear(vcpus)) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s",
+                       _("vcpus is empty"));
+        return -1;
+    }
+
+    while ((vcpu = virBitmapNextSetBit(vcpus, vcpu)) >= 0) {
+        if (!virBitmapIsBitSet(resctrl->vcpus, vcpu)) {
+            virReportError(VIR_ERR_INVALID_ARG, "%s",
+                           _("Monitor vcpus conflicts with allocation"));
+            return -1;
+        }
+    }
+
+    if (resctrl->alloc && virBitmapEqual(vcpus, resctrl->vcpus))
+        return 1;
+
+    for (i = 0; i < resctrl->nmonitors; i++) {
+        if (virBitmapEqual(resctrl->vcpus, resctrl->monitors[i]->vcpus))
+            continue;
+
+        if (virBitmapOverlaps(vcpus, resctrl->monitors[i]->vcpus)) {
+            virReportError(VIR_ERR_INVALID_ARG, "%s",
+                           _("Monitor vcpus conflicts with monitors"));
+
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
+static int
+virDomainResctrlMonDefParse(virDomainDefPtr def,
+                            xmlXPathContextPtr ctxt,
+                            xmlNodePtr node,
+                            virResctrlMonitorType tag,
+                            virDomainResctrlDefPtr resctrl)
+{
+    virDomainResctrlMonDefPtr domresmon = NULL;
+    xmlNodePtr oldnode = ctxt->node;
+    xmlNodePtr *nodes = NULL;
+    unsigned int level = 0;
+    char * tmp = NULL;
+    char * id = NULL;
+    size_t i = 0;
+    int n = 0;
+    int rv = -1;
+    int ret = -1;
+
+    ctxt->node = node;
+
+    if ((n = virXPathNodeSet("./monitor", ctxt, &nodes)) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Cannot extract monitor nodes"));
+        goto cleanup;
+    }
+
+    for (i = 0; i < n; i++) {
+
+        if (VIR_ALLOC(domresmon) < 0)
+            goto cleanup;
+
+        domresmon->tag = tag;
+
+        domresmon->instance = virResctrlMonitorNew();
+        if (!domresmon->instance) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Could not create monitor"));
+            goto cleanup;
+        }
+
+        if (tag == VIR_RESCTRL_MONITOR_TYPE_CACHE) {
+            tmp = virXMLPropString(nodes[i], "level");
+            if (!tmp) {
+                virReportError(VIR_ERR_XML_ERROR, "%s",
+                               _("Missing monitor attribute 'level'"));
+                goto cleanup;
+            }
+
+            if (virStrToLong_uip(tmp, NULL, 10, &level) < 0) {
+                virReportError(VIR_ERR_XML_ERROR,
+                               _("Invalid monitor attribute 'level' value '%s'"),
+                               tmp);
+                goto cleanup;
+            }
+
+            if (virResctrlMonitorSetCacheLevel(domresmon->instance, level) < 0)
+                goto cleanup;
+
+            VIR_FREE(tmp);
+        }
+
+        if (virDomainResctrlParseVcpus(def, nodes[i], &domresmon->vcpus) < 0)
+            goto cleanup;
+
+        rv = virDomainResctrlMonValidateVcpu(resctrl, domresmon->vcpus);
+
+        /* If monitor's vcpu list is identical to allocation's vcpu list,
+         * set as default monitor */
+        if (rv == 1 && resctrl->alloc)
+            virResctrlMonitorSetDefault(domresmon->instance);
+        else if (rv < 0)
+            goto cleanup;
+
+        if (!(tmp = virBitmapFormat(domresmon->vcpus)))
+            goto cleanup;
+
+        if (virAsprintf(&id, "vcpus_%s", tmp) < 0)
+            goto cleanup;
+
+        if (virResctrlMonitorSetID(domresmon->instance, id) < 0)
+            goto cleanup;
+
+        if (VIR_APPEND_ELEMENT(resctrl->monitors,
+                               resctrl->nmonitors,
+                               domresmon) < 0)
+            goto cleanup;
+
+        VIR_FREE(id);
+        VIR_FREE(tmp);
+        domresmon = NULL;
+    }
+
+    ret = 0;
+ cleanup:
+    ctxt->node = oldnode;
+    VIR_FREE(id);
+    VIR_FREE(tmp);
+    virDomainResctrlMonDefFree(domresmon);
+    return ret;
+}
+
 
 static virDomainResctrlDefPtr
 virDomainResctrlNew(virResctrlAllocPtr alloc,
@@ -19041,14 +19206,19 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
         }
     }
 
-    if (virResctrlAllocIsEmpty(alloc)) {
-        ret = 0;
-        goto cleanup;
-    }
-
     resctrl = virDomainResctrlNew(alloc, vcpus);
     if (!resctrl)
         goto cleanup;
+
+    if (virDomainResctrlMonDefParse(def, ctxt, node,
+                                    VIR_RESCTRL_MONITOR_TYPE_CACHE,
+                                    resctrl) < 0)
+        goto cleanup;
+
+    if (virResctrlAllocIsEmpty(alloc) && !resctrl->nmonitors) {
+        ret = 0;
+        goto cleanup;
+    }
 
     if (virDomainResctrlAppend(def, node, resctrl, flags) < 0)
         goto cleanup;
@@ -27085,12 +27255,42 @@ virDomainCachetuneDefFormatHelper(unsigned int level,
 
 
 static int
+virDomainResctrlMonDefFormatHelper(virDomainResctrlMonDefPtr domresmon,
+                                   virResctrlMonitorType tag,
+                                   virBufferPtr buf)
+{
+    char *vcpus = NULL;
+    unsigned int level = 0;
+
+    if (domresmon->tag != tag)
+        return 0;
+
+    virBufferAddLit(buf, "<monitor ");
+
+    if (tag == VIR_RESCTRL_MONITOR_TYPE_CACHE) {
+        level = virResctrlMonitorGetCacheLevel(domresmon->instance);
+        virBufferAsprintf(buf, "level='%u' ", level);
+    }
+
+    vcpus = virBitmapFormat(domresmon->vcpus);
+    if (!vcpus)
+        return -1;
+
+    virBufferAsprintf(buf, "vcpus='%s'/>\n", vcpus);
+
+    VIR_FREE(vcpus);
+    return 0;
+}
+
+
+static int
 virDomainCachetuneDefFormat(virBufferPtr buf,
                             virDomainResctrlDefPtr resctrl,
                             unsigned int flags)
 {
     virBuffer childrenBuf = VIR_BUFFER_INITIALIZER;
     char *vcpus = NULL;
+    size_t i = 0;
     int ret = -1;
 
     virBufferSetChildIndent(&childrenBuf, buf);
@@ -27098,6 +27298,13 @@ virDomainCachetuneDefFormat(virBufferPtr buf,
                                     virDomainCachetuneDefFormatHelper,
                                     &childrenBuf) < 0)
         goto cleanup;
+
+    for (i = 0; i < resctrl->nmonitors; i ++) {
+        if (virDomainResctrlMonDefFormatHelper(resctrl->monitors[i],
+                                               VIR_RESCTRL_MONITOR_TYPE_CACHE,
+                                               &childrenBuf) < 0)
+            goto cleanup;
+    }
 
     if (virBufferCheckError(&childrenBuf) < 0)
         goto cleanup;
