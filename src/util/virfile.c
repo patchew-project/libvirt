@@ -3464,9 +3464,15 @@ int virFilePrintf(FILE *fp, const char *msg, ...)
 
 # define PROC_MOUNTS "/proc/mounts"
 
+# ifdef __GNUC__
+typedef typeof(((struct statfs*)0)->f_type) f_type_type;
+# else
+typedef long f_type_type;
+# endif
+
 static int
 virFileIsSharedFixFUSE(const char *path,
-                       long *f_type)
+                       f_type_type *f_type)
 {
     char *dirpath = NULL;
     const char **mounts = NULL;
@@ -3575,7 +3581,7 @@ virFileIsSharedFSType(const char *path,
 
     if (sb.f_type == FUSE_SUPER_MAGIC) {
         VIR_DEBUG("Found FUSE mount for path=%s. Trying to fix it", path);
-        virFileIsSharedFixFUSE(path, (long *) &sb.f_type);
+        virFileIsSharedFixFUSE(path, &sb.f_type);
     }
 
     VIR_DEBUG("Check if path %s with FS magic %lld is shared",
