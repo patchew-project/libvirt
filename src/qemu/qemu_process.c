@@ -7987,6 +7987,9 @@ qemuProcessReconnect(void *opaque)
         }
     }
 
+    if (qemuProcessSetupVcpus(obj) < 0)
+        goto error;
+
     /* update domain state XML with possibly updated state in virDomainObj */
     if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, obj, driver->caps) < 0)
         goto error;

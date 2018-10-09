@@ -2495,8 +2495,15 @@ int
 virResctrlMonitorAddPID(virResctrlMonitorPtr monitor,
                         pid_t pid)
 {
+    size_t i = 0;
+
     if (virResctrlAddPID(monitor->path, pid) < 0)
         return -1;
+
+    for (i = 0; i < monitor->npids; i++) {
+        if (pid == monitor->pids[i])
+            return 0;
+    }
 
     if (VIR_APPEND_ELEMENT(monitor->pids, monitor->npids, pid) < 0)
         return -1;
