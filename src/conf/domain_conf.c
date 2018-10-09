@@ -17624,6 +17624,36 @@ virDomainVsockDefEquals(const virDomainVsockDef *a,
 }
 
 
+static bool
+virDomainHubDefEquals(const virDomainHubDef *a,
+                      const virDomainHubDef *b)
+{
+    if (a->type != b->type)
+        return false;
+
+    if (a->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
+        !virDomainDeviceInfoAddressIsEqual(&a->info, &b->info))
+        return false;
+
+    return true;
+}
+
+
+ssize_t
+virDomainHubDefFind(const virDomainDef *def,
+                    const virDomainHubDef *hub)
+{
+    size_t i;
+
+    for (i = 0; i < def->nhubs; i++) {
+        if (virDomainHubDefEquals(hub, def->hubs[i]))
+            return i;
+    }
+
+    return -1;
+}
+
+
 char *
 virDomainDefGetDefaultEmulator(virDomainDefPtr def,
                                virCapsPtr caps)

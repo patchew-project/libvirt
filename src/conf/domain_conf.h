@@ -3365,6 +3365,9 @@ virDomainShmemDefPtr virDomainShmemDefRemove(virDomainDefPtr def, size_t idx)
 ssize_t virDomainInputDefFind(const virDomainDef *def,
                               const virDomainInputDef *input)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
+ssize_t virDomainHubDefFind(const virDomainDef *def,
+                              const virDomainHubDef *hub)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
 bool virDomainVsockDefEquals(const virDomainVsockDef *a,
                              const virDomainVsockDef *b)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
