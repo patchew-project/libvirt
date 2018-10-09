@@ -196,4 +196,7 @@ virResctrlMonitorNew(void);
 int
 virResctrlMonitorAddPID(virResctrlMonitorPtr monitor,
                         pid_t pid);
+int
+virResctrlMonitorDeterminePath(virResctrlMonitorPtr monitor,
+                               const char *machinename);
 #endif /*  __VIR_RESCTRL_H__ */

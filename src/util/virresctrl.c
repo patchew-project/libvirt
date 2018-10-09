@@ -2465,3 +2465,35 @@ virResctrlMonitorAddPID(virResctrlMonitorPtr monitor,
 {
     return virResctrlAddPID(monitor->path, pid);
 }
+
+int
+virResctrlMonitorDeterminePath(virResctrlMonitorPtr monitor,
+                               const char *machinename)
+{
+    char *alloc_path = NULL;
+    char *parentpath = NULL;
+
+    if (!monitor) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Invalid resctrl monitor"));
+        return -1;
+    }
+
+    if (monitor->alloc)
+        alloc_path = monitor->alloc->path;
+    else
+        alloc_path = (char *)SYSFS_RESCTRL_PATH;
+
+    if (virAsprintf(&parentpath, "%s/mon_groups", alloc_path) < 0)
+        return -1;
+
+    monitor->path = virResctrlDeterminePath(parentpath, machinename,
+                                            monitor->id);
+
+    VIR_FREE(parentpath);
+
+    if (!monitor->path)
+        return -1;
+
+    return 0;
+}
