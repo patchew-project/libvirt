@@ -2248,6 +2248,7 @@ typedef struct _virDomainResctrlDef virDomainResctrlDef;
 typedef virDomainResctrlDef *virDomainResctrlDefPtr;
 
 struct _virDomainResctrlDef {
+    char *id;
     virBitmapPtr vcpus;
     virResctrlAllocPtr alloc;
 
