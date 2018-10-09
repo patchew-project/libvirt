@@ -2611,10 +2611,22 @@ qemuProcessResctrlCreate(virQEMUDriverPtr driver,
         return -1;
 
     for (i = 0; i < vm->def->nresctrls; i++) {
+        size_t j = 0;
         if (virResctrlAllocCreate(caps->host.resctrl,
                                   vm->def->resctrls[i]->alloc,
                                   priv->machineName) < 0)
             goto cleanup;
+
+        for (j = 0; j < vm->def->resctrls[i]->nmonitors; j++) {
+            virDomainResctrlMonDefPtr mon = NULL;
+
+            mon = vm->def->resctrls[i]->monitors[j];
+            if (virResctrlMonitorCreate(vm->def->resctrls[i]->alloc,
+                                        mon->instance,
+                                        priv->machineName) < 0)
+                goto cleanup;
+
+        }
     }
 
     ret = 0;
@@ -5440,11 +5452,22 @@ qemuProcessSetupVcpu(virDomainObjPtr vm,
         return -1;
 
     for (i = 0; i < vm->def->nresctrls; i++) {
+        size_t j = 0;
         virDomainResctrlDefPtr ct = vm->def->resctrls[i];
 
         if (virBitmapIsBitSet(ct->vcpus, vcpuid)) {
             if (virResctrlAllocAddPID(ct->alloc, vcpupid) < 0)
                 return -1;
+
+            for (j = 0; j < vm->def->resctrls[i]->nmonitors; j++) {
+                virDomainResctrlMonDefPtr mon = NULL;
+
+                mon = vm->def->resctrls[i]->monitors[j];
+                if (virBitmapIsBitSet(mon->vcpus, vcpuid)) {
+                    if (virResctrlMonitorAddPID(mon->instance, vcpupid) < 0)
+                        return -1;
+                }
+            }
             break;
         }
     }
@@ -7207,8 +7230,18 @@ void qemuProcessStop(virQEMUDriverPtr driver,
     /* Remove resctrl allocation after cgroups are cleaned up which makes it
      * kind of safer (although removing the allocation should work even with
      * pids in tasks file */
-    for (i = 0; i < vm->def->nresctrls; i++)
+    for (i = 0; i < vm->def->nresctrls; i++) {
+        size_t j = 0;
+
+        for (j = 0; j < vm->def->resctrls[i]->nmonitors; j++) {
+            virDomainResctrlMonDefPtr mon = NULL;
+
+            mon = vm->def->resctrls[i]->monitors[j];
+            virResctrlMonitorRemove(mon->instance);
+        }
+
         virResctrlAllocRemove(vm->def->resctrls[i]->alloc);
+    }
 
     qemuProcessRemoveDomainStatus(driver, vm);
 
@@ -7222,8 +7255,7 @@ void qemuProcessStop(virQEMUDriverPtr driver,
                 virPortAllocatorRelease(graphics->data.vnc.port);
             } else if (graphics->data.vnc.portReserved) {
                 virPortAllocatorRelease(graphics->data.vnc.port);
-                graphics->data.vnc.portReserved = false;
-            }
+                graphics->data.vnc.portReserved = false; }
             if (graphics->data.vnc.websocketGenerated) {
                 virPortAllocatorRelease(graphics->data.vnc.websocket);
                 graphics->data.vnc.websocketGenerated = false;
@@ -7939,9 +7971,20 @@ qemuProcessReconnect(void *opaque)
         goto error;
 
     for (i = 0; i < obj->def->nresctrls; i++) {
+        size_t j = 0;
+
         if (virResctrlAllocDeterminePath(obj->def->resctrls[i]->alloc,
                                          priv->machineName) < 0)
             goto error;
+
+        for (j = 0; j < obj->def->resctrls[i]->nmonitors; j++) {
+            virDomainResctrlMonDefPtr mon = NULL;
+
+            mon = obj->def->resctrls[i]->monitors[j];
+            if (virResctrlMonitorDeterminePath(mon->instance,
+                                               priv->machineName) < 0)
+                goto error;
+        }
     }
 
     /* update domain state XML with possibly updated state in virDomainObj */
