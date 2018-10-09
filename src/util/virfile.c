@@ -3469,7 +3469,7 @@ virFileIsSharedFixFUSE(const char *path,
                        long *f_type)
 {
     char *dirpath = NULL;
-    const char **mounts = NULL;
+    char **mounts = NULL;
     size_t nmounts = 0;
     char *p;
     FILE *f = NULL;
@@ -3491,8 +3491,12 @@ virFileIsSharedFixFUSE(const char *path,
         if (STRNEQ("fuse.glusterfs", mb.mnt_type))
             continue;
 
-        if (VIR_APPEND_ELEMENT_COPY(mounts, nmounts, mb.mnt_dir) < 0)
+        char *mnt_dir;
+        if (VIR_STRDUP(mnt_dir, mb.mnt_dir) < 0 ||
+                VIR_APPEND_ELEMENT_COPY(mounts, nmounts, mnt_dir) < 0) {
+            VIR_FREE(mnt_dir);
             goto cleanup;
+        }
     }
 
     /* Add NULL sentinel so that this is a virStringList */
@@ -3512,7 +3516,7 @@ virFileIsSharedFixFUSE(const char *path,
         else
             *p = '\0';
 
-        if (virStringListHasString(mounts, dirpath)) {
+        if (virStringListHasString((const char **)mounts, dirpath)) {
             VIR_DEBUG("Found gluster FUSE mountpoint=%s for path=%s. "
                       "Fixing shared FS type", dirpath, path);
             *f_type = GFS2_MAGIC;
@@ -3523,7 +3527,7 @@ virFileIsSharedFixFUSE(const char *path,
     ret = 0;
  cleanup:
     endmntent(f);
-    VIR_FREE(mounts);
+    virStringListFree(mounts);
     VIR_FREE(dirpath);
     return ret;
 }
