@@ -1093,4 +1093,7 @@ void qemuDomainStorageIdReset(qemuDomainObjPrivatePtr priv);
 virDomainEventResumedDetailType
 qemuDomainRunningReasonToResumeEvent(virDomainRunningReason reason);
 
+virDomainEventSuspendedDetailType
+qemuDomainPausedReasonToSuspendedEvent(virDomainPausedReason reason);
+
 #endif /* __QEMU_DOMAIN_H__ */

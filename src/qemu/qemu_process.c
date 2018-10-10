@@ -642,7 +642,7 @@ qemuProcessHandleStop(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
     virQEMUDriverPtr driver = opaque;
     virObjectEventPtr event = NULL;
     virDomainPausedReason reason;
-    virDomainEventSuspendedDetailType detail = VIR_DOMAIN_EVENT_SUSPENDED_PAUSED;
+    virDomainEventSuspendedDetailType detail;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     qemuDomainObjPrivatePtr priv = vm->privateData;
 
@@ -668,8 +668,11 @@ qemuProcessHandleStop(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
             }
         }
 
-        VIR_DEBUG("Transitioned guest %s to paused state, reason %s",
-                  vm->def->name, virDomainPausedReasonTypeToString(reason));
+        detail = qemuDomainPausedReasonToSuspendedEvent(reason);
+        VIR_DEBUG("Transitioned guest %s to paused state, "
+                  "reason %s, event detail %d",
+                  vm->def->name, virDomainPausedReasonTypeToString(reason),
+                  detail);
 
         if (priv->job.current)
             ignore_value(virTimeMillisNow(&priv->job.current->stopped));
