@@ -659,13 +659,10 @@ qemuProcessHandleStop(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
 
         if (priv->job.asyncJob == QEMU_ASYNC_JOB_MIGRATION_OUT) {
             if (priv->job.current->status ==
-                        QEMU_DOMAIN_JOB_STATUS_POSTCOPY) {
+                        QEMU_DOMAIN_JOB_STATUS_POSTCOPY)
                 reason = VIR_DOMAIN_PAUSED_POSTCOPY;
-                detail = VIR_DOMAIN_EVENT_SUSPENDED_POSTCOPY;
-            } else {
+            else
                 reason = VIR_DOMAIN_PAUSED_MIGRATION;
-                detail = VIR_DOMAIN_EVENT_SUSPENDED_MIGRATED;
-            }
         }
 
         detail = qemuDomainPausedReasonToSuspendedEvent(reason);
@@ -3156,7 +3153,11 @@ int qemuProcessStopCPUs(virQEMUDriverPtr driver,
     if (priv->job.current)
         ignore_value(virTimeMillisNow(&priv->job.current->stopped));
 
-    virDomainObjSetState(vm, VIR_DOMAIN_PAUSED, reason);
+    /* The STOP event handler will change the domain state with the reason
+     * saved in priv->pausedReason and it will also emit corresponding domain
+     * lifecycle event.
+     */
+
     if (virDomainLockProcessPause(driver->lockManager, vm, &priv->lockState) < 0)
         VIR_WARN("Unable to release lease on %s", vm->def->name);
     VIR_DEBUG("Preserving lock state '%s'", NULLSTR(priv->lockState));
