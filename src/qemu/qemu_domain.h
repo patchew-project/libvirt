@@ -370,6 +370,10 @@ struct _qemuDomainObjPrivate {
     /* qemuProcessStartCPUs stores the reason for starting vCPUs here for the
      * RESUME event handler to use it */
     virDomainRunningReason runningReason;
+
+    /* qemuProcessStopCPUs stores the reason for starting vCPUs here for the
+     * STOP event handler to use it */
+    virDomainPausedReason pausedReason;
 };
 
 # define QEMU_DOMAIN_PRIVATE(vm) \
