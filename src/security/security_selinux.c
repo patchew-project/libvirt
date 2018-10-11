@@ -214,6 +214,7 @@ virSecuritySELinuxTransactionRun(pid_t pid ATTRIBUTE_UNUSED,
                                  void *opaque)
 {
     virSecuritySELinuxContextListPtr list = opaque;
+    virSecurityManagerMetadataLockStatePtr state;
     bool privileged = virSecurityManagerGetPrivileged(list->manager);
     const char **paths = NULL;
     size_t npaths = 0;
@@ -227,13 +228,10 @@ virSecuritySELinuxTransactionRun(pid_t pid ATTRIBUTE_UNUSED,
     for (i = 0; i < list->nItems; i++) {
         const char *p = list->items[i]->path;
 
-        if (virFileIsDir(p))
-            continue;
-
         VIR_APPEND_ELEMENT_COPY_INPLACE(paths, npaths, p);
     }
 
-    if (virSecurityManagerMetadataLock(list->manager, paths, npaths) < 0)
+    if (!(state = virSecurityManagerMetadataLock(list->manager, paths, npaths)))
         goto cleanup;
 
     rv = 0;
@@ -250,8 +248,7 @@ virSecuritySELinuxTransactionRun(pid_t pid ATTRIBUTE_UNUSED,
         }
     }
 
-    if (virSecurityManagerMetadataUnlock(list->manager, paths, npaths) < 0)
-        goto cleanup;
+    virSecurityManagerMetadataUnlock(list->manager, &state);
 
     if (rv < 0)
         goto cleanup;
