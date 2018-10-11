@@ -2221,7 +2221,8 @@ networkSetIPv6Sysctls(virNetworkObjPtr obj)
     virNetworkDefPtr def = virNetworkObjGetDef(obj);
     char *field = NULL;
     int ret = -1;
-    bool enableIPv6 = !!virNetworkDefGetIPByIndex(def, AF_INET6, 0);
+    bool enableIPv6 = !!virNetworkDefGetIPByIndex(def, AF_INET6, 0) |
+                      def->ipv6nogw;
 
     /* set disable_ipv6 if there are no ipv6 addresses defined for the
      * network. But also unset it if there *are* ipv6 addresses, as we
