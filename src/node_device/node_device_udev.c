@@ -1616,6 +1616,7 @@ udevEventHandleThread(void *opaque ATTRIBUTE_UNUSED)
 
         errno = 0;
         device = udev_monitor_receive_device(priv->udev_monitor);
+        priv->dataReady = false;
         virObjectUnlock(priv);
 
         if (!device) {
@@ -1636,10 +1637,6 @@ udevEventHandleThread(void *opaque ATTRIBUTE_UNUSED)
                                        "monitor"));
                 return;
             }
-
-            virObjectLock(priv);
-            priv->dataReady = false;
-            virObjectUnlock(priv);
 
             continue;
         }
