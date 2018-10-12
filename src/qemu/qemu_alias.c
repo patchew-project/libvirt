@@ -364,14 +364,28 @@ qemuAssignDeviceVideoAlias(virDomainVideoDefPtr video,
 }
 
 
-static int
-qemuAssignDeviceHubAlias(virDomainHubDefPtr hub,
+int
+qemuAssignDeviceHubAlias(virDomainDefPtr def,
+                         virDomainHubDefPtr hub,
                          int idx)
 {
     if (hub->info.alias)
         return 0;
 
-    return virAsprintf(&hub->info.alias, "hub%d", idx);
+    if (idx == -1) {
+        int thisidx;
+        size_t i;
+
+        for (i = 0; i < def->nhubs; i++) {
+            if ((thisidx = qemuDomainDeviceAliasIndex(&def->hubs[i]->info, "hub")) >= idx)
+                idx = thisidx + 1;
+        }
+    }
+
+    if (virAsprintf(&hub->info.alias, "hub%d", idx) < 0)
+        return -1;
+
+    return 0;
 }
 
 
@@ -647,7 +661,7 @@ qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps)
             return -1;
     }
     for (i = 0; i < def->nhubs; i++) {
-        if (qemuAssignDeviceHubAlias(def->hubs[i], i) < 0)
+        if (qemuAssignDeviceHubAlias(def, def->hubs[i], i) < 0)
             return -1;
     }
     for (i = 0; i < def->nshmems; i++) {
