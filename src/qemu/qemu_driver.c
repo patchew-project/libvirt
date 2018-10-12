@@ -8133,6 +8133,11 @@ qemuDomainAttachDeviceConfig(virDomainDefPtr vmdef,
             return -1;
         break;
 
+    case VIR_DOMAIN_DEVICE_HUB:
+        if (VIR_APPEND_ELEMENT(vmdef->hubs, vmdef->nhubs, dev->data.hub) < 0)
+            return -1;
+        break;
+
     case VIR_DOMAIN_DEVICE_VSOCK:
         if (vmdef->vsock) {
             virReportError(VIR_ERR_OPERATION_INVALID, "%s",
@@ -8145,7 +8150,6 @@ qemuDomainAttachDeviceConfig(virDomainDefPtr vmdef,
     case VIR_DOMAIN_DEVICE_SOUND:
     case VIR_DOMAIN_DEVICE_VIDEO:
     case VIR_DOMAIN_DEVICE_GRAPHICS:
-    case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
