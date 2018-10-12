@@ -259,9 +259,9 @@
         a checkpoint as a side-effect of starting a new incremental
         backup with <code>virDomainBackupBegin()</code>, since a
         second incremental backup is most useful when using the
-        checkpoint created during the first.  <!--See also
+        checkpoint created during the first.  See also
         the <a href="formatcheckpoint.html">XML details</a> used with
-        this command.--></dd>
+        this command.</dd>
 
       <dt>virDomainBackupBegin(), virDomainBackupEnd()</dt>
       <dd>This API wraps approaches for capturing the state of disks

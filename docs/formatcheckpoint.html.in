@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <body>
+    <h1>Checkpoint and Backup XML format</h1>
+
+    <ul id="toc"></ul>
+
+    <h2><a id="CheckpointAttributes">Checkpoint XML</a></h2>
+
+    <p>
+      One method of capturing domain disk backups is via the use of
+      incremental backups.  Right now, incremental backups are only
+      supported for the qemu hypervisor when using qcow2 disks at the
+      active layer; if other disk formats are in use, capturing disk
+      backups requires different libvirt APIs
+      (see <a href="domainstatecapture.html">domain state capture</a>
+      for a comparison between APIs).
+    </p>
+    <p>
+      Libvirt is able to facilitate incremental backups by tracking
+      disk checkpoints, which are points in time against which it is
+      easy to compute which portion of the disk has changed.  Given a
+      full backup (a backup created from the creation of the disk to a
+      given point in time), coupled with the creation of a disk
+      checkpoint at that time, and an incremental backup (a backup
+      created from just the dirty portion of the disk between the
+      first checkpoint and the second backup operation), it is
+      possible to do an offline reconstruction of the state of the
+      disk at the time of the second backup without having to copy as
+      much data as a second full backup would require.  Most disk
+      checkpoints are created in concert with a backup
+      via <code>virDomainBackupBegin()</code>; however, libvirt also
+      exposes enough support to create disk checkpoints independently
+      from a backup operation
+      via <code>virDomainCheckpointCreateXML()</code>.
+    </p>
+    <p>
+      Attributes of libvirt checkpoints are stored as child elements
+      of the <code>domaincheckpoint</code> element.  At checkpoint
+      creation time, normally only
+      the <code>name</code>, <code>description</code>,
+      and <code>disks</code> elements are settable. The rest of the
+      fields are ignored on creation and will be filled in by libvirt
+      in for informational purposes
+      by <code>virDomainCheckpointGetXMLDesc()</code>.  However, when
+      redefining a checkpoint, with
+      the <code>VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE</code> flag
+      of <code>virDomainCheckpointCreateXML()</code>, all of the XML
+      fields described here are relevant.
+    </p>
+    <p>
+      Checkpoints are maintained in a hierarchy.  A domain can have a
+      current checkpoint, which is the most recent checkpoint compared to
+      the current state of the domain (although a domain might have
+      checkpoints without a current checkpoint, if checkpoints have been
+      deleted in the meantime).  Creating or reverting to a checkpoint
+      sets that checkpoint as current, and the prior current checkpoint is
+      the parent of the new checkpoint.  Branches in the hierarchy can
+      be formed by reverting to a checkpoint with a child, then creating
+      another checkpoint.
+    </p>
+    <p>
+      The top-level <code>domaincheckpoint</code> element may contain
+      the following elements:
+    </p>
+    <dl>
+      <dt><code>name</code></dt>
+      <dd>The name for this checkpoint.  If the name is specified when
+        initially creating the checkpoint, then the checkpoint will have
+        that particular name.  If the name is omitted when initially
+        creating the checkpoint, then libvirt will make up a name for
+        the checkpoint, based on the time when it was created.
+      </dd>
+      <dt><code>description</code></dt>
+      <dd>A human-readable description of the checkpoint.  If the
+        description is omitted when initially creating the checkpoint,
+        then this field will be empty.
+      </dd>
+      <dt><code>disks</code></dt>
+      <dd>On input, this is an optional listing of specific
+        instructions for disk checkpoints; it is needed when making a
+        checkpoint on only a subset of the disks associated with a
+        domain (in particular, since qemu checkpoints require qcow2
+        disks, this element may be needed on input for excluding guest
+        disks that are not in qcow2 format); if the entire element was
+        omitted on input, then all disks participate in the
+        checkpoint, but if individual disks were omitted from the
+        element, they will not be part of the checkpoint.  On output,
+        this is fully populated to show the state of each disk in the
+        checkpoint.  This element has a list of <code>disk</code>
+        sub-elements, describing anywhere from one to all of the disks
+        associated with the domain.
+        <dl>
+          <dt><code>disk</code></dt>
+          <dd>This sub-element describes the checkpoint properties of
+            a specific disk.  The attribute <code>name</code> is
+            mandatory, and must match either the <code>&lt;target
+            dev='name'/&gt;</code> or an unambiguous <code>&lt;source
+            file='name'/&gt;</code> of one of
+            the <a href="formatdomain.html#elementsDisks">disk
+            devices</a> specified for the domain at the time of the
+            checkpoint.  The attribute <code>checkpoint</code> is
+            optional on input; possible values are <code>no</code>
+            when the disk does not participate in this checkpoint;
+            or <code>bitmap</code> if the disk will track all changes
+            since the creation of this checkpoint via a bitmap, in
+            which case another attribute <code>bitmap</code> will be
+            the name of the tracking bitmap (defaulting to the
+            checkpoint name).  On output, an additional
+            attribute <code>size</code> may be present if
+            the <code>VIR_DOMAIN_CHECKPOINT_XML_SIZE</code> flag was
+            used to perform a dynamic query of the estimated size in
+            bytes of the changes made since the checkpoint was created.
+          </dd>
+        </dl>
+      </dd>
+      <dt><code>creationTime</code></dt>
+      <dd>The time this checkpoint was created.  The time is specified
+        in seconds since the Epoch, UTC (i.e. Unix time).  Readonly.
+      </dd>
+      <dt><code>parent</code></dt>
+      <dd>The parent of this checkpoint.  If present, this element
+        contains exactly one child element, name.  This specifies the
+        name of the parent checkpoint of this one, and is used to
+        represent trees of checkpoints.  Readonly.
+      </dd>
+      <dt><code>domain</code></dt>
+      <dd>The inactive <a href="formatdomain.html">domain
+        configuration</a> at the time the checkpoint was created.
+        Readonly.
+      </dd>
+    </dl>
+
+    <h2><a id="BackupAttributes">Backup XML</a></h2>
+
+    <p>
+      Creating a backup, whether full or incremental, is done
+      via <code>virDomainBackupBegin()</code>, which takes an XML
+      description of the actions to perform.  There are two general
+      modes for backups: a push mode (where the hypervisor writes out
+      the data to the destination file, which may be local or remote),
+      and a pull mode (where the hypervisor creates an NBD server that
+      a third-party client can then read as needed, and which requires
+      the use of temporary storage, typically local, until the backup
+      is complete).
+    </p>
+    <p>
+      The instructions for beginning a backup job are provided as
+      attributes and elements of the
+      top-level <code>domainbackup</code> element.  This element
+      includes an optional attribute <code>mode</code> which can be
+      either "push" or "pull" (default push).  Where elements are
+      optional on creation, <code>virDomainBackupGetXMLDesc()</code>
+      can be used to see the actual values selected (for example,
+      learning which port the NBD server is using in the pull model,
+      or what file names libvirt generated when none were supplied).
+      The following child elements are supported:
+    </p>
+    <dl>
+      <dt><code>incremental</code></dt>
+      <dd>Optional. If this element is present, it must name an
+        existing checkpoint of the domain, which will be used to make
+        this backup an incremental one (in the push model, only
+        changes since the checkpoint are written to the destination;
+        in the pull model, the NBD server uses the
+        NBD_OPT_SET_META_CONTEXT extension to advertise to the client
+        which portions of the export contain changes since the
+        checkpoint).  If omitted, a full backup is performed.
+      </dd>
+      <dt><code>server</code></dt>
+      <dd>Present only for a pull mode backup.  Contains the same
+        attributes as the <code>protocol</code> element of a disk
+        attached via NBD in the domain (such as transport, socket,
+        name, port, or tls), necessary to set up an NBD server that
+        exposes the content of each disk at the time the backup
+        started.
+      </dd>
+      <dt><code>disks</code></dt>
+      <dd>This is an optional listing of instructions for disks
+        participating in the backup (if omitted, all disks
+        participate, and libvirt attempts to generate filenames by
+        appending the current timestamp as a suffix). When provided on
+        input, disks omitted from the list do not participate in the
+        backup.  On output, the list is present but contains only the
+        disks participating in the backup job.  This element has a
+        list of <code>disk</code> sub-elements, describing anywhere
+        from one to all of the disks associated with the domain.
+        <dl>
+          <dt><code>disk</code></dt>
+          <dd>This sub-element describes the checkpoint properties of
+            a specific disk.  The attribute <code>name</code> is
+            mandatory, and must match either the <code>&lt;target
+            dev='name'/&gt;</code> or an unambiguous <code>&lt;source
+            file='name'/&gt;</code> of one of
+            the <a href="formatdomain.html#elementsDisks">disk
+            devices</a> specified for the domain at the time of the
+            checkpoint.  The optional attribute <code>type</code> can
+            be <code>file</code>, <code>block</code>,
+            or <code>network</code>, similar to a disk declaration for
+            a domain, controls what additional sub-elements are needed
+            to describe the destination (such as <code>protocol</code>
+            for a network destination).  In push mode backups, the
+            primary sub-element is <code>target</code>; in pull mode,
+            the primary sub-element is <code>scratch</code>; but
+            either way, the primary sub-element describes the file
+            name to be used during the backup operation, similar to
+            the <code>source</code> sub-element of a domain disk. In
+            push mode, an optional sub-element <code>driver</code> can
+            also be used to specify a destination format different
+            from qcow2.
+          </dd>
+        </dl>
+      </dd>
+    </dl>
+
+    <h2><a id="example">Examples</a></h2>
+
+    <p>Using this XML to create a checkpoint of just vda on a qemu
+      domain with two disks and a prior checkpoint:</p>
+    <pre>
+&lt;domaincheckpoint&gt;
+  &lt;description&gt;Completion of updates after OS install&lt;/description&gt;
+  &lt;disks&gt;
+    &lt;disk name='vda' checkpoint='bitmap'/&gt;
+    &lt;disk name='vdb' checkpoint='no'/&gt;
+  &lt;/disks&gt;
+&lt;/domaincheckpoint&gt;</pre>
+
+    <p>will result in XML similar to this from
+      <code>virDomainCheckpointGetXMLDesc()</code>:</p>
+    <pre>
+&lt;domaincheckpoint&gt;
+  &lt;name&gt;1525889631&lt;/name&gt;
+  &lt;description&gt;Completion of updates after OS install&lt;/description&gt;
+  &lt;creationTime&gt;1525889631&lt;/creationTime&gt;
+  &lt;parent&gt;
+    &lt;name&gt;1525111885&lt;/name&gt;
+  &lt;/parent&gt;
+  &lt;disks&gt;
+    &lt;disk name='vda' checkpoint='bitmap' bitmap='1525889631'/&gt;
+    &lt;disk name='vdb' checkpoint='no'/&gt;
+  &lt;/disks&gt;
+  &lt;domain type='qemu'&gt;
+    &lt;name&gt;fedora&lt;/name&gt;
+    &lt;uuid&gt;93a5c045-6457-2c09-e56c-927cdf34e178&lt;/uuid&gt;
+    &lt;memory&gt;1048576&lt;/memory&gt;
+    ...
+    &lt;devices&gt;
+      &lt;disk type='file' device='disk'&gt;
+        &lt;driver name='qemu' type='qcow2'/&gt;
+        &lt;source file='/path/to/file1'/&gt;
+        &lt;target dev='vda' bus='virtio'/&gt;
+      &lt;/disk&gt;
+      &lt;disk type='file' device='disk' snapshot='external'&gt;
+        &lt;driver name='qemu' type='raw'/&gt;
+        &lt;source file='/path/to/file2'/&gt;
+        &lt;target dev='vdb' bus='virtio'/&gt;
+      &lt;/disk&gt;
+      ...
+    &lt;/devices&gt;
+  &lt;/domain&gt;
+&lt;/domaincheckpoint&gt;</pre>
+
+    <p>With that checkpoint created, the qcow2 image is now tracking
+      all changes that occur in the image since the checkpoint via
+      the persistent bitmap named <code>1525889631</code>.  Now, we
+      can make a subsequent call
+      to <code>virDomainBackupBegin()</code> to perform an incremental
+      backup of just this data, using the following XML to start a
+      pull model NBD export of the vda disk:
+    </p>
+    <pre>
+&lt;domainbackup mode="pull"&gt;
+  &lt;incremental&gt;1525889631&lt;/incremental&gt;
+  &lt;server transport="unix" socket="/path/to/server"/&gt;
+  &lt;disks/&gt;
+    &lt;disk name='vda' type='file'&gt;
+      &lt;scratch file='/path/to/file1.scratch'/&gt;
+    &lt;/disk&gt;
+  &lt;/disks/&gt;
+&lt;/domainbackup&gt;
+    </pre>
+  </body>
+</html>
