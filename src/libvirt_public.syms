@@ -811,6 +811,9 @@ LIBVIRT_4.5.0 {
 
 LIBVIRT_4.9.0 {
     global:
+        virDomainBackupBegin;
+        virDomainBackupEnd;
+        virDomainBackupGetXMLDesc;
         virDomainCheckpointCreateXML;
         virDomainCheckpointCurrent;
         virDomainCheckpointDelete;
