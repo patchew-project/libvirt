@@ -35,6 +35,11 @@
 <libvirt>
   <release version="v4.10.0" date="unreleased">
     <section title="New features">
+      <change>
+        <summary>
+          qemu: Add support for cold(un)plugging and hot(un)plugging usb hub device
+        </summary>
+      </change>
     </section>
     <section title="Improvements">
     </section>
