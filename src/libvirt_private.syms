@@ -399,6 +399,7 @@ virDomainHostdevRemove;
 virDomainHostdevSubsysPCIBackendTypeToString;
 virDomainHostdevSubsysTypeToString;
 virDomainHPTResizingTypeToString;
+virDomainHubDefFind;
 virDomainHubTypeFromString;
 virDomainHubTypeToString;
 virDomainHypervTypeFromString;
