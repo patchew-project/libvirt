@@ -1,7 +1,7 @@
 /*
  * virerror.c: error handling and reporting code for libvirt
  *
- * Copyright (C) 2006, 2008-2016 Red Hat, Inc.
+ * Copyright (C) 2006, 2008-2018 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -136,6 +136,7 @@ VIR_ENUM_IMPL(virErrorDomain, VIR_ERR_DOMAIN_LAST,
               "Perf", /* 65 */
               "Libssh transport layer",
               "Resource control",
+              "Domain Checkpoint",
               )
 
 
@@ -1508,6 +1509,24 @@ virErrorMsg(virErrorNumber error, const char *info)
                 errmsg = _("Network filter binding not found");
             else
                 errmsg = _("Network filter binding not found: %s");
+            break;
+        case VIR_ERR_INVALID_DOMAIN_CHECKPOINT:
+            if (info == NULL)
+                errmsg = _("Invalid checkpoint");
+            else
+                errmsg = _("Invalid checkpoint: %s");
+            break;
+        case VIR_ERR_NO_DOMAIN_CHECKPOINT:
+            if (info == NULL)
+                errmsg = _("Domain checkpoint not found");
+            else
+                errmsg = _("Domain checkpoint not found: %s");
+            break;
+        case VIR_ERR_NO_DOMAIN_BACKUP:
+            if (info == NULL)
+                errmsg = _("Domain backup job id not found");
+            else
+                errmsg = _("Domain backup job id not found: %s");
             break;
     }
     return errmsg;
