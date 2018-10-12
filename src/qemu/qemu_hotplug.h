@@ -135,9 +135,17 @@ int qemuDomainAttachInputDevice(virQEMUDriverPtr driver,
                                 virDomainObjPtr vm,
                                 virDomainInputDefPtr input);
 
+int qemuDomainAttachHubDevice(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm,
+                          virDomainHubDefPtr hub);
+
 int qemuDomainAttachVsockDevice(virQEMUDriverPtr driver,
                                 virDomainObjPtr vm,
                                 virDomainVsockDefPtr vsock);
+
+int qemuDomainAttachInputDevice(virQEMUDriverPtr driver,
+                                virDomainObjPtr vm,
+                                virDomainInputDefPtr input);
 
 int qemuDomainAttachLease(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
