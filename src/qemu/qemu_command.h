@@ -174,6 +174,10 @@ char *qemuBuildRedirdevDevStr(const virDomainDef *def,
                               virDomainRedirdevDefPtr dev,
                               virQEMUCapsPtr qemuCaps);
 
+char *qemuBuildHubDevStr(const virDomainDef *def,
+                         virDomainHubDefPtr dev,
+                         virQEMUCapsPtr qemuCaps);
+
 int qemuNetworkPrepareDevices(virDomainDefPtr def);
 
 int qemuGetDriveSourceString(virStorageSourcePtr src,
