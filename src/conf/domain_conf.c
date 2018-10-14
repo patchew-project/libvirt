@@ -7804,8 +7804,12 @@ virDomainNetDefCoalesceParseXML(xmlNodePtr node,
     ctxt->node = node;
 
     str = virXPathString("string(./rx/frames/@max)", ctxt);
-    if (!str)
+    if (!str) {
+        virReportError(VIR_ERR_XML_DETAIL,
+                       "%s",
+                       _("incomplete coalesce settings in interface xml"));
         goto cleanup;
+    }
 
     if (VIR_ALLOC(ret) < 0)
         goto cleanup;
