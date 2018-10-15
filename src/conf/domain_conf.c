@@ -4064,13 +4064,22 @@ virDomainDefPostParseMemtune(virDomainDefPtr def)
         }
     }
 
-    if (def->mem.nhugepages &&
-        def->mem.source != VIR_DOMAIN_MEMORY_SOURCE_NONE &&
-        def->mem.source != VIR_DOMAIN_MEMORY_SOURCE_ANONYMOUS) {
-        virReportError(VIR_ERR_XML_ERROR,
-                       _("unsupported combination of hugepages and source type %s"),
-                       virDomainMemorySourceTypeToString(def->mem.source));
-        return -1;
+    if (def->mem.nhugepages) {
+        if (def->mem.source != VIR_DOMAIN_MEMORY_SOURCE_NONE &&
+            def->mem.source != VIR_DOMAIN_MEMORY_SOURCE_ANONYMOUS) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("unsupported combination of hugepages and source type %s"),
+                           virDomainMemorySourceTypeToString(def->mem.source));
+            return -1;
+        }
+
+        if (def->mem.allocation != VIR_DOMAIN_MEMORY_ALLOCATION_NONE &&
+            def->mem.allocation != VIR_DOMAIN_MEMORY_ALLOCATION_IMMEDIATE) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("unsupported combination of hugepages and allocation %s"),
+                           virDomainMemoryAllocationTypeToString(def->mem.allocation));
+            return -1;
+        }
     }
 
     return 0;
