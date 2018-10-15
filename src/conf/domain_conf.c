@@ -4041,7 +4041,7 @@ virDomainDefPostParseMemory(virDomainDefPtr def,
 }
 
 
-static void
+static int
 virDomainDefPostParseMemtune(virDomainDefPtr def)
 {
     size_t i;
@@ -4063,6 +4063,17 @@ virDomainDefPostParseMemtune(virDomainDefPtr def)
             }
         }
     }
+
+    if (def->mem.nhugepages &&
+        def->mem.source != VIR_DOMAIN_MEMORY_SOURCE_NONE &&
+        def->mem.source != VIR_DOMAIN_MEMORY_SOURCE_ANONYMOUS) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("unsupported combination of hugepages and source type %s"),
+                       virDomainMemorySourceTypeToString(def->mem.source));
+        return -1;
+    }
+
+    return 0;
 }
 
 
@@ -5131,7 +5142,8 @@ virDomainDefPostParseCommon(virDomainDefPtr def,
     if (virDomainDefPostParseMemory(def, data->parseFlags) < 0)
         return -1;
 
-    virDomainDefPostParseMemtune(def);
+    if (virDomainDefPostParseMemtune(def) < 0)
+        return -1;
 
     if (virDomainDefRejectDuplicateControllers(def) < 0)
         return -1;

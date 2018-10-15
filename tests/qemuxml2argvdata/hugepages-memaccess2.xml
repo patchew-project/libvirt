@@ -8,7 +8,6 @@
     <hugepages>
       <page size='2048' unit='KiB' nodeset='1'/>
     </hugepages>
-    <source type='file'/>
     <access mode='private'/>
   </memoryBacking>
   <vcpu placement='static'>4</vcpu>
