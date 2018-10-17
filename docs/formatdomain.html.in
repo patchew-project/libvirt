@@ -8258,6 +8258,8 @@ qemu-kvm -net nic,model=? /dev/null
   &lt;memory model='nvdimm'&gt;
     &lt;source&gt;
       &lt;path&gt;/tmp/nvdimm&lt;/path&gt;
+      &lt;alignsize unit='KiB'&gt;2048&lt;/alignsize&gt;
+      &lt;pmem&gt;on&lt;/pmem&gt;
     &lt;/source&gt;
     &lt;target&gt;
       &lt;size unit='KiB'&gt;524288&lt;/size&gt;
@@ -8265,6 +8267,8 @@ qemu-kvm -net nic,model=? /dev/null
       &lt;label&gt;
         &lt;size unit='KiB'&gt;128&lt;/size&gt;
       &lt;/label&gt;
+      &lt;persistence&gt;cpu&lt;/persistence&gt;
+      &lt;unarmed&gt;on&lt;/unarmed&gt;
     &lt;/target&gt;
   &lt;/memory&gt;
 &lt;/devices&gt;
@@ -8339,10 +8343,38 @@ qemu-kvm -net nic,model=? /dev/null
         </dl>
 
         <p>
-          For model <code>nvdimm</code> this element is mandatory and has a
-          single child element <code>path</code> that represents a path
-          in the host that backs the nvdimm module in the guest.
+          For model <code>nvdimm</code> this element is mandatory. The
+          mandatory child element <code>path</code> represents a path in
+          the host that backs the nvdimm module in the guest. If
+          <code>nvdimm</code> is provided, then the following optional
+          elements can be provided as well:
         </p>
+
+        <dl>
+          <dt><code>alignsize</code></dt>
+          <dd>
+            <p>
+              This element can be used to specify a proper alignment.
+              When mmap(2) the backend files, QEMU uses the host page
+              size by default as the alignment of mapping address. However,
+              some backends may require alignments different from the page.
+              For example, mmap a device DAX on NVDIMM maybe 2M-aligned.
+            </p>
+          </dd>
+
+          <dt><code>pmem</code></dt>
+          <dd>
+            <p>
+              This element can be used to specify whether the backend storage
+              of memory-backend-file is a real persistent memory that can be
+              accessed in SNIA NVM Programming Model. If the backend  is a real
+              persistence memory and <code>pmem</code> is set to 'on', QEMU will
+              guarantee the persistence of its own writes to the vNVDIMM backend,
+              but which can work well with libpmem support (QEMU configured with
+              --enable-libpmem).
+            </p>
+          </dd>
+        </dl>
       </dd>
 
       <dt><code>target</code></dt>
@@ -8361,19 +8393,55 @@ qemu-kvm -net nic,model=? /dev/null
           NUMA nodes configured.
         </p>
         <p>
-          For NVDIMM type devices one can optionally use
-          <code>label</code> and its subelement <code>size</code>
-          to configure the size of namespaces label storage
-          within the NVDIMM module. The <code>size</code> element
-          has usual meaning described
-          <a href="#elementsMemoryAllocation">here</a>.
-          For QEMU domains the following restrictions apply:
+          Besides, the following optional elements can be provided as well for
+          NVDIMM type devices:
         </p>
-        <ol>
-          <li>the minimum label size is 128KiB,</li>
-          <li>the remaining size (total-size - label-size) has to be aligned to
-            4KiB</li>
-        </ol>
+
+        <dl>
+          <dt><code>label</code></dt>
+          <dd>
+            <p>
+              For NVDIMM type devices one can optionally use
+              <code>label</code> and its subelement <code>size</code>
+              to configure the size of namespaces label storage
+              within the NVDIMM module. The <code>size</code> element
+              has usual meaning described
+              <a href="#elementsMemoryAllocation">here</a>.
+              For QEMU domains the following restrictions apply:
+            </p>
+            <ol>
+              <li>the minimum label size is 128KiB,</li>
+              <li>the remaining size (total-size - label-size) will be aligned to
+                4KiB as default.</li>
+            </ol>
+          </dd>
+
+          <dt><code>persistence</code></dt>
+          <dd>
+            <p>
+              The <code>persistence</code> element can be set to "mem-ctl" or "cpu",
+              which indicate platform-supported features about NVDIMM data persistence.
+              'mem-ctrl' means the platform supports flushing dirty data from the memory
+              controller to the NVDIMMs in the event of power loss, 'cpu' means The platform
+              supports flushing dirty data from the CPU cache to the NVDIMMs in the event
+              of power loss, which contains what 'mem-ctrl' means.
+              ACPI 6.2 Errata A added support for a new Platform Capabilities Structure
+              in NFIT, so the guest ACPI NFIT will be filled in according to the persistence
+              option.
+            </p>
+          </dd>
+
+          <dt><code>unarmed</code></dt>
+          <dd>
+            <p>
+              The <code>unarmed</code> element can be used to mark vNVDIMM read-only
+              through setting unarmed flag in guest NFIT.Currently the only vNVDIMM backend
+              can guarantee the guest write persistence is device DAX on Linux, so it's
+              suggested to set <code>unarmed</code> to 'on' when using other types of
+              backends.
+            </p>
+          </dd>
+        </dl>
       </dd>
     </dl>
 

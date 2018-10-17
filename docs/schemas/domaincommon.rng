@@ -5353,9 +5353,21 @@
           </interleave>
         </group>
         <group>
-          <element name="path">
-            <ref name="absFilePath"/>
-          </element>
+          <interleave>
+            <element name="path">
+              <ref name="absFilePath"/>
+            </element>
+            <optional>
+              <element name="alignsize">
+                <ref name="scaledInteger"/>
+              </element>
+            </optional>
+            <optional>
+              <element name="pmem">
+                <ref name="virOnOff"/>
+              </element>
+            </optional>
+          </interleave>
         </group>
       </choice>
     </element>
@@ -5377,6 +5389,19 @@
             <element name="size">
               <ref name="scaledInteger"/>
             </element>
+          </element>
+        </optional>
+        <optional>
+          <element name="persistence">
+            <choice>
+              <value>mem-ctrl</value>
+              <value>cpu</value>
+            </choice>
+          </element>
+        </optional>
+        <optional>
+          <element name="unarmed">
+            <ref name="virOnOff"/>
           </element>
         </optional>
       </interleave>
