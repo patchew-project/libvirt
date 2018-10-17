@@ -1165,6 +1165,87 @@ virProcessRunInMountNamespace(pid_t pid,
 }
 
 
+static int
+virProcessForkHelper(int errfd,
+                     pid_t pid,
+                     virProcessForkCallback cb,
+                     void *opaque)
+{
+    if (cb(pid, opaque) < 0) {
+        virErrorPtr err = virGetLastError();
+        if (err) {
+            size_t len = strlen(err->message) + 1;
+            ignore_value(safewrite(errfd, err->message, len));
+        }
+
+        return -1;
+    }
+
+    return 0;
+}
+
+
+/**
+ * virProcessRunInFork:
+ * @cb: callback to run
+ * @opaque: opaque data to @cb
+ *
+ * Do the fork and run @cb in the child. This can be used when
+ * @cb does something thread unsafe, for instance. However, due
+ * to possible signal propagation @cb should only call async
+ * signal safe functions. On return, the returned value is either
+ * -1 with error message reported if something went bad in the
+ *  parent, if child has died from a signal or if the child
+ *  returned EXIT_CANCELED. Otherwise the returned value is the
+ *  exit status of the child.
+ */
+int
+virProcessRunInFork(virProcessForkCallback cb,
+                    void *opaque)
+{
+    int ret = -1;
+    pid_t child = -1;
+    pid_t parent = getpid();
+    int errfd[2] = { -1, -1 };
+
+    if (pipe2(errfd, O_CLOEXEC) < 0) {
+        virReportSystemError(errno, "%s",
+                             _("Cannot create pipe for child"));
+        return -1;
+    }
+
+    if ((child = virFork()) < 0)
+        goto cleanup;
+
+    if (child == 0) {
+        VIR_FORCE_CLOSE(errfd[0]);
+        ret = virProcessForkHelper(errfd[1], parent, cb, opaque);
+        VIR_FORCE_CLOSE(errfd[1]);
+        _exit(ret < 0 ? EXIT_CANCELED : ret);
+    } else {
+        int status;
+        VIR_AUTOFREE(char *) buf = NULL;
+
+        VIR_FORCE_CLOSE(errfd[1]);
+        ignore_value(virFileReadHeaderFD(errfd[0], 1024, &buf));
+        ret = virProcessWait(child, &status, false);
+        if (!ret) {
+            ret = status == EXIT_CANCELED ? -1 : status;
+            if (ret) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("child reported: %s"),
+                               NULLSTR(buf));
+            }
+        }
+    }
+
+ cleanup:
+    VIR_FORCE_CLOSE(errfd[0]);
+    VIR_FORCE_CLOSE(errfd[1]);
+    return ret;
+}
+
+
 #if defined(HAVE_SYS_MOUNT_H) && defined(HAVE_UNSHARE)
 int
 virProcessSetupPrivateMountNS(void)

@@ -2625,6 +2625,7 @@ virProcessKill;
 virProcessKillPainfully;
 virProcessKillPainfullyDelay;
 virProcessNamespaceAvailable;
+virProcessRunInFork;
 virProcessRunInMountNamespace;
 virProcessSchedPolicyTypeFromString;
 virProcessSchedPolicyTypeToString;
