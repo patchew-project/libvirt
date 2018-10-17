@@ -436,6 +436,8 @@ virDomainMemoryFindByDef;
 virDomainMemoryFindInactiveByDef;
 virDomainMemoryInsert;
 virDomainMemoryModelTypeToString;
+virDomainMemoryPersistenceTypeFromString;
+virDomainMemoryPersistenceTypeToString;
 virDomainMemoryRemove;
 virDomainMemorySourceTypeFromString;
 virDomainMemorySourceTypeToString;

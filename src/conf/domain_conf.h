@@ -2133,6 +2133,14 @@ typedef enum {
     VIR_DOMAIN_MEMORY_MODEL_LAST
 } virDomainMemoryModel;
 
+typedef enum {
+    VIR_DOMAIN_MEMORY_PERSISTENCE_NONE,
+    VIR_DOMAIN_MEMORY_PERSISTENCE_MEMCTRL,
+    VIR_DOMAIN_MEMORY_PERSISTENCE_CPU,
+
+    VIR_DOMAIN_MEMORY_PERSISTENCE_LAST,
+} virDomainMemoryPersistence;
+
 struct _virDomainMemoryDef {
     virDomainMemoryAccess access;
     virTristateBool discard;
@@ -2141,12 +2149,17 @@ struct _virDomainMemoryDef {
     virBitmapPtr sourceNodes;
     unsigned long long pagesize; /* kibibytes */
     char *nvdimmPath;
+    unsigned long long alignsize; /* kibibytes; valid only for NVDIMM */
+    int nvdimmPmem; /* enum virTristateSwitch; valid only for NVDIMM */
 
     /* target */
     int model; /* virDomainMemoryModel */
     int targetNode;
     unsigned long long size; /* kibibytes */
     unsigned long long labelsize; /* kibibytes; valid only for NVDIMM */
+    int nvdimmPersistence; /* enum virDomainMemoryPersistence;
+                              valid only for NVDIMM*/
+    int nvdimmUnarmed; /* enum virTristateSwitch; valid only for NVDIMM */
 
     virDomainDeviceInfo info;
 };
@@ -3448,6 +3461,7 @@ VIR_ENUM_DECL(virDomainTPMVersion)
 VIR_ENUM_DECL(virDomainMemoryModel)
 VIR_ENUM_DECL(virDomainMemoryBackingModel)
 VIR_ENUM_DECL(virDomainMemorySource)
+VIR_ENUM_DECL(virDomainMemoryPersistence)
 VIR_ENUM_DECL(virDomainMemoryAllocation)
 VIR_ENUM_DECL(virDomainIOMMUModel)
 VIR_ENUM_DECL(virDomainVsockModel)

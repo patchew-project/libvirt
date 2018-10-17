@@ -932,6 +932,12 @@ VIR_ENUM_IMPL(virDomainMemoryModel,
               "dimm",
               "nvdimm")
 
+VIR_ENUM_IMPL(virDomainMemoryPersistence,
+              VIR_DOMAIN_MEMORY_PERSISTENCE_LAST,
+              "",
+              "mem-ctrl",
+              "cpu")
+
 VIR_ENUM_IMPL(virDomainShmemModel, VIR_DOMAIN_SHMEM_MODEL_LAST,
               "ivshmem",
               "ivshmem-plain",
@@ -15656,7 +15662,9 @@ virDomainMemorySourceDefParseXML(xmlNodePtr node,
                                  virDomainMemoryDefPtr def)
 {
     int ret = -1;
+    int val;
     char *nodemask = NULL;
+    char *ndPmem = NULL;
     xmlNodePtr save = ctxt->node;
     ctxt->node = node;
 
@@ -15685,6 +15693,21 @@ virDomainMemorySourceDefParseXML(xmlNodePtr node,
                            _("path is required for model 'nvdimm'"));
             goto cleanup;
         }
+
+        if (virDomainParseMemory("./alignsize", "./alignsize/@unit", ctxt,
+                                 &def->alignsize, false, false) < 0)
+            goto cleanup;
+
+        if ((ndPmem = virXPathString("string(./pmem)", ctxt))) {
+            if ((val = virTristateSwitchTypeFromString(ndPmem)) < 0) {
+                virReportError(VIR_ERR_XML_DETAIL,
+                               _("Invalid value of nvdimm 'pmem': %s"),
+                               ndPmem);
+                goto cleanup;
+            }
+            def->nvdimmPmem = val;
+        }
+        VIR_FREE(ndPmem);
         break;
 
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
@@ -15696,6 +15719,7 @@ virDomainMemorySourceDefParseXML(xmlNodePtr node,
 
  cleanup:
     VIR_FREE(nodemask);
+    VIR_FREE(ndPmem);
     ctxt->node = save;
     return ret;
 }
@@ -15710,6 +15734,9 @@ virDomainMemoryTargetDefParseXML(xmlNodePtr node,
     xmlNodePtr save = ctxt->node;
     ctxt->node = node;
     int rv;
+    int val;
+    char *ndPrst = NULL;
+    char *ndUnarmed = NULL;
 
     /* initialize to value which marks that the user didn't specify it */
     def->targetNode = -1;
@@ -15741,11 +15768,35 @@ virDomainMemoryTargetDefParseXML(xmlNodePtr node,
                            _("label size must be smaller than NVDIMM size"));
             goto cleanup;
         }
+
+        if ((ndPrst = virXPathString("string(./persistence)", ctxt))) {
+           if ((val = virDomainMemoryPersistenceTypeFromString(ndPrst)) < 0) {
+               virReportError(VIR_ERR_XML_DETAIL,
+                              _("Invalid value of nvdimm 'persistence': %s"),
+                              ndPrst);
+               goto cleanup;
+           }
+           def->nvdimmPersistence = val;
+        }
+        VIR_FREE(ndPrst);
+
+        if ((ndUnarmed = virXPathString("string(./unarmed)", ctxt))) {
+            if ((val = virTristateSwitchTypeFromString(ndUnarmed)) < 0) {
+                virReportError(VIR_ERR_XML_DETAIL,
+                               _("Invalid value of nvdimm 'unarmed': %s"),
+                               ndUnarmed);
+                goto cleanup;
+            }
+            def->nvdimmUnarmed = val;
+        }
+        VIR_FREE(ndUnarmed);
     }
 
     ret = 0;
 
  cleanup:
+    VIR_FREE(ndPrst);
+    VIR_FREE(ndUnarmed);
     ctxt->node = save;
     return ret;
 }
@@ -22445,13 +22496,49 @@ virDomainMemoryDefCheckABIStability(virDomainMemoryDefPtr src,
         return false;
     }
 
-    if (src->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM &&
-        src->labelsize != dst->labelsize) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("Target NVDIMM label size '%llu' doesn't match "
-                         "source NVDIMM label size '%llu'"),
-                       src->labelsize, dst->labelsize);
-        return false;
+    if (src->model == VIR_DOMAIN_MEMORY_MODEL_NVDIMM) {
+        if (src->labelsize != dst->labelsize) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Target NVDIMM label size '%llu' doesn't match "
+                             "source NVDIMM label size '%llu'"),
+                           src->labelsize, dst->labelsize);
+            return false;
+        }
+
+        if (src->alignsize != dst->alignsize) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Target NVDIMM alignment '%llu' doesn't match "
+                             "source NVDIMM alignment '%llu'"),
+                           src->alignsize, dst->alignsize);
+            return false;
+        }
+
+        if (src->nvdimmPmem != dst->nvdimmPmem) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Target NVDIMM pmem flag '%s' doesn't match "
+                             "source NVDIMM pmem flag '%s'"),
+                           virTristateSwitchTypeToString(src->nvdimmPmem),
+                           virTristateSwitchTypeToString(dst->nvdimmPmem));
+            return false;
+        }
+
+        if (src->nvdimmPersistence != dst->nvdimmPersistence) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Target NVDIMM persistence value '%s' doesn't match "
+                             "source NVDIMM persistence value '%s'"),
+                           virDomainMemoryPersistenceTypeToString(src->nvdimmPersistence),
+                           virDomainMemoryPersistenceTypeToString(dst->nvdimmPersistence));
+            return false;
+        }
+
+        if (src->nvdimmUnarmed != dst->nvdimmUnarmed) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Target NVDIMM unarmed flag '%s' doesn't match "
+                             "source NVDIMM unarmed flag '%s'"),
+                           virTristateSwitchTypeToString(src->nvdimmUnarmed),
+                           virTristateSwitchTypeToString(dst->nvdimmUnarmed));
+            return false;
+        }
     }
 
     return virDomainDeviceInfoCheckABIStability(&src->info, &dst->info);
@@ -25937,6 +26024,14 @@ virDomainMemorySourceDefFormat(virBufferPtr buf,
 
     case VIR_DOMAIN_MEMORY_MODEL_NVDIMM:
         virBufferEscapeString(buf, "<path>%s</path>\n", def->nvdimmPath);
+
+        if (def->alignsize)
+            virBufferAsprintf(buf, "<alignsize unit='KiB'>%llu</alignsize>\n",
+                              def->alignsize);
+
+        if (def->nvdimmPmem)
+            virBufferEscapeString(buf, "<pmem>%s</pmem>\n",
+                                  virTristateSwitchTypeToString(def->nvdimmPmem));
         break;
 
     case VIR_DOMAIN_MEMORY_MODEL_NONE:
@@ -25972,6 +26067,12 @@ virDomainMemoryTargetDefFormat(virBufferPtr buf,
         virBufferAdjustIndent(buf, -2);
         virBufferAddLit(buf, "</label>\n");
     }
+    if (def->nvdimmPersistence)
+        virBufferEscapeString(buf, "<persistence>%s</persistence>\n",
+                              virDomainMemoryPersistenceTypeToString(def->nvdimmPersistence));
+    if (def->nvdimmUnarmed)
+        virBufferEscapeString(buf, "<unarmed>%s</unarmed>\n",
+                              virTristateSwitchTypeToString(def->nvdimmUnarmed));
 
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</target>\n");
