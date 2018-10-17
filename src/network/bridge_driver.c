@@ -1416,11 +1416,8 @@ networkDnsmasqConfContents(virNetworkObjPtr obj,
                 !(eaddr = virSocketAddrFormat(&ipdef->ranges[r].end)))
                 goto cleanup;
 
-            virBufferAsprintf(&configbuf, "dhcp-range=%s,%s",
-                              saddr, eaddr);
-            if (VIR_SOCKET_ADDR_IS_FAMILY(&ipdef->address, AF_INET6))
-                virBufferAsprintf(&configbuf, ",%d", prefix);
-            virBufferAddLit(&configbuf, "\n");
+            virBufferAsprintf(&configbuf, "dhcp-range=%s,%s,%d\n",
+                              saddr, eaddr, prefix);
 
             VIR_FREE(saddr);
             VIR_FREE(eaddr);
