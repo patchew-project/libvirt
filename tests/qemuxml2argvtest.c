@@ -2731,6 +2731,18 @@ mymain(void)
     DO_TEST("memory-hotplug-nvdimm-label",
             QEMU_CAPS_DEVICE_NVDIMM,
             QEMU_CAPS_NUMA, QEMU_CAPS_OBJECT_MEMORY_RAM, QEMU_CAPS_OBJECT_MEMORY_FILE);
+    DO_TEST("memory-hotplug-nvdimm-align",
+            QEMU_CAPS_DEVICE_NVDIMM,
+            QEMU_CAPS_NUMA, QEMU_CAPS_OBJECT_MEMORY_RAM, QEMU_CAPS_OBJECT_MEMORY_FILE);
+    DO_TEST("memory-hotplug-nvdimm-pmem",
+            QEMU_CAPS_DEVICE_NVDIMM,
+            QEMU_CAPS_NUMA, QEMU_CAPS_OBJECT_MEMORY_RAM, QEMU_CAPS_OBJECT_MEMORY_FILE);
+    DO_TEST("memory-hotplug-nvdimm-persistence",
+            QEMU_CAPS_DEVICE_NVDIMM,
+            QEMU_CAPS_NUMA, QEMU_CAPS_OBJECT_MEMORY_RAM, QEMU_CAPS_OBJECT_MEMORY_FILE);
+    DO_TEST("memory-hotplug-nvdimm-unarmed",
+            QEMU_CAPS_DEVICE_NVDIMM,
+            QEMU_CAPS_NUMA, QEMU_CAPS_OBJECT_MEMORY_RAM, QEMU_CAPS_OBJECT_MEMORY_FILE);
 
     DO_TEST("machine-aeskeywrap-on-caps",
             QEMU_CAPS_AES_KEY_WRAP,

@@ -3319,6 +3319,22 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
     if (virJSONValueObjectAdd(props, "U:size", mem->size * 1024, NULL) < 0)
         goto cleanup;
 
+    if (mem->alignsize) {
+        if (virJSONValueObjectAdd(props,
+                                  "U:align",
+                                  mem->alignsize * 1024,
+                                  NULL) < 0)
+            goto cleanup;
+    }
+
+    if (mem->nvdimmPmem) {
+        if (virJSONValueObjectAdd(props,
+                                  "s:pmem",
+                                  virTristateSwitchTypeToString(mem->nvdimmPmem),
+                                  NULL) < 0)
+            goto cleanup;
+    }
+
     if (mem->sourceNodes) {
         nodemask = mem->sourceNodes;
     } else {
@@ -3479,6 +3495,10 @@ qemuBuildMemoryDeviceStr(virDomainMemoryDefPtr mem)
 
         if (mem->labelsize)
             virBufferAsprintf(&buf, "label-size=%llu,", mem->labelsize * 1024);
+
+        if (mem->nvdimmUnarmed)
+            virBufferAsprintf(&buf, "unarmed=%s,",
+                              virTristateSwitchTypeToString(mem->nvdimmUnarmed));
 
         virBufferAsprintf(&buf, "memdev=mem%s,id=%s",
                           mem->info.alias, mem->info.alias);
@@ -7262,6 +7282,11 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
                 goto cleanup;
             }
             virBufferAddLit(&buf, ",nvdimm=on");
+
+            if (def->mems[i]->nvdimmPersistence) {
+                virBufferAsprintf(&buf, ",nvdimm-persistence=%s",
+                                  virDomainMemoryPersistenceTypeToString(def->mems[i]->nvdimmPersistence));
+            }
             break;
         }
     }
