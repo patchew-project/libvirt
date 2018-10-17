@@ -563,7 +563,7 @@ virSecurityDACTransactionCommit(virSecurityManagerPtr mgr ATTRIBUTE_UNUSED,
     }
 
     if ((pid == -1 &&
-         virSecurityDACTransactionRun(pid, list) < 0) ||
+         virProcessRunInFork(virSecurityDACTransactionRun, list) < 0) ||
         (pid != -1 &&
          virProcessRunInMountNamespace(pid,
                                        virSecurityDACTransactionRun,

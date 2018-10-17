@@ -1104,7 +1104,7 @@ virSecuritySELinuxTransactionCommit(virSecurityManagerPtr mgr ATTRIBUTE_UNUSED,
     }
 
     if ((pid == -1 &&
-         virSecuritySELinuxTransactionRun(pid, list) < 0) ||
+         virProcessRunInFork(virSecuritySELinuxTransactionRun, list) < 0) ||
         (pid != -1 &&
          virProcessRunInMountNamespace(pid,
                                        virSecuritySELinuxTransactionRun,
