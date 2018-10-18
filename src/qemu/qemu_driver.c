@@ -16526,8 +16526,9 @@ qemuDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
         snap->first_child = NULL;
         ret = 0;
     } else {
-        virDomainSnapshotDropParent(snap);
         ret = qemuDomainSnapshotDiscard(driver, vm, snap, true, metadata_only);
+        if (ret == 0)
+            virDomainSnapshotDropParent(snap);
     }
 
  endjob:
