@@ -508,6 +508,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               /* 315 */
               "vfio-pci.display",
               "blockdev",
+              "iothread.poll-max-ns",
     );
 
 
@@ -1237,6 +1238,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "nbd-server-start/arg-type/tls-creds", QEMU_CAPS_NBD_TLS },
     { "screendump/arg-type/device", QEMU_CAPS_SCREENDUMP_DEVICE },
     { "block-commit/arg-type/*top",  QEMU_CAPS_ACTIVE_COMMIT },
+    { "query-iothreads/ret-type/poll-max-ns", QEMU_CAPS_IOTHREAD_POLLING },
 };
 
 typedef struct _virQEMUCapsObjectTypeProps virQEMUCapsObjectTypeProps;
