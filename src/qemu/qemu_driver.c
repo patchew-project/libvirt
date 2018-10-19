@@ -5486,12 +5486,42 @@ qemuDomainGetMaxVcpus(virDomainPtr dom)
                                          VIR_DOMAIN_VCPU_MAXIMUM));
 }
 
+
+static int
+qemuDomainGetIOThreadsMon(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm,
+                          qemuMonitorIOThreadInfoPtr **iothreads)
+{
+    qemuDomainObjPrivatePtr priv;
+    int niothreads = 0;
+
+    if (!virDomainObjIsActive(vm)) {
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("cannot list IOThreads for an inactive domain"));
+        return -1;
+    }
+
+    priv = vm->privateData;
+    if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_OBJECT_IOTHREAD)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("IOThreads not supported with this binary"));
+        return -1;
+    }
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    niothreads = qemuMonitorGetIOThreads(priv->mon, iothreads);
+    if (qemuDomainObjExitMonitor(driver, vm) < 0 || niothreads < 0)
+        return -1;
+
+    return niothreads;
+}
+
+
 static int
 qemuDomainGetIOThreadsLive(virQEMUDriverPtr driver,
                            virDomainObjPtr vm,
                            virDomainIOThreadInfoPtr **info)
 {
-    qemuDomainObjPrivatePtr priv;
     qemuMonitorIOThreadInfoPtr *iothreads = NULL;
     virDomainIOThreadInfoPtr *info_ret = NULL;
     int niothreads = 0;
@@ -5501,24 +5531,7 @@ qemuDomainGetIOThreadsLive(virQEMUDriverPtr driver,
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_QUERY) < 0)
         goto cleanup;
 
-    if (!virDomainObjIsActive(vm)) {
-        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
-                       _("cannot list IOThreads for an inactive domain"));
-        goto endjob;
-    }
-
-    priv = vm->privateData;
-    if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_OBJECT_IOTHREAD)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("IOThreads not supported with this binary"));
-        goto endjob;
-    }
-
-    qemuDomainObjEnterMonitor(driver, vm);
-    niothreads = qemuMonitorGetIOThreads(priv->mon, &iothreads);
-    if (qemuDomainObjExitMonitor(driver, vm) < 0)
-        goto endjob;
-    if (niothreads < 0)
+    if ((niothreads = qemuDomainGetIOThreadsMon(driver, vm, &iothreads)) < 0)
         goto endjob;
 
     /* Nothing to do */
@@ -5548,8 +5561,7 @@ qemuDomainGetIOThreadsLive(virQEMUDriverPtr driver,
         virBitmapFree(map);
     }
 
-    *info = info_ret;
-    info_ret = NULL;
+    VIR_STEAL_PTR(*info, info_ret);
     ret = niothreads;
 
  endjob:
