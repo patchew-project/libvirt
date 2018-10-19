@@ -1591,6 +1591,53 @@ udevEventMonitorSanityCheck(udevEventDataPtr priv,
 }
 
 
+/**
+ * udevEventHandleThread
+ * @opaque: unused
+ *
+ * Thread to handle the udevEventHandleCallback processing when udev
+ * tells us there's a device change for us (add, modify, delete, etc).
+ *
+ * Management of the processing udev device notification is a delicate
+ * balance between the udev process, the scheduler, and when exactly the
+ * data from/for the socket is received. The udev processing code notifies
+ * the udevEventHandleCallback that it has data; however, the actual recv()
+ * done in the udev code to fill in the @device structure can be delayed
+ * due to how threads are scheduled.
+ *
+ * As it turns out, the event loop could be scheduled (and it in fact
+ * was) earlier than the handler thread. What that essentially means is
+ * that by the time the thread actually handled the event and read the
+ * data from the monitor, the event loop fired the very same event, simply
+ * because the data hadn't been retrieved from the socket at that point yet.
+ *
+ * Thus this algorithm is that once udevEventHandleCallback is notified
+ * there is data, this loop will process as much data as possible until
+ * udev_monitor_receive_device fails to get the @device. This may be
+ * because we've processed everything or because the scheduling thread
+ * hasn't been able to populate data in the socket. Once we're done
+ * processing everything we can, wait on the next event/notification.
+ * Although this may incur a slight delay if the socket data wasn't
+ * populated, the event/notifications are fairly consistent so there's
+ * no need to use virCondWaitUntil.
+ *
+ * NB: Usage of event based socket algorithm causes some issues with
+ * older platforms such as CentOS 6 in which the data socket is opened
+ * without the NONBLOCK bit set. Still even if the reset of priv->dataReady
+ * were moved to just after the udev_monitor_receive_device in order to
+ * avoid the NONBLOCK issue, the scheduler would still come into play
+ * especially for environments when multiple devices are added into the
+ * system. Even those environments would still be blocked on the udev
+ * socket recv() call. The algorithm for handling that scenario would
+ * be more complex and involve pulling the monitor object out of the
+ * private data lockable object and would need to be guarded by a
+ * separate lock. Devising algorithms to work around issues with older
+ * OS's at the expense of more modern OS algorithms in newer event
+ * processing code may result in unexpected issues, so the choice is
+ * to encourage use of newer OS's with newer udev event processing code.
+ * Newer devices, such as mdevs make heavy usage of event processing
+ * and it's expected future devices would follow that model.
+ */
 static void
 udevEventHandleThread(void *opaque ATTRIBUTE_UNUSED)
 {
@@ -1637,6 +1684,8 @@ udevEventHandleThread(void *opaque ATTRIBUTE_UNUSED)
                 return;
             }
 
+            /* See the above description why this needs to be here
+             * and not after the udev_monitor_receive_device. */
             virObjectLock(priv);
             priv->dataReady = false;
             virObjectUnlock(priv);
