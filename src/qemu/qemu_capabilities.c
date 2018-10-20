@@ -54,6 +54,10 @@
 #include <sys/wait.h>
 #include <stdarg.h>
 #include <sys/utsname.h>
+#ifdef __APPLE__
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
@@ -2577,6 +2581,27 @@ virQEMUCapsProbeQMPKVMState(virQEMUCapsPtr qemuCaps,
     return 0;
 }
 
+static int
+virQEMUCapsProbeHVF(virQEMUCapsPtr qemuCaps,
+                    qemuMonitorPtr mon)
+{
+    (void)mon;
+    int hv_support = 0;
+#ifdef __APPLE__
+    size_t len = sizeof(hv_support);
+    if (sysctlbyname("kern.hv_support", &hv_support, &len, NULL, 0))
+        hv_support = 0;
+#endif
+
+    if (qemuCaps->version >= 2012000 &&
+        ARCH_IS_X86(qemuCaps->arch) &&
+        hv_support) {
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_HVF);
+    }
+
+    return 0;
+}
+
 struct virQEMUCapsCommandLineProps {
     const char *option;
     const char *param;
@@ -4121,6 +4146,9 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
 
     /* Some capabilities may differ depending on KVM state */
     if (virQEMUCapsProbeQMPKVMState(qemuCaps, mon) < 0)
+        goto cleanup;
+
+    if (virQEMUCapsProbeHVF(qemuCaps, mon) < 0)
         goto cleanup;
 
     if (virQEMUCapsProbeQMPEvents(qemuCaps, mon) < 0)
