@@ -852,6 +852,17 @@ virQEMUCapsInitGuestFromBinary(virCapsPtr caps,
         }
     }
 
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_HVF)) {
+        if (virCapabilitiesAddGuestDomain(guest,
+                                          VIR_DOMAIN_VIRT_HVF,
+                                          NULL,
+                                          NULL,
+                                          0,
+                                          NULL) == NULL) {
+            goto cleanup;
+        }
+    }
+
     if ((ARCH_IS_X86(guestarch) || guestarch == VIR_ARCH_AARCH64) &&
         virCapabilitiesAddGuestFeature(guest, "acpi", true, true) == NULL) {
         goto cleanup;
