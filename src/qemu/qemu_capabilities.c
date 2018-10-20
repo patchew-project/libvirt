@@ -642,6 +642,15 @@ virQEMUCapsHaveAccel(virQEMUCapsPtr qemuCaps)
     return virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM);
 }
 
+static virDomainVirtType
+virQEMUCapsToVirtType(virQEMUCapsPtr qemuCaps)
+{
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
+        return VIR_DOMAIN_VIRT_KVM;
+    else
+        return VIR_DOMAIN_VIRT_QEMU;
+}
+
 /* Checks whether a domain with @guest arch can run natively on @host.
  */
 bool
@@ -2401,7 +2410,7 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
         virtType = VIR_DOMAIN_VIRT_QEMU;
         model = "max";
     } else {
-        virtType = VIR_DOMAIN_VIRT_KVM;
+        virtType = virQEMUCapsToVirtType(qemuCaps);
         model = "host";
     }
 
@@ -4935,10 +4944,7 @@ virQEMUCapsCacheLookupDefault(virFileCachePtr cache,
         machine = virQEMUCapsGetPreferredMachine(qemuCaps);
     }
 
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
-        capsType = VIR_DOMAIN_VIRT_KVM;
-    else
-        capsType = VIR_DOMAIN_VIRT_QEMU;
+    capsType = virQEMUCapsToVirtType(qemuCaps);
 
     if (virttype == VIR_DOMAIN_VIRT_NONE)
         virttype = capsType;
