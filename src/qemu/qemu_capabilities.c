@@ -633,13 +633,15 @@ static const char *virQEMUCapsArchToString(virArch arch)
 static bool
 virQEMUCapsTypeIsAccelerated(virDomainVirtType type)
 {
-    return type == VIR_DOMAIN_VIRT_KVM;
+    return type == VIR_DOMAIN_VIRT_KVM ||
+           type == VIR_DOMAIN_VIRT_HVF;
 }
 
 static bool
 virQEMUCapsHaveAccel(virQEMUCapsPtr qemuCaps)
 {
-    return virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM);
+    return virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM) ||
+           virQEMUCapsGet(qemuCaps, QEMU_CAPS_HVF);
 }
 
 static virDomainVirtType
@@ -647,6 +649,8 @@ virQEMUCapsToVirtType(virQEMUCapsPtr qemuCaps)
 {
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
         return VIR_DOMAIN_VIRT_KVM;
+    else if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_HVF))
+        return VIR_DOMAIN_VIRT_HVF;
     else
         return VIR_DOMAIN_VIRT_QEMU;
 }
@@ -656,6 +660,8 @@ virQEMUCapsAccelStr(virDomainVirtType type)
 {
     if (type == VIR_DOMAIN_VIRT_KVM) {
         return "kvm";
+    } else if (type == VIR_DOMAIN_VIRT_HVF) {
+        return "hvf";
     } else {
         return "tcg";
     }
@@ -3081,6 +3087,8 @@ virQEMUCapsLoadHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
 
     if (virtType == VIR_DOMAIN_VIRT_KVM)
         hostCPUNode = virXPathNode("./hostCPU[@type='kvm']", ctxt);
+    else if (virtType == VIR_DOMAIN_VIRT_HVF)
+        hostCPUNode = virXPathNode("./hostCPU[@type='hvf']", ctxt);
     else
         hostCPUNode = virXPathNode("./hostCPU[@type='tcg']", ctxt);
 
@@ -3216,6 +3224,8 @@ virQEMUCapsLoadCPUModels(virQEMUCapsPtr qemuCaps,
 
     if (type == VIR_DOMAIN_VIRT_KVM)
         n = virXPathNodeSet("./cpu[@type='kvm']", ctxt, &nodes);
+    else if (type == VIR_DOMAIN_VIRT_HVF)
+        n = virXPathNodeSet("./cpu[@type='hvf']", ctxt, &nodes);
     else
         n = virXPathNodeSet("./cpu[@type='tcg']", ctxt, &nodes);
 
@@ -3513,10 +3523,12 @@ virQEMUCapsLoadCache(virArch hostArch,
     VIR_FREE(str);
 
     if (virQEMUCapsLoadHostCPUModelInfo(qemuCaps, ctxt, VIR_DOMAIN_VIRT_KVM) < 0 ||
+        virQEMUCapsLoadHostCPUModelInfo(qemuCaps, ctxt, VIR_DOMAIN_VIRT_HVF) < 0 ||
         virQEMUCapsLoadHostCPUModelInfo(qemuCaps, ctxt, VIR_DOMAIN_VIRT_QEMU) < 0)
         goto cleanup;
 
     if (virQEMUCapsLoadCPUModels(qemuCaps, ctxt, VIR_DOMAIN_VIRT_KVM) < 0 ||
+        virQEMUCapsLoadCPUModels(qemuCaps, ctxt, VIR_DOMAIN_VIRT_HVF) < 0 ||
         virQEMUCapsLoadCPUModels(qemuCaps, ctxt, VIR_DOMAIN_VIRT_QEMU) < 0)
         goto cleanup;
 
@@ -3630,6 +3642,7 @@ virQEMUCapsLoadCache(virArch hostArch,
         goto cleanup;
 
     virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_KVM);
+    virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_HVF);
     virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_QEMU);
 
     ret = 0;
@@ -3809,9 +3822,11 @@ virQEMUCapsFormatCache(virQEMUCapsPtr qemuCaps)
                       virArchToString(qemuCaps->arch));
 
     virQEMUCapsFormatHostCPUModelInfo(qemuCaps, &buf, VIR_DOMAIN_VIRT_KVM);
+    virQEMUCapsFormatHostCPUModelInfo(qemuCaps, &buf, VIR_DOMAIN_VIRT_HVF);
     virQEMUCapsFormatHostCPUModelInfo(qemuCaps, &buf, VIR_DOMAIN_VIRT_QEMU);
 
     virQEMUCapsFormatCPUModels(qemuCaps, &buf, VIR_DOMAIN_VIRT_KVM);
+    virQEMUCapsFormatCPUModels(qemuCaps, &buf, VIR_DOMAIN_VIRT_HVF);
     virQEMUCapsFormatCPUModels(qemuCaps, &buf, VIR_DOMAIN_VIRT_QEMU);
 
     for (i = 0; i < qemuCaps->nmachineTypes; i++) {
@@ -4422,7 +4437,7 @@ virQEMUCapsInitQMPCommandRun(virQEMUCapsInitQMPCommandPtr cmd,
     if (forceTCG)
         machine = "none,accel=tcg";
     else
-        machine = "none,accel=kvm:tcg";
+        machine = "none,accel=kvm:hvf:tcg";
 
     VIR_DEBUG("Try to probe capabilities of '%s' via QMP, machine %s",
               cmd->binary, machine);
@@ -4612,6 +4627,7 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
     qemuCaps->libvirtVersion = LIBVIR_VERSION_NUMBER;
 
     virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_KVM);
+    virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_HVF);
     virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_QEMU);
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
