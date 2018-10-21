@@ -15952,18 +15952,193 @@ qemuDomainSnapshotHasMetadata(virDomainSnapshotPtr snapshot,
     return ret;
 }
 
+static int
+qemuDomainSnapshotRevertExternalSingleDisk(virQEMUDriverPtr driver,
+                                           virDomainDiskDefPtr revert_disk,
+                                           virDomainDiskDefPtr backing_disk)
+{
+    virCommandPtr cmd = NULL;
+    const char *qemuImgPath;
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    int ret = -1;
+
+    if (!(qemuImgPath = qemuFindQemuImgBinary(driver)))
+        goto cleanup;
+
+    if (unlink(revert_disk->src->path) < 0)
+        VIR_WARN("Failed to overwrite current image for snapshot '%s'",
+                 revert_disk->src->path);
+
+    /* TODO: maybe figure out the format from the backing_disk? */
+    revert_disk->src->format = VIR_STORAGE_FILE_QCOW2;
+    /* FIXME: what about revert_disk->src->backingStore ? */
+
+    /* creates cmd line args: qemu-img create -f qcow2 -o */
+    if (!(cmd = virCommandNewArgList(qemuImgPath,
+                                     "create",
+                                     "-f",
+                                     virStorageFileFormatTypeToString(revert_disk->src->format),
+                                     "-o",
+                                     NULL)))
+        goto cleanup;
+
+    /* adds cmd line arg: backing_file=/path/to/backing/file,backing_fmt=format */
+    virCommandAddArgFormat(cmd, "backing_file=%s,backing_fmt=%s",
+                           backing_disk->src->path,
+                           virStorageFileFormatTypeToString(backing_disk->src->format));
+
+    /* adds cmd line args: /path/to/target/file */
+    virCommandAddArg(cmd, revert_disk->src->path);
+
+    if (virCommandRun(cmd, NULL) < 0)
+        goto cleanup;
+
+    virCommandFree(cmd);
+    cmd = NULL;
+    ret = 0;
+
+ cleanup:
+    virCommandFree(cmd);
+    virObjectUnref(cfg);
+
+    return ret;
+}
+
+static void
+qemuComputeSnapshotDiskToDomainDiskMapping(virDomainSnapshotDefPtr snap_def,
+                                           virDomainDefPtr dom_def,
+                                           int* out_mapping)
+{
+    size_t i, j;
+    int found_idx;
+    virDomainSnapshotDiskDefPtr snap_disk;
+
+    for (i = 0; i < snap_def->ndisks; ++i) {
+        snap_disk = &(snap_def->disks[i]);
+        if (snap_disk->snapshot != VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL)
+            continue;
+
+        found_idx = -1;
+        for (j = 0; j < dom_def->ndisks; ++j) {
+            if (STREQ(dom_def->disks[j]->dst, snap_disk->name)) {
+                found_idx = j;
+                break;
+            }
+        }
+        out_mapping[i] = found_idx;
+    }
+}
+
+/* This function reverts an external snapshot disk state. With external disks
+   we can't just revert to the disks listed in the domain stored within the
+   snapshot, because it's read-only and might be used by other VMs in different
+   backing chains. Since the contents of the current disks will be discarded
+   in favor of data in the snapshot, we reuse them by resetting them and
+   pointing the backing image link to the disks listed within the snapshot.
+
+   The domain is expected to be inactive.
+
+   new_def is the new domain definition that will be stored to vm sometime in
+   the future.
+ */
+static int
+qemuDomainSnapshotRevertInactiveExternal(virQEMUDriverPtr driver,
+                                         virDomainObjPtr vm,
+                                         virDomainSnapshotObjPtr snap,
+                                         virDomainDefPtr new_def)
+{
+    /* We have the following disks recorded in the snapshot and the current
+       domain definition:
+
+        - the current disk state before the revert (vm->def->disks). We'll
+          discard and reuse them.
+        - the lists of disks that were snapshotted (snap->def->disks). We'll
+          use this information to figure out which disks to actually revert.
+        - the original disk state stored in the snapshot
+          (snap->def->dom->disks). We'll point reverted disks to use these
+          disks as backing images.
+
+        FIXME: what to do with disks that weren't included in all snapshots
+        within the hierrachy?
+    */
+    size_t i;
+    int* snap_disk_to_vm_def_disk_idx_map = NULL;
+    int* snap_disk_to_new_def_disk_idx_map = NULL;
+    int ret = -1;
+    virDomainSnapshotDiskDefPtr snap_disk;
+    virDomainDiskDefPtr backing_disk;
+    virDomainDiskDefPtr revert_disk;
+    virDomainDiskDefPtr new_disk;
+
+    if (VIR_ALLOC_N(snap_disk_to_vm_def_disk_idx_map, snap->def->ndisks) < 0)
+        goto cleanup;
+    if (VIR_ALLOC_N(snap_disk_to_new_def_disk_idx_map, snap->def->ndisks) < 0)
+        goto cleanup;
+
+    /* Figure out the matching disks from the current VM state. */
+    qemuComputeSnapshotDiskToDomainDiskMapping(snap->def, vm->def,
+                                               snap_disk_to_vm_def_disk_idx_map);
+    qemuComputeSnapshotDiskToDomainDiskMapping(snap->def, new_def,
+                                               snap_disk_to_new_def_disk_idx_map);
+
+    for (i = 0; i < snap->def->ndisks; ++i) {
+        snap_disk = &(snap->def->disks[i]);
+        if (snap_disk->snapshot != VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL)
+            continue;
+        if (snap_disk_to_vm_def_disk_idx_map[i] < 0 ||
+            snap_disk_to_new_def_disk_idx_map[i] < 0) {
+            // FIXME: we could create additional disks, but for now it's not
+            // supported.
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("all disks in the snapshots must have "
+                             "equivalents in the current VM state."));
+            goto cleanup;
+        }
+    }
+
+    /* Discard old disk contents and point them to the backing disks */
+    for (i = 0; i < snap->def->ndisks; ++i) {
+        snap_disk = &(snap->def->disks[i]);
+
+        // Note that at the moment we don't support mixing internal and
+        // external snapshot modes for different disks, but skip non-external
+        // disks just in case.
+        if (snap_disk->snapshot != VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL)
+            continue;
+
+        backing_disk = snap->def->dom->disks[snap_disk->idx];
+        revert_disk = vm->def->disks[snap_disk_to_vm_def_disk_idx_map[i]];
+        if (qemuDomainSnapshotRevertExternalSingleDisk(driver, revert_disk,
+                                                       backing_disk) < 0) {
+            goto cleanup;
+        }
+
+        /* FIXME: figure out which data exactly needs copying.
+         */
+        new_disk = new_def->disks[snap_disk_to_new_def_disk_idx_map[i]];
+        new_disk->src->format = revert_disk->src->format;
+        if (VIR_STRDUP(new_disk->src->path, revert_disk->src->path) < 0) {
+            goto cleanup;
+        }
+    }
+    ret = 0;
+
+cleanup:
+    VIR_FREE(snap_disk_to_vm_def_disk_idx_map);
+    VIR_FREE(snap_disk_to_new_def_disk_idx_map);
+    return ret;
+}
 
 /* The domain is expected to be locked and inactive. */
 static int
-qemuDomainSnapshotRevertInactive(virQEMUDriverPtr driver,
-                                 virDomainObjPtr vm,
-                                 virDomainSnapshotObjPtr snap)
+qemuDomainSnapshotRevertInactiveInternal(virQEMUDriverPtr driver,
+                                         virDomainObjPtr vm,
+                                         virDomainSnapshotObjPtr snap)
 {
     /* Try all disks, but report failure if we skipped any.  */
     int ret = qemuDomainSnapshotForEachQcow2(driver, vm, snap, "-a", true);
     return ret > 0 ? -1 : ret;
 }
-
 
 static int
 qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
@@ -15981,6 +16156,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     virDomainDefPtr config = NULL;
     virQEMUDriverConfigPtr cfg = NULL;
     virCapsPtr caps = NULL;
+    bool is_external = false;
     bool was_stopped = false;
     qemuDomainSaveCookiePtr cookie;
     virCPUDefPtr origCPU = NULL;
@@ -16043,11 +16219,13 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
         goto endjob;
     }
 
-    if (virDomainSnapshotIsExternal(snap)) {
+    if (snap->def->memory == VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("revert to external snapshot not supported yet"));
+                       _("revert to external snapshot with memory state is "
+                         "not supported yet"));
         goto endjob;
     }
+    is_external = virDomainSnapshotIsExternal(snap);
 
     if (!(flags & VIR_DOMAIN_SNAPSHOT_REVERT_FORCE)) {
         if (!snap->def->dom) {
@@ -16090,6 +16268,11 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                                   driver->xmlopt, NULL, true);
         if (!config)
             goto endjob;
+    } else if (is_external) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("revert to a an external snapshot without the VM "
+                         "definition recorded is not supported."));
+        goto endjob;
     }
 
     cookie = (qemuDomainSaveCookiePtr) snap->def->cookie;
@@ -16110,8 +16293,8 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
             /* Transitions 5, 6, 8, 9 */
             /* Check for ABI compatibility. We need to do this check against
              * the migratable XML or it will always fail otherwise */
+            bool compatible = true;
             if (config) {
-                bool compatible;
 
                 /* Replace the CPU in config and put the original one in priv
                  * once we're done. When we have the updated CPU def in the
@@ -16152,20 +16335,25 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                         goto endjob;
                     }
                     virResetError(err);
-                    qemuProcessStop(driver, vm,
-                                    VIR_DOMAIN_SHUTOFF_FROM_SNAPSHOT,
-                                    QEMU_ASYNC_JOB_START, 0);
-                    virDomainAuditStop(vm, "from-snapshot");
-                    detail = VIR_DOMAIN_EVENT_STOPPED_FROM_SNAPSHOT;
-                    event = virDomainEventLifecycleNewFromObj(vm,
-                                                     VIR_DOMAIN_EVENT_STOPPED,
-                                                     detail);
-                    virObjectEventStateQueue(driver->domainEventState, event);
-                    /* Start after stop won't be an async start job, so
-                     * reset to none */
-                    jobType = QEMU_ASYNC_JOB_NONE;
-                    goto load;
                 }
+            }
+
+            if (!compatible || is_external) {
+                // If the snapshot is external we completely stop QEMU, adjust
+                // the disk state and restart it.
+                qemuProcessStop(driver, vm,
+                                VIR_DOMAIN_SHUTOFF_FROM_SNAPSHOT,
+                                QEMU_ASYNC_JOB_START, 0);
+                virDomainAuditStop(vm, "from-snapshot");
+                detail = VIR_DOMAIN_EVENT_STOPPED_FROM_SNAPSHOT;
+                event = virDomainEventLifecycleNewFromObj(vm,
+                                                 VIR_DOMAIN_EVENT_STOPPED,
+                                                 detail);
+                virObjectEventStateQueue(driver->domainEventState, event);
+                /* Start after stop won't be an async start job, so
+                 * reset to none */
+                jobType = QEMU_ASYNC_JOB_NONE;
+                goto load;
             }
 
             priv = vm->privateData;
@@ -16208,7 +16396,13 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
         } else {
             /* Transitions 2, 3 */
         load:
+
             was_stopped = true;
+
+            if (is_external &&
+                qemuDomainSnapshotRevertInactiveExternal(driver, vm, snap, config) < 0)
+                goto cleanup;
+
             if (config)
                 virDomainObjAssignDef(vm, config, false, NULL);
 
@@ -16221,7 +16415,8 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
 
             rc = qemuProcessStart(snapshot->domain->conn, driver, vm,
                                   cookie ? cookie->cpu : NULL,
-                                  jobType, NULL, -1, NULL, snap,
+                                  jobType, NULL, -1, NULL,
+                                  is_external ? NULL : snap,
                                   VIR_NETDEV_VPORT_PROFILE_OP_CREATE,
                                   start_flags);
             virDomainAuditStart(vm, "from-snapshot", rc >= 0);
@@ -16291,11 +16486,18 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                                              detail);
         }
 
-        if (qemuDomainSnapshotRevertInactive(driver, vm, snap) < 0) {
+        if (is_external) {
+            rc = qemuDomainSnapshotRevertInactiveExternal(driver, vm, snap, config);
+        } else {
+            rc = qemuDomainSnapshotRevertInactiveInternal(driver, vm, snap);
+        }
+
+        if (rc < 0) {
             qemuDomainRemoveInactive(driver, vm);
             qemuProcessEndJob(driver, vm);
             goto cleanup;
         }
+
         if (config)
             virDomainObjAssignDef(vm, config, false, NULL);
 
