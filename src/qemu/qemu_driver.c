@@ -16601,6 +16601,23 @@ struct _virQEMUSnapReparent {
 
 
 static int
+qemuDomainSnapshotReparentChildrenMetadata(virDomainSnapshotObjPtr snap,
+                                           virQEMUSnapReparentPtr rep)
+{
+    VIR_FREE(snap->def->parent);
+    snap->parent = rep->parent;
+
+    if (rep->parent->def &&
+        VIR_STRDUP(snap->def->parent, rep->parent->def->name) < 0) {
+        return -1;
+    }
+
+    return qemuDomainSnapshotWriteMetadata(rep->vm, snap,
+                                           rep->caps, rep->xmlopt,
+                                           rep->cfg->snapshotDir);
+}
+
+static int
 qemuDomainSnapshotReparentChildren(void *payload,
                                    const void *name ATTRIBUTE_UNUSED,
                                    void *data)
@@ -16611,21 +16628,14 @@ qemuDomainSnapshotReparentChildren(void *payload,
     if (rep->err < 0)
         return 0;
 
-    VIR_FREE(snap->def->parent);
-    snap->parent = rep->parent;
-
-    if (rep->parent->def &&
-        VIR_STRDUP(snap->def->parent, rep->parent->def->name) < 0) {
+    if (qemuDomainSnapshotReparentChildrenMetadata(snap, rep) < 0) {
         rep->err = -1;
-        return 0;
+        goto cleanup;
     }
 
+cleanup:
     if (!snap->sibling)
         rep->last = snap;
-
-    rep->err = qemuDomainSnapshotWriteMetadata(rep->vm, snap,
-                                               rep->caps, rep->xmlopt,
-                                               rep->cfg->snapshotDir);
     return 0;
 }
 
