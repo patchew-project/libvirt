@@ -15298,6 +15298,8 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
                             const char *xmlDesc,
                             unsigned int flags)
 {
+    VIR_DEBUG("domain=%p, flags=0x%x, xmlDesc=%s", domain, flags, xmlDesc);
+
     virQEMUDriverPtr driver = domain->conn->privateData;
     virDomainObjPtr vm = NULL;
     char *xml = NULL;
