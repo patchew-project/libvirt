@@ -16590,6 +16590,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
 typedef struct _virQEMUSnapReparent virQEMUSnapReparent;
 typedef virQEMUSnapReparent *virQEMUSnapReparentPtr;
 struct _virQEMUSnapReparent {
+    virQEMUDriverPtr driver;
     virQEMUDriverConfigPtr cfg;
     virDomainSnapshotObjPtr parent;
     virDomainObjPtr vm;
@@ -16618,6 +16619,88 @@ qemuDomainSnapshotReparentChildrenMetadata(virDomainSnapshotObjPtr snap,
 }
 
 static int
+qemuDomainSnapshotReparentDiskExternal(virQEMUDriverPtr driver,
+                                       virDomainSnapshotObjPtr parent_snap,
+                                       virDomainSnapshotDiskDefPtr disk)
+{
+    const char* qemu_img_path = NULL;
+    virCommandPtr cmd = NULL;
+    int i;
+    int ret = -1;
+    const char* parent_disk_path = NULL;
+
+    // Find the path to the disk we should use as the base when reparenting
+    // FIXME: what if there's no parent snapshot? i.e. we need to reparent on
+    // "empty" disk?
+    for (i = 0; i < parent_snap->def->dom->ndisks; ++i) {
+        if (STREQ(parent_snap->def->dom->disks[i]->dst, disk->name)) {
+            parent_disk_path = parent_snap->def->dom->disks[i]->src->path;
+            break;
+        }
+    }
+
+    if (parent_disk_path == NULL) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Could not find disk to reparent '%s' to"),
+                       disk->src->path);
+        goto cleanup;
+    }
+
+    if (!(qemu_img_path = qemuFindQemuImgBinary(driver))) {
+        goto cleanup;
+    }
+
+    if (!(cmd = virCommandNewArgList(qemu_img_path,
+                                     "rebase", "-b", parent_disk_path,
+                                     disk->src->path,
+                                     NULL))) {
+        goto cleanup;
+    }
+
+    if (virCommandRun(cmd, NULL) < 0)
+        goto cleanup;
+
+    ret = 0;
+cleanup:
+    virCommandFree(cmd);
+    return ret;
+}
+
+static int
+qemuDomainSnapshotReparentDisks(virDomainSnapshotObjPtr snap,
+                                virQEMUSnapReparentPtr rep)
+{
+    int i;
+    virDomainSnapshotDiskDefPtr snap_disk;
+
+    if (!snap->def->dom) {
+        VIR_WARN("Any external disk snapshots in a snapshot created with "
+                 "pre-0.9.5 libvirt will not be correctly reparented.");
+        // In snapshots created with pre-0.9.5 libvirt we don't have information
+        // needed to correctly reparent external disk snapshots but we also
+        // don't even know whether external disk snapshots were used so that
+        // we could report this as an error. We can only emit a warning in that
+        // case.
+        return 0;
+    }
+
+    for (i = 0; i < snap->def->ndisks; ++i) {
+        snap_disk = &(snap->def->disks[i]);
+
+        // FIXME: do we need to explicitly reparent internal snapshots to
+        // e.g. prevent long non-visible snapshot chains that might affect
+        // performance?
+        if (snap_disk->snapshot != VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL)
+            continue;
+
+        if (qemuDomainSnapshotReparentDiskExternal(rep->driver, rep->parent,
+                                                   snap_disk) < 0)
+            return -1;
+    }
+    return 0;
+}
+
+static int
 qemuDomainSnapshotReparentChildren(void *payload,
                                    const void *name ATTRIBUTE_UNUSED,
                                    void *data)
@@ -16627,6 +16710,11 @@ qemuDomainSnapshotReparentChildren(void *payload,
 
     if (rep->err < 0)
         return 0;
+
+    if (qemuDomainSnapshotReparentDisks(snap, rep) < 0) {
+        rep->err = -1;
+        goto cleanup;
+    }
 
     if (qemuDomainSnapshotReparentChildrenMetadata(snap, rep) < 0) {
         rep->err = -1;
@@ -16718,6 +16806,7 @@ qemuDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
             vm->current_snapshot = snap;
         }
     } else if (snap->nchildren) {
+        rep.driver = driver;
         rep.cfg = cfg;
         rep.parent = snap->parent;
         rep.vm = vm;
