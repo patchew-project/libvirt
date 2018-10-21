@@ -8244,6 +8244,38 @@ qemuDomainSnapshotForEachQcow2(virQEMUDriverPtr driver,
                                              op, try_all, def->ndisks);
 }
 
+static int
+qemuDomainSnapshotDiscardExternal(virDomainSnapshotObjPtr snap)
+{
+    int i;
+    virDomainSnapshotDiskDefPtr snap_disk;
+
+    // FIXME: libvirt stores the VM definition and the list of disks that
+    // snapshot has been taken of since 0.9.5. Before that we must assume that
+    // all disks from within the VM definition have been snapshotted and that
+    // they all were internal disks. Did libvirt support external snapshots
+    // before 0.9.5? If so, if we ever end up in this code path we may incur
+    // data loss as we'll delete whole QEMU file thinking it's an external
+    // snapshot.
+    if (!snap->def->dom) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("Snapshots created using libvirt 9.5 and containing "
+                         "external disk snapshots cannot be safely "
+                         "discarded."));
+        return -1;
+    }
+
+    for (i = 0; i < snap->def->ndisks; ++i) {
+        snap_disk = &(snap->def->disks[i]);
+        if (snap_disk->snapshot != VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL)
+            continue;
+        if (unlink(snap_disk->src->path) < 0)
+            VIR_WARN("Failed to unlink snapshot disk '%s'",
+                     snap_disk->src->path);
+    }
+    return 0;
+}
+
 /* Discard one snapshot (or its metadata), without reparenting any children.  */
 int
 qemuDomainSnapshotDiscard(virQEMUDriverPtr driver,
@@ -8260,10 +8292,15 @@ qemuDomainSnapshotDiscard(virQEMUDriverPtr driver,
 
     if (!metadata_only) {
         if (!virDomainObjIsActive(vm)) {
-            /* Ignore any skipped disks */
-            if (qemuDomainSnapshotForEachQcow2(driver, vm, snap, "-d",
-                                               true) < 0)
-                goto cleanup;
+            if (virDomainSnapshotIsExternal(snap)) {
+                if (qemuDomainSnapshotDiscardExternal(snap) < 0)
+                    goto cleanup;
+            } else {
+                /* Ignore any skipped disks */
+                if (qemuDomainSnapshotForEachQcow2(driver, vm, snap, "-d",
+                                                   true) < 0)
+                    goto cleanup;
+            }
         } else {
             priv = vm->privateData;
             qemuDomainObjEnterMonitor(driver, vm);

@@ -16662,7 +16662,7 @@ qemuDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
     if (!(snap = qemuSnapObjFromSnapshot(vm, snapshot)))
         goto endjob;
 
-    if (!metadata_only) {
+    if (!metadata_only && virDomainObjIsActive(vm)) {
         if (!(flags & VIR_DOMAIN_SNAPSHOT_DELETE_CHILDREN_ONLY) &&
             virDomainSnapshotIsExternal(snap))
             external++;
@@ -16673,8 +16673,9 @@ qemuDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
                                                &external);
         if (external) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("deletion of %d external disk snapshots not "
-                             "supported yet"), external);
+                           _("deletion of %d external disk snapshots while the "
+                             "domain is active is not supported yet"),
+                           external);
             goto endjob;
         }
     }
