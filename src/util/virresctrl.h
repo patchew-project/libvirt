@@ -219,4 +219,7 @@ virResctrlMonitorSetAlloc(virResctrlMonitorPtr monitor,
 
 int
 virResctrlMonitorRemove(virResctrlMonitorPtr monitor);
+
+bool
+virResctrlMonitorIsRunning(virResctrlMonitorPtr monitor);
 #endif /*  __VIR_RESCTRL_H__ */

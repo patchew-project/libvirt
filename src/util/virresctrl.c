@@ -359,6 +359,9 @@ struct _virResctrlMonitor {
     /* libvirt-generated path in /sys/fs/resctrl for this particular
      * monitor */
     char *path;
+    /* Tracking the tasks' PID associated with this monitor */
+    pid_t *pids;
+    size_t npids;
 };
 
 
@@ -418,6 +421,7 @@ virResctrlMonitorDispose(void *obj)
     virObjectUnref(monitor->alloc);
     VIR_FREE(monitor->id);
     VIR_FREE(monitor->path);
+    VIR_FREE(monitor->pids);
 }
 
 
@@ -2540,7 +2544,20 @@ int
 virResctrlMonitorAddPID(virResctrlMonitorPtr monitor,
                         pid_t pid)
 {
-    return virResctrlAddPID(monitor->path, pid);
+    size_t i = 0;
+
+    if (virResctrlAddPID(monitor->path, pid) < 0)
+        return -1;
+
+    for (i = 0; i < monitor->npids; i++) {
+        if (pid == monitor->pids[i])
+            return 0;
+    }
+
+    if (VIR_APPEND_ELEMENT(monitor->pids, monitor->npids, pid) < 0)
+        return -1;
+
+    return 0;
 }
 
 
@@ -2610,6 +2627,89 @@ virResctrlMonitorRemove(virResctrlMonitorPtr monitor)
         ret = -errno;
         VIR_ERROR(_("Unable to remove %s (%d)"), monitor->path, errno);
     }
+
+    return ret;
+}
+
+
+static int
+virResctrlPIDSorter(const void *pida, const void *pidb)
+{
+    return *(pid_t*)pida - *(pid_t*)pidb;
+}
+
+
+bool
+virResctrlMonitorIsRunning(virResctrlMonitorPtr monitor)
+{
+    char *pidstr = NULL;
+    char **spids = NULL;
+    size_t nspids = 0;
+    pid_t *pids = NULL;
+    size_t npids = 0;
+    size_t i = 0;
+    int rv = -1;
+    bool ret = false;
+
+    /* path is not determined yet, monitor is not running*/
+    if (!monitor->path)
+        return false;
+
+    /* No vcpu PID filled, regard monitor as not running */
+    if (monitor->npids == 0)
+        return false;
+
+    /* If no 'tasks' file found, underlying resctrl directory is not
+     * ready, regard monitor as not running */
+    rv = virFileReadValueString(&pidstr, "%s/tasks", monitor->path);
+    if (rv < 0)
+        goto cleanup;
+
+    /* no PID in task file, monitor is not running */
+    if (!*pidstr)
+        goto cleanup;
+
+    /* The tracking monitor PID list is not identical to the
+     * list in current resctrl directory. monitor is corrupted,
+     * report error and un-running state */
+    spids = virStringSplitCount(pidstr, "\n", 0, &nspids);
+    if (nspids != monitor->npids) {
+        VIR_ERROR(_("Monitor %s PID list mismatch in length"), monitor->path);
+        goto cleanup;
+    }
+
+    for (i = 0; i < nspids; i++) {
+        unsigned int val = 0;
+        pid_t pid = 0;
+
+        if (virStrToLong_uip(spids[i], NULL, 0, &val) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Monitor %s failed in parse PID list"),
+                           monitor->path);
+            goto cleanup;
+        }
+
+        pid = (pid_t)val;
+
+        if (VIR_APPEND_ELEMENT(pids, npids, pid) < 0)
+            goto cleanup;
+    }
+
+    qsort(pids, npids, sizeof(pid_t), virResctrlPIDSorter);
+    qsort(monitor->pids, monitor->npids, sizeof(pid_t), virResctrlPIDSorter);
+
+    for (i = 0; i < monitor->npids; i++) {
+        if (monitor->pids[i] != pids[i]) {
+            VIR_ERROR(_("Monitor %s PID list corrupted"), monitor->path);
+            goto cleanup;
+        }
+    }
+
+    ret = true;
+ cleanup:
+    virStringListFree(spids);
+    VIR_FREE(pids);
+    VIR_FREE(pidstr);
 
     return ret;
 }
