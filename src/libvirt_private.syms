@@ -2684,6 +2684,7 @@ virResctrlMonitorAddPID;
 virResctrlMonitorCreate;
 virResctrlMonitorDeterminePath;
 virResctrlMonitorGetID;
+virResctrlMonitorIsRunning;
 virResctrlMonitorNew;
 virResctrlMonitorRemove;
 virResctrlMonitorSetAlloc;
