@@ -2980,6 +2980,7 @@ virDomainResctrlDefFree(virDomainResctrlDefPtr resctrl)
     virObjectUnref(resctrl->alloc);
     virBitmapFree(resctrl->vcpus);
     VIR_FREE(resctrl->monitors);
+    VIR_FREE(resctrl->id);
     VIR_FREE(resctrl);
 }
 
@@ -19173,6 +19174,9 @@ virDomainResctrlNew(xmlNodePtr node,
     if (VIR_ALLOC(resctrl) < 0)
         goto cleanup;
 
+    if (VIR_STRDUP(resctrl->id, alloc_id) < 0)
+        goto cleanup;
+
     if (!(resctrl->vcpus = virBitmapNewCopy(*vcpus))) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("failed to copy 'vcpus'"));
@@ -27351,13 +27355,9 @@ virDomainCachetuneDefFormat(virBufferPtr buf,
 
     virBufferAsprintf(buf, "<cachetune vcpus='%s'", vcpus);
 
-    if (!(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE)) {
-        const char *alloc_id = virResctrlAllocGetID(resctrl->alloc);
-        if (!alloc_id)
-            goto cleanup;
+    if (!(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE))
+        virBufferAsprintf(buf, " id='%s'", resctrl->id);
 
-        virBufferAsprintf(buf, " id='%s'", alloc_id);
-    }
     virBufferAddLit(buf, ">\n");
 
     virBufferAddBuffer(buf, &childrenBuf);
@@ -27414,13 +27414,9 @@ virDomainMemorytuneDefFormat(virBufferPtr buf,
 
     virBufferAsprintf(buf, "<memorytune vcpus='%s'", vcpus);
 
-    if (!(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE)) {
-        const char *alloc_id = virResctrlAllocGetID(resctrl->alloc);
-        if (!alloc_id)
-            goto cleanup;
+    if (!(flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE))
+        virBufferAsprintf(buf, " id='%s'", resctrl->id);
 
-        virBufferAsprintf(buf, " id='%s'", alloc_id);
-    }
     virBufferAddLit(buf, ">\n");
 
     virBufferAddBuffer(buf, &childrenBuf);
