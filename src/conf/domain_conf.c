@@ -19022,14 +19022,14 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
             goto cleanup;
     }
 
+    resctrl = virDomainResctrlNew(node, &alloc, &vcpus, flags);
+    if (!resctrl)
+        goto cleanup;
+
     if (virResctrlAllocIsEmpty(alloc)) {
         ret = 0;
         goto cleanup;
     }
-
-    resctrl = virDomainResctrlNew(node, &alloc, &vcpus, flags);
-    if (!resctrl)
-        goto cleanup;
 
     if (VIR_APPEND_ELEMENT(def->resctrls, def->nresctrls, resctrl) < 0)
         goto cleanup;
