@@ -191,6 +191,13 @@ virResctrlInfoGetMonitorPrefix(virResctrlInfoPtr resctrl,
 typedef struct _virResctrlMonitor virResctrlMonitor;
 typedef virResctrlMonitor *virResctrlMonitorPtr;
 
+typedef struct _virResctrlMonitorStats virResctrlMonitorStats;
+typedef virResctrlMonitorStats *virResctrlMonitorStatsPtr;
+struct _virResctrlMonitorStats {
+    unsigned int id;
+    unsigned int val;
+};
+
 virResctrlMonitorPtr
 virResctrlMonitorNew(void);
 
@@ -222,4 +229,9 @@ virResctrlMonitorRemove(virResctrlMonitorPtr monitor);
 
 bool
 virResctrlMonitorIsRunning(virResctrlMonitorPtr monitor);
+
+int
+virResctrlMonitorGetCacheOccupancy(virResctrlMonitorPtr monitor,
+                                   virResctrlMonitorStatsPtr *caches,
+                                   size_t *ncaches);
 #endif /*  __VIR_RESCTRL_H__ */
