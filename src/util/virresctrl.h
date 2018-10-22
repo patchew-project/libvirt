@@ -205,4 +205,18 @@ virResctrlMonitorAddPID(virResctrlMonitorPtr monitor,
 int
 virResctrlMonitorCreate(virResctrlMonitorPtr monitor,
                         const char *machinename);
+
+int
+virResctrlMonitorSetID(virResctrlMonitorPtr monitor,
+                       const char *id);
+
+const char *
+virResctrlMonitorGetID(virResctrlMonitorPtr monitor);
+
+void
+virResctrlMonitorSetAlloc(virResctrlMonitorPtr monitor,
+                          virResctrlAllocPtr alloc);
+
+int
+virResctrlMonitorRemove(virResctrlMonitorPtr monitor);
 #endif /*  __VIR_RESCTRL_H__ */
