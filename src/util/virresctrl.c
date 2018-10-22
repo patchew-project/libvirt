@@ -2522,3 +2522,11 @@ virResctrlMonitorDeterminePath(virResctrlMonitorPtr monitor,
 
     return 0;
 }
+
+
+int
+virResctrlMonitorAddPID(virResctrlMonitorPtr monitor,
+                        pid_t pid)
+{
+    return virResctrlAddPID(monitor->path, pid);
+}
