@@ -2315,6 +2315,26 @@ virResctrlAllocDeterminePath(virResctrlAllocPtr alloc,
 }
 
 
+/* This function creates a resctrl directory in resource control file system,
+ * and the directory path is specified by @path. */
+static int
+virResctrlCreateGroupPath(const char *path)
+{
+    /* Directory exists, return */
+    if (virFileExists(path))
+        return 0;
+
+    if (virFileMakePath(path) < 0) {
+        virReportSystemError(errno,
+                             _("Cannot create resctrl directory '%s'"),
+                             path);
+        return -1;
+    }
+
+    return 0;
+}
+
+
 /* This checks if the directory for the alloc exists.  If not it tries to create
  * it and apply appropriate alloc settings. */
 int
@@ -2341,18 +2361,14 @@ virResctrlAllocCreate(virResctrlInfoPtr resctrl,
     if (virResctrlAllocIsEmpty(alloc))
         return 0;
 
-    if (virFileExists(alloc->path)) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Path '%s' for resctrl allocation exists"),
-                       alloc->path);
-        goto cleanup;
-    }
-
     lockfd = virResctrlLockWrite();
     if (lockfd < 0)
         goto cleanup;
 
     if (virResctrlAllocAssign(resctrl, alloc) < 0)
+        goto cleanup;
+
+    if (virResctrlCreateGroupPath(alloc->path) < 0)
         goto cleanup;
 
     alloc_str = virResctrlAllocFormat(alloc);
@@ -2361,13 +2377,6 @@ virResctrlAllocCreate(virResctrlInfoPtr resctrl,
 
     if (virAsprintf(&schemata_path, "%s/schemata", alloc->path) < 0)
         goto cleanup;
-
-    if (virFileMakePath(alloc->path) < 0) {
-        virReportSystemError(errno,
-                             _("Cannot create resctrl directory '%s'"),
-                             alloc->path);
-        goto cleanup;
-    }
 
     VIR_DEBUG("Writing resctrl schemata '%s' into '%s'", alloc_str, schemata_path);
     if (virFileWriteStr(schemata_path, alloc_str, 0) < 0) {
