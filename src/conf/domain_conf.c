@@ -18948,26 +18948,22 @@ virDomainCachetuneDefParseCache(xmlXPathContextPtr ctxt,
 }
 
 
-static int
-virDomainResctrlAppend(virDomainDefPtr def,
-                       xmlNodePtr node,
-                       virResctrlAllocPtr alloc,
-                       virBitmapPtr vcpus,
-                       unsigned int flags)
+static virDomainResctrlDefPtr
+virDomainResctrlNew(xmlNodePtr node,
+                    virResctrlAllocPtr *alloc,
+                    virBitmapPtr *vcpus,
+                    unsigned int flags)
 {
     char *vcpus_str = NULL;
     char *alloc_id = NULL;
-    virDomainResctrlDefPtr tmp_resctrl = NULL;
-    int ret = -1;
-
-    if (VIR_ALLOC(tmp_resctrl) < 0)
-        goto cleanup;
+    virDomainResctrlDefPtr resctrl = NULL;
+    virDomainResctrlDefPtr ret = NULL;
 
     /* We need to format it back because we need to be consistent in the naming
      * even when users specify some "sub-optimal" string there. */
-    vcpus_str = virBitmapFormat(vcpus);
+    vcpus_str = virBitmapFormat(*vcpus);
     if (!vcpus_str)
-        goto cleanup;
+        return NULL;
 
     if (!(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE))
         alloc_id = virXMLPropString(node, "id");
@@ -18982,18 +18978,23 @@ virDomainResctrlAppend(virDomainDefPtr def,
             goto cleanup;
     }
 
-    if (virResctrlAllocSetID(alloc, alloc_id) < 0)
+    if (virResctrlAllocSetID(*alloc, alloc_id) < 0)
         goto cleanup;
 
-    tmp_resctrl->vcpus = vcpus;
-    tmp_resctrl->alloc = alloc;
-
-    if (VIR_APPEND_ELEMENT(def->resctrls, def->nresctrls, tmp_resctrl) < 0)
+    if (VIR_ALLOC(resctrl) < 0)
         goto cleanup;
 
-    ret = 0;
+    if (!(resctrl->vcpus = virBitmapNewCopy(*vcpus))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("failed to copy 'vcpus'"));
+        goto cleanup;
+    }
+
+    resctrl->alloc = virObjectRef(*alloc);
+
+    VIR_STEAL_PTR(ret, resctrl);
  cleanup:
-    virDomainResctrlDefFree(tmp_resctrl);
+    virDomainResctrlDefFree(resctrl);
     VIR_FREE(alloc_id);
     VIR_FREE(vcpus_str);
     return ret;
@@ -19010,6 +19011,7 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
     xmlNodePtr *nodes = NULL;
     virBitmapPtr vcpus = NULL;
     virResctrlAllocPtr alloc = NULL;
+    virDomainResctrlDefPtr resctrl = NULL;
     ssize_t i = 0;
     int n;
     int ret = -1;
@@ -19053,14 +19055,17 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
         goto cleanup;
     }
 
-    if (virDomainResctrlAppend(def, node, alloc, vcpus, flags) < 0)
+    resctrl = virDomainResctrlNew(node, &alloc, &vcpus, flags);
+    if (!resctrl)
         goto cleanup;
-    vcpus = NULL;
-    alloc = NULL;
+
+    if (VIR_APPEND_ELEMENT(def->resctrls, def->nresctrls, resctrl) < 0)
+        goto cleanup;
 
     ret = 0;
  cleanup:
     ctxt->node = oldnode;
+    virDomainResctrlDefFree(resctrl);
     virObjectUnref(alloc);
     virBitmapFree(vcpus);
     VIR_FREE(nodes);
@@ -19218,6 +19223,8 @@ virDomainMemorytuneDefParse(virDomainDefPtr def,
     xmlNodePtr *nodes = NULL;
     virBitmapPtr vcpus = NULL;
     virResctrlAllocPtr alloc = NULL;
+    virDomainResctrlDefPtr resctrl = NULL;
+
     ssize_t i = 0;
     int n;
     int ret = -1;
@@ -19262,15 +19269,18 @@ virDomainMemorytuneDefParse(virDomainDefPtr def,
      * just update the existing alloc information, which is done in above
      * virDomainMemorytuneDefParseMemory */
     if (new_alloc) {
-        if (virDomainResctrlAppend(def, node, alloc, vcpus, flags) < 0)
+        resctrl = virDomainResctrlNew(node, &alloc, &vcpus, flags);
+        if (!resctrl)
             goto cleanup;
-        vcpus = NULL;
-        alloc = NULL;
+
+        if (VIR_APPEND_ELEMENT(def->resctrls, def->nresctrls, resctrl) < 0)
+            goto cleanup;
     }
 
     ret = 0;
  cleanup:
     ctxt->node = oldnode;
+    virDomainResctrlDefFree(resctrl);
     virObjectUnref(alloc);
     virBitmapFree(vcpus);
     VIR_FREE(nodes);
