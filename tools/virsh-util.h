@@ -44,6 +44,9 @@ void
 virshDomainFree(virDomainPtr dom);
 
 void
+virshDomainCheckpointFree(virDomainCheckpointPtr chk);
+
+void
 virshDomainSnapshotFree(virDomainSnapshotPtr snap);
 
 int
