@@ -887,6 +887,9 @@ blockJobTypeToStr(int type)
 
     case VIR_DOMAIN_BLOCK_JOB_TYPE_ACTIVE_COMMIT:
         return "active layer block commit";
+
+    case VIR_DOMAIN_BLOCK_JOB_TYPE_BACKUP:
+        return "backup";
     }
 
     return "unknown";
