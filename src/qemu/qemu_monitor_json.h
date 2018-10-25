@@ -101,6 +101,9 @@ int qemuMonitorJSONBlockResize(qemuMonitorPtr mon,
                                const char *nodename,
                                unsigned long long size);
 
+int qemuMonitorJSONUpdateCheckpointSize(qemuMonitorPtr mon,
+                                        virDomainCheckpointDefPtr chk);
+
 int qemuMonitorJSONSetVNCPassword(qemuMonitorPtr mon,
                                   const char *password);
 int qemuMonitorJSONSetPassword(qemuMonitorPtr mon,
@@ -470,6 +473,9 @@ int qemuMonitorJSONNBDServerAdd(qemuMonitorPtr mon,
                                 const char *deviceID,
                                 const char *export,
                                 bool writable);
+int qemuMonitorJSONNBDServerAddBitmap(qemuMonitorPtr mon,
+                                      const char *export,
+                                      const char *bitmap);
 int qemuMonitorJSONNBDServerStop(qemuMonitorPtr mon);
 int qemuMonitorJSONGetTPMModels(qemuMonitorPtr mon,
                                 char ***tpmmodels)
@@ -577,5 +583,17 @@ int qemuMonitorJSONBlockdevMediumInsert(qemuMonitorPtr mon,
 int qemuMonitorJSONGetPRManagerInfo(qemuMonitorPtr mon,
                                     virHashTablePtr info)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
+int qemuMonitorJSONAddBitmap(qemuMonitorPtr mon, const char *node,
+                             const char *bitmap);
+
+int qemuMonitorJSONEnableBitmap(qemuMonitorPtr mon, const char *node,
+                                const char *bitmap);
+
+int qemuMonitorJSONMergeBitmaps(qemuMonitorPtr mon, const char *node,
+                                const char *dst, const char *src);
+
+int qemuMonitorJSONDeleteBitmap(qemuMonitorPtr mon, const char *node,
+                                const char *bitmap);
 
 #endif /* QEMU_MONITOR_JSON_H */

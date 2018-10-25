@@ -28,6 +28,7 @@
 # include "internal.h"
 
 # include "domain_conf.h"
+# include "checkpoint_conf.h"
 # include "virbitmap.h"
 # include "virhash.h"
 # include "virjson.h"
@@ -605,6 +606,9 @@ int qemuMonitorBlockStatsUpdateCapacity(qemuMonitorPtr mon,
 int qemuMonitorBlockStatsUpdateCapacityBlockdev(qemuMonitorPtr mon,
                                                 virHashTablePtr stats)
     ATTRIBUTE_NONNULL(2);
+int qemuMonitorUpdateCheckpointSize(qemuMonitorPtr mon,
+                                    virDomainCheckpointDefPtr chk)
+    ATTRIBUTE_NONNULL(2);
 
 int qemuMonitorBlockResize(qemuMonitorPtr mon,
                            const char *device,
@@ -622,6 +626,15 @@ int qemuMonitorExpirePassword(qemuMonitorPtr mon,
 int qemuMonitorSetBalloon(qemuMonitorPtr mon,
                           unsigned long long newmem);
 int qemuMonitorSetCPU(qemuMonitorPtr mon, int cpu, bool online);
+
+int qemuMonitorAddBitmap(qemuMonitorPtr mon, const char *node,
+                         const char *bitmap);
+int qemuMonitorEnableBitmap(qemuMonitorPtr mon, const char *node,
+                            const char *bitmap);
+int qemuMonitorMergeBitmaps(qemuMonitorPtr mon, const char *node,
+                            const char *dst, const char *src);
+int qemuMonitorDeleteBitmap(qemuMonitorPtr mon, const char *node,
+                            const char *bitmap);
 
 
 /* XXX should we pass the virDomainDiskDefPtr instead
@@ -1076,6 +1089,9 @@ int qemuMonitorNBDServerAdd(qemuMonitorPtr mon,
                             const char *deviceID,
                             const char *export,
                             bool writable);
+int qemuMonitorNBDServerAddBitmap(qemuMonitorPtr mon,
+                                  const char *export,
+                                  const char *bitmap);
 int qemuMonitorNBDServerStop(qemuMonitorPtr);
 int qemuMonitorGetTPMModels(qemuMonitorPtr mon,
                             char ***tpmmodels);
