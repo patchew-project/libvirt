@@ -50,6 +50,7 @@
 #include "qemu_hostdev.h"
 #include "qemu_hotplug.h"
 #include "qemu_monitor.h"
+#include "qemu_monitor_json.h"
 #include "qemu_process.h"
 #include "qemu_migration.h"
 #include "qemu_migration_params.h"
@@ -16816,6 +16817,48 @@ qemuDomainCheckpointPrepare(virQEMUDriverPtr driver, virCapsPtr caps,
     return ret;
 }
 
+static int
+qemuDomainCheckpointAddActions(virJSONValuePtr actions,
+                               virDomainCheckpointObjPtr old_current,
+                               virDomainCheckpointDefPtr def)
+{
+    int i, j;
+    int ret = -1;
+
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainCheckpointDiskDef *disk = &def->disks[i];
+
+        if (disk->type != VIR_DOMAIN_CHECKPOINT_TYPE_BITMAP)
+            continue;
+        if (qemuMonitorJSONTransactionAdd(actions,
+                                          "block-dirty-bitmap-add",
+                                          "s:node", disk->node,
+                                          "s:name", disk->bitmap,
+                                          "b:persistent", true,
+                                          NULL) < 0)
+            goto cleanup;
+        if (old_current) {
+            for (j = 0; j < old_current->def->ndisks; j++) {
+                virDomainCheckpointDiskDef *disk2;
+
+                disk2 = &old_current->def->disks[j];
+                if (STRNEQ(disk->node, disk2->node))
+                    continue;
+                if (disk2->type == VIR_DOMAIN_CHECKPOINT_TYPE_BITMAP &&
+                    qemuMonitorJSONTransactionAdd(actions,
+                                                  "x-block-dirty-bitmap-disable",
+                                                  "s:node", disk->node,
+                                                  "s:name", disk2->bitmap,
+                                                  NULL) < 0)
+                    goto cleanup;
+            }
+        }
+    }
+    ret = 0;
+
+ cleanup:
+    return ret;
+}
 
 static virDomainCheckpointPtr
 qemuDomainCheckpointCreateXML(virDomainPtr domain,
@@ -16833,6 +16876,9 @@ qemuDomainCheckpointCreateXML(virDomainPtr domain,
     virDomainCheckpointObjPtr other = NULL;
     virQEMUDriverConfigPtr cfg = NULL;
     virCapsPtr caps = NULL;
+    qemuDomainObjPrivatePtr priv;
+    virJSONValuePtr actions = NULL;
+    int ret;
 
     virCheckFlags(VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE |
                   VIR_DOMAIN_CHECKPOINT_CREATE_CURRENT |
@@ -16846,6 +16892,7 @@ qemuDomainCheckpointCreateXML(virDomainPtr domain,
     if (!(vm = qemuDomObjFromDomain(domain)))
         goto cleanup;
 
+    priv = vm->privateData;
     cfg = virQEMUDriverGetConfig(driver);
 
     if (virDomainCheckpointCreateXMLEnsureACL(domain->conn, vm->def) < 0)
@@ -16892,6 +16939,7 @@ qemuDomainCheckpointCreateXML(virDomainPtr domain,
     if (update_current)
         chk->def->current = true;
     if (vm->current_checkpoint) {
+        other = vm->current_checkpoint;
         if (!redefine &&
             VIR_STRDUP(chk->def->parent, vm->current_checkpoint->def->name) < 0)
                 goto endjob;
@@ -16911,7 +16959,14 @@ qemuDomainCheckpointCreateXML(virDomainPtr domain,
          * makes sense, such as checking that qemu-img recognizes the
          * checkpoint bitmap name in at least one of the domain's disks?  */
     } else {
-        /* TODO: issue QMP transaction command */
+        if (!(actions = virJSONValueNewArray()))
+            goto endjob;
+        if (qemuDomainCheckpointAddActions(actions, other, chk->def) < 0)
+            goto endjob;
+        qemuDomainObjEnterMonitor(driver, vm);
+        ret = qemuMonitorTransaction(priv->mon, &actions);
+        if (qemuDomainObjExitMonitor(driver, vm) < 0 || ret < 0)
+            goto endjob;
     }
 
     /* If we fail after this point, there's not a whole lot we can do;
@@ -16950,6 +17005,7 @@ qemuDomainCheckpointCreateXML(virDomainPtr domain,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
+    virJSONValueFree(actions);
     virDomainObjEndAPI(&vm);
     virDomainCheckpointDefFree(def);
     VIR_FREE(xml);
