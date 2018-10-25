@@ -17449,8 +17449,80 @@ qemuDomainCheckpointDelete(virDomainCheckpointPtr checkpoint,
     return ret;
 }
 
-static int qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
-                                 const char *checkpointXml, unsigned int flags)
+static int
+qemuDomainBackupPrepare(virQEMUDriverPtr driver, virDomainObjPtr vm,
+                        virDomainBackupDefPtr def)
+{
+    int ret = -1;
+    int i;
+
+    if (qemuBlockNodeNamesDetect(driver, vm, QEMU_ASYNC_JOB_NONE) < 0)
+        goto cleanup;
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainBackupDiskDef *disk = &def->disks[i];
+        virStorageSourcePtr src = vm->def->disks[disk->idx]->src;
+
+        if (!disk->store)
+            continue;
+        if (virAsprintf(&disk->store->nodeformat, "tmp-%s", disk->name) < 0)
+            goto cleanup;
+        if (!disk->store->format)
+            disk->store->format = VIR_STORAGE_FILE_QCOW2;
+        if (def->incremental) {
+            if (src->format != VIR_STORAGE_FILE_QCOW2) {
+                virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                               _("incremental backup of %s requires qcow2"),
+                               disk->name);
+                goto cleanup;
+            }
+        }
+    }
+    ret = 0;
+ cleanup:
+    return ret;
+}
+
+/* Called while monitor lock is held. Best-effort cleanup. */
+static int
+qemuDomainBackupDiskCleanup(virQEMUDriverPtr driver, virDomainObjPtr vm,
+                            virDomainBackupDiskDef *disk, bool incremental)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    const char *node = vm->def->disks[disk->idx]->src->nodeformat;
+    int ret = 0;
+
+    if (!disk->store)
+        return 0;
+    if (disk->state >= VIR_DOMAIN_BACKUP_DISK_STATE_EXPORT) {
+        /* No real need to use nbd-server-remove, since we will
+         * shortly be calling nbd-server-stsop. */
+    }
+    if (incremental && disk->state >= VIR_DOMAIN_BACKUP_DISK_STATE_BITMAP &&
+        qemuMonitorDeleteBitmap(priv->mon, node, disk->store->nodeformat) < 0) {
+        VIR_WARN("Unable to remove temp bitmap for disk %s after backup",
+                 disk->name);
+        ret = -1;
+    }
+    if (disk->state >= VIR_DOMAIN_BACKUP_DISK_STATE_READY &&
+        qemuMonitorBlockdevDel(priv->mon, disk->store->nodeformat) < 0) {
+        VIR_WARN("Unable to remove temp disk %s after backup",
+                 disk->name);
+        ret = -1;
+    }
+    if (disk->state >= VIR_DOMAIN_BACKUP_DISK_STATE_LABEL)
+        qemuDomainDiskChainElementRevoke(driver, vm, disk->store);
+    if (disk->state >= VIR_DOMAIN_BACKUP_DISK_STATE_CREATED &&
+        disk->store->detected && unlink(disk->store->path) < 0) {
+        VIR_WARN("Unable to unlink temp disk %s after backup",
+                 disk->store->path);
+        ret = -1;
+    }
+    return ret;
+}
+
+static int
+qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
+                      const char *checkpointXml, unsigned int flags)
 {
     virQEMUDriverPtr driver = domain->conn->privateData;
     virDomainObjPtr vm = NULL;
@@ -17459,14 +17531,20 @@ static int qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
     virCapsPtr caps = NULL;
     qemuDomainObjPrivatePtr priv;
     int ret = -1;
+    virJSONValuePtr json = NULL;
+    bool job_started = false;
+    bool nbd_running = false;
+    int i;
     struct timeval tv;
     char *suffix = NULL;
+    virCommandPtr cmd = NULL;
+    const char *qemuImgPath;
 
     virCheckFlags(VIR_DOMAIN_BACKUP_BEGIN_NO_METADATA, -1);
     /* TODO: VIR_DOMAIN_BACKUP_BEGIN_QUIESCE */
 
     // FIXME: Support non-null checkpointXML for incremental - what
-    // code can be shared with CheckpointCreateXML, then use transaction
+    // code can be shared with CheckpointCreateXML, then add to transaction
     // to create new checkpoint at same time as starting blockdev-backup
     if (checkpointXml) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
@@ -17503,6 +17581,22 @@ static int qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
     if (!(def = virDomainBackupDefParseString(diskXml, driver->xmlopt, 0)))
         goto cleanup;
 
+    if (def->type == VIR_DOMAIN_BACKUP_TYPE_PULL &&
+        (!def->server ||
+         def->server->transport != VIR_STORAGE_NET_HOST_TRANS_TCP)) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("<domainbackup> must specify TCP server for now"));
+        goto cleanup;
+    }
+    if (def->incremental) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("cannot create incremental backups yet"));
+        goto cleanup;
+    }
+
+    if (!(qemuImgPath = qemuFindQemuImgBinary(driver)))
+        goto cleanup;
+
     /* We are going to modify the domain below. */
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
@@ -17514,14 +17608,74 @@ static int qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
         goto endjob;
     }
 
-    if (virDomainBackupAlignDisks(def, vm->def, suffix) < 0)
+    if (virDomainBackupAlignDisks(def, vm->def, suffix) < 0 ||
+        qemuDomainBackupPrepare(driver, vm, def) < 0)
         goto endjob;
 
     /* actually start the checkpoint. 2x2 array of push/pull, full/incr,
        plus additional tweak if checkpoint requested */
-    /* TODO: issue QMP commands:
-       - pull: nbd-server-start with <server> from user (or autogenerate server)
-       - push/pull: blockdev-add per <disk>
+    qemuDomainObjEnterMonitor(driver, vm);
+    /* - push/pull: blockdev-add per <disk> */
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainBackupDiskDef *disk = &def->disks[i];
+        virJSONValuePtr file;
+        virStorageSourcePtr src = vm->def->disks[disk->idx]->src;
+        const char *node = src->nodeformat;
+
+        if (!disk->store)
+            continue;
+        if (qemuDomainStorageFileInit(driver, vm, disk->store, src) < 0)
+            goto endmon;
+        if (disk->store->detected) {
+            if (virStorageFileCreate(disk->store) < 0) {
+                virReportSystemError(errno,
+                                     _("failed to create image file '%s'"),
+                                     NULLSTR(disk->store->path));
+                goto endmon;
+            }
+            disk->state = VIR_DOMAIN_BACKUP_DISK_STATE_CREATED;
+        }
+        if (qemuDomainDiskChainElementPrepare(driver, vm, disk->store, false,
+                                              true) < 0)
+            goto endmon;
+        disk->state = VIR_DOMAIN_BACKUP_DISK_STATE_LABEL;
+        /* Force initialization of scratch file to new qcow2 */
+        if (!(cmd = virCommandNewArgList(qemuImgPath,
+                                         "create",
+                                         "-f",
+                                         virStorageFileFormatTypeToString(disk->store->format),
+                                         "-o",
+                                         NULL)))
+            goto endmon;
+        virCommandAddArgFormat(cmd, "backing_file=%s,backing_fmt=%s",
+                               src->path,
+                               virStorageFileFormatTypeToString(src->format));
+        virCommandAddArg(cmd, disk->store->path);
+        if (virCommandRun(cmd, NULL) < 0)
+            goto endmon;
+        virCommandFree(cmd);
+        cmd = NULL;
+
+        if (virJSONValueObjectCreate(&file,
+                                     "s:driver", "file",
+                                     "s:filename", disk->store->path,
+                                     NULL) < 0)
+            goto endmon;
+        if (virJSONValueObjectCreate(&json,
+                                     "s:driver", virStorageFileFormatTypeToString(disk->store->format),
+                                     "s:node-name", disk->store->nodeformat,
+                                     "a:file", &file,
+                                     "s:backing", node, NULL) < 0) {
+            virJSONValueFree(file);
+            goto endmon;
+        }
+        if (qemuMonitorBlockdevAdd(priv->mon, json) < 0)
+            goto endmon;
+        json = NULL;
+        disk->state = VIR_DOMAIN_BACKUP_DISK_STATE_READY;
+    }
+
+    /* TODO:
        - incr: bitmap-add of tmp, x-bitmap-merge per <disk>
        - transaction, containing:
          - push+full: blockdev-backup sync:full
@@ -17529,9 +17683,81 @@ static int qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
          - pull+full: blockdev-backup sync:none
          - pull+incr: blockdev-backup sync:none, bitmap-disable of tmp
          - if checkpoint: bitmap-disable of old, bitmap-add of new
+    */
+    if (!(json = virJSONValueNewArray()))
+        goto endmon;
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainBackupDiskDef *disk = &def->disks[i];
+        virStorageSourcePtr src = vm->def->disks[disk->idx]->src;
+
+        if (!disk->store)
+            continue;
+        if (qemuMonitorJSONTransactionAdd(json,
+                                          "blockdev-backup",
+                                          "s:device", src->nodeformat,
+                                          "s:target", disk->store->nodeformat,
+                                          "s:sync", "none",
+                                          "s:job-id", disk->store->nodeformat,
+                                          NULL) < 0)
+            goto endmon;
+    }
+    if (qemuMonitorTransaction(priv->mon, &json) < 0)
+        goto endmon;
+    job_started = true;
+
+    /*
+       - pull: nbd-server-start with <server> from user (or autogenerate server)
        - pull: nbd-server-add per <disk>
        - pull+incr: nbd-server-add-bitmap per <disk>
     */
+    if (def->type == VIR_DOMAIN_BACKUP_TYPE_PULL) {
+        if (qemuMonitorNBDServerStart(priv->mon, def->server->name,
+                                      def->server->port, NULL) < 0)
+            goto endmon;
+        nbd_running = true;
+        for (i = 0; i < def->ndisks; i++) {
+            virDomainBackupDiskDef *disk = &def->disks[i];
+
+            if (!disk->store)
+                continue;
+            if (qemuMonitorNBDServerAdd(priv->mon, disk->store->nodeformat,
+                                        disk->name, false) < 0)
+                goto endmon;
+            disk->state = VIR_DOMAIN_BACKUP_DISK_STATE_EXPORT;
+            if (def->incremental &&
+                qemuMonitorNBDServerAddBitmap(priv->mon, disk->name,
+                                              disk->name) < 0)
+                goto endmon;
+        }
+    }
+
+    ret = 0;
+ endmon:
+    /* Best effort cleanup if we fail partway through */
+    if (ret < 0) {
+        virErrorPtr save_err = virSaveLastError();
+
+        if (nbd_running &&
+            qemuMonitorNBDServerStop(priv->mon) < 0)
+            VIR_WARN("Unable to stop NBD server on vm %s after backup job",
+                     vm->def->name);
+        for (i = 0; i < def->ndisks; i++) {
+            virDomainBackupDiskDef *disk = &def->disks[i];
+
+            if (job_started &&
+                qemuMonitorBlockJobCancel(priv->mon,
+                                          disk->store->nodeformat) < 0)
+                VIR_WARN("Unable to stop backup job %s on vm %s after failure",
+                         disk->store->nodeformat, vm->def->name);
+            qemuDomainBackupDiskCleanup(driver, vm, disk, !!def->incremental);
+        }
+        virSetError(save_err);
+        virFreeError(save_err);
+    }
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        ret = -1;
+    if (ret < 0)
+        goto endjob;
 
     VIR_STEAL_PTR(priv->backup, def);
     ret = priv->backup->id = 1; /* Hard-coded job id for now */
@@ -17544,7 +17770,9 @@ static int qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
+    virCommandFree(cmd);
     VIR_FREE(suffix);
+    virJSONValueFree(json);
     virDomainObjEndAPI(&vm);
     virDomainBackupDefFree(def);
     virObjectUnref(caps);
@@ -17594,6 +17822,8 @@ static int qemuDomainBackupEnd(virDomainPtr domain, int id, unsigned int flags)
     virDomainBackupDefPtr backup = NULL;
     qemuDomainObjPrivatePtr priv;
     bool want_abort = flags & VIR_DOMAIN_BACKUP_END_ABORT;
+    virDomainBackupDefPtr def;
+    int i;
 
     virCheckFlags(VIR_DOMAIN_BACKUP_END_ABORT, -1);
 
@@ -17614,9 +17844,27 @@ static int qemuDomainBackupEnd(virDomainPtr domain, int id, unsigned int flags)
 
     if (priv->backup->type != VIR_DOMAIN_BACKUP_TYPE_PUSH)
         want_abort = false;
+    def = priv->backup;
 
-    /* TODO: QMP commands to actually cancel the pending job, and on
-     * pull, also tear down the NBD server */
+    /* We are going to modify the domain below. */
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+        goto cleanup;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    if (def->type == VIR_DOMAIN_BACKUP_TYPE_PULL)
+        ret = qemuMonitorNBDServerStop(priv->mon);
+    for (i = 0; i < def->ndisks; i++) {
+        if (qemuMonitorBlockJobCancel(priv->mon,
+                                      def->disks[i].store->nodeformat) < 0 ||
+            qemuDomainBackupDiskCleanup(driver, vm, &def->disks[i],
+                                        !!def->incremental) < 0)
+            ret = -1;
+    }
+    if (qemuDomainObjExitMonitor(driver, vm) < 0 || ret < 0) {
+        ret = -1;
+        goto endjob;
+    }
+
     VIR_STEAL_PTR(backup, priv->backup);
     if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm,
                             driver->caps) < 0)
@@ -17624,6 +17872,9 @@ static int qemuDomainBackupEnd(virDomainPtr domain, int id, unsigned int flags)
                  vm->def->name);
 
     ret = want_abort ? 0 : 1;
+
+ endjob:
+    qemuDomainObjEndJob(driver, vm);
 
  cleanup:
     virDomainBackupDefFree(backup);

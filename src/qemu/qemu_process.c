@@ -937,6 +937,7 @@ qemuProcessHandleBlockJob(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
                           void *opaque)
 {
     virQEMUDriverPtr driver = opaque;
+    qemuDomainObjPrivatePtr priv;
     struct qemuProcessEvent *processEvent = NULL;
     virDomainDiskDefPtr disk;
     qemuDomainDiskPrivatePtr diskPriv;
@@ -947,6 +948,12 @@ qemuProcessHandleBlockJob(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
     VIR_DEBUG("Block job for device %s (domain: %p,%s) type %d status %d",
               diskAlias, vm, vm->def->name, type, status);
 
+    priv = vm->privateData;
+    if (type == VIR_DOMAIN_BLOCK_JOB_TYPE_BACKUP && priv->backup) {
+        /* Event for canceling a pull-mode backup is side-effect that
+         * should not be forwarded on to user */
+        goto cleanup;
+    }
     if (!(disk = qemuProcessFindDomainDiskByAliasOrQOM(vm, diskAlias, NULL)))
         goto error;
     diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
