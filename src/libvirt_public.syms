@@ -809,4 +809,24 @@ LIBVIRT_4.5.0 {
         virNWFilterBindingGetFilterName;
 } LIBVIRT_4.4.0;
 
+LIBVIRT_4.9.0 {
+    global:
+        virDomainCheckpointCreateXML;
+        virDomainCheckpointCurrent;
+        virDomainCheckpointDelete;
+        virDomainCheckpointFree;
+        virDomainCheckpointGetConnect;
+        virDomainCheckpointGetDomain;
+        virDomainCheckpointGetName;
+        virDomainCheckpointGetParent;
+        virDomainCheckpointGetXMLDesc;
+        virDomainCheckpointHasMetadata;
+        virDomainCheckpointIsCurrent;
+        virDomainCheckpointListChildren;
+        virDomainCheckpointLookupByName;
+        virDomainCheckpointRef;
+        virDomainHasCurrentCheckpoint;
+        virDomainListCheckpoints;
+} LIBVIRT_4.5.0;
+
 # .... define new API here using predicted next version number ....
