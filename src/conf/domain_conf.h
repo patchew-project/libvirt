@@ -127,6 +127,9 @@ typedef virDomainCheckpointObj *virDomainCheckpointObjPtr;
 typedef struct _virDomainCheckpointObjList virDomainCheckpointObjList;
 typedef virDomainCheckpointObjList *virDomainCheckpointObjListPtr;
 
+typedef struct _virDomainBackupDef virDomainBackupDef;
+typedef virDomainBackupDef *virDomainBackupDefPtr;
+
 typedef struct _virDomainSnapshotObj virDomainSnapshotObj;
 typedef virDomainSnapshotObj *virDomainSnapshotObjPtr;
 

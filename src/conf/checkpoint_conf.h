@@ -149,4 +149,70 @@ int virDomainCheckpointRedefinePrep(virDomainPtr domain,
                                     bool *update_current);
 
 VIR_ENUM_DECL(virDomainCheckpoint)
+
+/* Items related to incremental backup state */
+
+typedef enum {
+    VIR_DOMAIN_BACKUP_TYPE_DEFAULT = 0,
+    VIR_DOMAIN_BACKUP_TYPE_PUSH,
+    VIR_DOMAIN_BACKUP_TYPE_PULL,
+
+    VIR_DOMAIN_BACKUP_TYPE_LAST
+} virDomainBackupType;
+
+typedef enum {
+    VIR_DOMAIN_BACKUP_DISK_STATE_DEFAULT = 0, /* Initial */
+    VIR_DOMAIN_BACKUP_DISK_STATE_CREATED, /* File created */
+    VIR_DOMAIN_BACKUP_DISK_STATE_LABEL, /* Security labels applied */
+    VIR_DOMAIN_BACKUP_DISK_STATE_READY, /* Handed to guest */
+    VIR_DOMAIN_BACKUP_DISK_STATE_BITMAP, /* Associated temp bitmap created */
+    VIR_DOMAIN_BACKUP_DISK_STATE_EXPORT, /* NBD export created */
+} virDomainBackupDiskState;
+
+/* Stores disk-backup information */
+typedef struct _virDomainBackupDiskDef virDomainBackupDiskDef;
+typedef virDomainBackupDiskDef *virDomainBackupDiskDefPtr;
+struct _virDomainBackupDiskDef {
+    char *name;     /* name matching the <target dev='...' of the domain */
+    int idx;        /* index within checkpoint->dom->disks that matches name */
+
+    /* details of target for push-mode, or of the scratch file for pull-mode */
+    virStorageSourcePtr store;
+    int state;      /* virDomainBackupDiskState, not stored in XML */
+};
+
+/* Stores the complete backup metadata */
+typedef struct _virDomainBackupDef virDomainBackupDef;
+typedef virDomainBackupDef *virDomainBackupDefPtr;
+struct _virDomainBackupDef {
+    /* Public XML.  */
+    int type; /* virDomainBackupType */
+    int id;
+    char *incremental;
+    virStorageNetHostDefPtr server; /* only when type == PULL */
+
+    size_t ndisks; /* should not exceed dom->ndisks */
+    virDomainBackupDiskDef *disks;
+};
+
+VIR_ENUM_DECL(virDomainBackup)
+
+typedef enum {
+    VIR_DOMAIN_BACKUP_PARSE_INTERNAL = 1 << 0,
+} virDomainBackupParseFlags;
+
+virDomainBackupDefPtr virDomainBackupDefParseString(const char *xmlStr,
+                                                    virDomainXMLOptionPtr xmlopt,
+                                                    unsigned int flags);
+virDomainBackupDefPtr virDomainBackupDefParseNode(xmlDocPtr xml,
+                                                  xmlNodePtr root,
+                                                  virDomainXMLOptionPtr xmlopt,
+                                                  unsigned int flags);
+void virDomainBackupDefFree(virDomainBackupDefPtr def);
+int virDomainBackupDefFormat(virBufferPtr buf,
+                             virDomainBackupDefPtr def,
+                             bool internal);
+int virDomainBackupAlignDisks(virDomainBackupDefPtr backup,
+                              virDomainDefPtr dom, const char *suffix);
+
 #endif /* __CHECKPOINT_CONF_H */
