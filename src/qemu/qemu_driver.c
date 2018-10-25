@@ -16786,6 +16786,24 @@ qemuDomainCheckpointPrepare(virQEMUDriverPtr driver, virCapsPtr caps,
         if (disk->type != VIR_DOMAIN_CHECKPOINT_TYPE_BITMAP)
             continue;
 
+        /* We want to name temporary bitmap after disk name during
+         * incremental backup, which is not possible if that is a
+         * persistent bitmap name. We can also make life easier by
+         * enforcing bitmap names match checkpoint name, although this
+         * is not technically necessary. */
+        if (STREQ(disk->name, disk->bitmap)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("checkpoint for disk %s must have distinct bitmap name"),
+                           disk->name);
+            goto cleanup;
+        }
+        if (STRNEQ(disk->bitmap, def->name)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("disk %s bitmap should match checkpoint name %s"),
+                           disk->name, def->name);
+            goto cleanup;
+        }
+
         if (vm->def->disks[i]->src->format > 0 &&
             vm->def->disks[i]->src->format != VIR_STORAGE_FILE_QCOW2) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -17451,19 +17469,42 @@ qemuDomainCheckpointDelete(virDomainCheckpointPtr checkpoint,
 
 static int
 qemuDomainBackupPrepare(virQEMUDriverPtr driver, virDomainObjPtr vm,
-                        virDomainBackupDefPtr def)
+                        virDomainBackupDefPtr def,
+                        virDomainCheckpointObjPtr chk)
 {
     int ret = -1;
     int i;
 
+    if (chk && def->ndisks != chk->def->ndisks) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("inconsistency between backup and checkpoint disks"));
+        goto cleanup;
+    }
     if (qemuBlockNodeNamesDetect(driver, vm, QEMU_ASYNC_JOB_NONE) < 0)
         goto cleanup;
     for (i = 0; i < def->ndisks; i++) {
         virDomainBackupDiskDef *disk = &def->disks[i];
         virStorageSourcePtr src = vm->def->disks[disk->idx]->src;
 
-        if (!disk->store)
+        /* For now, insist that atomic checkpoint affect same disks as
+         * those being backed up. */
+        if (!disk->store) {
+            if (chk &&
+                chk->def->disks[i].type != VIR_DOMAIN_CHECKPOINT_TYPE_NONE) {
+                virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                               _("disk %s requested checkpoint without backup"),
+                               disk->name);
+                goto cleanup;
+            }
             continue;
+        }
+        if (chk &&
+            chk->def->disks[i].type != VIR_DOMAIN_CHECKPOINT_TYPE_BITMAP) {
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                           _("disk %s requested backup without checkpoint"),
+                           disk->name);
+            goto cleanup;
+        }
         if (virAsprintf(&disk->store->nodeformat, "tmp-%s", disk->name) < 0)
             goto cleanup;
         if (!disk->store->format)
@@ -17495,10 +17536,10 @@ qemuDomainBackupDiskCleanup(virQEMUDriverPtr driver, virDomainObjPtr vm,
         return 0;
     if (disk->state >= VIR_DOMAIN_BACKUP_DISK_STATE_EXPORT) {
         /* No real need to use nbd-server-remove, since we will
-         * shortly be calling nbd-server-stsop. */
+         * shortly be calling nbd-server-stop. */
     }
     if (incremental && disk->state >= VIR_DOMAIN_BACKUP_DISK_STATE_BITMAP &&
-        qemuMonitorDeleteBitmap(priv->mon, node, disk->store->nodeformat) < 0) {
+        qemuMonitorDeleteBitmap(priv->mon, node, disk->name) < 0) {
         VIR_WARN("Unable to remove temp bitmap for disk %s after backup",
                  disk->name);
         ret = -1;
@@ -17539,22 +17580,13 @@ qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
     char *suffix = NULL;
     virCommandPtr cmd = NULL;
     const char *qemuImgPath;
+    virDomainCheckpointDefPtr chkdef = NULL;
+    virDomainCheckpointObjPtr chk = NULL;
+    virDomainCheckpointObjPtr other = NULL;
+    virDomainCheckpointObjPtr parent = NULL;
 
     virCheckFlags(VIR_DOMAIN_BACKUP_BEGIN_NO_METADATA, -1);
     /* TODO: VIR_DOMAIN_BACKUP_BEGIN_QUIESCE */
-
-    // FIXME: Support non-null checkpointXML for incremental - what
-    // code can be shared with CheckpointCreateXML, then add to transaction
-    // to create new checkpoint at same time as starting blockdev-backup
-    if (checkpointXml) {
-        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
-                       _("cannot create incremental backups yet"));
-        return -1;
-    }
-    // if (chk) VIR_STRDUP(suffix, chk->name);
-    gettimeofday(&tv, NULL);
-    if (virAsprintf(&suffix, "%lld", (long long)tv.tv_sec) < 0)
-        goto cleanup;
 
     if (!(vm = qemuDomObjFromDomain(domain)))
         goto cleanup;
@@ -17581,6 +17613,17 @@ qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
     if (!(def = virDomainBackupDefParseString(diskXml, driver->xmlopt, 0)))
         goto cleanup;
 
+    if (checkpointXml) {
+        if (!(chkdef = qemuDomainCheckpointDefParseString(driver, caps,
+                                                          checkpointXml, 0)) ||
+            VIR_STRDUP(suffix, chkdef->name) < 0)
+            goto cleanup;
+    } else {
+        gettimeofday(&tv, NULL);
+        if (virAsprintf(&suffix, "%lld", (long long)tv.tv_sec) < 0)
+            goto cleanup;
+    }
+
     if (def->type == VIR_DOMAIN_BACKUP_TYPE_PULL &&
         (!def->server ||
          def->server->transport != VIR_STORAGE_NET_HOST_TRANS_TCP)) {
@@ -17589,9 +17632,18 @@ qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
         goto cleanup;
     }
     if (def->incremental) {
-        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
-                       _("cannot create incremental backups yet"));
-        goto cleanup;
+        for (other = vm->current_checkpoint; other;
+             other = other->def->parent ?
+                 virDomainCheckpointFindByName(vm->checkpoints,
+                                               other->def->parent) : NULL)
+            if (STREQ(other->def->name, def->incremental))
+                break;
+        if (!other) {
+            virReportError(VIR_ERR_OPERATION_INVALID,
+                           _("could not locate checkpoint '%s' for incremental backup"),
+                           def->incremental);
+            goto cleanup;
+        }
     }
 
     if (!(qemuImgPath = qemuFindQemuImgBinary(driver)))
@@ -17608,14 +17660,34 @@ qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
         goto endjob;
     }
 
+    if (chkdef) {
+        if (qemuDomainCheckpointPrepare(driver, caps, vm, chkdef) < 0)
+            goto endjob;
+        if (!(chk = virDomainCheckpointAssignDef(vm->checkpoints, chkdef)))
+            goto endjob;
+        chkdef = NULL;
+        chk->def->current = true;
+        if (vm->current_checkpoint) {
+            parent = vm->current_checkpoint;
+            if (VIR_STRDUP(chk->def->parent, parent->def->name) < 0)
+                goto endjob;
+            if (qemuDomainCheckpointWriteMetadata(vm, parent, driver->caps,
+                                                  driver->xmlopt,
+                                                  cfg->checkpointDir) < 0)
+                goto endjob;
+            vm->current_checkpoint = NULL;
+        }
+    }
+
     if (virDomainBackupAlignDisks(def, vm->def, suffix) < 0 ||
-        qemuDomainBackupPrepare(driver, vm, def) < 0)
+        qemuDomainBackupPrepare(driver, vm, def, chk) < 0)
         goto endjob;
 
     /* actually start the checkpoint. 2x2 array of push/pull, full/incr,
        plus additional tweak if checkpoint requested */
     qemuDomainObjEnterMonitor(driver, vm);
-    /* - push/pull: blockdev-add per <disk> */
+    /* - push/pull: blockdev-add per <disk>
+       - incr: bitmap-add of tmp, x-bitmap-merge per <disk> */
     for (i = 0; i < def->ndisks; i++) {
         virDomainBackupDiskDef *disk = &def->disks[i];
         virJSONValuePtr file;
@@ -17673,11 +17745,25 @@ qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
             goto endmon;
         json = NULL;
         disk->state = VIR_DOMAIN_BACKUP_DISK_STATE_READY;
+
+        if (def->incremental) {
+            if (qemuMonitorAddBitmap(priv->mon, node, disk->name) < 0)
+                goto endmon;
+            disk->state = VIR_DOMAIN_BACKUP_DISK_STATE_BITMAP;
+            for (other = parent ?: vm->current_checkpoint; other;
+                 other = other->def->parent ?
+                     virDomainCheckpointFindByName(vm->checkpoints,
+                                                   other->def->parent) : NULL) {
+                if (qemuMonitorMergeBitmaps(priv->mon, node, disk->name,
+                                            other->def->name) < 0)
+                    goto endmon;
+                if (STREQ(other->def->name, def->incremental))
+                    break;
+            }
+        }
     }
 
-    /* TODO:
-       - incr: bitmap-add of tmp, x-bitmap-merge per <disk>
-       - transaction, containing:
+    /* - transaction, containing:
          - push+full: blockdev-backup sync:full
          - push+incr: blockdev-backup sync:incremental bitmap:tmp
          - pull+full: blockdev-backup sync:none
@@ -17700,10 +17786,37 @@ qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
                                           "s:job-id", disk->store->nodeformat,
                                           NULL) < 0)
             goto endmon;
+        if (def->incremental && def->type == VIR_DOMAIN_BACKUP_TYPE_PULL &&
+            qemuMonitorJSONTransactionAdd(json,
+                                          "x-block-dirty-bitmap-disable",
+                                          "s:node", src->nodeformat,
+                                          "s:name", disk->name,
+                                          NULL) < 0)
+            goto endmon;
     }
+    if (chk && qemuDomainCheckpointAddActions(json, parent, chk->def) < 0)
+        goto endmon;
     if (qemuMonitorTransaction(priv->mon, &json) < 0)
         goto endmon;
     job_started = true;
+    if (chk) {
+        if (qemuDomainCheckpointWriteMetadata(vm, chk, driver->caps,
+                                              driver->xmlopt,
+                                              cfg->checkpointDir) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("unable to save metadata for checkpoint %s"),
+                           chk->def->name);
+            virDomainCheckpointObjListRemove(vm->checkpoints, chk);
+            goto endmon;
+        }
+        vm->current_checkpoint = chk;
+        other = virDomainCheckpointFindByName(vm->checkpoints,
+                                              chk->def->parent);
+        chk->parent = other;
+        other->nchildren++;
+        chk->sibling = other->first_child;
+        other->first_child = chk;
+    }
 
     /*
        - pull: nbd-server-start with <server> from user (or autogenerate server)
@@ -17770,6 +17883,7 @@ qemuDomainBackupBegin(virDomainPtr domain, const char *diskXml,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
+    virDomainCheckpointDefFree(chkdef);
     virCommandFree(cmd);
     VIR_FREE(suffix);
     virJSONValueFree(json);
