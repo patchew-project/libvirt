@@ -2,7 +2,7 @@
  * remote_driver.c: driver to provide access to libvirtd running
  *   on a remote machine
  *
- * Copyright (C) 2007-2015 Red Hat, Inc.
+ * Copyright (C) 2007-2018 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -147,6 +147,7 @@ static virStoragePoolPtr get_nonnull_storage_pool(virConnectPtr conn, remote_non
 static virStorageVolPtr get_nonnull_storage_vol(virConnectPtr conn, remote_nonnull_storage_vol vol);
 static virNodeDevicePtr get_nonnull_node_device(virConnectPtr conn, remote_nonnull_node_device dev);
 static virSecretPtr get_nonnull_secret(virConnectPtr conn, remote_nonnull_secret secret);
+static virDomainCheckpointPtr get_nonnull_domain_checkpoint(virDomainPtr domain, remote_nonnull_domain_checkpoint checkpoint);
 static virDomainSnapshotPtr get_nonnull_domain_snapshot(virDomainPtr domain, remote_nonnull_domain_snapshot snapshot);
 static void make_nonnull_domain(remote_nonnull_domain *dom_dst, virDomainPtr dom_src);
 static void make_nonnull_network(remote_nonnull_network *net_dst, virNetworkPtr net_src);
@@ -158,6 +159,7 @@ make_nonnull_node_device(remote_nonnull_node_device *dev_dst, virNodeDevicePtr d
 static void make_nonnull_secret(remote_nonnull_secret *secret_dst, virSecretPtr secret_src);
 static void make_nonnull_nwfilter(remote_nonnull_nwfilter *nwfilter_dst, virNWFilterPtr nwfilter_src);
 static void make_nonnull_nwfilter_binding(remote_nonnull_nwfilter_binding *binding_dst, virNWFilterBindingPtr binding_src);
+static void make_nonnull_domain_checkpoint(remote_nonnull_domain_checkpoint *checkpoint_dst, virDomainCheckpointPtr checkpoint_src);
 static void make_nonnull_domain_snapshot(remote_nonnull_domain_snapshot *snapshot_dst, virDomainSnapshotPtr snapshot_src);
 
 /*----------------------------------------------------------------------*/
@@ -8214,6 +8216,12 @@ get_nonnull_nwfilter_binding(virConnectPtr conn, remote_nonnull_nwfilter_binding
     return virGetNWFilterBinding(conn, binding.portdev, binding.filtername);
 }
 
+static virDomainCheckpointPtr
+get_nonnull_domain_checkpoint(virDomainPtr domain, remote_nonnull_domain_checkpoint checkpoint)
+{
+    return virGetDomainCheckpoint(domain, checkpoint.name);
+}
+
 static virDomainSnapshotPtr
 get_nonnull_domain_snapshot(virDomainPtr domain, remote_nonnull_domain_snapshot snapshot)
 {
@@ -8286,6 +8294,13 @@ make_nonnull_nwfilter_binding(remote_nonnull_nwfilter_binding *binding_dst, virN
 {
     binding_dst->portdev = binding_src->portdev;
     binding_dst->filtername = binding_src->filtername;
+}
+
+static void
+make_nonnull_domain_checkpoint(remote_nonnull_domain_checkpoint *checkpoint_dst, virDomainCheckpointPtr checkpoint_src)
+{
+    checkpoint_dst->name = checkpoint_src->name;
+    make_nonnull_domain(&checkpoint_dst->dom, checkpoint_src->domain);
 }
 
 static void
@@ -8536,7 +8551,21 @@ static virHypervisorDriver hypervisor_driver = {
     .connectCompareHypervisorCPU = remoteConnectCompareHypervisorCPU, /* 4.4.0 */
     .connectBaselineHypervisorCPU = remoteConnectBaselineHypervisorCPU, /* 4.4.0 */
     .nodeGetSEVInfo = remoteNodeGetSEVInfo, /* 4.5.0 */
-    .domainGetLaunchSecurityInfo = remoteDomainGetLaunchSecurityInfo /* 4.5.0 */
+    .domainGetLaunchSecurityInfo = remoteDomainGetLaunchSecurityInfo, /* 4.5.0 */
+    .domainCheckpointCreateXML = remoteDomainCheckpointCreateXML, /* 4.9.0 */
+    .domainCheckpointGetXMLDesc = remoteDomainCheckpointGetXMLDesc, /* 4.9.0 */
+    .domainListCheckpoints = remoteDomainListCheckpoints, /* 4.9.0 */
+    .domainCheckpointListChildren = remoteDomainCheckpointListChildren, /* 4.9.0 */
+    .domainCheckpointLookupByName = remoteDomainCheckpointLookupByName, /* 4.9.0 */
+    .domainHasCurrentCheckpoint = remoteDomainHasCurrentCheckpoint, /* 4.9.0 */
+    .domainCheckpointGetParent = remoteDomainCheckpointGetParent, /* 4.9.0 */
+    .domainCheckpointCurrent = remoteDomainCheckpointCurrent, /* 4.9.0 */
+    .domainCheckpointIsCurrent = remoteDomainCheckpointIsCurrent, /* 4.9.0 */
+    .domainCheckpointHasMetadata = remoteDomainCheckpointHasMetadata, /* 4.9.0 */
+    .domainCheckpointDelete = remoteDomainCheckpointDelete, /* 4.9.0 */
+    .domainBackupBegin = remoteDomainBackupBegin, /* 4.9.0 */
+    .domainBackupGetXMLDesc = remoteDomainBackupGetXMLDesc, /* 4.9.0 */
+    .domainBackupEnd = remoteDomainBackupEnd, /* 4.9.0 */
 };
 
 static virNetworkDriver network_driver = {
