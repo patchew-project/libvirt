@@ -6727,6 +6727,7 @@ qemuMonitorJSONNBDServerStart(qemuMonitorPtr mon,
 int
 qemuMonitorJSONNBDServerAdd(qemuMonitorPtr mon,
                             const char *deviceID,
+                            const char *export,
                             bool writable)
 {
     int ret = -1;
@@ -6735,6 +6736,7 @@ qemuMonitorJSONNBDServerAdd(qemuMonitorPtr mon,
 
     if (!(cmd = qemuMonitorJSONMakeCommand("nbd-server-add",
                                            "s:device", deviceID,
+                                           "S:name", export,
                                            "b:writable", writable,
                                            NULL)))
         return ret;
