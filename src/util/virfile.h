@@ -224,7 +224,17 @@ enum {
 int virFileIsSharedFSType(const char *path, int fstypes) ATTRIBUTE_NONNULL(1);
 int virFileIsSharedFS(const char *path) ATTRIBUTE_NONNULL(1);
 int virFileIsMountPoint(const char *file) ATTRIBUTE_NONNULL(1);
-int virFileIsCDROM(const char *path)
+
+typedef enum {
+    VIR_FILE_CDROM_DISC_OK,
+    VIR_FILE_CDROM_UNKNOWN,
+    VIR_FILE_CDROM_NO_DISC,
+    VIR_FILE_CDROM_TRAY_OPEN,
+    VIR_FILE_CDROM_DRIVE_NOT_READY,
+} virFileCDRomStatus;
+
+int virFileCheckCDROM(const char *path,
+                      virFileCDRomStatus *cd_status)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_RETURN_CHECK;
 
 int virFileGetMountSubtree(const char *mtabpath,

@@ -7806,7 +7806,7 @@ void qemuDomainObjCheckDiskTaint(virQEMUDriverPtr driver,
 
     if (disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM &&
         virStorageSourceGetActualType(disk->src) == VIR_STORAGE_TYPE_BLOCK &&
-        disk->src->path && virFileIsCDROM(disk->src->path) == 1)
+        disk->src->path && virFileCheckCDROM(disk->src->path, NULL) == 1)
         qemuDomainObjTaint(driver, obj, VIR_DOMAIN_TAINT_CDROM_PASSTHROUGH,
                            logCtxt);
 
@@ -8760,7 +8760,7 @@ qemuDomainDetermineDiskChain(virQEMUDriverPtr driver,
         if (disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM &&
             src->format == VIR_STORAGE_FILE_RAW &&
             virStorageSourceIsBlockLocal(src) &&
-            virFileIsCDROM(src->path) == 1)
+            virFileCheckCDROM(src->path, NULL) == 1)
             src->hostcdrom = true;
 
         ret = 0;
