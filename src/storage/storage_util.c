@@ -1601,6 +1601,38 @@ virStorageBackendVolOpen(const char *path, struct stat *sb,
         return -1;
     }
 
+#if defined(__linux__)
+    virFileCDRomStatus cd_status = VIR_FILE_CDROM_UNKNOWN;
+
+    if (virFileCheckCDROM(path, &cd_status) > 0) {
+        switch (cd_status) {
+            case VIR_FILE_CDROM_UNKNOWN:
+                virReportError(VIR_ERR_NO_STORAGE_VOL,
+                               _("unknown status for CDROM storage vol '%s'"),
+                               path);
+                return -1;
+            case VIR_FILE_CDROM_NO_DISC:
+                virReportError(VIR_ERR_NO_STORAGE_VOL,
+                               _("no disc in CDROM storage vol '%s'"),
+                               path);
+                return -1;
+            case VIR_FILE_CDROM_TRAY_OPEN:
+                virReportError(VIR_ERR_NO_STORAGE_VOL,
+                               _("the tray of CDROM storage vol '%s' is open"),
+                               path);
+                return -1;
+            case VIR_FILE_CDROM_DRIVE_NOT_READY:
+                virReportError(VIR_ERR_NO_STORAGE_VOL,
+                               _("CDROM storage vol '%s' is not ready"),
+                               path);
+                return -1;
+            case VIR_FILE_CDROM_DISC_OK:
+                VIR_INFO("CDROM storage vol %s is OK", path);
+                break;
+        }
+    }
+#endif /* defined(__linux__) */
+
     /* O_NONBLOCK should only matter during open() for fifos and
      * sockets, which we already filtered; but using it prevents a
      * TOCTTOU race.  However, later on we will want to read() the
