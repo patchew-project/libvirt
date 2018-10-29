@@ -949,3 +949,114 @@ virFirewallApply(virFirewallPtr firewall)
     virMutexUnlock(&ruleLock);
     return ret;
 }
+
+
+static void
+virFirewallDumpRule(virBufferPtr buf,
+                    const char *ifname,
+                    virFirewallRulePtr rule)
+{
+    size_t i = 0;
+    size_t j, idx;
+    const char *concurrent = NULL;
+
+    switch (rule->layer) {
+    case VIR_FIREWALL_LAYER_ETHERNET:
+        concurrent = "--concurrent";
+        break;
+
+    case VIR_FIREWALL_LAYER_IPV4:
+    case VIR_FIREWALL_LAYER_IPV6:
+        concurrent = "-w";
+        break;
+
+    case VIR_FIREWALL_LAYER_LAST:
+        break;
+    }
+
+    /* don't dump concurrent option */
+    if (concurrent && rule->argsLen > 0 && STREQ(rule->args[0], concurrent))
+        i++;
+
+    /* calculate index of 'command' argument like -N or -A etc */
+    idx = i;
+    if (i < rule->argsLen && STREQ(rule->args[i], "-t"))
+        idx += 2;
+
+    /* Whitelist commands that can go to dump. These are -N and -A.
+     * Commands D, L, X, F are used only for cleanup purpuses and do
+     * not present result rules list. -I is only used by
+     * iptablesCreateBaseChainsFW to [re]insert common non binding specific
+     * rules.
+     */
+    if (idx >= rule->argsLen ||
+        (STRNEQ(rule->args[idx], "-N") && STRNEQ(rule->args[idx], "-A")))
+         return;
+
+    for (j = i; j < rule->argsLen; j++)
+        if (strstr(rule->args[j], ifname))
+            break;
+
+    /* We also need to filter common non binding specific rules originated
+     * from iptablesCreateBaseChainsFW - these are -N for libvirt-in etc. */
+    if (j == rule->argsLen)
+        return;
+
+    switch (rule->layer) {
+    case VIR_FIREWALL_LAYER_ETHERNET:
+        virBufferAddLit(buf, "ebtables ");
+        break;
+
+    case VIR_FIREWALL_LAYER_IPV4:
+        virBufferAddLit(buf, "iptables ");
+        break;
+
+    case VIR_FIREWALL_LAYER_IPV6:
+        virBufferAddLit(buf, "ip6tables ");
+        break;
+
+    case VIR_FIREWALL_LAYER_LAST:
+        break;
+    }
+
+    /* dump default table explicitly */
+    if (i < rule->argsLen && STRNEQ(rule->args[i], "-t"))
+        virBufferAddLit(buf, "-t filter ");
+
+    for (; i < rule->argsLen; i++) {
+        virBufferAddStr(buf, rule->args[i]);
+
+        if (i < rule->argsLen - 1)
+            virBufferAddLit(buf, " ");
+    }
+
+    virBufferAddLit(buf, "\n");
+}
+
+
+/*
+ * Dump rules for all transactions. Transaction rollbacks are not dumped.
+ * The order of rules in dump follows from order of transactions and
+ * order of rules in transactions. Only creation rules (-N, -A) are dumped.
+ * Example:
+ *
+ * ebtables -t nat -N libvirt-P-vme001c42fd388c
+ * ebtables -t nat -A libvirt-P-vme001c42fd388c -d 00:1c:42:fd:38:9d -j RETURN
+ * ..
+ */
+char*
+virFirewallDumpRules(virFirewallPtr firewall,
+                     const char *ifname)
+{
+    size_t i, j;
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    if (!firewall || firewall->err)
+        return NULL;
+
+    for (i = 0; i < firewall->ngroups; i++)
+        for (j = 0; j < firewall->groups[i]->naction; j++)
+            virFirewallDumpRule(&buf, ifname, firewall->groups[i]->action[j]);
+
+    return virBufferContentAndReset(&buf);
+}

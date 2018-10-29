@@ -115,6 +115,9 @@ void virFirewallStartRollback(virFirewallPtr firewall,
 
 int virFirewallApply(virFirewallPtr firewall);
 
+char* virFirewallDumpRules(virFirewallPtr firewall,
+                           const char *ifname);
+
 void virFirewallSetLockOverride(bool avoid);
 
 VIR_DEFINE_AUTOPTR_FUNC(virFirewall, virFirewallFree)

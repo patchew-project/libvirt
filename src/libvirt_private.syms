@@ -1892,6 +1892,7 @@ virFileCacheSetPriv;
 # util/virfirewall.h
 virFirewallAddRuleFull;
 virFirewallApply;
+virFirewallDumpRules;
 virFirewallFree;
 virFirewallNew;
 virFirewallRemoveRule;
