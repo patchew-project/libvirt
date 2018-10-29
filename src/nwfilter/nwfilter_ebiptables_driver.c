@@ -96,6 +96,8 @@ static bool newMatchState;
 #define MATCH_PHYSDEV_OUT_FW  "-m", "physdev", "--physdev-is-bridged", "--physdev-out"
 #define MATCH_PHYSDEV_OUT_OLD_FW  "-m", "physdev", "--physdev-out"
 
+#define EBIPTABLES_CACHE_DIR (LOCALSTATEDIR "/run/libvirt/nwfilter-rules")
+
 static int ebtablesRemoveBasicRules(const char *ifname);
 static int ebiptablesDriverInit(bool privileged);
 static void ebiptablesDriverShutdown(void);
@@ -149,6 +151,10 @@ static char chainprefixes_host_temp[3] = {
     CHAINPREFIX_HOST_OUT_TEMP,
     0
 };
+
+static virHashTablePtr ebiptables_cache_hits;
+
+static int ebiptablesTearNewRules(const char *ifname);
 
 static int
 printVar(virNWFilterVarCombIterPtr vars,
@@ -3393,6 +3399,339 @@ ebtablesGetSubChainInsts(virHashTablePtr chains,
 
 }
 
+
+static int
+ebiptablesCacheApplyNew(const char *ifname,
+                        const char *dumpDriver)
+{
+    char *fileFirewall = NULL;
+    char *fileDriver = NULL;
+    char *fileDriverTmp = NULL;
+    int ret = -1;
+
+    /* for tests */
+    if (!ebiptables_cache_hits)
+        return 0;
+
+    if (virAsprintf(&fileFirewall, "%s/%s.firewall",
+                    EBIPTABLES_CACHE_DIR, ifname) < 0)
+        return -1;
+
+    if (virAsprintf(&fileDriver, "%s/%s.driver",
+                    EBIPTABLES_CACHE_DIR, ifname) < 0)
+        goto cleanup;
+
+    if (unlink(fileFirewall) < 0 && errno != ENOENT) {
+        virReportSystemError(errno, _("can not unlink file '%s'"), fileFirewall);
+        goto cleanup;
+    }
+
+    if (unlink(fileDriver) < 0 && errno != ENOENT) {
+        virReportSystemError(errno, _("can not unlink file '%s'"), fileDriver);
+        goto cleanup;
+    }
+
+    ret = 0;
+
+    if (!dumpDriver)
+        goto cleanup;
+
+    if (virAsprintfQuiet(&fileDriverTmp, "%s/%s.driver.tmp",
+                         EBIPTABLES_CACHE_DIR, ifname) < 0)
+        goto cleanup;
+
+    if (virFileWriteStr(fileDriverTmp, dumpDriver, 0600) < 0) {
+        unlink(fileDriverTmp);
+        goto cleanup;
+    }
+
+    rename(fileDriverTmp, fileDriver);
+
+ cleanup:
+    VIR_FREE(fileFirewall);
+    VIR_FREE(fileDriver);
+    VIR_FREE(fileDriverTmp);
+
+    return ret;
+}
+
+
+struct ebiptablesDumpData {
+    char *dump;
+    const char *ifname;
+    virFirewallLayer layer;
+};
+
+
+static int
+ebiptablesAppendInstalledRules(virFirewallPtr fw ATTRIBUTE_UNUSED,
+                               const char *const *lines,
+                               void *opaque)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+    struct ebiptablesDumpData *data = opaque;
+
+    virBufferAdd(&buf, data->dump, -1);
+
+    while (*lines) {
+        if (strstr(*lines, data->ifname)) {
+            /* iptables/ip6tables do not add binary and table in front of rules
+             * thus let's do it ourselves */
+            switch (data->layer) {
+            case VIR_FIREWALL_LAYER_IPV4:
+                if (!STRPREFIX(*lines, "iptables"))
+                    virBufferAddLit(&buf, "iptables -t filter ");
+                break;
+
+            case VIR_FIREWALL_LAYER_IPV6:
+                if (!STRPREFIX(*lines, "ip6tables"))
+                    virBufferAddLit(&buf, "ip6tables -t filter ");
+                break;
+
+            case VIR_FIREWALL_LAYER_ETHERNET:
+            case VIR_FIREWALL_LAYER_LAST:
+                break;
+            }
+
+            virBufferAddStr(&buf, *lines);
+            virBufferAddLit(&buf, "\n");
+        }
+        ++lines;
+    }
+
+    data->dump = virBufferContentAndReset(&buf);
+
+    return 0;
+}
+
+
+static char*
+ebiptablesDumpIstalledRules(const char *ifname)
+{
+    virFirewallPtr fw;
+    struct ebiptablesDumpData data = { NULL, ifname, 0 };
+
+    /* Here we get fragile. We only check nat table in ebtables and filter
+     * table for both iptables and ip6tables because we don't use other tables
+     * right now. But if we start to then we are in danger as we will miss
+     * changes in that tables on cache checks. On the other hand always checking
+     * all the tables is overkill and has significant performance impact if
+     * number of VMs is large. Do we need to add some protection here? */
+
+    fw = virFirewallNew();
+    virFirewallStartTransaction(fw, 0);
+    data.layer = VIR_FIREWALL_LAYER_ETHERNET;
+    virFirewallAddRuleFull(fw, data.layer,
+                           false, ebiptablesAppendInstalledRules, &data,
+                           "-t", "nat", "-L", "--Lx", NULL);
+    virFirewallApply(fw);
+    virFirewallFree(fw);
+
+    fw = virFirewallNew();
+    virFirewallStartTransaction(fw, 0);
+    data.layer = VIR_FIREWALL_LAYER_IPV4;
+    virFirewallAddRuleFull(fw, data.layer,
+                           false, ebiptablesAppendInstalledRules, &data,
+                           "-S", NULL);
+    virFirewallApply(fw);
+    virFirewallFree(fw);
+
+    fw = virFirewallNew();
+    virFirewallStartTransaction(fw, 0);
+    data.layer = VIR_FIREWALL_LAYER_IPV6;
+    virFirewallAddRuleFull(fw, data.layer,
+                           false, ebiptablesAppendInstalledRules, &data,
+                           "-S", NULL);
+    virFirewallApply(fw);
+    virFirewallFree(fw);
+
+    return data.dump;
+}
+
+
+static void
+ebiptablesCacheTearOld(const char *ifname,
+                       bool success)
+{
+    char *fileFirewall = NULL;
+    char *fileFirewallTmp = NULL;
+    char *fileDriver = NULL;
+    char *dump = NULL;
+    bool error = true;
+
+    /* for tests */
+    if (!ebiptables_cache_hits)
+        return;
+
+    if (virAsprintfQuiet(&fileDriver, "%s/%s.driver",
+                         EBIPTABLES_CACHE_DIR, ifname) < 0)
+        return;
+
+    /* We failed to tear old rules thus let's not cache so we can
+     * redo rules instantiantion and hopefully tear successfully
+     * next time
+     */
+    if (!success) {
+        unlink(fileDriver);
+        VIR_FREE(fileDriver);
+        return;
+    }
+
+    /* When applying new rules we can fail to save driver rules.
+     * We need both file for cache purpose thus there is no sense
+     * to save firewall rules.
+     */
+    if (access(fileDriver, F_OK) < 0)
+        return;
+
+    if (virAsprintfQuiet(&fileFirewall, "%s/%s.firewall",
+                         EBIPTABLES_CACHE_DIR, ifname) < 0)
+        goto cleanup;
+
+    if (virAsprintfQuiet(&fileFirewallTmp, "%s/%s.firewall.tmp",
+                         EBIPTABLES_CACHE_DIR, ifname) < 0)
+        goto cleanup;
+
+    if (!(dump = ebiptablesDumpIstalledRules(ifname)))
+        goto cleanup;
+
+    if (virFileWriteStr(fileFirewallTmp, dump, 0600) < 0) {
+        unlink(fileFirewallTmp);
+        goto cleanup;
+    }
+
+    if (rename(fileFirewallTmp, fileFirewall) < 0)
+        goto cleanup;
+
+    error = false;
+
+ cleanup:
+    if (error)
+        unlink(fileDriver);
+
+    VIR_FREE(fileFirewall);
+    VIR_FREE(fileFirewallTmp);
+    VIR_FREE(fileDriver);
+    VIR_FREE(dump);
+}
+
+
+static void
+ebiptablesCacheTearNew(const char *ifname)
+{
+    char *fileDriver = NULL;
+
+    /* for tests */
+    if (!ebiptables_cache_hits)
+        return;
+
+    if (virAsprintfQuiet(&fileDriver, "%s/%s.driver",
+                         EBIPTABLES_CACHE_DIR, ifname) < 0)
+        return;
+
+    unlink(fileDriver);
+    VIR_FREE(fileDriver);
+
+    /* We lost cache files at this point. We could preserve
+     * old cache files and restore them here but tearing
+     * new rules is error path so this is not really important.
+     */
+}
+
+
+static void
+ebiptablesCacheAllTeardown(const char *ifname)
+{
+    char *fileFirewall = NULL;
+    char *fileDriver = NULL;
+
+    /* for tests */
+    if (!ebiptables_cache_hits)
+        return;
+
+    if (virAsprintf(&fileFirewall, "%s/%s.firewall",
+                    EBIPTABLES_CACHE_DIR, ifname) < 0)
+        return;
+
+    if (virAsprintf(&fileDriver, "%s/%s.driver",
+                    EBIPTABLES_CACHE_DIR, ifname) < 0)
+        goto cleanup;
+
+    unlink(fileFirewall);
+    unlink(fileDriver);
+
+ cleanup:
+    VIR_FREE(fileFirewall);
+    VIR_FREE(fileDriver);
+}
+
+
+static bool
+ebiptablesCacheIsHit(const char *ifname,
+                     const char *dumpDriver)
+{
+    char *fileDriver = NULL;
+    char *fileFirewall = NULL;
+    char *dumpDriverCached = NULL;
+    char *dumpFirewallCached = NULL;
+    char *dumpFirewall = NULL;
+    bool ret = false;
+
+    /* for tests */
+    if (!ebiptables_cache_hits)
+        return false;
+
+    /* just to be sure we don't have remnaints from previous operations */
+    virHashRemoveEntry(ebiptables_cache_hits, ifname);
+
+    if (!dumpDriver)
+        return false;
+
+    if (virAsprintfQuiet(&fileDriver, "%s/%s.driver",
+                         EBIPTABLES_CACHE_DIR, ifname) < 0)
+        return false;
+
+    if (virAsprintfQuiet(&fileFirewall, "%s/%s.firewall",
+                         EBIPTABLES_CACHE_DIR, ifname) < 0)
+        goto cleanup;
+
+    if (virFileReadAllQuiet(fileDriver, 1024 * 1024, &dumpDriverCached) < 0) {
+        if (errno == EOVERFLOW)
+            VIR_WARN("nwfilter rules cache files exceeds limit");
+
+        goto cleanup;
+    }
+
+    if (virFileReadAllQuiet(fileFirewall, 1024 * 1024, &dumpFirewallCached) < 0) {
+        if (errno == EOVERFLOW)
+            VIR_WARN("nwfilter rules cache files exceeds limit");
+
+        goto cleanup;
+    }
+
+    if (!(dumpFirewall = ebiptablesDumpIstalledRules(ifname)))
+        goto cleanup;
+
+    if (STRNEQ(dumpFirewall, dumpFirewallCached) ||
+        STRNEQ(dumpDriver, dumpDriverCached))
+        goto cleanup;
+
+    if (virHashAddEntry(ebiptables_cache_hits, ifname, (void *) 1) < 0)
+        goto cleanup;
+
+    ret = true;
+
+ cleanup:
+    VIR_FREE(fileDriver);
+    VIR_FREE(fileFirewall);
+    VIR_FREE(dumpFirewall);
+    VIR_FREE(dumpFirewallCached);
+    VIR_FREE(dumpDriverCached);
+
+    return ret;
+}
+
+
 static int
 ebiptablesApplyNewRules(const char *ifname,
                         virNWFilterRuleInstPtr *rules,
@@ -3408,6 +3747,7 @@ ebiptablesApplyNewRules(const char *ifname,
     char *errmsg = NULL;
     struct ebtablesSubChainInst **subchains = NULL;
     size_t nsubchains = 0;
+    char *dumpDriver = NULL;
     int ret = -1;
 
     if (!chains_in_set || !chains_out_set)
@@ -3592,8 +3932,20 @@ ebiptablesApplyNewRules(const char *ifname,
     ebtablesRemoveTmpRootChainFW(fw, true, ifname);
     ebtablesRemoveTmpRootChainFW(fw, false, ifname);
 
-    if (virFirewallApply(fw) < 0)
-        goto cleanup;
+    dumpDriver = virFirewallDumpRules(fw, ifname);
+
+    if (!ebiptablesCacheIsHit(ifname, dumpDriver)) {
+        if (virFirewallApply(fw) < 0)
+            goto cleanup;
+
+        if (ebiptablesCacheApplyNew(ifname, dumpDriver) < 0) {
+            ebiptablesTearNewRules(ifname);
+            goto cleanup;
+        }
+
+    } else {
+        VIR_DEBUG("Skip rules reinstantiating for %s", ifname);
+    }
 
     ret = 0;
 
@@ -3604,6 +3956,7 @@ ebiptablesApplyNewRules(const char *ifname,
     virFirewallFree(fw);
     virHashFree(chains_in_set);
     virHashFree(chains_out_set);
+    VIR_FREE(dumpDriver);
 
     VIR_FREE(errmsg);
     return ret;
@@ -3633,12 +3986,20 @@ ebiptablesTearNewRules(const char *ifname)
     virFirewallPtr fw = virFirewallNew();
     int ret = -1;
 
+    if (virHashLookup(ebiptables_cache_hits, ifname)) {
+        virHashRemoveEntry(ebiptables_cache_hits, ifname);
+        return 0;
+    }
+
     virFirewallStartTransaction(fw, VIR_FIREWALL_TRANSACTION_IGNORE_ERRORS);
 
     ebiptablesTearNewRulesFW(fw, ifname);
 
     ret = virFirewallApply(fw);
     virFirewallFree(fw);
+
+    ebiptablesCacheTearNew(ifname);
+
     return ret;
 }
 
@@ -3647,6 +4008,11 @@ ebiptablesTearOldRules(const char *ifname)
 {
     virFirewallPtr fw = virFirewallNew();
     int ret = -1;
+
+    if (virHashLookup(ebiptables_cache_hits, ifname)) {
+        virHashRemoveEntry(ebiptables_cache_hits, ifname);
+        return 0;
+    }
 
     virFirewallStartTransaction(fw, VIR_FIREWALL_TRANSACTION_IGNORE_ERRORS);
 
@@ -3667,6 +4033,9 @@ ebiptablesTearOldRules(const char *ifname)
 
     ret = virFirewallApply(fw);
     virFirewallFree(fw);
+
+    ebiptablesCacheTearOld(ifname, ret == 0);
+
     return ret;
 }
 
@@ -3685,6 +4054,9 @@ ebiptablesAllTeardown(const char *ifname)
 {
     virFirewallPtr fw = virFirewallNew();
     int ret = -1;
+
+    virHashRemoveEntry(ebiptables_cache_hits, ifname);
+    ebiptablesCacheAllTeardown(ifname);
 
     virFirewallStartTransaction(fw, VIR_FIREWALL_TRANSACTION_IGNORE_ERRORS);
 
@@ -3826,6 +4198,15 @@ ebiptablesDriverInit(bool privileged)
     if (ebiptablesDriverProbeStateMatch() < 0)
         return -1;
 
+    if (virFileMakePathWithMode(EBIPTABLES_CACHE_DIR, S_IRWXU) < 0) {
+        virReportSystemError(errno, _("cannot create cache directory '%s'"),
+                             EBIPTABLES_CACHE_DIR);
+        return -1;
+    }
+
+    if (!(ebiptables_cache_hits = virHashCreate(100, NULL)))
+        return -1;
+
     ebiptables_driver.flags = TECHDRV_FLAG_INITIALIZED;
 
     return 0;
@@ -3835,5 +4216,7 @@ ebiptablesDriverInit(bool privileged)
 static void
 ebiptablesDriverShutdown(void)
 {
+    virHashFree(ebiptables_cache_hits);
+
     ebiptables_driver.flags = 0;
 }
