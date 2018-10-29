@@ -14683,6 +14683,14 @@ qemuDomainSnapshotPrepare(virDomainObjPtr vm,
                                                       active, reuse) < 0)
                 goto cleanup;
 
+            if (dom_disk->src->readonly && active) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("external snapshot for readonly disk %s "
+                                 "of active domain is not supported"),
+                               disk->name);
+                goto cleanup;
+            }
+
             external++;
             break;
 
