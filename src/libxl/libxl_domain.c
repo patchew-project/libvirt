@@ -447,8 +447,10 @@ libxlDomainShutdownThread(void *opaque)
     virObjectEventPtr dom_event = NULL;
     libxl_shutdown_reason xl_reason = ev->u.domain_shutdown.shutdown_reason;
     libxlDriverConfigPtr cfg;
+    libxl_domain_config d_config;
 
     cfg = libxlDriverConfigGet(driver);
+    libxl_domain_config_init(&d_config);
 
     vm = virDomainObjListFindByID(driver->domains, ev->domid);
     if (!vm) {
@@ -532,6 +534,33 @@ libxlDomainShutdownThread(void *opaque)
          * after calling libxl_domain_suspend() are handled by it's callers.
          */
         goto endjob;
+    } else if (xl_reason == LIBXL_SHUTDOWN_REASON_SOFT_RESET) {
+        libxlDomainObjPrivatePtr priv = vm->privateData;
+        int res;
+
+        if (libxl_retrieve_domain_configuration(cfg->ctx, vm->def->id,
+                                                &d_config) != 0) {
+            VIR_ERROR(_("Failed to retrieve config for VM '%s'. "
+                        "Unable to perform soft reset. Destroying VM"),
+                      vm->def->name);
+            goto destroy;
+        }
+
+        if (priv->deathW) {
+            libxl_evdisable_domain_death(cfg->ctx, priv->deathW);
+            priv->deathW = NULL;
+        }
+
+        res = libxl_domain_soft_reset(cfg->ctx, &d_config, vm->def->id,
+                                      NULL, NULL);
+        if (res != 0) {
+            VIR_ERROR(_("Failed to soft reset VM '%s'. Destroying VM"),
+                      vm->def->name);
+            goto destroy;
+        }
+        libxl_evenable_domain_death(cfg->ctx, vm->def->id, 0, &priv->deathW);
+        libxl_domain_unpause(cfg->ctx, vm->def->id);
+        goto endjob;
     } else {
         VIR_INFO("Unhandled shutdown_reason %d", xl_reason);
         goto endjob;
@@ -565,6 +594,7 @@ libxlDomainShutdownThread(void *opaque)
     virObjectEventStateQueue(driver->domainEventState, dom_event);
     libxl_event_free(cfg->ctx, ev);
     VIR_FREE(shutdown_info);
+    libxl_domain_config_dispose(&d_config);
     virObjectUnref(cfg);
 }
 
