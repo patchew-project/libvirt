@@ -8246,6 +8246,12 @@ qemuBuildVhostuserCommandLine(virQEMUDriverPtr driver,
         goto cleanup;
     }
 
+    if (virDomainNetGetActualBandwidth(net)) {
+        VIR_WARN("setting bandwidth on interfaces of "
+                 "type '%s' is not implemented yet",
+                 virDomainNetTypeToString(VIR_DOMAIN_NET_TYPE_VHOSTUSER));
+    }
+
     switch ((virDomainChrType)net->data.vhostuser->type) {
     case VIR_DOMAIN_CHR_TYPE_UNIX:
         if (!(chardev = qemuBuildChrChardevStr(logManager, secManager,
