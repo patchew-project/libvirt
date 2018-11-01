@@ -722,14 +722,11 @@ virNodeDevCapsDefFree;
 virNodeDevCapTypeFromString;
 virNodeDevCapTypeToString;
 virNodeDeviceCapsListExport;
-virNodeDeviceCreateVport;
 virNodeDeviceDefFormat;
 virNodeDeviceDefFree;
 virNodeDeviceDefParseFile;
 virNodeDeviceDefParseNode;
 virNodeDeviceDefParseString;
-virNodeDeviceDeleteVport;
-virNodeDeviceGetParentName;
 virNodeDeviceGetPCIDynamicCaps;
 virNodeDeviceGetSCSIHostCaps;
 virNodeDeviceGetSCSITargetCaps;
@@ -1316,6 +1313,11 @@ virLogManagerDomainReadLogFile;
 virLogManagerFree;
 virLogManagerNew;
 
+
+# node_device/node_device_util.h
+virNodeDeviceCreateVport;
+virNodeDeviceDeleteVport;
+virNodeDeviceGetParentName;
 
 # secret/secret_util.h
 virSecretGetSecretString;

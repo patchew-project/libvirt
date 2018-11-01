@@ -221,6 +221,7 @@ if WITH_STORAGE_SCSI
 libvirt_storage_backend_scsi_la_SOURCES = $(STORAGE_DRIVER_SCSI_SOURCES)
 libvirt_storage_backend_scsi_la_CFLAGS = \
 	-I$(srcdir)/conf \
+	-I$(srcdir)/node_device \
 	$(AM_CFLAGS) \
 	$(NULL)
 

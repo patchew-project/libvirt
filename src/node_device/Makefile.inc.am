@@ -3,6 +3,11 @@ NODE_DEVICE_DRIVER_SOURCES = \
 	node_device/node_device_driver.h \
 	$(NULL)
 
+NODE_DEVICE_UTIL_SOURCES = \
+	node_device/node_device_util.h \
+	node_device/node_device_util.c \
+	$(NULL)
+
 NODE_DEVICE_DRIVER_HAL_SOURCES = \
 	node_device/node_device_hal.c \
 	node_device/node_device_hal.h \
@@ -17,6 +22,7 @@ DRIVER_SOURCE_FILES += \
 	$(NODE_DEVICE_DRIVER_SOURCES) \
 	$(NODE_DEVICE_DRIVER_HAL_SOURCES) \
 	$(NODE_DEVICE_DRIVER_UDEV_SOURCES) \
+	$(NODE_DEVICE_UTIL_SOURCES) \
 	$(NULL)
 
 STATEFUL_DRIVER_SOURCE_FILES += \
@@ -27,13 +33,22 @@ EXTRA_DIST += \
 	$(NODE_DEVICE_DRIVER_SOURCES) \
 	$(NODE_DEVICE_DRIVER_HAL_SOURCES) \
 	$(NODE_DEVICE_DRIVER_UDEV_SOURCES) \
+	$(NODE_DEVICE_UTIL_SOURCES) \
 	$(NULL)
 
+noinst_LTLIBRARIES += libvirt_nodedev.la
+libvirt_la_BUILT_LIBADD += libvirt_nodedev.la
+libvirt_nodedev_la_CFLAGS = $(AM_CFLAGS)
+libvirt_nodedev_la_LDFLAGS = $(AM_LDFLAGS)
+libvirt_nodedev_la_SOURCES = $(NODE_DEVICE_UTIL_SOURCES)
 
 if WITH_NODE_DEVICES
 # Needed to keep automake quiet about conditionals
 mod_LTLIBRARIES += libvirt_driver_nodedev.la
-libvirt_driver_nodedev_la_SOURCES = $(NODE_DEVICE_DRIVER_SOURCES)
+libvirt_driver_nodedev_la_SOURCES = \
+	$(NODE_DEVICE_DRIVER_SOURCES) \
+	$(NODE_DEVICE_UTIL_SOURCES) \
+	$(NULL)
 
 libvirt_driver_nodedev_la_CFLAGS = \
 	-I$(srcdir)/access \
