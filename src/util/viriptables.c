@@ -51,6 +51,87 @@ enum {
 };
 
 
+
+typedef struct {
+    virFirewallLayer layer;
+    const char *table;
+    const char *parent;
+    const char *child;
+} iptablesChain;
+
+static int
+iptablesCheckPrivateChain(virFirewallPtr fw,
+                          const char *const *lines,
+                          void *opaque)
+{
+    iptablesChain *data = opaque;
+    bool found = false;
+
+    while (lines && *lines && !found) {
+        if (STRPREFIX(*lines, data->child))
+            found = true;
+        lines++;
+    }
+
+    if (!found)
+        virFirewallAddRule(fw, data->layer,
+                           "--table", data->table,
+                           "--insert", data->parent,
+                           "--jump", data->child, NULL);
+
+     return 0;
+}
+
+
+int
+iptablesSetupPrivateChains(void)
+{
+    virFirewallPtr fw;
+    int ret = -1;
+    iptablesChain chains[] = {
+        {VIR_FIREWALL_LAYER_IPV4, "filter", "INPUT", "INP_libvirt"},
+        {VIR_FIREWALL_LAYER_IPV4, "filter", "OUTPUT", "OUT_libvirt"},
+        {VIR_FIREWALL_LAYER_IPV4, "filter", "FORWARD", "FWD_libvirt_out"},
+        {VIR_FIREWALL_LAYER_IPV4, "filter", "FORWARD", "FWD_libvirt_in"},
+        {VIR_FIREWALL_LAYER_IPV4, "filter", "FORWARD", "FWD_libvirt_cross"},
+        {VIR_FIREWALL_LAYER_IPV4, "nat", "POSTROUTING", "PRT_libvirt"},
+        {VIR_FIREWALL_LAYER_IPV6, "filter", "INPUT", "INP_libvirt"},
+        {VIR_FIREWALL_LAYER_IPV6, "filter", "OUTPUT", "OUT_libvirt"},
+        {VIR_FIREWALL_LAYER_IPV6, "filter", "FORWARD", "FWD_libvirt_out"},
+        {VIR_FIREWALL_LAYER_IPV6, "filter", "FORWARD", "FWD_libvirt_in"},
+        {VIR_FIREWALL_LAYER_IPV6, "filter", "FORWARD", "FWD_libvirt_cross"},
+        {VIR_FIREWALL_LAYER_IPV6, "nat", "POSTROUTING", "PRT_libvirt"},
+    };
+    size_t i;
+
+    fw = virFirewallNew();
+
+    virFirewallStartTransaction(fw, VIR_FIREWALL_TRANSACTION_IGNORE_ERRORS);
+
+    for (i = 0; i < ARRAY_CARDINALITY(chains); i++) {
+        virFirewallAddRule(fw, chains[i].layer,
+                           "--table", chains[i].table,
+                           "--new-chain", chains[i].child, NULL);
+    }
+
+    virFirewallStartTransaction(fw, 0);
+
+    for (i = 0; i < ARRAY_CARDINALITY(chains); i++) {
+        virFirewallAddRuleFull(fw, chains[i].layer,
+                               false, iptablesCheckPrivateChain,
+                               &chains[i],
+                               "--table", chains[i].table,
+                               "--list", chains[i].parent, NULL);
+    }
+
+    if (virFirewallApply(fw) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    return ret;
+}
+
 static void
 iptablesInput(virFirewallPtr fw,
               virFirewallLayer layer,
