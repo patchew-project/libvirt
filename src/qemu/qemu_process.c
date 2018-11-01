@@ -7767,6 +7767,10 @@ qemuProcessReconnect(void *opaque)
     cfg = virQEMUDriverGetConfig(driver);
     priv = obj->privateData;
 
+    /* If we are connecting to a guest started by old libvirt there is no
+     * allowReboot in status XML and we need to initialize it. */
+    qemuProcessPrepareAllowReboot(obj);
+
     if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
         goto error;
 
@@ -7782,10 +7786,6 @@ qemuProcessReconnect(void *opaque)
     /* Restore the masterKey */
     if (qemuDomainMasterKeyReadFile(priv) < 0)
         goto error;
-
-    /* If we are connecting to a guest started by old libvirt there is no
-     * allowReboot in status XML and we need to initialize it. */
-    qemuProcessPrepareAllowReboot(obj);
 
     if (qemuHostdevUpdateActiveDomainDevices(driver, obj->def) < 0)
         goto error;
