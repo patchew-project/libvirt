@@ -1,5 +1,77 @@
 iptables \
 --table filter \
+--new-chain INP_libvirt
+iptables \
+--table filter \
+--new-chain OUT_libvirt
+iptables \
+--table filter \
+--new-chain FWD_libvirt_out
+iptables \
+--table filter \
+--new-chain FWD_libvirt_in
+iptables \
+--table filter \
+--new-chain FWD_libvirt_cross
+iptables \
+--table nat \
+--new-chain PRT_libvirt
+ip6tables \
+--table filter \
+--new-chain INP_libvirt
+ip6tables \
+--table filter \
+--new-chain OUT_libvirt
+ip6tables \
+--table filter \
+--new-chain FWD_libvirt_out
+ip6tables \
+--table filter \
+--new-chain FWD_libvirt_in
+ip6tables \
+--table filter \
+--new-chain FWD_libvirt_cross
+ip6tables \
+--table nat \
+--new-chain PRT_libvirt
+iptables \
+--table filter \
+--list INPUT
+iptables \
+--table filter \
+--list OUTPUT
+iptables \
+--table filter \
+--list FORWARD
+iptables \
+--table filter \
+--list FORWARD
+iptables \
+--table filter \
+--list FORWARD
+iptables \
+--table nat \
+--list POSTROUTING
+ip6tables \
+--table filter \
+--list INPUT
+ip6tables \
+--table filter \
+--list OUTPUT
+ip6tables \
+--table filter \
+--list FORWARD
+ip6tables \
+--table filter \
+--list FORWARD
+ip6tables \
+--table filter \
+--list FORWARD
+ip6tables \
+--table nat \
+--list POSTROUTING
+iptables \
+--table filter \
 --insert INPUT \
 --in-interface virbr0 \
 --protocol tcp \

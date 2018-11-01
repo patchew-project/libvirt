@@ -640,6 +640,9 @@ int networkAddFirewallRules(virNetworkDefPtr def)
     virFirewallPtr fw = NULL;
     int ret = -1;
 
+    if (iptablesSetupPrivateChains() < 0)
+        return -1;
+
     fw = virFirewallNew();
 
     virFirewallStartTransaction(fw, 0);
