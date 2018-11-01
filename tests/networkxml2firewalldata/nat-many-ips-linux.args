@@ -72,64 +72,64 @@ ip6tables \
 --list POSTROUTING
 iptables \
 --table filter \
---insert INPUT \
+--insert INP_libvirt \
 --in-interface virbr0 \
 --protocol tcp \
 --destination-port 67 \
 --jump ACCEPT
 iptables \
 --table filter \
---insert INPUT \
+--insert INP_libvirt \
 --in-interface virbr0 \
 --protocol udp \
 --destination-port 67 \
 --jump ACCEPT
 iptables \
 --table filter \
---insert OUTPUT \
+--insert OUT_libvirt \
 --out-interface virbr0 \
 --protocol udp \
 --destination-port 68 \
 --jump ACCEPT
 iptables \
 --table filter \
---insert INPUT \
+--insert INP_libvirt \
 --in-interface virbr0 \
 --protocol tcp \
 --destination-port 53 \
 --jump ACCEPT
 iptables \
 --table filter \
---insert INPUT \
+--insert INP_libvirt \
 --in-interface virbr0 \
 --protocol udp \
 --destination-port 53 \
 --jump ACCEPT
 iptables \
 --table filter \
---insert FORWARD \
+--insert FWD_libvirt_out \
 --in-interface virbr0 \
 --jump REJECT
 iptables \
 --table filter \
---insert FORWARD \
+--insert FWD_libvirt_in \
 --out-interface virbr0 \
 --jump REJECT
 iptables \
 --table filter \
---insert FORWARD \
+--insert FWD_libvirt_cross \
 --in-interface virbr0 \
 --out-interface virbr0 \
 --jump ACCEPT
 iptables \
 --table filter \
---insert FORWARD \
+--insert FWD_libvirt_out \
 --source 192.168.122.0/24 \
 --in-interface virbr0 \
 --jump ACCEPT
 iptables \
 --table filter \
---insert FORWARD \
+--insert FWD_libvirt_in \
 --destination 192.168.122.0/24 \
 --out-interface virbr0 \
 --match conntrack \
@@ -137,13 +137,13 @@ iptables \
 --jump ACCEPT
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.122.0/24 '!' \
 --destination 192.168.122.0/24 \
 --jump MASQUERADE
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.122.0/24 \
 -p udp '!' \
 --destination 192.168.122.0/24 \
@@ -151,7 +151,7 @@ iptables \
 --to-ports 1024-65535
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.122.0/24 \
 -p tcp '!' \
 --destination 192.168.122.0/24 \
@@ -159,25 +159,25 @@ iptables \
 --to-ports 1024-65535
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.122.0/24 \
 --destination 255.255.255.255/32 \
 --jump RETURN
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.122.0/24 \
 --destination 224.0.0.0/24 \
 --jump RETURN
 iptables \
 --table filter \
---insert FORWARD \
+--insert FWD_libvirt_out \
 --source 192.168.128.0/24 \
 --in-interface virbr0 \
 --jump ACCEPT
 iptables \
 --table filter \
---insert FORWARD \
+--insert FWD_libvirt_in \
 --destination 192.168.128.0/24 \
 --out-interface virbr0 \
 --match conntrack \
@@ -185,13 +185,13 @@ iptables \
 --jump ACCEPT
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.128.0/24 '!' \
 --destination 192.168.128.0/24 \
 --jump MASQUERADE
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.128.0/24 \
 -p udp '!' \
 --destination 192.168.128.0/24 \
@@ -199,7 +199,7 @@ iptables \
 --to-ports 1024-65535
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.128.0/24 \
 -p tcp '!' \
 --destination 192.168.128.0/24 \
@@ -207,25 +207,25 @@ iptables \
 --to-ports 1024-65535
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.128.0/24 \
 --destination 255.255.255.255/32 \
 --jump RETURN
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.128.0/24 \
 --destination 224.0.0.0/24 \
 --jump RETURN
 iptables \
 --table filter \
---insert FORWARD \
+--insert FWD_libvirt_out \
 --source 192.168.150.0/24 \
 --in-interface virbr0 \
 --jump ACCEPT
 iptables \
 --table filter \
---insert FORWARD \
+--insert FWD_libvirt_in \
 --destination 192.168.150.0/24 \
 --out-interface virbr0 \
 --match conntrack \
@@ -233,13 +233,13 @@ iptables \
 --jump ACCEPT
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.150.0/24 '!' \
 --destination 192.168.150.0/24 \
 --jump MASQUERADE
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.150.0/24 \
 -p udp '!' \
 --destination 192.168.150.0/24 \
@@ -247,7 +247,7 @@ iptables \
 --to-ports 1024-65535
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.150.0/24 \
 -p tcp '!' \
 --destination 192.168.150.0/24 \
@@ -255,19 +255,19 @@ iptables \
 --to-ports 1024-65535
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.150.0/24 \
 --destination 255.255.255.255/32 \
 --jump RETURN
 iptables \
 --table nat \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --source 192.168.150.0/24 \
 --destination 224.0.0.0/24 \
 --jump RETURN
 iptables \
 --table mangle \
---insert POSTROUTING \
+--insert PRT_libvirt \
 --out-interface virbr0 \
 --protocol udp \
 --destination-port 68 \

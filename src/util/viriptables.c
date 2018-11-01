@@ -209,7 +209,7 @@ iptablesAddTcpInput(virFirewallPtr fw,
                     const char *iface,
                     int port)
 {
-    iptablesInput(fw, layer, VIR_IPTABLES_CHAIN_BUILTIN, iface, port, ADD, 1);
+    iptablesInput(fw, layer, VIR_IPTABLES_CHAIN_PRIVATE, iface, port, ADD, 1);
 }
 
 /**
@@ -228,6 +228,7 @@ iptablesRemoveTcpInput(virFirewallPtr fw,
                        int port)
 {
     iptablesInput(fw, layer, VIR_IPTABLES_CHAIN_BUILTIN, iface, port, REMOVE, 1);
+    iptablesInput(fw, layer, VIR_IPTABLES_CHAIN_PRIVATE, iface, port, REMOVE, 1);
 }
 
 /**
@@ -245,7 +246,7 @@ iptablesAddUdpInput(virFirewallPtr fw,
                     const char *iface,
                     int port)
 {
-    iptablesInput(fw, layer, VIR_IPTABLES_CHAIN_BUILTIN, iface, port, ADD, 0);
+    iptablesInput(fw, layer, VIR_IPTABLES_CHAIN_PRIVATE, iface, port, ADD, 0);
 }
 
 /**
@@ -263,7 +264,8 @@ iptablesRemoveUdpInput(virFirewallPtr fw,
                        const char *iface,
                        int port)
 {
-    return iptablesInput(fw, layer, VIR_IPTABLES_CHAIN_BUILTIN, iface, port, REMOVE, 0);
+    iptablesInput(fw, layer, VIR_IPTABLES_CHAIN_BUILTIN, iface, port, REMOVE, 0);
+    iptablesInput(fw, layer, VIR_IPTABLES_CHAIN_PRIVATE, iface, port, REMOVE, 0);
 }
 
 /**
@@ -281,7 +283,7 @@ iptablesAddUdpOutput(virFirewallPtr fw,
                      const char *iface,
                      int port)
 {
-    iptablesOutput(fw, layer, VIR_IPTABLES_CHAIN_BUILTIN, iface, port, ADD, 0);
+    iptablesOutput(fw, layer, VIR_IPTABLES_CHAIN_PRIVATE, iface, port, ADD, 0);
 }
 
 /**
@@ -300,6 +302,7 @@ iptablesRemoveUdpOutput(virFirewallPtr fw,
                         int port)
 {
     iptablesOutput(fw, layer, VIR_IPTABLES_CHAIN_BUILTIN, iface, port, REMOVE, 0);
+    iptablesOutput(fw, layer, VIR_IPTABLES_CHAIN_PRIVATE, iface, port, REMOVE, 0);
 }
 
 
@@ -398,7 +401,7 @@ iptablesAddForwardAllowOut(virFirewallPtr fw,
                            const char *iface,
                            const char *physdev)
 {
-    return iptablesForwardAllowOut(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix, iface, physdev, ADD);
+    return iptablesForwardAllowOut(fw, VIR_IPTABLES_CHAIN_PRIVATE, netaddr, prefix, iface, physdev, ADD);
 }
 
 /**
@@ -421,7 +424,11 @@ iptablesRemoveForwardAllowOut(virFirewallPtr fw,
                               const char *iface,
                               const char *physdev)
 {
-    return iptablesForwardAllowOut(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix, iface, physdev, REMOVE);
+    if (iptablesForwardAllowOut(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix, iface, physdev, REMOVE) < 0)
+        return -1;
+    if (iptablesForwardAllowOut(fw, VIR_IPTABLES_CHAIN_PRIVATE, netaddr, prefix, iface, physdev, REMOVE) < 0)
+        return -1;
+    return 0;
 }
 
 
@@ -493,7 +500,7 @@ iptablesAddForwardAllowRelatedIn(virFirewallPtr fw,
                                  const char *iface,
                                  const char *physdev)
 {
-    return iptablesForwardAllowRelatedIn(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix, iface, physdev, ADD);
+    return iptablesForwardAllowRelatedIn(fw, VIR_IPTABLES_CHAIN_PRIVATE, netaddr, prefix, iface, physdev, ADD);
 }
 
 /**
@@ -516,7 +523,11 @@ iptablesRemoveForwardAllowRelatedIn(virFirewallPtr fw,
                                     const char *iface,
                                     const char *physdev)
 {
-    return iptablesForwardAllowRelatedIn(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix, iface, physdev, REMOVE);
+    if (iptablesForwardAllowRelatedIn(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix, iface, physdev, REMOVE) < 0)
+        return -1;
+    if (iptablesForwardAllowRelatedIn(fw, VIR_IPTABLES_CHAIN_PRIVATE, netaddr, prefix, iface, physdev, REMOVE) < 0)
+        return -1;
+    return 0;
 }
 
 /* Allow all traffic destined to the bridge, with a valid network address
@@ -581,7 +592,7 @@ iptablesAddForwardAllowIn(virFirewallPtr fw,
                           const char *iface,
                           const char *physdev)
 {
-    return iptablesForwardAllowIn(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix, iface, physdev, ADD);
+    return iptablesForwardAllowIn(fw, VIR_IPTABLES_CHAIN_PRIVATE, netaddr, prefix, iface, physdev, ADD);
 }
 
 /**
@@ -604,7 +615,11 @@ iptablesRemoveForwardAllowIn(virFirewallPtr fw,
                              const char *iface,
                              const char *physdev)
 {
-    return iptablesForwardAllowIn(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix, iface, physdev, REMOVE);
+    if (iptablesForwardAllowIn(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix, iface, physdev, REMOVE) < 0)
+        return -1;
+    if (iptablesForwardAllowIn(fw, VIR_IPTABLES_CHAIN_PRIVATE, netaddr, prefix, iface, physdev, REMOVE) < 0)
+        return -1;
+    return 0;
 }
 
 static void
@@ -644,7 +659,7 @@ iptablesAddForwardAllowCross(virFirewallPtr fw,
                              virFirewallLayer layer,
                              const char *iface)
 {
-    iptablesForwardAllowCross(fw, layer, VIR_IPTABLES_CHAIN_BUILTIN, iface, ADD);
+    iptablesForwardAllowCross(fw, layer, VIR_IPTABLES_CHAIN_PRIVATE, iface, ADD);
 }
 
 /**
@@ -664,6 +679,7 @@ iptablesRemoveForwardAllowCross(virFirewallPtr fw,
                                 const char *iface)
 {
     iptablesForwardAllowCross(fw, layer, VIR_IPTABLES_CHAIN_BUILTIN, iface, REMOVE);
+    iptablesForwardAllowCross(fw, layer, VIR_IPTABLES_CHAIN_PRIVATE, iface, REMOVE);
 }
 
 static void
@@ -680,7 +696,7 @@ iptablesForwardRejectOut(virFirewallPtr fw,
 
     virFirewallAddRule(fw, layer,
                        "--table", "filter",
-                       action == ADD ? "--insert" : "delete", chainName[chain],
+                       action == ADD ? "--insert" : "--delete", chainName[chain],
                        "--in-interface", iface,
                        "--jump", "REJECT",
                        NULL);
@@ -701,7 +717,7 @@ iptablesAddForwardRejectOut(virFirewallPtr fw,
                             virFirewallLayer layer,
                             const char *iface)
 {
-    iptablesForwardRejectOut(fw, layer, VIR_IPTABLES_CHAIN_BUILTIN, iface, ADD);
+    iptablesForwardRejectOut(fw, layer, VIR_IPTABLES_CHAIN_PRIVATE, iface, ADD);
 }
 
 /**
@@ -720,6 +736,7 @@ iptablesRemoveForwardRejectOut(virFirewallPtr fw,
                                const char *iface)
 {
     iptablesForwardRejectOut(fw, layer, VIR_IPTABLES_CHAIN_BUILTIN, iface, REMOVE);
+    iptablesForwardRejectOut(fw, layer, VIR_IPTABLES_CHAIN_PRIVATE, iface, REMOVE);
 }
 
 
@@ -758,7 +775,7 @@ iptablesAddForwardRejectIn(virFirewallPtr fw,
                            virFirewallLayer layer,
                            const char *iface)
 {
-    iptablesForwardRejectIn(fw, layer, VIR_IPTABLES_CHAIN_BUILTIN, iface, ADD);
+    iptablesForwardRejectIn(fw, layer, VIR_IPTABLES_CHAIN_PRIVATE, iface, ADD);
 }
 
 /**
@@ -777,6 +794,7 @@ iptablesRemoveForwardRejectIn(virFirewallPtr fw,
                               const char *iface)
 {
     iptablesForwardRejectIn(fw, layer, VIR_IPTABLES_CHAIN_BUILTIN, iface, REMOVE);
+    iptablesForwardRejectIn(fw, layer, VIR_IPTABLES_CHAIN_PRIVATE, iface, REMOVE);
 }
 
 
@@ -914,7 +932,7 @@ iptablesAddForwardMasquerade(virFirewallPtr fw,
                              virPortRangePtr port,
                              const char *protocol)
 {
-    return iptablesForwardMasquerade(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix,
+    return iptablesForwardMasquerade(fw, VIR_IPTABLES_CHAIN_PRIVATE, netaddr, prefix,
                                      physdev, addr, port, protocol, ADD);
 }
 
@@ -940,8 +958,13 @@ iptablesRemoveForwardMasquerade(virFirewallPtr fw,
                                 virPortRangePtr port,
                                 const char *protocol)
 {
-    return iptablesForwardMasquerade(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix,
-                                     physdev, addr, port, protocol, REMOVE);
+    if (iptablesForwardMasquerade(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix,
+                                  physdev, addr, port, protocol, REMOVE) < 0)
+        return -1;
+    if (iptablesForwardMasquerade(fw, VIR_IPTABLES_CHAIN_PRIVATE, netaddr, prefix,
+                                  physdev, addr, port, protocol, REMOVE) < 0)
+        return -1;
+    return 0;
 }
 
 
@@ -1016,7 +1039,7 @@ iptablesAddDontMasquerade(virFirewallPtr fw,
                           const char *physdev,
                           const char *destaddr)
 {
-    return iptablesForwardDontMasquerade(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix,
+    return iptablesForwardDontMasquerade(fw, VIR_IPTABLES_CHAIN_PRIVATE, netaddr, prefix,
                                          physdev, destaddr, ADD);
 }
 
@@ -1041,8 +1064,13 @@ iptablesRemoveDontMasquerade(virFirewallPtr fw,
                              const char *physdev,
                              const char *destaddr)
 {
-    return iptablesForwardDontMasquerade(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix,
-                                         physdev, destaddr, REMOVE);
+    if (iptablesForwardDontMasquerade(fw, VIR_IPTABLES_CHAIN_BUILTIN, netaddr, prefix,
+                                      physdev, destaddr, REMOVE) < 0)
+        return -1;
+    if (iptablesForwardDontMasquerade(fw, VIR_IPTABLES_CHAIN_PRIVATE, netaddr, prefix,
+                                      physdev, destaddr, REMOVE) < 0)
+        return -1;
+    return 0;
 }
 
 
@@ -1088,7 +1116,7 @@ iptablesAddOutputFixUdpChecksum(virFirewallPtr fw,
                                 const char *iface,
                                 int port)
 {
-    iptablesOutputFixUdpChecksum(fw, VIR_IPTABLES_CHAIN_BUILTIN, iface, port, ADD);
+    iptablesOutputFixUdpChecksum(fw, VIR_IPTABLES_CHAIN_PRIVATE, iface, port, ADD);
 }
 
 /**
@@ -1106,4 +1134,5 @@ iptablesRemoveOutputFixUdpChecksum(virFirewallPtr fw,
                                    int port)
 {
     iptablesOutputFixUdpChecksum(fw, VIR_IPTABLES_CHAIN_BUILTIN, iface, port, REMOVE);
+    iptablesOutputFixUdpChecksum(fw, VIR_IPTABLES_CHAIN_PRIVATE, iface, port, REMOVE);
 }
