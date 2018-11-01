@@ -72,6 +72,54 @@ ip6tables \
 --list POSTROUTING
 iptables \
 --table filter \
+--insert INPUT \
+--jump INP_libvirt
+iptables \
+--table filter \
+--insert OUTPUT \
+--jump OUT_libvirt
+iptables \
+--table filter \
+--insert FORWARD \
+--jump FWD_libvirt_out
+iptables \
+--table filter \
+--insert FORWARD \
+--jump FWD_libvirt_in
+iptables \
+--table filter \
+--insert FORWARD \
+--jump FWD_libvirt_cross
+iptables \
+--table nat \
+--insert POSTROUTING \
+--jump PRT_libvirt
+ip6tables \
+--table filter \
+--insert INPUT \
+--jump INP_libvirt
+ip6tables \
+--table filter \
+--insert OUTPUT \
+--jump OUT_libvirt
+ip6tables \
+--table filter \
+--insert FORWARD \
+--jump FWD_libvirt_out
+ip6tables \
+--table filter \
+--insert FORWARD \
+--jump FWD_libvirt_in
+ip6tables \
+--table filter \
+--insert FORWARD \
+--jump FWD_libvirt_cross
+ip6tables \
+--table nat \
+--insert POSTROUTING \
+--jump PRT_libvirt
+iptables \
+--table filter \
 --insert INP_libvirt \
 --in-interface virbr0 \
 --protocol tcp \
