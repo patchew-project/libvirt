@@ -1591,6 +1591,26 @@ udevEventMonitorSanityCheck(udevEventDataPtr priv,
 }
 
 
+/**
+ * udevEventHandleThread
+ * @opaque: unused
+ *
+ * Thread to handle the udevEventHandleCallback processing when udev
+ * tells us there's a device change for us (add, modify, delete, etc).
+ *
+ * Once notified there is data to be processed, the actual @device
+ * data retrieval by libudev may be delayed due to how threads are
+ * scheduled. In fact, the event loop could be scheduled earlier than
+ * the handler thread, thus potentially emitting the very same event
+ * the handler thread is currently trying to process, simply because
+ * the data hadn't been retrieved from the socket.
+ *
+ * NB: Usage of event based socket algorithm causes some issues with
+ * older platforms such as CentOS 6 in which the data socket is opened
+ * without the NONBLOCK bit set. That can be avoided by moving the reset
+ * priv->dataReady to just after the udev_monitor_receive_device; however,
+ * scheduler issues would still come into play.
+ */
 static void
 udevEventHandleThread(void *opaque ATTRIBUTE_UNUSED)
 {
@@ -1637,6 +1657,9 @@ udevEventHandleThread(void *opaque ATTRIBUTE_UNUSED)
                 return;
             }
 
+            /* Trying to move the reset of the @priv->dataReady flag to
+             * after the udev_monitor_receive_device wouldn't help much
+             * due to event mgmt and scheduler timing. */
             virObjectLock(priv);
             priv->dataReady = false;
             virObjectUnlock(priv);
@@ -1646,6 +1669,11 @@ udevEventHandleThread(void *opaque ATTRIBUTE_UNUSED)
 
         udevHandleOneDevice(device);
         udev_device_unref(device);
+
+        /* Instead of waiting for the next event after processing @device
+         * data, let's keep reading from the udev monitor and only wait
+         * for the next event once either a EAGAIN or a EWOULDBLOCK error
+         * is encountered. */
     }
 }
 
