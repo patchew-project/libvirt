@@ -1845,7 +1845,7 @@ I<domain> I<desturi> [I<migrateuri>] [I<graphicsuri>] [I<listen-address>] [I<dna
 [I<--compressed>] [I<--comp-methods> B<method-list>]
 [I<--comp-mt-level>] [I<--comp-mt-threads>] [I<--comp-mt-dthreads>]
 [I<--comp-xbzrle-cache>] [I<--auto-converge>] [I<auto-converge-initial>]
-[I<auto-converge-increment>] [I<--persistent-xml> B<file>] [I<--tls>]
+[I<auto-converge-increment>] [I<--persistent-xml> B<file>] [I<--tls>] [I<--dry-run>]
 
 Migrate domain to another host.  Add I<--live> for live migration; <--p2p>
 for peer-2-peer migration; I<--direct> for direct migration; or I<--tunnelled>
@@ -1936,6 +1936,14 @@ Providing I<--tls> causes the migration to use the host configured TLS setup
 (see migrate_tls_x509_cert_dir in /etc/libvirt/qemu.conf) in order to perform
 the migration of the domain. Usage requires proper TLS setup for both source
 and target.
+
+I<--dry-run> can be used as a best-effort check that the migration command
+will succeed. The destination host will be checked to see if it can
+accommodate the resources required by the domain. I<--dry-run> will fail if
+the destination host is not capable of running the domain. Although a
+subsequent migration will likely succeed, the success of dry run does not
+ensure a future migration will succeed. Resources on the destination host
+could become unavailable between a dry run and actual migration.
 
 Running migration can be canceled by interrupting virsh (usually using
 C<Ctrl-C>) or by B<domjobabort> command sent from another virsh instance.

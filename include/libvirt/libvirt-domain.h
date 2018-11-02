@@ -830,6 +830,18 @@ typedef enum {
      */
     VIR_MIGRATE_TLS               = (1 << 16),
 
+    /* Setting the VIR_MIGRATE_DRY_RUN flag will cause libvirt to make a
+     * best-effort attempt to check if migration will succeed. The destination
+     * host will be checked to see if it can accommodate the resources required
+     * by the domain. For example are the network, disk, memory, and CPU
+     * resources used by the domain on the source host also available on the
+     * destination host. The dry run will fail if libvirt determines the
+     * destination host is not capable of running the domain. Although a
+     * subsequent migration will likely succeed, the success of dry run does
+     * not ensure a future migration will succeed. Resources on the destination
+     * host could become unavailable between a dry run and actual migration.
+     */
+    VIR_MIGRATE_DRY_RUN           = (1 << 16),
 } virDomainMigrateFlags;
 
 

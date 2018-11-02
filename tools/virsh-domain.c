@@ -10450,6 +10450,10 @@ static const vshCmdOptDef opts_migrate[] = {
      .type = VSH_OT_BOOL,
      .help = N_("use TLS for migration")
     },
+    {.name = "dry-run",
+     .type = VSH_OT_BOOL,
+     .help = N_("check if migration will succeed without actually performing the migration")
+    },
     {.name = NULL}
 };
 
@@ -10693,6 +10697,9 @@ doMigrate(void *opaque)
 
     if (vshCommandOptBool(cmd, "tls"))
         flags |= VIR_MIGRATE_TLS;
+
+    if (vshCommandOptBool(cmd, "dry-run"))
+        flags |= VIR_MIGRATE_DRY_RUN;
 
     if (flags & VIR_MIGRATE_PEER2PEER || vshCommandOptBool(cmd, "direct")) {
         if (virDomainMigrateToURI3(dom, desturi, params, nparams, flags) == 0)
