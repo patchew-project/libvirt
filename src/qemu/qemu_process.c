@@ -8078,12 +8078,12 @@ static qemuMonitorCallbacks callbacks = {
 
 
 void
-virQEMUCapsInitQMPCommandFree(virQEMUCapsInitQMPCommandPtr cmd)
+qemuProcessFree(qemuProcessPtr cmd)
 {
     if (!cmd)
         return;
 
-    virQEMUCapsInitQMPCommandAbort(cmd);
+    qemuProcessAbort(cmd);
     VIR_FREE(cmd->binary);
     VIR_FREE(cmd->monpath);
     VIR_FREE(cmd->monarg);
@@ -8092,14 +8092,14 @@ virQEMUCapsInitQMPCommandFree(virQEMUCapsInitQMPCommandPtr cmd)
 }
 
 
-virQEMUCapsInitQMPCommandPtr
-virQEMUCapsInitQMPCommandNew(char *binary,
-                             const char *libDir,
-                             uid_t runUid,
-                             gid_t runGid,
-                             char **qmperr)
+qemuProcessPtr
+qemuProcessNew(char *binary,
+               const char *libDir,
+               uid_t runUid,
+               gid_t runGid,
+               char **qmperr)
 {
-    virQEMUCapsInitQMPCommandPtr cmd = NULL;
+    qemuProcessPtr cmd = NULL;
 
     if (VIR_ALLOC(cmd) < 0)
         goto error;
@@ -8138,7 +8138,7 @@ virQEMUCapsInitQMPCommandNew(char *binary,
     return cmd;
 
  error:
-    virQEMUCapsInitQMPCommandFree(cmd);
+    qemuProcessFree(cmd);
     return NULL;
 }
 
@@ -8148,8 +8148,8 @@ virQEMUCapsInitQMPCommandNew(char *binary,
  *          1 when probing QEMU failed
  */
 int
-virQEMUCapsInitQMPCommandRun(virQEMUCapsInitQMPCommandPtr cmd,
-                             bool forceTCG)
+qemuProcessRun(qemuProcessPtr cmd,
+               bool forceTCG)
 {
     virDomainXMLOptionPtr xmlopt = NULL;
     const char *machine;
@@ -8219,7 +8219,7 @@ virQEMUCapsInitQMPCommandRun(virQEMUCapsInitQMPCommandPtr cmd,
 
  cleanup:
     if (!cmd->mon)
-        virQEMUCapsInitQMPCommandAbort(cmd);
+        qemuProcessAbort(cmd);
     virObjectUnref(xmlopt);
 
     return ret;
@@ -8231,7 +8231,7 @@ virQEMUCapsInitQMPCommandRun(virQEMUCapsInitQMPCommandPtr cmd,
 
 
 void
-virQEMUCapsInitQMPCommandAbort(virQEMUCapsInitQMPCommandPtr cmd)
+qemuProcessAbort(qemuProcessPtr cmd)
 {
     if (cmd->mon)
         virObjectUnlock(cmd->mon);
