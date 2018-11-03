@@ -13614,6 +13614,27 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
     if (flags & VIR_CONNECT_BASELINE_CPU_EXPAND_FEATURES) {
         if (useLibvirt && virCPUExpandFeatures(arch, cpu) < 0) {
             goto cleanup;
+        } else if (useQemu &&
+                   virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION)) {
+
+            if (!(modelInfo = virQEMUCapsCPUModelInfoFromCPUDef(cpu)))
+                goto cleanup;
+
+            virCPUDefFree(cpu);
+            cpu = NULL;
+
+            /* QEMU can only include migratable features
+               for all archs that use QEMU for baseline calculation */
+            migratable = true;
+
+            if (qemuMonitorGetCPUModelExpansion(mon,
+                                                QEMU_MONITOR_CPU_MODEL_EXPANSION_FULL,
+                                                migratable, modelInfo, &expansion) < 0)
+                goto cleanup;
+
+            if (!(cpu = virQEMUCapsCPUModelInfoToCPUDef(migratable, expansion)))
+                goto cleanup;
+
         } else {
             virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
                            _("expand features while "
