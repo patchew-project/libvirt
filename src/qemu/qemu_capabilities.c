@@ -4275,43 +4275,51 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
 {
     qemuProcessPtr proc = NULL;
     qemuProcessPtr proc_kvm = NULL;
+    qemuMonitorPtr mon = NULL;
+    qemuMonitorPtr mon_kvm = NULL;
     int ret = -1;
-    int rc;
     bool forceTCG = false;
 
     if (!(proc = qemuProcessNew(qemuCaps->binary, libDir,
                                 runUid, runGid, forceTCG)))
         goto cleanup;
 
-    if ((rc = qemuProcessRun(proc)) != 0) {
-        if (rc == 1)
-            ret = 0;
+
+    if (qemuProcessRun(proc) < 0)
+        goto cleanup;
+
+    if (!(mon = QEMU_PROCESS_MONITOR(proc))) {
+        ret = 0; /* Failure probing QEMU not considered error case */
         goto cleanup;
     }
 
-    if (virQEMUCapsInitQMPMonitor(qemuCaps, proc->mon) < 0)
+    /* Pull capabilities from QEMU */
+    if (virQEMUCapsInitQMPMonitor(qemuCaps, mon) < 0)
         goto cleanup;
 
+    /* Pull capabilities again if KVM supported */
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
         qemuProcessStopQmp(proc);
 
         forceTCG = true;
         proc_kvm = qemuProcessNew(qemuCaps->binary, libDir, runUid, runGid, forceTCG);
 
-        if ((rc = qemuProcessRun(proc_kvm)) != 0) {
-            if (rc == 1)
-                ret = 0;
+        if (qemuProcessRun(proc_kvm) < 0)
+            goto cleanup;
+
+        if (!(mon_kvm = QEMU_PROCESS_MONITOR(proc_kvm))) {
+            ret = 0; /* Failure probing QEMU not considered error case */
             goto cleanup;
         }
 
-        if (virQEMUCapsInitQMPMonitorTCG(qemuCaps, proc_kvm->mon) < 0)
+        if (virQEMUCapsInitQMPMonitorTCG(qemuCaps, mon_kvm) < 0)
             goto cleanup;
     }
 
     ret = 0;
 
  cleanup:
-    if (proc && !proc->mon) {
+    if (!mon) {
         char *err = QEMU_PROCESS_ERROR(proc) ? QEMU_PROCESS_ERROR(proc) : _("unknown error");
 
         virReportError(VIR_ERR_INTERNAL_ERROR,

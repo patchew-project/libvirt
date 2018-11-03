@@ -235,6 +235,9 @@ struct _qemuProcess {
 #define QEMU_PROCESS_ERROR(proc) \
    ((char *) (proc ? proc->qmperr: NULL))
 
+#define QEMU_PROCESS_MONITOR(proc) \
+   ((qemuMonitorPtr) (proc ? proc->mon : NULL))
+
 qemuProcessPtr qemuProcessNew(const char *binary,
                               const char *libDir,
                               uid_t runUid,
