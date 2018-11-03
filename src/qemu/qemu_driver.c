@@ -13410,6 +13410,55 @@ qemuConnectBaselineCPU(virConnectPtr conn ATTRIBUTE_UNUSED,
 }
 
 
+static int
+qemuConnectBaselineHypervisorCPUViaLibvirt(
+        virQEMUCapsPtr qemuCaps,
+        bool migratable,
+        virDomainVirtType virttype,
+        virArch arch,
+        virCPUDefPtr *cpus,
+        unsigned int ncpus,
+        virCPUDefPtr *baseline)
+{
+    char **features = NULL;
+    int ret = -1;
+    int rc = -1;
+    virDomainCapsCPUModelsPtr cpuModels;
+
+    *baseline = NULL;
+
+    if (!(cpuModels = virQEMUCapsGetCPUDefinitions(qemuCaps, virttype)) ||
+        cpuModels->nmodels == 0) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                       _("QEMU '%s' does not support any CPU models for "
+                         "virttype '%s'"),
+                       virQEMUCapsGetBinary(qemuCaps),
+                       virDomainVirtTypeToString(virttype));
+        goto cleanup;
+    }
+
+    rc = virQEMUCapsGetCPUFeatures(qemuCaps, virttype,
+                                   migratable, &features);
+    if (rc < 0)
+        goto cleanup;
+    if (features && rc == 0) {
+        /* We got only migratable features from QEMU if we asked for them,
+         * no further filtering in virCPUBaseline is desired. */
+        migratable = false;
+    }
+
+    if (!(*baseline = virCPUBaseline(arch, cpus, ncpus, cpuModels,
+                                     (const char **)features, migratable)))
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    virStringListFree(features);
+    return ret;
+}
+
+
 static char *
 qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
                                  const char *emulator,
@@ -13428,7 +13477,6 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
     bool migratable;
     virCPUDefPtr cpu = NULL;
     char *cpustr = NULL;
-    char **features = NULL;
 
     virCheckFlags(VIR_CONNECT_BASELINE_CPU_EXPAND_FEATURES |
                   VIR_CONNECT_BASELINE_CPU_MIGRATABLE, NULL);
@@ -13451,30 +13499,9 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
     if (ARCH_IS_X86(arch)) {
         migratable = !!(flags & VIR_CONNECT_BASELINE_CPU_MIGRATABLE);
 
-        virDomainCapsCPUModelsPtr cpuModels;
-
-        if (!(cpuModels = virQEMUCapsGetCPUDefinitions(qemuCaps, virttype)) ||
-            cpuModels->nmodels == 0) {
-            virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
-                           _("QEMU '%s' does not support any CPU models for "
-                             "virttype '%s'"),
-                           virQEMUCapsGetBinary(qemuCaps),
-                           virDomainVirtTypeToString(virttype));
-            goto cleanup;
-        }
-
-        int rc = virQEMUCapsGetCPUFeatures(qemuCaps, virttype,
-                                           migratable, &features);
-        if (rc < 0)
-            goto cleanup;
-        if (features && rc == 0) {
-            /* We got only migratable features from QEMU if we asked for them,
-             * no further filtering in virCPUBaseline is desired. */
-            migratable = false;
-        }
-
-        if (!(cpu = virCPUBaseline(arch, cpus, ncpus, cpuModels,
-                                   (const char **)features, migratable)))
+        if (qemuConnectBaselineHypervisorCPUViaLibvirt(qemuCaps, migratable,
+                                                       virttype, arch,
+                                                       cpus, ncpus, &cpu) < 0)
             goto cleanup;
     } else {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
@@ -13495,7 +13522,6 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
     virCPUDefListFree(cpus);
     virCPUDefFree(cpu);
     virObjectUnref(qemuCaps);
-    virStringListFree(features);
 
     return cpustr;
 }
