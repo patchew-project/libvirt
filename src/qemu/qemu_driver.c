@@ -13410,6 +13410,78 @@ qemuConnectBaselineCPU(virConnectPtr conn ATTRIBUTE_UNUSED,
 }
 
 
+/* in:
+ *  cpus[0]->model = "z14";
+ *  cpus[0]->features[0].name = "xxx";
+ *  cpus[0]->features[1].name = "yyy";
+ *  ***
+ *  cpus[n]->model = "z13";
+ *  cpus[n]->features[0].name = "xxx";
+ *  cpus[n]->features[1].name = "yyy";
+ *
+ * out:
+ *  *baseline->model = "z13-base";
+ *  *baseline->features[0].name = "yyy";
+ */
+static int
+qemuConnectBaselineHypervisorCPUViaQEMU(qemuMonitorPtr mon,
+                                        virCPUDefPtr *cpus,
+                                        virCPUDefPtr *baseline)
+{
+    qemuMonitorCPUModelInfoPtr model_baseline = NULL;
+    qemuMonitorCPUModelInfoPtr new_model_baseline = NULL;
+    qemuMonitorCPUModelInfoPtr next_model = NULL;
+    bool migratable = true;
+    int ret = -1;
+    size_t i;
+
+    *baseline = NULL;
+
+    if (!cpus || !cpus[0]) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s", _("no cpus"));
+        goto cleanup;
+    }
+
+    for (i = 0; cpus[i]; i++) {      /* cpus terminated by NULL element */
+        virCPUDefPtr cpu = cpus[i];
+
+        VIR_DEBUG("cpu[%lu]->model = %s", i, NULLSTR(cpu->model));
+
+        if (!(next_model = virQEMUCapsCPUModelInfoFromCPUDef(cpu)))
+            goto cleanup;
+
+        if (i == 0) {
+            model_baseline = next_model;
+            continue;
+        }
+
+        if (qemuMonitorGetCPUModelBaseline(mon, model_baseline,
+                                           next_model, &new_model_baseline) < 0)
+            goto cleanup;
+
+        qemuMonitorCPUModelInfoFree(model_baseline);
+        qemuMonitorCPUModelInfoFree(next_model);
+
+        next_model = NULL;
+
+        model_baseline = new_model_baseline;
+    }
+
+    if (!(*baseline = virQEMUCapsCPUModelInfoToCPUDef(migratable, model_baseline)))
+        goto cleanup;
+
+    VIR_DEBUG("baseline->model = %s", (*baseline)->model);
+
+    ret = 0;
+
+ cleanup:
+    qemuMonitorCPUModelInfoFree(model_baseline);
+    qemuMonitorCPUModelInfoFree(next_model);
+
+    return ret;
+}
+
+
 static int
 qemuConnectBaselineHypervisorCPUViaLibvirt(
         virQEMUCapsPtr qemuCaps,
@@ -13478,6 +13550,12 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
     virCPUDefPtr cpu = NULL;
     char *cpustr = NULL;
     bool useLibvirt = false;
+    bool useQemu = false;
+    bool forceTCG = false;
+    qemuMonitorCPUModelInfoPtr modelInfo = NULL;
+    qemuMonitorCPUModelInfoPtr expansion = NULL;
+    qemuProcessPtr proc = NULL;
+    qemuMonitorPtr mon = NULL;
 
     virCheckFlags(VIR_CONNECT_BASELINE_CPU_EXPAND_FEATURES |
                   VIR_CONNECT_BASELINE_CPU_MIGRATABLE, NULL);
@@ -13498,6 +13576,7 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
         goto cleanup;
 
     useLibvirt = ARCH_IS_X86(arch);
+    useQemu = ARCH_IS_S390(arch);
 
     if (useLibvirt) {
         migratable = !!(flags & VIR_CONNECT_BASELINE_CPU_MIGRATABLE);
@@ -13506,6 +13585,23 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
                                                        virttype, arch,
                                                        cpus, ncpus, &cpu) < 0)
             goto cleanup;
+
+    } else if (useQemu) {
+        const char *binary = virQEMUCapsGetBinary(qemuCaps);
+        virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+
+        if (!(proc = qemuProcessNew(binary, cfg->libDir,
+                                    cfg->user, cfg->group, forceTCG)))
+            goto cleanup;
+
+        if (qemuProcessStartQmp(proc) < 0)
+            goto cleanup;
+
+        mon = QEMU_PROCESS_MONITOR(proc);
+
+        if ((qemuConnectBaselineHypervisorCPUViaQEMU(mon, cpus, &cpu) < 0) || !cpu)
+            goto cleanup;
+
     } else {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
                        _("computing baseline hypervisor CPU is not supported "
@@ -13533,6 +13629,10 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
     virCPUDefListFree(cpus);
     virCPUDefFree(cpu);
     virObjectUnref(qemuCaps);
+    qemuMonitorCPUModelInfoFree(modelInfo);
+    qemuMonitorCPUModelInfoFree(expansion);
+    qemuProcessStopQmp(proc);
+    qemuProcessFree(proc);
 
     return cpustr;
 }
