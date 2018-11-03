@@ -8173,6 +8173,9 @@ qemuProcessLaunchQmp(qemuProcessPtr proc)
     int status = 0;
     int ret = -1;
 
+    VIR_DEBUG("proc=%p, emulator=%s",
+              proc, NULLSTR(proc->binary));
+
     if (proc->forceTCG)
         machine = "none,accel=tcg";
     else
