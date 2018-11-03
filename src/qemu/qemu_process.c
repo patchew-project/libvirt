@@ -8063,18 +8063,6 @@ qemuProcessReconnectAll(virQEMUDriverPtr driver)
 }
 
 
-static void virQEMUCapsMonitorNotify(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
-                                     virDomainObjPtr vm ATTRIBUTE_UNUSED,
-                                     void *opaque ATTRIBUTE_UNUSED)
-{
-}
-
-static qemuMonitorCallbacks callbacks = {
-    .eofNotify = virQEMUCapsMonitorNotify,
-    .errorNotify = virQEMUCapsMonitorNotify,
-};
-
-
 /**
  * qemuProcessFree:
  * @proc: Stores Process and Connection State
@@ -8270,7 +8258,7 @@ qemuConnectMonitorQmp(qemuProcessPtr proc)
     bool retry = true;
     bool enableJson = true;
     virQEMUDriverPtr driver = NULL;
-    qemuMonitorCallbacksPtr monCallbacks = &callbacks;
+    qemuMonitorCallbacksPtr monCallbacks = NULL;
     virDomainXMLOptionPtr xmlopt = NULL;
     virDomainChrSourceDef monConfig;
 
