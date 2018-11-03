@@ -241,6 +241,6 @@ void qemuProcessFree(qemuProcessPtr proc);
 
 int qemuProcessRun(qemuProcessPtr proc, bool forceTCG);
 
-void qemuProcessAbort(qemuProcessPtr proc);
+void qemuProcessStopQmp(qemuProcessPtr proc);
 
 #endif /* __QEMU_PROCESS_H__ */
