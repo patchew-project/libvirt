@@ -4271,8 +4271,7 @@ static int
 virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
                    const char *libDir,
                    uid_t runUid,
-                   gid_t runGid,
-                   char **qmperr)
+                   gid_t runGid)
 {
     qemuProcessPtr proc = NULL;
     qemuProcessPtr proc_kvm = NULL;
@@ -4281,7 +4280,7 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
     bool forceTCG = false;
 
     if (!(proc = qemuProcessNew(qemuCaps->binary, libDir,
-                                runUid, runGid, qmperr, forceTCG)))
+                                runUid, runGid, forceTCG)))
         goto cleanup;
 
     if ((rc = qemuProcessRun(proc)) != 0) {
@@ -4297,7 +4296,7 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
         qemuProcessStopQmp(proc);
 
         forceTCG = true;
-        proc_kvm = qemuProcessNew(qemuCaps->binary, libDir, runUid, runGid, NULL, forceTCG);
+        proc_kvm = qemuProcessNew(qemuCaps->binary, libDir, runUid, runGid, forceTCG);
 
         if ((rc = qemuProcessRun(proc_kvm)) != 0) {
             if (rc == 1)
@@ -4312,6 +4311,13 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
     ret = 0;
 
  cleanup:
+    if (proc && !proc->mon) {
+        char *err = QEMU_PROCESS_ERROR(proc) ? QEMU_PROCESS_ERROR(proc) : _("unknown error");
+
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Failed to probe QEMU binary with QMP: %s"), err);
+    }
+
     qemuProcessStopQmp(proc);
     qemuProcessStopQmp(proc_kvm);
     qemuProcessFree(proc);
@@ -4351,7 +4357,6 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
 {
     virQEMUCapsPtr qemuCaps;
     struct stat sb;
-    char *qmperr = NULL;
 
     if (!(qemuCaps = virQEMUCapsNew()))
         goto error;
@@ -4378,15 +4383,8 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
         goto error;
     }
 
-    if (virQEMUCapsInitQMP(qemuCaps, libDir, runUid, runGid, &qmperr) < 0) {
-        virQEMUCapsLogProbeFailure(binary);
-        goto error;
-    }
-
-    if (!qemuCaps->usedQMP) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Failed to probe QEMU binary with QMP: %s"),
-                       qmperr ? qmperr : _("unknown error"));
+    if (virQEMUCapsInitQMP(qemuCaps, libDir, runUid, runGid) < 0 ||
+        !qemuCaps->usedQMP) {
         virQEMUCapsLogProbeFailure(binary);
         goto error;
     }
@@ -4405,7 +4403,6 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
     }
 
  cleanup:
-    VIR_FREE(qmperr);
     return qemuCaps;
 
  error:

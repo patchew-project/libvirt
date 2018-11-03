@@ -220,7 +220,7 @@ struct _qemuProcess {
     char *binary;
     uid_t runUid;
     gid_t runGid;
-    char **qmperr;
+    char *qmperr;  /* qemu process stderr */
     char *monarg;
     char *monpath;
     char *pidfile;
@@ -232,11 +232,13 @@ struct _qemuProcess {
     bool forceTCG;
 };
 
+#define QEMU_PROCESS_ERROR(proc) \
+   ((char *) (proc ? proc->qmperr: NULL))
+
 qemuProcessPtr qemuProcessNew(const char *binary,
                               const char *libDir,
                               uid_t runUid,
                               gid_t runGid,
-                              char **qmperr,
                               bool forceTCG);
 
 void qemuProcessFree(qemuProcessPtr proc);
