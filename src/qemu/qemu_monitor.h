@@ -1025,7 +1025,7 @@ struct _qemuMonitorCPUModelInfo {
     char *name;
     size_t nprops;
     qemuMonitorCPUPropertyPtr props;
-    bool migratability;
+    bool migratability; /* true if prop->migratable is YES/NO for all CPU props */
 };
 
 typedef enum {
@@ -1047,6 +1047,11 @@ qemuMonitorCPUModelInfoPtr qemuMonitorCPUModelInfoNew(const char *name);
 
 qemuMonitorCPUModelInfoPtr
 qemuMonitorCPUModelInfoCopy(const qemuMonitorCPUModelInfo *orig);
+
+qemuMonitorCPUModelInfoPtr
+qemuMonitorCPUModelInfoCopyDefaultMigratable(const qemuMonitorCPUModelInfo *orig)
+    ATTRIBUTE_NONNULL(1);
+
 
 int qemuMonitorCPUModelInfoBoolPropAdd(qemuMonitorCPUModelInfoPtr model,
                                        const char *prop_name,
