@@ -1053,6 +1053,10 @@ int qemuMonitorCPUModelInfoBoolPropAdd(qemuMonitorCPUModelInfoPtr model,
                                        bool prop_value)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
+void qemuMonitorCPUModelInfoRemovePropByBoolValue(qemuMonitorCPUModelInfoPtr model,
+                                                  bool value)
+    ATTRIBUTE_NONNULL(1);
+
 int qemuMonitorGetCommands(qemuMonitorPtr mon,
                            char ***commands);
 int qemuMonitorGetEvents(qemuMonitorPtr mon,

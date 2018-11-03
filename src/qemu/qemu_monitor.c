@@ -3785,6 +3785,36 @@ qemuMonitorCPUModelInfoCopy(const qemuMonitorCPUModelInfo *orig)
 }
 
 
+/* Squash CPU Model Info property list
+ * removing props of type boolean matching value */
+void
+qemuMonitorCPUModelInfoRemovePropByBoolValue(qemuMonitorCPUModelInfoPtr model,
+                                             bool value)
+{
+    qemuMonitorCPUPropertyPtr src;
+    qemuMonitorCPUPropertyPtr dst;
+    size_t i;
+    size_t dst_nprops = 0;
+
+    for (i = 0; i < model->nprops; i++) {
+        src = &(model->props[i]);
+        dst = &(model->props[dst_nprops]);
+
+        if (src->type == QEMU_MONITOR_CPU_PROPERTY_BOOLEAN &&
+            src->value.boolean == value)
+            continue;
+
+        *dst = *src;
+
+        dst_nprops++;
+    }
+
+    model->nprops = dst_nprops;
+
+    ignore_value(VIR_REALLOC_N_QUIET(model->props, dst_nprops));
+}
+
+
 int
 qemuMonitorCPUModelInfoBoolPropAdd(qemuMonitorCPUModelInfoPtr model,
                                    const char *prop_name,
