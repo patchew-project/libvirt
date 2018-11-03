@@ -8133,10 +8133,6 @@ qemuProcessNew(const char *binary,
 
     virPidFileForceCleanupPath(proc->pidfile);
 
-    proc->config.type = VIR_DOMAIN_CHR_TYPE_UNIX;
-    proc->config.data.nix.path = proc->monpath;
-    proc->config.data.nix.listen = false;
-
     return proc;
 
  error:
@@ -8168,7 +8164,6 @@ qemuProcessInitQmp(qemuProcessPtr proc)
 static int
 qemuProcessLaunchQmp(qemuProcessPtr proc)
 {
-    virDomainXMLOptionPtr xmlopt = NULL;
     const char *machine;
     int status = 0;
     int ret = -1;
@@ -8223,26 +8218,10 @@ qemuProcessLaunchQmp(qemuProcessPtr proc)
         goto ignore;
     }
 
-    if (!(xmlopt = virDomainXMLOptionNew(NULL, NULL, NULL, NULL, NULL)) ||
-        !(proc->vm = virDomainObjNew(xmlopt)))
-        goto cleanup;
-
-    proc->vm->pid = proc->pid;
-
-    if (!(proc->mon = qemuMonitorOpen(proc->vm, &proc->config, true, true,
-                                     0, &callbacks, NULL)))
-        goto ignore;
-
-    virObjectLock(proc->mon);
-
  ignore:
     ret = 0;
 
  cleanup:
-    if (!proc->mon)
-        qemuProcessStopQmp(proc);
-    virObjectUnref(xmlopt);
-
     return ret;
 }
 
@@ -8253,13 +8232,33 @@ static int
 qemuConnectMonitorQmp(qemuProcessPtr proc)
 {
     int ret = -1;
+    virDomainXMLOptionPtr xmlopt = NULL;
 
     VIR_DEBUG("proc=%p, emulator=%s, proc->pid=%lld",
               proc, NULLSTR(proc->binary), (long long) proc->pid);
 
+    proc->config.type = VIR_DOMAIN_CHR_TYPE_UNIX;
+    proc->config.data.nix.path = proc->monpath;
+    proc->config.data.nix.listen = false;
+
+    if (!(xmlopt = virDomainXMLOptionNew(NULL, NULL, NULL, NULL, NULL)) ||
+        !(proc->vm = virDomainObjNew(xmlopt)))
+        goto cleanup;
+
+    proc->vm->pid = proc->pid;
+
+    if (!(proc->mon = qemuMonitorOpen(proc->vm, &proc->config, true, true,
+                                      0, &callbacks, NULL)))
+        goto ignore;
+
+    virObjectLock(proc->mon);
+
+ ignore:
     ret = 0;
 
+ cleanup:
     VIR_DEBUG("ret=%i", ret);
+    virObjectUnref(xmlopt);
     return ret;
 }
 
