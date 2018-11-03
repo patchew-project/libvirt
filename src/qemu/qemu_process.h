@@ -227,7 +227,6 @@ struct _qemuProcess {
     char *pidfile;
     virCommandPtr cmd;
     qemuMonitorPtr mon;
-    virDomainChrSourceDef config;
     pid_t pid;
     virDomainObjPtr vm;
     bool forceTCG;

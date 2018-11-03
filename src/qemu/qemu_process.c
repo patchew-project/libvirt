@@ -8237,13 +8237,14 @@ qemuConnectMonitorQmp(qemuProcessPtr proc)
 {
     int ret = -1;
     virDomainXMLOptionPtr xmlopt = NULL;
+    virDomainChrSourceDef monConfig;
 
     VIR_DEBUG("proc=%p, emulator=%s, proc->pid=%lld",
               proc, NULLSTR(proc->binary), (long long) proc->pid);
 
-    proc->config.type = VIR_DOMAIN_CHR_TYPE_UNIX;
-    proc->config.data.nix.path = proc->monpath;
-    proc->config.data.nix.listen = false;
+    monConfig.type = VIR_DOMAIN_CHR_TYPE_UNIX;
+    monConfig.data.nix.path = proc->monpath;
+    monConfig.data.nix.listen = false;
 
     if (!(xmlopt = virDomainXMLOptionNew(NULL, NULL, NULL, NULL, NULL)) ||
         !(proc->vm = virDomainObjNew(xmlopt)))
@@ -8251,7 +8252,7 @@ qemuConnectMonitorQmp(qemuProcessPtr proc)
 
     proc->vm->pid = proc->pid;
 
-    if (!(proc->mon = qemuMonitorOpen(proc->vm, &proc->config, true, true,
+    if (!(proc->mon = qemuMonitorOpen(proc->vm, &monConfig, true, true,
                                       0, &callbacks, NULL)))
         goto ignore;
 
