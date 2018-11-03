@@ -1047,6 +1047,11 @@ qemuMonitorCPUModelInfoPtr qemuMonitorCPUModelInfoNew(const char *name);
 qemuMonitorCPUModelInfoPtr
 qemuMonitorCPUModelInfoCopy(const qemuMonitorCPUModelInfo *orig);
 
+int qemuMonitorCPUModelInfoBoolPropAdd(qemuMonitorCPUModelInfoPtr model,
+                                       const char *prop_name,
+                                       bool prop_value)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
 int qemuMonitorGetCommands(qemuMonitorPtr mon,
                            char ***commands);
 int qemuMonitorGetEvents(qemuMonitorPtr mon,
