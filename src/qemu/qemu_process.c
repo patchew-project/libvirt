@@ -8093,7 +8093,7 @@ qemuProcessFree(qemuProcessPtr cmd)
 
 
 qemuProcessPtr
-qemuProcessNew(char *binary,
+qemuProcessNew(const char *binary,
                const char *libDir,
                uid_t runUid,
                gid_t runGid,
