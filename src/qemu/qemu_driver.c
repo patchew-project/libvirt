@@ -4788,6 +4788,43 @@ processPRDisconnectEvent(virDomainObjPtr vm)
 }
 
 
+static void
+processRdmaGidStatusChangedEvent(virDomainObjPtr vm,
+                                 qemuDomainRdmaGidStatusChangedPrivatePtr info)
+{
+    unsigned int prefix_len;
+    virSocketAddr addr = {0};
+    int rc;
+
+    if (!virDomainObjIsActive(vm))
+        return;
+
+    VIR_DEBUG("netdev=%s,gid_status=%d,subnet_prefix=0x%lx,interface_id=0x%lx",
+              info->netdev, info->gid_status, info->subnet_prefix,
+              info->interface_id);
+
+    if (info->subnet_prefix) {
+        prefix_len = 64;
+        uint32_t ipv6[4];
+        memcpy(&ipv6[0], &info->subnet_prefix, sizeof(info->subnet_prefix));
+        memcpy(&ipv6[2], &info->interface_id, sizeof(info->subnet_prefix));
+        virSocketAddrSetIPv6AddrNetOrder(&addr, ipv6);
+    } else {
+        prefix_len = 24;
+        virSocketAddrSetIPv4AddrNetOrder(&addr, info->interface_id >> 32);
+    }
+
+    if (info->gid_status)
+        rc = virNetDevIPAddrAdd(info->netdev, &addr, NULL, prefix_len);
+    else
+        rc = virNetDevIPAddrDel(info->netdev, &addr, prefix_len);
+
+    if (rc)
+        VIR_ERROR(_("Fail to update address 0x%lx to %s"), info->interface_id,
+                  info->netdev);
+}
+
+
 static void qemuProcessEventHandler(void *data, void *opaque)
 {
     struct qemuProcessEvent *processEvent = data;
@@ -4827,6 +4864,9 @@ static void qemuProcessEventHandler(void *data, void *opaque)
         break;
     case QEMU_PROCESS_EVENT_PR_DISCONNECT:
         processPRDisconnectEvent(vm);
+        break;
+    case QEMU_PROCESS_EVENT_RDMA_GID_STATUS_CHANGED:
+        processRdmaGidStatusChangedEvent(vm, processEvent->data);
         break;
     case QEMU_PROCESS_EVENT_LAST:
         break;

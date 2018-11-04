@@ -478,6 +478,18 @@ struct _qemuDomainVsockPrivate {
 };
 
 
+typedef struct _qemuDomainRdmaGidStatusChangedPrivate qemuDomainRdmaGidStatusChangedPrivate;
+typedef qemuDomainRdmaGidStatusChangedPrivate *qemuDomainRdmaGidStatusChangedPrivatePtr;
+struct _qemuDomainRdmaGidStatusChangedPrivate {
+    virObject parent;
+
+    char *netdev;
+    bool gid_status;
+    uint64_t subnet_prefix;
+    uint64_t interface_id;
+};
+
+
 typedef enum {
     QEMU_PROCESS_EVENT_WATCHDOG = 0,
     QEMU_PROCESS_EVENT_GUESTPANIC,
@@ -487,6 +499,7 @@ typedef enum {
     QEMU_PROCESS_EVENT_BLOCK_JOB,
     QEMU_PROCESS_EVENT_MONITOR_EOF,
     QEMU_PROCESS_EVENT_PR_DISCONNECT,
+    QEMU_PROCESS_EVENT_RDMA_GID_STATUS_CHANGED,
 
     QEMU_PROCESS_EVENT_LAST
 } qemuProcessEventType;
@@ -498,6 +511,8 @@ struct qemuProcessEvent {
     int status;
     void *data;
 };
+
+void qemuMonitorEventRdmaGidStatusFree(qemuDomainRdmaGidStatusChangedPrivatePtr info);
 
 void qemuProcessEventFree(struct qemuProcessEvent *event);
 

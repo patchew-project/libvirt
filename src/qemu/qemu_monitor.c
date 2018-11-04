@@ -1687,6 +1687,23 @@ qemuMonitorEmitPRManagerStatusChanged(qemuMonitorPtr mon,
 
 
 int
+qemuMonitorEmitRdmaGidStatusChanged(qemuMonitorPtr mon, const char *netdev,
+                                    bool gid_status, uint64_t subnet_prefix,
+                                    uint64_t interface_id)
+{
+    int ret = -1;
+    VIR_DEBUG("mon=%p", mon);
+    VIR_DEBUG("netdev='%s',gid_status=%d,subnet_prefix=0x%lx,interface_id=0x%lx",
+              netdev, gid_status, subnet_prefix, interface_id);
+
+    QEMU_MONITOR_CALLBACK(mon, ret, domainRdmaGidStatusChanged, mon->vm, netdev,
+                          gid_status, subnet_prefix, interface_id);
+
+    return ret;
+}
+
+
+int
 qemuMonitorSetCapabilities(qemuMonitorPtr mon)
 {
     QEMU_CHECK_MONITOR(mon);
@@ -4294,6 +4311,17 @@ qemuMonitorEventPanicInfoFree(qemuMonitorEventPanicInfoPtr info)
         break;
     }
 
+    VIR_FREE(info);
+}
+
+
+void
+qemuMonitorEventRdmaGidStatusFree(qemuDomainRdmaGidStatusChangedPrivatePtr info)
+{
+    if (!info)
+        return;
+
+    VIR_FREE(info->netdev);
     VIR_FREE(info);
 }
 
