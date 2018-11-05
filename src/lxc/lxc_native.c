@@ -200,7 +200,9 @@ lxcSetRootfs(virDomainDefPtr def,
     int type = VIR_DOMAIN_FS_TYPE_MOUNT;
     VIR_AUTOFREE(char *) value = NULL;
 
-    if (virConfGetValueString(properties, "lxc.rootfs", &value) <= 0)
+    if (virConfGetValueString(properties, "lxc.rootfs", &value) <= 0 &&
+        /* Legacy config keys were removed after release 3.0. */
+        virConfGetValueString(properties, "lxc.rootfs.path", &value) <= 0)
         return -1;
 
     if (STRPREFIX(value, "/dev/"))
@@ -684,7 +686,9 @@ lxcCreateConsoles(virDomainDefPtr def, virConfPtr properties)
     virDomainChrDefPtr console;
     size_t i;
 
-    if (virConfGetValueString(properties, "lxc.tty", &value) <= 0)
+    if (virConfGetValueString(properties, "lxc.tty", &value) <= 0 &&
+        /* Legacy config keys were removed after release 3.0. */
+        virConfGetValueString(properties, "lxc.tty.max", &value) <= 0)
         return 0;
 
     if (virStrToLong_i(value, NULL, 10, &nbttys) < 0) {
@@ -724,7 +728,7 @@ lxcIdmapWalkCallback(const char *name, virConfValuePtr value, void *data)
     char type;
     unsigned long start, target, count;
 
-    if (STRNEQ(name, "lxc.id_map") || !value->str)
+    if (STRNEQ(name, "lxc.id_map") || STRNEQ(name, "lxc.idmap") || !value->str)
         return 0;
 
     if (sscanf(value->str, "%c %lu %lu %lu", &type,
@@ -1041,7 +1045,9 @@ lxcParseConfigString(const char *config,
     if (VIR_STRDUP(vmdef->os.init, "/sbin/init") < 0)
         goto error;
 
-    if (virConfGetValueString(properties, "lxc.utsname", &value) <= 0 ||
+    if ((virConfGetValueString(properties, "lxc.utsname", &value) <= 0 &&
+         /* Legacy config keys were removed after release 3.0. */
+         virConfGetValueString(properties, "lxc.uts.name", &value) <= 0) ||
         VIR_STRDUP(vmdef->name, value) < 0)
         goto error;
     if (!vmdef->name && (VIR_STRDUP(vmdef->name, "unnamed") < 0))
@@ -1051,7 +1057,9 @@ lxcParseConfigString(const char *config,
         goto error;
 
     /* Look for fstab: we shouldn't have it */
-    if (virConfGetValue(properties, "lxc.mount")) {
+    if (virConfGetValue(properties, "lxc.mount") ||
+        /* Legacy config keys were removed after release 3.0. */
+        virConfGetValue(properties, "lxc.mount.fstab")) {
         virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED, "%s",
                        _("lxc.mount found, use lxc.mount.entry lines instead"));
         goto error;
