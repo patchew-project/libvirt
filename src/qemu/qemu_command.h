@@ -129,6 +129,7 @@ int qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
                                 virDomainDefPtr def,
                                 virDomainMemoryDefPtr mem,
                                 virBitmapPtr autoNodeset,
+                                bool forbidPrealloc,
                                 bool force);
 
 char *qemuBuildMemoryDeviceStr(virDomainMemoryDefPtr mem);

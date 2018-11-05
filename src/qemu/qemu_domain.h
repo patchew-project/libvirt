@@ -370,6 +370,9 @@ struct _qemuDomainObjPrivate {
     /* qemuProcessStartCPUs stores the reason for starting vCPUs here for the
      * RESUME event handler to use it */
     virDomainRunningReason runningReason;
+
+    /* true if global -mem-prealloc appears on cmd line */
+    bool memPrealloc;
 };
 
 # define QEMU_DOMAIN_PRIVATE(vm) \

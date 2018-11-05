@@ -3123,6 +3123,7 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
  * @def: domain definition object
  * @mem: memory definition object
  * @autoNodeset: fallback nodeset in case of automatic NUMA placement
+ * @forbidPrealloc: don't set prealloc attribute
  * @force: forcibly use one of the backends
  *
  * Creates a configuration object that represents memory backend of given guest
@@ -3136,6 +3137,9 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
  * Then, if one of the two memory-backend-* should be used, the @qemuCaps is
  * consulted to check if qemu does support it.
  *
+ * If @forbidPrealloc is true then 'prealloc' attribute of the backend is not
+ * set. This may come handy when global -mem-prealloc is already specified.
+ *
  * Returns: 0 on success,
  *          1 on success and if there's no need to use memory-backend-*
  *         -1 on error.
@@ -3148,6 +3152,7 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
                             virDomainDefPtr def,
                             virDomainMemoryDefPtr mem,
                             virBitmapPtr autoNodeset,
+                            bool forbidPrealloc,
                             bool force)
 {
     const char *backendType = "memory-backend-file";
@@ -3265,11 +3270,13 @@ qemuBuildMemoryBackendProps(virJSONValuePtr *backendProps,
         if (mem->nvdimmPath) {
             if (VIR_STRDUP(memPath, mem->nvdimmPath) < 0)
                 goto cleanup;
-            prealloc = true;
+            if (!forbidPrealloc)
+                prealloc = true;
         } else if (useHugepage) {
             if (qemuGetDomainHupageMemPath(def, cfg, pagesize, &memPath) < 0)
                 goto cleanup;
-            prealloc = true;
+            if (!forbidPrealloc)
+                prealloc = true;
         } else {
             /* We can have both pagesize and mem source. If that's the case,
              * prefer hugepages as those are more specific. */
@@ -3398,7 +3405,8 @@ qemuBuildMemoryCellBackendStr(virDomainDefPtr def,
     mem.info.alias = alias;
 
     if ((rc = qemuBuildMemoryBackendProps(&props, alias, cfg, priv->qemuCaps,
-                                          def, &mem, priv->autoNodeset, false)) < 0)
+                                          def, &mem, priv->autoNodeset,
+                                          priv->memPrealloc, false)) < 0)
         goto cleanup;
 
     if (virQEMUBuildObjectCommandlineFromJSON(buf, props) < 0)
@@ -3435,7 +3443,8 @@ qemuBuildMemoryDimmBackendStr(virBufferPtr buf,
         goto cleanup;
 
     if (qemuBuildMemoryBackendProps(&props, alias, cfg, priv->qemuCaps,
-                                    def, mem, priv->autoNodeset, true) < 0)
+                                    def, mem, priv->autoNodeset,
+                                    priv->memPrealloc, true) < 0)
         goto cleanup;
 
     if (virQEMUBuildObjectCommandlineFromJSON(buf, props) < 0)
@@ -7443,7 +7452,8 @@ qemuBuildSmpCommandLine(virCommandPtr cmd,
 static int
 qemuBuildMemPathStr(virQEMUDriverConfigPtr cfg,
                     const virDomainDef *def,
-                    virCommandPtr cmd)
+                    virCommandPtr cmd,
+                    qemuDomainObjPrivatePtr priv)
 {
     const long system_page_size = virGetSystemPageSizeKB();
     char *mem_path = NULL;
@@ -7465,8 +7475,10 @@ qemuBuildMemPathStr(virQEMUDriverConfigPtr cfg,
         return 0;
     }
 
-    if (def->mem.allocation != VIR_DOMAIN_MEMORY_ALLOCATION_IMMEDIATE)
+    if (def->mem.allocation != VIR_DOMAIN_MEMORY_ALLOCATION_IMMEDIATE) {
         virCommandAddArgList(cmd, "-mem-prealloc", NULL);
+        priv->memPrealloc = true;
+    }
 
     virCommandAddArgList(cmd, "-mem-path", mem_path, NULL);
     VIR_FREE(mem_path);
@@ -7479,7 +7491,8 @@ static int
 qemuBuildMemCommandLine(virCommandPtr cmd,
                         virQEMUDriverConfigPtr cfg,
                         const virDomainDef *def,
-                        virQEMUCapsPtr qemuCaps)
+                        virQEMUCapsPtr qemuCaps,
+                        qemuDomainObjPrivatePtr priv)
 {
     if (qemuDomainDefValidateMemoryHotplug(def, qemuCaps, NULL) < 0)
         return -1;
@@ -7498,15 +7511,17 @@ qemuBuildMemCommandLine(virCommandPtr cmd,
                               virDomainDefGetMemoryInitial(def) / 1024);
     }
 
-    if (def->mem.allocation == VIR_DOMAIN_MEMORY_ALLOCATION_IMMEDIATE)
+    if (def->mem.allocation == VIR_DOMAIN_MEMORY_ALLOCATION_IMMEDIATE) {
         virCommandAddArgList(cmd, "-mem-prealloc", NULL);
+        priv->memPrealloc = true;
+    }
 
     /*
      * Add '-mem-path' (and '-mem-prealloc') parameter here if
      * the hugepages and no numa node is specified.
      */
     if (!virDomainNumaGetNodeCount(def->numa) &&
-        qemuBuildMemPathStr(cfg, def, cmd) < 0)
+        qemuBuildMemPathStr(cfg, def, cmd, priv) < 0)
         return -1;
 
     if (def->mem.locked && !virQEMUCapsGet(qemuCaps, QEMU_CAPS_REALTIME_MLOCK)) {
@@ -7613,7 +7628,7 @@ qemuBuildNumaArgStr(virQEMUDriverConfigPtr cfg,
     }
 
     if (!needBackend &&
-        qemuBuildMemPathStr(cfg, def, cmd) < 0)
+        qemuBuildMemPathStr(cfg, def, cmd, priv) < 0)
         goto cleanup;
 
     for (i = 0; i < ncells; i++) {
@@ -10250,7 +10265,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     if (!migrateURI && !snapshot && qemuDomainAlignMemorySizes(def) < 0)
         goto error;
 
-    if (qemuBuildMemCommandLine(cmd, cfg, def, qemuCaps) < 0)
+    if (qemuBuildMemCommandLine(cmd, cfg, def, qemuCaps, priv) < 0)
         goto error;
 
     if (qemuBuildSmpCommandLine(cmd, def) < 0)

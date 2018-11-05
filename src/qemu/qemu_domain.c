@@ -1944,6 +1944,8 @@ qemuDomainObjPrivateDataClear(qemuDomainObjPrivatePtr priv)
     VIR_FREE(priv->libDir);
     VIR_FREE(priv->channelTargetDir);
 
+    priv->memPrealloc = false;
+
     /* remove automatic pinning data */
     virBitmapFree(priv->autoNodeset);
     priv->autoNodeset = NULL;
