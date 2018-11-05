@@ -6018,11 +6018,16 @@ qemuDomainDelIOThreadCheck(virDomainDefPtr def,
     return 0;
 }
 
+typedef enum {
+    VIR_DOMAIN_IOTHREAD_ACTION_ADD,
+    VIR_DOMAIN_IOTHREAD_ACTION_DEL,
+} virDomainIOThreadAction;
+
 static int
 qemuDomainChgIOThread(virQEMUDriverPtr driver,
                       virDomainObjPtr vm,
                       unsigned int iothread_id,
-                      bool add,
+                      virDomainIOThreadAction action,
                       unsigned int flags)
 {
     virQEMUDriverConfigPtr cfg = NULL;
@@ -6048,18 +6053,24 @@ qemuDomainChgIOThread(virQEMUDriverPtr driver,
             goto endjob;
         }
 
-        if (add) {
+        switch (action) {
+        case VIR_DOMAIN_IOTHREAD_ACTION_ADD:
             if (qemuDomainAddIOThreadCheck(def, iothread_id) < 0)
                 goto endjob;
 
             if (qemuDomainHotplugAddIOThread(driver, vm, iothread_id) < 0)
                 goto endjob;
-        } else {
+
+            break;
+
+        case VIR_DOMAIN_IOTHREAD_ACTION_DEL:
             if (qemuDomainDelIOThreadCheck(def, iothread_id) < 0)
                 goto endjob;
 
             if (qemuDomainHotplugDelIOThread(driver, vm, iothread_id) < 0)
                 goto endjob;
+
+            break;
         }
 
         if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0)
@@ -6067,18 +6078,23 @@ qemuDomainChgIOThread(virQEMUDriverPtr driver,
     }
 
     if (persistentDef) {
-        if (add) {
+        switch (action) {
+        case VIR_DOMAIN_IOTHREAD_ACTION_ADD:
             if (qemuDomainAddIOThreadCheck(persistentDef, iothread_id) < 0)
                 goto endjob;
 
             if (!virDomainIOThreadIDAdd(persistentDef, iothread_id))
                 goto endjob;
 
-        } else {
+            break;
+
+        case VIR_DOMAIN_IOTHREAD_ACTION_DEL:
             if (qemuDomainDelIOThreadCheck(persistentDef, iothread_id) < 0)
                 goto endjob;
 
             virDomainIOThreadIDDel(persistentDef, iothread_id);
+
+            break;
         }
 
         if (virDomainSaveConfig(cfg->configDir, driver->caps,
@@ -6120,7 +6136,8 @@ qemuDomainAddIOThread(virDomainPtr dom,
     if (virDomainAddIOThreadEnsureACL(dom->conn, vm->def, flags) < 0)
         goto cleanup;
 
-    ret = qemuDomainChgIOThread(driver, vm, iothread_id, true, flags);
+    ret = qemuDomainChgIOThread(driver, vm, iothread_id,
+                                VIR_DOMAIN_IOTHREAD_ACTION_ADD, flags);
 
  cleanup:
     virDomainObjEndAPI(&vm);
@@ -6152,7 +6169,8 @@ qemuDomainDelIOThread(virDomainPtr dom,
     if (virDomainDelIOThreadEnsureACL(dom->conn, vm->def, flags) < 0)
            goto cleanup;
 
-    ret = qemuDomainChgIOThread(driver, vm, iothread_id, false, flags);
+    ret = qemuDomainChgIOThread(driver, vm, iothread_id,
+                                VIR_DOMAIN_IOTHREAD_ACTION_DEL, flags);
 
  cleanup:
     virDomainObjEndAPI(&vm);
