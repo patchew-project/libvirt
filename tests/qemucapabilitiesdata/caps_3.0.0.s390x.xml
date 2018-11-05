@@ -130,6 +130,7 @@
   <flag name='tpm-emulator'/>
   <flag name='egl-headless'/>
   <flag name='vfio-pci.display'/>
+  <flag name='iothread.poll-max-ns'/>
   <version>3000000</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>387601</microcodeVersion>
