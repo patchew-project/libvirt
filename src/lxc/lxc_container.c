@@ -871,7 +871,7 @@ static int lxcContainerSetReadOnly(void)
         qsort(mounts, nmounts, sizeof(mounts[0]),
               virStringSortRevCompare);
 
-    for (i = 0; i < nmounts; i++) {
+    for (i = 0; i < nmounts && mounts; i++) {
         VIR_DEBUG("Bind readonly %s", mounts[i]);
         if (mount(mounts[i], mounts[i], "none", MS_BIND|MS_REC|MS_RDONLY|MS_REMOUNT, NULL) < 0) {
             virReportSystemError(errno,
@@ -883,7 +883,7 @@ static int lxcContainerSetReadOnly(void)
 
     ret = 0;
  cleanup:
-    for (i = 0; i < nmounts; i++)
+    for (i = 0; i < nmounts && mounts; i++)
         VIR_FREE(mounts[i]);
     VIR_FREE(mounts);
     endmntent(procmnt);
