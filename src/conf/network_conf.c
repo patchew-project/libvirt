@@ -587,14 +587,14 @@ virNetworkDNSHostDefParseXML(const char *networkName,
     xmlNodePtr cur;
     char *ip;
 
-    if (!(ip = virXMLPropString(node, "ip")) && !partialOkay) {
+    if (!(ip = virXMLPropString(node, "ip"))) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("Missing IP address in network '%s' DNS HOST record"),
                        networkName);
         goto error;
     }
 
-    if (ip && (virSocketAddrParse(&def->ip, ip, AF_UNSPEC) < 0)) {
+    if (virSocketAddrParse(&def->ip, ip, AF_UNSPEC) < 0) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("Invalid IP address in network '%s' DNS HOST record"),
                        networkName);
@@ -602,6 +602,13 @@ virNetworkDNSHostDefParseXML(const char *networkName,
         goto error;
     }
     VIR_FREE(ip);
+
+    if (!VIR_SOCKET_ADDR_VALID(&def->ip)) {
+        virReportError(VIR_ERR_XML_DETAIL,
+                       _("Invalid IP address in network '%s' DNS HOST record"),
+                       networkName);
+        goto error;
+    }
 
     cur = node->children;
     while (cur != NULL) {
@@ -627,13 +634,6 @@ virNetworkDNSHostDefParseXML(const char *networkName,
     if (def->nnames == 0 && !partialOkay) {
         virReportError(VIR_ERR_XML_DETAIL,
                        _("Missing hostname in network '%s' DNS HOST record"),
-                       networkName);
-        goto error;
-    }
-
-    if (!VIR_SOCKET_ADDR_VALID(&def->ip) && def->nnames == 0) {
-        virReportError(VIR_ERR_XML_DETAIL,
-                       _("Missing ip and hostname in network '%s' DNS HOST record"),
                        networkName);
         goto error;
     }
@@ -3334,18 +3334,7 @@ virNetworkDefUpdateDNSHost(virNetworkDefPtr def,
         goto cleanup;
 
     for (i = 0; i < dns->nhosts; i++) {
-        bool foundThisTime = false;
-
-        if (virSocketAddrEqual(&host.ip, &dns->hosts[i].ip))
-            foundThisTime = true;
-
-        for (j = 0; j < host.nnames && !foundThisTime; j++) {
-            for (k = 0; k < dns->hosts[i].nnames && !foundThisTime; k++) {
-                if (STREQ(host.names[j], dns->hosts[i].names[k]))
-                    foundThisTime = true;
-            }
-        }
-        if (foundThisTime) {
+        if virSocketAddrEqual(&host.ip, &dns->hosts[i].ip) {
             foundCt++;
             foundIdx = i;
         }
