@@ -719,12 +719,7 @@ qemuProcessHandleResume(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
         priv->runningReason = VIR_DOMAIN_RUNNING_UNKNOWN;
     }
 
-    if (virDomainObjGetState(vm, NULL) == VIR_DOMAIN_PAUSED) {
-        if (priv->gotShutdown) {
-            VIR_DEBUG("Ignoring RESUME event after SHUTDOWN");
-            goto unlock;
-        }
-
+    if (virDomainObjGetState(vm, NULL) != VIR_DOMAIN_RUNNING) {
         eventDetail = qemuDomainRunningReasonToResumeEvent(reason);
         VIR_DEBUG("Transitioned guest %s out of paused into resumed state, "
                   "reason '%s', event detail %d",
@@ -742,7 +737,6 @@ qemuProcessHandleResume(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
         }
     }
 
- unlock:
     virObjectUnlock(vm);
     virObjectEventStateQueue(driver->domainEventState, event);
     virObjectUnref(cfg);
