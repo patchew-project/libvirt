@@ -509,6 +509,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "vfio-pci.display",
               "blockdev",
               "vfio-ap",
+              "qcow2.l2-cache-size",
     );
 
 
@@ -4116,6 +4117,10 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
         ARCH_IS_PPC64(qemuCaps->arch)) {
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_MACHINE_PSERIES_MAX_CPU_COMPAT);
     }
+
+    /* l2-cache-size before 3001000 does not accept INT64_MAX */
+    if (qemuCaps->version >= 3001000)
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_QCOW2_L2_CACHE_SIZE);
 
     if (virQEMUCapsProbeQMPCommands(qemuCaps, mon) < 0)
         goto cleanup;
