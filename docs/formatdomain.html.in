@@ -3556,6 +3556,14 @@
             virt queues for virtio-blk. (<span class="since">Since 3.9.0</span>)
           </li>
           <li>
+            The optional <code>metadata_cache_size</code> attribute specifies
+            metadata cache size policy, possible values are "default" and "maximum".
+            "default" leaves setting cache size to hypervisor, "maximum" makes
+            cache size large enough to keep all metadata, this will help if workload
+            needs access to whole disk all the time. (<span class="since">Since
+            4.10.0, QEMU 3.1</span>)
+          </li>
+          <li>
           For virtio disks,
           <a href="#elementsVirtio">Virtio-specific options</a> can also be
           set. (<span class="since">Since 3.5.0</span>)

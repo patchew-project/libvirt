@@ -568,6 +568,13 @@ typedef enum {
     VIR_DOMAIN_DISK_DETECT_ZEROES_LAST
 } virDomainDiskDetectZeroes;
 
+typedef enum {
+    VIR_DOMAIN_DISK_METADATA_CACHE_SIZE_DEFAULT = 0,
+    VIR_DOMAIN_DISK_METADATA_CACHE_SIZE_MAXIMUM,
+
+    VIR_DOMAIN_DISK_METADATA_CACHE_SIZE_LAST
+} virDomainDiskMetadataCacheSize;
+
 typedef struct _virDomainBlockIoTuneInfo virDomainBlockIoTuneInfo;
 struct _virDomainBlockIoTuneInfo {
     unsigned long long total_bytes_sec;
@@ -672,6 +679,7 @@ struct _virDomainDiskDef {
     int discard; /* enum virDomainDiskDiscard */
     unsigned int iothread; /* unused = 0, > 0 specific thread # */
     int detect_zeroes; /* enum virDomainDiskDetectZeroes */
+    int metadata_cache_size; /* enum virDomainDiskMetadataCacheSize */
     char *domain_name; /* backend domain name */
     unsigned int queues;
     virDomainVirtioOptionsPtr virtio;
@@ -3388,6 +3396,7 @@ VIR_ENUM_DECL(virDomainDeviceSGIO)
 VIR_ENUM_DECL(virDomainDiskTray)
 VIR_ENUM_DECL(virDomainDiskDiscard)
 VIR_ENUM_DECL(virDomainDiskDetectZeroes)
+VIR_ENUM_DECL(virDomainDiskMetadataCacheSize)
 VIR_ENUM_DECL(virDomainDiskMirrorState)
 VIR_ENUM_DECL(virDomainController)
 VIR_ENUM_DECL(virDomainControllerModelPCI)
