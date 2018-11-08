@@ -6401,6 +6401,7 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
                           unsigned int flags)
 {
     virBuffer attrBuf = VIR_BUFFER_INITIALIZER;
+    virBuffer childBuf = VIR_BUFFER_INITIALIZER;
 
     if ((flags & VIR_DOMAIN_DEF_FORMAT_ALLOW_BOOT) && info->bootIndex) {
         virBufferAsprintf(buf, "<boot order='%u'", info->bootIndex);
@@ -6462,6 +6463,14 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
         if (info->addr.pci.multi) {
             virBufferAsprintf(&attrBuf, " multifunction='%s'",
                               virTristateSwitchTypeToString(info->addr.pci.multi));
+        }
+
+        if (!virZPCIDeviceAddressIsEmpty(&info->addr.pci.zpci)) {
+            virBufferSetChildIndent(&childBuf, buf);
+            virBufferAsprintf(&childBuf,
+                              "<zpci uid='0x%.4x' fid='0x%.8x'/>\n",
+                              info->addr.pci.zpci.uid,
+                              info->addr.pci.zpci.fid);
         }
         break;
 
@@ -6530,9 +6539,10 @@ virDomainDeviceInfoFormat(virBufferPtr buf,
         break;
     }
 
-    virXMLFormatElement(buf, "address", &attrBuf, NULL);
+    virXMLFormatElement(buf, "address", &attrBuf, &childBuf);
 
     virBufferFreeAndReset(&attrBuf);
+    virBufferFreeAndReset(&childBuf);
 }
 
 static int
