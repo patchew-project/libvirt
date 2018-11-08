@@ -1322,13 +1322,16 @@ qemuBlockStorageSourceGetFormatQcow2Props(virStorageSourcePtr src,
      * 'pass-discard-snapshot'
      * 'pass-discard-other'
      * 'overlap-check'
-     * 'l2-cache-size'
      * 'l2-cache-entry-size'
      * 'refcount-cache-size'
      * 'cache-clean-interval'
      */
 
     if (qemuBlockStorageSourceGetFormatQcowGenericProps(src, "qcow2", props) < 0)
+        return -1;
+
+    if (src->metadata_cache_size == VIR_DOMAIN_DISK_METADATA_CACHE_SIZE_MAXIMUM &&
+        virJSONValueObjectAdd(props, "I:l2-cache-size", INT64_MAX, NULL) < 0)
         return -1;
 
     return 0;
