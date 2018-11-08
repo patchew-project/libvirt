@@ -3044,6 +3044,8 @@ mymain(void)
     DO_TEST_CAPS_ARCH_LATEST("x86_64-pc-headless", "x86_64");
     DO_TEST_CAPS_ARCH_LATEST("x86_64-q35-headless", "x86_64");
 
+    DO_TEST_CAPS_LATEST("disk-metadata_cache_size");
+
     if (getenv("LIBVIRT_SKIP_CLEANUP") == NULL)
         virFileDeleteTree(fakerootdir);
 
