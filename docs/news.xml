@@ -25,6 +25,15 @@
     <section title="New features">
     </section>
     <section title="Improvements">
+      <change>
+        <summary>
+          Add armv6l Support as guest
+        </summary>
+        <description>
+          Support for armv6l qemu guests has been added.
+          Tested with arm1176 CPU on x86.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
