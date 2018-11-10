@@ -1445,30 +1445,12 @@ int
 virNetDevGetVirtualFunctionInfo(const char *vfname, char **pfname,
                                 int *vf)
 {
-    char *pf_sysfs_path = NULL, *vf_sysfs_path = NULL;
-    int ret = -1;
-
     *pfname = NULL;
 
     if (virNetDevGetPhysicalFunction(vfname, pfname) < 0)
-        return ret;
+        return -1;
 
-    if (virNetDevSysfsFile(&pf_sysfs_path, *pfname, "device") < 0)
-        goto cleanup;
-
-    if (virNetDevSysfsFile(&vf_sysfs_path, vfname, "device") < 0)
-        goto cleanup;
-
-    ret = virPCIGetVirtualFunctionIndex(pf_sysfs_path, vf_sysfs_path, vf);
-
- cleanup:
-    if (ret < 0)
-        VIR_FREE(*pfname);
-
-    VIR_FREE(vf_sysfs_path);
-    VIR_FREE(pf_sysfs_path);
-
-    return ret;
+    return virNetDevGetVirtualFunctionIndex(*pfname, vfname, vf);
 }
 
 #else /* !__linux__ */
@@ -1863,13 +1845,9 @@ virNetDevSaveNetConfig(const char *linkdev, int vf,
          * it to PF + VFname
          */
 
-        if (virNetDevGetPhysicalFunction(linkdev, &pfDevOrig) < 0)
+        if (virNetDevGetVirtualFunctionInfo(linkdev, &pfDevOrig, &vf))
             goto cleanup;
-
         pfDevName = pfDevOrig;
-
-        if (virNetDevGetVirtualFunctionIndex(pfDevName, linkdev, &vf) < 0)
-            goto cleanup;
     }
 
     if (pfDevName) {
@@ -2021,13 +1999,9 @@ virNetDevReadNetConfig(const char *linkdev, int vf,
          * it to PF + VFname
          */
 
-        if (virNetDevGetPhysicalFunction(linkdev, &pfDevOrig) < 0)
+        if (virNetDevGetVirtualFunctionInfo(linkdev, &pfDevOrig, &vf))
             goto cleanup;
-
         pfDevName = pfDevOrig;
-
-        if (virNetDevGetVirtualFunctionIndex(pfDevName, linkdev, &vf) < 0)
-            goto cleanup;
     }
 
     /* if there is a PF, it's now in pfDevName, and linkdev is either
@@ -2226,13 +2200,9 @@ virNetDevSetNetConfig(const char *linkdev, int vf,
          * it to PF + VFname
          */
 
-        if (virNetDevGetPhysicalFunction(linkdev, &pfDevOrig) < 0)
+        if (virNetDevGetVirtualFunctionInfo(linkdev, &pfDevOrig, &vf))
             goto cleanup;
-
         pfDevName = pfDevOrig;
-
-        if (virNetDevGetVirtualFunctionIndex(pfDevName, linkdev, &vf) < 0)
-            goto cleanup;
     }
 
 
