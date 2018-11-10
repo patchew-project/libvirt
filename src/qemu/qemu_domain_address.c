@@ -232,8 +232,7 @@ qemuDomainAssignSpaprVIOAddresses(virDomainDefPtr def)
     for (i = 0; i < def->nnets; i++) {
         virDomainNetDefPtr net = def->nets[i];
 
-        if (net->model &&
-            STREQ(net->model, "spapr-vlan")) {
+        if (STREQ_NULLABLE(net->model, "spapr-vlan")) {
             net->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_SPAPRVIO;
         }
 
@@ -325,7 +324,7 @@ qemuDomainPrimeVirtioDeviceAddresses(virDomainDefPtr def,
         virDomainNetDefPtr net = def->nets[i];
 
         if (net->model &&
-            STREQ(net->model, "virtio") &&
+            STREQ_NULLABLE(net->model, "virtio") &&
             net->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE) {
             net->info.type = type;
         }
@@ -634,14 +633,14 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
          * addresses for other hostdev devices.
          */
         if (net->type == VIR_DOMAIN_NET_TYPE_HOSTDEV ||
-            STREQ(net->model, "usb-net")) {
+            STREQ_NULLABLE(net->model, "usb-net")) {
             return 0;
         }
 
-        if (STREQ(net->model, "virtio"))
+        if (STREQ_NULLABLE(net->model, "virtio"))
             return  virtioFlags;
 
-        if (STREQ(net->model, "e1000e"))
+        if (STREQ_NULLABLE(net->model, "e1000e"))
             return pcieFlags;
 
         return pciFlags;
