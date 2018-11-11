@@ -237,10 +237,10 @@ qemuProcessPtr qemuProcessNew(const char *binary,
                               gid_t runGid,
                               char **qmperr);
 
-void qemuProcessFree(qemuProcessPtr cmd);
+void qemuProcessFree(qemuProcessPtr proc);
 
-int qemuProcessRun(qemuProcessPtr cmd, bool forceTCG);
+int qemuProcessRun(qemuProcessPtr proc, bool forceTCG);
 
-void qemuProcessAbort(qemuProcessPtr cmd);
+void qemuProcessAbort(qemuProcessPtr proc);
 
 #endif /* __QEMU_PROCESS_H__ */
