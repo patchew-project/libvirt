@@ -231,7 +231,7 @@ struct _qemuProcess {
     virDomainObjPtr vm;
 };
 
-qemuProcessPtr qemuProcessNew(char *binary,
+qemuProcessPtr qemuProcessNew(const char *binary,
                               const char *libDir,
                               uid_t runUid,
                               gid_t runGid,
