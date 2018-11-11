@@ -8148,10 +8148,6 @@ qemuProcessNew(const char *binary,
 }
 
 
-/* Returns -1 on fatal error,
- *          0 on success,
- *          1 when probing QEMU failed
- */
 int
 qemuProcessRun(qemuProcessPtr proc){
     virDomainXMLOptionPtr xmlopt = NULL;
@@ -8218,6 +8214,7 @@ qemuProcessRun(qemuProcessPtr proc){
 
     virObjectLock(proc->mon);
 
+ ignore:
     ret = 0;
 
  cleanup:
@@ -8226,10 +8223,6 @@ qemuProcessRun(qemuProcessPtr proc){
     virObjectUnref(xmlopt);
 
     return ret;
-
- ignore:
-    ret = 1;
-    goto cleanup;
 }
 
 
