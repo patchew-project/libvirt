@@ -8086,7 +8086,7 @@ qemuProcessFree(qemuProcessPtr proc)
     if (!proc)
         return;
 
-    qemuProcessAbort(proc);
+    qemuProcessStopQmp(proc);
     VIR_FREE(proc->binary);
     VIR_FREE(proc->monpath);
     VIR_FREE(proc->monarg);
@@ -8222,7 +8222,7 @@ qemuProcessRun(qemuProcessPtr proc,
 
  cleanup:
     if (!proc->mon)
-        qemuProcessAbort(proc);
+        qemuProcessStopQmp(proc);
     virObjectUnref(xmlopt);
 
     return ret;
@@ -8234,7 +8234,7 @@ qemuProcessRun(qemuProcessPtr proc,
 
 
 void
-qemuProcessAbort(qemuProcessPtr proc)
+qemuProcessStopQmp(qemuProcessPtr proc)
 {
     if (proc->mon)
         virObjectUnlock(proc->mon);
