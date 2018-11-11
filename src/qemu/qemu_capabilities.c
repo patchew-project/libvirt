@@ -4220,14 +4220,16 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
                    char **qmperr)
 {
     qemuProcessPtr proc = NULL;
+    qemuProcessPtr proc_kvm = NULL;
     int ret = -1;
     int rc;
+    bool forceTCG = false;
 
     if (!(proc = qemuProcessNew(qemuCaps->binary, libDir,
-                                runUid, runGid, qmperr)))
+                                runUid, runGid, qmperr, forceTCG)))
         goto cleanup;
 
-    if ((rc = qemuProcessRun(proc, false)) != 0) {
+    if ((rc = qemuProcessRun(proc)) != 0) {
         if (rc == 1)
             ret = 0;
         goto cleanup;
@@ -4238,13 +4240,17 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
         qemuProcessStopQmp(proc);
-        if ((rc = qemuProcessRun(proc, true)) != 0) {
+
+        forceTCG = true;
+        proc_kvm = qemuProcessNew(qemuCaps->binary, libDir, runUid, runGid, NULL, forceTCG);
+
+        if ((rc = qemuProcessRun(proc_kvm)) != 0) {
             if (rc == 1)
                 ret = 0;
             goto cleanup;
         }
 
-        if (virQEMUCapsInitQMPMonitorTCG(qemuCaps, proc->mon) < 0)
+        if (virQEMUCapsInitQMPMonitorTCG(qemuCaps, proc_kvm->mon) < 0)
             goto cleanup;
     }
 
@@ -4252,7 +4258,9 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
 
  cleanup:
     qemuProcessStopQmp(proc);
+    qemuProcessStopQmp(proc_kvm);
     qemuProcessFree(proc);
+    qemuProcessFree(proc_kvm);
     return ret;
 }
 
