@@ -8091,6 +8091,7 @@ qemuProcessFree(qemuProcessPtr proc)
     VIR_FREE(proc->monpath);
     VIR_FREE(proc->monarg);
     VIR_FREE(proc->pidfile);
+    VIR_FREE(proc->qmperr);
     VIR_FREE(proc);
 }
 
@@ -8100,7 +8101,6 @@ qemuProcessNew(const char *binary,
                const char *libDir,
                uid_t runUid,
                gid_t runGid,
-               char **qmperr,
                bool forceTCG)
 {
     qemuProcessPtr proc = NULL;
@@ -8115,8 +8115,6 @@ qemuProcessNew(const char *binary,
 
     proc->runUid = runUid;
     proc->runGid = runGid;
-    proc->qmperr = qmperr;
-
 
     /* the ".sock" sufix is important to avoid a possible clash with a qemu
      * domain called "capabilities"
@@ -8155,8 +8153,7 @@ qemuProcessNew(const char *binary,
  *          1 when probing QEMU failed
  */
 int
-qemuProcessRun(qemuProcessPtr proc)
-{
+qemuProcessRun(qemuProcessPtr proc){
     virDomainXMLOptionPtr xmlopt = NULL;
     const char *machine;
     int status = 0;
@@ -8192,7 +8189,7 @@ qemuProcessRun(qemuProcessPtr proc)
     virCommandSetGID(proc->cmd, proc->runGid);
     virCommandSetUID(proc->cmd, proc->runUid);
 
-    virCommandSetErrorBuffer(proc->cmd, proc->qmperr);
+    virCommandSetErrorBuffer(proc->cmd, &(proc->qmperr));
 
     /* Log, but otherwise ignore, non-zero status.  */
     if (virCommandRun(proc->cmd, &status) < 0)
@@ -8200,7 +8197,7 @@ qemuProcessRun(qemuProcessPtr proc)
 
     if (status != 0) {
         VIR_DEBUG("QEMU %s exited with status %d: %s",
-                  proc->binary, status, *proc->qmperr);
+                  proc->binary, status, proc->qmperr);
         goto ignore;
     }
 
@@ -8262,7 +8259,6 @@ qemuProcessStopQmp(qemuProcessPtr proc)
                       (long long)proc->pid,
                       virStrerror(errno, ebuf, sizeof(ebuf)));
 
-        VIR_FREE(*proc->qmperr);
     }
     if (proc->pidfile)
         unlink(proc->pidfile);
