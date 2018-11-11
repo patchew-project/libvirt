@@ -813,12 +813,12 @@ qemuMonitorOpenInternal(virDomainObjPtr vm,
 {
     qemuMonitorPtr mon;
 
-    if (!cb->eofNotify) {
+    if (cb && !cb->eofNotify) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("EOF notify callback must be supplied"));
         return NULL;
     }
-    if (!cb->errorNotify) {
+    if (cb && !cb->errorNotify) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Error notify callback must be supplied"));
         return NULL;
