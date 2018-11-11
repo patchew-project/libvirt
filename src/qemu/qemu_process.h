@@ -246,7 +246,7 @@ qemuProcessPtr qemuProcessNew(const char *binary,
 
 void qemuProcessFree(qemuProcessPtr proc);
 
-int qemuProcessRun(qemuProcessPtr proc);
+int qemuProcessStartQmp(qemuProcessPtr proc);
 
 void qemuProcessStopQmp(qemuProcessPtr proc);
 

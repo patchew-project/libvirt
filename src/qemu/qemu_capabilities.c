@@ -4230,7 +4230,7 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
         goto cleanup;
 
 
-    if (qemuProcessRun(proc) < 0)
+    if (qemuProcessStartQmp(proc) < 0)
         goto cleanup;
 
     if (!(mon = QEMU_PROCESS_MONITOR(proc))) {
@@ -4249,7 +4249,7 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
         forceTCG = true;
         proc_kvm = qemuProcessNew(qemuCaps->binary, libDir, runUid, runGid, forceTCG);
 
-        if (qemuProcessRun(proc_kvm) < 0)
+        if (qemuProcessStartQmp(proc_kvm) < 0)
             goto cleanup;
 
         if (!(mon_kvm = QEMU_PROCESS_MONITOR(proc_kvm))) {
