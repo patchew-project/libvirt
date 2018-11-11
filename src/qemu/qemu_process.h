@@ -218,6 +218,7 @@ typedef struct _qemuProcess qemuProcess;
 typedef qemuProcess *qemuProcessPtr;
 struct _qemuProcess {
     char *binary;
+    char *libDir;
     uid_t runUid;
     gid_t runGid;
     char *qmperr;  /* qemu process stderr */
