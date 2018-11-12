@@ -8338,10 +8338,18 @@ qemuDomainDetachDeviceConfig(virDomainDefPtr vmdef,
         vmdef->vsock = NULL;
         break;
 
+    case VIR_DOMAIN_DEVICE_HUB:
+        if ((idx = virDomainHubDefFind(vmdef, dev->data.hub)) < 0) {
+            virReportError(VIR_ERR_DEVICE_MISSING, "%s",
+                           _("matching hub device not found"));
+            return -1;
+        }
+        VIR_DELETE_ELEMENT(vmdef->hubs, idx, vmdef->nhubs);
+        break;
+
     case VIR_DOMAIN_DEVICE_SOUND:
     case VIR_DOMAIN_DEVICE_VIDEO:
     case VIR_DOMAIN_DEVICE_GRAPHICS:
-    case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
