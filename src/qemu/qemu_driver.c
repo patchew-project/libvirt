@@ -20290,6 +20290,11 @@ qemuDomainGetStatsBlockExportDisk(virDomainDiskDefPtr disk,
     const char *backendstoragealias;
     int ret = -1;
 
+    if (!virDomainObjIsActive(dom) &&
+        qemuProcessMissingLocalOptionalDisk(disk))
+        return qemuDomainGetStatsBlockExportHeader(disk, disk->src, *recordnr,
+                                                   records, nrecords);
+
     for (n = disk->src; virStorageSourceIsBacking(n); n = n->backingStore) {
         if (blockdev) {
             frontendalias = QEMU_DOMAIN_DISK_PRIVATE(disk)->qomName;

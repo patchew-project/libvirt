@@ -214,4 +214,6 @@ int qemuProcessStartManagedPRDaemon(virDomainObjPtr vm);
 
 void qemuProcessKillManagedPRDaemon(virDomainObjPtr vm);
 
+bool qemuProcessMissingLocalOptionalDisk(virDomainDiskDefPtr disk);
+
 #endif /* __QEMU_PROCESS_H__ */

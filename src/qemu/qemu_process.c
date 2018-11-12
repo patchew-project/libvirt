@@ -6055,6 +6055,15 @@ qemuProcessPrepareSEVGuestInput(virDomainObjPtr vm)
 }
 
 
+bool
+qemuProcessMissingLocalOptionalDisk(virDomainDiskDefPtr disk)
+{
+    return disk->startupPolicy == VIR_DOMAIN_STARTUP_POLICY_OPTIONAL &&
+           virStorageSourceIsLocalStorage(disk->src) && disk->src->path &&
+           !virFileExists(disk->src->path);
+}
+
+
 static int
 qemuProcessPrepareHostStorage(virQEMUDriverPtr driver,
                               virDomainObjPtr vm,
