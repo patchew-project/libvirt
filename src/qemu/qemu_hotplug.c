@@ -3304,6 +3304,64 @@ qemuDomainAttachInputDevice(virQEMUDriverPtr driver,
 
 
 int
+qemuDomainAttachHubDevice(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm,
+                          virDomainHubDefPtr hub)
+{
+    int ret = -1;
+    char *devstr = NULL;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virErrorPtr originalError = NULL;
+    bool releaseaddr = false;
+
+    if (priv->usbaddrs) {
+        if (virDomainUSBAddressEnsure(priv->usbaddrs, &hub->info) < 0)
+                goto cleanup;
+            releaseaddr = true;
+    }
+
+    if (qemuAssignDeviceHubAlias(vm->def, hub, -1) < 0)
+        goto cleanup;
+
+    if (!(devstr = qemuBuildHubDevStr(vm->def, hub, priv->qemuCaps)))
+        goto cleanup;
+
+    if (VIR_REALLOC_N(vm->def->hubs, vm->def->nhubs + 1) < 0)
+        goto cleanup;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    if (qemuMonitorAddDevice(priv->mon, devstr) < 0)
+        goto exit_monitor;
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0) {
+        releaseaddr = false;
+        goto cleanup;
+    }
+
+    VIR_APPEND_ELEMENT_COPY_INPLACE(vm->def->hubs, vm->def->nhubs, hub);
+
+    ret = 0;
+    releaseaddr = false;
+
+ cleanup:
+    if (ret < 0) {
+        virErrorPreserveLast(&originalError);
+        if (releaseaddr)
+            qemuDomainReleaseDeviceAddress(vm, &hub->info, NULL);
+        virErrorRestore(&originalError);
+    }
+
+    VIR_FREE(devstr);
+    return ret;
+
+ exit_monitor:
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        releaseaddr = false;
+    goto cleanup;
+}
+
+
+int
 qemuDomainAttachVsockDevice(virQEMUDriverPtr driver,
                             virDomainObjPtr vm,
                             virDomainVsockDefPtr vsock)
