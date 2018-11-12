@@ -4965,6 +4965,32 @@ qemuDomainRemoveRedirdevDevice(virQEMUDriverPtr driver,
 }
 
 
+static int
+qemuDomainRemoveHubDevice(virDomainObjPtr vm,
+                          virDomainHubDefPtr dev)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virQEMUDriverPtr driver = priv->driver;
+    virObjectEventPtr event = NULL;
+    size_t i;
+
+    VIR_DEBUG("Removing hub device %s from domain %p %s",
+              dev->info.alias, vm, vm->def->name);
+
+    event = virDomainEventDeviceRemovedNewFromObj(vm, dev->info.alias);
+    virObjectEventStateQueue(driver->domainEventState, event);
+    for (i = 0; i < vm->def->nhubs; i++) {
+        if (vm->def->hubs[i] == dev)
+            break;
+    }
+    qemuDomainReleaseDeviceAddress(vm, &dev->info, NULL);
+
+    virDomainHubDefFree(vm->def->hubs[i]);
+    VIR_DELETE_ELEMENT(vm->def->hubs, i, vm->def->nhubs);
+    return 0;
+}
+
+
 int
 qemuDomainRemoveDevice(virQEMUDriverPtr driver,
                        virDomainObjPtr vm,
@@ -5016,13 +5042,16 @@ qemuDomainRemoveDevice(virQEMUDriverPtr driver,
         ret = qemuDomainRemoveVsockDevice(vm, dev->data.vsock);
         break;
 
+    case VIR_DOMAIN_DEVICE_HUB:
+        ret = qemuDomainRemoveHubDevice(vm, dev->data.hub);
+        break;
+
     case VIR_DOMAIN_DEVICE_NONE:
     case VIR_DOMAIN_DEVICE_LEASE:
     case VIR_DOMAIN_DEVICE_FS:
     case VIR_DOMAIN_DEVICE_SOUND:
     case VIR_DOMAIN_DEVICE_VIDEO:
     case VIR_DOMAIN_DEVICE_GRAPHICS:
-    case VIR_DOMAIN_DEVICE_HUB:
     case VIR_DOMAIN_DEVICE_SMARTCARD:
     case VIR_DOMAIN_DEVICE_MEMBALLOON:
     case VIR_DOMAIN_DEVICE_NVRAM:
@@ -7012,6 +7041,56 @@ qemuDomainDetachVsockDevice(virDomainObjPtr vm,
     } else {
         if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1)
             ret = qemuDomainRemoveVsockDevice(vm, vsock);
+    }
+
+ cleanup:
+    if (!async)
+        qemuDomainResetDeviceRemoval(vm);
+    return ret;
+}
+
+
+int
+qemuDomainDetachHubDevice(virDomainObjPtr vm,
+                          virDomainHubDefPtr def,
+                          bool async)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    virQEMUDriverPtr driver = priv->driver;
+    virDomainHubDefPtr detach;
+    int ret = -1;
+    int idx;
+
+    if ((idx = virDomainHubDefFind(vm->def, def)) < 0) {
+        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                       _("matching hub device not found"));
+        return -1;
+    }
+
+    detach = vm->def->hubs[idx];
+    if (qemuDomainHubIsBusy(vm, detach)) {
+        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                       _("device cannot be detached: device is busy"));
+        goto cleanup;
+    }
+
+    if (!async)
+        qemuDomainMarkDeviceForRemoval(vm, &detach->info);
+
+    qemuDomainObjEnterMonitor(driver, vm);
+    if (qemuMonitorDelDevice(priv->mon, detach->info.alias)) {
+        ignore_value(qemuDomainObjExitMonitor(driver, vm));
+        goto cleanup;
+    }
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        goto cleanup;
+
+    if (async) {
+        ret = 0;
+    } else {
+        if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1)
+            ret = qemuDomainRemoveHubDevice(vm, detach);
     }
 
  cleanup:
