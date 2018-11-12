@@ -50,6 +50,17 @@
           pvops-based HVM domains.
         </description>
       </change>
+      <change>
+        <summary>
+          qemu: Added support for CMT (Cache Monitoring Technology)
+        </summary>
+        <description>
+          Introduced cache monitor by <code>monitor</code> element
+          in <code>cachetune</code> for vCPU threads, and added interface
+          to get the cache utilization information through command
+          'virsh domstats'.
+        </description>
+      </change>
     </section>
   </release>
   <release version="v4.9.0" date="2018-11-04">
