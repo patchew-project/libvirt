@@ -71,6 +71,10 @@ int qemuAssignDeviceInputAlias(virDomainDefPtr def,
                                virDomainInputDefPtr input,
                                int idx);
 
+int qemuAssignDeviceHubAlias(virDomainDefPtr def,
+                             virDomainHubDefPtr hub,
+                             int idx);
+
 int qemuAssignDeviceVsockAlias(virDomainVsockDefPtr vsock);
 
 int qemuAssignDeviceAliases(virDomainDefPtr def, virQEMUCapsPtr qemuCaps);
