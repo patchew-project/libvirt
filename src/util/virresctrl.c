@@ -2581,3 +2581,12 @@ virResctrlMonitorCreate(virResctrlMonitorPtr monitor,
     virResctrlUnlock(lockfd);
     return ret;
 }
+
+
+int
+virResctrlMonitorSetID(virResctrlMonitorPtr monitor,
+                       const char *id)
+
+{
+    return virResctrlSetID(&monitor->id, id);
+}
