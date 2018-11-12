@@ -4675,7 +4675,7 @@ qemuBuildUSBHostdevDevStr(const virDomainDef *def,
 }
 
 
-static char *
+char *
 qemuBuildHubDevStr(const virDomainDef *def,
                    virDomainHubDefPtr dev,
                    virQEMUCapsPtr qemuCaps)
