@@ -6085,7 +6085,8 @@ qemuProcessPrepareHostStorage(virQEMUDriverPtr driver,
         if (!blockdev)
             virStorageSourceBackingStoreClear(disk->src);
 
-        if (qemuDomainDetermineDiskChain(driver, vm, disk, true) >= 0)
+        if (!qemuProcessMissingLocalOptionalDisk(disk) &&
+            qemuDomainDetermineDiskChain(driver, vm, disk, true) >= 0)
             continue;
 
         if (qemuDomainCheckDiskStartupPolicy(driver, vm, idx, cold_boot) >= 0)
