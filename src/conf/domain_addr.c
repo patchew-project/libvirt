@@ -2155,6 +2155,28 @@ virDomainUSBAddressEnsure(virDomainUSBAddressSetPtr addrs,
 }
 
 
+bool
+virDomainUSBAddressIsAttachedToHub(virDomainDeviceInfoPtr info,
+                                   virDomainHubDefPtr hub)
+{
+    unsigned int *hub_port = hub->info.addr.usb.port;
+    unsigned int *device_port = info->addr.usb.port;
+    size_t i;
+    if (hub->info.addr.usb.bus == info->addr.usb.bus) {
+        for (i = 0; i < VIR_DOMAIN_DEVICE_USB_MAX_PORT_DEPTH; ++i) {
+            if (hub_port[i] == device_port[i])
+                continue;
+            else if (hub_port[i] == 0 && device_port[i] != 0)
+                return true;
+            else
+                return false;
+        }
+    }
+
+    return false;
+}
+
+
 int
 virDomainUSBAddressRelease(virDomainUSBAddressSetPtr addrs,
                            virDomainDeviceInfoPtr info)

@@ -285,6 +285,11 @@ virDomainUSBAddressEnsure(virDomainUSBAddressSetPtr addrs,
                           virDomainDeviceInfoPtr info)
     ATTRIBUTE_NONNULL(2);
 
+bool
+virDomainUSBAddressIsAttachedToHub(virDomainDeviceInfoPtr info,
+                                   virDomainHubDefPtr hub)
+    ATTRIBUTE_NONNULL(2);
+
 int
 virDomainUSBAddressRelease(virDomainUSBAddressSetPtr addrs,
                            virDomainDeviceInfoPtr info)

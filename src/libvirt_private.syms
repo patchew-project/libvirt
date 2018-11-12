@@ -131,6 +131,7 @@ virDomainPCIControllerModelToConnectType;
 virDomainUSBAddressAssign;
 virDomainUSBAddressCountAllPorts;
 virDomainUSBAddressEnsure;
+virDomainUSBAddressIsAttachedToHub;
 virDomainUSBAddressPortFormatBuf;
 virDomainUSBAddressPortIsValid;
 virDomainUSBAddressPresent;
