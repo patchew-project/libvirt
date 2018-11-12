@@ -400,6 +400,7 @@ virDomainHostdevSubsysPCIBackendTypeToString;
 virDomainHostdevSubsysTypeToString;
 virDomainHPTResizingTypeToString;
 virDomainHubDefFind;
+virDomainHubDefFree;
 virDomainHubTypeFromString;
 virDomainHubTypeToString;
 virDomainHypervTypeFromString;
