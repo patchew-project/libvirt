@@ -5332,6 +5332,70 @@ static bool qemuDomainControllerIsBusy(virDomainObjPtr vm,
     }
 }
 
+static bool qemuDomainHubIsBusy(virDomainObjPtr vm,
+                                virDomainHubDefPtr detach)
+{
+    size_t i;
+    virDomainDiskDefPtr disk;
+    virDomainHubDefPtr hub;
+    virDomainInputDefPtr input;
+    virDomainSoundDefPtr sound;
+    virDomainHostdevDefPtr hostdev;
+    virDomainRedirdevDefPtr redirdev;
+    virDomainControllerDefPtr controller;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        disk = vm->def->disks[i];
+        if (disk->bus == VIR_DOMAIN_DISK_BUS_USB &&
+            virDomainUSBAddressIsAttachedToHub(&(disk->info), detach))
+            return true;
+    }
+
+    for (i = 0; i < vm->def->nhubs; i++) {
+        hub = vm->def->hubs[i];
+        if (virDomainUSBAddressIsAttachedToHub(&(hub->info), detach))
+            return true;
+    }
+
+    for (i = 0; i < vm->def->ninputs; i++) {
+        input = vm->def->inputs[i];
+        if (input->bus == VIR_DOMAIN_INPUT_BUS_USB &&
+            virDomainUSBAddressIsAttachedToHub(&(input->info), detach))
+            return true;
+    }
+
+    for (i = 0; i < vm->def->nsounds; i++) {
+        sound = vm->def->sounds[i];
+        if (sound->model == VIR_DOMAIN_SOUND_MODEL_USB &&
+            virDomainUSBAddressIsAttachedToHub(&(sound->info), detach))
+            return true;
+    }
+
+    for (i = 0; i < vm->def->nhostdevs; i++) {
+        hostdev = vm->def->hostdevs[i];
+        if (hostdev->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS &&
+            hostdev->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_USB &&
+            virDomainUSBAddressIsAttachedToHub(hostdev->info, detach))
+            return true;
+    }
+
+    for (i = 0; i < vm->def->nredirdevs; i++) {
+        redirdev = vm->def->redirdevs[i];
+        if (redirdev->bus == VIR_DOMAIN_REDIRDEV_BUS_USB &&
+            virDomainUSBAddressIsAttachedToHub(&(redirdev->info), detach))
+            return true;
+    }
+
+    for (i = 0; i < vm->def->ncontrollers; i++) {
+        controller = vm->def->controllers[i];
+        if (controller->type == VIR_DOMAIN_CONTROLLER_TYPE_CCID &&
+            virDomainUSBAddressIsAttachedToHub(&(controller->info), detach))
+            return false;
+    }
+
+    return false;
+}
+
 int qemuDomainDetachControllerDevice(virQEMUDriverPtr driver,
                                      virDomainObjPtr vm,
                                      virDomainDeviceDefPtr dev,
