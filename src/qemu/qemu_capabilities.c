@@ -553,6 +553,7 @@ struct _virQEMUCaps {
 
     bool usedQMP;
     bool isNested;
+    bool invalid;
 
     char *binary;
     time_t ctime;
@@ -3870,6 +3871,11 @@ virQEMUCapsIsValid(void *data,
     if (!qemuCaps->binary)
         return true;
 
+    if (qemuCaps->invalid) {
+        VIR_DEBUG("capabilities for '%s' invalidated", qemuCaps->binary);
+        return false;
+    }
+
     if (qemuCaps->libvirtCtime != virGetSelfLastChanged() ||
         qemuCaps->libvirtVersion != LIBVIR_VERSION_NUMBER) {
         VIR_DEBUG("Outdated capabilities for '%s': libvirt changed "
@@ -4957,6 +4963,35 @@ virQEMUCapsCacheLookupDefault(virFileCachePtr cache,
     virObjectUnref(qemuCaps);
     return ret;
 }
+
+
+/** virQEMUCapsInvalidateCapabilities:
+ *
+ * Using the @driver and existing qemuCapsCache, force all the data
+ * in the cache to be invalidated so that a subsequent isValid call
+ * force a refetch of the capabilities data.
+ */
+
+static int
+virQEMUCapsInvalidateData(void *payload,
+                          const void *name ATTRIBUTE_UNUSED,
+                          void *opaque ATTRIBUTE_UNUSED)
+{
+    virQEMUCaps *qemuCaps = payload;
+
+    qemuCaps->invalid = true;
+
+    return 0;
+}
+
+
+void
+virQEMUCapsInvalidateCapabilities(virFileCachePtr cache)
+{
+    virFileCacheForEach(cache, virQEMUCapsInvalidateData, NULL);
+    return;
+}
+
 
 bool
 virQEMUCapsSupportsVmport(virQEMUCapsPtr qemuCaps,

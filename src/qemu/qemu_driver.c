@@ -968,7 +968,9 @@ qemuStateReload(void)
     if (!qemu_driver)
         return 0;
 
-    if (!(caps = virQEMUDriverGetCapabilities(qemu_driver, false)))
+    virQEMUCapsInvalidateCapabilities(qemu_driver->qemuCapsCache);
+
+    if (!(caps = virQEMUDriverGetCapabilities(qemu_driver, true)))
         goto cleanup;
 
     cfg = virQEMUDriverGetConfig(qemu_driver);

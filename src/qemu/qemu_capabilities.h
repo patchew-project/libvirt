@@ -598,6 +598,8 @@ virCapsPtr virQEMUCapsInit(virFileCachePtr cache);
 int virQEMUCapsGetDefaultVersion(virCapsPtr caps,
                                  virFileCachePtr capsCache,
                                  unsigned int *version);
+void
+virQEMUCapsInvalidateCapabilities(virFileCachePtr cache);
 
 VIR_ENUM_DECL(virQEMUCaps);
 
