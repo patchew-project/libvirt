@@ -350,6 +350,30 @@ virFileCacheLookupByFunc(virFileCachePtr cache,
 
 
 /**
+ * virFileCacheForEach
+ * @cache: existing cache object
+ * @iter: an iterator to process each data
+ * @opaque: opaque data to pass to the iterator
+ *
+ * For each element in the file cache, run the @iter which uses
+ * @virHashIterator arguments with @opaque data.
+ */
+int
+virFileCacheForEach(virFileCachePtr cache,
+                    virHashIterator iter,
+                    void *opaque)
+{
+    int ret;
+
+    virObjectLock(cache);
+    ret = virHashForEach(cache->table, iter, opaque);
+    virObjectUnlock(cache);
+
+    return ret;
+}
+
+
+/**
  * virFileCacheGetPriv:
  * @cache: existing cache object
  *

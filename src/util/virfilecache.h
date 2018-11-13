@@ -122,6 +122,11 @@ virFileCacheLookupByFunc(virFileCachePtr cache,
                          virHashSearcher iter,
                          const void *iterData);
 
+int
+virFileCacheForEach(virFileCachePtr cache,
+                    virHashIterator iter,
+                    void *opaque);
+
 void *
 virFileCacheGetPriv(virFileCachePtr cache);
 
