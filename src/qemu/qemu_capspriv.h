@@ -48,6 +48,8 @@ int
 virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
                           qemuMonitorPtr mon);
 
+void virQEMUCapsClearIsNested(virQEMUCapsPtr qemuCaps);
+
 int
 virQEMUCapsInitQMPMonitorTCG(virQEMUCapsPtr qemuCaps,
                              qemuMonitorPtr mon);

@@ -40,6 +40,7 @@
 #include "virnodesuspend.h"
 #include "virnuma.h"
 #include "virhostcpu.h"
+#include "virkmod.h"
 #include "qemu_monitor.h"
 #include "virstring.h"
 #include "qemu_hostdev.h"
@@ -551,6 +552,7 @@ struct _virQEMUCaps {
     virObject parent;
 
     bool usedQMP;
+    bool isNested;
 
     char *binary;
     time_t ctime;
@@ -1512,6 +1514,7 @@ virQEMUCapsPtr virQEMUCapsNewCopy(virQEMUCapsPtr qemuCaps)
         return NULL;
 
     ret->usedQMP = qemuCaps->usedQMP;
+    ret->isNested = qemuCaps->isNested;
 
     if (VIR_STRDUP(ret->binary, qemuCaps->binary) < 0)
         goto error;
@@ -3567,6 +3570,9 @@ virQEMUCapsLoadCache(virArch hostArch,
     virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_KVM);
     virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_QEMU);
 
+    qemuCaps->isNested = virXPathBoolean("count(./isNested) > 0",
+                                         ctxt) > 0;
+
     ret = 0;
  cleanup:
     VIR_FREE(str);
@@ -3786,6 +3792,9 @@ virQEMUCapsFormatCache(virQEMUCapsPtr qemuCaps)
     if (qemuCaps->sevCapabilities)
         virQEMUCapsFormatSEVInfo(qemuCaps, &buf);
 
+    if (qemuCaps->isNested)
+        virBufferAddLit(&buf, "<isNested/>\n");
+
     virBufferAdjustIndent(&buf, -2);
     virBufferAddLit(&buf, "</qemuCaps>\n");
 
@@ -3827,6 +3836,28 @@ virQEMUCapsSaveFile(void *data,
 
 
 static bool
+virQEMUCapsIsNested(void)
+{
+    VIR_AUTOFREE(char *) kConfig = NULL;
+
+    if ((kConfig = virKModConfig()) &&
+        (strstr(kConfig, "kvm_intel nested=1") ||
+         strstr(kConfig, "kvm_amd nested=1")))
+        return true;
+    return false;
+}
+
+
+void
+virQEMUCapsClearIsNested(virQEMUCapsPtr qemuCaps)
+{
+    /* For qemucapabilitiestest to avoid printing the </isNested> on
+     * hosts with nested set in the kernel */
+    qemuCaps->isNested = false;
+}
+
+
+static bool
 virQEMUCapsIsValid(void *data,
                    void *privData)
 {
@@ -3834,6 +3865,7 @@ virQEMUCapsIsValid(void *data,
     virQEMUCapsCachePrivPtr priv = privData;
     bool kvmUsable;
     struct stat sb;
+    bool isNested;
 
     if (!qemuCaps->binary)
         return true;
@@ -3863,6 +3895,15 @@ virQEMUCapsIsValid(void *data,
                   "(%lld vs %lld)",
                   qemuCaps->binary,
                   (long long)sb.st_ctime, (long long)qemuCaps->ctime);
+        return false;
+    }
+
+    /* Check if someone changed the nested={0|1} value for the kernel from
+     * the previous time we checked. If so, then refresh the capabilities. */
+    isNested = virQEMUCapsIsNested();
+    if (isNested != qemuCaps->isNested) {
+        VIR_WARN("changed kernel nested kvm value was %d", qemuCaps->isNested);
+        qemuCaps->isNested = isNested;
         return false;
     }
 
@@ -4451,6 +4492,8 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
 
     if (virQEMUCapsInitQMPMonitor(qemuCaps, cmd->mon) < 0)
         goto cleanup;
+
+    qemuCaps->isNested = virQEMUCapsIsNested();
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
         virQEMUCapsInitQMPCommandAbort(cmd);

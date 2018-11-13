@@ -63,6 +63,9 @@ testQemuCaps(const void *opaque)
                                   qemuMonitorTestGetMonitor(mon)) < 0)
         goto cleanup;
 
+    /* Don't apply what the host has... force clear for testing purposes */
+    virQEMUCapsClearIsNested(capsActual);
+
     if (virQEMUCapsGet(capsActual, QEMU_CAPS_KVM)) {
         qemuMonitorResetCommandID(qemuMonitorTestGetMonitor(mon));
         if (virQEMUCapsInitQMPMonitorTCG(capsActual,
