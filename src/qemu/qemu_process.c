@@ -5916,6 +5916,9 @@ qemuProcessPrepareDomain(virQEMUDriverPtr driver,
         priv->chardevStdioLogd = true;
     }
 
+    /* Track if this domain remembers original owner */
+    priv->rememberOwner = cfg->rememberOwner;
+
     qemuProcessPrepareAllowReboot(vm);
 
     /* clear the 'blockdev' capability for VMs which have disks that need
