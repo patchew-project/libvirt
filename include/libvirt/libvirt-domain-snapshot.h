@@ -93,7 +93,10 @@ char *virDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
  * of flag (1<<0) depends on which function it is passed to; but serves
  * to toggle the per-call default of whether the listing is shallow or
  * recursive.  Remaining bits come in groups; if all bits from a group are
- * 0, then that group is not used to filter results.  */
+ * 0, then that group is not used to filter results.  Internal functions
+ * for listing no-metadata snapshots aren't implemented. Functions above
+ * will return 0 when VIR_DOMAIN_SNAPSHOT_LIST_NO_METADATA is used.
+ * */
 typedef enum {
     VIR_DOMAIN_SNAPSHOT_LIST_ROOTS       = (1 << 0), /* Filter by snapshots
                                                         with no parents, when

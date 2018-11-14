@@ -4689,6 +4689,9 @@ B<undefine> of a persistent domain, or be lost on B<destroy> of
 a transient domain.  Likewise, if I<--no-metadata> is specified,
 the list will be filtered to just snapshots that exist without
 the need for libvirt metadata.
+Note that - It will return no snapshot when I<--no-metadata> is
+used since internal functions for listing no-metadata snapshot
+are not implemented.
 
 If I<--inactive> is specified, the list will be filtered to snapshots
 that were taken when the domain was shut off.  If I<--active> is
