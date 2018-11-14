@@ -3958,6 +3958,7 @@ qemuProcessVerifyHypervFeatures(virDomainDefPtr def,
                            virDomainHypervTypeToString(i));
             return -1;
 
+        case VIR_DOMAIN_HYPERV_IPI:
         /* coverity[dead_error_begin] */
         case VIR_DOMAIN_HYPERV_VENDOR_ID:
         case VIR_DOMAIN_HYPERV_LAST:
