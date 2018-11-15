@@ -2836,7 +2836,6 @@
     &lt;/source&gt;
     &lt;target dev='sdb' bus='scsi'/&gt;
   &lt;/disk&gt;
-  &lt;/disk&gt;
   &lt;disk type='network' device='lun'&gt;
     &lt;driver name='qemu' type='raw'/&gt;
     &lt;source protocol='iscsi' name='iqn.2013-07.com.example:iscsi-nopool/0'&gt;
