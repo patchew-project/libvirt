@@ -287,7 +287,7 @@ virNetLibsshCheckHostKey(virNetLibsshSessionPtr sess)
     if (sess->hostKeyVerify == VIR_NET_LIBSSH_HOSTKEY_VERIFY_IGNORE)
         return 0;
 
-    state = ssh_is_server_known(sess->session);
+    state = ssh_session_is_known_server(sess->session);
 
     switch (state) {
     case SSH_SERVER_KNOWN_OK:
