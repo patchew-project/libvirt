@@ -643,6 +643,12 @@ virQEMUCapsTypeIsAccelerated(virDomainVirtType type)
     return type == VIR_DOMAIN_VIRT_KVM;
 }
 
+static bool
+virQEMUCapsHaveAccel(virQEMUCapsPtr qemuCaps)
+{
+    return virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM);
+}
+
 /* Checks whether a domain with @guest arch can run natively on @host.
  */
 bool
@@ -2387,7 +2393,7 @@ virQEMUCapsProbeQMPCPUDefinitions(virQEMUCapsPtr qemuCaps,
     if (!(models = virQEMUCapsFetchCPUDefinitions(mon)))
         return -1;
 
-    if (tcg || !virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
+    if (tcg || !virQEMUCapsHaveAccel(qemuCaps))
         qemuCaps->tcgCPUModels = models;
     else
         qemuCaps->accelCPUModels = models;
@@ -2413,7 +2419,7 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
     if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CPU_MODEL_EXPANSION))
         return 0;
 
-    if (tcg || !virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
+    if (tcg || !virQEMUCapsHaveAccel(qemuCaps)) {
         virtType = VIR_DOMAIN_VIRT_QEMU;
         model = "max";
     } else {
@@ -4528,7 +4534,7 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
     if (virQEMUCapsInitQMPMonitor(qemuCaps, cmd->mon) < 0)
         goto cleanup;
 
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
+    if (virQEMUCapsHaveAccel(qemuCaps)) {
         virQEMUCapsInitQMPCommandAbort(cmd);
         if ((rc = virQEMUCapsInitQMPCommandRun(cmd, true)) != 0) {
             if (rc == 1)
