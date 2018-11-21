@@ -658,6 +658,16 @@ virQEMUCapsToVirtType(virQEMUCapsPtr qemuCaps)
         return VIR_DOMAIN_VIRT_QEMU;
 }
 
+static const char *
+virQEMUCapsAccelStr(virDomainVirtType type)
+{
+    if (type == VIR_DOMAIN_VIRT_KVM) {
+        return "kvm";
+    } else {
+        return "tcg";
+    }
+}
+
 /* Checks whether a domain with @guest arch can run natively on @host.
  */
 bool
@@ -3670,7 +3680,7 @@ virQEMUCapsFormatHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
 {
     virQEMUCapsHostCPUDataPtr cpuData = virQEMUCapsGetHostCPUData(qemuCaps, type);
     qemuMonitorCPUModelInfoPtr model = cpuData->info;
-    const char *typeStr = type == VIR_DOMAIN_VIRT_KVM ? "kvm" : "tcg";
+    const char *typeStr = virQEMUCapsAccelStr(type);
     size_t i;
 
     if (!model)
@@ -3725,16 +3735,13 @@ virQEMUCapsFormatCPUModels(virQEMUCapsPtr qemuCaps,
                            virDomainVirtType type)
 {
     virDomainCapsCPUModelsPtr cpus;
-    const char *typeStr;
+    const char *typeStr = virQEMUCapsAccelStr(type);
     size_t i;
 
-    if (virQEMUCapsTypeIsAccelerated(type)) {
-        typeStr = "kvm";
+    if (virQEMUCapsTypeIsAccelerated(type))
         cpus = qemuCaps->accelCPUModels;
-    } else {
-        typeStr = "tcg";
+    else
         cpus = qemuCaps->tcgCPUModels;
-    }
 
     if (!cpus)
         return;
