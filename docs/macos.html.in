@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <body>
+    <h1 >macOS support</h1>
+
+    <ul id="toc"></ul>
+
+    <p>
+      Libvirt works both as client and server (for <a href="drvqemu.html">
+      "qemu" domain</a>) on macOS High Sierra (10.13) and macOS Mojave (10.14)
+      since 4.7.0. Other macOS variants likely work but we neither tested nor
+      received reports for them.
+    </p>
+
+    <p>
+      <a href="drvqemu.html">"hvf" domain type</a> adds support of <a
+      href="https://developer.apple.com/documentation/hypervisor">
+      Hypervisor.framework</a> since 4.10.0. To use "hvf" domain, QEMU must
+      be at least 2.12 and macOS must be no less than Yosemite (10.10). "hvf"
+      domain type is similar to "kvm" but it has less features.
+    </p>
+
+    <p>
+      Hypervisor.framework is available on your machine if the sysctl command
+      returns 1:
+
+      <pre>sysctl -n kern.hv_support</pre>
+    </p>
+
+    <h2><a id="installation">Installation</a></h2>
+
+    <p>
+      libvirt client (virsh), server (libvirtd) and development headers can be
+      installed from <a href="https://brew.sh">homebrew</a>:
+
+      <pre>brew install libvirt</pre>
+
+      <a href="http://virt-manager.org">virt-manager and virt-viewer</a> can be
+      installed from source via <a
+      href="https://github.com/jeffreywildman/homebrew-virt-manager">
+      Jeffrey Wildman's tap</a>:
+
+      <pre>brew tap jeffreywildman/homebrew-virt-manager
+brew install virt-manager virt-viewer</pre>
+    </p>
+
+    <h2><a id='local-libvirtd'>Running libvirtd locally</a></h2>
+
+    <p>
+      The server can be started manually:
+      <pre>libvirtd</pre>
+      or on system boot:
+      <pre>brew services start libvirt</pre>
+    </p>
+    <p>
+      Once started, you can use virsh to work with libvirtd:
+      <pre>virsh define domain.xml
+virsh start domain
+virsh shutdown domain</pre>
+
+      For more details on virsh, please see <a href="virshcmdref.html">virsh
+      command reference</a> or built-in help:
+      <pre>virsh help</pre>
+    </p>
+
+    <p>
+      Domain XML examples can be found on <a href="drvqemu.html#xmlconfig">QEMU
+      driver page</a>. Full reference is available on <a
+      href="formatdomain.html">domain XML format page</a>.
+    </p>
+
+    <p>
+      You can use virt-manager to connect to libvirtd (connection URI must be
+      specified on the first connection, then it'll be possible to omit it):
+      <pre>virt-manager -c qemu:///session</pre>
+      or, if you only need an access to the virtual display of a VM you can use
+      virt-viewer:
+      <pre>virt-viewer -c qemu:///session</pre>
+    </p>
+
+    <h2><a id="external-hypervisors">Working with external hypervisors</a></h2>
+    <p>
+      Details on the example domain XML files, capabilities and connection
+      string syntax used for connecting to external hypervisors can be found
+      online on <a href="drivers.html">hypervisor specific driver
+      pages</a>.
+    </p>
+
+    <h2><a id="tlscerts">TLS Certificates</a></h2>
+
+    <p>
+      TLS certificates must be placed in the correct locations, before you will
+      be able to connect to QEMU servers over TLS.
+    </p>
+
+    <p>
+      Information on generating TLS certificates can be found here:
+    </p>
+
+    <a href="http://wiki.libvirt.org/page/TLSSetup">http://wiki.libvirt.org/page/TLSSetup</a>
+
+    <p>
+      The Certificate Authority (CA) certificate file must be placed in:
+    </p>
+
+    <ul>
+      <li>~/.cache/libvirt/pki/CA/cacert.pem</li>
+    </ul>
+
+    <p>
+      The Client certificate file must be placed in:
+    </p>
+
+    <ul>
+      <li>~/.cache/libvirt/pki/libvirt/clientcert.pem</li>
+    </ul>
+
+    <p>
+      The Client key file must be placed in:
+    </p>
+
+    <ul>
+      <li>~/.cache/libvirt/pki/libvirt/private/clientkey.pem</li>
+    </ul>
+
+    <h2><a id="known-issues">Known issues</a></h2>
+    <p>
+      This is a list of issues that can be easily fixed and provide
+      substantial improvement of user experience:
+    </p>
+    <ul>
+      <li>
+        virt-install doesn't work unless disks are created upfront. The reason
+        is because VIR_STORAGE_VOL_CREATE_PREALLOC_METADATA sets
+        preallocate=falloc which is not supported by qemu-img on macOS.
+      </li>
+      <li>
+        "hvf" is not default domain type when virt-install connects to the
+        local libvirtd on macOS
+      </li>
+      <li>
+        QXL VGA device and SPICE display cannot be used unless QEMU is compiled
+        with SPICE server. The changes to build and run SPICE server on macOS
+        haven't been sent to upstream yet.
+      </li>
+      <li>
+        "make check" reports many failing tests on macOS. Some of the tests
+        need to be adopted to run both on Linux and macOS.
+      </li>
+      <li>
+        "make syntax-check" needs be fixed too, it depends on GNU version of
+        grep but uses system (BSD) grep.
+      </li>
+      <li>
+        QEMU from homebrew is compiled without USB redirection support.
+      </li>
+      <li>
+        CPU usage is not gathered for VMs and therefore cannot be dispalyed in
+        virt-manager.
+      </li>
+      <li>
+        libvirtd logs are noisy because some features are missing.
+      </li>
+    </ul>
+
+    <h2><a id="missing-features">Missing features</a></h2>
+    <p>
+      "hvf" is a new domain type and can't be compared to "kvm" feature-wise.
+      "kvm" domain relies on QEMU backend devices implemented in Linux kernel
+      such as para-virtualized vhost devices and PCI-passthrough with vfio.
+
+      Nonetheless, some of the features available in "kvm" domain can be
+      implemented in userspace for "hvf" domain.
+    </p>
+    <ul>
+      <li>
+        Instruction emulation in "hvf" accelerator is not mature. The bugs are
+        tracked on <a
+        href="https://bugs.launchpad.net/qemu/+bugs?field.tag=hvf">QEMU bug
+        tracker</a>.
+      </li>
+      <li>
+        Power Management notifications are not implemented, therefore guests
+        cannot respond to <a
+        href="https://developer.apple.com/library/archive/qa/qa1340/_index.html">
+        sleep events on the host</a>.
+      </li>
+      <li>
+        CPU pinning doesn't work but macOS provides <a
+        href="https://developer.apple.com/library/archive/releasenotes/Performance/RN-AffinityAPI/">
+        Thread Affinity API</a> that can be used to implement it.
+      </li>
+      <li>
+        Network management is not available but macOS has an API that is used
+        by ifconfig to create bridge and tap devices. So, it should be possible
+        to implement network management and bridged networking.
+      </li>
+      <li>
+        Filesystem pass-through is not available.
+      </li>
+      <li>
+        PCI/SCSI/USB pass-through is not available.
+      </li>
+    </ul>
+
+
+    <h2><a id="feedback">Feedback</a></h2>
+
+    <p>
+      Feedback and suggestions on changes and what else to include
+      <a href="contact.html">are desired</a>.
+    </p>
+
+    <h2><a id="compiling">Compiling yourself</a></h2>
+
+    <p>
+      Use these options when following the instructions on the
+      <a href="compiling.html">Compiling</a> page.
+    </p>
+
+<pre>
+./configure \
+  --without-wireshark-dissector \
+  --without-dbus
+</pre>
+
+  </body>
+</html>
