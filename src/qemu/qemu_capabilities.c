@@ -578,7 +578,7 @@ struct _virQEMUCaps {
 
     virArch arch;
 
-    virDomainCapsCPUModelsPtr kvmCPUModels;
+    virDomainCapsCPUModelsPtr accelCPUModels;
     virDomainCapsCPUModelsPtr tcgCPUModels;
 
     size_t nmachineTypes;
@@ -589,7 +589,7 @@ struct _virQEMUCaps {
 
     virSEVCapability *sevCapabilities;
 
-    virQEMUCapsHostCPUData kvmCPU;
+    virQEMUCapsHostCPUData accelCPU;
     virQEMUCapsHostCPUData tcgCPU;
 };
 
@@ -1564,9 +1564,9 @@ virQEMUCapsPtr virQEMUCapsNewCopy(virQEMUCapsPtr qemuCaps)
 
     ret->arch = qemuCaps->arch;
 
-    if (qemuCaps->kvmCPUModels) {
-        ret->kvmCPUModels = virDomainCapsCPUModelsCopy(qemuCaps->kvmCPUModels);
-        if (!ret->kvmCPUModels)
+    if (qemuCaps->accelCPUModels) {
+        ret->accelCPUModels = virDomainCapsCPUModelsCopy(qemuCaps->accelCPUModels);
+        if (!ret->accelCPUModels)
             goto error;
     }
 
@@ -1576,7 +1576,7 @@ virQEMUCapsPtr virQEMUCapsNewCopy(virQEMUCapsPtr qemuCaps)
             goto error;
     }
 
-    if (virQEMUCapsHostCPUDataCopy(&ret->kvmCPU, &qemuCaps->kvmCPU) < 0 ||
+    if (virQEMUCapsHostCPUDataCopy(&ret->accelCPU, &qemuCaps->accelCPU) < 0 ||
         virQEMUCapsHostCPUDataCopy(&ret->tcgCPU, &qemuCaps->tcgCPU) < 0)
         goto error;
 
@@ -1623,7 +1623,7 @@ void virQEMUCapsDispose(void *obj)
     }
     VIR_FREE(qemuCaps->machineTypes);
 
-    virObjectUnref(qemuCaps->kvmCPUModels);
+    virObjectUnref(qemuCaps->accelCPUModels);
     virObjectUnref(qemuCaps->tcgCPUModels);
 
     virBitmapFree(qemuCaps->flags);
@@ -1636,7 +1636,7 @@ void virQEMUCapsDispose(void *obj)
 
     virSEVCapabilitiesFree(qemuCaps->sevCapabilities);
 
-    virQEMUCapsHostCPUDataClear(&qemuCaps->kvmCPU);
+    virQEMUCapsHostCPUDataClear(&qemuCaps->accelCPU);
     virQEMUCapsHostCPUDataClear(&qemuCaps->tcgCPU);
 }
 
@@ -1794,8 +1794,8 @@ virQEMUCapsAddCPUDefinitions(virQEMUCapsPtr qemuCaps,
     size_t i;
     virDomainCapsCPUModelsPtr cpus = NULL;
 
-    if (type == VIR_DOMAIN_VIRT_KVM && qemuCaps->kvmCPUModels)
-        cpus = qemuCaps->kvmCPUModels;
+    if (type == VIR_DOMAIN_VIRT_KVM && qemuCaps->accelCPUModels)
+        cpus = qemuCaps->accelCPUModels;
     else if (type == VIR_DOMAIN_VIRT_QEMU && qemuCaps->tcgCPUModels)
         cpus = qemuCaps->tcgCPUModels;
 
@@ -1804,7 +1804,7 @@ virQEMUCapsAddCPUDefinitions(virQEMUCapsPtr qemuCaps,
             return -1;
 
         if (type == VIR_DOMAIN_VIRT_KVM)
-            qemuCaps->kvmCPUModels = cpus;
+            qemuCaps->accelCPUModels = cpus;
         else
             qemuCaps->tcgCPUModels = cpus;
     }
@@ -1823,7 +1823,7 @@ virQEMUCapsGetCPUDefinitions(virQEMUCapsPtr qemuCaps,
                              virDomainVirtType type)
 {
     if (type == VIR_DOMAIN_VIRT_KVM)
-        return qemuCaps->kvmCPUModels;
+        return qemuCaps->accelCPUModels;
     else
         return qemuCaps->tcgCPUModels;
 }
@@ -1834,7 +1834,7 @@ virQEMUCapsGetHostCPUData(virQEMUCapsPtr qemuCaps,
                           virDomainVirtType type)
 {
     if (type == VIR_DOMAIN_VIRT_KVM)
-        return &qemuCaps->kvmCPU;
+        return &qemuCaps->accelCPU;
     else
         return &qemuCaps->tcgCPU;
 }
@@ -1898,7 +1898,7 @@ virQEMUCapsIsCPUModeSupported(virQEMUCapsPtr qemuCaps,
 
     case VIR_CPU_MODE_CUSTOM:
         if (type == VIR_DOMAIN_VIRT_KVM)
-            cpus = qemuCaps->kvmCPUModels;
+            cpus = qemuCaps->accelCPUModels;
         else
             cpus = qemuCaps->tcgCPUModels;
         return cpus && cpus->nmodels > 0;
@@ -2385,7 +2385,7 @@ virQEMUCapsProbeQMPCPUDefinitions(virQEMUCapsPtr qemuCaps,
     if (tcg || !virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
         qemuCaps->tcgCPUModels = models;
     else
-        qemuCaps->kvmCPUModels = models;
+        qemuCaps->accelCPUModels = models;
 
     return 0;
 }
@@ -3232,7 +3232,7 @@ virQEMUCapsLoadCPUModels(virQEMUCapsPtr qemuCaps,
         goto cleanup;
 
     if (type == VIR_DOMAIN_VIRT_KVM)
-        qemuCaps->kvmCPUModels = cpus;
+        qemuCaps->accelCPUModels = cpus;
     else
         qemuCaps->tcgCPUModels = cpus;
 
@@ -3710,7 +3710,7 @@ virQEMUCapsFormatCPUModels(virQEMUCapsPtr qemuCaps,
 
     if (type == VIR_DOMAIN_VIRT_KVM) {
         typeStr = "kvm";
-        cpus = qemuCaps->kvmCPUModels;
+        cpus = qemuCaps->accelCPUModels;
     } else {
         typeStr = "tcg";
         cpus = qemuCaps->tcgCPUModels;
@@ -5107,7 +5107,7 @@ virQEMUCapsFillDomainCPUCaps(virCapsPtr caps,
             virDomainCapsCPUModelsPtr cpus;
 
             if (domCaps->virttype == VIR_DOMAIN_VIRT_KVM)
-                cpus = qemuCaps->kvmCPUModels;
+                cpus = qemuCaps->accelCPUModels;
             else
                 cpus = qemuCaps->tcgCPUModels;
 
