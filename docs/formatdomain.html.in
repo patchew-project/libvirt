@@ -22,10 +22,10 @@
       <a id="attributeDomainType"><code>type</code></a>
       specifies the hypervisor used for running
       the domain. The allowed values are driver specific, but
-      include "xen", "kvm", "qemu", "lxc" and "kqemu". The
-      second attribute is <code>id</code> which is a unique
-      integer identifier for the running guest machine. Inactive
-      machines have no id value.
+      include "xen", "kvm", "hvf" (<span class="since">since 4.10.0 and QEMU
+      2.12</span>), "qemu", "lxc" and "kqemu". The second attribute is
+      <code>id</code> which is a unique integer identifier for the running
+      guest machine. Inactive machines have no id value.
     </p>
 
 
