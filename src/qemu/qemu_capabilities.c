@@ -3467,11 +3467,13 @@ virQEMUCapsLoadCache(virArch hostArch,
     }
     VIR_FREE(str);
 
-    if (virQEMUCapsLoadHostCPUModelInfo(qemuCaps, ctxt, VIR_DOMAIN_VIRT_KVM) < 0 ||
+    if ((virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM) &&
+         virQEMUCapsLoadHostCPUModelInfo(qemuCaps, ctxt, VIR_DOMAIN_VIRT_KVM) < 0) ||
         virQEMUCapsLoadHostCPUModelInfo(qemuCaps, ctxt, VIR_DOMAIN_VIRT_QEMU) < 0)
         goto cleanup;
 
-    if (virQEMUCapsLoadCPUModels(qemuCaps, ctxt, VIR_DOMAIN_VIRT_KVM) < 0 ||
+    if ((virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM) &&
+         virQEMUCapsLoadCPUModels(qemuCaps, ctxt, VIR_DOMAIN_VIRT_KVM) < 0) ||
         virQEMUCapsLoadCPUModels(qemuCaps, ctxt, VIR_DOMAIN_VIRT_QEMU) < 0)
         goto cleanup;
 
@@ -3584,7 +3586,8 @@ virQEMUCapsLoadCache(virArch hostArch,
     if (virQEMUCapsParseSEVInfo(qemuCaps, ctxt) < 0)
         goto cleanup;
 
-    virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_KVM);
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
+      virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_KVM);
     virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_QEMU);
 
     ret = 0;
@@ -3766,10 +3769,12 @@ virQEMUCapsFormatCache(virQEMUCapsPtr qemuCaps)
     virBufferAsprintf(&buf, "<arch>%s</arch>\n",
                       virArchToString(qemuCaps->arch));
 
-    virQEMUCapsFormatHostCPUModelInfo(qemuCaps, &buf, VIR_DOMAIN_VIRT_KVM);
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
+      virQEMUCapsFormatHostCPUModelInfo(qemuCaps, &buf, VIR_DOMAIN_VIRT_KVM);
     virQEMUCapsFormatHostCPUModelInfo(qemuCaps, &buf, VIR_DOMAIN_VIRT_QEMU);
 
-    virQEMUCapsFormatCPUModels(qemuCaps, &buf, VIR_DOMAIN_VIRT_KVM);
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
+      virQEMUCapsFormatCPUModels(qemuCaps, &buf, VIR_DOMAIN_VIRT_KVM);
     virQEMUCapsFormatCPUModels(qemuCaps, &buf, VIR_DOMAIN_VIRT_QEMU);
 
     for (i = 0; i < qemuCaps->nmachineTypes; i++) {
@@ -4566,7 +4571,8 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
     qemuCaps->libvirtCtime = virGetSelfLastChanged();
     qemuCaps->libvirtVersion = LIBVIR_VERSION_NUMBER;
 
-    virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_KVM);
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM))
+      virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_KVM);
     virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_QEMU);
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
