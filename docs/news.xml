@@ -68,6 +68,18 @@
           be viewed via the domain statistics.
         </description>
       </change>
+      <change>
+        <summary>
+          qemu: Add hvf domain type for Hypervisor.framework
+        </summary>
+        <description>
+          QEMU introduced experimental support of Hypervisor.framework
+          since 2.12.
+
+          It's supported on machines with Intel VT-x feature set that includes
+          Extended Page Tables (EPT) and Unrestricted Mode since macOS 10.10.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
     </section>
