@@ -158,10 +158,10 @@
         which is specified by absolute path,
         used to assist the domain creation process. It is used by Xen
         fully virtualized domains as well as setting the QEMU BIOS file
-        path for QEMU/KVM domains. <span class="since">Xen since 0.1.0,
-        QEMU/KVM since 0.9.12</span> Then, <span class="since">since
-        1.2.8</span> it's possible for the element to have two
-        optional attributes: <code>readonly</code> (accepted values are
+        path for QEMU/KVM/HVF domains. <span class="since">Xen since 0.1.0,
+        QEMU/KVM since 0.9.12, HVF since 4.10.0</span> Then, <span
+        class="since">since 1.2.8</span> it's possible for the element to have
+        two optional attributes: <code>readonly</code> (accepted values are
         <code>yes</code> and <code>no</code>) to reflect the fact that the
         image should be writable or read-only. The second attribute
         <code>type</code> accepts values <code>rom</code> and
@@ -680,7 +680,7 @@
         IOThreads are dedicated event loop threads for supported disk
         devices to perform block I/O requests in order to improve
         scalability especially on an SMP host/guest with many LUNs.
-        <span class="since">Since 1.2.8 (QEMU only)</span>
+        <span class="since">QEMU/KVM since 1.2.8, HVF since 4.10.0</span>
       </p>
 
 <pre>
@@ -1603,12 +1603,13 @@
 
         Both <code>host-model</code> and <code>host-passthrough</code> modes
         make sense when a domain can run directly on the host CPUs (for
-        example, domains with type <code>kvm</code>). The actual host CPU is
-        irrelevant for domains with emulated virtual CPUs (such as domains with
-        type <code>qemu</code>). However, for backward compatibility
-        <code>host-model</code> may be implemented even for domains running on
-        emulated CPUs in which case the best CPU the hypervisor is able to
-        emulate may be used rather then trying to mimic the host CPU model.
+        example, domains with type <code>kvm</code> or <code>hvf</code>). The
+        actual host CPU is irrelevant for domains with emulated virtual CPUs
+        (such as domains with type <code>qemu</code>). However, for backward
+        compatibility <code>host-model</code> may be implemented even for
+        domains running on emulated CPUs in which case the best CPU the
+        hypervisor is able to emulate may be used rather then trying to mimic
+        the host CPU model.
       </dd>
 
       <dt><code>model</code></dt>
@@ -1902,12 +1903,12 @@
     </dl>
 
     <p>
-    QEMU/KVM supports the <code>on_poweroff</code> and <code>on_reboot</code>
-    events handling the <code>destroy</code> and <code>restart</code> actions.
-    The <code>preserve</code> action for an <code>on_reboot</code> event
-    is treated as a <code>destroy</code> and the <code>rename-restart</code>
-    action for an <code>on_poweroff</code> event is treated as a
-    <code>restart</code> event.
+    QEMU/KVM/HVF domains support the <code>on_poweroff</code> and
+    <code>on_reboot</code> events handling the <code>destroy</code> and
+    <code>restart</code> actions.  The <code>preserve</code> action for an
+    <code>on_reboot</code> event is treated as a <code>destroy</code> and the
+    <code>rename-restart</code> action for an <code>on_poweroff</code> event is
+    treated as a <code>restart</code> event.
     </p>
 
     <p>
@@ -2043,7 +2044,7 @@
         to address more than 4 GB of memory.</dd>
       <dt><code>acpi</code></dt>
       <dd>ACPI is useful for power management, for example, with
-        KVM guests it is required for graceful shutdown to work.
+        KVM or HVF guests it is required for graceful shutdown to work.
       </dd>
       <dt><code>apic</code></dt>
       <dd>APIC allows the use of programmable IRQ
@@ -2286,7 +2287,8 @@
       </dd>
       <dt><code>vmcoreinfo</code></dt>
       <dd>Enable QEMU vmcoreinfo device to let the guest kernel save debug
-          details. <span class="since">Since 4.4.0</span> (QEMU only)
+          details. <span class="since">QEMU/KVM since 4.4.0, HVF since
+          4.10.0</span>
       </dd>
       <dt><code>htm</code></dt>
       <dd>Configure HTM (Hardware Transational Memory) availability for
@@ -3559,7 +3561,7 @@
             Copy-on-read avoids accessing the same backing file sectors
             repeatedly and is useful when the backing file is over a slow
             network. By default copy-on-read is off.
-            <span class='since'>Since 0.9.10 (QEMU and KVM only)</span>
+            <span class='since'>QEMU/KVM since 0.9.10, HVF since 4.10.0</span>
           </li>
           <li>
             The optional <code>discard</code> attribute controls whether
@@ -3567,7 +3569,7 @@
             ignored or passed to the filesystem. The value can be either
             "unmap" (allow the discard request to be passed) or "ignore"
             (ignore the discard request).
-            <span class='since'>Since 1.0.6 (QEMU and KVM only)</span>
+            <span class='since'>QEMU/KVM since 1.0.6, HVF since 4.10.0</span>
           </li>
           <li>
             The optional <code>detect_zeroes</code> attribute controls whether
@@ -3723,7 +3725,7 @@
       <dt><code>blockio</code></dt>
       <dd>If present, the <code>blockio</code> element allows
         to override any of the block device properties listed below.
-        <span class="since">Since 0.10.2 (QEMU and KVM)</span>
+        <span class="since">QEMU/KVM since 0.10.2, HVF since 4.10.0</span>
         <dl>
           <dt><code>logical_block_size</code></dt>
           <dd>The logical block size the disk will report to the guest
@@ -4157,14 +4159,14 @@
         The optional <code>queues</code> attribute specifies the number of
         queues for the controller. For best performance, it's recommended to
         specify a value matching the number of vCPUs.
-        <span class="since">Since 1.0.5 (QEMU and KVM only)</span>
+        <span class="since">QEMU/KVM since 1.0.5, HVF since 4.10.0</span>
       </dd>
       <dt><code>cmd_per_lun</code></dt>
       <dd>
         The optional <code>cmd_per_lun</code> attribute specifies the maximum
         number of commands that can be queued on devices controlled by the
         host.
-        <span class="since">Since 1.2.7 (QEMU and KVM only)</span>
+        <span class="since">QEMU/KVM since 1.2.7, HVF since 4.10.0</span>
       </dd>
       <dt><code>max_sectors</code></dt>
       <dd>
@@ -4172,7 +4174,7 @@
         amount of data in bytes that will be transferred to or from the device
         in a single command. The transfer length is measured in sectors, where
         a sector is 512 bytes.
-        <span class="since">Since 1.2.7 (QEMU and KVM only)</span>
+        <span class="since">QEMU/KVM since 1.2.7, HVF since 4.10.0</span>
       </dd>
       <dt><code>ioeventfd</code></dt>
       <dd>
@@ -4268,7 +4270,8 @@
       <code>unit</code> attribute) the 64-bit PCI hole should be. Some guests (like
       Windows XP or Windows Server 2003) might crash when QEMU and Seabios
       are recent enough to support 64-bit PCI holes, unless this is disabled
-      (set to 0). <span class="since">Since 1.1.2 (QEMU only)</span>
+      (set to 0). <span class="since">QEMU/KVM since 1.1.2, HVF since
+      4.10.0</span>
     </p>
     <p>
       PCI controllers also have an optional
@@ -4280,8 +4283,8 @@
       model <b>attribute</b>.  In almost all cases, you should not
       manually add a <code>&lt;model&gt;</code> subelement to a
       controller, nor should you modify one that is automatically
-      generated by libvirt. <span class="since">Since 1.2.19 (QEMU
-      only).</span>
+      generated by libvirt. <span class="since">QEMU/KVM since 1.2.19, HVF
+      since 4.10.0</span>
     </p>
     <p>
       PCI controllers also have an optional
@@ -4293,7 +4296,8 @@
       should not manually add a <code>&lt;target&gt;</code> subelement
       to a controller, nor should you modify the values in the those
       that are automatically generated by
-      libvirt. <span class="since">Since 1.2.19 (QEMU only).</span>
+      libvirt. <span class="since">QEMU/KVM since 1.2.19, HVF since 4.10.0
+      </span>
     </p>
     <dl>
       <dt><code>chassisNr</code></dt>
@@ -5681,7 +5685,7 @@
     <p>
       The values for <code>type</code> aren't defined specifically by
       libvirt, but by what the underlying hypervisor supports (if
-      any).  For QEMU and KVM you can get a list of supported models
+      any).  For QEMU, KVM and HVF you can get a list of supported models
       with these commands:
     </p>
 
@@ -5691,7 +5695,7 @@ qemu-kvm -net nic,model=? /dev/null
 </pre>
 
     <p>
-      Typical values for QEMU and KVM include:
+      Typical values for QEMU, KVM and HVF include:
       ne2k_isa i82551 i82557b i82559er ne2k_pci pcnet rtl8139 e1000 virtio
     </p>
 
@@ -5730,7 +5734,7 @@ qemu-kvm -net nic,model=? /dev/null
         will be rejected.  If this attribute is not present, then the
         domain defaults to 'vhost' if present, but silently falls back
         to 'qemu' without error.
-        <span class="since">Since 0.8.8 (QEMU and KVM only)</span>
+        <span class="since">QEMU/KVM since 0.8.8, HVF since 4.10.0</span>
       </dd>
       <dd>
         For interfaces of type='hostdev' (PCI passthrough devices)
@@ -5755,7 +5759,8 @@ qemu-kvm -net nic,model=? /dev/null
         The <code>txmode</code> attribute specifies how to handle
         transmission of packets when the transmit buffer is full. The
         value can be either 'iothread' or 'timer'.
-        <span class="since">Since 0.8.8 (QEMU and KVM only)</span><br/><br/>
+        <span class="since">QEMU/KVM since 0.8.8, HVF since 4.10.0</span>
+        <br/><br/>
 
         If set to 'iothread', packet tx is all done in an iothread in
         the bottom half of the driver (this option translates into
@@ -5801,7 +5806,8 @@ qemu-kvm -net nic,model=? /dev/null
         usually if the feature is supported, default is on. In case
         there is a situation where this behavior is suboptimal, this
         attribute provides a way to force the feature off.
-        <span class="since">Since 0.9.5 (QEMU and KVM only)</span><br/><br/>
+        <span class="since">QEMU/KVM since 0.9.5, HVF since 4.10.0</span>
+        <br/><br/>
 
         <b>In general you should leave this option alone, unless you
         are very certain you know what you are doing.</b>
@@ -5828,7 +5834,8 @@ qemu-kvm -net nic,model=? /dev/null
         some restrictions on actual value. For instance, latest
         QEMU (as of 2016-09-01) requires value to be a power of two
         from [256, 1024] range.
-        <span class="since">Since 2.3.0 (QEMU and KVM only)</span><br/><br/>
+        <span class="since">QEMU/KVM since 2.3.0, HVF since 4.10.0</span>
+        <br/><br/>
 
         <b>In general you should leave this option alone, unless you
         are very certain you know what you are doing.</b>
@@ -5844,7 +5851,8 @@ qemu-kvm -net nic,model=? /dev/null
         range. In addition to that, this may work only for a subset of
         interface types, e.g. aforementioned QEMU enables this option
         only for <code>vhostuser</code> type.
-        <span class="since">Since 3.7.0 (QEMU and KVM only)</span><br/><br/>
+        <span class="since">QEMU/KVM since 3.7.0, HVF since 4.10.0</span>
+        <br/><br/>
 
         <b>In general you should leave this option alone, unless you
         are very certain you know what you are doing.</b>
@@ -6748,7 +6756,10 @@ qemu-kvm -net nic,model=? /dev/null
           of the first forward dev will be used.
         </p>
       </dd>
-      <dt><code>socket</code> <span class="since">since 2.0.0 (QEMU only)</span></dt>
+      <dt>
+        <code>socket</code> <span class="since">QEMU/KVM since 2.0.0, HVF
+        since 4.10.0</span>
+      </dt>
       <dd>
         <p>
           This listen type tells a graphics server to listen on unix socket.
@@ -6764,7 +6775,10 @@ qemu-kvm -net nic,model=? /dev/null
           attribute all <code>listen</code> elements are ignored.
         </p>
       </dd>
-      <dt><code>none</code> <span class="since">since 2.0.0 (QEMU only)</span></dt>
+      <dt>
+        <code>none</code> <span class="since">QEMU/KVM since 2.0.0, HVF
+        since 4.10.0</span>
+      </dt>
       <dd>
         <p>
           This listen type doesn't have any other attribute. Libvirt supports
@@ -6838,19 +6852,21 @@ qemu-kvm -net nic,model=? /dev/null
         <p>
           You can provide the amount of video memory in kibibytes (blocks of
           1024 bytes) using <code>vram</code>. This is supported only for guest
-          type of "libxl", "vz", "qemu", "vbox", "vmx" and "xen". If no
-          value is provided the default is used. If the size is not a power of
-          two it will be rounded to closest one.
+          type of "libxl", "vz", "qemu", "kvm", "hvf", "vbox", "vmx" and "xen".
+          If no value is provided the default is used. If the size is not a
+          power of two it will be rounded to closest one.
         </p>
         <p>
           The number of screen can be set using <code>heads</code>. This is
-          supported only for guests type of "vz", "kvm", "vbox" and "vmx".
+          supported only for guests type of "vz", "kvm", "hvf", "vbox" and
+          "vmx".
         </p>
         <p>
-          For guest type of "kvm" or "qemu" and model type "qxl" there are
-          optional attributes. Attribute <code>ram</code> (<span class="since">
-          since 1.0.2</span>) specifies the size of the primary bar, while the
-          attribute <code>vram</code> specifies the secondary bar size.
+          For guest type of "kvm", "hvf" or "qemu" and model type "qxl" there
+          are optional attributes. Attribute <code>ram</code> (<span
+          class="since"> since 1.0.2</span>) specifies the size of the primary
+          bar, while the attribute <code>vram</code> specifies the secondary bar
+          size.
           If <code>ram</code> or <code>vram</code> are not supplied a default
           value is used. The <code>ram</code> should also be rounded to power of
           two as <code>vram</code>. There is also optional attribute
@@ -7735,7 +7751,7 @@ qemu-kvm -net nic,model=? /dev/null
     <p>
       A virtual hardware watchdog device can be added to the guest via
       the <code>watchdog</code> element.
-      <span class="since">Since 0.7.3, QEMU and KVM only</span>
+      <span class="since">QEMU/KVM since 0.7.3, HVF since 4.10.0</span>
     </p>
 
     <p>
@@ -7773,12 +7789,17 @@ qemu-kvm -net nic,model=? /dev/null
         underlying hypervisor.
         </p>
         <p>
-        QEMU and KVM support:
+        QEMU, KVM and HVF support:
         </p>
         <ul>
           <li>'i6300esb' - the recommended device,
             emulating a PCI Intel 6300ESB </li>
           <li>'ib700' - emulating an ISA iBase IB700 </li>
+        </ul>
+        <p>
+        QEMU and KVM for s390/s390x support:
+        </p>
+        <ul>
           <li>'diag288' - emulating an S390 DIAG288 device
             <span class="since">Since 1.2.17</span></li>
         </ul>
@@ -7791,7 +7812,7 @@ qemu-kvm -net nic,model=? /dev/null
         specific to the underlying hypervisor.
         </p>
         <p>
-        QEMU and KVM support:
+        QEMU, KVM and HVF support:
         </p>
         <ul>
           <li>'reset' - default, forcefully reset the guest</li>
@@ -7823,14 +7844,14 @@ qemu-kvm -net nic,model=? /dev/null
     <h4><a id="elementsMemBalloon">Memory balloon device</a></h4>
 
     <p>
-      A virtual memory balloon device is added to all Xen and KVM/QEMU
+      A virtual memory balloon device is added to all Xen and QEMU/KVM/HVF
       guests. It will be seen as <code>memballoon</code> element.
       It will be automatically added when appropriate, so there is no
       need to explicitly add this element in the guest XML unless a
       specific PCI slot needs to be assigned.
-      <span class="since">Since 0.8.3, Xen, QEMU and KVM only</span>
-      Additionally, <span class="since">since 0.8.4</span>, if the
-      memballoon device needs to be explicitly disabled,
+      <span class="since">Xen, QEMU and KVM since 0.8.3, HVF since
+      4.10.0</span> Additionally, <span class="since">since 0.8.4</span>, if
+      the memballoon device needs to be explicitly disabled,
       <code>model='none'</code> may be used.
     </p>
 
@@ -7867,7 +7888,7 @@ qemu-kvm -net nic,model=? /dev/null
           the virtualization platform
         </p>
         <ul>
-          <li>'virtio' - default with QEMU/KVM</li>
+          <li>'virtio' - default with QEMU/KVM/HVF</li>
           <li>'xen' - default with Xen</li>
         </ul>
       </dd>
@@ -8148,7 +8169,7 @@ qemu-kvm -net nic,model=? /dev/null
     <p>
       panic device enables libvirt to receive panic notification from a QEMU
       guest.
-      <span class="since">Since 1.2.1, QEMU and KVM only</span>
+      <span class="since">QEMU/KVM since 1.2.1, HVF since 4.10.0</span>
     </p>
     <p>
       This feature is always enabled for:
@@ -8816,7 +8837,7 @@ qemu-kvm -net nic,model=? /dev/null
 
     <ul>
       <li><a href="drvxen.html#xmlconfig">Xen examples</a></li>
-      <li><a href="drvqemu.html#xmlconfig">QEMU/KVM examples</a></li>
+      <li><a href="drvqemu.html#xmlconfig">QEMU/KVM/HVF examples</a></li>
     </ul>
   </body>
 </html>
