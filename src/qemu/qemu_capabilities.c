@@ -515,6 +515,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               /* 320 */
               "memory-backend-memfd.hugetlb",
               "iothread.poll-max-ns",
+              "hvf",
     );
 
 
