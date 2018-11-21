@@ -637,6 +637,11 @@ static const char *virQEMUCapsArchToString(virArch arch)
     return virArchToString(arch);
 }
 
+static bool
+virQEMUCapsTypeIsAccelerated(virDomainVirtType type)
+{
+    return type == VIR_DOMAIN_VIRT_KVM;
+}
 
 /* Checks whether a domain with @guest arch can run natively on @host.
  */
@@ -1794,7 +1799,7 @@ virQEMUCapsAddCPUDefinitions(virQEMUCapsPtr qemuCaps,
     size_t i;
     virDomainCapsCPUModelsPtr cpus = NULL;
 
-    if (type == VIR_DOMAIN_VIRT_KVM && qemuCaps->accelCPUModels)
+    if (virQEMUCapsTypeIsAccelerated(type) && qemuCaps->accelCPUModels)
         cpus = qemuCaps->accelCPUModels;
     else if (type == VIR_DOMAIN_VIRT_QEMU && qemuCaps->tcgCPUModels)
         cpus = qemuCaps->tcgCPUModels;
@@ -1803,7 +1808,7 @@ virQEMUCapsAddCPUDefinitions(virQEMUCapsPtr qemuCaps,
         if (!(cpus = virDomainCapsCPUModelsNew(count)))
             return -1;
 
-        if (type == VIR_DOMAIN_VIRT_KVM)
+        if (virQEMUCapsTypeIsAccelerated(type))
             qemuCaps->accelCPUModels = cpus;
         else
             qemuCaps->tcgCPUModels = cpus;
@@ -1822,7 +1827,7 @@ virDomainCapsCPUModelsPtr
 virQEMUCapsGetCPUDefinitions(virQEMUCapsPtr qemuCaps,
                              virDomainVirtType type)
 {
-    if (type == VIR_DOMAIN_VIRT_KVM)
+    if (virQEMUCapsTypeIsAccelerated(type))
         return qemuCaps->accelCPUModels;
     else
         return qemuCaps->tcgCPUModels;
@@ -1833,7 +1838,7 @@ static virQEMUCapsHostCPUDataPtr
 virQEMUCapsGetHostCPUData(virQEMUCapsPtr qemuCaps,
                           virDomainVirtType type)
 {
-    if (type == VIR_DOMAIN_VIRT_KVM)
+    if (virQEMUCapsTypeIsAccelerated(type))
         return &qemuCaps->accelCPU;
     else
         return &qemuCaps->tcgCPU;
@@ -1889,7 +1894,7 @@ virQEMUCapsIsCPUModeSupported(virQEMUCapsPtr qemuCaps,
 
     switch (mode) {
     case VIR_CPU_MODE_HOST_PASSTHROUGH:
-        return type == VIR_DOMAIN_VIRT_KVM &&
+        return virQEMUCapsTypeIsAccelerated(type) &&
                virQEMUCapsGuestIsNative(caps->host.arch, qemuCaps->arch);
 
     case VIR_CPU_MODE_HOST_MODEL:
@@ -1897,7 +1902,7 @@ virQEMUCapsIsCPUModeSupported(virQEMUCapsPtr qemuCaps,
                                          VIR_QEMU_CAPS_HOST_CPU_REPORTED);
 
     case VIR_CPU_MODE_CUSTOM:
-        if (type == VIR_DOMAIN_VIRT_KVM)
+        if (virQEMUCapsTypeIsAccelerated(type))
             cpus = qemuCaps->accelCPUModels;
         else
             cpus = qemuCaps->tcgCPUModels;
@@ -3004,7 +3009,7 @@ virQEMUCapsInitHostCPUModel(virQEMUCapsPtr qemuCaps,
                   virArchToString(qemuCaps->arch),
                   virDomainVirtTypeToString(type));
         goto error;
-    } else if (type == VIR_DOMAIN_VIRT_KVM &&
+    } else if (virQEMUCapsTypeIsAccelerated(type) &&
                virCPUGetHostIsSupported(qemuCaps->arch)) {
         if (!(fullCPU = virCPUGetHost(qemuCaps->arch, VIR_CPU_TYPE_GUEST,
                                       NULL, NULL)))
@@ -3231,7 +3236,7 @@ virQEMUCapsLoadCPUModels(virQEMUCapsPtr qemuCaps,
     if (!(cpus = virDomainCapsCPUModelsNew(n)))
         goto cleanup;
 
-    if (type == VIR_DOMAIN_VIRT_KVM)
+    if (virQEMUCapsTypeIsAccelerated(type))
         qemuCaps->accelCPUModels = cpus;
     else
         qemuCaps->tcgCPUModels = cpus;
@@ -3708,7 +3713,7 @@ virQEMUCapsFormatCPUModels(virQEMUCapsPtr qemuCaps,
     const char *typeStr;
     size_t i;
 
-    if (type == VIR_DOMAIN_VIRT_KVM) {
+    if (virQEMUCapsTypeIsAccelerated(type)) {
         typeStr = "kvm";
         cpus = qemuCaps->accelCPUModels;
     } else {
@@ -4966,7 +4971,8 @@ virQEMUCapsCacheLookupDefault(virFileCachePtr cache,
     if (virttype == VIR_DOMAIN_VIRT_NONE)
         virttype = capsType;
 
-    if (virttype == VIR_DOMAIN_VIRT_KVM && capsType == VIR_DOMAIN_VIRT_QEMU) {
+    if (virQEMUCapsTypeIsAccelerated(virttype) &&
+        !virQEMUCapsTypeIsAccelerated(capsType)) {
         virReportError(VIR_ERR_INVALID_ARG,
                        _("KVM is not supported by '%s' on this host"),
                        binary);
@@ -5106,7 +5112,7 @@ virQEMUCapsFillDomainCPUCaps(virCapsPtr caps,
         if (virCPUGetModels(domCaps->arch, &models) >= 0) {
             virDomainCapsCPUModelsPtr cpus;
 
-            if (domCaps->virttype == VIR_DOMAIN_VIRT_KVM)
+            if (virQEMUCapsTypeIsAccelerated(domCaps->virttype))
                 cpus = qemuCaps->accelCPUModels;
             else
                 cpus = qemuCaps->tcgCPUModels;
