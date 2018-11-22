@@ -1248,6 +1248,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "screendump/arg-type/device", QEMU_CAPS_SCREENDUMP_DEVICE },
     { "block-commit/arg-type/*top",  QEMU_CAPS_ACTIVE_COMMIT },
     { "query-iothreads/ret-type/poll-max-ns", QEMU_CAPS_IOTHREAD_POLLING },
+    { "query-display-options/ret-type/+egl-headless", QEMU_CAPS_EGL_HEADLESS },
 };
 
 typedef struct _virQEMUCapsObjectTypeProps virQEMUCapsObjectTypeProps;
@@ -4122,11 +4123,6 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_MACHINE_PSERIES_RESIZE_HPT);
     }
 
-    /* '-display egl-headless' cmdline option is supported since QEMU 2.10, but
-     * there's no way to probe it */
-    if (qemuCaps->version >= 2010000)
-        virQEMUCapsSet(qemuCaps, QEMU_CAPS_EGL_HEADLESS);
-
     /* no way to query for -numa dist */
     if (qemuCaps->version >= 2010000)
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_NUMA_DIST);
@@ -4211,6 +4207,15 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
         if (rc == 0)
             virQEMUCapsClear(qemuCaps, QEMU_CAPS_SEV_GUEST);
     }
+
+    /* '-display egl-headless' cmdline option is supported since QEMU 2.10, but
+     * until QEMU 3.1 there hasn't been a way to probe it
+     *
+     * NOTE: One day in a future far far away, we can ditch this check
+     */
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_EGL_HEADLESS) &&
+        qemuCaps->version >= 2010000)
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_EGL_HEADLESS);
 
     ret = 0;
  cleanup:
