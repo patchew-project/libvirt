@@ -8293,6 +8293,19 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
 
 
 static int
+qemuBuildGraphicsEGLHeadlessCommandLine(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
+                                        virCommandPtr cmd,
+                                        virQEMUCapsPtr qemuCaps ATTRIBUTE_UNUSED,
+                                        virDomainGraphicsDefPtr graphics ATTRIBUTE_UNUSED)
+{
+    virCommandAddArg(cmd, "-display");
+    virCommandAddArg(cmd, "egl-headless");
+
+    return 0;
+}
+
+
+static int
 qemuBuildGraphicsCommandLine(virQEMUDriverConfigPtr cfg,
                              virCommandPtr cmd,
                              virDomainDefPtr def,
@@ -8323,8 +8336,9 @@ qemuBuildGraphicsCommandLine(virQEMUDriverConfigPtr cfg,
 
             break;
         case VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS:
-            virCommandAddArg(cmd, "-display");
-            virCommandAddArg(cmd, "egl-headless");
+            if (qemuBuildGraphicsEGLHeadlessCommandLine(cfg, cmd,
+                                                        qemuCaps, graphics) < 0)
+                return -1;
 
             break;
         case VIR_DOMAIN_GRAPHICS_TYPE_RDP:
