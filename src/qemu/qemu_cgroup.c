@@ -491,15 +491,22 @@ qemuSetupGraphicsCgroup(virDomainObjPtr vm,
                         virDomainGraphicsDefPtr gfx)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
-    const char *rendernode = gfx->data.spice.rendernode;
+    const char *rendernode = NULL;
     int ret;
 
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_DEVICES))
         return 0;
 
-    if (gfx->type != VIR_DOMAIN_GRAPHICS_TYPE_SPICE ||
-        gfx->data.spice.gl != VIR_TRISTATE_BOOL_YES ||
-        !rendernode)
+    if (gfx->type != VIR_DOMAIN_GRAPHICS_TYPE_SPICE &&
+        gfx->type != VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS)
+        return 0;
+
+    if (gfx->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE)
+        rendernode = gfx->data.spice.rendernode;
+    else
+        rendernode = gfx->data.egl_headless.rendernode;
+
+    if (!rendernode)
         return 0;
 
     ret = virCgroupAllowDevicePath(priv->cgroup, rendernode,
