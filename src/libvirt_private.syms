@@ -3150,6 +3150,7 @@ virGetUserName;
 virGetUserRuntimeDirectory;
 virGetUserShell;
 virHexToBin;
+virHostGetDRMRenderNode;
 virHostHasIOMMU;
 virIndexToDiskName;
 virIsDevMapperDevice;
