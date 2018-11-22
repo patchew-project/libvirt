@@ -8295,13 +8295,42 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
 static int
 qemuBuildGraphicsEGLHeadlessCommandLine(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
                                         virCommandPtr cmd,
-                                        virQEMUCapsPtr qemuCaps ATTRIBUTE_UNUSED,
-                                        virDomainGraphicsDefPtr graphics ATTRIBUTE_UNUSED)
+                                        virQEMUCapsPtr qemuCaps,
+                                        virDomainGraphicsDefPtr graphics)
 {
-    virCommandAddArg(cmd, "-display");
-    virCommandAddArg(cmd, "egl-headless");
+    int ret = -1;
+    virBuffer opt = VIR_BUFFER_INITIALIZER;
 
-    return 0;
+    /* Until QEMU 3.1, there wasn't any support for the 'rendernode' option on
+     * the cmdline, so don't bother picking one, the user is responsible for
+     * ensuring the correct permissions on the DRI devices.
+     */
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_EGL_HEADLESS_RENDERNODE)) {
+
+        /* we must populate @def so we actually have something to relabel */
+        graphics->data.egl_headless.rendernode = virHostGetDRMRenderNode();
+        if (!graphics->data.egl_headless.rendernode)
+            return -1;
+    }
+
+    virBufferAddLit(&opt, "egl-headless");
+
+    if (graphics->data.egl_headless.rendernode) {
+        virBufferAddLit(&opt, ",rendernode=");
+        virQEMUBuildBufferEscapeComma(&opt,
+                                      graphics->data.egl_headless.rendernode);
+    }
+
+    if (virBufferCheckError(&opt) < 0)
+        goto cleanup;
+
+    virCommandAddArg(cmd, "-display");
+    virCommandAddArgBuffer(cmd, &opt);
+
+    ret = 0;
+ cleanup:
+    virBufferFreeAndReset(&opt);
+    return ret;
 }
 
 
