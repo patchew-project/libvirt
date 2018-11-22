@@ -1246,6 +1246,10 @@ mymain(void)
     DO_TEST("graphics-egl-headless",
             QEMU_CAPS_EGL_HEADLESS,
             QEMU_CAPS_DEVICE_CIRRUS_VGA);
+    DO_TEST("graphics-egl-headless-rendernode-autoselect",
+            QEMU_CAPS_EGL_HEADLESS,
+            QEMU_CAPS_EGL_HEADLESS_RENDERNODE,
+            QEMU_CAPS_DEVICE_CIRRUS_VGA);
 
     DO_TEST("graphics-vnc", QEMU_CAPS_VNC, QEMU_CAPS_DEVICE_CIRRUS_VGA);
     DO_TEST("graphics-vnc-socket", QEMU_CAPS_VNC, QEMU_CAPS_DEVICE_CIRRUS_VGA);
