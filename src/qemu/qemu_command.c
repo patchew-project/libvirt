@@ -8235,6 +8235,8 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
     }
 
     if (graphics->data.spice.gl == VIR_TRISTATE_BOOL_YES) {
+        char **rendernode = &graphics->data.spice.rendernode;
+
         if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SPICE_GL)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("This QEMU doesn't support spice OpenGL"));
@@ -8246,17 +8248,20 @@ qemuBuildGraphicsSPICECommandLine(virQEMUDriverConfigPtr cfg,
         virBufferAsprintf(&opt, "gl=%s,",
                           virTristateSwitchTypeToString(graphics->data.spice.gl));
 
-        if (graphics->data.spice.rendernode) {
-            if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SPICE_RENDERNODE)) {
-                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                               _("This QEMU doesn't support spice OpenGL rendernode"));
-                goto error;
-            }
-
-            virBufferAddLit(&opt, "rendernode=");
-            virQEMUBuildBufferEscapeComma(&opt, graphics->data.spice.rendernode);
-            virBufferAddLit(&opt, ",");
+        if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SPICE_RENDERNODE)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("This QEMU doesn't support spice OpenGL rendernode"));
+            goto error;
         }
+
+        /* pick the first DRM render node if none was specified */
+        if (!*rendernode &&
+            !(*rendernode = virHostGetDRMRenderNode()))
+            goto error;
+
+        virBufferAddLit(&opt, "rendernode=");
+        virQEMUBuildBufferEscapeComma(&opt, graphics->data.spice.rendernode);
+        virBufferAddLit(&opt, ",");
     }
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SEAMLESS_MIGRATION)) {
