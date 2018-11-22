@@ -1492,10 +1492,16 @@ virSecurityDACSetGraphicsLabel(virSecurityManagerPtr mgr,
                                virDomainGraphicsDefPtr gfx)
 
 {
+    const char *rendernode = NULL;
     virSecurityDACDataPtr priv = virSecurityManagerGetPrivateData(mgr);
     virSecurityLabelDefPtr seclabel;
     uid_t user;
     gid_t group;
+
+    /* So far, only SPICE and EGL headless support rendering on DRM nodes */
+    if (gfx->type != VIR_DOMAIN_GRAPHICS_TYPE_SPICE &&
+        gfx->type != VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS)
+        return 0;
 
     /* Skip chowning the shared render file if namespaces are disabled */
     if (!priv->mountNamespace)
@@ -1508,14 +1514,13 @@ virSecurityDACSetGraphicsLabel(virSecurityManagerPtr mgr,
     if (virSecurityDACGetIds(seclabel, priv, &user, &group, NULL, NULL) < 0)
         return -1;
 
-    if (gfx->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE &&
-        gfx->data.spice.gl == VIR_TRISTATE_BOOL_YES &&
-        gfx->data.spice.rendernode) {
-        if (virSecurityDACSetOwnership(mgr, NULL,
-                                       gfx->data.spice.rendernode,
-                                       user, group) < 0)
-            return -1;
-    }
+    if (gfx->type == VIR_DOMAIN_GRAPHICS_TYPE_EGL_HEADLESS)
+        rendernode = gfx->data.egl_headless.rendernode;
+    else if (gfx->data.spice.gl == VIR_TRISTATE_BOOL_YES)
+        rendernode = gfx->data.spice.rendernode;
+
+    if (virSecurityDACSetOwnership(mgr, NULL, rendernode, user, group) < 0)
+        return -1;
 
     return 0;
 }
