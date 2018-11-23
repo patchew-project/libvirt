@@ -688,16 +688,17 @@
     </p>
     <p>
       For network connections using Open vSwitch it is also possible
-      to configure 'native-tagged' and 'native-untagged' VLAN modes
+      to configure 'native-tagged' and 'native-untagged' and 
+      'dot1q-tunnel' VLAN modes
       <span class="since">Since 1.1.0.</span> This is done with the
       optional <code>nativeMode</code> attribute on
       the <code>&lt;tag&gt;</code> subelement: <code>nativeMode</code>
-      may be set to 'tagged' or 'untagged'. The <code>id</code>
-      attribute of the <code>&lt;tag&gt;</code> subelement
-      containing <code>nativeMode</code> sets which VLAN is considered
-      to be the "native" VLAN for this interface, and
+      may be set to 'tagged' or 'untagged' or 'dot1q-tunnel'. 
+      The <code>id</code> attribute of the <code>&lt;tag&gt;</code> 
+      subelement containing <code>nativeMode</code> sets which VLAN is 
+      considered to be the "native" VLAN for this interface, and
       the <code>nativeMode</code> attribute determines whether or not
-      traffic for that VLAN will be tagged.
+      traffic for that VLAN will be tagged or QinQ.
     </p>
     <p>
       <code>&lt;vlan&gt;</code> elements can also be specified in
