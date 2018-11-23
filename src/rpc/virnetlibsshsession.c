@@ -80,6 +80,21 @@ struct _virNetLibsshAuthMethod {
     int tries;
 };
 
+#ifndef HAVE_SSH_KNOWN_HOSTS_E
+/* This is an auxiliar enum to help libssh migration to version 0.8.0
+ * or higher. This enum associates the enumerator ssh_server_known_e
+ * with new ssh_known_hosts_e enum. In other words, it can be removed
+ * in the future. */
+enum _vir_ssh_known_hosts_e {
+    SSH_KNOWN_HOSTS_ERROR=SSH_SERVER_ERROR,
+    SSH_KNOWN_HOSTS_UNKNOWN=SSH_SERVER_NOT_KNOWN,
+    SSH_KNOWN_HOSTS_OK,
+    SSH_KNOWN_HOSTS_CHANGED,
+    SSH_KNOWN_HOSTS_OTHER,
+    SSH_KNOWN_HOSTS_NOT_FOUND,
+};
+#endif
+
 struct _virNetLibsshSession {
     virObjectLockable parent;
     virNetLibsshSessionState state;
@@ -287,15 +302,15 @@ virNetLibsshCheckHostKey(virNetLibsshSessionPtr sess)
     if (sess->hostKeyVerify == VIR_NET_LIBSSH_HOSTKEY_VERIFY_IGNORE)
         return 0;
 
-    state = ssh_is_server_known(sess->session);
+    state = ssh_session_is_known_server(sess->session);
 
     switch (state) {
-    case SSH_SERVER_KNOWN_OK:
+    case SSH_KNOWN_HOSTS_OK:
         /* host key matches */
         return 0;
 
-    case SSH_SERVER_FOUND_OTHER:
-    case SSH_SERVER_KNOWN_CHANGED:
+    case SSH_KNOWN_HOSTS_OTHER:
+    case SSH_KNOWN_HOSTS_CHANGED:
         keyhashstr = virLibsshServerKeyAsString(sess);
         if (!keyhashstr)
             return -1;
@@ -312,8 +327,8 @@ virNetLibsshCheckHostKey(virNetLibsshSessionPtr sess)
         ssh_string_free_char(keyhashstr);
         return -1;
 
-    case SSH_SERVER_FILE_NOT_FOUND:
-    case SSH_SERVER_NOT_KNOWN:
+    case SSH_KNOWN_HOSTS_NOT_FOUND:
+    case SSH_KNOWN_HOSTS_UNKNOWN:
         /* key was not found, query to add it to database */
         if (sess->hostKeyVerify == VIR_NET_LIBSSH_HOSTKEY_VERIFY_NORMAL) {
             virConnectCredential askKey;
@@ -393,7 +408,7 @@ virNetLibsshCheckHostKey(virNetLibsshSessionPtr sess)
         /* key was accepted and added */
         return 0;
 
-    case SSH_SERVER_ERROR:
+    case SSH_KNOWN_HOSTS_ERROR:
         errmsg = ssh_get_error(sess->session);
         virReportError(VIR_ERR_LIBSSH,
                        _("failed to validate SSH host key: %s"),
