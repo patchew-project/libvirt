@@ -33,6 +33,14 @@ AC_DEFUN([LIBVIRT_CHECK_LIBSSH],[
       [],
       [AC_DEFINE_UNQUOTED([ssh_get_server_publickey], [ssh_get_publickey],
             [ssh_get_publickey is deprecated and replaced by ssh_get_server_publickey.])])
+    AC_CHECK_FUNC([ssh_session_is_known_server],
+      [],
+      [AC_DEFINE_UNQUOTED([ssh_session_is_known_server], [ssh_is_server_known],
+            [ssh_is_server_known is deprecated and replaced by ssh_session_is_known_server.])])
+    AC_CHECK_TYPE([enum ssh_known_hosts_e],
+        [AC_DEFINE([HAVE_SSH_KNOWN_HOSTS_E], [1],
+          [Defined if enum ssh_known_hosts_e exists in libssh.h])],
+        [], [[#include <libssh/libssh.h>]])
     CFLAGS="$old_CFLAGS"
     LIBS="$old_LIBS"
   fi
