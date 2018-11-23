@@ -41,6 +41,10 @@ AC_DEFUN([LIBVIRT_CHECK_LIBSSH],[
         [AC_DEFINE([HAVE_SSH_KNOWN_HOSTS_E], [1],
           [Defined if enum ssh_known_hosts_e exists in libssh.h])],
         [], [[#include <libssh/libssh.h>]])
+    AC_CHECK_FUNC([ssh_session_update_known_hosts],
+      [],
+      [AC_DEFINE_UNQUOTED([ssh_session_update_known_hosts], [ssh_write_knownhost],
+            [ssh_write_knownhost is deprecated and replaced by ssh_session_update_known_hosts.])])
     CFLAGS="$old_CFLAGS"
     LIBS="$old_LIBS"
   fi
