@@ -80,6 +80,22 @@ struct _virNetLibsshAuthMethod {
     int tries;
 };
 
+#ifndef HAVE_SSH_KNOWN_HOSTS_E
+/* This is an auxiliar enum to help libssh migration to version 0.8.0
+ * or higher. This enum associates the enumerator ssh_server_known_e
+ * with new ssh_known_hosts_e enum. In other words, it can be removed
+ * in the future. ERROR was moved from -1 to -2 and NOT_FOUND from 4
+ * to -1. */
+enum _vir_ssh_known_hosts_e {
+    SSH_KNOWN_HOSTS_ERROR = SSH_SERVER_ERROR,
+    SSH_KNOWN_HOSTS_UNKNOWN = SSH_SERVER_NOT_KNOWN,
+    SSH_KNOWN_HOSTS_OK,
+    SSH_KNOWN_HOSTS_CHANGED,
+    SSH_KNOWN_HOSTS_OTHER,
+    SSH_KNOWN_HOSTS_NOT_FOUND,
+};
+#endif
+
 struct _virNetLibsshSession {
     virObjectLockable parent;
     virNetLibsshSessionState state;
