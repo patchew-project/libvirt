@@ -17,11 +17,11 @@
  *
  */
 
-#ifndef __VIR_SECURITY_NOP_H__
-# define __VIR_SECURITY_NOP_H__
+#ifndef __SECURITY_NOP_H__
+# define __SECURITY_NOP_H__
 
 # include "security_driver.h"
 
 extern virSecurityDriver virSecurityDriverNop;
 
-#endif /* __VIR_SECURITY_NOP_H__ */
+#endif /* __SECURITY_NOP_H__ */

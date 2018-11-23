@@ -20,8 +20,8 @@
 
 #include "security_driver.h"
 
-#ifndef __VIR_SECURITY_DAC
-# define __VIR_SECURITY_DAC
+#ifndef __SECURITY_DAC__
+# define __SECURITY_DAC__
 
 extern virSecurityDriver virSecurityDriverDAC;
 
@@ -38,4 +38,4 @@ void virSecurityDACSetMountNamespace(virSecurityManagerPtr mgr,
 void virSecurityDACSetChownCallback(virSecurityManagerPtr mgr,
                                     virSecurityManagerDACChownCallback chownCallback);
 
-#endif /* __VIR_SECURITY_DAC */
+#endif /* __SECURITY_DAC__ */
