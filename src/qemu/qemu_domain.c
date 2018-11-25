@@ -3260,6 +3260,7 @@ qemuDomainDefAddDefaultDevices(virDomainDefPtr def,
             addPCIRoot = true;
         break;
 
+    case VIR_ARCH_ARMV6L:
     case VIR_ARCH_ARMV7L:
     case VIR_ARCH_AARCH64:
         addDefaultUSB = false;
@@ -3305,7 +3306,6 @@ qemuDomainDefAddDefaultDevices(virDomainDefPtr def,
         addPCIRoot = true;
         break;
 
-    case VIR_ARCH_ARMV6L:
     case VIR_ARCH_ARMV7B:
     case VIR_ARCH_CRIS:
     case VIR_ARCH_ITANIUM:
@@ -6035,7 +6035,8 @@ qemuDomainDefaultNetModel(const virDomainDef *def,
     if (ARCH_IS_S390(def->os.arch))
         return "virtio";
 
-    if (def->os.arch == VIR_ARCH_ARMV7L ||
+    if (def->os.arch == VIR_ARCH_ARMV6L ||
+        def->os.arch == VIR_ARCH_ARMV7L ||
         def->os.arch == VIR_ARCH_AARCH64) {
         if (STREQ(def->os.machine, "versatilepb"))
             return "smc91c111";
@@ -9818,7 +9819,8 @@ bool
 qemuDomainMachineIsARMVirt(const char *machine,
                            const virArch arch)
 {
-    if (arch != VIR_ARCH_ARMV7L &&
+    if (arch != VIR_ARCH_ARMV6L &&
+        arch != VIR_ARCH_ARMV7L &&
         arch != VIR_ARCH_AARCH64)
         return false;
 
@@ -10624,7 +10626,8 @@ qemuDomainSupportsNicdev(virDomainDefPtr def,
                          virDomainNetDefPtr net)
 {
     /* non-virtio ARM nics require legacy -net nic */
-    if (((def->os.arch == VIR_ARCH_ARMV7L) ||
+    if (((def->os.arch == VIR_ARCH_ARMV6L) ||
+        (def->os.arch == VIR_ARCH_ARMV7L) ||
         (def->os.arch == VIR_ARCH_AARCH64)) &&
         net->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO &&
         net->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI)

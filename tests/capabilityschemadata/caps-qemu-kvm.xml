@@ -81,6 +81,16 @@
     </features>
   </guest>
 
+<guest>
+    <os_type>hvm</os_type>
+    <arch name='armv7l'>
+      <wordsize>32</wordsize>
+      <emulator>/usr/bin/qemu-system-arm</emulator>
+      <machine>versatilepb</machine>
+      <domain type='qemu'/>
+    </arch>
+  </guest>
+
   <guest>
     <os_type>hvm</os_type>
     <arch name='armv7l'>
