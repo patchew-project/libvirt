@@ -3267,6 +3267,15 @@ qemuDomainDefAddDefaultDevices(virDomainDefPtr def,
         addDefaultMemballoon = false;
         if (qemuDomainIsARMVirt(def))
             addPCIeRoot = virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_GPEX);
+
+        if (!ARCH_IS_RISCV(def->os.arch) ||
+                    STREQ(def->os.machine, "versatilepb"))
+            addPCIRoot = true;
+
+        if (qemuDomainIsARMVirt(def) &&
+                    virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_GPEX))
+            addPCIRoot = true;
+
         break;
 
     case VIR_ARCH_PPC64:
