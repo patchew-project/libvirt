@@ -68,6 +68,14 @@
           be viewed via the domain statistics.
         </description>
       </change>
+      <change>
+        <summary>
+          libxl: Add XEN PVH support
+        </summary>
+        <description>
+          The libxl driver now has support for PVH os type.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
     </section>
