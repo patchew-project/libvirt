@@ -2200,10 +2200,10 @@ static const char *preferredMachines[] =
     NULL, /* VIR_ARCH_NONE (not a real arch :) */
     "clipper", /* VIR_ARCH_ALPHA */
     NULL, /* VIR_ARCH_ARMV6L (no QEMU impl) */
-    "integratorcp", /* VIR_ARCH_ARMV7L */
-    "integratorcp", /* VIR_ARCH_ARMV7B */
+    NULL, /* VIR_ARCH_ARMV7L (no default machine type) */
+    NULL, /* VIR_ARCH_ARMV7B (no default machine type) */
 
-    "integratorcp", /* VIR_ARCH_AARCH64 */
+    NULL, /* VIR_ARCH_AARCH64 (no default machine type) */
     "axis-dev88", /* VIR_ARCH_CRIS */
     "pc", /* VIR_ARCH_I686 */
     NULL, /* VIR_ARCH_ITANIUM (doesn't exist in QEMU any more) */
