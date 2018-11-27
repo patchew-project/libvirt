@@ -5490,15 +5490,8 @@ qemuDomainGetIOThreadsMon(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
                           qemuMonitorIOThreadInfoPtr **iothreads)
 {
-    qemuDomainObjPrivatePtr priv;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
     int niothreads = 0;
-
-    priv = vm->privateData;
-    if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_OBJECT_IOTHREAD)) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                       _("IOThreads not supported with this binary"));
-        return -1;
-    }
 
     qemuDomainObjEnterMonitor(driver, vm);
     niothreads = qemuMonitorGetIOThreads(priv->mon, iothreads);
@@ -5514,6 +5507,7 @@ qemuDomainGetIOThreadsLive(virQEMUDriverPtr driver,
                            virDomainObjPtr vm,
                            virDomainIOThreadInfoPtr **info)
 {
+    qemuDomainObjPrivatePtr priv;
     qemuMonitorIOThreadInfoPtr *iothreads = NULL;
     virDomainIOThreadInfoPtr *info_ret = NULL;
     int niothreads = 0;
@@ -5526,6 +5520,13 @@ qemuDomainGetIOThreadsLive(virQEMUDriverPtr driver,
     if (!virDomainObjIsActive(vm)) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("cannot list IOThreads for an inactive domain"));
+        goto endjob;
+    }
+
+    priv = vm->privateData;
+    if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_OBJECT_IOTHREAD)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("IOThreads not supported with this binary"));
         goto endjob;
     }
 
@@ -20874,12 +20875,17 @@ qemuDomainGetStatsIOThread(virQEMUDriverPtr driver,
                            int *maxparams,
                            unsigned int privflags ATTRIBUTE_UNUSED)
 {
+    qemuDomainObjPrivatePtr priv;
     size_t i;
     qemuMonitorIOThreadInfoPtr *iothreads = NULL;
     int niothreads;
     int ret = -1;
 
     if (!virDomainObjIsActive(dom))
+        return 0;
+
+    priv = dom->privateData;
+    if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_OBJECT_IOTHREAD))
         return 0;
 
     if ((niothreads = qemuDomainGetIOThreadsMon(driver, dom, &iothreads)) < 0)
