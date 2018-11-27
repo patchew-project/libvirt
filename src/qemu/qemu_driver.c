@@ -21092,6 +21092,7 @@ qemuConnectGetAllDomainStats(virConnectPtr conn,
                              unsigned int flags)
 {
     virQEMUDriverPtr driver = conn->privateData;
+    virErrorPtr save_err = NULL;
     virDomainObjPtr *vms = NULL;
     virDomainObjPtr vm;
     size_t nvms;
@@ -21160,6 +21161,7 @@ qemuConnectGetAllDomainStats(virConnectPtr conn,
         if (flags & VIR_CONNECT_GET_ALL_DOMAINS_STATS_BACKING)
             domflags |= QEMU_DOMAIN_STATS_BACKING;
         if (qemuDomainGetStats(conn, vm, stats, &tmp, domflags) < 0) {
+            save_err = virSaveLastError();
             if (HAVE_JOB(domflags) && vm)
                 qemuDomainObjEndJob(driver, vm);
 
@@ -21184,6 +21186,10 @@ qemuConnectGetAllDomainStats(virConnectPtr conn,
  cleanup:
     virDomainStatsRecordListFree(tmpstats);
     virObjectListFreeCount(vms, nvms);
+    if (save_err) {
+        virSetError(save_err);
+        virFreeError(save_err);
+    }
 
     return ret;
 }
