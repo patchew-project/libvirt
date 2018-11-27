@@ -615,8 +615,14 @@ x86DataToSignatureFull(const virCPUx86Data *data,
 }
 
 
-/* Mask out irrelevant bits (R and Step) from processor signature. */
-#define SIGNATURE_MASK  0x0fff3ff0
+#define SIGNATURE_MASK  0x0fff3fff
+#define SIGNATURE_MASK_STEPPING 0x0000000f
+#define SIGNATURE_MASK_FAMILYMODEL  0x0fff3ff0
+
+#define SIGNATURE(sig) (sig & SIGNATURE_MASK)
+#define STEPPING(sig) (sig & SIGNATURE_MASK_STEPPING)
+#define FAMILYMODEL(sig) (sig & SIGNATURE_MASK_FAMILYMODEL)
+
 
 static uint32_t
 x86DataToSignature(const virCPUx86Data *data)
@@ -627,7 +633,7 @@ x86DataToSignature(const virCPUx86Data *data)
     if (!(cpuid = x86DataCpuid(data, &leaf1)))
         return 0;
 
-    return cpuid->eax & SIGNATURE_MASK;
+    return SIGNATURE(cpuid->eax);
 }
 
 
@@ -1203,6 +1209,7 @@ x86ModelParse(xmlXPathContextPtr ctxt,
     if (virXPathBoolean("boolean(./signature)", ctxt)) {
         unsigned int sigFamily = 0;
         unsigned int sigModel = 0;
+        unsigned int sigStepping = 0;
         int rc;
 
         rc = virXPathUInt("string(./signature/@family)", ctxt, &sigFamily);
@@ -1221,7 +1228,12 @@ x86ModelParse(xmlXPathContextPtr ctxt,
             goto cleanup;
         }
 
-        model->signature = x86MakeSignature(sigFamily, sigModel, 0);
+        /* CPU stepping number will be used if './signature/@stepping' is present */
+        rc = virXPathUInt("string(./signature/@stepping)", ctxt, &sigStepping);
+        if (rc < 0)
+            sigStepping = 0;
+
+        model->signature = x86MakeSignature(sigFamily, sigModel, sigStepping);
     }
 
     if (virXPathBoolean("boolean(./vendor)", ctxt)) {
@@ -1675,6 +1687,13 @@ virCPUx86Compare(virCPUDefPtr host,
  * Checks whether a candidate model is a better fit for the CPU data than the
  * current model.
  *
+ * Using family/model along with an optional stepping number to select candidate
+ * CPU. If stepping is 0, consider which might be optional.
+ *
+ * If not considering the stepping number, we want to select a model with
+ * family/model equal to family/model of the real CPU. Once we found such
+ * model, we only consider candidates with matching family/model.
+ *
  * Returns 0 if current is better,
  *         1 if candidate is better,
  *         2 if candidate is the best one (search should stop now).
@@ -1707,12 +1726,22 @@ x86DecodeUseCandidate(virCPUx86ModelPtr current,
         return 1;
     }
 
-    /* Ideally we want to select a model with family/model equal to
-     * family/model of the real CPU. Once we found such model, we only
-     * consider candidates with matching family/model.
-     */
+    if (STEPPING(current->signature) && current->signature != signature) {
+        VIR_DEBUG("%s is dropped due to signature stepping mismatch, try %s",
+                cpuCurrent->model, cpuCandidate->model);
+        return 1;
+    }
+
     if (signature &&
-        current->signature == signature &&
+        FAMILYMODEL(current->signature) == FAMILYMODEL(signature) &&
+        FAMILYMODEL(candidate->signature) != FAMILYMODEL(signature)) {
+        VIR_DEBUG("%s differs in signature from matching %s",
+                  cpuCandidate->model, cpuCurrent->model);
+        return 0;
+    }
+
+    if (signature && STEPPING(candidate->signature) &&
+        FAMILYMODEL(current->signature) == FAMILYMODEL(signature) &&
         candidate->signature != signature) {
         VIR_DEBUG("%s differs in signature from matching %s",
                   cpuCandidate->model, cpuCurrent->model);
@@ -1725,12 +1754,19 @@ x86DecodeUseCandidate(virCPUx86ModelPtr current,
         return 1;
     }
 
+    if (signature && STEPPING(candidate->signature) &&
+        FAMILYMODEL(current->signature) == FAMILYMODEL(signature) &&
+        candidate->signature == signature) {
+        VIR_DEBUG("%s provides matching signature", cpuCandidate->model);
+        return 1;
+    }
+
     /* Prefer a candidate with matching signature even though it would
      * result in longer list of features.
      */
-    if (signature &&
-        candidate->signature == signature &&
-        current->signature != signature) {
+    if (signature&&
+        FAMILYMODEL(candidate->signature) == FAMILYMODEL(signature) &&
+        FAMILYMODEL(current->signature) != FAMILYMODEL(signature)) {
         VIR_DEBUG("%s provides matching signature", cpuCandidate->model);
         return 1;
     }
