@@ -1245,6 +1245,11 @@ mymain(void)
 
     DO_TEST("graphics-egl-headless",
             QEMU_CAPS_EGL_HEADLESS,
+            QEMU_CAPS_EGL_HEADLESS_RENDERNODE,
+            QEMU_CAPS_DEVICE_CIRRUS_VGA);
+    DO_TEST("graphics-egl-headless-rendernode-auto",
+            QEMU_CAPS_EGL_HEADLESS,
+            QEMU_CAPS_EGL_HEADLESS_RENDERNODE,
             QEMU_CAPS_DEVICE_CIRRUS_VGA);
 
     DO_TEST("graphics-vnc", QEMU_CAPS_VNC, QEMU_CAPS_DEVICE_CIRRUS_VGA);
@@ -1284,6 +1289,7 @@ mymain(void)
     DO_TEST("graphics-vnc-egl-headless",
             QEMU_CAPS_VNC,
             QEMU_CAPS_EGL_HEADLESS,
+            QEMU_CAPS_EGL_HEADLESS_RENDERNODE,
             QEMU_CAPS_DEVICE_CIRRUS_VGA);
 
     DO_TEST("graphics-sdl",
@@ -1346,6 +1352,7 @@ mymain(void)
     DO_TEST("graphics-spice-egl-headless",
             QEMU_CAPS_SPICE,
             QEMU_CAPS_EGL_HEADLESS,
+            QEMU_CAPS_EGL_HEADLESS_RENDERNODE,
             QEMU_CAPS_DEVICE_QXL);
     DO_TEST_FAILURE("graphics-spice-invalid-egl-headless",
                     QEMU_CAPS_SPICE,

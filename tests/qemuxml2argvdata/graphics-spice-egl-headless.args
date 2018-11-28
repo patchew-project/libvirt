@@ -24,7 +24,7 @@ server,nowait \
 -device ide-drive,bus=ide.0,unit=0,drive=drive-ide0-0-0,id=ide0-0-0,\
 bootindex=1 \
 -spice port=5903,addr=127.0.0.1 \
--display egl-headless \
+-display egl-headless,rendernode=/dev/dri/foo \
 -vga qxl \
 -global qxl-vga.ram_size=67108864 \
 -global qxl-vga.vram_size=33554432 \
