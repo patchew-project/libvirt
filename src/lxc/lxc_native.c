@@ -583,6 +583,9 @@ lxcNetworkWalkCallback(const char *name, virConfValuePtr value, void *data)
         parseData->ips = NULL;
         parseData->nips = 0;
 
+	parseData->gateway_ipv4 = NULL;
+	parseData->gateway_ipv6 = NULL;
+
         /* Keep the new value */
         parseData->type = value->str;
     }
