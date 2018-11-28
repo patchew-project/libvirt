@@ -4761,6 +4761,16 @@ qemuProcessGraphicsSetupListen(virQEMUDriverPtr driver,
 
 
 static int
+qemuProcessGraphicsSetupRenderNode(virDomainGraphicsDefPtr graphics)
+{
+    if (!(graphics->data.spice.rendernode = virHostGetDRMRenderNode()))
+        return -1;
+
+    return 0;
+}
+
+
+static int
 qemuProcessSetupGraphics(virQEMUDriverPtr driver,
                          virDomainObjPtr vm,
                          unsigned int flags)
@@ -4772,6 +4782,10 @@ qemuProcessSetupGraphics(virQEMUDriverPtr driver,
 
     for (i = 0; i < vm->def->ngraphics; i++) {
         graphics = vm->def->graphics[i];
+
+        if (virDomainGraphicsNeedsRenderNode(graphics) &&
+            qemuProcessGraphicsSetupRenderNode(graphics) < 0)
+            goto cleanup;
 
         if (qemuProcessGraphicsSetupListen(driver, graphics, vm) < 0)
             goto cleanup;
