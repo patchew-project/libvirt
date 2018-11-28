@@ -4763,7 +4763,14 @@ qemuProcessGraphicsSetupListen(virQEMUDriverPtr driver,
 static int
 qemuProcessGraphicsSetupRenderNode(virDomainGraphicsDefPtr graphics)
 {
-    if (!(graphics->data.spice.rendernode = virHostGetDRMRenderNode()))
+    char **rendernode = NULL;
+
+    if (graphics->type == VIR_DOMAIN_GRAPHICS_TYPE_SPICE)
+        rendernode = &graphics->data.spice.rendernode;
+    else
+        rendernode = &graphics->data.egl_headless.rendernode;
+
+    if (!(*rendernode = virHostGetDRMRenderNode()))
         return -1;
 
     return 0;
