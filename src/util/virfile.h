@@ -383,4 +383,15 @@ int virFileInData(int fd,
 
 VIR_DEFINE_AUTOPTR_FUNC(virFileWrapperFd, virFileWrapperFdFree)
 
+int virFileGetXAtrr(const char *path,
+                    const char *name,
+                    char **value);
+
+int virFileSetXAtrr(const char *path,
+                    const char *name,
+                    const char *value);
+
+int virFileRemoveXAttr(const char *path,
+                       const char *name);
+
 #endif /* __VIR_FILE_H */
