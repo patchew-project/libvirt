@@ -20,8 +20,8 @@
  * Author: Daniel P. Berrange <berrange@redhat.com>
  */
 
-#ifndef VIR_SECURITY_MANAGER_H__
-# define VIR_SECURITY_MANAGER_H__
+#ifndef __SECURITY_MANAGER_H__
+# define __SECURITY_MANAGER_H__
 
 # include "domain_conf.h"
 # include "vircommand.h"
@@ -210,4 +210,4 @@ void
 virSecurityManagerMetadataUnlock(virSecurityManagerPtr mgr,
                                  virSecurityManagerMetadataLockStatePtr *state);
 
-#endif /* VIR_SECURITY_MANAGER_H__ */
+#endif /* __SECURITY_MANAGER_H__ */

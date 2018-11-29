@@ -19,9 +19,9 @@
  *     James Morris <jmorris@namei.org>
  *
  */
-#ifndef __VIR_SECURITY_SELINUX_H__
-# define __VIR_SECURITY_SELINUX_H__
+#ifndef __SECURITY_SELINUX_H__
+# define __SECURITY_SELINUX_H__
 
 extern virSecurityDriver virSecurityDriverSELinux;
 
-#endif /* __VIR_SECURITY_SELINUX_H__ */
+#endif /* __SECURITY_SELINUX_H__ */

@@ -19,8 +19,8 @@
  *     James Morris <jmorris@namei.org>
  *
  */
-#ifndef __VIR_SECURITY_H__
-# define __VIR_SECURITY_H__
+#ifndef __SECURITY_DRIVER_H__
+# define __SECURITY_DRIVER_H__
 
 # include "internal.h"
 # include "domain_conf.h"
@@ -226,4 +226,4 @@ struct _virSecurityDriver {
 virSecurityDriverPtr virSecurityDriverLookup(const char *name,
                                              const char *virtDriver);
 
-#endif /* __VIR_SECURITY_H__ */
+#endif /* __SECURITY_DRIVER_H__ */
