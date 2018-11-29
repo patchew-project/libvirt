@@ -3668,4 +3668,13 @@ virDomainDefHasManagedPR(const virDomainDef *def);
 bool
 virDomainGraphicsDefHasOpenGL(const virDomainDef *def);
 
+bool
+virDomainGraphicsSupportsRenderNode(const virDomainGraphicsDef *graphics);
+
+const char *
+virDomainGraphicsGetRenderNode(const virDomainGraphicsDef *graphics);
+
+bool
+virDomainGraphicsNeedsRenderNode(const virDomainGraphicsDef *graphics);
+
 #endif /* __DOMAIN_CONF_H */
