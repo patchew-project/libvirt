@@ -29,6 +29,7 @@
 #endif
 
 #include "security_dac.h"
+#include "security_util.h"
 #include "virerror.h"
 #include "virfile.h"
 #include "viralloc.h"
@@ -415,11 +416,26 @@ virSecurityDACGetImageIds(virSecurityLabelDefPtr seclabel,
  */
 static int
 virSecurityDACRememberLabel(virSecurityDACDataPtr priv ATTRIBUTE_UNUSED,
-                            const char *path ATTRIBUTE_UNUSED,
-                            uid_t uid ATTRIBUTE_UNUSED,
-                            gid_t gid ATTRIBUTE_UNUSED)
+                            const char *path,
+                            uid_t uid,
+                            gid_t gid)
 {
-    return 0;
+    char *label = NULL;
+    int ret = -1;
+
+    if (virAsprintf(&label, "+%u:+%u",
+                    (unsigned int)uid,
+                    (unsigned int)gid) < 0)
+        goto cleanup;
+
+    if (virSecuritySetRememberedLabel(SECURITY_DAC_NAME,
+                                      path, label) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(label);
+    return ret;
 }
 
 /**
@@ -439,11 +455,27 @@ virSecurityDACRememberLabel(virSecurityDACDataPtr priv ATTRIBUTE_UNUSED,
  */
 static int
 virSecurityDACRecallLabel(virSecurityDACDataPtr priv ATTRIBUTE_UNUSED,
-                          const char *path ATTRIBUTE_UNUSED,
-                          uid_t *uid ATTRIBUTE_UNUSED,
-                          gid_t *gid ATTRIBUTE_UNUSED)
+                          const char *path,
+                          uid_t *uid,
+                          gid_t *gid)
 {
-    return 0;
+    char *label;
+    int ret = -1;
+
+    if (virSecurityGetRememberedLabel(SECURITY_DAC_NAME,
+                                      path, &label) < 0)
+        goto cleanup;
+
+    if (!label)
+        return 1;
+
+    if (virParseOwnershipIds(label, uid, gid) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    VIR_FREE(label);
+    return ret;
 }
 
 static virSecurityDriverStatus
