@@ -147,6 +147,7 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
         cfg->group = (gid_t)-1;
     }
     cfg->dynamicOwnership = privileged;
+    cfg->rememberOwner = true;
 
     cfg->cgroupControllers = -1; /* -1 == auto-detect */
 
@@ -728,6 +729,9 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         goto cleanup;
 
     if (virConfGetValueBool(conf, "dynamic_ownership", &cfg->dynamicOwnership) < 0)
+        goto cleanup;
+
+    if (virConfGetValueBool(conf, "remember_owner", &cfg->rememberOwner) < 0)
         goto cleanup;
 
     if (virConfGetValueStringList(conf,  "cgroup_controllers", false,
