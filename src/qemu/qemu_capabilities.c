@@ -558,6 +558,7 @@ struct _virQEMUCaps {
     virObject parent;
 
     bool usedQMP;
+    bool kvmSupportsNesting;
 
     char *binary;
     time_t ctime;
@@ -1530,6 +1531,7 @@ virQEMUCapsPtr virQEMUCapsNewCopy(virQEMUCapsPtr qemuCaps)
         return NULL;
 
     ret->usedQMP = qemuCaps->usedQMP;
+    ret->kvmSupportsNesting = qemuCaps->kvmSupportsNesting;
 
     if (VIR_STRDUP(ret->binary, qemuCaps->binary) < 0)
         goto error;
@@ -3589,6 +3591,9 @@ virQEMUCapsLoadCache(virArch hostArch,
     virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_KVM);
     virQEMUCapsInitHostCPUModel(qemuCaps, hostArch, VIR_DOMAIN_VIRT_QEMU);
 
+    if (virXPathBoolean("boolean(./kvmSupportsNesting)", ctxt) > 0)
+        qemuCaps->kvmSupportsNesting = true;
+
     ret = 0;
  cleanup:
     VIR_FREE(str);
@@ -3808,6 +3813,9 @@ virQEMUCapsFormatCache(virQEMUCapsPtr qemuCaps)
     if (qemuCaps->sevCapabilities)
         virQEMUCapsFormatSEVInfo(qemuCaps, &buf);
 
+    if (qemuCaps->kvmSupportsNesting)
+        virBufferAddLit(&buf, "<kvmSupportsNesting/>\n");
+
     virBufferAdjustIndent(&buf, -2);
     virBufferAddLit(&buf, "</qemuCaps>\n");
 
@@ -3848,6 +3856,41 @@ virQEMUCapsSaveFile(void *data,
 }
 
 
+/* Check the kernel module parameters 'nested' file to determine if enabled
+ *
+ *   Intel: 'kvm_intel' uses 'Y'
+ *   AMD:   'kvm_amd' uses '1'
+ *   PPC64: 'kvm_hv' uses 'Y'
+ *   S390:  'kvm' uses '1'
+ */
+static bool
+virQEMUCapsKVMSupportsNesting(void)
+{
+    static char const * const kmod[] = {"kvm_intel", "kvm_amd",
+                                        "kvm_hv", "kvm"};
+    VIR_AUTOFREE(char *) value = NULL;
+    int rc;
+    size_t i;
+
+    for (i = 0; i < ARRAY_CARDINALITY(kmod); i++) {
+        VIR_FREE(value);
+        rc = virFileReadValueString(&value, "/sys/module/%s/parameters/nested",
+                                    kmod[i]);
+        if (rc == -2)
+            continue;
+        if (rc < 0) {
+            virResetLastError();
+            return false;
+        }
+
+        if (value[0] == 'Y' || value[0] == 'y' || value[0] == '1')
+            return true;
+    }
+
+    return false;
+}
+
+
 static bool
 virQEMUCapsIsValid(void *data,
                    void *privData)
@@ -3856,6 +3899,7 @@ virQEMUCapsIsValid(void *data,
     virQEMUCapsCachePrivPtr priv = privData;
     bool kvmUsable;
     struct stat sb;
+    bool kvmSupportsNesting;
 
     if (!qemuCaps->binary)
         return true;
@@ -3931,6 +3975,14 @@ virQEMUCapsIsValid(void *data,
                       qemuCaps->binary,
                       priv->kernelVersion,
                       qemuCaps->kernelVersion);
+            return false;
+        }
+
+        kvmSupportsNesting = virQEMUCapsKVMSupportsNesting();
+        if (kvmSupportsNesting != qemuCaps->kvmSupportsNesting) {
+            VIR_DEBUG("Outdated capabilities for '%s': kvm kernel nested "
+                      "value changed from %d",
+                     qemuCaps->binary, qemuCaps->kvmSupportsNesting);
             return false;
         }
     }
@@ -4576,6 +4628,8 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
 
         if (VIR_STRDUP(qemuCaps->kernelVersion, kernelVersion) < 0)
             goto error;
+
+        qemuCaps->kvmSupportsNesting = virQEMUCapsKVMSupportsNesting();
     }
 
  cleanup:
