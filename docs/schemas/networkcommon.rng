@@ -223,6 +223,7 @@
               <choice>
                 <value>tagged</value>
                 <value>untagged</value>
+                <value>dot1q-tunnel</value>
               </choice>
             </attribute>
           </optional>

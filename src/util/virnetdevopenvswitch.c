@@ -91,6 +91,11 @@ virNetDevOpenvswitchConstructVlans(virCommandPtr cmd, virNetDevVlanPtr virtVlan)
         virCommandAddArg(cmd, "vlan_mode=native-untagged");
         virCommandAddArgFormat(cmd, "tag=%d", virtVlan->nativeTag);
         break;
+    case VIR_NATIVE_VLAN_MODE_DOT1Q_TUNNEL:
+        virCommandAddArg(cmd, "vlan_mode=dot1q-tunnel");
+        virCommandAddArg(cmd, "other_config:qinq-ethtype=802.1q");
+        virCommandAddArgFormat(cmd, "tag=%d", virtVlan->nativeTag);
+        break;
     case VIR_NATIVE_VLAN_MODE_DEFAULT:
     default:
         break;
