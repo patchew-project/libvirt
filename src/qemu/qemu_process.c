@@ -8108,12 +8108,12 @@ static qemuMonitorCallbacks callbacks = {
 
 
 void
-virQEMUCapsInitQMPCommandFree(virQEMUCapsInitQMPCommandPtr cmd)
+qemuProcessQmpFree(qemuProcessQmpPtr cmd)
 {
     if (!cmd)
         return;
 
-    virQEMUCapsInitQMPCommandAbort(cmd);
+    qemuProcessQmpAbort(cmd);
     VIR_FREE(cmd->binary);
     VIR_FREE(cmd->monpath);
     VIR_FREE(cmd->monarg);
@@ -8122,14 +8122,14 @@ virQEMUCapsInitQMPCommandFree(virQEMUCapsInitQMPCommandPtr cmd)
 }
 
 
-virQEMUCapsInitQMPCommandPtr
-virQEMUCapsInitQMPCommandNew(char *binary,
-                             const char *libDir,
-                             uid_t runUid,
-                             gid_t runGid,
-                             char **qmperr)
+qemuProcessQmpPtr
+qemuProcessQmpNew(char *binary,
+                  const char *libDir,
+                  uid_t runUid,
+                  gid_t runGid,
+                  char **qmperr)
 {
-    virQEMUCapsInitQMPCommandPtr cmd = NULL;
+    qemuProcessQmpPtr cmd = NULL;
 
     if (VIR_ALLOC(cmd) < 0)
         goto error;
@@ -8168,7 +8168,7 @@ virQEMUCapsInitQMPCommandNew(char *binary,
     return cmd;
 
  error:
-    virQEMUCapsInitQMPCommandFree(cmd);
+    qemuProcessQmpFree(cmd);
     return NULL;
 }
 
@@ -8178,8 +8178,8 @@ virQEMUCapsInitQMPCommandNew(char *binary,
  *          1 when probing QEMU failed
  */
 int
-virQEMUCapsInitQMPCommandRun(virQEMUCapsInitQMPCommandPtr cmd,
-                             bool forceTCG)
+qemuProcessQmpRun(qemuProcessQmpPtr cmd,
+                  bool forceTCG)
 {
     virDomainXMLOptionPtr xmlopt = NULL;
     const char *machine;
@@ -8249,7 +8249,7 @@ virQEMUCapsInitQMPCommandRun(virQEMUCapsInitQMPCommandPtr cmd,
 
  cleanup:
     if (!cmd->mon)
-        virQEMUCapsInitQMPCommandAbort(cmd);
+        qemuProcessQmpAbort(cmd);
     virObjectUnref(xmlopt);
 
     return ret;
@@ -8261,7 +8261,7 @@ virQEMUCapsInitQMPCommandRun(virQEMUCapsInitQMPCommandPtr cmd,
 
 
 void
-virQEMUCapsInitQMPCommandAbort(virQEMUCapsInitQMPCommandPtr cmd)
+qemuProcessQmpAbort(qemuProcessQmpPtr cmd)
 {
     if (cmd->mon)
         virObjectUnlock(cmd->mon);

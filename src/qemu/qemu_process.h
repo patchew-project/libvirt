@@ -214,9 +214,9 @@ int qemuProcessStartManagedPRDaemon(virDomainObjPtr vm);
 
 void qemuProcessKillManagedPRDaemon(virDomainObjPtr vm);
 
-typedef struct _virQEMUCapsInitQMPCommand virQEMUCapsInitQMPCommand;
-typedef virQEMUCapsInitQMPCommand *virQEMUCapsInitQMPCommandPtr;
-struct _virQEMUCapsInitQMPCommand {
+typedef struct _qemuProcessQmp qemuProcessQmp;
+typedef qemuProcessQmp *qemuProcessQmpPtr;
+struct _qemuProcessQmp {
     char *binary;
     uid_t runUid;
     gid_t runGid;
@@ -231,17 +231,17 @@ struct _virQEMUCapsInitQMPCommand {
     virDomainObjPtr vm;
 };
 
-virQEMUCapsInitQMPCommandPtr virQEMUCapsInitQMPCommandNew(char *binary,
-                                                          const char *libDir,
-                                                          uid_t runUid,
-                                                          gid_t runGid,
-                                                          char **qmperr);
+qemuProcessQmpPtr qemuProcessQmpNew(char *binary,
+                                    const char *libDir,
+                                    uid_t runUid,
+                                    gid_t runGid,
+                                    char **qmperr);
 
-void virQEMUCapsInitQMPCommandFree(virQEMUCapsInitQMPCommandPtr cmd);
+void qemuProcessQmpFree(qemuProcessQmpPtr cmd);
 
-int virQEMUCapsInitQMPCommandRun(virQEMUCapsInitQMPCommandPtr cmd,
-                                 bool forceTCG);
+int qemuProcessQmpRun(qemuProcessQmpPtr cmd,
+                      bool forceTCG);
 
-void virQEMUCapsInitQMPCommandAbort(virQEMUCapsInitQMPCommandPtr cmd);
+void qemuProcessQmpAbort(qemuProcessQmpPtr cmd);
 
 #endif /* __QEMU_PROCESS_H__ */
