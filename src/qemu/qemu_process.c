@@ -8123,7 +8123,7 @@ qemuProcessQmpFree(qemuProcessQmpPtr cmd)
 
 
 qemuProcessQmpPtr
-qemuProcessQmpNew(char *binary,
+qemuProcessQmpNew(const char *binary,
                   const char *libDir,
                   uid_t runUid,
                   gid_t runGid,

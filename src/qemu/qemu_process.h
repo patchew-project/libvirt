@@ -231,7 +231,7 @@ struct _qemuProcessQmp {
     virDomainObjPtr vm;
 };
 
-qemuProcessQmpPtr qemuProcessQmpNew(char *binary,
+qemuProcessQmpPtr qemuProcessQmpNew(const char *binary,
                                     const char *libDir,
                                     uid_t runUid,
                                     gid_t runGid,
