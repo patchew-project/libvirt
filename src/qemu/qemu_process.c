@@ -8390,10 +8390,20 @@ qemuProcessQmpStart(qemuProcessQmpPtr proc)
     goto cleanup;
 }
 
-
-void
-qemuProcessQmpStop(qemuProcessQmpPtr proc)
+/**
+ * qemuProcessStop:
+ * @proc: Stores Process and Connection State
+ *
+ * Stop Monitor Connection and QEMU Process
+ */
+void qemuProcessQmpStop(qemuProcessQmpPtr proc)
 {
+    if (!proc)
+        return;
+
+    VIR_DEBUG("Shutting down proc=%p emulator=%s mon=%p pid=%lld",
+              proc, proc->binary, proc->mon, (long long)proc->pid);
+
     if (proc->mon) {
         virObjectUnlock(proc->mon);
         qemuMonitorClose(proc->mon);
