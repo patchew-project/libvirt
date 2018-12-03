@@ -8263,14 +8263,17 @@ qemuProcessQmpRun(qemuProcessQmpPtr proc,
 void
 qemuProcessQmpStop(qemuProcessQmpPtr proc)
 {
-    if (proc->mon)
+    if (proc->mon) {
         virObjectUnlock(proc->mon);
-    qemuMonitorClose(proc->mon);
-    proc->mon = NULL;
+        qemuMonitorClose(proc->mon);
+        proc->mon = NULL;
+    }
 
-    virCommandAbort(proc->cmd);
-    virCommandFree(proc->cmd);
-    proc->cmd = NULL;
+    if (proc->cmd) {
+        virCommandAbort(proc->cmd);
+        virCommandFree(proc->cmd);
+        proc->cmd = NULL;
+    }
 
     if (proc->monpath)
         unlink(proc->monpath);
@@ -8287,8 +8290,10 @@ qemuProcessQmpStop(qemuProcessQmpPtr proc)
                       virStrerror(errno, ebuf, sizeof(ebuf)));
 
         VIR_FREE(*proc->qmperr);
+
+        proc->pid = 0;
     }
+
     if (proc->pidfile)
         unlink(proc->pidfile);
-    proc->pid = 0;
 }

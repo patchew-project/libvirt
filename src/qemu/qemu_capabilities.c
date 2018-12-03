@@ -4273,6 +4273,7 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
     ret = 0;
 
  cleanup:
+    qemuProcessQmpStop(proc);
     qemuProcessQmpFree(proc);
     return ret;
 }
