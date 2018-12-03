@@ -8119,6 +8119,7 @@ qemuProcessQmpFree(qemuProcessQmpPtr proc)
 
     VIR_FREE(proc->binary);
     VIR_FREE(proc->libDir);
+    VIR_FREE(proc->uniqDir);
     VIR_FREE(proc->monpath);
     VIR_FREE(proc->monarg);
     VIR_FREE(proc->pidfile);
@@ -8181,32 +8182,32 @@ qemuProcessQmpNew(const char *binary,
 static int
 qemuProcessQmpInit(qemuProcessQmpPtr proc)
 {
+    char *template = NULL;
     int ret = -1;
 
     VIR_DEBUG("Beginning VM startup process"
               " proc=%p, emulator=%s",
               proc, proc->binary);
 
-    /* the ".sock" sufix is important to avoid a possible clash with a qemu
-     * domain called "capabilities"
-     */
-    if (virAsprintf(&proc->monpath, "%s/%s", proc->libDir,
-                    "capabilities.monitor.sock") < 0)
+    if (virAsprintf(&template, "%s/qemu.XXXXXX", proc->libDir) < 0)
+        goto cleanup;
+
+    proc->uniqDir = mkdtemp(template);
+
+    if (virAsprintf(&proc->monpath, "%s/%s", proc->uniqDir,
+                    "qmp.monitor") < 0)
         goto cleanup;
 
     if (virAsprintf(&proc->monarg, "unix:%s,server,nowait", proc->monpath) < 0)
         goto cleanup;
 
-    /* ".pidfile" suffix is used rather than ".pid" to avoid a possible clash
-     * with a qemu domain called "capabilities"
+    /*
      * Normally we'd use runDir for pid files, but because we're using
      * -daemonize we need QEMU to be allowed to create them, rather
      * than libvirtd. So we're using libDir which QEMU can write to
      */
-    if (virAsprintf(&proc->pidfile, "%s/%s", proc->libDir, "capabilities.pidfile") < 0)
+    if (virAsprintf(&proc->pidfile, "%s/%s", proc->uniqDir, "qmp.pid") < 0)
         goto cleanup;
-
-    virPidFileForceCleanupPath(proc->pidfile);
 
     ret = 0;
 
@@ -8446,4 +8447,7 @@ void qemuProcessQmpStop(qemuProcessQmpPtr proc)
 
     if (proc->pidfile)
         unlink(proc->pidfile);
+
+    if (proc->uniqDir)
+        rmdir(proc->uniqDir);
 }
