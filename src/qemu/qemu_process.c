@@ -8332,6 +8332,14 @@ qemuProcessQmpConnectMonitor(qemuProcessQmpPtr proc)
 
     virObjectLock(proc->mon);
 
+    /* Exit capabilities negotiation mode and enter QEMU command mode
+     * by issuing qmp_capabilities command to QEMU */
+    if (qemuMonitorSetCapabilities(proc->mon) < 0) {
+        VIR_DEBUG("Failed to set monitor capabilities %s",
+                  virGetLastErrorMessage());
+        goto cleanup;
+    }
+
     ret = 0;
 
  cleanup:
