@@ -13861,6 +13861,10 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
                                                 migratable, modelInfo, &expansion) < 0)
                 goto cleanup;
 
+            /* Expansion enumerates all features
+             * Baselines output enumerates only in-model (true) features */
+            qemuMonitorCPUModelInfoRemovePropByBoolValue(expansion, false);
+
             if (!(cpu = virQEMUCapsCPUModelInfoToCPUDef(migratable, expansion)))
                 goto cleanup;
 
