@@ -8127,7 +8127,8 @@ qemuProcessQmpNew(const char *binary,
                   const char *libDir,
                   uid_t runUid,
                   gid_t runGid,
-                  char **qmperr)
+                  char **qmperr,
+                  bool forceTCG)
 {
     qemuProcessQmpPtr proc = NULL;
 
@@ -8137,9 +8138,11 @@ qemuProcessQmpNew(const char *binary,
     if (VIR_STRDUP(proc->binary, binary) < 0)
         goto error;
 
+
     proc->runUid = runUid;
     proc->runGid = runGid;
     proc->qmperr = qmperr;
+    proc->forceTCG = forceTCG;
 
     /* the ".sock" sufix is important to avoid a possible clash with a qemu
      * domain called "capabilities"
@@ -8178,15 +8181,14 @@ qemuProcessQmpNew(const char *binary,
  *          1 when probing QEMU failed
  */
 int
-qemuProcessQmpRun(qemuProcessQmpPtr proc,
-                  bool forceTCG)
+qemuProcessQmpRun(qemuProcessQmpPtr proc)
 {
     virDomainXMLOptionPtr xmlopt = NULL;
     const char *machine;
     int status = 0;
     int ret = -1;
 
-    if (forceTCG)
+    if (proc->forceTCG)
         machine = "none,accel=tcg";
     else
         machine = "none,accel=kvm:tcg";

@@ -229,18 +229,19 @@ struct _qemuProcessQmp {
     virDomainChrSourceDef config;
     pid_t pid;
     virDomainObjPtr vm;
+    bool forceTCG;
 };
 
 qemuProcessQmpPtr qemuProcessQmpNew(const char *binary,
                                     const char *libDir,
                                     uid_t runUid,
                                     gid_t runGid,
-                                    char **qmperr);
+                                    char **qmperr,
+                                    bool forceTCG);
 
 void qemuProcessQmpFree(qemuProcessQmpPtr proc);
 
-int qemuProcessQmpRun(qemuProcessQmpPtr cmd,
-                      bool forceTCG);
+int qemuProcessQmpRun(qemuProcessQmpPtr cmd);
 
 void qemuProcessQmpStop(qemuProcessQmpPtr proc);
 
