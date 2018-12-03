@@ -8175,8 +8175,28 @@ qemuProcessQmpNew(const char *binary,
 }
 
 
-int
-qemuProcessQmpRun(qemuProcessQmpPtr proc)
+/* Initialize configuration and paths prior to starting QEMU
+ */
+static int
+qemuProcessQmpInit(qemuProcessQmpPtr proc)
+{
+    int ret = -1;
+
+    VIR_DEBUG("Beginning VM startup process"
+              " proc=%p, emulator=%s",
+              proc, proc->binary);
+
+    ret = 0;
+
+    VIR_DEBUG("ret=%i", ret);
+    return ret;
+}
+
+
+/* Launch QEMU Process
+ */
+static int
+qemuProcessQmpLaunch(qemuProcessQmpPtr proc)
 {
     virDomainXMLOptionPtr xmlopt = NULL;
     const char *machine;
@@ -8250,6 +8270,76 @@ qemuProcessQmpRun(qemuProcessQmpPtr proc)
     virObjectUnref(xmlopt);
 
     return ret;
+}
+
+
+/* Connect Monitor to QEMU Process
+ */
+static int
+qemuProcessQmpConnectMonitor(qemuProcessQmpPtr proc)
+{
+    int ret = -1;
+
+    VIR_DEBUG("proc=%p, emulator=%s, proc->pid=%lld",
+              proc, NULLSTR(proc->binary), (long long)proc->pid);
+
+    ret = 0;
+
+    VIR_DEBUG("ret=%i", ret);
+    return ret;
+}
+
+
+/**
+ * qemuProcessQmpStart:
+ * @proc: Stores Process and Connection State
+ *
+ * Start and connect to QEMU binary so QMP queries can be made.
+ *
+ * Usage:
+ *   proc = qemuProcessQmpNew(binary, libDir, runUid, runGid, forceTCG);
+ *   qemuProcessQmpStart(proc);
+ *   ** Send QMP Queries to QEMU using monitor (proc->mon) **
+ *   qemuProcessQmpStop(proc);
+ *   qemuProcessQmpFree(proc);
+ *
+ * Check monitor is not NULL before using.
+ *
+ * QEMU probing failure results in monitor being NULL but is not considered
+ * an error case and does not result in a negative return value.
+ *
+ * Both qemuProcessQmpStop and qemuProcessQmpFree must be called to cleanup and
+ * free resources, even in activation failure cases.
+ *
+ * Process error output (proc->qmperr) remains available in qemuProcessQmp
+ * struct until qemuProcessQmpFree is called.
+ */
+int
+qemuProcessQmpStart(qemuProcessQmpPtr proc)
+{
+    int ret = -1;
+
+    VIR_DEBUG("proc=%p, emulator=%s",
+              proc, proc->binary);
+
+    if (qemuProcessQmpInit(proc) < 0)
+        goto cleanup;
+
+    if (qemuProcessQmpLaunch(proc) < 0)
+        goto stop;
+
+    if (qemuProcessQmpConnectMonitor(proc) < 0)
+        goto stop;
+
+    ret = 0;
+
+ cleanup:
+    VIR_DEBUG("ret=%i", ret);
+    return ret;
+
+ stop:
+    qemuProcessQmpStop(proc);
+    goto cleanup;
 }
 
 

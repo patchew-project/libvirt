@@ -4265,7 +4265,7 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
                                    runUid, runGid, false)))
         goto cleanup;
 
-    if (qemuProcessQmpRun(proc) < 0) {
+    if (qemuProcessQmpStart(proc) < 0) {
         if (proc->status != 0)
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Failed to probe QEMU binary with QMP: %s"),
@@ -4288,7 +4288,7 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
         procTCG = qemuProcessQmpNew(qemuCaps->binary, libDir,
                                     runUid, runGid, true);
 
-        if (qemuProcessQmpRun(procTCG) < 0)
+        if (qemuProcessQmpStart(procTCG) < 0)
             goto cleanup;
 
         if (virQEMUCapsInitQMPMonitorTCG(qemuCaps, procTCG->mon) < 0)
