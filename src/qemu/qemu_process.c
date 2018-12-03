@@ -8262,25 +8262,50 @@ static int
 qemuProcessQmpConnectMonitor(qemuProcessQmpPtr proc)
 {
     int ret = -1;
+    qemuMonitorPtr mon = NULL;
+    unsigned long long timeout = 0;
+    bool retry = true;
+    bool enableJson = true;
+    virQEMUDriverPtr driver = NULL;
+    qemuMonitorCallbacksPtr monCallbacks = &callbacks;
     virDomainXMLOptionPtr xmlopt = NULL;
     virDomainChrSourceDef monConfig;
 
     VIR_DEBUG("proc=%p, emulator=%s, proc->pid=%lld",
               proc, NULLSTR(proc->binary), (long long)proc->pid);
 
+    if (!proc || !proc->pid) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    proc->mon = NULL;
+
     monConfig.type = VIR_DOMAIN_CHR_TYPE_UNIX;
     monConfig.data.nix.path = proc->monpath;
     monConfig.data.nix.listen = false;
 
+    /* Create a NULL Domain object for qemuMonitor */
     if (!(xmlopt = virDomainXMLOptionNew(NULL, NULL, NULL, NULL, NULL)) ||
         !(proc->vm = virDomainObjNew(xmlopt)))
         goto cleanup;
 
     proc->vm->pid = proc->pid;
 
-    if (!(proc->mon = qemuMonitorOpen(proc->vm, &monConfig, true, true,
-                                      0, &callbacks, NULL)))
+    mon = qemuMonitorOpen(proc->vm,
+                          &monConfig,
+                          enableJson,
+                          retry,
+                          timeout,
+                          monCallbacks,
+                          driver);
+
+    if (!mon) {
+        VIR_INFO("Failed to connect monitor to emulator %s", proc->binary);
         goto cleanup;
+    }
+
+    VIR_STEAL_PTR(proc->mon, mon);
 
     virObjectLock(proc->mon);
 
