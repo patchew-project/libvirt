@@ -4259,7 +4259,7 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
         goto cleanup;
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
-        qemuProcessQmpAbort(proc);
+        qemuProcessQmpStop(proc);
         if ((rc = qemuProcessQmpRun(proc, true)) != 0) {
             if (rc == 1)
                 ret = 0;
