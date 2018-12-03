@@ -8176,16 +8176,11 @@ qemuProcessQmpNew(const char *binary,
 }
 
 
-/* Returns -1 on fatal error,
- *          0 on success,
- *          1 when probing QEMU failed
- */
 int
 qemuProcessQmpRun(qemuProcessQmpPtr proc)
 {
     virDomainXMLOptionPtr xmlopt = NULL;
     const char *machine;
-    int status = 0;
     int ret = -1;
 
     if (proc->forceTCG)
@@ -8220,19 +8215,20 @@ qemuProcessQmpRun(qemuProcessQmpPtr proc)
 
     virCommandSetErrorBuffer(proc->cmd, proc->qmperr);
 
-    /* Log, but otherwise ignore, non-zero status.  */
-    if (virCommandRun(proc->cmd, &status) < 0)
+    proc->status = 0;
+
+    if (virCommandRun(proc->cmd, &proc->status) < 0)
         goto cleanup;
 
-    if (status != 0) {
+    if (proc->status != 0) {
         VIR_DEBUG("QEMU %s exited with status %d: %s",
-                  proc->binary, status, *proc->qmperr);
-        goto ignore;
+                  proc->binary, proc->status, *proc->qmperr);
+        goto cleanup;
     }
 
     if (virPidFileReadPath(proc->pidfile, &proc->pid) < 0) {
         VIR_DEBUG("Failed to read pidfile %s", proc->pidfile);
-        goto ignore;
+        goto cleanup;
     }
 
     if (!(xmlopt = virDomainXMLOptionNew(NULL, NULL, NULL, NULL, NULL)) ||
@@ -8243,7 +8239,7 @@ qemuProcessQmpRun(qemuProcessQmpPtr proc)
 
     if (!(proc->mon = qemuMonitorOpen(proc->vm, &proc->config, true, true,
                                      0, &callbacks, NULL)))
-        goto ignore;
+        goto cleanup;
 
     virObjectLock(proc->mon);
 
@@ -8255,10 +8251,6 @@ qemuProcessQmpRun(qemuProcessQmpPtr proc)
     virObjectUnref(xmlopt);
 
     return ret;
-
- ignore:
-    ret = 1;
-    goto cleanup;
 }
 
 

@@ -4038,7 +4038,6 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     if (qemuMonitorSetCapabilities(mon) < 0) {
         VIR_DEBUG("Failed to set monitor capabilities %s",
                   virGetLastErrorMessage());
-        ret = 0;
         goto cleanup;
     }
 
@@ -4047,7 +4046,6 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
                               &package) < 0) {
         VIR_DEBUG("Failed to query monitor version %s",
                   virGetLastErrorMessage());
-        ret = 0;
         goto cleanup;
     }
 
@@ -4218,7 +4216,6 @@ virQEMUCapsInitQMPMonitorTCG(virQEMUCapsPtr qemuCaps ATTRIBUTE_UNUSED,
     if (qemuMonitorSetCapabilities(mon) < 0) {
         VIR_DEBUG("Failed to set monitor capabilities %s",
                   virGetLastErrorMessage());
-        ret = 0;
         goto cleanup;
     }
 
@@ -4230,63 +4227,6 @@ virQEMUCapsInitQMPMonitorTCG(virQEMUCapsPtr qemuCaps ATTRIBUTE_UNUSED,
 
     ret = 0;
  cleanup:
-    return ret;
-}
-
-
-static int
-virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
-                   const char *libDir,
-                   uid_t runUid,
-                   gid_t runGid,
-                   char **qmperr)
-{
-    qemuProcessQmpPtr proc = NULL;
-    qemuProcessQmpPtr procTCG = NULL;
-    int ret = -1;
-    int rc;
-
-    if (!(proc = qemuProcessQmpNew(qemuCaps->binary, libDir,
-                                   runUid, runGid, qmperr, false)))
-        goto cleanup;
-
-    if ((rc = qemuProcessQmpRun(proc)) != 0) {
-        if (rc == 1)
-            ret = 0;
-        goto cleanup;
-    }
-
-    if (virQEMUCapsInitQMPMonitor(qemuCaps, proc->mon) < 0)
-        goto cleanup;
-
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
-
-        /* The second QEMU process probes for TCG capabilities
-         * in case the first process reported KVM as enabled
-         * (otherwise the first one already reported TCG capabilities). */
-
-        qemuProcessQmpStop(proc);
-
-        procTCG = qemuProcessQmpNew(qemuCaps->binary, libDir,
-                                    runUid, runGid, NULL, true);
-
-        if ((rc = qemuProcessQmpRun(procTCG)) != 0) {
-            if (rc == 1)
-                ret = 0;
-            goto cleanup;
-        }
-
-        if (virQEMUCapsInitQMPMonitorTCG(qemuCaps, procTCG->mon) < 0)
-            goto cleanup;
-    }
-
-    ret = 0;
-
- cleanup:
-    qemuProcessQmpStop(proc);
-    qemuProcessQmpStop(procTCG);
-    qemuProcessQmpFree(proc);
-    qemuProcessQmpFree(procTCG);
     return ret;
 }
 
@@ -4311,6 +4251,67 @@ virQEMUCapsLogProbeFailure(const char *binary)
 }
 
 
+static int
+virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
+                   const char *libDir,
+                   uid_t runUid,
+                   gid_t runGid)
+{
+    qemuProcessQmpPtr proc = NULL;
+    qemuProcessQmpPtr procTCG = NULL;
+    char *qmperr = NULL;
+    int ret = -1;
+
+    if (!(proc = qemuProcessQmpNew(qemuCaps->binary, libDir,
+                                   runUid, runGid, &qmperr, false)))
+        goto cleanup;
+
+    if (qemuProcessQmpRun(proc) < 0) {
+        if (proc->status != 0)
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Failed to probe QEMU binary with QMP: %s"),
+                           qmperr ? qmperr : _("uknown error"));
+
+        goto cleanup;
+    }
+
+    if (virQEMUCapsInitQMPMonitor(qemuCaps, proc->mon) < 0)
+        goto cleanup;
+
+    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
+
+        /* The second QEMU process probes for TCG capabilities
+         * in case the first process reported KVM as enabled
+         * (otherwise the first one already reported TCG capabilities). */
+
+        qemuProcessQmpStop(proc);
+
+        procTCG = qemuProcessQmpNew(qemuCaps->binary, libDir,
+                                    runUid, runGid, NULL, true);
+
+        if (qemuProcessQmpRun(procTCG) < 0)
+            goto cleanup;
+
+        if (virQEMUCapsInitQMPMonitorTCG(qemuCaps, procTCG->mon) < 0)
+            goto cleanup;
+    }
+
+    ret = 0;
+
+ cleanup:
+    if (ret < 0)
+        virQEMUCapsLogProbeFailure(qemuCaps->binary);
+
+    qemuProcessQmpStop(proc);
+    qemuProcessQmpStop(procTCG);
+    qemuProcessQmpFree(proc);
+    qemuProcessQmpFree(procTCG);
+    VIR_FREE(qmperr);
+
+    return ret;
+}
+
+
 virQEMUCapsPtr
 virQEMUCapsNewForBinaryInternal(virArch hostArch,
                                 const char *binary,
@@ -4322,7 +4323,6 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
 {
     virQEMUCapsPtr qemuCaps;
     struct stat sb;
-    char *qmperr = NULL;
 
     if (!(qemuCaps = virQEMUCapsNew()))
         goto error;
@@ -4349,18 +4349,8 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
         goto error;
     }
 
-    if (virQEMUCapsInitQMP(qemuCaps, libDir, runUid, runGid, &qmperr) < 0) {
-        virQEMUCapsLogProbeFailure(binary);
+    if (virQEMUCapsInitQMP(qemuCaps, libDir, runUid, runGid) < 0)
         goto error;
-    }
-
-    if (!qemuCaps->usedQMP) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Failed to probe QEMU binary with QMP: %s"),
-                       qmperr ? qmperr : _("unknown error"));
-        virQEMUCapsLogProbeFailure(binary);
-        goto error;
-    }
 
     qemuCaps->libvirtCtime = virGetSelfLastChanged();
     qemuCaps->libvirtVersion = LIBVIR_VERSION_NUMBER;
@@ -4376,7 +4366,6 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
     }
 
  cleanup:
-    VIR_FREE(qmperr);
     return qemuCaps;
 
  error:

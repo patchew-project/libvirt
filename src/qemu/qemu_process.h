@@ -220,6 +220,7 @@ struct _qemuProcessQmp {
     char *binary;
     uid_t runUid;
     gid_t runGid;
+    int status;
     char **qmperr;
     char *monarg;
     char *monpath;
