@@ -3047,7 +3047,7 @@ virQEMUCapsLoadHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
         goto cleanup;
     }
 
-    if (VIR_ALLOC(hostCPU) < 0)
+    if (!(hostCPU = qemuMonitorCPUModelInfoNew(NULL)))
         goto cleanup;
 
     if (!(hostCPU->name = virXMLPropString(hostCPUNode, "model"))) {
