@@ -3642,6 +3642,51 @@ virQEMUCapsLoadCache(virArch hostArch,
 }
 
 
+/* virCPUDef model    => qemuMonitorCPUModelInfo name
+ * virCPUDef features => qemuMonitorCPUModelInfo boolean properties */
+qemuMonitorCPUModelInfoPtr
+virQEMUCapsCPUModelInfoFromCPUDef(const virCPUDef *cpuDef)
+{
+    size_t i;
+    qemuMonitorCPUModelInfoPtr cpuModel = NULL;
+    qemuMonitorCPUModelInfoPtr ret = NULL;
+
+    if (!cpuDef || (VIR_ALLOC(cpuModel) < 0))
+        goto cleanup;
+
+    VIR_DEBUG("cpuDef->model = %s", NULLSTR(cpuDef->model));
+
+    if (VIR_STRDUP(cpuModel->name, cpuDef->model) < 0 ||
+        VIR_ALLOC_N(cpuModel->props, cpuDef->nfeatures) < 0)
+        goto cleanup;
+
+    cpuModel->nprops = 0;
+
+    for (i = 0; i < cpuDef->nfeatures; i++) {
+        qemuMonitorCPUPropertyPtr prop = &(cpuModel->props[cpuModel->nprops]);
+        virCPUFeatureDefPtr feature = &(cpuDef->features[i]);
+
+        if (!(feature->name) ||
+            VIR_STRDUP(prop->name, feature->name) < 0)
+            goto cleanup;
+
+        prop->type = QEMU_MONITOR_CPU_PROPERTY_BOOLEAN;
+
+        prop->value.boolean = feature->policy == -1 || /* policy undefined */
+                              feature->policy == VIR_CPU_FEATURE_FORCE ||
+                              feature->policy == VIR_CPU_FEATURE_REQUIRE;
+
+        cpuModel->nprops++;
+    }
+
+    VIR_STEAL_PTR(ret, cpuModel);
+
+ cleanup:
+    qemuMonitorCPUModelInfoFree(cpuModel);
+    return ret;
+}
+
+
 /* qemuMonitorCPUModelInfo name               => virCPUDef model
  * qemuMonitorCPUModelInfo boolean properties => virCPUDef features
  *
@@ -3692,6 +3737,7 @@ virQEMUCapsCPUModelInfoToCPUDef(bool migratable, qemuMonitorCPUModelInfoPtr mode
     virCPUDefFree(cpu);
     return ret;
 }
+
 
 static void
 virQEMUCapsFormatHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
