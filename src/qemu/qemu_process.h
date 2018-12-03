@@ -218,6 +218,7 @@ typedef struct _qemuProcessQmp qemuProcessQmp;
 typedef qemuProcessQmp *qemuProcessQmpPtr;
 struct _qemuProcessQmp {
     char *binary;
+    char *libDir;
     uid_t runUid;
     gid_t runGid;
     int status;
