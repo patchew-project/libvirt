@@ -1,0 +1,1 @@
+/usr/bin/mount localhost:/var/lib/libvirt/images /mnt
