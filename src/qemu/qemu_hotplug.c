@@ -4831,13 +4831,24 @@ qemuDomainRemoveRNGDevice(virQEMUDriverPtr driver,
     rc = qemuMonitorDelObject(priv->mon, objAlias);
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
-        goto cleanup;
+        rc = -1;
 
-    if (rng->backend == VIR_DOMAIN_RNG_BACKEND_EGD &&
-        rc == 0 &&
-        qemuDomainDelChardevTLSObjects(driver, vm, rng->source.chardev,
-                                       charAlias) < 0)
-        goto cleanup;
+    if (rng->backend == VIR_DOMAIN_RNG_BACKEND_EGD) {
+        if (rc == 0 &&
+            qemuDomainDelChardevTLSObjects(driver, vm, rng->source.chardev,
+                                           charAlias) < 0)
+            rc = -1;
+
+        if (rc == 0) {
+            qemuDomainObjEnterMonitor(driver, vm);
+
+            if (qemuMonitorDetachCharDev(priv->mon, charAlias) < 0)
+                rc = -1;
+
+            if (qemuDomainObjExitMonitor(driver, vm) < 0)
+                rc = -1;
+        }
+    }
 
     virDomainAuditRNG(vm, rng, NULL, "detach", rc == 0);
 
