@@ -1,0 +1,1 @@
+/usr/bin/mount -t nfs localhost:/var/lib/libvirt/images /mnt

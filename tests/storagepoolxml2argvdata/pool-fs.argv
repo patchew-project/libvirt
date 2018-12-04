@@ -1,0 +1,1 @@
+/usr/bin/mount -t ext3 /dev/sda6 /mnt

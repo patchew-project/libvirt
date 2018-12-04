@@ -1,0 +1,1 @@
+/usr/bin/mount -t glusterfs example.com:/volume -o direct-io-mode=1 /mnt/gluster
