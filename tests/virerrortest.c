@@ -88,11 +88,31 @@ virErrorTestMsgs(const void *opaque ATTRIBUTE_UNUSED)
 
 
 static int
+virErrorTestMsgOrder(const void *opaque ATTRIBUTE_UNUSED)
+{
+    size_t i;
+    int ret = 0;
+
+    for (i = 0; i < VIR_ERR_NUMBER_LAST; i++) {
+        if (i != virErrorMsgStrings[i].error) {
+            VIR_TEST_VERBOSE("\nvirErrorMsgStrings[%zu] error code is '%d'\n",
+                             i, virErrorMsgStrings[i].error);
+            ret = -1;
+        }
+    }
+
+    return ret;
+}
+
+
+static int
 mymain(void)
 {
     int ret = 0;
 
     if (virTestRun("error message strings ", virErrorTestMsgs, NULL) < 0)
+        ret = -1;
+    if (virTestRun("error messages are in correct order ", virErrorTestMsgOrder, NULL) < 0)
         ret = -1;
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
