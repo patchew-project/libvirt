@@ -1,0 +1,101 @@
+1-internal error-internal error: %s
+2-out of memory-out of memory: %s
+3-this function is not supported by the connection driver-this function is not supported by the connection driver: %s
+4-unknown host-unknown host %s
+5-no connection driver available-no connection driver available for %s
+6-invalid connection pointer in-invalid connection pointer in %s
+7-invalid domain pointer in-invalid domain pointer in %s
+8-invalid argument-invalid argument: %s
+9-operation failed-operation failed: %s
+10-GET operation failed-GET operation failed: %s
+11-POST operation failed-POST operation failed: %s
+12-got unknown HTTP error code-got unknown HTTP error code %s
+13-failed to serialize S-Expr-failed to serialize S-Expr: %s
+14-could not use Xen hypervisor entry-could not use Xen hypervisor entry %s
+15-failed Xen syscall-failed Xen syscall %s
+16-unknown OS type-unknown OS type %s
+17-missing kernel information-missing kernel information: %s
+18-missing root device information-missing root device information in %s
+19-missing source information for device-missing source information for device %s
+20-missing target information for device-missing target information for device %s
+21-missing name information-missing name information in %s
+22-missing operating system information-missing operating system information for %s
+23-missing devices information-missing devices information for %s
+24-could not connect to Xen Store-could not connect to Xen Store %s
+25-too many drivers registered-too many drivers registered in %s
+26-library call failed, possibly not supported-library call %s failed, possibly not supported
+27-XML description is invalid or not well formed-XML error: %s
+28-this domain exists already-domain %s exists already
+29-operation forbidden for read only access-operation forbidden: %s
+30-failed to open configuration file for reading-failed to open %s for reading
+31-failed to read configuration file-failed to read configuration file %s
+32-failed to parse configuration file-failed to parse configuration file %s
+33-configuration file syntax error-configuration file syntax error: %s
+34-failed to write configuration file-failed to write configuration file: %s
+35-parser error-%s
+36-invalid network pointer in-invalid network pointer in %s
+37-this network exists already-network %s exists already
+38-system call error-%s
+39-RPC error-%s
+40-GNUTLS call error-%s
+41-Failed to find the network-Failed to find the network: %s
+42-Domain not found-Domain not found: %s
+43-Network not found-Network not found: %s
+44-invalid MAC address-invalid MAC address: %s
+45-authentication failed-authentication failed: %s
+46-invalid storage pool pointer in-invalid storage pool pointer in %s
+47-invalid storage volume pointer in-invalid storage volume pointer in %s
+48-Failed to find a storage driver-Failed to find a storage driver: %s
+49-Storage pool not found-Storage pool not found: %s
+50-Storage volume not found-Storage volume not found: %s
+51-Failed to find a node driver-Failed to find a node driver: %s
+52-invalid node device pointer-invalid node device pointer in %s
+53-Node device not found-Node device not found: %s
+54-Security model not found-Security model not found: %s
+55-Requested operation is not valid-Requested operation is not valid: %s
+56-Failed to find the interface-Failed to find the interface: %s
+57-Interface not found-Interface not found: %s
+58-invalid interface pointer in-invalid interface pointer in %s
+59-multiple matching interfaces found-multiple matching interfaces found: %s
+60-Failed to start the nwfilter driver-Failed to start the nwfilter driver: %s
+61-Invalid network filter-Invalid network filter: %s
+62-Network filter not found-Network filter not found: %s
+63-Error while building firewall-Error while building firewall: %s
+64-Failed to find a secret storage driver-Failed to find a secret storage driver: %s
+65-Invalid secret-Invalid secret: %s
+66-Secret not found-Secret not found: %s
+67-unsupported configuration-unsupported configuration: %s
+68-Timed out during operation-Timed out during operation: %s
+69-Failed to make domain persistent after migration-Failed to make domain persistent after migration: %s
+70-Hook script execution failed-Hook script execution failed: %s
+71-Invalid snapshot-Invalid snapshot: %s
+72-Domain snapshot not found-Domain snapshot not found: %s
+73-invalid stream pointer-invalid stream pointer in %s
+74-argument unsupported-argument unsupported: %s
+75-Storage pool probe failed-Storage pool probe failed: %s
+76-Storage pool already built-Storage pool already built: %s
+77-revert requires force-revert requires force: %s
+78-operation aborted-operation aborted: %s
+79-authentication cancelled-authentication cancelled: %s
+80-metadata not found-metadata not found: %s
+81-Unsafe migration-Unsafe migration: %s
+82-numerical overflow-numerical overflow: %s
+83-block copy still active-block copy still active: %s
+84-Operation not supported-Operation not supported: %s
+85-SSH transport error-SSH transport error: %s
+86-Guest agent is not responding-Guest agent is not responding: %s
+87-resource busy-resource busy: %s
+88-access denied-access denied: %s
+89-error from service-error from service: %s
+90-this storage volume exists already-storage volume %s exists already
+91-the CPU is incompatible with host CPU-the CPU is incompatible with host CPU: %s
+92-XML document failed to validate against schema-XML document failed to validate against schema: %s
+93-migration successfully aborted-migration successfully aborted: %s
+94-authentication unavailable-authentication unavailable: %s
+95-Server not found-Server not found: %s
+96-Client not found-Client not found: %s
+97-guest agent replied with wrong id to guest-sync command-guest agent replied with wrong id to guest-sync command: %s
+98-libssh transport error-libssh transport error: %s
+99-device not found-device not found: %s
+100-Invalid network filter binding-Invalid network filter binding: %s
+101-Network filter binding not found-Network filter binding not found: %s
