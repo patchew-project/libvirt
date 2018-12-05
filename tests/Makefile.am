@@ -207,6 +207,7 @@ test_programs = virshtest sockettest \
 	virnetdevtest \
 	virtypedparamtest \
 	vshtabletest \
+	virerrortest \
 	$(NULL)
 
 test_libraries = libshunload.la \
@@ -939,6 +940,11 @@ metadatatest_SOURCES = \
 	metadatatest.c \
 	testutils.c testutils.h
 metadatatest_LDADD = $(LDADDS) $(LIBXML_LIBS)
+
+virerrortest_SOURCES = \
+	virerrortest.c \
+	testutils.c testutils.h
+virerrortest_LDADD = $(LDADDS)
 
 vshtabletest_SOURCES = \
 	vshtabletest.c \
