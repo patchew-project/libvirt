@@ -951,6 +951,7 @@ libvirt_nss_la_SOURCES = \
 		util/vircommand.h \
 		util/virerror.c \
 		util/virerror.h \
+		util/virerrorpriv.h \
 		util/virfile.c \
 		util/virfile.h \
 		util/virhash.c \
