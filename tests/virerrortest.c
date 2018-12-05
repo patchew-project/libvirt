@@ -88,36 +88,11 @@ virErrorTestMsgs(const void *opaque ATTRIBUTE_UNUSED)
 
 
 static int
-virErrorTestMsgsStable(const void *opaque ATTRIBUTE_UNUSED)
-{
-    virBuffer buf = VIR_BUFFER_INITIALIZER;
-    char *actual = NULL;
-    size_t i;
-    int ret = 0;
-
-    for (i = 1; i < VIR_ERR_NUMBER_LAST; i++) {
-        virBufferAsprintf(&buf, "%zu-", i);
-        virBufferStrcat(&buf, virErrorMsg(i, NULL), "-", virErrorMsg(i, ""), "\n", NULL);
-    }
-
-    actual = virBufferContentAndReset(&buf);
-
-    if (virTestCompareToFile(actual, abs_srcdir "/virerrormessages.txt") < 0)
-        ret = -1;
-
-    VIR_FREE(actual);
-    return ret;
-}
-
-
-static int
 mymain(void)
 {
     int ret = 0;
 
     if (virTestRun("error message strings ", virErrorTestMsgs, NULL) < 0)
-        ret = -1;
-    if (virTestRun("error message strings stability ", virErrorTestMsgsStable, NULL) < 0)
         ret = -1;
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
