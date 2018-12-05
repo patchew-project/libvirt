@@ -21,6 +21,14 @@
 #ifndef __VIR_ERROR_PRIV_H__
 # define __VIR_ERROR_PRIV_H__
 
+typedef struct {
+    virErrorNumber error;
+    const char *msg;
+    const char *msginfo;
+} virErrorMsgTuple;
+
+extern const virErrorMsgTuple virErrorMsgStrings[VIR_ERR_NUMBER_LAST];
+
 const char *
 virErrorMsg(virErrorNumber error,
             const char *info);
