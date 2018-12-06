@@ -364,6 +364,16 @@ static int virLXCControllerGetNICIndexes(virLXCControllerPtr ctrl)
     size_t i;
     int ret = -1;
 
+    /* Gather the ifindexes of the "parent" veths for all interfaces
+     * implemented with a veth pair. These will be used when calling
+     * virCgroupNewMachine (and eventually the dbus method
+     * CreateMachineWithNetwork). ifindexes for the child veths, and
+     * for macvlan interfaces, *should not* be in this list, as they
+     * will be moved into the container. Only the interfaces that will
+     * remain outside the container, but are used for communication
+     * with the container, should be added to the list.
+     */
+
     VIR_DEBUG("Getting nic indexes");
     for (i = 0; i < ctrl->def->nnets; i++) {
         int nicindex = -1;
@@ -394,14 +404,9 @@ static int virLXCControllerGetNICIndexes(virLXCControllerPtr ctrl)
         case VIR_DOMAIN_NET_TYPE_INTERNAL:
         case VIR_DOMAIN_NET_TYPE_DIRECT:
         case VIR_DOMAIN_NET_TYPE_HOSTDEV:
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("Unsupported net type %s"),
-                           virDomainNetTypeToString(ctrl->def->nets[i]->type));
-            goto cleanup;
         case VIR_DOMAIN_NET_TYPE_LAST:
         default:
-            virReportEnumRangeError(virDomainNetType, ctrl->def->nets[i]->type);
-            goto cleanup;
+           break;
         }
     }
 
