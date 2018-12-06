@@ -377,7 +377,8 @@ static int virLXCControllerGetNICIndexes(virLXCControllerPtr ctrl)
     VIR_DEBUG("Getting nic indexes");
     for (i = 0; i < ctrl->def->nnets; i++) {
         int nicindex = -1;
-        switch (ctrl->def->nets[i]->type) {
+
+        switch (virDomainNetGetActualType(ctrl->def->nets[i])) {
         case VIR_DOMAIN_NET_TYPE_BRIDGE:
         case VIR_DOMAIN_NET_TYPE_NETWORK:
         case VIR_DOMAIN_NET_TYPE_ETHERNET:
