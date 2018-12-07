@@ -1299,7 +1299,7 @@ mymain(void)
 
     DO_TEST("graphics-sdl",
             QEMU_CAPS_DEVICE_VGA);
-    DO_TEST_FAILURE("graphics-sdl-egl-headless", NONE);
+    DO_TEST_PARSE_ERROR_CAPS_LATEST("graphics-sdl-egl-headless");
     DO_TEST("graphics-sdl-fullscreen",
             QEMU_CAPS_DEVICE_CIRRUS_VGA);
     DO_TEST("graphics-spice",
@@ -1358,10 +1358,7 @@ mymain(void)
             QEMU_CAPS_SPICE,
             QEMU_CAPS_EGL_HEADLESS,
             QEMU_CAPS_DEVICE_QXL);
-    DO_TEST_FAILURE("graphics-spice-invalid-egl-headless",
-                    QEMU_CAPS_SPICE,
-                    QEMU_CAPS_EGL_HEADLESS,
-                    QEMU_CAPS_DEVICE_QXL);
+    DO_TEST_PARSE_ERROR_CAPS_LATEST("graphics-spice-invalid-egl-headless");
     DO_TEST_CAPS_LATEST("graphics-spice-gl-auto-rendernode");
 
     DO_TEST("input-usbmouse", NONE);
