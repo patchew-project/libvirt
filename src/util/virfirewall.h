@@ -59,6 +59,7 @@ void virFirewallFree(virFirewallPtr firewall);
          virFirewallAddRuleFull(firewall, layer, false, NULL, NULL, __VA_ARGS__)
 
 typedef int (*virFirewallQueryCallback)(virFirewallPtr firewall,
+                                        virFirewallLayer layer,
                                         const char *const *lines,
                                         void *opaque);
 
