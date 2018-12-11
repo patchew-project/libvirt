@@ -91,6 +91,11 @@ virNetDevOpenvswitchConstructVlans(virCommandPtr cmd, virNetDevVlanPtr virtVlan)
         virCommandAddArg(cmd, "vlan_mode=native-untagged");
         virCommandAddArgFormat(cmd, "tag=%d", virtVlan->nativeTag);
         break;
+    case VIR_NATIVE_VLAN_MODE_DOT1Q_TUNNEL:
+        virCommandAddArg(cmd, "vlan_mode=dot1q-tunnel");
+        virCommandAddArg(cmd, "other_config:qinq-ethtype=802.1q");
+        virCommandAddArgFormat(cmd, "tag=%d", virtVlan->nativeTag);
+        break;
     case VIR_NATIVE_VLAN_MODE_DEFAULT:
     default:
         break;
@@ -504,6 +509,8 @@ int virNetDevOpenvswitchUpdateVlan(const char *ifname,
                          "--", "--if-exists", "clear", "Port", ifname, "tag",
                          "--", "--if-exists", "clear", "Port", ifname, "trunk",
                          "--", "--if-exists", "clear", "Port", ifname, "vlan_mode",
+                         "--", "--if-exists", "remove", "Port", ifname, "other_config",
+                         "qinq-ethtype",
                          "--", "--if-exists", "set", "Port", ifname, NULL);
 
     if (virNetDevOpenvswitchConstructVlans(cmd, virtVlan) < 0)

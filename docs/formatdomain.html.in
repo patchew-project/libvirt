@@ -6085,8 +6085,14 @@ qemu-kvm -net nic,model=? /dev/null
       <b>&lt;tag id='42'/&gt;</b>
       <b>&lt;tag id='123' nativeMode='untagged'/&gt;</b>
     <b>&lt;/vlan&gt;</b>
-    ...
   &lt;/interface&gt;
+  &lt;interface type='bridge'&gt;
+    <b>&lt;vlan trunk='yes'&gt;</b>
+      <b>&lt;tag id='42'/&gt;</b>
+      <b>&lt;tag id='123' nativeMode='dot1q-tunnel'/&gt;</b>
+    <b>&lt;/vlan&gt;</b>
+  &lt;/interface&gt;
+...
 &lt;/devices&gt;
 ...</pre>
 
@@ -6122,11 +6128,13 @@ qemu-kvm -net nic,model=? /dev/null
     </p>
     <p>
       For network connections using Open vSwitch it is also possible
-      to configure 'native-tagged' and 'native-untagged' VLAN modes
-      <span class="since">Since 1.1.0.</span> This is done with the
-      optional <code>nativeMode</code> attribute on
-      the <code>&lt;tag&gt;</code> subelement: <code>nativeMode</code>
-      may be set to 'tagged' or 'untagged'. The <code>id</code>
+      to configure 'native-tagged' and 'native-untagged'
+      <span class="since">Since 1.1.0.</span> and 'dot1q-tunnel'
+      (802.1ad double-tagged) <span class="since">Since 5.0.0.</span>
+      VLAN modes This is done with the optional <code>nativeMode</code>
+      attribute on the <code>&lt;tag&gt;</code> subelement:
+      <code>nativeMode</code> may be set to 'tagged' or 'untagged' or
+      'dot1q-tunnel'. The <code>id</code>
       attribute of the <code>&lt;tag&gt;</code> subelement
       containing <code>nativeMode</code> sets which VLAN is considered
       to be the "native" VLAN for this interface, and
