@@ -6045,6 +6045,7 @@ qemuProcessSEVCreateFile(virDomainObjPtr vm,
                          const char *data)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    virQEMUDriverPtr driver = priv->driver;
     char *configFile;
     int ret = -1;
 
@@ -6056,6 +6057,9 @@ qemuProcessSEVCreateFile(virDomainObjPtr vm,
                              configFile);
         goto cleanup;
     }
+
+    if (qemuSecurityDomainSetPathLabel(driver, vm, configFile, true) < 0)
+        goto cleanup;
 
     ret = 0;
  cleanup:
