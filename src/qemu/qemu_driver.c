@@ -4732,7 +4732,7 @@ processBlockJobEvent(virQEMUDriverPtr driver,
     }
 
     if (!(job = qemuBlockJobDiskGetJob(disk))) {
-        if (!(job = qemuBlockJobDiskNew(disk, type)))
+        if (!(job = qemuBlockJobDiskNew(disk, type, diskAlias)))
             goto endjob;
         qemuBlockJobStarted(job);
     }
@@ -17268,7 +17268,7 @@ qemuDomainBlockPullCommon(virQEMUDriverPtr driver,
         speed <<= 20;
     }
 
-    if (!(job = qemuBlockJobDiskNew(disk, QEMU_BLOCKJOB_TYPE_PULL)))
+    if (!(job = qemuBlockJobDiskNew(disk, QEMU_BLOCKJOB_TYPE_PULL, device)))
         goto endjob;
 
     qemuDomainObjEnterMonitor(driver, vm);
@@ -17803,7 +17803,7 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
         goto endjob;
     }
 
-    if (!(job = qemuBlockJobDiskNew(disk, QEMU_BLOCKJOB_TYPE_COPY)))
+    if (!(job = qemuBlockJobDiskNew(disk, QEMU_BLOCKJOB_TYPE_COPY, device)))
         goto endjob;
 
     /* Actually start the mirroring */
@@ -18217,7 +18217,7 @@ qemuDomainBlockCommit(virDomainPtr dom,
         jobtype = QEMU_BLOCKJOB_TYPE_ACTIVE_COMMIT;
     }
 
-    if (!(job = qemuBlockJobDiskNew(disk, jobtype)))
+    if (!(job = qemuBlockJobDiskNew(disk, jobtype, device)))
         goto endjob;
 
     qemuDomainObjEnterMonitor(driver, vm);

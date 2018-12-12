@@ -7776,7 +7776,7 @@ qemuProcessRefreshLegacyBlockjob(void *payload,
         disk->mirrorJob == VIR_DOMAIN_BLOCK_JOB_TYPE_ACTIVE_COMMIT)
         jobtype = disk->mirrorJob;
 
-    if (!(job = qemuBlockJobDiskNew(disk, jobtype)))
+    if (!(job = qemuBlockJobDiskNew(disk, jobtype, jobname)))
         return -1;
 
     qemuBlockJobStarted(job);
