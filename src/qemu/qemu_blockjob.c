@@ -333,7 +333,7 @@ qemuBlockJobEventProcessLegacy(virQEMUDriverPtr driver,
 
 
 /**
- * qemuBlockJobUpdateDisk:
+ * qemuBlockJobUpdate:
  * @vm: domain
  * @disk: domain disk
  * @error: error (output parameter)
@@ -344,11 +344,10 @@ qemuBlockJobEventProcessLegacy(virQEMUDriverPtr driver,
  * Returns the block job event processed or -1 if there was no pending event.
  */
 int
-qemuBlockJobUpdateDisk(virDomainObjPtr vm,
-                       int asyncJob,
-                       virDomainDiskDefPtr disk)
+qemuBlockJobUpdate(virDomainObjPtr vm,
+                   qemuBlockJobDataPtr job,
+                   int asyncJob)
 {
-    qemuBlockJobDataPtr job = QEMU_DOMAIN_DISK_PRIVATE(disk)->blockjob;
     qemuDomainObjPrivatePtr priv = vm->privateData;
 
     if (job->newstate == -1)
@@ -370,7 +369,7 @@ qemuBlockJobUpdateDisk(virDomainObjPtr vm,
  *
  * During a synchronous block job, a block job event for @disk
  * will not be processed asynchronously. Instead, it will be
- * processed only when qemuBlockJobUpdateDisk or qemuBlockJobSyncEndDisk
+ * processed only when qemuBlockJobUpdate or qemuBlockJobSyncEndDisk
  * is called.
  */
 void
@@ -402,7 +401,12 @@ qemuBlockJobSyncEndDisk(virDomainObjPtr vm,
                         int asyncJob,
                         virDomainDiskDefPtr disk)
 {
+    qemuBlockJobDataPtr job = QEMU_DOMAIN_DISK_PRIVATE(disk)->blockjob;
+
+    if (!job)
+        return;
+
     VIR_DEBUG("disk=%s", disk->dst);
-    qemuBlockJobUpdateDisk(vm, asyncJob, disk);
-    QEMU_DOMAIN_DISK_PRIVATE(disk)->blockjob->synchronous = false;
+    qemuBlockJobUpdate(vm, job, asyncJob);
+    job->synchronous = false;
 }
