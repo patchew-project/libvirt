@@ -4956,6 +4956,33 @@ qemuMonitorJSONDrivePivot(qemuMonitorPtr mon,
 }
 
 
+int
+qemuMonitorJSONJobDismiss(qemuMonitorPtr mon,
+                          const char *jobname)
+{
+    int ret = -1;
+    virJSONValuePtr cmd;
+    virJSONValuePtr reply = NULL;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("job-dismiss",
+                                           "s:id", jobname,
+                                           NULL)))
+        return -1;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONBlockJobError(cmd, reply, jobname) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    return ret;
+}
+
+
 int qemuMonitorJSONOpenGraphics(qemuMonitorPtr mon,
                                 const char *protocol,
                                 const char *fdname,

@@ -1359,6 +1359,7 @@ GEN_TEST_FUNC(qemuMonitorJSONBlockdevTrayOpen, "foodev", true)
 GEN_TEST_FUNC(qemuMonitorJSONBlockdevTrayClose, "foodev")
 GEN_TEST_FUNC(qemuMonitorJSONBlockdevMediumRemove, "foodev")
 GEN_TEST_FUNC(qemuMonitorJSONBlockdevMediumInsert, "foodev", "newnode")
+GEN_TEST_FUNC(qemuMonitorJSONJobDismiss, "jobname")
 
 static bool
 testQemuMonitorJSONqemuMonitorJSONQueryCPUsEqual(struct qemuMonitorQueryCpusEntry *a,
@@ -3005,6 +3006,7 @@ mymain(void)
     DO_TEST_GEN(qemuMonitorJSONBlockdevTrayClose);
     DO_TEST_GEN(qemuMonitorJSONBlockdevMediumRemove);
     DO_TEST_GEN(qemuMonitorJSONBlockdevMediumInsert);
+    DO_TEST_GEN(qemuMonitorJSONJobDismiss);
     DO_TEST(qemuMonitorJSONGetBalloonInfo);
     DO_TEST(qemuMonitorJSONGetBlockInfo);
     DO_TEST(qemuMonitorJSONGetAllBlockStatsInfo);
