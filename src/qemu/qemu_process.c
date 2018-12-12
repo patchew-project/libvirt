@@ -926,7 +926,7 @@ qemuProcessHandleBlockJob(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
     virQEMUDriverPtr driver = opaque;
     struct qemuProcessEvent *processEvent = NULL;
     virDomainDiskDefPtr disk;
-    qemuBlockJobDataPtr job;
+    qemuBlockJobDataPtr job = NULL;
     char *data = NULL;
 
     virObjectLock(vm);
@@ -937,9 +937,9 @@ qemuProcessHandleBlockJob(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
     if (!(disk = qemuProcessFindDomainDiskByAliasOrQOM(vm, diskAlias, NULL)))
         goto cleanup;
 
-    job = QEMU_DOMAIN_DISK_PRIVATE(disk)->blockjob;
+    job = qemuBlockJobDiskGetJob(disk);
 
-    if (job->synchronous) {
+    if (job && job->synchronous) {
         /* We have a SYNC API waiting for this event, dispatch it back */
         job->type = type;
         job->newstate = status;
@@ -968,6 +968,7 @@ qemuProcessHandleBlockJob(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
     }
 
  cleanup:
+    qemuBlockJobStartupFinalize(job);
     qemuProcessEventFree(processEvent);
     virObjectUnlock(vm);
     return 0;
@@ -7764,7 +7765,6 @@ qemuProcessRefreshLegacyBlockjob(void *payload,
     virDomainObjPtr vm = opaque;
     qemuMonitorBlockJobInfoPtr info = payload;
     virDomainDiskDefPtr disk;
-    qemuDomainDiskPrivatePtr diskPriv;
     qemuBlockJobDataPtr job;
 
     if (!(disk = qemuProcessFindDomainDiskByAliasOrQOM(vm, jobname, jobname))) {
@@ -7772,8 +7772,10 @@ qemuProcessRefreshLegacyBlockjob(void *payload,
         return 0;
     }
 
-    diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
-    job = diskPriv->blockjob;
+    if (!(job = qemuBlockJobDiskNew(disk)))
+        return -1;
+
+    qemuBlockJobStarted(job);
 
     if (disk->mirror) {
         if (info->ready == 1 ||
@@ -7781,8 +7783,7 @@ qemuProcessRefreshLegacyBlockjob(void *payload,
             disk->mirrorState = VIR_DOMAIN_BLOCK_JOB_READY;
     }
 
-    job->started = true;
-    job->newstate = -1;
+    qemuBlockJobStartupFinalize(job);
 
     return 0;
 }
