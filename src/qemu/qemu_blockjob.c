@@ -390,6 +390,124 @@ qemuBlockJobEventProcessLegacy(virQEMUDriverPtr driver,
 }
 
 
+static int
+qemuBlockJobEventProcessConcluded(qemuBlockJobDataPtr job,
+                                  virQEMUDriverPtr driver,
+                                  virDomainObjPtr vm,
+                                  qemuDomainAsyncJob asyncJob,
+                                  virQEMUDriverConfigPtr cfg)
+{
+    qemuMonitorJobInfoPtr *jobinfo = NULL;
+    size_t njobinfo = 0;
+    size_t i;
+    int ret = -1;
+    int rc = 0;
+    bool refreshstate = job->state == QEMU_BLOCKJOB_STATE_CONCLUDED;
+
+    if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
+        goto cleanup;
+
+    /* fetch job state */
+    if (refreshstate)
+        rc = qemuMonitorGetJobInfo(qemuDomainGetMonitor(vm), &jobinfo, &njobinfo);
+    /* dismiss job in qemu */
+    if (rc >= 0)
+        rc = qemuMonitorJobDismiss(qemuDomainGetMonitor(vm), job->name);
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0 || rc < 0)
+        goto cleanup;
+
+    /* we need to fetch the error state as the event does not propagate it */
+    if (refreshstate) {
+        for (i = 0; i < njobinfo; i++) {
+            if (STRNEQ_NULLABLE(job->name, jobinfo[i]->id))
+                continue;
+
+            if (VIR_STRDUP(job->errmsg, jobinfo[i]->error) < 0)
+                goto cleanup;
+        }
+
+        if (i == njobinfo) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, _("failed to refresh job '%s'"),
+                           job->name);
+            goto cleanup;
+        }
+
+        if (job->errmsg)
+            job->state = QEMU_BLOCKJOB_STATE_FAILED;
+        else
+            job->state = QEMU_BLOCKJOB_STATE_COMPLETED;
+
+        /* write status XML */
+        if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0)
+            VIR_WARN("Unable to save status on vm %s after block job", vm->def->name);
+    }
+
+    /* TODO: implement handlers for job types */
+    switch (job->type) {
+    case QEMU_BLOCKJOB_TYPE_PULL:
+    case QEMU_BLOCKJOB_TYPE_COPY:
+    case QEMU_BLOCKJOB_TYPE_COMMIT:
+    case QEMU_BLOCKJOB_TYPE_ACTIVE_COMMIT:
+    case QEMU_BLOCKJOB_TYPE_NONE:
+    case QEMU_BLOCKJOB_TYPE_INTERNAL:
+    case QEMU_BLOCKJOB_TYPE_LAST:
+        break;
+    }
+
+    ret = 0;
+
+ cleanup:
+    for (i = 0; i < njobinfo; i++)
+        qemuMonitorJobInfoFree(jobinfo[i]);
+    VIR_FREE(jobinfo);
+
+    return ret;
+}
+
+
+static void
+qemuBlockJobEventProcess(virQEMUDriverPtr driver,
+                         virDomainObjPtr vm,
+                         qemuBlockJobDataPtr job,
+                         qemuDomainAsyncJob asyncJob)
+
+{
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+
+    switch (job->newstate) {
+    case QEMU_BLOCKJOB_STATE_COMPLETED:
+    case QEMU_BLOCKJOB_STATE_FAILED:
+    case QEMU_BLOCKJOB_STATE_CANCELLED:
+    case QEMU_BLOCKJOB_STATE_CONCLUDED:
+        qemuBlockJobEventProcessConcluded(job, driver, vm, asyncJob, cfg);
+        break;
+
+    case QEMU_BLOCKJOB_STATE_READY:
+        if (job->disk && job->disk->mirror) {
+            job->disk->mirrorState = VIR_DOMAIN_BLOCK_JOB_READY;
+            qemuBlockJobEmitEvents(driver, vm, job->disk, job->type, job->newstate);
+        }
+        job->state = job->newstate;
+        break;
+
+    case QEMU_BLOCKJOB_STATE_NEW:
+    case QEMU_BLOCKJOB_STATE_RUNNING:
+    case QEMU_BLOCKJOB_STATE_LAST:
+        goto cleanup;
+    }
+
+    /* write status XML */
+    if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0)
+        VIR_WARN("Unable to save status on vm %s after block job", vm->def->name);
+
+ cleanup:
+    job->newstate = -1;
+    virObjectUnref(cfg);
+    return;
+}
+
+
 /**
  * qemuBlockJobUpdateDisk:
  * @vm: domain
@@ -411,7 +529,10 @@ qemuBlockJobUpdate(virDomainObjPtr vm,
     if (job->newstate == -1)
         return -1;
 
-    qemuBlockJobEventProcessLegacy(priv->driver, vm, job, asyncJob);
+    if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV))
+        qemuBlockJobEventProcess(priv->driver, vm, job, asyncJob);
+    else
+        qemuBlockJobEventProcessLegacy(priv->driver, vm, job, asyncJob);
 
     return job->state;
 }
