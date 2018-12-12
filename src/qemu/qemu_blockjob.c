@@ -45,7 +45,7 @@ VIR_LOG_INIT("qemu.qemu_blockjob");
 /* Note that qemuBlockjobState and qemuBlockjobType values are formatted into
  * the status XML */
 VIR_ENUM_IMPL(qemuBlockjobState, QEMU_BLOCKJOB_STATE_LAST,
-              "completed", "failed", "cancelled", "ready", "new", "running");
+              "completed", "failed", "cancelled", "ready", "new", "running", "concluded");
 
 VIR_ENUM_IMPL(qemuBlockjob, QEMU_BLOCKJOB_TYPE_LAST,
               "", "pull", "copy", "commit", "active-commit", "");
