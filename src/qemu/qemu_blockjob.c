@@ -222,6 +222,63 @@ qemuBlockJobIsRunning(qemuBlockJobDataPtr job)
 }
 
 
+int
+qemuBlockJobRefreshJobs(virQEMUDriverPtr driver,
+                        virDomainObjPtr vm)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    qemuMonitorJobInfoPtr *jobinfo = NULL;
+    size_t njobinfo = 0;
+    qemuBlockJobDataPtr job = NULL;
+    qemuBlockjobState newstate;
+    size_t i;
+    int ret = -1;
+    int rc;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+
+    rc = qemuMonitorGetJobInfo(priv->mon, &jobinfo, &njobinfo);
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0 || rc < 0)
+        goto cleanup;
+
+    for (i = 0; i < njobinfo; i++) {
+        if (!(job = virHashLookup(priv->blockjobs, jobinfo[i]->id))) {
+            VIR_DEBUG("ignoring untracked job '%s'", jobinfo[i]->id);
+            continue;
+        }
+
+        newstate = qemuBlockjobConvertMonitorStatus(jobinfo[i]->status);
+        if (newstate == QEMU_BLOCKJOB_STATE_LAST)
+            continue;
+
+        if (newstate != job->state) {
+            if ((job->state == QEMU_BLOCKJOB_STATE_FAILED ||
+                 job->state == QEMU_BLOCKJOB_STATE_COMPLETED)) {
+                /* preserve the old state but allow the job to be bumped to
+                 * execute the finishing steps */
+                job->newstate = job->state;
+            } else {
+                job->newstate = newstate;
+            }
+        }
+
+        /* qemuBlockJobUpdate checks whether something is needed */
+        qemuBlockJobUpdate(vm, job, QEMU_ASYNC_JOB_NONE);
+        job = NULL; /* job may have become invalid here */
+    }
+
+    ret = 0;
+
+ cleanup:
+    for (i = 0; i < njobinfo; i++)
+        qemuMonitorJobInfoFree(jobinfo[i]);
+    VIR_FREE(jobinfo);
+
+    return ret;
+}
+
+
 /**
  * qemuBlockJobEmitEvents:
  *

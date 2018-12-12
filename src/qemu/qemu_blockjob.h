@@ -105,6 +105,10 @@ void
 qemuBlockJobStartupFinalize(virDomainObjPtr vm,
                             qemuBlockJobDataPtr job);
 
+int
+qemuBlockJobRefreshJobs(virQEMUDriverPtr driver,
+                        virDomainObjPtr vm);
+
 int qemuBlockJobUpdate(virDomainObjPtr vm,
                        qemuBlockJobDataPtr job,
                        int asyncJob);
