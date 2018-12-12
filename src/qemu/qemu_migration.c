@@ -702,8 +702,10 @@ qemuMigrationSrcNBDCopyCancel(virQEMUDriverPtr driver,
     for (i = 0; i < vm->def->ndisks; i++) {
         virDomainDiskDefPtr disk = vm->def->disks[i];
         qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
+        qemuBlockJobDataPtr job;
 
-        if (!diskPriv->blockjob->started)
+        if (!(job = qemuBlockJobDiskGetJob(disk)) ||
+            !qemuBlockJobIsRunning(job))
             diskPriv->migrating = false;
 
         if (!diskPriv->migrating)
@@ -720,6 +722,8 @@ qemuMigrationSrcNBDCopyCancel(virQEMUDriverPtr driver,
             qemuBlockJobSyncEndDisk(vm, asyncJob, disk);
             diskPriv->migrating = false;
         }
+
+        virObjectUnref(job);
     }
 
     while ((rv = qemuMigrationSrcNBDCopyCancelled(vm, asyncJob, check)) != 1) {
@@ -5396,7 +5400,7 @@ qemuMigrationSrcCancel(virQEMUDriverPtr driver,
         qemuBlockJobDataPtr job;
 
         if (!(job = qemuBlockJobDiskGetJob(disk)) ||
-            !job->started)
+            !qemuBlockJobIsRunning(job))
             diskPriv->migrating = false;
 
         if (diskPriv->migrating) {

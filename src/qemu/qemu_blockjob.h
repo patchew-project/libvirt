@@ -26,6 +26,22 @@
 # include "qemu_conf.h"
 
 /**
+ * This enum has to map all known block job states from enum virDomainBlockJobType
+ * to the same values. All internal blockjobs can be mapped after and don't
+ * need to have stable values.
+ */
+typedef enum {
+    QEMU_BLOCKJOB_STATE_COMPLETED = VIR_DOMAIN_BLOCK_JOB_COMPLETED,
+    QEMU_BLOCKJOB_STATE_FAILED = VIR_DOMAIN_BLOCK_JOB_FAILED,
+    QEMU_BLOCKJOB_STATE_CANCELLED = VIR_DOMAIN_BLOCK_JOB_CANCELED,
+    QEMU_BLOCKJOB_STATE_READY = VIR_DOMAIN_BLOCK_JOB_READY,
+    QEMU_BLOCKJOB_STATE_NEW = VIR_DOMAIN_BLOCK_JOB_LAST,
+    QEMU_BLOCKJOB_STATE_RUNNING,
+    QEMU_BLOCKJOB_STATE_LAST
+} qemuBlockjobState;
+verify((int)QEMU_BLOCKJOB_STATE_NEW == VIR_DOMAIN_BLOCK_JOB_LAST);
+
+/**
  * This enum has to map all known block job types from enum virDomainBlockJobType
  * to the same values. All internal blockjobs can be mapped after and don't
  * need to have stable values.
@@ -49,8 +65,8 @@ struct _qemuBlockJobData {
 
     virDomainDiskDefPtr disk; /* may be NULL, if blockjob does not corrspond to any disk */
 
-    bool started;
     int type; /* qemuBlockjobType */
+    int state; /* qemuBlockjobState */
     char *errmsg;
     bool synchronous; /* API call is waiting for this job */
 
@@ -70,6 +86,10 @@ qemuBlockJobDiskGetJob(virDomainDiskDefPtr disk)
 
 void
 qemuBlockJobStarted(qemuBlockJobDataPtr job)
+    ATTRIBUTE_NONNULL(1);
+
+bool
+qemuBlockJobIsRunning(qemuBlockJobDataPtr job)
     ATTRIBUTE_NONNULL(1);
 
 void
