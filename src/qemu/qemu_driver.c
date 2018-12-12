@@ -4736,7 +4736,7 @@ processBlockJobEvent(virQEMUDriverPtr driver,
     diskPriv->blockJobType = type;
     diskPriv->blockJobStatus = status;
 
-    qemuBlockJobUpdate(vm, QEMU_ASYNC_JOB_NONE, disk, NULL);
+    qemuBlockJobUpdateDisk(vm, QEMU_ASYNC_JOB_NONE, disk, NULL);
 
  endjob:
     qemuDomainObjEndJob(driver, vm);
@@ -17361,7 +17361,7 @@ qemuDomainBlockJobAbort(virDomainPtr dom,
     }
 
     if (!async)
-        qemuBlockJobSyncBegin(disk);
+        qemuBlockJobSyncBeginDisk(disk);
 
     if (pivot) {
         if ((ret = qemuDomainBlockPivot(driver, vm, device, disk)) < 0)
@@ -17400,19 +17400,19 @@ qemuDomainBlockJobAbort(virDomainPtr dom,
      * scheduled block jobs from confusing us. */
     if (!async) {
         qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
-        qemuBlockJobUpdate(vm, QEMU_ASYNC_JOB_NONE, disk, NULL);
+        qemuBlockJobUpdateDisk(vm, QEMU_ASYNC_JOB_NONE, disk, NULL);
         while (diskPriv->blockjob) {
             if (virDomainObjWait(vm) < 0) {
                 ret = -1;
                 goto endjob;
             }
-            qemuBlockJobUpdate(vm, QEMU_ASYNC_JOB_NONE, disk, NULL);
+            qemuBlockJobUpdateDisk(vm, QEMU_ASYNC_JOB_NONE, disk, NULL);
         }
     }
 
  endjob:
     if (disk)
-        qemuBlockJobSyncEnd(vm, QEMU_ASYNC_JOB_NONE, disk);
+        qemuBlockJobSyncEndDisk(vm, QEMU_ASYNC_JOB_NONE, disk);
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
