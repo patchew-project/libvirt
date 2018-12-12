@@ -109,6 +109,49 @@ struct _qemuMonitorEventPanicInfo {
     } data;
 };
 
+
+typedef enum {
+    QEMU_MONITOR_JOB_TYPE_UNKNOWN, /* internal value, not exposed by qemu */
+    QEMU_MONITOR_JOB_TYPE_COMMIT,
+    QEMU_MONITOR_JOB_TYPE_STREAM,
+    QEMU_MONITOR_JOB_TYPE_MIRROR,
+    QEMU_MONITOR_JOB_TYPE_BACKUP,
+    QEMU_MONITOR_JOB_TYPE_CREATE,
+    QEMU_MONITOR_JOB_TYPE_LAST
+} qemuMonitorJobType;
+
+VIR_ENUM_DECL(qemuMonitorJob)
+
+typedef enum {
+    QEMU_MONITOR_JOB_STATUS_UNKNOWN, /* internal value, not exposed by qemu */
+    QEMU_MONITOR_JOB_STATUS_CREATED,
+    QEMU_MONITOR_JOB_STATUS_RUNNING,
+    QEMU_MONITOR_JOB_STATUS_PAUSED,
+    QEMU_MONITOR_JOB_STATUS_READY,
+    QEMU_MONITOR_JOB_STATUS_STANDBY,
+    QEMU_MONITOR_JOB_STATUS_WAITING,
+    QEMU_MONITOR_JOB_STATUS_PENDING,
+    QEMU_MONITOR_JOB_STATUS_ABORTING,
+    QEMU_MONITOR_JOB_STATUS_CONCLUDED,
+    QEMU_MONITOR_JOB_STATUS_UNDEFINED, /* the job states below should not be visible outside of qemu */
+    QEMU_MONITOR_JOB_STATUS_NULL,
+    QEMU_MONITOR_JOB_STATUS_LAST
+} qemuMonitorJobStatus;
+
+VIR_ENUM_DECL(qemuMonitorJobStatus)
+
+typedef struct _qemuMonitorJobInfo qemuMonitorJobInfo;
+typedef qemuMonitorJobInfo *qemuMonitorJobInfoPtr;
+struct _qemuMonitorJobInfo {
+    char *id;
+    qemuMonitorJobType type;
+    qemuMonitorJobStatus status;
+    char *error;
+    long long progressCurrent;
+    long long progressTotal;
+};
+
+
 char *qemuMonitorGuestPanicEventInfoFormatMsg(qemuMonitorEventPanicInfoPtr info);
 void qemuMonitorEventPanicInfoFree(qemuMonitorEventPanicInfoPtr info);
 
@@ -1216,5 +1259,11 @@ struct _qemuMonitorPRManagerInfo {
 
 int qemuMonitorGetPRManagerInfo(qemuMonitorPtr mon,
                                 virHashTablePtr *retinfo);
+
+void qemuMonitorJobInfoFree(qemuMonitorJobInfoPtr job);
+
+int qemuMonitorGetJobInfo(qemuMonitorPtr mon,
+                          qemuMonitorJobInfoPtr **jobs,
+                          size_t *njobs);
 
 #endif /* QEMU_MONITOR_H */
