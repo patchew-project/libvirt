@@ -967,7 +967,7 @@ qemuProcessHandleBlockJob(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
     }
 
  cleanup:
-    qemuBlockJobStartupFinalize(job);
+    qemuBlockJobStartupFinalize(vm, job);
     qemuProcessEventFree(processEvent);
     virObjectUnlock(vm);
     return 0;
@@ -7776,7 +7776,7 @@ qemuProcessRefreshLegacyBlockjob(void *payload,
         disk->mirrorJob == VIR_DOMAIN_BLOCK_JOB_TYPE_ACTIVE_COMMIT)
         jobtype = disk->mirrorJob;
 
-    if (!(job = qemuBlockJobDiskNew(disk, jobtype, jobname)))
+    if (!(job = qemuBlockJobDiskNew(vm, disk, jobtype, jobname)))
         return -1;
 
     qemuBlockJobStarted(job);
@@ -7789,7 +7789,7 @@ qemuProcessRefreshLegacyBlockjob(void *payload,
         }
     }
 
-    qemuBlockJobStartupFinalize(job);
+    qemuBlockJobStartupFinalize(vm, job);
 
     return 0;
 }

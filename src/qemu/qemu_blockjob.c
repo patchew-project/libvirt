@@ -105,20 +105,32 @@ qemuBlockJobDataNew(qemuBlockjobType type,
  * Returns 0 on success and -1 on failure.
  */
 qemuBlockJobDataPtr
-qemuBlockJobDiskNew(virDomainDiskDefPtr disk,
+qemuBlockJobDiskNew(virDomainObjPtr vm,
+                    virDomainDiskDefPtr disk,
                     qemuBlockjobType type,
                     const char *jobname)
 {
+    qemuDomainObjPrivatePtr priv = vm->privateData;
     qemuBlockJobDataPtr job = NULL;
+    qemuBlockJobDataPtr ret = NULL;
 
     if (!(job = qemuBlockJobDataNew(type, jobname)))
         return NULL;
+
+    if (virHashAddEntry(priv->blockjobs, jobname, virObjectRef(job)) < 0) {
+        virObjectUnref(job);
+        goto cleanup;
+    }
 
     job->disk = disk;
     if (disk)
         QEMU_DOMAIN_DISK_PRIVATE(disk)->blockjob = virObjectRef(job);
 
-    return job;
+    VIR_STEAL_PTR(ret, job);
+
+ cleanup:
+    virObjectUnref(job);
+    return ret;
 }
 
 
@@ -154,9 +166,13 @@ qemuBlockJobStarted(qemuBlockJobDataPtr job)
 
 
 static void
-qemuBlockJobTerminate(qemuBlockJobDataPtr job)
+qemuBlockJobTerminate(virDomainObjPtr vm,
+                      qemuBlockJobDataPtr job)
 {
+    qemuDomainObjPrivatePtr priv = vm->privateData;
     qemuDomainDiskPrivatePtr diskPriv;
+
+    virHashRemoveEntry(priv->blockjobs, job->name);
 
     if (job->disk) {
         diskPriv = QEMU_DOMAIN_DISK_PRIVATE(job->disk);
@@ -178,13 +194,14 @@ qemuBlockJobTerminate(qemuBlockJobDataPtr job)
  * to @job if it was started.
  */
 void
-qemuBlockJobStartupFinalize(qemuBlockJobDataPtr job)
+qemuBlockJobStartupFinalize(virDomainObjPtr vm,
+                            qemuBlockJobDataPtr job)
 {
     if (!job)
         return;
 
     if (job->state == QEMU_BLOCKJOB_STATE_NEW)
-        qemuBlockJobTerminate(job);
+        qemuBlockJobTerminate(vm, job);
 
     virObjectUnref(job);
 }
@@ -288,7 +305,7 @@ qemuBlockJobEventProcessLegacyCompleted(virQEMUDriverPtr driver,
     virStorageSourceBackingStoreClear(disk->src);
     ignore_value(qemuDomainDetermineDiskChain(driver, vm, disk, true));
     ignore_value(qemuBlockNodeNamesDetect(driver, vm, asyncJob));
-    qemuBlockJobTerminate(job);
+    qemuBlockJobTerminate(vm, job);
 }
 
 
@@ -343,7 +360,7 @@ qemuBlockJobEventProcessLegacy(virQEMUDriverPtr driver,
         }
         disk->mirrorState = VIR_DOMAIN_DISK_MIRROR_STATE_NONE;
         disk->mirrorJob = VIR_DOMAIN_BLOCK_JOB_TYPE_UNKNOWN;
-        qemuBlockJobTerminate(job);
+        qemuBlockJobTerminate(vm, job);
         break;
 
     case VIR_DOMAIN_BLOCK_JOB_LAST:
