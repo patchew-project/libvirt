@@ -17316,6 +17316,7 @@ qemuDomainBlockJobAbort(virDomainPtr dom,
     bool save = false;
     bool pivot = !!(flags & VIR_DOMAIN_BLOCK_JOB_ABORT_PIVOT);
     bool async = !!(flags & VIR_DOMAIN_BLOCK_JOB_ABORT_ASYNC);
+    qemuBlockJobDataPtr job = NULL;
     virDomainObjPtr vm;
     int ret = -1;
 
@@ -17343,6 +17344,12 @@ qemuDomainBlockJobAbort(virDomainPtr dom,
     if (!(device = qemuAliasDiskDriveFromDisk(disk)))
         goto endjob;
 
+    if (!(job = qemuBlockJobDiskGetJob(disk))) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("disk %s does not have an active block job"), disk->dst);
+        goto endjob;
+    }
+
     if (disk->mirrorState != VIR_DOMAIN_DISK_MIRROR_STATE_NONE &&
         disk->mirrorState != VIR_DOMAIN_DISK_MIRROR_STATE_READY) {
         virReportError(VIR_ERR_OPERATION_INVALID,
@@ -17352,7 +17359,7 @@ qemuDomainBlockJobAbort(virDomainPtr dom,
     }
 
     if (!async)
-        qemuBlockJobSyncBeginDisk(disk);
+        qemuBlockJobSyncBegin(job);
 
     if (pivot) {
         if ((ret = qemuDomainBlockPivot(driver, vm, device, disk)) < 0)
@@ -17407,6 +17414,7 @@ qemuDomainBlockJobAbort(virDomainPtr dom,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
+    virObjectUnref(job);
     virObjectUnref(cfg);
     VIR_FREE(device);
     virDomainObjEndAPI(&vm);
