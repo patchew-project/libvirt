@@ -46,7 +46,7 @@ VIR_LOG_INIT("qemu.qemu_blockjob");
  * qemuBlockJobEmitEvents:
  *
  * Emits the VIR_DOMAIN_EVENT_ID_BLOCK_JOB and VIR_DOMAIN_EVENT_ID_BLOCK_JOB_2
- * for a block job.
+ * for a block job. The former event is emitted only for local disks.
  */
 static void
 qemuBlockJobEmitEvents(virQEMUDriverPtr driver,
@@ -58,8 +58,11 @@ qemuBlockJobEmitEvents(virQEMUDriverPtr driver,
     virObjectEventPtr event = NULL;
     virObjectEventPtr event2 = NULL;
 
-    event = virDomainEventBlockJobNewFromObj(vm, disk->src->path, type, status);
-    virObjectEventStateQueue(driver->domainEventState, event);
+    if (virStorageSourceIsLocalStorage(disk->src) &&
+        !virStorageSourceIsEmpty(disk->src)) {
+        event = virDomainEventBlockJobNewFromObj(vm, disk->src->path, type, status);
+        virObjectEventStateQueue(driver->domainEventState, event);
+    }
 
     event2 = virDomainEventBlockJob2NewFromObj(vm, disk->dst, type, status);
     virObjectEventStateQueue(driver->domainEventState, event2);
