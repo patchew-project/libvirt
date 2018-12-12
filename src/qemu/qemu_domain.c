@@ -1062,7 +1062,7 @@ qemuDomainDiskPrivateNew(void)
     if (!(priv = virObjectNew(qemuDomainDiskPrivateClass)))
         return NULL;
 
-    if (VIR_ALLOC(priv->blockjob) < 0) {
+    if (!(priv->blockjob = qemuBlockJobDataNew())) {
         virObjectUnref(priv);
         priv = NULL;
     }
@@ -1078,7 +1078,7 @@ qemuDomainDiskPrivateDispose(void *obj)
     virStorageSourceFree(priv->migrSource);
     VIR_FREE(priv->qomName);
     VIR_FREE(priv->nodeCopyOnRead);
-    qemuBlockJobDataFree(priv->blockjob);
+    virObjectUnref(priv->blockjob);
 }
 
 static virClassPtr qemuDomainStorageSourcePrivateClass;
