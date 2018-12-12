@@ -1527,6 +1527,19 @@ qemuMonitorEmitBlockJob(qemuMonitorPtr mon,
 
 
 int
+qemuMonitorEmitJobStatusChange(qemuMonitorPtr mon,
+                               const char *jobname,
+                               qemuMonitorJobStatus status)
+{
+    int ret = -1;
+    VIR_DEBUG("mon=%p", mon);
+
+    QEMU_MONITOR_CALLBACK(mon, ret, jobStatusChange, mon->vm, jobname, status);
+    return ret;
+}
+
+
+int
 qemuMonitorEmitBalloonChange(qemuMonitorPtr mon,
                              unsigned long long actual)
 {
