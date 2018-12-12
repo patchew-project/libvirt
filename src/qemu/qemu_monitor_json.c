@@ -4303,6 +4303,7 @@ qemuMonitorJSONDriveMirror(qemuMonitorPtr mon,
 int
 qemuMonitorJSONBlockdevMirror(qemuMonitorPtr mon,
                               const char *jobname,
+                              bool persistjob,
                               const char *device,
                               const char *target,
                               unsigned long long speed,
@@ -4314,6 +4315,13 @@ qemuMonitorJSONBlockdevMirror(qemuMonitorPtr mon,
     virJSONValuePtr cmd;
     virJSONValuePtr reply = NULL;
     bool shallow = (flags & VIR_DOMAIN_BLOCK_REBASE_SHALLOW) != 0;
+    virTristateBool autofinalize = VIR_TRISTATE_BOOL_ABSENT;
+    virTristateBool autodismiss = VIR_TRISTATE_BOOL_ABSENT;
+
+    if (persistjob) {
+        autofinalize = VIR_TRISTATE_BOOL_YES;
+        autodismiss = VIR_TRISTATE_BOOL_NO;
+    }
 
     cmd = qemuMonitorJSONMakeCommand("blockdev-mirror",
                                      "S:job-id", jobname,
@@ -4323,6 +4331,8 @@ qemuMonitorJSONBlockdevMirror(qemuMonitorPtr mon,
                                      "z:granularity", granularity,
                                      "P:buf-size", buf_size,
                                      "s:sync", shallow ? "top" : "full",
+                                     "T:auto-finalize", autofinalize,
+                                     "T:auto-dismiss", autodismiss,
                                      NULL);
     if (!cmd)
         return -1;

@@ -3247,6 +3247,7 @@ qemuMonitorDriveMirror(qemuMonitorPtr mon,
 int
 qemuMonitorBlockdevMirror(qemuMonitorPtr mon,
                           const char *jobname,
+                          bool persistjob,
                           const char *device,
                           const char *target,
                           unsigned long long bandwidth,
@@ -3254,15 +3255,15 @@ qemuMonitorBlockdevMirror(qemuMonitorPtr mon,
                           unsigned long long buf_size,
                           unsigned int flags)
 {
-    VIR_DEBUG("jobname=%s, device=%s, target=%s, bandwidth=%lld, "
+    VIR_DEBUG("jobname=%s, persistjob=%d, device=%s, target=%s, bandwidth=%lld, "
               "granularity=%#x, buf_size=%lld, flags=0x%x",
-              NULLSTR(jobname), device, target, bandwidth, granularity,
+              NULLSTR(jobname), persistjob, device, target, bandwidth, granularity,
               buf_size, flags);
 
     QEMU_CHECK_MONITOR(mon);
 
-    return qemuMonitorJSONBlockdevMirror(mon, jobname, device, target, bandwidth,
-                                         granularity, buf_size, flags);
+    return qemuMonitorJSONBlockdevMirror(mon, jobname, persistjob, device, target,
+                                         bandwidth, granularity, buf_size, flags);
 }
 
 
