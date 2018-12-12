@@ -32,6 +32,8 @@ typedef qemuBlockJobData *qemuBlockJobDataPtr;
 struct _qemuBlockJobData {
     virObject parent;
 
+    virDomainDiskDefPtr disk; /* may be NULL, if blockjob does not corrspond to any disk */
+
     bool started;
     int type;
     char *errmsg;
