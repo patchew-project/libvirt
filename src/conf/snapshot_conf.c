@@ -1307,6 +1307,14 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
         goto cleanup;
     }
 
+    if (def->dom &&
+        STRNEQ(def->dom->name, domain->name)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("definition for snapshot %s must use name %s"),
+                       def->name, domain->name);
+        goto cleanup;
+    }
+
     other = virDomainSnapshotFindByName(vm->snapshots, def->name);
     if (other) {
         if ((other->def->state == VIR_DOMAIN_RUNNING ||
