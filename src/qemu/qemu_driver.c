@@ -16541,8 +16541,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
 
         if (qemuDomainSnapshotRevertInactive(driver, vm, snap) < 0) {
             qemuDomainRemoveInactive(driver, vm);
-            qemuProcessEndJob(driver, vm);
-            goto cleanup;
+            goto endjob;
         }
         if (config)
             virDomainObjAssignDef(vm, config, false, NULL);
@@ -16562,8 +16561,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
             virDomainAuditStart(vm, "from-snapshot", rc >= 0);
             if (rc < 0) {
                 qemuDomainRemoveInactive(driver, vm);
-                qemuProcessEndJob(driver, vm);
-                goto cleanup;
+                goto endjob;
             }
             detail = VIR_DOMAIN_EVENT_STARTED_FROM_SNAPSHOT;
             event = virDomainEventLifecycleNewFromObj(vm,
