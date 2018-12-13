@@ -62,6 +62,17 @@
     <section title="Improvements">
       <change>
         <summary>
+          qemu: snapshot inactive config of active persistent domain too
+        </summary>
+        <description>
+          Previous libvirt versions do not store complete metadata for active
+          persistent domain snapshot. As a result on revert both active and
+          inactive configs are reverted to be the same. Now snapshot saves both
+          active and inactive configs.
+        </description>
+      </change>
+      <change>
+        <summary>
           qemu: Add support for ARMv6l guests
         </summary>
       </change>
