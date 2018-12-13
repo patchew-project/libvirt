@@ -15695,6 +15695,12 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
                                                  VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE)))
             goto endjob;
 
+        if (virDomainObjIsActive(vm) && vm->persistent &&
+            !(def->persistDom = qemuDomainDefCopy(driver, vm->newDef,
+                                                  VIR_DOMAIN_XML_SECURE |
+                                                  VIR_DOMAIN_XML_MIGRATABLE)))
+            goto endjob;
+
         if (flags & VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY) {
             align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL;
             align_match = false;
@@ -16227,6 +16233,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     qemuDomainObjPrivatePtr priv;
     int rc;
     virDomainDefPtr config = NULL;
+    virDomainDefPtr persistConfig = NULL;
     virQEMUDriverConfigPtr cfg = NULL;
     virCapsPtr caps = NULL;
     bool was_stopped = false;
@@ -16234,6 +16241,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     virCPUDefPtr origCPU = NULL;
     unsigned int start_flags = VIR_QEMU_PROCESS_START_GEN_VMID;
     qemuDomainAsyncJob jobType = QEMU_ASYNC_JOB_START;
+    virDomainDefPtr newConfig = NULL;
 
     virCheckFlags(VIR_DOMAIN_SNAPSHOT_REVERT_RUNNING |
                   VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED |
@@ -16339,6 +16347,11 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
         if (!config)
             goto endjob;
     }
+
+    if (snap->def->persistDom &&
+        !(persistConfig = virDomainDefCopy(snap->def->persistDom, caps,
+                                           driver->xmlopt, NULL, true)))
+        goto endjob;
 
     cookie = (qemuDomainSaveCookiePtr) snap->def->cookie;
 
@@ -16448,8 +16461,18 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                  * failed loadvm attempt? */
                 goto endjob;
             }
-            if (config) {
-                virDomainObjAssignDef(vm, config, false, NULL);
+
+            /* Older versions do not save inactive config in metadata, instead
+             * they use active config for this purpose, so keep this behaviour
+             * for backward compat.
+             */
+            if (persistConfig)
+                VIR_STEAL_PTR(newConfig, persistConfig);
+            else
+                VIR_STEAL_PTR(newConfig, config);
+
+            if (newConfig) {
+                virDomainObjAssignDef(vm, newConfig, false, NULL);
                 virCPUDefFree(priv->origCPU);
                 VIR_STEAL_PTR(priv->origCPU, origCPU);
             }
@@ -16457,8 +16480,10 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
             /* Transitions 2, 3 */
         load:
             was_stopped = true;
-            if (config)
+            if (config) {
                 virDomainObjAssignDef(vm, config, false, NULL);
+                config = NULL;
+            }
 
             /* No cookie means libvirt which saved the domain was too old to
              * mess up the CPU definitions.
@@ -16479,6 +16504,11 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                                              detail);
             if (rc < 0)
                 goto endjob;
+
+            if (persistConfig) {
+                virDomainObjAssignDef(vm, persistConfig, false, NULL);
+                VIR_STEAL_PTR(newConfig, persistConfig);
+            }
         }
 
         /* Touch up domain state.  */
@@ -16543,8 +16573,10 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
             qemuDomainRemoveInactive(driver, vm);
             goto endjob;
         }
-        if (config)
+        if (config) {
             virDomainObjAssignDef(vm, config, false, NULL);
+            VIR_STEAL_PTR(newConfig, config);
+        }
 
         if (flags & (VIR_DOMAIN_SNAPSHOT_REVERT_RUNNING |
                      VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED)) {
@@ -16608,7 +16640,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     } else if (snap) {
         snap->def->current = false;
     }
-    if (ret == 0 && config && vm->persistent &&
+    if (ret == 0 && newConfig && vm->persistent &&
         !(ret = virDomainSaveConfig(cfg->configDir, driver->caps,
                                     vm->newDef ? vm->newDef : vm->def))) {
         detail = VIR_DOMAIN_EVENT_DEFINED_FROM_SNAPSHOT;
@@ -16624,6 +16656,8 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     virObjectUnref(cfg);
     virNWFilterUnlockFilterUpdates();
     virCPUDefFree(origCPU);
+    virDomainDefFree(config);
+    virDomainDefFree(persistConfig);
 
     return ret;
 }

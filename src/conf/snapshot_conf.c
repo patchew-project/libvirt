@@ -102,6 +102,7 @@ void virDomainSnapshotDefFree(virDomainSnapshotDefPtr def)
         virDomainSnapshotDiskDefClear(&def->disks[i]);
     VIR_FREE(def->disks);
     virDomainDefFree(def->dom);
+    virDomainDefFree(def->persistDom);
     virObjectUnref(def->cookie);
     VIR_FREE(def);
 }

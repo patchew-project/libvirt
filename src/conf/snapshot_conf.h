@@ -75,6 +75,8 @@ struct _virDomainSnapshotDef {
     virDomainSnapshotDiskDef *disks;
 
     virDomainDefPtr dom;
+    /* inactive domain config in case of active persistent domain */
+    virDomainDefPtr persistDom;
 
     virObjectPtr cookie;
 
