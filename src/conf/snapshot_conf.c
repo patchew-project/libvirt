@@ -283,6 +283,20 @@ virDomainSnapshotDefParse(xmlXPathContextPtr ctxt,
         } else {
             VIR_WARN("parsing older snapshot that lacks domain");
         }
+
+        if (def->state == VIR_DOMAIN_RUNNING ||
+            def->state == VIR_DOMAIN_PAUSED) {
+            int domainflags = VIR_DOMAIN_DEF_PARSE_INACTIVE |
+                              VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE;
+            xmlNodePtr domainNode;
+
+            if ((domainNode = virXPathNode("./persistent/domain", ctxt)) &&
+                !(def->persistDom = virDomainDefParseNode(ctxt->node->doc,
+                                                          domainNode, caps,
+                                                          xmlopt, NULL,
+                                                          domainflags)))
+                goto cleanup;
+        }
     } else {
         def->creationTime = tv.tv_sec;
     }
@@ -751,6 +765,18 @@ virDomainSnapshotDefFormat(const char *domain_uuid,
         virBufferAsprintf(&buf, "<uuid>%s</uuid>\n", domain_uuid);
         virBufferAdjustIndent(&buf, -2);
         virBufferAddLit(&buf, "</domain>\n");
+    }
+
+    if (def->persistDom) {
+        virBufferAddLit(&buf, "<persistent>\n");
+        virBufferAdjustIndent(&buf, 2);
+
+        if (virDomainDefFormatInternal(def->persistDom,
+                                       caps, flags, &buf, xmlopt) < 0)
+            goto error;
+
+        virBufferAdjustIndent(&buf, -2);
+        virBufferAddLit(&buf, "</persistent>\n");
     }
 
     if (virSaveCookieFormatBuf(&buf, def->cookie,

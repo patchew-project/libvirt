@@ -204,6 +204,7 @@ mymain(void)
     DO_TEST_OUT("noparent", "9d37b878-a7cc-9f9a-b78f-49b3abad25a8", false);
     DO_TEST_OUT("metadata", "c7a5fdbd-edaf-9455-926a-d65c16db1809", false);
     DO_TEST_OUT("external_vm_redefine", "c7a5fdbd-edaf-9455-926a-d65c16db1809", false);
+    DO_TEST_OUT("active_inactive_domain", NULL, true);
 
     DO_TEST_INOUT("empty", "9d37b878-a7cc-9f9a-b78f-49b3abad25a8", false, false);
     DO_TEST_INOUT("noparent", "9d37b878-a7cc-9f9a-b78f-49b3abad25a8", false, false);
