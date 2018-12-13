@@ -235,6 +235,13 @@
         at the time of the snapshot (<span class="since">since
         0.9.5</span>).  Readonly.
       </dd>
+      <dt><code>persistent/domain</code></dt>
+      <dd>Inactive domain configuration for active persistent domain.
+        Such a domain have 2 distinct configs and here inactive is
+        stored. It is different from <code>domain</code> which more
+        presisely keeps "inactive portion" of active config.
+        (<span class="since">since 5.0.0</span>).
+      </dd>
       <dt><code>cookie</code></dt>
       <dd>Save image cookie containing additional data libvirt may need to
         properly restore a domain from an active snapshot when such data
