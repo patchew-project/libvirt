@@ -1315,6 +1315,22 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
         goto cleanup;
     }
 
+    if (def->persistDom &&
+        memcmp(def->persistDom->uuid, domain->uuid, VIR_UUID_BUFLEN)) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("persistent definition for snapshot %s must use uuid %s"),
+                       def->name, uuidstr);
+        goto cleanup;
+    }
+
+    if (def->persistDom &&
+        STRNEQ(def->persistDom->name, domain->name)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("persistent definition for snapshot %s must use name %s"),
+                       def->name, domain->name);
+        goto cleanup;
+    }
+
     other = virDomainSnapshotFindByName(vm->snapshots, def->name);
     if (other) {
         if ((other->def->state == VIR_DOMAIN_RUNNING ||
@@ -1349,6 +1365,11 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
             }
         }
 
+        if (other->def->persistDom && !def->persistDom) {
+            def->persistDom = other->def->persistDom;
+            other->def->persistDom = NULL;
+        }
+
         if (def->dom) {
             if (def->state == VIR_DOMAIN_DISK_SNAPSHOT ||
                 virDomainSnapshotDefIsExternal(def)) {
@@ -1362,6 +1383,10 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
                 if (def->dom && !other->def->dom) {
                     other->def->dom = def->dom;
                     def->dom = NULL;
+                }
+                if (def->persistDom && !other->def->persistDom) {
+                    other->def->persistDom = def->persistDom;
+                    def->persistDom = NULL;
                 }
                 goto cleanup;
             }
