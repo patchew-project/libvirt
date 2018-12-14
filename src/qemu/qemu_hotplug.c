@@ -1443,6 +1443,11 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
         queueSize = net->driver.virtio.queues;
         if (!queueSize)
             queueSize = 1;
+
+        if (!net->info.type &&
+            vm->def->os.arch == VIR_ARCH_AARCH64)
+            net->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
+
         if (!qemuDomainSupportsNicdev(vm->def, net)) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            "%s", _("Nicdev support unavailable"));
