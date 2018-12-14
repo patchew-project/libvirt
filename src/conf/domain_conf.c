@@ -108,7 +108,6 @@ VIR_ENUM_IMPL(virDomainVirt, VIR_DOMAIN_VIRT_LAST,
               "kvm",
               "xen",
               "lxc",
-              "uml",
               "openvz",
               "test",
               "vmware",
@@ -124,7 +123,6 @@ VIR_ENUM_IMPL(virDomainOS, VIR_DOMAIN_OSTYPE_LAST,
               "xen",
               "linux",
               "exe",
-              "uml",
               "xenpvh")
 
 VIR_ENUM_IMPL(virDomainBoot, VIR_DOMAIN_BOOT_LAST,
@@ -285,7 +283,6 @@ VIR_ENUM_IMPL(virDomainDiskBus, VIR_DOMAIN_DISK_BUS_LAST,
               "virtio",
               "xen",
               "usb",
-              "uml",
               "sata",
               "sd")
 
@@ -465,7 +462,6 @@ VIR_ENUM_IMPL(virDomainChrConsoleTarget,
               "none",
               "serial",
               "xen",
-              "uml",
               "virtio",
               "lxc",
               "openvz",
@@ -5373,7 +5369,6 @@ virDomainDiskAddressDiskBusCompatibility(virDomainDiskBus bus,
     case VIR_DOMAIN_DISK_BUS_VIRTIO:
     case VIR_DOMAIN_DISK_BUS_XEN:
     case VIR_DOMAIN_DISK_BUS_USB:
-    case VIR_DOMAIN_DISK_BUS_UML:
     case VIR_DOMAIN_DISK_BUS_SD:
     case VIR_DOMAIN_DISK_BUS_LAST:
         return true;
@@ -9798,8 +9793,6 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                 def->bus = VIR_DOMAIN_DISK_BUS_VIRTIO;
             else if (STRPREFIX(target, "xvd"))
                 def->bus = VIR_DOMAIN_DISK_BUS_XEN;
-            else if (STRPREFIX(target, "ubd"))
-                def->bus = VIR_DOMAIN_DISK_BUS_UML;
             else
                 def->bus = VIR_DOMAIN_DISK_BUS_IDE;
         }
@@ -15067,7 +15060,6 @@ virDomainVideoDefaultType(const virDomainDef *def)
     case VIR_DOMAIN_VIRT_KQEMU:
     case VIR_DOMAIN_VIRT_KVM:
     case VIR_DOMAIN_VIRT_LXC:
-    case VIR_DOMAIN_VIRT_UML:
     case VIR_DOMAIN_VIRT_OPENVZ:
     case VIR_DOMAIN_VIRT_HYPERV:
     case VIR_DOMAIN_VIRT_PHYP:
@@ -18819,8 +18811,7 @@ virDomainDefParseBootOptions(virDomainDefPtr def,
 
     if (def->os.type == VIR_DOMAIN_OSTYPE_XEN ||
         def->os.type == VIR_DOMAIN_OSTYPE_XENPVH ||
-        def->os.type == VIR_DOMAIN_OSTYPE_HVM ||
-        def->os.type == VIR_DOMAIN_OSTYPE_UML) {
+        def->os.type == VIR_DOMAIN_OSTYPE_HVM) {
         xmlNodePtr loader_node;
 
         def->os.kernel = virXPathString("string(./os/kernel[1])", ctxt);

@@ -1226,7 +1226,6 @@ qemuDomainAttachDeviceDiskLiveInternal(virQEMUDriverPtr driver,
     case VIR_DOMAIN_DISK_BUS_IDE:
     case VIR_DOMAIN_DISK_BUS_FDC:
     case VIR_DOMAIN_DISK_BUS_XEN:
-    case VIR_DOMAIN_DISK_BUS_UML:
     case VIR_DOMAIN_DISK_BUS_SATA:
     case VIR_DOMAIN_DISK_BUS_SD:
         /* Note that SD card hotplug support should be added only once

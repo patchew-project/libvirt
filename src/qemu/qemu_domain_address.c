@@ -730,7 +730,6 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
         case VIR_DOMAIN_DISK_BUS_SCSI:
         case VIR_DOMAIN_DISK_BUS_XEN:
         case VIR_DOMAIN_DISK_BUS_USB:
-        case VIR_DOMAIN_DISK_BUS_UML:
         case VIR_DOMAIN_DISK_BUS_SATA:
         case VIR_DOMAIN_DISK_BUS_SD:
         case VIR_DOMAIN_DISK_BUS_LAST:

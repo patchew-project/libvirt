@@ -1134,7 +1134,6 @@ vboxAttachDrives(virDomainDefPtr def, vboxDriverPtr data, IMachine *machine)
         case VIR_DOMAIN_DISK_BUS_VIRTIO:
         case VIR_DOMAIN_DISK_BUS_XEN:
         case VIR_DOMAIN_DISK_BUS_USB:
-        case VIR_DOMAIN_DISK_BUS_UML:
         case VIR_DOMAIN_DISK_BUS_SD:
         case VIR_DOMAIN_DISK_BUS_LAST:
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,

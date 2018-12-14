@@ -245,7 +245,6 @@ qemuAssignDeviceDiskAlias(virDomainDefPtr def,
             break;
 
         case VIR_DOMAIN_DISK_BUS_XEN:
-        case VIR_DOMAIN_DISK_BUS_UML:
         case VIR_DOMAIN_DISK_BUS_SD:
         case VIR_DOMAIN_DISK_BUS_LAST:
             break;

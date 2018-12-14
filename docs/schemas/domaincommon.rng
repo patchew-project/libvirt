@@ -204,7 +204,6 @@
         <value>kvm</value>
         <value>xen</value>
         <value>lxc</value>
-        <value>uml</value>
         <value>openvz</value>
         <value>test</value>
         <value>vmware</value>
@@ -1907,7 +1906,6 @@
             <value>virtio</value>
             <value>xen</value>
             <value>usb</value>
-            <value>uml</value>
             <value>sata</value>
             <value>sd</value>
           </choice>
@@ -3725,7 +3723,6 @@
       <choice>
         <value>xen</value>
         <value>serial</value>
-        <value>uml</value>
         <value>virtio</value>
         <value>lxc</value>
         <value>openvz</value>

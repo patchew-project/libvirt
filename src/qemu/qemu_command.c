@@ -78,7 +78,6 @@ VIR_ENUM_IMPL(virDomainDiskQEMUBus, VIR_DOMAIN_DISK_BUS_LAST,
               "virtio",
               "xen",
               "usb",
-              "uml",
               "sata",
               "sd")
 
@@ -1808,7 +1807,6 @@ qemuCheckIOThreads(const virDomainDef *def,
     case VIR_DOMAIN_DISK_BUS_SCSI:
     case VIR_DOMAIN_DISK_BUS_XEN:
     case VIR_DOMAIN_DISK_BUS_USB:
-    case VIR_DOMAIN_DISK_BUS_UML:
     case VIR_DOMAIN_DISK_BUS_SATA:
     case VIR_DOMAIN_DISK_BUS_SD:
     case VIR_DOMAIN_DISK_BUS_LAST:
@@ -7254,7 +7252,6 @@ qemuBuildMachineCommandLine(virCommandPtr cmd,
     case VIR_DOMAIN_VIRT_KQEMU:
     case VIR_DOMAIN_VIRT_XEN:
     case VIR_DOMAIN_VIRT_LXC:
-    case VIR_DOMAIN_VIRT_UML:
     case VIR_DOMAIN_VIRT_OPENVZ:
     case VIR_DOMAIN_VIRT_TEST:
     case VIR_DOMAIN_VIRT_VMWARE:
@@ -10780,7 +10777,6 @@ qemuBuildConsoleChrDeviceStr(char **deviceStr,
 
     case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_NONE:
     case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_XEN:
-    case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_UML:
     case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_LXC:
     case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_OPENVZ:
     case VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_LAST:

@@ -47,7 +47,6 @@
         <value>virtio</value>
         <value>xen</value>
         <value>usb</value>
-        <value>uml</value>
         <value>sata</value>
         <value>sd</value>
       </enum>
