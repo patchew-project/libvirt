@@ -5422,6 +5422,11 @@
             </element>
           </element>
         </optional>
+        <optional>
+          <element name="unarmed">
+            <empty/>
+          </element>
+        </optional>
       </interleave>
     </element>
   </define>

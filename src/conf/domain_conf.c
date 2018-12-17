@@ -15844,6 +15844,9 @@ virDomainMemoryTargetDefParseXML(xmlNodePtr node,
                            _("label size must be smaller than NVDIMM size"));
             goto cleanup;
         }
+
+        if (virXPathBoolean("boolean(./unarmed)", ctxt))
+            def->nvdimmUnarmed = true;
     }
 
     ret = 0;
@@ -22766,6 +22769,13 @@ virDomainMemoryDefCheckABIStability(virDomainMemoryDefPtr src,
                              "source NVDIMM pmem flag"));
             return false;
         }
+
+        if (src->nvdimmUnarmed != dst->nvdimmUnarmed) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("Target NVDIMM unarmed flag doesn't match "
+                             "source NVDIMM unarmed flag"));
+            return false;
+        }
     }
 
     return virDomainDeviceInfoCheckABIStability(&src->info, &dst->info);
@@ -26344,6 +26354,8 @@ virDomainMemoryTargetDefFormat(virBufferPtr buf,
         virBufferAdjustIndent(buf, -2);
         virBufferAddLit(buf, "</label>\n");
     }
+    if (def->nvdimmUnarmed)
+        virBufferAddLit(buf, "<unarmed/>\n");
 
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</target>\n");
