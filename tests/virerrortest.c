@@ -58,7 +58,6 @@ virErrorTestMsgs(const void *opaque ATTRIBUTE_UNUSED)
     const char *err_noinfo;
     const char *err_info;
     size_t i;
-    int ret = 0;
 
     for (i = 1; i < VIR_ERR_NUMBER_LAST; i++) {
         err_noinfo = virErrorMsg(i, NULL);
@@ -66,25 +65,25 @@ virErrorTestMsgs(const void *opaque ATTRIBUTE_UNUSED)
 
         if (!err_noinfo) {
             VIR_TEST_VERBOSE("\nmissing string without info for error id %zu\n", i);
-            ret = -1;
+            return -1;
         }
 
         if (!err_info) {
             VIR_TEST_VERBOSE("\nmissing string with info for error id %zu\n", i);
-            ret = -1;
+            return -1;
         }
 
         if (strchr(err_noinfo, '%')) {
             VIR_TEST_VERBOSE("\nerror message id %zu contains formatting characters: '%s'\n",
                              i, err_noinfo);
-            ret = -1;
+            return -1;
         }
 
         if (virErrorTestMsgFormatInfoOne(err_info) < 0)
-            ret = -1;
+            return -1;
     }
 
-    return ret;
+    return 0;
 }
 
 
