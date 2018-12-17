@@ -65,6 +65,15 @@
           qemu: Add support for ARMv6l guests
         </summary>
       </change>
+      <change>
+        <summary>
+          NVDIMM: support more configurations
+        </summary>
+        <description>
+          Introduce more configuration options, including 'alignsize', 'pmem',
+          'unarmed'.
+        </description>
+      </change>
     </section>
     <section title="Bug fixes">
     </section>
