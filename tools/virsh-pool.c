@@ -141,6 +141,10 @@
     {.name = "adapter-parent-fabric-wwn", \
      .type = VSH_OT_STRING, \
      .help = N_("adapter parent scsi_hostN fabric_wwn to be used for underlying vHBA storage") \
+    }, \
+    {.name = "source-mount-opts", \
+     .type = VSH_OT_STRING, \
+     .help = N_("source mount options for an nfs pool's source-path") \
     }
 
 virStoragePoolPtr
@@ -324,7 +328,7 @@ virshBuildPoolXML(vshControl *ctl,
                *secretUsage = NULL, *adapterName = NULL, *adapterParent = NULL,
                *adapterWwnn = NULL, *adapterWwpn = NULL, *secretUUID = NULL,
                *adapterParentWwnn = NULL, *adapterParentWwpn = NULL,
-               *adapterParentFabricWwn = NULL;
+               *adapterParentFabricWwn = NULL, *mountOpts = NULL;
     virBuffer buf = VIR_BUFFER_INITIALIZER;
 
     VSH_EXCLUSIVE_OPTIONS("secret-usage", "secret-uuid");
@@ -336,6 +340,7 @@ virshBuildPoolXML(vshControl *ctl,
 
     if (vshCommandOptStringReq(ctl, cmd, "source-host", &srcHost) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "source-path", &srcPath) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "source-mount-opts", &mountOpts) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "source-dev", &srcDev) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "source-name", &srcName) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "source-format", &srcFormat) < 0 ||
@@ -363,8 +368,12 @@ virshBuildPoolXML(vshControl *ctl,
 
         if (srcHost)
             virBufferAsprintf(&buf, "<host name='%s'/>\n", srcHost);
-        if (srcPath)
-            virBufferAsprintf(&buf, "<dir path='%s'/>\n", srcPath);
+        if (srcPath) {
+            virBufferAsprintf(&buf, "<dir path='%s'", srcPath);
+            if (mountOpts)
+                virBufferAsprintf(&buf, " mount_opts='%s'", mountOpts);
+            virBufferAddLit(&buf, "/>\n");
+        }
         if (srcDev)
             virBufferAsprintf(&buf, "<device path='%s'/>\n", srcDev);
         if (adapterWwnn && adapterWwpn) {

@@ -3884,6 +3884,7 @@ just I<--build> is provided, then B<pool-build> is called with no flags.
 
 =item B<pool-create-as> I<name> I<type>
 [I<--source-host hostname>] [I<--source-path path>] [I<--source-dev path>]
+[I<--source-mount-opts mountOpts>]
 [I<--source-name name>] [I<--target path>] [I<--source-format format>]
 [I<--auth-type authtype> I<--auth-username username>
 [I<--secret-usage usage> | I<--secret-uuid uuid>]]
@@ -3909,6 +3910,10 @@ gluster).
 
 [I<--source-path path>] provides the source directory path for pools backed
 by directories (pool type dir).
+
+[<--source-mount-opts mountOpts>] provides a string to be used when creating
+the mount command for a netfs type pool. The options should be in a comma
+separated list format as described by the mount options command.
 
 [I<--source-dev path>] provides the source path for pools backed by physical
 devices (pool types fs, logical, disk, iscsi, zfs).
