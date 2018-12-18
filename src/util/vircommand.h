@@ -123,7 +123,7 @@ void virCommandAddEnvPassAllowSUID(virCommandPtr cmd,
 void virCommandAddEnvPassCommon(virCommandPtr cmd);
 
 void virCommandAddArg(virCommandPtr cmd,
-                      const char *val) ATTRIBUTE_NONNULL(2);
+                      const char *val);
 
 void virCommandAddArgBuffer(virCommandPtr cmd,
                             virBufferPtr buf);
@@ -134,8 +134,7 @@ void virCommandAddArgFormat(virCommandPtr cmd,
 
 void virCommandAddArgPair(virCommandPtr cmd,
                           const char *name,
-                          const char *val)
-    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+                          const char *val);
 
 void virCommandAddArgSet(virCommandPtr cmd,
                          const char *const*vals) ATTRIBUTE_NONNULL(2);
