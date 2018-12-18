@@ -4336,6 +4336,10 @@ virStorageBackendFileSystemMountCmd(const char *cmdstr,
         virStorageBackendFileSystemMountCIFSArgs(cmd, src, def);
     else
         virStorageBackendFileSystemMountDefaultArgs(cmd, src, def);
+
+    if (def->source.mountOpts)
+        virCommandAddArgList(cmd, "-o", def->source.mountOpts, NULL);
+
     return cmd;
 }
 
