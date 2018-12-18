@@ -175,6 +175,9 @@ struct _virStoragePoolSource {
     /* Or a directory */
     char *dir;
 
+    /* If provided, a list of mount(8) options for mounting the pool's dir */
+    char *mountOpts;
+
     /* Or an adapter */
     virStorageAdapter adapter;
 

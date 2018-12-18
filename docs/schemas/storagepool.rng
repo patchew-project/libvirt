@@ -354,6 +354,11 @@
       <attribute name='path'>
         <ref name='absDirPath'/>
       </attribute>
+      <optional>
+        <attribute name='mount_opts'>
+          <text/>
+        </attribute>
+      </optional>
       <empty/>
     </element>
   </define>

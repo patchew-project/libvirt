@@ -155,6 +155,14 @@
         for a <code>netfs</code> pool type using <code>format</code>
         type "cifs", the path to the Samba share without the leading slash.
         <span class="since">Since 0.4.1</span></dd>
+
+        <p>An optional <code>mount_opts</code> may be provided to add
+        mount options for pools such as <code>netfs</code> in order to
+        provide a list of mount options to be provided to the mount command
+        via the "-o" option during pool startup or creation. The options
+        are passed directly via a string to the command.
+        <span class="since">Since 5.0.0.</span>
+        </p>
       <dt><code>adapter</code></dt>
       <dd>Provides the source for pools backed by SCSI adapters (pool
         type <code>scsi</code>). May only occur once.

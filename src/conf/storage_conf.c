@@ -372,6 +372,7 @@ virStoragePoolSourceClear(virStoragePoolSourcePtr source)
         virStoragePoolSourceDeviceClear(&source->devices[i]);
     VIR_FREE(source->devices);
     VIR_FREE(source->dir);
+    VIR_FREE(source->mountOpts);
     VIR_FREE(source->name);
     virStorageAdapterClear(&source->adapter);
     virStorageSourceInitiatorClear(&source->initiator);
@@ -526,6 +527,9 @@ virStoragePoolDefParseSource(xmlXPathContextPtr ctxt,
     if (!source->dir && pool_type == VIR_STORAGE_POOL_GLUSTER &&
         VIR_STRDUP(source->dir, "/") < 0)
         goto cleanup;
+
+    /* Optional mount options for the directory */
+    source->mountOpts = virXPathString("string(./dir/@mount_opts)", ctxt);
 
     if ((adapternode = virXPathNode("./adapter", ctxt))) {
         if (virStorageAdapterParseXML(&source->adapter, adapternode, ctxt) < 0)
@@ -934,8 +938,12 @@ virStoragePoolSourceFormat(virBufferPtr buf,
         }
     }
 
-    if (options->flags & VIR_STORAGE_POOL_SOURCE_DIR)
-        virBufferEscapeString(buf, "<dir path='%s'/>\n", src->dir);
+    if (options->flags & VIR_STORAGE_POOL_SOURCE_DIR) {
+        virBufferEscapeString(buf, "<dir path='%s'", src->dir);
+        if (src->mountOpts)
+            virBufferEscapeString(buf, " mount_opts='%s'", src->mountOpts);
+        virBufferAddLit(buf, "/>\n");
+    }
 
     if ((options->flags & VIR_STORAGE_POOL_SOURCE_ADAPTER) &&
         (src->adapter.type == VIR_STORAGE_ADAPTER_TYPE_FC_HOST ||

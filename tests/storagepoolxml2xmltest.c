@@ -85,6 +85,7 @@ mymain(void)
     DO_TEST("pool-netfs-auto");
     DO_TEST("pool-netfs-gluster");
     DO_TEST("pool-netfs-cifs");
+    DO_TEST("pool-netfs-mountopts");
     DO_TEST("pool-scsi");
     DO_TEST("pool-scsi-type-scsi-host");
     DO_TEST("pool-scsi-type-fc-host");
