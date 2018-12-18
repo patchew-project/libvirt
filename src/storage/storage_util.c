@@ -3756,6 +3756,49 @@ virStorageBackendRefreshLocal(virStoragePoolObjPtr pool)
 
 
 static char *
+virStorageBackendSCSITargetPort(const char *dev)
+{
+    char *target_port = NULL;
+    const char *id;
+#ifdef WITH_UDEV
+    virCommandPtr cmd = virCommandNewArgList(
+        "/lib/udev/scsi_id",
+        "--replace-whitespace",
+        "--whitelisted",
+        "--export",
+        "--device", dev,
+        NULL
+        );
+
+    /* Run the program and capture its output */
+    virCommandSetOutputBuffer(cmd, &target_port);
+    if (virCommandRun(cmd, NULL) < 0)
+        goto cleanup;
+#endif
+
+    if (target_port && STRNEQ(target_port, "") &&
+        (id = strstr(target_port, "ID_TARGET_PORT="))) {
+        char *nl = strchr(id, '\n');
+        if (nl)
+            *nl = '\0';
+        id = strrchr(id, '=');
+        memmove(target_port, id + 1, strlen(id));
+    } else {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unable to uniquely identify target port for '%s'"),
+                       dev);
+    }
+
+#ifdef WITH_UDEV
+ cleanup:
+    virCommandFree(cmd);
+#endif
+
+    return target_port;
+}
+
+
+static char *
 virStorageBackendSCSISerial(const char *dev)
 {
     char *serial = NULL;
@@ -3813,6 +3856,8 @@ virStorageBackendSCSINewLun(virStoragePoolObjPtr pool,
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
     virStorageVolDefPtr vol = NULL;
     char *devpath = NULL;
+    char *key = NULL;
+    char *target_port = NULL;
     int retval = -1;
 
     /* Check if the pool is using a stable target path. The call to
@@ -3877,8 +3922,20 @@ virStorageBackendSCSINewLun(virStoragePoolObjPtr pool,
                                                  VIR_STORAGE_VOL_READ_NOERROR)) < 0)
         goto cleanup;
 
-    if (!(vol->key = virStorageBackendSCSISerial(vol->target.path)))
+    if (!(key = virStorageBackendSCSISerial(vol->target.path)))
         goto cleanup;
+
+    if (def->source.adapter.type == VIR_STORAGE_ADAPTER_TYPE_FC_HOST &&
+        STRNEQ(key, vol->target.path)) {
+        /* NPIV based LUNs use the same "serial" key. In order to distinguish
+         * we need to append a port value */
+        if (!(target_port = virStorageBackendSCSITargetPort(vol->target.path)))
+            goto cleanup;
+        if (virAsprintf(&vol->key, "%s_PORT%s", key, target_port) < 0)
+            goto cleanup;
+    } else {
+        VIR_STEAL_PTR(vol->key, key);
+    }
 
     def->capacity += vol->target.capacity;
     def->allocation += vol->target.allocation;
@@ -3892,6 +3949,8 @@ virStorageBackendSCSINewLun(virStoragePoolObjPtr pool,
  cleanup:
     virStorageVolDefFree(vol);
     VIR_FREE(devpath);
+    VIR_FREE(target_port);
+    VIR_FREE(key);
     return retval;
 }
 
