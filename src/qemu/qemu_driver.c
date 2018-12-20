@@ -15330,7 +15330,7 @@ qemuDomainSnapshotCreateDiskActive(virQEMUDriverPtr driver,
 
     if (ret == 0 || !do_transaction) {
         if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0 ||
-            (persist && virDomainSaveConfig(cfg->configDir, driver->caps,
+            (vm->persistent && persist && virDomainSaveConfig(cfg->configDir, driver->caps,
                                             vm->newDef) < 0))
             ret = -1;
     }
