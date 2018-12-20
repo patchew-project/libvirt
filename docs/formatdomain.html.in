@@ -8323,6 +8323,7 @@ qemu-kvm -net nic,model=? /dev/null
     &lt;source&gt;
       &lt;path&gt;/tmp/nvdimm&lt;/path&gt;
       &lt;alignsize unit='KiB'&gt;2048&lt;/alignsize&gt;
+      &lt;pmem/&gt;
     &lt;/source&gt;
     &lt;target&gt;
       &lt;size unit='KiB'&gt;524288&lt;/size&gt;
@@ -8421,6 +8422,17 @@ qemu-kvm -net nic,model=? /dev/null
               some backends may require alignments different from the page.
               For example, mmap a real NVDIMM device maybe 2M-aligned required.
               <span class="since">Since 5.0.0</span>
+            </p>
+          </dd>
+
+          <dt><code>pmem</code></dt>
+          <dd>
+            <p>
+              This element can be used to specify whether the backend storage
+              of memory-backend-file is a real persistent memory. If the
+              backend is a real persistence memory and <code>pmem</code> is set,
+              QEMU will guarantee the persistence of its own writes to the
+              vNVDIMM backend. <span class="since">Since 5.0.0</span>
             </p>
           </dd>
         </dl>
