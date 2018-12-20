@@ -8322,6 +8322,7 @@ qemu-kvm -net nic,model=? /dev/null
   &lt;memory model='nvdimm'&gt;
     &lt;source&gt;
       &lt;path&gt;/tmp/nvdimm&lt;/path&gt;
+      &lt;alignsize unit='KiB'&gt;2048&lt;/alignsize&gt;
     &lt;/source&gt;
     &lt;target&gt;
       &lt;size unit='KiB'&gt;524288&lt;/size&gt;
@@ -8403,10 +8404,26 @@ qemu-kvm -net nic,model=? /dev/null
         </dl>
 
         <p>
-          For model <code>nvdimm</code> this element is mandatory and has a
-          single child element <code>path</code> that represents a path
-          in the host that backs the nvdimm module in the guest.
+          For model <code>nvdimm</code> this element is mandatory. The
+          mandatory child element <code>path</code> represents a path in
+          the host that backs the nvdimm module in the guest. If
+          <code>nvdimm</code> is provided, then the following optional
+          elements can be provided as well:
         </p>
+
+        <dl>
+          <dt><code>alignsize</code></dt>
+          <dd>
+            <p>
+              This element can be used to specify a proper alignment.
+              When mmap(2) the backend files, QEMU uses the host page
+              size by default as the alignment of mapping address. However,
+              some backends may require alignments different from the page.
+              For example, mmap a real NVDIMM device maybe 2M-aligned required.
+              <span class="since">Since 5.0.0</span>
+            </p>
+          </dd>
+        </dl>
       </dd>
 
       <dt><code>target</code></dt>
