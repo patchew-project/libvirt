@@ -2836,6 +2836,8 @@ networkStartNetwork(virNetworkDriverStatePtr driver,
 
     VIR_DEBUG("Beginning network startup process");
 
+    virNetworkObjDeleteAllPorts(obj, driver->stateDir);
+
     VIR_DEBUG("Setting current network def as transient");
     if (virNetworkObjSetDefTransient(obj, true) < 0)
         goto cleanup;
@@ -4009,6 +4011,9 @@ networkDestroy(virNetworkPtr net)
 
     if ((ret = networkShutdownNetwork(driver, obj)) < 0)
         goto cleanup;
+
+    virNetworkObjDeleteAllPorts(obj, driver->stateDir);
+
     /* @def replaced in virNetworkObjUnsetDefTransient*/
     def = virNetworkObjGetDef(obj);
 
@@ -5669,6 +5674,229 @@ networkBandwidthUpdate(virDomainNetDefPtr iface,
 }
 
 
+static virNetworkPortPtr
+networkPortLookupByUUID(virNetworkPtr net,
+                        const unsigned char *uuid)
+{
+    virNetworkObjPtr obj;
+    virNetworkDefPtr def;
+    virNetworkPortDefPtr portdef = NULL;
+    virNetworkPortPtr ret = NULL;
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
+    virUUIDFormat(uuid, uuidstr);
+
+    if (!(obj = networkObjFromNetwork(net)))
+        return ret;
+
+    def = virNetworkObjGetDef(obj);
+
+    if (!(portdef = virNetworkObjLookupPort(obj, uuid)))
+        goto cleanup;
+
+    if (virNetworkPortLookupByUUIDEnsureACL(net->conn, def, portdef) < 0)
+        goto cleanup;
+
+    if (!virNetworkObjIsActive(obj)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("network '%s' is not active"),
+                       def->name);
+        goto cleanup;
+    }
+
+    ret = virGetNetworkPort(net, uuid);
+
+ cleanup:
+    virNetworkObjEndAPI(&obj);
+    return ret;
+}
+
+
+static virNetworkPortPtr
+networkPortCreateXML(virNetworkPtr net,
+                     const char *xmldesc,
+                     unsigned int flags)
+{
+    virNetworkDriverStatePtr driver = networkGetDriver();
+    virNetworkObjPtr obj;
+    virNetworkDefPtr def;
+    virNetworkPortDefPtr portdef = NULL;
+    virNetworkPortPtr ret = NULL;
+    int rc;
+
+    virCheckFlags(VIR_NETWORK_PORT_CREATE_RECLAIM, NULL);
+
+    if (!(obj = networkObjFromNetwork(net)))
+        return ret;
+
+    def = virNetworkObjGetDef(obj);
+
+    if (!(portdef = virNetworkPortDefParseString(xmldesc)))
+        goto cleanup;
+
+    if (virNetworkPortCreateXMLEnsureACL(net->conn, def, portdef) < 0)
+        goto cleanup;
+
+    if (!virNetworkObjIsActive(obj)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("network '%s' is not active"),
+                       def->name);
+        goto cleanup;
+    }
+
+    if (portdef->plugtype == VIR_NETWORK_PORT_PLUG_TYPE_NONE) {
+        if (flags & VIR_NETWORK_PORT_CREATE_RECLAIM) {
+            virReportError(VIR_ERR_INVALID_ARG, "%s",
+                           _("Port reclaim requested but plug type is none"));
+            goto cleanup;
+        }
+    } else {
+        if (!(flags & VIR_NETWORK_PORT_CREATE_RECLAIM)) {
+            virReportError(VIR_ERR_INVALID_ARG, "%s",
+                           _("Port reclaim not requested but plug type is not none"));
+            goto cleanup;
+        }
+    }
+
+    if (virNetworkObjAddPort(obj, portdef, driver->stateDir) < 0) {
+        virNetworkPortDefFree(portdef);
+        goto cleanup;
+    }
+
+    if (flags & VIR_NETWORK_PORT_CREATE_RECLAIM)
+        rc = networkNotifyPort(obj, portdef);
+    else
+        rc = networkAllocatePort(obj, portdef);
+    if (rc < 0) {
+        virErrorPtr saved;
+        saved = virSaveLastError();
+        virNetworkObjDeletePort(obj, portdef->uuid, driver->stateDir);
+        virSetError(saved);
+        virFreeError(saved);
+        goto cleanup;
+    }
+
+    ret = virGetNetworkPort(net, portdef->uuid);
+ cleanup:
+    virNetworkObjEndAPI(&obj);
+    return ret;
+}
+
+
+static char *
+networkPortGetXMLDesc(virNetworkPortPtr port,
+                      unsigned int flags)
+{
+    virNetworkObjPtr obj;
+    virNetworkDefPtr def;
+    virNetworkPortDefPtr portdef = NULL;
+    char *ret = NULL;
+
+    virCheckFlags(0, NULL);
+
+    if (!(obj = networkObjFromNetwork(port->net)))
+        return ret;
+
+    def = virNetworkObjGetDef(obj);
+
+    if (!(portdef = virNetworkObjLookupPort(obj, port->uuid)))
+        goto cleanup;
+
+    if (virNetworkPortGetXMLDescEnsureACL(port->net->conn, def, portdef) < 0)
+        goto cleanup;
+
+    if (!virNetworkObjIsActive(obj)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("network '%s' is not active"),
+                       def->name);
+        goto cleanup;
+    }
+
+   if (!(ret = virNetworkPortDefFormat(portdef)))
+       goto cleanup;
+
+ cleanup:
+    virNetworkObjEndAPI(&obj);
+    return ret;
+}
+
+
+static int
+networkPortDelete(virNetworkPortPtr port,
+                  unsigned int flags)
+{
+    virNetworkDriverStatePtr driver = networkGetDriver();
+    virNetworkObjPtr obj;
+    virNetworkDefPtr def;
+    virNetworkPortDefPtr portdef;
+    int ret = -1;
+
+    virCheckFlags(0, -1);
+
+    if (!(obj = networkObjFromNetwork(port->net)))
+        return ret;
+
+    def = virNetworkObjGetDef(obj);
+
+    if (!(portdef = virNetworkObjLookupPort(obj, port->uuid)))
+        goto cleanup;
+
+    if (virNetworkPortDeleteEnsureACL(port->net->conn, def, portdef) < 0)
+        goto cleanup;
+
+    if (!virNetworkObjIsActive(obj)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("network '%s' is not active"),
+                       def->name);
+        goto cleanup;
+    }
+
+    if (networkReleasePort(obj, portdef) < 0)
+        goto cleanup;
+
+    virNetworkObjDeletePort(obj, port->uuid, driver->stateDir);
+
+    ret = 0;
+ cleanup:
+    virNetworkObjEndAPI(&obj);
+    return ret;
+}
+
+
+static int
+networkListAllPorts(virNetworkPtr net,
+                    virNetworkPortPtr **ports,
+                    unsigned int flags)
+{
+    virNetworkObjPtr obj;
+    virNetworkDefPtr def;
+    int ret = -1;
+
+    virCheckFlags(0, -1);
+
+    if (!(obj = networkObjFromNetwork(net)))
+        return ret;
+
+    def = virNetworkObjGetDef(obj);
+
+    if (virNetworkListAllPortsEnsureACL(net->conn, def) < 0)
+        goto cleanup;
+
+    if (!virNetworkObjIsActive(obj)) {
+        virReportError(VIR_ERR_OPERATION_INVALID,
+                       _("network '%s' is not active"),
+                       def->name);
+        goto cleanup;
+    }
+
+    ret = virNetworkObjPortListExport(net, obj, ports,
+                                      virNetworkListAllPortsCheckACL);
+
+ cleanup:
+    virNetworkObjEndAPI(&obj);
+    return ret;
+}
+
+
 static virNetworkDriver networkDriver = {
     .name = "bridge",
     .connectNumOfNetworks = networkConnectNumOfNetworks, /* 0.2.0 */
@@ -5693,6 +5921,11 @@ static virNetworkDriver networkDriver = {
     .networkIsActive = networkIsActive, /* 0.7.3 */
     .networkIsPersistent = networkIsPersistent, /* 0.7.3 */
     .networkGetDHCPLeases = networkGetDHCPLeases, /* 1.2.6 */
+    .networkPortLookupByUUID = networkPortLookupByUUID, /* 5.0.0 */
+    .networkPortCreateXML = networkPortCreateXML, /* 5.0.0 */
+    .networkPortGetXMLDesc = networkPortGetXMLDesc, /* 5.0.0 */
+    .networkPortDelete = networkPortDelete, /* 5.0.0 */
+    .networkListAllPorts = networkListAllPorts, /* 5.0.0 */
 };
 
 
