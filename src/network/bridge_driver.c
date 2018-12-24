@@ -4822,8 +4822,10 @@ networkNotifyActualDevice(virNetworkPtr net,
     virNetworkObjPtr obj;
     virNetworkDefPtr netdef;
     virNetworkForwardIfDefPtr dev = NULL;
+    virNetworkPortDefPtr port = NULL;
     size_t i;
     char *master = NULL;
+    bool useOVS = false;
 
     obj = virNetworkObjFindByName(driver->networks, net->name);
     if (!obj) {
@@ -4868,29 +4870,42 @@ networkNotifyActualDevice(virNetworkPtr net,
         actualType = VIR_DOMAIN_NET_TYPE_BRIDGE;
     }
 
-    /* see if we're connected to the correct bridge */
-    if (netdef->bridge) {
-        bool useOVS = false;
+    if (!(port = virDomainNetDefActualToNetworkPort(dom, iface)))
+        goto cleanup;
 
-        if (virNetDevGetMaster(iface->ifname, &master) < 0)
+    switch (port->plugtype) {
+    case VIR_NETWORK_PORT_PLUG_TYPE_NONE:
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Unexpectedly got a network port without a plug"));
+        goto error;
+
+    case VIR_NETWORK_PORT_PLUG_TYPE_BRIDGE:
+        /* see if we're connected to the correct bridge */
+        if (!netdef->bridge) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Unexpectedly got a network port plugged into a bridge"));
+            goto error;
+        }
+
+        if (virNetDevGetMaster(port->plug.bridge.brname, &master) < 0)
             goto error;
 
         /* IFLA_MASTER for a tap on an OVS switch is always "ovs-system" */
         if (STREQ_NULLABLE(master, "ovs-system")) {
             useOVS = true;
             VIR_FREE(master);
-            if (virNetDevOpenvswitchInterfaceGetMaster(iface->ifname, &master) < 0)
+            if (virNetDevOpenvswitchInterfaceGetMaster(port->plug.bridge.brname, &master) < 0)
                 goto error;
         }
 
         if (STRNEQ_NULLABLE(netdef->bridge, master)) {
             /* disconnect from current (incorrect) bridge */
             if (master) {
-                VIR_INFO("Removing %s from %s", iface->ifname, master);
+                VIR_INFO("Removing %s from %s", port->plug.bridge.brname, master);
                 if (useOVS)
-                    ignore_value(virNetDevOpenvswitchRemovePort(master, iface->ifname));
+                    ignore_value(virNetDevOpenvswitchRemovePort(master, port->plug.bridge.brname));
                 else
-                    ignore_value(virNetDevBridgeRemovePort(master, iface->ifname));
+                    ignore_value(virNetDevBridgeRemovePort(master, port->plug.bridge.brname));
             }
 
             /* attach/reattach to correct bridge.
@@ -4898,51 +4913,28 @@ networkNotifyActualDevice(virNetworkPtr net,
              * so there is no point in trying to learn the actualMTU
              * (final arg to virNetDevTapAttachBridge())
              */
-            VIR_INFO("Attaching %s to %s", iface->ifname, netdef->bridge);
-            if (virNetDevTapAttachBridge(iface->ifname, netdef->bridge,
-                                         &iface->mac, dom->uuid,
-                                         virDomainNetGetActualVirtPortProfile(iface),
-                                         virDomainNetGetActualVlan(iface),
-                                         iface->mtu, NULL) < 0) {
+            VIR_INFO("Attaching %s to %s", port->plug.bridge.brname, netdef->bridge);
+            /* XXXXXXXXXXXXXXX MTU is bad perhaps ? */
+            if (virNetDevTapAttachBridge(port->plug.bridge.brname, netdef->bridge,
+                                         &port->mac, port->owneruuid,
+                                         port->virtPortProfile,
+                                         &port->vlan,
+                                         0, NULL) < 0) {
                 goto error;
             }
         }
-    }
+        break;
 
-    if (!iface->data.network.actual ||
-        (actualType != VIR_DOMAIN_NET_TYPE_DIRECT &&
-         actualType != VIR_DOMAIN_NET_TYPE_HOSTDEV)) {
-        VIR_DEBUG("Nothing to claim from network %s", iface->data.network.name);
-        goto success;
-    }
-
-    if (networkCreateInterfacePool(netdef) < 0)
-        goto error;
-
-    if (netdef->forward.nifs == 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("network '%s' uses a direct or hostdev mode, "
-                         "but has no forward dev and no interface pool"),
-                       netdef->name);
-        goto error;
-    }
-
-    if (actualType == VIR_DOMAIN_NET_TYPE_DIRECT) {
-        const char *actualDev;
-
-        actualDev = virDomainNetGetActualDirectDev(iface);
-        if (!actualDev) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("the interface uses a direct mode, "
-                             "but has no source dev"));
+    case VIR_NETWORK_PORT_PLUG_TYPE_DIRECT:
+        if (networkCreateInterfacePool(netdef) < 0)
             goto error;
-        }
 
         /* find the matching interface and increment its connections */
         for (i = 0; i < netdef->forward.nifs; i++) {
             if (netdef->forward.ifs[i].type
                 == VIR_NETWORK_FORWARD_HOSTDEV_DEVICE_NETDEV &&
-                STREQ(actualDev, netdef->forward.ifs[i].device.dev)) {
+                STREQ(port->plug.direct.linkdev,
+                      netdef->forward.ifs[i].device.dev)) {
                 dev = &netdef->forward.ifs[i];
                 break;
             }
@@ -4951,8 +4943,9 @@ networkNotifyActualDevice(virNetworkPtr net,
         if (!dev) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("network '%s' doesn't have dev='%s' "
-                             "in use by domain"),
-                           netdef->name, actualDev);
+                             "in use by network port '%s'"),
+                           netdef->name, port->plug.direct.linkdev,
+                           port->uuid);
             goto error;
         }
 
@@ -4963,31 +4956,26 @@ networkNotifyActualDevice(virNetworkPtr net,
         if ((dev->connections > 0) &&
             ((netdef->forward.type == VIR_NETWORK_FORWARD_PASSTHROUGH) ||
              ((netdef->forward.type == VIR_NETWORK_FORWARD_PRIVATE) &&
-              iface->data.network.actual->virtPortProfile &&
-              (iface->data.network.actual->virtPortProfile->virtPortType
-               == VIR_NETDEV_VPORT_PROFILE_8021QBH)))) {
+              port->virtPortProfile &&
+              (port->virtPortProfile->virtPortType == VIR_NETDEV_VPORT_PROFILE_8021QBH)))) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("network '%s' claims dev='%s' is already in "
-                             "use by a different domain"),
-                           netdef->name, actualDev);
+                             "use by a different port"),
+                           netdef->name, port->plug.direct.linkdev);
             goto error;
         }
-    }  else /* if (actualType == VIR_DOMAIN_NET_TYPE_HOSTDEV) */ {
-        virDomainHostdevDefPtr hostdev;
+        break;
 
-        hostdev = virDomainNetGetActualHostdev(iface);
-        if (!hostdev) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("the interface uses a hostdev mode, "
-                             "but has no hostdev"));
+    case VIR_NETWORK_PORT_PLUG_TYPE_HOSTDEV_PCI:
+
+        if (networkCreateInterfacePool(netdef) < 0)
             goto error;
-        }
 
         /* find the matching interface and increment its connections */
         for (i = 0; i < netdef->forward.nifs; i++) {
             if (netdef->forward.ifs[i].type
                 == VIR_NETWORK_FORWARD_HOSTDEV_DEVICE_PCI &&
-                virPCIDeviceAddressEqual(&hostdev->source.subsys.u.pci.addr,
+                virPCIDeviceAddressEqual(&port->plug.hostdevpci.addr,
                                          &netdef->forward.ifs[i].device.pci)) {
                 dev = &netdef->forward.ifs[i];
                 break;
@@ -4997,12 +4985,12 @@ networkNotifyActualDevice(virNetworkPtr net,
         if (!dev) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("network '%s' doesn't have "
-                             "PCI device %04x:%02x:%02x.%x in use by domain"),
+                             "PCI device %04x:%02x:%02x.%x in use by network port"),
                            netdef->name,
-                           hostdev->source.subsys.u.pci.addr.domain,
-                           hostdev->source.subsys.u.pci.addr.bus,
-                           hostdev->source.subsys.u.pci.addr.slot,
-                           hostdev->source.subsys.u.pci.addr.function);
+                           port->plug.hostdevpci.addr.domain,
+                           port->plug.hostdevpci.addr.bus,
+                           port->plug.hostdevpci.addr.slot,
+                           port->plug.hostdevpci.addr.function);
             goto error;
         }
 
@@ -5015,15 +5003,21 @@ networkNotifyActualDevice(virNetworkPtr net,
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("network '%s' claims the PCI device at "
                              "domain=%d bus=%d slot=%d function=%d "
-                             "is already in use by a different domain"),
+                             "is already in use by a different network port"),
                            netdef->name,
                            dev->device.pci.domain, dev->device.pci.bus,
                            dev->device.pci.slot, dev->device.pci.function);
             goto error;
         }
+
+        break;
+
+    case VIR_NETWORK_PORT_PLUG_TYPE_LAST:
+    default:
+        virReportEnumRangeError(virNetworkPortPlugType, port->plugtype);
+        goto error;
     }
 
- success:
     netdef->connections++;
     if (dev)
         dev->connections++;
@@ -5040,6 +5034,7 @@ networkNotifyActualDevice(virNetworkPtr net,
 
  cleanup:
     virNetworkObjEndAPI(&obj);
+    virNetworkPortDefFree(port);
     VIR_FREE(master);
     return;
 
