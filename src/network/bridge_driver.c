@@ -4765,52 +4765,6 @@ networkAllocatePort(virNetworkObjPtr obj,
 }
 
 
-static int
-networkAllocateActualDevice(virNetworkPtr net,
-                            virDomainDefPtr dom,
-                            virDomainNetDefPtr iface)
-{
-    virNetworkDriverStatePtr driver = networkGetDriver();
-    virNetworkPortDefPtr port = NULL;
-    virNetworkObjPtr obj;
-    int ret =  -1;
-
-    obj = virNetworkObjFindByName(driver->networks, net->name);
-    if (!obj) {
-        virReportError(VIR_ERR_NO_NETWORK,
-                       _("no network with matching name '%s'"),
-                       net->name);
-        return -1;
-    }
-
-    if (iface->type != VIR_DOMAIN_NET_TYPE_NETWORK) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Expected a interface for a virtual network"));
-        goto cleanup;
-    }
-
-    if (!(port = virDomainNetDefToNetworkPort(dom, iface)))
-        goto cleanup;
-
-    if (networkAllocatePort(obj, port) < 0)
-        goto cleanup;
-
-    VIR_DEBUG("Populating net def");
-    if (virDomainNetDefActualFromNetworkPort(iface, port) < 0)
-        goto cleanup;
-
-    ret = 0;
- cleanup:
-    if (ret < 0) {
-        virDomainActualNetDefFree(iface->data.network.actual);
-        iface->data.network.actual = NULL;
-    }
-    virNetworkPortDefFree(port);
-    virNetworkObjEndAPI(&obj);
-    return ret;
-}
-
-
 /* networkNotifyPort:
  * @obj: the network to notify
  * @port: the port definition to notify
@@ -5007,72 +4961,6 @@ networkNotifyPort(virNetworkObjPtr obj,
 }
 
 
-static void
-networkNotifyActualDevice(virNetworkPtr net,
-                          virDomainDefPtr dom,
-                          virDomainNetDefPtr iface)
-{
-    virNetworkDriverStatePtr driver = networkGetDriver();
-    virDomainNetType actualType = virDomainNetGetActualType(iface);
-    virNetworkObjPtr obj;
-    virNetworkDefPtr netdef;
-    virNetworkPortDefPtr port = NULL;
-
-    obj = virNetworkObjFindByName(driver->networks, net->name);
-    if (!obj) {
-        virReportError(VIR_ERR_NO_NETWORK,
-                       _("no network with matching name '%s'"),
-                       net->name);
-        goto cleanup;
-    }
-
-    if (iface->type != VIR_DOMAIN_NET_TYPE_NETWORK) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Expected a interface for a virtual network"));
-        goto cleanup;
-    }
-
-    netdef = virNetworkObjGetDef(obj);
-
-    if (!virNetworkObjIsActive(obj)) {
-        virReportError(VIR_ERR_OPERATION_INVALID,
-                       _("network '%s' is not active"),
-                       netdef->name);
-        goto cleanup;
-    }
-
-    /* if we're restarting libvirtd after an upgrade from a version
-     * that didn't save bridge name in actualNetDef for
-     * actualType==network, we need to copy it in so that it will be
-     * available in all cases
-     */
-    if (actualType == VIR_DOMAIN_NET_TYPE_BRIDGE &&
-        !iface->data.network.actual->data.bridge.brname &&
-        (VIR_STRDUP(iface->data.network.actual->data.bridge.brname,
-                    netdef->bridge) < 0))
-            goto cleanup;
-
-    /* Older libvirtd uses actualType==network, but we now
-     * just use actualType==bridge, as nothing needs to
-     * distinguish the two cases, and this simplifies virt
-     * drive code */
-    if (actualType == VIR_DOMAIN_NET_TYPE_NETWORK) {
-        iface->data.network.actual->type = VIR_DOMAIN_NET_TYPE_BRIDGE;
-        actualType = VIR_DOMAIN_NET_TYPE_BRIDGE;
-    }
-
-    if (!(port = virDomainNetDefActualToNetworkPort(dom, iface)))
-        goto cleanup;
-
-    if (networkNotifyPort(obj, port) < 0)
-        goto cleanup;
-
- cleanup:
-    virNetworkObjEndAPI(&obj);
-    virNetworkPortDefFree(port);
-}
-
-
 /* networkReleasePort:
  * @obj: the network to release from
  * @port: the port definition to release
@@ -5187,63 +5075,6 @@ networkReleasePort(virNetworkObjPtr obj,
     return ret;
 }
 
-
-/* networkReleaseActualDevice:
- * @dom: domain definition that @iface belongs to
- * @iface:  a domain's NetDef (interface definition)
- *
- * Given a domain <interface> element that previously had its <actual>
- * element filled in (and possibly a physical device allocated to it),
- * free up the physical device for use by someone else, and free the
- * virDomainActualNetDef.
- *
- * Returns 0 on success, -1 on failure.
- */
-static int
-networkReleaseActualDevice(virNetworkPtr net,
-                           virDomainDefPtr dom,
-                           virDomainNetDefPtr iface)
-{
-    virNetworkDriverStatePtr driver = networkGetDriver();
-    virNetworkObjPtr obj;
-    virNetworkPortDefPtr port = NULL;
-    int ret = -1;
-
-    obj = virNetworkObjFindByName(driver->networks, net->name);
-    if (!obj) {
-        virReportError(VIR_ERR_NO_NETWORK,
-                       _("no network with matching name '%s'"),
-                       net->name);
-        goto cleanup;
-    }
-
-    if (iface->type != VIR_DOMAIN_NET_TYPE_NETWORK) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("Expected a interface for a virtual network"));
-        goto cleanup;
-    }
-
-    if (iface->data.network.actual == NULL) {
-        ret = 0;
-        goto cleanup;
-    }
-
-    if (!(port = virDomainNetDefActualToNetworkPort(dom, iface)))
-        goto cleanup;
-
-    if (networkReleasePort(obj, port) < 0)
-        goto cleanup;
-
-    ret = 0;
- cleanup:
-    virNetworkObjEndAPI(&obj);
-    if (iface->type == VIR_DOMAIN_NET_TYPE_NETWORK) {
-        virDomainActualNetDefFree(iface->data.network.actual);
-        iface->data.network.actual = NULL;
-    }
-    virNetworkPortDefFree(port);
-    return ret;
-}
 
 
 /**
@@ -5966,9 +5797,6 @@ networkRegister(void)
         return -1;
 
     virDomainNetSetDeviceImpl(
-        networkAllocateActualDevice,
-        networkNotifyActualDevice,
-        networkReleaseActualDevice,
         networkBandwidthChangeAllowed,
         networkBandwidthUpdate);
 

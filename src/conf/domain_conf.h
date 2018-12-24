@@ -1027,6 +1027,7 @@ struct _virDomainNetDef {
         struct {
             char *name;
             char *portgroup;
+            unsigned char portid[VIR_UUID_BUFLEN];
             /* actual has info about the currently used physical
              * device (if the network is of type
              * bridge/private/vepa/passthrough). This is saved in the
@@ -3622,21 +3623,6 @@ virNetworkPortDefPtr
 virDomainNetDefActualToNetworkPort(virDomainDefPtr dom,
                                    virDomainNetDefPtr iface);
 
-typedef int
-(*virDomainNetAllocateActualDeviceImpl)(virNetworkPtr net,
-                                        virDomainDefPtr dom,
-                                        virDomainNetDefPtr iface);
-
-typedef void
-(*virDomainNetNotifyActualDeviceImpl)(virNetworkPtr net,
-                                      virDomainDefPtr dom,
-                                      virDomainNetDefPtr iface);
-
-typedef int
-(*virDomainNetReleaseActualDeviceImpl)(virNetworkPtr net,
-                                       virDomainDefPtr dom,
-                                       virDomainNetDefPtr iface);
-
 typedef bool
 (*virDomainNetBandwidthChangeAllowedImpl)(virDomainNetDefPtr iface,
                                           virNetDevBandwidthPtr newBandwidth);
@@ -3647,10 +3633,7 @@ typedef int
 
 
 void
-virDomainNetSetDeviceImpl(virDomainNetAllocateActualDeviceImpl allocate,
-                          virDomainNetNotifyActualDeviceImpl notify,
-                          virDomainNetReleaseActualDeviceImpl release,
-                          virDomainNetBandwidthChangeAllowedImpl bandwidthChangeAllowed,
+virDomainNetSetDeviceImpl(virDomainNetBandwidthChangeAllowedImpl bandwidthChangeAllowed,
                           virDomainNetBandwidthUpdateImpl bandwidthUpdate);
 
 int
