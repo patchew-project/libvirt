@@ -4392,32 +4392,29 @@ networkGetDHCPLeases(virNetworkPtr net,
 
 static void
 networkLogAllocation(virNetworkDefPtr netdef,
-                     virDomainNetType actualType,
                      virNetworkForwardIfDefPtr dev,
-                     virDomainNetDefPtr iface,
+                     virMacAddrPtr mac,
                      bool inUse)
 {
     char macStr[VIR_MAC_STRING_BUFLEN];
     const char *verb = inUse ? "using" : "releasing";
 
+    virMacAddrFormat(mac, macStr);
     if (!dev) {
         VIR_INFO("MAC %s %s network %s (%d connections)",
-                 virMacAddrFormat(&iface->mac, macStr), verb,
-                 netdef->name, netdef->connections);
+                 macStr, verb, netdef->name, netdef->connections);
     } else {
-        if (actualType == VIR_DOMAIN_NET_TYPE_HOSTDEV) {
+        if (dev->type == VIR_NETWORK_FORWARD_HOSTDEV_DEVICE_PCI) {
             VIR_INFO("MAC %s %s network %s (%d connections) "
                      "physical device %04x:%02x:%02x.%x (%d connections)",
-                     virMacAddrFormat(&iface->mac, macStr), verb,
-                     netdef->name, netdef->connections,
+                     macStr, verb, netdef->name, netdef->connections,
                      dev->device.pci.domain, dev->device.pci.bus,
                      dev->device.pci.slot, dev->device.pci.function,
                      dev->connections);
         } else {
             VIR_INFO("MAC %s %s network %s (%d connections) "
                      "physical device %s (%d connections)",
-                     virMacAddrFormat(&iface->mac, macStr), verb,
-                     netdef->name, netdef->connections,
+                     macStr, verb, netdef->name, netdef->connections,
                      dev->device.dev, dev->connections);
         }
     }
@@ -4826,7 +4823,7 @@ networkAllocateActualDevice(virNetworkPtr net,
             dev->connections--;
         goto error;
     }
-    networkLogAllocation(netdef, actualType, dev, iface, true);
+    networkLogAllocation(netdef, dev, &iface->mac, true);
 
     ret = 0;
 
@@ -5079,7 +5076,7 @@ networkNotifyActualDevice(virNetworkPtr net,
         netdef->connections--;
         goto error;
     }
-    networkLogAllocation(netdef, actualType, dev, iface, true);
+    networkLogAllocation(netdef, dev, &iface->mac, true);
 
  cleanup:
     virNetworkObjEndAPI(&obj);
@@ -5246,7 +5243,7 @@ networkReleaseActualDevice(virNetworkPtr net,
         /* finally we can call the 'unplugged' hook script if any */
         networkRunHook(obj, dom, iface, VIR_HOOK_NETWORK_OP_IFACE_UNPLUGGED,
                        VIR_HOOK_SUBOP_BEGIN);
-        networkLogAllocation(netdef, actualType, dev, iface, false);
+        networkLogAllocation(netdef, dev, &iface->mac, false);
     }
     ret = 0;
  cleanup:
