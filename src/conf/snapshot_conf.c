@@ -562,6 +562,7 @@ virDomainSnapshotAlignDisks(virDomainSnapshotDefPtr def,
     /* Double check requested disks.  */
     for (i = 0; i < def->ndisks; i++) {
         virDomainSnapshotDiskDefPtr disk = &def->disks[i];
+        virDomainDiskDefPtr dom_disk;
         int idx = virDomainDiskIndexByName(def->dom, disk->name, false);
         int disk_snapshot;
 
@@ -579,17 +580,18 @@ virDomainSnapshotAlignDisks(virDomainSnapshotDefPtr def,
         }
         ignore_value(virBitmapSetBit(map, idx));
         disk->idx = idx;
+        dom_disk = def->dom->disks[idx];
 
-        disk_snapshot = def->dom->disks[idx]->snapshot;
+        disk_snapshot = dom_disk->snapshot;
         if (!disk->snapshot) {
             if (disk_snapshot)
                 disk->snapshot = disk_snapshot;
             else
                 disk->snapshot = default_snapshot;
         }
-        if (STRNEQ(disk->name, def->dom->disks[idx]->dst)) {
+        if (STRNEQ(disk->name, dom_disk->dst)) {
             VIR_FREE(disk->name);
-            if (VIR_STRDUP(disk->name, def->dom->disks[idx]->dst) < 0)
+            if (VIR_STRDUP(disk->name, dom_disk->dst) < 0)
                 goto cleanup;
         }
     }
