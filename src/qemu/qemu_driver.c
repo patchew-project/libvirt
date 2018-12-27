@@ -14806,6 +14806,13 @@ qemuDomainSnapshotPrepareDiskExternal(virDomainDiskDefPtr disk,
         return -1;
     }
 
+    if (virStorageSourceIsEmpty(disk->src)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("snapshot for disk %s with empty source "
+                         "is not possible"), disk->dst);
+        return -1;
+    }
+
     if (qemuTranslateSnapshotDiskSourcePool(snapdisk) < 0)
         return -1;
 
@@ -14861,6 +14868,13 @@ qemuDomainSnapshotPrepareDiskInternal(virDomainDiskDefPtr disk,
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("internal snapshot for readonly disk %s "
                          "is not supported"), disk->dst);
+        return -1;
+    }
+
+    if (virStorageSourceIsEmpty(disk->src)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("snapshot for disk %s with empty source "
+                         "is not possible"), disk->dst);
         return -1;
     }
 
