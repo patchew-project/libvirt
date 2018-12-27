@@ -66,7 +66,7 @@ struct _virDomainSnapshotDef {
     long long creationTime; /* in seconds */
     int state; /* virDomainSnapshotState */
 
-    int memory; /* virDomainMemorySnapshot */
+    int memory; /* virDomainSnapshotLocation */
     char *file; /* memory state file when snapshot is external */
 
     size_t ndisks; /* should not exceed dom->ndisks */
