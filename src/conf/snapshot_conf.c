@@ -110,7 +110,6 @@ static int
 virDomainSnapshotDiskDefParseXML(xmlNodePtr node,
                                  xmlXPathContextPtr ctxt,
                                  virDomainSnapshotDiskDefPtr def,
-                                 unsigned int flags,
                                  virDomainXMLOptionPtr xmlopt)
 {
     int ret = -1;
@@ -156,7 +155,7 @@ virDomainSnapshotDiskDefParseXML(xmlNodePtr node,
     }
 
     if ((cur = virXPathNode("./source", ctxt)) &&
-        virDomainDiskSourceParse(cur, ctxt, def->src, flags, xmlopt) < 0)
+        virDomainDiskSourceParse(cur, ctxt, def->src, 0, xmlopt) < 0)
         goto cleanup;
 
     if ((driver = virXPathString("string(./driver/@type)", ctxt)) &&
@@ -341,7 +340,7 @@ virDomainSnapshotDefParse(xmlXPathContextPtr ctxt,
         def->ndisks = n;
         for (i = 0; i < def->ndisks; i++) {
             if (virDomainSnapshotDiskDefParseXML(nodes[i], ctxt, &def->disks[i],
-                                                 flags, xmlopt) < 0)
+                                                 xmlopt) < 0)
                 goto cleanup;
         }
         VIR_FREE(nodes);
