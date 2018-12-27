@@ -14857,6 +14857,13 @@ qemuDomainSnapshotPrepareDiskInternal(virDomainDiskDefPtr disk,
 {
     int actualType;
 
+    if (disk->src->readonly) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("internal snapshot for readonly disk %s "
+                         "is not supported"), disk->dst);
+        return -1;
+    }
+
     /* active disks are handled by qemu itself so no need to worry about those */
     if (active)
         return 0;
