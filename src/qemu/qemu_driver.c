@@ -15601,7 +15601,6 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
     unsigned int parse_flags = VIR_DOMAIN_SNAPSHOT_PARSE_DISKS;
     virDomainSnapshotObjPtr other = NULL;
     int align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_INTERNAL;
-    bool align_match = true;
     virQEMUDriverConfigPtr cfg = NULL;
     virCapsPtr caps = NULL;
     qemuDomainObjPrivatePtr priv;
@@ -15741,7 +15740,6 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
 
         if (flags & VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY) {
             align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL;
-            align_match = false;
             if (virDomainObjIsActive(vm))
                 def->state = VIR_DOMAIN_DISK_SNAPSHOT;
             else
@@ -15750,7 +15748,6 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
         } else if (def->memory == VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL) {
             def->state = virDomainObjGetState(vm, NULL);
             align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL;
-            align_match = false;
         } else {
             def->state = virDomainObjGetState(vm, NULL);
 
@@ -15766,8 +15763,7 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
                            VIR_DOMAIN_SNAPSHOT_LOCATION_NONE :
                            VIR_DOMAIN_SNAPSHOT_LOCATION_INTERNAL);
         }
-        if (virDomainSnapshotAlignDisks(def, align_location,
-                                        align_match) < 0 ||
+        if (virDomainSnapshotAlignDisks(def, align_location) < 0 ||
             qemuDomainSnapshotPrepare(vm, def, &flags) < 0)
             goto endjob;
     }

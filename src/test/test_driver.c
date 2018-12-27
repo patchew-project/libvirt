@@ -6311,11 +6311,9 @@ testDomainSnapshotAlignDisks(virDomainObjPtr vm,
                              unsigned int flags)
 {
     int align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_INTERNAL;
-    bool align_match = true;
 
     if (flags & VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY) {
         align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL;
-        align_match = false;
         if (virDomainObjIsActive(vm))
             def->state = VIR_DOMAIN_DISK_SNAPSHOT;
         else
@@ -6324,7 +6322,6 @@ testDomainSnapshotAlignDisks(virDomainObjPtr vm,
     } else if (def->memory == VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL) {
         def->state = virDomainObjGetState(vm, NULL);
         align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL;
-        align_match = false;
     } else {
         def->state = virDomainObjGetState(vm, NULL);
         def->memory = def->state == VIR_DOMAIN_SHUTOFF ?
@@ -6332,7 +6329,7 @@ testDomainSnapshotAlignDisks(virDomainObjPtr vm,
                       VIR_DOMAIN_SNAPSHOT_LOCATION_INTERNAL;
     }
 
-    return virDomainSnapshotAlignDisks(def, align_location, align_match);
+    return virDomainSnapshotAlignDisks(def, align_location);
 }
 
 static virDomainSnapshotPtr

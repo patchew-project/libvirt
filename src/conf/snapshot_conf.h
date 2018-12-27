@@ -118,8 +118,7 @@ char *virDomainSnapshotDefFormat(const char *domain_uuid,
                                  unsigned int flags,
                                  int internal);
 int virDomainSnapshotAlignDisks(virDomainSnapshotDefPtr snapshot,
-                                int default_snapshot,
-                                bool require_match);
+                                int default_snapshot);
 virDomainSnapshotObjPtr virDomainSnapshotAssignDef(virDomainSnapshotObjListPtr snapshots,
                                                    virDomainSnapshotDefPtr def);
 

@@ -528,12 +528,10 @@ virDomainSnapshotCompareDiskIndex(const void *a, const void *b)
  * the domain, with a fallback to a passed in default.  Convert paths
  * to disk targets for uniformity.  Issue an error and return -1 if
  * any def->disks[n]->name appears more than once or does not map to
- * dom->disks.  If require_match, also ensure that there is no
- * conflicting requests for both internal and external snapshots.  */
+ * dom->disks. */
 int
 virDomainSnapshotAlignDisks(virDomainSnapshotDefPtr def,
-                            int default_snapshot,
-                            bool require_match)
+                            int default_snapshot)
 {
     int ret = -1;
     virBitmapPtr map = NULL;
@@ -588,17 +586,6 @@ virDomainSnapshotAlignDisks(virDomainSnapshotDefPtr def,
                 disk->snapshot = disk_snapshot;
             else
                 disk->snapshot = default_snapshot;
-        } else if (require_match &&
-                   disk->snapshot != default_snapshot &&
-                   !(disk->snapshot == VIR_DOMAIN_SNAPSHOT_LOCATION_NONE &&
-                     disk_snapshot == VIR_DOMAIN_SNAPSHOT_LOCATION_NONE)) {
-            const char *tmp;
-
-            tmp = virDomainSnapshotLocationTypeToString(default_snapshot);
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("disk '%s' must use snapshot mode '%s'"),
-                           disk->name, tmp);
-            goto cleanup;
         }
         if (STRNEQ(disk->name, def->dom->disks[idx]->dst)) {
             VIR_FREE(disk->name);
@@ -1221,7 +1208,6 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
     virDomainSnapshotDefPtr def = *defptr;
     int ret = -1;
     int align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_INTERNAL;
-    bool align_match = true;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
     virDomainSnapshotObjPtr other;
 
@@ -1314,13 +1300,10 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
 
         if (def->dom) {
             if (def->state == VIR_DOMAIN_DISK_SNAPSHOT ||
-                virDomainSnapshotDefIsExternal(def)) {
+                virDomainSnapshotDefIsExternal(def))
                 align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL;
-                align_match = false;
-            }
 
-            if (virDomainSnapshotAlignDisks(def, align_location,
-                                            align_match) < 0) {
+            if (virDomainSnapshotAlignDisks(def, align_location) < 0) {
                 /* revert stealing of the snapshot domain definition */
                 if (def->dom && !other->def->dom) {
                     other->def->dom = def->dom;
@@ -1345,12 +1328,10 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
     } else {
         if (def->dom) {
             if (def->state == VIR_DOMAIN_DISK_SNAPSHOT ||
-                def->memory == VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL) {
+                def->memory == VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL)
                 align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL;
-                align_match = false;
-            }
-            if (virDomainSnapshotAlignDisks(def, align_location,
-                                            align_match) < 0)
+
+            if (virDomainSnapshotAlignDisks(def, align_location) < 0)
                 goto cleanup;
         }
     }
