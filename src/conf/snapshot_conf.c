@@ -584,9 +584,7 @@ virDomainSnapshotAlignDisks(virDomainSnapshotDefPtr def,
 
         disk_snapshot = def->dom->disks[idx]->snapshot;
         if (!disk->snapshot) {
-            if (disk_snapshot &&
-                (!require_match ||
-                 disk_snapshot == VIR_DOMAIN_SNAPSHOT_LOCATION_NONE))
+            if (disk_snapshot)
                 disk->snapshot = disk_snapshot;
             else
                 disk->snapshot = default_snapshot;
