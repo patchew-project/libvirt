@@ -1309,6 +1309,8 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
         }
 
         if (def->dom) {
+            /* we can skip align in this cases as well as we always
+             * dumped disks for these cases */
             if (def->state == VIR_DOMAIN_DISK_SNAPSHOT ||
                 virDomainSnapshotDefIsExternal(def))
                 align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL;
@@ -1337,8 +1339,10 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
         *snap = other;
     } else {
         if (def->dom) {
+            /* we can skip align in this cases as well as we always
+             * dumped disks for these cases */
             if (def->state == VIR_DOMAIN_DISK_SNAPSHOT ||
-                def->memory == VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL)
+                virDomainSnapshotDefIsExternal(def))
                 align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL;
 
             if (virDomainSnapshotAlignDisks(def, align_location) < 0)
