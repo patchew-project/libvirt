@@ -176,6 +176,15 @@ virDomainSnapshotDiskDefParseXML(xmlNodePtr node,
     if (!def->snapshot && (def->src->path || def->src->format))
         def->snapshot = VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL;
 
+    if (def->src->path &&
+        def->snapshot != VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("file '%s' for disk '%s' requires "
+                         "use of external snapshot mode"),
+                       def->src->path, def->name);
+        goto cleanup;
+    }
+
     ret = 0;
  cleanup:
     ctxt->node = saved;
@@ -591,14 +600,6 @@ virDomainSnapshotAlignDisks(virDomainSnapshotDefPtr def,
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("disk '%s' must use snapshot mode '%s'"),
                            disk->name, tmp);
-            goto cleanup;
-        }
-        if (disk->src->path &&
-            disk->snapshot != VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("file '%s' for disk '%s' requires "
-                             "use of external snapshot mode"),
-                           disk->src->path, disk->name);
             goto cleanup;
         }
         if (STRNEQ(disk->name, def->dom->disks[idx]->dst)) {
