@@ -9960,8 +9960,6 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
                            snapshot);
             goto error;
         }
-    } else if (def->src->readonly) {
-        def->snapshot = VIR_DOMAIN_SNAPSHOT_LOCATION_NONE;
     }
 
     if (rawio) {
@@ -24533,9 +24531,7 @@ virDomainDiskDefFormat(virBufferPtr buf,
     if (def->sgio)
         virBufferAsprintf(buf, " sgio='%s'", sgio);
 
-    if (def->snapshot &&
-        !(def->snapshot == VIR_DOMAIN_SNAPSHOT_LOCATION_NONE &&
-          def->src->readonly))
+    if (def->snapshot)
         virBufferAsprintf(buf, " snapshot='%s'",
                           virDomainSnapshotLocationTypeToString(def->snapshot));
     virBufferAddLit(buf, ">\n");

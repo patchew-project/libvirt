@@ -523,6 +523,25 @@ virDomainSnapshotCompareDiskIndex(const void *a, const void *b)
     return diska->idx - diskb->idx;
 }
 
+
+static void
+virDomainSnapshotSetDiskSnapshot(virDomainSnapshotDiskDefPtr disk,
+                                 virDomainDiskDefPtr dom_disk,
+                                 int default_snapshot)
+{
+    if (disk->snapshot)
+        return;
+
+    if (dom_disk->snapshot)
+        disk->snapshot = dom_disk->snapshot;
+    else if (dom_disk->src->readonly ||
+             virStorageSourceIsEmpty(dom_disk->src))
+        disk->snapshot = VIR_DOMAIN_SNAPSHOT_LOCATION_NONE;
+    else
+        disk->snapshot = default_snapshot;
+}
+
+
 /* Align def->disks to def->domain.  Sort the list of def->disks,
  * filling in any missing disks or snapshot state defaults given by
  * the domain, with a fallback to a passed in default.  Convert paths
@@ -564,7 +583,6 @@ virDomainSnapshotAlignDisks(virDomainSnapshotDefPtr def,
         virDomainSnapshotDiskDefPtr disk = &def->disks[i];
         virDomainDiskDefPtr dom_disk;
         int idx = virDomainDiskIndexByName(def->dom, disk->name, false);
-        int disk_snapshot;
 
         if (idx < 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
@@ -582,13 +600,8 @@ virDomainSnapshotAlignDisks(virDomainSnapshotDefPtr def,
         disk->idx = idx;
         dom_disk = def->dom->disks[idx];
 
-        disk_snapshot = dom_disk->snapshot;
-        if (!disk->snapshot) {
-            if (disk_snapshot)
-                disk->snapshot = disk_snapshot;
-            else
-                disk->snapshot = default_snapshot;
-        }
+        virDomainSnapshotSetDiskSnapshot(disk, dom_disk, default_snapshot);
+
         if (STRNEQ(disk->name, dom_disk->dst)) {
             VIR_FREE(disk->name);
             if (VIR_STRDUP(disk->name, dom_disk->dst) < 0)
@@ -614,15 +627,10 @@ virDomainSnapshotAlignDisks(virDomainSnapshotDefPtr def,
             goto cleanup;
         disk->idx = i;
 
-        /* Don't snapshot empty drives */
-        if (virStorageSourceIsEmpty(def->dom->disks[i]->src))
-            disk->snapshot = VIR_DOMAIN_SNAPSHOT_LOCATION_NONE;
-        else
-            disk->snapshot = def->dom->disks[i]->snapshot;
+        virDomainSnapshotSetDiskSnapshot(disk, def->dom->disks[i],
+                                         default_snapshot);
 
         disk->src->type = VIR_STORAGE_TYPE_FILE;
-        if (!disk->snapshot)
-            disk->snapshot = default_snapshot;
     }
 
     qsort(&def->disks[0], def->ndisks, sizeof(def->disks[0]),
