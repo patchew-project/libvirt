@@ -163,6 +163,7 @@ mymain(void)
     DO_TEST3("macvlannetwork", false);
     DO_TEST3("vlannetwork", false);
     DO_TEST3("miscnetwork", false);
+    DO_TEST3("randomnetwork", false);
     DO_TEST3("idmap", false);
     DO_TEST3("memtune", false);
     DO_TEST3("cputune", false);
