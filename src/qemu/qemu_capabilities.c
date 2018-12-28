@@ -3264,6 +3264,7 @@ struct _virQEMUCapsCachePriv {
     virArch hostArch;
     unsigned int microcodeVersion;
     char *kernelVersion;
+    virHashTablePtr validated;
 
     /* cache whether /dev/kvm is usable as runUid:runGuid */
     virTristateBool kvmUsable;
@@ -3280,6 +3281,7 @@ virQEMUCapsCachePrivFree(void *privData)
 
     VIR_FREE(priv->libDir);
     VIR_FREE(priv->kernelVersion);
+    virHashFree(priv->validated);
     VIR_FREE(priv);
 }
 
@@ -3952,9 +3954,18 @@ virQEMUCapsIsValid(void *data,
     bool kvmUsable;
     struct stat sb;
     bool kvmSupportsNesting;
+    bool validated = true;
 
     if (!qemuCaps->binary)
         return true;
+
+    if (!virHashLookup(priv->validated, qemuCaps->binary)) {
+        validated = false;
+
+        /* If we fail to remember this binary is validated it is not problem,
+         * it will be validated again next time once again */
+        virHashAddEntry(priv->validated, qemuCaps->binary, (void*)1);
+    }
 
     if (qemuCaps->libvirtCtime != virGetSelfLastChanged() ||
         qemuCaps->libvirtVersion != LIBVIR_VERSION_NUMBER) {
@@ -4011,6 +4022,12 @@ virQEMUCapsIsValid(void *data,
     }
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_KVM)) {
+        if (!validated) {
+            VIR_DEBUG("Capabilities for QEMU that supports KVM need to be "
+                      "updated after daemon restart");
+            return false;
+        }
+
         if (priv->microcodeVersion != qemuCaps->microcodeVersion) {
             VIR_DEBUG("Outdated capabilities for '%s': microcode version "
                       "changed (%u vs %u)",
@@ -4807,6 +4824,9 @@ virQEMUCapsCacheNew(const char *libDir,
     virFileCacheSetPriv(cache, priv);
 
     if (VIR_STRDUP(priv->libDir, libDir) < 0)
+        goto error;
+
+    if (!(priv->validated = virHashCreate(1, NULL)))
         goto error;
 
     priv->hostArch = virArchFromHost();
