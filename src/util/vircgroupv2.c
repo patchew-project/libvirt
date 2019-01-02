@@ -455,6 +455,10 @@ virCgroupV2MakeGroup(virCgroupPtr parent ATTRIBUTE_UNUSED,
 
 
 static int
+virCgroupV2DeviceRemoveProg(virCgroupPtr group);
+
+
+static int
 virCgroupV2Remove(virCgroupPtr group)
 {
     VIR_AUTOFREE(char *) grppath = NULL;
@@ -468,6 +472,9 @@ virCgroupV2Remove(virCgroupPtr group)
     controller = virCgroupV2GetAnyController(group);
     if (virCgroupV2PathOfController(group, controller, "", &grppath) < 0)
         return 0;
+
+    if (virCgroupV2DeviceRemoveProg(group) < 0)
+        return -1;
 
     return virCgroupRemoveRecursively(grppath);
 }
@@ -1936,6 +1943,25 @@ virCgroupV2DevicePrepareProg(virCgroupPtr group)
             return -1;
         }
     }
+
+    return 0;
+}
+
+
+static int
+virCgroupV2DeviceRemoveProg(virCgroupPtr group)
+{
+    if (virCgroupV2DeviceDetectProg(group) < 0)
+        return -1;
+
+    if (group->unified.devices.progfd <= 0 && group->unified.devices.mapfd <= 0)
+        return 0;
+
+    if (group->unified.devices.mapfd >= 0)
+        VIR_FORCE_CLOSE(group->unified.devices.mapfd);
+
+    if (group->unified.devices.progfd >= 0)
+        VIR_FORCE_CLOSE(group->unified.devices.progfd);
 
     return 0;
 }
