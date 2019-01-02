@@ -1828,6 +1828,49 @@ virCgroupV2DeviceDetectProg(virCgroupPtr group)
 }
 
 
+# define VIR_CGROUP_V2_INITIAL_BPF_MAP_SIZE 64
+
+static int
+virCgroupV2DeviceCreateMap(size_t size)
+{
+    int mapfd = virBPFCreateMap(BPF_MAP_TYPE_HASH, sizeof(__u64),
+                                sizeof(__u32), size);
+
+    if (mapfd < 0) {
+        virReportSystemError(errno, "%s",
+                             _("failed to initialize device BPF map"));
+        return -1;
+    }
+
+    return mapfd;
+}
+
+
+static int
+virCgroupV2DeviceCreateProg(virCgroupPtr group)
+{
+    int mapfd;
+
+    if (group->unified.devices.progfd > 0 && group->unified.devices.mapfd > 0)
+        return 0;
+
+    mapfd = virCgroupV2DeviceCreateMap(VIR_CGROUP_V2_INITIAL_BPF_MAP_SIZE);
+    if (mapfd < 0)
+        return -1;
+
+    if (virCgroupV2DeviceAttachProg(group, mapfd,
+                                    VIR_CGROUP_V2_INITIAL_BPF_MAP_SIZE) < 0) {
+        goto error;
+    }
+
+    return 0;
+
+ error:
+    VIR_FORCE_CLOSE(mapfd);
+    return -1;
+}
+
+
 virCgroupBackend virCgroupV2Backend = {
     .type = VIR_CGROUP_BACKEND_TYPE_V2,
 
