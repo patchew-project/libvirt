@@ -23,6 +23,8 @@
 
 # include <linux/bpf.h>
 
+# include "internal.h"
+
 /* ALU ops on registers, bpf_add|sub|...: dst_reg += src_reg */
 
 # define VIR_BPF_ALU64_REG(op, dst, src) \
@@ -211,7 +213,8 @@ virBPFQueryProg(int targetfd,
                 unsigned int maxprogids,
                 int attachType,
                 unsigned int *progcnt,
-                void *progids);
+                void *progids)
+    ATTRIBUTE_NOINLINE;
 
 int
 virBPFGetProg(unsigned int id);

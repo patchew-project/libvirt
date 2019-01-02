@@ -34,6 +34,7 @@
 # include "testutilslxc.h"
 # include "virstring.h"
 # include "virfile.h"
+# include "virbpf.h"
 
 static int (*real_open)(const char *path, int flags, ...);
 static FILE *(*real_fopen)(const char *path, const char *mode);
@@ -700,6 +701,16 @@ int open(const char *path, int flags, ...)
     }
     free(newpath);
     return ret;
+}
+
+int
+virBPFQueryProg(int targetfd ATTRIBUTE_UNUSED,
+                unsigned int maxprogids ATTRIBUTE_UNUSED,
+                int attachType ATTRIBUTE_UNUSED,
+                unsigned int *progcnt ATTRIBUTE_UNUSED,
+                void *progids ATTRIBUTE_UNUSED)
+{
+    return 0;
 }
 #else
 /* Nothing to override on non-__linux__ platforms */
