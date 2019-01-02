@@ -1967,6 +1967,32 @@ virCgroupV2DeviceRemoveProg(virCgroupPtr group)
 }
 
 
+static __u32
+virCgroupV2DeviceGetPerms(int perms,
+                          char type)
+{
+    __u32 ret = 0;
+
+    if (perms & VIR_CGROUP_DEVICE_MKNOD)
+        ret |= BPF_DEVCG_ACC_MKNOD << 16;
+
+    if (perms & VIR_CGROUP_DEVICE_READ)
+        ret |= BPF_DEVCG_ACC_READ << 16;
+
+    if (perms & VIR_CGROUP_DEVICE_WRITE)
+        ret |= BPF_DEVCG_ACC_WRITE << 16;
+
+    if (type == 'b')
+        ret |= BPF_DEVCG_DEV_BLOCK;
+    else if (type == 'c')
+        ret |= BPF_DEVCG_DEV_CHAR;
+    else
+        ret |= BPF_DEVCG_DEV_BLOCK | BPF_DEVCG_DEV_CHAR;
+
+    return ret;
+}
+
+
 virCgroupBackend virCgroupV2Backend = {
     .type = VIR_CGROUP_BACKEND_TYPE_V2,
 
