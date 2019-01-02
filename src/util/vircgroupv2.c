@@ -1993,6 +1993,14 @@ virCgroupV2DeviceGetPerms(int perms,
 }
 
 
+static __u64
+virCgroupV2DeviceGetKey(int major,
+                        int minor)
+{
+    return (__u64)major << 32 | ((__u64)minor & 0x00000000ffffffff);
+}
+
+
 virCgroupBackend virCgroupV2Backend = {
     .type = VIR_CGROUP_BACKEND_TYPE_V2,
 
