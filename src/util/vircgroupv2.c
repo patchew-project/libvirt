@@ -1671,6 +1671,58 @@ virCgroupV2DeviceLoadProg(int mapfd)
 }
 
 
+static int
+virCgroupV2DeviceAttachProg(virCgroupPtr group,
+                            int mapfd,
+                            size_t max)
+{
+    int ret = -1;
+    int progfd = -1;
+    int cgroupfd = -1;
+    VIR_AUTOFREE(char *) path = NULL;
+
+    if (virCgroupV2PathOfController(group, VIR_CGROUP_CONTROLLER_DEVICES,
+                                    NULL, &path) < 0) {
+        goto cleanup;
+    }
+
+    progfd = virCgroupV2DeviceLoadProg(mapfd);
+    if (progfd < 0) {
+        virReportSystemError(errno, "%s", _("failed to load cgroup BPF prog"));
+        goto cleanup;
+    }
+
+    cgroupfd = open(path, O_RDONLY);
+    if (cgroupfd < 0) {
+        virReportSystemError(errno, _("unable to open '%s'"), path);
+        goto cleanup;
+    }
+
+    if (virBPFAttachProg(progfd, cgroupfd, BPF_CGROUP_DEVICE) < 0) {
+        virReportSystemError(errno, "%s", _("failed to attach cgroup BPF prog"));
+        goto cleanup;
+    }
+
+    if (group->unified.devices.progfd > 0) {
+        VIR_DEBUG("Closing existing program that was replaced by new one.");
+        VIR_FORCE_CLOSE(group->unified.devices.progfd);
+    }
+
+    group->unified.devices.progfd = progfd;
+    group->unified.devices.mapfd = mapfd;
+    group->unified.devices.max = max;
+    progfd = -1;
+    mapfd = -1;
+
+    ret = 0;
+ cleanup:
+    VIR_FORCE_CLOSE(cgroupfd);
+    VIR_FORCE_CLOSE(progfd);
+    VIR_FORCE_CLOSE(mapfd);
+    return ret;
+}
+
+
 virCgroupBackend virCgroupV2Backend = {
     .type = VIR_CGROUP_BACKEND_TYPE_V2,
 
