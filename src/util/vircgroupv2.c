@@ -1847,6 +1847,49 @@ virCgroupV2DeviceCreateMap(size_t size)
 
 
 static int
+virCgroupV2DeviceReallocMap(int mapfd,
+                            size_t size)
+{
+    __u64 key = 0;
+    __u64 prevKey = 0;
+    int rc;
+    int newmapfd = virCgroupV2DeviceCreateMap(size);
+
+    VIR_DEBUG("realloc devices map mapfd:%d, size:%lu", mapfd, size);
+
+    if (newmapfd < 0)
+        return -1;
+
+    while ((rc = virBPFGetNextElem(mapfd, &prevKey, &key)) == 0) {
+        __u32 val = 0;
+
+        if (virBPFLookupElem(mapfd, &key, &val) < 0) {
+            virReportSystemError(errno, "%s",
+                                 _("failed to lookup device in old map"));
+            goto error;
+        }
+
+        if (virBPFUpdateElem(newmapfd, &key, &val) < 0) {
+            virReportSystemError(errno, "%s",
+                                 _("failed to add device into new map"));
+            goto error;
+        }
+
+        prevKey = key;
+    }
+
+    if (rc < 0)
+        goto error;
+
+    return newmapfd;
+
+ error:
+    VIR_FORCE_CLOSE(newmapfd);
+    return -1;
+}
+
+
+static int
 virCgroupV2DeviceCreateProg(virCgroupPtr group)
 {
     int mapfd;
