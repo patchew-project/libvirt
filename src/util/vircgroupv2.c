@@ -1914,6 +1914,33 @@ virCgroupV2DeviceCreateProg(virCgroupPtr group)
 }
 
 
+static int
+virCgroupV2DevicePrepareProg(virCgroupPtr group)
+{
+    if (virCgroupV2DeviceDetectProg(group) < 0)
+        return -1;
+
+    if (virCgroupV2DeviceCreateProg(group) < 0)
+        return -1;
+
+    if (group->unified.devices.count >= group->unified.devices.max) {
+        size_t max = group->unified.devices.max * 2;
+        int newmapfd = virCgroupV2DeviceReallocMap(group->unified.devices.mapfd,
+                                                   max);
+
+        if (newmapfd < 0)
+            return -1;
+
+        if (virCgroupV2DeviceAttachProg(group, newmapfd, max) < 0) {
+            VIR_FORCE_CLOSE(newmapfd);
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+
 virCgroupBackend virCgroupV2Backend = {
     .type = VIR_CGROUP_BACKEND_TYPE_V2,
 
