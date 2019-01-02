@@ -20,8 +20,13 @@
 #include <config.h>
 
 #ifdef __linux__
+# include <fcntl.h>
+# include <linux/bpf.h>
 # include <mntent.h>
 # include <sys/mount.h>
+# include <sys/stat.h>
+# include <sys/syscall.h>
+# include <sys/types.h>
 #endif /* __linux__ */
 
 #include "internal.h"
@@ -29,6 +34,7 @@
 #define LIBVIRT_VIRCGROUPPRIV_H_ALLOW
 #include "vircgrouppriv.h"
 
+#include "virbpf.h"
 #include "vircgroup.h"
 #include "vircgroupbackend.h"
 #include "vircgroupv2.h"
@@ -280,6 +286,31 @@ virCgroupV2ParseControllersFile(virCgroupPtr group)
 }
 
 
+static bool
+virCgroupV2DevicesAvailable(virCgroupPtr group)
+{
+    bool ret = false;
+    int cgroupfd = -1;
+    unsigned int progCnt = 0;
+
+    cgroupfd = open(group->unified.mountPoint, O_RDONLY);
+    if (cgroupfd < 0) {
+        VIR_DEBUG("failed to open cgroup '%s'", group->unified.mountPoint);
+        goto cleanup;
+    }
+
+    if (virBPFQueryProg(cgroupfd, 0, BPF_CGROUP_DEVICE, &progCnt, NULL) < 0) {
+        VIR_DEBUG("failed to query cgroup progs");
+        goto cleanup;
+    }
+
+    ret = true;
+ cleanup:
+    VIR_FORCE_CLOSE(cgroupfd);
+    return ret;
+}
+
+
 static int
 virCgroupV2DetectControllers(virCgroupPtr group,
                              int controllers)
@@ -292,6 +323,8 @@ virCgroupV2DetectControllers(virCgroupPtr group,
     /* In cgroup v2 there is no cpuacct controller, the cpu.stat file always
      * exists with usage stats. */
     group->unified.controllers |= 1 << VIR_CGROUP_CONTROLLER_CPUACCT;
+    if (virCgroupV2DevicesAvailable(group))
+        group->unified.controllers |= 1 << VIR_CGROUP_CONTROLLER_DEVICES;
 
     for (i = 0; i < VIR_CGROUP_CONTROLLER_LAST; i++)
         VIR_DEBUG("Controller '%s' present=%s",
@@ -406,8 +439,10 @@ virCgroupV2MakeGroup(virCgroupPtr parent ATTRIBUTE_UNUSED,
                     continue;
 
                 /* Controllers that are implicitly enabled if available. */
-                if (i == VIR_CGROUP_CONTROLLER_CPUACCT)
+                if (i == VIR_CGROUP_CONTROLLER_CPUACCT ||
+                    i == VIR_CGROUP_CONTROLLER_DEVICES) {
                     continue;
+                }
 
                 if (virCgroupV2EnableController(parent, i) < 0)
                     return -1;
