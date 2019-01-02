@@ -313,7 +313,8 @@ virCgroupV2DevicesAvailable(virCgroupPtr group)
 
 static int
 virCgroupV2DetectControllers(virCgroupPtr group,
-                             int controllers)
+                             int controllers,
+                             int detected)
 {
     size_t i;
 
@@ -325,6 +326,8 @@ virCgroupV2DetectControllers(virCgroupPtr group,
     group->unified.controllers |= 1 << VIR_CGROUP_CONTROLLER_CPUACCT;
     if (virCgroupV2DevicesAvailable(group))
         group->unified.controllers |= 1 << VIR_CGROUP_CONTROLLER_DEVICES;
+
+    group->unified.controllers &= ~detected;
 
     for (i = 0; i < VIR_CGROUP_CONTROLLER_LAST; i++)
         VIR_DEBUG("Controller '%s' present=%s",
