@@ -28,10 +28,26 @@
 # include <sys/types.h>
 
 # ifndef MIN
-#  define MIN(a, b) ((a) < (b) ? (a) : (b))
+#  if __GNUC_PREREQ(4, 9)
+#   define MIN(a, b) ({                         \
+            __auto_type _a = (a);               \
+            __auto_type _b = (b);               \
+            _a < _b ? _a : _b;                  \
+        })
+#  else
+#   define MIN(a, b) ((a) < (b) ? (a) : (b))
+#  endif
 # endif
 # ifndef MAX
-#  define MAX(a, b) ((a) > (b) ? (a) : (b))
+#  if __GNUC_PREREQ(4, 9)
+#   define MAX(a, b) ({                         \
+            __auto_type _a = (a);               \
+            __auto_type _b = (b);               \
+            _a > _b ? _a : _b;                  \
+        })
+#  else
+#   define MAX(a, b) ((a) > (b) ? (a) : (b))
+#  endif
 # endif
 
 
