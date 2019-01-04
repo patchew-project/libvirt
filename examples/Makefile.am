@@ -34,7 +34,8 @@ EXTRA_DIST = \
 
 
 AM_CPPFLAGS = \
-	-I$(top_builddir)/include -I$(top_srcdir)/include -I$(top_srcdir) \
+	-I$(top_builddir)/include -I$(top_srcdir)/include -I$(top_srcdir)
+GNULIB_CPPFLAGS = \
 	-I$(top_builddir)/gnulib/lib -I$(top_srcdir)/gnulib/lib
 LDADD = $(STATIC_BINARIES) $(WARN_CFLAGS) $(COVERAGE_LDFLAGS) \
 	$(top_builddir)/src/libvirt.la $(top_builddir)/gnulib/lib/libgnu.la \
@@ -49,13 +50,16 @@ noinst_PROGRAMS=dominfo/info1 dommigrate/dommigrate domsuspend/suspend \
 dominfo_info1_SOURCES = dominfo/info1.c
 dommigrate_dommigrate_SOURCES = dommigrate/dommigrate.c
 domsuspend_suspend_SOURCES = domsuspend/suspend.c
+domsuspend_suspend_CPPFLAGS = $(AM_CPPFLAGS) $(GNULIB_CPPFLAGS)
 domtop_domtop_SOURCES = domtop/domtop.c
+domtop_domtop_CPPFLAGS = $(AM_CPPFLAGS) $(GNULIB_CPPFLAGS)
 hellolibvirt_hellolibvirt_SOURCES = hellolibvirt/hellolibvirt.c
 
 object_events_event_test_CFLAGS = \
 		$(WARN_CFLAGS) \
 		$(NULL)
 object_events_event_test_SOURCES = object-events/event-test.c
+object_events_event_test_CPPFLAGS = $(AM_CPPFLAGS) $(GNULIB_CPPFLAGS)
 
 openauth_openauth_SOURCES = openauth/openauth.c
 rename_rename_SOURCES = rename/rename.c
@@ -67,6 +71,7 @@ admin_client_limits_SOURCES = admin/client_limits.c
 admin_client_info_SOURCES = admin/client_info.c
 admin_client_close_SOURCES = admin/client_close.c
 admin_logging_SOURCES = admin/logging.c
+admin_logging_CPPFLAGS = $(AM_CPPFLAGS) $(GNULIB_CPPFLAGS)
 
 INSTALL_DATA_LOCAL =
 UNINSTALL_LOCAL =
