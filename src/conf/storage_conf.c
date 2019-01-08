@@ -124,6 +124,9 @@ typedef virStoragePoolOptions *virStoragePoolOptionsPtr;
 struct _virStoragePoolOptions {
     unsigned int flags;
     int defaultFormat;
+
+    virStoragePoolXMLNamespace ns;
+
     virStoragePoolFormatToString formatToString;
     virStoragePoolFormatFromString formatFromString;
 };
@@ -318,6 +321,34 @@ virStoragePoolOptionsForPoolType(int type)
 }
 
 
+/* virStoragePoolOptionsPoolTypeSetXMLNamespace:
+ * @type: virStoragePoolType
+ * @ns: xmlopt namespace pointer
+ *
+ * Store the @ns in the pool options for the particular backend.
+ * This allows the parse/format code to then directly call the Namespace
+ * method space (parse, format, href, free) as needed during processing.
+ *
+ * Returns: 0 on success, -1 on failure.
+ */
+int
+virStoragePoolOptionsPoolTypeSetXMLNamespace(int type,
+                                             virStoragePoolXMLNamespacePtr ns)
+{
+    int ret = -1;
+    virStoragePoolTypeInfoPtr backend = virStoragePoolTypeInfoLookup(type);
+
+    if (!backend)
+        goto cleanup;
+
+    backend->poolOptions.ns = *ns;
+    ret = 0;
+
+ cleanup:
+    return ret;
+}
+
+
 static virStorageVolOptionsPtr
 virStorageVolOptionsForPoolType(int type)
 {
@@ -378,6 +409,9 @@ virStoragePoolSourceClear(virStoragePoolSourcePtr source)
     virStorageAuthDefFree(source->auth);
     VIR_FREE(source->vendor);
     VIR_FREE(source->product);
+
+    if (source->namespaceData && source->ns.free)
+        (source->ns.free)(source->namespaceData);
 }
 
 
@@ -548,6 +582,13 @@ virStoragePoolDefParseSource(xmlXPathContextPtr ctxt,
 
     source->vendor = virXPathString("string(./vendor/@name)", ctxt);
     source->product = virXPathString("string(./product/@name)", ctxt);
+
+    /* Make a copy of all the callback pointers here for easier use,
+     * especially during the virStoragePoolSourceClear method */
+    source->ns = options->ns;
+    if (source->ns.parse &&
+        (source->ns.parse)(ctxt, &source->namespaceData) < 0)
+        goto cleanup;
 
     ret = 0;
  cleanup:
@@ -965,6 +1006,11 @@ virStoragePoolSourceFormat(virBufferPtr buf,
     virBufferEscapeString(buf, "<vendor name='%s'/>\n", src->vendor);
     virBufferEscapeString(buf, "<product name='%s'/>\n", src->product);
 
+    if (src->namespaceData && src->ns.format) {
+        if ((src->ns.format)(buf, src->namespaceData) < 0)
+            return -1;
+    }
+
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</source>\n");
     return 0;
@@ -989,7 +1035,10 @@ virStoragePoolDefFormatBuf(virBufferPtr buf,
                        _("unexpected pool type"));
         return -1;
     }
-    virBufferAsprintf(buf, "<pool type='%s'>\n", type);
+    virBufferAsprintf(buf, "<pool type='%s'", type);
+    if (def->source.namespaceData && def->source.ns.href)
+        virBufferAsprintf(buf, " %s", (def->source.ns.href)());
+    virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
     virBufferEscapeString(buf, "<name>%s</name>\n", def->name);
 
