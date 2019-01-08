@@ -534,6 +534,9 @@
             <optional>
               <ref name='sourceinfovendor'/>
             </optional>
+            <optional>
+              <ref name='netfs_mount_opts'/>
+            </optional>
           </interleave>
         </group>
         <group>
@@ -673,6 +676,23 @@
     <data type='string'>
       <param name="pattern">iqn\.[0-9]{4}-(0[1-9]|1[0-2])\.[a-zA-Z0-9\.\-]+(:.+)?</param>
     </data>
+  </define>
+
+  <!--
+       Optional storage pool extensions in their own namespace:
+         NetFS
+    -->
+
+  <define name="netfs_mount_opts">
+    <element name="mount_opts" ns="http://libvirt.org/schemas/storagepool/source/netfs/1.0">
+      <zeroOrMore>
+        <element name="option">
+          <attribute name='name'>
+            <text/>
+          </attribute>
+        </element>
+      </zeroOrMore>
+    </element>
   </define>
 
 </grammar>

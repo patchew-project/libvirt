@@ -395,6 +395,48 @@
       <dd>Provides an optional product name of the storage device.
         This contains a single attribute <code>name</code> whose value
         is backend specific.  <span class="since">Since 0.8.4</span></dd>
+
+      <dt><code>netfs:mount_opts</code></dt>
+      <dd>Provides an XML namespace mechanism to optionally utilize
+        specifically named options for the mount command via the "-o"
+        option for the <code>netfs</code> type storage pools. In order
+        to designate that the Storage Pool will be using the mechanism,
+        the <code>pool</code> element must be modified to provide the
+        XML namespace attribute syntax as follows:
+
+        <p>
+        xmlns:netfs='http://libvirt.org/schemas/storagepool/source/netfs/1.0'
+        </p>
+
+        <p>
+        The <code>netfs:mount_opts</code> defines the mount options by
+        specifying multiple <code>netfs:option</code> subelements with
+        the attribute <code>name</code> specifying the mount option to
+        be added. The value of the named option is not checked since
+        it's possible options don't exist on all distributions. It is
+        expected that proper and valid options will be supplied for the
+        target host.
+        </p>
+
+        The following XML snippet shows the syntax required in order to
+        utilize
+      <pre>
+&lt;pool type="netfs" xmlns:netfs='http://libvirt.org/schemas/storagepool/source/netfs/1.0'&gt;
+  &lt;name&gt;nfsimages&lt;/name&gt;
+...
+  &lt;source&gt;
+    &lt;host name='localhost'/&gt;
+    &lt;dir path='/var/lib/libvirt/images'/&gt;
+    &lt;format type='nfs'/&gt;
+    &lt;netfs:mount_opts&gt;
+      &lt;netfs:option name='nodev'/&gt;
+      &lt;netfs:option name='nosuid'/&gt;
+    &lt;/netfs:mount_opts&gt;
+  &lt;/source&gt;
+...</pre>
+
+      <span class="since">Since 5.0.0.</span></dd>
+
     </dl>
 
     <h3><a id="StoragePoolTarget">Target elements</a></h3>
