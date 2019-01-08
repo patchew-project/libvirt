@@ -4352,6 +4352,26 @@ virStorageBackendFileSystemMountCmd(const char *cmdstr,
         virStorageBackendFileSystemMountCIFSArgs(cmd, src, def);
     else
         virStorageBackendFileSystemMountDefaultArgs(cmd, src, def);
+
+    if (def->type == VIR_STORAGE_POOL_NETFS && def->source.namespaceData) {
+        size_t i;
+        virStoragePoolNetFSMountOptionsDefPtr opts = def->source.namespaceData;
+        virBuffer buf = VIR_BUFFER_INITIALIZER;
+        VIR_AUTOFREE(char *) mountOpts = NULL;
+
+        for (i = 0; i < opts->noptions; i++)
+            virBufferAsprintf(&buf, "%s,", opts->options[i]);
+
+        virBufferTrim(&buf, ",", -1);
+
+        if (virBufferCheckError(&buf) < 0)
+            return NULL;
+
+        mountOpts = virBufferContentAndReset(&buf);
+
+        virCommandAddArgList(cmd, "-o", mountOpts, NULL);
+    }
+
     return cmd;
 }
 
