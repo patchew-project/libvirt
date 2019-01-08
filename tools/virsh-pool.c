@@ -136,6 +136,10 @@
     {.name = "adapter-parent-fabric-wwn", \
      .type = VSH_OT_STRING, \
      .help = N_("adapter parent scsi_hostN fabric_wwn to be used for underlying vHBA storage") \
+    }, \
+    {.name = "source-mount-opts", \
+     .type = VSH_OT_STRING, \
+     .help = N_("comma separated list for NFS pool mount options") \
     }
 
 virStoragePoolPtr
@@ -319,7 +323,9 @@ virshBuildPoolXML(vshControl *ctl,
                *secretUsage = NULL, *adapterName = NULL, *adapterParent = NULL,
                *adapterWwnn = NULL, *adapterWwpn = NULL, *secretUUID = NULL,
                *adapterParentWwnn = NULL, *adapterParentWwpn = NULL,
-               *adapterParentFabricWwn = NULL;
+               *adapterParentFabricWwn = NULL, *mountOpts = NULL;
+    size_t noptsList = 0;
+    char **optsList = NULL;
     virBuffer buf = VIR_BUFFER_INITIALIZER;
 
     VSH_EXCLUSIVE_OPTIONS("secret-usage", "secret-uuid");
@@ -345,10 +351,19 @@ virshBuildPoolXML(vshControl *ctl,
         vshCommandOptStringReq(ctl, cmd, "adapter-parent", &adapterParent) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "adapter-parent-wwnn", &adapterParentWwnn) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "adapter-parent-wwpn", &adapterParentWwpn) < 0 ||
-        vshCommandOptStringReq(ctl, cmd, "adapter-parent-fabric-wwn", &adapterParentFabricWwn) < 0)
+        vshCommandOptStringReq(ctl, cmd, "adapter-parent-fabric-wwn", &adapterParentFabricWwn) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "source-mount-opts", &mountOpts) < 0)
         goto cleanup;
 
-    virBufferAsprintf(&buf, "<pool type='%s'>\n", type);
+    if (mountOpts &&
+        !(optsList = virStringSplitCount(mountOpts, ",", 0, &noptsList)))
+        goto cleanup;
+
+    virBufferAsprintf(&buf, "<pool type='%s'", type);
+    if (mountOpts)
+        virBufferAsprintf(&buf, " xmlns:netfs='%s'",
+                          "http://libvirt.org/schemas/storagepool/source/netfs/1.0");
+    virBufferAddLit(&buf, ">\n");
     virBufferAdjustIndent(&buf, 2);
     virBufferAsprintf(&buf, "<name>%s</name>\n", name);
     if (srcHost || srcPath || srcDev || srcFormat || srcName ||
@@ -394,6 +409,20 @@ virshBuildPoolXML(vshControl *ctl,
         if (srcName)
             virBufferAsprintf(&buf, "<name>%s</name>\n", srcName);
 
+        if (mountOpts) {
+            size_t i;
+
+            virBufferAddLit(&buf, "<netfs:mount_opts>\n");
+            virBufferAdjustIndent(&buf, 2);
+
+            for (i = 0; i < noptsList; i++)
+                virBufferAsprintf(&buf, "<netfs:option name='%s'/>\n",
+                                  optsList[i]);
+
+            virBufferAdjustIndent(&buf, -2);
+            virBufferAddLit(&buf, "</netfs:mount_opts>\n");
+        }
+
         virBufferAdjustIndent(&buf, -2);
         virBufferAddLit(&buf, "</source>\n");
     }
@@ -409,14 +438,16 @@ virshBuildPoolXML(vshControl *ctl,
 
     if (virBufferError(&buf)) {
         vshError(ctl, "%s", _("Failed to allocate XML buffer"));
-        return false;
+        goto cleanup;
     }
 
+    virStringListFree(optsList);
     *xml = virBufferContentAndReset(&buf);
     *retname = name;
     return true;
 
  cleanup:
+    virStringListFree(optsList);
     virBufferFreeAndReset(&buf);
     return false;
 }
