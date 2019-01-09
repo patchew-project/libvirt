@@ -146,3 +146,5 @@ access/viraccessapichecklxc.c: $(srcdir)/rpc/gendispatch.pl \
 	$(AM_V_GEN)$(PERL) -w $(srcdir)/rpc/gendispatch.pl --mode=aclbody \
 	  lxc LXC $(LXC_PROTOCOL) access/viraccessapichecklxc.h \
 	  > $(srcdir)/access/viraccessapichecklxc.c
+
+# vim: filetype=automake

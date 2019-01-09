@@ -205,3 +205,5 @@ EXTRA_DIST += \
 	lxc/libvirtd_lxc.aug \
 	lxc/test_libvirtd_lxc.aug.in \
 	$(NULL)
+
+# vim: filetype=automake

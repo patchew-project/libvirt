@@ -162,3 +162,5 @@ EXTRA_DIST += \
 	qemu/THREADS.txt \
 	libvirt_qemu_probes.d \
 	$(NULL)
+
+# vim: filetype=automake

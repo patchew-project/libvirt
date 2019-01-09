@@ -20,3 +20,5 @@ USED_SYM_FILES += $(srcdir)/libvirt_vmx.syms
 else ! WITH_VMX
 SYM_FILES += $(srcdir)/libvirt_vmx.syms
 endif ! WITH_VMX
+
+# vim: filetype=automake

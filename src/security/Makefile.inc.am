@@ -120,3 +120,5 @@ uninstall-apparmor-local:
 INSTALL_DATA_LOCAL += install-apparmor-local
 UNINSTALL_LOCAL += uninstall-apparmor-local
 endif WITH_APPARMOR_PROFILES
+
+# vim: filetype=automake

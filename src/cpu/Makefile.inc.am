@@ -22,3 +22,5 @@ libvirt_cpu_la_CFLAGS = \
 	$(AM_CFLAGS) \
 	$(NULL)
 libvirt_cpu_la_SOURCES = $(CPU_SOURCES)
+
+# vim: filetype=automake

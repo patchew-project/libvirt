@@ -336,3 +336,5 @@ util/virkey%.7: util/virkey%.pod
 		< $@-t1 > $@-t2 && \
 	rm -f $@-t1 && \
 	mv $@-t2 $@
+
+# vim: filetype=automake

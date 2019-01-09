@@ -40,3 +40,5 @@ libvirt_driver_interface_la_SOURCES += $(INTERFACE_DRIVER_UDEV_SOURCES)
 endif WITH_UDEV
 libvirt_driver_interface_la_LIBADD += ../gnulib/lib/libgnu.la
 endif WITH_INTERFACE
+
+# vim: filetype=automake

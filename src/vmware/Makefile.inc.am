@@ -25,3 +25,5 @@ USED_SYM_FILES += $(srcdir)/libvirt_vmware.syms
 else ! WITH_VMWARE
 SYM_FILES += $(srcdir)/libvirt_vmware.syms
 endif ! WITH_VMWARE
+
+# vim: filetype=automake

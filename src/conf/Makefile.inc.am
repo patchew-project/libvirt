@@ -169,3 +169,5 @@ libvirt_conf_la_CFLAGS = \
 	$(NULL)
 libvirt_conf_la_LDFLAGS = $(AM_LDFLAGS)
 libvirt_conf_la_LIBADD = $(LIBXML_LIBS)
+
+# vim: filetype=automake

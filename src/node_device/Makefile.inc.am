@@ -63,3 +63,5 @@ endif WITH_UDEV
 
 libvirt_driver_nodedev_la_LIBADD += ../gnulib/lib/libgnu.la
 endif WITH_NODE_DEVICES
+
+# vim: filetype=automake

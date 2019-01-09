@@ -26,3 +26,5 @@ USED_SYM_FILES += $(srcdir)/libvirt_openvz.syms
 else ! WITH_OPENVZ
 SYM_FILES += $(srcdir)/libvirt_openvz.syms
 endif ! WITH_OPENVZ
+
+# vim: filetype=automake

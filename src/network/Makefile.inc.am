@@ -104,3 +104,5 @@ EXTRA_DIST += network/default.xml
 	install-data-network \
 	uninstall-data-network \
 	$(NULL)
+
+# vim: filetype=automake

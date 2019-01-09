@@ -88,3 +88,5 @@ libvirt_driver_esx_la_SOURCES = $(ESX_DRIVER_SOURCES)
 libvirt_driver_esx_la_DEPENDENCIES = $(ESX_DRIVER_GENERATED)
 
 endif WITH_ESX
+
+# vim: filetype=automake

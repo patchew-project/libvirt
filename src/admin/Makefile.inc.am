@@ -48,3 +48,5 @@ admin/admin_server_dispatch_stubs.h: $(srcdir)/rpc/gendispatch.pl \
 	$(AM_V_GEN)$(PERL) -w $(srcdir)/rpc/gendispatch.pl --mode=server \
 	  admin ADMIN $(ADMIN_PROTOCOL) \
 	  > $(srcdir)/admin/admin_server_dispatch_stubs.h
+
+# vim: filetype=automake

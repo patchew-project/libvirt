@@ -74,3 +74,5 @@ libvirt_driver_vbox_impl_la_LIBADD = \
 	$(NULL)
 libvirt_driver_vbox_impl_la_SOURCES = $(VBOX_DRIVER_SOURCES)
 endif WITH_VBOX
+
+# vim: filetype=automake

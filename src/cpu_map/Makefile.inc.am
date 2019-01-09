@@ -60,3 +60,5 @@ cpumap_DATA = \
 	$(NULL)
 
 EXTRA_DIST += $(cpumap_DATA)
+
+# vim: filetype=automake

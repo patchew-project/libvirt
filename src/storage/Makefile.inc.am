@@ -389,3 +389,5 @@ libvirt_parthelper_CFLAGS = \
 	$(PIE_CFLAGS) \
 	$(NULL)
 endif WITH_STORAGE_DISK
+
+# vim: filetype=automake

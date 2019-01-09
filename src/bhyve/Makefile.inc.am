@@ -71,3 +71,5 @@ EXTRA_DIST += \
 .PHONY: \
 	check-augeas-bhyve \
 	$(NULL)
+
+# vim: filetype=automake

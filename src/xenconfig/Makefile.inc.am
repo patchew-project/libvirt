@@ -26,3 +26,5 @@ USED_SYM_FILES += $(srcdir)/libvirt_xenconfig.syms
 else ! WITH_XENCONFIG
 SYM_FILES += $(srcdir)/libvirt_xenconfig.syms
 endif ! WITH_XENCONFIG
+
+# vim: filetype=automake

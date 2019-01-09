@@ -323,3 +323,5 @@ virtlockd.8.in: locking/virtlockd.pod
 		< $@-t1 > $@-t2 && \
 	rm -f $@-t1 && \
 	mv $@-t2 $@
+
+# vim: filetype=automake

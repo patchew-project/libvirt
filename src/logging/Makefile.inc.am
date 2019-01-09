@@ -153,3 +153,5 @@ virtlogd-admin.socket: logging/virtlogd-admin.socket.in \
 	    -e 's|[@]localstatedir[@]|$(localstatedir)|g' \
 	    < $< > $@-t && \
 	    mv $@-t $@
+
+# vim: filetype=automake
