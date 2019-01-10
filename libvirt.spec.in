@@ -389,6 +389,8 @@ BuildRequires: rpcgen
 BuildRequires: libtirpc-devel
 %endif
 
+BuildRequires: firewalld-filesystem
+
 Provides: bundled(gnulib)
 
 %description
@@ -1352,6 +1354,16 @@ if [ -f %{_localstatedir}/lib/rpm-state/libvirt/restart ]; then
 fi
 rm -rf %{_localstatedir}/lib/rpm-state/libvirt || :
 
+%post daemon-driver-network
+%if %{with_firewalld}
+    %firewalld_reload
+%endif
+
+%postun daemon-driver-network
+%if %{with_firewalld}
+    %firewalld_reload
+%endif
+
 %post daemon-config-network
 if test $1 -eq 1 && test ! -f %{_sysconfdir}/libvirt/qemu/networks/default.xml ; then
     # see if the network used by default network creates a conflict,
@@ -1589,6 +1601,10 @@ exit 0
 %dir %attr(0755, root, root) %{_localstatedir}/lib/libvirt/dnsmasq/
 %attr(0755, root, root) %{_libexecdir}/libvirt_leaseshelper
 %{_libdir}/%{name}/connection-driver/libvirt_driver_network.so
+
+%if %{with_firewalld}
+%{_prefix}/lib/firewalld/zones/libvirt.xml
+%endif
 
 %files daemon-driver-nodedev
 %{_libdir}/%{name}/connection-driver/libvirt_driver_nodedev.so

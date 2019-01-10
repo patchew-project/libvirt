@@ -27,6 +27,7 @@
 #include "virstring.h"
 #include "virlog.h"
 #include "virfirewall.h"
+#include "virfirewalld.h"
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
@@ -637,6 +638,14 @@ int networkAddFirewallRules(virNetworkDefPtr def)
     virNetworkIPDefPtr ipdef;
     virFirewallPtr fw = NULL;
     int ret = -1;
+
+
+    /* if firewalld is active, try to set the default "libvirt" zone,
+     * but ignore failure, since the version of firewalld on the host
+     * may have failed to load the libvirt zone
+    */
+    if (virFirewallDStatus() >= 0)
+       ignore_value(virFirewallDInterfaceSetZone(def->bridge, "libvirt"));
 
     fw = virFirewallNew();
 
