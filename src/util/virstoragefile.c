@@ -2208,6 +2208,7 @@ virStorageSourceCopy(const virStorageSource *src,
     ret->cachemode = src->cachemode;
     ret->discard = src->discard;
     ret->detect_zeroes = src->detect_zeroes;
+    ret->metadata_cache_size = src->metadata_cache_size;
 
     /* storage driver metadata are not copied */
     ret->drv = NULL;

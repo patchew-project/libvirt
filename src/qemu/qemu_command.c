@@ -1328,6 +1328,20 @@ qemuCheckDiskConfig(virDomainDiskDefPtr disk,
         return -1;
     }
 
+    if (disk->metadata_cache_size) {
+        if (disk->src->format != VIR_STORAGE_FILE_QCOW2) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("metadata_cache_size can only be set for qcow2 disks"));
+            return -1;
+        }
+
+        if (disk->metadata_cache_size != VIR_DOMAIN_DISK_METADATA_CACHE_SIZE_MAXIMUM) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("metadata_cache_size can only be set to 'maximum'"));
+            return -1;
+        }
+    }
+
     if (qemuCaps) {
         if (disk->serial &&
             disk->bus == VIR_DOMAIN_DISK_BUS_SCSI &&
@@ -1349,6 +1363,15 @@ qemuCheckDiskConfig(virDomainDiskDefPtr disk,
             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_DRIVE_DETECT_ZEROES)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("detect_zeroes is not supported by this QEMU binary"));
+            return -1;
+        }
+
+        if (disk->metadata_cache_size &&
+            !(virQEMUCapsGet(qemuCaps, QEMU_CAPS_BLOCKDEV) &&
+              virQEMUCapsGet(qemuCaps, QEMU_CAPS_QCOW2_L2_CACHE_SIZE_CAPPED))) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("setting metadata_cache_size is not supported by "
+                             "this QEMU binary"));
             return -1;
         }
     }

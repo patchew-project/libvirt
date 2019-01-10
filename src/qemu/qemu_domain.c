@@ -9202,6 +9202,7 @@ qemuDomainDiskChangeSupported(virDomainDiskDefPtr disk,
     /* "snapshot" is a libvirt internal field and thus can be changed */
     /* startupPolicy is allowed to be updated. Therefore not checked here. */
     CHECK_EQ(transient, "transient", true);
+    CHECK_EQ(metadata_cache_size, "metadata_cache_size", true);
 
     /* Note: For some address types the address auto generation for
      * @disk has still not happened at this point (e.g. driver
@@ -13370,6 +13371,7 @@ qemuDomainPrepareDiskSourceData(virDomainDiskDefPtr disk,
     src->iomode = disk->iomode;
     src->cachemode = disk->cachemode;
     src->discard = disk->discard;
+    src->metadata_cache_size = disk->metadata_cache_size;
 
     if (disk->device == VIR_DOMAIN_DISK_DEVICE_FLOPPY)
         src->floppyimg = true;

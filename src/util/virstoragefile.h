@@ -329,6 +329,7 @@ struct _virStorageSource {
     int cachemode; /* enum virDomainDiskCache */
     int discard; /* enum virDomainDiskDiscard */
     int detect_zeroes; /* enum virDomainDiskDetectZeroes */
+    int metadata_cache_size; /* enum virDomainDiskImageMetadataCacheSize */
 
     bool floppyimg; /* set to true if the storage source is going to be used
                        as a source for floppy drive */
