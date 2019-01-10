@@ -50,6 +50,17 @@
     <section title="New features">
       <change>
         <summary>
+          Add metadata cache size policy for disks
+        </summary>
+        <description>
+          Disk workloads using very big datasets intensively can have bad
+          perfomance for disks backed by non raw images. The cause is default
+          limit on disk's metadata cache size. Now one has option to keep all
+          metadata cache in memory.
+        </description>
+      </change>
+      <change>
+        <summary>
           Xen: Add support for openvswitch
         </summary>
         <description>
