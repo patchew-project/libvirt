@@ -1265,6 +1265,8 @@ mymain(void)
     DO_TEST("riscv64-virt",
             QEMU_CAPS_DEVICE_VIRTIO_MMIO);
 
+    DO_TEST("disk-metadata_cache_size", NONE);
+
     if (getenv("LIBVIRT_SKIP_CLEANUP") == NULL)
         virFileDeleteTree(fakerootdir);
 

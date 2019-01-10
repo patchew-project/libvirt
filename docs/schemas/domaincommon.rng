@@ -2003,6 +2003,9 @@
         <ref name="detect_zeroes"/>
       </optional>
       <optional>
+        <ref name="metadata_cache_size"/>
+      </optional>
+      <optional>
         <attribute name='queues'>
           <ref name="positiveInteger"/>
         </attribute>
@@ -2100,6 +2103,14 @@
         <value>off</value>
         <value>on</value>
         <value>unmap</value>
+      </choice>
+    </attribute>
+  </define>
+  <define name="metadata_cache_size">
+    <attribute name='metadata_cache_size'>
+      <choice>
+        <value>default</value>
+        <value>maximum</value>
       </choice>
     </attribute>
   </define>

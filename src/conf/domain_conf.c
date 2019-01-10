@@ -889,6 +889,11 @@ VIR_ENUM_IMPL(virDomainDiskDetectZeroes, VIR_DOMAIN_DISK_DETECT_ZEROES_LAST,
               "on",
               "unmap")
 
+VIR_ENUM_IMPL(virDomainDiskMetadataCacheSize,
+              VIR_DOMAIN_DISK_METADATA_CACHE_SIZE_LAST,
+              "default",
+              "maximum")
+
 VIR_ENUM_IMPL(virDomainDiskMirrorState, VIR_DOMAIN_DISK_MIRROR_STATE_LAST,
               "none",
               "yes",
@@ -9415,6 +9420,14 @@ virDomainDiskDefDriverParseXML(virDomainDiskDefPtr def,
         virReportError(VIR_ERR_XML_ERROR,
                        _("'queues' attribute must be positive number: %s"),
                        tmp);
+        goto cleanup;
+    }
+    VIR_FREE(tmp);
+
+    if ((tmp = virXMLPropString(cur, "metadata_cache_size")) &&
+        (def->metadata_cache_size = virDomainDiskMetadataCacheSizeTypeFromString(tmp)) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unknown driver metadata_cache_size value '%s'"), tmp);
         goto cleanup;
     }
     VIR_FREE(tmp);
@@ -24192,6 +24205,10 @@ virDomainDiskDefFormatDriver(virBufferPtr buf,
 
     if (disk->queues)
         virBufferAsprintf(&driverBuf, " queues='%u'", disk->queues);
+
+    if (disk->metadata_cache_size)
+        virBufferAsprintf(&driverBuf, " metadata_cache_size='%s'",
+                          virDomainDiskMetadataCacheSizeTypeToString(disk->metadata_cache_size));
 
     virDomainVirtioOptionsFormat(&driverBuf, disk->virtio);
 

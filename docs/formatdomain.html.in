@@ -3608,6 +3608,17 @@
             virt queues for virtio-blk. (<span class="since">Since 3.9.0</span>)
           </li>
           <li>
+            The optional <code>metadata_cache_size</code> attribute specifies
+            metadata cache size policy. Possible values are "default" and
+            "maximum". Using "default" leaves setting cache size to the hypervisor,
+            Using "maximum" ensures entire disk cache remains in memory, increasing
+            IO but utilizing more memory. This policy helps if workload's
+            disk working set (the amount of disk data used intensively) is too large
+            to be covered by cache size by "default" policy.
+            (<span class="since">Since 5.0.0, QEMU 3.0</span>). The option makes
+            sense only for non raw images and supported for qcow2 only now.
+          </li>
+          <li>
           For virtio disks,
           <a href="#elementsVirtio">Virtio-specific options</a> can also be
           set. (<span class="since">Since 3.5.0</span>)
