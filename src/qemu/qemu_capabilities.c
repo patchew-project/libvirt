@@ -520,6 +520,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               /* 325 */
               "memory-backend-file.pmem",
               "nvdimm.unarmed",
+              "qcow2.l2-cache-size.capped",
     );
 
 
@@ -4255,6 +4256,10 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
         ARCH_IS_PPC64(qemuCaps->arch)) {
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_MACHINE_PSERIES_MAX_CPU_COMPAT);
     }
+
+    /* l2-cache-size before 3001000 does not accept INT64_MAX */
+    if (qemuCaps->version >= 3001000)
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_QCOW2_L2_CACHE_SIZE_CAPPED);
 
     if (virQEMUCapsProbeQMPCommands(qemuCaps, mon) < 0)
         goto cleanup;
