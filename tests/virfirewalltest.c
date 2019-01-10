@@ -27,6 +27,7 @@
 # include "vircommandpriv.h"
 # define LIBVIRT_VIRFIREWALLPRIV_H_ALLOW
 # include "virfirewallpriv.h"
+# include "virfirewalld.h"
 # include "virmock.h"
 # define LIBVIRT_VIRDBUSPRIV_H_ALLOW
 # include "virdbuspriv.h"

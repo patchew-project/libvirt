@@ -1918,6 +1918,9 @@ virFirewallSetLockOverride;
 virFirewallStartRollback;
 virFirewallStartTransaction;
 
+# util/virfirewalld.h
+virFirewallDApplyRule;
+virFirewallDStatus;
 
 # util/virfirmware.h
 virFirmwareFreeList;
