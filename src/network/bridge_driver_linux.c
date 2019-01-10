@@ -639,13 +639,29 @@ int networkAddFirewallRules(virNetworkDefPtr def)
     virFirewallPtr fw = NULL;
     int ret = -1;
 
+    if (!def->bridgeZone) {
+        /* if firewalld is active and no zone has been explicitly set
+         * in the config, try to set the default "libvirt" zone, but
+         * ignore failure, since the version of firewalld on the host
+         * may have failed to load the libvirt zone
+         */
+        if (virFirewallDStatus() >= 0)
+            ignore_value(virFirewallDInterfaceSetZone(def->bridge, "libvirt"));
 
-    /* if firewalld is active, try to set the default "libvirt" zone,
-     * but ignore failure, since the version of firewalld on the host
-     * may have failed to load the libvirt zone
-    */
-    if (virFirewallDStatus() >= 0)
-       ignore_value(virFirewallDInterfaceSetZone(def->bridge, "libvirt"));
+    } else {
+        /* if a zone has been specified, fail/log an error if we can't
+         * honor it
+         */
+        if (virFirewallDStatus() < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("zone %s requested for network %s "
+                             "but firewalld is not active"),
+                           def->bridgeZone, def->name);
+            goto cleanup;
+        }
+        if (virFirewallDInterfaceSetZone(def->bridge, def->bridgeZone) < 0)
+            goto cleanup;
+    }
 
     fw = virFirewallNew();
 
