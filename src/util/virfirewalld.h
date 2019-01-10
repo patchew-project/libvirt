@@ -30,4 +30,7 @@ int virFirewallDApplyRule(virFirewallLayer layer,
                           bool ignoreErrors,
                           char **output);
 
+int virFirewallDInterfaceSetZone(const char *iface,
+                                 const char *zone);
+
 #endif /* LIBVIRT_VIRFIREWALLD_H */

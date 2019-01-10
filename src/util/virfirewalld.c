@@ -126,3 +126,26 @@ virFirewallDApplyRule(virFirewallLayer layer,
     virDBusMessageUnref(reply);
     return ret;
 }
+
+
+int
+virFirewallDInterfaceSetZone(const char *iface,
+                             const char *zone)
+{
+    DBusConnection *sysbus = virDBusGetSystemBus();
+    DBusMessage *reply = NULL;
+
+    if (!sysbus)
+        return -1;
+
+    return virDBusCallMethod(sysbus,
+                             &reply,
+                             NULL,
+                             VIR_FIREWALL_FIREWALLD_SERVICE,
+                             "/org/fedoraproject/FirewallD1",
+                             "org.fedoraproject.FirewallD1.zone",
+                             "changeZoneOfInterface",
+                             "ss",
+                             zone,
+                             iface);
+}

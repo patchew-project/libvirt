@@ -1920,6 +1920,7 @@ virFirewallStartTransaction;
 
 # util/virfirewalld.h
 virFirewallDApplyRule;
+virFirewallDInterfaceSetZone;
 virFirewallDStatus;
 
 # util/virfirmware.h
