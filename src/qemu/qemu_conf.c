@@ -1438,8 +1438,7 @@ static bool
 qemuIsSharedHostdev(virDomainHostdevDefPtr hostdev)
 {
     return (hostdev->shareable &&
-            (virHostdevIsSCSIDevice(hostdev) &&
-             hostdev->source.subsys.u.scsi.protocol !=
+            (hostdev->source.subsys.u.scsi.protocol !=
              VIR_DOMAIN_HOSTDEV_SCSI_PROTOCOL_TYPE_ISCSI));
 }
 
