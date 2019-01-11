@@ -22,6 +22,7 @@
 #include <config.h>
 
 #include "internal.h"
+#include "c-ctype.h"
 #include "lxc_container.h"
 #include "lxc_native.h"
 #include "util/viralloc.h"
@@ -409,8 +410,9 @@ lxcCreateHostdevDef(int mode, int type, const char *data)
     return hostdev;
 }
 
-typedef struct {
-    virDomainDefPtr def;
+typedef struct _lxcNetworkParseData lxcNetworkParseData;
+typedef lxcNetworkParseData *lxcNetworkParseDataPtr;
+struct _lxcNetworkParseData {
     char *type;
     char *link;
     char *mac;
@@ -422,9 +424,13 @@ typedef struct {
     size_t nips;
     char *gateway_ipv4;
     char *gateway_ipv6;
-    bool privnet;
-    size_t networks;
-} lxcNetworkParseData;
+    size_t index;
+};
+
+typedef struct {
+    lxcNetworkParseDataPtr *data;
+    size_t nnetworks;
+} lxcNetworkParseArray;
 
 static int
 lxcAddNetworkRouteDefinition(const char *address,
@@ -464,7 +470,7 @@ lxcAddNetworkRouteDefinition(const char *address,
 }
 
 static int
-lxcAddNetworkDefinition(lxcNetworkParseData *data)
+lxcAddNetworkDefinition(virDomainDefPtr def, lxcNetworkParseData *data)
 {
     virDomainNetDefPtr net = NULL;
     virDomainHostdevDefPtr hostdev = NULL;
@@ -512,9 +518,9 @@ lxcAddNetworkDefinition(lxcNetworkParseData *data)
                                          &hostdev->source.caps.u.net.ip.nroutes) < 0)
                 goto error;
 
-        if (VIR_EXPAND_N(data->def->hostdevs, data->def->nhostdevs, 1) < 0)
+        if (VIR_EXPAND_N(def->hostdevs, def->nhostdevs, 1) < 0)
             goto error;
-        data->def->hostdevs[data->def->nhostdevs - 1] = hostdev;
+        def->hostdevs[def->nhostdevs - 1] = hostdev;
     } else {
         if (!(net = lxcCreateNetDef(data->type, data->link, data->mac,
                                     data->flag, data->macvlanmode,
@@ -536,9 +542,9 @@ lxcAddNetworkDefinition(lxcNetworkParseData *data)
                                          &net->guestIP.nroutes) < 0)
                 goto error;
 
-        if (VIR_EXPAND_N(data->def->nets, data->def->nnets, 1) < 0)
+        if (VIR_EXPAND_N(def->nets, def->nnets, 1) < 0)
             goto error;
-        data->def->nets[data->def->nnets - 1] = net;
+        def->nets[def->nnets - 1] = net;
     }
 
     return 1;
@@ -552,51 +558,93 @@ lxcAddNetworkDefinition(lxcNetworkParseData *data)
     return -1;
 }
 
+static inline int lxcNetworkHasIndex(const char *entry)
+{
+    return STRPREFIX(entry, "lxc.net.") && c_isdigit(entry[8]);
+}
+
+static inline int lxcNetworkIndexHasType(const char *entry, const char *type)
+{
+    return lxcNetworkHasIndex(entry) && virFileHasSuffix(entry, type);
+}
+
 static int
 lxcNetworkWalkCallback(const char *name, virConfValuePtr value, void *data)
 {
-    lxcNetworkParseData *parseData = data;
-    int status;
+    lxcNetworkParseArray *parseData = data;
+    size_t index;
+
+    /* Managing memory and indexes for version 3.0 */
+    if (lxcNetworkHasIndex(name)) {
+        sscanf(name, "lxc.net.%zu", &index);
+
+        if (index >= parseData->nnetworks) {
+            if (!parseData->data) {
+                if (VIR_ALLOC_N(parseData->data, index + 1) < 0)
+                    return -1;
+            } else {
+                if (VIR_REALLOC_N(parseData->data, index + 1) < 0)
+                    return -1;
+            }
+
+            parseData->nnetworks = index + 1;
+        }
+
+        if (!parseData->data[index]) {
+            if (VIR_ALLOC(parseData->data[index]) < 0)
+                return -1;
+        }
+    } else {
+        /* Indexes can be 0 when a network is defined */
+        index = parseData->nnetworks - 1;
+    }
 
     if (STREQ(name, "lxc.network.type")) {
-        virDomainDefPtr def = parseData->def;
-        size_t networks = parseData->networks;
-        bool privnet = parseData->privnet;
+        /* A new NIC will be added */
+        index = parseData->nnetworks;
 
-        /* Store the previous NIC */
-        status = lxcAddNetworkDefinition(parseData);
+        if (!parseData->data) {
+            if (VIR_ALLOC_N(parseData->data, index + 1) < 0)
+                return -1;
+        } else {
+            if (VIR_REALLOC_N(parseData->data, index + 1) < 0)
+                return -1;
+        }
 
-        if (status < 0)
+        if (VIR_ALLOC(parseData->data[index]) < 0)
             return -1;
-        else if (status > 0)
-            networks++;
-        else if (parseData->type != NULL && STREQ(parseData->type, "none"))
-            privnet = false;
-
-        /* clean NIC to store a new one */
-        memset(parseData, 0, sizeof(*parseData));
-
-        parseData->def = def;
-        parseData->networks = networks;
-        parseData->privnet = privnet;
 
         /* Keep the new value */
-        parseData->type = value->str;
+        parseData->data[index]->type = value->str;
+        parseData->data[index]->index = index;
+
+        /* Network interface added */
+        parseData->nnetworks++;
     }
-    else if (STREQ(name, "lxc.network.link"))
-        parseData->link = value->str;
-    else if (STREQ(name, "lxc.network.hwaddr"))
-        parseData->mac = value->str;
-    else if (STREQ(name, "lxc.network.flags"))
-        parseData->flag = value->str;
-    else if (STREQ(name, "lxc.network.macvlan.mode"))
-        parseData->macvlanmode = value->str;
-    else if (STREQ(name, "lxc.network.vlan.id"))
-        parseData->vlanid = value->str;
-    else if (STREQ(name, "lxc.network.name"))
-        parseData->name = value->str;
-    else if (STREQ(name, "lxc.network.ipv4") ||
-             STREQ(name, "lxc.network.ipv6")) {
+    else if (lxcNetworkIndexHasType(name, ".type"))
+        parseData->data[index]->type = value->str;
+    else if (STREQ(name, "lxc.network.link") ||
+             lxcNetworkIndexHasType(name, ".link"))
+        parseData->data[index]->link = value->str;
+    else if (STREQ(name, "lxc.network.hwaddr") ||
+             lxcNetworkIndexHasType(name, ".hwaddr"))
+        parseData->data[index]->mac = value->str;
+    else if (STREQ(name, "lxc.network.flags") ||
+             lxcNetworkIndexHasType(name, ".flags"))
+        parseData->data[index]->flag = value->str;
+    else if (STREQ(name, "lxc.network.macvlan.mode") ||
+             lxcNetworkIndexHasType(name, ".macvlan.mode"))
+        parseData->data[index]->macvlanmode = value->str;
+    else if (STREQ(name, "lxc.network.vlan.id") ||
+             lxcNetworkIndexHasType(name, ".vlan.id"))
+        parseData->data[index]->vlanid = value->str;
+    else if (STREQ(name, "lxc.network.name") ||
+             lxcNetworkIndexHasType(name, ".name"))
+        parseData->data[index]->name = value->str;
+    else if ((STREQ(name, "lxc.network.ipv4") ||
+              STREQ(name, "lxc.network.ipv6")) ||
+             (lxcNetworkIndexHasType(name, ".ipv4") ||
+              lxcNetworkIndexHasType(name, ".ipv6"))) {
         int family = AF_INET;
         char **ipparts = NULL;
         virNetDevIPAddrPtr ip = NULL;
@@ -604,7 +652,8 @@ lxcNetworkWalkCallback(const char *name, virConfValuePtr value, void *data)
         if (VIR_ALLOC(ip) < 0)
             return -1;
 
-        if (STREQ(name, "lxc.network.ipv6"))
+        if (STREQ(name, "lxc.network.ipv6") ||
+            lxcNetworkIndexHasType(name, ".ipv6"))
             family = AF_INET6;
 
         ipparts = virStringSplit(value->str, "/", 2);
@@ -622,15 +671,19 @@ lxcNetworkWalkCallback(const char *name, virConfValuePtr value, void *data)
 
         virStringListFree(ipparts);
 
-        if (VIR_APPEND_ELEMENT(parseData->ips, parseData->nips, ip) < 0) {
+        if (VIR_APPEND_ELEMENT(parseData->data[index]->ips,
+                               parseData->data[index]->nips, ip) < 0) {
             VIR_FREE(ip);
             return -1;
         }
-    } else if (STREQ(name, "lxc.network.ipv4.gateway")) {
-        parseData->gateway_ipv4 = value->str;
-    } else if (STREQ(name, "lxc.network.ipv6.gateway")) {
-        parseData->gateway_ipv6 = value->str;
-    } else if (STRPREFIX(name, "lxc.network")) {
+    } else if (STREQ(name, "lxc.network.ipv4.gateway") ||
+               lxcNetworkIndexHasType(name, ".ipv4.gateway")) {
+        parseData->data[index]->gateway_ipv4 = value->str;
+    } else if (STREQ(name, "lxc.network.ipv6.gateway") ||
+               lxcNetworkIndexHasType(name, ".ipv6.gateway")) {
+        parseData->data[index]->gateway_ipv6 = value->str;
+    } else if (STRPREFIX(name, "lxc.network") ||
+               lxcNetworkHasIndex(name)) {
         VIR_WARN("Unhandled network property: %s = %s",
                  name,
                  value->str);
@@ -645,25 +698,29 @@ lxcConvertNetworkSettings(virDomainDefPtr def, virConfPtr properties)
     int status;
     int result = -1;
     size_t i;
-    lxcNetworkParseData data = {def, NULL, NULL, NULL, NULL,
-                                NULL, NULL, NULL, NULL, 0,
-                                NULL, NULL, true, 0};
+    bool privnet = true;
+    lxcNetworkParseArray nets = {NULL, 0};
 
-    if (virConfWalk(properties, lxcNetworkWalkCallback, &data) < 0)
+    if (virConfWalk(properties, lxcNetworkWalkCallback, &nets) < 0)
         goto error;
 
+    for (i = 0; i < nets.nnetworks; i++) {
+        lxcNetworkParseDataPtr data = nets.data[i];
 
-    /* Add the last network definition found */
-    status = lxcAddNetworkDefinition(&data);
+        /* It needs to guarantee that index exists. */
+        /* Since there is a sparse array. */
+        if (data) {
+            /* Add network definitions */
+            status = lxcAddNetworkDefinition(def, data);
 
-    if (status < 0)
-        goto error;
-    else if (status > 0)
-        data.networks++;
-    else if (data.type != NULL && STREQ(data.type, "none"))
-        data.privnet = false;
+            if (status < 0)
+                goto error;
+            else if (data->type != NULL && STREQ(data->type, "none"))
+                privnet = false;
+        }
+    }
 
-    if (data.networks == 0 && data.privnet) {
+    if (nets.nnetworks == 0 && privnet) {
         /* When no network type is provided LXC only adds loopback */
         def->features[VIR_DOMAIN_FEATURE_PRIVNET] = VIR_TRISTATE_SWITCH_ON;
     }
@@ -672,9 +729,13 @@ lxcConvertNetworkSettings(virDomainDefPtr def, virConfPtr properties)
     return result;
 
  error:
-    for (i = 0; i < data.nips; i++)
-        VIR_FREE(data.ips[i]);
-    VIR_FREE(data.ips);
+    for (i = 0; i < nets.nnetworks; i++) {
+        for (i = 0; i < nets.data[i]->nips; i++)
+            VIR_FREE(nets.data[i]->ips[i]);
+        VIR_FREE(nets.data[i]->ips);
+    }
+    for (i = 0; i < nets.nnetworks; i++)
+        VIR_FREE(nets.data[i]);
     return -1;
 }
 
