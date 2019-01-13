@@ -3063,15 +3063,15 @@ virQEMUCapsLoadHostCPUModelInfo(virQEMUCapsPtr qemuCaps,
         goto cleanup;
     }
 
-    if (VIR_ALLOC(hostCPU) < 0)
-        goto cleanup;
-
-    if (!(hostCPU->name = virXMLPropString(hostCPUNode, "model"))) {
+    if (!(str = virXMLPropString(hostCPUNode, "model"))) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("missing host CPU model name in QEMU "
                          "capabilities cache"));
         goto cleanup;
     }
+
+    if (!(hostCPU = qemuMonitorCPUModelInfoNew(str)))
+        goto cleanup;
 
     if (!(str = virXMLPropString(hostCPUNode, "migratability")) ||
         (val = virTristateBoolTypeFromString(str)) <= 0) {

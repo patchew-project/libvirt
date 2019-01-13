@@ -1067,6 +1067,8 @@ int qemuMonitorGetCPUModelExpansion(qemuMonitorPtr mon,
 
 void qemuMonitorCPUModelInfoFree(qemuMonitorCPUModelInfoPtr model_info);
 
+qemuMonitorCPUModelInfoPtr qemuMonitorCPUModelInfoNew(const char *name);
+
 qemuMonitorCPUModelInfoPtr
 qemuMonitorCPUModelInfoCopy(const qemuMonitorCPUModelInfo *orig);
 
