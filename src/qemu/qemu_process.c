@@ -8276,7 +8276,6 @@ qemuProcessQMPRun(qemuProcessQMPPtr proc)
 {
     virDomainXMLOptionPtr xmlopt = NULL;
     const char *machine;
-    int status = 0;
     int ret = -1;
 
     if (proc->forceTCG)
@@ -8311,12 +8310,14 @@ qemuProcessQMPRun(qemuProcessQMPPtr proc)
 
     virCommandSetErrorBuffer(proc->cmd, proc->qmperr);
 
-    if (virCommandRun(proc->cmd, &status) < 0)
+    proc->status = 0;
+
+    if (virCommandRun(proc->cmd, &proc->status) < 0)
         goto cleanup;
 
-    if (status != 0) {
+    if (proc->status != 0) {
         VIR_DEBUG("QEMU %s exited with status %d: %s",
-                  proc->binary, status, *proc->qmperr);
+                  proc->binary, proc->status, *proc->qmperr);
         goto cleanup;
     }
 

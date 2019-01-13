@@ -4349,23 +4349,49 @@ virQEMUCapsInitQMPMonitorTCG(virQEMUCapsPtr qemuCaps ATTRIBUTE_UNUSED,
 }
 
 
+#define MESSAGE_ID_CAPS_PROBE_FAILURE "8ae2f3fb-2dbe-498e-8fbd-012d40afa361"
+
+static void
+virQEMUCapsLogProbeFailure(const char *binary)
+{
+    virLogMetadata meta[] = {
+        { .key = "MESSAGE_ID", .s = MESSAGE_ID_CAPS_PROBE_FAILURE, .iv = 0 },
+        { .key = "LIBVIRT_QEMU_BINARY", .s = binary, .iv = 0 },
+        { .key = NULL },
+    };
+
+    virLogMessage(&virLogSelf,
+                  VIR_LOG_WARN,
+                  __FILE__, __LINE__, __func__,
+                  meta,
+                  _("Failed to probe capabilities for %s: %s"),
+                  binary, virGetLastErrorMessage());
+}
+
+
 static int
 virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
                    const char *libDir,
                    uid_t runUid,
-                   gid_t runGid,
-                   char **qmperr)
+                   gid_t runGid)
 {
     qemuProcessQMPPtr proc = NULL;
     qemuProcessQMPPtr procTCG = NULL;
+    char *qmperr = NULL;
     int ret = -1;
 
     if (!(proc = qemuProcessQMPNew(qemuCaps->binary, libDir,
-                                   runUid, runGid, qmperr, false)))
+                                   runUid, runGid, &qmperr, false)))
         goto cleanup;
 
-    if (qemuProcessQMPRun(proc) < 0)
+    if (qemuProcessQMPRun(proc) < 0) {
+        if (proc->status != 0)
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Failed to probe QEMU binary with QMP: %s"),
+                           qmperr ? qmperr : _("uknown error"));
+
         goto cleanup;
+    }
 
     if (virQEMUCapsInitQMPMonitor(qemuCaps, proc->mon) < 0)
         goto cleanup;
@@ -4390,31 +4416,16 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
     ret = 0;
 
  cleanup:
+    if (ret < 0)
+        virQEMUCapsLogProbeFailure(qemuCaps->binary);
+
     qemuProcessQMPStop(proc);
     qemuProcessQMPStop(procTCG);
     qemuProcessQMPFree(proc);
     qemuProcessQMPFree(procTCG);
+    VIR_FREE(qmperr);
+
     return ret;
-}
-
-
-#define MESSAGE_ID_CAPS_PROBE_FAILURE "8ae2f3fb-2dbe-498e-8fbd-012d40afa361"
-
-static void
-virQEMUCapsLogProbeFailure(const char *binary)
-{
-    virLogMetadata meta[] = {
-        { .key = "MESSAGE_ID", .s = MESSAGE_ID_CAPS_PROBE_FAILURE, .iv = 0 },
-        { .key = "LIBVIRT_QEMU_BINARY", .s = binary, .iv = 0 },
-        { .key = NULL },
-    };
-
-    virLogMessage(&virLogSelf,
-                  VIR_LOG_WARN,
-                  __FILE__, __LINE__, __func__,
-                  meta,
-                  _("Failed to probe capabilities for %s: %s"),
-                  binary, virGetLastErrorMessage());
 }
 
 
@@ -4429,7 +4440,6 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
 {
     virQEMUCapsPtr qemuCaps;
     struct stat sb;
-    char *qmperr = NULL;
 
     if (!(qemuCaps = virQEMUCapsNew()))
         goto error;
@@ -4456,18 +4466,8 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
         goto error;
     }
 
-    if (virQEMUCapsInitQMP(qemuCaps, libDir, runUid, runGid, &qmperr) < 0) {
-        virQEMUCapsLogProbeFailure(binary);
+    if (virQEMUCapsInitQMP(qemuCaps, libDir, runUid, runGid) < 0)
         goto error;
-    }
-
-    if (!qemuCaps->usedQMP) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Failed to probe QEMU binary with QMP: %s"),
-                       qmperr ? qmperr : _("unknown error"));
-        virQEMUCapsLogProbeFailure(binary);
-        goto error;
-    }
 
     qemuCaps->libvirtCtime = virGetSelfLastChanged();
     qemuCaps->libvirtVersion = LIBVIR_VERSION_NUMBER;
@@ -4485,7 +4485,6 @@ virQEMUCapsNewForBinaryInternal(virArch hostArch,
     }
 
  cleanup:
-    VIR_FREE(qmperr);
     return qemuCaps;
 
  error:
