@@ -723,6 +723,8 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
     case VIR_DOMAIN_DEVICE_DISK:
         switch ((virDomainDiskBus) dev->data.disk->bus) {
         case VIR_DOMAIN_DISK_BUS_VIRTIO:
+            if (dev->data.disk->model == VIR_DOMAIN_DISK_MODEL_VIRTIO_NON_TRANSITIONAL)
+                return pciFlags;
             return virtioFlags; /* only virtio disks use PCI */
 
         case VIR_DOMAIN_DISK_BUS_IDE:
