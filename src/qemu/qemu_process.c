@@ -8459,11 +8459,20 @@ qemuProcessQMPStart(qemuProcessQMPPtr proc)
 }
 
 
+/**
+ * qemuProcessStop:
+ * @proc: Stores process and connection state
+ *
+ * Stop monitor connection and QEMU process
+ */
 void
 qemuProcessQMPStop(qemuProcessQMPPtr proc)
 {
     if (!proc)
         return;
+
+    VIR_DEBUG("proc=%p emulator=%s mon=%p pid=%lld",
+              proc, proc->binary, proc->mon, (long long)proc->pid);
 
     if (proc->mon) {
         virObjectUnlock(proc->mon);
