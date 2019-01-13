@@ -2476,6 +2476,7 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
                            qemuMonitorPtr mon,
                            bool tcg)
 {
+    qemuMonitorCPUModelInfoPtr input;
     qemuMonitorCPUModelInfoPtr migratable = NULL;
     qemuMonitorCPUModelInfoPtr nonMigratable = NULL;
     qemuMonitorCPUModelInfoPtr augmented = NULL;
@@ -2508,7 +2509,8 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
     else
         type = QEMU_MONITOR_CPU_MODEL_EXPANSION_STATIC;
 
-    if (qemuMonitorGetCPUModelExpansion(mon, type, model, true, &migratable) < 0)
+    if (!(input = qemuMonitorCPUModelInfoNew(model)) ||
+        qemuMonitorGetCPUModelExpansion(mon, type, input, true, &migratable) < 0)
         goto cleanup;
 
     if (!migratable) {
@@ -2517,8 +2519,7 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
     }
 
     /* Try to check migratability of each feature. */
-    if (qemuMonitorGetCPUModelExpansion(mon, type, model, false,
-                                        &nonMigratable) < 0)
+    if (qemuMonitorGetCPUModelExpansion(mon, type, input, false, &nonMigratable) < 0)
         goto cleanup;
 
     if (virQEMUCapsMigratablePropsCalc(migratable, nonMigratable, &augmented) < 0)
@@ -2528,6 +2529,7 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
     ret = 0;
 
  cleanup:
+    qemuMonitorCPUModelInfoFree(input);
     qemuMonitorCPUModelInfoFree(migratable);
     qemuMonitorCPUModelInfoFree(nonMigratable);
     qemuMonitorCPUModelInfoFree(augmented);

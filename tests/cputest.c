@@ -480,6 +480,7 @@ cpuTestMakeQEMUCaps(const struct data *data)
     virQEMUCapsPtr qemuCaps = NULL;
     qemuMonitorTestPtr testMon = NULL;
     qemuMonitorCPUModelInfoPtr model = NULL;
+    qemuMonitorCPUModelInfoPtr expansion = NULL;
     char *json = NULL;
 
     if (virAsprintf(&json, "%s/cputestdata/%s-cpuid-%s.json",
@@ -489,9 +490,12 @@ cpuTestMakeQEMUCaps(const struct data *data)
     if (!(testMon = qemuMonitorTestNewFromFile(json, driver.xmlopt, true)))
         goto error;
 
+    if (!(model = qemuMonitorCPUModelInfoNew("host")))
+        goto cleanup;
+
     if (qemuMonitorGetCPUModelExpansion(qemuMonitorTestGetMonitor(testMon),
                                         QEMU_MONITOR_CPU_MODEL_EXPANSION_STATIC,
-                                        "host", true, &model) < 0)
+                                        model, true, &expansion) < 0)
         goto error;
 
     if (!(qemuCaps = virQEMUCapsNew()))
@@ -503,8 +507,8 @@ cpuTestMakeQEMUCaps(const struct data *data)
         virQEMUCapsSet(qemuCaps, QEMU_CAPS_QUERY_CPU_DEFINITIONS);
 
     virQEMUCapsSetArch(qemuCaps, data->arch);
-    virQEMUCapsSetCPUModelInfo(qemuCaps, VIR_DOMAIN_VIRT_KVM, model);
-    model = NULL;
+    virQEMUCapsSetCPUModelInfo(qemuCaps, VIR_DOMAIN_VIRT_KVM, expansion);
+    expansion = NULL;
 
     if (virQEMUCapsProbeQMPCPUDefinitions(qemuCaps,
                                           qemuMonitorTestGetMonitor(testMon),
@@ -513,6 +517,7 @@ cpuTestMakeQEMUCaps(const struct data *data)
 
  cleanup:
     qemuMonitorCPUModelInfoFree(model);
+    qemuMonitorCPUModelInfoFree(expansion);
     qemuMonitorTestFree(testMon);
     VIR_FREE(json);
 

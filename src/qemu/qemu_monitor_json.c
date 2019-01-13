@@ -5637,12 +5637,13 @@ qemuMonitorJSONBuildCPUModelInfoFromJSON(virJSONValuePtr cpu_model)
     return ret;
 }
 
+
 int
 qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
                                     qemuMonitorCPUModelExpansionType type,
-                                    const char *model_name,
+                                    qemuMonitorCPUModelInfoPtr input,
                                     bool migratable,
-                                    qemuMonitorCPUModelInfoPtr *model_info)
+                                    qemuMonitorCPUModelInfoPtr *expansion)
 {
     int ret = -1;
     virJSONValuePtr json_model_in = NULL;
@@ -5653,9 +5654,9 @@ qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
     qemuMonitorCPUModelInfoPtr model_in = NULL;
     const char *typeStr = "";
 
-    *model_info = NULL;
+    *expansion = NULL;
 
-    if (!(model_in = qemuMonitorCPUModelInfoNew(model_name)))
+    if (!(model_in = qemuMonitorCPUModelInfoCopy(input)))
         goto cleanup;
 
     if (!migratable &&
@@ -5721,13 +5722,14 @@ qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
         goto retry;
     }
 
-    if (!(*model_info = qemuMonitorJSONBuildCPUModelInfoFromJSON(cpu_model)))
+    if (!(*expansion = qemuMonitorJSONBuildCPUModelInfoFromJSON(cpu_model)))
         goto cleanup;
 
     ret = 0;
 
  cleanup:
     qemuMonitorCPUModelInfoFree(model_in);
+
     virJSONValueFree(cmd);
     virJSONValueFree(reply);
     virJSONValueFree(json_model_in);

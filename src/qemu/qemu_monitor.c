@@ -3669,20 +3669,30 @@ qemuMonitorCPUDefInfoFree(qemuMonitorCPUDefInfoPtr cpu)
 }
 
 
+/**
+ * qemuMonitorGetCPUModelExpansion:
+ * @mon:
+ * @type: qemuMonitorCPUModelExpansionType
+ * @input: Input model
+ * @migratable: Prompt QEMU to include non-migratable props for X86 models if false
+ * @expansion: Expanded output model (or NULL if QEMU rejects model or request)
+ *
+ * Re-represent @input CPU props using a new constructed CPUModelInfo
+*/
 int
 qemuMonitorGetCPUModelExpansion(qemuMonitorPtr mon,
                                 qemuMonitorCPUModelExpansionType type,
-                                const char *model_name,
+                                qemuMonitorCPUModelInfoPtr input,
                                 bool migratable,
-                                qemuMonitorCPUModelInfoPtr *model_info)
+                                qemuMonitorCPUModelInfoPtr *expansion
+                               )
 {
     VIR_DEBUG("type=%d model_name=%s migratable=%d",
-              type, model_name, migratable);
+              type, input->name, migratable);
 
     QEMU_CHECK_MONITOR(mon);
 
-    return qemuMonitorJSONGetCPUModelExpansion(mon, type, model_name,
-                                               migratable, model_info);
+    return qemuMonitorJSONGetCPUModelExpansion(mon, type, input, migratable, expansion);
 }
 
 
