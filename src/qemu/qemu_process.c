@@ -8203,13 +8203,28 @@ static qemuMonitorCallbacks callbacks = {
 };
 
 
+/**
+ * qemuProcessQMPFree:
+ * @proc: Stores process and connection state
+ *
+ * Free process data structure.
+ */
 void
 qemuProcessQMPFree(qemuProcessQMPPtr proc)
 {
     if (!proc)
         return;
 
-    qemuProcessQMPStop(proc);
+    VIR_DEBUG("proc=%p, proc->mon=%p", proc, proc->mon);
+
+    /* This should never be non-NULL if we get here, but just in case... */
+    if (proc->mon || proc->pid) {
+        VIR_ERROR(_("Unexpected QEMU still active during process free"
+                    " emulator: %s, pid: %lld, mon: %p"),
+                  proc->binary, (long long)proc->pid, proc->mon);
+        qemuProcessQMPStop(proc);
+    }
+
     VIR_FREE(proc->binary);
     VIR_FREE(proc->libDir);
     VIR_FREE(proc->monpath);
