@@ -4155,7 +4155,6 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     if (qemuMonitorSetCapabilities(mon) < 0) {
         VIR_DEBUG("Failed to set monitor capabilities %s",
                   virGetLastErrorMessage());
-        ret = 0;
         goto cleanup;
     }
 
@@ -4164,7 +4163,6 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
                               &package) < 0) {
         VIR_DEBUG("Failed to query monitor version %s",
                   virGetLastErrorMessage());
-        ret = 0;
         goto cleanup;
     }
 
@@ -4336,7 +4334,6 @@ virQEMUCapsInitQMPMonitorTCG(virQEMUCapsPtr qemuCaps ATTRIBUTE_UNUSED,
     if (qemuMonitorSetCapabilities(mon) < 0) {
         VIR_DEBUG("Failed to set monitor capabilities %s",
                   virGetLastErrorMessage());
-        ret = 0;
         goto cleanup;
     }
 
@@ -4362,17 +4359,13 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
     qemuProcessQMPPtr proc = NULL;
     qemuProcessQMPPtr procTCG = NULL;
     int ret = -1;
-    int rc;
 
     if (!(proc = qemuProcessQMPNew(qemuCaps->binary, libDir,
                                    runUid, runGid, qmperr, false)))
         goto cleanup;
 
-    if ((rc = qemuProcessQMPRun(proc)) != 0) {
-        if (rc == 1)
-            ret = 0;
+    if (qemuProcessQMPRun(proc) < 0)
         goto cleanup;
-    }
 
     if (virQEMUCapsInitQMPMonitor(qemuCaps, proc->mon) < 0)
         goto cleanup;
@@ -4387,11 +4380,8 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
         procTCG = qemuProcessQMPNew(qemuCaps->binary, libDir,
                                     runUid, runGid, NULL, true);
 
-        if ((rc = qemuProcessQMPRun(procTCG)) != 0) {
-            if (rc == 1)
-                ret = 0;
+        if (qemuProcessQMPRun(procTCG) < 0)
             goto cleanup;
-        }
 
         if (virQEMUCapsInitQMPMonitorTCG(qemuCaps, procTCG->mon) < 0)
             goto cleanup;
