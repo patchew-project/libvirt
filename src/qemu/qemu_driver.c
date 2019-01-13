@@ -13763,6 +13763,7 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
     bool migratable;
     virCPUDefPtr cpu = NULL;
     char *cpustr = NULL;
+    bool useLibvirt = false;
 
     virCheckFlags(VIR_CONNECT_BASELINE_CPU_EXPAND_FEATURES |
                   VIR_CONNECT_BASELINE_CPU_MIGRATABLE, NULL);
@@ -13782,7 +13783,9 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
     if (!qemuCaps)
         goto cleanup;
 
-    if (ARCH_IS_X86(arch)) {
+    useLibvirt = ARCH_IS_X86(arch);
+
+    if (useLibvirt) {
         migratable = !!(flags & VIR_CONNECT_BASELINE_CPU_MIGRATABLE);
 
         if (qemuConnectBaselineHypervisorCPUViaLibvirt(qemuCaps, migratable,
@@ -13798,9 +13801,17 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
 
     cpu->fallback = VIR_CPU_FALLBACK_FORBID;
 
-    if ((flags & VIR_CONNECT_BASELINE_CPU_EXPAND_FEATURES) &&
-        virCPUExpandFeatures(arch, cpu) < 0)
-        goto cleanup;
+    if (flags & VIR_CONNECT_BASELINE_CPU_EXPAND_FEATURES) {
+        if (useLibvirt && virCPUExpandFeatures(arch, cpu) < 0) {
+            goto cleanup;
+        } else {
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                           _("expand features while "
+                             "computing baseline hypervisor CPU is not supported "
+                             "for arch %s"), virArchToString(arch));
+            goto cleanup;
+        }
+    }
 
     cpustr = virCPUDefFormat(cpu, NULL);
 
