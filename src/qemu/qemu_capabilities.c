@@ -2394,14 +2394,91 @@ virQEMUCapsProbeQMPCPUDefinitions(virQEMUCapsPtr qemuCaps,
 }
 
 
+/* virQEMUCapsMigratablePropsCalc
+ * @migratable: input where all migratable props have value true
+ * and non-migratable and unsupported props have value false
+ *
+ * @nonMigratable: input where all migratable & non-migratable props
+ * have value true and unsupported props have value false
+ *
+ * @augmented: output including all props listed in @migratable but
+ * both migratable & non-migratable props have value true,
+ * unsupported props have value false,
+ * and prop->migratable is set to VIR_TRISTATE_BOOL_{YES/NO}
+ * for each supported prop
+ *
+ * Differences in expanded CPUModelInfo inputs @migratable and @nonMigratable are
+ * used to create output @augmented where individual props have prop->migratable
+ * set to indicate if prop is or isn't migratable.
+ */
+static int
+virQEMUCapsMigratablePropsCalc(qemuMonitorCPUModelInfoPtr migratable,
+                               qemuMonitorCPUModelInfoPtr nonMigratable,
+                               qemuMonitorCPUModelInfoPtr *augmented)
+{
+    int ret = -1;
+    qemuMonitorCPUModelInfoPtr tmp;
+    qemuMonitorCPUPropertyPtr prop;
+    qemuMonitorCPUPropertyPtr mProp;
+    qemuMonitorCPUPropertyPtr nonmProp;
+    virHashTablePtr hash = NULL;
+    size_t i;
+
+    *augmented = NULL;
+
+    if (!(tmp = qemuMonitorCPUModelInfoCopy(migratable)))
+        goto cleanup;
+
+    if (!nonMigratable)
+        goto done;
+
+    if (!(hash = virHashCreate(0, NULL)))
+        goto cleanup;
+
+    for (i = 0; i < tmp->nprops; i++) {
+        prop = tmp->props + i;
+
+        if (virHashAddEntry(hash, prop->name, prop) < 0)
+            goto cleanup;
+    }
+
+    for (i = 0; i < nonMigratable->nprops; i++) {
+        nonmProp = nonMigratable->props + i;
+
+        if (!(mProp = virHashLookup(hash, nonmProp->name)) ||
+            mProp->type != QEMU_MONITOR_CPU_PROPERTY_BOOLEAN ||
+            mProp->type != nonmProp->type)
+            continue;  /* In non-migratable list but not in migratable list */
+
+        if (mProp->value.boolean) {
+            mProp->migratable = VIR_TRISTATE_BOOL_YES;
+        } else if (nonmProp->value.boolean) {
+            mProp->value.boolean = true;
+            mProp->migratable = VIR_TRISTATE_BOOL_NO;
+        }
+    }
+
+    tmp->migratability = true;
+
+ done:
+    VIR_STEAL_PTR(*augmented, tmp);
+    ret = 0;
+
+ cleanup:
+    qemuMonitorCPUModelInfoFree(tmp);
+    virHashFree(hash);
+    return ret;
+}
+
+
 static int
 virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
                            qemuMonitorPtr mon,
                            bool tcg)
 {
-    qemuMonitorCPUModelInfoPtr modelInfo = NULL;
+    qemuMonitorCPUModelInfoPtr migratable = NULL;
     qemuMonitorCPUModelInfoPtr nonMigratable = NULL;
-    virHashTablePtr hash = NULL;
+    qemuMonitorCPUModelInfoPtr augmented = NULL;
     const char *model;
     qemuMonitorCPUModelExpansionType type;
     virDomainVirtType virtType;
@@ -2431,54 +2508,29 @@ virQEMUCapsProbeQMPHostCPU(virQEMUCapsPtr qemuCaps,
     else
         type = QEMU_MONITOR_CPU_MODEL_EXPANSION_STATIC;
 
-    if (qemuMonitorGetCPUModelExpansion(mon, type, model, true, &modelInfo) < 0)
+    if (qemuMonitorGetCPUModelExpansion(mon, type, model, true, &migratable) < 0)
         goto cleanup;
 
+    if (!migratable) {
+        ret = 0;      /* Qemu can't expand the model name, exit without error */
+        goto cleanup;
+    }
+
     /* Try to check migratability of each feature. */
-    if (modelInfo &&
-        qemuMonitorGetCPUModelExpansion(mon, type, model, false,
+    if (qemuMonitorGetCPUModelExpansion(mon, type, model, false,
                                         &nonMigratable) < 0)
         goto cleanup;
 
-    if (nonMigratable) {
-        qemuMonitorCPUPropertyPtr prop;
-        qemuMonitorCPUPropertyPtr nmProp;
-        size_t i;
+    if (virQEMUCapsMigratablePropsCalc(migratable, nonMigratable, &augmented) < 0)
+        goto cleanup;
 
-        if (!(hash = virHashCreate(0, NULL)))
-            goto cleanup;
-
-        for (i = 0; i < modelInfo->nprops; i++) {
-            prop = modelInfo->props + i;
-            if (virHashAddEntry(hash, prop->name, prop) < 0)
-                goto cleanup;
-        }
-
-        for (i = 0; i < nonMigratable->nprops; i++) {
-            nmProp = nonMigratable->props + i;
-            if (!(prop = virHashLookup(hash, nmProp->name)) ||
-                prop->type != QEMU_MONITOR_CPU_PROPERTY_BOOLEAN ||
-                prop->type != nmProp->type)
-                continue;
-
-            if (prop->value.boolean) {
-                prop->migratable = VIR_TRISTATE_BOOL_YES;
-            } else if (nmProp->value.boolean) {
-                prop->value.boolean = true;
-                prop->migratable = VIR_TRISTATE_BOOL_NO;
-            }
-        }
-
-        modelInfo->migratability = true;
-    }
-
-    VIR_STEAL_PTR(cpuData->info, modelInfo);
+    VIR_STEAL_PTR(cpuData->info, augmented);
     ret = 0;
 
  cleanup:
-    virHashFree(hash);
+    qemuMonitorCPUModelInfoFree(migratable);
     qemuMonitorCPUModelInfoFree(nonMigratable);
-    qemuMonitorCPUModelInfoFree(modelInfo);
+    qemuMonitorCPUModelInfoFree(augmented);
 
     return ret;
 }
