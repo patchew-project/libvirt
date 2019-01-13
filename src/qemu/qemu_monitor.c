@@ -4526,3 +4526,15 @@ qemuMonitorGetPRManagerInfo(qemuMonitorPtr mon,
     virHashFree(info);
     return ret;
 }
+
+
+int
+qemuMonitorGetCPUModelBaseline(qemuMonitorPtr mon,
+                               qemuMonitorCPUModelInfoPtr model_a,
+                               qemuMonitorCPUModelInfoPtr model_b,
+                               qemuMonitorCPUModelInfoPtr *model_baseline)
+{
+    QEMU_CHECK_MONITOR(mon);
+
+    return qemuMonitorJSONGetCPUModelBaseline(mon, model_a, model_b, model_baseline);
+}

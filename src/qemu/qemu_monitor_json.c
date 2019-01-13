@@ -8547,3 +8547,63 @@ qemuMonitorJSONGetPRManagerInfo(qemuMonitorPtr mon,
     return ret;
 
 }
+
+
+int
+qemuMonitorJSONGetCPUModelBaseline(qemuMonitorPtr mon,
+                                   qemuMonitorCPUModelInfoPtr model_a,
+                                   qemuMonitorCPUModelInfoPtr model_b,
+                                   qemuMonitorCPUModelInfoPtr *model_baseline)
+{
+    int ret = -1;
+    virJSONValuePtr cmd = NULL;
+    virJSONValuePtr reply = NULL;
+    virJSONValuePtr data = NULL;
+    virJSONValuePtr modela = NULL;
+    virJSONValuePtr modelb = NULL;
+    virJSONValuePtr cpu_model = NULL;
+
+    *model_baseline = NULL;
+
+    if (!(modela = qemuMonitorJSONBuildCPUModelInfoToJSON(model_a)) ||
+        !(modelb = qemuMonitorJSONBuildCPUModelInfoToJSON(model_b)))
+        goto cleanup;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("query-cpu-model-baseline",
+                                           "a:modela", &modela,
+                                           "a:modelb", &modelb,
+                                           NULL)))
+        goto cleanup;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckReply(cmd, reply, VIR_JSON_TYPE_OBJECT) < 0) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("QEMU doesn't support baseline or recognize model %s or %s"),
+                       model_a->name,
+                       model_b->name);
+        goto cleanup;
+    }
+
+    data = virJSONValueObjectGetObject(reply, "return");
+
+    if (!(cpu_model = virJSONValueObjectGetObject(data, "model"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("query-cpu-model-baseline reply data was missing 'model'"));
+        goto cleanup;
+    }
+
+    if (!(*model_baseline = qemuMonitorJSONBuildCPUModelInfoFromJSON(cpu_model)))
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    virJSONValueFree(modela);
+    virJSONValueFree(modelb);
+
+    return ret;
+}
