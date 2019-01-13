@@ -58,6 +58,9 @@ testQemuCaps(const void *opaque)
     if (!(mon = qemuMonitorTestNewFromFileFull(repliesFile, &data->driver, NULL)))
         goto cleanup;
 
+    if (qemuMonitorSetCapabilities(qemuMonitorTestGetMonitor(mon)) < 0)
+        goto cleanup;
+
     if (!(capsActual = virQEMUCapsNew()) ||
         virQEMUCapsInitQMPMonitor(capsActual,
                                   qemuMonitorTestGetMonitor(mon)) < 0)
@@ -65,6 +68,10 @@ testQemuCaps(const void *opaque)
 
     if (virQEMUCapsGet(capsActual, QEMU_CAPS_KVM)) {
         qemuMonitorResetCommandID(qemuMonitorTestGetMonitor(mon));
+
+        if (qemuMonitorSetCapabilities(qemuMonitorTestGetMonitor(mon)) < 0)
+            goto cleanup;
+
         if (virQEMUCapsInitQMPMonitorTCG(capsActual,
                                          qemuMonitorTestGetMonitor(mon)) < 0)
             goto cleanup;

@@ -4152,12 +4152,6 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
 
     /* @mon is supposed to be locked by callee */
 
-    if (qemuMonitorSetCapabilities(mon) < 0) {
-        VIR_DEBUG("Failed to set monitor capabilities %s",
-                  virGetLastErrorMessage());
-        goto cleanup;
-    }
-
     if (qemuMonitorGetVersion(mon,
                               &major, &minor, &micro,
                               &package) < 0) {
@@ -4330,12 +4324,6 @@ virQEMUCapsInitQMPMonitorTCG(virQEMUCapsPtr qemuCaps ATTRIBUTE_UNUSED,
                              qemuMonitorPtr mon)
 {
     int ret = -1;
-
-    if (qemuMonitorSetCapabilities(mon) < 0) {
-        VIR_DEBUG("Failed to set monitor capabilities %s",
-                  virGetLastErrorMessage());
-        goto cleanup;
-    }
 
     if (virQEMUCapsProbeQMPCPUDefinitions(qemuCaps, mon, true) < 0)
         goto cleanup;
