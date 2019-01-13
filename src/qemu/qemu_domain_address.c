@@ -856,7 +856,10 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
     case VIR_DOMAIN_DEVICE_RNG:
         switch ((virDomainRNGModel) dev->data.rng->model) {
         case VIR_DOMAIN_RNG_MODEL_VIRTIO:
+        case VIR_DOMAIN_RNG_MODEL_VIRTIO_TRANSITIONAL:
             return virtioFlags;
+        case VIR_DOMAIN_RNG_MODEL_VIRTIO_NON_TRANSITIONAL:
+            return pciFlags;
 
         case VIR_DOMAIN_RNG_MODEL_LAST:
             return 0;
@@ -2285,8 +2288,7 @@ qemuDomainAssignDevicePCISlots(virDomainDefPtr def,
 
     /* VirtIO RNG */
     for (i = 0; i < def->nrngs; i++) {
-        if (def->rngs[i]->model != VIR_DOMAIN_RNG_MODEL_VIRTIO ||
-            !virDeviceInfoPCIAddressIsWanted(&def->rngs[i]->info))
+        if (!virDeviceInfoPCIAddressIsWanted(&def->rngs[i]->info))
             continue;
 
         if (qemuDomainPCIAddressReserveNextAddr(addrs, &def->rngs[i]->info) < 0)
