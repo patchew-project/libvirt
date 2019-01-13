@@ -5541,6 +5541,102 @@ qemuMonitorJSONParseCPUModelProperty(const char *key,
     return 0;
 }
 
+
+/* model_json: {"name": "z13-base", "props": {}}
+ */
+static virJSONValuePtr
+qemuMonitorJSONBuildCPUModelInfoToJSON(qemuMonitorCPUModelInfoPtr model)
+{
+    virJSONValuePtr cpu_props = NULL;
+    virJSONValuePtr model_json = NULL;
+    size_t i;
+
+    if (!model)
+        goto cleanup;
+
+    if (model->nprops > 0 && !(cpu_props = virJSONValueNewObject()))
+        goto cleanup;
+
+    for (i = 0; i < model->nprops; i++) {
+        qemuMonitorCPUPropertyPtr prop = &(model->props[i]);
+
+        switch (prop->type) {
+        case QEMU_MONITOR_CPU_PROPERTY_BOOLEAN:
+            if (virJSONValueObjectAppendBoolean(cpu_props, prop->name,
+                                                prop->value.boolean) < 0)
+                goto cleanup;
+            break;
+
+        case QEMU_MONITOR_CPU_PROPERTY_STRING:
+            if (virJSONValueObjectAppendString(cpu_props, prop->name,
+                                               prop->value.string) < 0)
+                goto cleanup;
+            break;
+
+        case QEMU_MONITOR_CPU_PROPERTY_NUMBER:
+            if (virJSONValueObjectAppendNumberLong(cpu_props, prop->name,
+                                                   prop->value.number) < 0)
+                goto cleanup;
+            break;
+
+        case QEMU_MONITOR_CPU_PROPERTY_LAST:
+        default:
+            virReportEnumRangeError(qemuMonitorCPUPropertyPtr, prop->type);
+            goto cleanup;
+        }
+    }
+
+    ignore_value(virJSONValueObjectCreate(&model_json, "s:name", model->name,
+                                          "A:props", &cpu_props, NULL));
+
+ cleanup:
+    virJSONValueFree(cpu_props);
+    return model_json;
+}
+
+
+/* model_json: {"name": "IvyBridge", "props": {}}
+ */
+static qemuMonitorCPUModelInfoPtr
+qemuMonitorJSONBuildCPUModelInfoFromJSON(virJSONValuePtr cpu_model)
+{
+    virJSONValuePtr cpu_props;
+    qemuMonitorCPUModelInfoPtr model = NULL;
+    qemuMonitorCPUModelInfoPtr ret = NULL;
+    char const *cpu_name;
+
+    if (!(cpu_name = virJSONValueObjectGetString(cpu_model, "name"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Parsed JSON reply missing 'name'"));
+        goto cleanup;
+    }
+
+    if (!(model = qemuMonitorCPUModelInfoNew(cpu_name)))
+        goto cleanup;
+
+    if (!(cpu_props = virJSONValueObjectGetObject(cpu_model, "props"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("query-cpu-model-expansion reply data was missing 'props'"));
+        goto cleanup;
+    }
+
+    if (VIR_ALLOC_N(model->props,
+                    virJSONValueObjectKeysNumber(cpu_props)) < 0)
+        goto cleanup;
+
+    if (virJSONValueObjectForeachKeyValue(cpu_props,
+                                      qemuMonitorJSONParseCPUModelProperty,
+                                      model) < 0)
+        goto cleanup;
+
+    VIR_STEAL_PTR(ret, model);
+
+ cleanup:
+    qemuMonitorCPUModelInfoFree(model);
+
+    return ret;
+}
+
 int
 qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
                                     qemuMonitorCPUModelExpansionType type,
@@ -5549,32 +5645,25 @@ qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
                                     qemuMonitorCPUModelInfoPtr *model_info)
 {
     int ret = -1;
-    virJSONValuePtr model = NULL;
-    virJSONValuePtr props = NULL;
+    virJSONValuePtr json_model_in = NULL;
     virJSONValuePtr cmd = NULL;
     virJSONValuePtr reply = NULL;
     virJSONValuePtr data;
     virJSONValuePtr cpu_model;
-    virJSONValuePtr cpu_props;
-    qemuMonitorCPUModelInfoPtr machine_model = NULL;
-    char const *cpu_name;
+    qemuMonitorCPUModelInfoPtr model_in = NULL;
     const char *typeStr = "";
 
     *model_info = NULL;
 
-    if (!(model = virJSONValueNewObject()))
+    if (!(model_in = qemuMonitorCPUModelInfoNew(model_name)))
         goto cleanup;
 
-    if (virJSONValueObjectAppendString(model, "name", model_name) < 0)
+    if (!migratable &&
+        qemuMonitorCPUModelInfoBoolPropAdd(model_in, "migratable", false) < 0)
         goto cleanup;
 
-    if (!migratable) {
-        if (!(props = virJSONValueNewObject()) ||
-            virJSONValueObjectAppendBoolean(props, "migratable", false) < 0 ||
-            virJSONValueObjectAppend(model, "props", props) < 0)
-            goto cleanup;
-        props = NULL;
-    }
+    if (!(json_model_in = qemuMonitorJSONBuildCPUModelInfoToJSON(model_in)))
+        goto cleanup;
 
  retry:
     switch (type) {
@@ -5590,7 +5679,7 @@ qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
 
     if (!(cmd = qemuMonitorJSONMakeCommand("query-cpu-model-expansion",
                                            "s:type", typeStr,
-                                           "a:model", &model,
+                                           "a:model", &json_model_in,
                                            NULL)))
         goto cleanup;
 
@@ -5621,7 +5710,9 @@ qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
      * on the result of the initial "static" expansion.
      */
     if (type == QEMU_MONITOR_CPU_MODEL_EXPANSION_STATIC_FULL) {
-        if (!(model = virJSONValueCopy(cpu_model)))
+        virJSONValueFree(json_model_in);
+
+        if (!(json_model_in = virJSONValueCopy(cpu_model)))
             goto cleanup;
 
         virJSONValueFree(cmd);
@@ -5630,39 +5721,16 @@ qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
         goto retry;
     }
 
-    if (!(cpu_name = virJSONValueObjectGetString(cpu_model, "name"))) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("query-cpu-model-expansion reply data was missing 'name'"));
-        goto cleanup;
-    }
-
-    if (!(cpu_props = virJSONValueObjectGetObject(cpu_model, "props"))) {
-        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                       _("query-cpu-model-expansion reply data was missing 'props'"));
-        goto cleanup;
-    }
-
-    if (!(machine_model = qemuMonitorCPUModelInfoNew(cpu_name)))
-        goto cleanup;
-
-    if (VIR_ALLOC_N(machine_model->props, virJSONValueObjectKeysNumber(cpu_props)) < 0)
-        goto cleanup;
-
-    if (virJSONValueObjectForeachKeyValue(cpu_props,
-                                          qemuMonitorJSONParseCPUModelProperty,
-                                          machine_model) < 0)
+    if (!(*model_info = qemuMonitorJSONBuildCPUModelInfoFromJSON(cpu_model)))
         goto cleanup;
 
     ret = 0;
-    *model_info = machine_model;
-    machine_model = NULL;
 
  cleanup:
-    qemuMonitorCPUModelInfoFree(machine_model);
+    qemuMonitorCPUModelInfoFree(model_in);
     virJSONValueFree(cmd);
     virJSONValueFree(reply);
-    virJSONValueFree(model);
-    virJSONValueFree(props);
+    virJSONValueFree(json_model_in);
     return ret;
 }
 

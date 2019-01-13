@@ -3776,6 +3776,31 @@ qemuMonitorCPUModelInfoCopy(const qemuMonitorCPUModelInfo *orig)
 
 
 int
+qemuMonitorCPUModelInfoBoolPropAdd(qemuMonitorCPUModelInfoPtr model,
+                                   const char *prop_name,
+                                   bool prop_value)
+{
+    int ret = -1;
+    qemuMonitorCPUProperty prop = {
+        .type = QEMU_MONITOR_CPU_PROPERTY_BOOLEAN,
+        .value.boolean = prop_value
+    };
+
+    if (VIR_STRDUP(prop.name, prop_name) < 0)
+        goto cleanup;
+
+    if (VIR_APPEND_ELEMENT(model->props, model->nprops, prop) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(prop.name);
+    return ret;
+}
+
+
+int
 qemuMonitorGetCommands(qemuMonitorPtr mon,
                        char ***commands)
 {
