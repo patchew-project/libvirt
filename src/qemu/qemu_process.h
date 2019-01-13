@@ -241,7 +241,7 @@ qemuProcessQMPPtr qemuProcessQMPNew(const char *binary,
 
 void qemuProcessQMPFree(qemuProcessQMPPtr proc);
 
-int qemuProcessQMPRun(qemuProcessQMPPtr cmd);
+int qemuProcessQMPStart(qemuProcessQMPPtr proc);
 
 void qemuProcessQMPStop(qemuProcessQMPPtr proc);
 
