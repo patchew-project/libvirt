@@ -114,23 +114,23 @@
   <microcodeVersion>267973</microcodeVersion>
   <package></package>
   <arch>s390x</arch>
-  <hostCPU type='kvm' model='z13.2-base' migratability='no'>
-    <property name='aefsi' type='boolean' value='true'/>
-    <property name='msa5' type='boolean' value='true'/>
-    <property name='msa4' type='boolean' value='true'/>
-    <property name='msa3' type='boolean' value='true'/>
-    <property name='msa2' type='boolean' value='true'/>
-    <property name='msa1' type='boolean' value='true'/>
-    <property name='sthyi' type='boolean' value='true'/>
-    <property name='edat' type='boolean' value='true'/>
-    <property name='ri' type='boolean' value='true'/>
-    <property name='edat2' type='boolean' value='true'/>
-    <property name='vx' type='boolean' value='true'/>
-    <property name='ipter' type='boolean' value='true'/>
-    <property name='esop' type='boolean' value='true'/>
-    <property name='cte' type='boolean' value='true'/>
-    <property name='te' type='boolean' value='true'/>
-    <property name='cmm' type='boolean' value='true'/>
+  <hostCPU type='kvm' model='z13.2-base' migratability='yes'>
+    <property name='aefsi' type='boolean' value='true' migratable='yes'/>
+    <property name='msa5' type='boolean' value='true' migratable='yes'/>
+    <property name='msa4' type='boolean' value='true' migratable='yes'/>
+    <property name='msa3' type='boolean' value='true' migratable='yes'/>
+    <property name='msa2' type='boolean' value='true' migratable='yes'/>
+    <property name='msa1' type='boolean' value='true' migratable='yes'/>
+    <property name='sthyi' type='boolean' value='true' migratable='yes'/>
+    <property name='edat' type='boolean' value='true' migratable='yes'/>
+    <property name='ri' type='boolean' value='true' migratable='yes'/>
+    <property name='edat2' type='boolean' value='true' migratable='yes'/>
+    <property name='vx' type='boolean' value='true' migratable='yes'/>
+    <property name='ipter' type='boolean' value='true' migratable='yes'/>
+    <property name='esop' type='boolean' value='true' migratable='yes'/>
+    <property name='cte' type='boolean' value='true' migratable='yes'/>
+    <property name='te' type='boolean' value='true' migratable='yes'/>
+    <property name='cmm' type='boolean' value='true' migratable='yes'/>
   </hostCPU>
   <cpu type='kvm' name='z10EC-base'/>
   <cpu type='kvm' name='z9EC-base'/>
