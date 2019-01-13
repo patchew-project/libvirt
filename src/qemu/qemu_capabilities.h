@@ -583,6 +583,9 @@ int virQEMUCapsGetMachineTypesCaps(virQEMUCapsPtr qemuCaps,
 void virQEMUCapsFilterByMachineType(virQEMUCapsPtr qemuCaps,
                                     const char *machineType);
 
+virCPUDefPtr virQEMUCapsCPUModelInfoToCPUDef(qemuMonitorCPUModelInfoPtr model,
+                                             bool migratable);
+
 virFileCachePtr virQEMUCapsCacheNew(const char *libDir,
                                     const char *cacheDir,
                                     uid_t uid,

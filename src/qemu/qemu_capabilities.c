@@ -2834,7 +2834,8 @@ virQEMUCapsInitCPUModelS390(virQEMUCapsPtr qemuCaps,
                             virCPUDefPtr cpu,
                             bool migratable)
 {
-    size_t i;
+    virCPUDefPtr tmp = NULL;
+    int ret = -1;
 
     if (!modelInfo) {
         if (type == VIR_DOMAIN_VIRT_KVM) {
@@ -2847,32 +2848,18 @@ virQEMUCapsInitCPUModelS390(virQEMUCapsPtr qemuCaps,
         return 2;
     }
 
-    if (VIR_STRDUP(cpu->model, modelInfo->name) < 0 ||
-        VIR_ALLOC_N(cpu->features, modelInfo->nprops) < 0)
-        return -1;
+    if (!(tmp = virQEMUCapsCPUModelInfoToCPUDef(modelInfo, migratable)))
+        goto cleanup;
 
-    cpu->nfeatures_max = modelInfo->nprops;
-    cpu->nfeatures = 0;
+    /* Free original then copy over model, vendor, vendor_id and features */
+    virCPUDefStealModel(cpu, tmp, true);
 
-    for (i = 0; i < modelInfo->nprops; i++) {
-        virCPUFeatureDefPtr feature = cpu->features + cpu->nfeatures;
-        qemuMonitorCPUPropertyPtr prop = modelInfo->props + i;
+    ret = 0;
 
-        if (prop->type != QEMU_MONITOR_CPU_PROPERTY_BOOLEAN)
-            continue;
+ cleanup:
+    virCPUDefFree(tmp);
 
-        if (VIR_STRDUP(feature->name, prop->name) < 0)
-            return -1;
-
-        if (!prop->value.boolean ||
-            (migratable && prop->migratable == VIR_TRISTATE_BOOL_NO))
-            feature->policy = VIR_CPU_FEATURE_DISABLE;
-        else
-            feature->policy = VIR_CPU_FEATURE_REQUIRE;
-        cpu->nfeatures++;
-    }
-
-    return 0;
+    return ret;
 }
 
 
@@ -3673,6 +3660,61 @@ virQEMUCapsLoadCache(virArch hostArch,
     VIR_FREE(nodes);
     xmlXPathFreeContext(ctxt);
     xmlFreeDoc(doc);
+    return ret;
+}
+
+
+/**
+ * virQEMUCapsCPUModelInfoToCPUDef:
+ * @model: input model
+ * @migratable: mark non-migratable features as disabled if true else allow all
+ *
+ * qemuMonitorCPUModelInfo name => virCPUDef model
+ * qemuMonitorCPUModelInfo boolean properties => virCPUDef features
+ */
+virCPUDefPtr
+virQEMUCapsCPUModelInfoToCPUDef(qemuMonitorCPUModelInfoPtr model,
+                                bool migratable)
+{
+    virCPUDefPtr cpu = NULL;
+    virCPUDefPtr ret = NULL;
+    size_t i;
+
+    VIR_DEBUG("model= %p, model->name= %s", model, NULLSTR(model ? model->name : NULL));
+
+    if (!model || VIR_ALLOC(cpu) < 0)
+        goto cleanup;
+
+    if (VIR_STRDUP(cpu->model, model->name) < 0 ||
+        VIR_ALLOC_N(cpu->features, model->nprops) < 0)
+        goto cleanup;
+
+    cpu->nfeatures_max = model->nprops;
+    cpu->nfeatures = 0;
+
+    for (i = 0; i < model->nprops; i++) {
+        virCPUFeatureDefPtr feature = cpu->features + cpu->nfeatures;
+        qemuMonitorCPUPropertyPtr prop = model->props + i;
+
+        if (prop->type != QEMU_MONITOR_CPU_PROPERTY_BOOLEAN)
+            continue;
+
+        if (VIR_STRDUP(feature->name, prop->name) < 0)
+            goto cleanup;
+
+        if (!prop->value.boolean ||
+            (migratable && prop->migratable == VIR_TRISTATE_BOOL_NO))
+            feature->policy = VIR_CPU_FEATURE_DISABLE;
+        else
+            feature->policy = VIR_CPU_FEATURE_REQUIRE;
+
+        cpu->nfeatures++;
+    }
+
+    VIR_STEAL_PTR(ret, cpu);
+
+ cleanup:
+    virCPUDefFree(cpu);
     return ret;
 }
 
