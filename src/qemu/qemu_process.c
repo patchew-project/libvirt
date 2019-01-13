@@ -8214,6 +8214,7 @@ qemuProcessQMPFree(qemuProcessQMPPtr proc)
     VIR_FREE(proc->monpath);
     VIR_FREE(proc->monarg);
     VIR_FREE(proc->pidfile);
+    VIR_FREE(proc->stderr);
     VIR_FREE(proc);
 }
 
@@ -8223,7 +8224,6 @@ qemuProcessQMPNew(const char *binary,
                   const char *libDir,
                   uid_t runUid,
                   gid_t runGid,
-                  char **qmperr,
                   bool forceTCG)
 {
     qemuProcessQMPPtr proc = NULL;
@@ -8236,7 +8236,6 @@ qemuProcessQMPNew(const char *binary,
 
     proc->runUid = runUid;
     proc->runGid = runGid;
-    proc->qmperr = qmperr;
     proc->forceTCG = forceTCG;
 
     /* the ".sock" sufix is important to avoid a possible clash with a qemu
@@ -8308,7 +8307,7 @@ qemuProcessQMPRun(qemuProcessQMPPtr proc)
     virCommandSetGID(proc->cmd, proc->runGid);
     virCommandSetUID(proc->cmd, proc->runUid);
 
-    virCommandSetErrorBuffer(proc->cmd, proc->qmperr);
+    virCommandSetErrorBuffer(proc->cmd, &(proc->stderr));
 
     proc->status = 0;
 
@@ -8317,7 +8316,7 @@ qemuProcessQMPRun(qemuProcessQMPPtr proc)
 
     if (proc->status != 0) {
         VIR_DEBUG("QEMU %s exited with status %d: %s",
-                  proc->binary, proc->status, *proc->qmperr);
+                  proc->binary, proc->status, proc->stderr);
         goto cleanup;
     }
 
@@ -8380,8 +8379,6 @@ qemuProcessQMPStop(qemuProcessQMPPtr proc)
             VIR_ERROR(_("Failed to kill process %lld: %s"),
                       (long long)proc->pid,
                       virStrerror(errno, ebuf, sizeof(ebuf)));
-
-        VIR_FREE(*proc->qmperr);
 
         proc->pid = 0;
     }

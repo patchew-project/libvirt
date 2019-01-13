@@ -4377,18 +4377,17 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
 {
     qemuProcessQMPPtr proc = NULL;
     qemuProcessQMPPtr procTCG = NULL;
-    char *qmperr = NULL;
     int ret = -1;
 
     if (!(proc = qemuProcessQMPNew(qemuCaps->binary, libDir,
-                                   runUid, runGid, &qmperr, false)))
+                                   runUid, runGid, false)))
         goto cleanup;
 
     if (qemuProcessQMPRun(proc) < 0) {
         if (proc->status != 0)
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Failed to probe QEMU binary with QMP: %s"),
-                           qmperr ? qmperr : _("uknown error"));
+                           proc->stderr ? proc->stderr : _("uknown error"));
 
         goto cleanup;
     }
@@ -4404,7 +4403,7 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
         qemuProcessQMPStop(proc);
 
         procTCG = qemuProcessQMPNew(qemuCaps->binary, libDir,
-                                    runUid, runGid, NULL, true);
+                                    runUid, runGid, true);
 
         if (qemuProcessQMPRun(procTCG) < 0)
             goto cleanup;
@@ -4423,7 +4422,6 @@ virQEMUCapsInitQMP(virQEMUCapsPtr qemuCaps,
     qemuProcessQMPStop(procTCG);
     qemuProcessQMPFree(proc);
     qemuProcessQMPFree(procTCG);
-    VIR_FREE(qmperr);
 
     return ret;
 }
