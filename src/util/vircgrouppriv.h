@@ -62,6 +62,8 @@ typedef virCgroupV2Controller *virCgroupV2ControllerPtr;
 
 struct _virCgroup {
     char *path;
+    char *stateDir;
+    char *vmName;
 
     virCgroupBackendPtr backends[VIR_CGROUP_BACKEND_TYPE_LAST];
 

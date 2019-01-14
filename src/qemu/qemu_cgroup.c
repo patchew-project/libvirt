@@ -946,6 +946,7 @@ qemuInitCgroup(virDomainObjPtr vm,
                             nnicindexes, nicindexes,
                             vm->def->resource->partition,
                             cfg->cgroupControllers,
+                            cfg->stateDir,
                             &priv->cgroup) < 0) {
         if (virCgroupNewIgnoreError())
             goto done;
@@ -1256,16 +1257,19 @@ int
 qemuRemoveCgroup(virDomainObjPtr vm)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    int rc = 0;
 
     if (priv->cgroup == NULL)
         return 0; /* Not supported, so claim success */
+
+    rc = virCgroupRemove(priv->cgroup);
 
     if (virCgroupTerminateMachine(priv->machineName) < 0) {
         if (!virCgroupNewIgnoreError())
             VIR_DEBUG("Failed to terminate cgroup for %s", vm->def->name);
     }
 
-    return virCgroupRemove(priv->cgroup);
+    return rc;
 }
 
 

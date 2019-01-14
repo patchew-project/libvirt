@@ -31,10 +31,15 @@
 #include "vircgrouppriv.h"
 
 #include "virbpf.h"
+#include "vircommand.h"
 #include "vircgroup.h"
 #include "vircgroupv2devices.h"
 #include "virfile.h"
 #include "virlog.h"
+#include "virpidfile.h"
+#include "virprocess.h"
+#include "virstring.h"
+#include "virsystemd.h"
 
 VIR_LOG_INIT("util.cgroup");
 
@@ -365,17 +370,74 @@ virCgroupV2DevicesReallocMap(int mapfd,
 }
 
 
+static pid_t
+virCgroupV2DevicesStartDummyProc(virCgroupPtr group)
+{
+    pid_t ret = -1;
+    pid_t pid = -1;
+    virCommandPtr cmd = NULL;
+    VIR_AUTOFREE(char *) pidfile = NULL;
+    VIR_AUTOFREE(char *) fileName = NULL;
+
+    if (virAsprintf(&fileName, "cgroup-%s", group->vmName) < 0)
+        return -1;
+
+    pidfile = virPidFileBuildPath(group->stateDir, fileName);
+    if (!pidfile)
+        return -1;
+
+    cmd = virCommandNewArgList("/usr/bin/tail", "-f", "/dev/null",
+                               "-s", "3600", NULL);
+    if (!cmd)
+        return -1;
+
+    virCommandDaemonize(cmd);
+    virCommandSetPidFile(cmd, pidfile);
+
+    if (virCommandRun(cmd, NULL) < 0)
+        goto cleanup;
+
+    if (virPidFileReadPath(pidfile, &pid) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("failed to start dummy cgroup helper"));
+        goto cleanup;
+    }
+
+    if (virCgroupAddMachineProcess(group, pid) < 0)
+        goto cleanup;
+
+    ret = pid;
+ cleanup:
+    if (ret < 0) {
+        virCommandAbort(cmd);
+        if (pid > 0)
+            virProcessKillPainfully(pid, true);
+    }
+    if (pidfile)
+        unlink(pidfile);
+    virCommandFree(cmd);
+    return ret;
+}
+
+
 int
 virCgroupV2DevicesCreateProg(virCgroupPtr group)
 {
-    int mapfd;
+    int mapfd = -1;
+    pid_t pid = -1;
 
     if (group->unified.devices.progfd > 0 && group->unified.devices.mapfd > 0)
         return 0;
 
+    if (virSystemdHasMachined() == 0) {
+        pid = virCgroupV2DevicesStartDummyProc(group);
+        if (pid < 0)
+            return -1;
+    }
+
     mapfd = virCgroupV2DevicesCreateMap(VIR_CGROUP_V2_INITIAL_BPF_MAP_SIZE);
     if (mapfd < 0)
-        return -1;
+        goto error;
 
     if (virCgroupV2DevicesAttachProg(group, mapfd,
                                      VIR_CGROUP_V2_INITIAL_BPF_MAP_SIZE) < 0) {
@@ -385,6 +447,7 @@ virCgroupV2DevicesCreateProg(virCgroupPtr group)
     return 0;
 
  error:
+    virProcessKillPainfully(pid, true);
     VIR_FORCE_CLOSE(mapfd);
     return -1;
 }
@@ -452,6 +515,9 @@ virCgroupV2DevicesRemoveProg(virCgroupPtr group)
 
     if (group->unified.devices.progfd >= 0)
         VIR_FORCE_CLOSE(group->unified.devices.progfd);
+
+    if (virSystemdHasMachined() == 0)
+        virCgroupKillPainfully(group);
 
     ret = 0;
 

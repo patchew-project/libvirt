@@ -1105,6 +1105,7 @@ virCgroupNewMachineSystemd(const char *name,
                            int *nicindexes,
                            const char *partition,
                            int controllers,
+                           const char *stateDir,
                            virCgroupPtr *group)
 {
     int rv;
@@ -1148,6 +1149,16 @@ virCgroupNewMachineSystemd(const char *name,
 
     if (virCgroupEnableMissingControllers(path, pidleader,
                                           controllers, group) < 0) {
+        return -1;
+    }
+
+    if (VIR_STRDUP((*group)->stateDir, stateDir) < 0) {
+        virCgroupFree(group);
+        return -1;
+    }
+
+    if (VIR_STRDUP((*group)->vmName, name) < 0) {
+        virCgroupFree(group);
         return -1;
     }
 
@@ -1233,6 +1244,7 @@ virCgroupNewMachine(const char *name,
                     int *nicindexes,
                     const char *partition,
                     int controllers,
+                    const char *stateDir,
                     virCgroupPtr *group)
 {
     int rv;
@@ -1249,6 +1261,7 @@ virCgroupNewMachine(const char *name,
                                          nicindexes,
                                          partition,
                                          controllers,
+                                         stateDir,
                                          group)) == 0)
         return 0;
 
@@ -1301,6 +1314,8 @@ virCgroupFree(virCgroupPtr *group)
     VIR_FREE((*group)->unified.placement);
 
     VIR_FREE((*group)->path);
+    VIR_FREE((*group)->stateDir);
+    VIR_FREE((*group)->vmName);
     VIR_FREE(*group);
 }
 
@@ -2897,6 +2912,7 @@ virCgroupNewMachine(const char *name ATTRIBUTE_UNUSED,
                     int *nicindexes ATTRIBUTE_UNUSED,
                     const char *partition ATTRIBUTE_UNUSED,
                     int controllers ATTRIBUTE_UNUSED,
+                    const char *stateDir ATTRIBUTE_UNUSED,
                     virCgroupPtr *group ATTRIBUTE_UNUSED)
 {
     virReportSystemError(ENXIO, "%s",

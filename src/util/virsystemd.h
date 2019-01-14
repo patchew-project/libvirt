@@ -51,4 +51,6 @@ int virSystemdCanHybridSleep(bool *result);
 
 char *virSystemdGetMachineNameByPID(pid_t pid);
 
+int virSystemdHasMachined(void);
+
 #endif /* LIBVIRT_VIRSYSTEMD_H */
