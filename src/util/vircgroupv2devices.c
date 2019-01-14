@@ -420,11 +420,32 @@ virCgroupV2DevicesPrepareProg(virCgroupPtr group)
 int
 virCgroupV2DevicesRemoveProg(virCgroupPtr group)
 {
+    int ret = -1;
+    int cgroupfd = -1;
+    VIR_AUTOFREE(char *) path = NULL;
+
     if (virCgroupV2DevicesDetectProg(group) < 0)
         return -1;
 
     if (group->unified.devices.progfd <= 0 && group->unified.devices.mapfd <= 0)
         return 0;
+
+    if (virCgroupPathOfController(group, VIR_CGROUP_CONTROLLER_DEVICES,
+                                  NULL, &path) < 0) {
+        return -1;
+    }
+
+    cgroupfd = open(path, O_RDONLY);
+    if (cgroupfd < 0) {
+        virReportSystemError(errno, _("unable to open '%s'"), path);
+        goto cleanup;
+    }
+
+    if (virBPFDetachProg(group->unified.devices.progfd,
+                         cgroupfd, BPF_CGROUP_DEVICE) < 0) {
+        virReportSystemError(errno, "%s", _("failed to detach cgroup BPF prog"));
+        goto cleanup;
+    }
 
     if (group->unified.devices.mapfd >= 0)
         VIR_FORCE_CLOSE(group->unified.devices.mapfd);
@@ -432,7 +453,11 @@ virCgroupV2DevicesRemoveProg(virCgroupPtr group)
     if (group->unified.devices.progfd >= 0)
         VIR_FORCE_CLOSE(group->unified.devices.progfd);
 
-    return 0;
+    ret = 0;
+
+ cleanup:
+    VIR_FORCE_CLOSE(cgroupfd);
+    return ret;
 }
 
 
