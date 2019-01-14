@@ -2902,8 +2902,11 @@ virCPUx86ValidateFeatures(virCPUDefPtr cpu)
     virCPUx86MapPtr map;
     size_t i;
 
-    if (!(map = virCPUx86GetMap()))
+    if (!(map = virCPUx86GetMap())) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                        _("invalid x86 cpu map"));
         return -1;
+    }
 
     for (i = 0; i < cpu->nfeatures; i++) {
         if (!x86FeatureFind(map, cpu->features[i].name)) {
