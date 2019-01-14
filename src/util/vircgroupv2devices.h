@@ -47,4 +47,8 @@ uint32_t
 virCgroupV2DevicesGetPerms(int perms,
                            char type);
 
+uint64_t
+virCgroupV2DevicesGetKey(int major,
+                         int minor);
+
 #endif /* LIBVIRT_VIRCGROUPV2DEVICES_H */

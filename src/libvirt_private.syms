@@ -1616,6 +1616,7 @@ virCgroupV2DevicesAttachProg;
 virCgroupV2DevicesAvailable;
 virCgroupV2DevicesCreateProg;
 virCgroupV2DevicesDetectProg;
+virCgroupV2DevicesGetKey;
 virCgroupV2DevicesGetPerms;
 virCgroupV2DevicesPrepareProg;
 virCgroupV2DevicesRemoveProg;
