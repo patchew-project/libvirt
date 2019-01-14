@@ -34,6 +34,7 @@
 # include "testutilslxc.h"
 # include "virstring.h"
 # include "virfile.h"
+# include "vircgroupv2devices.h"
 
 static int (*real_open)(const char *path, int flags, ...);
 static FILE *(*real_fopen)(const char *path, const char *mode);
@@ -700,6 +701,12 @@ int open(const char *path, int flags, ...)
     }
     free(newpath);
     return ret;
+}
+
+bool
+virCgroupV2DevicesAvailable(virCgroupPtr group ATTRIBUTE_UNUSED)
+{
+    return true;
 }
 #else
 /* Nothing to override on non-__linux__ platforms */

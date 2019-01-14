@@ -21,10 +21,13 @@
 
 # include <sys/types.h>
 
+# include "internal.h"
+
 # include "vircgroup.h"
 
 bool
-virCgroupV2DevicesAvailable(virCgroupPtr group);
+virCgroupV2DevicesAvailable(virCgroupPtr group)
+    ATTRIBUTE_NOINLINE;
 
 int
 virCgroupV2DevicesAttachProg(virCgroupPtr group,

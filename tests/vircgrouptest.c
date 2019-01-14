@@ -587,6 +587,7 @@ static int testCgroupNewForSelfUnified(const void *args ATTRIBUTE_UNUSED)
         (1 << VIR_CGROUP_CONTROLLER_CPU) |
         (1 << VIR_CGROUP_CONTROLLER_CPUACCT) |
         (1 << VIR_CGROUP_CONTROLLER_MEMORY) |
+        (1 << VIR_CGROUP_CONTROLLER_DEVICES) |
         (1 << VIR_CGROUP_CONTROLLER_BLKIO);
 
     if (virCgroupNewSelf(&cgroup) < 0) {
@@ -609,14 +610,12 @@ static int testCgroupNewForSelfHybrid(const void *args ATTRIBUTE_UNUSED)
     const char *empty[VIR_CGROUP_CONTROLLER_LAST] = { 0 };
     const char *mounts[VIR_CGROUP_CONTROLLER_LAST] = {
         [VIR_CGROUP_CONTROLLER_CPUSET] = "/not/really/sys/fs/cgroup/cpuset",
-        [VIR_CGROUP_CONTROLLER_DEVICES] = "/not/really/sys/fs/cgroup/devices",
         [VIR_CGROUP_CONTROLLER_FREEZER] = "/not/really/sys/fs/cgroup/freezer",
         [VIR_CGROUP_CONTROLLER_NET_CLS] = "/not/really/sys/fs/cgroup/net_cls",
         [VIR_CGROUP_CONTROLLER_PERF_EVENT] = "/not/really/sys/fs/cgroup/perf_event",
     };
     const char *placement[VIR_CGROUP_CONTROLLER_LAST] = {
         [VIR_CGROUP_CONTROLLER_CPUSET] = "/",
-        [VIR_CGROUP_CONTROLLER_DEVICES] = "/",
         [VIR_CGROUP_CONTROLLER_FREEZER] = "/",
         [VIR_CGROUP_CONTROLLER_NET_CLS] = "/",
         [VIR_CGROUP_CONTROLLER_PERF_EVENT] = "/",
@@ -625,6 +624,7 @@ static int testCgroupNewForSelfHybrid(const void *args ATTRIBUTE_UNUSED)
         (1 << VIR_CGROUP_CONTROLLER_CPU) |
         (1 << VIR_CGROUP_CONTROLLER_CPUACCT) |
         (1 << VIR_CGROUP_CONTROLLER_MEMORY) |
+        (1 << VIR_CGROUP_CONTROLLER_DEVICES) |
         (1 << VIR_CGROUP_CONTROLLER_BLKIO);
 
     if (virCgroupNewSelf(&cgroup) < 0) {
