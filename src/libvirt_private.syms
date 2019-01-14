@@ -1616,6 +1616,7 @@ virCgroupV2DevicesAttachProg;
 virCgroupV2DevicesAvailable;
 virCgroupV2DevicesCreateProg;
 virCgroupV2DevicesDetectProg;
+virCgroupV2DevicesPrepareProg;
 
 # util/virclosecallbacks.h
 virCloseCallbacksGet;
