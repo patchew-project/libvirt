@@ -38,4 +38,7 @@ virCgroupV2DevicesCreateProg(virCgroupPtr group);
 int
 virCgroupV2DevicesPrepareProg(virCgroupPtr group);
 
+int
+virCgroupV2DevicesRemoveProg(virCgroupPtr group);
+
 #endif /* LIBVIRT_VIRCGROUPV2DEVICES_H */
