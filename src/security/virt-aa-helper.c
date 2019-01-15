@@ -938,7 +938,7 @@ get_files(vahControl * ctl)
     size_t i;
     char *uuid;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
-    bool needsVfio = false, needsvhost = false;
+    bool needsVfio = false, needsvhost = false, needDefaultRenderNode = false;
 
     /* verify uuid is same as what we were given on the command line */
     virUUIDFormat(ctl->def->uuid, uuidstr);
@@ -1062,6 +1062,10 @@ get_files(vahControl * ctl)
     for (i = 0; i < ctl->def->ngraphics; i++) {
         virDomainGraphicsDefPtr graphics = ctl->def->graphics[i];
         size_t n;
+        const char *rendernode = virDomainGraphicsGetRenderNode(graphics);
+
+        if (rendernode)
+            vah_add_file(&buf, rendernode, "rw");
 
         for (n = 0; n < graphics->nListens; n++) {
             virDomainGraphicsListenDef listenObj = graphics->listens[n];
@@ -1071,6 +1075,20 @@ get_files(vahControl * ctl)
                 vah_add_file(&buf, listenObj.socket, "rw"))
                 goto cleanup;
         }
+
+        if (graphics->data.spice.gl == VIR_TRISTATE_BOOL_YES) {
+            if (!rendernode)
+                needDefaultRenderNode = true;
+        }
+    }
+
+    if (virDomainGraphicsDefHasOpenGL(ctl->def))
+        vah_add_file(&buf, "/dev/dri", "r");
+
+    if (needDefaultRenderNode) {
+        const char *rendernode = virHostGetDRMRenderNode();
+        if (rendernode)
+            vah_add_file(&buf, virHostGetDRMRenderNode(), "rw");
     }
 
     if (ctl->def->ngraphics == 1 &&
