@@ -424,6 +424,16 @@ virQEMUDriverConfigHugeTLBFSInit(virHugeTLBFSPtr hugetlbfs,
 
 
 static int
+virQEMUDriverConfigLoadMemoryEntry(virQEMUDriverConfigPtr cfg,
+                                   virConfPtr conf)
+{
+    if (virConfGetValueString(conf, "memory_backing_dir", &cfg->memoryBackingDir) < 0)
+        return -1;
+
+    return 0;
+}
+
+static int
 virQEMUDriverConfigLoadSWTPMEntry(virQEMUDriverConfigPtr cfg,
                                   virConfPtr conf)
 {
@@ -891,7 +901,7 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
         }
     }
 
-    if (virConfGetValueString(conf, "memory_backing_dir", &cfg->memoryBackingDir) < 0)
+    if (virQEMUDriverConfigLoadMemoryEntry(cfg, conf) < 0)
         goto cleanup;
 
     if (virQEMUDriverConfigLoadSWTPMEntry(cfg, conf) < 0)
