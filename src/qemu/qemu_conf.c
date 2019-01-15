@@ -915,7 +915,7 @@ virQEMUDriverConfigLoadSecurityEntry(virQEMUDriverConfigPtr cfg,
         goto cleanup;
 
     if (controllers) {
-        cfg-> cgroupControllers = 0;
+        cfg->cgroupControllers = 0;
         for (i = 0; controllers[i] != NULL; i++) {
             int ctl;
             if ((ctl = virCgroupControllerTypeFromString(controllers[i])) < 0) {
