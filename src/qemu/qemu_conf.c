@@ -424,6 +424,15 @@ virQEMUDriverConfigHugeTLBFSInit(virHugeTLBFSPtr hugetlbfs,
 
 
 static int
+virQEMUDriverConfigLoadGlusterDebugEntry(virQEMUDriverConfigPtr cfg,
+                                         virConfPtr conf)
+{
+    if (virConfGetValueUInt(conf, "gluster_debug_level", &cfg->glusterDebugLevel) < 0)
+        return -1;
+    return 0;
+}
+
+static int
 virQEMUDriverConfigLoadSecurityEntry(virQEMUDriverConfigPtr cfg,
                                      virConfPtr conf,
                                      bool privileged)
@@ -914,7 +923,8 @@ int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
                 goto cleanup;
         }
     }
-    if (virConfGetValueUInt(conf, "gluster_debug_level", &cfg->glusterDebugLevel) < 0)
+
+    if (virQEMUDriverConfigLoadGlusterDebugEntry(cfg, conf) < 0)
         goto cleanup;
 
     if (virQEMUDriverConfigLoadSecurityEntry(cfg, conf, privileged) < 0)
