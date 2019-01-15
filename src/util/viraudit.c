@@ -66,7 +66,8 @@ int virAuditOpen(unsigned int audit_level ATTRIBUTE_UNUSED)
             if (audit_level < 2)
                 VIR_INFO("Audit is not supported by the kernel");
             else
-                virReportError(VIR_FROM_THIS, "%s", _("Audit is not supported by the kernel"));
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("Audit is not supported by the kernel"));
         } else {
             virReportSystemError(errno, "%s", _("Unable to initialize audit layer"));
         }
