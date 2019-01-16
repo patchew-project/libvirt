@@ -140,6 +140,10 @@
     {.name = "source-mount-opts", \
      .type = VSH_OT_STRING, \
      .help = N_("comma separated list for NFS pool mount options") \
+    }, \
+    {.name = "source-protocol-ver", \
+     .type = VSH_OT_STRING, \
+     .help = N_("nfsvers value for NFS pool mount option") \
     }
 
 virStoragePoolPtr
@@ -323,7 +327,8 @@ virshBuildPoolXML(vshControl *ctl,
                *secretUsage = NULL, *adapterName = NULL, *adapterParent = NULL,
                *adapterWwnn = NULL, *adapterWwpn = NULL, *secretUUID = NULL,
                *adapterParentWwnn = NULL, *adapterParentWwpn = NULL,
-               *adapterParentFabricWwn = NULL, *mountOpts = NULL;
+               *adapterParentFabricWwn = NULL, *mountOpts = NULL,
+               *protoVer = NULL;
     size_t noptsList = 0;
     char **optsList = NULL;
     virBuffer buf = VIR_BUFFER_INITIALIZER;
@@ -352,7 +357,8 @@ virshBuildPoolXML(vshControl *ctl,
         vshCommandOptStringReq(ctl, cmd, "adapter-parent-wwnn", &adapterParentWwnn) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "adapter-parent-wwpn", &adapterParentWwpn) < 0 ||
         vshCommandOptStringReq(ctl, cmd, "adapter-parent-fabric-wwn", &adapterParentFabricWwn) < 0 ||
-        vshCommandOptStringReq(ctl, cmd, "source-mount-opts", &mountOpts) < 0)
+        vshCommandOptStringReq(ctl, cmd, "source-mount-opts", &mountOpts) < 0 ||
+        vshCommandOptStringReq(ctl, cmd, "source-protocol-ver", &protoVer) < 0)
         goto cleanup;
 
     if (mountOpts &&
@@ -405,6 +411,9 @@ virshBuildPoolXML(vshControl *ctl,
             virBufferAsprintf(&buf, "<format type='%s'/>\n", srcFormat);
         if (srcName)
             virBufferAsprintf(&buf, "<name>%s</name>\n", srcName);
+
+        if (protoVer)
+            virBufferAsprintf(&buf, "<protocol ver='%s'/>\n", protoVer);
 
         if (mountOpts) {
             size_t i;
