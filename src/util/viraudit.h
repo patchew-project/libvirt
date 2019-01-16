@@ -31,7 +31,7 @@ typedef enum {
     VIR_AUDIT_RECORD_RESOURCE,
 } virAuditRecordType;
 
-int virAuditOpen(unsigned int audit_level);
+int virAuditOpen(void);
 
 void virAuditLog(bool enabled);
 

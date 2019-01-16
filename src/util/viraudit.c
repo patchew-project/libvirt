@@ -54,23 +54,11 @@ static int auditfd = -1;
 #endif
 static bool auditlog;
 
-int virAuditOpen(unsigned int audit_level ATTRIBUTE_UNUSED)
+int virAuditOpen(void)
 {
 #if WITH_AUDIT
     if ((auditfd = audit_open()) < 0) {
-        /* You get these error codes only when the kernel does not
-         * have audit compiled in or it's disabled (e.g. by the kernel
-         * cmdline) */
-        if (errno == EINVAL || errno == EPROTONOSUPPORT ||
-            errno == EAFNOSUPPORT) {
-            if (audit_level < 2)
-                VIR_INFO("Audit is not supported by the kernel");
-            else
-                virReportError(VIR_FROM_THIS, "%s", _("Audit is not supported by the kernel"));
-        } else {
-            virReportSystemError(errno, "%s", _("Unable to initialize audit layer"));
-        }
-
+        virReportSystemError(errno, "%s", _("Unable to initialize audit layer"));
         return -1;
     }
 
