@@ -193,13 +193,62 @@ virCapsPtr
 virStorageBackendGetCapabilities(void)
 {
     virCapsPtr caps;
+    virBuffer poolbuf = VIR_BUFFER_INITIALIZER;
+    virBuffer volbuf = VIR_BUFFER_INITIALIZER;
     size_t i;
 
     if (!(caps = virCapabilitiesNew(virArchFromHost(), false, false)))
         return NULL;
 
-    for (i = 0; i < virStorageBackendsCount; i++)
-        virCapabilitiesAddStoragePool(caps, virStorageBackends[i]->type);
+#define BUF_POOL_BACKEND(field) \
+    if (backend->field) \
+        virBufferAsprintf(&poolbuf, "%s,", #field);
+
+#define BUF_VOL_BACKEND(field) \
+    if (backend->field) \
+        virBufferAsprintf(&volbuf, "%s,", #field);
+
+    for (i = 0; i < virStorageBackendsCount; i++) {
+        char *poolstr = NULL;
+        char *volstr = NULL;
+        virStorageBackendPtr backend = virStorageBackends[i];
+
+        /* NB: checkPool is an internal only mechanism each pool has */
+        BUF_POOL_BACKEND(findPoolSources);
+        BUF_POOL_BACKEND(startPool);
+        BUF_POOL_BACKEND(buildPool);
+        BUF_POOL_BACKEND(refreshPool);
+        BUF_POOL_BACKEND(stopPool);
+        BUF_POOL_BACKEND(deletePool);
+        virBufferTrim(&poolbuf, ",", -1);
+
+        BUF_VOL_BACKEND(buildVol);
+        BUF_VOL_BACKEND(buildVolFrom);
+        BUF_VOL_BACKEND(createVol);
+        BUF_VOL_BACKEND(refreshVol);
+        BUF_VOL_BACKEND(deleteVol);
+        BUF_VOL_BACKEND(resizeVol);
+        BUF_VOL_BACKEND(uploadVol);
+        BUF_VOL_BACKEND(downloadVol);
+        BUF_VOL_BACKEND(wipeVol);
+        virBufferTrim(&volbuf, ",", -1);
+
+        if (virBufferCheckError(&poolbuf) < 0 ||
+            virBufferCheckError(&volbuf) < 0)
+            goto error;
+
+        poolstr = virBufferContentAndReset(&poolbuf);
+        volstr = virBufferContentAndReset(&volbuf);
+        virCapabilitiesAddStoragePool(caps, backend->type, poolstr, volstr);
+        VIR_FREE(poolstr);
+        VIR_FREE(volstr);
+    }
 
     return caps;
+
+ error:
+    virBufferFreeAndReset(&poolbuf);
+    virBufferFreeAndReset(&volbuf);
+    virObjectUnref(caps);
+    return NULL;
 }

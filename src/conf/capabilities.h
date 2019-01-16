@@ -215,6 +215,8 @@ typedef struct _virCapsStoragePool virCapsStoragePool;
 typedef virCapsStoragePool *virCapsStoragePoolPtr;
 struct _virCapsStoragePool {
     int type;
+    char *poolapis;
+    char *volapis;
 };
 
 
@@ -331,7 +333,9 @@ virCapabilitiesAddGuestFeature(virCapsGuestPtr guest,
 
 int
 virCapabilitiesAddStoragePool(virCapsPtr caps,
-                              int poolType);
+                              int poolType,
+                              const char *poolstr,
+                              const char *volstr);
 
 int
 virCapabilitiesHostSecModelAddBaseLabel(virCapsHostSecModelPtr secmodel,

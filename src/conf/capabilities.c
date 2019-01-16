@@ -188,6 +188,8 @@ virCapabilitiesFreeStoragePool(virCapsStoragePoolPtr pool)
     if (!pool)
         return;
 
+    VIR_FREE(pool->poolapis);
+    VIR_FREE(pool->volapis);
     VIR_FREE(pool);
 }
 
@@ -811,7 +813,9 @@ virCapabilitiesDomainDataLookup(virCapsPtr caps,
 
 int
 virCapabilitiesAddStoragePool(virCapsPtr caps,
-                              int poolType)
+                              int poolType,
+                              const char *poolstr,
+                              const char *volstr)
 {
     virCapsStoragePoolPtr pool;
 
@@ -823,7 +827,10 @@ virCapabilitiesAddStoragePool(virCapsPtr caps,
     if (VIR_RESIZE_N(caps->pools, caps->npools_max, caps->npools, 1) < 0)
         goto error;
     caps->pools[caps->npools++] = pool;
-
+    if (VIR_STRDUP(pool->poolapis, poolstr) < 0)
+        goto error;
+    if (VIR_STRDUP(pool->volapis, volstr) < 0)
+        goto error;
     return 0;
 
  error:
@@ -1322,15 +1329,53 @@ virCapabilitiesFormatStoragePoolXML(virCapsStoragePoolPtr *pools,
                                     virBufferPtr buf)
 {
     size_t i;
+    char **poolapis = NULL;
+    size_t npoolapis = 0;
+    char **volapis = NULL;
+    size_t nvolapis = 0;
 
     for (i = 0; i < npools; i++) {
+        size_t j;
+
+        if (!(poolapis = virStringSplitCount(pools[i]->poolapis, ",",
+                                             0, &npoolapis)) ||
+            !(volapis = virStringSplitCount(pools[i]->volapis, ",",
+                                            0, &nvolapis)))
+            goto cleanup;
+
         virBufferAddLit(buf, "<pool>\n");
         virBufferAdjustIndent(buf, 2);
         virBufferAsprintf(buf, "<type>%s</pool>\n",
                           virStoragePoolTypeToString(pools[i]->type));
+
+        virBufferAddLit(buf, "<poolapis>\n");
+        virBufferAdjustIndent(buf, 2);
+        for (j = 0; j < npoolapis; j++)
+            virBufferAsprintf(buf, "<%s/>\n", poolapis[j]);
+        virBufferAdjustIndent(buf, -2);
+        virBufferAddLit(buf, "</poolapis>\n");
+
+        virBufferAddLit(buf, "<volapis>\n");
+        virBufferAdjustIndent(buf, 2);
+        for (j = 0; j < nvolapis; j++)
+            virBufferAsprintf(buf, "<%s/>\n", volapis[j]);
+        virBufferAdjustIndent(buf, -2);
+        virBufferAddLit(buf, "</volapis>\n");
+
         virBufferAdjustIndent(buf, -2);
         virBufferAddLit(buf, "</pool>\n\n");
+
+        virStringListFree(poolapis);
+        poolapis = NULL;
+        npoolapis = 0;
+        virStringListFree(volapis);
+        volapis = NULL;
+        nvolapis = 0;
     }
+
+ cleanup:
+    virStringListFree(poolapis);
+    virStringListFree(volapis);
 }
 
 
