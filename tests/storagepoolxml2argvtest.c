@@ -159,6 +159,7 @@ mymain(void)
     DO_TEST("pool-netfs-auto");
     DO_TEST("pool-netfs-gluster");
     DO_TEST("pool-netfs-cifs");
+    DO_TEST("pool-netfs-mountopts");
     DO_TEST_FAIL("pool-scsi");
     DO_TEST_FAIL("pool-scsi-type-scsi-host");
     DO_TEST_FAIL("pool-scsi-type-fc-host");
