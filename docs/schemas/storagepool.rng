@@ -532,6 +532,9 @@
             <ref name='sourceinfodir'/>
             <ref name='sourcefmtnetfs'/>
             <optional>
+              <ref name='sourcemountopts'/>
+            </optional>
+            <optional>
               <ref name='sourceinfovendor'/>
             </optional>
           </interleave>
@@ -573,6 +576,23 @@
           <ref name='sourceinfovendor'/>
         </optional>
       </interleave>
+    </element>
+  </define>
+
+  <define name='sourcemountopts'>
+    <element name='mount_opts'>
+      <zeroOrMore>
+        <element name='option'>
+          <attribute name='name'>
+            <choice>
+              <value>noexec</value>
+              <value>nosuid</value>
+              <value>nodev</value>
+              <value>ro</value>
+            </choice>
+          </attribute>
+        </element>
+      </zeroOrMore>
     </element>
   </define>
 

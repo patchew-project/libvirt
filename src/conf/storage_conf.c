@@ -70,6 +70,10 @@ VIR_ENUM_IMPL(virStoragePoolFormatFileSystemNet,
               VIR_STORAGE_POOL_NETFS_LAST,
               "auto", "nfs", "glusterfs", "cifs")
 
+VIR_ENUM_IMPL(virStoragePoolSourceMountOpts,
+              VIR_STORAGE_POOL_SOURCE_MOUNT_OPTS_LAST,
+              "noexec", "nosuid", "nodev", "ro")
+
 VIR_ENUM_IMPL(virStoragePoolFormatDisk,
               VIR_STORAGE_POOL_DISK_LAST,
               "unknown", "dos", "dvh", "gpt",
@@ -378,6 +382,10 @@ virStoragePoolSourceClear(virStoragePoolSourcePtr source)
     virStorageAuthDefFree(source->auth);
     VIR_FREE(source->vendor);
     VIR_FREE(source->product);
+    for (i = 0; i < source->nmountOpts; i++)
+        VIR_FREE(source->mountOpts[i]);
+    VIR_FREE(source->mountOpts);
+    source->nmountOpts = 0;
 }
 
 
@@ -544,6 +552,33 @@ virStoragePoolDefParseSource(xmlXPathContextPtr ctxt,
 
         source->auth = authdef;
         authdef = NULL;
+    }
+
+    /* Optional, but defined mount ops */
+    VIR_FREE(nodeset);
+    n = virXPathNodeSet("./mount_opts/option", ctxt, &nodeset);
+    if (n < 0)
+        goto cleanup;
+
+    if (n > 0) {
+        if (VIR_ALLOC_N(source->mountOpts, n) < 0)
+            goto cleanup;
+        for (i = 0; i < n; i++) {
+            if (!(source->mountOpts[i] = virXMLPropString(nodeset[i],
+                                                          "name"))) {
+                virReportError(VIR_ERR_XML_ERROR, "%s",
+                               _("no mount option name specified"));
+                goto cleanup;
+            }
+            source->nmountOpts++;
+            /* Do we recognize the string? */
+            if (virStoragePoolSourceMountOptsTypeFromString(source->mountOpts[i]) < 0) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("unknown mount option name '%s' specified"),
+                               source->mountOpts[i]);
+                goto cleanup;
+            }
+        }
     }
 
     source->vendor = virXPathString("string(./vendor/@name)", ctxt);
@@ -961,6 +996,18 @@ virStoragePoolSourceFormat(virBufferPtr buf,
 
     if (src->auth)
         virStorageAuthDefFormat(buf, src->auth);
+
+    if (src->mountOpts) {
+        virBufferAddLit(buf, "<mount_opts>\n");
+        virBufferAdjustIndent(buf, 2);
+
+        for (i = 0; i < src->nmountOpts; i++)
+            virBufferEscapeString(buf, "<option name='%s'/>\n",
+                                  src->mountOpts[i]);
+
+        virBufferAdjustIndent(buf, -2);
+        virBufferAddLit(buf, "</mount_opts>\n");
+    }
 
     virBufferEscapeString(buf, "<vendor name='%s'/>\n", src->vendor);
     virBufferEscapeString(buf, "<product name='%s'/>\n", src->product);

@@ -193,6 +193,10 @@ struct _virStoragePoolSource {
     /* Product name of the source*/
     char *product;
 
+    /* Defined mount options to be added to mount command line */
+    char **mountOpts;
+    size_t nmountOpts;
+
     /* Pool type specific format such as filesystem type,
      * or lvm version, etc.
      */
@@ -331,6 +335,15 @@ typedef enum {
     VIR_STORAGE_POOL_NETFS_LAST,
 } virStoragePoolFormatFileSystemNet;
 VIR_ENUM_DECL(virStoragePoolFormatFileSystemNet)
+
+typedef enum {
+    VIR_STORAGE_POOL_SOURCE_MOUNT_OPTS_NOEXEC = 0,
+    VIR_STORAGE_POOL_SOURCE_MOUNT_OPTS_NOSUID,
+    VIR_STORAGE_POOL_SOURCE_MOUNT_OPTS_NODEV,
+    VIR_STORAGE_POOL_SOURCE_MOUNT_OPTS_RO,
+    VIR_STORAGE_POOL_SOURCE_MOUNT_OPTS_LAST,
+} virStoragePoolSourceMountOpts;
+VIR_ENUM_DECL(virStoragePoolSourceMountOpts)
 
 typedef enum {
     VIR_STORAGE_POOL_DISK_UNKNOWN = 0,

@@ -121,6 +121,19 @@
 &lt;/source&gt;
 ...</pre>
 
+    <pre>
+...
+  &lt;source&gt;
+    &lt;host name='localhost'/&gt;
+    &lt;dir path='/var/lib/libvirt/images'/&gt;
+    &lt;format type='nfs'/&gt;
+    &lt;mount_opts&gt;
+      &lt;option name='nodev'/&gt;
+      &lt;option name='nosuid'/&gt;
+    &lt;/mount_opts&gt;
+  &lt;/source&gt;
+...</pre>
+
     <dl>
       <dt><code>device</code></dt>
       <dd>Provides the source for pools backed by physical devices
@@ -386,6 +399,14 @@
         LVM metadata type. All drivers are required to have a default
         value for this, so it is optional. <span class="since">Since 0.4.1</span></dd>
 
+      <dt><code>mount_opts</code></dt>
+      <dd>Provide an optional set of mount options for the <code>netfs</code>
+        pool startup or creation to be provided via the "-o" option.
+        The desired options are specified by using the subelement
+        <code>option</code> with the attribute <code>name</code> to
+        provide the option. Supported option names are "noexec", "nosuid",
+        "nodev", and "ro".
+        <span class="since">Since 5.1.0</span></dd>
       <dt><code>vendor</code></dt>
       <dd>Provides optional information about the vendor of the
         storage device. This contains a single
