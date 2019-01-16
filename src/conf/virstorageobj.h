@@ -24,6 +24,8 @@
 
 # include "storage_conf.h"
 
+# include "capabilities.h"
+
 typedef struct _virStoragePoolObj virStoragePoolObj;
 typedef virStoragePoolObj *virStoragePoolObjPtr;
 
@@ -45,6 +47,8 @@ struct _virStorageDriverState {
 
     /* Immutable pointer, self-locking APIs */
     virObjectEventStatePtr storageEventState;
+
+    virCapsPtr caps;
 };
 
 typedef bool

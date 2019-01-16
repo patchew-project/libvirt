@@ -300,6 +300,9 @@ storageStateInitialize(bool privileged,
 
     driver->storageEventState = virObjectEventStateNew();
 
+    if (!(driver->caps = virStorageBackendGetCapabilities()))
+        goto error;
+
     storageDriverUnlock();
 
     ret = 0;
@@ -368,6 +371,7 @@ storageStateCleanup(void)
 
     storageDriverLock();
 
+    virObjectUnref(driver->caps);
     virObjectUnref(driver->storageEventState);
 
     /* free inactive pools */
@@ -576,6 +580,18 @@ storageConnectListStoragePools(virConnectPtr conn,
                                      virConnectListStoragePoolsCheckACL,
                                      names, maxnames);
 }
+
+
+static char *
+storageConnectGetCapabilities(virConnectPtr conn)
+{
+
+    if (virConnectGetCapabilitiesEnsureACL(conn) < 0)
+        return NULL;
+
+    return virCapabilitiesFormatXML(driver->caps);
+}
+
 
 static int
 storageConnectNumOfDefinedStoragePools(virConnectPtr conn)
@@ -2850,6 +2866,7 @@ static virHypervisorDriver storageHypervisorDriver = {
     .connectIsEncrypted = storageConnectIsEncrypted, /* 4.1.0 */
     .connectIsSecure = storageConnectIsSecure, /* 4.1.0 */
     .connectIsAlive = storageConnectIsAlive, /* 4.1.0 */
+    .connectGetCapabilities = storageConnectGetCapabilities, /* 5.1.0 */
 };
 
 static virConnectDriver storageConnectDriver = {
