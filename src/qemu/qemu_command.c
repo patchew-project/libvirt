@@ -3198,6 +3198,9 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
          * one. Likewise, we don't do anything for the primary IDE
          * controller on an i440fx machine or primary SATA on q35, but
          * we do add those beyond these two exceptions.
+         *
+         * CCID controllers are formated separately after USB hubs,
+         * because they go on the USB bus.
          */
         VIR_DOMAIN_CONTROLLER_TYPE_PCI,
         VIR_DOMAIN_CONTROLLER_TYPE_USB,
@@ -3205,7 +3208,6 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
         VIR_DOMAIN_CONTROLLER_TYPE_IDE,
         VIR_DOMAIN_CONTROLLER_TYPE_SATA,
         VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL,
-        VIR_DOMAIN_CONTROLLER_TYPE_CCID,
     };
     int ret = -1;
 
@@ -10610,6 +10612,10 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
         goto error;
 
     if (qemuBuildHubCommandLine(cmd, def, qemuCaps) < 0)
+        goto error;
+
+    if (qemuBuildControllersByTypeCommandLine(cmd, def, qemuCaps,
+                                              VIR_DOMAIN_CONTROLLER_TYPE_CCID) < 0)
         goto error;
 
     if (qemuBuildDisksCommandLine(cmd, def, qemuCaps) < 0)
