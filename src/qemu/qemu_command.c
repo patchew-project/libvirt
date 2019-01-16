@@ -3027,6 +3027,19 @@ qemuBuildLegacyUSBControllerCommandLine(virCommandPtr cmd,
                                         const virDomainDef *def,
                                         int usbcontroller)
 {
+    size_t i;
+
+    for (i = 0; i < def->ncontrollers; i++) {
+        virDomainControllerDefPtr cont = def->controllers[i];
+
+        if (cont->type != VIR_DOMAIN_CONTROLLER_TYPE_USB)
+            continue;
+
+        /* If we have mode='none', there are no other USB controllers */
+        if (cont->model == VIR_DOMAIN_CONTROLLER_MODEL_USB_NONE)
+            return 0;
+    }
+
     if (usbcontroller == 0 &&
         !qemuDomainIsQ35(def) &&
         !qemuDomainIsARMVirt(def) &&
@@ -3128,7 +3141,6 @@ qemuBuildControllerDevCommandLine(virCommandPtr cmd,
             /* skip USB controllers with type none.*/
             if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_USB &&
                 cont->model == VIR_DOMAIN_CONTROLLER_MODEL_USB_NONE) {
-                usbcontroller = -1; /* mark we don't want a controller */
                 continue;
             }
 
