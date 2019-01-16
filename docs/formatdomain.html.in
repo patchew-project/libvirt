@@ -8323,19 +8323,6 @@ qemu-kvm -net nic,model=? /dev/null
     &lt;source&gt;
       &lt;path&gt;/tmp/nvdimm&lt;/path&gt;
       &lt;alignsize unit='KiB'&gt;2048&lt;/alignsize&gt;
-    &lt;/source&gt;
-    &lt;target&gt;
-      &lt;size unit='KiB'&gt;524288&lt;/size&gt;
-      &lt;node&gt;1&lt;/node&gt;
-      &lt;label&gt;
-        &lt;size unit='KiB'&gt;128&lt;/size&gt;
-      &lt;/label&gt;
-      &lt;readonly/&gt;
-    &lt;/target&gt;
-  &lt;/memory&gt;
-  &lt;memory model='nvdimm'&gt;
-    &lt;source&gt;
-      &lt;path&gt;/dev/dax0.0&lt;/path&gt;
       &lt;pmem/&gt;
     &lt;/source&gt;
     &lt;target&gt;
@@ -8344,6 +8331,7 @@ qemu-kvm -net nic,model=? /dev/null
       &lt;label&gt;
         &lt;size unit='KiB'&gt;128&lt;/size&gt;
       &lt;/label&gt;
+      &lt;readonly/&gt;
     &lt;/target&gt;
   &lt;/memory&gt;
 &lt;/devices&gt;
