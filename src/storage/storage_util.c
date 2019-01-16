@@ -4337,10 +4337,14 @@ virStorageBackendFileSystemMountCmd(const char *cmdstr,
     else
         virStorageBackendFileSystemMountDefaultArgs(cmd, src, def);
 
-    if (def->type == VIR_STORAGE_POOL_NETFS && def->source.mountOpts) {
+    if (def->type == VIR_STORAGE_POOL_NETFS &&
+        (def->source.mountOpts || (def->source.protocolVer > 0))) {
         size_t i;
         virBuffer buf = VIR_BUFFER_INITIALIZER;
         VIR_AUTOFREE(char *) mountOpts = NULL;
+
+        if (def->source.protocolVer > 0)
+            virBufferAsprintf(&buf, "nfsvers=%u,", def->source.protocolVer);
 
         for (i = 0; i < def->source.nmountOpts; i++)
             virBufferAsprintf(&buf, "%s,", def->source.mountOpts[i]);
