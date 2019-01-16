@@ -1,0 +1,29 @@
+<pool type='netfs' xmlns:netfs='http://libvirt.org/schemas/storagepool/source/netfs/1.0'>
+  <name>nfsimages</name>
+  <uuid>7641d5a8-af11-f730-a34e-0a7dfcede71f</uuid>
+  <capacity>0</capacity>
+  <allocation>0</allocation>
+  <available>0</available>
+  <source>
+    <host name='localhost'/>
+    <dir path='/var/lib/libvirt/images'/>
+    <format type='nfs'/>
+    <protocol ver='3'/>
+    <mount_opts>
+      <option name='nodev'/>
+      <option name='nosuid'/>
+    </mount_opts>
+  </source>
+  <target>
+    <path>/mnt</path>
+    <permissions>
+      <mode>0700</mode>
+      <owner>0</owner>
+      <group>0</group>
+    </permissions>
+  </target>
+  <netfs:mount_opts>
+    <netfs:option name='sync'/>
+    <netfs:option name='lazytime'/>
+  </netfs:mount_opts>
+</pool>
