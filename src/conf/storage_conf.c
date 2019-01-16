@@ -428,6 +428,7 @@ virStoragePoolDefParseSource(xmlXPathContextPtr ctxt,
     virStorageAuthDefPtr authdef = NULL;
     char *name = NULL;
     char *port = NULL;
+    char *ver = NULL;
     int n;
 
     relnode = ctxt->node;
@@ -552,6 +553,24 @@ virStoragePoolDefParseSource(xmlXPathContextPtr ctxt,
 
         source->auth = authdef;
         authdef = NULL;
+    }
+
+    /* Option protocol version string (NFSvN) */
+    if ((ver = virXPathString("string(./protocol/@ver)", ctxt))) {
+        if ((source->format != VIR_STORAGE_POOL_NETFS_NFS) &&
+            (source->format != VIR_STORAGE_POOL_NETFS_AUTO)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("storage pool protocol ver unsupported for "
+                             "pool type '%s'"),
+                           virStoragePoolFormatFileSystemNetTypeToString(source->format));
+            goto cleanup;
+        }
+        if (virStrToLong_uip(ver, NULL, 0, &source->protocolVer) < 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("storage pool protocol ver '%s' is malformaed"),
+                           ver);
+            goto cleanup;
+        }
     }
 
     /* Optional, but defined mount ops */
@@ -996,6 +1015,9 @@ virStoragePoolSourceFormat(virBufferPtr buf,
 
     if (src->auth)
         virStorageAuthDefFormat(buf, src->auth);
+
+    if (src->protocolVer)
+        virBufferAsprintf(buf, "<protocol ver='%u'/>\n", src->protocolVer);
 
     if (src->mountOpts) {
         virBufferAddLit(buf, "<mount_opts>\n");

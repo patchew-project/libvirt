@@ -201,6 +201,9 @@ struct _virStoragePoolSource {
      * or lvm version, etc.
      */
     int format;
+
+    /* Protocol version value for netfs */
+    unsigned int protocolVer;
 };
 
 typedef struct _virStoragePoolTarget virStoragePoolTarget;
