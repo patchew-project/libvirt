@@ -4293,7 +4293,15 @@ virStorageBackendFileSystemMountNFSAddOptions(virCommandPtr cmd,
         virBufferAsprintf(&buf, "nfsvers=%u,", def->source.protocolVer);
 
     if (*default_nfs_mount_opts != '\0')
-        virBufferAddLit(&buf, default_nfs_mount_opts);
+        virBufferAsprintf(&buf, "%s,", default_nfs_mount_opts);
+
+    if (def->namespaceData) {
+        size_t i;
+        virStoragePoolNetFSMountOptionsDefPtr opts = def->namespaceData;
+
+        for (i = 0; i < opts->noptions; i++)
+            virBufferAsprintf(&buf, "%s,", opts->options[i]);
+    }
 
     virBufferTrim(&buf, ",", -1);
     mountOpts = virBufferContentAndReset(&buf);

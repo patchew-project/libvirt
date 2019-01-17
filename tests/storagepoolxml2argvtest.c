@@ -162,6 +162,9 @@ mymain(void)
 #define DO_TEST_FREEBSD(pool, ...) \
     DO_TEST_FULL(false, pool, false, true)
 
+    if (storageRegisterAll() < 0)
+       return EXIT_FAILURE;
+
     DO_TEST_FAIL("pool-dir");
     DO_TEST_FAIL("pool-dir-naming");
     DO_TEST("pool-fs");
@@ -177,14 +180,17 @@ mymain(void)
     DO_TEST_LINUX("pool-netfs");
     DO_TEST_LINUX("pool-netfs-auto");
     DO_TEST_LINUX("pool-netfs-protocol-ver");
+    DO_TEST_LINUX("pool-netfs-ns-mountopts");
 #elif defined(__FreeBSD__)
     DO_TEST_FREEBSD("pool-netfs");
     DO_TEST_FREEBSD("pool-netfs-auto");
     DO_TEST_FREEBSD("pool-netfs-protocol-ver");
+    DO_TEST_FREEBSD("pool-netfs-ns-mountopts");
 #else
     DO_TEST("pool-netfs");
     DO_TEST("pool-netfs-auto");
     DO_TEST("pool-netfs-protocol-ver");
+    DO_TEST("pool-netfs-ns-mountopts");
 #endif
     DO_TEST("pool-netfs-gluster");
     DO_TEST("pool-netfs-cifs");
