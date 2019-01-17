@@ -41,6 +41,7 @@ VIR_LOG_INIT("storage.storage_backend_fs");
 
 #if WITH_STORAGE_FS
 
+# include <libxml/xpathInternals.h>
 # include <mntent.h>
 
 struct _virNetfsDiscoverState {
@@ -559,6 +560,122 @@ virStorageBackendFileSystemBuild(virStoragePoolObjPtr pool,
 }
 
 
+#if WITH_STORAGE_FS
+
+# define STORAGE_POOL_NETFS_NAMESPACE_HREF "http://libvirt.org/schemas/storagepool/source/netfs/1.0"
+
+/* NetFS backend XML Namespace handling for nfs specific mount options to
+ * be added to the mount -o {options_list} command line. The XML will use
+ * the format, such as:
+ *
+ *     <netfs:mount_opts>
+ *       <netfs:option name='nodev'/>
+ *       <netfs:option name='nosuid'/>
+ *     </netfs:mount_opts>
+ *
+ * and the <pool type='netfs'> is required to have a "xmlns:netfs='%s'"
+ * attribute using the STORAGE_POOL_NETFS_NAMESPACE_HREF
+ */
+
+static void
+virStoragePoolDefNetFSNamespaceFree(void *nsdata)
+{
+    virStoragePoolNetFSMountOptionsDefPtr cmdopts = nsdata;
+    size_t i;
+
+    if (!cmdopts)
+        return;
+
+    for (i = 0; i < cmdopts->noptions; i++)
+        VIR_FREE(cmdopts->options[i]);
+    VIR_FREE(cmdopts->options);
+
+    VIR_FREE(cmdopts);
+}
+
+
+static int
+virStoragePoolDefNetFSNamespaceParse(xmlXPathContextPtr ctxt,
+                                     void **data)
+{
+    virStoragePoolNetFSMountOptionsDefPtr cmdopts = NULL;
+    xmlNodePtr *nodes = NULL;
+    int nnodes;
+    size_t i;
+    int ret = -1;
+
+    if (xmlXPathRegisterNs(ctxt, BAD_CAST "netfs",
+                           BAD_CAST STORAGE_POOL_NETFS_NAMESPACE_HREF) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Failed to register xml namespace '%s'"),
+                       STORAGE_POOL_NETFS_NAMESPACE_HREF);
+        return -1;
+    }
+
+    nnodes = virXPathNodeSet("./netfs:mount_opts/netfs:option", ctxt, &nodes);
+    if (nnodes < 0)
+        return -1;
+
+    if (nnodes == 0)
+        return 0;
+
+    if (VIR_ALLOC(cmdopts) < 0 ||
+        VIR_ALLOC_N(cmdopts->options, nnodes) < 0)
+        goto cleanup;
+
+    for (i = 0; i < nnodes; i++) {
+        if (!(cmdopts->options[cmdopts->noptions] =
+              virXMLPropString(nodes[i], "name"))) {
+            virReportError(VIR_ERR_XML_ERROR, "%s",
+                           _("no netfs mount option name specified"));
+            goto cleanup;
+        }
+        cmdopts->noptions++;
+    }
+
+    VIR_STEAL_PTR(*data, cmdopts);
+    ret = 0;
+
+ cleanup:
+    VIR_FREE(nodes);
+    virStoragePoolDefNetFSNamespaceFree(cmdopts);
+    return ret;
+}
+
+
+static int
+virStoragePoolDefNetFSNamespaceFormatXML(virBufferPtr buf,
+                                         void *nsdata)
+{
+    size_t i;
+    virStoragePoolNetFSMountOptionsDefPtr def = nsdata;
+
+    if (!def)
+        return 0;
+
+    virBufferAddLit(buf, "<netfs:mount_opts>\n");
+    virBufferAdjustIndent(buf, 2);
+
+    for (i = 0; i < def->noptions; i++)
+        virBufferEscapeString(buf, "<netfs:option name='%s'/>\n",
+                              def->options[i]);
+
+    virBufferAdjustIndent(buf, -2);
+    virBufferAddLit(buf, "</netfs:mount_opts>\n");
+
+    return 0;
+}
+
+
+static const char *
+virStoragePoolDefNetFSNamespaceHref(void)
+{
+    return "xmlns:netfs='" STORAGE_POOL_NETFS_NAMESPACE_HREF "'";
+}
+
+#endif /* WITH_STORAGE_FS */
+
+
 virStorageBackend virStorageBackendDirectory = {
     .type = VIR_STORAGE_POOL_DIR,
 
@@ -617,6 +734,13 @@ virStorageBackend virStorageBackendNetFileSystem = {
     .downloadVol = virStorageBackendVolDownloadLocal,
     .wipeVol = virStorageBackendVolWipeLocal,
 };
+
+static virStoragePoolXMLNamespace virStoragePoolNetFSXMLNamespace = {
+    .parse = virStoragePoolDefNetFSNamespaceParse,
+    .free = virStoragePoolDefNetFSNamespaceFree,
+    .format = virStoragePoolDefNetFSNamespaceFormatXML,
+    .href = virStoragePoolDefNetFSNamespaceHref,
+};
 #endif /* WITH_STORAGE_FS */
 
 
@@ -631,6 +755,10 @@ virStorageBackendFsRegister(void)
         return -1;
 
     if (virStorageBackendRegister(&virStorageBackendNetFileSystem) < 0)
+        return -1;
+
+    if (virStorageBackendNamespaceInit(VIR_STORAGE_POOL_NETFS,
+                                       &virStoragePoolNetFSXMLNamespace) < 0)
         return -1;
 #endif /* WITH_STORAGE_FS */
 
