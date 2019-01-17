@@ -4267,10 +4267,22 @@ virStorageBackendFileSystemGetPoolSource(virStoragePoolObjPtr pool)
 
 
 static void
-virStorageBackendFileSystemMountNFSAddOptions(virCommandPtr cmd)
+virStorageBackendFileSystemMountNFSAddOptions(virCommandPtr cmd,
+                                              virStoragePoolDefPtr def)
 {
+    VIR_AUTOFREE(char *) mountOpts = NULL;
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    if (def->source.protocolVer > 0)
+        virBufferAsprintf(&buf, "nfsvers=%u,", def->source.protocolVer);
+
     if (*default_nfs_mount_opts != '\0')
-        virCommandAddArgList(cmd, "-o", default_nfs_mount_opts, NULL);
+        virBufferAddLit(&buf, default_nfs_mount_opts);
+
+    virBufferTrim(&buf, ",", -1);
+    mountOpts = virBufferContentAndReset(&buf);
+    if (mountOpts)
+        virCommandAddArgList(cmd, "-o", mountOpts, NULL);
 }
 
 
@@ -4280,7 +4292,7 @@ virStorageBackendFileSystemMountNFSArgs(virCommandPtr cmd,
                                         virStoragePoolDefPtr def)
 {
     virCommandAddArgList(cmd, src, def->target.path, NULL);
-    virStorageBackendFileSystemMountNFSAddOptions(cmd);
+    virStorageBackendFileSystemMountNFSAddOptions(cmd, def);
 }
 
 
@@ -4323,7 +4335,7 @@ virStorageBackendFileSystemMountDefaultArgs(virCommandPtr cmd,
         fmt = virStoragePoolFormatFileSystemNetTypeToString(def->source.format);
     virCommandAddArgList(cmd, "-t", fmt, src, def->target.path, NULL);
     if (def->type == VIR_STORAGE_POOL_NETFS)
-        virStorageBackendFileSystemMountNFSAddOptions(cmd);
+        virStorageBackendFileSystemMountNFSAddOptions(cmd, def);
 }
 
 
