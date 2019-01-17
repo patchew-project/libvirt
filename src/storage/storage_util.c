@@ -34,6 +34,11 @@
 # ifndef FS_NOCOW_FL
 #  define FS_NOCOW_FL                     0x00800000 /* Do not cow file */
 # endif
+# define default_nfs_mount_opts "nodev,nosuid,noexec"
+#elif defined(__FreeBSD__)
+# define default_nfs_mount_opts "nosuid,noexec"
+#else
+# define default_nfs_mount_opts ""
 #endif
 
 #if WITH_BLKID
@@ -4262,11 +4267,20 @@ virStorageBackendFileSystemGetPoolSource(virStoragePoolObjPtr pool)
 
 
 static void
+virStorageBackendFileSystemMountNFSAddOptions(virCommandPtr cmd)
+{
+    if (*default_nfs_mount_opts != '\0')
+        virCommandAddArgList(cmd, "-o", default_nfs_mount_opts, NULL);
+}
+
+
+static void
 virStorageBackendFileSystemMountNFSArgs(virCommandPtr cmd,
                                         const char *src,
                                         virStoragePoolDefPtr def)
 {
     virCommandAddArgList(cmd, src, def->target.path, NULL);
+    virStorageBackendFileSystemMountNFSAddOptions(cmd);
 }
 
 
@@ -4308,6 +4322,8 @@ virStorageBackendFileSystemMountDefaultArgs(virCommandPtr cmd,
     else
         fmt = virStoragePoolFormatFileSystemNetTypeToString(def->source.format);
     virCommandAddArgList(cmd, "-t", fmt, src, def->target.path, NULL);
+    if (def->type == VIR_STORAGE_POOL_NETFS)
+        virStorageBackendFileSystemMountNFSAddOptions(cmd);
 }
 
 
