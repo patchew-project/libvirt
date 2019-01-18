@@ -876,6 +876,36 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
 
 
 /**
+ * qemuDomainFindDiskByAddress:
+ *
+ * Returns an existing disk in the VM definition that matches a given
+ * bus/controller/unit/target set, NULL in no match was found. */
+static virDomainDiskDefPtr
+qemuDomainFindDiskByAddress(virDomainDefPtr def,
+                            virDomainDeviceInfo info)
+{
+    virDomainDeviceInfo vm_info;
+    int idx;
+
+    for (idx = 0; idx < def->ndisks; idx++) {
+        vm_info = def->disks[idx]->info;
+        if ((vm_info.addr.drive.bus == info.addr.drive.bus) &&
+            (vm_info.addr.drive.controller == info.addr.drive.controller) &&
+            (vm_info.addr.drive.unit == info.addr.drive.unit)) {
+                /* Address does not have target to compare. We have
+                 * a match. */
+                if (!info.addr.drive.target)
+                    return def->disks[idx];
+                else if (vm_info.addr.drive.target &&
+                         vm_info.addr.drive.target == info.addr.drive.target)
+                    return def->disks[idx];
+        }
+    }
+    return NULL;
+}
+
+
+/**
  * qemuDomainAttachDiskGeneric:
  *
  * Attaches disk to a VM. This function aggregates common code for all bus types.
@@ -888,11 +918,20 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     int ret = -1;
     qemuDomainObjPrivatePtr priv = vm->privateData;
     qemuHotplugDiskSourceDataPtr diskdata = NULL;
+    virDomainDiskDefPtr vm_disk = NULL;
     char *devstr = NULL;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
 
     if (qemuHotplugPrepareDiskAccess(driver, vm, disk, NULL, false) < 0)
         goto cleanup;
+
+    if ((disk->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_DRIVE) &&
+        (vm_disk = qemuDomainFindDiskByAddress(vm->def, disk->info))) {
+        virReportError(VIR_ERR_OPERATION_FAILED,
+                       _("attached disk address conflicts with existing "
+                         "disk '%s'"), vm_disk->info.alias);
+        goto error;
+    }
 
     if (qemuAssignDeviceDiskAlias(vm->def, disk, priv->qemuCaps) < 0)
         goto error;
