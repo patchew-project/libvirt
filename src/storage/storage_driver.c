@@ -1850,6 +1850,16 @@ storageVolCreateXML(virStoragePoolPtr pool,
         goto cleanup;
     }
 
+    /* Inherit perms and mode from pool when they are not defined. */
+    if (voldef->target.perms->uid == (uid_t)-1)
+        voldef->target.perms->uid = def->target.perms.uid;
+
+    if (voldef->target.perms->gid == (gid_t)-1)
+        voldef->target.perms->gid = def->target.perms.gid;
+
+    if (voldef->target.perms->mode == (mode_t)-1)
+        voldef->target.perms->mode = def->target.perms.mode;
+
     if (virStorageVolCreateXMLEnsureACL(pool->conn, def, voldef) < 0)
         goto cleanup;
 
