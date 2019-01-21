@@ -2900,8 +2900,12 @@ mymain(void)
 
     if (!(qapiData.schema = testQEMUSchemaLoad())) {
         VIR_TEST_VERBOSE("failed to load qapi schema\n");
-        ret = -1;
-        goto cleanup;
+    cleanup:
+        VIR_FREE(metaschemastr);
+        virJSONValueFree(metaschema);
+        virHashFree(qapiData.schema);
+        qemuTestDriverFree(&driver);
+        return -1;
     }
 
 #define DO_TEST(name) \
@@ -3098,7 +3102,6 @@ mymain(void)
     if (!(metaschema = testQEMUSchemaGetLatest()) ||
         !(metaschemastr = virJSONValueToString(metaschema, false))) {
         VIR_TEST_VERBOSE("failed to load latest qapi schema\n");
-        ret = -1;
         goto cleanup;
     }
 
@@ -3108,7 +3111,6 @@ mymain(void)
 
 #undef DO_TEST_QAPI_SCHEMA
 
- cleanup:
     VIR_FREE(metaschemastr);
     virJSONValueFree(metaschema);
     virHashFree(qapiData.schema);
