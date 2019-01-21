@@ -1335,7 +1335,7 @@ virNWFilterDHCPSnoopThread(void *req0)
 {
     virNWFilterSnoopReqPtr req = req0;
     struct pcap_pkthdr *hdr;
-    virNWFilterSnoopEthHdrPtr packet;
+    const virNWFilterSnoopEthHdrPtr *packetPtr;
     int ifindex = 0;
     int errcount = 0;
     int tmp = -1, rv, n, pollTo;
@@ -1453,7 +1453,7 @@ virNWFilterDHCPSnoopThread(void *req0)
             n--;
 
             rv = pcap_next_ex(pcapConf[i].handle, &hdr,
-                              (const u_char **)&packet);
+                              (const u_char **)&packetPtr);
 
             if (rv < 0) {
                 /* error reading from socket */
@@ -1530,7 +1530,7 @@ virNWFilterDHCPSnoopThread(void *req0)
                     continue;
                 }
 
-                if (virNWFilterSnoopDHCPDecodeJobSubmit(worker, packet,
+                if (virNWFilterSnoopDHCPDecodeJobSubmit(worker, *packetPtr,
                                                       hdr->caplen,
                                                       pcapConf[i].dir,
                                                       &pcapConf[i].qCtr) < 0) {
