@@ -1355,9 +1355,8 @@ virNetDevGetPhysicalFunction(const char *ifname, char **pfname)
     }
 
     if (!*pfname) {
-        /* this shouldn't be possible. A VF can't exist unless its
-         * PF device is bound to a network driver
-         */
+        /* The SRIOV standard does not require VF netdevs to have the
+           netdev assigned to a PF */
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("The PF device for VF %s has no network device name"),
                        ifname);
@@ -1449,8 +1448,12 @@ virNetDevGetVirtualFunctionInfo(const char *vfname, char **pfname,
 
     *pfname = NULL;
 
-    if (virNetDevGetPhysicalFunction(vfname, pfname) < 0)
+    if (virNetDevGetPhysicalFunction(vfname, pfname) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Cannot get PF netdev name for VF %s"),
+                       vfname);
         return ret;
+    }
 
     if (virNetDevSysfsFile(&pf_sysfs_path, *pfname, "device") < 0)
         goto cleanup;
@@ -3178,8 +3181,12 @@ virNetDevSwitchdevFeature(const char *ifname,
     if ((is_vf = virNetDevIsVirtualFunction(ifname)) < 0)
         return ret;
 
-    if (is_vf == 1 && virNetDevGetPhysicalFunction(ifname, &pfname) < 0)
-        goto cleanup;
+    if (is_vf == 1) {
+        /* ignore error if PF does noto have netdev assigned
+         * in that case pfname == NULL */
+        if (virNetDevGetPhysicalFunction(ifname, &pfname) < 0)
+            virResetLastError();
+    }
 
     pci_device_ptr = pfname ? virNetDevGetPCIDevice(pfname) :
                               virNetDevGetPCIDevice(ifname);
