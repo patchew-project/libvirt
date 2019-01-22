@@ -202,6 +202,7 @@
   <flag name='tpm-emulator'/>
   <flag name='mch'/>
   <flag name='mch.extended-tseg-mbytes'/>
+  <flag name='sev-guest'/>
   <flag name='usb-storage.werror'/>
   <flag name='egl-headless'/>
   <flag name='vfio-pci.display'/>
@@ -212,10 +213,10 @@
   <flag name='memory-backend-file.align'/>
   <flag name='memory-backend-file.pmem'/>
   <flag name='nvdimm.unarmed'/>
-  <version>3000092</version>
+  <version>3001000</version>
   <kvmVersion>0</kvmVersion>
-  <microcodeVersion>440976</microcodeVersion>
-  <package>v3.1.0-rc2-48-g039d4e3df0</package>
+  <microcodeVersion>441048</microcodeVersion>
+  <package>v3.1.0</package>
   <arch>x86_64</arch>
   <hostCPU type='kvm' model='base' migratability='yes'>
     <property name='phys-bits' type='number' value='0'/>
@@ -339,11 +340,11 @@
     <property name='invtsc' type='boolean' value='true' migratable='no'/>
     <property name='sse3' type='boolean' value='true' migratable='yes'/>
     <property name='sse2' type='boolean' value='true' migratable='yes'/>
-    <property name='ssbd' type='boolean' value='false'/>
+    <property name='ssbd' type='boolean' value='true' migratable='yes'/>
     <property name='est' type='boolean' value='false'/>
     <property name='avx512ifma' type='boolean' value='false'/>
     <property name='tm2' type='boolean' value='false'/>
-    <property name='kvm-pv-ipi' type='boolean' value='false'/>
+    <property name='kvm-pv-ipi' type='boolean' value='true' migratable='yes'/>
     <property name='kvm-pv-eoi' type='boolean' value='true' migratable='yes'/>
     <property name='cx8' type='boolean' value='true' migratable='yes'/>
     <property name='cldemote' type='boolean' value='false'/>
@@ -359,7 +360,7 @@
     <property name='nodeid_msr' type='boolean' value='false'/>
     <property name='pdcm' type='boolean' value='false'/>
     <property name='movbe' type='boolean' value='true' migratable='yes'/>
-    <property name='model' type='number' value='94'/>
+    <property name='model' type='number' value='142'/>
     <property name='nrip_save' type='boolean' value='false'/>
     <property name='nrip-save' type='boolean' value='false'/>
     <property name='kvm_pv_unhalt' type='boolean' value='true' migratable='yes'/>
@@ -374,7 +375,7 @@
     <property name='de' type='boolean' value='true' migratable='yes'/>
     <property name='pconfig' type='boolean' value='false'/>
     <property name='enforce' type='boolean' value='false'/>
-    <property name='stepping' type='number' value='3'/>
+    <property name='stepping' type='number' value='10'/>
     <property name='xsave' type='boolean' value='true' migratable='yes'/>
     <property name='clflush' type='boolean' value='true' migratable='yes'/>
     <property name='skinit' type='boolean' value='false'/>
@@ -467,7 +468,7 @@
     <property name='rdrand' type='boolean' value='true' migratable='yes'/>
     <property name='rdseed' type='boolean' value='true' migratable='yes'/>
     <property name='avx512-4vnniw' type='boolean' value='false'/>
-    <property name='vmx' type='boolean' value='true' migratable='yes'/>
+    <property name='vmx' type='boolean' value='false'/>
     <property name='vme' type='boolean' value='true' migratable='yes'/>
     <property name='dtes64' type='boolean' value='false'/>
     <property name='mtrr' type='boolean' value='true' migratable='yes'/>
@@ -478,7 +479,7 @@
     <property name='wdt' type='boolean' value='false'/>
     <property name='pause_filter' type='boolean' value='false'/>
     <property name='sha-ni' type='boolean' value='false'/>
-    <property name='model-id' type='string' value='Intel(R) Xeon(R) CPU E3-1245 v5 @ 3.50GHz'/>
+    <property name='model-id' type='string' value='Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz'/>
     <property name='abm' type='boolean' value='true' migratable='yes'/>
     <property name='avx512pf' type='boolean' value='false'/>
     <property name='xstore-en' type='boolean' value='false'/>
@@ -863,7 +864,6 @@
     <blocker name='avx512-vpopcntdq'/>
     <blocker name='la57'/>
     <blocker name='pconfig'/>
-    <blocker name='ssbd'/>
     <blocker name='wbnoinvd'/>
     <blocker name='avx512f'/>
     <blocker name='avx512f'/>
@@ -882,7 +882,6 @@
     <blocker name='avx512vnni'/>
     <blocker name='avx512bitalg'/>
     <blocker name='avx512-vpopcntdq'/>
-    <blocker name='ssbd'/>
     <blocker name='wbnoinvd'/>
     <blocker name='pku'/>
   </cpu>
@@ -921,7 +920,6 @@
     <blocker name='pku'/>
     <blocker name=''/>
     <blocker name='avx512vnni'/>
-    <blocker name='ssbd'/>
     <blocker name='avx512f'/>
     <blocker name='avx512f'/>
     <blocker name='avx512f'/>
@@ -1376,4 +1374,10 @@
   <machine name='pc-0.11' hotplugCpus='yes' maxCpus='255'/>
   <machine name='pc-0.12' hotplugCpus='yes' maxCpus='255'/>
   <machine name='pc-0.10' hotplugCpus='yes' maxCpus='255'/>
+  <sev>
+    <cbitpos>47</cbitpos>
+    <reducedPhysBits>1</reducedPhysBits>
+    <pdh>AQAAAAAOAAAAQAAAAAOAAAAQAAAAAOAAAAQAAAAAOAAAAQAAAAAOAAAAQAAAAAOAAA</pdh>
+    <certChain>AQAAAAAOAAAAQAAAAAOAAAAQAAAAAOAAAAQAAAAAOAAAAQAAAAAOAAA</certChain>
+  </sev>
 </qemuCaps>
