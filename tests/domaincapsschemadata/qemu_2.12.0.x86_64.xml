@@ -23,18 +23,15 @@
   <cpu>
     <mode name='host-passthrough' supported='yes'/>
     <mode name='host-model' supported='yes'>
-      <model fallback='forbid'>Haswell-noTSX</model>
+      <model fallback='forbid'>Skylake-Client-IBRS</model>
       <vendor>Intel</vendor>
-      <feature policy='require' name='vme'/>
       <feature policy='require' name='ss'/>
-      <feature policy='require' name='f16c'/>
-      <feature policy='require' name='rdrand'/>
       <feature policy='require' name='hypervisor'/>
-      <feature policy='require' name='arat'/>
       <feature policy='require' name='tsc_adjust'/>
-      <feature policy='require' name='xsaveopt'/>
+      <feature policy='require' name='clflushopt'/>
+      <feature policy='require' name='umip'/>
+      <feature policy='require' name='xsaves'/>
       <feature policy='require' name='pdpe1gb'/>
-      <feature policy='require' name='abm'/>
       <feature policy='require' name='invtsc'/>
     </mode>
     <mode name='custom' supported='yes'>
@@ -51,13 +48,13 @@
       <model usable='yes'>core2duo</model>
       <model usable='no'>athlon</model>
       <model usable='yes'>Westmere</model>
-      <model usable='no'>Westmere-IBRS</model>
+      <model usable='yes'>Westmere-IBRS</model>
       <model usable='no'>Skylake-Server</model>
       <model usable='no'>Skylake-Server-IBRS</model>
-      <model usable='no'>Skylake-Client</model>
-      <model usable='no'>Skylake-Client-IBRS</model>
+      <model usable='yes'>Skylake-Client</model>
+      <model usable='yes'>Skylake-Client-IBRS</model>
       <model usable='yes'>SandyBridge</model>
-      <model usable='no'>SandyBridge-IBRS</model>
+      <model usable='yes'>SandyBridge-IBRS</model>
       <model usable='yes'>Penryn</model>
       <model usable='no'>Opteron_G5</model>
       <model usable='no'>Opteron_G4</model>
@@ -65,20 +62,20 @@
       <model usable='yes'>Opteron_G2</model>
       <model usable='yes'>Opteron_G1</model>
       <model usable='yes'>Nehalem</model>
-      <model usable='no'>Nehalem-IBRS</model>
+      <model usable='yes'>Nehalem-IBRS</model>
       <model usable='yes'>IvyBridge</model>
-      <model usable='no'>IvyBridge-IBRS</model>
-      <model usable='no'>Haswell</model>
+      <model usable='yes'>IvyBridge-IBRS</model>
+      <model usable='yes'>Haswell</model>
       <model usable='yes'>Haswell-noTSX</model>
-      <model usable='no'>Haswell-noTSX-IBRS</model>
-      <model usable='no'>Haswell-IBRS</model>
+      <model usable='yes'>Haswell-noTSX-IBRS</model>
+      <model usable='yes'>Haswell-IBRS</model>
       <model usable='no'>EPYC</model>
       <model usable='no'>EPYC-IBPB</model>
       <model usable='yes'>Conroe</model>
-      <model usable='no'>Broadwell</model>
-      <model usable='no'>Broadwell-noTSX</model>
-      <model usable='no'>Broadwell-noTSX-IBRS</model>
-      <model usable='no'>Broadwell-IBRS</model>
+      <model usable='yes'>Broadwell</model>
+      <model usable='yes'>Broadwell-noTSX</model>
+      <model usable='yes'>Broadwell-noTSX-IBRS</model>
+      <model usable='yes'>Broadwell-IBRS</model>
       <model usable='yes'>486</model>
     </mode>
   </cpu>

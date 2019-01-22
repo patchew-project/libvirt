@@ -113,6 +113,7 @@
   <flag name='gic-version'/>
   <flag name='incoming-defer'/>
   <flag name='virtio-gpu'/>
+  <flag name='virtio-gpu.virgl'/>
   <flag name='virtio-keyboard'/>
   <flag name='virtio-mouse'/>
   <flag name='virtio-tablet'/>
@@ -123,6 +124,7 @@
   <flag name='vserport-change-event'/>
   <flag name='virtio-balloon-pci.deflate-on-oom'/>
   <flag name='mptsas1068'/>
+  <flag name='spice-gl'/>
   <flag name='qxl.vram64_size_mb'/>
   <flag name='chardev-logfile'/>
   <flag name='debug-threads'/>
@@ -152,6 +154,7 @@
   <flag name='drive-iotune-group'/>
   <flag name='query-cpu-model-expansion'/>
   <flag name='virtio-net.host_mtu'/>
+  <flag name='spice-rendernode'/>
   <flag name='nvdimm'/>
   <flag name='pcie-root-port'/>
   <flag name='query-cpu-definitions'/>
@@ -207,10 +210,11 @@
   <flag name='memory-backend-memfd.hugetlb'/>
   <flag name='iothread.poll-max-ns'/>
   <flag name='memory-backend-file.align'/>
-  <version>2011090</version>
+  <flag name='nvdimm.unarmed'/>
+  <version>2012000</version>
   <kvmVersion>0</kvmVersion>
-  <microcodeVersion>414601</microcodeVersion>
-  <package>v2.12.0-rc0</package>
+  <microcodeVersion>414020</microcodeVersion>
+  <package>v2.12.0</package>
   <arch>x86_64</arch>
   <hostCPU type='kvm' model='base' migratability='yes'>
     <property name='phys-bits' type='number' value='0'/>
@@ -224,9 +228,10 @@
     <property name='arat' type='boolean' value='true' migratable='yes'/>
     <property name='gfni' type='boolean' value='false'/>
     <property name='pause-filter' type='boolean' value='false'/>
-    <property name='xsavec' type='boolean' value='false'/>
+    <property name='xsavec' type='boolean' value='true' migratable='yes'/>
     <property name='intel-pt' type='boolean' value='false'/>
     <property name='osxsave' type='boolean' value='false'/>
+    <property name='hv-frequencies' type='boolean' value='false'/>
     <property name='tsc-frequency' type='number' value='0'/>
     <property name='xd' type='boolean' value='true' migratable='yes'/>
     <property name='hv-vendor-id' type='string' value=''/>
@@ -234,7 +239,7 @@
     <property name='kvm_asyncpf' type='boolean' value='true' migratable='yes'/>
     <property name='perfctr_core' type='boolean' value='false'/>
     <property name='perfctr-core' type='boolean' value='false'/>
-    <property name='mpx' type='boolean' value='false'/>
+    <property name='mpx' type='boolean' value='true' migratable='yes'/>
     <property name='pbe' type='boolean' value='false'/>
     <property name='decodeassists' type='boolean' value='false'/>
     <property name='avx512cd' type='boolean' value='false'/>
@@ -251,7 +256,7 @@
     <property name='xcrypt' type='boolean' value='false'/>
     <property name='thread-id' type='number' value='-1'/>
     <property name='min-level' type='number' value='13'/>
-    <property name='xgetbv1' type='boolean' value='false'/>
+    <property name='xgetbv1' type='boolean' value='true' migratable='yes'/>
     <property name='cid' type='boolean' value='false'/>
     <property name='hv-relaxed' type='boolean' value='false'/>
     <property name='hv-crash' type='boolean' value='false'/>
@@ -263,7 +268,7 @@
     <property name='avx512-vpopcntdq' type='boolean' value='false'/>
     <property name='phe' type='boolean' value='false'/>
     <property name='extapic' type='boolean' value='false'/>
-    <property name='3dnowprefetch' type='boolean' value='false'/>
+    <property name='3dnowprefetch' type='boolean' value='true' migratable='yes'/>
     <property name='avx512vbmi2' type='boolean' value='false'/>
     <property name='cr8legacy' type='boolean' value='false'/>
     <property name='cpuid-0xb' type='boolean' value='true' migratable='yes'/>
@@ -282,19 +287,19 @@
     <property name='vmcb_clean' type='boolean' value='false'/>
     <property name='vmcb-clean' type='boolean' value='false'/>
     <property name='3dnowext' type='boolean' value='false'/>
-    <property name='hle' type='boolean' value='false'/>
+    <property name='hle' type='boolean' value='true' migratable='yes'/>
     <property name='npt' type='boolean' value='false'/>
     <property name='memory' type='string' value='/machine/unattached/system[0]'/>
     <property name='clwb' type='boolean' value='false'/>
     <property name='lbrv' type='boolean' value='false'/>
-    <property name='adx' type='boolean' value='false'/>
+    <property name='adx' type='boolean' value='true' migratable='yes'/>
     <property name='ss' type='boolean' value='true' migratable='yes'/>
     <property name='pni' type='boolean' value='true' migratable='yes'/>
     <property name='svm_lock' type='boolean' value='false'/>
     <property name='svm-lock' type='boolean' value='false'/>
     <property name='pfthreshold' type='boolean' value='false'/>
     <property name='smep' type='boolean' value='true' migratable='yes'/>
-    <property name='smap' type='boolean' value='false'/>
+    <property name='smap' type='boolean' value='true' migratable='yes'/>
     <property name='x2apic' type='boolean' value='true' migratable='yes'/>
     <property name='avx512vbmi' type='boolean' value='false'/>
     <property name='avx512vnni' type='boolean' value='false'/>
@@ -339,7 +344,7 @@
     <property name='nodeid_msr' type='boolean' value='false'/>
     <property name='pdcm' type='boolean' value='false'/>
     <property name='movbe' type='boolean' value='true' migratable='yes'/>
-    <property name='model' type='number' value='63'/>
+    <property name='model' type='number' value='142'/>
     <property name='nrip_save' type='boolean' value='false'/>
     <property name='nrip-save' type='boolean' value='false'/>
     <property name='kvm_pv_unhalt' type='boolean' value='true' migratable='yes'/>
@@ -352,7 +357,7 @@
     <property name='cx16' type='boolean' value='true' migratable='yes'/>
     <property name='de' type='boolean' value='true' migratable='yes'/>
     <property name='enforce' type='boolean' value='false'/>
-    <property name='stepping' type='number' value='2'/>
+    <property name='stepping' type='number' value='10'/>
     <property name='xsave' type='boolean' value='true' migratable='yes'/>
     <property name='clflush' type='boolean' value='true' migratable='yes'/>
     <property name='skinit' type='boolean' value='false'/>
@@ -371,7 +376,7 @@
     <property name='pmu' type='boolean' value='false'/>
     <property name='pmm' type='boolean' value='false'/>
     <property name='apic' type='boolean' value='true' migratable='yes'/>
-    <property name='spec-ctrl' type='boolean' value='false'/>
+    <property name='spec-ctrl' type='boolean' value='true' migratable='yes'/>
     <property name='min-xlevel2' type='number' value='0'/>
     <property name='tsc-adjust' type='boolean' value='true' migratable='yes'/>
     <property name='tsc_adjust' type='boolean' value='true' migratable='yes'/>
@@ -395,10 +400,10 @@
     <property name='mmxext' type='boolean' value='false'/>
     <property name='vaes' type='boolean' value='false'/>
     <property name='popcnt' type='boolean' value='true' migratable='yes'/>
-    <property name='xsaves' type='boolean' value='false'/>
+    <property name='xsaves' type='boolean' value='true' migratable='yes'/>
     <property name='tcg-cpuid' type='boolean' value='true' migratable='yes'/>
     <property name='lm' type='boolean' value='true' migratable='yes'/>
-    <property name='umip' type='boolean' value='false'/>
+    <property name='umip' type='boolean' value='true' migratable='yes'/>
     <property name='pse' type='boolean' value='true' migratable='yes'/>
     <property name='avx2' type='boolean' value='true' migratable='yes'/>
     <property name='sep' type='boolean' value='true' migratable='yes'/>
@@ -417,7 +422,7 @@
     <property name='topoext' type='boolean' value='false'/>
     <property name='hv-vpindex' type='boolean' value='false'/>
     <property name='xlevel2' type='number' value='0'/>
-    <property name='clflushopt' type='boolean' value='false'/>
+    <property name='clflushopt' type='boolean' value='true' migratable='yes'/>
     <property name='kvm-no-smi-migration' type='boolean' value='false'/>
     <property name='monitor' type='boolean' value='false'/>
     <property name='avx512er' type='boolean' value='false'/>
@@ -432,15 +437,15 @@
     <property name='hv-synic' type='boolean' value='false'/>
     <property name='xstore' type='boolean' value='false'/>
     <property name='fxsr_opt' type='boolean' value='false'/>
-    <property name='kvm-hint-dedicated' type='boolean' value='true' migratable='yes'/>
-    <property name='rtm' type='boolean' value='false'/>
+    <property name='kvm-hint-dedicated' type='boolean' value='false'/>
+    <property name='rtm' type='boolean' value='true' migratable='yes'/>
     <property name='lmce' type='boolean' value='true' migratable='yes'/>
     <property name='hv-time' type='boolean' value='false'/>
     <property name='perfctr-nb' type='boolean' value='false'/>
     <property name='perfctr_nb' type='boolean' value='false'/>
     <property name='ffxsr' type='boolean' value='false'/>
     <property name='rdrand' type='boolean' value='true' migratable='yes'/>
-    <property name='rdseed' type='boolean' value='false'/>
+    <property name='rdseed' type='boolean' value='true' migratable='yes'/>
     <property name='avx512-4vnniw' type='boolean' value='false'/>
     <property name='vmx' type='boolean' value='false'/>
     <property name='vme' type='boolean' value='true' migratable='yes'/>
@@ -448,12 +453,12 @@
     <property name='mtrr' type='boolean' value='true' migratable='yes'/>
     <property name='rdtscp' type='boolean' value='true' migratable='yes'/>
     <property name='pse36' type='boolean' value='true' migratable='yes'/>
-    <property name='kvm-pv-tlb-flush' type='boolean' value='false'/>
+    <property name='kvm-pv-tlb-flush' type='boolean' value='true' migratable='yes'/>
     <property name='tbm' type='boolean' value='false'/>
     <property name='wdt' type='boolean' value='false'/>
     <property name='pause_filter' type='boolean' value='false'/>
     <property name='sha-ni' type='boolean' value='false'/>
-    <property name='model-id' type='string' value='Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz'/>
+    <property name='model-id' type='string' value='Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz'/>
     <property name='abm' type='boolean' value='true' migratable='yes'/>
     <property name='avx512pf' type='boolean' value='false'/>
     <property name='xstore-en' type='boolean' value='false'/>
@@ -473,6 +478,7 @@
     <property name='xsavec' type='boolean' value='false'/>
     <property name='intel-pt' type='boolean' value='false'/>
     <property name='osxsave' type='boolean' value='false'/>
+    <property name='hv-frequencies' type='boolean' value='false'/>
     <property name='tsc-frequency' type='number' value='0'/>
     <property name='xd' type='boolean' value='true' migratable='yes'/>
     <property name='hv-vendor-id' type='string' value=''/>
@@ -731,91 +737,37 @@
     <blocker name='3dnow'/>
   </cpu>
   <cpu type='kvm' name='Westmere' usable='yes'/>
-  <cpu type='kvm' name='Westmere-IBRS' usable='no'>
-    <blocker name='spec-ctrl'/>
-  </cpu>
+  <cpu type='kvm' name='Westmere-IBRS' usable='yes'/>
   <cpu type='kvm' name='Skylake-Server' usable='no'>
-    <blocker name='hle'/>
-    <blocker name='rtm'/>
-    <blocker name='mpx'/>
     <blocker name='avx512f'/>
     <blocker name='avx512dq'/>
-    <blocker name='rdseed'/>
-    <blocker name='adx'/>
-    <blocker name='smap'/>
-    <blocker name='clflushopt'/>
     <blocker name='clwb'/>
     <blocker name='avx512cd'/>
     <blocker name='avx512bw'/>
     <blocker name='avx512vl'/>
-    <blocker name='3dnowprefetch'/>
-    <blocker name='xsavec'/>
-    <blocker name='xgetbv1'/>
-    <blocker name='mpx'/>
-    <blocker name='mpx'/>
     <blocker name='avx512f'/>
     <blocker name='avx512f'/>
     <blocker name='avx512f'/>
   </cpu>
   <cpu type='kvm' name='Skylake-Server-IBRS' usable='no'>
-    <blocker name='hle'/>
-    <blocker name='rtm'/>
-    <blocker name='mpx'/>
     <blocker name='avx512f'/>
     <blocker name='avx512dq'/>
-    <blocker name='rdseed'/>
-    <blocker name='adx'/>
-    <blocker name='smap'/>
     <blocker name='clwb'/>
     <blocker name='avx512cd'/>
     <blocker name='avx512bw'/>
     <blocker name='avx512vl'/>
-    <blocker name='spec-ctrl'/>
-    <blocker name='3dnowprefetch'/>
-    <blocker name='xsavec'/>
-    <blocker name='xgetbv1'/>
-    <blocker name='mpx'/>
-    <blocker name='mpx'/>
     <blocker name='avx512f'/>
     <blocker name='avx512f'/>
     <blocker name='avx512f'/>
   </cpu>
-  <cpu type='kvm' name='Skylake-Client' usable='no'>
-    <blocker name='hle'/>
-    <blocker name='rtm'/>
-    <blocker name='mpx'/>
-    <blocker name='rdseed'/>
-    <blocker name='adx'/>
-    <blocker name='smap'/>
-    <blocker name='3dnowprefetch'/>
-    <blocker name='xsavec'/>
-    <blocker name='xgetbv1'/>
-    <blocker name='mpx'/>
-    <blocker name='mpx'/>
-  </cpu>
-  <cpu type='kvm' name='Skylake-Client-IBRS' usable='no'>
-    <blocker name='hle'/>
-    <blocker name='rtm'/>
-    <blocker name='mpx'/>
-    <blocker name='rdseed'/>
-    <blocker name='adx'/>
-    <blocker name='smap'/>
-    <blocker name='spec-ctrl'/>
-    <blocker name='3dnowprefetch'/>
-    <blocker name='xsavec'/>
-    <blocker name='xgetbv1'/>
-    <blocker name='mpx'/>
-    <blocker name='mpx'/>
-  </cpu>
+  <cpu type='kvm' name='Skylake-Client' usable='yes'/>
+  <cpu type='kvm' name='Skylake-Client-IBRS' usable='yes'/>
   <cpu type='kvm' name='SandyBridge' usable='yes'/>
-  <cpu type='kvm' name='SandyBridge-IBRS' usable='no'>
-    <blocker name='spec-ctrl'/>
-  </cpu>
+  <cpu type='kvm' name='SandyBridge-IBRS' usable='yes'/>
   <cpu type='kvm' name='Penryn' usable='yes'/>
   <cpu type='kvm' name='Opteron_G5' usable='no'>
     <blocker name='sse4a'/>
     <blocker name='misalignsse'/>
-    <blocker name='3dnowprefetch'/>
     <blocker name='xop'/>
     <blocker name='fma4'/>
     <blocker name='tbm'/>
@@ -823,7 +775,6 @@
   <cpu type='kvm' name='Opteron_G4' usable='no'>
     <blocker name='sse4a'/>
     <blocker name='misalignsse'/>
-    <blocker name='3dnowprefetch'/>
     <blocker name='xop'/>
     <blocker name='fma4'/>
   </cpu>
@@ -834,90 +785,37 @@
   <cpu type='kvm' name='Opteron_G2' usable='yes'/>
   <cpu type='kvm' name='Opteron_G1' usable='yes'/>
   <cpu type='kvm' name='Nehalem' usable='yes'/>
-  <cpu type='kvm' name='Nehalem-IBRS' usable='no'>
-    <blocker name='spec-ctrl'/>
-  </cpu>
+  <cpu type='kvm' name='Nehalem-IBRS' usable='yes'/>
   <cpu type='kvm' name='IvyBridge' usable='yes'/>
-  <cpu type='kvm' name='IvyBridge-IBRS' usable='no'>
-    <blocker name='spec-ctrl'/>
-  </cpu>
-  <cpu type='kvm' name='Haswell' usable='no'>
-    <blocker name='hle'/>
-    <blocker name='rtm'/>
-  </cpu>
+  <cpu type='kvm' name='IvyBridge-IBRS' usable='yes'/>
+  <cpu type='kvm' name='Haswell' usable='yes'/>
   <cpu type='kvm' name='Haswell-noTSX' usable='yes'/>
-  <cpu type='kvm' name='Haswell-noTSX-IBRS' usable='no'>
-    <blocker name='spec-ctrl'/>
-  </cpu>
-  <cpu type='kvm' name='Haswell-IBRS' usable='no'>
-    <blocker name='hle'/>
-    <blocker name='rtm'/>
-    <blocker name='spec-ctrl'/>
-  </cpu>
+  <cpu type='kvm' name='Haswell-noTSX-IBRS' usable='yes'/>
+  <cpu type='kvm' name='Haswell-IBRS' usable='yes'/>
   <cpu type='kvm' name='EPYC' usable='no'>
-    <blocker name='rdseed'/>
-    <blocker name='adx'/>
-    <blocker name='smap'/>
-    <blocker name='clflushopt'/>
     <blocker name='sha-ni'/>
     <blocker name='mmxext'/>
     <blocker name='fxsr-opt'/>
     <blocker name='cr8legacy'/>
     <blocker name='sse4a'/>
     <blocker name='misalignsse'/>
-    <blocker name='3dnowprefetch'/>
     <blocker name='osvw'/>
-    <blocker name='xsavec'/>
-    <blocker name='xgetbv1'/>
   </cpu>
   <cpu type='kvm' name='EPYC-IBPB' usable='no'>
-    <blocker name='rdseed'/>
-    <blocker name='adx'/>
-    <blocker name='smap'/>
-    <blocker name='clflushopt'/>
     <blocker name='sha-ni'/>
     <blocker name='mmxext'/>
     <blocker name='fxsr-opt'/>
     <blocker name='cr8legacy'/>
     <blocker name='sse4a'/>
     <blocker name='misalignsse'/>
-    <blocker name='3dnowprefetch'/>
     <blocker name='osvw'/>
     <blocker name='ibpb'/>
-    <blocker name='xsavec'/>
-    <blocker name='xgetbv1'/>
   </cpu>
   <cpu type='kvm' name='Conroe' usable='yes'/>
-  <cpu type='kvm' name='Broadwell' usable='no'>
-    <blocker name='hle'/>
-    <blocker name='rtm'/>
-    <blocker name='rdseed'/>
-    <blocker name='adx'/>
-    <blocker name='smap'/>
-    <blocker name='3dnowprefetch'/>
-  </cpu>
-  <cpu type='kvm' name='Broadwell-noTSX' usable='no'>
-    <blocker name='rdseed'/>
-    <blocker name='adx'/>
-    <blocker name='smap'/>
-    <blocker name='3dnowprefetch'/>
-  </cpu>
-  <cpu type='kvm' name='Broadwell-noTSX-IBRS' usable='no'>
-    <blocker name='rdseed'/>
-    <blocker name='adx'/>
-    <blocker name='smap'/>
-    <blocker name='spec-ctrl'/>
-    <blocker name='3dnowprefetch'/>
-  </cpu>
-  <cpu type='kvm' name='Broadwell-IBRS' usable='no'>
-    <blocker name='hle'/>
-    <blocker name='rtm'/>
-    <blocker name='rdseed'/>
-    <blocker name='adx'/>
-    <blocker name='smap'/>
-    <blocker name='spec-ctrl'/>
-    <blocker name='3dnowprefetch'/>
-  </cpu>
+  <cpu type='kvm' name='Broadwell' usable='yes'/>
+  <cpu type='kvm' name='Broadwell-noTSX' usable='yes'/>
+  <cpu type='kvm' name='Broadwell-noTSX-IBRS' usable='yes'/>
+  <cpu type='kvm' name='Broadwell-IBRS' usable='yes'/>
   <cpu type='kvm' name='486' usable='yes'/>
   <cpu type='tcg' name='max' usable='yes'/>
   <cpu type='tcg' name='host' usable='no'>
