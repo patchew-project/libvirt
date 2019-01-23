@@ -202,11 +202,41 @@ mymain(void)
     DO_TEST("riscv64", "caps_4.0.0");
 
     /*
-     * Run "tests/qemucapsprobe /path/to/qemu/binary >foo.replies"
-     * to generate updated or new *.replies data files.
+     * Create a QEMU build environment using a checked out version
+     * of the release tag, such as:
      *
-     * If you manually edit replies files you can run
+     *    git checkout -b v3.0.0 v3.0.0
+     *
+     * Be sure the build dependencies are up to date, such as via yum:
+     *
+     *    yum builddep qemu
+     *
+     * Configure the environment, such as for x86_64:
+     *
+     *   ./configure --target-list=x86_64-softmmu \
+     *      --disable-xen --disable-strip --disable-fdt \
+     *      --disable-werror --enable-debug \
+     *      --enable-system --enable-user --enable-linux-user \
+     *      --with-pkgversion=v3.0.0
+     *
+     * Build the QEMU emulator binary.
+     *
+     * Then from a clean libvirt build:
+     *
+     * Run "tests/qemucapsprobe /path/to/qemu/binary >foo.replies"
+     * to generate updated or new *.replies data files, such as:
+     *
+     *    tests/qemucapsprobe /path/to/qemu/binary > \
+     *          tests/qemucapabilitiesdata/caps_3.0.0.x86_64.replies
+     *
+     * If you needed to manually edit replies files you can run
      * "tests/qemucapsfixreplies foo.replies" to fix the replies ids.
+     *
+     * Run "VIR_TEST_REGENERATE_OUTPUT=1 tests/qemucapabilitiestest" to
+     * update the corresponding tests/qemucapabilitiesdata/caps_*.xml file.
+     *
+     * May also need to run "VIR_TEST_REGENERATE_OUTPUT=1 tests/domaincapstest"
+     * depending on what changed.
      */
 
     qemuTestDriverFree(&data.driver);
