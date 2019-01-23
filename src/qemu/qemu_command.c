@@ -509,6 +509,13 @@ qemuBuildVirtioDevStr(virBufferPtr buf,
             ntmodel_cap = QEMU_CAPS_DEVICE_VIRTIO_BALLOON_PCI_NON_TRANSITIONAL;
             break;
 
+        case VIR_DOMAIN_DEVICE_VSOCK:
+            has_tmodel = device.data.vsock->model == VIR_DOMAIN_VSOCK_MODEL_VIRTIO_TRANSITIONAL;
+            has_ntmodel = device.data.vsock->model == VIR_DOMAIN_VSOCK_MODEL_VIRTIO_NON_TRANSITIONAL;
+            tmodel_cap = QEMU_CAPS_DEVICE_VHOST_VSOCK_PCI_TRANSITIONAL;
+            ntmodel_cap = QEMU_CAPS_DEVICE_VHOST_VSOCK_PCI_NON_TRANSITIONAL;
+            break;
+
         case VIR_DOMAIN_DEVICE_LEASE:
         case VIR_DOMAIN_DEVICE_INPUT:
         case VIR_DOMAIN_DEVICE_SOUND:
@@ -527,7 +534,6 @@ qemuBuildVirtioDevStr(virBufferPtr buf,
         case VIR_DOMAIN_DEVICE_PANIC:
         case VIR_DOMAIN_DEVICE_MEMORY:
         case VIR_DOMAIN_DEVICE_IOMMU:
-        case VIR_DOMAIN_DEVICE_VSOCK:
         case VIR_DOMAIN_DEVICE_LAST:
         default:
             return 0;
@@ -10493,7 +10499,6 @@ qemuBuildVsockDevStr(virDomainDefPtr def,
     qemuDomainVsockPrivatePtr priv = (qemuDomainVsockPrivatePtr)vsock->privateData;
     virBuffer buf = VIR_BUFFER_INITIALIZER;
     char *ret = NULL;
-
 
     if (qemuBuildVirtioDevStr(&buf, "vhost-vsock", qemuCaps,
                               VIR_DOMAIN_DEVICE_VSOCK, vsock) < 0) {

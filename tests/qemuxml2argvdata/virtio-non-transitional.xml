@@ -28,5 +28,8 @@
     </filesystem>
     <controller type='usb' index='0' model='none'/>
     <memballoon model='virtio-non-transitional'/>
+    <vsock model='virtio-non-transitional'>
+      <cid auto='no' address='4'/>
+    </vsock>
   </devices>
 </domain>
