@@ -212,5 +212,6 @@ int virThreadLocalSet(virThreadLocalPtr l, void*) ATTRIBUTE_RETURN_CHECK;
  \
         return 0; \
     } \
+    struct classname ## EatSemicolon
 
 #endif /* LIBVIRT_VIRTHREAD_H */
