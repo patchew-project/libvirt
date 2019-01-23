@@ -138,7 +138,7 @@ VIR_ENUM_IMPL(virErrorDomain, VIR_ERR_DOMAIN_LAST,
               "Perf", /* 65 */
               "Libssh transport layer",
               "Resource control",
-              );
+);
 
 
 /*

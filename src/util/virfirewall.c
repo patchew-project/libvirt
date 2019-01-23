@@ -44,11 +44,13 @@ VIR_ENUM_DECL(virFirewallLayerCommand);
 VIR_ENUM_IMPL(virFirewallLayerCommand, VIR_FIREWALL_LAYER_LAST,
               EBTABLES_PATH,
               IPTABLES_PATH,
-              IP6TABLES_PATH);
+              IP6TABLES_PATH,
+);
 
 VIR_ENUM_DECL(virFirewallLayerFirewallD);
 VIR_ENUM_IMPL(virFirewallLayerFirewallD, VIR_FIREWALL_LAYER_LAST,
-              "eb", "ipv4", "ipv6");
+              "eb", "ipv4", "ipv6",
+);
 
 
 struct _virFirewallRule {
