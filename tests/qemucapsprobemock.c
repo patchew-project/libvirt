@@ -22,8 +22,14 @@
 #include "internal.h"
 #include "viralloc.h"
 #include "virjson.h"
+#include "virlog.h"
+#include "virstring.h"
 #include "qemu/qemu_monitor.h"
 #include "qemu/qemu_monitor_json.h"
+
+#define VIR_FROM_THIS VIR_FROM_NONE
+
+VIR_LOG_INIT("tests.qemucapsprobemock");
 
 #define REAL_SYM(realFunc) \
     do { \
@@ -118,5 +124,49 @@ qemuMonitorJSONIOProcessLine(qemuMonitorPtr mon,
  cleanup:
     VIR_FREE(json);
     virJSONValueFree(value);
+    return ret;
+}
+
+
+static int (*realQemuMonitorJSONGetSEVCapabilities)(qemuMonitorPtr mon,
+                                                    virSEVCapability **capabilities);
+
+int
+qemuMonitorJSONGetSEVCapabilities(qemuMonitorPtr mon,
+                                  virSEVCapability **capabilities)
+{
+    int ret = -1;
+    VIR_AUTOPTR(virSEVCapability) capability = NULL;
+
+    VIR_DEBUG("mocked qemuMonitorJSONGetSEVCapabilities");
+
+    REAL_SYM(realQemuMonitorJSONGetSEVCapabilities);
+
+    ret = realQemuMonitorJSONGetSEVCapabilities(mon, capabilities);
+
+    if (ret == 0) {
+        /* QEMU has only compiled-in support of SEV in which case we
+         * can mock up a response instead since generation of SEV output
+         * is only possible on AMD hardware. Since the qemuxml2argvtest
+         * doesn't currently distinguish between AMD and Intel for x86_64
+         * if we "alter" the pseudo failure we can at least allow the
+         * test to succeed using the latest replies rather than a specific
+         * version with altered reply data */
+        if (VIR_ALLOC(capability) < 0)
+            return -1;
+
+        if (VIR_STRDUP(capability->pdh, "Unchecked, but mocked pdh") < 0)
+            return -1;
+
+        if (VIR_STRDUP(capability->cert_chain, "Mocked cert_chain too") < 0)
+            return -1;
+
+        capability->cbitpos = 47;
+        capability->reduced_phys_bits = 1;
+        VIR_STEAL_PTR(*capabilities, capability);
+
+        return 1;
+    }
+
     return ret;
 }
