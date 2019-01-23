@@ -5497,7 +5497,7 @@ qemuMonitorJSONGetCPUDefinitions(qemuMonitorPtr mon,
 
 VIR_ENUM_IMPL(qemuMonitorCPUProperty,
               QEMU_MONITOR_CPU_PROPERTY_LAST,
-              "boolean", "string", "number")
+              "boolean", "string", "number");
 
 static int
 qemuMonitorJSONParseCPUModelProperty(const char *key,

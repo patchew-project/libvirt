@@ -2417,7 +2417,7 @@ VIR_ENUM_IMPL(virNetDevIfState,
               "" /* value of zero means no state */,
               "unknown", "notpresent",
               "down", "lowerlayerdown",
-              "testing", "dormant", "up")
+              "testing", "dormant", "up");
 
 VIR_ENUM_IMPL(virNetDevFeature,
               VIR_NET_DEV_FEAT_LAST,
@@ -2434,7 +2434,7 @@ VIR_ENUM_IMPL(virNetDevFeature,
               "rxhash",
               "rdma",
               "txudptnl",
-              "switchdev")
+              "switchdev");
 
 #ifdef __linux__
 int

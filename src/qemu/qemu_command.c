@@ -80,7 +80,7 @@ VIR_ENUM_IMPL(virDomainDiskQEMUBus, VIR_DOMAIN_DISK_BUS_LAST,
               "usb",
               "uml",
               "sata",
-              "sd")
+              "sd");
 
 
 VIR_ENUM_DECL(qemuDiskCacheV2);

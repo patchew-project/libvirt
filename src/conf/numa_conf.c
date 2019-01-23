@@ -53,7 +53,7 @@ VIR_ENUM_IMPL(virDomainNumatunePlacement,
 VIR_ENUM_IMPL(virDomainMemoryAccess, VIR_DOMAIN_MEMORY_ACCESS_LAST,
               "default",
               "shared",
-              "private")
+              "private");
 
 typedef struct _virDomainNumaDistance virDomainNumaDistance;
 typedef virDomainNumaDistance *virDomainNumaDistancePtr;

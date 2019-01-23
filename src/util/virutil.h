@@ -92,7 +92,7 @@ const char *virEnumToString(const char *const*types,
         return virEnumFromString(name ## TypeList, \
                                  ARRAY_CARDINALITY(name ## TypeList), \
                                  type); \
-    }
+    } \
 
 # define VIR_ENUM_DECL(name) \
     const char *name ## TypeToString(int type); \

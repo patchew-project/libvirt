@@ -1036,7 +1036,7 @@ VIR_ENUM_IMPL(virshStoragePoolState,
               N_("building"),
               N_("running"),
               N_("degraded"),
-              N_("inaccessible"))
+              N_("inaccessible"));
 
 static const char *
 virshStoragePoolStateToString(int state)
@@ -1888,7 +1888,7 @@ VIR_ENUM_IMPL(virshPoolEvent,
               N_("Started"),
               N_("Stopped"),
               N_("Created"),
-              N_("Deleted"))
+              N_("Deleted"));
 
 static const char *
 virshPoolEventToString(int event)

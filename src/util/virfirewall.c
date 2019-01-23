@@ -48,7 +48,7 @@ VIR_ENUM_IMPL(virFirewallLayerCommand, VIR_FIREWALL_LAYER_LAST,
 
 VIR_ENUM_DECL(virFirewallLayerFirewallD);
 VIR_ENUM_IMPL(virFirewallLayerFirewallD, VIR_FIREWALL_LAYER_LAST,
-              "eb", "ipv4", "ipv6")
+              "eb", "ipv4", "ipv6");
 
 
 struct _virFirewallRule {
