@@ -22,6 +22,10 @@
     <rng model='virtio-transitional'>
       <backend model='random'>/dev/urandom</backend>
     </rng>
+    <filesystem type='mount' accessmode='passthrough' model='virtio-9p-transitional'>
+      <source dir='/export/fs1'/>
+      <target dir='fs1'/>
+    </filesystem>
     <controller type='usb' index='0' model='none'/>
     <memballoon model='none'/>
   </devices>

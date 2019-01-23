@@ -2499,6 +2499,15 @@
           </element>
         </optional>
       </interleave>
+      <optional>
+        <attribute name="model">
+          <choice>
+            <value>virtio-9p</value>
+            <value>virtio-9p-transitional</value>
+            <value>virtio-9p-non-transitional</value>
+          </choice>
+        </attribute>
+      </optional>
     </element>
   </define>
   <define name="fsDriver">
