@@ -382,6 +382,13 @@ VIR_ENUM_IMPL(virDomainControllerModelIDE, VIR_DOMAIN_CONTROLLER_MODEL_IDE_LAST,
               "piix4",
               "ich6")
 
+VIR_ENUM_IMPL(virDomainControllerModelVirtioSerial,
+              VIR_DOMAIN_CONTROLLER_MODEL_VIRTIO_SERIAL_LAST,
+              "virtio",
+              "virtio-transitional",
+              "virtio-non-transitional",
+);
+
 VIR_ENUM_IMPL(virDomainFS, VIR_DOMAIN_FS_TYPE_LAST,
               "mount",
               "block",
@@ -10324,6 +10331,8 @@ virDomainControllerModelTypeFromString(const virDomainControllerDef *def,
         return virDomainControllerModelPCITypeFromString(model);
     else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_IDE)
         return virDomainControllerModelIDETypeFromString(model);
+    else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL)
+        return virDomainControllerModelVirtioSerialTypeFromString(model);
 
     return -1;
 }
@@ -10341,6 +10350,8 @@ virDomainControllerModelTypeToString(virDomainControllerDefPtr def,
         return virDomainControllerModelPCITypeToString(model);
     else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_IDE)
         return virDomainControllerModelIDETypeToString(model);
+    else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL)
+        return virDomainControllerModelVirtioSerialTypeToString(model);
 
     return NULL;
 }

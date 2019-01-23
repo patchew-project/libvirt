@@ -525,11 +525,21 @@ qemuBuildVirtioDevStr(virBufferPtr buf,
             ntmodel_cap = QEMU_CAPS_DEVICE_VIRTIO_INPUT_HOST_PCI_NON_TRANSITIONAL;
             break;
 
+        case VIR_DOMAIN_DEVICE_CONTROLLER:
+            if (device.data.controller->type == VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL) {
+                has_tmodel = device.data.controller->model == VIR_DOMAIN_CONTROLLER_MODEL_VIRTIO_SERIAL_VIRTIO_TRANSITIONAL;
+                has_ntmodel = device.data.controller->model == VIR_DOMAIN_CONTROLLER_MODEL_VIRTIO_SERIAL_VIRTIO_NON_TRANSITIONAL;
+                tmodel_cap = QEMU_CAPS_DEVICE_VIRTIO_SERIAL_PCI_TRANSITIONAL;
+                ntmodel_cap = QEMU_CAPS_DEVICE_VIRTIO_SERIAL_PCI_NON_TRANSITIONAL;
+            } else {
+                return 0;
+            }
+            break;
+
         case VIR_DOMAIN_DEVICE_LEASE:
         case VIR_DOMAIN_DEVICE_SOUND:
         case VIR_DOMAIN_DEVICE_VIDEO:
         case VIR_DOMAIN_DEVICE_WATCHDOG:
-        case VIR_DOMAIN_DEVICE_CONTROLLER:
         case VIR_DOMAIN_DEVICE_GRAPHICS:
         case VIR_DOMAIN_DEVICE_HUB:
         case VIR_DOMAIN_DEVICE_REDIRDEV:
