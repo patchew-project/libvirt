@@ -1293,8 +1293,6 @@ virStreamInData;
 
 
 # locking/domain_lock.h
-virDomainLockDiskAttach;
-virDomainLockDiskDetach;
 virDomainLockImageAttach;
 virDomainLockImageDetach;
 virDomainLockLeaseAttach;
