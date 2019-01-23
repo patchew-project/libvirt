@@ -157,7 +157,8 @@ qemuSecurityRestoreDiskLabel(virQEMUDriverPtr driver,
 int
 qemuSecuritySetImageLabel(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
-                          virStorageSourcePtr src)
+                          virStorageSourcePtr src,
+                          bool backingChain)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     pid_t pid = -1;
@@ -170,7 +171,7 @@ qemuSecuritySetImageLabel(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (virSecurityManagerSetImageLabel(driver->securityManager,
-                                        vm->def, src, false) < 0)
+                                        vm->def, src, backingChain) < 0)
         goto cleanup;
 
     if (virSecurityManagerTransactionCommit(driver->securityManager,
@@ -187,7 +188,8 @@ qemuSecuritySetImageLabel(virQEMUDriverPtr driver,
 int
 qemuSecurityRestoreImageLabel(virQEMUDriverPtr driver,
                               virDomainObjPtr vm,
-                              virStorageSourcePtr src)
+                              virStorageSourcePtr src,
+                              bool backingChain)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     pid_t pid = -1;
@@ -200,7 +202,7 @@ qemuSecurityRestoreImageLabel(virQEMUDriverPtr driver,
         goto cleanup;
 
     if (virSecurityManagerRestoreImageLabel(driver->securityManager,
-                                            vm->def, src, false) < 0)
+                                            vm->def, src, backingChain) < 0)
         goto cleanup;
 
     if (virSecurityManagerTransactionCommit(driver->securityManager,
