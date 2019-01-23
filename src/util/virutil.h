@@ -96,7 +96,7 @@ const char *virEnumToString(const char *const*types,
 
 # define VIR_ENUM_DECL(name) \
     const char *name ## TypeToString(int type); \
-    int name ## TypeFromString(const char*type);
+    int name ## TypeFromString(const char*type)
 
 /* No-op workarounds for functionality missing in mingw.  */
 # ifndef HAVE_GETUID
