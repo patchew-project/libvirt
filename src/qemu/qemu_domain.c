@@ -4550,6 +4550,14 @@ qemuDomainRNGDefValidate(const virDomainRNGDef *def,
         model_supported = virQEMUCapsGet(qemuCaps,
                                          QEMU_CAPS_DEVICE_VIRTIO_RNG);
         break;
+    case VIR_DOMAIN_RNG_MODEL_VIRTIO_TRANSITIONAL:
+        model_supported = (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_RNG_PCI_TRANSITIONAL) ||
+                           virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY));
+        break;
+    case VIR_DOMAIN_RNG_MODEL_VIRTIO_NON_TRANSITIONAL:
+        model_supported = (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VIRTIO_RNG_PCI_NON_TRANSITIONAL) ||
+                           virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY));
+        break;
     case VIR_DOMAIN_RNG_MODEL_LAST:
         break;
     }

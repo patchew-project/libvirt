@@ -488,6 +488,13 @@ qemuBuildVirtioDevStr(virBufferPtr buf,
             ntmodel_cap = QEMU_CAPS_DEVICE_VHOST_SCSI_PCI_NON_TRANSITIONAL;
             break;
 
+        case VIR_DOMAIN_DEVICE_RNG:
+            has_tmodel = device.data.rng->model == VIR_DOMAIN_RNG_MODEL_VIRTIO_TRANSITIONAL;
+            has_ntmodel = device.data.rng->model == VIR_DOMAIN_RNG_MODEL_VIRTIO_NON_TRANSITIONAL;
+            tmodel_cap = QEMU_CAPS_DEVICE_VIRTIO_RNG_PCI_TRANSITIONAL;
+            ntmodel_cap = QEMU_CAPS_DEVICE_VIRTIO_RNG_PCI_NON_TRANSITIONAL;
+            break;
+
         case VIR_DOMAIN_DEVICE_LEASE:
         case VIR_DOMAIN_DEVICE_FS:
         case VIR_DOMAIN_DEVICE_INPUT:
@@ -506,7 +513,6 @@ qemuBuildVirtioDevStr(virBufferPtr buf,
         case VIR_DOMAIN_DEVICE_SHMEM:
         case VIR_DOMAIN_DEVICE_TPM:
         case VIR_DOMAIN_DEVICE_PANIC:
-        case VIR_DOMAIN_DEVICE_RNG:
         case VIR_DOMAIN_DEVICE_MEMORY:
         case VIR_DOMAIN_DEVICE_IOMMU:
         case VIR_DOMAIN_DEVICE_VSOCK:
