@@ -472,9 +472,15 @@ qemuBuildVirtioDevStr(virBufferPtr buf,
             ntmodel_cap = QEMU_CAPS_DEVICE_VIRTIO_BLK_PCI_NON_TRANSITIONAL;
             break;
 
+        case VIR_DOMAIN_DEVICE_NET:
+            has_tmodel = STREQ_NULLABLE(device.data.net->model, "virtio-transitional");
+            has_ntmodel = STREQ_NULLABLE(device.data.net->model, "virtio-non-transitional");
+            tmodel_cap = QEMU_CAPS_DEVICE_VIRTIO_NET_PCI_TRANSITIONAL;
+            ntmodel_cap = QEMU_CAPS_DEVICE_VIRTIO_NET_PCI_NON_TRANSITIONAL;
+            break;
+
         case VIR_DOMAIN_DEVICE_LEASE:
         case VIR_DOMAIN_DEVICE_FS:
-        case VIR_DOMAIN_DEVICE_NET:
         case VIR_DOMAIN_DEVICE_INPUT:
         case VIR_DOMAIN_DEVICE_SOUND:
         case VIR_DOMAIN_DEVICE_VIDEO:
