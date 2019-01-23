@@ -400,6 +400,7 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
  * qemuBuildVirtioDevStr
  * @buf: virBufferPtr to append the built string
  * @baseName: qemu virtio device basename string. Ex: virtio-rng for <rng>
+ * @qemuCaps: virQEMUCapPtr
  * @devtype: virDomainDeviceType of the device. Ex: VIR_DOMAIN_DEVICE_TYPE_RNG
  * @devdata: *DefPtr of the device definition
  *
@@ -413,6 +414,7 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
 static int
 qemuBuildVirtioDevStr(virBufferPtr buf,
                       const char *baseName,
+                      virQEMUCapsPtr qemuCaps ATTRIBUTE_UNUSED,
                       virDomainDeviceType devtype,
                       void *devdata)
 {
@@ -2069,7 +2071,7 @@ qemuBuildDiskDeviceStr(const virDomainDef *def,
         break;
 
     case VIR_DOMAIN_DISK_BUS_VIRTIO:
-        if (qemuBuildVirtioDevStr(&opt, "virtio-blk",
+        if (qemuBuildVirtioDevStr(&opt, "virtio-blk", qemuCaps,
                                   VIR_DOMAIN_DEVICE_DISK, disk) < 0) {
             goto error;
         }
@@ -2660,7 +2662,7 @@ qemuBuildFSDevStr(const virDomainDef *def,
         goto error;
     }
 
-    if (qemuBuildVirtioDevStr(&opt, "virtio-9p",
+    if (qemuBuildVirtioDevStr(&opt, "virtio-9p", qemuCaps,
                               VIR_DOMAIN_DEVICE_FS, fs) < 0) {
         goto error;
     }
@@ -2868,7 +2870,7 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
     case VIR_DOMAIN_CONTROLLER_TYPE_SCSI:
         switch ((virDomainControllerModelSCSI) def->model) {
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
-            if (qemuBuildVirtioDevStr(&buf, "virtio-scsi",
+            if (qemuBuildVirtioDevStr(&buf, "virtio-scsi", qemuCaps,
                                       VIR_DOMAIN_DEVICE_CONTROLLER, def) < 0) {
                 goto error;
             }
@@ -2911,7 +2913,7 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
         break;
 
     case VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL:
-        if (qemuBuildVirtioDevStr(&buf, "virtio-serial",
+        if (qemuBuildVirtioDevStr(&buf, "virtio-serial", qemuCaps,
                                   VIR_DOMAIN_DEVICE_CONTROLLER, def) < 0) {
             goto error;
         }
@@ -3682,7 +3684,7 @@ qemuBuildNicDevStr(virDomainDefPtr def,
     char macaddr[VIR_MAC_STRING_BUFLEN];
 
     if (virDomainNetIsVirtioModel(net)) {
-        if (qemuBuildVirtioDevStr(&buf, "virtio-net",
+        if (qemuBuildVirtioDevStr(&buf, "virtio-net", qemuCaps,
                                   VIR_DOMAIN_DEVICE_NET, net) < 0) {
             goto error;
         }
@@ -4078,7 +4080,7 @@ qemuBuildMemballoonCommandLine(virCommandPtr cmd,
     if (!virDomainDefHasMemballoon(def))
         return 0;
 
-    if (qemuBuildVirtioDevStr(&buf, "virtio-balloon",
+    if (qemuBuildVirtioDevStr(&buf, "virtio-balloon", qemuCaps,
                               VIR_DOMAIN_DEVICE_MEMBALLOON,
                               def->memballoon) < 0) {
         goto error;
@@ -4178,25 +4180,25 @@ qemuBuildVirtioInputDevStr(const virDomainDef *def,
 
     switch ((virDomainInputType)dev->type) {
     case VIR_DOMAIN_INPUT_TYPE_MOUSE:
-        if (qemuBuildVirtioDevStr(&buf, "virtio-mouse",
+        if (qemuBuildVirtioDevStr(&buf, "virtio-mouse", qemuCaps,
                                   VIR_DOMAIN_DEVICE_INPUT, dev) < 0) {
             goto error;
         }
         break;
     case VIR_DOMAIN_INPUT_TYPE_TABLET:
-        if (qemuBuildVirtioDevStr(&buf, "virtio-tablet",
+        if (qemuBuildVirtioDevStr(&buf, "virtio-tablet", qemuCaps,
                                   VIR_DOMAIN_DEVICE_INPUT, dev) < 0) {
             goto error;
         }
         break;
     case VIR_DOMAIN_INPUT_TYPE_KBD:
-        if (qemuBuildVirtioDevStr(&buf, "virtio-keyboard",
+        if (qemuBuildVirtioDevStr(&buf, "virtio-keyboard", qemuCaps,
                                   VIR_DOMAIN_DEVICE_INPUT, dev) < 0) {
             goto error;
         }
         break;
     case VIR_DOMAIN_INPUT_TYPE_PASSTHROUGH:
-        if (qemuBuildVirtioDevStr(&buf, "virtio-input-host",
+        if (qemuBuildVirtioDevStr(&buf, "virtio-input-host", qemuCaps,
                                   VIR_DOMAIN_DEVICE_INPUT, dev) < 0) {
             goto error;
         }
@@ -4517,7 +4519,7 @@ qemuBuildDeviceVideoStr(const virDomainDef *def,
     }
 
     if (STREQ(model, "virtio-gpu")) {
-        if (qemuBuildVirtioDevStr(&buf, "virtio-gpu",
+        if (qemuBuildVirtioDevStr(&buf, "virtio-gpu", qemuCaps,
                                   VIR_DOMAIN_DEVICE_VIDEO, video) < 0) {
             goto error;
         }
@@ -4965,7 +4967,7 @@ qemuBuildSCSIVHostHostdevDevStr(const virDomainDef *def,
         goto cleanup;
     }
 
-    if (qemuBuildVirtioDevStr(&buf, "vhost-scsi",
+    if (qemuBuildVirtioDevStr(&buf, "vhost-scsi", qemuCaps,
                               VIR_DOMAIN_DEVICE_HOSTDEV, dev) < 0) {
         goto cleanup;
     }
@@ -5915,7 +5917,7 @@ qemuBuildRNGDevStr(const virDomainDef *def,
                                               dev->source.file))
         goto error;
 
-    if (qemuBuildVirtioDevStr(&buf, "virtio-rng",
+    if (qemuBuildVirtioDevStr(&buf, "virtio-rng", qemuCaps,
                               VIR_DOMAIN_DEVICE_RNG, dev) < 0) {
         goto error;
     }
@@ -10390,7 +10392,7 @@ qemuBuildVsockDevStr(virDomainDefPtr def,
     char *ret = NULL;
 
 
-    if (qemuBuildVirtioDevStr(&buf, "vhost-vsock",
+    if (qemuBuildVirtioDevStr(&buf, "vhost-vsock", qemuCaps,
                               VIR_DOMAIN_DEVICE_VSOCK, vsock) < 0) {
         goto cleanup;
     }
