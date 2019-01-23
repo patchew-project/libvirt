@@ -482,6 +482,8 @@ virPCIDeviceIterDevices(virPCIDeviceIterPredicate predicate,
             *matched = check;
             ret = 1;
             break;
+        } else {
+            virPCIDeviceFree(check);
         }
     }
     VIR_DIR_CLOSE(dir);
