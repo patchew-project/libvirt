@@ -212,6 +212,26 @@
   <flag name='memory-backend-file.align'/>
   <flag name='memory-backend-file.pmem'/>
   <flag name='nvdimm.unarmed'/>
+  <flag name='virtio-blk-pci-transitional'/>
+  <flag name='virtio-blk-pci-non-transitional'/>
+  <flag name='virtio-net-pci-transitional'/>
+  <flag name='virtio-net-pci-non-transitional'/>
+  <flag name='vhost-scsi-pci-transitional'/>
+  <flag name='vhost-scsi-pci-non-transitional'/>
+  <flag name='virtio-rng-pci-transitional'/>
+  <flag name='virtio-rng-pci-non-transitional'/>
+  <flag name='virtio-9p-pci-transitional'/>
+  <flag name='virtio-9p-pci-non-transitional'/>
+  <flag name='virtio-balloon-pci-transitional'/>
+  <flag name='virtio-balloon-pci-non-transitional'/>
+  <flag name='vhost-vsock-pci-transitional'/>
+  <flag name='vhost-vsock-pci-non-transitional'/>
+  <flag name='virtio-input-host-pci-transitional'/>
+  <flag name='virtio-input-host-pci-non-transitional'/>
+  <flag name='virtio-scsi-pci-transitional'/>
+  <flag name='virtio-scsi-pci-non-transitional'/>
+  <flag name='virtio-serial-pci-transitional'/>
+  <flag name='virtio-serial-pci-non-transitional'/>
   <version>3001050</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>446361</microcodeVersion>

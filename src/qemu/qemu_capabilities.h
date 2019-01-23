@@ -504,6 +504,34 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     /* 325 */
     QEMU_CAPS_OBJECT_MEMORY_FILE_PMEM, /* -object memory-backend-file,pmem= */
     QEMU_CAPS_DEVICE_NVDIMM_UNARMED, /* -device nvdimm,unarmed= */
+    QEMU_CAPS_DEVICE_VIRTIO_BLK_PCI_TRANSITIONAL, /* -device virtio-blk-pci-transitional */
+    QEMU_CAPS_DEVICE_VIRTIO_BLK_PCI_NON_TRANSITIONAL, /* -device virtio-blk-pci-non-transitional */
+    QEMU_CAPS_DEVICE_VIRTIO_NET_PCI_TRANSITIONAL, /* -device virtio-net-pci-transitional */
+
+    /* 330 */
+    QEMU_CAPS_DEVICE_VIRTIO_NET_PCI_NON_TRANSITIONAL, /* -device virtio-net-pci-non-transitional */
+    QEMU_CAPS_DEVICE_VHOST_SCSI_PCI_TRANSITIONAL, /* -device vhost-scsi-pci-transitional */
+    QEMU_CAPS_DEVICE_VHOST_SCSI_PCI_NON_TRANSITIONAL, /* -device vhost-scsi-pci-non-transitional */
+    QEMU_CAPS_DEVICE_VIRTIO_RNG_PCI_TRANSITIONAL, /* -device virtio-blk-rng-transitional */
+    QEMU_CAPS_DEVICE_VIRTIO_RNG_PCI_NON_TRANSITIONAL, /* -device virtio-rng-pci-non-transitional */
+
+    /* 335 */
+    QEMU_CAPS_DEVICE_VIRTIO_9P_PCI_TRANSITIONAL, /* -device virtio-9p-pci-transitional */
+    QEMU_CAPS_DEVICE_VIRTIO_9P_PCI_NON_TRANSITIONAL, /* -device virtio-9p-pci-non-transitional */
+    QEMU_CAPS_DEVICE_VIRTIO_BALLOON_PCI_TRANSITIONAL, /* -device virtio-balloon-pci-transitional */
+    QEMU_CAPS_DEVICE_VIRTIO_BALLOON_PCI_NON_TRANSITIONAL, /* -device virtio-balloon-pci-transitional */
+    QEMU_CAPS_DEVICE_VHOST_VSOCK_PCI_TRANSITIONAL, /* -device vhost-vsock-pci-transitional */
+
+    /* 340 */
+    QEMU_CAPS_DEVICE_VHOST_VSOCK_PCI_NON_TRANSITIONAL, /* -device vhost-vsock-pci-non-transitional */
+    QEMU_CAPS_DEVICE_VIRTIO_INPUT_HOST_PCI_TRANSITIONAL, /* -device virtio-input-host-pci-transitional */
+    QEMU_CAPS_DEVICE_VIRTIO_INPUT_HOST_PCI_NON_TRANSITIONAL, /* -device virtio-input-host-pci-non-transitional */
+    QEMU_CAPS_DEVICE_VIRTIO_SCSI_PCI_TRANSITIONAL, /* -device virtio-scsi-pci-transitional */
+    QEMU_CAPS_DEVICE_VIRTIO_SCSI_PCI_NON_TRANSITIONAL, /* -device virtio-scsi-pci-non-transitional */
+
+    /* 345 */
+    QEMU_CAPS_DEVICE_VIRTIO_SERIAL_PCI_TRANSITIONAL, /* -device virtio-serial-pci-transitional */
+    QEMU_CAPS_DEVICE_VIRTIO_SERIAL_PCI_NON_TRANSITIONAL, /* -device virtio-serial-pci-non-transitional */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;

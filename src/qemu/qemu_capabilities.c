@@ -520,6 +520,34 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               /* 325 */
               "memory-backend-file.pmem",
               "nvdimm.unarmed",
+              "virtio-blk-pci-transitional",
+              "virtio-blk-pci-non-transitional",
+              "virtio-net-pci-transitional",
+
+              /* 330 */
+              "virtio-net-pci-non-transitional",
+              "vhost-scsi-pci-transitional",
+              "vhost-scsi-pci-non-transitional",
+              "virtio-rng-pci-transitional",
+              "virtio-rng-pci-non-transitional",
+
+              /* 335 */
+              "virtio-9p-pci-transitional",
+              "virtio-9p-pci-non-transitional",
+              "virtio-balloon-pci-transitional",
+              "virtio-balloon-pci-non-transitional",
+              "vhost-vsock-pci-transitional",
+
+              /* 340 */
+              "vhost-vsock-pci-non-transitional",
+              "virtio-input-host-pci-transitional",
+              "virtio-input-host-pci-non-transitional",
+              "virtio-scsi-pci-transitional",
+              "virtio-scsi-pci-non-transitional",
+
+              /* 345 */
+              "virtio-serial-pci-transitional",
+              "virtio-serial-pci-non-transitional",
     );
 
 
@@ -1108,6 +1136,26 @@ struct virQEMUCapsStringFlags virQEMUCapsObjectTypes[] = {
     { "vfio-ap", QEMU_CAPS_DEVICE_VFIO_AP },
     { "zpci", QEMU_CAPS_DEVICE_ZPCI },
     { "memory-backend-memfd", QEMU_CAPS_OBJECT_MEMORY_MEMFD },
+    { "virtio-blk-pci-transitional", QEMU_CAPS_DEVICE_VIRTIO_BLK_PCI_TRANSITIONAL },
+    { "virtio-blk-pci-non-transitional", QEMU_CAPS_DEVICE_VIRTIO_BLK_PCI_NON_TRANSITIONAL },
+    { "virtio-net-pci-transitional", QEMU_CAPS_DEVICE_VIRTIO_NET_PCI_TRANSITIONAL },
+    { "virtio-net-pci-non-transitional", QEMU_CAPS_DEVICE_VIRTIO_NET_PCI_NON_TRANSITIONAL },
+    { "vhost-scsi-pci-transitional", QEMU_CAPS_DEVICE_VHOST_SCSI_PCI_TRANSITIONAL },
+    { "vhost-scsi-pci-non-transitional", QEMU_CAPS_DEVICE_VHOST_SCSI_PCI_NON_TRANSITIONAL },
+    { "virtio-rng-pci-transitional", QEMU_CAPS_DEVICE_VIRTIO_RNG_PCI_TRANSITIONAL },
+    { "virtio-rng-pci-non-transitional", QEMU_CAPS_DEVICE_VIRTIO_RNG_PCI_NON_TRANSITIONAL },
+    { "virtio-9p-pci-transitional", QEMU_CAPS_DEVICE_VIRTIO_9P_PCI_TRANSITIONAL },
+    { "virtio-9p-pci-non-transitional", QEMU_CAPS_DEVICE_VIRTIO_9P_PCI_NON_TRANSITIONAL },
+    { "virtio-balloon-pci-transitional", QEMU_CAPS_DEVICE_VIRTIO_BALLOON_PCI_TRANSITIONAL },
+    { "virtio-balloon-pci-non-transitional", QEMU_CAPS_DEVICE_VIRTIO_BALLOON_PCI_NON_TRANSITIONAL },
+    { "vhost-vsock-pci-transitional", QEMU_CAPS_DEVICE_VHOST_VSOCK_PCI_TRANSITIONAL },
+    { "vhost-vsock-pci-non-transitional", QEMU_CAPS_DEVICE_VHOST_VSOCK_PCI_NON_TRANSITIONAL },
+    { "virtio-input-host-pci-transitional", QEMU_CAPS_DEVICE_VIRTIO_INPUT_HOST_PCI_TRANSITIONAL },
+    { "virtio-input-host-pci-non-transitional", QEMU_CAPS_DEVICE_VIRTIO_INPUT_HOST_PCI_NON_TRANSITIONAL },
+    { "virtio-scsi-pci-transitional", QEMU_CAPS_DEVICE_VIRTIO_SCSI_PCI_TRANSITIONAL },
+    { "virtio-scsi-pci-non-transitional", QEMU_CAPS_DEVICE_VIRTIO_SCSI_PCI_NON_TRANSITIONAL },
+    { "virtio-serial-pci-transitional", QEMU_CAPS_DEVICE_VIRTIO_SERIAL_PCI_TRANSITIONAL },
+    { "virtio-serial-pci-non-transitional", QEMU_CAPS_DEVICE_VIRTIO_SERIAL_PCI_NON_TRANSITIONAL },
 };
 
 static struct virQEMUCapsStringFlags virQEMUCapsDevicePropsVirtioBalloon[] = {
