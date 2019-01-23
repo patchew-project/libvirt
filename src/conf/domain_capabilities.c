@@ -48,7 +48,7 @@ static int virDomainCapsOnceInit(void)
 }
 
 
-VIR_ONCE_GLOBAL_INIT(virDomainCaps)
+VIR_ONCE_GLOBAL_INIT(virDomainCaps);
 
 
 static void

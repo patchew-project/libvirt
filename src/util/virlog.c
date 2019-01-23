@@ -297,7 +297,7 @@ virLogOnceInit(void)
     return 0;
 }
 
-VIR_ONCE_GLOBAL_INIT(virLog)
+VIR_ONCE_GLOBAL_INIT(virLog);
 
 
 /**

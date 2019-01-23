@@ -97,7 +97,7 @@ virFirewallOnceInit(void)
     return virFirewallValidateBackend(currentBackend);
 }
 
-VIR_ONCE_GLOBAL_INIT(virFirewall)
+VIR_ONCE_GLOBAL_INIT(virFirewall);
 
 static bool iptablesUseLock;
 static bool ip6tablesUseLock;
