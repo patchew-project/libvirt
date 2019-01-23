@@ -7902,6 +7902,8 @@ qemu-kvm -net nic,model=? /dev/null
         </p>
         <ul>
           <li>'virtio' - default with QEMU/KVM</li>
+          <li>'virtio-transitional' (since 5.1.0)</li>
+          <li>'virtio-non-transitional' (since 5.1.0)</li>
           <li>'xen' - default with Xen</li>
         </ul>
       </dd>
