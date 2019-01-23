@@ -196,8 +196,8 @@ typedef enum {
     VIR_TRISTATE_SWITCH_LAST
 } virTristateSwitch;
 
-VIR_ENUM_DECL(virTristateBool)
-VIR_ENUM_DECL(virTristateSwitch)
+VIR_ENUM_DECL(virTristateBool);
+VIR_ENUM_DECL(virTristateSwitch);
 
 virTristateBool virTristateBoolFromBool(bool val);
 virTristateSwitch virTristateSwitchFromBool(bool val);
