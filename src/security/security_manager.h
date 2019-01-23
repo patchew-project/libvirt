@@ -156,10 +156,12 @@ virSecurityManagerPtr* virSecurityManagerGetNested(virSecurityManagerPtr mgr);
 
 int virSecurityManagerSetImageLabel(virSecurityManagerPtr mgr,
                                     virDomainDefPtr vm,
-                                    virStorageSourcePtr src);
+                                    virStorageSourcePtr src,
+                                    bool backingChain);
 int virSecurityManagerRestoreImageLabel(virSecurityManagerPtr mgr,
                                         virDomainDefPtr vm,
-                                        virStorageSourcePtr src);
+                                        virStorageSourcePtr src,
+                                        bool backingChain);
 
 int virSecurityManagerSetMemoryLabel(virSecurityManagerPtr mgr,
                                      virDomainDefPtr vm,

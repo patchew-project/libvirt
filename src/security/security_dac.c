@@ -897,22 +897,17 @@ virSecurityDACSetImageLabelInternal(virSecurityManagerPtr mgr,
 static int
 virSecurityDACSetImageLabel(virSecurityManagerPtr mgr,
                             virDomainDefPtr def,
-                            virStorageSourcePtr src)
+                            virStorageSourcePtr src,
+                            bool backingChain)
 {
-    return virSecurityDACSetImageLabelInternal(mgr, def, src, NULL);
-}
+    virStorageSourcePtr n;
 
-static int
-virSecurityDACSetDiskLabel(virSecurityManagerPtr mgr,
-                           virDomainDefPtr def,
-                           virDomainDiskDefPtr disk)
-
-{
-    virStorageSourcePtr next;
-
-    for (next = disk->src; virStorageSourceIsBacking(next); next = next->backingStore) {
-        if (virSecurityDACSetImageLabelInternal(mgr, def, next, disk->src) < 0)
+    for (n = src; virStorageSourceIsBacking(n); n = n->backingStore) {
+        if (virSecurityDACSetImageLabelInternal(mgr, def, n, src) < 0)
             return -1;
+
+        if (!backingChain)
+            break;
     }
 
     return 0;
@@ -969,18 +964,10 @@ virSecurityDACRestoreImageLabelInt(virSecurityManagerPtr mgr,
 static int
 virSecurityDACRestoreImageLabel(virSecurityManagerPtr mgr,
                                 virDomainDefPtr def,
-                                virStorageSourcePtr src)
+                                virStorageSourcePtr src,
+                                bool backingChain ATTRIBUTE_UNUSED)
 {
     return virSecurityDACRestoreImageLabelInt(mgr, def, src, false);
-}
-
-
-static int
-virSecurityDACRestoreDiskLabel(virSecurityManagerPtr mgr,
-                               virDomainDefPtr def,
-                               virDomainDiskDefPtr disk)
-{
-    return virSecurityDACRestoreImageLabelInt(mgr, def, disk->src, false);
 }
 
 
@@ -1853,9 +1840,7 @@ virSecurityDACSetAllLabel(virSecurityManagerPtr mgr,
         /* XXX fixme - we need to recursively label the entire tree :-( */
         if (virDomainDiskGetType(def->disks[i]) == VIR_STORAGE_TYPE_DIR)
             continue;
-        if (virSecurityDACSetDiskLabel(mgr,
-                                       def,
-                                       def->disks[i]) < 0)
+        if (virSecurityDACSetImageLabel(mgr, def, def->disks[i]->src, true) < 0)
             return -1;
     }
 
@@ -2294,9 +2279,6 @@ virSecurityDriver virSecurityDriverDAC = {
     .transactionAbort                   = virSecurityDACTransactionAbort,
 
     .domainSecurityVerify               = virSecurityDACVerify,
-
-    .domainSetSecurityDiskLabel         = virSecurityDACSetDiskLabel,
-    .domainRestoreSecurityDiskLabel     = virSecurityDACRestoreDiskLabel,
 
     .domainSetSecurityImageLabel        = virSecurityDACSetImageLabel,
     .domainRestoreSecurityImageLabel    = virSecurityDACRestoreImageLabel,
