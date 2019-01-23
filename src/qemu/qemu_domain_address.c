@@ -785,11 +785,14 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
             return pcieFlags;
 
         /* according to pbonzini, from the guest PoV vhost-scsi devices
-         * are the same as virtio-scsi, so they should use virtioFlags
-         * (same as virtio-scsi) to determine Express vs. legacy placement
+         * are the same as virtio-scsi, so they should follow virtio logic
          */
-        if (hostdev->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST)
+        if (hostdev->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI_HOST) {
+            /* Transitional devices only work in conventional PCI slots */
+            if (hostdev->source.subsys.u.scsi_host.model == VIR_DOMAIN_HOSTDEV_SUBSYS_SCSI_VHOST_MODEL_TYPE_VIRTIO_TRANSITIONAL)
+                return pciFlags;
             return virtioFlags;
+        }
 
         if (!(pciDev = virPCIDeviceNew(hostAddr->domain,
                                        hostAddr->bus,
