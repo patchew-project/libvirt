@@ -163,7 +163,7 @@ static int
 networkShutdownNetworkExternal(virNetworkObjPtr obj);
 
 static void
-networkReloadFirewallRules(virNetworkDriverStatePtr driver);
+networkReloadFirewallRules(virNetworkDriverStatePtr driver, bool startup);
 
 static void
 networkRefreshDaemons(virNetworkDriverStatePtr driver);
@@ -551,7 +551,7 @@ firewalld_dbus_filter_bridge(DBusConnection *connection ATTRIBUTE_UNUSED,
                                "Reloaded"))
     {
         VIR_DEBUG("Reload in bridge_driver because of firewalld.");
-        networkReloadFirewallRules(driver);
+        networkReloadFirewallRules(driver, false);
     }
 
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
@@ -751,7 +751,7 @@ networkStateInitialize(bool privileged,
     virNetworkObjListPrune(network_driver->networks,
                            VIR_CONNECT_LIST_NETWORKS_INACTIVE |
                            VIR_CONNECT_LIST_NETWORKS_TRANSIENT);
-    networkReloadFirewallRules(network_driver);
+    networkReloadFirewallRules(network_driver, true);
     networkRefreshDaemons(network_driver);
 
     network_driver->networkEventState = virObjectEventStateNew();
@@ -827,7 +827,7 @@ networkStateReload(void)
     virNetworkObjLoadAllConfigs(network_driver->networks,
                                 network_driver->networkConfigDir,
                                 network_driver->networkAutostartDir);
-    networkReloadFirewallRules(network_driver);
+    networkReloadFirewallRules(network_driver, false);
     networkRefreshDaemons(network_driver);
     virNetworkObjListForEach(network_driver->networks,
                              networkAutostartConfig,
@@ -2179,12 +2179,15 @@ networkReloadFirewallRulesHelper(virNetworkObjPtr obj,
 
 
 static void
-networkReloadFirewallRules(virNetworkDriverStatePtr driver)
+networkReloadFirewallRules(virNetworkDriverStatePtr driver, bool startup)
 {
     VIR_INFO("Reloading iptables rules");
+    if (networkPreReloadFirewallRules(startup) < 0)
+        return;
     virNetworkObjListForEach(driver->networks,
                              networkReloadFirewallRulesHelper,
                              NULL);
+    networkPostReloadFirewallRules(startup);
 }
 
 
