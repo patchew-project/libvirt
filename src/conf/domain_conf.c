@@ -458,7 +458,8 @@ VIR_ENUM_IMPL(virDomainChrChannelTarget,
               "none",
               "guestfwd",
               "virtio",
-              "xen")
+              "xen",
+              "debugcon-isa")
 
 VIR_ENUM_IMPL(virDomainChrConsoleTarget,
               VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_LAST,
@@ -17228,6 +17229,9 @@ virDomainChrEquals(virDomainChrDefPtr src,
                 return src->target.addr == tgt->target.addr;
             return memcmp(src->target.addr, tgt->target.addr,
                           sizeof(*src->target.addr)) == 0;
+            break;
+
+        case VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_DEBUGCON_ISA:
             break;
 
         case VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_NONE:

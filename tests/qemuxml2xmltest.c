@@ -464,6 +464,7 @@ mymain(void)
     DO_TEST("channel-guestfwd", NONE);
     DO_TEST("channel-virtio", NONE);
     DO_TEST("channel-virtio-state", NONE);
+    DO_TEST("channel-debugcon-isa", NONE);
 
     DO_TEST_FULL("channel-unix-source-path", WHEN_INACTIVE, GIC_NONE, NONE);
 

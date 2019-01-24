@@ -4150,6 +4150,13 @@
       </optional>
     </element>
   </define>
+  <define name="debugconIsaTarget">
+    <element name="target">
+      <attribute name="type">
+        <value>debugcon-isa</value>
+      </attribute>
+    </element>
+  </define>
   <define name="channel">
     <element name="channel">
       <ref name="qemucdevSrcType"/>
@@ -4159,6 +4166,7 @@
           <ref name="guestfwdTarget"/>
           <ref name="virtioTarget"/>
           <ref name="xenTarget"/>
+          <ref name="debugconIsaTarget"/>
         </choice>
         <optional>
           <ref name="alias"/>

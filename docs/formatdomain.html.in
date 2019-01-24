@@ -7305,6 +7305,12 @@ qemu-kvm -net nic,model=? /dev/null
   &lt;channel type='spicevmc'&gt;
     &lt;target type='virtio' name='com.redhat.spice.0'/&gt;
   &lt;/channel&gt;
+
+  &lt;channel type='file'&gt;
+    &lt;source path='/var/log/libvirt/qemu/VM.firmware.log'/&gt;
+    &lt;target type='debugcon-isa'/&gt;
+    &lt;address type='isa' iobase='0x402'/&gt;
+  &lt;/channel&gt;
 &lt;/devices&gt;
 ...</pre>
 
@@ -7369,6 +7375,11 @@ qemu-kvm -net nic,model=? /dev/null
         optional <code>address</code> element can tie the channel to a
         particular <code>type='virtio-serial'</code> controller.
         <span class="since">Since 0.8.8</span></dd>
+      <dt><code>debugcon-isa</code></dt>
+      <dd>
+        Debug console on isa bus. Address on bus is given by optional
+        <code>address</code> element.
+        <span class="since">Since 5.1.0</span></dd>
     </dl>
 
     <h5><a id="elementsCharHostInterface">Host interface</a></h5>
