@@ -2123,6 +2123,10 @@ class docBuilder:
                 except:
                     val = info[0]
                 output.write(" value='%s'" % (val))
+                valuestr = re.sub("<", "&lt;", info[0])
+                valuestr = re.sub("[\(\)]", "", valuestr)
+                output.write(" valuestr='%s'" % valuestr)
+
             if info[2] is not None and info[2] != '':
                 output.write(" type='%s'" % info[2])
             if info[1] is not None and info[1] != '':

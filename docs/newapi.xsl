@@ -288,6 +288,17 @@
     </xsl:choose>
   </xsl:template>
 
+  <xsl:template name="enumvalue">
+    <xsl:param name="value" select="@value"/>
+    <xsl:param name="valuestr" select="@valuestr"/>
+    <xsl:value-of select="@value"/>
+    <xsl:if test="$value != $valuestr">
+      <xsl:text> (</xsl:text>
+      <xsl:value-of select="@valuestr"/>
+      <xsl:text>)</xsl:text>
+    </xsl:if>
+  </xsl:template>
+
   <xsl:template match="typedef[@type = 'enum']">
     <xsl:variable name="name" select="string(@name)"/>
     <h3><a name="{$name}"><code><xsl:value-of select="$name"/></code></a></h3>
@@ -306,7 +317,7 @@
             <td><xsl:text> = </xsl:text></td>
             <xsl:choose>
               <xsl:when test="@info != ''">
-                <td><xsl:value-of select="@value"/></td>
+                <td class="enumvalue"><xsl:call-template name="enumvalue"/></td>
                 <td>
                   <div class="comment">
                     <xsl:call-template name="dumptext">
@@ -316,7 +327,7 @@
                 </td>
               </xsl:when>
               <xsl:otherwise>
-                <td colspan="2"><xsl:value-of select="@value"/></td>
+                <td colspan="2" class="enumvalue"><xsl:call-template name="enumvalue"/></td>
               </xsl:otherwise>
             </xsl:choose>
           </tr>
