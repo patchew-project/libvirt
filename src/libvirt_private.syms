@@ -2075,6 +2075,7 @@ iptablesRemoveOutputFixUdpChecksum;
 iptablesRemoveTcpInput;
 iptablesRemoveUdpInput;
 iptablesRemoveUdpOutput;
+iptablesSetupPrivateChains;
 
 
 # util/viriscsi.h
