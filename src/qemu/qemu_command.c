@@ -9485,6 +9485,7 @@ qemuBuildChannelsCommandLine(virLogManagerPtr logManager,
             break;
 
         case VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_VIRTIO:
+        case VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_DEBUGCON_ISA:
             if (!(devstr = qemuBuildChrChardevStr(logManager, secManager,
                                                   cmd, cfg, def,
                                                   channel->source,
@@ -10788,6 +10789,15 @@ qemuBuildChannelChrDeviceStr(char **deviceStr,
         break;
 
     case VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_DEBUGCON_ISA:
+        if (chr->info.addr.isa.iobase) {
+            if (virAsprintf(deviceStr, "isa-debugcon,iobase=0x%x,chardev=char%s",
+                            chr->info.addr.isa.iobase, chr->info.alias) < 0)
+                goto cleanup;
+        } else {
+            if (virAsprintf(deviceStr, "isa-debugcon,chardev=char%s",
+                            chr->info.alias) < 0)
+                goto cleanup;
+        }
         break;
 
     case VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_XEN:

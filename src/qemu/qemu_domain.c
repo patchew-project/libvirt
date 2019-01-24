@@ -4451,7 +4451,19 @@ qemuDomainChrTargetDefValidate(const virDomainChrDef *chr)
 
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CONSOLE:
     case VIR_DOMAIN_CHR_DEVICE_TYPE_PARALLEL:
+        break;
+
     case VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL:
+        if (chr->targetType == VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_DEBUGCON_ISA &&
+            chr->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
+            chr->info.type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_ISA) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("Target type 'debugcon-isa' requires "
+                             " address type 'isa'"));
+            return -1;
+        }
+        break;
+
     case VIR_DOMAIN_CHR_DEVICE_TYPE_LAST:
         /* Nothing to do */
         break;
@@ -4514,6 +4526,14 @@ qemuDomainChrDefValidate(const virDomainChrDef *dev,
                            virDomainChrSerialTargetModelTypeToString(dev->targetModel));
             return -1;
         }
+    }
+
+    if (dev->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL &&
+        dev->targetType == VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_DEBUGCON_ISA &&
+        !ARCH_IS_X86(def->os.arch)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("debugcon-isa is not supported"));
+        return -1;
     }
 
     return 0;

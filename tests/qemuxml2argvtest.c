@@ -1499,6 +1499,7 @@ mymain(void)
     DO_TEST("channel-virtio-auto", NONE);
     DO_TEST("channel-virtio-autoassign", NONE);
     DO_TEST("channel-virtio-autoadd", NONE);
+    DO_TEST("channel-debugcon-isa", NONE);
     DO_TEST("console-virtio", NONE);
     DO_TEST("console-virtio-many",
             QEMU_CAPS_DEVICE_ISA_SERIAL);
