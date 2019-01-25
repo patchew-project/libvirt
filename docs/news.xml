@@ -63,6 +63,17 @@
           capabilities whether KVM nesting support is available.
         </description>
       </change>
+      <change>
+        <summary>
+          bhyve: support for ignoring unknown MSRs writes
+        </summary>
+        <description>
+          A new features element &lt;msrs ignoreUnknownWrites='yes'/&gt; was
+          introduced and the bhyve driver supports it to control unknown
+          Model Specific Registers (MSRs) writes.
+        </description>
+      </change>
+
     </section>
     <section title="Removed features">
       <change>
