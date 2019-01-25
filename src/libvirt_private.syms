@@ -2049,6 +2049,7 @@ virIdentitySetX509DName;
 
 
 # util/virinitctl.h
+virInitctlFifos;
 virInitctlSetRunLevel;
 
 

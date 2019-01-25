@@ -33,6 +33,10 @@ typedef enum {
     VIR_INITCTL_RUNLEVEL_LAST
 } virInitctlRunLevel;
 
-int virInitctlSetRunLevel(virInitctlRunLevel level);
+
+extern const char *virInitctlFifos[3];
+
+int virInitctlSetRunLevel(const char *fifo,
+                          virInitctlRunLevel level);
 
 #endif /* LIBVIRT_VIRINITCTL_H */
