@@ -462,5 +462,21 @@ Example:</p>
 &lt;/domain&gt;
 </pre>
 
+<h3><a id="msrsignorewrites">Ignoring unknown MSRs writes</a></h3>
+
+<p>Some guests might require ignoring unknown Model Specific Registers (MSRs) writes.
+<span class="since">Since 5.1.0</span> it's possible to switch this on using:</p>
+<pre>
+&lt;domain type="bhyve"&gt;
+    ...
+  &lt;features&gt;
+    &lt;msrs ignoreUnknownWrites='yes'/&gt;
+  &lt;/features&gt;
+    ...
+&lt;/domain&gt;
+</pre>
+
+<p>By default unknown writes are not ignored.</p>
+
   </body>
 </html>
