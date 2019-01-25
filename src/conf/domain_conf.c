@@ -153,6 +153,7 @@ VIR_ENUM_IMPL(virDomainFeature, VIR_DOMAIN_FEATURE_LAST,
               "vmcoreinfo",
               "htm",
               "nested-hv",
+              "msrs",
 );
 
 VIR_ENUM_IMPL(virDomainCapabilitiesPolicy, VIR_DOMAIN_CAPABILITIES_POLICY_LAST,
@@ -20232,6 +20233,7 @@ virDomainDefParseXML(xmlDocPtr xml,
         case VIR_DOMAIN_FEATURE_PRIVNET:
         case VIR_DOMAIN_FEATURE_HYPERV:
         case VIR_DOMAIN_FEATURE_KVM:
+        case VIR_DOMAIN_FEATURE_MSRS:
             def->features[val] = VIR_TRISTATE_SWITCH_ON;
             break;
 
@@ -20518,6 +20520,26 @@ virDomainDefParseXML(xmlDocPtr xml,
         if (rv < 0)
             goto error;
         def->tseg_specified = rv;
+    }
+
+    if (def->features[VIR_DOMAIN_FEATURE_MSRS] == VIR_TRISTATE_SWITCH_ON) {
+        if ((node = virXPathNode("./features/msrs", ctxt)) == NULL)
+            goto error;
+
+        if (!(tmp = virXMLPropString(node, "ignoreUnknownWrites"))) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("missing ignoreUnknownWrites attribute for feature '%s'"),
+                           virDomainFeatureTypeToString(VIR_DOMAIN_FEATURE_MSRS));
+            goto error;
+        }
+
+        if ((def->msrs_features[VIR_DOMAIN_MSRS_IGNORE_UNKNOWN_WRITES] = virTristateBoolTypeFromString(tmp)) <= 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unknown ignoreUnknownWrites value '%s'"),
+                           tmp);
+            goto error;
+        }
+        VIR_FREE(tmp);
     }
 
     if ((n = virXPathNodeSet("./features/capabilities/*", ctxt, &nodes)) < 0)
@@ -22580,6 +22602,9 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
                                "driver", virDomainIOAPICTypeToString(dst->features[i]));
                 return false;
             }
+            break;
+
+        case VIR_DOMAIN_FEATURE_MSRS:
             break;
 
         case VIR_DOMAIN_FEATURE_LAST:
@@ -28645,6 +28670,14 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                                         &attributeBuf, &childrenBuf) < 0) {
                     goto error;
                 }
+                break;
+
+            case VIR_DOMAIN_FEATURE_MSRS:
+                if (def->features[i] != VIR_TRISTATE_SWITCH_ON)
+                    break;
+
+                virBufferAsprintf(buf, "<msrs ignoreUnknownWrites='%s'/>\n",
+                                  virTristateBoolTypeToString(def->msrs_features[VIR_DOMAIN_MSRS_IGNORE_UNKNOWN_WRITES]));
                 break;
 
             /* coverity[dead_error_begin] */
