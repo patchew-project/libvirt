@@ -31,13 +31,6 @@ removable=off \
 -drive if=none,id=drive-usb-disk1,media=cdrom \
 -device usb-storage,bus=usb.0,port=2,drive=drive-usb-disk1,id=usb-disk1,\
 removable=off \
--drive file=/root/boot1.iso,format=raw,if=none,id=drive-virtio-disk0,\
-media=cdrom,readonly=on,cache=none \
--device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x2,drive=drive-virtio-disk0,\
-id=virtio-disk0,write-cache=on \
--drive if=none,id=drive-virtio-disk1,media=cdrom \
--device virtio-blk-pci,scsi=off,bus=pci.0,addr=0x3,drive=drive-virtio-disk1,\
-id=virtio-disk1,write-cache=on \
 -drive file=/root/boot2.iso,format=raw,if=sd,index=2,media=cdrom,readonly=on \
 -drive if=sd,index=3,media=cdrom \
 -sandbox on,obsolete=deny,elevateprivileges=deny,spawn=deny,\

@@ -27,17 +27,6 @@
       <readonly/>
     </disk>
     <disk type='file' device='cdrom'>
-      <driver name='qemu' type='raw' cache='none'/>
-      <source file='/root/boot1.iso'/>
-      <target dev='vda' bus='virtio'/>
-      <readonly/>
-    </disk>
-    <disk type='file' device='cdrom'>
-      <driver name='qemu' type='raw' cache='none'/>
-      <target dev='vdb' bus='virtio'/>
-      <readonly/>
-    </disk>
-    <disk type='file' device='cdrom'>
       <driver name='qemu' type='raw'/>
       <source file='/root/boot2.iso'/>
       <target dev='sdc' bus='sd'/>
