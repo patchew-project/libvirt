@@ -1893,7 +1893,7 @@ qemuBuildDiskDeviceStr(const virDomainDef *def,
     if (disk->iothread && !qemuCheckIOThreads(def, disk))
         goto error;
 
-    switch (disk->bus) {
+    switch ((virDomainDiskBus) disk->bus) {
     case VIR_DOMAIN_DISK_BUS_IDE:
         if (disk->info.addr.drive.target != 0) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
@@ -2115,6 +2115,10 @@ qemuBuildDiskDeviceStr(const virDomainDef *def,
         virBufferAsprintf(&opt, "floppy,unit=%d", disk->info.addr.drive.unit);
         break;
 
+    case VIR_DOMAIN_DISK_BUS_XEN:
+    case VIR_DOMAIN_DISK_BUS_UML:
+    case VIR_DOMAIN_DISK_BUS_SD:
+    case VIR_DOMAIN_DISK_BUS_LAST:
     default:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("unsupported disk bus '%s' with device setup"), bus);
