@@ -1,0 +1,38 @@
+.job_template: &job_definition
+  script:
+    - mkdir vpath
+    - cd vpath
+    - ../autogen.sh $LIBVIRT_CONFIGURE_OPTS
+    - make -j $(getconf _NPROCESSORS_ONLN)
+
+crossarm64:
+  <<: *job_definition
+  image: quay.io/libvirt/buildenv-cross-arm64
+
+crossarmel:
+  <<: *job_definition
+  image: quay.io/libvirt/buildenv-cross-armel
+
+crossarmhf:
+  <<: *job_definition
+  image: quay.io/libvirt/buildenv-cross-armhf
+
+crossmips64el:
+  <<: *job_definition
+  image: quay.io/libvirt/buildenv-cross-mips64el
+
+crossmips:
+  <<: *job_definition
+  image: quay.io/libvirt/buildenv-cross-mips
+
+crossmipsel:
+  <<: *job_definition
+  image: quay.io/libvirt/buildenv-cross-mipsel
+
+crossppc64el:
+  <<: *job_definition
+  image: quay.io/libvirt/buildenv-cross-ppc64el
+
+crosss390x:
+  <<: *job_definition
+  image: quay.io/libvirt/buildenv-cross-s390x
