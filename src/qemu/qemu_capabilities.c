@@ -1301,7 +1301,7 @@ static virQEMUCapsObjectTypeProps virQEMUCapsDeviceProps[] = {
     { "vfio-pci", virQEMUCapsDevicePropsVfioPCI,
       ARRAY_CARDINALITY(virQEMUCapsDevicePropsVfioPCI),
       QEMU_CAPS_DEVICE_VFIO_PCI },
-    { "scsi-disk", virQEMUCapsDevicePropsSCSIDisk,
+    { "scsi-hd", virQEMUCapsDevicePropsSCSIDisk,
       ARRAY_CARDINALITY(virQEMUCapsDevicePropsSCSIDisk),
       -1 },
     { "ide-drive", virQEMUCapsDevicePropsIDEDrive,
