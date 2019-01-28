@@ -104,7 +104,7 @@ cihelp:
 	@echo "    cicheck-\$$IMAGE  - run a 'make check'"
 	@echo "    cishell-\$$IMAGE  - run an interactive shell"
 	@echo
-	@echo "Available container images:"
+	@echo "Available x86 native container images:"
 	@echo
 	@echo "    centos-7"
 	@echo "    debian-8"
@@ -115,6 +115,17 @@ cihelp:
 	@echo "    fedora-rawhide"
 	@echo "    ubuntu-16"
 	@echo "    ubuntu-18"
+	@echo
+	@echo "Available cross-compiler container images:"
+	@echo
+	@echo "    cross-arm64"
+	@echo "    cross-armel"
+	@echo "    cross-armhf"
+	@echo "    cross-mips64el"
+	@echo "    cross-mips"
+	@echo "    cross-mipsel"
+	@echo "    cross-ppc64el"
+	@echo "    cross-s390x"
 	@echo
 	@echo "Available make variables:"
 	@echo
