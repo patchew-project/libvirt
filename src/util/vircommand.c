@@ -2057,11 +2057,13 @@ virCommandProcessIO(virCommandPtr cmd)
         outfd = cmd->outfd;
         if (VIR_REALLOC_N(*cmd->outbuf, 1) < 0)
             ret = -1;
+        *cmd->outbuf[0] = '\0';
     }
     if (cmd->errbuf) {
         errfd = cmd->errfd;
         if (VIR_REALLOC_N(*cmd->errbuf, 1) < 0)
             ret = -1;
+        *cmd->errbuf[0] = '\0';
     }
     if (ret == -1)
         goto cleanup;
