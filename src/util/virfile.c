@@ -351,8 +351,12 @@ virFileWrapperFdFree(virFileWrapperFdPtr wfd)
     if (!wfd)
         return;
 
+    /* If the command used to process IO has produced errors, it's fair
+     * to assume those will be more relevant to the user than whatever
+     * eg. QEMU can figure out on its own, so it's okay if we end up
+     * discarding an existing error */
     if (wfd->err_msg && *wfd->err_msg)
-        VIR_WARN("iohelper reports: %s", wfd->err_msg);
+        virReportError(VIR_ERR_OPERATION_FAILED, "%s", wfd->err_msg);
 
     virCommandAbort(wfd->cmd);
 
