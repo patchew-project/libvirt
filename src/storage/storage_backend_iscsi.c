@@ -158,7 +158,7 @@ static char *
 virStorageBackendISCSIFindPoolSources(const char *srcSpec,
                                       unsigned int flags)
 {
-    virStoragePoolSourcePtr source = NULL;
+    VIR_AUTOPTR(virStoragePoolSource) source = NULL;
     size_t ntargets = 0;
     char **targets = NULL;
     char *ret = NULL;
@@ -227,7 +227,6 @@ virStorageBackendISCSIFindPoolSources(const char *srcSpec,
         VIR_FREE(targets[i]);
     VIR_FREE(targets);
     VIR_FREE(portal);
-    virStoragePoolSourceFree(source);
     return ret;
 }
 

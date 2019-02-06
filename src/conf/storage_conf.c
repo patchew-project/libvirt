@@ -625,7 +625,8 @@ virStoragePoolDefParseSourceString(const char *srcSpec,
     xmlDocPtr doc = NULL;
     xmlNodePtr node = NULL;
     xmlXPathContextPtr xpath_ctxt = NULL;
-    virStoragePoolSourcePtr def = NULL, ret = NULL;
+    VIR_AUTOPTR(virStoragePoolSource) def = NULL;
+    virStoragePoolSourcePtr ret = NULL;
 
     if (!(doc = virXMLParseStringCtxt(srcSpec,
                                       _("(storage_source_specification)"),
@@ -647,7 +648,6 @@ virStoragePoolDefParseSourceString(const char *srcSpec,
 
     VIR_STEAL_PTR(ret, def);
  cleanup:
-    virStoragePoolSourceFree(def);
     xmlFreeDoc(doc);
     xmlXPathFreeContext(xpath_ctxt);
 

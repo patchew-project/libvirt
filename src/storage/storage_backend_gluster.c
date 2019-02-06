@@ -489,7 +489,7 @@ virStorageBackendGlusterFindPoolSources(const char *srcSpec,
                                       .nsources = 0,
                                       .sources = NULL
                                     };
-    virStoragePoolSourcePtr source = NULL;
+    VIR_AUTOPTR(virStoragePoolSource) source = NULL;
     char *ret = NULL;
     int rc;
     size_t i;
@@ -532,7 +532,6 @@ virStorageBackendGlusterFindPoolSources(const char *srcSpec,
         virStoragePoolSourceClear(&list.sources[i]);
     VIR_FREE(list.sources);
 
-    virStoragePoolSourceFree(source);
     return ret;
 }
 
