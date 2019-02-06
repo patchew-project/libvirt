@@ -2312,13 +2312,25 @@ static int
 qemuDomainObjPrivateXMLFormatBlockjobs(virBufferPtr buf,
                                        virDomainObjPtr vm)
 {
+    qemuDomainObjPrivatePtr priv = vm->privateData;
     virBuffer attrBuf = VIR_BUFFER_INITIALIZER;
     bool bj = qemuDomainHasBlockjob(vm, false);
+    int ret = -1;
 
     virBufferAsprintf(&attrBuf, " active='%s'",
                       virTristateBoolTypeToString(virTristateBoolFromBool(bj)));
 
-    return virXMLFormatElement(buf, "blockjobs", &attrBuf, NULL);
+    if (virXMLFormatElement(buf, "blockjobs", &attrBuf, NULL) < 0)
+        goto cleanup;
+
+    /* TODO: merge other blockjobs and backups into uniform space? */
+    if (priv->backup && virDomainBackupDefFormat(buf, priv->backup, true) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    virBufferFreeAndReset(&attrBuf);
+    return ret;
 }
 
 
@@ -2675,18 +2687,29 @@ qemuDomainObjPrivateXMLParseAutomaticPlacement(xmlXPathContextPtr ctxt,
 
 
 static int
-qemuDomainObjPrivateXMLParseBlockjobs(qemuDomainObjPrivatePtr priv,
+qemuDomainObjPrivateXMLParseBlockjobs(virQEMUDriverPtr driver,
+                                      qemuDomainObjPrivatePtr priv,
                                       xmlXPathContextPtr ctxt)
 {
+    xmlNodePtr node;
     char *active;
     int tmp;
+    int ret = -1;
 
     if ((active = virXPathString("string(./blockjobs/@active)", ctxt)) &&
         (tmp = virTristateBoolTypeFromString(active)) > 0)
         priv->reconnectBlockjobs = tmp;
 
+    if ((node = virXPathNode("./domainbackup", ctxt)) &&
+        !(priv->backup = virDomainBackupDefParseNode(ctxt->doc, node,
+                                                     driver->xmlopt,
+                                                     VIR_DOMAIN_BACKUP_PARSE_INTERNAL)))
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
     VIR_FREE(active);
-    return 0;
+    return ret;
 }
 
 
@@ -3065,7 +3088,7 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
 
     qemuDomainObjPrivateXMLParsePR(ctxt, &priv->prDaemonRunning);
 
-    if (qemuDomainObjPrivateXMLParseBlockjobs(priv, ctxt) < 0)
+    if (qemuDomainObjPrivateXMLParseBlockjobs(driver, priv, ctxt) < 0)
         goto error;
 
     qemuDomainStorageIdReset(priv);
