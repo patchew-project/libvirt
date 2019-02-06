@@ -1099,6 +1099,7 @@ int qemuMonitorNBDServerStart(qemuMonitorPtr mon,
                               const char *tls_alias);
 int qemuMonitorNBDServerAdd(qemuMonitorPtr mon,
                             const char *deviceID,
+                            const char *export,
                             bool writable);
 int qemuMonitorNBDServerStop(qemuMonitorPtr);
 int qemuMonitorGetTPMModels(qemuMonitorPtr mon,

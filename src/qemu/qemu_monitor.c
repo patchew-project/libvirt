@@ -3945,13 +3945,14 @@ qemuMonitorNBDServerStart(qemuMonitorPtr mon,
 int
 qemuMonitorNBDServerAdd(qemuMonitorPtr mon,
                         const char *deviceID,
+                        const char *export,
                         bool writable)
 {
-    VIR_DEBUG("deviceID=%s", deviceID);
+    VIR_DEBUG("deviceID=%s, export=%s", deviceID, NULLSTR(export));
 
     QEMU_CHECK_MONITOR(mon);
 
-    return qemuMonitorJSONNBDServerAdd(mon, deviceID, writable);
+    return qemuMonitorJSONNBDServerAdd(mon, deviceID, export, writable);
 }
 
 

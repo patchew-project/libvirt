@@ -465,6 +465,7 @@ int qemuMonitorJSONNBDServerStart(qemuMonitorPtr mon,
                                   const char *tls_alias);
 int qemuMonitorJSONNBDServerAdd(qemuMonitorPtr mon,
                                 const char *deviceID,
+                                const char *export,
                                 bool writable);
 int qemuMonitorJSONNBDServerStop(qemuMonitorPtr mon);
 int qemuMonitorJSONGetTPMModels(qemuMonitorPtr mon,
