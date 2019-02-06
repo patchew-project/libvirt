@@ -104,9 +104,9 @@ virStorageBackendZFSParseVol(virStoragePoolObjPtr pool,
                              const char *volume_string)
 {
     int ret = -1;
-    char **tokens;
     size_t count;
-    char **name_tokens = NULL;
+    VIR_AUTOPTR(virString) tokens = NULL;
+    VIR_AUTOPTR(virString) name_tokens = NULL;
     char *vol_name;
     bool is_new_vol = false;
     virStorageVolDefPtr volume = NULL;
@@ -169,8 +169,6 @@ virStorageBackendZFSParseVol(virStoragePoolObjPtr pool,
 
     ret = 0;
  cleanup:
-    virStringListFree(tokens);
-    virStringListFree(name_tokens);
     if (is_new_vol)
         virStorageVolDefFree(volume);
     return ret;
@@ -183,7 +181,7 @@ virStorageBackendZFSFindVols(virStoragePoolObjPtr pool,
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
     virCommandPtr cmd = NULL;
     char *volumes_list = NULL;
-    char **lines = NULL;
+    VIR_AUTOPTR(virString) lines = NULL;
     size_t i;
 
     /**
@@ -221,7 +219,6 @@ virStorageBackendZFSFindVols(virStoragePoolObjPtr pool,
 
  cleanup:
     virCommandFree(cmd);
-    virStringListFree(lines);
     VIR_FREE(volumes_list);
 
     return 0;
@@ -233,8 +230,8 @@ virStorageBackendZFSRefreshPool(virStoragePoolObjPtr pool ATTRIBUTE_UNUSED)
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
     virCommandPtr cmd = NULL;
     char *zpool_props = NULL;
-    char **lines = NULL;
-    char **tokens = NULL;
+    VIR_AUTOPTR(virString) lines = NULL;
+    VIR_AUTOPTR(virString) tokens = NULL;
     size_t i;
 
     /**
@@ -296,8 +293,6 @@ virStorageBackendZFSRefreshPool(virStoragePoolObjPtr pool ATTRIBUTE_UNUSED)
 
  cleanup:
     virCommandFree(cmd);
-    virStringListFree(lines);
-    virStringListFree(tokens);
     VIR_FREE(zpool_props);
 
     return 0;

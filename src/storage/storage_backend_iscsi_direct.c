@@ -411,7 +411,7 @@ virISCSIDirectUpdateTargets(struct iscsi_context *iscsi,
     struct iscsi_discovery_address *addr;
     struct iscsi_discovery_address *tmp_addr;
     size_t tmp_ntargets = 0;
-    char **tmp_targets = NULL;
+    VIR_AUTOPTR(virString) tmp_targets = NULL;
 
     if (!(addr = iscsi_discovery_sync(iscsi))) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -439,7 +439,6 @@ virISCSIDirectUpdateTargets(struct iscsi_context *iscsi,
     ret = 0;
  cleanup:
     iscsi_free_discovery_data(iscsi, addr);
-    virStringListFreeCount(tmp_targets, tmp_ntargets);
     return ret;
 }
 

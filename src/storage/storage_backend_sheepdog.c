@@ -138,8 +138,8 @@ virStorageBackendSheepdogRefreshAllVol(virStoragePoolObjPtr pool)
 {
     int ret = -1;
     char *output = NULL;
-    char **lines = NULL;
-    char **cells = NULL;
+    VIR_AUTOPTR(virString) lines = NULL;
+    VIR_AUTOPTR(virString) cells = NULL;
     size_t i;
 
     virCommandPtr cmd = virCommandNewArgList(SHEEPDOGCLI, "vdi", "list", "-r", NULL);
@@ -173,8 +173,6 @@ virStorageBackendSheepdogRefreshAllVol(virStoragePoolObjPtr pool)
 
  cleanup:
     virCommandFree(cmd);
-    virStringListFree(lines);
-    virStringListFree(cells);
     VIR_FREE(output);
     return ret;
 }
