@@ -56,7 +56,8 @@ virStorageBackendDiskMakeDataVol(virStoragePoolObjPtr pool,
                                  virStorageVolDefPtr vol)
 {
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
-    char *tmp, *devpath, *partname;
+    char *tmp, *partname;
+    VIR_AUTOFREE(char *) devpath = NULL;
     bool addVol = false;
 
     /* Prepended path will be same for all partitions, so we can
@@ -89,7 +90,6 @@ virStorageBackendDiskMakeDataVol(virStoragePoolObjPtr pool,
          * way of doing this...
          */
         vol->target.path = virStorageBackendStablePath(pool, devpath, true);
-        VIR_FREE(devpath);
         if (vol->target.path == NULL)
             goto error;
     }
@@ -355,13 +355,12 @@ virStorageBackendDiskReadPartitions(virStoragePoolObjPtr pool,
      */
 
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
-    char *parthelper_path;
+    VIR_AUTOFREE(char *) parthelper_path = NULL;
     VIR_AUTOPTR(virCommand) cmd = NULL;
     struct virStorageBackendDiskPoolVolData cbdata = {
         .pool = pool,
         .vol = vol,
     };
-    int ret;
 
     if (!(parthelper_path = virFileFindResource("libvirt_parthelper",
                                                 abs_topbuilddir "/src",
@@ -388,12 +387,7 @@ virStorageBackendDiskReadPartitions(virStoragePoolObjPtr pool,
         def->allocation = 0;
     def->capacity = def->available = 0;
 
-    ret = virCommandRunNul(cmd,
-                           6,
-                           virStorageBackendDiskMakeVol,
-                           &cbdata);
-    VIR_FREE(parthelper_path);
-    return ret;
+    return virCommandRunNul(cmd, 6, virStorageBackendDiskMakeVol, &cbdata);
 }
 
 static int
@@ -419,9 +413,8 @@ static int
 virStorageBackendDiskReadGeometry(virStoragePoolObjPtr pool)
 {
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
-    char *parthelper_path;
+    VIR_AUTOFREE(char *) parthelper_path = NULL;
     VIR_AUTOPTR(virCommand) cmd = NULL;
-    int ret;
 
     if (!(parthelper_path = virFileFindResource("libvirt_parthelper",
                                                 abs_topbuilddir "/src",
@@ -433,12 +426,8 @@ virStorageBackendDiskReadGeometry(virStoragePoolObjPtr pool)
                                "-g",
                                NULL);
 
-    ret = virCommandRunNul(cmd,
-                           3,
-                           virStorageBackendDiskMakePoolGeometry,
-                           pool);
-    VIR_FREE(parthelper_path);
-    return ret;
+    return virCommandRunNul(cmd, 3, virStorageBackendDiskMakePoolGeometry,
+                            pool);
 }
 
 static int
@@ -769,14 +758,13 @@ virStorageBackendDiskDeleteVol(virStoragePoolObjPtr pool,
                                unsigned int flags)
 {
     char *part_num = NULL;
-    char *devpath = NULL;
     char *dev_name;
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
     char *src_path = def->source.devices[0].path;
     char *srcname = last_component(src_path);
+    VIR_AUTOFREE(char *) devpath = NULL;
     VIR_AUTOPTR(virCommand) cmd = NULL;
     bool isDevMapperDevice;
-    int rc = -1;
 
     virCheckFlags(0, -1);
 
@@ -799,7 +787,7 @@ virStorageBackendDiskDeleteVol(virStoragePoolObjPtr pool,
             virReportSystemError(errno,
                                  _("Couldn't read volume target path '%s'"),
                                  vol->target.path);
-            goto cleanup;
+            return -1;
         }
         dev_name = last_component(devpath);
     }
@@ -810,7 +798,7 @@ virStorageBackendDiskDeleteVol(virStoragePoolObjPtr pool,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Volume path '%s' did not start with parent "
                          "pool source device name."), dev_name);
-        goto cleanup;
+        return -1;
     }
 
     part_num = dev_name + strlen(srcname);
@@ -824,7 +812,7 @@ virStorageBackendDiskDeleteVol(virStoragePoolObjPtr pool,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("cannot parse partition number from target "
                          "'%s'"), dev_name);
-        goto cleanup;
+        return -1;
     }
 
     /* eg parted /dev/sda rm 2 or /dev/mapper/mpathc rm 2 */
@@ -835,7 +823,7 @@ virStorageBackendDiskDeleteVol(virStoragePoolObjPtr pool,
                                part_num,
                                NULL);
     if (virCommandRun(cmd, NULL) < 0)
-        goto cleanup;
+        return -1;
 
     /* Refreshing the pool is the easiest option as LOGICAL and EXTENDED
      * partition allocation/capacity management is handled within
@@ -844,12 +832,9 @@ virStorageBackendDiskDeleteVol(virStoragePoolObjPtr pool,
      */
     virStoragePoolObjClearVols(pool);
     if (virStorageBackendDiskRefreshPool(pool) < 0)
-        goto cleanup;
+        return -1;
 
-    rc = 0;
- cleanup:
-    VIR_FREE(devpath);
-    return rc;
+    return 0;
 }
 
 
@@ -857,11 +842,10 @@ static int
 virStorageBackendDiskCreateVol(virStoragePoolObjPtr pool,
                                virStorageVolDefPtr vol)
 {
-    int res = -1;
-    char *partFormat = NULL;
     unsigned long long startOffset = 0, endOffset = 0;
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
     virErrorPtr save_err;
+    VIR_AUTOFREE(char *)partFormat = NULL;
     VIR_AUTOPTR(virCommand) cmd = NULL;
 
     cmd = virCommandNewArgList(PARTED,
@@ -874,11 +858,11 @@ virStorageBackendDiskCreateVol(virStoragePoolObjPtr pool,
         vol->target.encryption->format != VIR_STORAGE_ENCRYPTION_FORMAT_LUKS) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("storage pool only supports LUKS encrypted volumes"));
-        goto cleanup;
+        return -1;
     }
 
     if (virStorageBackendDiskPartFormat(pool, vol, &partFormat) != 0)
-        goto cleanup;
+        return -1;
     virCommandAddArg(cmd, partFormat);
 
     /* If we're going to encrypt using LUKS, then we could need up to
@@ -888,13 +872,13 @@ virStorageBackendDiskCreateVol(virStoragePoolObjPtr pool,
 
     if (virStorageBackendDiskPartBoundaries(pool, &startOffset, &endOffset,
                                             vol->target.capacity) < 0)
-        goto cleanup;
+        return -1;
 
     virCommandAddArgFormat(cmd, "%lluB", startOffset);
     virCommandAddArgFormat(cmd, "%lluB", endOffset);
 
     if (virCommandRun(cmd, NULL) < 0)
-        goto cleanup;
+        return -1;
 
     /* wait for device node to show up */
     virWaitForDevices();
@@ -918,11 +902,7 @@ virStorageBackendDiskCreateVol(virStoragePoolObjPtr pool,
             goto error;
     }
 
-    res = 0;
-
- cleanup:
-    VIR_FREE(partFormat);
-    return res;
+    return 0;
 
  error:
     /* Best effort to remove the partition. Ignore any errors
@@ -932,7 +912,7 @@ virStorageBackendDiskCreateVol(virStoragePoolObjPtr pool,
     ignore_value(virStorageBackendDiskDeleteVol(pool, vol, 0));
     virSetError(save_err);
     virFreeError(save_err);
-    goto cleanup;
+    return -1;
 }
 
 
