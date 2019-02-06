@@ -9872,8 +9872,11 @@ qemuFindAgentConfig(virDomainDefPtr def)
 
 bool
 qemuDomainMachineIsQ35(const char *machine,
-                       const virArch arch ATTRIBUTE_UNUSED)
+                       const virArch arch)
 {
+    if (!ARCH_IS_X86(arch))
+        return false;
+
     return (STRPREFIX(machine, "pc-q35-") ||
             STREQ(machine, "q35"));
 }
@@ -9881,8 +9884,11 @@ qemuDomainMachineIsQ35(const char *machine,
 
 bool
 qemuDomainMachineIsI440FX(const char *machine,
-                          const virArch arch ATTRIBUTE_UNUSED)
+                          const virArch arch)
 {
+    if (!ARCH_IS_X86(arch))
+        return false;
+
     return (STREQ(machine, "pc") ||
             STRPREFIX(machine, "pc-0.") ||
             STRPREFIX(machine, "pc-1.") ||
@@ -9893,8 +9899,11 @@ qemuDomainMachineIsI440FX(const char *machine,
 
 bool
 qemuDomainMachineIsS390CCW(const char *machine,
-                           const virArch arch ATTRIBUTE_UNUSED)
+                           const virArch arch)
 {
+    if (!ARCH_IS_S390(arch))
+        return false;
+
     return STRPREFIX(machine, "s390-ccw");
 }
 
@@ -9959,9 +9968,12 @@ qemuDomainMachineHasBuiltinIDE(const char *machine,
 
 bool
 qemuDomainMachineNeedsFDC(const char *machine,
-                          const virArch arch ATTRIBUTE_UNUSED)
+                          const virArch arch)
 {
     const char *p = STRSKIP(machine, "pc-q35-");
+
+    if (!ARCH_IS_X86(arch))
+        return false;
 
     if (p) {
         if (STRPREFIX(p, "1.") ||
