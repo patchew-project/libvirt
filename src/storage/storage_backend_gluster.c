@@ -237,8 +237,8 @@ virStorageBackendGlusterRefreshVol(virStorageBackendGlusterStatePtr state,
     int ret = -1;
     VIR_AUTOPTR(virStorageVolDef) vol = NULL;
     VIR_AUTOFREE(char *) header = NULL;
+    VIR_AUTOPTR(virStorageSource) meta = NULL;
     glfs_fd_t *fd = NULL;
-    virStorageSourcePtr meta = NULL;
     ssize_t len;
     int backingFormat;
 
@@ -323,7 +323,6 @@ virStorageBackendGlusterRefreshVol(virStorageBackendGlusterStatePtr state,
     VIR_STEAL_PTR(*volptr, vol);
     ret = 0;
  cleanup:
-    virStorageSourceFree(meta);
     if (fd)
         glfs_close(fd);
     return ret;

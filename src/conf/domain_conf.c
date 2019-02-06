@@ -9059,7 +9059,7 @@ virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
                                unsigned int flags,
                                virDomainXMLOptionPtr xmlopt)
 {
-    virStorageSourcePtr backingStore = NULL;
+    VIR_AUTOPTR(virStorageSource) backingStore = NULL;
     xmlNodePtr save_ctxt = ctxt->node;
     xmlNodePtr source;
     char *type = NULL;
@@ -9126,7 +9126,6 @@ virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
     ret = 0;
 
  cleanup:
-    virStorageSourceFree(backingStore);
     VIR_FREE(type);
     VIR_FREE(format);
     VIR_FREE(idx);
