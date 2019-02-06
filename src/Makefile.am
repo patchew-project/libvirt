@@ -176,6 +176,7 @@ DRIVER_SOURCES += \
 		$(DATATYPES_SOURCES) \
 		libvirt.c libvirt_internal.h \
 		libvirt-domain.c \
+		libvirt-domain-checkpoint.c \
 		libvirt-domain-snapshot.c \
 		libvirt-host.c \
 		libvirt-interface.c \
@@ -727,6 +728,7 @@ libvirt_setuid_rpc_client_la_SOURCES = \
 		datatypes.c \
 		libvirt.c \
 		libvirt-domain.c \
+		libvirt-domain-checkpoint.c \
 		libvirt-domain-snapshot.c \
 		libvirt-host.c \
 		libvirt-interface.c \
