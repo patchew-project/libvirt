@@ -48,6 +48,7 @@
 #include "qemu_hostdev.h"
 #include "qemu_hotplug.h"
 #include "qemu_monitor.h"
+#include "qemu_monitor_json.h"
 #include "qemu_process.h"
 #include "qemu_migration.h"
 #include "qemu_migration_params.h"
@@ -17095,6 +17096,51 @@ qemuDomainCheckpointPrepare(virQEMUDriverPtr driver, virCapsPtr caps,
     return ret;
 }
 
+static int
+qemuDomainCheckpointAddActions(virDomainObjPtr vm,
+                               virJSONValuePtr actions,
+                               virDomainCheckpointObjPtr old_current,
+                               virDomainCheckpointDefPtr def)
+{
+    size_t i, j;
+    int ret = -1;
+
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainCheckpointDiskDef *disk = &def->disks[i];
+        const char *node;
+
+        if (disk->type != VIR_DOMAIN_CHECKPOINT_TYPE_BITMAP)
+            continue;
+        node = qemuBlockNodeLookup(vm, disk->name);
+        if (qemuMonitorJSONTransactionAdd(actions,
+                                          "block-dirty-bitmap-add",
+                                          "s:node", node,
+                                          "s:name", disk->bitmap,
+                                          "b:persistent", true,
+                                          NULL) < 0)
+            goto cleanup;
+        if (old_current) {
+            for (j = 0; j < old_current->def->ndisks; j++) {
+                virDomainCheckpointDiskDef *disk2;
+
+                disk2 = &old_current->def->disks[j];
+                if (STRNEQ(disk->name, disk2->name))
+                    continue;
+                if (disk2->type == VIR_DOMAIN_CHECKPOINT_TYPE_BITMAP &&
+                    qemuMonitorJSONTransactionAdd(actions,
+                                                  "block-dirty-bitmap-disable",
+                                                  "s:node", node,
+                                                  "s:name", disk2->bitmap,
+                                                  NULL) < 0)
+                    goto cleanup;
+            }
+        }
+    }
+    ret = 0;
+
+ cleanup:
+    return ret;
+}
 
 static virDomainCheckpointPtr
 qemuDomainCheckpointCreateXML(virDomainPtr domain,
@@ -17112,6 +17158,9 @@ qemuDomainCheckpointCreateXML(virDomainPtr domain,
     virDomainCheckpointObjPtr other = NULL;
     virQEMUDriverConfigPtr cfg = NULL;
     virCapsPtr caps = NULL;
+    qemuDomainObjPrivatePtr priv;
+    virJSONValuePtr actions = NULL;
+    int ret;
 
     virCheckFlags(VIR_DOMAIN_CHECKPOINT_CREATE_REDEFINE |
                   VIR_DOMAIN_CHECKPOINT_CREATE_CURRENT |
@@ -17125,10 +17174,17 @@ qemuDomainCheckpointCreateXML(virDomainPtr domain,
     if (!(vm = qemuDomObjFromDomain(domain)))
         goto cleanup;
 
+    priv = vm->privateData;
     cfg = virQEMUDriverGetConfig(driver);
 
     if (virDomainCheckpointCreateXMLEnsureACL(domain->conn, vm->def) < 0)
         goto cleanup;
+
+    if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BITMAP_MERGE)) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                       _("qemu binary lacks persistent bitmaps support"));
+        goto cleanup;
+    }
 
     if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
         goto cleanup;
@@ -17171,6 +17227,7 @@ qemuDomainCheckpointCreateXML(virDomainPtr domain,
     if (update_current)
         chk->def->current = true;
     if (vm->current_checkpoint) {
+        other = vm->current_checkpoint;
         if (!redefine &&
             VIR_STRDUP(chk->def->parent, vm->current_checkpoint->def->name) < 0)
                 goto endjob;
@@ -17190,7 +17247,14 @@ qemuDomainCheckpointCreateXML(virDomainPtr domain,
          * makes sense, such as checking that qemu-img recognizes the
          * checkpoint bitmap name in at least one of the domain's disks?  */
     } else {
-        /* TODO: issue QMP transaction command */
+        if (!(actions = virJSONValueNewArray()))
+            goto endjob;
+        if (qemuDomainCheckpointAddActions(vm, actions, other, chk->def) < 0)
+            goto endjob;
+        qemuDomainObjEnterMonitor(driver, vm);
+        ret = qemuMonitorTransaction(priv->mon, &actions);
+        if (qemuDomainObjExitMonitor(driver, vm) < 0 || ret < 0)
+            goto endjob;
     }
 
     /* If we fail after this point, there's not a whole lot we can do;
@@ -17229,6 +17293,7 @@ qemuDomainCheckpointCreateXML(virDomainPtr domain,
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:
+    virJSONValueFree(actions);
     virDomainObjEndAPI(&vm);
     virDomainCheckpointDefFree(def);
     VIR_FREE(xml);
@@ -17601,6 +17666,7 @@ qemuDomainCheckpointDelete(virDomainCheckpointPtr checkpoint,
 {
     virQEMUDriverPtr driver = checkpoint->domain->conn->privateData;
     virDomainObjPtr vm = NULL;
+    qemuDomainObjPrivatePtr priv;
     int ret = -1;
     virDomainCheckpointObjPtr chk = NULL;
     virQEMUDependentRemove rem;
@@ -17622,6 +17688,22 @@ qemuDomainCheckpointDelete(virDomainCheckpointPtr checkpoint,
 
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
         goto cleanup;
+
+    priv = vm->privateData;
+    if (!metadata_only) {
+        /* Until qemu-img supports offline bitmap deletion, we are stuck
+         * with requiring a running guest */
+        if (!virDomainObjIsActive(vm)) {
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                           _("cannot delete checkpoint for inactive domain"));
+            goto endjob;
+        }
+        if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BITMAP_MERGE)) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("qemu binary lacks persistent bitmaps support"));
+            goto endjob;
+        }
+    }
 
     if (!(chk = qemuCheckObjFromCheckpoint(vm, checkpoint)))
         goto endjob;
