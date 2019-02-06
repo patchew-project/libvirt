@@ -1376,6 +1376,17 @@ typedef int
 (*virDrvDomainCheckpointDelete)(virDomainCheckpointPtr checkpoint,
                                 unsigned int flags);
 
+typedef int
+(*virDrvDomainBackupBegin)(virDomainPtr domain, const char *diskXml,
+                           const char *checkpointXml, unsigned int flags);
+
+typedef char *
+(*virDrvDomainBackupGetXMLDesc)(virDomainPtr domain, int id,
+                                unsigned int flags);
+
+typedef int
+(*virDrvDomainBackupEnd)(virDomainPtr domain, int id, unsigned int flags);
+
 typedef struct _virHypervisorDriver virHypervisorDriver;
 typedef virHypervisorDriver *virHypervisorDriverPtr;
 
@@ -1638,6 +1649,9 @@ struct _virHypervisorDriver {
     virDrvDomainCheckpointIsCurrent domainCheckpointIsCurrent;
     virDrvDomainCheckpointHasMetadata domainCheckpointHasMetadata;
     virDrvDomainCheckpointDelete domainCheckpointDelete;
+    virDrvDomainBackupBegin domainBackupBegin;
+    virDrvDomainBackupGetXMLDesc domainBackupGetXMLDesc;
+    virDrvDomainBackupEnd domainBackupEnd;
 };
 
 

@@ -2561,7 +2561,9 @@ VIR_ENUM_IMPL(virshDomainBlockJob,
               N_("Block Pull"),
               N_("Block Copy"),
               N_("Block Commit"),
-              N_("Active Block Commit"));
+              N_("Active Block Commit"),
+              N_("Backup"),
+);
 
 static const char *
 virshDomainBlockJobToString(int type)
@@ -6064,7 +6066,9 @@ VIR_ENUM_IMPL(virshDomainJobOperation,
               N_("Outgoing migration"),
               N_("Snapshot"),
               N_("Snapshot revert"),
-              N_("Dump"));
+              N_("Dump"),
+              N_("Backup"),
+);
 
 static const char *
 virshDomainJobOperationToString(int op)

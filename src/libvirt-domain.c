@@ -1,7 +1,7 @@
 /*
  * libvirt-domain.c: entry points for virDomainPtr APIs
  *
- * Copyright (C) 2006-2015 Red Hat, Inc.
+ * Copyright (C) 2006-2018 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -10324,6 +10324,12 @@ virDomainBlockRebase(virDomainPtr dom, const char *disk,
  * with the VIR_DOMAIN_BLOCK_REBASE_COPY flag, and offers better control
  * over the destination format, the ability to copy to a destination that
  * is not a local file, and the possibility of additional tuning parameters.
+ *
+ * The copy created by this API is not finalized until the job ends,
+ * and does not lend itself to incremental backups (beyond what
+ * VIR_DOMAIN_BLOCK_COPY_SHALLOW provides) nor to third-party control
+ * over the data being copied.  For those features, use
+ * virDomainBackupBegin().
  *
  * Returns 0 if the operation has started, -1 on failure.
  */

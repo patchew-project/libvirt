@@ -152,4 +152,25 @@ int virDomainCheckpointDelete(virDomainCheckpointPtr checkpoint,
 int virDomainCheckpointRef(virDomainCheckpointPtr checkpoint);
 int virDomainCheckpointFree(virDomainCheckpointPtr checkpoint);
 
+typedef enum {
+    VIR_DOMAIN_BACKUP_BEGIN_NO_METADATA = (1 << 0), /* Make checkpoint without
+                                                       remembering it */
+    /* TODO: VIR_DOMAIN_BACKUP_BEGIN_QUIESCE */
+} virDomainBackupBeginFlags;
+
+/* Begin an incremental backup job, possibly creating a checkpoint. */
+int virDomainBackupBegin(virDomainPtr domain, const char *diskXml,
+                         const char *checkpointXml, unsigned int flags);
+
+/* Learn about an ongoing backup job. */
+char *virDomainBackupGetXMLDesc(virDomainPtr domain, int id,
+                                unsigned int flags);
+
+typedef enum {
+    VIR_DOMAIN_BACKUP_END_ABORT = (1 << 0), /* Abandon a push model backup */
+} virDomainBackupEndFlags;
+
+/* Complete (or abort) an incremental backup job. */
+int virDomainBackupEnd(virDomainPtr domain, int id, unsigned int flags);
+
 #endif /* LIBVIRT_DOMAIN_CHECKPOINT_H */
