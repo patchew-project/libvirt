@@ -179,6 +179,8 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
             goto error;
         if (virAsprintf(&cfg->snapshotDir, "%s/snapshot", cfg->libDir) < 0)
             goto error;
+        if (virAsprintf(&cfg->checkpointDir, "%s/checkpoint", cfg->libDir) < 0)
+            goto error;
         if (virAsprintf(&cfg->autoDumpPath, "%s/dump", cfg->libDir) < 0)
             goto error;
         if (virAsprintf(&cfg->channelTargetDir,
@@ -241,6 +243,8 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
         if (virAsprintf(&cfg->saveDir, "%s/qemu/save", cfg->configBaseDir) < 0)
             goto error;
         if (virAsprintf(&cfg->snapshotDir, "%s/qemu/snapshot", cfg->configBaseDir) < 0)
+            goto error;
+        if (virAsprintf(&cfg->checkpointDir, "%s/qemu/checkpoint", cfg->configBaseDir) < 0)
             goto error;
         if (virAsprintf(&cfg->autoDumpPath, "%s/qemu/dump", cfg->configBaseDir) < 0)
             goto error;
@@ -354,6 +358,7 @@ static void virQEMUDriverConfigDispose(void *obj)
     VIR_FREE(cfg->cacheDir);
     VIR_FREE(cfg->saveDir);
     VIR_FREE(cfg->snapshotDir);
+    VIR_FREE(cfg->checkpointDir);
     VIR_FREE(cfg->channelTargetDir);
     VIR_FREE(cfg->nvramDir);
 
