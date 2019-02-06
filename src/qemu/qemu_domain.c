@@ -9870,7 +9870,7 @@ qemuFindAgentConfig(virDomainDefPtr def)
 }
 
 
-bool
+static bool
 qemuDomainMachineIsQ35(const char *machine,
                        const virArch arch)
 {
@@ -9882,7 +9882,7 @@ qemuDomainMachineIsQ35(const char *machine,
 }
 
 
-bool
+static bool
 qemuDomainMachineIsI440FX(const char *machine,
                           const virArch arch)
 {
@@ -9897,7 +9897,7 @@ qemuDomainMachineIsI440FX(const char *machine,
 }
 
 
-bool
+static bool
 qemuDomainMachineIsS390CCW(const char *machine,
                            const virArch arch)
 {
@@ -9908,6 +9908,8 @@ qemuDomainMachineIsS390CCW(const char *machine,
 }
 
 
+/* You should normally avoid this function and use
+ * qemuDomainIsARMVirt() instead. */
 bool
 qemuDomainMachineIsARMVirt(const char *machine,
                            const virArch arch)
@@ -9925,7 +9927,7 @@ qemuDomainMachineIsARMVirt(const char *machine,
 }
 
 
-bool
+static bool
 qemuDomainMachineIsRISCVVirt(const char *machine,
                              const virArch arch)
 {
@@ -9940,6 +9942,8 @@ qemuDomainMachineIsRISCVVirt(const char *machine,
 }
 
 
+/* You should normally avoid this function and use
+ * qemuDomainIsPSeries() instead. */
 bool
 qemuDomainMachineIsPSeries(const char *machine,
                            const virArch arch)
@@ -9955,6 +9959,8 @@ qemuDomainMachineIsPSeries(const char *machine,
 }
 
 
+/* You should normally avoid this function and use
+ * qemuDomainHasBuiltinIDE() instead. */
 bool
 qemuDomainMachineHasBuiltinIDE(const char *machine,
                                const virArch arch)
@@ -9966,7 +9972,7 @@ qemuDomainMachineHasBuiltinIDE(const char *machine,
 }
 
 
-bool
+static bool
 qemuDomainMachineNeedsFDC(const char *machine,
                           const virArch arch)
 {
