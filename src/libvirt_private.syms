@@ -69,6 +69,13 @@ virCapabilitiesSetNetPrefix;
 
 
 # conf/checkpoint_conf.h
+virDomainBackupAlignDisks;
+virDomainBackupDefFormat;
+virDomainBackupDefFree;
+virDomainBackupDefParseNode;
+virDomainBackupDefParseString;
+virDomainBackupTypeFromString;
+virDomainBackupTypeToString;
 virDomainCheckpointAlignDisks;
 virDomainCheckpointAssignDef;
 virDomainCheckpointDefFormat;
@@ -87,7 +94,6 @@ virDomainCheckpointTypeFromString;
 virDomainCheckpointTypeToString;
 virDomainCheckpointUpdateRelations;
 virDomainListAllCheckpoints;
-
 
 # conf/cpu_conf.h
 virCPUCacheModeTypeFromString;
