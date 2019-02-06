@@ -555,6 +555,7 @@ virDomainStateReasonFromString;
 virDomainStateReasonToString;
 virDomainStateTypeFromString;
 virDomainStateTypeToString;
+virDomainStorageNetworkParseHost;
 virDomainStorageSourceFormat;
 virDomainStorageSourceParse;
 virDomainTaintTypeFromString;
