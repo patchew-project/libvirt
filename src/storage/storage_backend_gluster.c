@@ -242,7 +242,7 @@ virStorageBackendGlusterRefreshVol(virStorageBackendGlusterStatePtr state,
                                    virStorageVolDefPtr *volptr)
 {
     int ret = -1;
-    virStorageVolDefPtr vol = NULL;
+    VIR_AUTOPTR(virStorageVolDef) vol = NULL;
     glfs_fd_t *fd = NULL;
     virStorageSourcePtr meta = NULL;
     char *header = NULL;
@@ -278,8 +278,7 @@ virStorageBackendGlusterRefreshVol(virStorageBackendGlusterStatePtr state,
     if (S_ISDIR(st->st_mode)) {
         vol->type = VIR_STORAGE_VOL_NETDIR;
         vol->target.format = VIR_STORAGE_FILE_DIR;
-        *volptr = vol;
-        vol = NULL;
+        VIR_STEAL_PTR(*volptr, vol);
         ret = 0;
         goto cleanup;
     }
@@ -328,12 +327,10 @@ virStorageBackendGlusterRefreshVol(virStorageBackendGlusterStatePtr state,
     vol->target.compat = meta->compat;
     meta->compat = NULL;
 
-    *volptr = vol;
-    vol = NULL;
+    VIR_STEAL_PTR(*volptr, vol);
     ret = 0;
  cleanup:
     virStorageSourceFree(meta);
-    virStorageVolDefFree(vol);
     if (fd)
         glfs_close(fd);
     VIR_FREE(header);

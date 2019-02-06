@@ -1952,7 +1952,7 @@ phypStorageVolCreateXML(virStoragePoolPtr pool,
 {
     virCheckFlags(0, NULL);
 
-    virStorageVolDefPtr voldef = NULL;
+    VIR_AUTOPTR(virStorageVolDef) voldef = NULL;
     virStoragePoolDefPtr spdef = NULL;
     virStorageVolPtr vol = NULL;
     virStorageVolPtr dup_vol = NULL;
@@ -2036,7 +2036,6 @@ phypStorageVolCreateXML(virStoragePoolPtr pool,
 
  err:
     VIR_FREE(key);
-    virStorageVolDefFree(voldef);
     virStoragePoolDefFree(spdef);
     virObjectUnref(vol);
     return NULL;

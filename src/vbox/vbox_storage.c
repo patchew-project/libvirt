@@ -401,7 +401,7 @@ vboxStorageVolCreateXML(virStoragePoolPtr pool,
                         const char *xml, unsigned int flags)
 {
     vboxDriverPtr data = pool->conn->privateData;
-    virStorageVolDefPtr def = NULL;
+    VIR_AUTOPTR(virStorageVolDef) def = NULL;
     PRUnichar *hddFormatUtf16 = NULL;
     PRUnichar *hddNameUtf16 = NULL;
     virStoragePoolDef poolDef;
@@ -501,7 +501,6 @@ vboxStorageVolCreateXML(virStoragePoolPtr pool,
     VBOX_RELEASE(progress);
     VBOX_UTF16_FREE(hddFormatUtf16);
     VBOX_UTF16_FREE(hddNameUtf16);
-    virStorageVolDefFree(def);
     return ret;
 }
 
