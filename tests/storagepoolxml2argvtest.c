@@ -24,30 +24,35 @@ testCompareXMLToArgvFiles(bool shouldFail,
 {
     VIR_AUTOFREE(char *) actualCmdline = NULL;
     VIR_AUTOFREE(char *) src = NULL;
+    VIR_AUTOPTR(virStoragePoolDef) def = NULL;
+    int defType;
     int ret = -1;
     virCommandPtr cmd = NULL;
-    virStoragePoolDefPtr def = NULL;
     virStoragePoolObjPtr pool = NULL;
+    virStoragePoolDefPtr objDef;
 
     if (!(def = virStoragePoolDefParseFile(poolxml)))
         goto cleanup;
+    defType = def->type;
 
-    switch ((virStoragePoolType)def->type) {
+    switch ((virStoragePoolType)defType) {
     case VIR_STORAGE_POOL_FS:
     case VIR_STORAGE_POOL_NETFS:
+
         if (!(pool = virStoragePoolObjNew())) {
-            VIR_TEST_DEBUG("pool type %d alloc pool obj fails\n", def->type);
-            virStoragePoolDefFree(def);
+            VIR_TEST_DEBUG("pool type %d alloc pool obj fails\n", defType);
             goto cleanup;
         }
         virStoragePoolObjSetDef(pool, def);
+        def = NULL;
+        objDef = virStoragePoolObjGetDef(pool);
 
         if (!(src = virStorageBackendFileSystemGetPoolSource(pool))) {
-            VIR_TEST_DEBUG("pool type %d has no pool source\n", def->type);
+            VIR_TEST_DEBUG("pool type %d has no pool source\n", defType);
             goto cleanup;
         }
 
-        cmd = virStorageBackendFileSystemMountCmd(MOUNT, def, src);
+        cmd = virStorageBackendFileSystemMountCmd(MOUNT, objDef, src);
         break;
 
     case VIR_STORAGE_POOL_LOGICAL:
@@ -67,12 +72,12 @@ testCompareXMLToArgvFiles(bool shouldFail,
     case VIR_STORAGE_POOL_VSTORAGE:
     case VIR_STORAGE_POOL_LAST:
     default:
-        VIR_TEST_DEBUG("pool type %d has no xml2argv test\n", def->type);
+        VIR_TEST_DEBUG("pool type %d has no xml2argv test\n", defType);
         goto cleanup;
     };
 
     if (!(actualCmdline = virCommandToString(cmd, false))) {
-        VIR_TEST_DEBUG("pool type %d failed to get commandline\n", def->type);
+        VIR_TEST_DEBUG("pool type %d failed to get commandline\n", defType);
         goto cleanup;
     }
 

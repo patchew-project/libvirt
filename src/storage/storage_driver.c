@@ -690,7 +690,7 @@ storagePoolCreateXML(virConnectPtr conn,
                      const char *xml,
                      unsigned int flags)
 {
-    virStoragePoolDefPtr newDef;
+    VIR_AUTOPTR(virStoragePoolDef) newDef = NULL;
     virStoragePoolObjPtr obj = NULL;
     virStoragePoolDefPtr def;
     virStoragePoolPtr pool = NULL;
@@ -762,7 +762,6 @@ storagePoolCreateXML(virConnectPtr conn,
 
  cleanup:
     VIR_FREE(stateFile);
-    virStoragePoolDefFree(newDef);
     virObjectEventStateQueue(driver->storageEventState, event);
     virStoragePoolObjEndAPI(&obj);
     return pool;
@@ -779,9 +778,10 @@ storagePoolDefineXML(virConnectPtr conn,
                      const char *xml,
                      unsigned int flags)
 {
-    virStoragePoolDefPtr newDef;
+    VIR_AUTOPTR(virStoragePoolDef) newDef = NULL;
     virStoragePoolObjPtr obj = NULL;
     virStoragePoolDefPtr def;
+    virStoragePoolDefPtr objNewDef;
     virStoragePoolPtr pool = NULL;
     virObjectEventPtr event = NULL;
 
@@ -801,14 +801,14 @@ storagePoolDefineXML(virConnectPtr conn,
 
     if (!(obj = virStoragePoolObjAssignDef(driver->pools, newDef, false)))
         goto cleanup;
-    newDef = virStoragePoolObjGetNewDef(obj);
+    newDef = NULL;
+    objNewDef = virStoragePoolObjGetNewDef(obj);
     def = virStoragePoolObjGetDef(obj);
 
-    if (virStoragePoolObjSaveDef(driver, obj, newDef ? newDef : def) < 0) {
+    if (virStoragePoolObjSaveDef(driver, obj, objNewDef ? objNewDef : def) < 0) {
         virStoragePoolObjRemove(driver->pools, obj);
         virObjectUnref(obj);
         obj = NULL;
-        newDef = NULL;
         goto cleanup;
     }
 
@@ -818,11 +818,9 @@ storagePoolDefineXML(virConnectPtr conn,
 
     VIR_INFO("Defining storage pool '%s'", def->name);
     pool = virGetStoragePool(conn, def->name, def->uuid, NULL, NULL);
-    newDef = NULL;
 
  cleanup:
     virObjectEventStateQueue(driver->storageEventState, event);
-    virStoragePoolDefFree(newDef);
     virStoragePoolObjEndAPI(&obj);
     return pool;
 }

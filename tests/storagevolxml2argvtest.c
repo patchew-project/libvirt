@@ -50,18 +50,19 @@ testCompareXMLToArgvFiles(bool shouldFail,
 
     VIR_AUTOPTR(virStorageVolDef) vol = NULL;
     VIR_AUTOPTR(virStorageVolDef) inputvol = NULL;
-    virStoragePoolDefPtr def = NULL;
-    virStoragePoolDefPtr inputpool = NULL;
+    VIR_AUTOPTR(virStoragePoolDef) inputpool = NULL;
+    VIR_AUTOPTR(virStoragePoolDef) def = NULL;
     virStoragePoolObjPtr obj = NULL;
+    virStoragePoolDefPtr objDef;
 
     if (!(def = virStoragePoolDefParseFile(poolxml)))
         goto cleanup;
 
-    if (!(obj = virStoragePoolObjNew())) {
-        virStoragePoolDefFree(def);
+    if (!(obj = virStoragePoolObjNew()))
         goto cleanup;
-    }
     virStoragePoolObjSetDef(obj, def);
+    def = NULL;
+    objDef = virStoragePoolObjGetDef(obj);
 
     if (inputpoolxml) {
         if (!(inputpool = virStoragePoolDefParseFile(inputpoolxml)))
@@ -71,14 +72,14 @@ testCompareXMLToArgvFiles(bool shouldFail,
     if (inputvolxml)
         parse_flags |= VIR_VOL_XML_PARSE_NO_CAPACITY;
 
-    if (!(vol = virStorageVolDefParseFile(def, volxml, parse_flags)))
+    if (!(vol = virStorageVolDefParseFile(objDef, volxml, parse_flags)))
         goto cleanup;
 
     if (inputvolxml &&
         !(inputvol = virStorageVolDefParseFile(inputpool, inputvolxml, 0)))
         goto cleanup;
 
-    testSetVolumeType(vol, def);
+    testSetVolumeType(vol, objDef);
     testSetVolumeType(inputvol, inputpool);
 
     /* Using an input file for encryption requires a multi-step process
@@ -139,7 +140,6 @@ testCompareXMLToArgvFiles(bool shouldFail,
     ret = 0;
 
  cleanup:
-    virStoragePoolDefFree(inputpool);
     virCommandFree(cmd);
     VIR_FREE(actualCmdline);
     virStoragePoolObjEndAPI(&obj);

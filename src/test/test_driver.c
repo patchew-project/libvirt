@@ -4474,7 +4474,7 @@ testStoragePoolCreateXML(virConnectPtr conn,
                          unsigned int flags)
 {
     testDriverPtr privconn = conn->privateData;
-    virStoragePoolDefPtr newDef;
+    VIR_AUTOPTR(virStoragePoolDef) newDef = NULL;
     virStoragePoolObjPtr obj = NULL;
     virStoragePoolDefPtr def;
     virStoragePoolPtr pool = NULL;
@@ -4527,7 +4527,6 @@ testStoragePoolCreateXML(virConnectPtr conn,
     pool = virGetStoragePool(conn, def->name, def->uuid, NULL, NULL);
 
  cleanup:
-    virStoragePoolDefFree(newDef);
     virObjectEventStateQueue(privconn->eventState, event);
     virStoragePoolObjEndAPI(&obj);
     virObjectUnlock(privconn);
@@ -4541,7 +4540,7 @@ testStoragePoolDefineXML(virConnectPtr conn,
                          unsigned int flags)
 {
     testDriverPtr privconn = conn->privateData;
-    virStoragePoolDefPtr newDef;
+    VIR_AUTOPTR(virStoragePoolDef) newDef = NULL;
     virStoragePoolObjPtr obj = NULL;
     virStoragePoolDefPtr def;
     virStoragePoolPtr pool = NULL;
@@ -4576,7 +4575,6 @@ testStoragePoolDefineXML(virConnectPtr conn,
     pool = virGetStoragePool(conn, def->name, def->uuid, NULL, NULL);
 
  cleanup:
-    virStoragePoolDefFree(newDef);
     virObjectEventStateQueue(privconn->eventState, event);
     virStoragePoolObjEndAPI(&obj);
     virObjectUnlock(privconn);
