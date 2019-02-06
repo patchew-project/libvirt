@@ -3,7 +3,7 @@
  *   remote_internal driver and libvirtd.  This protocol is
  *   internal and may change at any time.
  *
- * Copyright (C) 2006-2015 Red Hat, Inc.
+ * Copyright (C) 2006-2018 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -136,6 +136,9 @@ const REMOTE_AUTH_TYPE_LIST_MAX = 20;
 
 /* Upper limit on list of memory stats */
 const REMOTE_DOMAIN_MEMORY_STATS_MAX = 1024;
+
+/* Upper limit on lists of domain checkpoints. */
+const REMOTE_DOMAIN_CHECKPOINT_LIST_MAX = 16384;
 
 /* Upper limit on lists of domain snapshots. */
 const REMOTE_DOMAIN_SNAPSHOT_LIST_MAX = 16384;
@@ -320,6 +323,12 @@ struct remote_nonnull_secret {
     remote_uuid uuid;
     int usageType;
     remote_nonnull_string usageID;
+};
+
+/* A checkpoint which may not be NULL. */
+struct remote_nonnull_domain_checkpoint {
+    remote_nonnull_string name;
+    remote_nonnull_domain dom;
 };
 
 /* A snapshot which may not be NULL. */
@@ -3564,6 +3573,137 @@ struct remote_connect_list_all_nwfilter_bindings_ret { /* insert@1 */
     remote_nonnull_nwfilter_binding bindings<REMOTE_NWFILTER_BINDING_LIST_MAX>;
     unsigned int ret;
 };
+struct remote_domain_checkpoint_create_xml_args {
+    remote_nonnull_domain dom;
+    remote_nonnull_string xml_desc;
+    unsigned int flags;
+};
+
+struct remote_domain_checkpoint_create_xml_ret {
+    remote_nonnull_domain_checkpoint checkpoint;
+};
+
+struct remote_domain_checkpoint_get_xml_desc_args {
+    remote_nonnull_domain_checkpoint checkpoint;
+    unsigned int flags;
+};
+
+struct remote_domain_checkpoint_get_xml_desc_ret {
+    remote_nonnull_string xml;
+};
+
+struct remote_domain_list_checkpoints_args {
+    remote_nonnull_domain dom;
+    int need_results;
+    unsigned int flags;
+};
+
+struct remote_domain_list_checkpoints_ret { /* insert@1 */
+    remote_nonnull_domain_checkpoint checkpoints<REMOTE_DOMAIN_CHECKPOINT_LIST_MAX>;
+    int ret;
+};
+
+struct remote_domain_checkpoint_list_children_args {
+    remote_nonnull_domain_checkpoint checkpoint;
+    int need_results;
+    unsigned int flags;
+};
+
+struct remote_domain_checkpoint_list_children_ret { /* insert@1 */
+    remote_nonnull_domain_checkpoint checkpoints<REMOTE_DOMAIN_CHECKPOINT_LIST_MAX>;
+    int ret;
+};
+
+struct remote_domain_checkpoint_lookup_by_name_args {
+    remote_nonnull_domain dom;
+    remote_nonnull_string name;
+    unsigned int flags;
+};
+
+struct remote_domain_checkpoint_lookup_by_name_ret {
+    remote_nonnull_domain_checkpoint checkpoint;
+};
+
+struct remote_domain_has_current_checkpoint_args {
+    remote_nonnull_domain dom;
+    unsigned int flags;
+};
+
+struct remote_domain_has_current_checkpoint_ret {
+    int result;
+};
+
+struct remote_domain_checkpoint_get_parent_args {
+    remote_nonnull_domain_checkpoint checkpoint;
+    unsigned int flags;
+};
+
+struct remote_domain_checkpoint_get_parent_ret {
+    remote_nonnull_domain_checkpoint parent;
+};
+
+struct remote_domain_checkpoint_current_args {
+    remote_nonnull_domain dom;
+    unsigned int flags;
+};
+
+struct remote_domain_checkpoint_current_ret {
+    remote_nonnull_domain_checkpoint checkpoint;
+};
+
+struct remote_domain_checkpoint_is_current_args {
+    remote_nonnull_domain_checkpoint checkpoint;
+    unsigned int flags;
+};
+
+struct remote_domain_checkpoint_is_current_ret {
+    int current;
+};
+
+struct remote_domain_checkpoint_has_metadata_args {
+    remote_nonnull_domain_checkpoint checkpoint;
+    unsigned int flags;
+};
+
+struct remote_domain_checkpoint_has_metadata_ret {
+    int metadata;
+};
+
+struct remote_domain_checkpoint_delete_args {
+    remote_nonnull_domain_checkpoint checkpoint;
+    unsigned int flags;
+};
+
+struct remote_domain_backup_begin_args {
+    remote_nonnull_domain dom;
+    remote_string disk_xml;
+    remote_string checkpoint_xml;
+    unsigned int flags;
+};
+
+struct remote_domain_backup_begin_ret {
+    int result;
+};
+
+struct remote_domain_backup_get_xml_desc_args {
+    remote_nonnull_domain dom;
+    int id;
+    unsigned int flags;
+};
+
+struct remote_domain_backup_get_xml_desc_ret {
+    remote_nonnull_string xml;
+};
+
+struct remote_domain_backup_end_args {
+    remote_nonnull_domain dom;
+    int id;
+    unsigned int flags;
+};
+
+struct remote_domain_backup_end_ret {
+    int retcode;
+};
 
 /*----- Protocol. -----*/
 
@@ -6328,6 +6468,100 @@ enum remote_procedure {
      * @acl: domain:save:!VIR_DOMAIN_AFFECT_CONFIG|VIR_DOMAIN_AFFECT_LIVE
      * @acl: domain:save:VIR_DOMAIN_AFFECT_CONFIG
      */
-    REMOTE_PROC_DOMAIN_SET_IOTHREAD_PARAMS = 402
+    REMOTE_PROC_DOMAIN_SET_IOTHREAD_PARAMS = 402,
 
+   /**
+     * @generate: both
+     * @acl: domain:checkpoint
+     */
+    REMOTE_PROC_DOMAIN_CHECKPOINT_CREATE_XML = 403,
+
+    /**
+     * @generate: both
+     * @acl: domain:read
+     * @acl: domain:read_secure:VIR_DOMAIN_CHECKPOINT_XML_SECURE
+     */
+    REMOTE_PROC_DOMAIN_CHECKPOINT_GET_XML_DESC = 404,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: domain:read
+     */
+    REMOTE_PROC_DOMAIN_LIST_CHECKPOINTS = 405,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: domain:read
+     */
+    REMOTE_PROC_DOMAIN_CHECKPOINT_LIST_CHILDREN = 406,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: domain:read
+     */
+    REMOTE_PROC_DOMAIN_CHECKPOINT_LOOKUP_BY_NAME = 407,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: domain:read
+     */
+    REMOTE_PROC_DOMAIN_HAS_CURRENT_CHECKPOINT = 408,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: domain:read
+     */
+    REMOTE_PROC_DOMAIN_CHECKPOINT_CURRENT = 409,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: domain:read
+     */
+    REMOTE_PROC_DOMAIN_CHECKPOINT_GET_PARENT = 410,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: domain:read
+     */
+    REMOTE_PROC_DOMAIN_CHECKPOINT_IS_CURRENT = 411,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: domain:read
+     */
+    REMOTE_PROC_DOMAIN_CHECKPOINT_HAS_METADATA = 412,
+
+    /**
+     * @generate: both
+     * @acl: domain:checkpoint
+     */
+    REMOTE_PROC_DOMAIN_CHECKPOINT_DELETE = 413,
+
+    /**
+     * @generate: both
+     * @acl: domain:checkpoint
+     * @acl: domain:block_read
+     */
+    REMOTE_PROC_DOMAIN_BACKUP_BEGIN = 414,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: domain:read
+     */
+    REMOTE_PROC_DOMAIN_BACKUP_GET_XML_DESC = 415,
+
+    /**
+     * @generate: both
+     * @acl: domain:checkpoint
+     */
+    REMOTE_PROC_DOMAIN_BACKUP_END = 416
 };
