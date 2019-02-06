@@ -356,7 +356,7 @@ virStorageBackendDiskReadPartitions(virStoragePoolObjPtr pool,
 
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
     char *parthelper_path;
-    virCommandPtr cmd;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     struct virStorageBackendDiskPoolVolData cbdata = {
         .pool = pool,
         .vol = vol,
@@ -392,7 +392,6 @@ virStorageBackendDiskReadPartitions(virStoragePoolObjPtr pool,
                            6,
                            virStorageBackendDiskMakeVol,
                            &cbdata);
-    virCommandFree(cmd);
     VIR_FREE(parthelper_path);
     return ret;
 }
@@ -421,7 +420,7 @@ virStorageBackendDiskReadGeometry(virStoragePoolObjPtr pool)
 {
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
     char *parthelper_path;
-    virCommandPtr cmd;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     int ret;
 
     if (!(parthelper_path = virFileFindResource("libvirt_parthelper",
@@ -438,7 +437,6 @@ virStorageBackendDiskReadGeometry(virStoragePoolObjPtr pool)
                            3,
                            virStorageBackendDiskMakePoolGeometry,
                            pool);
-    virCommandFree(cmd);
     VIR_FREE(parthelper_path);
     return ret;
 }
@@ -502,51 +500,40 @@ virStorageBackendDiskBuildPool(virStoragePoolObjPtr pool,
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
     int format = def->source.format;
     const char *fmt;
-    bool ok_to_mklabel = false;
-    int ret = -1;
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
 
     virCheckFlags(VIR_STORAGE_POOL_BUILD_OVERWRITE |
-                  VIR_STORAGE_POOL_BUILD_NO_OVERWRITE, ret);
+                  VIR_STORAGE_POOL_BUILD_NO_OVERWRITE, -1);
 
-    VIR_EXCLUSIVE_FLAGS_GOTO(VIR_STORAGE_POOL_BUILD_OVERWRITE,
-                             VIR_STORAGE_POOL_BUILD_NO_OVERWRITE,
-                             error);
+    VIR_EXCLUSIVE_FLAGS_RET(VIR_STORAGE_POOL_BUILD_OVERWRITE,
+                            VIR_STORAGE_POOL_BUILD_NO_OVERWRITE,
+                            -1);
 
     fmt = virStoragePoolFormatDiskTypeToString(format);
-    if (flags & VIR_STORAGE_POOL_BUILD_OVERWRITE) {
-        ok_to_mklabel = true;
-    } else {
-        if (virStorageBackendDeviceIsEmpty(def->source.devices[0].path,
-                                           fmt, true))
-            ok_to_mklabel = true;
-    }
+    if (!(flags & VIR_STORAGE_POOL_BUILD_OVERWRITE) &&
+        !(virStorageBackendDeviceIsEmpty(def->source.devices[0].path,
+                                         fmt, true)))
+        return -1;
 
-    if (ok_to_mklabel) {
-        if (virStorageBackendZeroPartitionTable(def->source.devices[0].path,
-                                                1024 * 1024) < 0)
-            goto error;
+    if (virStorageBackendZeroPartitionTable(def->source.devices[0].path,
+                                            1024 * 1024) < 0)
+        return -1;
 
-        /* eg parted /dev/sda mklabel --script msdos */
-        if (format == VIR_STORAGE_POOL_DISK_UNKNOWN)
-            format = def->source.format = VIR_STORAGE_POOL_DISK_DOS;
-        if (format == VIR_STORAGE_POOL_DISK_DOS)
-            fmt = "msdos";
-        else
-            fmt = virStoragePoolFormatDiskTypeToString(format);
+    /* eg parted /dev/sda mklabel --script msdos */
+    if (format == VIR_STORAGE_POOL_DISK_UNKNOWN)
+        format = def->source.format = VIR_STORAGE_POOL_DISK_DOS;
+    if (format == VIR_STORAGE_POOL_DISK_DOS)
+        fmt = "msdos";
+    else
+        fmt = virStoragePoolFormatDiskTypeToString(format);
 
-        cmd = virCommandNewArgList(PARTED,
-                                   def->source.devices[0].path,
-                                   "mklabel",
-                                   "--script",
-                                   fmt,
-                                   NULL);
-        ret = virCommandRun(cmd, NULL);
-    }
-
- error:
-    virCommandFree(cmd);
-    return ret;
+    cmd = virCommandNewArgList(PARTED,
+                               def->source.devices[0].path,
+                               "mklabel",
+                               "--script",
+                               fmt,
+                               NULL);
+    return virCommandRun(cmd, NULL);
 }
 
 
@@ -787,7 +774,7 @@ virStorageBackendDiskDeleteVol(virStoragePoolObjPtr pool,
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
     char *src_path = def->source.devices[0].path;
     char *srcname = last_component(src_path);
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     bool isDevMapperDevice;
     int rc = -1;
 
@@ -862,7 +849,6 @@ virStorageBackendDiskDeleteVol(virStoragePoolObjPtr pool,
     rc = 0;
  cleanup:
     VIR_FREE(devpath);
-    virCommandFree(cmd);
     return rc;
 }
 
@@ -876,11 +862,13 @@ virStorageBackendDiskCreateVol(virStoragePoolObjPtr pool,
     unsigned long long startOffset = 0, endOffset = 0;
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
     virErrorPtr save_err;
-    virCommandPtr cmd = virCommandNewArgList(PARTED,
-                                             def->source.devices[0].path,
-                                             "mkpart",
-                                             "--script",
-                                             NULL);
+    VIR_AUTOPTR(virCommand) cmd = NULL;
+
+    cmd = virCommandNewArgList(PARTED,
+                               def->source.devices[0].path,
+                               "mkpart",
+                               "--script",
+                               NULL);
 
     if (vol->target.encryption &&
         vol->target.encryption->format != VIR_STORAGE_ENCRYPTION_FORMAT_LUKS) {
@@ -934,7 +922,6 @@ virStorageBackendDiskCreateVol(virStoragePoolObjPtr pool,
 
  cleanup:
     VIR_FREE(partFormat);
-    virCommandFree(cmd);
     return res;
 
  error:

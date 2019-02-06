@@ -39,7 +39,7 @@ virStorageBackendVzPoolStart(virStoragePoolObjPtr pool)
 {
     int ret = -1;
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     char *grp_name = NULL;
     char *usr_name = NULL;
     char *mode = NULL;
@@ -75,7 +75,6 @@ virStorageBackendVzPoolStart(virStoragePoolObjPtr pool)
     ret = 0;
 
  cleanup:
-    virCommandFree(cmd);
     VIR_FREE(mode);
     VIR_FREE(grp_name);
     VIR_FREE(usr_name);
@@ -125,8 +124,7 @@ static int
 virStorageBackendVzPoolStop(virStoragePoolObjPtr pool)
 {
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
-    virCommandPtr cmd = NULL;
-    int ret = -1;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     int rc;
 
     /* Short-circuit if already unmounted */
@@ -134,13 +132,7 @@ virStorageBackendVzPoolStop(virStoragePoolObjPtr pool)
         return rc;
 
     cmd = virCommandNewArgList(UMOUNT, def->target.path, NULL);
-    if (virCommandRun(cmd, NULL) < 0)
-        goto cleanup;
-
-    ret = 0;
- cleanup:
-    virCommandFree(cmd);
-    return ret;
+    return virCommandRun(cmd, NULL);
 }
 
 

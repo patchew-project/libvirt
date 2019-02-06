@@ -25,9 +25,9 @@ testCompareXMLToArgvFiles(bool shouldFail,
     VIR_AUTOFREE(char *) actualCmdline = NULL;
     VIR_AUTOFREE(char *) src = NULL;
     VIR_AUTOPTR(virStoragePoolDef) def = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     int defType;
     int ret = -1;
-    virCommandPtr cmd = NULL;
     virStoragePoolObjPtr pool = NULL;
     virStoragePoolDefPtr objDef;
 
@@ -88,7 +88,6 @@ testCompareXMLToArgvFiles(bool shouldFail,
     ret = 0;
 
  cleanup:
-    virCommandFree(cmd);
     VIR_FREE(actualCmdline);
     virStoragePoolObjEndAPI(&pool);
     if (shouldFail) {

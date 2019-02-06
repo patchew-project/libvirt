@@ -128,7 +128,7 @@ static int
 testPrepImages(void)
 {
     int ret = EXIT_FAILURE;
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     char *buf = NULL;
     bool compat = false;
 
@@ -246,7 +246,6 @@ testPrepImages(void)
     ret = 0;
  cleanup:
     VIR_FREE(buf);
-    virCommandFree(cmd);
     if (ret)
         testCleanupImages();
     return ret;
@@ -713,7 +712,7 @@ static int
 mymain(void)
 {
     int ret;
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     struct testChainData data;
     struct testLookupData data2;
     struct testPathCanonicalizeData data3;
@@ -1604,7 +1603,6 @@ mymain(void)
     /* Final cleanup */
     virStorageSourceFree(chain);
     testCleanupImages();
-    virCommandFree(cmd);
 
     return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

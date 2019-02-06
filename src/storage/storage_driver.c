@@ -2207,7 +2207,7 @@ static int
 virStorageBackendPloopRestoreDesc(char *path)
 {
     int ret = -1;
-    virCommandPtr cmd = NULL;
+    VIR_AUTOPTR(virCommand) cmd = NULL;
     char *refresh_tool = NULL;
     char *desc = NULL;
 
@@ -2238,7 +2238,6 @@ virStorageBackendPloopRestoreDesc(char *path)
 
  cleanup:
     VIR_FREE(refresh_tool);
-    virCommandFree(cmd);
     VIR_FREE(desc);
     return ret;
 }
