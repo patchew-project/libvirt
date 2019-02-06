@@ -1,7 +1,7 @@
 /*
  * domain_conf.c: domain XML processing
  *
- * Copyright (C) 2006-2016 Red Hat, Inc.
+ * Copyright (C) 2006-2018 Red Hat, Inc.
  * Copyright (C) 2006-2008 Daniel P. Berrange
  * Copyright (c) 2015 SUSE LINUX Products GmbH, Nuernberg, Germany.
  *
@@ -29,6 +29,7 @@
 #include "configmake.h"
 #include "internal.h"
 #include "virerror.h"
+#include "checkpoint_conf.h"
 #include "datatypes.h"
 #include "domain_addr.h"
 #include "domain_conf.h"
@@ -3313,6 +3314,7 @@ static void virDomainObjDispose(void *obj)
         (dom->privateDataFreeFunc)(dom->privateData);
 
     virDomainSnapshotObjListFree(dom->snapshots);
+    virDomainCheckpointObjListFree(dom->checkpoints);
 }
 
 virDomainObjPtr
@@ -3340,6 +3342,9 @@ virDomainObjNew(virDomainXMLOptionPtr xmlopt)
     }
 
     if (!(domain->snapshots = virDomainSnapshotObjListNew()))
+        goto error;
+
+    if (!(domain->checkpoints = virDomainCheckpointObjListNew()))
         goto error;
 
     virObjectLock(domain);

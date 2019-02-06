@@ -68,6 +68,27 @@ virCapabilitiesSetHostCPU;
 virCapabilitiesSetNetPrefix;
 
 
+# conf/checkpoint_conf.h
+virDomainCheckpointAlignDisks;
+virDomainCheckpointAssignDef;
+virDomainCheckpointDefFormat;
+virDomainCheckpointDefFree;
+virDomainCheckpointDefParseString;
+virDomainCheckpointDropParent;
+virDomainCheckpointFindByName;
+virDomainCheckpointForEach;
+virDomainCheckpointForEachChild;
+virDomainCheckpointForEachDescendant;
+virDomainCheckpointObjListFree;
+virDomainCheckpointObjListNew;
+virDomainCheckpointObjListRemove;
+virDomainCheckpointRedefinePrep;
+virDomainCheckpointTypeFromString;
+virDomainCheckpointTypeToString;
+virDomainCheckpointUpdateRelations;
+virDomainListAllCheckpoints;
+
+
 # conf/cpu_conf.h
 virCPUCacheModeTypeFromString;
 virCPUCacheModeTypeToString;

@@ -1,7 +1,7 @@
 /*
  * domain_conf.h: domain XML processing
  *
- * Copyright (C) 2006-2016 Red Hat, Inc.
+ * Copyright (C) 2006-2018 Red Hat, Inc.
  * Copyright (C) 2006-2008 Daniel P. Berrange
  * Copyright (c) 2015 SUSE LINUX Products GmbH, Nuernberg, Germany.
  *
@@ -118,6 +118,12 @@ typedef virDomainMemballoonDef *virDomainMemballoonDefPtr;
 
 typedef struct _virDomainNVRAMDef virDomainNVRAMDef;
 typedef virDomainNVRAMDef *virDomainNVRAMDefPtr;
+
+typedef struct _virDomainCheckpointObj virDomainCheckpointObj;
+typedef virDomainCheckpointObj *virDomainCheckpointObjPtr;
+
+typedef struct _virDomainCheckpointObjList virDomainCheckpointObjList;
+typedef virDomainCheckpointObjList *virDomainCheckpointObjListPtr;
 
 typedef struct _virDomainSnapshotObj virDomainSnapshotObj;
 typedef virDomainSnapshotObj *virDomainSnapshotObjPtr;
@@ -2630,6 +2636,9 @@ struct _virDomainObj {
     virDomainSnapshotObjPtr current_snapshot;
 
     bool hasManagedSave;
+
+    virDomainCheckpointObjListPtr checkpoints;
+    virDomainCheckpointObjPtr current_checkpoint;
 
     void *privateData;
     void (*privateDataFreeFunc)(void *);
