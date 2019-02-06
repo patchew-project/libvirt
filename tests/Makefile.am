@@ -1,6 +1,6 @@
 ## Process this file with automake to produce Makefile.in
 
-## Copyright (C) 2005-2015 Red Hat, Inc.
+## Copyright (C) 2005-2018 Red Hat, Inc.
 ##
 ## This library is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU Lesser General Public
@@ -92,7 +92,11 @@ EXTRA_DIST = \
 	capabilityschemadata \
 	commanddata \
 	cputestdata \
+	domainbackupxml2xmlin \
+	domainbackupxml2xmlout \
 	domaincapsschemadata \
+	domaincheckpointxml2xmlin \
+	domaincheckpointxml2xmlout \
 	domainconfdata \
 	domainschemadata \
 	domainsnapshotxml2xmlin \
