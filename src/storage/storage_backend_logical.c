@@ -911,7 +911,7 @@ static int
 virStorageBackendLogicalCreateVol(virStoragePoolObjPtr pool,
                                   virStorageVolDefPtr vol)
 {
-    int fd = -1;
+    VIR_AUTOCLOSE fd = -1;
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
     virErrorPtr err;
     struct stat sb;
@@ -971,7 +971,6 @@ virStorageBackendLogicalCreateVol(virStoragePoolObjPtr pool,
 
  error:
     err = virSaveLastError();
-    VIR_FORCE_CLOSE(fd);
     virStorageBackendLogicalDeleteVol(pool, vol, 0);
     virSetError(err);
     virFreeError(err);
