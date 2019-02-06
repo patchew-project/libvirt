@@ -458,7 +458,7 @@ virStoragePoolDefParseSource(xmlXPathContextPtr ctxt,
     int nsource;
     size_t i;
     virStoragePoolOptionsPtr options;
-    virStorageAuthDefPtr authdef = NULL;
+    VIR_AUTOPTR(virStorageAuthDef) authdef = NULL;
     char *name = NULL;
     char *port = NULL;
     char *ver = NULL;
@@ -584,8 +584,7 @@ virStoragePoolDefParseSource(xmlXPathContextPtr ctxt,
             goto cleanup;
         }
 
-        source->auth = authdef;
-        authdef = NULL;
+        VIR_STEAL_PTR(source->auth, authdef);
     }
 
     /* Option protocol version string (NFSvN) */
@@ -615,7 +614,6 @@ virStoragePoolDefParseSource(xmlXPathContextPtr ctxt,
 
     VIR_FREE(port);
     VIR_FREE(nodeset);
-    virStorageAuthDefFree(authdef);
     return ret;
 }
 

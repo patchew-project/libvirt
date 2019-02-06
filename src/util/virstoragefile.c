@@ -1879,26 +1879,24 @@ virStorageAuthDefFree(virStorageAuthDefPtr authdef)
 virStorageAuthDefPtr
 virStorageAuthDefCopy(const virStorageAuthDef *src)
 {
-    virStorageAuthDefPtr ret;
+    VIR_AUTOPTR(virStorageAuthDef) authdef = NULL;
+    virStorageAuthDefPtr ret = NULL;
 
-    if (VIR_ALLOC(ret) < 0)
+    if (VIR_ALLOC(authdef) < 0)
         return NULL;
 
-    if (VIR_STRDUP(ret->username, src->username) < 0)
-        goto error;
+    if (VIR_STRDUP(authdef->username, src->username) < 0)
+        return NULL;
     /* Not present for storage pool, but used for disk source */
-    if (VIR_STRDUP(ret->secrettype, src->secrettype) < 0)
-        goto error;
-    ret->authType = src->authType;
+    if (VIR_STRDUP(authdef->secrettype, src->secrettype) < 0)
+        return NULL;
+    authdef->authType = src->authType;
 
-    if (virSecretLookupDefCopy(&ret->seclookupdef, &src->seclookupdef) < 0)
-        goto error;
+    if (virSecretLookupDefCopy(&authdef->seclookupdef, &src->seclookupdef) < 0)
+        return NULL;
 
+    VIR_STEAL_PTR(ret, authdef);
     return ret;
-
- error:
-    virStorageAuthDefFree(ret);
-    return NULL;
 }
 
 
@@ -1907,7 +1905,7 @@ virStorageAuthDefParse(xmlNodePtr node,
                        xmlXPathContextPtr ctxt)
 {
     xmlNodePtr saveNode = ctxt->node;
-    virStorageAuthDefPtr authdef = NULL;
+    VIR_AUTOPTR(virStorageAuthDef) authdef = NULL;
     virStorageAuthDefPtr ret = NULL;
     xmlNodePtr secretnode = NULL;
     char *authtype = NULL;
@@ -1958,7 +1956,6 @@ virStorageAuthDefParse(xmlNodePtr node,
 
  cleanup:
     VIR_FREE(authtype);
-    virStorageAuthDefFree(authdef);
     ctxt->node = saveNode;
 
     return ret;
@@ -2832,7 +2829,7 @@ virStorageSourceParseRBDColonString(const char *rbdstr,
 {
     char *options = NULL;
     char *p, *e, *next;
-    virStorageAuthDefPtr authdef = NULL;
+    VIR_AUTOPTR(virStorageAuthDef) authdef = NULL;
 
     /* optionally skip the "rbd:" prefix if provided */
     if (STRPREFIX(rbdstr, "rbd:"))
@@ -2895,9 +2892,8 @@ virStorageSourceParseRBDColonString(const char *rbdstr,
             if (VIR_STRDUP(authdef->secrettype,
                            virSecretUsageTypeToString(VIR_SECRET_USAGE_TYPE_CEPH)) < 0)
                 goto error;
-            src->auth = authdef;
+            VIR_STEAL_PTR(src->auth, authdef);
             src->authInherited = true;
-            authdef = NULL;
 
             /* Cannot formulate a secretType (eg, usage or uuid) given
              * what is provided.
@@ -2936,7 +2932,6 @@ virStorageSourceParseRBDColonString(const char *rbdstr,
 
  error:
     VIR_FREE(options);
-    virStorageAuthDefFree(authdef);
     return -1;
 }
 
