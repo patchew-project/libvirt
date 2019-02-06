@@ -25,6 +25,7 @@
 # include "internal.h"
 
 # include "domain_conf.h"
+# include "checkpoint_conf.h"
 # include "virbitmap.h"
 # include "virhash.h"
 # include "virjson.h"
@@ -629,6 +630,9 @@ int qemuMonitorBlockStatsUpdateCapacity(qemuMonitorPtr mon,
 int qemuMonitorBlockStatsUpdateCapacityBlockdev(qemuMonitorPtr mon,
                                                 virHashTablePtr stats)
     ATTRIBUTE_NONNULL(2);
+int qemuMonitorUpdateCheckpointSize(qemuMonitorPtr mon,
+                                    virDomainCheckpointDefPtr chk)
+    ATTRIBUTE_NONNULL(2);
 
 int qemuMonitorBlockResize(qemuMonitorPtr mon,
                            const char *device,
@@ -646,6 +650,19 @@ int qemuMonitorExpirePassword(qemuMonitorPtr mon,
 int qemuMonitorSetBalloon(qemuMonitorPtr mon,
                           unsigned long long newmem);
 int qemuMonitorSetCPU(qemuMonitorPtr mon, int cpu, bool online);
+
+int qemuMonitorAddBitmap(qemuMonitorPtr mon, const char *node,
+                         const char *bitmap, bool persistent)
+    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+int qemuMonitorEnableBitmap(qemuMonitorPtr mon, const char *node,
+                            const char *bitmap)
+    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+int qemuMonitorMergeBitmaps(qemuMonitorPtr mon, const char *node,
+                            const char *dst, virJSONValuePtr *src)
+    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(4);
+int qemuMonitorDeleteBitmap(qemuMonitorPtr mon, const char *node,
+                            const char *bitmap)
+    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
 
 /* XXX should we pass the virDomainDiskDefPtr instead
@@ -1100,7 +1117,8 @@ int qemuMonitorNBDServerStart(qemuMonitorPtr mon,
 int qemuMonitorNBDServerAdd(qemuMonitorPtr mon,
                             const char *deviceID,
                             const char *export,
-                            bool writable);
+                            bool writable,
+                            const char *bitmap);
 int qemuMonitorNBDServerStop(qemuMonitorPtr);
 int qemuMonitorGetTPMModels(qemuMonitorPtr mon,
                             char ***tpmmodels);
