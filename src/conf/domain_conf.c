@@ -516,6 +516,7 @@ VIR_ENUM_IMPL(virDomainChrSerialTargetModel,
               "sclpconsole",
               "sclplmconsole",
               "16550a",
+              "isa-debugcon",
 );
 
 VIR_ENUM_IMPL(virDomainChrDevice, VIR_DOMAIN_CHR_DEVICE_TYPE_LAST,
@@ -4392,6 +4393,9 @@ virDomainDefAddConsoleCompat(virDomainDefPtr def)
 
         switch ((virDomainChrSerialTargetType) def->serials[0]->targetType) {
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA:
+            if (def->serials[0]->targetModel == VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_ISA_DEBUGCON)
+                break;
+
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SPAPR_VIO:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SYSTEM:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP:

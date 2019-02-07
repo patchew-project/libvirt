@@ -7089,7 +7089,8 @@ qemu-kvm -net nic,model=? /dev/null
       <span class="since">Since 3.10.0</span>, the <code>target</code>
       element can have an optional <code>model</code> subelement;
       valid values for its <code>name</code> attribute are:
-      <code>isa-serial</code> (usable with the <code>isa-serial</code> target
+      <code>isa-serial</code> and <span class="since">since 5.1.0</span>,
+      <code>isa-debugcon</code>(usable with the <code>isa-serial</code> target
       type); <code>usb-serial</code> (usable with the <code>usb-serial</code>
       target type); <code>pci-serial</code>
       (usable with the <code>pci-serial</code> target type);

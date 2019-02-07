@@ -3763,6 +3763,7 @@
           <value>16550a</value>
           <value>sclpconsole</value>
           <value>sclplmconsole</value>
+          <value>isa-debugcon</value>
         </choice>
       </attribute>
     </element>
