@@ -1628,6 +1628,13 @@ udevEventHandleThread(void *opaque ATTRIBUTE_UNUSED)
         }
 
         if (priv->threadQuit) {
+            if (priv->watch != -1) {
+                /* Since the udev thread getting stopped remove the
+                 * watch handle from the main loop */
+                virEventRemoveHandle(priv->watch);
+                priv->watch = -1;
+            }
+
             virObjectUnlock(priv);
             return;
         }
