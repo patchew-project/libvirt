@@ -23,6 +23,7 @@ testCompareXMLToArgvFiles(bool shouldFail,
                           const char *cmdline)
 {
     int ret = -1;
+    bool consumeDef = false;
     virStoragePoolDefPtr def = NULL;
     virStoragePoolObjPtr pool = NULL;
     VIR_AUTOFREE(char *) actualCmdline = NULL;
@@ -41,6 +42,7 @@ testCompareXMLToArgvFiles(bool shouldFail,
             goto cleanup;
         }
         virStoragePoolObjSetDef(pool, def);
+        consumeDef = true;
 
         if (!(src = virStorageBackendFileSystemGetPoolSource(pool))) {
             VIR_TEST_DEBUG("pool type %d has no pool source\n", def->type);
@@ -83,6 +85,8 @@ testCompareXMLToArgvFiles(bool shouldFail,
     ret = 0;
 
  cleanup:
+    if (!consumeDef)
+        virStoragePoolDefFree(def);
     virStoragePoolObjEndAPI(&pool);
     if (shouldFail) {
         virResetLastError();
