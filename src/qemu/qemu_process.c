@@ -641,14 +641,17 @@ qemuProcessHandleStop(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
 {
     virQEMUDriverPtr driver = opaque;
     virObjectEventPtr event = NULL;
-    virDomainPausedReason reason = VIR_DOMAIN_PAUSED_UNKNOWN;
+    virDomainPausedReason reason;
     virDomainEventSuspendedDetailType detail = VIR_DOMAIN_EVENT_SUSPENDED_PAUSED;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    qemuDomainObjPrivatePtr priv = vm->privateData;
 
     virObjectLock(vm);
-    if (virDomainObjGetState(vm, NULL) == VIR_DOMAIN_RUNNING) {
-        qemuDomainObjPrivatePtr priv = vm->privateData;
 
+    reason = priv->pausedReason;
+    priv->pausedReason = VIR_DOMAIN_PAUSED_UNKNOWN;
+
+    if (virDomainObjGetState(vm, NULL) == VIR_DOMAIN_RUNNING) {
         if (priv->job.asyncJob == QEMU_ASYNC_JOB_MIGRATION_OUT) {
             if (priv->job.current->status ==
                         QEMU_DOMAIN_JOB_STATUS_POSTCOPY) {
@@ -3231,6 +3234,8 @@ int qemuProcessStopCPUs(virQEMUDriverPtr driver,
 
     VIR_FREE(priv->lockState);
 
+    priv->pausedReason = reason;
+
     if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
         goto cleanup;
 
@@ -3253,6 +3258,9 @@ int qemuProcessStopCPUs(virQEMUDriverPtr driver,
     VIR_DEBUG("Preserving lock state '%s'", NULLSTR(priv->lockState));
 
  cleanup:
+    if (ret < 0)
+        priv->pausedReason = VIR_DOMAIN_PAUSED_UNKNOWN;
+
     return ret;
 }
 
@@ -6096,6 +6104,7 @@ qemuProcessPrepareDomain(virQEMUDriverPtr driver,
     priv->monError = false;
     priv->monStart = 0;
     priv->runningReason = VIR_DOMAIN_RUNNING_UNKNOWN;
+    priv->pausedReason = VIR_DOMAIN_PAUSED_UNKNOWN;
 
     VIR_DEBUG("Updating guest CPU definition");
     if (qemuProcessUpdateGuestCPU(vm->def, priv->qemuCaps, caps, flags) < 0)
