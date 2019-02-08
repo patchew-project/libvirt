@@ -663,6 +663,13 @@ VIR_ENUM_IMPL(virDomainInputBus, VIR_DOMAIN_INPUT_BUS_LAST,
               "virtio",
 );
 
+VIR_ENUM_IMPL(virDomainInputModel, VIR_DOMAIN_INPUT_MODEL_LAST,
+              "default",
+              "virtio",
+              "virtio-transitional",
+              "virtio-non-transitional",
+);
+
 VIR_ENUM_IMPL(virDomainGraphics, VIR_DOMAIN_GRAPHICS_TYPE_LAST,
               "sdl",
               "vnc",
@@ -13187,6 +13194,7 @@ virDomainInputDefParseXML(virDomainXMLOptionPtr xmlopt,
     char *evdev = NULL;
     char *type = NULL;
     char *bus = NULL;
+    char *model = NULL;
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
@@ -13195,6 +13203,7 @@ virDomainInputDefParseXML(virDomainXMLOptionPtr xmlopt,
 
     type = virXMLPropString(node, "type");
     bus = virXMLPropString(node, "bus");
+    model = virXMLPropString(node, "model");
 
     if (!type) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -13205,6 +13214,13 @@ virDomainInputDefParseXML(virDomainXMLOptionPtr xmlopt,
     if ((def->type = virDomainInputTypeFromString(type)) < 0) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("unknown input device type '%s'"), type);
+        goto error;
+    }
+
+    if (model &&
+        (def->model = virDomainInputModelTypeFromString(model)) < 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unknown input model '%s'"), model);
         goto error;
     }
 
@@ -13317,6 +13333,7 @@ virDomainInputDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_FREE(evdev);
     VIR_FREE(type);
     VIR_FREE(bus);
+    VIR_FREE(model);
 
     ctxt->node = save;
     return def;
@@ -22206,6 +22223,14 @@ virDomainInputDefCheckABIStability(virDomainInputDefPtr src,
         return false;
     }
 
+    if (src->model != dst->model) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("Target input model %s does not match source %s"),
+                       virDomainInputBusTypeToString(dst->model),
+                       virDomainInputBusTypeToString(src->model));
+        return false;
+    }
+
     if (src->virtio && dst->virtio &&
         !virDomainVirtioOptionsCheckABIStability(src->virtio, dst->virtio))
         return false;
@@ -26785,6 +26810,7 @@ virDomainInputDefFormat(virBufferPtr buf,
 {
     const char *type = virDomainInputTypeToString(def->type);
     const char *bus = virDomainInputBusTypeToString(def->bus);
+    const char *model = virDomainInputModelTypeToString(def->model);
     virBuffer childbuf = VIR_BUFFER_INITIALIZER;
     virBuffer driverBuf = VIR_BUFFER_INITIALIZER;
     int ret = -1;
@@ -26809,6 +26835,15 @@ virDomainInputDefFormat(virBufferPtr buf,
 
     virBufferAsprintf(buf, "<input type='%s' bus='%s'",
                       type, bus);
+
+    if (def->model) {
+        if (!model) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("unexpected input model %d"), def->model);
+            goto cleanup;
+        }
+        virBufferAsprintf(buf, " model='%s'", model);
+    }
 
     virBufferSetChildIndent(&childbuf, buf);
     virDomainVirtioOptionsFormat(&driverBuf, def->virtio);

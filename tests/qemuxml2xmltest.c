@@ -1259,13 +1259,15 @@ mymain(void)
             QEMU_CAPS_DEVICE_PCIE_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_PCIE_ROOT_PORT,
             QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY,
-            QEMU_CAPS_DEVICE_VHOST_VSOCK);
+            QEMU_CAPS_DEVICE_VHOST_VSOCK,
+            QEMU_CAPS_VIRTIO_INPUT_HOST);
     DO_TEST("virtio-non-transitional",
             QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
             QEMU_CAPS_DEVICE_PCIE_PCI_BRIDGE,
             QEMU_CAPS_DEVICE_PCIE_ROOT_PORT,
             QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY,
-            QEMU_CAPS_DEVICE_VHOST_VSOCK);
+            QEMU_CAPS_DEVICE_VHOST_VSOCK,
+            QEMU_CAPS_VIRTIO_INPUT_HOST);
 
     if (getenv("LIBVIRT_SKIP_CLEANUP") == NULL)
         virFileDeleteTree(fakerootdir);
