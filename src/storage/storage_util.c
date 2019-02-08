@@ -3353,10 +3353,9 @@ storageBackendProbeTarget(virStorageSourcePtr target,
                           virStorageEncryptionPtr *encryption)
 {
     int backingStoreFormat;
-    int ret = -1;
     int rc;
-    virStorageSourcePtr meta = NULL;
     struct stat sb;
+    VIR_AUTOPTR(virStorageSource) meta = NULL;
     VIR_AUTOCLOSE fd = -1;
 
     if (encryption)
@@ -3368,17 +3367,16 @@ storageBackendProbeTarget(virStorageSourcePtr target,
     fd = rc;
 
     if (virStorageBackendUpdateVolTargetInfoFD(target, fd, &sb) < 0)
-        goto cleanup;
+        return -1;
 
     if (S_ISDIR(sb.st_mode)) {
         if (storageBackendIsPloopDir(target->path)) {
             if (storageBackendRedoPloopUpdate(target, &sb, &fd,
                                               VIR_STORAGE_VOL_FS_PROBE_FLAGS) < 0)
-                goto cleanup;
+                return -1;
         } else {
             target->format = VIR_STORAGE_FILE_DIR;
-            ret = 0;
-            goto cleanup;
+            return 0;
         }
     }
 
@@ -3386,11 +3384,11 @@ storageBackendProbeTarget(virStorageSourcePtr target,
                                                  fd,
                                                  VIR_STORAGE_FILE_AUTO,
                                                  &backingStoreFormat)))
-        goto cleanup;
+        return -1;
 
     if (meta->backingStoreRaw) {
         if (!(target->backingStore = virStorageSourceNewFromBacking(meta)))
-            goto cleanup;
+            return -1;
 
         target->backingStore->format = backingStoreFormat;
 
@@ -3401,7 +3399,7 @@ storageBackendProbeTarget(virStorageSourcePtr target,
             virStorageSourceFree(target->backingStore);
 
             if (VIR_ALLOC(target->backingStore) < 0)
-                goto cleanup;
+                return -1;
 
             target->backingStore->type = VIR_STORAGE_TYPE_NETWORK;
             target->backingStore->path = meta->backingStoreRaw;
@@ -3430,8 +3428,6 @@ storageBackendProbeTarget(virStorageSourcePtr target,
     target->format = meta->format;
 
     /* Default to success below this point */
-    ret = 0;
-
     if (meta->capacity)
         target->capacity = meta->capacity;
 
@@ -3457,9 +3453,7 @@ storageBackendProbeTarget(virStorageSourcePtr target,
         VIR_STEAL_PTR(target->compat, meta->compat);
     }
 
- cleanup:
-    virStorageSourceFree(meta);
-    return ret;
+    return 0;
 }
 
 
@@ -3527,11 +3521,11 @@ virStorageBackendRefreshLocal(virStoragePoolObjPtr pool)
     struct dirent *ent;
     struct statvfs sb;
     struct stat statbuf;
-    virStorageSourcePtr target = NULL;
     int direrr;
     int ret = -1;
     VIR_AUTOPTR(virStorageVolDef) vol = NULL;
     VIR_AUTOCLOSE fd = -1;
+    VIR_AUTOPTR(virStorageSource) target = NULL;
 
     if (virDirOpen(&dir, def->target.path) < 0)
         goto cleanup;
@@ -3622,7 +3616,6 @@ virStorageBackendRefreshLocal(virStoragePoolObjPtr pool)
     ret = 0;
  cleanup:
     VIR_DIR_CLOSE(dir);
-    virStorageSourceFree(target);
     if (ret < 0)
         virStoragePoolObjClearVols(pool);
     return ret;
