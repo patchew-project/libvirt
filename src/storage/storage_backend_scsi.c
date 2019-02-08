@@ -55,8 +55,7 @@ struct _virStoragePoolFCRefreshInfo {
 static int
 virStorageBackendSCSITriggerRescan(uint32_t host)
 {
-    int fd = -1;
-    int retval = -1;
+    VIR_AUTOCLOSE fd = -1;
     VIR_AUTOFREE(char *) path = NULL;
 
     VIR_DEBUG("Triggering rescan of host %d", host);
@@ -73,24 +72,19 @@ virStorageBackendSCSITriggerRescan(uint32_t host)
         virReportSystemError(errno,
                              _("Could not open '%s' to trigger host scan"),
                              path);
-        goto cleanup;
+        return -1;
     }
 
     if (safewrite(fd,
                   LINUX_SYSFS_SCSI_HOST_SCAN_STRING,
                   sizeof(LINUX_SYSFS_SCSI_HOST_SCAN_STRING)) < 0) {
-        VIR_FORCE_CLOSE(fd);
         virReportSystemError(errno,
                              _("Write to '%s' to trigger host scan failed"),
                              path);
     }
 
-    retval = 0;
-
- cleanup:
-    VIR_FORCE_CLOSE(fd);
     VIR_DEBUG("Rescan of host %d complete", host);
-    return retval;
+    return 0;
 }
 
 /**
