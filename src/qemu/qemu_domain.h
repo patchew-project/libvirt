@@ -1111,4 +1111,7 @@ qemuDomainIsUsingNoShutdown(qemuDomainObjPrivatePtr priv);
 bool
 qemuDomainDiskIsMissingLocalOptional(virDomainDiskDefPtr disk);
 
+virDomainEventSuspendedDetailType
+qemuDomainPausedReasonToSuspendedEvent(virDomainPausedReason reason);
+
 #endif /* LIBVIRT_QEMU_DOMAIN_H */
