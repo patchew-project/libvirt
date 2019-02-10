@@ -59,6 +59,16 @@
           of the network's <code>bridge</code> element.
         </description>
       </change>
+      <change>
+        <summary>
+          bhyve: allow to configure LPC PCI address
+        </summary>
+        <description>
+          The bhyve driver now explicty models LPC PCI-ISA bridge, thus
+          allowing to specify PCI address for it instead of using
+          the default PCI slot 1.
+        </description>
+      </change>
     </section>
     <section title="Improvements">
     </section>
