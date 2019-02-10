@@ -462,6 +462,23 @@ Example:</p>
 &lt;/domain&gt;
 </pre>
 
+<h3><a id="msrsignorewrites">Ignoring unknown MSRs writes</a></h3>
+
+<p>Some guests might require ignoring unknown Model Specific Registers (MSRs)
+reads and writes.
+<span class="since">Since 5.1.0</span> it's possible to switch this on using:</p>
+<pre>
+&lt;domain type="bhyve"&gt;
+    ...
+  &lt;features&gt;
+    &lt;msrs unknown='ignore'/&gt;
+  &lt;/features&gt;
+    ...
+&lt;/domain&gt;
+</pre>
+
+<p>By default unknown reads and writes are not ignored.</p>
+
 <h3><a id="bhyvecommand">Pass-through of arbitrary bhyve commands</a></h3>
 
 <p><span class="since">Since 5.1.0</span>, it's possible to pass additional command-line
@@ -488,6 +505,11 @@ typically, the namespace is given the name of <code>bhyve</code>.
 They are <b>unsupported</b>, using them may result in inconsistent state,
 and upgrading either bhyve or libvirtd maybe break behavior of a domain that
 was relying on a specific commands pass-through.</p>
+
+
+>>>>>>> 525918ac5c... bhyve: implement MSRs ignore unknown writes feature
+=======
+>>>>>>> 93d9056998... fixup! bhyve: implement MSRs ignore unknown writes feature
 
   </body>
 </html>
