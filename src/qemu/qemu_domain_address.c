@@ -2402,6 +2402,7 @@ qemuDomainPCIControllerSetDefaultModelName(virDomainControllerDefPtr cont,
             *modelName = VIR_DOMAIN_CONTROLLER_PCI_MODEL_NAME_SPAPR_PCI_HOST_BRIDGE;
         break;
     case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT:
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_DEFAULT:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
         break;
@@ -2803,6 +2804,7 @@ qemuDomainAssignPCIAddresses(virDomainDefPtr def,
             case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_TO_PCI_BRIDGE:
             case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_UPSTREAM_PORT:
             case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_ROOT:
+            case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
             case VIR_DOMAIN_CONTROLLER_MODEL_PCI_DEFAULT:
             case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
                 break;

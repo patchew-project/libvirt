@@ -2294,6 +2294,7 @@
                     <value>pcie-switch-downstream-port</value>
                     <value>pci-expander-bus</value>
                     <value>pcie-expander-bus</value>
+                    <value>isa-bridge</value>
                   </choice>
                 </attribute>
               </group>

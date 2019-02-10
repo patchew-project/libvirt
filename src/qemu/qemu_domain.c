@@ -5405,6 +5405,7 @@ qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *cont,
         }
         break;
 
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_DEFAULT:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
     default:
@@ -5486,6 +5487,7 @@ qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *cont,
         }
         break;
 
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_DEFAULT:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
     default:
@@ -5530,6 +5532,7 @@ qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *cont,
         }
         break;
 
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_DEFAULT:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
     default:
@@ -5571,6 +5574,7 @@ qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *cont,
         }
         break;
 
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_DEFAULT:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
     default:
@@ -5606,6 +5610,7 @@ qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *cont,
         }
         break;
 
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_DEFAULT:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
     default:
@@ -5637,6 +5642,7 @@ qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *cont,
         }
         break;
 
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_DEFAULT:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
     default:
@@ -5682,6 +5688,7 @@ qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *cont,
         }
         break;
 
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_DEFAULT:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
     default:
@@ -5713,6 +5720,7 @@ qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *cont,
         }
         break;
 
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_DEFAULT:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
     default:
@@ -5752,6 +5760,7 @@ qemuDomainDeviceDefValidateControllerPCI(const virDomainControllerDef *cont,
         }
         break;
 
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_DEFAULT:
     case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
     default:

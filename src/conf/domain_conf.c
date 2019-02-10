@@ -354,6 +354,7 @@ VIR_ENUM_IMPL(virDomainControllerModelPCI, VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST,
               "pcie-switch-downstream-port",
               "pci-expander-bus",
               "pcie-expander-bus",
+              "isa-bridge",
 );
 
 VIR_ENUM_IMPL(virDomainControllerPCIModelName,
@@ -10619,6 +10620,7 @@ virDomainControllerDefParseXML(virDomainXMLOptionPtr xmlopt,
         case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_DOWNSTREAM_PORT:
         case VIR_DOMAIN_CONTROLLER_MODEL_PCI_EXPANDER_BUS:
         case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_EXPANDER_BUS:
+        case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
         case VIR_DOMAIN_CONTROLLER_MODEL_PCI_DEFAULT:
         case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
             /* Other controller models don't require extra checks */

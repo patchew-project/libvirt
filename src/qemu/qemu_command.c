@@ -3012,6 +3012,7 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("Unsupported PCI Express root controller"));
             goto error;
+        case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
         case VIR_DOMAIN_CONTROLLER_MODEL_PCI_DEFAULT:
         case VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST:
             virReportError(VIR_ERR_INTERNAL_ERROR,

@@ -304,6 +304,9 @@ virDomainPCIControllerModelToConnectType(virDomainControllerModelPCI model)
 
     case VIR_DOMAIN_CONTROLLER_MODEL_PCIE_SWITCH_DOWNSTREAM_PORT:
         return VIR_PCI_CONNECT_TYPE_PCIE_SWITCH_DOWNSTREAM_PORT;
+
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
+        return VIR_PCI_CONNECT_TYPE_PCI_ISA_BRIDGE;
     }
     return 0;
 }
@@ -588,6 +591,13 @@ virDomainPCIAddressBusSetModel(virDomainPCIAddressBusPtr bus,
         bus->flags = (VIR_PCI_CONNECT_TYPE_PCIE_ROOT_PORT |
                       VIR_PCI_CONNECT_TYPE_DMI_TO_PCI_BRIDGE);
         bus->minSlot = 0;
+        bus->maxSlot = VIR_PCI_ADDRESS_SLOT_LAST;
+        break;
+
+    case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
+        bus->flags = (VIR_PCI_CONNECT_TYPE_PCI_DEVICE |
+                      VIR_PCI_CONNECT_TYPE_PCI_BRIDGE);
+        bus->minSlot = 1;
         bus->maxSlot = VIR_PCI_ADDRESS_SLOT_LAST;
         break;
 

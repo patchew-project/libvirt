@@ -53,6 +53,7 @@ typedef enum {
    VIR_PCI_CONNECT_TYPE_PCIE_EXPANDER_BUS = 1 << 9,
    VIR_PCI_CONNECT_TYPE_PCI_BRIDGE = 1 << 10,
    VIR_PCI_CONNECT_TYPE_PCIE_TO_PCI_BRIDGE = 1 << 11,
+   VIR_PCI_CONNECT_TYPE_PCI_ISA_BRIDGE = 1 << 12,
 } virDomainPCIConnectFlags;
 
 /* a combination of all bits that describe the type of connections
@@ -67,7 +68,8 @@ typedef enum {
     VIR_PCI_CONNECT_TYPE_PCI_EXPANDER_BUS | \
     VIR_PCI_CONNECT_TYPE_PCIE_EXPANDER_BUS | \
     VIR_PCI_CONNECT_TYPE_PCI_BRIDGE | \
-    VIR_PCI_CONNECT_TYPE_PCIE_TO_PCI_BRIDGE)
+    VIR_PCI_CONNECT_TYPE_PCIE_TO_PCI_BRIDGE | \
+    VIR_PCI_CONNECT_TYPE_PCI_ISA_BRIDGE)
 
 /* combination of all bits that could be used to connect a normal
  * endpoint device (i.e. excluding the connection possible between an
