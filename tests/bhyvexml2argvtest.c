@@ -211,6 +211,7 @@ mymain(void)
     DO_TEST("cputopology");
     DO_TEST_FAILURE("cputopology-nvcpu-mismatch");
     DO_TEST("commandline");
+    DO_TEST("explicit-lpc");
 
     /* Address allocation tests */
     DO_TEST("addr-single-sata-disk");
@@ -218,6 +219,8 @@ mymain(void)
     DO_TEST("addr-more-than-32-sata-disks");
     DO_TEST("addr-single-virtio-disk");
     DO_TEST("addr-multiple-virtio-disks");
+    DO_TEST("addr-slot-1-not-lpc");
+    DO_TEST("addr-slot-1-and-31-not-lpc");
 
     /* The same without 32 devs per controller support */
     driver.bhyvecaps ^= BHYVE_CAP_AHCI32SLOT;

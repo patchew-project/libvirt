@@ -326,14 +326,6 @@ bhyveBuildVirtIODiskArgStr(const virDomainDef *def ATTRIBUTE_UNUSED,
 }
 
 static int
-bhyveBuildLPCArgStr(const virDomainDef *def ATTRIBUTE_UNUSED,
-                    virCommandPtr cmd)
-{
-    virCommandAddArgList(cmd, "-s", "1,lpc", NULL);
-    return 0;
-}
-
-static int
 bhyveBuildGraphicsArgStr(const virDomainDef *def,
                          virDomainGraphicsDefPtr graphics,
                          virDomainVideoDefPtr video,
@@ -460,7 +452,6 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
      *            vm0
      */
     size_t i;
-    bool add_lpc = false;
     int nusbcontrollers = 0;
     unsigned int nvcpus = virDomainDefGetVcpus(def);
 
@@ -549,7 +540,6 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
         if ((bhyveDriverGetCaps(conn) & BHYVE_CAP_LPC_BOOTROM)) {
             virCommandAddArg(cmd, "-l");
             virCommandAddArgFormat(cmd, "bootrom,%s", def->os.loader->path);
-            add_lpc = true;
         } else {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("Installed bhyve binary does not support "
@@ -563,12 +553,20 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
         virDomainControllerDefPtr controller = def->controllers[i];
         switch (controller->type) {
         case VIR_DOMAIN_CONTROLLER_TYPE_PCI:
-                if (controller->model != VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT) {
-                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                                       "%s", _("unsupported PCI controller model: only PCI root supported"));
-                        goto error;
-                }
+            switch (controller->model) {
+            case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE:
+                virCommandAddArg(cmd, "-s");
+                virCommandAddArgFormat(cmd, "%d:0,lpc",
+                                       controller->info.addr.pci.slot);
                 break;
+            case VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT:
+                break;
+            default:
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               "%s", _("unsupported PCI controller model: only PCI root supported"));
+                goto error;
+            }
+            break;
         case VIR_DOMAIN_CONTROLLER_TYPE_SATA:
                 if (bhyveBuildAHCIControllerArgStr(def, controller, conn, cmd) < 0)
                     goto error;
@@ -613,16 +611,12 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
             if (bhyveBuildGraphicsArgStr(def, def->graphics[0], def->videos[0],
                                          conn, cmd, dryRun) < 0)
                 goto error;
-            add_lpc = true;
         } else {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("Multiple graphics devices are not supported"));
              goto error;
         }
     }
-
-    if (add_lpc || def->nserials)
-        bhyveBuildLPCArgStr(def, cmd);
 
     if (bhyveBuildConsoleArgStr(def, cmd) < 0)
         goto error;

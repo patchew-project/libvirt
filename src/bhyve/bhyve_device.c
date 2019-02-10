@@ -43,16 +43,8 @@ bhyveCollectPCIAddress(virDomainDefPtr def ATTRIBUTE_UNUSED,
     virDomainPCIAddressSetPtr addrs = opaque;
     virPCIDeviceAddressPtr addr = &info->addr.pci;
 
-    if (addr->domain == 0 && addr->bus == 0) {
-        if (addr->slot == 0) {
-            return 0;
-        } else if (addr->slot == 1) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("PCI bus 0 slot 1 is reserved for the implicit "
-                             "LPC PCI-ISA bridge"));
-            return -1;
-        }
-    }
+    if (addr->domain == 0 && addr->bus == 0 && addr->slot == 0)
+        return 0;
 
     if (virDomainPCIAddressReserveAddr(addrs, addr,
                                        VIR_PCI_CONNECT_TYPE_PCI_DEVICE, 0) < 0) {
@@ -92,15 +84,36 @@ bhyveAssignDevicePCISlots(virDomainDefPtr def,
                           virDomainPCIAddressSetPtr addrs)
 {
     size_t i;
-    virPCIDeviceAddress lpc_addr;
 
-    /* explicitly reserve slot 1 for LPC-ISA bridge */
-    memset(&lpc_addr, 0, sizeof(lpc_addr));
-    lpc_addr.slot = 0x1;
+    /* Look for isa-bridge first, if it has no address assigned, we want to reserve
+       PCI slot 1 for it before it's used by some other device */
+    for (i = 0; i < def->ncontrollers; i++) {
+        if ((def->controllers[i]->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI) &&
+            (def->controllers[i]->model == VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE) &&
+             virDeviceInfoPCIAddressIsWanted(&def->controllers[i]->info)) {
+            virPCIDeviceAddress lpc_addr;
+            memset(&lpc_addr, 0, sizeof(lpc_addr));
+            lpc_addr.slot = 0x1;
 
-    if (virDomainPCIAddressReserveAddr(addrs, &lpc_addr,
-                                       VIR_PCI_CONNECT_TYPE_PCI_DEVICE, 0) < 0) {
-        goto error;
+            if (virDomainPCIAddressSlotInUse(addrs, &lpc_addr)) {
+                lpc_addr.slot = 0x1f;
+
+                if (virDomainPCIAddressSlotInUse(addrs, &lpc_addr)) {
+                    VIR_WARN("Cannot use PCI slots 1 and 31 for LPC PCI-ISA bridge "
+                             "as they are already reserved, using the next available "
+                             "address");
+                    continue;
+                }
+            }
+
+            if (virDomainPCIAddressReserveAddr(addrs, &lpc_addr,
+                                               VIR_PCI_CONNECT_TYPE_PCI_DEVICE, 0) < 0) {
+                goto error;
+            }
+
+            def->controllers[i]->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI;
+            def->controllers[i]->info.addr.pci = lpc_addr;
+        }
     }
 
     for (i = 0; i < def->ncontrollers; i++) {

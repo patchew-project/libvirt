@@ -73,6 +73,12 @@ bhyveDomainDefPostParse(virDomainDefPtr def,
                                        VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT) < 0)
         return -1;
 
+    if ((def->os.bootloader == NULL && def->os.loader) ||
+        (def->nconsoles || def->nserials) || (def->ngraphics && def->nvideos))
+        if (virDomainDefMaybeAddController(def, VIR_DOMAIN_CONTROLLER_TYPE_PCI, 1,
+                                           VIR_DOMAIN_CONTROLLER_MODEL_PCI_ISA_BRIDGE) < 0)
+            return -1;
+
     return 0;
 }
 
