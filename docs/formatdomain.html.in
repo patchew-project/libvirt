@@ -2010,6 +2010,7 @@
     &lt;tlbflush state='on'/&gt;
     &lt;ipi state='on'/&gt;
     &lt;evmcs state='on'/&gt;
+    &lt;msrs unknown='ignore'/&gt;
   &lt;/hyperv&gt;
   &lt;kvm&gt;
     &lt;hidden state='on'/&gt;

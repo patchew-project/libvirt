@@ -157,6 +157,7 @@ VIR_ENUM_IMPL(virDomainFeature, VIR_DOMAIN_FEATURE_LAST,
               "vmcoreinfo",
               "htm",
               "nested-hv",
+              "msrs",
 );
 
 VIR_ENUM_IMPL(virDomainCapabilitiesPolicy, VIR_DOMAIN_CAPABILITIES_POLICY_LAST,
@@ -184,6 +185,11 @@ VIR_ENUM_IMPL(virDomainHyperv, VIR_DOMAIN_HYPERV_LAST,
 
 VIR_ENUM_IMPL(virDomainKVM, VIR_DOMAIN_KVM_LAST,
               "hidden",
+);
+
+VIR_ENUM_IMPL(virDomainMsrsUnknown, VIR_DOMAIN_MSRS_UNKNOWN_LAST,
+              "ignore",
+              "fault",
 );
 
 VIR_ENUM_IMPL(virDomainCapsFeature, VIR_DOMAIN_CAPS_FEATURE_LAST,
@@ -20330,6 +20336,7 @@ virDomainDefParseXML(xmlDocPtr xml,
         case VIR_DOMAIN_FEATURE_PRIVNET:
         case VIR_DOMAIN_FEATURE_HYPERV:
         case VIR_DOMAIN_FEATURE_KVM:
+        case VIR_DOMAIN_FEATURE_MSRS:
             def->features[val] = VIR_TRISTATE_SWITCH_ON;
             break;
 
@@ -20616,6 +20623,26 @@ virDomainDefParseXML(xmlDocPtr xml,
         if (rv < 0)
             goto error;
         def->tseg_specified = rv;
+    }
+
+    if (def->features[VIR_DOMAIN_FEATURE_MSRS] == VIR_TRISTATE_SWITCH_ON) {
+        if ((node = virXPathNode("./features/msrs", ctxt)) == NULL)
+            goto error;
+
+        if (!(tmp = virXMLPropString(node, "unknown"))) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("missing 'unknown' attribute for feature '%s'"),
+                           virDomainFeatureTypeToString(VIR_DOMAIN_FEATURE_MSRS));
+            goto error;
+        }
+
+        if ((def->msrs_features[VIR_DOMAIN_MSRS_UNKNOWN] = virDomainMsrsUnknownTypeFromString(tmp)) < 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unknown 'unknown' value '%s'"),
+                           tmp);
+            goto error;
+        }
+        VIR_FREE(tmp);
     }
 
     if ((n = virXPathNodeSet("./features/capabilities/*", ctxt, &nodes)) < 0)
@@ -22676,6 +22703,9 @@ virDomainDefFeaturesCheckABIStability(virDomainDefPtr src,
                                "driver", virDomainIOAPICTypeToString(dst->features[i]));
                 return false;
             }
+            break;
+
+        case VIR_DOMAIN_FEATURE_MSRS:
             break;
 
         case VIR_DOMAIN_FEATURE_LAST:
@@ -28733,6 +28763,14 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                                         &attributeBuf, &childrenBuf) < 0) {
                     goto error;
                 }
+                break;
+
+            case VIR_DOMAIN_FEATURE_MSRS:
+                if (def->features[i] != VIR_TRISTATE_SWITCH_ON)
+                    break;
+
+                virBufferAsprintf(buf, "<msrs unknown='%s'/>\n",
+                                  virDomainMsrsUnknownTypeToString(def->msrs_features[VIR_DOMAIN_MSRS_UNKNOWN]));
                 break;
 
             /* coverity[dead_error_begin] */
