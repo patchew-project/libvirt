@@ -3726,9 +3726,9 @@ qemuBuildLegacyNicStr(virDomainNetDefPtr net)
                              virMacAddrFormat(&net->mac, macaddr),
                              net->info.alias,
                              (net->model ? ",model=" : ""),
-                             (net->model ? net->model : ""),
+                             NULLSTR_EMPTY(net->model),
                              (net->info.alias ? ",id=" : ""),
-                             (net->info.alias ? net->info.alias : "")));
+                             NULLSTR_EMPTY(net->info.alias)));
     return str;
 }
 
