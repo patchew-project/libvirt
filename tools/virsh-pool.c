@@ -2105,6 +2105,42 @@ cmdPoolEvent(vshControl *ctl, const vshCmd *cmd)
 }
 
 
+/*
+ * "poolcapabilities" command
+ */
+static const vshCmdInfo info_poolcapabilities[] = {
+    {.name = "help",
+     .data = N_("storage pool capabilities")
+    },
+    {.name = "desc",
+     .data = N_("Returns capabilities of storage pool support.")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_poolcapabilities[] = {
+    {.name = NULL}
+};
+
+static bool
+cmdPoolCapabilities(vshControl *ctl,
+                    const vshCmd *cmd ATTRIBUTE_UNUSED)
+{
+    const unsigned int flags = 0; /* No flags so far */
+    virshControlPtr priv = ctl->privData;
+    VIR_AUTOFREE(char *) caps = NULL;
+
+    caps = virConnectGetStoragePoolCapabilities(priv->conn, flags);
+    if (!caps) {
+        vshError(ctl, "%s", _("failed to get storage pool capabilities"));
+        return false;
+    }
+
+    vshPrint(ctl, "%s\n", caps);
+    return true;
+}
+
+
 const vshCmdDef storagePoolCmds[] = {
     {.name = "find-storage-pool-sources-as",
      .handler = cmdPoolDiscoverSourcesAs,
@@ -2224,6 +2260,12 @@ const vshCmdDef storagePoolCmds[] = {
      .handler = cmdPoolEvent,
      .opts = opts_pool_event,
      .info = info_pool_event,
+     .flags = 0
+    },
+    {.name = "poolcapabilities",
+     .handler = cmdPoolCapabilities,
+     .opts = opts_poolcapabilities,
+     .info = info_poolcapabilities,
      .flags = 0
     },
     {.name = NULL}
