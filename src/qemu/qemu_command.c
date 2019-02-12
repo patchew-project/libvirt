@@ -3964,8 +3964,7 @@ qemuBuildHostNetStr(virDomainNetDefPtr net,
 
     case VIR_DOMAIN_NET_TYPE_SERVER:
         virBufferAsprintf(&buf, "socket,listen=%s:%d,",
-                          net->data.socket.address ? net->data.socket.address
-                          : "",
+                          NULLSTR_EMPTY(net->data.socket.address),
                           net->data.socket.port);
         break;
 
@@ -7231,7 +7230,7 @@ qemuBuildCpuCommandLine(virCommandPtr cmd,
 
     if (cpu) {
         virCommandAddArg(cmd, "-cpu");
-        virCommandAddArgFormat(cmd, "%s%s", cpu, cpu_flags ? cpu_flags : "");
+        virCommandAddArgFormat(cmd, "%s%s", cpu, NULLSTR_EMPTY(cpu_flags));
     }
 
     ret = 0;
@@ -10729,8 +10728,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
             virCommandAddArg(cmd, qemucmd->args[i]);
         for (i = 0; i < qemucmd->num_env; i++)
             virCommandAddEnvPair(cmd, qemucmd->env_name[i],
-                                 qemucmd->env_value[i]
-                                 ? qemucmd->env_value[i] : "");
+                                 NULLSTR_EMPTY(qemucmd->env_value[i]));
     }
 
     if (qemuBuildSeccompSandboxCommandLine(cmd, cfg, qemuCaps) < 0)
