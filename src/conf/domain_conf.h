@@ -3110,6 +3110,9 @@ virDomainIOThreadIDDefPtr virDomainIOThreadIDAdd(virDomainDefPtr def,
                                                  unsigned int iothread_id);
 void virDomainIOThreadIDDel(virDomainDefPtr def, unsigned int iothread_id);
 
+# define VIR_DOMAIN_XML_COMMON_FLAGS \
+    (VIR_DOMAIN_XML_SECURE | VIR_DOMAIN_XML_INACTIVE | \
+     VIR_DOMAIN_XML_MIGRATABLE)
 unsigned int virDomainDefFormatConvertXMLFlags(unsigned int flags);
 
 char *virDomainDefFormat(virDomainDefPtr def,

@@ -29083,6 +29083,8 @@ virDomainDefFormatInternal(virDomainDefPtr def,
     return -1;
 }
 
+/* Converts VIR_DOMAIN_XML_COMMON_FLAGS into VIR_DOMAIN_DEF_FORMAT_* flags,
+ * and silently ignores any other flags.  */
 unsigned int virDomainDefFormatConvertXMLFlags(unsigned int flags)
 {
     unsigned int formatFlags = 0;
