@@ -1539,6 +1539,7 @@ mymain(void)
             QEMU_CAPS_DEVICE_ISA_SERIAL);
     DO_TEST("pci-serial-dev-chardev",
             QEMU_CAPS_DEVICE_PCI_SERIAL);
+    DO_TEST_CAPS_LATEST("isa-serial-debugcon");
 
     DO_TEST("channel-guestfwd", NONE);
     DO_TEST_CAPS_VER("channel-unix-guestfwd", "2.5.0");

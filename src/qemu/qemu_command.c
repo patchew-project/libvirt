@@ -198,7 +198,7 @@ VIR_ENUM_IMPL(qemuDomainChrSerialTargetModel,
               "sclpconsole",
               "sclplmconsole",
               "", /* 16550a is not user-instantiable */
-              "", /* debugcon */
+              "isa-debugcon",
 );
 
 
