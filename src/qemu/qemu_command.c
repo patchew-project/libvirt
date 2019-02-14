@@ -186,6 +186,20 @@ VIR_ENUM_IMPL(qemuNumaPolicy, VIR_DOMAIN_NUMATUNE_MEM_LAST,
               "interleave",
 );
 
+VIR_ENUM_DECL(qemuDomainChrSerialTargetModel);
+VIR_ENUM_IMPL(qemuDomainChrSerialTargetModel,
+              VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_LAST,
+              "none",
+              "isa-serial",
+              "usb-serial",
+              "pci-serial",
+              "spapr-vty",
+              "", /* pl011 is not user-insantiable */
+              "sclpconsole",
+              "sclplmconsole",
+              "", /* 16550a is not user-instantiable */
+);
+
 
 /**
  * qemuBuildMasterKeyCommandLine:
@@ -10974,7 +10988,7 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
     }
 
     virBufferAsprintf(&cmd, "%s,chardev=char%s,id=%s",
-                      virDomainChrSerialTargetModelTypeToString(serial->targetModel),
+                      qemuDomainChrSerialTargetModelTypeToString(serial->targetModel),
                       serial->info.alias, serial->info.alias);
 
     if (qemuBuildDeviceAddressStr(&cmd, def, &serial->info, qemuCaps) < 0)
