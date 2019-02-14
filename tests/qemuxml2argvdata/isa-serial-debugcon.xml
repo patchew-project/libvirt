@@ -15,7 +15,6 @@
       <target type='isa-serial' port='0'>
         <model name='debugcon'/>
       </target>
-      <address type='isa' iobase='0x402'/>
     </serial>
     <memballoon model='none'/>
   </devices>

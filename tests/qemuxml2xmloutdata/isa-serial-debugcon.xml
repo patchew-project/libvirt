@@ -21,7 +21,7 @@
       <target type='isa-serial' port='0'>
         <model name='debugcon'/>
       </target>
-      <address type='isa' iobase='0x402'/>
+      <address type='isa' iobase='0xe9'/>
     </serial>
     <input type='mouse' bus='ps2'/>
     <input type='keyboard' bus='ps2'/>

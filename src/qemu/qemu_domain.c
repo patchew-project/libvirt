@@ -6595,6 +6595,15 @@ qemuDomainChrDefPostParse(virDomainChrDefPtr chr,
         }
     }
 
+    if (chr->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_SERIAL &&
+        chr->targetType == VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA &&
+        chr->targetModel == VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_DEBUGCON) {
+        if (chr->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE) {
+            chr->info.type = VIR_DOMAIN_DEVICE_ADDRESS_TYPE_ISA;
+            chr->info.addr.isa.iobase = 0xE9;
+        }
+    }
+
     return 0;
 }
 

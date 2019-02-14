@@ -24,7 +24,7 @@ file=/tmp/lib/domain--1-QEMUGuest1/master-key.aes \
 -no-acpi \
 -boot strict=on \
 -chardev pipe,id=charserial0,path=/tmp/debugcon \
--device isa-debugcon,chardev=charserial0,id=serial0,iobase=0x402 \
+-device isa-debugcon,chardev=charserial0,id=serial0,iobase=0xe9 \
 -sandbox on,obsolete=deny,elevateprivileges=deny,spawn=deny,\
 resourcecontrol=deny \
 -msg timestamp=on
