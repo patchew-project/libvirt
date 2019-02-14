@@ -198,6 +198,7 @@ VIR_ENUM_IMPL(qemuDomainChrSerialTargetModel,
               "sclpconsole",
               "sclplmconsole",
               "", /* 16550a is not user-instantiable */
+              "", /* debugcon */
 );
 
 
@@ -9515,6 +9516,7 @@ qemuChrSerialTargetModelToCaps(virDomainChrSerialTargetModel targetModel)
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_PL011:
         return QEMU_CAPS_DEVICE_PL011;
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_16550A:
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_DEBUGCON:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_LAST:
         break;
@@ -10963,6 +10965,7 @@ qemuBuildSerialChrDeviceStr(char **deviceStr,
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SPAPR_VTY:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPCONSOLE:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPLMCONSOLE:
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_DEBUGCON:
 
         caps = qemuChrSerialTargetModelToCaps(serial->targetModel);
 

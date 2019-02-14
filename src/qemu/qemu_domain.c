@@ -4358,6 +4358,8 @@ qemuDomainChrSerialTargetModelToTargetType(int targetModel)
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPCONSOLE:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPLMCONSOLE:
         return VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_SCLP;
+    case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_DEBUGCON:
+        return VIR_DOMAIN_CHR_SERIAL_TARGET_TYPE_ISA;
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_NONE:
     case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_LAST:
         break;
@@ -4420,6 +4422,7 @@ qemuDomainChrTargetDefValidate(const virDomainChrDef *chr)
         case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPCONSOLE:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_SCLPLMCONSOLE:
         case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_16550A:
+        case VIR_DOMAIN_CHR_SERIAL_TARGET_MODEL_DEBUGCON:
 
             expected = qemuDomainChrSerialTargetModelToTargetType(chr->targetModel);
 
