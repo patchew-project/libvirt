@@ -7079,7 +7079,7 @@ qemuDomainSaveImageGetXMLDesc(virConnectPtr conn, const char *path,
     virQEMUSaveDataPtr data = NULL;
 
     /* We only take subset of virDomainDefFormat flags.  */
-    virCheckFlags(VIR_DOMAIN_XML_SECURE, NULL);
+    virCheckFlags(VIR_DOMAIN_SAVE_IMAGE_XML_SECURE, NULL);
 
     fd = qemuDomainSaveImageOpen(driver, path, &def, &data,
                                  false, NULL, false, false);
@@ -7184,7 +7184,7 @@ qemuDomainManagedSaveGetXMLDesc(virDomainPtr dom, unsigned int flags)
     virQEMUSaveDataPtr data = NULL;
 
     /* We only take subset of virDomainDefFormat flags.  */
-    virCheckFlags(VIR_DOMAIN_XML_SECURE, NULL);
+    virCheckFlags(VIR_DOMAIN_SAVE_IMAGE_XML_SECURE, NULL);
 
     if (!(vm = qemuDomObjFromDomain(dom)))
         return ret;
