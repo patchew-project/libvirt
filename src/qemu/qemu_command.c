@@ -409,9 +409,9 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
                               info->addr.ccw.ssid,
                               info->addr.ccw.devno);
     } else if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_ISA) {
-        virBufferAsprintf(buf, ",iobase=0x%x,irq=0x%x",
-                          info->addr.isa.iobase,
-                          info->addr.isa.irq);
+        virBufferAsprintf(buf, ",iobase=0x%x", info->addr.isa.iobase);
+        if (info->addr.isa.irq)
+            virBufferAsprintf(buf, ",irq=0x%x", info->addr.isa.irq);
     }
 
     ret = 0;
