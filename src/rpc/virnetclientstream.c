@@ -50,6 +50,7 @@ struct _virNetClientStream {
     virNetMessagePtr rx;
     bool incomingEOF;
     virNetClientStreamClosed closed;
+    bool clientClosed;
 
     bool allowSkip;
     long long holeLength;  /* Size of incoming hole in stream. */
@@ -85,7 +86,11 @@ virNetClientStreamEventTimerUpdate(virNetClientStreamPtr st)
 
     VIR_DEBUG("Check timer rx=%p cbEvents=%d", st->rx, st->cbEvents);
 
-    if (((st->rx || st->incomingEOF || st->err.code != VIR_ERR_OK || st->closed) &&
+    if (((st->rx ||
+          st->incomingEOF ||
+          st->err.code != VIR_ERR_OK ||
+          st->closed ||
+          st->clientClosed) &&
          (st->cbEvents & VIR_STREAM_EVENT_READABLE)) ||
         (st->cbEvents & VIR_STREAM_EVENT_WRITABLE)) {
         VIR_DEBUG("Enabling event timer");
@@ -107,7 +112,11 @@ virNetClientStreamEventTimer(int timer ATTRIBUTE_UNUSED, void *opaque)
 
     if (st->cb &&
         (st->cbEvents & VIR_STREAM_EVENT_READABLE) &&
-        (st->rx || st->incomingEOF || st->err.code != VIR_ERR_OK || st->closed))
+        (st->rx ||
+         st->incomingEOF ||
+         st->err.code != VIR_ERR_OK ||
+         st->closed ||
+         st->clientClosed))
         events |= VIR_STREAM_EVENT_READABLE;
     if (st->cb &&
         (st->cbEvents & VIR_STREAM_EVENT_WRITABLE))
@@ -204,6 +213,12 @@ int virNetClientStreamCheckState(virNetClientStreamPtr st)
         return -1;
     }
 
+    if (st->clientClosed) {
+        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                       _("client socket is closed"));
+        return -1;
+    }
+
     if (st->closed) {
         virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                        _("stream is closed"));
@@ -244,6 +259,17 @@ int virNetClientStreamCheckSendStatus(virNetClientStreamPtr st,
     }
 
     return 0;
+}
+
+
+void virNetClientStreamSetClientClosed(virNetClientStreamPtr st)
+{
+    virObjectLock(st);
+
+    st->clientClosed = true;
+    virNetClientStreamEventTimerUpdate(st);
+
+    virObjectUnlock(st);
 }
 
 

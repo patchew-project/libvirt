@@ -785,6 +785,7 @@ static void
 virNetClientCloseLocked(virNetClientPtr client)
 {
     virKeepAlivePtr ka;
+    size_t i;
 
     VIR_DEBUG("client=%p, sock=%p, reason=%d", client, client->sock, client->closeReason);
 
@@ -825,6 +826,9 @@ virNetClientCloseLocked(virNetClientPtr client)
         virObjectLock(client);
         virObjectUnref(client);
     }
+
+    for (i = 0; i < client->nstreams; i++)
+        virNetClientStreamSetClientClosed(client->streams[i]);
 }
 
 static void virNetClientCloseInternal(virNetClientPtr client,

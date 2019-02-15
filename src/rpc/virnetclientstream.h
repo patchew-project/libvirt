@@ -49,6 +49,8 @@ int virNetClientStreamCheckSendStatus(virNetClientStreamPtr st,
 int virNetClientStreamSetError(virNetClientStreamPtr st,
                                virNetMessagePtr msg);
 
+void virNetClientStreamSetClientClosed(virNetClientStreamPtr st);
+
 void virNetClientStreamSetClosed(virNetClientStreamPtr st,
                                  virNetClientStreamClosed closed);
 
