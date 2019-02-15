@@ -73,6 +73,7 @@ struct virConsole {
     struct virConsoleBuffer terminalToStream;
 
     char escapeChar;
+    virError error;
 };
 
 static virClassPtr virConsoleClass;
@@ -98,6 +99,11 @@ virConsoleHandleSignal(int sig ATTRIBUTE_UNUSED)
 static void
 virConsoleShutdown(virConsolePtr con)
 {
+    virErrorPtr err = virGetLastError();
+
+    if (con->error.code == VIR_ERR_OK && err && err->code != VIR_ERR_OK)
+        virCopyLastError(&con->error);
+
     if (con->st) {
         virStreamEventRemoveCallback(con->st);
         virStreamAbort(con->st);
@@ -126,6 +132,7 @@ virConsoleDispose(void *obj)
         virStreamFree(con->st);
 
     virCondDestroy(&con->cond);
+    virResetError(&con->error);
 }
 
 
@@ -162,7 +169,13 @@ virConsoleEventOnStream(virStreamPtr st,
                             avail);
         if (got == -2)
             goto cleanup; /* blocking */
-        if (got <= 0) {
+        if (got == 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("console stream EOF"));
+            virConsoleShutdown(con);
+            goto cleanup;
+        }
+        if (got < 0) {
             virConsoleShutdown(con);
             goto cleanup;
         }
@@ -245,11 +258,14 @@ virConsoleEventOnStdin(int watch ATTRIBUTE_UNUSED,
                    con->terminalToStream.offset,
                    avail);
         if (got < 0) {
-            if (errno != EAGAIN)
+            if (errno != EAGAIN) {
+                virReportSystemError(errno, "%s", _("can not read from stdin"));
                 virConsoleShutdown(con);
+            }
             goto cleanup;
         }
         if (got == 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("EOF on stdin"));
             virConsoleShutdown(con);
             goto cleanup;
         }
@@ -265,9 +281,16 @@ virConsoleEventOnStdin(int watch ATTRIBUTE_UNUSED,
                                          VIR_STREAM_EVENT_WRITABLE);
     }
 
-    if (events & VIR_EVENT_HANDLE_ERROR ||
-        events & VIR_EVENT_HANDLE_HANGUP) {
+    if (events & VIR_EVENT_HANDLE_ERROR) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("IO error on stdin"));
         virConsoleShutdown(con);
+        goto cleanup;
+    }
+
+    if (events & VIR_EVENT_HANDLE_HANGUP) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("EOF on stdin"));
+        virConsoleShutdown(con);
+        goto cleanup;
     }
 
  cleanup:
@@ -297,8 +320,10 @@ virConsoleEventOnStdout(int watch ATTRIBUTE_UNUSED,
                      con->streamToTerminal.data,
                      con->streamToTerminal.offset);
         if (done < 0) {
-            if (errno != EAGAIN)
+            if (errno != EAGAIN) {
+                virReportSystemError(errno, "%s", _("can not write to stdout"));
                 virConsoleShutdown(con);
+            }
             goto cleanup;
         }
         memmove(con->streamToTerminal.data,
@@ -317,9 +342,16 @@ virConsoleEventOnStdout(int watch ATTRIBUTE_UNUSED,
     if (!con->streamToTerminal.offset)
         virEventUpdateHandle(con->stdoutWatch, 0);
 
-    if (events & VIR_EVENT_HANDLE_ERROR ||
-        events & VIR_EVENT_HANDLE_HANGUP) {
+    if (events & VIR_EVENT_HANDLE_ERROR) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("IO error stdout"));
         virConsoleShutdown(con);
+        goto cleanup;
+    }
+
+    if (events & VIR_EVENT_HANDLE_HANGUP) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("EOF on stdout"));
+        virConsoleShutdown(con);
+        goto cleanup;
     }
 
  cleanup:
@@ -447,15 +479,24 @@ virshRunConsole(vshControl *ctl,
 
     while (!con->quit) {
         if (virCondWait(&con->cond, &con->parent.lock) < 0) {
-            VIR_ERROR(_("unable to wait on console condition"));
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("unable to wait on console condition"));
             goto cleanup;
         }
     }
 
-    ret = 0;
+    if (con->error.code == VIR_ERR_OK)
+        ret = 0;
 
  cleanup:
     virConsoleShutdown(con);
+
+    if (ret < 0) {
+        vshResetLibvirtError();
+        virSetError(&con->error);
+        vshSaveLibvirtHelperError();
+    }
+
     virObjectUnlock(con);
     virObjectUnref(con);
 
