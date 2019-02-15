@@ -1163,7 +1163,8 @@ static void virNetClientCallCompleteAllWaitingReply(virNetClientPtr client)
     virNetClientCallPtr call;
 
     for (call = client->waitDispatch; call; call = call->next) {
-        if (call->msg->header.prog == client->msg.header.prog &&
+        if (call->msg->header.type == VIR_NET_STREAM &&
+            call->msg->header.prog == client->msg.header.prog &&
             call->msg->header.vers == client->msg.header.vers &&
             call->msg->header.serial == client->msg.header.serial &&
             call->expectReply)
@@ -1207,7 +1208,8 @@ static int virNetClientCallDispatchStream(virNetClientPtr client)
 
         /* Find oldest dummy message waiting for incoming data. */
         for (thecall = client->waitDispatch; thecall; thecall = thecall->next) {
-            if (thecall->msg->header.prog == client->msg.header.prog &&
+            if (thecall->msg->header.type == VIR_NET_STREAM &&
+                thecall->msg->header.prog == client->msg.header.prog &&
                 thecall->msg->header.vers == client->msg.header.vers &&
                 thecall->msg->header.serial == client->msg.header.serial &&
                 thecall->expectReply &&
@@ -1225,7 +1227,8 @@ static int virNetClientCallDispatchStream(virNetClientPtr client)
     case VIR_NET_OK:
         /* Find oldest abort/finish message. */
         for (thecall = client->waitDispatch; thecall; thecall = thecall->next) {
-            if (thecall->msg->header.prog == client->msg.header.prog &&
+            if (thecall->msg->header.type == VIR_NET_STREAM &&
+                thecall->msg->header.prog == client->msg.header.prog &&
                 thecall->msg->header.vers == client->msg.header.vers &&
                 thecall->msg->header.serial == client->msg.header.serial &&
                 thecall->expectReply &&
