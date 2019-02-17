@@ -460,7 +460,6 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
      *            vm0
      */
     size_t i;
-    bool add_lpc = false;
     int nusbcontrollers = 0;
     unsigned int nvcpus = virDomainDefGetVcpus(def);
 
@@ -549,7 +548,6 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
         if ((bhyveDriverGetCaps(conn) & BHYVE_CAP_LPC_BOOTROM)) {
             virCommandAddArg(cmd, "-l");
             virCommandAddArgFormat(cmd, "bootrom,%s", def->os.loader->path);
-            add_lpc = true;
         } else {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("Installed bhyve binary does not support "
@@ -613,7 +611,6 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
             if (bhyveBuildGraphicsArgStr(def, def->graphics[0], def->videos[0],
                                          conn, cmd, dryRun) < 0)
                 goto error;
-            add_lpc = true;
         } else {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("Multiple graphics devices are not supported"));
@@ -621,7 +618,7 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
         }
     }
 
-    if (add_lpc || def->nserials)
+    if (bhyveDomainDefNeedsISAController(def))
         bhyveBuildLPCArgStr(def, cmd);
 
     if (bhyveBuildConsoleArgStr(def, cmd) < 0)

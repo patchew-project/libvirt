@@ -61,6 +61,16 @@ virDomainXMLPrivateDataCallbacks virBhyveDriverPrivateDataCallbacks = {
     .free = bhyveDomainObjPrivateFree,
 };
 
+bool
+bhyveDomainDefNeedsISAController(virDomainDefPtr def)
+{
+    if ((def->os.bootloader == NULL && def->os.loader) ||
+        (def->nconsoles || def->nserials) || (def->ngraphics && def->nvideos))
+        return true;
+    else
+        return false;
+}
+
 static int
 bhyveDomainDefPostParse(virDomainDefPtr def,
                         virCapsPtr caps ATTRIBUTE_UNUSED,
