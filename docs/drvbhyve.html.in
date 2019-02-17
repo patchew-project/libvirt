@@ -462,6 +462,28 @@ Example:</p>
 &lt;/domain&gt;
 </pre>
 
+<h3><a id="lpc">LPC PCI-ISA bridge address</a></h3>
+
+<p>LPC PCI-ISA bridge is used in bhyve to attach serial ports and a boot ROM.
+By default, the bhyve driver assigns PCI slot 1 for it.
+However, sometimes it may be necessary to use other slot for it.
+For example, placing it on slot 31 instead of slot 1 will look like this:</p>
+
+<pre>
+&lt;domain type="bhyve"&gt;
+  ...
+  &lt;devices&gt;
+    ...
+    &lt;controller type='isa' index='1' model='isa-bridge'&gt;
+      &lt;address type='pci' domain='0x0000' bus='0x00' slot='0x1f' function='0x0'/&gt;
+    &lt;/controller&gt;
+    ...
+  &lt;/devices&gt;
+&lt;/domain&gt;
+</pre>
+
+<p>This is supported <span class="since">since 5.1.0</span>.</p>
+
 <h3><a id="bhyvecommand">Pass-through of arbitrary bhyve commands</a></h3>
 
 <p><span class="since">Since 5.1.0</span>, it's possible to pass additional command-line
