@@ -461,6 +461,7 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
      */
     size_t i;
     int nusbcontrollers = 0;
+    int nisacontrollers = 0;
     unsigned int nvcpus = virDomainDefGetVcpus(def);
 
     virCommandPtr cmd = virCommandNew(BHYVE);
@@ -581,6 +582,21 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
                 if (bhyveBuildUSBControllerArgStr(def, controller, cmd) < 0)
                     goto error;
                 break;
+        case VIR_DOMAIN_CONTROLLER_TYPE_ISA:
+                if (controller->model != VIR_DOMAIN_CONTROLLER_MODEL_ISA_BRIDGE) {
+                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                       "%s", _("unsupported ISA controller model: only ISA bridge supported"));
+                        goto error;
+                }
+                if (++nisacontrollers > 1) {
+                        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                                       "%s", _("only single ISA controller is supported"));
+                        goto error;
+                }
+                virCommandAddArg(cmd, "-s");
+                virCommandAddArgFormat(cmd, "%d:0,lpc",
+                                       controller->info.addr.pci.slot);
+                break;
         }
     }
     for (i = 0; i < def->nnets; i++) {
@@ -618,7 +634,7 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
         }
     }
 
-    if (bhyveDomainDefNeedsISAController(def))
+    if (nisacontrollers == 0 && bhyveDomainDefNeedsISAController(def))
         bhyveBuildLPCArgStr(def, cmd);
 
     if (bhyveBuildConsoleArgStr(def, cmd) < 0)

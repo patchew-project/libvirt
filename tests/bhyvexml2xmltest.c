@@ -111,6 +111,7 @@ mymain(void)
     DO_TEST_DIFFERENT("vnc-vgaconf-io");
     DO_TEST_DIFFERENT("vnc-autoport");
     DO_TEST_DIFFERENT("commandline");
+    DO_TEST_DIFFERENT("isa-controller");
 
     /* Address allocation tests */
     DO_TEST_DIFFERENT("addr-single-sata-disk");
@@ -118,6 +119,8 @@ mymain(void)
     DO_TEST_DIFFERENT("addr-more-than-32-sata-disks");
     DO_TEST_DIFFERENT("addr-single-virtio-disk");
     DO_TEST_DIFFERENT("addr-multiple-virtio-disks");
+    DO_TEST_DIFFERENT("addr-isa-controller-on-slot-1");
+    DO_TEST_DIFFERENT("addr-isa-controller-on-slot-31");
 
     /* The same without 32 devs per controller support */
     driver.bhyvecaps ^= BHYVE_CAP_AHCI32SLOT;
