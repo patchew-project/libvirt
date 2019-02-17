@@ -2201,6 +2201,19 @@
               </attribute>
             </optional>
           </group>
+          <!-- isa has an optional attribute "model" -->
+          <group>
+            <attribute name="type">
+              <value>isa</value>
+            </attribute>
+            <optional>
+              <attribute name="model">
+                <choice>
+                  <value>isa-bridge</value>
+                </choice>
+              </attribute>
+            </optional>
+          </group>
           <!-- pci has an optional attribute "model" -->
           <group>
             <attribute name="type">

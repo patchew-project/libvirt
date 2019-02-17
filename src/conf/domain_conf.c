@@ -341,6 +341,7 @@ VIR_ENUM_IMPL(virDomainController, VIR_DOMAIN_CONTROLLER_TYPE_LAST,
               "ccid",
               "usb",
               "pci",
+              "isa",
 );
 
 VIR_ENUM_IMPL(virDomainControllerModelPCI, VIR_DOMAIN_CONTROLLER_MODEL_PCI_LAST,
@@ -402,6 +403,10 @@ VIR_ENUM_IMPL(virDomainControllerModelIDE, VIR_DOMAIN_CONTROLLER_MODEL_IDE_LAST,
               "piix3",
               "piix4",
               "ich6",
+);
+
+VIR_ENUM_IMPL(virDomainControllerModelISA, VIR_DOMAIN_CONTROLLER_MODEL_ISA_LAST,
+              "isa-bridge",
 );
 
 VIR_ENUM_IMPL(virDomainFS, VIR_DOMAIN_FS_TYPE_LAST,
@@ -2041,6 +2046,7 @@ virDomainControllerDefNew(virDomainControllerType type)
     case VIR_DOMAIN_CONTROLLER_TYPE_SCSI:
     case VIR_DOMAIN_CONTROLLER_TYPE_SATA:
     case VIR_DOMAIN_CONTROLLER_TYPE_CCID:
+    case VIR_DOMAIN_CONTROLLER_TYPE_ISA:
     case VIR_DOMAIN_CONTROLLER_TYPE_LAST:
         break;
     }
@@ -10445,6 +10451,8 @@ virDomainControllerModelTypeFromString(const virDomainControllerDef *def,
         return virDomainControllerModelPCITypeFromString(model);
     else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_IDE)
         return virDomainControllerModelIDETypeFromString(model);
+    else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_ISA)
+        return virDomainControllerModelISATypeFromString(model);
 
     return -1;
 }
@@ -10462,6 +10470,8 @@ virDomainControllerModelTypeToString(virDomainControllerDefPtr def,
         return virDomainControllerModelPCITypeToString(model);
     else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_IDE)
         return virDomainControllerModelIDETypeToString(model);
+    else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_ISA)
+        return virDomainControllerModelISATypeToString(model);
 
     return NULL;
 }
