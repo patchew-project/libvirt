@@ -61,7 +61,7 @@ virDomainXMLPrivateDataCallbacks virBhyveDriverPrivateDataCallbacks = {
     .free = bhyveDomainObjPrivateFree,
 };
 
-bool
+static bool
 bhyveDomainDefNeedsISAController(virDomainDefPtr def)
 {
     if ((def->os.bootloader == NULL && def->os.loader) ||
@@ -82,6 +82,11 @@ bhyveDomainDefPostParse(virDomainDefPtr def,
     if (virDomainDefMaybeAddController(def, VIR_DOMAIN_CONTROLLER_TYPE_PCI, 0,
                                        VIR_DOMAIN_CONTROLLER_MODEL_PCI_ROOT) < 0)
         return -1;
+
+    if (bhyveDomainDefNeedsISAController(def))
+        if (virDomainDefMaybeAddController(def, VIR_DOMAIN_CONTROLLER_TYPE_ISA, 1,
+                                           VIR_DOMAIN_CONTROLLER_MODEL_ISA_BRIDGE) < 0)
+            return -1;
 
     return 0;
 }

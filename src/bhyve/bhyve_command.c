@@ -326,14 +326,6 @@ bhyveBuildVirtIODiskArgStr(const virDomainDef *def ATTRIBUTE_UNUSED,
 }
 
 static int
-bhyveBuildLPCArgStr(const virDomainDef *def ATTRIBUTE_UNUSED,
-                    virCommandPtr cmd)
-{
-    virCommandAddArgList(cmd, "-s", "1,lpc", NULL);
-    return 0;
-}
-
-static int
 bhyveBuildGraphicsArgStr(const virDomainDef *def,
                          virDomainGraphicsDefPtr graphics,
                          virDomainVideoDefPtr video,
@@ -633,9 +625,6 @@ virBhyveProcessBuildBhyveCmd(virConnectPtr conn,
              goto error;
         }
     }
-
-    if (nisacontrollers == 0 && bhyveDomainDefNeedsISAController(def))
-        bhyveBuildLPCArgStr(def, cmd);
 
     if (bhyveBuildConsoleArgStr(def, cmd) < 0)
         goto error;
