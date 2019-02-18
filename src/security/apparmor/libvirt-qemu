@@ -21,6 +21,7 @@
   signal (receive) peer=/usr/sbin/libvirtd,
 
   /dev/net/tun rw,
+  /dev/vhost-net rw,
   /dev/kvm rw,
   /dev/ptmx rw,
   /dev/kqemu rw,

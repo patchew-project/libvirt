@@ -937,7 +937,7 @@ get_files(vahControl * ctl)
     size_t i;
     char *uuid;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
-    bool needsVfio = false, needsvhost = false;
+    bool needsVfio = false;
 
     /* verify uuid is same as what we were given on the command line */
     virUUIDFormat(ctl->def->uuid, uuidstr);
@@ -1247,21 +1247,6 @@ get_files(vahControl * ctl)
             break;
         }
     }
-
-    if (ctl->def->virtType == VIR_DOMAIN_VIRT_KVM) {
-        for (i = 0; i < ctl->def->nnets; i++) {
-            virDomainNetDefPtr net = ctl->def->nets[i];
-            if (net && net->model) {
-                if (net->driver.virtio.name == VIR_DOMAIN_NET_BACKEND_TYPE_QEMU)
-                    continue;
-                if (!virDomainNetIsVirtioModel(net))
-                    continue;
-            }
-            needsvhost = true;
-        }
-    }
-    if (needsvhost)
-        virBufferAddLit(&buf, "  \"/dev/vhost-net\" rw,\n");
 
     if (needsVfio) {
         virBufferAddLit(&buf, "  \"/dev/vfio/vfio\" rw,\n");
