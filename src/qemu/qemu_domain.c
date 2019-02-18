@@ -10693,6 +10693,9 @@ qemuDomainRefreshVcpuInfo(virQEMUDriverPtr driver,
      * impl which we can support.
      */
     for (i = 0; i < maxvcpus && validTIDs; i++) {
+        if (vm->def->virtType != VIR_DOMAIN_VIRT_QEMU)
+            break;
+
         if (info[i].tid == vm->pid) {
             VIR_DEBUG("vCPU[%zu] PID %llu duplicates process",
                       i, (unsigned long long)info[i].tid);
