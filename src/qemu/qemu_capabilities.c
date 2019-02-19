@@ -4873,7 +4873,7 @@ virQEMUCapsFillDomainLoaderCaps(virDomainCapsLoaderPtr capsLoader,
 {
     size_t i;
 
-    capsLoader->supported = true;
+    capsLoader->supported = VIR_TRISTATE_BOOL_YES;
 
     if (VIR_ALLOC_N(capsLoader->values.values, nfirmwares) < 0)
         return -1;
@@ -4913,7 +4913,7 @@ virQEMUCapsFillDomainOSCaps(virDomainCapsOSPtr os,
 {
     virDomainCapsLoaderPtr capsLoader = &os->loader;
 
-    os->supported = true;
+    os->supported = VIR_TRISTATE_BOOL_YES;
     if (virQEMUCapsFillDomainLoaderCaps(capsLoader, firmwares, nfirmwares) < 0)
         return -1;
     return 0;
@@ -4966,7 +4966,8 @@ static int
 virQEMUCapsFillDomainIOThreadCaps(virQEMUCapsPtr qemuCaps,
                                   virDomainCapsPtr domCaps)
 {
-    domCaps->iothreads = virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_IOTHREAD);
+    domCaps->iothreads = virTristateBoolFromBool(
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_OBJECT_IOTHREAD));
 
     return 0;
 }
@@ -4977,7 +4978,7 @@ virQEMUCapsFillDomainDeviceDiskCaps(virQEMUCapsPtr qemuCaps,
                                     const char *machine,
                                     virDomainCapsDeviceDiskPtr disk)
 {
-    disk->supported = true;
+    disk->supported = VIR_TRISTATE_BOOL_YES;
     /* QEMU supports all of these */
     VIR_DOMAIN_CAPS_ENUM_SET(disk->diskDevice,
                              VIR_DOMAIN_DISK_DEVICE_DISK,
@@ -5012,7 +5013,7 @@ static int
 virQEMUCapsFillDomainDeviceGraphicsCaps(virQEMUCapsPtr qemuCaps,
                                         virDomainCapsDeviceGraphicsPtr dev)
 {
-    dev->supported = true;
+    dev->supported = VIR_TRISTATE_BOOL_YES;
 
     VIR_DOMAIN_CAPS_ENUM_SET(dev->type, VIR_DOMAIN_GRAPHICS_TYPE_SDL);
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_VNC))
@@ -5028,7 +5029,7 @@ static int
 virQEMUCapsFillDomainDeviceVideoCaps(virQEMUCapsPtr qemuCaps,
                                      virDomainCapsDeviceVideoPtr dev)
 {
-    dev->supported = true;
+    dev->supported = VIR_TRISTATE_BOOL_YES;
 
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VGA))
         VIR_DOMAIN_CAPS_ENUM_SET(dev->modelType, VIR_DOMAIN_VIDEO_TYPE_VGA);
@@ -5052,7 +5053,7 @@ virQEMUCapsFillDomainDeviceHostdevCaps(virQEMUCapsPtr qemuCaps,
     bool supportsPassthroughKVM = qemuHostdevHostSupportsPassthroughLegacy();
     bool supportsPassthroughVFIO = qemuHostdevHostSupportsPassthroughVFIO();
 
-    hostdev->supported = true;
+    hostdev->supported = VIR_TRISTATE_BOOL_YES;
     /* VIR_DOMAIN_HOSTDEV_MODE_CAPABILITIES is for containers only */
     VIR_DOMAIN_CAPS_ENUM_SET(hostdev->mode,
                              VIR_DOMAIN_HOSTDEV_MODE_SUBSYS);
@@ -5167,7 +5168,7 @@ virQEMUCapsFillDomainFeatureGICCaps(virQEMUCapsPtr qemuCaps,
                                            version))
             continue;
 
-        gic->supported = true;
+        gic->supported = VIR_TRISTATE_BOOL_YES;
         VIR_DOMAIN_CAPS_ENUM_SET(gic->version,
                                  version);
     }
@@ -5238,10 +5239,11 @@ virQEMUCapsFillDomainCaps(virCapsPtr caps,
         domCaps->maxvcpus = MIN(domCaps->maxvcpus, hostmaxvcpus);
     }
 
-    domCaps->vmcoreinfo = virQEMUCapsGet(qemuCaps,
-                                         QEMU_CAPS_DEVICE_VMCOREINFO);
+    domCaps->vmcoreinfo = virTristateBoolFromBool(
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VMCOREINFO));
 
-    domCaps->genid = virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VMGENID);
+    domCaps->genid = virTristateBoolFromBool(
+            virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VMGENID));
 
     if (virQEMUCapsFillDomainOSCaps(os, firmwares, nfirmwares) < 0 ||
         virQEMUCapsFillDomainCPUCaps(caps, qemuCaps, domCaps) < 0 ||
