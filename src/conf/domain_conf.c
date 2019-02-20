@@ -11355,10 +11355,11 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                 xmlNodePtr tmpnode = ctxt->node;
 
                 ctxt->node = cur;
-                if (virDomainNetIPInfoParseXML(_("interface host IP"),
-                                               ctxt, &def->hostIP) < 0)
-                    goto error;
+                rv = virDomainNetIPInfoParseXML(_("interface host IP"),
+                                                ctxt, &def->hostIP);
                 ctxt->node = tmpnode;
+                if (rv < 0)
+                    goto error;
             }
             if (!macaddr && virXMLNodeNameEqual(cur, "mac")) {
                 macaddr = virXMLPropString(cur, "address");
