@@ -516,6 +516,10 @@ virQEMUCapsPtr virQEMUCapsNew(void);
 
 void virQEMUCapsSet(virQEMUCapsPtr qemuCaps,
                     virQEMUCapsFlags flag) ATTRIBUTE_NONNULL(1);
+int virQEMUCapsSetFromNodes(virQEMUCapsPtr qemuCaps,
+                            xmlNodePtr *nodes,
+                            size_t nnodes)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
 void virQEMUCapsSetList(virQEMUCapsPtr qemuCaps, ...) ATTRIBUTE_NONNULL(1);
 

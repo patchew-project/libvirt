@@ -3442,7 +3442,7 @@ virQEMUCapsParseSEVInfo(virQEMUCapsPtr qemuCaps, xmlXPathContextPtr ctxt)
 }
 
 
-static int
+int
 virQEMUCapsSetFromNodes(virQEMUCapsPtr qemuCaps,
                         xmlNodePtr *nodes,
                         size_t n)

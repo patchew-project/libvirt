@@ -2984,20 +2984,8 @@ qemuDomainObjPrivateXMLParse(xmlXPathContextPtr ctxt,
         if (!(qemuCaps = virQEMUCapsNew()))
             goto error;
 
-        for (i = 0; i < n; i++) {
-            char *str = virXMLPropString(nodes[i], "name");
-            if (str) {
-                int flag = virQEMUCapsTypeFromString(str);
-                if (flag < 0) {
-                    virReportError(VIR_ERR_INTERNAL_ERROR,
-                                   _("Unknown qemu capabilities flag %s"), str);
-                    VIR_FREE(str);
-                    goto error;
-                }
-                VIR_FREE(str);
-                virQEMUCapsSet(qemuCaps, flag);
-            }
-        }
+        if (virQEMUCapsSetFromNodes(qemuCaps, nodes, n) < 0)
+            goto error;
 
         VIR_STEAL_PTR(priv->qemuCaps, qemuCaps);
     }

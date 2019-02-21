@@ -38,7 +38,7 @@ testQemuGetCaps(char *caps)
     virQEMUCapsPtr qemuCaps = NULL;
     xmlDocPtr xml;
     xmlXPathContextPtr ctxt = NULL;
-    ssize_t i, n;
+    ssize_t n;
     xmlNodePtr *nodes = NULL;
 
     if (!(xml = virXMLParseStringCtxt(caps, "(test caps)", &ctxt)))
@@ -52,19 +52,8 @@ testQemuGetCaps(char *caps)
     if (!(qemuCaps = virQEMUCapsNew()))
         goto error;
 
-    for (i = 0; i < n; i++) {
-        char *str = virXMLPropString(nodes[i], "name");
-        if (str) {
-            int flag = virQEMUCapsTypeFromString(str);
-            if (flag < 0) {
-                fprintf(stderr, "Unknown qemu capabilities flag %s", str);
-                VIR_FREE(str);
-                goto error;
-            }
-            VIR_FREE(str);
-            virQEMUCapsSet(qemuCaps, flag);
-        }
-    }
+    if (virQEMUCapsSetFromNodes(qemuCaps, nodes, n) < 0)
+        goto error;
 
     VIR_FREE(nodes);
     xmlFreeDoc(xml);
