@@ -3442,6 +3442,38 @@ virQEMUCapsParseSEVInfo(virQEMUCapsPtr qemuCaps, xmlXPathContextPtr ctxt)
 }
 
 
+static int
+virQEMUCapsSetFromNodes(virQEMUCapsPtr qemuCaps,
+                        xmlNodePtr *nodes,
+                        size_t n)
+{
+    size_t i;
+    char *str = NULL;
+    int ret = -1;
+
+    for (i = 0; i < n; i++) {
+        int flag;
+        if (!(str = virXMLPropString(nodes[i], "name"))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("missing flag name in QEMU capabilities cache"));
+            goto cleanup;
+        }
+        flag = virQEMUCapsTypeFromString(str);
+        if (flag < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Unknown qemu capabilities flag %s"), str);
+            goto cleanup;
+        }
+        VIR_FREE(str);
+        virQEMUCapsSet(qemuCaps, flag);
+    }
+    ret = 0;
+ cleanup:
+    VIR_FREE(str);
+    return ret;
+}
+
+
 /*
  * Parsing a doc that looks like
  *
@@ -3515,22 +3547,9 @@ virQEMUCapsLoadCache(virArch hostArch,
         goto cleanup;
     }
     VIR_DEBUG("Got flags %d", n);
-    for (i = 0; i < n; i++) {
-        int flag;
-        if (!(str = virXMLPropString(nodes[i], "name"))) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("missing flag name in QEMU capabilities cache"));
-            goto cleanup;
-        }
-        flag = virQEMUCapsTypeFromString(str);
-        if (flag < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("Unknown qemu capabilities flag %s"), str);
-            goto cleanup;
-        }
-        VIR_FREE(str);
-        virQEMUCapsSet(qemuCaps, flag);
-    }
+
+    if (virQEMUCapsSetFromNodes(qemuCaps, nodes, n) < 0)
+        goto cleanup;
     VIR_FREE(nodes);
 
     if (virXPathUInt("string(./version)", ctxt, &qemuCaps->version) < 0) {
