@@ -524,6 +524,101 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "scsi-disk.device_id",
     );
 
+#define VIR_QEMU_CAPS_DEPRECATED_LAST 92 /* chosen by fair dice roll */
+VIR_ENUM_IMPL(virQEMUCapsDeprecated, VIR_QEMU_CAPS_DEPRECATED_LAST,
+    "kqemu", /* X_QEMU_CAPS_KQEMU, Whether KQEMU is compiled in */
+    "vnc-colon", /* X_QEMU_CAPS_VNC_COLON, VNC takes or address + display */
+    "no-reboot", /* X_QEMU_CAPS_NO_REBOOT, Is the -no-reboot flag available */
+    "drive", /* X_QEMU_CAPS_DRIVE, Is the new -drive arg available */
+    "drive-boot", /* X_QEMU_CAPS_DRIVE_BOOT, Does -drive support boot=on */
+    "name", /* X_QEMU_CAPS_NAME, Is the -name flag available */
+    "uuid", /* X_QEMU_CAPS_UUID, Is the -uuid flag available */
+    "domid", /* X_QEMU_CAPS_DOMID, Xenner: -domid flag available */
+    "vnet-hdr", /* X_QEMU_CAPS_VNET_HDR */
+    "migrate-kvm-stdio", /* X_QEMU_CAPS_MIGRATE_KVM_STDIO, avoid kvm tcp migration bug */
+    "migrate-qemu-tcp", /* X_QEMU_CAPS_MIGRATE_QEMU_TCP, have qemu tcp migration */
+    "migrate-qemu-exec", /* X_QEMU_CAPS_MIGRATE_QEMU_EXEC, have qemu exec migration */
+    "drive-cache-v2", /* X_QEMU_CAPS_DRIVE_CACHE_V2, cache= flag wanting new v2 values */
+    "drive-format", /* X_QEMU_CAPS_DRIVE_FORMAT, Is -drive format= avail */
+    "vga", /* X_QEMU_CAPS_VGA, Is -vga avail */
+    "0.10", /* X_QEMU_CAPS_0_10, features added in qemu-0.10.0 or later */
+    "pci-device", /* X_QEMU_CAPS_PCIDEVICE, PCI device assignment supported */
+    "mem-path", /* X_QEMU_CAPS_MEM_PATH, mmap'ped guest backing supported */
+    "drive-serial", /* X_QEMU_CAPS_DRIVE_SERIAL, -driver serial=  available */
+    "xen-domid", /* X_QEMU_CAPS_XEN_DOMID, -xen-domid */
+    "migrate-qemu-unix", /* X_QEMU_CAPS_MIGRATE_QEMU_UNIX, qemu migration via unix sockets */
+    "chardev", /* X_QEMU_CAPS_CHARDEV, Is the new -chardev arg available */
+    "enable-kvm", /* X_QEMU_CAPS_ENABLE_KVM, -enable-kvm flag */
+    "monitor-json", /* X_QEMU_CAPS_MONITOR_JSON, JSON mode for monitor */
+    "balloon", /* X_QEMU_CAPS_BALLOON, -balloon available */
+    "device", /* X_QEMU_CAPS_DEVICE, Is the -device arg available */
+    "sdl", /* X_QEMU_CAPS_SDL, Is the new -sdl arg available */
+    "smp-topology", /* X_QEMU_CAPS_SMP_TOPOLOGY, -smp has sockets/cores/threads */
+    "netdev", /* X_QEMU_CAPS_NETDEV, -netdev flag & netdev_add/remove */
+    "rtc", /* X_QEMU_CAPS_RTC, The -rtc flag for clock options */
+    "vhost-net", /* X_QEMU_CAPS_VHOST_NET, vhost-net support available */
+    "rtc-td-hack", /* X_QEMU_CAPS_RTC_TD_HACK, -rtc-td-hack available */
+    "no-kvm-pit", /* X_QEMU_CAPS_NO_KVM_PIT, -no-kvm-pit-reinjection supported */
+    "tdf", /* X_QEMU_CAPS_TDF, -tdf flag (user-mode pit catchup) */
+    "pci-configfd", /* X_QEMU_CAPS_PCI_CONFIGFD, pci-assign.configfd */
+    "nodefconfig", /* X_QEMU_CAPS_NODEFCONFIG, -nodefconfig */
+    "boot-menu", /* X_QEMU_CAPS_BOOT_MENU, -boot menu=on support */
+    "enable-kqemu", /* X_QEMU_CAPS_ENABLE_KQEMU, -enable-kqemu flag */
+    "fsdev", /* X_QEMU_CAPS_FSDEV, -fstype filesystem passthrough */
+    "nesting", /* X_QEMU_CAPS_NESTING, -enable-nesting (SVM/VMX) */
+    "name-process", /* X_QEMU_CAPS_NAME_PROCESS, Is -name process= available */
+    "drive-readonly", /* X_QEMU_CAPS_DRIVE_READONLY, -drive readonly=on|off */
+    "smbios-type", /* X_QEMU_CAPS_SMBIOS_TYPE, Is -smbios type= available */
+    "vga-qxl", /* X_QEMU_CAPS_VGA_QXL, The 'qxl' arg for '-vga' */
+    "vga-none", /* X_QEMU_CAPS_VGA_NONE, The 'none' arg for '-vga' */
+    "migrate-qemu-fd", /* X_QEMU_CAPS_MIGRATE_QEMU_FD, -incoming fd:n */
+    "boot-index", /* X_QEMU_CAPS_BOOTINDEX, -device bootindex property */
+    "drive-aio", /* X_QEMU_CAPS_DRIVE_AIO, -drive aio= supported */
+    "pci-multibus", /* X_QEMU_CAPS_PCI_MULTIBUS, bus=pci.0 vs bus=pci */
+    "pci-bootindex", /* X_QEMU_CAPS_PCI_BOOTINDEX, pci-assign.bootindex */
+    "chardev-spicevmc", /* X_QEMU_CAPS_CHARDEV_SPICEVMC, newer -chardev spicevmc */
+    "device-spicevmc", /* X_QEMU_CAPS_DEVICE_SPICEVMC, older -device spicevmc*/
+    "device-qxl-vga", /* X_QEMU_CAPS_DEVICE_QXL_VGA, primary qxl device named qxl-vga? */
+    "pci-multifunction", /* X_QEMU_CAPS_PCI_MULTIFUNCTION, -device multifunction=on|off */
+    "cache-directsync", /* X_QEMU_CAPS_DRIVE_CACHE_DIRECTSYNC, Is cache=directsync supported? */
+    "no-shutdown", /* X_QEMU_CAPS_NO_SHUTDOWN, usable -no-shutdown */
+    "cache-unsafe", /* X_QEMU_CAPS_DRIVE_CACHE_UNSAFE, Is cache=unsafe supported? */
+    "rombar", /* X_QEMU_CAPS_PCI_ROMBAR, -device rombar=0|1 */
+    "fsdev-readonly", /* X_QEMU_CAPS_FSDEV_READONLY, -fsdev readonly supported */
+    "blk-sg-io", /* X_QEMU_CAPS_VIRTIO_BLK_SG_IO, SG_IO commands */
+    "drive-copy-on-read", /* X_QEMU_CAPS_DRIVE_COPY_ON_READ, -drive copy-on-read */
+    "cpu-host", /* X_QEMU_CAPS_CPU_HOST, support for -cpu host */
+    "fsdev-writeout", /* X_QEMU_CAPS_FSDEV_WRITEOUT, -fsdev writeout supported */
+    "drive-iotune", /* X_QEMU_CAPS_DRIVE_IOTUNE, -drive bps= and friends */
+    "system_wakeup", /* X_QEMU_CAPS_WAKEUP, system_wakeup monitor command */
+    "block-job-sync", /* X_QEMU_CAPS_BLOCKJOB_SYNC, old block_job_cancel, block_stream */
+    "scsi-cd", /* X_QEMU_CAPS_SCSI_CD, -device scsi-cd */
+    "ide-cd", /* X_QEMU_CAPS_IDE_CD, -device ide-cd */
+    "no-user-config", /* X_QEMU_CAPS_NO_USER_CONFIG, -no-user-config */
+    "balloon-event", /* X_QEMU_CAPS_BALLOON_EVENT, Async event for balloon changes */
+    "bridge", /* X_QEMU_CAPS_NETDEV_BRIDGE, bridge helper support */
+    "dump-guest-core", /* X_QEMU_CAPS_DUMP_GUEST_CORE, dump-guest-core-parameter */
+    "seamless-migration", /* X_QEMU_CAPS_SEAMLESS_MIGRATION, seamless-migration for SPICE */
+    "usb-redir.bootindex", /* X_QEMU_CAPS_USB_REDIR_BOOTINDEX, usb-redir.bootindex */
+    "usb-host.bootindex", /* X_QEMU_CAPS_USB_HOST_BOOTINDEX, usb-host.bootindex */
+    "usb-net", /* X_QEMU_CAPS_DEVICE_USB_NET, -device usb-net */
+    "add-fd", /* X_QEMU_CAPS_ADD_FD, -add-fd */
+    "dtb", /* X_QEMU_CAPS_DTB, -dtb file */
+    "ipv6-migration", /* X_QEMU_CAPS_IPV6_MIGRATION, -incoming [::] */
+    "machine-opt", /* X_QEMU_CAPS_MACHINE_OPT, -machine xxxx*/
+    "machine-usb-opt", /* X_QEMU_CAPS_MACHINE_USB_OPT, -machine xxx,usb=on/off */
+    "vfio-pci.bootindex", /* X_QEMU_CAPS_VFIO_PCI_BOOTINDEX, bootindex param for vfio-pci device */
+    "scsi-generic", /* X_QEMU_CAPS_DEVICE_SCSI_GENERIC, -device scsi-generic */
+    "scsi-generic.bootindex", /* X_QEMU_CAPS_DEVICE_SCSI_GENERIC_BOOTINDEX, -device scsi-generic.bootindex */
+    "vnc-websocket", /* X_QEMU_CAPS_VNC_WEBSOCKET, -vnc x:y,websocket */
+    "vnc-share-policy", /* X_QEMU_CAPS_VNC_SHARE_POLICY, set display sharing policy */
+    "device-del-event", /* X_QEMU_CAPS_DEVICE_DEL_EVENT, DEVICE_DELETED event */
+    "spiceport", /* X_QEMU_CAPS_CHARDEV_SPICEPORT, -chardev spiceport */
+    "host-pci-multidomain", /* X_QEMU_CAPS_HOST_PCI_MULTIDOMAIN, support domain > 0 in host pci address */
+    "device-tray-moved-event", /* X_QEMU_CAPS_DEVICE_TRAY_MOVED, DEVICE_TRAY_MOVED event */
+    "qxl-vga.max_outputs", /* X_QEMU_CAPS_QXL_VGA_MAX_OUTPUTS, -device qxl-vga,max-outputs= */
+    "display", /* X_QEMU_CAPS_DISPLAY, -display */
+    );
 
 struct virQEMUCapsMachineType {
     char *name;

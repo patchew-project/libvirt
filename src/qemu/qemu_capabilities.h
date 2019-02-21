@@ -612,6 +612,7 @@ int virQEMUCapsGetDefaultVersion(virCapsPtr caps,
                                  unsigned int *version);
 
 VIR_ENUM_DECL(virQEMUCaps);
+VIR_ENUM_DECL(virQEMUCapsDeprecated);
 
 bool virQEMUCapsSupportsGICVersion(virQEMUCapsPtr qemuCaps,
                                    virDomainVirtType virtType,
