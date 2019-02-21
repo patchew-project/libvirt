@@ -63,99 +63,21 @@ VIR_LOG_INIT("qemu.qemu_capabilities");
  * daemon restarts
  */
 VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
-              /* 0 */
-              "kqemu",
-              "vnc-colon",
-              "no-reboot",
-              "drive",
-              "drive-boot",
-
-              /* 5 */
-              "name",
-              "uuid",
-              "domid",
-              "vnet-hdr",
-              "migrate-kvm-stdio",
-
-              /* 10 */
-              "migrate-qemu-tcp",
-              "migrate-qemu-exec",
-              "drive-cache-v2",
               "kvm",
-              "drive-format",
-
-              /* 15 */
-              "vga",
-              "0.10",
-              "pci-device",
-              "mem-path",
-              "drive-serial",
-
-              /* 20 */
-              "xen-domid",
-              "migrate-qemu-unix",
-              "chardev",
-              "enable-kvm",
-              "monitor-json",
-
-              /* 25 */
-              "balloon",
-              "device",
-              "sdl",
-              "smp-topology",
-              "netdev",
-
-              /* 30 */
-              "rtc",
-              "vhost-net",
-              "rtc-td-hack",
               "no-hpet",
-              "no-kvm-pit",
-
-              /* 35 */
-              "tdf",
-              "pci-configfd",
-              "nodefconfig",
-              "boot-menu",
-              "enable-kqemu",
-
-              /* 40 */
-              "fsdev",
-              "nesting",
-              "name-process",
-              "drive-readonly",
-              "smbios-type",
-
-              /* 45 */
-              "vga-qxl",
               "spice",
-              "vga-none",
-              "migrate-qemu-fd",
-              "boot-index",
 
               /* 50 */
               "hda-duplex",
-              "drive-aio",
-              "pci-multibus",
-              "pci-bootindex",
               "ccid-emulated",
 
               /* 55 */
               "ccid-passthru",
-              "chardev-spicevmc",
-              "device-spicevmc",
               "virtio-tx-alg",
-              "device-qxl-vga",
-
-              /* 60 */
-              "pci-multifunction",
               "virtio-blk-pci.ioeventfd",
               "sga",
               "virtio-blk-pci.event_idx",
               "virtio-net-pci.event_idx",
-
-              /* 65 */
-              "cache-directsync",
               "piix3-usb-uhci",
               "piix4-usb-uhci",
               "usb-ehci",
@@ -166,45 +88,21 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "pci-ohci",
               "usb-redir",
               "usb-hub",
-              "no-shutdown",
-
-              /* 75 */
-              "cache-unsafe",
-              "rombar",
               "ich9-ahci",
               "no-acpi",
-              "fsdev-readonly",
 
               /* 80 */
               "virtio-blk-pci.scsi",
-              "blk-sg-io",
-              "drive-copy-on-read",
-              "cpu-host",
-              "fsdev-writeout",
-
-              /* 85 */
-              "drive-iotune",
-              "system_wakeup",
               "scsi-disk.channel",
               "scsi-block",
               "transaction",
-
-              /* 90 */
-              "block-job-sync",
               "block-job-async",
-              "scsi-cd",
-              "ide-cd",
-              "no-user-config",
 
               /* 95 */
               "hda-micro",
               "dump-guest-memory",
               "nec-usb-xhci",
               "virtio-s390",
-              "balloon-event",
-
-              /* 100 */
-              "bridge",
               "lsi",
               "virtio-scsi-pci",
               "blockio",
@@ -219,15 +117,11 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
 
               /* 110 */
               "reboot-timeout",
-              "dump-guest-core",
-              "seamless-migration",
               "block-commit",
               "vnc",
 
               /* 115 */
               "drive-mirror",
-              "usb-redir.bootindex",
-              "usb-host.bootindex",
               "blockdev-snapshot-sync",
               "qxl",
 
@@ -240,8 +134,6 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
 
               /* 125 */
               "usb-serial",
-              "usb-net",
-              "add-fd",
               "nbd-server",
               "virtio-rng",
 
@@ -249,13 +141,7 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "rng-random",
               "rng-egd",
               "virtio-ccw",
-              "dtb",
               "megasas",
-
-              /* 135 */
-              "ipv6-migration",
-              "machine-opt",
-              "machine-usb-opt",
               "tpm-passthrough",
               "tpm-tis",
 
@@ -263,19 +149,9 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "nvram",
               "pci-bridge",
               "vfio-pci",
-              "vfio-pci.bootindex",
-              "scsi-generic",
-
-              /* 145 */
-              "scsi-generic.bootindex",
               "mem-merge",
-              "vnc-websocket",
               "drive-discard",
               "mlock",
-
-              /* 150 */
-              "vnc-share-policy",
-              "device-del-event",
               "dmi-to-pci-bridge",
               "i440fx-pci-hole64-size",
               "q35-pci-hole64-size",
@@ -292,11 +168,9 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "pvpanic",
               "enable-fips",
               "spice-file-xfer-disable",
-              "spiceport",
 
               /* 165 */
               "usb-kbd",
-              "host-pci-multidomain",
               "msg-timestamp",
               "active-commit",
               "change-backing-file",
@@ -373,20 +247,15 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
 
               /* 220 */
               "pxb-pcie",
-              "device-tray-moved-event",
               "nec-usb-xhci-ports",
               "virtio-scsi-pci.iothread",
               "name-guest",
 
               /* 225 */
               "qxl.max_outputs",
-              "qxl-vga.max_outputs",
               "spice-unix",
               "drive-detect-zeroes",
               "tls-creds-x509",
-
-              /* 230 */
-              "display",
               "intel-iommu",
               "smm",
               "virtio-pci-disable-legacy",
