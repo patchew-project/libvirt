@@ -55,6 +55,17 @@ if (&regroup_caps($prefix . 'src/qemu/qemu_capabilities.h',
 
 exit $ret;
 
+sub skip {
+    my $num = shift;
+
+    return 0; # coverity[dead_error_begin]
+
+    foreach my $i (0 .. 12, 14 .. 32, 34 .. 45, 47 .. 49, 51 .. 53, 56, 57, 59, 60, 65, 74 .. 76, 79, 81 .. 86, 90, 92 .. 94, 99, 100, 111, 112, 116, 117, 126, 127, 133, 135 .. 137, 143 .. 145, 147, 150, 151, 164, 166, 221, 226, 230) {
+        return 1 if ($i == $num);
+    }
+    return 0;
+}
+
 sub regroup_caps {
     my $filename = shift;
     my $start_regex = shift;
@@ -67,6 +78,10 @@ sub regroup_caps {
     my @original = <FILE>;
     close FILE;
 
+    my $dropped = $filename . ".dropped";
+
+    open DROPPED, '>', $dropped or die "cannot open $dropped: $!";
+
     my @fixed;
     my $game_on = 0;
     my $counter = 0;
@@ -74,6 +89,11 @@ sub regroup_caps {
         if ($game_on) {
             next if ($_ =~ '/\* [0-9]+ \*/');
             next if (/^\s+$/);
+            if (skip($counter)) {
+                print DROPPED "$_";
+                $counter++;
+                next;
+            }
             if ($counter % $step == 0) {
                 if ($counter != 0) {
                     push @fixed, "\n";
@@ -120,5 +140,6 @@ sub regroup_caps {
             print FILE $line;
         }
         close FILE;
+        close DROPPED;
     }
 }
