@@ -3460,9 +3460,15 @@ virQEMUCapsSetFromNodes(virQEMUCapsPtr qemuCaps,
         }
         flag = virQEMUCapsTypeFromString(str);
         if (flag < 0) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("Unknown qemu capabilities flag %s"), str);
-            goto cleanup;
+            flag = virQEMUCapsDeprecatedTypeFromString(str);
+            if (flag < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("Unknown qemu capabilities flag %s"), str);
+                goto cleanup;
+            } else {
+                VIR_FREE(str);
+                continue;
+            }
         }
         VIR_FREE(str);
         virQEMUCapsSet(qemuCaps, flag);
