@@ -292,7 +292,6 @@
     <vcpu id='287' pid='3803806'/>
   </vcpus>
   <qemuCaps>
-    <flag name='vnet-hdr'/>
     <flag name='qxl.vgamem_mb'/>
     <flag name='qxl-vga.vgamem_mb'/>
     <flag name='pc-dimm'/>
