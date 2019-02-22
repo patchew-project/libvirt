@@ -612,7 +612,6 @@ void virAllocTestHook(void (*func)(int, void*), void *data);
     { \
         if (*_ptr) \
             (func)(*_ptr); \
-        *_ptr = NULL; \
     }
 
 # define VIR_AUTOCLEAN_FUNC_NAME(type) type##AutoClean
