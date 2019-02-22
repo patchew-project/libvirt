@@ -697,6 +697,10 @@ void virAllocTestHook(void (*func)(int, void*), void *data);
  * the variable declared with it by calling the function
  * defined by VIR_DEFINE_AUTOPTR_FUNC when the variable
  * goes out of scope.
+ *
+ * Note that this macro must NOT be used with vectors! The cleaning function
+ * will not free any elements beyond the first.
+ * See VIR_AUTOLISTPTR for NULL-terminated lists.
  */
 # define VIR_AUTOPTR(type) \
     __attribute__((cleanup(VIR_AUTOPTR_FUNC_NAME(type)))) type *
@@ -709,6 +713,10 @@ void virAllocTestHook(void (*func)(int, void*), void *data);
  * when the variable goes out of scope.
  * The cleanup function is registered by VIR_DEFINE_AUTOCLEAN_FUNC macro for
  * the given type.
+ *
+ * Note that this macro must NOT be used with vectors! The cleaning function
+ * will not free any elements beyond the first.
+ * See VIR_AUTOLISTPTR for NULL-terminated lists.
  */
 # define VIR_AUTOCLEAN(type) \
     __attribute__((cleanup(VIR_AUTOCLEAN_FUNC_NAME(type)))) type
