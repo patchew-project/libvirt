@@ -307,6 +307,6 @@ int virStringParsePort(const char *str,
                        unsigned int *port)
     ATTRIBUTE_NONNULL(2) ATTRIBUTE_RETURN_CHECK;
 
-VIR_DEFINE_AUTOPTR_FUNC(virString, virStringListFree);
+VIR_DEFINE_AUTOLISTPTR_FUNC_DIRECT(virString, virStringListFree);
 
 #endif /* LIBVIRT_VIRSTRING_H */
