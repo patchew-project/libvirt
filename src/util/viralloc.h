@@ -631,6 +631,54 @@ void virAllocTestHook(void (*func)(int, void*), void *data);
         (func)(_ptr); \
     }
 
+
+# define VIR_AUTOLISTPTR_FUNC_NAME(type) type##AutoListPtrFree
+
+/**
+ * VIR_DEFINE_AUTOLISTPTR_FUNC:
+ * @type: type of the element of the list
+ * @func: freeing function for a single element of the list
+ *
+ * This macro defines the freeing function used by VIR_AUTOLISTPTR for @type.
+ * @func must free one of the elements of @type.
+ *
+ * Note that the function is not inline due to size and thus
+ * VIR_DECLARE_AUTOLISTPTR_FUNC needs to be used in the appropriate header file.
+ *
+ * VIR_DEFINE_AUTOLISTPTR_FUNC is mutually exclusive with
+ * VIR_DEFINE_AUTOLISTPTR_FUNC_DIRECT.
+ */
+# define VIR_DECLARE_AUTOLISTPTR_FUNC(type) \
+    void VIR_AUTOLISTPTR_FUNC_NAME(type)(type **_ptr);
+# define VIR_DEFINE_AUTOLISTPTR_FUNC(type, func) \
+    void VIR_AUTOLISTPTR_FUNC_NAME(type)(type **_ptr) \
+    { \
+        type *n;\
+        for (n = *_ptr; n && *n; n++) \
+            (func)(n); \
+        VIR_FREE(*_ptr);\
+    }
+
+/**
+ * VIR_DEFINE_AUTOLISTPTR_FUNC_DIRECT:
+ * @type: type of the element of the list
+ * @func: freeing function for the whole NULL-terminated list of @type
+ *
+ * This macro defines the freeing function used by VIR_AUTOLISTPTR for @type.
+ * @func must free a NULL terminated dense list of @type and also the list
+ * itself. This is a convenience option if @type has already such function.
+ *
+ * VIR_DEFINE_AUTOLISTPTR_FUNC_DIRECT is mutually exclusive with
+ * VIR_DEFINE_AUTOLISTPTR_FUNC.
+ */
+# define VIR_DEFINE_AUTOLISTPTR_FUNC_DIRECT(type, func) \
+    static inline void VIR_AUTOLISTPTR_FUNC_NAME(type)(type **_ptr) \
+    { \
+        if (*_ptr) \
+            (func)(*_ptr); \
+    }
+
+
 /**
  * VIR_AUTOFREE:
  * @type: type of the variable to be freed automatically
@@ -665,6 +713,19 @@ void virAllocTestHook(void (*func)(int, void*), void *data);
 # define VIR_AUTOCLEAN(type) \
     __attribute__((cleanup(VIR_AUTOCLEAN_FUNC_NAME(type)))) type
 
+/**
+ * VIR_AUTOLISTPTR:
+ * @type: type of the members of the self-freeing NULL-terminated list to be defined
+ *
+ * This macro defines a pointer to a NULL-terminated list of @type members. The
+ * list is automatically freed when it goes out of scope including elements
+ * themselves.
+ *
+ * The freeing function is registered by VIR_DEFINE_AUTOLISTPTR_FUNC or
+ * VIR_DEFINE_AUTOLISTPTR_FUNC_DIRECT macro for the given type.
+ */
+# define VIR_AUTOLISTPTR(type) \
+    __attribute__((cleanup(VIR_AUTOLISTPTR_FUNC_NAME(type)))) type *
 
 /**
  * VIR_AUTOUNREF:
