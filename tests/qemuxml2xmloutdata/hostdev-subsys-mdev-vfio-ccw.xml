@@ -14,7 +14,7 @@
   <on_crash>destroy</on_crash>
   <devices>
     <emulator>/usr/bin/qemu-system-s390x</emulator>
-    <hostdev mode='subsystem' type='mdev' managed='no' model='vfio-ccw'>
+    <hostdev mode='subsystem' type='mdev' model='vfio-ccw'>
       <source>
         <address uuid='90c6c135-ad44-41d0-b1b7-bae47de48627'/>
       </source>

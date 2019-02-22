@@ -76,7 +76,7 @@
       <model type='cirrus' vram='16384' heads='1'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
     </video>
-    <hostdev mode='subsystem' type='usb' managed='yes'>
+    <hostdev mode='subsystem' type='usb'>
       <source>
         <address bus='14' device='6'/>
       </source>

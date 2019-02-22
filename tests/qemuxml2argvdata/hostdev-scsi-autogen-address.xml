@@ -23,68 +23,68 @@
     <controller type='usb' index='0'/>
     <controller type='ide' index='0'/>
     <controller type='pci' index='0' model='pci-root'/>
-    <hostdev mode='subsystem' type='scsi' managed='yes'>
+    <hostdev mode='subsystem' type='scsi'>
       <source>
         <adapter name='scsi_host0'/>
         <address bus='0' target='0' unit='0'/>
       </source>
     </hostdev>
-    <hostdev mode='subsystem' type='scsi' managed='yes'>
+    <hostdev mode='subsystem' type='scsi'>
       <source>
         <adapter name='scsi_host1'/>
         <address bus='0' target='0' unit='1'/>
       </source>
     </hostdev>
-    <hostdev mode='subsystem' type='scsi' managed='yes'>
+    <hostdev mode='subsystem' type='scsi'>
       <source>
         <adapter name='scsi_host2'/>
         <address bus='0' target='0' unit='2'/>
       </source>
     </hostdev>
-    <hostdev mode='subsystem' type='scsi' managed='yes'>
+    <hostdev mode='subsystem' type='scsi'>
       <source>
         <adapter name='scsi_host3'/>
         <address bus='0' target='0' unit='3'/>
       </source>
     </hostdev>
-    <hostdev mode='subsystem' type='scsi' managed='yes'>
+    <hostdev mode='subsystem' type='scsi'>
       <source>
         <adapter name='scsi_host4'/>
         <address bus='0' target='0' unit='4'/>
       </source>
     </hostdev>
-    <hostdev mode='subsystem' type='scsi' managed='yes'>
+    <hostdev mode='subsystem' type='scsi'>
       <source>
         <adapter name='scsi_host5'/>
         <address bus='0' target='0' unit='5'/>
       </source>
     </hostdev>
-    <hostdev mode='subsystem' type='scsi' managed='yes'>
+    <hostdev mode='subsystem' type='scsi'>
       <source>
         <adapter name='scsi_host6'/>
         <address bus='0' target='0' unit='6'/>
       </source>
     </hostdev>
-    <hostdev mode='subsystem' type='scsi' managed='yes'>
+    <hostdev mode='subsystem' type='scsi'>
       <source>
         <adapter name='scsi_host7'/>
         <address bus='0' target='0' unit='7'/>
       </source>
     </hostdev>
-    <hostdev mode='subsystem' type='scsi' managed='yes'>
+    <hostdev mode='subsystem' type='scsi'>
       <source>
         <adapter name='scsi_host8'/>
         <address bus='0' target='0' unit='8'/>
       </source>
     </hostdev>
-    <hostdev mode='subsystem' type='scsi' managed='yes'>
+    <hostdev mode='subsystem' type='scsi'>
       <source>
         <adapter name='scsi_host9'/>
         <address bus='0' target='0' unit='9'/>
       </source>
       <address type='drive' controller='1' bus='0' target='0' unit='5'/>
     </hostdev>
-    <hostdev mode='subsystem' type='scsi' managed='yes'>
+    <hostdev mode='subsystem' type='scsi'>
       <source>
         <adapter name='scsi_host10'/>
         <address bus='0' target='0' unit='10'/>

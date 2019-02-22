@@ -31,7 +31,7 @@
     <controller type='pci' index='0' model='pci-root'/>
     <input type='mouse' bus='ps2'/>
     <input type='keyboard' bus='ps2'/>
-    <hostdev mode='subsystem' type='scsi_host' managed='no'>
+    <hostdev mode='subsystem' type='scsi_host'>
       <source protocol='vhost' wwpn='naa.5123456789abcde0'/>
     </hostdev>
     <memballoon model='virtio'>

@@ -30,7 +30,7 @@
     <controller type='pci' index='0' model='pci-root'/>
     <input type='mouse' bus='ps2'/>
     <input type='keyboard' bus='ps2'/>
-    <hostdev mode='subsystem' type='scsi' managed='yes'>
+    <hostdev mode='subsystem' type='scsi'>
       <source protocol='iscsi' name='iqn.1992-01.com.example:storage/2'>
         <host name='example.org' port='6000'/>
         <auth username='myname'>

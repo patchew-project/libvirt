@@ -14,14 +14,14 @@
   <on_crash>destroy</on_crash>
   <devices>
     <emulator>/usr/bin/qemu-system-i686</emulator>
-    <hostdev mode='subsystem' type='scsi' managed='no'>
+    <hostdev mode='subsystem' type='scsi'>
       <source>
         <adapter name='scsi_host2'/>
         <address bus='0' target='0' unit='1'/>
       </source>
       <address type='drive' controller='0' bus='0' target='0' unit='0'/>
     </hostdev>
-    <hostdev mode='subsystem' type='scsi' managed='no'>
+    <hostdev mode='subsystem' type='scsi'>
       <source>
         <adapter name='scsi_host2'/>
         <address bus='0' target='0' unit='2'/>

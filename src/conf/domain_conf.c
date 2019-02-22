@@ -27353,8 +27353,10 @@ virDomainHostdevDefFormat(virBufferPtr buf,
     virBufferAsprintf(buf, "<hostdev mode='%s' type='%s'",
                       mode, type);
     if (def->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
-        virBufferAsprintf(buf, " managed='%s'",
-                          def->managed ? "yes" : "no");
+        if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI) {
+            virBufferAsprintf(buf, " managed='%s'",
+                              def->managed ? "yes" : "no");
+        }
 
         if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI &&
             scsisrc->sgio)

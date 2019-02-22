@@ -62,13 +62,13 @@
       <master startport='4'/>
       <address type='pci' domain='0' bus='0' slot='5' function='2'/>
     </controller>
-    <hostdev mode='subsystem' type='usb' managed='yes'>
+    <hostdev mode='subsystem' type='usb'>
       <source>
         <address bus='14' device='6'/>
       </source>
       <address type='usb' bus='0' port='3'/>
     </hostdev>
-    <hostdev mode='subsystem' type='usb' managed='yes'>
+    <hostdev mode='subsystem' type='usb'>
       <source>
         <address bus='15' device='6'/>
       </source>

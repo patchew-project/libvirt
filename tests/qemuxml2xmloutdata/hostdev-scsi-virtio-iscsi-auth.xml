@@ -32,7 +32,7 @@
     <controller type='pci' index='0' model='pci-root'/>
     <input type='mouse' bus='ps2'/>
     <input type='keyboard' bus='ps2'/>
-    <hostdev mode='subsystem' type='scsi' managed='yes'>
+    <hostdev mode='subsystem' type='scsi'>
       <source protocol='iscsi' name='iqn.1992-01.com.example:storage/1'>
         <host name='example.org' port='3260'/>
         <auth username='myname'>
@@ -41,7 +41,7 @@
       </source>
       <address type='drive' controller='0' bus='0' target='2' unit='4'/>
     </hostdev>
-    <hostdev mode='subsystem' type='scsi' managed='yes'>
+    <hostdev mode='subsystem' type='scsi'>
       <source protocol='iscsi' name='iqn.1992-01.com.example:storage/2'>
         <host name='example.org' port='3260'/>
         <auth username='myname'>

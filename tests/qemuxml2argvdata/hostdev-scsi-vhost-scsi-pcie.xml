@@ -15,7 +15,7 @@
   <devices>
     <emulator>/usr/bin/qemu-system-x86_64</emulator>
     <controller type='usb' index='0' model='none'/>
-    <hostdev mode='subsystem' type='scsi_host' managed='no'>
+    <hostdev mode='subsystem' type='scsi_host'>
       <source protocol='vhost' wwpn='naa.5123456789abcde0'/>
     </hostdev>
     <memballoon model='none'/>
