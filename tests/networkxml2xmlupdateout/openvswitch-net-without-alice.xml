@@ -20,4 +20,13 @@
       <parameters profileid='native-profile'/>
     </virtualport>
   </portgroup>
+  <portgroup name='8021ad'>
+    <vlan trunk='yes'>
+      <tag id='555' nativeMode='802.1ad'/>
+      <tag id='666'/>
+    </vlan>
+    <virtualport>
+      <parameters profileid='8021ad-profile'/>
+    </virtualport>
+  </portgroup>
 </network>

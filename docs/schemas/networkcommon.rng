@@ -223,6 +223,7 @@
               <choice>
                 <value>tagged</value>
                 <value>untagged</value>
+                <value>802.1ad</value>
               </choice>
             </attribute>
           </optional>
