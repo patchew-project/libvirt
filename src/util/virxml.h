@@ -219,4 +219,26 @@ virXMLFormatElement(virBufferPtr buf,
                     virBufferPtr attrBuf,
                     virBufferPtr childBuf);
 
+struct _virXPathContextNodeSave {
+    xmlXPathContextPtr ctxt;
+    xmlNodePtr node;
+};
+typedef struct _virXPathContextNodeSave virXPathContextNodeSave;
+typedef virXPathContextNodeSave *virXPathContextNodeSavePtr;
+
+void
+virXPathContextNodeRestore(virXPathContextNodeSavePtr save);
+
+VIR_DEFINE_AUTOCLEAN_FUNC(virXPathContextNodeSave, virXPathContextNodeRestore);
+
+/**
+ * VIR_XPATH_NODE_AUTORESTORE:
+ * @ctxt: XML XPath context pointer
+ *
+ * This macro ensures that when the scope where it's used ends @ctxt's current
+ * node pointer is reset to the original value when this macro was used.
+ */
+# define VIR_XPATH_NODE_AUTORESTORE(ctxt) \
+    VIR_AUTOCLEAN(virXPathContextNodeSave) ctxt ## CtxtSave = {(ctxt), (ctxt)->node}
+
 #endif /* LIBVIRT_VIRXML_H */

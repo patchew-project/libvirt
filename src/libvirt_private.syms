@@ -3246,6 +3246,7 @@ virXMLValidatorFree;
 virXMLValidatorInit;
 virXMLValidatorValidate;
 virXPathBoolean;
+virXPathContextNodeRestore;
 virXPathInt;
 virXPathLong;
 virXPathLongHex;
