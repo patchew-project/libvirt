@@ -423,7 +423,7 @@ virJSONValueFree(virJSONValuePtr value)
         VIR_FREE(value->data.array.values);
         break;
     case VIR_JSON_TYPE_STRING:
-        VIR_FREE(value->data.string);
+        VIR_DISPOSE_STRING(value->data.string);
         break;
     case VIR_JSON_TYPE_NUMBER:
         VIR_FREE(value->data.number);
