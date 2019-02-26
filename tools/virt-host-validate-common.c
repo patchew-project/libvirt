@@ -337,7 +337,7 @@ int virHostValidateIOMMU(const char *hvname,
     virBitmapPtr flags;
     struct stat sb;
     const char *bootarg = NULL;
-    bool isAMD = false, isIntel = false, isPPC = false;
+    bool isAMD = false, isIntel = false, isPPC, isS390;
     flags = virHostValidateGetCPUFlags();
 
     if (flags && virBitmapIsBitSet(flags, VIR_HOST_VALIDATE_CPU_FLAG_VMX))
@@ -348,6 +348,7 @@ int virHostValidateIOMMU(const char *hvname,
     virBitmapFree(flags);
 
     isPPC = ARCH_IS_PPC64(virArchFromHost());
+    isS390 = ARCH_IS_S390(virArchFromHost());
 
     if (isIntel) {
         virHostMsgCheck(hvname, "%s", _("for device assignment IOMMU support"));
@@ -375,6 +376,12 @@ int virHostValidateIOMMU(const char *hvname,
         }
     } else if (isPPC) {
         /* Empty Block */
+    } else if (isS390) {
+	/* On s390x, we skip the IOMMU check if there are no PCI devices
+	 * (which is quite usual on s390x) */
+        if (stat("/sys/bus/pci/devices", &sb) < 0 || !S_ISDIR(sb.st_mode) ||
+            sb.st_nlink <= 2)
+            return 0;
     } else {
         virHostMsgFail(level,
                        "Unknown if this platform has IOMMU support");
@@ -391,7 +398,7 @@ int virHostValidateIOMMU(const char *hvname,
 
     virHostMsgCheck(hvname, "%s", _("if IOMMU is enabled by kernel"));
     if (sb.st_nlink <= 2) {
-        if (!isPPC)
+        if (bootarg)
             virHostMsgFail(level,
                            "IOMMU appears to be disabled in kernel. "
                            "Add %s to kernel cmdline arguments", bootarg);
