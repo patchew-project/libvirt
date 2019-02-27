@@ -15700,27 +15700,35 @@ qemuDomainSnapshotValidate(virDomainSnapshotDefPtr def, int state,
     }
 
     /* allow snapshots only in certain states */
-    switch ((virDomainState) state) {
+    switch ((virDomainSnapshotState) state) {
         /* valid states */
-    case VIR_DOMAIN_RUNNING:
-    case VIR_DOMAIN_PAUSED:
-    case VIR_DOMAIN_SHUTDOWN:
-    case VIR_DOMAIN_SHUTOFF:
-    case VIR_DOMAIN_CRASHED:
+    case VIR_SNAP_STATE_RUNNING:
+    case VIR_SNAP_STATE_PAUSED:
+    case VIR_SNAP_STATE_SHUTDOWN:
+    case VIR_SNAP_STATE_SHUTOFF:
+    case VIR_SNAP_STATE_CRASHED:
         break;
 
-    case VIR_DOMAIN_PMSUSPENDED:
+    case VIR_SNAP_STATE_DISK_SNAPSHOT:
+        if (!(flags & VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, _("Invalid domain state %s"),
+                           virDomainSnapshotStateTypeToString(state));
+            return -1;
+        }
+        break;
+
+    case VIR_SNAP_STATE_PMSUSPENDED:
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("qemu doesn't support taking snapshots of "
                          "PMSUSPENDED guests"));
         return -1;
 
         /* invalid states */
-    case VIR_DOMAIN_NOSTATE:
-    case VIR_DOMAIN_BLOCKED: /* invalid state, unused in qemu */
-    case VIR_DOMAIN_LAST:
+    case VIR_SNAP_STATE_NOSTATE:
+    case VIR_SNAP_STATE_BLOCKED: /* invalid state, unused in qemu */
+    case VIR_SNAP_STATE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR, _("Invalid domain state %s"),
-                       virDomainStateTypeToString(state));
+                       virDomainSnapshotStateTypeToString(state));
         return -1;
     }
     return 0;
@@ -16487,14 +16495,9 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
 
     cookie = (qemuDomainSaveCookiePtr) snap->def->cookie;
 
-    /* FIXME: This cast should be to virDomainSnapshotState, with
-     * better handling of VIR_SNAP_STATE_DISK_SNAPSHOT (the only enum
-     * value added beyond what virDomainState supports). But for now
-     * it doesn't matter, because of the above rejection of revert to
-     * external snapshots. */
-    switch ((virDomainState) snap->def->state) {
-    case VIR_DOMAIN_RUNNING:
-    case VIR_DOMAIN_PAUSED:
+    switch ((virDomainSnapshotState) snap->def->state) {
+    case VIR_SNAP_STATE_RUNNING:
+    case VIR_SNAP_STATE_PAUSED:
 
         start_flags |= VIR_QEMU_PROCESS_START_PAUSED;
 
@@ -16669,9 +16672,9 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
         }
         break;
 
-    case VIR_DOMAIN_SHUTDOWN:
-    case VIR_DOMAIN_SHUTOFF:
-    case VIR_DOMAIN_CRASHED:
+    case VIR_SNAP_STATE_SHUTDOWN:
+    case VIR_SNAP_STATE_SHUTOFF:
+    case VIR_SNAP_STATE_CRASHED:
         /* Transitions 1, 4, 7 */
         /* Newer qemu -loadvm refuses to revert to the state of a snapshot
          * created by qemu-img snapshot -c.  If the domain is running, we
@@ -16728,15 +16731,17 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
         }
         break;
 
-    case VIR_DOMAIN_PMSUSPENDED:
+    case VIR_SNAP_STATE_PMSUSPENDED:
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("qemu doesn't support reversion of snapshot taken in "
                          "PMSUSPENDED state"));
         goto endjob;
 
-    case VIR_DOMAIN_NOSTATE:
-    case VIR_DOMAIN_BLOCKED:
-    case VIR_DOMAIN_LAST:
+    case VIR_SNAP_STATE_DISK_SNAPSHOT:
+        /* Rejected earlier as an external snapshot */
+    case VIR_SNAP_STATE_NOSTATE:
+    case VIR_SNAP_STATE_BLOCKED:
+    case VIR_SNAP_STATE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Invalid target domain state '%s'. Refusing "
                          "snapshot reversion"),
