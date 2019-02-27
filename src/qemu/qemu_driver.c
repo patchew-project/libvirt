@@ -15673,6 +15673,59 @@ qemuDomainSnapshotCreateActiveExternal(virQEMUDriverPtr driver,
 }
 
 
+/* Validate that a snapshot object does not violate any qemu-specific
+ * constraints. */
+static int
+qemuDomainSnapshotValidate(virDomainSnapshotDefPtr def, int state,
+                           unsigned int flags)
+{
+    /* reject snapshot names containing slashes or starting with dot as
+     * snapshot definitions are saved in files named by the snapshot name */
+    if (!(flags & VIR_DOMAIN_SNAPSHOT_CREATE_NO_METADATA)) {
+        if (strchr(def->name, '/')) {
+            virReportError(VIR_ERR_XML_DETAIL,
+                           _("invalid snapshot name '%s': "
+                             "name can't contain '/'"),
+                           def->name);
+            return -1;
+        }
+
+        if (def->name[0] == '.') {
+            virReportError(VIR_ERR_XML_DETAIL,
+                           _("invalid snapshot name '%s': "
+                             "name can't start with '.'"),
+                           def->name);
+            return -1;
+        }
+    }
+
+    /* allow snapshots only in certain states */
+    switch ((virDomainState) state) {
+        /* valid states */
+    case VIR_DOMAIN_RUNNING:
+    case VIR_DOMAIN_PAUSED:
+    case VIR_DOMAIN_SHUTDOWN:
+    case VIR_DOMAIN_SHUTOFF:
+    case VIR_DOMAIN_CRASHED:
+        break;
+
+    case VIR_DOMAIN_PMSUSPENDED:
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("qemu doesn't support taking snapshots of "
+                         "PMSUSPENDED guests"));
+        return -1;
+
+        /* invalid states */
+    case VIR_DOMAIN_NOSTATE:
+    case VIR_DOMAIN_BLOCKED: /* invalid state, unused in qemu */
+    case VIR_DOMAIN_LAST:
+        virReportError(VIR_ERR_INTERNAL_ERROR, _("Invalid domain state %s"),
+                       virDomainStateTypeToString(state));
+        return -1;
+    }
+    return 0;
+}
+
 static virDomainSnapshotPtr
 qemuDomainSnapshotCreateXML(virDomainPtr domain,
                             const char *xmlDesc,
@@ -15747,25 +15800,8 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
                                                 parse_flags)))
         goto cleanup;
 
-    /* reject snapshot names containing slashes or starting with dot as
-     * snapshot definitions are saved in files named by the snapshot name */
-    if (!(flags & VIR_DOMAIN_SNAPSHOT_CREATE_NO_METADATA)) {
-        if (strchr(def->name, '/')) {
-            virReportError(VIR_ERR_XML_DETAIL,
-                           _("invalid snapshot name '%s': "
-                             "name can't contain '/'"),
-                           def->name);
-            goto cleanup;
-        }
-
-        if (def->name[0] == '.') {
-            virReportError(VIR_ERR_XML_DETAIL,
-                           _("invalid snapshot name '%s': "
-                             "name can't start with '.'"),
-                           def->name);
-            goto cleanup;
-        }
-    }
+    if (qemuDomainSnapshotValidate(def, vm->state.state, flags) < 0)
+        goto cleanup;
 
     /* reject the VIR_DOMAIN_SNAPSHOT_CREATE_LIVE flag where not supported */
     if (flags & VIR_DOMAIN_SNAPSHOT_CREATE_LIVE &&
@@ -15774,31 +15810,6 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("live snapshot creation is supported only "
                          "during full system snapshots"));
-        goto cleanup;
-    }
-
-    /* allow snapshots only in certain states */
-    switch ((virDomainState) vm->state.state) {
-        /* valid states */
-    case VIR_DOMAIN_RUNNING:
-    case VIR_DOMAIN_PAUSED:
-    case VIR_DOMAIN_SHUTDOWN:
-    case VIR_DOMAIN_SHUTOFF:
-    case VIR_DOMAIN_CRASHED:
-        break;
-
-    case VIR_DOMAIN_PMSUSPENDED:
-        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
-                       _("qemu doesn't support taking snapshots of "
-                         "PMSUSPENDED guests"));
-        goto cleanup;
-
-        /* invalid states */
-    case VIR_DOMAIN_NOSTATE:
-    case VIR_DOMAIN_BLOCKED: /* invalid state, unused in qemu */
-    case VIR_DOMAIN_LAST:
-        virReportError(VIR_ERR_INTERNAL_ERROR, _("Invalid domain state %s"),
-                       virDomainStateTypeToString(vm->state.state));
         goto cleanup;
     }
 
