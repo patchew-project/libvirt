@@ -2659,9 +2659,7 @@ virNWFilterDefParseXML(xmlXPathContextPtr ctxt)
             ret->chainPriority = chain_priority;
         } else {
             /* assign default priority if none can be found via lookup */
-            if (!name_prefix ||
-                 intMapGetByString(chain_priorities, name_prefix, 0,
-                                   &ret->chainPriority) < 0) {
+            if (intMapGetByString(chain_priorities, name_prefix, 0, &ret->chainPriority) < 0) {
                 /* assign default chain priority */
                 ret->chainPriority = (NWFILTER_MAX_FILTER_PRIORITY +
                                       NWFILTER_MIN_FILTER_PRIORITY) / 2;
