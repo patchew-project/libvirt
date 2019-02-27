@@ -3876,14 +3876,8 @@ qemuDomainDefPostParse(virDomainDefPtr def,
         goto cleanup;
     }
 
-    if (def->os.loader &&
-        def->os.loader->type == VIR_DOMAIN_LOADER_TYPE_PFLASH &&
-        def->os.loader->readonly == VIR_TRISTATE_SWITCH_ON &&
-        !def->os.loader->nvram) {
-        if (virAsprintf(&def->os.loader->nvram, "%s/%s_VARS.fd",
-                        cfg->nvramDir, def->name) < 0)
-            goto cleanup;
-    }
+    if (qemuDomainNVRAMPathGenerate(cfg, def) < 0)
+        goto cleanup;
 
     if (qemuDomainDefAddDefaultDevices(def, qemuCaps) < 0)
         goto cleanup;
@@ -13943,4 +13937,20 @@ qemuDomainDiskIsMissingLocalOptional(virDomainDiskDefPtr disk)
     return disk->startupPolicy == VIR_DOMAIN_STARTUP_POLICY_OPTIONAL &&
            virStorageSourceIsLocalStorage(disk->src) && disk->src->path &&
            !virFileExists(disk->src->path);
+}
+
+
+int
+qemuDomainNVRAMPathGenerate(virQEMUDriverConfigPtr cfg,
+                            virDomainDefPtr def)
+{
+    if (def->os.loader &&
+        def->os.loader->type == VIR_DOMAIN_LOADER_TYPE_PFLASH &&
+        def->os.loader->readonly == VIR_TRISTATE_SWITCH_ON &&
+        !def->os.loader->nvram) {
+        return virAsprintf(&def->os.loader->nvram, "%s/%s_VARS.fd",
+                           cfg->nvramDir, def->name);
+    }
+
+    return 0;
 }
