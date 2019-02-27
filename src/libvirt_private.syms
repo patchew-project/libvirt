@@ -2466,6 +2466,7 @@ virNetDevVlanFree;
 virNetDevVPortProfileAssociate;
 virNetDevVPortProfileCheckComplete;
 virNetDevVPortProfileCheckNoExtras;
+virNetDevVPortProfileCopy;
 virNetDevVPortProfileDisassociate;
 virNetDevVPortProfileEqual;
 virNetDevVPortProfileMerge3;
