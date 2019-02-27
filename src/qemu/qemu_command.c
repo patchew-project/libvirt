@@ -9846,6 +9846,7 @@ qemuBuildDomainLoaderCommandLine(virCommandPtr cmd,
         }
         break;
 
+    case VIR_DOMAIN_LOADER_TYPE_NONE:
     case VIR_DOMAIN_LOADER_TYPE_LAST:
         /* nada */
         break;

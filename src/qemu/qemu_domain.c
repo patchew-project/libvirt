@@ -12201,6 +12201,7 @@ qemuDomainSetupLoader(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
                 goto cleanup;
             break;
 
+        case VIR_DOMAIN_LOADER_TYPE_NONE:
         case VIR_DOMAIN_LOADER_TYPE_LAST:
             break;
         }
