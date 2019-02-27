@@ -2437,6 +2437,7 @@ virNetDevTapDelete;
 virNetDevTapGetName;
 virNetDevTapGetRealDeviceName;
 virNetDevTapInterfaceStats;
+virNetDevTapReattachBridge;
 
 
 # util/virnetdevveth.h
