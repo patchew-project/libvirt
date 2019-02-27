@@ -32,6 +32,7 @@
 #include "testutils.h"
 #include "cpu_conf.h"
 #include "cpu/cpu.h"
+#include "cpu/cpu_x86.h"
 #include "cpu/cpu_map.h"
 #include "virstring.h"
 
@@ -643,6 +644,68 @@ cpuTestGuestCPUID(const void *arg)
 
 
 static int
+cpuTestCompareSignature(const struct data *data,
+                        virCPUDataPtr hostData)
+{
+    unsigned long signature;
+    unsigned int family;
+    unsigned int model;
+    unsigned int stepping;
+    char *result = NULL;
+    char *sigStr = NULL;
+    int ret = -1;
+
+    signature = virCPUx86DataGetSignature(hostData, &family, &model, &stepping);
+
+    if (virAsprintf(&result, "%s/cputestdata/%s-cpuid-%s.sig",
+                    abs_srcdir, virArchToString(data->arch), data->host) < 0)
+        goto cleanup;
+
+    if (virAsprintf(&sigStr,
+                    "%1$06lx\n"
+                    "family:   %2$2u (0x%2$02x)\n"
+                    "model:    %3$2u (0x%3$02x)\n"
+                    "stepping: %4$2u (0x%4$02x)\n",
+                    signature, family, model, stepping) < 0)
+        goto cleanup;
+
+    ret = virTestCompareToFile(sigStr, result);
+
+ cleanup:
+    VIR_FREE(result);
+    VIR_FREE(sigStr);
+    return ret;
+}
+
+
+static int
+cpuTestCPUIDSignature(const void *arg)
+{
+    const struct data *data = arg;
+    virCPUDataPtr hostData = NULL;
+    char *hostFile = NULL;
+    char *host = NULL;
+    int ret = -1;
+
+    if (virAsprintf(&hostFile, "%s/cputestdata/%s-cpuid-%s.xml",
+                    abs_srcdir, virArchToString(data->arch), data->host) < 0)
+        goto cleanup;
+
+    if (virTestLoadFile(hostFile, &host) < 0 ||
+        !(hostData = virCPUDataParse(host)))
+        goto cleanup;
+
+    ret = cpuTestCompareSignature(data, hostData);
+
+ cleanup:
+    virCPUDataFree(hostData);
+    VIR_FREE(hostFile);
+    VIR_FREE(host);
+    return ret;
+}
+
+
+static int
 cpuTestUpdateLiveCompare(virArch arch,
                          virCPUDefPtr actual,
                          virCPUDefPtr expected)
@@ -863,6 +926,31 @@ cpuTestJSONCPUID(const void *arg)
     VIR_FREE(result);
     return ret;
 }
+
+
+static int
+cpuTestJSONSignature(const void *arg)
+{
+    const struct data *data = arg;
+    virQEMUCapsPtr qemuCaps = NULL;
+    virCPUDataPtr hostData = NULL;
+    qemuMonitorCPUModelInfoPtr modelInfo;
+    int ret = -1;
+
+    if (!(qemuCaps = cpuTestMakeQEMUCaps(data)))
+        goto cleanup;
+
+    modelInfo = virQEMUCapsGetCPUModelInfo(qemuCaps, VIR_DOMAIN_VIRT_KVM);
+    if (!(hostData = virQEMUCapsGetCPUModelX86Data(modelInfo, false)))
+        goto cleanup;
+
+    ret = cpuTestCompareSignature(data, hostData);
+
+ cleanup:
+    virObjectUnref(qemuCaps);
+    virCPUDataFree(hostData);
+    return ret;
+}
 #endif
 
 
@@ -1008,6 +1096,8 @@ mymain(void)
         if (json != JSON_NONE) { \
             DO_TEST(arch, cpuTestJSONCPUID, host, host, \
                     NULL, NULL, json, 0); \
+            DO_TEST(arch, cpuTestJSONSignature, host, host, \
+                    NULL, NULL, 0, 0); \
         } \
     } while (0)
 #else
@@ -1020,6 +1110,8 @@ mymain(void)
                 NULL, NULL, 0, 0); \
         DO_TEST(arch, cpuTestGuestCPUID, host, host, \
                 NULL, NULL, json, 0); \
+        DO_TEST(arch, cpuTestCPUIDSignature, host, host, \
+                NULL, NULL, 0, 0); \
         DO_TEST_JSON(arch, host, json); \
         if (json != JSON_NONE) { \
             DO_TEST(arch, cpuTestUpdateLive, host, host, \
