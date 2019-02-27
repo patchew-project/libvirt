@@ -15022,7 +15022,7 @@ qemuDomainSnapshotPrepare(virDomainObjPtr vm,
         case VIR_DOMAIN_SNAPSHOT_LOCATION_INTERNAL:
             found_internal = true;
 
-            if (def->state == VIR_DOMAIN_DISK_SNAPSHOT && active) {
+            if (def->state == VIR_SNAP_STATE_DISK_SNAPSHOT && active) {
                 virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                                _("active qemu domains require external disk "
                                  "snapshots; disk %s requested internal"),
@@ -15099,7 +15099,7 @@ qemuDomainSnapshotPrepare(virDomainObjPtr vm,
     }
 
     /* disk snapshot requires at least one disk */
-    if (def->state == VIR_DOMAIN_DISK_SNAPSHOT && !external) {
+    if (def->state == VIR_SNAP_STATE_DISK_SNAPSHOT && !external) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("disk-only snapshots require at least "
                          "one disk to be selected for snapshot"));
@@ -15844,9 +15844,9 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
             align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL;
             align_match = false;
             if (virDomainObjIsActive(vm))
-                def->state = VIR_DOMAIN_DISK_SNAPSHOT;
+                def->state = VIR_SNAP_STATE_DISK_SNAPSHOT;
             else
-                def->state = VIR_DOMAIN_SHUTOFF;
+                def->state = VIR_SNAP_STATE_SHUTOFF;
             def->memory = VIR_DOMAIN_SNAPSHOT_LOCATION_NONE;
         } else if (def->memory == VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL) {
             def->state = virDomainObjGetState(vm, NULL);
@@ -15863,7 +15863,7 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
                 goto endjob;
             }
 
-            def->memory = (def->state == VIR_DOMAIN_SHUTOFF ?
+            def->memory = (def->state == VIR_SNAP_STATE_SHUTOFF ?
                            VIR_DOMAIN_SNAPSHOT_LOCATION_NONE :
                            VIR_DOMAIN_SNAPSHOT_LOCATION_INTERNAL);
         }
@@ -16426,8 +16426,8 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
         goto endjob;
 
     if (!vm->persistent &&
-        snap->def->state != VIR_DOMAIN_RUNNING &&
-        snap->def->state != VIR_DOMAIN_PAUSED &&
+        snap->def->state != VIR_SNAP_STATE_RUNNING &&
+        snap->def->state != VIR_SNAP_STATE_PAUSED &&
         (flags & (VIR_DOMAIN_SNAPSHOT_REVERT_RUNNING |
                   VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED)) == 0) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
@@ -16450,8 +16450,8 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
             goto endjob;
         }
         if (virDomainObjIsActive(vm) &&
-            !(snap->def->state == VIR_DOMAIN_RUNNING
-              || snap->def->state == VIR_DOMAIN_PAUSED) &&
+            !(snap->def->state == VIR_SNAP_STATE_RUNNING ||
+              snap->def->state == VIR_SNAP_STATE_PAUSED) &&
             (flags & (VIR_DOMAIN_SNAPSHOT_REVERT_RUNNING |
                       VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED))) {
             virReportError(VIR_ERR_SNAPSHOT_REVERT_RISKY, "%s",
@@ -16487,6 +16487,11 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
 
     cookie = (qemuDomainSaveCookiePtr) snap->def->cookie;
 
+    /* FIXME: This cast should be to virDomainSnapshotState, with
+     * better handling of VIR_SNAP_STATE_DISK_SNAPSHOT (the only enum
+     * value added beyond what virDomainState supports). But for now
+     * it doesn't matter, because of the above rejection of revert to
+     * external snapshots. */
     switch ((virDomainState) snap->def->state) {
     case VIR_DOMAIN_RUNNING:
     case VIR_DOMAIN_PAUSED:
@@ -16628,7 +16633,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
 
         /* Touch up domain state.  */
         if (!(flags & VIR_DOMAIN_SNAPSHOT_REVERT_RUNNING) &&
-            (snap->def->state == VIR_DOMAIN_PAUSED ||
+            (snap->def->state == VIR_SNAP_STATE_PAUSED ||
              (flags & VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED))) {
             /* Transitions 3, 6, 9 */
             virDomainObjSetState(vm, VIR_DOMAIN_PAUSED,
@@ -16735,7 +16740,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Invalid target domain state '%s'. Refusing "
                          "snapshot reversion"),
-                       virDomainStateTypeToString(snap->def->state));
+                       virDomainSnapshotStateTypeToString(snap->def->state));
         goto endjob;
     }
 
