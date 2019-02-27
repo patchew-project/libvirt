@@ -132,6 +132,7 @@ EXTRA_DIST = \
 	qemuxml2xmloutdata \
 	qemustatusxml2xmldata \
 	qemumemlockdata \
+	qemufirmwaredata \
 	secretxml2xmlin \
 	securityselinuxhelperdata \
 	securityselinuxlabeldata \
@@ -291,6 +292,7 @@ test_programs += qemuxml2argvtest qemuxml2xmltest \
 	qemublocktest \
 	qemumigparamstest \
 	qemusecuritytest \
+	qemufirmwaretest \
 	$(NULL)
 test_helpers += qemucapsprobe
 test_libraries += libqemumonitortestutils.la \
@@ -698,6 +700,12 @@ qemusecuritytest_SOURCES = \
 	testutilsqemu.h testutilsqemu.c
 qemusecuritytest_LDADD = $(qemu_LDADDS) $(LDADDS)
 
+qemufirmwaretest_SOURCES = \
+	qemufirmwaretest.c \
+	testutils.h testutils.c \
+	$(NULL)
+qemufirmwaretest_LDADD = $(qemu_LDADDS) $(LDADDS)
+
 else ! WITH_QEMU
 EXTRA_DIST += qemuxml2argvtest.c qemuxml2xmltest.c qemuargv2xmltest.c \
 	domainsnapshotxml2xmltest.c \
@@ -711,6 +719,7 @@ EXTRA_DIST += qemuxml2argvtest.c qemuxml2xmltest.c qemuargv2xmltest.c \
 	qemumigparamstest.c \
 	qemusecuritytest.c qemusecuritytest.h \
 	qemusecuritymock.c \
+	qemufirmwaretest.c \
 	$(QEMUMONITORTESTUTILS_SOURCES)
 endif ! WITH_QEMU
 
