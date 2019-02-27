@@ -1033,6 +1033,13 @@ VIR_ENUM_IMPL(virDomainHPTResizing,
               "required",
 );
 
+VIR_ENUM_IMPL(virDomainOsDefFirmware,
+              VIR_DOMAIN_OS_DEF_FIRMWARE_LAST,
+              "none",
+              "bios",
+              "efi",
+);
+
 /* Internal mapping: subset of block job types that can be present in
  * <mirror> XML (remaining types are not two-phase). */
 VIR_ENUM_DECL(virDomainBlockJob);
@@ -6582,14 +6589,23 @@ virDomainDefMemtuneValidate(const virDomainDef *def)
 
 
 static int
-virDomainDefOSValidate(const virDomainDef *def)
+virDomainDefOSValidate(const virDomainDef *def,
+                       virDomainXMLOptionPtr xmlopt)
 {
     if (!def->os.loader)
         return 0;
 
-    if (!def->os.loader->path) {
+    if (def->os.firmware &&
+        !(xmlopt->config.features & VIR_DOMAIN_DEF_FEATURE_FW_AUTOSELECT)) {
         virReportError(VIR_ERR_XML_DETAIL, "%s",
-                       _("no loader path specified"));
+                       _("firmware auto selection not implemented for this driver"));
+        return -1;
+    }
+
+    if (!def->os.loader->path &&
+        def->os.firmware == VIR_DOMAIN_OS_DEF_FIRMWARE_NONE) {
+        virReportError(VIR_ERR_XML_DETAIL, "%s",
+                       _("no loader path specified and firmware auto selection disabled"));
         return -1;
     }
 
@@ -6598,7 +6614,8 @@ virDomainDefOSValidate(const virDomainDef *def)
 
 
 static int
-virDomainDefValidateInternal(const virDomainDef *def)
+virDomainDefValidateInternal(const virDomainDef *def,
+                             virDomainXMLOptionPtr xmlopt)
 {
     if (virDomainDefCheckDuplicateDiskInfo(def) < 0)
         return -1;
@@ -6635,7 +6652,7 @@ virDomainDefValidateInternal(const virDomainDef *def)
     if (virDomainDefMemtuneValidate(def) < 0)
         return -1;
 
-    if (virDomainDefOSValidate(def) < 0)
+    if (virDomainDefOSValidate(def, xmlopt) < 0)
         return -1;
 
     return 0;
@@ -6686,7 +6703,7 @@ virDomainDefValidate(virDomainDefPtr def,
                                            &data) < 0)
         return -1;
 
-    if (virDomainDefValidateInternal(def) < 0)
+    if (virDomainDefValidateInternal(def, xmlopt) < 0)
         return -1;
 
     return 0;
@@ -18692,20 +18709,23 @@ virDomainDefMaybeAddHostdevSCSIcontroller(virDomainDefPtr def)
 
 static int
 virDomainLoaderDefParseXML(xmlNodePtr node,
-                           virDomainLoaderDefPtr loader)
+                           virDomainLoaderDefPtr loader,
+                           bool fwAutoSelect)
 {
     int ret = -1;
     char *readonly_str = NULL;
     char *secure_str = NULL;
     char *type_str = NULL;
 
-    readonly_str = virXMLPropString(node, "readonly");
     secure_str = virXMLPropString(node, "secure");
-    type_str = virXMLPropString(node, "type");
-    loader->path = (char *) xmlNodeGetContent(node);
 
-    if (STREQ_NULLABLE(loader->path, ""))
-        VIR_FREE(loader->path);
+    if (!fwAutoSelect) {
+        readonly_str = virXMLPropString(node, "readonly");
+        type_str = virXMLPropString(node, "type");
+        loader->path = (char *) xmlNodeGetContent(node);
+        if (STREQ_NULLABLE(loader->path, ""))
+            VIR_FREE(loader->path);
+    }
 
     if (readonly_str &&
         (loader->readonly = virTristateBoolTypeFromString(readonly_str)) <= 0) {
@@ -19120,6 +19140,7 @@ virDomainDefParseBootOptions(virDomainDefPtr def,
         def->os.type == VIR_DOMAIN_OSTYPE_XENPVH ||
         def->os.type == VIR_DOMAIN_OSTYPE_HVM ||
         def->os.type == VIR_DOMAIN_OSTYPE_UML) {
+        VIR_AUTOFREE(char *) firmware = NULL;
         xmlNodePtr loader_node;
 
         def->os.kernel = virXPathString("string(./os/kernel[1])", ctxt);
@@ -19127,15 +19148,35 @@ virDomainDefParseBootOptions(virDomainDefPtr def,
         def->os.cmdline = virXPathString("string(./os/cmdline[1])", ctxt);
         def->os.dtb = virXPathString("string(./os/dtb[1])", ctxt);
         def->os.root = virXPathString("string(./os/root[1])", ctxt);
+
+        if (def->os.type == VIR_DOMAIN_OSTYPE_HVM &&
+            (firmware = virXPathString("string(./os/@firmware)", ctxt))) {
+            int fw = virDomainOsDefFirmwareTypeFromString(firmware);
+
+            if (fw <= 0) {
+                virReportError(VIR_ERR_XML_ERROR,
+                               _("unknown firmware value %s"),
+                               firmware);
+                goto error;
+            }
+
+            def->os.firmware = fw;
+        }
+
         if ((loader_node = virXPathNode("./os/loader[1]", ctxt))) {
+            const bool fwAutoSelect = def->os.firmware != VIR_DOMAIN_OS_DEF_FIRMWARE_NONE;
+
             if (VIR_ALLOC(def->os.loader) < 0)
                 goto error;
 
-            if (virDomainLoaderDefParseXML(loader_node, def->os.loader) < 0)
+            if (virDomainLoaderDefParseXML(loader_node,
+                                           def->os.loader,
+                                           fwAutoSelect) < 0)
                 goto error;
 
             def->os.loader->nvram = virXPathString("string(./os/nvram[1])", ctxt);
-            def->os.loader->templt = virXPathString("string(./os/nvram[1]/@template)", ctxt);
+            if (!fwAutoSelect)
+                def->os.loader->templt = virXPathString("string(./os/nvram[1]/@template)", ctxt);
         }
     }
 
@@ -28459,7 +28500,11 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                               def->os.bootloaderArgs);
     }
 
-    virBufferAddLit(buf, "<os>\n");
+    virBufferAddLit(buf, "<os");
+    if (def->os.firmware)
+        virBufferAsprintf(buf, " firmware='%s'",
+                          virDomainOsDefFirmwareTypeToString(def->os.firmware));
+    virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
     virBufferAddLit(buf, "<type");
     if (def->os.arch)
