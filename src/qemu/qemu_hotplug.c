@@ -1377,7 +1377,6 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
 
     switch (actualType) {
     case VIR_DOMAIN_NET_TYPE_BRIDGE:
-    case VIR_DOMAIN_NET_TYPE_NETWORK:
         tapfdSize = vhostfdSize = net->driver.virtio.queues;
         if (!tapfdSize)
             tapfdSize = vhostfdSize = 1;
@@ -1468,6 +1467,11 @@ qemuDomainAttachNetDevice(virQEMUDriverPtr driver,
     case VIR_DOMAIN_NET_TYPE_USER:
         /* No preparation needed. */
         break;
+
+    case VIR_DOMAIN_NET_TYPE_NETWORK:
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Unexpectedly found type=network for actual NIC type"));
+        goto cleanup;
 
     case VIR_DOMAIN_NET_TYPE_SERVER:
     case VIR_DOMAIN_NET_TYPE_CLIENT:
@@ -3572,8 +3576,13 @@ qemuDomainChangeNetFilter(virDomainObjPtr vm,
     switch (virDomainNetGetActualType(newdev)) {
     case VIR_DOMAIN_NET_TYPE_ETHERNET:
     case VIR_DOMAIN_NET_TYPE_BRIDGE:
-    case VIR_DOMAIN_NET_TYPE_NETWORK:
         break;
+
+    case VIR_DOMAIN_NET_TYPE_NETWORK:
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Unexpectedly found type=network for actual NIC type"));
+        return -1;
+
     case VIR_DOMAIN_NET_TYPE_USER:
     case VIR_DOMAIN_NET_TYPE_VHOSTUSER:
     case VIR_DOMAIN_NET_TYPE_SERVER:
