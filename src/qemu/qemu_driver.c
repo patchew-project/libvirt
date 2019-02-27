@@ -15674,7 +15674,9 @@ qemuDomainSnapshotCreateActiveExternal(virQEMUDriverPtr driver,
 
 
 /* Validate that a snapshot object does not violate any qemu-specific
- * constraints. */
+ * constraints. @state is virDomainState if flags implies creation, or
+ * virDomainSnapshotState if flags includes _REDEFINE (the latter
+ * enum is a superset of the former). */
 static int
 qemuDomainSnapshotValidate(virDomainSnapshotDefPtr def, int state,
                            unsigned int flags)
@@ -15808,7 +15810,8 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
                                                 parse_flags)))
         goto cleanup;
 
-    if (qemuDomainSnapshotValidate(def, vm->state.state, flags) < 0)
+    if (qemuDomainSnapshotValidate(def, redefine ? def->state : vm->state.state,
+                                   flags) < 0)
         goto cleanup;
 
     /* reject the VIR_DOMAIN_SNAPSHOT_CREATE_LIVE flag where not supported */
