@@ -321,8 +321,8 @@ virISCSIDirectRefreshVol(virStoragePoolObjPtr pool,
     if (virISCSIDirectGetVolumeCapacity(iscsi, lun, &block_size, &nb_block) < 0)
         return -1;
 
-    vol->target.capacity = block_size * nb_block;
-    vol->target.allocation = block_size * nb_block;
+    vol->target.capacity = (unsigned long long)block_size * nb_block;
+    vol->target.allocation = (unsigned long long)block_size * nb_block;
     def->capacity += vol->target.capacity;
     def->allocation += vol->target.allocation;
 
