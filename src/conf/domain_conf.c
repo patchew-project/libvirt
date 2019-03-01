@@ -22020,13 +22020,11 @@ virDomainChannelDefCheckABIStability(virDomainChrDefPtr src,
     case VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_GUESTFWD:
         if (memcmp(src->target.addr, dst->target.addr,
                    sizeof(*src->target.addr)) != 0) {
-            char *saddr = virSocketAddrFormatFull(src->target.addr, true, ":");
-            char *daddr = virSocketAddrFormatFull(dst->target.addr, true, ":");
+            VIR_AUTOFREE(char *) saddr = virSocketAddrFormatFull(src->target.addr, true, ":");
+            VIR_AUTOFREE(char *) daddr = virSocketAddrFormatFull(dst->target.addr, true, ":");
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                            _("Target channel addr %s does not match source %s"),
                            NULLSTR(daddr), NULLSTR(saddr));
-            VIR_FREE(saddr);
-            VIR_FREE(daddr);
             return false;
         }
         break;
@@ -25315,8 +25313,10 @@ virDomainNetDefFormat(virBufferPtr buf,
         virBufferEscapeString(buf, "<model type='%s'/>\n",
                               def->model);
         if (virDomainNetIsVirtioModel(def)) {
-            char *str = NULL, *gueststr = NULL, *hoststr = NULL;
             int rc = 0;
+            VIR_AUTOFREE(char *) str = NULL;
+            VIR_AUTOFREE(char *) gueststr = NULL;
+            VIR_AUTOFREE(char *) hoststr = NULL;
 
             if (virDomainVirtioNetDriverFormat(&str, def) < 0 ||
                 virDomainVirtioNetGuestOptsFormat(&gueststr, def) < 0 ||
@@ -25339,9 +25339,6 @@ virDomainNetDefFormat(virBufferPtr buf,
                 virBufferAdjustIndent(buf, -2);
                 virBufferAddLit(buf, "</driver>\n");
             }
-            VIR_FREE(str);
-            VIR_FREE(hoststr);
-            VIR_FREE(gueststr);
 
             if (rc < 0)
                 return -1;
@@ -25561,19 +25558,19 @@ virDomainChrTargetDefFormat(virBufferPtr buf,
         switch (def->targetType) {
         case VIR_DOMAIN_CHR_CHANNEL_TARGET_TYPE_GUESTFWD: {
             int port = virSocketAddrGetPort(def->target.addr);
+            VIR_AUTOFREE(char *) addr = NULL;
             if (port < 0) {
                 virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                                _("Unable to format guestfwd port"));
                 return -1;
             }
 
-            char *addr = virSocketAddrFormat(def->target.addr);
+            addr = virSocketAddrFormat(def->target.addr);
             if (addr == NULL)
                 return -1;
 
             virBufferAsprintf(buf, " address='%s' port='%d'",
                               addr, port);
-            VIR_FREE(addr);
             break;
         }
 
@@ -27147,11 +27144,10 @@ virDomainHugepagesFormatBuf(virBufferPtr buf,
                       hugepage->size);
 
     if (hugepage->nodemask) {
-        char *nodeset = NULL;
+        VIR_AUTOFREE(char *) nodeset = NULL;
         if (!(nodeset = virBitmapFormat(hugepage->nodemask)))
             goto cleanup;
         virBufferAsprintf(buf, " nodeset='%s'", nodeset);
-        VIR_FREE(nodeset);
     }
 
     virBufferAddLit(buf, "/>\n");
