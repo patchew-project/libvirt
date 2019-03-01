@@ -1584,14 +1584,13 @@ virDomainVcpuDefNew(virDomainXMLOptionPtr xmlopt)
 
     if (xmlopt && xmlopt->privateData.vcpuNew &&
         !(priv = xmlopt->privateData.vcpuNew()))
-        goto cleanup;
+        return NULL;
 
     if (VIR_ALLOC(ret) < 0)
-        goto cleanup;
+        return NULL;
 
     VIR_STEAL_PTR(ret->privateData, priv);
 
- cleanup:
     return ret;
 }
 
@@ -26990,23 +26989,19 @@ static int
 virDomainHugepagesFormatBuf(virBufferPtr buf,
                             virDomainHugePagePtr hugepage)
 {
-    int ret = -1;
-
     virBufferAsprintf(buf, "<page size='%llu' unit='KiB'",
                       hugepage->size);
 
     if (hugepage->nodemask) {
         VIR_AUTOFREE(char *) nodeset = NULL;
         if (!(nodeset = virBitmapFormat(hugepage->nodemask)))
-            goto cleanup;
+            return -1;
         virBufferAsprintf(buf, " nodeset='%s'", nodeset);
     }
 
     virBufferAddLit(buf, "/>\n");
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 static void
@@ -29726,21 +29721,21 @@ virDomainObjGetMetadata(virDomainObjPtr vm,
     if (type >= VIR_DOMAIN_METADATA_LAST) {
         virReportError(VIR_ERR_INVALID_ARG,
                        _("unknown metadata type '%d'"), type);
-        goto cleanup;
+        return NULL;
     }
 
     if (!(def = virDomainObjGetOneDef(vm, flags)))
-        goto cleanup;
+        return NULL;
 
     switch ((virDomainMetadataType) type) {
     case VIR_DOMAIN_METADATA_DESCRIPTION:
         if (VIR_STRDUP(ret, def->description) < 0)
-            goto cleanup;
+            return NULL;
         break;
 
     case VIR_DOMAIN_METADATA_TITLE:
         if (VIR_STRDUP(ret, def->title) < 0)
-            goto cleanup;
+            return NULL;
         break;
 
     case VIR_DOMAIN_METADATA_ELEMENT:
@@ -29748,7 +29743,7 @@ virDomainObjGetMetadata(virDomainObjPtr vm,
             break;
 
         if (virXMLExtractNamespaceXML(def->metadata, uri, &ret) < 0)
-            goto cleanup;
+            return NULL;
         break;
 
     /* coverity[dead_error_begin] */
@@ -29760,7 +29755,6 @@ virDomainObjGetMetadata(virDomainObjPtr vm,
         virReportError(VIR_ERR_NO_DOMAIN_METADATA, "%s",
                        _("Requested metadata element is not present"));
 
- cleanup:
     return ret;
 }
 
@@ -30414,22 +30408,16 @@ static int
 virDomainDiskTranslateSourcePoolAuth(virDomainDiskDefPtr def,
                                      virStoragePoolSourcePtr source)
 {
-    int ret = -1;
-
     /* Only necessary when authentication set */
-    if (!source->auth) {
-        ret = 0;
-        goto cleanup;
-    }
+    if (!source->auth)
+        return 0;
+
     def->src->auth = virStorageAuthDefCopy(source->auth);
     if (!def->src->auth)
-        goto cleanup;
+        return -1;
     /* A <disk> doesn't use <auth type='%s', so clear that out for the disk */
     def->src->auth->authType = VIR_STORAGE_AUTH_TYPE_NONE;
-    ret = 0;
-
- cleanup:
-    return ret;
+    return 0;
 }
 
 
@@ -30471,7 +30459,6 @@ int
 virDomainDiskTranslateSourcePool(virDomainDiskDefPtr def)
 {
     virStorageVolInfo info;
-    int ret = -1;
     VIR_AUTOPTR(virStoragePoolDef) pooldef = NULL;
     VIR_AUTOFREE(char *) poolxml = NULL;
     VIR_AUTOUNREF(virConnectPtr) conn = NULL;
@@ -30488,27 +30475,27 @@ virDomainDiskTranslateSourcePool(virDomainDiskDefPtr def)
         return -1;
 
     if (!(pool = virStoragePoolLookupByName(conn, def->src->srcpool->pool)))
-        goto cleanup;
+        return -1;
 
     if (virStoragePoolIsActive(pool) != 1) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("storage pool '%s' containing volume '%s' "
                          "is not active"),
                        def->src->srcpool->pool, def->src->srcpool->volume);
-        goto cleanup;
+        return -1;
     }
 
     if (!(vol = virStorageVolLookupByName(pool, def->src->srcpool->volume)))
-        goto cleanup;
+        return -1;
 
     if (virStorageVolGetInfo(vol, &info) < 0)
-        goto cleanup;
+        return -1;
 
     if (!(poolxml = virStoragePoolGetXMLDesc(pool, 0)))
-        goto cleanup;
+        return -1;
 
     if (!(pooldef = virStoragePoolDefParseString(poolxml)))
-        goto cleanup;
+        return -1;
 
     def->src->srcpool->pooltype = pooldef->type;
     def->src->srcpool->voltype = info.type;
@@ -30517,7 +30504,7 @@ virDomainDiskTranslateSourcePool(virDomainDiskDefPtr def)
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("disk source mode is only valid when "
                          "storage pool is of iscsi type"));
-        goto cleanup;
+        return -1;
     }
 
     VIR_FREE(def->src->path);
@@ -30537,13 +30524,13 @@ virDomainDiskTranslateSourcePool(virDomainDiskDefPtr def)
     case VIR_STORAGE_POOL_ZFS:
     case VIR_STORAGE_POOL_VSTORAGE:
         if (!(def->src->path = virStorageVolGetPath(vol)))
-            goto cleanup;
+            return -1;
 
         if (def->startupPolicy && info.type != VIR_STORAGE_VOL_FILE) {
             virReportError(VIR_ERR_XML_ERROR, "%s",
                            _("'startupPolicy' is only valid for "
                              "'file' type volume"));
-            goto cleanup;
+            return -1;
         }
 
 
@@ -30571,7 +30558,7 @@ virDomainDiskTranslateSourcePool(virDomainDiskDefPtr def)
                              "for storage pool type '%s'"),
                            virStorageVolTypeToString(info.type),
                            virStoragePoolTypeToString(pooldef->type));
-            goto cleanup;
+            return -1;
         }
 
         break;
@@ -30581,13 +30568,13 @@ virDomainDiskTranslateSourcePool(virDomainDiskDefPtr def)
             virReportError(VIR_ERR_XML_ERROR, "%s",
                            _("'startupPolicy' is only valid for "
                              "'file' type volume"));
-            goto cleanup;
+            return -1;
         }
 
         def->src->srcpool->mode = VIR_STORAGE_SOURCE_POOL_MODE_DIRECT;
 
         if (virDomainDiskTranslateISCSIDirect(def, pooldef) < 0)
-            goto cleanup;
+            return -1;
 
         break;
 
@@ -30596,7 +30583,7 @@ virDomainDiskTranslateSourcePool(virDomainDiskDefPtr def)
             virReportError(VIR_ERR_XML_ERROR, "%s",
                            _("'startupPolicy' is only valid for "
                              "'file' type volume"));
-            goto cleanup;
+            return -1;
         }
 
        switch (def->src->srcpool->mode) {
@@ -30607,12 +30594,12 @@ virDomainDiskTranslateSourcePool(virDomainDiskDefPtr def)
        case VIR_STORAGE_SOURCE_POOL_MODE_HOST:
            def->src->srcpool->actualtype = VIR_STORAGE_TYPE_BLOCK;
            if (!(def->src->path = virStorageVolGetPath(vol)))
-               goto cleanup;
+               return -1;
            break;
 
        case VIR_STORAGE_SOURCE_POOL_MODE_DIRECT:
            if (virDomainDiskTranslateISCSIDirect(def, pooldef) < 0)
-               goto cleanup;
+               return -1;
            break;
        }
        break;
@@ -30626,12 +30613,10 @@ virDomainDiskTranslateSourcePool(virDomainDiskDefPtr def)
                        _("using '%s' pools for backing 'volume' disks "
                          "isn't yet supported"),
                        virStoragePoolTypeToString(pooldef->type));
-        goto cleanup;
+        return -1;
     }
 
-    ret = 0;
- cleanup:
-    return ret;
+    return 0;
 }
 
 
