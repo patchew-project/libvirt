@@ -10332,6 +10332,194 @@ qemuDomainUpdateCurrentMemorySize(virDomainObjPtr vm)
 
 
 /**
+ * Reads a phandle file and returns the phandle value.
+ */
+static int read_dt_phandle(const char* file)
+{
+    unsigned int buf[1];
+    size_t read;
+    FILE *f;
+
+    f = fopen(file, "r");
+    if (!f)
+        return -1;
+
+    read = fread(buf, sizeof(unsigned int), 1, f);
+
+    if (!read) {
+        fclose(f);
+        return 0;
+    }
+
+    fclose(f);
+    return be32toh(buf[0]);
+}
+
+
+/**
+ * Reads a memory reg file and returns the first 4 int values.
+ *
+ * The caller is responsible for freeing the returned array.
+ */
+static unsigned int *read_dt_memory_reg(const char *file)
+{
+    unsigned int *buf;
+    size_t read, i;
+    FILE *f;
+
+    f = fopen(file, "r");
+    if (!f)
+        return NULL;
+
+    buf = calloc(4, sizeof(unsigned int));
+    read = fread(buf, sizeof(unsigned int), 4, f);
+
+    if (!read && read < 4)
+        /* shouldn't happen */
+        VIR_FREE(buf);
+    else for (i = 0; i < 4; i++)
+        buf[i] = be32toh(buf[i]);
+
+    fclose(f);
+    return buf;
+}
+
+
+/**
+ * This wrapper function receives arguments to be used in a
+ * 'find' call to retrieve the file names that matches
+ * the criteria inside the /proc/device-tree dir.
+ *
+ * A 'find' call with '-iname phandle' inside /proc/device-tree
+ * provides more than a thousand matches. Adding '-path' to
+ * narrow it down further is necessary to keep the file
+ * listing sane.
+ *
+ * The caller is responsible to free the buffer returned by
+ * this function.
+ */
+static char *retrieve_dt_files_pattern(const char *path_pattern,
+                                       const char *file_pattern)
+{
+    virCommandPtr cmd = NULL;
+    char *output = NULL;
+
+    cmd = virCommandNew("find");
+    virCommandAddArgList(cmd, "/proc/device-tree/","-path", path_pattern,
+                         "-iname", file_pattern, NULL);
+    virCommandSetOutputBuffer(cmd, &output);
+
+    if (virCommandRun(cmd, NULL) < 0)
+        VIR_FREE(output);
+
+    virCommandFree(cmd);
+    return output;
+}
+
+
+/**
+ * Helper function that receives a listing of file names and
+ * calls read_dt_phandle() on each one finding for a match
+ * with the given phandle argument. Returns the file name if a
+ * match is found, NULL otherwise.
+ */
+static char *find_dt_file_with_phandle(char *files, int phandle)
+{
+    char *line, *tmp;
+    int ret;
+
+    line = strtok_r(files, "\n", &tmp);
+    do {
+       ret = read_dt_phandle(line);
+       if (ret == phandle)
+           break;
+    } while ((line = strtok_r(NULL, "\n", &tmp)) != NULL);
+
+    return line;
+}
+
+
+/**
+ * This function receives a string that represents a PCI device,
+ * such as '0004:04:00.0', and tells if the device is NVLink2 capable.
+ *
+ * The logic goes as follows:
+ *
+ * 1 - get the phandle of a nvlink of the device, reading the 'ibm,npu'
+ * attribute;
+ * 2 - find the device tree node of the nvlink bus using the phandle
+ * found in (1)
+ * 3 - get the phandle of the memory region of the nvlink bus
+ * 4 - find the device tree node of the memory region using the
+ * phandle found in (3)
+ * 5 - read the 'reg' value of the memory region. If the value of
+ * the second 64 bit value is 0x02 0x00, the device is attached
+ * to a NVLink2 bus.
+ *
+ * If any of these steps fails, the function returns false.
+ */
+static bool device_is_nvlink2_capable(const char *device)
+{
+    char *file, *files, *tmp;
+    unsigned int *reg;
+    int phandle;
+
+    if ((virAsprintf(&file, "/sys/bus/pci/devices/%s/of_node/ibm,npu",
+                    device)) < 0)
+        return false;
+
+    /* Find phandles of nvlinks:  */
+    if ((phandle = read_dt_phandle(file)) == -1)
+        return false;
+
+    /* Find a DT node for the phandle found */
+    files = retrieve_dt_files_pattern("*device-tree/pci*", "phandle");
+    if (!files)
+        return false;
+
+    if ((file = find_dt_file_with_phandle(files, phandle)) == NULL)
+        goto fail;
+
+    /* Find a phandle of the GPU memory region of the device. The
+     * file found above ends with '/phandle' - the memory region
+     * of the GPU ends with '/memory-region */
+    tmp = strrchr(file, '/');
+    *tmp = '\0';
+    file = strcat(file, "/memory-region");
+
+    if ((phandle = read_dt_phandle(file)) == -1)
+        goto fail;
+
+    file = NULL;
+    VIR_FREE(files);
+
+    /* Find the memory node for the phandle found above */
+    files = retrieve_dt_files_pattern("*device-tree/memory*", "phandle");
+    if (!files)
+        return false;
+
+    if ((file = find_dt_file_with_phandle(files, phandle)) == NULL)
+        goto fail;
+
+    /* And see its size in the second 64bit value of 'reg'. First,
+     * the end of the file needs to be changed from '/phandle' to
+     * '/reg' */
+    tmp = strrchr(file, '/');
+    *tmp = '\0';
+    file = strcat(file, "/reg");
+
+    reg = read_dt_memory_reg(file);
+    if (reg && reg[2] == 0x20 && reg[3] == 0x00)
+        return true;
+
+fail:
+    VIR_FREE(files);
+    VIR_FREE(reg);
+    return false;
+}
+
+
+/**
  * qemuDomainGetMemLockLimitBytes:
  * @def: domain definition
  *
