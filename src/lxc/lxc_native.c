@@ -572,6 +572,37 @@ lxcAddNetworkDefinition(virDomainDefPtr def, lxcNetworkParseDataPtr data)
     return -1;
 }
 
+static lxcNetworkParseDataPtr
+lxcNetworkGetParseDataLegacy(lxcNetworkParseArray *networks,
+                             const char *name)
+{
+    const char *suffix = STRSKIP(name, "lxc.network.");
+    int elem = virLXCNetworkConfigEntryTypeFromString(suffix);
+    size_t index = networks->nnetworks;
+
+    if (elem == VIR_LXC_NETWORK_CONFIG_TYPE) {
+        if (!networks->data) {
+            if (VIR_ALLOC_N(networks->data, index + 1) < 0)
+                return NULL;
+        } else {
+            if (VIR_REALLOC_N(networks->data, index + 1) < 0)
+                return NULL;
+        }
+
+        if (VIR_ALLOC(networks->data[index]) < 0)
+            return NULL;
+
+        networks->data[index]->index = index;
+        networks->nnetworks++;
+
+        /* Return a new network. */
+        return networks->data[index];
+    }
+
+    /* Return the last network. */
+    return networks->data[index-1];
+}
+
 static int
 lxcNetworkParseDataIPs(const char *name,
                        virConfValuePtr value,
@@ -679,8 +710,12 @@ lxcNetworkWalkCallback(const char *name, virConfValuePtr value, void *data)
     lxcNetworkParseArray *networks = data;
     lxcNetworkParseDataPtr parseData = NULL;
 
-    if (STRPREFIX(name, "lxc.network."))
+    if (STRPREFIX(name, "lxc.network.")) {
+        if (!(parseData = lxcNetworkGetParseDataLegacy(networks, name)))
+            return -1;
+
         return lxcNetworkParseDataEntry(name, value, parseData);
+    }
 
     return 0;
 }
