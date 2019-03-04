@@ -484,7 +484,7 @@ lxcAddNetworkRouteDefinition(const char *address,
 }
 
 static int
-lxcAddNetworkDefinition(lxcNetworkParseData *data)
+lxcAddNetworkDefinition(virDomainDefPtr def, lxcNetworkParseDataPtr data)
 {
     virDomainNetDefPtr net = NULL;
     virDomainHostdevDefPtr hostdev = NULL;
@@ -532,9 +532,9 @@ lxcAddNetworkDefinition(lxcNetworkParseData *data)
                                          &hostdev->source.caps.u.net.ip.nroutes) < 0)
                 goto error;
 
-        if (VIR_EXPAND_N(data->def->hostdevs, data->def->nhostdevs, 1) < 0)
+        if (VIR_EXPAND_N(def->hostdevs, def->nhostdevs, 1) < 0)
             goto error;
-        data->def->hostdevs[data->def->nhostdevs - 1] = hostdev;
+        def->hostdevs[def->nhostdevs - 1] = hostdev;
     } else {
         if (!(net = lxcCreateNetDef(data->type, data->link, data->mac,
                                     data->flag, data->macvlanmode,
@@ -556,9 +556,9 @@ lxcAddNetworkDefinition(lxcNetworkParseData *data)
                                          &net->guestIP.nroutes) < 0)
                 goto error;
 
-        if (VIR_EXPAND_N(data->def->nets, data->def->nnets, 1) < 0)
+        if (VIR_EXPAND_N(def->nets, def->nnets, 1) < 0)
             goto error;
-        data->def->nets[data->def->nnets - 1] = net;
+        def->nets[def->nnets - 1] = net;
     }
 
     return 1;
@@ -572,44 +572,10 @@ lxcAddNetworkDefinition(lxcNetworkParseData *data)
     return -1;
 }
 
-
-static int
-lxcNetworkParseDataType(virConfValuePtr value,
-                        lxcNetworkParseData *parseData)
-{
-    virDomainDefPtr def = parseData->def;
-    size_t networks = parseData->networks;
-    bool privnet = parseData->privnet;
-    int status;
-
-    /* Store the previous NIC */
-    status = lxcAddNetworkDefinition(parseData);
-
-    if (status < 0)
-        return -1;
-    else if (status > 0)
-        networks++;
-    else if (parseData->type != NULL && STREQ(parseData->type, "none"))
-        privnet = false;
-
-    /* clean NIC to store a new one */
-    memset(parseData, 0, sizeof(*parseData));
-
-    parseData->def = def;
-    parseData->networks = networks;
-    parseData->privnet = privnet;
-
-    /* Keep the new value */
-    parseData->type = value->str;
-
-    return 0;
-}
-
-
 static int
 lxcNetworkParseDataIPs(const char *name,
                        virConfValuePtr value,
-                       lxcNetworkParseData *parseData)
+                       lxcNetworkParseDataPtr parseData)
 {
     int family = AF_INET;
     char **ipparts = NULL;
@@ -648,14 +614,13 @@ lxcNetworkParseDataIPs(const char *name,
 static int
 lxcNetworkParseDataSuffix(const char *entry,
                           virConfValuePtr value,
-                          lxcNetworkParseData *parseData)
+                          lxcNetworkParseDataPtr parseData)
 {
     int elem = virLXCNetworkConfigEntryTypeFromString(entry);
 
     switch (elem) {
     case VIR_LXC_NETWORK_CONFIG_TYPE:
-        if (lxcNetworkParseDataType(value, parseData) < 0)
-            return -1;
+        parseData->type = value->str;
         break;
     case VIR_LXC_NETWORK_CONFIG_LINK:
         parseData->link = value->str;
@@ -700,7 +665,7 @@ lxcNetworkParseDataSuffix(const char *entry,
 static int
 lxcNetworkParseDataEntry(const char *name,
                          virConfValuePtr value,
-                         lxcNetworkParseData *parseData)
+                         lxcNetworkParseDataPtr parseData)
 {
     const char *suffix = STRSKIP(name, "lxc.network.");
 
@@ -711,7 +676,8 @@ lxcNetworkParseDataEntry(const char *name,
 static int
 lxcNetworkWalkCallback(const char *name, virConfValuePtr value, void *data)
 {
-    lxcNetworkParseData *parseData = data;
+    lxcNetworkParseArray *networks = data;
+    lxcNetworkParseDataPtr parseData = NULL;
 
     if (STRPREFIX(name, "lxc.network."))
         return lxcNetworkParseDataEntry(name, value, parseData);
@@ -724,26 +690,26 @@ lxcConvertNetworkSettings(virDomainDefPtr def, virConfPtr properties)
 {
     int status;
     int result = -1;
-    size_t i;
-    lxcNetworkParseData data = {def, NULL, NULL, NULL, NULL,
-                                NULL, NULL, NULL, NULL, 0,
-                                NULL, NULL, true, 0};
+    size_t i, j;
+    bool privnet = true;
+    lxcNetworkParseArray nets = {NULL, 0};
 
-    if (virConfWalk(properties, lxcNetworkWalkCallback, &data) < 0)
+    if (virConfWalk(properties, lxcNetworkWalkCallback, &nets) < 0)
         goto error;
 
+    for (i = 0; i < nets.nnetworks; i++) {
+        lxcNetworkParseDataPtr data = nets.data[i];
 
-    /* Add the last network definition found */
-    status = lxcAddNetworkDefinition(&data);
+        /* Add network definitions */
+        status = lxcAddNetworkDefinition(def, data);
 
-    if (status < 0)
-        goto error;
-    else if (status > 0)
-        data.networks++;
-    else if (data.type != NULL && STREQ(data.type, "none"))
-        data.privnet = false;
+        if (status < 0)
+            goto error;
+        else if (data->type != NULL && STREQ(data->type, "none"))
+            privnet = false;
+    }
 
-    if (data.networks == 0 && data.privnet) {
+    if (nets.nnetworks == 0 && privnet) {
         /* When no network type is provided LXC only adds loopback */
         def->features[VIR_DOMAIN_FEATURE_PRIVNET] = VIR_TRISTATE_SWITCH_ON;
     }
@@ -752,9 +718,13 @@ lxcConvertNetworkSettings(virDomainDefPtr def, virConfPtr properties)
     return result;
 
  error:
-    for (i = 0; i < data.nips; i++)
-        VIR_FREE(data.ips[i]);
-    VIR_FREE(data.ips);
+    for (i = 0; i < nets.nnetworks; i++) {
+        for (j = 0; i < nets.data[i]->nips; i++)
+            VIR_FREE(nets.data[i]->ips[j]);
+        VIR_FREE(nets.data[i]->ips);
+    }
+    for (i = 0; i < nets.nnetworks; i++)
+        VIR_FREE(nets.data[i]);
     return -1;
 }
 
