@@ -29,6 +29,7 @@ module Libvirtd_libxl =
    let keepalive_interval_entry = int_entry "keepalive_interval"
    let keepalive_count_entry = int_entry "keepalive_count"
    let nested_hvm_entry = bool_entry "nested_hvm"
+   let max_grant_frames_entry = int_entry "max_grant_frames"
 
    (* Each entry in the config is one of the following ... *)
    let entry = autoballoon_entry
@@ -36,6 +37,7 @@ module Libvirtd_libxl =
              | keepalive_interval_entry
              | keepalive_count_entry
              | nested_hvm_entry
+             | max_grant_frames_entry
 
    let comment = [ label "#comment" . del /#[ \t]*/ "# " .  store /([^ \t\n][^\n]*)?/ . del /\n/ "\n" ]
    let empty = [ label "#empty" . eol ]

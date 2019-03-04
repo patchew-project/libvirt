@@ -393,6 +393,12 @@ libxlMakeDomBuildInfo(virDomainDefPtr def,
     def->mem.cur_balloon = VIR_ROUND_UP(def->mem.cur_balloon, 1024);
     b_info->max_memkb = virDomainDefGetMemoryInitial(def);
     b_info->target_memkb = def->mem.cur_balloon;
+
+#ifdef LIBXL_HAVE_BUILDINFO_GRANT_LIMITS
+    if (cfg->max_grant_frames > 0)
+        b_info->max_grant_frames = cfg->max_grant_frames;
+#endif
+
     if (hvm || pvh) {
         if (caps &&
             def->cpu && def->cpu->mode == (VIR_CPU_MODE_HOST_PASSTHROUGH)) {
@@ -1886,6 +1892,9 @@ int libxlDriverConfigLoadFile(libxlDriverConfigPtr cfg,
         goto cleanup;
 
     if (virConfGetValueBool(conf, "nested_hvm", &cfg->nested_hvm) < 0)
+        goto cleanup;
+
+    if (virConfGetValueUInt(conf, "max_grant_frames", &cfg->max_grant_frames) < 0)
         goto cleanup;
 
     ret = 0;

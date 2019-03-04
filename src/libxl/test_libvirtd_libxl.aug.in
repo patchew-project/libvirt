@@ -7,3 +7,4 @@ module Test_libvirtd_libxl =
 { "keepalive_interval" = "5" }
 { "keepalive_count" = "5" }
 { "nested_hvm" = "0" }
+{ "max_grant_frames" = "32" }

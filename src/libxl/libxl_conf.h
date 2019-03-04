@@ -86,6 +86,8 @@ struct _libxlDriverConfig {
 
     bool nested_hvm;
 
+    unsigned int max_grant_frames;
+
     /* Once created, caps are immutable */
     virCapsPtr caps;
 
