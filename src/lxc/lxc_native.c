@@ -423,8 +423,9 @@ lxcCreateHostdevDef(int mode, int type, const char *data)
     return hostdev;
 }
 
-typedef struct {
-    virDomainDefPtr def;
+typedef struct _lxcNetworkParseData lxcNetworkParseData;
+typedef lxcNetworkParseData *lxcNetworkParseDataPtr;
+struct _lxcNetworkParseData {
     char *type;
     char *link;
     char *mac;
@@ -436,9 +437,14 @@ typedef struct {
     size_t nips;
     char *gateway_ipv4;
     char *gateway_ipv6;
-    bool privnet;
-    size_t networks;
-} lxcNetworkParseData;
+    size_t index;
+};
+
+typedef struct {
+    lxcNetworkParseDataPtr *data;
+    size_t nnetworks;
+} lxcNetworkParseArray;
+
 
 static int
 lxcAddNetworkRouteDefinition(const char *address,
