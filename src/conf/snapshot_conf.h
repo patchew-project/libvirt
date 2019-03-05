@@ -36,11 +36,26 @@ typedef enum {
     VIR_DOMAIN_SNAPSHOT_LOCATION_LAST
 } virDomainSnapshotLocation;
 
+/**
+ * This enum has to map all known domain states from the public enum
+ * virDomainState, before adding one additional state possible only
+ * for snapshots.
+ */
 typedef enum {
-    /* Inherit the VIR_DOMAIN_* states from virDomainState.  */
-    VIR_DOMAIN_DISK_SNAPSHOT = VIR_DOMAIN_LAST,
-    VIR_DOMAIN_SNAPSHOT_STATE_LAST
+    /* Mapped to public enum */
+    VIR_SNAP_STATE_NOSTATE = VIR_DOMAIN_NOSTATE,
+    VIR_SNAP_STATE_RUNNING = VIR_DOMAIN_RUNNING,
+    VIR_SNAP_STATE_BLOCKED = VIR_DOMAIN_BLOCKED,
+    VIR_SNAP_STATE_PAUSED = VIR_DOMAIN_PAUSED,
+    VIR_SNAP_STATE_SHUTDOWN = VIR_DOMAIN_SHUTDOWN,
+    VIR_SNAP_STATE_SHUTOFF = VIR_DOMAIN_SHUTOFF,
+    VIR_SNAP_STATE_CRASHED = VIR_DOMAIN_CRASHED,
+    VIR_SNAP_STATE_PMSUSPENDED = VIR_DOMAIN_PMSUSPENDED,
+    /* Additional enum values local to qemu */
+    VIR_SNAP_STATE_DISK_SNAPSHOT,
+    VIR_SNAP_STATE_LAST
 } virDomainSnapshotState;
+verify((int)VIR_SNAP_STATE_DISK_SNAPSHOT == VIR_DOMAIN_LAST);
 
 /* Stores disk-snapshot information */
 typedef struct _virDomainSnapshotDiskDef virDomainSnapshotDiskDef;
