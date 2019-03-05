@@ -226,7 +226,7 @@ networkRunHook(virNetworkObjPtr obj,
             goto cleanup;
         if (virNetworkDefFormatBuf(&buf, def, 0) < 0)
             goto cleanup;
-        if (dom && virDomainDefFormatInternal(dom, NULL, 0, &buf, NULL) < 0)
+        if (dom && virDomainDefFormatInternal(&buf, dom, NULL, 0, NULL) < 0)
             goto cleanup;
 
         virBufferAdjustIndent(&buf, -2);

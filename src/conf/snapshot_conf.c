@@ -715,6 +715,9 @@ virDomainSnapshotDefFormatInternal(virBufferPtr buf,
 {
     size_t i;
     int domainflags = VIR_DOMAIN_DEF_FORMAT_INACTIVE;
+    virDomainDefFormatData data = {
+        .caps = caps,
+    };
 
     if (flags & VIR_DOMAIN_SNAPSHOT_FORMAT_SECURE)
         domainflags |= VIR_DOMAIN_DEF_FORMAT_SECURE;
@@ -759,7 +762,7 @@ virDomainSnapshotDefFormatInternal(virBufferPtr buf,
     }
 
     if (def->dom) {
-        if (virDomainDefFormatInternal(def->dom, caps, domainflags, buf,
+        if (virDomainDefFormatInternal(buf, def->dom, &data, domainflags,
                                        xmlopt) < 0)
             goto error;
     } else if (uuidstr) {

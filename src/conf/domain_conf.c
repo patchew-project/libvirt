@@ -27894,14 +27894,15 @@ virDomainDefFormatFeatures(virBufferPtr buf,
 /* This internal version appends to an existing buffer
  * (possibly with auto-indent), rather than flattening
  * to string.
- * Return -1 on failure.  */
+ * Return -1 on failure, with the buffer reset.  */
 int
-virDomainDefFormatInternal(virDomainDefPtr def,
-                           virCapsPtr caps,
+virDomainDefFormatInternal(virBufferPtr buf,
+                           virDomainDefPtr def,
+                           virDomainDefFormatDataPtr data,
                            unsigned int flags,
-                           virBufferPtr buf,
                            virDomainXMLOptionPtr xmlopt)
 {
+    virCapsPtr caps = data ? data->caps : NULL;
     unsigned char *uuid;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
     const char *type = NULL;
@@ -28436,12 +28437,27 @@ unsigned int virDomainDefFormatConvertXMLFlags(unsigned int flags)
 
 
 char *
-virDomainDefFormat(virDomainDefPtr def, virCapsPtr caps, unsigned int flags)
+virDomainDefFormat(virDomainDefPtr def,
+                   virCapsPtr caps,
+                   unsigned int flags)
+{
+    virDomainDefFormatData data = {
+        .caps = caps,
+    };
+
+    return virDomainDefFormatFull(def, &data, flags);
+}
+
+
+char *
+virDomainDefFormatFull(virDomainDefPtr def,
+                       virDomainDefFormatDataPtr data,
+                       unsigned int flags)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
 
     virCheckFlags(VIR_DOMAIN_DEF_FORMAT_COMMON_FLAGS, NULL);
-    if (virDomainDefFormatInternal(def, caps, flags, &buf, NULL) < 0)
+    if (virDomainDefFormatInternal(&buf, def, data, flags, NULL) < 0)
         return NULL;
 
     return virBufferContentAndReset(&buf);
@@ -28458,6 +28474,9 @@ virDomainObjFormat(virDomainXMLOptionPtr xmlopt,
     int state;
     int reason;
     size_t i;
+    virDomainDefFormatData data = {
+        .caps = caps,
+    };
 
     state = virDomainObjGetState(obj, &reason);
     virBufferAsprintf(&buf, "<domstatus state='%s' reason='%s' pid='%lld'>\n",
@@ -28476,7 +28495,7 @@ virDomainObjFormat(virDomainXMLOptionPtr xmlopt,
         xmlopt->privateData.format(&buf, obj) < 0)
         goto error;
 
-    if (virDomainDefFormatInternal(obj->def, caps, flags, &buf, xmlopt) < 0)
+    if (virDomainDefFormatInternal(&buf, obj->def, &data, flags, xmlopt) < 0)
         goto error;
 
     virBufferAdjustIndent(&buf, -2);

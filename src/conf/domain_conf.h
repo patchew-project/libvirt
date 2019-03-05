@@ -1,7 +1,7 @@
 /*
  * domain_conf.h: domain XML processing
  *
- * Copyright (C) 2006-2016 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  * Copyright (C) 2006-2008 Daniel P. Berrange
  * Copyright (c) 2015 SUSE LINUX Products GmbH, Nuernberg, Germany.
  *
@@ -3194,17 +3194,27 @@ void virDomainIOThreadIDDel(virDomainDefPtr def, unsigned int iothread_id);
      VIR_DOMAIN_XML_MIGRATABLE)
 unsigned int virDomainDefFormatConvertXMLFlags(unsigned int flags);
 
+/* Struct of extra information that may be required while formatting
+ * domains, according to the flags in use. */
+typedef struct _virDomainDefFormatData {
+    virCapsPtr caps;
+} virDomainDefFormatData;
+typedef struct _virDomainDefFormatData *virDomainDefFormatDataPtr;
+
 char *virDomainDefFormat(virDomainDefPtr def,
                          virCapsPtr caps,
                          unsigned int flags);
+char *virDomainDefFormatFull(virDomainDefPtr def,
+                             virDomainDefFormatDataPtr data,
+                             unsigned int flags);
 char *virDomainObjFormat(virDomainXMLOptionPtr xmlopt,
                          virDomainObjPtr obj,
                          virCapsPtr caps,
                          unsigned int flags);
-int virDomainDefFormatInternal(virDomainDefPtr def,
-                               virCapsPtr caps,
+int virDomainDefFormatInternal(virBufferPtr buf,
+                               virDomainDefPtr def,
+                               virDomainDefFormatDataPtr data,
                                unsigned int flags,
-                               virBufferPtr buf,
                                virDomainXMLOptionPtr xmlopt);
 
 int virDomainDiskSourceFormat(virBufferPtr buf,
