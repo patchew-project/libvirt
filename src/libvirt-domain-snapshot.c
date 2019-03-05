@@ -1,7 +1,7 @@
 /*
  * libvirt-domain-snapshot.c: entry points for virDomainSnapshotPtr APIs
  *
- * Copyright (C) 2006-2014 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -102,7 +102,7 @@ virDomainSnapshotGetConnect(virDomainSnapshotPtr snapshot)
  * @flags: bitwise-OR of virDomainSnapshotCreateFlags
  *
  * Creates a new snapshot of a domain based on the snapshot xml
- * contained in xmlDesc.
+ * contained in xmlDesc, with a top-level <domainsnapshot> element.
  *
  * If @flags is 0, the domain can be active, in which case the
  * snapshot will be a full system snapshot (capturing both disk state,
@@ -132,8 +132,17 @@ virDomainSnapshotGetConnect(virDomainSnapshotPtr snapshot)
  * guest-visible layout.  When redefining a snapshot name that does
  * not exist, the hypervisor may validate that reverting to the
  * snapshot appears to be possible (for example, disk images have
- * snapshot contents by the requested name).  Not all hypervisors
- * support these flags.
+ * snapshot contents by the requested name).  Alternatively, if @flags
+ * includes VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE_LIST (which requires
+ * VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE and is incompatible with
+ * VIR_DOMAIN_SNAPSHOT_CREATE_CURRENT), and the domain has no existing
+ * snapshot metadata, then @xmlDesc is parsed as a top-level
+ * <snapshots> element with an optional current='name' attribute, and
+ * containing one or more <domainsnapshot> children (as produced by
+ * virDomainGetXMLDesc() with the flag VIR_DOMAIN_XML_SNAPSHOTS), to
+ * do a bulk redefine of all snapshots at once (it is unspecified
+ * which of the redefined snapshots will be used as the return value
+ * on success).  Not all hypervisors support these flags.
  *
  * If @flags includes VIR_DOMAIN_SNAPSHOT_CREATE_NO_METADATA, then the
  * domain's disk images are modified according to @xmlDesc, but then
@@ -219,12 +228,18 @@ virDomainSnapshotCreateXML(virDomainPtr domain,
     VIR_REQUIRE_FLAG_GOTO(VIR_DOMAIN_SNAPSHOT_CREATE_CURRENT,
                           VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE,
                           error);
+    VIR_REQUIRE_FLAG_GOTO(VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE_LIST,
+                          VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE,
+                          error);
 
     VIR_EXCLUSIVE_FLAGS_GOTO(VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE,
                              VIR_DOMAIN_SNAPSHOT_CREATE_NO_METADATA,
                              error);
     VIR_EXCLUSIVE_FLAGS_GOTO(VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE,
                              VIR_DOMAIN_SNAPSHOT_CREATE_HALT,
+                             error);
+    VIR_EXCLUSIVE_FLAGS_GOTO(VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE_LIST,
+                             VIR_DOMAIN_SNAPSHOT_CREATE_CURRENT,
                              error);
 
     if (conn->driver->domainSnapshotCreateXML) {

@@ -71,6 +71,9 @@ typedef enum {
     VIR_DOMAIN_SNAPSHOT_CREATE_LIVE        = (1 << 8), /* create the snapshot
                                                           while the guest is
                                                           running */
+    VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE_LIST = (1 << 9), /* parse multiple
+                                                            snapshots in one
+                                                            API call */
 } virDomainSnapshotCreateFlags;
 
 /* Take a snapshot of the current VM state */
