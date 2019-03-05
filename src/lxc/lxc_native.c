@@ -603,6 +603,53 @@ lxcNetworkGetParseDataLegacy(lxcNetworkParseArray *networks,
     return networks->data[index-1];
 }
 
+static lxcNetworkParseDataPtr
+lxcNetworkGetParseData(lxcNetworkParseArray *networks,
+                       const char *name)
+{
+    size_t index, nnetworks = networks->nnetworks;
+    size_t i;
+
+    sscanf(name, "lxc.net.%zu", &index);
+
+    if (!nnetworks) {
+        if (VIR_ALLOC_N(networks->data, 1) < 0)
+            return NULL;
+
+        if (VIR_ALLOC(networks->data[0]) < 0)
+            return NULL;
+
+        networks->data[0]->index = index;
+        networks->nnetworks++;
+
+        return networks->data[0];
+    }
+
+    for (i = 0; i < nnetworks; i++) {
+        if (networks->data[i]->index == index)
+            return networks->data[i];
+    }
+
+    /* This is a new element in an existing array. */
+    if (VIR_REALLOC_N(networks->data, nnetworks + 1) < 0)
+        return NULL;
+
+    if (VIR_ALLOC(networks->data[nnetworks]) < 0)
+        return NULL;
+
+    networks->nnetworks++;
+
+    for (i = nnetworks; i > 0; i--) {
+        if (networks->data[i-1]->index < index) {
+            networks->data[i]->index = index;
+            return networks->data[i];
+        }
+        memcpy(networks->data[i], networks->data[i-1], sizeof(lxcNetworkParseData));
+    }
+
+    return NULL;
+}
+
 static int
 lxcNetworkParseDataIPs(const char *name,
                        virConfValuePtr value,
@@ -692,14 +739,25 @@ lxcNetworkParseDataSuffix(const char *entry,
     return 0;
 }
 
+static int
+lxcNetworkParseDataEntryLegacy(const char *name,
+                               virConfValuePtr value,
+                               lxcNetworkParseData *parseData)
+{
+    const char *suffix = STRSKIP(name, "lxc.network.");
+
+    return lxcNetworkParseDataSuffix(suffix, value, parseData);
+}
 
 static int
 lxcNetworkParseDataEntry(const char *name,
                          virConfValuePtr value,
                          lxcNetworkParseDataPtr parseData)
 {
-    const char *suffix = STRSKIP(name, "lxc.network.");
+    const char *suffix = STRSKIP(name, "lxc.net.");
 
+    suffix = strchr(suffix, '.');
+    suffix = STRSKIP(suffix, ".");
     return lxcNetworkParseDataSuffix(suffix, value, parseData);
 }
 
@@ -712,6 +770,11 @@ lxcNetworkWalkCallback(const char *name, virConfValuePtr value, void *data)
 
     if (STRPREFIX(name, "lxc.network.")) {
         if (!(parseData = lxcNetworkGetParseDataLegacy(networks, name)))
+            return -1;
+
+        return lxcNetworkParseDataEntryLegacy(name, value, parseData);
+    } else if (STRPREFIX(name, "lxc.net.")) {
+        if (!(parseData = lxcNetworkGetParseData(networks, name)))
             return -1;
 
         return lxcNetworkParseDataEntry(name, value, parseData);
