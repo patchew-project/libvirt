@@ -144,7 +144,7 @@ vzInitCaps(unsigned long vzVersion, vzCapabilitiesPtr vzCaps)
         vzCaps->vmDiskFormat = VIR_STORAGE_FILE_QCOW2;
         vzCaps->diskBuses = vz7DiskBuses;
         vzCaps->controllerTypes = vz7ControllerTypes;
-        vzCaps->scsiControllerModel = VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI;
+        vzCaps->scsiControllerModel = VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO;
     }
 }
 
@@ -471,7 +471,7 @@ int vzGetDefaultSCSIModel(vzDriverPtr driver,
                           PRL_CLUSTERED_DEVICE_SUBTYPE *scsiModel)
 {
     switch ((int)driver->vzCaps.scsiControllerModel) {
-    case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
+    case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO:
         *scsiModel = PCD_VIRTIO_SCSI;
         break;
     case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_BUSLOGIC:

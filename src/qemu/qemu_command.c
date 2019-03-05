@@ -2999,7 +2999,7 @@ qemuBuildControllerDevStr(const virDomainDef *domainDef,
     switch ((virDomainControllerType)def->type) {
     case VIR_DOMAIN_CONTROLLER_TYPE_SCSI:
         switch ((virDomainControllerModelSCSI) def->model) {
-        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO:
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_TRANSITIONAL:
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_NON_TRANSITIONAL:
             if (qemuBuildVirtioDevStr(&buf, "virtio-scsi", qemuCaps,

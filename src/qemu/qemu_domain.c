@@ -5087,7 +5087,7 @@ static int
 qemuDomainDeviceDefValidateControllerAttributes(const virDomainControllerDef *controller)
 {
     if (!(controller->type == VIR_DOMAIN_CONTROLLER_TYPE_SCSI &&
-          (controller->model == VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI ||
+          (controller->model == VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO ||
            controller->model == VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_TRANSITIONAL ||
            controller->model == VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_NON_TRANSITIONAL))) {
         if (controller->queues) {
@@ -5142,7 +5142,7 @@ qemuDomainCheckSCSIControllerModel(virQEMUCapsPtr qemuCaps,
             return false;
         }
         break;
-    case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
+    case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO:
     case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_TRANSITIONAL:
     case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_NON_TRANSITIONAL:
         if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_SCSI)) {
@@ -5259,7 +5259,7 @@ qemuDomainDeviceDefValidateControllerSCSI(const virDomainControllerDef *controll
                                           const virDomainDef *def)
 {
     switch ((virDomainControllerModelSCSI) controller->model) {
-        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
+        case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO:
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_TRANSITIONAL:
         case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_NON_TRANSITIONAL:
             if (!qemuDomainCheckSCSIControllerIOThreads(controller, def))

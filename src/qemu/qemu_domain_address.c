@@ -58,11 +58,11 @@ qemuDomainGetSCSIControllerModel(const virDomainDef *def,
     if (qemuDomainIsPSeries(def))
         return VIR_DOMAIN_CONTROLLER_MODEL_SCSI_IBMVSCSI;
     else if (ARCH_IS_S390(def->os.arch))
-        return VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI;
+        return VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO;
     else if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SCSI_LSI))
         return VIR_DOMAIN_CONTROLLER_MODEL_SCSI_LSILOGIC;
     else if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_SCSI))
-        return VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI;
+        return VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO;
 
     virReportError(VIR_ERR_INTERNAL_ERROR,
                    _("Unable to determine model for SCSI controller idx=%d"),
@@ -647,7 +647,7 @@ qemuDomainDeviceCalculatePCIConnectFlags(virDomainDeviceDefPtr dev,
             case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_DEFAULT:
                 return 0;
 
-            case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI:
+            case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO:
             case VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_NON_TRANSITIONAL:
                 return virtioFlags;
 

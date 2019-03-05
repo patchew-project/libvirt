@@ -4938,7 +4938,7 @@ static int
 virDomainControllerDefPostParse(virDomainControllerDefPtr cdev)
 {
     if (cdev->iothread &&
-        cdev->model != VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI &&
+        cdev->model != VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO &&
         cdev->model != VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_TRANSITIONAL &&
         cdev->model != VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_NON_TRANSITIONAL) {
         virReportError(VIR_ERR_XML_ERROR, "%s",

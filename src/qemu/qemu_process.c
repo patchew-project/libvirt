@@ -5193,7 +5193,7 @@ qemuProcessStartValidateIOThreads(virDomainObjPtr vm,
         virDomainControllerDefPtr cont = vm->def->controllers[i];
 
         if (cont->type == VIR_DOMAIN_CONTROLLER_TYPE_SCSI &&
-            cont->model == VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO_SCSI &&
+            cont->model == VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO &&
             cont->iothread > 0 &&
             !virQEMUCapsGet(qemuCaps, QEMU_CAPS_VIRTIO_SCSI_IOTHREAD)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
