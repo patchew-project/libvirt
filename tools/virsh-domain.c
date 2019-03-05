@@ -10055,6 +10055,10 @@ static const vshCmdOptDef opts_dumpxml[] = {
      .type = VSH_OT_BOOL,
      .help = N_("provide XML suitable for migrations")
     },
+    {.name = "snapshots",
+     .type = VSH_OT_BOOL,
+     .help = N_("include all domain snapshots in XML dump"),
+    },
     {.name = NULL}
 };
 
@@ -10069,6 +10073,7 @@ cmdDumpXML(vshControl *ctl, const vshCmd *cmd)
     bool secure = vshCommandOptBool(cmd, "security-info");
     bool update = vshCommandOptBool(cmd, "update-cpu");
     bool migratable = vshCommandOptBool(cmd, "migratable");
+    bool snapshots = vshCommandOptBool(cmd, "snapshots");
 
     if (inactive)
         flags |= VIR_DOMAIN_XML_INACTIVE;
@@ -10078,6 +10083,8 @@ cmdDumpXML(vshControl *ctl, const vshCmd *cmd)
         flags |= VIR_DOMAIN_XML_UPDATE_CPU;
     if (migratable)
         flags |= VIR_DOMAIN_XML_MIGRATABLE;
+    if (snapshots)
+        flags |= VIR_DOMAIN_XML_SNAPSHOTS;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;

@@ -80,6 +80,13 @@ virshSnapshotCreate(vshControl *ctl, virDomainPtr dom, const char *buffer,
         goto cleanup;
     }
 
+    if (flags & VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE_LIST) {
+        vshPrintExtra(ctl, "%s",
+                      _("Domain snapshot list imported successfully"));
+        ret = true;
+        goto cleanup;
+    }
+
     name = virDomainSnapshotGetName(snapshot);
     if (!name) {
         vshError(ctl, "%s", _("Could not get snapshot name"));
@@ -122,6 +129,10 @@ static const vshCmdOptDef opts_snapshot_create[] = {
      .help = N_("redefine metadata for existing snapshot")
     },
     VIRSH_COMMON_OPT_CURRENT(N_("with redefine, set current snapshot")),
+    {.name = "redefine-list",
+     .type = VSH_OT_BOOL,
+     .help = N_("bulk define a set of snapshots, implies --redefine"),
+    },
     {.name = "no-metadata",
      .type = VSH_OT_BOOL,
      .help = N_("take snapshot but create no metadata")
@@ -177,6 +188,9 @@ cmdSnapshotCreate(vshControl *ctl, const vshCmd *cmd)
         flags |= VIR_DOMAIN_SNAPSHOT_CREATE_ATOMIC;
     if (vshCommandOptBool(cmd, "live"))
         flags |= VIR_DOMAIN_SNAPSHOT_CREATE_LIVE;
+    if (vshCommandOptBool(cmd, "redefine-list"))
+        flags |= VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE |
+            VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE_LIST;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         goto cleanup;
