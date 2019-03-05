@@ -10320,16 +10320,20 @@ static int
 virDomainControllerModelTypeFromString(const virDomainControllerDef *def,
                                        const char *model)
 {
-    if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_SCSI)
-        return virDomainControllerModelSCSITypeFromString(model);
-    else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_USB)
+    if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_SCSI) {
+        if (STREQ_NULLABLE(model, "virtio"))
+            return VIR_DOMAIN_CONTROLLER_MODEL_SCSI_VIRTIO;
+        else
+            return virDomainControllerModelSCSITypeFromString(model);
+    } else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_USB) {
         return virDomainControllerModelUSBTypeFromString(model);
-    else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI)
+    } else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_PCI) {
         return virDomainControllerModelPCITypeFromString(model);
-    else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_IDE)
+    } else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_IDE) {
         return virDomainControllerModelIDETypeFromString(model);
-    else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL)
+    } else if (def->type == VIR_DOMAIN_CONTROLLER_TYPE_VIRTIO_SERIAL) {
         return virDomainControllerModelVirtioSerialTypeFromString(model);
+    }
 
     return -1;
 }

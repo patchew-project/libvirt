@@ -47,7 +47,7 @@
     <controller type='scsi' index='2' model='virtio-scsi'>
       <driver cmd_per_lun='50'/>
     </controller>
-    <controller type='scsi' index='3' model='virtio-scsi'>
+    <controller type='scsi' index='3' model='virtio'>
       <driver max_sectors='512'/>
     </controller>
     <controller type='scsi' index='4' model='virtio-scsi'>
