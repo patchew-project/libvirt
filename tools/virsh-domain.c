@@ -11939,7 +11939,7 @@ static const vshCmdInfo info_detach_device_alias[] = {
 };
 
 static const vshCmdOptDef opts_detach_device_alias[] = {
-    VIRSH_COMMON_OPT_DOMAIN_FULL(0),
+    VIRSH_COMMON_OPT_DOMAIN_FULL(VIR_CONNECT_LIST_DOMAINS_ACTIVE),
     {.name = "alias",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
