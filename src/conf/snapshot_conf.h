@@ -1,7 +1,7 @@
 /*
  * snapshot_conf.h: domain snapshot XML processing
  *
- * Copyright (C) 2006-2014 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  * Copyright (C) 2006-2008 Daniel P. Berrange
  *
  * This library is free software; you can redistribute it and/or
@@ -138,6 +138,13 @@ char *virDomainSnapshotDefFormat(const char *uuidstr,
                                  virCapsPtr caps,
                                  virDomainXMLOptionPtr xmlopt,
                                  unsigned int flags);
+int virDomainSnapshotObjListFormat(virBufferPtr buf,
+                                   const char *uuidstr,
+                                   virDomainSnapshotObjListPtr snapshots,
+                                   virDomainSnapshotObjPtr current_snapshot,
+                                   virCapsPtr caps,
+                                   virDomainXMLOptionPtr xmlopt,
+                                   unsigned int flags);
 int virDomainSnapshotAlignDisks(virDomainSnapshotDefPtr snapshot,
                                 int default_snapshot,
                                 bool require_match);
