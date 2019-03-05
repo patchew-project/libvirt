@@ -2627,8 +2627,11 @@ static char *testDomainGetXMLDesc(virDomainPtr domain, unsigned int flags)
     virDomainDefPtr def;
     virDomainObjPtr privdom;
     char *ret = NULL;
+    virDomainDefFormatData data = {
+        .caps = privconn->caps,
+    };
 
-    virCheckFlags(VIR_DOMAIN_XML_COMMON_FLAGS, NULL);
+    virCheckFlags(VIR_DOMAIN_XML_COMMON_FLAGS | VIR_DOMAIN_XML_SNAPSHOTS, NULL);
 
     if (!(privdom = testDomObjFromDomain(domain)))
         return NULL;
@@ -2636,8 +2639,10 @@ static char *testDomainGetXMLDesc(virDomainPtr domain, unsigned int flags)
     def = (flags & VIR_DOMAIN_XML_INACTIVE) &&
         privdom->newDef ? privdom->newDef : privdom->def;
 
-    ret = virDomainDefFormat(def, privconn->caps,
-                             virDomainDefFormatConvertXMLFlags(flags));
+    data.snapshots = privdom->snapshots;
+    data.current_snapshot = privdom->current_snapshot;
+    ret = virDomainDefFormatFull(def, &data,
+                                 virDomainDefFormatConvertXMLFlags(flags));
 
     virDomainObjEndAPI(&privdom);
     return ret;
@@ -6314,6 +6319,7 @@ testDomainSnapshotCreateXML(virDomainPtr domain,
      * QUIESCE: Nothing to do
      * ATOMIC: Nothing to do
      * LIVE: Nothing to do
+     * REDEFINE_LIST: Implemented
      */
     virCheckFlags(
         VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE |
@@ -6321,7 +6327,8 @@ testDomainSnapshotCreateXML(virDomainPtr domain,
         VIR_DOMAIN_SNAPSHOT_CREATE_HALT |
         VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE |
         VIR_DOMAIN_SNAPSHOT_CREATE_ATOMIC |
-        VIR_DOMAIN_SNAPSHOT_CREATE_LIVE, NULL);
+        VIR_DOMAIN_SNAPSHOT_CREATE_LIVE |
+        VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE_LIST, NULL);
 
     if ((redefine && !(flags & VIR_DOMAIN_SNAPSHOT_CREATE_CURRENT)))
         update_current = false;
@@ -6334,6 +6341,18 @@ testDomainSnapshotCreateXML(virDomainPtr domain,
     if (!vm->persistent && (flags & VIR_DOMAIN_SNAPSHOT_CREATE_HALT)) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("cannot halt after transient domain snapshot"));
+        goto cleanup;
+    }
+
+    if (flags & VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE_LIST) {
+        if (virDomainSnapshotObjListParse(xmlDesc, vm->def->uuid, vm->snapshots,
+                                          &vm->current_snapshot, privconn->caps,
+                                          privconn->xmlopt, parse_flags) < 0)
+            goto cleanup;
+
+        /* Return is arbitrary, so use the first root */
+        snap = virDomainSnapshotFindByName(vm->snapshots, NULL);
+        snapshot = virGetDomainSnapshot(domain, snap->first_child->def->name);
         goto cleanup;
     }
 
@@ -6384,7 +6403,7 @@ testDomainSnapshotCreateXML(virDomainPtr domain,
     snapshot = virGetDomainSnapshot(domain, snap->def->name);
  cleanup:
     if (vm) {
-        if (snapshot) {
+        if (snapshot && !(flags & VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE_LIST)) {
             virDomainSnapshotObjPtr other;
             if (update_current)
                 vm->current_snapshot = snap;
