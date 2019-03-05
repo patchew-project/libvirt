@@ -1773,6 +1773,26 @@ x86ModelHasSignature(virCPUx86ModelPtr model,
 }
 
 
+static char *
+x86FormatSignatures(virCPUx86ModelPtr model)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+    size_t i;
+
+    for (i = 0; i < model->nsignatures; i++) {
+        virBufferAsprintf(&buf, "%06lx,",
+                          (unsigned long)model->signatures[i]);
+    }
+
+    virBufferTrim(&buf, ",", -1);
+
+    if (virBufferCheckError(&buf) < 0)
+        return NULL;
+
+    return virBufferContentAndReset(&buf);
+}
+
+
 /*
  * Checks whether a candidate model is a better fit for the CPU data than the
  * current model.
@@ -1896,6 +1916,7 @@ x86Decode(virCPUDefPtr cpu,
     virCPUx86Data features = VIR_CPU_X86_DATA_INIT;
     virCPUx86VendorPtr vendor;
     virDomainCapsCPUModelPtr hvModel = NULL;
+    char *sigs = NULL;
     uint32_t signature;
     ssize_t i;
     int rc;
@@ -1988,6 +2009,11 @@ x86Decode(virCPUDefPtr cpu,
     if (vendor && VIR_STRDUP(cpu->vendor, vendor->name) < 0)
         goto cleanup;
 
+    sigs = x86FormatSignatures(model);
+
+    VIR_DEBUG("Using CPU model %s (signatures %s) for CPU with signature %06lx",
+              model->name, NULLSTR(sigs), (unsigned long)signature);
+
     VIR_STEAL_PTR(cpu->model, cpuModel->model);
     VIR_STEAL_PTR(cpu->features, cpuModel->features);
     cpu->nfeatures = cpuModel->nfeatures;
@@ -2002,6 +2028,7 @@ x86Decode(virCPUDefPtr cpu,
     virCPUx86DataClear(&data);
     virCPUx86DataClear(&copy);
     virCPUx86DataClear(&features);
+    VIR_FREE(sigs);
     return ret;
 }
 
