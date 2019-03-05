@@ -3120,6 +3120,7 @@ typedef enum {
     VIR_DOMAIN_DEF_FORMAT_ALLOW_ROM       = 1 << 6,
     VIR_DOMAIN_DEF_FORMAT_ALLOW_BOOT      = 1 << 7,
     VIR_DOMAIN_DEF_FORMAT_CLOCK_ADJUST    = 1 << 8,
+    VIR_DOMAIN_DEF_FORMAT_SNAPSHOTS       = 1 << 9,
 } virDomainDefFormatFlags;
 
 /* Use these flags to skip specific domain ABI consistency checks done
@@ -3198,6 +3199,8 @@ unsigned int virDomainDefFormatConvertXMLFlags(unsigned int flags);
  * domains, according to the flags in use. */
 typedef struct _virDomainDefFormatData {
     virCapsPtr caps;
+    virDomainSnapshotObjListPtr snapshots;
+    virDomainSnapshotObjPtr current_snapshot;
 } virDomainDefFormatData;
 typedef struct _virDomainDefFormatData *virDomainDefFormatDataPtr;
 
