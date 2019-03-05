@@ -7717,6 +7717,7 @@ qemuDomainDefCopy(virQEMUDriverPtr driver,
 
 static int
 qemuDomainDefFormatBufInternal(virQEMUDriverPtr driver,
+                               virDomainObjPtr vm,
                                virDomainDefPtr def,
                                virCPUDefPtr origCPU,
                                unsigned int flags,
@@ -7726,8 +7727,10 @@ qemuDomainDefFormatBufInternal(virQEMUDriverPtr driver,
     virDomainDefPtr copy = NULL;
     virQEMUCapsPtr qemuCaps = NULL;
     virDomainDefFormatData data = { 0 };
+    bool snapshots = flags & VIR_DOMAIN_XML_SNAPSHOTS;
 
-    virCheckFlags(VIR_DOMAIN_XML_COMMON_FLAGS | VIR_DOMAIN_XML_UPDATE_CPU, -1);
+    virCheckFlags(VIR_DOMAIN_XML_COMMON_FLAGS | VIR_DOMAIN_XML_UPDATE_CPU |
+                  VIR_DOMAIN_XML_SNAPSHOTS, -1);
 
     if (!(data.caps = virQEMUDriverGetCapabilities(driver, false)))
         goto cleanup;
@@ -7894,6 +7897,15 @@ qemuDomainDefFormatBufInternal(virQEMUDriverPtr driver,
     }
 
  format:
+    if (snapshots) {
+        if (!vm) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("snapshots XML requested but not provided"));
+            goto cleanup;
+        }
+        data.snapshots = vm->snapshots;
+        data.current_snapshot = vm->current_snapshot;
+    }
     ret = virDomainDefFormatInternal(buf, def, &data,
                                      virDomainDefFormatConvertXMLFlags(flags),
                                      driver->xmlopt);
@@ -7912,19 +7924,21 @@ qemuDomainDefFormatBuf(virQEMUDriverPtr driver,
                        unsigned int flags,
                        virBufferPtr buf)
 {
-    return qemuDomainDefFormatBufInternal(driver, def, NULL, flags, buf);
+    return qemuDomainDefFormatBufInternal(driver, NULL, def, NULL, flags, buf);
 }
 
 
 static char *
 qemuDomainDefFormatXMLInternal(virQEMUDriverPtr driver,
+                               virDomainObjPtr vm,
                                virDomainDefPtr def,
                                virCPUDefPtr origCPU,
                                unsigned int flags)
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
 
-    if (qemuDomainDefFormatBufInternal(driver, def, origCPU, flags, &buf) < 0)
+    if (qemuDomainDefFormatBufInternal(driver, vm, def, origCPU, flags,
+                                       &buf) < 0)
         return NULL;
 
     return virBufferContentAndReset(&buf);
@@ -7936,7 +7950,7 @@ qemuDomainDefFormatXML(virQEMUDriverPtr driver,
                        virDomainDefPtr def,
                        unsigned int flags)
 {
-    return qemuDomainDefFormatXMLInternal(driver, def, NULL, flags);
+    return qemuDomainDefFormatXMLInternal(driver, NULL, def, NULL, flags);
 }
 
 
@@ -7955,7 +7969,7 @@ char *qemuDomainFormatXML(virQEMUDriverPtr driver,
         origCPU = priv->origCPU;
     }
 
-    return qemuDomainDefFormatXMLInternal(driver, def, origCPU, flags);
+    return qemuDomainDefFormatXMLInternal(driver, vm, def, origCPU, flags);
 }
 
 char *
@@ -7972,7 +7986,7 @@ qemuDomainDefFormatLive(virQEMUDriverPtr driver,
     if (compatible)
         flags |= VIR_DOMAIN_XML_MIGRATABLE;
 
-    return qemuDomainDefFormatXMLInternal(driver, def, origCPU, flags);
+    return qemuDomainDefFormatXMLInternal(driver, NULL, def, origCPU, flags);
 }
 
 
