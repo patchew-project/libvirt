@@ -28432,11 +28432,12 @@ virDomainDefFormatInternal(virBufferPtr buf,
     return -1;
 }
 
-/* Converts VIR_DOMAIN_XML_COMMON_FLAGS into VIR_DOMAIN_DEF_FORMAT_*
- * flags, and silently ignores any other flags.  Note that the caller
- * should validate the set of flags it is willing to accept; see also
- * the comment on VIR_DOMAIN_XML_COMMON_FLAGS about security
- * considerations with adding new flags. */
+/* Converts VIR_DOMAIN_XML_COMMON_FLAGS and VIR_DOMAIN_XML_SNAPSHOTS
+ * into VIR_DOMAIN_DEF_FORMAT_* flags, and silently ignores any other
+ * flags.  Note that the caller should validate the set of flags it is
+ * willing to accept; see also the comment on
+ * VIR_DOMAIN_XML_COMMON_FLAGS about security considerations with
+ * adding new flags. */
 unsigned int virDomainDefFormatConvertXMLFlags(unsigned int flags)
 {
     unsigned int formatFlags = 0;
@@ -28447,6 +28448,8 @@ unsigned int virDomainDefFormatConvertXMLFlags(unsigned int flags)
         formatFlags |= VIR_DOMAIN_DEF_FORMAT_INACTIVE;
     if (flags & VIR_DOMAIN_XML_MIGRATABLE)
         formatFlags |= VIR_DOMAIN_DEF_FORMAT_MIGRATABLE;
+    if (flags & VIR_DOMAIN_XML_SNAPSHOTS)
+        formatFlags |= VIR_DOMAIN_DEF_FORMAT_SNAPSHOTS;
 
     return formatFlags;
 }

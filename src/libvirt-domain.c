@@ -1,7 +1,7 @@
 /*
  * libvirt-domain.c: entry points for virDomainPtr APIs
  *
- * Copyright (C) 2006-2015 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2569,6 +2569,12 @@ virDomainGetControlInfo(virDomainPtr domain,
  * this flag is rejected on read-only connections, and the resulting
  * XML might not validate against the schema, so it is mainly for
  * internal use.
+ *
+ * If @flags contains VIR_DOMAIN_XML_SNAPSHOTS, the XML will include
+ * an additional <snapshots> child element describing all snapshots
+ * belonging to the domain, including an attribute current='name' if
+ * one of those snapshots is current. Note that some older servers
+ * silently ignore this flag instead of diagnosing it as unsupported.
  *
  * Returns a 0 terminated UTF-8 encoded XML instance, or NULL in case of error.
  *         the caller must free() the returned value.
