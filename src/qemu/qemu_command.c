@@ -10658,6 +10658,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
     cmd = virCommandNew(def->emulator);
 
     virCommandAddEnvPassCommon(cmd);
+    virCommandAddEnvXDG(cmd, priv->libDir);
 
     if (qemuBuildNameCommandLine(cmd, cfg, def, qemuCaps) < 0)
         goto error;

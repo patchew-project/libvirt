@@ -1620,6 +1620,7 @@ virCommandAddEnvPassAllowSUID;
 virCommandAddEnvPassBlockSUID;
 virCommandAddEnvPassCommon;
 virCommandAddEnvString;
+virCommandAddEnvXDG;
 virCommandAllowCap;
 virCommandClearCaps;
 virCommandDaemonize;
