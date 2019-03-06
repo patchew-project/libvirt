@@ -39,8 +39,10 @@
 
 #define ISCSI_DEFAULT_TARGET_PORT 3260
 #define VIR_ISCSI_TEST_UNIT_TIMEOUT 30 * 1000
-#define BLOCK_PER_PACKET 128
 #define VOL_NAME_PREFIX "unit:0:0:"
+
+/* Empirically tested to be the highest value to work without any error. */
+#define WIPE_BLOCKS_AT_ONCE 4096
 
 VIR_LOG_INIT("storage.storage_backend_iscsi_direct");
 
@@ -624,6 +626,7 @@ virStorageBackendISCSIDirectVolWipeZero(virStorageVolDefPtr vol,
     uint64_t lba = 0;
     uint32_t block_size;
     uint64_t nb_block;
+    uint64_t wipe_at_once = WIPE_BLOCKS_AT_ONCE;
     struct scsi_task *task = NULL;
     int lun = 0;
     int ret = -1;
@@ -635,25 +638,49 @@ virStorageBackendISCSIDirectVolWipeZero(virStorageVolDefPtr vol,
         return ret;
     if (virISCSIDirectGetVolumeCapacity(iscsi, lun, &block_size, &nb_block))
         return ret;
-    if (VIR_ALLOC_N(data, block_size * BLOCK_PER_PACKET))
+    if (VIR_ALLOC_N(data, block_size))
         return ret;
 
-    while (lba < nb_block) {
-        if (nb_block - lba > block_size * BLOCK_PER_PACKET) {
+    VIR_DEBUG("Starting zeroing of lun=%d block_size=%ju nb_block=%ju wipe_at_once=%ju",
+              lun, (uintmax_t) block_size, (uintmax_t) nb_block, (uintmax_t) wipe_at_once);
 
-            if (!(task = iscsi_write16_sync(iscsi, lun, lba, data,
-                                            block_size * BLOCK_PER_PACKET,
-                                            block_size, 0, 0, 0, 0, 0)))
-                return -1;
-            scsi_free_scsi_task(task);
-            lba += BLOCK_PER_PACKET;
-        } else {
-            if (!(task = iscsi_write16_sync(iscsi, lun, lba, data, block_size,
-                                        block_size, 0, 0, 0, 0, 0)))
-                return -1;
-            scsi_free_scsi_task(task);
-            lba++;
+    while (lba < nb_block) {
+        const uint64_t to_write = MIN(nb_block - lba + 1, wipe_at_once);
+        bool fail = false;
+
+        if (!(task = iscsi_writesame16_sync(iscsi, lun, lba,
+                                            data, block_size,
+                                            to_write,
+                                            0, 0, 0, 0)))
+            fail = true;
+
+        if (task &&
+            task->status == SCSI_STATUS_CHECK_CONDITION &&
+            task->sense.key == SCSI_SENSE_ILLEGAL_REQUEST &&
+            task->sense.ascq == SCSI_SENSE_ASCQ_INVALID_FIELD_IN_CDB) {
+            /* This means that we tried to write too much blocks at once.
+             * Halve it (if it's not small enough already) and retry. */
+            if (wipe_at_once > 1) {
+                wipe_at_once /= 2;
+                VIR_DEBUG("Halving wipe_at_once to %ju", (uintmax_t) wipe_at_once);
+                scsi_free_scsi_task(task);
+                continue;
+            }
+
+            fail = true;
         }
+
+        if (fail) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("failed to run writesame: %s"),
+                           iscsi_get_error(iscsi));
+            scsi_free_scsi_task(task);
+            return -1;
+        }
+
+        scsi_free_scsi_task(task);
+
+        lba += to_write;
     }
 
     return 0;
