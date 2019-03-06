@@ -10638,6 +10638,8 @@ qemuCommandEnvSetup(virCommandPtr cmd,
 
     virCommandAddEnvPassCommon(cmd);
 
+    /* override HOME for QEMU processes */
+    virCommandAddEnvPair(cmd, "HOME", baseDir);
     virCommandAddEnvXDG(cmd, baseDir);
 }
 
