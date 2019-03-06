@@ -10620,6 +10620,28 @@ qemuBuildVsockCommandLine(virCommandPtr cmd,
 }
 
 
+/**
+ * qemuCommandEnvSetup:
+ * @cmd: command to modify
+ * @baseDir: absolute path to a dir which HOME and XDG vars will be based on
+ *
+ * Defines the basic set of environment variables for a QEMU process, e.g.
+ * HOME, PATH, XDG_, etc. To isolate individual QEMU processes, HOME and XDG_
+ * variables are derived from @baseDir. Therefore, @baseDir must not be NULL.
+ */
+void
+qemuCommandEnvSetup(virCommandPtr cmd,
+                    const char *baseDir)
+{
+    if (!baseDir)
+        return;
+
+    virCommandAddEnvPassCommon(cmd);
+
+    virCommandAddEnvXDG(cmd, baseDir);
+}
+
+
 /*
  * Constructs a argv suitable for launching qemu with config defined
  * for a given virtual machine.
@@ -10657,8 +10679,7 @@ qemuBuildCommandLine(virQEMUDriverPtr driver,
 
     cmd = virCommandNew(def->emulator);
 
-    virCommandAddEnvPassCommon(cmd);
-    virCommandAddEnvXDG(cmd, priv->libDir);
+    qemuCommandEnvSetup(cmd, priv->libDir);
 
     if (qemuBuildNameCommandLine(cmd, cfg, def, qemuCaps) < 0)
         goto error;

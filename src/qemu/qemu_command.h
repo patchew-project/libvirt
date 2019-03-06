@@ -227,4 +227,7 @@ qemuBuildTPMOpenBackendFDs(const char *tpmdev,
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3)
     ATTRIBUTE_NONNULL(4);
 
+void
+qemuCommandEnvSetup(virCommandPtr cmd, const char *baseDir);
+
 #endif /* LIBVIRT_QEMU_COMMAND_H */
