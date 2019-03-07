@@ -1300,7 +1300,7 @@ virStringMatchesNameSuffix(const char *file,
     if (STRNEQLEN(file, name, namelen))
         return false;
 
-    if (STRNEQLEN(file + namelen, suffix, suffixlen))
+    if (STRNEQ(file + namelen, suffix))
         return false;
 
     return true;
