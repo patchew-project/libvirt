@@ -1245,7 +1245,10 @@ virStringHasSuffix(const char *str,
     if (len < suffixlen)
         return false;
 
-    return STREQ(str + len - suffixlen, suffix);
+    if (STRNEQ(str + len - suffixlen, suffix))
+        return false;
+
+    return true;
 }
 
 bool
