@@ -8516,8 +8516,7 @@ virSecurityLabelDefsParseXML(virDomainDefPtr def,
     virCapsHostPtr host = &caps->host;
     VIR_AUTOFREE(xmlNodePtr *) list = NULL;
 
-    /* Check args and save context */
-    if (def == NULL || ctxt == NULL)
+    if (def == NULL)
         return 0;
 
     /* Allocate a security labels based on XML */
