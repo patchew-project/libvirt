@@ -1294,12 +1294,16 @@ virStringMatchesNameSuffix(const char *file,
     int namelen = strlen(name);
     int suffixlen = strlen(suffix);
 
-    if (filelen == (namelen + suffixlen) &&
-        STREQLEN(file, name, namelen) &&
-        STREQLEN(file + namelen, suffix, suffixlen))
-        return true;
-    else
+    if (filelen != (namelen + suffixlen))
         return false;
+
+    if (STRNEQLEN(file, name, namelen))
+        return false;
+
+    if (STRNEQLEN(file + namelen, suffix, suffixlen))
+        return false;
+
+    return true;
 }
 
 /**
