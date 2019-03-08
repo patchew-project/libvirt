@@ -1272,7 +1272,9 @@ virshSnapshotListCollect(vshControl *ctl, virDomainPtr dom,
          * still in list.  We mark known descendants by clearing
          * snaps[i].parents.  Sorry, this is O(n^3) - hope your
          * hierarchy isn't huge.  XXX Is it worth making O(n^2 log n)
-         * by using qsort and bsearch?  */
+         * by using qsort and bsearch?  Or even a linear topological
+         * sort such as Kahn's algorithm?  Should we emulate
+         * --topological for older libvirt that lacked the flag? */
         if (start_index < 0) {
             vshError(ctl, _("snapshot %s disappeared from list"), fromname);
             goto cleanup;
@@ -1351,8 +1353,9 @@ virshSnapshotListCollect(vshControl *ctl, virDomainPtr dom,
             }
         }
     }
-    qsort(snaplist->snaps, snaplist->nsnaps, sizeof(*snaplist->snaps),
-          virshSnapSorter);
+    if (!(orig_flags & VIR_DOMAIN_SNAPSHOT_LIST_TOPOLOGICAL))
+        qsort(snaplist->snaps, snaplist->nsnaps, sizeof(*snaplist->snaps),
+              virshSnapSorter);
     snaplist->nsnaps -= deleted;
 
     VIR_STEAL_PTR(ret, snaplist);
@@ -1451,6 +1454,10 @@ static const vshCmdOptDef opts_snapshot_list[] = {
      .type = VSH_OT_BOOL,
      .help = N_("list snapshot names only")
     },
+    {.name = "topological",
+     .type = VSH_OT_BOOL,
+     .help = N_("sort list topologically rather than by name"),
+    },
 
     {.name = NULL}
 };
@@ -1511,6 +1518,9 @@ cmdSnapshotList(vshControl *ctl, const vshCmd *cmd)
     FILTER("internal", INTERNAL);
     FILTER("external", EXTERNAL);
 #undef FILTER
+
+    if (vshCommandOptBool(cmd, "topological"))
+        flags |= VIR_DOMAIN_SNAPSHOT_LIST_TOPOLOGICAL;
 
     if (roots)
         flags |= VIR_DOMAIN_SNAPSHOT_LIST_ROOTS;
