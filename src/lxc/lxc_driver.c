@@ -2876,6 +2876,77 @@ lxcDomainGetBlkioParameters(virDomainPtr dom,
     return ret;
 }
 
+static int
+lxcDomainGetBalloonStats(virDomainObjPtr dom,
+                         virDomainStatsRecordPtr record,
+                         int *maxparams)
+{
+    virLXCDomainObjPrivatePtr priv = dom->privateData;
+    virDomainMemoryStatStruct stats[VIR_DOMAIN_MEMORY_STAT_NR];
+    unsigned long long swap_usage;
+    unsigned long mem_usage;
+    size_t i;
+    int ret = -1;
+
+    if (virTypedParamsAddULLong(&record->params,
+                                &record->nparams,
+                                maxparams,
+                                "balloon.maximum",
+                                virDomainDefGetMemoryTotal(dom->def)) < 0)
+        return -1;
+
+    if (virTypedParamsAddULLong(&record->params,
+                                &record->nparams,
+                                maxparams,
+                                "balloon.current",
+                                virDomainDefGetMemoryTotal(dom->def)) < 0)
+        return -1;
+
+    if (virCgroupGetMemSwapUsage(priv->cgroup, &swap_usage) < 0)
+        return -1;
+
+    if (virCgroupGetMemoryUsage(priv->cgroup, &mem_usage) < 0)
+        return -1;
+
+    ret = 0;
+    if (ret < *maxparams) {
+        stats[ret].tag = VIR_DOMAIN_MEMORY_STAT_ACTUAL_BALLOON;
+        stats[ret].val = dom->def->mem.cur_balloon;
+        ret++;
+    }
+    if (ret < *maxparams) {
+        stats[ret].tag = VIR_DOMAIN_MEMORY_STAT_SWAP_IN;
+        stats[ret].val = swap_usage;
+        ret++;
+    }
+    if (ret < *maxparams) {
+        stats[ret].tag = VIR_DOMAIN_MEMORY_STAT_RSS;
+        stats[ret].val = mem_usage;
+        ret++;
+    }
+
+#define LXC_STORE_MEM_RECORD(TAG, NAME) \
+    if (stats[i].tag == VIR_DOMAIN_MEMORY_STAT_ ##TAG) \
+        if (virTypedParamsAddULLong(&record->params, \
+                                    &record->nparams, \
+                                    maxparams, \
+                                    "balloon." NAME, \
+                                    stats[i].val) < 0) \
+            return -1;
+
+    for (i = 0; i < ret; i++) {
+        LXC_STORE_MEM_RECORD(SWAP_IN, "swap_in")
+        LXC_STORE_MEM_RECORD(SWAP_OUT, "swap_out")
+        LXC_STORE_MEM_RECORD(MAJOR_FAULT, "major_fault")
+        LXC_STORE_MEM_RECORD(MINOR_FAULT, "minor_fault")
+        LXC_STORE_MEM_RECORD(AVAILABLE, "available")
+        LXC_STORE_MEM_RECORD(UNUSED, "unused")
+    }
+
+#undef LXC_STORE_MEM_RECORD
+
+    return 0;
+}
 
 static int
 lxcDomainInterfaceStats(virDomainPtr dom,
