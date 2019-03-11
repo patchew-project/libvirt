@@ -2482,6 +2482,106 @@ lxcDomainBlockStatsFlags(virDomainPtr dom,
     return ret;
 }
 
+#define LXC_STORE_DISK_RECORD(FIELD, COUNTER) \
+do { \
+    if (stats.FIELD != -1) { \
+        snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH, \
+                 "block.%zu." COUNTER, i); \
+        if (virTypedParamsAddULLong(&record->params, \
+                                    &record->nparams, \
+                                    maxparams, \
+                                    param_name, \
+                                    stats.FIELD) < 0) \
+            return -1; \
+    } \
+} while (0)
+
+static int
+lxcDomainGetBlockStats(virDomainObjPtr dom,
+                       virDomainStatsRecordPtr record,
+                       int *maxparams)
+{
+    virLXCDomainObjPrivatePtr priv = dom->privateData;
+    virDomainBlockStatsStruct stats;
+    size_t i = 0;
+    size_t ndisks = 1;
+    char param_name[VIR_TYPED_PARAM_FIELD_LENGTH];
+
+    if (virCgroupGetBlkioIoServiced(priv->cgroup,
+                                    &stats.rd_bytes,
+                                    &stats.wr_bytes,
+                                    &stats.rd_req,
+                                    &stats.wr_req) < 0)
+        return -1;
+
+    LXC_STORE_DISK_RECORD(rd_req, "rd.reqs");
+    LXC_STORE_DISK_RECORD(rd_bytes, "rd.bytes");
+    LXC_STORE_DISK_RECORD(wr_req, "wr.reqs");
+    LXC_STORE_DISK_RECORD(wr_bytes, "wr.bytes");
+
+    for (i = 0; i < dom->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = dom->def->disks[i];
+
+        if (virDomainDiskGetType(disk) == VIR_STORAGE_TYPE_BLOCK) {
+            if (virCgroupGetBlkioIoDeviceServiced(priv->cgroup,
+                                                  disk->src->path,
+                                                  &stats.rd_bytes,
+                                                  &stats.wr_bytes,
+                                                  &stats.rd_req,
+                                                  &stats.wr_req) < 0)
+                return -1;
+
+            snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH,
+                     "block.%zu.name", i);
+            if (virTypedParamsAddString(&record->params,
+                                        &record->nparams,
+                                        maxparams,
+                                        param_name,
+                                        disk->dst) < 0)
+                return -1;
+
+            if (virStorageSourceIsLocalStorage(disk->src) && disk->src->path) {
+                snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH,
+                         "block.%zu.path", i);
+                if (virTypedParamsAddString(&record->params,
+                                            &record->nparams,
+                                            maxparams,
+                                            param_name,
+                                            disk->src->path) < 0)
+                    return -1;
+            }
+
+            LXC_STORE_DISK_RECORD(rd_req, "rd.reqs");
+            LXC_STORE_DISK_RECORD(rd_bytes, "rd.bytes");
+            LXC_STORE_DISK_RECORD(wr_req, "wr.reqs");
+            LXC_STORE_DISK_RECORD(wr_bytes, "wr.bytes");
+
+            if (disk->device == VIR_DOMAIN_DISK_DEVICE_DISK) {
+                snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH,
+                         "block.%zu.capacity", i);
+                if (virTypedParamsAddULLong(&record->params,
+                                            &record->nparams,
+                                            maxparams,
+                                            param_name,
+                                            disk->src->capacity) < 0)
+                    return -1;
+            }
+
+            ndisks++;
+        }
+    }
+
+    if (virTypedParamsAddUInt(&record->params,
+                              &record->nparams,
+                              maxparams,
+                              "block.count",
+                              ndisks) < 0)
+        return -1;
+
+    return 0;
+}
+
+#undef LXC_STORE_DISK_RECORD
 
 static int
 lxcDomainSetBlkioParameters(virDomainPtr dom,
