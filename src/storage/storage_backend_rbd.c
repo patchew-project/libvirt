@@ -61,6 +61,9 @@ struct _virStoragePoolRBDConfigOptionsDef {
 
 #define STORAGE_POOL_RBD_NAMESPACE_HREF "http://libvirt.org/schemas/storagepool/rbd/1.0"
 
+#define CONFIG_OPTION_INTERNAL_PREFIX "libvirt_"
+#define CONFIG_OPTION_CALCULATE_DISK_USAGE CONFIG_OPTION_INTERNAL_PREFIX "calculate_disk_usage"
+
 static void
 virStoragePoolDefRBDNamespaceFree(void *nsdata)
 {
@@ -321,6 +324,9 @@ virStorageBackendRBDOpenRADOSConn(virStorageBackendRBDStatePtr ptr,
         char uuidstr[VIR_UUID_STRING_BUFLEN];
 
         for (i = 0; i < cmdopts->noptions; i++) {
+            if (STRPREFIX(cmdopts->names[i], CONFIG_OPTION_INTERNAL_PREFIX))
+                continue;
+
             if (virStorageBackendRBDRADOSConfSet(ptr->cluster,
                                                  cmdopts->names[i],
                                                  cmdopts->values[i]) < 0)
@@ -527,10 +533,30 @@ virStorageBackendRBDSetAllocation(virStorageVolDefPtr vol ATTRIBUTE_UNUSED,
 }
 #endif
 
+static bool
+virStorageBackendRBDCalculateDiskUsage(virStoragePoolDefPtr def)
+{
+    size_t i;
+    bool calculate_disk_usage = true;
+
+    if (def->namespaceData) {
+        virStoragePoolRBDConfigOptionsDefPtr cmdopts = def->namespaceData;
+
+        for (i = 0; i < cmdopts->noptions; i++) {
+            if (STREQ(cmdopts->names[i], CONFIG_OPTION_CALCULATE_DISK_USAGE)) {
+                calculate_disk_usage = STRCASEEQ(cmdopts->values[i], "true");
+                break;
+            }
+        }
+    }
+    return calculate_disk_usage;
+}
+
 static int
 volStorageBackendRBDRefreshVolInfo(virStorageVolDefPtr vol,
                                    virStoragePoolObjPtr pool,
-                                   virStorageBackendRBDStatePtr ptr)
+                                   virStorageBackendRBDStatePtr ptr,
+                                   bool calculate_disk_usage)
 {
     int ret = -1;
     virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
@@ -564,7 +590,8 @@ volStorageBackendRBDRefreshVolInfo(virStorageVolDefPtr vol,
     vol->type = VIR_STORAGE_VOL_NETWORK;
     vol->target.format = VIR_STORAGE_FILE_RAW;
 
-    if (volStorageBackendRBDUseFastDiff(features, flags)) {
+    if (calculate_disk_usage &&
+        volStorageBackendRBDUseFastDiff(features, flags)) {
         VIR_DEBUG("RBD image %s/%s has fast-diff feature enabled. "
                   "Querying for actual allocation",
                   def->source.name, vol->name);
@@ -610,7 +637,9 @@ virStorageBackendRBDRefreshPool(virStoragePoolObjPtr pool)
     virStorageBackendRBDStatePtr ptr = NULL;
     struct rados_cluster_stat_t clusterstat;
     struct rados_pool_stat_t poolstat;
+    bool calculate_disk_usage = virStorageBackendRBDCalculateDiskUsage(def);
     VIR_AUTOFREE(char *) names = NULL;
+
 
     if (!(ptr = virStorageBackendRBDNewState(pool)))
         goto cleanup;
@@ -663,7 +692,8 @@ virStorageBackendRBDRefreshPool(virStoragePoolObjPtr pool)
 
         name += strlen(name) + 1;
 
-        r = volStorageBackendRBDRefreshVolInfo(vol, pool, ptr);
+        r = volStorageBackendRBDRefreshVolInfo(vol, pool, ptr,
+                                               calculate_disk_usage);
 
         /* It could be that a volume has been deleted through a different route
          * then libvirt and that will cause a -ENOENT to be returned.
@@ -1238,12 +1268,15 @@ virStorageBackendRBDRefreshVol(virStoragePoolObjPtr pool,
                                virStorageVolDefPtr vol)
 {
     virStorageBackendRBDStatePtr ptr = NULL;
+    virStoragePoolDefPtr def = virStoragePoolObjGetDef(pool);
+    bool calculate_disk_usage = virStorageBackendRBDCalculateDiskUsage(def);
     int ret = -1;
 
     if (!(ptr = virStorageBackendRBDNewState(pool)))
         goto cleanup;
 
-    if (volStorageBackendRBDRefreshVolInfo(vol, pool, ptr) < 0)
+    if (volStorageBackendRBDRefreshVolInfo(vol, pool, ptr,
+                                           calculate_disk_usage) < 0)
         goto cleanup;
 
     ret = 0;

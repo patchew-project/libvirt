@@ -613,12 +613,21 @@
     &lt;rbd:option name='client_mount_timeout' value='45'/&gt;
     &lt;rbd:option name='rados_mon_op_timeout' value='20'/&gt;
     &lt;rbd:option name='rados_osd_op_timeout' value='10'/&gt;
+    &lt;rbd:option name='libvirt_calculate_disk_usage' value='false'/&gt;
   &lt;/rbd:config_opts&gt;
 &lt;/pool&gt;
 </pre>
 
-      <span class="since">Since 5.1.0.</span></dd>
-
+      <span class="since">Since 5.1.0.</span>
+      <dl>
+        <dt><code>libvirt_calculate_disk_usage</code></dt>
+        <dd>Disable calculating the actual disk usage of RBD volumes when
+         set to <code>false</code>. This will speed up pool and volume
+         refresh operations for pools with many volumes or pools with
+         large images.
+        </dd>
+      </dl>
+      </dd>
     </dl>
 
     <h2><a id="StorageVol">Storage volume XML</a></h2>
