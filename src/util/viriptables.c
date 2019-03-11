@@ -101,6 +101,16 @@ iptablesPrivateChainCreate(virFirewallPtr fw,
         tmp++;
     }
 
+    /* This function is running in the context of the very first transaction,
+     * which does nothing more than just lists current tables and chains. But
+     * since some tables might not be there (e.g. because of a module missing),
+     * the transaction is run with IGNORE_ERRORS flag. But obviously, we don't
+     * want to ignore errors here, where we are constructing our own chains and
+     * rules. The only way to resolve this is to start a new transaction so
+     * that all those AddRule() calls below add rules to new transaction/group.
+     */
+    virFirewallStartTransaction(fw, 0);
+
     for (i = 0; i < data->nchains; i++) {
         const char *from;
         if (!virHashLookup(chains, data->chains[i].child)) {
@@ -160,7 +170,7 @@ iptablesSetupPrivateChains(void)
 
     fw = virFirewallNew();
 
-    virFirewallStartTransaction(fw, 0);
+    virFirewallStartTransaction(fw, VIR_FIREWALL_TRANSACTION_IGNORE_ERRORS);
 
     for (i = 0; i < ARRAY_CARDINALITY(data); i++)
         virFirewallAddRuleFull(fw, data[i].layer,
