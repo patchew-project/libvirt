@@ -197,7 +197,9 @@
           Historically firewall rules for virtual networks were added
           straight into the base chains. This works but has a number of
           bugs and design limitations. To address them, libvirt now puts
-          firewall rules into its own chains.
+          firewall rules into its own chains. Note that with this change the
+          <code>filter</code>, <code>nat</code> and <code>mangle</code> tables
+          are required for both <code>IPv4</code> and <code>IPv6</code>.
         </description>
       </change>
       <change>
