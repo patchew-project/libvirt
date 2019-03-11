@@ -5278,6 +5278,28 @@ lxcDomainGetMetadata(virDomainPtr dom,
 }
 
 static int
+lxcDomainGetStatsState(virDomainObjPtr dom,
+                       virDomainStatsRecordPtr record,
+                       int *maxparams)
+{
+    if (virTypedParamsAddInt(&record->params,
+                             &record->nparams,
+                             maxparams,
+                             "state.state",
+                             dom->state.state) < 0)
+        return -1;
+
+    if (virTypedParamsAddInt(&record->params,
+                             &record->nparams,
+                             maxparams,
+                             "state.reason",
+                             dom->state.reason) < 0)
+        return -1;
+
+    return 0;
+}
+
+static int
 lxcDomainGetStatsCpu(virDomainObjPtr dom,
                      virDomainStatsRecordPtr record,
                      int *maxparams)
