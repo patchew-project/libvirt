@@ -5277,6 +5277,48 @@ lxcDomainGetMetadata(virDomainPtr dom,
     return ret;
 }
 
+static virDomainStatsRecordPtr
+lxcDomainGetStats(virConnectPtr conn,
+                  virDomainObjPtr dom)
+{
+    virLXCDriverPtr driver = conn->privateData;
+    virDomainStatsRecordPtr stat;
+    int maxparams = 0;
+
+    if (VIR_ALLOC(stat) < 0)
+        return NULL;
+
+    if (!(stat->dom = virGetDomain(conn, dom->def->name, dom->def->uuid, dom->def->id)))
+        goto error;
+
+    if (virLXCDomainObjBeginJob(driver, dom, LXC_JOB_QUERY) < 0)
+        goto error;
+
+    if (lxcDomainGetStatsState(dom, stat, &maxparams) < 0)
+        goto endjob;
+
+    if (lxcDomainGetStatsCpu(dom, stat, &maxparams) < 0)
+        goto endjob;
+
+    if (lxcDomainGetBlockStats(dom, stat, &maxparams) < 0)
+        goto endjob;
+
+    if (lxcDomainGetBalloonStats(dom, stat, &maxparams) < 0)
+        goto endjob;
+
+    virLXCDomainObjEndJob(driver, dom);
+    return stat;
+
+ endjob:
+    virLXCDomainObjEndJob(driver, dom);
+
+ error:
+    virTypedParamsFree(stat->params, stat->nparams);
+    virObjectUnref(stat->dom);
+    VIR_FREE(stat);
+    return NULL;
+}
+
 static int
 lxcConnectGetAllDomainStats(virConnectPtr conn,
                             virDomainPtr *doms,
