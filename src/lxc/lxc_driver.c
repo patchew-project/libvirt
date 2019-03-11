@@ -5277,6 +5277,88 @@ lxcDomainGetMetadata(virDomainPtr dom,
     return ret;
 }
 
+static int
+lxcConnectGetAllDomainStats(virConnectPtr conn,
+                            virDomainPtr *doms,
+                            unsigned int ndoms,
+                            unsigned int stats,
+                            virDomainStatsRecordPtr **retStats,
+                            unsigned int flags)
+{
+    virLXCDriverPtr driver = conn->privateData;
+    virDomainObjPtr *vms = NULL;
+    virDomainObjPtr vm;
+    size_t nvms;
+    virDomainStatsRecordPtr *tmpstats = NULL;
+    int nstats = 0;
+    size_t i;
+    int ret = -1;
+    unsigned int lflags = flags & (VIR_CONNECT_LIST_DOMAINS_FILTERS_ACTIVE |
+                                   VIR_CONNECT_LIST_DOMAINS_FILTERS_PERSISTENT |
+                                   VIR_CONNECT_LIST_DOMAINS_FILTERS_STATE);
+    unsigned int supported = VIR_DOMAIN_STATS_STATE |
+                             VIR_DOMAIN_STATS_CPU_TOTAL |
+                             VIR_DOMAIN_STATS_BLOCK |
+                             VIR_DOMAIN_STATS_BALLOON;
+
+    virCheckFlags(VIR_CONNECT_LIST_DOMAINS_FILTERS_ACTIVE |
+                  VIR_CONNECT_LIST_DOMAINS_FILTERS_PERSISTENT |
+                  VIR_CONNECT_LIST_DOMAINS_FILTERS_STATE |
+                  VIR_CONNECT_GET_ALL_DOMAINS_STATS_ENFORCE_STATS, -1);
+
+    if (virConnectGetAllDomainStatsEnsureACL(conn) < 0)
+        return -1;
+
+    if (!stats) {
+        stats = supported;
+    } else if ((flags & VIR_CONNECT_GET_ALL_DOMAINS_STATS_ENFORCE_STATS) &&
+               (stats & ~supported)) {
+        virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED,
+                       _("Stats types bits 0x%x are not supported by this daemon"),
+                       stats & ~supported);
+        return -1;
+    }
+
+    if (ndoms) {
+        if (virDomainObjListConvert(driver->domains, conn, doms, ndoms, &vms,
+                                    &nvms, virConnectGetAllDomainStatsCheckACL,
+                                    lflags, true) < 0)
+            return -1;
+    } else {
+        if (virDomainObjListCollect(driver->domains, conn, &vms, &nvms,
+                                    virConnectGetAllDomainStatsCheckACL,
+                                    lflags) < 0)
+            return -1;
+    }
+
+    if (VIR_ALLOC_N(tmpstats, ndoms + 1) < 0)
+        goto cleanup;
+
+    for (i = 0; i < nvms; i++) {
+        virDomainStatsRecordPtr tmp;
+        vm = vms[i];
+
+        virObjectLock(vm);
+        tmp = lxcDomainGetStats(conn, vm);
+        virObjectUnlock(vm);
+
+        if (!tmp)
+            goto cleanup;
+
+        tmpstats[nstats++] = tmp;
+
+    }
+
+    *retStats = tmpstats;
+    tmpstats = NULL;
+    ret = nstats;
+
+ cleanup:
+    virDomainStatsRecordListFree(tmpstats);
+    virObjectListFreeCount(vms, nvms);
+
+    return ret;
+}
 
 static int
 lxcDomainGetCPUStats(virDomainPtr dom,
@@ -5448,6 +5530,7 @@ static virHypervisorDriver lxcHypervisorDriver = {
     .domainMemoryStats = lxcDomainMemoryStats, /* 1.2.2 */
     .nodeGetCPUStats = lxcNodeGetCPUStats, /* 0.9.3 */
     .nodeGetMemoryStats = lxcNodeGetMemoryStats, /* 0.9.3 */
+    .connectGetAllDomainStats = lxcConnectGetAllDomainStats, /* 5.1.0 */
     .nodeGetCellsFreeMemory = lxcNodeGetCellsFreeMemory, /* 0.6.5 */
     .nodeGetFreeMemory = lxcNodeGetFreeMemory, /* 0.6.5 */
     .nodeGetCPUMap = lxcNodeGetCPUMap, /* 1.0.0 */
