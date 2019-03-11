@@ -5277,6 +5277,45 @@ lxcDomainGetMetadata(virDomainPtr dom,
     return ret;
 }
 
+static int
+lxcDomainGetStatsCpu(virDomainObjPtr dom,
+                     virDomainStatsRecordPtr record,
+                     int *maxparams)
+{
+    virLXCDomainObjPrivatePtr priv = dom->privateData;
+    unsigned long long cpu_time = 0;
+    unsigned long long user_time = 0;
+    unsigned long long sys_time = 0;
+    int err = 0;
+
+    if (!priv->cgroup)
+        return 0;
+
+    err = virCgroupGetCpuacctUsage(priv->cgroup, &cpu_time);
+    if (!err && virTypedParamsAddULLong(&record->params,
+                                        &record->nparams,
+                                        maxparams,
+                                        "cpu.time",
+                                        cpu_time) < 0)
+        return -1;
+
+    err = virCgroupGetCpuacctStat(priv->cgroup, &user_time, &sys_time);
+    if (!err && virTypedParamsAddULLong(&record->params,
+                                        &record->nparams,
+                                        maxparams,
+                                        "cpu.user",
+                                        user_time) < 0)
+        return -1;
+    if (!err && virTypedParamsAddULLong(&record->params,
+                                        &record->nparams,
+                                        maxparams,
+                                        "cpu.system",
+                                        sys_time) < 0)
+        return -1;
+
+    return 0;
+}
+
 static virDomainStatsRecordPtr
 lxcDomainGetStats(virConnectPtr conn,
                   virDomainObjPtr dom)
