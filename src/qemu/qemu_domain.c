@@ -10440,7 +10440,10 @@ getPPC64MemLockLimitBytes(virDomainDefPtr def)
     unsigned long long maxMemory = 0;
     unsigned long long passthroughLimit = 0;
     size_t i, nPCIHostBridges = 0;
+    virPCIDeviceAddressPtr pciAddr;
+    char *pciAddrStr = NULL;
     bool usesVFIO = false;
+    bool nvlink2Capable = false;
 
     for (i = 0; i < def->ncontrollers; i++) {
         virDomainControllerDefPtr cont = def->controllers[i];
@@ -10458,7 +10461,16 @@ getPPC64MemLockLimitBytes(virDomainDefPtr def)
             dev->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_PCI &&
             dev->source.subsys.u.pci.backend == VIR_DOMAIN_HOSTDEV_PCI_BACKEND_VFIO) {
             usesVFIO = true;
-            break;
+
+            pciAddr = &dev->source.subsys.u.pci.addr;
+            if (virPCIDeviceAddressIsValid(pciAddr, false)) {
+                pciAddrStr = virPCIDeviceAddressAsString(pciAddr);
+                 if (ppc64VFIODeviceIsNV2Bridge(pciAddrStr)) {
+                    nvlink2Capable = true;
+                    break;
+                }
+            }
+
         }
     }
 
@@ -10485,6 +10497,32 @@ getPPC64MemLockLimitBytes(virDomainDefPtr def)
                 4096 * nPCIHostBridges +
                 8192;
 
+    /* NVLink2 support in QEMU is a special case of the passthrough
+     * mechanics explained in the usesVFIO case below. The GPU RAM
+     * is placed with a gap after maxMemory. The current QEMU
+     * implementation puts the NVIDIA RAM above the PCI MMIO, which
+     * starts at 32TiB and is the MMIO reserved for the guest main RAM.
+     *
+     * This window ends at 64TiB, and this is where the GPUs are being
+     * placed. The next available window size is at 128TiB, and
+     * 64TiB..128TiB will fit all possible NVIDIA GPUs.
+     *
+     * The same assumption as the most common case applies here:
+     * the guest will request a 64-bit DMA window, per PHB, that is
+     * big enough to map all its RAM, which is now at 128TiB due
+     * to the GPUs.
+     *
+     * Note that the NVIDIA RAM window must be accounted for the TCE
+     * table size, but *not* for the main RAM (maxMemory). This gives
+     * us the following passthroughLimit for the NVLink2 case:
+     *
+     * passthroughLimit = maxMemory +
+     *                    128TiB/512KiB * #PHBs + 8 MiB */
+    if (nvlink2Capable)
+        passthroughLimit = maxMemory +
+                           128 * (1ULL<<30) / 512 * nPCIHostBridges +
+                           8192;
+
     /* passthroughLimit := max( 2 GiB * #PHBs,                       (c)
      *                          memory                               (d)
      *                          + memory * 1/512 * #PHBs + 8 MiB )   (e)
@@ -10504,7 +10542,7 @@ getPPC64MemLockLimitBytes(virDomainDefPtr def)
      * kiB pages, less still if the guest is mapped with hugepages (unlike
      * the default 32-bit DMA window, DDW windows can use large IOMMU
      * pages). 8 MiB is for second and further level overheads, like (b) */
-    if (usesVFIO)
+    else if (usesVFIO)
         passthroughLimit = MAX(2 * 1024 * 1024 * nPCIHostBridges,
                                memory +
                                memory / 512 * nPCIHostBridges + 8192);
