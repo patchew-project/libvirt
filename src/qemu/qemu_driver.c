@@ -1,7 +1,7 @@
 /*
  * qemu_driver.c: core driver methods for managing qemu guests
  *
- * Copyright (C) 2006-2016 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  * Copyright (C) 2006 Daniel P. Berrange
  *
  * This library is free software; you can redistribute it and/or
@@ -15974,6 +15974,84 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
 }
 
 
+/* Struct and hash-iterator callback used when bulk redefining snapshots */
+struct qemuDomainSnapshotBulk {
+    virDomainObjPtr vm;
+    virQEMUDriverPtr driver;
+    const char *snapshotDir;
+};
+
+static int
+qemuDomainSnapshotBulkRedefine(void *payload,
+                               const void *name ATTRIBUTE_UNUSED,
+                               void *opaque)
+{
+    virDomainSnapshotObjPtr snap = payload;
+    struct qemuDomainSnapshotBulk *data = opaque;
+
+    if (qemuDomainSnapshotValidate(snap->def, snap->def->state,
+                                   VIR_DOMAIN_SNAPSHOT_PARSE_REDEFINE) < 0)
+        return -1;
+    if (qemuDomainSnapshotWriteMetadata(data->vm, snap, data->driver->caps,
+                                        data->driver->xmlopt,
+                                        data->snapshotDir) < 0)
+        return -1;
+    return 0;
+}
+
+
+static int
+qemuDomainImportSnapshotsXML(virDomainPtr domain,
+                             const char *xmlDesc,
+                             unsigned int flags)
+{
+    virQEMUDriverPtr driver = domain->conn->privateData;
+    virDomainObjPtr vm = NULL;
+    int ret = -1;
+    unsigned int parse_flags = VIR_DOMAIN_SNAPSHOT_PARSE_REDEFINE |
+        VIR_DOMAIN_SNAPSHOT_PARSE_DISKS;
+    struct qemuDomainSnapshotBulk bulk = { .driver = driver, };
+    virQEMUDriverConfigPtr cfg = NULL;
+
+    virCheckFlags(0, -1);
+
+    if (!(vm = qemuDomObjFromDomain(domain)))
+        return -1;
+
+    if (virDomainImportSnapshotsXMLEnsureACL(domain->conn, vm->def) < 0)
+        goto cleanup;
+
+    cfg = virQEMUDriverGetConfig(driver);
+
+    ret = virDomainSnapshotObjListParse(xmlDesc, vm->def->uuid, vm->snapshots,
+                                        &vm->current_snapshot, driver->caps,
+                                        driver->xmlopt, parse_flags);
+    if (ret < 0)
+        goto cleanup;
+
+    /* Validate and save the snapshots to disk. Since we don't get
+     * here unless there were no snapshots beforehand, just delete
+     * everything on the first failure, ignoring further errors. */
+    bulk.vm = vm;
+    bulk.snapshotDir = cfg->snapshotDir;
+    if (virDomainSnapshotForEach(vm->snapshots, false,
+                                 qemuDomainSnapshotBulkRedefine, &bulk) < 0) {
+        virErrorPtr orig_err = NULL;
+
+        virErrorPreserveLast(&orig_err);
+        qemuDomainSnapshotDiscardAllMetadata(driver, vm);
+        virErrorRestore(&orig_err);
+        ret = 0;
+        goto cleanup;
+    }
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    virObjectUnref(cfg);
+    return ret;
+}
+
+
 static int
 qemuDomainSnapshotListNames(virDomainPtr domain,
                             char **names,
@@ -16285,6 +16363,40 @@ qemuDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     xml = virDomainSnapshotDefFormat(uuidstr, snap->def,
                                      driver->caps, driver->xmlopt,
                                      virDomainSnapshotFormatConvertXMLFlags(flags));
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return xml;
+}
+
+
+static char *
+qemuDomainGetSnapshotsXMLDesc(virDomainPtr domain,
+                              unsigned int flags)
+{
+    virQEMUDriverPtr driver = domain->conn->privateData;
+    virDomainObjPtr vm = NULL;
+    char *xml = NULL;
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    virCheckFlags(VIR_DOMAIN_GET_SNAPSHOTS_XML_SECURE |
+                  VIR_DOMAIN_GET_SNAPSHOTS_XML_TOPOLOGICAL, NULL);
+
+    if (!(vm = qemuDomObjFromDomain(domain)))
+        return NULL;
+
+    if (virDomainGetSnapshotsXMLDescEnsureACL(domain->conn, vm->def, flags) < 0)
+        goto cleanup;
+
+    virUUIDFormat(domain->uuid, uuidstr);
+
+    if (virDomainSnapshotObjListFormat(&buf, uuidstr, vm->snapshots,
+                                       vm->current_snapshot, driver->caps,
+                                       driver->xmlopt, flags) < 0)
+        goto cleanup;
+
+    xml = virBufferContentAndReset(&buf);
 
  cleanup:
     virDomainObjEndAPI(&vm);
@@ -22585,7 +22697,9 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainManagedSaveGetXMLDesc = qemuDomainManagedSaveGetXMLDesc, /* 3.7.0 */
     .domainManagedSaveDefineXML = qemuDomainManagedSaveDefineXML, /* 3.7.0 */
     .domainSnapshotCreateXML = qemuDomainSnapshotCreateXML, /* 0.8.0 */
+    .domainImportSnapshotsXML = qemuDomainImportSnapshotsXML, /* 5.2.0 */
     .domainSnapshotGetXMLDesc = qemuDomainSnapshotGetXMLDesc, /* 0.8.0 */
+    .domainGetSnapshotsXMLDesc = qemuDomainGetSnapshotsXMLDesc, /* 5.2.0 */
     .domainSnapshotNum = qemuDomainSnapshotNum, /* 0.8.0 */
     .domainSnapshotListNames = qemuDomainSnapshotListNames, /* 0.8.0 */
     .domainListAllSnapshots = qemuDomainListAllSnapshots, /* 0.9.13 */
