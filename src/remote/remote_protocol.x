@@ -3,7 +3,7 @@
  *   remote_internal driver and libvirtd.  This protocol is
  *   internal and may change at any time.
  *
- * Copyright (C) 2006-2015 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -3573,6 +3573,26 @@ struct remote_connect_get_storage_pool_capabilities_ret {
     remote_nonnull_string capabilities;
 };
 
+struct remote_domain_get_snapshots_xml_desc_args {
+    remote_nonnull_domain domain;
+    unsigned int flags;
+};
+
+struct remote_domain_get_snapshots_xml_desc_ret {
+    remote_nonnull_string xml;
+};
+
+struct remote_domain_import_snapshots_xml_args {
+    remote_nonnull_domain dom;
+    remote_nonnull_string xml;
+    unsigned int flags;
+};
+
+struct remote_domain_import_snapshots_xml_ret {
+    int result;
+};
+
+
 /*----- Protocol. -----*/
 
 /* Define the program number, protocol version and procedure numbers here. */
@@ -6342,5 +6362,19 @@ enum remote_procedure {
      * @generate: both
      * @acl: connect:read
      */
-    REMOTE_PROC_CONNECT_GET_STORAGE_POOL_CAPABILITIES = 403
+    REMOTE_PROC_CONNECT_GET_STORAGE_POOL_CAPABILITIES = 403,
+
+    /**
+     * @generate: both
+     * @priority: high
+     * @acl: domain:read
+     * @acl: domain:read_secure:VIR_DOMAIN_GET_SNAPSHOTS_XML_SECURE
+     */
+    REMOTE_PROC_DOMAIN_GET_SNAPSHOTS_XML_DESC = 404,
+
+    /**
+     * @generate: both
+     * @acl: domain:snapshot
+     */
+    REMOTE_PROC_DOMAIN_IMPORT_SNAPSHOTS_XML = 405
 };

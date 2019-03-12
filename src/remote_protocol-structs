@@ -2981,6 +2981,21 @@ struct remote_connect_get_storage_pool_capabilities_args {
 struct remote_connect_get_storage_pool_capabilities_ret {
         remote_nonnull_string      capabilities;
 };
+struct remote_domain_get_snapshots_xml_desc_args {
+        remote_nonnull_domain      domain;
+        u_int                      flags;
+};
+struct remote_domain_get_snapshots_xml_desc_ret {
+        remote_nonnull_string      xml;
+};
+struct remote_domain_import_snapshots_xml_args {
+        remote_nonnull_domain      dom;
+        remote_nonnull_string      xml;
+        u_int                      flags;
+};
+struct remote_domain_import_snapshots_xml_ret {
+        int                        result;
+};
 enum remote_procedure {
         REMOTE_PROC_CONNECT_OPEN = 1,
         REMOTE_PROC_CONNECT_CLOSE = 2,
@@ -3385,4 +3400,6 @@ enum remote_procedure {
         REMOTE_PROC_CONNECT_LIST_ALL_NWFILTER_BINDINGS = 401,
         REMOTE_PROC_DOMAIN_SET_IOTHREAD_PARAMS = 402,
         REMOTE_PROC_CONNECT_GET_STORAGE_POOL_CAPABILITIES = 403,
+        REMOTE_PROC_DOMAIN_GET_SNAPSHOTS_XML_DESC = 404,
+        REMOTE_PROC_DOMAIN_IMPORT_SNAPSHOTS_XML = 405,
 };

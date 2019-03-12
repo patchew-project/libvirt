@@ -2,7 +2,7 @@
  * remote_driver.c: driver to provide access to libvirtd running
  *   on a remote machine
  *
- * Copyright (C) 2007-2015 Red Hat, Inc.
+ * Copyright (C) 2007-2019 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -8516,7 +8516,9 @@ static virHypervisorDriver hypervisor_driver = {
     .connectCompareHypervisorCPU = remoteConnectCompareHypervisorCPU, /* 4.4.0 */
     .connectBaselineHypervisorCPU = remoteConnectBaselineHypervisorCPU, /* 4.4.0 */
     .nodeGetSEVInfo = remoteNodeGetSEVInfo, /* 4.5.0 */
-    .domainGetLaunchSecurityInfo = remoteDomainGetLaunchSecurityInfo /* 4.5.0 */
+    .domainGetLaunchSecurityInfo = remoteDomainGetLaunchSecurityInfo, /* 4.5.0 */
+    .domainGetSnapshotsXMLDesc = remoteDomainGetSnapshotsXMLDesc, /* 5.2.0 */
+    .domainImportSnapshotsXML = remoteDomainImportSnapshotsXML, /* 5.2.0 */
 };
 
 static virNetworkDriver network_driver = {
