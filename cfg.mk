@@ -1075,6 +1075,14 @@ sc_require_attribute_cleanup_initialization:
 	halt='variable declared with a cleanup macro must be initialized' \
 	  $(_sc_search_regexp)
 
+# "class" in headers is not good because by default Vim treats it as a keyword
+sc_prohibit_class_in_headers:
+	@prohibit=' +_?class *;' \
+	in_vc_files='\.h$$' \
+	halt='use klass instead of class or _class as name in header files' \
+	  $(_sc_search_regexp)
+
+
 # We don't use this feature of maint.mk.
 prev_version_file = /dev/null
 
