@@ -1,7 +1,7 @@
 /*
  * test_driver.c: A "mock" hypervisor for use by application unit tests
  *
- * Copyright (C) 2006-2015 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  * Copyright (C) 2006 Daniel P. Berrange
  *
  * This library is free software; you can redistribute it and/or
@@ -6222,6 +6222,36 @@ testDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     return xml;
 }
 
+static char *
+testDomainGetSnapshotsXMLDesc(virDomainPtr domain,
+                              unsigned int flags)
+{
+    virDomainObjPtr vm = NULL;
+    char *xml = NULL;
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
+    testDriverPtr privconn = domain->conn->privateData;
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    virCheckFlags(VIR_DOMAIN_GET_SNAPSHOTS_XML_SECURE |
+                  VIR_DOMAIN_GET_SNAPSHOTS_XML_TOPOLOGICAL, NULL);
+
+    if (!(vm = testDomObjFromDomain(domain)))
+        return NULL;
+
+    virUUIDFormat(domain->uuid, uuidstr);
+
+    if (virDomainSnapshotObjListFormat(&buf, uuidstr, vm->snapshots,
+                                       vm->current_snapshot, privconn->caps,
+                                       privconn->xmlopt, flags) < 0)
+        goto cleanup;
+
+    xml = virBufferContentAndReset(&buf);
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return xml;
+}
+
 static int
 testDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot,
                             unsigned int flags)
@@ -6406,6 +6436,34 @@ testDomainSnapshotCreateXML(virDomainPtr domain,
     virObjectEventStateQueue(privconn->eventState, event);
     virDomainSnapshotDefFree(def);
     return snapshot;
+}
+
+
+static int
+testDomainImportSnapshotsXML(virDomainPtr domain,
+                             const char *xmlDesc,
+                             unsigned int flags)
+{
+    testDriverPtr privconn = domain->conn->privateData;
+    virDomainObjPtr vm = NULL;
+    int ret = -1;
+    unsigned int parse_flags = VIR_DOMAIN_SNAPSHOT_PARSE_REDEFINE |
+        VIR_DOMAIN_SNAPSHOT_PARSE_DISKS;
+
+    virCheckFlags(0, -1);
+
+    if (!(vm = testDomObjFromDomain(domain)))
+        return -1;
+
+    ret = virDomainSnapshotObjListParse(xmlDesc,
+                                        vm->def->uuid,
+                                        vm->snapshots,
+                                        &vm->current_snapshot,
+                                        privconn->caps,
+                                        privconn->xmlopt,
+                                        parse_flags);
+    virDomainObjEndAPI(&vm);
+    return ret;
 }
 
 
@@ -6840,6 +6898,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainSnapshotListNames = testDomainSnapshotListNames, /* 1.1.4 */
     .domainListAllSnapshots = testDomainListAllSnapshots, /* 1.1.4 */
     .domainSnapshotGetXMLDesc = testDomainSnapshotGetXMLDesc, /* 1.1.4 */
+    .domainGetSnapshotsXMLDesc = testDomainGetSnapshotsXMLDesc, /* 5.2.0 */
     .domainSnapshotNumChildren = testDomainSnapshotNumChildren, /* 1.1.4 */
     .domainSnapshotListChildrenNames = testDomainSnapshotListChildrenNames, /* 1.1.4 */
     .domainSnapshotListAllChildren = testDomainSnapshotListAllChildren, /* 1.1.4 */
@@ -6850,6 +6909,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainSnapshotIsCurrent = testDomainSnapshotIsCurrent, /* 1.1.4 */
     .domainSnapshotHasMetadata = testDomainSnapshotHasMetadata, /* 1.1.4 */
     .domainSnapshotCreateXML = testDomainSnapshotCreateXML, /* 1.1.4 */
+    .domainImportSnapshotsXML = testDomainImportSnapshotsXML, /* 5.2.0 */
     .domainRevertToSnapshot = testDomainRevertToSnapshot, /* 1.1.4 */
     .domainSnapshotDelete = testDomainSnapshotDelete, /* 1.1.4 */
 
