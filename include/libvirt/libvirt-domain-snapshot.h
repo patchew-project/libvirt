@@ -3,7 +3,7 @@
  * Summary: APIs for management of domain snapshots
  * Description: Provides APIs for the management of domain snapshots
  *
- * Copyright (C) 2006-2014 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -78,6 +78,11 @@ virDomainSnapshotPtr virDomainSnapshotCreateXML(virDomainPtr domain,
                                                 const char *xmlDesc,
                                                 unsigned int flags);
 
+/* Bulk import a list of snapshots */
+int virDomainImportSnapshotsXML(virDomainPtr domain,
+                                const char *xmlDesc,
+                                unsigned int flags);
+
 typedef enum {
     VIR_DOMAIN_SNAPSHOT_XML_SECURE         = VIR_DOMAIN_XML_SECURE, /* dump security sensitive information too */
 } virDomainSnapshotXMLFlags;
@@ -85,6 +90,15 @@ typedef enum {
 /* Dump the XML of a snapshot */
 char *virDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
                                   unsigned int flags);
+
+typedef enum {
+    VIR_DOMAIN_GET_SNAPSHOTS_XML_SECURE         = (1 << 0), /* dump security sensitive information too */
+    VIR_DOMAIN_GET_SNAPSHOTS_XML_TOPOLOGICAL    = (1 << 1), /* ensure parents occur before children */
+} virDomainGetSnapshotsXMLFlags;
+
+/* Dump the XML of all snapshots */
+char *virDomainGetSnapshotsXMLDesc(virDomainPtr domain,
+                                   unsigned int flags);
 
 /**
  * virDomainSnapshotListFlags:

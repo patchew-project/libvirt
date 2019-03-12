@@ -1,7 +1,7 @@
 /*
  * driver-hypervisor.h: entry points for hypervisor drivers
  *
- * Copyright (C) 2006-2015 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -797,9 +797,18 @@ typedef virDomainSnapshotPtr
                                  const char *xmlDesc,
                                  unsigned int flags);
 
+typedef int
+(*virDrvDomainImportSnapshotsXML)(virDomainPtr domain,
+                                  const char *xmlDesc,
+                                  unsigned int flags);
+
 typedef char *
 (*virDrvDomainSnapshotGetXMLDesc)(virDomainSnapshotPtr snapshot,
                                   unsigned int flags);
+
+typedef char *
+(*virDrvDomainGetSnapshotsXMLDesc)(virDomainPtr domain,
+                                   unsigned int flags);
 
 typedef int
 (*virDrvDomainSnapshotNum)(virDomainPtr domain,
@@ -1494,7 +1503,9 @@ struct _virHypervisorDriver {
     virDrvDomainManagedSaveGetXMLDesc domainManagedSaveGetXMLDesc;
     virDrvDomainManagedSaveDefineXML domainManagedSaveDefineXML;
     virDrvDomainSnapshotCreateXML domainSnapshotCreateXML;
+    virDrvDomainImportSnapshotsXML domainImportSnapshotsXML;
     virDrvDomainSnapshotGetXMLDesc domainSnapshotGetXMLDesc;
+    virDrvDomainGetSnapshotsXMLDesc domainGetSnapshotsXMLDesc;
     virDrvDomainSnapshotNum domainSnapshotNum;
     virDrvDomainSnapshotListNames domainSnapshotListNames;
     virDrvDomainListAllSnapshots domainListAllSnapshots;

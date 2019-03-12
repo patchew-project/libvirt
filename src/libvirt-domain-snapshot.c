@@ -133,7 +133,8 @@ virDomainSnapshotGetConnect(virDomainSnapshotPtr snapshot)
  * not exist, the hypervisor may validate that reverting to the
  * snapshot appears to be possible (for example, disk images have
  * snapshot contents by the requested name).  Not all hypervisors
- * support these flags.
+ * support these flags; and some hypervisors support
+ * virDomainImportSnapshotsXML() for redefining all metadata in one call.
  *
  * If @flags includes VIR_DOMAIN_SNAPSHOT_CREATE_NO_METADATA, then the
  * domain's disk images are modified according to @xmlDesc, but then
@@ -243,6 +244,65 @@ virDomainSnapshotCreateXML(virDomainPtr domain,
 
 
 /**
+ * virDomainImportSnapshotsXML:
+ * @domain: a domain object
+ * @xmlDesc: string containing an XML description of a list of domain snapshots
+ * @flags: extra flags; not used yet, so callers should always pass 0
+ *
+ * Imports the metadata for a list of domain snapshots using
+ * @xmlDesc with a top-level element of <snapshots>.
+ *
+ * This call requires that the domain currently has no snapshot
+ * metadata, and the snapshots can be listed in any order, whereas
+ * using virDomainSnapshotCreateXML() with its
+ * VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE flag requires multiple calls
+ * and topological sorting. Bulk redefinition is mainly useful for
+ * reinstating metadata in situations such as transient domains or
+ * migration.
+ *
+ * Generally, the list of snapshots is obtained from
+ * virDomainGetSnapshotsXMLDesc() prior to a scenario that requires
+ * removing snapshot metadata (such as virDomainUndefine() on a
+ * transient domain); although it could also be constructed by
+ * concatenating virDomainSnapshotGetXMLDesc() for each snapshot and
+ * wrapping with a <snapshots> element and optional attribute
+ * current='name' pointing to the current snapshot.
+ *
+ * Returns a count of snapshots imported on success, or -1 on failure.
+ */
+int
+virDomainImportSnapshotsXML(virDomainPtr domain,
+                            const char *xmlDesc,
+                            unsigned int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "xmlDesc=%s, flags=0x%x", xmlDesc, flags);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    conn = domain->conn;
+
+    virCheckNonNullArgGoto(xmlDesc, error);
+    virCheckReadOnlyGoto(conn->flags, error);
+
+    if (conn->driver->domainImportSnapshotsXML) {
+        int ret = conn->driver->domainImportSnapshotsXML(domain, xmlDesc,
+                                                         flags);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+ error:
+    virDispatchError(conn);
+    return -1;
+}
+
+
+/**
  * virDomainSnapshotGetXMLDesc:
  * @snapshot: a domain snapshot object
  * @flags: bitwise-OR of supported virDomainSnapshotXMLFlags
@@ -254,8 +314,8 @@ virDomainSnapshotCreateXML(virDomainPtr domain,
  * VIR_DOMAIN_SNAPSHOT_XML_SECURE; this flag is rejected on read-only
  * connections.
  *
- * Returns a 0 terminated UTF-8 encoded XML instance, or NULL in case of error.
- *         the caller must free() the returned value.
+ * Returns a 0 terminated UTF-8 encoded XML instance, or NULL in case
+ * of error.  The caller must free() the returned value.
  */
 char *
 virDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
@@ -279,6 +339,62 @@ virDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     if (conn->driver->domainSnapshotGetXMLDesc) {
         char *ret;
         ret = conn->driver->domainSnapshotGetXMLDesc(snapshot, flags);
+        if (!ret)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+ error:
+    virDispatchError(conn);
+    return NULL;
+}
+
+
+/**
+ * virDomainGetSnapshotsXMLDesc:
+ * @domain: a domain object
+ * @flags: bitwise-OR of virDomainGetSnapshotsXMLFlags
+ *
+ * Provide an XML description of all domain snapshots, with a top-level
+ * element of <snapshots>.
+ *
+ * No security-sensitive data will be included unless @flags contains
+ * VIR_DOMAIN_GET_SNAPSHOTS_XML_SECURE; this flag is rejected on read-only
+ * connections.
+ *
+ * If @flags contains VIR_DOMAIN_GET_SNAPSHOTS_XML_TOPOLOGICAL, then
+ * it is guaranteed that no snapshot appears in the resulting XML
+ * prior to its parent; otherwise, the order of snapshots in the
+ * resulting list is unspecified. Use of this flag is not required for
+ * virDomainImportSnapshotsXML() to transfer snapshot metadata to
+ * another instance of libvirt.
+ *
+ * Returns a 0 terminated UTF-8 encoded XML instance, or NULL in case
+ * of error.  The caller must free() the returned value.
+ */
+char *
+virDomainGetSnapshotsXMLDesc(virDomainPtr domain,
+                             unsigned int flags)
+{
+    virConnectPtr conn;
+    VIR_DOMAIN_DEBUG(domain, "flags=0x%x", flags);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, NULL);
+    conn = domain->conn;
+
+    if ((conn->flags & VIR_CONNECT_RO) &&
+        (flags & VIR_DOMAIN_GET_SNAPSHOTS_XML_SECURE)) {
+        virReportError(VIR_ERR_OPERATION_DENIED, "%s",
+                       _("virDomainGetSnapshotsXMLDesc with secure flag"));
+        goto error;
+    }
+
+    if (conn->driver->domainGetSnapshotsXMLDesc) {
+        char *ret;
+        ret = conn->driver->domainGetSnapshotsXMLDesc(domain, flags);
         if (!ret)
             goto error;
         return ret;
