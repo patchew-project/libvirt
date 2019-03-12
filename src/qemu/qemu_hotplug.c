@@ -82,12 +82,8 @@ static inline int
 qemuDomainDeleteDevice(qemuMonitorPtr mon,
                        const char *alias)
 {
-    if (qemuMonitorDelDevice(mon, alias) < 0) {
-        virObjectUnlock(mon);
-        sleep(10);
-        virObjectLock(mon);
+    if (qemuMonitorDelDevice(mon, alias) < 0)
         return -1;
-    }
 
     return 0;
 }
