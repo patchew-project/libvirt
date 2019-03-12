@@ -1,7 +1,7 @@
 /*
  * virsh-snapshot.c: Commands to manage domain snapshot
  *
- * Copyright (C) 2005, 2007-2016 Red Hat, Inc.
+ * Copyright (C) 2005-2019 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -438,6 +438,61 @@ cmdSnapshotCreateAs(vshControl *ctl, const vshCmd *cmd)
 
  cleanup:
     virBufferFreeAndReset(&buf);
+    VIR_FREE(buffer);
+    virshDomainFree(dom);
+
+    return ret;
+}
+
+/*
+ * "snapshot-import" command
+ */
+static const vshCmdInfo info_snapshot_import[] = {
+    {.name = "help",
+     .data = N_("Bulk import snapshots from XML")
+    },
+    {.name = "desc",
+     .data = N_("Import the metadata for multiple snapshots from XML")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_snapshot_import[] = {
+    VIRSH_COMMON_OPT_DOMAIN_FULL(0),
+    {.name = "xmlfile",
+     .type = VSH_OT_DATA,
+     .flags = VSH_OFLAG_REQ,
+     .help = N_("domain snapshots XML"),
+    },
+    {.name = NULL}
+};
+
+static bool
+cmdSnapshotImport(vshControl *ctl, const vshCmd *cmd)
+{
+    virDomainPtr dom = NULL;
+    bool ret = false;
+    const char *from = NULL;
+    char *buffer = NULL;
+    int count;
+
+    if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
+        goto cleanup;
+
+    if (vshCommandOptStringReq(ctl, cmd, "xmlfile", &from) < 0)
+        goto cleanup;
+    if (virFileReadAll(from, VSH_MAX_XML_FILE, &buffer) < 0) {
+        vshSaveLibvirtError();
+        goto cleanup;
+    }
+
+    if ((count = virDomainImportSnapshotsXML(dom, buffer, 0)) < 0)
+        goto cleanup;
+    vshPrint(ctl, _("Imported %d snapshots"), count);
+
+    ret = true;
+
+ cleanup:
     VIR_FREE(buffer);
     virshDomainFree(dom);
 
@@ -1664,10 +1719,17 @@ static const vshCmdInfo info_snapshot_dumpxml[] = {
 static const vshCmdOptDef opts_snapshot_dumpxml[] = {
     VIRSH_COMMON_OPT_DOMAIN_FULL(0),
     {.name = "snapshotname",
-     .type = VSH_OT_DATA,
-     .flags = VSH_OFLAG_REQ,
+     .type = VSH_OT_STRING,
      .help = N_("snapshot name"),
      .completer = virshSnapshotNameCompleter,
+    },
+    {.name = "all",
+     .type = VSH_OT_BOOL,
+     .help = N_("list all snapshots at once"),
+    },
+    {.name = "topological",
+     .type = VSH_OT_BOOL,
+     .help = N_("with --all, ensure listing is topologically sorted"),
     },
     {.name = "security-info",
      .type = VSH_OT_BOOL,
@@ -1681,32 +1743,49 @@ cmdSnapshotDumpXML(vshControl *ctl, const vshCmd *cmd)
 {
     virDomainPtr dom = NULL;
     bool ret = false;
-    const char *name = NULL;
+    const char *snapshotname = NULL;
     virDomainSnapshotPtr snapshot = NULL;
     char *xml = NULL;
     unsigned int flags = 0;
+    bool all = vshCommandOptBool(cmd, "all");
+
+    if (vshCommandOptStringReq(ctl, cmd, "snapshotname", &snapshotname) < 0)
+        return false;
+
+    VSH_EXCLUSIVE_OPTIONS_VAR(snapshotname, all);
+    VSH_EXCLUSIVE_OPTIONS("snapshotname", "topological");
 
     if (vshCommandOptBool(cmd, "security-info"))
-        flags |= VIR_DOMAIN_XML_SECURE;
-
-    if (vshCommandOptStringReq(ctl, cmd, "snapshotname", &name) < 0)
-        return false;
+        flags |= all ? VIR_DOMAIN_GET_SNAPSHOTS_XML_SECURE :
+            VIR_DOMAIN_XML_SECURE;
+    if (vshCommandOptBool(cmd, "topological"))
+        flags |= VIR_DOMAIN_GET_SNAPSHOTS_XML_TOPOLOGICAL;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;
 
-    if (!(snapshot = virDomainSnapshotLookupByName(dom, name, 0)))
-        goto cleanup;
+    if (all) {
+        if (!(xml = virDomainGetSnapshotsXMLDesc(dom, flags)))
+            goto cleanup;
+    } else {
+        if (!snapshotname) {
+            vshError(ctl, "%s", _("either snapshotname or --all required"));
+            goto cleanup;
+        }
+        if (!(snapshot = virDomainSnapshotLookupByName(dom, snapshotname, 0)))
+            goto cleanup;
 
-    if (!(xml = virDomainSnapshotGetXMLDesc(snapshot, flags)))
-        goto cleanup;
+        if (!(xml = virDomainSnapshotGetXMLDesc(snapshot, flags)))
+            goto cleanup;
+    }
 
     vshPrint(ctl, "%s", xml);
     ret = true;
 
  cleanup:
     VIR_FREE(xml);
-    virshDomainSnapshotFree(snapshot);
+    if (!all)
+        virshDomainSnapshotFree(snapshot);
     virshDomainFree(dom);
 
     return ret;
@@ -1951,6 +2030,12 @@ const vshCmdDef snapshotCmds[] = {
      .opts = opts_snapshot_create_as,
      .info = info_snapshot_create_as,
      .flags = 0
+    },
+    {.name = "snapshot-import",
+     .handler = cmdSnapshotImport,
+     .opts = opts_snapshot_import,
+     .info = info_snapshot_import,
+     .flags = 0,
     },
     {.name = "snapshot-current",
      .handler = cmdSnapshotCurrent,

@@ -4680,6 +4680,15 @@ If I<--live> is specified, libvirt takes the snapshot while the guest is
 running. This increases the size of the memory image of the external
 snapshot. This is currently supported only for external full system snapshots.
 
+=item B<snapshot-import> I<domain> I<xmlfile>
+
+Import the metadata for all snapshots, for a domain with no existing
+snapshot metadata. This is useful for migrating snapshots from one
+host (with B<snapshot-dumpxml --all --security-info>) to another.
+
+This command is a shortcut to using B<snapshot-create --redefine> one
+snapshot at a time.
+
 =item B<snapshot-current> I<domain> {[I<--name>] | [I<--security-info>]
 | [I<snapshotname>]}
 
@@ -4786,9 +4795,13 @@ that use internal storage of existing disk images.  If I<--external>
 is specified, the list will be filtered to snapshots that use external
 files for disk images or memory state.
 
-=item B<snapshot-dumpxml> I<domain> I<snapshot> [I<--security-info>]
+=item B<snapshot-dumpxml> I<domain> {I<snapshot> | I<--all> [I<--topological>]}
+[I<--security-info>]
 
 Output the snapshot XML for the domain's snapshot named I<snapshot>.
+Alternatively, if I<--all> is passed instead of I<snapshot> output XML
+describing all snapshots at once, where I<--topological> can also be
+used to ensure no child is listed before a parent.
 Using I<--security-info> will also include security sensitive information.
 Use B<snapshot-current> to easily access the XML of the current snapshot.
 
