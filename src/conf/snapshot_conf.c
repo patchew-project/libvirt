@@ -1050,7 +1050,7 @@ virDomainSnapshotObjListFormat(virBufferPtr buf,
                               current_snapshot->def->name);
     virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
-    if (virDomainSnapshotForEach(snapshots, virDomainSnapshotFormatOne,
+    if (virDomainSnapshotForEach(snapshots, false, virDomainSnapshotFormatOne,
                                  &data) < 0) {
         virBufferFreeAndReset(buf);
         return -1;
@@ -1293,9 +1293,13 @@ void virDomainSnapshotObjListRemove(virDomainSnapshotObjListPtr snapshots,
 
 int
 virDomainSnapshotForEach(virDomainSnapshotObjListPtr snapshots,
+                         bool topological,
                          virHashIterator iter,
                          void *data)
 {
+    if (topological)
+        return virDomainSnapshotForEachDescendant(&snapshots->metaroot,
+                                                  iter, data);
     return virHashForEach(snapshots->objs, iter, data);
 }
 

@@ -8623,7 +8623,7 @@ qemuDomainSnapshotDiscardAllMetadata(virQEMUDriverPtr driver,
     rem.vm = vm;
     rem.metadata_only = true;
     rem.err = 0;
-    virDomainSnapshotForEach(vm->snapshots, qemuDomainSnapshotDiscardAll,
+    virDomainSnapshotForEach(vm->snapshots, false, qemuDomainSnapshotDiscardAll,
                              &rem);
     if (rem.current)
         vm->current_snapshot = NULL;

@@ -2170,7 +2170,8 @@ vzFindCurrentSnapshot(virDomainSnapshotObjListPtr snapshots)
 {
     virDomainSnapshotObjPtr current = NULL;
 
-    virDomainSnapshotForEach(snapshots, vzCurrentSnapshotIterator, &current);
+    virDomainSnapshotForEach(snapshots, false, vzCurrentSnapshotIterator,
+                             &current);
     return current;
 }
 

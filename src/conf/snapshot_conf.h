@@ -170,6 +170,7 @@ virDomainSnapshotObjPtr virDomainSnapshotFindByName(virDomainSnapshotObjListPtr 
 void virDomainSnapshotObjListRemove(virDomainSnapshotObjListPtr snapshots,
                                     virDomainSnapshotObjPtr snapshot);
 int virDomainSnapshotForEach(virDomainSnapshotObjListPtr snapshots,
+                             bool topological,
                              virHashIterator iter,
                              void *data);
 int virDomainSnapshotForEachChild(virDomainSnapshotObjPtr snapshot,
