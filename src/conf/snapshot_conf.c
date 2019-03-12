@@ -507,8 +507,10 @@ virDomainSnapshotRedefineValidate(virDomainSnapshotDefPtr def,
 }
 
 
-/* Parse a <snapshots> XML entry into snapshots, which must start empty.
- * Any <domain> sub-elements of a <domainsnapshot> must match domain_uuid.
+/* Parse a <snapshots> XML entry into snapshots, which must start
+ * empty.  Any <domain> sub-elements of a <domainsnapshot> must match
+ * domain_uuid.  @flags is virDomainSnapshotParseFlags.  Return the
+ * number of snapshots parsed, or -1 on error.
  */
 int
 virDomainSnapshotObjListParse(const char *xmlStr,
@@ -562,11 +564,6 @@ virDomainSnapshotObjListParse(const char *xmlStr,
 
     if ((n = virXPathNodeSet("./domainsnapshot", ctxt, &nodes)) < 0)
         goto cleanup;
-    if (!n) {
-        virReportError(VIR_ERR_XML_ERROR, "%s",
-                       _("expected at least one <domainsnapshot> child"));
-        goto cleanup;
-    }
 
     for (i = 0; i < n; i++) {
         virDomainSnapshotDefPtr def;
@@ -601,7 +598,7 @@ virDomainSnapshotObjListParse(const char *xmlStr,
         (*current_snap)->def->current = true;
     }
 
-    ret = 0;
+    ret = n;
  cleanup:
     if (ret < 0) {
         /* There were no snapshots before this call; so on error, just
@@ -1025,8 +1022,9 @@ virDomainSnapshotFormatOne(void *payload,
 }
 
 
-/* Format the XML for all snapshots in the list into buf. On error,
- * clear the buffer and return -1. */
+/* Format the XML for all snapshots in the list into buf. @flags is
+ * virDomainGetSnapshotsXMLFlags. On error, clear the buffer and
+ * return -1. */
 int
 virDomainSnapshotObjListFormat(virBufferPtr buf,
                                const char *uuidstr,
@@ -1041,17 +1039,23 @@ virDomainSnapshotObjListFormat(virBufferPtr buf,
         .uuidstr = uuidstr,
         .caps = caps,
         .xmlopt = xmlopt,
-        .flags = flags,
+        .flags = 0,
     };
+    bool topological = flags & VIR_DOMAIN_GET_SNAPSHOTS_XML_TOPOLOGICAL;
 
+    virCheckFlags(VIR_DOMAIN_GET_SNAPSHOTS_XML_SECURE |
+                  VIR_DOMAIN_GET_SNAPSHOTS_XML_TOPOLOGICAL, -1);
+
+    if (flags & VIR_DOMAIN_GET_SNAPSHOTS_XML_SECURE)
+        data.flags |= VIR_DOMAIN_SNAPSHOT_FORMAT_SECURE;
     virBufferAddLit(buf, "<snapshots");
     if (current_snapshot)
         virBufferEscapeString(buf, " current='%s'",
                               current_snapshot->def->name);
     virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
-    if (virDomainSnapshotForEach(snapshots, false, virDomainSnapshotFormatOne,
-                                 &data) < 0) {
+    if (virDomainSnapshotForEach(snapshots, topological,
+                                 virDomainSnapshotFormatOne, &data) < 0) {
         virBufferFreeAndReset(buf);
         return -1;
     }
