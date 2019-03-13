@@ -485,6 +485,10 @@ VIR_ENUM_IMPL(virDomainNetModel, VIR_DOMAIN_NET_MODEL_LAST,
               "spapr-vlan",
               "lan9118",
               "scm91c111",
+              "vlance",
+              "vmxnet",
+              "vmxnet2",
+              "vmxnet3",
 );
 
 VIR_ENUM_IMPL(virDomainNetBackend, VIR_DOMAIN_NET_BACKEND_TYPE_LAST,
