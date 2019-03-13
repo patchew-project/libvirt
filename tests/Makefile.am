@@ -47,7 +47,6 @@ AM_CFLAGS = \
 	$(SELINUX_CFLAGS) \
 	$(APPARMOR_CFLAGS) \
 	$(YAJL_CFLAGS) \
-	$(COVERAGE_CFLAGS) \
 	$(XDR_CFLAGS) \
 	$(WARN_CFLAGS)
 
@@ -275,7 +274,6 @@ endif WITH_SECDRIVER_SELINUX
 
 # This is a fake SSH we use from virnetsockettest
 ssh_SOURCES = ssh.c
-ssh_LDADD = $(COVERAGE_LDFLAGS)
 
 if WITH_LIBXL
 test_programs += xlconfigtest xml2sexprtest sexpr2xmltest \
