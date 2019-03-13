@@ -60,9 +60,10 @@ struct virConsoleBuffer {
 typedef struct virConsole virConsole;
 typedef virConsole *virConsolePtr;
 struct virConsole {
+    virObjectLockable parent;
+
     virStreamPtr st;
     bool quit;
-    virMutex lock;
     virCond cond;
 
     int stdinWatch;
@@ -74,6 +75,19 @@ struct virConsole {
     char escapeChar;
 };
 
+static virClassPtr virConsoleClass;
+static void virConsoleDispose(void *obj);
+
+static int
+virConsoleOnceInit(void)
+{
+    if (!VIR_CLASS_NEW(virConsole, virClassForObjectLockable()))
+        return -1;
+
+    return 0;
+}
+
+VIR_ONCE_GLOBAL_INIT(virConsole);
 
 static void
 virConsoleHandleSignal(int sig ATTRIBUTE_UNUSED)
@@ -98,22 +112,22 @@ virConsoleShutdown(virConsolePtr con)
         virEventRemoveHandle(con->stdoutWatch);
     con->stdinWatch = -1;
     con->stdoutWatch = -1;
-    con->quit = true;
-    virCondSignal(&con->cond);
+    if (!con->quit) {
+        con->quit = true;
+        virCondSignal(&con->cond);
+    }
 }
 
 
 static void
-virConsoleFree(virConsolePtr con)
+virConsoleDispose(void *obj)
 {
-    if (!con)
-        return;
+    virConsolePtr con = obj;
 
     if (con->st)
         virStreamFree(con->st);
-    virMutexDestroy(&con->lock);
+
     virCondDestroy(&con->cond);
-    VIR_FREE(con);
 }
 
 
@@ -288,6 +302,35 @@ virConsoleEventOnStdout(int watch ATTRIBUTE_UNUSED,
 }
 
 
+static virConsolePtr
+virConsoleNew(void)
+{
+    virConsolePtr con;
+
+    if (virConsoleInitialize() < 0)
+        return NULL;
+
+    if (!(con = virObjectNew(virConsoleClass)))
+        return NULL;
+
+    if (virCondInit(&con->cond) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("cannot initialize console condition"));
+
+        goto error;
+    }
+
+    con->stdinWatch = -1;
+    con->stdoutWatch = -1;
+
+    return con;
+
+ error:
+    virObjectUnref(con);
+    return NULL;
+}
+
+
 static char
 virshGetEscapeChar(const char *s)
 {
@@ -324,6 +367,11 @@ virshRunConsole(vshControl *ctl,
     if (vshTTYMakeRaw(ctl, true) < 0)
         goto resettty;
 
+    if (!(con = virConsoleNew()))
+        goto resettty;
+
+    virObjectLock(con);
+
     /* Trap all common signals so that we can safely restore the original
      * terminal settings on STDIN before the process exits - people don't like
      * being left with a messed up terminal ! */
@@ -332,9 +380,6 @@ virshRunConsole(vshControl *ctl,
     sigaction(SIGINT,  &sighandler, &old_sigint);
     sigaction(SIGHUP,  &sighandler, &old_sighup);
     sigaction(SIGPIPE, &sighandler, &old_sigpipe);
-
-    if (VIR_ALLOC(con) < 0)
-        goto cleanup;
 
     con->escapeChar = virshGetEscapeChar(priv->escapeChar);
     con->st = virStreamNew(virDomainGetConnect(dom),
@@ -345,42 +390,49 @@ virshRunConsole(vshControl *ctl,
     if (virDomainOpenConsole(dom, dev_name, con->st, flags) < 0)
         goto cleanup;
 
-    if (virCondInit(&con->cond) < 0 || virMutexInit(&con->lock) < 0)
+    virObjectRef(con);
+    if ((con->stdinWatch = virEventAddHandle(STDIN_FILENO,
+                                             VIR_EVENT_HANDLE_READABLE,
+                                             virConsoleEventOnStdin,
+                                             con,
+                                             virObjectFreeCallback)) < 0) {
+        virObjectUnref(con);
         goto cleanup;
+    }
 
-    virMutexLock(&con->lock);
+    virObjectRef(con);
+    if ((con->stdoutWatch = virEventAddHandle(STDOUT_FILENO,
+                                              0,
+                                              virConsoleEventOnStdout,
+                                              con,
+                                              virObjectFreeCallback)) < 0) {
+        virObjectUnref(con);
+        goto cleanup;
+    }
 
-    con->stdinWatch = virEventAddHandle(STDIN_FILENO,
-                                        VIR_EVENT_HANDLE_READABLE,
-                                        virConsoleEventOnStdin,
-                                        con,
-                                        NULL);
-    con->stdoutWatch = virEventAddHandle(STDOUT_FILENO,
-                                         0,
-                                         virConsoleEventOnStdout,
-                                         con,
-                                         NULL);
-
-    virStreamEventAddCallback(con->st,
-                              VIR_STREAM_EVENT_READABLE,
-                              virConsoleEventOnStream,
-                              con,
-                              NULL);
+    virObjectRef(con);
+    if (virStreamEventAddCallback(con->st,
+                                  VIR_STREAM_EVENT_READABLE,
+                                  virConsoleEventOnStream,
+                                  con,
+                                  virObjectFreeCallback) < 0) {
+        virObjectUnref(con);
+        goto cleanup;
+    }
 
     while (!con->quit) {
-        if (virCondWait(&con->cond, &con->lock) < 0) {
-            virMutexUnlock(&con->lock);
+        if (virCondWait(&con->cond, &con->parent.lock) < 0) {
             VIR_ERROR(_("unable to wait on console condition"));
             goto cleanup;
         }
     }
 
-    virMutexUnlock(&con->lock);
-
     ret = 0;
 
  cleanup:
-    virConsoleFree(con);
+    virConsoleShutdown(con);
+    virObjectUnlock(con);
+    virObjectUnref(con);
 
     /* Restore original signal handlers */
     sigaction(SIGQUIT, &old_sigquit, NULL);
