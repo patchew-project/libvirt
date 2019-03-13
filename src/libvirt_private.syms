@@ -477,6 +477,8 @@ virDomainNetGetActualVlan;
 virDomainNetGetModelString;
 virDomainNetInsert;
 virDomainNetIsVirtioModel;
+virDomainNetModelTypeFromString;
+virDomainNetModelTypeToString;
 virDomainNetNotifyActualDevice;
 virDomainNetReleaseActualDevice;
 virDomainNetRemove;
