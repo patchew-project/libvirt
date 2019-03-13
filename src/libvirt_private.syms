@@ -487,7 +487,6 @@ virDomainNetResolveActualType;
 virDomainNetSetDeviceImpl;
 virDomainNetSetModelString;
 virDomainNetStrcaseeqModelString;
-virDomainNetStreqModelString;
 virDomainNetTypeFromString;
 virDomainNetTypeSharesHostView;
 virDomainNetTypeToString;
