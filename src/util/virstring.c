@@ -1548,3 +1548,24 @@ virStringParsePort(const char *str,
 
     return 0;
 }
+
+
+/**
+ * virStringParseYesNo:
+ * @str: "yes|no" to parse, and the value must not be NULL.
+ * @port: pointer to parse and convert "yes|no" into
+ *
+ * Parses a string "yes|no" and convert it into true|false.
+ * Returns 0 on success and -1 on error.
+ */
+int virStringParseYesNo(const char *str, bool *result)
+{
+    if (STREQ(str, "yes"))
+        *result = true;
+    else if (STREQ(str, "no"))
+        *result = false;
+    else
+        return -1;
+
+    return 0;
+}
