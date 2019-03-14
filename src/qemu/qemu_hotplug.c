@@ -99,11 +99,6 @@ qemuDomainDeleteDevice(virDomainObjPtr vm,
         qemuDomainObjEnterMonitor(driver, vm);
 
     rc = qemuMonitorDelDevice(priv->mon, alias);
-    if (rc < 0) {
-        virObjectUnlock(priv->mon);
-        sleep(10);
-        virObjectLock(priv->mon);
-    }
 
     if (enterMonitor &&
         qemuDomainObjExitMonitor(driver, vm) < 0) {
