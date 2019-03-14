@@ -832,6 +832,9 @@ mymain(void)
 # define DO_TEST_CAPS_LATEST_PARSE_ERROR(name) \
     DO_TEST_CAPS_ARCH_LATEST_FULL(name, "x86_64", FLAG_EXPECT_PARSE_ERROR, 0)
 
+
+/* All the following macros require an explicit QEMU_CAPS_* list
+ * at the end of the argument list, or the NONE placeholder */
 # define DO_TEST_FULL(name, ...) \
     do { \
         static struct testInfo info = { \
