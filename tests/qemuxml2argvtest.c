@@ -842,22 +842,26 @@ mymain(void)
  * version.
  */
 
-# define DO_TEST_CAPS_INTERNAL(_name, arch, ver, ...) \
+# define TEST_INTERNAL(_name, _suffix, ...) \
     do { \
         static struct testInfo info = { \
             .name = _name, \
-            .suffix = "." arch "-" ver, \
+            .suffix = _suffix, \
         }; \
         if (testInfoSetArgs(&info, capslatest, \
-                            ARG_CAPS_ARCH, arch, \
-                            ARG_CAPS_VER, ver, \
                             __VA_ARGS__, ARG_END) < 0) \
             return EXIT_FAILURE; \
-        if (virTestRun("QEMU XML-2-ARGV " _name "." arch "-" ver, \
+        if (virTestRun("QEMU XML-2-ARGV " _name _suffix, \
                        testCompareXMLToArgv, &info) < 0) \
             ret = -1; \
         testInfoClear(&info); \
     } while (0)
+
+# define DO_TEST_CAPS_INTERNAL(name, arch, ver, ...) \
+    TEST_INTERNAL(name, "." arch "-" ver, \
+                  ARG_CAPS_ARCH, arch, \
+                  ARG_CAPS_VER, ver, \
+                  __VA_ARGS__)
 
 # define DO_TEST_CAPS_ARCH_VER(name, arch, ver) \
     DO_TEST_CAPS_INTERNAL(name, arch, ver, ARG_END)
@@ -885,19 +889,8 @@ mymain(void)
 
 /* All the following macros require an explicit QEMU_CAPS_* list
  * at the end of the argument list, or the NONE placeholder */
-# define DO_TEST_FULL(_name, ...) \
-    do { \
-        static struct testInfo info = { \
-            .name = _name, \
-        }; \
-        if (testInfoSetArgs(&info, capslatest, \
-                            __VA_ARGS__, QEMU_CAPS_LAST, ARG_END) < 0) \
-            return EXIT_FAILURE; \
-        if (virTestRun("QEMU XML-2-ARGV " _name, \
-                       testCompareXMLToArgv, &info) < 0) \
-            ret = -1; \
-        testInfoClear(&info); \
-    } while (0)
+# define DO_TEST_FULL(name, ...) \
+    TEST_INTERNAL(name, "", __VA_ARGS__, QEMU_CAPS_LAST)
 
 # define DO_TEST(name, ...) \
     DO_TEST_FULL(name, \
