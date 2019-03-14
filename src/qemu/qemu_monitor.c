@@ -3008,6 +3008,16 @@ qemuMonitorDriveDel(qemuMonitorPtr mon,
 }
 
 
+/**
+ * @mon: monitor object
+ * @devalias: alias of the device to detach
+ *
+ * Sends device detach request to qemu.
+ *
+ * Returns: 0 on success,
+ *         -2 if DeviceNotFound error encountered
+ *         -1 otherwise
+ */
 int
 qemuMonitorDelDevice(qemuMonitorPtr mon,
                      const char *devalias)
