@@ -621,19 +621,21 @@ testInfoSetArgs(struct testInfo *info, ...)
 {
     va_list argptr;
     testInfoArgNames argname;
+    virQEMUCapsPtr qemuCaps = NULL;
+    int gic = GIC_NONE;
     int ret = -1;
 
     va_start(argptr, info);
     while ((argname = va_arg(argptr, int)) < ARG_END) {
         switch (argname) {
         case ARG_QEMU_CAPS:
-            virQEMUCapsSetVList(info->qemuCaps, argptr);
+            if (qemuCaps || !(qemuCaps = virQEMUCapsNew()))
+                goto cleanup;
+            virQEMUCapsSetVList(qemuCaps, argptr);
             break;
 
         case ARG_GIC:
-            if (testQemuCapsSetGIC(info->qemuCaps,
-                                   va_arg(argptr, int)) < 0)
-                goto cleanup;
+            gic = va_arg(argptr, int);
             break;
 
         case ARG_MIGRATE_FROM:
@@ -659,8 +661,20 @@ testInfoSetArgs(struct testInfo *info, ...)
         }
     }
 
+    if (!info->qemuCaps) {
+        if (!qemuCaps) {
+            fprintf(stderr, "No qemuCaps generated\n");
+            goto cleanup;
+        }
+        VIR_STEAL_PTR(info->qemuCaps, qemuCaps);
+    }
+
+    if (gic && testQemuCapsSetGIC(info->qemuCaps, gic) < 0)
+        goto cleanup;
+
     ret = 0;
  cleanup:
+    virObjectUnref(qemuCaps);
     va_end(argptr);
     return ret;
 }
@@ -851,8 +865,6 @@ mymain(void)
         static struct testInfo info = { \
             .name = _name, \
         }; \
-        if (!(info.qemuCaps = virQEMUCapsNew())) \
-            return EXIT_FAILURE; \
         if (testInfoSetArgs(&info, __VA_ARGS__, QEMU_CAPS_LAST, ARG_END) < 0) \
             return EXIT_FAILURE; \
         if (virTestRun("QEMU XML-2-ARGV " _name, \
