@@ -786,11 +786,12 @@ mymain(void)
  * the test cases should be forked using DO_TEST_CAPS_VER with the appropriate
  * version.
  */
-# define DO_TEST_CAPS_INTERNAL(name, suffix, \
+# define DO_TEST_CAPS_INTERNAL(_name, _suffix, \
                                arch, capsfile, stripmachinealiases, ...) \
     do { \
         static struct testInfo info = { \
-            name, "." suffix, NULL, NULL, -1, 0, 0, \
+            .name = _name, \
+            .suffix = "." _suffix, \
         }; \
         if (!(info.qemuCaps = qemuTestParseCapabilitiesArch(virArchFromString(arch), \
                                                             capsfile))) \
@@ -800,7 +801,7 @@ mymain(void)
         if (testInfoSetArgs(&info, __VA_ARGS__, ARG_END) < 0) \
             return EXIT_FAILURE; \
         info.flags |= FLAG_REAL_CAPS; \
-        if (virTestRun("QEMU XML-2-ARGV " name "." suffix, \
+        if (virTestRun("QEMU XML-2-ARGV " _name "." _suffix, \
                        testCompareXMLToArgv, &info) < 0) \
             ret = -1; \
         virObjectUnref(info.qemuCaps); \
@@ -841,16 +842,16 @@ mymain(void)
 
 /* All the following macros require an explicit QEMU_CAPS_* list
  * at the end of the argument list, or the NONE placeholder */
-# define DO_TEST_FULL(name, ...) \
+# define DO_TEST_FULL(_name, ...) \
     do { \
         static struct testInfo info = { \
-            name, NULL, NULL, NULL, -1, 0, 0, \
+            .name = _name, \
         }; \
         if (!(info.qemuCaps = virQEMUCapsNew())) \
             return EXIT_FAILURE; \
         if (testInfoSetArgs(&info, __VA_ARGS__, QEMU_CAPS_LAST, ARG_END) < 0) \
             return EXIT_FAILURE; \
-        if (virTestRun("QEMU XML-2-ARGV " name, \
+        if (virTestRun("QEMU XML-2-ARGV " _name, \
                        testCompareXMLToArgv, &info) < 0) \
             ret = -1; \
         virObjectUnref(info.qemuCaps); \
