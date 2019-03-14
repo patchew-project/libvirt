@@ -17,7 +17,7 @@ matrix:
         - docker
       env:
         - IMAGE="centos-7"
-        - DISTCHECK_CONFIGURE_FLAGS="--with-init-script=upstart"
+        - DISTCHECK_CONFIGURE_FLAGS="--with-init-script=redhat"
         - DOCKER_CMD="$LINUX_CMD"
     - services:
         - docker
