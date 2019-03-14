@@ -624,14 +624,35 @@ testCompareXMLToArgv(const void *data)
     return ret;
 }
 
+typedef enum {
+    ARG_QEMU_CAPS = 1,
+
+    ARG_END = QEMU_CAPS_LAST,
+} testInfoArgNames;
+
 static int
 testInfoSetArgs(struct testInfo *info, ...)
 {
     va_list argptr;
-    int ret = 0;
+    testInfoArgNames argname;
+    int ret = -1;
 
     va_start(argptr, info);
-    virQEMUCapsSetVList(info->qemuCaps, argptr);
+    while ((argname = va_arg(argptr, int)) < ARG_END) {
+        switch (argname) {
+        case ARG_QEMU_CAPS:
+            virQEMUCapsSetVList(info->qemuCaps, argptr);
+            break;
+
+        case ARG_END:
+        default:
+            fprintf(stderr, "Unexpected test info argument");
+            goto cleanup;
+        }
+    }
+
+    ret = 0;
+ cleanup:
     va_end(argptr);
     return ret;
 }
@@ -821,7 +842,8 @@ mymain(void)
         }; \
         if (testInitQEMUCaps(&info, gic) < 0) \
             return EXIT_FAILURE; \
-        if (testInfoSetArgs(&info, __VA_ARGS__, QEMU_CAPS_LAST) < 0) \
+        if (testInfoSetArgs(&info, ARG_QEMU_CAPS, \
+                            __VA_ARGS__, QEMU_CAPS_LAST, ARG_END) < 0) \
             return EXIT_FAILURE; \
         if (virTestRun("QEMU XML-2-ARGV " name, \
                        testCompareXMLToArgv, &info) < 0) \
