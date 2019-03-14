@@ -183,9 +183,15 @@
     <element name='features'>
       <interleave>
         <ref name='gic'/>
-        <ref name='vmcoreinfo'/>
-        <ref name='vmgenid'/>
-        <ref name='sev'/>
+        <optional>
+          <ref name='vmcoreinfo'/>
+        </optional>
+        <optional>
+          <ref name='vmgenid'/>
+        </optional>
+        <optional>
+          <ref name='sev'/>
+        </optional>
       </interleave>
     </element>
   </define>
