@@ -67,6 +67,9 @@ VIR_LOG_INIT("qemu.qemu_hotplug");
 unsigned long long qemuDomainRemoveDeviceWaitTime = 1000ull * 5;
 
 
+static void
+qemuDomainResetDeviceRemoval(virDomainObjPtr vm);
+
 /**
  * qemuDomainDeleteDevice:
  * @vm: domain object
@@ -103,8 +106,51 @@ qemuDomainDeleteDevice(virDomainObjPtr vm,
     }
 
     if (enterMonitor &&
-        qemuDomainObjExitMonitor(driver, vm) < 0)
-        rc = -1;
+        qemuDomainObjExitMonitor(driver, vm) < 0) {
+        /* Domain is no longer running. No cleanup needed. */
+        return -1;
+    }
+
+    if (rc < 0) {
+        bool eventSeen;
+
+        /* Deleting device failed. Let's check if DEVICE_DELETED
+         * even arrived. If it did, we need to claim success to
+         * make the caller remove device from domain XML. */
+        if (enterMonitor) {
+            /* Here @vm is locked again. It's safe to access
+             * private data directly. */
+        } else {
+            /* Here @vm is not locked. Do some locking magic to
+             * be able to access private data. It is safe to lock
+             * and unlock both @mon and @vm here because:
+             * a) qemuDomainObjEnterMonitor() ensures @mon is ref()'d
+             * b) The API that is calling us ensures that @vm is ref()'d
+             */
+            virObjectUnlock(priv->mon);
+            virObjectLock(vm);
+            virObjectLock(priv->mon);
+        }
+
+        eventSeen = priv->unplug.eventSeen;
+        if (eventSeen) {
+            /* The event arrived. Return success. */
+            VIR_DEBUG("Detaching of device %s failed, but event arrived", alias);
+            qemuDomainResetDeviceRemoval(vm);
+            rc = 0;
+        } else if (rc == -2) {
+            /* The device does not exist in qemu, but it still
+             * exists in libvirt. Claim success to make caller
+             * qemuDomainWaitForDeviceRemoval(). Otherwise if
+             * domain XML is queried right after detach API the
+             * device would still be there.  */
+            VIR_DEBUG("Detaching of device %s failed and no event arrived", alias);
+            rc = 0;
+        }
+
+        if (!enterMonitor)
+            virObjectUnlock(vm);
+    }
 
     return rc;
 }
@@ -5186,6 +5232,7 @@ qemuDomainResetDeviceRemoval(virDomainObjPtr vm)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     priv->unplug.alias = NULL;
+    priv->unplug.eventSeen = false;
 }
 
 /* Returns:
@@ -5245,6 +5292,7 @@ qemuDomainSignalDeviceRemoval(virDomainObjPtr vm,
         VIR_DEBUG("Removal of device '%s' continues in waiting thread", devAlias);
         qemuDomainResetDeviceRemoval(vm);
         priv->unplug.status = status;
+        priv->unplug.eventSeen = true;
         virDomainObjBroadcast(vm);
         return true;
     }
