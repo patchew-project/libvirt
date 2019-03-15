@@ -1,7 +1,7 @@
 /*
  * datatypes.c: management of structs for public data types
  *
- * Copyright (C) 2006-2015 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,6 +36,7 @@ VIR_LOG_INIT("datatypes");
 virClassPtr virConnectClass;
 virClassPtr virConnectCloseCallbackDataClass;
 virClassPtr virDomainClass;
+virClassPtr virDomainMomentClass;
 virClassPtr virDomainSnapshotClass;
 virClassPtr virInterfaceClass;
 virClassPtr virNetworkClass;
@@ -50,7 +51,8 @@ virClassPtr virStoragePoolClass;
 static void virConnectDispose(void *obj);
 static void virConnectCloseCallbackDataDispose(void *obj);
 static void virDomainDispose(void *obj);
-static void virDomainSnapshotDispose(void *obj);
+static void virDomainMomentDispose(void *obj);
+#define virDomainSnapshotDispose NULL
 static void virInterfaceDispose(void *obj);
 static void virNetworkDispose(void *obj);
 static void virNodeDeviceDispose(void *obj);
@@ -86,7 +88,8 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS_LOCKABLE(virConnect);
     DECLARE_CLASS_LOCKABLE(virConnectCloseCallbackData);
     DECLARE_CLASS(virDomain);
-    DECLARE_CLASS(virDomainSnapshot);
+    DECLARE_CLASS(virDomainMoment);
+    DECLARE_CLASS_COMMON(virDomainSnapshot, virDomainMomentClass);
     DECLARE_CLASS(virInterface);
     DECLARE_CLASS(virNetwork);
     DECLARE_CLASS(virNodeDevice);
@@ -901,6 +904,64 @@ virNWFilterBindingDispose(void *obj)
 
 
 /**
+ * virGetDomainMoment:
+ * @domain: the domain involved in a point-in-time moment
+ * @name: pointer to the domain moment name
+ *
+ * Allocates a new concrete subclass of a domain moment object. When
+ * the object is no longer needed, virObjectUnref() must be called in
+ * order to not leak data.
+ *
+ * Returns a pointer to the domain moment object, or NULL on error.
+ */
+static virDomainMomentPtr
+virGetDomainMoment(virDomainPtr domain, const char *name, virClassPtr subclass)
+{
+    virDomainMomentPtr ret = NULL;
+
+    if (virDataTypesInitialize() < 0)
+        return NULL;
+
+    virCheckDomainGoto(domain, error);
+    virCheckNonNullArgGoto(name, error);
+
+    if (!(ret = virObjectNew(subclass)))
+        goto error;
+    if (VIR_STRDUP(ret->name, name) < 0)
+        goto error;
+
+    ret->domain = virObjectRef(domain);
+
+    return ret;
+
+ error:
+    virObjectUnref(ret);
+    return NULL;
+}
+
+
+/**
+ * virDomainMomentDispose:
+ * @obj: the domain moment to release
+ *
+ * Unconditionally release all memory associated with a moment.
+ * The object must not be used once this method returns.
+ *
+ * It will also unreference the associated connection object,
+ * which may also be released if its ref count hits zero.
+ */
+static void
+virDomainMomentDispose(void *obj)
+{
+    virDomainMomentPtr moment = obj;
+    VIR_DEBUG("release moment %p %s", moment, moment->name);
+
+    VIR_FREE(moment->name);
+    virObjectUnref(moment->domain);
+}
+
+
+/**
  * virGetDomainSnapshot:
  * @domain: the domain to snapshot
  * @name: pointer to the domain snapshot name
@@ -913,47 +974,8 @@ virNWFilterBindingDispose(void *obj)
 virDomainSnapshotPtr
 virGetDomainSnapshot(virDomainPtr domain, const char *name)
 {
-    virDomainSnapshotPtr ret = NULL;
-
-    if (virDataTypesInitialize() < 0)
-        return NULL;
-
-    virCheckDomainGoto(domain, error);
-    virCheckNonNullArgGoto(name, error);
-
-    if (!(ret = virObjectNew(virDomainSnapshotClass)))
-        goto error;
-    if (VIR_STRDUP(ret->_name, name) < 0)
-        goto error;
-
-    ret->_domain = virObjectRef(domain);
-
-    return ret;
-
- error:
-    virObjectUnref(ret);
-    return NULL;
-}
-
-
-/**
- * virDomainSnapshotDispose:
- * @obj: the domain snapshot to release
- *
- * Unconditionally release all memory associated with a snapshot.
- * The snapshot object must not be used once this method returns.
- *
- * It will also unreference the associated connection object,
- * which may also be released if its ref count hits zero.
- */
-static void
-virDomainSnapshotDispose(void *obj)
-{
-    virDomainSnapshotPtr snapshot = obj;
-    VIR_DEBUG("release snapshot %p %s", snapshot, snapshot->_name);
-
-    VIR_FREE(snapshot->_name);
-    virObjectUnref(snapshot->_domain);
+    return (virDomainSnapshotPtr) virGetDomainMoment(domain, name,
+                                                     virDomainSnapshotClass);
 }
 
 
