@@ -94,6 +94,11 @@ VIR_ENUM_IMPL(virStorageVolFormatDisk,
               "extended",
 );
 
+VIR_ENUM_IMPL(virStorageVolRefreshAllocation,
+              VIR_STORAGE_VOL_REFRESH_ALLOCATION_LAST,
+              "default", "capacity",
+);
+
 VIR_ENUM_IMPL(virStoragePartedFs,
               VIR_STORAGE_PARTED_FS_TYPE_LAST,
               "ext2", "ext2", "fat16",
@@ -797,6 +802,7 @@ virStoragePoolDefParseXML(xmlXPathContextPtr ctxt)
     xmlNodePtr source_node;
     VIR_AUTOPTR(virStoragePoolDef) def = NULL;
     VIR_AUTOFREE(char *) type = NULL;
+    VIR_AUTOFREE(char *) refresh_volume_allocation = NULL;
     VIR_AUTOFREE(char *) uuid = NULL;
     VIR_AUTOFREE(char *) target_path = NULL;
 
@@ -818,6 +824,18 @@ virStoragePoolDefParseXML(xmlXPathContextPtr ctxt)
 
     if ((options = virStoragePoolOptionsForPoolType(def->type)) == NULL)
         return NULL;
+
+    refresh_volume_allocation = virXPathString("string(./@refresh_volume_allocation)",
+                                               ctxt);
+    if (refresh_volume_allocation) {
+        if ((def->refresh_volume_allocation =
+                virStorageVolRefreshAllocationTypeFromString(refresh_volume_allocation)) < 0) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("unknown storage pool volume refresh allocation type %s"),
+                               refresh_volume_allocation);
+                return NULL;
+        }
+    }
 
     source_node = virXPathNode("./source", ctxt);
     if (source_node) {
@@ -1107,8 +1125,13 @@ virStoragePoolDefFormatBuf(virBufferPtr buf,
         return -1;
     }
     virBufferAsprintf(buf, "<pool type='%s'", type);
+    if (def->refresh_volume_allocation)
+        virBufferAsprintf(buf, " refresh_volume_allocation='%s'",
+                          virStorageVolRefreshAllocationTypeToString(def->refresh_volume_allocation));
     if (def->namespaceData && def->ns.href)
         virBufferAsprintf(buf, " %s", (def->ns.href)());
+
+
     virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
     virBufferEscapeString(buf, "<name>%s</name>\n", def->name);

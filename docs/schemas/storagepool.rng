@@ -11,6 +11,11 @@
 
   <define name='pool'>
     <element name='pool'>
+      <optional>
+        <attribute name='refresh_volume_allocation'>
+          <ref name="refreshVolumeAllocation"/>
+        </attribute>
+      </optional>
       <choice>
         <ref name='pooldir'/>
         <ref name='poolfs'/>

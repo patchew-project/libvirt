@@ -16,7 +16,7 @@
     </p>
     <p>
       The top level tag for a storage pool document is 'pool'. It has
-      a single attribute <code>type</code>, which is one of <code>dir</code>,
+      an attribute <code>type</code>, which is one of <code>dir</code>,
       <code>fs</code>, <code>netfs</code>, <code>disk</code>,
       <code>iscsi</code>, <code>logical</code>, <code>scsi</code>
       (all <span class="since">since 0.4.1</span>),
@@ -27,8 +27,17 @@
       <code>zfs</code> (<span class="since">since 1.2.8</span>),
       <code>vstorage</code> (<span class="since">since 3.1.0</span>),
       or <code>iscsi-direct</code> (<span class="since">since 4.7.0</span>).
-      This corresponds to the
-      storage backend drivers listed further along in this document.
+      This corresponds to the storage backend drivers listed further along in
+      this document.
+    </p>
+    <p>
+      The 'pool' element may also have an optional
+      <code>refresh_volume_allocation</code> attribute to control how
+      volume allocation is computed during a refresh. Valid values
+      are <code>default</code> to compute the actual usage or
+      <code>capacity</code> to default the allocation to the logical
+      capacity for cases where computing the allocation is too expensive.
+      <span class="since">Since 5.1.1</span>
     </p>
     <h3><a id="StoragePoolFirst">General metadata</a></h3>
 
