@@ -32,6 +32,7 @@
 extern virClassPtr virConnectClass;
 extern virClassPtr virDomainClass;
 extern virClassPtr virDomainMomentClass;
+extern virClassPtr virDomainCheckpointClass;
 extern virClassPtr virDomainSnapshotClass;
 extern virClassPtr virInterfaceClass;
 extern virClassPtr virNetworkClass;
@@ -293,7 +294,23 @@ extern virClassPtr virAdmClientClass;
         } \
     } while (0)
 
-# define virCheckDomainSnapshotReturn(obj, retval) \
+
+# define virCheckDomainCheckpointReturn(obj, retval) \
+    do { \
+        virDomainCheckpointPtr _check = (obj); \
+        if (!virObjectIsClass(_check, virDomainCheckpointClass) || \
+            !virObjectIsClass(virChkDom(_check), virDomainClass) ||     \
+            !virObjectIsClass(virChkDom(_check)->conn, virConnectClass)) { \
+            virReportErrorHelper(VIR_FROM_DOMAIN_CHECKPOINT, \
+                                 VIR_ERR_INVALID_DOMAIN_CHECKPOINT, \
+                                 __FILE__, __FUNCTION__, __LINE__, \
+                                 __FUNCTION__); \
+            virDispatchError(NULL); \
+            return retval; \
+        } \
+    } while (0)
+
+# define virCheckDomainSnapshotReturn(obj, retval)      \
     do { \
         virDomainSnapshotPtr _snap = (obj); \
         if (!virObjectIsClass(_snap, virDomainSnapshotClass) || \
@@ -683,6 +700,27 @@ struct _virDomainMoment {
     virDomainPtr domain;
 };
 
+/*
+ * _virDomainCheckpoint
+ *
+ * Internal structure associated with a domain checkpoint
+ */
+struct _virDomainCheckpoint {
+    virDomainMoment parent;
+};
+
+static inline char *
+virChkName(virDomainCheckpointPtr checkpoint)
+{
+    return checkpoint->parent.name;
+}
+
+static inline virDomainPtr
+virChkDom(virDomainCheckpointPtr checkpoint)
+{
+    return checkpoint->parent.domain;
+}
+
 /**
  * _virDomainSnapshot
  *
@@ -769,6 +807,8 @@ virNWFilterPtr virGetNWFilter(virConnectPtr conn,
 virNWFilterBindingPtr virGetNWFilterBinding(virConnectPtr conn,
                                             const char *portdev,
                                             const char *filtername);
+virDomainCheckpointPtr virGetDomainCheckpoint(virDomainPtr domain,
+                                              const char *name);
 virDomainSnapshotPtr virGetDomainSnapshot(virDomainPtr domain,
                                           const char *name);
 

@@ -37,6 +37,7 @@ virClassPtr virConnectClass;
 virClassPtr virConnectCloseCallbackDataClass;
 virClassPtr virDomainClass;
 virClassPtr virDomainMomentClass;
+virClassPtr virDomainCheckpointClass;
 virClassPtr virDomainSnapshotClass;
 virClassPtr virInterfaceClass;
 virClassPtr virNetworkClass;
@@ -52,6 +53,7 @@ static void virConnectDispose(void *obj);
 static void virConnectCloseCallbackDataDispose(void *obj);
 static void virDomainDispose(void *obj);
 static void virDomainMomentDispose(void *obj);
+#define virDomainCheckpointDispose NULL
 #define virDomainSnapshotDispose NULL
 static void virInterfaceDispose(void *obj);
 static void virNetworkDispose(void *obj);
@@ -89,6 +91,7 @@ virDataTypesOnceInit(void)
     DECLARE_CLASS_LOCKABLE(virConnectCloseCallbackData);
     DECLARE_CLASS(virDomain);
     DECLARE_CLASS(virDomainMoment);
+    DECLARE_CLASS_COMMON(virDomainCheckpoint, virDomainMomentClass);
     DECLARE_CLASS_COMMON(virDomainSnapshot, virDomainMomentClass);
     DECLARE_CLASS(virInterface);
     DECLARE_CLASS(virNetwork);
@@ -958,6 +961,25 @@ virDomainMomentDispose(void *obj)
 
     VIR_FREE(moment->name);
     virObjectUnref(moment->domain);
+}
+
+
+/**
+ * virGetDomainCheckpoint:
+ * @domain: the domain to checkpoint
+ * @name: pointer to the domain checkpoint name
+ *
+ * Allocates a new domain checkpoint object. When the object is no longer needed,
+ * virObjectUnref() must be called in order to not leak data.
+ *
+ * Returns a pointer to the domain checkpoint object, or NULL on error.
+ */
+virDomainCheckpointPtr
+virGetDomainCheckpoint(virDomainPtr domain,
+                       const char *name)
+{
+    return (virDomainCheckpointPtr) virGetDomainMoment(domain, name,
+                                                       virDomainCheckpointClass);
 }
 
 
