@@ -147,10 +147,11 @@ virClassForObjectRWLockable(void)
  *
  * Register a new object class with @name. The @objectSize
  * should give the total size of the object struct, which
- * is expected to have a 'virObject object;' field as its
- * first member. When the last reference on the object is
- * released, the @dispose callback will be invoked to free
- * memory of the object fields
+ * is expected to have a 'virObject parent;' field as (or
+ * contained in) its first member. When the last reference
+ * on the object is released, the @dispose callback will be
+ * invoked to free memory of the local object fields, as
+ * well as dispose callbacks of the parent classes
  *
  * Returns a new class instance
  */
