@@ -1,7 +1,7 @@
 /*
  * datatypes.h: management of structs for public data types
  *
- * Copyright (C) 2006-2015 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -296,8 +296,8 @@ extern virClassPtr virAdmClientClass;
     do { \
         virDomainSnapshotPtr _snap = (obj); \
         if (!virObjectIsClass(_snap, virDomainSnapshotClass) || \
-            !virObjectIsClass(_snap->domain, virDomainClass) || \
-            !virObjectIsClass(_snap->domain->conn, virConnectClass)) { \
+            !virObjectIsClass(virSnapDom(_snap), virDomainClass) || \
+            !virObjectIsClass(virSnapDom(_snap)->conn, virConnectClass)) { \
             virReportErrorHelper(VIR_FROM_DOMAIN_SNAPSHOT, \
                                  VIR_ERR_INVALID_DOMAIN_SNAPSHOT, \
                                  __FILE__, __FUNCTION__, __LINE__, \
@@ -675,9 +675,21 @@ struct _virStream {
  */
 struct _virDomainSnapshot {
     virObject parent;
-    char *name;
-    virDomainPtr domain;
+    char *_name;
+    virDomainPtr _domain;
 };
+
+static inline char *
+virSnapName(virDomainSnapshotPtr snapshot)
+{
+    return snapshot->_name;
+}
+
+static inline virDomainPtr
+virSnapDom(virDomainSnapshotPtr snapshot)
+{
+    return snapshot->_domain;
+}
 
 /**
 * _virNWFilter:

@@ -8270,8 +8270,8 @@ make_nonnull_nwfilter_binding(remote_nonnull_nwfilter_binding *binding_dst, virN
 static void
 make_nonnull_domain_snapshot(remote_nonnull_domain_snapshot *snapshot_dst, virDomainSnapshotPtr snapshot_src)
 {
-    snapshot_dst->name = snapshot_src->name;
-    make_nonnull_domain(&snapshot_dst->dom, snapshot_src->domain);
+    snapshot_dst->name = virSnapName(snapshot_src);
+    make_nonnull_domain(&snapshot_dst->dom, virSnapDom(snapshot_src));
 }
 
 /*----------------------------------------------------------------------*/

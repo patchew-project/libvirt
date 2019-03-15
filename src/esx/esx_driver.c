@@ -4166,7 +4166,7 @@ static char *
 esxDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
                             unsigned int flags)
 {
-    esxPrivate *priv = snapshot->domain->conn->privateData;
+    esxPrivate *priv = virSnapDom(snapshot)->conn->privateData;
     esxVI_VirtualMachineSnapshotTree *rootSnapshotList = NULL;
     esxVI_VirtualMachineSnapshotTree *snapshotTree = NULL;
     esxVI_VirtualMachineSnapshotTree *snapshotTreeParent = NULL;
@@ -4181,15 +4181,15 @@ esxDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     if (esxVI_EnsureSession(priv->primary) < 0)
         return NULL;
 
-    if (esxVI_LookupRootSnapshotTreeList(priv->primary, snapshot->domain->uuid,
+    if (esxVI_LookupRootSnapshotTreeList(priv->primary, virSnapDom(snapshot)->uuid,
                                          &rootSnapshotList) < 0 ||
-        esxVI_GetSnapshotTreeByName(rootSnapshotList, snapshot->name,
+        esxVI_GetSnapshotTreeByName(rootSnapshotList, virSnapName(snapshot),
                                     &snapshotTree, &snapshotTreeParent,
                                     esxVI_Occurrence_RequiredItem) < 0) {
         goto cleanup;
     }
 
-    def.name = snapshot->name;
+    def.name = virSnapName(snapshot);
     def.description = snapshotTree->description;
     def.parent = snapshotTreeParent ? snapshotTreeParent->name : NULL;
 
@@ -4201,7 +4201,7 @@ esxDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     def.state = esxVI_VirtualMachinePowerState_ConvertToLibvirt
                   (snapshotTree->state);
 
-    virUUIDFormat(snapshot->domain->uuid, uuid_string);
+    virUUIDFormat(virSnapDom(snapshot)->uuid, uuid_string);
 
     xml = virDomainSnapshotDefFormat(uuid_string, &def, priv->caps, priv->xmlopt,
                                      0);
@@ -4299,7 +4299,7 @@ static int
 esxDomainSnapshotNumChildren(virDomainSnapshotPtr snapshot, unsigned int flags)
 {
     int count = -1;
-    esxPrivate *priv = snapshot->domain->conn->privateData;
+    esxPrivate *priv = virSnapDom(snapshot)->conn->privateData;
     esxVI_VirtualMachineSnapshotTree *rootSnapshotTreeList = NULL;
     esxVI_VirtualMachineSnapshotTree *snapshotTree = NULL;
     bool recurse;
@@ -4315,9 +4315,9 @@ esxDomainSnapshotNumChildren(virDomainSnapshotPtr snapshot, unsigned int flags)
     if (esxVI_EnsureSession(priv->primary) < 0)
         return -1;
 
-    if (esxVI_LookupRootSnapshotTreeList(priv->primary, snapshot->domain->uuid,
+    if (esxVI_LookupRootSnapshotTreeList(priv->primary, virSnapDom(snapshot)->uuid,
                                          &rootSnapshotTreeList) < 0 ||
-        esxVI_GetSnapshotTreeByName(rootSnapshotTreeList, snapshot->name,
+        esxVI_GetSnapshotTreeByName(rootSnapshotTreeList, virSnapName(snapshot),
                                     &snapshotTree, NULL,
                                     esxVI_Occurrence_RequiredItem) < 0) {
         goto cleanup;
@@ -4346,7 +4346,7 @@ esxDomainSnapshotListChildrenNames(virDomainSnapshotPtr snapshot,
                                    unsigned int flags)
 {
     int result = -1;
-    esxPrivate *priv = snapshot->domain->conn->privateData;
+    esxPrivate *priv = virSnapDom(snapshot)->conn->privateData;
     esxVI_VirtualMachineSnapshotTree *rootSnapshotTreeList = NULL;
     esxVI_VirtualMachineSnapshotTree *snapshotTree = NULL;
     bool recurse;
@@ -4370,9 +4370,9 @@ esxDomainSnapshotListChildrenNames(virDomainSnapshotPtr snapshot,
     if (esxVI_EnsureSession(priv->primary) < 0)
         return -1;
 
-    if (esxVI_LookupRootSnapshotTreeList(priv->primary, snapshot->domain->uuid,
+    if (esxVI_LookupRootSnapshotTreeList(priv->primary, virSnapDom(snapshot)->uuid,
                                          &rootSnapshotTreeList) < 0 ||
-        esxVI_GetSnapshotTreeByName(rootSnapshotTreeList, snapshot->name,
+        esxVI_GetSnapshotTreeByName(rootSnapshotTreeList, virSnapName(snapshot),
                                     &snapshotTree, NULL,
                                     esxVI_Occurrence_RequiredItem) < 0) {
         goto cleanup;
@@ -4457,7 +4457,7 @@ esxDomainHasCurrentSnapshot(virDomainPtr domain, unsigned int flags)
 static virDomainSnapshotPtr
 esxDomainSnapshotGetParent(virDomainSnapshotPtr snapshot, unsigned int flags)
 {
-    esxPrivate *priv = snapshot->domain->conn->privateData;
+    esxPrivate *priv = virSnapDom(snapshot)->conn->privateData;
     esxVI_VirtualMachineSnapshotTree *rootSnapshotList = NULL;
     esxVI_VirtualMachineSnapshotTree *snapshotTree = NULL;
     esxVI_VirtualMachineSnapshotTree *snapshotTreeParent = NULL;
@@ -4468,9 +4468,9 @@ esxDomainSnapshotGetParent(virDomainSnapshotPtr snapshot, unsigned int flags)
     if (esxVI_EnsureSession(priv->primary) < 0)
         return NULL;
 
-    if (esxVI_LookupRootSnapshotTreeList(priv->primary, snapshot->domain->uuid,
+    if (esxVI_LookupRootSnapshotTreeList(priv->primary, virSnapDom(snapshot)->uuid,
                                          &rootSnapshotList) < 0 ||
-        esxVI_GetSnapshotTreeByName(rootSnapshotList, snapshot->name,
+        esxVI_GetSnapshotTreeByName(rootSnapshotList, virSnapName(snapshot),
                                     &snapshotTree, &snapshotTreeParent,
                                     esxVI_Occurrence_RequiredItem) < 0) {
         goto cleanup;
@@ -4483,7 +4483,7 @@ esxDomainSnapshotGetParent(virDomainSnapshotPtr snapshot, unsigned int flags)
         goto cleanup;
     }
 
-    parent = virGetDomainSnapshot(snapshot->domain, snapshotTreeParent->name);
+    parent = virGetDomainSnapshot(virSnapDom(snapshot), snapshotTreeParent->name);
 
  cleanup:
     esxVI_VirtualMachineSnapshotTree_Free(&rootSnapshotList);
@@ -4522,7 +4522,7 @@ esxDomainSnapshotCurrent(virDomainPtr domain, unsigned int flags)
 static int
 esxDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot, unsigned int flags)
 {
-    esxPrivate *priv = snapshot->domain->conn->privateData;
+    esxPrivate *priv = virSnapDom(snapshot)->conn->privateData;
     esxVI_VirtualMachineSnapshotTree *currentSnapshotTree = NULL;
     esxVI_VirtualMachineSnapshotTree *rootSnapshotList = NULL;
     esxVI_VirtualMachineSnapshotTree *snapshotTree = NULL;
@@ -4534,21 +4534,21 @@ esxDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot, unsigned int flags)
         return -1;
 
     /* Check that snapshot exists.  */
-    if (esxVI_LookupRootSnapshotTreeList(priv->primary, snapshot->domain->uuid,
+    if (esxVI_LookupRootSnapshotTreeList(priv->primary, virSnapDom(snapshot)->uuid,
                                          &rootSnapshotList) < 0 ||
-        esxVI_GetSnapshotTreeByName(rootSnapshotList, snapshot->name,
+        esxVI_GetSnapshotTreeByName(rootSnapshotList, virSnapName(snapshot),
                                     &snapshotTree, NULL,
                                     esxVI_Occurrence_RequiredItem) < 0) {
         goto cleanup;
     }
 
-    if (esxVI_LookupCurrentSnapshotTree(priv->primary, snapshot->domain->uuid,
+    if (esxVI_LookupCurrentSnapshotTree(priv->primary, virSnapDom(snapshot)->uuid,
                                         &currentSnapshotTree,
                                         esxVI_Occurrence_RequiredItem) < 0) {
         goto cleanup;
     }
 
-    ret = STREQ(snapshot->name, currentSnapshotTree->name);
+    ret = STREQ(virSnapName(snapshot), currentSnapshotTree->name);
 
  cleanup:
     esxVI_VirtualMachineSnapshotTree_Free(&currentSnapshotTree);
@@ -4560,7 +4560,7 @@ esxDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot, unsigned int flags)
 static int
 esxDomainSnapshotHasMetadata(virDomainSnapshotPtr snapshot, unsigned int flags)
 {
-    esxPrivate *priv = snapshot->domain->conn->privateData;
+    esxPrivate *priv = virSnapDom(snapshot)->conn->privateData;
     esxVI_VirtualMachineSnapshotTree *rootSnapshotList = NULL;
     esxVI_VirtualMachineSnapshotTree *snapshotTree = NULL;
     int ret = -1;
@@ -4571,9 +4571,9 @@ esxDomainSnapshotHasMetadata(virDomainSnapshotPtr snapshot, unsigned int flags)
         return -1;
 
     /* Check that snapshot exists.  If so, there is no metadata.  */
-    if (esxVI_LookupRootSnapshotTreeList(priv->primary, snapshot->domain->uuid,
+    if (esxVI_LookupRootSnapshotTreeList(priv->primary, virSnapDom(snapshot)->uuid,
                                          &rootSnapshotList) < 0 ||
-        esxVI_GetSnapshotTreeByName(rootSnapshotList, snapshot->name,
+        esxVI_GetSnapshotTreeByName(rootSnapshotList, virSnapName(snapshot),
                                     &snapshotTree, NULL,
                                     esxVI_Occurrence_RequiredItem) < 0) {
         goto cleanup;
@@ -4591,7 +4591,7 @@ static int
 esxDomainRevertToSnapshot(virDomainSnapshotPtr snapshot, unsigned int flags)
 {
     int result = -1;
-    esxPrivate *priv = snapshot->domain->conn->privateData;
+    esxPrivate *priv = virSnapDom(snapshot)->conn->privateData;
     esxVI_VirtualMachineSnapshotTree *rootSnapshotList = NULL;
     esxVI_VirtualMachineSnapshotTree *snapshotTree = NULL;
     esxVI_ManagedObjectReference *task = NULL;
@@ -4603,9 +4603,9 @@ esxDomainRevertToSnapshot(virDomainSnapshotPtr snapshot, unsigned int flags)
     if (esxVI_EnsureSession(priv->primary) < 0)
         return -1;
 
-    if (esxVI_LookupRootSnapshotTreeList(priv->primary, snapshot->domain->uuid,
+    if (esxVI_LookupRootSnapshotTreeList(priv->primary, virSnapDom(snapshot)->uuid,
                                          &rootSnapshotList) < 0 ||
-        esxVI_GetSnapshotTreeByName(rootSnapshotList, snapshot->name,
+        esxVI_GetSnapshotTreeByName(rootSnapshotList, virSnapName(snapshot),
                                     &snapshotTree, NULL,
                                     esxVI_Occurrence_RequiredItem) < 0) {
         goto cleanup;
@@ -4613,7 +4613,7 @@ esxDomainRevertToSnapshot(virDomainSnapshotPtr snapshot, unsigned int flags)
 
     if (esxVI_RevertToSnapshot_Task(priv->primary, snapshotTree->snapshot, NULL,
                                     esxVI_Boolean_Undefined, &task) < 0 ||
-        esxVI_WaitForTaskCompletion(priv->primary, task, snapshot->domain->uuid,
+        esxVI_WaitForTaskCompletion(priv->primary, task, virSnapDom(snapshot)->uuid,
                                     esxVI_Occurrence_RequiredItem,
                                     priv->parsedUri->autoAnswer, &taskInfoState,
                                     &taskInfoErrorMessage) < 0) {
@@ -4622,7 +4622,7 @@ esxDomainRevertToSnapshot(virDomainSnapshotPtr snapshot, unsigned int flags)
 
     if (taskInfoState != esxVI_TaskInfoState_Success) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Could not revert to snapshot '%s': %s"), snapshot->name,
+                       _("Could not revert to snapshot '%s': %s"), virSnapName(snapshot),
                        taskInfoErrorMessage);
         goto cleanup;
     }
@@ -4643,7 +4643,7 @@ static int
 esxDomainSnapshotDelete(virDomainSnapshotPtr snapshot, unsigned int flags)
 {
     int result = -1;
-    esxPrivate *priv = snapshot->domain->conn->privateData;
+    esxPrivate *priv = virSnapDom(snapshot)->conn->privateData;
     esxVI_VirtualMachineSnapshotTree *rootSnapshotList = NULL;
     esxVI_VirtualMachineSnapshotTree *snapshotTree = NULL;
     esxVI_Boolean removeChildren = esxVI_Boolean_False;
@@ -4660,9 +4660,9 @@ esxDomainSnapshotDelete(virDomainSnapshotPtr snapshot, unsigned int flags)
     if (flags & VIR_DOMAIN_SNAPSHOT_DELETE_CHILDREN)
         removeChildren = esxVI_Boolean_True;
 
-    if (esxVI_LookupRootSnapshotTreeList(priv->primary, snapshot->domain->uuid,
+    if (esxVI_LookupRootSnapshotTreeList(priv->primary, virSnapDom(snapshot)->uuid,
                                          &rootSnapshotList) < 0 ||
-        esxVI_GetSnapshotTreeByName(rootSnapshotList, snapshot->name,
+        esxVI_GetSnapshotTreeByName(rootSnapshotList, virSnapName(snapshot),
                                     &snapshotTree, NULL,
                                     esxVI_Occurrence_RequiredItem) < 0) {
         goto cleanup;
@@ -4677,7 +4677,7 @@ esxDomainSnapshotDelete(virDomainSnapshotPtr snapshot, unsigned int flags)
 
     if (esxVI_RemoveSnapshot_Task(priv->primary, snapshotTree->snapshot,
                                   removeChildren, &task) < 0 ||
-        esxVI_WaitForTaskCompletion(priv->primary, task, snapshot->domain->uuid,
+        esxVI_WaitForTaskCompletion(priv->primary, task, virSnapDom(snapshot)->uuid,
                                     esxVI_Occurrence_RequiredItem,
                                     priv->parsedUri->autoAnswer, &taskInfoState,
                                     &taskInfoErrorMessage) < 0) {
@@ -4686,7 +4686,7 @@ esxDomainSnapshotDelete(virDomainSnapshotPtr snapshot, unsigned int flags)
 
     if (taskInfoState != esxVI_TaskInfoState_Success) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Could not delete snapshot '%s': %s"), snapshot->name,
+                       _("Could not delete snapshot '%s': %s"), virSnapName(snapshot),
                        taskInfoErrorMessage);
         goto cleanup;
     }

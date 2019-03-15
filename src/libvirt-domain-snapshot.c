@@ -45,7 +45,7 @@ virDomainSnapshotGetName(virDomainSnapshotPtr snapshot)
 
     virCheckDomainSnapshotReturn(snapshot, NULL);
 
-    return snapshot->name;
+    return virSnapName(snapshot);
 }
 
 
@@ -68,7 +68,7 @@ virDomainSnapshotGetDomain(virDomainSnapshotPtr snapshot)
 
     virCheckDomainSnapshotReturn(snapshot, NULL);
 
-    return snapshot->domain;
+    return virSnapDom(snapshot);
 }
 
 
@@ -91,7 +91,7 @@ virDomainSnapshotGetConnect(virDomainSnapshotPtr snapshot)
 
     virCheckDomainSnapshotReturn(snapshot, NULL);
 
-    return snapshot->domain->conn;
+    return virSnapDom(snapshot)->conn;
 }
 
 
@@ -267,7 +267,7 @@ virDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     virResetLastError();
 
     virCheckDomainSnapshotReturn(snapshot, NULL);
-    conn = snapshot->domain->conn;
+    conn = virSnapDom(snapshot)->conn;
 
     if ((conn->flags & VIR_CONNECT_RO) &&
         (flags & VIR_DOMAIN_SNAPSHOT_XML_SECURE)) {
@@ -600,7 +600,7 @@ virDomainSnapshotNumChildren(virDomainSnapshotPtr snapshot, unsigned int flags)
     virResetLastError();
 
     virCheckDomainSnapshotReturn(snapshot, -1);
-    conn = snapshot->domain->conn;
+    conn = virSnapDom(snapshot)->conn;
 
     if (conn->driver->domainSnapshotNumChildren) {
         int ret = conn->driver->domainSnapshotNumChildren(snapshot, flags);
@@ -694,7 +694,7 @@ virDomainSnapshotListChildrenNames(virDomainSnapshotPtr snapshot,
     virResetLastError();
 
     virCheckDomainSnapshotReturn(snapshot, -1);
-    conn = snapshot->domain->conn;
+    conn = virSnapDom(snapshot)->conn;
 
     virCheckNonNullArgGoto(names, error);
     virCheckNonNegativeArgGoto(nameslen, error);
@@ -790,7 +790,7 @@ virDomainSnapshotListAllChildren(virDomainSnapshotPtr snapshot,
         *snaps = NULL;
 
     virCheckDomainSnapshotReturn(snapshot, -1);
-    conn = snapshot->domain->conn;
+    conn = virSnapDom(snapshot)->conn;
 
     if (conn->driver->domainSnapshotListAllChildren) {
         int ret = conn->driver->domainSnapshotListAllChildren(snapshot, snaps,
@@ -952,7 +952,7 @@ virDomainSnapshotGetParent(virDomainSnapshotPtr snapshot,
     virResetLastError();
 
     virCheckDomainSnapshotReturn(snapshot, NULL);
-    conn = snapshot->domain->conn;
+    conn = virSnapDom(snapshot)->conn;
 
     if (conn->driver->domainSnapshotGetParent) {
         virDomainSnapshotPtr snap;
@@ -990,7 +990,7 @@ virDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot,
     virResetLastError();
 
     virCheckDomainSnapshotReturn(snapshot, -1);
-    conn = snapshot->domain->conn;
+    conn = virSnapDom(snapshot)->conn;
 
     if (conn->driver->domainSnapshotIsCurrent) {
         int ret;
@@ -1029,7 +1029,7 @@ virDomainSnapshotHasMetadata(virDomainSnapshotPtr snapshot,
     virResetLastError();
 
     virCheckDomainSnapshotReturn(snapshot, -1);
-    conn = snapshot->domain->conn;
+    conn = virSnapDom(snapshot)->conn;
 
     if (conn->driver->domainSnapshotHasMetadata) {
         int ret;
@@ -1100,7 +1100,7 @@ virDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     virResetLastError();
 
     virCheckDomainSnapshotReturn(snapshot, -1);
-    conn = snapshot->domain->conn;
+    conn = virSnapDom(snapshot)->conn;
 
     virCheckReadOnlyGoto(conn->flags, error);
 
@@ -1157,7 +1157,7 @@ virDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
     virResetLastError();
 
     virCheckDomainSnapshotReturn(snapshot, -1);
-    conn = snapshot->domain->conn;
+    conn = virSnapDom(snapshot)->conn;
 
     virCheckReadOnlyGoto(conn->flags, error);
 

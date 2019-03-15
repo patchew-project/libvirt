@@ -5732,7 +5732,7 @@ static int
 vboxSnapshotGetReadWriteDisks(virDomainSnapshotDefPtr def,
                               virDomainSnapshotPtr snapshot)
 {
-    virDomainPtr dom = snapshot->domain;
+    virDomainPtr dom = virSnapDom(snapshot);
     vboxDriverPtr data = dom->conn->privateData;
     vboxIID domiid;
     IMachine *machine = NULL;
@@ -5756,7 +5756,7 @@ vboxSnapshotGetReadWriteDisks(virDomainSnapshotDefPtr def,
     if (openSessionForMachine(data, dom->uuid, &domiid, &machine) < 0)
         goto cleanup;
 
-    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, snapshot->name)))
+    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, virSnapName(snapshot))))
         goto cleanup;
 
     rc = gVBoxAPI.UISnapshot.GetId(snap, &snapIid);
@@ -5972,7 +5972,7 @@ static int
 vboxSnapshotGetReadOnlyDisks(virDomainSnapshotDefPtr def,
                              virDomainSnapshotPtr snapshot)
 {
-    virDomainPtr dom = snapshot->domain;
+    virDomainPtr dom = virSnapDom(snapshot);
     vboxDriverPtr data = dom->conn->privateData;
     vboxIID domiid;
     ISnapshot *snap = NULL;
@@ -5994,7 +5994,7 @@ vboxSnapshotGetReadOnlyDisks(virDomainSnapshotDefPtr def,
     if (openSessionForMachine(data, dom->uuid, &domiid, &machine) < 0)
         goto cleanup;
 
-    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, snapshot->name)))
+    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, virSnapName(snapshot))))
         goto cleanup;
 
     rc = gVBoxAPI.UISnapshot.GetMachine(snap, &snapMachine);
@@ -6195,7 +6195,7 @@ vboxSnapshotGetReadOnlyDisks(virDomainSnapshotDefPtr def,
 static char *vboxDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
                                           unsigned int flags)
 {
-    virDomainPtr dom = snapshot->domain;
+    virDomainPtr dom = virSnapDom(snapshot);
     vboxDriverPtr data = dom->conn->privateData;
     vboxIID domiid;
     IMachine *machine = NULL;
@@ -6218,12 +6218,12 @@ static char *vboxDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     if (openSessionForMachine(data, dom->uuid, &domiid, &machine) < 0)
         goto cleanup;
 
-    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, snapshot->name)))
+    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, virSnapName(snapshot))))
         goto cleanup;
 
     if (VIR_ALLOC(def) < 0 || !(def->dom = virDomainDefNew()))
         goto cleanup;
-    if (VIR_STRDUP(def->name, snapshot->name) < 0)
+    if (VIR_STRDUP(def->name, virSnapName(snapshot)) < 0)
         goto cleanup;
 
     if (gVBoxAPI.vboxSnapshotRedefine) {
@@ -6265,7 +6265,7 @@ static char *vboxDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     if (NS_FAILED(rc)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("could not get description of snapshot %s"),
-                       snapshot->name);
+                       virSnapName(snapshot));
         goto cleanup;
     }
     if (str16) {
@@ -6282,7 +6282,7 @@ static char *vboxDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     if (NS_FAILED(rc)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("could not get creation time of snapshot %s"),
-                       snapshot->name);
+                       virSnapName(snapshot));
         goto cleanup;
     }
     /* timestamp is in milliseconds while creationTime in seconds */
@@ -6292,7 +6292,7 @@ static char *vboxDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     if (NS_FAILED(rc)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("could not get parent of snapshot %s"),
-                       snapshot->name);
+                       virSnapName(snapshot));
         goto cleanup;
     }
     if (parent) {
@@ -6300,7 +6300,7 @@ static char *vboxDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
         if (NS_FAILED(rc) || !str16) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("could not get name of parent of snapshot %s"),
-                           snapshot->name);
+                           virSnapName(snapshot));
             goto cleanup;
         }
         VBOX_UTF16_TO_UTF8(str16, &str8);
@@ -6316,7 +6316,7 @@ static char *vboxDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     if (NS_FAILED(rc)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("could not get online state of snapshot %s"),
-                       snapshot->name);
+                       virSnapName(snapshot));
         goto cleanup;
     }
     if (online)
@@ -6531,7 +6531,7 @@ static virDomainSnapshotPtr
 vboxDomainSnapshotGetParent(virDomainSnapshotPtr snapshot,
                             unsigned int flags)
 {
-    virDomainPtr dom = snapshot->domain;
+    virDomainPtr dom = virSnapDom(snapshot);
     vboxDriverPtr data = dom->conn->privateData;
     vboxIID iid;
     IMachine *machine = NULL;
@@ -6550,20 +6550,20 @@ vboxDomainSnapshotGetParent(virDomainSnapshotPtr snapshot,
     if (openSessionForMachine(data, dom->uuid, &iid, &machine) < 0)
         goto cleanup;
 
-    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, snapshot->name)))
+    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, virSnapName(snapshot))))
         goto cleanup;
 
     rc = gVBoxAPI.UISnapshot.GetParent(snap, &parent);
     if (NS_FAILED(rc)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("could not get parent of snapshot %s"),
-                       snapshot->name);
+                       virSnapName(snapshot));
         goto cleanup;
     }
     if (!parent) {
         virReportError(VIR_ERR_NO_DOMAIN_SNAPSHOT,
                        _("snapshot '%s' does not have a parent"),
-                       snapshot->name);
+                       virSnapName(snapshot));
         goto cleanup;
     }
 
@@ -6571,7 +6571,7 @@ vboxDomainSnapshotGetParent(virDomainSnapshotPtr snapshot,
     if (NS_FAILED(rc) || !nameUtf16) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("could not get name of parent of snapshot %s"),
-                       snapshot->name);
+                       virSnapName(snapshot));
         goto cleanup;
     }
     VBOX_UTF16_TO_UTF8(nameUtf16, &name);
@@ -6652,7 +6652,7 @@ vboxDomainSnapshotCurrent(virDomainPtr dom, unsigned int flags)
 static int vboxDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot,
                                        unsigned int flags)
 {
-    virDomainPtr dom = snapshot->domain;
+    virDomainPtr dom = virSnapDom(snapshot);
     vboxDriverPtr data = dom->conn->privateData;
     vboxIID iid;
     IMachine *machine = NULL;
@@ -6671,7 +6671,7 @@ static int vboxDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot,
     if (openSessionForMachine(data, dom->uuid, &iid, &machine) < 0)
         goto cleanup;
 
-    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, snapshot->name)))
+    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, virSnapName(snapshot))))
         goto cleanup;
 
     rc = gVBoxAPI.UIMachine.GetCurrentSnapshot(machine, &current);
@@ -6698,7 +6698,7 @@ static int vboxDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot,
         goto cleanup;
     }
 
-    ret = STREQ(snapshot->name, name);
+    ret = STREQ(virSnapName(snapshot), name);
 
  cleanup:
     VBOX_UTF8_FREE(name);
@@ -6713,7 +6713,7 @@ static int vboxDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot,
 static int vboxDomainSnapshotHasMetadata(virDomainSnapshotPtr snapshot,
                                          unsigned int flags)
 {
-    virDomainPtr dom = snapshot->domain;
+    virDomainPtr dom = virSnapDom(snapshot);
     vboxDriverPtr data = dom->conn->privateData;
     vboxIID iid;
     IMachine *machine = NULL;
@@ -6729,7 +6729,7 @@ static int vboxDomainSnapshotHasMetadata(virDomainSnapshotPtr snapshot,
         goto cleanup;
 
     /* Check that snapshot exists.  If so, there is no metadata.  */
-    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, snapshot->name)))
+    if (!(snap = vboxDomainSnapshotGet(data, dom, machine, virSnapName(snapshot))))
         goto cleanup;
 
     ret = 0;
@@ -6744,7 +6744,7 @@ static int vboxDomainSnapshotHasMetadata(virDomainSnapshotPtr snapshot,
 static int vboxDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                                       unsigned int flags)
 {
-    virDomainPtr dom = snapshot->domain;
+    virDomainPtr dom = virSnapDom(snapshot);
     vboxDriverPtr data = dom->conn->privateData;
     vboxIID domiid;
     IMachine *machine = NULL;
@@ -6763,7 +6763,7 @@ static int vboxDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     if (openSessionForMachine(data, dom->uuid, &domiid, &machine) < 0)
         goto cleanup;
 
-    newSnapshot = vboxDomainSnapshotGet(data, dom, machine, snapshot->name);
+    newSnapshot = vboxDomainSnapshotGet(data, dom, machine, virSnapName(snapshot));
     if (!newSnapshot)
         goto cleanup;
 
@@ -6771,7 +6771,7 @@ static int vboxDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     if (NS_FAILED(rc)) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("could not get online state of snapshot %s"),
-                       snapshot->name);
+                       virSnapName(snapshot));
         goto cleanup;
     }
 
@@ -6908,7 +6908,7 @@ vboxDomainSnapshotDeleteMetadataOnly(virDomainSnapshotPtr snapshot)
      * the machine with the new file.
      */
 
-    virDomainPtr dom = snapshot->domain;
+    virDomainPtr dom = virSnapDom(snapshot);
     vboxDriverPtr data = dom->conn->privateData;
     virDomainSnapshotDefPtr def = NULL;
     char *defXml = NULL;
@@ -7345,7 +7345,7 @@ vboxDomainSnapshotDeleteMetadataOnly(virDomainSnapshotPtr snapshot)
 static int vboxDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
                                     unsigned int flags)
 {
-    virDomainPtr dom = snapshot->domain;
+    virDomainPtr dom = virSnapDom(snapshot);
     vboxDriverPtr data = dom->conn->privateData;
     vboxIID domiid;
     IMachine *machine = NULL;
@@ -7365,7 +7365,7 @@ static int vboxDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
     if (openSessionForMachine(data, dom->uuid, &domiid, &machine) < 0)
         goto cleanup;
 
-    snap = vboxDomainSnapshotGet(data, dom, machine, snapshot->name);
+    snap = vboxDomainSnapshotGet(data, dom, machine, virSnapName(snapshot));
     if (!snap)
         goto cleanup;
 

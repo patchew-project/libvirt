@@ -2148,7 +2148,7 @@ static virDomainSnapshotObjPtr
 vzSnapObjFromSnapshot(virDomainSnapshotObjListPtr snapshots,
                       virDomainSnapshotPtr snapshot)
 {
-    return vzSnapObjFromName(snapshots, snapshot->name);
+    return vzSnapObjFromName(snapshots, virSnapName(snapshot));
 }
 
 static int
@@ -2271,14 +2271,14 @@ vzDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot, unsigned int flags)
     virDomainSnapshotObjPtr snap;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
     virDomainSnapshotObjListPtr snapshots = NULL;
-    vzConnPtr privconn = snapshot->domain->conn->privateData;
+    vzConnPtr privconn = virSnapDom(snapshot)->conn->privateData;
 
     virCheckFlags(VIR_DOMAIN_SNAPSHOT_XML_SECURE, NULL);
 
-    if (!(dom = vzDomObjFromDomain(snapshot->domain)))
+    if (!(dom = vzDomObjFromDomain(virSnapDom(snapshot))))
         return NULL;
 
-    if (virDomainSnapshotGetXMLDescEnsureACL(snapshot->domain->conn, dom->def, flags) < 0)
+    if (virDomainSnapshotGetXMLDescEnsureACL(virSnapDom(snapshot)->conn, dom->def, flags) < 0)
         goto cleanup;
 
     if (!(snapshots = prlsdkLoadSnapshots(dom)))
@@ -2287,7 +2287,7 @@ vzDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot, unsigned int flags)
     if (!(snap = vzSnapObjFromSnapshot(snapshots, snapshot)))
         goto cleanup;
 
-    virUUIDFormat(snapshot->domain->uuid, uuidstr);
+    virUUIDFormat(virSnapDom(snapshot)->uuid, uuidstr);
 
     xml = virDomainSnapshotDefFormat(uuidstr, snap->def, privconn->driver->caps,
                                      privconn->driver->xmlopt,
@@ -2311,10 +2311,10 @@ vzDomainSnapshotNumChildren(virDomainSnapshotPtr snapshot, unsigned int flags)
     virCheckFlags(VIR_DOMAIN_SNAPSHOT_LIST_DESCENDANTS |
                   VIR_DOMAIN_SNAPSHOT_FILTERS_ALL, -1);
 
-    if (!(dom = vzDomObjFromDomain(snapshot->domain)))
+    if (!(dom = vzDomObjFromDomain(virSnapDom(snapshot))))
         return -1;
 
-    if (virDomainSnapshotNumChildrenEnsureACL(snapshot->domain->conn, dom->def) < 0)
+    if (virDomainSnapshotNumChildrenEnsureACL(virSnapDom(snapshot)->conn, dom->def) < 0)
         goto cleanup;
 
     if (!(snapshots = prlsdkLoadSnapshots(dom)))
@@ -2346,10 +2346,10 @@ vzDomainSnapshotListChildrenNames(virDomainSnapshotPtr snapshot,
     virCheckFlags(VIR_DOMAIN_SNAPSHOT_LIST_DESCENDANTS |
                   VIR_DOMAIN_SNAPSHOT_FILTERS_ALL, -1);
 
-    if (!(dom = vzDomObjFromDomain(snapshot->domain)))
+    if (!(dom = vzDomObjFromDomain(virSnapDom(snapshot))))
         return -1;
 
-    if (virDomainSnapshotListChildrenNamesEnsureACL(snapshot->domain->conn, dom->def) < 0)
+    if (virDomainSnapshotListChildrenNamesEnsureACL(virSnapDom(snapshot)->conn, dom->def) < 0)
         goto cleanup;
 
     if (!(snapshots = prlsdkLoadSnapshots(dom)))
@@ -2380,10 +2380,10 @@ vzDomainSnapshotListAllChildren(virDomainSnapshotPtr snapshot,
     virCheckFlags(VIR_DOMAIN_SNAPSHOT_LIST_DESCENDANTS |
                   VIR_DOMAIN_SNAPSHOT_FILTERS_ALL, -1);
 
-    if (!(dom = vzDomObjFromDomain(snapshot->domain)))
+    if (!(dom = vzDomObjFromDomain(virSnapDom(snapshot))))
         return -1;
 
-    if (virDomainSnapshotListAllChildrenEnsureACL(snapshot->domain->conn, dom->def) < 0)
+    if (virDomainSnapshotListAllChildrenEnsureACL(virSnapDom(snapshot)->conn, dom->def) < 0)
         goto cleanup;
 
     if (!(snapshots = prlsdkLoadSnapshots(dom)))
@@ -2392,7 +2392,7 @@ vzDomainSnapshotListAllChildren(virDomainSnapshotPtr snapshot,
     if (!(snap = vzSnapObjFromSnapshot(snapshots, snapshot)))
         goto cleanup;
 
-    n = virDomainListSnapshots(snapshots, snap, snapshot->domain, snaps, flags);
+    n = virDomainListSnapshots(snapshots, snap, virSnapDom(snapshot), snaps, flags);
 
  cleanup:
     virDomainSnapshotObjListFree(snapshots);
@@ -2471,10 +2471,10 @@ vzDomainSnapshotGetParent(virDomainSnapshotPtr snapshot, unsigned int flags)
 
     virCheckFlags(0, NULL);
 
-    if (!(dom = vzDomObjFromDomain(snapshot->domain)))
+    if (!(dom = vzDomObjFromDomain(virSnapDom(snapshot))))
         return NULL;
 
-    if (virDomainSnapshotGetParentEnsureACL(snapshot->domain->conn, dom->def) < 0)
+    if (virDomainSnapshotGetParentEnsureACL(virSnapDom(snapshot)->conn, dom->def) < 0)
         goto cleanup;
 
     if (!(snapshots = prlsdkLoadSnapshots(dom)))
@@ -2490,7 +2490,7 @@ vzDomainSnapshotGetParent(virDomainSnapshotPtr snapshot, unsigned int flags)
         goto cleanup;
     }
 
-    parent = virGetDomainSnapshot(snapshot->domain, snap->def->parent);
+    parent = virGetDomainSnapshot(virSnapDom(snapshot), snap->def->parent);
 
  cleanup:
     virDomainSnapshotObjListFree(snapshots);
@@ -2543,17 +2543,17 @@ vzDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot, unsigned int flags)
 
     virCheckFlags(0, -1);
 
-    if (!(dom = vzDomObjFromDomain(snapshot->domain)))
+    if (!(dom = vzDomObjFromDomain(virSnapDom(snapshot))))
         return -1;
 
-    if (virDomainSnapshotIsCurrentEnsureACL(snapshot->domain->conn, dom->def) < 0)
+    if (virDomainSnapshotIsCurrentEnsureACL(virSnapDom(snapshot)->conn, dom->def) < 0)
         goto cleanup;
 
     if (!(snapshots = prlsdkLoadSnapshots(dom)))
         goto cleanup;
 
     current = vzFindCurrentSnapshot(snapshots);
-    ret = current && STREQ(snapshot->name, current->def->name);
+    ret = current && STREQ(virSnapName(snapshot), current->def->name);
 
  cleanup:
     virDomainSnapshotObjListFree(snapshots);
@@ -2573,10 +2573,10 @@ vzDomainSnapshotHasMetadata(virDomainSnapshotPtr snapshot,
 
     virCheckFlags(0, -1);
 
-    if (!(dom = vzDomObjFromDomain(snapshot->domain)))
+    if (!(dom = vzDomObjFromDomain(virSnapDom(snapshot))))
         return -1;
 
-    if (virDomainSnapshotHasMetadataEnsureACL(snapshot->domain->conn, dom->def) < 0)
+    if (virDomainSnapshotHasMetadataEnsureACL(virSnapDom(snapshot)->conn, dom->def) < 0)
         goto cleanup;
 
     if (!(snapshots = prlsdkLoadSnapshots(dom)))
@@ -2674,13 +2674,13 @@ vzDomainSnapshotDelete(virDomainSnapshotPtr snapshot, unsigned int flags)
 
     virCheckFlags(VIR_DOMAIN_SNAPSHOT_DELETE_CHILDREN, -1);
 
-    if (!(dom = vzDomObjFromDomain(snapshot->domain)))
+    if (!(dom = vzDomObjFromDomain(virSnapDom(snapshot))))
         return -1;
 
-    if (virDomainSnapshotDeleteEnsureACL(snapshot->domain->conn, dom->def) < 0)
+    if (virDomainSnapshotDeleteEnsureACL(virSnapDom(snapshot)->conn, dom->def) < 0)
         goto cleanup;
 
-    ret = prlsdkDeleteSnapshot(dom, snapshot->name,
+    ret = prlsdkDeleteSnapshot(dom, virSnapName(snapshot),
                                flags & VIR_DOMAIN_SNAPSHOT_DELETE_CHILDREN);
 
  cleanup:
@@ -2698,10 +2698,10 @@ vzDomainRevertToSnapshot(virDomainSnapshotPtr snapshot, unsigned int flags)
 
     virCheckFlags(VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED, -1);
 
-    if (!(dom = vzDomObjFromDomain(snapshot->domain)))
+    if (!(dom = vzDomObjFromDomain(virSnapDom(snapshot))))
         return -1;
 
-    if (virDomainRevertToSnapshotEnsureACL(snapshot->domain->conn, dom->def) < 0)
+    if (virDomainRevertToSnapshotEnsureACL(virSnapDom(snapshot)->conn, dom->def) < 0)
         goto cleanup;
 
     if (vzDomainObjBeginJob(dom) < 0)
@@ -2711,7 +2711,7 @@ vzDomainRevertToSnapshot(virDomainSnapshotPtr snapshot, unsigned int flags)
     if (vzEnsureDomainExists(dom) < 0)
         goto cleanup;
 
-    ret = prlsdkSwitchToSnapshot(dom, snapshot->name,
+    ret = prlsdkSwitchToSnapshot(dom, virSnapName(snapshot),
                                  flags & VIR_DOMAIN_SNAPSHOT_REVERT_PAUSED);
  cleanup:
     if (job)

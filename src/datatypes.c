@@ -923,10 +923,10 @@ virGetDomainSnapshot(virDomainPtr domain, const char *name)
 
     if (!(ret = virObjectNew(virDomainSnapshotClass)))
         goto error;
-    if (VIR_STRDUP(ret->name, name) < 0)
+    if (VIR_STRDUP(ret->_name, name) < 0)
         goto error;
 
-    ret->domain = virObjectRef(domain);
+    ret->_domain = virObjectRef(domain);
 
     return ret;
 
@@ -950,10 +950,10 @@ static void
 virDomainSnapshotDispose(void *obj)
 {
     virDomainSnapshotPtr snapshot = obj;
-    VIR_DEBUG("release snapshot %p %s", snapshot, snapshot->name);
+    VIR_DEBUG("release snapshot %p %s", snapshot, snapshot->_name);
 
-    VIR_FREE(snapshot->name);
-    virObjectUnref(snapshot->domain);
+    VIR_FREE(snapshot->_name);
+    virObjectUnref(snapshot->_domain);
 }
 
 
