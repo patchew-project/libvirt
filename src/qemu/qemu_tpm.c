@@ -834,16 +834,16 @@ qemuExtTPMStartEmulator(virQEMUDriverPtr driver,
 
 
 int
-qemuExtTPMStart(virQEMUDriverPtr driver,
-                virDomainObjPtr vm,
+qemuExtTPMStart(virDomainObjPtr vm,
                 qemuDomainLogContextPtr logCtxt)
 {
     int ret = 0;
+    qemuDomainObjPrivatePtr priv = vm->privateData;
     virDomainTPMDefPtr tpm = vm->def->tpm;
 
     switch (tpm->type) {
     case VIR_DOMAIN_TPM_TYPE_EMULATOR:
-        ret = qemuExtTPMStartEmulator(driver, vm, logCtxt);
+        ret = qemuExtTPMStartEmulator(priv->driver, vm, logCtxt);
         break;
     case VIR_DOMAIN_TPM_TYPE_PASSTHROUGH:
     case VIR_DOMAIN_TPM_TYPE_LAST:
