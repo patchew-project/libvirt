@@ -2681,65 +2681,27 @@ qemuDomainObjPrivateXMLParsePR(xmlXPathContextPtr ctxt,
 
 static int
 qemuDomainObjPrivateXMLParseJobNBDSource(xmlNodePtr node,
+                                         qemuDomainObjPrivatePtr priv,
                                          xmlXPathContextPtr ctxt,
                                          virDomainDiskDefPtr disk)
 {
     VIR_XPATH_NODE_AUTORESTORE(ctxt);
     qemuDomainDiskPrivatePtr diskPriv = QEMU_DOMAIN_DISK_PRIVATE(disk);
-    char *format = NULL;
-    char *type = NULL;
-    int ret = -1;
-    VIR_AUTOUNREF(virStorageSourcePtr) migrSource = NULL;
 
     ctxt->node = node;
 
-    if (!(ctxt->node = virXPathNode("./migrationSource", ctxt))) {
-        ret = 0;
-        goto cleanup;
-    }
+    if (!(ctxt->node = virXPathNode("./migrationSource", ctxt)))
+        return 0;
 
-    if (!(migrSource = virStorageSourceNew()))
-        goto cleanup;
+    if (!(diskPriv->migrSource = virDomainStorageSourceParseFull("string(@type)",
+                                                                 "string(@format)",
+                                                                 ".", NULL,
+                                                                 false, ctxt,
+                                                                 VIR_DOMAIN_DEF_PARSE_STATUS,
+                                                                 priv->driver->xmlopt)))
+        return -1;
 
-    if (!(type = virXMLPropString(ctxt->node, "type"))) {
-        virReportError(VIR_ERR_XML_ERROR, "%s",
-                       _("missing storage source type"));
-        goto cleanup;
-    }
-
-    if (!(format = virXMLPropString(ctxt->node, "format"))) {
-        virReportError(VIR_ERR_XML_ERROR, "%s",
-                       _("missing storage source format"));
-        goto cleanup;
-    }
-
-    if ((migrSource->type = virStorageTypeFromString(type)) <= 0) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("unknown storage source type '%s'"), type);
-        goto cleanup;
-    }
-
-    if ((migrSource->format = virStorageFileFormatTypeFromString(format)) <= 0) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("unknown storage source format '%s'"), format);
-        goto cleanup;
-    }
-
-    if (virDomainStorageSourceParse(ctxt->node, ctxt, migrSource,
-                                    VIR_DOMAIN_DEF_PARSE_STATUS, NULL) < 0)
-        goto cleanup;
-
-    if ((ctxt->node = virXPathNode("./privateData", ctxt)) &&
-        qemuStorageSourcePrivateDataParse(ctxt, migrSource) < 0)
-        goto cleanup;
-
-    VIR_STEAL_PTR(diskPriv->migrSource, migrSource);
-    ret = 0;
-
- cleanup:
-    VIR_FREE(format);
-    VIR_FREE(type);
-    return ret;
+    return 0;
 }
 
 
@@ -2770,7 +2732,7 @@ qemuDomainObjPrivateXMLParseJobNBD(virDomainObjPtr vm,
                 (disk = virDomainDiskByName(vm->def, dst, false))) {
                 QEMU_DOMAIN_DISK_PRIVATE(disk)->migrating = true;
 
-                if (qemuDomainObjPrivateXMLParseJobNBDSource(nodes[i], ctxt,
+                if (qemuDomainObjPrivateXMLParseJobNBDSource(nodes[i], priv, ctxt,
                                                              disk) < 0)
                     goto cleanup;
             }
