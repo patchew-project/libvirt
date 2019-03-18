@@ -9205,20 +9205,6 @@ virDomainStorageSourceParseFull(const char *typeXPath,
 }
 
 
-int
-virDomainDiskSourceParse(xmlNodePtr node,
-                         xmlXPathContextPtr ctxt,
-                         virStorageSourcePtr src,
-                         unsigned int flags,
-                         virDomainXMLOptionPtr xmlopt)
-{
-    if (virDomainStorageSourceParse(node, ctxt, src, flags, xmlopt) < 0)
-        return -1;
-
-    return 0;
-}
-
-
 static int
 virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
                                virStorageSourcePtr src,
@@ -9280,7 +9266,7 @@ virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
         return -1;
     }
 
-    if (virDomainDiskSourceParse(source, ctxt, backingStore, flags, xmlopt) < 0 ||
+    if (virDomainStorageSourceParse(source, ctxt, backingStore, flags, xmlopt) < 0 ||
         virDomainDiskBackingStoreParse(ctxt, backingStore, flags, xmlopt) < 0)
         return -1;
 
@@ -9414,8 +9400,8 @@ virDomainDiskDefMirrorParse(virDomainDiskDefPtr def,
             return -1;
         }
 
-        if (virDomainDiskSourceParse(mirrorNode, ctxt, def->mirror,
-                                     flags, xmlopt) < 0)
+        if (virDomainStorageSourceParse(mirrorNode, ctxt, def->mirror,
+                                        flags, xmlopt) < 0)
             return -1;
     } else {
         /* For back-compat reasons, we handle a file name
@@ -9865,7 +9851,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
             continue;
 
         if (!source && virXMLNodeNameEqual(cur, "source")) {
-            if (virDomainDiskSourceParse(cur, ctxt, def->src, flags, xmlopt) < 0)
+            if (virDomainStorageSourceParse(cur, ctxt, def->src, flags, xmlopt) < 0)
                 goto error;
 
             /* If we've already found an <auth> as a child of <disk> and
