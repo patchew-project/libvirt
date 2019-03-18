@@ -23857,6 +23857,57 @@ virDomainStorageSourceFormat(virBufferPtr attrBuf,
 }
 
 
+static int
+virDomainDiskBackingStoreFormat(virBufferPtr buf,
+                                virStorageSourcePtr backingStore,
+                                virDomainXMLOptionPtr xmlopt,
+                                unsigned int flags)
+{
+    VIR_AUTOCLEAN(virBuffer) attrBuf = VIR_BUFFER_INITIALIZER;
+    VIR_AUTOCLEAN(virBuffer) childBuf = VIR_BUFFER_INITIALIZER;
+    bool inactive = flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE;
+
+    virBufferSetChildIndent(&childBuf, buf);
+
+    if (!backingStore)
+        return 0;
+
+    /* don't write detected backing chain members to inactive xml */
+    if (inactive && backingStore->detected)
+        return 0;
+
+    if (backingStore->type == VIR_STORAGE_TYPE_NONE) {
+        virBufferAddLit(buf, "<backingStore/>\n");
+        return 0;
+    }
+
+    if (backingStore->format <= 0 || backingStore->format >= VIR_STORAGE_FILE_LAST) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("unexpected disk backing store format %d"),
+                       backingStore->format);
+        return -1;
+    }
+
+    virBufferAsprintf(&attrBuf, " type='%s'",
+                      virStorageTypeToString(backingStore->type));
+    if (backingStore->id != 0)
+        virBufferAsprintf(&attrBuf, " index='%u'", backingStore->id);
+
+    virBufferAsprintf(&childBuf, "<format type='%s'/>\n",
+                      virStorageFileFormatTypeToString(backingStore->format));
+    /* We currently don't output seclabels for backing chain element */
+    if (virDomainDiskSourceFormat(&childBuf, backingStore, 0, flags, false,
+                                  false, xmlopt) < 0)
+        return -1;
+
+    if (virDomainDiskBackingStoreFormat(&childBuf, backingStore->backingStore,
+                                        xmlopt, flags) < 0)
+        return -1;
+
+    return virXMLFormatElement(buf, "backingStore", &attrBuf, &childBuf);
+}
+
+
 /**
  * virDomainStorageSourceFormatFull:
  * @buf: output buffer
@@ -23915,57 +23966,6 @@ virDomainDiskSourceFormat(virBufferPtr buf,
         return -1;
 
     return virXMLFormatElement(buf, "source", &attrBuf, &childBuf);
-}
-
-
-static int
-virDomainDiskBackingStoreFormat(virBufferPtr buf,
-                                virStorageSourcePtr backingStore,
-                                virDomainXMLOptionPtr xmlopt,
-                                unsigned int flags)
-{
-    VIR_AUTOCLEAN(virBuffer) attrBuf = VIR_BUFFER_INITIALIZER;
-    VIR_AUTOCLEAN(virBuffer) childBuf = VIR_BUFFER_INITIALIZER;
-    bool inactive = flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE;
-
-    virBufferSetChildIndent(&childBuf, buf);
-
-    if (!backingStore)
-        return 0;
-
-    /* don't write detected backing chain members to inactive xml */
-    if (inactive && backingStore->detected)
-        return 0;
-
-    if (backingStore->type == VIR_STORAGE_TYPE_NONE) {
-        virBufferAddLit(buf, "<backingStore/>\n");
-        return 0;
-    }
-
-    if (backingStore->format <= 0 || backingStore->format >= VIR_STORAGE_FILE_LAST) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("unexpected disk backing store format %d"),
-                       backingStore->format);
-        return -1;
-    }
-
-    virBufferAsprintf(&attrBuf, " type='%s'",
-                      virStorageTypeToString(backingStore->type));
-    if (backingStore->id != 0)
-        virBufferAsprintf(&attrBuf, " index='%u'", backingStore->id);
-
-    virBufferAsprintf(&childBuf, "<format type='%s'/>\n",
-                      virStorageFileFormatTypeToString(backingStore->format));
-    /* We currently don't output seclabels for backing chain element */
-    if (virDomainDiskSourceFormat(&childBuf, backingStore, 0, flags, false,
-                                  false, xmlopt) < 0)
-        return -1;
-
-    if (virDomainDiskBackingStoreFormat(&childBuf, backingStore->backingStore,
-                                        xmlopt, flags) < 0)
-        return -1;
-
-    return virXMLFormatElement(buf, "backingStore", &attrBuf, &childBuf);
 }
 
 
