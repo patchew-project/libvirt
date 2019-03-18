@@ -87,7 +87,7 @@ testBackingXMLjsonXML(const void *args)
         goto cleanup;
     }
 
-    if (virDomainDiskSourceFormat(&buf, jsonsrc, 0, 0, true, false, NULL) < 0 ||
+    if (virDomainDiskSourceFormat(&buf, jsonsrc, 0, 0, true, false, false, NULL) < 0 ||
         !(actualxml = virBufferContentAndReset(&buf))) {
         fprintf(stderr, "failed to format disk source xml\n");
         goto cleanup;
