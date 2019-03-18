@@ -759,7 +759,7 @@ nwfilterBindingCreateXML(virConnectPtr conn,
         goto cleanup;
 
     obj = virNWFilterBindingObjListAdd(driver->bindings,
-                                       def);
+                                       &def);
     if (!obj)
         goto cleanup;
 
@@ -775,8 +775,7 @@ nwfilterBindingCreateXML(virConnectPtr conn,
     virNWFilterBindingObjSave(obj, driver->bindingDir);
 
  cleanup:
-    if (!obj)
-        virNWFilterBindingDefFree(def);
+    virNWFilterBindingDefFree(def);
     virNWFilterBindingObjEndAPI(&obj);
 
     return ret;

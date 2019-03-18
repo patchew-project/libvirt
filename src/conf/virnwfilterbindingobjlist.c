@@ -164,23 +164,24 @@ virNWFilterBindingObjListAddObjLocked(virNWFilterBindingObjListPtr bindings,
  */
 static virNWFilterBindingObjPtr
 virNWFilterBindingObjListAddLocked(virNWFilterBindingObjListPtr bindings,
-                                   virNWFilterBindingDefPtr def)
+                                   virNWFilterBindingDefPtr *def)
 {
     virNWFilterBindingObjPtr binding;
 
     /* See if a binding with matching portdev already exists */
     if ((binding = virNWFilterBindingObjListFindByPortDevLocked(
-             bindings, def->portdevname))) {
+             bindings, (*def)->portdevname))) {
         virReportError(VIR_ERR_OPERATION_FAILED,
                        _("binding '%s' already exists"),
-                       def->portdevname);
+                       (*def)->portdevname);
         goto error;
     }
 
     if (!(binding = virNWFilterBindingObjNew()))
         goto error;
 
-    virNWFilterBindingObjSetDef(binding, def);
+    virNWFilterBindingObjSetDef(binding, *def);
+    *def = NULL;
 
     if (virNWFilterBindingObjListAddObjLocked(bindings, binding) < 0)
         goto error;
@@ -195,7 +196,7 @@ virNWFilterBindingObjListAddLocked(virNWFilterBindingObjListPtr bindings,
 
 virNWFilterBindingObjPtr
 virNWFilterBindingObjListAdd(virNWFilterBindingObjListPtr bindings,
-                             virNWFilterBindingDefPtr def)
+                             virNWFilterBindingDefPtr *def)
 {
     virNWFilterBindingObjPtr ret;
 

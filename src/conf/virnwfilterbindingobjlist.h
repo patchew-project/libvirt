@@ -35,7 +35,7 @@ virNWFilterBindingObjListFindByPortDev(virNWFilterBindingObjListPtr bindings,
 
 virNWFilterBindingObjPtr
 virNWFilterBindingObjListAdd(virNWFilterBindingObjListPtr bindings,
-                             virNWFilterBindingDefPtr def);
+                             virNWFilterBindingDefPtr *def);
 
 void
 virNWFilterBindingObjListRemove(virNWFilterBindingObjListPtr bindings,
