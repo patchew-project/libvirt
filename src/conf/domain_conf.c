@@ -23907,21 +23907,14 @@ virDomainDiskSourceFormat(virBufferPtr buf,
 {
     VIR_AUTOCLEAN(virBuffer) attrBuf = VIR_BUFFER_INITIALIZER;
     VIR_AUTOCLEAN(virBuffer) childBuf = VIR_BUFFER_INITIALIZER;
-    int ret = -1;
 
     virBufferSetChildIndent(&childBuf, buf);
 
     if (virDomainStorageSourceFormat(&attrBuf, &childBuf, src, flags,
                                      seclabels, attrIndex, policy, xmlopt) < 0)
-        goto cleanup;
+        return -1;
 
-    if (virXMLFormatElement(buf, "source", &attrBuf, &childBuf) < 0)
-        goto cleanup;
-
-    ret = 0;
-
- cleanup:
-    return ret;
+    return virXMLFormatElement(buf, "source", &attrBuf, &childBuf);
 }
 
 
