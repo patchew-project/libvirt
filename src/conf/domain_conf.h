@@ -3469,13 +3469,6 @@ virDomainStorageSourceFormatFull(virBufferPtr buf,
                                  virDomainXMLOptionPtr xmlopt)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
-int virDomainStorageSourceParse(xmlNodePtr node,
-                                xmlXPathContextPtr ctxt,
-                                virStorageSourcePtr src,
-                                unsigned int flags,
-                                virDomainXMLOptionPtr xmlopt)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
-
 virStorageSourcePtr
 virDomainStorageSourceParseFull(const char *typeXPath,
                                 const char *formatXPath,

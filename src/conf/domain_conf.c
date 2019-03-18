@@ -9039,7 +9039,7 @@ virDomainDiskSourcePRParse(xmlNodePtr node,
 }
 
 
-int
+static int
 virDomainStorageSourceParse(xmlNodePtr node,
                             xmlXPathContextPtr ctxt,
                             virStorageSourcePtr src,
