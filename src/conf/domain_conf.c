@@ -23755,12 +23755,32 @@ virDomainDiskSourceFormatPrivateData(virBufferPtr buf,
 }
 
 
+/**
+ * virDomainStorageSourceFormat:
+ * @attrBuf: buffer for containing attribute portion of @src
+ * @childBuf: buffer for subelements of the formatted element
+ * @src: storage source to format
+ * @flags: XML formatter flags
+ * @seclabels: security labels are formatted if true
+ * @attrIndex: the 'index' attribute is formatted if true
+ * @policy: startup policy, taken from disk (use 0 to omit)
+ * @xmlopt: XML options data (for private data formatters)
+ *
+ * Formats @src into the attributes (@attrBuf) and subelements (@childBuf) ready
+ * for creating a full XML element representing @src.
+ *
+ * Note that this does _not_ format the 'type' and 'format' of @src due to
+ * differences in callers.
+ */
 int
 virDomainStorageSourceFormat(virBufferPtr attrBuf,
                              virBufferPtr childBuf,
                              virStorageSourcePtr src,
                              unsigned int flags,
-                             bool seclabels)
+                             bool seclabels,
+                             bool attrIndex,
+                             int policy,
+                             virDomainXMLOptionPtr xmlopt)
 {
     switch ((virStorageType)src->type) {
     case VIR_STORAGE_TYPE_FILE:
@@ -23823,6 +23843,16 @@ virDomainStorageSourceFormat(virBufferPtr attrBuf,
         virStoragePRDefFormat(childBuf, src->pr,
                               flags & VIR_DOMAIN_DEF_FORMAT_MIGRATABLE);
 
+    if (policy && src->type != VIR_STORAGE_TYPE_NETWORK)
+        virBufferEscapeString(attrBuf, " startupPolicy='%s'",
+                              virDomainStartupPolicyTypeToString(policy));
+
+    if (attrIndex && src->id != 0)
+        virBufferAsprintf(attrBuf, " index='%u'", src->id);
+
+    if (virDomainDiskSourceFormatPrivateData(childBuf, src, flags, xmlopt) < 0)
+        return -1;
+
     return 0;
 }
 
@@ -23843,17 +23873,7 @@ virDomainDiskSourceFormatInternal(virBufferPtr buf,
     virBufferSetChildIndent(&childBuf, buf);
 
     if (virDomainStorageSourceFormat(&attrBuf, &childBuf, src, flags,
-                                     seclabels) < 0)
-        goto cleanup;
-
-    if (policy && src->type != VIR_STORAGE_TYPE_NETWORK)
-        virBufferEscapeString(&attrBuf, " startupPolicy='%s'",
-                              virDomainStartupPolicyTypeToString(policy));
-
-    if (attrIndex && src->id != 0)
-        virBufferAsprintf(&attrBuf, " index='%u'", src->id);
-
-    if (virDomainDiskSourceFormatPrivateData(&childBuf, src, flags, xmlopt) < 0)
+                                     seclabels, attrIndex, policy, xmlopt) < 0)
         goto cleanup;
 
     if (virXMLFormatElement(buf, "source", &attrBuf, &childBuf) < 0)
