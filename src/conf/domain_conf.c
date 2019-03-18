@@ -23772,7 +23772,7 @@ virDomainDiskSourceFormatPrivateData(virBufferPtr buf,
  * Note that this does _not_ format the 'type' and 'format' of @src due to
  * differences in callers.
  */
-int
+static int
 virDomainStorageSourceFormat(virBufferPtr attrBuf,
                              virBufferPtr childBuf,
                              virStorageSourcePtr src,

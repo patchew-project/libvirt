@@ -3457,16 +3457,6 @@ int virDomainDiskDefCheckDuplicateInfo(const virDomainDiskDef *a,
                                        const virDomainDiskDef *b)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
-int virDomainStorageSourceFormat(virBufferPtr attrBuf,
-                                 virBufferPtr childBuf,
-                                 virStorageSourcePtr src,
-                                 unsigned int flags,
-                                 bool seclabels,
-                                 bool attrIndex,
-                                 int policy,
-                                 virDomainXMLOptionPtr xmlopt)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
-
 int
 virDomainStorageSourceFormatFull(virBufferPtr buf,
                                  virStorageSourcePtr src,
