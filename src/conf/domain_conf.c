@@ -9783,16 +9783,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
     ctxt->node = node;
 
     /* defaults */
-    def->src->type = VIR_STORAGE_TYPE_FILE;
     def->device = VIR_DOMAIN_DISK_DEVICE_DISK;
-
-    if ((tmp = virXMLPropString(node, "type")) &&
-        (def->src->type = virStorageTypeFromString(tmp)) <= 0) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("unknown disk type '%s'"), tmp);
-        goto error;
-    }
-    VIR_FREE(tmp);
 
     if ((tmp = virXMLPropString(node, "device")) &&
         (def->device = virDomainDiskDeviceTypeFromString(tmp)) < 0) {
@@ -9815,14 +9806,18 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
     rawio = virXMLPropString(node, "rawio");
     sgio = virXMLPropString(node, "sgio");
 
+    virObjectUnref(def->src);
+    if (!(def->src = virDomainStorageSourceParseFull("string(@type)", NULL,
+                                                     "./source",
+                                                     "string(./source/@index)",
+                                                     true, ctxt, flags, xmlopt)))
+        goto error;
+
     for (cur = node->children; cur != NULL; cur = cur->next) {
         if (cur->type != XML_ELEMENT_NODE)
             continue;
 
         if (!source && virXMLNodeNameEqual(cur, "source")) {
-            if (virDomainStorageSourceParse(cur, ctxt, def->src, flags, xmlopt) < 0)
-                goto error;
-
             /* If we've already found an <auth> as a child of <disk> and
              * we find one as a child of <source>, then force an error to
              * avoid ambiguity */
@@ -9851,14 +9846,6 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
             source = true;
 
             startupPolicy = virXMLPropString(cur, "startupPolicy");
-
-            if (!(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE) &&
-                (tmp = virXMLPropString(cur, "index")) &&
-                virStrToLong_uip(tmp, NULL, 10, &def->src->id) < 0) {
-                virReportError(VIR_ERR_XML_ERROR, _("invalid disk index '%s'"), tmp);
-                goto error;
-            }
-            VIR_FREE(tmp);
         } else if (!target &&
                    virXMLNodeNameEqual(cur, "target")) {
             target = virXMLPropString(cur, "dev");
