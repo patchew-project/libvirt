@@ -9342,6 +9342,7 @@ virDomainDiskDefMirrorParse(virDomainDiskDefPtr def,
                             unsigned int flags,
                             virDomainXMLOptionPtr xmlopt)
 {
+    VIR_XPATH_NODE_AUTORESTORE(ctxt);
     VIR_AUTOFREE(char *) mirrorFormat = NULL;
     VIR_AUTOFREE(char *) mirrorType = NULL;
     VIR_AUTOFREE(char *) ready = NULL;
@@ -9358,14 +9359,16 @@ virDomainDiskDefMirrorParse(virDomainDiskDefPtr def,
     }
 
     if ((mirrorType = virXMLPropString(cur, "type"))) {
-        if (!(def->mirror = virDomainStorageSourceParseFull("string(./mirror/@type)",
+        ctxt->node = cur;
+
+        if (!(def->mirror = virDomainStorageSourceParseFull("string(./@type)",
                                                             NULL,
-                                                            "./mirror/source",
+                                                            "./source",
                                                             NULL,
-                                                            false, false, ctxt, flags, xmlopt)))
+                                                            false, true, ctxt, flags, xmlopt)))
             return -1;
 
-        mirrorFormat = virXPathString("string(./mirror/format/@type)", ctxt);
+        mirrorFormat = virXPathString("string(./format/@type)", ctxt);
     } else {
         if (!(def->mirror = virStorageSourceNew()))
             return -1;
@@ -24127,7 +24130,7 @@ virDomainDiskDefFormatMirror(virBufferPtr buf,
     virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
     virBufferEscapeString(buf, "<format type='%s'/>\n", formatStr);
-    if (virDomainDiskSourceFormat(buf, disk->mirror, 0, 0, true, false, false,
+    if (virDomainDiskSourceFormat(buf, disk->mirror, 0, flags, true, false, true,
                                   xmlopt) < 0)
         return -1;
     virBufferAdjustIndent(buf, -2);
