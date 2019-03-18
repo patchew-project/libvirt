@@ -3016,6 +3016,8 @@ int virDomainDiskSourceFormat(virBufferPtr buf,
                               virStorageSourcePtr src,
                               int policy,
                               unsigned int flags,
+                              bool seclabels,
+                              bool attrIndex,
                               virDomainXMLOptionPtr xmlopt);
 
 int virDomainNetDefFormat(virBufferPtr buf,
