@@ -9111,6 +9111,100 @@ virDomainStorageSourceParse(xmlNodePtr node,
 }
 
 
+/**
+ * virDomainStorageSourceParseFull
+ * @typeXPath: XPath query string for the 'type' of virStorageSource
+ * @formatXPath: XPath query for the image format (may be NULL if caller wishes to parse it)
+ * @sourceXPath: XPath query for the <source> subelement
+ * @indexXPath: XPath query for 'id' in virStorageSource (may be NULL if skipped)
+ * @allowMissing: if true no errors are reported if the above fields are missing
+ * @ctxt: XPath context
+ * @flags: XML parser flags
+ * @xmlopt: XML parser callbacks
+ *
+ * Uses the XPath queries provided as arguments to parse a storage source XML
+ * into virStorageSource. If allowMissing is false the function reports error if
+ * any of the XML parts described by @typeXPath, @formatXPath or @sourceXPath
+ * are missing. @formatXPath and @indexXpath may be NULL if they should be omitted
+ * or if the caller parses the value separately.
+ *
+ * Returns the parsed source or NULL on error.
+ */
+virStorageSourcePtr
+virDomainStorageSourceParseFull(const char *typeXPath,
+                                const char *formatXPath,
+                                const char *sourceXPath,
+                                const char *indexXPath,
+                                bool allowMissing,
+                                xmlXPathContextPtr ctxt,
+                                unsigned int flags,
+                                virDomainXMLOptionPtr xmlopt)
+{
+    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_AUTOFREE(char *) type = NULL;
+    VIR_AUTOFREE(char *) format = NULL;
+    VIR_AUTOFREE(char *) idx = NULL;
+    xmlNodePtr sourceNode = NULL;
+    VIR_AUTOUNREF(virStorageSourcePtr) src = NULL;
+    virStorageSourcePtr ret = NULL;
+
+    if (!(type = virXPathString(typeXPath, ctxt)) &&
+        !allowMissing) {
+        virReportError(VIR_ERR_XML_ERROR, "%s", _("missing storage source type"));
+        return NULL;
+    }
+
+    if (formatXPath &&
+        !(format = virXPathString(formatXPath, ctxt)) &&
+        !allowMissing) {
+        virReportError(VIR_ERR_XML_ERROR, "%s", _("missing storage source format"));
+        return NULL;
+    }
+
+    if (!(sourceNode = virXPathNode(sourceXPath, ctxt)) &&
+        !allowMissing) {
+        virReportError(VIR_ERR_XML_ERROR, "%s", _("missing storage source data"));
+        return NULL;
+    }
+
+    if (!(src = virStorageSourceNew()))
+        return NULL;
+
+    if (type) {
+        if ((src->type = virStorageTypeFromString(type)) <= 0) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("unknown storage source type '%s'"), type);
+            return NULL;
+        }
+    } else {
+        src->type = VIR_STORAGE_TYPE_FILE;
+    }
+
+    if (format &&
+        (src->format = virStorageFileFormatTypeFromString(format)) <= 0) {
+        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                       _("unknown storage source format '%s'"), format);
+        return NULL;
+    }
+
+    if (indexXPath &&
+        !(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE) &&
+        (idx = virXPathString(indexXPath, ctxt)) &&
+        virStrToLong_uip(idx, NULL, 10, &src->id) < 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("invalid storage source index '%s'"), idx);
+        return NULL;
+    }
+
+    if (sourceNode &&
+        virDomainStorageSourceParse(sourceNode, ctxt, src, flags, xmlopt) < 0)
+        return NULL;
+
+    VIR_STEAL_PTR(ret, src);
+    return ret;
+}
+
+
 int
 virDomainDiskSourceParse(xmlNodePtr node,
                          xmlXPathContextPtr ctxt,

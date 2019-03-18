@@ -3476,6 +3476,18 @@ int virDomainStorageSourceParse(xmlNodePtr node,
                                 virDomainXMLOptionPtr xmlopt)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
+virStorageSourcePtr
+virDomainStorageSourceParseFull(const char *typeXPath,
+                                const char *formatXPath,
+                                const char *sourceXPath,
+                                const char *indexXPath,
+                                bool allowMissing,
+                                xmlXPathContextPtr ctxt,
+                                unsigned int flags,
+                                virDomainXMLOptionPtr xmlopt)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3)
+    ATTRIBUTE_NONNULL(6);
+
 int virDomainDefGetVcpuPinInfoHelper(virDomainDefPtr def,
                                      int maplen,
                                      int ncpumaps,
