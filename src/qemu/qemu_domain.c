@@ -9387,9 +9387,14 @@ qemuDomainDiskChangeSupported(virDomainDiskDefPtr disk,
     CHECK_EQ(blkdeviotune.size_iops_sec,
              "blkdeviotune size_iops_sec",
              true);
-    CHECK_EQ(blkdeviotune.group_name,
-             "blkdeviotune group_name",
-             true);
+    if (disk->blkdeviotune.group_name) {
+        if (STRNEQ(disk->blkdeviotune.group_name, orig_disk->blkdeviotune.group_name)) {
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                           _("cannot modify field '%s' of the disk"),
+                           "target");
+            return false;
+        }
+    }
 
     if (disk->serial && STRNEQ_NULLABLE(disk->serial, orig_disk->serial)) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
