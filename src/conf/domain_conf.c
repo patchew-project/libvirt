@@ -23857,6 +23857,45 @@ virDomainStorageSourceFormat(virBufferPtr attrBuf,
 }
 
 
+/**
+ * virDomainStorageSourceFormatFull:
+ * @buf: output buffer
+ * @src: storage source to format
+ * @elemname: name of the top level element to use
+ * @status: output status-XML style private data
+ * @xmlopt: formatter callback data structure
+ *
+ * Formats @src into a XML element called @elemname. The element has both 'type'
+ * and 'format' attributes and thus is fully standalone.
+ */
+int
+virDomainStorageSourceFormatFull(virBufferPtr buf,
+                                 virStorageSourcePtr src,
+                                 const char *elemname,
+                                 bool status,
+                                 virDomainXMLOptionPtr xmlopt)
+{
+    VIR_AUTOCLEAN(virBuffer) attrBuf = VIR_BUFFER_INITIALIZER;
+    VIR_AUTOCLEAN(virBuffer) childBuf = VIR_BUFFER_INITIALIZER;
+    unsigned int flags = 0;
+
+    if (status)
+        flags |= VIR_DOMAIN_DEF_FORMAT_STATUS;
+
+    virBufferSetChildIndent(&childBuf, buf);
+
+    virBufferAsprintf(&attrBuf, " type='%s' format='%s'",
+                      virStorageTypeToString(src->type),
+                      virStorageFileFormatTypeToString(src->format));
+
+    if (virDomainStorageSourceFormat(&attrBuf, &childBuf, src, flags,
+                                     true, true, 0, xmlopt) < 0)
+        return -1;
+
+    return virXMLFormatElement(buf, elemname, &attrBuf, &childBuf);
+}
+
+
 static int
 virDomainDiskSourceFormatInternal(virBufferPtr buf,
                                   virStorageSourcePtr src,

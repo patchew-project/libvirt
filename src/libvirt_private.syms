@@ -564,6 +564,7 @@ virDomainStateTypeFromString;
 virDomainStateTypeToString;
 virDomainStorageNetworkParseHost;
 virDomainStorageSourceFormat;
+virDomainStorageSourceFormatFull;
 virDomainStorageSourceParse;
 virDomainTaintTypeFromString;
 virDomainTaintTypeToString;
