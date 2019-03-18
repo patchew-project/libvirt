@@ -23758,7 +23758,6 @@ virDomainDiskSourceFormatPrivateData(virBufferPtr buf,
  * @childBuf: buffer for subelements of the formatted element
  * @src: storage source to format
  * @flags: XML formatter flags
- * @seclabels: security labels are formatted if true
  * @attrIndex: the 'index' attribute is formatted if true
  * @policy: startup policy, taken from disk (use 0 to omit)
  * @xmlopt: XML options data (for private data formatters)
@@ -23774,7 +23773,6 @@ virDomainStorageSourceFormat(virBufferPtr attrBuf,
                              virBufferPtr childBuf,
                              virStorageSourcePtr src,
                              unsigned int flags,
-                             bool seclabels,
                              bool attrIndex,
                              int policy,
                              virDomainXMLOptionPtr xmlopt)
@@ -23817,7 +23815,7 @@ virDomainStorageSourceFormat(virBufferPtr attrBuf,
         return -1;
     }
 
-    if (seclabels && src->type != VIR_STORAGE_TYPE_NETWORK)
+    if (src->type != VIR_STORAGE_TYPE_NETWORK)
         virDomainSourceDefFormatSeclabel(childBuf, src->nseclabels,
                                          src->seclabels, flags);
 
@@ -23934,7 +23932,7 @@ virDomainStorageSourceFormatFull(virBufferPtr buf,
                       virStorageFileFormatTypeToString(src->format));
 
     if (virDomainStorageSourceFormat(&attrBuf, &childBuf, src, flags,
-                                     true, true, 0, xmlopt) < 0)
+                                     true, 0, xmlopt) < 0)
         return -1;
 
     if (virXMLFormatElement(buf, elemname, &attrBuf, &childBuf) < 0)
@@ -23963,8 +23961,7 @@ virDomainDiskSourceFormat(virBufferPtr buf,
     virBufferSetChildIndent(&childBuf, buf);
 
     if (virDomainStorageSourceFormat(&attrBuf, &childBuf, src, flags,
-                                     true, attrIndex,
-                                     policy, xmlopt) < 0)
+                                     attrIndex, policy, xmlopt) < 0)
         return -1;
 
     if (virXMLFormatElement(buf, "source", &attrBuf, &childBuf) < 0)
