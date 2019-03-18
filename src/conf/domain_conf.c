@@ -9364,7 +9364,7 @@ virDomainDiskDefMirrorParse(virDomainDiskDefPtr def,
         if (!(def->mirror = virDomainStorageSourceParseFull("string(./@type)",
                                                             NULL,
                                                             "./source",
-                                                            NULL,
+                                                            "string(./source/@index)",
                                                             false, true, ctxt, flags, xmlopt)))
             return -1;
 
@@ -24130,7 +24130,7 @@ virDomainDiskDefFormatMirror(virBufferPtr buf,
     virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
     virBufferEscapeString(buf, "<format type='%s'/>\n", formatStr);
-    if (virDomainDiskSourceFormat(buf, disk->mirror, 0, flags, true, false, true,
+    if (virDomainDiskSourceFormat(buf, disk->mirror, 0, flags, true, true, true,
                                   xmlopt) < 0)
         return -1;
     virBufferAdjustIndent(buf, -2);
