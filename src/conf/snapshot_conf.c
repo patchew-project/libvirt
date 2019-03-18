@@ -108,15 +108,9 @@ virDomainSnapshotDiskDefParseXML(xmlNodePtr node,
 {
     int ret = -1;
     char *snapshot = NULL;
-    char *type = NULL;
-    char *driver = NULL;
-    xmlNodePtr cur;
     xmlNodePtr saved = ctxt->node;
 
     ctxt->node = node;
-
-    if (!(def->src = virStorageSourceNew()))
-        goto cleanup;
 
     def->name = virXMLPropString(node, "name");
     if (!def->name) {
@@ -136,27 +130,19 @@ virDomainSnapshotDiskDefParseXML(xmlNodePtr node,
         }
     }
 
-    if ((type = virXMLPropString(node, "type"))) {
-        if ((def->src->type = virStorageTypeFromString(type)) <= 0 ||
-            def->src->type == VIR_STORAGE_TYPE_VOLUME ||
-            def->src->type == VIR_STORAGE_TYPE_DIR) {
-            virReportError(VIR_ERR_XML_ERROR,
-                           _("unknown disk snapshot type '%s'"), type);
-            goto cleanup;
-        }
-    } else {
-        def->src->type = VIR_STORAGE_TYPE_FILE;
-    }
-
-    if ((cur = virXPathNode("./source", ctxt)) &&
-        virDomainDiskSourceParse(cur, ctxt, def->src, flags, xmlopt) < 0)
+    if (!(def->src = virDomainStorageSourceParseFull("string(@type)",
+                                                     "string(./driver/@type)",
+                                                     "./source",
+                                                     NULL, true,
+                                                     ctxt, flags, xmlopt)))
         goto cleanup;
 
-    if ((driver = virXPathString("string(./driver/@type)", ctxt)) &&
-        (def->src->format = virStorageFileFormatTypeFromString(driver)) <= 0) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("unknown disk snapshot driver '%s'"), driver);
-            goto cleanup;
+    if (def->src->type == VIR_STORAGE_TYPE_VOLUME ||
+        def->src->type == VIR_STORAGE_TYPE_DIR) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("unsupported disk snapshot type '%s'"),
+                       virStorageTypeToString(def->src->type));
+        goto cleanup;
     }
 
     /* validate that the passed path is absolute */
@@ -174,9 +160,7 @@ virDomainSnapshotDiskDefParseXML(xmlNodePtr node,
  cleanup:
     ctxt->node = saved;
 
-    VIR_FREE(driver);
     VIR_FREE(snapshot);
-    VIR_FREE(type);
     if (ret < 0)
         virDomainSnapshotDiskDefClear(def);
     return ret;
