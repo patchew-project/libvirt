@@ -9111,6 +9111,43 @@ virDomainStorageSourceParse(xmlNodePtr node,
 }
 
 
+static int
+virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
+                               virStorageSourcePtr src,
+                               unsigned int flags,
+                               virDomainXMLOptionPtr xmlopt)
+{
+    VIR_XPATH_NODE_AUTORESTORE(ctxt);
+    VIR_AUTOUNREF(virStorageSourcePtr) backingStore = NULL;
+    VIR_AUTOFREE(char *) type = NULL;
+
+    if (!(ctxt->node = virXPathNode("./backingStore", ctxt)))
+        return 0;
+
+    /* terminator does not have a type */
+    if (!(type = virXMLPropString(ctxt->node, "type"))) {
+        if (!(src->backingStore = virStorageSourceNew()))
+            return -1;
+
+        return 0;
+    }
+
+    if (!(backingStore = virDomainStorageSourceParseFull("string(@type)",
+                                                         "string(./format/@type)",
+                                                         "./source",
+                                                         "string(@index)",
+                                                         false, true, ctxt, flags, xmlopt)))
+        return -1;
+
+    /* backing store is always read-only */
+    backingStore->readonly = true;
+
+    VIR_STEAL_PTR(src->backingStore, backingStore);
+
+    return 0;
+}
+
+
 /**
  * virDomainStorageSourceParseFull
  * @typeXPath: XPath query string for the 'type' of virStorageSource
@@ -9118,6 +9155,7 @@ virDomainStorageSourceParse(xmlNodePtr node,
  * @sourceXPath: XPath query for the <source> subelement
  * @indexXPath: XPath query for 'id' in virStorageSource (may be NULL if skipped)
  * @allowMissing: if true no errors are reported if the above fields are missing
+ * @backingStore: Full backing chain is parsed if true
  * @ctxt: XPath context
  * @flags: XML parser flags
  * @xmlopt: XML parser callbacks
@@ -9128,6 +9166,10 @@ virDomainStorageSourceParse(xmlNodePtr node,
  * are missing. @formatXPath and @indexXpath may be NULL if they should be omitted
  * or if the caller parses the value separately.
  *
+ * @backingStore controls whether the full backing chain should be parsed.
+ * Backing chain is parsed from elements named <backingStore> relative to
+ * the node of @ctxt when called.
+ *
  * Returns the parsed source or NULL on error.
  */
 virStorageSourcePtr
@@ -9136,6 +9178,7 @@ virDomainStorageSourceParseFull(const char *typeXPath,
                                 const char *sourceXPath,
                                 const char *indexXPath,
                                 bool allowMissing,
+                                bool backingStore,
                                 xmlXPathContextPtr ctxt,
                                 unsigned int flags,
                                 virDomainXMLOptionPtr xmlopt)
@@ -9200,49 +9243,14 @@ virDomainStorageSourceParseFull(const char *typeXPath,
         virDomainStorageSourceParse(sourceNode, ctxt, src, flags, xmlopt) < 0)
         return NULL;
 
+    if (backingStore &&
+        virDomainDiskBackingStoreParse(ctxt, src, flags, xmlopt) < 0)
+        return NULL;
+
     VIR_STEAL_PTR(ret, src);
     return ret;
 }
 
-
-static int
-virDomainDiskBackingStoreParse(xmlXPathContextPtr ctxt,
-                               virStorageSourcePtr src,
-                               unsigned int flags,
-                               virDomainXMLOptionPtr xmlopt)
-{
-    VIR_XPATH_NODE_AUTORESTORE(ctxt);
-    VIR_AUTOUNREF(virStorageSourcePtr) backingStore = NULL;
-    VIR_AUTOFREE(char *) type = NULL;
-
-    if (!(ctxt->node = virXPathNode("./backingStore", ctxt)))
-        return 0;
-
-    /* terminator does not have a type */
-    if (!(type = virXMLPropString(ctxt->node, "type"))) {
-        if (!(src->backingStore = virStorageSourceNew()))
-            return -1;
-
-        return 0;
-    }
-
-    if (!(backingStore = virDomainStorageSourceParseFull("string(@type)",
-                                                         "string(./format/@type)",
-                                                         "./source",
-                                                         "string(@index)",
-                                                         false, ctxt, flags, xmlopt)))
-        return -1;
-
-    /* backing store is always read-only */
-    backingStore->readonly = true;
-
-    if (virDomainDiskBackingStoreParse(ctxt, backingStore, flags, xmlopt) < 0)
-        return -1;
-
-    VIR_STEAL_PTR(src->backingStore, backingStore);
-
-    return 0;
-}
 
 #define PARSE_IOTUNE(val) \
     if (virXPathULongLong("string(./iotune/" #val ")", \
@@ -9354,7 +9362,7 @@ virDomainDiskDefMirrorParse(virDomainDiskDefPtr def,
                                                             NULL,
                                                             "./mirror/source",
                                                             NULL,
-                                                            false, ctxt, flags, xmlopt)))
+                                                            false, false, ctxt, flags, xmlopt)))
             return -1;
 
         mirrorFormat = virXPathString("string(./mirror/format/@type)", ctxt);
@@ -9765,6 +9773,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_AUTOFREE(char *) vendor = NULL;
     VIR_AUTOFREE(char *) product = NULL;
     VIR_AUTOFREE(char *) domain_name = NULL;
+    bool backingStore = true;
 
     if (!(def = virDomainDiskDefNew(xmlopt)))
         return NULL;
@@ -9773,6 +9782,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
 
     /* defaults */
     def->device = VIR_DOMAIN_DISK_DEVICE_DISK;
+
+    if ((flags & VIR_DOMAIN_DEF_PARSE_DISK_SOURCE))
+        backingStore = false;
 
     if ((tmp = virXMLPropString(node, "device")) &&
         (def->device = virDomainDiskDeviceTypeFromString(tmp)) < 0) {
@@ -9799,7 +9811,8 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
     if (!(def->src = virDomainStorageSourceParseFull("string(@type)", NULL,
                                                      "./source",
                                                      "string(./source/@index)",
-                                                     true, ctxt, flags, xmlopt)))
+                                                     true, backingStore,
+                                                     ctxt, flags, xmlopt)))
         goto error;
 
     for (cur = node->children; cur != NULL; cur = cur->next) {
@@ -10133,11 +10146,6 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_STEAL_PTR(def->wwn, wwn);
     VIR_STEAL_PTR(def->vendor, vendor);
     VIR_STEAL_PTR(def->product, product);
-
-    if (!(flags & VIR_DOMAIN_DEF_PARSE_DISK_SOURCE)) {
-        if (virDomainDiskBackingStoreParse(ctxt, def->src, flags, xmlopt) < 0)
-            goto error;
-    }
 
     if (flags & VIR_DOMAIN_DEF_PARSE_STATUS &&
         virDomainDiskDefParsePrivateData(ctxt, def, xmlopt) < 0)

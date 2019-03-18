@@ -3470,11 +3470,12 @@ virDomainStorageSourceParseFull(const char *typeXPath,
                                 const char *sourceXPath,
                                 const char *indexXPath,
                                 bool allowMissing,
+                                bool backingStore,
                                 xmlXPathContextPtr ctxt,
                                 unsigned int flags,
                                 virDomainXMLOptionPtr xmlopt)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(3)
-    ATTRIBUTE_NONNULL(6);
+    ATTRIBUTE_NONNULL(7);
 
 int virDomainDefGetVcpuPinInfoHelper(virDomainDefPtr def,
                                      int maplen,

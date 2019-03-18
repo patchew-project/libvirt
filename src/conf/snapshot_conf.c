@@ -133,7 +133,7 @@ virDomainSnapshotDiskDefParseXML(xmlNodePtr node,
     if (!(def->src = virDomainStorageSourceParseFull("string(@type)",
                                                      "string(./driver/@type)",
                                                      "./source",
-                                                     NULL, true,
+                                                     NULL, true, false,
                                                      ctxt, flags, xmlopt)))
         goto cleanup;
 

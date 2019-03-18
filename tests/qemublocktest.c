@@ -57,7 +57,7 @@ testBackingXMLjsonXML(const void *args)
 
     if (!(xmlsrc = virDomainStorageSourceParseFull("string(./@type)",
                                                    "string(./@format)",
-                                                   ".", NULL, false,
+                                                   ".", NULL, false, false,
                                                    ctxt, 0, NULL))) {
         fprintf(stderr, "failed to parse disk source xml\n");
         return -1;

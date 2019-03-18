@@ -2696,7 +2696,7 @@ qemuDomainObjPrivateXMLParseJobNBDSource(xmlNodePtr node,
     if (!(diskPriv->migrSource = virDomainStorageSourceParseFull("string(@type)",
                                                                  "string(@format)",
                                                                  ".", NULL,
-                                                                 false, ctxt,
+                                                                 false, false, ctxt,
                                                                  VIR_DOMAIN_DEF_PARSE_STATUS,
                                                                  priv->driver->xmlopt)))
         return -1;
