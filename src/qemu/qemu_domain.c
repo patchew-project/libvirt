@@ -2342,46 +2342,10 @@ qemuDomainObjPrivateXMLFormatPR(virBufferPtr buf,
 
 
 static int
-qemuDomainObjPrivateXMLFormatNBDMigrationSource(virBufferPtr buf,
-                                                virStorageSourcePtr src)
-{
-    VIR_AUTOCLEAN(virBuffer) attrBuf = VIR_BUFFER_INITIALIZER;
-    VIR_AUTOCLEAN(virBuffer) childBuf = VIR_BUFFER_INITIALIZER;
-    VIR_AUTOCLEAN(virBuffer) privateDataBuf = VIR_BUFFER_INITIALIZER;
-    int ret = -1;
-
-    virBufferSetChildIndent(&childBuf, buf);
-    virBufferSetChildIndent(&privateDataBuf, &childBuf);
-
-    virBufferAsprintf(&attrBuf, " type='%s' format='%s'",
-                      virStorageTypeToString(src->type),
-                      virStorageFileFormatTypeToString(src->format));
-
-    if (virDomainStorageSourceFormat(&attrBuf, &childBuf, src,
-                                     VIR_DOMAIN_DEF_FORMAT_STATUS, true,
-                                     false, 0, NULL) < 0)
-        goto cleanup;
-
-    if (qemuStorageSourcePrivateDataFormat(src, &privateDataBuf) < 0)
-        goto cleanup;
-
-    if (virXMLFormatElement(&childBuf, "privateData", NULL, &privateDataBuf) < 0)
-        goto cleanup;
-
-    if (virXMLFormatElement(buf, "migrationSource", &attrBuf, &childBuf) < 0)
-        goto cleanup;
-
-    ret = 0;
-
- cleanup:
-    return ret;
-}
-
-
-static int
 qemuDomainObjPrivateXMLFormatNBDMigration(virBufferPtr buf,
                                           virDomainObjPtr vm)
 {
+    qemuDomainObjPrivatePtr priv = vm->privateData;
     VIR_AUTOCLEAN(virBuffer) attrBuf = VIR_BUFFER_INITIALIZER;
     VIR_AUTOCLEAN(virBuffer) childBuf = VIR_BUFFER_INITIALIZER;
     size_t i;
@@ -2399,8 +2363,9 @@ qemuDomainObjPrivateXMLFormatNBDMigration(virBufferPtr buf,
                           disk->dst, diskPriv->migrating ? "yes" : "no");
 
         if (diskPriv->migrSource &&
-            qemuDomainObjPrivateXMLFormatNBDMigrationSource(&childBuf,
-                                                            diskPriv->migrSource) < 0)
+            virDomainStorageSourceFormatFull(&childBuf, diskPriv->migrSource,
+                                             "migrationSource", true,
+                                             priv->driver->xmlopt) < 0)
             goto cleanup;
 
         if (virXMLFormatElement(buf, "disk", &attrBuf, &childBuf) < 0)
