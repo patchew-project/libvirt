@@ -3465,6 +3465,7 @@ virDomainStorageSourceFormatFull(virBufferPtr buf,
                                  virStorageSourcePtr src,
                                  const char *elemname,
                                  bool status,
+                                 bool backingStore,
                                  virDomainXMLOptionPtr xmlopt)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 

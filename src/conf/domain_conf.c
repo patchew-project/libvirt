@@ -23910,6 +23910,7 @@ virDomainDiskBackingStoreFormat(virBufferPtr buf,
  * @src: storage source to format
  * @elemname: name of the top level element to use
  * @status: output status-XML style private data
+ * @backingStore: output full backing chain of @src
  * @xmlopt: formatter callback data structure
  *
  * Formats @src into a XML element called @elemname. The element has both 'type'
@@ -23920,6 +23921,7 @@ virDomainStorageSourceFormatFull(virBufferPtr buf,
                                  virStorageSourcePtr src,
                                  const char *elemname,
                                  bool status,
+                                 bool backingStore,
                                  virDomainXMLOptionPtr xmlopt)
 {
     VIR_AUTOCLEAN(virBuffer) attrBuf = VIR_BUFFER_INITIALIZER;
@@ -23939,7 +23941,14 @@ virDomainStorageSourceFormatFull(virBufferPtr buf,
                                      true, true, 0, xmlopt) < 0)
         return -1;
 
-    return virXMLFormatElement(buf, elemname, &attrBuf, &childBuf);
+    if (virXMLFormatElement(buf, elemname, &attrBuf, &childBuf) < 0)
+        return -1;
+
+    if (backingStore && src->backingStore &&
+        virDomainDiskBackingStoreFormat(buf, src->backingStore, xmlopt, flags) < 0)
+        return -1;
+
+    return 0;
 }
 
 

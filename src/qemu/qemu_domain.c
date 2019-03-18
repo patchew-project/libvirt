@@ -2364,7 +2364,7 @@ qemuDomainObjPrivateXMLFormatNBDMigration(virBufferPtr buf,
 
         if (diskPriv->migrSource &&
             virDomainStorageSourceFormatFull(&childBuf, diskPriv->migrSource,
-                                             "migrationSource", true,
+                                             "migrationSource", true, false,
                                              priv->driver->xmlopt) < 0)
             goto cleanup;
 
