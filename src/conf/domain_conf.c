@@ -9334,14 +9334,10 @@ virDomainDiskDefMirrorParse(virDomainDiskDefPtr def,
                             unsigned int flags,
                             virDomainXMLOptionPtr xmlopt)
 {
-    xmlNodePtr mirrorNode;
     VIR_AUTOFREE(char *) mirrorFormat = NULL;
     VIR_AUTOFREE(char *) mirrorType = NULL;
     VIR_AUTOFREE(char *) ready = NULL;
     VIR_AUTOFREE(char *) blockJob = NULL;
-
-    if (!(def->mirror = virStorageSourceNew()))
-        return -1;
 
     if ((blockJob = virXMLPropString(cur, "job"))) {
         if ((def->mirrorJob = virDomainBlockJobTypeFromString(blockJob)) <= 0) {
@@ -9354,25 +9350,18 @@ virDomainDiskDefMirrorParse(virDomainDiskDefPtr def,
     }
 
     if ((mirrorType = virXMLPropString(cur, "type"))) {
-        if ((def->mirror->type = virStorageTypeFromString(mirrorType)) <= 0) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                           _("unknown mirror backing store type '%s'"),
-                           mirrorType);
+        if (!(def->mirror = virDomainStorageSourceParseFull("string(./mirror/@type)",
+                                                            NULL,
+                                                            "./mirror/source",
+                                                            NULL,
+                                                            false, ctxt, flags, xmlopt)))
             return -1;
-        }
 
         mirrorFormat = virXPathString("string(./mirror/format/@type)", ctxt);
-
-        if (!(mirrorNode = virXPathNode("./mirror/source", ctxt))) {
-            virReportError(VIR_ERR_XML_ERROR, "%s",
-                           _("mirror requires source element"));
-            return -1;
-        }
-
-        if (virDomainStorageSourceParse(mirrorNode, ctxt, def->mirror,
-                                        flags, xmlopt) < 0)
-            return -1;
     } else {
+        if (!(def->mirror = virStorageSourceNew()))
+            return -1;
+
         /* For back-compat reasons, we handle a file name
          * encoded as attributes, even though we prefer
          * modern output in the style of backingStore */
