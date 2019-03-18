@@ -23924,7 +23924,11 @@ virDomainDiskBackingStoreFormat(virBufferPtr buf,
                                 virDomainXMLOptionPtr xmlopt,
                                 unsigned int flags)
 {
+    VIR_AUTOCLEAN(virBuffer) attrBuf = VIR_BUFFER_INITIALIZER;
+    VIR_AUTOCLEAN(virBuffer) childBuf = VIR_BUFFER_INITIALIZER;
     bool inactive = flags & VIR_DOMAIN_DEF_FORMAT_INACTIVE;
+
+    virBufferSetChildIndent(&childBuf, buf);
 
     if (!backingStore)
         return 0;
@@ -23945,25 +23949,23 @@ virDomainDiskBackingStoreFormat(virBufferPtr buf,
         return -1;
     }
 
-    virBufferAsprintf(buf, "<backingStore type='%s'",
+    virBufferAsprintf(&attrBuf, " type='%s'",
                       virStorageTypeToString(backingStore->type));
     if (backingStore->id != 0)
-        virBufferAsprintf(buf, " index='%u'", backingStore->id);
-    virBufferAddLit(buf, ">\n");
-    virBufferAdjustIndent(buf, 2);
+        virBufferAsprintf(&attrBuf, " index='%u'", backingStore->id);
 
-    virBufferAsprintf(buf, "<format type='%s'/>\n",
+    virBufferAsprintf(&childBuf, "<format type='%s'/>\n",
                       virStorageFileFormatTypeToString(backingStore->format));
     /* We currently don't output seclabels for backing chain element */
-    if (virDomainDiskSourceFormat(buf, backingStore, 0, flags, false,
-                                  false, xmlopt) < 0 ||
-        virDomainDiskBackingStoreFormat(buf, backingStore->backingStore,
+    if (virDomainDiskSourceFormat(&childBuf, backingStore, 0, flags, false,
+                                  false, xmlopt) < 0)
+        return -1;
+
+    if (virDomainDiskBackingStoreFormat(&childBuf, backingStore->backingStore,
                                         xmlopt, flags) < 0)
         return -1;
 
-    virBufferAdjustIndent(buf, -2);
-    virBufferAddLit(buf, "</backingStore>\n");
-    return 0;
+    return virXMLFormatElement(buf, "backingStore", &attrBuf, &childBuf);
 }
 
 
