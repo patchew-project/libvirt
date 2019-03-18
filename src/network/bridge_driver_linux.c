@@ -35,11 +35,25 @@ VIR_LOG_INIT("network.bridge_driver_linux");
 
 #define PROC_NET_ROUTE "/proc/net/route"
 
-int networkPreReloadFirewallRules(bool startup)
+static virErrorPtr errInit;
+
+void networkPreReloadFirewallRules(bool startup)
 {
-    int ret = iptablesSetupPrivateChains();
-    if (ret < 0)
-        return -1;
+    int ret;
+
+    /* We create global rules upfront as we don't want
+     * the perf hit of conditionally figuring out whether
+     * to create them each time a network is started.
+     *
+     * Any errors here are saved to be reported at time
+     * of starting the network though as that makes them
+     * more likely to be seen by a human
+     */
+    ret = iptablesSetupPrivateChains();
+    if (ret < 0) {
+        errInit = virSaveLastError();
+        virResetLastError();
+    }
 
     /*
      * If this is initial startup, and we just created the
@@ -56,8 +70,6 @@ int networkPreReloadFirewallRules(bool startup)
      */
     if (startup && ret == 1)
         iptablesSetDeletePrivate(false);
-
-    return 0;
 }
 
 
@@ -670,6 +682,11 @@ int networkAddFirewallRules(virNetworkDefPtr def)
     virNetworkIPDefPtr ipdef;
     virFirewallPtr fw = NULL;
     int ret = -1;
+
+    if (errInit) {
+        virSetError(errInit);
+        return -1;
+    }
 
     if (def->bridgeZone) {
 
