@@ -23892,7 +23892,7 @@ virDomainDiskBackingStoreFormat(virBufferPtr buf,
 
     virBufferAsprintf(&childBuf, "<format type='%s'/>\n",
                       virStorageFileFormatTypeToString(backingStore->format));
-    if (virDomainDiskSourceFormat(&childBuf, backingStore, 0, flags, true,
+    if (virDomainDiskSourceFormat(&childBuf, backingStore, 0, flags,
                                   false, true, xmlopt) < 0)
         return -1;
 
@@ -23953,7 +23953,6 @@ virDomainDiskSourceFormat(virBufferPtr buf,
                           virStorageSourcePtr src,
                           int policy,
                           unsigned int flags,
-                          bool seclabels,
                           bool attrIndex,
                           bool backingStore,
                           virDomainXMLOptionPtr xmlopt)
@@ -23964,7 +23963,7 @@ virDomainDiskSourceFormat(virBufferPtr buf,
     virBufferSetChildIndent(&childBuf, buf);
 
     if (virDomainStorageSourceFormat(&attrBuf, &childBuf, src, flags,
-                                     seclabels, attrIndex,
+                                     true, attrIndex,
                                      policy, xmlopt) < 0)
         return -1;
 
@@ -24129,7 +24128,7 @@ virDomainDiskDefFormatMirror(virBufferPtr buf,
     virBufferAddLit(buf, ">\n");
     virBufferAdjustIndent(buf, 2);
     virBufferEscapeString(buf, "<format type='%s'/>\n", formatStr);
-    if (virDomainDiskSourceFormat(buf, disk->mirror, 0, flags, true, true, true,
+    if (virDomainDiskSourceFormat(buf, disk->mirror, 0, flags, true, true,
                                   xmlopt) < 0)
         return -1;
     virBufferAdjustIndent(buf, -2);
@@ -24227,7 +24226,7 @@ virDomainDiskDefFormat(virBufferPtr buf,
         virStorageAuthDefFormat(buf, def->src->auth);
 
     if (virDomainDiskSourceFormat(buf, def->src, def->startupPolicy,
-                                  flags, true, true, true, xmlopt) < 0)
+                                  flags, true, true, xmlopt) < 0)
         return -1;
 
     virBufferEscapeString(buf, "<backenddomain name='%s'/>\n", def->domain_name);
