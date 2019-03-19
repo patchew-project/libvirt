@@ -4356,7 +4356,8 @@ networkLogAllocation(virNetworkDefPtr netdef,
  * Returns 0 on success, -1 on failure.
  */
 static int
-networkAllocateActualDevice(virDomainDefPtr dom,
+networkAllocateActualDevice(virNetworkPtr net,
+                            virDomainDefPtr dom,
                             virDomainNetDefPtr iface)
 {
     virNetworkDriverStatePtr driver = networkGetDriver();
@@ -4371,6 +4372,14 @@ networkAllocateActualDevice(virDomainDefPtr dom,
     size_t i;
     int ret = -1;
 
+    obj = virNetworkObjFindByName(driver->networks, net->name);
+    if (!obj) {
+        virReportError(VIR_ERR_NO_NETWORK,
+                       _("no network with matching name '%s'"),
+                       net->name);
+        goto error;
+    }
+
     if (iface->type != VIR_DOMAIN_NET_TYPE_NETWORK) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Expected a interface for a virtual network"));
@@ -4380,13 +4389,6 @@ networkAllocateActualDevice(virDomainDefPtr dom,
     virDomainActualNetDefFree(iface->data.network.actual);
     iface->data.network.actual = NULL;
 
-    obj = virNetworkObjFindByName(driver->networks, iface->data.network.name);
-    if (!obj) {
-        virReportError(VIR_ERR_NO_NETWORK,
-                       _("no network with matching name '%s'"),
-                       iface->data.network.name);
-        goto error;
-    }
     netdef = virNetworkObjGetDef(obj);
 
     if (!virNetworkObjIsActive(obj)) {
@@ -4775,7 +4777,8 @@ networkAllocateActualDevice(virDomainDefPtr dom,
  * No return value (but does log any failures)
  */
 static void
-networkNotifyActualDevice(virDomainDefPtr dom,
+networkNotifyActualDevice(virNetworkPtr net,
+                          virDomainDefPtr dom,
                           virDomainNetDefPtr iface)
 {
     virNetworkDriverStatePtr driver = networkGetDriver();
@@ -4786,19 +4789,20 @@ networkNotifyActualDevice(virDomainDefPtr dom,
     size_t i;
     char *master = NULL;
 
+    obj = virNetworkObjFindByName(driver->networks, net->name);
+    if (!obj) {
+        virReportError(VIR_ERR_NO_NETWORK,
+                       _("no network with matching name '%s'"),
+                       net->name);
+        goto error;
+    }
+
     if (iface->type != VIR_DOMAIN_NET_TYPE_NETWORK) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Expected a interface for a virtual network"));
         goto error;
     }
 
-    obj = virNetworkObjFindByName(driver->networks, iface->data.network.name);
-    if (!obj) {
-        virReportError(VIR_ERR_NO_NETWORK,
-                       _("no network with matching name '%s'"),
-                       iface->data.network.name);
-        goto error;
-    }
     netdef = virNetworkObjGetDef(obj);
 
     if (!virNetworkObjIsActive(obj)) {
@@ -5011,7 +5015,8 @@ networkNotifyActualDevice(virDomainDefPtr dom,
  * Returns 0 on success, -1 on failure.
  */
 static int
-networkReleaseActualDevice(virDomainDefPtr dom,
+networkReleaseActualDevice(virNetworkPtr net,
+                           virDomainDefPtr dom,
                            virDomainNetDefPtr iface)
 {
     virNetworkDriverStatePtr driver = networkGetDriver();
@@ -5022,19 +5027,20 @@ networkReleaseActualDevice(virDomainDefPtr dom,
     size_t i;
     int ret = -1;
 
+    obj = virNetworkObjFindByName(driver->networks, net->name);
+    if (!obj) {
+        virReportError(VIR_ERR_NO_NETWORK,
+                       _("no network with matching name '%s'"),
+                       net->name);
+        goto error;
+    }
+
     if (iface->type != VIR_DOMAIN_NET_TYPE_NETWORK) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Expected a interface for a virtual network"));
         goto error;
     }
 
-    obj = virNetworkObjFindByName(driver->networks, iface->data.network.name);
-    if (!obj) {
-        virReportError(VIR_ERR_NO_NETWORK,
-                       _("no network with matching name '%s'"),
-                       iface->data.network.name);
-        goto error;
-    }
     netdef = virNetworkObjGetDef(obj);
 
     switch ((virNetworkForwardType) netdef->forward.type) {
