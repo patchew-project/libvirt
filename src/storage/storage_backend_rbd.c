@@ -437,10 +437,29 @@ volStorageBackendRBDGetFeatures(rbd_image_t image,
 }
 
 #if LIBRBD_VERSION_CODE > 265
-static bool
-volStorageBackendRBDUseFastDiff(uint64_t features)
+static int
+volStorageBackendRBDGetFlags(rbd_image_t image,
+                             const char *volname,
+                             uint64_t *flags)
 {
-    return features & RBD_FEATURE_FAST_DIFF;
+    int r, ret = -1;
+
+    if ((r = rbd_get_flags(image, flags)) < 0) {
+        virReportSystemError(-r, _("failed to get the flags of RBD image "
+                                 "%s"), volname);
+        goto cleanup;
+    }
+    ret = 0;
+
+ cleanup:
+    return ret;
+}
+
+static bool
+volStorageBackendRBDUseFastDiff(uint64_t features, uint64_t flags)
+{
+    return (((features & RBD_FEATURE_FAST_DIFF) != 0ULL) &&
+            ((flags & RBD_FLAG_FAST_DIFF_INVALID) == 0ULL));
 }
 
 static int
@@ -484,7 +503,17 @@ virStorageBackendRBDSetAllocation(virStorageVolDefPtr vol,
 
 #else
 static int
-volStorageBackendRBDUseFastDiff(uint64_t features ATTRIBUTE_UNUSED)
+volStorageBackendRBDGetFlags(rbd_image_t image,
+                             const char *volname,
+                             uint64_t *flags)
+{
+    *flags = 0;
+    return 0;
+}
+
+static int
+volStorageBackendRBDUseFastDiff(uint64_t features ATTRIBUTE_UNUSED,
+                                uint64_t feature_flags ATTRIBUTE_UNUSED)
 {
     return false;
 }
@@ -509,6 +538,7 @@ volStorageBackendRBDRefreshVolInfo(virStorageVolDefPtr vol,
     rbd_image_t image = NULL;
     rbd_image_info_t info;
     uint64_t features;
+    uint64_t flags;
 
     if ((r = rbd_open_read_only(ptr->ioctx, vol->name, &image, NULL)) < 0) {
         ret = -r;
@@ -527,11 +557,14 @@ volStorageBackendRBDRefreshVolInfo(virStorageVolDefPtr vol,
     if (volStorageBackendRBDGetFeatures(image, vol->name, &features) < 0)
         goto cleanup;
 
+    if (volStorageBackendRBDGetFlags(image, vol->name, &flags) < 0)
+        goto cleanup;
+
     vol->target.capacity = info.size;
     vol->type = VIR_STORAGE_VOL_NETWORK;
     vol->target.format = VIR_STORAGE_FILE_RAW;
 
-    if (volStorageBackendRBDUseFastDiff(features)) {
+    if (volStorageBackendRBDUseFastDiff(features, flags)) {
         VIR_DEBUG("RBD image %s/%s has fast-diff feature enabled. "
                   "Querying for actual allocation",
                   def->source.name, vol->name);
