@@ -396,6 +396,7 @@ virDomainObjListRemove(virDomainObjListPtr doms,
     dom->removing = true;
     virObjectRef(dom);
     virObjectUnlock(dom);
+    sleep(60);
     virObjectRWLockWrite(doms);
     virObjectLock(dom);
     virDomainObjListRemoveLocked(doms, dom);
