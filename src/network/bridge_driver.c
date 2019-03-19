@@ -4776,12 +4776,11 @@ networkAllocateActualDevice(virNetworkPtr net,
  * Called to notify the network driver when libvirtd is restarted and
  * finds an already running domain. If appropriate it will force an
  * allocation of the actual->direct.linkdev to get everything back in
- * order, or re-attach the interface's tap device to the network's
- * bridge.
+ * order.
  *
- * No return value (but does log any failures)
+ * Returns 0 on success, -1 on failure.
  */
-static void
+static int
 networkNotifyActualDevice(virNetworkPtr net,
                           virDomainDefPtr dom,
                           virDomainNetDefPtr iface)
@@ -4792,6 +4791,7 @@ networkNotifyActualDevice(virNetworkPtr net,
     virNetworkDefPtr netdef;
     virNetworkForwardIfDefPtr dev = NULL;
     size_t i;
+    int ret = -1;
 
     obj = virNetworkObjFindByName(driver->networks, net->name);
     if (!obj) {
@@ -4834,22 +4834,6 @@ networkNotifyActualDevice(virNetworkPtr net,
     if (actualType == VIR_DOMAIN_NET_TYPE_NETWORK) {
         iface->data.network.actual->type = VIR_DOMAIN_NET_TYPE_BRIDGE;
         actualType = VIR_DOMAIN_NET_TYPE_BRIDGE;
-    }
-
-    /* see if we're connected to the correct bridge */
-    if (netdef->bridge) {
-        /*
-         * NB: we can't notify the guest of any MTU change anyway,
-         * so there is no point in trying to learn the actualMTU
-         * (final arg to virNetDevTapReattachBridge())
-         */
-        if (virNetDevTapReattachBridge(iface->ifname, netdef->bridge,
-                                       &iface->mac, dom->uuid,
-                                       virDomainNetGetActualVirtPortProfile(iface),
-                                       virDomainNetGetActualVlan(iface),
-                                       iface->mtu, NULL) < 0) {
-            goto error;
-        }
     }
 
     if (!iface->data.network.actual ||
@@ -4980,10 +4964,11 @@ networkNotifyActualDevice(virNetworkPtr net,
         goto error;
     }
     networkLogAllocation(netdef, actualType, dev, iface, true);
+    ret = 0;
 
  cleanup:
     virNetworkObjEndAPI(&obj);
-    return;
+    return ret;
 
  error:
     goto cleanup;
