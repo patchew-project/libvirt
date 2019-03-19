@@ -94,6 +94,11 @@ VIR_ENUM_IMPL(virStorageVolFormatDisk,
               "extended",
 );
 
+VIR_ENUM_IMPL(virStorageVolRefreshAllocation,
+              VIR_STORAGE_VOL_REFRESH_ALLOCATION_LAST,
+              "default", "capacity",
+);
+
 VIR_ENUM_IMPL(virStoragePartedFs,
               VIR_STORAGE_PARTED_FS_TYPE_LAST,
               "ext2", "ext2", "fat16",
@@ -799,6 +804,7 @@ virStoragePoolDefParseXML(xmlXPathContextPtr ctxt)
     VIR_AUTOFREE(char *) type = NULL;
     VIR_AUTOFREE(char *) uuid = NULL;
     VIR_AUTOFREE(char *) target_path = NULL;
+    VIR_AUTOFREE(char *) refresh_volume_allocation = NULL;
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
@@ -929,6 +935,18 @@ virStoragePoolDefParseXML(xmlXPathContextPtr ctxt)
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                        _("missing initiator IQN"));
         return NULL;
+    }
+
+    refresh_volume_allocation = virXPathString("string(./refresh/volume/@allocation)",
+                                               ctxt);
+    if (refresh_volume_allocation) {
+        if ((def->refresh_volume_allocation =
+                virStorageVolRefreshAllocationTypeFromString(refresh_volume_allocation)) < 0) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("unknown storage pool volume refresh allocation type %s"),
+                               refresh_volume_allocation);
+                return NULL;
+        }
     }
 
     /* Make a copy of all the callback pointers here for easier use,
@@ -1161,6 +1179,15 @@ virStoragePoolDefFormatBuf(virBufferPtr buf,
 
         virBufferAdjustIndent(buf, -2);
         virBufferAddLit(buf, "</target>\n");
+    }
+
+    if (def->refresh_volume_allocation) {
+        virBufferAddLit(buf, "<refresh>\n");
+        virBufferAdjustIndent(buf, 2);
+        virBufferAsprintf(buf, "<volume allocation='%s'/>\n",
+                          virStorageVolRefreshAllocationTypeToString(def->refresh_volume_allocation));
+        virBufferAdjustIndent(buf, -2);
+        virBufferAddLit(buf, "</refresh>\n");
     }
 
     if (def->namespaceData && def->ns.format) {

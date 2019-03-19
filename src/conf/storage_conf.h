@@ -83,6 +83,13 @@ struct _virStorageVolSource {
                    * backend for partition type creation */
 };
 
+typedef enum {
+   VIR_STORAGE_VOL_REFRESH_ALLOCATION_DEFAULT,  /* compute actual allocation */
+   VIR_STORAGE_VOL_REFRESH_ALLOCATION_CAPACITY, /* use logical capacity */
+   VIR_STORAGE_VOL_REFRESH_ALLOCATION_LAST,
+} virStorageVolRefreshAllocationType;
+
+VIR_ENUM_DECL(virStorageVolRefreshAllocation);
 
 typedef struct _virStorageVolDef virStorageVolDef;
 typedef virStorageVolDef *virStorageVolDefPtr;
@@ -242,6 +249,8 @@ struct _virStoragePoolDef {
     char *name;
     unsigned char uuid[VIR_UUID_BUFLEN];
     int type; /* virStoragePoolType */
+
+    int refresh_volume_allocation; /* virStorageVolRefreshAllocationType */
 
     unsigned long long allocation; /* bytes */
     unsigned long long capacity; /* bytes */
