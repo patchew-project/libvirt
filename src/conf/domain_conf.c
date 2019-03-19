@@ -30397,7 +30397,6 @@ virDomainNetDefActualToNetworkPort(virDomainDefPtr dom,
 static virDomainNetAllocateActualDeviceImpl netAllocate;
 static virDomainNetNotifyActualDeviceImpl netNotify;
 static virDomainNetReleaseActualDeviceImpl netRelease;
-static virDomainNetBandwidthChangeAllowedImpl netBandwidthChangeAllowed;
 static virDomainNetBandwidthUpdateImpl netBandwidthUpdate;
 
 
@@ -30405,13 +30404,11 @@ void
 virDomainNetSetDeviceImpl(virDomainNetAllocateActualDeviceImpl allocate,
                           virDomainNetNotifyActualDeviceImpl notify,
                           virDomainNetReleaseActualDeviceImpl release,
-                          virDomainNetBandwidthChangeAllowedImpl bandwidthChangeAllowed,
                           virDomainNetBandwidthUpdateImpl bandwidthUpdate)
 {
     netAllocate = allocate;
     netNotify = notify;
     netRelease = release;
-    netBandwidthChangeAllowed = bandwidthChangeAllowed;
     netBandwidthUpdate = bandwidthUpdate;
 }
 
@@ -30519,18 +30516,6 @@ virDomainNetReleaseActualDevice(virConnectPtr conn,
     return ret;
 }
 
-bool
-virDomainNetBandwidthChangeAllowed(virDomainNetDefPtr iface,
-                                   virNetDevBandwidthPtr newBandwidth)
-{
-    if (!netBandwidthChangeAllowed) {
-        virReportError(VIR_ERR_NO_SUPPORT, "%s",
-                       _("Virtual networking driver is not available"));
-        return -1;
-    }
-
-    return netBandwidthChangeAllowed(iface, newBandwidth);
-}
 
 int
 virDomainNetBandwidthUpdate(virDomainNetDefPtr iface,
