@@ -31,6 +31,7 @@
 
 extern virClassPtr virConnectClass;
 extern virClassPtr virDomainClass;
+extern virClassPtr virDomainMomentClass;
 extern virClassPtr virDomainSnapshotClass;
 extern virClassPtr virInterfaceClass;
 extern virClassPtr virNetworkClass;
@@ -669,26 +670,41 @@ struct _virStream {
 };
 
 /**
- * _virDomainSnapshot
+ * _virDomainMoment
  *
- * Internal structure associated with a domain snapshot
+ * Internal abstract structure serving as a base class to a named
+ * point in time object related to a domain
  */
-struct _virDomainSnapshot {
+typedef struct _virDomainMoment virDomainMoment;
+typedef virDomainMoment *virDomainMomentPtr;
+struct _virDomainMoment {
     virObject parent;
     char *name;
     virDomainPtr domain;
 };
 
+/**
+ * _virDomainSnapshot
+ *
+ * Internal structure associated with a domain snapshot
+ */
+struct _virDomainSnapshot {
+    virDomainMoment parent;
+
+    /* Unused attribute to allow for subclass creation */
+    bool dummy;
+};
+
 static inline char *
 virSnapName(virDomainSnapshotPtr snapshot)
 {
-    return snapshot->name;
+    return snapshot->parent.name;
 }
 
 static inline virDomainPtr
 virSnapDom(virDomainSnapshotPtr snapshot)
 {
-    return snapshot->domain;
+    return snapshot->parent.domain;
 }
 
 /**
