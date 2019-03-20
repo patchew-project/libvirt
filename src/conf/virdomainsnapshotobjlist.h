@@ -27,6 +27,10 @@
 # include "virdomainsnapshotobj.h"
 # include "virbuffer.h"
 
+/* Filter that returns true if a given snapshot matches the filter flags */
+typedef bool (*virDomainSnapshotObjListFilter)(virDomainSnapshotObjPtr obj,
+                                               unsigned int flags);
+
 virDomainSnapshotObjListPtr virDomainSnapshotObjListNew(void);
 void virDomainSnapshotObjListFree(virDomainSnapshotObjListPtr snapshots);
 
