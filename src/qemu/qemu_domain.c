@@ -8448,45 +8448,28 @@ qemuFindQemuImgBinary(virQEMUDriverPtr driver)
 
 int
 qemuDomainSnapshotWriteMetadata(virDomainObjPtr vm,
-                                virDomainMomentObjPtr snapshot,
+                                virDomainMomentObjPtr snapshot ATTRIBUTE_UNUSED,
                                 virCapsPtr caps,
                                 virDomainXMLOptionPtr xmlopt,
                                 const char *snapshotDir)
 {
-    char *newxml = NULL;
-    int ret = -1;
-    char *snapDir = NULL;
-    char *snapFile = NULL;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
-    unsigned int flags = VIR_DOMAIN_SNAPSHOT_FORMAT_SECURE |
-        VIR_DOMAIN_SNAPSHOT_FORMAT_INTERNAL;
-    virDomainSnapshotDefPtr def = virDomainSnapshotObjGetDef(snapshot);
+    unsigned int flags = VIR_DOMAIN_SNAPSHOT_FORMAT_SECURE;
+    VIR_AUTOFREE(char *) newxml = NULL;
+    VIR_AUTOFREE(char *) snapDir = NULL;
+    VIR_AUTOFREE(char *) snapFile = NULL;
+    VIR_AUTOCLEAN(virBuffer) buf = VIR_BUFFER_INITIALIZER;
 
-    if (virDomainSnapshotGetCurrent(vm->snapshots) == snapshot)
-        flags |= VIR_DOMAIN_SNAPSHOT_FORMAT_CURRENT;
     virUUIDFormat(vm->def->uuid, uuidstr);
-    newxml = virDomainSnapshotDefFormat(uuidstr, def, caps, xmlopt, flags);
-    if (newxml == NULL)
+    if (virDomainSnapshotObjListFormat(&buf, uuidstr, vm->snapshots, caps,
+                                       xmlopt, flags) < 0)
         return -1;
 
-    if (virAsprintf(&snapDir, "%s/%s", snapshotDir, vm->def->name) < 0)
-        goto cleanup;
-    if (virFileMakePath(snapDir) < 0) {
-        virReportSystemError(errno, _("cannot create snapshot directory '%s'"),
-                             snapDir);
-        goto cleanup;
-    }
+    if (virAsprintf(&snapFile, "%s/%s.xml", snapshotDir, vm->def->name) < 0)
+        return -1;
 
-    if (virAsprintf(&snapFile, "%s/%s.xml", snapDir, def->common.name) < 0)
-        goto cleanup;
-
-    ret = virXMLSaveFile(snapFile, NULL, "snapshot-edit", newxml);
-
- cleanup:
-    VIR_FREE(snapFile);
-    VIR_FREE(snapDir);
-    VIR_FREE(newxml);
-    return ret;
+    newxml = virBufferContentAndReset(&buf);
+    return virXMLSaveFile(snapFile, NULL, "snapshot-edit", newxml);
 }
 
 /* The domain is expected to be locked and inactive. Return -1 on normal
@@ -8589,7 +8572,6 @@ qemuDomainSnapshotDiscard(virQEMUDriverPtr driver,
                           bool update_parent,
                           bool metadata_only)
 {
-    char *snapFile = NULL;
     int ret = -1;
     qemuDomainObjPrivatePtr priv;
     virDomainMomentObjPtr parentsnap = NULL;
@@ -8609,10 +8591,6 @@ qemuDomainSnapshotDiscard(virQEMUDriverPtr driver,
             ignore_value(qemuDomainObjExitMonitor(driver, vm));
         }
     }
-
-    if (virAsprintf(&snapFile, "%s/%s/%s.xml", cfg->snapshotDir,
-                    vm->def->name, snap->def->name) < 0)
-        goto cleanup;
 
     if (snap == virDomainSnapshotGetCurrent(vm->snapshots)) {
         virDomainSnapshotSetCurrent(vm->snapshots, NULL);
@@ -8635,8 +8613,6 @@ qemuDomainSnapshotDiscard(virQEMUDriverPtr driver,
         }
     }
 
-    if (unlink(snapFile) < 0)
-        VIR_WARN("Failed to unlink %s", snapFile);
     if (update_parent)
         virDomainMomentDropParent(snap);
     virDomainSnapshotObjListRemove(vm->snapshots, snap);
@@ -8644,7 +8620,6 @@ qemuDomainSnapshotDiscard(virQEMUDriverPtr driver,
     ret = 0;
 
  cleanup:
-    VIR_FREE(snapFile);
     virObjectUnref(cfg);
     return ret;
 }
@@ -8691,7 +8666,7 @@ qemuDomainRemoveInactiveCommon(virQEMUDriverPtr driver,
                                virDomainObjPtr vm)
 {
     virQEMUDriverConfigPtr cfg;
-    VIR_AUTOFREE(char *) snapDir = NULL;
+    VIR_AUTOFREE(char *) snapFile = NULL;
 
     cfg = virQEMUDriverGetConfig(driver);
 
@@ -8699,12 +8674,12 @@ qemuDomainRemoveInactiveCommon(virQEMUDriverPtr driver,
     if (qemuDomainSnapshotDiscardAllMetadata(driver, vm) < 0) {
         VIR_WARN("unable to remove all snapshots for domain %s",
                  vm->def->name);
-    } else if (virAsprintf(&snapDir, "%s/%s", cfg->snapshotDir,
+    } else if (virAsprintf(&snapFile, "%s/%s.xml", cfg->snapshotDir,
                            vm->def->name) < 0) {
-        VIR_WARN("unable to remove snapshot directory %s/%s",
+        VIR_WARN("unable to remove snapshots storage %s/%s.xml",
                  cfg->snapshotDir, vm->def->name);
-    } else if (rmdir(snapDir) < 0 && errno != ENOENT) {
-        VIR_WARN("unable to remove snapshot directory %s", snapDir);
+    } else if (unlink(snapFile) < 0 && errno != ENOENT) {
+        VIR_WARN("unable to remove snapshots storage %s", snapFile);
     }
     qemuExtDevicesCleanupHost(driver, vm->def);
 

@@ -406,12 +406,14 @@ qemuSecurityInit(virQEMUDriverPtr driver)
 }
 
 
+/* Older qemu used a series of $dir/snapshot/domainname/snap.xml
+ * files, instead of the modern $dir/snapshot/domainname.xml bulk
+ * file. Called while vm is locked. */
 static int
-qemuDomainSnapshotLoad(virDomainObjPtr vm,
-                       void *data)
+qemuDomainSnapshotLoadLegacy(virDomainObjPtr vm,
+                             char *snapDir,
+                             virCapsPtr caps)
 {
-    char *baseDir = (char *)data;
-    char *snapDir = NULL;
     DIR *dir = NULL;
     struct dirent *entry;
     char *xmlStr;
@@ -424,20 +426,7 @@ qemuDomainSnapshotLoad(virDomainObjPtr vm,
                           VIR_DOMAIN_SNAPSHOT_PARSE_DISKS |
                           VIR_DOMAIN_SNAPSHOT_PARSE_INTERNAL);
     int ret = -1;
-    virCapsPtr caps = NULL;
     int direrr;
-
-    virObjectLock(vm);
-    if (virAsprintf(&snapDir, "%s/%s", baseDir, vm->def->name) < 0) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("Failed to allocate memory for "
-                       "snapshot directory for domain %s"),
-                       vm->def->name);
-        goto cleanup;
-    }
-
-    if (!(caps = virQEMUDriverGetCapabilities(qemu_driver, false)))
-        goto cleanup;
 
     VIR_INFO("Scanning for snapshots for domain %s in %s", vm->def->name,
              snapDir);
@@ -503,6 +492,74 @@ qemuDomainSnapshotLoad(virDomainObjPtr vm,
                        _("Snapshots have inconsistent relations for domain %s"),
                        vm->def->name);
 
+    virResetLastError();
+
+    ret = 0;
+ cleanup:
+    VIR_DIR_CLOSE(dir);
+    return ret;
+}
+
+
+/* Load all snapshots associated with domain */
+static int
+qemuDomainSnapshotLoad(virDomainObjPtr vm,
+                       void *data)
+{
+    char *baseDir = (char *)data;
+    unsigned int flags = (VIR_DOMAIN_SNAPSHOT_PARSE_REDEFINE |
+                          VIR_DOMAIN_SNAPSHOT_PARSE_DISKS);
+    int ret = -1;
+    virCapsPtr caps = NULL;
+    VIR_AUTOFREE(char *) snapFile = NULL;
+    VIR_AUTOFREE(char *) snapDir = NULL;
+    VIR_AUTOFREE(char *) xmlStr = NULL;
+
+    virObjectLock(vm);
+    VIR_INFO("Scanning for snapshots for domain %s in %s", vm->def->name,
+             baseDir);
+    if (virAsprintf(&snapFile, "%s/%s.xml", baseDir, vm->def->name) < 0) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Failed to allocate memory for "
+                       "snapshots storage for domain %s"),
+                       vm->def->name);
+        goto cleanup;
+    }
+
+    if (!(caps = virQEMUDriverGetCapabilities(qemu_driver, false)))
+        goto cleanup;
+
+    if (virFileExists(snapFile)) {
+        /* State last saved by modern libvirt in single file. As each
+         * snapshot contains a <domain>, it can be quite large. */
+        if (virFileReadAll(snapFile, 128*1024*1024*1, &xmlStr) < 0) {
+            /* Nothing we can do here */
+            virReportSystemError(errno,
+                                 _("Failed to read snapshot file %s"),
+                                 snapFile);
+            goto cleanup;
+        }
+
+        ret = virDomainSnapshotObjListParse(xmlStr, vm->def->uuid,
+                                            vm->snapshots, caps,
+                                            qemu_driver->xmlopt, flags);
+        if (ret < 0)
+            goto cleanup;
+        VIR_INFO("Read in %d snapshots for domain %s", ret, vm->def->name);
+    } else if (virAsprintf(&snapDir, "%s/%s", baseDir, vm->def->name) >= 0 &&
+               virFileExists(snapDir)) {
+        /* State may have been saved by earlier libvirt; if so, try to
+         * read it in, convert to modern style, and remove the old
+         * directory if successful. */
+        if (qemuDomainSnapshotLoadLegacy(vm, snapDir, caps) < 0)
+            goto cleanup;
+        if (qemuDomainSnapshotWriteMetadata(vm, NULL, caps,
+                                            qemu_driver->xmlopt, baseDir) < 0)
+            goto cleanup;
+        if (virFileDeleteTree(snapDir) < 0)
+            VIR_WARN("Unable to remove legacy snapshot directory %s", snapDir);
+    }
+
     /* FIXME: qemu keeps internal track of snapshots.  We can get access
      * to this info via the "info snapshots" monitor command for running
      * domains, or via "qemu-img snapshot -l" for shutoff domains.  It would
@@ -516,8 +573,6 @@ qemuDomainSnapshotLoad(virDomainObjPtr vm,
 
     ret = 0;
  cleanup:
-    VIR_DIR_CLOSE(dir);
-    VIR_FREE(snapDir);
     virObjectUnref(caps);
     virObjectUnlock(vm);
     return ret;
