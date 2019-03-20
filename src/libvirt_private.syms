@@ -980,9 +980,12 @@ virDomainObjListRename;
 
 
 # conf/virdomainsnapshotobj.h
+virDomainSnapshotDropChildren;
 virDomainSnapshotDropParent;
 virDomainSnapshotForEachChild;
 virDomainSnapshotForEachDescendant;
+virDomainSnapshotMoveChildren;
+virDomainSnapshotSetParent;
 
 
 # conf/virdomainsnapshotobjlist.h
