@@ -108,7 +108,8 @@ virDomainSnapshotObjListParse(const char *xmlStr,
         virDomainSnapshotDefPtr def;
         virDomainSnapshotObjPtr snap;
 
-        def = virDomainSnapshotDefParseNode(xml, nodes[i], caps, xmlopt, flags);
+        def = virDomainSnapshotDefParseNode(xml, nodes[i], caps, xmlopt, NULL,
+                                            flags);
         if (!def)
             goto cleanup;
         if (!(snap = virDomainSnapshotAssignDef(snapshots, def))) {
@@ -134,7 +135,6 @@ virDomainSnapshotObjListParse(const char *xmlStr,
                            _("no snapshot matching current='%s'"), current);
             goto cleanup;
         }
-        (*current_snap)->def->current = true;
     }
 
     ret = 0;
