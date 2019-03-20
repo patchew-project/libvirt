@@ -1,5 +1,5 @@
 /*
- * virdomainsnapshotobj.c: handle snapshot objects
+ * virdomainmomentobjlist.c: handle snapshot/checkpoint objects
  *                  (derived from snapshot_conf.c)
  *
  * Copyright (C) 2006-2019 Red Hat, Inc.
@@ -23,15 +23,15 @@
 #include <config.h>
 
 #include "internal.h"
-#include "virdomainsnapshotobj.h"
-#include "snapshot_conf.h"
-#include "virdomainsnapshotobjlist.h"
+#include "virdomainmomentobjlist.h"
 #include "virlog.h"
 #include "virerror.h"
+#include "virstring.h"
+#include "moment_conf.h"
 
-#define VIR_FROM_THIS VIR_FROM_DOMAIN_SNAPSHOT
+#define VIR_FROM_THIS VIR_FROM_DOMAIN
 
-VIR_LOG_INIT("conf.virdomainsnapshotobj");
+VIR_LOG_INIT("conf.virdomainmomentobjlist");
 
 /* Run iter(data) on all direct children of moment, while ignoring all
  * other entries in moments.  Return the number of children

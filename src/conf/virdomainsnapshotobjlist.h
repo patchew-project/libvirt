@@ -24,7 +24,7 @@
 # define LIBVIRT_VIRDOMAINSNAPSHOTOBJLIST_H
 
 # include "internal.h"
-# include "virdomainsnapshotobj.h"
+# include "virdomainmomentobjlist.h"
 # include "virbuffer.h"
 
 /* Filter that returns true if a given moment matches the filter flags */
@@ -80,4 +80,9 @@ int virDomainListSnapshots(virDomainSnapshotObjListPtr snapshots,
                            virDomainSnapshotPtr **snaps,
                            unsigned int flags);
 
+static inline virDomainSnapshotDefPtr
+virDomainSnapshotObjGetDef(virDomainMomentObjPtr obj)
+{
+    return (virDomainSnapshotDefPtr) obj->def;
+}
 #endif /* LIBVIRT_VIRDOMAINSNAPSHOTOBJLIST_H */
