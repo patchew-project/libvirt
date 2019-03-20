@@ -52,4 +52,10 @@ void virDomainSnapshotMoveChildren(virDomainSnapshotObjPtr from,
 void virDomainSnapshotSetParent(virDomainSnapshotObjPtr snapshot,
                                 virDomainSnapshotObjPtr parent);
 
+static inline virDomainSnapshotDefPtr
+virDomainSnapshotObjGetDef(virDomainSnapshotObjPtr obj)
+{
+    return obj->def;
+}
+
 #endif /* LIBVIRT_VIRDOMAINSNAPSHOTOBJ_H */

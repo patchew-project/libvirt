@@ -456,8 +456,10 @@ virDomainSnapshotRedefineValidate(virDomainSnapshotDefPtr def,
     }
 
     if (other) {
-        if ((other->def->state == VIR_DOMAIN_SNAPSHOT_RUNNING ||
-             other->def->state == VIR_DOMAIN_SNAPSHOT_PAUSED) !=
+        virDomainSnapshotDefPtr otherdef = virDomainSnapshotObjGetDef(other);
+
+        if ((otherdef->state == VIR_DOMAIN_SNAPSHOT_RUNNING ||
+             otherdef->state == VIR_DOMAIN_SNAPSHOT_PAUSED) !=
             (def->state == VIR_DOMAIN_SNAPSHOT_RUNNING ||
              def->state == VIR_DOMAIN_SNAPSHOT_PAUSED)) {
             virReportError(VIR_ERR_INVALID_ARG,
@@ -467,7 +469,7 @@ virDomainSnapshotRedefineValidate(virDomainSnapshotDefPtr def,
             return -1;
         }
 
-        if ((other->def->state == VIR_DOMAIN_SNAPSHOT_DISK_SNAPSHOT) !=
+        if ((otherdef->state == VIR_DOMAIN_SNAPSHOT_DISK_SNAPSHOT) !=
             (def->state == VIR_DOMAIN_SNAPSHOT_DISK_SNAPSHOT)) {
             virReportError(VIR_ERR_INVALID_ARG,
                            _("cannot change between disk only and "
@@ -476,15 +478,15 @@ virDomainSnapshotRedefineValidate(virDomainSnapshotDefPtr def,
             return -1;
         }
 
-        if (other->def->dom) {
+        if (otherdef->dom) {
             if (def->dom) {
-                if (!virDomainDefCheckABIStability(other->def->dom,
+                if (!virDomainDefCheckABIStability(otherdef->dom,
                                                    def->dom, xmlopt))
                     return -1;
             } else {
                 /* Transfer the domain def */
-                def->dom = other->def->dom;
-                other->def->dom = NULL;
+                def->dom = otherdef->dom;
+                otherdef->dom = NULL;
             }
         }
     }
@@ -909,7 +911,9 @@ virDomainSnapshotDefIsExternal(virDomainSnapshotDefPtr def)
 bool
 virDomainSnapshotIsExternal(virDomainSnapshotObjPtr snap)
 {
-    return virDomainSnapshotDefIsExternal(snap->def);
+    virDomainSnapshotDefPtr def = virDomainSnapshotObjGetDef(snap);
+
+    return virDomainSnapshotDefIsExternal(def);
 }
 
 int
@@ -923,6 +927,7 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
 {
     virDomainSnapshotDefPtr def = *defptr;
     virDomainSnapshotObjPtr other;
+    virDomainSnapshotDefPtr otherdef;
     bool check_if_stolen;
 
     /* Prevent circular chains */
@@ -940,15 +945,16 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
                            def->parent, def->name);
             return -1;
         }
-        while (other->def->parent) {
-            if (STREQ(other->def->parent, def->name)) {
+        otherdef = virDomainSnapshotObjGetDef(other);
+        while (otherdef->parent) {
+            if (STREQ(otherdef->parent, def->name)) {
                 virReportError(VIR_ERR_INVALID_ARG,
                                _("parent %s would create cycle to %s"),
-                               other->def->name, def->name);
+                               otherdef->name, def->name);
                 return -1;
             }
             other = virDomainSnapshotFindByName(vm->snapshots,
-                                                other->def->parent);
+                                                otherdef->parent);
             if (!other) {
                 VIR_WARN("snapshots are inconsistent for %s",
                          vm->def->name);
@@ -958,12 +964,13 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
     }
 
     other = virDomainSnapshotFindByName(vm->snapshots, def->name);
-    check_if_stolen = other && other->def->dom;
+    otherdef = other ? virDomainSnapshotObjGetDef(other) : NULL;
+    check_if_stolen = other && otherdef->dom;
     if (virDomainSnapshotRedefineValidate(def, domain->uuid, other, xmlopt,
                                           flags) < 0) {
         /* revert any stealing of the snapshot domain definition */
-        if (check_if_stolen && def->dom && !other->def->dom) {
-            other->def->dom = def->dom;
+        if (check_if_stolen && def->dom && !otherdef->dom) {
+            otherdef->dom = def->dom;
             def->dom = NULL;
         }
         return -1;
@@ -977,8 +984,8 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
         /* Drop and rebuild the parent relationship, but keep all
          * child relations by reusing snap. */
         virDomainSnapshotDropParent(other);
-        virDomainSnapshotDefFree(other->def);
-        other->def = def;
+        virDomainSnapshotDefFree(otherdef);
+        otherdef = def;
         *defptr = NULL;
         *snap = other;
     }
