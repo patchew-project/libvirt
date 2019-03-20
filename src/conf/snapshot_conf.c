@@ -426,7 +426,7 @@ virDomainSnapshotDefParseString(const char *xmlStr,
 int
 virDomainSnapshotRedefineValidate(virDomainSnapshotDefPtr def,
                                   const unsigned char *domain_uuid,
-                                  virDomainSnapshotObjPtr other,
+                                  virDomainMomentObjPtr other,
                                   virDomainXMLOptionPtr xmlopt,
                                   unsigned int flags)
 {
@@ -907,7 +907,7 @@ virDomainSnapshotDefIsExternal(virDomainSnapshotDefPtr def)
 }
 
 bool
-virDomainSnapshotIsExternal(virDomainSnapshotObjPtr snap)
+virDomainSnapshotIsExternal(virDomainMomentObjPtr snap)
 {
     virDomainSnapshotDefPtr def = virDomainSnapshotObjGetDef(snap);
 
@@ -918,13 +918,13 @@ int
 virDomainSnapshotRedefinePrep(virDomainPtr domain,
                               virDomainObjPtr vm,
                               virDomainSnapshotDefPtr *defptr,
-                              virDomainSnapshotObjPtr *snap,
+                              virDomainMomentObjPtr *snap,
                               virDomainXMLOptionPtr xmlopt,
                               bool *update_current,
                               unsigned int flags)
 {
     virDomainSnapshotDefPtr def = *defptr;
-    virDomainSnapshotObjPtr other;
+    virDomainMomentObjPtr other;
     virDomainSnapshotDefPtr otherdef;
     bool check_if_stolen;
 
@@ -981,7 +981,7 @@ virDomainSnapshotRedefinePrep(virDomainPtr domain,
 
         /* Drop and rebuild the parent relationship, but keep all
          * child relations by reusing snap. */
-        virDomainSnapshotDropParent(other);
+        virDomainMomentDropParent(other);
         virDomainSnapshotDefFree(otherdef);
         otherdef = def;
         *defptr = NULL;
