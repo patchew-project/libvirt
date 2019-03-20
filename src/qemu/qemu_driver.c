@@ -193,7 +193,7 @@ qemuDomObjFromDomain(virDomainPtr domain)
 static virDomainObjPtr
 qemuDomObjFromSnapshot(virDomainSnapshotPtr snapshot)
 {
-    return qemuDomObjFromDomain(snapshot->domain);
+    return qemuDomObjFromDomain(virSnapDom(snapshot));
 }
 
 
@@ -218,7 +218,7 @@ static virDomainSnapshotObjPtr
 qemuSnapObjFromSnapshot(virDomainObjPtr vm,
                         virDomainSnapshotPtr snapshot)
 {
-    return qemuSnapObjFromName(vm, snapshot->name);
+    return qemuSnapObjFromName(vm, virSnapName(snapshot));
 }
 
 static int
@@ -16047,7 +16047,7 @@ qemuDomainSnapshotListChildrenNames(virDomainSnapshotPtr snapshot,
     if (!(vm = qemuDomObjFromSnapshot(snapshot)))
         return -1;
 
-    if (virDomainSnapshotListChildrenNamesEnsureACL(snapshot->domain->conn, vm->def) < 0)
+    if (virDomainSnapshotListChildrenNamesEnsureACL(virSnapDom(snapshot)->conn, vm->def) < 0)
         goto cleanup;
 
     if (!(snap = qemuSnapObjFromSnapshot(vm, snapshot)))
@@ -16077,7 +16077,7 @@ qemuDomainSnapshotNumChildren(virDomainSnapshotPtr snapshot,
     if (!(vm = qemuDomObjFromSnapshot(snapshot)))
         return -1;
 
-    if (virDomainSnapshotNumChildrenEnsureACL(snapshot->domain->conn, vm->def) < 0)
+    if (virDomainSnapshotNumChildrenEnsureACL(virSnapDom(snapshot)->conn, vm->def) < 0)
         goto cleanup;
 
     if (!(snap = qemuSnapObjFromSnapshot(vm, snapshot)))
@@ -16107,13 +16107,13 @@ qemuDomainSnapshotListAllChildren(virDomainSnapshotPtr snapshot,
     if (!(vm = qemuDomObjFromSnapshot(snapshot)))
         return -1;
 
-    if (virDomainSnapshotListAllChildrenEnsureACL(snapshot->domain->conn, vm->def) < 0)
+    if (virDomainSnapshotListAllChildrenEnsureACL(virSnapDom(snapshot)->conn, vm->def) < 0)
         goto cleanup;
 
     if (!(snap = qemuSnapObjFromSnapshot(vm, snapshot)))
         goto cleanup;
 
-    n = virDomainListSnapshots(vm->snapshots, snap, snapshot->domain, snaps,
+    n = virDomainListSnapshots(vm->snapshots, snap, virSnapDom(snapshot), snaps,
                                flags);
 
  cleanup:
@@ -16186,7 +16186,7 @@ qemuDomainSnapshotGetParent(virDomainSnapshotPtr snapshot,
     if (!(vm = qemuDomObjFromSnapshot(snapshot)))
         return NULL;
 
-    if (virDomainSnapshotGetParentEnsureACL(snapshot->domain->conn, vm->def) < 0)
+    if (virDomainSnapshotGetParentEnsureACL(virSnapDom(snapshot)->conn, vm->def) < 0)
         goto cleanup;
 
     if (!(snap = qemuSnapObjFromSnapshot(vm, snapshot)))
@@ -16199,7 +16199,7 @@ qemuDomainSnapshotGetParent(virDomainSnapshotPtr snapshot,
         goto cleanup;
     }
 
-    parent = virGetDomainSnapshot(snapshot->domain, snap->def->parent);
+    parent = virGetDomainSnapshot(virSnapDom(snapshot), snap->def->parent);
 
  cleanup:
     virDomainObjEndAPI(&vm);
@@ -16240,7 +16240,7 @@ static char *
 qemuDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
                              unsigned int flags)
 {
-    virQEMUDriverPtr driver = snapshot->domain->conn->privateData;
+    virQEMUDriverPtr driver = virSnapDom(snapshot)->conn->privateData;
     virDomainObjPtr vm = NULL;
     char *xml = NULL;
     virDomainSnapshotObjPtr snap = NULL;
@@ -16251,13 +16251,13 @@ qemuDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     if (!(vm = qemuDomObjFromSnapshot(snapshot)))
         return NULL;
 
-    if (virDomainSnapshotGetXMLDescEnsureACL(snapshot->domain->conn, vm->def, flags) < 0)
+    if (virDomainSnapshotGetXMLDescEnsureACL(virSnapDom(snapshot)->conn, vm->def, flags) < 0)
         goto cleanup;
 
     if (!(snap = qemuSnapObjFromSnapshot(vm, snapshot)))
         goto cleanup;
 
-    virUUIDFormat(snapshot->domain->uuid, uuidstr);
+    virUUIDFormat(virSnapDom(snapshot)->uuid, uuidstr);
 
     xml = virDomainSnapshotDefFormat(uuidstr, snap->def,
                                      driver->caps, driver->xmlopt,
@@ -16282,14 +16282,14 @@ qemuDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot,
     if (!(vm = qemuDomObjFromSnapshot(snapshot)))
         return -1;
 
-    if (virDomainSnapshotIsCurrentEnsureACL(snapshot->domain->conn, vm->def) < 0)
+    if (virDomainSnapshotIsCurrentEnsureACL(virSnapDom(snapshot)->conn, vm->def) < 0)
         goto cleanup;
 
     if (!(snap = qemuSnapObjFromSnapshot(vm, snapshot)))
         goto cleanup;
 
     ret = (vm->current_snapshot &&
-           STREQ(snapshot->name, vm->current_snapshot->def->name));
+           STREQ(virSnapName(snapshot), vm->current_snapshot->def->name));
 
  cleanup:
     virDomainObjEndAPI(&vm);
@@ -16310,7 +16310,7 @@ qemuDomainSnapshotHasMetadata(virDomainSnapshotPtr snapshot,
     if (!(vm = qemuDomObjFromSnapshot(snapshot)))
         return -1;
 
-    if (virDomainSnapshotHasMetadataEnsureACL(snapshot->domain->conn, vm->def) < 0)
+    if (virDomainSnapshotHasMetadataEnsureACL(virSnapDom(snapshot)->conn, vm->def) < 0)
         goto cleanup;
 
     if (!(snap = qemuSnapObjFromSnapshot(vm, snapshot)))
@@ -16343,7 +16343,7 @@ static int
 qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                            unsigned int flags)
 {
-    virQEMUDriverPtr driver = snapshot->domain->conn->privateData;
+    virQEMUDriverPtr driver = virSnapDom(snapshot)->conn->privateData;
     virDomainObjPtr vm = NULL;
     int ret = -1;
     virDomainSnapshotObjPtr snap = NULL;
@@ -16386,7 +16386,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
 
     cfg = virQEMUDriverGetConfig(driver);
 
-    if (virDomainRevertToSnapshotEnsureACL(snapshot->domain->conn, vm->def) < 0)
+    if (virDomainRevertToSnapshotEnsureACL(virSnapDom(snapshot)->conn, vm->def) < 0)
         goto cleanup;
 
     if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
@@ -16593,7 +16593,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                 qemuDomainFixupCPUs(vm, &cookie->cpu) < 0)
                 goto cleanup;
 
-            rc = qemuProcessStart(snapshot->domain->conn, driver, vm,
+            rc = qemuProcessStart(virSnapDom(snapshot)->conn, driver, vm,
                                   cookie ? cookie->cpu : NULL,
                                   jobType, NULL, -1, NULL, snap,
                                   VIR_NETDEV_VPORT_PROFILE_OP_CREATE,
@@ -16681,7 +16681,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
             start_flags |= paused ? VIR_QEMU_PROCESS_START_PAUSED : 0;
 
             virObjectEventStateQueue(driver->domainEventState, event);
-            rc = qemuProcessStart(snapshot->domain->conn, driver, vm, NULL,
+            rc = qemuProcessStart(virSnapDom(snapshot)->conn, driver, vm, NULL,
                                   QEMU_ASYNC_JOB_START, NULL, -1, NULL, NULL,
                                   VIR_NETDEV_VPORT_PROFILE_OP_CREATE,
                                   start_flags);
@@ -16806,7 +16806,7 @@ static int
 qemuDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
                          unsigned int flags)
 {
-    virQEMUDriverPtr driver = snapshot->domain->conn->privateData;
+    virQEMUDriverPtr driver = virSnapDom(snapshot)->conn->privateData;
     virDomainObjPtr vm = NULL;
     int ret = -1;
     virDomainSnapshotObjPtr snap = NULL;
@@ -16825,7 +16825,7 @@ qemuDomainSnapshotDelete(virDomainSnapshotPtr snapshot,
 
     cfg = virQEMUDriverGetConfig(driver);
 
-    if (virDomainSnapshotDeleteEnsureACL(snapshot->domain->conn, vm->def) < 0)
+    if (virDomainSnapshotDeleteEnsureACL(virSnapDom(snapshot)->conn, vm->def) < 0)
         goto cleanup;
 
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)

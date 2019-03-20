@@ -1335,7 +1335,7 @@ elsif ($mode eq "client") {
 
                     if ($is_first_arg) {
                         if ($name eq "domain_snapshot") {
-                            $priv_src = "$arg_name->domain->conn";
+                            $priv_src = "virSnapDom($arg_name)->conn";
                         } else {
                             $priv_src = "$arg_name->conn";
                         }

@@ -5961,13 +5961,13 @@ static virDomainSnapshotObjPtr
 testSnapObjFromSnapshot(virDomainObjPtr vm,
                         virDomainSnapshotPtr snapshot)
 {
-    return testSnapObjFromName(vm, snapshot->name);
+    return testSnapObjFromName(vm, virSnapName(snapshot));
 }
 
 static virDomainObjPtr
 testDomObjFromSnapshot(virDomainSnapshotPtr snapshot)
 {
-    return testDomObjFromDomain(snapshot->domain);
+    return testDomObjFromDomain(virSnapDom(snapshot));
 }
 
 static int
@@ -6105,7 +6105,7 @@ testDomainSnapshotListAllChildren(virDomainSnapshotPtr snapshot,
     if (!(snap = testSnapObjFromSnapshot(vm, snapshot)))
         goto cleanup;
 
-    n = virDomainListSnapshots(vm->snapshots, snap, snapshot->domain, snaps,
+    n = virDomainListSnapshots(vm->snapshots, snap, virSnapDom(snapshot), snaps,
                                flags);
 
  cleanup:
@@ -6178,7 +6178,7 @@ testDomainSnapshotGetParent(virDomainSnapshotPtr snapshot,
         goto cleanup;
     }
 
-    parent = virGetDomainSnapshot(snapshot->domain, snap->def->parent);
+    parent = virGetDomainSnapshot(virSnapDom(snapshot), snap->def->parent);
 
  cleanup:
     virDomainObjEndAPI(&vm);
@@ -6218,7 +6218,7 @@ testDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     char *xml = NULL;
     virDomainSnapshotObjPtr snap = NULL;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
-    testDriverPtr privconn = snapshot->domain->conn->privateData;
+    testDriverPtr privconn = virSnapDom(snapshot)->conn->privateData;
 
     virCheckFlags(VIR_DOMAIN_SNAPSHOT_XML_SECURE, NULL);
 
@@ -6228,7 +6228,7 @@ testDomainSnapshotGetXMLDesc(virDomainSnapshotPtr snapshot,
     if (!(snap = testSnapObjFromSnapshot(vm, snapshot)))
         goto cleanup;
 
-    virUUIDFormat(snapshot->domain->uuid, uuidstr);
+    virUUIDFormat(virSnapDom(snapshot)->uuid, uuidstr);
 
     xml = virDomainSnapshotDefFormat(uuidstr, snap->def, privconn->caps,
                                      privconn->xmlopt,
@@ -6252,7 +6252,7 @@ testDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot,
         return -1;
 
     ret = (vm->current_snapshot &&
-           STREQ(snapshot->name, vm->current_snapshot->def->name));
+           STREQ(virSnapName(snapshot), vm->current_snapshot->def->name));
 
     virDomainObjEndAPI(&vm);
     return ret;
@@ -6555,7 +6555,7 @@ static int
 testDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                            unsigned int flags)
 {
-    testDriverPtr privconn = snapshot->domain->conn->privateData;
+    testDriverPtr privconn = virSnapDom(snapshot)->conn->privateData;
     virDomainObjPtr vm = NULL;
     virDomainSnapshotObjPtr snap = NULL;
     virObjectEventPtr event = NULL;
@@ -6647,7 +6647,7 @@ testDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
                 }
 
                 virResetError(err);
-                testDomainShutdownState(snapshot->domain, vm,
+                testDomainShutdownState(virSnapDom(snapshot), vm,
                                         VIR_DOMAIN_SHUTOFF_FROM_SNAPSHOT);
                 event = virDomainEventLifecycleNewFromObj(vm,
                             VIR_DOMAIN_EVENT_STOPPED,
@@ -6719,7 +6719,7 @@ testDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
 
         if (virDomainObjIsActive(vm)) {
             /* Transitions 4, 7 */
-            testDomainShutdownState(snapshot->domain, vm,
+            testDomainShutdownState(virSnapDom(snapshot), vm,
                                     VIR_DOMAIN_SHUTOFF_FROM_SNAPSHOT);
             event = virDomainEventLifecycleNewFromObj(vm,
                                     VIR_DOMAIN_EVENT_STOPPED,
