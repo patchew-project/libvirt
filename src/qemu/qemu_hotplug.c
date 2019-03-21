@@ -5549,6 +5549,13 @@ qemuDomainDetachControllerDevice(virQEMUDriverPtr driver,
     int idx, ret = -1;
     virDomainControllerDefPtr detach = NULL;
 
+    if (dev->data.controller->type != VIR_DOMAIN_CONTROLLER_TYPE_SCSI) {
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                       _("'%s' controller cannot be hot unplugged."),
+                       virDomainControllerTypeToString(dev->data.controller->type));
+        return -1;
+    }
+
     if ((idx = virDomainControllerFind(vm->def,
                                        dev->data.controller->type,
                                        dev->data.controller->idx)) < 0) {
@@ -5561,16 +5568,16 @@ qemuDomainDetachControllerDevice(virQEMUDriverPtr driver,
 
     detach = vm->def->controllers[idx];
 
+    if (qemuDomainControllerIsBusy(vm, detach)) {
+        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                       _("device cannot be detached: device is busy"));
+        goto cleanup;
+    }
+
     if (qemuIsMultiFunctionDevice(vm->def, &detach->info)) {
         virReportError(VIR_ERR_OPERATION_FAILED,
                        _("cannot hot unplug multifunction PCI device: %s"),
                        dev->data.disk->dst);
-        goto cleanup;
-    }
-
-    if (qemuDomainControllerIsBusy(vm, detach)) {
-        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
-                       _("device cannot be detached: device is busy"));
         goto cleanup;
     }
 
@@ -6195,27 +6202,6 @@ qemuDomainDetachLease(virQEMUDriverPtr driver,
 }
 
 
-static int
-qemuDomainDetachDeviceControllerLive(virQEMUDriverPtr driver,
-                                     virDomainObjPtr vm,
-                                     virDomainDeviceDefPtr dev,
-                                     bool async)
-{
-    virDomainControllerDefPtr cont = dev->data.controller;
-    int ret = -1;
-
-    switch (cont->type) {
-    case VIR_DOMAIN_CONTROLLER_TYPE_SCSI:
-        ret = qemuDomainDetachControllerDevice(driver, vm, dev, async);
-        break;
-    default :
-        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
-                       _("'%s' controller cannot be hot unplugged."),
-                       virDomainControllerTypeToString(cont->type));
-    }
-    return ret;
-}
-
 int
 qemuDomainDetachDeviceLive(virDomainObjPtr vm,
                            virDomainDeviceDefPtr dev,
@@ -6229,7 +6215,7 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
         ret = qemuDomainDetachDeviceDiskLive(driver, vm, dev, async);
         break;
     case VIR_DOMAIN_DEVICE_CONTROLLER:
-        ret = qemuDomainDetachDeviceControllerLive(driver, vm, dev, async);
+        ret = qemuDomainDetachControllerDevice(driver, vm, dev, async);
         break;
     case VIR_DOMAIN_DEVICE_LEASE:
         ret = qemuDomainDetachLease(driver, vm, dev->data.lease);
