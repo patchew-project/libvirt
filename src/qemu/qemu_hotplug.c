@@ -3563,6 +3563,32 @@ qemuDomainAttachVsockDevice(virQEMUDriverPtr driver,
 }
 
 
+int
+qemuDomainAttachLease(virQEMUDriverPtr driver,
+                      virDomainObjPtr vm,
+                      virDomainLeaseDefPtr lease)
+{
+    int ret = -1;
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+
+    if (virDomainLeaseInsertPreAlloc(vm->def) < 0)
+        goto cleanup;
+
+    if (virDomainLockLeaseAttach(driver->lockManager, cfg->uri,
+                                 vm, lease) < 0) {
+        virDomainLeaseInsertPreAlloced(vm->def, NULL);
+        goto cleanup;
+    }
+
+    virDomainLeaseInsertPreAlloced(vm->def, lease);
+    ret = 0;
+
+ cleanup:
+    virObjectUnref(cfg);
+    return ret;
+}
+
+
 static int
 qemuDomainChangeNetBridge(virDomainObjPtr vm,
                           virDomainNetDefPtr olddev,
@@ -5905,52 +5931,6 @@ qemuDomainDetachNetDevice(virQEMUDriverPtr driver,
 }
 
 
-int qemuDomainAttachLease(virQEMUDriverPtr driver,
-                          virDomainObjPtr vm,
-                          virDomainLeaseDefPtr lease)
-{
-    int ret = -1;
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
-
-    if (virDomainLeaseInsertPreAlloc(vm->def) < 0)
-        goto cleanup;
-
-    if (virDomainLockLeaseAttach(driver->lockManager, cfg->uri,
-                                 vm, lease) < 0) {
-        virDomainLeaseInsertPreAlloced(vm->def, NULL);
-        goto cleanup;
-    }
-
-    virDomainLeaseInsertPreAlloced(vm->def, lease);
-    ret = 0;
-
- cleanup:
-    virObjectUnref(cfg);
-    return ret;
-}
-
-int qemuDomainDetachLease(virQEMUDriverPtr driver,
-                          virDomainObjPtr vm,
-                          virDomainLeaseDefPtr lease)
-{
-    virDomainLeaseDefPtr det_lease;
-    int idx;
-
-    if ((idx = virDomainLeaseIndex(vm->def, lease)) < 0) {
-        virReportError(VIR_ERR_INVALID_ARG,
-                       _("Lease %s in lockspace %s does not exist"),
-                       lease->key, NULLSTR(lease->lockspace));
-        return -1;
-    }
-
-    if (virDomainLockLeaseDetach(driver->lockManager, vm, lease) < 0)
-        return -1;
-
-    det_lease = virDomainLeaseRemoveAt(vm->def, idx);
-    virDomainLeaseDefFree(det_lease);
-    return 0;
-}
-
 int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
                               virDomainObjPtr vm,
                               virDomainChrDefPtr chr,
@@ -6186,6 +6166,30 @@ qemuDomainDetachVsockDevice(virDomainObjPtr vm,
     if (!async)
         qemuDomainResetDeviceRemoval(vm);
     return ret;
+}
+
+
+int
+qemuDomainDetachLease(virQEMUDriverPtr driver,
+                      virDomainObjPtr vm,
+                      virDomainLeaseDefPtr lease)
+{
+    virDomainLeaseDefPtr det_lease;
+    int idx;
+
+    if ((idx = virDomainLeaseIndex(vm->def, lease)) < 0) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("Lease %s in lockspace %s does not exist"),
+                       lease->key, NULLSTR(lease->lockspace));
+        return -1;
+    }
+
+    if (virDomainLockLeaseDetach(driver->lockManager, vm, lease) < 0)
+        return -1;
+
+    det_lease = virDomainLeaseRemoveAt(vm->def, idx);
+    virDomainLeaseDefFree(det_lease);
+    return 0;
 }
 
 
