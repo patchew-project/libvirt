@@ -114,22 +114,6 @@ int qemuDomainAttachRNGDevice(virQEMUDriverPtr driver,
                               virDomainObjPtr vm,
                               virDomainRNGDefPtr rng);
 
-int qemuDomainDetachDeviceDiskLive(virQEMUDriverPtr driver,
-                                   virDomainObjPtr vm,
-                                   virDomainDeviceDefPtr dev,
-                                   bool async);
-int qemuDomainDetachShmemDevice(virQEMUDriverPtr driver,
-                                virDomainObjPtr vm,
-                                virDomainShmemDefPtr dev,
-                                bool async);
-int qemuDomainDetachWatchdog(virQEMUDriverPtr driver,
-                             virDomainObjPtr vm,
-                             virDomainWatchdogDefPtr watchdog,
-                             bool async);
-int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
-                              virDomainObjPtr vm,
-                              virDomainChrDefPtr chr,
-                              bool async);
 int qemuDomainDetachDeviceLive(virDomainObjPtr vm,
                                virDomainDeviceDefPtr dev,
                                virQEMUDriverPtr driver,

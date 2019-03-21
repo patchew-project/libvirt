@@ -5389,7 +5389,7 @@ qemuFindDisk(virDomainDefPtr def, const char *dst)
     return -1;
 }
 
-int
+static int
 qemuDomainDetachDeviceDiskLive(virQEMUDriverPtr driver,
                                virDomainObjPtr vm,
                                virDomainDeviceDefPtr dev,
@@ -5721,7 +5721,7 @@ qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
 }
 
 
-int
+static int
 qemuDomainDetachShmemDevice(virQEMUDriverPtr driver,
                             virDomainObjPtr vm,
                             virDomainShmemDefPtr dev,
@@ -5775,7 +5775,7 @@ qemuDomainDetachShmemDevice(virQEMUDriverPtr driver,
 }
 
 
-int
+static int
 qemuDomainDetachWatchdog(virQEMUDriverPtr driver,
                          virDomainObjPtr vm,
                          virDomainWatchdogDefPtr dev,
@@ -5940,10 +5940,11 @@ qemuDomainDetachNetDevice(virQEMUDriverPtr driver,
 }
 
 
-int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
-                              virDomainObjPtr vm,
-                              virDomainChrDefPtr chr,
-                              bool async)
+static int
+qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm,
+                          virDomainChrDefPtr chr,
+                          bool async)
 {
     int ret = -1;
     qemuDomainObjPrivatePtr priv = vm->privateData;
