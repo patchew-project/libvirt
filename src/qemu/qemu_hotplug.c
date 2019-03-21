@@ -5274,12 +5274,74 @@ qemuDomainSignalDeviceRemoval(virDomainObjPtr vm,
 
 
 static int
-qemuDomainDetachDiskDevice(virQEMUDriverPtr driver,
-                           virDomainObjPtr vm,
-                           virDomainDiskDefPtr detach,
-                           bool async)
+qemuFindDisk(virDomainDefPtr def, const char *dst)
 {
+    size_t i;
+
+    for (i = 0; i < def->ndisks; i++) {
+        if (STREQ(def->disks[i]->dst, dst))
+            return i;
+    }
+
+    return -1;
+}
+
+int
+qemuDomainDetachDeviceDiskLive(virQEMUDriverPtr driver,
+                               virDomainObjPtr vm,
+                               virDomainDeviceDefPtr dev,
+                               bool async)
+{
+    virDomainDiskDefPtr detach;
+    int idx;
     int ret = -1;
+
+    if ((idx = qemuFindDisk(vm->def, dev->data.disk->dst)) < 0) {
+        virReportError(VIR_ERR_OPERATION_FAILED,
+                       _("disk %s not found"), dev->data.disk->dst);
+        return -1;
+    }
+    detach = vm->def->disks[idx];
+
+    switch ((virDomainDiskDevice) detach->device) {
+    case VIR_DOMAIN_DISK_DEVICE_DISK:
+    case VIR_DOMAIN_DISK_DEVICE_LUN:
+
+        switch ((virDomainDiskBus) detach->bus) {
+        case VIR_DOMAIN_DISK_BUS_VIRTIO:
+        case VIR_DOMAIN_DISK_BUS_USB:
+        case VIR_DOMAIN_DISK_BUS_SCSI:
+            break;
+
+        case VIR_DOMAIN_DISK_BUS_IDE:
+        case VIR_DOMAIN_DISK_BUS_FDC:
+        case VIR_DOMAIN_DISK_BUS_XEN:
+        case VIR_DOMAIN_DISK_BUS_UML:
+        case VIR_DOMAIN_DISK_BUS_SATA:
+        case VIR_DOMAIN_DISK_BUS_SD:
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                           _("This type of disk cannot be hot unplugged"));
+            return -1;
+
+        case VIR_DOMAIN_DISK_BUS_LAST:
+        default:
+            virReportEnumRangeError(virDomainDiskBus, detach->bus);
+            return -1;
+        }
+        break;
+
+    case VIR_DOMAIN_DISK_DEVICE_CDROM:
+    case VIR_DOMAIN_DISK_DEVICE_FLOPPY:
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                       _("disk device type '%s' cannot be detached"),
+                       virDomainDiskDeviceTypeToString(detach->device));
+        return -1;
+
+    case VIR_DOMAIN_DISK_DEVICE_LAST:
+    default:
+        virReportEnumRangeError(virDomainDiskDevice, detach->device);
+        break;
+    }
 
     if (qemuDomainDiskBlockJobIsActive(detach))
         return -1;
@@ -5312,78 +5374,6 @@ qemuDomainDetachDiskDevice(virQEMUDriverPtr driver,
     if (!async)
         qemuDomainResetDeviceRemoval(vm);
     return ret;
-}
-
-static int
-qemuFindDisk(virDomainDefPtr def, const char *dst)
-{
-    size_t i;
-
-    for (i = 0; i < def->ndisks; i++) {
-        if (STREQ(def->disks[i]->dst, dst))
-            return i;
-    }
-
-    return -1;
-}
-
-int
-qemuDomainDetachDeviceDiskLive(virQEMUDriverPtr driver,
-                               virDomainObjPtr vm,
-                               virDomainDeviceDefPtr dev,
-                               bool async)
-{
-    virDomainDiskDefPtr disk;
-    int idx;
-
-    if ((idx = qemuFindDisk(vm->def, dev->data.disk->dst)) < 0) {
-        virReportError(VIR_ERR_OPERATION_FAILED,
-                       _("disk %s not found"), dev->data.disk->dst);
-        return -1;
-    }
-    disk = vm->def->disks[idx];
-
-    switch ((virDomainDiskDevice) disk->device) {
-    case VIR_DOMAIN_DISK_DEVICE_DISK:
-    case VIR_DOMAIN_DISK_DEVICE_LUN:
-
-        switch ((virDomainDiskBus) disk->bus) {
-        case VIR_DOMAIN_DISK_BUS_VIRTIO:
-        case VIR_DOMAIN_DISK_BUS_USB:
-        case VIR_DOMAIN_DISK_BUS_SCSI:
-            return qemuDomainDetachDiskDevice(driver, vm, disk, async);
-
-        case VIR_DOMAIN_DISK_BUS_IDE:
-        case VIR_DOMAIN_DISK_BUS_FDC:
-        case VIR_DOMAIN_DISK_BUS_XEN:
-        case VIR_DOMAIN_DISK_BUS_UML:
-        case VIR_DOMAIN_DISK_BUS_SATA:
-        case VIR_DOMAIN_DISK_BUS_SD:
-            virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
-                           _("This type of disk cannot be hot unplugged"));
-            break;
-
-        case VIR_DOMAIN_DISK_BUS_LAST:
-        default:
-            virReportEnumRangeError(virDomainDiskBus, disk->bus);
-            break;
-        }
-        break;
-
-    case VIR_DOMAIN_DISK_DEVICE_CDROM:
-    case VIR_DOMAIN_DISK_DEVICE_FLOPPY:
-        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
-                       _("disk device type '%s' cannot be detached"),
-                       virDomainDiskDeviceTypeToString(disk->device));
-        break;
-
-    case VIR_DOMAIN_DISK_DEVICE_LAST:
-    default:
-        virReportEnumRangeError(virDomainDiskDevice, disk->device);
-        break;
-    }
-
-    return -1;
 }
 
 
