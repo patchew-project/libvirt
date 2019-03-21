@@ -6271,9 +6271,6 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
         break;
     }
 
-    if (ret == 0)
-        ret = qemuDomainUpdateDeviceList(driver, vm, QEMU_ASYNC_JOB_NONE);
-
     return ret;
 }
 

@@ -8929,6 +8929,10 @@ qemuDomainDetachDeviceLiveAndConfig(virQEMUDriverPtr driver,
     if (flags & VIR_DOMAIN_AFFECT_LIVE) {
         if (qemuDomainDetachDeviceLive(vm, dev_copy, driver, false) < 0)
             goto cleanup;
+
+        if (qemuDomainUpdateDeviceList(driver, vm, QEMU_ASYNC_JOB_NONE) < 0)
+            goto cleanup;
+
         /*
          * update domain status forcibly because the domain status may be
          * changed even if we failed to attach the device. For example,
@@ -9010,6 +9014,9 @@ qemuDomainDetachDeviceAliasLiveAndConfig(virQEMUDriverPtr driver,
             goto cleanup;
 
         if (qemuDomainDetachDeviceLive(vm, &dev, driver, true) < 0)
+            goto cleanup;
+
+        if (qemuDomainUpdateDeviceList(driver, vm, QEMU_ASYNC_JOB_NONE) < 0)
             goto cleanup;
     }
 
