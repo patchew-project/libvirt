@@ -5540,10 +5540,11 @@ static bool qemuDomainControllerIsBusy(virDomainObjPtr vm,
     }
 }
 
-int qemuDomainDetachControllerDevice(virQEMUDriverPtr driver,
-                                     virDomainObjPtr vm,
-                                     virDomainDeviceDefPtr dev,
-                                     bool async)
+static int
+qemuDomainDetachControllerDevice(virQEMUDriverPtr driver,
+                                 virDomainObjPtr vm,
+                                 virDomainDeviceDefPtr dev,
+                                 bool async)
 {
     int idx, ret = -1;
     virDomainControllerDefPtr detach = NULL;
@@ -5594,10 +5595,11 @@ int qemuDomainDetachControllerDevice(virQEMUDriverPtr driver,
 
 
 /* search for a hostdev matching dev and detach it */
-int qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
-                               virDomainObjPtr vm,
-                               virDomainDeviceDefPtr dev,
-                               bool async)
+static int
+qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
+                           virDomainObjPtr vm,
+                           virDomainDeviceDefPtr dev,
+                           bool async)
 {
     virDomainHostdevDefPtr hostdev = dev->data.hostdev;
     virDomainHostdevSubsysPtr subsys = &hostdev->source.subsys;
@@ -5821,7 +5823,7 @@ qemuDomainDetachWatchdog(virQEMUDriverPtr driver,
 }
 
 
-int
+static int
 qemuDomainDetachRedirdevDevice(virQEMUDriverPtr driver,
                                virDomainObjPtr vm,
                                virDomainRedirdevDefPtr dev,
@@ -5865,7 +5867,7 @@ qemuDomainDetachRedirdevDevice(virQEMUDriverPtr driver,
 }
 
 
-int
+static int
 qemuDomainDetachNetDevice(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
                           virDomainDeviceDefPtr dev,
@@ -5988,7 +5990,7 @@ int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
 }
 
 
-int
+static int
 qemuDomainDetachRNGDevice(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
                           virDomainRNGDefPtr rng,
@@ -6034,7 +6036,7 @@ qemuDomainDetachRNGDevice(virQEMUDriverPtr driver,
 }
 
 
-int
+static int
 qemuDomainDetachMemoryDevice(virQEMUDriverPtr driver,
                              virDomainObjPtr vm,
                              virDomainMemoryDefPtr memdef,
@@ -6082,7 +6084,7 @@ qemuDomainDetachMemoryDevice(virQEMUDriverPtr driver,
 }
 
 
-int
+static int
 qemuDomainDetachInputDevice(virDomainObjPtr vm,
                             virDomainInputDefPtr def,
                             bool async)
@@ -6133,7 +6135,7 @@ qemuDomainDetachInputDevice(virDomainObjPtr vm,
 }
 
 
-int
+static int
 qemuDomainDetachVsockDevice(virDomainObjPtr vm,
                             virDomainVsockDefPtr dev,
                             bool async)
@@ -6169,7 +6171,7 @@ qemuDomainDetachVsockDevice(virDomainObjPtr vm,
 }
 
 
-int
+static int
 qemuDomainDetachLease(virQEMUDriverPtr driver,
                       virDomainObjPtr vm,
                       virDomainLeaseDefPtr lease)
@@ -6190,6 +6192,103 @@ qemuDomainDetachLease(virQEMUDriverPtr driver,
     det_lease = virDomainLeaseRemoveAt(vm->def, idx);
     virDomainLeaseDefFree(det_lease);
     return 0;
+}
+
+
+static int
+qemuDomainDetachDeviceControllerLive(virQEMUDriverPtr driver,
+                                     virDomainObjPtr vm,
+                                     virDomainDeviceDefPtr dev,
+                                     bool async)
+{
+    virDomainControllerDefPtr cont = dev->data.controller;
+    int ret = -1;
+
+    switch (cont->type) {
+    case VIR_DOMAIN_CONTROLLER_TYPE_SCSI:
+        ret = qemuDomainDetachControllerDevice(driver, vm, dev, async);
+        break;
+    default :
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                       _("'%s' controller cannot be hot unplugged."),
+                       virDomainControllerTypeToString(cont->type));
+    }
+    return ret;
+}
+
+int
+qemuDomainDetachDeviceLive(virDomainObjPtr vm,
+                           virDomainDeviceDefPtr dev,
+                           virQEMUDriverPtr driver,
+                           bool async)
+{
+    int ret = -1;
+
+    switch ((virDomainDeviceType)dev->type) {
+    case VIR_DOMAIN_DEVICE_DISK:
+        ret = qemuDomainDetachDeviceDiskLive(driver, vm, dev, async);
+        break;
+    case VIR_DOMAIN_DEVICE_CONTROLLER:
+        ret = qemuDomainDetachDeviceControllerLive(driver, vm, dev, async);
+        break;
+    case VIR_DOMAIN_DEVICE_LEASE:
+        ret = qemuDomainDetachLease(driver, vm, dev->data.lease);
+        break;
+    case VIR_DOMAIN_DEVICE_NET:
+        ret = qemuDomainDetachNetDevice(driver, vm, dev, async);
+        break;
+    case VIR_DOMAIN_DEVICE_HOSTDEV:
+        ret = qemuDomainDetachHostDevice(driver, vm, dev, async);
+        break;
+    case VIR_DOMAIN_DEVICE_CHR:
+        ret = qemuDomainDetachChrDevice(driver, vm, dev->data.chr, async);
+        break;
+    case VIR_DOMAIN_DEVICE_RNG:
+        ret = qemuDomainDetachRNGDevice(driver, vm, dev->data.rng, async);
+        break;
+    case VIR_DOMAIN_DEVICE_MEMORY:
+        ret = qemuDomainDetachMemoryDevice(driver, vm, dev->data.memory, async);
+        break;
+    case VIR_DOMAIN_DEVICE_SHMEM:
+        ret = qemuDomainDetachShmemDevice(driver, vm, dev->data.shmem, async);
+        break;
+    case VIR_DOMAIN_DEVICE_WATCHDOG:
+        ret = qemuDomainDetachWatchdog(driver, vm, dev->data.watchdog, async);
+        break;
+    case VIR_DOMAIN_DEVICE_INPUT:
+        ret = qemuDomainDetachInputDevice(vm, dev->data.input, async);
+        break;
+    case VIR_DOMAIN_DEVICE_REDIRDEV:
+        ret = qemuDomainDetachRedirdevDevice(driver, vm, dev->data.redirdev, async);
+        break;
+
+    case VIR_DOMAIN_DEVICE_VSOCK:
+        ret = qemuDomainDetachVsockDevice(vm, dev->data.vsock, async);
+        break;
+
+    case VIR_DOMAIN_DEVICE_FS:
+    case VIR_DOMAIN_DEVICE_SOUND:
+    case VIR_DOMAIN_DEVICE_VIDEO:
+    case VIR_DOMAIN_DEVICE_GRAPHICS:
+    case VIR_DOMAIN_DEVICE_HUB:
+    case VIR_DOMAIN_DEVICE_SMARTCARD:
+    case VIR_DOMAIN_DEVICE_MEMBALLOON:
+    case VIR_DOMAIN_DEVICE_NVRAM:
+    case VIR_DOMAIN_DEVICE_NONE:
+    case VIR_DOMAIN_DEVICE_TPM:
+    case VIR_DOMAIN_DEVICE_PANIC:
+    case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_LAST:
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                       _("live detach of device '%s' is not supported"),
+                       virDomainDeviceTypeToString(dev->type));
+        break;
+    }
+
+    if (ret == 0)
+        ret = qemuDomainUpdateDeviceList(driver, vm, QEMU_ASYNC_JOB_NONE);
+
+    return ret;
 }
 
 
