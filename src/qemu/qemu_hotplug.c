@@ -5208,6 +5208,78 @@ qemuDomainRemoveRedirdevDevice(virQEMUDriverPtr driver,
 }
 
 
+static inline void
+qemuDomainRemoveAuditDevice(virDomainObjPtr vm,
+                            virDomainDeviceDefPtr detach,
+                            bool success)
+{
+    switch ((virDomainDeviceType)detach->type) {
+    case VIR_DOMAIN_DEVICE_CHR:
+        virDomainAuditChardev(vm, detach->data.chr, NULL, "detach", success);
+        break;
+
+    case VIR_DOMAIN_DEVICE_DISK:
+        virDomainAuditDisk(vm, detach->data.disk->src, NULL, "detach", success);
+        break;
+
+    case VIR_DOMAIN_DEVICE_NET:
+        virDomainAuditNet(vm, detach->data.net, NULL, "detach", success);
+        break;
+
+    case VIR_DOMAIN_DEVICE_HOSTDEV:
+        virDomainAuditHostdev(vm, detach->data.hostdev, "detach", success);
+        break;
+
+    case VIR_DOMAIN_DEVICE_RNG:
+        virDomainAuditRNG(vm, detach->data.rng, NULL, "detach", success);
+        break;
+
+    case VIR_DOMAIN_DEVICE_MEMORY: {
+        unsigned long long oldmem = virDomainDefGetMemoryTotal(vm->def);
+        unsigned long long newmem = oldmem - detach->data.memory->size;
+
+        virDomainAuditMemory(vm, oldmem, newmem, "update", success);
+        break;
+    }
+
+    case VIR_DOMAIN_DEVICE_SHMEM:
+        virDomainAuditShmem(vm, detach->data.shmem, "detach", success);
+        break;
+
+    case VIR_DOMAIN_DEVICE_INPUT:
+        virDomainAuditInput(vm, detach->data.input, "detach", success);
+        break;
+
+    case VIR_DOMAIN_DEVICE_REDIRDEV:
+        virDomainAuditRedirdev(vm, detach->data.redirdev, "detach", success);
+        break;
+
+    case VIR_DOMAIN_DEVICE_LEASE:
+    case VIR_DOMAIN_DEVICE_CONTROLLER:
+    case VIR_DOMAIN_DEVICE_WATCHDOG:
+    case VIR_DOMAIN_DEVICE_VSOCK:
+        /* These devices don't have associated audit logs */
+        break;
+
+    case VIR_DOMAIN_DEVICE_FS:
+    case VIR_DOMAIN_DEVICE_SOUND:
+    case VIR_DOMAIN_DEVICE_VIDEO:
+    case VIR_DOMAIN_DEVICE_GRAPHICS:
+    case VIR_DOMAIN_DEVICE_HUB:
+    case VIR_DOMAIN_DEVICE_SMARTCARD:
+    case VIR_DOMAIN_DEVICE_MEMBALLOON:
+    case VIR_DOMAIN_DEVICE_NVRAM:
+    case VIR_DOMAIN_DEVICE_NONE:
+    case VIR_DOMAIN_DEVICE_TPM:
+    case VIR_DOMAIN_DEVICE_PANIC:
+    case VIR_DOMAIN_DEVICE_IOMMU:
+    case VIR_DOMAIN_DEVICE_LAST:
+        /* these will never happen, these devices can't be unplugged */
+        break;
+    }
+}
+
+
 int
 qemuDomainRemoveDevice(virQEMUDriverPtr driver,
                        virDomainObjPtr vm,
