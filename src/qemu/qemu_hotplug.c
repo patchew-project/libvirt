@@ -6205,52 +6205,64 @@ qemuDomainDetachLease(virQEMUDriverPtr driver,
 
 int
 qemuDomainDetachDeviceLive(virDomainObjPtr vm,
-                           virDomainDeviceDefPtr dev,
+                           virDomainDeviceDefPtr match,
                            virQEMUDriverPtr driver,
                            bool async)
 {
     int ret = -1;
 
-    switch ((virDomainDeviceType)dev->type) {
+    switch ((virDomainDeviceType)match->type) {
+        /*
+         * lease and chr devices don't follow the standard pattern of
+         * the others, so they must have their own self-contained
+         * Detach functions.
+         */
+    case VIR_DOMAIN_DEVICE_LEASE:
+        return qemuDomainDetachLease(driver, vm, match->data.lease);
+
+    case VIR_DOMAIN_DEVICE_CHR:
+        return qemuDomainDetachChrDevice(driver, vm, match->data.chr, async);
+
+        /*
+         * All the other device types follow a very similar pattern -
+         * First we call type-specific functions to 1) locate the device
+         * we want to detach (based on the prototype device in match)
+         * and 2) do any device-type-specific validation to assure it
+         * is okay to detach the device.
+         */
     case VIR_DOMAIN_DEVICE_DISK:
-        ret = qemuDomainDetachDeviceDiskLive(driver, vm, dev, async);
+        ret = qemuDomainDetachDeviceDiskLive(driver, vm, match, async);
         break;
     case VIR_DOMAIN_DEVICE_CONTROLLER:
-        ret = qemuDomainDetachControllerDevice(driver, vm, dev, async);
-        break;
-    case VIR_DOMAIN_DEVICE_LEASE:
-        ret = qemuDomainDetachLease(driver, vm, dev->data.lease);
+        ret = qemuDomainDetachControllerDevice(driver, vm, match, async);
         break;
     case VIR_DOMAIN_DEVICE_NET:
-        ret = qemuDomainDetachNetDevice(driver, vm, dev, async);
+        ret = qemuDomainDetachNetDevice(driver, vm, match, async);
         break;
     case VIR_DOMAIN_DEVICE_HOSTDEV:
-        ret = qemuDomainDetachHostDevice(driver, vm, dev, async);
-        break;
-    case VIR_DOMAIN_DEVICE_CHR:
-        ret = qemuDomainDetachChrDevice(driver, vm, dev->data.chr, async);
+        ret = qemuDomainDetachHostDevice(driver, vm, match, async);
         break;
     case VIR_DOMAIN_DEVICE_RNG:
-        ret = qemuDomainDetachRNGDevice(driver, vm, dev->data.rng, async);
+        ret = qemuDomainDetachRNGDevice(driver, vm, match->data.rng, async);
         break;
     case VIR_DOMAIN_DEVICE_MEMORY:
-        ret = qemuDomainDetachMemoryDevice(driver, vm, dev->data.memory, async);
+        ret = qemuDomainDetachMemoryDevice(driver, vm, match->data.memory, async);
         break;
     case VIR_DOMAIN_DEVICE_SHMEM:
-        ret = qemuDomainDetachShmemDevice(driver, vm, dev->data.shmem, async);
+        ret = qemuDomainDetachShmemDevice(driver, vm, match->data.shmem, async);
         break;
     case VIR_DOMAIN_DEVICE_WATCHDOG:
-        ret = qemuDomainDetachWatchdog(driver, vm, dev->data.watchdog, async);
+        ret = qemuDomainDetachWatchdog(driver, vm, match->data.watchdog, async);
         break;
     case VIR_DOMAIN_DEVICE_INPUT:
-        ret = qemuDomainDetachInputDevice(vm, dev->data.input, async);
+        ret = qemuDomainDetachInputDevice(vm, match->data.input, async);
         break;
     case VIR_DOMAIN_DEVICE_REDIRDEV:
-        ret = qemuDomainDetachRedirdevDevice(driver, vm, dev->data.redirdev, async);
+        ret = qemuDomainDetachRedirdevDevice(driver, vm, match->data.redirdev, async);
         break;
 
     case VIR_DOMAIN_DEVICE_VSOCK:
-        ret = qemuDomainDetachVsockDevice(vm, dev->data.vsock, async);
+        ret = qemuDomainDetachVsockDevice(vm, match->data.vsock, async);
         break;
 
     case VIR_DOMAIN_DEVICE_FS:
@@ -6268,8 +6280,8 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
     case VIR_DOMAIN_DEVICE_LAST:
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
                        _("live detach of device '%s' is not supported"),
-                       virDomainDeviceTypeToString(dev->type));
-        break;
+                       virDomainDeviceTypeToString(match->type));
+        return -1;
     }
 
     return ret;
