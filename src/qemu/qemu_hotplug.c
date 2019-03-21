@@ -5390,27 +5390,28 @@ qemuFindDisk(virDomainDefPtr def, const char *dst)
 }
 
 static int
-qemuDomainDetachDeviceDiskLive(virQEMUDriverPtr driver,
-                               virDomainObjPtr vm,
-                               virDomainDeviceDefPtr dev,
-                               bool async)
+qemuDomainDetachPrepDisk(virQEMUDriverPtr driver,
+                         virDomainObjPtr vm,
+                         virDomainDiskDefPtr match,
+                         virDomainDiskDefPtr *detach,
+                         bool async)
 {
-    virDomainDiskDefPtr detach;
+    virDomainDiskDefPtr disk;
     int idx;
     int ret = -1;
 
-    if ((idx = qemuFindDisk(vm->def, dev->data.disk->dst)) < 0) {
+    if ((idx = qemuFindDisk(vm->def, match->dst)) < 0) {
         virReportError(VIR_ERR_OPERATION_FAILED,
-                       _("disk %s not found"), dev->data.disk->dst);
+                       _("disk %s not found"), match->dst);
         return -1;
     }
-    detach = vm->def->disks[idx];
+    *detach = disk = vm->def->disks[idx];
 
-    switch ((virDomainDiskDevice) detach->device) {
+    switch ((virDomainDiskDevice) disk->device) {
     case VIR_DOMAIN_DISK_DEVICE_DISK:
     case VIR_DOMAIN_DISK_DEVICE_LUN:
 
-        switch ((virDomainDiskBus) detach->bus) {
+        switch ((virDomainDiskBus) disk->bus) {
         case VIR_DOMAIN_DISK_BUS_VIRTIO:
         case VIR_DOMAIN_DISK_BUS_USB:
         case VIR_DOMAIN_DISK_BUS_SCSI:
@@ -5428,7 +5429,7 @@ qemuDomainDetachDeviceDiskLive(virQEMUDriverPtr driver,
 
         case VIR_DOMAIN_DISK_BUS_LAST:
         default:
-            virReportEnumRangeError(virDomainDiskBus, detach->bus);
+            virReportEnumRangeError(virDomainDiskBus, disk->bus);
             return -1;
         }
         break;
@@ -5437,32 +5438,32 @@ qemuDomainDetachDeviceDiskLive(virQEMUDriverPtr driver,
     case VIR_DOMAIN_DISK_DEVICE_FLOPPY:
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
                        _("disk device type '%s' cannot be detached"),
-                       virDomainDiskDeviceTypeToString(detach->device));
+                       virDomainDiskDeviceTypeToString(disk->device));
         return -1;
 
     case VIR_DOMAIN_DISK_DEVICE_LAST:
     default:
-        virReportEnumRangeError(virDomainDiskDevice, detach->device);
+        virReportEnumRangeError(virDomainDiskDevice, disk->device);
         break;
     }
 
-    if (qemuDomainDiskBlockJobIsActive(detach))
+    if (qemuDomainDiskBlockJobIsActive(disk))
         return -1;
 
-    if (detach->bus == VIR_DOMAIN_DISK_BUS_VIRTIO &&
-        qemuIsMultiFunctionDevice(vm->def, &detach->info)) {
+    if (disk->bus == VIR_DOMAIN_DISK_BUS_VIRTIO &&
+        qemuIsMultiFunctionDevice(vm->def, &disk->info)) {
         virReportError(VIR_ERR_OPERATION_FAILED,
                        _("cannot hot unplug multifunction PCI device: %s"),
-                       detach->dst);
+                       disk->dst);
         return -1;
     }
 
     if (!async)
-        qemuDomainMarkDeviceForRemoval(vm, &detach->info);
+        qemuDomainMarkDeviceForRemoval(vm, &disk->info);
 
-    if (qemuDomainDeleteDevice(vm, detach->info.alias) < 0) {
+    if (qemuDomainDeleteDevice(vm, disk->info.alias) < 0) {
         if (virDomainObjIsActive(vm))
-            virDomainAuditDisk(vm, detach->src, NULL, "detach", false);
+            virDomainAuditDisk(vm, disk->src, NULL, "detach", false);
         goto cleanup;
     }
 
@@ -5470,7 +5471,7 @@ qemuDomainDetachDeviceDiskLive(virQEMUDriverPtr driver,
         ret = 0;
     } else {
         if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1)
-            ret = qemuDomainRemoveDiskDevice(driver, vm, detach);
+            ret = qemuDomainRemoveDiskDevice(driver, vm, disk);
     }
 
  cleanup:
@@ -5541,57 +5542,55 @@ static bool qemuDomainControllerIsBusy(virDomainObjPtr vm,
 }
 
 static int
-qemuDomainDetachControllerDevice(virQEMUDriverPtr driver,
-                                 virDomainObjPtr vm,
-                                 virDomainDeviceDefPtr dev,
-                                 bool async)
+qemuDomainDetachPrepController(virQEMUDriverPtr driver,
+                               virDomainObjPtr vm,
+                               virDomainControllerDefPtr match,
+                               virDomainControllerDefPtr *detach,
+                               bool async)
 {
+    virDomainControllerDefPtr controller;
     int idx, ret = -1;
-    virDomainControllerDefPtr detach = NULL;
 
-    if (dev->data.controller->type != VIR_DOMAIN_CONTROLLER_TYPE_SCSI) {
+    if (match->type != VIR_DOMAIN_CONTROLLER_TYPE_SCSI) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
                        _("'%s' controller cannot be hot unplugged."),
-                       virDomainControllerTypeToString(dev->data.controller->type));
+                       virDomainControllerTypeToString(match->type));
         return -1;
     }
 
-    if ((idx = virDomainControllerFind(vm->def,
-                                       dev->data.controller->type,
-                                       dev->data.controller->idx)) < 0) {
+    if ((idx = virDomainControllerFind(vm->def, match->type, match->idx)) < 0) {
         virReportError(VIR_ERR_DEVICE_MISSING,
                        _("controller %s:%d not found"),
-                       virDomainControllerTypeToString(dev->data.controller->type),
-                       dev->data.controller->idx);
+                       virDomainControllerTypeToString(match->type),
+                       match->idx);
         goto cleanup;
     }
 
-    detach = vm->def->controllers[idx];
+    *detach = controller = vm->def->controllers[idx];
 
-    if (qemuDomainControllerIsBusy(vm, detach)) {
+    if (qemuDomainControllerIsBusy(vm, controller)) {
         virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                        _("device cannot be detached: device is busy"));
         goto cleanup;
     }
 
-    if (qemuIsMultiFunctionDevice(vm->def, &detach->info)) {
-        virReportError(VIR_ERR_OPERATION_FAILED,
-                       _("cannot hot unplug multifunction PCI device: %s"),
-                       dev->data.disk->dst);
+    if (qemuIsMultiFunctionDevice(vm->def, &controller->info)) {
+        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                       _("cannot hot unplug multifunction PCI device"));
         goto cleanup;
     }
 
     if (!async)
-        qemuDomainMarkDeviceForRemoval(vm, &detach->info);
+        qemuDomainMarkDeviceForRemoval(vm, &controller->info);
 
-    if (qemuDomainDeleteDevice(vm, detach->info.alias) < 0)
+    if (qemuDomainDeleteDevice(vm, controller->info.alias) < 0)
         goto cleanup;
 
     if (async) {
         ret = 0;
     } else {
         if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1)
-            ret = qemuDomainRemoveControllerDevice(driver, vm, detach);
+            ret = qemuDomainRemoveControllerDevice(driver, vm, controller);
     }
 
  cleanup:
@@ -5603,29 +5602,30 @@ qemuDomainDetachControllerDevice(virQEMUDriverPtr driver,
 
 /* search for a hostdev matching dev and detach it */
 static int
-qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
-                           virDomainObjPtr vm,
-                           virDomainDeviceDefPtr dev,
-                           bool async)
+qemuDomainDetachPrepHostdev(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            virDomainHostdevDefPtr match,
+                            virDomainHostdevDefPtr *detach,
+                            bool async)
 {
-    virDomainHostdevDefPtr hostdev = dev->data.hostdev;
-    virDomainHostdevSubsysPtr subsys = &hostdev->source.subsys;
+    virDomainHostdevSubsysPtr subsys = &match->source.subsys;
     virDomainHostdevSubsysUSBPtr usbsrc = &subsys->u.usb;
     virDomainHostdevSubsysPCIPtr pcisrc = &subsys->u.pci;
     virDomainHostdevSubsysSCSIPtr scsisrc = &subsys->u.scsi;
     virDomainHostdevSubsysMediatedDevPtr mdevsrc = &subsys->u.mdev;
-    virDomainHostdevDefPtr detach = NULL;
+    virDomainHostdevDefPtr hostdev;
     int idx;
     int ret = -1;
 
-    if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
+    if (match->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
         virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
                        _("hot unplug is not supported for hostdev mode '%s'"),
-                       virDomainHostdevModeTypeToString(hostdev->mode));
+                       virDomainHostdevModeTypeToString(match->mode));
         return -1;
     }
 
-    idx = virDomainHostdevFind(vm->def, hostdev, &detach);
+    idx = virDomainHostdevFind(vm->def, match, &hostdev);
+    *detach = hostdev;
 
     if (idx < 0) {
         switch (subsys->type) {
@@ -5678,30 +5678,30 @@ qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
         return -1;
     }
 
-    if (qemuAssignDeviceHostdevAlias(vm->def, &detach->info->alias, -1) < 0)
+    if (qemuAssignDeviceHostdevAlias(vm->def, &hostdev->info->alias, -1) < 0)
         return -1;
 
-    if (qemuIsMultiFunctionDevice(vm->def, detach->info)) {
+    if (qemuIsMultiFunctionDevice(vm->def, hostdev->info)) {
         virReportError(VIR_ERR_OPERATION_FAILED,
                        _("cannot hot unplug multifunction PCI device with guest address: "
                          "%.4x:%.2x:%.2x.%.1x"),
-                       detach->info->addr.pci.domain, detach->info->addr.pci.bus,
-                       detach->info->addr.pci.slot, detach->info->addr.pci.function);
+                       hostdev->info->addr.pci.domain, hostdev->info->addr.pci.bus,
+                       hostdev->info->addr.pci.slot, hostdev->info->addr.pci.function);
         return -1;
     }
 
-    if (!detach->info->alias) {
+    if (!hostdev->info->alias) {
         virReportError(VIR_ERR_OPERATION_FAILED,
                        "%s", _("device cannot be detached without a device alias"));
         return -1;
     }
 
     if (!async)
-        qemuDomainMarkDeviceForRemoval(vm, detach->info);
+        qemuDomainMarkDeviceForRemoval(vm, hostdev->info);
 
-    if (qemuDomainDeleteDevice(vm, detach->info->alias) < 0) {
+    if (qemuDomainDeleteDevice(vm, hostdev->info->alias) < 0) {
         if (virDomainObjIsActive(vm))
-            virDomainAuditHostdev(vm, detach, "detach", false);
+            virDomainAuditHostdev(vm, hostdev, "detach", false);
         goto cleanup;
     }
 
@@ -5709,7 +5709,7 @@ qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
         ret = 0;
     } else {
         if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1)
-            ret = qemuDomainRemoveHostDevice(driver, vm, detach);
+            ret = qemuDomainRemoveHostDevice(driver, vm, hostdev);
     }
 
  cleanup:
@@ -5722,24 +5722,25 @@ qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
 
 
 static int
-qemuDomainDetachShmemDevice(virQEMUDriverPtr driver,
-                            virDomainObjPtr vm,
-                            virDomainShmemDefPtr dev,
-                            bool async)
+qemuDomainDetachPrepShmem(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm,
+                          virDomainShmemDefPtr match,
+                          virDomainShmemDefPtr *detach,
+                          bool async)
 {
     int ret = -1;
     ssize_t idx = -1;
-    virDomainShmemDefPtr shmem = NULL;
+    virDomainShmemDefPtr shmem;
 
-    if ((idx = virDomainShmemDefFind(vm->def, dev)) < 0) {
+    if ((idx = virDomainShmemDefFind(vm->def, match)) < 0) {
         virReportError(VIR_ERR_DEVICE_MISSING,
                        _("model '%s' shmem device not present "
                          "in domain configuration"),
-                       virDomainShmemModelTypeToString(dev->model));
+                       virDomainShmemModelTypeToString(match->model));
         return -1;
     }
 
-    shmem = vm->def->shmems[idx];
+    *detach = shmem = vm->def->shmems[idx];
 
     switch ((virDomainShmemModel)shmem->model) {
     case VIR_DOMAIN_SHMEM_MODEL_IVSHMEM_PLAIN:
@@ -5776,13 +5777,17 @@ qemuDomainDetachShmemDevice(virQEMUDriverPtr driver,
 
 
 static int
-qemuDomainDetachWatchdog(virQEMUDriverPtr driver,
-                         virDomainObjPtr vm,
-                         virDomainWatchdogDefPtr dev,
-                         bool async)
+qemuDomainDetachPrepWatchdog(virQEMUDriverPtr driver,
+                             virDomainObjPtr vm,
+                             virDomainWatchdogDefPtr match,
+                             virDomainWatchdogDefPtr *detach,
+                             bool async)
 {
     int ret = -1;
-    virDomainWatchdogDefPtr watchdog = vm->def->watchdog;
+    virDomainWatchdogDefPtr watchdog;
+
+
+    *detach = watchdog = vm->def->watchdog;
 
     if (!watchdog) {
         virReportError(VIR_ERR_DEVICE_MISSING, "%s",
@@ -5793,9 +5798,9 @@ qemuDomainDetachWatchdog(virQEMUDriverPtr driver,
     /* While domains can have up to one watchdog, the one supplied by the user
      * doesn't necessarily match the one domain has. Refuse to detach in such
      * case. */
-    if (!(watchdog->model == dev->model &&
-          watchdog->action == dev->action &&
-          virDomainDeviceInfoAddressIsEqual(&dev->info, &watchdog->info))) {
+    if (!(watchdog->model == match->model &&
+          watchdog->action == match->action &&
+          virDomainDeviceInfoAddressIsEqual(&match->info, &watchdog->info))) {
         virReportError(VIR_ERR_DEVICE_MISSING,
                        _("model '%s' watchdog device not present "
                          "in domain configuration"),
@@ -5831,40 +5836,41 @@ qemuDomainDetachWatchdog(virQEMUDriverPtr driver,
 
 
 static int
-qemuDomainDetachRedirdevDevice(virQEMUDriverPtr driver,
-                               virDomainObjPtr vm,
-                               virDomainRedirdevDefPtr dev,
-                               bool async)
+qemuDomainDetachPrepRedirdev(virQEMUDriverPtr driver,
+                             virDomainObjPtr vm,
+                             virDomainRedirdevDefPtr match,
+                             virDomainRedirdevDefPtr *detach,
+                             bool async)
 {
     int ret = -1;
-    virDomainRedirdevDefPtr tmpRedirdevDef;
+    virDomainRedirdevDefPtr redirdev;
     ssize_t idx;
 
-    if ((idx = virDomainRedirdevDefFind(vm->def, dev)) < 0) {
+    if ((idx = virDomainRedirdevDefFind(vm->def, match)) < 0) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("no matching redirdev was not found"));
         return -1;
     }
 
-    tmpRedirdevDef = vm->def->redirdevs[idx];
+    *detach = redirdev = vm->def->redirdevs[idx];
 
-    if (!tmpRedirdevDef->info.alias) {
+    if (!redirdev->info.alias) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("alias not set for redirdev device"));
         return -1;
     }
 
     if (!async)
-        qemuDomainMarkDeviceForRemoval(vm, &tmpRedirdevDef->info);
+        qemuDomainMarkDeviceForRemoval(vm, &redirdev->info);
 
-    if (qemuDomainDeleteDevice(vm, tmpRedirdevDef->info.alias) < 0)
+    if (qemuDomainDeleteDevice(vm, redirdev->info.alias) < 0)
         goto cleanup;
 
     if (async) {
         ret = 0;
     } else {
         if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1)
-            ret = qemuDomainRemoveRedirdevDevice(driver, vm, tmpRedirdevDef);
+            ret = qemuDomainRemoveRedirdevDevice(driver, vm, redirdev);
     }
 
  cleanup:
@@ -5875,53 +5881,54 @@ qemuDomainDetachRedirdevDevice(virQEMUDriverPtr driver,
 
 
 static int
-qemuDomainDetachNetDevice(virQEMUDriverPtr driver,
-                          virDomainObjPtr vm,
-                          virDomainDeviceDefPtr dev,
-                          bool async)
+qemuDomainDetachPrepNet(virQEMUDriverPtr driver,
+                        virDomainObjPtr vm,
+                        virDomainNetDefPtr match,
+                        virDomainNetDefPtr *detach,
+                        bool async)
 {
     int detachidx, ret = -1;
-    virDomainNetDefPtr detach = NULL;
+    virDomainNetDefPtr net;
 
-    if ((detachidx = virDomainNetFindIdx(vm->def, dev->data.net)) < 0)
+    if ((detachidx = virDomainNetFindIdx(vm->def, match)) < 0)
         goto cleanup;
 
-    detach = vm->def->nets[detachidx];
+    *detach = net = vm->def->nets[detachidx];
 
-    if (qemuIsMultiFunctionDevice(vm->def, &detach->info)) {
+    if (qemuIsMultiFunctionDevice(vm->def, &net->info)) {
         virReportError(VIR_ERR_OPERATION_FAILED,
                        _("cannot hot unplug multifunction PCI device: %s"),
-                       detach->ifname);
+                       net->ifname);
         goto cleanup;
     }
 
-    if (!detach->info.alias) {
-        if (qemuAssignDeviceNetAlias(vm->def, detach, -1) < 0)
+    if (!net->info.alias) {
+        if (qemuAssignDeviceNetAlias(vm->def, net, -1) < 0)
             goto cleanup;
     }
 
-    if (virDomainNetGetActualBandwidth(detach) &&
-        virNetDevSupportBandwidth(virDomainNetGetActualType(detach)) &&
-        virNetDevBandwidthClear(detach->ifname) < 0)
+    if (virDomainNetGetActualBandwidth(net) &&
+        virNetDevSupportBandwidth(virDomainNetGetActualType(net)) &&
+        virNetDevBandwidthClear(net->ifname) < 0)
         VIR_WARN("cannot clear bandwidth setting for device : %s",
-                 detach->ifname);
+                 net->ifname);
 
     /* deactivate the tap/macvtap device on the host, which could also
      * affect the parent device (e.g. macvtap passthrough mode sets
      * the parent device offline)
      */
-    ignore_value(qemuInterfaceStopDevice(detach));
+    ignore_value(qemuInterfaceStopDevice(net));
 
     if (!async)
-        qemuDomainMarkDeviceForRemoval(vm, &detach->info);
+        qemuDomainMarkDeviceForRemoval(vm, &net->info);
 
-    if (qemuDomainDeleteDevice(vm, detach->info.alias) < 0) {
+    if (qemuDomainDeleteDevice(vm, net->info.alias) < 0) {
         if (virDomainObjIsActive(vm)) {
             /* the audit message has a different format for hostdev network devices */
-            if (virDomainNetGetActualType(detach) == VIR_DOMAIN_NET_TYPE_HOSTDEV)
-                virDomainAuditHostdev(vm, virDomainNetGetActualHostdev(detach), "detach", false);
+            if (virDomainNetGetActualType(net) == VIR_DOMAIN_NET_TYPE_HOSTDEV)
+                virDomainAuditHostdev(vm, virDomainNetGetActualHostdev(net), "detach", false);
             else
-                virDomainAuditNet(vm, detach, NULL, "detach", false);
+                virDomainAuditNet(vm, net, NULL, "detach", false);
         }
         goto cleanup;
     }
@@ -5930,7 +5937,7 @@ qemuDomainDetachNetDevice(virQEMUDriverPtr driver,
         ret = 0;
     } else {
         if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1)
-            ret = qemuDomainRemoveNetDevice(driver, vm, detach);
+            ret = qemuDomainRemoveNetDevice(driver, vm, net);
     }
 
  cleanup:
@@ -5941,7 +5948,7 @@ qemuDomainDetachNetDevice(virQEMUDriverPtr driver,
 
 
 static int
-qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
+qemuDomainDetachDeviceChr(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
                           virDomainChrDefPtr chr,
                           bool async)
@@ -5999,42 +6006,43 @@ qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
 
 
 static int
-qemuDomainDetachRNGDevice(virQEMUDriverPtr driver,
-                          virDomainObjPtr vm,
-                          virDomainRNGDefPtr rng,
-                          bool async)
+qemuDomainDetachPrepRNG(virQEMUDriverPtr driver,
+                        virDomainObjPtr vm,
+                        virDomainRNGDefPtr match,
+                        virDomainRNGDefPtr *detach,
+                        bool async)
 {
     ssize_t idx;
-    virDomainRNGDefPtr tmpRNG;
+    virDomainRNGDefPtr rng;
     int ret = -1;
 
-    if ((idx = virDomainRNGFind(vm->def, rng)) < 0) {
+    if ((idx = virDomainRNGFind(vm->def, match)) < 0) {
         virReportError(VIR_ERR_DEVICE_MISSING,
                        _("model '%s' RNG device not present "
                          "in domain configuration"),
-                       virDomainRNGBackendTypeToString(rng->model));
+                       virDomainRNGBackendTypeToString(match->model));
         return -1;
     }
 
-    tmpRNG = vm->def->rngs[idx];
+    *detach = rng = vm->def->rngs[idx];
 
-    if (!tmpRNG->info.alias) {
+    if (!rng->info.alias) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("alias not set for RNG device"));
         return -1;
     }
 
     if (!async)
-        qemuDomainMarkDeviceForRemoval(vm, &tmpRNG->info);
+        qemuDomainMarkDeviceForRemoval(vm, &rng->info);
 
-    if (qemuDomainDeleteDevice(vm, tmpRNG->info.alias) < 0)
+    if (qemuDomainDeleteDevice(vm, rng->info.alias) < 0)
         goto cleanup;
 
     if (async) {
         ret = 0;
     } else {
         if ((ret = qemuDomainWaitForDeviceRemoval(vm)) == 1)
-            ret = qemuDomainRemoveRNGDevice(driver, vm, tmpRNG);
+            ret = qemuDomainRemoveRNGDevice(driver, vm, rng);
     }
 
  cleanup:
@@ -6045,26 +6053,27 @@ qemuDomainDetachRNGDevice(virQEMUDriverPtr driver,
 
 
 static int
-qemuDomainDetachMemoryDevice(virQEMUDriverPtr driver,
-                             virDomainObjPtr vm,
-                             virDomainMemoryDefPtr memdef,
-                             bool async)
+qemuDomainDetachPrepMemory(virQEMUDriverPtr driver,
+                           virDomainObjPtr vm,
+                           virDomainMemoryDefPtr match,
+                           virDomainMemoryDefPtr *detach,
+                           bool async)
 {
     virDomainMemoryDefPtr mem;
     int idx;
     int ret = -1;
 
-    qemuDomainMemoryDeviceAlignSize(vm->def, memdef);
+    qemuDomainMemoryDeviceAlignSize(vm->def, match);
 
-    if ((idx = virDomainMemoryFindByDef(vm->def, memdef)) < 0) {
+    if ((idx = virDomainMemoryFindByDef(vm->def, match)) < 0) {
         virReportError(VIR_ERR_DEVICE_MISSING,
                        _("model '%s' memory device not present "
                          "in the domain configuration"),
-                       virDomainMemoryModelTypeToString(memdef->model));
+                       virDomainMemoryModelTypeToString(match->model));
         return -1;
     }
 
-    mem = vm->def->mems[idx];
+    *detach = mem = vm->def->mems[idx];
 
     if (!mem->info.alias) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
@@ -6093,20 +6102,21 @@ qemuDomainDetachMemoryDevice(virQEMUDriverPtr driver,
 
 
 static int
-qemuDomainDetachInputDevice(virDomainObjPtr vm,
-                            virDomainInputDefPtr def,
-                            bool async)
+qemuDomainDetachPrepInput(virDomainObjPtr vm,
+                          virDomainInputDefPtr match,
+                          virDomainInputDefPtr *detach,
+                          bool async)
 {
     virDomainInputDefPtr input;
     int ret = -1;
     int idx;
 
-    if ((idx = virDomainInputDefFind(vm->def, def)) < 0) {
+    if ((idx = virDomainInputDefFind(vm->def, match)) < 0) {
         virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                        _("matching input device not found"));
         return -1;
     }
-    input = vm->def->inputs[idx];
+    *detach = input = vm->def->inputs[idx];
 
     switch ((virDomainInputBus) input->bus) {
     case VIR_DOMAIN_INPUT_BUS_PS2:
@@ -6144,16 +6154,18 @@ qemuDomainDetachInputDevice(virDomainObjPtr vm,
 
 
 static int
-qemuDomainDetachVsockDevice(virDomainObjPtr vm,
-                            virDomainVsockDefPtr dev,
-                            bool async)
+qemuDomainDetachPrepVsock(virDomainObjPtr vm,
+                          virDomainVsockDefPtr match,
+                          virDomainVsockDefPtr *detach,
+                          bool async)
 {
-    virDomainVsockDefPtr vsock = vm->def->vsock;
+    virDomainVsockDefPtr vsock;
     int ret = -1;
 
 
+    *detach = vsock = vm->def->vsock;
     if (!vsock ||
-        !virDomainVsockDefEquals(dev, vsock)) {
+        !virDomainVsockDefEquals(match, vsock)) {
         virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                        _("matching vsock device not found"));
         return -1;
@@ -6180,9 +6192,9 @@ qemuDomainDetachVsockDevice(virDomainObjPtr vm,
 
 
 static int
-qemuDomainDetachLease(virQEMUDriverPtr driver,
-                      virDomainObjPtr vm,
-                      virDomainLeaseDefPtr lease)
+qemuDomainDetachDeviceLease(virQEMUDriverPtr driver,
+                            virDomainObjPtr vm,
+                            virDomainLeaseDefPtr lease)
 {
     virDomainLeaseDefPtr det_lease;
     int idx;
@@ -6209,6 +6221,7 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
                            virQEMUDriverPtr driver,
                            bool async)
 {
+    virDomainDeviceDef detach = { .type = match->type };
     int ret = -1;
 
     switch ((virDomainDeviceType)match->type) {
@@ -6218,10 +6231,10 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
          * Detach functions.
          */
     case VIR_DOMAIN_DEVICE_LEASE:
-        return qemuDomainDetachLease(driver, vm, match->data.lease);
+        return qemuDomainDetachDeviceLease(driver, vm, match->data.lease);
 
     case VIR_DOMAIN_DEVICE_CHR:
-        return qemuDomainDetachChrDevice(driver, vm, match->data.chr, async);
+        return qemuDomainDetachDeviceChr(driver, vm, match->data.chr, async);
 
         /*
          * All the other device types follow a very similar pattern -
@@ -6231,38 +6244,70 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
          * is okay to detach the device.
          */
     case VIR_DOMAIN_DEVICE_DISK:
-        ret = qemuDomainDetachDeviceDiskLive(driver, vm, match, async);
+        if (qemuDomainDetachPrepDisk(driver, vm, match->data.disk,
+                                     &detach.data.disk, async) < 0) {
+            return -1;
+        }
         break;
     case VIR_DOMAIN_DEVICE_CONTROLLER:
-        ret = qemuDomainDetachControllerDevice(driver, vm, match, async);
+        if (qemuDomainDetachPrepController(driver, vm, match->data.controller,
+                                           &detach.data.controller, async) < 0) {
+            return -1;
+        }
         break;
     case VIR_DOMAIN_DEVICE_NET:
-        ret = qemuDomainDetachNetDevice(driver, vm, match, async);
+        if (qemuDomainDetachPrepNet(driver, vm, match->data.net,
+                                    &detach.data.net, async) < 0) {
+            return -1;
+        }
         break;
     case VIR_DOMAIN_DEVICE_HOSTDEV:
-        ret = qemuDomainDetachHostDevice(driver, vm, match, async);
+        if (qemuDomainDetachPrepHostdev(driver, vm, match->data.hostdev,
+                                        &detach.data.hostdev, async) < 0) {
+            return -1;
+        }
         break;
     case VIR_DOMAIN_DEVICE_RNG:
-        ret = qemuDomainDetachRNGDevice(driver, vm, match->data.rng, async);
+        if (qemuDomainDetachPrepRNG(driver, vm, match->data.rng,
+                                    &detach.data.rng, async) < 0) {
+            return -1;
+        }
         break;
     case VIR_DOMAIN_DEVICE_MEMORY:
-        ret = qemuDomainDetachMemoryDevice(driver, vm, match->data.memory, async);
+        if (qemuDomainDetachPrepMemory(driver, vm, match->data.memory,
+                                       &detach.data.memory, async) < 0) {
+            return -1;
+        }
         break;
     case VIR_DOMAIN_DEVICE_SHMEM:
-        ret = qemuDomainDetachShmemDevice(driver, vm, match->data.shmem, async);
+        if (qemuDomainDetachPrepShmem(driver, vm, match->data.shmem,
+                                      &detach.data.shmem, async) < 0) {
+            return -1;
+        }
         break;
     case VIR_DOMAIN_DEVICE_WATCHDOG:
-        ret = qemuDomainDetachWatchdog(driver, vm, match->data.watchdog, async);
+        if (qemuDomainDetachPrepWatchdog(driver, vm, match->data.watchdog,
+                                         &detach.data.watchdog, async) < 0) {
+            return -1;
+        }
         break;
     case VIR_DOMAIN_DEVICE_INPUT:
-        ret = qemuDomainDetachInputDevice(vm, match->data.input, async);
+        if (qemuDomainDetachPrepInput(vm, match->data.input,
+                                      &detach.data.input, async) < 0) {
+            return -1;
+        }
         break;
     case VIR_DOMAIN_DEVICE_REDIRDEV:
-        ret = qemuDomainDetachRedirdevDevice(driver, vm, match->data.redirdev, async);
+        if (qemuDomainDetachPrepRedirdev(driver, vm, match->data.redirdev,
+                                         &detach.data.redirdev, async) < 0) {
+            return -1;
+        }
         break;
-
     case VIR_DOMAIN_DEVICE_VSOCK:
-        ret = qemuDomainDetachVsockDevice(vm, match->data.vsock, async);
+        if (qemuDomainDetachPrepVsock(vm, match->data.vsock,
+                                      &detach.data.vsock, async) < 0) {
+            return -1;
+        }
         break;
 
     case VIR_DOMAIN_DEVICE_FS:
@@ -6283,6 +6328,8 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
                        virDomainDeviceTypeToString(match->type));
         return -1;
     }
+
+    ret = 0;
 
     return ret;
 }
