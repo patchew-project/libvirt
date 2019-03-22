@@ -2725,32 +2725,15 @@ qemuDomainObjPrivateXMLParseJobNBDSource(xmlNodePtr node,
     if (!(ctxt->node = virXPathNode("./migrationSource", ctxt)))
         return 0;
 
-    if (!(migrSource = virStorageSourceNew()))
-        return -1;
-
-    if (!(type = virXMLPropString(ctxt->node, "type"))) {
+    if (!(type = virXMLPropString(ctxt->node, "type")) ||
+        !(format = virXMLPropString(ctxt->node, "format"))) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
-                       _("missing storage source type"));
+                       _("missing NBD migration storage source type or format"));
         return -1;
     }
 
-    if (!(format = virXMLPropString(ctxt->node, "format"))) {
-        virReportError(VIR_ERR_XML_ERROR, "%s",
-                       _("missing storage source format"));
+    if (!(migrSource = virDomainStorageSourceParseBase(type, format, NULL)))
         return -1;
-    }
-
-    if ((migrSource->type = virStorageTypeFromString(type)) <= 0) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("unknown storage source type '%s'"), type);
-        return -1;
-    }
-
-    if ((migrSource->format = virStorageFileFormatTypeFromString(format)) <= 0) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("unknown storage source format '%s'"), format);
-        return -1;
-    }
 
     if ((sourceNode = virXPathNode("./source", ctxt)))
         ctxt->node = sourceNode;
