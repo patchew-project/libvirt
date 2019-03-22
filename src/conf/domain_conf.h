@@ -3463,7 +3463,7 @@ int virDomainStorageSourceParse(xmlNodePtr node,
                                 virStorageSourcePtr src,
                                 unsigned int flags,
                                 virDomainXMLOptionPtr xmlopt)
-    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
+    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(3);
 
 int virDomainDefGetVcpuPinInfoHelper(virDomainDefPtr def,
                                      int maplen,

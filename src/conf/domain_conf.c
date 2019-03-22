@@ -9080,7 +9080,7 @@ virDomainStorageSourceParseBase(const char *type,
 
 /**
  * virDomainStorageSourceParse:
- * @node: XML node pointing to the source element to parse
+ * @node: XML node pointing to the source element to parse (see below)
  * @ctxt: XPath context
  * @src: filled with parsed data
  * @flags: XML parser flags
@@ -9089,6 +9089,9 @@ virDomainStorageSourceParseBase(const char *type,
  * Parses @src definition from element pointed to by @node. Note that this
  * does not parse the 'type' and 'format' attributes of @src and 'type' needs
  * to be set correctly prior to calling this function.
+ *
+ * If @node is NULL a <source> subelement is looked up in @ctxt to be used as
+ * source. Error is reported if the source is not found.
  */
 int
 virDomainStorageSourceParse(xmlNodePtr node,
@@ -9099,6 +9102,13 @@ virDomainStorageSourceParse(xmlNodePtr node,
 {
     VIR_XPATH_NODE_AUTORESTORE(ctxt);
     xmlNodePtr tmp;
+
+    if (!node &&
+        !(node = virXPathNode("./source", ctxt))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("missing <source> element for storage source"));
+        return -1;
+    }
 
     ctxt->node = node;
 
