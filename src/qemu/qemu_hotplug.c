@@ -844,14 +844,13 @@ qemuDomainChangeMediaBlockdev(virQEMUDriverPtr driver,
  * Returns 0 on success, -1 on error and reports libvirt error
  */
 int
-qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
-                               virDomainObjPtr vm,
+qemuDomainChangeEjectableMedia(virDomainObjPtr vm,
                                virDomainDiskDefPtr disk,
                                virStorageSourcePtr newsrc,
                                bool force)
 {
-    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     qemuDomainObjPrivatePtr priv = vm->privateData;
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(priv->driver);
     virStorageSourcePtr oldsrc = disk->src;
     bool sharedAdded = false;
     int ret = -1;
@@ -862,27 +861,27 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
     if (virDomainDiskTranslateSourcePool(disk) < 0)
         goto cleanup;
 
-    if (qemuAddSharedDisk(driver, disk, vm->def->name) < 0)
+    if (qemuAddSharedDisk(priv->driver, disk, vm->def->name) < 0)
         goto cleanup;
 
     sharedAdded = true;
 
-    if (qemuDomainDetermineDiskChain(driver, vm, disk, NULL, true) < 0)
+    if (qemuDomainDetermineDiskChain(priv->driver, vm, disk, NULL, true) < 0)
         goto cleanup;
 
     if (qemuDomainPrepareDiskSource(disk, priv, cfg) < 0)
         goto cleanup;
 
-    if (qemuHotplugPrepareDiskSourceAccess(driver, vm, newsrc, false) < 0)
+    if (qemuHotplugPrepareDiskSourceAccess(priv->driver, vm, newsrc, false) < 0)
         goto cleanup;
 
-    if (qemuHotplugAttachManagedPR(driver, vm, newsrc, QEMU_ASYNC_JOB_NONE) < 0)
+    if (qemuHotplugAttachManagedPR(priv->driver, vm, newsrc, QEMU_ASYNC_JOB_NONE) < 0)
         goto cleanup;
 
     if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV))
-        rc = qemuDomainChangeMediaBlockdev(driver, vm, disk, oldsrc, newsrc, force);
+        rc = qemuDomainChangeMediaBlockdev(priv->driver, vm, disk, oldsrc, newsrc, force);
     else
-        rc = qemuDomainChangeMediaLegacy(driver, vm, disk, newsrc, force);
+        rc = qemuDomainChangeMediaLegacy(priv->driver, vm, disk, newsrc, force);
 
     virDomainAuditDisk(vm, oldsrc, newsrc, "update", rc >= 0);
 
@@ -891,8 +890,8 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
 
     /* remove the old source from shared device list */
     disk->src = oldsrc;
-    ignore_value(qemuRemoveSharedDisk(driver, disk, vm->def->name));
-    ignore_value(qemuHotplugPrepareDiskSourceAccess(driver, vm, oldsrc, true));
+    ignore_value(qemuRemoveSharedDisk(priv->driver, disk, vm->def->name));
+    ignore_value(qemuHotplugPrepareDiskSourceAccess(priv->driver, vm, oldsrc, true));
 
     /* media was changed, so we can remove the old media definition now */
     virObjectUnref(oldsrc);
@@ -905,13 +904,13 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
     /* undo changes to the new disk */
     if (ret < 0) {
         if (sharedAdded)
-            ignore_value(qemuRemoveSharedDisk(driver, disk, vm->def->name));
+            ignore_value(qemuRemoveSharedDisk(priv->driver, disk, vm->def->name));
 
-        ignore_value(qemuHotplugPrepareDiskSourceAccess(driver, vm, newsrc, true));
+        ignore_value(qemuHotplugPrepareDiskSourceAccess(priv->driver, vm, newsrc, true));
     }
 
     /* remove PR manager object if unneeded */
-    ignore_value(qemuHotplugRemoveManagedPR(driver, vm, QEMU_ASYNC_JOB_NONE));
+    ignore_value(qemuHotplugRemoveManagedPR(priv->driver, vm, QEMU_ASYNC_JOB_NONE));
 
     /* revert old image do the disk definition */
     if (oldsrc)
@@ -1315,7 +1314,7 @@ qemuDomainAttachDeviceDiskLive(virQEMUDriverPtr driver,
     if ((disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM ||
          disk->device == VIR_DOMAIN_DISK_DEVICE_FLOPPY) &&
         (orig_disk = virDomainDiskFindByBusAndDst(vm->def, disk->bus, disk->dst))) {
-        if (qemuDomainChangeEjectableMedia(driver, vm, orig_disk,
+        if (qemuDomainChangeEjectableMedia(vm, orig_disk,
                                            disk->src, false) < 0)
             return -1;
 

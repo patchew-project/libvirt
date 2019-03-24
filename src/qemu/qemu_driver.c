@@ -8100,7 +8100,6 @@ qemuDomainDetachDeviceLive(virDomainObjPtr vm,
 static int
 qemuDomainChangeDiskLive(virDomainObjPtr vm,
                          virDomainDeviceDefPtr dev,
-                         virQEMUDriverPtr driver,
                          bool force)
 {
     virDomainDiskDefPtr disk = dev->data.disk;
@@ -8136,7 +8135,7 @@ qemuDomainChangeDiskLive(virDomainObjPtr vm,
             goto cleanup;
         }
 
-        if (qemuDomainChangeEjectableMedia(driver, vm, orig_disk,
+        if (qemuDomainChangeEjectableMedia(vm, orig_disk,
                                            dev->data.disk->src, force) < 0)
             goto cleanup;
 
@@ -8165,7 +8164,7 @@ qemuDomainUpdateDeviceLive(virDomainObjPtr vm,
     switch ((virDomainDeviceType)dev->type) {
     case VIR_DOMAIN_DEVICE_DISK:
         qemuDomainObjCheckDiskTaint(driver, vm, dev->data.disk, NULL);
-        ret = qemuDomainChangeDiskLive(vm, dev, driver, force);
+        ret = qemuDomainChangeDiskLive(vm, dev, force);
         break;
 
     case VIR_DOMAIN_DEVICE_GRAPHICS:

@@ -26,8 +26,7 @@
 # include "qemu_domain.h"
 # include "domain_conf.h"
 
-int qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
-                                   virDomainObjPtr vm,
+int qemuDomainChangeEjectableMedia(virDomainObjPtr vm,
                                    virDomainDiskDefPtr disk,
                                    virStorageSourcePtr newsrc,
                                    bool force);
