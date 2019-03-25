@@ -39,6 +39,9 @@ typedef qemuMonitor *qemuMonitorPtr;
 typedef struct _qemuMonitorMessage qemuMonitorMessage;
 typedef qemuMonitorMessage *qemuMonitorMessagePtr;
 
+typedef struct _qemuDomainStatePanicInfo qemuDomainStatePanicInfo;
+typedef qemuDomainStatePanicInfo *qemuDomainStatePanicInfoPtr;
+
 typedef int (*qemuMonitorPasswordHandler)(qemuMonitorPtr mon,
                                           qemuMonitorMessagePtr msg,
                                           const char *data,
@@ -67,45 +70,6 @@ struct _qemuMonitorMessage {
     void *passwordOpaque;
 };
 
-typedef enum {
-    QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_NONE = 0,
-    QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_HYPERV,
-    QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_S390,
-
-    QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_LAST
-} qemuMonitorEventPanicInfoType;
-
-typedef struct _qemuMonitorEventPanicInfoHyperv qemuMonitorEventPanicInfoHyperv;
-typedef qemuMonitorEventPanicInfoHyperv *qemuMonitorEventPanicInfoHypervPtr;
-struct _qemuMonitorEventPanicInfoHyperv {
-    /* Hyper-V specific guest panic information (HV crash MSRs) */
-    unsigned long long arg1;
-    unsigned long long arg2;
-    unsigned long long arg3;
-    unsigned long long arg4;
-    unsigned long long arg5;
-};
-
-typedef struct _qemuMonitorEventPanicInfoS390 qemuMonitorEventPanicInfoS390;
-typedef qemuMonitorEventPanicInfoS390 *qemuMonitorEventPanicInfoS390Ptr;
-struct _qemuMonitorEventPanicInfoS390 {
-    /* S390 specific guest panic information */
-    int core;
-    unsigned long long psw_mask;
-    unsigned long long psw_addr;
-    char *reason;
-};
-
-typedef struct _qemuMonitorEventPanicInfo qemuMonitorEventPanicInfo;
-typedef qemuMonitorEventPanicInfo *qemuMonitorEventPanicInfoPtr;
-struct _qemuMonitorEventPanicInfo {
-    qemuMonitorEventPanicInfoType type;
-    union {
-        qemuMonitorEventPanicInfoHyperv hyperv;
-        qemuMonitorEventPanicInfoS390 s390;
-    } data;
-};
-
 
 typedef struct _qemuMonitorRdmaGidStatus qemuMonitorRdmaGidStatus;
 typedef qemuMonitorRdmaGidStatus *qemuMonitorRdmaGidStatusPtr;
@@ -117,8 +81,6 @@ struct _qemuMonitorRdmaGidStatus {
 };
 
 
-char *qemuMonitorGuestPanicEventInfoFormatMsg(qemuMonitorEventPanicInfoPtr info);
-void qemuMonitorEventPanicInfoFree(qemuMonitorEventPanicInfoPtr info);
 void qemuMonitorEventRdmaGidStatusFree(qemuMonitorRdmaGidStatusPtr info);
 
 typedef void (*qemuMonitorDestroyCallback)(qemuMonitorPtr mon,
@@ -209,7 +171,7 @@ typedef int (*qemuMonitorDomainPMSuspendDiskCallback)(qemuMonitorPtr mon,
                                                       void *opaque);
 typedef int (*qemuMonitorDomainGuestPanicCallback)(qemuMonitorPtr mon,
                                                    virDomainObjPtr vm,
-                                                   qemuMonitorEventPanicInfoPtr info,
+                                                   qemuDomainStatePanicInfoPtr info,
                                                    void *opaque);
 typedef int (*qemuMonitorDomainDeviceDeletedCallback)(qemuMonitorPtr mon,
                                                       virDomainObjPtr vm,
@@ -431,7 +393,7 @@ int qemuMonitorEmitBalloonChange(qemuMonitorPtr mon,
                                  unsigned long long actual);
 int qemuMonitorEmitPMSuspendDisk(qemuMonitorPtr mon);
 int qemuMonitorEmitGuestPanic(qemuMonitorPtr mon,
-                              qemuMonitorEventPanicInfoPtr info);
+                              qemuDomainStatePanicInfoPtr info);
 int qemuMonitorEmitDeviceDeleted(qemuMonitorPtr mon,
                                  const char *devAlias);
 int qemuMonitorEmitNicRxFilterChanged(qemuMonitorPtr mon,

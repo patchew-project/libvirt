@@ -632,15 +632,15 @@ static void qemuMonitorJSONHandleResume(qemuMonitorPtr mon, virJSONValuePtr data
 }
 
 
-static qemuMonitorEventPanicInfoPtr
+static qemuDomainStatePanicInfoPtr
 qemuMonitorJSONGuestPanicExtractInfoHyperv(virJSONValuePtr data)
 {
-    qemuMonitorEventPanicInfoPtr ret;
+    qemuDomainStatePanicInfoPtr ret;
 
     if (VIR_ALLOC(ret) < 0)
         return NULL;
 
-    ret->type = QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_HYPERV;
+    ret->type = QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_HYPERV;
 
     if (virJSONValueObjectGetNumberUlong(data, "arg1", &ret->data.hyperv.arg1) < 0 ||
         virJSONValueObjectGetNumberUlong(data, "arg2", &ret->data.hyperv.arg2) < 0 ||
@@ -655,14 +655,14 @@ qemuMonitorJSONGuestPanicExtractInfoHyperv(virJSONValuePtr data)
     return ret;
 
  error:
-    qemuMonitorEventPanicInfoFree(ret);
+    qemuDomainStatePanicInfoFree(ret);
     return NULL;
 }
 
-static qemuMonitorEventPanicInfoPtr
+static qemuDomainStatePanicInfoPtr
 qemuMonitorJSONGuestPanicExtractInfoS390(virJSONValuePtr data)
 {
-    qemuMonitorEventPanicInfoPtr ret;
+    qemuDomainStatePanicInfoPtr ret;
     int core;
     unsigned long long psw_mask, psw_addr;
     const char *reason = NULL;
@@ -670,7 +670,7 @@ qemuMonitorJSONGuestPanicExtractInfoS390(virJSONValuePtr data)
     if (VIR_ALLOC(ret) < 0)
         return NULL;
 
-    ret->type = QEMU_MONITOR_EVENT_PANIC_INFO_TYPE_S390;
+    ret->type = QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_S390;
 
     if (virJSONValueObjectGetNumberInt(data, "core", &core) < 0 ||
         virJSONValueObjectGetNumberUlong(data, "psw-mask", &psw_mask) < 0 ||
@@ -690,11 +690,11 @@ qemuMonitorJSONGuestPanicExtractInfoS390(virJSONValuePtr data)
     return ret;
 
  error:
-    qemuMonitorEventPanicInfoFree(ret);
+    qemuDomainStatePanicInfoFree(ret);
     return NULL;
 }
 
-static qemuMonitorEventPanicInfoPtr
+static qemuDomainStatePanicInfoPtr
 qemuMonitorJSONGuestPanicExtractInfo(virJSONValuePtr data)
 {
     const char *type = virJSONValueObjectGetString(data, "type");
@@ -715,7 +715,7 @@ qemuMonitorJSONHandleGuestPanic(qemuMonitorPtr mon,
                                 virJSONValuePtr data)
 {
     virJSONValuePtr infojson = virJSONValueObjectGetObject(data, "info");
-    qemuMonitorEventPanicInfoPtr info = NULL;
+    qemuDomainStatePanicInfoPtr info = NULL;
 
     if (infojson)
         info = qemuMonitorJSONGuestPanicExtractInfo(infojson);

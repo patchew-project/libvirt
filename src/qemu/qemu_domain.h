@@ -268,6 +268,48 @@ struct _qemuDomainSecretInfo {
     } s;
 };
 
+typedef enum {
+    QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_NONE = 0,
+    QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_HYPERV,
+    QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_S390,
+
+    QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_LAST
+} qemuDomainStatePanicInfoType;
+
+typedef struct _qemuDomainStatePanicInfoHyperv qemuDomainStatePanicInfoHyperv;
+typedef qemuDomainStatePanicInfoHyperv *qemuDomainStatePanicInfoHypervPtr;
+struct _qemuDomainStatePanicInfoHyperv {
+    /* Hyper-V specific guest panic information (HV crash MSRs) */
+    unsigned long long arg1;
+    unsigned long long arg2;
+    unsigned long long arg3;
+    unsigned long long arg4;
+    unsigned long long arg5;
+};
+
+typedef struct _qemuDomainStatePanicInfoS390 qemuDomainStatePanicInfoS390;
+typedef qemuDomainStatePanicInfoS390 *qemuDomainStatePanicInfoS390Ptr;
+struct _qemuDomainStatePanicInfoS390 {
+    /* S390 specific guest panic information */
+    int core;
+    unsigned long long psw_mask;
+    unsigned long long psw_addr;
+    char *reason;
+};
+
+typedef struct _qemuDomainStatePanicInfo qemuDomainStatePanicInfo;
+typedef qemuDomainStatePanicInfo *qemuDomainStatePanicInfoPtr;
+struct _qemuDomainStatePanicInfo {
+    qemuDomainStatePanicInfoType type;
+    union {
+        qemuDomainStatePanicInfoHyperv hyperv;
+        qemuDomainStatePanicInfoS390 s390;
+    } data;
+};
+
+char *qemuDomainStatePanicInfoFormatMsg(qemuDomainStatePanicInfoPtr info);
+void qemuDomainStatePanicInfoFree(qemuDomainStatePanicInfoPtr info);
+
 typedef struct _qemuDomainObjPrivate qemuDomainObjPrivate;
 typedef qemuDomainObjPrivate *qemuDomainObjPrivatePtr;
 struct _qemuDomainObjPrivate {

@@ -4163,9 +4163,9 @@ doCoreDumpToAutoDumpPath(virQEMUDriverPtr driver,
 static void
 qemuProcessGuestPanicEventInfo(virQEMUDriverPtr driver,
                                virDomainObjPtr vm,
-                               qemuMonitorEventPanicInfoPtr info)
+                               qemuDomainStatePanicInfoPtr info)
 {
-    char *msg = qemuMonitorGuestPanicEventInfoFormatMsg(info);
+    char *msg = qemuDomainStatePanicInfoFormatMsg(info);
     char *timestamp = virTimeStringNow();
 
     if (msg && timestamp)
@@ -4180,7 +4180,7 @@ static void
 processGuestPanicEvent(virQEMUDriverPtr driver,
                        virDomainObjPtr vm,
                        int action,
-                       qemuMonitorEventPanicInfoPtr info)
+                       qemuDomainStatePanicInfoPtr info)
 {
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virObjectEventPtr event = NULL;

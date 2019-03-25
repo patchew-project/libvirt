@@ -1259,7 +1259,7 @@ qemuProcessHandlePMSuspendDisk(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
 static int
 qemuProcessHandleGuestPanic(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
                             virDomainObjPtr vm,
-                            qemuMonitorEventPanicInfoPtr info,
+                            qemuDomainStatePanicInfoPtr info,
                             void *opaque)
 {
     virQEMUDriverPtr driver = opaque;

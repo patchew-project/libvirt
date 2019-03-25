@@ -13907,7 +13907,7 @@ qemuProcessEventFree(struct qemuProcessEvent *event)
 
     switch (event->eventType) {
     case QEMU_PROCESS_EVENT_GUESTPANIC:
-        qemuMonitorEventPanicInfoFree(event->data);
+        qemuDomainStatePanicInfoFree(event->data);
         break;
     case QEMU_PROCESS_EVENT_RDMA_GID_STATUS_CHANGED:
         qemuMonitorEventRdmaGidStatusFree(event->data);
@@ -14035,4 +14035,55 @@ qemuDomainNVRAMPathGenerate(virQEMUDriverConfigPtr cfg,
     }
 
     return 0;
+}
+
+
+char *
+qemuDomainStatePanicInfoFormatMsg(qemuDomainStatePanicInfoPtr info)
+{
+    char *ret = NULL;
+
+    switch (info->type) {
+    case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_HYPERV:
+        ignore_value(virAsprintf(&ret,
+                                 "hyper-v: arg1='0x%llx', arg2='0x%llx', "
+                                 "arg3='0x%llx', arg4='0x%llx', arg5='0x%llx'",
+                                 info->data.hyperv.arg1, info->data.hyperv.arg2,
+                                 info->data.hyperv.arg3, info->data.hyperv.arg4,
+                                 info->data.hyperv.arg5));
+        break;
+    case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_S390:
+        ignore_value(virAsprintf(&ret, "s390: core='%d' psw-mask='0x%016llx' "
+                                 "psw-addr='0x%016llx' reason='%s'",
+                                 info->data.s390.core,
+                                 info->data.s390.psw_mask,
+                                 info->data.s390.psw_addr,
+                                 info->data.s390.reason));
+        break;
+    case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_NONE:
+    case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_LAST:
+        break;
+    }
+
+    return ret;
+}
+
+
+void
+qemuDomainStatePanicInfoFree(qemuDomainStatePanicInfoPtr info)
+{
+    if (!info)
+        return;
+
+    switch (info->type) {
+    case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_S390:
+        VIR_FREE(info->data.s390.reason);
+        break;
+    case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_NONE:
+    case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_HYPERV:
+    case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_LAST:
+        break;
+    }
+
+    VIR_FREE(info);
 }
