@@ -5389,7 +5389,7 @@ qemuFindDisk(virDomainDefPtr def, const char *dst)
     return -1;
 }
 
-int
+static int
 qemuDomainDetachDeviceDiskLive(virQEMUDriverPtr driver,
                                virDomainObjPtr vm,
                                virDomainDeviceDefPtr dev,
@@ -5540,10 +5540,11 @@ static bool qemuDomainControllerIsBusy(virDomainObjPtr vm,
     }
 }
 
-int qemuDomainDetachControllerDevice(virQEMUDriverPtr driver,
-                                     virDomainObjPtr vm,
-                                     virDomainDeviceDefPtr dev,
-                                     bool async)
+static int
+qemuDomainDetachControllerDevice(virQEMUDriverPtr driver,
+                                 virDomainObjPtr vm,
+                                 virDomainDeviceDefPtr dev,
+                                 bool async)
 {
     int idx, ret = -1;
     virDomainControllerDefPtr detach = NULL;
@@ -5601,10 +5602,11 @@ int qemuDomainDetachControllerDevice(virQEMUDriverPtr driver,
 
 
 /* search for a hostdev matching dev and detach it */
-int qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
-                               virDomainObjPtr vm,
-                               virDomainDeviceDefPtr dev,
-                               bool async)
+static int
+qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
+                           virDomainObjPtr vm,
+                           virDomainDeviceDefPtr dev,
+                           bool async)
 {
     virDomainHostdevDefPtr hostdev = dev->data.hostdev;
     virDomainHostdevSubsysPtr subsys = &hostdev->source.subsys;
@@ -5716,7 +5718,7 @@ int qemuDomainDetachHostDevice(virQEMUDriverPtr driver,
 }
 
 
-int
+static int
 qemuDomainDetachShmemDevice(virQEMUDriverPtr driver,
                             virDomainObjPtr vm,
                             virDomainShmemDefPtr dev,
@@ -5770,7 +5772,7 @@ qemuDomainDetachShmemDevice(virQEMUDriverPtr driver,
 }
 
 
-int
+static int
 qemuDomainDetachWatchdog(virQEMUDriverPtr driver,
                          virDomainObjPtr vm,
                          virDomainWatchdogDefPtr dev,
@@ -5825,7 +5827,7 @@ qemuDomainDetachWatchdog(virQEMUDriverPtr driver,
 }
 
 
-int
+static int
 qemuDomainDetachRedirdevDevice(virQEMUDriverPtr driver,
                                virDomainObjPtr vm,
                                virDomainRedirdevDefPtr dev,
@@ -5869,7 +5871,7 @@ qemuDomainDetachRedirdevDevice(virQEMUDriverPtr driver,
 }
 
 
-int
+static int
 qemuDomainDetachNetDevice(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
                           virDomainDeviceDefPtr dev,
@@ -5935,10 +5937,11 @@ qemuDomainDetachNetDevice(virQEMUDriverPtr driver,
 }
 
 
-int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
-                              virDomainObjPtr vm,
-                              virDomainChrDefPtr chr,
-                              bool async)
+static int
+qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
+                          virDomainObjPtr vm,
+                          virDomainChrDefPtr chr,
+                          bool async)
 {
     int ret = -1;
     qemuDomainObjPrivatePtr priv = vm->privateData;
@@ -5992,7 +5995,7 @@ int qemuDomainDetachChrDevice(virQEMUDriverPtr driver,
 }
 
 
-int
+static int
 qemuDomainDetachRNGDevice(virQEMUDriverPtr driver,
                           virDomainObjPtr vm,
                           virDomainRNGDefPtr rng,
@@ -6038,7 +6041,7 @@ qemuDomainDetachRNGDevice(virQEMUDriverPtr driver,
 }
 
 
-int
+static int
 qemuDomainDetachMemoryDevice(virQEMUDriverPtr driver,
                              virDomainObjPtr vm,
                              virDomainMemoryDefPtr memdef,
@@ -6086,7 +6089,7 @@ qemuDomainDetachMemoryDevice(virQEMUDriverPtr driver,
 }
 
 
-int
+static int
 qemuDomainDetachInputDevice(virDomainObjPtr vm,
                             virDomainInputDefPtr def,
                             bool async)
@@ -6137,7 +6140,7 @@ qemuDomainDetachInputDevice(virDomainObjPtr vm,
 }
 
 
-int
+static int
 qemuDomainDetachVsockDevice(virDomainObjPtr vm,
                             virDomainVsockDefPtr dev,
                             bool async)
@@ -6173,7 +6176,7 @@ qemuDomainDetachVsockDevice(virDomainObjPtr vm,
 }
 
 
-int
+static int
 qemuDomainDetachLease(virQEMUDriverPtr driver,
                       virDomainObjPtr vm,
                       virDomainLeaseDefPtr lease)
