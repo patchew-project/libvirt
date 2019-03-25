@@ -2642,6 +2642,123 @@ qemuDomainGetState(virDomainPtr dom,
 }
 
 static int
+qemuDomainGetStateParams(virDomainPtr dom,
+                         int *state,
+                         int *reason,
+                         virTypedParameterPtr *params,
+                         int *nparams,
+                         unsigned int flags)
+{
+    int ret = -1;
+    virDomainObjPtr vm;
+    qemuDomainStatePanicInfoPtr info = NULL;
+    virTypedParameterPtr par = NULL;
+    int npar = 0, maxparams = 0;
+
+    virCheckFlags(VIR_TYPED_PARAM_STRING_OKAY, -1);
+
+    if (!(vm = qemuDomObjFromDomain(dom)))
+        goto cleanup;
+
+    if (virDomainGetStateParamsEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    *state = virDomainObjGetState(vm, reason);
+
+    info = QEMU_DOMAIN_PRIVATE(vm)->panicInfo;
+
+    if (!info) {
+        if (virTypedParamsAddInt(&par, &npar, &maxparams,
+                                 VIR_DOMAIN_STATE_PARAMS_INFO_TYPE,
+                                 VIR_DOMAIN_STATE_INFO_TYPE_NONE) < 0) {
+            goto cleanup;
+        }
+    } else if (*state == VIR_DOMAIN_CRASHED &&
+               *reason == VIR_DOMAIN_CRASHED_PANICKED) {
+        switch (info->type) {
+        case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_HYPERV:
+            if (virTypedParamsAddInt(&par, &npar,
+                                     &maxparams,
+                                     VIR_DOMAIN_STATE_PARAMS_INFO_TYPE,
+                                     VIR_DOMAIN_STATE_INFO_TYPE_QEMU_HYPERV) < 0) {
+                goto cleanup;
+            }
+            if (virTypedParamsAddULLong(&par, &npar, &maxparams,
+                                        VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG1,
+                                        info->data.hyperv.arg1) < 0) {
+                goto cleanup;
+            }
+            if (virTypedParamsAddULLong(&par, &npar, &maxparams,
+                                        VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG2,
+                                        info->data.hyperv.arg2) < 0) {
+                goto cleanup;
+            }
+            if (virTypedParamsAddULLong(&par, &npar, &maxparams,
+                                        VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG3,
+                                        info->data.hyperv.arg3) < 0) {
+                goto cleanup;
+            }
+            if (virTypedParamsAddULLong(&par, &npar, &maxparams,
+                                        VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG4,
+                                        info->data.hyperv.arg4) < 0) {
+                goto cleanup;
+            }
+            if (virTypedParamsAddULLong(&par, &npar, &maxparams,
+                                        VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG5,
+                                        info->data.hyperv.arg5) < 0) {
+                goto cleanup;
+            }
+            break;
+        case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_S390:
+            if (virTypedParamsAddInt(&par, &npar, &maxparams,
+                                     VIR_DOMAIN_STATE_PARAMS_INFO_TYPE,
+                                     VIR_DOMAIN_STATE_INFO_TYPE_QEMU_S390) < 0) {
+                goto cleanup;
+            }
+            if (virTypedParamsAddInt(&par, &npar, &maxparams,
+                                     VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_CORE,
+                                     info->data.s390.core) < 0) {
+                goto cleanup;
+            }
+            if (virTypedParamsAddULLong(&par, &npar, &maxparams,
+                                        VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_PSW_MASK,
+                                        info->data.s390.psw_mask) < 0) {
+                goto cleanup;
+            }
+            if (virTypedParamsAddULLong(&par, &npar, &maxparams,
+                                        VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_PSW_ADDR,
+                                        info->data.s390.psw_addr) < 0) {
+                goto cleanup;
+            }
+            if (virTypedParamsAddString(&par, &npar, &maxparams,
+                                        VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_PSW_REASON,
+                                        info->data.s390.reason) < 0) {
+                goto cleanup;
+            }
+            break;
+        case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_NONE:
+        case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_LAST:
+            if (virTypedParamsAddInt(&par, &npar, &maxparams,
+                                     VIR_DOMAIN_STATE_PARAMS_INFO_TYPE,
+                                     VIR_DOMAIN_STATE_INFO_TYPE_NONE) < 0) {
+                goto cleanup;
+            }
+            break;
+        }
+    }
+
+    VIR_STEAL_PTR(*params, par);
+    *nparams = npar;
+    npar = 0;
+    ret = 0;
+
+ cleanup:
+    virTypedParamsFree(par, npar);
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+static int
 qemuDomainGetControlInfo(virDomainPtr dom,
                           virDomainControlInfoPtr info,
                           unsigned int flags)
@@ -22454,6 +22571,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .domainGetBlkioParameters = qemuDomainGetBlkioParameters, /* 0.9.0 */
     .domainGetInfo = qemuDomainGetInfo, /* 0.2.0 */
     .domainGetState = qemuDomainGetState, /* 0.9.2 */
+    .domainGetStateParams = qemuDomainGetStateParams, /* TODO: 5.2.0 */
     .domainGetControlInfo = qemuDomainGetControlInfo, /* 0.9.3 */
     .domainSave = qemuDomainSave, /* 0.2.0 */
     .domainSaveFlags = qemuDomainSaveFlags, /* 0.9.4 */
