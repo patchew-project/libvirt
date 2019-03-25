@@ -37,6 +37,17 @@
     <section title="New features">
       <change>
         <summary>
+          Ability to set/get additional state information
+        </summary>
+        <description>
+          Add the ability to set/get additional state information, e.g. guest
+          CPU state for crashed guests. Introduce a new extensible API
+          function, virDomainGetStateParams, and add new argument --info to
+          the virsh domstate command.
+        </description>
+      </change>
+      <change>
+        <summary>
           Add Storage Pool Capabilities output
         </summary>
         <description>
