@@ -1278,6 +1278,82 @@ int                     virDomainGetState       (virDomainPtr domain,
                                                  int *reason,
                                                  unsigned int flags);
 
+typedef enum {
+    VIR_DOMAIN_STATE_INFO_TYPE_NONE,
+    VIR_DOMAIN_STATE_INFO_TYPE_QEMU_HYPERV,
+    VIR_DOMAIN_STATE_INFO_TYPE_QEMU_S390,
+
+    VIR_DOMAIN_STATE_INFO_TYPE_LAST
+} virDomainStateInfoType;
+
+/**
+ * VIR_DOMAIN_STATE_PARAMS_INFO_TYPE:
+ * specifies the type of additional state information available
+ */
+# define VIR_DOMAIN_STATE_PARAMS_INFO_TYPE "info_type"
+
+/**
+ * VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG1:
+ * Hyper-V-specific panic state information: HV crash MSR1
+ */
+# define VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG1 "panic_hyperv_msr1"
+
+/**
+ * VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG2:
+ * Hyper-V-specific panic state information: HV crash MSR2
+ */
+# define VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG2 "panic_hyperv_msr2"
+
+/**
+ * VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG3:
+ * Hyper-V-specific panic state information: HV crash MSR3
+ */
+# define VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG3 "panic_hyperv_msr3"
+
+/**
+ * VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG4:
+ * Hyper-V-specific panic state information: HV crash MSR4
+ */
+# define VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG4 "panic_hyperv_msr4"
+
+/**
+ * VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG5:
+ * Hyper-V-specific panic state information: HV crash MSR5
+ */
+# define VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG5 "panic_hyperv_msr5"
+
+/**
+ * VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_CORE:
+ * S390-specific panic state information: panicked core
+ */
+# define VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_CORE "panic_s390_core"
+
+/**
+ * VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_PSW_MASK:
+ * S390-specific panic state information: PSW mask
+ */
+# define VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_PSW_MASK "panic_s390_psw_mask"
+
+/**
+ * VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_PSW_ADDR:
+ * S390-specific panic state information: PSW address
+ */
+# define VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_PSW_ADDR "panic_s390_psw_addr"
+
+/**
+ * VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_PSW_REASON:
+ * S390-specific panic state information: human-readable reason
+ */
+# define VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_PSW_REASON "panic_s390_reason"
+
+int                     virDomainGetStateParams(virDomainPtr domain,
+                                                int *state,
+                                                int *reason,
+                                                virTypedParameterPtr *params,
+                                                int *nparams,
+                                                unsigned int flags);
+
+
 /**
  * VIR_DOMAIN_CPU_STATS_CPUTIME:
  * cpu usage (sum of both vcpu and hypervisor usage) in nanoseconds,

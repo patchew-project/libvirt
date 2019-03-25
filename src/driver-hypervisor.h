@@ -221,6 +221,14 @@ typedef int
                         unsigned int flags);
 
 typedef int
+(*virDrvDomainGetStateParams)(virDomainPtr domain,
+                              int *state,
+                              int *reason,
+                              virTypedParameterPtr *params,
+                              int *nparams,
+                              unsigned int flags);
+
+typedef int
 (*virDrvDomainGetControlInfo)(virDomainPtr domain,
                               virDomainControlInfoPtr info,
                               unsigned int flags);
@@ -1390,6 +1398,7 @@ struct _virHypervisorDriver {
     virDrvDomainGetBlkioParameters domainGetBlkioParameters;
     virDrvDomainGetInfo domainGetInfo;
     virDrvDomainGetState domainGetState;
+    virDrvDomainGetStateParams domainGetStateParams;
     virDrvDomainGetControlInfo domainGetControlInfo;
     virDrvDomainSave domainSave;
     virDrvDomainSaveFlags domainSaveFlags;

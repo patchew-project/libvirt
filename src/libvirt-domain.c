@@ -2503,6 +2503,70 @@ virDomainGetState(virDomainPtr domain,
 
 
 /**
+ * virDomainGetStateParams:
+ * @domain: a domain object
+ * @state: returned state of the domain (one of virDomainState)
+ * @reason: returned reason which led to @state (one of virDomain*Reason)
+ * @params: where to store additional state information, must be freed by
+ *          the caller
+ * @nparams: number of items in @params
+ * @flags: bitwise-OR of virDomainGetStateFlags,
+ *         not currently used yet, callers should always pass 0
+ *
+ * Extract domain state. Each state is accompanied by a reason (if known)
+ * and optional detailed information.
+ *
+ * Possible fields returned in @params are defined by VIR_DOMAIN_STATE_PARAMS_*
+ * macros and new fields will likely be introduced in the future so callers
+ * may receive fields that they do not understand in case they talk to a newer
+ * server. The caller is responsible to free allocated memory returned in
+ * @params by calling virTypedParamsFree.
+ *
+ * Returns 0 in case of success and -1 in case of failure.
+ */
+int
+virDomainGetStateParams(virDomainPtr domain,
+                        int *state,
+                        int *reason,
+                        virTypedParameterPtr *params,
+                        int *nparams,
+                        unsigned int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "params=%p, nparams=%p, flags=0x%x",
+                     params, nparams, flags);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    virCheckNonNullArgGoto(params, error);
+    virCheckNonNullArgGoto(nparams, error);
+
+    conn = domain->conn;
+
+    if (VIR_DRV_SUPPORTS_FEATURE(conn->driver, conn,
+                                 VIR_DRV_FEATURE_TYPED_PARAM_STRING))
+        flags |= VIR_TYPED_PARAM_STRING_OKAY;
+
+    if (conn->driver->domainGetStateParams) {
+        int ret;
+        ret = conn->driver->domainGetStateParams(domain, state, reason,
+                                                 params, nparams, flags);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+
+ error:
+    virDispatchError(domain->conn);
+    return -1;
+}
+
+
+/**
  * virDomainGetControlInfo:
  * @domain: a domain object
  * @info: pointer to a virDomainControlInfo structure allocated by the user
