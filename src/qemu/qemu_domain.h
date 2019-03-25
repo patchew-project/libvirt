@@ -308,6 +308,8 @@ struct _qemuDomainStatePanicInfo {
 };
 
 char *qemuDomainStatePanicInfoFormatMsg(qemuDomainStatePanicInfoPtr info);
+void qemuDomainStatePanicInfoSet(virDomainObjPtr vm,
+                                 qemuDomainStatePanicInfoPtr info);
 void qemuDomainStatePanicInfoFree(qemuDomainStatePanicInfoPtr info);
 
 typedef struct _qemuDomainObjPrivate qemuDomainObjPrivate;
@@ -417,6 +419,9 @@ struct _qemuDomainObjPrivate {
 
     /* true if global -mem-prealloc appears on cmd line */
     bool memPrealloc;
+
+    /* store extra information for panicked domain state */
+    qemuDomainStatePanicInfoPtr panicInfo;
 };
 
 # define QEMU_DOMAIN_PRIVATE(vm) \

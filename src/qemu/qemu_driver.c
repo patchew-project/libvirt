@@ -4171,6 +4171,8 @@ qemuProcessGuestPanicEventInfo(virQEMUDriverPtr driver,
     if (msg && timestamp)
         qemuDomainLogAppendMessage(driver, vm, "%s: panic %s\n", timestamp, msg);
 
+    qemuDomainStatePanicInfoSet(vm, info);
+
     VIR_FREE(timestamp);
     VIR_FREE(msg);
 }

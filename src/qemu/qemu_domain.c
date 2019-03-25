@@ -2052,6 +2052,9 @@ qemuDomainObjPrivateDataClear(qemuDomainObjPrivatePtr priv)
     virBitmapFree(priv->migrationCaps);
     priv->migrationCaps = NULL;
 
+    qemuDomainStatePanicInfoFree(priv->panicInfo);
+    priv->panicInfo = NULL;
+
     qemuDomainObjResetJob(priv);
     qemuDomainObjResetAsyncJob(priv);
 }
@@ -14066,6 +14069,39 @@ qemuDomainStatePanicInfoFormatMsg(qemuDomainStatePanicInfoPtr info)
     }
 
     return ret;
+}
+
+
+void
+qemuDomainStatePanicInfoSet(virDomainObjPtr vm,
+                            qemuDomainStatePanicInfoPtr info)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+
+    if (!priv->panicInfo && VIR_ALLOC(priv->panicInfo) < 0)
+        return;
+
+    priv->panicInfo->type = info->type;
+
+    switch (info->type) {
+    case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_HYPERV:
+        priv->panicInfo->data.hyperv.arg1 = info->data.hyperv.arg1;
+        priv->panicInfo->data.hyperv.arg2 = info->data.hyperv.arg2;
+        priv->panicInfo->data.hyperv.arg3 = info->data.hyperv.arg3;
+        priv->panicInfo->data.hyperv.arg4 = info->data.hyperv.arg4;
+        priv->panicInfo->data.hyperv.arg5 = info->data.hyperv.arg5;
+        break;
+    case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_S390:
+        priv->panicInfo->data.s390.core = info->data.s390.core;
+        priv->panicInfo->data.s390.psw_mask = info->data.s390.psw_mask;
+        priv->panicInfo->data.s390.psw_addr = info->data.s390.psw_addr;
+        ignore_value(VIR_STRDUP(priv->panicInfo->data.s390.reason,
+                                info->data.s390.reason));
+        break;
+    case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_NONE:
+    case QEMU_DOMAIN_STATE_PANIC_INFO_TYPE_LAST:
+        break;
+    }
 }
 
 
