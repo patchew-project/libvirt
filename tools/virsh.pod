@@ -1568,10 +1568,11 @@ specified in the second argument.
 
 B<Note>: Domain must be inactive and without snapshots.
 
-=item B<domstate> I<domain> [I<--reason>]
+=item B<domstate> I<domain> [I<--reason>] [I<--info>]
 
 Returns state about a domain.  I<--reason> tells virsh to also print
-reason for the state.
+reason for the state. I<--info> prints additional state information if
+available, I<--info> implies I<--reason>.
 
 =item B<domcontrol> I<domain>
 

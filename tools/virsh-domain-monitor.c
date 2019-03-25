@@ -1391,8 +1391,76 @@ static const vshCmdOptDef opts_domstate[] = {
      .type = VSH_OT_BOOL,
      .help = N_("also print reason for the state")
     },
+    {.name = "info",
+     .type = VSH_OT_BOOL,
+     .help = N_("also print reason and information for the state")
+    },
     {.name = NULL}
 };
+
+static char *
+vshStateInfoMsgFormat(virTypedParameterPtr params,
+                      int nparams)
+{
+    char *ret = NULL;
+    int type;
+
+    if (virTypedParamsGetInt(params, nparams,
+                             VIR_DOMAIN_STATE_PARAMS_INFO_TYPE, &type) < 0) {
+        return NULL;
+    }
+
+    switch (type) {
+    case VIR_DOMAIN_STATE_INFO_TYPE_QEMU_HYPERV: {
+        unsigned long long arg1, arg2, arg3, arg4, arg5;
+
+        if (virTypedParamsGetULLong(params, nparams,
+                                    VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG1, &arg1) < 0 ||
+            virTypedParamsGetULLong(params, nparams,
+                                    VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG2, &arg2) < 0 ||
+            virTypedParamsGetULLong(params, nparams,
+                                    VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG3, &arg3) < 0 ||
+            virTypedParamsGetULLong(params, nparams,
+                                    VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG4, &arg4) < 0 ||
+            virTypedParamsGetULLong(params, nparams,
+                                    VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_HYPERV_ARG5, &arg5) < 0) {
+            return NULL;
+        }
+
+        ignore_value(virAsprintf(&ret, "hyper-v: arg1='0x%llx', arg2='0x%llx', "
+                                 "arg3='0x%llx', arg4='0x%llx', arg5='0x%llx'",
+                                 arg1, arg2, arg3, arg4, arg5));
+        }
+        break;
+    case VIR_DOMAIN_STATE_INFO_TYPE_QEMU_S390: {
+        int core;
+        unsigned long long psw_mask;
+        unsigned long long psw_addr;
+        const char *reason;
+
+        if (virTypedParamsGetInt(params, nparams,
+                                 VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_CORE, &core) < 0 ||
+            virTypedParamsGetULLong(params, nparams,
+                                    VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_PSW_MASK, &psw_mask) < 0 ||
+            virTypedParamsGetULLong(params, nparams,
+                                    VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_PSW_ADDR, &psw_addr) < 0 ||
+            virTypedParamsGetString(params, nparams,
+                                    VIR_DOMAIN_STATE_PARAMS_PANIC_INFO_S390_PSW_REASON, &reason) < 0) {
+            return NULL;
+        }
+
+        ignore_value(virAsprintf(&ret, "s390: core='%d' psw-mask='0x%016llx' "
+                                 "psw-addr='0x%016llx' reason='%s'",
+                                 core, psw_mask, psw_addr, reason));
+        }
+        break;
+    case VIR_DOMAIN_STATE_INFO_TYPE_NONE:
+    case VIR_DOMAIN_STATE_INFO_TYPE_LAST:
+        break;
+    }
+
+    return ret;
+}
 
 static bool
 cmdDomstate(vshControl *ctl, const vshCmd *cmd)
@@ -1400,26 +1468,40 @@ cmdDomstate(vshControl *ctl, const vshCmd *cmd)
     virDomainPtr dom;
     bool ret = true;
     bool showReason = vshCommandOptBool(cmd, "reason");
+    bool showInfo = vshCommandOptBool(cmd, "info");
+    virTypedParameterPtr params = NULL;
+    int nparams = 0;
     int state, reason;
+    char *info = NULL;
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;
 
-    if ((state = virshDomainState(ctl, dom, &reason)) < 0) {
-        ret = false;
-        goto cleanup;
+    if (virDomainGetStateParams(dom, &state, &reason, &params, &nparams, 0) < 0) {
+        if ((state = virshDomainState(ctl, dom, &reason)) < 0) {
+            ret = false;
+            goto cleanup;
+        }
     }
 
-    if (showReason) {
-        vshPrint(ctl, "%s (%s)\n",
-                 virshDomainStateToString(state),
-                 virshDomainStateReasonToString(state, reason));
-    } else {
-        vshPrint(ctl, "%s\n",
-                 virshDomainStateToString(state));
+    vshPrint(ctl, "%s", virshDomainStateToString(state));
+
+    if (showReason || showInfo) {
+        vshPrint(ctl, " (%s", virshDomainStateReasonToString(state, reason));
+
+        if (showInfo) {
+            info = vshStateInfoMsgFormat(params, nparams);
+            if (info)
+                vshPrint(ctl, ": %s", info);
+        }
+        vshPrint(ctl, ")");
     }
+
+    vshPrint(ctl, "\n");
 
  cleanup:
+    VIR_FREE(info);
+    virTypedParamsFree(params, nparams);
     virshDomainFree(dom);
     return ret;
 }
