@@ -8131,6 +8131,49 @@ remoteStorageVolGetInfoFlags(virStorageVolPtr vol,
     return rv;
 }
 
+static int
+remoteDomainGetStateParams(virDomainPtr domain,
+                           int *state,
+                           int *reason,
+                           virTypedParameterPtr *params,
+                           int *nparams,
+                           unsigned int flags)
+{
+    int rv = -1;
+    remote_domain_get_state_params_args args;
+    remote_domain_get_state_params_ret ret;
+    struct private_data *priv = domain->conn->privateData;
+
+    remoteDriverLock(priv);
+
+    make_nonnull_domain(&args.dom, domain);
+    args.flags = flags;
+
+    memset(&ret, 0, sizeof(ret));
+    if (call(domain->conn, priv, 0, REMOTE_PROC_DOMAIN_GET_STATE_PARAMS,
+             (xdrproc_t) xdr_remote_domain_get_state_params_args, (char *) &args,
+             (xdrproc_t) xdr_remote_domain_get_state_params_ret, (char *) &ret) == -1)
+        goto done;
+
+    *state = ret.state;
+    *reason = ret.reason;
+
+    if (virTypedParamsDeserialize((virTypedParameterRemotePtr) ret.params.params_val,
+                                  ret.params.params_len,
+                                  REMOTE_DOMAIN_STATE_PARAMS_MAX,
+                                  params, nparams) < 0)
+        goto cleanup;
+
+    rv = 0;
+
+ cleanup:
+    xdr_free((xdrproc_t) xdr_remote_domain_get_state_params_ret,
+             (char *) &ret);
+ done:
+    remoteDriverUnlock(priv);
+    return rv;
+}
+
 
 /* get_nonnull_domain and get_nonnull_network turn an on-wire
  * (name, uuid) pair into virDomainPtr or virNetworkPtr object.
@@ -8326,6 +8369,7 @@ static virHypervisorDriver hypervisor_driver = {
     .domainSetPerfEvents = remoteDomainSetPerfEvents, /* 1.3.3 */
     .domainGetInfo = remoteDomainGetInfo, /* 0.3.0 */
     .domainGetState = remoteDomainGetState, /* 0.9.2 */
+    .domainGetStateParams = remoteDomainGetStateParams, /* TODO: 5.2.0 */
     .domainGetControlInfo = remoteDomainGetControlInfo, /* 0.9.3 */
     .domainSave = remoteDomainSave, /* 0.3.0 */
     .domainSaveFlags = remoteDomainSaveFlags, /* 0.9.4 */

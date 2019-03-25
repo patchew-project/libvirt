@@ -7392,3 +7392,53 @@ remoteSerializeDomainDiskErrors(virDomainDiskErrorPtr errors,
     }
     return -1;
 }
+
+static int
+remoteDispatchDomainGetStateParams(virNetServerPtr server ATTRIBUTE_UNUSED,
+                                   virNetServerClientPtr client,
+                                   virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                   virNetMessageErrorPtr rerr,
+                                   remote_domain_get_state_params_args *args,
+                                   remote_domain_get_state_params_ret *ret)
+{
+    virDomainPtr dom = NULL;
+    virTypedParameterPtr params = NULL;
+    int nparams = 0;
+    int rv = -1;
+    struct daemonClientPrivate *priv =
+        virNetServerClientGetPrivateData(client);
+
+    if (!priv->conn) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
+        goto cleanup;
+    }
+
+    if (!(dom = get_nonnull_domain(priv->conn, args->dom)))
+        goto cleanup;
+
+    if (virDomainGetStateParams(dom, &ret->state, &ret->reason, &params,
+                                &nparams, args->flags) < 0)
+        goto cleanup;
+
+    if (nparams > REMOTE_DOMAIN_STATE_PARAMS_MAX) {
+        virReportError(VIR_ERR_RPC,
+                       _("Too many state information entries '%d' for limit '%d'"),
+                       nparams, REMOTE_DOMAIN_STATE_PARAMS_MAX);
+        goto cleanup;
+    }
+
+    if (virTypedParamsSerialize(params, nparams,
+                                (virTypedParameterRemotePtr *) &ret->params.params_val,
+                                &ret->params.params_len,
+                                VIR_TYPED_PARAM_STRING_OKAY) < 0)
+        goto cleanup;
+
+    rv = 0;
+
+ cleanup:
+    if (rv < 0)
+        virNetMessageSaveError(rerr);
+    virTypedParamsFree(params, nparams);
+    virObjectUnref(dom);
+    return rv;
+}

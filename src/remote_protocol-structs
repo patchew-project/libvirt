@@ -2162,6 +2162,18 @@ struct remote_domain_get_state_ret {
         int                        state;
         int                        reason;
 };
+struct remote_domain_get_state_params_args {
+        remote_nonnull_domain      dom;
+        u_int                      flags;
+};
+struct remote_domain_get_state_params_ret {
+        int                        state;
+        int                        reason;
+        struct {
+                u_int              params_len;
+                remote_typed_param * params_val;
+        } params;
+};
 struct remote_domain_migrate_begin3_args {
         remote_nonnull_domain      dom;
         remote_string              xmlin;
