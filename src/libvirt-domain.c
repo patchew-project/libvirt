@@ -6444,7 +6444,9 @@ virConnectListDefinedDomains(virConnectPtr conn, char **const names,
  * VIR_CONNECT_LIST_DOMAINS_NO_AUTOSTART, for filtering based on autostart;
  * VIR_CONNECT_LIST_DOMAINS_HAS_SNAPSHOT and
  * VIR_CONNECT_LIST_DOMAINS_NO_SNAPSHOT, for filtering based on whether
- * a domain has snapshots.
+ * a domain has snapshots; VIR_CONNECT_LIST_DOMAINS_HAS_CHECKPOINT and
+ * VIR_CONNECT_LIST_DOMAINS_NO_CHECKPOINT, for filtering based on whether
+ * a domain has checkpoints.
  *
  * Example of usage:
  *

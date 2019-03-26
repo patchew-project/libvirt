@@ -1774,6 +1774,9 @@ typedef enum {
     VIR_DOMAIN_UNDEFINE_NVRAM              = (1 << 2), /* Also remove any
                                                           nvram file */
     VIR_DOMAIN_UNDEFINE_KEEP_NVRAM         = (1 << 3), /* Keep nvram file */
+    VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA= (1 << 4),/* If last use of domain,
+                                                          then also remove any
+                                                          checkpoint metadata */
 
     /* Future undefine control flags should come here. */
 } virDomainUndefineFlagsValues;
@@ -1812,6 +1815,9 @@ typedef enum {
 
     VIR_CONNECT_LIST_DOMAINS_HAS_SNAPSHOT   = 1 << 12,
     VIR_CONNECT_LIST_DOMAINS_NO_SNAPSHOT    = 1 << 13,
+
+    VIR_CONNECT_LIST_DOMAINS_HAS_CHECKPOINT = 1 << 14,
+    VIR_CONNECT_LIST_DOMAINS_NO_CHECKPOINT  = 1 << 15,
 } virConnectListAllDomainsFlags;
 
 int                     virConnectListAllDomains (virConnectPtr conn,
