@@ -82,6 +82,8 @@ EXTRA_DIST = \
 	capabilityschemadata \
 	commanddata \
 	cputestdata \
+	domainbackupxml2xmlin \
+	domainbackupxml2xmlout \
 	domaincapsschemadata \
 	domaincheckpointxml2xmlin \
 	domaincheckpointxml2xmlout \
