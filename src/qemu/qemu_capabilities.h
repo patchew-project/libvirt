@@ -506,6 +506,10 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     QEMU_CAPS_DEVICE_NVDIMM_UNARMED, /* -device nvdimm,unarmed= */
     QEMU_CAPS_SCSI_DISK_DEVICE_ID, /* 'device_id' property of scsi disk */
     QEMU_CAPS_VIRTIO_PCI_TRANSITIONAL, /* virtio *-pci-{non-}transitional devices */
+    QEMU_CAPS_BITMAP_MERGE, /* block-dirty-bitmap-merge */
+
+    /* 330 */
+    QEMU_CAPS_NBD_BITMAP, /* nbd-server-add supports bitmap */
 
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
