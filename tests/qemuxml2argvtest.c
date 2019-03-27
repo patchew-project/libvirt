@@ -650,7 +650,7 @@ testInfoSetArgs(struct testInfo *info,
         case ARG_QEMU_CAPS:
             if (qemuCaps || !(qemuCaps = virQEMUCapsNew()))
                 goto cleanup;
-            virQEMUCapsSetVAList(qemuCaps, argptr);
+            virQEMUCapsSetVAList(qemuCaps, &argptr);
             break;
 
         case ARG_GIC:

@@ -519,7 +519,7 @@ void virQEMUCapsSet(virQEMUCapsPtr qemuCaps,
                     virQEMUCapsFlags flag) ATTRIBUTE_NONNULL(1);
 
 void virQEMUCapsSetVAList(virQEMUCapsPtr qemuCaps,
-                          va_list list) ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+                          va_list *list) ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 void virQEMUCapsSetList(virQEMUCapsPtr qemuCaps, ...) ATTRIBUTE_NONNULL(1);
 
 void virQEMUCapsClear(virQEMUCapsPtr qemuCaps,
