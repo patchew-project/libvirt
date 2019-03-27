@@ -615,7 +615,7 @@ virDomainCheckpointRedefinePrep(virDomainPtr domain,
         return -1;
 
     other = virDomainCheckpointFindByName(vm->checkpoints, def->common.name);
-    otherdef = other ? virDomainCheckpointObjGetDef(other) : NULL;
+    otherdef = virDomainCheckpointObjGetDef(other);
     if (other) {
         if (!virDomainDefCheckABIStability(otherdef->common.dom,
                                            def->common.dom, xmlopt))
