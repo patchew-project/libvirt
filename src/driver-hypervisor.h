@@ -1,7 +1,7 @@
 /*
  * driver-hypervisor.h: entry points for hypervisor drivers
  *
- * Copyright (C) 2006-2015 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1328,6 +1328,53 @@ typedef int
                                         int *nparams,
                                         unsigned int flags);
 
+typedef virDomainCheckpointPtr
+(*virDrvDomainCheckpointCreateXML)(virDomainPtr domain,
+                                   const char *xmlDesc,
+                                   unsigned int flags);
+
+typedef char *
+(*virDrvDomainCheckpointGetXMLDesc)(virDomainCheckpointPtr checkpoint,
+                                    unsigned int flags);
+
+typedef int
+(*virDrvDomainListAllCheckpoints)(virDomainPtr domain,
+                                  virDomainCheckpointPtr **checkpoints,
+                                  unsigned int flags);
+
+typedef int
+(*virDrvDomainCheckpointListAllChildren)(virDomainCheckpointPtr checkpoint,
+                                         virDomainCheckpointPtr **children,
+                                         unsigned int flags);
+
+typedef virDomainCheckpointPtr
+(*virDrvDomainCheckpointLookupByName)(virDomainPtr domain,
+                                      const char *name,
+                                      unsigned int flags);
+
+typedef int
+(*virDrvDomainHasCurrentCheckpoint)(virDomainPtr domain,
+                                    unsigned int flags);
+
+typedef virDomainCheckpointPtr
+(*virDrvDomainCheckpointGetParent)(virDomainCheckpointPtr checkpoint,
+                                   unsigned int flags);
+
+typedef virDomainCheckpointPtr
+(*virDrvDomainCheckpointCurrent)(virDomainPtr domain,
+                                 unsigned int flags);
+
+typedef int
+(*virDrvDomainCheckpointIsCurrent)(virDomainCheckpointPtr checkpoint,
+                                   unsigned int flags);
+
+typedef int
+(*virDrvDomainCheckpointHasMetadata)(virDomainCheckpointPtr checkpoint,
+                                     unsigned int flags);
+
+typedef int
+(*virDrvDomainCheckpointDelete)(virDomainCheckpointPtr checkpoint,
+                                unsigned int flags);
 
 typedef struct _virHypervisorDriver virHypervisorDriver;
 typedef virHypervisorDriver *virHypervisorDriverPtr;
@@ -1580,6 +1627,17 @@ struct _virHypervisorDriver {
     virDrvConnectBaselineHypervisorCPU connectBaselineHypervisorCPU;
     virDrvNodeGetSEVInfo nodeGetSEVInfo;
     virDrvDomainGetLaunchSecurityInfo domainGetLaunchSecurityInfo;
+    virDrvDomainCheckpointCreateXML domainCheckpointCreateXML;
+    virDrvDomainCheckpointGetXMLDesc domainCheckpointGetXMLDesc;
+    virDrvDomainListAllCheckpoints domainListAllCheckpoints;
+    virDrvDomainCheckpointListAllChildren domainCheckpointListAllChildren;
+    virDrvDomainCheckpointLookupByName domainCheckpointLookupByName;
+    virDrvDomainHasCurrentCheckpoint domainHasCurrentCheckpoint;
+    virDrvDomainCheckpointGetParent domainCheckpointGetParent;
+    virDrvDomainCheckpointCurrent domainCheckpointCurrent;
+    virDrvDomainCheckpointIsCurrent domainCheckpointIsCurrent;
+    virDrvDomainCheckpointHasMetadata domainCheckpointHasMetadata;
+    virDrvDomainCheckpointDelete domainCheckpointDelete;
 };
 
 
