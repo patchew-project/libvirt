@@ -1,4 +1,4 @@
-## Copyright (C) 2005-2016 Red Hat, Inc.
+## Copyright (C) 2005-2018 Red Hat, Inc.
 ## Copyright (C) 2013 Yuto KAWAMURA(kawamuray) <kawamuray.dadada@gmail.com>
 ##
 ## This library is free software; you can redistribute it and/or
@@ -216,6 +216,7 @@ virt_login_shell_CFLAGS = \
 
 virsh_SOURCES = \
 		virsh.c virsh.h \
+		virsh-checkpoint.c virsh-checkpoint.h \
 		virsh-completer.c virsh-completer.h \
 		virsh-console.c virsh-console.h \
 		virsh-domain.c virsh-domain.h \

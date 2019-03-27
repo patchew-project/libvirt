@@ -3630,6 +3630,10 @@ static const vshCmdOptDef opts_undefine[] = {
      .type = VSH_OT_BOOL,
      .help = N_("remove all domain snapshot metadata, if inactive")
     },
+    {.name = "checkpoints-metadata",
+     .type = VSH_OT_BOOL,
+     .help = N_("remove all domain checkpoint metadata, if inactive")
+    },
     {.name = "nvram",
      .type = VSH_OT_BOOL,
      .help = N_("remove nvram file, if inactive")
@@ -3659,6 +3663,7 @@ cmdUndefine(vshControl *ctl, const vshCmd *cmd)
     /* User-requested actions.  */
     bool managed_save = vshCommandOptBool(cmd, "managed-save");
     bool snapshots_metadata = vshCommandOptBool(cmd, "snapshots-metadata");
+    bool checkpoints_metadata = vshCommandOptBool(cmd, "checkpoints-metadata");
     bool wipe_storage = vshCommandOptBool(cmd, "wipe-storage");
     bool remove_all_storage = vshCommandOptBool(cmd, "remove-all-storage");
     bool delete_snapshots = vshCommandOptBool(cmd, "delete-snapshots");
@@ -3667,6 +3672,7 @@ cmdUndefine(vshControl *ctl, const vshCmd *cmd)
     /* Positive if these items exist.  */
     int has_managed_save = 0;
     int has_snapshots_metadata = 0;
+    int has_checkpoints_metadata = 0;
     int has_snapshots = 0;
     /* True if undefine will not strand data, even on older servers.  */
     bool managed_save_safe = false;
@@ -3713,6 +3719,8 @@ cmdUndefine(vshControl *ctl, const vshCmd *cmd)
         flags |= VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA;
         snapshots_safe = true;
     }
+    if (checkpoints_metadata)
+        flags |= VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA;
     if (nvram)
         flags |= VIR_DOMAIN_UNDEFINE_NVRAM;
     if (keep_nvram)
@@ -3761,7 +3769,12 @@ cmdUndefine(vshControl *ctl, const vshCmd *cmd)
                 managed_save_safe = snapshots_safe = true;
             }
         }
+        has_checkpoints_metadata
+            = virDomainListAllCheckpoints(dom, NULL,
+                                          VIR_DOMAIN_CHECKPOINT_LIST_METADATA);
     }
+    /* Clear flags which older servers might reject, if they would
+     * otherwise have no effect. */
     if (!has_managed_save) {
         flags &= ~VIR_DOMAIN_UNDEFINE_MANAGED_SAVE;
         managed_save_safe = true;
@@ -3772,6 +3785,8 @@ cmdUndefine(vshControl *ctl, const vshCmd *cmd)
         flags &= ~VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA;
         snapshots_safe = true;
     }
+    if (has_checkpoints_metadata == 0)
+        flags &= ~VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA;
 
     /* Stash domain description for later use */
     if (vol_string || remove_all_storage) {
