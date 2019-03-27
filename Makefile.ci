@@ -1,0 +1,206 @@
+# -*- makefile -*-
+# vim: filetype=make
+
+HERE = $(shell pwd)
+
+# Figure out name and path to this file. This isn't
+# portable but we only care for modern GNU make
+THIS_FILE = $(abspath $(lastword $(MAKEFILE_LIST)))
+
+# The directory holding content on the host that we will
+# expose to the container.
+SCRATCHDIR = $(HERE)/ci-tree
+
+TOP = $(shell git rev-parse --show-toplevel)
+
+# The directory holding the clo%%%%ne of the git repo that
+# we will expose to the container
+HOST_SRCDIR = $(SCRATCHDIR)/src
+
+# The directory holding the source inside the
+# container. ie where we told docker to expose
+# the $GIT/ci-tree directory from the host
+CONT_SRCDIR = /src
+
+# Relative directory to perform the build in. This
+# defaults to using a separate build dir, but can be
+# set to empty string for an in-source tree build.
+CONT_VPATH = build
+
+# The directory holding the build output inside the
+# container.
+CONT_BUILDDIR = $(CONT_SRCDIR)/$(CONT_VPATH)
+
+# Can be overridden with mingw{32,64}-configure if desired
+CONFIGURE = $(CONT_SRCDIR)/configure
+
+# Default to using all possible CPUs
+SMP = $(shell getconf _NPROCESSORS_ONLN)
+
+# Any extra arguments to pass to make
+MAKE_ARGS =
+
+# Any extra arguments to pass to configure
+CONFIGURE_ARGS =
+
+# Avoid pulling submodules over the network by locally
+# cloning them
+SUBMODULES = .gnulib src/keycodemapdb
+
+IMAGE_PREFIX = quay.io/libvirt/buildenv-
+IMAGE_TAG = :master
+
+# We delete the virtual root after completion, set
+# to 0 if you need to keep it around for debugging
+CLEAN = 1
+
+# We'll always freshly clone the virtual root each
+# time in case it was not cleaned up before. Set
+# to 1 if you want to try restarting a previously
+# preserved env
+REUSE = 0
+
+# We need the container process to run with current host IDs
+# so that it can access the passed in build directory
+UID = $(shell id -u)
+GID = $(shell id -g)
+
+# Docker doesn't require the IDs you run as to exist in
+# the container's /etc/passwd & /etc/group files, but
+# if they do not, then libvirt's  'make check' will fail
+# many tests.
+#
+# We do not directly mount /etc/{passwd,group} as Docker
+# is liable to mess with SELinux labelling which will
+# then prevent the host accessing them. Copying them
+# first is safer.
+PWDB_MOUNTS = \
+	--volume $(SCRATCHDIR)/group:/etc/group:ro,z \
+	--volume $(SCRATCHDIR)/passwd:/etc/passwd:ro,z \
+	$(NULL)
+
+# Docker containers can have very large ulimits
+# for nofiles - as much as 1048576. This makes
+# libvirt very slow at exec'ing programs.
+ULIMIT_FILES = 1024
+
+# Args to use when cloning a git repo.
+#  -c  stop it complaining about checking out a random hash
+#  -q  stop it displaying progress info for local clone
+#  --local ensure we don't actually copy files
+GIT_ARGS = \
+	-c advice.detachedHead=false \
+	-q \
+	--local  \
+	$(NULL)
+
+# Args to use when running the docker env
+#   --rm      stop inactive containers getting left behind
+#   --user    we execute as the same user & group account
+#             as dev so that file ownership matches host
+#             instead of root:root
+#   --volume  to pass in the cloned git repo & config
+#   --workdir to set cwd to vpath build location
+#   --ulimit  lower files limit for performance reasons
+#   --interactive
+#   --tty     Ensure we have ability to Ctrl-C the build
+DOCKER_ARGS = \
+	--rm \
+	--user $(UID):$(GID) \
+	--interactive \
+	--tty \
+	$(PWDB_MOUNTS) \
+	--volume $(HOST_SRCDIR):$(CONT_SRCDIR):z \
+	--workdir $(CONT_SRCDIR) \
+	--ulimit nofile=$(ULIMIT_FILES):$(ULIMIT_FILES) \
+	$(NULL)
+
+check-docker:
+	@echo -n "Checking if Docker is available and running..." && \
+	docker version 1>/dev/null && echo "yes"
+
+prepare-tree:
+	@if test "$(REUSE)" != "1" ; then \
+		rm -rf ci-tree ; \
+	fi
+	@if ! test -d ci-tree ; then \
+		mkdir -p ci-tree/src; \
+		cp /etc/passwd ci-tree; \
+		cp /etc/group ci-tree; \
+		echo "Cloning $(TOP) to $(HOST_SRCDIR)"; \
+		git clone $(GIT_ARGS) $(TOP) $(HOST_SRCDIR) || exit 1; \
+		for mod in $(SUBMODULES) ; \
+		do \
+			if test -d $(TOP)/$$mod ; \
+			then \
+				echo "Cloning $(TOP)/$$mod to $(HOST_SRCDIR)/$$mod"; \
+				git clone $(GIT_ARGS) $(TOP)/$$mod $(HOST_SRCDIR)/$$mod || exit 1; \
+			fi ; \
+		done ; \
+	else \
+		test "$(CLEAN)" = "1" && rm -rf ci-tree || : ; \
+	fi
+
+# $CONFIGURE_OPTS is a env that can optionally be set in the container,
+# populated at build time from the Dockerfile. A typical use case would
+# be to pass --host/--target args to trigger cross-compilation
+#
+# This can be augmented by make local args in $(CONFIGURE_ARGS)
+ci-build@%: check-docker prepare-tree
+	docker run $(DOCKER_ARGS) $(IMAGE_PREFIX)$*$(IMAGE_TAG) \
+		/bin/bash -c '\
+		mkdir -p $(CONT_BUILDDIR) || exit 1 ; \
+		cd $(CONT_BUILDDIR) ; \
+		NOCONFIGURE=1 $(CONT_SRCDIR)/autogen.sh || exit 1 ; \
+		$(CONFIGURE) $${CONFIGURE_OPTS} $(CONFIGURE_ARGS) ; \
+		if test $$? != 0 ; \
+		then \
+			test -f config.log && cat config.log ; \
+			exit 1 ; \
+		fi; \
+		find -name test-suite.log -delete ; \
+		make -j$(SMP) $(MAKE_ARGS) ; \
+		if test $$? != 0 ; then \
+			LOGS=`find -name test-suite.log` ; \
+			if test "$${LOGS}" != "" ; then \
+				echo "=== LOG FILE(S) START ===" ; \
+				cat $${LOGS} ; \
+				echo "=== LOG FILE(S) END ===" ; \
+			fi ; \
+			exit 1 ;\
+		fi'
+	@test "$(CLEAN)" = "1" && rm -rf ci-tree || :
+
+ci-check@%:
+	$(MAKE) -f $(THIS_FILE) ci-build@$* MAKE_ARGS="check gl_public_submodule_commit="
+
+ci-shell@%: prepare-tree
+	docker run $(DOCKER_ARGS) $(IMAGE_PREFIX)$*$(IMAGE_TAG) /bin/bash
+	@test "$(CLEAN)" = "1" && rm -rf ci-tree || :
+
+ci-help:
+	@echo "Build libvirt inside docker containers used for CI"
+	@echo
+	@echo "Available targets:"
+	@echo
+	@echo "    ci-build@\$$IMAGE  - run a default 'make'"
+	@echo "    ci-check@\$$IMAGE  - run a 'make check'"
+	@echo "    ci-shell@\$$IMAGE  - run an interactive shell"
+	@echo
+	@echo "Available x86 container images:"
+	@echo
+	@echo "    centos-7"
+	@echo "    debian-8"
+	@echo "    debian-9"
+	@echo "    debian-sid"
+	@echo "    fedora-28"
+	@echo "    fedora-29"
+	@echo "    fedora-rawhide"
+	@echo "    ubuntu-16"
+	@echo "    ubuntu-18"
+	@echo
+	@echo "Available make variables:"
+	@echo
+	@echo "    CLEAN=0  - do not delete '$(SCRATCHDIR)' after completion"
+	@echo "    REUSE=1  - re-use existing '$(SCRATCHDIR)' content"
+	@echo
