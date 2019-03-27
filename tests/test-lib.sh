@@ -222,6 +222,19 @@ mkfifo_or_skip_()
   fi
 }
 
+# Create mock XDG files/directories to avoid permission problems.
+# As it points inside $test_dir_, it is automatically cleaned.
+mock_xdg_()
+{
+  export XDG_CONFIG_HOME="$test_dir_/.config"
+  export XDG_CACHE_HOME="$test_dir_/.cache"
+  export XDG_RUNTIME_HOME="XDG_CACHE_HOME"
+
+  mkdir -p "$XDG_CONFIG_HOME/libvirt" "$XDG_CONFIG_HOME/virsh"
+  mkdir -p "$XDG_CACHE_HOME/libvirt" "$XDG_CACHE_HOME/virsh"
+  mkdir -p "$XDG_RUNTIME_HOME/libvirt" "$XDG_RUNTIME_HOME/virsh"
+}
+
 test_dir_=$(pwd)
 
 this_test_() { echo "./$0" | sed 's,.*/,,'; }
