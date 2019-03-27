@@ -1,7 +1,7 @@
 /*
  * viraccessperm.h: access control permissions
  *
- * Copyright (C) 2012-2014 Red Hat, Inc.
+ * Copyright (C) 2012-2019 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -185,6 +185,12 @@ typedef enum {
      * @message: Migrating domain requires authorization
      */
     VIR_ACCESS_PERM_DOMAIN_MIGRATE,   /* Host migration */
+
+    /**
+     * @desc: Checkpoint domain
+     * @message: Checkpointing domain requires authorization
+     */
+    VIR_ACCESS_PERM_DOMAIN_CHECKPOINT,  /* Checkpoint disks */
 
     /**
      * @desc: Snapshot domain
