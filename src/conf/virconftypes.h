@@ -355,4 +355,7 @@ typedef virDomainCheckpointObj *virDomainCheckpointObjPtr;
 typedef struct _virDomainCheckpointObjList virDomainCheckpointObjList;
 typedef virDomainCheckpointObjList *virDomainCheckpointObjListPtr;
 
+typedef struct _virDomainBackupDef virDomainBackupDef;
+typedef virDomainBackupDef *virDomainBackupDefPtr;
+
 #endif /* LIBVIRT_VIRCONFTYPES_H */
