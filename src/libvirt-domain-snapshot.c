@@ -202,6 +202,10 @@ virDomainSnapshotGetConnect(virDomainSnapshotPtr snapshot)
  * block copy operation; in that case, use virDomainBlockJobAbort()
  * to stop the block copy first.
  *
+ * To create a checkpoint object that coincides with the snapshot, in
+ * order to facilitate later incremental backups from the time of the
+ * snapshot, use virDomainSnapshotCreateXML2().
+ *
  * virDomainSnapshotFree should be used to free the resources after the
  * snapshot object is no longer needed.
  *
@@ -239,6 +243,91 @@ virDomainSnapshotCreateXML(virDomainPtr domain,
     if (conn->driver->domainSnapshotCreateXML) {
         virDomainSnapshotPtr ret;
         ret = conn->driver->domainSnapshotCreateXML(domain, xmlDesc, flags);
+        if (!ret)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+ error:
+    virDispatchError(conn);
+    return NULL;
+}
+
+
+/**
+ * virDomainSnapshotCreateXML2:
+ * @domain: a domain object
+ * @xmlDesc: string containing an XML description of the domain snapshot
+ * @checkpointXml: description of a checkpoint to create or NULL
+ * @flags: bitwise-OR of virDomainSnapshotCreateFlags
+ *
+ * Creates a new snapshot of a domain based on the snapshot xml
+ * contained in xmlDesc, with a top-level element <domainsnapshot>.
+ *
+ * The @checkpointXml parameter is optional; if non-NULL, then libvirt
+ * behaves as if virDomainCheckpointCreateXML() were called to create
+ * a checkpoint atomically covering the same point in time as the
+ * snapshot, using @checkpointXml and forwarding flags
+ * VIR_DOMAIN_SNAPSHOT_CREATE_QUIESCE and
+ * VIR_DOMAIN_SNAPSHOT_CREATE_NO_METADATA.  The creation of a new
+ * checkpoint allows for future incremental backups from the time of
+ * the snapshot.  Note that some hypervisors may require a particular
+ * disk format, such as qcow2, in order to take advantage of
+ * checkpoints, while allowing arbitrary formats if checkpoints are
+ * not involved. This parameter is incompatible with the flag
+ * VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE.
+ *
+ * See virDomainSnapshotCreateXML() for the description of individual
+ * flags and general behavior.
+ *
+ * virDomainSnapshotFree() should be used to free the resources after
+ * the snapshot object is no longer needed.
+ *
+ * Returns an (opaque) new virDomainSnapshotPtr on success or NULL on
+ * failure.
+ */
+virDomainSnapshotPtr
+virDomainSnapshotCreateXML2(virDomainPtr domain,
+                            const char *xmlDesc,
+                            const char *checkpointXml,
+                            unsigned int flags)
+{
+    virConnectPtr conn;
+
+    VIR_DOMAIN_DEBUG(domain, "xmlDesc=%s, checkpointXml=%s, flags=0x%x",
+                     xmlDesc, checkpointXml, flags);
+
+    virResetLastError();
+
+    virCheckDomainReturn(domain, NULL);
+    conn = domain->conn;
+
+    virCheckNonNullArgGoto(xmlDesc, error);
+    virCheckReadOnlyGoto(conn->flags, error);
+
+    VIR_REQUIRE_FLAG_GOTO(VIR_DOMAIN_SNAPSHOT_CREATE_CURRENT,
+                          VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE,
+                          error);
+
+    VIR_EXCLUSIVE_FLAGS_GOTO(VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE,
+                             VIR_DOMAIN_SNAPSHOT_CREATE_NO_METADATA,
+                             error);
+    VIR_EXCLUSIVE_FLAGS_GOTO(VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE,
+                             VIR_DOMAIN_SNAPSHOT_CREATE_HALT,
+                             error);
+
+    if (checkpointXml && (flags & VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE)) {
+        virReportInvalidArg(checkpointXml, "%s",
+                            _("Cannot create checkpoint when redefining "
+                              "snapshot"));
+        goto error;
+    }
+
+    if (conn->driver->domainSnapshotCreateXML2) {
+        virDomainSnapshotPtr ret;
+        ret = conn->driver->domainSnapshotCreateXML2(domain, xmlDesc,
+                                                     checkpointXml, flags);
         if (!ret)
             goto error;
         return ret;

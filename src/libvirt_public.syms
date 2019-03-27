@@ -817,6 +817,9 @@ LIBVIRT_4.10.0 {
 LIBVIRT_5.2.0 {
     global:
         virConnectGetStoragePoolCapabilities;
+        virDomainBackupBegin;
+        virDomainBackupEnd;
+        virDomainBackupGetXMLDesc;
         virDomainCheckpointCreateXML;
         virDomainCheckpointCurrent;
         virDomainCheckpointDelete;
@@ -833,6 +836,7 @@ LIBVIRT_5.2.0 {
         virDomainCheckpointRef;
         virDomainHasCurrentCheckpoint;
         virDomainListAllCheckpoints;
+        virDomainSnapshotCreateXML2;
 } LIBVIRT_4.10.0;
 
 # .... define new API here using predicted next version number ....
