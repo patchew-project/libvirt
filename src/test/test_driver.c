@@ -6249,14 +6249,19 @@ testDomainSnapshotIsCurrent(virDomainSnapshotPtr snapshot,
 {
     virDomainObjPtr vm = NULL;
     int ret;
+    virDomainMomentObjPtr snap = NULL;
 
     virCheckFlags(0, -1);
 
     if (!(vm = testDomObjFromSnapshot(snapshot)))
         return -1;
 
-    ret = virDomainSnapshotIsCurrentName(vm->snapshots, snapshot->name);
+    if (!(snap = testSnapObjFromSnapshot(vm, snapshot)))
+        goto cleanup;
 
+    ret = snap == virDomainSnapshotGetCurrent(vm->snapshots);
+
+ cleanup:
     virDomainObjEndAPI(&vm);
     return ret;
 }
