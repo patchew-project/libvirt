@@ -40,18 +40,26 @@
 
 /* Helper for snapshot-create and snapshot-create-as */
 static bool
-virshSnapshotCreate(vshControl *ctl, virDomainPtr dom, const char *buffer,
-                    unsigned int flags, const char *from)
+virshSnapshotCreate(vshControl *ctl,
+                    virDomainPtr dom,
+                    const char *buffer,
+                    const char *check_buffer,
+                    unsigned int flags,
+                    const char *from)
 {
     bool ret = false;
     virDomainSnapshotPtr snapshot;
     bool halt = false;
     const char *name = NULL;
 
-    snapshot = virDomainSnapshotCreateXML(dom, buffer, flags);
+    if (check_buffer)
+        snapshot = virDomainSnapshotCreateXML2(dom, buffer, check_buffer,
+                                               flags);
+    else
+        snapshot = virDomainSnapshotCreateXML(dom, buffer, flags);
 
     /* Emulate --halt on older servers.  */
-    if (!snapshot && last_error->code == VIR_ERR_INVALID_ARG &&
+    if (!check_buffer && !snapshot && last_error->code == VIR_ERR_INVALID_ARG &&
         (flags & VIR_DOMAIN_SNAPSHOT_CREATE_HALT)) {
         int persistent;
 
@@ -117,6 +125,10 @@ static const vshCmdOptDef opts_snapshot_create[] = {
      .type = VSH_OT_STRING,
      .help = N_("domain snapshot XML")
     },
+    {.name = "checkpointxml",
+     .type = VSH_OT_STRING,
+     .help = N_("domain checkpoint XML"),
+    },
     {.name = "redefine",
      .type = VSH_OT_BOOL,
      .help = N_("redefine metadata for existing snapshot")
@@ -157,7 +169,9 @@ cmdSnapshotCreate(vshControl *ctl, const vshCmd *cmd)
     bool ret = false;
     const char *from = NULL;
     char *buffer = NULL;
+    const char *check_from = NULL;
     unsigned int flags = 0;
+    VIR_AUTOFREE(char *check_buffer) = NULL;
 
     if (vshCommandOptBool(cmd, "redefine"))
         flags |= VIR_DOMAIN_SNAPSHOT_CREATE_REDEFINE;
@@ -192,7 +206,18 @@ cmdSnapshotCreate(vshControl *ctl, const vshCmd *cmd)
         }
     }
 
-    ret = virshSnapshotCreate(ctl, dom, buffer, flags, from);
+    if (vshCommandOptStringReq(ctl, cmd, "checkpointxml", &check_from) < 0)
+        goto cleanup;
+    if (check_from) {
+        if (virFileReadAll(check_from, VSH_MAX_XML_FILE, &check_buffer) < 0) {
+            vshSaveLibvirtError();
+            goto cleanup;
+        }
+    }
+
+    ret = virshSnapshotCreate(ctl, dom, buffer, check_buffer, flags, from);
+    if (ret && check_buffer)
+        vshPrintExtra(ctl, _("checkpoint created from '%s'\n"), check_from);
 
  cleanup:
     VIR_FREE(buffer);
@@ -434,7 +459,7 @@ cmdSnapshotCreateAs(vshControl *ctl, const vshCmd *cmd)
         goto cleanup;
     }
 
-    ret = virshSnapshotCreate(ctl, dom, buffer, flags, NULL);
+    ret = virshSnapshotCreate(ctl, dom, buffer, NULL, flags, NULL);
 
  cleanup:
     virBufferFreeAndReset(&buf);
