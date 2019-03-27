@@ -32,6 +32,8 @@
 /* FIXME: using virObject would allow us to not need this */
 #include "snapshot_conf.h"
 #include "virdomainsnapshotobjlist.h"
+#include "checkpoint_conf.h"
+#include "virdomaincheckpointobjlist.h"
 
 #define VIR_FROM_THIS VIR_FROM_DOMAIN
 
@@ -197,7 +199,21 @@ virDomainMomentObjNew(void)
 
 
 static void
-virDomainMomentObjFree(virDomainMomentObjPtr moment)
+virDomainCheckpointObjFree(virDomainMomentObjPtr moment)
+{
+    if (!moment)
+        return;
+
+    VIR_DEBUG("obj=%p", moment);
+
+    /* FIXME: Make this polymorphic by inheriting from virObject */
+    virDomainCheckpointDefFree(virDomainCheckpointObjGetDef(moment));
+    VIR_FREE(moment);
+}
+
+
+static void
+virDomainSnapshotObjFree(virDomainMomentObjPtr moment)
 {
     if (!moment)
         return;
@@ -238,23 +254,35 @@ virDomainMomentAssignDef(virDomainMomentObjListPtr moments,
 
 
 static void
-virDomainMomentObjListDataFree(void *payload,
-                               const void *name ATTRIBUTE_UNUSED)
+virDomainCheckpointObjListDataFree(void *payload,
+                                   const void *name ATTRIBUTE_UNUSED)
 {
     virDomainMomentObjPtr obj = payload;
 
-    virDomainMomentObjFree(obj);
+    virDomainCheckpointObjFree(obj);
+}
+
+
+static void
+virDomainSnapshotObjListDataFree(void *payload,
+                                 const void *name ATTRIBUTE_UNUSED)
+{
+    virDomainMomentObjPtr obj = payload;
+
+    virDomainSnapshotObjFree(obj);
 }
 
 
 virDomainMomentObjListPtr
-virDomainMomentObjListNew(void)
+virDomainMomentObjListNew(bool snapshot)
 {
     virDomainMomentObjListPtr moments;
 
     if (VIR_ALLOC(moments) < 0)
         return NULL;
-    moments->objs = virHashCreate(50, virDomainMomentObjListDataFree);
+    moments->objs = virHashCreate(50,
+                                  snapshot ? virDomainSnapshotObjListDataFree :
+                                  virDomainCheckpointObjListDataFree);
     if (!moments->objs) {
         VIR_FREE(moments);
         return NULL;

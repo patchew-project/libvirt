@@ -1,7 +1,7 @@
 /*
  * virdomainobjlist.h: domain objects list utilities
  *
- * Copyright (C) 2006-2015 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  * Copyright (C) 2006-2008 Daniel P. Berrange
  * Copyright (c) 2015 SUSE LINUX Products GmbH, Nuernberg, Germany.
  *
@@ -121,13 +121,18 @@ int virDomainObjListForEach(virDomainObjListPtr doms,
                 (VIR_CONNECT_LIST_DOMAINS_HAS_SNAPSHOT | \
                  VIR_CONNECT_LIST_DOMAINS_NO_SNAPSHOT)
 
+# define VIR_CONNECT_LIST_DOMAINS_FILTERS_CHECKPOINT \
+                (VIR_CONNECT_LIST_DOMAINS_HAS_CHECKPOINT | \
+                 VIR_CONNECT_LIST_DOMAINS_NO_CHECKPOINT)
+
 # define VIR_CONNECT_LIST_DOMAINS_FILTERS_ALL \
                 (VIR_CONNECT_LIST_DOMAINS_FILTERS_ACTIVE      | \
                  VIR_CONNECT_LIST_DOMAINS_FILTERS_PERSISTENT  | \
                  VIR_CONNECT_LIST_DOMAINS_FILTERS_STATE       | \
                  VIR_CONNECT_LIST_DOMAINS_FILTERS_MANAGEDSAVE | \
                  VIR_CONNECT_LIST_DOMAINS_FILTERS_AUTOSTART   | \
-                 VIR_CONNECT_LIST_DOMAINS_FILTERS_SNAPSHOT)
+                 VIR_CONNECT_LIST_DOMAINS_FILTERS_SNAPSHOT    | \
+                 VIR_CONNECT_LIST_DOMAINS_FILTERS_CHECKPOINT)
 
 int virDomainObjListCollect(virDomainObjListPtr doms,
                             virConnectPtr conn,

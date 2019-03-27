@@ -64,7 +64,7 @@ void virDomainMomentMoveChildren(virDomainMomentObjPtr from,
 void virDomainMomentSetParent(virDomainMomentObjPtr moment,
                               virDomainMomentObjPtr parent);
 
-virDomainMomentObjListPtr virDomainMomentObjListNew(void);
+virDomainMomentObjListPtr virDomainMomentObjListNew(bool snapshot);
 void virDomainMomentObjListFree(virDomainMomentObjListPtr moments);
 
 virDomainMomentObjPtr virDomainMomentAssignDef(virDomainMomentObjListPtr moments,
