@@ -2038,6 +2038,8 @@ mymain(void)
     DO_TEST("pseries-many-buses-2",
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
             QEMU_CAPS_VIRTIO_SCSI);
+# if defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__)
+    /* XXX Dirty hack, but mocking stat on 32bits is above my skills */
     DO_TEST("pseries-hostdevs-1",
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
             QEMU_CAPS_VIRTIO_SCSI,
@@ -2050,6 +2052,7 @@ mymain(void)
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
             QEMU_CAPS_VIRTIO_SCSI,
             QEMU_CAPS_DEVICE_VFIO_PCI);
+# endif
 
     DO_TEST("pseries-features",
             QEMU_CAPS_DEVICE_SPAPR_PCI_HOST_BRIDGE,
@@ -3157,10 +3160,13 @@ mymain(void)
     DO_TEST_CAPS_ARCH_LATEST("x86_64-pc-graphics", "x86_64");
     DO_TEST_CAPS_ARCH_LATEST("x86_64-q35-graphics", "x86_64");
 
+# if defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__)
+    /* XXX Dirty hack, but mocking stat on 32bits is above my skills */
     DO_TEST_CAPS_LATEST("os-firmware-bios");
     DO_TEST_CAPS_LATEST("os-firmware-efi");
     DO_TEST_CAPS_LATEST("os-firmware-efi-secboot");
     DO_TEST_CAPS_ARCH_LATEST("aarch64-os-firmware-efi", "aarch64");
+# endif
 
     if (getenv("LIBVIRT_SKIP_CLEANUP") == NULL)
         virFileDeleteTree(fakerootdir);

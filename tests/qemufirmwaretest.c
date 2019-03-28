@@ -52,6 +52,8 @@ testParseFormatFW(const void *opaque)
 }
 
 
+#if defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__)
+/* XXX Dirty hack, but mocking stat on 32bits is above my skills */
 static int
 testFWPrecedence(const void *opaque ATTRIBUTE_UNUSED)
 {
@@ -97,6 +99,7 @@ testFWPrecedence(const void *opaque ATTRIBUTE_UNUSED)
 
     return 0;
 }
+#endif
 
 
 static int
@@ -124,8 +127,12 @@ mymain(void)
     DO_PARSE_TEST("usr/share/qemu/firmware/61-ovmf.json");
     DO_PARSE_TEST("usr/share/qemu/firmware/70-aavmf.json");
 
+
+#if defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__)
+    /* XXX Dirty hack, but mocking stat on 32bits is above my skills */
     if (virTestRun("QEMU FW precedence test", testFWPrecedence, NULL) < 0)
         ret = -1;
+#endif
 
     virFileWrapperClearPrefixes();
 
