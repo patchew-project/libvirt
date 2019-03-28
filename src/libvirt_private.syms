@@ -1866,6 +1866,7 @@ virFileGetHugepageSize;
 virFileGetMountReverseSubtree;
 virFileGetMountSubtree;
 virFileGetXAttr;
+virFileGetXAttrQuiet;
 virFileInData;
 virFileIsAbsPath;
 virFileIsCDROM;
