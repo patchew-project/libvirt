@@ -285,7 +285,7 @@ vmwareExtractVersion(struct vmware_driver *driver)
             break;
 
         case VMWARE_DRIVER_FUSION:
-            if (virAsprintf(&bin, "%s/%s", vmwarePath, "vmware-vmx") < 0)
+            if (virAsprintf(&bin, "%s/%s", vmwarePath, VMX_CONFIG_FORMAT_ARGV) < 0)
                 goto cleanup;
             break;
 
