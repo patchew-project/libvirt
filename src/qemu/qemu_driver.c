@@ -2172,8 +2172,10 @@ qemuDomainDestroyFlags(virDomainPtr dom,
     if (virDomainDestroyFlagsEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
 
-    if (virDomainObjCheckActive(vm) < 0)
+    if (!virDomainObjIsActive(vm)) {
+        ret = 0;
         goto cleanup;
+    }
 
     state = virDomainObjGetState(vm, &reason);
     starting = (state == VIR_DOMAIN_PAUSED &&
