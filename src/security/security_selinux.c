@@ -1819,6 +1819,7 @@ virSecuritySELinuxSetImageLabelInternal(virSecurityManagerPtr mgr,
     virSecurityLabelDefPtr secdef;
     virSecurityDeviceLabelDefPtr disk_seclabel;
     virSecurityDeviceLabelDefPtr parent_seclabel = NULL;
+    const bool remember = src == parent;
     int ret;
 
     if (!src->path || !virStorageSourceIsLocalStorage(src))
@@ -1839,29 +1840,29 @@ virSecuritySELinuxSetImageLabelInternal(virSecurityManagerPtr mgr,
             return 0;
 
         ret = virSecuritySELinuxSetFilecon(mgr, src->path,
-                                           disk_seclabel->label, true);
+                                           disk_seclabel->label, remember);
     } else if (parent_seclabel && (!parent_seclabel->relabel || parent_seclabel->label)) {
         if (!parent_seclabel->relabel)
             return 0;
 
         ret = virSecuritySELinuxSetFilecon(mgr, src->path,
-                                           parent_seclabel->label, true);
+                                           parent_seclabel->label, remember);
     } else if (!parent || parent == src) {
         if (src->shared) {
             ret = virSecuritySELinuxSetFileconOptional(mgr,
                                                        src->path,
                                                        data->file_context,
-                                                       true);
+                                                       remember);
         } else if (src->readonly) {
             ret = virSecuritySELinuxSetFileconOptional(mgr,
                                                        src->path,
                                                        data->content_context,
-                                                       true);
+                                                       remember);
         } else if (secdef->imagelabel) {
             ret = virSecuritySELinuxSetFileconOptional(mgr,
                                                        src->path,
                                                        secdef->imagelabel,
-                                                       true);
+                                                       remember);
         } else {
             ret = 0;
         }
@@ -1869,7 +1870,7 @@ virSecuritySELinuxSetImageLabelInternal(virSecurityManagerPtr mgr,
         ret = virSecuritySELinuxSetFileconOptional(mgr,
                                                    src->path,
                                                    data->content_context,
-                                                   true);
+                                                   remember);
     }
 
     if (ret == 1 && !disk_seclabel) {

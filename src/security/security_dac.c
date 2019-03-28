@@ -911,7 +911,8 @@ virSecurityDACSetImageLabelInternal(virSecurityManagerPtr mgr,
             return -1;
     }
 
-    return virSecurityDACSetOwnership(mgr, src, NULL, user, group, true);
+    /* Remember label only for the top level image. */
+    return virSecurityDACSetOwnership(mgr, src, NULL, user, group, src == parent);
 }
 
 
