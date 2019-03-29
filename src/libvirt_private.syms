@@ -2202,6 +2202,7 @@ virJSONValueObjectKeysNumber;
 virJSONValueObjectRemoveKey;
 virJSONValueObjectStealArray;
 virJSONValueObjectStealObject;
+virJSONValueToBuffer;
 virJSONValueToString;
 
 
