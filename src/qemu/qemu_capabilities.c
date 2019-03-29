@@ -2738,6 +2738,11 @@ virQEMUCapsProbeQMPGICCapabilities(virQEMUCapsPtr qemuCaps,
     virGICCapability *caps = NULL;
     int ncaps;
 
+    if (!(qemuCaps->arch == VIR_ARCH_AARCH64 ||
+          qemuCaps->arch == VIR_ARCH_ARMV6L ||
+          qemuCaps->arch == VIR_ARCH_ARMV7L))
+        return 0;
+
     if ((ncaps = qemuMonitorGetGICCapabilities(mon, &caps)) < 0)
         return -1;
 
@@ -2747,7 +2752,6 @@ virQEMUCapsProbeQMPGICCapabilities(virQEMUCapsPtr qemuCaps,
 }
 
 
-/* Returns -1 on error, 0 if SEV is not supported, 1 if SEV is supported */
 static int
 virQEMUCapsProbeQMPSEVCapabilities(virQEMUCapsPtr qemuCaps,
                                    qemuMonitorPtr mon)
@@ -2755,12 +2759,21 @@ virQEMUCapsProbeQMPSEVCapabilities(virQEMUCapsPtr qemuCaps,
     int rc = -1;
     virSEVCapability *caps = NULL;
 
-    if ((rc = qemuMonitorGetSEVCapabilities(mon, &caps)) <= 0)
-        return rc;
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_SEV_GUEST))
+        return 0;
+
+    if ((rc = qemuMonitorGetSEVCapabilities(mon, &caps)) < 0)
+        return -1;
+
+    /* SEV isn't actually supported */
+    if (rc == 0) {
+        virQEMUCapsClear(qemuCaps, QEMU_CAPS_SEV_GUEST);
+        return 0;
+    }
 
     virSEVCapabilitiesFree(qemuCaps->sevCapabilities);
     qemuCaps->sevCapabilities = caps;
-    return rc;
+    return 0;
 }
 
 
@@ -4270,6 +4283,9 @@ virQEMUCapsProbeQMPSchemaCapabilities(virQEMUCapsPtr qemuCaps,
     virHashTablePtr schema = NULL;
     size_t i;
 
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_QMP_SCHEMA))
+        return 0;
+
     if (!(schemareply = qemuMonitorQueryQMPSchema(mon)))
         return -1;
 
@@ -4363,29 +4379,14 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
         goto cleanup;
     if (virQEMUCapsProbeQMPMigrationCapabilities(qemuCaps, mon) < 0)
         goto cleanup;
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_QMP_SCHEMA) &&
-        virQEMUCapsProbeQMPSchemaCapabilities(qemuCaps, mon) < 0)
+    if (virQEMUCapsProbeQMPSchemaCapabilities(qemuCaps, mon) < 0)
         goto cleanup;
     if (virQEMUCapsProbeQMPHostCPU(qemuCaps, mon, false) < 0)
         goto cleanup;
-
-    /* GIC capabilities, eg. available GIC versions */
-    if ((qemuCaps->arch == VIR_ARCH_AARCH64 ||
-         qemuCaps->arch == VIR_ARCH_ARMV6L ||
-         qemuCaps->arch == VIR_ARCH_ARMV7L) &&
-        virQEMUCapsProbeQMPGICCapabilities(qemuCaps, mon) < 0)
+    if (virQEMUCapsProbeQMPGICCapabilities(qemuCaps, mon) < 0)
         goto cleanup;
-
-    /* Probe for SEV capabilities */
-    if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_SEV_GUEST)) {
-        int rc = virQEMUCapsProbeQMPSEVCapabilities(qemuCaps, mon);
-
-        if (rc < 0)
-            goto cleanup;
-
-        if (rc == 0)
-            virQEMUCapsClear(qemuCaps, QEMU_CAPS_SEV_GUEST);
-    }
+    if (virQEMUCapsProbeQMPSEVCapabilities(qemuCaps, mon) < 0)
+        goto cleanup;
 
     virQEMUCapsInitProcessCaps(qemuCaps);
 
