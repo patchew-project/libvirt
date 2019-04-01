@@ -6,6 +6,7 @@
 #include "viralloc.h"
 #include "testutils.h"
 #include "virutil.h"
+#include "virpin.h"
 
 static const char* diskNames[] = {
     "sda",  "sdb",  "sdc",  "sdd",  "sde",  "sdf",  "sdg",  "sdh",  "sdi",  "sdj",  "sdk",  "sdl",  "sdm",  "sdn",  "sdo",  "sdp",  "sdq",  "sdr",  "sds",  "sdt",  "sdu",  "sdv",  "sdw",  "sdx",  "sdy",  "sdz",
@@ -253,7 +254,35 @@ testOverflowCheckMacro(const void *data ATTRIBUTE_UNUSED)
     return 0;
 }
 
+#define TEST_PIN(pin, expect) \
+    if (virPinIsJanos((pin)) != (expect)) { \
+        if ((expect)) \
+            VIR_TEST_VERBOSE("error: string " pin " not recognized as pin\n"); \
+        else \
+            VIR_TEST_VERBOSE("error: string " pin " recognized as pin\n"); \
+        ret = -1; \
+    }
 
+static int
+testPinNumberPrefixes(const void *data ATTRIBUTE_UNUSED)
+{
+    int ret = 0;
+
+    TEST_PIN("asdf", false);
+    TEST_PIN("0", true);
+    TEST_PIN("00", false);
+    TEST_PIN("000", false);
+    TEST_PIN("12", true);
+    TEST_PIN("012", false);
+    TEST_PIN("01234", false);
+    TEST_PIN("0123", true);
+    TEST_PIN("1234", true);
+    TEST_PIN("1234", true);
+    TEST_PIN("123", true);
+    TEST_PIN("0asdf", false);
+
+    return ret;
+}
 
 
 static int
@@ -277,6 +306,7 @@ mymain(void)
     DO_TEST(ParseVersionString);
     DO_TEST(RoundValueToPowerOfTwo);
     DO_TEST(OverflowCheckMacro);
+    DO_TEST(PinNumberPrefixes);
 
     return result == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

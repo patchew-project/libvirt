@@ -2662,6 +2662,10 @@ virPidFileWrite;
 virPidFileWritePath;
 
 
+# util/virpin.h
+virPinIsJanos;
+
+
 # util/virpolkit.h
 virPolkitAgentCreate;
 virPolkitAgentDestroy;

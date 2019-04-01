@@ -148,6 +148,8 @@ UTIL_SOURCES = \
 	util/virpci.h \
 	util/virpidfile.c \
 	util/virpidfile.h \
+	util/virpin.c \
+	util/virpin.h \
 	util/virpolkit.c \
 	util/virpolkit.h \
 	util/virportallocator.c \
