@@ -28,6 +28,7 @@
 #include "virlog.h"
 #include "virstring.h"
 #include "virutil.h"
+#include "virpin.h"
 
 #if WITH_YAJL
 # include <yajl/yajl_gen.h>
@@ -426,7 +427,10 @@ virJSONValueFree(virJSONValuePtr value)
         VIR_FREE(value->data.string);
         break;
     case VIR_JSON_TYPE_NUMBER:
-        VIR_FREE(value->data.number);
+        if (virPinIsJanos(value->data.number))
+            VIR_DISPOSE_STRING(value->data.number);
+        else
+            VIR_FREE(value->data.number);
         break;
     case VIR_JSON_TYPE_BOOLEAN:
     case VIR_JSON_TYPE_NULL:

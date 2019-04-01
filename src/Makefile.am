@@ -683,6 +683,7 @@ libvirt_setuid_rpc_client_la_SOURCES = \
 		util/virlog.c \
 		util/virobject.c \
 		util/virpidfile.c \
+		util/virpin.c \
 		util/virprocess.c \
 		util/virrandom.c \
 		util/virsocketaddr.c \
@@ -890,6 +891,8 @@ libvirt_nss_la_SOURCES = \
 		util/virhashcode.h \
 		util/virjson.c \
 		util/virjson.h \
+		util/virpin.c \
+		util/virpin.h \
 		util/virkmod.c \
 		util/virkmod.h \
 		util/virlease.c \
