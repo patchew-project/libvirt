@@ -4210,7 +4210,7 @@ qemuDomainChangeGraphicsPasswords(virQEMUDriverPtr driver,
     const char *expire;
     char *validTo = NULL;
     const char *connected = NULL;
-    const char *password;
+    VIR_TMP(const char *) password;
     int ret = -1;
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
 
