@@ -79,7 +79,7 @@ virshDomainNameCompleter(vshControl *ctl,
     int ndomains = 0;
     size_t i = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(VIR_CONNECT_LIST_DOMAINS_ACTIVE |
                   VIR_CONNECT_LIST_DOMAINS_INACTIVE |
@@ -112,7 +112,6 @@ virshDomainNameCompleter(vshControl *ctl,
     for (i = 0; i < ndomains; i++)
         virshDomainFree(domains[i]);
     VIR_FREE(domains);
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -133,7 +132,7 @@ virshDomainInterfaceCompleter(vshControl *ctl,
     size_t i;
     unsigned int domainXMLFlags = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(VIRSH_DOMAIN_INTERFACE_COMPLETER_MAC, NULL);
 
@@ -171,7 +170,6 @@ virshDomainInterfaceCompleter(vshControl *ctl,
     VIR_FREE(interfaces);
     xmlFreeDoc(xmldoc);
     xmlXPathFreeContext(ctxt);
-    virStringListFree(tmp);
     return ret;
 }
 
@@ -187,7 +185,7 @@ virshDomainDiskTargetCompleter(vshControl *ctl,
     xmlNodePtr *disks = NULL;
     int ndisks;
     size_t i;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
     char **ret = NULL;
 
     virCheckFlags(0, NULL);
@@ -216,7 +214,6 @@ virshDomainDiskTargetCompleter(vshControl *ctl,
     VIR_FREE(disks);
     xmlFreeDoc(xmldoc);
     xmlXPathFreeContext(ctxt);
-    virStringListFree(tmp);
     return ret;
 }
 
@@ -231,7 +228,7 @@ virshStoragePoolNameCompleter(vshControl *ctl,
     int npools = 0;
     size_t i = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(VIR_CONNECT_LIST_STORAGE_POOLS_INACTIVE |
                   VIR_CONNECT_LIST_STORAGE_POOLS_ACTIVE |
@@ -260,7 +257,6 @@ virshStoragePoolNameCompleter(vshControl *ctl,
     for (i = 0; i < npools; i++)
         virStoragePoolFree(pools[i]);
     VIR_FREE(pools);
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -280,7 +276,7 @@ virshStorageVolNameCompleter(vshControl *ctl,
     int nvols = 0;
     size_t i = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -311,7 +307,6 @@ virshStorageVolNameCompleter(vshControl *ctl,
     for (i = 0; i < nvols; i++)
         virStorageVolFree(vols[i]);
     VIR_FREE(vols);
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -329,7 +324,7 @@ virshInterfaceNameCompleter(vshControl *ctl,
     int nifaces = 0;
     size_t i = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(VIR_CONNECT_LIST_INTERFACES_ACTIVE |
                   VIR_CONNECT_LIST_INTERFACES_INACTIVE,
@@ -357,7 +352,6 @@ virshInterfaceNameCompleter(vshControl *ctl,
     for (i = 0; i < nifaces; i++)
         virInterfaceFree(ifaces[i]);
     VIR_FREE(ifaces);
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -375,7 +369,7 @@ virshNetworkNameCompleter(vshControl *ctl,
     int nnets = 0;
     size_t i = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(VIR_CONNECT_LIST_NETWORKS_INACTIVE |
                   VIR_CONNECT_LIST_NETWORKS_ACTIVE |
@@ -404,7 +398,6 @@ virshNetworkNameCompleter(vshControl *ctl,
     for (i = 0; i < nnets; i++)
         virNetworkFree(nets[i]);
     VIR_FREE(nets);
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -419,7 +412,7 @@ virshNetworkEventNameCompleter(vshControl *ctl ATTRIBUTE_UNUSED,
 {
     size_t i = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -434,7 +427,6 @@ virshNetworkEventNameCompleter(vshControl *ctl ATTRIBUTE_UNUSED,
     VIR_STEAL_PTR(ret, tmp);
 
  cleanup:
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -452,7 +444,7 @@ virshNodeDeviceNameCompleter(vshControl *ctl,
     int ndevs = 0;
     size_t i = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -478,7 +470,6 @@ virshNodeDeviceNameCompleter(vshControl *ctl,
     for (i = 0; i < ndevs; i++)
         virNodeDeviceFree(devs[i]);
     VIR_FREE(devs);
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -496,7 +487,7 @@ virshNWFilterNameCompleter(vshControl *ctl,
     int nnwfilters = 0;
     size_t i = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -522,7 +513,6 @@ virshNWFilterNameCompleter(vshControl *ctl,
     for (i = 0; i < nnwfilters; i++)
         virNWFilterFree(nwfilters[i]);
     VIR_FREE(nwfilters);
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -540,7 +530,7 @@ virshNWFilterBindingNameCompleter(vshControl *ctl,
     int nbindings = 0;
     size_t i = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -566,7 +556,6 @@ virshNWFilterBindingNameCompleter(vshControl *ctl,
     for (i = 0; i < nbindings; i++)
         virNWFilterBindingFree(bindings[i]);
     VIR_FREE(bindings);
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -584,7 +573,7 @@ virshSecretUUIDCompleter(vshControl *ctl,
     int nsecrets = 0;
     size_t i = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -611,7 +600,6 @@ virshSecretUUIDCompleter(vshControl *ctl,
     for (i = 0; i < nsecrets; i++)
         virSecretFree(secrets[i]);
     VIR_FREE(secrets);
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -631,7 +619,7 @@ virshSnapshotNameCompleter(vshControl *ctl,
     int nsnapshots = 0;
     size_t i = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -662,7 +650,6 @@ virshSnapshotNameCompleter(vshControl *ctl,
     for (i = 0; i < nsnapshots; i++)
         virshDomainSnapshotFree(snapshots[i]);
     VIR_FREE(snapshots);
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -690,7 +677,7 @@ virshAllocpagesPagesizeCompleter(vshControl *ctl,
     char *cap_xml = NULL;
     char **ret = NULL;
     char *unit = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -744,7 +731,6 @@ virshAllocpagesPagesizeCompleter(vshControl *ctl,
     VIR_FREE(pagesize);
     VIR_FREE(cap_xml);
     VIR_FREE(unit);
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -759,7 +745,7 @@ virshSecretEventNameCompleter(vshControl *ctl ATTRIBUTE_UNUSED,
 {
     size_t i;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -774,7 +760,6 @@ virshSecretEventNameCompleter(vshControl *ctl ATTRIBUTE_UNUSED,
     VIR_STEAL_PTR(ret, tmp);
 
  cleanup:
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -789,7 +774,7 @@ virshDomainEventNameCompleter(vshControl *ctl ATTRIBUTE_UNUSED,
 {
     size_t i = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -804,7 +789,6 @@ virshDomainEventNameCompleter(vshControl *ctl ATTRIBUTE_UNUSED,
     VIR_STEAL_PTR(ret, tmp);
 
  cleanup:
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -819,7 +803,7 @@ virshPoolEventNameCompleter(vshControl *ctl ATTRIBUTE_UNUSED,
 {
     size_t i = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -834,7 +818,6 @@ virshPoolEventNameCompleter(vshControl *ctl ATTRIBUTE_UNUSED,
     VIR_STEAL_PTR(ret, tmp);
 
  cleanup:
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -858,7 +841,7 @@ virshDomainInterfaceStateCompleter(vshControl *ctl,
     xmlNodePtr *interfaces = NULL;
     char *xpath = NULL;
     char *state = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -908,7 +891,6 @@ virshDomainInterfaceStateCompleter(vshControl *ctl,
     VIR_FREE(interfaces);
     xmlXPathFreeContext(ctxt);
     xmlFreeDoc(xml);
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -923,7 +905,7 @@ virshNodedevEventNameCompleter(vshControl *ctl ATTRIBUTE_UNUSED,
 {
     size_t i = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -938,7 +920,6 @@ virshNodedevEventNameCompleter(vshControl *ctl ATTRIBUTE_UNUSED,
     VIR_STEAL_PTR(ret, tmp);
 
  cleanup:
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -959,7 +940,7 @@ virshCellnoCompleter(vshControl *ctl,
     size_t i = 0;
     char *cap_xml = NULL;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -991,7 +972,6 @@ virshCellnoCompleter(vshControl *ctl,
     VIR_FREE(cells);
     xmlFreeDoc(doc);
     VIR_FREE(cap_xml);
-    virStringListFree(tmp);
     return ret;
 
  error:
@@ -1012,7 +992,7 @@ virshDomainDeviceAliasCompleter(vshControl *ctl,
     size_t i;
     unsigned int domainXMLFlags = 0;
     char **ret = NULL;
-    char **tmp = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
 
     virCheckFlags(0, NULL);
 
@@ -1042,6 +1022,5 @@ virshDomainDeviceAliasCompleter(vshControl *ctl,
     VIR_FREE(aliases);
     xmlFreeDoc(xmldoc);
     xmlXPathFreeContext(ctxt);
-    virStringListFree(tmp);
     return ret;
 }
