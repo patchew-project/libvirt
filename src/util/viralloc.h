@@ -81,6 +81,8 @@ void virDispose(void *ptrptr, size_t count, size_t element_size, size_t *countpt
     ATTRIBUTE_NONNULL(1);
 void virDisposeString(char **strptr)
     ATTRIBUTE_NONNULL(1);
+void virClearPtr(void *varptr)
+    ATTRIBUTE_NONNULL(1);
 
 /**
  * VIR_ALLOC:
@@ -693,5 +695,18 @@ void virAllocTestHook(void (*func)(int, void*), void *data);
  */
 # define VIR_AUTOUNREF(type) \
     __attribute__((cleanup(virObjectAutoUnref))) type
+
+/**
+ * VIR_TMP:
+ * @type: type of the pointer to be NULLed automatically
+ *
+ * Marks the pointer as temporary which should be cleared when leaving scope.
+ *
+ * This macro declares a temporary variable of @type which is set to NULL when
+ * the variable is leaving scope. This keeps the stack tidy. Note that no
+ * resources are freed or cleared otherwise. @type must be a pointer.
+ */
+# define VIR_TMP(type) \
+    __attribute__((cleanup(virClearPtr))) type
 
 #endif /* LIBVIRT_VIRALLOC_H */

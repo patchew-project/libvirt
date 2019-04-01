@@ -634,3 +634,10 @@ virDisposeString(char **strptr)
 
     virDispose(strptr, strlen(*strptr), sizeof(char), NULL);
 }
+
+
+void
+virClearPtr(void *ptrptr)
+{
+    *(void **)ptrptr = NULL;
+}
