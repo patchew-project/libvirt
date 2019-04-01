@@ -91,7 +91,8 @@ testCompareStatusXMLToXMLFiles(const void *opaque)
 static int
 testInfoSetPaths(struct testQemuInfo *info,
                  const char *name,
-                 int when)
+                 int when,
+                 const char *suffix)
 {
     VIR_FREE(info->infile);
     VIR_FREE(info->outfile);
@@ -101,9 +102,10 @@ testInfoSetPaths(struct testQemuInfo *info,
         goto error;
 
     if (virAsprintf(&info->outfile,
-                    "%s/qemuxml2xmloutdata/%s-%s.xml",
+                    "%s/qemuxml2xmloutdata/%s-%s%s.xml",
                     abs_srcdir, name,
-                    when == WHEN_ACTIVE ? "active" : "inactive") < 0)
+                    when == WHEN_ACTIVE ? "active" : "inactive",
+                    suffix) < 0)
         goto error;
 
     if (!virFileExists(info->outfile)) {
@@ -175,7 +177,7 @@ mymain(void)
 
     cfg = virQEMUDriverGetConfig(&driver);
 
-# define DO_TEST_FULL(name, when, ...) \
+# define DO_TEST_INTERNAL(name, suffix, when, ...) \
     do { \
         if (testQemuInfoSetArgs(&info, capslatest, \
                                 __VA_ARGS__, \
@@ -186,7 +188,7 @@ mymain(void)
         } \
  \
         if (when & WHEN_INACTIVE) { \
-            if (testInfoSetPaths(&info, name, WHEN_INACTIVE) < 0) { \
+            if (testInfoSetPaths(&info, name, WHEN_INACTIVE, suffix) < 0) { \
                 VIR_TEST_DEBUG("Failed to generate inactive paths for '%s'", name); \
                 return -1; \
             } \
@@ -196,7 +198,7 @@ mymain(void)
         } \
  \
         if (when & WHEN_ACTIVE) { \
-            if (testInfoSetPaths(&info, name, WHEN_ACTIVE) < 0) { \
+            if (testInfoSetPaths(&info, name, WHEN_ACTIVE, suffix) < 0) { \
                 VIR_TEST_DEBUG("Failed to generate active paths for '%s'", name); \
                 return -1; \
             } \
@@ -209,9 +211,26 @@ mymain(void)
 
 # define NONE QEMU_CAPS_LAST
 
+# define DO_TEST_FULL(name, when, ...) \
+    DO_TEST_INTERNAL(name, "", when, __VA_ARGS__)
+
 # define DO_TEST(name, ...) \
     DO_TEST_FULL(name, WHEN_BOTH, ARG_QEMU_CAPS, __VA_ARGS__, QEMU_CAPS_LAST)
 
+# define DO_TEST_CAPS_INTERNAL(name, arch, ver, ...) \
+    DO_TEST_INTERNAL(name, "." arch "-" ver, WHEN_BOTH, \
+                     ARG_CAPS_ARCH, arch, \
+                     ARG_CAPS_VER, ver, \
+                     __VA_ARGS__)
+
+# define DO_TEST_CAPS_ARCH_LATEST_FULL(name, arch, ...) \
+    DO_TEST_CAPS_INTERNAL(name, arch, "latest", __VA_ARGS__)
+
+# define DO_TEST_CAPS_ARCH_LATEST(name, arch) \
+    DO_TEST_CAPS_ARCH_LATEST_FULL(name, arch, ARG_END)
+
+# define DO_TEST_CAPS_LATEST(name) \
+    DO_TEST_CAPS_ARCH_LATEST(name, "x86_64")
 
 
     /* Unset or set all envvars here that are copied in qemudBuildCommandLine
@@ -979,36 +998,14 @@ mymain(void)
     DO_TEST("smbios", NONE);
     DO_TEST("smbios-multiple-type2", NONE);
 
-    DO_TEST("os-firmware-bios",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_IOH3420,
-            QEMU_CAPS_ICH9_AHCI,
-            QEMU_CAPS_ICH9_USB_EHCI1,
-            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
-            QEMU_CAPS_DEVICE_QXL);
-    DO_TEST("os-firmware-efi",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_IOH3420,
-            QEMU_CAPS_ICH9_AHCI,
-            QEMU_CAPS_ICH9_USB_EHCI1,
-            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
-            QEMU_CAPS_DEVICE_QXL);
-    DO_TEST("os-firmware-efi-secboot",
-            QEMU_CAPS_DEVICE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_DMI_TO_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_IOH3420,
-            QEMU_CAPS_ICH9_AHCI,
-            QEMU_CAPS_ICH9_USB_EHCI1,
-            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
-            QEMU_CAPS_DEVICE_QXL);
+    DO_TEST_CAPS_LATEST("os-firmware-bios");
+    DO_TEST_CAPS_LATEST("os-firmware-efi");
+    DO_TEST_CAPS_LATEST("os-firmware-efi-secboot");
 
     DO_TEST("aarch64-aavmf-virtio-mmio",
             QEMU_CAPS_DEVICE_VIRTIO_MMIO,
             QEMU_CAPS_DEVICE_VIRTIO_RNG, QEMU_CAPS_OBJECT_RNG_RANDOM);
-    DO_TEST("aarch64-os-firmware-efi",
-            QEMU_CAPS_DEVICE_VIRTIO_MMIO);
+    DO_TEST_CAPS_ARCH_LATEST("aarch64-os-firmware-efi", "aarch64");
     DO_TEST("aarch64-virtio-pci-default",
             QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY,
             QEMU_CAPS_DEVICE_VIRTIO_MMIO,
@@ -1256,24 +1253,8 @@ mymain(void)
     DO_TEST("riscv64-virt-pci",
             QEMU_CAPS_OBJECT_GPEX);
 
-    DO_TEST("virtio-transitional",
-            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
-            QEMU_CAPS_DEVICE_PCIE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_PCIE_ROOT_PORT,
-            QEMU_CAPS_DEVICE_VIRTIO_RNG,
-            QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY,
-            QEMU_CAPS_DEVICE_VHOST_VSOCK,
-            QEMU_CAPS_VIRTIO_INPUT_HOST,
-            QEMU_CAPS_VIRTIO_SCSI);
-    DO_TEST("virtio-non-transitional",
-            QEMU_CAPS_DEVICE_VIDEO_PRIMARY,
-            QEMU_CAPS_DEVICE_PCIE_PCI_BRIDGE,
-            QEMU_CAPS_DEVICE_PCIE_ROOT_PORT,
-            QEMU_CAPS_DEVICE_VIRTIO_RNG,
-            QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY,
-            QEMU_CAPS_DEVICE_VHOST_VSOCK,
-            QEMU_CAPS_VIRTIO_INPUT_HOST,
-            QEMU_CAPS_VIRTIO_SCSI);
+    DO_TEST_CAPS_LATEST("virtio-transitional");
+    DO_TEST_CAPS_LATEST("virtio-non-transitional");
 
     if (getenv("LIBVIRT_SKIP_CLEANUP") == NULL)
         virFileDeleteTree(fakerootdir);
