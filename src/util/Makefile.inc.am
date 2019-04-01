@@ -271,6 +271,7 @@ libvirt_util_la_CFLAGS = \
 	$(NUMACTL_CFLAGS) \
 	$(GNUTLS_CFLAGS) \
 	$(ACL_CFLAGS) \
+	$(CURL_CFLAGS) \
 	$(NULL)
 libvirt_util_la_LIBADD = \
 	$(CAPNG_LIBS) \
@@ -287,6 +288,7 @@ libvirt_util_la_LIBADD = \
 	$(NUMACTL_LIBS) \
 	$(ACL_LIBS) \
 	$(GNUTLS_LIBS) \
+	$(CURL_LIBS) \
 	$(NULL)
 
 

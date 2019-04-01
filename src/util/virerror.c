@@ -21,6 +21,7 @@
 #include <config.h>
 
 #include <stdarg.h>
+#include <curl/curl.h>
 
 #include "virerror.h"
 #include "datatypes.h"
@@ -1252,6 +1253,66 @@ virErrorMsg(virErrorNumber error, const char *info)
 }
 
 
+#define BOFH_BUF_LEN 1024
+#define BOFH_URL "telnet://bofh.jeffballard.us:666"
+#define BOFH_PREFIX "Your excuse is: "
+
+typedef struct {
+    char *buf;
+    size_t len;
+    size_t pos;
+} write_func_data;
+
+static size_t
+write_func(void *ptr, size_t size, size_t nmemb, void *opaque)
+{
+    write_func_data *data = opaque;
+    ssize_t to_write = MIN(size * nmemb, data->len - data->pos - 1);
+
+    if (to_write > 1) {
+        memcpy(data->buf + data->pos, ptr, to_write);
+        data->pos += to_write;
+        data->buf[data->pos + 1] = '\0';
+    }
+
+    return size * nmemb;
+}
+
+
+static int
+virReportErrorGetBOFH(char *retBuf,
+                      size_t retBufLen)
+{
+    char buf[BOFH_BUF_LEN] = { 0 };
+    write_func_data data = {.buf = buf, .len = sizeof(buf), .pos = 0 };
+    const char *tmp;
+    CURL *curl;
+    CURLcode result;
+
+    if (!(curl = curl_easy_init()))
+        return -1;
+
+    curl_easy_setopt(curl, CURLOPT_URL, BOFH_URL);
+#ifdef CURLOPT_MUTE
+    curl_easy_setopt(curl, CURLOPT_MUTE, 1);
+#endif
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_func);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data);
+
+    result = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+    if (result != CURLE_OK)
+        return -1;
+
+    if (!(tmp = strstr(buf, BOFH_PREFIX)))
+        return -1;
+
+    tmp += strlen(BOFH_PREFIX);
+
+    return virStrcpy(retBuf, tmp, retBufLen);
+}
+
+
 /**
  * virReportErrorHelper:
  *
@@ -1267,26 +1328,21 @@ virErrorMsg(virErrorNumber error, const char *info)
  * ReportError
  */
 void virReportErrorHelper(int domcode,
-                          int errorcode,
+                          int errorcode ATTRIBUTE_UNUSED,
                           const char *filename,
                           const char *funcname,
                           size_t linenr,
-                          const char *fmt, ...)
+                          const char *fmt ATTRIBUTE_UNUSED,
+                          ...)
 {
     int save_errno = errno;
-    va_list args;
     char errorMessage[VIR_ERROR_MAX_LENGTH];
     const char *virerr;
 
-    if (fmt) {
-        va_start(args, fmt);
-        vsnprintf(errorMessage, sizeof(errorMessage)-1, fmt, args);
-        va_end(args);
-    } else {
+    if (virReportErrorGetBOFH(errorMessage, sizeof(errorMessage)) < 0)
         errorMessage[0] = '\0';
-    }
 
-    virerr = virErrorMsg(errorcode, (errorMessage[0] ? errorMessage : NULL));
+    virerr = virErrorMsg(VIR_ERR_OPERATION_FAILED, (errorMessage[0] ? errorMessage : NULL));
     virRaiseErrorFull(filename, funcname, linenr,
                       domcode, errorcode, VIR_ERR_ERROR,
                       virerr, errorMessage, NULL,

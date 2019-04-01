@@ -734,6 +734,7 @@ libvirt_setuid_rpc_client_la_LDFLAGS = \
 		$(AM_LDFLAGS) \
 		$(LIBXML_LIBS) \
 		$(SECDRIVER_LIBS) \
+		$(CURL_LIBS) \
 		$(NULL)
 libvirt_setuid_rpc_client_la_CFLAGS = \
 		-DLIBVIRT_SETUID_RPC_CLIENT \
@@ -741,6 +742,7 @@ libvirt_setuid_rpc_client_la_CFLAGS = \
 		-I$(srcdir)/rpc \
 		$(AM_CFLAGS) \
 		$(SECDRIVER_CFLAGS) \
+		$(CURL_CFLAGS) \
 		$(XDR_CFLAGS) \
 		$(NULL)
 endif WITH_SETUID_RPC_CLIENT
@@ -924,6 +926,7 @@ libvirt_nss_la_CFLAGS = \
 		-DLIBVIRT_NSS \
 		$(AM_CFLAGS) \
 		$(YAJL_CFLAGS) \
+		$(CURL_CFLAGS) \
 		$(NULL)
 libvirt_nss_la_LDFLAGS = \
 		$(AM_LDFLAGS) \
@@ -931,6 +934,7 @@ libvirt_nss_la_LDFLAGS = \
 
 libvirt_nss_la_LIBADD = \
 		$(YAJL_LIBS) \
+		$(CURL_LIBS) \
 		$(NULL)
 endif WITH_NSS
 
