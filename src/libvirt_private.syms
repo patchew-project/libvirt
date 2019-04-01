@@ -1862,6 +1862,7 @@ virFileFindResourceFull;
 virFileFlock;
 virFileFreeACLs;
 virFileGetACLs;
+virFileGetDefaultHugepage;
 virFileGetHugepageSize;
 virFileGetMountReverseSubtree;
 virFileGetMountSubtree;
