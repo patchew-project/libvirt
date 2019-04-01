@@ -1427,6 +1427,7 @@ virAllocTestOOM;
 virAllocVar;
 virDeleteElementsN;
 virDispose;
+virDisposeString;
 virExpandN;
 virFree;
 virInsertElementsN;
