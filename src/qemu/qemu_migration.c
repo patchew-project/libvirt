@@ -4799,6 +4799,7 @@ qemuMigrationSrcPerform(virQEMUDriverPtr driver,
         if (cookieinlen) {
             virReportError(VIR_ERR_OPERATION_INVALID,
                            "%s", _("received unexpected cookie with P2P migration"));
+            virDomainObjEndAPI(&vm);
             return -1;
         }
 
@@ -4813,6 +4814,7 @@ qemuMigrationSrcPerform(virQEMUDriverPtr driver,
         if (dconnuri) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            "%s", _("Unexpected dconnuri parameter with non-peer2peer migration"));
+            virDomainObjEndAPI(&vm);
             return -1;
         }
 
