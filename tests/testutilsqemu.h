@@ -109,6 +109,7 @@ int testQemuCapsIterate(const char *dirname,
 int testQemuInfoSetArgs(struct testQemuInfo *info,
                         virHashTablePtr capslatest, ...);
 void testQemuInfoClear(struct testQemuInfo *info);
+virHashTablePtr testQemuGetCapsLatest(void);
 
 # endif
 
