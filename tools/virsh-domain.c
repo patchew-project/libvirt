@@ -49,6 +49,7 @@
 #include "virsh-console.h"
 #include "virsh-domain-monitor.h"
 #include "virerror.h"
+#include "virrandom.h"
 #include "virtime.h"
 #include "virtypedparam.h"
 #include "virxml.h"
@@ -2972,7 +2973,7 @@ static const vshCmdInfo info_console[] = {
 };
 
 static const vshCmdOptDef opts_console[] = {
-    VIRSH_COMMON_OPT_DOMAIN_FULL(VIR_CONNECT_LIST_DOMAINS_ACTIVE),
+    VIRSH_COMMON_OPT_DOMAIN_OT_STRING_FULL(0, VIR_CONNECT_LIST_DOMAINS_ACTIVE),
     {.name = "devname", /* sc_prohibit_devname */
      .type = VSH_OT_STRING,
      .help = N_("character device name")
@@ -3023,6 +3024,23 @@ cmdRunConsole(vshControl *ctl, virDomainPtr dom,
     return ret;
 }
 
+static const char *
+constellation_phrases[] = {
+    "Everything is going to be all right.",
+    "Things are going to work out in the end.",
+    "Imagine pleasant nonsense", /* https://www.instagram.com/p/BuRfmkrBigI/ */
+    "Ursa Major",
+    "There, there.",
+};
+
+static void
+cmdConsoleUser(vshControl *ctl)
+{
+    uint32_t die = virRandomInt(ARRAY_CARDINALITY(constellation_phrases));
+
+    vshPrintExtra(ctl, "%s", constellation_phrases[die]);
+}
+
 static bool
 cmdConsole(vshControl *ctl, const vshCmd *cmd)
 {
@@ -3032,6 +3050,11 @@ cmdConsole(vshControl *ctl, const vshCmd *cmd)
     bool safe = vshCommandOptBool(cmd, "safe");
     unsigned int flags = 0;
     const char *name = NULL;
+
+    if (!vshCommandOptBool(cmd, "domain")) {
+        cmdConsoleUser(ctl);
+        return true;
+    }
 
     if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
         return false;
