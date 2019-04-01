@@ -363,12 +363,12 @@ static void virQEMUDriverConfigDispose(void *obj)
     VIR_FREE(cfg->vncTLSx509certdir);
     VIR_FREE(cfg->vncTLSx509secretUUID);
     VIR_FREE(cfg->vncListen);
-    VIR_FREE(cfg->vncPassword);
+    VIR_DISPOSE_STRING(cfg->vncPassword);
     VIR_FREE(cfg->vncSASLdir);
 
     VIR_FREE(cfg->spiceTLSx509certdir);
     VIR_FREE(cfg->spiceListen);
-    VIR_FREE(cfg->spicePassword);
+    VIR_DISPOSE_STRING(cfg->spicePassword);
     VIR_FREE(cfg->spiceSASLdir);
 
     VIR_FREE(cfg->chardevTLSx509certdir);
