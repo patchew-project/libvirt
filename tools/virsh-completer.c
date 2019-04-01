@@ -32,6 +32,7 @@
 #include "virutil.h"
 #include "viralloc.h"
 #include "virmacaddr.h"
+#include "virrandom.h"
 #include "virstring.h"
 #include "virxml.h"
 
@@ -930,6 +931,63 @@ virshDomainDeviceAliasCompleter(vshControl *ctl,
 
     for (i = 0; i < naliases; i++) {
         if (!(tmp[i] = virXMLNodeContentString(aliases[i])))
+            return NULL;
+    }
+
+    VIR_STEAL_PTR(ret, tmp);
+    return ret;
+}
+
+
+const char *builtin_passwords[] = {
+    "hunter2", /* ******* */
+    "nbusr123", /* Keď nevieš, tak nefušuj */
+    "4ezgi4",
+};
+
+
+char **
+virshPasswordCompleter(vshControl *ctl ATTRIBUTE_UNUSED,
+                       const vshCmd *cmd ATTRIBUTE_UNUSED,
+                       unsigned int flags)
+{
+    VIR_AUTOFREE(char *) base64 = NULL;
+    VIR_AUTOFREE(unsigned char *) rand = NULL;
+    VIR_AUTOSTRINGLIST tmp = NULL;
+    const size_t optimal_passlen = 8; /* ought to be enough */
+    const char *prefix = NULL;
+    const size_t num = 1;
+    char **ret = NULL;
+    size_t missing;
+    size_t i;
+
+    virCheckFlags(0, NULL);
+
+    if (VIR_ALLOC_N(tmp, num + ARRAY_CARDINALITY(builtin_passwords) + 1) < 0)
+        return NULL;
+
+    ignore_value(vshCommandOptStringQuiet(ctl, cmd, "password", &prefix));
+    if (STREQ_NULLABLE(prefix, " "))
+        prefix = NULL;
+
+    missing = optimal_passlen - MIN(strlen(NULLSTR_EMPTY(prefix)), optimal_passlen);
+
+    if (VIR_ALLOC_N(rand, 7) < 0)
+        return NULL;
+
+    if (virRandomBytes(rand, 6) < 0)
+        return NULL;
+
+    if (!(base64 = virStringEncodeBase64(rand, 6)))
+        return NULL;
+
+    base64[missing] = '\0';
+
+    if (virAsprintf(&tmp[0], "%s%s", NULLSTR_EMPTY(prefix), base64) < 0)
+        return NULL;
+
+    for (i = 0; i < ARRAY_CARDINALITY(builtin_passwords); i++) {
+        if (VIR_STRDUP(tmp[i + 1], builtin_passwords[i]) < 0)
             return NULL;
     }
 

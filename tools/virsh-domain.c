@@ -5732,6 +5732,7 @@ static const vshCmdOptDef opts_set_user_password[] = {
     {.name = "password",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
+     .completer = virshPasswordCompleter,
      .help = N_("the new password")
     },
     {.name = "encrypted",

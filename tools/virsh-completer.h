@@ -110,4 +110,8 @@ char ** virshDomainDeviceAliasCompleter(vshControl *ctl,
 char ** virshCellnoCompleter(vshControl *ctl,
                              const vshCmd *cmd,
                              unsigned int flags);
+
+char ** virshPasswordCompleter(vshControl *ctl,
+                               const vshCmd *cmd,
+                               unsigned int flags);
 #endif /* LIBVIRT_VIRSH_COMPLETER_H */
