@@ -63,9 +63,9 @@
  * @flags to return names of only domains in a particular state
  * that the command accepts.
  *
- * Under no circumstances should a completer output anything.
- * Neither to stdout nor to stderr. This would harm the user
- * experience.
+ * A completer may not harm the user experience by outputting
+ * anything or, through inaction, allow the user experience
+ * to be harmed by output.
  */
 
 
