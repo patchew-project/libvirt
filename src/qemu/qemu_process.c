@@ -6449,6 +6449,41 @@ qemuProcessSetupDiskThrottlingBlockdev(virQEMUDriverPtr driver,
     return ret;
 }
 
+/**
+ * qemuProcessSetupWakeupSuspendSupport:
+ *
+ * Sets up QEMU_CAPS_WAKEUP_SUSPEND_SUPPORT in case QEMU has support
+ * for the query-current-machine QMP API. This can be verified by
+ * checking for the QEMU_CAPS_QUERY_CURRENT_MACHINE cap.
+ */
+static int
+qemuProcessSetupWakeupSuspendSupport(virQEMUDriverPtr driver,
+                                       virDomainObjPtr vm,
+                                       qemuDomainAsyncJob asyncJob)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    bool enabled;
+    int ret = -1;
+
+    if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_QUERY_CURRENT_MACHINE))
+        return 0;
+
+    if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
+        return -1;
+
+    if (qemuMonitorGetWakeupSuspendSupport(qemuDomainGetMonitor(vm), &enabled) < 0)
+        goto cleanup;
+
+    if (enabled)
+        virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_WAKEUP_SUSPEND_SUPPORT);
+
+    ret = 0;
+
+ cleanup:
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        ret = -1;
+    return ret;
+}
 
 /**
  * qemuProcessLaunch:
@@ -6775,6 +6810,9 @@ qemuProcessLaunch(virConnectPtr conn,
 
     if (flags & VIR_QEMU_PROCESS_START_AUTODESTROY &&
         qemuProcessAutoDestroyAdd(driver, vm, conn) < 0)
+        goto cleanup;
+
+    if (qemuProcessSetupWakeupSuspendSupport(driver, vm, asyncJob) < 0)
         goto cleanup;
 
     ret = 0;

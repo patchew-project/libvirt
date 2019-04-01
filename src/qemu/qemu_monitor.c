@@ -4472,3 +4472,11 @@ qemuMonitorGetPRManagerInfo(qemuMonitorPtr mon,
     virHashFree(info);
     return ret;
 }
+
+int
+qemuMonitorGetWakeupSuspendSupport(qemuMonitorPtr mon, bool *enabled)
+{
+    QEMU_CHECK_MONITOR(mon);
+
+    return qemuMonitorJSONGetWakeupSuspendSupport(mon, enabled);
+}

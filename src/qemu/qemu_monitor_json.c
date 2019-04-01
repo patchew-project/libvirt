@@ -8452,3 +8452,38 @@ qemuMonitorJSONGetPRManagerInfo(qemuMonitorPtr mon,
     return ret;
 
 }
+
+int
+qemuMonitorJSONGetWakeupSuspendSupport(qemuMonitorPtr mon, bool *enabled)
+{
+    int ret = -1;
+    virJSONValuePtr cmd, data;
+    virJSONValuePtr reply = NULL;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("query-current-machine",
+                                           NULL)))
+        return -1;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckReply(cmd, reply, VIR_JSON_TYPE_OBJECT) < 0)
+        goto cleanup;
+
+    data = virJSONValueObjectGetObject(reply, "return");
+
+    if (virJSONValueObjectGetBoolean(data, "wakeup-suspend-support",
+                                     enabled)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("missing wakeup-suspend-support in "
+                         "query-current-machine response"));
+        goto cleanup;
+    }
+
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    return ret;
+}

@@ -576,4 +576,8 @@ int qemuMonitorJSONGetPRManagerInfo(qemuMonitorPtr mon,
                                     virHashTablePtr info)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
+int qemuMonitorJSONGetWakeupSuspendSupport(qemuMonitorPtr mon,
+                                           bool *enabled)
+    ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
+
 #endif /* LIBVIRT_QEMU_MONITOR_JSON_H */
