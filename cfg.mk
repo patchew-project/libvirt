@@ -1306,7 +1306,7 @@ exclude_file_name_regexp--sc_prohibit_getenv = \
   ^tests/.*\.[ch]$$
 
 exclude_file_name_regexp--sc_avoid_attribute_unused_in_header = \
-  ^(src/util/virlog\.h|src/network/bridge_driver\.h)$$
+  ^(src/util/virlog\.h|src/network/bridge_driver\.h|src/util/viralloc\.h)$$
 
 exclude_file_name_regexp--sc_prohibit_mixed_case_abbreviations = \
   ^src/(vbox/vbox_CAPI.*.h|esx/esx_vi.(c|h)|esx/esx_storage_backend_iscsi.c)$$

@@ -637,9 +637,10 @@ void virAllocTestHook(void (*func)(int, void*), void *data);
  * take pointer to @type.
  */
 # define VIR_DEFINE_AUTOCLEAN_FUNC(type, func) \
-    static inline void VIR_AUTOCLEAN_FUNC_NAME(type)(type *_ptr) \
+    static void ATTRIBUTE_UNUSED VIR_AUTOCLEAN_FUNC_NAME(type)(type *_ptr) \
     { \
         (func)(_ptr); \
+        memset(_ptr, 0, sizeof(*_ptr));\
     }
 
 /**
