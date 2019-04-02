@@ -162,7 +162,7 @@ testJSONAddRemove(const void *data)
         VIR_TEST_VERBOSE("%s", "unexpected failure adding new key\n");
         return -1;
     }
-    if (!(actual = virJSONValueToString(json, false))) {
+    if (!(actual = virJSONValueToString(json, true))) {
         VIR_TEST_VERBOSE("%s", "failed to stringize result\n");
         return -1;
     }
