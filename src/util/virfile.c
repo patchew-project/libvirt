@@ -2893,6 +2893,39 @@ virDirOpenQuiet(DIR **dirp, const char *name)
     return virDirOpenInternal(dirp, name, false, true);
 }
 
+static int
+virDirReadFixDType(DIR *dirp, struct dirent *ent)
+{
+    /* DO NOT CLOSE THIS FD */
+    const int fd = dirfd(dirp);
+    struct stat sb;
+
+    if (fd < 0)
+        return -1;
+
+    if (fstatat(fd, ent->d_name, &sb, AT_NO_AUTOMOUNT | AT_SYMLINK_NOFOLLOW) < 0)
+        return -1;
+
+    if (S_ISDIR(sb.st_mode))
+        ent->d_type = DT_DIR;
+    else if (S_ISCHR(sb.st_mode))
+        ent->d_type = DT_CHR;
+    else if (S_ISBLK(sb.st_mode))
+        ent->d_type = DT_BLK;
+    else if (S_ISREG(sb.st_mode))
+        ent->d_type = DT_REG;
+    else if (S_ISFIFO(sb.st_mode))
+        ent->d_type = DT_FIFO;
+    else if (S_ISLNK(sb.st_mode))
+        ent->d_type = DT_LNK;
+    else if (S_ISSOCK(sb.st_mode))
+        ent->d_type = DT_SOCK;
+    else
+        return -1;
+
+    return 0;
+}
+
 /**
  * virDirRead:
  * @dirp: directory to read
@@ -2926,6 +2959,17 @@ int virDirRead(DIR *dirp, struct dirent **ent, const char *name)
         }
     } while (*ent && (STREQ((*ent)->d_name, ".") ||
                       STREQ((*ent)->d_name, "..")));
+
+    if (*ent &&
+        (*ent)->d_type == DT_UNKNOWN &&
+        virDirReadFixDType(dirp, *ent) < 0) {
+        if (name)
+            virReportSystemError(errno,
+                                 _("Unable to fix d_type of '%s/%s'"),
+                                 name, (*ent)->d_name);
+        return -1;
+    }
+
     return !!*ent;
 }
 
