@@ -52,7 +52,7 @@ testJSONFromFile(const void *data)
         }
     }
 
-    if (!(actual = virJSONValueToString(injson, false)))
+    if (!(actual = virJSONValueToString(injson, true)))
         return -1;
 
     if (virTestCompareToFile(actual, outfile) < 0)
