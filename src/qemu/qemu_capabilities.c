@@ -4367,7 +4367,7 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
 
 
 int
-virQEMUCapsInitQMPMonitorTCG(virQEMUCapsPtr qemuCaps ATTRIBUTE_UNUSED,
+virQEMUCapsInitQMPMonitorTCG(virQEMUCapsPtr qemuCaps,
                              qemuMonitorPtr mon)
 {
     int ret = -1;
