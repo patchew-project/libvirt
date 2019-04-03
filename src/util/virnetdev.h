@@ -26,6 +26,7 @@
 # include "virmacaddr.h"
 # include "virpci.h"
 # include "virnetdevvlan.h"
+# include "virenum.h"
 
 # ifdef HAVE_STRUCT_IFREQ
 typedef struct ifreq virIfreq;
