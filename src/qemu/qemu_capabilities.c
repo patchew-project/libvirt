@@ -64,7 +64,6 @@ VIR_LOG_INIT("qemu.qemu_capabilities");
  */
 VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               /* 0 */
-              "kqemu",
               "vnc-colon",
               "no-reboot",
               "drive",
@@ -117,7 +116,6 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "pci-configfd",
               "nodefconfig",
               "boot-menu",
-              "enable-kqemu",
 
               /* 40 */
               "fsdev",

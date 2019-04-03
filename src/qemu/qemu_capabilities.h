@@ -46,7 +46,6 @@
  */
 typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     /* 0 */
-    X_QEMU_CAPS_KQEMU, /* Whether KQEMU is compiled in */
     X_QEMU_CAPS_VNC_COLON, /* VNC takes or address + display */
     X_QEMU_CAPS_NO_REBOOT, /* Is the -no-reboot flag available */
     X_QEMU_CAPS_DRIVE, /* Is the new -drive arg available */
@@ -99,7 +98,6 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     X_QEMU_CAPS_PCI_CONFIGFD, /* pci-assign.configfd */
     X_QEMU_CAPS_NODEFCONFIG, /* -nodefconfig */
     X_QEMU_CAPS_BOOT_MENU, /* -boot menu=on support */
-    X_QEMU_CAPS_ENABLE_KQEMU, /* -enable-kqemu flag */
 
     /* 40 */
     X_QEMU_CAPS_FSDEV, /* -fstype filesystem passthrough */
