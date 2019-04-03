@@ -23,7 +23,6 @@
 
 # include "internal.h"
 # include "virobject.h"
-# include "viralloc.h"
 
 typedef struct _virSCSIDevice virSCSIDevice;
 typedef virSCSIDevice *virSCSIDevicePtr;

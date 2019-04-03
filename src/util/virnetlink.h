@@ -22,7 +22,6 @@
 
 # include "internal.h"
 # include "virmacaddr.h"
-# include "viralloc.h"
 
 # if defined(__linux__) && defined(HAVE_LIBNL)
 

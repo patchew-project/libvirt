@@ -22,7 +22,6 @@
 # include "internal.h"
 # include "virobject.h"
 # include "virutil.h"
-# include "viralloc.h"
 
 typedef enum {
     VIR_MDEV_MODEL_TYPE_VFIO_PCI = 0,

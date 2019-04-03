@@ -23,7 +23,6 @@
 
 # include "internal.h"
 # include "domain_conf.h"
-# include "viralloc.h"
 
 typedef const char * (*virDomainCapsValToStr)(int value);
 

@@ -23,7 +23,6 @@
 
 # include "internal.h"
 # include "virobject.h"
-# include "viralloc.h"
 
 # define USB_DEVFS "/dev/bus/usb/"
 
