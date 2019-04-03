@@ -1500,59 +1500,43 @@ virVMXParseConfig(virVMXContext *ctx,
     }
 
     if (sched_cpu_affinity != NULL && STRCASENEQ(sched_cpu_affinity, "all")) {
-        const char *current = sched_cpu_affinity;
-        int number, count = 0;
+        VIR_AUTOSTRINGLIST afflist = NULL;
+        char **aff;
+        size_t naffs;
 
         def->cpumask = virBitmapNew(VIR_DOMAIN_CPUMASK_LEN);
         if (!def->cpumask)
             goto cleanup;
 
-        while (*current != '\0') {
+        if (!(afflist = virStringSplitCount(sched_cpu_affinity, ",", 0, &naffs)))
+            goto cleanup;
+
+        if (naffs < numvcpus) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Expecting VMX entry 'sched.cpu.affinity' to contain "
+                             "at least as many values as 'numvcpus' (%lld) but "
+                             "found only %zu value(s)"), numvcpus, naffs);
+            goto cleanup;
+        }
+
+        for (aff = afflist; *aff; aff++) {
+            const char *current = *aff;
+            unsigned int number;
+            int rc;
+
+            virSkipSpaces(&current);
+            rc = virStrToLong_uip(current, (char **) &current, 10, &number);
             virSkipSpaces(&current);
 
-            number = virParseNumber(&current);
-
-            if (number < 0) {
+            if (rc < 0 || *current != '\0') {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
                                _("Expecting VMX entry 'sched.cpu.affinity' to be "
                                  "a comma separated list of unsigned integers but "
                                  "found '%s'"), sched_cpu_affinity);
-                goto cleanup;
-            }
-
-            if (number >= VIR_DOMAIN_CPUMASK_LEN) {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("VMX entry 'sched.cpu.affinity' contains a %d, "
-                                 "this value is too large"), number);
                 goto cleanup;
             }
 
             ignore_value(virBitmapSetBit(def->cpumask, number));
-            ++count;
-
-            virSkipSpaces(&current);
-
-            if (*current == ',') {
-                ++current;
-            } else if (*current == '\0') {
-                break;
-            } else {
-                virReportError(VIR_ERR_INTERNAL_ERROR,
-                               _("Expecting VMX entry 'sched.cpu.affinity' to be "
-                                 "a comma separated list of unsigned integers but "
-                                 "found '%s'"), sched_cpu_affinity);
-                goto cleanup;
-            }
-
-            virSkipSpaces(&current);
-        }
-
-        if (count < numvcpus) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("Expecting VMX entry 'sched.cpu.affinity' to contain "
-                             "at least as many values as 'numvcpus' (%lld) but "
-                             "found only %d value(s)"), numvcpus, count);
-            goto cleanup;
         }
     }
 
