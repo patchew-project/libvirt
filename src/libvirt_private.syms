@@ -3225,7 +3225,6 @@ virMemoryMaxValue;
 virParseNumber;
 virParseOwnershipIds;
 virParseVersionString;
-virPipeReadUntilEOF;
 virScaleInteger;
 virSetBlocking;
 virSetCloseExec;
