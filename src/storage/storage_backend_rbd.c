@@ -436,7 +436,6 @@ volStorageBackendRBDGetFeatures(rbd_image_t image,
     return ret;
 }
 
-#if LIBRBD_VERSION_CODE > 265
 static int
 volStorageBackendRBDGetFlags(rbd_image_t image,
                              const char *volname,
@@ -500,31 +499,6 @@ virStorageBackendRBDSetAllocation(virStorageVolDefPtr vol,
     return ret;
 }
 
-#else
-static int
-volStorageBackendRBDGetFlags(rbd_image_t image,
-                             const char *volname,
-                             uint64_t *flags)
-{
-    *flags = 0;
-    return 0;
-}
-
-static int
-volStorageBackendRBDUseFastDiff(uint64_t features ATTRIBUTE_UNUSED,
-                                uint64_t feature_flags ATTRIBUTE_UNUSED)
-{
-    return false;
-}
-
-static int
-virStorageBackendRBDSetAllocation(virStorageVolDefPtr vol ATTRIBUTE_UNUSED,
-                                  rbd_image_t *image ATTRIBUTE_UNUSED,
-                                  rbd_image_info_t *info ATTRIBUTE_UNUSED)
-{
-    return false;
-}
-#endif
 
 static int
 volStorageBackendRBDRefreshVolInfo(virStorageVolDefPtr vol,
@@ -1087,21 +1061,8 @@ virStorageBackendRBDSnapshotFindNoDiff(rbd_image_t image,
         /* The callback will set diff to non-zero if there is a diff */
         diff = 0;
 
-/*
- * rbd_diff_iterate2() is available in versions above Ceph 0.94 (Hammer)
- * It uses a object map inside Ceph which is faster than rbd_diff_iterate()
- * which iterates all objects.
- * LIBRBD_VERSION_CODE for Ceph 0.94 is 265. In 266 and upwards diff_iterate2
- * is available
- */
-#if LIBRBD_VERSION_CODE > 265
         r = rbd_diff_iterate2(image, snaps[i].name, 0, info.size, 0, 1,
                               virStorageBackendRBDIterateCb, (void *)&diff);
-#else
-        r = rbd_diff_iterate(image, snaps[i].name, 0, info.size,
-                             virStorageBackendRBDIterateCb, (void *)&diff);
-#endif
-
         if (r < 0) {
             virReportSystemError(-r, _("failed to iterate RBD snapshot %s@%s"),
                                  imgname, snaps[i].name);
