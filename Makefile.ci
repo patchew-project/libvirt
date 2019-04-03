@@ -203,6 +203,18 @@ ci-help:
 	@echo "    fedora-rawhide"
 	@echo "    ubuntu-18"
 	@echo
+	@echo "Available cross-compiler container images:"
+	@echo
+	@echo "    debian-[9,sid]-cross-aarch64"
+	@echo "    debian-[9,sid]-cross-armv6l"
+	@echo "    debian-[9,sid]-cross-armv7l"
+	@echo "    debian-sid-cross-i686"
+	@echo "    debian-[9,sid]-cross-mips64el"
+	@echo "    debian-[9,sid]-cross-mips"
+	@echo "    debian-[9,sid]-cross-mipsel"
+	@echo "    debian-[9,sid]-cross-ppc64le"
+	@echo "    debian-[9,sid]-cross-s390x"
+	@echo
 	@echo "Available make variables:"
 	@echo
 	@echo "    CI_CLEAN=0  - do not delete '$(CI_SCRATCHDIR)' after completion"
