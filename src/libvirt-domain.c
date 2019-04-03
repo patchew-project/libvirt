@@ -2894,7 +2894,7 @@ virDomainMigrateVersion2(virDomainPtr domain,
                        _("domainMigratePrepare2 did not set uri"));
         cancelled = 1;
         /* Make sure Finish doesn't overwrite the error */
-        orig_err = virSaveLastError();
+        virErrorPreserveLast(&orig_err);
         goto finish;
     }
     if (uri_out)
@@ -2909,7 +2909,7 @@ virDomainMigrateVersion2(virDomainPtr domain,
 
     /* Perform failed. Make sure Finish doesn't overwrite the error */
     if (ret < 0)
-        orig_err = virSaveLastError();
+        virErrorPreserveLast(&orig_err);
 
     /* If Perform returns < 0, then we need to cancel the VM
      * startup on the destination
@@ -3100,7 +3100,7 @@ virDomainMigrateVersion3Full(virDomainPtr domain,
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("domainMigratePrepare3 did not set uri"));
         cancelled = 1;
-        orig_err = virSaveLastError();
+        virErrorPreserveLast(&orig_err);
         goto finish;
     }
 
