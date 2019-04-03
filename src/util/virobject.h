@@ -110,6 +110,16 @@ virObjectNew(virClassPtr klass)
 bool
 virObjectUnref(void *obj);
 
+/**
+ * VIR_AUTOUNREF:
+ * @type: type of an virObject subclass to be unref'd automatically
+ *
+ * Declares a variable of @type which will be automatically unref'd when
+ * control goes out of the scope.
+ */
+# define VIR_AUTOUNREF(type) \
+    __attribute__((cleanup(virObjectAutoUnref))) type
+
 void
 virObjectAutoUnref(void *objptr);
 
