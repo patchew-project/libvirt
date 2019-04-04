@@ -154,6 +154,9 @@
       <optional>
         <ref name='hostdev'/>
       </optional>
+      <optional>
+        <ref name='rng'/>
+      </optional>
     </element>
   </define>
 
@@ -180,6 +183,13 @@
 
   <define name='hostdev'>
     <element name='hostdev'>
+      <ref name='supported'/>
+      <ref name='enum'/>
+    </element>
+  </define>
+
+  <define name='rng'>
+    <element name='rng'>
       <ref name='supported'/>
       <ref name='enum'/>
     </element>
