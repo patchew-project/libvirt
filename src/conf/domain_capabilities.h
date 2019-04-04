@@ -223,6 +223,10 @@ void virDomainCapsEnumClear(virDomainCapsEnumPtr capsEnum);
 
 char * virDomainCapsFormat(virDomainCapsPtr const caps);
 
+int virDomainCapsDeviceDefValidate(virDomainCapsPtr const caps,
+                                   const virDomainDeviceDef *dev,
+                                   const virDomainDef *def);
+
 void
 virSEVCapabilitiesFree(virSEVCapability *capabilities);
 
