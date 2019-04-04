@@ -582,6 +582,7 @@ struct _virQEMUCaps {
 
     virArch arch;
 
+    virHashTablePtr domCapsCache;
     virDomainCapsCPUModelsPtr kvmCPUModels;
     virDomainCapsCPUModelsPtr tcgCPUModels;
 
@@ -1476,6 +1477,9 @@ virQEMUCapsNew(void)
     if (!(qemuCaps->flags = virBitmapNew(QEMU_CAPS_LAST)))
         goto error;
 
+    if (!(qemuCaps->domCapsCache = virHashCreate(5, virObjectFreeHashData)))
+        goto error;
+
     return qemuCaps;
 
  error:
@@ -1628,6 +1632,7 @@ void virQEMUCapsDispose(void *obj)
     }
     VIR_FREE(qemuCaps->machineTypes);
 
+    virHashFree(qemuCaps->domCapsCache);
     virObjectUnref(qemuCaps->kvmCPUModels);
     virObjectUnref(qemuCaps->tcgCPUModels);
 
@@ -1787,6 +1792,12 @@ unsigned int virQEMUCapsGetKVMVersion(virQEMUCapsPtr qemuCaps)
 const char *virQEMUCapsGetPackage(virQEMUCapsPtr qemuCaps)
 {
     return qemuCaps->package;
+}
+
+
+virHashTablePtr virQEMUCapsGetDomainCapsCache(virQEMUCapsPtr qemuCaps)
+{
+    return qemuCaps->domCapsCache;
 }
 
 
