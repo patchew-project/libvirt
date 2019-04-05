@@ -5934,6 +5934,7 @@ qemuDomainDetachDeviceLease(virQEMUDriverPtr driver,
                             virDomainLeaseDefPtr lease)
 {
     virDomainLeaseDefPtr det_lease;
+    virObjectEventPtr event = NULL;
     int idx;
 
     if ((idx = virDomainLeaseIndex(vm->def, lease)) < 0) {
@@ -5945,6 +5946,12 @@ qemuDomainDetachDeviceLease(virQEMUDriverPtr driver,
 
     if (virDomainLockLeaseDetach(driver->lockManager, vm, lease) < 0)
         return -1;
+
+    event = virDomainEventLeaseChangeNewFromObj(vm,
+                                                VIR_CONNECT_DOMAIN_EVENT_LEASE_ACTION_DETACH,
+                                                lease->lockspace,
+                                                lease->key);
+    virObjectEventStateQueue(driver->domainEventState, event);
 
     det_lease = virDomainLeaseRemoveAt(vm->def, idx);
     virDomainLeaseDefFree(det_lease);
