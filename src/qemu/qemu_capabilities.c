@@ -46,6 +46,7 @@
 #include "qemu_capspriv.h"
 #include "qemu_qapi.h"
 #include "qemu_process.h"
+#include "qemu_firmware.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -4962,12 +4963,27 @@ virQEMUCapsFillDomainLoaderCaps(virDomainCapsLoaderPtr capsLoader,
 
 static int
 virQEMUCapsFillDomainOSCaps(virDomainCapsOSPtr os,
+                            const char *machine,
+                            virArch arch,
+                            bool privileged,
                             virFirmwarePtr *firmwares,
                             size_t nfirmwares)
 {
     virDomainCapsLoaderPtr capsLoader = &os->loader;
+    unsigned int autoFirmwares = 0;
 
     os->supported = VIR_TRISTATE_BOOL_YES;
+
+    if (qemuFirmwareGetSupported(machine, arch, privileged, &autoFirmwares) < 0)
+        return -1;
+
+    os->firmware.report = true;
+
+    if (autoFirmwares & (1 << VIR_DOMAIN_OS_DEF_FIRMWARE_BIOS))
+        VIR_DOMAIN_CAPS_ENUM_SET(os->firmware, VIR_DOMAIN_OS_DEF_FIRMWARE_BIOS);
+    if (autoFirmwares & (1 << VIR_DOMAIN_OS_DEF_FIRMWARE_EFI))
+        VIR_DOMAIN_CAPS_ENUM_SET(os->firmware, VIR_DOMAIN_OS_DEF_FIRMWARE_EFI);
+
     if (virQEMUCapsFillDomainLoaderCaps(capsLoader, firmwares, nfirmwares) < 0)
         return -1;
     return 0;
@@ -5298,6 +5314,7 @@ int
 virQEMUCapsFillDomainCaps(virCapsPtr caps,
                           virDomainCapsPtr domCaps,
                           virQEMUCapsPtr qemuCaps,
+                          bool privileged,
                           virFirmwarePtr *firmwares,
                           size_t nfirmwares)
 {
@@ -5324,7 +5341,11 @@ virQEMUCapsFillDomainCaps(virCapsPtr caps,
     domCaps->genid = virTristateBoolFromBool(
             virQEMUCapsGet(qemuCaps, QEMU_CAPS_DEVICE_VMGENID));
 
-    if (virQEMUCapsFillDomainOSCaps(os, firmwares, nfirmwares) < 0 ||
+    if (virQEMUCapsFillDomainOSCaps(os,
+                                    domCaps->machine,
+                                    domCaps->arch,
+                                    privileged,
+                                    firmwares, nfirmwares) < 0 ||
         virQEMUCapsFillDomainCPUCaps(caps, qemuCaps, domCaps) < 0 ||
         virQEMUCapsFillDomainIOThreadCaps(qemuCaps, domCaps) < 0 ||
         virQEMUCapsFillDomainDeviceDiskCaps(qemuCaps,

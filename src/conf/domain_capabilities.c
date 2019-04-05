@@ -427,6 +427,8 @@ virDomainCapsOSFormat(virBufferPtr buf,
 
     FORMAT_PROLOGUE(os);
 
+    ENUM_PROCESS(os, firmware, virDomainOsDefFirmwareTypeToString);
+
     virDomainCapsLoaderFormat(buf, loader);
 
     FORMAT_EPILOGUE(os);

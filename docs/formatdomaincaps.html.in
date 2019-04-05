@@ -119,6 +119,10 @@
 &lt;domainCapabilities&gt;
   ...
   &lt;os supported='yes'&gt;
+    &lt;enum name='firmware'&gt;
+      &lt;value&gt;bios&lt;/value&gt;
+      &lt;value&gt;efi&lt;/value&gt;
+    &lt;/enum&gt;
     &lt;loader supported='yes'&gt;
       &lt;value&gt;/usr/share/OVMF/OVMF_CODE.fd&lt;/value&gt;
       &lt;enum name='type'&gt;
@@ -134,6 +138,16 @@
   ...
 &lt;domainCapabilities&gt;
 </pre>
+
+    <p>The <code>firmware</code> enum corresponds to
+      <code>firmware</code> attribute of the <code>os</code> element.
+      Plain presence of this enum means that libvirt is capable of so
+      called firmware auto selection. The listed values then represent
+      accepted values for the domain attribute. Only values for which
+      there exists a firmware descriptor that matches machine type and
+      architecture are listed, i.e. those which won't cause a failure
+      on domain startup.
+    </p>
 
     <p>For the <code>loader</code> element, the following can occur:</p>
 

@@ -57,6 +57,7 @@ typedef struct _virDomainCapsOS virDomainCapsOS;
 typedef virDomainCapsOS *virDomainCapsOSPtr;
 struct _virDomainCapsOS {
     virTristateBool supported;
+    virDomainCapsEnum firmware;     /* Info about virDomainOsDefFirmware */
     virDomainCapsLoader loader;     /* Info about virDomainLoaderDef */
 };
 

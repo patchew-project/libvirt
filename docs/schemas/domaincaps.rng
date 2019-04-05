@@ -78,6 +78,9 @@
       <interleave>
         <ref name='supported'/>
         <optional>
+          <ref name='enum'/>
+        </optional>
+        <optional>
           <ref name='loader'/>
         </optional>
       </interleave>

@@ -6,6 +6,7 @@
   <vcpu max='248'/>
   <iothreads supported='yes'/>
   <os supported='yes'>
+    <enum name='firmware'/>
     <loader supported='yes'>
       <value>/usr/share/AAVMF/AAVMF_CODE.fd</value>
       <value>/usr/share/AAVMF/AAVMF32_CODE.fd</value>
