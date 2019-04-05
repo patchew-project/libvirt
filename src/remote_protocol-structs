@@ -2981,6 +2981,13 @@ struct remote_connect_get_storage_pool_capabilities_args {
 struct remote_connect_get_storage_pool_capabilities_ret {
         remote_nonnull_string      capabilities;
 };
+struct remote_domain_event_lease_change_msg {
+        int                        callbackID;
+        remote_nonnull_domain      dom;
+        int                        action;
+        remote_nonnull_string      locspace;
+        remote_nonnull_string      key;
+};
 enum remote_procedure {
         REMOTE_PROC_CONNECT_OPEN = 1,
         REMOTE_PROC_CONNECT_CLOSE = 2,
@@ -3385,4 +3392,5 @@ enum remote_procedure {
         REMOTE_PROC_CONNECT_LIST_ALL_NWFILTER_BINDINGS = 401,
         REMOTE_PROC_DOMAIN_SET_IOTHREAD_PARAMS = 402,
         REMOTE_PROC_CONNECT_GET_STORAGE_POOL_CAPABILITIES = 403,
+        REMOTE_PROC_DOMAIN_EVENT_LEASE_CHANGE = 404,
 };

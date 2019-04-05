@@ -3573,6 +3573,14 @@ struct remote_connect_get_storage_pool_capabilities_ret {
     remote_nonnull_string capabilities;
 };
 
+struct remote_domain_event_lease_change_msg {
+    int callbackID;
+    remote_nonnull_domain dom;
+    int action;
+    remote_nonnull_string locspace;
+    remote_nonnull_string key;
+};
+
 /*----- Protocol. -----*/
 
 /* Define the program number, protocol version and procedure numbers here. */
@@ -6342,5 +6350,11 @@ enum remote_procedure {
      * @generate: both
      * @acl: connect:read
      */
-    REMOTE_PROC_CONNECT_GET_STORAGE_POOL_CAPABILITIES = 403
+    REMOTE_PROC_CONNECT_GET_STORAGE_POOL_CAPABILITIES = 403,
+
+    /**
+     * @generate: both
+     * @acl: none
+     */
+    REMOTE_PROC_DOMAIN_EVENT_LEASE_CHANGE = 404
 };

@@ -4473,6 +4473,38 @@ typedef void (*virConnectDomainEventBlockThresholdCallback)(virConnectPtr conn,
                                                             unsigned long long excess,
                                                             void *opaque);
 
+
+typedef enum {
+    VIR_CONNECT_DOMAIN_EVENT_LEASE_ACTION_ATTACH = 1, /* lease attached */
+    VIR_CONNECT_DOMAIN_EVENT_LEASE_ACTION_DETACH = 2, /* lease detached */
+
+# ifdef VIR_ENUM_SENTINELS
+    VIR_CONNECT_DOMAIN_EVENT_LEASE_ACTION_LAST
+# endif
+} virConnectDomainEventLeaseAction;
+
+/**
+ * virConnectDomainEventLeaseChangeCallback:
+ * @conn: connection object
+ * @dom: domain on which the event occurred
+ * @action: action which occurred, one of virConnectDomainEventLeaseAction
+ * @lockspace: string identifying within which lockspace @key is held
+ * @key: unique key
+ * @opaque: application specified data
+ *
+ * The callback occurs on lease attach or detach.
+ *
+ * The callback signature to use when registering for an event of type
+ * VIR_DOMAIN_EVENT_ID_LEASE_CHANGE with virConnectDomainEventRegisterAny()
+ */
+typedef void (*virConnectDomainEventLeaseChangeCallback)(virConnectPtr conn,
+                                                         virDomainPtr dom,
+                                                         int action,
+                                                         const char *lockspace,
+                                                         const char *key,
+                                                         void *opaque);
+
+
 /**
  * VIR_DOMAIN_EVENT_CALLBACK:
  *
@@ -4515,6 +4547,7 @@ typedef enum {
     VIR_DOMAIN_EVENT_ID_DEVICE_REMOVAL_FAILED = 22, /* virConnectDomainEventDeviceRemovalFailedCallback */
     VIR_DOMAIN_EVENT_ID_METADATA_CHANGE = 23, /* virConnectDomainEventMetadataChangeCallback */
     VIR_DOMAIN_EVENT_ID_BLOCK_THRESHOLD = 24, /* virConnectDomainEventBlockThresholdCallback */
+    VIR_DOMAIN_EVENT_ID_LEASE_CHANGE = 25,    /* virConnectDomainEventLeaseChangeCallback */
 
 # ifdef VIR_ENUM_SENTINELS
     VIR_DOMAIN_EVENT_ID_LAST

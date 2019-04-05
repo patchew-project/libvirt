@@ -256,6 +256,18 @@ virDomainEventBlockThresholdNewFromDom(virDomainPtr dom,
                                        unsigned long long threshold,
                                        unsigned long long excess);
 
+virObjectEventPtr
+virDomainEventLeaseChangeNewFromObj(virDomainObjPtr obj,
+                                    int action,
+                                    const char *lockspace,
+                                    const char *key);
+
+virObjectEventPtr
+virDomainEventLeaseChangeNewFromDom(virDomainPtr dom,
+                                    int action,
+                                    const char *lockspace,
+                                    const char *key);
+
 int
 virDomainEventStateRegister(virConnectPtr conn,
                             virObjectEventStatePtr state,

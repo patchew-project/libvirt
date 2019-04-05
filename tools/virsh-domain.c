@@ -13405,6 +13405,35 @@ virshEventBlockThresholdPrint(virConnectPtr conn ATTRIBUTE_UNUSED,
 }
 
 
+VIR_ENUM_DECL(virshEventLeaseChangeAction);
+VIR_ENUM_IMPL(virshEventLeaseChangeAction,
+              VIR_CONNECT_DOMAIN_EVENT_LEASE_ACTION_LAST,
+              N_("unknown"),
+              N_("attach"),
+              N_("detach"));
+
+
+static void
+virshEventLeaseChangePrint(virConnectPtr conn ATTRIBUTE_UNUSED,
+                           virDomainPtr dom,
+                           int action,
+                           const char *lockspace,
+                           const char *key,
+                           void *opaque)
+{
+    virBuffer buf = VIR_BUFFER_INITIALIZER;
+
+    virBufferAsprintf(&buf,
+                      _("event 'lease-change' for domain %s: "
+                        "action: %s lockspace: %s key: %s\n"),
+                      virDomainGetName(dom),
+                      UNKNOWNSTR(virshEventLeaseChangeActionTypeToString(action)),
+                      lockspace, key);
+
+    virshEventPrint(opaque, &buf);
+}
+
+
 virshDomainEventCallback virshDomainEventCallbacks[] = {
     { "lifecycle",
       VIR_DOMAIN_EVENT_CALLBACK(virshEventLifecyclePrint), },
@@ -13454,6 +13483,8 @@ virshDomainEventCallback virshDomainEventCallbacks[] = {
       VIR_DOMAIN_EVENT_CALLBACK(virshEventMetadataChangePrint), },
     { "block-threshold",
       VIR_DOMAIN_EVENT_CALLBACK(virshEventBlockThresholdPrint), },
+    { "lease-change",
+      VIR_DOMAIN_EVENT_CALLBACK(virshEventLeaseChangePrint), },
 };
 verify(VIR_DOMAIN_EVENT_ID_LAST == ARRAY_CARDINALITY(virshDomainEventCallbacks));
 

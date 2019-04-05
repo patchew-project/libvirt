@@ -419,6 +419,11 @@ remoteDomainBuildEventBlockThreshold(virNetClientProgramPtr prog,
                                      void *evdata, void *opaque);
 
 static void
+remoteDomainBuildEventLeaseChange(virNetClientProgramPtr prog,
+                                  virNetClientPtr client,
+                                  void *evdata, void *opaque);
+
+static void
 remoteConnectNotifyEventConnectionClosed(virNetClientProgramPtr prog ATTRIBUTE_UNUSED,
                                          virNetClientPtr client ATTRIBUTE_UNUSED,
                                          void *evdata, void *opaque);
@@ -629,6 +634,10 @@ static virNetClientProgramEvent remoteEvents[] = {
       remoteDomainBuildEventBlockThreshold,
       sizeof(remote_domain_event_block_threshold_msg),
       (xdrproc_t)xdr_remote_domain_event_block_threshold_msg },
+    { REMOTE_PROC_DOMAIN_EVENT_LEASE_CHANGE,
+      remoteDomainBuildEventLeaseChange,
+      sizeof(remote_domain_event_lease_change_msg),
+      (xdrproc_t)xdr_remote_domain_event_lease_change_msg },
 };
 
 static void
@@ -5586,6 +5595,29 @@ remoteDomainBuildEventBlockThreshold(virNetClientProgramPtr prog ATTRIBUTE_UNUSE
 
     virObjectUnref(dom);
 
+    virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
+}
+
+
+static void
+remoteDomainBuildEventLeaseChange(virNetClientProgramPtr prog ATTRIBUTE_UNUSED,
+                                  virNetClientPtr client ATTRIBUTE_UNUSED,
+                                  void *evdata, void *opaque)
+{
+    virConnectPtr conn = opaque;
+    remote_domain_event_lease_change_msg *msg = evdata;
+    struct private_data *priv = conn->privateData;
+    virDomainPtr dom;
+    virObjectEventPtr event = NULL;
+
+    if (!(dom = get_nonnull_domain(conn, msg->dom)))
+        return;
+
+    event = virDomainEventLeaseChangeNewFromDom(dom,
+                                                msg->action,
+                                                msg->locspace,
+                                                msg->key);
+    virObjectUnref(dom);
     virObjectEventStateQueueRemote(priv->eventState, event, msg->callbackID);
 }
 

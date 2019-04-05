@@ -59,6 +59,7 @@ static virClassPtr virDomainEventJobCompletedClass;
 static virClassPtr virDomainEventDeviceRemovalFailedClass;
 static virClassPtr virDomainEventMetadataChangeClass;
 static virClassPtr virDomainEventBlockThresholdClass;
+static virClassPtr virDomainEventLeaseChangeClass;
 
 static void virDomainEventDispose(void *obj);
 static void virDomainEventLifecycleDispose(void *obj);
@@ -81,6 +82,7 @@ static void virDomainEventJobCompletedDispose(void *obj);
 static void virDomainEventDeviceRemovalFailedDispose(void *obj);
 static void virDomainEventMetadataChangeDispose(void *obj);
 static void virDomainEventBlockThresholdDispose(void *obj);
+static void virDomainEventLeaseChangeDispose(void *obj);
 
 static void
 virDomainEventDispatchDefaultFunc(virConnectPtr conn,
@@ -289,6 +291,17 @@ struct _virDomainEventBlockThreshold {
 typedef struct _virDomainEventBlockThreshold virDomainEventBlockThreshold;
 typedef virDomainEventBlockThreshold *virDomainEventBlockThresholdPtr;
 
+struct _virDomainEventLeaseChange {
+    virDomainEvent parent;
+
+    int action;
+
+    char *lockspace;
+    char *key;
+};
+typedef struct _virDomainEventLeaseChange virDomainEventLeaseChange;
+typedef virDomainEventLeaseChange *virDomainEventLeaseChangePtr;
+
 
 static int
 virDomainEventsOnceInit(void)
@@ -334,6 +347,8 @@ virDomainEventsOnceInit(void)
     if (!VIR_CLASS_NEW(virDomainEventMetadataChange, virDomainEventClass))
         return -1;
     if (!VIR_CLASS_NEW(virDomainEventBlockThreshold, virDomainEventClass))
+        return -1;
+    if (!VIR_CLASS_NEW(virDomainEventLeaseChange, virDomainEventClass))
         return -1;
     return 0;
 }
@@ -541,6 +556,17 @@ virDomainEventBlockThresholdDispose(void *obj)
 
     VIR_FREE(event->dev);
     VIR_FREE(event->path);
+}
+
+
+static void
+virDomainEventLeaseChangeDispose(void *obj)
+{
+    virDomainEventLeaseChangePtr event = obj;
+    VIR_DEBUG("obj=%p", event);
+
+    VIR_FREE(event->lockspace);
+    VIR_FREE(event->key);
 }
 
 
@@ -1672,6 +1698,55 @@ virDomainEventBlockThresholdNewFromDom(virDomainPtr dom,
 }
 
 
+static virObjectEventPtr
+virDomainEventLeaseChangeNew(int id,
+                             const char *name,
+                             unsigned char *uuid,
+                             int action,
+                             const char *lockspace,
+                             const char *key)
+{
+    virDomainEventLeaseChangePtr ev;
+
+    if (virDomainEventsInitialize() < 0)
+        return NULL;
+
+    if (!(ev = virDomainEventNew(virDomainEventLeaseChangeClass,
+                                 VIR_DOMAIN_EVENT_ID_LEASE_CHANGE,
+                                 id, name, uuid)))
+        return NULL;
+
+    if (VIR_STRDUP(ev->lockspace, lockspace) < 0 ||
+        VIR_STRDUP(ev->key, key) < 0) {
+        virObjectUnref(ev);
+        return NULL;
+    }
+    ev->action = action;
+
+    return (virObjectEventPtr)ev;
+}
+
+virObjectEventPtr
+virDomainEventLeaseChangeNewFromObj(virDomainObjPtr obj,
+                                    int action,
+                                    const char *lockspace,
+                                    const char *key)
+{
+    return virDomainEventLeaseChangeNew(obj->def->id, obj->def->name,
+                                        obj->def->uuid, action, lockspace, key);
+}
+
+virObjectEventPtr
+virDomainEventLeaseChangeNewFromDom(virDomainPtr dom,
+                                    int action,
+                                    const char *lockspace,
+                                    const char *key)
+{
+    return virDomainEventLeaseChangeNew(dom->id, dom->name, dom->uuid,
+                                        action, lockspace, key);
+}
+
+
 static void
 virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                   virObjectEventPtr event,
@@ -1955,6 +2030,20 @@ virDomainEventDispatchDefaultFunc(virConnectPtr conn,
                                                               cbopaque);
             goto cleanup;
         }
+
+    case VIR_DOMAIN_EVENT_ID_LEASE_CHANGE:
+        {
+            virDomainEventLeaseChangePtr leaseChangeEvent;
+
+            leaseChangeEvent = (virDomainEventLeaseChangePtr)event;
+            ((virConnectDomainEventLeaseChangeCallback)cb)(conn, dom,
+                                                           leaseChangeEvent->action,
+                                                           leaseChangeEvent->lockspace,
+                                                           leaseChangeEvent->key,
+                                                           cbopaque);
+            goto cleanup;
+        }
+
     case VIR_DOMAIN_EVENT_ID_LAST:
         break;
     }

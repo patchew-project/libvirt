@@ -957,6 +957,39 @@ myDomainEventBlockThresholdCallback(virConnectPtr conn ATTRIBUTE_UNUSED,
 }
 
 
+static const char *
+leaseActionTypeToStr(int action)
+{
+    switch ((virConnectDomainEventLeaseAction) action) {
+    case VIR_CONNECT_DOMAIN_EVENT_LEASE_ACTION_ATTACH:
+        return "attach";
+
+    case VIR_CONNECT_DOMAIN_EVENT_LEASE_ACTION_DETACH:
+        return "detach";
+
+    case VIR_CONNECT_DOMAIN_EVENT_LEASE_ACTION_LAST:
+        break;
+    }
+
+    return "unknown";
+}
+
+
+static int
+myDomainEventLeaseChangeCallback(virConnectPtr conn ATTRIBUTE_UNUSED,
+                                 virDomainPtr dom,
+                                 int action,
+                                 const char *lockspace,
+                                 const char *key,
+                                 void *opaque ATTRIBUTE_UNUSED)
+{
+    printf("%s EVENT domain %s(%d) lease change: action %s lockspace %s key %s",
+           __func__, virDomainGetName(dom), virDomainGetID(dom),
+           leaseActionTypeToStr(action), lockspace, key);
+    return 0;
+}
+
+
 static int
 myDomainEventMigrationIterationCallback(virConnectPtr conn ATTRIBUTE_UNUSED,
                                         virDomainPtr dom,
@@ -1087,6 +1120,7 @@ struct domainEventData domainEvents[] = {
     DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_DEVICE_REMOVAL_FAILED, myDomainEventDeviceRemovalFailedCallback),
     DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_METADATA_CHANGE, myDomainEventMetadataChangeCallback),
     DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_BLOCK_THRESHOLD, myDomainEventBlockThresholdCallback),
+    DOMAIN_EVENT(VIR_DOMAIN_EVENT_ID_LEASE_CHANGE, myDomainEventLeaseChangeCallback),
 };
 
 struct storagePoolEventData {

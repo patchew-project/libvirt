@@ -1449,6 +1449,45 @@ remoteRelayDomainEventBlockThreshold(virConnectPtr conn,
 }
 
 
+static int
+remoteRelayDomainEventLeaseChange(virConnectPtr conn,
+                                  virDomainPtr dom,
+                                  int action,
+                                  const char *lockspace,
+                                  const char *key,
+                                  void *opaque)
+{
+    daemonClientEventCallbackPtr callback = opaque;
+    remote_domain_event_lease_change_msg data;
+
+    if (callback->callbackID < 0 ||
+        !remoteRelayDomainEventCheckACL(callback->client, conn, dom))
+        return -1;
+
+    VIR_DEBUG("Relaying domain lease change event %s %d %d %s %s, callback %d",
+              dom->name, dom->id, action, lockspace, key, callback->callbackID);
+
+    memset(&data, 0, sizeof(data));
+    data.callbackID = callback->callbackID;
+    if (VIR_STRDUP(data.locspace, lockspace) < 0 ||
+        VIR_STRDUP(data.key, key) < 0)
+        goto error;
+    data.action = action;
+    if (make_nonnull_domain(&data.dom, dom) < 0)
+        goto error;
+
+    remoteDispatchObjectEventSend(callback->client, remoteProgram,
+                                  REMOTE_PROC_DOMAIN_EVENT_LEASE_CHANGE,
+                                  (xdrproc_t)xdr_remote_domain_event_lease_change_msg, &data);
+    return 0;
+
+ error:
+    xdr_free((xdrproc_t)xdr_remote_domain_event_lease_change_msg,
+             (char *) &data);
+    return -1;
+}
+
+
 static virConnectDomainEventGenericCallback domainEventCallbacks[] = {
     VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventLifecycle),
     VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventReboot),
@@ -1475,6 +1514,7 @@ static virConnectDomainEventGenericCallback domainEventCallbacks[] = {
     VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventDeviceRemovalFailed),
     VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventMetadataChange),
     VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventBlockThreshold),
+    VIR_DOMAIN_EVENT_CALLBACK(remoteRelayDomainEventLeaseChange),
 };
 
 verify(ARRAY_CARDINALITY(domainEventCallbacks) == VIR_DOMAIN_EVENT_ID_LAST);
