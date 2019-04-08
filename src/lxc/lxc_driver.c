@@ -2898,6 +2898,68 @@ lxcDomainGetBlkioParameters(virDomainPtr dom,
 
 
 static int
+lxcDomainGetStatsMemory(virDomainObjPtr dom,
+                        virDomainStatsRecordPtr record,
+                        int *maxparams,
+                        unsigned int supported)
+{
+    virLXCDomainObjPrivatePtr priv = dom->privateData;
+    unsigned long long swap_usage;
+    unsigned long long kmem_usage;
+    unsigned long mem_usage;
+    unsigned int flags = VIR_DOMAIN_STATS_BALLOON;
+
+    virCheckFlags(supported, 0);
+
+    if (virDomainObjCheckActive(dom) < 0)
+        return 0;
+
+    if (virTypedParamsAddULLong(&record->params,
+                                &record->nparams,
+                                maxparams,
+                                "balloon.current",
+                                dom->def->mem.cur_balloon) < 0)
+        return -1;
+
+    if (virTypedParamsAddULLong(&record->params,
+                                &record->nparams,
+                                maxparams,
+                                "balloon.maximum",
+                                virDomainDefGetMemoryTotal(dom->def)) < 0)
+        return -1;
+
+    if (virCgroupGetMemoryUsage(priv->cgroup, &mem_usage) >= 0) {
+        if (virTypedParamsAddULLong(&record->params,
+                                    &record->nparams,
+                                    maxparams,
+                                    "balloon.rss",
+                                    mem_usage) < 0)
+            return -1;
+    }
+
+    if (virCgroupGetKMemUsage(priv->cgroup, &kmem_usage) >= 0) {
+        if (virTypedParamsAddULLong(&record->params,
+                                    &record->nparams,
+                                    maxparams,
+                                    "balloon.kmem",
+                                    kmem_usage) < 0)
+            return -1;
+    }
+
+    if (virCgroupGetMemSwapUsage(priv->cgroup, &swap_usage) >= 0) {
+        if (virTypedParamsAddULLong(&record->params,
+                                    &record->nparams,
+                                    maxparams,
+                                    "balloon.swap_in",
+                                    swap_usage) < 0)
+            return -1;
+    }
+
+    return 0;
+}
+
+
+static int
 lxcDomainInterfaceStats(virDomainPtr dom,
                         const char *device,
                         virDomainInterfaceStatsPtr stats)
@@ -5498,6 +5560,9 @@ lxcDomainGetStats(virConnectPtr conn,
         goto endjob;
 
     if (lxcDomainGetStatsBlock(dom, stat, &maxparams, flags) < 0)
+        goto endjob;
+
+    if (lxcDomainGetStatsMemory(dom, stat, &maxparams, flags) < 0)
         goto endjob;
 
     virLXCDomainObjEndJob(driver, dom);
