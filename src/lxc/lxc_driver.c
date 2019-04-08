@@ -5272,6 +5272,69 @@ lxcDomainGetMetadata(virDomainPtr dom,
 
 
 static int
+lxcDomainGetStatsState(virDomainObjPtr dom,
+                       virDomainStatsRecordPtr record,
+                       int *maxparams,
+                       unsigned int supported)
+{
+    unsigned int flags = VIR_DOMAIN_STATS_STATE;
+
+    virCheckFlags(supported, 0);
+
+    if (virTypedParamsAddInt(&record->params,
+                             &record->nparams,
+                             maxparams,
+                             "state.state",
+                             dom->state.state) < 0)
+        return -1;
+
+    if (virTypedParamsAddInt(&record->params,
+                             &record->nparams,
+                             maxparams,
+                             "state.reason",
+                             dom->state.reason) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+static virDomainStatsRecordPtr
+lxcDomainGetStats(virConnectPtr conn,
+                  virDomainObjPtr dom,
+                  unsigned int flags)
+{
+    virLXCDriverPtr driver = conn->privateData;
+    virDomainStatsRecordPtr stat;
+    int maxparams = 0;
+
+    if (VIR_ALLOC(stat) < 0)
+        return NULL;
+
+    if (!(stat->dom = virGetDomain(conn, dom->def->name, dom->def->uuid, dom->def->id)))
+        goto error;
+
+    if (virLXCDomainObjBeginJob(driver, dom, LXC_JOB_QUERY) < 0)
+        goto error;
+
+    if (lxcDomainGetStatsState(dom, stat, &maxparams, flags) < 0)
+        goto endjob;
+
+    virLXCDomainObjEndJob(driver, dom);
+    return stat;
+
+ endjob:
+    virLXCDomainObjEndJob(driver, dom);
+
+ error:
+    virTypedParamsFree(stat->params, stat->nparams);
+    virObjectUnref(stat->dom);
+    VIR_FREE(stat);
+    return NULL;
+}
+
+
+static int
 lxcConnectGetAllDomainStats(virConnectPtr conn,
                             virDomainPtr *doms,
                             unsigned int ndoms,
@@ -5281,7 +5344,9 @@ lxcConnectGetAllDomainStats(virConnectPtr conn,
 {
     virLXCDriverPtr driver = conn->privateData;
     virDomainObjPtr *vms = NULL;
+    virDomainObjPtr vm;
     size_t nvms;
+    size_t i;
     virDomainStatsRecordPtr *tmpstats = NULL;
     int nstats = 0;
     int ret = -1;
@@ -5325,6 +5390,21 @@ lxcConnectGetAllDomainStats(virConnectPtr conn,
 
     if (VIR_ALLOC_N(tmpstats, ndoms + 1) < 0)
         goto cleanup;
+
+    for (i = 0; i < nvms; i++) {
+        virDomainStatsRecordPtr tmp;
+        vm = vms[i];
+
+        virObjectLock(vm);
+        tmp = lxcDomainGetStats(conn, vm, stats);
+        virObjectUnlock(vm);
+
+        if (!tmp)
+            goto cleanup;
+
+        tmpstats[nstats++] = tmp;
+
+    }
 
     VIR_STEAL_PTR(*retStats, tmpstats);
     ret = nstats;
