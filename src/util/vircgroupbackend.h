@@ -264,6 +264,14 @@ typedef int
                               unsigned long long *kb);
 
 typedef int
+(*virCgroupGetKMemHardLimitCB)(virCgroupPtr group,
+                               unsigned long long *kb);
+
+typedef int
+(*virCgroupGetKMemUsageCB)(virCgroupPtr group,
+                           unsigned long long *kb);
+
+typedef int
 (*virCgroupAllowDeviceCB)(virCgroupPtr group,
                           char type,
                           int major,
@@ -406,6 +414,8 @@ struct _virCgroupBackend {
     virCgroupSetMemSwapHardLimitCB setMemSwapHardLimit;
     virCgroupGetMemSwapHardLimitCB getMemSwapHardLimit;
     virCgroupGetMemSwapUsageCB getMemSwapUsage;
+    virCgroupGetKMemHardLimitCB getKMemHardLimit;
+    virCgroupGetKMemUsageCB getKMemUsage;
 
     virCgroupAllowDeviceCB allowDevice;
     virCgroupDenyDeviceCB denyDevice;

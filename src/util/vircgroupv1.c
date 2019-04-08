@@ -1691,6 +1691,40 @@ virCgroupV1GetMemSwapUsage(virCgroupPtr group,
 
 
 static int
+virCgroupV1GetKMemHardLimit(virCgroupPtr group,
+                            unsigned long long *kb)
+{
+    long long unsigned int limit_in_bytes;
+
+    if (virCgroupGetValueU64(group,
+                             VIR_CGROUP_CONTROLLER_MEMORY,
+                             "memory.kmem.limit_in_bytes", &limit_in_bytes) < 0)
+        return -1;
+
+    *kb = limit_in_bytes >> 10;
+    if (*kb >= virCgroupV1GetMemoryUnlimitedKB())
+        *kb = VIR_DOMAIN_MEMORY_PARAM_UNLIMITED;
+
+    return 0;
+}
+
+
+static int
+virCgroupV1GetKMemUsage(virCgroupPtr group,
+                        unsigned long long *kb)
+{
+    long long unsigned int usage_in_bytes;
+    int ret;
+    ret = virCgroupGetValueU64(group,
+                               VIR_CGROUP_CONTROLLER_MEMORY,
+                               "memory.kmem.usage_in_bytes", &usage_in_bytes);
+    if (ret == 0)
+        *kb = usage_in_bytes >> 10;
+    return ret;
+}
+
+
+static int
 virCgroupV1AllowDevice(virCgroupPtr group,
                        char type,
                        int major,
@@ -2085,6 +2119,8 @@ virCgroupBackend virCgroupV1Backend = {
     .setMemSwapHardLimit = virCgroupV1SetMemSwapHardLimit,
     .getMemSwapHardLimit = virCgroupV1GetMemSwapHardLimit,
     .getMemSwapUsage = virCgroupV1GetMemSwapUsage,
+    .getKMemHardLimit = virCgroupV1GetKMemHardLimit,
+    .getKMemUsage = virCgroupV1GetKMemUsage,
 
     .allowDevice = virCgroupV1AllowDevice,
     .denyDevice = virCgroupV1DenyDevice,

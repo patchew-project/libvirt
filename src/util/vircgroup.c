@@ -1785,6 +1785,38 @@ virCgroupGetMemSwapUsage(virCgroupPtr group, unsigned long long *kb)
 
 
 /**
+ * virCgroupGetKMemHardLimit:
+ *
+ * @group: The cgroup to get mem+kmem hard limit for
+ * @kb: The mem+kmem amount in kilobytes
+ *
+ * Returns: 0 on success
+ */
+int
+virCgroupGetKMemHardLimit(virCgroupPtr group, unsigned long long *kb)
+{
+    VIR_CGROUP_BACKEND_CALL(group, VIR_CGROUP_CONTROLLER_MEMORY,
+                            getKMemHardLimit, -1, kb);
+}
+
+
+/**
+ * virCgroupGetKMemUsage:
+ *
+ * @group: The cgroup to get mem+kmem usage for
+ * @kb: The mem+kmem amount in kilobytes
+ *
+ * Returns: 0 on success
+ */
+int
+virCgroupGetKMemUsage(virCgroupPtr group, unsigned long long *kb)
+{
+    VIR_CGROUP_BACKEND_CALL(group, VIR_CGROUP_CONTROLLER_MEMORY,
+                            getKMemUsage, -1, kb);
+}
+
+
+/**
  * virCgroupSetCpusetMems:
  *
  * @group: The cgroup to set cpuset.mems for
