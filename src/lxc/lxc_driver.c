@@ -5299,6 +5299,53 @@ lxcDomainGetStatsState(virDomainObjPtr dom,
 }
 
 
+static int
+lxcDomainGetStatsCpu(virDomainObjPtr dom,
+                     virDomainStatsRecordPtr record,
+                     int *maxparams,
+                     unsigned int supported)
+{
+    virLXCDomainObjPrivatePtr priv = dom->privateData;
+    unsigned long long cpu_time = 0;
+    unsigned long long user_time = 0;
+    unsigned long long sys_time = 0;
+    unsigned int flags = VIR_DOMAIN_STATS_CPU_TOTAL;
+    int err = 0;
+
+    virCheckFlags(supported, 0);
+
+    if (virDomainObjCheckActive(dom) < 0)
+        return 0;
+
+    if (!priv->cgroup)
+        return 0;
+
+    err = virCgroupGetCpuacctUsage(priv->cgroup, &cpu_time);
+    if (!err && virTypedParamsAddULLong(&record->params,
+                                        &record->nparams,
+                                        maxparams,
+                                        "cpu.time",
+                                        cpu_time) < 0)
+        return -1;
+
+    err = virCgroupGetCpuacctStat(priv->cgroup, &user_time, &sys_time);
+    if (!err && virTypedParamsAddULLong(&record->params,
+                                        &record->nparams,
+                                        maxparams,
+                                        "cpu.user",
+                                        user_time) < 0)
+        return -1;
+    if (!err && virTypedParamsAddULLong(&record->params,
+                                        &record->nparams,
+                                        maxparams,
+                                        "cpu.system",
+                                        sys_time) < 0)
+        return -1;
+
+    return 0;
+}
+
+
 static virDomainStatsRecordPtr
 lxcDomainGetStats(virConnectPtr conn,
                   virDomainObjPtr dom,
@@ -5318,6 +5365,9 @@ lxcDomainGetStats(virConnectPtr conn,
         goto error;
 
     if (lxcDomainGetStatsState(dom, stat, &maxparams, flags) < 0)
+        goto endjob;
+
+    if (lxcDomainGetStatsCpu(dom, stat, &maxparams, flags) < 0)
         goto endjob;
 
     virLXCDomainObjEndJob(driver, dom);
