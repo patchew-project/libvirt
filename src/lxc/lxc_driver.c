@@ -2477,6 +2477,133 @@ lxcDomainBlockStatsFlags(virDomainPtr dom,
 
 
 static int
+lxcDomainGetStatsBlock(virDomainObjPtr dom,
+                       virDomainStatsRecordPtr record,
+                       int *maxparams,
+                       unsigned int supported)
+{
+    virLXCDomainObjPrivatePtr priv = dom->privateData;
+    virDomainBlockStatsStruct stats;
+    size_t i = 0, index = 0;
+    char param_name[VIR_TYPED_PARAM_FIELD_LENGTH];
+    unsigned int flags = VIR_DOMAIN_STATS_BLOCK;
+
+    virCheckFlags(supported, 0);
+
+    if (virDomainObjCheckActive(dom) < 0)
+        return 0;
+
+    if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_BLKIO)) {
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("blkio cgroup isn't mounted"));
+        return -1;
+    }
+
+#define LXC_ADD_STAT_PARAM_UUL(group, field, subparam) \
+do { \
+    if (stats.field != -1) { \
+        snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH, \
+                 group ".%zu." subparam, index); \
+        if (virTypedParamsAddULLong(&record->params, \
+                                    &record->nparams, \
+                                    maxparams, \
+                                    param_name, \
+                                    stats.field) < 0) \
+            return -1; \
+    } \
+} while (0)
+
+    if (virCgroupGetBlkioIoServiced(priv->cgroup,
+                                    &stats.rd_bytes,
+                                    &stats.wr_bytes,
+                                    &stats.rd_req,
+                                    &stats.wr_req) < 0)
+        return -1;
+
+    LXC_ADD_STAT_PARAM_UUL("block", rd_req, "rd.reqs");
+    LXC_ADD_STAT_PARAM_UUL("block", rd_bytes, "rd.bytes");
+    LXC_ADD_STAT_PARAM_UUL("block", wr_req, "wr.reqs");
+    LXC_ADD_STAT_PARAM_UUL("block", wr_bytes, "wr.bytes");
+
+    index++;
+
+    for (i = 0; i < dom->def->ndisks; i++) {
+        virDomainDiskDefPtr disk = dom->def->disks[i];
+
+        if (*disk->src->path) {
+            if (!disk->info.alias) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("missing disk device alias name for %s"), disk->dst);
+                return -1;
+            }
+
+            if (virCgroupGetBlkioIoDeviceServiced(priv->cgroup,
+                                                  disk->info.alias,
+                                                  &stats.rd_bytes,
+                                                  &stats.wr_bytes,
+                                                  &stats.rd_req,
+                                                  &stats.wr_req) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               "%s", _("domain stats query failed"));
+                return -1;
+            }
+        }
+
+        LXC_ADD_STAT_PARAM_UUL("block", rd_req, "rd.reqs");
+        LXC_ADD_STAT_PARAM_UUL("block", rd_bytes, "rd.bytes");
+        LXC_ADD_STAT_PARAM_UUL("block", wr_req, "wr.reqs");
+        LXC_ADD_STAT_PARAM_UUL("block", wr_bytes, "wr.bytes");
+
+        if (disk->src->allocation) {
+            snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH,
+                     "block.%zu.allocation", index);
+            if (virTypedParamsAddULLong(&record->params,
+                                        &record->nparams,
+                                        maxparams,
+                                        param_name,
+                                        disk->src->allocation) < 0)
+                return -1;
+        }
+
+        if (disk->src->physical) {
+            snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH,
+                     "block.%zu.physical", index);
+            if (virTypedParamsAddULLong(&record->params,
+                                        &record->nparams,
+                                        maxparams,
+                                        param_name,
+                                        disk->src->physical) < 0)
+                return -1;
+        }
+
+        if (disk->src->capacity) {
+            snprintf(param_name, VIR_TYPED_PARAM_FIELD_LENGTH,
+                     "block.%zu.capacity", i);
+            if (virTypedParamsAddULLong(&record->params,
+                                        &record->nparams,
+                                        maxparams,
+                                        param_name,
+                                        disk->src->capacity) < 0)
+                return -1;
+        }
+
+        index++;
+    }
+
+#undef LXC_ADD_STAT_PARAM_UUL
+
+    if (virTypedParamsAddUInt(&record->params,
+                              &record->nparams,
+                              maxparams,
+                              "block.count",
+                              index) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+static int
 lxcDomainSetBlkioParameters(virDomainPtr dom,
                             virTypedParameterPtr params,
                             int nparams,
@@ -5368,6 +5495,9 @@ lxcDomainGetStats(virConnectPtr conn,
         goto endjob;
 
     if (lxcDomainGetStatsCpu(dom, stat, &maxparams, flags) < 0)
+        goto endjob;
+
+    if (lxcDomainGetStatsBlock(dom, stat, &maxparams, flags) < 0)
         goto endjob;
 
     virLXCDomainObjEndJob(driver, dom);
