@@ -23,8 +23,17 @@ AC_DEFUN([LIBVIRT_ARG_READLINE],[
 
 AC_DEFUN([LIBVIRT_CHECK_READLINE],[
 
-  # The normal library check...
-  LIBVIRT_CHECK_LIB([READLINE], [readline], [readline], [readline/readline.h])
+  # We have to check for readline.pc's presence beforehand because for
+  # the longest time the library didn't ship a .pc file at all
+  PKG_CHECK_EXISTS([readline], [use_pkgconfig=1], [use_pkgconfig=0])
+
+  if test $use_pkgconfig = 1; then
+    # readline 7.0 is the first version which includes pkg-config support
+    LIBVIRT_CHECK_PKG([READLINE], [readline], [7.0])
+  else
+    # The normal library check...
+    LIBVIRT_CHECK_LIB([READLINE], [readline], [readline], [readline/readline.h])
+  fi
 
   # We need this to avoid compilation issues with modern compilers.
   # See 9ea3424a178 for a more detailed explanation
