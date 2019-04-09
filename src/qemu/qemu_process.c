@@ -6461,6 +6461,39 @@ qemuProcessSetupDiskThrottlingBlockdev(virQEMUDriverPtr driver,
     return ret;
 }
 
+static int
+qemuProcessSetCurrentMachineCaps(virQEMUDriverPtr driver,
+                                 virDomainObjPtr vm,
+                                 qemuDomainAsyncJob asyncJob)
+{
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+    qemuMonitorCurrentMachineInfoPtr info;
+    int ret = -1;
+
+    if (!virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_QUERY_CURRENT_MACHINE))
+        return 0;
+
+    if (qemuDomainObjEnterMonitorAsync(driver, vm, asyncJob) < 0)
+        return -1;
+
+    if (VIR_ALLOC(info) < 0)
+        return -1;
+
+    ret = qemuMonitorGetCurrentMachineInfo(priv->mon, info);
+
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        ret = -1;
+
+    if (ret < 0)
+        goto cleanup;
+
+    if (info->wakeupSuspendSupport)
+        virQEMUCapsSet(priv->qemuCaps, QEMU_CAPS_PM_WAKEUP_SUPPORT);
+
+ cleanup:
+    VIR_FREE(info);
+    return ret;
+}
 
 /**
  * qemuProcessLaunch:
@@ -6776,6 +6809,9 @@ qemuProcessLaunch(virConnectPtr conn,
         goto cleanup;
 
     if (qemuProcessSetupDiskThrottlingBlockdev(driver, vm, asyncJob) < 0)
+        goto cleanup;
+
+    if (qemuProcessSetCurrentMachineCaps(driver, vm, asyncJob) < 0)
         goto cleanup;
 
     /* Since CPUs were not started yet, the balloon could not return the memory

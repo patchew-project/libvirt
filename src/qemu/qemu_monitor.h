@@ -1220,4 +1220,15 @@ struct _qemuMonitorPRManagerInfo {
 int qemuMonitorGetPRManagerInfo(qemuMonitorPtr mon,
                                 virHashTablePtr *retinfo);
 
+struct _qemuMonitorCurrentMachineInfo {
+    bool wakeupSuspendSupport;
+};
+
+typedef struct  _qemuMonitorCurrentMachineInfo qemuMonitorCurrentMachineInfo;
+typedef qemuMonitorCurrentMachineInfo *qemuMonitorCurrentMachineInfoPtr;
+
+int
+qemuMonitorGetCurrentMachineInfo(qemuMonitorPtr mon,
+                                 qemuMonitorCurrentMachineInfoPtr info);
+
 #endif /* LIBVIRT_QEMU_MONITOR_H */

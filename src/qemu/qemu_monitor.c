@@ -4472,3 +4472,20 @@ qemuMonitorGetPRManagerInfo(qemuMonitorPtr mon,
     virHashFree(info);
     return ret;
 }
+
+int
+qemuMonitorGetCurrentMachineInfo(qemuMonitorPtr mon,
+                                 qemuMonitorCurrentMachineInfoPtr info)
+{
+    int ret = -1;
+
+    QEMU_CHECK_MONITOR(mon);
+
+    if (qemuMonitorJSONGetCurrentMachineInfo(mon, info) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    return ret;
+}
