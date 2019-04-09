@@ -869,6 +869,9 @@ qemuSetupCpusetCgroup(virDomainObjPtr vm)
     if (virCgroupSetCpusetMemoryMigrate(priv->cgroup, true) < 0)
         return -1;
 
+    if (qemuSetupCpusetMems(vm) < 0)
+        return -1;
+
     return 0;
 }
 
