@@ -824,7 +824,7 @@ qemuSetupDevicesCgroup(virDomainObjPtr vm)
 }
 
 
-int
+static int
 qemuSetupCpusetMems(virDomainObjPtr vm)
 {
     virCgroupPtr cgroup_temp = NULL;
