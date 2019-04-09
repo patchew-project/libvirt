@@ -22,32 +22,9 @@ AC_DEFUN([LIBVIRT_ARG_READLINE],[
 ])
 
 AC_DEFUN([LIBVIRT_CHECK_READLINE],[
-  extra_LIBS=
-  lv_saved_libs=$LIBS
-  if test "x$with_readline" != xno; then
-    # Linking with -lreadline may require some termcap-related code, e.g.,
-    # from one of the following libraries.  Add it to LIBS before using
-    # canned library checks; then verify later if it was needed.
-    LIBS=
-    AC_SEARCH_LIBS([tgetent], [ncurses curses termcap termlib])
-    case $LIBS in
-      no*) ;;  # handle "no" and "none required"
-      *) # anything else is a -lLIBRARY
-	extra_LIBS=$LIBS ;;
-    esac
-    LIBS="$lv_saved_libs $extra_LIBS"
-  fi
 
   # The normal library check...
   LIBVIRT_CHECK_LIB([READLINE], [readline], [readline], [readline/readline.h])
-
-  # Touch things up to avoid $extra_LIBS, if possible.  Test a second
-  # function, to ensure we aren't being confused by caching.
-  LIBS=$lv_saved_libs
-  AC_CHECK_LIB([readline], [rl_initialize],
-    [],
-    [READLINE_LIBS="$READLINE_LIBS $extra_LIBS"])
-  LIBS=$lv_saved_libs
 
   # We need this to avoid compilation issues with modern compilers.
   # See 9ea3424a178 for a more detailed explanation
