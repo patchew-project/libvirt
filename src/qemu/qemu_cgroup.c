@@ -847,7 +847,7 @@ qemuSetupCpusetMems(virDomainObjPtr vm)
 
     if (mem_mask)
         if (virCgroupNewThread(priv->cgroup, VIR_CGROUP_THREAD_EMULATOR, 0,
-                               false, &cgroup_temp) < 0 ||
+                               true, &cgroup_temp) < 0 ||
             virCgroupSetCpusetMems(cgroup_temp, mem_mask) < 0)
             goto cleanup;
 
