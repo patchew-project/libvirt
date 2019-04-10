@@ -476,7 +476,9 @@ mymain(void)
     DO_TEST_BHYVE("fbuf", "/usr/sbin/bhyve", &bhyve_caps, VIR_DOMAIN_VIRT_BHYVE);
 #endif /* WITH_BHYVE */
 
+#ifndef WIN32
     virFileWrapperClearPrefixes();
+#endif /* WIN32 */
 
     return ret;
 }
