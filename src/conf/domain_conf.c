@@ -28597,6 +28597,7 @@ virDomainDefCompatibleDevice(virDomainDefPtr def,
     if (action == VIR_DOMAIN_DEVICE_ACTION_ATTACH &&
         data.newInfo &&
         data.newInfo->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
+        !virDomainDiskIsCdromOrFloppy(dev->data.disk) &&
         virDomainDefHasDeviceAddress(def, data.newInfo)) {
         virReportError(VIR_ERR_OPERATION_INVALID, "%s",
                        _("Domain already contains a device with the same address"));
