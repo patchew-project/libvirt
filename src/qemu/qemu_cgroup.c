@@ -830,7 +830,7 @@ qemuSetupCpusetMems(virDomainObjPtr vm)
     virCgroupPtr cgroup_temp = NULL;
     qemuDomainObjPrivatePtr priv = vm->privateData;
     virDomainNumatuneMemMode mode;
-    char *mem_mask = NULL;
+    VIR_AUTOFREE(char *) mem_mask = NULL;
     int ret = -1;
 
     if (!virCgroupHasController(priv->cgroup, VIR_CGROUP_CONTROLLER_CPUSET))
@@ -843,7 +843,7 @@ qemuSetupCpusetMems(virDomainObjPtr vm)
     if (virDomainNumatuneMaybeFormatNodeset(vm->def->numa,
                                             priv->autoNodeset,
                                             &mem_mask, -1) < 0)
-        goto cleanup;
+        return -1;
 
     if (mem_mask)
         if (virCgroupNewThread(priv->cgroup, VIR_CGROUP_THREAD_EMULATOR, 0,
@@ -853,7 +853,6 @@ qemuSetupCpusetMems(virDomainObjPtr vm)
 
     ret = 0;
  cleanup:
-    VIR_FREE(mem_mask);
     virCgroupFree(&cgroup_temp);
     return ret;
 }
