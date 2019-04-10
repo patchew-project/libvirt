@@ -1666,8 +1666,7 @@ qemuBuildDriveSourceStr(virDomainDiskDefPtr disk,
 
     /* nothing to format if the drive is empty */
     if (!(source || srcprops) ||
-        ((disk->device == VIR_DOMAIN_DISK_DEVICE_FLOPPY ||
-          disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM) &&
+        (virDomainDiskIsCdromOrFloppy(disk) &&
          disk->tray_status == VIR_DOMAIN_DISK_TRAY_OPEN)) {
         ret = 0;
         goto cleanup;

@@ -3579,4 +3579,6 @@ virDomainGraphicsGetRenderNode(const virDomainGraphicsDef *graphics);
 bool
 virDomainGraphicsNeedsAutoRenderNode(const virDomainGraphicsDef *graphics);
 
+bool
+virDomainDiskIsCdromOrFloppy(virDomainDiskDefPtr disk);
 #endif /* LIBVIRT_DOMAIN_CONF_H */

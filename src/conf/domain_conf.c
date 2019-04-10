@@ -16708,6 +16708,14 @@ void virDomainDiskInsertPreAlloced(virDomainDefPtr def,
 }
 
 
+bool
+virDomainDiskIsCdromOrFloppy(virDomainDiskDefPtr disk)
+{
+    return disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM ||
+            disk->device == VIR_DOMAIN_DISK_DEVICE_FLOPPY;
+}
+
+
 virDomainDiskDefPtr
 virDomainDiskRemove(virDomainDefPtr def, size_t i)
 {

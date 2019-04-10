@@ -1230,8 +1230,7 @@ qemuDomainAttachDeviceDiskLiveInternal(virQEMUDriverPtr driver,
     virDomainDiskDefPtr disk = dev->data.disk;
     int ret = -1;
 
-    if (disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM ||
-        disk->device == VIR_DOMAIN_DISK_DEVICE_FLOPPY) {
+    if (virDomainDiskIsCdromOrFloppy(disk)) {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
                        _("cdrom/floppy device hotplug isn't supported"));
         return -1;
@@ -1314,8 +1313,7 @@ qemuDomainAttachDeviceDiskLive(virQEMUDriverPtr driver,
 
     /* this API overloads media change semantics on disk hotplug
      * for devices supporting media changes */
-    if ((disk->device == VIR_DOMAIN_DISK_DEVICE_CDROM ||
-         disk->device == VIR_DOMAIN_DISK_DEVICE_FLOPPY) &&
+    if (virDomainDiskIsCdromOrFloppy(disk) &&
         (orig_disk = virDomainDiskFindByBusAndDst(vm->def, disk->bus, disk->dst))) {
         if (qemuDomainChangeEjectableMedia(driver, vm, orig_disk,
                                            disk->src, false) < 0)

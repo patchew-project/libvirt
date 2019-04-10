@@ -342,6 +342,7 @@ virDomainDiskInsert;
 virDomainDiskInsertPreAlloced;
 virDomainDiskIoTypeFromString;
 virDomainDiskIoTypeToString;
+virDomainDiskIsCdromOrFloppy;
 virDomainDiskMirrorStateTypeFromString;
 virDomainDiskMirrorStateTypeToString;
 virDomainDiskModelTypeFromString;

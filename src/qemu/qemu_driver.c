@@ -8021,8 +8021,7 @@ qemuDomainChangeDiskLive(virDomainObjPtr vm,
 
     if (!virStorageSourceIsSameLocation(disk->src, orig_disk->src)) {
         /* Disk source can be changed only for removable devices */
-        if (disk->device != VIR_DOMAIN_DISK_DEVICE_CDROM &&
-            disk->device != VIR_DOMAIN_DISK_DEVICE_FLOPPY) {
+        if (!virDomainDiskIsCdromOrFloppy(disk)) {
             virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
                            _("disk source can be changed only in removable "
                              "drives"));
