@@ -19151,6 +19151,7 @@ qemuDomainPMSuspendForDuration(virDomainPtr dom,
                                unsigned int flags)
 {
     virQEMUDriverPtr driver = dom->conn->privateData;
+    qemuDomainObjPrivatePtr priv;
     virDomainObjPtr vm;
     qemuAgentPtr agent;
     int ret = -1;
@@ -19177,6 +19178,26 @@ qemuDomainPMSuspendForDuration(virDomainPtr dom,
 
     if (virDomainPMSuspendForDurationEnsureACL(dom->conn, vm->def) < 0)
         goto cleanup;
+
+    priv = vm->privateData;
+
+    /*
+     * We can't check just for QEMU_CAPS_WAKEUP_SUSPEND_SUPPORT because,
+     * in case this cap is disabled, it is not possible to tell if the guest
+     * does not have wake-up from suspend support or if the current QEMU
+     * instance does not have the API.
+     *
+     * The case we want to handle here is when QEMU has the API and
+     * QEMU_CAPS_WAKEUP_SUSPEND_SUPPORT cap is disabled. Otherwise, do
+     * not interfere with the suspend process.
+     */
+    if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_QUERY_CURRENT_MACHINE) &&
+        !virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_PM_WAKEUP_SUPPORT)) {
+
+        virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                       _("Domain does not have suspend support"));
+        goto cleanup;
+    }
 
     if (qemuDomainObjBeginAgentJob(driver, vm, QEMU_AGENT_JOB_MODIFY) < 0)
         goto cleanup;
