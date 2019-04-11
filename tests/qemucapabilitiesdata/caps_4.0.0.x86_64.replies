@@ -21053,6 +21053,17 @@
 }
 
 {
+  "execute": "query-current-machine",
+  "id": "libvirt-50"
+}
+
+{
+  "return": {
+    "wakeup-suspend-support": true
+  }
+}
+
+{
   "execute": "qmp_capabilities",
   "id": "libvirt-1"
 }

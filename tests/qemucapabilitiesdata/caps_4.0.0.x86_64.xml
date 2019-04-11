@@ -202,6 +202,7 @@
   <flag name='scsi-disk.device_id'/>
   <flag name='virtio-pci-non-transitional'/>
   <flag name='query-current-machine'/>
+  <flag name='wakeup-suspend-support'/>
   <version>3001050</version>
   <kvmVersion>0</kvmVersion>
   <microcodeVersion>43100758</microcodeVersion>

@@ -525,6 +525,9 @@ VIR_ENUM_IMPL(virQEMUCaps, QEMU_CAPS_LAST,
               "scsi-disk.device_id",
               "virtio-pci-non-transitional",
               "query-current-machine",
+
+              /* 330 */
+              "wakeup-suspend-support",
     );
 
 
@@ -2769,6 +2772,25 @@ virQEMUCapsProbeQMPSEVCapabilities(virQEMUCapsPtr qemuCaps,
 }
 
 
+static int
+virQEMUCapsProbeQMPCurrentMachine(virQEMUCapsPtr qemuCaps,
+                                  qemuMonitorPtr mon)
+{
+    qemuMonitorCurrentMachineInfo info = { 0 };
+
+    if (!virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CURRENT_MACHINE))
+        return 0;
+
+    if (qemuMonitorGetCurrentMachineInfo(mon, &info) < 0)
+        return -1;
+
+    if (info.wakeupSuspendSupport)
+        virQEMUCapsSet(qemuCaps, QEMU_CAPS_PM_WAKEUP_SUPPORT);
+
+    return 0;
+}
+
+
 bool
 virQEMUCapsCPUFilterFeatures(const char *name,
                              void *opaque)
@@ -4372,6 +4394,8 @@ virQEMUCapsInitQMPMonitor(virQEMUCapsPtr qemuCaps,
     if (virQEMUCapsProbeQMPGICCapabilities(qemuCaps, mon) < 0)
         return -1;
     if (virQEMUCapsProbeQMPSEVCapabilities(qemuCaps, mon) < 0)
+        return -1;
+    if (virQEMUCapsProbeQMPCurrentMachine(qemuCaps, mon) < 0)
         return -1;
 
     virQEMUCapsInitProcessCaps(qemuCaps);

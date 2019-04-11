@@ -17756,3 +17756,14 @@
   ],
   "id": "libvirt-39"
 }
+
+{
+  "execute": "query-current-machine",
+  "id": "libvirt-40"
+}
+
+{
+  "return": {
+    "wakeup-suspend-support": true
+  }
+}
