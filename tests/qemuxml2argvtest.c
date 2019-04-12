@@ -2399,8 +2399,8 @@ mymain(void)
             QEMU_CAPS_DEVICE_PCIE_ROOT_PORT,
             QEMU_CAPS_VIRTIO_PCI_DISABLE_LEGACY);
 
-    DO_TEST("mlock-on", NONE);
-    DO_TEST("mlock-off", NONE);
+    DO_TEST("mlock-on", QEMU_CAPS_OVERCOMMIT);
+    DO_TEST("mlock-off", QEMU_CAPS_OVERCOMMIT);
     DO_TEST("mlock-unsupported", NONE);
 
     DO_TEST_PARSE_ERROR("pci-bridge-negative-index-invalid", NONE);
