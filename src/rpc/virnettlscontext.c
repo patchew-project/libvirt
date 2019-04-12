@@ -703,14 +703,14 @@ static virNetTLSContextPtr virNetTLSContextNew(const char *cacert,
         return NULL;
 
     if (VIR_STRDUP(ctxt->priority, priority) < 0)
-        goto error;
+        goto ctxt_init_error;
 
     err = gnutls_certificate_allocate_credentials(&ctxt->x509cred);
     if (err) {
         virReportError(VIR_ERR_SYSTEM_ERROR,
                        _("Unable to allocate x509 credentials: %s"),
                        gnutls_strerror(err));
-        goto error;
+        goto ctxt_init_error;
     }
 
     if (sanityCheckCert &&
@@ -759,6 +759,8 @@ static virNetTLSContextPtr virNetTLSContextNew(const char *cacert,
     if (isServer)
         gnutls_dh_params_deinit(ctxt->dhParams);
     gnutls_certificate_free_credentials(ctxt->x509cred);
+ ctxt_init_error:
+    if (ctxt->priority) VIR_FREE(ctxt->priority);
     VIR_FREE(ctxt);
     return NULL;
 }

@@ -350,6 +350,16 @@
     <section title="Bug fixes">
       <change>
         <summary>
+          rpc: Segfaults and memory leak in virNetTLSContextNew function
+        </summary>
+        <description>
+          Failed new gnutls context allocations in virNetTLSContextNew function
+          results in double free and segfault. Occasional memory leaks may also
+          occur.
+        </description>
+      </change>
+      <change>
+        <summary>
           qemu: Use CAP_DAC_OVERRIDE during QEMU capabilities probing
         </summary>
         <description>
