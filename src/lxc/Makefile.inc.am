@@ -1,3 +1,6 @@
+# -*- makefile -*-
+# vim: filetype=make
+
 LXC_MONITOR_PROTOCOL_GENERATED = \
 	lxc/lxc_monitor_protocol.h \
 	lxc/lxc_monitor_protocol.c \

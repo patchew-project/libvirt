@@ -1,3 +1,6 @@
+# -*- makefile -*-
+# vim: filetype=make
+
 NODE_DEVICE_DRIVER_SOURCES = \
 	node_device/node_device_driver.c \
 	node_device/node_device_driver.h \

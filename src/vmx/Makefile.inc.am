@@ -1,3 +1,6 @@
+# -*- makefile -*-
+# vim: filetype=make
+
 VMX_SOURCES = \
 	vmx/vmx.c \
 	vmx/vmx.h \

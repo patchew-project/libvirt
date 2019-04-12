@@ -1,3 +1,6 @@
+# -*- makefile -*-
+# vim: filetype=make
+
 LOG_PROTOCOL_GENERATED = \
 	logging/log_protocol.h \
 	logging/log_protocol.c \

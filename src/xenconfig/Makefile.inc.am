@@ -1,3 +1,6 @@
+# -*- makefile -*-
+# vim: filetype=make
+
 XENCONFIG_SOURCES = \
 	xenconfig/xenxs_private.h \
 	xenconfig/xen_common.c \

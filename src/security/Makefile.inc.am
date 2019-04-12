@@ -1,3 +1,6 @@
+# -*- makefile -*-
+# vim: filetype=make
+
 SECURITY_DRIVER_APPARMOR_HELPER_SOURCES = \
 	$(DATATYPES_SOURCES) \
 	security/virt-aa-helper.c \

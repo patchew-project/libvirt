@@ -1,3 +1,6 @@
+# -*- makefile -*-
+# vim: filetype=make
+
 NWFILTER_DRIVER_SOURCES = \
 	nwfilter/nwfilter_driver.h \
 	nwfilter/nwfilter_driver.c \

@@ -1,3 +1,6 @@
+# -*- makefile -*-
+# vim: filetype=make
+
 REMOTE_DRIVER_GENERATED = \
 	remote/remote_protocol.c \
 	remote/remote_protocol.h \

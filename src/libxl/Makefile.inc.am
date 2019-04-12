@@ -1,3 +1,6 @@
+# -*- makefile -*-
+# vim: filetype=make
+
 LIBXL_DRIVER_SOURCES = \
 	libxl/libxl_conf.c \
 	libxl/libxl_conf.h \

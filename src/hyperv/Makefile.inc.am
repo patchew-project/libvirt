@@ -1,3 +1,6 @@
+# -*- makefile -*-
+# vim: filetype=make
+
 HYPERV_DRIVER_SOURCES = \
 	hyperv/hyperv_private.h \
 	hyperv/hyperv_driver.c \

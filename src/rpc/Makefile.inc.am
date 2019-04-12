@@ -1,3 +1,6 @@
+# -*- makefile -*-
+# vim: filetype=make
+
 EXTRA_DIST += \
 	rpc/gendispatch.pl \
 	rpc/genprotocol.pl \

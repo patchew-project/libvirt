@@ -1,3 +1,6 @@
+# -*- makefile -*-
+# vim: filetype=make
+
 VBOX_DRIVER_SOURCES = \
 	vbox/vbox_glue.c \
 	vbox/vbox_glue.h \

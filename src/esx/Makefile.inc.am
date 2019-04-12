@@ -1,3 +1,6 @@
+# -*- makefile -*-
+# vim: filetype=make
+
 ESX_DRIVER_SOURCES = \
 	esx/esx_private.h \
 	esx/esx_driver.c \

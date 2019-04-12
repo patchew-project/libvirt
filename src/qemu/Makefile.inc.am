@@ -1,3 +1,6 @@
+# -*- makefile -*-
+# vim: filetype=make
+
 QEMU_DRIVER_SOURCES = \
 	qemu/qemu_agent.c \
 	qemu/qemu_agent.h \
