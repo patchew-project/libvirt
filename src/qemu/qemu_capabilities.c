@@ -524,6 +524,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "scsi-disk.device_id",
               "virtio-pci-non-transitional",
               "overcommit",
+              "query-cpu-model-comparison",
     );
 
 
@@ -969,6 +970,7 @@ struct virQEMUCapsStringFlags virQEMUCapsCommands[] = {
     { "query-cpus-fast", QEMU_CAPS_QUERY_CPUS_FAST },
     { "qom-list-properties", QEMU_CAPS_QOM_LIST_PROPERTIES },
     { "blockdev-del", QEMU_CAPS_BLOCKDEV_DEL },
+    { "query-cpu-model-comparison", QEMU_CAPS_QUERY_CPU_MODEL_COMPARISON },
 };
 
 struct virQEMUCapsStringFlags virQEMUCapsMigration[] = {
