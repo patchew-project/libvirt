@@ -18,6 +18,7 @@
 #include <config.h>
 
 #include "virenum.h"
+#include "virerror.h"
 #include "virstring.h"
 
 #define VIR_FROM_THIS VIR_FROM_NONE
@@ -60,16 +61,22 @@ virTristateSwitchFromBool(bool val)
 int
 virEnumFromString(const char * const *types,
                   unsigned int ntypes,
-                  const char *type)
+                  const char *type,
+                  const char *label)
 {
     size_t i;
     if (!type)
-        return -1;
+        goto error;
 
     for (i = 0; i < ntypes; i++)
         if (STREQ(types[i], type))
             return i;
 
+ error:
+    if (label) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("Unknown '%s' value '%s'"), label, NULLSTR(type));
+    }
     return -1;
 }
 
@@ -77,10 +84,16 @@ virEnumFromString(const char * const *types,
 const char *
 virEnumToString(const char * const *types,
                 unsigned int ntypes,
-                int type)
+                int type,
+                const char *label)
 {
-    if (type < 0 || type >= ntypes)
+    if (type < 0 || type >= ntypes) {
+        if (label) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Unknown '%s' internal value %d"), label, type);
+        }
         return NULL;
+    }
 
     return types[type];
 }

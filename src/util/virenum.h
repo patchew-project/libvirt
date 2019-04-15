@@ -24,24 +24,28 @@
 int
 virEnumFromString(const char * const *types,
                   unsigned int ntypes,
-                  const char *type);
+                  const char *type,
+                  const char *label);
 
 const char *
 virEnumToString(const char * const *types,
                 unsigned int ntypes,
-                int type);
+                int type,
+                const char *label);
 
 # define VIR_ENUM_IMPL(name, lastVal, ...) \
     static const char *const name ## TypeList[] = { __VA_ARGS__ }; \
     const char *name ## TypeToString(int type) { \
         return virEnumToString(name ## TypeList, \
                                ARRAY_CARDINALITY(name ## TypeList), \
-                               type); \
+                               type, \
+                               NULL); \
     } \
     int name ## TypeFromString(const char *type) { \
         return virEnumFromString(name ## TypeList, \
                                  ARRAY_CARDINALITY(name ## TypeList), \
-                                 type); \
+                                 type, \
+                                 NULL); \
     } \
     verify(ARRAY_CARDINALITY(name ## TypeList) == lastVal)
 
