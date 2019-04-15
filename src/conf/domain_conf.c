@@ -27196,30 +27196,30 @@ virDomainSchedulerFormat(virBufferPtr buf,
                          virDomainThreadSchedParamPtr sched,
                          size_t id)
 {
+    VIR_AUTOCLEAN(virBuffer) attrBuf = VIR_BUFFER_INITIALIZER;
+
     switch (sched->policy) {
         case VIR_PROC_POLICY_BATCH:
         case VIR_PROC_POLICY_IDLE:
-            virBufferAsprintf(buf, "<%s "
-                              "%s='%zu' scheduler='%s'/>\n",
-                              elementName, idAttributeName, id,
+            virBufferAsprintf(&attrBuf, " %s='%zu'", idAttributeName, id);
+            virBufferAsprintf(&attrBuf, " scheduler='%s'",
                               virProcessSchedPolicyTypeToString(sched->policy));
             break;
 
         case VIR_PROC_POLICY_RR:
         case VIR_PROC_POLICY_FIFO:
-            virBufferAsprintf(buf, "<%s "
-                              "%s='%zu' scheduler='%s' priority='%d'/>\n",
-                              elementName, idAttributeName, id,
-                              virProcessSchedPolicyTypeToString(sched->policy),
-                              sched->priority);
+            virBufferAsprintf(&attrBuf, " %s='%zu'", idAttributeName, id);
+            virBufferAsprintf(&attrBuf, " scheduler='%s'",
+                              virProcessSchedPolicyTypeToString(sched->policy));
+            virBufferAsprintf(&attrBuf, " priority='%d'", sched->priority);
             break;
 
         case VIR_PROC_POLICY_NONE:
         case VIR_PROC_POLICY_LAST:
-            break;
+            return 0;
         }
 
-    return 0;
+    return virXMLFormatElement(buf, elementName, &attrBuf, NULL);
 }
 
 
