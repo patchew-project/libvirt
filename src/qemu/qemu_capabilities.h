@@ -647,4 +647,13 @@ virQEMUCapsGetSEVCapabilities(virQEMUCapsPtr qemuCaps);
 virArch virQEMUCapsArchFromString(const char *arch);
 const char *virQEMUCapsArchToString(virArch arch);
 
+virCPUCompareResult
+virQEMUCapsCPUModelComparison(virQEMUCapsPtr qemuCaps,
+                              const char *libDir,
+                              uid_t runUid,
+                              gid_t runGid,
+                              virCPUDefPtr cpu_a,
+                              virCPUDefPtr cpu_b,
+                              bool failIncompatible);
+
 #endif /* LIBVIRT_QEMU_CAPABILITIES_H */

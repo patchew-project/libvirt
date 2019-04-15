@@ -1066,6 +1066,16 @@ int qemuMonitorGetCPUModelExpansion(qemuMonitorPtr mon,
 
 void qemuMonitorCPUModelInfoFree(qemuMonitorCPUModelInfoPtr model_info);
 
+int
+qemuMonitorGetCPUModelComparison(qemuMonitorPtr mon,
+                                 const char *model_a_name,
+                                 int model_a_nprops,
+                                 virCPUFeatureDefPtr model_a_props,
+                                 const char *model_b_name,
+                                 int model_b_nprops,
+                                 virCPUFeatureDefPtr model_b_props,
+                                 qemuMonitorCPUModelInfoPtr *model_result);
+
 qemuMonitorCPUModelInfoPtr
 qemuMonitorCPUModelInfoCopy(const qemuMonitorCPUModelInfo *orig);
 
