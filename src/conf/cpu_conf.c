@@ -260,6 +260,36 @@ virCPUDefCopy(const virCPUDef *cpu)
 }
 
 
+int
+virCPUDefParseXMLHelper(const char *xml,
+                        const char *xpath,
+                        virCPUType type,
+                        virCPUDefPtr *cpu)
+{
+    xmlDocPtr doc = NULL;
+    xmlXPathContextPtr ctxt = NULL;
+    int ret = -1;
+
+    if (!xml) {
+        virReportError(VIR_ERR_INVALID_ARG, "%s", _("missing CPU definition"));
+        goto cleanup;
+    }
+
+    if (!(doc = virXMLParseStringCtxt(xml, _("(CPU_definition)"), &ctxt)))
+        goto cleanup;
+
+    if (virCPUDefParseXML(ctxt, xpath, type, cpu) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    xmlFreeDoc(doc);
+    xmlXPathFreeContext(ctxt);
+    return ret;
+}
+
+
 /*
  * Parses CPU definition XML from a node pointed to by @xpath. If @xpath is
  * NULL, the current node of @ctxt is used (i.e., it is a shortcut to ".").
