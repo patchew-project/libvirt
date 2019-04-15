@@ -1,3 +1,4 @@
+
 /*
  * viruuid.c: helper APIs for dealing with UUIDs
  *
@@ -201,6 +202,7 @@ getDMISystemUUID(char *uuid, int len)
     const char *paths[] = {
         "/sys/devices/virtual/dmi/id/product_uuid",
         "/sys/class/dmi/id/product_uuid",
+        "/sys/firmware/devicetree/base/vm,uuid",
         NULL
     };
 
