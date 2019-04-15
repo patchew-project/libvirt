@@ -1457,13 +1457,25 @@ virSecurityDACRestoreChardevLabel(virSecurityManagerPtr mgr,
         ret = 0;
         break;
 
+    case VIR_DOMAIN_CHR_TYPE_UNIX:
+        if (!dev_source->data.nix.listen ||
+            (dev_source->data.nix.path &&
+             virFileExists(dev_source->data.nix.path))) {
+            /* Also label mode='bind' sockets if they exist,
+             * e.g. because they were created by libvirt
+             * and passed via FD */
+            if (virSecurityDACRestoreFileLabel(mgr, dev_source->data.nix.path) < 0)
+                goto done;
+        }
+        ret = 0;
+        break;
+
     case VIR_DOMAIN_CHR_TYPE_NULL:
     case VIR_DOMAIN_CHR_TYPE_VC:
     case VIR_DOMAIN_CHR_TYPE_PTY:
     case VIR_DOMAIN_CHR_TYPE_STDIO:
     case VIR_DOMAIN_CHR_TYPE_UDP:
     case VIR_DOMAIN_CHR_TYPE_TCP:
-    case VIR_DOMAIN_CHR_TYPE_UNIX:
     case VIR_DOMAIN_CHR_TYPE_SPICEVMC:
     case VIR_DOMAIN_CHR_TYPE_SPICEPORT:
     case VIR_DOMAIN_CHR_TYPE_NMDM:
