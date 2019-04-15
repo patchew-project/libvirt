@@ -524,6 +524,9 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "scsi-disk.device_id",
               "virtio-pci-non-transitional",
               "overcommit",
+
+              /* 330 */
+              "blockdev-file-dynamic-auto-read-only",
     );
 
 
@@ -1263,6 +1266,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "block-commit/arg-type/*top",  QEMU_CAPS_ACTIVE_COMMIT },
     { "query-iothreads/ret-type/poll-max-ns", QEMU_CAPS_IOTHREAD_POLLING },
     { "query-display-options/ret-type/+egl-headless/rendernode", QEMU_CAPS_EGL_HEADLESS_RENDERNODE },
+    { "blockdev-add/arg-type/+file/$dynamic-auto-read-only", QEMU_CAPS_BLOCK_FILE_AUTO_READONLY_DYNAMIC },
 };
 
 typedef struct _virQEMUCapsObjectTypeProps virQEMUCapsObjectTypeProps;
