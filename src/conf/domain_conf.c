@@ -104,7 +104,7 @@ VIR_ENUM_IMPL(virDomainTaint, NULL,
               "custom-ga-command",
 );
 
-VIR_ENUM_IMPL(virDomainVirt, NULL,
+VIR_ENUM_IMPL(virDomainVirt, "domain type",
               VIR_DOMAIN_VIRT_LAST,
               "none",
               "qemu",
@@ -19327,11 +19327,8 @@ virDomainDefParseCaps(virDomainDefPtr def,
                        "%s", _("missing domain type attribute"));
         return -1;
     }
-    if ((def->virtType = virDomainVirtTypeFromString(virttype)) < 0) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("invalid domain type %s"), virttype);
+    if ((def->virtType = virDomainVirtTypeFromString(virttype)) < 0)
         return -1;
-    }
 
     if (!ostype) {
         if (def->os.bootloader) {
@@ -28035,11 +28032,8 @@ virDomainDefFormatInternal(virDomainDefPtr def,
                   VIR_DOMAIN_DEF_FORMAT_CLOCK_ADJUST,
                   -1);
 
-    if (!(type = virDomainVirtTypeToString(def->virtType))) {
-        virReportError(VIR_ERR_INTERNAL_ERROR,
-                       _("unexpected domain type %d"), def->virtType);
+    if (!(type = virDomainVirtTypeToString(def->virtType)))
         goto error;
-    }
 
     if (def->id == -1)
         flags |= VIR_DOMAIN_DEF_FORMAT_INACTIVE;

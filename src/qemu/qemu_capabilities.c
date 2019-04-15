@@ -4800,11 +4800,8 @@ virQEMUCapsCacheLookupDefault(virFileCachePtr cache,
     virQEMUCapsPtr ret = NULL;
 
     if (virttypeStr &&
-        (virttype = virDomainVirtTypeFromString(virttypeStr)) < 0) {
-        virReportError(VIR_ERR_INVALID_ARG,
-                       _("unknown virttype: %s"), virttypeStr);
+        (virttype = virDomainVirtTypeFromString(virttypeStr)) < 0)
         goto cleanup;
-    }
 
     if (archStr &&
         (arch = virArchFromString(archStr)) == VIR_ARCH_NONE) {

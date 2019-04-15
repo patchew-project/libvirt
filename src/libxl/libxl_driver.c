@@ -6365,12 +6365,8 @@ libxlConnectGetDomainCapabilities(virConnectPtr conn,
     cfg = libxlDriverConfigGet(driver);
 
     if (virttype_str &&
-        (virttype = virDomainVirtTypeFromString(virttype_str)) < 0) {
-        virReportError(VIR_ERR_INVALID_ARG,
-                       _("unknown virttype: %s"),
-                       virttype_str);
+        (virttype = virDomainVirtTypeFromString(virttype_str)) < 0)
         goto cleanup;
-    }
 
     if (virttype != VIR_DOMAIN_VIRT_XEN) {
         virReportError(VIR_ERR_INVALID_ARG,
