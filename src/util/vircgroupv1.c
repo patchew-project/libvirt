@@ -47,7 +47,7 @@ VIR_LOG_INIT("util.cgroup");
 
 
 VIR_ENUM_DECL(virCgroupV1Controller);
-VIR_ENUM_IMPL(virCgroupV1Controller,
+VIR_ENUM_IMPL(virCgroupV1Controller, NULL,
               VIR_CGROUP_CONTROLLER_LAST,
               "cpu", "cpuacct", "cpuset", "memory", "devices",
               "freezer", "blkio", "net_cls", "perf_event",

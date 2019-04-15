@@ -56,7 +56,7 @@ static const vshCmdGrp cmdGroups[];
 static const vshClientHooks hooks;
 
 VIR_ENUM_DECL(virClientTransport);
-VIR_ENUM_IMPL(virClientTransport,
+VIR_ENUM_IMPL(virClientTransport, NULL,
               VIR_CLIENT_TRANS_LAST,
               N_("unix"),
               N_("tcp"),

@@ -66,7 +66,7 @@
 
 VIR_LOG_INIT("qemu.qemu_migration");
 
-VIR_ENUM_IMPL(qemuMigrationJobPhase,
+VIR_ENUM_IMPL(qemuMigrationJobPhase, NULL,
               QEMU_MIGRATION_PHASE_LAST,
               "none",
               "perform2",

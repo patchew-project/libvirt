@@ -38,7 +38,7 @@
 
 VIR_LOG_INIT("qemu.qemu_migration_cookie");
 
-VIR_ENUM_IMPL(qemuMigrationCookieFlag,
+VIR_ENUM_IMPL(qemuMigrationCookieFlag, NULL,
               QEMU_MIGRATION_COOKIE_FLAG_LAST,
               "graphics",
               "lockstate",

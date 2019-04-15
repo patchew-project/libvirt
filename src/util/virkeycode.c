@@ -68,7 +68,7 @@ verify(VIR_KEYMAP_ENTRY_MAX == ARRAY_CARDINALITY(virKeyNameTable_linux));
 verify(VIR_KEYMAP_ENTRY_MAX == ARRAY_CARDINALITY(virKeyNameTable_osx));
 verify(VIR_KEYMAP_ENTRY_MAX == ARRAY_CARDINALITY(virKeyNameTable_win32));
 
-VIR_ENUM_IMPL(virKeycodeSet,
+VIR_ENUM_IMPL(virKeycodeSet, NULL,
               VIR_KEYCODE_SET_LAST,
               "linux",
               "xt",

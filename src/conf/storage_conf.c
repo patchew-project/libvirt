@@ -47,13 +47,13 @@
 
 VIR_LOG_INIT("conf.storage_conf");
 
-VIR_ENUM_IMPL(virStorageVol,
+VIR_ENUM_IMPL(virStorageVol, NULL,
               VIR_STORAGE_VOL_LAST,
               "file", "block", "dir", "network",
               "netdir", "ploop",
 );
 
-VIR_ENUM_IMPL(virStoragePool,
+VIR_ENUM_IMPL(virStoragePool, NULL,
               VIR_STORAGE_POOL_LAST,
               "dir", "fs", "netfs",
               "logical", "disk", "iscsi",
@@ -62,31 +62,31 @@ VIR_ENUM_IMPL(virStoragePool,
               "zfs", "vstorage",
 );
 
-VIR_ENUM_IMPL(virStoragePoolFormatFileSystem,
+VIR_ENUM_IMPL(virStoragePoolFormatFileSystem, NULL,
               VIR_STORAGE_POOL_FS_LAST,
               "auto", "ext2", "ext3",
               "ext4", "ufs", "iso9660", "udf",
               "gfs", "gfs2", "vfat", "hfs+", "xfs", "ocfs2",
 );
 
-VIR_ENUM_IMPL(virStoragePoolFormatFileSystemNet,
+VIR_ENUM_IMPL(virStoragePoolFormatFileSystemNet, NULL,
               VIR_STORAGE_POOL_NETFS_LAST,
               "auto", "nfs", "glusterfs", "cifs",
 );
 
-VIR_ENUM_IMPL(virStoragePoolFormatDisk,
+VIR_ENUM_IMPL(virStoragePoolFormatDisk, NULL,
               VIR_STORAGE_POOL_DISK_LAST,
               "unknown", "dos", "dvh", "gpt",
               "mac", "bsd", "pc98", "sun", "lvm2",
 );
 
-VIR_ENUM_IMPL(virStoragePoolFormatLogical,
+VIR_ENUM_IMPL(virStoragePoolFormatLogical, NULL,
               VIR_STORAGE_POOL_LOGICAL_LAST,
               "unknown", "lvm2",
 );
 
 
-VIR_ENUM_IMPL(virStorageVolFormatDisk,
+VIR_ENUM_IMPL(virStorageVolFormatDisk, NULL,
               VIR_STORAGE_VOL_DISK_LAST,
               "none", "linux", "fat16",
               "fat32", "linux-swap",
@@ -94,12 +94,12 @@ VIR_ENUM_IMPL(virStorageVolFormatDisk,
               "extended",
 );
 
-VIR_ENUM_IMPL(virStorageVolDefRefreshAllocation,
+VIR_ENUM_IMPL(virStorageVolDefRefreshAllocation, NULL,
               VIR_STORAGE_VOL_DEF_REFRESH_ALLOCATION_LAST,
               "default", "capacity",
 );
 
-VIR_ENUM_IMPL(virStoragePartedFs,
+VIR_ENUM_IMPL(virStoragePartedFs, NULL,
               VIR_STORAGE_PARTED_FS_TYPE_LAST,
               "ext2", "ext2", "fat16",
               "fat32", "linux-swap",

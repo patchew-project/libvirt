@@ -906,12 +906,12 @@ static const vshCmdOptDef opts_network_update[] = {
 };
 
 VIR_ENUM_DECL(virNetworkUpdateCommand);
-VIR_ENUM_IMPL(virNetworkUpdateCommand,
+VIR_ENUM_IMPL(virNetworkUpdateCommand, NULL,
               VIR_NETWORK_UPDATE_COMMAND_LAST,
               "none", "modify", "delete", "add-last", "add-first");
 
 VIR_ENUM_DECL(virNetworkSection);
-VIR_ENUM_IMPL(virNetworkSection,
+VIR_ENUM_IMPL(virNetworkSection, NULL,
               VIR_NETWORK_SECTION_LAST,
               "none", "bridge", "domain", "ip", "ip-dhcp-host",
               "ip-dhcp-range", "forward", "forward-interface",
@@ -1140,7 +1140,7 @@ cmdNetworkEdit(vshControl *ctl, const vshCmd *cmd)
  * "net-event" command
  */
 VIR_ENUM_DECL(virshNetworkEvent);
-VIR_ENUM_IMPL(virshNetworkEvent,
+VIR_ENUM_IMPL(virshNetworkEvent, NULL,
               VIR_NETWORK_EVENT_LAST,
               N_("Defined"),
               N_("Undefined"),
@@ -1164,7 +1164,7 @@ struct virshNetEventData {
 typedef struct virshNetEventData virshNetEventData;
 
 VIR_ENUM_DECL(virshNetworkEventId);
-VIR_ENUM_IMPL(virshNetworkEventId,
+VIR_ENUM_IMPL(virshNetworkEventId, NULL,
               VIR_NETWORK_EVENT_ID_LAST,
               "lifecycle");
 

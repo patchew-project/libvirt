@@ -38,21 +38,21 @@
 
 #define VIR_FROM_THIS VIR_FROM_DOMAIN
 
-VIR_ENUM_IMPL(virDomainNumatuneMemMode,
+VIR_ENUM_IMPL(virDomainNumatuneMemMode, NULL,
               VIR_DOMAIN_NUMATUNE_MEM_LAST,
               "strict",
               "preferred",
               "interleave",
 );
 
-VIR_ENUM_IMPL(virDomainNumatunePlacement,
+VIR_ENUM_IMPL(virDomainNumatunePlacement, NULL,
               VIR_DOMAIN_NUMATUNE_PLACEMENT_LAST,
               "default",
               "static",
               "auto",
 );
 
-VIR_ENUM_IMPL(virDomainMemoryAccess,
+VIR_ENUM_IMPL(virDomainMemoryAccess, NULL,
               VIR_DOMAIN_MEMORY_ACCESS_LAST,
               "default",
               "shared",

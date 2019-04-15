@@ -32,26 +32,26 @@
 
 VIR_LOG_INIT("conf.cpu_conf");
 
-VIR_ENUM_IMPL(virCPU,
+VIR_ENUM_IMPL(virCPU, NULL,
               VIR_CPU_TYPE_LAST,
               "host", "guest", "auto",
 );
 
-VIR_ENUM_IMPL(virCPUMode,
+VIR_ENUM_IMPL(virCPUMode, NULL,
               VIR_CPU_MODE_LAST,
               "custom",
               "host-model",
               "host-passthrough",
 );
 
-VIR_ENUM_IMPL(virCPUMatch,
+VIR_ENUM_IMPL(virCPUMatch, NULL,
               VIR_CPU_MATCH_LAST,
               "minimum",
               "exact",
               "strict",
 );
 
-VIR_ENUM_IMPL(virCPUCheck,
+VIR_ENUM_IMPL(virCPUCheck, NULL,
               VIR_CPU_CHECK_LAST,
               "default",
               "none",
@@ -59,13 +59,13 @@ VIR_ENUM_IMPL(virCPUCheck,
               "full",
 );
 
-VIR_ENUM_IMPL(virCPUFallback,
+VIR_ENUM_IMPL(virCPUFallback, NULL,
               VIR_CPU_FALLBACK_LAST,
               "allow",
               "forbid",
 );
 
-VIR_ENUM_IMPL(virCPUFeaturePolicy,
+VIR_ENUM_IMPL(virCPUFeaturePolicy, NULL,
               VIR_CPU_FEATURE_LAST,
               "force",
               "require",
@@ -74,7 +74,7 @@ VIR_ENUM_IMPL(virCPUFeaturePolicy,
               "forbid",
 );
 
-VIR_ENUM_IMPL(virCPUCacheMode,
+VIR_ENUM_IMPL(virCPUCacheMode, NULL,
               VIR_CPU_CACHE_MODE_LAST,
               "emulate",
               "passthrough",

@@ -1215,7 +1215,7 @@ void qemuAgentNotifyEvent(qemuAgentPtr mon,
 
 VIR_ENUM_DECL(qemuAgentShutdownMode);
 
-VIR_ENUM_IMPL(qemuAgentShutdownMode,
+VIR_ENUM_IMPL(qemuAgentShutdownMode, NULL,
               QEMU_AGENT_SHUTDOWN_LAST,
               "powerdown", "reboot", "halt",
 );
@@ -1335,7 +1335,7 @@ int qemuAgentFSThaw(qemuAgentPtr mon)
 
 VIR_ENUM_DECL(qemuAgentSuspendMode);
 
-VIR_ENUM_IMPL(qemuAgentSuspendMode,
+VIR_ENUM_IMPL(qemuAgentSuspendMode, NULL,
               VIR_NODE_SUSPEND_TARGET_LAST,
               "guest-suspend-ram",
               "guest-suspend-disk",

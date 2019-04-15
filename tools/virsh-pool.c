@@ -1039,7 +1039,7 @@ virshStoragePoolListCollect(vshControl *ctl,
 
 
 VIR_ENUM_DECL(virshStoragePoolState);
-VIR_ENUM_IMPL(virshStoragePoolState,
+VIR_ENUM_IMPL(virshStoragePoolState, NULL,
               VIR_STORAGE_POOL_STATE_LAST,
               N_("inactive"),
               N_("building"),
@@ -1890,7 +1890,7 @@ cmdPoolEdit(vshControl *ctl, const vshCmd *cmd)
  * "pool-event" command
  */
 VIR_ENUM_DECL(virshPoolEvent);
-VIR_ENUM_IMPL(virshPoolEvent,
+VIR_ENUM_IMPL(virshPoolEvent, NULL,
               VIR_STORAGE_POOL_EVENT_LAST,
               N_("Defined"),
               N_("Undefined"),

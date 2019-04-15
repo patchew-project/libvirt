@@ -52,7 +52,7 @@ typedef enum {
 } qemuFirmwareOSInterface;
 
 VIR_ENUM_DECL(qemuFirmwareOSInterface);
-VIR_ENUM_IMPL(qemuFirmwareOSInterface,
+VIR_ENUM_IMPL(qemuFirmwareOSInterface, NULL,
               QEMU_FIRMWARE_OS_INTERFACE_LAST,
               "",
               "bios",
@@ -102,7 +102,7 @@ typedef enum {
 } qemuFirmwareDevice;
 
 VIR_ENUM_DECL(qemuFirmwareDevice);
-VIR_ENUM_IMPL(qemuFirmwareDevice,
+VIR_ENUM_IMPL(qemuFirmwareDevice, NULL,
               QEMU_FIRMWARE_DEVICE_LAST,
               "",
               "flash",
@@ -148,7 +148,7 @@ typedef enum {
 } qemuFirmwareFeature;
 
 VIR_ENUM_DECL(qemuFirmwareFeature);
-VIR_ENUM_IMPL(qemuFirmwareFeature,
+VIR_ENUM_IMPL(qemuFirmwareFeature, NULL,
               QEMU_FIRMWARE_FEATURE_LAST,
               "",
               "acpi-s3",

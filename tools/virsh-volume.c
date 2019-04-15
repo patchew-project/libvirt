@@ -937,7 +937,7 @@ static const vshCmdOptDef opts_vol_wipe[] = {
 };
 
 VIR_ENUM_DECL(virStorageVolWipeAlgorithm);
-VIR_ENUM_IMPL(virStorageVolWipeAlgorithm,
+VIR_ENUM_IMPL(virStorageVolWipeAlgorithm, NULL,
               VIR_STORAGE_VOL_WIPE_ALG_LAST,
               "zero", "nnsa", "dod", "bsi", "gutmann", "schneier",
               "pfitzner7", "pfitzner33", "random", "trim");
@@ -984,7 +984,7 @@ cmdVolWipe(vshControl *ctl, const vshCmd *cmd)
 
 
 VIR_ENUM_DECL(virshStorageVol);
-VIR_ENUM_IMPL(virshStorageVol,
+VIR_ENUM_IMPL(virshStorageVol, NULL,
               VIR_STORAGE_VOL_LAST,
               N_("file"),
               N_("block"),

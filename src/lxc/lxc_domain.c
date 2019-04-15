@@ -37,7 +37,7 @@
 #define VIR_FROM_THIS VIR_FROM_LXC
 #define LXC_NAMESPACE_HREF "http://libvirt.org/schemas/domain/lxc/1.0"
 
-VIR_ENUM_IMPL(virLXCDomainJob,
+VIR_ENUM_IMPL(virLXCDomainJob, NULL,
               LXC_JOB_LAST,
               "none",
               "query",
@@ -181,14 +181,14 @@ virLXCDomainObjPrivateFree(void *data)
 
 
 
-VIR_ENUM_IMPL(virLXCDomainNamespace,
+VIR_ENUM_IMPL(virLXCDomainNamespace, NULL,
               VIR_LXC_DOMAIN_NAMESPACE_LAST,
               "sharenet",
               "shareipc",
               "shareuts",
 );
 
-VIR_ENUM_IMPL(virLXCDomainNamespaceSource,
+VIR_ENUM_IMPL(virLXCDomainNamespaceSource, NULL,
               VIR_LXC_DOMAIN_NAMESPACE_SOURCE_LAST,
               "none",
               "name",

@@ -27,7 +27,7 @@
 
 #define VIR_FROM_THIS VIR_FROM_CAPABILITIES
 
-VIR_ENUM_IMPL(virDomainCapsCPUUsable,
+VIR_ENUM_IMPL(virDomainCapsCPUUsable, NULL,
               VIR_DOMCAPS_CPU_USABLE_LAST,
               "unknown", "yes", "no",
 );

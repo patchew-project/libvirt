@@ -168,7 +168,7 @@ static int qemuMonitorOnceInit(void)
 VIR_ONCE_GLOBAL_INIT(qemuMonitor);
 
 
-VIR_ENUM_IMPL(qemuMonitorMigrationStatus,
+VIR_ENUM_IMPL(qemuMonitorMigrationStatus, NULL,
               QEMU_MONITOR_MIGRATION_STATUS_LAST,
               "inactive", "setup",
               "active", "pre-switchover",
@@ -177,7 +177,7 @@ VIR_ENUM_IMPL(qemuMonitorMigrationStatus,
               "cancelling", "cancelled",
 );
 
-VIR_ENUM_IMPL(qemuMonitorVMStatus,
+VIR_ENUM_IMPL(qemuMonitorVMStatus, NULL,
               QEMU_MONITOR_VM_STATUS_LAST,
               "debug", "inmigrate", "internal-error", "io-error", "paused",
               "postmigrate", "prelaunch", "finish-migrate", "restore-vm",
@@ -194,12 +194,12 @@ typedef enum {
 
 VIR_ENUM_DECL(qemuMonitorBlockIOStatus);
 
-VIR_ENUM_IMPL(qemuMonitorBlockIOStatus,
+VIR_ENUM_IMPL(qemuMonitorBlockIOStatus, NULL,
               QEMU_MONITOR_BLOCK_IO_STATUS_LAST,
               "ok", "failed", "nospace",
 );
 
-VIR_ENUM_IMPL(qemuMonitorDumpStatus,
+VIR_ENUM_IMPL(qemuMonitorDumpStatus, NULL,
               QEMU_MONITOR_DUMP_STATUS_LAST,
               "none", "active", "completed", "failed",
 );

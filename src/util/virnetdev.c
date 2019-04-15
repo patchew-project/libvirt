@@ -2413,7 +2413,7 @@ virNetDevSetNetConfig(const char *linkdev ATTRIBUTE_UNUSED,
 
 #endif /* defined(__linux__) && defined(HAVE_LIBNL) && defined(IFLA_VF_MAX) */
 
-VIR_ENUM_IMPL(virNetDevIfState,
+VIR_ENUM_IMPL(virNetDevIfState, NULL,
               VIR_NETDEV_IF_STATE_LAST,
               "" /* value of zero means no state */,
               "unknown", "notpresent",
@@ -2421,7 +2421,7 @@ VIR_ENUM_IMPL(virNetDevIfState,
               "testing", "dormant", "up",
 );
 
-VIR_ENUM_IMPL(virNetDevFeature,
+VIR_ENUM_IMPL(virNetDevFeature, NULL,
               VIR_NET_DEV_FEAT_LAST,
               "rx",
               "tx",
@@ -2765,7 +2765,7 @@ static int virNetDevGetMcastList(const char *ifname,
 }
 
 
-VIR_ENUM_IMPL(virNetDevRxFilterMode,
+VIR_ENUM_IMPL(virNetDevRxFilterMode, NULL,
               VIR_NETDEV_RX_FILTER_MODE_LAST,
               "none",
               "normal",

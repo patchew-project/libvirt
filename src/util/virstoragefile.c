@@ -49,7 +49,7 @@ VIR_LOG_INIT("util.storagefile");
 
 static virClassPtr virStorageSourceClass;
 
-VIR_ENUM_IMPL(virStorage,
+VIR_ENUM_IMPL(virStorage, NULL,
               VIR_STORAGE_TYPE_LAST,
               "none",
               "file",
@@ -59,7 +59,7 @@ VIR_ENUM_IMPL(virStorage,
               "volume",
 );
 
-VIR_ENUM_IMPL(virStorageFileFormat,
+VIR_ENUM_IMPL(virStorageFileFormat, NULL,
               VIR_STORAGE_FILE_LAST,
               "none",
               "raw", "dir", "bochs",
@@ -71,12 +71,12 @@ VIR_ENUM_IMPL(virStorageFileFormat,
               "cow", "qcow", "qcow2", "qed", "vmdk",
 );
 
-VIR_ENUM_IMPL(virStorageFileFeature,
+VIR_ENUM_IMPL(virStorageFileFeature, NULL,
               VIR_STORAGE_FILE_FEATURE_LAST,
               "lazy_refcounts",
 );
 
-VIR_ENUM_IMPL(virStorageNetProtocol,
+VIR_ENUM_IMPL(virStorageNetProtocol, NULL,
               VIR_STORAGE_NET_PROTOCOL_LAST,
               "none",
               "nbd",
@@ -93,21 +93,21 @@ VIR_ENUM_IMPL(virStorageNetProtocol,
               "vxhs",
 );
 
-VIR_ENUM_IMPL(virStorageNetHostTransport,
+VIR_ENUM_IMPL(virStorageNetHostTransport, NULL,
               VIR_STORAGE_NET_HOST_TRANS_LAST,
               "tcp",
               "unix",
               "rdma",
 );
 
-VIR_ENUM_IMPL(virStorageSourcePoolMode,
+VIR_ENUM_IMPL(virStorageSourcePoolMode, NULL,
               VIR_STORAGE_SOURCE_POOL_MODE_LAST,
               "default",
               "host",
               "direct",
 );
 
-VIR_ENUM_IMPL(virStorageAuth,
+VIR_ENUM_IMPL(virStorageAuth, NULL,
               VIR_STORAGE_AUTH_TYPE_LAST,
               "none", "chap", "ceph",
 );

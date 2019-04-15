@@ -38,7 +38,7 @@
 
 VIR_LOG_INIT("vmware.vmware_conf");
 
-VIR_ENUM_IMPL(vmwareDriver,
+VIR_ENUM_IMPL(vmwareDriver, NULL,
               VMWARE_DRIVER_LAST,
               "player",
               "ws",

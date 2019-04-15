@@ -50,7 +50,7 @@
 VIR_LOG_INIT("conf.capabilities");
 
 VIR_ENUM_DECL(virCapsHostPMTarget);
-VIR_ENUM_IMPL(virCapsHostPMTarget,
+VIR_ENUM_IMPL(virCapsHostPMTarget, NULL,
               VIR_NODE_SUSPEND_TARGET_LAST,
               "suspend_mem", "suspend_disk", "suspend_hybrid",
 );

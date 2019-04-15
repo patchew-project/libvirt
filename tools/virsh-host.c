@@ -774,7 +774,7 @@ typedef enum {
 } virshCPUStats;
 
 VIR_ENUM_DECL(virshCPUStats);
-VIR_ENUM_IMPL(virshCPUStats,
+VIR_ENUM_IMPL(virshCPUStats, NULL,
               VIRSH_CPU_LAST,
               VIR_NODE_CPU_STATS_USER,
               VIR_NODE_CPU_STATS_KERNEL,

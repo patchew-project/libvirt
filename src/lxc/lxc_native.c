@@ -35,7 +35,7 @@
 
 VIR_LOG_INIT("lxc.lxc_native");
 
-VIR_ENUM_IMPL(virLXCNetworkConfigEntry,
+VIR_ENUM_IMPL(virLXCNetworkConfigEntry, NULL,
               VIR_LXC_NETWORK_CONFIG_LAST,
               "name",
               "type",

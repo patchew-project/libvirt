@@ -40,7 +40,7 @@
 
 VIR_LOG_INIT("libxl.libxl_domain");
 
-VIR_ENUM_IMPL(libxlDomainJob,
+VIR_ENUM_IMPL(libxlDomainJob, NULL,
               LIBXL_JOB_LAST,
               "none",
               "query",

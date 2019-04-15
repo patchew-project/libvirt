@@ -53,7 +53,7 @@ VIR_LOG_INIT("util.virresctrl");
  * consistent in between all of them. */
 
 /* Cache name mapping for Linux kernel naming. */
-VIR_ENUM_IMPL(virCacheKernel,
+VIR_ENUM_IMPL(virCacheKernel, NULL,
               VIR_CACHE_TYPE_LAST,
               "Unified",
               "Instruction",
@@ -61,7 +61,7 @@ VIR_ENUM_IMPL(virCacheKernel,
 );
 
 /* Cache name mapping for our XML naming. */
-VIR_ENUM_IMPL(virCache,
+VIR_ENUM_IMPL(virCache, NULL,
               VIR_CACHE_TYPE_LAST,
               "both",
               "code",
@@ -70,7 +70,7 @@ VIR_ENUM_IMPL(virCache,
 
 /* Cache name mapping for resctrl interface naming. */
 VIR_ENUM_DECL(virResctrl);
-VIR_ENUM_IMPL(virResctrl,
+VIR_ENUM_IMPL(virResctrl, NULL,
               VIR_CACHE_TYPE_LAST,
               "",
               "CODE",
@@ -78,7 +78,7 @@ VIR_ENUM_IMPL(virResctrl,
 );
 
 /* Monitor feature name prefix mapping for monitor naming */
-VIR_ENUM_IMPL(virResctrlMonitorPrefix,
+VIR_ENUM_IMPL(virResctrlMonitorPrefix, NULL,
               VIR_RESCTRL_MONITOR_TYPE_LAST,
               "__unsupported__",
               "llc_",

@@ -80,7 +80,7 @@ VIR_LOG_INIT("qemu.qemu_domain");
 
 #define QEMU_NAMESPACE_HREF "http://libvirt.org/schemas/domain/qemu/1.0"
 
-VIR_ENUM_IMPL(qemuDomainJob,
+VIR_ENUM_IMPL(qemuDomainJob, NULL,
               QEMU_JOB_LAST,
               "none",
               "query",
@@ -93,14 +93,14 @@ VIR_ENUM_IMPL(qemuDomainJob,
               "async nested",
 );
 
-VIR_ENUM_IMPL(qemuDomainAgentJob,
+VIR_ENUM_IMPL(qemuDomainAgentJob, NULL,
               QEMU_AGENT_JOB_LAST,
               "none",
               "query",
               "modify",
 );
 
-VIR_ENUM_IMPL(qemuDomainAsyncJob,
+VIR_ENUM_IMPL(qemuDomainAsyncJob, NULL,
               QEMU_ASYNC_JOB_LAST,
               "none",
               "migration out",
@@ -111,7 +111,7 @@ VIR_ENUM_IMPL(qemuDomainAsyncJob,
               "start",
 );
 
-VIR_ENUM_IMPL(qemuDomainNamespace,
+VIR_ENUM_IMPL(qemuDomainNamespace, NULL,
               QEMU_DOMAIN_NS_LAST,
               "mount",
 );

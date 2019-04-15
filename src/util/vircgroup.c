@@ -62,7 +62,7 @@ VIR_LOG_INIT("util.cgroup");
 #define CGROUP_NB_TOTAL_CPU_STAT_PARAM 3
 #define CGROUP_NB_PER_CPU_STAT_PARAM   1
 
-VIR_ENUM_IMPL(virCgroupController,
+VIR_ENUM_IMPL(virCgroupController, NULL,
               VIR_CGROUP_CONTROLLER_LAST,
               "cpu", "cpuacct", "cpuset", "memory", "devices",
               "freezer", "blkio", "net_cls", "perf_event",

@@ -30,7 +30,7 @@
 #define VIR_FROM_THIS VIR_FROM_CGROUP
 
 VIR_ENUM_DECL(virCgroupBackend);
-VIR_ENUM_IMPL(virCgroupBackend,
+VIR_ENUM_IMPL(virCgroupBackend, NULL,
               VIR_CGROUP_BACKEND_TYPE_LAST,
               "cgroup V2",
               "cgroup V1",

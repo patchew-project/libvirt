@@ -33,19 +33,19 @@ virEnumToString(const char * const *types,
                 int type,
                 const char *label);
 
-# define VIR_ENUM_IMPL(name, lastVal, ...) \
+# define VIR_ENUM_IMPL(name, label, lastVal, ...) \
     static const char *const name ## TypeList[] = { __VA_ARGS__ }; \
     const char *name ## TypeToString(int type) { \
         return virEnumToString(name ## TypeList, \
                                ARRAY_CARDINALITY(name ## TypeList), \
                                type, \
-                               NULL); \
+                               label); \
     } \
     int name ## TypeFromString(const char *type) { \
         return virEnumFromString(name ## TypeList, \
                                  ARRAY_CARDINALITY(name ## TypeList), \
                                  type, \
-                                 NULL); \
+                                 label); \
     } \
     verify(ARRAY_CARDINALITY(name ## TypeList) == lastVal)
 

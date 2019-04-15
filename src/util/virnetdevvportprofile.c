@@ -25,7 +25,7 @@
 
 #define VIR_FROM_THIS VIR_FROM_NET
 
-VIR_ENUM_IMPL(virNetDevVPort,
+VIR_ENUM_IMPL(virNetDevVPort, NULL,
               VIR_NETDEV_VPORT_PROFILE_LAST,
               "none",
               "802.1Qbg",
@@ -34,7 +34,7 @@ VIR_ENUM_IMPL(virNetDevVPort,
               "midonet",
 );
 
-VIR_ENUM_IMPL(virNetDevVPortProfileOp,
+VIR_ENUM_IMPL(virNetDevVPortProfileOp, NULL,
               VIR_NETDEV_VPORT_PROFILE_OP_LAST,
               "create",
               "save",

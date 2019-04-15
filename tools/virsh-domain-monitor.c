@@ -38,7 +38,7 @@
 #include "virenum.h"
 
 VIR_ENUM_DECL(virshDomainIOError);
-VIR_ENUM_IMPL(virshDomainIOError,
+VIR_ENUM_IMPL(virshDomainIOError, NULL,
               VIR_DOMAIN_DISK_ERROR_LAST,
               N_("no error"),
               N_("unspecified error"),
@@ -102,7 +102,7 @@ virshGetDomainDescription(vshControl *ctl, virDomainPtr dom, bool title,
 }
 
 VIR_ENUM_DECL(virshDomainControlState);
-VIR_ENUM_IMPL(virshDomainControlState,
+VIR_ENUM_IMPL(virshDomainControlState, NULL,
               VIR_DOMAIN_CONTROL_LAST,
               N_("ok"),
               N_("background job"),
@@ -118,7 +118,7 @@ virshDomainControlStateToString(int state)
 }
 
 VIR_ENUM_DECL(virshDomainControlErrorReason);
-VIR_ENUM_IMPL(virshDomainControlErrorReason,
+VIR_ENUM_IMPL(virshDomainControlErrorReason, NULL,
               VIR_DOMAIN_CONTROL_ERROR_REASON_LAST,
               "",
               N_("unknown"),
@@ -134,7 +134,7 @@ virshDomainControlErrorReasonToString(int reason)
 }
 
 VIR_ENUM_DECL(virshDomainState);
-VIR_ENUM_IMPL(virshDomainState,
+VIR_ENUM_IMPL(virshDomainState, NULL,
               VIR_DOMAIN_LAST,
               N_("no state"),
               N_("running"),
@@ -154,13 +154,13 @@ virshDomainStateToString(int state)
 }
 
 VIR_ENUM_DECL(virshDomainNostateReason);
-VIR_ENUM_IMPL(virshDomainNostateReason,
+VIR_ENUM_IMPL(virshDomainNostateReason, NULL,
               VIR_DOMAIN_NOSTATE_LAST,
               N_("unknown"),
 );
 
 VIR_ENUM_DECL(virshDomainRunningReason);
-VIR_ENUM_IMPL(virshDomainRunningReason,
+VIR_ENUM_IMPL(virshDomainRunningReason, NULL,
               VIR_DOMAIN_RUNNING_LAST,
               N_("unknown"),
               N_("booted"),
@@ -176,13 +176,13 @@ VIR_ENUM_IMPL(virshDomainRunningReason,
 );
 
 VIR_ENUM_DECL(virshDomainBlockedReason);
-VIR_ENUM_IMPL(virshDomainBlockedReason,
+VIR_ENUM_IMPL(virshDomainBlockedReason, NULL,
               VIR_DOMAIN_BLOCKED_LAST,
               N_("unknown"),
 );
 
 VIR_ENUM_DECL(virshDomainPausedReason);
-VIR_ENUM_IMPL(virshDomainPausedReason,
+VIR_ENUM_IMPL(virshDomainPausedReason, NULL,
               VIR_DOMAIN_PAUSED_LAST,
               N_("unknown"),
               N_("user"),
@@ -201,14 +201,14 @@ VIR_ENUM_IMPL(virshDomainPausedReason,
 );
 
 VIR_ENUM_DECL(virshDomainShutdownReason);
-VIR_ENUM_IMPL(virshDomainShutdownReason,
+VIR_ENUM_IMPL(virshDomainShutdownReason, NULL,
               VIR_DOMAIN_SHUTDOWN_LAST,
               N_("unknown"),
               N_("user"),
 );
 
 VIR_ENUM_DECL(virshDomainShutoffReason);
-VIR_ENUM_IMPL(virshDomainShutoffReason,
+VIR_ENUM_IMPL(virshDomainShutoffReason, NULL,
               VIR_DOMAIN_SHUTOFF_LAST,
               N_("unknown"),
               N_("shutdown"),
@@ -222,14 +222,14 @@ VIR_ENUM_IMPL(virshDomainShutoffReason,
 );
 
 VIR_ENUM_DECL(virshDomainCrashedReason);
-VIR_ENUM_IMPL(virshDomainCrashedReason,
+VIR_ENUM_IMPL(virshDomainCrashedReason, NULL,
               VIR_DOMAIN_CRASHED_LAST,
               N_("unknown"),
               N_("panicked"),
 );
 
 VIR_ENUM_DECL(virshDomainPMSuspendedReason);
-VIR_ENUM_IMPL(virshDomainPMSuspendedReason,
+VIR_ENUM_IMPL(virshDomainPMSuspendedReason, NULL,
               VIR_DOMAIN_PMSUSPENDED_LAST,
               N_("unknown"),
 );

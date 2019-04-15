@@ -43,32 +43,32 @@
 
 #define VIR_FROM_THIS VIR_FROM_NETWORK
 
-VIR_ENUM_IMPL(virNetworkForward,
+VIR_ENUM_IMPL(virNetworkForward, NULL,
               VIR_NETWORK_FORWARD_LAST,
               "none", "nat", "route", "open",
               "bridge", "private", "vepa", "passthrough",
               "hostdev",
 );
 
-VIR_ENUM_IMPL(virNetworkBridgeMACTableManager,
+VIR_ENUM_IMPL(virNetworkBridgeMACTableManager, NULL,
               VIR_NETWORK_BRIDGE_MAC_TABLE_MANAGER_LAST,
               "default", "kernel", "libvirt",
 );
 
 VIR_ENUM_DECL(virNetworkForwardHostdevDevice);
-VIR_ENUM_IMPL(virNetworkForwardHostdevDevice,
+VIR_ENUM_IMPL(virNetworkForwardHostdevDevice, NULL,
               VIR_NETWORK_FORWARD_HOSTDEV_DEVICE_LAST,
               "none", "pci", "netdev",
 );
 
-VIR_ENUM_IMPL(virNetworkForwardDriverName,
+VIR_ENUM_IMPL(virNetworkForwardDriverName, NULL,
               VIR_NETWORK_FORWARD_DRIVER_NAME_LAST,
               "default",
               "kvm",
               "vfio",
 );
 
-VIR_ENUM_IMPL(virNetworkTaint,
+VIR_ENUM_IMPL(virNetworkTaint, NULL,
               VIR_NETWORK_TAINT_LAST,
               "hook-script",
 );

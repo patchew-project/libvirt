@@ -99,7 +99,7 @@ virshDomainDefine(virConnectPtr conn, const char *xml, unsigned int flags)
 }
 
 VIR_ENUM_DECL(virshDomainVcpuState);
-VIR_ENUM_IMPL(virshDomainVcpuState,
+VIR_ENUM_IMPL(virshDomainVcpuState, NULL,
               VIR_VCPU_LAST,
               N_("offline"),
               N_("running"),
@@ -2556,7 +2556,7 @@ static const vshCmdOptDef opts_blockjob[] = {
 };
 
 VIR_ENUM_DECL(virshDomainBlockJob);
-VIR_ENUM_IMPL(virshDomainBlockJob,
+VIR_ENUM_IMPL(virshDomainBlockJob, NULL,
               VIR_DOMAIN_BLOCK_JOB_TYPE_LAST,
               N_("Unknown job"),
               N_("Block Pull"),
@@ -5645,13 +5645,13 @@ static const vshCmdOptDef opts_setLifecycleAction[] = {
     {.name = NULL}
 };
 
-VIR_ENUM_IMPL(virDomainLifecycle,
+VIR_ENUM_IMPL(virDomainLifecycle, NULL,
               VIR_DOMAIN_LIFECYCLE_LAST,
               "poweroff",
               "reboot",
               "crash");
 
-VIR_ENUM_IMPL(virDomainLifecycleAction,
+VIR_ENUM_IMPL(virDomainLifecycleAction, NULL,
               VIR_DOMAIN_LIFECYCLE_ACTION_LAST,
               "destroy",
               "restart",
@@ -6042,7 +6042,7 @@ static const vshCmdOptDef opts_domjobinfo[] = {
 };
 
 VIR_ENUM_DECL(virshDomainJob);
-VIR_ENUM_IMPL(virshDomainJob,
+VIR_ENUM_IMPL(virshDomainJob, NULL,
               VIR_DOMAIN_JOB_LAST,
               N_("None"),
               N_("Bounded"),
@@ -6059,7 +6059,7 @@ virshDomainJobToString(int type)
 }
 
 VIR_ENUM_DECL(virshDomainJobOperation);
-VIR_ENUM_IMPL(virshDomainJobOperation,
+VIR_ENUM_IMPL(virshDomainJobOperation, NULL,
               VIR_DOMAIN_JOB_OPERATION_LAST,
               N_("Unknown"),
               N_("Start"),
@@ -8777,7 +8777,7 @@ static const vshCmdOptDef opts_send_process_signal[] = {
 };
 
 VIR_ENUM_DECL(virDomainProcessSignal);
-VIR_ENUM_IMPL(virDomainProcessSignal,
+VIR_ENUM_IMPL(virDomainProcessSignal, NULL,
               VIR_DOMAIN_PROCESS_SIGNAL_LAST,
                "nop",    "hup",  "int",  "quit",  "ill", /* 0-4 */
               "trap",   "abrt",  "bus",   "fpe", "kill", /* 5-9 */
@@ -12740,7 +12740,7 @@ cmdEdit(vshControl *ctl, const vshCmd *cmd)
  * "event" command
  */
 VIR_ENUM_DECL(virshDomainEvent);
-VIR_ENUM_IMPL(virshDomainEvent,
+VIR_ENUM_IMPL(virshDomainEvent, NULL,
               VIR_DOMAIN_EVENT_LAST,
               N_("Defined"),
               N_("Undefined"),
@@ -12760,7 +12760,7 @@ virshDomainEventToString(int event)
 }
 
 VIR_ENUM_DECL(virshDomainEventDefined);
-VIR_ENUM_IMPL(virshDomainEventDefined,
+VIR_ENUM_IMPL(virshDomainEventDefined, NULL,
               VIR_DOMAIN_EVENT_DEFINED_LAST,
               N_("Added"),
               N_("Updated"),
@@ -12768,13 +12768,13 @@ VIR_ENUM_IMPL(virshDomainEventDefined,
               N_("Snapshot"));
 
 VIR_ENUM_DECL(virshDomainEventUndefined);
-VIR_ENUM_IMPL(virshDomainEventUndefined,
+VIR_ENUM_IMPL(virshDomainEventUndefined, NULL,
               VIR_DOMAIN_EVENT_UNDEFINED_LAST,
               N_("Removed"),
               N_("Renamed"));
 
 VIR_ENUM_DECL(virshDomainEventStarted);
-VIR_ENUM_IMPL(virshDomainEventStarted,
+VIR_ENUM_IMPL(virshDomainEventStarted, NULL,
               VIR_DOMAIN_EVENT_STARTED_LAST,
               N_("Booted"),
               N_("Migrated"),
@@ -12783,7 +12783,7 @@ VIR_ENUM_IMPL(virshDomainEventStarted,
               N_("Event wakeup"));
 
 VIR_ENUM_DECL(virshDomainEventSuspended);
-VIR_ENUM_IMPL(virshDomainEventSuspended,
+VIR_ENUM_IMPL(virshDomainEventSuspended, NULL,
               VIR_DOMAIN_EVENT_SUSPENDED_LAST,
               N_("Paused"),
               N_("Migrated"),
@@ -12796,7 +12796,7 @@ VIR_ENUM_IMPL(virshDomainEventSuspended,
               N_("Post-copy Error"));
 
 VIR_ENUM_DECL(virshDomainEventResumed);
-VIR_ENUM_IMPL(virshDomainEventResumed,
+VIR_ENUM_IMPL(virshDomainEventResumed, NULL,
               VIR_DOMAIN_EVENT_RESUMED_LAST,
               N_("Unpaused"),
               N_("Migrated"),
@@ -12804,7 +12804,7 @@ VIR_ENUM_IMPL(virshDomainEventResumed,
               N_("Post-copy"));
 
 VIR_ENUM_DECL(virshDomainEventStopped);
-VIR_ENUM_IMPL(virshDomainEventStopped,
+VIR_ENUM_IMPL(virshDomainEventStopped, NULL,
               VIR_DOMAIN_EVENT_STOPPED_LAST,
               N_("Shutdown"),
               N_("Destroyed"),
@@ -12815,20 +12815,20 @@ VIR_ENUM_IMPL(virshDomainEventStopped,
               N_("Snapshot"));
 
 VIR_ENUM_DECL(virshDomainEventShutdown);
-VIR_ENUM_IMPL(virshDomainEventShutdown,
+VIR_ENUM_IMPL(virshDomainEventShutdown, NULL,
               VIR_DOMAIN_EVENT_SHUTDOWN_LAST,
               N_("Finished"),
               N_("Finished after guest request"),
               N_("Finished after host request"));
 
 VIR_ENUM_DECL(virshDomainEventPMSuspended);
-VIR_ENUM_IMPL(virshDomainEventPMSuspended,
+VIR_ENUM_IMPL(virshDomainEventPMSuspended, NULL,
               VIR_DOMAIN_EVENT_PMSUSPENDED_LAST,
               N_("Memory"),
               N_("Disk"));
 
 VIR_ENUM_DECL(virshDomainEventCrashed);
-VIR_ENUM_IMPL(virshDomainEventCrashed,
+VIR_ENUM_IMPL(virshDomainEventCrashed, NULL,
               VIR_DOMAIN_EVENT_CRASHED_LAST,
               N_("Panicked"));
 
@@ -12871,7 +12871,7 @@ virshDomainEventDetailToString(int event, int detail)
 }
 
 VIR_ENUM_DECL(virshDomainEventWatchdog);
-VIR_ENUM_IMPL(virshDomainEventWatchdog,
+VIR_ENUM_IMPL(virshDomainEventWatchdog, NULL,
               VIR_DOMAIN_EVENT_WATCHDOG_LAST,
               N_("none"),
               N_("pause"),
@@ -12889,7 +12889,7 @@ virshDomainEventWatchdogToString(int action)
 }
 
 VIR_ENUM_DECL(virshDomainEventIOError);
-VIR_ENUM_IMPL(virshDomainEventIOError,
+VIR_ENUM_IMPL(virshDomainEventIOError, NULL,
               VIR_DOMAIN_EVENT_IO_ERROR_LAST,
               N_("none"),
               N_("pause"),
@@ -12903,7 +12903,7 @@ virshDomainEventIOErrorToString(int action)
 }
 
 VIR_ENUM_DECL(virshGraphicsPhase);
-VIR_ENUM_IMPL(virshGraphicsPhase,
+VIR_ENUM_IMPL(virshGraphicsPhase, NULL,
               VIR_DOMAIN_EVENT_GRAPHICS_LAST,
               N_("connect"),
               N_("initialize"),
@@ -12917,7 +12917,7 @@ virshGraphicsPhaseToString(int phase)
 }
 
 VIR_ENUM_DECL(virshGraphicsAddress);
-VIR_ENUM_IMPL(virshGraphicsAddress,
+VIR_ENUM_IMPL(virshGraphicsAddress, NULL,
               VIR_DOMAIN_EVENT_GRAPHICS_ADDRESS_LAST,
               N_("IPv4"),
               N_("IPv6"),
@@ -12931,7 +12931,7 @@ virshGraphicsAddressToString(int family)
 }
 
 VIR_ENUM_DECL(virshDomainBlockJobStatus);
-VIR_ENUM_IMPL(virshDomainBlockJobStatus,
+VIR_ENUM_IMPL(virshDomainBlockJobStatus, NULL,
               VIR_DOMAIN_BLOCK_JOB_LAST,
               N_("completed"),
               N_("failed"),
@@ -12946,7 +12946,7 @@ virshDomainBlockJobStatusToString(int status)
 }
 
 VIR_ENUM_DECL(virshDomainEventDiskChange);
-VIR_ENUM_IMPL(virshDomainEventDiskChange,
+VIR_ENUM_IMPL(virshDomainEventDiskChange, NULL,
               VIR_DOMAIN_EVENT_DISK_CHANGE_LAST,
               N_("changed"),
               N_("dropped"));
@@ -12959,7 +12959,7 @@ virshDomainEventDiskChangeToString(int reason)
 }
 
 VIR_ENUM_DECL(virshDomainEventTrayChange);
-VIR_ENUM_IMPL(virshDomainEventTrayChange,
+VIR_ENUM_IMPL(virshDomainEventTrayChange, NULL,
               VIR_DOMAIN_EVENT_TRAY_CHANGE_LAST,
               N_("opened"),
               N_("closed"));
@@ -13283,14 +13283,14 @@ virshEventTunablePrint(virConnectPtr conn ATTRIBUTE_UNUSED,
 }
 
 VIR_ENUM_DECL(virshEventAgentLifecycleState);
-VIR_ENUM_IMPL(virshEventAgentLifecycleState,
+VIR_ENUM_IMPL(virshEventAgentLifecycleState, NULL,
               VIR_CONNECT_DOMAIN_EVENT_AGENT_LIFECYCLE_STATE_LAST,
               N_("unknown"),
               N_("connected"),
               N_("disconnected"));
 
 VIR_ENUM_DECL(virshEventAgentLifecycleReason);
-VIR_ENUM_IMPL(virshEventAgentLifecycleReason,
+VIR_ENUM_IMPL(virshEventAgentLifecycleReason, NULL,
               VIR_CONNECT_DOMAIN_EVENT_AGENT_LIFECYCLE_REASON_LAST,
               N_("unknown"),
               N_("domain started"),
@@ -13369,7 +13369,7 @@ virshEventDeviceRemovalFailedPrint(virConnectPtr conn ATTRIBUTE_UNUSED,
 }
 
 VIR_ENUM_DECL(virshEventMetadataChangeType);
-VIR_ENUM_IMPL(virshEventMetadataChangeType,
+VIR_ENUM_IMPL(virshEventMetadataChangeType, NULL,
               VIR_DOMAIN_METADATA_LAST,
               N_("description"),
               N_("title"),

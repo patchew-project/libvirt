@@ -72,7 +72,7 @@
 VIR_LOG_INIT("qemu.qemu_command");
 
 VIR_ENUM_DECL(virDomainDiskQEMUBus);
-VIR_ENUM_IMPL(virDomainDiskQEMUBus,
+VIR_ENUM_IMPL(virDomainDiskQEMUBus, NULL,
               VIR_DOMAIN_DISK_BUS_LAST,
               "ide",
               "floppy",
@@ -88,7 +88,7 @@ VIR_ENUM_IMPL(virDomainDiskQEMUBus,
 
 VIR_ENUM_DECL(qemuDiskCacheV2);
 
-VIR_ENUM_IMPL(qemuDiskCacheV2,
+VIR_ENUM_IMPL(qemuDiskCacheV2, NULL,
               VIR_DOMAIN_DISK_CACHE_LAST,
               "default",
               "none",
@@ -98,7 +98,7 @@ VIR_ENUM_IMPL(qemuDiskCacheV2,
               "unsafe",
 );
 
-VIR_ENUM_IMPL(qemuVideo,
+VIR_ENUM_IMPL(qemuVideo, NULL,
               VIR_DOMAIN_VIDEO_TYPE_LAST,
               "", /* default value, we shouldn't see this */
               "std",
@@ -115,7 +115,7 @@ VIR_ENUM_IMPL(qemuVideo,
 
 VIR_ENUM_DECL(qemuDeviceVideo);
 
-VIR_ENUM_IMPL(qemuDeviceVideo,
+VIR_ENUM_IMPL(qemuDeviceVideo, NULL,
               VIR_DOMAIN_VIDEO_TYPE_LAST,
               "", /* default value, we shouldn't see this */
               "VGA",
@@ -132,7 +132,7 @@ VIR_ENUM_IMPL(qemuDeviceVideo,
 
 VIR_ENUM_DECL(qemuDeviceVideoSecondary);
 
-VIR_ENUM_IMPL(qemuDeviceVideoSecondary,
+VIR_ENUM_IMPL(qemuDeviceVideoSecondary, NULL,
               VIR_DOMAIN_VIDEO_TYPE_LAST,
               "", /* default value, we shouldn't see this */
               "", /* no secondary device for VGA */
@@ -149,7 +149,7 @@ VIR_ENUM_IMPL(qemuDeviceVideoSecondary,
 
 VIR_ENUM_DECL(qemuSoundCodec);
 
-VIR_ENUM_IMPL(qemuSoundCodec,
+VIR_ENUM_IMPL(qemuSoundCodec, NULL,
               VIR_DOMAIN_SOUND_CODEC_TYPE_LAST,
               "hda-duplex",
               "hda-micro",
@@ -158,7 +158,7 @@ VIR_ENUM_IMPL(qemuSoundCodec,
 
 VIR_ENUM_DECL(qemuControllerModelUSB);
 
-VIR_ENUM_IMPL(qemuControllerModelUSB,
+VIR_ENUM_IMPL(qemuControllerModelUSB, NULL,
               VIR_DOMAIN_CONTROLLER_MODEL_USB_LAST,
               "piix3-usb-uhci",
               "piix4-usb-uhci",
@@ -177,7 +177,7 @@ VIR_ENUM_IMPL(qemuControllerModelUSB,
 );
 
 VIR_ENUM_DECL(qemuDomainFSDriver);
-VIR_ENUM_IMPL(qemuDomainFSDriver,
+VIR_ENUM_IMPL(qemuDomainFSDriver, NULL,
               VIR_DOMAIN_FS_DRIVER_TYPE_LAST,
               "local",
               "local",
@@ -188,7 +188,7 @@ VIR_ENUM_IMPL(qemuDomainFSDriver,
 );
 
 VIR_ENUM_DECL(qemuNumaPolicy);
-VIR_ENUM_IMPL(qemuNumaPolicy,
+VIR_ENUM_IMPL(qemuNumaPolicy, NULL,
               VIR_DOMAIN_NUMATUNE_MEM_LAST,
               "bind",
               "preferred",

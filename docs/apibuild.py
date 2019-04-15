@@ -1404,6 +1404,20 @@ class CParser:
             self.error("parsing VIR_ENUM_IMPL: expecting ','", token)
         token = self.token()
 
+        # The 'label' field
+        if (token[0] != "string" and not
+            (token[0] == "name" and token[1] == "NULL")):
+            self.error("parsing VIR_ENUM_IMPL: expecting string or NULL",
+                       token)
+        token = self.token()
+
+        if token[0] != "sep":
+            self.error("parsing VIR_ENUM_IMPL: expecting ','", token)
+
+        if token[1] != ',':
+            self.error("parsing VIR_ENUM_IMPL: expecting ','", token)
+        token = self.token()
+
         # Now the sentinel name
         if token[0] != "name":
             self.error("parsing VIR_ENUM_IMPL: expecting name", token)

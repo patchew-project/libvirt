@@ -65,7 +65,7 @@ struct _virConfParserCtxt {
   do { while ((ctxt->cur < ctxt->end) && (c_isblank(CUR))) \
           ctxt->cur++; } while (0)
 
-VIR_ENUM_IMPL(virConf,
+VIR_ENUM_IMPL(virConf, NULL,
               VIR_CONF_LAST,
               "*unexpected*",
               "long",

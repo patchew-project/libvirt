@@ -31,7 +31,7 @@
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
-VIR_ENUM_IMPL(virTypedParameter,
+VIR_ENUM_IMPL(virTypedParameter, NULL,
               VIR_TYPED_PARAM_LAST,
               "unknown",
               "int",

@@ -566,7 +566,7 @@ cmdSecretList(vshControl *ctl, const vshCmd *cmd ATTRIBUTE_UNUSED)
  * "Secret-event" command
  */
 VIR_ENUM_DECL(virshSecretEvent);
-VIR_ENUM_IMPL(virshSecretEvent,
+VIR_ENUM_IMPL(virshSecretEvent, NULL,
               VIR_SECRET_EVENT_LAST,
               N_("Defined"),
               N_("Undefined"));

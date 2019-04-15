@@ -46,12 +46,12 @@ VIR_LOG_INIT("util.pci");
 #define PCI_ID_LEN 10   /* "XXXX XXXX" */
 #define PCI_ADDR_LEN 13 /* "XXXX:XX:XX.X" */
 
-VIR_ENUM_IMPL(virPCIELinkSpeed,
+VIR_ENUM_IMPL(virPCIELinkSpeed, NULL,
               VIR_PCIE_LINK_SPEED_LAST,
               "", "2.5", "5", "8", "16",
 );
 
-VIR_ENUM_IMPL(virPCIStubDriver,
+VIR_ENUM_IMPL(virPCIStubDriver, NULL,
               VIR_PCI_STUB_DRIVER_LAST,
               "none",
               "pciback", /* XEN */
@@ -59,7 +59,7 @@ VIR_ENUM_IMPL(virPCIStubDriver,
               "vfio-pci", /* VFIO */
 );
 
-VIR_ENUM_IMPL(virPCIHeader,
+VIR_ENUM_IMPL(virPCIHeader, NULL,
               VIR_PCI_HEADER_LAST,
               "endpoint",
               "pci-bridge",

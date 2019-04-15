@@ -23,7 +23,7 @@
 #include "viraccessperm.h"
 
 
-VIR_ENUM_IMPL(virAccessPermConnect,
+VIR_ENUM_IMPL(virAccessPermConnect, NULL,
               VIR_ACCESS_PERM_CONNECT_LAST,
               "getattr", "read", "write",
               "search_domains", "search_networks",
@@ -34,7 +34,7 @@ VIR_ENUM_IMPL(virAccessPermConnect,
               "interface_transaction",
 );
 
-VIR_ENUM_IMPL(virAccessPermDomain,
+VIR_ENUM_IMPL(virAccessPermDomain, NULL,
               VIR_ACCESS_PERM_DOMAIN_LAST,
               "getattr", "read", "write", "read_secure",
               "start", "stop", "reset",
@@ -47,44 +47,44 @@ VIR_ENUM_IMPL(virAccessPermDomain,
               "open_namespace", "set_time", "set_password",
 );
 
-VIR_ENUM_IMPL(virAccessPermInterface,
+VIR_ENUM_IMPL(virAccessPermInterface, NULL,
               VIR_ACCESS_PERM_INTERFACE_LAST,
               "getattr", "read", "write", "save",
               "delete", "start", "stop",
 );
 
-VIR_ENUM_IMPL(virAccessPermNetwork,
+VIR_ENUM_IMPL(virAccessPermNetwork, NULL,
               VIR_ACCESS_PERM_NETWORK_LAST,
               "getattr", "read", "write",
               "save", "delete", "start", "stop",
 );
 
-VIR_ENUM_IMPL(virAccessPermNodeDevice,
+VIR_ENUM_IMPL(virAccessPermNodeDevice, NULL,
               VIR_ACCESS_PERM_NODE_DEVICE_LAST,
               "getattr", "read", "write",
               "start", "stop",
               "detach",
 );
 
-VIR_ENUM_IMPL(virAccessPermNWFilter,
+VIR_ENUM_IMPL(virAccessPermNWFilter, NULL,
               VIR_ACCESS_PERM_NWFILTER_LAST,
               "getattr", "read", "write",
               "save", "delete",
 );
 
-VIR_ENUM_IMPL(virAccessPermNWFilterBinding,
+VIR_ENUM_IMPL(virAccessPermNWFilterBinding, NULL,
               VIR_ACCESS_PERM_NWFILTER_BINDING_LAST,
               "getattr", "read",
               "create", "delete",
 );
 
-VIR_ENUM_IMPL(virAccessPermSecret,
+VIR_ENUM_IMPL(virAccessPermSecret, NULL,
               VIR_ACCESS_PERM_SECRET_LAST,
               "getattr", "read", "write",
               "read_secure", "save", "delete",
 );
 
-VIR_ENUM_IMPL(virAccessPermStoragePool,
+VIR_ENUM_IMPL(virAccessPermStoragePool, NULL,
               VIR_ACCESS_PERM_STORAGE_POOL_LAST,
               "getattr", "read", "write",
               "save", "delete", "start", "stop",
@@ -92,7 +92,7 @@ VIR_ENUM_IMPL(virAccessPermStoragePool,
               "format",
 );
 
-VIR_ENUM_IMPL(virAccessPermStorageVol,
+VIR_ENUM_IMPL(virAccessPermStorageVol, NULL,
               VIR_ACCESS_PERM_STORAGE_VOL_LAST,
               "getattr", "read", "create", "delete",
               "format", "resize", "data_read",

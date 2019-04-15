@@ -31,7 +31,7 @@
 
 #define VIR_FROM_THIS VIR_FROM_INTERFACE
 
-VIR_ENUM_IMPL(virInterface,
+VIR_ENUM_IMPL(virInterface, NULL,
               VIR_INTERFACE_TYPE_LAST,
               "ethernet", "bridge", "bond", "vlan",
 );

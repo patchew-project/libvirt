@@ -42,13 +42,13 @@
 
 VIR_LOG_INIT("conf.node_device_conf");
 
-VIR_ENUM_IMPL(virNodeDevDevnode,
+VIR_ENUM_IMPL(virNodeDevDevnode, NULL,
               VIR_NODE_DEV_DEVNODE_LAST,
               "dev",
               "link",
 );
 
-VIR_ENUM_IMPL(virNodeDevCap,
+VIR_ENUM_IMPL(virNodeDevCap, NULL,
               VIR_NODE_DEV_CAP_LAST,
               "system",
               "pci",
@@ -68,13 +68,13 @@ VIR_ENUM_IMPL(virNodeDevCap,
               "ccw",
 );
 
-VIR_ENUM_IMPL(virNodeDevNetCap,
+VIR_ENUM_IMPL(virNodeDevNetCap, NULL,
               VIR_NODE_DEV_CAP_NET_LAST,
               "80203",
               "80211",
 );
 
-VIR_ENUM_IMPL(virNodeDevDRM,
+VIR_ENUM_IMPL(virNodeDevDRM, NULL,
               VIR_NODE_DEV_DRM_LAST,
               "primary",
               "control",
