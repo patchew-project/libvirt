@@ -27189,26 +27189,27 @@ virDomainPerfDefFormat(virBufferPtr buf, virDomainPerfDefPtr perf)
 }
 
 
-static void
+static int
 virDomainSchedulerFormat(virBufferPtr buf,
-                         const char *name,
+                         const char *elementName,
+                         const char *idAttributeName,
                          virDomainThreadSchedParamPtr sched,
                          size_t id)
 {
     switch (sched->policy) {
         case VIR_PROC_POLICY_BATCH:
         case VIR_PROC_POLICY_IDLE:
-            virBufferAsprintf(buf, "<%ssched "
-                              "%ss='%zu' scheduler='%s'/>\n",
-                              name, name, id,
+            virBufferAsprintf(buf, "<%s "
+                              "%s='%zu' scheduler='%s'/>\n",
+                              elementName, idAttributeName, id,
                               virProcessSchedPolicyTypeToString(sched->policy));
             break;
 
         case VIR_PROC_POLICY_RR:
         case VIR_PROC_POLICY_FIFO:
-            virBufferAsprintf(buf, "<%ssched "
-                              "%ss='%zu' scheduler='%s' priority='%d'/>\n",
-                              name, name, id,
+            virBufferAsprintf(buf, "<%s "
+                              "%s='%zu' scheduler='%s' priority='%d'/>\n",
+                              elementName, idAttributeName, id,
                               virProcessSchedPolicyTypeToString(sched->policy),
                               sched->priority);
             break;
@@ -27218,6 +27219,7 @@ virDomainSchedulerFormat(virBufferPtr buf,
             break;
         }
 
+    return 0;
 }
 
 
@@ -27476,14 +27478,16 @@ virDomainCputuneDefFormat(virBufferPtr buf,
     }
 
     for (i = 0; i < def->maxvcpus; i++) {
-        virDomainSchedulerFormat(&childrenBuf, "vcpu",
-                                 &def->vcpus[i]->sched, i);
+        if (virDomainSchedulerFormat(&childrenBuf, "vcpusched", "vcpus",
+                                     &def->vcpus[i]->sched, i) < 0)
+            goto cleanup;
     }
 
     for (i = 0; i < def->niothreadids; i++) {
-        virDomainSchedulerFormat(&childrenBuf, "iothread",
-                                 &def->iothreadids[i]->sched,
-                                 def->iothreadids[i]->iothread_id);
+        if (virDomainSchedulerFormat(&childrenBuf, "iothreadsched", "iothreads",
+                                     &def->iothreadids[i]->sched,
+                                     def->iothreadids[i]->iothread_id) < 0)
+            goto cleanup;
     }
 
     for (i = 0; i < def->nresctrls; i++)
