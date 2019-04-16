@@ -2728,6 +2728,15 @@ virDomainXMLOptionPtr virDomainXMLOptionNew(virDomainDefParserConfigPtr config,
 virSaveCookieCallbacksPtr
 virDomainXMLOptionGetSaveCookie(virDomainXMLOptionPtr xmlopt);
 
+typedef int (*virDomainMomentPostParseCallback)(virDomainMomentDefPtr def,
+                                                void *opaque);
+
+void virDomainXMLOptionSetMomentPostParse(virDomainXMLOptionPtr xmlopt,
+                                          virDomainMomentPostParseCallback cb,
+                                          void *opaque);
+int virDomainXMLOptionRunMomentPostParse(virDomainXMLOptionPtr xmlopt,
+                                         virDomainMomentDefPtr def);
+
 void virDomainNetGenerateMAC(virDomainXMLOptionPtr xmlopt, virMacAddrPtr mac);
 
 virDomainXMLNamespacePtr
