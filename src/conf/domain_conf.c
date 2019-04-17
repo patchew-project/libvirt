@@ -6815,9 +6815,6 @@ static int
 virDomainDefOSValidate(const virDomainDef *def,
                        virDomainXMLOptionPtr xmlopt)
 {
-    if (!def->os.loader)
-        return 0;
-
     if (def->os.firmware &&
         !(xmlopt->config.features & VIR_DOMAIN_DEF_FEATURE_FW_AUTOSELECT)) {
         virReportError(VIR_ERR_XML_DETAIL, "%s",
@@ -6825,7 +6822,8 @@ virDomainDefOSValidate(const virDomainDef *def,
         return -1;
     }
 
-    if (!def->os.loader->path &&
+    if (def->os.loader &&
+        !def->os.loader->path &&
         def->os.firmware == VIR_DOMAIN_OS_DEF_FIRMWARE_NONE) {
         virReportError(VIR_ERR_XML_DETAIL, "%s",
                        _("no loader path specified and firmware auto selection disabled"));
