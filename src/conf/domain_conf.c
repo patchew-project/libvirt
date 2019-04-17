@@ -30437,6 +30437,7 @@ virDomainNetNotifyActualDevice(virConnectPtr conn,
                                virDomainDefPtr dom,
                                virDomainNetDefPtr iface)
 {
+    virDomainNetType actualType = virDomainNetGetActualType(iface);
     virNetworkPtr net = NULL;
 
     if (!netNotify)
@@ -30444,6 +30445,16 @@ virDomainNetNotifyActualDevice(virConnectPtr conn,
 
     if (!(net = virNetworkLookupByName(conn, iface->data.network.name)))
         return;
+
+    /* Older libvirtd uses actualType==network, but we now
+     * just use actualType==bridge, as nothing needs to
+     * distinguish the two cases, and this simplifies virt
+     * drive code */
+    if (actualType == VIR_DOMAIN_NET_TYPE_NETWORK) {
+        iface->data.network.actual->type = VIR_DOMAIN_NET_TYPE_BRIDGE;
+        actualType = VIR_DOMAIN_NET_TYPE_BRIDGE;
+    }
+
 
     if (netNotify(net, dom, iface) < 0)
         goto cleanup;
