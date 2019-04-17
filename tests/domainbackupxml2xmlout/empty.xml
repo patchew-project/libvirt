@@ -1,0 +1,7 @@
+<domainbackup mode="push">
+  <disks>
+    <disk name="vda" type="file">
+      <target file="/path/to/file1.copy"/>
+    </disk>
+  </disks>
+</domainbackup>
