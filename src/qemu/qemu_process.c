@@ -88,6 +88,7 @@
 #include "virresctrl.h"
 #include "virvsock.h"
 #include "viridentity.h"
+#include "backup_conf.h"
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
@@ -932,6 +933,7 @@ qemuProcessHandleBlockJob(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
                           void *opaque)
 {
     virQEMUDriverPtr driver = opaque;
+    qemuDomainObjPrivatePtr priv;
     struct qemuProcessEvent *processEvent = NULL;
     virDomainDiskDefPtr disk;
     qemuBlockJobDataPtr job = NULL;
@@ -942,6 +944,13 @@ qemuProcessHandleBlockJob(qemuMonitorPtr mon ATTRIBUTE_UNUSED,
     VIR_DEBUG("Block job for device %s (domain: %p,%s) type %d status %d",
               diskAlias, vm, vm->def->name, type, status);
 
+    priv = vm->privateData;
+    if (type == VIR_DOMAIN_BLOCK_JOB_TYPE_BACKUP &&
+        (!priv->backup || priv->backup->type == VIR_DOMAIN_BACKUP_TYPE_PULL)) {
+        /* Event for canceling a pull-mode backup is side-effect that
+         * should not be forwarded on to user */
+        goto cleanup;
+    }
     if (!(disk = qemuProcessFindDomainDiskByAliasOrQOM(vm, diskAlias, NULL)))
         goto cleanup;
 
