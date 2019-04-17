@@ -1350,13 +1350,41 @@ GEN_TEST_FUNC(qemuMonitorJSONBlockCommit, "vdb", "/foo/bar1", "/foo/bar2", "back
 GEN_TEST_FUNC(qemuMonitorJSONDrivePivot, "vdb")
 GEN_TEST_FUNC(qemuMonitorJSONScreendump, "devicename", 1, "/foo/bar")
 GEN_TEST_FUNC(qemuMonitorJSONOpenGraphics, "spice", "spicefd", false)
-GEN_TEST_FUNC(qemuMonitorJSONNBDServerStart, "localhost", 12345, "test-alias")
 GEN_TEST_FUNC(qemuMonitorJSONNBDServerAdd, "vda", true)
 GEN_TEST_FUNC(qemuMonitorJSONDetachCharDev, "serial1")
 GEN_TEST_FUNC(qemuMonitorJSONBlockdevTrayOpen, "foodev", true)
 GEN_TEST_FUNC(qemuMonitorJSONBlockdevTrayClose, "foodev")
 GEN_TEST_FUNC(qemuMonitorJSONBlockdevMediumRemove, "foodev")
 GEN_TEST_FUNC(qemuMonitorJSONBlockdevMediumInsert, "foodev", "newnode")
+
+static int
+testQemuMonitorJSONqemuMonitorJSONNBDServerStart(const void *data)
+{
+    virDomainXMLOptionPtr xmlopt = (virDomainXMLOptionPtr)data;
+    qemuMonitorTestPtr test = qemuMonitorTestNewSimple(true, xmlopt);
+    int ret = -1;
+    virStorageNetHostDef server = {
+        .name = (char *)"localhost",
+        .port = 12345,
+        .transport = VIR_STORAGE_NET_HOST_TRANS_TCP,
+    };
+
+    if (!test)
+        return -1;
+
+    if (qemuMonitorTestAddItem(test, "nbd-server-start", "{\"return\":{}}") < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONNBDServerStart(qemuMonitorTestGetMonitor(test),
+                                      &server, "test-alias") < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    qemuMonitorTestFree(test);
+    return ret;
+}
 
 static bool
 testQemuMonitorJSONqemuMonitorJSONQueryCPUsEqual(struct qemuMonitorQueryCpusEntry *a,
