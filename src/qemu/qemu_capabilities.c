@@ -524,6 +524,8 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "scsi-disk.device_id",
               "virtio-pci-non-transitional",
               "overcommit",
+              "bitmap-merge",
+              "nbd-bitmap",
     );
 
 
@@ -969,6 +971,7 @@ struct virQEMUCapsStringFlags virQEMUCapsCommands[] = {
     { "query-cpus-fast", QEMU_CAPS_QUERY_CPUS_FAST },
     { "qom-list-properties", QEMU_CAPS_QOM_LIST_PROPERTIES },
     { "blockdev-del", QEMU_CAPS_BLOCKDEV_DEL },
+    { "block-dirty-bitmap-merge", QEMU_CAPS_BITMAP_MERGE },
 };
 
 struct virQEMUCapsStringFlags virQEMUCapsMigration[] = {
@@ -1263,6 +1266,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "block-commit/arg-type/*top",  QEMU_CAPS_ACTIVE_COMMIT },
     { "query-iothreads/ret-type/poll-max-ns", QEMU_CAPS_IOTHREAD_POLLING },
     { "query-display-options/ret-type/+egl-headless/rendernode", QEMU_CAPS_EGL_HEADLESS_RENDERNODE },
+    { "nbd-server-add/arg-type/bitmap", QEMU_CAPS_NBD_BITMAP },
 };
 
 typedef struct _virQEMUCapsObjectTypeProps virQEMUCapsObjectTypeProps;

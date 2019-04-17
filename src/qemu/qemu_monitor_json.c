@@ -1011,6 +1011,8 @@ qemuMonitorJSONHandleBlockJobImpl(qemuMonitorPtr mon,
         type = VIR_DOMAIN_BLOCK_JOB_TYPE_COMMIT;
     else if (STREQ(type_str, "mirror"))
         type = VIR_DOMAIN_BLOCK_JOB_TYPE_COPY;
+    else if (STREQ(type_str, "backup"))
+        type = VIR_DOMAIN_BLOCK_JOB_TYPE_BACKUP;
 
     switch ((virConnectDomainEventBlockJobStatus) event) {
     case VIR_DOMAIN_BLOCK_JOB_COMPLETED:
@@ -2752,6 +2754,82 @@ int qemuMonitorJSONBlockResize(qemuMonitorPtr mon,
  cleanup:
     virJSONValueFree(cmd);
     virJSONValueFree(reply);
+    return ret;
+}
+
+int qemuMonitorJSONUpdateCheckpointSize(qemuMonitorPtr mon,
+                                        virDomainCheckpointDefPtr chk)
+{
+    int ret = -1;
+    size_t i, j;
+    virJSONValuePtr devices;
+
+    if (!(devices = qemuMonitorJSONQueryBlock(mon)))
+        return -1;
+
+    for (i = 0; i < virJSONValueArraySize(devices); i++) {
+        virJSONValuePtr dev = virJSONValueArrayGet(devices, i);
+        virJSONValuePtr inserted;
+        virJSONValuePtr bitmaps = NULL;
+        const char *node;
+        virDomainCheckpointDiskDefPtr disk;
+
+        if (!(dev = qemuMonitorJSONGetBlockDev(devices, i)))
+            goto cleanup;
+
+        if (!(inserted = virJSONValueObjectGetObject(dev, "inserted")))
+            continue;
+        if (!(node = virJSONValueObjectGetString(inserted, "node-name"))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("query-block device entry was not in expected format"));
+            goto cleanup;
+        }
+
+        for (j = 0; j < chk->ndisks; j++) {
+            disk = &chk->disks[j];
+            if (disk->type != VIR_DOMAIN_CHECKPOINT_TYPE_BITMAP)
+                continue;
+            if (STREQ(chk->common.dom->disks[disk->idx]->src->nodeformat, node))
+                break;
+        }
+        if (j == chk->ndisks) {
+            VIR_DEBUG("query-block did not find node %s", node);
+            continue;
+        }
+        if (!(bitmaps = virJSONValueObjectGetArray(dev, "dirty-bitmaps"))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("disk %s dirty bitmaps missing"), disk->name);
+            goto cleanup;
+        }
+        for (j = 0; j < virJSONValueArraySize(bitmaps); j++) {
+            virJSONValuePtr map = virJSONValueArrayGet(bitmaps, j);
+            const char *name;
+
+            if (!(name = virJSONValueObjectGetString(map, "name"))) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("dirty bitmaps entry was not in expected format"));
+                goto cleanup;
+            }
+            if (STRNEQ(name, disk->bitmap))
+                continue;
+            if (virJSONValueObjectGetNumberUlong(map, "count", &disk->size) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("invalid bitmap count"));
+                goto cleanup;
+            }
+            break;
+        }
+        if (j == virJSONValueArraySize(bitmaps)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("disk %s dirty bitmap info missing"), disk->name);
+            goto cleanup;
+        }
+    }
+
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(devices);
     return ret;
 }
 
@@ -4706,6 +4784,8 @@ qemuMonitorJSONParseBlockJobInfo(virHashTablePtr blockJobs,
         info->type = VIR_DOMAIN_BLOCK_JOB_TYPE_COMMIT;
     else if (STREQ(type, "mirror"))
         info->type = VIR_DOMAIN_BLOCK_JOB_TYPE_COPY;
+    else if (STREQ(type, "backup"))
+        info->type = VIR_DOMAIN_BLOCK_JOB_TYPE_BACKUP;
     else
         info->type = VIR_DOMAIN_BLOCK_JOB_TYPE_UNKNOWN;
 
@@ -6746,15 +6826,20 @@ qemuMonitorJSONNBDServerStart(qemuMonitorPtr mon,
 int
 qemuMonitorJSONNBDServerAdd(qemuMonitorPtr mon,
                             const char *deviceID,
-                            bool writable)
+                            const char *export,
+                            bool writable,
+                            const char *bitmap)
 {
     int ret = -1;
     virJSONValuePtr cmd;
     virJSONValuePtr reply = NULL;
 
+    /* Note: bitmap must be NULL if QEMU_CAPS_NBD_BITMAP is lacking */
     if (!(cmd = qemuMonitorJSONMakeCommand("nbd-server-add",
                                            "s:device", deviceID,
+                                           "S:name", export,
                                            "b:writable", writable,
+                                           "S:bitmap", bitmap,
                                            NULL)))
         return ret;
 
@@ -8469,4 +8554,116 @@ qemuMonitorJSONGetPRManagerInfo(qemuMonitorPtr mon,
     virJSONValueFree(reply);
     return ret;
 
+}
+
+int
+qemuMonitorJSONAddBitmap(qemuMonitorPtr mon, const char *node,
+                         const char *bitmap, bool persistent)
+{
+    int ret = -1;
+    virJSONValuePtr cmd;
+    virJSONValuePtr reply = NULL;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("block-dirty-bitmap-add",
+                                           "s:node", node,
+                                           "s:name", bitmap,
+                                           "b:persistent", persistent,
+                                           NULL)))
+        return -1;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    return ret;
+}
+
+int
+qemuMonitorJSONEnableBitmap(qemuMonitorPtr mon, const char *node,
+                            const char *bitmap)
+{
+    int ret = -1;
+    virJSONValuePtr cmd;
+    virJSONValuePtr reply = NULL;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("block-dirty-bitmap-enable",
+                                           "s:node", node,
+                                           "s:name", bitmap,
+                                           NULL)))
+        return -1;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    return ret;
+}
+
+int
+qemuMonitorJSONMergeBitmaps(qemuMonitorPtr mon, const char *node,
+                            const char *dst, virJSONValuePtr *src)
+{
+    int ret = -1;
+    virJSONValuePtr cmd;
+    virJSONValuePtr reply = NULL;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("block-dirty-bitmap-merge",
+                                           "s:node", node,
+                                           "s:target", dst,
+                                           "a:bitmaps", src,
+                                           NULL)))
+        goto cleanup;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    virJSONValueFree(*src);
+    *src = NULL;
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    return ret;
+}
+
+int
+qemuMonitorJSONDeleteBitmap(qemuMonitorPtr mon, const char *node,
+                            const char *bitmap)
+{
+    int ret = -1;
+    virJSONValuePtr cmd;
+    virJSONValuePtr reply = NULL;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("block-dirty-bitmap-remove",
+                                           "s:node", node,
+                                           "s:name", bitmap,
+                                           NULL)))
+        return -1;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
+        goto cleanup;
+
+    ret = 0;
+ cleanup:
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    return ret;
 }

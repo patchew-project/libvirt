@@ -2342,6 +2342,17 @@ qemuMonitorBlockStatsUpdateCapacityBlockdev(qemuMonitorPtr mon,
     return qemuMonitorJSONBlockStatsUpdateCapacityBlockdev(mon, stats);
 }
 
+/* Updates "chk" to fill in size of the associated bitmap */
+int qemuMonitorUpdateCheckpointSize(qemuMonitorPtr mon,
+                                    virDomainCheckpointDefPtr chk)
+{
+    VIR_DEBUG("chk=%p", chk);
+
+    QEMU_CHECK_MONITOR(mon);
+
+    return qemuMonitorJSONUpdateCheckpointSize(mon, chk);
+}
+
 int
 qemuMonitorBlockResize(qemuMonitorPtr mon,
                        const char *device,
@@ -3938,13 +3949,17 @@ qemuMonitorNBDServerStart(qemuMonitorPtr mon,
 int
 qemuMonitorNBDServerAdd(qemuMonitorPtr mon,
                         const char *deviceID,
-                        bool writable)
+                        const char *export,
+                        bool writable,
+                        const char *bitmap)
 {
-    VIR_DEBUG("deviceID=%s", deviceID);
+    VIR_DEBUG("deviceID=%s, export=%s, bitmap=%s", deviceID, NULLSTR(export),
+              NULLSTR(bitmap));
 
     QEMU_CHECK_MONITOR(mon);
 
-    return qemuMonitorJSONNBDServerAdd(mon, deviceID, writable);
+    return qemuMonitorJSONNBDServerAdd(mon, deviceID, export, writable,
+                                       bitmap);
 }
 
 
@@ -4470,4 +4485,48 @@ qemuMonitorGetPRManagerInfo(qemuMonitorPtr mon,
  cleanup:
     virHashFree(info);
     return ret;
+}
+
+int
+qemuMonitorAddBitmap(qemuMonitorPtr mon, const char *node,
+                     const char *bitmap, bool persistent)
+{
+    VIR_DEBUG("node=%s bitmap=%s persistent=%d", node, bitmap, persistent);
+
+    QEMU_CHECK_MONITOR(mon);
+
+    return qemuMonitorJSONAddBitmap(mon, node, bitmap, persistent);
+}
+
+int
+qemuMonitorEnableBitmap(qemuMonitorPtr mon, const char *node,
+                        const char *bitmap)
+{
+    VIR_DEBUG("node=%s bitmap=%s", node, bitmap);
+
+    QEMU_CHECK_MONITOR(mon);
+
+    return qemuMonitorJSONEnableBitmap(mon, node, bitmap);
+}
+
+int
+qemuMonitorMergeBitmaps(qemuMonitorPtr mon, const char *node,
+                        const char *dst, virJSONValuePtr *src)
+{
+    VIR_DEBUG("node=%s dst=%s src=%p", node, dst, *src);
+
+    QEMU_CHECK_MONITOR(mon);
+
+    return qemuMonitorJSONMergeBitmaps(mon, node, dst, src);
+}
+
+int
+qemuMonitorDeleteBitmap(qemuMonitorPtr mon, const char *node,
+                        const char *bitmap)
+{
+    VIR_DEBUG("node=%s bitmap=%s", node, bitmap);
+
+    QEMU_CHECK_MONITOR(mon);
+
+    return qemuMonitorJSONDeleteBitmap(mon, node, bitmap);
 }
