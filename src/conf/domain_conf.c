@@ -23934,6 +23934,7 @@ virDomainDiskSourceFormatPrivateData(virBufferPtr buf,
  * virDomainDiskSourceFormat:
  * @buf: output buffer
  * @src: storage source definition to format
+ * @element: name to use for the top-level element (often "source")
  * @policy: startup policy attribute value, if necessary
  * @attrIndex: the 'index' attribute of <source> is formatted if true
  * @flags: XML formatter flags
@@ -23945,6 +23946,7 @@ virDomainDiskSourceFormatPrivateData(virBufferPtr buf,
 int
 virDomainDiskSourceFormat(virBufferPtr buf,
                           virStorageSourcePtr src,
+                          const char *element,
                           int policy,
                           bool attrIndex,
                           unsigned int flags,
@@ -24025,7 +24027,7 @@ virDomainDiskSourceFormat(virBufferPtr buf,
     if (virDomainDiskSourceFormatPrivateData(&childBuf, src, flags, xmlopt) < 0)
         return -1;
 
-    if (virXMLFormatElement(buf, "source", &attrBuf, &childBuf) < 0)
+    if (virXMLFormatElement(buf, element, &attrBuf, &childBuf) < 0)
         return -1;
 
     return 0;
@@ -24071,7 +24073,8 @@ virDomainDiskBackingStoreFormat(virBufferPtr buf,
 
     virBufferAsprintf(&childBuf, "<format type='%s'/>\n",
                       virStorageFileFormatTypeToString(backingStore->format));
-    if (virDomainDiskSourceFormat(&childBuf, backingStore, 0, false, flags, xmlopt) < 0)
+    if (virDomainDiskSourceFormat(&childBuf, backingStore, "source", 0, false,
+                                  flags, xmlopt) < 0)
         return -1;
 
     if (virDomainDiskBackingStoreFormat(&childBuf, backingStore, xmlopt, flags) < 0)
@@ -24234,7 +24237,8 @@ virDomainDiskDefFormatMirror(virBufferPtr buf,
                               virDomainDiskMirrorStateTypeToString(disk->mirrorState));
 
     virBufferEscapeString(&childBuf, "<format type='%s'/>\n", formatStr);
-    if (virDomainDiskSourceFormat(&childBuf, disk->mirror, 0, true, flags, xmlopt) < 0)
+    if (virDomainDiskSourceFormat(&childBuf, disk->mirror, "source", 0, true,
+                                  flags, xmlopt) < 0)
         return -1;
 
     if (virDomainDiskBackingStoreFormat(&childBuf, disk->mirror, xmlopt, flags) < 0)
@@ -24334,8 +24338,8 @@ virDomainDiskDefFormat(virBufferPtr buf,
     if (def->src->auth && !def->src->authInherited)
         virStorageAuthDefFormat(buf, def->src->auth);
 
-    if (virDomainDiskSourceFormat(buf, def->src, def->startupPolicy, true,
-                                  flags, xmlopt) < 0)
+    if (virDomainDiskSourceFormat(buf, def->src, "source", def->startupPolicy,
+                                  true, flags, xmlopt) < 0)
         return -1;
 
     /* Don't format backingStore to inactive XMLs until the code for
