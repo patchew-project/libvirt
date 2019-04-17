@@ -1677,6 +1677,7 @@ virLXCProcessReconnectDomain(virDomainObjPtr vm,
 {
     virLXCDriverPtr driver = opaque;
     virLXCDomainObjPrivatePtr priv;
+    virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
     int ret = -1;
 
     virObjectLock(vm);
@@ -1719,6 +1720,9 @@ virLXCProcessReconnectDomain(virDomainObjPtr vm,
 
         virLXCProcessReconnectNotifyNets(vm->def);
 
+        if (virDomainSaveStatus(driver->xmlopt, cfg->stateDir, vm, driver->caps) < 0)
+            VIR_WARN("Cannot update XML for running LXC guest %s", vm->def->name);
+
         /* now that we know it's reconnected call the hook if present */
         if (virHookPresent(VIR_HOOK_DRIVER_LXC)) {
             char *xml = virDomainDefFormat(vm->def, driver->caps, 0);
@@ -1739,6 +1743,7 @@ virLXCProcessReconnectDomain(virDomainObjPtr vm,
 
     ret = 0;
  cleanup:
+    virObjectUnref(cfg);
     virObjectUnlock(vm);
     return ret;
 
