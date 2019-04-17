@@ -3,7 +3,7 @@
  * Summary: APIs for management of domain snapshots
  * Description: Provides APIs for the management of domain snapshots
  *
- * Copyright (C) 2006-2014 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -77,6 +77,12 @@ typedef enum {
 virDomainSnapshotPtr virDomainSnapshotCreateXML(virDomainPtr domain,
                                                 const char *xmlDesc,
                                                 unsigned int flags);
+
+/* Take a snapshot of the current VM state, possibly creating a checkpoint */
+virDomainSnapshotPtr virDomainSnapshotCreateXML2(virDomainPtr domain,
+                                                 const char *xmlDesc,
+                                                 const char *checkpointXml,
+                                                 unsigned int flags);
 
 typedef enum {
     VIR_DOMAIN_SNAPSHOT_XML_SECURE         = VIR_DOMAIN_XML_SECURE, /* dump security sensitive information too */
