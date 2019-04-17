@@ -1647,3 +1647,15 @@ qemuBlockStorageGetCopyOnReadProps(virDomainDiskDefPtr disk)
 
     return ret;
 }
+
+const char *
+qemuBlockNodeLookup(virDomainObjPtr vm, const char *disk)
+{
+    size_t i;
+
+    for (i = 0; i < vm->def->ndisks; i++) {
+        if (STREQ(vm->def->disks[i]->dst, disk))
+            return vm->def->disks[i]->src->nodeformat;
+    }
+    return NULL;
+}
