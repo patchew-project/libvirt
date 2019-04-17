@@ -2556,6 +2556,8 @@ struct _virDomainObj {
 
     bool hasManagedSave;
 
+    virDomainCheckpointObjListPtr checkpoints;
+
     void *privateData;
     void (*privateDataFreeFunc)(void *);
 

@@ -349,4 +349,10 @@ typedef virDomainXMLPrivateDataCallbacks *virDomainXMLPrivateDataCallbacksPtr;
 typedef struct _virDomainXenbusControllerOpts virDomainXenbusControllerOpts;
 typedef virDomainXenbusControllerOpts *virDomainXenbusControllerOptsPtr;
 
+typedef struct _virDomainCheckpointObj virDomainCheckpointObj;
+typedef virDomainCheckpointObj *virDomainCheckpointObjPtr;
+
+typedef struct _virDomainCheckpointObjList virDomainCheckpointObjList;
+typedef virDomainCheckpointObjList *virDomainCheckpointObjListPtr;
+
 #endif /* LIBVIRT_VIRCONFTYPES_H */

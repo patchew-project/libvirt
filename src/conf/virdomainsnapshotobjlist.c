@@ -87,7 +87,7 @@ virDomainSnapshotObjListNew(void)
 
     if (VIR_ALLOC(snapshots) < 0)
         return NULL;
-    snapshots->base = virDomainMomentObjListNew();
+    snapshots->base = virDomainMomentObjListNew(true);
     if (!snapshots->base) {
         VIR_FREE(snapshots);
         return NULL;
