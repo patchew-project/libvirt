@@ -21,15 +21,19 @@ AC_DEFUN([LIBVIRT_ARG_LOADER_NVRAM], [
   LIBVIRT_ARG_WITH([LOADER_NVRAM],
                    [Pass list of pairs of <loader>:<nvram> paths.
                     Both pairs and list items are separated by a colon.],
-                   [''])
+                   ['builtin'])
 ])
 
 AC_DEFUN([LIBVIRT_CHECK_LOADER_NVRAM], [
-  if test "x$with_loader_nvram" != "xno" && \
-     test "x$with_loader_nvram" != "x" ; then
-    l=$(echo $with_loader_nvram | tr ':' '\n' | wc -l)
-    if test $(expr $l % 2) -ne 0 ; then
-      AC_MSG_ERROR([Malformed --with-loader-nvram argument])
+  if test "x$with_loader_nvram" != "xbuiltin" ; then
+    if test "x$with_loader_nvram" = "xno" ; then
+      with_loader_nvram=
+    fi
+    if test "x$with_loader_nvram" != "x" ; then
+      l=$(echo $with_loader_nvram | tr ':' '\n' | wc -l)
+      if test $(expr $l % 2) -ne 0 ; then
+        AC_MSG_ERROR([Malformed --with-loader-nvram argument string '$with_loader_nvram'])
+      fi
     fi
     AC_DEFINE_UNQUOTED([DEFAULT_LOADER_NVRAM], ["$with_loader_nvram"],
                        [List of loader:nvram pairs])
