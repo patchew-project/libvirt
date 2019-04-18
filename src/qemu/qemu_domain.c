@@ -2345,6 +2345,15 @@ qemuDomainObjPrivateXMLFormatPR(virBufferPtr buf,
 }
 
 
+static void
+qemuDomainObjPrivateXMLFormatSlirp(virBufferPtr buf,
+                                qemuDomainObjPrivatePtr priv)
+{
+    if (priv->slirpPid)
+        virBufferAddLit(buf, "<Slirp/>\n");
+}
+
+
 static int
 qemuDomainObjPrivateXMLFormatNBDMigrationSource(virBufferPtr buf,
                                                 virStorageSourcePtr src,
@@ -2554,6 +2563,8 @@ qemuDomainObjPrivateXMLFormat(virBufferPtr buf,
     qemuDomainObjPrivateXMLFormatAllowReboot(buf, priv->allowReboot);
 
     qemuDomainObjPrivateXMLFormatPR(buf, priv);
+
+    qemuDomainObjPrivateXMLFormatSlirp(buf, priv);
 
     if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV))
         virBufferAsprintf(buf, "<nodename index='%llu'/>\n", priv->nodenameindex);

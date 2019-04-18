@@ -105,6 +105,11 @@ AC_DEFUN([LIBVIRT_DRIVER_CHECK_QEMU], [
                [/usr/bin:/usr/libexec])
   AC_DEFINE_UNQUOTED([QEMU_PR_HELPER], ["$QEMU_PR_HELPER"],
                      [QEMU PR helper])
+  AC_PATH_PROG([SLIRP_HELPER], [slirp-helper],
+               [/usr/bin/slirp-helper],
+               [/usr/bin:/usr/libexec])
+  AC_DEFINE_UNQUOTED([SLIRP_HELPER], ["$SLIRP_HELPER"],
+                     [slirp helper])
 ])
 
 AC_DEFUN([LIBVIRT_DRIVER_RESULT_QEMU], [

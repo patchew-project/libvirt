@@ -365,6 +365,9 @@ struct _qemuDomainObjPrivate {
     /* true if qemu-pr-helper process is running for the domain */
     bool prDaemonRunning;
 
+    /* todo: list of running slirp processes */
+    pid_t slirpPid;
+
     /* counter for generating node names for qemu disks */
     unsigned long long nodenameindex;
 

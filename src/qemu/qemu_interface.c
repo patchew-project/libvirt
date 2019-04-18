@@ -604,6 +604,86 @@ qemuInterfaceBridgeConnect(virDomainDefPtr def,
 
 
 /**
+ * qemuInterfaceOpenSlirp:
+ * @net: network definition
+ * @slirpfd: slirp connection
+ *
+ * Returns: 0 on success
+ *         -1 on failure
+ */
+int
+qemuInterfaceOpenSlirp(virQEMUDriverPtr driver,
+                       virDomainObjPtr vm,
+                       virDomainNetDefPtr net,
+                       int *slirpfd)
+{
+    int i, pair[2] = { -1, -1 };
+    VIR_AUTOPTR(virCommand) cmd = NULL;
+    VIR_AUTOFREE(char *) cmdstr = NULL;
+    VIR_AUTOFREE(char *) addr = NULL;
+    virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
+    qemuDomainObjPrivatePtr priv = vm->privateData;
+
+    if (socketpair(AF_UNIX, SOCK_DGRAM, 0, pair) < 0) {
+        virReportSystemError(errno, "%s", _("failed to create socket"));
+        goto error;
+    }
+
+    cmd = virCommandNew(cfg->slirpHelperName);
+    virCommandAddArgFormat(cmd, "--fd=%d", pair[1]);
+    virCommandPassFD(cmd, pair[1],
+                     VIR_COMMAND_PASS_FD_CLOSE_PARENT);
+
+    for (i = 0; i < net->guestIP.nips; i++) {
+        const virNetDevIPAddr *ip = net->guestIP.ips[i];
+        const char *opt = "";
+
+        if (!(addr = virSocketAddrFormat(&ip->address)))
+            goto error;
+
+        if (VIR_SOCKET_ADDR_IS_FAMILY(&ip->address, AF_INET))
+            opt = "--net";
+        if (VIR_SOCKET_ADDR_IS_FAMILY(&ip->address, AF_INET6))
+            opt = "--prefix-ipv6";
+
+        virCommandAddArgFormat(cmd, "%s=%s", opt, addr);
+        VIR_FREE(addr);
+
+        if (ip->prefix) {
+            if (VIR_SOCKET_ADDR_IS_FAMILY(&ip->address, AF_INET)) {
+                virSocketAddr netmask;
+                VIR_AUTOFREE(char *) netmaskStr = NULL;
+
+                if (virSocketAddrPrefixToNetmask(ip->prefix, &netmask, AF_INET) < 0) {
+                    virReportError(VIR_ERR_INTERNAL_ERROR,
+                                   _("Failed to translate prefix %d to netmask"),
+                                   ip->prefix);
+                    goto error;
+                }
+                if (!(netmaskStr = virSocketAddrFormat(&netmask)))
+                    goto error;
+                virCommandAddArgFormat(cmd, "--mask=%s", netmaskStr);
+            }
+            if (VIR_SOCKET_ADDR_IS_FAMILY(&ip->address, AF_INET6))
+                virCommandAddArgFormat(cmd, "--prefix-length-ipv6=%u", ip->prefix);
+        }
+    }
+
+    virCommandClearCaps(cmd);
+    if (virCommandRunAsync(cmd, &priv->slirpPid) < 0) {
+        goto error;
+    }
+
+    *slirpfd = pair[0];
+    return 0;
+
+error:
+    VIR_FORCE_CLOSE(pair[0]);
+    return -1;
+}
+
+
+/**
  * qemuInterfaceOpenVhostNet:
  * @def: domain definition
  * @net: network definition

@@ -55,4 +55,10 @@ int qemuInterfaceOpenVhostNet(virDomainDefPtr def,
                               virDomainNetDefPtr net,
                               int *vhostfd,
                               size_t *vhostfdSize);
+
+int qemuInterfaceOpenSlirp(virQEMUDriverPtr driver,
+                           virDomainObjPtr vm,
+                           virDomainNetDefPtr net,
+                           int *slirpfd);
+
 #endif /* LIBVIRT_QEMU_INTERFACE_H */
