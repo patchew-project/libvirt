@@ -1130,7 +1130,7 @@ exit 1
 
 %define arg_selinux_mount --with-selinux-mount="/sys/fs/selinux"
 
-%if 0%{?fedora}
+%if 0%{?fedora} && 0%{?fedora} < 31
     # Nightly edk2.git-ovmf-x64
     LOADERS="/usr/share/edk2.git/ovmf-x64/OVMF_CODE-pure-efi.fd:/usr/share/edk2.git/ovmf-x64/OVMF_VARS-pure-efi.fd"
     # Nightly edk2.git-ovmf-ia32
@@ -1149,6 +1149,10 @@ exit 1
     # Fedora edk2-arm
     LOADERS="$LOADERS:/usr/share/edk2/arm/QEMU_EFI-pflash.raw:/usr/share/edk2/arm/vars-template-pflash.raw"
     %define arg_loader_nvram --with-loader-nvram="$LOADERS"
+%else
+    # These distros use QEMU firmware metadata files, so
+    # disable libvirts built-in default nvram list
+    %define arg_loader_nvram --without-loader-nvram
 %endif
 
 # place macros above and build commands below this comment
