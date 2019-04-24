@@ -1943,6 +1943,18 @@ testDomainGetState(virDomainPtr domain,
     return 0;
 }
 
+static int
+testDomainGetTime(virDomainPtr dom ATTRIBUTE_UNUSED,
+                  long long *seconds,
+                  unsigned int *nseconds,
+                  unsigned int flags ATTRIBUTE_UNUSED)
+{
+    *seconds = 627319920;
+    *nseconds = 0;
+
+    return 0;
+}
+
 #define TEST_SAVE_MAGIC "TestGuestMagic"
 
 static int
@@ -6786,6 +6798,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainSetMemory = testDomainSetMemory, /* 0.1.4 */
     .domainGetInfo = testDomainGetInfo, /* 0.1.1 */
     .domainGetState = testDomainGetState, /* 0.9.2 */
+    .domainGetTime = testDomainGetTime, /* 5.3.0 */
     .domainSave = testDomainSave, /* 0.3.2 */
     .domainSaveFlags = testDomainSaveFlags, /* 0.9.4 */
     .domainRestore = testDomainRestore, /* 0.3.2 */
