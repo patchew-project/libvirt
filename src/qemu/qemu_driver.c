@@ -19146,12 +19146,42 @@ qemuDomainGetCPUStats(virDomainPtr domain,
 }
 
 static int
+qemuDomainProbeQMPCurrentMachine(virQEMUDriverPtr driver,
+                                 virDomainObjPtr vm,
+                                 bool *enabled)
+{
+    qemuMonitorCurrentMachineInfo info = { 0 };
+    qemuDomainObjPrivatePtr priv;
+    int ret = -1;
+
+    *enabled = false;
+    priv = vm->privateData;
+
+    qemuDomainObjEnterMonitor(driver, vm);
+
+    if (qemuMonitorGetCurrentMachineInfo(priv->mon, &info) < 0)
+        goto cleanup;
+
+    ret = 0;
+
+    if (info.wakeupSuspendSupport)
+        *enabled = true;
+
+ cleanup:
+    if (qemuDomainObjExitMonitor(driver, vm) < 0)
+        ret = -1;
+
+    return ret;
+}
+
+static int
 qemuDomainPMSuspendForDuration(virDomainPtr dom,
                                unsigned int target,
                                unsigned long long duration,
                                unsigned int flags)
 {
     virQEMUDriverPtr driver = dom->conn->privateData;
+    qemuDomainObjPrivatePtr priv;
     virDomainObjPtr vm;
     qemuAgentPtr agent;
     int ret = -1;
@@ -19184,6 +19214,30 @@ qemuDomainPMSuspendForDuration(virDomainPtr dom,
 
     if (virDomainObjCheckActive(vm) < 0)
         goto endjob;
+
+    /*
+     * The case we want to handle here is when QEMU has the API (i.e.
+     * QEMU_CAPS_QUERY_CURRENT_MACHINE is set). Otherwise, do not interfere
+     * with the suspend process. This means that existing running domains,
+     * that don't know about this cap, will keep their old behavior of
+     * suspending 'in the dark'.
+     */
+    priv = vm->privateData;
+    if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_QUERY_CURRENT_MACHINE)) {
+        bool enabled;
+
+        if (qemuDomainProbeQMPCurrentMachine(driver, vm, &enabled) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("Error executing query-current-machine call"));
+            goto endjob;
+        }
+
+        if (!enabled) {
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                          _("Domain does not have suspend support"));
+            goto endjob;
+        }
+    }
 
     if (vm->def->pm.s3 || vm->def->pm.s4) {
         if (vm->def->pm.s3 == VIR_TRISTATE_BOOL_NO &&
