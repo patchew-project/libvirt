@@ -1725,6 +1725,16 @@ virCgroupV2AllowAllDevices(virCgroupPtr group,
 }
 
 
+static int
+virCgroupV2DenyAllDevices(virCgroupPtr group)
+{
+    if (virCgroupV2DevicesDetectProg(group) < 0)
+        return -1;
+
+    return virCgroupV2DevicesCreateProg(group);
+}
+
+
 virCgroupBackend virCgroupV2Backend = {
     .type = VIR_CGROUP_BACKEND_TYPE_V2,
 
@@ -1777,6 +1787,7 @@ virCgroupBackend virCgroupV2Backend = {
     .allowDevice = virCgroupV2AllowDevice,
     .denyDevice = virCgroupV2DenyDevice,
     .allowAllDevices = virCgroupV2AllowAllDevices,
+    .denyAllDevices = virCgroupV2DenyAllDevices,
 
     .setCpuShares = virCgroupV2SetCpuShares,
     .getCpuShares = virCgroupV2GetCpuShares,
