@@ -5811,23 +5811,46 @@ static int testConnectListAllDomains(virConnectPtr conn,
 }
 
 static int
-testNodeGetCPUMap(virConnectPtr conn ATTRIBUTE_UNUSED,
+testNodeGetCPUMap(virConnectPtr conn,
                   unsigned char **cpumap,
                   unsigned int *online,
                   unsigned int flags)
 {
+    testDriverPtr privconn = conn->privateData;
+    int maxcpus = VIR_NODEINFO_MAXCPUS(privconn->nodeInfo);
+    virBitmapPtr cpus = NULL;
+    int ret = -1;
+    int dummy;
+    size_t i;
+
     virCheckFlags(0, -1);
 
+    if (!cpumap && !online)
+        return maxcpus;
+
+    if (!(cpus = virBitmapNew(maxcpus)))
+        goto cleanup;
+
     if (cpumap) {
-        if (VIR_ALLOC_N(*cpumap, 1) < 0)
-            return -1;
-        *cpumap[0] = 0x15;
+        for (i = 0; i < privconn->nodeInfo.cpus; i++) {
+            if (virBitmapSetBit(cpus, i) < 0)
+                goto cleanup;
+        }
+
+        if (virBitmapToData(cpus, cpumap, &dummy) < 0)
+            goto cleanup;
     }
 
     if (online)
-        *online = 3;
+        *online = privconn->nodeInfo.cpus;
 
-    return  8;
+    ret = maxcpus;
+
+ cleanup:
+    if (ret < 0 && cpumap)
+        VIR_FREE(*cpumap);
+    VIR_FREE(cpus);
+    return ret;
 }
 
 static char *
