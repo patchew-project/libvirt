@@ -33,6 +33,7 @@
 #include "vircgroup.h"
 #include "vircgroupbackend.h"
 #include "vircgroupv2.h"
+#include "vircgroupv2devices.h"
 #include "virerror.h"
 #include "virfile.h"
 #include "virlog.h"
@@ -295,6 +296,8 @@ virCgroupV2DetectControllers(virCgroupPtr group,
     /* In cgroup v2 there is no cpuacct controller, the cpu.stat file always
      * exists with usage stats. */
     group->unified.controllers |= 1 << VIR_CGROUP_CONTROLLER_CPUACCT;
+    if (virCgroupV2DevicesAvailable(group))
+        group->unified.controllers |= 1 << VIR_CGROUP_CONTROLLER_DEVICES;
 
     for (i = 0; i < VIR_CGROUP_CONTROLLER_LAST; i++)
         VIR_DEBUG("Controller '%s' present=%s",
@@ -415,8 +418,10 @@ virCgroupV2MakeGroup(virCgroupPtr parent ATTRIBUTE_UNUSED,
                     continue;
 
                 /* Controllers that are implicitly enabled if available. */
-                if (i == VIR_CGROUP_CONTROLLER_CPUACCT)
+                if (i == VIR_CGROUP_CONTROLLER_CPUACCT ||
+                    i == VIR_CGROUP_CONTROLLER_DEVICES) {
                     continue;
+                }
 
                 if (virCgroupV2EnableController(parent, i) < 0)
                     return -1;
