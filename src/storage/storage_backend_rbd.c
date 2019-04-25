@@ -268,9 +268,16 @@ virStorageBackendRBDOpenRADOSConn(virStorageBackendRBDStatePtr ptr,
                               source->hosts[i].name);
         } else if (source->hosts[i].name != NULL &&
             source->hosts[i].port) {
-            virBufferAsprintf(&mon_host, "%s:%d,",
-                              source->hosts[i].name,
-                              source->hosts[i].port);
+            /* assume host containing : is ipv6 */
+            if (strchr(source->hosts[i].name, ':')) {
+                virBufferAsprintf(&mon_host, "[%s]:%d,",
+                                  source->hosts[i].name,
+                                  source->hosts[i].port);
+            } else {
+                virBufferAsprintf(&mon_host, "%s:%d,",
+                                  source->hosts[i].name,
+                                  source->hosts[i].port);
+            }
         } else {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("received malformed monitor, check the XML definition"));
