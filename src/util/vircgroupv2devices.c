@@ -570,6 +570,32 @@ virCgroupV2DevicesRemoveProg(virCgroupPtr group)
 
     return 0;
 }
+
+
+uint32_t
+virCgroupV2DevicesGetPerms(int perms,
+                           char type)
+{
+    uint32_t ret = 0;
+
+    if (perms & VIR_CGROUP_DEVICE_MKNOD)
+        ret |= BPF_DEVCG_ACC_MKNOD << 16;
+
+    if (perms & VIR_CGROUP_DEVICE_READ)
+        ret |= BPF_DEVCG_ACC_READ << 16;
+
+    if (perms & VIR_CGROUP_DEVICE_WRITE)
+        ret |= BPF_DEVCG_ACC_WRITE << 16;
+
+    if (type == 'b')
+        ret |= BPF_DEVCG_DEV_BLOCK;
+    else if (type == 'c')
+        ret |= BPF_DEVCG_DEV_CHAR;
+    else
+        ret |= BPF_DEVCG_DEV_BLOCK | BPF_DEVCG_DEV_CHAR;
+
+    return ret;
+}
 #else /* !HAVE_DECL_BPF_CGROUP_DEVICE */
 bool
 virCgroupV2DevicesAvailable(virCgroupPtr group ATTRIBUTE_UNUSED)
@@ -622,6 +648,14 @@ virCgroupV2DevicesPrepareProg(virCgroupPtr group ATTRIBUTE_UNUSED)
 
 int
 virCgroupV2DevicesRemoveProg(virCgroupPtr group ATTRIBUTE_UNUSED)
+{
+    return 0;
+}
+
+
+uint32_t
+virCgroupV2DevicesGetPerms(int perms ATTRIBUTE_UNUSED,
+                           char type ATTRIBUTE_UNUSED)
 {
     return 0;
 }
