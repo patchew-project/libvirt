@@ -23,4 +23,6 @@
 
 extern int checkPaths(void);
 
+extern void freePaths(void);
+
 #endif /* LIBVIRT_QEMUSECURITYTEST_H */
