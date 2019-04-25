@@ -15156,21 +15156,32 @@ qemuDomainSnapshotUpdateDiskSourcesRenumber(virStorageSourcePtr src)
 
 /**
  * qemuDomainSnapshotUpdateDiskSources:
+ * @driver: QEMU driver
+ * @vm: domain object
  * @dd: snapshot disk data object
  * @persist: set to true if persistent config of the VM was changed
  *
  * Updates disk definition after a successful snapshot.
  */
 static void
-qemuDomainSnapshotUpdateDiskSources(qemuDomainSnapshotDiskDataPtr dd,
+qemuDomainSnapshotUpdateDiskSources(virQEMUDriverPtr driver,
+                                    virDomainObjPtr vm,
+                                    qemuDomainSnapshotDiskDataPtr dd,
                                     bool *persist)
 {
-    if (!dd->src)
+    if (!dd->src) {
+        /* Remove old metadata */
+        if (qemuSecurityMoveImageMetadata(driver, vm, dd->disk->src, NULL) < 0)
+            VIR_WARN("Unable to remove disk metadata on vm %s", vm->def->name);
         return;
+    }
 
     /* storage driver access won'd be needed */
     if (dd->initialized)
         virStorageFileDeinit(dd->src);
+
+    if (qemuSecurityMoveImageMetadata(driver, vm, dd->disk->src, dd->src) < 0)
+        VIR_WARN("Unable to move disk metadata on vm %s", vm->def->name);
 
     /* the old disk image is now readonly */
     dd->disk->src->readonly = true;
@@ -15294,7 +15305,7 @@ qemuDomainSnapshotCreateDiskActive(virQEMUDriverPtr driver,
             virDomainAuditDisk(vm, dd->disk->src, dd->src, "snapshot", ret >= 0);
 
             if (ret == 0)
-                qemuDomainSnapshotUpdateDiskSources(dd, &persist);
+                qemuDomainSnapshotUpdateDiskSources(driver, vm, dd, &persist);
         }
 
         if (ret < 0)
