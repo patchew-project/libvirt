@@ -108,7 +108,8 @@ typedef int (*virProcessForkCallback)(pid_t ppid,
                                       void *opaque);
 
 int virProcessRunInFork(virProcessForkCallback cb,
-                        void *opaque);
+                        void *opaque)
+    ATTRIBUTE_NOINLINE;
 
 int virProcessSetupPrivateMountNS(void);
 
