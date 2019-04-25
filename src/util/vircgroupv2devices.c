@@ -328,6 +328,113 @@ virCgroupV2DevicesAttachProg(virCgroupPtr group,
     VIR_FORCE_CLOSE(mapfd);
     return ret;
 }
+
+
+static int
+virCgroupV2DevicesCountMapEntries(int mapfd)
+{
+    int ret = 0;
+    int rc;
+    uint64_t key = 0;
+    uint64_t prevKey = 0;
+
+    while ((rc = virBPFGetNextElem(mapfd, &prevKey, &key)) == 0) {
+        ret++;
+        prevKey = key;
+    }
+
+    if (rc < 0)
+        return -1;
+
+    return ret;
+}
+
+
+# define MAX_PROG_IDS 10
+
+int
+virCgroupV2DevicesDetectProg(virCgroupPtr group)
+{
+    int ret = -1;
+    int cgroupfd = -1;
+    unsigned int progcnt = 0;
+    unsigned int progids[MAX_PROG_IDS] = { 0 };
+    VIR_AUTOFREE(char *) path = NULL;
+
+    if (group->unified.devices.progfd > 0 && group->unified.devices.mapfd > 0)
+        return 0;
+
+    if (virCgroupPathOfController(group, VIR_CGROUP_CONTROLLER_DEVICES,
+                                  NULL, &path) < 0) {
+        return -1;
+    }
+
+    cgroupfd = open(path, O_RDONLY);
+    if (cgroupfd < 0) {
+        virReportSystemError(errno, _("unable to open '%s'"), path);
+        goto cleanup;
+    }
+
+    if (virBPFQueryProg(cgroupfd, MAX_PROG_IDS, BPF_CGROUP_DEVICE,
+                        &progcnt, progids) < 0) {
+        virReportSystemError(errno, "%s", _("unable to query cgroup BPF progs"));
+        goto cleanup;
+    }
+
+    if (progcnt > 0) {
+        /* No need to have alternate code, this function will not be called
+         * if compiled with old kernel. */
+        int progfd = virBPFGetProg(progids[0]);
+        int mapfd = -1;
+        int nitems = -1;
+        struct bpf_prog_info progInfo = { 0 };
+        struct bpf_map_info mapInfo = { 0 };
+        VIR_AUTOFREE(unsigned int *) mapIDs = NULL;
+
+        if (progfd < 0) {
+            virReportSystemError(errno, "%s", _("failed to get cgroup BPF prog FD"));
+            goto cleanup;
+        }
+
+        if (virBPFGetProgInfo(progfd, &progInfo, &mapIDs) < 0) {
+            virReportSystemError(errno, "%s", _("failed to get cgroup BPF prog info"));
+            goto cleanup;
+        }
+
+        if (progInfo.nr_map_ids == 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("no map for cgroup BPF prog"));
+            goto cleanup;
+        }
+
+        mapfd = virBPFGetMap(mapIDs[0]);
+        if (mapfd < 0) {
+            virReportSystemError(errno, "%s", _("failed to get cgroup BPF map FD"));
+            goto cleanup;
+        }
+
+        if (virBPFGetMapInfo(mapfd, &mapInfo) < 0) {
+            virReportSystemError(errno, "%s", _("failed to get cgroup BPF map info"));
+            goto cleanup;
+        }
+
+        nitems = virCgroupV2DevicesCountMapEntries(mapfd);
+        if (nitems < 0) {
+            virReportSystemError(errno, "%s", _("failed to count cgroup BPF map items"));
+            goto cleanup;
+        }
+
+        group->unified.devices.progfd = progfd;
+        group->unified.devices.mapfd = mapfd;
+        group->unified.devices.max = mapInfo.max_entries;
+        group->unified.devices.count = nitems;
+    }
+
+    ret = 0;
+ cleanup:
+    VIR_FORCE_CLOSE(cgroupfd);
+    return ret;
+}
 #else /* !HAVE_DECL_BPF_CGROUP_DEVICE */
 bool
 virCgroupV2DevicesAvailable(virCgroupPtr group ATTRIBUTE_UNUSED)
@@ -340,6 +447,16 @@ int
 virCgroupV2DevicesAttachProg(virCgroupPtr group ATTRIBUTE_UNUSED,
                              int mapfd ATTRIBUTE_UNUSED,
                              size_t max ATTRIBUTE_UNUSED)
+{
+    virReportSystemError(ENOSYS, "%s",
+                         _("cgroups v2 BPF devices not supported "
+                           "with this kernel"));
+    return -1;
+}
+
+
+int
+virCgroupV2DevicesDetectProg(virCgroupPtr group ATTRIBUTE_UNUSED)
 {
     virReportSystemError(ENOSYS, "%s",
                          _("cgroups v2 BPF devices not supported "

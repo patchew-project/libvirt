@@ -29,4 +29,7 @@ virCgroupV2DevicesAttachProg(virCgroupPtr group,
                              int mapfd,
                              size_t max);
 
+int
+virCgroupV2DevicesDetectProg(virCgroupPtr group);
+
 #endif /* LIBVIRT_VIRCGROUPV2DEVICES_H */
