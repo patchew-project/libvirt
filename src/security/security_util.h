@@ -29,4 +29,9 @@ virSecuritySetRememberedLabel(const char *name,
                               const char *path,
                               const char *label);
 
+int
+virSecurityMoveRememberedLabel(const char *name,
+                               const char *src,
+                               const char *dst);
+
 #endif /* LIBVIRT_SECURITY_UTIL_H */
