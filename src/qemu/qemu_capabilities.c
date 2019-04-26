@@ -5402,3 +5402,105 @@ virQEMUCapsStripMachineAliases(virQEMUCapsPtr qemuCaps)
     for (i = 0; i < qemuCaps->nmachineTypes; i++)
         VIR_FREE(qemuCaps->machineTypes[i].alias);
 }
+
+
+static void
+virQEMUCapsFixFeatPolicy(virCPUDefPtr cpu)
+{
+    size_t i;
+
+    /* Features reported by QMP are either on or off. If the feature is
+     * off, let's set the policy to disabled. Otherwise set it to required.
+     */
+    for (i = 0; i < cpu->nfeatures; i++) {
+        if (cpu->features[i].policy == 0)
+            cpu->features[i].policy = VIR_CPU_FEATURE_DISABLE;
+        else
+            cpu->features[i].policy = VIR_CPU_FEATURE_REQUIRE;
+    }
+}
+
+
+static int
+virQEMUCapsStealCPUModelFromInfo(qemuMonitorCPUModelInfoPtr info,
+                                 virCPUDefPtr cpu)
+{
+    size_t i;
+
+    virCPUDefFreeModel(cpu);
+
+    VIR_STEAL_PTR(cpu->model, info->name);
+
+    for (i = 0; i < info->nprops; i++) {
+        char *name = info->props[i].name;
+        int policy = 0;
+
+        /* If monitor prop type is boolean and is true, force the feat on */
+        if (info->props[i].type == QEMU_MONITOR_CPU_PROPERTY_BOOLEAN)
+            policy = info->props[i].value.boolean;
+
+        if (virCPUDefAddFeature(cpu, name, policy) < 0)
+            goto error;
+    }
+
+    qemuMonitorCPUModelInfoFree(info);
+    return 0;
+
+ error:
+    virCPUDefFree(cpu);
+    return -1;
+}
+
+
+virCPUDefPtr
+virQEMUCapsCPUModelBaseline(virQEMUCapsPtr qemuCaps,
+                            const char *libDir,
+                            uid_t runUid,
+                            gid_t runGid,
+                            int ncpus,
+                            virCPUDefPtr *cpus)
+{
+    qemuMonitorCPUModelInfoPtr result = NULL;
+    qemuProcessQMPPtr proc = NULL;
+    virCPUDefPtr cpu = NULL;
+    virCPUDefPtr baseline = NULL;
+    size_t i;
+
+    if (VIR_ALLOC(cpu) < 0)
+        goto cleanup;
+
+    if (virCPUDefCopyModel(cpu, cpus[0], false))
+        goto cleanup;
+
+    if (!(proc = qemuProcessQMPNew(qemuCaps->binary, libDir,
+                                   runUid, runGid, false)))
+        goto cleanup;
+
+    if (qemuProcessQMPStart(proc) < 0)
+        goto cleanup;
+
+    for (i = 1; i < ncpus; i++) {
+        if (qemuMonitorGetCPUModelBaseline(proc->mon, cpu->model,
+                                           cpu->nfeatures, cpu->features,
+                                           cpus[i]->model, cpus[i]->nfeatures,
+                                           cpus[i]->features, &result) < 0)
+            goto cleanup;
+
+        if (virQEMUCapsStealCPUModelFromInfo(result, cpu) < 0)
+            goto cleanup;
+
+        result = NULL;
+    }
+
+    virQEMUCapsFixFeatPolicy(cpu);
+    VIR_STEAL_PTR(baseline, cpu);
+
+ cleanup:
+    if (!baseline)
+        virQEMUCapsLogProbeFailure(qemuCaps->binary);
+
+    qemuMonitorCPUModelInfoFree(result);
+    qemuProcessQMPFree(proc);
+    virCPUDefFree(cpu);
+    return baseline;
+}
