@@ -526,6 +526,9 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "overcommit",
               "query-current-machine",
               "query-cpu-model-baseline",
+
+              /* 330 */
+              "query-cpu-model-comparison",
     );
 
 
@@ -973,6 +976,7 @@ struct virQEMUCapsStringFlags virQEMUCapsCommands[] = {
     { "blockdev-del", QEMU_CAPS_BLOCKDEV_DEL },
     { "query-current-machine", QEMU_CAPS_QUERY_CURRENT_MACHINE },
     { "query-cpu-model-baseline", QEMU_CAPS_QUERY_CPU_MODEL_BASELINE },
+    { "query-cpu-model-comparison", QEMU_CAPS_QUERY_CPU_MODEL_COMPARISON },
 };
 
 struct virQEMUCapsStringFlags virQEMUCapsMigration[] = {
