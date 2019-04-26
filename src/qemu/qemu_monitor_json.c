@@ -5766,6 +5766,95 @@ qemuMonitorJSONGetCPUModelBaseline(qemuMonitorPtr mon,
 }
 
 
+static int
+qemuMonitorJSONParseCPUModelPropName(size_t pos ATTRIBUTE_UNUSED,
+                                     virJSONValuePtr item,
+                                     void *opaque)
+{
+    return qemuMonitorJSONParseCPUModelProperty(virJSONValueGetString(item),
+                                                item, opaque);
+}
+
+
+int
+qemuMonitorJSONGetCPUModelComparison(qemuMonitorPtr mon,
+                                     const char *model_a_name,
+                                     int model_a_nprops,
+                                     virCPUFeatureDefPtr model_a_props,
+                                     const char *model_b_name,
+                                     int model_b_nprops,
+                                     virCPUFeatureDefPtr model_b_props,
+                                     qemuMonitorCPUModelInfoPtr *model_result)
+{
+    int ret = -1;
+    virJSONValuePtr model_a;
+    virJSONValuePtr model_b = NULL;
+    virJSONValuePtr cmd = NULL;
+    virJSONValuePtr reply = NULL;
+    virJSONValuePtr data;
+    const char *result_name;
+    virJSONValuePtr props;
+    qemuMonitorCPUModelInfoPtr compare = NULL;
+
+    if (!(model_a = qemuMonitorJSONMakeCPUModel(model_a_name, model_a_nprops, model_a_props, true)) ||
+        !(model_b = qemuMonitorJSONMakeCPUModel(model_b_name, model_b_nprops, model_b_props, true)))
+        goto cleanup;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("query-cpu-model-comparison",
+                                           "a:modela", &model_a,
+                                           "a:modelb", &model_b,
+                                           NULL)))
+        goto cleanup;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
+        goto cleanup;
+
+    data = virJSONValueObjectGetObject(reply, "return");
+
+    if (!(result_name = virJSONValueObjectGetString(data, "result"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("query-cpu-model-comparison reply data was missing "
+                         "'result'"));
+        goto cleanup;
+    }
+
+    if (!(props = virJSONValueObjectGetArray(data, "responsible-properties"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("query-cpu-model-comparison reply data was missing "
+                         "'responsible-properties'"));
+        goto cleanup;
+    }
+
+    if (VIR_ALLOC(compare) < 0)
+        goto cleanup;
+
+    if (VIR_STRDUP(compare->name, result_name) < 0)
+        goto cleanup;
+
+    if (VIR_ALLOC_N(compare->props, virJSONValueArraySize(props)) < 0)
+        goto cleanup;
+
+    if (virJSONValueArrayForeachSteal(props,
+                                      qemuMonitorJSONParseCPUModelPropName,
+                                      compare) < 0)
+        goto cleanup;
+
+    VIR_STEAL_PTR(*model_result, compare);
+    ret = 0;
+
+ cleanup:
+    qemuMonitorCPUModelInfoFree(compare);
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    virJSONValueFree(model_a);
+    virJSONValueFree(model_b);
+    return ret;
+}
+
+
 int qemuMonitorJSONGetCommands(qemuMonitorPtr mon,
                                char ***commands)
 {
