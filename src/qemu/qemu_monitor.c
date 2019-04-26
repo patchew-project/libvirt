@@ -3684,6 +3684,28 @@ qemuMonitorGetCPUModelExpansion(qemuMonitorPtr mon,
 }
 
 
+int
+qemuMonitorGetCPUModelBaseline(qemuMonitorPtr mon,
+                               const char *model_a_name,
+                               int model_a_nprops,
+                               virCPUFeatureDefPtr model_a_props,
+                               const char *model_b_name,
+                               int model_b_nprops,
+                               virCPUFeatureDefPtr model_b_props,
+                               qemuMonitorCPUModelInfoPtr *model_result)
+{
+    VIR_DEBUG("model_a_name=%s model_a_nprops=%d model_b_name=%s model_b_nprops=%d",
+               model_a_name, model_a_nprops, model_b_name, model_b_nprops);
+
+    QEMU_CHECK_MONITOR(mon);
+
+    return qemuMonitorJSONGetCPUModelBaseline(mon, model_a_name, model_a_nprops,
+                                              model_a_props, model_b_name,
+                                              model_b_nprops, model_b_props,
+                                              model_result);
+}
+
+
 void
 qemuMonitorCPUModelInfoFree(qemuMonitorCPUModelInfoPtr model_info)
 {
