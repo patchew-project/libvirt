@@ -11631,9 +11631,10 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                     goto error;
                 }
             } else if (virXMLNodeNameEqual(cur, "bandwidth")) {
-                if (virNetDevBandwidthParse(&def->bandwidth,
-                                            cur,
-                                            def->type == VIR_DOMAIN_NET_TYPE_NETWORK) < 0)
+                bool allowFloor =
+                    def->type == VIR_DOMAIN_NET_TYPE_NETWORK ||
+                    def->type == VIR_DOMAIN_NET_TYPE_BRIDGE;
+                if (virNetDevBandwidthParse(&def->bandwidth, cur, allowFloor) < 0)
                     goto error;
             } else if (virXMLNodeNameEqual(cur, "vlan")) {
                 if (virNetDevVlanParse(cur, ctxt, &def->vlan) < 0)
