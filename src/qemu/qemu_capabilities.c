@@ -5508,3 +5508,51 @@ virQEMUCapsCPUModelBaseline(virQEMUCapsPtr qemuCaps,
     virCPUDefFree(cpu);
     return baseline;
 }
+
+virCPUCompareResult
+virQEMUCapsCPUModelComparison(virQEMUCapsPtr qemuCaps,
+                              const char *libDir,
+                              uid_t runUid,
+                              gid_t runGid,
+                              virCPUDefPtr cpu_a,
+                              virCPUDefPtr cpu_b,
+                              bool failIncompatible)
+{
+    qemuProcessQMPPtr proc = NULL;
+    qemuMonitorCPUModelInfoPtr result;
+    int ret = -1;
+
+    if (!(proc = qemuProcessQMPNew(qemuCaps->binary, libDir,
+                                   runUid, runGid, false)))
+        goto cleanup;
+
+    if (qemuProcessQMPStart(proc) < 0)
+        goto cleanup;
+
+    if (qemuMonitorGetCPUModelComparison(proc->mon, cpu_a->model,
+                                         cpu_a->nfeatures, cpu_a->features,
+                                         cpu_b->model, cpu_b->nfeatures,
+                                         cpu_b->features, &result) < 0)
+        goto cleanup;
+
+    if (STREQ(result->name, "incompatible") ||
+        STREQ(result->name, "subset"))
+        ret = VIR_CPU_COMPARE_INCOMPATIBLE;
+    else if (STREQ(result->name, "identical"))
+        ret = VIR_CPU_COMPARE_IDENTICAL;
+    else if (STREQ(result->name, "superset"))
+        ret = VIR_CPU_COMPARE_SUPERSET;
+
+    if (failIncompatible && ret == VIR_CPU_COMPARE_INCOMPATIBLE) {
+        ret = VIR_CPU_COMPARE_ERROR;
+        virReportError(VIR_ERR_CPU_INCOMPATIBLE, NULL);
+    }
+
+ cleanup:
+    if (ret < 0)
+        virQEMUCapsLogProbeFailure(qemuCaps->binary);
+
+    qemuMonitorCPUModelInfoFree(result);
+    qemuProcessQMPFree(proc);
+    return ret;
+}
