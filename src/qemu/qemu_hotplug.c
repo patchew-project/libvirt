@@ -3966,7 +3966,7 @@ qemuDomainChangeNet(virQEMUDriverPtr driver,
         goto cleanup;
     }
 
-    if (olddev->type == newdev->type && oldType == newType) {
+    if (oldType == newType) {
 
         /* if type hasn't changed, check the relevant fields for the type */
         switch (newdev->type) {
