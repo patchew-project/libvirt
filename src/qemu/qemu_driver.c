@@ -6844,7 +6844,7 @@ qemuDomainSaveImageStartVM(virConnectPtr conn,
              * must manually kill it and ignore any error related to
              * the process
              */
-            orig_err = virSaveLastError();
+            virErrorPreserveLast(&orig_err);
             VIR_FORCE_CLOSE(intermediatefd);
             VIR_FORCE_CLOSE(*fd);
         }
@@ -6855,10 +6855,7 @@ qemuDomainSaveImageStartVM(virConnectPtr conn,
         }
         VIR_DEBUG("Decompression binary stderr: %s", NULLSTR(errbuf));
 
-        if (orig_err) {
-            virSetError(orig_err);
-            virFreeError(orig_err);
-        }
+        virErrorRestore(&orig_err);
     }
     VIR_FORCE_CLOSE(intermediatefd);
 
@@ -14398,7 +14395,7 @@ qemuDomainSnapshotFSThaw(virQEMUDriverPtr driver ATTRIBUTE_UNUSED,
 
     agent = qemuDomainObjEnterAgent(vm);
     if (!report)
-        err = virSaveLastError();
+        virErrorPreserveLast(&err); 
     thawed = qemuAgentFSThaw(agent);
     if (!report)
         virSetError(err);
@@ -15308,7 +15305,7 @@ qemuDomainSnapshotCreateDiskActive(virQEMUDriverPtr driver,
 
  error:
     if (ret < 0) {
-        orig_err = virSaveLastError();
+        virErrorPreserveLast(&orig_err);
         for (i = 0; i < snapdef->ndisks; i++) {
             if (!diskdata[i].src)
                 continue;
@@ -15351,10 +15348,7 @@ qemuDomainSnapshotCreateDiskActive(virQEMUDriverPtr driver,
     virJSONValueFree(actions);
     virObjectUnref(cfg);
 
-    if (orig_err) {
-        virSetError(orig_err);
-        virFreeError(orig_err);
-    }
+    virErrorRestore(&orig_err);
 
     return ret;
 }
@@ -17773,7 +17767,7 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
     if (qemuDomainObjExitMonitor(driver, vm) < 0)
         ret = -1;
     if (ret < 0) {
-        monitor_error = virSaveLastError();
+        virErrorPreserveLast(&monitor_error);
         qemuDomainDiskChainElementRevoke(driver, vm, mirror);
         goto endjob;
     }
@@ -17795,10 +17789,7 @@ qemuDomainBlockCopyCommon(virDomainObjPtr vm,
         VIR_WARN("%s", _("unable to remove just-created copy target"));
     virStorageFileDeinit(mirror);
     qemuDomainObjEndJob(driver, vm);
-    if (monitor_error) {
-        virSetError(monitor_error);
-        virFreeError(monitor_error);
-    }
+    virErrorRestore(&monitor_error);
     qemuBlockJobStartupFinalize(job);
 
  cleanup:
@@ -18196,10 +18187,7 @@ qemuDomainBlockCommit(virDomainPtr dom,
         if (top_parent && top_parent != disk->src)
             qemuDomainDiskChainElementPrepare(driver, vm, top_parent, true, false);
 
-        if (orig_err) {
-            virSetError(orig_err);
-            virFreeError(orig_err);
-        }
+        virErrorRestore(&orig_err);
     }
     qemuBlockJobStartupFinalize(job);
     qemuDomainObjEndJob(driver, vm);

@@ -8042,7 +8042,7 @@ void qemuDomainObjTaint(virQEMUDriverPtr driver,
     /* We don't care about errors logging taint info, so
      * preserve original error, and clear any error that
      * is raised */
-    orig_err = virSaveLastError();
+    virErrorPreserveLast(&orig_err);
 
     if (!(timestamp = virTimeStringNow()))
         goto cleanup;

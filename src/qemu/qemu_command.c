@@ -9119,7 +9119,7 @@ qemuBuildNetCommandLine(virQEMUDriverPtr driver,
  error:
     /* free up any resources in the network driver
      * but don't overwrite the original error */
-    originalError = virSaveLastError();
+    virErrorPreserveLast(&originalError);
     for (i = 0; last_good_net != -1 && i <= last_good_net; i++)
         virDomainConfNWFilterTeardown(def->nets[i]);
     virSetError(originalError);
