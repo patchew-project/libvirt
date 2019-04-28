@@ -19396,6 +19396,7 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
 
     ret = 0;
  cleanup:
+    virObjectUnref(alloc);
     virDomainResctrlDefFree(resctrl);
     return ret;
 }
@@ -19597,6 +19598,7 @@ virDomainMemorytuneDefParse(virDomainDefPtr def,
 
     ret = 0;
  cleanup:
+    virObjectUnref(alloc);
     virDomainResctrlDefFree(resctrl);
     return ret;
 }
