@@ -1031,14 +1031,9 @@ virStorageBackendRBDIterateCb(uint64_t offset ATTRIBUTE_UNUSED,
 {
     /*
      * Just set that there is a diff for this snapshot, we do not care where
-     *
-     * When it returns a negative number the rbd_diff_iterate() function will stop
-     *
-     * That's why we return -1, meaning that there is a difference and we can stop
-     * searching any further.
      */
     *(int*) arg = 1;
-    return -1;
+    return 0;
 }
 
 static int
