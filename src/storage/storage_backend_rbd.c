@@ -1101,7 +1101,9 @@ virStorageBackendRBDSnapshotFindNoDiff(rbd_image_t image,
                              virStorageBackendRBDIterateCb, (void *)&diff);
 #endif
 
-        if (r < 0) {
+        /* We care for errors only if the callback wasn't called at all. If it
+         * was, rbd_diff_iterate() returns an error which we have to ignore. */
+        if (r < 0 && diff == 0) {
             virReportSystemError(-r, _("failed to iterate RBD snapshot %s@%s"),
                                  imgname, snaps[i].name);
             goto cleanup;
