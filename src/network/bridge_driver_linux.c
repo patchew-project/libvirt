@@ -35,44 +35,10 @@ VIR_LOG_INIT("network.bridge_driver_linux");
 
 #define PROC_NET_ROUTE "/proc/net/route"
 
-static virErrorPtr errInitV4;
-static virErrorPtr errInitV6;
+static bool pvtChainsCreated;
 
 void networkPreReloadFirewallRules(bool startup)
 {
-    bool created = false;
-    int rc;
-
-    /* We create global rules upfront as we don't want
-     * the perf hit of conditionally figuring out whether
-     * to create them each time a network is started.
-     *
-     * Any errors here are saved to be reported at time
-     * of starting the network though as that makes them
-     * more likely to be seen by a human
-     */
-    rc = iptablesSetupPrivateChains(VIR_FIREWALL_LAYER_IPV4);
-    if (rc < 0) {
-        errInitV4 = virSaveLastError();
-        virResetLastError();
-    } else {
-        virFreeError(errInitV4);
-        errInitV4 = NULL;
-    }
-    if (rc)
-        created = true;
-
-    rc = iptablesSetupPrivateChains(VIR_FIREWALL_LAYER_IPV6);
-    if (rc < 0) {
-        errInitV6 = virSaveLastError();
-        virResetLastError();
-    } else {
-        virFreeError(errInitV6);
-        errInitV6 = NULL;
-    }
-    if (rc)
-        created = true;
-
     /*
      * If this is initial startup, and we just created the
      * top level private chains we either
@@ -86,8 +52,8 @@ void networkPreReloadFirewallRules(bool startup)
      * rules will be present. Thus we can safely just tell it
      * to always delete from the builin chain
      */
-    if (startup && created)
-        iptablesSetDeletePrivate(false);
+    if (startup)
+        iptablesSetDeletePrivate(true);
 }
 
 
@@ -701,19 +667,19 @@ int networkAddFirewallRules(virNetworkDefPtr def)
     virFirewallPtr fw = NULL;
     int ret = -1;
 
-    if (errInitV4 &&
-        (virNetworkDefGetIPByIndex(def, AF_INET, 0) ||
-         virNetworkDefGetRouteByIndex(def, AF_INET, 0))) {
-        virSetError(errInitV4);
-        return -1;
-    }
+    if (!pvtChainsCreated) {
+        if (iptablesSetupPrivateChains(VIR_FIREWALL_LAYER_IPV4) < 0 &&
+            (virNetworkDefGetIPByIndex(def, AF_INET, 0) ||
+             virNetworkDefGetRouteByIndex(def, AF_INET, 0)))
+            return -1;
 
-    if (errInitV6 &&
-        (virNetworkDefGetIPByIndex(def, AF_INET6, 0) ||
-         virNetworkDefGetRouteByIndex(def, AF_INET6, 0) ||
-         def->ipv6nogw)) {
-        virSetError(errInitV6);
-        return -1;
+        if (iptablesSetupPrivateChains(VIR_FIREWALL_LAYER_IPV6) < 0 &&
+            (virNetworkDefGetIPByIndex(def, AF_INET6, 0) ||
+             virNetworkDefGetRouteByIndex(def, AF_INET6, 0) ||
+             def->ipv6nogw))
+            return -1;
+
+        pvtChainsCreated = true;
     }
 
     if (def->bridgeZone) {
