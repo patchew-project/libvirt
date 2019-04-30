@@ -8997,17 +8997,19 @@ qemuBuildInterfaceCommandLine(virQEMUDriverPtr driver,
         if (qemuSecuritySetTapFDLabel(driver->securityManager,
                                       def, tapfd[i]) < 0)
             goto cleanup;
-        virCommandPassFD(cmd, tapfd[i],
-                         VIR_COMMAND_PASS_FD_CLOSE_PARENT);
         if (virAsprintf(&tapfdName[i], "%d", tapfd[i]) < 0)
             goto cleanup;
+        virCommandPassFD(cmd, tapfd[i],
+                         VIR_COMMAND_PASS_FD_CLOSE_PARENT);
+        tapfd[i] = -1;
     }
 
     for (i = 0; i < vhostfdSize; i++) {
-        virCommandPassFD(cmd, vhostfd[i],
-                         VIR_COMMAND_PASS_FD_CLOSE_PARENT);
         if (virAsprintf(&vhostfdName[i], "%d", vhostfd[i]) < 0)
             goto cleanup;
+        virCommandPassFD(cmd, vhostfd[i],
+                         VIR_COMMAND_PASS_FD_CLOSE_PARENT);
+        vhostfd[i] = -1;
     }
 
     if (chardev)
