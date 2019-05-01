@@ -5844,6 +5844,14 @@ qemuDomainDetachDeviceChr(virQEMUDriverPtr driver,
         goto cleanup;
     }
 
+    if (tmpChr->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_CONSOLE &&
+        tmpChr->targetType == VIR_DOMAIN_CHR_CONSOLE_TARGET_TYPE_SERIAL) {
+        virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                       _("detaching serial console is not supported"));
+        goto cleanup;
+    }
+
+
     /* guestfwd channels are not really -device rather than
      * -netdev. We need to treat them slightly differently. */
     guestfwd = tmpChr->deviceType == VIR_DOMAIN_CHR_DEVICE_TYPE_CHANNEL &&
