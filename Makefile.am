@@ -17,7 +17,7 @@
 ## <http://www.gnu.org/licenses/>.
 
 SUBDIRS = . gnulib/lib include/libvirt src tools docs gnulib/tests \
-  tests po examples
+  tests tests/tools po examples
 
 XZ_OPT ?= -v -T0
 export XZ_OPT

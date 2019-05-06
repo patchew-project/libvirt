@@ -925,6 +925,7 @@ AC_CONFIG_FILES([\
         include/libvirt/libvirt-common.h \
         examples/Makefile \
         tests/Makefile \
+        tests/tools/Makefile \
         tools/Makefile])
 AC_OUTPUT
 

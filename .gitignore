@@ -170,7 +170,7 @@
 /tests/*.trs
 /tests/*test
 /tests/commandhelper
-/tests/qemucapsprobe
+/tests/tools/qemucapsprobe
 !/tests/virsh-self-test
 !/tests/virt-aa-helper-test
 !/tests/virt-admin-self-test

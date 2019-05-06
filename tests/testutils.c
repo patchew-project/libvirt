@@ -533,7 +533,7 @@ virTestRewrapFile(const char *filename)
         return -1;
     }
 
-    if (virAsprintf(&script, "%s/test-wrap-argv.pl", abs_srcdir) < 0)
+    if (virAsprintf(&script, "%s/tools/test-wrap-argv.pl", abs_srcdir) < 0)
         goto cleanup;
 
     cmd = virCommandNewArgList(perl, script, "--in-place", filename, NULL);
