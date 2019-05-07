@@ -1169,10 +1169,10 @@ header-ifdef:
 
 test-wrap-argv:
 	$(AM_V_GEN)$(VC_LIST) | $(GREP) -E '\.(ldargs|args)' | xargs \
-	$(PERL) $(top_srcdir)/tests/test-wrap-argv.pl --check
+	$(PERL) $(top_srcdir)/tests/tools/test-wrap-argv.pl --check
 
 group-qemu-caps:
-	$(AM_V_GEN)$(PERL) $(top_srcdir)/tests/group-qemu-caps.pl --check $(top_srcdir)/
+	$(AM_V_GEN)$(PERL) $(top_srcdir)/tests/tools/group-qemu-caps.pl --check $(top_srcdir)/
 
 # sc_po_check can fail if generated files are not built first
 sc_po_check: \

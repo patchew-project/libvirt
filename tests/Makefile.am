@@ -75,7 +75,6 @@ MOCKLIBS_LIBS = \
 	../src/libvirt.la
 
 EXTRA_DIST = \
-	.valgrind.supp \
 	bhyvexml2argvdata \
 	bhyveargv2xmldata \
 	bhyvexml2xmloutdata \
@@ -107,7 +106,6 @@ EXTRA_DIST = \
 	nwfilterxml2firewalldata \
 	nwfilterxml2xmlin \
 	nwfilterxml2xmlout \
-	oomtrace.pl \
 	qemuagentdata \
 	qemuargv2xmldata \
 	qemublocktestdata \
@@ -285,12 +283,10 @@ test_programs += qemuxml2argvtest qemuxml2xmltest \
 	qemusecuritytest \
 	qemufirmwaretest \
 	$(NULL)
-test_helpers += qemucapsprobe
 test_libraries += libqemumonitortestutils.la \
 		libqemutestdriver.la \
 		qemuxml2argvmock.la \
 		qemucaps2xmlmock.la \
-		qemucapsprobemock.la \
 		qemucpumock.la \
 		$(NULL)
 endif WITH_QEMU
@@ -442,15 +438,13 @@ EXTRA_DIST += $(test_scripts)
 if WITH_LINUX
 check-access: file-access-clean
 	VIR_TEST_FILE_ACCESS=1 $(MAKE) $(AM_MAKEFLAGS) check
-	$(PERL) check-file-access.pl | sort -u
+	$(PERL) tools/check-file-access.pl | sort -u
 
 file-access-clean:
 	> test_file_access.txt
 endif WITH_LINUX
 
-EXTRA_DIST += \
-	check-file-access.pl \
-	file_access_whitelist.txt
+include tools/Makefile.inc.am
 
 if WITH_TESTS
 noinst_PROGRAMS = $(test_programs) $(test_helpers)
@@ -478,7 +472,7 @@ TESTS_ENVIRONMENT = \
 
 VALGRIND = valgrind --quiet --leak-check=full --trace-children=yes \
 	--trace-children-skip="*/tools/virsh","*/tests/commandhelper" \
-	--suppressions=$(abs_srcdir)/.valgrind.supp
+	--suppressions=$(abs_srcdir)/tools/.valgrind.supp
 valgrind:
 	$(MAKE) check VG="$(LIBTOOL) --mode=execute $(VALGRIND)"
 
@@ -602,16 +596,6 @@ qemucapabilitiestest_SOURCES = \
 	$(NULL)
 qemucapabilitiestest_LDADD = libqemumonitortestutils.la \
 	$(qemu_LDADDS) $(LDADDS)
-
-qemucapsprobe_SOURCES = \
-	qemucapsprobe.c
-qemucapsprobe_LDADD = \
-	libqemutestdriver.la $(LDADDS)
-
-qemucapsprobemock_la_SOURCES = \
-	qemucapsprobemock.c
-qemucapsprobemock_la_LDFLAGS = $(MOCKLIBS_LDFLAGS)
-qemucapsprobemock_la_LIBADD = $(MOCKLIBS_LIBS)
 
 qemucommandutiltest_SOURCES = \
 	qemucommandutiltest.c \

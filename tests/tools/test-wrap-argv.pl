@@ -94,7 +94,7 @@ sub rewrap {
             close DIFF;
 
             print STDERR "Incorrect line wrapping in $file\n";
-            print STDERR "Use test-wrap-argv.pl to wrap test data files\n";
+            print STDERR "Use tests/tools/test-wrap-argv.pl to wrap test data files\n";
             return -1;
         }
     } else {

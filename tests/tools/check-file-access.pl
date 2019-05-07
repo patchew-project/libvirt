@@ -25,7 +25,7 @@ use strict;
 use warnings;
 
 my $access_file = "test_file_access.txt";
-my $whitelist_file = "file_access_whitelist.txt";
+my $whitelist_file = "tools/file_access_whitelist.txt";
 
 my @known_actions = ("open", "fopen", "access", "stat", "lstat", "connect");
 

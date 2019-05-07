@@ -1,0 +1,23 @@
+# vim: filetype=automake
+
+if WITH_QEMU
+test_helpers += tools/qemucapsprobe
+test_libraries += tools/qemucapsprobemock.la
+
+tools_qemucapsprobe_SOURCES = \
+	tools/qemucapsprobe.c \
+	testutils.h
+tools_qemucapsprobe_LDADD = \
+	libqemutestdriver.la $(LDADDS)
+
+tools_qemucapsprobemock_la_SOURCES = \
+	tools/qemucapsprobemock.c
+tools_qemucapsprobemock_la_LDFLAGS = $(MOCKLIBS_LDFLAGS)
+tools_qemucapsprobemock_la_LIBADD = $(MOCKLIBS_LIBS)
+endif WITH_QEMU
+
+EXTRA_DIST += \
+	tools/.valgrind.supp \
+	tools/check-file-access.pl \
+	tools/file_access_whitelist.txt \
+	tools/oomtrace.pl
