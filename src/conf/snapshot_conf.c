@@ -81,7 +81,17 @@ virDomainSnapshotDiskDefClear(virDomainSnapshotDiskDefPtr disk)
     disk->src = NULL;
 }
 
-void virDomainSnapshotDefFree(virDomainSnapshotDefPtr def)
+virDomainSnapshotDefPtr
+virDomainSnapshotDefNew(void)
+{
+    virDomainSnapshotDefPtr def;
+
+    ignore_value(VIR_ALLOC(def));
+    return def;
+}
+
+void
+virDomainSnapshotDefFree(virDomainSnapshotDefPtr def)
 {
     size_t i;
 
@@ -205,8 +215,8 @@ virDomainSnapshotDefParse(xmlXPathContextPtr ctxt,
     bool offline = !!(flags & VIR_DOMAIN_SNAPSHOT_PARSE_OFFLINE);
     virSaveCookieCallbacksPtr saveCookie = virDomainXMLOptionGetSaveCookie(xmlopt);
 
-    if (VIR_ALLOC(def) < 0)
-        goto cleanup;
+    if (!(def = virDomainSnapshotDefNew()))
+        return NULL;
 
     def->parent.name = virXPathString("string(./name)", ctxt);
     if (def->parent.name == NULL) {
