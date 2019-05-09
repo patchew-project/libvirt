@@ -52,6 +52,8 @@ runIO(const char *path, int fd, int oflags)
     unsigned long long total = 0;
     bool direct = O_DIRECT && ((oflags & O_DIRECT) != 0);
     off_t end = 0;
+    const unsigned long long sleep_step = (long long)10*1024*1024*1024;
+    unsigned long long next_sleep = sleep_step;
 
 #if HAVE_POSIX_MEMALIGN
     if (posix_memalign(&base, alignMask + 1, buflen)) {
@@ -127,6 +129,12 @@ runIO(const char *path, int fd, int oflags)
             break;
 
         total += got;
+
+        /* sleeps for a while to avoid hunging other tasks */
+        if (total > next_sleep) {
+            next_sleep += sleep_step;
+            usleep(100*1000);
+        }
 
         /* handle last write size align in direct case */
         if (got < buflen && direct && fdout == fd) {
