@@ -1198,7 +1198,6 @@ rm -f po/stamp-po
            --with-selinux \
            %{?arg_selinux_mount} \
            --without-apparmor \
-           --without-hal \
            --with-udev \
            --with-yajl \
            %{?arg_sanlock} \

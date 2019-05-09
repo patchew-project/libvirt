@@ -781,7 +781,7 @@ AC_SUBST([LV_LIBTOOL_OBJDIR])
 
 
 with_nodedev=no;
-if test "$with_hal" = "yes" || test "$with_udev" = "yes";
+if test "$with_udev" = "yes";
 then
   with_nodedev=yes
   AC_DEFINE_UNQUOTED([WITH_NODE_DEVICES], 1, [with node device driver])
@@ -982,7 +982,6 @@ LIBVIRT_RESULT_FIREWALLD_ZONE
 LIBVIRT_RESULT_FUSE
 LIBVIRT_RESULT_GLUSTER
 LIBVIRT_RESULT_GNUTLS
-LIBVIRT_RESULT_HAL
 LIBVIRT_RESULT_LIBISCSI
 LIBVIRT_RESULT_LIBNL
 LIBVIRT_RESULT_LIBPCAP

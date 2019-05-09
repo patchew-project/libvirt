@@ -18,13 +18,11 @@ dnl <http://www.gnu.org/licenses/>.
 dnl
 
 AC_DEFUN([LIBVIRT_ARG_HAL],[
-  LIBVIRT_ARG_WITH_FEATURE([HAL], [hal], [check], [0.5.0])
+  LIBVIRT_ARG_WITH([HAL], [hal was removed], [no])
 ])
 
 AC_DEFUN([LIBVIRT_CHECK_HAL],[
-  LIBVIRT_CHECK_PKG([HAL], [hal], [0.5.0])
-])
-
-AC_DEFUN([LIBVIRT_RESULT_HAL],[
-  LIBVIRT_RESULT_LIB([HAL])
+  if test "$with_hal" != "no" ; then
+    AC_MSG_ERROR([HAL node device driver was removed from libvirt])
+  fi
 ])

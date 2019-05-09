@@ -38,7 +38,7 @@ my %groupheaders = (
 my @srcs;
 find({
     wanted => sub {
-        if (m!$srcdir/.*/\w+_(driver|common|tmpl|monitor|hal|udev)\.c$!) {
+        if (m!$srcdir/.*/\w+_(driver|common|tmpl|monitor|udev)\.c$!) {
             push @srcs, $_ if $_ !~ /vbox_driver\.c/;
         }
     }, no_chdir => 1}, $srcdir);
