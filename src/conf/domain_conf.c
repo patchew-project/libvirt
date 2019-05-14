@@ -11397,6 +11397,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_AUTOFREE(char *) type = NULL;
     VIR_AUTOFREE(char *) network = NULL;
     VIR_AUTOFREE(char *) portgroup = NULL;
+    VIR_AUTOFREE(char *) portid = NULL;
     VIR_AUTOFREE(char *) bridge = NULL;
     VIR_AUTOFREE(char *) dev = NULL;
     VIR_AUTOFREE(char *) ifname = NULL;
@@ -11474,6 +11475,8 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                        virXMLNodeNameEqual(cur, "source")) {
                 network = virXMLPropString(cur, "network");
                 portgroup = virXMLPropString(cur, "portgroup");
+                if (!(flags & VIR_DOMAIN_DEF_PARSE_INACTIVE))
+                    portid = virXMLPropString(cur, "portid");
             } else if (!internal &&
                        def->type == VIR_DOMAIN_NET_TYPE_INTERNAL &&
                        virXMLNodeNameEqual(cur, "source")) {
@@ -11687,6 +11690,13 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                              "specified with <interface type='network'/>"));
             goto error;
         }
+        if (portid &&
+            virUUIDParse(portid, def->data.network.portid) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("Unable to parse port id '%s'"), portid);
+            goto error;
+        }
+
         VIR_STEAL_PTR(def->data.network.name, network);
         VIR_STEAL_PTR(def->data.network.portgroup, portgroup);
         VIR_STEAL_PTR(def->data.network.actual, actual);
@@ -24975,6 +24985,11 @@ virDomainActualNetDefContentsFormat(virBufferPtr buf,
                                   def->data.network.name);
             virBufferEscapeString(buf, " portgroup='%s'",
                                   def->data.network.portgroup);
+            if (virUUIDIsValid(def->data.network.portid)) {
+                char uuidstr[VIR_UUID_STRING_BUFLEN];
+                virUUIDFormat(def->data.network.portid, uuidstr);
+                virBufferAsprintf(buf, " portid='%s'", uuidstr);
+            }
         }
         if (actualType == VIR_DOMAIN_NET_TYPE_BRIDGE ||
             actualType == VIR_DOMAIN_NET_TYPE_NETWORK) {
@@ -25278,6 +25293,12 @@ virDomainNetDefFormat(virBufferPtr buf,
                                   def->data.network.name);
             virBufferEscapeString(buf, " portgroup='%s'",
                                   def->data.network.portgroup);
+            if (virUUIDIsValid(def->data.network.portid) &&
+                !(flags & (VIR_DOMAIN_DEF_FORMAT_INACTIVE))) {
+                char portidstr[VIR_UUID_STRING_BUFLEN];
+                virUUIDFormat(def->data.network.portid, portidstr);
+                virBufferEscapeString(buf, " portid='%s'", portidstr);
+            }
             sourceLines++;
             break;
 
