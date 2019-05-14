@@ -11278,6 +11278,7 @@ virDomainActualNetDefParseXML(xmlNodePtr node,
     bandwidth_node = virXPathNode("./bandwidth", ctxt);
     if (bandwidth_node &&
         virNetDevBandwidthParse(&actual->bandwidth,
+                                NULL,
                                 bandwidth_node,
                                 actual->type == VIR_DOMAIN_NET_TYPE_NETWORK) < 0)
         goto error;
@@ -11617,6 +11618,7 @@ virDomainNetDefParseXML(virDomainXMLOptionPtr xmlopt,
                 }
             } else if (virXMLNodeNameEqual(cur, "bandwidth")) {
                 if (virNetDevBandwidthParse(&def->bandwidth,
+                                            NULL,
                                             cur,
                                             def->type == VIR_DOMAIN_NET_TYPE_NETWORK) < 0)
                     goto error;
@@ -25014,7 +25016,7 @@ virDomainActualNetDefContentsFormat(virBufferPtr buf,
         return -1;
     if (virNetDevVPortProfileFormat(virDomainNetGetActualVirtPortProfile(def), buf) < 0)
         return -1;
-    if (virNetDevBandwidthFormat(virDomainNetGetActualBandwidth(def), buf) < 0)
+    if (virNetDevBandwidthFormat(virDomainNetGetActualBandwidth(def), 0, buf) < 0)
         return -1;
     return 0;
 }
@@ -25391,7 +25393,7 @@ virDomainNetDefFormat(virBufferPtr buf,
             return -1;
         if (virNetDevVPortProfileFormat(def->virtPortProfile, buf) < 0)
             return -1;
-        if (virNetDevBandwidthFormat(def->bandwidth, buf) < 0)
+        if (virNetDevBandwidthFormat(def->bandwidth, 0, buf) < 0)
             return -1;
 
         /* ONLY for internal status storage - format the ActualNetDef
