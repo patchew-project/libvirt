@@ -365,8 +365,10 @@ virStoragePoolObjDispose(void *opaque)
     if (!obj)
         return;
 
-    virStoragePoolObjClearVols(obj);
-    virObjectUnref(obj->volumes);
+    if (obj->volumes) {
+        virStoragePoolObjClearVols(obj);
+        virObjectUnref(obj->volumes);
+    }
 
     virStoragePoolDefFree(obj->def);
     virStoragePoolDefFree(obj->newDef);
