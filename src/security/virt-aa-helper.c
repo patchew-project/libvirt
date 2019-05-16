@@ -511,8 +511,7 @@ valid_path(const char *path, const bool readonly)
     /* override the above with these */
     const char * const override[] = {
         "/sys/devices/pci",                /* for hostdev pci devices */
-        "/sys/kernel/config/target/vhost", /* for hostdev vhost_scsi devices */
-        "/etc/libvirt-sandbox/services/"   /* for virt-sandbox service config */
+        "/sys/kernel/config/target/vhost"  /* for hostdev vhost_scsi devices */
     };
 
     const int nropaths = ARRAY_CARDINALITY(restricted);
