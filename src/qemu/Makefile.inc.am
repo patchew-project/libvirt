@@ -166,3 +166,10 @@ EXTRA_DIST += \
 	qemu/THREADS.txt \
 	libvirt_qemu_probes.d \
 	$(NULL)
+
+libexec_PROGRAMS += libvirt_qemu_shim
+
+libvirt_qemu_shim_SOURCES = qemu/qemu_shim.c
+
+libvirt_qemu_shim_LDADD = libvirt.la
+libvirt_qemu_shim_LDFLAGS = -Wl,--export-dynamic
