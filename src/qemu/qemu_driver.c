@@ -613,7 +613,7 @@ qemuStateInitialize(bool privileged,
     if (privileged)
         qemu_driver->hostsysinfo = virSysinfoRead();
 
-    if (!(qemu_driver->config = cfg = virQEMUDriverConfigNew(privileged)))
+    if (!(qemu_driver->config = cfg = virQEMUDriverConfigNew(privileged, root)))
         goto error;
 
     if (virAsprintf(&driverConf, "%s/qemu.conf", cfg->configBaseDir) < 0)

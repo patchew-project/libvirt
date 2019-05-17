@@ -123,7 +123,8 @@ void qemuDomainCmdlineDefFree(qemuDomainCmdlineDefPtr def)
 #endif
 
 
-virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
+virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged,
+                                              const char *root)
 {
     virQEMUDriverConfigPtr cfg;
 
@@ -150,30 +151,31 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
 
     if (privileged) {
         if (virAsprintf(&cfg->logDir,
-                        "%s/log/libvirt/qemu", LOCALSTATEDIR) < 0)
+                        "%s%s/log/libvirt/qemu", root, LOCALSTATEDIR) < 0)
             goto error;
 
         if (virAsprintf(&cfg->swtpmLogDir,
-                        "%s/log/swtpm/libvirt/qemu", LOCALSTATEDIR) < 0)
+                        "%s%s/log/swtpm/libvirt/qemu", root, LOCALSTATEDIR) < 0)
             goto error;
 
-        if (VIR_STRDUP(cfg->configBaseDir, SYSCONFDIR "/libvirt") < 0)
+        if (virAsprintf(&cfg->configBaseDir,
+                        "%s%s/libvirt", root, SYSCONFDIR) < 0)
             goto error;
 
         if (virAsprintf(&cfg->stateDir,
-                      "%s/run/libvirt/qemu", LOCALSTATEDIR) < 0)
+                        "%s%s/run/libvirt/qemu", root, LOCALSTATEDIR) < 0)
             goto error;
 
         if (virAsprintf(&cfg->swtpmStateDir,
-                       "%s/run/libvirt/qemu/swtpm", LOCALSTATEDIR) < 0)
+                        "%s%s/run/libvirt/qemu/swtpm", root, LOCALSTATEDIR) < 0)
             goto error;
 
         if (virAsprintf(&cfg->cacheDir,
-                      "%s/cache/libvirt/qemu", LOCALSTATEDIR) < 0)
+                        "%s%s/cache/libvirt/qemu", root, LOCALSTATEDIR) < 0)
             goto error;
 
         if (virAsprintf(&cfg->libDir,
-                      "%s/lib/libvirt/qemu", LOCALSTATEDIR) < 0)
+                        "%s%s/lib/libvirt/qemu", root, LOCALSTATEDIR) < 0)
             goto error;
         if (virAsprintf(&cfg->saveDir, "%s/save", cfg->libDir) < 0)
             goto error;
@@ -188,8 +190,8 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
             goto error;
         if (virAsprintf(&cfg->memoryBackingDir, "%s/ram", cfg->libDir) < 0)
             goto error;
-        if (virAsprintf(&cfg->swtpmStorageDir, "%s/lib/libvirt/swtpm",
-                        LOCALSTATEDIR) < 0)
+        if (virAsprintf(&cfg->swtpmStorageDir, "%s%s/lib/libvirt/swtpm",
+                        root, LOCALSTATEDIR) < 0)
             goto error;
         if (!virDoesUserExist("tss") ||
             virGetUserID("tss", &cfg->swtpm_user) < 0)
@@ -200,22 +202,23 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
     } else {
         char *rundir;
         char *cachedir;
+        char *cfgdir;
 
         cachedir = virGetUserCacheDirectory();
         if (!cachedir)
             goto error;
 
         if (virAsprintf(&cfg->logDir,
-                        "%s/qemu/log", cachedir) < 0) {
+                        "%s%s/qemu/log", root, cachedir) < 0) {
             VIR_FREE(cachedir);
             goto error;
         }
         if (virAsprintf(&cfg->swtpmLogDir,
-                        "%s/qemu/log", cachedir) < 0) {
+                        "%s%s/qemu/log", root, cachedir) < 0) {
             VIR_FREE(cachedir);
             goto error;
         }
-        if (virAsprintf(&cfg->cacheDir, "%s/qemu/cache", cachedir) < 0) {
+        if (virAsprintf(&cfg->cacheDir, "%s%s/qemu/cache", root, cachedir) < 0) {
             VIR_FREE(cachedir);
             goto error;
         }
@@ -224,7 +227,7 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
         rundir = virGetUserRuntimeDirectory();
         if (!rundir)
             goto error;
-        if (virAsprintf(&cfg->stateDir, "%s/qemu/run", rundir) < 0) {
+        if (virAsprintf(&cfg->stateDir, "%s%s/qemu/run", root, rundir) < 0) {
             VIR_FREE(rundir);
             goto error;
         }
@@ -233,8 +236,15 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
         if (virAsprintf(&cfg->swtpmStateDir, "%s/swtpm", cfg->stateDir) < 0)
             goto error;
 
-        if (!(cfg->configBaseDir = virGetUserConfigDirectory()))
+        cfgdir = virGetUserConfigDirectory();
+        if (!cfgdir)
             goto error;
+
+        if (virAsprintf(&cfg->configBaseDir, "%s%s", root, cfgdir) < 0) {
+            VIR_FREE(cfgdir);
+            goto error;
+        }
+        VIR_FREE(cfgdir);
 
         if (virAsprintf(&cfg->libDir, "%s/qemu/lib", cfg->configBaseDir) < 0)
             goto error;
@@ -267,6 +277,7 @@ virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged)
      * This will then be used as a fallback if the service specific
      * directory doesn't exist (although we don't check if this exists).
      */
+    // XXX root ?
     if (VIR_STRDUP(cfg->defaultTLSx509certdir,
                    SYSCONFDIR "/pki/qemu") < 0)
         goto error;

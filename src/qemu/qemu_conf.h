@@ -312,7 +312,8 @@ struct _qemuDomainCmdlineDef {
 
 void qemuDomainCmdlineDefFree(qemuDomainCmdlineDefPtr def);
 
-virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged);
+virQEMUDriverConfigPtr virQEMUDriverConfigNew(bool privileged,
+                                              const char *root);
 
 int virQEMUDriverConfigLoadFile(virQEMUDriverConfigPtr cfg,
                                 const char *filename,
