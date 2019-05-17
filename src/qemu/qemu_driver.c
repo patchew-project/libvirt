@@ -1105,14 +1105,16 @@ static virDrvOpenStatus qemuConnectOpen(virConnectPtr conn,
 
     if (virQEMUDriverIsPrivileged(qemu_driver)) {
         if (STRNEQ(conn->uri->path, "/system") &&
-            STRNEQ(conn->uri->path, "/session")) {
+            STRNEQ(conn->uri->path, "/session") &&
+            STRNEQ(conn->uri->path, "/embed")) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("unexpected QEMU URI path '%s', try qemu:///system"),
                            conn->uri->path);
             return VIR_DRV_OPEN_ERROR;
         }
     } else {
-        if (STRNEQ(conn->uri->path, "/session")) {
+        if (STRNEQ(conn->uri->path, "/session") &&
+            STRNEQ(conn->uri->path, "/embed")) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("unexpected QEMU URI path '%s', try qemu:///session"),
                            conn->uri->path);

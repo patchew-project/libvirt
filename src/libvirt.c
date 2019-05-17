@@ -87,6 +87,7 @@
 #ifdef WITH_BHYVE
 # include "bhyve/bhyve_driver.h"
 #endif
+#include "access/viraccessmanager.h"
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
@@ -841,6 +842,7 @@ virConnectOpenInternal(const char *name,
     virConnectPtr ret;
     virConfPtr conf = NULL;
     char *uristr = NULL;
+    bool embed = false;
 
     ret = virGetConnect();
     if (ret == NULL)
@@ -939,6 +941,36 @@ virConnectOpenInternal(const char *name,
                                            ret->uri) < 0) {
             goto failed;
         }
+
+        if (STREQ(ret->uri->scheme, "qemu") &&
+            STREQ(ret->uri->path, "/embed")) {
+            const char *root = NULL;
+            for (i = 0; i < ret->uri->paramsCount; i++) {
+                virURIParamPtr var = &ret->uri->params[i];
+                if (STREQ(var->name, "root"))
+                    root = var->value;
+            }
+
+            if (!root) {
+                virReportError(VIR_ERR_INVALID_ARG, "%s",
+                               _("root parameter required for embedded driver"));
+                goto failed;
+            }
+
+            if (virDriverLoadModule("qemu", "qemuRegister", false) < 0)
+                goto failed;
+
+            if (virAccessManagerGetDefault() == NULL) {
+                virAccessManagerPtr acl;
+                acl = virAccessManagerNew("none");
+                virAccessManagerSetDefault(acl);
+            }
+
+            if (virStateInitialize(geteuid() == 0, root, NULL, NULL) < 0)
+                goto failed;
+
+            embed = true;
+        }
     } else {
         VIR_DEBUG("no name, allowing driver auto-select");
     }
@@ -1011,7 +1043,12 @@ virConnectOpenInternal(const char *name,
                 continue;
             }
         } else {
-            VIR_DEBUG("Matching any URI scheme for '%s'", ret->uri ? ret->uri->scheme : "");
+            if (embed) {
+                VIR_DEBUG("Skipping wildcard for embedded URI");
+                continue;
+            } else {
+                VIR_DEBUG("Matching any URI scheme for '%s'", ret->uri ? ret->uri->scheme : "");
+            }
         }
 
         /* before starting the new connection, check if the driver only works

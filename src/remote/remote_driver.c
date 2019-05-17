@@ -1343,6 +1343,13 @@ remoteConnectOpen(virConnectPtr conn,
     if (flags & VIR_CONNECT_RO)
         rflags |= VIR_DRV_OPEN_REMOTE_RO;
 
+    if (conn->uri &&
+        conn->uri->path &&
+        STREQ(conn->uri->path, "/embed")) {
+        ret = VIR_DRV_OPEN_DECLINED;
+        goto cleanup;
+    }
+
     /*
      * If no servername is given, and no +XXX
      * transport is listed, or transport is unix,
