@@ -85,6 +85,7 @@ VIR_LOG_INIT("lxc.lxc_driver");
 
 
 static int lxcStateInitialize(bool privileged,
+                              const char *root ATTRIBUTE_UNUSED,
                               virStateInhibitCallback callback,
                               void *opaque);
 static int lxcStateCleanup(void);
@@ -1536,6 +1537,7 @@ lxcSecurityInit(virLXCDriverConfigPtr cfg)
 
 
 static int lxcStateInitialize(bool privileged,
+                              const char *root ATTRIBUTE_UNUSED,
                               virStateInhibitCallback callback ATTRIBUTE_UNUSED,
                               void *opaque ATTRIBUTE_UNUSED)
 {

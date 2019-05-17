@@ -1800,6 +1800,7 @@ udevPCITranslateInit(bool privileged ATTRIBUTE_UNUSED)
 
 static int
 nodeStateInitialize(bool privileged,
+                    const char *root ATTRIBUTE_UNUSED,
                     virStateInhibitCallback callback ATTRIBUTE_UNUSED,
                     void *opaque ATTRIBUTE_UNUSED)
 {

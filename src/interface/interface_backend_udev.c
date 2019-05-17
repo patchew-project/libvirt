@@ -1159,6 +1159,7 @@ udevInterfaceIsActive(virInterfacePtr ifinfo)
 
 static int
 udevStateInitialize(bool privileged,
+                    const char *root ATTRIBUTE_UNUSED,
                     virStateInhibitCallback callback ATTRIBUTE_UNUSED,
                     void *opaque ATTRIBUTE_UNUSED)
 {

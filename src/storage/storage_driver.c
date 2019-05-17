@@ -247,6 +247,7 @@ storageDriverAutostart(void)
  */
 static int
 storageStateInitialize(bool privileged,
+                       const char *root ATTRIBUTE_UNUSED,
                        virStateInhibitCallback callback ATTRIBUTE_UNUSED,
                        void *opaque ATTRIBUTE_UNUSED)
 {

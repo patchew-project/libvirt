@@ -638,6 +638,7 @@ virRegisterStateDriver(virStateDriverPtr driver)
  */
 int
 virStateInitialize(bool privileged,
+                   const char *root,
                    virStateInhibitCallback callback,
                    void *opaque)
 {
@@ -651,6 +652,7 @@ virStateInitialize(bool privileged,
             VIR_DEBUG("Running global init for %s state driver",
                       virStateDriverTab[i]->name);
             if (virStateDriverTab[i]->stateInitialize(privileged,
+                                                      root,
                                                       callback,
                                                       opaque) < 0) {
                 VIR_ERROR(_("Initialization of %s state driver failed: %s"),

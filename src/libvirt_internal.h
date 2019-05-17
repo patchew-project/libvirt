@@ -31,6 +31,7 @@ typedef void (*virStateInhibitCallback)(bool inhibit,
                                         void *opaque);
 
 int virStateInitialize(bool privileged,
+                       const char *root,
                        virStateInhibitCallback inhibit,
                        void *opaque);
 int virStateCleanup(void);

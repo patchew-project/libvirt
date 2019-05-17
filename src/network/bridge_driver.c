@@ -588,6 +588,7 @@ firewalld_dbus_filter_bridge(DBusConnection *connection ATTRIBUTE_UNUSED,
  */
 static int
 networkStateInitialize(bool privileged,
+                       const char *root ATTRIBUTE_UNUSED,
                        virStateInhibitCallback callback ATTRIBUTE_UNUSED,
                        void *opaque ATTRIBUTE_UNUSED)
 {

@@ -588,6 +588,7 @@ device_prop_modified(LibHalContext *ctx ATTRIBUTE_UNUSED,
 
 static int
 nodeStateInitialize(bool privileged ATTRIBUTE_UNUSED,
+                    const char *root ATTRIBUTE_UNUSED,
                     virStateInhibitCallback callback ATTRIBUTE_UNUSED,
                     void *opaque ATTRIBUTE_UNUSED)
 {

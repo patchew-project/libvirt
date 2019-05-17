@@ -27,6 +27,7 @@
 
 typedef int
 (*virDrvStateInitialize)(bool privileged,
+                         const char *root,
                          virStateInhibitCallback callback,
                          void *opaque);
 

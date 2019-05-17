@@ -176,6 +176,7 @@ virNWFilterTriggerRebuildImpl(void *opaque)
  */
 static int
 nwfilterStateInitialize(bool privileged,
+                        const char *root ATTRIBUTE_UNUSED,
                         virStateInhibitCallback callback ATTRIBUTE_UNUSED,
                         void *opaque ATTRIBUTE_UNUSED)
 {

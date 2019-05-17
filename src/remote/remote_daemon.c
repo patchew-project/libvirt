@@ -796,6 +796,7 @@ static void daemonRunStateInit(void *opaque)
      * we're ready, since it can take a long time and this will
      * seriously delay OS bootup process */
     if (virStateInitialize(virNetDaemonIsPrivileged(dmn),
+                           "",
                            daemonInhibitCallback,
                            dmn) < 0) {
         VIR_ERROR(_("Driver state initialization failed"));

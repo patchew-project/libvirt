@@ -184,6 +184,7 @@ static int remoteSplitURIScheme(virURIPtr uri,
 
 static int
 remoteStateInitialize(bool privileged ATTRIBUTE_UNUSED,
+                      const char *root ATTRIBUTE_UNUSED,
                       virStateInhibitCallback callback ATTRIBUTE_UNUSED,
                       void *opaque ATTRIBUTE_UNUSED)
 {
