@@ -55,11 +55,9 @@ update-gmo: $(GMOFILES)
 update-mini-po: $(POTFILE)
 	for lang in $(LANGS); do \
 	  echo "Minimizing $$lang content" && \
-	  $(MSGMERGE) --no-location --no-fuzzy-matching --sort-output \
-	    $$lang.po $(POTFILE) | \
-	  $(SED) $(SED_PO_FIXUP_ARGS) | \
-	  $(PERL) $(top_srcdir)/build-aux/minimize-po.pl > \
-	    $(srcdir)/$$lang.mini.po ; \
+	  $(MSGMERGE) --for-msgfmt --sort-output \
+	    $$lang.po $(POTFILE) \
+	    -o $(srcdir)/$$lang.mini.po ; \
 	done
 
 push-pot: $(POTFILE)
