@@ -4252,6 +4252,13 @@ virDomainDeviceInfoIterateInternal(virDomainDefPtr def,
             return rc;
     }
 
+    if (def->iommu) {
+        device.type = VIR_DOMAIN_DEVICE_IOMMU;
+        device.data.iommu = def->iommu;
+        if ((rc = cb(def, &device, NULL, opaque)) != 0)
+            return rc;
+    }
+
     /* Coverity is not very happy with this - all dead_error_condition */
 #if !STATIC_ANALYSIS
     /* This switch statement is here to trigger compiler warning when adding
