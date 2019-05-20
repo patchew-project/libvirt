@@ -169,6 +169,9 @@ qemuDomainSpaprVIOFindByReg(virDomainDefPtr def ATTRIBUTE_UNUSED,
 {
     virDomainDeviceInfoPtr target = opaque;
 
+    if (!info)
+        return 0;
+
     if (info->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_SPAPRVIO)
         return 0;
 
@@ -427,6 +430,9 @@ qemuDomainHasVirtioMMIODevicesCallback(virDomainDefPtr def ATTRIBUTE_UNUSED,
                                        virDomainDeviceInfoPtr info,
                                        void *opaque)
 {
+    if (!info)
+        return 0;
+
     if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_VIRTIO_MMIO) {
         /* We can stop iterating as soon as we find the first
          * virtio-mmio device */
@@ -1083,6 +1089,9 @@ qemuDomainFillDevicePCIConnectFlagsIter(virDomainDefPtr def ATTRIBUTE_UNUSED,
 {
     qemuDomainFillDevicePCIConnectFlagsIterData *data = opaque;
 
+    if (!info)
+        return 0;
+
     info->pciConnectFlags
         = qemuDomainDeviceCalculatePCIConnectFlags(dev, data->driver,
                                                    data->pcieFlags,
@@ -1139,6 +1148,9 @@ qemuDomainFillDevicePCIExtensionFlagsIter(virDomainDefPtr def ATTRIBUTE_UNUSED,
 {
     virQEMUCapsPtr qemuCaps = opaque;
 
+    if (!info)
+        return 0;
+
     info->pciAddrExtFlags =
         qemuDomainDeviceCalculatePCIAddressExtensionFlags(qemuCaps, dev);
 
@@ -1187,6 +1199,9 @@ qemuDomainFindUnusedIsolationGroupIter(virDomainDefPtr def ATTRIBUTE_UNUSED,
                                        void *opaque)
 {
     unsigned int *isolationGroup = opaque;
+
+    if (!info)
+        return 0;
 
     if (info->isolationGroup == *isolationGroup)
         return -1;
@@ -1479,7 +1494,12 @@ qemuDomainAssignPCIAddressExtension(virDomainDefPtr def ATTRIBUTE_UNUSED,
                                     void *opaque)
 {
     virDomainPCIAddressSetPtr addrs = opaque;
-    virPCIDeviceAddressPtr addr = &info->addr.pci;
+    virPCIDeviceAddressPtr addr;
+
+    if (!info)
+        return 0;
+
+    addr = &info->addr.pci;
 
     if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI)
         addr->extFlags = info->pciAddrExtFlags;
@@ -1498,7 +1518,12 @@ qemuDomainCollectPCIAddress(virDomainDefPtr def ATTRIBUTE_UNUSED,
 {
     virDomainPCIAddressSetPtr addrs = opaque;
     int ret = -1;
-    virPCIDeviceAddressPtr addr = &info->addr.pci;
+    virPCIDeviceAddressPtr addr;
+
+    if (!info)
+        return 0;
+
+    addr = &info->addr.pci;
 
     if (!virDeviceInfoPCIAddressIsPresent(info) ||
         ((device->type == VIR_DOMAIN_DEVICE_HOSTDEV) &&
@@ -1590,7 +1615,12 @@ qemuDomainCollectPCIAddressExtension(virDomainDefPtr def ATTRIBUTE_UNUSED,
                                      void *opaque)
 {
     virDomainPCIAddressSetPtr addrs = opaque;
-    virPCIDeviceAddressPtr addr = &info->addr.pci;
+    virPCIDeviceAddressPtr addr;
+
+    if (!info)
+        return 0;
+
+    addr = &info->addr.pci;
 
     if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI)
         addr->extFlags = info->pciAddrExtFlags;

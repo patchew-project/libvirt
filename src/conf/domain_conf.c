@@ -4049,6 +4049,9 @@ virDomainDefHasDeviceAddressIterator(virDomainDefPtr def ATTRIBUTE_UNUSED,
 {
     virDomainDeviceInfoPtr needle = opaque;
 
+    if (!info)
+        return 0;
+
     /* break iteration if the info was found */
     if (virDomainDeviceInfoAddressIsEqual(info, needle))
         return -1;
@@ -4297,6 +4300,21 @@ virDomainDeviceInfoIterateInternal(virDomainDefPtr def,
 }
 
 
+/**
+ * virDomainDeviceInfoIterate:
+ * @def: domain definition
+ * @cb: callback
+ * @opaque: user data
+ *
+ * Call @cb for each device in @def.
+ *
+ * Note that some devices might not have a virDomainDeviceInfoPtr associated
+ * with them, in which case the corresponding argument passed to the callback
+ * will be NULL: @cb should be written to account for this possibility, which
+ * usually involves returning early.
+ *
+ * Return: 0 on success, <0 on failure
+ */
 int
 virDomainDeviceInfoIterate(virDomainDefPtr def,
                            virDomainDeviceInfoCallback cb,
@@ -5543,6 +5561,9 @@ virDomainDefCollectBootOrder(virDomainDefPtr def ATTRIBUTE_UNUSED,
     virHashTablePtr bootHash = data;
     VIR_AUTOFREE(char *) order = NULL;
 
+    if (!info)
+        return 0;
+
     if (info->bootIndex == 0)
         return 0;
 
@@ -6383,7 +6404,12 @@ virDomainDeviceDefValidateAliasesIterator(virDomainDefPtr def,
                                           void *opaque)
 {
     struct virDomainDefValidateAliasesData *data = opaque;
-    const char *alias = info->alias;
+    const char *alias;
+
+    if (!info)
+        return 0;
+
+    alias = info->alias;
 
     if (!virDomainDeviceAliasIsUserAlias(alias))
         return 0;
@@ -28767,6 +28793,9 @@ virDomainDeviceInfoCheckBootIndex(virDomainDefPtr def ATTRIBUTE_UNUSED,
 {
     virDomainCompatibleDeviceDataPtr data = opaque;
 
+    if (!info)
+        return 0;
+
     /* Ignore the device we're about to update */
     if (data->oldInfo == info)
         return 0;
@@ -29855,6 +29884,9 @@ virDomainDefFindDeviceCallback(virDomainDefPtr def ATTRIBUTE_UNUSED,
                                void *opaque)
 {
     virDomainDefFindDeviceCallbackData *data = opaque;
+
+    if (!info)
+        return 0;
 
     if (STREQ_NULLABLE(info->alias, data->devAlias)) {
         *data->dev = *dev;

@@ -1468,6 +1468,9 @@ virDomainCCWAddressAllocate(virDomainDefPtr def ATTRIBUTE_UNUSED,
                             virDomainDeviceInfoPtr info,
                             void *data)
 {
+    if (!info)
+        return 0;
+
     return virDomainCCWAddressAssign(info, data, true);
 }
 
@@ -1477,6 +1480,9 @@ virDomainCCWAddressValidate(virDomainDefPtr def ATTRIBUTE_UNUSED,
                             virDomainDeviceInfoPtr info,
                             void *data)
 {
+    if (!info)
+        return 0;
+
     return virDomainCCWAddressAssign(info, data, false);
 }
 
@@ -1693,6 +1699,9 @@ virDomainVirtioSerialAddrReserve(virDomainDefPtr def ATTRIBUTE_UNUSED,
     virBitmapPtr map = NULL;
     bool b;
     ssize_t i;
+
+    if (!info)
+        return 0;
 
     if (!virDomainVirtioSerialAddrIsComplete(info))
         return 0;

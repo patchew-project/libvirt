@@ -3593,6 +3593,9 @@ libxlComparePCIDevice(virDomainDefPtr def ATTRIBUTE_UNUSED,
 {
     virDomainDeviceInfoPtr info2 = opaque;
 
+    if (!info1)
+        return 0;
+
     if (info1->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI ||
         info2->type != VIR_DOMAIN_DEVICE_ADDRESS_TYPE_PCI)
         return 0;
