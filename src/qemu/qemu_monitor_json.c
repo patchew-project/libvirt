@@ -4280,34 +4280,25 @@ qemuMonitorJSONDriveMirror(qemuMonitorPtr mon,
                            bool shallow,
                            bool reuse)
 {
-    int ret = -1;
-    virJSONValuePtr cmd;
-    virJSONValuePtr reply = NULL;
+    VIR_AUTOPTR(virJSONValue) cmd = NULL;
+    VIR_AUTOPTR(virJSONValue) reply = NULL;
 
-    cmd = qemuMonitorJSONMakeCommand("drive-mirror",
-                                     "s:device", device,
-                                     "s:target", file,
-                                     "Y:speed", speed,
-                                     "z:granularity", granularity,
-                                     "P:buf-size", buf_size,
-                                     "s:sync", shallow ? "top" : "full",
-                                     "s:mode", reuse ? "existing" : "absolute-paths",
-                                     "S:format", format,
-                                     NULL);
-    if (!cmd)
+    if (!(cmd = qemuMonitorJSONMakeCommand("drive-mirror",
+                                           "s:device", device,
+                                           "s:target", file,
+                                           "Y:speed", speed,
+                                           "z:granularity", granularity,
+                                           "P:buf-size", buf_size,
+                                           "s:sync", shallow ? "top" : "full",
+                                           "s:mode", reuse ? "existing" : "absolute-paths",
+                                           "S:format", format,
+                                           NULL)))
         return -1;
 
     if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
-        goto cleanup;
+        return -1;
 
-    if (qemuMonitorJSONCheckError(cmd, reply) < 0)
-        goto cleanup;
-
-    ret = 0;
- cleanup:
-    virJSONValueFree(cmd);
-    virJSONValueFree(reply);
-    return ret;
+    return qemuMonitorJSONCheckError(cmd, reply);
 }
 
 
@@ -4321,30 +4312,24 @@ qemuMonitorJSONBlockdevMirror(qemuMonitorPtr mon,
                               unsigned long long buf_size,
                               bool shallow)
 {
-    int ret = -1;
-    virJSONValuePtr cmd;
-    virJSONValuePtr reply = NULL;
+    VIR_AUTOPTR(virJSONValue) cmd = NULL;
+    VIR_AUTOPTR(virJSONValue) reply = NULL;
 
-    cmd = qemuMonitorJSONMakeCommand("blockdev-mirror",
-                                     "S:job-id", jobname,
-                                     "s:device", device,
-                                     "s:target", target,
-                                     "Y:speed", speed,
-                                     "z:granularity", granularity,
-                                     "P:buf-size", buf_size,
-                                     "s:sync", shallow ? "top" : "full",
-                                     NULL);
-    if (!cmd)
+    if (!(cmd = qemuMonitorJSONMakeCommand("blockdev-mirror",
+                                           "S:job-id", jobname,
+                                           "s:device", device,
+                                           "s:target", target,
+                                           "Y:speed", speed,
+                                           "z:granularity", granularity,
+                                           "P:buf-size", buf_size,
+                                           "s:sync", shallow ? "top" : "full",
+                                           NULL)))
         return -1;
 
-    if ((ret = qemuMonitorJSONCommand(mon, cmd, &reply)) < 0)
-        goto cleanup;
-    ret = qemuMonitorJSONCheckError(cmd, reply);
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        return -1;
 
- cleanup:
-    virJSONValueFree(cmd);
-    virJSONValueFree(reply);
-    return ret;
+    return qemuMonitorJSONCheckError(cmd, reply);
 }
 
 
