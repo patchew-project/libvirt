@@ -2869,6 +2869,9 @@ typedef int (*virDomainDeviceInfoCallback)(virDomainDefPtr def,
                                            virDomainDeviceInfoPtr info,
                                            void *opaque);
 
+int virDomainDeviceIterate(virDomainDefPtr def,
+                           virDomainDeviceInfoCallback cb,
+                           void *opaque);
 int virDomainDeviceInfoIterate(virDomainDefPtr def,
                                virDomainDeviceInfoCallback cb,
                                void *opaque);

@@ -4298,6 +4298,19 @@ virDomainDeviceInfoIterateInternal(virDomainDefPtr def,
 
 
 int
+virDomainDeviceIterate(virDomainDefPtr def,
+                       virDomainDeviceInfoCallback cb,
+                       void *opaque)
+{
+    return virDomainDeviceInfoIterateInternal(def,
+                                              cb,
+                                              DOMAIN_DEVICE_ITERATE_ALL_CONSOLES |
+                                              DOMAIN_DEVICE_ITERATE_GRAPHICS,
+                                              opaque);
+}
+
+
+int
 virDomainDeviceInfoIterate(virDomainDefPtr def,
                            virDomainDeviceInfoCallback cb,
                            void *opaque)
@@ -5793,10 +5806,9 @@ virDomainDefPostParse(virDomainDefPtr def,
     }
 
     /* iterate the devices */
-    ret = virDomainDeviceInfoIterateInternal(def,
-                                             virDomainDefPostParseDeviceIterator,
-                                             DOMAIN_DEVICE_ITERATE_ALL_CONSOLES,
-                                             &data);
+    ret = virDomainDeviceIterate(def,
+                                 virDomainDefPostParseDeviceIterator,
+                                 &data);
 
     if (virDomainDefPostParseCheckFailure(def, parseFlags, ret) < 0)
         goto cleanup;
@@ -6923,11 +6935,9 @@ virDomainDefValidate(virDomainDefPtr def,
         return -1;
 
     /* iterate the devices */
-    if (virDomainDeviceInfoIterateInternal(def,
-                                           virDomainDefValidateDeviceIterator,
-                                           (DOMAIN_DEVICE_ITERATE_ALL_CONSOLES |
-                                            DOMAIN_DEVICE_ITERATE_GRAPHICS),
-                                           &data) < 0)
+    if (virDomainDeviceIterate(def,
+                               virDomainDefValidateDeviceIterator,
+                               &data) < 0)
         return -1;
 
     if (virDomainDefValidateInternal(def, xmlopt) < 0)
