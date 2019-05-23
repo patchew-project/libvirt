@@ -19088,10 +19088,9 @@ virDomainCachetuneDefParseCache(xmlXPathContextPtr ctxt,
 /* Checking if the monitor's vcpus is conflicted with existing allocation
  * and monitors.
  *
- * Returns 1 if @vcpus equals to @resctrl->vcpus, then the monitor will
- * share the underlying resctrl group with @resctrl->alloc. Returns - 1
- * if any conflict found. Returns 0 if no conflict and @vcpus is not equal
- * to @resctrl->vcpus.
+ * Returns 1 if @vcpus equals to vcpus of an existing resctrl allocation group.
+ * Returns -1 if any conflict found. Returns 0 if no conflict and @vcpus is
+ * not equal to any created resctrl allocation.
  */
 static int
 virDomainResctrlMonValidateVcpus(virDomainResctrlDefPtr resctrl,
@@ -19115,7 +19114,7 @@ virDomainResctrlMonValidateVcpus(virDomainResctrlDefPtr resctrl,
         }
     }
 
-    if (virBitmapEqual(vcpus, resctrl->vcpus))
+    if (virBitmapEqual(vcpus, resctrl->vcpus) && resctrl->alloc != NULL)
         return 1;
 
     for (i = 0; i < resctrl->nmonitors; i++) {
