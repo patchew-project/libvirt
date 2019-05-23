@@ -19360,7 +19360,7 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
 
     /* If no <cache> element or <monitor> element in <cachetune>, do not
      * append any resctrl element */
-    if (!resctrl->nmonitors && virResctrlAllocIsEmpty(alloc)) {
+    if (!resctrl->nmonitors && n == 0) {
         ret = 0;
         goto cleanup;
     }
@@ -19550,7 +19550,7 @@ virDomainMemorytuneDefParse(virDomainDefPtr def,
             return -1;
     }
 
-    if (virResctrlAllocIsEmpty(alloc))
+    if (n == 0)
         return 0;
 
     /*
