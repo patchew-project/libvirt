@@ -20120,7 +20120,7 @@ qemuDomainGetStatsCpuCache(virDomainObjPtr dom,
                      "cpu.cache.monitor.%zu.bank.%zu.bytes", i, j);
             if (virTypedParamsAddUInt(&record->params, &record->nparams,
                                       maxparams, param_name,
-                                      resdata[i]->stats[j]->val) < 0)
+                                      resdata[i]->stats[j]->vals[0]) < 0)
                 goto cleanup;
         }
     }
