@@ -19980,6 +19980,7 @@ qemuDomainFreeResctrlMonData(virQEMUResctrlMonDataPtr resdata)
     VIR_FREE(resdata->name);
     VIR_FREE(resdata->vcpus);
     virResctrlMonitorFreeStats(resdata->stats, resdata->nstats);
+    VIR_FREE(resdata->stats);
     VIR_FREE(resdata);
 }
 

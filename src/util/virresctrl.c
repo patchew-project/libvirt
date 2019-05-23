@@ -2764,7 +2764,7 @@ virResctrlMonitorGetStats(virResctrlMonitorPtr monitor,
  cleanup:
     VIR_FREE(datapath);
     VIR_FREE(filepath);
-    VIR_FREE(stat);
+    virResctrlMonitorFreeStats(&stat, 1);
     VIR_DIR_CLOSE(dirp);
     return ret;
 }
@@ -2781,8 +2781,6 @@ virResctrlMonitorFreeStats(virResctrlMonitorStatsPtr *stats,
 
     for (i = 0; i < nstats; i++)
         VIR_FREE(stats[i]);
-
-    VIR_FREE(stats);
 }
 
 
