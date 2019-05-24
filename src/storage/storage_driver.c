@@ -202,12 +202,14 @@ storageDriverAutostartCallback(virStoragePoolObjPtr obj,
 
     if (virStoragePoolObjIsAutostart(obj) &&
         !virStoragePoolObjIsActive(obj)) {
+
+        virStoragePoolObjSetStarting(obj, true);
         if (backend->startPool &&
             backend->startPool(obj) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR,
                            _("Failed to autostart storage pool '%s': %s"),
                            def->name, virGetLastErrorMessage());
-            return;
+            goto cleanup;
         }
         started = true;
     }
@@ -225,6 +227,13 @@ storageDriverAutostartCallback(virStoragePoolObjPtr obj,
         } else {
             virStoragePoolObjSetActive(obj, true);
         }
+    }
+
+ cleanup:
+    if (virStoragePoolObjIsStarting(obj)) {
+        if (!virStoragePoolObjIsActive(obj))
+            virStoragePoolUpdateInactive(obj);
+        virStoragePoolObjSetStarting(obj, false);
     }
 }
 
@@ -761,6 +770,8 @@ storagePoolCreateXML(virConnectPtr conn,
     newDef = NULL;
     def = virStoragePoolObjGetDef(obj);
 
+    virStoragePoolObjSetStarting(obj, true);
+
     if (backend->buildPool) {
         if (flags & VIR_STORAGE_POOL_CREATE_WITH_BUILD_OVERWRITE)
             build_flags |= VIR_STORAGE_POOL_BUILD_OVERWRITE;
@@ -797,6 +808,11 @@ storagePoolCreateXML(virConnectPtr conn,
     pool = virGetStoragePool(conn, def->name, def->uuid, NULL, NULL);
 
  cleanup:
+    if (virStoragePoolObjIsStarting(obj)) {
+        if (!virStoragePoolObjIsActive(obj))
+            virStoragePoolUpdateInactive(obj);
+        virStoragePoolObjSetStarting(obj, false);
+    }
     virObjectEventStateQueue(driver->storageEventState, event);
     virStoragePoolObjEndAPI(&obj);
     return pool;
@@ -948,6 +964,8 @@ storagePoolCreate(virStoragePoolPtr pool,
         goto cleanup;
     }
 
+    virStoragePoolObjSetStarting(obj, true);
+
     if (backend->buildPool) {
         if (flags & VIR_STORAGE_POOL_CREATE_WITH_BUILD_OVERWRITE)
             build_flags |= VIR_STORAGE_POOL_BUILD_OVERWRITE;
@@ -983,6 +1001,11 @@ storagePoolCreate(virStoragePoolPtr pool,
     ret = 0;
 
  cleanup:
+    if (virStoragePoolObjIsStarting(obj)) {
+        if (!virStoragePoolObjIsActive(obj))
+            virStoragePoolUpdateInactive(obj);
+        virStoragePoolObjSetStarting(obj, false);
+    }
     virObjectEventStateQueue(driver->storageEventState, event);
     virStoragePoolObjEndAPI(&obj);
     return ret;
@@ -1015,6 +1038,8 @@ storagePoolBuild(virStoragePoolPtr pool,
         goto cleanup;
     }
 
+    virStoragePoolObjSetStarting(obj, true);
+
     if (backend->buildPool &&
         backend->buildPool(obj, flags) < 0)
         goto cleanup;
@@ -1027,6 +1052,10 @@ storagePoolBuild(virStoragePoolPtr pool,
     ret = 0;
 
  cleanup:
+    if (virStoragePoolObjIsStarting(obj)) {
+        virStoragePoolUpdateInactive(obj);
+        virStoragePoolObjSetStarting(obj, false);
+    }
     virObjectEventStateQueue(driver->storageEventState, event);
     virStoragePoolObjEndAPI(&obj);
     return ret;
