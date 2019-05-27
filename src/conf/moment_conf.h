@@ -38,6 +38,7 @@ struct _virDomainMomentDef {
     long long creationTime; /* in seconds */
 
     virDomainDefPtr dom;
+    virDomainDefPtr inactiveDom;
 };
 
 virClassPtr virClassForDomainMomentDef(void);

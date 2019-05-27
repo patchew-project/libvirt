@@ -15707,6 +15707,15 @@ qemuDomainSnapshotCreateXML(virDomainPtr domain,
                                                         VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE)))
             goto endjob;
 
+        if (vm->newDef) {
+            if (!(xml = qemuDomainDefFormatLive(driver, vm->newDef, priv->origCPU,
+                                                true, true)) ||
+                !(def->parent.inactiveDom = virDomainDefParseString(xml, caps, driver->xmlopt, NULL,
+                                                               VIR_DOMAIN_DEF_PARSE_INACTIVE |
+                                                               VIR_DOMAIN_DEF_PARSE_SKIP_VALIDATE)))
+                goto endjob;
+        }
+
         if (flags & VIR_DOMAIN_SNAPSHOT_CREATE_DISK_ONLY) {
             align_location = VIR_DOMAIN_SNAPSHOT_LOCATION_EXTERNAL;
             align_match = false;
@@ -16241,6 +16250,7 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
     qemuDomainObjPrivatePtr priv;
     int rc;
     virDomainDefPtr config = NULL;
+    virDomainDefPtr inactiveConfig = NULL;
     virQEMUDriverConfigPtr cfg = NULL;
     virCapsPtr caps = NULL;
     bool was_stopped = false;
@@ -16341,15 +16351,20 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
          * in the failure cases where we know there was no change?  */
     }
 
-    /* Prepare to copy the snapshot inactive xml as the config of this
-     * domain.
-     *
-     * XXX Should domain snapshots track live xml rather
-     * than inactive xml?  */
+    /* Prepare to copy the snapshot inactive domain as the config XML
+     * and the snapshot domain as the live XML. In case of inactive domain
+     * NULL, both config and live XML will be copied from snapshot domain.
+     */
     if (snap->def->dom) {
         config = virDomainDefCopy(snap->def->dom, caps,
                                   driver->xmlopt, NULL, true);
         if (!config)
+            goto endjob;
+    }
+    if (snap->def->inactiveDom) {
+        inactiveConfig = virDomainDefCopy(snap->def->inactiveDom, caps,
+                                          driver->xmlopt, NULL, true);
+        if (!inactiveConfig)
             goto endjob;
     }
 
@@ -16602,6 +16617,10 @@ qemuDomainRevertToSnapshot(virDomainSnapshotPtr snapshot,
         goto endjob;
     }
 
+    if (inactiveConfig) {
+        virDomainDefFree(vm->newDef);
+        VIR_STEAL_PTR(vm->newDef, inactiveConfig);
+    }
     ret = 0;
 
  endjob:
