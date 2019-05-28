@@ -7620,6 +7620,7 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
     virDomainDefPtr def = NULL;
     virDomainDefPtr oldDef = NULL;
     virDomainObjPtr vm = NULL;
+    virDomainObjPtr exvm = NULL;
     virDomainPtr dom = NULL;
     virObjectEventPtr event = NULL;
     virQEMUDriverConfigPtr cfg;
@@ -7647,10 +7648,34 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
     if (virDomainDefineXMLFlagsEnsureACL(conn, def) < 0)
         goto cleanup;
 
+    if ((exvm = virDomainObjListFindByUUID(driver->domains, def->uuid))) {
+        if (qemuDomainObjBeginJob(driver, exvm, QEMU_JOB_MODIFY) < 0) {
+            virDomainObjEndAPI(&exvm);
+            goto cleanup;
+        }
+        virObjectUnlock(exvm);
+    }
+
     if (!(vm = virDomainObjListAdd(driver->domains, def,
                                    driver->xmlopt,
-                                   0, &oldDef)))
+                                   0, &oldDef))) {
+        if (exvm)
+            virObjectLock(exvm);
         goto cleanup;
+    }
+
+    if (exvm) {
+        if (vm != exvm) {
+            virReportError(VIR_ERR_OPERATION_FAILED,
+                           _("domain '%s' is removed"), def->name);
+            virObjectLock(exvm);
+            goto cleanup;
+        }
+
+        /* we don't need extra reference for same domain */
+        virObjectUnref(exvm);
+    }
+
     def = NULL;
 
     vm->persistent = 1;
@@ -7670,7 +7695,10 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
             /* Brand new domain. Remove it */
             VIR_INFO("Deleting domain '%s'", vm->def->name);
             vm->persistent = 0;
-            qemuDomainRemoveInactiveJob(driver, vm);
+            if (exvm)
+                qemuDomainRemoveInactive(driver, vm);
+            else
+                qemuDomainRemoveInactiveJob(driver, vm);
         }
         goto cleanup;
     }
@@ -7685,8 +7713,13 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
 
  cleanup:
+    if (exvm)
+        qemuDomainObjEndJob(driver, exvm);
+
     virDomainDefFree(oldDef);
     virDomainDefFree(def);
+    if (exvm && exvm != vm)
+        virDomainObjEndAPI(&exvm);
     virDomainObjEndAPI(&vm);
     virObjectEventStateQueue(driver->domainEventState, event);
     virObjectUnref(caps);
