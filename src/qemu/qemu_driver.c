@@ -7626,6 +7626,7 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
     virCapsPtr caps = NULL;
     unsigned int parse_flags = VIR_DOMAIN_DEF_PARSE_INACTIVE |
                                VIR_DOMAIN_DEF_PARSE_ABI_UPDATE;
+    bool job = false;
 
     virCheckFlags(VIR_DOMAIN_DEFINE_VALIDATE, NULL);
 
@@ -7646,6 +7647,10 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
 
     if (virDomainDefineXMLFlagsEnsureACL(conn, def) < 0)
         goto cleanup;
+
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0)
+        goto cleanup;
+    job = true;
 
     if (!(vm = virDomainObjListAdd(driver->domains, def,
                                    driver->xmlopt,
@@ -7685,6 +7690,9 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
 
  cleanup:
+    if (job)
+        qemuDomainObjEndJob(driver, vm);
+
     virDomainDefFree(oldDef);
     virDomainDefFree(def);
     virDomainObjEndAPI(&vm);
