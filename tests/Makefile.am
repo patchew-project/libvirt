@@ -557,7 +557,7 @@ endif WITH_DTRACE_PROBES
 
 libqemutestdriver_la_SOURCES =
 libqemutestdriver_la_LDFLAGS = $(DRIVERLIB_LDFLAGS)
-libqemutestdriver_la_LIBADD = $(qemu_LDADDS)
+libqemutestdriver_la_LIBADD = $(qemu_LDADDS) $(GNULIB_LIBS)
 
 qemucpumock_la_SOURCES = \
 	qemucpumock.c testutilshostcpus.h
@@ -729,7 +729,7 @@ lxcconf2xmltest_SOURCES = \
 lxcconf2xmltest_LDADD = $(lxc_LDADDS)
 else ! WITH_LXC
 EXTRA_DIST += lxcxml2xmltest.c testutilslxc.c testutilslxc.h
-endif ! WITH_LXC
+-endif ! WITH_LXC
 
 if WITH_OPENVZ
 openvzutilstest_SOURCES = \
