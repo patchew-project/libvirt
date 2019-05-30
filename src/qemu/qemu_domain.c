@@ -7199,6 +7199,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
     virQEMUDriverConfigPtr cfg = virQEMUDriverGetConfig(driver);
     const char *blocker = NULL;
     const char *agentBlocker = NULL;
+    const char *domName = NULLSTR(obj->def ? obj->def->name : NULL);
     int ret = -1;
     unsigned long long duration = 0;
     unsigned long long agentDuration = 0;
@@ -7209,7 +7210,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
               qemuDomainJobTypeToString(job),
               qemuDomainAgentJobTypeToString(agentJob),
               qemuDomainAsyncJobTypeToString(asyncJob),
-              obj, obj->def->name,
+              obj, domName,
               qemuDomainJobTypeToString(priv->job.active),
               qemuDomainAgentJobTypeToString(priv->job.agentActive),
               qemuDomainAsyncJobTypeToString(priv->job.asyncJob));
@@ -7233,7 +7234,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
         if (nowait)
             goto cleanup;
 
-        VIR_DEBUG("Waiting for async job (vm=%p name=%s)", obj, obj->def->name);
+        VIR_DEBUG("Waiting for async job (vm=%p name=%s)", obj, domName);
         if (virCondWaitUntil(&priv->job.asyncCond, &obj->parent.lock, then) < 0)
             goto error;
     }
@@ -7242,7 +7243,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
         if (nowait)
             goto cleanup;
 
-        VIR_DEBUG("Waiting for job (vm=%p name=%s)", obj, obj->def->name);
+        VIR_DEBUG("Waiting for job (vm=%p name=%s)", obj, domName);
         if (virCondWaitUntil(&priv->job.cond, &obj->parent.lock, then) < 0)
             goto error;
     }
@@ -7261,7 +7262,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
             VIR_DEBUG("Started job: %s (async=%s vm=%p name=%s)",
                       qemuDomainJobTypeToString(job),
                       qemuDomainAsyncJobTypeToString(priv->job.asyncJob),
-                      obj, obj->def->name);
+                      obj, domName);
             priv->job.active = job;
             priv->job.owner = virThreadSelfID();
             priv->job.ownerAPI = virThreadJobGet();
@@ -7269,7 +7270,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
         } else {
             VIR_DEBUG("Started async job: %s (vm=%p name=%s)",
                       qemuDomainAsyncJobTypeToString(asyncJob),
-                      obj, obj->def->name);
+                      obj, domName);
             qemuDomainObjResetAsyncJob(priv);
             if (VIR_ALLOC(priv->job.current) < 0)
                 goto cleanup;
@@ -7287,7 +7288,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
 
         VIR_DEBUG("Started agent job: %s (vm=%p name=%s job=%s async=%s)",
                   qemuDomainAgentJobTypeToString(agentJob),
-                  obj, obj->def->name,
+                  obj, domName,
                   qemuDomainJobTypeToString(priv->job.active),
                   qemuDomainAsyncJobTypeToString(priv->job.asyncJob));
         priv->job.agentActive = agentJob;
@@ -7318,7 +7319,7 @@ qemuDomainObjBeginJobInternal(virQEMUDriverPtr driver,
              qemuDomainJobTypeToString(job),
              qemuDomainAgentJobTypeToString(agentJob),
              qemuDomainAsyncJobTypeToString(asyncJob),
-             obj->def->name,
+             domName,
              qemuDomainJobTypeToString(priv->job.active),
              qemuDomainAgentJobTypeToString(priv->job.agentActive),
              qemuDomainAsyncJobTypeToString(priv->job.asyncJob),
@@ -7531,13 +7532,14 @@ qemuDomainObjEndJob(virQEMUDriverPtr driver, virDomainObjPtr obj)
 {
     qemuDomainObjPrivatePtr priv = obj->privateData;
     qemuDomainJob job = priv->job.active;
+    const char *domName = NULLSTR(obj->def ? obj->def->name : NULL);
 
     priv->jobs_queued--;
 
     VIR_DEBUG("Stopping job: %s (async=%s vm=%p name=%s)",
               qemuDomainJobTypeToString(job),
               qemuDomainAsyncJobTypeToString(priv->job.asyncJob),
-              obj, obj->def->name);
+              obj, domName);
 
     qemuDomainObjResetJob(priv);
     if (qemuDomainTrackJob(job))
@@ -7552,13 +7554,14 @@ qemuDomainObjEndAgentJob(virDomainObjPtr obj)
 {
     qemuDomainObjPrivatePtr priv = obj->privateData;
     qemuDomainAgentJob agentJob = priv->job.agentActive;
+    const char *domName = NULLSTR(obj->def ? obj->def->name : NULL);
 
     priv->jobs_queued--;
 
     VIR_DEBUG("Stopping agent job: %s (async=%s vm=%p name=%s)",
               qemuDomainAgentJobTypeToString(agentJob),
               qemuDomainAsyncJobTypeToString(priv->job.asyncJob),
-              obj, obj->def->name);
+              obj, domName);
 
     qemuDomainObjResetAgentJob(priv);
     /* We indeed need to wake up ALL threads waiting because
@@ -7573,6 +7576,7 @@ qemuDomainObjEndJobWithAgent(virQEMUDriverPtr driver,
     qemuDomainObjPrivatePtr priv = obj->privateData;
     qemuDomainJob job = priv->job.active;
     qemuDomainAgentJob agentJob = priv->job.agentActive;
+    const char *domName = NULLSTR(obj->def ? obj->def->name : NULL);
 
     priv->jobs_queued--;
 
@@ -7580,7 +7584,7 @@ qemuDomainObjEndJobWithAgent(virQEMUDriverPtr driver,
               qemuDomainJobTypeToString(job),
               qemuDomainAgentJobTypeToString(agentJob),
               qemuDomainAsyncJobTypeToString(priv->job.asyncJob),
-              obj, obj->def->name);
+              obj, domName);
 
     qemuDomainObjResetJob(priv);
     qemuDomainObjResetAgentJob(priv);
@@ -7595,12 +7599,13 @@ void
 qemuDomainObjEndAsyncJob(virQEMUDriverPtr driver, virDomainObjPtr obj)
 {
     qemuDomainObjPrivatePtr priv = obj->privateData;
+    const char *domName = NULLSTR(obj->def ? obj->def->name : NULL);
 
     priv->jobs_queued--;
 
     VIR_DEBUG("Stopping async job: %s (vm=%p name=%s)",
               qemuDomainAsyncJobTypeToString(priv->job.asyncJob),
-              obj, obj->def->name);
+              obj, domName);
 
     qemuDomainObjResetAsyncJob(priv);
     qemuDomainObjSaveJob(driver, obj);
