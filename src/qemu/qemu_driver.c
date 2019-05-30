@@ -13466,9 +13466,11 @@ qemuConnectCompareHypervisorCPU(virConnectPtr conn,
 {
     int ret = VIR_CPU_COMPARE_ERROR;
     virQEMUDriverPtr driver = conn->privateData;
+    virQEMUDriverConfigPtr config = driver->config;
     virQEMUCapsPtr qemuCaps = NULL;
     bool failIncompatible;
     virCPUDefPtr hvCPU;
+    virCPUDefPtr cpu;
     virArch arch;
     virDomainVirtType virttype;
 
@@ -13503,6 +13505,14 @@ qemuConnectCompareHypervisorCPU(virConnectPtr conn,
 
     if (ARCH_IS_X86(arch)) {
         ret = virCPUCompareXML(arch, hvCPU, xmlCPU, failIncompatible);
+    } else if (ARCH_IS_S390(arch) &&
+               virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CPU_MODEL_COMPARISON)) {
+        if (virCPUDefParseXMLHelper(xmlCPU, NULL, VIR_CPU_TYPE_AUTO, &cpu) < 0)
+            goto cleanup;
+
+        ret = virQEMUCapsCPUModelComparison(qemuCaps, config->libDir,
+                                            config->user, config->group,
+                                            hvCPU, cpu, failIncompatible);
     } else {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
                        _("comparing with the hypervisor CPU is not supported "
@@ -13510,6 +13520,7 @@ qemuConnectCompareHypervisorCPU(virConnectPtr conn,
     }
 
  cleanup:
+    virCPUDefFree(cpu);
     virObjectUnref(qemuCaps);
     return ret;
 }

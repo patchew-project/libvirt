@@ -658,4 +658,13 @@ virCPUDefPtr virQEMUCapsCPUModelBaseline(virQEMUCapsPtr qemuCaps,
                                         int ncpus,
                                         virCPUDefPtr *cpus);
 
+virCPUCompareResult
+virQEMUCapsCPUModelComparison(virQEMUCapsPtr qemuCaps,
+                              const char *libDir,
+                              uid_t runUid,
+                              gid_t runGid,
+                              virCPUDefPtr cpu_a,
+                              virCPUDefPtr cpu_b,
+                              bool failIncompatible);
+
 #endif /* LIBVIRT_QEMU_CAPABILITIES_H */
