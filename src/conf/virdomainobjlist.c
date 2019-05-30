@@ -265,12 +265,7 @@ virDomainObjListAddObjLocked(virDomainObjListPtr doms,
  * virDomainObjListAddLocked:
  *
  * If flags & VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE then
- * this will refuse updating an existing def if the
- * current def is Live
- *
- * If flags & VIR_DOMAIN_OBJ_LIST_ADD_LIVE then
- * the @def being added is assumed to represent a
- * live config, not a future inactive config
+ * this will fail if domain is already active or starting up.
  *
  * The returned @vm from this function will be locked and ref
  * counted. The caller is expected to use virDomainObjEndAPI
@@ -280,14 +275,10 @@ static virDomainObjPtr
 virDomainObjListAddLocked(virDomainObjListPtr doms,
                           virDomainDefPtr def,
                           virDomainXMLOptionPtr xmlopt,
-                          unsigned int flags,
-                          virDomainDefPtr *oldDef)
+                          unsigned int flags)
 {
     virDomainObjPtr vm;
     char uuidstr[VIR_UUID_STRING_BUFLEN];
-
-    if (oldDef)
-        *oldDef = NULL;
 
     /* See if a VM with matching UUID already exists */
     if ((vm = virDomainObjListFindByUUIDLocked(doms, def->uuid))) {
@@ -320,11 +311,6 @@ virDomainObjListAddLocked(virDomainObjListPtr doms,
                 goto error;
             }
         }
-
-        virDomainObjAssignDef(vm,
-                              def,
-                              !!(flags & VIR_DOMAIN_OBJ_LIST_ADD_LIVE),
-                              oldDef);
     } else {
         /* UUID does not match, but if a name matches, refuse it */
         if ((vm = virDomainObjListFindByNameLocked(doms, def->name))) {
@@ -340,8 +326,6 @@ virDomainObjListAddLocked(virDomainObjListPtr doms,
 
         if (virDomainObjListAddObjLocked(doms, vm, def->uuid, def->name) < 0)
             goto error;
-
-        vm->def = def;
     }
 
     return vm;
@@ -355,13 +339,12 @@ virDomainObjListAddLocked(virDomainObjListPtr doms,
 virDomainObjPtr virDomainObjListAdd(virDomainObjListPtr doms,
                                     virDomainDefPtr def,
                                     virDomainXMLOptionPtr xmlopt,
-                                    unsigned int flags,
-                                    virDomainDefPtr *oldDef)
+                                    unsigned int flags)
 {
     virDomainObjPtr ret;
 
     virObjectRWLockWrite(doms);
-    ret = virDomainObjListAddLocked(doms, def, xmlopt, flags, oldDef);
+    ret = virDomainObjListAddLocked(doms, def, xmlopt, flags);
     virObjectRWUnlock(doms);
     return ret;
 }
@@ -513,8 +496,10 @@ virDomainObjListLoadConfig(virDomainObjListPtr doms,
     if ((autostart = virFileLinkPointsTo(autostartLink, configFile)) < 0)
         goto error;
 
-    if (!(dom = virDomainObjListAddLocked(doms, def, xmlopt, 0, &oldDef)))
+    if (!(dom = virDomainObjListAddLocked(doms, def, xmlopt, 0)))
         goto error;
+
+    virDomainObjAssignDef(dom, def, false, &oldDef);
 
     dom->autostart = autostart;
 

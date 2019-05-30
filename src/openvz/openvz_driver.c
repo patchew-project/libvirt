@@ -918,9 +918,10 @@ openvzDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int fla
         goto cleanup;
 
     if (!(vm = virDomainObjListAdd(driver->domains, vmdef,
-                                   driver->xmlopt,
-                                   0, NULL)))
+                                   driver->xmlopt, 0)))
         goto cleanup;
+
+    virDomainObjAssignDef(vm, vmdef, false, NULL);
     vmdef = NULL;
     vm->persistent = 1;
 
@@ -1007,10 +1008,10 @@ openvzDomainCreateXML(virConnectPtr conn, const char *xml,
     if (!(vm = virDomainObjListAdd(driver->domains,
                                    vmdef,
                                    driver->xmlopt,
-                                   VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
-                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE,
-                                   NULL)))
+                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
+
+    virDomainObjAssignDef(vm, vmdef, true, NULL);
     vmdef = NULL;
     /* All OpenVZ domains seem to be persistent - this is a bit of a violation
      * of this libvirt API which is intended for transient domain creation */
@@ -2174,10 +2175,10 @@ openvzDomainMigratePrepare3Params(virConnectPtr dconn,
 
     if (!(vm = virDomainObjListAdd(driver->domains, def,
                                    driver->xmlopt,
-                                   VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
-                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE,
-                                   NULL)))
+                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto error;
+
+    virDomainObjAssignDef(vm, def, true, NULL);
     def = NULL;
 
     if (!uri_in) {

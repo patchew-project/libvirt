@@ -540,9 +540,10 @@ bhyveDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flag
         goto cleanup;
 
     if (!(vm = virDomainObjListAdd(privconn->domains, def,
-                                   privconn->xmlopt,
-                                   0, &oldDef)))
+                                   privconn->xmlopt, 0)))
         goto cleanup;
+
+    virDomainObjAssignDef(vm, def, false, &oldDef);
     def = NULL;
     vm->persistent = 1;
 
@@ -941,9 +942,10 @@ bhyveDomainCreateXML(virConnectPtr conn,
 
     if (!(vm = virDomainObjListAdd(privconn->domains, def,
                                    privconn->xmlopt,
-                                   VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
-                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE, NULL)))
+                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
+
+    virDomainObjAssignDef(vm, def, true, NULL);
     def = NULL;
 
     if (virBhyveProcessStart(conn, privconn, vm,

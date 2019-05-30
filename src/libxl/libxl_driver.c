@@ -603,9 +603,10 @@ libxlAddDom0(libxlDriverPrivatePtr driver)
 
     if (!(vm = virDomainObjListAdd(driver->domains, def,
                                    driver->xmlopt,
-                                   0,
-                                   &oldDef)))
+                                   0)))
         goto cleanup;
+
+    virDomainObjAssignDef(vm, def, false, &oldDef);
     def = NULL;
 
     vm->persistent = 1;
@@ -1031,10 +1032,10 @@ libxlDomainCreateXML(virConnectPtr conn, const char *xml,
 
     if (!(vm = virDomainObjListAdd(driver->domains, def,
                                    driver->xmlopt,
-                                   VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
-                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE,
-                                   NULL)))
+                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
+
+    virDomainObjAssignDef(vm, def, true, NULL);
     def = NULL;
 
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0) {
@@ -1951,10 +1952,10 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
 
     if (!(vm = virDomainObjListAdd(driver->domains, def,
                                    driver->xmlopt,
-                                   VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
-                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE,
-                                   NULL)))
+                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
+
+    virDomainObjAssignDef(vm, def, true, NULL);
     def = NULL;
 
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0) {
@@ -2851,9 +2852,10 @@ libxlDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flag
 
     if (!(vm = virDomainObjListAdd(driver->domains, def,
                                    driver->xmlopt,
-                                   0,
-                                   &oldDef)))
+                                   0)))
         goto cleanup;
+
+    virDomainObjAssignDef(vm, def, false, &oldDef);
     def = NULL;
 
     vm->persistent = 1;
