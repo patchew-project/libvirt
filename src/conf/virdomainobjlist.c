@@ -337,12 +337,11 @@ virDomainObjListAddLocked(virDomainObjListPtr doms,
 
         if (!(vm = virDomainObjNew(xmlopt)))
             goto error;
-        vm->def = def;
 
-        if (virDomainObjListAddObjLocked(doms, vm, def->uuid, def->name) < 0) {
-            vm->def = NULL;
+        if (virDomainObjListAddObjLocked(doms, vm, def->uuid, def->name) < 0)
             goto error;
-        }
+
+        vm->def = def;
     }
 
     return vm;
