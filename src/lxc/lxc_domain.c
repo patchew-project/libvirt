@@ -93,6 +93,7 @@ virLXCDomainObjBeginJob(virLXCDriverPtr driver ATTRIBUTE_UNUSED,
     virLXCDomainObjPrivatePtr priv = obj->privateData;
     unsigned long long now;
     unsigned long long then;
+    const char *domName = NULLSTR(obj->def ? obj->def->name : NULL);
 
     if (virTimeMillisNow(&now) < 0)
         return -1;
@@ -117,7 +118,7 @@ virLXCDomainObjBeginJob(virLXCDriverPtr driver ATTRIBUTE_UNUSED,
     VIR_WARN("Cannot start job (%s) for domain %s;"
              " current job is (%s) owned by (%d)",
              virLXCDomainJobTypeToString(job),
-             obj->def->name,
+             domName,
              virLXCDomainJobTypeToString(priv->job.active),
              priv->job.owner);
 

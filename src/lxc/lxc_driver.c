@@ -448,6 +448,12 @@ lxcDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags)
                                    driver->xmlopt, 0)))
         goto cleanup;
 
+    if (virLXCDomainObjBeginJob(driver, vm, LXC_JOB_MODIFY) < 0) {
+        if (!vm->persistent)
+            virDomainObjListRemove(driver->domains, vm);
+        goto cleanup;
+    }
+
     virDomainObjAssignDef(vm, def, false, &oldDef);
     def = NULL;
     vm->persistent = 1;
@@ -455,7 +461,7 @@ lxcDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags)
     if (virDomainSaveConfig(cfg->configDir, driver->caps,
                             vm->newDef ? vm->newDef : vm->def) < 0) {
         virDomainObjListRemove(driver->domains, vm);
-        goto cleanup;
+        goto endjob;
     }
 
     event = virDomainEventLifecycleNewFromObj(vm,
@@ -465,6 +471,9 @@ lxcDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags)
                                      VIR_DOMAIN_EVENT_DEFINED_UPDATED);
 
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
+
+ endjob:
+    virLXCDomainObjEndJob(driver, vm);
 
  cleanup:
     virDomainDefFree(def);
@@ -1196,14 +1205,14 @@ lxcDomainCreateXMLWithFiles(virConnectPtr conn,
                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
 
-    virDomainObjAssignDef(vm, def, true, NULL);
-    def = NULL;
-
     if (virLXCDomainObjBeginJob(driver, vm, LXC_JOB_MODIFY) < 0) {
         if (!vm->persistent)
             virDomainObjListRemove(driver->domains, vm);
         goto cleanup;
     }
+
+    virDomainObjAssignDef(vm, def, true, NULL);
+    def = NULL;
 
     if (virLXCProcessStart(conn, driver, vm,
                            nfiles, files,
