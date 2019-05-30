@@ -525,6 +525,7 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "virtio-pci-non-transitional",
               "overcommit",
               "query-current-machine",
+              "query-cpu-model-baseline",
     );
 
 
@@ -971,6 +972,7 @@ struct virQEMUCapsStringFlags virQEMUCapsCommands[] = {
     { "qom-list-properties", QEMU_CAPS_QOM_LIST_PROPERTIES },
     { "blockdev-del", QEMU_CAPS_BLOCKDEV_DEL },
     { "query-current-machine", QEMU_CAPS_QUERY_CURRENT_MACHINE },
+    { "query-cpu-model-baseline", QEMU_CAPS_QUERY_CPU_MODEL_BASELINE },
 };
 
 struct virQEMUCapsStringFlags virQEMUCapsMigration[] = {
