@@ -115,6 +115,7 @@ libxlDomainObjBeginJob(libxlDriverPrivatePtr driver ATTRIBUTE_UNUSED,
     libxlDomainObjPrivatePtr priv = obj->privateData;
     unsigned long long now;
     unsigned long long then;
+    const char *domName = NULLSTR(obj->def ? obj->def->name : NULL);
 
     if (virTimeMillisNow(&now) < 0)
         return -1;
@@ -141,7 +142,7 @@ libxlDomainObjBeginJob(libxlDriverPrivatePtr driver ATTRIBUTE_UNUSED,
     VIR_WARN("Cannot start job (%s) for domain %s;"
              " current job is (%s) owned by (%d)",
              libxlDomainJobTypeToString(job),
-             obj->def->name,
+             domName,
              libxlDomainJobTypeToString(priv->job.active),
              priv->job.owner);
 

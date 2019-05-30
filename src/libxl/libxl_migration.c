@@ -571,9 +571,6 @@ libxlDomainMigrationDstPrepareTunnel3(virConnectPtr dconn,
                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto error;
 
-    virDomainObjAssignDef(vm, *def, true, NULL);
-    *def = NULL;
-
     /*
      * Unless an error is encountered in this function, the job will
      * be terminated in the finish phase.
@@ -581,6 +578,8 @@ libxlDomainMigrationDstPrepareTunnel3(virConnectPtr dconn,
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0)
         goto error;
 
+    virDomainObjAssignDef(vm, *def, true, NULL);
+    *def = NULL;
     priv = vm->privateData;
 
     if (taint_hook) {
@@ -680,9 +679,6 @@ libxlDomainMigrationDstPrepare(virConnectPtr dconn,
                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto error;
 
-    virDomainObjAssignDef(vm, *def, true, NULL);
-    *def = NULL;
-
     /*
      * Unless an error is encountered in this function, the job will
      * be terminated in the finish phase.
@@ -690,6 +686,8 @@ libxlDomainMigrationDstPrepare(virConnectPtr dconn,
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0)
         goto error;
 
+    virDomainObjAssignDef(vm, *def, true, NULL);
+    *def = NULL;
     priv = vm->privateData;
 
     if (taint_hook) {

@@ -606,22 +606,29 @@ libxlAddDom0(libxlDriverPrivatePtr driver)
                                    0)))
         goto cleanup;
 
+    if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0) {
+        virDomainObjListRemove(driver->domains, vm);
+        goto cleanup;
+    }
+
     virDomainObjAssignDef(vm, def, false, &oldDef);
     def = NULL;
 
     vm->persistent = 1;
     virDomainObjSetState(vm, VIR_DOMAIN_RUNNING, VIR_DOMAIN_RUNNING_BOOTED);
     if (virDomainDefSetVcpusMax(vm->def, d_info.vcpu_max_id + 1, driver->xmlopt))
-        goto cleanup;
+        goto endjob;
 
     if (virDomainDefSetVcpus(vm->def, d_info.vcpu_online) < 0)
-        goto cleanup;
+        goto endjob;
     vm->def->mem.cur_balloon = d_info.current_memkb;
     if (libxlDriverGetDom0MaxmemConf(cfg, &maxmem) < 0)
         maxmem = d_info.current_memkb;
     virDomainDefSetMemoryTotal(vm->def, maxmem);
 
     ret = 0;
+ endjob:
+    libxlDomainObjEndJob(driver, vm);
 
  cleanup:
     libxl_dominfo_dispose(&d_info);
@@ -1035,14 +1042,14 @@ libxlDomainCreateXML(virConnectPtr conn, const char *xml,
                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
 
-    virDomainObjAssignDef(vm, def, true, NULL);
-    def = NULL;
-
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0) {
         if (!vm->persistent)
             virDomainObjListRemove(driver->domains, vm);
         goto cleanup;
     }
+
+    virDomainObjAssignDef(vm, def, true, NULL);
+    def = NULL;
 
     if (libxlDomainStartNew(driver, vm,
                          (flags & VIR_DOMAIN_START_PAUSED) != 0) < 0) {
@@ -1955,14 +1962,14 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
 
-    virDomainObjAssignDef(vm, def, true, NULL);
-    def = NULL;
-
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0) {
         if (!vm->persistent)
             virDomainObjListRemove(driver->domains, vm);
         goto cleanup;
     }
+
+    virDomainObjAssignDef(vm, def, true, NULL);
+    def = NULL;
 
     ret = libxlDomainStartRestore(driver, vm,
                                   (flags & VIR_DOMAIN_SAVE_PAUSED) != 0,
@@ -2855,16 +2862,20 @@ libxlDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flag
                                    0)))
         goto cleanup;
 
+    if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0) {
+        virDomainObjListRemove(driver->domains, vm);
+        goto cleanup;
+    }
+
     virDomainObjAssignDef(vm, def, false, &oldDef);
     def = NULL;
-
     vm->persistent = 1;
 
     if (virDomainSaveConfig(cfg->configDir,
                             cfg->caps,
                             vm->newDef ? vm->newDef : vm->def) < 0) {
         virDomainObjListRemove(driver->domains, vm);
-        goto cleanup;
+        goto endjob;
     }
 
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
@@ -2873,6 +2884,9 @@ libxlDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flag
                                      !oldDef ?
                                      VIR_DOMAIN_EVENT_DEFINED_ADDED :
                                      VIR_DOMAIN_EVENT_DEFINED_UPDATED);
+
+ endjob:
+    libxlDomainObjEndJob(driver, vm);
 
  cleanup:
     virDomainDefFree(def);
