@@ -8808,7 +8808,8 @@ qemuDomainRemoveInactive(virQEMUDriverPtr driver,
         return;
     }
 
-    qemuDomainRemoveInactiveCommon(driver, vm);
+    if (vm->def)
+        qemuDomainRemoveInactiveCommon(driver, vm);
 
     virDomainObjListRemove(driver->domains, vm);
 }
