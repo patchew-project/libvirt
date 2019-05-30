@@ -5701,6 +5701,67 @@ qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
 }
 
 
+int
+qemuMonitorJSONGetCPUModelBaseline(qemuMonitorPtr mon,
+                                   const char *model_a_name,
+                                   int model_a_nprops,
+                                   virCPUFeatureDefPtr model_a_props,
+                                   const char *model_b_name,
+                                   int model_b_nprops,
+                                   virCPUFeatureDefPtr model_b_props,
+                                   qemuMonitorCPUModelInfoPtr *model_result)
+{
+    int ret = -1;
+    virJSONValuePtr model_a;
+    virJSONValuePtr model_b = NULL;
+    virJSONValuePtr cmd = NULL;
+    virJSONValuePtr reply = NULL;
+    virJSONValuePtr data;
+    virJSONValuePtr cpu_model;
+    virJSONValuePtr cpu_props = NULL;
+    const char *cpu_name = "";
+    qemuMonitorCPUModelInfoPtr baseline = NULL;
+
+    if (!(model_a = qemuMonitorJSONMakeCPUModel(model_a_name, model_a_nprops,
+                                                model_a_props, true)) ||
+        !(model_b = qemuMonitorJSONMakeCPUModel(model_b_name, model_b_nprops,
+                                                model_b_props, true)))
+        goto cleanup;
+
+    if (!(cmd = qemuMonitorJSONMakeCommand("query-cpu-model-baseline",
+                                           "a:modela", &model_a,
+                                           "a:modelb", &model_b,
+                                           NULL)))
+        goto cleanup;
+
+    if (qemuMonitorJSONCommand(mon, cmd, &reply) < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONCheckReply(cmd, reply, VIR_JSON_TYPE_OBJECT) < 0)
+        goto cleanup;
+
+    data = virJSONValueObjectGetObject(reply, "return");
+
+    if (qemuMonitorJSONParseCPUModelData(data, &cpu_model, &cpu_props, &cpu_name,
+                                         "query-cpu-model-baseline") < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONParseCPUModel(cpu_name, cpu_props, &baseline) < 0)
+        goto cleanup;
+
+    VIR_STEAL_PTR(*model_result, baseline);
+    ret = 0;
+
+ cleanup:
+    qemuMonitorCPUModelInfoFree(baseline);
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    virJSONValueFree(model_a);
+    virJSONValueFree(model_b);
+    return ret;
+}
+
+
 int qemuMonitorJSONGetCommands(qemuMonitorPtr mon,
                                char ***commands)
 {
