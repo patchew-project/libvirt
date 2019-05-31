@@ -2747,9 +2747,6 @@ qemuProcessKillManagedPRDaemon(virDomainObjPtr vm)
     virErrorPtr orig_err;
     char *pidfile;
 
-    if (!priv->prDaemonRunning)
-        return;
-
     if (!(pidfile = qemuProcessBuildPRHelperPidfilePath(vm))) {
         VIR_WARN("Unable to construct pr-helper pidfile path");
         return;
