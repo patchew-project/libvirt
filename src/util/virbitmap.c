@@ -1271,16 +1271,22 @@ virBitmapIntersect(virBitmapPtr a,
  */
 int
 virBitmapUnion(virBitmapPtr a,
-               virBitmapPtr b)
+               const virBitmap *b)
 {
     size_t i;
+    size_t max;
 
-    for (i = 0; i < b->nbits; i++) {
-        if (virBitmapIsBitSet(b, i)) {
-            if (virBitmapSetBitExpand(a, i) < 0)
-                return -1;
-        }
+    if (a->nbits < b->nbits &&
+        virBitmapExpand(a, b->nbits) < 0) {
+        return -1;
     }
+
+    max = a->map_len;
+    if (max > b->map_len)
+        max = b->map_len;
+
+    for (i = 0; i < max; i++)
+        a->map[i] |= b->map[i];
 
     return 0;
 }

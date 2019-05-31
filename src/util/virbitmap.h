@@ -150,7 +150,7 @@ void virBitmapIntersect(virBitmapPtr a, virBitmapPtr b)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
 int virBitmapUnion(virBitmapPtr a,
-                   virBitmapPtr b)
+                   const virBitmap *b)
     ATTRIBUTE_NONNULL(1) ATTRIBUTE_NONNULL(2);
 
 void virBitmapSubtract(virBitmapPtr a, virBitmapPtr b)
