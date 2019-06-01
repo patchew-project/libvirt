@@ -6045,6 +6045,44 @@ testDomainSendKey(virDomainPtr domain,
 
 
 static int
+testDomainSendKey(virDomainPtr domain,
+                  unsigned int codeset,
+                  unsigned int holdtime,
+                  unsigned int *keycodes,
+                  int nkeycodes,
+                  unsigned int flags)
+{
+    int ret = -1;
+    size_t i;
+    virDomainObjPtr vm = NULL;
+
+    virCheckFlags(0, -1);
+
+    if (!(vm = testDomObjFromDomain(domain)))
+        goto cleanup;
+
+    if (virDomainObjCheckActive(vm) < 0)
+        goto cleanup;
+
+    for (i = 0; i < nkeycodes; i++) {
+        if (virKeycodeValueTranslate(codeset, codeset, keycodes[i]) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("invalid keycode %u of %s codeset"),
+                           keycodes[i],
+                           virKeycodeSetTypeToString(codeset));
+            goto cleanup;
+        }
+    }
+
+    usleep(holdtime * 1000);
+    ret = 0;
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+static int
 testConnectGetCPUModelNames(virConnectPtr conn ATTRIBUTE_UNUSED,
                             const char *archName,
                             char ***models,
