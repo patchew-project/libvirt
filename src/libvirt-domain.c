@@ -6837,6 +6837,13 @@ virDomainSendKey(virDomainPtr domain,
     virCheckNonNullArgGoto(keycodes, error);
     virCheckPositiveArgGoto(nkeycodes, error);
 
+    if (codeset >= VIR_KEYCODE_SET_LAST) {
+        virReportInvalidArg(codeset,
+                            _("codeset must be less than %d"),
+                            VIR_KEYCODE_SET_LAST);
+        goto error;
+    }
+
     if (nkeycodes > VIR_DOMAIN_SEND_KEY_MAX_KEYS) {
         virReportInvalidArg(nkeycodes,
                             _("nkeycodes must be <= %d"),
