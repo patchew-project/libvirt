@@ -582,7 +582,7 @@ virDomainDeviceSpaprVioAddressParseXML(xmlNodePtr node,
 
     reg = virXMLPropString(node, "reg");
     if (reg) {
-        if (virStrToLong_ull(reg, NULL, 16, &addr->reg) < 0) {
+        if (virStrToLong_ul(reg, NULL, 16, &addr->reg) < 0) {
             virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                            _("Cannot parse <address> 'reg' attribute"));
             ret = -1;

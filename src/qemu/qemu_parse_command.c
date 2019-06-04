@@ -2549,8 +2549,8 @@ qemuParseCommandLine(virFileCachePtr capsCache,
             def->nvram->info.addr.spaprvio.has_reg = true;
 
             val += strlen("spapr-nvram.reg=");
-            if (virStrToLong_ull(val, NULL, 16,
-                                 &def->nvram->info.addr.spaprvio.reg) < 0) {
+            if (virStrToLong_ul(val, NULL, 16,
+                                &def->nvram->info.addr.spaprvio.reg) < 0) {
                 virReportError(VIR_ERR_INTERNAL_ERROR,
                                _("cannot parse nvram's address '%s'"), val);
                 goto error;

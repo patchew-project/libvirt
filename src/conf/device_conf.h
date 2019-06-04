@@ -101,7 +101,7 @@ struct _virDomainDeviceUSBAddress {
 typedef struct _virDomainDeviceSpaprVioAddress virDomainDeviceSpaprVioAddress;
 typedef virDomainDeviceSpaprVioAddress *virDomainDeviceSpaprVioAddressPtr;
 struct _virDomainDeviceSpaprVioAddress {
-    unsigned long long reg;
+    unsigned long reg;
     bool has_reg;
 };
 

@@ -204,7 +204,7 @@ qemuDomainAssignSpaprVIOAddress(virDomainDefPtr def,
     while (ret != 0) {
         if (user_reg) {
             virReportError(VIR_ERR_XML_ERROR,
-                           _("spapr-vio address %#llx already in use"),
+                           _("spapr-vio address %#lx already in use"),
                            info->addr.spaprvio.reg);
             return -EEXIST;
         }

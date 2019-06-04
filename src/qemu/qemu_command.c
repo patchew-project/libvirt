@@ -395,7 +395,7 @@ qemuBuildDeviceAddressStr(virBufferPtr buf,
         }
     } else if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_SPAPRVIO) {
         if (info->addr.spaprvio.has_reg)
-            virBufferAsprintf(buf, ",reg=0x%llx", info->addr.spaprvio.reg);
+            virBufferAsprintf(buf, ",reg=0x%lx", info->addr.spaprvio.reg);
     } else if (info->type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_CCW) {
         if (info->addr.ccw.assigned)
             virBufferAsprintf(buf, ",devno=%x.%x.%04x",
@@ -4332,7 +4332,7 @@ qemuBuildNVRAMDevStr(virDomainNVRAMDefPtr dev)
 
     if (dev->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_SPAPRVIO &&
         dev->info.addr.spaprvio.has_reg) {
-        virBufferAsprintf(&buf, "spapr-nvram.reg=0x%llx",
+        virBufferAsprintf(&buf, "spapr-nvram.reg=0x%lx",
                           dev->info.addr.spaprvio.reg);
     } else {
         virReportError(VIR_ERR_XML_ERROR, "%s",
