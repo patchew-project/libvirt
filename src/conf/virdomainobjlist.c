@@ -223,6 +223,8 @@ virDomainObjListFindByName(virDomainObjListPtr doms,
 /**
  * @doms: Domain object list pointer
  * @vm: Domain object to be added
+ * @uuid: domain UUID
+ * @name: domain name
  *
  * Upon entry @vm should have at least 1 ref and be locked.
  *
@@ -238,16 +240,18 @@ virDomainObjListFindByName(virDomainObjListPtr doms,
  */
 static int
 virDomainObjListAddObjLocked(virDomainObjListPtr doms,
-                             virDomainObjPtr vm)
+                             virDomainObjPtr vm,
+                             const unsigned char *uuid,
+                             const char *name)
 {
     char uuidstr[VIR_UUID_STRING_BUFLEN];
 
-    virUUIDFormat(vm->def->uuid, uuidstr);
+    virUUIDFormat(uuid, uuidstr);
     if (virHashAddEntry(doms->objs, uuidstr, vm) < 0)
         return -1;
     virObjectRef(vm);
 
-    if (virHashAddEntry(doms->objsName, vm->def->name, vm) < 0) {
+    if (virHashAddEntry(doms->objsName, name, vm) < 0) {
         virHashRemoveEntry(doms->objs, uuidstr);
         return -1;
     }
@@ -335,7 +339,7 @@ virDomainObjListAddLocked(virDomainObjListPtr doms,
             goto error;
         vm->def = def;
 
-        if (virDomainObjListAddObjLocked(doms, vm) < 0) {
+        if (virDomainObjListAddObjLocked(doms, vm, def->uuid, def->name) < 0) {
             vm->def = NULL;
             goto error;
         }
@@ -564,7 +568,7 @@ virDomainObjListLoadStatus(virDomainObjListPtr doms,
         goto error;
     }
 
-    if (virDomainObjListAddObjLocked(doms, obj) < 0)
+    if (virDomainObjListAddObjLocked(doms, obj, obj->def->uuid, obj->def->name) < 0)
         goto error;
 
     if (notify)
