@@ -38,8 +38,7 @@ virDomainObjPtr virDomainObjListFindByName(virDomainObjListPtr doms,
                                            const char *name);
 
 enum {
-    VIR_DOMAIN_OBJ_LIST_ADD_LIVE = (1 << 0),
-    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE = (1 << 1),
+    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE = (1 << 0),
 };
 virDomainObjPtr virDomainObjListAdd(virDomainObjListPtr doms,
                                     virDomainDefPtr def,
