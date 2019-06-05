@@ -2767,7 +2767,7 @@ int virDomainDefValidate(virDomainDefPtr def,
 static inline bool
 virDomainObjIsActive(virDomainObjPtr dom)
 {
-    return dom->def->id != -1;
+    return dom->def && dom->def->id != -1;
 }
 
 int virDomainObjCheckActive(virDomainObjPtr dom);
