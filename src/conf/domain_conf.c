@@ -15311,6 +15311,7 @@ virDomainVideoDefParseXML(virDomainXMLOptionPtr xmlopt,
     xmlNodePtr cur;
     VIR_XPATH_NODE_AUTORESTORE(ctxt);
     VIR_AUTOFREE(char *) type = NULL;
+    VIR_AUTOFREE(char *) vhostuser = NULL;
     VIR_AUTOFREE(char *) heads = NULL;
     VIR_AUTOFREE(char *) vram = NULL;
     VIR_AUTOFREE(char *) vram64 = NULL;
@@ -15329,6 +15330,7 @@ virDomainVideoDefParseXML(virDomainXMLOptionPtr xmlopt,
             if (!type && !vram && !ram && !heads &&
                 virXMLNodeNameEqual(cur, "model")) {
                 type = virXMLPropString(cur, "type");
+                vhostuser = virXMLPropString(cur, "vhostuser");
                 ram = virXMLPropString(cur, "ram");
                 vram = virXMLPropString(cur, "vram");
                 vram64 = virXMLPropString(cur, "vram64");
@@ -15359,6 +15361,16 @@ virDomainVideoDefParseXML(virDomainXMLOptionPtr xmlopt,
         }
     } else {
         def->type = virDomainVideoDefaultType(dom);
+    }
+
+    if (vhostuser != NULL) {
+        if (virStringParseYesNo(vhostuser, &def->vhostuser) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("unknown vhostuser value '%s'"), vhostuser);
+            goto cleanup;
+        }
+    } else {
+        def->vhostuser = false;
     }
 
     if (ram) {
@@ -26364,6 +26376,8 @@ virDomainVideoDefFormat(virBufferPtr buf,
         virBufferAsprintf(buf, " heads='%u'", def->heads);
     if (def->primary)
         virBufferAddLit(buf, " primary='yes'");
+    if (def->vhostuser)
+        virBufferAddLit(buf, " vhostuser='yes'");
     if (def->accel) {
         virBufferAddLit(buf, ">\n");
         virBufferAdjustIndent(buf, 2);

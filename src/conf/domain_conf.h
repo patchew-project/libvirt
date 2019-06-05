@@ -1419,6 +1419,7 @@ struct _virDomainVideoDef {
     virDomainVideoDriverDefPtr driver;
     virDomainDeviceInfo info;
     virDomainVirtioOptionsPtr virtio;
+    bool vhostuser;
 };
 
 /* graphics console modes */
