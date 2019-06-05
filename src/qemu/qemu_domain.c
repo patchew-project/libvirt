@@ -7061,6 +7061,7 @@ virDomainDefParserConfig virQEMUDriverDomainDefParserConfig = {
  * @def: domain definition
  * @oldDef: previous domain definition
  * @live: whether @def is live definition
+ * @keepJob: whether to leave MODIFY job set on returned object
  * @flags: an bitwise-OR of virDomainObjListAdd flags
  *
  * Add a domain onto the list of domain object and sets its
@@ -7070,6 +7071,10 @@ virDomainDefParserConfig virQEMUDriverDomainDefParserConfig = {
  * In addition to that, if definition of an existing domain is
  * changed a MODIFY job is acquired prior to that.
  *
+ * If @keepJob is true, then the MODIFY job is not ended upon
+ * successful return from this function. This might be handy if
+ * caller would try to acquire the job anyway.
+ *
  * Returns: domain object pointer on success,
  *          NULL otherwise.
  */
@@ -7078,9 +7083,11 @@ qemuDomainObjListAdd(virQEMUDriverPtr driver,
                      virDomainDefPtr def,
                      virDomainDefPtr *oldDef,
                      bool live,
+                     bool keepJob,
                      unsigned int flags)
 {
     virDomainObjPtr vm = NULL;
+    bool defSet = false;
 
     if (!(vm = virDomainObjListAdd(driver->domains, def, driver->xmlopt, flags)))
         return NULL;
@@ -7091,7 +7098,9 @@ qemuDomainObjListAdd(virQEMUDriverPtr driver,
      * just set the definition without acquiring job. */
     if (!vm->def) {
         virDomainObjAssignDef(vm, def, live, oldDef);
-        VIR_RETURN_PTR(vm);
+        defSet = true;
+        if (!keepJob)
+            VIR_RETURN_PTR(vm);
     }
 
     /* Bad luck. Domain was pre-existing and this call is trying
@@ -7102,9 +7111,11 @@ qemuDomainObjListAdd(virQEMUDriverPtr driver,
         return NULL;
     }
 
-    virDomainObjAssignDef(vm, def, live, oldDef);
+    if (!defSet)
+        virDomainObjAssignDef(vm, def, live, oldDef);
 
-    qemuDomainObjEndJob(driver, vm);
+    if (!keepJob)
+        qemuDomainObjEndJob(driver, vm);
 
     return vm;
 }

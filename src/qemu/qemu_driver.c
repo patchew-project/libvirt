@@ -1701,7 +1701,7 @@ static virDomainPtr qemuDomainCreateXML(virConnectPtr conn,
     if (virDomainCreateXMLEnsureACL(conn, def) < 0)
         goto cleanup;
 
-    if (!(vm = qemuDomainObjListAdd(driver, def, NULL, true,
+    if (!(vm = qemuDomainObjListAdd(driver, def, NULL, true, false,
                                     VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
     def = NULL;
@@ -6969,7 +6969,7 @@ qemuDomainRestoreFlags(virConnectPtr conn,
         def = tmp;
     }
 
-    if (!(vm = qemuDomainObjListAdd(driver, def, NULL, true,
+    if (!(vm = qemuDomainObjListAdd(driver, def, NULL, true, false,
                                     VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
     def = NULL;
@@ -7642,7 +7642,7 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
     if (virDomainDefineXMLFlagsEnsureACL(conn, def) < 0)
         goto cleanup;
 
-    if (!(vm = qemuDomainObjListAdd(driver, def, &oldDef, false, 0)))
+    if (!(vm = qemuDomainObjListAdd(driver, def, &oldDef, false, true, 0)))
         goto cleanup;
     def = NULL;
 
@@ -7663,9 +7663,9 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
             /* Brand new domain. Remove it */
             VIR_INFO("Deleting domain '%s'", vm->def->name);
             vm->persistent = 0;
-            qemuDomainRemoveInactiveJob(driver, vm);
+            qemuDomainRemoveInactive(driver, vm);
         }
-        goto cleanup;
+        goto endjob;
     }
 
     event = virDomainEventLifecycleNewFromObj(vm,
@@ -7676,6 +7676,9 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
 
     VIR_INFO("Creating domain '%s'", vm->def->name);
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
+
+ endjob:
+    qemuDomainObjEndJob(driver, vm);
 
  cleanup:
     virDomainDefFree(oldDef);
@@ -16876,25 +16879,20 @@ static virDomainPtr qemuDomainQemuAttach(virConnectPtr conn,
     if (qemuAssignDeviceAliases(def, qemuCaps) < 0)
         goto cleanup;
 
-    if (!(vm = qemuDomainObjListAdd(driver, def, NULL, true,
+    if (!(vm = qemuDomainObjListAdd(driver, def, NULL, true, true,
                                     VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
     def = NULL;
 
-    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0) {
-        qemuDomainRemoveInactive(driver, vm);
-        goto cleanup;
-    }
-
     if (qemuProcessAttach(conn, driver, vm, pid,
                           pidfile, monConfig, monJSON) < 0) {
         qemuDomainRemoveInactive(driver, vm);
-        qemuDomainObjEndJob(driver, vm);
-        goto cleanup;
+        goto endjob;
     }
 
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
 
+ endjob:
     qemuDomainObjEndJob(driver, vm);
 
  cleanup:

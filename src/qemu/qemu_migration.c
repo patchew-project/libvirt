@@ -2403,7 +2403,7 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
                                        QEMU_MIGRATION_COOKIE_CAPS)))
         goto cleanup;
 
-    if (!(vm = qemuDomainObjListAdd(driver, *def, NULL, true,
+    if (!(vm = qemuDomainObjListAdd(driver, *def, NULL, true, false,
                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
     *def = NULL;
