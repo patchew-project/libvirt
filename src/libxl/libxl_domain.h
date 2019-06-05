@@ -88,6 +88,7 @@ libxlDomainObjListAdd(libxlDriverPrivatePtr driver,
                       virDomainDefPtr def,
                       virDomainDefPtr *oldDef,
                       bool live,
+                      bool keepJob,
                       unsigned int flags);
 
 int
