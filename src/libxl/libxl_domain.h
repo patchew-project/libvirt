@@ -83,6 +83,13 @@ extern const struct libxl_event_hooks ev_hooks;
 int
 libxlDomainObjPrivateInitCtx(virDomainObjPtr vm);
 
+virDomainObjPtr
+libxlDomainObjListAdd(libxlDriverPrivatePtr driver,
+                      virDomainDefPtr def,
+                      virDomainDefPtr *oldDef,
+                      bool live,
+                      unsigned int flags);
+
 int
 libxlDomainObjBeginJob(libxlDriverPrivatePtr driver,
                        virDomainObjPtr obj,

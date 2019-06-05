@@ -601,12 +601,8 @@ libxlAddDom0(libxlDriverPrivatePtr driver)
     if (virUUIDParse("00000000-0000-0000-0000-000000000000", def->uuid) < 0)
         goto cleanup;
 
-    if (!(vm = virDomainObjListAdd(driver->domains, def,
-                                   driver->xmlopt,
-                                   0)))
+    if (!(vm = libxlDomainObjListAdd(driver, def, &oldDef, false, 0)))
         goto cleanup;
-
-    virDomainObjAssignDef(vm, def, false, &oldDef);
     def = NULL;
 
     vm->persistent = 1;
@@ -1030,12 +1026,9 @@ libxlDomainCreateXML(virConnectPtr conn, const char *xml,
     if (virDomainCreateXMLEnsureACL(conn, def) < 0)
         goto cleanup;
 
-    if (!(vm = virDomainObjListAdd(driver->domains, def,
-                                   driver->xmlopt,
-                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
+    if (!(vm = libxlDomainObjListAdd(driver, def, NULL, true,
+                                     VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
-
-    virDomainObjAssignDef(vm, def, true, NULL);
     def = NULL;
 
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0) {
@@ -1950,12 +1943,9 @@ libxlDomainRestoreFlags(virConnectPtr conn, const char *from,
     if (virDomainRestoreFlagsEnsureACL(conn, def) < 0)
         goto cleanup;
 
-    if (!(vm = virDomainObjListAdd(driver->domains, def,
-                                   driver->xmlopt,
+    if (!(vm = libxlDomainObjListAdd(driver, def, NULL, true,
                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
-
-    virDomainObjAssignDef(vm, def, true, NULL);
     def = NULL;
 
     if (libxlDomainObjBeginJob(driver, vm, LIBXL_JOB_MODIFY) < 0) {
@@ -2850,12 +2840,8 @@ libxlDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flag
     if (virDomainDefineXMLFlagsEnsureACL(conn, def) < 0)
         goto cleanup;
 
-    if (!(vm = virDomainObjListAdd(driver->domains, def,
-                                   driver->xmlopt,
-                                   0)))
+    if (!(vm = libxlDomainObjListAdd(driver, def, &oldDef, false, 0)))
         goto cleanup;
-
-    virDomainObjAssignDef(vm, def, false, &oldDef);
     def = NULL;
 
     vm->persistent = 1;
