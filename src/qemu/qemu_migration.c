@@ -2405,10 +2405,10 @@ qemuMigrationDstPrepareAny(virQEMUDriverPtr driver,
 
     if (!(vm = virDomainObjListAdd(driver->domains, *def,
                                    driver->xmlopt,
-                                   VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
-                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE,
-                                   NULL)))
+                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
+
+    virDomainObjAssignDef(vm, *def, true, NULL);
     *def = NULL;
 
     priv = vm->privateData;

@@ -1955,8 +1955,10 @@ prlsdkLoadDomain(vzDriverPtr driver,
 
         virObjectLock(driver);
         if (!(olddom = virDomainObjListFindByUUID(driver->domains, def->uuid)))
-            dom = virDomainObjListAdd(driver->domains, def, driver->xmlopt, 0, NULL);
+            dom = virDomainObjListAdd(driver->domains, def, driver->xmlopt, 0);
         virObjectUnlock(driver);
+
+        virDomainObjAssignDef(dom, def, false, NULL);
 
         if (olddom) {
             virDomainDefFree(def);

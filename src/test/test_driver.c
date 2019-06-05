@@ -913,10 +913,12 @@ testParseDomains(testDriverPtr privconn,
             !(obj = virDomainObjListAdd(privconn->domains,
                                         def,
                                         privconn->xmlopt,
-                                        0, NULL))) {
+                                        0))) {
             virDomainDefFree(def);
             goto error;
         }
+
+        virDomainObjAssignDef(obj, def, false, NULL);
 
         if (testParseDomainSnapshots(privconn, obj, file, ctxt) < 0)
             goto error;
@@ -1620,10 +1622,10 @@ testDomainCreateXML(virConnectPtr conn, const char *xml,
     if (!(dom = virDomainObjListAdd(privconn->domains,
                                     def,
                                     privconn->xmlopt,
-                                    VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
-                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE,
-                                    NULL)))
+                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
+
+    virDomainObjAssignDef(dom, def, true, NULL);
     def = NULL;
 
     if (testDomainStartState(privconn, dom, VIR_DOMAIN_RUNNING_BOOTED) < 0) {
@@ -2167,10 +2169,10 @@ testDomainRestoreFlags(virConnectPtr conn,
     if (!(dom = virDomainObjListAdd(privconn->domains,
                                     def,
                                     privconn->xmlopt,
-                                    VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
-                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE,
-                                    NULL)))
+                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
+
+    virDomainObjAssignDef(dom, def, true, NULL);
     def = NULL;
 
     if (testDomainStartState(privconn, dom, VIR_DOMAIN_RUNNING_RESTORED) < 0) {
@@ -2746,9 +2748,10 @@ static virDomainPtr testDomainDefineXMLFlags(virConnectPtr conn,
     if (!(dom = virDomainObjListAdd(privconn->domains,
                                     def,
                                     privconn->xmlopt,
-                                    0,
-                                    &oldDef)))
+                                    0)))
         goto cleanup;
+
+    virDomainObjAssignDef(dom, def, false, &oldDef);
     def = NULL;
     dom->persistent = 1;
 

@@ -169,10 +169,10 @@ vmwareLoadDomains(struct vmware_driver *driver)
         }
 
         if (!(vm = virDomainObjListAdd(driver->domains, vmdef,
-                                       driver->xmlopt,
-                                       0, NULL)))
+                                       driver->xmlopt, 0)))
             goto cleanup;
 
+        virDomainObjAssignDef(vm, vmdef, false, NULL);
         pDomain = vm->privateData;
 
         if (VIR_STRDUP(pDomain->vmxPath, vmxPath) < 0)

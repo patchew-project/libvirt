@@ -445,10 +445,10 @@ lxcDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags)
     }
 
     if (!(vm = virDomainObjListAdd(driver->domains, def,
-                                   driver->xmlopt,
-                                   0, &oldDef)))
+                                   driver->xmlopt, 0)))
         goto cleanup;
 
+    virDomainObjAssignDef(vm, def, false, &oldDef);
     def = NULL;
     vm->persistent = 1;
 
@@ -1193,10 +1193,10 @@ lxcDomainCreateXMLWithFiles(virConnectPtr conn,
 
     if (!(vm = virDomainObjListAdd(driver->domains, def,
                                    driver->xmlopt,
-                                   VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
-                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE,
-                                   NULL)))
+                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
+
+    virDomainObjAssignDef(vm, def, true, NULL);
     def = NULL;
 
     if (virLXCDomainObjBeginJob(driver, vm, LXC_JOB_MODIFY) < 0) {

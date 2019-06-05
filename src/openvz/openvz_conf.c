@@ -517,7 +517,8 @@ int openvzLoadDomains(struct openvz_driver *driver)
 
     line = outbuf;
     while (line[0] != '\0') {
-        unsigned int flags = 0;
+        bool active = false;
+
         if (virStrToLong_i(line, &status, 10, &veid) < 0 ||
             *status++ != ' ' ||
             (line = strchr(status, '\n')) == NULL) {
@@ -578,16 +579,15 @@ int openvzLoadDomains(struct openvz_driver *driver)
         openvzReadMemConf(def, veid);
 
         virUUIDFormat(def->uuid, uuidstr);
-        flags = VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE;
-        if (STRNEQ(status, "stopped"))
-            flags |= VIR_DOMAIN_OBJ_LIST_ADD_LIVE;
+        active = STRNEQ(status, "stopped");
 
         if (!(dom = virDomainObjListAdd(driver->domains,
                                         def,
                                         driver->xmlopt,
-                                        flags,
-                                        NULL)))
+                                        VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
             goto cleanup;
+
+        virDomainObjAssignDef(dom, def, active, NULL);
 
         if (STREQ(status, "stopped")) {
             virDomainObjSetState(dom, VIR_DOMAIN_SHUTOFF,

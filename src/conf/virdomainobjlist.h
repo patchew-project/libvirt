@@ -44,8 +44,7 @@ enum {
 virDomainObjPtr virDomainObjListAdd(virDomainObjListPtr doms,
                                     virDomainDefPtr def,
                                     virDomainXMLOptionPtr xmlopt,
-                                    unsigned int flags,
-                                    virDomainDefPtr *oldDef);
+                                    unsigned int flags);
 
 typedef int (*virDomainObjListRenameCallback)(virDomainObjPtr dom,
                                               const char *new_name,
