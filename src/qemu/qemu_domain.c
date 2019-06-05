@@ -7055,6 +7055,61 @@ virDomainDefParserConfig virQEMUDriverDomainDefParserConfig = {
 };
 
 
+/**
+ * qemuDomainObjListAdd:
+ * @driver: qemu driver
+ * @def: domain definition
+ * @oldDef: previous domain definition
+ * @live: whether @def is live definition
+ * @flags: an bitwise-OR of virDomainObjListAdd flags
+ *
+ * Add a domain onto the list of domain object and sets its
+ * definition. If @oldDef is not NULL and there was pre-existing
+ * definition it's returned in @oldDef.
+ *
+ * In addition to that, if definition of an existing domain is
+ * changed a MODIFY job is acquired prior to that.
+ *
+ * Returns: domain object pointer on success,
+ *          NULL otherwise.
+ */
+virDomainObjPtr
+qemuDomainObjListAdd(virQEMUDriverPtr driver,
+                     virDomainDefPtr def,
+                     virDomainDefPtr *oldDef,
+                     bool live,
+                     unsigned int flags)
+{
+    virDomainObjPtr vm = NULL;
+
+    if (!(vm = virDomainObjListAdd(driver->domains, def, driver->xmlopt, flags)))
+        return NULL;
+
+    /* At this point, @vm is locked. If it doesn't have any
+     * definition set, then the call above just added it and
+     * there can't be anybody else using the object. It's safe to
+     * just set the definition without acquiring job. */
+    if (!vm->def) {
+        virDomainObjAssignDef(vm, def, live, oldDef);
+        VIR_RETURN_PTR(vm);
+    }
+
+    /* Bad luck. Domain was pre-existing and this call is trying
+     * to update its definition. Modify job MUST be acquired. */
+    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0) {
+        qemuDomainRemoveInactive(driver, vm);
+        virDomainObjEndAPI(&vm);
+        return NULL;
+    }
+
+    virDomainObjAssignDef(vm, def, live, oldDef);
+
+    qemuDomainObjEndJob(driver, vm);
+
+    return vm;
+}
+
+
 static void
 qemuDomainObjSaveJob(virQEMUDriverPtr driver, virDomainObjPtr obj)
 {

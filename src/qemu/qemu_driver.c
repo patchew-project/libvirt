@@ -1701,12 +1701,9 @@ static virDomainPtr qemuDomainCreateXML(virConnectPtr conn,
     if (virDomainCreateXMLEnsureACL(conn, def) < 0)
         goto cleanup;
 
-    if (!(vm = virDomainObjListAdd(driver->domains, def,
-                                   driver->xmlopt,
-                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
+    if (!(vm = qemuDomainObjListAdd(driver, def, NULL, true,
+                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
-
-    virDomainObjAssignDef(vm, def, true, NULL);
     def = NULL;
 
     if (qemuProcessBeginJob(driver, vm, VIR_DOMAIN_JOB_OPERATION_START,
@@ -2405,6 +2402,7 @@ static int qemuDomainSetMemoryStatsPeriod(virDomainPtr dom, int period,
 
         qemuDomainObjEnterMonitor(driver, vm);
         r = qemuMonitorSetMemoryStatsPeriod(priv->mon, def->memballoon, period);
+        sleep(60);
         if (qemuDomainObjExitMonitor(driver, vm) < 0)
             goto endjob;
         if (r < 0) {
@@ -6971,12 +6969,9 @@ qemuDomainRestoreFlags(virConnectPtr conn,
         def = tmp;
     }
 
-    if (!(vm = virDomainObjListAdd(driver->domains, def,
-                                   driver->xmlopt,
-                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
+    if (!(vm = qemuDomainObjListAdd(driver, def, NULL, true,
+                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
-
-    virDomainObjAssignDef(vm, def, true, NULL);
     def = NULL;
 
     if (flags & VIR_DOMAIN_SAVE_RUNNING)
@@ -7647,11 +7642,8 @@ qemuDomainDefineXMLFlags(virConnectPtr conn,
     if (virDomainDefineXMLFlagsEnsureACL(conn, def) < 0)
         goto cleanup;
 
-    if (!(vm = virDomainObjListAdd(driver->domains, def,
-                                   driver->xmlopt, 0)))
+    if (!(vm = qemuDomainObjListAdd(driver, def, &oldDef, false, 0)))
         goto cleanup;
-
-    virDomainObjAssignDef(vm, def, false, &oldDef);
     def = NULL;
 
     vm->persistent = 1;
@@ -16884,12 +16876,9 @@ static virDomainPtr qemuDomainQemuAttach(virConnectPtr conn,
     if (qemuAssignDeviceAliases(def, qemuCaps) < 0)
         goto cleanup;
 
-    if (!(vm = virDomainObjListAdd(driver->domains, def,
-                                   driver->xmlopt,
-                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
+    if (!(vm = qemuDomainObjListAdd(driver, def, NULL, true,
+                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
-
-    virDomainObjAssignDef(vm, def, true, NULL);
     def = NULL;
 
     if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0) {

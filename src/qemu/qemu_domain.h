@@ -543,6 +543,12 @@ void qemuDomainEventFlush(int timer, void *opaque);
 void qemuDomainEventEmitJobCompleted(virQEMUDriverPtr driver,
                                      virDomainObjPtr vm);
 
+virDomainObjPtr qemuDomainObjListAdd(virQEMUDriverPtr driver,
+                                     virDomainDefPtr def,
+                                     virDomainDefPtr *oldDef,
+                                     bool live,
+                                     unsigned int flags);
+
 int qemuDomainObjBeginJob(virQEMUDriverPtr driver,
                           virDomainObjPtr obj,
                           qemuDomainJob job)
