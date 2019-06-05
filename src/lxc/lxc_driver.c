@@ -444,7 +444,7 @@ lxcDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags)
         goto cleanup;
     }
 
-    if (!(vm = lxcDomainObjListAdd(driver, def, &oldDef, false, 0)))
+    if (!(vm = lxcDomainObjListAdd(driver, def, &oldDef, false, true, 0)))
         goto cleanup;
     def = NULL;
 
@@ -453,7 +453,7 @@ lxcDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags)
     if (virDomainSaveConfig(cfg->configDir, driver->caps,
                             vm->newDef ? vm->newDef : vm->def) < 0) {
         virDomainObjListRemove(driver->domains, vm);
-        goto cleanup;
+        goto endjob;
     }
 
     event = virDomainEventLifecycleNewFromObj(vm,
@@ -463,6 +463,9 @@ lxcDomainDefineXMLFlags(virConnectPtr conn, const char *xml, unsigned int flags)
                                      VIR_DOMAIN_EVENT_DEFINED_UPDATED);
 
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
+
+ endjob:
+    virLXCDomainObjEndJob(driver, vm);
 
  cleanup:
     virDomainDefFree(def);
@@ -1189,26 +1192,19 @@ lxcDomainCreateXMLWithFiles(virConnectPtr conn,
     }
 
 
-    if (!(vm = lxcDomainObjListAdd(driver, def, NULL, true,
+    if (!(vm = lxcDomainObjListAdd(driver, def, NULL, true, true,
                                    VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE)))
         goto cleanup;
     def = NULL;
-
-    if (virLXCDomainObjBeginJob(driver, vm, LXC_JOB_MODIFY) < 0) {
-        if (!vm->persistent)
-            virDomainObjListRemove(driver->domains, vm);
-        goto cleanup;
-    }
 
     if (virLXCProcessStart(conn, driver, vm,
                            nfiles, files,
                            (flags & VIR_DOMAIN_START_AUTODESTROY),
                            VIR_DOMAIN_RUNNING_BOOTED) < 0) {
         virDomainAuditStart(vm, "booted", false);
-        virLXCDomainObjEndJob(driver, vm);
         if (!vm->persistent)
             virDomainObjListRemove(driver->domains, vm);
-        goto cleanup;
+        goto endjob;
     }
 
     event = virDomainEventLifecycleNewFromObj(vm,
@@ -1218,6 +1214,7 @@ lxcDomainCreateXMLWithFiles(virConnectPtr conn,
 
     dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
 
+ endjob:
     virLXCDomainObjEndJob(driver, vm);
 
  cleanup:

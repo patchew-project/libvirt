@@ -101,6 +101,7 @@ lxcDomainObjListAdd(virLXCDriverPtr driver,
                     virDomainDefPtr def,
                     virDomainDefPtr *oldDef,
                     bool live,
+                    bool keepJob,
                     unsigned int flags);
 
 int
