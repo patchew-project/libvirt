@@ -96,6 +96,13 @@ extern virDomainXMLNamespace virLXCDriverDomainXMLNamespace;
 extern virDomainXMLPrivateDataCallbacks virLXCDriverPrivateDataCallbacks;
 extern virDomainDefParserConfig virLXCDriverDomainDefParserConfig;
 
+virDomainObjPtr
+lxcDomainObjListAdd(virLXCDriverPtr driver,
+                    virDomainDefPtr def,
+                    virDomainDefPtr *oldDef,
+                    bool live,
+                    unsigned int flags);
+
 int
 virLXCDomainObjBeginJob(virLXCDriverPtr driver,
                        virDomainObjPtr obj,
