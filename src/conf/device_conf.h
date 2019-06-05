@@ -181,6 +181,7 @@ struct _virDomainDeviceInfo {
      * locking the isolation group */
     bool isolationGroupLocked;
     char *vhost_user_binary;
+    int vhost_user_fd;
 };
 
 void virDomainDeviceInfoClear(virDomainDeviceInfoPtr info);
