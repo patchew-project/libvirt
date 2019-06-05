@@ -509,6 +509,10 @@ typedef enum { /* virQEMUCapsFlags grouping marker for syntax-check */
     QEMU_CAPS_QUERY_CURRENT_MACHINE, /* query-current-machine command */
     QEMU_CAPS_MACHINE_VIRT_IOMMU, /* -machine virt,iommu */
 
+    /* 330 */
+    QEMU_CAPS_DEVICE_VHOST_USER_GPU, /* -device vhost-user-gpu */
+    QEMU_CAPS_DEVICE_VHOST_USER_VGA, /* -device vhost-user-vga */
+
     QEMU_CAPS_LAST /* this must always be the last item */
 } virQEMUCapsFlags;
 
