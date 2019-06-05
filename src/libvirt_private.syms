@@ -105,7 +105,6 @@ virDomainDeviceCCWAddressIsValid;
 virDomainDeviceCCWAddressParseXML;
 virDomainDeviceDriveAddressParseXML;
 virDomainDeviceInfoAddressIsEqual;
-virDomainDeviceInfoCopy;
 virDomainDeviceSpaprVioAddressParseXML;
 virDomainDeviceUSBAddressParseXML;
 virDomainDeviceVirtioSerialAddressParseXML;
