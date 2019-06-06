@@ -1348,13 +1348,67 @@ GEN_TEST_FUNC(qemuMonitorJSONBlockCommit, "vdb", "/foo/bar1", "/foo/bar2", "back
 GEN_TEST_FUNC(qemuMonitorJSONDrivePivot, "vdb")
 GEN_TEST_FUNC(qemuMonitorJSONScreendump, "devicename", 1, "/foo/bar")
 GEN_TEST_FUNC(qemuMonitorJSONOpenGraphics, "spice", "spicefd", false)
-GEN_TEST_FUNC(qemuMonitorJSONNBDServerStart, "localhost", 12345, "test-alias")
 GEN_TEST_FUNC(qemuMonitorJSONNBDServerAdd, "vda", true)
 GEN_TEST_FUNC(qemuMonitorJSONDetachCharDev, "serial1")
 GEN_TEST_FUNC(qemuMonitorJSONBlockdevTrayOpen, "foodev", true)
 GEN_TEST_FUNC(qemuMonitorJSONBlockdevTrayClose, "foodev")
 GEN_TEST_FUNC(qemuMonitorJSONBlockdevMediumRemove, "foodev")
 GEN_TEST_FUNC(qemuMonitorJSONBlockdevMediumInsert, "foodev", "newnode")
+
+static int
+testQemuMonitorJSONqemuMonitorJSONNBDServerStart(const void *opaque)
+{
+    virDomainXMLOptionPtr xmlopt = (virDomainXMLOptionPtr) opaque;
+    qemuMonitorTestPtr test = qemuMonitorTestNewSimple(true, xmlopt);
+    int ret = -1;
+    virStorageNetHostDef server_tcp = {
+        .name = (char *)"localhost",
+        .port = 12345,
+        .transport = VIR_STORAGE_NET_HOST_TRANS_TCP,
+    };
+    virStorageNetHostDef server_unix = {
+        .socket = (char *)"/tmp/sock",
+        .transport = VIR_STORAGE_NET_HOST_TRANS_UNIX,
+    };
+
+    if (!test)
+        return -1;
+
+    if (qemuMonitorTestAddItemVerbatim(test,
+                                       "{\"execute\":\"nbd-server-start\","
+                                       " \"arguments\":{\"addr\":{"
+                                       "  \"type\":\"inet\",\"data\":{"
+                                       "   \"host\":\"localhost\","
+                                       "   \"port\":\"12345\"}},"
+                                       "  \"tls-creds\":\"test-alias\"},"
+                                       " \"id\":\"libvirt-1\"}",
+                                       NULL, "{\"return\":{}}") < 0)
+        goto cleanup;
+
+    if (qemuMonitorTestAddItemVerbatim(test,
+                                       "{\"execute\":\"nbd-server-start\","
+                                       " \"arguments\":{\"addr\":{"
+                                       "  \"type\":\"unix\",\"data\":{"
+                                       "   \"path\":\"/tmp/sock\"}},"
+                                       "  \"tls-creds\":\"test-alias\"},"
+                                       " \"id\":\"libvirt-2\"}",
+                                       NULL, "{\"return\":{}}") < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONNBDServerStart(qemuMonitorTestGetMonitor(test),
+                                      &server_tcp, "test-alias") < 0)
+        goto cleanup;
+
+    if (qemuMonitorJSONNBDServerStart(qemuMonitorTestGetMonitor(test),
+                                      &server_unix, "test-alias") < 0)
+        goto cleanup;
+
+    ret = 0;
+
+ cleanup:
+    qemuMonitorTestFree(test);
+    return ret;
+}
 
 static bool
 testQemuMonitorJSONqemuMonitorJSONQueryCPUsEqual(struct qemuMonitorQueryCpusEntry *a,
@@ -3014,7 +3068,6 @@ mymain(void)
     DO_TEST_GEN(qemuMonitorJSONDrivePivot);
     DO_TEST_GEN(qemuMonitorJSONScreendump);
     DO_TEST_GEN(qemuMonitorJSONOpenGraphics);
-    DO_TEST_GEN(qemuMonitorJSONNBDServerStart);
     DO_TEST_GEN(qemuMonitorJSONNBDServerAdd);
     DO_TEST_GEN(qemuMonitorJSONDetachCharDev);
     DO_TEST_GEN(qemuMonitorJSONBlockdevTrayOpen);
@@ -3036,6 +3089,7 @@ mymain(void)
     DO_TEST(qemuMonitorJSONGetDumpGuestMemoryCapability);
     DO_TEST(qemuMonitorJSONSendKeyHoldtime);
     DO_TEST(qemuMonitorSupportsActiveCommit);
+    DO_TEST(qemuMonitorJSONNBDServerStart);
 
     DO_TEST_CPU_DATA("host");
     DO_TEST_CPU_DATA("full");
