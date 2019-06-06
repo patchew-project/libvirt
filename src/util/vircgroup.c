@@ -1106,6 +1106,7 @@ virCgroupNewMachineSystemd(const char *name,
                            int *nicindexes,
                            const char *partition,
                            int controllers,
+                           unsigned int maxthreads,
                            virCgroupPtr *group)
 {
     int rv;
@@ -1122,7 +1123,8 @@ virCgroupNewMachineSystemd(const char *name,
                                       isContainer,
                                       nnicindexes,
                                       nicindexes,
-                                      partition)) < 0)
+                                      partition,
+                                      maxthreads)) < 0)
         return rv;
 
     if (controllers != -1)
@@ -1234,6 +1236,7 @@ virCgroupNewMachine(const char *name,
                     int *nicindexes,
                     const char *partition,
                     int controllers,
+                    unsigned int maxthreads,
                     virCgroupPtr *group)
 {
     int rv;
@@ -1250,6 +1253,7 @@ virCgroupNewMachine(const char *name,
                                          nicindexes,
                                          partition,
                                          controllers,
+                                         maxthreads,
                                          group)) == 0)
         return 0;
 
