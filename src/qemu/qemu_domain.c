@@ -4173,15 +4173,24 @@ qemuDomainDefValidate(const virDomainDef *def,
     if (virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_HOTPLUGGABLE_CPUS)) {
         unsigned int topologycpus;
         unsigned int granularity;
+        unsigned int numacpus;
 
         /* Starting from QEMU 2.5, max vCPU count and overall vCPU topology
          * must agree. We only actually enforce this with QEMU 2.7+, due
          * to the capability check above */
-        if (virDomainDefGetVcpusTopology(def, &topologycpus) == 0 &&
-            topologycpus != virDomainDefGetVcpusMax(def)) {
-            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
-                           _("CPU topology doesn't match maximum vcpu count"));
-            goto cleanup;
+        if (virDomainDefGetVcpusTopology(def, &topologycpus) == 0) {
+            if (topologycpus != virDomainDefGetVcpusMax(def)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("CPU topology doesn't match maximum vcpu count"));
+                goto cleanup;
+            }
+
+            numacpus = virDomainNumaGetCPUCountTotal(def->numa);
+            if ((numacpus != 0) && (topologycpus != numacpus)) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                               _("CPU topology doesn't match numa CPU count"));
+                goto cleanup;
+            }
         }
 
         /* vCPU hotplug granularity must be respected */
