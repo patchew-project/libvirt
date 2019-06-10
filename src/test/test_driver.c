@@ -1453,6 +1453,14 @@ static char *testConnectGetHostname(virConnectPtr conn ATTRIBUTE_UNUSED)
 }
 
 
+static int testConnectGetLibVersion(virConnectPtr conn ATTRIBUTE_UNUSED,
+                                    unsigned long *libVer)
+{
+    *libVer = LIBVIR_VERSION_NUMBER;
+    return 0;
+}
+
+
 static int testConnectIsSecure(virConnectPtr conn ATTRIBUTE_UNUSED)
 {
     return 1;
@@ -6988,6 +6996,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .connectClose = testConnectClose, /* 0.1.1 */
     .connectGetVersion = testConnectGetVersion, /* 0.1.1 */
     .connectGetHostname = testConnectGetHostname, /* 0.6.3 */
+    .connectGetLibVersion = testConnectGetLibVersion, /* 5.5.0 */
     .connectGetMaxVcpus = testConnectGetMaxVcpus, /* 0.3.2 */
     .nodeGetInfo = testNodeGetInfo, /* 0.1.1 */
     .nodeGetCPUStats = testNodeGetCPUStats, /* 2.3.0 */
