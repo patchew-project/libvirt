@@ -19002,7 +19002,7 @@ virDomainResctrlParseVcpus(virDomainDefPtr def,
 static int
 virDomainResctrlVcpuMatch(virDomainDefPtr def,
                           virBitmapPtr vcpus,
-                          virResctrlAllocPtr *alloc)
+                          virDomainResctrlDefPtr *resctrl)
 {
     ssize_t i = 0;
 
@@ -19011,7 +19011,7 @@ virDomainResctrlVcpuMatch(virDomainDefPtr def,
          * Just updating memory allocation information of that group
          */
         if (virBitmapEqual(def->resctrls[i]->vcpus, vcpus)) {
-            *alloc = virObjectRef(def->resctrls[i]->alloc);
+            *resctrl = def->resctrls[i];
             break;
         }
         if (virBitmapOverlaps(def->resctrls[i]->vcpus, vcpus)) {
@@ -19342,17 +19342,17 @@ virDomainCachetuneDefParse(virDomainDefPtr def,
         return -1;
     }
 
-    if (virDomainResctrlVcpuMatch(def, vcpus, &alloc) < 0)
+    if (virDomainResctrlVcpuMatch(def, vcpus, &resctrl) < 0)
         return -1;
 
-    if (!alloc) {
-        if (!(alloc = virResctrlAllocNew()))
-            return -1;
-    } else {
+    if (resctrl) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
                        _("Identical vcpus in cachetunes found"));
         return -1;
     }
+
+    if (!(alloc = virResctrlAllocNew()))
+        return -1;
 
     for (i = 0; i < n; i++) {
         if (virDomainCachetuneDefParseCache(ctxt, nodes[i], alloc) < 0)
@@ -19528,7 +19528,6 @@ virDomainMemorytuneDefParse(virDomainDefPtr def,
     ssize_t i = 0;
     int n;
     int ret = -1;
-    bool new_alloc = false;
 
     ctxt->node = node;
 
@@ -19544,13 +19543,14 @@ virDomainMemorytuneDefParse(virDomainDefPtr def,
         return -1;
     }
 
-    if (virDomainResctrlVcpuMatch(def, vcpus, &alloc) < 0)
+    if (virDomainResctrlVcpuMatch(def, vcpus, &resctrl) < 0)
         return -1;
 
-    if (!alloc) {
+    if (resctrl) {
+        alloc = virObjectRef(resctrl->alloc);
+    } else {
         if (!(alloc = virResctrlAllocNew()))
             return -1;
-        new_alloc = true;
     }
 
     for (i = 0; i < n; i++) {
@@ -19565,7 +19565,7 @@ virDomainMemorytuneDefParse(virDomainDefPtr def,
      * If this is a new allocation, format ID and append to resctrl, otherwise
      * just update the existing alloc information, which is done in above
      * virDomainMemorytuneDefParseMemory */
-    if (new_alloc) {
+    if (!resctrl) {
         if (!(resctrl = virDomainResctrlNew(node, alloc, vcpus, flags)))
             return -1;
 
