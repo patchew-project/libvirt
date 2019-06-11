@@ -2758,6 +2758,7 @@ virResctrlAllocForeachMemory;
 virResctrlAllocFormat;
 virResctrlAllocGetID;
 virResctrlAllocGetUnused;
+virResctrlAllocIsEmpty;
 virResctrlAllocNew;
 virResctrlAllocRemove;
 virResctrlAllocSetCacheSize;
