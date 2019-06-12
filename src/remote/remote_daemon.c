@@ -1464,14 +1464,14 @@ int main(int argc, char **argv) {
     /* Keep cleanup order in inverse order of startup */
     virNetDaemonClose(dmn);
 
-    virNetlinkEventServiceStopAll();
-
     if (driversInitialized) {
         /* NB: Possible issue with timing window between driversInitialized
          * setting if virNetlinkEventServerStart fails */
         driversInitialized = false;
         virStateCleanup();
     }
+
+    virNetlinkEventServiceStopAll();
 
     virObjectUnref(adminProgram);
     virObjectUnref(srvAdm);
