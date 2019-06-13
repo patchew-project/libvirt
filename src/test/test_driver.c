@@ -1474,6 +1474,7 @@ static int testConnectGetMaxVcpus(virConnectPtr conn ATTRIBUTE_UNUSED,
     return 32;
 }
 
+
 static char *
 testConnectBaselineCPU(virConnectPtr conn ATTRIBUTE_UNUSED,
                        const char **xmlCPUs,
@@ -2497,6 +2498,50 @@ testDomainGetMaxVcpus(virDomainPtr domain)
     return testDomainGetVcpusFlags(domain, (VIR_DOMAIN_AFFECT_LIVE |
                                             VIR_DOMAIN_VCPU_MAXIMUM));
 }
+
+
+#define TEST_ASSIGN_MEM_PARAM(index, name, value) \
+    if (index < *nparams && \
+        virTypedParameterAssign(&params[index], name, VIR_TYPED_PARAM_ULLONG, \
+                                value) < 0) \
+        goto cleanup
+
+static int
+testDomainGetMemoryParameters(virDomainPtr dom,
+                              virTypedParameterPtr params,
+                              int *nparams,
+                              unsigned int flags)
+{
+    int ret = -1;
+    virDomainObjPtr vm = NULL;
+
+    virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
+                  VIR_DOMAIN_AFFECT_CONFIG |
+                  VIR_TYPED_PARAM_STRING_OKAY, -1);
+
+    if ((*nparams) == 0) {
+        *nparams = 3;
+        return 0;
+    }
+
+    if (!(vm = testDomObjFromDomain(dom)))
+        goto cleanup;
+
+    TEST_ASSIGN_MEM_PARAM(0, VIR_DOMAIN_MEMORY_HARD_LIMIT, vm->def->mem.hard_limit);
+    TEST_ASSIGN_MEM_PARAM(1, VIR_DOMAIN_MEMORY_SOFT_LIMIT, vm->def->mem.soft_limit);
+    TEST_ASSIGN_MEM_PARAM(2, VIR_DOMAIN_MEMORY_SWAP_HARD_LIMIT, vm->def->mem.swap_hard_limit);
+
+    if (*nparams > 3)
+        *nparams = 3;
+
+    ret = 0;
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+#undef TEST_ASSIGN_MEM_PARAM
+
 
 static int
 testDomainSetVcpusFlags(virDomainPtr domain, unsigned int nrCpus,
@@ -7162,6 +7207,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainGetVcpus = testDomainGetVcpus, /* 0.7.3 */
     .domainGetVcpuPinInfo = testDomainGetVcpuPinInfo, /* 1.2.18 */
     .domainGetMaxVcpus = testDomainGetMaxVcpus, /* 0.7.3 */
+    .domainGetMemoryParameters = testDomainGetMemoryParameters, /* 5.5.0 */
     .domainGetXMLDesc = testDomainGetXMLDesc, /* 0.1.4 */
     .connectListDefinedDomains = testConnectListDefinedDomains, /* 0.1.11 */
     .connectNumOfDefinedDomains = testConnectNumOfDefinedDomains, /* 0.1.11 */
