@@ -16799,92 +16799,15 @@ static int qemuDomainQemuMonitorCommand(virDomainPtr domain, const char *cmd,
 }
 
 
-static virDomainPtr qemuDomainQemuAttach(virConnectPtr conn,
-                                         unsigned int pid_value,
+static virDomainPtr qemuDomainQemuAttach(virConnectPtr conn ATTRIBUTE_UNUSED,
+                                         unsigned int pid_value ATTRIBUTE_UNUSED,
                                          unsigned int flags)
 {
-    virQEMUDriverPtr driver = conn->privateData;
-    virDomainObjPtr vm = NULL;
-    virDomainDefPtr def = NULL;
-    virDomainPtr dom = NULL;
-    virDomainChrSourceDefPtr monConfig = NULL;
-    bool monJSON = false;
-    pid_t pid = pid_value;
-    char *pidfile = NULL;
-    virQEMUCapsPtr qemuCaps = NULL;
-    virCapsPtr caps = NULL;
-
     virCheckFlags(0, NULL);
 
-    if (!(caps = virQEMUDriverGetCapabilities(driver, false)))
-        goto cleanup;
-
-    if (!(def = qemuParseCommandLinePid(driver->qemuCapsCache,
-                                        caps, driver->xmlopt, pid,
-                                        &pidfile, &monConfig, &monJSON)))
-        goto cleanup;
-
-    if (virDomainQemuAttachEnsureACL(conn, def) < 0)
-        goto cleanup;
-
-    if (!monConfig) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("No monitor connection for pid %u"), pid_value);
-        goto cleanup;
-    }
-    if (monConfig->type != VIR_DOMAIN_CHR_TYPE_UNIX) {
-        virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
-                       _("Cannot connect to monitor connection of type '%s' "
-                         "for pid %u"),
-                       virDomainChrTypeToString(monConfig->type),
-                       pid_value);
-        goto cleanup;
-    }
-
-    if (!(def->name) &&
-        virAsprintf(&def->name, "attach-pid-%u", pid_value) < 0)
-        goto cleanup;
-
-    if (!(qemuCaps = virQEMUCapsCacheLookup(driver->qemuCapsCache,
-                                            def->emulator)))
-        goto cleanup;
-
-    if (qemuAssignDeviceAliases(def, qemuCaps) < 0)
-        goto cleanup;
-
-    if (!(vm = virDomainObjListAdd(driver->domains, def,
-                                   driver->xmlopt,
-                                   VIR_DOMAIN_OBJ_LIST_ADD_LIVE |
-                                   VIR_DOMAIN_OBJ_LIST_ADD_CHECK_LIVE,
-                                   NULL)))
-        goto cleanup;
-
-    def = NULL;
-
-    if (qemuDomainObjBeginJob(driver, vm, QEMU_JOB_MODIFY) < 0) {
-        qemuDomainRemoveInactive(driver, vm);
-        goto cleanup;
-    }
-
-    if (qemuProcessAttach(conn, driver, vm, pid,
-                          pidfile, monConfig, monJSON) < 0) {
-        qemuDomainRemoveInactive(driver, vm);
-        qemuDomainObjEndJob(driver, vm);
-        goto cleanup;
-    }
-
-    dom = virGetDomain(conn, vm->def->name, vm->def->uuid, vm->def->id);
-
-    qemuDomainObjEndJob(driver, vm);
-
- cleanup:
-    virDomainDefFree(def);
-    virObjectUnref(monConfig);
-    virDomainObjEndAPI(&vm);
-    VIR_FREE(pidfile);
-    virObjectUnref(caps);
-    virObjectUnref(qemuCaps);
-    return dom;
+    virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
+                   _("attaching to a non-libvirt qemu process is no longer supported"));
+    return NULL;
 }
 
 
