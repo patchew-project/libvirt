@@ -22,22 +22,6 @@
 #ifndef LIBVIRT_QEMU_PARSE_COMMAND_H
 # define LIBVIRT_QEMU_PARSE_COMMAND_H
 
-# include "virfilecache.h"
-
-# define QEMU_QXL_VGAMEM_DEFAULT 16 * 1024
-
-/*
- * NB: def->name can be NULL upon return and the caller
- * *must* decide how to fill in a name in this case
- */
-virDomainDefPtr qemuParseCommandLineString(virFileCachePtr capsCache,
-                                           virCapsPtr caps,
-                                           virDomainXMLOptionPtr xmlopt,
-                                           const char *args,
-                                           char **pidfile,
-                                           virDomainChrSourceDefPtr *monConfig,
-                                           bool *monJSON);
-
 void
 qemuParseKeywordsFree(int nkeywords,
                      char **keywords,

@@ -76,6 +76,8 @@
 
 #define VIR_FROM_THIS VIR_FROM_QEMU
 
+#define QEMU_QXL_VGAMEM_DEFAULT 16 * 1024
+
 VIR_LOG_INIT("qemu.qemu_domain");
 
 #define QEMU_NAMESPACE_HREF "http://libvirt.org/schemas/domain/qemu/1.0"
