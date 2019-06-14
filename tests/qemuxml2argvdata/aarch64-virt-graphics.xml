@@ -12,7 +12,6 @@
   <os>
     <type arch='aarch64' machine='virt'>hvm</type>
     <loader readonly='yes' type='pflash'>/usr/share/AAVMF/AAVMF_CODE.fd</loader>
-    <nvram>/var/lib/libvirt/qemu/nvram/guest_VARS.fd</nvram>
     <boot dev='hd'/>
   </os>
   <features>
@@ -42,6 +41,7 @@
     <video>
       <model type='virtio'/>
     </video>
+    <memballoon model='virtio'/>
     <rng model='virtio'>
       <backend model='random'>/dev/urandom</backend>
     </rng>
