@@ -35,7 +35,7 @@
       <target index='0'/>
     </controller>
     <controller type='scsi' index='0' model='ibmvscsi'>
-      <address type='spapr-vio' reg='0x2000'/>
+      <address type='spapr-vio' reg='0x00002000'/>
     </controller>
     <input type='keyboard' bus='usb'/>
     <input type='mouse' bus='usb'/>
