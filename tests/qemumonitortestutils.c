@@ -546,7 +546,7 @@ qemuMonitorTestProcessCommandDefaultValidate(qemuMonitorTestPtr test,
     char *schemapath = NULL;
     int ret = -1;
 
-    if (!test->qapischema || !test->json || test->agent)
+    if (!test->qapischema)
         return 0;
 
     /* 'device_add' needs to be skipped as it does not have fully defined schema */
