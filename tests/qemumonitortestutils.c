@@ -1263,7 +1263,6 @@ qemuMonitorTestNew(bool json,
     test->qapischema = schema;
     if (!(test->mon = qemuMonitorOpen(test->vm,
                                       &src,
-                                      json,
                                       true,
                                       0,
                                       &qemuMonitorTestCallbacks,

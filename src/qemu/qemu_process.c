@@ -1895,7 +1895,6 @@ qemuConnectMonitor(virQEMUDriverPtr driver, virDomainObjPtr vm, int asyncJob,
 
     mon = qemuMonitorOpen(vm,
                           monConfig,
-                          true,
                           retry,
                           timeout,
                           &monitorCallbacks,
@@ -8447,7 +8446,7 @@ qemuProcessQMPConnectMonitor(qemuProcessQMPPtr proc)
 
     proc->vm->pid = proc->pid;
 
-    if (!(proc->mon = qemuMonitorOpen(proc->vm, &monConfig, true, true,
+    if (!(proc->mon = qemuMonitorOpen(proc->vm, &monConfig, true,
                                       0, &callbacks, NULL)))
         goto cleanup;
 
