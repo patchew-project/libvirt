@@ -697,30 +697,22 @@ sc_require_whitespace_in_translation:
 
 # Enforce recommended preprocessor indentation style.
 sc_preprocessor_indentation:
-	@if cppi --version >/dev/null 2>&1; then \
-	  $(VC_LIST_EXCEPT) | $(GREP) -E '\.[ch](\.in)?$$' | xargs cppi -a -c \
-	    || { echo '$(ME): incorrect preprocessor indentation' 1>&2; \
-		exit 1; }; \
-	else \
-	  echo '$(ME): skipping test $@: cppi not installed' 1>&2; \
-	fi
+	@$(VC_LIST_EXCEPT) | $(GREP) -E '\.[ch](\.in)?$$' | xargs cppi -a -c \
+	  || { echo '$(ME): incorrect preprocessor indentation' 1>&2; \
+	  exit 1; };
 
 # Enforce similar spec file indentation style, by running cppi on a
 # (comment-only) C file that mirrors the same layout as the spec file.
 sc_spec_indentation:
-	@if cppi --version >/dev/null 2>&1; then \
-	  for f in $$($(VC_LIST_EXCEPT) | $(GREP) '\.spec\.in$$'); do \
-	    $(SED) -e 's|#|// #|; s|%ifn*\(arch\)* |#if a // |' \
-		-e 's/%\(else\|endif\|define\)/#\1/' \
-		-e 's/^\( *\)\1\1\1#/#\1/' \
-		-e 's|^\( *[^#/ ]\)|// \1|; s|^\( */[^/]\)|// \1|' $$f \
-	    | cppi -a -c 2>&1 | $(SED) "s|standard input|$$f|"; \
-	  done | { if $(GREP) . >&2; then false; else :; fi; } \
-	    || { echo '$(ME): incorrect preprocessor indentation' 1>&2; \
-		exit 1; }; \
-	else \
-	  echo '$(ME): skipping test $@: cppi not installed' 1>&2; \
-	fi
+	@for f in $$($(VC_LIST_EXCEPT) | $(GREP) '\.spec\.in$$'); do \
+	  $(SED) -e 's|#|// #|; s|%ifn*\(arch\)* |#if a // |' \
+	  -e 's/%\(else\|endif\|define\)/#\1/' \
+	  -e 's/^\( *\)\1\1\1#/#\1/' \
+	  -e 's|^\( *[^#/ ]\)|// \1|; s|^\( */[^/]\)|// \1|' $$f \
+	  | cppi -a -c 2>&1 | $(SED) "s|standard input|$$f|"; \
+	done | { if $(GREP) . >&2; then false; else :; fi; } \
+	  || { echo '$(ME): incorrect preprocessor indentation' 1>&2; \
+	  exit 1; };
 
 # Nested conditionals are easier to understand if we enforce that endifs
 # can be paired back to the if
