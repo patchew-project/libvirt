@@ -22,8 +22,6 @@
 #ifndef LIBVIRT_QEMU_PARSE_COMMAND_H
 # define LIBVIRT_QEMU_PARSE_COMMAND_H
 
-# define QEMU_QXL_VGAMEM_DEFAULT 16 * 1024
-
 void
 qemuParseKeywordsFree(int nkeywords,
                      char **keywords,
