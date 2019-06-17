@@ -695,6 +695,11 @@ sc_require_whitespace_in_translation:
 	  { echo '$(ME): missing whitespace at line split' 1>&2; \
 	    exit 1; } || :
 
+cppi_banner = \
+	" *****************************************************\n" \
+	"* cppi not installed, some checks have been skipped *\n" \
+	"*****************************************************"
+
 # Enforce recommended preprocessor indentation style.
 sc_preprocessor_indentation:
 	@if cppi --version >/dev/null 2>&1; then \
@@ -702,7 +707,7 @@ sc_preprocessor_indentation:
 	    || { echo '$(ME): incorrect preprocessor indentation' 1>&2; \
 		exit 1; }; \
 	else \
-	  echo '$(ME): skipping test $@: cppi not installed' 1>&2; \
+	  echo -e "$(ME): skipping test $@:\n"$(cppi_banner) 1>&2; \
 	fi
 
 # Enforce similar spec file indentation style, by running cppi on a
@@ -719,7 +724,7 @@ sc_spec_indentation:
 	    || { echo '$(ME): incorrect preprocessor indentation' 1>&2; \
 		exit 1; }; \
 	else \
-	  echo '$(ME): skipping test $@: cppi not installed' 1>&2; \
+	  echo -e "$(ME): skipping test $@:\n"$(cppi_banner) 1>&2; \
 	fi
 
 # Nested conditionals are easier to understand if we enforce that endifs
