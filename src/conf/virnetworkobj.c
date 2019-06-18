@@ -1750,6 +1750,7 @@ virNetworkObjDeleteAllPorts(virNetworkObjPtr net,
 
     ret = 0;
  cleanup:
+    VIR_DIR_CLOSE(dh);
     return ret;
 }
 
