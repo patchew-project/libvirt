@@ -1161,7 +1161,7 @@ virHostdevUpdateActiveUSBDevices(virHostdevManagerPtr mgr,
     virObjectLock(mgr->activeUSBHostdevs);
     for (i = 0; i < nhostdevs; i++) {
         virDomainHostdevSubsysUSBPtr usbsrc;
-        virUSBDevicePtr usb = NULL;
+        VIR_AUTOPTR(virUSBDevice) usb = NULL;
         hostdev = hostdevs[i];
         usbsrc = &hostdev->source.subsys.u.usb;
 
@@ -1178,10 +1178,9 @@ virHostdevUpdateActiveUSBDevices(virHostdevManagerPtr mgr,
 
         virUSBDeviceSetUsedBy(usb, drv_name, dom_name);
 
-        if (virUSBDeviceListAdd(mgr->activeUSBHostdevs, &usb) < 0) {
-            virUSBDeviceFree(usb);
+        if (virUSBDeviceListAdd(mgr->activeUSBHostdevs, &usb) < 0)
             goto cleanup;
-        }
+        usb = NULL;
     }
     ret = 0;
  cleanup:
@@ -1197,7 +1196,7 @@ virHostdevUpdateActiveSCSIHostDevices(virHostdevManagerPtr mgr,
                                       const char *dom_name)
 {
     virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
-    virSCSIDevicePtr scsi = NULL;
+    VIR_AUTOPTR(virSCSIDevice) scsi = NULL;
     virSCSIDevicePtr tmp = NULL;
 
     if (!(scsi = virSCSIDeviceNew(NULL,
@@ -1207,17 +1206,13 @@ virHostdevUpdateActiveSCSIHostDevices(virHostdevManagerPtr mgr,
         return -1;
 
     if ((tmp = virSCSIDeviceListFind(mgr->activeSCSIHostdevs, scsi))) {
-        if (virSCSIDeviceSetUsedBy(tmp, drv_name, dom_name) < 0) {
-            virSCSIDeviceFree(scsi);
+        if (virSCSIDeviceSetUsedBy(tmp, drv_name, dom_name) < 0)
             return -1;
-        }
-        virSCSIDeviceFree(scsi);
     } else {
         if (virSCSIDeviceSetUsedBy(scsi, drv_name, dom_name) < 0 ||
-            virSCSIDeviceListAdd(mgr->activeSCSIHostdevs, scsi) < 0) {
-            virSCSIDeviceFree(scsi);
+            virSCSIDeviceListAdd(mgr->activeSCSIHostdevs, scsi) < 0)
             return -1;
-        }
+        scsi = NULL;
     }
     return 0;
 }
@@ -1472,7 +1467,7 @@ virHostdevPrepareUSBDevices(virHostdevManagerPtr mgr,
     for (i = 0; i < nhostdevs; i++) {
         virDomainHostdevDefPtr hostdev = hostdevs[i];
         bool required = true;
-        virUSBDevicePtr usb;
+        VIR_AUTOPTR(virUSBDevice) usb = NULL;
 
         if (hostdev->mode != VIR_DOMAIN_HOSTDEV_MODE_SUBSYS)
             continue;
@@ -1487,10 +1482,9 @@ virHostdevPrepareUSBDevices(virHostdevManagerPtr mgr,
         if (virHostdevFindUSBDevice(hostdev, required, &usb) < 0)
             return -1;
 
-        if (usb && virUSBDeviceListAdd(list, &usb) < 0) {
-            virUSBDeviceFree(usb);
+        if (usb && virUSBDeviceListAdd(list, &usb) < 0)
             return -1;
-        }
+        usb = NULL;
     }
 
     /* Mark devices in temporary list as used by @dom_name
@@ -1518,7 +1512,7 @@ virHostdevPrepareSCSIHostDevices(virDomainHostdevDefPtr hostdev,
                                  virSCSIDeviceListPtr list)
 {
     virDomainHostdevSubsysSCSIHostPtr scsihostsrc = &scsisrc->u.host;
-    virSCSIDevicePtr scsi;
+    VIR_AUTOPTR(virSCSIDevice) scsi = NULL;
 
     if (hostdev->managed) {
         virReportError(VIR_ERR_XML_ERROR, "%s",
@@ -1532,10 +1526,9 @@ virHostdevPrepareSCSIHostDevices(virDomainHostdevDefPtr hostdev,
                                   hostdev->readonly, hostdev->shareable)))
         return -1;
 
-    if (virSCSIDeviceListAdd(list, scsi) < 0) {
-        virSCSIDeviceFree(scsi);
+    if (virSCSIDeviceListAdd(list, scsi) < 0)
         return -1;
-    }
+    scsi = NULL;
 
     return 0;
 }
@@ -1746,7 +1739,7 @@ virHostdevPrepareMediatedDevices(virHostdevManagerPtr mgr,
     for (i = 0; i < nhostdevs; i++) {
         virDomainHostdevDefPtr hostdev = hostdevs[i];
         virDomainHostdevSubsysMediatedDevPtr src = &hostdev->source.subsys.u.mdev;
-        virMediatedDevicePtr mdev;
+        VIR_AUTOPTR(virMediatedDevice) mdev = NULL;
 
         if (!virHostdevIsMdevDevice(hostdev))
             continue;
@@ -1754,10 +1747,9 @@ virHostdevPrepareMediatedDevices(virHostdevManagerPtr mgr,
         if (!(mdev = virMediatedDeviceNew(src->uuidstr, src->model)))
             return -1;
 
-        if (virMediatedDeviceListAdd(list, &mdev) < 0) {
-            virMediatedDeviceFree(mdev);
+        if (virMediatedDeviceListAdd(list, &mdev) < 0)
             return -1;
-        }
+        mdev = NULL;
     }
 
     /* Mark the devices in the list as used by @drv_name-@dom_name and copy the
