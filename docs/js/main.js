@@ -28,7 +28,54 @@ function pageload() {
     advancedSearch.className = "advancedsearch"
 
     simpleSearch = document.getElementById("simplesearch")
-    simplesearch.addEventListener("submit", advancedsearch)
+    simpleSearch.addEventListener("submit", advancedsearch)
+
+    docLoc = document.location;
+    if (docLoc.protocol != "file:" ||
+        docLoc.origin != "null" ||
+        docLoc.host !== "" ||
+        docLoc.hostname !== "") {
+        fetchRSS()
+    }
+}
+
+function fetchRSS() {
+    cb = "jsonpRSSFeedCallback"
+    window["jsonpRSSFeedCallback"] = function (data) {
+        if (data.responseStatus != 200)
+            return
+        entries = data.responseData.feed.entries
+        nEntries = Math.min(entries.length, 4)
+
+        dl = document.createElement('dl')
+
+        dateOpts = { day: 'numeric', month: 'short', year: 'numeric'}
+
+        for (i = 0; i < nEntries; i++) {
+            entry = entries[i]
+            a = document.createElement('a')
+            a.href = entry.link
+            a.innerText = entry.title
+
+            dt = document.createElement('dt')
+            dt.appendChild(a)
+            dl.appendChild(dt)
+
+            date = new Date(entry.publishedDate)
+            datestr = date.toLocaleDateString('default', dateOpts)
+
+            dd = document.createElement('dd')
+            dd.innerText = ` by ${entry.author} on ${datestr}`
+
+            dl.appendChild(dd)
+        }
+
+        planet.appendChild(dl);
+    };
+    script = document.createElement("script")
+    script.src = "https://feedrapp.herokuapp.com/"
+    script.src += `?q=http%3A%2F%2Fplanet.virt-tools.org%2Fatom.xml&callback=${cb}`
+    document.body.appendChild(script);
 }
 
 function advancedsearch(e) {

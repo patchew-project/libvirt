@@ -5,19 +5,6 @@
     <script type="text/javascript" src="js/jquery-3.1.1.min.js"> </script>
     <script type="text/javascript" src="js/moment.min.js"> </script>
     <script type="text/javascript" src="js/jquery.rss.min.js"> </script>
-
-    <script type="text/javascript">
-      <!--
-      jQuery(function($) {
-        $("#planet").rss("http://planet.virt-tools.org/atom.xml", {
-          ssl: true,
-          layoutTemplate: '<dl>{entries}</dl>',
-          entryTemplate: '<dt><a href="{url}">{title}</a></dt><dd>by {author} on {date}</li>',
-          dateFormat: 'DD MMM YYYY'
-        })
-      })
-      // -->
-    </script>
   </head>
   <body class="index">
     <h1>The virtualization API</h1>
