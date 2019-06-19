@@ -1150,10 +1150,9 @@ void qemuMonitorSetDomainLog(qemuMonitorPtr mon,
                              void *opaque,
                              virFreeCallback destroy);
 
-int qemuMonitorGetGuestCPU(qemuMonitorPtr mon,
-                           virArch arch,
-                           virCPUDataPtr *data,
-                           virCPUDataPtr *disabled);
+int qemuMonitorGetGuestCPUx86(qemuMonitorPtr mon,
+                              virCPUDataPtr *data,
+                              virCPUDataPtr *disabled);
 
 int qemuMonitorRTCResetReinjection(qemuMonitorPtr mon);
 
