@@ -3362,6 +3362,46 @@ virCPUx86DataAddFeature(virCPUDataPtr cpuData,
 }
 
 
+/**
+ * virCPUx86FeatureIsMSR:
+ * @name CPU feature name
+ * @opaque NULL or a pointer to bool
+ *
+ * This is a callback for functions filtering features in virCPUDef.
+ *
+ * Checks whether a given CPU feature is reported via MSR. When @opaque is NULL
+ * or a pointer to true, the function will pick out (return true for) MSR
+ * features. If @opaque is a pointer to false, the logic will be inverted and
+ * the function will filter out (return false for) MSR features.
+ */
+bool
+virCPUx86FeatureIsMSR(const char *name,
+                      void *opaque)
+{
+    virCPUx86FeaturePtr feature;
+    virCPUx86DataIterator iter;
+    virCPUx86DataItemPtr item;
+    virCPUx86MapPtr map;
+    bool inverted = false;
+
+    if (opaque)
+        inverted = !*(bool *)opaque;
+
+    if ((!(map = virCPUx86GetMap()) ||
+         !(feature = x86FeatureFind(map, name))) &&
+        !(feature = x86FeatureFindInternal(name)))
+        return inverted ? true : false;
+
+    virCPUx86DataIteratorInit(&iter, &feature->data);
+    while ((item = virCPUx86DataNext(&iter))) {
+        if (item->type == VIR_CPU_X86_DATA_MSR)
+            return inverted ? false : true;
+    }
+
+    return inverted ? true : false;
+}
+
+
 struct cpuArchDriver cpuDriverX86 = {
     .name = "x86",
     .arch = archs,
