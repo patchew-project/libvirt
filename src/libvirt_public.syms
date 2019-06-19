@@ -820,17 +820,32 @@ LIBVIRT_5.2.0 {
 } LIBVIRT_4.10.0;
 
 LIBVIRT_5.5.0 {
+    global:
+        virDomainCheckpointCreateXML;
+        virDomainCheckpointCurrent;
+        virDomainCheckpointDelete;
+        virDomainCheckpointFree;
+        virDomainCheckpointGetConnect;
+        virDomainCheckpointGetDomain;
+        virDomainCheckpointGetName;
+        virDomainCheckpointGetParent;
+        virDomainCheckpointGetXMLDesc;
+        virDomainCheckpointIsCurrent;
+        virDomainCheckpointListAllChildren;
+        virDomainCheckpointLookupByName;
+        virDomainCheckpointRef;
+        virDomainListAllCheckpoints;
         virNetworkListAllPorts;
-        virNetworkPortLookupByUUID;
-        virNetworkPortLookupByUUIDString;
         virNetworkPortCreateXML;
-        virNetworkPortGetNetwork;
-        virNetworkPortGetParameters;
-        virNetworkPortGetXMLDesc;
-        virNetworkPortGetUUID;
-        virNetworkPortGetUUIDString;
         virNetworkPortDelete;
         virNetworkPortFree;
+        virNetworkPortGetNetwork;
+        virNetworkPortGetParameters;
+        virNetworkPortGetUUID;
+        virNetworkPortGetUUIDString;
+        virNetworkPortGetXMLDesc;
+        virNetworkPortLookupByUUID;
+        virNetworkPortLookupByUUIDString;
         virNetworkPortSetParameters;
 } LIBVIRT_5.2.0;
 
