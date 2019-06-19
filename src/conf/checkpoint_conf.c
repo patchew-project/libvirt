@@ -35,6 +35,7 @@
 #include "virerror.h"
 #include "virxml.h"
 #include "virstring.h"
+#include "virdomaincheckpointobjlist.h"
 
 #define VIR_FROM_THIS VIR_FROM_DOMAIN_CHECKPOINT
 
@@ -572,4 +573,90 @@ virDomainCheckpointDefFormat(virDomainCheckpointDefPtr def,
         return NULL;
 
     return virBufferContentAndReset(&buf);
+}
+
+
+int
+virDomainCheckpointRedefinePrep(virDomainPtr domain,
+                                virDomainObjPtr vm,
+                                virDomainCheckpointDefPtr *defptr,
+                                virDomainMomentObjPtr *chk,
+                                virDomainXMLOptionPtr xmlopt,
+                                bool *update_current)
+{
+    virDomainCheckpointDefPtr def = *defptr;
+    char uuidstr[VIR_UUID_STRING_BUFLEN];
+    virDomainMomentObjPtr other;
+    virDomainCheckpointDefPtr otherdef;
+
+    virUUIDFormat(domain->uuid, uuidstr);
+
+    /* TODO: Move this and snapshot version into virDomainMoment */
+    /* Prevent circular chains */
+    if (def->parent.parent_name) {
+        if (STREQ(def->parent.name, def->parent.parent_name)) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("cannot set checkpoint %s as its own parent"),
+                           def->parent.name);
+            return -1;
+        }
+        other = virDomainCheckpointFindByName(vm->checkpoints,
+                                              def->parent.parent_name);
+        if (!other) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("parent %s for checkpoint %s not found"),
+                           def->parent.parent_name, def->parent.name);
+            return -1;
+        }
+        otherdef = virDomainCheckpointObjGetDef(other);
+        while (otherdef->parent.parent_name) {
+            if (STREQ(otherdef->parent.parent_name, def->parent.name)) {
+                virReportError(VIR_ERR_INVALID_ARG,
+                               _("parent %s would create cycle to %s"),
+                               otherdef->parent.name, def->parent.name);
+                return -1;
+            }
+            other = virDomainCheckpointFindByName(vm->checkpoints,
+                                                  otherdef->parent.parent_name);
+            if (!other) {
+                VIR_WARN("checkpoints are inconsistent for %s",
+                         vm->def->name);
+                break;
+            }
+            otherdef = virDomainCheckpointObjGetDef(other);
+        }
+    }
+
+    if (!def->parent.dom ||
+        memcmp(def->parent.dom->uuid, domain->uuid, VIR_UUID_BUFLEN)) {
+        virReportError(VIR_ERR_INVALID_ARG,
+                       _("definition for checkpoint %s must use uuid %s"),
+                       def->parent.name, uuidstr);
+        return -1;
+    }
+    if (virDomainCheckpointAlignDisks(def) < 0)
+        return -1;
+
+    other = virDomainCheckpointFindByName(vm->checkpoints, def->parent.name);
+    otherdef = other ? virDomainCheckpointObjGetDef(other) : NULL;
+    if (other) {
+        if (!virDomainDefCheckABIStability(otherdef->parent.dom,
+                                           def->parent.dom, xmlopt))
+            return -1;
+
+        if (other == virDomainCheckpointGetCurrent(vm->checkpoints)) {
+            *update_current = true;
+            virDomainCheckpointSetCurrent(vm->checkpoints, NULL);
+        }
+
+        /* Drop and rebuild the parent relationship, but keep all
+         * child relations by reusing chk.  */
+        virDomainMomentDropParent(other);
+        virObjectUnref(otherdef);
+        other->def = &(*defptr)->parent;
+        *defptr = NULL;
+        *chk = other;
+    }
+
+    return 0;
 }

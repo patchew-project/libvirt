@@ -31,8 +31,8 @@
 #include "viralloc.h"
 
 /* FIXME: using virObject would allow us to not need this */
-#include "snapshot_conf.h"
 #include "virdomainsnapshotobjlist.h"
+#include "virdomaincheckpointobjlist.h"
 
 #define VIR_FROM_THIS VIR_FROM_DOMAIN
 

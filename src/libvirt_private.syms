@@ -70,9 +70,12 @@ virCapabilitiesSetNetPrefix;
 
 
 # conf/checkpoint_conf.h
+virDomainCheckpointAlignDisks;
 virDomainCheckpointDefFormat;
 virDomainCheckpointDefNew;
 virDomainCheckpointDefParseString;
+virDomainCheckpointFormatConvertXMLFlags;
+virDomainCheckpointRedefinePrep;
 virDomainCheckpointTypeFromString;
 virDomainCheckpointTypeToString;
 
@@ -974,6 +977,21 @@ virStoragePoolEventStateRegisterID;
 virChrdevAlloc;
 virChrdevFree;
 virChrdevOpen;
+
+
+# conf/virdomaincheckpointobjlist.h
+virDomainCheckpointAssignDef;
+virDomainCheckpointFindByName;
+virDomainCheckpointForEach;
+virDomainCheckpointGetCurrent;
+virDomainCheckpointGetCurrentName;
+virDomainCheckpointObjListFree;
+virDomainCheckpointObjListNew;
+virDomainCheckpointObjListRemove;
+virDomainCheckpointObjListRemoveAll;
+virDomainCheckpointSetCurrent;
+virDomainCheckpointUpdateRelations;
+virDomainListCheckpoints;
 
 
 # conf/virdomainmomentobjlist.h
