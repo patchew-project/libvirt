@@ -2760,6 +2760,82 @@ int qemuMonitorJSONBlockResize(qemuMonitorPtr mon,
     return ret;
 }
 
+int qemuMonitorJSONUpdateCheckpointSize(qemuMonitorPtr mon,
+                                        virDomainCheckpointDefPtr chk)
+{
+    int ret = -1;
+    size_t i, j;
+    virJSONValuePtr devices;
+
+    if (!(devices = qemuMonitorJSONQueryBlock(mon)))
+        return -1;
+
+    for (i = 0; i < virJSONValueArraySize(devices); i++) {
+        virJSONValuePtr dev = virJSONValueArrayGet(devices, i);
+        virJSONValuePtr inserted;
+        virJSONValuePtr bitmaps = NULL;
+        const char *node;
+        virDomainCheckpointDiskDefPtr disk;
+
+        if (!(dev = qemuMonitorJSONGetBlockDev(devices, i)))
+            goto cleanup;
+
+        if (!(inserted = virJSONValueObjectGetObject(dev, "inserted")))
+            continue;
+        if (!(node = virJSONValueObjectGetString(inserted, "node-name"))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("query-block device entry was not in expected format"));
+            goto cleanup;
+        }
+
+        for (j = 0; j < chk->ndisks; j++) {
+            disk = &chk->disks[j];
+            if (disk->type != VIR_DOMAIN_CHECKPOINT_TYPE_BITMAP)
+                continue;
+            if (STREQ(chk->parent.dom->disks[disk->idx]->src->nodeformat, node))
+                break;
+        }
+        if (j == chk->ndisks) {
+            VIR_DEBUG("query-block did not find node %s", node);
+            continue;
+        }
+        if (!(bitmaps = virJSONValueObjectGetArray(dev, "dirty-bitmaps"))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("disk %s dirty bitmaps missing"), disk->name);
+            goto cleanup;
+        }
+        for (j = 0; j < virJSONValueArraySize(bitmaps); j++) {
+            virJSONValuePtr map = virJSONValueArrayGet(bitmaps, j);
+            const char *name;
+
+            if (!(name = virJSONValueObjectGetString(map, "name"))) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("dirty bitmaps entry was not in expected format"));
+                goto cleanup;
+            }
+            if (STRNEQ(name, disk->bitmap))
+                continue;
+            if (virJSONValueObjectGetNumberUlong(map, "count", &disk->size) < 0) {
+                virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                               _("invalid bitmap count"));
+                goto cleanup;
+            }
+            break;
+        }
+        if (j == virJSONValueArraySize(bitmaps)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR,
+                           _("disk %s dirty bitmap info missing"), disk->name);
+            goto cleanup;
+        }
+    }
+
+    ret = 0;
+
+ cleanup:
+    virJSONValueFree(devices);
+    return ret;
+}
+
 
 int qemuMonitorJSONSetPassword(qemuMonitorPtr mon,
                                const char *protocol,

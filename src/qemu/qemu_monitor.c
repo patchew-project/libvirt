@@ -2342,6 +2342,17 @@ qemuMonitorBlockStatsUpdateCapacityBlockdev(qemuMonitorPtr mon,
     return qemuMonitorJSONBlockStatsUpdateCapacityBlockdev(mon, stats);
 }
 
+/* Updates "chk" to fill in size of the associated bitmap */
+int qemuMonitorUpdateCheckpointSize(qemuMonitorPtr mon,
+                                    virDomainCheckpointDefPtr chk)
+{
+    VIR_DEBUG("chk=%p", chk);
+
+    QEMU_CHECK_MONITOR(mon);
+
+    return qemuMonitorJSONUpdateCheckpointSize(mon, chk);
+}
+
 int
 qemuMonitorBlockResize(qemuMonitorPtr mon,
                        const char *device,

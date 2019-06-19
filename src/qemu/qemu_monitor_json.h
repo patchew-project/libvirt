@@ -98,6 +98,9 @@ int qemuMonitorJSONBlockResize(qemuMonitorPtr mon,
                                const char *nodename,
                                unsigned long long size);
 
+int qemuMonitorJSONUpdateCheckpointSize(qemuMonitorPtr mon,
+                                        virDomainCheckpointDefPtr chk);
+
 int qemuMonitorJSONSetPassword(qemuMonitorPtr mon,
                                const char *protocol,
                                const char *password,
