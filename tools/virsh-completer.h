@@ -79,6 +79,10 @@ char ** virshSecretUUIDCompleter(vshControl *ctl,
                                  const vshCmd *cmd,
                                  unsigned int flags);
 
+char ** virshCheckpointNameCompleter(vshControl *ctl,
+                                     const vshCmd *cmd,
+                                     unsigned int flags);
+
 char ** virshSnapshotNameCompleter(vshControl *ctl,
                                    const vshCmd *cmd,
                                    unsigned int flags);
