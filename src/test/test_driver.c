@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <libxml/xmlsave.h>
 #include <libxml/xpathInternals.h>
+#include <arpa/inet.h>
 
 
 #include "virerror.h"
@@ -3380,6 +3381,11 @@ static int testDomainBlockStats(virDomainPtr domain,
     return ret;
 }
 
+
+static virNetworkObjPtr testNetworkObjFindByName(testDriverPtr privconn, const char *name);
+static virNetworkPtr testNetworkLookupByName(virConnectPtr conn, const char *name);
+
+
 static int
 testDomainInterfaceAddresses(virDomainPtr dom,
                              virDomainInterfacePtr **ifaces,
@@ -3388,11 +3394,18 @@ testDomainInterfaceAddresses(virDomainPtr dom,
 {
     size_t i;
     size_t ifaces_count = 0;
+    size_t addr_offset;
     int ret = -1;
     char macaddr[VIR_MAC_STRING_BUFLEN];
+    char ip_str[INET6_ADDRSTRLEN];
+    struct sockaddr_in ipv4_addr;
+    struct sockaddr_in6 ipv6_addr;
     virDomainObjPtr vm = NULL;
     virDomainInterfacePtr iface = NULL;
     virDomainInterfacePtr *ifaces_ret = NULL;
+    virNetworkPtr net = NULL;
+    virNetworkObjPtr net_obj = NULL;
+    virNetworkDefPtr net_obj_def = NULL;
 
     virCheckFlags(0, -1);
 
@@ -3413,6 +3426,16 @@ testDomainInterfaceAddresses(virDomainPtr dom,
         if (vm->def->nets[i]->type != VIR_DOMAIN_NET_TYPE_NETWORK)
             continue;
 
+        virObjectUnref(net);
+        if (!(net = testNetworkLookupByName(dom->conn,
+                                            vm->def->nets[i]->data.network.name)))
+            goto cleanup;
+
+        if (!(net_obj = testNetworkObjFindByName(net->conn->privateData, net->name)))
+            goto cleanup;
+
+        net_obj_def = virNetworkObjGetDef(net_obj);
+
         if (VIR_ALLOC(iface) < 0)
             goto cleanup;
 
@@ -3426,15 +3449,58 @@ testDomainInterfaceAddresses(virDomainPtr dom,
         if (VIR_ALLOC(iface->addrs) < 0)
             goto cleanup;
 
-        iface->addrs[0].type = VIR_IP_ADDR_TYPE_IPV4;
-        iface->addrs[0].prefix = 24;
-        if (virAsprintf(&iface->addrs[0].addr, "192.168.0.%zu", 1 + i) < 0)
-            goto cleanup;
-
         iface->naddrs = 1;
+
+        if (net_obj_def->ips->family && STREQ(net_obj_def->ips->family, "ipv6"))
+            iface->addrs[0].type = VIR_IP_ADDR_TYPE_IPV6;
+        else
+            iface->addrs[0].type = VIR_IP_ADDR_TYPE_IPV4;
+
+        /* try using different addresses per different inf and domain */
+        addr_offset = 20 * (vm->def->id - 1) + i;
+
+        if (net_obj_def->ips->nranges > 0) {
+            /* use ip addresses from the defined DHCP range */
+
+            if (iface->addrs[0].type == VIR_IP_ADDR_TYPE_IPV6) {
+                ipv6_addr = net_obj_def->ips->ranges[0].start.data.inet6;
+                ipv6_addr.sin6_addr.s6_addr[15] += addr_offset;
+                inet_ntop(AF_INET6, &(ipv6_addr.sin6_addr), ip_str, INET6_ADDRSTRLEN);
+            } else {
+                ipv4_addr = net_obj_def->ips->ranges[0].start.data.inet4;
+                ipv4_addr.sin_addr.s_addr = htonl(ntohl(ipv4_addr.sin_addr.s_addr) +
+                                                  addr_offset);
+                inet_ntop(AF_INET, &(ipv4_addr.sin_addr), ip_str, INET_ADDRSTRLEN);
+            }
+
+            if (VIR_STRDUP(iface->addrs[0].addr, ip_str) < 0)
+                goto cleanup;
+
+            iface->addrs[0].prefix = virSocketAddrGetIPPrefix(
+                                         &net_obj_def->ips->ranges[0].start,
+                                         &net_obj_def->ips->netmask,
+                                         net_obj_def->ips->prefix);
+
+        } else {
+            /* use hard-coded addresses when a DHCP range isn't defined */
+
+            if (iface->addrs[0].type == VIR_IP_ADDR_TYPE_IPV6) {
+                iface->addrs[0].prefix = 64;
+                if (virAsprintf(&iface->addrs[0].addr, "fc00::%zu",
+                                1 + addr_offset) < 0)
+                    goto cleanup;
+            } else {
+                iface->addrs[0].prefix = 24;
+                if (virAsprintf(&iface->addrs[0].addr, "192.168.0.%zu",
+                                1 + addr_offset) < 0)
+                    goto cleanup;
+            }
+        }
 
         if (VIR_APPEND_ELEMENT(ifaces_ret, ifaces_count, iface) < 0)
             goto cleanup;
+
+        virNetworkObjEndAPI(&net_obj);
     }
 
     VIR_STEAL_PTR(*ifaces, ifaces_ret);
@@ -3442,6 +3508,8 @@ testDomainInterfaceAddresses(virDomainPtr dom,
 
  cleanup:
     virDomainObjEndAPI(&vm);
+    virNetworkObjEndAPI(&net_obj);
+    virObjectUnref(net);
 
     if (ifaces_ret) {
         for (i = 0; i < ifaces_count; i++)
