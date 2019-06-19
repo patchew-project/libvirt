@@ -128,4 +128,7 @@ qemuBlockSnapshotAddLegacy(virJSONValuePtr actions,
                            virStorageSourcePtr newsrc,
                            bool reuse);
 
+const char *
+qemuBlockNodeLookup(virDomainObjPtr vm, const char *disk);
+
 #endif /* LIBVIRT_QEMU_BLOCK_H */
