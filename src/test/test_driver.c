@@ -3409,10 +3409,10 @@ testDomainInterfaceAddresses(virDomainPtr dom,
     if (virDomainObjCheckActive(vm) < 0)
         goto cleanup;
 
-    if (VIR_ALLOC_N(ifaces_ret, vm->def->nnets) < 0)
-        goto cleanup;
-
     for (i = 0; i < vm->def->nnets; i++) {
+        if (vm->def->nets[i]->type != VIR_DOMAIN_NET_TYPE_NETWORK)
+            continue;
+
         if (VIR_ALLOC(iface) < 0)
             goto cleanup;
 
@@ -3433,7 +3433,8 @@ testDomainInterfaceAddresses(virDomainPtr dom,
 
         iface->naddrs = 1;
 
-        VIR_APPEND_ELEMENT_INPLACE(ifaces_ret, ifaces_count, iface);
+        if (VIR_APPEND_ELEMENT(ifaces_ret, ifaces_count, iface) < 0)
+            goto cleanup;
     }
 
     VIR_STEAL_PTR(*ifaces, ifaces_ret);
