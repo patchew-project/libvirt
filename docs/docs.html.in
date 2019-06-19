@@ -124,6 +124,11 @@
 
         <dt><a href="secureusage.html">Secure usage</a></dt>
         <dd>Secure usage of the libvirt APIs</dd>
+
+        <dt><a href="domainstatecapture.html">Domain state
+            capture</a></dt>
+        <dd>Comparison between different methods of capturing domain
+          state</dd>
       </dl>
     </div>
 
