@@ -3193,6 +3193,22 @@ virQEMUCapsInitHostCPUModel(virQEMUCapsPtr qemuCaps,
             goto error;
     }
 
+    if (ARCH_IS_X86(qemuCaps->arch) &&
+        !virQEMUCapsGet(qemuCaps, QEMU_CAPS_CPU_UNAVAILABLE_FEATURES)) {
+        bool selecting = false;
+        if (cpu &&
+            virCPUDefFilterFeatures(cpu, virCPUx86FeatureIsMSR, &selecting) < 0)
+            goto error;
+
+        if (migCPU &&
+            virCPUDefFilterFeatures(migCPU, virCPUx86FeatureIsMSR, &selecting) < 0)
+            goto error;
+
+        if (fullCPU &&
+            virCPUDefFilterFeatures(fullCPU, virCPUx86FeatureIsMSR, &selecting) < 0)
+            goto error;
+    }
+
     virQEMUCapsSetHostModel(qemuCaps, type, cpu, migCPU, fullCPU);
 
  cleanup:
