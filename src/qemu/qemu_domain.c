@@ -6871,6 +6871,9 @@ qemuDomainDeviceVideoDefPostParse(virDomainVideoDefPtr video,
     if (video->type == VIR_DOMAIN_VIDEO_TYPE_QXL &&
         !video->vgamem) {
         video->vgamem = QEMU_QXL_VGAMEM_DEFAULT;
+    } else if (video->type == VIR_DOMAIN_VIDEO_TYPE_CIRRUS) {
+        /* cirrus vram is not configurable. Ignore it */
+        video->vram = 0;
     }
 
     return 0;

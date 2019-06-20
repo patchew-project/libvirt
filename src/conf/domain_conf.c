@@ -15154,7 +15154,6 @@ virDomainVideoDefaultRAM(const virDomainDef *def,
 {
     switch (type) {
     case VIR_DOMAIN_VIDEO_TYPE_VGA:
-    case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
     case VIR_DOMAIN_VIDEO_TYPE_VMVGA:
         if (def->virtType == VIR_DOMAIN_VIRT_VBOX)
             return 8 * 1024;
@@ -15172,6 +15171,7 @@ virDomainVideoDefaultRAM(const virDomainDef *def,
         /* QEMU use 64M as the minimal video memory for qxl device */
         return 64 * 1024;
 
+    case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
     case VIR_DOMAIN_VIDEO_TYPE_DEFAULT:
     case VIR_DOMAIN_VIDEO_TYPE_VBOX:
     case VIR_DOMAIN_VIDEO_TYPE_PARALLELS:
