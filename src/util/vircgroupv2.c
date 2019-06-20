@@ -425,8 +425,13 @@ virCgroupV2MakeGroup(virCgroupPtr parent ATTRIBUTE_UNUSED,
                 if (i == VIR_CGROUP_CONTROLLER_CPUACCT)
                     continue;
 
-                if (virCgroupV2EnableController(parent, i) < 0)
-                    return -1;
+                if (virCgroupV2EnableController(parent, i) < 0) {
+                    virResetLastError();
+                    VIR_DEBUG("failed to enable '%s' controller, skipping",
+                              virCgroupV2ControllerTypeToString(i));
+                    group->unified.controllers &= ~(1 << i);
+                    continue;
+                }
             }
         }
     }
