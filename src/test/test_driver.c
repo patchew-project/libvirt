@@ -3261,6 +3261,7 @@ static int testDomainGetDiskErrors(virDomainPtr dom,
                                    unsigned int flags)
 {
     virDomainObjPtr vm = NULL;
+    int n = 0;
     int ret = -1;
     size_t i;
 
@@ -3273,12 +3274,13 @@ static int testDomainGetDiskErrors(virDomainPtr dom,
         goto cleanup;
 
     if (errors) {
-        for (i = 0; i < MIN(vm->def->ndisks, maxerrors); i++) {
-            if (VIR_STRDUP(errors[i].disk, vm->def->disks[i]->dst) < 0)
+        for (i = 1; i < vm->def->ndisks && n < maxerrors; i += 2) {
+            if (VIR_STRDUP(errors[n].disk, vm->def->disks[i]->dst) < 0)
                 goto cleanup;
-            errors[i].error = i % VIR_DOMAIN_DISK_ERROR_LAST;
+            errors[n].error = (n % (VIR_DOMAIN_DISK_ERROR_LAST - 1)) + 1;
+            n++;
         }
-        ret = i;
+        ret = n;
     } else {
         ret = vm->def->ndisks;
     }
@@ -3286,7 +3288,7 @@ static int testDomainGetDiskErrors(virDomainPtr dom,
  cleanup:
     virDomainObjEndAPI(&vm);
     if (ret < 0) {
-        for (i = 0; i < MIN(vm->def->ndisks, maxerrors); i++)
+        for (i = 0; i < n; i++)
             VIR_FREE(errors[i].disk);
     }
     return ret;
