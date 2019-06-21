@@ -353,20 +353,35 @@ virCgroupV2PathOfController(virCgroupPtr group,
 }
 
 
+/**
+ * virCgroupV2EnableController:
+ *
+ * Returns: -1 on fatal error
+ *          -2 if we failed to write into cgroup.subtree_control
+ *          0 on success
+ */
 static int
 virCgroupV2EnableController(virCgroupPtr parent,
                             int controller)
 {
     VIR_AUTOFREE(char *) val = NULL;
+    VIR_AUTOFREE(char *) path = NULL;
 
     if (virAsprintf(&val, "+%s",
                     virCgroupV2ControllerTypeToString(controller)) < 0) {
         return -1;
     }
 
-    if (virCgroupSetValueStr(parent, controller,
-                             "cgroup.subtree_control", val) < 0) {
+    if (virCgroupPathOfController(parent, controller,
+                                  "cgroup.subtree_control", &path) < 0) {
         return -1;
+    }
+
+    if (virFileWriteStr(path, val, 0) < 0) {
+        virReportSystemError(errno,
+                             _("Failed to enable controller '%s' for '%s'"),
+                             val, path);
+        return -2;
     }
 
     return 0;
