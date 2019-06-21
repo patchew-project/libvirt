@@ -433,6 +433,8 @@ virCgroupV2MakeGroup(virCgroupPtr parent ATTRIBUTE_UNUSED,
         } else {
             size_t i;
             for (i = 0; i < VIR_CGROUP_CONTROLLER_LAST; i++) {
+                int rc;
+
                 if (!virCgroupV2HasController(parent, i))
                     continue;
 
@@ -440,8 +442,17 @@ virCgroupV2MakeGroup(virCgroupPtr parent ATTRIBUTE_UNUSED,
                 if (i == VIR_CGROUP_CONTROLLER_CPUACCT)
                     continue;
 
-                if (virCgroupV2EnableController(parent, i) < 0)
+                rc = virCgroupV2EnableController(parent, i);
+                if (rc < 0) {
+                    if (rc == -2) {
+                        virResetLastError();
+                        VIR_DEBUG("failed to enable '%s' controller, skipping",
+                                  virCgroupV2ControllerTypeToString(i));
+                        group->unified.controllers &= ~(1 << i);
+                        continue;
+                    }
                     return -1;
+                }
             }
         }
     }
