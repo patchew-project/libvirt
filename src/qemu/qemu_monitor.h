@@ -1289,6 +1289,10 @@ virJSONValuePtr qemuMonitorQueryNamedBlockNodes(qemuMonitorPtr mon);
 int qemuMonitorSetWatchdogAction(qemuMonitorPtr mon,
                                  const char *action);
 
+int qemuMonitorBlockdevCreate(qemuMonitorPtr mon,
+                              const char *jobname,
+                              virJSONValuePtr props);
+
 int qemuMonitorBlockdevAdd(qemuMonitorPtr mon,
                            virJSONValuePtr props);
 
