@@ -314,6 +314,9 @@
             <reservations managed='yes'>
               <source type='unix' path='/somepath/ux.sck' mode='client'/>
             </reservations>
+            <seclabel model='dac' relabel='yes'>
+              <label>qemu:qemu</label>
+            </seclabel>
             <privateData>
               <nodenames>
                 <nodename type='storage' name='test-storage'/>
