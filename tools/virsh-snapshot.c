@@ -255,6 +255,8 @@ virshParseSnapshotDiskspec(vshControl *ctl, virBufferPtr buf, const char *str)
     char **array = NULL;
     int narray;
     size_t i;
+    struct stat st;
+    int stor_type = VIR_STORAGE_TYPE_NONE;
 
     narray = vshStringToArray(str, &array);
     if (narray <= 0)
@@ -272,16 +274,29 @@ virshParseSnapshotDiskspec(vshControl *ctl, virBufferPtr buf, const char *str)
             goto cleanup;
     }
 
+    /* possibly update storage type */
+    if (file && STRPREFIX(file, "/dev/") && stat(file, &st) == 0 && S_ISBLK(st.st_mode))
+        stor_type = VIR_STORAGE_TYPE_BLOCK;
+    else
+        stor_type = VIR_STORAGE_TYPE_FILE;
+
     virBufferEscapeString(buf, "<disk name='%s'", name);
     if (snapshot)
         virBufferAsprintf(buf, " snapshot='%s'", snapshot);
+    if (stor_type == VIR_STORAGE_TYPE_BLOCK)
+        virBufferAsprintf(buf, " type='%s'", virStorageTypeToString(stor_type));
+
     if (driver || file) {
         virBufferAddLit(buf, ">\n");
         virBufferAdjustIndent(buf, 2);
         if (driver)
             virBufferAsprintf(buf, "<driver type='%s'/>\n", driver);
-        if (file)
-            virBufferEscapeString(buf, "<source file='%s'/>\n", file);
+        if (file) {
+            if (stor_type == VIR_STORAGE_TYPE_BLOCK)
+                virBufferEscapeString(buf, "<source dev='%s'/>\n", file);
+            else
+                virBufferEscapeString(buf, "<source file='%s'/>\n", file);
+        }
         virBufferAdjustIndent(buf, -2);
         virBufferAddLit(buf, "</disk>\n");
     } else {
