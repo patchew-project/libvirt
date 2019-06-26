@@ -234,11 +234,10 @@ foreach my $src (@srcs) {
             }
 
         } else {
-            if ($line =~ m!\s*\.(\w+)\s*=\s*(\w+)\s*,?\s*(?:/\*\s*(\d+\.\d+\.\d+)\s*(?:\(deprecated:\s*(\d+\.\d+\.\d+)\))?\s*\*/\s*)?$!) {
+            if ($line =~ m!\s*\.(\w+)\s*=\s*(\w+)\s*,?\s*(?:/\*\s*(\d+\.\d+\.\d+)\s*\*/\s*)?$!) {
                 my $api = $1;
                 my $meth = $2;
                 my $vers = $3;
-                my $depre = $4;
 
                 next if $api eq "no" || $api eq "name";
 
@@ -252,16 +251,12 @@ foreach my $src (@srcs) {
                     die "Found unexpected method $api in $ingrp\n";
                 }
 
-                $groups{$ingrp}->{drivers}->{$impl}->{$api} = {};
-                $groups{$ingrp}->{drivers}->{$impl}->{$api}->{vers} = $vers;
-                $groups{$ingrp}->{drivers}->{$impl}->{$api}->{depre}  = $depre;
+                $groups{$ingrp}->{drivers}->{$impl}->{$api} = $vers;
                 if ($api eq "domainMigratePrepare" ||
                     $api eq "domainMigratePrepare2" ||
                     $api eq "domainMigratePrepare3") {
-                    if (!$groups{$ingrp}->{drivers}->{$impl}->{"domainMigrate"}) {
-                        $groups{$ingrp}->{drivers}->{$impl}->{"domainMigrate"} = {};
-                        $groups{$ingrp}->{drivers}->{$impl}->{"domainMigrate"}->{vers} = $vers;
-                    }
+                    $groups{$ingrp}->{drivers}->{$impl}->{"domainMigrate"} = $vers
+                        unless $groups{$ingrp}->{drivers}->{$impl}->{"domainMigrate"};
                 }
 
             } elsif ($line =~ /}/) {
@@ -285,7 +280,7 @@ $groups{virHypervisorDriver}->{apis}->{"domainMigrate"} = "virDomainMigrate";
 my $openAuthVers = (0 * 1000 * 1000) + (4 * 1000) + 0;
 
 foreach my $drv (keys %{$groups{"virHypervisorDriver"}->{drivers}}) {
-    my $openVersStr = $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"connectOpen"}->{vers};
+    my $openVersStr = $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"connectOpen"};
     my $openVers;
     if ($openVersStr =~ /(\d+)\.(\d+)\.(\d+)/) {
         $openVers = ($1 * 1000 * 1000) + ($2 * 1000) + $3;
@@ -295,16 +290,14 @@ foreach my $drv (keys %{$groups{"virHypervisorDriver"}->{drivers}}) {
     $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"connectOpenReadOnly"} =
         $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"connectOpen"};
 
-    $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"connectOpenAuth"} = {};
-
     # virConnectOpenAuth is always 0.4.0 if the driver existed
     # before this time, otherwise it matches the version of
     # the driver's virConnectOpen entry
     if ($openVersStr eq "Y" ||
         $openVers >= $openAuthVers) {
-        $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"connectOpenAuth"}->{vers} = $openVersStr;
+        $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"connectOpenAuth"} = $openVersStr;
     } else {
-        $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"connectOpenAuth"}->{vers} = "0.4.0";
+        $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"connectOpenAuth"} = "0.4.0";
     }
 }
 
@@ -316,23 +309,21 @@ $groups{virHypervisorDriver}->{apis}->{"domainCreateLinux"} = "virDomainCreateLi
 my $createAPIVers = (0 * 1000 * 1000) + (0 * 1000) + 3;
 
 foreach my $drv (keys %{$groups{"virHypervisorDriver"}->{drivers}}) {
-    my $createVersStr = $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"domainCreateXML"}->{vers};
+    my $createVersStr = $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"domainCreateXML"};
     next unless defined $createVersStr;
     my $createVers;
     if ($createVersStr =~ /(\d+)\.(\d+)\.(\d+)/) {
         $createVers = ($1 * 1000 * 1000) + ($2 * 1000) + $3;
     }
 
-    $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"domainCreateLinux"} = {};
-
     # virCreateLinux is always 0.0.3 if the driver existed
     # before this time, otherwise it matches the version of
     # the driver's virCreateXML entry
     if ($createVersStr eq "Y" ||
         $createVers >= $createAPIVers) {
-        $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"domainCreateLinux"}->{vers} = $createVersStr;
+        $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"domainCreateLinux"} = $createVersStr;
     } else {
-        $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"domainCreateLinux"}->{vers} = "0.0.3";
+        $groups{"virHypervisorDriver"}->{drivers}->{$drv}->{"domainCreateLinux"} = "0.0.3";
     }
 }
 
@@ -351,9 +342,7 @@ print <<EOF;
 <p>
 This page documents which <a href="html/">libvirt calls</a> work on
 which libvirt drivers / hypervisors, and which version the API appeared
-in. If a hypervisor driver deprecated the API, the version when it
-was removed is also mentioned (highlighted in
-<span class="deprecatedhv">dark red</span>).
+in.
 </p>
 
 EOF
@@ -406,16 +395,11 @@ EOF
 EOF
 
         foreach my $drv (sort {$a cmp $b } keys %{$groups{$grp}->{drivers}}) {
-            print "<td>";
             if (exists $groups{$grp}->{drivers}->{$drv}->{$field}) {
-                if ($groups{$grp}->{drivers}->{$drv}->{$field}->{vers}) {
-                    print $groups{$grp}->{drivers}->{$drv}->{$field}->{vers};
-                }
-                if ($groups{$grp}->{drivers}->{$drv}->{$field}->{depre}) {
-                    print " - <span class=\"deprecatedhv\">", $groups{$grp}->{drivers}->{$drv}->{$field}->{depre}, "</span>";
-                }
+                print "<td>", $groups{$grp}->{drivers}->{$drv}->{$field}, "</td>\n";
+            } else {
+                print "<td></td>\n";
             }
-            print "</td>\n";
         }
 
         print <<EOF;
