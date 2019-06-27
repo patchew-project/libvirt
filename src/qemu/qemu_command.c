@@ -111,6 +111,7 @@ VIR_ENUM_IMPL(qemuVideo,
               "", /* no need for virtio */
               "" /* don't support gop */,
               "" /* 'none' doesn't make sense here */,
+              "bochs-display",
 );
 
 VIR_ENUM_DECL(qemuDeviceVideo);
@@ -128,6 +129,7 @@ VIR_ENUM_IMPL(qemuDeviceVideo,
               "virtio-vga",
               "" /* don't support gop */,
               "" /* 'none' doesn't make sense here */,
+              "bochs-display",
 );
 
 VIR_ENUM_DECL(qemuDeviceVideoSecondary);
@@ -145,6 +147,7 @@ VIR_ENUM_IMPL(qemuDeviceVideoSecondary,
               "virtio-gpu",
               "" /* don't support gop */,
               "" /* 'none' doesn't make sense here */,
+              "bochs-display",
 );
 
 VIR_ENUM_DECL(qemuSoundCodec);
@@ -4748,13 +4751,16 @@ qemuBuildDeviceVideoStr(const virDomainDef *def,
             if (video->heads)
                 virBufferAsprintf(&buf, ",max_outputs=%u", video->heads);
         }
-    } else if (video->vram &&
-        ((video->type == VIR_DOMAIN_VIDEO_TYPE_VGA &&
-          virQEMUCapsGet(qemuCaps, QEMU_CAPS_VGA_VGAMEM)) ||
-         (video->type == VIR_DOMAIN_VIDEO_TYPE_VMVGA &&
-          virQEMUCapsGet(qemuCaps, QEMU_CAPS_VMWARE_SVGA_VGAMEM)))) {
+    } else if (video->vram) {
+        if ((video->type == VIR_DOMAIN_VIDEO_TYPE_VGA &&
+             virQEMUCapsGet(qemuCaps, QEMU_CAPS_VGA_VGAMEM)) ||
+            (video->type == VIR_DOMAIN_VIDEO_TYPE_VMVGA &&
+             virQEMUCapsGet(qemuCaps, QEMU_CAPS_VMWARE_SVGA_VGAMEM))) {
 
-        virBufferAsprintf(&buf, ",vgamem_mb=%u", video->vram / 1024);
+            virBufferAsprintf(&buf, ",vgamem_mb=%u", video->vram / 1024);
+        } else if (video->type == VIR_DOMAIN_VIDEO_TYPE_BOCHS_DISPLAY) {
+            virBufferAsprintf(&buf, ",vgamem=%uk", video->vram);
+        }
     }
 
     if (qemuBuildDeviceAddressStr(&buf, def, &video->info, qemuCaps) < 0)

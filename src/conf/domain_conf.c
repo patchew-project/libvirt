@@ -738,6 +738,7 @@ VIR_ENUM_IMPL(virDomainVideo,
               "virtio",
               "gop",
               "none",
+              "bochs-display",
 );
 
 VIR_ENUM_IMPL(virDomainVideoVGAConf,
@@ -15158,6 +15159,7 @@ virDomainVideoDefaultRAM(const virDomainDef *def,
     case VIR_DOMAIN_VIDEO_TYPE_VGA:
     case VIR_DOMAIN_VIDEO_TYPE_CIRRUS:
     case VIR_DOMAIN_VIDEO_TYPE_VMVGA:
+    case VIR_DOMAIN_VIDEO_TYPE_BOCHS_DISPLAY:
         if (def->virtType == VIR_DOMAIN_VIRT_VBOX)
             return 8 * 1024;
         else if (def->virtType == VIR_DOMAIN_VIRT_VMWARE)
