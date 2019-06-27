@@ -3086,6 +3086,11 @@ virSysinfoReadS390;
 
 
 # util/virsystemd.h
+virSystemdGetActivation;
+virSystemdActivationClaimFDs;
+virSystemdActivationComplete;
+virSystemdActivationFree;
+virSystemdActivationHasName;
 virSystemdCanHibernate;
 virSystemdCanHybridSleep;
 virSystemdCanSuspend;
