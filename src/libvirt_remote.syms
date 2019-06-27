@@ -206,7 +206,6 @@ virNetServerServiceGetPort;
 virNetServerServiceGetTLSContext;
 virNetServerServiceIsReadonly;
 virNetServerServiceNewFDs;
-virNetServerServiceNewFDOrUNIX;
 virNetServerServiceNewPostExecRestart;
 virNetServerServiceNewTCP;
 virNetServerServiceNewUNIX;
