@@ -2405,6 +2405,53 @@ testDomainCoreDump(virDomainPtr domain,
 }
 
 
+static int
+testDomainGetNumaParameters(virDomainPtr dom,
+                            virTypedParameterPtr params,
+                            int *nparams,
+                            unsigned int flags)
+{
+    virDomainObjPtr vm = NULL;
+    virDomainNumatuneMemMode mode = VIR_DOMAIN_NUMATUNE_MEM_STRICT;
+    VIR_AUTOFREE(char *) nodeset = NULL;
+    int ret = -1;
+
+    virCheckFlags(VIR_DOMAIN_AFFECT_CURRENT |
+                  VIR_DOMAIN_AFFECT_LIVE |
+                  VIR_DOMAIN_AFFECT_CONFIG |
+                  VIR_TYPED_PARAM_STRING_OKAY, -1);
+
+    if ((*nparams) == 0) {
+        *nparams = 2;
+        return 0;
+    }
+
+    if (!(vm = testDomObjFromDomain(dom)))
+        goto cleanup;
+
+    ignore_value(virDomainNumatuneGetMode(vm->def->numa, -1, &mode));
+    if (0 < *nparams && virTypedParameterAssign(&params[0], VIR_DOMAIN_NUMA_MODE,
+                                                VIR_TYPED_PARAM_INT, mode) < 0)
+        goto cleanup;
+
+    nodeset = virDomainNumatuneFormatNodeset(vm->def->numa, NULL, -1);
+    if (1 < *nparams && (!nodeset || virTypedParameterAssign(&params[1],
+                                                             VIR_DOMAIN_NUMA_NODESET,
+                                                             VIR_TYPED_PARAM_STRING,
+                                                             nodeset) < 0))
+        goto cleanup;
+    nodeset = NULL;
+
+    if (*nparams > 2)
+        *nparams = 2;
+
+    ret = 0;
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+
 static char *
 testDomainGetOSType(virDomainPtr dom ATTRIBUTE_UNUSED)
 {
@@ -7251,6 +7298,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainReboot = testDomainReboot, /* 0.1.1 */
     .domainDestroy = testDomainDestroy, /* 0.1.1 */
     .domainDestroyFlags = testDomainDestroyFlags, /* 4.2.0 */
+    .domainGetNumaParameters = testDomainGetNumaParameters, /* 5.6.0 */
     .domainGetOSType = testDomainGetOSType, /* 0.1.9 */
     .domainGetLaunchSecurityInfo = testDomainGetLaunchSecurityInfo, /* 5.5.0 */
     .domainGetMaxMemory = testDomainGetMaxMemory, /* 0.1.4 */
