@@ -202,7 +202,7 @@ virNetServerServiceGetMaxRequests;
 virNetServerServiceGetPort;
 virNetServerServiceGetTLSContext;
 virNetServerServiceIsReadonly;
-virNetServerServiceNewFD;
+virNetServerServiceNewFDs;
 virNetServerServiceNewFDOrUNIX;
 virNetServerServiceNewPostExecRestart;
 virNetServerServiceNewTCP;
