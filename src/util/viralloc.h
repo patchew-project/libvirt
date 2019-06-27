@@ -614,3 +614,16 @@ void virAllocTestHook(void (*func)(int, void*), void *data);
  * when the variable goes out of scope.
  */
 #define VIR_AUTOFREE(type) __attribute__((cleanup(virFree))) type
+
+/**
+ * VIR_AUTOSTRUCT:
+ * @type: type of the struct variable to be freed automatically
+ *
+ * Macro to automatically free the memory allocated to
+ * the struct variable declared with it by calling vir$STRUCTFree
+ * when the variable goes out of scope.
+ *
+ * The vir$STRUCTFree function must take a pointer to a pointer
+ * to the struct.
+ */
+#define VIR_AUTOSTRUCT(type) __attribute__((cleanup(type ## Free))) type
