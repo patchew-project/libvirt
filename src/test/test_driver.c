@@ -1964,6 +1964,109 @@ static int testDomainGetInfo(virDomainPtr domain,
     return ret;
 }
 
+
+static int
+testDomainGetInterfaceParameters(virDomainPtr dom,
+                                 const char *device,
+                                 virTypedParameterPtr params,
+                                 int *nparams,
+                                 unsigned int flags)
+{
+    size_t i;
+    virDomainObjPtr vm = NULL;
+    virDomainDefPtr def = NULL;
+    virDomainNetDefPtr net = NULL;
+    int ret = -1;
+
+    virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
+                  VIR_DOMAIN_AFFECT_CONFIG |
+                  VIR_TYPED_PARAM_STRING_OKAY, -1);
+
+    if ((*nparams) == 0) {
+        *nparams = 7;
+        return 0;
+    }
+
+    if (!(vm = testDomObjFromDomain(dom)))
+        return -1;
+
+    if (!(def = virDomainObjGetOneDef(vm, flags)))
+        goto cleanup;
+
+    if (!(net = virDomainNetFind(def, device)))
+        goto cleanup;
+
+    for (i = 0; i < *nparams && i < 7; i++) {
+        switch (i) {
+        case 0: /* inbound.average */
+            if (virTypedParameterAssign(&params[i],
+                                        VIR_DOMAIN_BANDWIDTH_IN_AVERAGE,
+                                        VIR_TYPED_PARAM_UINT, 0) < 0)
+                goto cleanup;
+            if (net->bandwidth && net->bandwidth->in)
+                params[i].value.ui = net->bandwidth->in->average;
+            break;
+        case 1: /* inbound.peak */
+            if (virTypedParameterAssign(&params[i],
+                                        VIR_DOMAIN_BANDWIDTH_IN_PEAK,
+                                        VIR_TYPED_PARAM_UINT, 0) < 0)
+                goto cleanup;
+            if (net->bandwidth && net->bandwidth->in)
+                params[i].value.ui = net->bandwidth->in->peak;
+            break;
+        case 2: /* inbound.burst */
+            if (virTypedParameterAssign(&params[i],
+                                        VIR_DOMAIN_BANDWIDTH_IN_BURST,
+                                        VIR_TYPED_PARAM_UINT, 0) < 0)
+                goto cleanup;
+            if (net->bandwidth && net->bandwidth->in)
+                params[i].value.ui = net->bandwidth->in->burst;
+            break;
+        case 3: /* inbound.floor */
+            if (virTypedParameterAssign(&params[i],
+                                        VIR_DOMAIN_BANDWIDTH_IN_FLOOR,
+                                        VIR_TYPED_PARAM_UINT, 0) < 0)
+                goto cleanup;
+            if (net->bandwidth && net->bandwidth->in)
+                params[i].value.ui = net->bandwidth->in->floor;
+            break;
+        case 4: /* outbound.average */
+            if (virTypedParameterAssign(&params[i],
+                                        VIR_DOMAIN_BANDWIDTH_OUT_AVERAGE,
+                                        VIR_TYPED_PARAM_UINT, 0) < 0)
+                goto cleanup;
+            if (net->bandwidth && net->bandwidth->out)
+                params[i].value.ui = net->bandwidth->out->average;
+            break;
+        case 5: /* outbound.peak */
+            if (virTypedParameterAssign(&params[i],
+                                        VIR_DOMAIN_BANDWIDTH_OUT_PEAK,
+                                        VIR_TYPED_PARAM_UINT, 0) < 0)
+                goto cleanup;
+            if (net->bandwidth && net->bandwidth->out)
+                params[i].value.ui = net->bandwidth->out->peak;
+            break;
+        case 6: /* outbound.burst */
+            if (virTypedParameterAssign(&params[i],
+                                        VIR_DOMAIN_BANDWIDTH_OUT_BURST,
+                                        VIR_TYPED_PARAM_UINT, 0) < 0)
+                goto cleanup;
+            if (net->bandwidth && net->bandwidth->out)
+                params[i].value.ui = net->bandwidth->out->burst;
+            break;
+        }
+    }
+
+    if (*nparams > 7)
+        *nparams = 7;
+
+    ret = 0;
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+
 static int
 testDomainGetState(virDomainPtr domain,
                    int *state,
@@ -7258,6 +7361,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainSetMemory = testDomainSetMemory, /* 0.1.4 */
     .domainGetHostname = testDomainGetHostname, /* 5.5.0 */
     .domainGetInfo = testDomainGetInfo, /* 0.1.1 */
+    .domainGetInterfaceParameters = testDomainGetInterfaceParameters, /* 5.6.0 */
     .domainGetState = testDomainGetState, /* 0.9.2 */
     .domainGetTime = testDomainGetTime, /* 5.4.0 */
     .domainSave = testDomainSave, /* 0.3.2 */
