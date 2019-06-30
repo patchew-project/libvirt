@@ -2514,6 +2514,57 @@ testDomainGetMaxVcpus(virDomainPtr domain)
                                             VIR_DOMAIN_VCPU_MAXIMUM));
 }
 
+
+static int
+testDomainGetMemoryParameters(virDomainPtr dom,
+                              virTypedParameterPtr params,
+                              int *nparams,
+                              unsigned int flags)
+{
+    int ret = -1;
+    virDomainObjPtr vm = NULL;
+    virDomainDefPtr def = NULL;
+
+    virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
+                  VIR_DOMAIN_AFFECT_CONFIG |
+                  VIR_TYPED_PARAM_STRING_OKAY, -1);
+
+    if ((*nparams) == 0) {
+        *nparams = 3;
+        return 0;
+    }
+
+    if (!(vm = testDomObjFromDomain(dom)))
+        goto cleanup;
+
+    if (!(def = virDomainObjGetOneDef(vm, flags)))
+        goto cleanup;
+
+    if (*nparams > 0 &&
+        virTypedParameterAssign(&params[0], VIR_DOMAIN_MEMORY_HARD_LIMIT,
+                                VIR_TYPED_PARAM_ULLONG, def->mem.hard_limit) < 0)
+        goto cleanup;
+
+    if (*nparams > 1 &&
+        virTypedParameterAssign(&params[1], VIR_DOMAIN_MEMORY_SOFT_LIMIT,
+                                VIR_TYPED_PARAM_ULLONG, def->mem.soft_limit) < 0)
+        goto cleanup;
+
+    if (*nparams > 2 &&
+        virTypedParameterAssign(&params[2], VIR_DOMAIN_MEMORY_SWAP_HARD_LIMIT,
+                                VIR_TYPED_PARAM_ULLONG, def->mem.swap_hard_limit) < 0)
+        goto cleanup;
+
+    if (*nparams > 3)
+        *nparams = 3;
+
+    ret = 0;
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+
 static int
 testDomainSetVcpusFlags(virDomainPtr domain, unsigned int nrCpus,
                         unsigned int flags)
@@ -7275,6 +7326,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainGetVcpus = testDomainGetVcpus, /* 0.7.3 */
     .domainGetVcpuPinInfo = testDomainGetVcpuPinInfo, /* 1.2.18 */
     .domainGetMaxVcpus = testDomainGetMaxVcpus, /* 0.7.3 */
+    .domainGetMemoryParameters = testDomainGetMemoryParameters, /* 5.6.0 */
     .domainGetXMLDesc = testDomainGetXMLDesc, /* 0.1.4 */
     .connectListDefinedDomains = testConnectListDefinedDomains, /* 0.1.11 */
     .connectNumOfDefinedDomains = testConnectNumOfDefinedDomains, /* 0.1.11 */
