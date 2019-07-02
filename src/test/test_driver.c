@@ -2844,6 +2844,13 @@ static char *testDomainGetXMLDesc(virDomainPtr domain, unsigned int flags)
     return ret;
 }
 
+
+#define TEST_SET_PARAM(index, name, type, value) \
+    if (index < *nparams && \
+        virTypedParameterAssign(&params[index], name, type, value) < 0) \
+        goto cleanup
+
+
 static int testConnectNumOfDefinedDomains(virConnectPtr conn)
 {
     testDriverPtr privconn = conn->privateData;
