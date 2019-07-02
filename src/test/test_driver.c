@@ -2935,6 +2935,69 @@ testDomainGetNumaParameters(virDomainPtr dom,
 }
 
 
+static int
+testDomainGetInterfaceParameters(virDomainPtr dom,
+                                 const char *device,
+                                 virTypedParameterPtr params,
+                                 int *nparams,
+                                 unsigned int flags)
+{
+    unsigned int in_average = 0, in_peak = 0, in_burst = 0, in_floor = 0;
+    unsigned int out_average = 0, out_peak = 0, out_burst = 0;
+    virDomainObjPtr vm = NULL;
+    virDomainDefPtr def = NULL;
+    virDomainNetDefPtr net = NULL;
+    int ret = -1;
+
+    virCheckFlags(VIR_DOMAIN_AFFECT_LIVE |
+                  VIR_DOMAIN_AFFECT_CONFIG |
+                  VIR_TYPED_PARAM_STRING_OKAY, -1);
+
+    if ((*nparams) == 0) {
+        *nparams = 7;
+        return 0;
+    }
+
+    if (!(vm = testDomObjFromDomain(dom)))
+        return -1;
+
+    if (!(def = virDomainObjGetOneDef(vm, flags)))
+        goto cleanup;
+
+    if (!(net = virDomainNetFind(def, device)))
+        goto cleanup;
+
+    if (net->bandwidth && net->bandwidth->in) {
+        in_average = net->bandwidth->in->average;
+        in_peak = net->bandwidth->in->peak;
+        in_burst = net->bandwidth->in->burst;
+        in_floor = net->bandwidth->in->floor;
+    }
+
+    if (net->bandwidth && net->bandwidth->out) {
+        out_average = net->bandwidth->out->average;
+        out_peak = net->bandwidth->out->peak;
+        out_burst = net->bandwidth->out->burst;
+    }
+
+    TEST_SET_PARAM(0, VIR_DOMAIN_BANDWIDTH_IN_AVERAGE, VIR_TYPED_PARAM_UINT, in_average);
+    TEST_SET_PARAM(1, VIR_DOMAIN_BANDWIDTH_IN_PEAK, VIR_TYPED_PARAM_UINT, in_peak);
+    TEST_SET_PARAM(2, VIR_DOMAIN_BANDWIDTH_IN_BURST, VIR_TYPED_PARAM_UINT, in_burst);
+    TEST_SET_PARAM(3, VIR_DOMAIN_BANDWIDTH_IN_FLOOR, VIR_TYPED_PARAM_UINT, in_floor);
+    TEST_SET_PARAM(4, VIR_DOMAIN_BANDWIDTH_OUT_AVERAGE, VIR_TYPED_PARAM_UINT, out_average);
+    TEST_SET_PARAM(5, VIR_DOMAIN_BANDWIDTH_OUT_PEAK, VIR_TYPED_PARAM_UINT, out_peak);
+    TEST_SET_PARAM(6, VIR_DOMAIN_BANDWIDTH_OUT_BURST, VIR_TYPED_PARAM_UINT, out_burst);
+
+    if (*nparams > 7)
+        *nparams = 7;
+
+    ret = 0;
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+
 static int testConnectNumOfDefinedDomains(virConnectPtr conn)
 {
     testDriverPtr privconn = conn->privateData;
@@ -7369,6 +7432,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainGetXMLDesc = testDomainGetXMLDesc, /* 0.1.4 */
     .domainGetMemoryParameters = testDomainGetMemoryParameters, /* 5.6.0 */
     .domainGetNumaParameters = testDomainGetNumaParameters, /* 5.6.0 */
+    .domainGetInterfaceParameters = testDomainGetInterfaceParameters, /* 5.6.0 */
     .connectListDefinedDomains = testConnectListDefinedDomains, /* 0.1.11 */
     .connectNumOfDefinedDomains = testConnectNumOfDefinedDomains, /* 0.1.11 */
     .domainCreate = testDomainCreate, /* 0.1.11 */
