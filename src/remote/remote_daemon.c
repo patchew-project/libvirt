@@ -899,9 +899,6 @@ daemonUsage(const char *argv0, bool privileged)
                 _("\n"
                   "  Default paths:\n"
                   "\n"
-                  "    Configuration file (unless overridden by -f):\n"
-                  "      %s\n"
-                  "\n"
                   "    Sockets:\n"
                   "      %s\n"
                   "      %s\n"
@@ -914,7 +911,6 @@ daemonUsage(const char *argv0, bool privileged)
                   "    PID file (unless overridden by -p):\n"
                   "      %s/run/libvirtd.pid\n"
                   "\n"),
-                LIBVIRTD_CONFIGURATION_FILE,
                 LIBVIRTD_PRIV_UNIX_SOCKET,
                 LIBVIRTD_PRIV_UNIX_SOCKET_RO,
                 LIBVIRT_CACERT,
