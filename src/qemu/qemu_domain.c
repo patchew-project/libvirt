@@ -136,13 +136,6 @@ static void qemuDomainSaveCookieDispose(void *obj);
 
 
 static int
-qemuDomainPrepareStorageSourceBlockdev(virDomainDiskDefPtr disk,
-                                       virStorageSourcePtr src,
-                                       qemuDomainObjPrivatePtr priv,
-                                       virQEMUDriverConfigPtr cfg);
-
-
-static int
 qemuDomainOnceInit(void)
 {
     if (!VIR_CLASS_NEW(qemuDomainLogContext, virClassForObject()))
@@ -14146,7 +14139,7 @@ qemuDomainPrepareDiskSourceLegacy(virDomainDiskDefPtr disk,
 }
 
 
-static int
+int
 qemuDomainPrepareStorageSourceBlockdev(virDomainDiskDefPtr disk,
                                        virStorageSourcePtr src,
                                        qemuDomainObjPrivatePtr priv,
