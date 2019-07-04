@@ -457,7 +457,9 @@ lxcDomainInitctlCallback(pid_t pid ATTRIBUTE_UNUSED,
             data->st[i].st_ino == cont_sb.st_ino)
             continue;
 
-        return virInitctlSetRunLevel(fifo, data->runlevel);
+        if (virInitctlSetRunLevel(fifo, data->runlevel) == -1)
+            return -1;
+        return 0;
     }
 
     /* If no usable fifo was found then declare success. Caller
