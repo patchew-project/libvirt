@@ -121,7 +121,7 @@ virDomainSnapshotDefDispose(void *obj)
     virObjectUnref(def->cookie);
 }
 
-static int
+int
 virDomainSnapshotDiskDefParseXML(xmlNodePtr node,
                                  xmlXPathContextPtr ctxt,
                                  virDomainSnapshotDiskDefPtr def,

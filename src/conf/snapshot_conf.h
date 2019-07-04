@@ -123,6 +123,11 @@ int virDomainSnapshotAlignDisks(virDomainSnapshotDefPtr snapshot,
                                 int default_snapshot,
                                 bool require_match);
 
+int virDomainSnapshotDiskDefParseXML(xmlNodePtr node,
+                                     xmlXPathContextPtr ctxt,
+                                     virDomainSnapshotDiskDefPtr def,
+                                     unsigned int flags,
+                                     virDomainXMLOptionPtr xmlopt);
 bool virDomainSnapshotDefIsExternal(virDomainSnapshotDefPtr def);
 bool virDomainSnapshotIsExternal(virDomainMomentObjPtr snap);
 
