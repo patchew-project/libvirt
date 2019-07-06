@@ -519,3 +519,43 @@ virDomainMomentUpdateRelations(virDomainMomentObjListPtr moments)
         moments->current = NULL;
     return act.err;
 }
+
+
+int
+virDomainMomentCheckCycles(virDomainMomentObjListPtr list,
+                           virDomainMomentDefPtr def,
+                           const char *domname)
+{
+    virDomainMomentObjPtr other;
+
+    if (def->parent_name) {
+        if (STREQ(def->name, def->parent_name)) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("cannot set moment %s as its own parent"),
+                           def->name);
+            return -1;
+        }
+        other = virDomainMomentFindByName(list, def->parent_name);
+        if (!other) {
+            virReportError(VIR_ERR_INVALID_ARG,
+                           _("parent %s for moment %s not found"),
+                           def->parent_name, def->name);
+            return -1;
+        }
+        while (other->def->parent_name) {
+            if (STREQ(other->def->parent_name, def->name)) {
+                virReportError(VIR_ERR_INVALID_ARG,
+                               _("parent %s would create cycle to %s"),
+                               other->def->name, def->name);
+                return -1;
+            }
+            other = virDomainMomentFindByName(list, other->def->parent_name);
+            if (!other) {
+                VIR_WARN("moments are inconsistent for domain %s",
+                         domname);
+                break;
+            }
+        }
+    }
+    return 0;
+}
