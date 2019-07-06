@@ -4767,7 +4767,8 @@ with I<--current>.
 [{I<--parent> | I<--roots> | [{I<--tree> | I<--name>}]}] [I<--topological>]
 [{[I<--from>] B<snapshot> | I<--current>} [I<--descendants>]]
 [I<--leaves>] [I<--no-leaves>] [I<--inactive>] [I<--active>]
-[I<--disk-only>] [I<--internal>] [I<--external>]
+[I<--disk-only>] [I<--internal>] [I<--external>] [I<--current-only>]
+[I<--no-current>]
 
 List all of the available snapshots for the given domain, defaulting
 to show columns for the snapshot name, creation time, and domain state.
@@ -4823,6 +4824,10 @@ If I<--internal> is specified, the list will be filtered to snapshots
 that use internal storage of existing disk images.  If I<--external>
 is specified, the list will be filtered to snapshots that use external
 files for disk images or memory state.
+
+If I<--current-only> is specified, the list will be filtered to just
+the current snapshot (if it meets all other filters).  If I<--no-current>
+is specified, the list will be filtered to exclude the current snapshot.
 
 =item B<snapshot-dumpxml> I<domain> I<snapshot> [I<--security-info>]
 

@@ -52,6 +52,7 @@ $abs_top_builddir/tools/virsh --connect test:///default >out 2>err '
   snapshot-current test --name
   # Deleting current root leads to multiple roots, demonstrate list filtering
   snapshot-delete test --current
+  snapshot-list test --current-only --name
   echo --err marker
   snapshot-current test --name
   echo --err marker
@@ -63,7 +64,7 @@ $abs_top_builddir/tools/virsh --connect test:///default >out 2>err '
   # More fun with delete flags, current node moves up to remaining parent
   snapshot-current test s4
   snapshot-delete test --children-only s6
-  snapshot-current test --name
+  snapshot-list test --current-only --name
   snapshot-delete test --children s7
   snapshot-current test --name
   snapshot-delete test s6
@@ -71,6 +72,7 @@ $abs_top_builddir/tools/virsh --connect test:///default >out 2>err '
   # Now the tree is linear, so we have an unambiguous topological order
   snapshot-list test --name
   snapshot-list test --name --topological
+  snapshot-list test --name --no-current
   # Capture some XML for later redefine
   echo "<!--MarkerA-->"
   snapshot-dumpxml test s3
@@ -123,6 +125,7 @@ Domain snapshot s1 deleted
 
 
 
+
  Name   Creation Time               State
 ---------------------------------------------
  s3     TIMESTAMP   running
@@ -155,6 +158,7 @@ Snapshot s4 set as current
 Domain snapshot s6 children deleted
 
 s6
+
 Domain snapshot s7 deleted
 
 s6
@@ -165,6 +169,8 @@ s2
 s3
 
 s3
+s2
+
 s2
 
 EOF

@@ -1463,6 +1463,14 @@ static const vshCmdOptDef opts_snapshot_list[] = {
      .type = VSH_OT_BOOL,
      .help = N_("sort list topologically rather than by name"),
     },
+    {.name = "current-only",
+     .type = VSH_OT_BOOL,
+     .help = N_("filter to just the current snapshot"),
+    },
+    {.name = "no-current",
+     .type = VSH_OT_BOOL,
+     .help = N_("filter out the current snapshot"),
+    },
 
     {.name = NULL}
 };
@@ -1522,6 +1530,8 @@ cmdSnapshotList(vshControl *ctl, const vshCmd *cmd)
     FILTER("disk-only", DISK_ONLY);
     FILTER("internal", INTERNAL);
     FILTER("external", EXTERNAL);
+    FILTER("current-only", CURRENT);
+    FILTER("no-current", NO_CURRENT);
 #undef FILTER
 
     if (vshCommandOptBool(cmd, "topological"))
