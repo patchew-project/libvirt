@@ -283,6 +283,7 @@ struct virDomainMomentNameData {
     unsigned int flags;
     int count;
     bool error;
+    virDomainMomentObjPtr current; /* The current moment, if any */
     virDomainMomentObjListFilter filter;
     unsigned int filter_flags;
 };
@@ -302,6 +303,11 @@ static int virDomainMomentObjListCopyNames(void *payload,
     if ((data->flags & VIR_DOMAIN_MOMENT_LIST_LEAVES) && obj->nchildren)
         return 0;
     if ((data->flags & VIR_DOMAIN_MOMENT_LIST_NO_LEAVES) && !obj->nchildren)
+        return 0;
+    if ((data->flags & VIR_DOMAIN_MOMENT_LIST_CURRENT) && obj != data->current)
+        return 0;
+    if ((data->flags & VIR_DOMAIN_MOMENT_LIST_NO_CURRENT) &&
+        obj == data->current)
         return 0;
 
     if (!data->filter(obj, data->filter_flags))
@@ -327,7 +333,8 @@ virDomainMomentObjListGetNames(virDomainMomentObjListPtr moments,
                                unsigned int filter_flags)
 {
     struct virDomainMomentNameData data = { names, maxnames, flags, 0,
-                                            false, filter, filter_flags };
+                                            false, moments->current,
+                                            filter, filter_flags };
     size_t i;
 
     virCheckFlags(VIR_DOMAIN_MOMENT_FILTERS_ALL, -1);
