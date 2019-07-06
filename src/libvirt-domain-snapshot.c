@@ -465,6 +465,12 @@ virDomainSnapshotListNames(virDomainPtr domain, char **names, int nameslen,
  * whether the snapshot is stored inside the disk images or as
  * additional files.
  *
+ * The next group of @flags is VIR_DOMAIN_SNAPSHOT_LIST_CURRENT and
+ * VIR_DOMAIN_SNAPSHOT_LIST_NO_CURRENT, to filter based on whether a
+ * snapshot is current. This filter provides the same functionality as
+ * virDomainHasCurrentSnapshot(), virDomainSnapshotCurrent(), and
+ * virDomainSnapshotIsCurrent().
+ *
  * Returns the number of domain snapshots found or -1 and sets @snaps to
  * NULL in case of error.  On success, the array stored into @snaps is
  * guaranteed to have an extra allocated element set to NULL but not included
@@ -736,7 +742,9 @@ virDomainSnapshotLookupByName(virDomainPtr domain,
  * @domain: pointer to the domain object
  * @flags: extra flags; not used yet, so callers should always pass 0
  *
- * Determine if the domain has a current snapshot.
+ * Determine if the domain has a current snapshot.  This can also be
+ * determined by using virDomainListAllSnapshots() with the
+ * VIR_DOMAIN_SNAPSHOT_LIST_CURRENT filter.
  *
  * Returns 1 if such snapshot exists, 0 if it doesn't, -1 on error.
  */
@@ -771,7 +779,9 @@ virDomainHasCurrentSnapshot(virDomainPtr domain, unsigned int flags)
  * @domain: a domain object
  * @flags: extra flags; not used yet, so callers should always pass 0
  *
- * Get the current snapshot for a domain, if any.
+ * Get the current snapshot for a domain, if any.  This can also be
+ * determined by using virDomainListAllSnapshots() with the
+ * VIR_DOMAIN_SNAPSHOT_LIST_CURRENT filter.
  *
  * virDomainSnapshotFree should be used to free the resources after the
  * snapshot object is no longer needed.

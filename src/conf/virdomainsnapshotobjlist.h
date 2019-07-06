@@ -73,11 +73,16 @@ int virDomainSnapshotCheckCycles(virDomainSnapshotObjListPtr snapshots,
                (VIR_DOMAIN_SNAPSHOT_LIST_INTERNAL     | \
                 VIR_DOMAIN_SNAPSHOT_LIST_EXTERNAL)
 
+#define VIR_DOMAIN_SNAPSHOT_FILTERS_CURRENT \
+               (VIR_DOMAIN_SNAPSHOT_LIST_CURRENT      | \
+                VIR_DOMAIN_SNAPSHOT_LIST_NO_CURRENT)
+
 #define VIR_DOMAIN_SNAPSHOT_FILTERS_ALL \
                (VIR_DOMAIN_SNAPSHOT_FILTERS_METADATA  | \
                 VIR_DOMAIN_SNAPSHOT_FILTERS_LEAVES    | \
                 VIR_DOMAIN_SNAPSHOT_FILTERS_STATUS    | \
-                VIR_DOMAIN_SNAPSHOT_FILTERS_LOCATION)
+                VIR_DOMAIN_SNAPSHOT_FILTERS_LOCATION  | \
+                VIR_DOMAIN_SNAPSHOT_FILTERS_CURRENT)
 
 int virDomainListSnapshots(virDomainSnapshotObjListPtr snapshots,
                            virDomainMomentObjPtr from,

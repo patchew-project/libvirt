@@ -141,6 +141,11 @@ typedef enum {
     VIR_DOMAIN_SNAPSHOT_LIST_TOPOLOGICAL = (1 << 10), /* Ensure parents occur
                                                          before children in
                                                          the resulting list */
+
+    VIR_DOMAIN_SNAPSHOT_LIST_CURRENT     = (1 << 11), /* Filter to just current
+                                                         snapshot */
+    VIR_DOMAIN_SNAPSHOT_LIST_NO_CURRENT  = (1 << 12), /* Filter out current
+                                                         snapshot */
 } virDomainSnapshotListFlags;
 
 /* Return the number of snapshots for this domain */
