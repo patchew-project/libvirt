@@ -1446,6 +1446,10 @@ virSecurityManagerTransactionStart;
 virSecurityManagerVerify;
 
 
+# tpm/virtpm.h
+virTPMCreateCancelPath;
+
+
 # util/viralloc.h
 virAlloc;
 virAllocN;
@@ -3157,10 +3161,6 @@ virTimeStringNow;
 virTimeStringNowRaw;
 virTimeStringThen;
 virTimeStringThenRaw;
-
-
-# util/virtpm.h
-virTPMCreateCancelPath;
 
 
 # util/virtypedparam.h
