@@ -776,7 +776,10 @@ vmwareDomainUndefineFlags(virDomainPtr dom,
     virDomainObjPtr vm;
     int ret = -1;
 
-    virCheckFlags(0, -1);
+    /* No managed save, so we explicitly reject
+     * VIR_DOMAIN_UNDEFINE_MANAGED_SAVE.  No snapshot metadata for
+     * vmware, so we can trivially ignore that flag.  */
+    virCheckFlags(VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA, -1);
 
     vmwareDriverLock(driver);
     if (!(vm = vmwareDomObjFromDomainLocked(driver, dom->uuid)))
