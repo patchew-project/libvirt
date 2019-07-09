@@ -2921,7 +2921,9 @@ libxlDomainUndefineFlags(virDomainPtr dom,
     char *name = NULL;
     int ret = -1;
 
-    virCheckFlags(VIR_DOMAIN_UNDEFINE_MANAGED_SAVE, -1);
+    /* No snapshot support, so we can trivially ignore that flag.  */
+    virCheckFlags(VIR_DOMAIN_UNDEFINE_MANAGED_SAVE |
+                  VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA, -1);
 
     if (!(vm = libxlDomObjFromDomain(dom)))
         goto cleanup;
