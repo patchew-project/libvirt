@@ -553,7 +553,8 @@ static int vboxConnectClose(virConnectPtr conn)
 }
 
 static int
-vboxDomainSave(virDomainPtr dom, const char *path ATTRIBUTE_UNUSED)
+vboxDomainSaveFlags(virDomainPtr dom, const char *path ATTRIBUTE_UNUSED,
+                    const char *dxml, unsigned int flags)
 {
     vboxDriverPtr data = dom->conn->privateData;
     IConsole *console = NULL;
@@ -563,6 +564,9 @@ vboxDomainSave(virDomainPtr dom, const char *path ATTRIBUTE_UNUSED)
     resultCodeUnion resultCode;
     nsresult rc;
     int ret = -1;
+
+    virCheckFlags(0, -1);
+    virCheckNonNullArgReturn(dxml, -1);
 
     if (!data->vboxObj)
         return ret;
@@ -605,6 +609,12 @@ vboxDomainSave(virDomainPtr dom, const char *path ATTRIBUTE_UNUSED)
     VBOX_RELEASE(progress);
     vboxIIDUnalloc(&iid);
     return ret;
+}
+
+static int
+vboxDomainSave(virDomainPtr dom, const char *path)
+{
+    return vboxDomainSaveFlags(dom, path, NULL, 0);
 }
 
 static int vboxConnectGetVersion(virConnectPtr conn, unsigned long *version)
@@ -2717,7 +2727,8 @@ static char *vboxDomainGetOSType(virDomainPtr dom ATTRIBUTE_UNUSED) {
     return osType;
 }
 
-static int vboxDomainSetMemory(virDomainPtr dom, unsigned long memory)
+static int vboxDomainSetMemoryFlags(virDomainPtr dom, unsigned long memory,
+                                    unsigned int flags)
 {
     vboxDriverPtr data = dom->conn->privateData;
     IMachine *machine = NULL;
@@ -2726,6 +2737,8 @@ static int vboxDomainSetMemory(virDomainPtr dom, unsigned long memory)
     PRBool isAccessible = PR_FALSE;
     nsresult rc;
     int ret = -1;
+
+    virCheckFlags(0, -1);
 
     if (!data->vboxObj)
         return ret;
@@ -2773,6 +2786,11 @@ static int vboxDomainSetMemory(virDomainPtr dom, unsigned long memory)
     VBOX_RELEASE(machine);
     vboxIIDUnalloc(&iid);
     return ret;
+}
+
+static int vboxDomainSetMemory(virDomainPtr dom, unsigned long memory)
+{
+    return vboxDomainSetMemoryFlags(dom, memory, 0);
 }
 
 static int vboxDomainGetInfo(virDomainPtr dom, virDomainInfoPtr info)
@@ -7995,9 +8013,11 @@ static virHypervisorDriver vboxCommonDriver = {
     .domainDestroyFlags = vboxDomainDestroyFlags, /* 0.9.4 */
     .domainGetOSType = vboxDomainGetOSType, /* 0.6.3 */
     .domainSetMemory = vboxDomainSetMemory, /* 0.6.3 */
+    .domainSetMemoryFlags = vboxDomainSetMemoryFlags, /* 5.6.0 */
     .domainGetInfo = vboxDomainGetInfo, /* 0.6.3 */
     .domainGetState = vboxDomainGetState, /* 0.9.2 */
     .domainSave = vboxDomainSave, /* 0.6.3 */
+    .domainSaveFlags = vboxDomainSaveFlags, /* 5.6.0 */
     .domainSetVcpus = vboxDomainSetVcpus, /* 0.7.1 */
     .domainSetVcpusFlags = vboxDomainSetVcpusFlags, /* 0.8.5 */
     .domainGetVcpusFlags = vboxDomainGetVcpusFlags, /* 0.8.5 */
