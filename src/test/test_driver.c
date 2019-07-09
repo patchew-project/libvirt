@@ -4103,6 +4103,71 @@ testDomainFSFreeze(virDomainPtr dom,
 }
 
 
+static int
+testDomainFSThaw(virDomainPtr dom,
+                   const char **mountpoints,
+                   unsigned int nmountpoints,
+                   unsigned int flags)
+{
+    virDomainObjPtr vm;
+    testDomainObjPrivatePtr priv;
+    size_t i;
+    int slash = 0, slash_boot = 0;
+    int ret = -1;
+
+    virCheckFlags(0, -1);
+
+    if (!(vm = testDomObjFromDomain(dom)))
+        goto cleanup;
+
+    if (virDomainObjCheckActive(vm) < 0)
+        goto cleanup;
+
+    priv = vm->privateData;
+
+    if (nmountpoints == 0) {
+        ret = priv->frozen[0] + priv->frozen[1];
+        priv->frozen[0] = priv->frozen[1] = false;
+    } else {
+        for (i = 0; i < nmountpoints; i++) {
+            if (STREQ(mountpoints[i], "/")) {
+                if (priv->frozen[0]) {
+                    slash = 1;
+                } else {
+                    virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                                   _("mount point is not frozen: /"));
+                    goto cleanup;
+                }
+            } else if (STREQ(mountpoints[i], "/boot")) {
+                if (priv->frozen[1]) {
+                    slash_boot = 1;
+                } else {
+                    virReportError(VIR_ERR_OPERATION_INVALID, "%s",
+                                   _("mount point is not frozen: /boot"));
+                    goto cleanup;
+                }
+            } else {
+                virReportError(VIR_ERR_OPERATION_INVALID,
+                               _("mount point not found: %s"),
+                               mountpoints[i]);
+                goto cleanup;
+            }
+        }
+
+        if (slash)
+            priv->frozen[0] = false;
+        if (slash_boot)
+            priv->frozen[1] = false;
+
+        ret = slash + slash_boot;
+    }
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+
 static int testDomainGetAutostart(virDomainPtr domain,
                                   int *autostart)
 {
@@ -8750,6 +8815,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainUndefine = testDomainUndefine, /* 0.1.11 */
     .domainUndefineFlags = testDomainUndefineFlags, /* 0.9.4 */
     .domainFSFreeze = testDomainFSFreeze, /* 5.6.0 */
+    .domainFSThaw = testDomainFSThaw, /* 5.6.0 */
     .domainGetAutostart = testDomainGetAutostart, /* 0.3.2 */
     .domainSetAutostart = testDomainSetAutostart, /* 0.3.2 */
     .domainGetDiskErrors = testDomainGetDiskErrors, /* 5.4.0 */
