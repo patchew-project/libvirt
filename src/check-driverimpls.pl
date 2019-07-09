@@ -23,14 +23,41 @@ use warnings;
 my $intable = 0;
 my $table;
 my $mainprefix;
+my %apis;
+
+# API pairs where a driver should provide both or neither alternative.
+my %pairs = (
+    'domainShutdown' => 'domainShutdownFlags',
+    'domainDestroy' => 'domainDestroyFlags',
+    'domainSetMemory' => 'domainSetMemoryFlags',
+    'domainSave' => 'domainSaveFlags',
+    'domainRestore' => 'domainRestoreFlags',
+    'domainSetVcpus' => 'domainSetVcpusFlags',
+    'domainPinVcpu' => 'domainPinVcpuFlags',
+    'domainCreate' => 'domainCreateWithFlags',
+    'domainDefineXML' => 'domainDefineXMLFlags',
+    'domainUndefine' => 'domainUndefineFlags',
+    'domainAttachDevice' => 'domainAttachDeviceFlags',
+    'domainDetachDevice' => 'domainDetachDeviceFlags',
+    'domainGetSchedulerParameters' => 'domainGetSchedulerParametersFlags',
+    'domainSetSchedulerParameters' => 'domainSetSchedulerParametersFlags',
+    'nodeDeviceDettach' => 'nodeDeviceDetachFlags',
+);
 
 my $status = 0;
 while (<>) {
     if ($intable) {
         if (/}/) {
+            while (my ($old, $new) = each %pairs) {
+                if (exists $apis{$old} != exists $apis{$new}) {
+                    print "$ARGV:$. Inconsistent paired API '$old' vs. '$new'\n";
+                    $status = 1;
+                }
+            }
             $intable = 0;
             $table = undef;
             $mainprefix = undef;
+            %apis = ();
         } elsif (/\.(\w+)\s*=\s*(\w+),?/) {
             my $api = $1;
             my $impl = $2;
@@ -39,9 +66,11 @@ while (<>) {
             next if $api eq "name";
             next if $impl eq "NULL";
 
+            $apis{$api} = 1;
+
             my $suffix = $impl;
             my $prefix = $impl;
-            $prefix =~ s/^([a-z]+(?:Unified)?)(.*?)$/$1/;
+            $prefix =~ s/^([a-z]+)(.*?)$/$1/;
 
             if (defined $mainprefix) {
                 if ($mainprefix ne $prefix) {
@@ -53,7 +82,7 @@ while (<>) {
             }
 
             if ($api !~ /^$mainprefix/) {
-                $suffix =~ s/^[a-z]+(?:Unified)?//;
+                $suffix =~ s/^[a-z]+//;
                 $suffix =~ s/^([A-Z]+)/lc $1/e;
             }
 
