@@ -1184,19 +1184,21 @@ xenapiDomainSetVcpus(virDomainPtr dom, unsigned int nvcpus)
 }
 
 /*
- * xenapiDomainPinVcpu
+ * xenapiDomainPinVcpuFlags
  *
  * Dynamically change the real CPUs which can be allocated to a virtual CPU
  * Returns 0 on success or -1 in case of error
  */
 static int
-xenapiDomainPinVcpu(virDomainPtr dom, unsigned int vcpu ATTRIBUTE_UNUSED,
-                    unsigned char *cpumap, int maplen)
+xenapiDomainPinVcpuFlags(virDomainPtr dom, unsigned int vcpu ATTRIBUTE_UNUSED,
+                         unsigned char *cpumap, int maplen,
+                         unsigned int flags)
 {
     char *value = NULL;
     xen_vm vm;
     xen_vm_set *vms;
     xen_session *session = ((struct _xenapiPrivate *)(dom->conn->privateData))->session;
+    virCheckFlags(0, -1);
     if (xen_vm_get_by_name_label(session, &vms, dom->name) && vms->size > 0) {
         if (vms->size != 1) {
             xenapiSessionErrorHandler(dom->conn, VIR_ERR_INTERNAL_ERROR,
@@ -1223,6 +1225,19 @@ xenapiDomainPinVcpu(virDomainPtr dom, unsigned int vcpu ATTRIBUTE_UNUSED,
         xen_vm_set_free(vms);
     xenapiSessionErrorHandler(dom->conn, VIR_ERR_INTERNAL_ERROR, NULL);
     return -1;
+}
+
+/*
+ * xenapiDomainPinVcpu
+ *
+ * Dynamically change the real CPUs which can be allocated to a virtual CPU
+ * Returns 0 on success or -1 in case of error
+ */
+static int
+xenapiDomainPinVcpu(virDomainPtr dom, unsigned int vcpu,
+                    unsigned char *cpumap, int maplen)
+{
+    return xenapiDomainPinVcpuFlags(dom, vcpu, cpumap, maplen, 0);
 }
 
 /*
@@ -2029,6 +2044,7 @@ static virHypervisorDriver xenapiHypervisorDriver = {
     .domainSetVcpusFlags = xenapiDomainSetVcpusFlags, /* 0.8.5 */
     .domainGetVcpusFlags = xenapiDomainGetVcpusFlags, /* 0.8.5 */
     .domainPinVcpu = xenapiDomainPinVcpu, /* 0.8.0 */
+    .domainPinVcpuFlags = xenapiDomainPinVcpuFlags, /* 5.6.0 */
     .domainGetVcpus = xenapiDomainGetVcpus, /* 0.8.0 */
     .domainGetMaxVcpus = xenapiDomainGetMaxVcpus, /* 0.8.0 */
     .domainGetXMLDesc = xenapiDomainGetXMLDesc, /* 0.8.0 */
