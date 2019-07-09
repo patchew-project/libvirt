@@ -584,7 +584,10 @@ bhyveDomainUndefineFlags(virDomainPtr domain, unsigned int flags)
     virDomainObjPtr vm;
     int ret = -1;
 
-    virCheckFlags(0, -1);
+    /* We have no managed save or snapshots, so we can ignore those flags */
+    virCheckFlags(VIR_DOMAIN_UNDEFINE_MANAGED_SAVE |
+                  VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA, NULL);
+
     if (!(vm = bhyveDomObjFromDomain(domain)))
         goto cleanup;
 
