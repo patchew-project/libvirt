@@ -1126,7 +1126,10 @@ openvzDomainUndefineFlags(virDomainPtr dom,
     int ret = -1;
     int status;
 
-    virCheckFlags(0, -1);
+    /* No managed save, so we explicitly reject
+     * VIR_DOMAIN_UNDEFINE_MANAGED_SAVE.  No snapshot metadata for
+     * openvz, so we can trivially ignore that flag.  */
+    virCheckFlags(VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA, -1);
 
     openvzDriverLock(driver);
     if (!(vm = openvzDomObjFromDomainLocked(driver, dom->uuid)))
