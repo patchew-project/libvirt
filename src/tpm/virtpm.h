@@ -26,3 +26,6 @@ const char *virTPMGetSwtpm(void);
 const char *virTPMGetSwtpmSetup(void);
 const char *virTPMGetSwtpmIoctl(void);
 int virTPMEmulatorInit(void);
+
+bool virTPMSwtpmCapsGet(unsigned int cap);
+bool virTPMSwtpmSetupCapsGet(unsigned int cap);
