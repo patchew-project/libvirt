@@ -567,19 +567,53 @@ int
 virRegisterConnectDriver(virConnectDriverPtr driver,
                          bool setSharedDrivers)
 {
-    VIR_DEBUG("driver=%p name=%s", driver,
-              driver ? NULLSTR(driver->hypervisorDriver->name) : "(null)");
+    const char *driver_name;
+
+    driver_name = driver ? NULLSTR(driver->hypervisorDriver->name) : "(null)";
+    VIR_DEBUG("driver=%p name=%s", driver, driver_name);
 
     virCheckNonNullArgReturn(driver, -1);
     if (virConnectDriverTabCount >= MAX_DRIVERS) {
         virReportError(VIR_ERR_INTERNAL_ERROR,
                        _("Too many drivers, cannot register %s"),
-                       driver->hypervisorDriver->name);
+                       driver_name);
         return -1;
     }
 
+    /* Check for drivers failing to provide a modern counterpart to an
+     * older API */
+#define REQUIRE_API(old, new) \
+    do { \
+        if (driver->hypervisorDriver->old && \
+            !driver->hypervisorDriver->new) { \
+            fprintf(stderr, " ***FIXME!: driver %s is broken on %s\n", \
+                    driver ? NULLSTR(driver->hypervisorDriver->name) : "(null)", #new); \
+            virReportError(VIR_ERR_INTERNAL_ERROR, \
+                           _("driver %s is missing %s interface"), \
+                           driver_name, #new); \
+            return -1; \
+        } \
+    } while (0)
+    REQUIRE_API(domainShutdown, domainShutdownFlags);
+    REQUIRE_API(domainDestroy, domainDestroyFlags);
+    REQUIRE_API(domainSetMemory, domainSetMemoryFlags);
+    REQUIRE_API(domainSave, domainSaveFlags);
+    REQUIRE_API(domainRestore, domainRestoreFlags);
+    REQUIRE_API(domainSetVcpus, domainSetVcpusFlags);
+    REQUIRE_API(domainGetVcpus, domainGetVcpusFlags);
+    REQUIRE_API(domainPinVcpu, domainPinVcpuFlags);
+    REQUIRE_API(domainCreate, domainCreateWithFlags);
+    REQUIRE_API(domainDefineXML, domainDefineXMLFlags);
+    REQUIRE_API(domainUndefine, domainUndefineFlags);
+    REQUIRE_API(domainAttachDevice, domainAttachDeviceFlags);
+    REQUIRE_API(domainDetachDevice, domainDetachDeviceFlags);
+    REQUIRE_API(domainGetSchedulerParameters, domainGetSchedulerParametersFlags);
+    REQUIRE_API(domainSetSchedulerParameters, domainSetSchedulerParametersFlags);
+    REQUIRE_API(nodeDeviceDettach, nodeDeviceDetachFlags);
+#undef REQUIRE_API
+
     VIR_DEBUG("registering %s as driver %d",
-           driver->hypervisorDriver->name, virConnectDriverTabCount);
+              driver_name, virConnectDriverTabCount);
 
     if (setSharedDrivers) {
         if (driver->interfaceDriver == NULL)
