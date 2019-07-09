@@ -491,7 +491,10 @@ static int lxcDomainUndefineFlags(virDomainPtr dom,
     int ret = -1;
     virLXCDriverConfigPtr cfg = virLXCDriverGetConfig(driver);
 
-    virCheckFlags(0, -1);
+    /* No managed save, so we explicitly reject
+     * VIR_DOMAIN_UNDEFINE_MANAGED_SAVE.  No snapshot metadata for
+     * lxc, so we can trivially ignore that flag.  */
+    virCheckFlags(VIR_DOMAIN_UNDEFINE_SNAPSHOTS_METADATA, -1);
 
     if (!(vm = lxcDomObjFromDomain(dom)))
         goto cleanup;
