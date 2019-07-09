@@ -390,6 +390,8 @@ typedef struct _testDomainObjPrivate testDomainObjPrivate;
 typedef testDomainObjPrivate *testDomainObjPrivatePtr;
 struct _testDomainObjPrivate {
     testDriverPtr driver;
+
+    bool frozen[2]; /* used by file system related calls */
 };
 
 
@@ -402,6 +404,7 @@ testDomainObjPrivateAlloc(void *opaque)
         return NULL;
 
     priv->driver = opaque;
+    priv->frozen[0] = priv->frozen[1] = false;
 
     return priv;
 }
@@ -4045,6 +4048,60 @@ static int testDomainUndefine(virDomainPtr domain)
 {
     return testDomainUndefineFlags(domain, 0);
 }
+
+
+static int
+testDomainFSFreeze(virDomainPtr dom,
+                   const char **mountpoints,
+                   unsigned int nmountpoints,
+                   unsigned int flags)
+{
+    virDomainObjPtr vm;
+    testDomainObjPrivatePtr priv;
+    size_t i;
+    int slash = 0, slash_boot = 0;
+    int ret = -1;
+
+    virCheckFlags(0, -1);
+
+    if (!(vm = testDomObjFromDomain(dom)))
+        goto cleanup;
+
+    if (virDomainObjCheckActive(vm) < 0)
+        goto cleanup;
+
+    priv = vm->privateData;
+
+    if (nmountpoints == 0) {
+        priv->frozen[0] = priv->frozen[1] = true;
+        ret = 2;
+    } else {
+        for (i = 0; i < nmountpoints; i++) {
+            if (STREQ(mountpoints[i], "/")) {
+                slash = 1;
+            } else if (STREQ(mountpoints[i], "/boot")) {
+                slash_boot = 1;
+            } else {
+                virReportError(VIR_ERR_OPERATION_INVALID,
+                               _("mount point not found: %s"),
+                               mountpoints[i]);
+                goto cleanup;
+            }
+        }
+
+        if (slash)
+            priv->frozen[0] = true;
+        if (slash_boot)
+            priv->frozen[1] = true;
+
+        ret = slash + slash_boot;
+    }
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
 
 static int testDomainGetAutostart(virDomainPtr domain,
                                   int *autostart)
@@ -8692,6 +8749,7 @@ static virHypervisorDriver testHypervisorDriver = {
     .domainDefineXMLFlags = testDomainDefineXMLFlags, /* 1.2.12 */
     .domainUndefine = testDomainUndefine, /* 0.1.11 */
     .domainUndefineFlags = testDomainUndefineFlags, /* 0.9.4 */
+    .domainFSFreeze = testDomainFSFreeze, /* 5.6.0 */
     .domainGetAutostart = testDomainGetAutostart, /* 0.3.2 */
     .domainSetAutostart = testDomainSetAutostart, /* 0.3.2 */
     .domainGetDiskErrors = testDomainGetDiskErrors, /* 5.4.0 */
