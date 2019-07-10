@@ -4316,6 +4316,7 @@
           <attribute name="type">
              <value>emulator</value>
           </attribute>
+          <ref name="tpm-backend-emulator-encryption"/>
         </group>
       </choice>
       <choice>
@@ -4343,6 +4344,35 @@
         </optional>
       </element>
     </optional>
+  </define>
+
+  <define name="tpm-backend-emulator-encryption">
+    <optional>
+      <element name="encryption">
+        <attribute name="format">
+          <value>vtpm</value>
+        </attribute>
+        <ref name="vtpmAuthSecret"/>
+      </element>
+    </optional>
+  </define>
+
+  <define name='vtpmAuthSecret'>
+    <element name='secret'>
+      <attribute name='type'>
+        <choice>
+          <value>passphrase</value>
+        </choice>
+      </attribute>
+      <choice>
+        <attribute name='uuid'>
+          <ref name="UUID"/>
+        </attribute>
+        <attribute name='usage'>
+          <text/>
+        </attribute>
+      </choice>
+    </element>
   </define>
 
   <define name="vsock">
