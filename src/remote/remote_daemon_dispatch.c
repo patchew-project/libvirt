@@ -7465,3 +7465,92 @@ remoteSerializeDomainDiskErrors(virDomainDiskErrorPtr errors,
     }
     return -1;
 }
+
+static int
+remoteDispatchDomainGetGuestUsers(virNetServerPtr server ATTRIBUTE_UNUSED,
+                                  virNetServerClientPtr client,
+                                  virNetMessagePtr msg ATTRIBUTE_UNUSED,
+                                  virNetMessageErrorPtr rerr,
+                                  remote_domain_get_guest_users_args *args,
+                                  remote_domain_get_guest_users_ret *ret)
+{
+    int rv = -1;
+    size_t i;
+    struct daemonClientPrivate *priv = virNetServerClientGetPrivateData(client);
+    virDomainUserInfoPtr *info = NULL;
+    virDomainPtr dom = NULL;
+    remote_domain_userinfo *dst;
+    int ninfo = 0;
+
+    if (!priv->conn) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s", _("connection not open"));
+        goto cleanup;
+    }
+
+    if (!(dom = get_nonnull_domain(priv->conn, args->dom)))
+        goto cleanup;
+
+    if ((ninfo = virDomainGetGuestUsers(dom, &info, args->flags)) < 0)
+        goto cleanup;
+
+    if (ninfo > REMOTE_DOMAIN_GUEST_USERS_MAX) {
+        virReportError(VIR_ERR_RPC,
+                       _("Too many users in userinfo: %d for limit %d"),
+                       ninfo, REMOTE_DOMAIN_GUEST_USERS_MAX);
+        goto cleanup;
+    }
+
+    if (ninfo) {
+        if (VIR_ALLOC_N(ret->info.info_val, ninfo) < 0)
+            goto cleanup;
+
+        ret->info.info_len = ninfo;
+
+        for (i = 0; i < ninfo; i++) {
+            dst = &ret->info.info_val[i];
+            if (VIR_STRDUP(dst->user, info[i]->user) < 0)
+                goto cleanup;
+
+            if (info[i]->domain) {
+                if (VIR_ALLOC(*dst->domain) < 0)
+                    goto cleanup;
+                if (VIR_STRDUP(*dst->domain, info[i]->domain) < 0)
+                    goto cleanup;
+            }
+
+            dst->login_time = info[i]->loginTime;
+
+        }
+
+    } else {
+        ret->info.info_len = 0;
+        ret->info.info_val = NULL;
+    }
+
+    ret->ret = ninfo;
+
+    rv = 0;
+
+ cleanup:
+    if (rv < 0) {
+        virNetMessageSaveError(rerr);
+
+        if (ret->info.info_val && ninfo > 0) {
+            for (i = 0; i < ninfo; i++) {
+                dst = &ret->info.info_val[i];
+                VIR_FREE(dst->user);
+                if(dst->domain)
+                    VIR_FREE(*dst->domain);
+                VIR_FREE(dst->domain);
+            }
+            VIR_FREE(ret->info.info_val);
+        }
+    }
+    virObjectUnref(dom);
+    if (ninfo >= 0)
+        for (i = 0; i < ninfo; i++)
+            virDomainUserInfoFree(info[i]);
+    VIR_FREE(info);
+
+    return rv;
+}

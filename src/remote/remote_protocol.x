@@ -266,6 +266,9 @@ const REMOTE_NODE_SEV_INFO_MAX = 64;
 /* Upper limit on number of launch security information entries */
 const REMOTE_DOMAIN_LAUNCH_SECURITY_INFO_PARAMS_MAX = 64;
 
+/* Upper limit on number of guest user information entries */
+const REMOTE_DOMAIN_GUEST_USERS_MAX = 64;
+
 /*
  * Upper limit on list of network port parameters
  */
@@ -3649,6 +3652,21 @@ struct remote_network_port_delete_args {
     unsigned int flags;
 };
 
+struct remote_domain_userinfo {
+    remote_nonnull_string user;
+    remote_string domain;
+    unsigned hyper login_time;
+};
+
+struct remote_domain_get_guest_users_args {
+    remote_nonnull_domain dom;
+    unsigned int flags;
+};
+
+struct remote_domain_get_guest_users_ret {
+    remote_domain_userinfo info<REMOTE_DOMAIN_GUEST_USERS_MAX>;
+    unsigned int ret;
+};
 
 /*----- Protocol. -----*/
 
@@ -6463,5 +6481,11 @@ enum remote_procedure {
      * @generate: both
      * @acl: network_port:delete
      */
-    REMOTE_PROC_NETWORK_PORT_DELETE = 410
+    REMOTE_PROC_NETWORK_PORT_DELETE = 410,
+
+    /**
+     * @generate: none
+     * @acl: domain:write
+     */
+    REMOTE_PROC_DOMAIN_GET_GUEST_USERS = 411
 };

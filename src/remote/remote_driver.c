@@ -8167,6 +8167,85 @@ remoteNetworkPortGetParameters(virNetworkPortPtr port,
     return rv;
 }
 
+static int
+remoteDomainGetGuestUsers(virDomainPtr dom,
+                          virDomainUserInfoPtr **info,
+                          unsigned int flags)
+{
+    int rv = -1;
+    size_t i;
+    struct private_data *priv = dom->conn->privateData;
+    remote_domain_get_guest_users_args args;
+    remote_domain_get_guest_users_ret ret;
+    remote_domain_userinfo *src;
+    virDomainUserInfoPtr *info_ret = NULL;
+
+    remoteDriverLock(priv);
+
+    make_nonnull_domain(&args.dom, dom);
+
+    args.flags = flags;
+
+    memset(&ret, 0, sizeof(ret));
+
+    if (call(dom->conn, priv, 0, REMOTE_PROC_DOMAIN_GET_GUEST_USERS,
+             (xdrproc_t)xdr_remote_domain_get_guest_users_args, (char *)&args,
+             (xdrproc_t)xdr_remote_domain_get_guest_users_ret, (char *)&ret) == -1)
+        goto done;
+
+    if (ret.info.info_len > REMOTE_DOMAIN_GUEST_USERS_MAX) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       _("Too many users in userinfo: %d for limit %d"),
+                       ret.info.info_len, REMOTE_DOMAIN_GUEST_USERS_MAX);
+        goto cleanup;
+    }
+
+    if (info) {
+        if (!ret.info.info_len) {
+            *info = NULL;
+            rv = ret.ret;
+            goto cleanup;
+        }
+
+        if (VIR_ALLOC_N(info_ret, ret.info.info_len) < 0)
+            goto cleanup;
+
+        for (i = 0; i < ret.info.info_len; i++) {
+            src = &ret.info.info_val[i];
+
+            if (VIR_ALLOC(info_ret[i]) < 0)
+                goto cleanup;
+
+            if (VIR_STRDUP(info_ret[i]->user, src->user) < 0)
+                goto cleanup;
+
+            if (src->domain) {
+                if (VIR_STRDUP(info_ret[i]->domain, *src->domain) < 0)
+                    goto cleanup;
+            }
+
+            info_ret[i]->loginTime = src->login_time;
+        }
+
+        *info = info_ret;
+        info_ret = NULL;
+    }
+
+    rv = ret.ret;
+
+ cleanup:
+    if (info_ret) {
+        for (i = 0; i < ret.info.info_len; i++)
+            virDomainUserInfoFree(info_ret[i]);
+        VIR_FREE(info_ret);
+    }
+    xdr_free((xdrproc_t)xdr_remote_domain_get_guest_users_ret,
+             (char *) &ret);
+
+ done:
+    remoteDriverUnlock(priv);
+    return rv;
+}
 
 /* get_nonnull_domain and get_nonnull_network turn an on-wire
  * (name, uuid) pair into virDomainPtr or virNetworkPtr object.
@@ -8573,7 +8652,8 @@ static virHypervisorDriver hypervisor_driver = {
     .connectCompareHypervisorCPU = remoteConnectCompareHypervisorCPU, /* 4.4.0 */
     .connectBaselineHypervisorCPU = remoteConnectBaselineHypervisorCPU, /* 4.4.0 */
     .nodeGetSEVInfo = remoteNodeGetSEVInfo, /* 4.5.0 */
-    .domainGetLaunchSecurityInfo = remoteDomainGetLaunchSecurityInfo /* 4.5.0 */
+    .domainGetLaunchSecurityInfo = remoteDomainGetLaunchSecurityInfo, /* 4.5.0 */
+    .domainGetGuestUsers = remoteDomainGetGuestUsers /* 5.6.0 */
 };
 
 static virNetworkDriver network_driver = {

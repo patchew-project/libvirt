@@ -3043,6 +3043,22 @@ struct remote_network_port_delete_args {
         remote_nonnull_network_port port;
         u_int                      flags;
 };
+struct remote_domain_userinfo {
+        remote_nonnull_string      user;
+        remote_string              domain;
+        uint64_t                   login_time;
+};
+struct remote_domain_get_guest_users_args {
+        remote_nonnull_domain      dom;
+        u_int                      flags;
+};
+struct remote_domain_get_guest_users_ret {
+        struct {
+                u_int              info_len;
+                remote_domain_userinfo * info_val;
+        } info;
+        u_int                      ret;
+};
 enum remote_procedure {
         REMOTE_PROC_CONNECT_OPEN = 1,
         REMOTE_PROC_CONNECT_CLOSE = 2,
@@ -3454,4 +3470,5 @@ enum remote_procedure {
         REMOTE_PROC_NETWORK_PORT_SET_PARAMETERS = 408,
         REMOTE_PROC_NETWORK_PORT_GET_XML_DESC = 409,
         REMOTE_PROC_NETWORK_PORT_DELETE = 410,
+        REMOTE_PROC_DOMAIN_GET_GUEST_USERS = 411,
 };
