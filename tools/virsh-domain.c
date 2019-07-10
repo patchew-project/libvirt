@@ -14030,6 +14030,76 @@ cmdDomFSInfo(vshControl *ctl, const vshCmd *cmd)
     return ret;
 }
 
+/*
+ * "guestusers" command
+ */
+static const vshCmdInfo info_guestusers[] = {
+    {.name = "help",
+     .data = N_("query the users logged on in the guest (via agent)")
+    },
+    {.name = "desc",
+     .data = N_("Use the guest agent to query the list of logged in users from guest's "
+                "point of view")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_guestusers[] = {
+    VIRSH_COMMON_OPT_DOMAIN_FULL(VIR_CONNECT_LIST_DOMAINS_ACTIVE),
+    {.name = NULL}
+};
+
+static bool
+cmdGuestusers(vshControl *ctl, const vshCmd *cmd)
+{
+    virDomainPtr dom;
+    virDomainUserInfoPtr *userinfo = NULL;
+    int ninfo = 0;
+    size_t i;
+    bool ret = false;
+    vshTablePtr table = NULL;
+
+    if (!(dom = virshCommandOptDomain(ctl, cmd, NULL)))
+        return false;
+
+    if ((ninfo = virDomainGetGuestUsers(dom, &userinfo, 0)) < 0)
+        goto cleanup;
+
+    if (userinfo != NULL) {
+        table = vshTableNew(_("User"), _("Domain"), _("Login Time"),  NULL);
+        if (!table)
+            goto cleanup;
+
+        for (i = 0; i < ninfo; i++) {
+            VIR_AUTOFREE(char *) loginstr = virTimeStringThen(userinfo[i]->loginTime);
+            if (loginstr == NULL)
+                goto cleanup;
+
+            if (vshTableRowAppend(table,
+                                  userinfo[i]->user,
+                                  userinfo[i]->domain ? userinfo[i]->domain : "",
+                                  loginstr,
+                                  NULL) < 0)
+                goto cleanup;
+        }
+
+        vshTablePrintToStdout(table, ctl);
+    } else {
+        vshPrintExtra(ctl, _("No active users in the domain"));
+    }
+
+    ret = true;
+
+cleanup:
+    if (ninfo >= 0) {
+        for (i = 0; i < ninfo; i++)
+            virDomainUserInfoFree(userinfo[i]);
+    }
+    VIR_FREE(userinfo);
+    virshDomainFree(dom);
+    return ret;
+}
+
 const vshCmdDef domManagementCmds[] = {
     {.name = "attach-device",
      .handler = cmdAttachDevice,
@@ -14643,6 +14713,12 @@ const vshCmdDef domManagementCmds[] = {
      .handler = cmdDomblkthreshold,
      .opts = opts_domblkthreshold,
      .info = info_domblkthreshold,
+     .flags = 0
+    },
+    {.name = "guestusers",
+     .handler = cmdGuestusers,
+     .opts = opts_guestusers,
+     .info = info_guestusers,
      .flags = 0
     },
     {.name = NULL}

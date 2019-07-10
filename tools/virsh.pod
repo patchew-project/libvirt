@@ -3072,6 +3072,10 @@ provided too. The desired operation is then executed on the domain.
 
 See B<vcpupin> for information on I<cpulist>.
 
+=item B<guestusers> I<domain>
+
+Query the list of logged in users from guest's point of view using the guest agent.
+
 =item B<vncdisplay> I<domain>
 
 Output the IP address and port number for the VNC display. If the information
