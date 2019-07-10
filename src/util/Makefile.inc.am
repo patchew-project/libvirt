@@ -203,8 +203,6 @@ UTIL_SOURCES = \
 	util/virthreadpool.h \
 	util/virtime.c \
 	util/virtime.h \
-	util/virtpm.c \
-	util/virtpm.h \
 	util/virtypedparam.c \
 	util/virtypedparam.h \
 	util/virusb.c \

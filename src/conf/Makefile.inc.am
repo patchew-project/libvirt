@@ -178,6 +178,7 @@ libvirt_la_BUILT_LIBADD += libvirt_conf.la
 libvirt_conf_la_SOURCES = $(CONF_SOURCES)
 libvirt_conf_la_CFLAGS = \
 	-I$(srcdir)/conf \
+	-I$(srcdir)/tpm \
 	$(AM_CFLAGS) \
 	$(NULL)
 libvirt_conf_la_LDFLAGS = $(AM_LDFLAGS)
