@@ -12,6 +12,9 @@ EXTRA_DIST += \
 
 noinst_LTLIBRARIES += libvirt_tpm.la
 libvirt_la_BUILT_LIBADD += libvirt_tpm.la
-libvirt_tpm_la_CFLAGS = $(AM_CFLAGS)
+libvirt_tpm_la_CFLAGS = \
+	-I$(srcdir)/conf \
+	$(AM_CFLAGS) \
+	$(NULL)
 libvirt_tpm_la_LDFLAGS = $(AM_LDFLAGS)
 libvirt_tpm_la_SOURCES = $(TPM_UTIL_SOURCES)
