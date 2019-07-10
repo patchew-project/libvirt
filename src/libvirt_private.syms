@@ -1735,6 +1735,7 @@ virCommandSetOutputBuffer;
 virCommandSetOutputFD;
 virCommandSetPidFile;
 virCommandSetPreExecHook;
+virCommandSetSendBuffer;
 virCommandSetSELinuxLabel;
 virCommandSetUID;
 virCommandSetUmask;
