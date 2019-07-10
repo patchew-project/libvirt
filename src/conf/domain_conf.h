@@ -1270,6 +1270,7 @@ struct _virDomainTPMDef {
             virDomainChrSourceDef source;
             char *storagepath;
             char *logfile;
+            virStorageEncryptionPtr encryption;
         } emulator;
     } data;
 };
