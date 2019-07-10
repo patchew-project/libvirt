@@ -12362,3 +12362,97 @@ int virDomainGetLaunchSecurityInfo(virDomainPtr domain,
     virDispatchError(domain->conn);
     return -1;
 }
+
+
+/**
+ * virDomainJobFree:
+ * @job: pointer to virDomainJob object
+ *
+ * Frees the memory associated with @job.
+ */
+void
+virDomainJobFree(virDomainJobPtr job)
+{
+    [...]
+}
+
+
+/**
+ * virDomainJobList:
+ * @domain: pointer to a domain
+ * @jobs: Pointer to a variable to store the array containing job description
+ *        objects or NULL if the list is not required.
+ * @flags: optional flags (currently unused, callers should always pass 0)
+ *
+ * Collects a list of background jobs associated with @domain and returns it in
+ * an allocated array of virDomainJobPtr structs. The jobs include migration jobs
+ * block jobs and any other possibly long running asynchronous operation.
+ *
+ * The caller is responsible for freeing the members of the returned @jobs array
+ * using virDomainJobFree and the whole array using free();
+ *
+ * Returns the number of jobs running on @domain on success (optionally filling
+ * @jobs if non-NULL) or -1 on error (value of @jobs is set to NULL).
+ */
+int
+virDomainJobList(virDomainPtr domain,
+                 virDomainJobPtr **jobs,
+                 unsigned int flags)
+{
+    [...]
+}
+
+
+/**
+ * virDomainJobGetXMLDesc:
+ * @domain: pointer to a domain
+ * @jobname: name of the domain job to operate on
+ * @flags: optional flags (currently unused, callers should always pass 0)
+ *
+ * Returns a string containing an UTF-8 encoded XML document describing the
+ * configuration, state and progress of domain job @jobname. Please refer to the
+ * job XML documentation for information on the format of the returned document.
+ *
+ * In case of error NULL is returned. Caller is responsible for free()-ing the
+ * returned string.
+ */
+char *
+virDomainJobGetXMLDesc(virDomainPtr domain,
+                       const char *jobname,
+                       unsigned int flags)
+{
+    [...]
+}
+
+
+/**
+ * virDomainJobControl:
+ * @domain: pointer to a domain
+ * @jobname: name of the domain job to operate on
+ * @op: operation to perform on @jobname
+ * @flags: optional flags (currently unused, callers should always pass 0)
+ *
+ * Requests change of state of @jobname. Note that it depends on the type of
+ * @jobname whether @op is supported.
+ *
+ * VIR_DOMAIN_JOB_CONTROL_OPERATION_FINALIZE are supported only with
+ * VIR_DOMAIN_JOB_TYPE_BLOCK_COPY and VIR_DOMAIN_JOB_TYPE_BLOCK_COMMIT_ACTIVE.
+ *
+ * VIR_DOMAIN_JOB_CONTROL_OPERATION_PAUSE and VIR_DOMAIN_JOB_CONTROL_OPERATION_RESUME
+ * are supported only with VIR_DOMAIN_JOB_TYPE_BLOCK_* type jobs.
+ *
+ * The request to change state is asynchronous and callers should install an
+ * event callback for VIR_DOMAIN_EVENT_ID_JOB_STATE if they wish to be notified
+ * when the state change occured. (Note that the callback may fire before this
+ * API returns).
+ *
+ * Returns 0 on success or -1 on error.
+ */
+int
+virDomainJobControl(virDomainPtr domain,
+                    const char *jobname,
+                    virDomainJobControlOperations op,
+                    unsigned int flags)
+{
+    [...]
+}

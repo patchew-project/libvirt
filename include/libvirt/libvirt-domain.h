@@ -4486,6 +4486,28 @@ typedef void (*virConnectDomainEventBlockThresholdCallback)(virConnectPtr conn,
                                                             void *opaque);
 
 /**
+ * virConnectDomainEventJobStateCallback:
+ * @conn: connection object
+ * @dom: domain on which the event occurred
+ * @jobname: name of job which changed state
+ * @jobtype: type of the job
+ * @newstate: the new state the job entered
+ * @opaque: application specified data
+ *
+ * The callback occurs when a long running domain job (see virDomainJobList)
+ * changes state.
+ *
+ * The callback signature to use when registering for an event of type
+ * VIR_DOMAIN_EVENT_ID_JOB_STATE with virConnectDomainEventRegisterAny()
+ */
+typedef void (*virConnectDomainEventJobStateCallback)(virConnectPtr conn,
+                                                      virDomainPtr dom,
+                                                      const char *jobname,
+                                                      virDomainJobType jobtype,
+                                                      virDomainJobState newstate,
+                                                      void *opaque);
+
+/**
  * VIR_DOMAIN_EVENT_CALLBACK:
  *
  * Used to cast the event specific callback into the generic one
@@ -4527,6 +4549,7 @@ typedef enum {
     VIR_DOMAIN_EVENT_ID_DEVICE_REMOVAL_FAILED = 22, /* virConnectDomainEventDeviceRemovalFailedCallback */
     VIR_DOMAIN_EVENT_ID_METADATA_CHANGE = 23, /* virConnectDomainEventMetadataChangeCallback */
     VIR_DOMAIN_EVENT_ID_BLOCK_THRESHOLD = 24, /* virConnectDomainEventBlockThresholdCallback */
+    VIR_DOMAIN_EVENT_ID_JOB_STATE = 25, /* virConnectDomainEventJobStateCallback */
 
 # ifdef VIR_ENUM_SENTINELS
     VIR_DOMAIN_EVENT_ID_LAST
@@ -4895,5 +4918,73 @@ int virDomainGetLaunchSecurityInfo(virDomainPtr domain,
                                    virTypedParameterPtr *params,
                                    int *nparams,
                                    unsigned int flags);
+
+typedef enum {
+    VIR_DOMAIN_JOB_TYPE_NONE = 0,
+    VIR_DOMAIN_JOB_TYPE_MIGRATION = 1,
+    VIR_DOMAIN_JOB_TYPE_BLOCK_PULL = 2,
+    [...]
+
+# ifdef VIR_ENUM_SENTINELS
+    VIR_DOMAIN_JOB_TYPE_LAST
+# endif
+} virDomainJobType;
+
+
+typedef enum {
+    VIR_DOMAIN_JOB_STATE_NONE = 0, /* unknown job state */
+    VIR_DOMAIN_JOB_STATE_RUNNING = 1, /* job is currently running */
+    VIR_DOMAIN_JOB_STATE_READY = 2, /* job reached a synchronized state and may be finalized */
+    VIR_DOMAIN_JOB_STATE_FAILED = 3, /* job has failed */
+    VIR_DOMAIN_JOB_STATE_COMPLETED = 4, /* job has completed successfully */
+    VIR_DOMAIN_JOB_STATE_ABORTED = 5, /* job has been aborted */
+    [...]
+
+# ifdef VIR_ENUM_SENTINELS
+    VIR_DOMAIN_JOB_STATE_LAST
+# endif
+} virDomainJobState;
+
+
+typedef struct _virDomainJob virDomainJob;
+typedef virDomainJob *virDomainJobPtr;
+struct _virDomainJob {
+    char *name;
+    virDomainJobType type;
+    virDomainJobState state;
+
+    /* possibly overkill? - currently empty*/
+    virTypedParameterPtr data;
+    size_t ndata;
+};
+
+
+void virDomainJobFree(virDomainJobPtr job);
+
+int virDomainJobList(virDomainPtr domain,
+                     virDomainJobPtr **jobs,
+                     unsigned int flags);
+
+int virDomainJobGetXMLDesc(virDomainPtr domain,
+                           const char *jobname,
+                           unsigned int flags);
+
+typedef enum {
+    VIR_DOMAIN_JOB_CONTROL_OPERATION_NONE = 0,
+    VIR_DOMAIN_JOB_CONTROL_OPERATION_ABORT = 1,
+    VIR_DOMAIN_JOB_CONTROL_OPERATION_FINALIZE = 2,
+    VIR_DOMAIN_JOB_CONTROL_OPERATION_PAUSE = 3,
+    VIR_DOMAIN_JOB_CONTROL_OPERATION_RESUME = 4,
+    VIR_DOMAIN_JOB_CONTROL_OPERATION_DISMISS = 5,
+
+# ifdef VIR_ENUM_SENTINELS
+    VIR_DOMAIN_JOB_CONTROL_OPERATION_LAST
+# endif
+} virDomainJobControlOperation;
+
+int virDomainJobControl(virDomainPtr domain,
+                        const char *jobname,
+                        virDomainJobControlOperation op,
+                        unsigned int flags);
 
 #endif /* LIBVIRT_DOMAIN_H */
