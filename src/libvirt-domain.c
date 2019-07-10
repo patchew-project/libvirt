@@ -12199,6 +12199,68 @@ virDomainSetVcpu(virDomainPtr domain,
     return -1;
 }
 
+/**
+ * virDomainGetGuestUsers:
+ * @domain: pointer to domain object
+ * @info: a pointer to a variable to store an array of user info
+ * @flags: currently unused, callers shall pass 0
+ *
+ * Queries the guest agent for the list of currently active users on the
+ * guest. The reported data depends on the guest agent implementation.
+ *
+ * This API requires the VM to run. The caller is responsible for calling
+ * virTypedParamsFree to free memory returned in @params.
+ *
+ * Returns the number of returned users, or -1 in case of error.
+ * On success, the array of the information is stored into @info. The caller is
+ * responsible for calling virDomainUserInfoFree() on each array element, then
+ * calling free() on @info. On error, @info is set to NULL.
+ */
+int
+virDomainGetGuestUsers(virDomainPtr domain,
+                       virDomainUserInfoPtr **info,
+                       unsigned int flags)
+{
+    virResetLastError();
+
+    virCheckDomainReturn(domain, -1);
+    virCheckReadOnlyGoto(domain->conn->flags, error);
+
+    virCheckNonNullArgGoto(info, error);
+
+    if (domain->conn->driver->domainGetGuestUsers) {
+        int ret;
+        ret = domain->conn->driver->domainGetGuestUsers(domain, info,
+                                                        flags);
+        if (ret < 0)
+            goto error;
+        return ret;
+    }
+
+    virReportUnsupportedError();
+
+ error:
+    virDispatchError(domain->conn);
+    return -1;
+}
+
+/**
+ * virDomainUserInfoFree:
+ * @info: pointer to a UserInfo object
+ *
+ * Frees all the memory occupied by @info.
+ */
+void
+virDomainUserInfoFree(virDomainUserInfoPtr info)
+{
+    if (!info)
+        return;
+
+    VIR_FREE(info->user);
+    VIR_FREE(info->domain);
+
+    VIR_FREE(info);
+}
 
 /**
  * virDomainSetBlockThreshold:

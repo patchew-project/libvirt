@@ -4896,4 +4896,22 @@ int virDomainGetLaunchSecurityInfo(virDomainPtr domain,
                                    int *nparams,
                                    unsigned int flags);
 
+/**
+ * virDomainUserInfo:
+ *
+ * The data structure containing informationa bout logged-in users within a
+ * guest
+ */
+typedef struct _virDomainUserInfo virDomainUserInfo;
+typedef virDomainUserInfo *virDomainUserInfoPtr;
+struct _virDomainUserInfo {
+    char *user; /* username */
+    char *domain; /* login domain (windows only) */
+    unsigned long long loginTime; /* timestamp of login for this user in ms since epoch */
+};
+int virDomainGetGuestUsers(virDomainPtr domain,
+                           virDomainUserInfoPtr **info,
+                           unsigned int flags);
+void virDomainUserInfoFree(virDomainUserInfoPtr info);
+
 #endif /* LIBVIRT_DOMAIN_H */
