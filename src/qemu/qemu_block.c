@@ -1184,6 +1184,7 @@ qemuBlockStorageSourceGetCryptoProps(virStorageSourcePtr src,
         encformat = "luks";
         break;
 
+    case VIR_STORAGE_ENCRYPTION_FORMAT_VTPM:
     case VIR_STORAGE_ENCRYPTION_FORMAT_DEFAULT:
     case VIR_STORAGE_ENCRYPTION_FORMAT_LAST:
     default:
