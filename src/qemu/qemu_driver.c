@@ -22201,6 +22201,43 @@ qemuDomainGetLaunchSecurityInfo(virDomainPtr domain,
     return ret;
 }
 
+static int
+qemuDomainGetGuestUsers(virDomainPtr dom,
+                        virDomainUserInfoPtr **info,
+                        unsigned int flags)
+{
+    virQEMUDriverPtr driver = dom->conn->privateData;
+    virDomainObjPtr vm = NULL;
+    qemuAgentPtr agent;
+    int ret = -1;
+
+    virCheckFlags(0, ret);
+
+    if (!(vm = qemuDomObjFromDomain(dom)))
+        goto cleanup;
+
+    if (virDomainGetGuestUsersEnsureACL(dom->conn, vm->def) < 0)
+        goto cleanup;
+
+    if (qemuDomainObjBeginAgentJob(driver, vm, QEMU_AGENT_JOB_QUERY) < 0)
+        goto cleanup;
+
+    if (!qemuDomainAgentAvailable(vm, true))
+        goto endjob;
+
+    agent = qemuDomainObjEnterAgent(vm);
+    ret = qemuAgentGetUsers(agent, info);
+    qemuDomainObjExitAgent(vm, agent);
+
+ endjob:
+    qemuDomainObjEndAgentJob(vm);
+
+ cleanup:
+    virDomainObjEndAPI(&vm);
+    return ret;
+}
+
+
 static virHypervisorDriver qemuHypervisorDriver = {
     .name = QEMU_DRIVER_NAME,
     .connectURIProbe = qemuConnectURIProbe,
@@ -22428,6 +22465,7 @@ static virHypervisorDriver qemuHypervisorDriver = {
     .connectBaselineHypervisorCPU = qemuConnectBaselineHypervisorCPU, /* 4.4.0 */
     .nodeGetSEVInfo = qemuNodeGetSEVInfo, /* 4.5.0 */
     .domainGetLaunchSecurityInfo = qemuDomainGetLaunchSecurityInfo, /* 4.5.0 */
+    .domainGetGuestUsers = qemuDomainGetGuestUsers, /* 5.6.0 */
 };
 
 
