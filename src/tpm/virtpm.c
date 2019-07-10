@@ -77,8 +77,13 @@ virTPMCreateCancelPath(const char *devpath)
  * executables for the swtpm; to be found on the host
  */
 static char *swtpm_path;
+static struct stat swtpm_stat;
+
 static char *swtpm_setup;
+static struct stat swtpm_setup_stat;
+
 static char *swtpm_ioctl;
+static struct stat swtpm_ioctl_stat;
 
 const char *
 virTPMGetSwtpm(void)
@@ -116,18 +121,22 @@ virTPMEmulatorInit(void)
     static const struct {
         const char *name;
         char **path;
+        struct stat *stat;
     } prgs[] = {
         {
             .name = "swtpm",
             .path = &swtpm_path,
+            .stat = &swtpm_stat,
         },
         {
             .name = "swtpm_setup",
             .path = &swtpm_setup,
+            .stat = &swtpm_setup_stat,
         },
         {
             .name = "swtpm_ioctl",
             .path = &swtpm_ioctl,
+            .stat = &swtpm_ioctl_stat,
         }
     };
     size_t i;
@@ -135,6 +144,23 @@ virTPMEmulatorInit(void)
     for (i = 0; i < ARRAY_CARDINALITY(prgs); i++) {
         char *path;
         bool findit = *prgs[i].path == NULL;
+        struct stat statbuf;
+        char *tmp;
+
+        if (!findit) {
+            /* has executables changed? */
+            if (stat(*prgs[i].path, &statbuf) < 0) {
+                virReportSystemError(errno,
+                                     _("Could not stat %s"), path);
+                findit = true;
+            }
+            if (!findit &&
+                memcmp(&statbuf.st_mtim,
+                       &prgs[i].stat->st_mtime,
+                       sizeof(statbuf.st_mtim))) {
+                findit = true;
+            }
+        }
 
         if (findit) {
             path = virFindFileInPath(prgs[i].name);
@@ -151,7 +177,15 @@ virTPMEmulatorInit(void)
                 VIR_FREE(path);
                 return -1;
             }
+            if (stat(path, prgs[i].stat) < 0) {
+                virReportSystemError(errno,
+                                     _("Could not stat %s"), path);
+                VIR_FREE(path);
+                return -1;
+            }
+            tmp = *prgs[i].path;
             *prgs[i].path = path;
+            VIR_FREE(tmp);
         }
     }
 
