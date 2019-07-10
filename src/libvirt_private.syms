@@ -1448,6 +1448,10 @@ virSecurityManagerVerify;
 
 # tpm/virtpm.h
 virTPMCreateCancelPath;
+virTPMEmulatorInit;
+virTPMGetSwtpm;
+virTPMGetSwtpmIoctl;
+virTPMGetSwtpmSetup;
 
 
 # util/viralloc.h
