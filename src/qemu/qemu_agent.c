@@ -2240,3 +2240,95 @@ qemuAgentSetUserPassword(qemuAgentPtr mon,
     VIR_FREE(password64);
     return ret;
 }
+
+int
+qemuAgentGetUsers(qemuAgentPtr mon,
+                  virDomainUserInfoPtr **info)
+{
+    int ret = -1;
+    size_t i;
+    virJSONValuePtr cmd;
+    virJSONValuePtr reply = NULL;
+    virJSONValuePtr data = NULL;
+    size_t ndata;
+    const char *result;
+    virDomainUserInfoPtr *users = NULL;
+
+    if (!(cmd = qemuAgentMakeCommand("guest-get-users", NULL)))
+        return -1;
+
+    if (qemuAgentCommand(mon, cmd, &reply, true,
+                         VIR_DOMAIN_QEMU_AGENT_COMMAND_BLOCK) < 0)
+        goto cleanup;
+
+    if (!(data = virJSONValueObjectGetArray(reply, "return"))) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("guest-get-users reply was missing return data"));
+        goto cleanup;
+    }
+
+    if (!virJSONValueIsArray(data)) {
+        virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                       _("Malformed guest-get-users data array"));
+        goto cleanup;
+    }
+
+    ndata = virJSONValueArraySize(data);
+
+    if (VIR_ALLOC_N(users, ndata) < 0)
+        goto cleanup;
+
+    for (i = 0; i < ndata; i++) {
+        virJSONValuePtr entry = virJSONValueArrayGet(data, i);
+        if (VIR_ALLOC(users[i]) < 0)
+            goto cleanup;
+
+        if (!entry) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("array element missing in guest-get-users return "
+                             "value"));
+            goto cleanup;
+        }
+
+        if (!(result = virJSONValueObjectGetString(entry, "user"))) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("'user' missing in reply of guest-get-users"));
+            goto cleanup;
+        }
+
+        if (VIR_STRDUP(users[i]->user, result) < 0) {
+            goto cleanup;
+        }
+
+        /* 'domain' is only present for windows guests */
+        if ((result = virJSONValueObjectGetString(entry, "domain"))) {
+            if (VIR_STRDUP(users[i]->domain, result) < 0) {
+                goto cleanup;
+            }
+        }
+
+        double loginseconds;
+        if (virJSONValueObjectGetNumberDouble(entry, "login-time", &loginseconds) < 0) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("'login-time' missing in reply of guest-get-users"));
+            goto cleanup;
+        }
+        /* convert to milliseconds */
+        users[i]->loginTime = loginseconds * 1000;
+    }
+
+    *info = users;
+    users = NULL;
+    ret = ndata;
+
+ cleanup:
+    if (users) {
+        for (i = 0; i < ndata; i++) {
+            virDomainUserInfoFree(users[i]);
+        }
+        VIR_FREE(users);
+    }
+    virJSONValueFree(cmd);
+    virJSONValueFree(reply);
+    return ret;
+}

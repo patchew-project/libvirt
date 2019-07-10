@@ -902,6 +902,130 @@ testQemuAgentGetInterfaces(const void *data)
     return ret;
 }
 
+static const char testQemuAgentUsersResponse[] =
+    "{\"return\": "
+    "   ["
+    "       {\"user\": \"test\","
+    "        \"login-time\": 1561739203.584038"
+    "       },"
+    "       {\"user\": \"test2\","
+    "        \"login-time\": 1561739229.190697"
+    "       }"
+    "   ]"
+    "}";
+
+static const char testQemuAgentUsersResponse2[] =
+    "{\"return\": "
+    "   ["
+    "       {\"user\": \"test\","
+    "        \"domain\": \"DOMAIN\","
+    "        \"login-time\": 1561739203.584038"
+    "       }"
+    "   ]"
+    "}";
+
+static int
+testQemuAgentUsers(const void *data)
+{
+    virDomainXMLOptionPtr xmlopt = (virDomainXMLOptionPtr)data;
+    qemuMonitorTestPtr test = qemuMonitorTestNewAgent(xmlopt);
+    virDomainUserInfoPtr *userinfo = NULL;
+    int nusers;
+    int ret = -1;
+    int i;
+
+    if (!test)
+        return -1;
+
+    if (qemuMonitorTestAddAgentSyncResponse(test) < 0)
+        goto cleanup;
+
+    if (qemuMonitorTestAddItem(test, "guest-get-users",
+                               testQemuAgentUsersResponse) < 0)
+        goto cleanup;
+
+    /* get users */
+    if ((nusers = qemuAgentGetUsers(qemuMonitorTestGetAgent(test),
+                                    &userinfo)) < 0)
+        goto cleanup;
+
+    if (nusers != 2) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "Expected '2' users, got '%d'", nusers);
+        goto cleanup;
+    }
+    if (STRNEQ(userinfo[0]->user, "test")) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "Expected user name 'test', got '%s'", userinfo[0]->user);
+        goto cleanup;
+    }
+    if (userinfo[0]->loginTime != 1561739203.584038) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "Expected login time of '1561739203584', got '%llu'",
+                       userinfo[0]->loginTime);
+        goto cleanup;
+    }
+
+    if (STRNEQ(userinfo[1]->user, "test2")) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "Expected user name 'test2', got '%s'", userinfo[1]->user);
+        goto cleanup;
+    }
+    if (userinfo[1]->loginTime != 1561739229.190697) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "Expected login time of '1561739229190', got '%llu'",
+                       userinfo[1]->loginTime);
+        goto cleanup;
+    }
+
+    if (qemuMonitorTestAddAgentSyncResponse(test) < 0)
+        goto cleanup;
+
+    if (qemuMonitorTestAddItem(test, "guest-get-users",
+                               testQemuAgentUsersResponse2) < 0)
+        goto cleanup;
+
+    VIR_FREE(userinfo);
+    /* get users with domain */
+    if ((nusers = qemuAgentGetUsers(qemuMonitorTestGetAgent(test),
+                                    &userinfo)) < 0)
+        goto cleanup;
+
+    if (nusers != 1) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "Expected '1' user, got '%d'", nusers);
+        goto cleanup;
+    }
+
+    if (STRNEQ(userinfo[0]->user, "test")) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "Expected user name 'test', got '%s'", userinfo[0]->user);
+        goto cleanup;
+    }
+    if (userinfo[0]->loginTime != 1561739203.584038) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "Expected login time of '1561739203584', got '%llu'",
+                       userinfo[0]->loginTime);
+        goto cleanup;
+    }
+    if (STRNEQ(userinfo[0]->domain, "DOMAIN")) {
+        virReportError(VIR_ERR_INTERNAL_ERROR,
+                       "Expected domain 'DOMAIN', got '%s'", userinfo[0]->domain);
+        goto cleanup;
+    }
+    ret = 0;
+
+ cleanup:
+    if (nusers >= 0) {
+        for (i = 0; i < nusers; i++)
+            virDomainUserInfoFree(userinfo[i]);
+    }
+    VIR_FREE(userinfo);
+    qemuMonitorTestFree(test);
+    return ret;
+}
+
+
 static int
 mymain(void)
 {
@@ -931,6 +1055,7 @@ mymain(void)
     DO_TEST(CPU);
     DO_TEST(ArbitraryCommand);
     DO_TEST(GetInterfaces);
+    DO_TEST(Users);
 
     DO_TEST(Timeout); /* Timeout should always be called last */
 
