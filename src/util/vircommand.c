@@ -1803,6 +1803,69 @@ virCommandSetSendBuffer(virCommandPtr cmd,
 }
 
 
+static int
+virCommandGetNumSendBuffers(virCommandPtr cmd)
+{
+    return cmd->numSendBuffers;
+}
+
+
+static int
+virCommandAddSendBuffersFillPollfd(virCommandPtr cmd,
+                                   struct pollfd *fds,
+                                   int startidx)
+{
+    size_t i, j;
+
+    for (i = 0, j = 0; i < cmd->numSendBuffers; i++) {
+        if (cmd->sendBuffers[i].fd >= 0) {
+            fds[startidx + j].fd = cmd->sendBuffers[i].fd;
+            fds[startidx + j].events = POLLOUT;
+            fds[startidx + j].revents = 0;
+            j++;
+        }
+    }
+
+    return j;
+}
+
+
+static int
+virCommandSendBuffersHandlePoll(virCommandPtr cmd,
+                                struct pollfd *fds)
+{
+    size_t i;
+    int done;
+
+    for (i = 0; i < cmd->numSendBuffers; i++) {
+        if (fds->fd == cmd->sendBuffers[i].fd)
+            break;
+    }
+    if (i == cmd->numSendBuffers)
+        return 0;
+
+    done = write(fds->fd,
+                 cmd->sendBuffers[i].buffer + cmd->sendBuffers[i].offset,
+                 MIN(cmd->sendBuffers[i].buflen - cmd->sendBuffers[i].offset,
+                     MAX_PIPE_FEED_BYTES));
+    if (done < 0) {
+        if (errno == EPIPE) {
+            VIR_DEBUG("child closed PIPE early, ignoring EPIPE "
+                      "on fd %d", cmd->sendBuffers[i].fd);
+            VIR_FORCE_CLOSE(cmd->sendBuffers[i].fd);
+        } else if (errno != EINTR && errno != EAGAIN) {
+            virReportSystemError(errno, "%s",
+                                 _("unable to write to child input"));
+            return -1;
+        }
+    } else {
+        cmd->sendBuffers[i].offset += done;
+        if (cmd->sendBuffers[i].offset == cmd->sendBuffers[i].buflen)
+            VIR_FORCE_CLOSE(cmd->sendBuffers[i].fd);
+    }
+    return 0;
+}
+
 /**
  * virCommandSetInputBuffer:
  * @cmd: the command to modify
@@ -2157,7 +2220,7 @@ virCommandProcessIO(virCommandPtr cmd)
         goto cleanup;
     ret = -1;
 
-    if (VIR_ALLOC_N(fds, 3) < 0)
+    if (VIR_ALLOC_N(fds, 3 + virCommandGetNumSendBuffers(cmd)) < 0)
         goto cleanup;
 
     for (;;) {
@@ -2182,6 +2245,8 @@ virCommandProcessIO(virCommandPtr cmd)
             fds[nfds].revents = 0;
             nfds++;
         }
+
+        nfds += virCommandAddSendBuffersFillPollfd(cmd, fds, nfds);
 
         if (nfds == 0)
             break;
@@ -2255,6 +2320,9 @@ virCommandProcessIO(virCommandPtr cmd)
                     if (inoff == inlen)
                         VIR_FORCE_CLOSE(cmd->inpipe);
                 }
+            } else if (fds[i].revents & (POLLOUT | POLLHUP | POLLERR)) {
+                if (virCommandSendBuffersHandlePoll(cmd, &fds[i]) < 0)
+                    goto cleanup;
             }
         }
     }
