@@ -84,6 +84,7 @@ libvirt_driver_qemu_impl_la_CFLAGS = \
 	-I$(srcdir)/access \
 	-I$(srcdir)/conf \
 	-I$(srcdir)/secret \
+	-I$(srcdir)/tpm \
 	$(AM_CFLAGS) \
 	$(NULL)
 libvirt_driver_qemu_impl_la_LDFLAGS = $(AM_LDFLAGS)

@@ -188,6 +188,7 @@ src/storage/storage_backend_zfs.c
 src/storage/storage_driver.c
 src/storage/storage_util.c
 src/test/test_driver.c
+src/tpm/virtpm.c
 src/util/iohelper.c
 src/util/viralloc.c
 src/util/virarptable.c
@@ -265,7 +266,6 @@ src/util/virsysinfo.c
 src/util/virthreadjob.c
 src/util/virthreadpool.c
 src/util/virtime.c
-src/util/virtpm.c
 src/util/virtypedparam.c
 src/util/viruri.c
 src/util/virusb.c
