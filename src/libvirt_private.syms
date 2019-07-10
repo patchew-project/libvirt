@@ -521,6 +521,7 @@ virDomainOsDefFirmwareTypeFromString;
 virDomainOsDefFirmwareTypeToString;
 virDomainOSTypeFromString;
 virDomainOSTypeToString;
+virDomainParseBlkioDeviceStr;
 virDomainParseMemory;
 virDomainPausedReasonTypeFromString;
 virDomainPausedReasonTypeToString;
