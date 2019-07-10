@@ -43,6 +43,8 @@
 #include "dirname.h"
 #include "qemu_tpm.h"
 #include "virtpm.h"
+#include "secret_util.h"
+#include "virtpm_conf.h"
 
 #define VIR_FROM_THIS VIR_FROM_NONE
 
@@ -372,6 +374,62 @@ qemuTPMEmulatorPrepareHost(virDomainTPMDefPtr tpm,
     return ret;
 }
 
+/*
+ * qemuTPMSetupEncryption
+ *
+ * @encryption: pointer to virStorageEncryption holding secret
+ * @cmd: the virCommand to transfer the secret to
+ *
+ * Returns file descriptor representing the read-end of a pipe.
+ * The passphrase can be read from this pipe. Returns < 0 in case
+ * of error.
+ *
+ * This function reads the passphrase and writes it into the
+ * write-end of a pipe so that the read-end of the pipe can be
+ * passed to the emulator for reading the passphrase from.
+ */
+static int
+qemuTPMSetupEncryption(virStorageEncryptionPtr encryption,
+                       virCommandPtr cmd)
+{
+    int ret = -1;
+    int pipefd[2] = { -1, -1 };
+    virConnectPtr conn;
+    VIR_AUTOFREE(uint8_t *) secret = NULL;
+    size_t secret_len;
+
+    conn = virGetConnectSecret();
+    if (!conn)
+        return -1;
+
+    if (virSecretGetSecretString(conn, &encryption->secrets[0]->seclookupdef,
+                                 VIR_SECRET_USAGE_TYPE_VTPM,
+                                 &secret, &secret_len) < 0)
+        goto error;
+
+    if (pipe(pipefd) == -1) {
+        virReportSystemError(errno, "%s",
+                             _("Unable to create pipe"));
+        goto error;
+    }
+
+    if (virCommandSetSendBuffer(cmd, pipefd[1], secret, secret_len) < 0)
+        goto error;
+
+    secret = NULL;
+    ret = pipefd[0];
+
+ cleanup:
+    virObjectUnref(conn);
+
+    return ret;
+
+ error:
+    VIR_FORCE_CLOSE(pipefd[1]);
+    VIR_FORCE_CLOSE(pipefd[0]);
+
+    goto cleanup;
+}
 
 /*
  * qemuTPMEmulatorRunSetup
@@ -386,6 +444,7 @@ qemuTPMEmulatorPrepareHost(virDomainTPMDefPtr tpm,
  * @logfile: The file to write the log into; it must be writable
  *           for the user given by userid or 'tss'
  * @tpmversion: The version of the TPM, either a TPM 1.2 or TPM 2
+ * @encryption: pointer to virStorageEncryption holding secret
  *
  * Setup the external swtpm by creating endorsement key and
  * certificates for it.
@@ -398,13 +457,15 @@ qemuTPMEmulatorRunSetup(const char *storagepath,
                         uid_t swtpm_user,
                         gid_t swtpm_group,
                         const char *logfile,
-                        const virDomainTPMVersion tpmversion)
+                        const virDomainTPMVersion tpmversion,
+                        virStorageEncryptionPtr encryption)
 {
     virCommandPtr cmd = NULL;
     int exitstatus;
     int ret = -1;
     char uuid[VIR_UUID_STRING_BUFLEN];
     char *vmid = NULL;
+    VIR_AUTOCLOSE pwdfile_fd = -1;
 
     if (!privileged && tpmversion == VIR_DOMAIN_TPM_VERSION_1_2)
         return virFileWriteStr(logfile,
@@ -434,6 +495,23 @@ qemuTPMEmulatorRunSetup(const char *storagepath,
         break;
     }
 
+    if (encryption) {
+        if (!virTPMSwtpmSetupCapsGet(
+                VIR_TPM_SWTPM_SETUP_FEATURE_CMDARG_PWDFILE_FD)) {
+            virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED,
+                _("%s does not support passing a passphrase using a file "
+                  "descriptor"), virTPMGetSwtpmSetup());
+            goto cleanup;
+        }
+        if ((pwdfile_fd = qemuTPMSetupEncryption(encryption, cmd)) < 0)
+            goto cleanup;
+
+        virCommandAddArg(cmd, "--pwdfile-fd");
+        virCommandAddArgFormat(cmd, "%d", pwdfile_fd);
+        virCommandAddArgList(cmd, "--cipher", "aes-256-cbc", NULL);
+        virCommandPassFD(cmd, pwdfile_fd, VIR_COMMAND_PASS_FD_CLOSE_PARENT);
+        pwdfile_fd = -1;
+    }
 
     virCommandAddArgList(cmd,
                          "--tpm-state", storagepath,
@@ -496,6 +574,7 @@ qemuTPMEmulatorBuildCommand(virDomainTPMDefPtr tpm,
     virCommandPtr cmd = NULL;
     bool created = false;
     char *pidfile;
+    VIR_AUTOCLOSE pwdfile_fd = -1;
 
     if (qemuTPMCreateEmulatorStorage(tpm->data.emulator.storagepath,
                                      &created, swtpm_user, swtpm_group) < 0)
@@ -504,7 +583,8 @@ qemuTPMEmulatorBuildCommand(virDomainTPMDefPtr tpm,
     if (created &&
         qemuTPMEmulatorRunSetup(tpm->data.emulator.storagepath, vmname, vmuuid,
                                 privileged, swtpm_user, swtpm_group,
-                                tpm->data.emulator.logfile, tpm->version) < 0)
+                                tpm->data.emulator.logfile, tpm->version,
+                                tpm->data.emulator.encryption) < 0)
         goto error;
 
     unlink(tpm->data.emulator.source.data.nix.path);
@@ -546,6 +626,25 @@ qemuTPMEmulatorBuildCommand(virDomainTPMDefPtr tpm,
     virCommandAddArg(cmd, "--pid");
     virCommandAddArgFormat(cmd, "file=%s", pidfile);
     VIR_FREE(pidfile);
+
+    if (tpm->data.emulator.encryption) {
+        if (!virTPMSwtpmCapsGet(VIR_TPM_SWTPM_FEATURE_CMDARG_PWD_FD)) {
+            virReportError(VIR_ERR_ARGUMENT_UNSUPPORTED,
+                  _("%s does not support passing passphrase via file descriptor"),
+                  virTPMGetSwtpm());
+            goto error;
+        }
+
+        pwdfile_fd = qemuTPMSetupEncryption(tpm->data.emulator.encryption, cmd);
+        if (pwdfile_fd < 0)
+            goto error;
+
+        virCommandAddArg(cmd, "--key");
+        virCommandAddArgFormat(cmd, "pwdfd=%d,mode=aes-256-cbc,kdf=pbkdf2",
+                               pwdfile_fd);
+        virCommandPassFD(cmd, pwdfile_fd, VIR_COMMAND_PASS_FD_CLOSE_PARENT);
+        pwdfile_fd = -1;
+    }
 
     return cmd;
 
