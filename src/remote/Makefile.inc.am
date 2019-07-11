@@ -146,6 +146,7 @@ libvirtd_CFLAGS = \
 	-DSOCK_NAME="\"libvirt-sock\"" \
 	-DSOCK_NAME_RO="\"libvirt-sock-ro\"" \
 	-DSOCK_NAME_ADMIN="\"libvirt-admin-sock\"" \
+	-DDAEMON_NAME="\"libvirtd\"" \
 	$(NULL)
 
 libvirtd_LDFLAGS = \

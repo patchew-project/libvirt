@@ -63,7 +63,7 @@
 
 #include "virdbus.h"
 
-VIR_LOG_INIT("daemon.libvirtd");
+VIR_LOG_INIT("daemon." DAEMON_NAME);
 
 #if WITH_SASL
 virNetSASLContextPtr saslCtxt = NULL;
@@ -564,7 +564,7 @@ daemonSetupNetDevOpenvswitch(struct daemonConfig *config)
 
 /*
  * Set up the logging environment
- * By default if daemonized all errors go to the logfile libvirtd.log,
+ * By default if daemonized all errors go to journald/a logfile
  * but if verbose or error debugging is asked for then also output
  * informational and debug messages. Default size if 64 kB.
  */
@@ -577,7 +577,7 @@ daemonSetupLogging(struct daemonConfig *config,
     virLogReset();
 
     /*
-     * Libvirtd's order of precedence is:
+     * Logging setup order of precedence is:
      * cmdline > environment > config
      *
      * Given the precedence, we must process the variables in the opposite
@@ -605,7 +605,7 @@ daemonSetupLogging(struct daemonConfig *config,
     /* Define the default output. This is only applied if there was no setting
      * from either the config or the environment.
      */
-    if (virLogSetDefaultOutput("libvirtd", godaemon, privileged) < 0)
+    if (virLogSetDefaultOutput(DAEMON_NAME, godaemon, privileged) < 0)
         return -1;
 
     if (virLogGetNbOutputs() == 0)
@@ -717,7 +717,7 @@ static void daemonStopWorker(void *opaque)
 
     VIR_DEBUG("Completed stop dmn=%p", dmn);
 
-    /* Exit libvirtd cleanly */
+    /* Exit daemon cleanly */
     virNetDaemonQuit(dmn);
 }
 
@@ -796,7 +796,7 @@ static void daemonRunStateInit(void *opaque)
     driversInitialized = true;
 
 #ifdef WITH_DBUS
-    /* Tie the non-privileged libvirtd to the session/shutdown lifecycle */
+    /* Tie the non-privileged daemons to the session/shutdown lifecycle */
     if (!virNetDaemonIsPrivileged(dmn)) {
 
         sessionBus = virDBusGetSessionBus();
@@ -895,7 +895,7 @@ daemonUsage(const char *argv0, bool privileged)
                   "  Default paths:\n"
                   "\n"
                   "    Configuration file (unless overridden by -f):\n"
-                  "      %s\n"
+                  "      %s/libvirt/%s.conf\n"
                   "\n"
                   "    Sockets:\n"
                   "      %s\n"
@@ -907,22 +907,24 @@ daemonUsage(const char *argv0, bool privileged)
                   "      Server private key: %s\n"
                   "\n"
                   "    PID file (unless overridden by -p):\n"
-                  "      %s/run/libvirtd.pid\n"
+                  "      %s/run/%s.pid\n"
                   "\n"),
-                LIBVIRTD_CONFIGURATION_FILE,
+                SYSCONFDIR,
+                DAEMON_NAME,
                 LOCALSTATEDIR "/run/libvirt/" SOCK_NAME,
                 LOCALSTATEDIR "/run/libvirt/" SOCK_NAME_RO,
                 LIBVIRT_CACERT,
                 LIBVIRT_SERVERCERT,
                 LIBVIRT_SERVERKEY,
-                LOCALSTATEDIR);
+                LOCALSTATEDIR,
+                DAEMON_NAME);
     } else {
         fprintf(stderr,
                 _("\n"
                   "  Default paths:\n"
                   "\n"
                   "    Configuration file (unless overridden by -f):\n"
-                  "      $XDG_CONFIG_HOME/libvirt/libvirtd.conf\n"
+                  "      $XDG_CONFIG_HOME/libvirt/%s.conf\n"
                   "\n"
                   "    Sockets:\n"
                   "      $XDG_RUNTIME_DIR/libvirt/%s\n"
@@ -933,9 +935,11 @@ daemonUsage(const char *argv0, bool privileged)
                   "      Server private key: $HOME/.pki/libvirt/serverkey.pem\n"
                   "\n"
                   "    PID file:\n"
-                  "      $XDG_RUNTIME_DIR/libvirt/libvirtd.pid\n"
+                  "      $XDG_RUNTIME_DIR/libvirt/%s.pid\n"
                   "\n"),
-                SOCK_NAME);
+                DAEMON_NAME,
+                SOCK_NAME,
+                DAEMON_NAME);
     }
 }
 
@@ -1099,7 +1103,7 @@ int main(int argc, char **argv) {
     if (!pid_file &&
         virPidFileConstructPath(privileged,
                                 LOCALSTATEDIR,
-                                "libvirtd",
+                                DAEMON_NAME,
                                 &pid_file) < 0) {
         VIR_ERROR(_("Can't determine pid file path."));
         exit(EXIT_FAILURE);
@@ -1179,7 +1183,7 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
-    if (!(srv = virNetServerNew("libvirtd", 1,
+    if (!(srv = virNetServerNew(DAEMON_NAME, 1,
                                 config->min_workers,
                                 config->max_workers,
                                 config->prio_workers,
