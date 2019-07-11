@@ -162,6 +162,7 @@
 /src/util/virkeycodetable*.h
 /src/util/virkeynametable*.h
 /src/virt-aa-helper
+/src/virtbhyved
 /src/virtinterfaced
 /src/virtlibxld
 /src/virtlockd
