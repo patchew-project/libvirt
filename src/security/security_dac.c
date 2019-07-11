@@ -912,6 +912,23 @@ virSecurityDACSetImageLabelInternal(virSecurityManagerPtr mgr,
             return -1;
     }
 
+    /* This is not very clean. But so far we don't have NVMe
+     * storage pool backend so that its chownCallback would be
+     * called. And this place looks least offensive. */
+    if (src->type == VIR_STORAGE_TYPE_NVME) {
+        const virStorageSourceNVMeDef *nvme = src->nvme;
+        VIR_AUTOFREE(char *) vfioGroupDev = NULL;
+        VIR_AUTOUNREF(virPCIDevicePtr) pci = virPCIDeviceNew(nvme->pciAddr.domain,
+                                                             nvme->pciAddr.bus,
+                                                             nvme->pciAddr.slot,
+                                                             nvme->pciAddr.function);
+        if (!pci ||
+            !(vfioGroupDev = virPCIDeviceGetIOMMUGroupDev(pci)))
+            return -1;
+
+        return virSecurityDACSetOwnership(mgr, NULL, vfioGroupDev, user, group, false);
+    }
+
     /* We can't do restore on shared resources safely. Not even
      * with refcounting implemented in XATTRs because if there
      * was a domain running with the feature turned off the
@@ -999,6 +1016,27 @@ virSecurityDACRestoreImageLabelInt(virSecurityManagerPtr mgr,
                       src->path);
             return 0;
         }
+    }
+
+    /* This is not very clean. But so far we don't have NVMe
+     * storage pool backend so that its chownCallback would be
+     * called. And this place looks least offensive. */
+    if (src->type == VIR_STORAGE_TYPE_NVME) {
+        const virStorageSourceNVMeDef *nvme = src->nvme;
+        VIR_AUTOFREE(char *) vfioGroupDev = NULL;
+        VIR_AUTOUNREF(virPCIDevicePtr) pci = virPCIDeviceNew(nvme->pciAddr.domain,
+                                                             nvme->pciAddr.bus,
+                                                             nvme->pciAddr.slot,
+                                                             nvme->pciAddr.function);
+        if (!pci ||
+            !(vfioGroupDev = virPCIDeviceGetIOMMUGroupDev(pci)))
+            return -1;
+
+        /* Ideally, we would check if there is not another PCI
+         * device within domain def that is in the same IOMMU
+         * group. But we're not doing that for hostdevs yet. */
+
+        return virSecurityDACRestoreFileLabelInternal(mgr, NULL, vfioGroupDev, false);
     }
 
     return virSecurityDACRestoreFileLabelInternal(mgr, src, NULL, true);
