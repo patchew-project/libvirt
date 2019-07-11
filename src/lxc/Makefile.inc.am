@@ -110,6 +110,21 @@ endif WITH_BLKID
 libvirt_driver_lxc_impl_la_LIBADD += $(SECDRIVER_LIBS)
 libvirt_driver_lxc_impl_la_SOURCES = $(LXC_DRIVER_SOURCES)
 
+
+sbin_PROGRAMS += virtlxcd
+
+virtlxcd_SOURCES = $(REMOTE_DAEMON_SOURCES)
+virtlxcd_CFLAGS = \
+       $(REMOTE_DAEMON_CFLAGS) \
+       -DSOCK_NAME="\"virtlxcd-sock\"" \
+       -DSOCK_NAME_RO="\"virtlxcd-sock-ro\"" \
+       -DSOCK_NAME_ADMIN="\"virtlxcd-admin-sock\"" \
+       -DDAEMON_NAME="\"virtlxcd\"" \
+       -DMODULE_NAME="\"lxc\"" \
+       $(NULL)
+virtlxcd_LDFLAGS = $(REMOTE_DAEMON_LDFLAGS)
+virtlxcd_LDADD = $(REMOTE_DAEMON_LDADD)
+
 libexec_PROGRAMS += libvirt_lxc
 
 libvirt_lxc_SOURCES = \

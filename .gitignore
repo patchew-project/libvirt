@@ -166,6 +166,7 @@
 /src/virtlibxld
 /src/virtlockd
 /src/virtlogd
+/src/virtlxcd
 /src/virtnetworkd
 /src/virtnodedevd
 /src/virtnwfilterd
