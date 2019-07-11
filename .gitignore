@@ -163,6 +163,7 @@
 /src/util/virkeynametable*.h
 /src/virt-aa-helper
 /src/virtinterfaced
+/src/virtlibxld
 /src/virtlockd
 /src/virtlogd
 /src/virtnetworkd

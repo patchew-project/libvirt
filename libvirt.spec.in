@@ -1691,6 +1691,7 @@ exit 0
 
 %if %{with_libxl}
 %files daemon-driver-libxl
+%attr(0755, root, root) %{_sbindir}/virtlibxld
 %config(noreplace) %{_sysconfdir}/libvirt/libxl.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/libvirtd.libxl
 %config(noreplace) %{_sysconfdir}/libvirt/libxl-lockd.conf
