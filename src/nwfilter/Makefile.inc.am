@@ -41,4 +41,18 @@ libvirt_driver_nwfilter_impl_la_LIBADD = \
 	../gnulib/lib/libgnu.la \
 	$(NULL)
 libvirt_driver_nwfilter_impl_la_SOURCES = $(NWFILTER_DRIVER_SOURCES)
+
+sbin_PROGRAMS += virtnwfilterd
+
+virtnwfilterd_SOURCES = $(REMOTE_DAEMON_SOURCES)
+virtnwfilterd_CFLAGS = \
+       $(REMOTE_DAEMON_CFLAGS) \
+       -DSOCK_NAME="\"virtnwfilterd-sock\"" \
+       -DSOCK_NAME_RO="\"virtnwfilterd-sock-ro\"" \
+       -DSOCK_NAME_ADMIN="\"virtnwfilterd-admin-sock\"" \
+       -DDAEMON_NAME="\"virtnwfilterd\"" \
+       -DMODULE_NAME="\"nwfilter\"" \
+       $(NULL)
+virtnwfilterd_LDFLAGS = $(REMOTE_DAEMON_LDFLAGS)
+virtnwfilterd_LDADD = $(REMOTE_DAEMON_LDADD)
 endif WITH_NWFILTER

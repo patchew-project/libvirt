@@ -167,6 +167,7 @@
 /src/virtlogd
 /src/virtnetworkd
 /src/virtnodedevd
+/src/virtnwfilterd
 /src/virtsecretd
 /src/virtstoraged
 /src/virt-guest-shutdown.target
