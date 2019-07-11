@@ -112,6 +112,20 @@ CLEANFILES += \
 
 endif WITH_DTRACE_PROBES
 
+sbin_PROGRAMS += virtqemud
+
+virtqemud_SOURCES = $(REMOTE_DAEMON_SOURCES)
+virtqemud_CFLAGS = \
+       $(REMOTE_DAEMON_CFLAGS) \
+       -DSOCK_NAME="\"virtqemud-sock\"" \
+       -DSOCK_NAME_RO="\"virtqemud-sock-ro\"" \
+       -DSOCK_NAME_ADMIN="\"virtqemud-admin-sock\"" \
+       -DDAEMON_NAME="\"virtqemud\"" \
+       -DMODULE_NAME="\"qemu\"" \
+       $(NULL)
+virtqemud_LDFLAGS = $(REMOTE_DAEMON_LDFLAGS)
+virtqemud_LDADD = $(REMOTE_DAEMON_LDADD)
+
 conf_DATA += qemu/qemu.conf
 
 augeas_DATA += qemu/libvirtd_qemu.aug

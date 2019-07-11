@@ -1661,6 +1661,7 @@ exit 0
 
 %if %{with_qemu}
 %files daemon-driver-qemu
+%attr(0755, root, root) %{_sbindir}/virtqemud
 %dir %attr(0700, root, root) %{_sysconfdir}/libvirt/qemu/
 %dir %attr(0700, root, root) %{_localstatedir}/log/libvirt/qemu/
 %config(noreplace) %{_sysconfdir}/libvirt/qemu.conf
