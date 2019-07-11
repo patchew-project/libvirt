@@ -366,11 +366,13 @@ static int ATTRIBUTE_NONNULL(3)
 daemonSetupNetworking(virNetServerPtr srv,
                       virNetServerPtr srvAdm,
                       struct daemonConfig *config,
+#ifdef ENABLE_IP
+                      bool ipsock,
+                      bool privileged,
+#endif /* ! ENABLE_IP */
                       const char *sock_path,
                       const char *sock_path_ro,
-                      const char *sock_path_adm,
-                      bool ipsock,
-                      bool privileged)
+                      const char *sock_path_adm)
 {
     virNetServerServicePtr svc = NULL;
     virNetServerServicePtr svcAdm = NULL;
@@ -457,6 +459,7 @@ daemonSetupNetworking(virNetServerPtr srv,
             goto cleanup;
     }
 
+#ifdef ENABLE_IP
     if (ipsock) {
         if (config->listen_tcp) {
             VIR_DEBUG("Registering TCP socket %s:%s",
@@ -537,6 +540,7 @@ daemonSetupNetworking(virNetServerPtr srv,
             virObjectUnref(ctxt);
         }
     }
+#endif /* ! ENABLE_IP */
 
 #if WITH_SASL
     if (virNetServerNeedsAuth(srv, REMOTE_AUTH_SASL) &&
@@ -876,6 +880,7 @@ daemonSetupHostUUID(const struct daemonConfig *config)
 static void
 daemonUsage(const char *argv0, bool privileged)
 {
+#ifdef ENABLE_IP
     fprintf(stderr,
             _("\n"
               "Usage:\n"
@@ -946,6 +951,64 @@ daemonUsage(const char *argv0, bool privileged)
                 SOCK_NAME,
                 DAEMON_NAME);
     }
+#else
+    fprintf(stderr,
+            _("\n"
+              "Usage:\n"
+              "  %s [options]\n"
+              "\n"
+              "Options:\n"
+              "  -h | --help            Display program help:\n"
+              "  -v | --verbose         Verbose messages.\n"
+              "  -d | --daemon          Run as a daemon & write PID file.\n"
+              "  -t | --timeout <secs>  Exit after timeout period.\n"
+              "  -f | --config <file>   Configuration file.\n"
+              "  -V | --version         Display version information.\n"
+              "  -p | --pid-file <file> Change name of PID file.\n"
+              "\n"
+              "libvirt management daemon:\n"),
+            argv0);
+
+    if (privileged) {
+        fprintf(stderr,
+                _("\n"
+                  "  Default paths:\n"
+                  "\n"
+                  "    Configuration file (unless overridden by -f):\n"
+                  "      %s/libvirt/%s.conf\n"
+                  "\n"
+                  "    Sockets:\n"
+                  "      %s\n"
+                  "      %s\n"
+                  "\n"
+                  "    PID file (unless overridden by -p):\n"
+                  "      %s/run/%s.pid\n"
+                  "\n"),
+                SYSCONFDIR,
+                DAEMON_NAME,
+                LOCALSTATEDIR "/run/libvirt/" SOCK_NAME,
+                LOCALSTATEDIR "/run/libvirt/" SOCK_NAME_RO,
+                LOCALSTATEDIR,
+                DAEMON_NAME);
+    } else {
+        fprintf(stderr,
+                _("\n"
+                  "  Default paths:\n"
+                  "\n"
+                  "    Configuration file (unless overridden by -f):\n"
+                  "      $XDG_CONFIG_HOME/libvirt/%s.conf\n"
+                  "\n"
+                  "    Sockets:\n"
+                  "      $XDG_RUNTIME_DIR/libvirt/%s\n"
+                  "\n"
+                  "    PID file:\n"
+                  "      $XDG_RUNTIME_DIR/libvirt/%s.pid\n"
+                  "\n"),
+                DAEMON_NAME,
+                SOCK_NAME,
+                DAEMON_NAME);
+    }
+#endif
 }
 
 int main(int argc, char **argv) {
@@ -965,7 +1028,9 @@ int main(int argc, char **argv) {
     int timeout = -1;        /* -t: Shutdown timeout */
     int verbose = 0;
     int godaemon = 0;
+#ifdef ENABLE_IP
     int ipsock = 0;
+#endif /* ! ENABLE_IP */
     struct daemonConfig *config;
     bool privileged = geteuid() == 0 ? true : false;
     bool implicit_conf = false;
@@ -975,7 +1040,9 @@ int main(int argc, char **argv) {
     struct option opts[] = {
         { "verbose", no_argument, &verbose, 'v'},
         { "daemon", no_argument, &godaemon, 'd'},
+#ifdef ENABLE_IP
         { "listen", no_argument, &ipsock, 'l'},
+#endif /* ! ENABLE_IP */
         { "config", required_argument, NULL, 'f'},
         { "timeout", required_argument, NULL, 't'},
         { "pid-file", required_argument, NULL, 'p'},
@@ -999,7 +1066,13 @@ int main(int argc, char **argv) {
         int c;
         char *tmp;
 
-        c = getopt_long(argc, argv, "ldf:p:t:vVh", opts, &optidx);
+        c = getopt_long(argc, argv,
+#ifdef ENABLE_IP
+                        "ldf:p:t:vVh",
+#else /* ! ENABLE_IP */
+                        "df:p:t:vVh",
+#endif /* ! ENABLE_IP */
+                        opts, &optidx);
 
         if (c == -1)
             break;
@@ -1014,9 +1087,11 @@ int main(int argc, char **argv) {
         case 'd':
             godaemon = 1;
             break;
+#ifdef ENABLE_IP
         case 'l':
             ipsock = 1;
             break;
+#endif /* ! ENABLE_IP */
 
         case 't':
             if (virStrToLong_i(optarg, &tmp, 10, &timeout) != 0
@@ -1330,10 +1405,13 @@ int main(int argc, char **argv) {
 
     if (daemonSetupNetworking(srv, srvAdm,
                               config,
+#ifdef ENABLE_IP
+                              ipsock,
+                              privileged,
+#endif /* !ENABLE_IP */
                               sock_file,
                               sock_file_ro,
-                              sock_file_adm,
-                              ipsock, privileged) < 0) {
+                              sock_file_adm) < 0) {
         ret = VIR_DAEMON_ERR_NETWORK;
         goto cleanup;
     }
