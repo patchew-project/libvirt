@@ -71,7 +71,7 @@ EXTRA_DIST += \
 	$(LIBVIRTD_SOURCES) \
 	remote/test_libvirtd.aug.in \
 	remote/libvirtd.aug \
-	remote/libvirtd.conf \
+	remote/libvirtd.conf.in \
 	remote/libvirtd.policy \
 	remote/libvirtd.rules \
 	remote/libvirtd.sasl \
@@ -87,6 +87,9 @@ BUILT_SOURCES += \
 MAINTAINERCLEANFILES += \
 	$(REMOTE_DRIVER_GENERATED) \
 	$(LIBVIRTD_GENERATED) \
+	$(NULL)
+CLEANFILES += \
+	remote/libvirtd.conf \
 	$(NULL)
 
 if WITH_REMOTE
@@ -177,6 +180,13 @@ libvirtd_LDADD += \
 	../gnulib/lib/libgnu.la \
 	$(LIBSOCKET) \
 	$(NULL)
+
+remote/libvirtd.conf: remote/libvirtd.conf.in
+	$(AM_V_GEN)sed \
+		-e '/:: CUT ENABLE_IP ::/d' \
+		-e '/:: END ::/d' \
+		-e 's/:: DAEMON_NAME ::/libvirtd/' \
+		< $^ > $@
 
 INSTALL_DATA_DIRS += remote
 
