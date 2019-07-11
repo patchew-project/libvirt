@@ -37,4 +37,18 @@ libvirt_driver_vz_impl_la_LIBADD = \
 	$(PARALLELS_SDK_LIBS) \
 	$(LIBNL_LIBS) \
 	$(NULL)
+
+sbin_PROGRAMS += virtvzd
+
+virtvzd_SOURCES = $(REMOTE_DAEMON_SOURCES)
+virtvzd_CFLAGS = \
+       $(REMOTE_DAEMON_CFLAGS) \
+       -DSOCK_NAME="\"virtvzd-sock\"" \
+       -DSOCK_NAME_RO="\"virtvzd-sock-ro\"" \
+       -DSOCK_NAME_ADMIN="\"virtvzd-admin-sock\"" \
+       -DDAEMON_NAME="\"virtvzd\"" \
+       -DMODULE_NAME="\"vz\"" \
+       $(NULL)
+virtvzd_LDFLAGS = $(REMOTE_DAEMON_LDFLAGS)
+virtvzd_LDADD = $(REMOTE_DAEMON_LDADD)
 endif WITH_VZ
