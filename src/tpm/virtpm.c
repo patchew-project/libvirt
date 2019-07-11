@@ -113,51 +113,45 @@ virTPMGetSwtpmIoctl(void)
 int
 virTPMEmulatorInit(void)
 {
-    if (!swtpm_path) {
-        swtpm_path = virFindFileInPath("swtpm");
-        if (!swtpm_path) {
-            virReportSystemError(ENOENT, "%s",
-                                 _("Unable to find 'swtpm' binary in $PATH"));
-            return -1;
+    static const struct {
+        const char *name;
+        char **path;
+    } prgs[] = {
+        {
+            .name = "swtpm",
+            .path = &swtpm_path,
+        },
+        {
+            .name = "swtpm_setup",
+            .path = &swtpm_setup,
+        },
+        {
+            .name = "swtpm_ioctl",
+            .path = &swtpm_ioctl,
         }
-        if (!virFileIsExecutable(swtpm_path)) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("TPM emulator %s is not an executable"),
-                           swtpm_path);
-            VIR_FREE(swtpm_path);
-            return -1;
-        }
-    }
+    };
+    size_t i;
 
-    if (!swtpm_setup) {
-        swtpm_setup = virFindFileInPath("swtpm_setup");
-        if (!swtpm_setup) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("Could not find 'swtpm_setup' in PATH"));
-            return -1;
-        }
-        if (!virFileIsExecutable(swtpm_setup)) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("'%s' is not an executable"),
-                           swtpm_setup);
-            VIR_FREE(swtpm_setup);
-            return -1;
-        }
-    }
+    for (i = 0; i < ARRAY_CARDINALITY(prgs); i++) {
+        char *path;
+        bool findit = *prgs[i].path == NULL;
 
-    if (!swtpm_ioctl) {
-        swtpm_ioctl = virFindFileInPath("swtpm_ioctl");
-        if (!swtpm_ioctl) {
-            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
-                           _("Could not find swtpm_ioctl in PATH"));
-            return -1;
-        }
-        if (!virFileIsExecutable(swtpm_ioctl)) {
-            virReportError(VIR_ERR_INTERNAL_ERROR,
-                           _("swtpm_ioctl program %s is not an executable"),
-                           swtpm_ioctl);
-            VIR_FREE(swtpm_ioctl);
-            return -1;
+        if (findit) {
+            path = virFindFileInPath(prgs[i].name);
+            if (!path) {
+                virReportSystemError(ENOENT,
+                                _("Unable to find '%s' binary in $PATH"),
+                                prgs[i].name);
+                return -1;
+            }
+            if (!virFileIsExecutable(path)) {
+                virReportError(VIR_ERR_INTERNAL_ERROR,
+                               _("%s is not an executable"),
+                               path);
+                VIR_FREE(path);
+                return -1;
+            }
+            *prgs[i].path = path;
         }
     }
 
