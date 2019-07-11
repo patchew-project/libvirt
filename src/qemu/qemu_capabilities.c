@@ -533,6 +533,9 @@ VIR_ENUM_IMPL(virQEMUCaps,
               "x86-max-cpu",
               "cpu-unavailable-features",
               "canonical-cpu-features",
+
+              /* 335 */
+              "drive-nvme",
     );
 
 
@@ -1274,6 +1277,7 @@ static struct virQEMUCapsStringFlags virQEMUCapsQMPSchemaQueries[] = {
     { "query-iothreads/ret-type/poll-max-ns", QEMU_CAPS_IOTHREAD_POLLING },
     { "query-display-options/ret-type/+egl-headless/rendernode", QEMU_CAPS_EGL_HEADLESS_RENDERNODE },
     { "nbd-server-add/arg-type/bitmap", QEMU_CAPS_NBD_BITMAP },
+    { "blockdev-add/arg-type/+nvme", QEMU_CAPS_DRIVE_NVME },
 };
 
 typedef struct _virQEMUCapsObjectTypeProps virQEMUCapsObjectTypeProps;
