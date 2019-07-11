@@ -2950,6 +2950,7 @@ void virDomainTPMDefFree(virDomainTPMDefPtr def)
         virDomainChrSourceDefClear(&def->data.emulator.source);
         VIR_FREE(def->data.emulator.storagepath);
         VIR_FREE(def->data.emulator.logfile);
+        virStorageEncryptionFree(def->data.emulator.encryption);
         break;
     case VIR_DOMAIN_TPM_TYPE_LAST:
         break;
@@ -13048,6 +13049,16 @@ virDomainSmartcardDefParseXML(virDomainXMLOptionPtr xmlopt,
  * <tpm model='tpm-tis'>
  *   <backend type='emulator' version='2'/>
  * </tpm>
+ *
+ * Emulator state encryption is supported with the following:
+ *
+ * <tpm model='tpm-tis'>
+ *   <backend type='emulator' version='2'>
+ *     <encryption format='vtpm'>
+ *        <secret type='passphrase' uuid='32ee7e76-2178-47a1-ab7b-269e6e348015'/>
+ *     </encryption>
+ *   </backend>
+ * </tpm>
  */
 static virDomainTPMDefPtr
 virDomainTPMDefParseXML(virDomainXMLOptionPtr xmlopt,
@@ -13063,6 +13074,7 @@ virDomainTPMDefParseXML(virDomainXMLOptionPtr xmlopt,
     VIR_AUTOFREE(char *) backend = NULL;
     VIR_AUTOFREE(char *) version = NULL;
     VIR_AUTOFREE(xmlNodePtr *) backends = NULL;
+    xmlNodePtr encnode = NULL;
 
     if (VIR_ALLOC(def) < 0)
         return NULL;
@@ -13126,6 +13138,21 @@ virDomainTPMDefParseXML(virDomainXMLOptionPtr xmlopt,
         def->data.passthrough.source.type = VIR_DOMAIN_CHR_TYPE_DEV;
         break;
     case VIR_DOMAIN_TPM_TYPE_EMULATOR:
+        encnode = virXPathNode("./backend/encryption", ctxt);
+        if (encnode) {
+            def->data.emulator.encryption =
+               virStorageEncryptionParseNode(encnode, ctxt);
+            if (!def->data.emulator.encryption)
+                goto error;
+            if (def->data.emulator.encryption->format !=
+                    VIR_STORAGE_ENCRYPTION_FORMAT_VTPM) {
+                virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                               _("Unsupported vTPM encryption type '%s'"),
+                               virStorageEncryptionFormatTypeToString(
+                                   def->data.emulator.encryption->format));
+                goto error;
+            }
+        }
         break;
     case VIR_DOMAIN_TPM_TYPE_LAST:
         goto error;
@@ -25949,8 +25976,19 @@ virDomainTPMDefFormat(virBufferPtr buf,
         virBufferAddLit(buf, "</backend>\n");
         break;
     case VIR_DOMAIN_TPM_TYPE_EMULATOR:
-        virBufferAsprintf(buf, " version='%s'/>\n",
+        virBufferAsprintf(buf, " version='%s'",
                           virDomainTPMVersionTypeToString(def->version));
+        if (def->data.emulator.encryption) {
+            virBufferAddLit(buf, ">\n");
+            virBufferAdjustIndent(buf, 2);
+            if (virStorageEncryptionFormat(buf,
+                                           def->data.emulator.encryption) < 0)
+                return -1;
+            virBufferAdjustIndent(buf, -2);
+            virBufferAddLit(buf, "</backend>\n");
+        } else {
+            virBufferAddLit(buf, "/>\n");
+        }
         break;
     case VIR_DOMAIN_TPM_TYPE_LAST:
         break;
