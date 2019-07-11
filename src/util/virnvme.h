@@ -1,0 +1,89 @@
+/*
+ * virnvme.h: helper APIs for managing NVMe devices
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
+
+#pragma once
+
+#include "virpci.h"
+
+typedef struct _virNVMeDevice virNVMeDevice;
+typedef virNVMeDevice *virNVMeDevicePtr;
+typedef struct _virNVMeDeviceList virNVMeDeviceList;
+typedef virNVMeDeviceList *virNVMeDeviceListPtr;
+
+virNVMeDevicePtr
+virNVMeDeviceNew(const virPCIDeviceAddress *address,
+                 unsigned long namespace,
+                 bool managed);
+
+void
+virNVMeDeviceFree(virNVMeDevicePtr dev);
+
+VIR_DEFINE_AUTOPTR_FUNC(virNVMeDevice, virNVMeDeviceFree);
+
+virNVMeDevicePtr
+virNVMeDeviceCopy(const virNVMeDevice *dev);
+
+const virPCIDeviceAddress *
+virNVMeDeviceAddressGet(const virNVMeDevice *dev);
+
+void
+virNVMeDeviceUsedByClear(virNVMeDevicePtr dev);
+
+void
+virNVMeDeviceUsedByGet(const virNVMeDevice *dev,
+                       const char **drv,
+                       const char **dom);
+
+int
+virNVMeDeviceUsedBySet(virNVMeDevicePtr dev,
+                       const char *drv,
+                       const char *dom);
+
+virNVMeDeviceListPtr
+virNVMeDeviceListNew(void);
+
+size_t
+virNVMeDeviceListCount(const virNVMeDeviceList *list);
+
+int
+virNVMeDeviceListAdd(virNVMeDeviceListPtr list,
+                     const virNVMeDevice *dev);
+
+int
+virNVMeDeviceListDel(virNVMeDeviceListPtr list,
+                     const virNVMeDevice *dev);
+
+virNVMeDevicePtr
+virNVMeDeviceListGet(virNVMeDeviceListPtr list,
+                     size_t i);
+
+virNVMeDevicePtr
+virNVMeDeviceListLookup(virNVMeDeviceListPtr list,
+                        const virNVMeDevice *dev);
+
+ssize_t
+virNVMeDeviceListLookupIndex(virNVMeDeviceListPtr list,
+                             const virNVMeDevice *dev);
+
+virPCIDeviceListPtr
+virNVMeDeviceListCreateDetachList(virNVMeDeviceListPtr activeList,
+                                  virNVMeDeviceListPtr toDetachList);
+
+virPCIDeviceListPtr
+virNVMeDeviceListCreateReAttachList(virNVMeDeviceListPtr activeList,
+                                    virNVMeDeviceListPtr toReAttachList);
