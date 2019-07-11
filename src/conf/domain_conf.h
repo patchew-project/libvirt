@@ -3623,3 +3623,7 @@ virDomainGraphicsGetRenderNode(const virDomainGraphicsDef *graphics);
 
 bool
 virDomainGraphicsNeedsAutoRenderNode(const virDomainGraphicsDef *graphics);
+
+int
+virDomainCheckDeviceChanges(virDomainDefPtr def, virDomainDefPtr newDef)
+    ATTRIBUTE_NONNULL(2);
