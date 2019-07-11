@@ -1707,6 +1707,7 @@ exit 0
 
 %if %{with_vbox}
 %files daemon-driver-vbox
+%attr(0755, root, root) %{_sbindir}/virtvboxd
 %{_libdir}/%{name}/connection-driver/libvirt_driver_vbox.so
 %endif
 

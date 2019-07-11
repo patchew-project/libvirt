@@ -173,6 +173,7 @@
 /src/virtqemud
 /src/virtsecretd
 /src/virtstoraged
+/src/virtvboxd
 /src/virt-guest-shutdown.target
 /tests/*.log
 /tests/*.pid

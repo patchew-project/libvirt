@@ -63,4 +63,18 @@ libvirt_driver_vbox_impl_la_LIBADD = \
 	$(LIBXML_LIBS) \
 	$(NULL)
 libvirt_driver_vbox_impl_la_SOURCES = $(VBOX_DRIVER_SOURCES)
+
+sbin_PROGRAMS += virtvboxd
+
+virtvboxd_SOURCES = $(REMOTE_DAEMON_SOURCES)
+virtvboxd_CFLAGS = \
+       $(REMOTE_DAEMON_CFLAGS) \
+       -DSOCK_NAME="\"virtvboxd-sock\"" \
+       -DSOCK_NAME_RO="\"virtvboxd-sock-ro\"" \
+       -DSOCK_NAME_ADMIN="\"virtvboxd-admin-sock\"" \
+       -DDAEMON_NAME="\"virtvboxd\"" \
+       -DMODULE_NAME="\"vbox\"" \
+       $(NULL)
+virtvboxd_LDFLAGS = $(REMOTE_DAEMON_LDFLAGS)
+virtvboxd_LDADD = $(REMOTE_DAEMON_LDADD)
 endif WITH_VBOX
