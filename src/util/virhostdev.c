@@ -613,26 +613,21 @@ virHostdevRestoreNetConfig(virDomainHostdevDefPtr hostdev,
     }
 }
 
-int
-virHostdevPreparePCIDevices(virHostdevManagerPtr mgr,
-                            const char *drv_name,
-                            const char *dom_name,
-                            const unsigned char *uuid,
-                            virDomainHostdevDefPtr *hostdevs,
-                            int nhostdevs,
-                            unsigned int flags)
+
+static int
+virHostdevPreparePCIDevicesImpl(virHostdevManagerPtr mgr,
+                                const char *drv_name,
+                                const char *dom_name,
+                                const unsigned char *uuid,
+                                virPCIDeviceListPtr pcidevs,
+                                virDomainHostdevDefPtr *hostdevs,
+                                int nhostdevs,
+                                unsigned int flags)
 {
-    VIR_AUTOUNREF(virPCIDeviceListPtr) pcidevs = NULL;
     int last_processed_hostdev_vf = -1;
     size_t i;
     int ret = -1;
     virPCIDeviceAddressPtr devAddr = NULL;
-
-    if (!nhostdevs)
-        return 0;
-
-    if (!(pcidevs = virHostdevGetPCIHostDeviceList(hostdevs, nhostdevs)))
-        return -1;
 
     virObjectLock(mgr->activePCIHostdevs);
     virObjectLock(mgr->inactivePCIHostdevs);
@@ -906,8 +901,29 @@ virHostdevPreparePCIDevices(virHostdevManagerPtr mgr,
  cleanup:
     virObjectUnlock(mgr->activePCIHostdevs);
     virObjectUnlock(mgr->inactivePCIHostdevs);
-
     return ret;
+}
+
+
+int
+virHostdevPreparePCIDevices(virHostdevManagerPtr mgr,
+                            const char *drv_name,
+                            const char *dom_name,
+                            const unsigned char *uuid,
+                            virDomainHostdevDefPtr *hostdevs,
+                            int nhostdevs,
+                            unsigned int flags)
+{
+    VIR_AUTOUNREF(virPCIDeviceListPtr) pcidevs = NULL;
+
+    if (!nhostdevs)
+        return 0;
+
+    if (!(pcidevs = virHostdevGetPCIHostDeviceList(hostdevs, nhostdevs)))
+        return -1;
+
+    return virHostdevPreparePCIDevicesImpl(mgr, drv_name, dom_name, uuid,
+                                           pcidevs, hostdevs, nhostdevs, flags);
 }
 
 /*
