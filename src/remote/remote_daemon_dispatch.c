@@ -1954,6 +1954,9 @@ remoteDispatchConnectOpen(virNetServerPtr server ATTRIBUTE_UNUSED,
     unsigned int flags;
     struct daemonClientPrivate *priv = virNetServerClientGetPrivateData(client);
     int rv = -1;
+#ifndef LIBVIRTD
+    const char *type = NULL;
+#endif
 
     VIR_DEBUG("priv=%p conn=%p", priv, priv->conn);
     virMutexLock(&priv->lock);
@@ -1972,20 +1975,73 @@ remoteDispatchConnectOpen(virNetServerPtr server ATTRIBUTE_UNUSED,
     if (virNetServerClientGetReadonly(client))
         flags |= VIR_CONNECT_RO;
 
-    priv->conn =
-        flags & VIR_CONNECT_RO
-        ? virConnectOpenReadOnly(name)
-        : virConnectOpen(name);
+#define OPEN_DRIVER(var, uri) \
+    do {                                 \
+        VIR_DEBUG("Opening driver %s", uri); \
+        if (!(priv->var = flags & VIR_CONNECT_RO  \
+                    ? virConnectOpenReadOnly(uri) \
+                    : virConnectOpen(uri))) \
+          goto cleanup; \
+        VIR_DEBUG("Opened %p", priv->var); \
+    } while (0)
 
-    if (priv->conn == NULL)
+    OPEN_DRIVER(conn, name);
+
+#ifndef LIBVIRTD
+    if (!(type = virConnectGetType(priv->conn)))
         goto cleanup;
 
-    priv->interfaceConn = virObjectRef(priv->conn);
-    priv->networkConn = virObjectRef(priv->conn);
-    priv->nodedevConn = virObjectRef(priv->conn);
-    priv->nwfilterConn = virObjectRef(priv->conn);
-    priv->secretConn = virObjectRef(priv->conn);
-    priv->storageConn = virObjectRef(priv->conn);
+    VIR_DEBUG("Primary driver type is '%s'", type);
+    if (STREQ(type, "QEMU") ||
+        STREQ(type, "LIBXL") ||
+        STREQ(type, "LXC") ||
+        STREQ(type, "VBOX") ||
+        STREQ(type, "bhyve") ||
+        STREQ(type, "vz") ||
+        STREQ(type, "Parallels")) {
+        VIR_DEBUG("Hypervisor driver found, opening connections to secondary drivers");
+        OPEN_DRIVER(interfaceConn, getuid() == 0 ? "interface:///system" : "interface:///session");
+        OPEN_DRIVER(networkConn, getuid() == 0 ? "network:///system" : "network:///session");
+        OPEN_DRIVER(nodedevConn, getuid() == 0 ? "nodedev:///system" : "nodedev:///session");
+        if (getuid() == 0)
+            OPEN_DRIVER(nwfilterConn, "nwfilter:///system");
+        OPEN_DRIVER(secretConn, getuid() == 0 ? "secret:///system" : "secret:///session");
+        OPEN_DRIVER(storageConn, getuid() == 0 ? "storage:///system" : "storage:///session");
+    } else if (STREQ(type, "interface")) {
+        VIR_DEBUG("Interface driver found");
+        priv->interfaceConn = virObjectRef(priv->conn);
+    } else if (STREQ(type, "network")) {
+        VIR_DEBUG("Network driver found");
+        priv->networkConn = virObjectRef(priv->conn);
+    } else if (STREQ(type, "nodedev")) {
+        VIR_DEBUG("Nodedev driver found");
+        priv->nodedevConn = virObjectRef(priv->conn);
+    } else if (STREQ(type, "nwfilter")) {
+        VIR_DEBUG("NWFilter driver found");
+        priv->nwfilterConn = virObjectRef(priv->conn);
+    } else if (STREQ(type, "secret")) {
+        VIR_DEBUG("Secret driver found");
+        priv->secretConn = virObjectRef(priv->conn);
+    } else if (STREQ(type, "storage")) {
+        VIR_DEBUG("Storage driver found");
+        priv->storageConn = virObjectRef(priv->conn);
+
+        /* Co-open the secret driver, as apps using the storage driver may well
+         * need access to secrets for storage auth
+         */
+        OPEN_DRIVER(secretConn, getuid == 0 ? "secret:///system" : "secret:///session");
+    } else {
+#endif /* LIBVIRTD */
+        VIR_DEBUG("Pointing secondary drivers to primary");
+        priv->interfaceConn = virObjectRef(priv->conn);
+        priv->networkConn = virObjectRef(priv->conn);
+        priv->nodedevConn = virObjectRef(priv->conn);
+        priv->nwfilterConn = virObjectRef(priv->conn);
+        priv->secretConn = virObjectRef(priv->conn);
+        priv->storageConn = virObjectRef(priv->conn);
+#ifndef LIBVIRTD
+    }
+#endif /* LIBVIRTD */
 
     /* force update the @readonly attribute which was inherited from the
      * virNetServerService object - this is important for sockets that are RW
