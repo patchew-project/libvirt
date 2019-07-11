@@ -10950,6 +10950,21 @@ qemuDomainGetMemLockLimitBytes(virDomainDefPtr def)
         }
     }
 
+    for (i = 0; i < def->ndisks; i++) {
+        virDomainDiskDefPtr disk = def->disks[i];
+        virStorageSourcePtr n;
+
+        if (!disk->src)
+            continue;
+
+        for (n = disk->src; virStorageSourceIsBacking(n); n = n->backingStore) {
+            if (n->type == VIR_STORAGE_TYPE_NVME) {
+                memKB = virDomainDefGetMemoryTotal(def) + 1024 * 1024;
+                goto done;
+            }
+        }
+    }
+
  done:
     return memKB << 10;
 }
