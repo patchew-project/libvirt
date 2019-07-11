@@ -624,13 +624,13 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     VIR_AUTOFREE(char *) corAlias = NULL;
 
     if (qemuDomainStorageSourceChainAccessAllow(driver, vm, disk->src) < 0)
-        goto cleanup;
+        return -1;
 
     if (qemuAssignDeviceDiskAlias(vm->def, disk, priv->qemuCaps) < 0)
-        goto error;
+        goto cleanup;
 
     if (qemuDomainPrepareDiskSource(disk, priv, cfg) < 0)
-        goto error;
+        goto cleanup;
 
     if (virQEMUCapsGet(priv->qemuCaps, QEMU_CAPS_BLOCKDEV)) {
         if (disk->copy_on_read == VIR_TRISTATE_SWITCH_ON &&
@@ -647,13 +647,13 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     }
 
     if (!(devstr = qemuBuildDiskDeviceStr(vm->def, disk, 0, priv->qemuCaps)))
-        goto error;
+        goto cleanup;
 
     if (VIR_REALLOC_N(vm->def->disks, vm->def->ndisks + 1) < 0)
-        goto error;
+        goto cleanup;
 
     if (qemuHotplugAttachManagedPR(driver, vm, disk->src, QEMU_ASYNC_JOB_NONE) < 0)
-        goto error;
+        goto cleanup;
 
     qemuDomainObjEnterMonitor(driver, vm);
 
@@ -674,7 +674,7 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
 
     if (qemuDomainObjExitMonitor(driver, vm) < 0) {
         ret = -2;
-        goto error;
+        goto cleanup;
     }
 
     virDomainAuditDisk(vm, NULL, disk->src, "attach", true);
@@ -683,6 +683,8 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     ret = 0;
 
  cleanup:
+    if (ret < 0)
+        ignore_value(qemuDomainStorageSourceChainAccessRevoke(driver, vm, disk->src));
     qemuDomainSecretDiskDestroy(disk);
     VIR_FREE(devstr);
     return ret;
@@ -700,9 +702,6 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
         ret = -2;
 
     virDomainAuditDisk(vm, NULL, disk->src, "attach", false);
-
- error:
-    ignore_value(qemuDomainStorageSourceChainAccessRevoke(driver, vm, disk->src));
     goto cleanup;
 }
 
