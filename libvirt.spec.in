@@ -1610,6 +1610,7 @@ exit 0
 %files daemon-driver-storage
 
 %files daemon-driver-storage-core
+%attr(0755, root, root) %{_sbindir}/virtstoraged
 %attr(0755, root, root) %{_libexecdir}/libvirt_parthelper
 %{_libdir}/%{name}/connection-driver/libvirt_driver_storage.so
 %{_libdir}/%{name}/storage-backend/libvirt_storage_backend_fs.so

@@ -368,6 +368,20 @@ libvirt_storage_backend_vstorage_la_LIBADD = \
 	$(NULL)
 endif WITH_STORAGE_VSTORAGE
 
+sbin_PROGRAMS += virtstoraged
+
+virtstoraged_SOURCES = $(REMOTE_DAEMON_SOURCES)
+virtstoraged_CFLAGS = \
+       $(REMOTE_DAEMON_CFLAGS) \
+       -DSOCK_NAME="\"virtstoraged-sock\"" \
+       -DSOCK_NAME_RO="\"virtstoraged-sock-ro\"" \
+       -DSOCK_NAME_ADMIN="\"virtstoraged-admin-sock\"" \
+       -DDAEMON_NAME="\"virtstoraged\"" \
+       -DMODULE_NAME="\"storage\"" \
+       $(NULL)
+virtstoraged_LDFLAGS = $(REMOTE_DAEMON_LDFLAGS)
+virtstoraged_LDADD = $(REMOTE_DAEMON_LDADD)
+
 if WITH_STORAGE_DISK
 libexec_PROGRAMS += libvirt_parthelper
 

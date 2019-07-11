@@ -167,6 +167,7 @@
 /src/virtlogd
 /src/virtnetworkd
 /src/virtsecretd
+/src/virtstoraged
 /src/virt-guest-shutdown.target
 /tests/*.log
 /tests/*.pid
