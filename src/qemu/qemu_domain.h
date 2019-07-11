@@ -1011,6 +1011,12 @@ int qemuDomainCheckMonitor(virQEMUDriverPtr driver,
 bool qemuDomainSupportsVideoVga(virDomainVideoDefPtr video,
                                 virQEMUCapsPtr qemuCaps);
 
+char * qemuDomainGetNVMeDiskPath(const virStorageSourceNVMeDef *nvme);
+
+char ** qemuDomainGetDiskNVMePaths(const virDomainDef *def,
+                                   const virStorageSource *src,
+                                   bool teardown);
+
 int qemuDomainGetHostdevPath(virDomainDefPtr def,
                              virDomainHostdevDefPtr dev,
                              bool teardown,

@@ -11723,6 +11723,50 @@ qemuDomainSupportsVideoVga(virDomainVideoDefPtr video,
 }
 
 
+char *
+qemuDomainGetNVMeDiskPath(const virStorageSourceNVMeDef *nvme)
+{
+    VIR_AUTOPTR(virPCIDevice) pci = NULL;
+
+    /* All NVMe devices are VFIO PCI devices */
+    if (!(pci = virPCIDeviceNew(nvme->pciAddr.domain,
+                                nvme->pciAddr.bus,
+                                nvme->pciAddr.slot,
+                                nvme->pciAddr.function)))
+        return NULL;
+
+    return virPCIDeviceGetIOMMUGroupDev(pci);
+}
+
+
+char **
+qemuDomainGetDiskNVMePaths(const virDomainDef *def,
+                           const virStorageSource *src,
+                           bool teardown)
+{
+    VIR_AUTOFREE(char *) iommuGroup = NULL;
+    VIR_AUTOSTRINGLIST paths = NULL;
+    bool includeVFIO = !teardown;
+
+    if (!(iommuGroup = qemuDomainGetNVMeDiskPath(src->nvme)))
+        return NULL;
+
+    if (virStringListAdd(&paths, iommuGroup) < 0)
+        return NULL;
+
+    if (teardown && def &&
+        !virDomainDefHasNVMeDisk(def) &&
+        !virDomainDefHasVFIOHostdev(def))
+        includeVFIO = true;
+
+    if (includeVFIO &&
+        virStringListAdd(&paths, QEMU_DEV_VFIO) < 0)
+        return NULL;
+
+    VIR_RETURN_PTR(paths);
+}
+
+
 /**
  * qemuDomainGetHostdevPath:
  * @def: domain definition
