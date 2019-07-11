@@ -14637,6 +14637,7 @@ qemuDomainSnapshotPrepareDiskExternalInactive(virDomainSnapshotDiskDefPtr snapdi
 
     case VIR_STORAGE_TYPE_DIR:
     case VIR_STORAGE_TYPE_VOLUME:
+    case VIR_STORAGE_TYPE_NVME:
     case VIR_STORAGE_TYPE_NONE:
     case VIR_STORAGE_TYPE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -14653,6 +14654,7 @@ qemuDomainSnapshotPrepareDiskExternalInactive(virDomainSnapshotDiskDefPtr snapdi
     case VIR_STORAGE_TYPE_NETWORK:
     case VIR_STORAGE_TYPE_DIR:
     case VIR_STORAGE_TYPE_VOLUME:
+    case VIR_STORAGE_TYPE_NVME:
     case VIR_STORAGE_TYPE_NONE:
     case VIR_STORAGE_TYPE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -14715,6 +14717,7 @@ qemuDomainSnapshotPrepareDiskExternalActive(virDomainSnapshotDiskDefPtr snapdisk
 
     case VIR_STORAGE_TYPE_DIR:
     case VIR_STORAGE_TYPE_VOLUME:
+    case VIR_STORAGE_TYPE_NVME:
     case VIR_STORAGE_TYPE_NONE:
     case VIR_STORAGE_TYPE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,
@@ -14837,6 +14840,7 @@ qemuDomainSnapshotPrepareDiskInternal(virDomainDiskDefPtr disk,
 
     case VIR_STORAGE_TYPE_DIR:
     case VIR_STORAGE_TYPE_VOLUME:
+    case VIR_STORAGE_TYPE_NVME:
     case VIR_STORAGE_TYPE_NONE:
     case VIR_STORAGE_TYPE_LAST:
         virReportError(VIR_ERR_INTERNAL_ERROR,

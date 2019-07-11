@@ -5088,6 +5088,11 @@ virDomainDiskDefPostParse(virDomainDiskDefPtr disk,
         return -1;
     }
 
+    if (disk->src->type == VIR_STORAGE_TYPE_NVME) {
+        if (disk->src->nvme->managed == VIR_TRISTATE_BOOL_ABSENT)
+            disk->src->nvme->managed = VIR_TRISTATE_BOOL_YES;
+    }
+
     if (disk->info.type == VIR_DOMAIN_DEVICE_ADDRESS_TYPE_NONE &&
         virDomainDiskDefAssignAddress(xmlopt, disk, def) < 0) {
         return -1;
@@ -5936,6 +5941,38 @@ virDomainDiskDefValidate(const virDomainDiskDef *disk)
                        virDomainDiskModelTypeToString(disk->model),
                        virDomainDiskBusTypeToString(disk->bus));
         return -1;
+    }
+
+    if (disk->src->type == VIR_STORAGE_TYPE_NVME) {
+        /* These might not be valid for all hypervisors, but be
+         * strict now and possibly refine in the future. */
+        if (disk->device != VIR_DOMAIN_DISK_DEVICE_DISK) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Unsupported disk type '%s' for NVMe disk"),
+                           virDomainDiskDeviceTypeToString(disk->device));
+            return -1;
+        }
+
+        if (disk->bus != VIR_DOMAIN_DISK_BUS_VIRTIO) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Unsupported bus '%s' for NVMe disk"),
+                           virDomainDiskBusTypeToString(disk->bus));
+            return -1;
+        }
+
+        if (disk->startupPolicy != VIR_DOMAIN_STARTUP_POLICY_DEFAULT &&
+            disk->startupPolicy != VIR_DOMAIN_STARTUP_POLICY_MANDATORY) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED,
+                           _("Unsupported startup policy '%s' for NVMe disk"),
+                           virDomainStartupPolicyTypeToString(disk->startupPolicy));
+            return -1;
+        }
+
+        if (disk->src->shared) {
+            virReportError(VIR_ERR_CONFIG_UNSUPPORTED, "%s",
+                           _("Unsupported <shareable/> for NVMe disk"));
+            return -1;
+        }
     }
 
     return 0;
@@ -9185,6 +9222,76 @@ virDomainDiskSourceNetworkParse(xmlNodePtr node,
 
 
 static int
+virDomainDiskSourceNVMeParse(xmlNodePtr node,
+                             xmlXPathContextPtr ctxt,
+                             virStorageSourcePtr src)
+{
+    VIR_AUTOPTR(virStorageSourceNVMeDef) nvme = NULL;
+    VIR_AUTOFREE(char *) type = NULL;
+    VIR_AUTOFREE(char *) namespace = NULL;
+    VIR_AUTOFREE(char *) managed = NULL;
+    xmlNodePtr address;
+
+    if (VIR_ALLOC(nvme) < 0)
+        return -1;
+
+    if (!(type = virXMLPropString(node, "type"))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("missing 'type' attribute to disk source"));
+        return -1;
+    }
+
+    if (STRNEQ(type, "pci")) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("unsupported source type '%s'"),
+                       type);
+        return -1;
+    }
+
+    if (!(namespace = virXMLPropString(node, "namespace"))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("missing 'namespace' attribute to disk source"));
+        return -1;
+    }
+
+    if (virStrToLong_ul(namespace, NULL, 10, &nvme->namespace) < 0) {
+        virReportError(VIR_ERR_XML_ERROR,
+                       _("malformed namespace '%s'"),
+                       namespace);
+        return -1;
+    }
+
+    /* NVMe namespaces start from 1 */
+    if (nvme->namespace == 0) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("NVMe namespace can't be zero"));
+        return -1;
+    }
+
+    if ((managed = virXMLPropString(node, "managed"))) {
+        if ((nvme->managed = virTristateBoolTypeFromString(managed)) <= 0) {
+            virReportError(VIR_ERR_XML_ERROR,
+                           _("malformed managed value '%s'"),
+                           managed);
+            return -1;
+        }
+    }
+
+    if (!(address = virXPathNode("./address", ctxt))) {
+        virReportError(VIR_ERR_XML_ERROR, "%s",
+                       _("NVMe disk source is missing address"));
+        return -1;
+    }
+
+    if (virPCIDeviceAddressParseXML(address, &nvme->pciAddr) < 0)
+        return -1;
+
+    VIR_STEAL_PTR(src->nvme, nvme);
+    return 0;
+}
+
+
+static int
 virDomainDiskSourcePRParse(xmlNodePtr node,
                            xmlXPathContextPtr ctxt,
                            virStoragePRDefPtr *pr)
@@ -9282,6 +9389,10 @@ virDomainStorageSourceParse(xmlNodePtr node,
         break;
     case VIR_STORAGE_TYPE_VOLUME:
         if (virDomainDiskSourcePoolDefParse(node, &src->srcpool) < 0)
+            return -1;
+        break;
+    case VIR_STORAGE_TYPE_NVME:
+        if (virDomainDiskSourceNVMeParse(node, ctxt, src) < 0)
             return -1;
         break;
     case VIR_STORAGE_TYPE_NONE:
@@ -23922,6 +24033,19 @@ virDomainDiskSourceFormatNetwork(virBufferPtr attrBuf,
 }
 
 
+static void
+virDomainDiskSourceNVMeFormat(virBufferPtr attrBuf,
+                              virBufferPtr childBuf,
+                              const virStorageSourceNVMeDef *nvme)
+{
+    virBufferAddLit(attrBuf, " type='pci'");
+    virBufferAsprintf(attrBuf, " managed='%s'",
+                      virTristateBoolTypeToString(nvme->managed));
+    virBufferAsprintf(attrBuf, " namespace='%ld'", nvme->namespace);
+    virPCIDeviceAddressFormat(childBuf, nvme->pciAddr, false);
+}
+
+
 static int
 virDomainDiskSourceFormatPrivateData(virBufferPtr buf,
                                      virStorageSourcePtr src,
@@ -24006,6 +24130,11 @@ virDomainDiskSourceFormat(virBufferPtr buf,
                                   virStorageSourcePoolModeTypeToString(src->srcpool->mode));
         }
 
+        break;
+
+    case VIR_STORAGE_TYPE_NVME:
+        if (src->nvme)
+            virDomainDiskSourceNVMeFormat(&attrBuf, &childBuf, src->nvme);
         break;
 
     case VIR_STORAGE_TYPE_NONE:
