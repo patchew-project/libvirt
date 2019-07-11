@@ -11831,7 +11831,8 @@ qemuDomainGetHostdevPath(virDomainDefPtr def,
 
                 perm = VIR_CGROUP_DEVICE_RW;
                 if (teardown) {
-                    if (!virDomainDefHasVFIOHostdev(def))
+                    if (!virDomainDefHasVFIOHostdev(def) &&
+                        !virDomainDefHasNVMeDisk(def))
                         includeVFIO = true;
                 } else {
                     includeVFIO = true;
@@ -12415,6 +12416,22 @@ qemuDomainSetupDisk(virQEMUDriverConfigPtr cfg ATTRIBUTE_UNUSED,
     int ret = -1;
 
     for (next = disk->src; virStorageSourceIsBacking(next); next = next->backingStore) {
+        /* NVMe disks must be checked before virStorageSourceIsLocalStorage()
+         * is called. This is because while NVMe disks are local, they don't
+         * have next->path set. */
+        if (next->type == VIR_STORAGE_TYPE_NVME) {
+            VIR_AUTOSTRINGLIST nvmePaths = NULL;
+            size_t i;
+
+            if (!(nvmePaths = qemuDomainGetDiskNVMePaths(NULL, next, false)))
+                goto cleanup;
+
+            for (i = 0; nvmePaths[i]; i++) {
+                if (qemuDomainCreateDevice(nvmePaths[i], data, false) < 0)
+                    goto cleanup;
+            }
+        }
+
         if (!next->path || !virStorageSourceIsLocalStorage(next)) {
             /* Not creating device. Just continue. */
             continue;
@@ -13462,12 +13479,28 @@ qemuDomainNamespaceSetupDisk(virDomainObjPtr vm,
                              virStorageSourcePtr src)
 {
     virStorageSourcePtr next;
+    VIR_AUTOSTRINGLIST nvmePaths = NULL;
     const char **paths = NULL;
     size_t npaths = 0;
     char *dmPath = NULL;
     int ret = -1;
 
     for (next = src; virStorageSourceIsBacking(next); next = next->backingStore) {
+        /* NVMe disks must be checked before virStorageSourceIsLocalStorage()
+         * is called. This is because while NVMe disks are local, they don't
+         * have next->path set. */
+        if (next->type == VIR_STORAGE_TYPE_NVME) {
+            size_t i;
+
+            if (!(nvmePaths = qemuDomainGetDiskNVMePaths(NULL, next, false)))
+                goto cleanup;
+
+            for (i = 0; nvmePaths[i]; i++) {
+                if (VIR_APPEND_ELEMENT_COPY(paths, npaths, nvmePaths[i]) < 0)
+                    goto cleanup;
+            }
+        }
+
         if (virStorageSourceIsEmpty(next) ||
             !virStorageSourceIsLocalStorage(next)) {
             /* Not creating device. Just continue. */
