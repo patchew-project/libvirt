@@ -739,34 +739,35 @@ remoteConnectSupportsFeatureUnlocked(virConnectPtr conn,
     }
 
 
-#ifndef WIN32
-static char *remoteGetUNIXSocketNonRoot(void)
+static char *
+remoteGetUNIXSocket(remoteDriverTransport transport,
+                    unsigned int flags)
 {
     char *sockname = NULL;
-    char *userdir = virGetUserRuntimeDirectory();
+    VIR_AUTOFREE(char *userdir);
 
-    if (!userdir)
-        return NULL;
+    if (flags & VIR_DRV_OPEN_REMOTE_USER) {
+        if (transport != REMOTE_DRIVER_TRANSPORT_UNIX) {
+            virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
+                           _("Connecting to session instance without "
+                             "socket path is not supported by the %s "
+                             "transport"),
+                           remoteDriverTransportTypeToString(transport));
+            return NULL;
+        }
+        if (!(userdir = virGetUserRuntimeDirectory()))
+            return NULL;
 
-    if (virAsprintf(&sockname, "%s/" LIBVIRTD_USER_UNIX_SOCKET, userdir) < 0) {
-        VIR_FREE(userdir);
-        return NULL;
+        if (virAsprintf(&sockname,
+                        "%s/" LIBVIRTD_USER_UNIX_SOCKET, userdir) < 0)
+            return NULL;
+    } else {
+        if (VIR_STRDUP(sockname,
+                       flags & VIR_DRV_OPEN_REMOTE_RO ?
+                       LIBVIRTD_PRIV_UNIX_SOCKET_RO :
+                       LIBVIRTD_PRIV_UNIX_SOCKET) < 0)
+            return NULL;
     }
-    VIR_FREE(userdir);
-
-    VIR_DEBUG("Chosen UNIX sockname %s", sockname);
-    return sockname;
-}
-#endif /* WIN32 */
-
-static char *remoteGetUNIXSocketRoot(unsigned int flags)
-{
-    char *sockname = NULL;
-
-    if (VIR_STRDUP(sockname,
-                   flags & VIR_DRV_OPEN_REMOTE_RO ?
-                   LIBVIRTD_PRIV_UNIX_SOCKET_RO : LIBVIRTD_PRIV_UNIX_SOCKET) < 0)
-        return NULL;
 
     VIR_DEBUG("Chosen UNIX sockname %s", sockname);
     return sockname;
@@ -964,6 +965,17 @@ doRemoteOpen(virConnectPtr conn,
     }
 
     VIR_DEBUG("Connecting with transport %d", transport);
+
+    if ((transport == REMOTE_DRIVER_TRANSPORT_UNIX ||
+         transport == REMOTE_DRIVER_TRANSPORT_SSH ||
+         transport == REMOTE_DRIVER_TRANSPORT_LIBSSH ||
+         transport == REMOTE_DRIVER_TRANSPORT_LIBSSH2) &&
+        !sockname &&
+        !(sockname = remoteGetUNIXSocket(transport, flags)))
+        goto failed;
+
+    VIR_DEBUG("Chosen UNIX socket %s", NULLSTR(sockname));
+
     /* Connect to the remote service. */
     switch (transport) {
     case REMOTE_DRIVER_TRANSPORT_TLS:
@@ -1005,20 +1017,6 @@ doRemoteOpen(virConnectPtr conn,
         break;
 
     case REMOTE_DRIVER_TRANSPORT_LIBSSH2:
-        if (!sockname) {
-            /* Right now we don't support default session connections */
-            if (flags & VIR_DRV_OPEN_REMOTE_USER) {
-                virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
-                               _("Connecting to session instance without "
-                                 "socket path is not supported by the libssh2 "
-                                 "connection driver"));
-                goto failed;
-            }
-
-            if (!(sockname = remoteGetUNIXSocketRoot(flags)))
-                goto failed;
-        }
-
         VIR_DEBUG("Starting LibSSH2 session");
 
         priv->client = virNetClientNewLibSSH2(priv->hostname,
@@ -1040,20 +1038,6 @@ doRemoteOpen(virConnectPtr conn,
         break;
 
     case REMOTE_DRIVER_TRANSPORT_LIBSSH:
-        if (!sockname) {
-            /* Right now we don't support default session connections */
-            if (flags & VIR_DRV_OPEN_REMOTE_USER) {
-                virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
-                               _("Connecting to session instance without "
-                                 "socket path is not supported by the libssh "
-                                 "connection driver"));
-                goto failed;
-            }
-
-            if (!(sockname = remoteGetUNIXSocketRoot(flags)))
-                goto failed;
-        }
-
         VIR_DEBUG("Starting libssh session");
 
         priv->client = virNetClientNewLibssh(priv->hostname,
@@ -1076,15 +1060,6 @@ doRemoteOpen(virConnectPtr conn,
 
 #ifndef WIN32
     case REMOTE_DRIVER_TRANSPORT_UNIX:
-        if (!sockname) {
-            if (flags & VIR_DRV_OPEN_REMOTE_USER)
-                sockname = remoteGetUNIXSocketNonRoot();
-            else
-                sockname = remoteGetUNIXSocketRoot(flags);
-            if (!sockname)
-                goto failed;
-        }
-
         if ((flags & VIR_DRV_OPEN_REMOTE_AUTOSTART) &&
             !(daemonPath = virFileFindResourceFull("libvirtd",
                                                    NULL, NULL,
@@ -1104,20 +1079,6 @@ doRemoteOpen(virConnectPtr conn,
     case REMOTE_DRIVER_TRANSPORT_SSH:
         if (!command && VIR_STRDUP(command, "ssh") < 0)
             goto failed;
-
-        if (!sockname) {
-            /* Right now we don't support default session connections */
-            if (flags & VIR_DRV_OPEN_REMOTE_USER) {
-                virReportError(VIR_ERR_OPERATION_UNSUPPORTED, "%s",
-                               _("Connecting to session instance without "
-                                 "socket path is not supported by the ssh "
-                                 "connection driver"));
-                goto failed;
-            }
-
-            if (!(sockname = remoteGetUNIXSocketRoot(flags)))
-                goto failed;
-        }
 
         if (!(priv->client = virNetClientNewSSH(priv->hostname,
                                                 port,
