@@ -605,6 +605,54 @@ qemuDomainChangeEjectableMedia(virQEMUDriverPtr driver,
 }
 
 
+static int
+qemuDomainStorageSourcePrepareDisk(virQEMUDriverPtr driver,
+                                   virDomainObjPtr vm,
+                                   virDomainDiskDefPtr disk,
+                                   bool teardown)
+{
+    int rc;
+    bool adjustMemlock = false;
+    bool reattach = false;
+
+    if (!virDomainDefHasNVMeDisk(vm->def) &&
+        !virStorageSourceChainHasNVMe(disk->src))
+        return 0;
+
+    if (teardown) {
+        adjustMemlock = true;
+        reattach = true;
+        goto rollback;
+    }
+
+    /* Tentatively add disk to domain def so that memlock limit can be computed. */
+    vm->def->disks[vm->def->ndisks++] = disk;
+    rc = qemuDomainAdjustMaxMemLock(vm);
+    vm->def->disks[--vm->def->ndisks] = NULL;
+
+    if (rc < 0)
+        return -1;
+
+    adjustMemlock = true;
+
+    if (qemuHostdevPrepareNVMeDevices(driver, vm->def->name, &disk, 1) < 0)
+        return -1;
+
+    reattach = true;
+
+    return 0;
+
+ rollback:
+    if (reattach)
+        qemuHostdevReAttachNVMeDevices(driver, vm->def->name, &disk, 1);
+
+    if (adjustMemlock)
+        qemuDomainAdjustMaxMemLock(vm);
+
+    return 0;
+}
+
+
 /**
  * qemuDomainAttachDiskGeneric:
  *
@@ -623,8 +671,14 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     VIR_AUTOPTR(virJSONValue) corProps = NULL;
     VIR_AUTOFREE(char *) corAlias = NULL;
 
-    if (qemuDomainStorageSourceChainAccessAllow(driver, vm, disk->src) < 0)
+    if (VIR_REALLOC_N(vm->def->disks, vm->def->ndisks + 1) < 0)
         return -1;
+
+    if (qemuDomainStorageSourcePrepareDisk(driver, vm, disk, false) < 0)
+        return -1;
+
+    if (qemuDomainStorageSourceChainAccessAllow(driver, vm, disk->src) < 0)
+        goto cleanup;
 
     if (qemuAssignDeviceDiskAlias(vm->def, disk, priv->qemuCaps) < 0)
         goto cleanup;
@@ -647,9 +701,6 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     }
 
     if (!(devstr = qemuBuildDiskDeviceStr(vm->def, disk, 0, priv->qemuCaps)))
-        goto cleanup;
-
-    if (VIR_REALLOC_N(vm->def->disks, vm->def->ndisks + 1) < 0)
         goto cleanup;
 
     if (qemuHotplugAttachManagedPR(driver, vm, disk->src, QEMU_ASYNC_JOB_NONE) < 0)
@@ -683,8 +734,10 @@ qemuDomainAttachDiskGeneric(virQEMUDriverPtr driver,
     ret = 0;
 
  cleanup:
-    if (ret < 0)
+    if (ret < 0) {
         ignore_value(qemuDomainStorageSourceChainAccessRevoke(driver, vm, disk->src));
+        qemuDomainStorageSourcePrepareDisk(driver, vm, disk, true);
+    }
     qemuDomainSecretDiskDestroy(disk);
     VIR_FREE(devstr);
     return ret;
@@ -4266,6 +4319,8 @@ qemuDomainRemoveDiskDevice(virQEMUDriverPtr driver,
     dev.type = VIR_DOMAIN_DEVICE_DISK;
     dev.data.disk = disk;
     ignore_value(qemuRemoveSharedDevice(driver, &dev, vm->def->name));
+
+    qemuDomainStorageSourcePrepareDisk(driver, vm, disk, true);
 
     if (virStorageSourceChainHasManagedPR(disk->src) &&
         qemuHotplugRemoveManagedPR(driver, vm, QEMU_ASYNC_JOB_NONE) < 0)
