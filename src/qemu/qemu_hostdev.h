@@ -27,6 +27,8 @@
 bool qemuHostdevHostSupportsPassthroughLegacy(void);
 bool qemuHostdevHostSupportsPassthroughVFIO(void);
 
+int qemuHostdevUpdateActiveNVMeDevices(virQEMUDriverPtr driver,
+                                       virDomainDefPtr def);
 int qemuHostdevUpdateActiveMediatedDevices(virQEMUDriverPtr driver,
                                            virDomainDefPtr def);
 int qemuHostdevUpdateActivePCIDevices(virQEMUDriverPtr driver,
@@ -38,6 +40,10 @@ int qemuHostdevUpdateActiveSCSIDevices(virQEMUDriverPtr driver,
 int qemuHostdevUpdateActiveDomainDevices(virQEMUDriverPtr driver,
                                          virDomainDefPtr def);
 
+int qemuHostdevPrepareNVMeDevices(virQEMUDriverPtr driver,
+                                  const char *name,
+                                  virDomainDiskDefPtr *disks,
+                                  size_t ndisks);
 int qemuHostdevPreparePCIDevices(virQEMUDriverPtr driver,
                                  const char *name,
                                  const unsigned char *uuid,
@@ -67,6 +73,10 @@ int qemuHostdevPrepareDomainDevices(virQEMUDriverPtr driver,
                                     virQEMUCapsPtr qemuCaps,
                                     unsigned int flags);
 
+void qemuHostdevReAttachNVMeDevices(virQEMUDriverPtr driver,
+                                    const char *name,
+                                    virDomainDiskDefPtr *disks,
+                                    size_t ndisks);
 void qemuHostdevReAttachPCIDevices(virQEMUDriverPtr driver,
                                    const char *name,
                                    virDomainHostdevDefPtr *hostdevs,
