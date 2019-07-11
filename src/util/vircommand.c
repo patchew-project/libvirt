@@ -2137,6 +2137,7 @@ virCommandProcessIO(virCommandPtr cmd)
     size_t inlen = 0, outlen = 0, errlen = 0;
     size_t inoff = 0;
     int ret = 0;
+    VIR_AUTOFREE(struct pollfd *) fds = NULL;
 
     if (dryRunBuffer || dryRunCallback) {
         VIR_DEBUG("Dry run requested, skipping I/O processing");
@@ -2168,9 +2169,11 @@ virCommandProcessIO(virCommandPtr cmd)
         goto cleanup;
     ret = -1;
 
+    if (VIR_ALLOC_N(fds, 3) < 0)
+        goto cleanup;
+
     for (;;) {
         size_t i;
-        struct pollfd fds[3];
         int nfds = 0;
 
         if (cmd->inpipe != -1) {
