@@ -153,6 +153,11 @@ DEVICE_CONF_SOURCES = \
 	conf/device_conf.h \
 	$(NULL)
 
+TPM_CONF_SOURCES = \
+	conf/virtpm_conf.c \
+	conf/virtpm_conf.h \
+	$(NULL)
+
 CONF_SOURCES = \
 	$(NETDEV_CONF_SOURCES) \
 	$(DOMAIN_CONF_SOURCES) \
@@ -171,6 +176,7 @@ CONF_SOURCES = \
 	$(CPU_CONF_SOURCES) \
 	$(CHRDEV_CONF_SOURCES) \
 	$(DEVICE_CONF_SOURCES) \
+	$(TPM_CONF_SOURCES) \
 	$(NULL)
 
 noinst_LTLIBRARIES += libvirt_conf.la

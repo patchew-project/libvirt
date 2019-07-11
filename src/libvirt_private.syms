@@ -1236,6 +1236,11 @@ virStoragePoolObjVolumeGetNames;
 virStoragePoolObjVolumeListExport;
 
 
+# conf/virtpm_conf.h
+virTPMSwtpmFeatureTypeFromString;
+virTPMSwtpmSetupFeatureTypeFromString;
+
+
 # cpu/cpu.h
 cpuDecode;
 cpuEncode;
