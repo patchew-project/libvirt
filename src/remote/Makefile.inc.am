@@ -124,11 +124,11 @@ sbin_PROGRAMS += libvirtd
 
 augeas_DATA += remote/libvirtd.aug
 
-augeastest_DATA += test_libvirtd.aug
+augeastest_DATA += remote/test_libvirtd.aug
 
 conf_DATA += remote/libvirtd.conf
 
-CLEANFILES += test_libvirtd.aug
+CLEANFILES += remote/libvirtd.aug remote/test_libvirtd.aug
 
 man8_MANS += libvirtd.8
 
@@ -198,13 +198,28 @@ uninstall-data-remote:
 
 AUGEAS_DIRS += remote
 
-test_libvirtd.aug: remote/test_libvirtd.aug.in \
-		remote/libvirtd.conf $(AUG_GENTEST)
-	$(AM_V_GEN)$(AUG_GENTEST) $(srcdir)/remote/libvirtd.conf $< $@
+remote/libvirtd.aug: remote/libvirtd.aug.in
+	$(AM_V_GEN)$(SED) \
+		-e '/:: CUT ENABLE_IP ::/d' \
+		-e '/:: END ::/d' \
+		-e 's/:: DAEMON_NAME ::/libvirtd/' \
+		-e 's/:: DAEMON_NAME_UC ::/Libvirtd/' \
+		$< > $@
 
-check-augeas-remote: test_libvirtd.aug
+remote/test_libvirtd.aug.tmp: remote/test_libvirtd.aug.in \
+		remote/libvirtd.conf $(AUG_GENTEST)
+	$(AM_V_GEN)$(AUG_GENTEST) remote/libvirtd.conf remote/test_libvirtd.aug.in $@
+
+remote/test_libvirtd.aug: remote/test_libvirtd.aug.tmp
+	$(AM_V_GEN)$(SED) -e '/:: CUT ENABLE_IP ::/d' \
+		-e '/:: END ::/d' \
+		-e 's/:: DAEMON_NAME ::/libvirtd/' \
+		-e 's/:: DAEMON_NAME_UC ::/Libvirtd/' \
+		< $^ > $@ || rm -f $@
+
+check-augeas-remote: remote/test_libvirtd.aug
 	$(AM_V_GEN)if test -x '$(AUGPARSE)'; then \
-	    '$(AUGPARSE)' -I $(srcdir)/remote test_libvirtd.aug; \
+	    '$(AUGPARSE)' -I $(srcdir)/remote remote/test_libvirtd.aug; \
 	fi
 
 if WITH_SYSCTL
