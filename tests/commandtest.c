@@ -1196,6 +1196,117 @@ static int test26(const void *unused ATTRIBUTE_UNUSED)
     return ret;
 }
 
+static int test27(const void *unused ATTRIBUTE_UNUSED)
+{
+    virCommandPtr cmd = virCommandNew(abs_builddir "/commandhelper");
+    int pipe1[2];
+    int pipe2[2];
+    int ret = -1;
+    size_t buflen = 1024 * 128;
+    char *buffer0 = malloc(buflen);
+    char *buffer1 = malloc(buflen);
+    char *buffer2 = malloc(buflen);
+    char *outactual = NULL;
+    char *erractual = NULL;
+    char *outexpect = NULL;
+#define TEST27_OUTEXPECT_TEMP "BEGIN STDOUT\n" \
+        "%s%s%s" \
+        "END STDOUT\n"
+    char *errexpect = NULL;
+#define TEST27_ERREXPECT_TEMP "BEGIN STDERR\n" \
+        "%s%s%s" \
+        "END STDERR\n"
+
+    if (!buffer0 || !buffer1 || !buffer2) {
+        printf("Could not allocate memory for buffer\n");
+        goto cleanup;
+    }
+    memset(buffer0, 'G', buflen - 2);
+    buffer0[buflen - 2] = '\n';
+    buffer0[buflen - 1] = 0;
+
+    memset(buffer1, '1', buflen - 2);
+    buffer1[buflen - 2] = '\n';
+    buffer1[buflen - 1] = 0;
+
+    memset(buffer2, '2', buflen - 2);
+    buffer2[buflen - 2] = '\n';
+    buffer2[buflen - 1] = 0;
+
+    if (virAsprintf(&outexpect, TEST27_OUTEXPECT_TEMP,
+                    buffer0, buffer1, buffer2) < 0 ||
+        virAsprintf(&errexpect, TEST27_ERREXPECT_TEMP,
+                    buffer0, buffer1, buffer2) < 0) {
+        printf("Could not virAsprintf expected output\n");
+        goto cleanup;
+    }
+
+    if (pipe(pipe1) < 0 || pipe(pipe2) < 0) {
+        printf("Could not create pipe: %s\n", strerror(errno));
+        goto cleanup;
+    }
+
+    if (virCommandSetSendBuffer(cmd, pipe1[1],
+            (unsigned char *)buffer1, buflen - 1)  < 0 ||
+        virCommandSetSendBuffer(cmd, pipe2[1],
+            (unsigned char *)buffer2, buflen - 1) < 0) {
+        printf("Could not set send buffers\n");
+        goto cleanup;
+    }
+    pipe1[1] = 0;
+    pipe2[1] = 0;
+    buffer1 = NULL;
+    buffer2 = NULL;
+
+    virCommandAddArg(cmd, "--readfd");
+    virCommandAddArgFormat(cmd, "%d", pipe1[0]);
+    virCommandPassFD(cmd, pipe1[0], 0);
+
+    virCommandAddArg(cmd, "--readfd");
+    virCommandAddArgFormat(cmd, "%d", pipe2[0]);
+    virCommandPassFD(cmd, pipe2[0], 0);
+
+    virCommandSetInputBuffer(cmd, buffer0);
+    virCommandSetOutputBuffer(cmd, &outactual);
+    virCommandSetErrorBuffer(cmd, &erractual);
+
+    if (virCommandRun(cmd, NULL) < 0) {
+        printf("Cannot run child %s\n", virGetLastErrorMessage());
+        goto cleanup;
+    }
+
+    virCommandFree(cmd);
+
+    if (!outactual || !erractual)
+        goto cleanup;
+
+    if (STRNEQ(outactual, outexpect)) {
+        virTestDifference(stderr, outexpect, outactual);
+        goto cleanup;
+    }
+    if (STRNEQ(erractual, errexpect)) {
+        virTestDifference(stderr, errexpect, erractual);
+        goto cleanup;
+    }
+
+    ret = 0;
+
+ cleanup:
+    VIR_FORCE_CLOSE(pipe1[0]);
+    VIR_FORCE_CLOSE(pipe2[0]);
+    VIR_FORCE_CLOSE(pipe1[1]);
+    VIR_FORCE_CLOSE(pipe2[1]);
+    VIR_FREE(buffer0);
+    VIR_FREE(buffer1);
+    VIR_FREE(buffer2);
+    VIR_FREE(outactual);
+    VIR_FREE(erractual);
+    VIR_FREE(outexpect);
+    VIR_FREE(errexpect);
+
+    return ret;
+}
+
 static void virCommandThreadWorker(void *opaque)
 {
     virCommandTestDataPtr test = opaque;
@@ -1350,6 +1461,7 @@ mymain(void)
     DO_TEST(test24);
     DO_TEST(test25);
     DO_TEST(test26);
+    DO_TEST(test27);
 
     virMutexLock(&test->lock);
     if (test->running) {
