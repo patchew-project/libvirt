@@ -992,6 +992,25 @@ qemuBlockStorageSourceGetVvfatProps(virStorageSourcePtr src)
 }
 
 
+static virJSONValuePtr
+qemuBlockStorageSourceGetNVMeProps(virStorageSourcePtr src)
+{
+    const virStorageSourceNVMeDef *nvme = src->nvme;
+    VIR_AUTOFREE(char *) pciAddr = NULL;
+    virJSONValuePtr ret = NULL;
+
+    if (!(pciAddr = virPCIDeviceAddressAsString(&nvme->pciAddr)))
+        return NULL;
+
+    ignore_value(virJSONValueObjectCreate(&ret,
+                                          "s:driver", "nvme",
+                                          "s:device", pciAddr,
+                                          "U:namespace", nvme->namespace,
+                                          NULL));
+    return ret;
+}
+
+
 static int
 qemuBlockStorageSourceGetBlockdevGetCacheProps(virStorageSourcePtr src,
                                                virJSONValuePtr props)
@@ -1049,8 +1068,12 @@ qemuBlockStorageSourceGetBackendProps(virStorageSourcePtr src,
             return NULL;
         break;
 
-    case VIR_STORAGE_TYPE_VOLUME:
     case VIR_STORAGE_TYPE_NVME:
+        if (!(fileprops = qemuBlockStorageSourceGetNVMeProps(src)))
+            return NULL;
+        break;
+
+    case VIR_STORAGE_TYPE_VOLUME:
     case VIR_STORAGE_TYPE_NONE:
     case VIR_STORAGE_TYPE_LAST:
         return NULL;
