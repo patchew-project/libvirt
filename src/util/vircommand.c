@@ -86,6 +86,8 @@ struct _virCommandSendBuffer {
     size_t buflen;
     off_t offset;
 };
+/* max. number of bytes we write to pipe to avoid blocking on it */
+#define MAX_PIPE_WRITE_BYTES 1024
 
 struct _virCommand {
     int has_error; /* ENOMEM on allocation failure, -1 for anything else.  */
@@ -2251,7 +2253,7 @@ virCommandProcessIO(virCommandPtr cmd)
                 int done;
 
                 done = write(cmd->inpipe, cmd->inbuf + inoff,
-                             inlen - inoff);
+                             MIN(inlen - inoff, MAX_PIPE_WRITE_BYTES));
                 if (done < 0) {
                     if (errno == EPIPE) {
                         VIR_DEBUG("child closed stdin early, ignoring EPIPE "
