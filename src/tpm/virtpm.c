@@ -308,3 +308,19 @@ virTPMEmulatorInit(void)
 
     return 0;
 }
+
+bool
+virTPMSwtpmCapsGet(unsigned int cap)
+{
+    if (virTPMEmulatorInit() < 0)
+        return false;
+    return virBitmapIsBitSet(swtpm_caps, cap);
+}
+
+bool
+virTPMSwtpmSetupCapsGet(unsigned int cap)
+{
+    if (virTPMEmulatorInit() < 0)
+        return false;
+    return virBitmapIsBitSet(swtpm_setup_caps, cap);
+}
