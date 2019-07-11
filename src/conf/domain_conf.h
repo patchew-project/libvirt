@@ -3612,6 +3612,9 @@ bool
 virDomainDefHasManagedPR(const virDomainDef *def);
 
 bool
+virDomainDefHasNVMeDisk(const virDomainDef *def);
+
+bool
 virDomainGraphicsDefHasOpenGL(const virDomainDef *def);
 
 bool

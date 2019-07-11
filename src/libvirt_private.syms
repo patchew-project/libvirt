@@ -284,6 +284,7 @@ virDomainDefHasDeviceAddress;
 virDomainDefHasManagedPR;
 virDomainDefHasMemballoon;
 virDomainDefHasMemoryHotplug;
+virDomainDefHasNVMeDisk;
 virDomainDefHasUSB;
 virDomainDefHasVcpusOffline;
 virDomainDefLifecycleActionAllowed;
