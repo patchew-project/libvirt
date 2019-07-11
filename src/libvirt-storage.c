@@ -93,6 +93,7 @@ virStoragePoolGetConnect(virStoragePoolPtr pool)
  * VIR_CONNECT_LIST_STORAGE_POOLS_MPATH
  * VIR_CONNECT_LIST_STORAGE_POOLS_RBD
  * VIR_CONNECT_LIST_STORAGE_POOLS_SHEEPDOG
+ * VIR_CONNECT_LIST_STORAGE_POOLS_ISCSI_DIRECT
  *
  * Returns the number of storage pools found or -1 and sets @pools to
  * NULL in case of error.  On success, the array stored into @pools is
