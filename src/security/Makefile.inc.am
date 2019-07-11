@@ -47,6 +47,7 @@ noinst_LTLIBRARIES += libvirt_security_manager.la
 libvirt_la_BUILT_LIBADD += libvirt_security_manager.la
 libvirt_security_manager_la_CFLAGS = \
 	-I$(srcdir)/conf \
+	-I$(srcdir)/tpm \
 	$(AM_CFLAGS) \
 	$(NULL)
 libvirt_security_manager_la_LDFLAGS = $(AM_LDFLAGS)

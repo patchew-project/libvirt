@@ -1,0 +1,17 @@
+# vim: filetype=automake
+
+TPM_UTIL_SOURCES = \
+	tpm/virtpm.h \
+	tpm/virtpm.c \
+	$(NULL)
+
+
+EXTRA_DIST += \
+	$(TPM_UTIL_SOURCES) \
+	$(NULL)
+
+noinst_LTLIBRARIES += libvirt_tpm.la
+libvirt_la_BUILT_LIBADD += libvirt_tpm.la
+libvirt_tpm_la_CFLAGS = $(AM_CFLAGS)
+libvirt_tpm_la_LDFLAGS = $(AM_LDFLAGS)
+libvirt_tpm_la_SOURCES = $(TPM_UTIL_SOURCES)
