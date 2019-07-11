@@ -1602,6 +1602,7 @@ exit 0
 %{_libdir}/%{name}/connection-driver/libvirt_driver_nwfilter.so
 
 %files daemon-driver-secret
+%attr(0755, root, root) %{_sbindir}/virtsecretd
 %{_libdir}/%{name}/connection-driver/libvirt_driver_secret.so
 
 %files daemon-driver-storage

@@ -164,6 +164,7 @@
 /src/virt-aa-helper
 /src/virtlockd
 /src/virtlogd
+/src/virtsecretd
 /src/virt-guest-shutdown.target
 /tests/*.log
 /tests/*.pid
