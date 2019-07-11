@@ -41,4 +41,18 @@ libvirt_driver_interface_la_LIBADD += $(UDEV_LIBS)
 libvirt_driver_interface_la_SOURCES += $(INTERFACE_DRIVER_UDEV_SOURCES)
 endif WITH_UDEV
 libvirt_driver_interface_la_LIBADD += ../gnulib/lib/libgnu.la
+
+sbin_PROGRAMS += virtinterfaced
+
+virtinterfaced_SOURCES = $(REMOTE_DAEMON_SOURCES)
+virtinterfaced_CFLAGS = \
+       $(REMOTE_DAEMON_CFLAGS) \
+       -DSOCK_NAME="\"virtinterfaced-sock\"" \
+       -DSOCK_NAME_RO="\"virtinterfaced-sock-ro\"" \
+       -DSOCK_NAME_ADMIN="\"virtinterfaced-admin-sock\"" \
+       -DDAEMON_NAME="\"virtinterfaced\"" \
+       -DMODULE_NAME="\"interface\"" \
+       $(NULL)
+virtinterfaced_LDFLAGS = $(REMOTE_DAEMON_LDFLAGS)
+virtinterfaced_LDADD = $(REMOTE_DAEMON_LDADD)
 endif WITH_INTERFACE

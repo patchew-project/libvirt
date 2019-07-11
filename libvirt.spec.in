@@ -1577,6 +1577,7 @@ exit 0
 %ghost %{_sysconfdir}/libvirt/nwfilter/*.xml
 
 %files daemon-driver-interface
+%attr(0755, root, root) %{_sbindir}/virtinterfaced
 %{_libdir}/%{name}/connection-driver/libvirt_driver_interface.so
 
 %files daemon-driver-network
