@@ -5386,6 +5386,10 @@ qemuDomainGetEmulatorPinInfo(virDomainPtr dom,
     } else if (vm->def->placement_mode == VIR_DOMAIN_CPU_PLACEMENT_MODE_AUTO &&
                autoCpuset) {
         cpumask = autoCpuset;
+    } else if (virHostCPUHasBitmap()) {
+        if (!(bitmap = virHostCPUGetOnlineBitmap()))
+            goto cleanup;
+        cpumask = bitmap;
     } else {
         if (!(bitmap = virBitmapNew(hostcpus)))
             goto cleanup;
