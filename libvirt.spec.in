@@ -1580,6 +1580,7 @@ exit 0
 %{_libdir}/%{name}/connection-driver/libvirt_driver_interface.so
 
 %files daemon-driver-network
+%attr(0755, root, root) %{_sbindir}/virtnetworkd
 %dir %attr(0700, root, root) %{_sysconfdir}/libvirt/qemu/
 %dir %attr(0700, root, root) %{_sysconfdir}/libvirt/qemu/networks/
 %dir %attr(0700, root, root) %{_sysconfdir}/libvirt/qemu/networks/autostart

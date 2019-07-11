@@ -49,6 +49,20 @@ libvirt_driver_network_impl_la_CFLAGS = \
 libvirt_driver_network_impl_la_SOURCES = $(NETWORK_DRIVER_SOURCES)
 libvirt_driver_network_impl_la_LIBADD  = $(DBUS_LIBS)
 
+sbin_PROGRAMS += virtnetworkd
+
+virtnetworkd_SOURCES = $(REMOTE_DAEMON_SOURCES)
+virtnetworkd_CFLAGS = \
+       $(REMOTE_DAEMON_CFLAGS) \
+       -DSOCK_NAME="\"virtnetworkd-sock\"" \
+       -DSOCK_NAME_RO="\"virtnetworkd-sock-ro\"" \
+       -DSOCK_NAME_ADMIN="\"virtnetworkd-admin-sock\"" \
+       -DDAEMON_NAME="\"virtnetworkd\"" \
+       -DMODULE_NAME="\"network\"" \
+       $(NULL)
+virtnetworkd_LDFLAGS = $(REMOTE_DAEMON_LDFLAGS)
+virtnetworkd_LDADD = $(REMOTE_DAEMON_LDADD)
+
 libexec_PROGRAMS += libvirt_leaseshelper
 libvirt_leaseshelper_SOURCES = $(NETWORK_LEASES_HELPER_SOURCES)
 libvirt_leaseshelper_LDFLAGS = \
