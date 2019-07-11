@@ -220,19 +220,19 @@ daemonUnixSocketPaths(struct daemonConfig *config,
     char *rundir = NULL;
 
     if (config->unix_sock_dir) {
-        if (virAsprintf(sockfile, "%s/libvirt-sock", config->unix_sock_dir) < 0)
+        if (virAsprintf(sockfile, "%s/" SOCK_NAME, config->unix_sock_dir) < 0)
             goto cleanup;
 
         if (privileged) {
-            if (virAsprintf(rosockfile, "%s/libvirt-sock-ro", config->unix_sock_dir) < 0 ||
-                virAsprintf(admsockfile, "%s/libvirt-admin-sock", config->unix_sock_dir) < 0)
+            if (virAsprintf(rosockfile, "%s/" SOCK_NAME_RO, config->unix_sock_dir) < 0 ||
+                virAsprintf(admsockfile, "%s/" SOCK_NAME_ADMIN, config->unix_sock_dir) < 0)
                 goto cleanup;
         }
     } else {
         if (privileged) {
-            if (VIR_STRDUP(*sockfile, LOCALSTATEDIR "/run/libvirt/libvirt-sock") < 0 ||
-                VIR_STRDUP(*rosockfile, LOCALSTATEDIR "/run/libvirt/libvirt-sock-ro") < 0 ||
-                VIR_STRDUP(*admsockfile, LOCALSTATEDIR "/run/libvirt/libvirt-admin-sock") < 0)
+            if (VIR_STRDUP(*sockfile, LOCALSTATEDIR "/run/libvirt/" SOCK_NAME) < 0 ||
+                VIR_STRDUP(*rosockfile, LOCALSTATEDIR "/run/libvirt/" SOCK_NAME_RO) < 0 ||
+                VIR_STRDUP(*admsockfile, LOCALSTATEDIR "/run/libvirt/" SOCK_NAME_ADMIN) < 0)
                 goto cleanup;
         } else {
             mode_t old_umask;
@@ -247,8 +247,8 @@ daemonUnixSocketPaths(struct daemonConfig *config,
             }
             umask(old_umask);
 
-            if (virAsprintf(sockfile, "%s/libvirt-sock", rundir) < 0 ||
-                virAsprintf(admsockfile, "%s/libvirt-admin-sock", rundir) < 0)
+            if (virAsprintf(sockfile, "%s/" SOCK_NAME, rundir) < 0 ||
+                virAsprintf(admsockfile, "%s/" SOCK_NAME_ADMIN, rundir) < 0)
                 goto cleanup;
         }
     }
@@ -910,14 +910,14 @@ daemonUsage(const char *argv0, bool privileged)
                   "      %s/run/libvirtd.pid\n"
                   "\n"),
                 LIBVIRTD_CONFIGURATION_FILE,
-                LIBVIRTD_PRIV_UNIX_SOCKET,
-                LIBVIRTD_PRIV_UNIX_SOCKET_RO,
+                LOCALSTATEDIR "/run/libvirt/" SOCK_NAME,
+                LOCALSTATEDIR "/run/libvirt/" SOCK_NAME_RO,
                 LIBVIRT_CACERT,
                 LIBVIRT_SERVERCERT,
                 LIBVIRT_SERVERKEY,
                 LOCALSTATEDIR);
     } else {
-        fprintf(stderr, "%s",
+        fprintf(stderr,
                 _("\n"
                   "  Default paths:\n"
                   "\n"
@@ -925,7 +925,7 @@ daemonUsage(const char *argv0, bool privileged)
                   "      $XDG_CONFIG_HOME/libvirt/libvirtd.conf\n"
                   "\n"
                   "    Sockets:\n"
-                  "      $XDG_RUNTIME_DIR/libvirt/libvirt-sock\n"
+                  "      $XDG_RUNTIME_DIR/libvirt/%s\n"
                   "\n"
                   "    TLS:\n"
                   "      CA certificate:     $HOME/.pki/libvirt/cacert.pem\n"
@@ -934,7 +934,8 @@ daemonUsage(const char *argv0, bool privileged)
                   "\n"
                   "    PID file:\n"
                   "      $XDG_RUNTIME_DIR/libvirt/libvirtd.pid\n"
-                  "\n"));
+                  "\n"),
+                SOCK_NAME);
     }
 }
 

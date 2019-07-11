@@ -143,6 +143,9 @@ libvirtd_CFLAGS = \
 	-I$(srcdir)/access \
 	-I$(srcdir)/conf \
 	-I$(srcdir)/rpc \
+	-DSOCK_NAME="\"libvirt-sock\"" \
+	-DSOCK_NAME_RO="\"libvirt-sock-ro\"" \
+	-DSOCK_NAME_ADMIN="\"libvirt-admin-sock\"" \
 	$(NULL)
 
 libvirtd_LDFLAGS = \
