@@ -1596,6 +1596,7 @@ exit 0
 %endif
 
 %files daemon-driver-nodedev
+%attr(0755, root, root) %{_sbindir}/virtnodedevd
 %{_libdir}/%{name}/connection-driver/libvirt_driver_nodedev.so
 
 %files daemon-driver-nwfilter

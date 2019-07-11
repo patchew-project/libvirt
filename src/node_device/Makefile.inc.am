@@ -64,4 +64,18 @@ libvirt_driver_nodedev_la_LIBADD += \
 endif WITH_UDEV
 
 libvirt_driver_nodedev_la_LIBADD += ../gnulib/lib/libgnu.la
+
+sbin_PROGRAMS += virtnodedevd
+
+virtnodedevd_SOURCES = $(REMOTE_DAEMON_SOURCES)
+virtnodedevd_CFLAGS = \
+       $(REMOTE_DAEMON_CFLAGS) \
+       -DSOCK_NAME="\"virtnodedevd-sock\"" \
+       -DSOCK_NAME_RO="\"virtnodedevd-sock-ro\"" \
+       -DSOCK_NAME_ADMIN="\"virtnodedevd-admin-sock\"" \
+       -DDAEMON_NAME="\"virtnodedevd\"" \
+       -DMODULE_NAME="\"nodedev\"" \
+       $(NULL)
+virtnodedevd_LDFLAGS = $(REMOTE_DAEMON_LDFLAGS)
+virtnodedevd_LDADD = $(REMOTE_DAEMON_LDADD)
 endif WITH_NODE_DEVICES
