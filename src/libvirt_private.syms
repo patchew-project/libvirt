@@ -2612,6 +2612,7 @@ virObjectUnref;
 
 # util/virpci.h
 virPCIDeviceAddressAsString;
+virPCIDeviceAddressCopy;
 virPCIDeviceAddressEqual;
 virPCIDeviceAddressGetIOMMUGroupAddresses;
 virPCIDeviceAddressGetIOMMUGroupNum;

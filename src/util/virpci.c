@@ -1730,6 +1730,12 @@ virPCIDeviceAddressEqual(const virPCIDeviceAddress *addr1,
     return false;
 }
 
+void virPCIDeviceAddressCopy(virPCIDeviceAddressPtr dst,
+                             const virPCIDeviceAddress *src)
+{
+    memcpy(dst, src, sizeof(*src));
+}
+
 char *
 virPCIDeviceAddressAsString(const virPCIDeviceAddress *addr)
 {
