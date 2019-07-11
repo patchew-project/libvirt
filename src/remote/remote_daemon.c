@@ -298,11 +298,19 @@ static int daemonErrorLogFilter(virErrorPtr err, int priority)
 
 static int daemonInitialize(void)
 {
-#ifdef MODULE_NAME
+#ifndef LIBVIRTD
+# ifdef MODULE_NAME
+    /* This a dedicated per-driver daemon build */
     if (virDriverLoadModule(MODULE_NAME, MODULE_NAME "Register", true) < 0)
         return -1;
+# else
+    /* This is virtproxyd which merely proxies to the per-driver
+     * daemons for back compat, and also allows IP connectivity.
+     */
+# endif
 #else
-    /*
+    /* This is the legacy monolithic libvirtd built with all drivers
+     *
      * Note that the order is important: the first ones have a higher
      * priority when calling virStateInitialize. We must register the
      * network, storage and nodedev drivers before any stateful domain

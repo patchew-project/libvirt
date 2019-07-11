@@ -161,7 +161,7 @@ endif ! WITH_REMOTE
 
 if WITH_LIBVIRTD
 
-sbin_PROGRAMS += libvirtd
+sbin_PROGRAMS += libvirtd virtproxyd
 
 augeas_DATA += remote/libvirtd.aug
 
@@ -174,7 +174,6 @@ CLEANFILES += remote/libvirtd.aug remote/test_libvirtd.aug
 man8_MANS += libvirtd.8
 
 libvirtd_SOURCES = $(REMOTE_DAEMON_SOURCES)
-
 libvirtd_CFLAGS = \
 	$(REMOTE_DAEMON_CFLAGS) \
 	-DSOCK_NAME="\"libvirt-sock\"" \
@@ -182,11 +181,22 @@ libvirtd_CFLAGS = \
 	-DSOCK_NAME_ADMIN="\"libvirt-admin-sock\"" \
 	-DDAEMON_NAME="\"libvirtd\"" \
 	-DENABLE_IP \
+	-DLIBVIRTD \
 	$(NULL)
-
 libvirtd_LDFLAGS = $(REMOTE_DAEMON_LDFLAGS)
-
 libvirtd_LDADD = $(REMOTE_DAEMON_LDADD)
+
+virtproxyd_SOURCES = $(REMOTE_DAEMON_SOURCES)
+virtproxyd_CFLAGS = \
+	$(REMOTE_DAEMON_CFLAGS) \
+	-DSOCK_NAME="\"libvirt-sock\"" \
+	-DSOCK_NAME_RO="\"libvirt-sock-ro\"" \
+	-DSOCK_NAME_ADMIN="\"libvirt-admin-sock\"" \
+	-DDAEMON_NAME="\"virtproxyd\"" \
+	-DENABLE_IP \
+	$(NULL)
+virtproxyd_LDFLAGS = $(REMOTE_DAEMON_LDFLAGS)
+virtproxyd_LDADD = $(REMOTE_DAEMON_LDADD)
 
 remote/libvirtd.conf: remote/libvirtd.conf.in
 	$(AM_V_GEN)sed \
