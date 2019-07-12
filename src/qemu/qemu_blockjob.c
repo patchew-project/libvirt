@@ -78,7 +78,7 @@ qemuBlockJobDataOnceInit(void)
 
 VIR_ONCE_GLOBAL_INIT(qemuBlockJobData);
 
-static qemuBlockJobDataPtr
+qemuBlockJobDataPtr
 qemuBlockJobDataNew(qemuBlockJobType type,
                     const char *name)
 {
@@ -101,7 +101,7 @@ qemuBlockJobDataNew(qemuBlockJobType type,
 }
 
 
-static int
+int
 qemuBlockJobRegister(qemuBlockJobDataPtr job,
                      virDomainObjPtr vm,
                      virDomainDiskDefPtr disk)
