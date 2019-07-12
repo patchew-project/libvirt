@@ -578,6 +578,7 @@ qemuTPMEmulatorBuildCommand(virDomainTPMDefPtr tpm,
     bool created = false;
     char *pidfile;
     VIR_AUTOCLOSE pwdfile_fd = -1;
+    VIR_AUTOCLOSE migpwdfile_fd = -1;
     const unsigned char *secretuuid = NULL;
 
     if (qemuTPMCreateEmulatorStorage(tpm->data.emulator.storagepath,
@@ -644,6 +645,9 @@ qemuTPMEmulatorBuildCommand(virDomainTPMDefPtr tpm,
 
         pwdfile_fd = qemuTPMSetupEncryption(tpm->data.emulator.secretuuid, cmd);
         if (pwdfile_fd)
+        migpwdfile_fd = qemuTPMSetupEncryption(tpm->data.emulator.secretuuid,
+                                               cmd);
+        if (pwdfile_fd < 0 || migpwdfile_fd < 0)
             goto error;
 
         virCommandAddArg(cmd, "--key");
@@ -651,6 +655,12 @@ qemuTPMEmulatorBuildCommand(virDomainTPMDefPtr tpm,
                                pwdfile_fd);
         virCommandPassFD(cmd, pwdfile_fd, VIR_COMMAND_PASS_FD_CLOSE_PARENT);
         pwdfile_fd = -1;
+
+        virCommandAddArg(cmd, "--migration-key");
+        virCommandAddArgFormat(cmd, "pwdfd=%d,mode=aes-256-cbc,kdf=pbkdf2",
+                               migpwdfile_fd);
+        virCommandPassFD(cmd, migpwdfile_fd, VIR_COMMAND_PASS_FD_CLOSE_PARENT);
+        migpwdfile_fd = -1;
     }
 
     return cmd;
