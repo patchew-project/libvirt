@@ -2807,7 +2807,7 @@ qemuBuildFSDevCommandLine(virCommandPtr cmd,
                           const virDomainDef *def,
                           virQEMUCapsPtr qemuCaps)
 {
-    char *optstr;
+    VIR_AUTOFREE(char *) optstr = NULL;
 
     virCommandAddArg(cmd, "-fsdev");
     if (!(optstr = qemuBuildFSStr(fs)))
@@ -2822,7 +2822,6 @@ qemuBuildFSDevCommandLine(virCommandPtr cmd,
     if (!(optstr = qemuBuildFSDevStr(def, fs, qemuCaps)))
         return -1;
     virCommandAddArg(cmd, optstr);
-    VIR_FREE(optstr);
 
     return 0;
 }
