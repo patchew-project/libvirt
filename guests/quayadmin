@@ -84,8 +84,8 @@ def run_show_repo(args):
         return 1
 
     info = res.json()
-    if not args.quiet:
-        print("{}/{}: {}".format(args.namespace, args.repo, info["description"]))
+
+    print("{}/{}: {}".format(args.namespace, args.repo, info["description"]))
 
 
 def run_create_repo(args):
