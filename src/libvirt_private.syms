@@ -90,6 +90,7 @@ virCPUDefIsEqual;
 virCPUDefListFree;
 virCPUDefListParse;
 virCPUDefParseXML;
+virCPUDefParseXMLHelper;
 virCPUDefStealModel;
 virCPUDefUpdateFeature;
 virCPUModeTypeToString;
