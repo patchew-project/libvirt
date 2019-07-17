@@ -10,7 +10,7 @@
 
     <p>As new virtualization engine support gets added to libvirt, and to
     handle cases like QEMU supporting a variety of emulations, a query
-    interface has been added in 0.2.1 allowing to list the set of supported
+    interface has been added allowing to list the set of supported
     virtualization capabilities on the host:</p>
 
     <pre>char * virConnectGetCapabilities (virConnectPtr conn);</pre>
@@ -118,35 +118,33 @@
           with a guest of described type.  Possible subelements are:
           <dl>
             <dt><code>pae</code></dt><dd>If present, 32-bit guests can use PAE
-              address space extensions, <span class="since">since
-              0.4.1</span></dd>
+              address space extensions.
+              </dd>
             <dt><code>nonpae</code></dt><dd>If present, 32-bit guests can be run
-              without requiring PAE, <span class="since">since
-              0.4.1</span></dd>
+              without requiring PAE.
+              </dd>
             <dt><code>ia64_be</code></dt><dd>If present, IA64 guests can be run in
-              big-endian mode, <span class="since">since 0.4.1</span></dd>
+              big-endian mode.</dd>
             <dt><code>acpi</code></dt><dd>If this element is present,
               the <code>default</code> attribute describes whether the
               hypervisor exposes ACPI to the guest by default, and
               the <code>toggle</code> attribute describes whether the
-              user can override this
-              default. <span class="since">Since 0.4.1</span></dd>
+              user can override this default. </dd>
             <dt><code>apic</code></dt><dd>If this element is present,
               the <code>default</code> attribute describes whether the
               hypervisor exposes APIC to the guest by default, and
               the <code>toggle</code> attribute describes whether the
               user can override this
-              default. <span class="since">Since 0.4.1</span></dd>
+              default. </dd>
             <dt><code>cpuselection</code></dt><dd>If this element is present, the
               hypervisor supports the <code>&lt;cpu&gt;</code> element
               within a domain definition for fine-grained control over
               the CPU presented to the
-              guest. <span class="since">Since 0.7.5</span></dd>
+              guest. </dd>
             <dt><code>deviceboot</code></dt><dd>If this element is present,
               the <code>&lt;boot order='...'/&gt;</code> element can
               be used inside devices, rather than the older boot
-              specification by category. <span class="since">Since
-              0.8.8</span></dd>
+              specification by category. </dd>
             <dt><code>disksnapshot</code></dt><dd>If this element is present,
               the <code>default</code> attribute describes whether
               external disk snapshots are supported.  If absent,
