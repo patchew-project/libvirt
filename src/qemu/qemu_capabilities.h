@@ -673,3 +673,12 @@ virCPUDefPtr virQEMUCapsCPUModelBaseline(virQEMUCapsPtr qemuCaps,
                                         gid_t runGid,
                                         int ncpus,
                                         virCPUDefPtr *cpus);
+
+virCPUCompareResult
+virQEMUCapsCPUModelComparison(virQEMUCapsPtr qemuCaps,
+                              const char *libDir,
+                              uid_t runUid,
+                              gid_t runGid,
+                              virCPUDefPtr cpu_a,
+                              virCPUDefPtr cpu_b,
+                              bool failIncompatible);
