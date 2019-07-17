@@ -5574,3 +5574,87 @@ virQEMUCapsStripMachineAliases(virQEMUCapsPtr qemuCaps)
     for (i = 0; i < qemuCaps->nmachineTypes; i++)
         VIR_FREE(qemuCaps->machineTypes[i].alias);
 }
+
+
+static int
+virQEMUCapsStealCPUModelFromInfo(virCPUDefPtr dst,
+                                 qemuMonitorCPUModelInfoPtr *src)
+{
+    qemuMonitorCPUModelInfoPtr info = *src;
+    size_t i;
+
+    virCPUDefFreeModel(dst);
+
+    VIR_STEAL_PTR(dst->model, info->name);
+
+    for (i = 0; i < info->nprops; i++) {
+        char *name = info->props[i].name;
+        int policy = VIR_CPU_FEATURE_REQUIRE;
+
+        if (info->props[i].type == QEMU_MONITOR_CPU_PROPERTY_BOOLEAN &&
+            !info->props[i].value.boolean)
+            policy = VIR_CPU_FEATURE_DISABLE;
+
+        if (virCPUDefAddFeature(dst, name, policy) < 0)
+            goto error;
+    }
+
+    qemuMonitorCPUModelInfoFree(info);
+    *src = NULL;
+    return 0;
+
+ error:
+    virCPUDefFree(dst);
+    return -1;
+}
+
+
+virCPUDefPtr
+virQEMUCapsCPUModelBaseline(virQEMUCapsPtr qemuCaps,
+                            const char *libDir,
+                            uid_t runUid,
+                            gid_t runGid,
+                            int ncpus,
+                            virCPUDefPtr *cpus)
+{
+    qemuMonitorCPUModelInfoPtr result = NULL;
+    qemuProcessQMPPtr proc = NULL;
+    virCPUDefPtr cpu = NULL;
+    virCPUDefPtr baseline = NULL;
+    size_t i;
+
+    if (VIR_ALLOC(cpu) < 0)
+        goto cleanup;
+
+    if (virCPUDefCopyModel(cpu, cpus[0], false))
+        goto cleanup;
+
+    if (!(proc = qemuProcessQMPNew(qemuCaps->binary, libDir,
+                                   runUid, runGid, false)))
+        goto cleanup;
+
+    if (qemuProcessQMPStart(proc) < 0)
+        goto cleanup;
+
+    for (i = 1; i < ncpus; i++) {
+        if (qemuMonitorGetCPUModelBaseline(proc->mon, cpu->model,
+                                           cpu->nfeatures, cpu->features,
+                                           cpus[i]->model, cpus[i]->nfeatures,
+                                           cpus[i]->features, &result) < 0)
+            goto cleanup;
+
+        if (virQEMUCapsStealCPUModelFromInfo(cpu, &result) < 0)
+            goto cleanup;
+    }
+
+    VIR_STEAL_PTR(baseline, cpu);
+
+ cleanup:
+    if (!baseline)
+        virQEMUCapsLogProbeFailure(qemuCaps->binary);
+
+    qemuMonitorCPUModelInfoFree(result);
+    qemuProcessQMPFree(proc);
+    virCPUDefFree(cpu);
+    return baseline;
+}

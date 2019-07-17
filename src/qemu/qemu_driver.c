@@ -13576,6 +13576,7 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
                                  unsigned int flags)
 {
     virQEMUDriverPtr driver = conn->privateData;
+    virQEMUDriverConfigPtr config = driver->config;
     virCPUDefPtr *cpus = NULL;
     virQEMUCapsPtr qemuCaps = NULL;
     virArch arch;
@@ -13630,6 +13631,32 @@ qemuConnectBaselineHypervisorCPU(virConnectPtr conn,
         if (!(cpu = virCPUBaseline(arch, cpus, ncpus, cpuModels,
                                    (const char **)features, migratable)))
             goto cleanup;
+    } else if (ARCH_IS_S390(arch) &&
+               virQEMUCapsGet(qemuCaps, QEMU_CAPS_QUERY_CPU_MODEL_BASELINE)) {
+        /* Add a copy of the hypervisor CPU to the list */
+        virCPUDefPtr hvCPU, tmp;
+        size_t allocated = ncpus + 1;
+
+        hvCPU = virQEMUCapsGetHostModel(qemuCaps, virttype,
+                                        VIR_QEMU_CAPS_HOST_CPU_REPORTED);
+        if (VIR_ALLOC(tmp) < 0)
+             goto cleanup;
+
+        if (virCPUDefCopyModel(tmp, hvCPU, false))
+             goto cleanup;
+
+        if (VIR_INSERT_ELEMENT(cpus, ncpus, allocated, tmp) < 0)
+             goto cleanup;
+
+        ncpus++;
+
+        if (!(cpu = virQEMUCapsCPUModelBaseline(qemuCaps, config->libDir,
+                                                config->user, config->group,
+                                                ncpus, cpus)))
+            goto cleanup;
+
+        if (!(flags & VIR_CONNECT_BASELINE_CPU_EXPAND_FEATURES))
+            virCPUDefFreeFeatures(cpu);
     } else {
         virReportError(VIR_ERR_OPERATION_UNSUPPORTED,
                        _("computing baseline hypervisor CPU is not supported "

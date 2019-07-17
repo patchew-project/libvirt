@@ -665,3 +665,10 @@ virQEMUCapsGetSEVCapabilities(virQEMUCapsPtr qemuCaps);
 
 virArch virQEMUCapsArchFromString(const char *arch);
 const char *virQEMUCapsArchToString(virArch arch);
+
+virCPUDefPtr virQEMUCapsCPUModelBaseline(virQEMUCapsPtr qemuCaps,
+                                        const char *libDir,
+                                        uid_t runUid,
+                                        gid_t runGid,
+                                        int ncpus,
+                                        virCPUDefPtr *cpus);
