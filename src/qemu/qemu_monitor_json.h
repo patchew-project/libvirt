@@ -395,6 +395,16 @@ int qemuMonitorJSONGetCPUModelExpansion(qemuMonitorPtr mon,
                                         qemuMonitorCPUModelInfoPtr *model_info)
     ATTRIBUTE_NONNULL(3) ATTRIBUTE_NONNULL(5);
 
+int qemuMonitorJSONGetCPUModelBaseline(qemuMonitorPtr mon,
+                                       const char *model_a_name,
+                                       int model_a_nprops,
+                                       virCPUFeatureDefPtr model_a_props,
+                                       const char *model_b_name,
+                                       int model_b_nprops,
+                                       virCPUFeatureDefPtr model_b_props,
+                                       qemuMonitorCPUModelInfoPtr *model_result)
+    ATTRIBUTE_NONNULL(2) ATTRIBUTE_NONNULL(5) ATTRIBUTE_NONNULL(8);
+
 int qemuMonitorJSONGetCommands(qemuMonitorPtr mon,
                                char ***commands)
     ATTRIBUTE_NONNULL(2);
