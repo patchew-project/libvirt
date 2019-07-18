@@ -613,33 +613,6 @@ virHostdevRestoreNetConfig(virDomainHostdevDefPtr hostdev,
     }
 }
 
-/*
- * Pre-condition: inactivePCIHostdevs & activePCIHostdevs
- * are locked
- */
-static void
-virHostdevReattachPCIDevice(virHostdevManagerPtr mgr,
-                            virPCIDevicePtr actual)
-{
-    /* Wait for device cleanup if it is qemu/kvm */
-    if (virPCIDeviceGetStubDriver(actual) == VIR_PCI_STUB_DRIVER_KVM) {
-        int retries = 100;
-        while (virPCIDeviceWaitForCleanup(actual, "kvm_assigned_device")
-               && retries) {
-            usleep(100*1000);
-            retries--;
-        }
-    }
-
-    VIR_DEBUG("Reattaching PCI device %s", virPCIDeviceGetName(actual));
-    if (virPCIDeviceReattach(actual, mgr->activePCIHostdevs,
-                             mgr->inactivePCIHostdevs) < 0) {
-        VIR_ERROR(_("Failed to re-attach PCI device: %s"),
-                  virGetLastErrorMessage());
-        virResetLastError();
-    }
-}
-
 static void
 virHostdevReattachAllPCIDevices(virPCIDeviceListPtr pcidevs,
                                 virHostdevManagerPtr mgr)
@@ -655,11 +628,17 @@ virHostdevReattachAllPCIDevices(virPCIDeviceListPtr pcidevs,
         if (!(actual = virPCIDeviceListFind(mgr->inactivePCIHostdevs, pci)))
             continue;
 
-        if (virPCIDeviceGetManaged(actual))
-            virHostdevReattachPCIDevice(mgr, actual);
-        else
+        if (virPCIDeviceGetManaged(actual)) {
+            if (virPCIDeviceReattach(actual, mgr->activePCIHostdevs,
+                                     mgr->inactivePCIHostdevs) < 0) {
+                VIR_ERROR(_("Failed to re-attach PCI device: %s"),
+                          virGetLastErrorMessage());
+                virResetLastError();
+            }
+        } else {
             VIR_DEBUG("Not reattaching unmanaged PCI device %s",
                       virPCIDeviceGetName(actual));
+        }
     }
 }
 
@@ -2049,10 +2028,6 @@ virHostdevPCINodeDeviceReAttach(virHostdevManagerPtr mgr,
 
     if (virHostdevIsPCINodeDeviceUsed(virPCIDeviceGetAddress(pci), &data))
         goto cleanup;
-
-    virPCIDeviceSetUnbindFromStub(pci, true);
-    virPCIDeviceSetRemoveSlot(pci, true);
-    virPCIDeviceSetReprobe(pci, true);
 
     if (virPCIDeviceReattach(pci, mgr->activePCIHostdevs,
                              mgr->inactivePCIHostdevs) < 0)
