@@ -218,6 +218,7 @@ virsh_SOURCES = \
 		virsh.c virsh.h \
 		virsh-completer.c virsh-completer.h \
 		virsh-completer-domain.c virsh-completer-domain.h \
+		virsh-completer-host.c virsh-completer-host.h \
 		virsh-completer-interface.c virsh-completer-interface.h \
 		virsh-completer-network.c virsh-completer-network.h \
 		virsh-completer-nodedev.c virsh-completer-nodedev.h \

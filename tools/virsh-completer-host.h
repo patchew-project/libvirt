@@ -1,7 +1,7 @@
 /*
- * virsh-completer.h: virsh completer callbacks
+ * virsh-completer-host.h: virsh completer callbacks related to host
  *
- * Copyright (C) 2017 Red Hat, Inc.
+ * Copyright (C) 2019 Red Hat, Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,16 +22,10 @@
 
 #include "vsh.h"
 
-#include "virsh-completer-domain.h"
-#include "virsh-completer-host.h"
-#include "virsh-completer-interface.h"
-#include "virsh-completer-network.h"
-#include "virsh-completer-nodedev.h"
-#include "virsh-completer-nwfilter.h"
-#include "virsh-completer-pool.h"
-#include "virsh-completer-secret.h"
-#include "virsh-completer-snapshot.h"
-#include "virsh-completer-volume.h"
+char ** virshAllocpagesPagesizeCompleter(vshControl *ctl,
+                                         const vshCmd *cmd,
+                                         unsigned int flags);
 
-char ** virshCommaStringListComplete(const char *input,
-                                     const char **options);
+char ** virshCellnoCompleter(vshControl *ctl,
+                             const vshCmd *cmd,
+                             unsigned int flags);
