@@ -29,14 +29,11 @@
 #include "virsh-completer-nwfilter.h"
 #include "virsh-completer-pool.h"
 #include "virsh-completer-secret.h"
+#include "virsh-completer-snapshot.h"
 #include "virsh-completer-volume.h"
 
 char ** virshCommaStringListComplete(const char *input,
                                      const char **options);
-
-char ** virshSnapshotNameCompleter(vshControl *ctl,
-                                   const vshCmd *cmd,
-                                   unsigned int flags);
 
 char ** virshAllocpagesPagesizeCompleter(vshControl *ctl,
                                          const vshCmd *cmd,
