@@ -24,6 +24,7 @@ DOMAIN_CONF_SOURCES = \
 	conf/domain_audit.h \
 	conf/domain_nwfilter.c \
 	conf/domain_nwfilter.h \
+	conf/domain_parse.h \
 	conf/virsavecookie.c \
 	conf/virsavecookie.h \
 	conf/moment_conf.c \
