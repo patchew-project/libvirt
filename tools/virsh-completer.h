@@ -25,15 +25,12 @@
 #include "virsh-completer-domain.h"
 #include "virsh-completer-interface.h"
 #include "virsh-completer-network.h"
+#include "virsh-completer-nodedev.h"
 #include "virsh-completer-pool.h"
 #include "virsh-completer-volume.h"
 
 char ** virshCommaStringListComplete(const char *input,
                                      const char **options);
-
-char ** virshNodeDeviceNameCompleter(vshControl *ctl,
-                                     const vshCmd *cmd,
-                                     unsigned int flags);
 
 char ** virshNWFilterNameCompleter(vshControl *ctl,
                                    const vshCmd *cmd,
@@ -58,14 +55,6 @@ char ** virshAllocpagesPagesizeCompleter(vshControl *ctl,
 char ** virshSecretEventNameCompleter(vshControl *ctl,
                                       const vshCmd *cmd,
                                       unsigned int flags);
-
-char ** virshNodeDeviceEventNameCompleter(vshControl *ctl,
-                                          const vshCmd *cmd,
-                                          unsigned int flags);
-
-char ** virshNodeDeviceCapabilityNameCompleter(vshControl *ctl,
-                                               const vshCmd *cmd,
-                                               unsigned int flags);
 
 char ** virshCellnoCompleter(vshControl *ctl,
                              const vshCmd *cmd,
