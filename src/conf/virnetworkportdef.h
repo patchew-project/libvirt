@@ -22,6 +22,7 @@
 #pragma once
 
 #include "internal.h"
+#include "virconftypes.h"
 #include "viruuid.h"
 #include "virnetdevvlan.h"
 #include "virnetdevvportprofile.h"
@@ -31,9 +32,6 @@
 #include "netdev_vport_profile_conf.h"
 #include "netdev_bandwidth_conf.h"
 #include "netdev_vlan_conf.h"
-
-typedef struct _virNetworkPortDef virNetworkPortDef;
-typedef virNetworkPortDef *virNetworkPortDefPtr;
 
 typedef enum {
     VIR_NETWORK_PORT_PLUG_TYPE_NONE,
