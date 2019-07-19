@@ -2399,11 +2399,13 @@ int
 virCgroupRemove(virCgroupPtr group)
 {
     size_t i;
+    int ret = 0;
 
     for (i = 0; i < VIR_CGROUP_BACKEND_TYPE_LAST; i++) {
-        if (group->backends[i] &&
-            group->backends[i]->remove(group) < 0) {
-            return -1;
+        if (group->backends[i])
+            ret = group->backends[i]->remove(group);
+            if (ret < 0)
+                return ret;
         }
     }
 
