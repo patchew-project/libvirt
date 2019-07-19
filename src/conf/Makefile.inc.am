@@ -22,6 +22,7 @@ DOMAIN_CONF_SOURCES = \
 	conf/domain_conf.h \
 	conf/domain_audit.c \
 	conf/domain_audit.h \
+	conf/domain_format.h \
 	conf/domain_nwfilter.c \
 	conf/domain_nwfilter.h \
 	conf/domain_parse.h \
